@@ -1,5 +1,6 @@
 import { screen, waitFor, within } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { setFormatTimeZone } from "@logicplanes/kaeso-ui/format";
 import { renderUi } from "~/test/render";
 import { PeriodPicker } from "./period-picker";
 
@@ -38,5 +39,30 @@ describe("PeriodPicker", () => {
     await user.type(end, "2026-10-05");
     await user.click(within(dialog).getByRole("button", { name: "Apply" }));
     await waitFor(() => expect(onChange).toHaveBeenCalledWith({ period: undefined, from: "2026-10-02", to: "2026-10-05" }));
+  });
+
+  describe("ends on the UTC day, which usage counts by, whatever the install's time zone", () => {
+    afterEach(() => vi.useRealTimers());
+
+    async function pickUntil(zone: string, now: string, last: string) {
+      setFormatTimeZone(zone);
+      vi.setSystemTime(new Date(now));
+      const view = await open();
+      await view.user.clear(within(view.dialog).getByRole("textbox", { name: "End date" }));
+      await view.user.type(within(view.dialog).getByRole("textbox", { name: "End date" }), last);
+      await view.user.click(within(view.dialog).getByRole("button", { name: "Apply" }));
+      return view;
+    }
+
+    it("refuses the install's today when that UTC day hasn't started", async () => {
+      const { dialog, onChange } = await pickUntil("Asia/Tokyo", "2026-10-14T20:00:00Z", "2026-10-15");
+      expect(within(dialog).getByRole("alert")).toHaveTextContent("This date can't be chosen. Choose another date.");
+      expect(onChange).not.toHaveBeenCalledWith(expect.objectContaining({ to: "2026-10-15" }));
+    });
+
+    it("offers today's UTC day while the install's clock is still on the day before", async () => {
+      const { onChange } = await pickUntil("America/Los_Angeles", "2026-10-15T03:00:00Z", "2026-10-15");
+      await waitFor(() => expect(onChange).toHaveBeenCalledWith({ period: undefined, from: "2026-10-01", to: "2026-10-15" }));
+    });
   });
 });

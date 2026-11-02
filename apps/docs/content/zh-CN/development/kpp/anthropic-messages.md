@@ -214,7 +214,7 @@ Schema `MessageStreamEvent`。
 | `message_delta.delta.stop_details`、`.container`、未知键 | extras `delta.*` | |
 | `message_delta.usage`（`MessageDeltaUsage`） | `ResponseDelta.usage`（累计值） | 它省略的计数以及缓存写入的细分数据会从 `message_start` 补全；`raw` 是该增量自己的对象。 |
 | `message_stop` | `ResponseStop` | |
-| `error` | `StreamEvent::Error`（类型按[错误表](#错误)确定，没有状态码） | 解码器停止。 |
+| `error`，以及每个名为 `event: error` 的帧，无论其数据如何 | `StreamEvent::Error`（类型和消息按[错误表](#错误)确定，没有状态码） | 解码器停止。采用 OpenAI 错误格式、顶层没有 `type` 的数据保留其消息；不是 JSON 的数据会被引用到消息中，因为 SDK 对每个这样的帧都会抛出错误（固定 SDK 提交中的 `_streaming.py`）。不是 Anthropic 格式的错误会以 Anthropic 的格式送达 Anthropic 应用，与 HTTP 错误相同（fixture 为 `error-event-openai-shape.sse`、`error-event-not-json.sse`）。 |
 | `ping`、未知事件 | `StreamEvent::Extra { event, data }` | 仅限同一方言。不是 JSON 的数据按文本保留。帧的 `id`、`retry` 和其他 SSE 字段保留在该 extra 中。 |
 | 没有 `data:` 行的帧（例如单独的 `retry: 3000` 或 `event: ping`），无论事件名称是什么 | 没有 `data` 键的 `StreamEvent::Extra` | 按 SSE 规范它不是事件，因此永远不会成为错误或生命周期事件。写回时不带 `data:` 行。 |
 | SSE 注释 | `StreamEvent::Extra { comment }` | |

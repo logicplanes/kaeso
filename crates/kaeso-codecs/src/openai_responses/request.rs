@@ -270,7 +270,12 @@ pub(super) fn decode(
         }
     }
 
-    let canon = canonical_body(&req, kind, &origin, &mut Names::none());
+    let input = if matches!(w.input, Some(StringOr::List(_))) {
+        Input::Skipped
+    } else {
+        Input::Encoded
+    };
+    let canon = canonical_body_with(&req, kind, &origin, &mut Names::none(), input);
     let mut overrides = Overrides::diff_with(
         &canon,
         raw,
@@ -472,6 +477,9 @@ fn reasoning_object(cfg: &ReasoningConfig) -> Option<Node> {
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Input {
     Encoded,
+    // An empty list in place of the items, for the diff of a decoded request, which never looks
+    // inside an `input` list (`overrides::diff_at`).
+    Skipped,
     Left,
 }
 
@@ -497,11 +505,12 @@ fn canonical_body_with(
         node.insert("model", Node::str(&req.model));
     }
     let (instructions, system_items) = encode_system(&req.system, &req.extras);
-    if input == Input::Encoded {
+    if input != Input::Left {
         let as_string =
             req.extras.form_str(DIALECT, INPUT) == Some("string") && system_items.is_empty();
         match string_input(&req.messages).filter(|_| as_string) {
             Some(s) => node.insert("input", Node::str(s)),
+            None if input == Input::Skipped => node.insert("input", Node::Arr(Vec::new())),
             None => {
                 let mut items = system_items;
                 let stateless = !req.extras.form_flag(DIALECT, NATIVE);

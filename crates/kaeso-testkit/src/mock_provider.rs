@@ -168,6 +168,8 @@ impl MockProvider {
             .route("/__mock/streams", axum::routing::get(control_streams))
             .route("/__mock/reset", axum::routing::post(control_reset))
             .fallback(handle)
+            // Anthropic takes request bodies up to 32 MB, more than axum's default.
+            .layer(axum::extract::DefaultBodyLimit::max(64 << 20))
             .with_state(ctx);
         tokio::spawn(async move {
             let _ = axum::serve(listener, app).await;

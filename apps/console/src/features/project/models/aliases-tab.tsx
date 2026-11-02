@@ -25,8 +25,10 @@ import { modelName } from "~/format/models";
 import { toast } from "~/shell/toast";
 import { formatRelative } from "@logicplanes/kaeso-ui/format";
 import { api, data } from "~/api/client";
+import { fieldError } from "~/api/field-error";
 import type { AliasView } from "~/api/generated/types";
 import { aliasesQuery, catalogueQuery } from "~/api/queries/models";
+import { projectCatalogue } from "~/api/queries/invalidation";
 import { useApiMutation } from "~/auth/mutation";
 import { t } from "~/i18n";
 import { tRich } from "~/i18n/rich";
@@ -140,11 +142,6 @@ export function AliasesTab({
   );
 }
 
-const aliasInvalidations = (org: string, project: string) => [
-  ["orgs", org, "projects", project, "aliases"],
-  ["orgs", org, "projects", project, "models"],
-];
-
 function DeleteAliasDialog({
   org,
   project,
@@ -162,7 +159,7 @@ function DeleteAliasDialog({
     mutationFn: async () => {
       await api.DELETE("/platform/v1/orgs/{org}/projects/{project}/aliases/{alias}", { params: { path: { org, project, alias: alias.id } } });
     },
-    invalidates: aliasInvalidations(org, project),
+    invalidates: projectCatalogue(org, project),
     onSuccess: () => {
       toast(t("models.alias.deleted", "Alias {name} deleted", { name: alias.name }));
       onOpenChange(false);
@@ -212,7 +209,7 @@ function AliasDialog({ org, project, alias, onClose }: { org: string; project: s
         }),
       );
     },
-    invalidates: aliasInvalidations(org, project),
+    invalidates: projectCatalogue(org, project),
     onSuccess: (a) => {
       toast(alias ? t("models.alias.saved", "Alias {name} saved", { name: a.name }) : t("models.alias.created", "Alias {name} created", { name: a.name }));
       onClose();
@@ -246,7 +243,11 @@ function AliasDialog({ org, project, alias, onClose }: { org: string; project: s
         <Input
           label={common.name()}
           value={name}
-          onChange={(e) => setName(e.target.value)}
+          onChange={(e) => {
+            setName(e.target.value);
+            if (save.isError) save.reset();
+          }}
+          error={fieldError(save.error, "name")}
           autoFocus
           maxLength={200}
           placeholder={t("models.alias.nameExample", "fast")}
@@ -258,7 +259,11 @@ function AliasDialog({ org, project, alias, onClose }: { org: string; project: s
           fullWidth
           placeholder={t("models.chooseModel", "Choose a model")}
           value={target}
-          onValueChange={setTarget}
+          onValueChange={(next: string) => {
+            setTarget(next);
+            if (save.isError) save.reset();
+          }}
+          error={fieldError(save.error, "catalogue_model_id")}
           options={options}
           providers={providers}
         />

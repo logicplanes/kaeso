@@ -47,6 +47,7 @@
   "keys.replacedName": "{name}（已替换）",
   "keys.replacedStops": "已替换，{when}停止工作",
   "keys.rotate": "轮换",
+  "keys.rotateDisabled": "请先启用密钥，再进行轮换。",
   "keys.rotateKey": "轮换密钥",
   "keys.rotateTitle": "轮换 {name}",
   "keys.rotated": "密钥已轮换",

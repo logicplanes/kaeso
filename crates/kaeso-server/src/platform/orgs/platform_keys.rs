@@ -301,7 +301,8 @@ pub async fn get(
     description = "Answers with the new key and its secret, shown once. The old key stops at \
     the end of the grace period, or at its own expiry if that is sooner, and links to the new \
     key in `replaced_by`. Rotating also needs `platform_keys.revoke`, and the caller must hold \
-    every right of the admin role, as for creating one.",
+    every right of the admin role, as for creating one. A disabled key is refused until it is \
+    enabled.",
     tag = "orgs",
     params(("org" = OrgId, Path), ("key" = OrgPlatformKeyId, Path)),
     request_body = KeyRotate,
@@ -335,6 +336,11 @@ pub async fn rotate(
     if old.replaced_by.is_some() {
         return Err(ApiError::Conflict(
             "This key was rotated already; rotate the key that replaced it.".into(),
+        ));
+    }
+    if old.disabled_at.is_some() {
+        return Err(ApiError::Conflict(
+            crate::platform::projects::keys::ROTATE_DISABLED.into(),
         ));
     }
     let stops_at = req.grace_ends_at(ctx.now)?;

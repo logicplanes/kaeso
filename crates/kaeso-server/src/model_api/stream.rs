@@ -11,8 +11,10 @@ use kaeso_core::assembler::Assembler;
 use kaeso_core::estimate::{self, Tally};
 use kaeso_core::provider::AccountSignIn;
 use kaeso_kpp::{DialectId, KppError, Reply, StopReason, StreamEvent};
+use tokio::sync::mpsc::error::TrySendError;
 use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::time::{Instant, sleep_until};
+use tokio_util::sync::CancellationToken;
 
 use kaeso_upstream::UpstreamError;
 
@@ -151,10 +153,11 @@ struct ToApp {
     taken: Taken,
     progress: StreamProgress,
     arrived: std::time::Instant,
-    state: crate::state::AppState,
+    cut: CancellationToken,
     patience: Duration,
     stopping: bool,
     stalled: bool,
+    cut_short: bool,
 }
 
 impl ToApp {
@@ -164,6 +167,12 @@ impl ToApp {
         } else {
             self.patience
         };
+        // Most chunks fit in the channel at once; only a full one needs the timer and the cut.
+        let bytes = match self.tx.try_send(bytes) {
+            Ok(()) => return true,
+            Err(TrySendError::Closed(_)) => return false,
+            Err(TrySendError::Full(bytes)) => bytes,
+        };
         tokio::select! {
             sent = self.tx.send(bytes) => sent.is_ok(),
             () = tokio::time::sleep(patience) => {
@@ -171,8 +180,17 @@ impl ToApp {
                 self.stalled = !self.stopping;
                 false
             }
-            () = self.state.in_flight.cut(), if !self.stopping => false,
+            () = self.cut.cancelled(), if !self.stopping => {
+                self.cut_short = true;
+                false
+            }
         }
+    }
+
+    // A write that failed because the gateway is shutting down, not because the app left: only a
+    // closed channel means the app is gone; one that merely stopped reading still gets a shutdown.
+    fn left(&self) -> bool {
+        !self.cut_short || self.tx.is_closed()
     }
 
     async fn reply(&mut self, bytes: Vec<u8>) -> bool {
@@ -313,20 +331,25 @@ impl Reserved {
         }
     }
 
-    async fn keep(&mut self, rec: &Recording) {
+    fn keep(&mut self, rec: &Recording) {
         let Some(due) = self.due else { return };
         let now = rec.state().clock.now();
         if now < due {
             return;
         }
         self.due = Some(now + RESERVATION_REFRESH);
-        if let Err(e) =
-            crate::services::limits::extend(rec.state(), rec.reservation(), &self.request_id).await
-        {
-            metrics::counter!(crate::metrics::VALKEY_FAILURES, "operation" => "reservation")
-                .increment(1);
-            tracing::warn!(error = %e, "cannot extend a stream's reservation under its limits");
-        }
+        // The chunk that is due goes on to the app while Valkey answers; an extend that lands
+        // after the charge finds no reservation left to move.
+        let (state, reservation) = (rec.state().clone(), rec.reservation().clone());
+        let request_id = self.request_id.clone();
+        rec.state().in_flight.spawn(async move {
+            if let Err(e) = crate::services::limits::extend(&state, &reservation, &request_id).await
+            {
+                metrics::counter!(crate::metrics::VALKEY_FAILURES, "operation" => "reservation")
+                    .increment(1);
+                tracing::warn!(error = %e, "cannot extend a stream's reservation under its limits");
+            }
+        });
     }
 }
 
@@ -355,10 +378,11 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
         taken,
         progress: StreamProgress::default(),
         arrived: rec.arrived(),
-        state: state.clone(),
+        cut: state.in_flight.cut(),
         patience: state.config.upstream.stream_idle_timeout,
         stopping: false,
         stalled: false,
+        cut_short: false,
     };
     let limits = &state.config.streams;
     let max_bytes = limits.max_bytes.0;
@@ -373,7 +397,8 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
         tokio::pin!(closed);
         let quiet = sleep_until(keepalive.deadline(last_write).unwrap_or(last_write));
         tokio::pin!(quiet);
-        let cut = state.in_flight.cut();
+        let cut = app.cut.clone();
+        let cut = cut.cancelled();
         tokio::pin!(cut);
         let too_long = tokio::time::sleep(limits.max_duration);
         tokio::pin!(too_long);
@@ -389,15 +414,14 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
                     break 'read;
                 }
                 () = &mut cut => {
-                    if last_event_at.is_none()
-                        && !end_shutdown(&mut app, encoder.as_mut(), &mut broken).await
-                    {
-                        gone = true;
+                    if last_event_at.is_none() {
+                        end_shutdown(&mut app, encoder.as_mut(), &mut broken).await;
                     }
+                    gone = app.tx.is_closed();
                     break 'read;
                 }
                 next = chunks.next() => {
-                    reserved.keep(&rec).await;
+                    reserved.keep(&rec);
                     next
                 }
                 () = &mut quiet, if keepalive.interval.is_some() => {
@@ -407,9 +431,9 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
                         quiet.as_mut().reset(due);
                         continue;
                     }
-                    reserved.keep(&rec).await;
+                    reserved.keep(&rec);
                     if !app.keepalive(encoder.keepalive()).await {
-                        gone = true;
+                        gone = cut_off(&mut app, encoder.as_mut(), &mut broken, last_event_at).await;
                         break 'read;
                     }
                     last_write = Instant::now();
@@ -491,7 +515,7 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
             }
             if !out.is_empty() {
                 if !app.reply(out).await {
-                    gone = true;
+                    gone = cut_off(&mut app, encoder.as_mut(), &mut broken, last_event_at).await;
                     break 'read;
                 }
                 last_write = Instant::now();
@@ -512,6 +536,14 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
                 break;
             }
         }
+    }
+    // An early exit leaves what the decoder held back: the app's stream is over, but the logged
+    // reply and the usage estimate still count it.
+    let held = processing.time(|| decoder.flush());
+    app.progress.count(&held);
+    for event in &held {
+        asm.feed(event);
+        tally.feed(event);
     }
     drop(chunks);
     let cancelled = gone && !last_event_at.is_some_and(|at| app.taken.reached(at));
@@ -622,6 +654,21 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
     }
 }
 
+async fn cut_off(
+    app: &mut ToApp,
+    encoder: &mut dyn StreamEncoder,
+    broken: &mut Option<Broken>,
+    last_event_at: Option<u64>,
+) -> bool {
+    if app.left() {
+        return true;
+    }
+    if last_event_at.is_none() {
+        end_shutdown(app, encoder, broken).await;
+    }
+    app.tx.is_closed()
+}
+
 async fn end_shutdown(
     app: &mut ToApp,
     encoder: &mut dyn StreamEncoder,
@@ -667,6 +714,54 @@ mod tests {
             Keepalive::new(Duration::from_secs(15)).deadline(now),
             Some(now + Duration::from_secs(15))
         );
+    }
+
+    fn writer(capacity: usize) -> (ToApp, Receiver<Bytes>, CancellationToken) {
+        let (tx, rx) = tokio::sync::mpsc::channel(capacity);
+        let cut = CancellationToken::new();
+        let app = ToApp {
+            tx,
+            taken: Taken::default(),
+            progress: StreamProgress::default(),
+            arrived: std::time::Instant::now(),
+            cut: cut.clone(),
+            patience: Duration::from_secs(300),
+            stopping: false,
+            stalled: false,
+            cut_short: false,
+        };
+        (app, rx, cut)
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn a_shutdown_during_a_write_to_an_app_that_stopped_reading_ends_as_a_shutdown() {
+        let (mut app, rx, cut) = writer(1);
+        assert!(app.reply(b"data: one\n\n".to_vec()).await);
+        let mut encoder = kaeso_codecs::dispatch::stream_encoder(
+            DialectId::OpenAiChat,
+            &kaeso_codecs::EncodeCtx::new(
+                kaeso_kpp::RequestKind::Generate,
+                kaeso_kpp::StreamMode::on(false),
+            ),
+        )
+        .unwrap();
+        let mut broken = None;
+        cut.cancel();
+        assert!(!app.reply(b"data: two\n\n".to_vec()).await);
+        assert!(app.cut_short && !app.left(), "the app is slow, not gone");
+        let gone = cut_off(&mut app, encoder.as_mut(), &mut broken, None).await;
+        assert!(!gone);
+        assert_eq!(broken.map(|b| b.kind), Some(SHUT_DOWN.to_owned()));
+        drop(rx);
+        assert!(app.left(), "a closed channel means the app left");
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn a_write_an_app_stopped_reading_without_a_shutdown_means_it_left() {
+        let (mut app, _rx, _cut) = writer(1);
+        assert!(app.reply(b"data: one\n\n".to_vec()).await);
+        assert!(!app.reply(b"data: two\n\n".to_vec()).await);
+        assert!(app.stalled && app.left());
     }
 
     #[tokio::test]

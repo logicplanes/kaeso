@@ -1,12 +1,16 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { signedIn, without } from "~/test/fixtures";
+import { ORG, OTHER_PROJECT, PROJECT, signedIn, without } from "~/test/fixtures";
 import { hoverReason, notifications } from "~/test/fixtures/org";
 import { alias, catalogueModel, modelsApi, projectData, projectPath } from "~/test/fixtures/project";
 import { apiError, on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
+import { queryClient } from "~/query";
 
 const ALIASES = "orgs/:org/projects/:project/aliases";
+const PLAYGROUND_MODELS = ["orgs", ORG, "projects", PROJECT, "playground", "models"];
+const OTHER_PLAYGROUND_MODELS = ["orgs", ORG, "projects", OTHER_PROJECT, "playground", "models"];
+const playgroundReloads = (key: readonly unknown[]) => queryClient.getQueryState(key)?.isInvalidated;
 const ONE_ALIAS = "orgs/:org/projects/:project/aliases/:alias";
 
 const models = () => [
@@ -70,6 +74,8 @@ describe("AliasesTab", () => {
 
   it("creates an alias and warns when its name is a model's", async () => {
     setUp();
+    queryClient.setQueryData(PLAYGROUND_MODELS, []);
+    queryClient.setQueryData(OTHER_PLAYGROUND_MODELS, []);
     on("POST", ALIASES, ({ body }: { body: { name: string; catalogue_model_id: string } }) => alias({ id: "al_new", ...body }));
     const { user } = await renderApp(projectPath("models?tab=aliases&add=true"));
 
@@ -89,6 +95,8 @@ describe("AliasesTab", () => {
     expect(await notifications().findByText("Alias smart created")).toBeInTheDocument();
     expect(requests("POST", ALIASES).map((r) => r.body)).toEqual([{ name: "smart", catalogue_model_id: "cm_haiku" }]);
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "Create alias" })).not.toBeInTheDocument());
+    expect(playgroundReloads(PLAYGROUND_MODELS)).toBe(true);
+    expect(playgroundReloads(OTHER_PLAYGROUND_MODELS)).toBe(false);
   });
 
   it("shows the API's message when the alias is refused", async () => {
@@ -104,6 +112,34 @@ describe("AliasesTab", () => {
     await user.click(await screen.findByRole("option", { name: /Claude Sonnet 4.5/ }));
     await user.click(within(dialog).getByRole("button", { name: "Create alias" }));
     expect((await notifications().findAllByText("An alias with that name exists.")).length).toBeGreaterThan(0);
+  });
+
+  it("puts a refusal of the name or the target under that field until it is changed", async () => {
+    setUp();
+    on("POST", ALIASES, apiError(400, "invalid_request", "An alias name can't contain spaces.", { param: "name" }));
+    const { user } = await renderApp(projectPath("models?tab=aliases&add=true"));
+
+    const dialog = await screen.findByRole("dialog", { name: "Create alias" });
+    const name = within(dialog).getByRole("textbox", { name: "Name" });
+    await user.type(name, "my alias");
+    await user.click(within(dialog).getByRole("button", { name: "Target" }));
+    await user.click(await screen.findByRole("option", { name: /Claude Sonnet 4.5/ }));
+    await user.click(within(dialog).getByRole("button", { name: "Create alias" }));
+    await waitFor(() => expect(name).toHaveAccessibleDescription("An alias name can't contain spaces."));
+    expect(name).toHaveAttribute("aria-invalid", "true");
+    await user.type(name, "x");
+    expect(name).not.toHaveAccessibleDescription("An alias name can't contain spaces.");
+    expect(within(dialog).queryByText("An alias name can't contain spaces.")).not.toBeInTheDocument();
+
+    on("POST", ALIASES, apiError(400, "invalid_request", "No such model in this project's catalogue.", { param: "catalogue_model_id" }));
+    await user.clear(name);
+    await user.type(name, "smart");
+    await user.click(within(dialog).getByRole("button", { name: "Create alias" }));
+    expect(await within(dialog).findByText("No such model in this project's catalogue.")).toBeInTheDocument();
+    expect(name).not.toHaveAttribute("aria-invalid");
+    await user.click(within(dialog).getByRole("button", { name: "Target" }));
+    await user.click(await screen.findByRole("option", { name: /claude-haiku-4-5/ }));
+    expect(within(dialog).queryByText("No such model in this project's catalogue.")).not.toBeInTheDocument();
   });
 
   it("retargets an alias opened from its row, sending only what changed", async () => {
@@ -141,6 +177,7 @@ describe("AliasesTab", () => {
 
   it("deletes an alias after confirming", async () => {
     setUp();
+    queryClient.setQueryData(PLAYGROUND_MODELS, []);
     on("DELETE", ONE_ALIAS, () => undefined);
     const { user } = await renderApp(projectPath("models?tab=aliases"));
 
@@ -153,6 +190,7 @@ describe("AliasesTab", () => {
     expect(await notifications().findByText("Alias fast deleted")).toBeInTheDocument();
     expect(requests("DELETE", ONE_ALIAS).map((r) => r.params.alias)).toEqual(["al_fast"]);
     await waitFor(() => expect(screen.queryByRole("alertdialog", { name: "Delete the alias fast?" })).not.toBeInTheDocument());
+    expect(playgroundReloads(PLAYGROUND_MODELS)).toBe(true);
   });
 
   it("shows aliases read-only without Manage models", async () => {

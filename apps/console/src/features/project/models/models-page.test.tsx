@@ -1,10 +1,11 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { signedIn, without } from "~/test/fixtures";
+import { ORG, PROJECT, signedIn, without } from "~/test/fixtures";
 import { hoverReason, notifications } from "~/test/fixtures/org";
 import { alias, catalogueModel, modelsApi, projectData, projectPath } from "~/test/fixtures/project";
 import { apiError, on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
+import { queryClient } from "~/query";
 
 const cells = () => screen.getAllByRole("gridcell").map((c) => c.textContent);
 
@@ -306,12 +307,15 @@ describe("ModelsPage", () => {
     const CHECK = "orgs/:org/projects/:project/models/check";
     const found = catalogue().map((m, i) => ({ ...m, availability: i === 0 ? ("unavailable" as const) : ("available" as const) }));
     on("POST", CHECK, { models: found, failed: [] });
+    const playground = ["orgs", ORG, "projects", PROJECT, "playground", "models"];
+    queryClient.setQueryData(playground, []);
     const { user } = await renderApp(projectPath("models"));
 
     await screen.findByText("gpt-5");
     await user.click(screen.getByRole("button", { name: "Check availability" }));
     expect(await notifications().findByText("Checked 4 models; 1 unavailable")).toBeInTheDocument();
     expect(requests("POST", CHECK)).toHaveLength(1);
+    expect(queryClient.getQueryState(playground)?.isInvalidated).toBe(true);
 
     on("POST", CHECK, { models: found.map((m) => ({ ...m, availability: "available" })), failed: [] });
     await user.click(screen.getByRole("button", { name: "Check availability" }));

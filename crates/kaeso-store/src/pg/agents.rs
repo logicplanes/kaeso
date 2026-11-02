@@ -49,6 +49,32 @@ pub async fn insert_client_if_missing(
     Ok(())
 }
 
+pub async fn keep_unused_clients(
+    db: impl PgExecutor<'_>,
+    keep: i64,
+    newest: Uuid,
+) -> Result<u64, StoreError> {
+    let dropped = sqlx::query!(
+        "DELETE FROM agent_clients WHERE id IN (SELECT c.id FROM agent_clients c \
+         WHERE c.id <> $2 AND NOT EXISTS (SELECT 1 FROM agents a WHERE a.client_id = c.id) \
+         ORDER BY c.created_at DESC, c.id DESC OFFSET $1)",
+        (keep - 1).max(0),
+        newest,
+    )
+    .execute(db)
+    .await?;
+    Ok(dropped.rows_affected())
+}
+
+pub async fn approved(db: impl PgExecutor<'_>, client: Uuid) -> Result<bool, StoreError> {
+    Ok(sqlx::query_scalar!(
+        "SELECT EXISTS (SELECT 1 FROM agents WHERE client_id = $1 AND revoked_at IS NULL) AS \"approved!\"",
+        client
+    )
+    .fetch_one(db)
+    .await?)
+}
+
 pub async fn get_client(db: impl PgExecutor<'_>, id: Uuid) -> Result<Option<Client>, StoreError> {
     Ok(sqlx::query_as!(
         Client,
@@ -88,6 +114,24 @@ pub async fn insert_request(db: impl PgExecutor<'_>, r: &NewRequest<'_>) -> Resu
     .execute(db)
     .await?;
     Ok(())
+}
+
+pub async fn keep_requests(
+    db: impl PgExecutor<'_>,
+    client: Uuid,
+    keep: i64,
+    newest: Uuid,
+) -> Result<u64, StoreError> {
+    let dropped = sqlx::query!(
+        "DELETE FROM agent_requests WHERE id IN (SELECT id FROM agent_requests \
+         WHERE client_id = $1 AND id <> $3 ORDER BY created_at DESC, id DESC OFFSET $2)",
+        client,
+        (keep - 1).max(0),
+        newest,
+    )
+    .execute(db)
+    .await?;
+    Ok(dropped.rows_affected())
 }
 
 #[derive(Clone, Debug)]

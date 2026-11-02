@@ -185,7 +185,7 @@
   "Called with the selected rows; rows then get checkboxes.": "调用时传入所选行；此时行会显示复选框。",
   "Called with the selected tab.": "调用时传入选中的标签页。",
   "Called with the tags whenever one is added or removed.": "每当添加或移除标签时调用，并传入所有标签。",
-  "Called with the text typed into the input.": "调用时传入输入框中键入的文字。",
+  "Called with the text typed into the input, and with an empty string once a pick clears the search, so a server search lists every option again.": "调用时传入输入框中键入的文字；选择一项后搜索清空时传入空字符串，以便服务器搜索重新列出所有选项。",
   "Called with the text whenever it changes.": "每当文字变化时调用，并传入该文字。",
   "Called with the value when dragging ends.": "拖动结束时调用，并传入值。",
   "Called with the value while it is dragged.": "拖动时调用，并传入值。",

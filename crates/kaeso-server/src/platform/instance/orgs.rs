@@ -386,7 +386,7 @@ pub async fn schedule_deletion(
         .await?;
     tx.commit().await?;
     crate::services::keys::forget_org(&state, row.id).await;
-    org_service::notify_deletion(&state, &ctx, &row).await?;
+    org_service::notify_deletion(&state, &ctx, &row).await;
     Ok(Json(view(&state, &row).await?))
 }
 

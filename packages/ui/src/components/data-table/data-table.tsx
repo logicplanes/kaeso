@@ -30,6 +30,7 @@ import { useScrollMargin } from "../../hooks/use-scroll-margin.js";
 import { useUiText } from "../../i18n/context.js";
 import { useScrollFadeX } from "../../hooks/use-scroll-fade.js";
 import { useCoarsePointer } from "../../hooks/use-coarse-pointer.js";
+import { selectsText } from "../../utils/selects-text.js";
 import { TIME_COLUMNS } from "./time-columns.js";
 
 export const KAESO_DATA_TABLE_VARIANTS = {
@@ -340,6 +341,7 @@ function DataTableInner<T>(
     );
 
   const focusable = !!onRowClick || !!selectable;
+  const cellRole = focusable ? "gridcell" : "cell";
   const bodyZone = focusable && rows.length > 0 && zone === "body";
   const stop = Math.min(focusRow, Math.max(rows.length - 1, 0));
   const focusAt = (i: number) => {
@@ -493,7 +495,7 @@ function DataTableInner<T>(
   // The virtualizer renders the table again for every scroll event, but a row's cells change only
   // with its data, the columns shown and whether it is active or selected. A row hands back the
   // cells it drew last time, so React skips them instead of drawing every visible row again.
-  const cellDeps = [columns, cols.map((c) => c.id).join(" "), inset, pinEnd, stickyFirstColumn, onRaised];
+  const cellDeps = [columns, cols.map((c) => c.id).join(" "), inset, pinEnd, stickyFirstColumn, onRaised, cellRole];
   const drawn = useRef<{ deps: unknown[]; rows: WeakMap<Row<T>, { state: string; cells: ReactNode }> } | null>(null);
   if (!drawn.current || cellDeps.some((d, i) => d !== drawn.current?.deps[i])) drawn.current = { deps: cellDeps, rows: new WeakMap() };
   const drawnRows = drawn.current.rows;
@@ -524,7 +526,7 @@ function DataTableInner<T>(
         }}
         onClick={(e) => {
           anchor.current = null;
-          if ((e.target as HTMLElement).closest("button, a, [role=checkbox]")) return;
+          if ((e.target as HTMLElement).closest("button, a, [role=checkbox]") || selectsText(e.currentTarget)) return;
           onRowClick?.(row.original);
         }}
         onKeyDown={(e) => onRowKeyDown(e, row, i)}
@@ -566,7 +568,7 @@ function DataTableInner<T>(
         return (
           <div
             key={cell.id}
-            role="cell"
+            role={cellRole}
             className={cn(
               cellPad(i),
               meta?.align === "end" && "justify-end text-right tabular",
@@ -672,9 +674,10 @@ function DataTableInner<T>(
       className={cn("relative w-full min-w-0", !inset && !padded && "px-24", className)}
     >
       <div
-        role="table"
+        role={focusable ? "grid" : "table"}
         aria-label={ariaLabel}
         aria-rowcount={rows.length + 1}
+        aria-multiselectable={selectable || undefined}
         aria-busy={loading || undefined}
         className={cn("w-full overflow-clip", inset && "rounded-group bg-raised shadow-xs")}
       >
@@ -710,7 +713,7 @@ function DataTableInner<T>(
         >
           {error ? (
             <div role="row">
-              <div role="cell" aria-colspan={cols.length} className="block">
+              <div role={cellRole} aria-colspan={cols.length} className="block">
                 <div role="alert">
                   <Empty
                     size="compact"
@@ -731,7 +734,7 @@ function DataTableInner<T>(
             Array.from({ length: 8 }, (_, r) => (
               <div key={r} role="row" className={cn("grid", KAESO_DATA_TABLE_VARIANTS.density[density].classes)} style={gridStyle}>
                 {cols.map((c, i) => (
-                  <div key={c.id} role="cell" className={cn(cellPad(i), c.columnDef.meta?.align === "end" && "justify-end")}>
+                  <div key={c.id} role={cellRole} className={cn(cellPad(i), c.columnDef.meta?.align === "end" && "justify-end")}>
                     <Skeleton shape="line" style={{ width: `${40 + ((r * 7 + i * 13) % 45)}%` }} />
                   </div>
                 ))}
@@ -739,7 +742,7 @@ function DataTableInner<T>(
             ))
           ) : rows.length === 0 ? (
             <div role="row">
-              <div role="cell" aria-colspan={cols.length} className="block">
+              <div role={cellRole} aria-colspan={cols.length} className="block">
                 {empty ?? <Empty size="compact" title={t("dataTable.noRows", "No rows")} />}
               </div>
             </div>

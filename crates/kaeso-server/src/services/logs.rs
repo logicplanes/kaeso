@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
-use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::{Mutex, PoisonError};
+use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
+use std::sync::{Mutex, MutexGuard, PoisonError};
 use std::time::Duration;
 
 use futures::future::BoxFuture;
@@ -21,6 +21,7 @@ use crate::state::AppState;
 const WRITE_RETRY_WAIT: Duration = Duration::from_secs(2);
 
 struct Entry {
+    seq: u64,
     log: Option<LogRow>,
     content: Option<ContentRow>,
     size: u64,
@@ -32,9 +33,15 @@ impl Entry {
     }
 }
 
+// Every finished request lands here, so the queue is split per worker thread; rows carry a
+// sequence number so taking and trimming still go oldest first across all shards.
+const SHARDS: usize = 16;
+
 #[derive(Default)]
 pub struct Buffer {
-    queue: Mutex<VecDeque<Entry>>,
+    shards: [Mutex<VecDeque<Entry>>; SHARDS],
+    next: AtomicU64,
+    rows: AtomicUsize,
     bytes: AtomicU64,
     dropped: AtomicU64,
     wake: Notify,
@@ -48,65 +55,107 @@ impl std::fmt::Debug for Buffer {
     }
 }
 
+type Shard<'a> = MutexGuard<'a, VecDeque<Entry>>;
+
+fn oldest(shards: &mut [Shard<'_>]) -> Option<Entry> {
+    let mut first: Option<(u64, usize)> = None;
+    for (i, q) in shards.iter().enumerate() {
+        if let Some(e) = q.front()
+            && first.is_none_or(|(seq, _)| e.seq < seq)
+        {
+            first = Some((e.seq, i));
+        }
+    }
+    first
+        .and_then(|(_, i)| shards.get_mut(i))
+        .and_then(|q| q.pop_front())
+}
+
 impl Buffer {
-    fn push(&self, entry: Entry, cap: u64, flush_rows: usize) {
-        let mut q = self.queue.lock().unwrap_or_else(PoisonError::into_inner);
-        self.bytes.fetch_add(entry.size, Ordering::Relaxed);
-        q.push_back(entry);
-        self.trim(&mut q, cap);
-        let len = q.len();
-        drop(q);
-        self.gauges(len);
-        if len >= flush_rows {
+    fn lock_all(&self) -> Vec<Shard<'_>> {
+        self.shards
+            .iter()
+            .map(|q| q.lock().unwrap_or_else(PoisonError::into_inner))
+            .collect()
+    }
+
+    // The counters grow before a row is queued and shrink after it leaves, so they never
+    // fall below what the queues hold.
+    fn counted(&self, e: &Entry) {
+        self.rows.fetch_add(1, Ordering::Relaxed);
+        self.bytes.fetch_add(e.size, Ordering::Relaxed);
+    }
+
+    fn uncounted(&self, e: &Entry) {
+        self.rows.fetch_sub(1, Ordering::Relaxed);
+        self.bytes.fetch_sub(e.size, Ordering::Relaxed);
+    }
+
+    fn push(&self, mut entry: Entry, cap: u64, flush_rows: usize) {
+        entry.seq = self.next.fetch_add(1, Ordering::Relaxed);
+        self.counted(&entry);
+        let shard = crate::shard::of_this_thread(SHARDS);
+        if let Some(q) = self.shards.get(shard) {
+            q.lock()
+                .unwrap_or_else(PoisonError::into_inner)
+                .push_back(entry);
+        }
+        if self.bytes.load(Ordering::Relaxed) > cap {
+            self.trim(&mut self.lock_all(), cap);
+        }
+        let rows = self.len();
+        self.gauges(rows);
+        if rows >= flush_rows {
             self.wake.notify_one();
         }
     }
 
-    fn trim(&self, q: &mut VecDeque<Entry>, cap: u64) {
+    fn trim(&self, shards: &mut [Shard<'_>], cap: u64) {
         while self.bytes.load(Ordering::Relaxed) > cap {
-            let Some(old) = q.pop_front() else { break };
-            self.bytes.fetch_sub(old.size, Ordering::Relaxed);
+            let Some(old) = oldest(shards) else { break };
+            self.uncounted(&old);
             self.dropped.fetch_add(1, Ordering::Relaxed);
             metrics::counter!(crate::metrics::LOG_ROWS_DROPPED).increment(1);
         }
     }
 
-    fn gauges(&self, len: usize) {
-        metrics::gauge!(crate::metrics::LOG_BUFFER_ROWS).set(len as f64);
+    fn gauges(&self, rows: usize) {
+        metrics::gauge!(crate::metrics::LOG_BUFFER_ROWS).set(rows as f64);
         metrics::gauge!(crate::metrics::LOG_BUFFER_BYTES)
             .set(self.bytes.load(Ordering::Relaxed) as f64);
     }
 
     fn take(&self, max: usize) -> Vec<Entry> {
-        let mut q = self.queue.lock().unwrap_or_else(PoisonError::into_inner);
-        let n = q.len().min(max);
-        let batch: Vec<Entry> = q.drain(..n).collect();
-        for e in &batch {
-            self.bytes.fetch_sub(e.size, Ordering::Relaxed);
+        let mut shards = self.lock_all();
+        let mut batch = Vec::with_capacity(max.min(self.len()));
+        while batch.len() < max {
+            let Some(e) = oldest(&mut shards) else { break };
+            batch.push(e);
         }
-        let len = q.len();
-        drop(q);
-        self.gauges(len);
+        drop(shards);
+        for e in &batch {
+            self.uncounted(e);
+        }
+        self.gauges(self.len());
         batch
     }
 
     fn put_back(&self, batch: Vec<Entry>, cap: u64) {
-        let mut q = self.queue.lock().unwrap_or_else(PoisonError::into_inner);
+        let mut shards = self.lock_all();
         for e in batch.into_iter().rev() {
-            self.bytes.fetch_add(e.size, Ordering::Relaxed);
-            q.push_front(e);
+            self.counted(&e);
+            let shard = usize::try_from(e.seq % SHARDS as u64).unwrap_or(0);
+            if let Some(q) = shards.get_mut(shard) {
+                q.push_front(e);
+            }
         }
-        self.trim(&mut q, cap);
-        let len = q.len();
-        drop(q);
-        self.gauges(len);
+        self.trim(&mut shards, cap);
+        drop(shards);
+        self.gauges(self.len());
     }
 
     pub fn len(&self) -> usize {
-        self.queue
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner)
-            .len()
+        self.rows.load(Ordering::Relaxed)
     }
 
     pub fn is_empty(&self) -> bool {
@@ -246,7 +295,7 @@ async fn settings(state: &AppState, project: Uuid) -> Result<Option<LogSettings>
     let found = state
         .caches
         .log_settings
-        .get_or_load(&project.to_string(), || async move {
+        .get_or_refresh(&project.to_string(), move || async move {
             log_jobs::settings(&pg, project)
                 .await
                 .map(|s| s.map(Cached::from))
@@ -455,6 +504,7 @@ pub async fn record(state: &AppState, o: &Outcome) {
     let cfg = &state.config.logs;
     state.logs.push(
         Entry {
+            seq: 0,
             log: Some(log),
             content,
             size,
@@ -490,6 +540,19 @@ impl Sink for Recorder {
             record(state, &outcome).await;
         })
     }
+
+    fn finish_charged<'a>(
+        &'a self,
+        state: &'a AppState,
+        outcome: Outcome,
+        charged: tokio::sync::oneshot::Sender<()>,
+    ) -> BoxFuture<'a, ()> {
+        Box::pin(async move {
+            crate::services::usage::account(state, &outcome).await;
+            let _ = charged.send(());
+            record(state, &outcome).await;
+        })
+    }
 }
 
 pub async fn run_jobs(state: &AppState) -> Result<String, StoreError> {
@@ -520,6 +583,52 @@ pub async fn run_jobs(state: &AppState) -> Result<String, StoreError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn row(size: u64) -> Entry {
+        Entry {
+            seq: 0,
+            log: None,
+            content: None,
+            size,
+        }
+    }
+
+    fn seqs(entries: &[Entry]) -> Vec<u64> {
+        entries.iter().map(|e| e.seq).collect()
+    }
+
+    #[test]
+    fn rows_from_every_thread_are_taken_put_back_and_dropped_oldest_first() {
+        let buffer = std::sync::Arc::new(Buffer::default());
+        let threads: Vec<_> = (0..4)
+            .map(|_| {
+                let buffer = buffer.clone();
+                std::thread::spawn(move || {
+                    for _ in 0..25 {
+                        buffer.push(row(10), u64::MAX, usize::MAX);
+                    }
+                })
+            })
+            .collect();
+        for t in threads {
+            t.join().unwrap();
+        }
+        assert_eq!(buffer.len(), 100);
+
+        let first = buffer.take(30);
+        assert_eq!(seqs(&first), (0..30).collect::<Vec<_>>());
+        buffer.put_back(first, u64::MAX);
+        assert_eq!(buffer.len(), 100);
+
+        buffer.push(row(10), 500, usize::MAX);
+        assert_eq!(buffer.len(), 50);
+        assert_eq!(buffer.dropped(), 51);
+        assert_eq!(
+            seqs(&buffer.take(usize::MAX)),
+            (51..=100).collect::<Vec<_>>()
+        );
+        assert!(buffer.is_empty());
+    }
 
     #[test]
     fn expiry_dates_stop_at_the_last_second_the_log_stores() {

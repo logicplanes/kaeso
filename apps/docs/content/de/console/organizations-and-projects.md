@@ -100,7 +100,7 @@ Wählen Sie unter **Allgemein** **Organisation löschen** und bestätigen Sie mi
 
 1. Alle API-Schlüssel der Organisation hören sofort auf zu funktionieren, und Kaeso informiert die Mitglieder per E-Mail.
 2. Während einer Schonfrist von 7 Tagen (sofern die Installation keine andere festlegt) ist die Organisation schreibgeschützt, und jede Seite zeigt einen Hinweis. Ein Inhaber kann noch **Organisation wiederherstellen** wählen.
-3. Nach der Schonfrist löscht Kaeso ihre Projekte, Schlüssel, Anbieter-Schlüssel, Einstellungen, Nutzung und Protokolle endgültig.
+3. Nach der Schonfrist löscht Kaeso ihre Projekte, Schlüssel, Anbieter-Schlüssel, Einstellungen, Nutzung und Protokolle endgültig. Ist die Schonfrist abgelaufen, lässt sich die Organisation nicht mehr wiederherstellen, auch bevor Kaeso sie ganz gelöscht hat.
 
 ## Audit-Log lesen
 

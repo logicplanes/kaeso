@@ -1180,6 +1180,79 @@ describe("StepDialog advance", () => {
   });
 });
 
+describe("StepDialog refusedStep", () => {
+  it("goes back to the step whose field was refused, every time it is refused", async () => {
+    const user = userEvent.setup();
+    function CreateAccount() {
+      const [refused, setRefused] = useState<string | undefined>(undefined);
+      return (
+        <StepDialog
+          open
+          title="Create service account"
+          submitLabel="Create service account"
+          onSubmit={() => setRefused("name")}
+          refusedStep={refused}
+          steps={[
+            {
+              id: "name",
+              title: "What uses it?",
+              content: <input aria-label="Name" onChange={() => setRefused(undefined)} />,
+            },
+            { id: "rights", title: "What can its keys do?", content: <p>Developer</p> },
+          ]}
+        />
+      );
+    }
+    render(<CreateAccount />);
+    await frames();
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+    expect(await screen.findByText("Step 2 of 2")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Create service account" }));
+    expect(await screen.findByText("Step 1 of 2")).toBeInTheDocument();
+    await frames();
+    expect(screen.getByRole("textbox", { name: "Name" })).toHaveFocus();
+
+    await user.type(screen.getByRole("textbox", { name: "Name" }), "x");
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+    await user.click(await screen.findByRole("button", { name: "Create service account" }));
+    expect(await screen.findByText("Step 1 of 2")).toBeInTheDocument();
+  });
+
+  it("stays on the step it is on when the refused id names no step", async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(
+      <StepDialog
+        open
+        title="Create key"
+        submitLabel="Create key"
+        onSubmit={() => undefined}
+        steps={[
+          { id: "name", title: "What is it for?", content: <input aria-label="Name" /> },
+          { id: "expiry", title: "When does it expire?", content: <p>In 90 days</p> },
+        ]}
+      />,
+    );
+    await frames();
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+    expect(await screen.findByText("Step 2 of 2")).toBeInTheDocument();
+    rerender(
+      <StepDialog
+        open
+        title="Create key"
+        submitLabel="Create key"
+        onSubmit={() => undefined}
+        refusedStep="limits"
+        steps={[
+          { id: "name", title: "What is it for?", content: <input aria-label="Name" /> },
+          { id: "expiry", title: "When does it expire?", content: <p>In 90 days</p> },
+        ]}
+      />,
+    );
+    await frames();
+    expect(screen.getByText("Step 2 of 2")).toBeInTheDocument();
+  });
+});
+
 describe("Dialog backdrop", () => {
   it("keeps the focus in a persistent dialog when the backdrop is pressed, so typing and ⌘Enter still reach it", async () => {
     const onSubmit = vi.fn();

@@ -88,7 +88,7 @@ Docker 会在每个服务的日志达到 10 MB 时轮转，并保留五个文件
 | `KAESO_SHUTDOWN_GRACE`<br>`shutdown_grace` | 文本 | `30s` | 收到关闭信号后，进行中的请求和流还能运行多久。届时仍未结束的以 503 结束，并照常计费和记录。 |
 | `KAESO_SERVER_HEADER_READ_TIMEOUT`<br>`server.header_read_timeout` | 文本 | `30s` | 客户端发送请求头、或在两次请求之间保持连接空闲的最长时间；1s 到 10m。它从不中断正在进行的回复。 |
 | `KAESO_SERVER_BODY_READ_TIMEOUT`<br>`server.body_read_timeout` | 文本 | `30s` | 网关等待请求体下一部分的最长时间，超时后以 400 拒绝请求；1s 到 10m。 |
-| `KAESO_SERVER_BODY_READ_DEADLINE`<br>`server.body_read_deadline` | 文本 | `60s` | 网关等待整个请求体的最长时间，无论各部分到达得多均匀，超时后以 400 拒绝请求；1s 到 1h。8 MiB 的请求体（模型 API 的默认上限）以 1.2 Mbit/s 传输即可按时到达；应用的网络更慢时请调高此值。 |
+| `KAESO_SERVER_BODY_READ_DEADLINE`<br>`server.body_read_deadline` | 文本 | `60s` | 网关等待整个请求体的最长时间，无论各部分到达得多均匀，超时后以 400 拒绝请求；1s 到 1h。32 MiB 的请求体（模型 API 的默认上限）以 4.5 Mbit/s 传输即可按时到达；应用的网络更慢时请调高此值。 |
 | `KAESO_SERVER_MAX_CONNECTIONS`<br>`server.max_connections` | 整数 | `4096` | 网关同时服务的连接数，来自应用或前置代理。更多连接会在操作系统的队列中等待，直到有连接关闭。默认值与 Linux 默认的监听队列 `net.core.somaxconn` 相同。 |
 
 在 `http` 回环地址上（例如 `http://localhost:8080`），会话 Cookie 不带 `Secure` 和 `__Host-` 前缀，因此控制台可以在您的电脑上通过普通 HTTP 使用。
@@ -106,7 +106,7 @@ Docker 会在每个服务的日志达到 10 MB 时轮转，并保留五个文件
 | 变量<br>TOML 键 | 类型 | 默认值 | 作用 |
 | --- | --- | --- | --- |
 | `KAESO_POSTGRES_URL`<br>`postgres.url` | 文本，机密 | 必填 | PostgreSQL 连接 URL。 |
-| `KAESO_POSTGRES_POOL_SIZE`<br>`postgres.pool_size` | 整数 | `20` | 每个网关实例的 PostgreSQL 最大连接数，至少为 1。后台任务另用几条连接持有锁。 |
+| `KAESO_POSTGRES_POOL_SIZE`<br>`postgres.pool_size` | 整数 | `20` | 每个网关实例的 PostgreSQL 连接池大小，至少为 1。后台任务运行时会在连接池之外另开最多 8 条连接，实例管理员每发起一次版本检查再多开一条。PostgreSQL 的 `max_connections` 须为每个实例同时容纳这两部分。 |
 | `KAESO_CLICKHOUSE_URL`<br>`clickhouse.url` | 文本，机密 | — | 带用户和密码的 ClickHouse HTTP URL，例如 `http://kaeso:secret@clickhouse:8123`。不设置或为空时关闭请求日志。 |
 | `KAESO_CLICKHOUSE_DATABASE`<br>`clickhouse.database` | 文本 | `kaeso` | 存放请求日志的 ClickHouse 数据库，由字母、数字和 `_` 组成。不存在时网关会创建它。 |
 | `KAESO_VALKEY_URL`<br>`valkey.url` | 文本，机密 | 必填 | 带密码的 Valkey（或 Redis）URL，例如 `redis://:secret@valkey:6379`。 |
@@ -144,7 +144,7 @@ Docker 会在每个服务的日志达到 10 MB 时轮转，并保留五个文件
 
 | 变量<br>TOML 键 | 类型 | 默认值 | 作用 |
 | --- | --- | --- | --- |
-| `KAESO_KEY_FAILURES_PER_ADDRESS`<br>`key_failures.per_address` | 整数 | `100` | 每个客户端地址在每个时间窗口内允许的 API 密钥查找失败次数，两个 API 合计。`0` 关闭限流（[API 密钥限流](#api-密钥限流)）。 |
+| `KAESO_KEY_FAILURES_PER_ADDRESS`<br>`key_failures.per_address` | 整数 | `100` | 每个客户端地址在每个时间窗口内允许的 API 密钥和智能体访问令牌查找失败次数，两个 API 与 MCP 服务器合计。`0` 关闭限流（[API 密钥限流](#api-密钥限流)）。 |
 | `KAESO_KEY_FAILURES_WINDOW`<br>`key_failures.window` | 文本 | `1m` | `key_failures.per_address` 的时间窗口，1s 到 1h。被封锁的地址最多等待这么久。 |
 
 ### KPMR
@@ -240,7 +240,7 @@ Docker 会在每个服务的日志达到 10 MB 时轮转，并保留五个文件
 
 | 变量<br>TOML 键 | 类型 | 默认值 | 作用 |
 | --- | --- | --- | --- |
-| `KAESO_BODY_LIMITS_MODEL_API`<br>`body_limits.model_api` | 文本 | `8MiB` | 模型 API 请求体的上限。它能容纳一张达到 Anthropic 5 MB 上限、以 base64 编码的图片；处理大型 PDF 时请调高。 |
+| `KAESO_BODY_LIMITS_MODEL_API`<br>`body_limits.model_api` | 文本 | `32MiB` | 模型 API 请求体的上限。它与 Anthropic 32 MB 的请求上限一致，可容纳带图片和文档的长智能体对话；如需降低每个请求占用的内存，请调低此值。 |
 | `KAESO_BODY_LIMITS_IN_FLIGHT`<br>`body_limits.in_flight` | 文本 | `512MiB` | 模型 API 和 Playground 同时翻译请求时可使用的内存，根据收到的每个请求体及其消息、内容块和工具估算。请求在解码和编码期间占用其估算值，之后直到结束只保留仍在使用的部分：解码后的请求及其消息、内容块、工具和 Token ID，在仍可能请服务商统计其输入 Token 期间再保留一份副本，在服务商响应之前发送给它的请求体，以及在记录内容时的原始请求体。一个密钥最多占用四分之一，更大的请求占用这四分之一。10 秒内仍无空间的请求会得到 503 和 `Retry-After: 10`。 |
 | `KAESO_BODY_LIMITS_PLATFORM_API`<br>`body_limits.platform_api` | 文本 | `1MiB` | Platform API 请求体的上限，包括 Playground 请求。 |
 | `KAESO_BODY_LIMITS_PROVIDER_RESPONSE`<br>`body_limits.provider_response` | 文本 | `128MiB` | 网关从服务商读取的非流式响应体的上限。超出时请求以 502 失败。 |
@@ -286,7 +286,7 @@ Docker 会在每个服务的日志达到 10 MB 时轮转，并保留五个文件
 
 ## API 密钥限流
 
-网关在 Valkey 中按客户端地址统计 API 密钥查找失败的次数，防止猜测密钥的客户端让 PostgreSQL 一直忙碌。在 `KAESO_KEY_FAILURES_WINDOW` 内失败达到 `KAESO_KEY_FAILURES_PER_ADDRESS` 次后，该地址在窗口结束前被封锁。此后来自该地址、且不在内存中的每个密钥都会收到 429 和 `Retry-After`，格式与所调用的 API 一致。
+网关在 Valkey 中按客户端地址统计 API 密钥和智能体访问令牌查找失败的次数，涵盖两个 API 和 [MCP 服务器](../api/mcp.md)，防止猜测密钥的客户端让 PostgreSQL 一直忙碌。在 `KAESO_KEY_FAILURES_WINDOW` 内失败达到 `KAESO_KEY_FAILURES_PER_ADDRESS` 次后，该地址在窗口结束前被封锁。此后来自该地址、且不在内存中的每个密钥，以及每个访问令牌，都会收到 429 和 `Retry-After`，格式与所调用的 API 一致。
 
 - 只有格式正确但不匹配任何密钥的值才计数。格式错误的值、已停用或已过期的密钥，以及 30 秒内重复出现的未知密钥都不计数。
 - 有效密钥从不计数。本实例在过去 30 秒内用过的密钥，即使来自被封锁的地址也能使用；其他有效密钥需要等窗口结束。

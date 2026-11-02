@@ -177,6 +177,7 @@ struct Updater {
     fail_start: Option<u16>,
     garbled: bool,
     down: bool,
+    docker_down: bool,
     unauthorized: u32,
 }
 
@@ -205,7 +206,7 @@ async fn updater_status(State(u): State<Arc<Mutex<Updater>>>, headers: HeaderMap
     if !authorized(&mut u, &headers) {
         return StatusCode::UNAUTHORIZED.into_response();
     }
-    axum::Json(json!({ "version": "40.9.0", "protocol": 1, "docker": true, "job": null }))
+    axum::Json(json!({ "version": "40.9.0", "protocol": 1, "docker": !u.docker_down, "job": null }))
         .into_response()
 }
 
@@ -1522,6 +1523,194 @@ async fn without_the_updater_the_window_passes_quietly() {
         summary.ends_with("update window: the updater isn't ready"),
         "{summary}"
     );
+    s.cleanup().await;
+}
+
+async fn automatic_in_the_next_hour(
+    stable: Vec<(String, bool, bool)>,
+) -> (
+    TestServices,
+    App,
+    Owner,
+    Arc<Mutex<GitHub>>,
+    Arc<Mutex<Updater>>,
+    time::OffsetDateTime,
+) {
+    let s = TestServices::start().await;
+    let (gh, url) = github(stable).await;
+    let (updater, updater_url) = updater().await;
+    let app = App::start_with(
+        &s,
+        &[
+            ("KAESO_UPDATES_RELEASES_URL", url.as_str()),
+            ("KAESO_UPDATER_URL", updater_url.as_str()),
+            ("KAESO_UPDATER_TOKEN", token()),
+        ],
+    )
+    .await;
+    let owner = app.setup().await;
+    let window = next_hour(&app);
+    update_settings(
+        &app,
+        &owner,
+        json!({
+            "mode": "automatic",
+            "schedule": { "frequency": "daily", "weekday": "monday", "hour": window.hour() },
+        }),
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    (s, app, owner, gh, updater, window)
+}
+
+async fn run_update_check(app: &App) -> String {
+    kaeso_server::jobs::run_once(&app.state, update_check_job())
+        .await
+        .unwrap()
+        .unwrap()
+}
+
+#[tokio::test]
+async fn a_window_that_couldnt_start_an_update_tries_again_until_it_closes() {
+    let (s, app, _owner, gh, updater, window) = automatic_in_the_next_hour(stable()).await;
+    gh.lock().unwrap().status = Some((503, None));
+    app.clock.set(window + time::Duration::minutes(1));
+    let failed = run_update_check(&app).await;
+    assert!(
+        failed.ends_with("update window: releases couldn't be fetched"),
+        "{failed}"
+    );
+    app.clock.set(window + time::Duration::minutes(5));
+    let waiting = run_update_check(&app).await;
+    assert!(
+        waiting.ends_with("update window: releases couldn't be fetched"),
+        "{waiting}"
+    );
+    assert_eq!(
+        gh.lock().unwrap().requests.len(),
+        1,
+        "a failed check waits for its next turn"
+    );
+
+    gh.lock().unwrap().status = None;
+    updater.lock().unwrap().docker_down = true;
+    app.clock.set(window + time::Duration::minutes(17));
+    let not_ready = run_update_check(&app).await;
+    assert!(
+        not_ready.ends_with("update window: the updater isn't ready"),
+        "{not_ready}"
+    );
+    assert!(updater.lock().unwrap().started.is_empty());
+
+    updater.lock().unwrap().docker_down = false;
+    app.clock.set(window + time::Duration::minutes(59));
+    let started = run_update_check(&app).await;
+    assert!(
+        started.ends_with(&format!("update window: updating to {}", next_patch())),
+        "{started}"
+    );
+    assert_eq!(updater.lock().unwrap().started.len(), 1);
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn a_window_that_passes_without_an_update_waits_for_the_next() {
+    let (s, app, owner, _gh, updater, window) = automatic_in_the_next_hour(stable()).await;
+    updater.lock().unwrap().docker_down = true;
+    app.clock.set(window + time::Duration::minutes(30));
+    let not_ready = run_update_check(&app).await;
+    assert!(
+        not_ready.ends_with("the updater isn't ready"),
+        "{not_ready}"
+    );
+    let shown = app.get("/instance/updates", &owner.cookie).await;
+    assert_eq!(
+        shown.body["settings"]["next_auto_update_at"],
+        window
+            .format(&time::format_description::well_known::Rfc3339)
+            .unwrap(),
+        "the open window is still the next one"
+    );
+
+    updater.lock().unwrap().docker_down = false;
+    app.clock.set(window + time::Duration::minutes(61));
+    let closed = run_update_check(&app).await;
+    assert!(closed.ends_with("; no update window"), "{closed}");
+    assert!(updater.lock().unwrap().started.is_empty());
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn a_release_that_rolled_back_is_left_to_an_admin_until_a_newer_one_comes() {
+    let (s, app, _owner, gh, updater, window) = automatic_in_the_next_hour(stable()).await;
+    let day = time::Duration::days(1);
+    let minute = time::Duration::minutes(1);
+    let skipped = format!(
+        "update window: the last update to {} didn't end well",
+        next_patch()
+    );
+    updater.lock().unwrap().finish_as = Some("rolled_back");
+    app.clock.set(window + minute);
+    let first = run_update_check(&app).await;
+    assert!(
+        first.ends_with(&format!("updating to {}", next_patch())),
+        "{first}"
+    );
+    app.clock.set(window + minute * 2);
+    let rolled = run_update_check(&app).await;
+    assert!(
+        rolled.starts_with(&format!("update {} is rolled_back", next_patch())),
+        "{rolled}"
+    );
+
+    app.clock.set(window + day + minute);
+    let next_day = run_update_check(&app).await;
+    assert!(next_day.ends_with(&skipped), "{next_day}");
+    assert_eq!(updater.lock().unwrap().started.len(), 1);
+
+    let admin = app
+        .post(
+            "/auth/password",
+            json!({ "email": "owner@example.com", "password": common::PASSWORD }),
+            None,
+        )
+        .await
+        .cookie()
+        .unwrap();
+    let status = app
+        .post("/instance/updates/check", json!({}), Some(&admin))
+        .await;
+    assert_eq!(status.body["can_apply"], true, "{:?}", status.body);
+    app.post(
+        "/instance/updates/apply",
+        json!({ "version": next_patch() }),
+        Some(&admin),
+    )
+    .await
+    .expect_status(StatusCode::ACCEPTED);
+    app.clock.set(window + day + minute * 2);
+    let by_hand = run_update_check(&app).await;
+    assert!(by_hand.ends_with(&skipped), "{by_hand}");
+    app.clock.set(window + day * 2 + minute);
+    let still = run_update_check(&app).await;
+    assert!(still.ends_with(&skipped), "{still}");
+    assert_eq!(updater.lock().unwrap().started.len(), 2);
+
+    let v = semver::Version::parse(RUNNING).unwrap();
+    let newer = format!("{}.{}.{}", v.major, v.minor, v.patch + 2);
+    gh.lock()
+        .unwrap()
+        .releases
+        .push((newer.clone(), false, false));
+    app.clock.set(window + day * 3 + minute);
+    let newest = run_update_check(&app).await;
+    assert!(
+        newest.ends_with(&format!("updating to {newer}")),
+        "{newest}"
+    );
+    let started = updater.lock().unwrap().started.clone();
+    assert_eq!(started.len(), 3);
+    assert_eq!(started[2]["version"], newer);
     s.cleanup().await;
 }
 

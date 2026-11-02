@@ -36,7 +36,7 @@ The key needs inference access, and its owner needs the right `api.request`. An 
 
 ## The request
 
-A request body may be up to `KAESO_BODY_LIMITS_MODEL_API`, 8 MiB by default. Kaeso answers a larger one with 413.
+A request body may be up to `KAESO_BODY_LIMITS_MODEL_API`, 32 MiB by default. Kaeso answers a larger one with 413.
 
 KPP counts what the body holds before it decodes anything. A request gets 400 when it holds any of these:
 

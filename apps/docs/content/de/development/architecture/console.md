@@ -75,4 +75,6 @@ Jeder Fehler ist ein Toast; Fehler erscheinen nie im Seiteninhalt.
 - Änderungen laufen über `useApiMutation` (`src/auth/mutation.ts`), öffentliche Formulare über `useSubmit` und fehlgeschlagene Ladevorgänge über den Handler des Query-Caches (`src/query.ts`), der „Erneut versuchen“ anbietet.
 - Fehler des Gateways tragen die Anfrage-ID.
 - Änderungen an Katalogmodellen und Limits senden `If-Match` mit der Revision, auf der sie gemacht wurden. Ein `412` lädt neu, was sich geändert hat, sagt das und schließt den Bearbeitungsdialog.
-- Ein fehlendes Objekt (404) ist ein eigener Zustand der Seite oder des Sheets, und eine beendete Sitzung führt zur Anmeldung.
+- Ein fehlendes Objekt (404) ist ein eigener Zustand der Seite oder des Sheets.
+- Eine beendete Sitzung führt zur Anmeldung und danach zurück, ob eine Änderung, ein Ladevorgang oder die Sitzungsprüfung sie bemerkt (`src/auth/session-end.ts`).
+- Ein Ladevorgang, der scheitert, weil das Gateway oder die Anfrageprotokolle nicht verfügbar sind, bekommt keine eigene Toast-Meldung. Die Seitenleiste der Projektübersicht zeigt die Meldung des Gateways an seiner Stelle.

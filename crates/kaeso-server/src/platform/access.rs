@@ -621,7 +621,10 @@ async fn authenticate(state: &AppState, req: &Parts, ip: Option<IpAddr>) -> ApiR
             ApiError::Authentication("Send the key as `Authorization: Bearer <key>`.".into())
         })?;
         if agents::is_access_token(presented) {
-            return match agents::authenticate(state, presented).await? {
+            let found = agents::authenticate(state, presented, ip)
+                .await
+                .map_err(|e| lookup_failed(e, "agent"))?;
+            return match found {
                 Ok(agent) => Ok(Caller::Agent(agent)),
                 Err(refusal @ agents::Refusal::NotAllowed) => {
                     Err(ApiError::PermissionDenied(refusal.message().into()))
@@ -634,16 +637,7 @@ async fn authenticate(state: &AppState, req: &Parts, ip: Option<IpAddr>) -> ApiR
         }
         let found = keys::authenticate(state, presented, ip)
             .await
-            .map_err(|e| match e {
-                LookupError::Store(e) => ApiError::from(e),
-                LookupError::Throttled(t) => {
-                    metrics::counter!(crate::metrics::AUTH_FAILURES, "method" => "api_key", "reason" => "throttled").increment(1);
-                    ApiError::RateLimited {
-                        message: t.message(),
-                        retry_after: Some(t.retry_after),
-                    }
-                }
-            })?;
+            .map_err(|e| lookup_failed(e, "api_key"))?;
         return match found {
             Ok(KeyCaller::Project(k)) if !k.platform => {
                 metrics::counter!(crate::metrics::AUTH_FAILURES, "method" => "api_key", "reason" => "no_platform_access").increment(1);
@@ -667,6 +661,19 @@ async fn authenticate(state: &AppState, req: &Parts, ip: Option<IpAddr>) -> ApiR
         None => Err(ApiError::Authentication(
             "Your session has ended; sign in again.".into(),
         )),
+    }
+}
+
+fn lookup_failed(e: LookupError, method: &'static str) -> ApiError {
+    match e {
+        LookupError::Store(e) => ApiError::from(e),
+        LookupError::Throttled(t) => {
+            metrics::counter!(crate::metrics::AUTH_FAILURES, "method" => method, "reason" => "throttled").increment(1);
+            ApiError::RateLimited {
+                message: t.message(),
+                retry_after: Some(t.retry_after),
+            }
+        }
     }
 }
 

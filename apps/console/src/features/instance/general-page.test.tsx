@@ -177,6 +177,25 @@ describe("request log retention", () => {
     expect(screen.getByText("No organization keeps metadata longer.")).toBeInTheDocument();
     expect(screen.getByText("No organization keeps bodies longer.")).toBeInTheDocument();
   });
+
+  it("keeps unsaved edits of the other retentions while one is saved", async () => {
+    signedIn();
+    settingsApi();
+    const { user } = await renderApp(LOGGING);
+    await screen.findByRole("spinbutton", { name: "Default metadata retention" });
+    await setNumber(user, "Default content retention", "14");
+    await setNumber(user, "Maximum metadata retention", "730");
+    await setNumber(user, "Default metadata retention", "60");
+    await user.click(screen.getByRole("button", { name: "Save default metadata retention" }));
+    expect(await notifications().findByText("Retention saved")).toBeInTheDocument();
+    await waitFor(() => expect(requests("GET", "instance/settings").length).toBeGreaterThan(1));
+
+    expect(screen.getByRole("spinbutton", { name: "Default metadata retention" })).toHaveValue("60");
+    expect(screen.getByRole("spinbutton", { name: "Default content retention" })).toHaveValue("14");
+    expect(screen.getByRole("spinbutton", { name: "Maximum metadata retention" })).toHaveValue("730");
+    await user.click(screen.getByRole("button", { name: "Save default content retention" }));
+    await waitFor(() => expect(patches()).toEqual([{ metadata_retention_days: 60 }, { content_retention_days: 14 }]));
+  });
 });
 
 describe("the test email", () => {

@@ -57,7 +57,7 @@ Einen Schlüssel zu rotieren erfordert diese Rechte:
 | Schlüssel eines Dienstkontos | **Dienstkonto-Schlüssel erstellen** und **Alle Schlüssel verwalten** |
 | Ein Schlüssel mit Plattformzugriff | Zusätzlich **Plattformzugriff vergeben**, eine Konsolensitzung und eine kürzliche Anmeldung |
 
-Den Schlüssel eines Mitglieds rotiert nur sein Inhaber, weil der neue Schlüssel mit dessen Rechten handelt. Ein archivierter oder bereits rotierter Schlüssel lässt sich nicht rotieren; rotieren Sie stattdessen seinen Nachfolger.
+Den Schlüssel eines Mitglieds rotiert nur sein Inhaber, weil der neue Schlüssel mit dessen Rechten handelt. Ein archivierter oder bereits rotierter Schlüssel lässt sich nicht rotieren; rotieren Sie stattdessen seinen Nachfolger. Ein deaktivierter Schlüssel auch nicht, weil sein Nachfolger aktiviert beginnen würde; aktivieren Sie ihn zuerst.
 
 ## Schlüssel abschalten
 

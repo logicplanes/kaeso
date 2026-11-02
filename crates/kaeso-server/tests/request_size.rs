@@ -107,22 +107,32 @@ async fn a_small_body_of_many_tiny_items_is_refused_before_it_is_decoded_or_sent
 }
 
 #[tokio::test]
-async fn the_model_api_takes_bodies_up_to_8_mib_by_default() {
+async fn the_model_api_takes_bodies_up_to_32_mib_by_default() {
     let env = common::v1::env(None, None).await;
-    assert_eq!(env.app.state.config.body_limits.model_api.0, 8 << 20);
+    assert_eq!(env.app.state.config.body_limits.model_api.0, 32 << 20);
+    let long = call(
+        &env,
+        "/v1/messages",
+        Some(&env.key),
+        true,
+        Some(messages("claude-haiku-4-5", &"a".repeat(12 << 20))),
+    )
+    .await;
+    assert_eq!(long.status, StatusCode::OK, "{}", long.text());
+    env.mock.clear();
     let r = call(
         &env,
         "/v1/messages",
         Some(&env.key),
         true,
-        Some(messages("claude-haiku-4-5", &"a".repeat(8 << 20))),
+        Some(messages("claude-haiku-4-5", &"a".repeat(32 << 20))),
     )
     .await;
     assert_eq!(r.status, StatusCode::PAYLOAD_TOO_LARGE, "{}", r.text());
     assert_eq!(r.json()["error"]["type"], "request_too_large");
     assert_eq!(
         r.json()["error"]["message"],
-        "The request body is larger than 8388608 bytes."
+        "The request body is larger than 33554432 bytes."
     );
     assert!(env.mock.received().is_empty());
 }
@@ -140,7 +150,7 @@ async fn a_request_returns_its_translation_memory_before_the_provider_answers() 
         gate.wait_for(1).await;
         assert_eq!(
             state.translating.free(),
-            115 << 10,
+            122 << 10,
             "the open call keeps only its decoded request, its content, one message and one block, twice: once to encode the reply and once for the input counter"
         );
         let next = call(
@@ -244,13 +254,13 @@ async fn stalled_streams_of_padded_bodies_leave_the_translation_memory_to_everyo
     }
     assert_eq!(
         total - budget.free(),
-        13 * (13 << 10),
-        "each open stream keeps 13 KiB for its decoded request, one message and one block, and the request the input counter keeps, not its padding"
+        13 * (6 << 10),
+        "each open stream keeps 6 KiB for its decoded request, one message and one block, and the request the input counter keeps, not its padding"
     );
     assert_eq!(content_logging(true).await.status, StatusCode::OK);
     streams.push(open().await);
     assert!(
-        total - budget.free() >= 13 * (13 << 10) + body.len() as u64,
+        total - budget.free() >= 13 * (6 << 10) + body.len() as u64,
         "a body kept for its log is counted until it is logged"
     );
     let (victim, _) = new_key(&env, "victim").await;
@@ -328,13 +338,13 @@ async fn many_tiny_messages_keep_their_structure_while_the_provider_answers() {
     said.push(json!({ "role": "user", "content": "[mock:stall]" }));
     let body = serde_json::to_vec(&json!({ "model": "gpt-4o", "stream": true, "messages": said }))
         .unwrap();
-    let structure = 2 * 2_001 * (6 << 10);
+    let structure = 2 * 2_001 * (5 << 9);
     let content = 2 * body.len() as u64;
     let stream = open_stalled(&env, "/v1/chat/completions", body).await;
     let held = total - budget.free();
     assert!(
         (structure..structure + content + (1 << 10)).contains(&held),
-        "2,001 messages of one block each keep 6 KiB apiece besides their content, in the decoded request and in the request the input counter keeps: {held} bytes"
+        "2,001 messages of one block each keep 2.5 KiB apiece besides their content, in the decoded request and in the request the input counter keeps: {held} bytes"
     );
     drop(stream);
 }

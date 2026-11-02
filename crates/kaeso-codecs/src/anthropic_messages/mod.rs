@@ -37,6 +37,16 @@ impl crate::codec::sealed::Sealed for AnthropicMessages {}
 impl crate::codec::sealed::Sealed for stream::Decoder {}
 impl crate::codec::sealed::Sealed for stream_encoder::Encoder {}
 
+impl AnthropicMessages {
+    pub(crate) fn decode_checked(
+        kind: RequestKind,
+        body: &[u8],
+        headers: &HeaderList,
+    ) -> Result<Request, KppError> {
+        request::decode_request(kind, body, headers)
+    }
+}
+
 impl Codec for AnthropicMessages {
     const DIALECT: DialectId = DialectId::AnthropicMessages;
 
@@ -46,7 +56,7 @@ impl Codec for AnthropicMessages {
         headers: &HeaderList,
     ) -> Result<Request, KppError> {
         crate::limits::request_shape(Self::DIALECT, body)?;
-        request::decode_request(kind, body, headers)
+        Self::decode_checked(kind, body, headers)
     }
 
     fn encode_response(reply: &Reply, ctx: &EncodeCtx) -> Result<Vec<u8>, KppError> {

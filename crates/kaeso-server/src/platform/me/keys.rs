@@ -60,12 +60,10 @@ pub async fn list(
         .collect();
     let projects = match ctx.agent() {
         Some(agent) => Some(
-            crate::services::agents::holdings(&state.pg, session.user_id)
+            crate::services::agents::reachable(&state, agent)
                 .await?
-                .iter()
-                .filter(|held| open.contains(&held.id))
-                .filter_map(|held| crate::services::agents::reach(agent, held))
-                .flat_map(|reach| reach.projects.into_iter().map(|(id, _)| id))
+                .into_values()
+                .flatten()
                 .collect::<Vec<_>>(),
         ),
         None => None,

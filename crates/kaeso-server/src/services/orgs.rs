@@ -94,6 +94,17 @@ pub async fn notify_deletion(
     state: &crate::state::AppState,
     ctx: &crate::platform::access::Ctx,
     org: &orgs::Org,
+) {
+    // The org is scheduled already, so a failure here mustn't turn the answer into an error.
+    if let Err(e) = send_deletion_notices(state, ctx, org).await {
+        tracing::error!(org = %OrgId::from_uuid(org.id), error = %e, "cannot send the deletion notices");
+    }
+}
+
+async fn send_deletion_notices(
+    state: &crate::state::AppState,
+    ctx: &crate::platform::access::Ctx,
+    org: &orgs::Org,
 ) -> Result<(), StoreError> {
     let name = match ctx.acting_user() {
         Some(u) => Some(
@@ -121,46 +132,23 @@ pub async fn notify_deletion(
         state.config.public_url,
         OrgId::from_uuid(org.id)
     );
-    let mut recipients: Vec<(uuid::Uuid, String)> = Vec::new();
-    let mut after = None;
-    loop {
-        let page = members::list_org(&state.pg, org.id, after, 500, None, None).await?;
-        after = page.last().map(|m| m.id);
-        recipients.extend(
-            page.iter()
-                .filter(|m| m.user_state == "active")
-                .filter_map(|m| Some((m.user_id, m.email.clone()?))),
-        );
-        if page.len() < 500 {
-            break;
-        }
-    }
-    let mut after = None;
-    loop {
-        let page =
-            kaeso_store::pg::users::list(&state.pg, after, 500, None, Some("active")).await?;
-        after = page.last().map(|u| u.id);
-        recipients.extend(
-            page.iter()
-                .filter(|u| u.is_instance_admin)
-                .filter_map(|u| Some((u.id, u.email.clone()?))),
-        );
-        if page.len() < 500 {
-            break;
-        }
-    }
-    recipients.sort_by_key(|(_, e)| e.to_lowercase());
-    recipients.dedup_by(|a, b| a.1.eq_ignore_ascii_case(&b.1));
-    for (user, to) in recipients {
-        let lang = mail_lang::of_user(&state.pg, user, None).await;
+    let mut recipients = members::members_and_instance_admins(&state.pg, org.id).await?;
+    recipients.sort_by_key(|r| r.email.to_lowercase());
+    recipients.dedup_by(|a, b| a.email.eq_ignore_ascii_case(&b.email));
+    for r in recipients {
+        let lang = mail_lang::of_user(&state.pg, r.user_id, None).await;
         state
             .mailer
             .send(kaeso_mail::templates::org_scheduled_for_deletion(
-                lang, &to, &org.name, by, due, zone, &url,
+                lang, &r.email, &org.name, by, due, zone, &url,
             ));
     }
     Ok(())
 }
+
+// Once due, the deletion job may already have deleted its logs, which a restore can't bring back.
+const PAST_RESTORE: &str =
+    "The organization is being deleted for good and can no longer be restored.";
 
 pub async fn restore(
     state: &crate::state::AppState,
@@ -176,6 +164,9 @@ pub async fn restore(
         return Err(ApiError::Conflict(
             "The organization is not scheduled for deletion.".into(),
         ));
+    }
+    if row.deletion_due_at.is_some_and(|d| d <= ctx.now) {
+        return Err(ApiError::Conflict(PAST_RESTORE.into()));
     }
     row.state = "active".into();
     row.deletion_due_at = None;
@@ -241,24 +232,22 @@ pub async fn purge(
     let due = |o: &orgs::Org| {
         o.state == "scheduled_for_deletion" && o.deletion_due_at.is_some_and(|d| d <= now)
     };
-    match orgs::get(&state.pg, org).await? {
-        Some(o) if due(&o) => {}
-        _ => return Ok(false),
-    }
+    let mut tx = state.pg.begin().await.map_err(StoreError::from)?;
+    // The row stays locked until the org is gone, so a restore that started before the due date
+    // either commits first and stops this, or waits and finds nothing left to restore.
+    let Some(row) = orgs::get_for_update(&mut *tx, org).await?.filter(due) else {
+        return Ok(false);
+    };
     delete_logs(state, org).await?;
-    let counters: Vec<String> = kaeso_store::pg::limits::list_org(&state.pg, org)
+    let counters: Vec<String> = kaeso_store::pg::limits::list_org(&mut *tx, org)
         .await?
         .iter()
         .filter_map(|l| l.limit().ok())
         .map(|l| state.valkey.key(&l.counter(now)))
         .flat_map(|k| [format!("{k}:f"), k])
         .collect();
-    let projects = kaeso_store::pg::projects::ids_of_org(&state.pg, org).await?;
+    let projects = kaeso_store::pg::projects::ids_of_org(&mut *tx, org).await?;
     crate::services::keys::forget_org(state, org).await;
-    let mut tx = state.pg.begin().await.map_err(StoreError::from)?;
-    let Some(row) = orgs::get_for_update(&mut *tx, org).await?.filter(due) else {
-        return Ok(false);
-    };
     orgs::delete_final(&mut tx, org).await?;
     crate::platform::audit::system_change(
         &mut tx,

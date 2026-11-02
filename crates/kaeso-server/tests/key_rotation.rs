@@ -446,3 +446,185 @@ async fn a_platform_key_rotates_in_a_session_with_a_recent_sign_in() {
     assert_eq!(r.error_type(), "recent_sign_in_required", "{:?}", r.body);
     s.cleanup().await;
 }
+
+#[tokio::test]
+async fn a_disabled_key_is_enabled_before_it_rotates() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let org = owner.org_id.clone();
+    let project = default_project(&app, &owner).await;
+    let base = format!("/orgs/{org}/projects/{project}");
+    let (dev, _) = common::join(
+        &app,
+        &owner,
+        json!({ "email": "dev@example.com", "role": "developer" }),
+        "Dev",
+    )
+    .await;
+    let mine = created(
+        &app,
+        &format!("{base}/keys"),
+        json!({ "name": "laptop" }),
+        &dev,
+    )
+    .await["id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let account = created(
+        &app,
+        &format!("{base}/service-accounts"),
+        json!({ "name": "billing-sync", "preset": "viewer" }),
+        &owner.cookie,
+    )
+    .await["id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let accounts = format!("{base}/service-accounts/{account}/keys");
+    let theirs = created(&app, &accounts, json!({ "name": "nightly" }), &owner.cookie).await["id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let platform = created(
+        &app,
+        &format!("/orgs/{org}/platform-keys"),
+        json!({ "name": "terraform", "expires_in_days": 90 }),
+        &owner.cookie,
+    )
+    .await["id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    for disable in [
+        format!("{base}/keys/{mine}/disable"),
+        format!("{base}/keys/{theirs}/disable"),
+        format!("/orgs/{org}/platform-keys/{platform}/disable"),
+    ] {
+        app.post(&disable, json!({}), Some(&owner.cookie))
+            .await
+            .expect_status(StatusCode::OK);
+    }
+
+    let owner_now = fresh_sign_in(&app, "owner@example.com").await;
+    for (rotate, cookie) in [
+        (format!("{base}/keys/{mine}/rotate"), &dev),
+        (format!("{accounts}/{theirs}/rotate"), &owner_now),
+        (
+            format!("/orgs/{org}/platform-keys/{platform}/rotate"),
+            &owner_now,
+        ),
+    ] {
+        let r = app
+            .post(&rotate, json!({ "grace_hours": 0 }), Some(cookie))
+            .await;
+        assert_eq!(r.status, StatusCode::CONFLICT, "{rotate}: {:?}", r.body);
+        assert_eq!(
+            r.body["error"]["message"], "This key is disabled; enable it before you rotate it.",
+            "{rotate}"
+        );
+    }
+    let keys = app
+        .get(&format!("{base}/keys?include_archived=true"), &owner.cookie)
+        .await;
+    let states: Vec<(&str, &str)> = keys.body["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|k| (k["name"].as_str().unwrap(), k["state"].as_str().unwrap()))
+        .collect();
+    assert_eq!(states, [("laptop", "disabled"), ("nightly", "disabled")]);
+    let platform_keys = app
+        .get(&format!("/orgs/{org}/platform-keys"), &owner.cookie)
+        .await;
+    assert_eq!(platform_keys.body["data"].as_array().unwrap().len(), 1);
+
+    app.post(
+        &format!("{base}/keys/{mine}/enable"),
+        json!({}),
+        Some(&owner.cookie),
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    let rotated = created(
+        &app,
+        &format!("{base}/keys/{mine}/rotate"),
+        json!({ "grace_hours": 0 }),
+        &dev,
+    )
+    .await;
+    assert_eq!(rotated["state"], "active");
+    s.cleanup().await;
+}
+
+async fn until_a_lock_is_awaited(pool: &sqlx::PgPool) {
+    loop {
+        let waiting: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM pg_stat_activity WHERE datname = current_database() AND wait_event_type = 'Lock'",
+        )
+        .fetch_one(pool)
+        .await
+        .unwrap();
+        if waiting > 0 {
+            return;
+        }
+        tokio::task::yield_now().await;
+    }
+}
+
+#[tokio::test]
+async fn a_disable_during_a_rotation_stops_it() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let project = default_project(&app, &owner).await;
+    let base = format!("/orgs/{}/projects/{project}", owner.org_id);
+    let old = created(
+        &app,
+        &format!("{base}/keys"),
+        json!({ "name": "laptop" }),
+        &owner.cookie,
+    )
+    .await["id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let mut disabling = app.state.pg.begin().await.unwrap();
+    kaeso_store::pg::keys::set_disabled(
+        &mut *disabling,
+        common::uuid(&project),
+        common::uuid(&old),
+        Some(app.clock.now()),
+        kaeso_store::pg::keys::Actor {
+            kind: "user",
+            id: Some(common::uuid(&owner.user_id)),
+        },
+    )
+    .await
+    .unwrap();
+
+    let rotate = format!("{base}/keys/{old}/rotate");
+    let request = app.post(&rotate, json!({ "grace_hours": 0 }), Some(&owner.cookie));
+    tokio::pin!(request);
+    tokio::select! {
+        r = &mut request => panic!("the rotation didn't wait for the disable: {:?}", r.body),
+        () = until_a_lock_is_awaited(&app.state.pg) => {}
+    }
+    disabling.commit().await.unwrap();
+    let r = request.await;
+    assert_eq!(r.status, StatusCode::CONFLICT, "{:?}", r.body);
+    assert_eq!(
+        r.body["error"]["message"],
+        "The key changed meanwhile; reload and try again."
+    );
+    let keys = app.get(&format!("{base}/keys"), &owner.cookie).await;
+    let states: Vec<(&str, &str)> = keys.body["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|k| (k["id"].as_str().unwrap(), k["state"].as_str().unwrap()))
+        .collect();
+    assert_eq!(states, [(old.as_str(), "disabled")]);
+    s.cleanup().await;
+}

@@ -74,6 +74,13 @@ pub(crate) mod sealed {
 pub trait StreamDecoder: Send + sealed::Sealed {
     fn feed(&mut self, bytes: &[u8]) -> Vec<StreamEvent>;
     fn finish(&mut self) -> Vec<StreamEvent>;
+    /// Releases the events the decoder still holds back, such as a Chat Completions tool call
+    /// waiting for its `id` and `name`, for a stream that ends without [`finish`](Self::finish):
+    /// the provider's connection broke, the app left, or the gateway ended the stream. Unlike
+    /// `finish`, it adds no error for the unfinished reply. The decoder takes no more bytes after.
+    fn flush(&mut self) -> Vec<StreamEvent> {
+        Vec::new()
+    }
 }
 
 pub trait StreamEncoder: Send + sealed::Sealed {

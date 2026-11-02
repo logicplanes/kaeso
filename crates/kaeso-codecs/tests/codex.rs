@@ -732,6 +732,30 @@ fn chat_models_get_developer_messages_where_chat_completions_takes_them() {
 }
 
 #[test]
+fn a_developer_message_between_parallel_results_follows_the_last_result_for_chat_models() {
+    let body = codex("codex-developer-between-results");
+    let req = decode(&body);
+    let (sent, _) = sent_with(C, &req, mistral(&req));
+    let messages = sent["messages"].as_array().unwrap();
+    let tail: Vec<(&str, Option<&str>)> = messages[messages.len() - 5..]
+        .iter()
+        .map(|m| (m["role"].as_str().unwrap(), m["tool_call_id"].as_str()))
+        .collect();
+    assert_eq!(
+        tail,
+        [
+            ("tool", Some("toolu_01GtrXhD5GoEnUhCCW1fRitv")),
+            ("assistant", None),
+            ("tool", Some("toolu_016JRGCFdy7aegTehRXRsbmH")),
+            ("tool", Some("toolu_01HqEcvnD295JaWcncws9Yuh")),
+            ("system", None),
+        ]
+    );
+    let developer = &body["input"][10]["content"][0]["text"];
+    assert_eq!(messages.last().unwrap()["content"], *developer);
+}
+
+#[test]
 fn chat_system_messages_reach_claude_as_system_prompt_and_user_turn_text() {
     let body = json!({
         "model": "m",

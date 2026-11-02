@@ -1,5 +1,6 @@
 use std::time::Duration;
 
+use futures::{Stream, StreamExt};
 use kaeso_update::manifest::Image;
 use reqwest::{Method, StatusCode};
 use serde_json::{Value, json};
@@ -36,10 +37,30 @@ pub enum DockerError {
     },
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Timeouts {
+    pub quick: Duration,
+    pub slow: Duration,
+    pub stop_grace: Duration,
+    pub pull_idle: Duration,
+}
+
+impl Default for Timeouts {
+    fn default() -> Timeouts {
+        Timeouts {
+            quick: Duration::from_secs(30),
+            slow: Duration::from_secs(600),
+            stop_grace: Duration::from_secs(15),
+            pull_idle: Duration::from_secs(120),
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct Docker {
     http: reqwest::Client,
     base: String,
+    timeouts: Timeouts,
 }
 
 fn kind(e: &reqwest::Error) -> &'static str {
@@ -58,13 +79,31 @@ fn encode(value: &str) -> String {
 
 impl Docker {
     pub fn new(host: &Url) -> Result<Docker, reqwest::Error> {
+        Docker::with_timeouts(host, Timeouts::default())
+    }
+
+    pub fn with_timeouts(host: &Url, timeouts: Timeouts) -> Result<Docker, reqwest::Error> {
         let http = reqwest::Client::builder()
-            .timeout(Duration::from_secs(600))
             .connect_timeout(Duration::from_secs(5))
             .redirect(reqwest::redirect::Policy::none())
             .build()?;
         let base = format!("{}/{API_VERSION}/", host.as_str().trim_end_matches('/'));
-        Ok(Docker { http, base })
+        Ok(Docker {
+            http,
+            base,
+            timeouts,
+        })
+    }
+
+    fn request(
+        &self,
+        method: Method,
+        what: &str,
+        path: &str,
+    ) -> Result<reqwest::RequestBuilder, DockerError> {
+        let url = Url::parse(&format!("{}{path}", self.base))
+            .map_err(|_| DockerError::Parse(what.to_owned()))?;
+        Ok(self.http.request(method, url))
     }
 
     async fn call(
@@ -73,10 +112,9 @@ impl Docker {
         what: &str,
         path: &str,
         body: Option<&Value>,
+        timeout: Duration,
     ) -> Result<(StatusCode, Vec<u8>), DockerError> {
-        let url = Url::parse(&format!("{}{path}", self.base))
-            .map_err(|_| DockerError::Parse(what.to_owned()))?;
-        let mut req = self.http.request(method, url);
+        let mut req = self.request(method, what, path)?.timeout(timeout);
         if let Some(b) = body {
             let bytes = serde_json::to_vec(b).map_err(|_| DockerError::Parse(what.to_owned()))?;
             req = req
@@ -109,20 +147,21 @@ impl Docker {
         path: &str,
         body: Option<&Value>,
         ok: &[StatusCode],
+        timeout: Duration,
     ) -> Result<Vec<u8>, DockerError> {
-        let (status, out) = self.call(method, what, path, body).await?;
+        let (status, out) = self.call(method, what, path, body, timeout).await?;
         if status.is_success() || ok.contains(&status) {
             return Ok(out);
         }
-        let message = serde_json::from_slice::<Value>(&out)
-            .ok()
-            .and_then(|v| v.get("message").and_then(Value::as_str).map(str::to_owned))
-            .unwrap_or_default();
-        Err(DockerError::Refused {
-            what: what.to_owned(),
-            status: status.as_u16(),
-            message,
-        })
+        Err(refused(what, status, &out))
+    }
+
+    fn quick(&self) -> Duration {
+        self.timeouts.quick
+    }
+
+    fn slow(&self) -> Duration {
+        self.timeouts.slow
     }
 
     fn json(what: &str, bytes: &[u8]) -> Result<Value, DockerError> {
@@ -131,7 +170,14 @@ impl Docker {
 
     pub async fn version(&self) -> Result<String, DockerError> {
         let out = self
-            .answered(Method::GET, "report its version", "version", None, &[])
+            .answered(
+                Method::GET,
+                "report its version",
+                "version",
+                None,
+                &[],
+                self.quick(),
+            )
             .await?;
         let v = Self::json("version", &out)?;
         Ok(v.get("Version")
@@ -155,7 +201,14 @@ impl Docker {
         .to_string();
         let path = format!("containers/json?all=true&filters={}", encode(&filters));
         let out = self
-            .answered(Method::GET, "list containers", &path, None, &[])
+            .answered(
+                Method::GET,
+                "list containers",
+                &path,
+                None,
+                &[],
+                self.quick(),
+            )
             .await?;
         let list = Self::json("containers", &out)?;
         Ok(list
@@ -187,6 +240,7 @@ impl Docker {
                 &format!("containers/{}/json", encode(id)),
                 None,
                 &[],
+                self.quick(),
             )
             .await?;
         Self::json("container", &out)
@@ -199,6 +253,7 @@ impl Docker {
                 "inspect an image",
                 &format!("images/{reference}/json"),
                 None,
+                self.quick(),
             )
             .await?;
         match status {
@@ -223,19 +278,20 @@ impl Docker {
             encode(&image.name),
             encode(&image.digest)
         );
-        let out = self.answered(Method::POST, &what, &path, None, &[]).await?;
-        for line in out.split(|b| *b == b'\n').filter(|l| !l.is_empty()) {
-            if let Ok(event) = serde_json::from_slice::<Value>(line)
-                && let Some(message) = event.get("error").and_then(Value::as_str)
-            {
-                return Err(DockerError::Refused {
-                    what,
-                    status: 200,
-                    message: message.to_owned(),
-                });
-            }
+        let idle = self.timeouts.pull_idle;
+        let req = self.request(Method::POST, &what, &path)?.send();
+        let resp = tokio::time::timeout(idle, req)
+            .await
+            .map_err(|_| DockerError::Unreachable("timed out"))?
+            .map_err(|e| DockerError::Unreachable(kind(&e)))?;
+        let status = resp.status();
+        if !status.is_success() {
+            let out = tokio::time::timeout(idle, resp.bytes())
+                .await
+                .map_err(|_| DockerError::Unreachable("timed out"))??;
+            return Err(refused(&what, status, &out));
         }
-        Ok(())
+        pulled(&what, resp.bytes_stream(), idle).await
     }
 
     pub async fn tag(
@@ -249,7 +305,7 @@ impl Docker {
             encode(repository),
             encode(tag)
         );
-        self.answered(Method::POST, "tag an image", &path, None, &[])
+        self.answered(Method::POST, "tag an image", &path, None, &[], self.slow())
             .await
             .map(|_| ())
     }
@@ -271,6 +327,7 @@ impl Docker {
                 &format!("containers/create?name={}", encode(name)),
                 Some(spec),
                 &[],
+                self.slow(),
             )
             .await?;
         Self::json("created container", &out)?
@@ -287,6 +344,7 @@ impl Docker {
             &format!("containers/{}/start", encode(id)),
             None,
             &[StatusCode::NOT_MODIFIED],
+            self.quick(),
         )
         .await
         .map(|_| ())
@@ -299,6 +357,7 @@ impl Docker {
             &format!("containers/{}/stop?t={seconds}", encode(id)),
             None,
             &[StatusCode::NOT_MODIFIED],
+            Duration::from_secs(u64::from(seconds)) + self.timeouts.stop_grace,
         )
         .await
         .map(|_| ())
@@ -311,6 +370,7 @@ impl Docker {
             &format!("containers/{}/rename?name={}", encode(id), encode(name)),
             None,
             &[],
+            self.quick(),
         )
         .await
         .map(|_| ())
@@ -323,8 +383,137 @@ impl Docker {
             &format!("containers/{}?force=true", encode(id)),
             None,
             &[StatusCode::NOT_FOUND],
+            self.slow(),
         )
         .await
         .map(|_| ())
+    }
+}
+
+fn refused(what: &str, status: StatusCode, body: &[u8]) -> DockerError {
+    let message = serde_json::from_slice::<Value>(body)
+        .ok()
+        .and_then(|v| v.get("message").and_then(Value::as_str).map(str::to_owned))
+        .unwrap_or_default();
+    DockerError::Refused {
+        what: what.to_owned(),
+        status: status.as_u16(),
+        message,
+    }
+}
+
+// Docker streams a pull's progress as it goes, so a pull may take as long as the images need
+// while a registry or daemon that goes quiet for `idle` ends it.
+async fn pulled<S, B, E>(what: &str, mut events: S, idle: Duration) -> Result<(), DockerError>
+where
+    S: Stream<Item = Result<B, E>> + Unpin,
+    B: AsRef<[u8]>,
+    E: Into<DockerError>,
+{
+    let mut line = Vec::new();
+    loop {
+        let next = tokio::time::timeout(idle, events.next())
+            .await
+            .map_err(|_| DockerError::Unreachable("timed out"))?;
+        let Some(chunk) = next else {
+            return pull_error(what, &line);
+        };
+        let chunk = chunk.map_err(Into::into)?;
+        let mut parts = chunk.as_ref().split(|b| *b == b'\n');
+        if let Some(first) = parts.next() {
+            line.extend_from_slice(first);
+        }
+        for part in parts {
+            pull_error(what, &line)?;
+            line.clear();
+            line.extend_from_slice(part);
+        }
+        if line.len() > MAX_BODY {
+            return Err(DockerError::Parse(what.to_owned()));
+        }
+    }
+}
+
+fn pull_error(what: &str, line: &[u8]) -> Result<(), DockerError> {
+    match serde_json::from_slice::<Value>(line)
+        .ok()
+        .as_ref()
+        .and_then(|event| event.get("error"))
+        .and_then(Value::as_str)
+    {
+        Some(message) => Err(DockerError::Refused {
+            what: what.to_owned(),
+            status: 200,
+            message: message.to_owned(),
+        }),
+        None => Ok(()),
+    }
+}
+
+impl From<reqwest::Error> for DockerError {
+    fn from(e: reqwest::Error) -> DockerError {
+        DockerError::Unreachable(kind(&e))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    type Events = tokio::sync::mpsc::UnboundedSender<&'static [u8]>;
+
+    fn events() -> (
+        Events,
+        impl Stream<Item = Result<&'static [u8], DockerError>> + Unpin,
+    ) {
+        let (tx, rx) = tokio::sync::mpsc::unbounded_channel::<&'static [u8]>();
+        let stream =
+            futures::stream::unfold(
+                rx,
+                |mut rx| async move { rx.recv().await.map(|b| (Ok(b), rx)) },
+            );
+        (tx, Box::pin(stream))
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn a_pull_that_keeps_reporting_progress_takes_as_long_as_it_needs() {
+        let (tx, stream) = events();
+        let pull = tokio::spawn(pulled("pull", stream, Duration::from_secs(120)));
+        for _ in 0..20 {
+            tokio::time::advance(Duration::from_secs(100)).await;
+            assert!(tx.send(b"{\"status\":\"Downloading\"}\n{\"sta").is_ok());
+            assert!(tx.send(b"tus\":\"Extracting\"}\n").is_ok());
+        }
+        drop(tx);
+        assert!(matches!(pull.await, Ok(Ok(()))));
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn a_pull_that_goes_quiet_ends_after_the_idle_timeout() {
+        let (tx, stream) = events();
+        let started = tokio::time::Instant::now();
+        let pull = tokio::spawn(pulled("pull", stream, Duration::from_secs(120)));
+        tokio::time::advance(Duration::from_secs(60)).await;
+        assert!(tx.send(b"{\"status\":\"Pulling\"}\n").is_ok());
+        let ended = pull.await.unwrap();
+        assert!(matches!(ended, Err(DockerError::Unreachable("timed out"))));
+        assert_eq!(started.elapsed(), Duration::from_secs(180));
+        drop(tx);
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn an_error_in_the_progress_fails_the_pull_even_on_its_last_line() {
+        for last in [
+            &b"{\"status\":\"Pulling\"}\n{\"error\":\"denied\"}\n"[..],
+            &b"{\"status\":\"Pulling\"}\n{\"error\":\"denied\"}"[..],
+        ] {
+            let (tx, stream) = events();
+            assert!(tx.send(last).is_ok());
+            drop(tx);
+            let err = pulled("pull it", stream, Duration::from_secs(120))
+                .await
+                .unwrap_err();
+            assert_eq!(err.to_string(), "Docker refused to pull it: 200 denied");
+        }
     }
 }

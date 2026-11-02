@@ -431,6 +431,134 @@ fn rewritten_tool_names_are_mapped_back() {
     assert!(events.iter().any(|e| matches!(e, StreamEvent::BlockStart(BlockStart { block: BlockHeader::ToolCall(h), .. }) if h.name == "weather.get")));
 }
 
+fn first_events(bytes: &[u8], n: usize) -> Vec<u8> {
+    String::from_utf8(bytes.to_vec())
+        .unwrap()
+        .split_inclusive("\n\n")
+        .take(n)
+        .collect::<String>()
+        .into_bytes()
+}
+
+#[test]
+fn a_stream_cut_while_a_call_is_held_releases_the_call_on_flush() {
+    let wire = fixture("tool-header-after-arguments");
+    let mut decoder = OpenAiChat::stream_decoder(&ectx());
+    let fed = decoder.feed(&first_events(&wire, 4));
+    assert_eq!(kinds(&fed), ["start"], "the call waits for its id and name");
+    let held = decoder.flush();
+    assert_eq!(
+        kinds(&held),
+        ["block_start 0", "delta 0", "delta 0", "delta 0"]
+    );
+    let StreamEvent::BlockStart(BlockStart {
+        block: BlockHeader::ToolCall(call),
+        ..
+    }) = &held[0]
+    else {
+        panic!("{held:?}")
+    };
+    assert_eq!(call.id, "call_kaeso_chatcmpl6TnHeldToolCall0x1_0");
+    let args: String = held
+        .iter()
+        .filter_map(|e| match e {
+            StreamEvent::BlockDelta(BlockDelta {
+                delta: Delta::ToolArguments(a),
+                ..
+            }) => Some(a.as_str()),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(args, "{\"location\":");
+    assert!(decoder.flush().is_empty());
+    assert!(decoder.feed(&wire).is_empty(), "nothing after a flush");
+    assert!(decoder.finish().is_empty());
+
+    let mut decoder = OpenAiChat::stream_decoder(&ectx());
+    decoder.feed(&wire);
+    assert!(
+        decoder
+            .finish()
+            .iter()
+            .all(|e| !matches!(e, StreamEvent::Error(_)))
+    );
+    assert!(decoder.flush().is_empty(), "nothing is held after the end");
+}
+
+#[test]
+fn an_empty_chunk_after_the_finish_opens_no_block() {
+    let events = decode_whole(&fixture("providers/openrouter/recorded-free-stream"));
+    let first_stop = events
+        .iter()
+        .position(|e| matches!(e, StreamEvent::ResponseDelta(d) if d.stop.is_some()))
+        .unwrap();
+    let after: Vec<String> = kinds(&events[first_stop..])
+        .into_iter()
+        .filter(|k| k != "extra")
+        .collect();
+    assert_eq!(
+        after,
+        ["response_delta", "response_delta", "stop"],
+        "{events:?}"
+    );
+    let starts = events
+        .iter()
+        .filter(|e| matches!(e, StreamEvent::BlockStart(_)))
+        .count();
+    assert_eq!(starts, 1);
+}
+
+#[test]
+fn a_long_call_that_never_gets_an_id_is_released_whole_at_the_end() {
+    let chunk = |delta: &str| {
+        format!(
+            "data: {{\"id\":\"c\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"m\",\"choices\":[{{\"index\":0,\"delta\":{delta},\"finish_reason\":null}}]}}\n\n"
+        )
+    };
+    let mut sse = chunk(
+        r#"{"role":"assistant","tool_calls":[{"index":0,"type":"function","function":{"name":"get_weather","arguments":""}}]}"#,
+    );
+    for _ in 0..3_000 {
+        sse.push_str(&chunk(
+            r#"{"tool_calls":[{"index":0,"function":{"arguments":"x"}}]}"#,
+        ));
+    }
+    let mut decoder = OpenAiChat::stream_decoder(&ectx());
+    for piece in sse.as_bytes().chunks(4096) {
+        assert!(decoder.feed(piece).is_empty(), "the call waits for its id");
+    }
+    let events = decoder.finish();
+    let calls: Vec<&ToolCallHeader> = events
+        .iter()
+        .filter_map(|e| match e {
+            StreamEvent::BlockStart(BlockStart {
+                block: BlockHeader::ToolCall(call),
+                ..
+            }) => Some(call),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(
+        calls,
+        [&ToolCallHeader::new("call_kaeso_c_0", "get_weather")]
+    );
+    let args: String = events
+        .iter()
+        .filter_map(|e| match e {
+            StreamEvent::BlockDelta(BlockDelta {
+                delta: Delta::ToolArguments(a),
+                ..
+            }) => Some(a.as_str()),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(args.len(), 3_000);
+    assert!(
+        matches!(events.last(), Some(StreamEvent::Error(_))),
+        "the stream was cut"
+    );
+}
+
 #[test]
 fn a_rewritten_name_in_a_later_chunk_reaches_chat_apps_as_the_apps_name() {
     let mut ctx = ectx();
