@@ -1,7 +1,7 @@
 use kaeso_kpp::{KppError, RawJson, ResponseStart, StreamEvent};
 use serde_json::Value;
 
-use super::{EVENT_KEY, Engine, SSE_KEY, event_extras, skipped};
+use super::{EVENT_KEY, Emitted, Engine, SSE_KEY, event_extras, skipped};
 use crate::codec::{EncodeCtx, StreamEncoder};
 use crate::keepalive::{self, Pacer};
 use crate::openai_responses::DIALECT;
@@ -41,18 +41,18 @@ impl Encoder {
     fn run(&mut self, event: &StreamEvent, out: &mut Vec<u8>) -> Result<(), KppError> {
         let empty = kaeso_kpp::Extras::default();
         let extras = event_extras(event).unwrap_or(&empty);
-        let mut emit = |scope: &str, mut node: Node, seq: i64| -> Result<Option<Node>, KppError> {
+        let mut emit = |scope: &str, mut node: Node, seq: i64| -> Result<Emitted, KppError> {
             if skipped(extras, scope) {
-                return Ok(None);
+                return Ok(Emitted::Skipped(node));
             }
             if !node.has("sequence_number") {
                 node.insert("sequence_number", Node::Val(Value::from(seq)));
             }
             apply(extras, DIALECT, scope, &[], &mut node);
-            write_node(out, node.clone())?;
+            write_obj(out, &node)?;
             node.remove(EVENT_KEY);
             node.remove(SSE_KEY);
-            Ok(Some(node))
+            Ok(Emitted::Written(node))
         };
         self.engine.step(event, &mut emit)
     }
@@ -79,6 +79,48 @@ pub(super) fn write_node(out: &mut Vec<u8>, mut node: Node) -> Result<(), KppErr
     }
     write_item(out, &SseItem::Event(event));
     Ok(())
+}
+
+// `write_node` without copying the node when it is an object: the same event name, framing and
+// data, the data serialized without the two marker keys instead of from a copy that lost them.
+fn write_obj(out: &mut Vec<u8>, node: &Node) -> Result<(), KppError> {
+    let Node::Obj(entries) = node else {
+        return write_node(out, node.clone());
+    };
+    let name = if entries.contains_key(EVENT_KEY) {
+        node.get_str(EVENT_KEY)
+    } else {
+        node.get_str("type")
+    };
+    let framing = entries.get(SSE_KEY).and_then(|n| n.to_value().ok());
+    let data = serde_json::to_string(&Unmarked(entries)).map_err(|e| {
+        KppError::provider(format!(
+            "Kaeso could not serialize a stream event ({e}). This is a bug in Kaeso; please report it."
+        ))
+    })?;
+    let mut event = SseEvent::new(name.as_deref(), data);
+    if let Some(framing) = framing {
+        crate::sse::set_framing(&mut event, &framing);
+    }
+    write_item(out, &SseItem::Event(event));
+    Ok(())
+}
+
+struct Unmarked<'a>(&'a indexmap::IndexMap<String, Node>);
+
+impl serde::Serialize for Unmarked<'_> {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        use serde::ser::SerializeMap;
+        let kept = self
+            .0
+            .iter()
+            .filter(|(k, _)| *k != EVENT_KEY && *k != SSE_KEY);
+        let mut map = serializer.serialize_map(Some(kept.clone().count()))?;
+        for (k, v) in kept {
+            map.serialize_entry(k, v)?;
+        }
+        map.end()
+    }
 }
 
 pub(super) fn write_extra(

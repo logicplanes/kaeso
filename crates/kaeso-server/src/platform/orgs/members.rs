@@ -10,7 +10,7 @@ use time::OffsetDateTime;
 use utoipa::{IntoParams, ToSchema};
 
 use crate::auth::sessions;
-use crate::platform::access::Ctx;
+use crate::platform::access::{Ctx, OrgScope};
 use crate::platform::audit::Action;
 use crate::platform::error::{ApiError, ApiResult};
 use crate::platform::grants::{
@@ -198,12 +198,18 @@ pub async fn update(
     Body(req): Body<GrantRequest>,
 ) -> ApiResult<Json<MemberView>> {
     let scope = ctx.org()?;
+    let user_id = id_param::<UserId>(&user, "member")?.uuid();
     let mut tx = state.pg.begin().await?;
-    let current = member(&mut *tx, &ctx, &user).await?;
+    // The owner checks below hold only on a row read under the owner lock: a role read before it
+    // can be one a transfer or a removal has changed meanwhile, which could leave no owner.
+    members::lock_owners(&mut tx, scope.org.id).await?;
+    let locked = members::lock_org(&mut *tx, scope.org.id, user_id)
+        .await?
+        .ok_or_else(|| ApiError::not_found("member"))?;
     lock_roles(
         &mut tx,
         scope.org.id,
-        &[current.role_id, requested_role(&req)],
+        &[locked.role_id, requested_role(&req)],
     )
     .await?;
     let target = member(&mut *tx, &ctx, &user).await?;
@@ -218,7 +224,6 @@ pub async fn update(
     }
     check_org_peer(scope, &before)?;
     check_org(scope, Some(&before), &after)?;
-    members::lock_owners(&mut tx, scope.org.id).await?;
     if before.is_owner()
         && !after.is_owner()
         && members::count_owners(&mut *tx, scope.org.id).await? <= 1
@@ -267,29 +272,53 @@ pub async fn remove(
     Path((_org, user)): Path<(String, String)>,
 ) -> ApiResult<StatusCode> {
     let scope = ctx.org()?;
-    let target = member(&state.pg, &ctx, &user).await?;
-    if target.preset == "owner" && !scope.is_owner() {
-        return Err(ApiError::PermissionDenied(
-            "Only owners can remove an owner.".into(),
-        ));
-    }
-    check_org_peer(scope, &grant_of(&target)?)?;
-    remove_member(&state, &ctx, scope.id(), &target).await?;
+    let user = id_param::<UserId>(&user, "member")?;
+    remove_member(&state, &ctx, scope.id(), user, Removal::By(scope)).await?;
     Ok(StatusCode::NO_CONTENT)
+}
+
+pub(crate) enum Removal<'a> {
+    By(&'a OrgScope),
+    Leaving,
 }
 
 pub(crate) async fn remove_member(
     state: &AppState,
     ctx: &Ctx,
     org: OrgId,
-    target: &OrgMember,
+    user: UserId,
+    removal: Removal<'_>,
 ) -> ApiResult<()> {
     let mut tx = state.pg.begin().await?;
+    // Read the member under the owner lock, so a role change that committed while this waited
+    // counts for the owner checks.
     members::lock_owners(&mut tx, org.uuid()).await?;
-    if target.preset == "owner" && members::count_owners(&mut *tx, org.uuid()).await? <= 1 {
-        return Err(ApiError::Conflict(
-            "This is the organization's last owner; transfer ownership first.".into(),
-        ));
+    let target = members::lock_org(&mut *tx, org.uuid(), user.uuid())
+        .await?
+        .ok_or_else(|| {
+            ApiError::not_found(match removal {
+                Removal::By(_) => "member",
+                Removal::Leaving => "membership",
+            })
+        })?;
+    let owner = target.preset == "owner";
+    match removal {
+        Removal::By(scope) => {
+            if owner && !scope.is_owner() {
+                return Err(ApiError::PermissionDenied(
+                    "Only owners can remove an owner.".into(),
+                ));
+            }
+            check_org_peer(scope, &grant_of(&target)?)?;
+            if owner && members::count_owners(&mut *tx, org.uuid()).await? <= 1 {
+                return Err(ApiError::Conflict(
+                    "This is the organization's last owner; transfer ownership first.".into(),
+                ));
+            }
+        }
+        Removal::Leaving => {
+            crate::services::users::ensure_can_leave(&mut tx, org.uuid(), user).await?;
+        }
     }
     members::delete_org(&mut tx, org.uuid(), target.user_id).await?;
     let limited =

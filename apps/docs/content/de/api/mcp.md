@@ -210,7 +210,7 @@ Jede Operation der Platform API, die ein Agent nutzen kann, ist ein Tool, benann
 - **Ergebnisse.** Ein Tool antwortet mit dem JSON der Platform API als Text und als `structuredContent`. Eine Antwort über 200 KB wird gekürzt; fordern Sie mit `limit` eine kleinere Seite an.
 - **Modell.** Jedes Tool nimmt `agent_model`, die Modellfamilie, auf der der Agent läuft: `claude`, `gpt`, `gemini`, `gemma`, `grok`, `llama`, `mistral`, `deepseek`, `qwen`, `kimi`, `glm`, `minimax`, `command`, `nova`, `phi`, `granite`, `jamba`, `ernie`, `hunyuan`, `doubao`, `yi`, `nemotron`, `olmo`, `sonar`, `reka` oder `unknown`. Kaeso speichert sie bei jedem Aufruf und zeigt den Namen der Familie neben dem Agenten; jeder andere Wert zählt als `unknown`. Bis zu seinem ersten Aufruf erscheint ein Agent als `unknown`.
 - **Hinweise.** Lesende Tools tragen `readOnlyHint`, löschende `destructiveHint`.
-- **Anweisungen.** Der Server weist den Agenten an, zuerst seine Organisationen mit `get_me_memberships` aufzulisten.
+- **Anweisungen.** Der Server weist den Agenten an, zuerst seine Organisationen mit `get_me_memberships` aufzulisten. Es listet nur die Organisationen und Projekte, die der Agent öffnen kann, ebenso die Rechte eines Mitglieds in `get_orgs_org_members_user_rights`.
 
 Diese Aktionen brauchen eine Konsolensitzung, daher hat kein Agent ein Tool dafür:
 
@@ -243,6 +243,7 @@ Ein Agent kann API-Schlüssel, die Modelle aufrufen, nur in Projekten erstellen,
 | 403 | Die Installation lässt keine Agenten zu, oder `Origin` nennt eine andere Website. |
 | 405 | `GET` oder `DELETE` auf `/mcp`. |
 | 413 | Der Body ist zu groß. |
+| 429 | Von Ihrer Adresse kamen zu viele unbekannte Tokens ([Drosselung von API-Schlüsseln](../self-hosting/configuration.md#drosselung-von-api-schlüsseln)). `Retry-After` sagt, wann Sie es erneut versuchen können. |
 | 503 | Kaeso erreicht seine Datenbank nicht. |
 
 Eine unbekannte Methode erhält den JSON-RPC-Fehler `-32601`, ein unbekanntes Tool `-32602`. Ein fehlgeschlagener Tool-Aufruf antwortet 200 mit `isError: true` und dem Text `<type>: <message>`. Der Typ ist der [Fehlertyp](platform-api.md#fehler) der Platform API oder `insufficient_rights` für ein [fehlendes Recht](#fehlende-rechte).
@@ -268,13 +269,15 @@ Kaeso ist sein eigener Autorisierungsserver. Sein Issuer ist die öffentliche UR
 | `GET /.well-known/oauth-protected-resource/mcp` | Die Ressourcen-Metadaten: die Adresse von `/mcp`, Kaeso als Autorisierungsserver und der Scope `kaeso`. Auch unter `/.well-known/oauth-protected-resource` |
 | `GET /.well-known/oauth-authorization-server` | Die Metadaten des Autorisierungsservers: die Endpunkte unten, `S256` als einzige PKCE-Methode, nur öffentliche Clients (`none`) und `iss` in jeder Weiterleitung (RFC 9207) |
 | `POST /oauth/register` | Registriert einen Client (RFC 7591) mit 1 bis 10 Weiterleitungs-URIs und antwortet mit seiner `client_id` (`cli_…`). Eine Weiterleitungs-URI nutzt HTTPS, eine Loopback-Adresse mit beliebigem Port oder ein privates Schema |
-| `GET /oauth/authorize` | Nimmt `response_type=code`, `client_id`, `redirect_uri`, `state` und `code_challenge` mit `code_challenge_method=S256`. `scope` darf nur `kaeso` sein, und `resource` muss, wenn gesendet, die Adresse von `/mcp` sein. Eine abgelehnte Anfrage geht mit `error` an eine Loopback-Weiterleitungs-URI oder eine mit privatem Schema zurück; bei einer HTTPS-URI zeigt stattdessen die Konsole den Fehler |
+| `GET /oauth/authorize` | Nimmt `response_type=code`, `client_id`, `redirect_uri`, `state` und `code_challenge` mit `code_challenge_method=S256`. `scope` darf nur `kaeso` sein, `resource` muss, wenn gesendet, die Adresse von `/mcp` sein, und `state` hat höchstens 2.000 Zeichen. Eine abgelehnte Anfrage geht mit `error` an eine Loopback-Weiterleitungs-URI oder eine mit privatem Schema zurück, sobald jemand einen Agenten dieses Clients autorisiert hat. Vorher und bei einer HTTPS-URI zeigt stattdessen die Konsole den Fehler |
 | `POST /oauth/token` | Formularkodiert. `grant_type=authorization_code` mit `code`, `client_id`, `redirect_uri` und `code_verifier`, oder `grant_type=refresh_token` mit `refresh_token` und `client_id` |
 | `POST /oauth/revoke` | Formularkodiertes `token`. Beendet die Anmeldung, zu der das Token gehört, und antwortet 200 auch für ein unbekanntes Token |
 
 Eine Loopback-Weiterleitungs-URI darf ihren Port bei jeder Anmeldung ändern, wie RFC 8252 es erlaubt. Host und Pfad müssen wie registriert bleiben.
 
 Ein Agent behält seine `client_id` über Neustarts hinweg, aber Kaeso löscht Registrierungen, aus denen nie eine Anmeldung wurde, und eine neue Datenbank hat keine. Meldet sich ein Agent mit einer `client_id` an, die Kaeso nicht kennt, und mit einer Loopback-Weiterleitungs-URI, registriert Kaeso ihn unter dieser ID erneut als „MCP client“, und die Anmeldung geht weiter. Auf der Zustimmungsseite können Sie ihn umbenennen. Bei jeder anderen Weiterleitungs-URI sagt die Konsole, dass sie den Agenten nicht kennt.
+
+Jeder kann einen Client registrieren und eine Anmeldung öffnen, deshalb begrenzt Kaeso beides. Jede Adresse darf 20 Clients pro Stunde registrieren und alle 15 Minuten 30 Anmeldungen öffnen sowie 120 Token- und 30 Widerrufsanfragen senden. Darüber hinaus antwortet der Endpunkt mit 429, `temporarily_unavailable` und `Retry-After`, und `/oauth/authorize` öffnet die Konsole, die Sie warten lässt. Kaeso behält höchstens 1.000 Registrierungen ohne Anmeldung, die ältesten fallen zuerst weg, und von jedem Client die 20 neuesten Anmeldeanfragen. Unbekannte Access-Tokens zählen zur [Drosselung von API-Schlüsseln](../self-hosting/configuration.md#drosselung-von-api-schlüsseln).
 
 ## Richtlinien
 

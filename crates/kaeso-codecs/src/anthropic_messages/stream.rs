@@ -27,7 +27,7 @@ pub(crate) const INDEX_FORM: &str = "index";
 pub(crate) const EVENT_FORM: &str = "event";
 pub(crate) const SSE_FORM: &str = "sse";
 
-const KNOWN_EVENTS: [&str; 8] = [
+const KNOWN_EVENTS: [&str; 7] = [
     "message_start",
     "content_block_start",
     "content_block_delta",
@@ -35,7 +35,6 @@ const KNOWN_EVENTS: [&str; 8] = [
     "message_delta",
     "message_stop",
     "ping",
-    "error",
 ];
 
 pub(crate) fn default_start_block(header: &BlockHeader, visible_redacted: bool) -> Option<Value> {
@@ -150,6 +149,12 @@ impl Decoder {
         if !ev.has_data {
             return self.extra(&ev, out);
         }
+        // The SDKs raise on every `event: error` frame whatever its data, so an Anthropic-compatible
+        // server's error in another shape, or in plain text, is still the provider's error.
+        if ev.event.as_deref() == Some("error") {
+            self.error(&ev.data, out);
+            return Ok(());
+        }
         let data: Box<RawValue> = match serde_json::from_str(&ev.data) {
             Ok(d) => d,
             Err(e) => {
@@ -256,15 +261,17 @@ impl Decoder {
                 out.push(StreamEvent::ResponseStop(stop));
                 self.stopped = true;
             }
-            "error" => {
-                let mut err = decode_stream_error(&ev.data);
-                err.origin = Some(origin);
-                out.push(StreamEvent::Error(err));
-                self.inert = true;
-            }
+            "error" => self.error(&ev.data, out),
             _ => return self.extra(&ev, out),
         }
         Ok(())
+    }
+
+    fn error(&mut self, data: &str, out: &mut Vec<StreamEvent>) {
+        let mut err = decode_stream_error(data);
+        err.origin = Some(self.origin.clone());
+        out.push(StreamEvent::Error(err));
+        self.inert = true;
     }
 
     fn check_order(&mut self, ty: &str) -> Result<(), KppError> {
@@ -384,14 +391,6 @@ impl Decoder {
         if known.index != kpp {
             extras.form.insert(INDEX_FORM.into(), known.index.into());
         }
-        if let Some(default) = default_start_block(&wire_header, true) {
-            let actual: Value =
-                serde_json::from_str(cb.get()).map_err(|e| bad(&without_position(&e)))?;
-            if actual != default {
-                extras.form.insert(CONTENT_BLOCK_FORM.into(), actual);
-            }
-        }
-        framing(ev, ty, &mut extras);
         let header = match wire_header {
             BlockHeader::ToolCall(h) => BlockHeader::ToolCall(ToolCallHeader::new(
                 self.ctx.original_tool_id(&h.id),
@@ -399,6 +398,18 @@ impl Decoder {
             )),
             other => other,
         };
+        if let Some(default) = default_start_block(&header, true) {
+            let mut actual: Value =
+                serde_json::from_str(cb.get()).map_err(|e| bad(&without_position(&e)))?;
+            if let (BlockHeader::ToolCall(h), Value::Object(block)) = (&header, &mut actual) {
+                block.insert("id".into(), Value::from(h.id.as_str()));
+                block.insert("name".into(), Value::from(h.name.as_str()));
+            }
+            if actual != default {
+                extras.form.insert(CONTENT_BLOCK_FORM.into(), actual);
+            }
+        }
+        framing(ev, ty, &mut extras);
         let mut start = BlockStart::new(kpp, header);
         start.extras = extras;
         out.push(StreamEvent::BlockStart(start));

@@ -78,6 +78,21 @@ pub async fn get(
     .await?)
 }
 
+pub async fn hold_active(
+    db: impl PgExecutor<'_>,
+    project_id: Uuid,
+    id: Uuid,
+) -> Result<bool, StoreError> {
+    Ok(sqlx::query_scalar!(
+        "SELECT 1 AS \"one!\" FROM service_accounts WHERE project_id = $1 AND id = $2 AND archived_at IS NULL FOR SHARE",
+        project_id,
+        id
+    )
+    .fetch_optional(db)
+    .await?
+    .is_some())
+}
+
 pub async fn get_for_update(
     db: impl PgExecutor<'_>,
     project_id: Uuid,

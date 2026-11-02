@@ -42,7 +42,7 @@ Under **General**:
 | Organization creation | **Instance admins only**, **Users on allowed domains** or **Any signed-in user** |
 | Allowed domains | The domains for the two settings above. `*.example.com` covers subdomains |
 | Single sign-on for instance admins | **None**, or an organization with single sign-on whose provider may sign its managed instance admins in to administer the instance ([instance admins](../self-hosting/sign-in.md#instance-admins)) |
-| Time zone | The install's time zone. Every time in the console shows in it, for everyone, and automatic updates follow it. **Use this zone** switches to your browser's |
+| Time zone | The install's time zone. Every time in the console shows in it, for everyone, the request log and audit log filter by its days, and automatic updates follow it. **Use this zone** switches to your browser's |
 | Deleting organizations | Whether organizations can be deleted at all, and the grace period, 1 to 90 days |
 
 Under **Logging**, **Request log retention** sets the defaults for new organizations, and the longest an organization may choose.

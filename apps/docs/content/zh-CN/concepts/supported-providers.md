@@ -18,6 +18,7 @@ Kaeso 内置了以下服务商，按名称排列。如何使用服务商以及�
 | 服务商 | 格式 | 主机 | 密钥 |
 | --- | --- | --- | --- |
 | Anthropic `anthropic` | Messages、Token 计数 | `api.anthropic.com` | [platform.claude.com](https://platform.claude.com/settings/keys)，`sk-ant-` |
+| Cerebras `cerebras` | Chat Completions | `api.cerebras.ai` | [cloud.cerebras.ai](https://cloud.cerebras.ai)，`csk-` |
 | Cohere `cohere` | Chat Completions、Embeddings | `api.cohere.ai` | [dashboard.cohere.com](https://dashboard.cohere.com/api-keys)，无固定前缀 |
 | DeepSeek `deepseek` | Chat Completions | `api.deepseek.com` | [platform.deepseek.com](https://platform.deepseek.com/api_keys)，`sk-` |
 | Groq `groq` | Chat Completions | `api.groq.com` | [console.groq.com](https://console.groq.com/keys)，`gsk_` |
@@ -35,6 +36,7 @@ Kaeso 内置了以下服务商，按名称排列。如何使用服务商以及�
 
 关于部分服务商的其他须知事项。服务商会改名或拒绝的每个 Chat Completions 字段，见[服务商配置](../development/kpp/openai-chat-providers.md#服务商配置)：
 
+- **Cerebras。** 即 Cerebras Inference，提供 `gpt-oss-120b`、`qwen-3.8-27b` 等模型。`developer` 消息会作为 `system` 消息发送给它，终端用户的 ID 以 `user` 发送，Claude Code 或 Codex 在第一轮之后发送的系统消息的文本并入下一个用户轮次，没有参数的函数带上空的参数 schema。Grok CLI 发回的 `reasoning_content` 以 `reasoning` 到达它。它拒绝以 assistant 消息结尾的对话，因为 Cerebras 会重新回答，也拒绝 assistant 消息上的 `refusal`。Cerebras 对任何它不认识的字段（例如 `store`）返回 400，并且只接受 data URI 形式的图像。模型的思考内容可到达任何格式的应用；`gpt-oss-120b` 在 `reasoning_effort` 为 `low`、`medium` 或 `high` 时思考，`qwen-3.8-27b` 还接受 `none`，其他强度由 Kaeso 拒绝。
 - **Cohere。** 即 Cohere 的 [Compatibility API](https://docs.cohere.com/docs/compatibility-api)，它只覆盖 Cohere 自身 API 的一部分：无法通过它使用文档、引用和重排序。Cohere 拒绝部分字段，例如 `logit_bias` 和 `parallel_tool_calls: false`；单个 `stop` 字符串会以列表形式发送给它。它的推理模型只支持 `reasoning_effort` 为 `none` 或 `high`。它的 Embed 模型（例如 `embed-v4.0`）不在 KPMR 中：请将其添加为以 Embeddings 发送的自定义模型，并填写价格。
 - **DeepSeek。** `developer` 消息会作为 `system` 消息发送给它。
 - **Groq。** `developer` 消息会作为 `system` 消息发送给它；它拒绝部分字段，例如 `logit_bias`。
@@ -49,4 +51,4 @@ Kaeso 内置了以下服务商，按名称排列。如何使用服务商以及�
 
 ## 商标
 
-所有商标和标志均归其各自所有者所有。Kaeso 与这些服务商均无关联，也未获得其认可或赞助。控制台显示服务商的标志，仅用于标明密钥、模型或请求所属的服务商。Anthropic、Cohere、Groq 以及 QwenCloud 的所有者 Alibaba Cloud 在其条款中限制使用其标志；Kaeso 仅出于此目的显示它们的标志，保留所有者的形状和颜色，只在颜色需要在 Kaeso 的浅色和深色背景上保持可见时才做必要的调整。Mistral 的品牌页面要求不要给其图标重新着色或加框；Kaeso 以 Mistral 自己的颜色显示该图标，放在与其他标志相同的中性底块上。[NOTICE.md](https://github.com/logicplanes/kaeso/blob/dev/NOTICE.md#trademarks) 列出了每个标志的来源。
+所有商标和标志均归其各自所有者所有。Kaeso 与这些服务商均无关联，也未获得其认可或赞助。控制台显示服务商的标志，仅用于标明密钥、模型或请求所属的服务商。Anthropic、Cerebras、Cohere、Groq 以及 QwenCloud 的所有者 Alibaba Cloud 在其条款中限制使用其标志；Kaeso 仅出于此目的显示它们的标志，保留所有者的形状和颜色，只在颜色需要在 Kaeso 的浅色和深色背景上保持可见时才做必要的调整。Mistral 的品牌页面要求不要给其图标重新着色或加框；Kaeso 以 Mistral 自己的颜色显示该图标，放在与其他标志相同的中性底块上。[NOTICE.md](https://github.com/logicplanes/kaeso/blob/dev/NOTICE.md#trademarks) 列出了每个标志的来源。

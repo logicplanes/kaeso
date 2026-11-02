@@ -88,7 +88,7 @@ Docker rotiert das Log jedes Dienstes bei 10 MB und behält fünf Dateien.
 | `KAESO_SHUTDOWN_GRACE`<br>`shutdown_grace` | Text | `30s` | Wie lange laufende Anfragen und Streams nach dem Signal zum Beenden noch laufen dürfen. Was dann noch offen ist, endet mit 503 und wird abgerechnet und protokolliert. |
 | `KAESO_SERVER_HEADER_READ_TIMEOUT`<br>`server.header_read_timeout` | Text | `30s` | Wie lange ein Client für die Header einer Anfrage brauchen oder eine Verbindung zwischen Anfragen ruhen lassen darf; 1s bis 10m. Eine laufende Antwort bricht es nie ab. |
 | `KAESO_SERVER_BODY_READ_TIMEOUT`<br>`server.body_read_timeout` | Text | `30s` | Wie lange das Gateway auf den nächsten Teil eines Anfrage-Bodys wartet, bevor es die Anfrage mit 400 ablehnt; 1s bis 10m. |
-| `KAESO_SERVER_BODY_READ_DEADLINE`<br>`server.body_read_deadline` | Text | `60s` | Wie lange das Gateway auf einen ganzen Anfrage-Body wartet, wie gleichmäßig seine Teile auch ankommen, bevor es die Anfrage mit 400 ablehnt; 1s bis 1h. Ein Body von 8 MiB, die Standardgrenze der Modell-API, kommt bei 1,2 Mbit/s rechtzeitig an; erhöhen Sie den Wert für Apps mit langsameren Verbindungen. |
+| `KAESO_SERVER_BODY_READ_DEADLINE`<br>`server.body_read_deadline` | Text | `60s` | Wie lange das Gateway auf einen ganzen Anfrage-Body wartet, wie gleichmäßig seine Teile auch ankommen, bevor es die Anfrage mit 400 ablehnt; 1s bis 1h. Ein Body von 32 MiB, die Standardgrenze der Modell-API, kommt bei 4,5 Mbit/s rechtzeitig an; erhöhen Sie den Wert für Apps mit langsameren Verbindungen. |
 | `KAESO_SERVER_MAX_CONNECTIONS`<br>`server.max_connections` | Ganzzahl | `4096` | Verbindungen, die das Gateway gleichzeitig bedient, von Apps oder einem vorgeschalteten Proxy. Weitere warten in der Warteschlange des Betriebssystems, bis eine schließt. Der Standard entspricht der Standard-Warteschlange von Linux, `net.core.somaxconn`. Jeder offene Stream hält zusätzlich eine Verbindung zu seinem Anbieter, daher hebt das Gateway beim Start seine Grenze für offene Dateien so weit an, wie das System erlaubt, und warnt, wenn sie unter dem Doppelten dieser Zahl plus 256 bleibt. |
 
 Auf einer Loopback-Adresse mit `http`, etwa `http://localhost:8080`, kommt das Sitzungscookie ohne `Secure` und ohne das Präfix `__Host-` aus, sodass die Konsole auf Ihrem Rechner über einfaches HTTP funktioniert.
@@ -106,7 +106,7 @@ Ohne diese Einstellung sendet Kaeso keine CORS-Header. Die [Modell-API](../api/m
 | Variable<br>TOML-Schlüssel | Typ | Standard | Was sie bewirkt |
 | --- | --- | --- | --- |
 | `KAESO_POSTGRES_URL`<br>`postgres.url` | Text, Secret | erforderlich | Verbindungs-URL für PostgreSQL. |
-| `KAESO_POSTGRES_POOL_SIZE`<br>`postgres.pool_size` | Ganzzahl | `20` | Höchstzahl der PostgreSQL-Verbindungen je Gateway-Instanz, mindestens 1. Hintergrundjobs halten ihre Sperren zusätzlich über einige weitere Verbindungen. |
+| `KAESO_POSTGRES_POOL_SIZE`<br>`postgres.pool_size` | Ganzzahl | `20` | Größe des PostgreSQL-Verbindungspools jeder Gateway-Instanz, mindestens 1. Hintergrundjobs öffnen außerhalb davon bis zu 8 eigene Verbindungen, solange sie laufen, und jede Release-Prüfung, die ein Instanz-Admin startet, eine weitere. `max_connections` von PostgreSQL muss beides für jede Instanz abdecken. |
 | `KAESO_CLICKHOUSE_URL`<br>`clickhouse.url` | Text, Secret | — | HTTP-URL für ClickHouse mit Benutzer und Passwort, etwa `http://kaeso:secret@clickhouse:8123`. Nicht gesetzt oder leer schaltet die Anfrageprotokolle aus. |
 | `KAESO_CLICKHOUSE_DATABASE`<br>`clickhouse.database` | Text | `kaeso` | ClickHouse-Datenbank für die Anfrageprotokolle, aus Buchstaben, Ziffern und `_`. Das Gateway legt sie an, wenn sie fehlt. |
 | `KAESO_VALKEY_URL`<br>`valkey.url` | Text, Secret | erforderlich | URL für Valkey (oder Redis) mit dem Passwort, etwa `redis://:secret@valkey:6379`. |
@@ -144,7 +144,7 @@ Diese Einstellungen schalten Passwörter und Anmeldelinks für die ganze Install
 
 | Variable<br>TOML-Schlüssel | Typ | Standard | Was sie bewirkt |
 | --- | --- | --- | --- |
-| `KAESO_KEY_FAILURES_PER_ADDRESS`<br>`key_failures.per_address` | Ganzzahl | `100` | Erlaubte fehlgeschlagene Schlüssel-Abfragen je Client-Adresse und Zeitfenster, über beide APIs zusammen. `0` schaltet die Drosselung ab ([Drosselung von API-Schlüsseln](#drosselung-von-api-schlüsseln)). |
+| `KAESO_KEY_FAILURES_PER_ADDRESS`<br>`key_failures.per_address` | Ganzzahl | `100` | Erlaubte fehlgeschlagene Abfragen von API-Schlüsseln und Access-Tokens von Agenten je Client-Adresse und Zeitfenster, über beide APIs und den MCP-Server zusammen. `0` schaltet die Drosselung ab ([Drosselung von API-Schlüsseln](#drosselung-von-api-schlüsseln)). |
 | `KAESO_KEY_FAILURES_WINDOW`<br>`key_failures.window` | Text | `1m` | Das Zeitfenster von `key_failures.per_address`, 1s bis 1h. Eine gesperrte Adresse wartet höchstens so lange. |
 
 ### KPMR
@@ -190,6 +190,7 @@ Die ersten drei Einstellungen legen nur die Anfangswerte einer neuen Installatio
 | `KAESO_PROVIDERS_OLLAMA_CLOUD_BASE_URL`<br>`providers.ollama-cloud.base_url` | Text | `https://ollama.com` | Basis-URL der Ollama-Cloud-API. |
 | `KAESO_PROVIDERS_MOONSHOTAI_BASE_URL`<br>`providers.moonshotai.base_url` | Text | `https://api.moonshot.ai` | Basis-URL der Moonshot-AI-API. |
 | `KAESO_PROVIDERS_ALIBABA_BASE_URL`<br>`providers.alibaba.base_url` | Text | `https://ap-southeast-1.maas.qwencloudapi.com/compatible-mode` | Basis-URL der QwenCloud-API. |
+| `KAESO_PROVIDERS_CEREBRAS_BASE_URL`<br>`providers.cerebras.base_url` | Text | `https://api.cerebras.ai` | Basis-URL der Cerebras-API. |
 | `KAESO_UPSTREAM_CONNECT_TIMEOUT`<br>`upstream.connect_timeout` | Text | `10s` | Zeit für den Verbindungsaufbau zu einem Anbieter, TCP und TLS; höchstens 24h. |
 | `KAESO_UPSTREAM_REQUEST_TIMEOUT`<br>`upstream.request_timeout` | Text | `600s` | Gesamtzeit einer Anbieter-Anfrage ohne Streaming; höchstens 24h. |
 | `KAESO_UPSTREAM_FIRST_BYTE_TIMEOUT`<br>`upstream.first_byte_timeout` | Text | `60s` | Streaming: Zeit bis zum ersten Byte des Anbieters; höchstens 24h. |
@@ -240,7 +241,7 @@ Gecachte Antworten bleiben in Valkey, bis die Dauer ihres Projekts abläuft. Das
 
 | Variable<br>TOML-Schlüssel | Typ | Standard | Was sie bewirkt |
 | --- | --- | --- | --- |
-| `KAESO_BODY_LIMITS_MODEL_API`<br>`body_limits.model_api` | Text | `8MiB` | Größter Anfragekörper der Modell-API. Er fasst ein Bild an der 5-MB-Grenze von Anthropic als Base64; für große PDFs erhöhen Sie ihn. |
+| `KAESO_BODY_LIMITS_MODEL_API`<br>`body_limits.model_api` | Text | `32MiB` | Größter Anfragekörper der Modell-API. Er entspricht der 32-MB-Grenze von Anthropic für Anfragen, sodass lange Agent-Unterhaltungen mit Bildern und Dokumenten hineinpassen; senken Sie ihn, um den Speicher pro Anfrage klein zu halten. |
 | `KAESO_BODY_LIMITS_IN_FLIGHT`<br>`body_limits.in_flight` | Text | `512MiB` | Speicher, den Modell-API und Playground gleichzeitig zum Übersetzen von Anfragen nutzen dürfen, geschätzt aus jedem Körper, wie er ankommt, und aus seinen Nachrichten, Blöcken und Werkzeugen. Eine Anfrage hält ihre Schätzung, während sie decodiert und codiert wird, danach bis zu ihrem Ende nur, was belegt bleibt: ihre decodierte Anfrage samt Nachrichten, Blöcken, Werkzeugen und Token-IDs, eine zweite Kopie davon, solange der Anbieter noch gebeten werden kann, ihre Eingabe-Token zu zählen, den an den Anbieter gesendeten Körper, bis er antwortet, und ihren rohen Körper, solange Inhalte protokolliert werden. Ein Schlüssel hält höchstens ein Viertel, und eine größere Anfrage nimmt das Viertel. Eine Anfrage, die binnen 10 Sekunden keinen Platz findet, erhält 503 mit `Retry-After: 10`. |
 | `KAESO_BODY_LIMITS_PLATFORM_API`<br>`body_limits.platform_api` | Text | `1MiB` | Größter Anfragekörper der Platform API, Anfragen des Playground eingeschlossen. |
 | `KAESO_BODY_LIMITS_PROVIDER_RESPONSE`<br>`body_limits.provider_response` | Text | `128MiB` | Größter Antwortkörper, den das Gateway ohne Streaming von einem Anbieter liest. Ein größerer lässt die Anfrage mit 502 scheitern. |
@@ -286,7 +287,7 @@ Eine Anbieter-ID besteht aus Kleinbuchstaben und Ziffern mit einzelnen Bindestri
 
 ## Drosselung von API-Schlüsseln
 
-Das Gateway zählt fehlgeschlagene Abfragen von API-Schlüsseln je Client-Adresse in Valkey, damit ein Client, der Schlüssel errät, PostgreSQL nicht beschäftigt hält. Nach `KAESO_KEY_FAILURES_PER_ADDRESS` Fehlschlägen innerhalb von `KAESO_KEY_FAILURES_WINDOW` ist die Adresse bis zum Ende des Zeitfensters gesperrt. Jeder Schlüssel von dort, der nicht im Speicher liegt, erhält dann 429 mit `Retry-After`, im Format der jeweiligen API.
+Das Gateway zählt fehlgeschlagene Abfragen von API-Schlüsseln und Access-Tokens von Agenten je Client-Adresse in Valkey, über beide APIs und den [MCP-Server](../api/mcp.md), damit ein Client, der Schlüssel errät, PostgreSQL nicht beschäftigt hält. Nach `KAESO_KEY_FAILURES_PER_ADDRESS` Fehlschlägen innerhalb von `KAESO_KEY_FAILURES_WINDOW` ist die Adresse bis zum Ende des Zeitfensters gesperrt. Jeder Schlüssel von dort, der nicht im Speicher liegt, und jedes Access-Token erhalten dann 429 mit `Retry-After`, im Format der jeweiligen API.
 
 - Es zählen nur wohlgeformte Schlüssel, die zu keinem Schlüssel passen. Ein fehlerhafter Wert, ein deaktivierter oder abgelaufener Schlüssel und ein unbekannter Schlüssel, der binnen 30 Sekunden wiederkommt, zählen nicht.
 - Gültige Schlüssel zählen nie. Ein Schlüssel, den die Instanz in den letzten 30 Sekunden verwendet hat, funktioniert auch von einer gesperrten Adresse; andere gültige Schlüssel warten das Zeitfenster ab.

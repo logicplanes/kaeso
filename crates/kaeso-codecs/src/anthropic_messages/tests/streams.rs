@@ -116,6 +116,10 @@ pub(super) fn accumulate(sse: &[u8]) -> Value {
     message
 }
 
+// An error event whose data is not an Anthropic error reaches Anthropic apps as one, as HTTP
+// errors in another shape do (`providers/vercel/errors/*.meta.json`), so it isn't replayed as sent.
+const REWRITTEN_ERRORS: [&str; 2] = ["error-event-not-json", "error-event-openai-shape"];
+
 #[test]
 fn every_stream_fixture_round_trips_under_every_chunking() {
     let mut n = 0;
@@ -133,9 +137,11 @@ fn every_stream_fixture_round_trips_under_every_chunking() {
             .iter()
             .filter(|e| matches!(e, StreamEvent::Error(_)))
             .count();
-        let expect_error = name == "error-overloaded-mid-stream";
+        let expect_error = name.starts_with("error-");
         assert_eq!(errors, usize::from(expect_error), "{name}: {whole:?}");
-        assert_sse_eq(&name, &bytes, &encode_stream(&whole));
+        if !REWRITTEN_ERRORS.contains(&name.as_str()) {
+            assert_sse_eq(&name, &bytes, &encode_stream(&whole));
+        }
         n += 1;
     }
     assert!(n >= 14, "{n}");
@@ -364,6 +370,120 @@ event: content_block_start\ndata: {\"type\":\"content_block_start\",\"index\":0,
             .iter()
             .any(|e| matches!(e, StreamEvent::BlockStart(s) if !s.extras.form.is_empty()))
     );
+}
+
+#[test]
+fn a_start_block_kept_whole_carries_the_apps_tool_name_and_id() {
+    let mut ctx = stream_ctx();
+    ctx.tool_names
+        .insert("get_weather".into(), "weather.get".into());
+    ctx.tool_ids.insert(
+        "toolu_01NRLabsLyVHZPKxbKvkfSMn".into(),
+        "call:weather".into(),
+    );
+    let wire = stream_fixture("tools-caller");
+    let events = decode_stream_chunked(&wire, 0, &ctx);
+    let start = events
+        .iter()
+        .find_map(|e| match e {
+            StreamEvent::BlockStart(s) if matches!(s.block, BlockHeader::ToolCall(_)) => Some(s),
+            _ => None,
+        })
+        .unwrap();
+    assert_eq!(
+        start.block,
+        BlockHeader::ToolCall(ToolCallHeader::new("call:weather", "weather.get"))
+    );
+    assert_eq!(
+        start.extras.form_value(A, "content_block"),
+        Some(
+            &json!({"type": "tool_use", "id": "call:weather", "name": "weather.get", "caller": {"type": "direct"}, "input": {}})
+        )
+    );
+    let out = String::from_utf8(encode_stream(&events)).unwrap();
+    let want = String::from_utf8(wire)
+        .unwrap()
+        .replace("\"toolu_01NRLabsLyVHZPKxbKvkfSMn\"", "\"call:weather\"")
+        .replace("\"get_weather\"", "\"weather.get\"");
+    assert_sse_eq("tools-caller", want.as_bytes(), out.as_bytes());
+
+    let events = decode_stream_chunked(&stream_fixture("tools-caller"), 0, &stream_ctx());
+    assert_sse_eq(
+        "tools-caller",
+        &stream_fixture("tools-caller"),
+        &encode_stream(&events),
+    );
+}
+
+fn error_of(events: &[StreamEvent]) -> &kaeso_kpp::KppError {
+    match events.last() {
+        Some(StreamEvent::Error(e)) => e,
+        other => panic!("{other:?}"),
+    }
+}
+
+fn error_frame(out: &[u8]) -> Value {
+    let items = crate::sse::parse_all(out).unwrap();
+    let Some(crate::sse::SseItem::Event(ev)) = items.last() else {
+        panic!("{items:?}")
+    };
+    assert_eq!(ev.event.as_deref(), Some("error"));
+    serde_json::from_str(&ev.data).unwrap()
+}
+
+#[test]
+fn an_error_event_in_another_shape_keeps_the_providers_message() {
+    let vercel = "Rate limit exceeded for nvidia/nemotron-3.5-lightning-free for provider nvidia: this team's limit of 5 requests per minute (per region) was reached. Retry after 48s.";
+    let events = decode_stream_chunked(
+        &stream_fixture("error-event-openai-shape"),
+        0,
+        &stream_ctx(),
+    );
+    let err = error_of(&events);
+    assert_eq!(err.message, vercel);
+    assert_eq!(
+        err.kind,
+        kaeso_kpp::ErrorKind::ProviderError,
+        "`rate_limit_exceeded` is not an Anthropic type"
+    );
+    assert_eq!(
+        error_frame(&encode_stream(&events)),
+        json!({"type": "error", "error": {"type": "api_error", "message": vercel}})
+    );
+
+    let events = decode_stream_chunked(&stream_fixture("error-event-not-json"), 0, &stream_ctx());
+    let err = error_of(&events);
+    assert_eq!(err.kind, kaeso_kpp::ErrorKind::ProviderError);
+    assert!(
+        err.message.ends_with("upstream request timeout"),
+        "{}",
+        err.message
+    );
+    assert_eq!(
+        error_frame(&encode_stream(&events))["error"]["message"],
+        err.message.as_str()
+    );
+
+    let anthropic_type = b"event: message_start\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"m\",\"model\":\"x\",\"usage\":{\"input_tokens\":1,\"output_tokens\":1}}}\n\n\
+event: error\ndata: {\"error\":{\"type\":\"overloaded_error\",\"message\":\"Overloaded\"}}\n\n";
+    let events = decode_stream_chunked(anthropic_type, 0, &stream_ctx());
+    let err = error_of(&events);
+    assert_eq!(
+        (err.kind.clone(), err.message.as_str()),
+        (kaeso_kpp::ErrorKind::Overloaded, "Overloaded")
+    );
+}
+
+#[test]
+fn an_anthropic_stream_holds_nothing_back_for_a_flush() {
+    let half: String = String::from_utf8(stream_fixture("tools-single"))
+        .unwrap()
+        .split_inclusive("\n\n")
+        .take(6)
+        .collect();
+    let mut dec = AnthropicMessages::stream_decoder(&stream_ctx());
+    assert!(!dec.feed(half.as_bytes()).is_empty());
+    assert!(dec.flush().is_empty());
 }
 
 fn chat_like_stream() -> Vec<StreamEvent> {
@@ -686,4 +806,48 @@ fn a_foreign_usage_report_between_deltas_only_updates_the_final_usage() {
     );
     assert_eq!(message["stop_reason"], "end_turn");
     assert_eq!(message["usage"]["output_tokens"], 2);
+}
+
+mod plain_deltas {
+    use proptest::prelude::*;
+
+    use super::*;
+
+    fn encoded(block: BlockHeader, delta: Delta, form: Option<&str>) -> Vec<u8> {
+        let ctx = EncodeCtx::new(RequestKind::Generate, StreamMode::on(true));
+        let mut enc = AnthropicMessages::stream_encoder(&ctx);
+        let mut start = ResponseStart::new("msg_1", "claude-x");
+        start.extras = Extras::new(A);
+        let mut d = BlockDelta::new(0, delta);
+        d.extras = Extras::new(A);
+        if let Some(key) = form {
+            d.extras.form.insert(key.to_owned(), json!(true));
+        }
+        let mut out = Vec::new();
+        for e in [
+            StreamEvent::ResponseStart(start),
+            StreamEvent::BlockStart(BlockStart::new(0, block)),
+            StreamEvent::BlockDelta(d),
+        ] {
+            out.extend(enc.encode(&e).unwrap());
+        }
+        out
+    }
+
+    proptest! {
+        #[test]
+        fn a_delta_without_extras_is_written_as_the_full_path_writes_it(text in "\\PC*|[\\x00-\\x1f\"\\\\\u{2028}\u{1f600}a]{0,24}") {
+            for (block, delta) in [
+                (BlockHeader::Text, Delta::Text(text.clone())),
+                (BlockHeader::Refusal, Delta::Refusal(text.clone())),
+                (BlockHeader::ToolCall(ToolCallHeader::new("toolu_1", "f")), Delta::ToolArguments(text.clone())),
+                (BlockHeader::Reasoning(kaeso_kpp::ReasoningHeader::new(A)), Delta::ReasoningText(text.clone())),
+            ] {
+                prop_assert_eq!(
+                    encoded(block.clone(), delta.clone(), None),
+                    encoded(block, delta, Some("unrelated"))
+                );
+            }
+        }
+    }
 }

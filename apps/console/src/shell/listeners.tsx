@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useRouter } from "@tanstack/react-router";
+import { SignInWhenSessionEnds } from "~/auth/session-end";
 import { ConnectionToast } from "./connection-banner";
 import { ShortcutsHost } from "./shortcuts";
 import { LocaleSync } from "~/i18n/sync";
@@ -19,6 +20,7 @@ function BackScroll() {
 export default function ShellListeners() {
   return (
     <>
+      <SignInWhenSessionEnds />
       <ConnectionToast />
       <ShortcutsHost />
       <BackScroll />

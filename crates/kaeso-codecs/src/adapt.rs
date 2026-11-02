@@ -8,7 +8,7 @@ use serde_json::{Map, Value};
 
 use crate::codec::EgressCtx;
 use crate::cross::{
-    CHAT_ASSISTANT_BOOKKEEPING, OPENAI_CACHE_KEY, check_extras, is_chat_bookkeeping,
+    CHAT_ASSISTANT_BOOKKEEPING, OPENAI_CACHE_KEY, check_message_extras, is_chat_bookkeeping,
 };
 use crate::openai_chat::ChatProfile;
 use crate::openai_responses::{InputItems, ReasoningReplay, history, namespaces, replay};
@@ -130,7 +130,11 @@ pub(crate) fn for_target<'a>(
             web_search::for_chat(&mut draft)?;
             history::agent_messages(&mut draft, ctx.chat_profile.provider)?;
             history::as_function_calls(&mut draft)?;
-            place_system_for_chat(&mut draft, target);
+            if ctx.chat_profile.request.leading_system_only {
+                fold_later_system(&mut draft, target)?;
+            } else {
+                place_system_for_chat(&mut draft, target);
+            }
             media_after_tool_results(&mut draft);
             parallel_permission_left_out(&mut draft, &ctx.chat_profile);
         }
@@ -251,9 +255,10 @@ fn foreign_system(d: &Draft<'_>, target: DialectId) -> Result<bool, KppError> {
         return Ok(false);
     }
     let mut any = false;
-    for (i, m) in d.get().messages.iter().enumerate() {
+    let r = d.get();
+    for (i, m) in r.messages.iter().enumerate() {
         if m.role == Role::System {
-            check_extras(&m.extras, target, &format!("messages[{i}]"), "message")?;
+            check_message_extras(r, m, target, &format!("messages[{i}]"))?;
             any = true;
         }
     }
@@ -271,6 +276,7 @@ fn leading_results(m: &Message) -> usize {
 // assistant turn, and not on every model (Claude Sonnet 5 refuses them), while OpenAI apps
 // place developer messages anywhere, typically before the user turn they introduce.
 // https://platform.claude.com/docs/en/build-with-claude/mid-conversation-system-messages
+// Qwen's chat template on Cerebras refuses any system message after the first turn.
 fn fold_later_system(d: &mut Draft<'_>, target: DialectId) -> Result<(), KppError> {
     if !foreign_system(d, target)? {
         return Ok(());
@@ -319,6 +325,10 @@ fn calls_tools(m: &Message) -> bool {
     m.role == Role::Assistant && m.blocks.iter().any(|b| matches!(b, Block::ToolCall(_)))
 }
 
+fn only_results(m: &Message) -> bool {
+    m.role == Role::User && !m.blocks.is_empty() && leading_results(m) == m.blocks.len()
+}
+
 // Chat Completions wants a call's `tool` messages right after the assistant message that
 // made it: Mistral answers a system message between them with a 400
 // `invalid_request_message_order` ("Unexpected role 'tool' after role 'system'").
@@ -352,7 +362,7 @@ fn place_system_for_chat(d: &mut Draft<'_>, target: DialectId) {
             Role::System => out.push(m),
             _ => {
                 out.append(&mut deferred);
-                awaiting_results = calls_tools(&m);
+                awaiting_results = calls_tools(&m) || (awaiting_results && only_results(&m));
                 out.push(m);
             }
         }

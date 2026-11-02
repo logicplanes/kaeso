@@ -7,6 +7,7 @@ import {
   Badge,
   Button,
   DialogScope,
+  Field,
   Input,
   InlineCopyText,
   NumberInput,
@@ -20,6 +21,7 @@ import {
 import { toast } from "~/shell/toast";
 import { formatDate } from "@logicplanes/kaeso-ui/format";
 import { api, data } from "~/api/client";
+import { fieldError } from "~/api/field-error";
 import type { ProjectLogSettings } from "~/api/generated/types";
 import { orgQuery } from "~/api/queries/orgs";
 import { projectListKey, projectQuery, projectViewKey } from "~/api/queries/projects";
@@ -128,28 +130,33 @@ function General({
           title={common.name()}
           description={t("project.settings.nameHint", "Shown in the sidebar and in request logs.")}
           control={
-            <div className="flex min-w-0 items-center gap-8">
-              <div className="w-240 min-w-0">
-                <Input
-                  aria-label={t("project.settings.projectName", "Project name")}
+            <Field error={fieldError(rename.error, "name")}>
+              <div className="flex min-w-0 items-center gap-8">
+                <div className="w-240 min-w-0">
+                  <Input
+                    aria-label={t("project.settings.projectName", "Project name")}
+                    size="sm"
+                    value={draft}
+                    maxLength={100}
+                    disabled={!canUpdate || archived}
+                    onChange={(e) => {
+                      setDraft(e.target.value);
+                      if (rename.isError) rename.reset();
+                    }}
+                    onKeyDown={(e) => e.key === "Enter" && !reason && !rename.isPending && rename.mutate(next)}
+                  />
+                </div>
+                <Button
                   size="sm"
-                  value={draft}
-                  maxLength={100}
-                  disabled={!canUpdate || archived}
-                  onChange={(e) => setDraft(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && !reason && !rename.isPending && rename.mutate(next)}
-                />
+                  disabled={!!reason}
+                  {...(reason && !locked ? { disabledReason: reason } : {})}
+                  loading={rename.isPending}
+                  onClick={() => rename.mutate(next)}
+                >
+                  {common.save()}
+                </Button>
               </div>
-              <Button
-                size="sm"
-                disabled={!!reason}
-                {...(reason && !locked ? { disabledReason: reason } : {})}
-                loading={rename.isPending}
-                onClick={() => rename.mutate(next)}
-              >
-                {common.save()}
-              </Button>
-            </div>
+            </Field>
           }
         />
         <SettingsRow

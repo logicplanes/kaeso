@@ -1205,3 +1205,58 @@ fn an_alibaba_listing_decodes_with_its_paging_ids_and_refuses_a_wrong_key() {
     .unwrap_err();
     assert_eq!(e.kind, ErrorKind::Authentication);
 }
+
+#[test]
+fn a_cerebras_listing_decodes_and_its_errors_keep_cerebras_message_without_an_error_object() {
+    let body = fixture("openai_chat", "providers/cerebras/list-recorded");
+    let l = list(DialectId::OpenAiChat, &body);
+    assert!(!l.has_more);
+    let ids: Vec<&str> = l.models.iter().map(|m| m.id.as_str()).collect();
+    assert_eq!(ids, ["gpt-oss-120b", "qwen-3.8-27b"]);
+    assert!(
+        l.models
+            .iter()
+            .all(|m| m.owned_by.as_deref() == Some("Cerebras"))
+    );
+    assert_json_eq(
+        "providers/cerebras/list-recorded",
+        &body,
+        &dispatch::encode_models(DialectId::OpenAiChat, &l).unwrap(),
+    );
+    let one = model(
+        DialectId::OpenAiChat,
+        &fixture("openai_chat", "providers/cerebras/retrieve-recorded"),
+    );
+    assert_eq!(one.id, "gpt-oss-120b");
+    let errors = fixtures("openai_chat", "errors", "json");
+    let error = |name: &str| {
+        errors
+            .iter()
+            .find(|(n, _)| n == name)
+            .unwrap_or_else(|| panic!("no error fixture {name}"))
+            .1
+            .clone()
+    };
+    let e = dispatch::decode_model(
+        DialectId::OpenAiChat,
+        404,
+        &h(),
+        &error("providers/cerebras/retrieve-not-found"),
+    )
+    .unwrap_err();
+    assert_eq!(e.kind, ErrorKind::NotFound);
+    assert_eq!(
+        e.message,
+        "Model does not exist or you do not have access to it."
+    );
+    assert_eq!(e.param.as_deref(), Some("model"));
+    let e = dispatch::decode_models(
+        DialectId::OpenAiChat,
+        401,
+        &h(),
+        &error("providers/cerebras/list-invalid-api-key"),
+    )
+    .unwrap_err();
+    assert_eq!(e.kind, ErrorKind::Authentication);
+    assert_eq!(e.message, "Wrong API Key");
+}

@@ -139,9 +139,9 @@ Der Updater ersetzt weder sich selbst noch Caddy, während er läuft. Das nächs
 
 Wählen Sie unter **Wie Updates installiert werden** die Option **Automatisch**, und legen Sie dann das Update-Fenster fest: **Täglich** oder **Wöchentlich** an einem Tag, zu einer Stunde. Die Stunde gilt in der Zeitzone der Installation, die Sie unter **Allgemein** festlegen, Sommerzeit eingeschlossen. Das Fenster bleibt eine Stunde offen, und die Seite zeigt, wann sich das nächste öffnet.
 
-Im Fenster sucht das Gateway nach Releases, wenn es das in der letzten Stunde nicht getan hat. Dann aktualisiert es auf das neueste Release, das der Updater installiert, genau wie **Auf … aktualisieren**. Eine neue Hauptversion oder ein Release mit Schritten von Hand wartet auf Sie.
+Im Fenster sucht das Gateway nach Releases, wenn es das in der letzten Stunde nicht getan hat. Dann aktualisiert es auf das neueste Release, das der Updater installiert, genau wie **Auf … aktualisieren**. Eine neue Hauptversion oder ein Release mit Schritten von Hand wartet auf Sie. Das gilt auch für ein Release, dessen letztes Update mit **Zurückgesetzt**, **Zurücksetzen fehlgeschlagen** oder **Prüfung nötig** endete, wer es auch gestartet hat: Aktualisieren Sie selbst darauf, sobald Sie die Ursache gefunden haben, oder lassen Sie das Fenster das nächste Release installieren.
 
-Läuft das Gateway während eines Fensters nicht, verstreicht es, und das nächste zählt. Verlauf und Audit-Log halten jedes automatische Update ohne Person fest.
+Bis ein Update startet, versucht es das Gateway jede Minute erneut, solange das Fenster offen ist. Eine Release-Liste, die sich nicht abrufen lässt, oder ein Updater, der noch nicht bereit ist, verzögert das Update also nur. Ein Fenster, das ohne Update schließt, verstreicht, ebenso eines, in dem das Gateway nicht läuft, und das nächste zählt. Verlauf und Audit-Log halten jedes automatische Update ohne Person fest.
 
 ### Ergebnisse
 

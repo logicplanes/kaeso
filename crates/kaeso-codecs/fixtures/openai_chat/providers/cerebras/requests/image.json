@@ -1,0 +1,22 @@
+{
+  "model": "qwen-3.8-27b",
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "What colour is this image? Answer with one word."
+        },
+        {
+          "type": "image_url",
+          "image_url": {
+            "url": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAAKklEQVR4nGO4IyJCU8QwasGoBaMWjFowasGoBaMWjFowasGoBaMWDBULAJ3LED3QqzauAAAAAElFTkSuQmCC"
+          }
+        }
+      ]
+    }
+  ],
+  "reasoning_effort": "none",
+  "max_completion_tokens": 20
+}

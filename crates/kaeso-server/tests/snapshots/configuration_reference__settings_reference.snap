@@ -15,7 +15,7 @@ expression: settings_reference()
 | `KAESO_SERVER_MAX_CONNECTIONS` | `server.max_connections` | integer | `4096` | Connections the gateway serves at once; further ones wait to be accepted until one closes. |
 | `KAESO_CORS_ALLOWED_ORIGINS` | `cors.allowed_origins` | text | — | Comma-separated origins of the web apps that may call the model API from a browser, such as `https://app.example.com`, never `*`; only these get CORS headers, and only on `/v1`. |
 | `KAESO_POSTGRES_URL` | `postgres.url` | text, secret | required | PostgreSQL connection URL. Required. |
-| `KAESO_POSTGRES_POOL_SIZE` | `postgres.pool_size` | integer | `20` | Maximum PostgreSQL connections per gateway instance. |
+| `KAESO_POSTGRES_POOL_SIZE` | `postgres.pool_size` | integer | `20` | Size of each gateway instance's PostgreSQL connection pool; background jobs open up to 8 connections of their own outside it while they run, and each release check an instance admin starts one more. |
 | `KAESO_CLICKHOUSE_URL` | `clickhouse.url` | text, secret | — | ClickHouse HTTP URL, with user and password, e.g. `http://kaeso:secret@clickhouse:8123`. Unset or empty turns request logs off. |
 | `KAESO_CLICKHOUSE_DATABASE` | `clickhouse.database` | text | `kaeso` | ClickHouse database for request logs; created when missing. |
 | `KAESO_VALKEY_URL` | `valkey.url` | text, secret | required | Valkey (or Redis) URL, e.g. `redis://valkey:6379`. Required. |
@@ -31,7 +31,7 @@ expression: settings_reference()
 | `KAESO_AUTH_PASSWORD` | `auth.password` | bool | `true` | Allow sign-in with email and password. |
 | `KAESO_AUTH_MAGIC_LINK` | `auth.magic_link` | bool | `true` | Allow sign-in with a sign-in link sent by email. |
 | `KAESO_AUTH_OIDC_ALLOW_PRIVATE_NETWORKS` | `auth.oidc_allow_private_networks` | bool | `false` | Allow OIDC discovery and token requests to private and loopback addresses, for an identity provider on your own network; link-local and cloud metadata addresses stay refused. |
-| `KAESO_KEY_FAILURES_PER_ADDRESS` | `key_failures.per_address` | integer | `100` | Failed API key lookups (well-formed keys that match no key) allowed per client address and window, on the model API and the Platform API together; beyond it, keys that are not cached are refused with 429 until the window ends. IPv6 addresses count per /64. Valid keys never count. `0` turns the throttle off. |
+| `KAESO_KEY_FAILURES_PER_ADDRESS` | `key_failures.per_address` | integer | `100` | Failed lookups of API keys and agents' access tokens (well-formed ones that match none) allowed per client address and window, on the model API, the Platform API and the MCP server together; beyond it, keys that are not cached and access tokens are refused with 429 until the window ends. IPv6 addresses count per /64. Valid keys never count. `0` turns the throttle off. |
 | `KAESO_KEY_FAILURES_WINDOW` | `key_failures.window` | text | `1m` | The window of `key_failures.per_address`: 1s to 1h. |
 | `KAESO_KPMR_SYNC` | `kpmr.sync` | bool | `true` | Fetch the model data from KPMR, the Kaeso Provider & Model Registry. Off for installs without internet; the built-in snapshot is used. |
 | `KAESO_KPMR_URL` | `kpmr.url` | text | `https://kpmr.kaeso.app/v1/catalogue` | Where the KPMR catalogue is fetched from, KPMR or a mirror: `https`, or `http` on localhost; redirects must stay on its host and `https`, at most 3. |
@@ -56,6 +56,7 @@ expression: settings_reference()
 | `KAESO_PROVIDERS_OLLAMA_CLOUD_BASE_URL` | `providers.ollama-cloud.base_url` | text | `https://ollama.com` | Base URL of the Ollama Cloud API. |
 | `KAESO_PROVIDERS_MOONSHOTAI_BASE_URL` | `providers.moonshotai.base_url` | text | `https://api.moonshot.ai` | Base URL of the Moonshot API. |
 | `KAESO_PROVIDERS_ALIBABA_BASE_URL` | `providers.alibaba.base_url` | text | `https://ap-southeast-1.maas.qwencloudapi.com/compatible-mode` | Base URL of the QwenCloud API. |
+| `KAESO_PROVIDERS_CEREBRAS_BASE_URL` | `providers.cerebras.base_url` | text | `https://api.cerebras.ai` | Base URL of the Cerebras API. |
 | `KAESO_CUSTOM_PROVIDERS_ENABLED` | `custom_providers.enabled` | bool | `true` | Let organization admins add their own providers, such as a self-hosted vLLM or an internal proxy, on an API format Kaeso speaks. Off refuses requests to the ones they added. |
 | `KAESO_CUSTOM_PROVIDERS_ALLOWED_NETWORKS` | `custom_providers.allowed_networks` | text | — | Comma-separated private, loopback or other non-public networks custom providers may reach, such as `10.0.0.0/8` or `127.0.0.1/32`; plain `http` reaches only these. Kaeso checks every connection after DNS resolution; link-local and cloud metadata addresses stay refused. |
 | `KAESO_UPSTREAM_CONNECT_TIMEOUT` | `upstream.connect_timeout` | text | `10s` | Connect timeout to providers, TCP and TLS; at most 24h. |
@@ -69,7 +70,7 @@ expression: settings_reference()
 | `KAESO_RESPONSE_CACHE_ENABLED` | `response_cache.enabled` | bool | `true` | Let projects turn on the response cache, which answers a repeated identical request from Valkey instead of the provider. Off, no project can use it and nothing is cached. |
 | `KAESO_RESPONSE_CACHE_MAX_ENTRY_SIZE` | `response_cache.max_entry_size` | text | `1MiB` | Largest reply the response cache keeps; a larger one is still served but not cached. |
 | `KAESO_RESPONSE_CACHE_MEMORY_SHARE` | `response_cache.memory_share` | integer | `50` | Percent of Valkey's `maxmemory` above which the response cache stops adding entries, so limit counters always have room; 1 to 90. Ignored when Valkey sets no `maxmemory`. |
-| `KAESO_BODY_LIMITS_MODEL_API` | `body_limits.model_api` | text | `8MiB` | Largest request body of the model API. |
+| `KAESO_BODY_LIMITS_MODEL_API` | `body_limits.model_api` | text | `32MiB` | Largest request body of the model API. |
 | `KAESO_BODY_LIMITS_IN_FLIGHT` | `body_limits.in_flight` | text | `512MiB` | Memory the model API and the Playground may use at once to translate requests, estimated from each body as received and its messages, blocks and tools; a request waits up to 10s for room. |
 | `KAESO_BODY_LIMITS_PLATFORM_API` | `body_limits.platform_api` | text | `1MiB` | Largest request body of the Platform API, Playground requests included. |
 | `KAESO_BODY_LIMITS_PROVIDER_RESPONSE` | `body_limits.provider_response` | text | `128MiB` | Largest non-streaming response body Kaeso reads from a provider; a larger one fails the request with 502. |

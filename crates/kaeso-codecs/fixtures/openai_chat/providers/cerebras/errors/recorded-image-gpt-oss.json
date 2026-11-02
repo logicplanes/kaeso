@@ -1,0 +1,7 @@
+{
+  "message": "Content type 'image_url' is not supported by selected model. Only 'text' content type can be used.",
+  "type": "invalid_request_error",
+  "param": "prompt",
+  "code": "wrong_api_format",
+  "id": ""
+}

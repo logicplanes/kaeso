@@ -275,6 +275,7 @@ pub(crate) fn set_framing(ev: &mut SseEvent, framing: &serde_json::Value) {
 }
 
 pub fn write_event(out: &mut Vec<u8>, event: Option<&str>, data: &str) {
+    out.reserve(data.len() + event.map_or(0, str::len) + FRAMING);
     if let Some(event) = event {
         write_field(out, "event", event);
     }
@@ -292,6 +293,7 @@ pub fn write_item(out: &mut Vec<u8>, item: &SseItem) {
             }
         }
         SseItem::Event(ev) => {
+            out.reserve(ev.data.len() + ev.event.as_deref().map_or(0, str::len) + FRAMING);
             if starts_with_bom(ev) {
                 out.push(b'\n');
             }
@@ -340,11 +342,14 @@ fn write_field(out: &mut Vec<u8>, name: &str, value: &str) {
     out.push(b'\n');
 }
 
+// Room for the field names, separators and line ends around an event's data and name.
+const FRAMING: usize = 24;
+
 fn lines(text: &str) -> impl Iterator<Item = &str> {
     let mut rest = Some(text);
     std::iter::from_fn(move || {
         let current = rest?;
-        match current.find(['\r', '\n']) {
+        match current.bytes().position(|b| b == b'\r' || b == b'\n') {
             Some(pos) => {
                 let (line, tail) = current.split_at(pos);
                 let skip = if tail.starts_with("\r\n") { 2 } else { 1 };

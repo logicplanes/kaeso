@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { DataTable, Empty, InsetContent, LimitMeter, List, ModelLabel, ProviderBadge, Section, Segmented, StatusCode, Text, col } from "@logicplanes/kaeso-ui";
 import { formatNumber, formatPercent, formatRelative, formatTokens, formatUSD } from "@logicplanes/kaeso-ui/format";
 import type { LimitView, UsageRow } from "~/api/generated/types";
+import { untoldReason } from "~/api/load-error";
 import { allKeysQuery } from "~/api/queries/keys";
 import { limitsQuery } from "~/api/queries/limits";
 import { recentErrorsQuery } from "~/api/queries/recent-errors";
@@ -239,18 +240,17 @@ export function Aside({ org, project, modelCount }: { org: string; project: stri
   const keys = useQuery({ ...allKeysQuery(org, project), enabled: rights.has("keys.all.view") });
   const keyCount = keys.data ? formatNumber(keys.data.length) : undefined;
   const go = (href: string) => void navigate({ href });
-  const settled = (q: { isPending: boolean }, on: boolean) => !on || !q.isPending;
-  if (!settled(limits, rights.has("limits.view")) || !settled(errors, showErrors) || !settled(keys, rights.has("keys.all.view"))) return null;
   return (
     <InsetContent>
-      {rights.has("limits.view") && (
+      {rights.has("limits.view") && !limits.isPending && (
         <Section title={t("project.overview.limits", "Limits")} spacing="none">
           <div className="flex flex-col gap-16">
             {limits.isError ? (
-              <Text tone="secondary">{t("project.overview.limitsFailed", "The limits couldn't load; the notification says why.")}</Text>
+              <Text tone="secondary">
+                {untoldReason(limits.error) ?? t("project.overview.limitsFailed", "The limits couldn't load; the notification says why.")}
+              </Text>
             ) : (
-              (limits.data ?? []).length === 0 &&
-              !limits.isPending && (
+              limits.data?.length === 0 && (
                 <Text tone="secondary">{t("project.overview.noLimits", "No project limits. Keys and members can still have their own.")}</Text>
               )
             )}
@@ -260,17 +260,18 @@ export function Aside({ org, project, modelCount }: { org: string; project: stri
           </div>
         </Section>
       )}
-      {showErrors && (
+      {showErrors && !errors.isPending && (
         <Section title={t("project.overview.recentErrors", "Recent errors")} spacing="none">
           {errors.isError ? (
-            <Text tone="secondary">{t("project.overview.errorsFailed", "The recent errors couldn't load; the notification says why.")}</Text>
-          ) : recent.length === 0 && !errors.isPending ? (
+            <Text tone="secondary">
+              {untoldReason(errors.error) ?? t("project.overview.errorsFailed", "The recent errors couldn't load; the notification says why.")}
+            </Text>
+          ) : recent.length === 0 ? (
             <Text tone="secondary">{t("project.overview.noErrors", "No failed requests.")}</Text>
           ) : (
             <List
               aria-label={t("project.overview.recentErrors", "Recent errors")}
               density="compact"
-              loading={errors.isPending}
               items={recent.map((l) => ({
                 id: l.id,
                 textValue: `${l.status} ${l.error_kind ? errorKindLabel(l.error_kind) : ""} ${l.requested_model}`,
@@ -287,7 +288,7 @@ export function Aside({ org, project, modelCount }: { org: string; project: stri
           )}
         </Section>
       )}
-      {(modelCount !== undefined || keyCount !== undefined) && (
+      {(modelCount !== undefined || keyCount !== undefined) && !(rights.has("keys.all.view") && keys.isPending) && (
         <Section title={t("project.overview.thisProject", "This project")} spacing="none">
           <List
             aria-label={t("project.overview.thisProject", "This project")}

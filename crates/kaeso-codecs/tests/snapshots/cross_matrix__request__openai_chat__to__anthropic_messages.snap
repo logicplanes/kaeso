@@ -895,6 +895,1008 @@ expression: outcomes
     "param": null,
     "unsupported": "web_search_options"
   },
+  "providers/cerebras/assistant-refusal": {
+    "body": {
+      "max_tokens": 200,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "Hi",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "content": [
+            {
+              "text": "Hello!",
+              "type": "text"
+            }
+          ],
+          "role": "assistant"
+        },
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Say bye.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-oss-120b",
+      "output_config": {
+        "effort": "low"
+      },
+      "thinking": {
+        "type": "adaptive"
+      }
+    },
+    "path": "/v1/messages"
+  },
+  "providers/cerebras/basic": {
+    "body": {
+      "max_tokens": 300,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "What is the capital of France?",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-oss-120b",
+      "output_config": {
+        "effort": "low"
+      },
+      "system": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "text": "Answer in one short sentence.",
+          "type": "text"
+        }
+      ],
+      "thinking": {
+        "type": "adaptive"
+      }
+    },
+    "path": "/v1/messages"
+  },
+  "providers/cerebras/developer-role-qwen": {
+    "body": {
+      "max_tokens": 100,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "What is the capital of France?",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "qwen-3.8-27b",
+      "system": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "text": "Answer in one short sentence.",
+          "type": "text"
+        }
+      ]
+    },
+    "path": "/v1/messages"
+  },
+  "providers/cerebras/image": {
+    "body": {
+      "max_tokens": 20,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "What colour is this image? Answer with one word.",
+              "type": "text"
+            },
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "source": {
+                "data": "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAAKklEQVR4nGO4IyJCU8QwasGoBaMWjFowasGoBaMWjFowasGoBaMWDBULAJ3LED3QqzauAAAAAElFTkSuQmCC",
+                "media_type": "image/png",
+                "type": "base64"
+              },
+              "type": "image"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "qwen-3.8-27b"
+    },
+    "path": "/v1/messages"
+  },
+  "providers/cerebras/image-gpt-oss": {
+    "body": {
+      "max_tokens": 100,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "What colour is this image? Answer with one word.",
+              "type": "text"
+            },
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "source": {
+                "data": "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAAKklEQVR4nGO4IyJCU8QwasGoBaMWjFowasGoBaMWjFowasGoBaMWDBULAJ3LED3QqzauAAAAAElFTkSuQmCC",
+                "media_type": "image/png",
+                "type": "base64"
+              },
+              "type": "image"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-oss-120b",
+      "output_config": {
+        "effort": "low"
+      },
+      "thinking": {
+        "type": "adaptive"
+      }
+    },
+    "path": "/v1/messages"
+  },
+  "providers/cerebras/image-url": {
+    "body": {
+      "max_tokens": 50,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "What is in this image?",
+              "type": "text"
+            },
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "source": {
+                "type": "url",
+                "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Gfp-wisconsin-madison-the-nature-boardwalk.jpg/320px-Gfp-wisconsin-madison-the-nature-boardwalk.jpg"
+              },
+              "type": "image"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "qwen-3.8-27b"
+    },
+    "path": "/v1/messages"
+  },
+  "providers/cerebras/invalid-api-key": {
+    "body": {
+      "max_tokens": 100,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Say hello in two words.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-oss-120b",
+      "output_config": {
+        "effort": "low"
+      },
+      "thinking": {
+        "type": "adaptive"
+      }
+    },
+    "path": "/v1/messages"
+  },
+  "providers/cerebras/logit-bias-honoured": {
+    "message": "`logit_bias` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "logit_bias"
+  },
+  "providers/cerebras/logprobs": {
+    "message": "`logprobs` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "logprobs"
+  },
+  "providers/cerebras/max-completion-tokens-reasoning": {
+    "body": {
+      "max_tokens": 20,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Explain why the sky is blue.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-oss-120b",
+      "output_config": {
+        "effort": "medium"
+      },
+      "thinking": {
+        "type": "adaptive"
+      }
+    },
+    "path": "/v1/messages"
+  },
+  "providers/cerebras/metadata-field": {
+    "message": "`metadata` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "metadata"
+  },
+  "providers/cerebras/n-above-one": {
+    "rejected_by_source": "n"
+  },
+  "providers/cerebras/prefill": {
+    "body": {
+      "max_tokens": 300,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "Name three colours as a numbered list.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "1. Red\n2.",
+              "type": "text"
+            }
+          ],
+          "role": "assistant"
+        }
+      ],
+      "model": "gpt-oss-120b",
+      "output_config": {
+        "effort": "low"
+      },
+      "thinking": {
+        "type": "adaptive"
+      }
+    },
+    "path": "/v1/messages"
+  },
+  "providers/cerebras/rate-limited": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Say hello in two words.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-oss-120b",
+      "output_config": {
+        "effort": "low"
+      },
+      "thinking": {
+        "type": "adaptive"
+      }
+    },
+    "path": "/v1/messages"
+  },
+  "providers/cerebras/reasoning": {
+    "body": {
+      "max_tokens": 1500,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "What is 17 times 23? Answer with the number.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "qwen-3.8-27b"
+    },
+    "path": "/v1/messages"
+  },
+  "providers/cerebras/reasoning-content-sent-back": {
+    "body": {
+      "max_tokens": 300,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "Pick a number from 1 to 10.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "content": [
+            {
+              "text": "7",
+              "type": "text"
+            }
+          ],
+          "role": "assistant"
+        },
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Why that one? Answer in one sentence.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-oss-120b",
+      "output_config": {
+        "effort": "low"
+      },
+      "thinking": {
+        "type": "adaptive"
+      }
+    },
+    "path": "/v1/messages"
+  },
+  "providers/cerebras/reasoning-effort-minimal": {
+    "message": "reasoning effort `minimal` is not supported by Anthropic Messages. Anthropic effort levels are low, medium, high, xhigh and max.",
+    "param": "reasoning_effort",
+    "unsupported": "reasoning effort `minimal`"
+  },
+  "providers/cerebras/reasoning-effort-none": {
+    "body": {
+      "max_tokens": 100,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "What is 17 times 23? Answer with the number.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "qwen-3.8-27b"
+    },
+    "path": "/v1/messages"
+  },
+  "providers/cerebras/reasoning-effort-none-gpt-oss": {
+    "body": {
+      "max_tokens": 100,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "What is the capital of France?",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-oss-120b"
+    },
+    "path": "/v1/messages"
+  },
+  "providers/cerebras/reasoning-format-hidden": {
+    "message": "`reasoning_format` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "reasoning_format"
+  },
+  "providers/cerebras/reasoning-format-raw": {
+    "message": "`reasoning_format` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "reasoning_format"
+  },
+  "providers/cerebras/reasoning-sent-back": {
+    "body": {
+      "max_tokens": 300,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "Pick a number from 1 to 10.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "content": [
+            {
+              "text": "7",
+              "type": "text"
+            }
+          ],
+          "role": "assistant"
+        },
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Why that one? Answer in one sentence.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-oss-120b",
+      "output_config": {
+        "effort": "low"
+      },
+      "thinking": {
+        "type": "adaptive"
+      }
+    },
+    "path": "/v1/messages"
+  },
+  "providers/cerebras/safety-identifier-field": {
+    "body": {
+      "max_tokens": 100,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Say hello in two words.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "metadata": {
+        "user_id": "8f14e45fceea167a5a36dedd4bea2543"
+      },
+      "model": "gpt-oss-120b",
+      "output_config": {
+        "effort": "low"
+      },
+      "thinking": {
+        "type": "adaptive"
+      }
+    },
+    "path": "/v1/messages"
+  },
+  "providers/cerebras/sampling": {
+    "message": "`seed` is not supported by Anthropic Messages. Remove `seed` or route the request to an OpenAI model.",
+    "param": "seed",
+    "unsupported": "seed"
+  },
+  "providers/cerebras/store-field": {
+    "message": "`store` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "store"
+  },
+  "providers/cerebras/stream": {
+    "body": {
+      "max_tokens": 300,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Hello!",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-oss-120b",
+      "output_config": {
+        "effort": "low"
+      },
+      "stream": true,
+      "system": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "text": "You are a helpful assistant.",
+          "type": "text"
+        }
+      ],
+      "thinking": {
+        "type": "adaptive"
+      }
+    },
+    "path": "/v1/messages"
+  },
+  "providers/cerebras/stream-json-object": {
+    "message": "`json_object output` is not supported by Anthropic Messages. Anthropic has no JSON mode without a schema. Send a JSON schema (structured outputs) instead.",
+    "param": "response_format",
+    "unsupported": "json_object output"
+  },
+  "providers/cerebras/stream-reasoning": {
+    "body": {
+      "max_tokens": 1500,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "What is 17 times 23? Answer with the number.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "qwen-3.8-27b",
+      "stream": true
+    },
+    "path": "/v1/messages"
+  },
+  "providers/cerebras/stream-tools": {
+    "body": {
+      "max_tokens": 400,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "What's the weather in Paris right now? Use Celsius.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-oss-120b",
+      "output_config": {
+        "effort": "low"
+      },
+      "stream": true,
+      "thinking": {
+        "type": "adaptive"
+      },
+      "tools": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "description": "Get the current weather for a city.",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "city": {
+                "description": "City name, such as Paris",
+                "type": "string"
+              },
+              "unit": {
+                "enum": [
+                  "celsius",
+                  "fahrenheit"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "city"
+            ],
+            "type": "object"
+          },
+          "name": "get_weather"
+        }
+      ]
+    },
+    "path": "/v1/messages"
+  },
+  "providers/cerebras/stream-usage": {
+    "body": {
+      "max_tokens": 100,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Hello!",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "qwen-3.8-27b",
+      "stream": true,
+      "system": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "text": "You are a helpful assistant.",
+          "type": "text"
+        }
+      ]
+    },
+    "path": "/v1/messages"
+  },
+  "providers/cerebras/structured-output": {
+    "body": {
+      "max_tokens": 600,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Alice and Bob are going to a science fair on 2026-10-16.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-oss-120b",
+      "output_config": {
+        "effort": "low",
+        "format": {
+          "schema": {
+            "additionalProperties": false,
+            "properties": {
+              "date": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "participants": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            },
+            "required": [
+              "name",
+              "date",
+              "participants"
+            ],
+            "type": "object"
+          },
+          "type": "json_schema"
+        }
+      },
+      "system": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "text": "Extract the event information.",
+          "type": "text"
+        }
+      ],
+      "thinking": {
+        "type": "adaptive"
+      }
+    },
+    "path": "/v1/messages"
+  },
+  "providers/cerebras/system-mid-conversation": {
+    "body": {
+      "max_tokens": 200,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "Pick a colour.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "content": [
+            {
+              "text": "Blue.",
+              "type": "text"
+            }
+          ],
+          "role": "assistant"
+        },
+        {
+          "content": [
+            {
+              "text": "From now on, answer in French.",
+              "type": "text"
+            },
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Pick another one.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-oss-120b",
+      "output_config": {
+        "effort": "low"
+      },
+      "system": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "text": "Answer in one short sentence.",
+          "type": "text"
+        }
+      ],
+      "thinking": {
+        "type": "adaptive"
+      }
+    },
+    "path": "/v1/messages"
+  },
+  "providers/cerebras/system-mid-conversation-qwen": {
+    "body": {
+      "max_tokens": 200,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "Pick a colour.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "content": [
+            {
+              "text": "Blue.",
+              "type": "text"
+            }
+          ],
+          "role": "assistant"
+        },
+        {
+          "content": [
+            {
+              "text": "From now on, answer in French.",
+              "type": "text"
+            },
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Pick another one.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "qwen-3.8-27b",
+      "system": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "text": "Answer in one short sentence.",
+          "type": "text"
+        }
+      ]
+    },
+    "path": "/v1/messages"
+  },
+  "providers/cerebras/tool-without-parameters": {
+    "body": {
+      "max_tokens": 300,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "What time is it? Use the tool.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-oss-120b",
+      "output_config": {
+        "effort": "low"
+      },
+      "thinking": {
+        "type": "adaptive"
+      },
+      "tools": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "description": "Get the current time.",
+          "input_schema": {
+            "properties": {},
+            "type": "object"
+          },
+          "name": "get_time"
+        }
+      ]
+    },
+    "path": "/v1/messages"
+  },
+  "providers/cerebras/tools": {
+    "body": {
+      "max_tokens": 400,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "What's the weather in Paris right now? Use Celsius.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-oss-120b",
+      "output_config": {
+        "effort": "low"
+      },
+      "thinking": {
+        "type": "adaptive"
+      },
+      "tools": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "description": "Get the current weather for a city.",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "city": {
+                "description": "City name, such as Paris",
+                "type": "string"
+              },
+              "unit": {
+                "enum": [
+                  "celsius",
+                  "fahrenheit"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "city"
+            ],
+            "type": "object"
+          },
+          "name": "get_weather"
+        }
+      ]
+    },
+    "path": "/v1/messages"
+  },
+  "providers/cerebras/tools-with-response-format": {
+    "message": "`json_object output` is not supported by Anthropic Messages. Anthropic has no JSON mode without a schema. Send a JSON schema (structured outputs) instead.",
+    "param": "response_format",
+    "unsupported": "json_object output"
+  },
+  "providers/cerebras/unknown-model": {
+    "body": {
+      "max_tokens": 100,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Say hello in two words.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "no-such-model"
+    },
+    "path": "/v1/messages"
+  },
+  "providers/cerebras/user-hints": {
+    "message": "`service_tier` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "service_tier"
+  },
+  "providers/cerebras/verbosity-field": {
+    "message": "`verbosity` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "verbosity"
+  },
   "providers/cohere/assistant-prefill": {
     "body": {
       "max_tokens": 4096,

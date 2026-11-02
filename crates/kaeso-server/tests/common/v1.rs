@@ -78,6 +78,20 @@ pub async fn env_hooked(
     limits: Option<Arc<dyn Limits>>,
     extra: Option<&[(&str, &str)]>,
 ) -> Env {
+    let sink = capture.clone().map(|c| c as Arc<dyn Sink>);
+    env_with(capture, limits, sink, extra).await
+}
+
+pub async fn env_sunk(sink: Arc<dyn Sink>, extra: Option<&[(&str, &str)]>) -> Env {
+    env_with(None, None, Some(sink), extra).await
+}
+
+async fn env_with(
+    capture: Option<Arc<Capture>>,
+    limits: Option<Arc<dyn Limits>>,
+    sink: Option<Arc<dyn Sink>>,
+    extra: Option<&[(&str, &str)]>,
+) -> Env {
     let s = TestServices::start().await;
     let mock = MockProvider::start().await;
     let names: Vec<String> = PROVIDERS
@@ -89,7 +103,6 @@ pub async fn env_hooked(
         .map(|name| (name.as_str(), mock.base_url.as_str()))
         .collect();
     settings.extend_from_slice(extra.unwrap_or(&[]));
-    let sink = capture.clone().map(|c| c as Arc<dyn Sink>);
     let app = App::start_hooked(&s, &settings, limits, sink).await;
     let capture = capture.unwrap_or_default();
     let owner = app.setup().await;

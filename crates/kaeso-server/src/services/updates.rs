@@ -830,6 +830,7 @@ pub enum Auto {
     CheckFailed,
     UpdaterNotReady,
     Busy,
+    BrokeBefore(String),
     Started(String),
     Failed(String),
 }
@@ -844,10 +845,22 @@ impl Auto {
             Auto::CheckFailed => "update window: releases couldn't be fetched".to_owned(),
             Auto::UpdaterNotReady => "update window: the updater isn't ready".to_owned(),
             Auto::Busy => "update window: an update already runs".to_owned(),
+            Auto::BrokeBefore(version) => {
+                format!("update window: the last update to {version} didn't end well")
+            }
             Auto::Started(version) => format!("update window: updating to {version}"),
             Auto::Failed(version) => format!("update window: the update to {version} didn't start"),
         }
     }
+}
+
+// An update that rolled back or left Kaeso half-switched would do the same in every window, so
+// the window leaves that release to an admin, whoever started the update; a newer one goes ahead.
+fn broke(state: &str) -> bool {
+    matches!(
+        JobState::parse(state),
+        Some(JobState::RolledBack | JobState::RollbackFailed | JobState::NeedsAttention)
+    )
 }
 
 pub async fn auto_update(state: &AppState) -> Result<Auto, StoreError> {
@@ -860,15 +873,20 @@ pub async fn auto_update(state: &AppState) -> Result<Auto, StoreError> {
     let Some(start) = schedule(&settings, &timezone).window(now) else {
         return Ok(Auto::NotDue);
     };
-    if !updates::claim_window(&state.pg, start).await? {
+    if settings.auto_window_at.is_some_and(|at| at >= start) {
         return Ok(Auto::NotDue);
     }
     if settings
         .last_success_at
         .is_none_or(|at| now - at > FRESH_FOR_AUTO)
-        && let Checked::Failed(_) = check(state, Trigger::Schedule).await?
     {
-        return Ok(Auto::CheckFailed);
+        // The window is tried every minute until an update starts, so a failed check waits its turn.
+        if next_check(&settings).is_some_and(|at| now < at) {
+            return Ok(Auto::CheckFailed);
+        }
+        if let Checked::Failed(_) = check(state, Trigger::Schedule).await? {
+            return Ok(Auto::CheckFailed);
+        }
     }
     let settings = updates::settings(&state.pg).await?;
     let releases = known(updates::releases(&state.pg).await?);
@@ -877,6 +895,12 @@ pub async fn auto_update(state: &AppState) -> Result<Auto, StoreError> {
     };
     if plan.manual.is_some() {
         return Ok(Auto::Manual);
+    }
+    let to = plan.target.version.to_string();
+    if let Some(last) = updates::last_job_to(&state.pg, &to).await?
+        && broke(&last.state)
+    {
+        return Ok(Auto::BrokeBefore(to));
     }
     let Some(client) = updater::of(state) else {
         return Ok(Auto::UpdaterNotReady);
@@ -890,10 +914,12 @@ pub async fn auto_update(state: &AppState) -> Result<Auto, StoreError> {
         Ok(status) if updater::speaks(&status, required) && status.docker => {}
         _ => return Ok(Auto::UpdaterNotReady),
     }
-    let to = plan.target.version.to_string();
     let from = running().to_string();
     let id = UpdateId::new();
     let mut tx = state.pg.begin().await?;
+    if !updates::claim_window(&mut *tx, start).await? {
+        return Ok(Auto::NotDue);
+    }
     let started = updates::start_job(
         &mut *tx,
         &NewJob {

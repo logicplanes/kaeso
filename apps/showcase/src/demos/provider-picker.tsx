@@ -6,6 +6,7 @@ const providers: ProviderPickerOption[] = [
   { id: "openai", name: "OpenAI", connected: true, hint: "2 keys" },
   { id: "anthropic", name: "Anthropic", connected: true, hint: "1 key" },
   { id: "alibaba", name: "QwenCloud" },
+  { id: "cerebras", name: "Cerebras" },
   { id: "cohere", name: "Cohere" },
   { id: "deepseek", name: "DeepSeek" },
   { id: "groq", name: "Groq" },

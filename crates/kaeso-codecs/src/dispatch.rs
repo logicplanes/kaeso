@@ -4,6 +4,7 @@ use kaeso_kpp::{
 };
 
 use crate::anthropic_messages::AnthropicMessages;
+use crate::limits::Checked;
 use crate::openai_chat::OpenAiChat;
 use crate::openai_embeddings::OpenAiEmbeddings;
 use crate::openai_responses::OpenAiResponses;
@@ -41,6 +42,22 @@ pub fn decode_request(
     headers: &HeaderList,
 ) -> Result<Request, KppError> {
     dispatch!(dialect, decode_request(kind, body, headers))?
+}
+
+/// Decodes a request body [`Checked::new`] already checked, without counting it again.
+pub fn decode_checked_request<B: AsRef<[u8]>>(
+    kind: RequestKind,
+    checked: &Checked<B>,
+    headers: &HeaderList,
+) -> Result<Request, KppError> {
+    let body = checked.body().as_ref();
+    match checked.dialect() {
+        DialectId::AnthropicMessages => AnthropicMessages::decode_checked(kind, body, headers),
+        DialectId::OpenAiChat => OpenAiChat::decode_checked(kind, body, headers),
+        DialectId::OpenAiResponses => OpenAiResponses::decode_checked(kind, body, headers),
+        DialectId::OpenAiEmbeddings => OpenAiEmbeddings::decode_checked(kind, body, headers),
+        other => Err(no_codec(other)),
+    }
 }
 
 pub fn encode_response(

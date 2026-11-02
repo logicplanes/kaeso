@@ -238,6 +238,17 @@ describe("platform keys", () => {
     expect(requests("POST", "orgs/:org/platform-keys/opk_terraform/rotate").map((r) => r.body)).toEqual([{ grace_hours: 168, expires_in_days: 90 }]);
   });
 
+  it("asks to enable a disabled platform key before rotating it", async () => {
+    signedIn();
+    on("GET", "orgs/:org/platform-keys", paged([platformKey({ state: "disabled" })]));
+    const { user } = await renderApp(PATH);
+    await user.click(await screen.findByRole("tab", { name: "All" }));
+    await user.click(await screen.findByRole("button", { name: "Actions for Terraform" }));
+    const rotate = await screen.findByRole("menuitem", { name: /Rotate/ });
+    expect(rotate).toHaveAttribute("aria-disabled", "true");
+    expect(rotate).toHaveTextContent("Enable the key before you rotate it.");
+  });
+
   it("closes the rotation without rotating, and asks before closing the new key", async () => {
     signedIn();
     on("GET", "orgs/:org/platform-keys", paged([platformKey()]));

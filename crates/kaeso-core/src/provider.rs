@@ -591,6 +591,36 @@ pub const PROVIDERS: &[Provider] = &[
         responses: ResponsesProfile::compatible("QwenCloud"),
         account: None,
     },
+    Provider {
+        id: "cerebras",
+        name: "Cerebras",
+        key_page: KeyPage {
+            url: "https://cloud.cerebras.ai",
+            label: "API Keys",
+        },
+        key_prefix: Some("csk-"),
+        default_base_url: "https://api.cerebras.ai",
+        auth: AuthStyle::Bearer,
+        generation: DialectId::OpenAiChat,
+        count_tokens: None,
+        embeddings: None,
+        dialects: &[DialectId::OpenAiChat],
+        refused_key_messages: &[],
+        context_window_messages: &[],
+        reasoning_beyond_output_limit: false,
+        end_user_limit: None,
+        chat: ChatProfile::compatible("Cerebras")
+            .system_role()
+            .leading_system_only()
+            .end_user_as_user()
+            .without_prefill()
+            .with_tool_parameters()
+            .reasoning_fields(&["reasoning"])
+            .replay_reasoning_as_read()
+            .refusing_in_messages(&["refusal"]),
+        responses: ResponsesProfile::compatible("Cerebras"),
+        account: None,
+    },
 ];
 
 const _: () = {
@@ -870,7 +900,7 @@ mod tests {
         assert!(provider("gemini").is_none());
         assert_eq!(
             ids(),
-            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba"
+            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras"
         );
     }
 
@@ -1216,6 +1246,51 @@ mod tests {
     }
 
     #[test]
+    fn cerebras_gets_each_request_it_was_recorded_refusing_in_a_form_it_takes() {
+        let cerebras = |request: &str| {
+            sent_with_profile(
+                "cerebras",
+                &format!("providers/cerebras/requests/{request}"),
+            )
+        };
+        for (request, param) in [
+            ("prefill", "messages[1]"),
+            ("assistant-refusal", "messages[1].refusal"),
+        ] {
+            assert_eq!(cerebras(request).unwrap_err(), param, "{request}");
+        }
+        let developer = cerebras("developer-role-qwen").unwrap();
+        assert_eq!(developer["messages"][0]["role"], "system");
+        let end_user = cerebras("safety-identifier-field").unwrap();
+        assert!(end_user.get("safety_identifier").is_none(), "{end_user}");
+        assert_eq!(end_user["user"], "8f14e45fceea167a5a36dedd4bea2543");
+        let tool = cerebras("tool-without-parameters").unwrap();
+        assert_eq!(
+            tool["tools"][0]["function"]["parameters"],
+            serde_json::json!({"type": "object", "properties": {}})
+        );
+        let replayed = cerebras("reasoning-content-sent-back").unwrap();
+        assert_eq!(
+            replayed["messages"][1]["reasoning"],
+            "The user wants one number; 7 is a common pick."
+        );
+        assert!(replayed["messages"][1].get("reasoning_content").is_none());
+        for kept in [
+            "basic",
+            "logprobs",
+            "sampling",
+            "user-hints",
+            "logit-bias-honoured",
+            "structured-output",
+            "image",
+            "reasoning-sent-back",
+            "system-mid-conversation",
+        ] {
+            cerebras(kept).unwrap_or_else(|p| panic!("{kept}: {p}"));
+        }
+    }
+
+    #[test]
     fn only_mistral_reads_its_context_window_message_as_context_too_long() {
         let message =
             "Prompt contains 65673 tokens, too large for model with 32768 maximum context length";
@@ -1395,7 +1470,8 @@ mod tests {
                 "cohere",
                 "ollama-cloud",
                 "moonshotai",
-                "alibaba"
+                "alibaba",
+                "cerebras"
             ]
         );
         assert_eq!(

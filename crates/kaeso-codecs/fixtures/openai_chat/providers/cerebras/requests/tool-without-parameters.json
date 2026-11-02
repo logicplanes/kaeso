@@ -1,0 +1,20 @@
+{
+  "model": "gpt-oss-120b",
+  "messages": [
+    {
+      "role": "user",
+      "content": "What time is it? Use the tool."
+    }
+  ],
+  "reasoning_effort": "low",
+  "max_completion_tokens": 300,
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_time",
+        "description": "Get the current time."
+      }
+    }
+  ]
+}

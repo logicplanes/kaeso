@@ -14,6 +14,10 @@ const PROFILES: &[(&str, ChatProfile)] = &[
         ChatProfile::compatible("QwenCloud").reasoning_fields(&["reasoning_content"]),
     ),
     (
+        "cerebras",
+        ChatProfile::compatible("Cerebras").reasoning_fields(&["reasoning"]),
+    ),
+    (
         "deepseek",
         ChatProfile::compatible("DeepSeek").reasoning_fields(&["reasoning_content"]),
     ),
@@ -182,6 +186,10 @@ fn a_reasoning_field_is_a_reasoning_block_before_the_answer() {
             "recorded-reasoning-sent-back",
             "reasoning_content",
         ),
+        ("cerebras", "recorded-basic", "reasoning"),
+        ("cerebras", "recorded-reasoning", "reasoning"),
+        ("cerebras", "recorded-reasoning-sent-back", "reasoning"),
+        ("cerebras", "recorded-system-mid-conversation", "reasoning"),
         (
             "deepseek",
             "recorded-thinking-reasoning-content",
@@ -246,6 +254,29 @@ fn a_reasoning_field_is_a_reasoning_block_before_the_answer() {
         );
         assert_eq!(responses["output"][1]["type"], "message", "{name}");
     }
+}
+
+#[test]
+fn cerebras_reasoning_comes_before_its_tool_call_in_replies_and_streams() {
+    let resp = reply(
+        "cerebras",
+        &recorded("responses", "json", "cerebras", "recorded-tools"),
+    );
+    assert!(
+        matches!(&resp.blocks[0], Block::Reasoning(r) if r.text == ["We need to call get_weather."]),
+        "{:?}",
+        resp.blocks
+    );
+    assert!(
+        matches!(&resp.blocks[1], Block::ToolCall(c) if c.name == "get_weather"),
+        "{:?}",
+        resp.blocks
+    );
+    let bytes = recorded("streams", "sse", "cerebras", "recorded-stream-tools");
+    let got = shape(&stream("cerebras", &bytes));
+    assert_eq!(got.reasoning, streamed_field(&bytes, "reasoning"));
+    assert_eq!(got.order[..2], ["reasoning 0", "stop 0"]);
+    assert_eq!(got.order[2], "tool call 1");
 }
 
 #[test]
@@ -437,6 +468,19 @@ fn streamed_reasoning_fields_are_one_reasoning_block_that_ends_before_the_answer
             "alibaba",
             "recorded-thinking-stream",
             "reasoning_content",
+            answered,
+        ),
+        ("cerebras", "recorded-stream", "reasoning", answered),
+        (
+            "cerebras",
+            "recorded-stream-json-object",
+            "reasoning",
+            answered,
+        ),
+        (
+            "cerebras",
+            "recorded-stream-reasoning",
+            "reasoning",
             answered,
         ),
         (

@@ -139,9 +139,9 @@ The updater doesn't replace itself or Caddy while it runs. The next `docker comp
 
 Under **How updates install**, choose **Automatically**, then set the update window: **Daily**, or **Weekly** on a day, at an hour. The hour is in the install's time zone, set under **General**, daylight saving time included. The window stays open for an hour, and the page shows when the next one opens.
 
-In the window, the gateway looks for releases if it hasn't in the last hour. It then updates to the newest release the updater installs, exactly as **Update to …** would. A new major version or a release with steps by hand waits for you.
+In the window, the gateway looks for releases if it hasn't in the last hour. It then updates to the newest release the updater installs, exactly as **Update to …** would. A new major version or a release with steps by hand waits for you. So does a release whose last update ended **Rolled back**, **Rollback failed** or **Needs attention**, whoever started it: update to it yourself once you've found the cause, or let the window install the next release.
 
-A window the gateway doesn't run through passes, and the next one counts. The history and the audit log record each automatic update without a person.
+Until an update starts, the gateway tries again every minute while the window is open, so a release list that can't be fetched or an updater that isn't ready only delays it. A window that closes without an update passes, as does one the gateway doesn't run through, and the next one counts. The history and the audit log record each automatic update without a person.
 
 ### Results
 

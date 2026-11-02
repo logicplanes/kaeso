@@ -1,0 +1,18 @@
+data: {"id":"chatcmpl-6TnHeldToolCall0x1","object":"chat.completion.chunk","created":1791641600,"model":"gpt-4.1-2025-04-14","system_fingerprint":"fp_e41873063e","choices":[{"index":0,"delta":{"role":"assistant","content":null},"logprobs":null,"finish_reason":null}]}
+
+data: {"id":"chatcmpl-6TnHeldToolCall0x1","object":"chat.completion.chunk","created":1791641600,"model":"gpt-4.1-2025-04-14","system_fingerprint":"fp_e41873063e","choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"type":"function","function":{"arguments":""}}]},"logprobs":null,"finish_reason":null}]}
+
+data: {"id":"chatcmpl-6TnHeldToolCall0x1","object":"chat.completion.chunk","created":1791641600,"model":"gpt-4.1-2025-04-14","system_fingerprint":"fp_e41873063e","choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"arguments":"{\"loc"}}]},"logprobs":null,"finish_reason":null}]}
+
+data: {"id":"chatcmpl-6TnHeldToolCall0x1","object":"chat.completion.chunk","created":1791641600,"model":"gpt-4.1-2025-04-14","system_fingerprint":"fp_e41873063e","choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"arguments":"ation\":"}}]},"logprobs":null,"finish_reason":null}]}
+
+data: {"id":"chatcmpl-6TnHeldToolCall0x1","object":"chat.completion.chunk","created":1791641600,"model":"gpt-4.1-2025-04-14","system_fingerprint":"fp_e41873063e","choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"arguments":"\"Oslo\""}}]},"logprobs":null,"finish_reason":null}]}
+
+data: {"id":"chatcmpl-6TnHeldToolCall0x1","object":"chat.completion.chunk","created":1791641600,"model":"gpt-4.1-2025-04-14","system_fingerprint":"fp_e41873063e","choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"arguments":"}"}}]},"logprobs":null,"finish_reason":null}]}
+
+data: {"id":"chatcmpl-6TnHeldToolCall0x1","object":"chat.completion.chunk","created":1791641600,"model":"gpt-4.1-2025-04-14","system_fingerprint":"fp_e41873063e","choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"id":"call_Ht4mQe2mVb9xRc4nWk1pZs8y","function":{"name":"get_weather"}}]},"logprobs":null,"finish_reason":null}]}
+
+data: {"id":"chatcmpl-6TnHeldToolCall0x1","object":"chat.completion.chunk","created":1791641600,"model":"gpt-4.1-2025-04-14","system_fingerprint":"fp_e41873063e","choices":[{"index":0,"delta":{},"logprobs":null,"finish_reason":"tool_calls"}]}
+
+data: [DONE]
+

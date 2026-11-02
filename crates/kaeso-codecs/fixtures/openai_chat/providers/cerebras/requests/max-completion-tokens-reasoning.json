@@ -1,0 +1,11 @@
+{
+  "model": "gpt-oss-120b",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Explain why the sky is blue."
+    }
+  ],
+  "reasoning_effort": "medium",
+  "max_completion_tokens": 20
+}

@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::collections::HashSet;
 
 use kaeso_kpp::{DialectId, Extras, HEADER_PREFIX, RawJson};
@@ -173,15 +174,13 @@ fn diff_children(
     out: &mut Overrides,
 ) {
     let text = actual.get().trim_start();
-    let canon_obj = match canon {
-        None => Some(Node::obj()),
-        Some(n) => {
-            let mut n = n.clone();
-            n.expand();
-            matches!(n, Node::Obj(_)).then_some(n)
-        }
+    let empty = Node::obj();
+    let expanded = canon.map(Node::expanded);
+    let canon_obj = match &expanded {
+        None => Some(&empty),
+        Some(n) => matches!(n.as_ref(), Node::Obj(_)).then_some(n.as_ref()),
     };
-    if let (Some(Node::Obj(centries)), Some(aentries)) = (&canon_obj, entries_of(actual)) {
+    if let (Some(Node::Obj(centries)), Some(aentries)) = (canon_obj, entries_of(actual)) {
         let simple_keys = aentries.iter().all(|(k, _)| plain_key(k))
             && centries.iter().all(|(k, _)| !k.contains('.'));
         if simple_keys {
@@ -214,11 +213,8 @@ fn diff_children(
             return;
         }
     }
-    if let Some(Node::Arr(citems)) = canon.map(|n| {
-        let mut n = n.clone();
-        n.expand();
-        n
-    }) && text.starts_with('[')
+    if let Some(Node::Arr(citems)) = expanded.as_deref()
+        && text.starts_with('[')
         && let Ok(aitems) = serde_json::from_str::<Vec<&RawValue>>(actual.get())
         && aitems.len() == citems.len()
     {
@@ -232,7 +228,34 @@ fn diff_children(
     diff_whole(canon, actual, path, out);
 }
 
+// The text of a string leaf, borrowed where it has no escapes: the long leaves of an input item
+// (`encrypted_content`, a call's output) compare without copying either side into a `Value`.
+fn leaf_str(raw: &str) -> Option<Cow<'_, str>> {
+    if !raw.trim_start().starts_with('"') {
+        return None;
+    }
+    match serde_json::from_str::<&str>(raw) {
+        Ok(s) => Some(Cow::Borrowed(s)),
+        Err(_) => serde_json::from_str::<String>(raw).ok().map(Cow::Owned),
+    }
+}
+
+fn same_string(canon: &Node, actual: &RawValue) -> bool {
+    let canon = match canon {
+        Node::Val(Value::String(s)) => Cow::Borrowed(s.as_str()),
+        Node::Raw(r) => match leaf_str(r.get()) {
+            Some(s) => s,
+            None => return false,
+        },
+        _ => return false,
+    };
+    leaf_str(actual.get()).is_some_and(|a| a == canon)
+}
+
 fn diff_whole(canon: Option<&Node>, actual: &RawValue, path: &[String], out: &mut Overrides) {
+    if canon.is_some_and(|c| same_string(c, actual)) {
+        return;
+    }
     let canon_value = canon.and_then(|c| c.to_value().ok());
     let equal = match (&canon_value, serde_json::from_str::<Value>(actual.get())) {
         (Some(c), Ok(a)) => *c == a,
@@ -341,55 +364,59 @@ pub(crate) fn apply(
             rel.split('.').map(str::to_owned).collect()
         }
     };
-    let pristine = node.clone();
-    let fresh = |key: &str, segs: &[String]| -> bool {
+    let fresh = |node: &Node, key: &str, segs: &[String]| -> bool {
         // Decoding records no path deeper than MAX_DEPTH, and the Node walks recurse once
         // per segment: a deeper key, only ever built by hand, would overflow the stack.
         if segs.len() > MAX_DEPTH {
             return false;
         }
         let refs: Vec<&str> = segs.iter().map(String::as_str).collect();
-        let now = pristine.value_at(&refs);
+        let now = node.value_at(&refs);
         match (canon.and_then(|m| m.get(key)), now) {
             (None, None) => true,
             (Some(then), Some(now)) => values_equal(then, &now),
             _ => false,
         }
     };
-    if let Some(Value::Array(list)) = extras.form.get(UNSET) {
-        for p in list.iter().filter_map(Value::as_str) {
-            if let Some(rel) = select(p) {
-                let segs = segs_of(&rel);
-                if fresh(p, &segs) {
-                    let refs: Vec<&str> = segs.iter().map(String::as_str).collect();
-                    node.unset_path(&refs);
-                }
-            }
-        }
+    let unset = match extras.form.get(UNSET) {
+        Some(Value::Array(list)) => list.iter().filter_map(Value::as_str).collect(),
+        _ => Vec::new(),
+    };
+    let set = match extras.form.get(SET) {
+        Some(Value::Object(map)) => map.iter().collect(),
+        _ => Vec::new(),
+    };
+    let change = |key: &str| {
+        select(key)
+            .map(|rel| segs_of(&rel))
+            .filter(|segs| fresh(node, key, segs))
+    };
+    // Every record is checked against the node as the canonical form built it, before any is
+    // applied, so the checks need no copy of the node.
+    let unset: Vec<Vec<String>> = unset.into_iter().filter_map(change).collect();
+    let fields: Vec<(Vec<String>, &RawJson)> = extras
+        .fields
+        .iter()
+        .filter(|(key, _)| !key.starts_with(HEADER_PREFIX))
+        .filter_map(|(key, raw)| change(key).map(|segs| (segs, raw)))
+        .collect();
+    let set: Vec<(Vec<String>, &Value)> = set
+        .into_iter()
+        .filter_map(|(key, value)| change(key).map(|segs| (segs, value)))
+        .collect();
+    for segs in &unset {
+        node.unset_path(&refs(segs));
     }
-    for (key, raw) in &extras.fields {
-        if key.starts_with(HEADER_PREFIX) {
-            continue;
-        }
-        if let Some(rel) = select(key) {
-            let segs = segs_of(&rel);
-            if fresh(key, &segs) {
-                let refs: Vec<&str> = segs.iter().map(String::as_str).collect();
-                node.set_path(&refs, Node::raw(raw));
-            }
-        }
+    for (segs, raw) in fields {
+        node.set_path(&refs(&segs), Node::raw(raw));
     }
-    if let Some(Value::Object(map)) = extras.form.get(SET) {
-        for (key, value) in map {
-            if let Some(rel) = select(key) {
-                let segs = segs_of(&rel);
-                if fresh(key, &segs) {
-                    let refs: Vec<&str> = segs.iter().map(String::as_str).collect();
-                    node.set_path(&refs, Node::Val(value.clone()));
-                }
-            }
-        }
+    for (segs, value) in set {
+        node.set_path(&refs(&segs), Node::Val(value.clone()));
     }
+}
+
+fn refs(segs: &[String]) -> Vec<&str> {
+    segs.iter().map(String::as_str).collect()
 }
 
 #[cfg(test)]
@@ -445,6 +472,47 @@ mod tests {
         assert_eq!(set["store"], Value::Null);
         assert_eq!(set["text.format.type"], "text");
         assert!(!e.fields.contains_key("temperature"), "0 equals 0.0");
+    }
+
+    #[test]
+    fn string_leaves_compare_by_their_text_however_they_are_escaped() {
+        let canon = Node::obj()
+            .with("output", Node::str("A \"quoted\" line\n"))
+            .with(
+                "encrypted_content",
+                Node::raw(&RawJson::from_string("\"gAAA\"".to_owned()).unwrap()),
+            );
+        let same = Overrides::diff(
+            &canon,
+            &raw(r#"{"output":"\u0041 \"quoted\" line\n","encrypted_content":"gAAA"}"#),
+            &[],
+        );
+        assert!(same.set.is_empty() && same.unset.is_empty(), "{same:?}");
+        let other = Overrides::diff(
+            &canon,
+            &raw(r#"{"output":"B","encrypted_content":"gBBB"}"#),
+            &[],
+        );
+        let paths: Vec<&str> = other.set.iter().map(|(p, _, _)| p.as_str()).collect();
+        assert_eq!(paths, ["output", "encrypted_content"]);
+        assert_eq!(other.set[0].2, Some(Value::from("A \"quoted\" line\n")));
+    }
+
+    #[test]
+    fn every_record_is_checked_against_the_node_before_any_is_applied() {
+        let mut e = Extras::new(D);
+        e.form.insert(UNSET.to_owned(), serde_json::json!(["a"]));
+        e.form.insert(
+            CANON.to_owned(),
+            serde_json::json!({"a": {"b": 1}, "a.b": 1}),
+        );
+        e.fields.insert(
+            "a.b".to_owned(),
+            RawJson::from_string("2".to_owned()).unwrap(),
+        );
+        let mut n = Node::obj().with("a", Node::obj().with("b", Node::int(1)));
+        apply(&e, D, "", &[], &mut n);
+        assert_eq!(n.to_value().unwrap(), serde_json::json!({"a": {"b": 2}}));
     }
 
     #[test]

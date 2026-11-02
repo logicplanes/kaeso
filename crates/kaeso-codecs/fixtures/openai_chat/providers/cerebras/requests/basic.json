@@ -1,0 +1,15 @@
+{
+  "model": "gpt-oss-120b",
+  "messages": [
+    {
+      "role": "developer",
+      "content": "Answer in one short sentence."
+    },
+    {
+      "role": "user",
+      "content": "What is the capital of France?"
+    }
+  ],
+  "reasoning_effort": "low",
+  "max_completion_tokens": 300
+}

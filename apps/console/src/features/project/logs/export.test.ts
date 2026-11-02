@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { setFormatTimeZone } from "@logicplanes/kaeso-ui/format";
 import { apply, load } from "~/i18n";
 import { exportFilters, exportRequest, exportSummary } from "./export";
 
@@ -90,11 +91,12 @@ describe("exportRequest", () => {
     expect(r.file).toEqual({ name: "kaeso-logs-proj_1.csv", description: "CSV", mime: "text/csv", extension: "csv" });
   });
 
-  it("keeps whole UTC days and asks for content only in JSON Lines", () => {
+  it("keeps whole days in the install's time zone and asks for content only in JSON Lines", () => {
+    setFormatTimeZone("Europe/Berlin");
     const r = exportRequest("org_1", "proj_1", { from: "2026-08-14", to: "2026-10-13" }, "content", now);
     expect(Object.fromEntries(new URL(r.url, "http://x").searchParams)).toEqual({
-      from: "2026-08-14T00:00:00Z",
-      to: "2026-10-14T00:00:00.000Z",
+      from: "2026-08-13T22:00:00.000Z",
+      to: "2026-10-13T22:00:00.000Z",
       format: "jsonl",
       include_content: "true",
     });

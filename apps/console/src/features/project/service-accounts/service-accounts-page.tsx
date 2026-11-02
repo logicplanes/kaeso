@@ -6,6 +6,7 @@ import { ScopeTabs } from "~/kaeso/scope-tabs";
 import { toast } from "~/shell/toast";
 import { formatDate } from "@logicplanes/kaeso-ui/format";
 import { api, data } from "~/api/client";
+import { fieldError } from "~/api/field-error";
 import { allKeysQuery } from "~/api/queries/keys";
 import { serviceAccountsQuery } from "~/api/queries/members";
 import { useApiMutation } from "~/auth/mutation";
@@ -183,6 +184,7 @@ function CreateServiceAccountDialog({
       submitLabel={t("project.serviceAccounts.create", "Create service account")}
       submitting={create.isPending}
       onSubmit={() => name.trim() && create.mutate()}
+      refusedStep={create.error?.param === "name" ? "name" : undefined}
       size="md"
       steps={[
         {
@@ -195,7 +197,11 @@ function CreateServiceAccountDialog({
               label={common.name()}
               placeholder={t("project.serviceAccounts.nameExample", "checkout-production")}
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => {
+                setName(e.target.value);
+                if (create.isError) create.reset();
+              }}
+              error={fieldError(create.error, "name")}
               autoFocus
               maxLength={100}
             />

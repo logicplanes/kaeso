@@ -138,7 +138,7 @@ const ACTION_LABELS: Record<string, () => string> = {
   "user.sign_in_link": () => t("format.audit.action.userSignInLink", "Sign-in link printed on the command line"),
   "user.sso_link": () => t("format.audit.action.userSsoLink", "Linked to single sign-on"),
   "user.sso_unlink": () => t("format.audit.action.userSsoUnlink", "Unlinked from single sign-on"),
-  "user.sessions_revoke": () => t("format.audit.action.userSessionsRevoke", "Every session ended"),
+  "user.sessions_revoke": () => t("format.audit.action.userSessionsRevoke", "Sessions ended"),
   "user.notifications": () => t("format.audit.action.userNotifications", "Notification settings changed"),
   "user.deactivate": () => t("format.audit.action.userDeactivate", "User deactivated"),
   "user.reactivate": () => t("format.audit.action.userReactivate", "User reactivated"),

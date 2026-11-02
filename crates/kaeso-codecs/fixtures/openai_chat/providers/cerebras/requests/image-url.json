@@ -1,0 +1,22 @@
+{
+  "model": "qwen-3.8-27b",
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "What is in this image?"
+        },
+        {
+          "type": "image_url",
+          "image_url": {
+            "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Gfp-wisconsin-madison-the-nature-boardwalk.jpg/320px-Gfp-wisconsin-madison-the-nature-boardwalk.jpg"
+          }
+        }
+      ]
+    }
+  ],
+  "reasoning_effort": "none",
+  "max_completion_tokens": 50
+}

@@ -1,0 +1,38 @@
+{
+  "id": "chatcmpl-a51fa45b-7e9e-454e-8038-01cc78abc657",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "Paris is the capital of France.",
+        "reasoning": "Need short sentence answer.",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1793652349,
+  "model": "gpt-oss-120b",
+  "system_fingerprint": "fp_6fdb8c40f91e0c236df5",
+  "object": "chat.completion",
+  "usage": {
+    "total_tokens": 109,
+    "completion_tokens": 22,
+    "completion_tokens_details": {
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0,
+      "reasoning_tokens": 5
+    },
+    "prompt_tokens": 87,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    }
+  },
+  "time_info": {
+    "created": 1793652349.8108187,
+    "queue_time": 0.0031349150000000003,
+    "prompt_time": 0.001489698,
+    "completion_time": 0.009781321,
+    "total_time": 0.01695704460144043
+  }
+}

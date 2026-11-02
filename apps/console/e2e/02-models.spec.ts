@@ -10,7 +10,7 @@ const row = (page: Page, text: string, grid = "Models") =>
     .filter({ has: page.getByText(text, { exact: true }) });
 const hit = (page: Page, model: string) =>
   page
-    .getByRole("table", { name: "Models in KPMR" })
+    .getByRole("grid", { name: "Models in KPMR" })
     .getByRole("row")
     .filter({ has: page.getByText(model, { exact: true }) });
 
@@ -83,7 +83,7 @@ test("models are picked from the keyboard: Space selects, a row's review button 
   const search = dialog.getByRole("searchbox", { name: "Search models" });
   await expect(search).toBeFocused();
   await page.keyboard.type("gpt-4.1");
-  const hits = dialog.getByRole("table", { name: "Models in KPMR" }).getByRole("rowgroup").last().getByRole("row");
+  const hits = dialog.getByRole("grid", { name: "Models in KPMR" }).getByRole("rowgroup").last().getByRole("row");
   await expect(hits).toHaveCount(2);
   await expect(dialog.getByText("Requests to these models fail until someone adds a key for OpenAI on the Providers page.")).toBeVisible();
   // A Tab pressed as the dialog's resize animation ends can drop focus to the first field.

@@ -267,6 +267,22 @@ pub async fn latest_job(db: impl PgExecutor<'_>) -> Result<Option<JobRow>, Store
     .await?)
 }
 
+pub async fn last_job_to(
+    db: impl PgExecutor<'_>,
+    version: &str,
+) -> Result<Option<JobRow>, StoreError> {
+    Ok(sqlx::query_as!(
+        JobRow,
+        "SELECT j.id, j.from_version, j.to_version, j.state, j.step, j.reason, j.detail, \
+         j.started_by, u.name AS started_by_name, j.automatic, j.started_at, j.last_contact_at, j.finished_at \
+         FROM update_jobs j LEFT JOIN users u ON u.id = j.started_by WHERE j.to_version = $1 \
+         ORDER BY j.started_at DESC, j.id DESC LIMIT 1",
+        version
+    )
+    .fetch_optional(db)
+    .await?)
+}
+
 pub async fn jobs(
     db: impl PgExecutor<'_>,
     after: Option<Uuid>,

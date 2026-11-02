@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button, Empty, NumberInput, SettingsGroup, SettingsRow, SettingsSection } from "@logicplanes/kaeso-ui";
 import { api, data } from "~/api/client";
 import type { SettingsView } from "~/api/generated/types";
@@ -32,10 +32,7 @@ export function InstanceLoggingPage() {
       ) : !s ? (
         <SettingsLoading rows={4} />
       ) : (
-        <Retention
-          key={`${s.metadata_retention_days}-${s.content_retention_days}-${s.max_metadata_retention_days}-${s.max_content_retention_days}`}
-          settings={s}
-        />
+        <Retention settings={s} />
       )}
     </InstancePage>
   );
@@ -44,21 +41,22 @@ export function InstanceLoggingPage() {
 type RetentionField = "metadata_retention_days" | "content_retention_days" | "max_metadata_retention_days" | "max_content_retention_days";
 
 function Retention({ settings }: { settings: SettingsView }) {
-  const [draft, setDraft] = useState<Record<RetentionField, string>>({
-    metadata_retention_days: String(settings.metadata_retention_days),
-    content_retention_days: String(settings.content_retention_days),
-    max_metadata_retention_days: String(settings.max_metadata_retention_days),
-    max_content_retention_days: String(settings.max_content_retention_days),
-  });
+  const queryClient = useQueryClient();
+  const [drafts, setDrafts] = useState<Partial<Record<RetentionField, string>>>({});
+  const draft = (field: RetentionField) => drafts[field] ?? String(settings[field]);
   const [saving, setSaving] = useState<RetentionField | null>(null);
   const save = useApiMutation({
     mutationFn: async (body: Partial<Record<RetentionField, number>>) => data(await api.PATCH("/platform/v1/instance/settings", { body })),
     invalidates: [["instance", "settings"]],
-    onSuccess: () => toast.success(t("instance.retentionSaved", "Retention saved")),
+    onSuccess: (saved, body) => {
+      queryClient.setQueryData(instanceSettingsQuery.queryKey, saved);
+      setDrafts((d) => Object.fromEntries(Object.entries(d).filter(([field]) => !(field in body))));
+      toast.success(t("instance.retentionSaved", "Retention saved"));
+    },
   });
-  const next = (field: RetentionField) => ({ ...settings, [field]: Number(draft[field]) });
+  const next = (field: RetentionField) => ({ ...settings, [field]: Number(draft(field)) });
   const reason = (field: RetentionField): string | undefined => {
-    const v = Number(draft[field]);
+    const v = Number(draft(field));
     const s = next(field);
     if (!Number.isInteger(v) || v < 1) return t("instance.wholeDays", "Enter whole days, at least 1");
     if (v === settings[field]) return t("instance.noChange", "No change to save");
@@ -77,8 +75,8 @@ function Retention({ settings }: { settings: SettingsView }) {
             aria-label={label}
             size="sm"
             integer
-            value={draft[field]}
-            onValueChange={(v) => setDraft((d) => ({ ...d, [field]: v }))}
+            value={draft(field)}
+            onValueChange={(v) => setDrafts((d) => ({ ...d, [field]: v }))}
             min="1"
             step="1"
             unit={t("instance.daysUnit", "days")}
@@ -92,7 +90,7 @@ function Retention({ settings }: { settings: SettingsView }) {
           loading={save.isPending && saving === field}
           onClick={() => {
             setSaving(field);
-            save.mutate({ [field]: Number(draft[field]) });
+            save.mutate({ [field]: Number(draft(field)) });
           }}
         >
           {t("common.save", "Save")}

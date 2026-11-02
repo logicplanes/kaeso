@@ -16,6 +16,7 @@ const D: &str = "openai_chat";
 pub(super) const REJECTED_REQUESTS: &[(&str, &str)] = &[
     ("input-audio-unsupported", "input_audio"),
     ("n-2", "n"),
+    ("providers/cerebras/n-above-one", "n"),
     ("providers/groq/n-above-one", "n"),
 ];
 
@@ -121,6 +122,7 @@ const FOREIGN_ERROR_BODIES: &[(&str, ErrorKind)] = &[
 ];
 
 const COHERE: &str = "providers/cohere/";
+const CEREBRAS: &str = "providers/cerebras/";
 
 pub(super) fn raw(s: &str) -> RawJson {
     RawJson::from_string(s.to_owned()).unwrap()
@@ -408,7 +410,11 @@ fn a_mistral_error_frame_in_a_stream_ends_it_with_mistrals_error() {
 #[test]
 fn every_error_fixture_round_trips_with_status_and_retry_after() {
     for (name, body) in fixtures(D, "errors", "json") {
-        if FOREIGN_ERROR_BODIES.iter().any(|(n, _)| *n == name) || name.starts_with(COHERE) {
+        // Cohere and Cerebras send no `error` object, so apps get their errors in OpenAI's shape.
+        if FOREIGN_ERROR_BODIES.iter().any(|(n, _)| *n == name)
+            || name.starts_with(COHERE)
+            || name.starts_with(CEREBRAS)
+        {
             continue;
         }
         let meta = sidecar(D, "errors", &name, "meta").unwrap();
@@ -470,6 +476,46 @@ fn cohere_error_bodies_reach_apps_with_cohere_message_and_status() {
         assert_eq!(out.status, status, "{name}");
         let sent: Value = serde_json::from_slice(&out.body).unwrap();
         assert_eq!(sent["error"]["message"], err.message.as_str(), "{name}");
+    }
+}
+
+#[test]
+fn cerebras_error_bodies_reach_apps_with_cerebras_message_param_and_status() {
+    let bodies: Vec<(String, Vec<u8>)> = fixtures(D, "errors", "json")
+        .into_iter()
+        .filter(|(n, _)| n.starts_with(CEREBRAS))
+        .collect();
+    assert_eq!(bodies.len(), 20);
+    for (name, body) in &bodies {
+        let meta = sidecar(D, "errors", name, "meta").unwrap();
+        let status = u16::try_from(meta["status"].as_u64().unwrap()).unwrap();
+        let headers = meta_headers(&meta);
+        let err = OpenAiChat::decode_error(status, &headers, body);
+        let original: Value = serde_json::from_slice(body).unwrap();
+        assert_eq!(err.message, original["message"].as_str().unwrap(), "{name}");
+        assert_eq!(err.param.as_deref(), original["param"].as_str(), "{name}");
+        assert_eq!(err.raw.as_ref(), Some(&original), "{name}");
+        let kind = match status {
+            401 => ErrorKind::Authentication,
+            404 => ErrorKind::NotFound,
+            429 => ErrorKind::RateLimited,
+            _ => ErrorKind::InvalidRequest,
+        };
+        assert_eq!(
+            (err.kind.clone(), err.status),
+            (kind, Some(status)),
+            "{name}"
+        );
+        let out = OpenAiChat::encode_error(&err);
+        assert_eq!(out.status, status, "{name}");
+        let sent: Value = serde_json::from_slice(&out.body).unwrap();
+        assert_eq!(sent["error"]["message"], original["message"], "{name}");
+        assert_eq!(sent["error"]["param"], original["param"], "{name}");
+        assert_eq!(
+            out.headers.get("retry-after"),
+            headers.get("retry-after"),
+            "{name}"
+        );
     }
 }
 

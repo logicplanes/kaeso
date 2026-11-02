@@ -2,6 +2,7 @@ import type { DateRangePreset } from "@logicplanes/kaeso-ui";
 import { formatISODate, parseISODate } from "@logicplanes/kaeso-ui/format";
 import { t } from "~/i18n";
 import { PERIODS, shiftDay, utcDay, type PeriodId } from "./period";
+import { dayKey } from "./zone";
 
 function periodName(id: PeriodId): string {
   switch (id) {
@@ -29,32 +30,38 @@ export function pickerDate(day: string): Date {
   return parseISODate(day) ?? new Date(y, m - 1, d);
 }
 
-export const afterToday = (d: Date, now = new Date()) => pickedDay(d) > utcDay(now);
+export const afterToday = (d: Date, now = new Date()) => pickedDay(d) > dayKey(now);
 
-const apiToday = () => utcDay(new Date());
+export const afterUtcToday = (d: Date, now = new Date()) => pickedDay(d) > utcDay(now);
+
 const days = (from: string, to: string) => ({ from: pickerDate(from), to: pickerDate(to) });
 
-const DAY_RANGES: { label: () => string; range: DateRangePreset["range"] }[] = [
-  { label: () => t("format.period.today", "Today"), range: () => days(apiToday(), apiToday()) },
-  { label: () => t("format.period.last7Days", "Last 7 days"), range: () => days(shiftDay(apiToday(), -6), apiToday()) },
-  { label: () => t("format.period.last30Days", "Last 30 days"), range: () => days(shiftDay(apiToday(), -29), apiToday()) },
-  { label: () => t("format.period.last90Days", "Last 90 days"), range: () => days(shiftDay(apiToday(), -89), apiToday()) },
-  { label: () => t("format.period.thisMonth", "This month"), range: () => days(`${apiToday().slice(0, 8)}01`, apiToday()) },
-  {
-    label: () => t("format.period.lastMonth", "Last month"),
-    range: () => {
-      const end = shiftDay(`${apiToday().slice(0, 8)}01`, -1);
-      return days(`${end.slice(0, 8)}01`, end);
+function dayPresets(today: () => string): DateRangePreset[] {
+  const ranges: { label: () => string; range: DateRangePreset["range"] }[] = [
+    { label: () => t("format.period.today", "Today"), range: () => days(today(), today()) },
+    { label: () => t("format.period.last7Days", "Last 7 days"), range: () => days(shiftDay(today(), -6), today()) },
+    { label: () => t("format.period.last30Days", "Last 30 days"), range: () => days(shiftDay(today(), -29), today()) },
+    { label: () => t("format.period.last90Days", "Last 90 days"), range: () => days(shiftDay(today(), -89), today()) },
+    { label: () => t("format.period.thisMonth", "This month"), range: () => days(`${today().slice(0, 8)}01`, today()) },
+    {
+      label: () => t("format.period.lastMonth", "Last month"),
+      range: () => {
+        const end = shiftDay(`${today().slice(0, 8)}01`, -1);
+        return days(`${end.slice(0, 8)}01`, end);
+      },
     },
-  },
-];
+  ];
+  return ranges.map((p) => ({
+    get label() {
+      return p.label();
+    },
+    range: p.range,
+  }));
+}
 
-export const DAY_PRESETS: DateRangePreset[] = DAY_RANGES.map((p) => ({
-  get label() {
-    return p.label();
-  },
-  range: p.range,
-}));
+export const DAY_PRESETS = dayPresets(() => dayKey(new Date()));
+
+export const UTC_DAY_PRESETS = dayPresets(() => utcDay(new Date()));
 
 const span = (r: { from: string; to: string }) => ({ from: pickerDate(r.from), to: pickerDate(r.to) });
 

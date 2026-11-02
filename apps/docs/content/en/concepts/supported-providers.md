@@ -18,6 +18,7 @@ Kaeso has the providers below built in, listed by name. [Providers](providers.md
 | Provider | Formats | Host | Key |
 | --- | --- | --- | --- |
 | Anthropic `anthropic` | Messages, token counts | `api.anthropic.com` | [platform.claude.com](https://platform.claude.com/settings/keys), `sk-ant-` |
+| Cerebras `cerebras` | Chat Completions | `api.cerebras.ai` | [cloud.cerebras.ai](https://cloud.cerebras.ai), `csk-` |
 | Cohere `cohere` | Chat Completions, Embeddings | `api.cohere.ai` | [dashboard.cohere.com](https://dashboard.cohere.com/api-keys), no fixed prefix |
 | DeepSeek `deepseek` | Chat Completions | `api.deepseek.com` | [platform.deepseek.com](https://platform.deepseek.com/api_keys), `sk-` |
 | Groq `groq` | Chat Completions | `api.groq.com` | [console.groq.com](https://console.groq.com/keys), `gsk_` |
@@ -35,6 +36,7 @@ Kaeso has the providers below built in, listed by name. [Providers](providers.md
 
 What else to know about some providers. [Provider profiles](../development/kpp/openai-chat-providers.md#provider-profiles) lists every Chat Completions field a provider renames or refuses:
 
+- **Cerebras.** Cerebras Inference, with models such as `gpt-oss-120b` and `qwen-3.8-27b`. Gets `developer` messages as `system` messages, the end user's id as `user`, the text of a system message that Claude Code or Codex sends after the first turn in the next user turn, and a function without parameters with an empty parameter schema. Grok CLI's replayed `reasoning_content` reaches it as `reasoning`. It refuses a conversation that ends with an assistant message, because Cerebras answers it anew, and a `refusal` on an assistant message. Cerebras answers any field it doesn't know, such as `store`, with 400, and takes images only as data URIs. A model's thinking reaches apps in every format; `gpt-oss-120b` thinks at `reasoning_effort` `low`, `medium` or `high`, `qwen-3.8-27b` also at `none`, and Kaeso refuses other levels.
 - **Cohere.** Cohere's [Compatibility API](https://docs.cohere.com/docs/compatibility-api), which covers part of Cohere's own API: documents, citations and rerank aren't reachable through it. Cohere refuses some fields, such as `logit_bias` and `parallel_tool_calls: false`, and gets a single `stop` string as a list. Its reasoning models think at `reasoning_effort` `none` or `high` only. Its Embed models, such as `embed-v4.0`, aren't in KPMR: add them as custom models that send as Embeddings, with their price.
 - **DeepSeek.** Gets `developer` messages as `system` messages.
 - **Groq.** Gets `developer` messages as `system` messages, and refuses some fields, such as `logit_bias`.
@@ -49,4 +51,4 @@ What else to know about some providers. [Provider profiles](../development/kpp/o
 
 ## Trademarks
 
-All trademarks and logos belong to their owners. Kaeso is not affiliated with, endorsed or sponsored by any of these providers. The console shows each provider's mark only to identify the provider a key, model or request belongs to. Anthropic, Cohere, Groq and QwenCloud's owner Alibaba Cloud restrict the use of their logos in their terms; Kaeso shows their marks only for this purpose, in the owner's shapes and colours, adjusting a colour only as far as it needs to stay visible on Kaeso's light and dark backgrounds. Mistral's brand page asks not to recolour its icon or frame it; Kaeso shows the icon in Mistral's own colours, on the same neutral tile as every other mark. [NOTICE.md](https://github.com/logicplanes/kaeso/blob/dev/NOTICE.md#trademarks) lists the source of every mark.
+All trademarks and logos belong to their owners. Kaeso is not affiliated with, endorsed or sponsored by any of these providers. The console shows each provider's mark only to identify the provider a key, model or request belongs to. Anthropic, Cerebras, Cohere, Groq and QwenCloud's owner Alibaba Cloud restrict the use of their logos in their terms; Kaeso shows their marks only for this purpose, in the owner's shapes and colours, adjusting a colour only as far as it needs to stay visible on Kaeso's light and dark backgrounds. Mistral's brand page asks not to recolour its icon or frame it; Kaeso shows the icon in Mistral's own colours, on the same neutral tile as every other mark. [NOTICE.md](https://github.com/logicplanes/kaeso/blob/dev/NOTICE.md#trademarks) lists the source of every mark.

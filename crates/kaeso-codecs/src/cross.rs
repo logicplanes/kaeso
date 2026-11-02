@@ -343,6 +343,25 @@ fn only_thinking_edits(value: &RawJson) -> bool {
         })
 }
 
+// Claude Code repeats the request's `output_config` on its mid-conversation system messages.
+pub(crate) fn check_message_extras(
+    r: &GenerateRequest,
+    m: &Message,
+    target: DialectId,
+    path: &str,
+) -> Result<(), KppError> {
+    let effort = r
+        .reasoning
+        .as_ref()
+        .and_then(|c| c.effort.as_ref())
+        .map(ReasoningEffort::as_wire);
+    let own_system = m.role == Role::System && m.extras.is_from(DialectId::AnthropicMessages);
+    check_extras_with(&m.extras, target, path, "message", |key, value| {
+        (own_system && key == "output_config" && repeats_effort(value, effort))
+            || is_chat_bookkeeping(m, key)
+    })
+}
+
 fn repeats_effort(value: &RawJson, effort: Option<&str>) -> bool {
     let Ok(Value::Object(config)) = serde_json::from_str::<Value>(value.get()) else {
         return false;
@@ -444,18 +463,9 @@ fn check_generate(r: &GenerateRequest, target: &Origin) -> Result<(), KppError> 
     for (i, b) in r.system.iter().enumerate() {
         check_block(b, target, &format!("system[{i}]"))?;
     }
-    let effort = r
-        .reasoning
-        .as_ref()
-        .and_then(|c| c.effort.as_ref())
-        .map(ReasoningEffort::as_wire);
     for (mi, m) in r.messages.iter().enumerate() {
         let path = format!("messages[{mi}]");
-        let own_system = m.role == Role::System && m.extras.is_from(DialectId::AnthropicMessages);
-        check_extras_with(&m.extras, dialect, &path, "message", |key, value| {
-            (own_system && key == "output_config" && repeats_effort(value, effort))
-                || is_chat_bookkeeping(m, key)
-        })?;
+        check_message_extras(r, m, dialect, &path)?;
         for (bi, b) in m.blocks.iter().enumerate() {
             check_block(b, target, &format!("{path}.blocks[{bi}]"))?;
         }

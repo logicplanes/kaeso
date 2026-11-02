@@ -41,6 +41,26 @@ describe("password", () => {
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "Change password" })).not.toBeInTheDocument());
   });
 
+  it("disconnects the agents too when asked, and says so", async () => {
+    signedIn();
+    on("GET", "me", me());
+    on("POST", "me/password", { status: "changed" });
+    const { user } = await renderApp(PATH);
+    await user.click(await screen.findByRole("button", { name: "Change password" }));
+    const dialog = await screen.findByRole("dialog", { name: "Change password" });
+    const revoke = within(dialog).getByRole("checkbox", { name: "Also disconnect my agents" });
+    expect(revoke).not.toBeChecked();
+    expect(revoke).toHaveAccessibleDescription("Revokes every agent you authorized, in case someone else connected one to your account.");
+    await user.type(within(dialog).getByLabelText("Current password"), "old password");
+    await user.type(within(dialog).getByLabelText("New password"), "correct horse battery");
+    await user.click(revoke);
+    await user.click(within(dialog).getByRole("button", { name: "Change password" }));
+    expect(await (await notifications()).findByText("Password changed; other sessions and your agents signed out")).toBeInTheDocument();
+    expect(requests("POST", "me/password").map((r) => r.body)).toEqual([
+      { new_password: "correct horse battery", current_password: "old password", revoke_agents: true },
+    ]);
+  });
+
   it("sets a first password without asking for a current one", async () => {
     signedIn();
     on("GET", "me", me({ has_password: false }));
