@@ -4,6 +4,26 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 ## [Unreleased]
 
+## [0.5.5] - 2026-11-02
+
+Kaeso 0.5.5 fixes the verification code input so its cells line up with the Verify button and the fields around them on every screen that asks for a code. Fresh installs start with KPMR's OpenRouter models as of 2 November 2026, 14:35 UTC, and running installs get the same data from KPMR on their own. There are no breaking changes in this release.
+
+**Contributors:** @dvnold
+
+**Full changes:** [v0.5.4...v0.5.5](https://github.com/logicplanes/kaeso/compare/v0.5.4...v0.5.5)
+
+### Changed
+
+#### Gateway
+
+- A fresh install starts with KPMR's OpenRouter models as of 2 November 2026, 14:35 UTC. The snapshot adds `z-ai/glm-5.3-flashx-legal`, removes `nousresearch/hermes-3-llama-3.1-405b` and `nousresearch/hermes-3-llama-3.1-70b`, which OpenRouter no longer lists, and changes the price of `google/gemma-4-26b-a4b-it`. Running installs get the same data from KPMR on their own. ([#594](https://github.com/logicplanes/kaeso/pull/594))
+
+### Fixed
+
+#### UI library
+
+- The verification code cells line up with the Verify button and the fields around them instead of hugging the left edge. The `OTPInput` row now takes its container's width, up to the 400px sign-in column, and the cells share it at 48px high (`md`) or 40px (`sm`). This applies to the sign-in two-step step, the sign-in-again dialog, two-factor set-up and the second-factor field. The empty focused cell also shows a blinking caret, which the global reduced-motion rule keeps still. ([#593](https://github.com/logicplanes/kaeso/pull/593))
+
 ## [0.5.4] - 2026-11-02
 
 Kaeso 0.5.4 fixes Claude Code requests to models whose output limit is below 32,000 tokens, which were refused before. Fresh installs start with KPMR model data as of 2 November 2026 and current prices for two OpenRouter models. Running installs get the same data from KPMR on their own. There are no breaking changes in this release.
@@ -1114,7 +1134,8 @@ The first release of Kaeso, the open-source AI gateway you run yourself: the gat
 
 - A Release workflow that runs only from `prod`: it prepares the version changes and the changelog without write access to the repository, lets only jobs that run nothing but git push the release commit and the tag, syncs the release commit back to `dev`, and pins every action by commit SHA.
 
-[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.5.4...HEAD
+[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.5.5...HEAD
+[0.5.5]: https://github.com/logicplanes/kaeso/releases/tag/v0.5.5
 [0.5.4]: https://github.com/logicplanes/kaeso/releases/tag/v0.5.4
 [0.5.3]: https://github.com/logicplanes/kaeso/releases/tag/v0.5.3
 [0.5.2]: https://github.com/logicplanes/kaeso/releases/tag/v0.5.2
