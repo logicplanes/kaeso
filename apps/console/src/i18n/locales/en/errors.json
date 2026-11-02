@@ -272,6 +272,7 @@
   "errors.modelApi.ambiguous": "The model name `{model}` is served by several providers in this project ({providers}). Use a prefixed name such as `{provider}/{model}`.",
   "errors.modelApi.appClosed": "The app closed the connection before the reply was complete.",
   "errors.modelApi.appStalled": "The app stopped reading the stream for too long; Kaeso ended it.",
+  "errors.modelApi.bodyBrokeOff": "The request body broke off before it was complete; send it again.",
   "errors.modelApi.bodyTimeout": "The request body did not arrive in time; send it again.",
   "errors.modelApi.bodyTooLarge": "The request body is larger than {limit} bytes.",
   "errors.modelApi.credentialSealed": "Kaeso cannot decrypt the provider credential. The operator must check the configured master keys.",

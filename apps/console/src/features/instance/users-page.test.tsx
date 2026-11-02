@@ -150,6 +150,22 @@ describe("instance users list", () => {
     expect(userQueries().at(-1)).toEqual({ limit: "100", after: "cur_2" });
   });
 
+  it("keeps the gateway's order, which no column can change", async () => {
+    signedIn();
+    on("GET", "instance/users", ({ query }: { query: URLSearchParams }) => (query.get("after") === "cur_2" ? paged([ADA]) : paged([LINUS, GRACE], "cur_2")));
+    const { user } = await renderApp(PATH);
+    await within(table()).findByText("Grace Hopper");
+    await user.click(screen.getByRole("button", { name: "Load more" }));
+    await within(table()).findByText("Ada Okafor");
+
+    const rows = within(table()).getAllByRole("row").slice(1);
+    ["Linus Park", "Grace Hopper", "Ada Okafor"].forEach((name, i) => expect(rows[i]).toHaveTextContent(name));
+    for (const column of within(table()).getAllByRole("columnheader")) {
+      expect(column).not.toHaveAttribute("aria-sort");
+      expect(within(column).queryByRole("button")).not.toBeInTheDocument();
+    }
+  });
+
   it("shows a user's picture and leaves the email empty when there is none", async () => {
     signedIn();
     users([ADA, instanceUser({ avatar_url: "/avatars/grace.webp", email: null })]);
