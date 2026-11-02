@@ -585,3 +585,47 @@ async fn usage_by_member_and_key_names_people_service_accounts_and_the_playgroun
     got.sort();
     assert_eq!(got, keys);
 }
+
+#[tokio::test]
+async fn usage_is_written_as_soon_as_shutdown_begins_and_while_requests_drain() {
+    let env = common::v1::env(None, None).await;
+    let (draining, stop) = (
+        tokio_util::sync::CancellationToken::new(),
+        tokio_util::sync::CancellationToken::new(),
+    );
+    kaeso_server::serve::spawn_usage_flusher(env.app.state.clone(), draining.clone(), stop.clone());
+    let written = |n: u64| {
+        let env = &env;
+        async move {
+            let deadline = std::time::Instant::now() + Duration::from_secs(5);
+            loop {
+                let requests: u64 = postgres(env).await.values().map(|c| c.0).sum();
+                if requests >= n {
+                    return;
+                }
+                assert!(
+                    std::time::Instant::now() < deadline,
+                    "{requests} of {n} requests written"
+                );
+                tokio::time::sleep(Duration::from_millis(20)).await;
+            }
+        }
+    };
+    let ask = || {
+        call(
+            &env,
+            "/v1/messages",
+            Some(&env.key),
+            true,
+            Some(messages("claude-haiku-4-5", "Hi")),
+        )
+    };
+    assert_eq!(ask().await.status, StatusCode::OK);
+    env.app.state.in_flight.settled().await;
+    draining.cancel();
+    written(1).await;
+    assert_eq!(ask().await.status, StatusCode::OK, "requests still drain");
+    env.app.state.in_flight.settled().await;
+    written(2).await;
+    stop.cancel();
+}
