@@ -5336,7 +5336,7 @@
         "tags": [
           "me"
         ],
-        "summary": "Every org and project the user belongs to.",
+        "summary": "Every org and project the user belongs to. An agent sees only the orgs\nand projects it can open.",
         "description": "**Access:** a signed-in console session, or an agent granted `account.view`.",
         "operationId": "getMeMemberships",
         "responses": {
@@ -5631,7 +5631,7 @@
         "tags": [
           "me"
         ],
-        "summary": "Sets or changes the password. Ends every session of the user; the\ncaller gets a new session (new cookie). Without a current password (a\nuser who signs in by sign-in link or SSO), a recent sign-in is needed.",
+        "summary": "Sets or changes the password. Ends every session of the user; the\ncaller gets a new session (new cookie). Without a current password (a\nuser who signs in by sign-in link or SSO), a recent sign-in is needed.\nWith `revoke_agents`, the user's agents are revoked too.",
         "description": "**Access:** a signed-in console session; one from the SSO of an org that doesn't manage the account gets `other_sign_in_required`.",
         "operationId": "postMePassword",
         "requestBody": {
@@ -10599,7 +10599,7 @@
           "orgs"
         ],
         "summary": "Rotates an org platform key: a new key with the same name, while the old\nkey keeps working for the grace period. Only with a console session.",
-        "description": "Answers with the new key and its secret, shown once. The old key stops at the end of the grace period, or at its own expiry if that is sooner, and links to the new key in `replaced_by`. Rotating also needs `platform_keys.revoke`, and the caller must hold every right of the admin role, as for creating one.\n\n**Right:** `platform_keys.create` on the organization in the path; with a session, a sign-in within the last 15 minutes.",
+        "description": "Answers with the new key and its secret, shown once. The old key stops at the end of the grace period, or at its own expiry if that is sooner, and links to the new key in `replaced_by`. Rotating also needs `platform_keys.revoke`, and the caller must hold every right of the admin role, as for creating one. A disabled key is refused until it is enabled.\n\n**Right:** `platform_keys.create` on the organization in the path; with a session, a sign-in within the last 15 minutes.",
         "operationId": "postOrgsOrgPlatformKeysKeyRotate",
         "parameters": [
           {
@@ -12638,7 +12638,7 @@
           "projects"
         ],
         "summary": "Rotates one of the caller's keys: a new key with the same name, access,\nmodels and limits, while the old key keeps working for the grace period.",
-        "description": "Answers with the new key and its secret, shown once. The old key stops at the end of the grace period, or at its own expiry if that is sooner, and links to the new key in `replaced_by`. Rotating also needs `keys.own.manage` (or `keys.all.manage`), and a key with platform access needs what creating one needs.\n\n**Right:** `keys.own.create` on the project in the path.",
+        "description": "Answers with the new key and its secret, shown once. The old key stops at the end of the grace period, or at its own expiry if that is sooner, and links to the new key in `replaced_by`. Rotating also needs `keys.own.manage` (or `keys.all.manage`), and a key with platform access needs what creating one needs. A disabled key is refused until it is enabled.\n\n**Right:** `keys.own.create` on the project in the path.",
         "operationId": "postOrgsOrgProjectsProjectKeysKeyRotate",
         "parameters": [
           {
@@ -16688,7 +16688,7 @@
           "projects"
         ],
         "summary": "Rotates a service account's key: a new key with the same name, access,\nmodels and limits, while the old key keeps working for the grace period.",
-        "description": "Answers with the new key and its secret, shown once. The old key stops at the end of the grace period, or at its own expiry if that is sooner, and links to the new key in `replaced_by`. Rotating also needs `keys.all.manage`, and a key with platform access needs what creating one needs.\n\n**Right:** `service_accounts.keys.create` on the project in the path.",
+        "description": "Answers with the new key and its secret, shown once. The old key stops at the end of the grace period, or at its own expiry if that is sooner, and links to the new key in `replaced_by`. Rotating also needs `keys.all.manage`, and a key with platform access needs what creating one needs. A disabled key is refused until it is enabled.\n\n**Right:** `service_accounts.keys.create` on the project in the path.",
         "operationId": "postOrgsOrgProjectsProjectServiceAccountsAccountKeysKeyRotate",
         "parameters": [
           {
@@ -20402,7 +20402,7 @@
           },
           "provider": {
             "$ref": "#/components/schemas/ProviderId",
-            "description": "The id of a provider Kaeso calls: `openai`, `anthropic`, `deepseek`, `xai`,\n`togetherai`, `groq`, `openrouter`, `mistral`, `vercel`, `cohere`,\n`ollama-cloud`, `moonshotai`, `alibaba`, or one of the organization's custom\nproviders that takes a key."
+            "description": "The id of a provider Kaeso calls: `openai`, `anthropic`, `deepseek`, `xai`,\n`togetherai`, `groq`, `openrouter`, `mistral`, `vercel`, `cohere`,\n`ollama-cloud`, `moonshotai`, `alibaba`, `cerebras`, or one of the\norganization's custom providers that takes a key."
           },
           "secret": {
             "type": "string",
@@ -27263,6 +27263,10 @@
             "format": "password",
             "description": "The new password, 12 to 128 characters.",
             "writeOnly": true
+          },
+          "revoke_agents": {
+            "type": "boolean",
+            "description": "Also revoke every agent the user authorized, for when someone else may\nhave connected one. Agents keep working when it is `false`, the default."
           }
         },
         "additionalProperties": false

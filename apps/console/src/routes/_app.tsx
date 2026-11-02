@@ -14,7 +14,10 @@ export const Route = createFileRoute("/_app")({
     try {
       const memberships = context.queryClient.ensureQueryData(membershipsQuery);
       memberships.catch(() => undefined);
-      await context.queryClient.ensureQueryData(sessionQuery);
+      const session = context.queryClient.getQueryState(sessionQuery.queryKey);
+      // A failed fetch keeps the last session's data, which ensureQueryData would hand back as if still signed in.
+      const ended = session?.status === "error" && isApiError(session.error) && session.error.type === "authentication";
+      await (ended ? context.queryClient.fetchQuery({ ...sessionQuery, staleTime: 0 }) : context.queryClient.ensureQueryData(sessionQuery));
       await memberships;
     } catch (error) {
       if (isApiError(error) && error.type === "authentication") {

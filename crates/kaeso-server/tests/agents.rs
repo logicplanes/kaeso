@@ -585,9 +585,10 @@ async fn authorize_refuses_bad_requests_without_leaking_to_strangers() {
         ),
     ] {
         let r = authorize_url(&app, &bad).await;
-        let q = query_of(&location(&r));
-        assert_eq!(q["error"], error);
-        assert!(location(&r).starts_with(REDIRECT));
+        assert_eq!(
+            location(&r),
+            format!("https://kaeso.test/authorize#error={error}")
+        );
     }
     let bad_redirect = app
         .raw(
@@ -1277,6 +1278,69 @@ async fn agents_stop_when_every_session_of_their_user_ends() {
 }
 
 #[tokio::test]
+async fn a_password_change_disconnects_agents_only_when_asked() {
+    let (s, app, owner) = setup().await;
+    let first = sign_in(&app, &owner.cookie, builder(&owner.org_id)).await;
+    let changed = app
+        .post(
+            "/me/password",
+            json!({ "current_password": common::PASSWORD, "new_password": "a second long passphrase" }),
+            Some(&owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::OK);
+    let cookie = changed.cookie().unwrap();
+    assert_eq!(
+        mcp(&app, &first.access, "ping", json!({})).await.status,
+        StatusCode::OK,
+        "a plain password change keeps the agent"
+    );
+
+    let second = sign_in(&app, &cookie, builder(&owner.org_id)).await;
+    let changed = app
+        .post(
+            "/me/password",
+            json!({
+                "current_password": "a second long passphrase",
+                "new_password": "a third long passphrase",
+                "revoke_agents": true,
+            }),
+            Some(&cookie),
+        )
+        .await
+        .expect_status(StatusCode::OK);
+    let cookie = changed.cookie().unwrap();
+    assert!(stopped(&app, &first).await, "the first agent");
+    assert!(stopped(&app, &second).await, "the second agent");
+    let listed = app
+        .get("/me/agents", &cookie)
+        .await
+        .expect_status(StatusCode::OK);
+    assert_eq!(listed.body["data"], json!([]));
+    let who = app
+        .get("/auth/session", &cookie)
+        .await
+        .expect_status(StatusCode::OK);
+    assert_eq!(
+        who.body["user"]["email"], "owner@example.com",
+        "the caller stays signed in"
+    );
+
+    let audit = app
+        .get("/instance/audit-log?action=user.password_change", &cookie)
+        .await
+        .expect_status(StatusCode::OK);
+    let afters: Vec<&Value> = audit.body["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|e| &e["after"])
+        .collect();
+    assert_eq!(afters, [&json!({ "agents_revoked": 2 }), &Value::Null]);
+    s.cleanup().await;
+}
+
+#[tokio::test]
 async fn a_reused_code_ends_the_tokens_it_was_exchanged_for() {
     let (_s, app, owner) = setup().await;
     let client = register(&app, "Codex").await;
@@ -1539,6 +1603,105 @@ async fn personal_keys_and_projects_stay_within_the_agents_grant() {
 }
 
 #[tokio::test]
+async fn an_agent_sees_only_the_orgs_and_projects_it_can_open() {
+    let (_s, app, owner) = setup().await;
+    app.post(
+        &format!("/orgs/{}/projects", owner.org_id),
+        json!({ "name": "Second" }),
+        Some(&owner.cookie),
+    )
+    .await
+    .expect_status(StatusCode::CREATED);
+    let projects = projects_of(&app, &owner).await;
+    let (first, second) = (&projects[0], &projects[1]);
+    let elsewhere = app
+        .post(
+            "/me/orgs",
+            json!({ "name": "Elsewhere" }),
+            Some(&owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::CREATED)
+        .body["id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let mut g = grant(&owner.org_id, &["org.view", "members.view"], &[]);
+    g["orgs"][0]["projects"] = json!({
+        "all": false,
+        "rights": [],
+        "selected": [{ "project": first, "rights": ["project.view"] }]
+    });
+    g["orgs"].as_array_mut().unwrap().push(json!({
+        "org": elsewhere,
+        "included": false,
+        "rights": [],
+        "projects": { "all": true, "rights": [], "selected": [] }
+    }));
+    let a = sign_in(&app, &owner.cookie, g).await;
+
+    let memberships = |result: Value| -> Vec<(String, Vec<String>)> {
+        assert_eq!(result["isError"], false, "{result:?}");
+        result["structuredContent"]["data"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|m| {
+                let projects = m["projects"].as_array().unwrap().iter();
+                (
+                    m["org_id"].as_str().unwrap().to_owned(),
+                    projects
+                        .map(|p| p["id"].as_str().unwrap().to_owned())
+                        .collect(),
+                )
+            })
+            .collect()
+    };
+    let seen = tool(&app, &a.access, "get_me_memberships", json!({})).await;
+    assert_eq!(
+        memberships(seen),
+        [(owner.org_id.clone(), vec![first.clone()])]
+    );
+    let rights = tool(
+        &app,
+        &a.access,
+        "get_orgs_org_members_user_rights",
+        json!({ "org": owner.org_id, "user": owner.user_id }),
+    )
+    .await;
+    assert_eq!(rights["isError"], false, "{rights:?}");
+    let shown: Vec<&str> = rights["structuredContent"]["projects"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|p| p["project"]["id"].as_str().unwrap())
+        .collect();
+    assert_eq!(shown, [first.as_str()]);
+
+    let mine = app
+        .get("/me/memberships", &owner.cookie)
+        .await
+        .expect_status(StatusCode::OK);
+    assert_eq!(mine.body["data"].as_array().unwrap().len(), 2);
+    assert_eq!(
+        mine.body["data"][0]["projects"].as_array().unwrap().len(),
+        2,
+        "the console still sees {second}"
+    );
+
+    app.call(
+        Method::PUT,
+        &format!("/orgs/{}/security/agents", owner.org_id),
+        Some(json!({ "allowed": false, "max": "full" })),
+        Some(&owner.cookie),
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    let seen = tool(&app, &a.access, "get_me_memberships", json!({})).await;
+    assert!(memberships(seen).is_empty(), "the org refuses agents");
+}
+
+#[tokio::test]
 async fn a_closed_org_cant_be_left_by_the_agent() {
     let (_s, app, owner) = setup().await;
     let (member, _) = common::join(
@@ -1604,4 +1767,251 @@ async fn orgs_joined_later_show_as_open_and_stay_open_after_a_save() {
     assert_eq!(saved.body["grant"], viewed.body["grant"]);
     let org = tool(&app, &a.access, "get_orgs_org", json!({ "org": later })).await;
     assert_eq!(org["isError"], false, "{org:?}");
+}
+
+fn from(peer: &str, mut req: Request<Body>) -> Request<Body> {
+    let addr = std::net::SocketAddr::new(peer.parse().unwrap(), 40000);
+    req.extensions_mut()
+        .insert(axum::extract::ConnectInfo(addr));
+    req
+}
+
+fn registration(redirect_uris: &[&str]) -> Request<Body> {
+    Request::builder()
+        .method(Method::POST)
+        .uri("/oauth/register")
+        .header(header::CONTENT_TYPE, "application/json")
+        .body(Body::from(
+            json!({ "client_name": "Stranger", "redirect_uris": redirect_uris }).to_string(),
+        ))
+        .unwrap()
+}
+
+#[tokio::test]
+async fn errors_go_back_to_an_agent_only_once_someone_approved_it() {
+    let (_s, app, owner) = setup().await;
+    let scheme = "com.example.agent:/oauth";
+    let stranger = app
+        .raw(registration(&[scheme, REDIRECT]))
+        .await
+        .expect_status(StatusCode::CREATED)
+        .body["client_id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let bad = |client: &str, redirect: &str| {
+        form(&[
+            ("client_id", client),
+            ("redirect_uri", redirect),
+            ("response_type", "x"),
+            ("state", "st4te"),
+        ])
+    };
+    for redirect in [scheme, REDIRECT] {
+        let r = authorize_url(&app, &bad(&stranger, redirect)).await;
+        assert_eq!(r.status, StatusCode::SEE_OTHER);
+        assert_eq!(
+            location(&r),
+            "https://kaeso.test/authorize#error=unsupported_response_type"
+        );
+    }
+    let long_state = "s".repeat(2001);
+    let r = authorize_url(
+        &app,
+        &form(&[
+            ("client_id", &stranger),
+            ("redirect_uri", REDIRECT),
+            ("response_type", "code"),
+            ("code_challenge", CHALLENGE),
+            ("code_challenge_method", "S256"),
+            ("state", &long_state),
+        ]),
+    )
+    .await;
+    assert_eq!(
+        location(&r),
+        "https://kaeso.test/authorize#error=invalid_request"
+    );
+
+    let a = sign_in(&app, &owner.cookie, builder(&owner.org_id)).await;
+    let back = location(&authorize_url(&app, &bad(&a.client, REDIRECT)).await);
+    assert!(back.starts_with(REDIRECT), "{back}");
+    let q = query_of(&back);
+    assert_eq!(q["error"], "unsupported_response_type");
+    assert_eq!(q["state"], "st4te");
+    assert_eq!(q["iss"], "https://kaeso.test");
+    assert_eq!(
+        location(&authorize_url(&app, &bad(&stranger, REDIRECT)).await),
+        "https://kaeso.test/authorize#error=unsupported_response_type"
+    );
+
+    app.call(
+        Method::DELETE,
+        &format!("/me/agents/{}", a.agent),
+        None,
+        Some(&owner.cookie),
+    )
+    .await
+    .expect_status(StatusCode::NO_CONTENT);
+    assert_eq!(
+        location(&authorize_url(&app, &bad(&a.client, REDIRECT)).await),
+        "https://kaeso.test/authorize#error=unsupported_response_type"
+    );
+}
+
+#[tokio::test]
+async fn each_address_gets_a_limited_number_of_registrations_sign_ins_and_token_calls() {
+    let (_s, app, _owner) = setup().await;
+    let flood = "203.0.113.60";
+    for n in 0..20 {
+        let r = app.raw(from(flood, registration(&[REDIRECT]))).await;
+        assert_eq!(r.status, StatusCode::CREATED, "{n}: {:?}", r.body);
+    }
+    let refused = app.raw(from(flood, registration(&[REDIRECT]))).await;
+    assert_eq!(refused.status, StatusCode::TOO_MANY_REQUESTS);
+    assert_eq!(refused.body["error"], "temporarily_unavailable");
+    let description = refused.body["error_description"].as_str().unwrap();
+    assert!(
+        description.starts_with("Too many attempts from your address; try again in "),
+        "{description}"
+    );
+    let retry: u64 = refused.headers[header::RETRY_AFTER]
+        .to_str()
+        .unwrap()
+        .parse()
+        .unwrap();
+    assert!((1..=3600).contains(&retry), "{retry}");
+    let other = app
+        .raw(from("198.51.100.60", registration(&[REDIRECT])))
+        .await;
+    assert_eq!(other.status, StatusCode::CREATED);
+
+    let client = other.body["client_id"].as_str().unwrap().to_owned();
+    let sign_in = || {
+        Request::builder()
+            .uri(format!(
+                "/oauth/authorize?{}",
+                form(&[
+                    ("response_type", "code"),
+                    ("client_id", &client),
+                    ("redirect_uri", REDIRECT),
+                    ("code_challenge", CHALLENGE),
+                    ("code_challenge_method", "S256"),
+                ])
+            ))
+            .body(Body::empty())
+            .unwrap()
+    };
+    for n in 0..30 {
+        let r = app.raw(from(flood, sign_in())).await;
+        assert!(location(&r).contains("#request="), "{n}: {}", location(&r));
+    }
+    assert_eq!(
+        location(&app.raw(from(flood, sign_in())).await),
+        "https://kaeso.test/authorize#error=temporarily_unavailable"
+    );
+    let elsewhere = app.raw(from("198.51.100.61", sign_in())).await;
+    assert!(location(&elsewhere).contains("#request="));
+
+    let token_call = |path: &str| {
+        Request::builder()
+            .method(Method::POST)
+            .uri(path)
+            .body(Body::empty())
+            .unwrap()
+    };
+    for n in 0..120 {
+        let r = app.raw(from(flood, token_call("/oauth/token"))).await;
+        assert_eq!(r.status, StatusCode::BAD_REQUEST, "{n}: {:?}", r.body);
+    }
+    let r = app.raw(from(flood, token_call("/oauth/token"))).await;
+    assert_eq!(r.status, StatusCode::TOO_MANY_REQUESTS);
+    assert_eq!(r.body["error"], "temporarily_unavailable");
+    for n in 0..30 {
+        let r = app.raw(from(flood, token_call("/oauth/revoke"))).await;
+        assert_eq!(r.status, StatusCode::BAD_REQUEST, "{n}: {:?}", r.body);
+    }
+    let r = app.raw(from(flood, token_call("/oauth/revoke"))).await;
+    assert_eq!(r.status, StatusCode::TOO_MANY_REQUESTS);
+    let r = app
+        .raw(from("198.51.100.62", token_call("/oauth/revoke")))
+        .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST);
+}
+
+#[tokio::test]
+async fn registrations_no_agent_signed_in_with_are_capped_oldest_first() {
+    let (_s, app, owner) = setup().await;
+    let web = "https://agent.example/cb";
+    let approved = sign_in(&app, &owner.cookie, builder(&owner.org_id)).await;
+    let oldest = app
+        .raw(from("198.51.100.70", registration(&[web])))
+        .await
+        .expect_status(StatusCode::CREATED)
+        .body["client_id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let now = app.state.clock.now();
+    sqlx::query(
+        "INSERT INTO agent_clients (id, name, redirect_uris, created_at) \
+         SELECT gen_random_uuid(), 'Flood', ARRAY['https://agent.example/cb'], \
+         $1 + n * interval '1 millisecond' FROM generate_series(1, 999) n",
+    )
+    .bind(now)
+    .execute(&app.state.pg)
+    .await
+    .unwrap();
+    app.clock.advance(time::Duration::seconds(5));
+    let newest = app
+        .raw(from("198.51.100.71", registration(&[web])))
+        .await
+        .expect_status(StatusCode::CREATED)
+        .body["client_id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let unused: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM agent_clients c \
+         WHERE NOT EXISTS (SELECT 1 FROM agents a WHERE a.client_id = c.id)",
+    )
+    .fetch_one(&app.state.pg)
+    .await
+    .unwrap();
+    assert_eq!(unused, 1000);
+    let open = |client: &str| {
+        form(&[
+            ("response_type", "code"),
+            ("client_id", client),
+            ("redirect_uri", web),
+            ("code_challenge", CHALLENGE),
+            ("code_challenge_method", "S256"),
+        ])
+    };
+    assert_eq!(
+        location(&authorize_url(&app, &open(&oldest)).await),
+        "https://kaeso.test/authorize#error=invalid_client"
+    );
+    assert!(location(&authorize_url(&app, &open(&newest)).await).contains("#request="));
+    request_token(&app, &approved.client).await;
+}
+
+#[tokio::test]
+async fn a_client_keeps_only_its_newest_sign_in_requests() {
+    let (_s, app, owner) = setup().await;
+    let client = register(&app, "Claude Code").await;
+    let first = request_token(&app, &client).await;
+    let mut last = first.clone();
+    for _ in 0..20 {
+        last = request_token(&app, &client).await;
+    }
+    let view = |request: &str| {
+        app.post(
+            "/me/agent-requests/view",
+            json!({ "request": request }),
+            Some(&owner.cookie),
+        )
+    };
+    assert_eq!(view(&first).await.status, StatusCode::NOT_FOUND);
+    view(&last).await.expect_status(StatusCode::OK);
 }

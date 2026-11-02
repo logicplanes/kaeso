@@ -48,6 +48,7 @@ export interface StepDialogProps {
   inline?: boolean | undefined;
   defaultStep?: number | undefined;
   result?: StepDialogResult | undefined;
+  refusedStep?: string | undefined;
 }
 
 export interface StepDialogControls {
@@ -67,7 +68,7 @@ function reducedMotion() {
 const bodyOf = (el: HTMLElement | null | undefined) => el?.closest<HTMLElement>("[data-dialog-body]") ?? null;
 
 export const StepDialog = forwardRef<HTMLDivElement, StepDialogProps>(function StepDialog(
-  { open, onOpenChange, title, steps, submitLabel, onSubmit, submitting, tone = "default", size = "sm", inline, defaultStep = 0, result },
+  { open, onOpenChange, title, steps, submitLabel, onSubmit, submitting, tone = "default", size = "sm", inline, defaultStep = 0, result, refusedStep },
   ref,
 ) {
   const [index, setIndex] = useState(defaultStep);
@@ -136,13 +137,19 @@ export const StepDialog = forwardRef<HTMLDivElement, StepDialogProps>(function S
       .finally(() => setContinuing(false));
   };
   const latestNext = useRef(next);
+  const backTo = useRef((to: number) => to !== index && go(to));
   useLayoutEffect(() => {
     latestNext.current = next;
+    backTo.current = (to) => to !== index && go(to);
   });
   const [advanced, setAdvanced] = useState(0);
   useEffect(() => {
     if (advanced) latestNext.current();
   }, [advanced]);
+  const refusedAt = steps.findIndex((s) => s.id === refusedStep);
+  useEffect(() => {
+    if (refusedAt >= 0) backTo.current(refusedAt);
+  }, [refusedAt]);
   const controls = useMemo<StepDialogControls>(() => ({ advance: () => setAdvanced((n) => n + 1) }), []);
   const waiting = !!submitting || continuing;
   const progress = { current: index + 1, total: steps.length };

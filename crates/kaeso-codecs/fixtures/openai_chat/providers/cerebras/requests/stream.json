@@ -1,0 +1,16 @@
+{
+  "model": "gpt-oss-120b",
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a helpful assistant."
+    },
+    {
+      "role": "user",
+      "content": "Hello!"
+    }
+  ],
+  "reasoning_effort": "low",
+  "max_completion_tokens": 300,
+  "stream": true
+}

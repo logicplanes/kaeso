@@ -4,6 +4,12 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Combobox, Highlight } from "./combobox.js";
 
+const PEOPLE = [
+  { value: "u1", label: "Ada Okafor" },
+  { value: "u2", label: "Lin Park" },
+  { value: "u3", label: "Grace Hopper" },
+];
+
 describe("Combobox", () => {
   it("takes the first match with Enter while typing", async () => {
     const onChange = vi.fn();
@@ -65,6 +71,43 @@ describe("Combobox", () => {
     expect(screen.getByLabelText("Ada Okafor")).toBeInTheDocument();
     await userEvent.type(screen.getByRole("combobox", { name: "Members" }), "lin{Enter}");
     expect(onChange).toHaveBeenLastCalledWith(["u1", "u2"]);
+  });
+
+  it("lists every option again when opened after a pick", async () => {
+    const onChange = vi.fn();
+    render(<Combobox aria-label="Member" options={PEOPLE} onValueChange={onChange} />);
+    await userEvent.click(screen.getByRole("button", { name: "Show options" }));
+    await userEvent.click(await screen.findByRole("option", { name: "Lin Park" }));
+    expect(onChange).toHaveBeenLastCalledWith("u2");
+    expect(screen.getByRole("combobox", { name: "Member" })).toHaveValue("Lin Park");
+
+    await userEvent.click(screen.getByRole("button", { name: "Show options" }));
+    expect((await screen.findAllByRole("option")).map((o) => o.textContent)).toEqual(["Ada Okafor", "Lin Park", "Grace Hopper"]);
+  });
+
+  it("lists every option again after a search that led to a pick", async () => {
+    render(<Combobox aria-label="Member" options={PEOPLE} />);
+    const input = screen.getByRole("combobox", { name: "Member" });
+    await userEvent.type(input, "gra");
+    const [grace] = await screen.findAllByRole("option");
+    expect(grace).toHaveTextContent(/^Grace Hopper$/);
+    await userEvent.click(grace!);
+    expect(input).toHaveValue("Grace Hopper");
+
+    await userEvent.click(screen.getByRole("button", { name: "Show options" }));
+    expect((await screen.findAllByRole("option")).map((o) => o.textContent)).toEqual(["Ada Okafor", "Lin Park", "Grace Hopper"]);
+  });
+
+  it("asks for a search only with what was typed, and for none once an option is picked", async () => {
+    const onSearch = vi.fn();
+    render(<Combobox aria-label="Member" options={PEOPLE} onInputValueChange={onSearch} />);
+    await userEvent.type(screen.getByRole("combobox", { name: "Member" }), "li");
+    expect(onSearch.mock.calls).toEqual([["l"], ["li"]]);
+    const [lin] = await screen.findAllByRole("option");
+    expect(lin).toHaveTextContent(/^Lin Park$/);
+    await userEvent.click(lin!);
+    expect(onSearch).toHaveBeenLastCalledWith("");
+    expect(onSearch).not.toHaveBeenCalledWith("Lin Park");
   });
 
   it("never takes the create row as its own value", async () => {

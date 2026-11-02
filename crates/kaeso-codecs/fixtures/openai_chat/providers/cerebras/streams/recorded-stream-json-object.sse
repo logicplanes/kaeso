@@ -1,0 +1,16 @@
+data: {"id":"chatcmpl-feb653e4-2a8f-4175-99b4-5c1c3e72994c","choices":[{"delta":{"role":"assistant"},"index":0}],"created":1793652622,"model":"gpt-oss-120b","system_fingerprint":"fp_6fdb8c40f91e0c236df5","object":"chat.completion.chunk"}
+
+data: {"id":"chatcmpl-feb653e4-2a8f-4175-99b4-5c1c3e72994c","choices":[{"delta":{"reasoning":"We"},"index":0}],"created":1793652622,"model":"gpt-oss-120b","system_fingerprint":"fp_6fdb8c40f91e0c236df5","object":"chat.completion.chunk"}
+
+data: {"id":"chatcmpl-feb653e4-2a8f-4175-99b4-5c1c3e72994c","choices":[{"delta":{"reasoning":" need to output JSON object with one"},"index":0}],"created":1793652622,"model":"gpt-oss-120b","system_fingerprint":"fp_6fdb8c40f91e0c236df5","object":"chat.completion.chunk"}
+
+data: {"id":"chatcmpl-feb653e4-2a8f-4175-99b4-5c1c3e72994c","choices":[{"delta":{"reasoning":" key a set to 1. Use format json_object"},"index":0}],"created":1793652622,"model":"gpt-oss-120b","system_fingerprint":"fp_6fdb8c40f91e0c236df5","object":"chat.completion.chunk"}
+
+data: {"id":"chatcmpl-feb653e4-2a8f-4175-99b4-5c1c3e72994c","choices":[{"delta":{"content":"{\"type\":\"object\",\"a","reasoning":"."},"index":0}],"created":1793652622,"model":"gpt-oss-120b","system_fingerprint":"fp_6fdb8c40f91e0c236df5","object":"chat.completion.chunk"}
+
+data: {"id":"chatcmpl-feb653e4-2a8f-4175-99b4-5c1c3e72994c","choices":[{"delta":{"content":"\":1}"},"index":0}],"created":1793652622,"model":"gpt-oss-120b","system_fingerprint":"fp_6fdb8c40f91e0c236df5","object":"chat.completion.chunk"}
+
+data: {"id":"chatcmpl-feb653e4-2a8f-4175-99b4-5c1c3e72994c","choices":[{"delta":{},"finish_reason":"stop","index":0}],"created":1793652622,"model":"gpt-oss-120b","system_fingerprint":"fp_6fdb8c40f91e0c236df5","object":"chat.completion.chunk","usage":{"total_tokens":147,"completion_tokens":39,"completion_tokens_details":{"accepted_prediction_tokens":0,"rejected_prediction_tokens":0,"reasoning_tokens":20},"prompt_tokens":108,"prompt_tokens_details":{"cached_tokens":0}},"time_info":{"created":1793652622.5277865,"queue_time":0.003095571999999998,"prompt_time":0.001609391,"completion_time":0.017747501,"total_time":0.02418065071105957}}
+
+data: [DONE]
+

@@ -26,7 +26,7 @@ function projectAudit(events: AuditEventView[] = EVENTS) {
   on("GET", "orgs/:org/projects/:project/audit-log", paged(events));
 }
 
-const table = () => screen.getByRole("table", { name: "Audit log" });
+const table = () => screen.getByRole("grid", { name: "Audit log" });
 const row = (ip: string) => within(table()).getByText(ip).closest('[role="row"]') as HTMLElement;
 
 describe("project audit log", () => {

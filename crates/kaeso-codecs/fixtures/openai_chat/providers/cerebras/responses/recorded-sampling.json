@@ -1,0 +1,37 @@
+{
+  "id": "chatcmpl-165ccf97-c15b-47d4-a88f-a50ec70fb5ae",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "reasoning": "We just output \"1 2 3 4 5 6 7",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1793652450,
+  "model": "gpt-oss-120b",
+  "system_fingerprint": "fp_6fdb8c40f91e0c236df5",
+  "object": "chat.completion",
+  "usage": {
+    "total_tokens": 107,
+    "completion_tokens": 20,
+    "completion_tokens_details": {
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0,
+      "reasoning_tokens": 17
+    },
+    "prompt_tokens": 79,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    }
+  },
+  "time_info": {
+    "created": 1793652450.1171722,
+    "queue_time": 0.003029584,
+    "prompt_time": 0.002397435,
+    "completion_time": 0.011068726,
+    "total_time": 0.01902484893798828
+  }
+}

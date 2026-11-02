@@ -31,7 +31,7 @@ function orgs(list: InstanceOrgView[] = [NORTHWIND, CONTOSO, FABRIKAM, ORPHAN]) 
 }
 
 const orgQueries = () => requests("GET", "instance/orgs").map((r) => Object.fromEntries(r.query));
-const table = () => screen.getByRole("table", { name: "Organizations" });
+const table = () => screen.getByRole("grid", { name: "Organizations" });
 
 async function rowMenu(user: UserEvent, name: string) {
   await user.pointer({ keys: "[MouseRight]", target: await within(table()).findByText(name) });

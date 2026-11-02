@@ -1,7 +1,7 @@
 import { infiniteQueryOptions, queryOptions } from "@tanstack/react-query";
 import { api, data } from "../client";
 import type { AuditEventView } from "../generated/types";
-import { endOfDay } from "~/format/period";
+import { dayEnd, dayStart } from "~/format/zone";
 import type { AuditFilters } from "./audit-search";
 import { nextPageParam, refetchOnFocusWhileOnePage } from "../paging";
 
@@ -15,8 +15,8 @@ export function auditParams(f: AuditFilters) {
     ...(f.action ? { action: f.action } : {}),
     ...(f.target ? { target: f.target } : {}),
     ...(f.by_agents ? { by_agents: true } : {}),
-    ...(f.from ? { from: `${f.from}T00:00:00Z` } : {}),
-    ...(f.to ? { to: endOfDay(f.to) } : {}),
+    ...(f.from ? { from: dayStart(f.from) } : {}),
+    ...(f.to ? { to: dayEnd(f.to) } : {}),
   };
 }
 

@@ -1,0 +1,27 @@
+{
+  "model": "gpt-oss-120b",
+  "messages": [
+    {
+      "role": "system",
+      "content": "Answer in one short sentence."
+    },
+    {
+      "role": "user",
+      "content": "Pick a colour."
+    },
+    {
+      "role": "assistant",
+      "content": "Blue."
+    },
+    {
+      "role": "system",
+      "content": "From now on, answer in French."
+    },
+    {
+      "role": "user",
+      "content": "Pick another one."
+    }
+  ],
+  "reasoning_effort": "low",
+  "max_completion_tokens": 200
+}

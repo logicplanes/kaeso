@@ -6,6 +6,7 @@ import {
   Button,
   DialogScope,
   Empty,
+  Field,
   Input,
   KeyDisplay,
   KeyValue,
@@ -20,6 +21,7 @@ import { toast } from "~/shell/toast";
 import { formatDate } from "@logicplanes/kaeso-ui/format";
 import { api, data } from "~/api/client";
 import { isApiError } from "~/api/errors";
+import { fieldError } from "~/api/field-error";
 import type { ServiceAccountView } from "~/api/generated/types";
 import { allKeysQuery } from "~/api/queries/keys";
 import { useApiMutation } from "~/auth/mutation";
@@ -142,18 +144,29 @@ function AccountBody({ org, project, accountId, onClose }: { org: string; projec
         </Banner>
       )}
       {name !== null ? (
-        <div className="flex items-end gap-8">
-          <Input className="flex-1" label={common.name()} value={name} onChange={(e) => setName(e.target.value)} autoFocus maxLength={100} />
-          <Button
-            variant="primary"
-            disabled={!name.trim() || name.trim() === a.name}
-            loading={update.isPending && update.variables?.name !== undefined}
-            onClick={() => update.mutate({ name: name.trim() })}
-          >
-            {common.save()}
-          </Button>
-          <Button onClick={() => setName(null)}>{common.cancel()}</Button>
-        </div>
+        <Field label={common.name()} error={fieldError(update.error, "name")}>
+          <div className="flex items-center gap-8">
+            <Input
+              className="flex-1"
+              value={name}
+              onChange={(e) => {
+                setName(e.target.value);
+                if (update.isError) update.reset();
+              }}
+              autoFocus
+              maxLength={100}
+            />
+            <Button
+              variant="primary"
+              disabled={!name.trim() || name.trim() === a.name}
+              loading={update.isPending && update.variables?.name !== undefined}
+              onClick={() => update.mutate({ name: name.trim() })}
+            >
+              {common.save()}
+            </Button>
+            <Button onClick={() => setName(null)}>{common.cancel()}</Button>
+          </div>
+        </Field>
       ) : (
         <KeyValue
           items={[

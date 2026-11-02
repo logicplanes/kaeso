@@ -57,7 +57,7 @@ Rotating a key needs these rights:
 | A service account's key | **Create service account keys** and **Manage all keys** |
 | A key with platform access | Also **Give keys platform access**, a console session and a recent sign-in |
 
-Only its owner can rotate a member's key, because the new key acts with the owner's rights. A key that is archived or was rotated already can't be rotated; rotate its replacement instead.
+Only its owner can rotate a member's key, because the new key acts with the owner's rights. A key that is archived or was rotated already can't be rotated; rotate its replacement instead. Neither can a disabled key, because its replacement would start out enabled; enable it first.
 
 ## Turn a key off
 

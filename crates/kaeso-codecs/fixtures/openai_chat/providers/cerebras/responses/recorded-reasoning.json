@@ -1,0 +1,37 @@
+{
+  "id": "chatcmpl-266374e7-5dbd-49c3-9001-fb06e4d60fc6",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "\n\n391",
+        "reasoning": "We need answer user: \"What is 17 times 23? Answer with the number.\" Compute 17*23 = 391. Need final only number likely. Ensure no extra.\n",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1793652392,
+  "model": "qwen-3.8-27b",
+  "system_fingerprint": "fp_2642a45f2f6e92f79b49",
+  "object": "chat.completion",
+  "usage": {
+    "total_tokens": 118,
+    "completion_tokens": 51,
+    "completion_tokens_details": {
+      "reasoning_tokens": 46
+    },
+    "prompt_tokens": 67,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "image_tokens": 0
+    }
+  },
+  "time_info": {
+    "created": 1793652392.827205,
+    "queue_time": 0.00026537800000000014,
+    "prompt_time": 0.002987013,
+    "completion_time": 0.019981268,
+    "total_time": 0.024804353713989258
+  }
+}

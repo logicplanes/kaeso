@@ -25,6 +25,7 @@ import { modelName } from "~/format/models";
 import { toast } from "~/shell/toast";
 import { formatRelative } from "@logicplanes/kaeso-ui/format";
 import { api, data } from "~/api/client";
+import { fieldError } from "~/api/field-error";
 import type { AliasView } from "~/api/generated/types";
 import { aliasesQuery, catalogueQuery } from "~/api/queries/models";
 import { projectCatalogue } from "~/api/queries/invalidation";
@@ -242,7 +243,11 @@ function AliasDialog({ org, project, alias, onClose }: { org: string; project: s
         <Input
           label={common.name()}
           value={name}
-          onChange={(e) => setName(e.target.value)}
+          onChange={(e) => {
+            setName(e.target.value);
+            if (save.isError) save.reset();
+          }}
+          error={fieldError(save.error, "name")}
           autoFocus
           maxLength={200}
           placeholder={t("models.alias.nameExample", "fast")}
@@ -254,7 +259,11 @@ function AliasDialog({ org, project, alias, onClose }: { org: string; project: s
           fullWidth
           placeholder={t("models.chooseModel", "Choose a model")}
           value={target}
-          onValueChange={setTarget}
+          onValueChange={(next: string) => {
+            setTarget(next);
+            if (save.isError) save.reset();
+          }}
+          error={fieldError(save.error, "catalogue_model_id")}
           options={options}
           providers={providers}
         />

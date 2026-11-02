@@ -55,6 +55,9 @@ const ACCEPT_RETRY_WAIT: Duration = Duration::from_secs(1);
 const POSTGRES_RETRY_WAIT: Duration = Duration::from_secs(2);
 const CLICKHOUSE_MIGRATION_RETRY_WAIT: Duration = Duration::from_secs(5);
 const USAGE_FLUSH_INTERVAL: Duration = Duration::from_secs(10);
+// Docker stops a container 10 s after its signal unless told otherwise, so while the gateway
+// drains, what it has counted and logged is written every second, not at the very end alone.
+pub(crate) const SHUTDOWN_FLUSH_INTERVAL: Duration = Duration::from_secs(1);
 const METRICS_SHUTDOWN_GRACE: Duration = Duration::from_secs(1);
 const IN_FLIGHT_SHUTDOWN_WAIT: Duration = Duration::from_secs(10);
 const LOG_FLUSH_SHUTDOWN_WAIT: Duration = Duration::from_secs(10);
@@ -194,12 +197,18 @@ pub fn spawn_clickhouse_migrations(state: AppState, shutdown: CancellationToken)
     });
 }
 
-pub fn spawn_usage_flusher(state: AppState, shutdown: CancellationToken) {
+pub fn spawn_usage_flusher(state: AppState, draining: CancellationToken, stop: CancellationToken) {
     tokio::spawn(async move {
         loop {
+            let every = if draining.is_cancelled() {
+                SHUTDOWN_FLUSH_INTERVAL
+            } else {
+                USAGE_FLUSH_INTERVAL
+            };
             tokio::select! {
-                () = shutdown.cancelled() => return,
-                () = tokio::time::sleep(USAGE_FLUSH_INTERVAL) => {}
+                () = stop.cancelled() => return,
+                () = draining.cancelled(), if !draining.is_cancelled() => {}
+                () = tokio::time::sleep(every) => {}
             }
             if let Err(e) = crate::services::usage::flush(&state).await {
                 tracing::warn!(error = %e, retry_in = ?USAGE_FLUSH_INTERVAL, "cannot write usage; retrying");
@@ -217,8 +226,9 @@ pub async fn run(
     crate::services::kpmr::spawn_reloader(&state);
     spawn_clickhouse_migrations(state.clone(), shutdown.clone());
     crate::jobs::spawn_all(&state, &shutdown);
-    spawn_usage_flusher(state.clone(), shutdown.clone());
-    crate::services::logs::spawn_writer(state.clone(), shutdown.clone());
+    let flushing = CancellationToken::new();
+    spawn_usage_flusher(state.clone(), shutdown.clone(), flushing.clone());
+    crate::services::logs::spawn_writer(state.clone(), shutdown.clone(), flushing.clone());
     crate::services::response_cache::spawn_memory_watch(state.clone(), shutdown.clone());
 
     crate::setup::announce(&state).await;
@@ -268,6 +278,7 @@ pub async fn run(
     if open > 0 {
         tracing::error!(open, "requests could not record their outcome at shutdown");
     }
+    flushing.cancel();
     match crate::services::usage::flush(&state).await {
         Ok(n) => tracing::info!(rows = n, "usage written"),
         Err(e) => tracing::error!(error = %e, "cannot write the last usage at shutdown"),

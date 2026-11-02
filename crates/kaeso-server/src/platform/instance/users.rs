@@ -389,14 +389,15 @@ pub async fn end_sessions(
 ) -> ApiResult<StatusCode> {
     let target = user(&state, &id).await?;
     let uid = UserId::from_uuid(target.id);
-    let ended = sessions::revoke_all(&state, uid, None).await?;
     let mut tx = state.pg.begin().await?;
+    let ended = sessions::revoke_all_in(&mut tx, uid, None, ctx.now).await?;
     ctx.audit(None, Action::UserSessionsRevoke)
         .target("user", uid)
-        .after(serde_json::json!({ "ended": ended }))
+        .after(serde_json::json!({ "ended": ended.len() }))
         .write(&mut tx)
         .await?;
     tx.commit().await?;
+    sessions::forget(&state, &ended).await;
     if let Some(email) = &target.email {
         let lang = crate::services::mail_lang::of_user(
             &state.pg,

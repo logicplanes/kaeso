@@ -418,6 +418,22 @@ pub fn reach(agent: &AgentCaller, held: &HeldOrg) -> Option<Reach> {
     Some(Reach { org, projects })
 }
 
+pub async fn reachable(
+    state: &AppState,
+    agent: &AgentCaller,
+) -> ApiResult<BTreeMap<Uuid, BTreeSet<Uuid>>> {
+    let managed = managed_by(state, &agent.sign_in).await?.map(|m| m.org_id);
+    Ok(holdings(&state.pg, agent.user_id())
+        .await?
+        .iter()
+        .filter(|held| policy_gap(&agent.sign_in, managed, held.area).is_none())
+        .filter_map(|held| {
+            let projects = reach(agent, held)?.projects.into_iter().map(|(id, _)| id);
+            Some((held.id, projects.collect()))
+        })
+        .collect())
+}
+
 fn added<I: Iterator<Item = Right>>(rights: I) -> bool {
     rights.into_iter().any(needs_confirmation)
 }

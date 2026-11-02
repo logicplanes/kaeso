@@ -1,0 +1,45 @@
+{
+  "model": "gpt-oss-120b",
+  "messages": [
+    {
+      "role": "system",
+      "content": "Extract the event information."
+    },
+    {
+      "role": "user",
+      "content": "Alice and Bob are going to a science fair on 2026-10-16."
+    }
+  ],
+  "reasoning_effort": "low",
+  "max_completion_tokens": 600,
+  "response_format": {
+    "type": "json_schema",
+    "json_schema": {
+      "name": "calendar_event",
+      "strict": true,
+      "schema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "date": {
+            "type": "string"
+          },
+          "participants": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "name",
+          "date",
+          "participants"
+        ],
+        "additionalProperties": false
+      }
+    }
+  }
+}

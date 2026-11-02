@@ -1,0 +1,20 @@
+{
+  "model": "gpt-oss-120b",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hi"
+    },
+    {
+      "role": "assistant",
+      "content": "Hello!",
+      "refusal": null
+    },
+    {
+      "role": "user",
+      "content": "Say bye."
+    }
+  ],
+  "reasoning_effort": "low",
+  "max_completion_tokens": 200
+}

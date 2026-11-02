@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import {
+  AlertDialog,
   Badge,
   Banner,
   Button,
@@ -37,7 +38,7 @@ import { tRich } from "~/i18n/rich";
 import { docsPage } from "~/format/docs";
 import { common } from "~/i18n/common";
 import { fullDayLabel, utcDay } from "~/format/period";
-import { afterToday, DAY_PRESETS, pickedDay } from "~/format/picked-day";
+import { afterUtcToday, pickedDay, UTC_DAY_PRESETS } from "~/format/picked-day";
 import { toast } from "~/shell/toast";
 import { LoadFailed } from "./load-failed";
 import { OrgPage } from "./org-page";
@@ -125,28 +126,37 @@ function LogSettings({ org }: { org: string }) {
   const s = settings.data;
   if (settings.isError) return <LoadFailed title={t("org.logging.settingsFailed", "The log settings couldn't load")} />;
   if (!s) return <Skeleton className="h-full w-full" />;
-  return (
-    <LogSettingsForm key={`${s.metadata_retention_days}-${s.content_retention_days}`} org={org} settings={s} canManage={rights.has("logs.settings.manage")} />
-  );
+  return <LogSettingsForm key={org} org={org} settings={s} canManage={rights.has("logs.settings.manage")} />;
 }
+
+type RetentionField = "metadata_retention_days" | "content_retention_days";
 
 function LogSettingsForm({ org, settings, canManage }: { org: string; settings: OrgLogSettings; canManage: boolean }) {
   const needs = useNeedsRight(org);
-  const [metadata, setMetadata] = useState(String(settings.metadata_retention_days));
-  const [content, setContent] = useState(String(settings.content_retention_days));
+  const queryClient = useQueryClient();
+  const [drafts, setDrafts] = useState<Partial<Record<RetentionField, string>>>({});
+  const [shortening, setShortening] = useState<{ field: RetentionField; days: number } | null>(null);
+  const [confirming, setConfirming] = useState(false);
   const save = useApiMutation({
-    mutationFn: async (body: { content_logging?: boolean; metadata_retention_days?: number; content_retention_days?: number }) =>
+    mutationFn: async (body: { content_logging?: boolean } & Partial<Record<RetentionField, number>>) =>
       data(await api.PATCH("/platform/v1/orgs/{org}/logs/settings", { params: { path: { org } }, body })),
     invalidates: [["orgs", org, "logs"], orgViewKey(org), projectListKey(org), projectViews(org), projectLogSettings(org)],
-    onSuccess: (_s, body) =>
+    onSuccess: (saved, body) => {
+      queryClient.setQueryData(logSettingsQuery(org).queryKey, saved);
+      setDrafts((d) => Object.fromEntries(Object.entries(d).filter(([field]) => !(field in body))));
       toast.success(
         body.content_logging === undefined
           ? t("org.logging.retentionSaved", "Retention saved")
           : body.content_logging
             ? t("org.logging.contentOn", "Content logging turned on")
             : t("org.logging.contentOff", "Content logging turned off"),
-      ),
+      );
+    },
+    onError: () => setConfirming(false),
   });
+  const metadata = drafts.metadata_retention_days ?? String(settings.metadata_retention_days);
+  const content = drafts.content_retention_days ?? String(settings.content_retention_days);
+  const setDraft = (field: RetentionField) => (value: string) => setDrafts((d) => ({ ...d, [field]: value }));
   const m = Number(metadata);
   const c = Number(content);
   const whole = (n: number) => Number.isInteger(n) && n >= 1;
@@ -175,19 +185,24 @@ function LogSettingsForm({ org, settings, canManage }: { org: string; settings: 
           : c === settings.content_retention_days
             ? t("org.noChange", "No change to save")
             : undefined;
-  const saving = (field: "metadata_retention_days" | "content_retention_days") => save.isPending && save.variables?.[field] !== undefined;
-  const saveButton = (reason: string | undefined, field: "metadata_retention_days" | "content_retention_days", value: number, label: string) => (
+  const saving = (field: RetentionField) => save.isPending && save.variables?.[field] !== undefined;
+  const saveButton = (reason: string | undefined, field: RetentionField, value: number, label: string) => (
     <Button
       size="sm"
       aria-label={label}
       disabled={!!reason}
       {...(reason ? { disabledReason: reason } : {})}
       loading={saving(field)}
-      onClick={() => save.mutate({ [field]: value })}
+      onClick={() => {
+        if (value >= settings[field]) return save.mutate({ [field]: value });
+        setShortening({ field, days: value });
+        setConfirming(true);
+      }}
     >
       {common.save()}
     </Button>
   );
+  const shortDays = shortening && t("org.days", "{count, plural, one {# day} other {# days}}", { count: shortening.days });
   return (
     <div>
       <SettingsSection title={t("org.logging.content", "Content logging")}>
@@ -224,7 +239,7 @@ function LogSettingsForm({ org, settings, canManage }: { org: string; settings: 
                     size="sm"
                     integer
                     value={metadata}
-                    onValueChange={setMetadata}
+                    onValueChange={setDraft("metadata_retention_days")}
                     min="1"
                     step="1"
                     unit={days}
@@ -246,7 +261,7 @@ function LogSettingsForm({ org, settings, canManage }: { org: string; settings: 
                     size="sm"
                     integer
                     value={content}
-                    onValueChange={setContent}
+                    onValueChange={setDraft("content_retention_days")}
                     min="1"
                     step="1"
                     unit={days}
@@ -259,6 +274,28 @@ function LogSettingsForm({ org, settings, canManage }: { org: string; settings: 
           />
         </SettingsGroup>
       </SettingsSection>
+      {shortening && shortDays && (
+        <AlertDialog
+          open={confirming}
+          onOpenChange={setConfirming}
+          tone="danger"
+          title={
+            shortening.field === "metadata_retention_days"
+              ? t("org.logging.shortenMetadata", "Keep metadata for {days} only?", { days: shortDays })
+              : t("org.logging.shortenContent", "Keep content for {days} only?", { days: shortDays })
+          }
+          description={
+            shortening.field === "metadata_retention_days"
+              ? t("org.logging.shortenMetadataHint", "Log entries older than {days} are deleted now, with their content; this can't be undone.", {
+                  days: shortDays,
+                })
+              : t("org.logging.shortenContentHint", "Request and reply bodies older than {days} are deleted now; this can't be undone.", { days: shortDays })
+          }
+          confirmLabel={t("org.logging.shortenConfirm", "Shorten and delete")}
+          loading={save.isPending}
+          onConfirm={() => save.mutateAsync({ [shortening.field]: shortening.days })}
+        />
+      )}
     </div>
   );
 }
@@ -494,8 +531,8 @@ function DeleteLogsDialog({ org, onClose }: { org: string; onClose: () => void }
               aria-label={t("org.logging.period", "Period")}
               value={range}
               onValueChange={setRange}
-              presets={DAY_PRESETS}
-              disabledDays={(d) => afterToday(d)}
+              presets={UTC_DAY_PRESETS}
+              disabledDays={(d) => afterUtcToday(d)}
             />
           ),
         },

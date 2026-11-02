@@ -117,6 +117,7 @@ export const providerMark = {
   moonshotai: mode("#1783ff", "#1783ff"),
   "alibaba-violet": mode("#4f21ff", "#543aff"),
   "alibaba-pink": mode("#d75bfe", "#d75bfe"),
+  cerebras: mode("#f05a28", "#f05a28"),
 } as const;
 
 export const type = {

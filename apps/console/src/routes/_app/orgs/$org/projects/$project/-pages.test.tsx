@@ -104,7 +104,7 @@ describe("the request logs address", () => {
     await screen.findByRole("heading", { name: "Request logs", level: 1 });
     await waitFor(() =>
       expect(sent("orgs/:org/projects/:project/logs")).toContainEqual({
-        from: "2026-10-01T00:00:00Z",
+        from: "2026-10-01T00:00:00.000Z",
         to: "2026-10-08T00:00:00.000Z",
         key: "key_web",
         user: "usr_ada",
@@ -244,7 +244,7 @@ describe("the project audit log address", () => {
         actor: "usr_ada",
         action: "key.created",
         target: "key_web",
-        from: "2026-10-01T00:00:00Z",
+        from: "2026-10-01T00:00:00.000Z",
         to: "2026-10-03T00:00:00.000Z",
         limit: "100",
       }),

@@ -1,0 +1,6 @@
+{
+  "message": "Tokens per minute limit exceeded - too many tokens processed.",
+  "type": "too_many_tokens_error",
+  "param": "quota",
+  "code": "token_quota_exceeded"
+}

@@ -72,7 +72,7 @@ Jede Organisation legt unter **Organisationseinstellungen** › **Protokollierun
 | Aufbewahrung der Metadaten | 90 Tage | Wie lange Protokolleinträge bleiben |
 | Aufbewahrung der Inhalte | 30 Tage | Wie lange Anfragen und Antworten bleiben. Nie länger als die Metadaten |
 
-Eine kürzere Aufbewahrung löscht ältere Einträge, eine längere gilt für neue. Die Installation legt die Standards für neue Organisationen fest und die längste Aufbewahrung, die eine Organisation wählen darf ([Instanzeinstellungen](instance-administration.md#installationseinstellungen-ändern)). Diese Einstellungen oder die Inhaltsprotokollierung der Organisation zu ändern erfordert das Recht **Protokollierung verwalten** und eine kürzliche Anmeldung.
+Eine kürzere Aufbewahrung löscht nach Ihrer Bestätigung sofort ältere Einträge, eine längere gilt für neue. Die Installation legt die Standards für neue Organisationen fest und die längste Aufbewahrung, die eine Organisation wählen darf ([Instanzeinstellungen](instance-administration.md#installationseinstellungen-ändern)). Diese Einstellungen oder die Inhaltsprotokollierung der Organisation zu ändern erfordert das Recht **Protokollierung verwalten** und eine kürzliche Anmeldung.
 
 Ein Projekt kann die Inhaltsprotokollierung für sich in seinen **Einstellungen** ausschalten, mit dem Recht **Inhaltsprotokollierung schalten**. Einschalten kann es sie nicht, solange die Organisation sie ausgeschaltet hat.
 

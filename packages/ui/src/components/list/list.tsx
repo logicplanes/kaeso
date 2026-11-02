@@ -13,6 +13,7 @@ import { useCoarsePointer } from "../../hooks/use-coarse-pointer.js";
 import { createPortal } from "react-dom";
 import { usePortalContainer } from "../../utils/portal-context.js";
 import { lazyModule, useLazyModuleRetried } from "../../utils/lazy-module.js";
+import { selectsText } from "../../utils/selects-text.js";
 import { RowCheckbox } from "./row-checkbox.js";
 import { useUiText } from "../../i18n/context.js";
 
@@ -391,11 +392,6 @@ function rowTone(card: boolean, selected: boolean) {
       ? "bg-raised-pressed controls-on-fill hover:raised-selected-hover active:raised-selected-hover"
       : "bg-fill-2 controls-on-fill hover:bg-fill-3 active:bg-fill-3";
   return card ? "hover:bg-raised-hover hover:controls-on-fill active:bg-raised-pressed" : "hover:bg-fill-1 hover:controls-on-fill active:bg-fill-2";
-}
-
-function selectsText(row: HTMLElement) {
-  const selection = typeof window === "undefined" ? null : window.getSelection();
-  return !!selection && !selection.isCollapsed && !!selection.anchorNode && row.contains(selection.anchorNode);
 }
 
 function clearOfBar(el: HTMLElement, bar: HTMLElement | null) {

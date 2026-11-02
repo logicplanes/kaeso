@@ -228,8 +228,10 @@ pub async fn delete(
 ) -> Result<Vec<uuid::Uuid>, LifecycleError> {
     ensure_not_last_owner(&mut *tx, user, "delete the account").await?;
     ensure_not_last_instance_admin(&mut *tx, user).await?;
-    let keys = kaeso_store::pg::key_lifecycle::archive_user_keys(&mut *tx, user.uuid(), at).await?;
+    // Deleting the memberships waits for a key being created meanwhile, so archiving after it
+    // catches that key too.
     kaeso_store::pg::members::delete_all_of_user(&mut *tx, user.uuid()).await?;
+    let keys = kaeso_store::pg::key_lifecycle::archive_user_keys(&mut *tx, user.uuid(), at).await?;
     totp::remove(&mut *tx, user.uuid()).await?;
     kaeso_store::pg::tokens::delete_of_user(&mut *tx, user.uuid()).await?;
     if let Some(avatar) = users::delete_personal_data(&mut *tx, user.uuid(), at).await? {

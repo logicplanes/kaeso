@@ -908,6 +908,401 @@ expression: outcomes
       "output_tokens": 30
     }
   },
+  "providers/cerebras/recorded-basic": {
+    "content": [
+      {
+        "text": "Paris is the capital of France.",
+        "type": "text"
+      }
+    ],
+    "id": "chatcmpl-a51fa45b-7e9e-454e-8038-01cc78abc657",
+    "model": "gpt-oss-120b",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 87,
+      "output_tokens": 22,
+      "output_tokens_details": {
+        "thinking_tokens": 5
+      }
+    }
+  },
+  "providers/cerebras/recorded-image": {
+    "content": [
+      {
+        "text": " red",
+        "type": "text"
+      }
+    ],
+    "id": "chatcmpl-8e1ca3d6-d06c-41a9-bfe8-4c19a65b2ead",
+    "model": "qwen-3.8-27b",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 89,
+      "output_tokens": 2,
+      "output_tokens_details": {
+        "thinking_tokens": 0
+      }
+    }
+  },
+  "providers/cerebras/recorded-logit-bias-honoured": {
+    "content": [
+      {
+        "text": "Apple. </s>",
+        "type": "text"
+      }
+    ],
+    "id": "chatcmpl-7cfae345-fb7f-4d2e-9316-6f77fc4ce020",
+    "model": "gpt-oss-120b",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 71,
+      "output_tokens": 18,
+      "output_tokens_details": {
+        "thinking_tokens": 3
+      }
+    }
+  },
+  "providers/cerebras/recorded-logprobs": {
+    "content": [
+      {
+        "text": "Hello there.",
+        "type": "text"
+      }
+    ],
+    "id": "chatcmpl-0dc84096-9ab8-435e-ab13-c88b1962b698",
+    "model": "gpt-oss-120b",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 73,
+      "output_tokens": 28,
+      "output_tokens_details": {
+        "thinking_tokens": 15
+      }
+    }
+  },
+  "providers/cerebras/recorded-max-completion-tokens-reasoning": {
+    "content": [],
+    "id": "chatcmpl-08a16a7e-c7b2-4e94-a102-b5a5b55fec6c",
+    "model": "gpt-oss-120b",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "max_tokens",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 74,
+      "output_tokens": 20,
+      "output_tokens_details": {
+        "thinking_tokens": 17
+      }
+    }
+  },
+  "providers/cerebras/recorded-prefill": {
+    "content": [
+      {
+        "text": "1. Red  \n2. Blue  \n3. Green",
+        "type": "text"
+      }
+    ],
+    "id": "chatcmpl-31157dd1-4c6b-4503-8714-7b26e9bd25b0",
+    "model": "gpt-oss-120b",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 87,
+      "output_tokens": 37,
+      "output_tokens_details": {
+        "thinking_tokens": 16
+      }
+    }
+  },
+  "providers/cerebras/recorded-reasoning": {
+    "content": [
+      {
+        "text": "\n\n391",
+        "type": "text"
+      }
+    ],
+    "id": "chatcmpl-266374e7-5dbd-49c3-9001-fb06e4d60fc6",
+    "model": "qwen-3.8-27b",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 67,
+      "output_tokens": 51,
+      "output_tokens_details": {
+        "thinking_tokens": 46
+      }
+    }
+  },
+  "providers/cerebras/recorded-reasoning-effort-none": {
+    "content": [
+      {
+        "text": "391",
+        "type": "text"
+      }
+    ],
+    "id": "chatcmpl-3c6cedcb-6c3e-4189-8653-f9c2bd82b2d4",
+    "model": "qwen-3.8-27b",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 27,
+      "output_tokens": 4,
+      "output_tokens_details": {
+        "thinking_tokens": 0
+      }
+    }
+  },
+  "providers/cerebras/recorded-reasoning-format-hidden": {
+    "content": [
+      {
+        "text": "2 + 2 = 4.",
+        "type": "text"
+      }
+    ],
+    "id": "chatcmpl-a0e4957b-fcdd-421b-8f67-1ba8f90e321f",
+    "model": "gpt-oss-120b",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 74,
+      "output_tokens": 26,
+      "output_tokens_details": {
+        "thinking_tokens": 6
+      }
+    }
+  },
+  "providers/cerebras/recorded-reasoning-format-raw": {
+    "content": [
+      {
+        "text": "The user is asking a simple arithmetic question: 2+2. The answer is 4.\n</think>\n\n4",
+        "type": "text"
+      }
+    ],
+    "id": "chatcmpl-af2759bd-947d-4c2b-b79d-c28fc4874425",
+    "model": "qwen-3.8-27b",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 47,
+      "output_tokens": 25,
+      "output_tokens_details": {
+        "thinking_tokens": 22
+      }
+    }
+  },
+  "providers/cerebras/recorded-reasoning-sent-back": {
+    "content": [
+      {
+        "text": "Because 7 is often considered lucky, memorable, and it falls right in the middle of the range, making it a balanced choice.",
+        "type": "text"
+      }
+    ],
+    "id": "chatcmpl-b90a1860-9b61-4ba1-a5e7-e379a7d1feaa",
+    "model": "gpt-oss-120b",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 97,
+      "output_tokens": 44,
+      "output_tokens_details": {
+        "thinking_tokens": 7
+      }
+    }
+  },
+  "providers/cerebras/recorded-sampling": {
+    "content": [],
+    "id": "chatcmpl-165ccf97-c15b-47d4-a88f-a50ec70fb5ae",
+    "model": "gpt-oss-120b",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 79,
+      "output_tokens": 20,
+      "output_tokens_details": {
+        "thinking_tokens": 17
+      }
+    }
+  },
+  "providers/cerebras/recorded-structured-output": {
+    "content": [
+      {
+        "text": "{\"name\":\"science fair\",\"date\":\"2026-10-16\",\"participants\":[\"Alice\",\"Bob\"]}",
+        "type": "text"
+      }
+    ],
+    "id": "chatcmpl-c5fe3464-db59-4659-9b98-95e9684dc488",
+    "model": "gpt-oss-120b",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 243,
+      "output_tokens": 59,
+      "output_tokens_details": {
+        "thinking_tokens": 27
+      }
+    }
+  },
+  "providers/cerebras/recorded-system-mid-conversation": {
+    "content": [
+      {
+        "text": "Rouge.",
+        "type": "text"
+      }
+    ],
+    "id": "chatcmpl-8a847cf6-444b-4162-9286-ec5db69c4175",
+    "model": "gpt-oss-120b",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 115,
+      "output_tokens": 23,
+      "output_tokens_details": {
+        "thinking_tokens": 10
+      }
+    }
+  },
+  "providers/cerebras/recorded-tools": {
+    "content": [
+      {
+        "id": "4e80d65a6",
+        "input": {
+          "city": "Paris",
+          "unit": "celsius"
+        },
+        "name": "get_weather",
+        "type": "tool_use"
+      }
+    ],
+    "id": "chatcmpl-aa806c9c-512c-4489-90da-8fecf3aae7f7",
+    "model": "gpt-oss-120b",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "tool_use",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 150,
+      "output_tokens": 36,
+      "output_tokens_details": {
+        "thinking_tokens": 7
+      }
+    }
+  },
+  "providers/cerebras/recorded-user-hints": {
+    "content": [
+      {
+        "text": "Hello there!",
+        "type": "text"
+      }
+    ],
+    "id": "chatcmpl-29e4eb35-4fc1-451b-ab8b-6fc3ae619027",
+    "model": "gpt-oss-120b",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 73,
+      "output_tokens": 21,
+      "output_tokens_details": {
+        "thinking_tokens": 8
+      }
+    }
+  },
   "providers/cohere/recorded-assistant-prefill": {
     "content": [
       {

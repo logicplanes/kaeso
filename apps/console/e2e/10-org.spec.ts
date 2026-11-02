@@ -354,6 +354,7 @@ test("logging: retention is shortened, storage is listed, and a deletion is queu
   const content = page.getByRole("spinbutton", { name: "Content retention" });
   await content.fill("7");
   await page.getByRole("button", { name: "Save content retention" }).click();
+  await page.getByRole("alertdialog", { name: "Keep content for 7 days only?" }).getByRole("button", { name: "Shorten and delete" }).click();
   await expect(toastText(page, "Retention saved")).toBeVisible();
 
   await page.getByRole("tab", { name: "Storage" }).click();
@@ -374,7 +375,7 @@ test("logging: retention is shortened, storage is listed, and a deletion is queu
 
 test("audit log: the changes above are recorded, filtered by action, and open with what they changed", async ({ page }) => {
   await openOrgSettings(page, "Audit log");
-  const grid = page.getByRole("table", { name: "Audit log" });
+  const grid = page.getByRole("grid", { name: "Audit log" });
   await expect(grid.getByText("Organization changed").first()).toBeVisible();
   await expect(grid.getByText("Custom provider deleted")).toBeVisible();
   await page.getByRole("combobox", { name: "Action" }).fill("Platform keys");

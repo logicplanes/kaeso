@@ -393,7 +393,7 @@ describe("CreateKeyDialog", () => {
     expect(within(dialog).getAllByText("You need Give keys platform access; ask Lin Wei for it.")).toHaveLength(2);
   });
 
-  it("shows the API's message when the key is refused", async () => {
+  it("goes back to the name and says under it why the key is refused", async () => {
     signedIn();
     projectData();
     on("POST", KEYS, apiError(422, "invalid_request", "A key with this name exists.", { param: "name" }));
@@ -405,5 +405,12 @@ describe("CreateKeyDialog", () => {
     await user.click(within(dialog).getByRole("button", { name: "Create key" }));
     expect((await notifications().findAllByText("A key with this name exists.")).length).toBeGreaterThan(0);
     expect(screen.queryByRole("dialog", { name: "Key created" })).not.toBeInTheDocument();
+
+    expect(await within(dialog).findByRole("heading", { name: "What is it for?" })).toBeVisible();
+    const name = within(dialog).getByRole("textbox", { name: "Name" });
+    await waitFor(() => expect(name).toHaveFocus());
+    expect(name).toHaveAccessibleDescription("A key with this name exists.");
+    await user.type(name, "-2");
+    expect(name).not.toHaveAccessibleDescription("A key with this name exists.");
   });
 });

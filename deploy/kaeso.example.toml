@@ -95,6 +95,9 @@ base_url = "https://api.moonshot.ai"
 [providers.alibaba]
 base_url = "https://ap-southeast-1.maas.qwencloudapi.com/compatible-mode"
 
+[providers.cerebras]
+base_url = "https://api.cerebras.ai"
+
 [custom_providers]
 enabled = true
 allowed_networks = ""
@@ -119,7 +122,7 @@ max_entry_size = "1MiB"
 memory_share = 50
 
 [body_limits]
-model_api = "8MiB"
+model_api = "32MiB"
 in_flight = "512MiB"
 platform_api = "1MiB"
 provider_response = "128MiB"

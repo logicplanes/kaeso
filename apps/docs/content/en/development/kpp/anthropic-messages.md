@@ -201,7 +201,7 @@ Schema `MessageStreamEvent`.
 | `content_block_start` `thinking` | `BlockStart(Reasoning { origin })` | Initial thinking and signature → deltas with `in_start`. |
 | `content_block_start` `redacted_thinking` | `BlockStart(Reasoning { opaque: [AnthropicRedactedThinking] })` | |
 | `content_block_start` of other types | `BlockStart(Unknown)` (raw) | |
-| a start block that differs from the default (`{type:text,text:""}`, `{type:tool_use,id,name,input:{}}`, `{type:thinking,thinking:"",signature:""}`, `{type:redacted_thinking,data}`) | form `content_block` (the exact block) | |
+| a start block that differs from the default (`{type:text,text:""}`, `{type:tool_use,id,name,input:{}}`, `{type:thinking,thinking:"",signature:""}`, `{type:redacted_thinking,data}`) | form `content_block` (the exact block) | Claude's `tool_use` start carries `caller: {type: direct}`, so it is kept this way; its `id` and `name` are mapped back first, and the default is built from the mapped ones (`fixtures/anthropic_messages/streams/tools-caller.sse`). |
 | `content_block_start.index` that differs from the KPP index | form `index` | Anthropic numbers blocks 0, 1, …, so this only happens in unusual streams. |
 | `text_delta` | `Delta::Text` | |
 | `input_json_delta` (`partial_json`) | `Delta::ToolArguments(partial_json)` | The `partial_json` fragments of a block concatenate to the arguments. On `Unknown` blocks (such as `server_tool_use`): `Delta::Unknown` (raw). |
@@ -214,7 +214,7 @@ Schema `MessageStreamEvent`.
 | `message_delta.delta.stop_details`, `.container`, unknown keys | fields `delta.*` | |
 | `message_delta.usage` (`MessageDeltaUsage`) | `ResponseDelta.usage` (cumulative) | Counts it omits and the cache-write breakdown are completed from `message_start`; `raw` is the delta's own object. |
 | `message_stop` | `ResponseStop` | |
-| `error` | `StreamEvent::Error` (kind from the [error table](#errors), no status) | The decoder stops. |
+| `error`, and every frame named `event: error` whatever its data | `StreamEvent::Error` (kind and message from the [error table](#errors), no status) | The decoder stops. Data in OpenAI's error shape, without a top-level `type`, keeps its message, and data that is not JSON is quoted in the message, because the SDK raises on every such frame (`_streaming.py` at the pinned SDK commit). An error not in Anthropic's shape reaches Anthropic apps in Anthropic's shape, as HTTP errors do (fixtures `error-event-openai-shape.sse`, `error-event-not-json.sse`). |
 | `ping`, unknown events | `StreamEvent::Extra { event, data }` | Same dialect only. Data that is not JSON is kept as text. The frame's `id`, `retry` and other SSE fields stay in the extra. |
 | a frame without a `data:` line (such as `retry: 3000` or `event: ping` alone), whatever its event name | `StreamEvent::Extra` without a `data` key | Not an event under the SSE specification, so it is never an error or a lifecycle event. Written back without a `data:` line. |
 | SSE comments | `StreamEvent::Extra { comment }` | |

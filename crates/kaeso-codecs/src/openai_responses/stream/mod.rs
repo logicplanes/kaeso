@@ -30,7 +30,14 @@ pub(super) const SKIP: &str = "skip";
 pub(super) const EVENT_KEY: &str = "~event";
 pub(super) const SSE_KEY: &str = "~sse";
 
-pub(super) type Emit<'a> = dyn FnMut(&str, Node, i64) -> Result<Option<Node>, KppError> + 'a;
+pub(super) type Emit<'a> = dyn FnMut(&str, Node, i64) -> Result<Emitted, KppError> + 'a;
+
+// The node goes to the emitter and comes back, so it is not copied for every event: `Written`
+// carries the event as written, `Skipped` the canonical node unchanged.
+pub(super) enum Emitted {
+    Written(Node),
+    Skipped(Node),
+}
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum PartKind {
@@ -182,12 +189,12 @@ impl Engine {
     }
 
     fn emit(&mut self, em: &mut Emit<'_>, scope: &str, node: Node) -> Result<Node, KppError> {
-        match em(scope, node.clone(), self.seq)? {
-            Some(out) => {
+        match em(scope, node, self.seq)? {
+            Emitted::Written(out) => {
                 self.saw_sequence(out.get_i64("sequence_number"));
                 Ok(out)
             }
-            None => Ok(node),
+            Emitted::Skipped(node) => Ok(node),
         }
     }
 

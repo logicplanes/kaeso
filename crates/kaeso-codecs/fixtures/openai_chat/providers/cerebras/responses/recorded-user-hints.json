@@ -1,0 +1,38 @@
+{
+  "id": "chatcmpl-29e4eb35-4fc1-451b-ab8b-6fc3ae619027",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "Hello there!",
+        "reasoning": "We just respond with two-word greeting.",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1793652464,
+  "model": "gpt-oss-120b",
+  "system_fingerprint": "fp_6fdb8c40f91e0c236df5",
+  "object": "chat.completion",
+  "usage": {
+    "total_tokens": 94,
+    "completion_tokens": 21,
+    "completion_tokens_details": {
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0,
+      "reasoning_tokens": 8
+    },
+    "prompt_tokens": 73,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    }
+  },
+  "time_info": {
+    "created": 1793652464.4345052,
+    "queue_time": 0.003139495000000001,
+    "prompt_time": 0.001376589,
+    "completion_time": 0.014267489,
+    "total_time": 0.029584169387817383
+  }
+}

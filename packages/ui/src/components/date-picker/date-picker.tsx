@@ -8,7 +8,7 @@ import { Icon } from "../icon/icon.js";
 import { Spinner, useDelayedLoading } from "../loader/loader.js";
 import { icons } from "../../icons/vocabulary.js";
 import { PopoverRoot, PopoverTrigger } from "../popover/popover-root.js";
-import { formatDate, formatDateRange } from "../../format/index.js";
+import { dateFormatter, formatDateRange } from "../../format/index.js";
 import { lazyModule, preload, type LazyModule } from "../../utils/lazy-module.js";
 import { whenIdle } from "../../utils/when-idle.js";
 import { englishText, useUiText, type UiText } from "../../i18n/context.js";
@@ -22,6 +22,9 @@ export const KAESO_DATE_PICKER_VARIANTS = {
   },
 } as const;
 export const KAESO_DATE_PICKER_DEFAULT_VARIANTS = { size: "md" } as const;
+
+// The calendar picks the viewer's local midnight, so the day is named in the viewer's zone, not the format zone formatDate uses.
+const formatPickedDay = (day: Date) => dateFormatter({ day: "numeric", month: "short", year: "numeric" })(day);
 
 const datePopup = lazyModule(() => import("./date-popup.js"), { base: () => import.meta.url });
 const rangePopup = lazyModule(() => import("./range-popup.js"), { base: () => import.meta.url });
@@ -245,7 +248,7 @@ export const DatePicker = forwardRef<HTMLDivElement, DatePickerProps>(function D
             labelled={labelled}
             {...naming}
           >
-            {date ? formatDate(date) : (placeholder ?? t("datePicker.chooseDate", "Choose a date"))}
+            {date ? formatPickedDay(date) : (placeholder ?? t("datePicker.chooseDate", "Choose a date"))}
           </TriggerButton>
         </PopoverTrigger>
         {DatePopup && <DatePopup date={date} onDateChange={setDate} onClose={() => setOpen(false)} weekStartsOn={weekStartsOn} disabledDays={disabledDays} />}
@@ -356,7 +359,7 @@ export const DateRangePicker = forwardRef<HTMLDivElement, DateRangePickerProps>(
     (range?.from && range.to
       ? formatDateRange(range.from, range.to)
       : range?.from
-        ? formatDate(range.from)
+        ? formatPickedDay(range.from)
         : (placeholder ?? t("datePicker.chooseRange", "Choose a date range")));
   const control = (
     <div ref={ref} className={cn("inline-flex", !(label || description || error) && className)}>

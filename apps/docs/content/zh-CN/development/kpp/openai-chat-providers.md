@@ -29,6 +29,8 @@ nav: Chat 服务商
 | `partial_prefill()` | 当对话的最后一条 assistant 消息由其他格式的应用发送且不调用工具时，为其加上 `partial: true`；Anthropic Messages 应用就是这样预填回复开头的。Chat 应用自己的消息按原样发送。 | 消息及其文本不变；该标记只是告诉借助它续写预填内容的服务商（例如 Moonshot）接着该消息续写，而不是重新回答并重复预填内容。 |
 | `stop_list()` | 将单个 `stop` 字符串作为只含一项的列表发送。 | 只改变写法，停止序列不变。把 `stop` 定义为列表的服务商会拒绝字符串。 |
 | `thinking_switch()` | 将请求的思考以 `enable_thinking` 发送：思考关闭或强度为 `none`、`minimal` 时为 `false`，并省略 `reasoning_effort`；其他情况为 `true`。没有强度的预算以 `thinking_budget` 发送，而不是映射成的强度；强度仍以 `reasoning_effort` 发送。Chat 应用自己发送的键保持不变。 | 服务商用自己的键开关思考；在模型默认不思考时，仅有 `reasoning_effort` 不会开启思考。开或关、预算和强度都原样到达服务商。 |
+| `leading_system_only()` | 对于其他格式的应用放在第一轮之后的系统消息，把其文本放到下一个用户轮次的开头、排在其工具结果之后，与 Anthropic Messages 相同（[系统消息](cross-format.md#系统消息)）；开头的系统消息仍作为系统提示词。Chat 应用自己的消息按原样发送。 | 文本及其顺序不变，只有角色改变。模型只接受开头系统消息的服务商（例如 Cerebras 上的 Qwen）会拒绝这样的请求，而 Claude Code 和 Codex 会发送此类消息。 |
+| `replay_reasoning_as_read()` | Chat 应用在 assistant 消息上以 `reasoning_content` 或 `reasoning` 发回推理时，如果服务商不读取应用使用的键，且消息没有同时带上那个键，就改用 `reasoning_fields` 中的第一个键发送。 | 文本不变，只有键名改变。Grok CLI 在其 assistant 轮次中发回 xAI 的 `reasoning_content`，而拒绝自己不读取的消息键的服务商（例如 Cerebras）会以 400 回应。 |
 | `greedy_top_p()` | 只要请求带有 `temperature: 0`，无论设置了什么 `top_p`，都发送 `top_p: 1`。 | 在 `temperature: 0` 下，模型总是选择可能性最高的 token，因此 `top_p` 不起作用，应用的值也没有损失；默认 `top_p` 更低的提供商在没有 `top_p: 1` 时会拒绝贪婪采样。 |
 | `refusing(fields)` | 如果请求体会包含其中某个顶层键，就拒绝该请求，例如 `` `logit_bias` is not supported by Example Cloud; remove it from the request. `` | extras 是语义字段，因此被拒绝，而不是丢弃。`parallel_tool_calls: true` 是例外：它只允许并行调用，而没有该字段的服务商本来就允许，因此会被省略，并在 `kaeso-left-out` 中注明。Codex 在每个请求中都会发送它。 |
 | `refusing_in_messages(fields)` | 对 system、user 和 assistant 消息中的键同样处理。不检查 tool 消息。 | 同上。 |
@@ -49,6 +51,7 @@ Kaeso 读取回复时的设置（`ChatProfile::reply`，即一个 `ReplyProfile`
 
 | 服务商 | 设置 | 来源 |
 |---|---|---|
+| Cerebras（`cerebras`） | `system_role()`、`leading_system_only()`、`end_user_as_user()`、`without_prefill()`、`with_tool_parameters()`、`reasoning_fields(["reasoning"])`、`replay_reasoning_as_read()`；拒绝消息中的 `refusal` | Cerebras 的 [Chat Completions 参考](https://inference-docs.cerebras.ai/api-reference/chat-completions)（2026-11-02 查阅；`reasoning`、`user`），以及 `fixtures/openai_chat/providers/cerebras/` 中的：`errors/recorded-developer-role-qwen` 和 `errors/recorded-system-mid-conversation-qwen`（Qwen 的聊天模板拒绝 `developer` 角色和第一轮之后的 `system` 消息）；`errors/recorded-safety-identifier-field`（400 `property 'safety_identifier' is unsupported`）；`responses/recorded-prefill`，其回复重复了预填内容；`errors/recorded-tool-without-parameters`；`errors/recorded-reasoning-content-sent-back`（400）和 `responses/recorded-reasoning-sent-back`（200，带 `reasoning`）；`errors/recorded-assistant-refusal`；`responses/recorded-reasoning` 和 `streams/recorded-stream-reasoning` |
 | Cohere（`cohere`） | `stop_list()`、`reasoning_fields(["reasoning_content"])`；拒绝 `audio`、`function_call`、`functions`、`logit_bias`、`metadata`、`modalities`、`parallel_tool_calls`、`prediction`、`service_tier`、`store`、`top_logprobs`、`verbosity` 和 `web_search_options` | Cohere 的 [Compatibility API](https://docs.cohere.com/docs/compatibility-api) 页面（2026-10-30 查阅），其中列出 `store`、`metadata`、`logit_bias`、`top_logprobs`、`n`、`modalities`、`prediction`、`audio`、`service_tier` 和 `parallel_tool_calls` 不受支持；`fixtures/openai_chat/providers/cohere/errors/` 中的 422 录制，每个字段一份；`responses/recorded-functions-field` 和 `responses/recorded-web-search-options-field`，Cohere 以 200 回答并忽略该字段，`verbosity` 也是如此；`stop_list()` 依据 `errors/recorded-stop-string`（422，`stop` 必须是列表）；`responses/recorded-reasoning` 和 `streams/recorded-reasoning-stream`（`reasoning_content`） |
 | DeepSeek（`deepseek`） | `max_tokens()`、`system_role()`、`reasoning_fields(["reasoning_content"])`、`tool_schema_root(ToolSchemaRoot::TypedObjectUnions)` | 2026-11-02 通过 Kaeso 网关实际检查：DeepSeek 拒绝没有 `type: "object"` 的工具根部（[联合类型的工具 schema](cross-format.md#联合类型的工具-schema)）；DeepSeek 的 API 参考和思考模式指南（`reasoning_content`），`responses/recorded-thinking-reasoning-content` 和 `streams/recorded-thinking-stream`；`fixtures/openai_chat/providers/deepseek/responses/recorded-max-completion-tokens-limit`：DeepSeek 忽略 `max_completion_tokens`（要求 20，实际 133 个 completion token），而其 API 参考记载的是 `max_tokens`；`fixtures/openai_chat/providers/deepseek/errors/recorded-plain-developer-string`：DeepSeek 对 `developer` 角色返回 422 `unknown variant` |
 | Groq（`groq`） | `system_role()`、`end_user_as_user()`、`without_cache_key()`、`reasoning_fields(["reasoning"])`；拒绝 `logit_bias`、`logprobs`、`prompt_cache_key` 和 `top_logprobs`，以及消息中的 `name` 和 `refusal` | Groq 的 OpenAI 兼容性页面（https://console.groq.com/docs/openai，其中列出 `logprobs`、`logit_bias`、`top_logprobs` 和 `messages[].name` 不受支持）；`fixtures/openai_chat/providers/groq/errors/` 中的 `recorded-logit-bias`、`recorded-logprobs-top-logprobs-doc`、`recorded-tools-results-parallel-error`（assistant 消息中的 `refusal`）和 `recorded-tools-single`（Qwen 的聊天模板拒绝 `developer` 角色）；Groq 的推理指南（`reasoning`），`responses/recorded-reasoning-format-parsed` 和 `streams/recorded-stream-doc`；2026-11-02 通过 Kaeso 网关实际检查，Groq 对 `safety_identifier` 回应 400 `property 'safety_identifier' is unsupported`，并接受 `user`；对 `prompt_cache_key` 回应 400 `property 'prompt_cache_key' is unsupported` |
@@ -229,3 +232,27 @@ Cohere 自身 Chat API 的字段（`documents`、`citation_options`、`connector
 | `GET /v1/models`、`GET /v1/models/{model}` | `ModelList`、`ModelInfo` | OpenAI 的格式，带 `owned_by: "system"`，所有模型在一页中返回，`first_id` 为 `model-id-0`；两者都以 401 拒绝错误的密钥（`errors/list-invalid-api-key`）。 |
 
 在这个地域，QwenCloud 还在 `/compatible-mode/v1/responses` 提供 OpenAI Responses，在 `/apps/anthropic/v1/messages` 提供 Anthropic Messages；只有 Chat Completions 和 Embeddings 经过录制并列出。密钥只能在其所属地域使用：中国（北京）地域为 `https://dashscope.aliyuncs.com/compatible-mode`，使用该地域自己的密钥。
+
+### Cerebras
+
+来源：Cerebras 的 [Chat Completions 参考](https://inference-docs.cerebras.ai/api-reference/chat-completions)和 [OpenAI 兼容](https://inference-docs.cerebras.ai/resources/openai)页面（2026-11-02 查阅），以及 `fixtures/openai_chat/providers/cerebras/` 中使用 `gpt-oss-120b` 和 `qwen-3.8-27b` 的实时录制。Kaeso 的基础 URL 为 `https://api.cerebras.ai`，接受 `Authorization: Bearer`。
+
+| Cerebras 字段 | KPP | 说明 |
+|---|---|---|
+| `message.reasoning`、`delta.reasoning` | `Block::Reasoning` | 通过配置的 `reasoning_fields`，与 Groq 相同。其他格式的应用发回的思考内容以 `reasoning` 到达 Cerebras，Cerebras 接受它（`responses/recorded-reasoning-sent-back`）。Chat 应用的 `reasoning_content`（例如 Grok CLI 发送的）会被 Cerebras 以 400 拒绝，因此同样以 `reasoning` 发送（`replay_reasoning_as_read()`）。 |
+| `time_info`、`system_fingerprint`、`choices[].reasoning_logprobs` | extras | 发往其他方言时省略。 |
+| `completion_tokens_details.accepted_prediction_tokens` 和 `rejected_prediction_tokens`、`prompt_tokens_details.image_tokens` | `raw` 用量 | 缓存 token 和推理 token 按上文类型化。 |
+| 结束数据块上的 `usage` 和 `time_info`，即使没有 `stream_options.include_usage` | `Usage` | Cerebras 从不发送 `choices: []` 的数据块。 |
+| `reasoning_effort` | `reasoning.effort` | `gpt-oss-120b` 接受 `low`、`medium` 和 `high`，`qwen-3.8-27b` 还接受 `none`，与 KPMR 所列一致；其他强度由 Kaeso 在发送前拒绝，Cerebras 也会以 400 回应（`errors/recorded-reasoning-effort-*`）。`max_completion_tokens` 包含推理。 |
+| `reasoning_format`、`clear_thinking`（请求） | extras | 请求发往其他方言时被拒绝，与其他仅限 Chat 的字段相同。 |
+| Cerebras 未声明的字段，例如 `safety_identifier`、`metadata`、`store` 或 `web_search_options` | 发送 | Cerebras 以 400 `property '…' is unsupported` 回应，该错误会到达应用。配置把终端用户的 ID 以 `user` 发送（`end_user_as_user()`），因此 Claude Code 的 `metadata.user_id` 会到达那里。 |
+| `logit_bias`、`logprobs`、`top_logprobs`、两种惩罚参数、`seed`、`stop`、`prompt_cache_key`、`parallel_tool_calls`、`service_tier`、`prediction` | 发送 | Cerebras 接受它们（`responses/recorded-logit-bias-honoured` 显示偏置生效）。`stop` 序列也会结束推理，因此回复可能没有 `content`（`responses/recorded-sampling`）。 |
+| `developer` 角色、第一轮之后的 `system` 消息 | `Role::System` | Qwen 的聊天模板以 400 拒绝两者。`system_role()` 发送 `system`；对于其他格式的应用（例如 Claude Code 或 Codex）的后续系统消息，`leading_system_only()` 把其文本移入下一个用户轮次。 |
+| 最后一条 assistant 消息 | 拒绝 | Cerebras 会重新回答并重复它（`responses/recorded-prefill`），因此 `without_prefill()` 在发送前拒绝它。 |
+| assistant 消息上的 `refusal`，包括 `null` | 拒绝 | Cerebras 以 400 回应（`errors/recorded-assistant-refusal`）；配置在发送前拒绝它。 |
+| 没有 `parameters` 的函数 | `parameters` | `with_tool_parameters()` 发送 `gpt-oss-120b` 的聊天模板要求的空对象 schema（`errors/recorded-tool-without-parameters`）。 |
+| `gpt-oss-120b` 上同时带 `tools` 和 `response_format`、以 `https` URL 提供的图像，或发给不接受图像的模型的图像 | 发送 | Cerebras 以 400 回应（`errors/recorded-tools-with-response-format`、`errors/recorded-image-url`、`errors/recorded-image-gpt-oss`），该错误会到达应用。 |
+| 顶层带 OpenAI 的 `message`、`type`、`param` 和 `code`，但没有 `error` 对象的错误 | `KppError` | 消息和 `param` 来自 Cerebras，类别取决于状态码：错误的密钥（401 `wrong_api_key`）是被拒绝的密钥，账户的每分钟 token 限制（429 `too_many_tokens_error`，`retry-after: 60`）是速率限制。Chat 应用以 OpenAI 的形式收到错误。 |
+| `GET /v1/models` | `ModelList` | 该密钥可调用的模型，带 `created: 0` 和 `owned_by: "Cerebras"`；错误的密钥得到 401，因此模型检查能发现它。 |
+
+Cerebras 没有 Responses、Messages、embeddings 或 token 计数端点（都返回 404），因此 `embeddings` 和 `count_tokens` 为 `None`。

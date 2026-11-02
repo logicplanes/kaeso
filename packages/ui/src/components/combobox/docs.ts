@@ -41,7 +41,8 @@ export const docs = {
       name: "The field name the value is sent under in a form.",
       createLabel: "The words of the offer to add what was typed; `Add “…”` by default.",
       onCreate: 'Offers "Add “…”" when nothing matches exactly.',
-      onInputValueChange: "Called with the text typed into the input.",
+      onInputValueChange:
+        "Called with the text typed into the input, and with an empty string once a pick clears the search, so a server search lists every option again.",
       onValueChange: "Called with the chosen value, or the list of values with `multiple`.",
       searchDelay: "Milliseconds of quiet typing before `onInputValueChange` is called, so a server search runs once per pause, not per keystroke.",
       optional: "Adds “Optional” to the label, for forms where most fields are required.",

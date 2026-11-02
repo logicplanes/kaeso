@@ -1,0 +1,10 @@
+{
+  "model": "qwen-3.8-27b",
+  "messages": [
+    {
+      "role": "user",
+      "content": "What is 17 times 23? Answer with the number."
+    }
+  ],
+  "max_completion_tokens": 1500
+}

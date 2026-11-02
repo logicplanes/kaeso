@@ -1,4 +1,5 @@
 use std::collections::BTreeMap;
+use std::net::IpAddr;
 use std::sync::Arc;
 
 use kaeso_core::rights::{
@@ -12,6 +13,9 @@ use kaeso_store::pg::sessions::SessionRow;
 use time::{Duration, OffsetDateTime};
 use uuid::Uuid;
 
+use super::key_failures::Gate;
+use super::keys::LookupError;
+use crate::cache::hex;
 use crate::state::AppState;
 
 pub const ACCESS_PREFIX: &str = "kso_at_";
@@ -260,9 +264,18 @@ pub fn unused_too_long(agent: &Agent, now: OffsetDateTime) -> bool {
 pub async fn authenticate(
     state: &AppState,
     presented: &str,
-) -> Result<Result<Arc<AgentCaller>, Refusal>, StoreError> {
+    client: Option<IpAddr>,
+) -> Result<Result<Arc<AgentCaller>, Refusal>, LookupError> {
     let now = state.clock.now();
     let hash = secret::hash(presented);
+    let unknown = format!("agt:{}", hex(&hash));
+    if state.caches.unknown_keys.contains_key(&unknown) {
+        return Ok(Err(Refusal::Invalid));
+    }
+    let gate = Gate::new(state, client);
+    if let Some(g) = &gate {
+        g.check().await?;
+    }
     let Some(AgentAuth {
         agent,
         user_state,
@@ -270,6 +283,10 @@ pub async fn authenticate(
         ..
     }) = agents::authenticate(&state.pg, &hash, now).await?
     else {
+        state.caches.unknown_keys.insert(unknown, ()).await;
+        if let Some(g) = &gate {
+            g.failed().await?;
+        }
         return Ok(Err(Refusal::Invalid));
     };
     if user_state != "active" || unused_too_long(&agent, now) {
@@ -279,7 +296,7 @@ pub async fn authenticate(
     if !instance_policy.allowed {
         return Ok(Err(Refusal::NotAllowed));
     }
-    let mut conn = state.pg.acquire().await?;
+    let mut conn = state.pg.acquire().await.map_err(StoreError::from)?;
     let grant = AgentGrant::from_store(&agents::grant_of(&mut conn, &agent).await?);
     drop(conn);
     agents::touch(&state.pg, agent.id, now, TOUCH_EVERY).await?;

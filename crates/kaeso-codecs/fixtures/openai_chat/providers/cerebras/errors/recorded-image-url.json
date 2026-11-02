@@ -1,0 +1,6 @@
+{
+  "message": "Remote image URLs are not supported; send images as data URIs (data:image/png;base64,...)",
+  "type": "invalid_request_error",
+  "param": "messages",
+  "code": "invalid_multimodal_input"
+}

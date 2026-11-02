@@ -19,6 +19,9 @@ use crate::model_api::hooks::{Outcome, Sink};
 use crate::state::AppState;
 
 const WRITE_RETRY_WAIT: Duration = Duration::from_secs(2);
+// ClickHouse's client sets no timeouts of its own, so a stalled server would hold the writer, and
+// the batch it took, until the gateway restarts.
+const WRITE_DEADLINE: Duration = Duration::from_secs(60);
 
 struct Entry {
     seq: u64,
@@ -168,10 +171,18 @@ impl Buffer {
 }
 
 pub async fn flush_once(state: &AppState) -> Result<usize, StoreError> {
-    match flush_by(state, None).await {
+    flush_within(state, WRITE_DEADLINE).await
+}
+
+pub async fn flush_within(state: &AppState, wait: Duration) -> Result<usize, StoreError> {
+    match flush_by(state, Some(tokio::time::Instant::now() + wait)).await {
         Flushed::Wrote(n) => Ok(n),
         Flushed::Failed(e) => Err(e),
-        Flushed::OutOfTime => Ok(0),
+        Flushed::OutOfTime => {
+            metrics::counter!(crate::metrics::CLICKHOUSE_WRITE_FAILURES).increment(1);
+            tracing::warn!(waited = ?wait, rows = state.logs.len(), "ClickHouse did not take request logs in time; keeping them in memory");
+            Ok(0)
+        }
     }
 }
 
@@ -260,16 +271,21 @@ pub async fn flush_all(state: &AppState, timeout: Duration) -> usize {
     written
 }
 
-pub fn spawn_writer(state: AppState, shutdown: CancellationToken) {
+pub fn spawn_writer(state: AppState, draining: CancellationToken, stop: CancellationToken) {
     if !state.request_logs() {
         return;
     }
     tokio::spawn(async move {
-        let interval = state.config.logs.flush_interval;
         loop {
+            let every = if draining.is_cancelled() {
+                crate::serve::SHUTDOWN_FLUSH_INTERVAL.min(state.config.logs.flush_interval)
+            } else {
+                state.config.logs.flush_interval
+            };
             tokio::select! {
-                () = shutdown.cancelled() => return,
-                () = tokio::time::sleep(interval) => {}
+                () = stop.cancelled() => return,
+                () = draining.cancelled(), if !draining.is_cancelled() => {}
+                () = tokio::time::sleep(every) => {}
                 () = state.logs.wake.notified() => {}
             }
             loop {
@@ -279,7 +295,7 @@ pub fn spawn_writer(state: AppState, shutdown: CancellationToken) {
                     Err(e) => {
                         tracing::warn!(error = %e, rows = state.logs.len(), "cannot write request logs; keeping them in memory");
                         tokio::select! {
-                            () = shutdown.cancelled() => return,
+                            () = stop.cancelled() => return,
                             () = tokio::time::sleep(WRITE_RETRY_WAIT) => {}
                         }
                         break;
@@ -295,7 +311,7 @@ async fn settings(state: &AppState, project: Uuid) -> Result<Option<LogSettings>
     let found = state
         .caches
         .log_settings
-        .get_or_load(&project.to_string(), || async move {
+        .get_or_refresh(&project.to_string(), move || async move {
             log_jobs::settings(&pg, project)
                 .await
                 .map(|s| s.map(Cached::from))
@@ -537,6 +553,19 @@ impl Sink for Recorder {
     fn finish<'a>(&'a self, state: &'a AppState, outcome: Outcome) -> BoxFuture<'a, ()> {
         Box::pin(async move {
             crate::services::usage::account(state, &outcome).await;
+            record(state, &outcome).await;
+        })
+    }
+
+    fn finish_charged<'a>(
+        &'a self,
+        state: &'a AppState,
+        outcome: Outcome,
+        charged: tokio::sync::oneshot::Sender<()>,
+    ) -> BoxFuture<'a, ()> {
+        Box::pin(async move {
+            crate::services::usage::account(state, &outcome).await;
+            let _ = charged.send(());
             record(state, &outcome).await;
         })
     }

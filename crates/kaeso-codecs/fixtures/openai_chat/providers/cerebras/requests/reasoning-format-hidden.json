@@ -1,0 +1,12 @@
+{
+  "model": "gpt-oss-120b",
+  "messages": [
+    {
+      "role": "user",
+      "content": "What is 2+2?"
+    }
+  ],
+  "reasoning_format": "hidden",
+  "reasoning_effort": "low",
+  "max_completion_tokens": 200
+}

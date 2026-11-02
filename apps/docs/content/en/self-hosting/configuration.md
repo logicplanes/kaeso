@@ -88,8 +88,8 @@ Docker rotates each service's log at 10 MB and keeps five files.
 | `KAESO_SHUTDOWN_GRACE`<br>`shutdown_grace` | text | `30s` | How long requests and streams in flight may run after a shutdown signal. Those still open then end with 503 and are charged and logged. |
 | `KAESO_SERVER_HEADER_READ_TIMEOUT`<br>`server.header_read_timeout` | text | `30s` | How long a client may take to send a request's headers, or leave a connection idle between requests; 1s to 10m. It never cuts off a reply in progress. |
 | `KAESO_SERVER_BODY_READ_TIMEOUT`<br>`server.body_read_timeout` | text | `30s` | How long the gateway waits for the next part of a request body before it refuses the request with 400; 1s to 10m. |
-| `KAESO_SERVER_BODY_READ_DEADLINE`<br>`server.body_read_deadline` | text | `60s` | How long the gateway waits for a whole request body, however steadily its parts arrive, before it refuses the request with 400; 1s to 1h. An 8 MiB body, the model API's default limit, arrives in time at 1.2 Mbit/s; raise it for apps on slower links. |
-| `KAESO_SERVER_MAX_CONNECTIONS`<br>`server.max_connections` | integer | `4096` | Connections the gateway serves at once, from apps or a proxy in front. Further ones wait in the operating system's queue until one closes. The default matches Linux's default listen queue, `net.core.somaxconn`. |
+| `KAESO_SERVER_BODY_READ_DEADLINE`<br>`server.body_read_deadline` | text | `60s` | How long the gateway waits for a whole request body, however steadily its parts arrive, before it refuses the request with 400; 1s to 1h. A 32 MiB body, the model API's default limit, arrives in time at 4.5 Mbit/s; raise it for apps on slower links. |
+| `KAESO_SERVER_MAX_CONNECTIONS`<br>`server.max_connections` | integer | `4096` | Connections the gateway serves at once, from apps or a proxy in front. Further ones wait in the operating system's queue until one closes. The default matches Linux's default listen queue, `net.core.somaxconn`. Each open stream also holds a connection to its provider, so at startup the gateway raises its open-file limit as far as the system allows and warns when it stays below twice this number plus 256. |
 
 On a loopback `http` address, such as `http://localhost:8080`, the session cookie goes without `Secure` and the `__Host-` prefix, so the console works over plain HTTP on your computer.
 
@@ -106,7 +106,7 @@ Without this setting, Kaeso sends no CORS headers. The [model API](../api/model-
 | Variable<br>TOML key | Type | Default | What it does |
 | --- | --- | --- | --- |
 | `KAESO_POSTGRES_URL`<br>`postgres.url` | text, secret | required | PostgreSQL connection URL. |
-| `KAESO_POSTGRES_POOL_SIZE`<br>`postgres.pool_size` | integer | `20` | Most PostgreSQL connections per gateway instance, at least 1. Background jobs hold their locks on a few connections besides these. |
+| `KAESO_POSTGRES_POOL_SIZE`<br>`postgres.pool_size` | integer | `20` | Size of each gateway instance's PostgreSQL connection pool, at least 1. Background jobs open up to 8 connections of their own outside it while they run, and each release check an instance admin starts one more. PostgreSQL's `max_connections` must cover both, for every instance. |
 | `KAESO_CLICKHOUSE_URL`<br>`clickhouse.url` | text, secret | — | ClickHouse HTTP URL with user and password, such as `http://kaeso:secret@clickhouse:8123`. Unset or empty turns request logs off. |
 | `KAESO_CLICKHOUSE_DATABASE`<br>`clickhouse.database` | text | `kaeso` | ClickHouse database for request logs, of letters, digits and `_`. The gateway creates it when it is missing. |
 | `KAESO_VALKEY_URL`<br>`valkey.url` | text, secret | required | Valkey (or Redis) URL with the password, such as `redis://:secret@valkey:6379`. |
@@ -144,7 +144,7 @@ These settings turn passwords and sign-in links on or off for the whole install.
 
 | Variable<br>TOML key | Type | Default | What it does |
 | --- | --- | --- | --- |
-| `KAESO_KEY_FAILURES_PER_ADDRESS`<br>`key_failures.per_address` | integer | `100` | Failed API key lookups allowed per client address and window, on both APIs together. `0` turns the throttle off ([API key throttling](#api-key-throttling)). |
+| `KAESO_KEY_FAILURES_PER_ADDRESS`<br>`key_failures.per_address` | integer | `100` | Failed lookups of API keys and agents' access tokens allowed per client address and window, on both APIs and the MCP server together. `0` turns the throttle off ([API key throttling](#api-key-throttling)). |
 | `KAESO_KEY_FAILURES_WINDOW`<br>`key_failures.window` | text | `1m` | The window of `key_failures.per_address`, 1s to 1h. A blocked address waits at most this long. |
 
 ### KPMR
@@ -190,6 +190,7 @@ The first three settings only seed a new install. After that, instance admins ch
 | `KAESO_PROVIDERS_OLLAMA_CLOUD_BASE_URL`<br>`providers.ollama-cloud.base_url` | text | `https://ollama.com` | Base URL of the Ollama Cloud API. |
 | `KAESO_PROVIDERS_MOONSHOTAI_BASE_URL`<br>`providers.moonshotai.base_url` | text | `https://api.moonshot.ai` | Base URL of the Moonshot API. |
 | `KAESO_PROVIDERS_ALIBABA_BASE_URL`<br>`providers.alibaba.base_url` | text | `https://ap-southeast-1.maas.qwencloudapi.com/compatible-mode` | Base URL of the QwenCloud API. |
+| `KAESO_PROVIDERS_CEREBRAS_BASE_URL`<br>`providers.cerebras.base_url` | text | `https://api.cerebras.ai` | Base URL of the Cerebras API. |
 | `KAESO_UPSTREAM_CONNECT_TIMEOUT`<br>`upstream.connect_timeout` | text | `10s` | Time to connect to a provider, TCP and TLS; at most 24h. |
 | `KAESO_UPSTREAM_REQUEST_TIMEOUT`<br>`upstream.request_timeout` | text | `600s` | Total time of a provider request that doesn't stream; at most 24h. |
 | `KAESO_UPSTREAM_FIRST_BYTE_TIMEOUT`<br>`upstream.first_byte_timeout` | text | `60s` | Streaming: time to the provider's first byte; at most 24h. |
@@ -240,7 +241,7 @@ Cached replies live in Valkey until their project's time runs out. The packaged 
 
 | Variable<br>TOML key | Type | Default | What it does |
 | --- | --- | --- | --- |
-| `KAESO_BODY_LIMITS_MODEL_API`<br>`body_limits.model_api` | text | `8MiB` | Largest request body of the model API. It fits an image at Anthropic's 5 MB limit as base64; raise it for large PDFs. |
+| `KAESO_BODY_LIMITS_MODEL_API`<br>`body_limits.model_api` | text | `32MiB` | Largest request body of the model API. It matches Anthropic's 32 MB request limit, so long agent conversations with images and documents fit; lower it to keep each request's memory small. |
 | `KAESO_BODY_LIMITS_IN_FLIGHT`<br>`body_limits.in_flight` | text | `512MiB` | Memory the model API and the Playground may use at once to translate requests, estimated from each body as received and from its messages, blocks and tools. A request holds its estimate while it's decoded and encoded, then until it ends only what stays allocated: its decoded request with its messages, blocks, tools and token ids, a second copy of it while the provider may still be asked to count its input tokens, the body sent to the provider until it answers, and its raw body while content is logged. One key holds at most a quarter, and a request larger than that takes the quarter. A request that finds no room within 10 seconds gets 503 with `Retry-After: 10`. |
 | `KAESO_BODY_LIMITS_PLATFORM_API`<br>`body_limits.platform_api` | text | `1MiB` | Largest request body of the Platform API, Playground requests included. |
 | `KAESO_BODY_LIMITS_PROVIDER_RESPONSE`<br>`body_limits.provider_response` | text | `128MiB` | Largest response body the gateway reads from a provider when it doesn't stream. A larger one fails the request with 502. |
@@ -286,7 +287,7 @@ A provider id is lowercase letters and digits with single hyphens between them. 
 
 ## API key throttling
 
-The gateway counts failed API key lookups per client address in Valkey, so a client that guesses keys can't keep PostgreSQL busy. After `KAESO_KEY_FAILURES_PER_ADDRESS` failures within `KAESO_KEY_FAILURES_WINDOW`, the address is blocked until the window ends. Every key from it that isn't in memory then gets 429 with `Retry-After`, in the API's own format.
+The gateway counts failed lookups of API keys and agents' access tokens per client address in Valkey, on both APIs and the [MCP server](../api/mcp.md), so a client that guesses keys can't keep PostgreSQL busy. After `KAESO_KEY_FAILURES_PER_ADDRESS` failures within `KAESO_KEY_FAILURES_WINDOW`, the address is blocked until the window ends. Every key from it that isn't in memory, and every access token, then gets 429 with `Retry-After`, in the API's own format.
 
 - Only well-formed keys that match no key count. A malformed value, a disabled or expired key, and an unknown key repeated within 30 seconds don't.
 - Valid keys never count. A key the instance used in the last 30 seconds still works from a blocked address; other valid keys wait for the window to end.

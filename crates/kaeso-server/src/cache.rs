@@ -101,7 +101,6 @@ impl Flights {
 #[derive(Clone)]
 struct Held<V> {
     value: Arc<V>,
-    at: Instant,
     until: Instant,
 }
 
@@ -211,7 +210,6 @@ where
             let now = Instant::now();
             Held {
                 value,
-                at: now,
                 until: now + UNSUBSCRIBED_TTL,
             }
         })
@@ -243,15 +241,43 @@ where
     {
         let seen = self.subscription.seen();
         if let Some(h) = self.held(key, seen).await {
-            if seen.subscribed
-                && h.at.elapsed() >= self.refresh_after
-                && let Ok(guard) = self.flights.lane(key).await.try_lock_owned()
-            {
-                self.refresh(key, seen, load, guard);
-            }
+            self.refresh_if_due(key, seen, &h, load).await;
             return Ok(Some(h.value));
         }
         self.load_once(key, seen, load).await
+    }
+
+    // Like `cached`, for a caller that loads a missing entry its own way but keeps a hot one fresh.
+    pub async fn cached_or_refresh<E, F, Fut>(&self, key: &str, load: F) -> Option<Arc<V>>
+    where
+        F: FnOnce() -> Fut + Send + 'static,
+        Fut: Future<Output = Result<Option<V>, E>> + Send + 'static,
+        E: std::fmt::Display + Send + 'static,
+    {
+        let seen = self.subscription.seen();
+        let h = self.held(key, seen).await?;
+        self.refresh_if_due(key, seen, &h, load).await;
+        Some(h.value)
+    }
+
+    fn fresh_enough(&self) -> Duration {
+        TTL.saturating_sub(self.refresh_after)
+    }
+
+    // Due by what is left of the entry, not its age: one taken from Valkey keeps only Valkey's
+    // remaining time and would otherwise expire before it is ever refreshed.
+    async fn refresh_if_due<E, F, Fut>(&self, key: &str, seen: Seen, h: &Held<V>, load: F)
+    where
+        F: FnOnce() -> Fut + Send + 'static,
+        Fut: Future<Output = Result<Option<V>, E>> + Send + 'static,
+        E: std::fmt::Display + Send + 'static,
+    {
+        if seen.subscribed
+            && h.until.saturating_duration_since(Instant::now()) <= self.fresh_enough()
+            && let Ok(guard) = self.flights.lane(key).await.try_lock_owned()
+        {
+            self.refresh(key, seen, load, guard);
+        }
     }
 
     async fn load_once<E, F, Fut>(
@@ -312,7 +338,19 @@ where
         let key = key.to_owned();
         let dropped = self.dropped.load(Ordering::Acquire);
         tokio::spawn(async move {
-            let version = cache.version(&key).await;
+            // Another instance may have refreshed the shared entry already; then it is enough.
+            let version = match cache.valkey_get(&key).await {
+                Some(Shared::Found(value, left)) if left > cache.fresh_enough() => {
+                    if cache.dropped.load(Ordering::Acquire) == dropped {
+                        cache.remember(&key, Arc::new(value), seen, left).await;
+                    }
+                    drop(guard);
+                    return;
+                }
+                Some(Shared::Missing(version)) => Some(version),
+                Some(Shared::Found(..)) => cache.version(&key).await,
+                None => None,
+            };
             let loaded = load().await;
             let undisturbed =
                 cache.subscription.still(seen) && cache.dropped.load(Ordering::Acquire) == dropped;
@@ -346,7 +384,6 @@ where
                     key.to_owned(),
                     Held {
                         value,
-                        at: now,
                         until: now + left.min(TTL),
                     },
                 )
@@ -936,6 +973,75 @@ mod tests {
             tokio::task::yield_now().await;
         }
         assert_eq!(loads.load(Ordering::SeqCst), 2);
+    }
+
+    #[tokio::test]
+    async fn an_entry_with_little_time_left_is_refreshed_before_it_expires() {
+        let subscription = Arc::new(Subscription::default());
+        subscription.set(true);
+        let cache = cache(&subscription);
+        let seen = subscription.seen();
+        let shared = Arc::new("read from valkey".to_owned());
+        cache
+            .remember("k", shared, seen, Duration::from_secs(5))
+            .await;
+        let served = cache
+            .get_or_refresh("k", || async { Ok::<_, String>(Some("v1".to_owned())) })
+            .await;
+        assert_eq!(served, Ok(Some(Arc::new("read from valkey".to_owned()))));
+        let deadline = Instant::now() + Duration::from_secs(10);
+        while cache.cached("k").await.as_deref() != Some(&"v1".to_owned()) {
+            assert!(Instant::now() < deadline, "the entry was not refreshed");
+            tokio::task::yield_now().await;
+        }
+    }
+
+    #[tokio::test]
+    async fn a_refresh_takes_the_entry_another_instance_already_refreshed() {
+        let services = kaeso_testkit::services::TestServices::start().await;
+        let subscription = Arc::new(Subscription::default());
+        subscription.set(true);
+        let mac = Arc::new(MacKey::derive(&ring(), "cache"));
+        let here = TieredCache::<String>::new(
+            "test",
+            services.valkey.clone(),
+            subscription.clone(),
+            mac.clone(),
+        );
+        let there =
+            TieredCache::<String>::new("test", services.valkey.clone(), subscription.clone(), mac);
+        let fresh = there
+            .get_or_load("k", || async { Ok::<_, String>(Some("fresh".to_owned())) })
+            .await;
+        assert_eq!(fresh, Ok(Some(Arc::new("fresh".to_owned()))));
+        let seen = subscription.seen();
+        here.remember(
+            "k",
+            Arc::new("old".to_owned()),
+            seen,
+            Duration::from_secs(1),
+        )
+        .await;
+        let loads = Arc::new(AtomicUsize::new(0));
+        let load = {
+            let loads = loads.clone();
+            move || async move {
+                loads.fetch_add(1, Ordering::SeqCst);
+                Ok::<_, String>(Some("from postgresql".to_owned()))
+            }
+        };
+        let served = here.get_or_refresh("k", load).await;
+        assert_eq!(served, Ok(Some(Arc::new("old".to_owned()))));
+        let deadline = Instant::now() + Duration::from_secs(10);
+        while here.cached("k").await.as_deref() != Some(&"fresh".to_owned()) {
+            assert!(Instant::now() < deadline, "the shared entry was not taken");
+            tokio::task::yield_now().await;
+        }
+        assert_eq!(
+            loads.load(Ordering::SeqCst),
+            0,
+            "nothing was read from PostgreSQL"
+        );
     }
 
     #[tokio::test]

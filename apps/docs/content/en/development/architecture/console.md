@@ -75,4 +75,6 @@ Every error is a toast; nothing shows an error in the page.
 - Changes go through `useApiMutation` (`src/auth/mutation.ts`), public forms through `useSubmit`, and failed loads through the query cache's handler (`src/query.ts`), which offers "Try again".
 - Gateway failures carry the request id.
 - Edits to catalogue models and limits send `If-Match` with the revision they were made on. A `412` reloads what changed, says so, and closes the edit's dialog.
-- A missing object (404) is the page's or sheet's own state, and an ended session goes to sign-in.
+- A missing object (404) is the page's or sheet's own state.
+- An ended session goes to sign-in and back, whether a change, a load or the session check finds it (`src/auth/session-end.ts`).
+- A load that fails because the gateway or the request logs are unavailable gets no toast of its own. The project overview's side panel says the gateway's message in its place.

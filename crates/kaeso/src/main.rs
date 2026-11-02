@@ -136,6 +136,50 @@ fn runtime() -> Result<tokio::runtime::Runtime> {
         .context("cannot start the async runtime")
 }
 
+// Each open stream holds two sockets, one to the app and one to the provider, and Rust keeps
+// the soft open-file limit it was started with, often 1,024 in a container.
+#[cfg(unix)]
+fn open_files(max_connections: usize) {
+    let wanted = u64::try_from(max_connections)
+        .unwrap_or(u64::MAX)
+        .saturating_mul(2)
+        .saturating_add(256);
+    let now = raise_open_files();
+    if now < wanted {
+        tracing::warn!(
+            open_files = now,
+            wanted,
+            "the open-file limit is below what the most connections need; raise the container's nofile limit or lower KAESO_SERVER_MAX_CONNECTIONS"
+        );
+    }
+}
+
+#[cfg(not(unix))]
+fn open_files(_max_connections: usize) {}
+
+// macOS refuses a soft limit above OPEN_MAX (10,240) even when the hard limit is unlimited.
+#[cfg(unix)]
+fn raise_open_files() -> u64 {
+    use rustix::process::{Resource, Rlimit, getrlimit, setrlimit};
+    let limit = getrlimit(Resource::Nofile);
+    let soft = limit.current.unwrap_or(u64::MAX);
+    let hard = limit.maximum.unwrap_or(u64::MAX);
+    [hard, 10_240]
+        .into_iter()
+        .filter(|&n| n > soft && n <= hard)
+        .find(|&n| {
+            setrlimit(
+                Resource::Nofile,
+                Rlimit {
+                    current: Some(n),
+                    maximum: limit.maximum,
+                },
+            )
+            .is_ok()
+        })
+        .unwrap_or(soft)
+}
+
 fn load_config(source: &dyn Source) -> Result<Config> {
     config::load(source).map_err(|e| anyhow::anyhow!("configuration: {e}"))
 }
@@ -154,6 +198,7 @@ async fn run(command: Command) -> Result<()> {
     }
     match command {
         Command::Serve => {
+            open_files(config.server.max_connections);
             let metrics = kaeso_server::telemetry::init_metrics()?;
             let state = kaeso_server::serve::prepare(config).await?;
             kaeso_server::serve::run(state, metrics, shutdown_signal()).await?;
@@ -357,6 +402,18 @@ mod tests {
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
     use super::*;
+
+    #[cfg(unix)]
+    #[test]
+    fn the_open_file_limit_is_raised_as_far_as_the_system_lets_it() {
+        use rustix::process::{Resource, getrlimit};
+        let before = getrlimit(Resource::Nofile);
+        let raised = raise_open_files();
+        let after = getrlimit(Resource::Nofile).current.unwrap_or(u64::MAX);
+        assert_eq!(raised, after);
+        assert!(after >= before.current.unwrap_or(u64::MAX));
+        assert!(after >= before.maximum.unwrap_or(u64::MAX).min(10_240));
+    }
 
     fn source(listen: &str) -> MapSource {
         MapSource::new()
