@@ -144,7 +144,7 @@ Docker 会在每个服务的日志达到 10 MB 时轮转，并保留五个文件
 
 | 变量<br>TOML 键 | 类型 | 默认值 | 作用 |
 | --- | --- | --- | --- |
-| `KAESO_KEY_FAILURES_PER_ADDRESS`<br>`key_failures.per_address` | 整数 | `100` | 每个客户端地址在每个时间窗口内允许的 API 密钥查找失败次数，两个 API 合计。`0` 关闭限流（[API 密钥限流](#api-密钥限流)）。 |
+| `KAESO_KEY_FAILURES_PER_ADDRESS`<br>`key_failures.per_address` | 整数 | `100` | 每个客户端地址在每个时间窗口内允许的 API 密钥和智能体访问令牌查找失败次数，两个 API 与 MCP 服务器合计。`0` 关闭限流（[API 密钥限流](#api-密钥限流)）。 |
 | `KAESO_KEY_FAILURES_WINDOW`<br>`key_failures.window` | 文本 | `1m` | `key_failures.per_address` 的时间窗口，1s 到 1h。被封锁的地址最多等待这么久。 |
 
 ### KPMR
@@ -286,7 +286,7 @@ Docker 会在每个服务的日志达到 10 MB 时轮转，并保留五个文件
 
 ## API 密钥限流
 
-网关在 Valkey 中按客户端地址统计 API 密钥查找失败的次数，防止猜测密钥的客户端让 PostgreSQL 一直忙碌。在 `KAESO_KEY_FAILURES_WINDOW` 内失败达到 `KAESO_KEY_FAILURES_PER_ADDRESS` 次后，该地址在窗口结束前被封锁。此后来自该地址、且不在内存中的每个密钥都会收到 429 和 `Retry-After`，格式与所调用的 API 一致。
+网关在 Valkey 中按客户端地址统计 API 密钥和智能体访问令牌查找失败的次数，涵盖两个 API 和 [MCP 服务器](../api/mcp.md)，防止猜测密钥的客户端让 PostgreSQL 一直忙碌。在 `KAESO_KEY_FAILURES_WINDOW` 内失败达到 `KAESO_KEY_FAILURES_PER_ADDRESS` 次后，该地址在窗口结束前被封锁。此后来自该地址、且不在内存中的每个密钥，以及每个访问令牌，都会收到 429 和 `Retry-After`，格式与所调用的 API 一致。
 
 - 只有格式正确但不匹配任何密钥的值才计数。格式错误的值、已停用或已过期的密钥，以及 30 秒内重复出现的未知密钥都不计数。
 - 有效密钥从不计数。本实例在过去 30 秒内用过的密钥，即使来自被封锁的地址也能使用；其他有效密钥需要等窗口结束。

@@ -336,3 +336,89 @@ async fn the_throttle_can_be_turned_off() {
         assert_eq!(r.status, StatusCode::UNAUTHORIZED, "{n}");
     }
 }
+
+async fn with_agent_token(env: &Env, peer: &str, path: &str, token: &str) -> Answer {
+    let req = if path == "/mcp" {
+        Request::builder()
+            .method("POST")
+            .uri(path)
+            .header("authorization", format!("Bearer {token}"))
+            .header("content-type", "application/json")
+            .body(Body::from(
+                json!({ "jsonrpc": "2.0", "id": 1, "method": "ping" }).to_string(),
+            ))
+            .unwrap()
+    } else {
+        Request::builder()
+            .method("GET")
+            .uri(path)
+            .header("authorization", format!("Bearer {token}"))
+            .body(Body::empty())
+            .unwrap()
+    };
+    let mut req = req;
+    let addr = SocketAddr::new(peer.parse::<IpAddr>().unwrap(), 40000);
+    req.extensions_mut().insert(ConnectInfo(addr));
+    let resp = env.app.raw(req).await;
+    Answer {
+        status: resp.status,
+        retry_after: resp
+            .headers
+            .get("retry-after")
+            .and_then(|v| v.to_str().ok())
+            .and_then(|v| v.parse().ok()),
+        body: resp.body,
+    }
+}
+
+fn agent_token(n: u32) -> String {
+    format!("kso_at_{n:0>43}")
+}
+
+#[tokio::test]
+async fn unknown_agent_tokens_count_on_the_mcp_server_and_the_platform_api() {
+    let env = env(LIMIT).await;
+    let peer = "203.0.113.80";
+    let platform = format!("/platform/v1/orgs/{}/projects", env.owner.org_id);
+    for _ in 0..(LIMIT * 2) {
+        let r = with_agent_token(&env, peer, "/mcp", &agent_token(0)).await;
+        assert_eq!(r.status, StatusCode::UNAUTHORIZED, "{:?}", r.body);
+    }
+    for n in 1..3 {
+        let r = with_agent_token(&env, peer, "/mcp", &agent_token(n)).await;
+        assert_eq!(r.status, StatusCode::UNAUTHORIZED, "{:?}", r.body);
+    }
+    for n in 3..LIMIT {
+        let r = with_agent_token(&env, peer, &platform, &agent_token(n)).await;
+        assert_eq!(r.status, StatusCode::UNAUTHORIZED, "{:?}", r.body);
+        assert_eq!(r.body["error"]["type"], "authentication");
+    }
+    let r = with_agent_token(&env, peer, "/mcp", &agent_token(LIMIT)).await;
+    assert_eq!(r.status, StatusCode::TOO_MANY_REQUESTS, "{:?}", r.body);
+    assert_eq!(r.body["error"]["type"], "rate_limited");
+    let message = r.body["error"]["message"].as_str().unwrap();
+    assert!(common::copy::sent_problem(message).is_none(), "{message}");
+    assert!(r.retry_after.is_some_and(|s| (1..=60).contains(&s)));
+
+    let mut blocker = env.app.state.pg.begin().await.unwrap();
+    sqlx::query("LOCK TABLE agent_tokens IN ACCESS EXCLUSIVE MODE")
+        .execute(&mut *blocker)
+        .await
+        .unwrap();
+    for (n, path) in [(100, "/mcp"), (101, platform.as_str())] {
+        let r = tokio::time::timeout(
+            Duration::from_secs(2),
+            with_agent_token(&env, peer, path, &agent_token(n)),
+        )
+        .await
+        .expect("a blocked address waited for PostgreSQL");
+        assert_eq!(r.status, StatusCode::TOO_MANY_REQUESTS, "{path}");
+    }
+    blocker.rollback().await.unwrap();
+    assert_eq!(
+        v1(&env, peer, &made_up(1)).await.status,
+        StatusCode::TOO_MANY_REQUESTS
+    );
+    let r = with_agent_token(&env, "198.51.100.80", "/mcp", &agent_token(200)).await;
+    assert_eq!(r.status, StatusCode::UNAUTHORIZED);
+}

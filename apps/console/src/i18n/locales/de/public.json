@@ -7,6 +7,7 @@
   "public.agentLinkFailed": "Kaeso konnte diese Anmeldung nicht starten; versuchen Sie es im Agenten erneut.",
   "public.agentLinkMissing": "Starten Sie die Anmeldung erneut im Agenten; er öffnet diese Seite mit seiner Anfrage.",
   "public.agentLinkRefused": "Der Agent hat eine Anmeldung angefragt, die Kaeso nicht anbietet; aktualisieren Sie ihn und verbinden Sie ihn neu.",
+  "public.agentLinkThrottled": "Von Ihrer Adresse kamen zu viele Anmeldungen; warten Sie einige Minuten und starten Sie dann erneut im Agenten.",
   "public.agentLinkUnknownClient": "Kaeso kennt diesen Agenten nicht; verbinden Sie ihn vom Agenten aus neu.",
   "public.agentLinkUnusable": "Dieser Anmeldelink kann nicht verwendet werden",
   "public.agentRequestEnded": "Diese Anfrage ist abgelaufen",

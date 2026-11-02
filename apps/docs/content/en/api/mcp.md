@@ -243,6 +243,7 @@ An agent can create API keys that call models only in projects where it holds `a
 | 403 | The install doesn't allow agents, or `Origin` names another site. |
 | 405 | `GET` or `DELETE` on `/mcp`. |
 | 413 | The body is too large. |
+| 429 | Too many unknown tokens came from your address ([API key throttling](../self-hosting/configuration.md#api-key-throttling)). `Retry-After` says when to try again. |
 | 503 | Kaeso can't reach its database. |
 
 An unknown method gets the JSON-RPC error `-32601`, and an unknown tool `-32602`. A tool call that fails answers 200 with `isError: true` and the text `<type>: <message>`. The type is the Platform API's [error type](platform-api.md#errors), or `insufficient_rights` for a [missing right](#missing-rights).
@@ -268,13 +269,15 @@ Kaeso is its own authorization server. Its issuer is the install's public URL, s
 | `GET /.well-known/oauth-protected-resource/mcp` | The resource metadata: the `/mcp` address, Kaeso as its authorization server and the scope `kaeso`. Also at `/.well-known/oauth-protected-resource` |
 | `GET /.well-known/oauth-authorization-server` | The authorization server metadata: the endpoints below, `S256` as the only PKCE method, public clients only (`none`), and `iss` in every redirect (RFC 9207) |
 | `POST /oauth/register` | Registers a client (RFC 7591) with 1 to 10 redirect URIs and answers with its `client_id` (`cli_…`). A redirect URI uses HTTPS, a loopback address on any port, or a private-use scheme |
-| `GET /oauth/authorize` | Takes `response_type=code`, `client_id`, `redirect_uri`, `state` and `code_challenge` with `code_challenge_method=S256`. `scope` may only be `kaeso`, and `resource`, when sent, must be the `/mcp` address. A request it refuses goes back with `error` to a loopback or private-use redirect URI; with an HTTPS one, the console shows the error instead |
+| `GET /oauth/authorize` | Takes `response_type=code`, `client_id`, `redirect_uri`, `state` and `code_challenge` with `code_challenge_method=S256`. `scope` may only be `kaeso`, `resource`, when sent, must be the `/mcp` address, and `state` holds at most 2,000 characters. A request it refuses goes back with `error` to a loopback or private-use redirect URI once someone has authorized an agent of that client. Before that, and with an HTTPS redirect URI, the console shows the error instead |
 | `POST /oauth/token` | Form-encoded. `grant_type=authorization_code` with `code`, `client_id`, `redirect_uri` and `code_verifier`, or `grant_type=refresh_token` with `refresh_token` and `client_id` |
 | `POST /oauth/revoke` | Form-encoded `token`. Ends the sign-in the token belongs to, and answers 200 for a token it doesn't know |
 
 A loopback redirect URI may change its port at every sign-in, as RFC 8252 allows. Its host and path must stay as registered.
 
 An agent keeps its `client_id` across restarts, but Kaeso deletes registrations that never led to a sign-in, and a new database has none. When an agent signs in with a `client_id` Kaeso doesn't know and a loopback redirect URI, Kaeso registers it again under that id as "MCP client", and the sign-in goes on. You can rename it on the consent page. For any other redirect URI, the console says it doesn't know the agent.
+
+Anyone can register a client and open a sign-in, so Kaeso limits both. Each address may register 20 clients an hour, and open 30 sign-ins and send 120 token and 30 revocation requests every 15 minutes. Beyond that, the endpoint answers 429 with `temporarily_unavailable` and `Retry-After`, and `/oauth/authorize` opens the console, which asks you to wait. Kaeso keeps at most 1,000 registrations without a sign-in, dropping the oldest first, and the 20 newest sign-in requests of each client. Unknown access tokens count toward [API key throttling](../self-hosting/configuration.md#api-key-throttling).
 
 ## Policies
 
