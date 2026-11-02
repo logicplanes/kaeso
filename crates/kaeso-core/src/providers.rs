@@ -394,6 +394,10 @@ impl ProviderRef {
         self.built_in().is_some_and(|p| p.exceeds_context(message))
     }
 
+    pub fn end_user_limit(&self) -> Option<usize> {
+        self.built_in().and_then(|p| p.end_user_limit)
+    }
+
     pub fn reasoning_beyond_output_limit(&self) -> bool {
         self.built_in()
             .is_some_and(|p| p.reasoning_beyond_output_limit)
