@@ -4,6 +4,85 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 ## [Unreleased]
 
+## [0.5.6] - 2026-11-02
+
+### Added
+
+- Cerebras is a built-in provider: add its key and call its models from any app format ([#642](https://github.com/logicplanes/kaeso/pull/642))
+
+### Changed
+
+- The model API takes request bodies up to 32 MiB by default, as Anthropic does, instead of 8 MiB ([#617](https://github.com/logicplanes/kaeso/pull/617))
+- Kaeso decodes large requests about a third faster by counting each body once ([#623](https://github.com/logicplanes/kaeso/pull/623))
+
+#### Gateway
+
+- The gateway serves more requests per second under heavy load and spends less CPU on each ([#600](https://github.com/logicplanes/kaeso/pull/600))
+- A response cache lookup on a large request no longer holds up other requests on the same gateway thread ([#626](https://github.com/logicplanes/kaeso/pull/626))
+- A fresh install starts with KPMR's OpenRouter prices as of 2 November 2026, 22:15 UTC ([#644](https://github.com/logicplanes/kaeso/pull/644))
+
+#### KPP
+
+- A Chat Completions tool call streamed without an id no longer slows the stream down as it grows ([#615](https://github.com/logicplanes/kaeso/pull/615))
+- Kaeso translates large Responses requests, such as long Codex threads, with less work ([#627](https://github.com/logicplanes/kaeso/pull/627))
+- Kaeso translates streamed replies with less work per chunk, 1.3 to 1.6 times faster for the common pairs ([#641](https://github.com/logicplanes/kaeso/pull/641))
+
+#### Self-hosting
+
+- Updates finish 10 to 15 seconds sooner, because new containers report healthy as soon as they are ([#636](https://github.com/logicplanes/kaeso/pull/636))
+
+### Fixed
+
+- Streamed tool calls keep the tool name the app defined ([#598](https://github.com/logicplanes/kaeso/pull/598))
+- Shortening an organization's log retention asks first, and saving one retention keeps an unsaved edit of the other ([#602](https://github.com/logicplanes/kaeso/pull/602))
+- Streams that break off log the tool call Kaeso was still holding back and count its tokens in the usage estimate ([#603](https://github.com/logicplanes/kaeso/pull/603))
+- Tool call arguments, citations and unknown parts that a Responses stream sends only in the finished item reach every app ([#606](https://github.com/logicplanes/kaeso/pull/606))
+- A system or developer message between two tool results reaches Chat Completions models after the last result ([#608](https://github.com/logicplanes/kaeso/pull/608))
+- An Anthropic stream error in another shape or in plain text keeps the provider's message ([#609](https://github.com/logicplanes/kaeso/pull/609))
+- An ended session sends you to sign in from any page, the request log stops refetching a page that keeps failing, and the project overview explains what couldn't load ([#610](https://github.com/logicplanes/kaeso/pull/610))
+- A Chat Completions stream's second finish chunk no longer adds an empty text block after the stop ([#612](https://github.com/logicplanes/kaeso/pull/612))
+- Date pickers name the day you picked, and the request and audit logs filter by days in the install's time zone ([#613](https://github.com/logicplanes/kaeso/pull/613))
+- A Combobox lists every option again after a pick, and a data table you can open rows in is a grid that doesn't open a row when you select its text ([#621](https://github.com/logicplanes/kaeso/pull/621))
+- The project's forms show why a name was refused under the name, and the key and service account dialogs go back to it ([#624](https://github.com/logicplanes/kaeso/pull/624))
+- Request logs say a stream ended because Kaeso restarted, not because the app left, and a broken-off upload is no longer called too large ([#625](https://github.com/logicplanes/kaeso/pull/625))
+- The `postgres.pool_size` setting now says it sizes each instance's pool and that background jobs open up to 8 connections outside it ([#633](https://github.com/logicplanes/kaeso/pull/633))
+- The gateway raises its open-file limit at startup, so heavy traffic no longer runs it out of sockets at about 500 streams ([#635](https://github.com/logicplanes/kaeso/pull/635))
+- Automatic updates retry within the window's hour when they can't start, and no longer retry a release whose update rolled back ([#639](https://github.com/logicplanes/kaeso/pull/639))
+- The updater gives each Docker call its own timeout, so a hung Docker no longer holds an update for 10 minutes past its health deadline ([#640](https://github.com/logicplanes/kaeso/pull/640))
+- The password hint wraps under its field instead of running past the dialog and off a phone's screen ([#645](https://github.com/logicplanes/kaeso/pull/645))
+
+#### Gateway
+
+- Long agent conversations no longer hit "busy translating" at half the memory budget ([#601](https://github.com/logicplanes/kaeso/pull/601))
+- Limit checks cost the same however many requests are open, instead of slowing Valkey down as streams pile up ([#604](https://github.com/logicplanes/kaeso/pull/604))
+- Limited streams no longer pause for Valkey once a minute, and a limited reply ends as soon as it is charged ([#607](https://github.com/logicplanes/kaeso/pull/607))
+- Requests no longer wait for PostgreSQL every 30 seconds when a key's cached entries expire ([#616](https://github.com/logicplanes/kaeso/pull/616))
+- Budgets no longer lose up to 10 seconds of usage when their counter is rebuilt during a usage write ([#619](https://github.com/logicplanes/kaeso/pull/619))
+- A restart no longer loses the last seconds of usage and request logs when Docker stops the gateway before its requests have drained ([#631](https://github.com/logicplanes/kaeso/pull/631))
+- Scheduling an organization's deletion no longer reads every user of the install, and no longer reports an error once the organization is scheduled ([#632](https://github.com/logicplanes/kaeso/pull/632))
+- Request logs keep flowing after ClickHouse recovers from a stall, instead of the writer hanging until a restart ([#634](https://github.com/logicplanes/kaeso/pull/634))
+
+#### Console
+
+- Instance users and organizations stay in the gateway's order instead of sorting only the rows loaded so far ([#597](https://github.com/logicplanes/kaeso/pull/597))
+- The playground's model list follows catalogue changes, the audit log's Clear search removes the target filter, and deleting your account forgets what the browser kept ([#599](https://github.com/logicplanes/kaeso/pull/599))
+
+### Security
+
+- Changing your password can also disconnect your agents, for when someone else may have connected one ([#605](https://github.com/logicplanes/kaeso/pull/605))
+- A disabled key can no longer be rotated into a working one; enable it first ([#618](https://github.com/logicplanes/kaeso/pull/618))
+- Ending your own sessions is now recorded in the instance's audit log ([#620](https://github.com/logicplanes/kaeso/pull/620))
+- An agent no longer sees organizations and projects it was shut out of in your memberships or a member's rights ([#622](https://github.com/logicplanes/kaeso/pull/622))
+- An organization past its deletion date can no longer be restored, and a restore under way stops its final deletion instead of losing its logs ([#628](https://github.com/logicplanes/kaeso/pull/628))
+- Changing an organization's log retention or content logging now needs a recent sign-in, and the right is marked sensitive ([#629](https://github.com/logicplanes/kaeso/pull/629))
+- Agent sign-ins are limited per address and capped, unknown agent tokens count toward key throttling, and sign-in errors go back only to approved agents ([#638](https://github.com/logicplanes/kaeso/pull/638))
+
+#### Gateway
+
+- An ownership transfer racing with a demotion, removal or leave no longer leaves an organization without an owner ([#611](https://github.com/logicplanes/kaeso/pull/611))
+- A key created while its member is removed, its account deleted or its project or service account archived is refused or archived with the rest ([#614](https://github.com/logicplanes/kaeso/pull/614))
+- A burst of sign-in attempts can no longer run the gateway out of memory ([#630](https://github.com/logicplanes/kaeso/pull/630))
+
 ## [0.5.5] - 2026-11-02
 
 Kaeso 0.5.5 fixes the verification code input so its cells line up with the Verify button and the fields around them on every screen that asks for a code. Fresh installs start with KPMR's OpenRouter models as of 2 November 2026, 14:35 UTC, and running installs get the same data from KPMR on their own. There are no breaking changes in this release.
@@ -1134,7 +1213,8 @@ The first release of Kaeso, the open-source AI gateway you run yourself: the gat
 
 - A Release workflow that runs only from `prod`: it prepares the version changes and the changelog without write access to the repository, lets only jobs that run nothing but git push the release commit and the tag, syncs the release commit back to `dev`, and pins every action by commit SHA.
 
-[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.5.5...HEAD
+[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.5.6...HEAD
+[0.5.6]: https://github.com/logicplanes/kaeso/releases/tag/v0.5.6
 [0.5.5]: https://github.com/logicplanes/kaeso/releases/tag/v0.5.5
 [0.5.4]: https://github.com/logicplanes/kaeso/releases/tag/v0.5.4
 [0.5.3]: https://github.com/logicplanes/kaeso/releases/tag/v0.5.3
