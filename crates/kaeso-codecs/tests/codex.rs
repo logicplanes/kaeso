@@ -969,6 +969,29 @@ fn verbosity_reaches_chat_models_that_take_it_and_is_left_out_elsewhere() {
 }
 
 #[test]
+fn a_codex_cache_key_is_left_out_for_a_chat_provider_without_one() {
+    let req = decode(&codex("codex-developer-resume"));
+    let (sent, left_out) = sent_with(C, &req, mistral(&req));
+    assert_eq!(
+        sent["prompt_cache_key"],
+        "019a0e5b-7c06-7000-8000-000000000006"
+    );
+    assert!(
+        !left_out.iter().any(|l| l == "prompt_cache_key"),
+        "{left_out:?}"
+    );
+    let groq = EgressCtx::new(&req)
+        .with_provider("groq")
+        .with_chat_profile(ChatProfile::compatible("Groq").without_cache_key());
+    let (sent, left_out) = sent_with(C, &req, groq);
+    assert!(sent.get("prompt_cache_key").is_none(), "{sent}");
+    assert!(
+        left_out.iter().any(|l| l == "prompt_cache_key"),
+        "{left_out:?}"
+    );
+}
+
+#[test]
 fn xai_gets_its_own_web_search_fields() {
     let mut body = codex("codex-developer-resume");
     body["tools"][1] = json!({

@@ -25,6 +25,7 @@ pub struct RequestProfile {
     pub end_user_field: EndUserField,
     pub assistant_prefill: bool,
     pub verbosity: bool,
+    pub cache_key: bool,
     pub message_bookkeeping: bool,
     pub greedy_top_p: bool,
     pub stop_list: bool,
@@ -81,6 +82,7 @@ impl RequestProfile {
         end_user_field: EndUserField::SafetyIdentifier,
         assistant_prefill: true,
         verbosity: true,
+        cache_key: true,
         message_bookkeeping: false,
         greedy_top_p: false,
         stop_list: false,
@@ -120,6 +122,12 @@ impl ChatProfile {
     #[must_use]
     pub const fn without_verbosity(mut self) -> Self {
         self.request.verbosity = false;
+        self
+    }
+
+    #[must_use]
+    pub const fn without_cache_key(mut self) -> Self {
+        self.request.cache_key = false;
         self
     }
 
