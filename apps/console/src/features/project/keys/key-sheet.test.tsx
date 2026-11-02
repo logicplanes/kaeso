@@ -416,6 +416,20 @@ describe("KeySheet", () => {
     expect(rotate).toHaveTextContent(/You need Create own keys; ask .+ for it\./);
   });
 
+  it("asks to enable a disabled key before rotating it", async () => {
+    signedIn();
+    projectData({ keys: [apiKey({ state: "disabled" })] });
+    keyApi(apiKey({ state: "disabled" }));
+    const { user } = await renderApp(projectPath("keys?key=key_web"));
+
+    await sheet();
+    await user.click(await screen.findByRole("button", { name: "Key actions" }));
+    const rotate = await screen.findByRole("menuitem", { name: /Rotate/ });
+    expect(rotate).toHaveAttribute("aria-disabled", "true");
+    expect(rotate).toHaveTextContent("Enable the key before you rotate it.");
+    expect(screen.getByRole("menuitem", { name: "Enable" })).toBeInTheDocument();
+  });
+
   it("doesn't offer rotating someone else's key", async () => {
     signedIn();
     projectData({ keys: [apiKey()], members: [projectMember()] });

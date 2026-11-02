@@ -281,6 +281,7 @@
   "org.platformKeys.noneYet": "No platform keys yet",
   "org.platformKeys.noneYetHint": "Create one for scripts that manage the organization through the Platform API.",
   "org.platformKeys.rotate": "Rotate",
+  "org.platformKeys.rotateDisabled": "Enable the key before you rotate it.",
   "org.platformKeys.rotateKey": "Rotate key",
   "org.platformKeys.rotateTitle": "Rotate {name}",
   "org.platformKeys.rotated": "Platform key rotated",

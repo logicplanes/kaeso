@@ -335,6 +335,7 @@ const messages = (): Rule[] => [
   rule("errors.keyArchived", () => t("errors.keyArchived", "The key is archived and cannot change.")),
   rule("errors.keyChangedMeanwhile", () => t("errors.keyChangedMeanwhile", "The key changed meanwhile; reload and try again.")),
   rule("errors.keyRotatedAlready", () => t("errors.keyRotatedAlready", "This key was rotated already; rotate the key that replaced it.")),
+  rule("errors.keyRotateDisabled", () => t("errors.keyRotateDisabled", "This key is disabled; enable it before you rotate it.")),
   rule("errors.onlyOwnerRotates", () => t("errors.onlyOwnerRotates", "Only a key's owner can rotate it; the new key acts with the owner's rights.")),
   rule("errors.serviceAccountKeyRotatePath", (v) =>
     t("errors.serviceAccountKeyRotatePath", "Rotate a service account's key through service-accounts/{account}/keys/{key}/rotate.", v),

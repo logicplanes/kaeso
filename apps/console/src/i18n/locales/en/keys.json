@@ -47,6 +47,7 @@
   "keys.replacedName": "{name} (replaced)",
   "keys.replacedStops": "Replaced; stops {when}",
   "keys.rotate": "Rotate",
+  "keys.rotateDisabled": "Enable the key before you rotate it.",
   "keys.rotateKey": "Rotate key",
   "keys.rotateTitle": "Rotate {name}",
   "keys.rotated": "Key rotated",
