@@ -509,6 +509,57 @@ fn an_empty_chunk_after_the_finish_opens_no_block() {
 }
 
 #[test]
+fn a_long_call_that_never_gets_an_id_is_released_whole_at_the_end() {
+    let chunk = |delta: &str| {
+        format!(
+            "data: {{\"id\":\"c\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"m\",\"choices\":[{{\"index\":0,\"delta\":{delta},\"finish_reason\":null}}]}}\n\n"
+        )
+    };
+    let mut sse = chunk(
+        r#"{"role":"assistant","tool_calls":[{"index":0,"type":"function","function":{"name":"get_weather","arguments":""}}]}"#,
+    );
+    for _ in 0..3_000 {
+        sse.push_str(&chunk(
+            r#"{"tool_calls":[{"index":0,"function":{"arguments":"x"}}]}"#,
+        ));
+    }
+    let mut decoder = OpenAiChat::stream_decoder(&ectx());
+    for piece in sse.as_bytes().chunks(4096) {
+        assert!(decoder.feed(piece).is_empty(), "the call waits for its id");
+    }
+    let events = decoder.finish();
+    let calls: Vec<&ToolCallHeader> = events
+        .iter()
+        .filter_map(|e| match e {
+            StreamEvent::BlockStart(BlockStart {
+                block: BlockHeader::ToolCall(call),
+                ..
+            }) => Some(call),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(
+        calls,
+        [&ToolCallHeader::new("call_kaeso_c_0", "get_weather")]
+    );
+    let args: String = events
+        .iter()
+        .filter_map(|e| match e {
+            StreamEvent::BlockDelta(BlockDelta {
+                delta: Delta::ToolArguments(a),
+                ..
+            }) => Some(a.as_str()),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(args.len(), 3_000);
+    assert!(
+        matches!(events.last(), Some(StreamEvent::Error(_))),
+        "the stream was cut"
+    );
+}
+
+#[test]
 fn usage_is_hidden_when_the_app_did_not_ask() {
     let bytes = fixture("tools-single");
     let events = decode_whole(&bytes);
