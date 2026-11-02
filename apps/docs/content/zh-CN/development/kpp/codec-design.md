@@ -42,7 +42,7 @@ flowchart TD
 - **块索引**是 KPP 自己的：按块开始的顺序依次为 0、1、2 等。块可以交错（OpenAI 就是这样流式传输并行工具调用的），因此每个事件都注明它所属的块。
 - **每个生命周期事件都携带 `Extras`**，因此同一方言内的回放能精确重现原始事件，包括各事件自己的字段，例如 OpenAI 的 `obfuscation`。
 - **失败在带内报告**：先给出到目前为止解码出的事件，最后是一个 `StreamEvent::Error`，因此同一 chunk 中先前解码的内容不会丢失。
-- **事件顺序从不改变，但可能暂缓输出。** 兼容 OpenAI 的服务商可能在第一个 chunk 之后才发送回复的 `id` 和 `model`，或工具调用的 `id` 和 `name`。这时 OpenAI Chat Completions 解码器会暂缓 `ResponseStart` 和没有内容的 chunk，直到某个 chunk 带来这些值或内容。工具调用的 `BlockStart` 及其后的每个事件也会被暂缓。它们会一直等到该调用的 `id` 和 `name` 都已到达、该块结束，或者流结束或中断（[OpenAI Chat Completions](openai-chat.md#流createchatcompletionstreamresponse)）。服务商在块仍打开时发送的用量会被暂缓到这些块结束，因此 `ResponseDelta` 总是在最后一个 `BlockStop` 之后。
+- **事件顺序从不改变，但可能暂缓输出。** 兼容 OpenAI 的服务商可能在第一个 chunk 之后才发送回复的 `id` 和 `model`，或工具调用的 `id` 和 `name`。这时 OpenAI Chat Completions 解码器会暂缓 `ResponseStart` 和没有内容的 chunk，直到某个 chunk 带来这些值或内容。工具调用的 `BlockStart` 及其后的每个事件也会被暂缓。它们会一直等到该调用的 `id` 和 `name` 都已到达、该块结束，或者流结束或中断（[OpenAI Chat Completions](openai-chat.md#流createchatcompletionstreamresponse)）。服务商在块仍打开时发送的用量会被暂缓到这些块结束，因此 `ResponseDelta` 总是在最后一个 `BlockStop` 之后。流提前结束时（与服务商的连接中断、应用离开或网关结束了它），`StreamDecoder::flush` 会释放解码器仍暂缓的事件，且不添加错误；网关会把它们与回复一起记录，并计入用量估算。
 
 ### 流编码器
 

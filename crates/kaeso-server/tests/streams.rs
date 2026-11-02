@@ -645,6 +645,38 @@ async fn an_app_that_closes_before_the_last_event_is_a_disconnect() {
 }
 
 #[tokio::test]
+async fn a_tool_call_the_decoder_held_back_is_logged_when_the_stream_breaks() {
+    let env = env_with_groq(&[]).await;
+    set_content_logging(&env, true).await;
+    let text = "Hi [mock:fixture=tool-header-after-arguments] [mock:cut]";
+    let r = send(
+        &env,
+        "/v1/chat/completions",
+        false,
+        streaming(chat("groq/openai/gpt-oss-20b", text)),
+    )
+    .await;
+    assert_eq!(r.status, 200);
+    assert!(!r.text().contains("tool_calls"), "{}", r.text());
+    let id = r.header("kaeso-request-id").unwrap().to_owned();
+    let o = outcome(&env, |o| o.request_id.to_string() == id).await;
+    assert_eq!(o.error_kind.as_deref(), Some("stream_interrupted"));
+    let reply = o.reply.as_ref().unwrap();
+    let calls: Vec<_> = reply
+        .blocks
+        .iter()
+        .filter_map(|b| match b {
+            kaeso_kpp::Block::ToolCall(c) => Some(c),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(calls.len(), 1, "{reply:?}");
+    assert!(calls[0].arguments.get().contains("location"), "{reply:?}");
+    assert!(o.usage_estimated);
+    assert!(o.usage.unwrap().output_tokens >= 3);
+}
+
+#[tokio::test]
 async fn nothing_after_the_last_event_fails_a_stream() {
     use http_body_util::BodyExt;
     let cases: [(&str, &[(&str, &str)]); 3] = [

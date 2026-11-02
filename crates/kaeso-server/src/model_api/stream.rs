@@ -532,6 +532,14 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
             }
         }
     }
+    // An early exit leaves what the decoder held back: the app's stream is over, but the logged
+    // reply and the usage estimate still count it.
+    let held = processing.time(|| decoder.flush());
+    app.progress.count(&held);
+    for event in &held {
+        asm.feed(event);
+        tally.feed(event);
+    }
     drop(chunks);
     let cancelled = gone && !last_event_at.is_some_and(|at| app.taken.reached(at));
     let mut assembled = asm.finish();
