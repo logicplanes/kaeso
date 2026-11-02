@@ -263,3 +263,185 @@ async fn instance_changes_to_people_need_a_recent_sign_in() {
     assert_eq!(member.body["grant"]["role"]["id"], "member");
     s.cleanup().await;
 }
+
+async fn until_a_lock_is_awaited(pool: &sqlx::PgPool) {
+    loop {
+        let waiting: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM pg_stat_activity WHERE datname = current_database() AND wait_event_type = 'Lock'",
+        )
+        .fetch_one(pool)
+        .await
+        .unwrap();
+        if waiting > 0 {
+            return;
+        }
+        tokio::task::yield_now().await;
+    }
+}
+
+async fn once_it_waits(
+    app: &App,
+    held: sqlx::Transaction<'static, sqlx::Postgres>,
+    request: impl std::future::Future<Output = common::Resp>,
+) -> common::Resp {
+    tokio::pin!(request);
+    tokio::select! {
+        r = &mut request => panic!("the key didn't wait for the change under way: {:?}", r.body),
+        () = until_a_lock_is_awaited(&app.state.pg) => {}
+    }
+    held.commit().await.unwrap();
+    request.await
+}
+
+async fn keys_of(app: &App, owner: &Owner, base: &str, filter: &str) -> Value {
+    app.get(
+        &format!("{base}/keys?include_archived=true&{filter}"),
+        &owner.cookie,
+    )
+    .await
+    .expect_status(StatusCode::OK)
+    .body["data"]
+        .clone()
+}
+
+#[tokio::test]
+async fn a_key_asked_for_while_its_member_is_removed_is_refused() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let project = default_project(&app, &owner).await;
+    let base = format!("/orgs/{}/projects/{project}", owner.org_id);
+    let (dev, dev_id) = common::join(
+        &app,
+        &owner,
+        json!({ "email": "dev@example.com", "role": "developer" }),
+        "Dev",
+    )
+    .await;
+    let org = common::uuid(&owner.org_id);
+    let mut removal = app.state.pg.begin().await.unwrap();
+    kaeso_store::pg::members::delete_org(&mut removal, org, common::uuid(&dev_id))
+        .await
+        .unwrap();
+
+    let r = once_it_waits(
+        &app,
+        removal,
+        app.post(
+            &format!("{base}/keys"),
+            json!({ "name": "late" }),
+            Some(&dev),
+        ),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::NOT_FOUND, "{:?}", r.body);
+    assert_eq!(
+        r.body["error"]["message"],
+        "No such organization, or you cannot see it."
+    );
+    assert_eq!(
+        keys_of(&app, &owner, &base, &format!("user={dev_id}")).await,
+        json!([])
+    );
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn a_key_asked_for_while_its_project_is_archived_is_refused() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let created = app
+        .post(
+            &format!("/orgs/{}/projects", owner.org_id),
+            json!({ "name": "Support bot" }),
+            Some(&owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::CREATED);
+    let project = created.body["id"].as_str().unwrap().to_owned();
+    let base = format!("/orgs/{}/projects/{project}", owner.org_id);
+    let mut archive = app.state.pg.begin().await.unwrap();
+    let mut row = kaeso_store::pg::projects::get_for_update(
+        &mut *archive,
+        common::uuid(&owner.org_id),
+        common::uuid(&project),
+    )
+    .await
+    .unwrap()
+    .unwrap();
+    row.archived_at = Some(time::OffsetDateTime::now_utc());
+    kaeso_store::pg::projects::update(&mut *archive, &row)
+        .await
+        .unwrap();
+
+    let r = once_it_waits(
+        &app,
+        archive,
+        app.post(
+            &format!("{base}/keys"),
+            json!({ "name": "late" }),
+            Some(&owner.cookie),
+        ),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::CONFLICT, "{:?}", r.body);
+    assert_eq!(
+        r.body["error"]["message"],
+        "The project is archived; its keys cannot change."
+    );
+    assert_eq!(keys_of(&app, &owner, &base, "").await, json!([]));
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn a_key_asked_for_while_its_service_account_is_archived_is_refused() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let project = default_project(&app, &owner).await;
+    let base = format!("/orgs/{}/projects/{project}", owner.org_id);
+    let created = app
+        .post(
+            &format!("{base}/service-accounts"),
+            json!({ "name": "deployer", "role": "developer" }),
+            Some(&owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::CREATED);
+    let account = created.body["id"].as_str().unwrap().to_owned();
+    let mut archive = app.state.pg.begin().await.unwrap();
+    let mut row = kaeso_store::pg::service_accounts::get_for_update(
+        &mut *archive,
+        common::uuid(&project),
+        common::uuid(&account),
+    )
+    .await
+    .unwrap()
+    .unwrap();
+    row.archived_at = Some(time::OffsetDateTime::now_utc());
+    kaeso_store::pg::service_accounts::update(&mut *archive, &row)
+        .await
+        .unwrap();
+
+    let r = once_it_waits(
+        &app,
+        archive,
+        app.post(
+            &format!("{base}/service-accounts/{account}/keys"),
+            json!({ "name": "late" }),
+            Some(&owner.cookie),
+        ),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::NOT_FOUND, "{:?}", r.body);
+    assert_eq!(
+        r.body["error"]["message"],
+        "No such active service account, or you cannot see it."
+    );
+    assert_eq!(
+        keys_of(&app, &owner, &base, &format!("service_account={account}")).await,
+        json!([])
+    );
+    s.cleanup().await;
+}

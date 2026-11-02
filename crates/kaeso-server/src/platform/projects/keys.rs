@@ -107,6 +107,7 @@ async fn create_key(
     let project = ctx.project()?;
     let (created_kind, created_id) = creator_of(ctx);
     let mut tx = state.pg.begin().await?;
+    hold_for_key(&mut tx, &project.project, user, service_account).await?;
     let key_limits = match &req.limits {
         Some(specs) => {
             super::limits::key_limits(state, &mut tx, project.project.id, id.uuid(), member, specs)
@@ -194,6 +195,30 @@ async fn create_key(
             secret: secret.secret.expose_secret().to_owned(),
         }),
     ))
+}
+
+// The request's view of these rows can be stale: an archive or removal that commits first refuses
+// the key here, and one that comes later waits for it and archives it with the others.
+async fn hold_for_key(
+    tx: &mut sqlx::PgConnection,
+    project: &kaeso_store::pg::projects::Project,
+    user: Option<UserId>,
+    service_account: Option<uuid::Uuid>,
+) -> ApiResult<()> {
+    if !kaeso_store::pg::projects::hold_active(&mut *tx, project.org_id, project.id).await? {
+        return Err(ApiError::Conflict(KEYS_ARCHIVED.into()));
+    }
+    if let Some(user) = user
+        && !kaeso_store::pg::members::hold_org(&mut *tx, project.org_id, user.uuid()).await?
+    {
+        return Err(ApiError::not_found("organization"));
+    }
+    if let Some(account) = service_account
+        && !service_accounts::hold_active(&mut *tx, project.id, account).await?
+    {
+        return Err(ApiError::not_found("active service account"));
+    }
+    Ok(())
 }
 
 #[utoipa::path(

@@ -175,6 +175,21 @@ pub async fn delete_org(
     Ok(())
 }
 
+pub async fn hold_org(
+    db: impl PgExecutor<'_>,
+    org_id: Uuid,
+    user_id: Uuid,
+) -> Result<bool, StoreError> {
+    Ok(sqlx::query_scalar!(
+        "SELECT 1 AS \"one!\" FROM org_memberships WHERE org_id = $1 AND user_id = $2 FOR SHARE",
+        org_id,
+        user_id
+    )
+    .fetch_optional(db)
+    .await?
+    .is_some())
+}
+
 pub async fn lock_owners(db: &mut sqlx::PgConnection, org_id: Uuid) -> Result<(), StoreError> {
     sqlx::query!(
         "SELECT pg_advisory_xact_lock(hashtextextended('org_owners:' || $1::uuid::text, 0))",
