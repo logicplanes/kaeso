@@ -148,7 +148,7 @@ Die [Platform API](../api/platform-api.md) beschreibt die Routen für Rechte, Ro
 
 | Recht | Name | Was es erlaubt | Hinweise |
 | --- | --- | --- | --- |
-| `logs.settings.manage` | Protokollierung verwalten | Aufbewahrung festlegen und Inhaltsprotokollierung der Organisation ein- oder ausschalten. |  |
+| `logs.settings.manage` | Protokollierung verwalten | Aufbewahrung festlegen und Inhaltsprotokollierung der Organisation ein- oder ausschalten. | sensibel; kürzliche Anmeldung |
 | `logs.storage.view` | Protokollspeicher ansehen | Sehen, wie viele Protokolleinträge es gibt und wie viel Platz sie belegen. |  |
 | `logs.delete` | Protokolle löschen | Protokolle der Organisation für einen Zeitraum löschen. | sensibel; kürzliche Anmeldung; erfordert `logs.storage.view` |
 

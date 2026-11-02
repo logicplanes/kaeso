@@ -9486,7 +9486,7 @@
           "logs"
         ],
         "summary": "Changes retention or content logging. A shorter retention removes older\nrows in the background; a longer one applies to new rows.",
-        "description": "**Right:** `logs.settings.manage` on the organization in the path.",
+        "description": "**Right:** `logs.settings.manage` on the organization in the path; with a session, a sign-in within the last 15 minutes.",
         "operationId": "patchOrgsOrgLogsSettings",
         "parameters": [
           {

@@ -729,3 +729,83 @@ async fn a_stored_secret_is_kept_only_for_the_same_issuer_and_client() {
     );
     s.cleanup().await;
 }
+
+#[tokio::test]
+async fn org_log_settings_need_a_recent_sign_in_in_the_console() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let settings = format!("/orgs/{}/logs/settings", owner.org_id);
+    let key = app
+        .post(
+            &format!("/orgs/{}/platform-keys", owner.org_id),
+            json!({ "name": "terraform", "expires_in_days": 90 }),
+            Some(&owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::CREATED)
+        .body["secret"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    app.clock.advance(time::Duration::minutes(16));
+    for body in [
+        json!({ "content_logging": false }),
+        json!({ "metadata_retention_days": 30, "content_retention_days": 7 }),
+    ] {
+        let r = app
+            .call(
+                Method::PATCH,
+                &settings,
+                Some(body.clone()),
+                Some(&owner.cookie),
+            )
+            .await;
+        assert_eq!(
+            r.error_type(),
+            "recent_sign_in_required",
+            "{body}: {:?}",
+            r.body
+        );
+    }
+    let unchanged = app
+        .get(&settings, &owner.cookie)
+        .await
+        .expect_status(StatusCode::OK);
+    assert_eq!(unchanged.body["content_logging"], true);
+    assert_eq!(unchanged.body["metadata_retention_days"], 90);
+
+    let fresh = app
+        .post(
+            "/auth/password",
+            json!({ "email": "owner@example.com", "password": common::PASSWORD }),
+            None,
+        )
+        .await
+        .cookie()
+        .unwrap();
+    let r = app
+        .call(
+            Method::PATCH,
+            &settings,
+            Some(json!({ "content_logging": false })),
+            Some(&fresh),
+        )
+        .await
+        .expect_status(StatusCode::OK);
+    assert_eq!(r.body["content_logging"], false);
+    let r = app
+        .with_key(
+            Method::PATCH,
+            &settings,
+            Some(json!({ "content_logging": true })),
+            &key,
+        )
+        .await
+        .expect_status(StatusCode::OK);
+    assert_eq!(
+        r.body["content_logging"], true,
+        "keys have no sign-in to renew"
+    );
+    s.cleanup().await;
+}

@@ -491,6 +491,7 @@ fn sensitive_rights_need_a_recent_sign_in() {
             "security.sso.require",
             "security.2fa.require",
             "platform_keys.create",
+            "logs.settings.manage",
             "logs.delete"
         ]
     );
