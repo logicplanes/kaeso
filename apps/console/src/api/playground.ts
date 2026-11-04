@@ -6,13 +6,28 @@ import { readSse, type SseEvent } from "./sse";
 
 export type PlaygroundRequest = Body & { stream: true };
 
-export async function* streamPlayground(org: string, project: string, body: PlaygroundRequest, signal: AbortSignal): AsyncGenerator<SseEvent> {
+export async function* streamPlayground(
+  org: string,
+  project: string,
+  body: PlaygroundRequest,
+  signal: AbortSignal,
+  onAnswer?: ((answer: Response) => void) | undefined,
+): AsyncGenerator<SseEvent> {
   const { data, response } = await api.POST("/platform/v1/orgs/{org}/projects/{project}/playground/responses", {
     params: { path: { org, project } },
     body,
     headers: { accept: "text/event-stream" },
     parseAs: "stream",
     signal,
+    ...(onAnswer
+      ? {
+          fetch: async (request: Request) => {
+            const answer = await globalThis.fetch(request);
+            onAnswer(answer);
+            return answer;
+          },
+        }
+      : {}),
   });
   if (!data || !(response.headers.get("content-type") ?? "").includes("text/event-stream")) {
     await data?.cancel().catch(() => undefined);

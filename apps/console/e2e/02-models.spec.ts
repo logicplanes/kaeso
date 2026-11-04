@@ -205,9 +205,15 @@ test("aliases: build a route with a fallback, warn about a shadowed model, renam
   await expect(page.getByRole("heading", { name: "fast" })).toBeVisible();
   await page.getByRole("tab", { name: "Test" }).click();
   await expect(panel.getByRole("heading", { name: "Test a request" })).toBeVisible();
+  await expect(steps.getByRole("treeitem", { name: /Try 2/ })).toBeVisible();
+  await panel.getByRole("button", { name: "Send" }).click();
+  await expect(panel.getByText("Steps it took")).toBeVisible();
+  await expect(panel.getByRole("listitem").filter({ hasText: "GPT-5.4 mini" })).toContainText("fell back");
+  await expect(panel.getByRole("listitem").filter({ hasText: "GPT-5.6" })).toBeVisible();
+  await expect(panel.getByRole("button", { name: "Open in request log" })).toBeVisible();
+  await panel.getByRole("radio", { name: "Preview" }).click();
   await expect(panel.getByText("Try 1; tried first")).toBeVisible();
   await expect(panel.getByText("Try 2; tried when try 1 fails")).toBeVisible();
-  await expect(steps.getByRole("treeitem", { name: /Try 2/ })).toBeVisible();
   await page.getByRole("tab", { name: "Editor" }).click();
 
   await page.getByRole("button", { name: "Back to aliases" }).click();

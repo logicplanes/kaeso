@@ -1,3 +1,4 @@
+import type { ResponseViewProps } from "@logicplanes/kaeso-ui/playground";
 import { t } from "~/i18n";
 
 type ResponseStatus = "waiting" | "streaming" | "completed" | "incomplete" | "failed" | "stopped";
@@ -182,4 +183,15 @@ export function historyItems(turns: readonly Turn[]): InputItem[] {
     } else if (r.text) items.push({ role: "assistant", content: r.text });
   }
   return items;
+}
+
+export function replyView(r: ResponseState): Pick<ResponseViewProps, "text" | "reasoning" | "status" | "incompleteReason" | "error" | "reasoningDuration"> {
+  return {
+    text: r.text,
+    reasoning: r.reasoning,
+    status: r.status === "waiting" ? "pending" : r.status === "completed" ? "done" : r.status === "failed" ? "error" : r.status,
+    ...(r.incompleteReason ? { incompleteReason: r.incompleteReason } : {}),
+    ...(r.error ? { error: r.requestId ? t("playground.errorWithRequest", "{error} Request {id}", { error: r.error, id: r.requestId }) : r.error } : {}),
+    ...(r.reasoning && r.firstTextAt !== null && r.firstTokenAt !== null ? { reasoningDuration: r.firstTextAt - r.firstTokenAt } : {}),
+  };
 }

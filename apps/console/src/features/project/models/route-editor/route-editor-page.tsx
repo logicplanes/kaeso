@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useBlocker, useNavigate } from "@tanstack/react-router";
 import { AlertDialog, AppFrame, Button, DialogScope, IconButton, Loader, Menu, PageHeader, PillTabs, icons } from "@logicplanes/kaeso-ui";
 import { FlowCanvas, FlowWorkspace } from "@logicplanes/kaeso-ui/flow-canvas";
+import { formatDuration } from "@logicplanes/kaeso-ui/format";
 import { api, data } from "~/api/client";
 import type { AliasView, CatalogueModelView, RouteStep } from "~/api/generated/types";
 import { allKeysQuery } from "~/api/queries/keys";
@@ -10,6 +11,7 @@ import { projectMembersQuery, serviceAccountsQuery } from "~/api/queries/members
 import { aliasQuery, catalogueQuery } from "~/api/queries/models";
 import { projectCatalogue } from "~/api/queries/invalidation";
 import { useApiMutation } from "~/auth/mutation";
+import { useRequestLogs, useSession } from "~/auth/session";
 import { useProjectRights } from "~/auth/rights";
 import { useNeedsRight } from "~/auth/needs-right";
 import { LoadFailed } from "~/features/org/load-failed";
@@ -28,7 +30,6 @@ import {
   find,
   fromRoute,
   map,
-  modelsOf,
   move,
   moves,
   parentEdge,
@@ -51,8 +52,9 @@ import { useHistory } from "./history";
 import { AliasPanel, ConditionPanel, ModelPanel, SplitPanel, type FieldErrors, type InspectorContext } from "./inspector";
 import { moveLabel, type Names } from "./labels";
 import { RouteJsonDialog } from "./route-json";
-import { TestPanel, firstRequest, useTrace, type TestRequest } from "./test-panel";
-import { START, canvasTree, stepName } from "./tree";
+import { pathIds, toneOf, useRouteSend, type Walked } from "./send";
+import { TestPanel, asSent, firstRequest, sentHeaders, useTrace, type TestMode, type TestRequest } from "./test-panel";
+import { START, canvasTree, stepName, type Outcome } from "./tree";
 import { VersionsPanel, useVersions, type Version } from "./versions";
 
 type Doc = { name: string; root: DraftStep };
@@ -61,6 +63,25 @@ type Tab = "editor" | "test" | "versions";
 const KIND_ICON = { model: icons.model, condition: icons.condition, split: icons.split } as const;
 const KINDS = ["model", "condition", "split"] as const;
 type Saved = { id: string; name: string; route: RouteStep };
+
+function outcome(w: Walked): Outcome {
+  if (w.status === null) return { tone: "neutral", label: t("models.route.sent.skipped", "Skipped") };
+  if (w.ms === null) return { tone: toneOf(w.status), label: String(w.status) };
+  return {
+    tone: toneOf(w.status),
+    label: t("models.route.sent.statusAfter", "{status} after {duration}", { status: String(w.status), duration: formatDuration(w.ms) }),
+  };
+}
+
+function outcomes(root: DraftStep, walked: readonly Walked[]): Map<string, Outcome> {
+  const byPath = new Map(walked.map((w) => [w.path, w]));
+  const out = new Map<string, Outcome>();
+  for (const { step, path } of walk(root)) {
+    const w = byPath.get(path);
+    if (w) out.set(step.id, outcome(w));
+  }
+  return out;
+}
 
 export function RouteEditorPage({ org, project, alias }: { org: string; project: string; alias?: string | undefined }) {
   const catalogue = useQuery(catalogueQuery(org, project));
@@ -112,6 +133,8 @@ function Start({ org, project }: { org: string; project: string }) {
   );
 }
 
+const nameMissing = (name: string) => name.trim() === "";
+
 const isTyping = (e: KeyboardEvent) => {
   const el = e.target as HTMLElement | null;
   return !!el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable);
@@ -143,7 +166,12 @@ function Editor({
   const [selected, setSelected] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("editor");
   const [request, setRequest] = useState<TestRequest>(() => firstRequest(doc.root));
-  const [started, setStarted] = useState<{ kind: Template; root: DraftStep } | null>(null);
+  const [mode, setMode] = useState<TestMode>("send");
+  const [prompt, setPrompt] = useState(() => t("models.route.defaultPrompt", "Say hello in one sentence."));
+  const me = useSession().user.id;
+  const logs = useRequestLogs();
+  const sender = useRouteSend(org, project);
+  const [started, setStarted] = useState<{ kind: Template; root: DraftStep } | null>(() => (initial ? null : { kind: "single", root: history.present.root }));
   const [version, setVersion] = useState<string | null>(null);
   const [json, setJson] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -183,17 +211,39 @@ function Editor({
 
   const testing = tab === "test";
   const testable = problems.size === 0;
+  const sending = testing && mode === "send";
+  const readsTokens = useMemo(
+    () => [...walk(doc.root)].some(({ step }) => step.type === "condition" && step.rules.some((r) => r.field === "input_tokens")),
+    [doc.root],
+  );
+  const typed = useDeferredValue(readsTokens ? prompt : "");
   const test = useTrace({
     org,
     project,
     alias: saved?.id,
     route,
     root: doc.root,
-    request,
+    request: sending ? asSent(request, typed, me) : request,
     keys: keys.data,
     enabled: testing && testable,
   });
   const trace = testing && testable ? test.trace : undefined;
+  const result = sending && sender.sent?.walked && sameRoute(sender.sent.route, route) ? sender.sent.walked : null;
+  const sendBlock = !rights.has("playground.use")
+    ? needs("playground.use")
+    : nameMissing(doc.name)
+      ? t("models.route.needsName", "Give the alias a name first.")
+      : undefined;
+  const sendRequest = (text: string) => {
+    void sender.send(text, {
+      model: doc.name.trim(),
+      input: text,
+      stream: true,
+      route,
+      ...(saved ? { alias: saved.id } : {}),
+      headers: sentHeaders(request),
+    });
+  };
 
   const tree = useMemo(
     () =>
@@ -204,9 +254,9 @@ function Editor({
         providerName: providers.name,
         problems: shown ? new Map() : problems,
         names,
-        tries: trace?.tries,
+        ...(result ? { outcomes: outcomes(shownRoot, result) } : { tries: trace?.tries }),
       }),
-    [shown, doc.name, shownRoot, models, providers.name, problems, names, trace],
+    [shown, doc.name, shownRoot, models, providers.name, problems, names, trace, result],
   );
 
   const clearErrors = () => {
@@ -274,10 +324,9 @@ function Editor({
   });
 
   const blockingProblems = problems.size;
-  const nameMissing = doc.name.trim() === "";
   const saveReason = readOnly
     ? needs("models.manage")
-    : nameMissing
+    : nameMissing(doc.name)
       ? t("models.route.needsName", "Give the alias a name first.")
       : blockingProblems > 0
         ? t("models.route.needsFixes", "Fix the steps marked on the route first.")
@@ -410,13 +459,27 @@ function Editor({
       />
     ) : testing ? (
       <TestPanel
+        mode={mode}
+        onMode={setMode}
         request={request}
         onRequest={setRequest}
+        prompt={prompt}
+        onPrompt={setPrompt}
         root={doc.root}
         blocked={!testable}
+        sendBlock={sendBlock}
         trace={trace}
         error={test.error}
         loading={test.loading}
+        sent={sender.sent}
+        busy={sender.busy}
+        onSend={sendRequest}
+        onStop={sender.stop}
+        onOpenLog={
+          logs && rights.has("logs.metadata.view")
+            ? (log: string) => void navigate({ to: "/orgs/$org/projects/$project/logs", params: { org, project }, search: { log } })
+            : undefined
+        }
         keys={keys.data}
         models={models}
         names={names}
@@ -439,7 +502,7 @@ function Editor({
         nameError={nameError}
         readOnly={readOnly}
         shadows={shadows}
-        summary={{ models: modelsOf(doc.root).length, steps: [...walk(doc.root)].length, problems: blockingProblems }}
+        problems={blockingProblems}
         {...(!saved && !readOnly
           ? {
               templates: {
@@ -516,7 +579,8 @@ function Editor({
           aria-label={t("models.route.canvasLabel", "Route of {name}", { name: doc.name.trim() || t("models.route.newAlias", "New alias") })}
           root={tree}
           selected={shown || testing ? null : (selected ?? null)}
-          trace={trace ? [START, ...trace.ids] : undefined}
+          trace={result ? [START, ...pathIds(doc.root, result)] : trace ? [START, ...trace.ids] : undefined}
+          busy={sending && sender.busy && !result}
           onSelect={(id) => {
             if (shown) return;
             if (testing) {

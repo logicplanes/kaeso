@@ -1,8 +1,8 @@
 import type { PlaygroundModel } from "~/api/queries/playground";
-import { ResponseMetrics, ResponseView, Thread as Turns, UserMessage, type ResponseStatus } from "@logicplanes/kaeso-ui/playground";
+import { ResponseMetrics, ResponseView, Thread as Turns, UserMessage } from "@logicplanes/kaeso-ui/playground";
 import { metricsOf } from "./metrics";
 import { t } from "~/i18n";
-import type { ResponseState, Turn } from "./responses";
+import { replyView, type Turn } from "./responses";
 
 export default function Thread({
   turns,
@@ -26,14 +26,7 @@ export default function Thread({
             <UserMessage>{turn.prompt}</UserMessage>
             <ResponseView
               aria-label={t("playground.response", "{model} response", { model: label })}
-              text={r.text}
-              reasoning={r.reasoning}
-              status={statusOf(r)}
-              {...(r.incompleteReason ? { incompleteReason: r.incompleteReason } : {})}
-              {...(r.error
-                ? { error: r.requestId ? t("playground.errorWithRequest", "{error} Request {id}", { error: r.error, id: r.requestId }) : r.error }
-                : {})}
-              {...(r.reasoning && r.firstTextAt !== null && r.firstTokenAt !== null ? { reasoningDuration: r.firstTextAt - r.firstTokenAt } : {})}
+              {...replyView(r)}
               {...(latest && onRetry ? { onRetry } : {})}
               {...(latest ? {} : { footer: <ResponseMetrics {...metricsOf(r, model)} /> })}
             />
@@ -43,6 +36,3 @@ export default function Thread({
     </Turns>
   );
 }
-
-const statusOf = (r: ResponseState): ResponseStatus =>
-  r.status === "waiting" ? "pending" : r.status === "completed" ? "done" : r.status === "failed" ? "error" : r.status;

@@ -18,6 +18,14 @@ export type TreeInput = {
   problems: ReadonlyMap<string, Problem[]>;
   names: Names;
   tries?: ReadonlyMap<string, number> | undefined;
+  outcomes?: ReadonlyMap<string, Outcome> | undefined;
+};
+
+export type Outcome = { tone: "success" | "warning" | "danger" | "neutral"; label: string };
+
+const into = (step: DraftStep, input: TreeInput): Pick<FlowCanvasEdge, "tone"> => {
+  const tone = input.outcomes?.get(step.id)?.tone;
+  return tone && tone !== "neutral" ? { tone } : {};
 };
 
 export function stepName(step: DraftStep, input: Pick<TreeInput, "models" | "names">): string {
@@ -44,7 +52,7 @@ function status(problems: Problem[] | undefined): FlowCanvasNode["status"] {
 
 function node(step: DraftStep, input: TreeInput): FlowCanvasNode {
   const name = stepName(step, input);
-  const problem = status(input.problems.get(step.id));
+  const problem = status(input.problems.get(step.id)) ?? input.outcomes?.get(step.id);
   const attempt = input.tries?.get(step.id);
   const base = {
     id: step.id,
@@ -62,6 +70,7 @@ function node(step: DraftStep, input: TreeInput): FlowCanvasNode {
       addLabel: t("models.route.addFallback", "Add a fallback to {name}", { name }),
       ...(step.fallback
         ? {
+            ...into(step.fallback, input),
             node: node(step.fallback, input),
             insertLabel: t("models.route.insertBefore", "Insert a step before {name}", { name: stepName(step.fallback, input) }),
           }
@@ -95,6 +104,7 @@ function node(step: DraftStep, input: TreeInput): FlowCanvasNode {
       children: (["then", "else"] as const).map((side) => ({
         id: edgeId({ kind: side, of: step.id }),
         label: side === "then" ? t("models.route.then", "Then") : t("models.route.else", "Else"),
+        ...into(step[side], input),
         node: node(step[side], input),
         insertLabel: t("models.route.insertBefore", "Insert a step before {name}", { name: stepName(step[side], input) }),
       })),
@@ -108,6 +118,7 @@ function node(step: DraftStep, input: TreeInput): FlowCanvasNode {
     children: step.branches.map((b, index) => ({
       id: edgeId({ kind: "branch", of: step.id, index }),
       label: weightLabel(b.weight),
+      ...into(b.step, input),
       node: node(b.step, input),
       insertLabel: t("models.route.insertBefore", "Insert a step before {name}", { name: stepName(b.step, input) }),
     })),
@@ -125,6 +136,7 @@ export function canvasTree(input: TreeInput): FlowCanvasNode {
     children: [
       {
         id: edgeId({ kind: "root" }),
+        ...into(input.root, input),
         node: node(input.root, input),
         insertLabel: t("models.route.insertBefore", "Insert a step before {name}", { name: stepName(input.root, input) }),
       },

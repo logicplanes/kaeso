@@ -1,4 +1,4 @@
-import { useId, useMemo } from "react";
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   Banner,
@@ -12,8 +12,6 @@ import {
   Input,
   KeyValue,
   Menu,
-  Radio,
-  RadioGroup,
   Segmented,
   Select,
   Text,
@@ -532,7 +530,7 @@ export function AliasPanel({
   nameError,
   readOnly,
   shadows,
-  summary,
+  problems,
   templates,
 }: {
   name: string;
@@ -540,10 +538,9 @@ export function AliasPanel({
   nameError: string | undefined;
   readOnly: boolean;
   shadows: boolean;
-  summary: { models: number; steps: number; problems: number };
+  problems: number;
   templates?: { value: Template | null; onPick: (template: Template) => void } | undefined;
 }) {
-  const startFrom = useId();
   const shown = name.trim() || t("models.alias.nameExample", "fast");
   const base = useMemo(() => `${window.location.origin}/v1`, []);
   const tabs = [
@@ -583,26 +580,18 @@ export function AliasPanel({
         </Banner>
       )}
       {templates && (
-        <div className="flex flex-col gap-8">
-          <Text id={startFrom} variant="small" weight="medium">
-            {t("models.route.startFrom", "Start from")}
-          </Text>
-          <RadioGroup aria-labelledby={startFrom} value={templates.value ?? ""} onValueChange={(v: string) => templates.onPick(v as Template)}>
-            {TEMPLATES.map((x) => (
-              <Radio key={x} value={x} label={templateLabel[x]()} description={templateHint[x]()} />
-            ))}
-          </RadioGroup>
-        </div>
+        <Select
+          label={t("models.route.startFrom", "Start from")}
+          fullWidth
+          value={templates.value ?? undefined}
+          placeholder={t("models.route.ownRoute", "Your own route")}
+          onValueChange={(v: string) => templates.onPick(v as Template)}
+          options={TEMPLATES.map((x) => ({ value: x, label: templateLabel[x](), description: templateHint[x]() }))}
+        />
       )}
-      <KeyValue
-        items={[
-          { label: t("models.route.models", "Models"), value: formatNumber(summary.models) },
-          { label: t("models.route.steps", "Steps"), value: formatNumber(summary.steps) },
-        ]}
-      />
-      {summary.problems > 0 && (
+      {problems > 0 && (
         <Banner tone="warning">
-          {t("models.route.problemCount", "{count, plural, one {# step needs} other {# steps need}} a fix before you can save.", { count: summary.problems })}
+          {t("models.route.problemCount", "{count, plural, one {# step needs} other {# steps need}} a fix before you can save.", { count: problems })}
         </Banner>
       )}
       <div className="flex flex-col gap-8">

@@ -27,7 +27,7 @@ test("requests through the gateway appear in the log, filter, and open in the in
   ).toBe(true);
   const created = await page.request.post(`/platform/v1/orgs/${org}/projects/${project}/keys`, { headers, data: { name: "logs-test", access: "inference" } });
   expect(created.ok()).toBe(true);
-  const { secret } = (await created.json()) as { secret: string };
+  const { id: keyId, secret } = (await created.json()) as { id: string; secret: string };
   const call = (content: string) =>
     page.request.post("/v1/chat/completions", {
       headers: { authorization: `Bearer ${secret}` },
@@ -39,6 +39,7 @@ test("requests through the gateway appear in the log, filter, and open in the in
 
   await page.getByRole("link", { name: "Request logs" }).click();
   await expect(page).toHaveTitle(/^Request logs · /);
+  await page.goto(`/orgs/${org}/projects/${project}/logs?key=${keyId}`);
   await expect(async () => {
     await page.reload();
     await expect(rows(page)).toHaveCount(2, { timeout: 2000 });

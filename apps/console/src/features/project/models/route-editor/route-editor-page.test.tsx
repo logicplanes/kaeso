@@ -452,6 +452,7 @@ describe("RouteEditorPage", () => {
     await user.click(await screen.findByRole("tab", { name: "Test" }));
     const panel = await screen.findByRole("complementary", { name: "Step settings" });
     expect(within(panel).getByRole("heading", { name: "Test a request" })).toBeInTheDocument();
+    await user.click(within(panel).getByRole("radio", { name: "Preview" }));
     expect(await within(panel).findByText("Doesn't hold; takes Else")).toBeInTheDocument();
     expect(within(panel).getByText("Drew 70 of 100; takes branch 2, 50%")).toBeInTheDocument();
     expect(within(panel).getByText("Try 1; tried first")).toBeInTheDocument();
@@ -497,6 +498,7 @@ describe("RouteEditorPage", () => {
     const { user } = await renderApp(projectPath("models/aliases/al_fast"));
 
     await user.click(await screen.findByRole("tab", { name: "Test" }));
+    await user.click(await screen.findByRole("radio", { name: "Preview" }));
     expect(await screen.findByText("Send up to 20 headers.")).toBeInTheDocument();
 
     await user.click(screen.getByRole("tab", { name: "Editor" }));
@@ -537,20 +539,25 @@ describe("RouteEditorPage", () => {
     modelsApi({ models: models() });
     const { user } = await renderApp(projectPath("models/aliases/new"));
 
-    const chain = await screen.findByRole("radio", { name: /A fallback chain/ });
-    await user.click(chain);
-    expect(chain).toBeChecked();
+    const start = await screen.findByRole("combobox", { name: "Start from" });
+    expect(start).toHaveTextContent("One model");
+    const pick = async (name: RegExp) => {
+      await user.click(screen.getByRole("combobox", { name: "Start from" }));
+      await user.click(await screen.findByRole("option", { name }));
+    };
+    await pick(/A fallback chain/);
+    expect(start).toHaveTextContent("A fallback chain");
     expect(await step(/Claude Sonnet 4\.5/)).toBeInTheDocument();
     expect(await step(/Claude Haiku 4\.5/)).toBeInTheDocument();
     expect(await step(/No model yet/)).toBeInTheDocument();
 
-    await user.click(screen.getByRole("radio", { name: /An A\/B test/ }));
+    await pick(/An A\/B test/);
     expect(await step(/By caller/)).toBeInTheDocument();
-    await user.click(screen.getByRole("radio", { name: /By a header/ }));
+    await pick(/By a header/);
     expect(await step(/x-plan is enterprise/)).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Undo" }));
     expect(await step(/By caller/)).toBeInTheDocument();
-    expect(screen.getByRole("radio", { name: /An A\/B test/ })).not.toBeChecked();
+    expect(screen.getByRole("combobox", { name: "Start from" })).toHaveTextContent("Your own route");
   });
 
   it("splits by a header and saves which header it reads", async () => {

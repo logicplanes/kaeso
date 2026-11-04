@@ -78,7 +78,7 @@ Anfragen nehmen die Route, sobald Sie **Speichern** wählen. **Versionen** liste
 
 ### Eine Route testen
 
-**Testen** beschreibt eine Anfrage (ihr API-Format, ihre Eingabe-Tokens, was sie nutzt, ihren API-Schlüssel und ihre Header) und hebt auf der Fläche die Schritte hervor, die sie nimmt, jedes Modell mit seinem Versuch. Nichts wird gesendet, und die Route muss nicht gespeichert sein. **Neu ziehen** zieht die Aufteilungen neu.
+**Testen** hat zwei Modi. **Senden** schickt eine Nachricht als Sie durch die Route, gespeichert oder nicht, mit den Headern, die Sie hinzufügen. Die Fläche färbt jeden Schritt, den die Anfrage versuchte, nach seiner Antwort: grün für einen 2xx-Status, gelb für einen 4xx und rot für einen 5xx, mit dem Status und, bei einem gescheiterten Schritt, seiner Dauer. Das Panel listet die genommenen Schritte und dann die Antwort. Die Anfrage zählt gegen Ihre Limits, wird dem Projekt berechnet und erscheint im [Anfrageprotokoll](request-logs.md) mit der Quelle **Playground**; **Im Anfrageprotokoll öffnen** zeigt sie. **Vorschau** beschreibt stattdessen eine Anfrage (ihr API-Format, ihre Eingabe-Tokens, was sie nutzt, ihren API-Schlüssel und ihre Header) und hebt die Schritte hervor, die sie nähme, jedes Modell mit seinem Versuch; nichts wird gesendet. **Neu ziehen** zieht die Aufteilungen neu.
 
 ## Wie eine Anfrage ein Modell nennt
 

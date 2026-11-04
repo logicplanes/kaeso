@@ -78,7 +78,7 @@ Requests take the route once you choose **Save**. **Versions** lists every save,
 
 ### Test a route
 
-**Test** describes a request (its API format, input tokens, what it uses, its API key and its headers) and lights up the steps it takes on the canvas, each model with its try. Nothing is sent, and the route needn't be saved. **Draw again** draws the splits anew.
+**Test** has two modes. **Send** sends a message through the route as you, saved or not, with the headers you add. The canvas colors each step the request tried by its answer: green for a 2xx status, amber for a 4xx and red for a 5xx, with the status and, for a step that failed, its time. The panel lists the steps it took, then the reply. The request counts against your limits, is charged to the project and appears in the [request log](request-logs.md) with the source **Playground**; **Open in request log** shows it. **Preview** describes a request instead (its API format, input tokens, what it uses, its API key and its headers) and lights up the steps it would take, each model with its try; nothing is sent. **Draw again** draws the splits anew.
 
 ## How a request names a model
 
