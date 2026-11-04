@@ -32,15 +32,12 @@ export interface FlowCanvasEdge {
 export const NODE_W = 240;
 export const NODE_H = 80;
 export const SLOT = 24;
-export const CHAIN = 128;
+export const STUB = 32;
 const V_GAP = 96;
 const LEVEL = NODE_H + V_GAP;
 const H_GAP = 40;
 const FORK = 24;
 const RADIUS = 12;
-const BESIDE = NODE_W / 2 + 56;
-const CHAIN_LABEL = 44;
-const CHAIN_INSERT = 104;
 
 interface Box {
   l: number;
@@ -122,13 +119,6 @@ function gapBetween(left: Shape, right: Shape): number {
   return need === -Infinity ? 0 : need;
 }
 
-function lowestLeft(s: Shape): number {
-  let low = Infinity;
-  for (const b of s.contour.slice(1)) low = Math.min(low, b.l);
-  if (s.tail) low = Math.min(low, s.tail.l);
-  return low;
-}
-
 function merge(shapes: Shape[]): Shape {
   const contour: Box[] = [];
   let tail: Box | null = null;
@@ -180,29 +170,6 @@ function layoutTree(node: FlowCanvasNode, built: Built, parent: string | null, e
     children: children.map((e) => edgeKey(key, e)),
   });
   const self: Box = { l: -NODE_W / 2, r: NODE_W / 2 };
-  if (node.terminal) {
-    const next = children[0];
-    if (!next) return { items: [{ key, x: 0, level: 0 }], contour: [self], tail: null };
-    if (!next.node) {
-      const slotKey = slot(built, key, next, depth + 1);
-      return {
-        items: [
-          { key, x: 0, level: 0 },
-          { key: slotKey, x: BESIDE, level: 0 },
-        ],
-        contour: [{ l: self.l, r: BESIDE + SLOT / 2 }],
-        tail: null,
-      };
-    }
-    const chained = layoutTree(next.node, built, key, next, depth + 1);
-    const dx = Math.max(NODE_W + CHAIN, self.l - lowestLeft(chained));
-    const moved = shift(chained, dx);
-    return {
-      items: [{ key, x: 0, level: 0 }, ...moved.items],
-      contour: [union(self, moved.contour[0])!, ...moved.contour.slice(1)],
-      tail: moved.tail,
-    };
-  }
   const shapes: Shape[] = children.map((e) =>
     e.node
       ? layoutTree(e.node, built, key, e, depth + 1)
@@ -237,7 +204,7 @@ function elbow(x1: number, y1: number, x2: number, y2: number, turnY: number): s
   return `M${x1} ${y1}V${turnY - r}Q${x1} ${turnY} ${x1 + dir * r} ${turnY}H${x2 - dir * r}Q${x2} ${turnY} ${x2} ${turnY + r}V${y2}`;
 }
 
-export function layoutFlow(root: FlowCanvasNode, { editing = true }: { editing?: boolean | undefined } = {}): FlowLayout {
+export function layoutFlow(root: FlowCanvasNode): FlowLayout {
   const built: Built = { placed: new Map(), order: [] };
   const shape = layoutTree(root, built, null, undefined, 0);
   for (const rel of shape.items) {
@@ -246,6 +213,11 @@ export function layoutFlow(root: FlowCanvasNode, { editing = true }: { editing?:
     p.y = p.kind === "slot" ? rel.level * LEVEL + (NODE_H - SLOT) / 2 : rel.level * LEVEL;
   }
   const items = built.placed;
+  for (const key of built.order) {
+    const p = items.get(key)!;
+    const parent = p.parent === null ? undefined : items.get(p.parent);
+    if (p.kind === "slot" && parent?.node?.terminal) p.y = parent.y + NODE_H + STUB;
+  }
   const wires: Wire[] = [];
   let maxBottom = 0;
   let minX = Infinity;
@@ -262,31 +234,12 @@ export function layoutFlow(root: FlowCanvasNode, { editing = true }: { editing?:
     const parent = items.get(p.parent)!;
     const edge = p.edge!;
     const variant = edge.variant ?? "default";
-    if (parent.node?.terminal) {
-      const midY = parent.y + NODE_H / 2;
-      const from = parent.x + NODE_W / 2;
-      const chained = p.kind === "node";
-      const labelAt = chained && labelled(edge) ? { x: from + (editing ? CHAIN_LABEL : CHAIN / 2), y: midY } : null;
-      const insertAt = chained ? { x: from + (labelAt ? CHAIN_INSERT : CHAIN / 2), y: midY } : null;
-      wires.push({
-        key: `wire:${key}`,
-        from: parent.key,
-        to: key,
-        d: `M${from} ${midY}H${p.x - p.w / 2}`,
-        variant,
-        label: edge.label,
-        labelAt,
-        insertAt,
-        edge,
-      });
-      continue;
-    }
     const top = p.y;
     const turnY = parent.y + NODE_H + FORK;
     const d = elbow(parent.x, parent.y + NODE_H, p.x, top, turnY);
     const firstY = Math.abs(p.x - parent.x) < 1 ? parent.y + NODE_H : turnY;
     const run = top - firstY;
-    const labelAt = labelled(edge) ? { x: p.x, y: round(firstY + Math.min(22, run / 3)) } : null;
+    const labelAt = p.kind === "node" && labelled(edge) ? { x: p.x, y: round(firstY + Math.min(22, run / 3)) } : null;
     const insertAt = p.kind === "node" ? { x: p.x, y: round(labelAt ? top - 20 : firstY + run / 2) } : null;
     wires.push({ key: `wire:${key}`, from: parent.key, to: key, d, variant, label: edge.label, labelAt, insertAt, edge });
   }

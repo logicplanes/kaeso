@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CHAIN, NODE_H, NODE_W, SLOT, layoutFlow, type FlowCanvasEdge, type FlowCanvasNode, type Placed } from "./layout.js";
+import { NODE_H, NODE_W, SLOT, STUB, layoutFlow, type FlowCanvasEdge, type FlowCanvasNode, type Placed } from "./layout.js";
 
 const model = (id: string, children: FlowCanvasEdge[] = []): FlowCanvasNode => ({ id, kind: "Model", title: id, terminal: true, children });
 const fallback = (node?: FlowCanvasNode): FlowCanvasEdge => ({
@@ -42,18 +42,19 @@ function invariants(root: FlowCanvasNode) {
     const from = l.items.get(w.from)!;
     const to = l.items.get(w.to)!;
     if (!from.node?.terminal) continue;
-    const y = from.y + NODE_H / 2;
-    expect(to.y + to.h / 2, `${to.key} sits on the row of ${from.key}`).toBe(y);
+    expect(to.x, `${to.key} sits straight under ${from.key}`).toBe(from.x);
     for (const n of all) {
-      if (n === from || n === to || n.y > y || n.y + n.h < y) continue;
-      expect(right(n) <= left(from) || left(n) >= right(to), `the fallback line from ${from.key} crosses ${n.key}`).toBe(true);
+      if (n === from || n === to) continue;
+      const beside = right(n) <= from.x || left(n) >= from.x;
+      const clear = n.y + n.h <= from.y + NODE_H || n.y >= to.y;
+      expect(beside || clear, `the fallback line from ${from.key} crosses ${n.key}`).toBe(true);
     }
   }
   for (const p of all) {
     if (!p.parent) continue;
     const parent = l.items.get(p.parent)!;
-    if (parent.node?.terminal) continue;
-    expect(p.y, `${p.key} sits a row under ${parent.key}`).toBe(parent.y + NODE_H + 96 + (p.kind === "slot" ? (NODE_H - SLOT) / 2 : 0));
+    const under = p.kind === "slot" && parent.node?.terminal ? NODE_H + STUB : NODE_H + 96 + (p.kind === "slot" ? (NODE_H - SLOT) / 2 : 0);
+    expect(p.y, `${p.key} sits under ${parent.key}`).toBe(parent.y + under);
   }
   return l;
 }
@@ -68,37 +69,41 @@ describe("layoutFlow", () => {
     expect(l.bounds).toEqual({ minX: -120, maxX: 120, minY: 0, maxY: 256 });
   });
 
-  it("places an open fallback slot beside its model, joined by a straight dashed line", () => {
+  it("places an open fallback slot just under its model, joined by a short dashed line", () => {
     const l = invariants(start(model("gpt-5", [fallback()])));
     const slot = item(l, "gpt-5::fb-open");
-    expect(slot).toMatchObject({ kind: "slot", x: 176, w: SLOT, level: 2 });
-    expect(slot.y).toBe(176 + (NODE_H - SLOT) / 2);
+    expect(slot).toMatchObject({ kind: "slot", x: 0, w: SLOT, level: 2 });
+    expect(slot.y).toBe(176 + NODE_H + STUB);
     const wire = l.wires.find((w) => w.to === slot.key)!;
-    expect(wire).toMatchObject({ d: "M120 216H164", variant: "fallback", labelAt: null, insertAt: null });
+    expect(wire).toMatchObject({ d: "M0 256V288", variant: "fallback", labelAt: null, insertAt: null });
   });
 
-  it("continues a fallback chain to the right on the model's row, in the order the models are tried", () => {
+  it("continues a fallback chain down from its model, in the order the models are tried", () => {
     const l = invariants(start(model("gpt-5", [fallback(model("claude-sonnet-4-5", [fallback(model("llama-3-3-70b"))]))])));
     const a = item(l, "gpt-5");
     const b = item(l, "claude-sonnet-4-5");
     const c = item(l, "llama-3-3-70b");
-    expect([a.x, b.x, c.x]).toEqual([0, NODE_W + CHAIN, 2 * (NODE_W + CHAIN)]);
-    expect([a.y, b.y, c.y]).toEqual([176, 176, 176]);
+    expect([a.x, b.x, c.x]).toEqual([0, 0, 0]);
+    expect([a.y, b.y, c.y]).toEqual([176, 352, 528]);
     expect([a.level, b.level, c.level]).toEqual([1, 2, 3]);
     const wire = l.wires.find((w) => w.to === b.key)!;
-    expect(wire).toMatchObject({ d: "M120 216H248", variant: "fallback", labelAt: { x: 164, y: 216 }, insertAt: { x: 224, y: 216 } });
-    expect(layoutFlow(start(model("gpt-5", [fallback(model("claude-sonnet-4-5"))])), { editing: false }).wires[1]!.labelAt).toEqual({ x: 184, y: 216 });
+    expect(wire).toMatchObject({ d: "M0 256V352", variant: "fallback", labelAt: { x: 0, y: 278 }, insertAt: { x: 0, y: 332 } });
+    expect(l.bounds).toEqual({ minX: -NODE_W / 2, maxX: NODE_W / 2, minY: 0, maxY: 608 });
   });
 
-  it("keeps the branches of a fallback under it, clear of the model before it", () => {
+  it("keeps the branches of a fallback under it", () => {
     const l = invariants(start(model("gpt-5", [fallback(condition("images", model("claude-sonnet-4-5"), split("ab", [model("a"), model("b"), model("c")])))])));
     const first = item(l, "gpt-5");
     const branching = item(l, "images");
-    expect(branching.y).toBe(first.y);
-    for (const key of ["claude-sonnet-4-5", "ab"]) {
-      expect(item(l, key).y).toBe(first.y + NODE_H + 96);
-      expect(left(item(l, key))).toBeGreaterThanOrEqual(left(first));
-    }
+    expect(branching).toMatchObject({ x: first.x, y: first.y + NODE_H + 96 });
+    for (const key of ["claude-sonnet-4-5", "ab"]) expect(item(l, key).y).toBe(branching.y + NODE_H + 96);
+  });
+
+  it("keeps a route with fallbacks in every branch as narrow as its widest row of steps", () => {
+    const l = invariants(
+      start(condition("plan", model("sonnet", [fallback(model("gpt-6"))]), split("ab", [model("haiku", [fallback(model("mini"))]), model("mini-2")]))),
+    );
+    expect(l.bounds.maxX - l.bounds.minX).toBe(3 * NODE_W + 2 * 40);
   });
 
   it("centres a condition's branches under it with Then on the left", () => {

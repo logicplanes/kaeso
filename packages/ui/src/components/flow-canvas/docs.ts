@@ -3,7 +3,7 @@ import type { ComponentDocs } from "../../component-docs.js";
 export const docs = {
   FlowCanvas: {
     description:
-      "An editable route drawn as a tree, top down: the start, then each step with its branches side by side under it, and a model's fallback continuing its row to the right, so a chain reads in the order its models are tried. The layout is computed, never measured, so it is the same at every zoom. Drag the background or scroll to pan; ⌘ or Ctrl with the wheel, a pinch or the buttons at the bottom left zoom between 25% and 150%; it fits itself once, on first render, never below 67% so every step stays readable, and then keeps the view when the route changes. The steps are one tree for the keyboard and screen readers.",
+      "An editable route drawn as a tree, top down: the start, then each step with its branches side by side under it, and a model's fallback straight under the model on a dashed line, so a chain reads top down in the order its models are tried and a route stays as narrow as its widest row of steps. The layout is computed, never measured, so it is the same at every zoom. Drag the background or scroll to pan; ⌘ or Ctrl with the wheel, a pinch or the buttons at the bottom left zoom between 25% and 150%; it fits itself once, on first render, never below 67% so every step stays readable, and then keeps the view when the route changes. The steps are one tree for the keyboard and screen readers.",
     props: {
       addMenu:
         "Turns editing on: open slots and a + midway on every connection show, and each opens a menu with these items. Called with the connection's `edge` id and `insert`: false for an open slot, true for the + that puts a step before the connection's step. Without it, open slots are not drawn.",
@@ -14,10 +14,10 @@ export const docs = {
         "Menu items for a step, shown in a button on the step and opened with Shift F10 or the context-menu key. Return nothing for a step without actions, such as the start.",
       onDelete: "Called with a step's id when Delete or Backspace is pressed on it.",
       onSelect: "Called with a step's id when it is clicked or chosen with Enter or Space, and with null when the background is clicked or Escape is pressed.",
-      root: "The start of the route. Each node has `kind` (its tag), `title`, an optional `subtitle`, `leading` (such as a provider badge), `status` (a word and a tone: `danger`, `warning` and `success` also ring the step), `badge` (a short word at its top right, such as its try), `terminal` (a model: its one connection is its fallback, drawn to its right) and `children`: connections with an `id`, a `label`, a `variant` (`fallback` draws a dashed line), a `tone` (`success`, `warning` or `danger`: on a traced path, the line takes that color, such as the status a tried step answered with) and the `node` they lead to; a connection without a node is an open slot.",
+      root: "The start of the route. Each node has `kind` (its tag), `title`, an optional `subtitle`, `leading` (such as a provider badge), `status` (a word and a tone: `danger`, `warning` and `success` also ring the step), `badge` (a short word at its top right, such as its try), `terminal` (a model: its one connection is its fallback, drawn straight under it, with an open slot just below the model) and `children`: connections with an `id`, a `label`, a `variant` (`fallback` draws a dashed line), a `tone` (`success`, `warning` or `danger`: on a traced path, the line takes that color, such as the status a tried step answered with) and the `node` they lead to; a connection without a node is an open slot.",
       selected: "The id of the selected step, drawn with the selection ring; the view moves to show it when it changes.",
       trace:
-        "The ids of the steps one request passes, such as from a dry run: they and the lines between them stay strong, and every other step turns quieter: secondary text and a hairline, still readable. Leave it out to draw the route evenly.",
+        "The ids of the steps one request passes, such as from a dry run: they and the lines between them stay strong, and every other step turns quieter: secondary text and a hairline, still readable. When its last step changes, the view moves to show that step. Leave it out to draw the route evenly.",
     },
   },
   FlowWorkspace: {
