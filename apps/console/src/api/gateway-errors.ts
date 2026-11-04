@@ -448,9 +448,7 @@ const messages = (): Rule[] => [
   rule("errors.aliasTaken", (v) => t("errors.aliasTaken", "The alias `{name}` exists in this project.", v)),
   rule("errors.aliasOnlyWithRoute", () => t("errors.aliasOnlyWithRoute", "Send `alias` only with `route`.")),
   rule("errors.routeModel", () => t("errors.routeModel", "This model is not in the project's catalogue.")),
-  rule("errors.aliasModelsRemoved", (v) =>
-    t("errors.aliasModelsRemoved", "The alias `{alias}` names only models removed from the catalogue; ask a project admin.", v),
-  ),
+  rule("errors.aliasModelsRemoved", (v) => t("errors.aliasModelsRemoved", "The alias `{alias}` has no model left for this request; ask a project admin.", v)),
   rule("errors.modelIdForm", () => t("errors.modelIdForm", "A model id has 1 to 200 characters and no spaces.")),
   rule("errors.modelIdDots", () => t("errors.modelIdDots", "`model_id` can't be `.` or `..`, or have either between slashes.")),
   rule("errors.listModelIds", () => t("errors.listModelIds", "List 1 to 200 model ids.")),

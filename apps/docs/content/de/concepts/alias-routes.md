@@ -72,7 +72,7 @@ Nichts weicht mehr aus, sobald der Anbieter geantwortet hat: Ein Stream, der sp�
 ### Übersprungene Schritte
 
 - **Ein Modell, das der Schlüssel nicht nutzen darf.** Kaeso überspringt den Schritt, ohne ihn zu nennen, damit ein eingeschränkter Schlüssel nichts über die Route erfährt. Eine Anfrage, die keinen erlaubten Schritt findet, erhält 404, wie für ein unbekanntes Modell.
-- **Ein aus dem Katalog entferntes Modell.** Kaeso überspringt den Schritt. Das Entfernen eines Modells löscht die Aliasse, die nur zu ihm führen; eine Route, die auch andere Modelle nutzt, behält es als Schritt, den die `models`-Liste des Alias ohne `target` zeigt. Bleibt kein anderer Schritt, erhält die Anfrage 404: `The alias `fast` names only models removed from the catalogue; ask a project admin.`
+- **Ein aus dem Katalog entferntes Modell.** Kaeso überspringt den Schritt. Das Entfernen eines Modells löscht die Aliasse, die nur zu ihm führen; eine Route, die auch andere Modelle nutzt, behält es als Schritt, den die `models`-Liste des Alias ohne `target` zeigt. Bleibt kein anderer Schritt, erhält die Anfrage 404: ``The alias `fast` has no model left for this request; ask a project admin.`` Umbenennen lässt sich der Alias weiterhin; um seine Route zu ändern, ersetzen oder entfernen Sie zuerst diesen Schritt.
 
 ## Limits, Kosten und der Cache
 

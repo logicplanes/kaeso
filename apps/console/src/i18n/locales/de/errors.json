@@ -12,7 +12,7 @@
   "errors.aliasTaken": "Den Alias `{name}` gibt es in diesem Projekt schon.",
   "errors.aliasOnlyWithRoute": "Senden Sie `alias` nur zusammen mit `route`.",
   "errors.routeModel": "Dieses Modell ist nicht im Katalog des Projekts.",
-  "errors.aliasModelsRemoved": "Der Alias `{alias}` nennt nur Modelle, die aus dem Katalog entfernt wurden; wenden Sie sich an die Projekt-Admins.",
+  "errors.aliasModelsRemoved": "Der Alias `{alias}` hat für diese Anfrage kein Modell mehr; wenden Sie sich an die Projekt-Admins.",
   "errors.allowedDomainNeeded": "Zum Nutzen mindestens eine erlaubte Domain hinzufügen.",
   "errors.alreadyHasAccount": "{email} hat schon ein Konto.",
   "errors.alreadyOrgMember": "{email} ist schon Mitglied dieser Organisation.",

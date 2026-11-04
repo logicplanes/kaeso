@@ -72,7 +72,7 @@ Nothing falls back once the provider has answered: a stream that breaks off late
 ### Steps that are skipped
 
 - **A model the key may not use.** Kaeso skips the step without naming it, so a restricted key learns nothing about the route. A request that finds no step it may use gets 404, as for an unknown model.
-- **A model removed from the catalogue.** Kaeso skips the step. Removing a model deletes the aliases that route only to it; a route that also uses other models keeps it as a step, which the alias's `models` list shows without a `target`. When no other step is left, the request gets 404: `The alias `fast` names only models removed from the catalogue; ask a project admin.`
+- **A model removed from the catalogue.** Kaeso skips the step. Removing a model deletes the aliases that route only to it; a route that also uses other models keeps it as a step, which the alias's `models` list shows without a `target`. When no other step is left, the request gets 404: ``The alias `fast` has no model left for this request; ask a project admin.`` The alias can still be renamed; to change its route, replace or remove that step first.
 
 ## Limits, costs and the cache
 

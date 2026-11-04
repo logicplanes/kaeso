@@ -12,7 +12,7 @@
   "errors.aliasTaken": "此项目中已存在别名 `{name}`。",
   "errors.aliasOnlyWithRoute": "`alias` 只能与 `route` 一起发送。",
   "errors.routeModel": "此模型不在项目的目录中。",
-  "errors.aliasModelsRemoved": "别名 `{alias}` 只指向已从目录中移除的模型；请联系项目管理员。",
+  "errors.aliasModelsRemoved": "别名 `{alias}` 已没有可处理此请求的模型；请联系项目管理员。",
   "errors.allowedDomainNeeded": "请至少添加一个允许的域名后再使用。",
   "errors.alreadyHasAccount": "{email} 已有账户。",
   "errors.alreadyOrgMember": "{email} 已是此组织的成员。",

@@ -1388,9 +1388,7 @@ fn removed_models(alias: &str) -> KppError {
     error(
         ErrorKind::NotFound,
         404,
-        format!(
-            "The alias `{alias}` names only models removed from the catalogue; ask a project admin."
-        ),
+        format!("The alias `{alias}` has no model left for this request; ask a project admin."),
     )
     .with_param("model")
 }
