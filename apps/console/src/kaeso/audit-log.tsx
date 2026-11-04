@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, type ReactNode } from "react";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import {
   AgentAttribution,
@@ -63,6 +63,12 @@ function zoneName(at: Date): string {
     .join("");
 }
 
+function onlyAbout(filters: AuditFilters, target: string): AuditFilters {
+  const scoped: AuditFilters = { ...filters, target };
+  delete scoped.action;
+  return scoped;
+}
+
 export function AuditLog({
   scope,
   search,
@@ -73,6 +79,8 @@ export function AuditLog({
   actorsLoading,
   targetHref,
   targetName,
+  about,
+  eventActions,
 }: {
   scope: AuditScope;
   search: AuditSearch;
@@ -83,13 +91,16 @@ export function AuditLog({
   actorsLoading?: boolean | undefined;
   targetHref?: (kind: string, id: string) => string | undefined;
   targetName?: (kind: string, id: string) => string | undefined;
+  about?: string | undefined;
+  eventActions?: ((e: AuditEventView) => ReactNode) | undefined;
 }) {
-  const { event, ...filters } = search;
+  const { event, ...picked } = search;
+  const filters = about ? onlyAbout(picked, about) : picked;
   const log = useInfiniteQuery(auditLogQuery(scope, filters));
   const [target, setTarget] = useState(filters.target ?? "");
   const rows = useMemo(() => log.data?.pages.flatMap((p) => p.data) ?? [], [log.data]);
   const set = (patch: SearchPatch<AuditSearch>) => onSearch(patchSearch(search, patch));
-  const filtered = !!(filters.actor || filters.action || filters.target || filters.from || filters.by_agents);
+  const filtered = !!(filters.actor || filters.action || (!about && filters.target) || filters.from || filters.by_agents);
   const snapshotNames = useMemo(() => {
     const names = new Map<string, string>();
     for (const r of rows) {
@@ -147,11 +158,15 @@ export function AuditLog({
           (r: AuditEventView) => r.action,
           (v: string) => <Text truncate>{auditActionLabel(v)}</Text>,
         ),
-        col.custom(
-          { id: "target", header: t("kaeso.audit.target", "Target"), size: 152, minWidth: 104, priority: phone ? 2 : 1, grow: !phone },
-          (r: AuditEventView) => r.target_id ?? "",
-          (_v, r) => <TargetCell kind={r.target_kind} id={r.target_id} href={targetHref} name={nameOf} bare />,
-        ),
+        ...(about
+          ? []
+          : [
+              col.custom(
+                { id: "target", header: t("kaeso.audit.target", "Target"), size: 152, minWidth: 104, priority: phone ? 2 : 1, grow: !phone },
+                (r: AuditEventView) => r.target_id ?? "",
+                (_v, r) => <TargetCell kind={r.target_kind} id={r.target_id} href={targetHref} name={nameOf} bare />,
+              ),
+            ]),
         col.text({ id: "ip", header: t("kaeso.audit.ip", "IP"), size: 136, priority: 3 }, (r: AuditEventView) => r.ip ?? ""),
         col.custom(
           { id: "agent", header: t("kaeso.audit.userAgent", "User agent"), size: 200, priority: 4 },
@@ -164,7 +179,7 @@ export function AuditLog({
             ) : null,
         ),
       ].map((c) => ({ ...c, enableSorting: false })),
-    [lang, phone, actionWidth, partyLabel, targetHref, nameOf],
+    [lang, phone, actionWidth, partyLabel, targetHref, nameOf, about],
   );
 
   return (
@@ -188,31 +203,35 @@ export function AuditLog({
             onValueChange={(v: string | null) => set({ actor: v ?? undefined, event: undefined })}
           />
         </div>
-        <div className={FILTER_FIELD}>
-          <Combobox
-            aria-label={t("kaeso.audit.action", "Action")}
-            size="sm"
-            placeholder={t("kaeso.audit.anyAction", "Any action")}
-            options={auditActionOptions()}
-            value={filters.action ?? null}
-            onValueChange={(v: string | null) => set({ action: v ?? undefined, event: undefined })}
-          />
-        </div>
-        <div className={FILTER_FIELD}>
-          <SearchInput
-            aria-label={t("kaeso.audit.targetId", "Target id")}
-            size="sm"
-            placeholder={t("kaeso.audit.targetId", "Target id")}
-            value={target}
-            onChange={(e) => setTarget(e.target.value)}
-            onClear={() => {
-              setTarget("");
-              set({ target: undefined, event: undefined });
-            }}
-            onKeyDown={(e) => e.key === "Enter" && set({ target: target.trim() || undefined, event: undefined })}
-            onBlur={() => target.trim() !== (filters.target ?? "") && set({ target: target.trim() || undefined, event: undefined })}
-          />
-        </div>
+        {!about && (
+          <div className={FILTER_FIELD}>
+            <Combobox
+              aria-label={t("kaeso.audit.action", "Action")}
+              size="sm"
+              placeholder={t("kaeso.audit.anyAction", "Any action")}
+              options={auditActionOptions()}
+              value={filters.action ?? null}
+              onValueChange={(v: string | null) => set({ action: v ?? undefined, event: undefined })}
+            />
+          </div>
+        )}
+        {!about && (
+          <div className={FILTER_FIELD}>
+            <SearchInput
+              aria-label={t("kaeso.audit.targetId", "Target id")}
+              size="sm"
+              placeholder={t("kaeso.audit.targetId", "Target id")}
+              value={target}
+              onChange={(e) => setTarget(e.target.value)}
+              onClear={() => {
+                setTarget("");
+                set({ target: undefined, event: undefined });
+              }}
+              onKeyDown={(e) => e.key === "Enter" && set({ target: target.trim() || undefined, event: undefined })}
+              onBlur={() => target.trim() !== (filters.target ?? "") && set({ target: target.trim() || undefined, event: undefined })}
+            />
+          </div>
+        )}
         <FilterToggle
           label={t("kaeso.audit.byAgents", "Agents")}
           pressed={!!filters.by_agents}
@@ -258,6 +277,7 @@ export function AuditLog({
         partyLabel={partyLabel}
         targetHref={targetHref}
         targetName={nameOf}
+        actions={eventActions}
         onClose={() => set({ event: undefined })}
       />
     </>
@@ -346,6 +366,7 @@ function AuditEventSheet({
   partyLabel,
   targetHref,
   targetName,
+  actions,
   onClose,
 }: {
   scope: AuditScope;
@@ -355,6 +376,7 @@ function AuditEventSheet({
   partyLabel: (p: PartyRef) => PartyLabel;
   targetHref?: ((kind: string, id: string) => string | undefined) | undefined;
   targetName?: ((kind: string, id: string) => string | undefined) | undefined;
+  actions?: ((e: AuditEventView) => ReactNode) | undefined;
   onClose: () => void;
 }) {
   const own = "org" in scope && !!scope.project;
@@ -370,6 +392,7 @@ function AuditEventSheet({
       size="lg"
       title={e ? auditActionLabel(e.action) : t("kaeso.audit.event", "Event")}
       subtitle={e?.action}
+      footer={e && actions ? actions(e) : undefined}
     >
       {(own ? rowsLoading : event.isPending) ? (
         <Skeleton className="w-full" />

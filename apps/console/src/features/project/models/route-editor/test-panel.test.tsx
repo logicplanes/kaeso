@@ -283,10 +283,54 @@ describe("Sending a request", () => {
     );
     await user.click(within(panel).getByRole("button", { name: "Send" }));
     expect(await within(panel).findByText("Takes Else")).toBeInTheDocument();
-    expect(within(panel).getByText("Takes branch 2, 60%")).toBeInTheDocument();
+    expect(within(panel).getByText("Takes branch 2, 60%; the next request is drawn anew.")).toBeInTheDocument();
     expect(within(panel).getByText("Failed; fell back")).toBeInTheDocument();
     expect(within(panel).getByText("Failed")).toBeInTheDocument();
     expect(within(panel).queryByRole("button", { name: "Open in request log" })).not.toBeInTheDocument();
+  });
+
+  it("says a split by caller keeps all your requests on one branch, and a split by header keeps a value on one", async () => {
+    const split = (by: "caller" | "header"): RouteStep => ({
+      type: "split",
+      by,
+      header: by === "header" ? "x-user-id" : null,
+      branches: [
+        { weight: 80, step: modelRoute("cm_haiku") },
+        { weight: 20, step: modelRoute("cm_sonnet") },
+      ],
+    });
+    const { user, panel } = await openSend({ route: split("caller") });
+    expect(within(panel).getByText("A split by caller sends all your requests down one branch; Preview shows where a key's go.")).toBeInTheDocument();
+    on("POST", RESPONSES, reply("Hi.", { [ROUTE]: '"route.branches.1.step";model="anthropic/claude-sonnet-4-5";status=200' }));
+    await user.click(within(panel).getByRole("button", { name: "Send" }));
+    expect(await within(panel).findByText("Takes branch 2, 20%, like all your requests: each caller stays on one branch.")).toBeInTheDocument();
+    await user.click(within(panel).getByRole("radio", { name: "Preview" }));
+    expect(await within(panel).findByText("A split by caller keeps each key's requests on one branch.")).toBeInTheDocument();
+    expect(within(panel).getByRole("button", { name: "Draw again" })).toBeInTheDocument();
+  });
+
+  it("says a header's value keeps a split by header on one branch once the header is sent", async () => {
+    const { user, panel } = await openSend({
+      route: {
+        type: "split",
+        by: "header",
+        header: "x-user-id",
+        branches: [
+          { weight: 80, step: modelRoute("cm_haiku") },
+          { weight: 20, step: modelRoute("cm_sonnet") },
+        ],
+      },
+    });
+    expect(within(panel).queryByText(/A split by caller/)).not.toBeInTheDocument();
+    await user.type(within(panel).getByRole("textbox", { name: "Value of header 1" }), "user-7");
+    on("POST", RESPONSES, reply("Hi.", { [ROUTE]: '"route.branches.0.step";model="anthropic/claude-haiku-4-5";status=200' }));
+    await user.click(within(panel).getByRole("button", { name: "Send" }));
+    expect(await within(panel).findByText("Takes branch 1, 80%, like every request with this x-user-id.")).toBeInTheDocument();
+    await user.click(within(panel).getByRole("radio", { name: "Preview" }));
+    expect(await within(panel).findByRole("combobox", { name: "API format" })).toBeInTheDocument();
+    expect(within(panel).queryByRole("button", { name: "Draw again" })).not.toBeInTheDocument();
+    await user.clear(within(panel).getByRole("textbox", { name: "Value of header 1" }));
+    expect(await within(panel).findByRole("button", { name: "Draw again" })).toBeInTheDocument();
   });
 
   it("stops a request, says when a stream ends early, and forgets the colors once the route changes", async () => {
@@ -333,7 +377,7 @@ describe("Sending a request", () => {
     expect(within(panel).getByRole("textbox", { name: "Message" })).toBeDisabled();
     await user.click(within(panel).getByRole("radio", { name: "Preview" }));
     expect(await within(panel).findByRole("combobox", { name: "API format" })).toBeInTheDocument();
-    await user.click(within(panel).getByRole("radio", { name: "Send" }));
+    await user.click(within(panel).getByRole("radio", { name: "Real request" }));
     expect(within(panel).getByRole("textbox", { name: "Message" })).toBeInTheDocument();
   });
 

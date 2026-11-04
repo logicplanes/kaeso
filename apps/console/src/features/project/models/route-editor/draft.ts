@@ -1,4 +1,5 @@
 import type { RouteFailure, RouteRule, RouteStep, TraceStep } from "~/api/generated/types";
+import { stableJson } from "~/format/stable-json";
 
 export const MAX_STEPS = 32;
 export const MAX_DEPTH = 12;
@@ -112,7 +113,7 @@ export function toRoute(step: DraftStep): RouteStep {
 }
 
 export function sameRoute(a: RouteStep, b: RouteStep): boolean {
-  return JSON.stringify(a) === JSON.stringify(b);
+  return stableJson(a) === stableJson(b);
 }
 
 export function* walk(step: DraftStep, path = "route", depth = 1): Generator<{ step: DraftStep; path: string; depth: number }> {

@@ -55,10 +55,10 @@ import { RouteJsonDialog } from "./route-json";
 import { pathIds, toneOf, useRouteSend, type Walked } from "./send";
 import { TestPanel, asSent, firstRequest, sentHeaders, useTrace, type TestMode, type TestRequest } from "./test-panel";
 import { START, canvasTree, stepName, type Outcome } from "./tree";
-import { VersionsPanel, useVersions, type Version } from "./versions";
+import { AliasAuditLog, type Version } from "./audit";
 
 type Doc = { name: string; root: DraftStep };
-type Tab = "editor" | "test" | "versions";
+type Tab = "editor" | "test" | "audit";
 
 const KIND_ICON = { model: icons.model, condition: icons.condition, split: icons.split } as const;
 const KINDS = ["model", "condition", "split"] as const;
@@ -157,7 +157,7 @@ function Editor({
   const rights = useProjectRights(org, project);
   const needs = useNeedsRight(org, project);
   const readOnly = !rights.has("models.manage");
-  const canSeeVersions = rights.has("project.audit_log.view");
+  const canSeeAudit = rights.has("project.audit_log.view");
   const history = useHistory<Doc>(() => ({ name: initial?.name ?? "", root: initial ? fromRoute(initial.route) : emptyModel() }));
   const doc = history.present;
   const [saved, setSaved] = useState<Saved | null>(initial);
@@ -172,7 +172,6 @@ function Editor({
   const logs = useRequestLogs();
   const sender = useRouteSend(org, project);
   const [started, setStarted] = useState<{ kind: Template; root: DraftStep } | null>(() => (initial ? null : { kind: "single", root: history.present.root }));
-  const [version, setVersion] = useState<string | null>(null);
   const [json, setJson] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [nameError, setNameError] = useState<string>();
@@ -204,10 +203,6 @@ function Editor({
     }),
     [keys.data, members.data, accounts.data],
   );
-
-  const versions = useVersions(org, project, saved?.id, canSeeVersions && tab === "versions");
-  const shown = tab === "versions" ? versions.versions.find((v) => v.id === version) : undefined;
-  const shownRoot = useMemo(() => (shown ? fromRoute(shown.route) : doc.root), [shown, doc.root]);
 
   const testing = tab === "test";
   const testable = problems.size === 0;
@@ -248,15 +243,15 @@ function Editor({
   const tree = useMemo(
     () =>
       canvasTree({
-        alias: shown?.name ?? doc.name,
-        root: shownRoot,
+        alias: doc.name,
+        root: doc.root,
         models,
         providerName: providers.name,
-        problems: shown ? new Map() : problems,
+        problems,
         names,
-        ...(result ? { outcomes: outcomes(shownRoot, result) } : { tries: trace?.tries }),
+        ...(result ? { outcomes: outcomes(doc.root, result) } : { tries: trace?.tries }),
       }),
-    [shown, doc.name, shownRoot, models, providers.name, problems, names, trace, result],
+    [doc.name, doc.root, models, providers.name, problems, names, trace, result],
   );
 
   const clearErrors = () => {
@@ -440,87 +435,74 @@ function Editor({
     clearErrors();
     history.commit(() => ({ name: v.name, root: fromRoute(v.route) }));
     setTab("editor");
-    setVersion(null);
     setSelected(null);
     toast(t("models.route.restored", "Version restored; save to make it live"));
   };
 
-  const panel =
-    tab === "versions" ? (
-      <VersionsPanel
-        versions={versions.versions}
-        loading={versions.loading}
-        selected={version}
-        current={route}
-        readOnly={readOnly}
-        models={models}
-        onSelect={setVersion}
-        onRestore={restore}
-      />
-    ) : testing ? (
-      <TestPanel
-        mode={mode}
-        onMode={setMode}
-        request={request}
-        onRequest={setRequest}
-        prompt={prompt}
-        onPrompt={setPrompt}
-        root={doc.root}
-        blocked={!testable}
-        sendBlock={sendBlock}
-        trace={trace}
-        error={test.error}
-        loading={test.loading}
-        sent={sender.sent}
-        busy={sender.busy}
-        onSend={sendRequest}
-        onStop={sender.stop}
-        onOpenLog={
-          logs && rights.has("logs.metadata.view")
-            ? (log: string) => void navigate({ to: "/orgs/$org/projects/$project/logs", params: { org, project }, search: { log } })
-            : undefined
-        }
-        keys={keys.data}
-        models={models}
-        names={names}
-        providerName={providers.name}
-        stepName={(s) => stepName(s, { models, names })}
-      />
-    ) : selectedStep?.type === "model" ? (
-      <ModelPanel key={selectedStep.id} ctx={ctx} step={selectedStep} />
-    ) : selectedStep?.type === "condition" ? (
-      <ConditionPanel key={selectedStep.id} ctx={ctx} step={selectedStep} />
-    ) : selectedStep?.type === "split" ? (
-      <SplitPanel key={selectedStep.id} ctx={ctx} step={selectedStep} />
-    ) : (
-      <AliasPanel
-        name={doc.name}
-        onName={(name) => {
-          setNameError(undefined);
-          history.commit((d) => ({ ...d, name }), "name");
-        }}
-        nameError={nameError}
-        readOnly={readOnly}
-        shadows={shadows}
-        problems={blockingProblems}
-        {...(!saved && !readOnly
-          ? {
-              templates: {
-                value: started && started.root === doc.root ? started.kind : null,
-                onPick: (kind: Template) => {
-                  const next = template(
-                    kind,
-                    catalogue.map((m) => m.id),
-                  );
-                  reshape(next);
-                  setStarted({ kind, root: next });
-                  setRequest(firstRequest(next));
-                },
+  const panel = testing ? (
+    <TestPanel
+      mode={mode}
+      onMode={setMode}
+      request={request}
+      onRequest={setRequest}
+      prompt={prompt}
+      onPrompt={setPrompt}
+      root={doc.root}
+      blocked={!testable}
+      sendBlock={sendBlock}
+      trace={trace}
+      error={test.error}
+      loading={test.loading}
+      sent={sender.sent}
+      busy={sender.busy}
+      onSend={sendRequest}
+      onStop={sender.stop}
+      onOpenLog={
+        logs && rights.has("logs.metadata.view")
+          ? (log: string) => void navigate({ to: "/orgs/$org/projects/$project/logs", params: { org, project }, search: { log } })
+          : undefined
+      }
+      keys={keys.data}
+      models={models}
+      names={names}
+      providerName={providers.name}
+      stepName={(s) => stepName(s, { models, names })}
+    />
+  ) : selectedStep?.type === "model" ? (
+    <ModelPanel key={selectedStep.id} ctx={ctx} step={selectedStep} />
+  ) : selectedStep?.type === "condition" ? (
+    <ConditionPanel key={selectedStep.id} ctx={ctx} step={selectedStep} />
+  ) : selectedStep?.type === "split" ? (
+    <SplitPanel key={selectedStep.id} ctx={ctx} step={selectedStep} />
+  ) : (
+    <AliasPanel
+      name={doc.name}
+      onName={(name) => {
+        setNameError(undefined);
+        history.commit((d) => ({ ...d, name }), "name");
+      }}
+      nameError={nameError}
+      readOnly={readOnly}
+      shadows={shadows}
+      problems={blockingProblems}
+      {...(!saved && !readOnly
+        ? {
+            templates: {
+              value: started && started.root === doc.root ? started.kind : null,
+              onPick: (kind: Template) => {
+                const next = template(
+                  kind,
+                  catalogue.map((m) => m.id),
+                );
+                reshape(next);
+                setStarted({ kind, root: next });
+                setRequest(firstRequest(next));
               },
-            }
-          : {})}
-      />
-    );
+            },
+          }
+        : {})}
+    />
+  );
 
   return (
     <>
@@ -528,11 +510,11 @@ function Editor({
         start={<Start org={org} project={project} />}
         title={saved?.name ?? (doc.name.trim() || t("models.route.newAlias", "New alias"))}
         tabs={
-          <PillTabs value={tab} onValueChange={(v) => setTab(v === "versions" || v === "test" ? v : "editor")}>
+          <PillTabs value={tab} onValueChange={(v) => setTab(v === "audit" || v === "test" ? v : "editor")}>
             <PillTabs.List aria-label={t("models.route.views", "Alias views")}>
               <PillTabs.Tab value="editor">{t("models.route.editor", "Editor")}</PillTabs.Tab>
               <PillTabs.Tab value="test">{t("models.route.testTab", "Test")}</PillTabs.Tab>
-              {saved && canSeeVersions && <PillTabs.Tab value="versions">{t("models.route.versions", "Versions")}</PillTabs.Tab>}
+              {saved && canSeeAudit && <PillTabs.Tab value="audit">{t("models.route.auditLog", "Audit log")}</PillTabs.Tab>}
             </PillTabs.List>
           </PillTabs>
         }
@@ -574,33 +556,36 @@ function Editor({
           </span>
         }
       />
-      <FlowWorkspace panel={panel} panelLabel={t("models.route.inspector", "Step settings")}>
-        <FlowCanvas
-          aria-label={t("models.route.canvasLabel", "Route of {name}", { name: doc.name.trim() || t("models.route.newAlias", "New alias") })}
-          root={tree}
-          selected={shown || testing ? null : (selected ?? null)}
-          trace={result ? [START, ...pathIds(doc.root, result)] : trace ? [START, ...trace.ids] : undefined}
-          busy={sending && sender.busy && !result}
-          onSelect={(id) => {
-            if (shown) return;
-            if (testing) {
-              if (id) openStep(id);
-              return;
-            }
-            setSelected(id);
-          }}
-          {...(!readOnly && !shown && !testing
-            ? {
-                addMenu,
-                nodeActions,
-                onDelete: (id: string) => {
-                  const how = defaultRemoval(doc.root, id);
-                  if (how) removeStep(id, how);
-                },
+      {tab === "audit" && saved ? (
+        <AliasAuditLog org={org} project={project} alias={saved.id} current={{ name: doc.name, route }} readOnly={readOnly} onRestore={restore} />
+      ) : (
+        <FlowWorkspace panel={panel} panelLabel={t("models.route.inspector", "Step settings")}>
+          <FlowCanvas
+            aria-label={t("models.route.canvasLabel", "Route of {name}", { name: doc.name.trim() || t("models.route.newAlias", "New alias") })}
+            root={tree}
+            selected={testing ? null : (selected ?? null)}
+            trace={result ? [START, ...pathIds(doc.root, result)] : trace ? [START, ...trace.ids] : undefined}
+            busy={sending && sender.busy && !result}
+            onSelect={(id) => {
+              if (testing) {
+                if (id) openStep(id);
+                return;
               }
-            : {})}
-        />
-      </FlowWorkspace>
+              setSelected(id);
+            }}
+            {...(!readOnly && !testing
+              ? {
+                  addMenu,
+                  nodeActions,
+                  onDelete: (id: string) => {
+                    const how = defaultRemoval(doc.root, id);
+                    if (how) removeStep(id, how);
+                  },
+                }
+              : {})}
+          />
+        </FlowWorkspace>
+      )}
       <RouteJsonDialog open={json} onOpenChange={setJson} name={doc.name.trim()} route={route} />
       {saved && view && (
         <DialogScope open={deleting}>
