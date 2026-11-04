@@ -75,7 +75,6 @@ export function ModelsPage({ org, project, search }: { org: string; project: str
   const canManage = rights.has("models.manage");
   const tab = search.tab ?? "catalogue";
   const [adding, setAdding] = useState(!!search.add && tab === "catalogue");
-  const [creatingAlias, setCreatingAlias] = useState(!!search.add && tab === "aliases");
   const catalogue = useQuery(catalogueQuery(org, project));
   const aliases = useQuery(aliasesQuery(org, project));
   const sort = search.sort ?? "model";
@@ -83,7 +82,10 @@ export function ModelsPage({ org, project, search }: { org: string; project: str
 
   const create =
     tab === "aliases"
-      ? { label: t("models.createAlias", "Create alias"), run: () => setCreatingAlias(true) }
+      ? {
+          label: t("models.createAlias", "Create alias"),
+          run: () => void navigate({ to: "/orgs/$org/projects/$project/models/aliases/$alias", params: { org, project, alias: "new" } }),
+        }
       : { label: t("models.addModels", "Add models"), run: () => setAdding(true) };
   usePageCreateAction({ ...create, disabledReason: reason });
 
@@ -293,7 +295,7 @@ export function ModelsPage({ org, project, search }: { org: string; project: str
         </>
       ) : (
         <AppFrame.Body padding="list">
-          <AliasesTab org={org} project={project} canManage={canManage} creating={creatingAlias} onCreatingChange={setCreatingAlias} />
+          <AliasesTab org={org} project={project} canManage={canManage} />
         </AppFrame.Body>
       )}
       <ModelSheet org={org} project={project} modelId={search.model} onClose={() => setSearch({ model: undefined })} />

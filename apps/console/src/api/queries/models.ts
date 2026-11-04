@@ -19,6 +19,13 @@ export const aliasesQuery = (org: string, project: string) =>
     staleTime: 60_000,
   });
 
+export const aliasQuery = (org: string, project: string, alias: string) =>
+  queryOptions({
+    queryKey: ["orgs", org, "projects", project, "aliases", "one", alias],
+    queryFn: async (): Promise<AliasView> =>
+      data(await api.GET("/platform/v1/orgs/{org}/projects/{project}/aliases/{alias}", { params: { path: { org, project, alias } } })),
+  });
+
 export const catalogueModelQuery = (org: string, project: string, model: string) =>
   queryOptions({
     queryKey: ["orgs", org, "projects", project, "models", "one", model],

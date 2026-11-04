@@ -134,8 +134,8 @@ export function catalogueModel(overrides: Partial<CatalogueModelView> = {}): Cat
   };
 }
 
-export function modelRoute(model: string): AliasView["route"] {
-  return { type: "model", model, fallback: null, fall_back_on: ["unavailable", "limited", "unsupported"], timeout_seconds: null };
+export function modelRoute(model: string, fallback: AliasView["route"] | null = null): AliasView["route"] {
+  return { type: "model", model, fallback, fall_back_on: ["unavailable", "limited", "unsupported"], timeout_seconds: null };
 }
 
 export function alias(overrides: Partial<AliasView> = {}): AliasView {

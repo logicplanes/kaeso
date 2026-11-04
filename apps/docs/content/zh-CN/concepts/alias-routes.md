@@ -90,7 +90,7 @@ flowchart TD
 
 ## 测试路由
 
-试运行让一个请求经过路由，但不调用任何模型，也不记录日志：它显示每个条件及其中成立的规则、每个分流抽到的数字和所走的分支，以及请求会依次尝试的每个模型。路由无需先保存。把路由和请求的特征发送到 Platform API：
+试运行让一个请求经过路由，但不调用任何模型，也不记录日志：它显示每个条件及其中成立的规则、每个分流抽到的数字和所走的分支，以及请求会依次尝试的每个模型。路由无需先保存。在控制台中使用别名的**测试**标签页（[模型和别名](../console/models-and-aliases.md#测试路由)）；用脚本时，把路由和请求的特征发送到 Platform API：
 
 ```bash
 curl -X POST "https://kaeso.example.com/platform/v1/orgs/$ORG/projects/$PROJECT/aliases/trace" \
@@ -117,7 +117,7 @@ curl -X POST "https://kaeso.example.com/platform/v1/orgs/$ORG/projects/$PROJECT/
 
 ## 设置路由
 
-通过 [Platform API](../api/platform-api.md) 创建或修改别名时，把路由作为 `route` 发送。下面的别名先尝试 Claude Sonnet，在 Sonnet 不可用或受速率限制时改用 GPT-5：
+在控制台中，可在别名页面上构建路由（[模型和别名](../console/models-and-aliases.md#创建别名)）。用脚本时，通过 [Platform API](../api/platform-api.md) 创建或修改别名，把路由作为 `route` 发送。下面的别名先尝试 Claude Sonnet，在 Sonnet 不可用或受速率限制时改用 GPT-5：
 
 ```bash
 curl -X PATCH "https://kaeso.example.com/platform/v1/orgs/$ORG/projects/$PROJECT/aliases/$ALIAS" \

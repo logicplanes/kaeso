@@ -90,7 +90,7 @@ Nichts weicht mehr aus, sobald der Anbieter geantwortet hat: Ein Stream, der sp�
 
 ## Eine Route testen
 
-Ein Probelauf schickt eine Anfrage durch eine Route, ohne ein Modell aufzurufen oder etwas zu protokollieren: Er zeigt jede Bedingung mit den Regeln, die zutrafen, die Zahl, die jede Aufteilung zieht, und den Zweig, den sie nimmt, und jedes Modell, das die Anfrage der Reihe nach versuchen w체rde. Die Route muss nicht gespeichert sein. Senden Sie die Route und die Merkmale der Anfrage an die Plattform-API:
+Ein Probelauf schickt eine Anfrage durch eine Route, ohne ein Modell aufzurufen oder etwas zu protokollieren: Er zeigt jede Bedingung mit den Regeln, die zutrafen, die Zahl, die jede Aufteilung zieht, und den Zweig, den sie nimmt, und jedes Modell, das die Anfrage der Reihe nach versuchen w체rde. Die Route muss nicht gespeichert sein. In der Konsole nutzen Sie den Tab **Testen** des Alias ([Modelle und Aliasse](../console/models-and-aliases.md#eine-route-testen)); per Skript senden Sie die Route und die Merkmale der Anfrage an die Plattform-API:
 
 ```bash
 curl -X POST "https://kaeso.example.com/platform/v1/orgs/$ORG/projects/$PROJECT/aliases/trace" \
@@ -117,7 +117,7 @@ Um eine echte Anfrage durch eine Route zu senden, gespeichert oder nicht, geben 
 
 ## Eine Route setzen
 
-Senden Sie die Route als `route`, wenn Sie einen Alias 체ber die [Plattform-API](../api/platform-api.md) erstellen oder 채ndern. Dieser Alias versucht Claude Sonnet, und GPT-5, wenn Sonnet nicht verf체gbar oder durch ein Ratenlimit begrenzt ist:
+In der Konsole bauen Sie die Route auf der Seite des Alias ([Modelle und Aliasse](../console/models-and-aliases.md#alias-erstellen)). Per Skript senden Sie sie als `route`, wenn Sie einen Alias 체ber die [Plattform-API](../api/platform-api.md) erstellen oder 채ndern. Dieser Alias versucht Claude Sonnet, und GPT-5, wenn Sonnet nicht verf체gbar oder durch ein Ratenlimit begrenzt ist:
 
 ```bash
 curl -X PATCH "https://kaeso.example.com/platform/v1/orgs/$ORG/projects/$PROJECT/aliases/$ALIAS" \

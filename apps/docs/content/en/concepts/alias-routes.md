@@ -90,7 +90,7 @@ Nothing falls back once the provider has answered: a stream that breaks off late
 
 ## Test a route
 
-A trace sends a request through a route without calling a model or logging anything: it shows each condition with the rules that held, the number each split draws and the branch it takes, and every model the request would try, in order. The route needn't be saved. Send the route and the request's facts to the Platform API:
+A trace sends a request through a route without calling a model or logging anything: it shows each condition with the rules that held, the number each split draws and the branch it takes, and every model the request would try, in order. The route needn't be saved. In the console, use the alias's **Test** tab ([models and aliases](../console/models-and-aliases.md#test-a-route)); from a script, send the route and the request's facts to the Platform API:
 
 ```bash
 curl -X POST "https://kaeso.example.com/platform/v1/orgs/$ORG/projects/$PROJECT/aliases/trace" \
@@ -117,7 +117,7 @@ To send a real request through a route, saved or not, give the [Playground](../c
 
 ## Set a route
 
-Send the route as `route` when you create or change an alias on the [Platform API](../api/platform-api.md). This alias tries Claude Sonnet, and GPT-5 when Sonnet is unavailable or rate limited:
+In the console, build the route on the alias's page ([models and aliases](../console/models-and-aliases.md#create-an-alias)). From a script, send it as `route` when you create or change an alias on the [Platform API](../api/platform-api.md). This alias tries Claude Sonnet, and GPT-5 when Sonnet is unavailable or rate limited:
 
 ```bash
 curl -X PATCH "https://kaeso.example.com/platform/v1/orgs/$ORG/projects/$PROJECT/aliases/$ALIAS" \
