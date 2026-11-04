@@ -15,7 +15,7 @@ function setUp({
   view = project(),
   settings = logSettings(),
 }: { rights?: string[]; view?: ReturnType<typeof project>; settings?: ReturnType<typeof logSettings> } = {}) {
-  signedIn({ ...(rights ? { projectRights: rights } : {}), projects: [view, project({ id: OTHER_PROJECT, name: "Support triage", is_default: false })] });
+  signedIn({ ...(rights ? { projectRights: rights } : {}), projects: [view, project({ id: OTHER_PROJECT, name: "Support triage" })] });
   projectData();
   on("GET", LOG_SETTINGS, settings);
 }
@@ -25,15 +25,13 @@ const saveName = () => screen.getAllByRole("button", { name: "Save" })[0] as HTM
 const saveLifetime = () => screen.getAllByRole("button", { name: "Save" }).at(-1) as HTMLElement;
 
 describe("project settings", () => {
-  it("shows the project's name, id, creation date and that it is the default", async () => {
+  it("shows the project's name, id and creation date", async () => {
     setUp();
     await renderApp(projectPath("settings"));
 
     expect(await screen.findByRole("textbox", { name: "Project name" })).toHaveValue("Checkout assistant");
     expect(screen.getByText(PROJECT)).toBeInTheDocument();
     expect(screen.getByText("15 Oct 2026")).toBeInTheDocument();
-    expect(screen.getByText("Default project")).toBeInTheDocument();
-    expect(screen.getByText("New organization members join it; it can't be archived.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Upload" })).toBeInTheDocument();
   });
 
@@ -152,7 +150,7 @@ describe("project settings", () => {
   });
 
   it("says when an archived project was archived instead of offering to archive it again", async () => {
-    setUp({ view: project({ is_default: false, archived_at: "2026-10-19T12:00:00Z" }) });
+    setUp({ view: project({ archived_at: "2026-10-19T12:00:00Z" }) });
     await renderApp(projectPath("settings"));
 
     expect(await screen.findByText("Its keys and service accounts went with it; history is kept.")).toBeInTheDocument();
@@ -163,7 +161,7 @@ describe("project settings", () => {
   });
 
   it("keeps an archived project's own key lifetime as it is", async () => {
-    setUp({ view: project({ is_default: false, archived_at: "2026-10-19T12:00:00Z", max_key_lifetime_days: 30 }) });
+    setUp({ view: project({ archived_at: "2026-10-19T12:00:00Z", max_key_lifetime_days: 30 }) });
     const { user } = await renderApp(projectPath("settings"));
 
     expect(await screen.findByRole("spinbutton", { name: "Maximum key lifetime" })).toBeDisabled();
@@ -293,21 +291,11 @@ describe("content logging", () => {
 });
 
 describe("archiving the project", () => {
-  it("can't archive the default project", async () => {
-    setUp();
-    const { user } = await renderApp(projectPath("settings"));
-
-    const archive = await screen.findByRole("button", { name: "Archive project" });
-    expect(archive).toHaveAttribute("aria-disabled", "true");
-    await hoverReason(user, archive, "Make another project the default to archive this one");
-  });
-
   it("archives the project once its name is typed", async () => {
-    setUp({ view: project({ is_default: false }) });
-    on("POST", "orgs/:org/projects/:project/archive", project({ is_default: false, archived_at: "2026-10-15T12:00:00Z" }));
+    setUp();
+    on("POST", "orgs/:org/projects/:project/archive", project({ archived_at: "2026-10-15T12:00:00Z" }));
     const { user, router } = await renderApp(projectPath("settings"));
 
-    expect(screen.queryByText("Default project")).not.toBeInTheDocument();
     await user.click(await screen.findByRole("button", { name: "Archive project" }));
     const dialog = await screen.findByRole("alertdialog", { name: "Archive Checkout assistant?" });
     await user.type(within(dialog).getByRole("textbox"), "Checkout assistant");

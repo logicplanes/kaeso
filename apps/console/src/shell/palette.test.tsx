@@ -126,14 +126,17 @@ describe("the command palette", () => {
     expect(router.state.location.search).toMatchObject({ member: "usr_lin" });
   });
 
-  it("finds a project by its name on the organization's pages, and the last project's keys with its name", async () => {
+  it("finds a project by its name on the organization's pages, and no project's keys", async () => {
     signedIn();
     projectData({ keys: [apiKey({ name: "support-bot" })] });
+    window.localStorage.setItem("kaeso:last", JSON.stringify({ org: ORG, project: PROJECT }));
     const { user, router } = await renderApp(`/orgs/${ORG}`);
     await openPalette(user);
     await user.type(screen.getByPlaceholderText("Search pages, actions, projects, members and keys"), "support");
-    expect(await screen.findByRole("option", { name: /support-bot/ })).toHaveTextContent("Key in Checkout assistant");
-    await user.click(await screen.findByRole("option", { name: /Support triage/ }));
+    const triage = await screen.findByRole("option", { name: /Support triage/ });
+    expect(screen.queryByRole("option", { name: /support-bot/ })).not.toBeInTheDocument();
+    expect(requests("GET", "orgs/:org/projects/:project/keys")).toHaveLength(0);
+    await user.click(triage);
     await waitFor(() => expect(router.state.location.pathname).toBe(`/orgs/${ORG}/projects/${OTHER_PROJECT}`));
   });
 
@@ -223,19 +226,15 @@ describe("the command palette", () => {
     await waitFor(() => expect(router.state.location.pathname).toBe(`/orgs/${ORG}/projects/${OTHER_PROJECT}`));
   });
 
-  it("runs the page's own create action and links to the others", async () => {
+  it("runs the page's own create action", async () => {
     signedIn();
-    const { user, router } = await renderApp(`/orgs/${ORG}/projects`);
-    let list = await openPalette(user);
+    const { user } = await renderApp(`/orgs/${ORG}/projects`);
+    const list = await openPalette(user);
     expect(optionIds(list)).not.toContain("create:project");
     await user.click(within(list).getByRole("option", { name: /Create project/ }));
     expect(await screen.findByRole("dialog", { name: "Create project" })).toBeInTheDocument();
     await user.keyboard("{Escape}");
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "Create project" })).not.toBeInTheDocument());
-    list = await openPalette(user);
-    await user.click(within(list).getByRole("option", { name: /Create key/ }));
-    await waitFor(() => expect(router.state.location.pathname).toBe(`/orgs/${ORG}/projects/${PROJECT}/keys`));
-    expect(router.state.location.search).toMatchObject({ create: true });
   });
 
   it("invites a member from anywhere in the organization", async () => {
@@ -245,6 +244,24 @@ describe("the command palette", () => {
     await user.click(within(list).getByRole("option", { name: /Invite member/ }));
     await waitFor(() => expect(router.state.location.pathname).toBe(`/settings/orgs/${ORG}/members`));
     expect(router.state.location.search).toMatchObject({ tab: "invites", invite: true });
+  });
+
+  it("creates a key in the project the person is in", async () => {
+    signedIn();
+    projectData();
+    const { user, router } = await renderApp(LIMITS);
+    const list = await openPalette(user);
+    await user.click(within(list).getByRole("option", { name: /Create key/ }));
+    await waitFor(() => expect(router.state.location.pathname).toBe(`/orgs/${ORG}/projects/${PROJECT}/keys`));
+    expect(router.state.location.search).toMatchObject({ create: true });
+  });
+
+  it("offers no project's actions on an organization's pages before the person opened a project", async () => {
+    signedIn();
+    const { user } = await renderApp(`/orgs/${ORG}/projects`);
+    const list = await openPalette(user);
+    expect(optionIds(list)).not.toContain("create:key");
+    expect(optionIds(list).filter((id) => id.startsWith("page:"))).toEqual([]);
   });
 
   it("leaves out the instance for people who don't run it", async () => {
@@ -300,7 +317,7 @@ describe("the command palette", () => {
     await waitFor(() => expect(router.state.location.pathname).toBe(`/orgs/${ORG}/projects/${OTHER_PROJECT}/keys`));
   });
 
-  it("works in the first organization's default project from settings when there is no last place", async () => {
+  it("picks no project for the person from settings when there is no last place", async () => {
     const globex = { org_id: "org_globex", org_name: "Globex" };
     signedIn({
       session: whoAmI({ memberships: [membership(), membership(globex)] }),
@@ -310,8 +327,9 @@ describe("the command palette", () => {
     on("GET", "me", me());
     const { user, router } = await renderApp("/settings/account/profile");
     const list = await openPaletteIn(user, "Settings");
-    await user.click(await option(list, "page:limits"));
-    await waitFor(() => expect(router.state.location.pathname).toBe(`/orgs/${ORG}/projects/${PROJECT}/limits`));
+    expect(optionIds(list).filter((id) => id.startsWith("page:"))).toEqual([]);
+    await user.click(await option(list, "org:providers"));
+    await waitFor(() => expect(router.state.location.pathname).toBe(`/orgs/${ORG}/providers`));
   });
 
   it("offers the organization's pages, not another organization's project, on its settings pages", async () => {

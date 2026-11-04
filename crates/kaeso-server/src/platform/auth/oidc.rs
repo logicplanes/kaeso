@@ -21,7 +21,7 @@ use crate::platform::cookies;
 use crate::platform::error::{ApiError, ApiResult};
 use crate::platform::json::Body;
 use crate::platform::params::Query;
-use crate::services::{invites as invite_service, orgs as org_service};
+use crate::services::invites as invite_service;
 use crate::state::AppState;
 
 const FLOW_LIFETIME: Duration = Duration::minutes(10);
@@ -725,12 +725,12 @@ async fn complete(state: &AppState, ctx: &Ctx, flow: &Flow, code: &str) -> ApiRe
                 .write(&mut tx)
                 .await?;
         } else if let Some(preset) = org_row.sso_default_preset.clone() {
-            let grant = kaeso_store::pg::members::Grant {
+            let grant = members::Grant {
                 preset,
                 role_id: org_row.sso_default_role_id,
                 ..Default::default()
             };
-            org_service::add_member(&mut tx, org, user_id, &grant).await?;
+            members::insert_org(&mut *tx, org.uuid(), user_id.uuid(), &grant).await?;
             ctx.audit(Some(org), Action::MemberJoinBySso)
                 .by(user_id)
                 .target("user", user_id)

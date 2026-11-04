@@ -43,7 +43,6 @@ Die Antwort ist eine Seite mit Projekten:
       "id": "proj_…",
       "org_id": "org_…",
       "name": "Support bot",
-      "is_default": false,
       "content_logging": true,
       "created_at": "2026-10-01T09:30:00Z"
     }

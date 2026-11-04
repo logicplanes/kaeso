@@ -7,21 +7,6 @@ use common::{App, Owner};
 use kaeso_testkit::services::TestServices;
 use serde_json::{Value, json};
 
-async fn default_project(app: &App, owner: &Owner) -> String {
-    let r = app
-        .get(&format!("/orgs/{}/projects", owner.org_id), &owner.cookie)
-        .await;
-    r.body["data"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .find(|p| p["is_default"] == true)
-        .unwrap()["id"]
-        .as_str()
-        .unwrap()
-        .to_owned()
-}
-
 async fn new_key(app: &App, base: &str, cookie: &str, body: Value) -> (String, String) {
     let r = app
         .post(&format!("{base}/keys"), body, Some(cookie))
@@ -38,9 +23,9 @@ async fn a_key_someone_else_disabled_stays_off_for_its_owner() {
     let s = TestServices::start().await;
     let app = App::start(&s).await;
     let owner = app.setup().await;
-    let project = default_project(&app, &owner).await;
+    let project = common::first_project(&app, &owner).await;
     let base = format!("/orgs/{}/projects/{project}", owner.org_id);
-    let (dev, _) = common::join(
+    let (dev, _) = common::join_first_project(
         &app,
         &owner,
         json!({ "email": "dev@example.com", "role": "developer" }),
@@ -89,7 +74,7 @@ async fn keys_cannot_undo_what_a_person_did_or_mint_platform_keys() {
     let app = App::start(&s).await;
     let owner = app.setup().await;
     let org = owner.org_id.clone();
-    let project = default_project(&app, &owner).await;
+    let project = common::first_project(&app, &owner).await;
     let base = format!("/orgs/{org}/projects/{project}");
     let (_, script) = new_key(
         &app,
@@ -219,7 +204,7 @@ async fn instance_changes_to_people_need_a_recent_sign_in() {
     let s = TestServices::start().await;
     let app = App::start(&s).await;
     let owner = app.setup().await;
-    let (_, grace) = common::join(
+    let (_, grace) = common::join_first_project(
         &app,
         &owner,
         json!({ "email": "grace@example.com", "role": "member" }),
@@ -309,9 +294,9 @@ async fn a_key_asked_for_while_its_member_is_removed_is_refused() {
     let s = TestServices::start().await;
     let app = App::start(&s).await;
     let owner = app.setup().await;
-    let project = default_project(&app, &owner).await;
+    let project = common::first_project(&app, &owner).await;
     let base = format!("/orgs/{}/projects/{project}", owner.org_id);
-    let (dev, dev_id) = common::join(
+    let (dev, dev_id) = common::join_first_project(
         &app,
         &owner,
         json!({ "email": "dev@example.com", "role": "developer" }),
@@ -351,9 +336,9 @@ async fn a_key_asked_for_while_its_member_leaves_the_project_is_refused() {
     let s = TestServices::start().await;
     let app = App::start(&s).await;
     let owner = app.setup().await;
-    let project = default_project(&app, &owner).await;
+    let project = common::first_project(&app, &owner).await;
     let base = format!("/orgs/{}/projects/{project}", owner.org_id);
-    let (member, member_id) = common::join(
+    let (member, member_id) = common::join_first_project(
         &app,
         &owner,
         json!({ "email": "member@example.com", "role": "member" }),
@@ -404,9 +389,9 @@ async fn deleting_an_account_archives_a_key_created_meanwhile() {
     let s = TestServices::start().await;
     let app = App::start(&s).await;
     let owner = app.setup().await;
-    let project = default_project(&app, &owner).await;
+    let project = common::first_project(&app, &owner).await;
     let base = format!("/orgs/{}/projects/{project}", owner.org_id);
-    let (dev, dev_id) = common::join(
+    let (dev, dev_id) = common::join_first_project(
         &app,
         &owner,
         json!({ "email": "dev@example.com", "role": "developer" }),
@@ -510,7 +495,7 @@ async fn a_key_asked_for_while_its_service_account_is_archived_is_refused() {
     let s = TestServices::start().await;
     let app = App::start(&s).await;
     let owner = app.setup().await;
-    let project = default_project(&app, &owner).await;
+    let project = common::first_project(&app, &owner).await;
     let base = format!("/orgs/{}/projects/{project}", owner.org_id);
     let created = app
         .post(

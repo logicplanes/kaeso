@@ -466,11 +466,10 @@ async fn sso_signs_in_existing_accounts_once_linked_and_only_where_they_are_memb
             .unwrap();
     assert_eq!(members, 0);
 
-    let mut tx = app.state.pg.begin().await.unwrap();
-    kaeso_server::services::orgs::add_member(
-        &mut tx,
-        org,
-        eve,
+    kaeso_store::pg::members::insert_org(
+        &app.state.pg,
+        org.uuid(),
+        eve.uuid(),
         &kaeso_store::pg::members::Grant {
             preset: "member".into(),
             ..Default::default()
@@ -478,7 +477,6 @@ async fn sso_signs_in_existing_accounts_once_linked_and_only_where_they_are_memb
     )
     .await
     .unwrap();
-    tx.commit().await.unwrap();
     let r = sign_in().await;
     assert_eq!(location(&r), format!("{ORIGIN}/"));
     let who = app.get("/auth/session", &r.cookie().unwrap()).await;
@@ -1598,11 +1596,10 @@ async fn ada_in_two_orgs(app: &App, idp: &MockIdp) -> InTwoOrgs {
     let ada = r.cookie().unwrap();
     let who = app.get("/auth/session", &ada).await;
     let ada_id: kaeso_core::id::UserId = who.body["user"]["id"].as_str().unwrap().parse().unwrap();
-    let mut tx = app.state.pg.begin().await.unwrap();
-    kaeso_server::services::orgs::add_member(
-        &mut tx,
-        beta.parse().unwrap(),
-        ada_id,
+    kaeso_store::pg::members::insert_org(
+        &app.state.pg,
+        common::uuid(&beta),
+        ada_id.uuid(),
         &kaeso_store::pg::members::Grant {
             preset: "member".into(),
             ..Default::default()
@@ -1610,7 +1607,6 @@ async fn ada_in_two_orgs(app: &App, idp: &MockIdp) -> InTwoOrgs {
     )
     .await
     .unwrap();
-    tx.commit().await.unwrap();
     InTwoOrgs {
         acme: owner.org_id,
         beta,
@@ -1772,8 +1768,7 @@ async fn an_sso_session_reads_the_account_but_changes_it_only_after_another_sign
 }
 
 async fn own_key(app: &App, cookie: &str, org: &str, name: &str) -> String {
-    let projects = app.get(&format!("/orgs/{org}/projects"), cookie).await;
-    let project = projects.body["data"][0]["id"].as_str().unwrap().to_owned();
+    let project = common::create_project(app, org, cookie, name).await;
     let r = app
         .post(
             &format!("/orgs/{org}/projects/{project}/keys"),

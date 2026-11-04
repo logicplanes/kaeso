@@ -1,5 +1,5 @@
 import type { Page } from "@playwright/test";
-import { expect, test, NEW_PASSWORD, OWNER, openDefaultProject, signInAsOwner, signInWithPassword, stepTo, toastText } from "./support";
+import { expect, test, NEW_PASSWORD, OWNER, openFirstProject, signInAsOwner, signInWithPassword, stepTo, toastText } from "./support";
 
 test.describe.configure({ mode: "serial" });
 
@@ -33,7 +33,7 @@ test("a scheduled organization stays readable without refused requests, sorts fi
   await expect(page.getByRole("button", { description: "Switch or open settings" }).getByText(/^Deletion on /)).toBeVisible();
   await expect(page.getByText(/It's read-only and its keys stopped working; on .+ it's deleted for good\./)).toBeVisible();
   await expectNoToasts(page);
-  await openDefaultProject(page);
+  await openFirstProject(page);
   await page.getByRole("navigation", { name: "Console" }).getByRole("link", { name: "API keys" }).click();
   await expect(page.getByRole("button", { name: "Create key" }).first()).toBeDisabled();
   await expectNoToasts(page);

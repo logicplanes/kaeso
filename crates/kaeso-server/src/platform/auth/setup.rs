@@ -128,7 +128,7 @@ pub async fn setup(
         },
     )
     .await?;
-    let (org, project) = orgs::create(&mut tx, &org_name, user).await?;
+    let org = orgs::create(&mut tx, &org_name, user).await?;
     instance::complete_setup(&mut *tx, ctx.now).await?;
     if let Some(zone) = &timezone {
         instance::set_time_zone(&mut *tx, zone).await?;
@@ -144,7 +144,6 @@ pub async fn setup(
         .target("org", org)
         .after(serde_json::json!({
             "org": OrgRef { id: org, name: org_name.clone() },
-            "default_project": project.to_string(),
             "owner": user.to_string(),
         }))
         .write(&mut tx)

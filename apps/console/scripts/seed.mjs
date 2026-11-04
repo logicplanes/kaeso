@@ -106,8 +106,8 @@ async function addModels(owner, base, provider, wanted) {
   if (ids.length) await owner.post(`${base}/models/batch`, { provider, model_ids: ids });
 }
 
-async function invite(owner, org, person, index) {
-  await owner.post(`orgs/${org}/invites`, { email: person.email, role: person.role });
+async function invite(owner, org, person, index, project_roles) {
+  await owner.post(`orgs/${org}/invites`, { email: person.email, role: person.role, project_roles });
   const token = await mailToken(person.email, "invite");
   await new Session(person.email).post("auth/invites/accept", { token, name: person.name, password: PASSWORD });
   const session = await signIn(person.email);
@@ -125,10 +125,8 @@ async function buildOrg() {
   const org = (await owner.get("auth/session")).memberships[0].org_id;
   await owner.put(`orgs/${org}/avatar`, pictureUpload(4));
 
-  const first = (await owner.get("me/memberships")).data[0].projects.find((p) => p.is_default).id;
-  await owner.patch(`orgs/${org}/projects/${first}`, { name: PROJECTS[0].name });
-  const projects = [{ ...PROJECTS[0], id: first }];
-  for (const project of PROJECTS.slice(1)) projects.push({ ...project, id: (await owner.post(`orgs/${org}/projects`, { name: project.name })).id });
+  const projects = [];
+  for (const project of PROJECTS) projects.push({ ...project, id: (await owner.post(`orgs/${org}/projects`, { name: project.name })).id });
   for (const [i, project] of projects.entries()) await owner.put(`orgs/${org}/projects/${project.id}/avatar`, pictureUpload(i + 2));
 
   await owner.post(`orgs/${org}/credentials`, { provider: "openai", name: "Production", secret: "sk-proj-mock-0000000000000000openai" });
@@ -147,7 +145,10 @@ async function buildOrg() {
   if (haiku) await owner.post(`${checkout}/aliases`, { name: "fast", catalogue_model_id: haiku.id });
 
   const people = [];
-  for (const [i, person] of PEOPLE.entries()) people.push(await invite(owner, org, person, i));
+  for (const [i, person] of PEOPLE.entries()) {
+    const role = person.role === "member" ? "viewer" : person.role;
+    people.push(await invite(owner, org, person, i, [{ project_id: projects[0].id, role }]));
+  }
   await owner.post(`orgs/${org}/invites`, { email: "sam@example.com", role: "member" });
   const noor = people.find((p) => p.email === "noor@example.com");
   await owner.put(`instance/users/${noor.id}/instance-admin`, { is_instance_admin: true });

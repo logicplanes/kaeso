@@ -99,7 +99,6 @@ const ACTION_LABELS: Record<string, () => string> = {
   "platform_key.rotate": () => t("format.audit.action.platformKeyRotate", "Platform key rotated"),
   "project.create": () => t("format.audit.action.projectCreate", "Project created"),
   "project.update": () => t("format.audit.action.projectUpdate", "Project changed"),
-  "project.default": () => t("format.audit.action.projectDefault", "Default project changed"),
   "project.key_policy": () => t("format.audit.action.projectKeyPolicy", "Project's key lifetime changed"),
   "response_cache.org_update": () => t("format.audit.action.responseCacheOrgUpdate", "Response cache allowed or forbidden"),
   "response_cache.project_update": () => t("format.audit.action.responseCacheProjectUpdate", "A project's response cache changed"),
@@ -152,16 +151,17 @@ export const AUDIT_ACTIONS: Record<string, string[]> = Object.keys(ACTION_LABELS
   return kinds;
 }, {});
 
-// Events an older gateway wrote, before KPMR replaced models.dev; the audit log keeps them as they are.
+// Actions older gateways wrote, for models.dev before KPMR replaced it and for the default project; the audit log keeps them as they are.
 const RETIRED_ACTION_LABELS: Record<string, () => string> = {
   "models_dev.sync": () => t("format.audit.action.modelsDevSync", "models.dev synced"),
   "models_dev.price_change": () => t("format.audit.action.modelsDevPriceChange", "Price changed on models.dev"),
   "models_dev.model_delisted": () => t("format.audit.action.modelsDevModelDelisted", "Model taken off models.dev"),
+  "project.default": () => t("format.audit.action.projectDefault", "Default project changed"),
 };
 
 export const auditActionLabel = (action: string): string => (ACTION_LABELS[action] ?? RETIRED_ACTION_LABELS[action])?.() ?? action;
 
-const RETIRED_ACTIONS: Record<string, string[]> = { models_dev: Object.keys(RETIRED_ACTION_LABELS) };
+const RETIRED_ACTIONS: Record<string, string[]> = { models_dev: Object.keys(RETIRED_ACTION_LABELS).filter((a) => a.startsWith("models_dev.")) };
 
 export function auditActionOptions(): { value: string; label: string; description: string }[] {
   return [...Object.entries(AUDIT_ACTIONS), ...Object.entries(RETIRED_ACTIONS)].flatMap(([kind, actions]) => [

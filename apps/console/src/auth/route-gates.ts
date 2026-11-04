@@ -5,13 +5,12 @@ import { keptWhileReadOnly } from "~/auth/rights";
 import { membershipsQuery, projectRightsQuery, sessionQuery } from "~/auth/session";
 import { writeLast } from "~/shell/last";
 import { PROJECT_PAGES } from "~/shell/pages";
-import { homePlace } from "~/shell/place";
+import { homeOrg } from "~/shell/place";
 import { toast } from "~/shell/toast";
 
 export async function goHome(queryClient: QueryClient): Promise<void> {
-  const place = homePlace(await queryClient.ensureQueryData(membershipsQuery));
-  if (place?.project) throw redirect({ to: "/orgs/$org/projects/$project", params: { org: place.org, project: place.project } });
-  if (place) throw redirect({ to: "/orgs/$org", params: { org: place.org } });
+  const org = homeOrg(await queryClient.ensureQueryData(membershipsQuery));
+  if (org) throw redirect({ to: "/orgs/$org", params: { org } });
 }
 
 export async function projectGate({

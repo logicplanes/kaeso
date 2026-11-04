@@ -3,17 +3,10 @@
 mod common;
 
 use axum::http::{Method, StatusCode};
-use common::{App, Owner, PASSWORD};
+use common::{App, PASSWORD};
 use kaeso_core::clock::Clock;
 use kaeso_testkit::services::TestServices;
 use serde_json::{Value, json};
-
-async fn default_project(app: &App, owner: &Owner) -> String {
-    let r = app
-        .get(&format!("/orgs/{}/projects", owner.org_id), &owner.cookie)
-        .await;
-    r.body["data"][0]["id"].as_str().unwrap().to_owned()
-}
 
 async fn created(app: &App, path: &str, body: Value, cookie: &str) -> Value {
     let r = app.post(path, body, Some(cookie)).await;
@@ -38,7 +31,7 @@ async fn a_rotated_key_keeps_its_settings_and_the_old_key_works_until_the_grace_
     let app = App::start(&s).await;
     let owner = app.setup().await;
     let org = owner.org_id.clone();
-    let project = default_project(&app, &owner).await;
+    let project = common::first_project(&app, &owner).await;
     let base = format!("/orgs/{org}/projects/{project}");
     let model = created(
         &app,
@@ -180,7 +173,7 @@ async fn a_rotation_without_a_grace_period_stops_the_old_key_at_once() {
     let s = TestServices::start().await;
     let app = App::start(&s).await;
     let owner = app.setup().await;
-    let project = default_project(&app, &owner).await;
+    let project = common::first_project(&app, &owner).await;
     let base = format!("/orgs/{}/projects/{project}", owner.org_id);
     let old = created(
         &app,
@@ -230,9 +223,9 @@ async fn only_a_keys_owner_rotates_it_and_a_service_accounts_key_needs_its_right
     let app = App::start(&s).await;
     let owner = app.setup().await;
     let org = owner.org_id.clone();
-    let project = default_project(&app, &owner).await;
+    let project = common::first_project(&app, &owner).await;
     let base = format!("/orgs/{org}/projects/{project}");
-    let (dev, dev_id) = common::join(
+    let (dev, dev_id) = common::join_first_project(
         &app,
         &owner,
         json!({ "email": "dev@example.com", "preset": "developer" }),
@@ -453,9 +446,9 @@ async fn a_disabled_key_is_enabled_before_it_rotates() {
     let app = App::start(&s).await;
     let owner = app.setup().await;
     let org = owner.org_id.clone();
-    let project = default_project(&app, &owner).await;
+    let project = common::first_project(&app, &owner).await;
     let base = format!("/orgs/{org}/projects/{project}");
-    let (dev, _) = common::join(
+    let (dev, _) = common::join_first_project(
         &app,
         &owner,
         json!({ "email": "dev@example.com", "role": "developer" }),
@@ -578,7 +571,7 @@ async fn a_disable_during_a_rotation_stops_it() {
     let s = TestServices::start().await;
     let app = App::start(&s).await;
     let owner = app.setup().await;
-    let project = default_project(&app, &owner).await;
+    let project = common::first_project(&app, &owner).await;
     let base = format!("/orgs/{}/projects/{project}", owner.org_id);
     let old = created(
         &app,

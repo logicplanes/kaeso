@@ -35,8 +35,7 @@ export function InviteDialog({ org, onClose }: { org: string; onClose: () => voi
   const held = useQueries({ queries: roles.map((r) => projectRightsQuery(session, org, r.project_id)) });
   const orgRoles = rolesOfScope(allRoles, "org");
   const projectRoles = rolesOfScope(allRoles, "project");
-  const extra = (projects.data ?? []).filter((p) => !p.is_default);
-  const defaultProject = projects.data?.find((p) => p.is_default);
+  const available = projects.data ?? [];
 
   const send = useApiMutation({
     mutationFn: async (batch: Batch) => {
@@ -74,7 +73,7 @@ export function InviteDialog({ org, onClose }: { org: string; onClose: () => voi
 
   const typed = [...new Set([...emails, ...draft.split(/[\s,;]+/).flatMap((e) => (e ? [e.toLowerCase()] : []))])];
   const invalid = typed.filter((e) => !looksLikeEmail(e));
-  const nextProject = extra.find((p) => !roles.some((r) => r.project_id === p.id));
+  const nextProject = available.find((p) => !roles.some((r) => r.project_id === p.id));
   const reason = !typed.length
     ? t("org.invite.addEmail", "Add at least one email address")
     : invalid.length
@@ -129,9 +128,7 @@ export function InviteDialog({ org, onClose }: { org: string; onClose: () => voi
         {
           id: "projects",
           title: t("org.invite.projects", "Which projects?"),
-          description: defaultProject
-            ? t("org.invite.projectsHint", "They join {project}, the default project; add others now or later.", { project: defaultProject.name })
-            : t("org.invite.projectsHintUnnamed", "They join the default project; add others now or later."),
+          description: t("org.invite.projectsHint", "Add the projects they join, each with a role; or add them later."),
           content: (
             <div className="flex flex-col gap-12">
               {roles.map((pr, i) => (
@@ -142,7 +139,7 @@ export function InviteDialog({ org, onClose }: { org: string; onClose: () => voi
                       fullWidth
                       value={pr.project_id}
                       onValueChange={(project_id) => setRoles(roles.map((r, j) => (j === i ? { ...r, project_id } : r)))}
-                      options={extra
+                      options={available
                         .filter((p) => p.id === pr.project_id || !roles.some((r) => r.project_id === p.id))
                         .map((p) => ({ value: p.id, label: p.name }))}
                     />
@@ -174,7 +171,7 @@ export function InviteDialog({ org, onClose }: { org: string; onClose: () => voi
               ) : (
                 roles.length === 0 && (
                   <Text variant="small" tone="secondary">
-                    {t("org.invite.noOtherProjects", "The organization has no other projects.")}
+                    {t("org.invite.noProjects", "The organization has no projects yet.")}
                   </Text>
                 )
               )}

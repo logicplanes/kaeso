@@ -42,14 +42,14 @@ Built-in roles are the same in every organization, and nobody can change them. T
 
 An organization role also holds rights in every project, on top of the member's own project role there:
 
-| Organization role | Organization rights | Rights in every project | Starts in the default project as |
-| --- | --- | --- | --- |
-| Owner | All, including those of future releases | All | Admin |
-| Admin | All except `org.delete`, `org.ownership.transfer` and `billing.manage` | All | Admin |
-| Billing | `org.view`, `members.view`, `projects.view.all`, `logs.storage.view`, `usage.org.view`, `costs.org.view`, `billing.view`, `billing.manage` | None | Viewer |
-| Developer | `org.view`, `members.view`, `projects.create`, `provider_credentials.view`, `providers.custom.view`, `logs.storage.view`, `usage.org.view`, `costs.org.view` | None | Developer |
-| Auditor | `org.view`, `members.view`, `projects.view.all`, `provider_credentials.view`, `providers.custom.view`, `platform_keys.view`, `logs.storage.view`, `usage.org.view`, `costs.org.view`, `billing.view`, `audit_log.view`, `audit_log.export` | The Viewer's, and `project.audit_log.view` | Viewer |
-| Member | `org.view`, `members.view` | None | Viewer |
+| Organization role | Organization rights | Rights in every project |
+| --- | --- | --- |
+| Owner | All, including those of future releases | All |
+| Admin | All except `org.delete`, `org.ownership.transfer` and `billing.manage` | All |
+| Billing | `org.view`, `members.view`, `projects.view.all`, `logs.storage.view`, `usage.org.view`, `costs.org.view`, `billing.view`, `billing.manage` | None |
+| Developer | `org.view`, `members.view`, `projects.create`, `provider_credentials.view`, `providers.custom.view`, `logs.storage.view`, `usage.org.view`, `costs.org.view` | None |
+| Auditor | `org.view`, `members.view`, `projects.view.all`, `provider_credentials.view`, `providers.custom.view`, `platform_keys.view`, `logs.storage.view`, `usage.org.view`, `costs.org.view`, `billing.view`, `audit_log.view`, `audit_log.export` | The Viewer's, and `project.audit_log.view` |
+| Member | `org.view`, `members.view` | None |
 
 | Project role | Rights |
 | --- | --- |
@@ -59,7 +59,7 @@ An organization role also holds rights in every project, on top of the member's 
 
 Two organization rights also reach into every project. `projects.view.all` gives `project.view`, and `projects.archive.any` gives `project.view` and `project.archive`.
 
-A member's rights in a project add up from three sources: their project role, their organization role's rights in every project, and what these two rights reach. In the default project, Owners and Admins start as project Admin, and Developers as Developer. Every other organization role starts as Viewer, custom roles included.
+A member's rights in a project add up from three sources: their project role, their organization role's rights in every project, and what these two rights reach. Joining an organization adds a member to no project: they join the projects their invitation names, or the ones they are added to later.
 
 ### Custom roles
 
@@ -73,7 +73,7 @@ A member's rights in a project add up from three sources: their project role, th
 
 Every change of roles and rights follows these rules:
 
-1. **Give only what you hold.** You can give only rights you hold yourself, in the same scope: organization rights in the organization, project rights in that project. You can give rights in every project only if you hold them in every project. For an invitation and the single sign-on role, the rule also covers the role they bring in the default project, unless the invitation names the default project itself. The rule applies when you:
+1. **Give only what you hold.** You can give only rights you hold yourself, in the same scope: organization rights in the organization, project rights in that project. You can give rights in every project only if you hold them in every project. The rule applies when you:
    - change a member's role or rights;
    - invite someone or resend an invitation;
    - add a project member;
@@ -93,7 +93,7 @@ Every change of roles and rights follows these rules:
 | Right | Name | What it allows | Notes |
 | --- | --- | --- | --- |
 | `org.view` | View organization | See the organization, its settings and its roles. |  |
-| `org.update` | Edit organization | Rename the organization, change its picture and general settings, and choose the default project. |  |
+| `org.update` | Edit organization | Rename the organization and change its picture and general settings. |  |
 | `org.delete` | Delete organization | Schedule the organization for deletion, or restore it while it waits. | sensitive; recent sign-in |
 | `org.ownership.transfer` | Transfer ownership | Make another member an owner in your place; only owners hold it. | sensitive; recent sign-in; needs `members.view` |
 

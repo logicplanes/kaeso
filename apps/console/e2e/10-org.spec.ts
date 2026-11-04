@@ -2,9 +2,11 @@ import type { Page } from "@playwright/test";
 import {
   expect,
   test,
+  FIRST_PROJECT,
   NEW_PASSWORD,
   OWNER,
   expectSignedIn,
+  firstProjectOf,
   signInAsOwner,
   signInWithPassword,
   stepTo,
@@ -138,49 +140,25 @@ test("projects: the settings address opens the organization's Projects page; a p
   await expect(page.getByRole("navigation", { name: "Console" }).getByText("Research", { exact: true })).toBeVisible();
 });
 
-test("projects: an admin makes Research the default and back after a confirmation; a developer can't", async ({ page, browser }) => {
+test("projects: none has actions of its own, and a developer sees only the projects they are in", async ({ page, browser }) => {
   await openOrgSettings(page, "General");
   const org = /\/settings\/orgs\/([^/]+)/.exec(new URL(page.url()).pathname)?.[1] ?? "";
   await page.goto(`/orgs/${org}/projects`);
   const grid = page.getByRole("grid", { name: "Projects" });
-  const row = (name: string) => grid.getByRole("gridcell").filter({ hasText: name });
-  const actions = page.getByRole("button", { name: /^Actions for / });
-  await expect(actions).toHaveCount(1);
-  await expect(actions).toHaveAccessibleName("Actions for Research");
-  const listed = (await (await page.request.get(`/platform/v1/orgs/${org}/projects`)).json()) as { data: { name: string; is_default: boolean }[] };
-  const before = listed.data.find((p) => p.is_default)?.name ?? "";
-
-  await row("Research").hover();
-  await page.getByRole("button", { name: "Actions for Research" }).click();
-  await page.getByRole("menuitem", { name: "Make default" }).click();
-  const confirm = page.getByRole("dialog", { name: "Make default project" });
-  await expect(confirm.getByText("Make Research the default?")).toBeVisible();
-  await expect(confirm.getByText(`${before} stays a project; its members keep their places.`)).toBeVisible();
-  await expect(confirm.getByText("People who join the organization from now on start there; current members don't join it.")).toBeVisible();
-  await confirm.getByRole("button", { name: "Make default" }).click();
-  await expect(toastText(page, "Research is the default project")).toBeVisible();
-  await expect(row("Research").getByText("Default", { exact: true })).toBeVisible();
-  await expect(row(before).getByText("Default", { exact: true })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: `Actions for ${before}` })).toBeVisible();
+  await expect(grid.getByText("Research", { exact: true })).toBeVisible();
+  await expect(grid.getByText(FIRST_PROJECT, { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: /^Actions for / })).toHaveCount(0);
 
   const other = await browser.newContext();
   const developer = await other.newPage();
   await signInWithPassword(developer, "developer@example.com", NEW_PASSWORD);
   await expectSignedIn(developer);
+  await expect(developer).toHaveURL(new RegExp(`/orgs/${org}$`));
   await developer.goto(`/orgs/${org}/projects`);
   const projects = developer.getByRole("grid", { name: "Projects" });
-  await expect(projects.getByText(before, { exact: true })).toBeVisible();
+  await expect(projects.getByText(FIRST_PROJECT, { exact: true })).toBeVisible();
   await expect(projects.getByText("Research", { exact: true })).toHaveCount(0);
-  await expect(developer.getByRole("button", { name: /^Actions for / })).toHaveCount(0);
   await other.close();
-
-  await row(before).hover();
-  await page.getByRole("button", { name: `Actions for ${before}` }).click();
-  await page.getByRole("menuitem", { name: "Make default" }).click();
-  await page.getByRole("dialog", { name: "Make default project" }).getByRole("button", { name: "Make default" }).click();
-  await expect(toastText(page, `${before} is the default project`)).toBeVisible();
-  await expect(row(before).getByText("Default", { exact: true })).toBeVisible();
-  await expect(row("Research").getByText("Default", { exact: true })).toHaveCount(0);
 });
 
 test("provider keys: several per provider, one default, assigned to a project, replaced, renamed and deleted", async ({ page }) => {
@@ -272,10 +250,7 @@ test("custom providers: one is detected from its base URL and key, added with th
   await page.getByRole("tab", { name: /Provider keys/ }).click();
   await expect(page.getByRole("row").filter({ hasText: "Research vLLM" }).first()).toBeVisible();
 
-  const memberships = (await (await page.request.get("/platform/v1/me/memberships")).json()) as {
-    data: { org_id: string; projects: { id: string; is_default: boolean }[] }[];
-  };
-  const project = memberships.data.find((m) => m.org_id === org)?.projects.find((p) => p.is_default)?.id ?? "";
+  const project = await firstProjectOf(page, org);
   await page.goto(`/orgs/${org}/projects/${project}/models?add=true`);
   const dialog = page.getByRole("dialog", { name: "Add models" });
   await dialog.getByRole("button", { description: "Provider" }).click();

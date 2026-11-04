@@ -5,8 +5,9 @@ import {
   NEW_PASSWORD,
   clearMail,
   expectSignedIn,
+  inviteToFirstProject,
   mailLink,
-  openDefaultProject,
+  openFirstProject,
   signInAsOwner,
   signInWithPassword,
   submitSteps,
@@ -82,7 +83,7 @@ test("a custom project role is created, with what its rights need", async ({ pag
   await expect(gridRow(page, "Project roles", ROLE)).toBeVisible();
 });
 
-test("a new member joins as Member and sees what a Viewer may not do, with who can give it", async ({ page, browser }) => {
+test("a new member joins as Member, a Viewer in the project they were invited to, and sees what a Viewer may not do", async ({ page, browser }) => {
   await clearMail();
   const org = await openSettings(page, "members");
   await page.getByRole("button", { name: "Invite members" }).first().click();
@@ -93,6 +94,7 @@ test("a new member joins as Member and sees what a Viewer may not do, with who c
   await expect(dialog.getByRole("radio", { name: "Owner" })).toHaveAttribute("aria-disabled", "true");
   await expect(dialog.getByText("Only owners can make someone an owner")).toBeVisible();
   await expect(dialog.getByRole("radio", { name: "Member" })).toBeChecked();
+  await inviteToFirstProject(page, dialog, "Viewer");
   await submitSteps(dialog, "Send invitation");
   await expect(toastText(page, `Invitation sent to ${NOOR.email}`)).toBeVisible();
 
@@ -105,7 +107,7 @@ test("a new member joins as Member and sees what a Viewer may not do, with who c
   await noor.getByRole("button", { name: "Create account and join" }).click();
   await expectSignedIn(noor);
   await noor.goto(`/orgs/${org}`);
-  await openDefaultProject(noor);
+  await openFirstProject(noor);
   const nav = noor.getByRole("navigation", { name: "Console" });
   await expect(nav.getByRole("link", { name: "Request logs" })).toBeVisible();
   await expect(nav.getByRole("link", { name: "Playground" })).toHaveCount(0);
@@ -119,7 +121,7 @@ test("a new member joins as Member and sees what a Viewer may not do, with who c
 
 test("the role is given in the project, limits the member to it, and they see where each right comes from", async ({ page, browser }) => {
   await signInAsOwner(page);
-  await openDefaultProject(page);
+  await openFirstProject(page);
   const project = new URL(page.url()).pathname;
   await page.getByRole("navigation", { name: "Console" }).getByRole("link", { name: "Members" }).click();
   await gridRow(page, "Members", NOOR.name).click();
@@ -178,7 +180,7 @@ test("the role changes for everyone who has it, can't be deleted while held, the
   await expect(toastText(page, `${ROLE} saved for 1 member or service account`)).toBeVisible();
 
   await page.goto(`/orgs/${orgOf(page)}`);
-  await openDefaultProject(page);
+  await openFirstProject(page);
   await page.getByRole("navigation", { name: "Console" }).getByRole("link", { name: "Members" }).click();
   await gridRow(page, "Members", NOOR.name).click();
   const member = page.getByRole("dialog", { name: NOOR.name });

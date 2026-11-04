@@ -92,7 +92,7 @@ docker compose exec gateway kaeso setup-link
 
 The link works once, within 24 hours. Running the command again prints a new link and retires the old one.
 
-Open the link and enter your name, your email, a password of 12 to 128 characters and a name for your organization. Then choose **Set up Kaeso**. You are now an instance admin and the owner of the first organization, which comes with a default project.
+Open the link and enter your name, your email, a password of 12 to 128 characters and a name for your organization. Then choose **Set up Kaeso**. You are now an instance admin and the owner of the first organization, and Kaeso opens its **Overview**. The organization has no projects yet.
 
 ## Add a provider key
 
@@ -104,11 +104,20 @@ Provider keys belong to the organization, and every project uses the provider's 
 
 The first key of a provider becomes its default. Kaeso never shows the key again; see [provider keys](../console/provider-keys.md).
 
+## Create a project
+
+Models, API keys and request logs belong to a project.
+
+1. On the organization's **Overview**, choose **Create project**.
+2. Name it after what it is for, such as `Support bot`, and choose **Create project**.
+
+Kaeso opens the new project, and you are its admin; see [organizations and projects](../console/organizations-and-projects.md#create-a-project).
+
 ## Add a model
 
 A request can only name a model in the project's catalogue.
 
-1. Open the default project and choose **Models**, then **Add models**.
+1. In the project, choose **Models**, then **Add models**.
 2. Choose the provider and search for a model, such as `claude-haiku-4-5` from Anthropic or `gpt-5-mini` from OpenAI.
 3. Add it.
 

@@ -1,4 +1,4 @@
-import { expect, test, NEW_PASSWORD, OWNER, enterEmail, openDefaultProject } from "./support";
+import { expect, test, NEW_PASSWORD, OWNER, enterEmail, firstProjectOf, openFirstProject } from "./support";
 
 test.describe.configure({ mode: "serial" });
 
@@ -11,12 +11,9 @@ test("the main flow works from the keyboard alone", async ({ page }) => {
   await page.keyboard.type(NEW_PASSWORD);
   await page.keyboard.press("Enter");
   await expect(page.getByRole("navigation", { name: "Console" })).toBeVisible();
-  const memberships = (await (await page.request.get("/platform/v1/me/memberships")).json()) as {
-    data: { org_id: string; projects: { id: string; is_default: boolean }[] }[];
-  };
-  const home = memberships.data[0];
-  const project = home?.projects.find((p) => p.is_default)?.id;
-  await page.goto(`/orgs/${home?.org_id}/projects/${project}`);
+  await expect(page).toHaveURL(/\/orgs\/[^/]+$/);
+  const org = new URL(page.url()).pathname.split("/")[2] ?? "";
+  await page.goto(`/orgs/${org}/projects/${await firstProjectOf(page, org)}`);
   await expect(page.getByRole("navigation", { name: "Console" })).toBeVisible();
   await page.keyboard.press("Tab");
   await expect(page.getByRole("link", { name: "Skip to content" })).toBeFocused();
@@ -89,7 +86,7 @@ test("the shell, a list, a dialog and the inspector expose names and roles", asy
   await expect(page.getByRole("main")).toBeVisible();
   await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
 
-  await openDefaultProject(page);
+  await openFirstProject(page);
   await page.getByRole("link", { name: "API keys" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "API keys" })).toBeVisible();
   await expect(page.getByRole("grid", { name: /keys/i }).first()).toBeVisible();

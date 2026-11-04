@@ -14,7 +14,7 @@ Was Sie in der Konsole sehen, hängt von Ihren Rechten ab. Eine Seite, für die 
 
 1. **Wer wird eingeladen?** Geben Sie eine oder mehrere Adressen ein oder fügen Sie sie ein. Eine eingegebene Adresse zählt, sobald Sie fortfahren; eine, die keine E-Mail-Adresse ist, bleibt markiert, bis Sie sie entfernen oder korrigieren.
 2. **Was dürfen sie in der Organisation?** Wählen Sie ihre Organisationsrolle.
-3. **Welche Projekte?** Fügen Sie die Projekte hinzu, denen sie beitreten, jeweils mit einer Rolle. Dem Standardprojekt treten sie immer bei.
+3. **Welche Projekte?** Fügen Sie die Projekte hinzu, denen sie beitreten, jeweils mit einer Rolle. Anderen Projekten treten sie nicht bei; weitere können Sie später hinzufügen.
 
 **Einladung senden** schickt jeder Person einen Link, der 21 Tage gilt. **Einladungen** listet die offenen Einladungen, die Sie mit **Erneut senden** oder **Widerrufen** bearbeiten. Angenommene, widerrufene und abgelaufene Einladungen stehen unter **Alle**.
 
@@ -30,7 +30,7 @@ Organisationen haben sechs integrierte Rollen: **Inhaber**, **Admin**, **Abrechn
 
 - Inhaber haben jedes Recht, auch die Rechte, die spätere Versionen hinzufügen. Nur Inhaber ernennen, ändern oder entfernen Inhaber, und eine Organisation behält immer mindestens einen.
 - Inhaber und Admins haben jedes Recht in jedem Projekt.
-- Im Standardprojekt beginnen Inhaber und Admins als Admin, Entwickler als Entwickler und alle anderen als Betrachter.
+- Alle anderen arbeiten nur in den Projekten, zu denen man sie hinzufügt.
 
 Für jede Ihrer Änderungen gelten zwei Regeln. Sie können nur Rechte vergeben, die Sie selbst haben. Und Sie können nur Mitglieder ändern, die kein Recht haben, das Ihnen fehlt.
 

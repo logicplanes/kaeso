@@ -23,19 +23,45 @@ async fn join(
     .await
 }
 
-async fn default_project(app: &App, owner: &Owner) -> String {
-    let r = app
-        .get(&format!("/orgs/{}/projects", owner.org_id), &owner.cookie)
-        .await;
-    r.body["data"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .find(|p| p["is_default"] == true)
-        .unwrap()["id"]
-        .as_str()
-        .unwrap()
-        .to_owned()
+#[tokio::test]
+async fn new_orgs_start_without_projects() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup_without_projects().await;
+    let mine = app
+        .post("/me/orgs", json!({ "name": "Globex" }), Some(&owner.cookie))
+        .await
+        .expect_status(StatusCode::CREATED);
+    let theirs = app
+        .post(
+            "/instance/orgs",
+            json!({ "name": "Initech" }),
+            Some(&owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::CREATED);
+    for org in [
+        owner.org_id.as_str(),
+        mine.body["id"].as_str().unwrap(),
+        theirs.body["id"].as_str().unwrap(),
+    ] {
+        let listed = app
+            .get(
+                &format!("/orgs/{org}/projects?include_archived=true"),
+                &owner.cookie,
+            )
+            .await
+            .expect_status(StatusCode::OK);
+        assert_eq!(listed.body["data"], json!([]), "{org}");
+    }
+    let memberships = app.get("/me/memberships", &owner.cookie).await;
+    let memberships = memberships.body["data"].as_array().unwrap();
+    assert_eq!(memberships.len(), 3);
+    assert!(
+        memberships.iter().all(|m| m["projects"] == json!([])),
+        "{memberships:?}"
+    );
+    s.cleanup().await;
 }
 
 #[tokio::test]
@@ -70,17 +96,13 @@ async fn invites_add_members_with_their_presets_and_project_roles() {
     assert_eq!(member.body["grant"]["preset"], "developer");
     let mine = app.get("/me/memberships", &dev).await;
     let projects = mine.body["data"][0]["projects"].as_array().unwrap();
-    assert_eq!(projects.len(), 2, "default project and the invited project");
-    assert!(
+    assert_eq!(
         projects
             .iter()
-            .any(|p| p["is_default"] == true && p["preset"] == "developer"),
-        "{projects:?}"
-    );
-    assert!(
-        projects
-            .iter()
-            .any(|p| p["id"] == project_id && p["preset"] == "admin")
+            .map(|p| (p["id"].as_str().unwrap(), p["preset"].as_str().unwrap()))
+            .collect::<Vec<_>>(),
+        [(project_id.as_str(), "admin")],
+        "only the invited project"
     );
 
     let again = app
@@ -439,7 +461,7 @@ async fn removing_a_member_archives_their_keys_and_ends_sessions_when_no_org_is_
     let app = App::start(&s).await;
     let owner = app.setup().await;
     let (dev, dev_id) = join(&app, &owner, "dev@example.com", "developer", json!([])).await;
-    let project = default_project(&app, &owner).await;
+    let project = common::first_project(&app, &owner).await;
     let dev_uuid = dev_id.parse::<kaeso_core::id::UserId>().unwrap().uuid();
     let org_uuid = owner
         .org_id
@@ -523,9 +545,9 @@ async fn projects_are_created_listed_by_visibility_and_archived() {
             .map(|p| p["name"].as_str().unwrap().to_owned())
             .collect::<Vec<_>>()
     };
-    assert_eq!(
-        names(&app.get(&format!("/orgs/{org}/projects"), &member).await),
-        ["Default project"]
+    assert!(
+        names(&app.get(&format!("/orgs/{org}/projects"), &member).await).is_empty(),
+        "joining the org added the member to no project"
     );
     assert_eq!(
         names(&app.get(&format!("/orgs/{org}/projects"), &billing).await).len(),
@@ -561,15 +583,15 @@ async fn projects_are_created_listed_by_visibility_and_archived() {
         .await;
     assert_eq!(r.status, StatusCode::BAD_REQUEST, "{:?}", r.body);
 
-    let default = default_project(&app, &owner).await;
+    let first = common::first_project(&app, &owner).await;
     let r = app
         .post(
-            &format!("/orgs/{org}/projects/{default}/archive"),
+            &format!("/orgs/{org}/projects/{first}/archive"),
             json!({}),
             Some(&owner.cookie),
         )
         .await;
-    assert_eq!(r.status, StatusCode::CONFLICT);
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
     let r = app
         .post(
             &format!("/orgs/{org}/projects/{dev_project}/archive"),
@@ -618,12 +640,12 @@ async fn projects_are_created_listed_by_visibility_and_archived() {
         assert_eq!(r.status, StatusCode::CONFLICT, "{path}: {:?}", r.body);
         assert_eq!(r.body["error"]["message"], message, "{path}");
     }
-    assert_eq!(
+    assert!(
         names(
             &app.get(&format!("/orgs/{org}/projects"), &owner.cookie)
                 .await
-        ),
-        ["Default project"]
+        )
+        .is_empty()
     );
     s.cleanup().await;
 }
@@ -634,7 +656,7 @@ async fn service_accounts_get_only_rights_the_creator_holds() {
     let app = App::start(&s).await;
     let owner = app.setup().await;
     let org = owner.org_id.clone();
-    let project = default_project(&app, &owner).await;
+    let project = common::first_project(&app, &owner).await;
     let base = format!("/orgs/{org}/projects/{project}/service-accounts");
     let r = app
         .post(
@@ -645,7 +667,14 @@ async fn service_accounts_get_only_rights_the_creator_holds() {
         .await;
     assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
     let id = r.body["id"].as_str().unwrap().to_owned();
-    let (dev, _) = join(&app, &owner, "dev@example.com", "developer", json!([])).await;
+    let (dev, _) = join(
+        &app,
+        &owner,
+        "dev@example.com",
+        "developer",
+        json!([{ "project_id": project, "preset": "developer" }]),
+    )
+    .await;
     assert_eq!(
         app.post(
             &base,
@@ -717,7 +746,7 @@ async fn service_accounts_get_only_rights_the_creator_holds() {
 async fn every_change_is_audited_and_the_log_can_be_filtered_and_exported() {
     let s = TestServices::start().await;
     let app = App::start(&s).await;
-    let owner = app.setup().await;
+    let owner = app.setup_without_projects().await;
     let org = owner.org_id.clone();
     app.post(
         &format!("/orgs/{org}/projects"),
@@ -895,7 +924,7 @@ async fn deleting_an_org_waits_its_grace_period_and_can_be_undone() {
         use base64::Engine;
         json!({ "content_type": kind, "data": base64::engine::general_purpose::STANDARD.encode(bytes) })
     };
-    let default = default_project(&app, &owner).await;
+    let default = common::first_project(&app, &owner).await;
     for (path, body) in [
         (
             format!("/orgs/{org}/avatar"),
@@ -1154,7 +1183,7 @@ async fn deactivation_disables_keys_and_reactivation_restores_them() {
     let app = App::start(&s).await;
     let owner = app.setup().await;
     let (dev, dev_id) = join(&app, &owner, "dev@example.com", "developer", json!([])).await;
-    let project = default_project(&app, &owner).await;
+    let project = common::first_project(&app, &owner).await;
     let dev_uuid = dev_id.parse::<kaeso_core::id::UserId>().unwrap().uuid();
     for (name, disabled) in [("on", false), ("off", true)] {
         sqlx::query(
@@ -1297,282 +1326,5 @@ async fn orgs_requiring_two_factor_close_their_routes_to_password_sessions_witho
         StatusCode::FORBIDDEN,
         "the setup session has no second factor either"
     );
-    s.cleanup().await;
-}
-
-async fn defaults(app: &App, owner: &Owner) -> Vec<(String, bool, bool)> {
-    app.get(
-        &format!("/orgs/{}/projects?include_archived=true", owner.org_id),
-        &owner.cookie,
-    )
-    .await
-    .body["data"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .map(|p| {
-            (
-                p["id"].as_str().unwrap().to_owned(),
-                p["is_default"] == true,
-                !p["archived_at"].is_null(),
-            )
-        })
-        .collect()
-}
-
-async fn make_default(app: &App, org: &str, project: &str, cookie: &str) -> common::Resp {
-    app.call(
-        Method::PUT,
-        &format!("/orgs/{org}/default-project"),
-        Some(json!({ "project_id": project })),
-        Some(cookie),
-    )
-    .await
-}
-
-#[tokio::test]
-async fn org_admins_choose_the_default_project_where_new_members_start() {
-    let s = TestServices::start().await;
-    let app = App::start(&s).await;
-    let owner = app.setup().await;
-    let org = owner.org_id.clone();
-    let first = default_project(&app, &owner).await;
-    let (dev, _) = join(&app, &owner, "dev@example.com", "developer", json!([])).await;
-    let (member, _) = join(&app, &owner, "member@example.com", "member", json!([])).await;
-    let created = app
-        .post(
-            &format!("/orgs/{org}/projects"),
-            json!({ "name": "Production" }),
-            Some(&dev),
-        )
-        .await;
-    let next = created.body["id"].as_str().unwrap().to_owned();
-
-    let r = make_default(&app, &org, &next, &dev).await;
-    assert_eq!(r.status, StatusCode::FORBIDDEN, "{:?}", r.body);
-    assert_eq!(
-        make_default(&app, &org, &next, &member).await.status,
-        StatusCode::FORBIDDEN
-    );
-
-    let r = make_default(&app, &org, &next, &owner.cookie).await;
-    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
-    assert_eq!(r.body["id"], next.as_str());
-    assert_eq!(r.body["is_default"], true);
-    let now = defaults(&app, &owner).await;
-    assert_eq!(
-        now.iter()
-            .filter(|(_, d, _)| *d)
-            .map(|(id, _, _)| id.as_str())
-            .collect::<Vec<_>>(),
-        [next.as_str()]
-    );
-    let again = make_default(&app, &org, &next, &owner.cookie).await;
-    assert_eq!(again.status, StatusCode::OK);
-    assert_eq!(again.body["is_default"], true);
-
-    let mine = app.get("/me/memberships", &member).await;
-    let projects = mine.body["data"][0]["projects"].as_array().unwrap();
-    assert_eq!(
-        projects.len(),
-        1,
-        "existing members don't join: {projects:?}"
-    );
-    assert_eq!(projects[0]["id"], first.as_str());
-    assert_eq!(projects[0]["is_default"], false);
-    let mine = app.get("/me/memberships", &dev).await;
-    assert!(
-        mine.body["data"][0]["projects"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .any(|p| p["id"] == next.as_str() && p["preset"] == "admin"),
-        "the creator keeps the admin preset: {:?}",
-        mine.body
-    );
-    let (billing, _) = join(&app, &owner, "billing@example.com", "billing", json!([])).await;
-    let mine = app.get("/me/memberships", &billing).await;
-    let projects = mine.body["data"][0]["projects"].as_array().unwrap();
-    assert_eq!(projects.len(), 1, "{projects:?}");
-    assert_eq!(projects[0]["id"], next.as_str());
-
-    let audit = app
-        .get(
-            &format!("/orgs/{org}/audit-log?action=project.default"),
-            &owner.cookie,
-        )
-        .await;
-    let events = audit.body["data"].as_array().unwrap();
-    assert_eq!(events.len(), 1, "{events:?}");
-    assert_eq!(events[0]["before"]["default_project"], first.as_str());
-    assert_eq!(
-        events[0]["after"],
-        json!({ "default_project": next.as_str() })
-    );
-
-    let r = app
-        .post(
-            &format!("/orgs/{org}/projects/{next}/archive"),
-            json!({}),
-            Some(&owner.cookie),
-        )
-        .await;
-    assert_eq!(r.status, StatusCode::CONFLICT, "{:?}", r.body);
-    assert!(
-        r.body["error"]["message"]
-            .as_str()
-            .unwrap()
-            .contains("default"),
-        "{:?}",
-        r.body
-    );
-    let r = app
-        .post(
-            &format!("/orgs/{org}/projects/{first}/archive"),
-            json!({}),
-            Some(&owner.cookie),
-        )
-        .await;
-    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
-
-    let r = make_default(&app, &org, &first, &owner.cookie).await;
-    assert_eq!(r.status, StatusCode::CONFLICT, "{:?}", r.body);
-    let r = make_default(
-        &app,
-        &org,
-        &kaeso_core::id::ProjectId::new().to_string(),
-        &owner.cookie,
-    )
-    .await;
-    assert_eq!(r.status, StatusCode::NOT_FOUND, "{:?}", r.body);
-    let other = app
-        .post(
-            "/me/orgs",
-            json!({ "name": "Other org" }),
-            Some(&owner.cookie),
-        )
-        .await;
-    assert_eq!(other.status, StatusCode::CREATED, "{:?}", other.body);
-    let other_org = other.body["id"].as_str().unwrap().to_owned();
-    let r = make_default(&app, &other_org, &next, &owner.cookie).await;
-    assert_eq!(r.status, StatusCode::NOT_FOUND, "{:?}", r.body);
-    s.cleanup().await;
-}
-
-#[tokio::test]
-async fn choosing_the_default_project_gives_nobody_rights_in_it() {
-    let s = TestServices::start().await;
-    let app = App::start(&s).await;
-    let owner = app.setup().await;
-    let org = owner.org_id.clone();
-    let first = default_project(&app, &owner).await;
-    let (dev, dev_id) = join(&app, &owner, "dev@example.com", "developer", json!([])).await;
-    let (member, _) = join(&app, &owner, "member@example.com", "member", json!([])).await;
-    app.call(
-        Method::PATCH,
-        &format!("/orgs/{org}/members/{dev_id}"),
-        Some(json!({ "role": "developer", "rights_added": ["org.update"] })),
-        Some(&owner.cookie),
-    )
-    .await
-    .expect_status(StatusCode::OK);
-    let restricted = app
-        .post(
-            &format!("/orgs/{org}/projects"),
-            json!({ "name": "Restricted" }),
-            Some(&owner.cookie),
-        )
-        .await
-        .expect_status(StatusCode::CREATED)
-        .body["id"]
-        .as_str()
-        .unwrap()
-        .to_owned();
-
-    let r = make_default(&app, &org, &restricted, &dev).await;
-    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
-    assert_eq!(r.body["is_default"], true);
-
-    for cookie in [&dev, &member] {
-        let r = app
-            .get(
-                &format!("/orgs/{org}/projects/{restricted}/my-rights"),
-                cookie,
-            )
-            .await;
-        assert_eq!(r.status, StatusCode::NOT_FOUND, "{:?}", r.body);
-        let r = app
-            .get(
-                &format!("/orgs/{org}/projects/{restricted}/members"),
-                cookie,
-            )
-            .await;
-        assert_eq!(r.status, StatusCode::NOT_FOUND, "{:?}", r.body);
-        let mine = app.get("/me/memberships", cookie).await;
-        let projects = mine.body["data"][0]["projects"].as_array().unwrap();
-        assert_eq!(projects.len(), 1, "{projects:?}");
-        assert_eq!(projects[0]["id"], first.as_str());
-    }
-    let members = app
-        .get(
-            &format!("/orgs/{org}/projects/{restricted}/members"),
-            &owner.cookie,
-        )
-        .await
-        .expect_status(StatusCode::OK);
-    let members = members.body["data"].as_array().unwrap();
-    assert_eq!(members.len(), 1, "{members:?}");
-    assert_eq!(members[0]["user"]["id"], owner.user_id.as_str());
-    s.cleanup().await;
-}
-
-#[tokio::test]
-async fn the_org_always_has_exactly_one_default_project() {
-    let s = TestServices::start().await;
-    let app = App::start(&s).await;
-    let owner = app.setup().await;
-    let org = owner.org_id.clone();
-    let mut ids = Vec::new();
-    for n in 0..6 {
-        let r = app
-            .post(
-                &format!("/orgs/{org}/projects"),
-                json!({ "name": format!("Project {n}") }),
-                Some(&owner.cookie),
-            )
-            .await;
-        ids.push(r.body["id"].as_str().unwrap().to_owned());
-    }
-
-    for _ in 0..3 {
-        let calls = ids
-            .iter()
-            .map(|id| make_default(&app, &org, id, &owner.cookie));
-        for r in futures::future::join_all(calls).await {
-            assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
-        }
-        let now = defaults(&app, &owner).await;
-        assert_eq!(now.iter().filter(|(_, d, _)| *d).count(), 1, "{now:?}");
-    }
-
-    for id in &ids {
-        let current = defaults(&app, &owner).await;
-        if current.iter().any(|(p, d, a)| p == id && (*d || *a)) {
-            continue;
-        }
-        let path = format!("/orgs/{org}/projects/{id}/archive");
-        let archive = app.post(&path, json!({}), Some(&owner.cookie));
-        let promote = make_default(&app, &org, id, &owner.cookie);
-        let (archived, promoted) = tokio::join!(archive, promote);
-        assert!(
-            (archived.status == StatusCode::OK) != (promoted.status == StatusCode::OK),
-            "archive {:?}, default {:?}",
-            archived.body,
-            promoted.body
-        );
-        let now = defaults(&app, &owner).await;
-        assert_eq!(now.iter().filter(|(_, d, _)| *d).count(), 1, "{now:?}");
-        assert!(!now.iter().any(|(_, d, a)| *d && *a), "{now:?}");
-    }
     s.cleanup().await;
 }

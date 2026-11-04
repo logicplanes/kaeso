@@ -1,5 +1,19 @@
 import type { Page } from "@playwright/test";
-import { expect, test, NEW_PASSWORD, OWNER, clearMail, expectSignedIn, mailLink, signInAsOwner, signInToProject, submitSteps, toastText } from "./support";
+import {
+  expect,
+  test,
+  FIRST_PROJECT,
+  NEW_PASSWORD,
+  OWNER,
+  clearMail,
+  expectSignedIn,
+  inviteToFirstProject,
+  mailLink,
+  signInAsOwner,
+  signInToProject,
+  submitSteps,
+  toastText,
+} from "./support";
 
 test.describe.configure({ mode: "serial" });
 
@@ -13,7 +27,7 @@ const row = (page: Page, grid: string, text: string) =>
 
 const orgOf = (page: Page) => /\/orgs\/([^/]+)/.exec(new URL(page.url()).pathname)?.[1] ?? "";
 
-test("an invited person accepts and joins the organization", async ({ page, browser }) => {
+test("an invited person accepts and joins the organization and the project they were invited to", async ({ page, browser }) => {
   await clearMail();
   await signInAsOwner(page);
   await page.goto(`/settings/orgs/${orgOf(page)}/members?tab=invites`);
@@ -21,6 +35,7 @@ test("an invited person accepts and joins the organization", async ({ page, brow
   const dialog = page.getByRole("dialog", { name: "Invite members" });
   await dialog.getByRole("textbox", { name: "Email addresses" }).fill(DEVELOPER.email);
   await dialog.getByRole("textbox", { name: "Email addresses" }).press("Enter");
+  await inviteToFirstProject(page, dialog, "Viewer");
   await submitSteps(dialog, "Send invitation");
   await expect(toastText(page, `Invitation sent to ${DEVELOPER.email}`)).toBeVisible();
 
@@ -34,6 +49,7 @@ test("an invited person accepts and joins the organization", async ({ page, brow
   await invitee.getByRole("button", { name: "Create account and join" }).click();
   await expectSignedIn(invitee);
   await expect(invitee.getByRole("button", { name: OWNER.org, description: "Switch or open settings", exact: true })).toBeVisible();
+  await expect(invitee.getByRole("navigation", { name: "Console" }).getByText(FIRST_PROJECT, { exact: true })).toBeVisible();
   await other.close();
 });
 

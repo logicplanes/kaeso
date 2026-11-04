@@ -92,7 +92,7 @@ docker compose exec gateway kaeso setup-link
 
 Der Link funktioniert einmal, innerhalb von 24 Stunden. Rufen Sie den Befehl erneut auf, gibt er einen neuen Link aus und macht den alten ungültig.
 
-Öffnen Sie den Link, und geben Sie Ihren Namen, Ihre E-Mail-Adresse, ein Passwort mit 12 bis 128 Zeichen und einen Namen für Ihre Organisation ein. Wählen Sie dann **Kaeso einrichten**. Damit sind Sie Instanz-Admin und Inhaber der ersten Organisation, die ein Standardprojekt mitbringt.
+Öffnen Sie den Link, und geben Sie Ihren Namen, Ihre E-Mail-Adresse, ein Passwort mit 12 bis 128 Zeichen und einen Namen für Ihre Organisation ein. Wählen Sie dann **Kaeso einrichten**. Damit sind Sie Instanz-Admin und Inhaber der ersten Organisation, und Kaeso öffnet ihre **Übersicht**. Die Organisation hat noch keine Projekte.
 
 ## Einen Anbieter-Schlüssel hinzufügen
 
@@ -104,11 +104,20 @@ Anbieter-Schlüssel gehören zur Organisation, und jedes Projekt nutzt den Stand
 
 Der erste Schlüssel eines Anbieters wird dessen Standard. Kaeso zeigt den Schlüssel nie wieder an; siehe [Anbieter-Schlüssel](../console/provider-keys.md).
 
+## Ein Projekt erstellen
+
+Modelle, API-Schlüssel und Anfrageprotokolle gehören zu einem Projekt.
+
+1. Wählen Sie in der **Übersicht** der Organisation **Projekt erstellen**.
+2. Benennen Sie es nach seinem Zweck, etwa `Support bot`, und wählen Sie **Projekt erstellen**.
+
+Kaeso öffnet das neue Projekt, und Sie sind sein Admin; siehe [Organisationen und Projekte](../console/organizations-and-projects.md#projekt-erstellen).
+
 ## Ein Modell hinzufügen
 
 Eine Anfrage kann nur ein Modell aus dem Katalog des Projekts nennen.
 
-1. Öffnen Sie das Standardprojekt, und wählen Sie **Modelle**, dann **Modelle hinzufügen**.
+1. Wählen Sie im Projekt **Modelle**, dann **Modelle hinzufügen**.
 2. Wählen Sie den Anbieter, und suchen Sie nach einem Modell, etwa `claude-haiku-4-5` von Anthropic oder `gpt-5-mini` von OpenAI.
 3. Fügen Sie es hinzu.
 

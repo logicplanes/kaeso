@@ -14,7 +14,6 @@ import { useCreateAction } from "./create-action";
 import { readLast } from "./last";
 import { ORG_AREA_PAGES, orgPath, projectPath } from "./pages";
 import { useProjectPages } from "./project-pages";
-import { defaultProjectOf } from "./place";
 import { readRecent, recentHint, type RecentIcons } from "./recent";
 import { ACCOUNT_PAGES, INSTANCE_PAGES, ORG_SETTINGS_PAGES } from "./settings-pages";
 import { openShortcutSheet } from "./shortcuts-store";
@@ -66,7 +65,7 @@ export default function PaletteUI({
   );
 }
 
-function useFindGroup(org: string, project: string, query: string, enabled: boolean, close: () => void, projectName?: string): CommandGroup | null {
+function useFindGroup(org: string, project: string, query: string, enabled: boolean, close: () => void): CommandGroup | null {
   const navigate = useNavigate();
   const rights = useProjectRights(org, project);
   const on = enabled && !!project && query.length > 0;
@@ -78,7 +77,6 @@ function useFindGroup(org: string, project: string, query: string, enabled: bool
   const q = query.toLowerCase();
   const has = (...texts: (string | null | undefined)[]) => texts.some((text) => text?.toLowerCase().includes(q));
   const base = projectPath(org, project);
-  const inProject = (kind: string) => (projectName ? t("shell.palette.inProject", "{kind} in {project}", { kind, project: projectName }) : kind);
   const go = (href: string) => () => {
     close();
     void navigate({ href });
@@ -90,7 +88,7 @@ function useFindGroup(org: string, project: string, query: string, enabled: bool
         id: `find:key:${k.id}`,
         label: k.name,
         icon: icons.key,
-        hint: inProject(recentHint("key")),
+        hint: recentHint("key"),
         keywords: [query],
         onSelect: go(`${base}/keys?key=${k.id}`),
       })),
@@ -100,7 +98,7 @@ function useFindGroup(org: string, project: string, query: string, enabled: bool
         id: `find:model:${m.id}`,
         label: m.model_id,
         icon: icons.model,
-        hint: inProject(recentHint("model")),
+        hint: recentHint("model"),
         keywords: [query],
         onSelect: go(`${base}/models?model=${m.id}`),
       })),
@@ -110,7 +108,7 @@ function useFindGroup(org: string, project: string, query: string, enabled: bool
         id: `find:member:${m.user.id}`,
         label: m.user.name,
         icon: icons.member,
-        hint: inProject(recentHint("member")),
+        hint: recentHint("member"),
         keywords: [query],
         onSelect: go(`${base}/members?member=${m.user.id}`),
       })),
@@ -120,7 +118,7 @@ function useFindGroup(org: string, project: string, query: string, enabled: bool
         id: `find:sa:${a.id}`,
         label: a.name,
         icon: icons.serviceAccount,
-        hint: inProject(recentHint("service-account")),
+        hint: recentHint("service-account"),
         keywords: [query],
         onSelect: go(`${base}/service-accounts?account=${a.id}`),
       })),
@@ -203,7 +201,7 @@ function usePaletteGroups(close: () => void, open: boolean, query: string): { gr
   const memberships = useMemberships();
   const last = readLast();
   const org = params.org ?? last?.org ?? memberships[0]?.org_id ?? "";
-  const project = params.project ?? (org === last?.org ? last?.project : undefined) ?? defaultProjectOf(memberships, org) ?? "";
+  const project = params.project ?? (org === last?.org ? last?.project : undefined) ?? "";
   const projectRights = useProjectRights(org, project);
   const orgRights = useOrgRights(org);
   const projectPages = useProjectPages(org, project);
@@ -211,15 +209,11 @@ function usePaletteGroups(close: () => void, open: boolean, query: string): { gr
   const create = useCreateAction();
   const { setTheme } = useTheme();
   const orgContext = !!params.org && !params.project;
-  const projectName = orgContext ? projects.data?.find((p) => p.id === project)?.name : undefined;
-  const projectFind = useFindGroup(org, project, query, open, close, projectName);
+  const projectFind = useFindGroup(org, project, query, open, close);
   const orgFind = useOrgFindGroup(org, query, open && orgContext, close);
 
   const groups = useMemo(() => {
-    const find =
-      orgFind && projectFind
-        ? { ...orgFind, items: [...orgFind.items, ...projectFind.items].slice(0, 20), loading: !!(orgFind.loading || projectFind.loading) }
-        : (orgFind ?? projectFind);
+    const find = orgFind ?? projectFind;
     const go = (to: string) => () => {
       close();
       void navigate({ to });

@@ -57,10 +57,10 @@ pub async fn create_org(
     let name = validate_name("name", &req.name)?;
     let me = ctx.user_id()?;
     let mut tx = state.pg.begin().await?;
-    let (org, project) = crate::services::orgs::create(&mut tx, &name, me).await?;
+    let org = crate::services::orgs::create(&mut tx, &name, me).await?;
     ctx.audit(Some(org), Action::OrgCreate)
         .target("org", org)
-        .after(serde_json::json!({ "name": name, "default_project": project.to_string(), "owner": me.to_string() }))
+        .after(serde_json::json!({ "name": name, "owner": me.to_string() }))
         .write(&mut tx)
         .await?;
     ctx.audit(None, Action::OrgCreate)
@@ -81,8 +81,6 @@ pub struct MyProject {
     pub id: ProjectId,
     #[doc = "Its name."]
     pub name: String,
-    #[doc = "Whether it is the default project."]
-    pub is_default: bool,
     #[doc = "The project's picture; `null` without one."]
     pub avatar_url: Option<String>,
     #[doc = "The user's project role."]
@@ -159,7 +157,6 @@ pub async fn memberships(State(state): State<AppState>, ctx: Ctx) -> ApiResult<J
                     .map(|p| MyProject {
                         id: ProjectId::from_uuid(p.project_id),
                         name: p.project_name.clone(),
-                        is_default: p.is_default,
                         avatar_url: crate::platform::views::avatar_url(p.project_avatar.as_deref()),
                         role: crate::platform::grants::RoleRef::of_project(&p.grant()),
                         preset: p.preset.clone(),

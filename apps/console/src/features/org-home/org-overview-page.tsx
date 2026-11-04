@@ -1,7 +1,7 @@
 import { lazy, Suspense } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { AppFrame, Avatar, Badge, Button, List, Section, Text } from "@logicplanes/kaeso-ui";
+import { AppFrame, Avatar, Badge, Button, Empty, List, Section, Text, icons } from "@logicplanes/kaeso-ui";
 import { orgProjectsQuery } from "~/api/queries/projects";
 import { orgUsageQuery, usageSpanQuery } from "~/api/queries/usage";
 import { useOrgRights } from "~/auth/session";
@@ -121,13 +121,26 @@ export function OrgOverviewPage({ org, search }: { org: string; search: OrgOverv
                 leading: <Avatar name={p.name} {...(p.avatar_url ? { src: p.avatar_url } : {})} kind="org" size={20} decorative />,
                 meta: (
                   <>
-                    {p.is_default && <Badge>{t("orgHome.default", "Default")}</Badge>}
                     {p.archived_at && <Badge>{t("common.archived", "Archived")}</Badge>}
                     {canUsage && byProject.data && <Requests n={usageOf(p.id)?.requests ?? 0} />}
                   </>
                 ),
               }))}
               onOpen={(item) => void navigate({ href: projectPath(org, item.id) })}
+              empty={
+                <Empty
+                  size="md"
+                  title={t("orgHome.noProjects", "No projects you can see")}
+                  description={t("orgHome.noProjectsHint", "Projects you belong to are listed here.")}
+                  actions={
+                    rights.has("projects.create") && (
+                      <Button variant="primary" leadingIcon={icons.add} href={`/orgs/${org}/projects?create=true`}>
+                        {t("orgHome.createProject", "Create project")}
+                      </Button>
+                    )
+                  }
+                />
+              }
             />
           </Section>
         </div>

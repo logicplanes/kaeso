@@ -33,7 +33,6 @@ pub fn known_model(model: &str) -> Option<&'static str> {
 pub struct HeldProject {
     pub id: Uuid,
     pub name: String,
-    pub is_default: bool,
     pub avatar: Option<String>,
     pub rights: ProjectRights,
 }
@@ -94,7 +93,6 @@ pub async fn holdings(pg: &PgPool, user: Uuid) -> ApiResult<Vec<HeldOrg>> {
                 held.push(HeldProject {
                     id: p.id,
                     name: p.name,
-                    is_default: p.is_default,
                     avatar: p.avatar,
                     rights,
                 });
@@ -561,8 +559,7 @@ mod tests {
             policy,
             projects: vec![HeldProject {
                 id: Uuid::now_v7(),
-                name: "Default".into(),
-                is_default: true,
+                name: "Checkout".into(),
                 avatar: None,
                 rights: ProjectPreset::Developer.rights(),
             }],

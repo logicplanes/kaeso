@@ -18,7 +18,7 @@ async function openDialog() {
 }
 
 describe("inviting members", () => {
-  it("sends one invitation with a role and an extra project", async () => {
+  it("sends one invitation with a role and a project", async () => {
     signedIn();
     on("GET", "orgs/:org/members", paged([member()]));
     on("POST", "orgs/:org/invites", ({ body }: { body: InviteBody }) => invite({ email: body.email }));
@@ -32,16 +32,15 @@ describe("inviting members", () => {
     expect(await within(dialog).findByText("What can they do in the organization?")).toBeInTheDocument();
     await user.click(within(dialog).getByRole("radio", { name: /Developer/ }));
     await user.click(within(dialog).getByRole("button", { name: "Continue" }));
-    expect(await within(dialog).findByText("They join Checkout assistant, the default project; add others now or later.")).toBeInTheDocument();
+    expect(await within(dialog).findByText("Add the projects they join, each with a role; or add them later.")).toBeInTheDocument();
     await user.click(within(dialog).getByRole("button", { name: "Add a project" }));
-    expect(within(dialog).getByRole("combobox", { name: "Project" })).toHaveTextContent("Support triage");
+    expect(within(dialog).getByRole("combobox", { name: "Project" })).toHaveTextContent("Checkout assistant");
     await user.click(within(dialog).getByRole("combobox", { name: "Role in the project" }));
     await user.click(await screen.findByRole("option", { name: /Viewer/ }));
-    expect(within(dialog).queryByRole("button", { name: "Add a project" })).not.toBeInTheDocument();
     await user.click(within(dialog).getByRole("button", { name: "Send invitation" }));
     expect(await notifications().findByText("Invitation sent to grace@example.com")).toBeInTheDocument();
     expect(requests("POST", "orgs/:org/invites").map((r) => r.body)).toEqual([
-      { email: "grace@example.com", role: "developer", project_roles: [{ project_id: OTHER_PROJECT, role: "viewer" }] },
+      { email: "grace@example.com", role: "developer", project_roles: [{ project_id: PROJECT, role: "viewer" }] },
     ]);
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "Invite members" })).not.toBeInTheDocument());
     expect(router.state.location.search).toEqual({});
@@ -73,13 +72,13 @@ describe("inviting members", () => {
     expect(within(dialog).getByRole("button", { name: "Add a project" })).toBeInTheDocument();
   });
 
-  it("gives each extra project its own role", async () => {
+  it("gives each project its own role", async () => {
     signedIn({
       projects: [
         project(),
-        project({ id: OTHER_PROJECT, name: "Support triage", is_default: false }),
-        project({ id: "proj_search", name: "Search ranking", is_default: false }),
-        project({ id: "proj_billing", name: "Billing bot", is_default: false }),
+        project({ id: OTHER_PROJECT, name: "Support triage" }),
+        project({ id: "proj_search", name: "Search ranking" }),
+        project({ id: "proj_billing", name: "Billing bot" }),
       ],
     });
     on("GET", "orgs/:org/members", paged([member()]));
@@ -92,7 +91,7 @@ describe("inviting members", () => {
     await user.click(await within(dialog).findByRole("button", { name: "Add a project" }));
     await user.click(within(dialog).getByRole("button", { name: "Add a project" }));
     const second = () => within(dialog).getAllByRole("combobox", { name: "Project" })[1] as HTMLElement;
-    expect(second()).toHaveTextContent("Search ranking");
+    expect(second()).toHaveTextContent("Support triage");
     await user.click(second());
     await user.click(await screen.findByRole("option", { name: "Billing bot" }));
     expect(second()).toHaveTextContent("Billing bot");
@@ -105,7 +104,7 @@ describe("inviting members", () => {
         email: "grace@example.com",
         role: "member",
         project_roles: [
-          { project_id: OTHER_PROJECT, role: "developer" },
+          { project_id: PROJECT, role: "developer" },
           { project_id: "proj_billing", role: "viewer" },
         ],
       },
@@ -260,27 +259,27 @@ describe("inviting members", () => {
     expect(notifications().queryByText(/grace@example.com:/)).not.toBeInTheDocument();
   });
 
-  it("says when the organization has no other projects", async () => {
-    signedIn({ projects: [project()] });
+  it("says when the organization has no projects yet", async () => {
+    signedIn({ projects: [] });
     on("GET", "orgs/:org/members", paged([member()]));
     const { user, dialog } = await openDialog();
     await fill(user, within(dialog).getByRole("textbox", { name: "Email addresses" }), "grace@example.com");
     await user.keyboard("{Enter}");
     await user.click(within(dialog).getByRole("button", { name: "Continue" }));
     await user.click(within(dialog).getByRole("button", { name: "Continue" }));
-    expect(await within(dialog).findByText("The organization has no other projects.")).toBeInTheDocument();
+    expect(await within(dialog).findByText("The organization has no projects yet.")).toBeInTheDocument();
+    expect(within(dialog).queryByRole("button", { name: "Add a project" })).not.toBeInTheDocument();
   });
 
-  it("names no project when the organization has no default one", async () => {
-    signedIn({ projects: [project({ is_default: false }), project({ id: OTHER_PROJECT, name: "Support triage", is_default: false })] });
+  it("adds another project than the first one offered", async () => {
+    signedIn();
     on("GET", "orgs/:org/members", paged([member()]));
     const { user, dialog } = await openDialog();
     await fill(user, within(dialog).getByRole("textbox", { name: "Email addresses" }), "grace@example.com");
     await user.keyboard("{Enter}");
     await user.click(within(dialog).getByRole("button", { name: "Continue" }));
     await user.click(within(dialog).getByRole("button", { name: "Continue" }));
-    expect(await within(dialog).findByText("They join the default project; add others now or later.")).toBeInTheDocument();
-    await user.click(within(dialog).getByRole("button", { name: "Add a project" }));
+    await user.click(await within(dialog).findByRole("button", { name: "Add a project" }));
     await user.click(within(dialog).getByRole("combobox", { name: "Project" }));
     await user.click(await screen.findByRole("option", { name: "Support triage" }));
     expect(within(dialog).getByRole("combobox", { name: "Project" })).toHaveTextContent("Support triage");

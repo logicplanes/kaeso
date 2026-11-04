@@ -169,7 +169,7 @@ macro_rules! rights {
 rights!(
     OrgRight, view = OrgView {
         OrgView = "org.view", Organization, "View organization", false, false, false, [], "See the organization, its settings and its roles.";
-        OrgUpdate = "org.update", Organization, "Edit organization", false, false, false, [], "Rename the organization, change its picture and general settings, and choose the default project.";
+        OrgUpdate = "org.update", Organization, "Edit organization", false, false, false, [], "Rename the organization and change its picture and general settings.";
         OrgDelete = "org.delete", Organization, "Delete organization", true, true, false, [], "Schedule the organization for deletion, or restore it while it waits.";
         OrgOwnershipTransfer = "org.ownership.transfer", Organization, "Transfer ownership", true, true, false, [MembersView], "Make another member an owner in your place; only owners hold it.";
         MembersView = "members.view", Members, "View members", false, false, false, [], "See members, their roles and their rights.";

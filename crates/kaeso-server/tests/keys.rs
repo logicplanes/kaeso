@@ -12,13 +12,6 @@ use serde_json::{Value, json};
 
 use common::PASSWORD;
 
-async fn default_project(app: &App, owner: &Owner) -> String {
-    let r = app
-        .get(&format!("/orgs/{}/projects", owner.org_id), &owner.cookie)
-        .await;
-    r.body["data"][0]["id"].as_str().unwrap().to_owned()
-}
-
 async fn key(app: &App, owner: &Owner, project: &str, body: Value) -> (String, Value) {
     let r = app
         .post(
@@ -39,7 +32,7 @@ async fn keys_show_their_secret_once_and_follow_the_expiry_rules() {
     let s = TestServices::start().await;
     let app = App::start(&s).await;
     let owner = app.setup().await;
-    let project = default_project(&app, &owner).await;
+    let project = common::first_project(&app, &owner).await;
     let (secret, created) = key(
         &app,
         &owner,
@@ -123,7 +116,7 @@ async fn a_key_expires_on_the_date_sent_and_a_misspelt_field_is_refused() {
     let s = TestServices::start().await;
     let app = App::start(&s).await;
     let owner = app.setup().await;
-    let project = default_project(&app, &owner).await;
+    let project = common::first_project(&app, &owner).await;
     let base = format!("/orgs/{}/projects/{project}/keys", owner.org_id);
     let on = (app.clock.now() + time::Duration::days(20)).date();
     let (_, created) = key(
@@ -169,9 +162,9 @@ async fn platform_access_needs_its_right_and_a_recent_sign_in() {
     let s = TestServices::start().await;
     let app = App::start(&s).await;
     let owner = app.setup().await;
-    let project = default_project(&app, &owner).await;
+    let project = common::first_project(&app, &owner).await;
     let base = format!("/orgs/{}/projects/{project}/keys", owner.org_id);
-    let (dev, _) = common::join(
+    let (dev, _) = common::join_first_project(
         &app,
         &owner,
         json!({ "email": "dev@example.com", "preset": "developer" }),
@@ -226,7 +219,7 @@ async fn keys_reach_only_what_their_kind_and_principal_allow() {
     let app = App::start(&s).await;
     let owner = app.setup().await;
     let org = owner.org_id.clone();
-    let project = default_project(&app, &owner).await;
+    let project = common::first_project(&app, &owner).await;
     let other = app
         .post(
             &format!("/orgs/{org}/projects"),
@@ -410,7 +403,7 @@ async fn disabled_keys_stop_on_every_instance_within_five_seconds() {
     let b = a.second_instance(&s).await;
     let owner = a.setup().await;
     let org = owner.org_id.clone();
-    let project = default_project(&a, &owner).await;
+    let project = common::first_project(&a, &owner).await;
     let (platform, created) = key(
         &a,
         &owner,
@@ -471,7 +464,7 @@ async fn expired_archived_and_orphaned_keys_are_refused() {
     let app = App::start(&s).await;
     let owner = app.setup().await;
     let org = owner.org_id.clone();
-    let project = default_project(&app, &owner).await;
+    let project = common::first_project(&app, &owner).await;
     let path = format!("/orgs/{org}/projects/{project}");
     let (short, _) = key(
         &app,
@@ -582,7 +575,7 @@ async fn users_manage_their_own_keys_and_get_expiry_warnings() {
     let s = TestServices::start().await;
     let app = App::start(&s).await;
     let owner = app.setup().await;
-    let project = default_project(&app, &owner).await;
+    let project = common::first_project(&app, &owner).await;
     let (_, created) = key(
         &app,
         &owner,
@@ -715,7 +708,7 @@ async fn own_keys_follow_the_orgs_sign_in_requirements() {
     let s = TestServices::start().await;
     let app = App::start(&s).await;
     let owner = app.setup().await;
-    let project = default_project(&app, &owner).await;
+    let project = common::first_project(&app, &owner).await;
     let (_, created) = key(&app, &owner, &project, json!({ "name": "bot" })).await;
     let id = created["id"].as_str().unwrap();
     let r = app

@@ -125,8 +125,7 @@ class Install:
         )
         session = self.http.get("/platform/v1/auth/session").json()
         self.org = session["memberships"][0]["org_id"]
-        projects = self.http.get(f"/platform/v1/orgs/{self.org}/projects").json()
-        self.project = projects["data"][0]["id"]
+        self.project = self.post(f"/platform/v1/orgs/{self.org}/projects", {"name": "E2E"})["id"]
         self.base = f"/platform/v1/orgs/{self.org}/projects/{self.project}"
         for provider, secret in (("openai", OPENAI_SECRET), ("anthropic", ANTHROPIC_SECRET)):
             self.post(

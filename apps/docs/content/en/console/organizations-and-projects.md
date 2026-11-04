@@ -8,9 +8,9 @@ An organization holds members, provider keys and projects. A project holds a mod
 
 ## Create an organization
 
-Open the menu at the foot of the sidebar and choose **Create organization**. You become its owner, and it starts with a default project. The install decides who may create organizations ([instance settings](instance-administration.md#change-install-settings)).
+Open the menu at the foot of the sidebar and choose **Create organization**. You become its owner, and it starts with no projects. The install decides who may create organizations ([instance settings](instance-administration.md#change-install-settings)).
 
-The same menu lists your organizations and switches between them.
+The same menu lists your organizations and switches between them. Opening Kaeso, or another organization, shows the organization's **Overview**; open a project from there or from the sidebar.
 
 ## Read usage
 
@@ -122,9 +122,7 @@ On **Projects**, choose **Create project** and give it a name. You become the pr
 
 **Archived** lists archived projects, and **All** every project. Search finds a project by name, and each project shows its requests in the last 30 days to people who can see the organization's usage.
 
-The default project is where new members start. To move the default, choose **Make default** in another project's menu. Moving it needs the right **Edit organization**.
-
-Only people who join the organization afterwards start in the new default; current members keep their places and don't join it. The old default stays a project with its members. Kaeso refuses the move while pending invitations or the single sign-on role would give people rights there that you don't hold.
+All of an organization's projects are alike. People who join the organization join no project by it: an invitation names the projects they join, and anyone else is added on a project's **Members** page.
 
 ## Change project settings
 
@@ -134,12 +132,11 @@ A project's **Settings** page holds these settings:
 | --- | --- |
 | Picture, project name | Shown in the sidebar and in request logs |
 | Project id | The id the Platform API uses |
-| Default project | Shown only on the default project. New organization members join it, and it can't be archived |
 | Maximum key lifetime | **Use the organization's limit**, or a shorter maximum for new keys in this project |
 | Content logging | Whether request and reply bodies are kept with their log entries. It can't be on while the organization has it off |
 | Archive project | Archives the project with its keys and service accounts, for good. Its keys stop working at once |
 
-Kaeso archives projects and never deletes them, so their usage and logs stay. The default project can't be archived: make another project the default first.
+Kaeso archives projects and never deletes them, so their usage and logs stay. Any project can be archived.
 
 ## Next steps
 

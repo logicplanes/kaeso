@@ -3,7 +3,7 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use kaeso_core::id::{InviteId, OrgId, ProjectId, RoleId, UserId};
 use kaeso_core::rights::{
-    OrgGrant, OrgPreset, ProjectGrant, ProjectPreset, ProjectRights, effective_project_rights,
+    OrgGrant, OrgPreset, ProjectPreset, ProjectRights, effective_project_rights,
 };
 use kaeso_core::secret;
 use kaeso_crypto::random_token;
@@ -142,15 +142,13 @@ pub struct InviteRequest {
     pub email: String,
     #[doc = "The org role: a built-in role's name (`owner`, `admin`, `billing`,\n\
         `developer`, `auditor`, `member`) or a custom org role's id. Only a\n\
-        role whose rights the inviter holds, and whose project role in the\n\
-        default project the inviter could grant there unless `project_roles`\n\
-        names it; only owners invite owners."]
+        role whose rights the inviter holds; only owners invite owners."]
     #[schema(example = "developer")]
     pub role: Option<String>,
     #[doc = "Deprecated: the built-in org role; send `role` instead."]
     #[schema(deprecated)]
     pub preset: Option<String>,
-    #[doc = "Projects to join besides the default project, with project roles."]
+    #[doc = "Projects to join, with project roles."]
     #[serde(default)]
     pub project_roles: Vec<InviteProjectRequest>,
 }
@@ -229,8 +227,6 @@ pub async fn create(
             role_id: p.role_id.map(RoleId::from_uuid),
         });
     }
-    let named: Vec<uuid::Uuid> = roles.iter().map(|r| r.project_id.uuid()).collect();
-    check_default_join(&state, &ctx, &grant, &named).await?;
     if let Some(user) = users::get_by_email(&state.pg, &email).await?
         && members::get_org(&state.pg, scope.org.id, user.id)
             .await?
@@ -309,8 +305,6 @@ async fn check_resend(
     check_org_role(scope, &grant)?;
     let stored: Vec<ProjectRole> =
         serde_json::from_value(invite.project_roles.clone()).unwrap_or_default();
-    let named: Vec<uuid::Uuid> = stored.iter().map(|r| r.project_id.uuid()).collect();
-    check_default_join(state, ctx, &grant, &named).await?;
     for wanted in stored {
         let name = match wanted.role_id {
             Some(id) if book.get(id.uuid()).is_none() => continue,
@@ -338,23 +332,6 @@ fn email_role(role: &RoleRef) -> &str {
     } else {
         &role.name
     }
-}
-
-pub(crate) async fn check_default_join(
-    state: &AppState,
-    ctx: &Ctx,
-    grant: &OrgGrant,
-    named: &[uuid::Uuid],
-) -> ApiResult<()> {
-    let Some(default) = projects::default_of(&state.pg, ctx.org()?.org.id).await? else {
-        return Ok(());
-    };
-    if named.contains(&default.id) {
-        return Ok(());
-    }
-    let caller_rights = caller_project_rights(state, ctx, default.id).await?;
-    let joins = ProjectGrant::preset(grant.default_project_preset());
-    check_project(caller_rights, None, &joins)
 }
 
 pub(crate) async fn caller_project_rights(

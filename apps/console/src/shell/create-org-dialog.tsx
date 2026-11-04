@@ -35,7 +35,7 @@ export default function CreateOrgDialog({ onClose }: { onClose: () => void }) {
       onOpenChange={(o) => !o && onClose()}
       size="sm"
       title={t("shell.createOrg", "Create organization")}
-      description={t("shell.createOrg.description", "You become its owner; it starts with a default project.")}
+      description={t("shell.createOrg.description", "You become its owner; it starts with no projects.")}
       onSubmit={() => name.trim() && create.mutate()}
       footer={
         <>

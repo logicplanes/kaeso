@@ -1,4 +1,4 @@
-use sqlx::{PgConnection, PgExecutor};
+use sqlx::PgExecutor;
 use time::OffsetDateTime;
 use uuid::Uuid;
 
@@ -9,7 +9,6 @@ pub struct Project {
     pub id: Uuid,
     pub org_id: Uuid,
     pub name: String,
-    pub is_default: bool,
     pub content_logging: bool,
     pub max_key_lifetime_days: Option<i32>,
     pub archived_at: Option<OffsetDateTime>,
@@ -22,14 +21,12 @@ pub async fn insert(
     id: Uuid,
     org_id: Uuid,
     name: &str,
-    is_default: bool,
 ) -> Result<(), StoreError> {
     sqlx::query!(
-        "INSERT INTO projects (id, org_id, name, is_default) VALUES ($1, $2, $3, $4)",
+        "INSERT INTO projects (id, org_id, name) VALUES ($1, $2, $3)",
         id,
         org_id,
-        name,
-        is_default
+        name
     )
     .execute(db)
     .await?;
@@ -43,7 +40,7 @@ pub async fn get(
 ) -> Result<Option<Project>, StoreError> {
     Ok(sqlx::query_as!(
         Project,
-        "SELECT id, org_id, name, is_default, content_logging, max_key_lifetime_days, archived_at, created_at, avatar \
+        "SELECT id, org_id, name, content_logging, max_key_lifetime_days, archived_at, created_at, avatar \
          FROM projects WHERE org_id = $1 AND id = $2",
         org_id,
         id
@@ -74,24 +71,10 @@ pub async fn get_for_update(
 ) -> Result<Option<Project>, StoreError> {
     Ok(sqlx::query_as!(
         Project,
-        "SELECT id, org_id, name, is_default, content_logging, max_key_lifetime_days, archived_at, created_at, avatar \
+        "SELECT id, org_id, name, content_logging, max_key_lifetime_days, archived_at, created_at, avatar \
          FROM projects WHERE org_id = $1 AND id = $2 FOR NO KEY UPDATE",
         org_id,
         id
-    )
-    .fetch_optional(db)
-    .await?)
-}
-
-pub async fn default_of(
-    db: impl PgExecutor<'_>,
-    org_id: Uuid,
-) -> Result<Option<Project>, StoreError> {
-    Ok(sqlx::query_as!(
-        Project,
-        "SELECT id, org_id, name, is_default, content_logging, max_key_lifetime_days, archived_at, created_at, avatar \
-         FROM projects WHERE org_id = $1 AND is_default",
-        org_id
     )
     .fetch_optional(db)
     .await?)
@@ -103,48 +86,6 @@ pub async fn ids_of_org(db: impl PgExecutor<'_>, org_id: Uuid) -> Result<Vec<Uui
             .fetch_all(db)
             .await?,
     )
-}
-
-pub async fn lock_default(db: &mut PgConnection, org_id: Uuid) -> Result<(), StoreError> {
-    sqlx::query!(
-        "SELECT pg_advisory_xact_lock(hashtextextended('projects_default:' || $1::uuid::text, 0))",
-        org_id
-    )
-    .execute(db)
-    .await?;
-    Ok(())
-}
-
-pub async fn set_default(
-    db: &mut PgConnection,
-    org_id: Uuid,
-    id: Uuid,
-) -> Result<bool, StoreError> {
-    let active = sqlx::query_scalar!(
-        "SELECT EXISTS (SELECT 1 FROM projects WHERE org_id = $1 AND id = $2 AND archived_at IS NULL) AS \"exists!\"",
-        org_id,
-        id
-    )
-    .fetch_one(&mut *db)
-    .await?;
-    if !active {
-        return Ok(false);
-    }
-    sqlx::query!(
-        "UPDATE projects SET is_default = false, updated_at = now() WHERE org_id = $1 AND is_default AND id <> $2",
-        org_id,
-        id
-    )
-    .execute(&mut *db)
-    .await?;
-    sqlx::query!(
-        "UPDATE projects SET is_default = true, updated_at = now() WHERE org_id = $1 AND id = $2 AND NOT is_default",
-        org_id,
-        id
-    )
-    .execute(&mut *db)
-    .await?;
-    Ok(true)
 }
 
 pub async fn update(db: impl PgExecutor<'_>, p: &Project) -> Result<(), StoreError> {
@@ -175,7 +116,7 @@ pub async fn list(
 ) -> Result<Vec<Project>, StoreError> {
     Ok(sqlx::query_as!(
         Project,
-        "SELECT p.id, p.org_id, p.name, p.is_default, p.content_logging, p.max_key_lifetime_days, p.archived_at, p.created_at, p.avatar \
+        "SELECT p.id, p.org_id, p.name, p.content_logging, p.max_key_lifetime_days, p.archived_at, p.created_at, p.avatar \
          FROM projects p WHERE p.org_id = $1 \
          AND ($2::uuid IS NULL OR EXISTS (SELECT 1 FROM project_memberships m WHERE m.project_id = p.id AND m.user_id = $2)) \
          AND ($6::uuid[] IS NULL OR p.id = ANY($6)) \

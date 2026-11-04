@@ -20,7 +20,7 @@
             "id": "org.update",
             "scope": "org",
             "name": "Edit organization",
-            "description": "Rename the organization, change its picture and general settings, and choose the default project.",
+            "description": "Rename the organization and change its picture and general settings.",
             "sensitive": false,
             "recent_sign_in": false,
             "cloud_only": false,

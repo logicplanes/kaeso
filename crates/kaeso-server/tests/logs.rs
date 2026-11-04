@@ -1071,11 +1071,8 @@ async fn no_query_reaches_another_orgs_logs() {
         .await;
     assert_eq!(other.status, StatusCode::CREATED, "{:?}", other.body);
     let other_org = other.body["id"].as_str().unwrap();
-    let projects = env
-        .app
-        .get(&format!("/orgs/{other_org}/projects"), &env.owner.cookie)
-        .await;
-    let other_project = projects.body["data"][0]["id"].as_str().unwrap();
+    let other_project =
+        &common::create_project(&env.app, other_org, &env.owner.cookie, "Other").await;
     let list = env
         .app
         .get(

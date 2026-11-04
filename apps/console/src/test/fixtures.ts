@@ -79,7 +79,6 @@ export function myProject(overrides: Partial<MyMembership["projects"][number]> =
   return {
     id: PROJECT,
     name: "Checkout assistant",
-    is_default: true,
     avatar_url: null,
     role: { id: "admin", kind: "builtin", name: "Admin" },
     preset: "admin",
@@ -96,7 +95,7 @@ export function myMembership(overrides: Partial<MyMembership> = {}): MyMembershi
     org_avatar_url: null,
     role: { id: "owner", kind: "builtin", name: "Owner" },
     preset: "owner",
-    projects: [myProject(), myProject({ id: OTHER_PROJECT, name: "Support triage", is_default: false })],
+    projects: [myProject(), myProject({ id: OTHER_PROJECT, name: "Support triage" })],
     last_owner: false,
     ...overrides,
   };
@@ -107,7 +106,6 @@ export function project(overrides: Partial<ProjectView> = {}): ProjectView {
     id: PROJECT,
     org_id: ORG,
     name: "Checkout assistant",
-    is_default: true,
     content_logging: true,
     created_at: NOW,
     archived_at: null,
@@ -155,7 +153,7 @@ export interface SignedInOptions {
 export function signedIn(options: SignedInOptions = {}): WhoAmI {
   const session = options.session ?? whoAmI();
   const memberships = options.memberships ?? [myMembership()];
-  const projects = options.projects ?? [project(), project({ id: OTHER_PROJECT, name: "Support triage", is_default: false })];
+  const projects = options.projects ?? [project(), project({ id: OTHER_PROJECT, name: "Support triage" })];
   on("GET", "auth/session", session);
   on("GET", "me/memberships", { data: memberships });
   on("GET", "me/whats-new", {

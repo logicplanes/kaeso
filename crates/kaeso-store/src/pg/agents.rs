@@ -986,7 +986,6 @@ pub struct OrgProject {
     pub id: Uuid,
     pub org_id: Uuid,
     pub name: String,
-    pub is_default: bool,
     pub avatar: Option<String>,
 }
 
@@ -996,8 +995,8 @@ pub async fn active_projects(
 ) -> Result<Vec<OrgProject>, StoreError> {
     Ok(sqlx::query_as!(
         OrgProject,
-        "SELECT id, org_id, name, is_default, avatar FROM projects \
-         WHERE org_id = ANY($1) AND archived_at IS NULL ORDER BY org_id, is_default DESC, name, id",
+        "SELECT id, org_id, name, avatar FROM projects \
+         WHERE org_id = ANY($1) AND archived_at IS NULL ORDER BY org_id, name, id",
         org_ids
     )
     .fetch_all(db)

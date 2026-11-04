@@ -71,7 +71,6 @@
   "instance.deactivateConfirmHint": "They can't sign in, every session ends and their keys are disabled until you reactivate them.",
   "instance.deactivateHint": "Blocks sign-in and disables their keys until reactivated.",
   "instance.deactivateQuestion": "Deactivate {name}?",
-  "instance.default": "Default",
   "instance.degraded": "Degraded",
   "instance.deleteNamed": "Delete {name}",
   "instance.deleteNow": "Delete now",

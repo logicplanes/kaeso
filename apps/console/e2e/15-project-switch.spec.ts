@@ -1,5 +1,5 @@
 import type { Page, Route } from "@playwright/test";
-import { expect, test, signInAsOwner } from "./support";
+import { expect, test, FIRST_PROJECT, signInAsOwner } from "./support";
 
 test.describe.configure({ mode: "serial" });
 
@@ -175,7 +175,7 @@ test("while a project page's code and rights are still loading, its pending page
     if (released) await route.continue();
     else held.push(route);
   });
-  await page.getByRole("main").getByRole("row").filter({ hasText: "Default project" }).first().click();
+  await page.getByRole("main").getByRole("row").filter({ hasText: FIRST_PROJECT }).first().click();
   await expect(page).toHaveURL(/\/projects\/proj_[^/]+$/);
   await expect(projectsHeading).toBeHidden();
   // The pending page's skeleton is decorative and hidden from assistive technology, so no role finds it.

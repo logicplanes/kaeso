@@ -905,13 +905,7 @@ async fn another_organization_can_neither_see_nor_call_a_custom_provider_and_may
         .as_str()
         .unwrap()
         .to_owned();
-    let bob_project = app
-        .get(&format!("/orgs/{bob_org}/projects"), &bob)
-        .await
-        .body["data"][0]["id"]
-        .as_str()
-        .unwrap()
-        .to_owned();
+    let bob_project = common::create_project(&app, &bob_org, &bob, "Bob's project").await;
     let bob_owner = Owner {
         cookie: bob.clone(),
         user_id: String::new(),

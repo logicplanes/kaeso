@@ -373,29 +373,8 @@ impl Place {
     }
 }
 
-async fn place(env: &Env, org: &str, name: Option<&str>) -> Place {
-    let project = match name {
-        Some(name) => {
-            let r = env
-                .app
-                .post(
-                    &format!("/orgs/{org}/projects"),
-                    json!({ "name": name }),
-                    Some(&env.owner.cookie),
-                )
-                .await;
-            assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
-            r.body["id"].as_str().unwrap().to_owned()
-        }
-        None => env
-            .app
-            .get(&format!("/orgs/{org}/projects"), &env.owner.cookie)
-            .await
-            .body["data"][0]["id"]
-            .as_str()
-            .unwrap()
-            .to_owned(),
-    };
+async fn place(env: &Env, org: &str, name: &str) -> Place {
+    let project = common::create_project(&env.app, org, &env.owner.cookie, name).await;
     let base = format!("/orgs/{org}/projects/{project}");
     let r = env
         .app
@@ -426,7 +405,7 @@ async fn three_places(env: &Env) -> [Place; 3] {
         base: base(env),
         key: env.key.clone(),
     };
-    let second = place(env, &env.owner.org_id, Some("Second")).await;
+    let second = place(env, &env.owner.org_id, "Second").await;
     let r = env
         .app
         .post(
@@ -446,7 +425,7 @@ async fn three_places(env: &Env) -> [Place; 3] {
         )
         .await;
     assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
-    let elsewhere = place(env, &org, None).await;
+    let elsewhere = place(env, &org, "Elsewhere").await;
     [first, second, elsewhere]
 }
 

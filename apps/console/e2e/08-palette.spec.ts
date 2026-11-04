@@ -1,7 +1,7 @@
-import { expect, test, signInAsOwner } from "./support";
+import { expect, test, signInAsOwner, signInToProject } from "./support";
 
 test("the palette finds a key, opens it, and lists it under Recent", async ({ page }) => {
-  await signInAsOwner(page);
+  await signInToProject(page);
   await page.keyboard.press("ControlOrMeta+k");
   const palette = page.getByRole("dialog", { name: /command/i });
   await expect(palette.getByRole("combobox")).toBeFocused();

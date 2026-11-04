@@ -189,8 +189,6 @@ pub struct ProjectRefView {
     pub name: String,
     #[doc = "Its picture; `null` without one."]
     pub avatar_url: Option<String>,
-    #[doc = "Whether it is the org's default project."]
-    pub is_default: bool,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -378,7 +376,6 @@ pub async fn member(
                 id: ProjectId::from_uuid(p.project_id),
                 name: p.project_name.clone(),
                 avatar_url: super::views::avatar_url(p.project_avatar.as_deref()),
-                is_default: p.is_default,
             },
             role: Some(role),
             rights,

@@ -14,7 +14,7 @@ Open **Organization settings** › **Members** and choose **Invite members**. Th
 
 1. **Who are you inviting?** Type or paste one or more addresses. An address you typed counts as soon as you continue; one that isn't an email address is marked until you remove or fix it.
 2. **What can they do in the organization?** Choose their organization role.
-3. **Which projects?** Add the projects they join, each with a role. They always join the default project.
+3. **Which projects?** Add the projects they join, each with a role. They join no other project; you can add them to more later.
 
 **Send invitation** emails each person a link that works for 21 days. **Invites** lists the pending invitations, where you can **Resend** or **Revoke** each one. Accepted, revoked and expired invitations are under **All**.
 
@@ -30,7 +30,7 @@ Organizations have six built-in roles: **Owner**, **Admin**, **Billing**, **Deve
 
 - Owners hold every right, including rights that later releases add. Only owners make, change or remove owners, and an organization always keeps at least one.
 - Owners and admins hold every right in every project.
-- In the default project, owners and admins start as Admin, developers as Developer, and everyone else as Viewer.
+- Everyone else works only in the projects they are added to.
 
 Two rules apply to every change you make. You can give only rights you hold yourself. And you can change only members who hold no right that you lack.
 

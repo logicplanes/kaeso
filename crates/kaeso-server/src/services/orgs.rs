@@ -1,14 +1,12 @@
-use kaeso_core::id::{OrgId, ProjectId, UserId};
-use kaeso_core::rights::{OrgPreset, ProjectPreset};
+use kaeso_core::id::{OrgId, UserId};
+use kaeso_core::rights::OrgPreset;
 use kaeso_mail::Actor;
 use kaeso_store::StoreError;
 use kaeso_store::pg::members::{self, Grant};
-use kaeso_store::pg::{instance, orgs, projects};
+use kaeso_store::pg::{instance, orgs};
 
 use crate::platform::audit::Action;
 use crate::services::mail_lang;
-
-pub const DEFAULT_PROJECT_NAME: &str = "Default project";
 
 pub fn org_grant(preset: OrgPreset) -> Grant {
     Grant {
@@ -17,24 +15,11 @@ pub fn org_grant(preset: OrgPreset) -> Grant {
     }
 }
 
-pub fn project_grant(preset: ProjectPreset) -> Grant {
-    Grant {
-        preset: preset.as_str().to_owned(),
-        ..Grant::default()
-    }
-}
-
-pub fn default_project_preset(org: &Grant) -> ProjectPreset {
-    org.preset
-        .parse::<OrgPreset>()
-        .map_or(ProjectPreset::Viewer, OrgPreset::default_project_preset)
-}
-
 pub async fn create(
     tx: &mut sqlx::PgConnection,
     name: &str,
     owner: UserId,
-) -> Result<(OrgId, ProjectId), StoreError> {
+) -> Result<OrgId, StoreError> {
     let settings = instance::get(&mut *tx).await?;
     let org = OrgId::new();
     orgs::insert(
@@ -45,15 +30,6 @@ pub async fn create(
         settings.content_retention_days,
     )
     .await?;
-    let project = ProjectId::new();
-    projects::insert(
-        &mut *tx,
-        project.uuid(),
-        org.uuid(),
-        DEFAULT_PROJECT_NAME,
-        true,
-    )
-    .await?;
     members::insert_org(
         &mut *tx,
         org.uuid(),
@@ -61,33 +37,7 @@ pub async fn create(
         &org_grant(OrgPreset::Owner),
     )
     .await?;
-    members::insert_project(
-        &mut *tx,
-        project.uuid(),
-        owner.uuid(),
-        &project_grant(OrgPreset::Owner.default_project_preset()),
-    )
-    .await?;
-    Ok((org, project))
-}
-
-pub async fn add_member(
-    tx: &mut sqlx::PgConnection,
-    org: OrgId,
-    user: UserId,
-    grant: &Grant,
-) -> Result<bool, StoreError> {
-    let added = members::insert_org(&mut *tx, org.uuid(), user.uuid(), grant).await?;
-    if added && let Some(default) = projects::default_of(&mut *tx, org.uuid()).await? {
-        members::insert_project(
-            &mut *tx,
-            default.id,
-            user.uuid(),
-            &project_grant(default_project_preset(grant)),
-        )
-        .await?;
-    }
-    Ok(added)
+    Ok(org)
 }
 
 pub async fn notify_deletion(

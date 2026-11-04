@@ -30,12 +30,12 @@ describe("a member's sheet", () => {
         every_project: [{ right: "project.view", sources: [{ kind: "org_role", role: { id: "developer", kind: "builtin", name: "Developer" } }] }],
         projects: [
           {
-            project: { id: PROJECT, name: "Checkout assistant", avatar_url: null, is_default: false },
+            project: { id: PROJECT, name: "Checkout assistant", avatar_url: null },
             role: { id: "admin", kind: "builtin", name: "Admin" },
             rights: [],
             removed: [],
           },
-          { project: { id: "proj_support", name: "Support triage", avatar_url: null, is_default: false }, role: null, rights: [], removed: [] },
+          { project: { id: "proj_support", name: "Support triage", avatar_url: null }, role: null, rights: [], removed: [] },
         ],
       }),
     );
@@ -58,9 +58,7 @@ describe("a member's sheet", () => {
     membersData([ada, grace], (user) =>
       memberRights({
         user_id: user,
-        projects: [
-          { project: { id: PROJECT, name: "Checkout assistant", avatar_url: "/avatars/p.webp", is_default: false }, role: null, rights: [], removed: [] },
-        ],
+        projects: [{ project: { id: PROJECT, name: "Checkout assistant", avatar_url: "/avatars/p.webp" }, role: null, rights: [], removed: [] }],
       }),
     );
     const { sheet, user, router } = await openSheet(OTHER_USER, "Grace Hopper");

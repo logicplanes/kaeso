@@ -39,13 +39,6 @@ fn the_api_names_every_provider_a_key_can_be_for() {
     }
 }
 
-async fn default_project(app: &App, owner: &Owner) -> String {
-    let r = app
-        .get(&format!("/orgs/{}/projects", owner.org_id), &owner.cookie)
-        .await;
-    r.body["data"][0]["id"].as_str().unwrap().to_owned()
-}
-
 fn ids(owner: &Owner, project: &str) -> (OrgId, ProjectId) {
     (owner.org_id.parse().unwrap(), project.parse().unwrap())
 }
@@ -194,7 +187,7 @@ async fn projects_use_their_assigned_key_then_the_default() {
     let app = App::start(&s).await;
     let other = app.second_instance(&s).await;
     let owner = app.setup().await;
-    let project = default_project(&app, &owner).await;
+    let project = common::first_project(&app, &owner).await;
     let second = app
         .post(
             &format!("/orgs/{}/projects", owner.org_id),
@@ -243,7 +236,7 @@ async fn projects_use_their_assigned_key_then_the_default() {
     let r = assign(&app, &owner, &second_id, &[&project]).await;
     assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
     assert_eq!(r.body["projects"][0]["id"], project);
-    assert_eq!(r.body["projects"][0]["name"], "Default project");
+    assert_eq!(r.body["projects"][0]["name"], "Checkout");
     assert_eq!(
         secret_of(&app, &owner, &project).await.unwrap(),
         SECOND_SECRET
@@ -278,7 +271,8 @@ async fn projects_use_their_assigned_key_then_the_default() {
         cookie: owner.cookie.clone(),
         user_id: owner.user_id.clone(),
     };
-    let foreign = default_project(&app, &elsewhere).await;
+    let foreign =
+        common::create_project(&app, &elsewhere.org_id, &elsewhere.cookie, "Elsewhere").await;
     let bad = assign(&app, &owner, &second_id, &[&project, &foreign]).await;
     assert_eq!(bad.error_type(), "invalid_request", "{:?}", bad.body);
     let foreign_key = assign(&app, &elsewhere, &second_id, &[&foreign]).await;
@@ -423,7 +417,7 @@ async fn master_keys_rotate_without_reentering_credentials() {
     let s = TestServices::start().await;
     let app = App::start(&s).await;
     let owner = app.setup().await;
-    let project = default_project(&app, &owner).await;
+    let project = common::first_project(&app, &owner).await;
     let r = app
         .post(
             &format!("/orgs/{}/credentials", owner.org_id),
@@ -637,7 +631,7 @@ async fn a_chatgpt_account_becomes_a_provider_key_without_showing_its_tokens() {
             .iter()
             .any(|s| s == "chatgpt.tokens.use.direct")
     );
-    let project = default_project(&app, &owner).await;
+    let project = common::first_project(&app, &owner).await;
     let secret = secret_of(&app, &owner, &project).await.unwrap();
     assert_eq!(secret, tokens.access_token);
     assert!(issued.contains(&secret));
@@ -1241,7 +1235,7 @@ async fn an_account_renews_once_however_many_instances_need_it() {
     let created = common::sign_in_chatgpt(&app, &owner, &oauth, "Plan", "ada@example.com").await;
     let id = created["id"].as_str().unwrap().to_owned();
     let other = app.second_instance(&s).await;
-    let project = default_project(&app, &owner).await;
+    let project = common::first_project(&app, &owner).await;
     let (org, project_id) = ids(&owner, &project);
     let first = secret_of(&app, &owner, &project).await.unwrap();
     assert_eq!(secret_of(&other, &owner, &project).await.unwrap(), first);
@@ -1303,7 +1297,7 @@ async fn an_account_whose_session_ended_asks_for_a_new_sign_in() {
     let owner = app.setup().await;
     let created = common::sign_in_chatgpt(&app, &owner, &oauth, "Plan", "ada@example.com").await;
     let id = created["id"].as_str().unwrap().to_owned();
-    let project = default_project(&app, &owner).await;
+    let project = common::first_project(&app, &owner).await;
     app.clock.advance(time::Duration::minutes(56));
     oauth.set_fault(OAuthFault::SignedOut);
     let err = secret_of(&app, &owner, &project).await.unwrap_err();
@@ -1354,7 +1348,7 @@ async fn renewal_waits_for_openai_and_outlasts_its_outages() {
     oauth.refresh_not_before(7200);
     common::sign_in_chatgpt(&app, &owner, &oauth, "Plan", "ada@example.com").await;
     oauth.refresh_not_before(0);
-    let project = default_project(&app, &owner).await;
+    let project = common::first_project(&app, &owner).await;
     let first = secret_of(&app, &owner, &project).await.unwrap();
 
     app.clock.advance(time::Duration::minutes(57));
@@ -1403,7 +1397,7 @@ async fn a_renewal_is_kept_when_the_request_that_started_it_goes_away() {
     let owner = app.setup().await;
     let created = common::sign_in_chatgpt(&app, &owner, &oauth, "Plan", "ada@example.com").await;
     let id = created["id"].as_str().unwrap().to_owned();
-    let project = default_project(&app, &owner).await;
+    let project = common::first_project(&app, &owner).await;
     let (org, project_id) = ids(&owner, &project);
     let before = common::account_tokens(&app, &owner, &id).await;
 
@@ -1658,7 +1652,7 @@ async fn a_grok_account_signs_in_with_a_device_code_checked_once_per_call() {
     assert_eq!(tokens.client_id, GROK_CLIENT);
     assert_eq!(tokens.sub, "sub-ada");
     assert!(!tokens.id_token.is_empty());
-    let project = default_project(&app, &owner).await;
+    let project = common::first_project(&app, &owner).await;
     assert_eq!(
         secret_for(&app, &owner, &project, "xai").await.unwrap(),
         tokens.access_token
@@ -1905,7 +1899,7 @@ async fn a_grok_account_renews_in_its_last_two_minutes_once_across_instances() {
     let created = common::sign_in_grok(&app, &owner, &grok, "Grok", "ada@example.com").await;
     let id = created["id"].as_str().unwrap().to_owned();
     let other = app.second_instance(&s).await;
-    let project = default_project(&app, &owner).await;
+    let project = common::first_project(&app, &owner).await;
     let (org, project_id) = ids(&owner, &project);
     let first = secret_for(&app, &owner, &project, "xai").await.unwrap();
     let before = common::account_tokens(&app, &owner, &id).await;
@@ -1954,7 +1948,7 @@ async fn a_grok_plan_without_api_access_or_a_lost_session_stops_requests() {
     let owner = app.setup().await;
     let created = common::sign_in_grok(&app, &owner, &grok, "Grok", "ada@example.com").await;
     let id = created["id"].as_str().unwrap().to_owned();
-    let project = default_project(&app, &owner).await;
+    let project = common::first_project(&app, &owner).await;
     app.clock.advance(time::Duration::minutes(29));
     grok.set_fault(Fault::NoApiAccess);
     assert_eq!(
@@ -2152,7 +2146,7 @@ async fn only_xais_own_refusal_reads_as_a_plan_without_api_access() {
     grok.set_fault(Fault::None);
     let created = common::sign_in_grok(&app, &owner, &grok, "Grok", "ada@example.com").await;
     let id = created["id"].as_str().unwrap().to_owned();
-    let project = default_project(&app, &owner).await;
+    let project = common::first_project(&app, &owner).await;
     let first = secret_for(&app, &owner, &project, "xai").await.unwrap();
     app.clock.advance(time::Duration::minutes(29));
     grok.set_fault(Fault::Challenge);

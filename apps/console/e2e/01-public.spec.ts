@@ -1,4 +1,4 @@
-import { expect, test, NEW_PASSWORD, OWNER, PASSWORD, clearMail, enterEmail, expectSignedIn, mailLink, signInWithPassword } from "./support";
+import { expect, test, FIRST_PROJECT, NEW_PASSWORD, OWNER, PASSWORD, clearMail, enterEmail, expectSignedIn, mailLink, signInWithPassword } from "./support";
 import { setupLinkToken } from "./stack";
 
 test.describe.configure({ mode: "serial" });
@@ -16,8 +16,18 @@ test("setup creates the first user and organization", async ({ page }) => {
   await page.getByLabel("Organization name").fill(OWNER.org);
   await page.getByRole("button", { name: "Set up Kaeso" }).click();
   await expectSignedIn(page);
-  await expect(page).toHaveTitle(/Overview · Default · Kaeso|Overview · .* · Kaeso/);
+  await expect(page).toHaveURL(/\/orgs\/[^/]+$/);
+  await expect(page).toHaveTitle(`Overview · ${OWNER.org} · Kaeso`);
   await expect(page.getByRole("button", { name: OWNER.org, description: "Switch or open settings", exact: true })).toBeVisible();
+
+  const main = page.getByRole("main");
+  await expect(main.getByText("No projects you can see")).toBeVisible();
+  await main.getByRole("link", { name: "Create project" }).click();
+  const create = page.getByRole("dialog", { name: "Create project" });
+  await create.getByLabel("Name").fill(FIRST_PROJECT);
+  await create.getByRole("button", { name: "Create project" }).click();
+  await expect(page).toHaveURL(/\/orgs\/[^/]+\/projects\/[^/]+$/);
+  await expect(page.getByRole("navigation", { name: "Console" }).getByText(FIRST_PROJECT, { exact: true })).toBeVisible();
 });
 
 test("the setup page of a set-up install says so and leads to sign-in", async ({ page }) => {

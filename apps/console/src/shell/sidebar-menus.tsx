@@ -48,13 +48,7 @@ export function ProjectMenu({
           }
         >
           {list.map((p) => (
-            <Menu.RadioItem
-              key={p.id}
-              value={p.id}
-              closeOnClick
-              leading={<Picture project={p} />}
-              {...(p.is_default ? { hint: t("shell.defaultProject", "Default") } : {})}
-            >
+            <Menu.RadioItem key={p.id} value={p.id} closeOnClick leading={<Picture project={p} />}>
               {p.name}
             </Menu.RadioItem>
           ))}

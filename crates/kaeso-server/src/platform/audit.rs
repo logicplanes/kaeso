@@ -99,7 +99,6 @@ actions! {
         PlatformKeyRotate = "platform_key.rotate",
         ProjectArchive = "project.archive",
         ProjectCreate = "project.create",
-        ProjectDefault = "project.default",
         ProjectKeyPolicy = "project.key_policy",
         ProjectMemberAdd = "project.member_add",
         ProjectMemberRemove = "project.member_remove",

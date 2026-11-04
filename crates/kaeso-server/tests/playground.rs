@@ -102,7 +102,7 @@ async fn captured() -> Env {
 }
 
 async fn join(app: &App, owner: &Owner, email: &str, preset: &str) -> (String, String) {
-    common::join(
+    common::join_first_project(
         app,
         owner,
         json!({ "email": email, "preset": preset }),

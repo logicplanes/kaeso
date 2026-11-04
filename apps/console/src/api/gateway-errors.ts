@@ -199,9 +199,6 @@ const messages = (): Rule[] => [
   rule("errors.chooseAnotherMember", () => t("errors.chooseAnotherMember", "Choose another member.")),
   rule("errors.newOwnerActiveMember", () => t("errors.newOwnerActiveMember", "The new owner must be an active member of the organization.")),
   rule("errors.memberHoldsMoreRights", () => t("errors.memberHoldsMoreRights", "You can't change a member who holds rights you don't hold.")),
-  rule("errors.pendingJoinsHoldMore", () =>
-    t("errors.pendingJoinsHoldMore", "Pending invitations or SSO sign-ups would get rights you don't hold in this project."),
-  ),
   rule("errors.serviceAccountHoldsMoreRights", () =>
     t("errors.serviceAccountHoldsMoreRights", "You can't change a service account that holds rights you don't hold."),
   ),
@@ -325,8 +322,6 @@ const messages = (): Rule[] => [
   rule("errors.projectArchivedModels", () => t("errors.projectArchivedModels", "The project is archived; its models cannot change.")),
   rule("errors.projectArchivedCalls", () => t("errors.projectArchivedCalls", "The project is archived; its models cannot be called.")),
   rule("errors.orgMaxDays", (v) => t("errors.orgMaxDays", "The organization allows at most {max} days.", v)),
-  rule("errors.defaultProjectArchive", () => t("errors.defaultProjectArchive", "The default project cannot be archived; make another one the default first.")),
-  rule("errors.archivedNotDefault", () => t("errors.archivedNotDefault", "An archived project cannot be the default.")),
   rule("errors.onlyActiveMembersJoin", () => t("errors.onlyActiveMembersJoin", "Only active members of the organization can join its projects.")),
   rule("errors.alreadyProjectMember", () => t("errors.alreadyProjectMember", "The user is already a member of this project.")),
   rule("errors.notProjectMember", () => t("errors.notProjectMember", "This user is not a member of the project.")),
