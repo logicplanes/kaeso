@@ -218,6 +218,7 @@ function RuleValue({ ctx, step, rule }: { ctx: InspectorContext; step: DraftCond
           <Select
             aria-label={t("models.route.comparison", "Comparison")}
             fullWidth
+            className={presence ? WIDE : undefined}
             disabled={disabled}
             value={rule.op}
             onValueChange={(op: string) => set({ ...rule, op: op as typeof rule.op, value: op === "present" || op === "absent" ? null : (rule.value ?? "") })}
@@ -257,6 +258,7 @@ function RuleValue({ ctx, step, rule }: { ctx: InspectorContext; step: DraftCond
             aria-label={t("models.route.formats", "API formats")}
             multiple
             fullWidth
+            className={WIDE}
             disabled={disabled}
             placeholder={t("models.route.chooseFormats", "Choose formats")}
             value={rule.value}
@@ -282,6 +284,7 @@ function RuleValue({ ctx, step, rule }: { ctx: InspectorContext; step: DraftCond
           <Select
             aria-label={fieldLabel.feature()}
             fullWidth
+            className={WIDE}
             disabled={disabled}
             value={rule.value}
             onValueChange={(v: string) => set({ ...rule, value: v as RouteFeature })}
@@ -305,6 +308,7 @@ function RuleValue({ ctx, step, rule }: { ctx: InspectorContext; step: DraftCond
           />
           <Input
             aria-label={fieldLabel.input_tokens()}
+            className={WIDE}
             inputMode="numeric"
             disabled={disabled}
             value={rule.value ? String(rule.value) : ""}
@@ -338,6 +342,7 @@ function RuleValue({ ctx, step, rule }: { ctx: InspectorContext; step: DraftCond
           />
           <Combobox
             aria-label={fieldLabel[rule.field]()}
+            className={WIDE}
             multiple
             disabled={disabled}
             loading={loading}
@@ -351,6 +356,8 @@ function RuleValue({ ctx, step, rule }: { ctx: InspectorContext; step: DraftCond
     }
   }
 }
+
+const WIDE = "col-span-2";
 
 const listed = <T, O>(items: T[] | undefined, option: (item: T) => O): O[] => (items ?? []).map(option);
 
@@ -407,17 +414,19 @@ export function ConditionPanel({ ctx, step }: { ctx: InspectorContext; step: Dra
               />
             )}
           </div>
-          <Select
-            aria-label={t("models.route.ruleField", "What the rule reads")}
-            fullWidth
-            disabled={ctx.readOnly}
-            value={rule.field}
-            onValueChange={(field: string) =>
-              set((s) => ({ ...s, rules: s.rules.map((r) => (r.id === rule.id ? blankRule(field as RouteRule["field"], r.id) : r)) }))
-            }
-            options={(Object.keys(fieldLabel) as RouteRule["field"][]).map((f) => ({ value: f, label: fieldLabel[f]() }))}
-          />
-          <RuleValue ctx={ctx} step={step} rule={rule} />
+          <div className="grid grid-cols-2 gap-8">
+            <Select
+              aria-label={t("models.route.ruleField", "What the rule reads")}
+              fullWidth
+              disabled={ctx.readOnly}
+              value={rule.field}
+              onValueChange={(field: string) =>
+                set((s) => ({ ...s, rules: s.rules.map((r) => (r.id === rule.id ? blankRule(field as RouteRule["field"], r.id) : r)) }))
+              }
+              options={(Object.keys(fieldLabel) as RouteRule["field"][]).map((f) => ({ value: f, label: fieldLabel[f]() }))}
+            />
+            <RuleValue ctx={ctx} step={step} rule={rule} />
+          </div>
         </section>
       ))}
       {!ctx.readOnly && step.rules.length < MAX_RULES && (
@@ -583,7 +592,7 @@ export function AliasPanel({
         <Select
           label={t("models.route.startFrom", "Start from")}
           fullWidth
-          value={templates.value ?? undefined}
+          value={templates.value}
           placeholder={t("models.route.ownRoute", "Your own route")}
           onValueChange={(v: string) => templates.onPick(v as Template)}
           options={TEMPLATES.map((x) => ({ value: x, label: templateLabel[x](), description: templateHint[x]() }))}

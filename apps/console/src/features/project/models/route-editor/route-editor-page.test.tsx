@@ -2,7 +2,7 @@ import { screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { ORG, PROJECT, USER, signedIn, without } from "~/test/fixtures";
 import { notifications } from "~/test/fixtures/org";
-import { alias, apiKey, catalogueModel, modelRoute, modelsApi, projectData, projectPath } from "~/test/fixtures/project";
+import { alias, apiKey, catalogueModel, modelRoute, modelsApi, projectData, projectMember, projectPath } from "~/test/fixtures/project";
 import { apiError, on, page, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
 
@@ -57,9 +57,13 @@ const sturdy = () =>
     ],
   });
 
-function setUp({ rights, one = sturdy() }: { rights?: string[]; one?: ReturnType<typeof alias> } = {}) {
+function setUp({
+  rights,
+  one = sturdy(),
+  members = [],
+}: { rights?: string[]; one?: ReturnType<typeof alias>; members?: ReturnType<typeof projectMember>[] } = {}) {
   signedIn(rights ? { projectRights: rights } : {});
-  projectData({ aliases: [one], models: models() });
+  projectData({ aliases: [one], models: models(), members });
   modelsApi({ models: models() });
   on("GET", ONE_ALIAS, one);
 }
@@ -208,8 +212,8 @@ describe("RouteEditorPage", () => {
     expect(dialog).toHaveTextContent('"model": "cm_haiku"');
   });
 
-  it("lists versions and restores one", async () => {
-    setUp();
+  it("shows the alias's own audit log and restores a version from an event", async () => {
+    setUp({ members: [projectMember({ user: { id: "usr_grace", name: "Grace Hopper" } })] });
     on("GET", AUDIT, ({ query }: { query: URLSearchParams }) =>
       query.get("target") === "al_fast"
         ? page([
@@ -218,6 +222,10 @@ describe("RouteEditorPage", () => {
               at: "2026-11-03T10:00:00Z",
               action: "alias.update",
               actor: { kind: "user", id: USER },
+              ip: "198.51.100.2",
+              target_kind: "alias",
+              target_id: "al_fast",
+              before: { name: "fast", route: modelRoute("cm_sonnet") },
               after: { name: "fast", route: sturdy().route },
             },
             {
@@ -225,6 +233,7 @@ describe("RouteEditorPage", () => {
               at: "2026-11-02T10:00:00Z",
               action: "alias.update",
               actor: { kind: "user", id: USER },
+              ip: "198.51.100.15",
               after: { name: "fast" },
             },
             {
@@ -232,6 +241,7 @@ describe("RouteEditorPage", () => {
               at: "2026-11-02T09:00:00Z",
               action: "alias.update",
               actor: { kind: "service_account", id: "sa_deploy" },
+              ip: "198.51.100.12",
               after: { name: "fast", route: modelRoute("cm_sonnet") },
             },
             {
@@ -239,6 +249,7 @@ describe("RouteEditorPage", () => {
               at: "2026-11-01T10:00:00Z",
               action: "alias.create",
               actor: { kind: "user", id: USER },
+              ip: "198.51.100.1",
               after: { name: "fast", catalogue_model_id: "cm_haiku" },
             },
           ])
@@ -246,27 +257,43 @@ describe("RouteEditorPage", () => {
     );
     const { user } = await renderApp(projectPath("models/aliases/al_fast"));
 
-    await user.click(await screen.findByRole("tab", { name: "Versions" }));
-    const created = await screen.findByRole("gridcell", { name: /^Created by/ });
-    await user.click(created);
-    expect(await step(/Claude Haiku 4\.5/)).toBeInTheDocument();
-    expect(screen.queryByRole("treeitem", { name: stepName(/Claude Sonnet 4\.5/) })).not.toBeInTheDocument();
-    await user.click(await step(/Claude Haiku 4\.5/));
-    expect(screen.queryByRole("heading", { name: "Model" })).not.toBeInTheDocument();
-    await user.click(screen.getByRole("gridcell", { name: /^Created by/ }));
-    expect(await step(/Claude Sonnet 4\.5/)).toBeInTheDocument();
-    await user.click(screen.getByRole("gridcell", { name: /^Saved by .*Live/ }));
-    expect(await screen.findByText("It routes like your route does.")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Restore this version" })).not.toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Show your route" }));
-    expect(screen.queryByText("It routes like your route does.")).not.toBeInTheDocument();
-    await user.click(screen.getByRole("gridcell", { name: /^Created by/ }));
-    expect(await screen.findByText("Your route differs; restore this version to edit it.")).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Changes as JSON" }));
-    expect(await screen.findByText("This version → your route")).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Restore this version" }));
+    await user.click(await screen.findByRole("tab", { name: "Audit log" }));
+    const table = await screen.findByRole("grid", { name: "Audit log" });
+    const row = (ip: string) => within(table).getByText(ip).closest('[role="row"]') as HTMLElement;
+    await within(table).findByText("198.51.100.2");
+    expect(requests("GET", AUDIT).at(-1)?.query.get("target")).toBe("al_fast");
+    expect(within(row("198.51.100.1")).getByText("Alias created")).toBeInTheDocument();
+    expect(within(table).queryByRole("columnheader", { name: "Target" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("combobox", { name: "Action" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("searchbox", { name: "Target id" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("tree")).not.toBeInTheDocument();
+    await user.click(screen.getByRole("combobox", { name: "Actor" }));
+    expect(await screen.findByRole("option", { name: /Grace Hopper/ })).toBeInTheDocument();
+    await user.keyboard("{Escape}");
+
+    await user.click(within(row("198.51.100.2")).getByText("Alias changed"));
+    const live = await screen.findByRole("dialog", { name: /Alias changed/ });
+    expect(within(live).getByRole("button", { name: "Restore this version" })).toHaveAttribute("aria-disabled", "true");
+    await user.click(within(row("198.51.100.15")).getByText("Alias changed"));
+    await waitFor(() =>
+      expect(within(screen.getByRole("dialog", { name: /Alias changed/ })).queryByRole("button", { name: "Restore this version" })).not.toBeInTheDocument(),
+    );
+    await user.click(within(row("198.51.100.1")).getByText("Alias created"));
+    const created = await screen.findByRole("dialog", { name: /Alias created/ });
+    expect(within(created).getByRole("button", { name: "Restore this version" })).not.toHaveAttribute("aria-disabled");
+
+    await user.click(within(row("198.51.100.12")).getByText("Alias changed"));
+    const older = await screen.findByRole("dialog", { name: /Alias changed/ });
+    await user.click(within(older).getByRole("button", { name: "Restore this version" }));
     expect(await notifications().findByText("Version restored; save to make it live")).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Editor" })).toHaveAttribute("aria-selected", "true");
+    expect(await step(/Claude Sonnet 4\.5/)).toBeInTheDocument();
+    expect(screen.queryByRole("treeitem", { name: stepName(/Claude Haiku 4\.5/) })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Save" })).not.toHaveAttribute("aria-disabled");
+    await user.click(screen.getByRole("button", { name: "Back to aliases" }));
+    const ask = await screen.findByRole("alertdialog", { name: "Leave without saving?" });
+    await user.click(within(ask).getByRole("button", { name: "Cancel" }));
+    expect(window.location.pathname).toBe(`/orgs/${ORG}/projects/${PROJECT}/models/aliases/al_fast`);
   });
 
   it("shows the route read-only without Manage models", async () => {
@@ -374,6 +401,7 @@ describe("RouteEditorPage", () => {
     await user.click(within(confirm).getByRole("button", { name: "Delete alias" }));
     expect(await notifications().findByText("Alias fast deleted")).toBeInTheDocument();
     await waitFor(() => expect(window.location.pathname).toBe(`/orgs/${ORG}/projects/${PROJECT}/models`));
+    expect(requests("GET", ONE_ALIAS)).toHaveLength(1);
   });
 
   it("stays on the page when leaving is called off", async () => {
@@ -388,26 +416,33 @@ describe("RouteEditorPage", () => {
     expect(window.location.pathname).toBe(`/orgs/${ORG}/projects/${PROJECT}/models/aliases/al_fast`);
   });
 
-  it("has no versions to show for an alias with none, and goes back to the editor", async () => {
+  it("offers no restore for a deletion, says when the alias has no events, and goes back to the editor", async () => {
     setUp();
-    on("GET", AUDIT, ({ query }: { query: URLSearchParams }) =>
-      page(
-        query.get("target") === "al_fast"
-          ? [
-              { id: "evt_3", at: "2026-11-03T12:00:00Z", action: "alias.delete", actor: { kind: "service_account", id: "sa_deploy" }, after: null },
-              { id: "evt_4", at: "2026-11-03T12:00:00Z", action: "alias.update", actor: { kind: "user", id: USER }, after: { name: 7 } },
-            ]
-          : [],
-      ),
-    );
+    const events = [
+      { id: "evt_3", at: "2026-11-03T12:00:00Z", action: "alias.delete", actor: { kind: "service_account", id: "sa_deploy" }, ip: "198.51.100.3", after: null },
+      { id: "evt_4", at: "2026-11-03T11:00:00Z", action: "alias.update", actor: { kind: "user", id: USER }, ip: "198.51.100.4", after: { name: 7 } },
+    ];
+    on("GET", AUDIT, () => page(events));
     const { user } = await renderApp(projectPath("models/aliases/al_fast"));
 
-    await user.click(await screen.findByRole("tab", { name: "Versions" }));
-    expect(await screen.findByText("No versions yet")).toBeInTheDocument();
-    await user.click(await step(/Claude Sonnet 4\.5/));
-    expect(screen.queryByRole("heading", { name: "Model" })).not.toBeInTheDocument();
+    await user.click(await screen.findByRole("tab", { name: "Audit log" }));
+    const table = await screen.findByRole("grid", { name: "Audit log" });
+    await user.click(await within(table).findByText("198.51.100.3"));
+    const deleted = await screen.findByRole("dialog", { name: /Alias deleted/ });
+    expect(within(deleted).queryByRole("button", { name: "Restore this version" })).not.toBeInTheDocument();
+    await user.click(within(table).getByText("198.51.100.4"));
+    await waitFor(() => expect(screen.queryByRole("button", { name: "Restore this version" })).not.toBeInTheDocument());
     await user.click(screen.getByRole("tab", { name: "Editor" }));
+    await user.click(await step(/Claude Sonnet 4\.5/));
     expect(await screen.findByRole("heading", { name: "Model" })).toBeInTheDocument();
+  });
+
+  it("says when an alias has no events yet", async () => {
+    setUp();
+    on("GET", AUDIT, () => page([]));
+    const { user } = await renderApp(projectPath("models/aliases/al_fast"));
+    await user.click(await screen.findByRole("tab", { name: "Audit log" }));
+    expect(await screen.findByText("No events yet")).toBeInTheDocument();
   });
 
   it("saves nothing from the keyboard when nothing changed, and warns before the tab closes with changes", async () => {

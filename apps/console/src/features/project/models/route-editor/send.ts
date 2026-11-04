@@ -89,6 +89,7 @@ export function pathIds(root: DraftStep, walked: readonly Walked[]): string[] {
 export type Sent = {
   prompt: string;
   route: RouteStep;
+  headers: { name: string; value: string }[];
   response: ResponseState;
   walked: Walked[] | null;
   status: number | null;
@@ -121,7 +122,15 @@ export function useRouteSend(org: string, project: string) {
       controller.current?.abort();
       const abort = new AbortController();
       controller.current = abort;
-      let current: Sent = { prompt, route: request.route, response: newResponse(performance.now()), walked: null, status: null, requestId: null };
+      let current: Sent = {
+        prompt,
+        route: request.route,
+        headers: request.headers ?? [],
+        response: newResponse(performance.now()),
+        walked: null,
+        status: null,
+        requestId: null,
+      };
       const publish = (change: (s: Sent) => Sent, now: boolean) => {
         current = change(current);
         live.current = current;

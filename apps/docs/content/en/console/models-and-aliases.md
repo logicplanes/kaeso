@@ -74,11 +74,13 @@ On the **Aliases** tab, choose **Create alias**. The route editor fills the page
 
 Conditions and splits branch downward, their branches side by side; a model's fallbacks hang under it on a dashed line, in the order they are tried, so the route stays as narrow as its widest row of steps. A step's menu, from its **⋯** or with Shift F10, puts a step before it, moves a model to be tried earlier or later, swaps a condition's **Then** and **Else**, or removes it. ⌘Z undoes, ⌘⇧Z redoes and ⌘S saves.
 
-Requests take the route once you choose **Save**. **Versions** lists every save, with the live one marked **Live**: choose one to see its route on the canvas, its changes as JSON, and restore it.
+Requests take the route once you choose **Save**. **Audit log** is the [audit log](organizations-and-projects.md#read-the-audit-log) of this alias alone: who created, changed or deleted it, and when, filtered by actor and days. Choose an entry to see the alias before and after; **Restore this version** puts that route back in the editor, and it takes effect once you save it.
 
 ### Test a route
 
-**Test** has two modes. **Send** sends a message through the route as you, saved or not, with the headers you add. The canvas colors each step the request tried by its answer: green for a 2xx status, amber for a 4xx and red for a 5xx, with the status and, for a step that failed, its time. The panel lists the steps it took, then the reply. The request counts against your limits, is charged to the project and appears in the [request log](request-logs.md) with the source **Playground**; **Open in request log** shows it. **Preview** describes a request instead (its API format, input tokens, what it uses, its API key and its headers) and lights up the steps it would take, each model with its try; nothing is sent. **Draw again** draws the splits anew.
+**Test** has two modes. **Real request** sends a message through the route as you, saved or not, with the headers you add. The canvas colors each step the request tried by its answer: green for a 2xx status, amber for a 4xx and red for a 5xx, with the status and, for a step that failed, its time. The panel lists the steps it took, then the reply. The request counts against your limits, is charged to the project and appears in the [request log](request-logs.md) with the source **Playground**; **Open in request log** shows it. **Preview** describes a request instead (its API format, input tokens, what it uses, its API key and its headers) and lights up the steps it would take, each model with its try; nothing is sent. **Draw again** draws anew the splits a request draws for itself.
+
+A split by caller keeps every caller on one branch, so all your real requests take the same branch whatever its weight; choose an API key in **Preview** to see where that key's requests go. A split by header does the same for each value of its header, and draws anew for a request without it.
 
 ## How a request names a model
 

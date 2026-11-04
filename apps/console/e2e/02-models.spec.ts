@@ -234,6 +234,14 @@ test("aliases: build a route with a fallback, warn about a shadowed model, renam
   await page.getByLabel("Name").fill("quick");
   await page.getByRole("button", { name: "Save" }).click();
   await expect(page.getByText("Alias quick saved")).toBeVisible();
+  await page.getByRole("tab", { name: "Audit log" }).click();
+  const audit = page.getByRole("grid", { name: "Audit log" });
+  await expect(audit.getByText("Alias changed")).toBeVisible();
+  await audit.getByText("Alias created").click();
+  await page.getByRole("dialog", { name: /Alias created/ }).getByRole("button", { name: "Restore this version" }).click();
+  await expect(page.getByText("Version restored; save to make it live")).toBeVisible();
+  await expect(page.getByRole("tab", { name: "Editor" })).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByLabel("Name")).toHaveValue("fast");
   await page.getByRole("button", { name: "Delete alias" }).click();
   await page.getByRole("alertdialog").getByRole("button", { name: "Delete alias" }).click();
   await expect(page.getByText("Alias quick deleted")).toBeVisible();

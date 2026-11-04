@@ -2,6 +2,7 @@ import { AlertDialog } from "@logicplanes/kaeso-ui";
 import { api } from "~/api/client";
 import type { AliasView } from "~/api/generated/types";
 import { projectCatalogue } from "~/api/queries/invalidation";
+import { aliasQuery } from "~/api/queries/models";
 import { useApiMutation } from "~/auth/mutation";
 import { toast } from "~/shell/toast";
 import { t } from "~/i18n";
@@ -21,11 +22,13 @@ export function DeleteAliasDialog({
   onOpenChange: (open: boolean) => void;
   onDeleted?: (() => void) | undefined;
 }) {
+  const startsWith = (key: readonly unknown[], prefix: readonly unknown[]) => prefix.every((part, i) => key[i] === part);
+  const gone = aliasQuery(org, project, alias.id).queryKey;
   const remove = useApiMutation({
     mutationFn: async () => {
       await api.DELETE("/platform/v1/orgs/{org}/projects/{project}/aliases/{alias}", { params: { path: { org, project, alias: alias.id } } });
     },
-    invalidates: projectCatalogue(org, project),
+    invalidates: [({ queryKey }) => projectCatalogue(org, project).some((k) => startsWith(queryKey, k)) && !startsWith(queryKey, gone)],
     onSuccess: () => {
       toast(t("models.alias.deleted", "Alias {name} deleted", { name: alias.name }));
       onOpenChange(false);

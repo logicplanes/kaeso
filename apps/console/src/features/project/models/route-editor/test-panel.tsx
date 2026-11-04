@@ -57,7 +57,21 @@ export function firstRequest(root: DraftStep): TestRequest {
   };
 }
 
-export const drawsAnew = (root: DraftStep) => [...walk(root)].some(({ step }) => step.type === "split" && step.by !== "caller");
+const sentValue = (request: TestRequest, name: string) => {
+  const wanted = name.trim();
+  return !!wanted && request.headers.some((h) => h.name.trim() === wanted && h.value !== "");
+};
+
+export function drawsAnew(root: DraftStep, request: TestRequest & { member?: string }): boolean {
+  return [...walk(root)].some(({ step }) => {
+    if (step.type !== "split") return false;
+    if (step.by === "caller") return !request.key && !request.member;
+    if (step.by === "header") return !sentValue(request, step.header);
+    return true;
+  });
+}
+
+export const splitsByCaller = (root: DraftStep) => [...walk(root)].some(({ step }) => step.type === "split" && step.by === "caller");
 
 export const sentHeaders = (request: TestRequest) =>
   request.headers.filter((h) => h.name.trim() && !headerProblem(h.name)).map((h) => ({ name: h.name.trim(), value: h.value }));
@@ -147,11 +161,17 @@ function outcome(at: TraceStep): string {
   }
 }
 
-function taken(p: Extract<Passed, { kind: "decision" }>): string {
+function taken(p: Extract<Passed, { kind: "decision" }>, headers: readonly { name: string; value: string }[]): string {
   if (p.step.type === "condition") return p.taken.startsWith("then") ? t("models.route.sent.then", "Takes Then") : t("models.route.sent.else", "Takes Else");
   const index = Number(p.taken.split(".")[1]);
   const weight = p.step.branches.reduce((w, b, i) => (i === index ? b.weight : w), 0);
-  return t("models.route.sent.branch", "Takes branch {n}, {weight}", { n: formatNumber(index + 1), weight: weightLabel(weight) });
+  const values = { n: formatNumber(index + 1), weight: weightLabel(weight) };
+  const header = p.step.header.trim();
+  if (p.step.by === "caller")
+    return t("models.route.sent.branchCaller", "Takes branch {n}, {weight}, like all your requests: each caller stays on one branch.", values);
+  if (p.step.by === "header" && headers.some((h) => h.name === header && h.value !== ""))
+    return t("models.route.sent.branchHeader", "Takes branch {n}, {weight}, like every request with this {header}.", { ...values, header });
+  return t("models.route.sent.branchDrawn", "Takes branch {n}, {weight}; the next request is drawn anew.", values);
 }
 
 function tried(p: Extract<Passed, { kind: "tried" }>): string {
@@ -228,12 +248,14 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 
 function SentResult({
   sent,
+  headers,
   models,
   providerName,
   title,
   onOpenLog,
 }: {
   sent: Sent;
+  headers: readonly { name: string; value: string }[];
   models: ReadonlyMap<string, CatalogueModelView>;
   providerName: (id: string) => string;
   title: (step: DraftStep) => string;
@@ -254,7 +276,7 @@ function SentResult({
                 marker: glyph(p.step, models, providerName),
                 title: title(p.step),
                 ...(p.kind === "tried" && p.walked.status !== null ? { time: <StatusCode code={p.walked.status} /> } : {}),
-                description: p.kind === "decision" ? taken(p) : tried(p),
+                description: p.kind === "decision" ? taken(p, headers) : tried(p),
               }))}
             />
           ) : (
@@ -344,7 +366,7 @@ export function TestPanel({
         value={mode}
         onValueChange={(v) => onMode(v === "preview" ? "preview" : "send")}
         options={[
-          { value: "send", label: t("models.route.sendMode", "Send") },
+          { value: "send", label: t("models.route.sendMode", "Real request") },
           { value: "preview", label: t("models.route.previewMode", "Preview") },
         ]}
       />
@@ -364,8 +386,13 @@ export function TestPanel({
             onStop={onStop}
             disabled={blocked || !!sendBlock}
           />
+          {splitsByCaller(root) && (
+            <Text variant="small" tone="secondary">
+              {t("models.route.callerSplitHint", "A split by caller sends all your requests down one branch; Preview shows where a key's go.")}
+            </Text>
+          )}
           <HeaderRows request={request} onRequest={onRequest} />
-          {sent && <SentResult sent={sent} models={models} providerName={providerName} title={title} onOpenLog={onOpenLog} />}
+          {sent && <SentResult sent={sent} headers={sent.headers} models={models} providerName={providerName} title={title} onOpenLog={onOpenLog} />}
         </>
       ) : (
         <>
@@ -397,6 +424,7 @@ export function TestPanel({
           />
           <Select
             label={t("models.route.field.key", "API key")}
+            {...(splitsByCaller(root) ? { description: t("models.route.keyCallerHint", "A split by caller keeps each key's requests on one branch.") } : {})}
             fullWidth
             value={request.key ?? NO_KEY}
             onValueChange={(v: string) => onRequest((r) => ({ ...r, key: v === NO_KEY ? null : v }))}
@@ -422,7 +450,7 @@ export function TestPanel({
                   }))}
                 />
               )}
-              {drawsAnew(root) && (
+              {drawsAnew(root, request) && (
                 <Button variant="secondary" leadingIcon={icons.refresh} onClick={() => onRequest((r) => ({ ...r, seed: newSeed() }))}>
                   {t("models.route.drawAgain", "Draw again")}
                 </Button>
