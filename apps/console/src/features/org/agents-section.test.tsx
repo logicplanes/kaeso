@@ -35,6 +35,7 @@ describe("agents in an organization", () => {
     on("DELETE", "orgs/:org/agents/:agent", noContent);
     const { user } = await renderApp(PATH);
     expect(await screen.findByText("Release helper of Ada Okafor")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Agents with access" })).toBeInTheDocument();
     expect(screen.getByText("GPT · used never")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Close access" }));
     expect(await screen.findByText("Close this organization to Release helper?")).toBeInTheDocument();

@@ -12,6 +12,8 @@
   "org.agents.neverUsed": "nie",
   "org.agents.saved": "Agenten-Richtlinie gespeichert",
   "org.agents.title": "Agenten",
+  "org.agents.withAccess": "Agenten mit Zugang",
+  "org.agents.withAccessHint": "Jeder Agent, dem ein Mitglied diese Organisation geöffnet hat.",
   "org.auditLog.description": "Jede Änderung in der Organisation: wer, wann und was.",
   "org.auditLog.hidden": "Kein Zugriff auf das Audit-Log",
   "org.auditLog.title": "Audit-Log",
