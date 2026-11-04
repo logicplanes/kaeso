@@ -150,7 +150,7 @@ export async function inviteToFirstProject(page: Page, dialog: Locator, role: st
   const add = dialog.getByRole("button", { name: "Add a project" });
   await stepTo(dialog, add);
   await add.click();
-  await dialog.getByRole("combobox", { name: "Project" }).click();
+  await dialog.getByRole("combobox", { name: "Project", exact: true }).click();
   await page.getByRole("option", { name: FIRST_PROJECT, exact: true }).click();
   await dialog.getByRole("combobox", { name: "Role in the project" }).click();
   await page.getByRole("option", { name: new RegExp(`^${role}`) }).click();
