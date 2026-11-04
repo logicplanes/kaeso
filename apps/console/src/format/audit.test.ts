@@ -75,6 +75,11 @@ describe("audit actions", () => {
     expect(auditActionOptions().find((o) => o.value === "agent.")?.label).toBe("Agents: every action");
   });
 
+  it("name the default project's changes from older gateways, but offer no filter for them", () => {
+    expect(auditActionLabel("project.default")).toBe("Default project changed");
+    expect(auditActionOptions().some((o) => o.value === "project.default")).toBe(false);
+  });
+
   it("keep an action they don't know as it was written", () => {
     expect(auditActionLabel("webhook.create")).toBe("webhook.create");
   });

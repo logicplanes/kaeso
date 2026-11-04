@@ -59,7 +59,6 @@
   "account.copySetupKey": "Copy setup key",
   "account.currentPassword": "Current password",
   "account.customizeAgentHint": "Nothing changes until you save the rights.",
-  "account.defaultProject": "Default",
   "account.deleteAccount": "Delete account",
   "account.deleteConfirm": "Delete your account?",
   "account.deleteConfirmHint": "Your keys are archived and you appear as \"Deleted user\" in history.",

@@ -4,7 +4,6 @@ import { useNavigate } from "@tanstack/react-router";
 import {
   AlertDialog,
   AppFrame,
-  Badge,
   Button,
   DialogScope,
   Field,
@@ -63,7 +62,6 @@ export function ProjectSettingsPage({ org, project }: { org: string; project: st
                 archived={!!p.archived_at}
                 id={p.id}
                 createdAt={p.created_at}
-                isDefault={p.is_default}
                 canUpdate={rights.has("project.update")}
               />
               {rights.has("security.key_policy.project.manage") && (
@@ -71,11 +69,7 @@ export function ProjectSettingsPage({ org, project }: { org: string; project: st
               )}
               {requestLogs && <ContentLogging org={org} project={project} canChange={rights.has("logs.content.manage")} archived={!!p.archived_at} />}
               <ResponseCacheSection org={org} project={project} canChange={rights.has("project.update")} archived={!!p.archived_at} />
-              {p.archived_at ? (
-                <ArchivedOn date={p.archived_at} />
-              ) : (
-                rights.has("project.archive") && <Archive org={org} project={project} name={p.name} isDefault={p.is_default} />
-              )}
+              {p.archived_at ? <ArchivedOn date={p.archived_at} /> : rights.has("project.archive") && <Archive org={org} project={project} name={p.name} />}
             </>
           )}
         </div>
@@ -92,7 +86,6 @@ function General({
   archived,
   id,
   createdAt,
-  isDefault,
   canUpdate,
 }: {
   org: string;
@@ -102,7 +95,6 @@ function General({
   archived: boolean;
   id: string;
   createdAt: string;
-  isDefault: boolean;
   canUpdate: boolean;
 }) {
   const needs = useNeedsRight(org, project);
@@ -165,13 +157,6 @@ function General({
           control={<InlineCopyText value={id} label={t("project.settings.copyId", "Copy project id")} />}
         />
         <SettingsRow title={common.created()} control={<Text tone="secondary">{formatDate(createdAt)}</Text>} />
-        {isDefault && (
-          <SettingsRow
-            title={t("project.settings.defaultProject", "Default project")}
-            description={t("project.settings.defaultHint", "New organization members join it; it can't be archived.")}
-            control={<Badge>{t("project.settings.default", "Default")}</Badge>}
-          />
-        )}
       </SettingsGroup>
     </SettingsSection>
   );
@@ -365,16 +350,10 @@ function ArchivedOn({ date }: { date: string }) {
   );
 }
 
-function Archive({ org, project, name, isDefault }: { org: string; project: string; name: string; isDefault: boolean }) {
+function Archive({ org, project, name }: { org: string; project: string; name: string }) {
   const [open, setOpen] = useState(false);
   const button = (
-    <Button
-      variant="danger-secondary"
-      size="sm"
-      disabled={isDefault}
-      {...(isDefault ? { disabledReason: t("project.settings.defaultCantArchive", "Make another project the default to archive this one") } : {})}
-      onClick={() => setOpen(true)}
-    >
+    <Button variant="danger-secondary" size="sm" onClick={() => setOpen(true)}>
       {t("project.settings.archiveProject", "Archive project")}
     </Button>
   );

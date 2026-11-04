@@ -31,7 +31,6 @@ describe("memberships", () => {
     const northwind = screen.getByRole("group", { name: "Projects in Northwind Labs" });
     expect(within(northwind).getByRole("link", { name: /Checkout assistant/ })).toHaveAttribute("href", `/orgs/${ORG}/projects/${PROJECT}`);
     expect(within(northwind).getByRole("link", { name: /Support triage/ })).toHaveAttribute("href", `/orgs/${ORG}/projects/${OTHER_PROJECT}`);
-    expect(within(northwind).getByText("Default")).toBeInTheDocument();
     const contoso = screen.getByRole("group", { name: "Projects in Contoso" });
     expect(within(contoso).getByText("No projects")).toBeInTheDocument();
     expect(within(contoso).getByText("You belong to none of its projects.")).toBeInTheDocument();

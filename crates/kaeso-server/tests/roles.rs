@@ -14,28 +14,13 @@ async fn join(
     role: &str,
     projects: Value,
 ) -> (String, String) {
-    common::join(
+    common::join_first_project(
         app,
         owner,
         json!({ "email": email, "role": role, "project_roles": projects }),
         email,
     )
     .await
-}
-
-async fn default_project(app: &App, owner: &Owner) -> String {
-    let r = app
-        .get(&format!("/orgs/{}/projects", owner.org_id), &owner.cookie)
-        .await;
-    r.body["data"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .find(|p| p["is_default"] == true)
-        .unwrap()["id"]
-        .as_str()
-        .unwrap()
-        .to_owned()
 }
 
 fn names(v: &Value) -> Vec<String> {
@@ -175,7 +160,7 @@ async fn custom_roles_are_created_assigned_changed_and_deleted() {
     let app = App::start(&s).await;
     let owner = app.setup().await;
     let org = owner.org_id.clone();
-    let project = default_project(&app, &owner).await;
+    let project = common::first_project(&app, &owner).await;
     let (dev, dev_id) = join(&app, &owner, "dev@example.com", "member", json!([])).await;
 
     let r = app
@@ -585,7 +570,7 @@ async fn needs_hold_within_each_grant_whatever_the_org_role_gives_in_every_proje
     let app = App::start(&s).await;
     let owner = app.setup().await;
     let org = owner.org_id.clone();
-    let project = default_project(&app, &owner).await;
+    let project = common::first_project(&app, &owner).await;
     let org_role = app
         .post(
             &format!("/orgs/{org}/roles"),
@@ -671,7 +656,7 @@ async fn a_role_change_never_strands_the_rights_its_holders_were_given() {
     let app = App::start(&s).await;
     let owner = app.setup().await;
     let org = owner.org_id.clone();
-    let project = default_project(&app, &owner).await;
+    let project = common::first_project(&app, &owner).await;
     let created = app
         .post(
             &format!("/orgs/{org}/roles"),
@@ -825,7 +810,7 @@ async fn custom_project_roles_work_for_members_service_accounts_and_invites() {
     let app = App::start(&s).await;
     let owner = app.setup().await;
     let org = owner.org_id.clone();
-    let project = default_project(&app, &owner).await;
+    let project = common::first_project(&app, &owner).await;
     let created = app
         .post(
             &format!("/orgs/{org}/roles"),

@@ -199,11 +199,6 @@ impl OrgGrant {
         self.every_project
     }
 
-    pub fn default_project_preset(&self) -> ProjectPreset {
-        self.preset_role()
-            .map_or(ProjectPreset::Viewer, OrgPreset::default_project_preset)
-    }
-
     #[must_use]
     pub fn normalised(self) -> OrgGrant {
         if self.is_owner() {

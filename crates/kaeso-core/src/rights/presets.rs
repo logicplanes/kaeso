@@ -115,14 +115,6 @@ impl OrgPreset {
             OrgPreset::Member => [R::OrgView, R::MembersView].into_iter().collect(),
         }
     }
-
-    pub const fn default_project_preset(self) -> ProjectPreset {
-        match self {
-            OrgPreset::Owner | OrgPreset::Admin => ProjectPreset::Admin,
-            OrgPreset::Developer => ProjectPreset::Developer,
-            OrgPreset::Billing | OrgPreset::Auditor | OrgPreset::Member => ProjectPreset::Viewer,
-        }
-    }
 }
 
 impl ProjectPreset {

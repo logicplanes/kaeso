@@ -32,7 +32,6 @@
   "account.copySetupKey": "复制设置密钥",
   "account.currentPassword": "当前密码",
   "account.customizeAgentHint": "保存权限之前不会有任何更改。",
-  "account.defaultProject": "默认",
   "account.deleteAccount": "删除账户",
   "account.deleteConfirm": "删除您的账户？",
   "account.deleteConfirmHint": "您的密钥将被归档，历史记录中您将显示为“已删除用户”。",

@@ -2,8 +2,8 @@ use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
 use kaeso_core::id::{OrgId, ProjectId};
-use kaeso_core::rights::{OrgPreset, OrgRight, ProjectGrant, ProjectPreset, ProjectRight};
-use kaeso_store::pg::{avatars, invites, key_lifecycle, members, orgs, projects, service_accounts};
+use kaeso_core::rights::{OrgRight, ProjectGrant, ProjectPreset, ProjectRight};
+use kaeso_store::pg::{avatars, key_lifecycle, members, projects, service_accounts};
 use serde::{Deserialize, Serialize};
 use sqlx::PgConnection;
 use time::OffsetDateTime;
@@ -12,14 +12,12 @@ use utoipa::{IntoParams, ToSchema};
 use crate::platform::access::Ctx;
 use crate::platform::audit::Action;
 use crate::platform::error::{ApiError, ApiResult};
-use crate::platform::grants::{check_project, project_to_store};
+use crate::platform::grants::project_to_store;
 use crate::platform::json::Body;
-use crate::platform::orgs::invites::caller_project_rights;
 use crate::platform::orgs::security::validate_lifetime;
 use crate::platform::pagination::{List, PageParams};
 use crate::platform::params::{Path, Query};
 use crate::platform::validate::validate_name;
-use crate::services::invites::ProjectRole;
 use crate::state::AppState;
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -32,8 +30,6 @@ pub struct ProjectView {
     #[doc = "Name."]
     #[schema(example = "Support bot")]
     pub name: String,
-    #[doc = "Whether it is the org's default project."]
-    pub is_default: bool,
     #[doc = "Whether bodies are logged (off when the org or the project turned it off)."]
     pub content_logging: bool,
     #[doc = "The longest lifetime of new keys in days; `null` for the org's limit."]
@@ -57,7 +53,6 @@ impl ProjectView {
             id: ProjectId::from_uuid(p.id),
             org_id: OrgId::from_uuid(p.org_id),
             name: p.name.clone(),
-            is_default: p.is_default,
             content_logging: p.content_logging,
             max_key_lifetime_days: p.max_key_lifetime_days,
             archived_at: p.archived_at,
@@ -150,7 +145,7 @@ pub async fn create(
     let name = validate_name("name", &req.name)?;
     let id = ProjectId::new();
     let mut tx = state.pg.begin().await?;
-    projects::insert(&mut *tx, id.uuid(), scope.org.id, &name, false).await?;
+    projects::insert(&mut *tx, id.uuid(), scope.org.id, &name).await?;
     if let Some(user) = ctx.acting_user() {
         members::insert_project(
             &mut *tx,
@@ -366,7 +361,7 @@ pub async fn remove_avatar(
     post,
     path = "/orgs/{org}/projects/{project}/archive",
     summary = "Archives the project with all its keys and service accounts. Archiving\n\
-    is permanent; the default project cannot be archived.",
+    is permanent.",
     tag = "projects",
     params(("org" = OrgId, Path), ("project" = ProjectId, Path)),
     responses((status = 200, body = ProjectView))
@@ -376,15 +371,8 @@ pub async fn archive(
     ctx: Ctx,
     Path(_p): Path<(String, String)>,
 ) -> ApiResult<Json<ProjectView>> {
-    let org = ctx.project()?.project.org_id;
     let mut tx = state.pg.begin().await?;
-    projects::lock_default(&mut tx, org).await?;
     let before = lock_active(&mut tx, &ctx).await?;
-    if before.is_default {
-        return Err(ApiError::Conflict(
-            "The default project cannot be archived; make another one the default first.".into(),
-        ));
-    }
     let mut after = before.clone();
     after.archived_at = Some(ctx.now);
     projects::update(&mut *tx, &after).await?;
@@ -397,118 +385,5 @@ pub async fn archive(
         .await?;
     tx.commit().await?;
     crate::services::keys::forget(&state, &keys).await;
-    Ok(Json(ProjectView::from_row(&after)))
-}
-
-async fn check_waiting_joins(
-    state: &AppState,
-    ctx: &Ctx,
-    tx: &mut PgConnection,
-    project: uuid::Uuid,
-) -> ApiResult<()> {
-    let org = ctx.org()?.org.id;
-    let mut presets: Vec<ProjectPreset> = invites::pending_of_org(&mut *tx, org, ctx.now)
-        .await?
-        .into_iter()
-        .filter(|i| {
-            serde_json::from_value::<Vec<ProjectRole>>(i.project_roles.clone())
-                .unwrap_or_default()
-                .iter()
-                .all(|r| r.project_id.uuid() != project)
-        })
-        .map(|i| {
-            i.org_preset
-                .unwrap_or_else(|| OrgPreset::Member.as_str().to_owned())
-        })
-        .chain(
-            orgs::get(&mut *tx, org)
-                .await?
-                .and_then(|o| o.sso_default_preset),
-        )
-        .map(|preset| {
-            crate::services::orgs::default_project_preset(&kaeso_store::pg::members::Grant {
-                preset,
-                ..Default::default()
-            })
-        })
-        .collect();
-    presets.sort_by_key(|p| p.as_str());
-    presets.dedup();
-    let caller = caller_project_rights(state, ctx, project).await?;
-    for preset in presets {
-        check_project(caller, None, &ProjectGrant::preset(preset)).map_err(|_| {
-            ApiError::PermissionDenied(
-                "Pending invitations or SSO sign-ups would get rights you don't hold in this project."
-                    .into(),
-            )
-        })?;
-    }
-    Ok(())
-}
-
-#[derive(Debug, Deserialize, ToSchema)]
-#[serde(deny_unknown_fields)]
-#[schema(description = "The project that becomes the org's default.")]
-pub struct DefaultProjectChoice {
-    #[doc = "An active project of the org."]
-    pub project_id: ProjectId,
-}
-
-#[utoipa::path(
-    put,
-    path = "/orgs/{org}/default-project",
-    summary = "Makes an active project the org's default: the previous\n\
-    default becomes an ordinary project, in the same transaction, so the org\n\
-    always has exactly one. Nobody joins or leaves a project by it: members\n\
-    keep their places, and people who join the org from now on start in the\n\
-    new default. Refused when pending invitations or the SSO default role\n\
-    would give people rights there that the caller doesn't hold.",
-    tag = "projects",
-    params(("org" = OrgId, Path)),
-    request_body = DefaultProjectChoice,
-    responses((status = 200, body = ProjectView))
-)]
-pub async fn set_default(
-    State(state): State<AppState>,
-    ctx: Ctx,
-    Path(_org): Path<String>,
-    Body(req): Body<DefaultProjectChoice>,
-) -> ApiResult<Json<ProjectView>> {
-    let scope = ctx.org()?;
-    let org = scope.org.id;
-    let id = req.project_id.uuid();
-    let mut tx = state.pg.begin().await?;
-    projects::lock_default(&mut tx, org).await?;
-    let chosen = projects::get(&mut *tx, org, id)
-        .await?
-        .ok_or_else(|| ApiError::not_found("project"))?;
-    if chosen.archived_at.is_some() {
-        return Err(ApiError::Conflict(
-            "An archived project cannot be the default.".into(),
-        ));
-    }
-    if chosen.is_default {
-        return Ok(Json(ProjectView::from_row(&chosen)));
-    }
-    check_waiting_joins(&state, &ctx, &mut tx, id).await?;
-    let previous = projects::default_of(&mut *tx, org).await?;
-    if !projects::set_default(&mut tx, org, id).await? {
-        return Err(ApiError::not_found("project"));
-    }
-    let after = projects::get(&mut *tx, org, id)
-        .await?
-        .ok_or_else(|| ApiError::internal("the new default project vanished"))?;
-    ctx.audit(Some(scope.id()), Action::ProjectDefault)
-        .project(ProjectId::from_uuid(id))
-        .target("project", ProjectId::from_uuid(id))
-        .before(serde_json::json!({
-            "default_project": previous.map(|p| ProjectId::from_uuid(p.id).to_string()),
-        }))
-        .after(serde_json::json!({
-            "default_project": ProjectId::from_uuid(id).to_string(),
-        }))
-        .write(&mut tx)
-        .await?;
-    tx.commit().await?;
     Ok(Json(ProjectView::from_row(&after)))
 }

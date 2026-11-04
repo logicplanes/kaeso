@@ -71,7 +71,6 @@
   "instance.deactivateConfirmHint": "该用户将无法登录，所有会话结束，其密钥在重新启用前均被停用。",
   "instance.deactivateHint": "在重新启用前禁止登录并停用其密钥。",
   "instance.deactivateQuestion": "停用 {name}？",
-  "instance.default": "默认",
   "instance.degraded": "降级",
   "instance.deleteNamed": "删除 {name}",
   "instance.deleteNow": "立即删除",

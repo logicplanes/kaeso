@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { AlertDialog, Avatar, Badge, Button, DialogScope, SettingsGroup, SettingsRow, SettingsSection, Text } from "@logicplanes/kaeso-ui";
+import { AlertDialog, Avatar, Button, DialogScope, SettingsGroup, SettingsRow, SettingsSection, Text } from "@logicplanes/kaeso-ui";
 import { toast } from "~/shell/toast";
 import { api } from "~/api/client";
 import type { MyMembership } from "~/api/generated/types";
@@ -55,7 +55,6 @@ export function MembershipsPage() {
                     <span className="flex items-center gap-8">
                       <Avatar name={p.name} {...(p.avatar_url ? { src: p.avatar_url } : {})} kind="org" size={20} decorative />
                       {p.name}
-                      {p.is_default && <Badge>{t("account.defaultProject", "Default")}</Badge>}
                     </span>
                   }
                   value={p.role.name}

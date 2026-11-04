@@ -35,11 +35,7 @@ describe("an organization seen from the instance", () => {
     signedIn();
     orgData({
       members: [ADA, GRACE, LINUS],
-      projects: [
-        project(),
-        project({ id: "proj_old", name: "Old pilot", is_default: false, archived_at: "2026-09-01T12:00:00Z" }),
-        project({ id: "proj_new", name: "Search", is_default: false }),
-      ],
+      projects: [project(), project({ id: "proj_old", name: "Old pilot", archived_at: "2026-09-01T12:00:00Z" }), project({ id: "proj_new", name: "Search" })],
       view: instanceOrg({ members: 3, projects: 3 }),
     });
     await renderApp(path());
@@ -70,7 +66,6 @@ describe("an organization seen from the instance", () => {
     expect(within(members).getByText("Deactivated")).toBeInTheDocument();
     expect(screen.getByText("3 members, with their role and the day they joined")).toBeInTheDocument();
     const projects = await screen.findByRole("grid", { name: "Projects" });
-    expect(within(projects).getByText("Default")).toBeInTheDocument();
     expect(within(projects).getByText("Archived")).toBeInTheDocument();
     expect(within(projects).getByText("Search")).toBeInTheDocument();
     expect(screen.getByText("3 projects, with the day each was created")).toBeInTheDocument();

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT p.id, p.org_id, p.name, p.is_default, p.content_logging, p.max_key_lifetime_days, p.archived_at, p.created_at, p.avatar FROM projects p WHERE p.org_id = $1 AND ($2::uuid IS NULL OR EXISTS (SELECT 1 FROM project_memberships m WHERE m.project_id = p.id AND m.user_id = $2)) AND ($6::uuid[] IS NULL OR p.id = ANY($6)) AND ($3 OR p.archived_at IS NULL) AND ($4::uuid IS NULL OR p.id > $4) ORDER BY p.id LIMIT $5",
+  "query": "SELECT id, org_id, name, content_logging, max_key_lifetime_days, archived_at, created_at, avatar FROM projects WHERE org_id = $1 AND id = $2",
   "describe": {
     "columns": [
       {
@@ -38,17 +38,6 @@
       },
       {
         "ordinal": 3,
-        "name": "is_default",
-        "type_info": "Bool",
-        "origin": {
-          "Table": {
-            "table": "projects",
-            "name": "is_default"
-          }
-        }
-      },
-      {
-        "ordinal": 4,
         "name": "content_logging",
         "type_info": "Bool",
         "origin": {
@@ -59,7 +48,7 @@
         }
       },
       {
-        "ordinal": 5,
+        "ordinal": 4,
         "name": "max_key_lifetime_days",
         "type_info": "Int4",
         "origin": {
@@ -70,7 +59,7 @@
         }
       },
       {
-        "ordinal": 6,
+        "ordinal": 5,
         "name": "archived_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -81,7 +70,7 @@
         }
       },
       {
-        "ordinal": 7,
+        "ordinal": 6,
         "name": "created_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -92,7 +81,7 @@
         }
       },
       {
-        "ordinal": 8,
+        "ordinal": 7,
         "name": "avatar",
         "type_info": "Text",
         "origin": {
@@ -106,15 +95,10 @@
     "parameters": {
       "Left": [
         "Uuid",
-        "Uuid",
-        "Bool",
-        "Uuid",
-        "Int8",
-        "UuidArray"
+        "Uuid"
       ]
     },
     "nullable": [
-      false,
       false,
       false,
       false,
@@ -125,5 +109,5 @@
       true
     ]
   },
-  "hash": "6eb6c918c1b6cd46bc3b2e160c17dd6ce0ec1f6efa98547ff7dfadb383298c35"
+  "hash": "703baa2742045ff50810a97fc476b5f352baf3e678f31ec6c29b466173732ee1"
 }

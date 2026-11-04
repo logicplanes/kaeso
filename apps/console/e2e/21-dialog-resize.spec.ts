@@ -1,6 +1,6 @@
 import { createHmac } from "node:crypto";
 import type { Locator, Page } from "@playwright/test";
-import { expect, test, expectSignedIn, NEW_PASSWORD, OWNER, openDefaultProject, signInAsOwner, signInWithPassword } from "./support";
+import { expect, test, expectSignedIn, NEW_PASSWORD, OWNER, openFirstProject, signInAsOwner, signInWithPassword } from "./support";
 
 test.describe.configure({ mode: "serial" });
 test.use({ reducedMotion: "no-preference" });
@@ -193,7 +193,7 @@ for (const viewport of [
 
       test("creating a key: each step at its own height, the key shown once in the same dialog, with its top edge held throughout", async ({ page }) => {
         await signInAsOwner(page);
-        await openDefaultProject(page);
+        await openFirstProject(page);
         await page.setViewportSize({ width: viewport.width, height: viewport.height });
         await page.goto(`${new URL(page.url()).pathname}/keys`);
         await page
@@ -239,7 +239,7 @@ for (const viewport of [
 
 test("a dialog that jumps to its new size in one frame fails the smoothness check", async ({ page }) => {
   await signInAsOwner(page);
-  await openDefaultProject(page);
+  await openFirstProject(page);
   await page.goto(`${new URL(page.url()).pathname}/keys`);
   await page
     .getByRole("button", { name: /^Create( key)?$/ })

@@ -5,7 +5,7 @@ const rights: Readonly<Record<string, () => [string, string]>> = {
   "org.view": () => [t("rights.orgView.name", "View organization"), t("rights.orgView.description", "See the organization, its settings and its roles.")],
   "org.update": () => [
     t("rights.orgUpdate.name", "Edit organization"),
-    t("rights.orgUpdate.description", "Rename the organization, change its picture and general settings, and choose the default project."),
+    t("rights.orgUpdate.description", "Rename the organization and change its picture and general settings."),
   ],
   "org.delete": () => [
     t("rights.orgDelete.name", "Delete organization"),

@@ -74,7 +74,7 @@
   "rights.orgDelete.name": "Organisation löschen",
   "rights.orgOwnershipTransfer.description": "Ein anderes Mitglied an Ihrer Stelle zum Inhaber machen; nur Inhaber haben dieses Recht.",
   "rights.orgOwnershipTransfer.name": "Inhaberschaft übertragen",
-  "rights.orgUpdate.description": "Die Organisation umbenennen, Bild und allgemeine Einstellungen ändern und das Standardprojekt wählen.",
+  "rights.orgUpdate.description": "Die Organisation umbenennen und Bild und allgemeine Einstellungen ändern.",
   "rights.orgUpdate.name": "Organisation bearbeiten",
   "rights.orgView.description": "Die Organisation, ihre Einstellungen und Rollen sehen.",
   "rights.orgView.name": "Organisation ansehen",

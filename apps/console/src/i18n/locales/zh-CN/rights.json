@@ -74,7 +74,7 @@
   "rights.orgDelete.name": "删除组织",
   "rights.orgOwnershipTransfer.description": "让另一位成员代替您成为所有者；仅所有者拥有此权限。",
   "rights.orgOwnershipTransfer.name": "转让所有权",
-  "rights.orgUpdate.description": "重命名组织，更改其图片和常规设置，并选择默认项目。",
+  "rights.orgUpdate.description": "重命名组织，并更改其图片和常规设置。",
   "rights.orgUpdate.name": "编辑组织",
   "rights.orgView.description": "查看组织及其设置和角色。",
   "rights.orgView.name": "查看组织",

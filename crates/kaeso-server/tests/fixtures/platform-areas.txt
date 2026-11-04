@@ -15,7 +15,7 @@ org | Settings | orgs/{org}, orgs/{org}/restore, orgs/{org}/ownership-transfer |
 org | Members | orgs/{org}/members | members.* |
 org | Roles | orgs/{org}/roles, orgs/{org}/rights | org.view, roles.manage, members.view |
 org | Invites | orgs/{org}/invites | members.invite, members.invites.revoke |
-org | Projects | orgs/{org}/projects, orgs/{org}/default-project | projects.*, org.update |
+org | Projects | orgs/{org}/projects | projects.* |
 org | Providers | orgs/{org}/providers | org.view |
 org | Provider credentials | orgs/{org}/credentials | provider_credentials.* |
 org | Custom providers | orgs/{org}/custom-providers | providers.custom.* |

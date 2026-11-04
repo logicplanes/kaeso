@@ -27,8 +27,8 @@ export function grantable(overrides: Partial<Grantable> = {}): Grantable {
         rights: preset("full").org,
         every_project: preset("full").project,
         projects: [
-          { id: PROJECT, name: "Checkout", is_default: true, avatar_url: null, rights: preset("full").project },
-          { id: OTHER_PROJECT, name: "Support triage", is_default: false, avatar_url: null, rights: preset("observer").project },
+          { id: PROJECT, name: "Checkout", avatar_url: null, rights: preset("full").project },
+          { id: OTHER_PROJECT, name: "Support triage", avatar_url: null, rights: preset("observer").project },
         ],
       },
       {

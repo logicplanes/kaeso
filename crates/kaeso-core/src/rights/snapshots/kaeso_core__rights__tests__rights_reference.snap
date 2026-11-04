@@ -7,7 +7,7 @@ expression: rights_reference()
 | Right | Category | Name | Allows | Needs (beyond `org.view`) | Recent sign-in | Kaeso Cloud only |
 |---|---|---|---|---|:-:|:-:|
 | `org.view` | Organization | View organization | See the organization, its settings and its roles. |  |  |  |
-| `org.update` | Organization | Edit organization | Rename the organization, change its picture and general settings, and choose the default project. |  |  |  |
+| `org.update` | Organization | Edit organization | Rename the organization and change its picture and general settings. |  |  |  |
 | `org.delete` ⚠ | Organization | Delete organization | Schedule the organization for deletion, or restore it while it waits. |  | ✓ |  |
 | `org.ownership.transfer` ⚠ | Organization | Transfer ownership | Make another member an owner in your place; only owners hold it. | `members.view` | ✓ |  |
 | `members.view` | Members & access | View members | See members, their roles and their rights. |  |  |  |
@@ -80,14 +80,14 @@ expression: rights_reference()
 
 ## Built-in organization roles
 
-| Role | Id | Description | Default project role |
-|---|---|---|---|
-| Owner | `owner` | Holds every right, now and in future releases; only owners manage owners. | Admin |
-| Admin | `admin` | Manages the organization and every project, except deleting it, transferring ownership and changing billing. | Admin |
-| Billing | `billing` | Manages billing and sees usage and costs across all projects. | Viewer |
-| Developer | `developer` | Creates projects and sees usage, costs and provider keys; works in the projects they are added to. | Developer |
-| Auditor | `auditor` | Reads the whole organization for reviews, including the audit log and every project, and changes nothing; never sees prompts or outputs. | Viewer |
-| Member | `member` | Sees the organization and its members; works in the projects they are added to. | Viewer |
+| Role | Id | Description |
+|---|---|---|
+| Owner | `owner` | Holds every right, now and in future releases; only owners manage owners. |
+| Admin | `admin` | Manages the organization and every project, except deleting it, transferring ownership and changing billing. |
+| Billing | `billing` | Manages billing and sees usage and costs across all projects. |
+| Developer | `developer` | Creates projects and sees usage, costs and provider keys; works in the projects they are added to. |
+| Auditor | `auditor` | Reads the whole organization for reviews, including the audit log and every project, and changes nothing; never sees prompts or outputs. |
+| Member | `member` | Sees the organization and its members; works in the projects they are added to. |
 
 ## Built-in project roles
 

@@ -66,10 +66,10 @@ describe("organization overview", () => {
   it("shows the period's usage, the cost by project and the projects ordered by requests", async () => {
     signedIn({
       projects: [
-        project({ id: OTHER_PROJECT, name: "Support triage", is_default: false }),
+        project({ id: OTHER_PROJECT, name: "Support triage" }),
         project(),
-        project({ id: "proj_old", name: "Old pilot", is_default: false, archived_at: "2026-09-01T00:00:00Z" }),
-        project({ id: "proj_quiet", name: "Quiet archive", is_default: false, archived_at: "2026-09-01T00:00:00Z" }),
+        project({ id: "proj_old", name: "Old pilot", archived_at: "2026-09-01T00:00:00Z" }),
+        project({ id: "proj_quiet", name: "Quiet archive", archived_at: "2026-09-01T00:00:00Z" }),
       ],
     });
     usage({
@@ -108,7 +108,7 @@ describe("organization overview", () => {
         within(list)
           .getAllByRole("gridcell")
           .map((c) => c.textContent),
-      ).toEqual(["CCheckout assistantDefault30 requests", "SSupport triage10 requests", "OOld pilotArchived5 requests"]),
+      ).toEqual(["CCheckout assistant30 requests", "SSupport triage10 requests", "OOld pilotArchived5 requests"]),
     );
     expect(screen.getByText("Requests in the period; open one to work in it")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "View all projects" })).toHaveAttribute("href", `/orgs/${ORG}/projects`);
@@ -340,12 +340,29 @@ describe("organization overview", () => {
       within(list)
         .getAllByRole("gridcell")
         .map((c) => c.textContent),
-    ).toEqual(["CCheckout assistantDefault", "SSupport triage"]);
+    ).toEqual(["CCheckout assistant", "SSupport triage"]);
     expect(screen.getByText("Open one to work in it")).toBeInTheDocument();
     expect(screen.queryByRole("table", { name: "Usage breakdown" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { description: "Period" })).not.toBeInTheDocument();
     expect(requests("GET", USAGE)).toHaveLength(0);
     expect(requests("GET", "orgs/:org/usage/span")).toHaveLength(0);
+  });
+
+  it("offers to create the first project in an organization without projects", async () => {
+    signedIn({ projects: [] });
+    const { user, router } = await renderApp(`/orgs/${ORG}`);
+    expect(await screen.findByText("No projects you can see")).toBeInTheDocument();
+    await user.click(screen.getByRole("link", { name: "Create project" }));
+    await waitFor(() => expect(router.state.location.pathname).toBe(`/orgs/${ORG}/projects`));
+    expect(await screen.findByRole("dialog", { name: "Create project" })).toBeInTheDocument();
+  });
+
+  it("doesn't offer to create a project without the right", async () => {
+    withRights(["org.view"]);
+    on("GET", "orgs/:org/projects", page([]));
+    await renderApp(`/orgs/${ORG}`);
+    expect(await screen.findByText("No projects you can see")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Create project" })).not.toBeInTheDocument();
   });
 
   it("starts all time at the first day with usage and compares with nothing", async () => {

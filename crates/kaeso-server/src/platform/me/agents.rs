@@ -647,8 +647,6 @@ pub struct GrantableProject {
     pub id: ProjectId,
     #[doc = "Its name."]
     pub name: String,
-    #[doc = "Whether it is the org's default project."]
-    pub is_default: bool,
     #[doc = "Its picture; `null` without one."]
     pub avatar_url: Option<String>,
     #[doc = "The user's rights in it, within the org's agent policy."]
@@ -735,7 +733,6 @@ pub async fn grantable(State(state): State<AppState>, ctx: Ctx) -> ApiResult<Jso
                         .map(|p| GrantableProject {
                             id: ProjectId::from_uuid(p.id),
                             name: p.name.clone(),
-                            is_default: p.is_default,
                             avatar_url: avatar_url(p.avatar.as_deref()),
                             rights: p.rights.intersect(ceiling).names(),
                         })

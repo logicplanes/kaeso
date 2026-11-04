@@ -13,7 +13,7 @@ These pages explain how Kaeso works, so you know what to expect before you rely 
 | Install | One Kaeso deployment: the gateway, the console and their databases, on one domain ([self-hosting](../self-hosting/index.md)) |
 | Instance admin | A user who runs the install: its users, organizations and settings. Being one gives no rights inside organizations ([instance administration](../console/instance-administration.md)) |
 | Organization | Holds members, provider keys, platform keys and projects ([organizations and projects](../console/organizations-and-projects.md)) |
-| Project | Holds a model catalogue, API keys, service accounts, limits and request logs. Every organization has a default project |
+| Project | Holds a model catalogue, API keys, service accounts, limits and request logs. An organization's projects are all alike, and a new organization has none |
 | Member | A person in an organization. A member has an organization role, and a project role in each of their projects |
 | Service account | A project member for software, such as a deployment or a job. Its keys keep working when the people who made them leave |
 | Right, role | A right allows one kind of action, such as `keys.all.view`. A role is a named set of rights ([rights](rights.md)) |

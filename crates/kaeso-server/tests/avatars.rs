@@ -134,11 +134,16 @@ async fn projects_have_pictures_where_they_are_named() {
     let owner = app.setup().await;
     let cookie = Some(owner.cookie.as_str());
     let org = owner.org_id.clone();
+    let first = common::first_project(&app, &owner).await;
 
     let r = app
         .post(
             &format!("/orgs/{org}/invites"),
-            json!({ "email": "dev@example.com", "preset": "developer", "project_roles": [] }),
+            json!({
+                "email": "dev@example.com",
+                "preset": "developer",
+                "project_roles": [{ "project_id": first, "preset": "viewer" }],
+            }),
             cookie,
         )
         .await;
@@ -179,22 +184,10 @@ async fn projects_have_pictures_where_they_are_named() {
     assert_eq!(served.status, StatusCode::OK);
     assert_eq!(served.headers["content-type"], "image/png");
 
-    let default = app
-        .get(&format!("/orgs/{org}/projects"), &owner.cookie)
-        .await
-        .body["data"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .find(|p| p["is_default"] == true)
-        .unwrap()["id"]
-        .as_str()
-        .unwrap()
-        .to_owned();
     let r = app
         .call(
             Method::PUT,
-            &format!("/orgs/{org}/projects/{default}/avatar"),
+            &format!("/orgs/{org}/projects/{first}/avatar"),
             Some(upload(PNG, "image/png")),
             Some(&dev),
         )
@@ -203,14 +196,14 @@ async fn projects_have_pictures_where_they_are_named() {
     let r = app
         .call(
             Method::PUT,
-            &format!("/orgs/{org}/projects/{default}/avatar"),
+            &format!("/orgs/{org}/projects/{first}/avatar"),
             Some(upload(JPEG, "image/jpeg")),
             cookie,
         )
         .await;
     assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
-    let default_url = r.body["avatar_url"].as_str().unwrap().to_owned();
-    assert_ne!(default_url, url);
+    let first_url = r.body["avatar_url"].as_str().unwrap().to_owned();
+    assert_ne!(first_url, url);
 
     for (bytes, kind) in [(b"<svg/>".as_slice(), "image/png"), (PNG, "image/webp")] {
         let r = app
@@ -247,7 +240,7 @@ async fn projects_have_pictures_where_they_are_named() {
             .clone()
     };
     assert_eq!(row(&project)["avatar_url"], url.as_str());
-    assert_eq!(row(&default)["avatar_url"], default_url.as_str());
+    assert_eq!(row(&first)["avatar_url"], first_url.as_str());
     let mine = app.get("/me/memberships", &dev).await;
     let projects = mine.body["data"][0]["projects"].as_array().unwrap();
     assert!(

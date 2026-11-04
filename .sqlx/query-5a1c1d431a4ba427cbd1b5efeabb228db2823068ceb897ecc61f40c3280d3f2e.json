@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, org_id, name, is_default, avatar FROM projects WHERE org_id = ANY($1) AND archived_at IS NULL ORDER BY org_id, is_default DESC, name, id",
+  "query": "SELECT id, org_id, name, avatar FROM projects WHERE org_id = ANY($1) AND archived_at IS NULL ORDER BY org_id, name, id",
   "describe": {
     "columns": [
       {
@@ -38,17 +38,6 @@
       },
       {
         "ordinal": 3,
-        "name": "is_default",
-        "type_info": "Bool",
-        "origin": {
-          "Table": {
-            "table": "projects",
-            "name": "is_default"
-          }
-        }
-      },
-      {
-        "ordinal": 4,
         "name": "avatar",
         "type_info": "Text",
         "origin": {
@@ -68,9 +57,8 @@
       false,
       false,
       false,
-      false,
       true
     ]
   },
-  "hash": "12468b240564eb13015d4da0e0ef3f93643df3b05c188f1da0a78781c5214332"
+  "hash": "5a1c1d431a4ba427cbd1b5efeabb228db2823068ceb897ecc61f40c3280d3f2e"
 }

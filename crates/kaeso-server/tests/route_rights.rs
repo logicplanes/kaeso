@@ -93,22 +93,6 @@ async fn call_with_key(app: &App, route: &Route, path: &str, key: &str) -> commo
         .await
 }
 
-async fn default_project(app: &App, owner: &Owner) -> String {
-    let r = app
-        .get(&format!("/orgs/{}/projects", owner.org_id), &owner.cookie)
-        .await
-        .expect_status(StatusCode::OK);
-    r.body["data"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .find(|p| p["is_default"] == true)
-        .unwrap()["id"]
-        .as_str()
-        .unwrap()
-        .to_owned()
-}
-
 fn dependents(catalogue: &Value, scope: &str, right: &str) -> BTreeSet<String> {
     let mut needs: BTreeMap<String, Vec<String>> = BTreeMap::new();
     for category in catalogue[scope]["categories"].as_array().unwrap() {
@@ -150,8 +134,8 @@ async fn every_org_and_project_route_refuses_a_member_without_its_right() {
     let app = App::start(&s).await;
     let owner = app.setup().await;
     let org = owner.org_id.clone();
-    let project = default_project(&app, &owner).await;
-    let (probe, probe_id) = common::join(
+    let project = common::first_project(&app, &owner).await;
+    let (probe, probe_id) = common::join_first_project(
         &app,
         &owner,
         json!({ "email": "probe@example.com", "role": "member" }),
@@ -254,8 +238,8 @@ async fn every_org_and_project_route_hides_other_organizations() {
     let app = App::start(&s).await;
     let owner = app.setup().await;
     let org = owner.org_id.clone();
-    let project = default_project(&app, &owner).await;
-    let (admin, _) = common::join(
+    let project = common::first_project(&app, &owner).await;
+    let (admin, _) = common::join_first_project(
         &app,
         &owner,
         json!({ "email": "admin@example.com", "role": "admin" }),
@@ -278,7 +262,8 @@ async fn every_org_and_project_route_hides_other_organizations() {
         cookie: owner.cookie.clone(),
         user_id: owner.user_id.clone(),
     };
-    let other_project = default_project(&app, &other).await;
+    let other_project =
+        common::create_project(&app, &other.org_id, &other.cookie, "Elsewhere").await;
     let org_key = app
         .post(
             &format!("/orgs/{org}/platform-keys"),

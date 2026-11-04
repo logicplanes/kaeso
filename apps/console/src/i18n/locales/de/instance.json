@@ -71,7 +71,6 @@
   "instance.deactivateConfirmHint": "Keine Anmeldung mehr, alle Sitzungen enden, Schlüssel sind bis zur Reaktivierung deaktiviert.",
   "instance.deactivateHint": "Sperrt Anmeldung und Schlüssel bis zur Reaktivierung.",
   "instance.deactivateQuestion": "{name} deaktivieren?",
-  "instance.default": "Standard",
   "instance.degraded": "Eingeschränkt",
   "instance.deleteNamed": "{name} löschen",
   "instance.deleteNow": "Jetzt löschen",

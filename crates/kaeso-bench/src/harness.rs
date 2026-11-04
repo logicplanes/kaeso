@@ -370,10 +370,14 @@ async fn set_up(addr: SocketAddr, token: &str) -> Result<(String, String)> {
     .await?;
     let session = p.call(Method::GET, "auth/session", None).await?;
     let org = text(&session, "/memberships/0/org_id")?;
-    let projects = p
-        .call(Method::GET, &format!("orgs/{org}/projects"), None)
+    let project = p
+        .call(
+            Method::POST,
+            &format!("orgs/{org}/projects"),
+            Some(json!({ "name": "Benchmark" })),
+        )
         .await?;
-    let project = text(&projects, "/data/0/id")?;
+    let project = text(&project, "/id")?;
     p.call(
         Method::POST,
         &format!("orgs/{org}/credentials"),

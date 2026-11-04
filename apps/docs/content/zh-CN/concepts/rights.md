@@ -42,14 +42,14 @@ order: 4
 
 组织角色还拥有在所有项目中的权限，叠加在成员在各项目中自身的项目角色之上：
 
-| 组织角色 | 组织权限 | 在所有项目中的权限 | 在默认项目中的初始角色 |
-| --- | --- | --- | --- |
-| 所有者 | 全部，包括未来版本新增的权限 | 全部 | 管理员 |
-| 管理员 | 除 `org.delete`、`org.ownership.transfer` 和 `billing.manage` 之外的全部 | 全部 | 管理员 |
-| 财务 | `org.view`、`members.view`、`projects.view.all`、`logs.storage.view`、`usage.org.view`、`costs.org.view`、`billing.view`、`billing.manage` | 无 | 查看者 |
-| 开发者 | `org.view`、`members.view`、`projects.create`、`provider_credentials.view`、`providers.custom.view`、`logs.storage.view`、`usage.org.view`、`costs.org.view` | 无 | 开发者 |
-| 审计员 | `org.view`、`members.view`、`projects.view.all`、`provider_credentials.view`、`providers.custom.view`、`platform_keys.view`、`logs.storage.view`、`usage.org.view`、`costs.org.view`、`billing.view`、`audit_log.view`、`audit_log.export` | 查看者的权限，以及 `project.audit_log.view` | 查看者 |
-| 成员 | `org.view`、`members.view` | 无 | 查看者 |
+| 组织角色 | 组织权限 | 在所有项目中的权限 |
+| --- | --- | --- |
+| 所有者 | 全部，包括未来版本新增的权限 | 全部 |
+| 管理员 | 除 `org.delete`、`org.ownership.transfer` 和 `billing.manage` 之外的全部 | 全部 |
+| 财务 | `org.view`、`members.view`、`projects.view.all`、`logs.storage.view`、`usage.org.view`、`costs.org.view`、`billing.view`、`billing.manage` | 无 |
+| 开发者 | `org.view`、`members.view`、`projects.create`、`provider_credentials.view`、`providers.custom.view`、`logs.storage.view`、`usage.org.view`、`costs.org.view` | 无 |
+| 审计员 | `org.view`、`members.view`、`projects.view.all`、`provider_credentials.view`、`providers.custom.view`、`platform_keys.view`、`logs.storage.view`、`usage.org.view`、`costs.org.view`、`billing.view`、`audit_log.view`、`audit_log.export` | 查看者的权限，以及 `project.audit_log.view` |
+| 成员 | `org.view`、`members.view` | 无 |
 
 | 项目角色 | 权限 |
 | --- | --- |
@@ -59,7 +59,7 @@ order: 4
 
 有两项组织权限还会延伸到每个项目中。`projects.view.all` 授予 `project.view`，`projects.archive.any` 授予 `project.view` 和 `project.archive`。
 
-成员在某个项目中的权限来自三部分：其项目角色的权限、其组织角色在所有项目中的权限，以及这两项权限所延伸的权限。在默认项目中，所有者和管理员的初始角色是项目管理员，开发者是开发者。其他所有组织角色的初始角色都是查看者，包括自定义角色。
+成员在某个项目中的权限来自三部分：其项目角色的权限、其组织角色在所有项目中的权限，以及这两项权限所延伸的权限。加入组织不会让成员加入任何项目：他们加入邀请中指定的项目，或之后被添加到的项目。
 
 ### 自定义角色
 
@@ -73,7 +73,7 @@ order: 4
 
 每次更改角色和权限都遵循以下规则：
 
-1. **只授予自己拥有的权限。** 您只能在同一范围内授予自己拥有的权限：组织中的组织权限，该项目中的项目权限。只有在所有项目中都拥有某些权限时，才能授予在所有项目中的这些权限。对于邀请和单点登录角色，此规则也适用于它们在默认项目中带来的角色，除非邀请本身指定了默认项目。以下操作都适用此规则：
+1. **只授予自己拥有的权限。** 您只能在同一范围内授予自己拥有的权限：组织中的组织权限，该项目中的项目权限。只有在所有项目中都拥有某些权限时，才能授予在所有项目中的这些权限。以下操作都适用此规则：
    - 更改成员的角色或权限；
    - 发出邀请或重新发送邀请；
    - 添加项目成员；
@@ -93,7 +93,7 @@ order: 4
 | 权限 | 名称 | 允许的操作 | 备注 |
 | --- | --- | --- | --- |
 | `org.view` | 查看组织 | 查看组织及其设置和角色。 |  |
-| `org.update` | 编辑组织 | 重命名组织，更改其图片和常规设置，并选择默认项目。 |  |
+| `org.update` | 编辑组织 | 重命名组织，并更改其图片和常规设置。 |  |
 | `org.delete` | 删除组织 | 计划删除组织，或在等待期间将其恢复。 | 敏感；需近期登录 |
 | `org.ownership.transfer` | 转让所有权 | 让另一位成员代替您成为所有者；仅所有者拥有此权限。 | 敏感；需近期登录；需要 `members.view` |
 

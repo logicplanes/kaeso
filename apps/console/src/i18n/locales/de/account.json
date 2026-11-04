@@ -32,7 +32,6 @@
   "account.copySetupKey": "Einrichtungsschlüssel kopieren",
   "account.currentPassword": "Aktuelles Passwort",
   "account.customizeAgentHint": "Nichts ändert sich, bevor Sie die Rechte speichern.",
-  "account.defaultProject": "Standard",
   "account.deleteAccount": "Konto löschen",
   "account.deleteConfirm": "Ihr Konto löschen?",
   "account.deleteConfirmHint": "Ihre Schlüssel werden archiviert, und im Verlauf erscheinen Sie als „Gelöschter Benutzer“.",

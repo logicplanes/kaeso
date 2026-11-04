@@ -77,22 +77,25 @@ export async function signInAsOwner(page: Page): Promise<void> {
   ownerCookies = await page.context().cookies();
 }
 
-export async function openDefaultProject(page: Page): Promise<void> {
+export const FIRST_PROJECT = "Checkout assistant";
+
+export async function firstProjectOf(page: Page, org: string): Promise<string> {
+  const listed = (await (await page.request.get(`/platform/v1/orgs/${org}/projects`)).json()) as { data: { id: string; name: string }[] };
+  return listed.data.find((p) => p.name === FIRST_PROJECT)?.id ?? "";
+}
+
+export async function openFirstProject(page: Page): Promise<void> {
   const nav = page.getByRole("navigation", { name: "Console" });
   await nav.waitFor();
-  const memberships = (await (await page.request.get("/platform/v1/me/memberships")).json()) as {
-    data: { org_id: string; projects: { id: string; is_default: boolean }[] }[];
-  };
-  const org = new URL(page.url()).pathname.split("/")[2] ?? memberships.data[0]?.org_id;
-  const home = memberships.data.find((m) => m.org_id === org) ?? memberships.data[0];
-  const project = home?.projects.find((p) => p.is_default)?.id;
-  await nav.locator(`a[href="/orgs/${home?.org_id}/projects/${project}"]`).click();
+  const memberships = (await (await page.request.get("/platform/v1/me/memberships")).json()) as { data: { org_id: string }[] };
+  const org = new URL(page.url()).pathname.split("/")[2] ?? memberships.data[0]?.org_id ?? "";
+  await nav.locator(`a[href="/orgs/${org}/projects/${await firstProjectOf(page, org)}"]`).click();
   await expect(page).toHaveURL(/\/orgs\/[^/]+\/projects\/[^/]+$/);
 }
 
 export async function signInToProject(page: Page): Promise<void> {
   await signInAsOwner(page);
-  await openDefaultProject(page);
+  await openFirstProject(page);
 }
 
 const mailSearch = (query: string) => `${STACK_URLS.mail}/api/v1/search?query=${encodeURIComponent(query)}`;
@@ -141,6 +144,16 @@ export async function stepTo(dialog: Locator, target: Locator): Promise<void> {
     await expect(step).not.toHaveText(at);
   }
   await expect(target).toBeVisible();
+}
+
+export async function inviteToFirstProject(page: Page, dialog: Locator, role: string): Promise<void> {
+  const add = dialog.getByRole("button", { name: "Add a project" });
+  await stepTo(dialog, add);
+  await add.click();
+  await dialog.getByRole("combobox", { name: "Project" }).click();
+  await page.getByRole("option", { name: FIRST_PROJECT, exact: true }).click();
+  await dialog.getByRole("combobox", { name: "Role in the project" }).click();
+  await page.getByRole("option", { name: new RegExp(`^${role}`) }).click();
 }
 
 export async function submitSteps(dialog: Locator, submit: string): Promise<void> {

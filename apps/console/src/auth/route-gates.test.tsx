@@ -17,12 +17,11 @@ describe("the start page", () => {
     await waitFor(() => expect(window.location.pathname).toBe(`/orgs/${ORG}`));
   });
 
-  it("opens the last project the person was in", async () => {
+  it("opens the organization of the last project the person was in, not the project", async () => {
     signedIn();
-    on("GET", "orgs/:org/projects/:project/limits", page([]));
     window.localStorage.setItem("kaeso:last", JSON.stringify({ org: ORG, project: PROJECT }));
     await renderApp("/");
-    await waitFor(() => expect(window.location.pathname).toBe(BASE));
+    await waitFor(() => expect(window.location.pathname).toBe(`/orgs/${ORG}`));
   });
 
   it("stays on the welcome page without an organization", async () => {

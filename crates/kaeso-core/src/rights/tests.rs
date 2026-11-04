@@ -109,7 +109,6 @@ fn owners_and_admins_hold_every_project_right() {
         effective_project_rights(Some(&custom), None).names(),
         ["project.view", "usage.view"]
     );
-    assert_eq!(custom.default_project_preset(), ProjectPreset::Viewer);
 }
 
 #[test]
@@ -524,22 +523,6 @@ fn only_a_session_changes_single_sign_on() {
     );
 }
 
-#[test]
-fn org_presets_map_to_their_default_project_presets() {
-    use OrgPreset as O;
-    use ProjectPreset as P;
-    for (org, project) in [
-        (O::Owner, P::Admin),
-        (O::Admin, P::Admin),
-        (O::Developer, P::Developer),
-        (O::Billing, P::Viewer),
-        (O::Auditor, P::Viewer),
-        (O::Member, P::Viewer),
-    ] {
-        assert_eq!(org.default_project_preset(), project);
-    }
-}
-
 struct Entry {
     name: &'static str,
     sensitive: bool,
@@ -711,16 +694,12 @@ fn rights_reference() -> String {
     );
     out.push("## Built-in organization roles".to_owned());
     out.push(String::new());
-    out.extend(header(
-        &["Role", "Id", "Description", "Default project role"],
-        4,
-    ));
+    out.extend(header(&["Role", "Id", "Description"], 3));
     for p in OrgPreset::ALL {
         out.push(row(&[
             cell(p.name()),
             format!("`{}`", p.as_str()),
             cell(p.description()),
-            cell(p.default_project_preset().name()),
         ]));
     }
     out.push(String::new());

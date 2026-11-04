@@ -8797,86 +8797,6 @@
         "x-kaeso-access": "right:providers.custom.manage"
       }
     },
-    "/platform/v1/orgs/{org}/default-project": {
-      "put": {
-        "tags": [
-          "projects"
-        ],
-        "summary": "Makes an active project the org's default: the previous\ndefault becomes an ordinary project, in the same transaction, so the org\nalways has exactly one. Nobody joins or leaves a project by it: members\nkeep their places, and people who join the org from now on start in the\nnew default. Refused when pending invitations or the SSO default role\nwould give people rights there that the caller doesn't hold.",
-        "description": "**Right:** `org.update` on the organization in the path.",
-        "operationId": "putOrgsOrgDefaultProject",
-        "parameters": [
-          {
-            "name": "org",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/OrgId"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/DefaultProjectChoice"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProjectView"
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "#/components/responses/InvalidRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthenticated"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          },
-          "409": {
-            "$ref": "#/components/responses/Conflict"
-          },
-          "413": {
-            "$ref": "#/components/responses/TooLarge"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/Internal"
-          },
-          "503": {
-            "$ref": "#/components/responses/Unavailable"
-          }
-        },
-        "security": [
-          {
-            "session": []
-          },
-          {
-            "api_key": []
-          },
-          {
-            "agent": []
-          }
-        ],
-        "x-kaeso-access": "right:org.update"
-      }
-    },
     "/platform/v1/orgs/{org}/invites": {
       "get": {
         "tags": [
@@ -11434,7 +11354,7 @@
         "tags": [
           "projects"
         ],
-        "summary": "Archives the project with all its keys and service accounts. Archiving\nis permanent; the default project cannot be archived.",
+        "summary": "Archives the project with all its keys and service accounts. Archiving\nis permanent.",
         "description": "**Right:** `project.archive` on the project in the path.",
         "operationId": "postOrgsOrgProjectsProjectArchive",
         "parameters": [
@@ -20966,20 +20886,6 @@
           }
         }
       },
-      "DefaultProjectChoice": {
-        "type": "object",
-        "description": "The project that becomes the org's default.",
-        "required": [
-          "project_id"
-        ],
-        "properties": {
-          "project_id": {
-            "$ref": "#/components/schemas/ProjectId",
-            "description": "An active project of the org."
-          }
-        },
-        "additionalProperties": false
-      },
       "DeletionRequest": {
         "type": "object",
         "description": "A deletion of logs in a time range.",
@@ -21883,7 +21789,6 @@
         "required": [
           "id",
           "name",
-          "is_default",
           "rights"
         ],
         "properties": {
@@ -21897,10 +21802,6 @@
           "id": {
             "$ref": "#/components/schemas/ProjectId",
             "description": "The project."
-          },
-          "is_default": {
-            "type": "boolean",
-            "description": "Whether it is the org's default project."
           },
           "name": {
             "type": "string",
@@ -22376,14 +22277,14 @@
             "items": {
               "$ref": "#/components/schemas/InviteProjectRequest"
             },
-            "description": "Projects to join besides the default project, with project roles."
+            "description": "Projects to join, with project roles."
           },
           "role": {
             "type": [
               "string",
               "null"
             ],
-            "description": "The org role: a built-in role's name (`owner`, `admin`, `billing`,\n`developer`, `auditor`, `member`) or a custom org role's id. Only a\nrole whose rights the inviter holds, and whose project role in the\ndefault project the inviter could grant there unless `project_roles`\nnames it; only owners invite owners.",
+            "description": "The org role: a built-in role's name (`owner`, `admin`, `billing`,\n`developer`, `auditor`, `member`) or a custom org role's id. Only a\nrole whose rights the inviter holds; only owners invite owners.",
             "example": "developer"
           }
         },
@@ -25095,7 +24996,6 @@
                 "id",
                 "org_id",
                 "name",
-                "is_default",
                 "content_logging",
                 "created_at"
               ],
@@ -25128,10 +25028,6 @@
                 "id": {
                   "$ref": "#/components/schemas/ProjectId",
                   "description": "Id."
-                },
-                "is_default": {
-                  "type": "boolean",
-                  "description": "Whether it is the org's default project."
                 },
                 "max_key_lifetime_days": {
                   "type": [
@@ -26601,7 +26497,6 @@
         "required": [
           "id",
           "name",
-          "is_default",
           "role",
           "preset"
         ],
@@ -26616,10 +26511,6 @@
           "id": {
             "$ref": "#/components/schemas/ProjectId",
             "description": "The project."
-          },
-          "is_default": {
-            "type": "boolean",
-            "description": "Whether it is the default project."
           },
           "name": {
             "type": "string",
@@ -27685,8 +27576,7 @@
         "description": "A project as named in rights.",
         "required": [
           "id",
-          "name",
-          "is_default"
+          "name"
         ],
         "properties": {
           "avatar_url": {
@@ -27699,10 +27589,6 @@
           "id": {
             "$ref": "#/components/schemas/ProjectId",
             "description": "The project."
-          },
-          "is_default": {
-            "type": "boolean",
-            "description": "Whether it is the org's default project."
           },
           "name": {
             "type": "string",
@@ -27919,7 +27805,6 @@
           "id",
           "org_id",
           "name",
-          "is_default",
           "content_logging",
           "created_at"
         ],
@@ -27952,10 +27837,6 @@
           "id": {
             "$ref": "#/components/schemas/ProjectId",
             "description": "Id."
-          },
-          "is_default": {
-            "type": "boolean",
-            "description": "Whether it is the org's default project."
           },
           "max_key_lifetime_days": {
             "type": [
@@ -29522,7 +29403,7 @@
               "string",
               "null"
             ],
-            "description": "The org role of SSO users who arrive without an invite: a built-in\nrole other than `owner`, or a custom org role's id; `null` for invite\nonly. Only a role whose rights the caller holds, and whose project role\nin the default project the caller could grant there, can be chosen.",
+            "description": "The org role of SSO users who arrive without an invite: a built-in\nrole other than `owner`, or a custom org role's id; `null` for invite\nonly. Only a role whose rights the caller holds can be chosen.",
             "example": "developer"
           },
           "domains": {

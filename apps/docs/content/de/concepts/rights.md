@@ -42,14 +42,14 @@ Integrierte Rollen sind in jeder Organisation gleich, und niemand kann sie ände
 
 Eine Organisationsrolle enthält auch Rechte in jedem Projekt, zusätzlich zur eigenen Projektrolle des Mitglieds dort:
 
-| Organisationsrolle | Organisationsrechte | Rechte in jedem Projekt | Beginnt im Standardprojekt als |
-| --- | --- | --- | --- |
-| Inhaber | Alle, auch die künftiger Versionen | Alle | Admin |
-| Admin | Alle außer `org.delete`, `org.ownership.transfer` und `billing.manage` | Alle | Admin |
-| Abrechnung | `org.view`, `members.view`, `projects.view.all`, `logs.storage.view`, `usage.org.view`, `costs.org.view`, `billing.view`, `billing.manage` | Keine | Betrachter |
-| Entwickler | `org.view`, `members.view`, `projects.create`, `provider_credentials.view`, `providers.custom.view`, `logs.storage.view`, `usage.org.view`, `costs.org.view` | Keine | Entwickler |
-| Prüfer | `org.view`, `members.view`, `projects.view.all`, `provider_credentials.view`, `providers.custom.view`, `platform_keys.view`, `logs.storage.view`, `usage.org.view`, `costs.org.view`, `billing.view`, `audit_log.view`, `audit_log.export` | Die des Betrachters und `project.audit_log.view` | Betrachter |
-| Mitglied | `org.view`, `members.view` | Keine | Betrachter |
+| Organisationsrolle | Organisationsrechte | Rechte in jedem Projekt |
+| --- | --- | --- |
+| Inhaber | Alle, auch die künftiger Versionen | Alle |
+| Admin | Alle außer `org.delete`, `org.ownership.transfer` und `billing.manage` | Alle |
+| Abrechnung | `org.view`, `members.view`, `projects.view.all`, `logs.storage.view`, `usage.org.view`, `costs.org.view`, `billing.view`, `billing.manage` | Keine |
+| Entwickler | `org.view`, `members.view`, `projects.create`, `provider_credentials.view`, `providers.custom.view`, `logs.storage.view`, `usage.org.view`, `costs.org.view` | Keine |
+| Prüfer | `org.view`, `members.view`, `projects.view.all`, `provider_credentials.view`, `providers.custom.view`, `platform_keys.view`, `logs.storage.view`, `usage.org.view`, `costs.org.view`, `billing.view`, `audit_log.view`, `audit_log.export` | Die des Betrachters und `project.audit_log.view` |
+| Mitglied | `org.view`, `members.view` | Keine |
 
 | Projektrolle | Rechte |
 | --- | --- |
@@ -59,7 +59,7 @@ Eine Organisationsrolle enthält auch Rechte in jedem Projekt, zusätzlich zur e
 
 Zwei Organisationsrechte reichen ebenfalls in jedes Projekt. `projects.view.all` gibt `project.view`, und `projects.archive.any` gibt `project.view` und `project.archive`.
 
-Die Rechte eines Mitglieds in einem Projekt ergeben sich aus drei Quellen: seiner Projektrolle, den Rechten seiner Organisationsrolle in jedem Projekt und dem, was diese beiden Rechte erreichen. Im Standardprojekt beginnen Inhaber und Admins als Projekt-Admin und Entwickler als Entwickler. Jede andere Organisationsrolle beginnt als Betrachter, eigene Rollen eingeschlossen.
+Die Rechte eines Mitglieds in einem Projekt ergeben sich aus drei Quellen: seiner Projektrolle, den Rechten seiner Organisationsrolle in jedem Projekt und dem, was diese beiden Rechte erreichen. Wer einer Organisation beitritt, kommt dadurch in kein Projekt: Er tritt den Projekten bei, die seine Einladung nennt, oder denen, zu denen man ihn später hinzufügt.
 
 ### Eigene Rollen
 
@@ -73,7 +73,7 @@ Die Rechte eines Mitglieds in einem Projekt ergeben sich aus drei Quellen: seine
 
 Jede Änderung an Rollen und Rechten folgt diesen Regeln:
 
-1. **Nur vergeben, was Sie selbst haben.** Sie können nur Rechte vergeben, die Sie selbst im selben Bereich haben: Organisationsrechte in der Organisation, Projektrechte in diesem Projekt. Rechte in jedem Projekt können Sie nur vergeben, wenn Sie sie in jedem Projekt haben. Bei einer Einladung und der Rolle für Single Sign-on gilt die Regel auch für die Rolle, die sie im Standardprojekt mitbringen, außer die Einladung nennt das Standardprojekt selbst. Die Regel gilt, wenn Sie:
+1. **Nur vergeben, was Sie selbst haben.** Sie können nur Rechte vergeben, die Sie selbst im selben Bereich haben: Organisationsrechte in der Organisation, Projektrechte in diesem Projekt. Rechte in jedem Projekt können Sie nur vergeben, wenn Sie sie in jedem Projekt haben. Die Regel gilt, wenn Sie:
    - Rolle oder Rechte eines Mitglieds ändern;
    - jemanden einladen oder eine Einladung erneut senden;
    - ein Projektmitglied hinzufügen;
@@ -93,7 +93,7 @@ Die [Platform API](../api/platform-api.md) beschreibt die Routen für Rechte, Ro
 | Recht | Name | Was es erlaubt | Hinweise |
 | --- | --- | --- | --- |
 | `org.view` | Organisation ansehen | Die Organisation, ihre Einstellungen und Rollen sehen. |  |
-| `org.update` | Organisation bearbeiten | Die Organisation umbenennen, Bild und allgemeine Einstellungen ändern und das Standardprojekt wählen. |  |
+| `org.update` | Organisation bearbeiten | Die Organisation umbenennen und Bild und allgemeine Einstellungen ändern. |  |
 | `org.delete` | Organisation löschen | Die Organisation zur Löschung vormerken oder sie in der Wartezeit wiederherstellen. | sensibel; kürzliche Anmeldung |
 | `org.ownership.transfer` | Inhaberschaft übertragen | Ein anderes Mitglied an Ihrer Stelle zum Inhaber machen; nur Inhaber haben dieses Recht. | sensibel; kürzliche Anmeldung; erfordert `members.view` |
 

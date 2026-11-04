@@ -1,42 +1,32 @@
 import { describe, expect, it } from "vitest";
 import { ORG, OTHER_PROJECT, PROJECT, myMembership, myProject } from "~/test/fixtures";
 import { writeLast } from "./last";
-import { defaultProjectOf, homePlace } from "./place";
+import { homeOrg } from "./place";
 
-const globex = myMembership({ org_id: "org_globex", org_name: "Globex", projects: [myProject({ id: "proj_globex", is_default: false })] });
+const globex = myMembership({ org_id: "org_globex", org_name: "Globex", projects: [myProject({ id: "proj_globex" })] });
 
 describe("the place to start", () => {
-  it("returns to the last project the person worked in", () => {
+  it("opens the organization of the last project, not the project", () => {
     writeLast({ org: ORG, project: OTHER_PROJECT });
-    expect(homePlace([globex, myMembership()])).toEqual({ org: ORG, project: OTHER_PROJECT });
+    expect(homeOrg([globex, myMembership()])).toBe(ORG);
   });
 
-  it("falls back to the organization when the last project is gone", () => {
-    writeLast({ org: ORG, project: "proj_gone" });
-    expect(homePlace([myMembership()])).toEqual({ org: ORG });
-  });
-
-  it("keeps an organization-only last place", () => {
+  it("opens the last organization", () => {
     writeLast({ org: ORG });
-    expect(homePlace([globex, myMembership()])).toEqual({ org: ORG });
+    expect(homeOrg([globex, myMembership()])).toBe(ORG);
   });
 
   it("starts in the first organization when the last one was left", () => {
     writeLast({ org: "org_left", project: PROJECT });
-    expect(homePlace([globex, myMembership()])).toEqual({ org: "org_globex" });
+    expect(homeOrg([globex, myMembership()])).toBe("org_globex");
+  });
+
+  it("opens an organization without projects", () => {
+    expect(homeOrg([myMembership({ projects: [] })])).toBe(ORG);
   });
 
   it("has nowhere to start without memberships", () => {
     window.localStorage.setItem("kaeso:last", JSON.stringify({ org: "" }));
-    expect(homePlace([])).toBeNull();
-  });
-});
-
-describe("the default project", () => {
-  it("prefers the marked default, then the first project", () => {
-    expect(defaultProjectOf([myMembership()], ORG)).toBe(PROJECT);
-    expect(defaultProjectOf([globex], "org_globex")).toBe("proj_globex");
-    expect(defaultProjectOf([myMembership({ projects: [] })], ORG)).toBeNull();
-    expect(defaultProjectOf([], ORG)).toBeNull();
+    expect(homeOrg([])).toBeNull();
   });
 });

@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { AppFrame, Avatar, Badge, Button, Empty, FilterRow, IconButton, List, Menu, SearchInput, icons } from "@logicplanes/kaeso-ui";
+import { AppFrame, Avatar, Badge, Button, Empty, FilterRow, List, SearchInput, icons } from "@logicplanes/kaeso-ui";
 import { formatDate, formatNumber } from "@logicplanes/kaeso-ui/format";
-import type { ProjectView } from "~/api/generated/types";
 import { orgProjectsQuery } from "~/api/queries/projects";
 import { orgUsageQuery } from "~/api/queries/usage";
 import { useNeedsRight } from "~/auth/needs-right";
@@ -15,7 +14,6 @@ import { resolvePeriod } from "~/format/presets";
 import { OrgHeader } from "~/shell/org-header";
 import { projectPath } from "~/shell/pages";
 import { CreateProjectDialog } from "./create-project-dialog";
-import { MakeDefaultDialog } from "./make-default-dialog";
 import { t } from "~/i18n";
 import { compareNames } from "~/format/collate";
 
@@ -29,11 +27,9 @@ export function OrgProjectsPage({ org, search }: { org: string; search: OrgProje
   const needs = useNeedsRight(org);
   const canCreate = rights.has("projects.create");
   const createReason = canCreate ? undefined : needs("projects.create");
-  const canChooseDefault = rights.has("org.update");
   const [scope, setScope] = useState<Scope>("active");
   const [query, setQuery] = useState("");
   const [creating, setCreating] = useState(!!search.create && canCreate);
-  const [promoting, setPromoting] = useState<ProjectView | null>(null);
   const projects = useQuery(orgProjectsQuery(org, scope !== "active"));
   const last30 = resolvePeriod({});
   const usage = useQuery({ ...orgUsageQuery(org, last30.from, last30.to, "project"), enabled: rights.has("usage.org.view") });
@@ -43,8 +39,7 @@ export function OrgProjectsPage({ org, search }: { org: string; search: OrgProje
     setCreating(false);
     if (search.create) void navigate({ to: "/orgs/$org/projects", params: { org }, search: {}, replace: true });
   };
-  const all = [...(projects.data ?? [])].sort((a, b) => Number(b.is_default) - Number(a.is_default) || compareNames(a.name, b.name));
-  const current = all.find((p) => p.is_default);
+  const all = [...(projects.data ?? [])].sort((a, b) => compareNames(a.name, b.name));
   const words = query.trim().toLocaleLowerCase();
   const list = all.filter((p) => (scope !== "archived" || p.archived_at) && (!words || p.name.toLocaleLowerCase().includes(words)));
   const requests = (id: string) => {
@@ -56,22 +51,6 @@ export function OrgProjectsPage({ org, search }: { org: string; search: OrgProje
           formatted: formatNumber(n),
         })
       : t("orgHome.noRequestsIn30Days", "No requests in 30 days");
-  };
-
-  const menu = (p: ProjectView) => {
-    if (!canChooseDefault || p.is_default || p.archived_at) return undefined;
-    return (
-      <Menu>
-        <Menu.Trigger>
-          <IconButton icon={icons.more} aria-label={t("orgHome.actionsFor", "Actions for {name}", { name: p.name })} size="xs" />
-        </Menu.Trigger>
-        <Menu.Content align="end">
-          <Menu.Item icon={icons.home} onClick={() => setPromoting(p)}>
-            {t("orgHome.makeDefault", "Make default")}
-          </Menu.Item>
-        </Menu.Content>
-      </Menu>
-    );
   };
 
   return (
@@ -119,6 +98,13 @@ export function OrgProjectsPage({ org, search }: { org: string; search: OrgProje
             <Empty
               title={t("orgHome.noProjects", "No projects you can see")}
               description={t("orgHome.noProjectsHint", "Projects you belong to are listed here.")}
+              actions={
+                canCreate && (
+                  <Button variant="primary" leadingIcon={icons.add} onClick={() => setCreating(true)}>
+                    {t("orgHome.createProject", "Create project")}
+                  </Button>
+                )
+              }
             />
           )
         ) : (
@@ -131,22 +117,16 @@ export function OrgProjectsPage({ org, search }: { org: string; search: OrgProje
               title: p.name,
               subtitle: requests(p.id),
               leading: <Avatar name={p.name} {...(p.avatar_url ? { src: p.avatar_url } : {})} kind="org" size={20} decorative />,
-              meta: p.is_default ? (
-                <Badge>{t("orgHome.default", "Default")}</Badge>
-              ) : p.archived_at ? (
-                <Badge>{t("common.archived", "Archived")}</Badge>
-              ) : undefined,
+              meta: p.archived_at ? <Badge>{t("common.archived", "Archived")}</Badge> : undefined,
               date: p.archived_at
                 ? t("orgHome.archivedOn", "Archived {date}", { date: formatDate(p.archived_at) })
                 : t("orgHome.createdOn", "Created {date}", { date: formatDate(p.created_at) }),
-              actions: menu(p),
             }))}
             onOpen={(item) => void navigate({ href: projectPath(org, item.id) })}
           />
         )}
       </AppFrame.Body>
       {creating && <CreateProjectDialog org={org} onClose={closeCreate} />}
-      {promoting && <MakeDefaultDialog org={org} project={promoting} current={current} onClose={() => setPromoting(null)} />}
     </>
   );
 }

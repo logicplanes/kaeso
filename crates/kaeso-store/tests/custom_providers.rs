@@ -14,14 +14,12 @@ async fn org_with_project(pg: &sqlx::PgPool, name: &str) -> (Uuid, Uuid) {
     .execute(pg)
     .await
     .unwrap();
-    sqlx::query(
-        "INSERT INTO projects (id, org_id, name, is_default) VALUES ($1, $2, 'Default', true)",
-    )
-    .bind(project)
-    .bind(org)
-    .execute(pg)
-    .await
-    .unwrap();
+    sqlx::query("INSERT INTO projects (id, org_id, name) VALUES ($1, $2, 'Checkout')")
+        .bind(project)
+        .bind(org)
+        .execute(pg)
+        .await
+        .unwrap();
     (org, project)
 }
 

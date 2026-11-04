@@ -1,6 +1,6 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { ALL_PROJECT_RIGHTS, ORG, PROJECT, project, signedIn, signedOut, whoAmI } from "~/test/fixtures";
+import { ALL_PROJECT_RIGHTS, ORG, PROJECT, project, signedIn, signedOut, whoAmI, withRights } from "~/test/fixtures";
 import { methods } from "~/test/fixtures/public";
 import { listed } from "~/test/fixtures/project";
 import { apiError, on, requests } from "~/test/network";
@@ -38,16 +38,14 @@ describe("opening the app", () => {
     expect(screen.getByRole("button", { name: "Retry now" })).toBeInTheDocument();
   });
 
-  it("opens the person's default project from the start page", async () => {
-    signedIn();
-    on("GET", "orgs/:org/projects/:project/usage/span", { first_day: null, last_day: null });
-    on("GET", "orgs/:org/projects/:project/usage", { data: [] });
-    on("GET", "orgs/:org/projects/:project/models", { data: [] });
-    on("GET", "orgs/:org/projects/:project/logs", listed([]));
+  it("opens the organization from the start page, even when the person last worked in a project", async () => {
+    withRights(["org.view"]);
     window.localStorage.setItem("kaeso:last", JSON.stringify({ org: ORG, project: PROJECT }));
     const { router } = await renderApp("/");
-    await waitFor(() => expect(router.state.location.pathname).toBe(`/orgs/${ORG}/projects/${PROJECT}`));
+    await waitFor(() => expect(router.state.location.pathname).toBe(`/orgs/${ORG}`));
     expect(await screen.findByRole("heading", { name: "Overview", level: 1 })).toBeInTheDocument();
+    expect(await screen.findByRole("grid", { name: "Projects" })).toBeInTheDocument();
+    expect(requests("GET", "orgs/:org/projects/:project")).toHaveLength(0);
   });
 
   it("welcomes a person who is in no organization", async () => {

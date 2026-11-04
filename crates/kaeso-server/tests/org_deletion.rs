@@ -12,7 +12,7 @@ use time::OffsetDateTime;
 use time::format_description::well_known::Rfc3339;
 
 async fn join(app: &App, owner: &Owner, email: &str, preset: &str) -> String {
-    common::join(
+    common::join_first_project(
         app,
         owner,
         json!({ "email": email, "preset": preset }),
@@ -31,21 +31,6 @@ async fn sign_in(app: &App, email: &str) -> String {
     .await
     .cookie()
     .unwrap()
-}
-
-async fn default_project(app: &App, owner: &Owner) -> String {
-    let r = app
-        .get(&format!("/orgs/{}/projects", owner.org_id), &owner.cookie)
-        .await;
-    r.body["data"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .find(|p| p["is_default"] == true)
-        .unwrap()["id"]
-        .as_str()
-        .unwrap()
-        .to_owned()
 }
 
 fn due(body: &Value) -> OffsetDateTime {
@@ -79,7 +64,7 @@ async fn a_scheduled_org_stays_readable_refuses_changes_and_can_be_restored() {
     let app = App::start(&s).await;
     let owner = app.setup().await;
     let org = owner.org_id.clone();
-    let project = default_project(&app, &owner).await;
+    let project = common::first_project(&app, &owner).await;
     let dev = join(&app, &owner, "developer@example.com", "developer").await;
     let key = app
         .post(
@@ -372,7 +357,7 @@ async fn the_org_is_deleted_for_good_when_its_grace_period_ends() {
     let owner = app.setup().await;
     let org = owner.org_id.clone();
     let dev = join(&app, &owner, "developer@example.com", "developer").await;
-    let project = default_project(&app, &owner).await;
+    let project = common::first_project(&app, &owner).await;
     let limit = app
         .post(
             &format!("/orgs/{org}/projects/{project}/limits"),
@@ -763,7 +748,7 @@ async fn a_restore_under_way_when_the_date_passes_keeps_the_logs() {
     let app = App::start(&s).await;
     let owner = app.setup().await;
     let org = common::uuid(&owner.org_id);
-    let project = common::uuid(&default_project(&app, &owner).await);
+    let project = common::uuid(&common::first_project(&app, &owner).await);
     let cookie = sign_in(&app, "owner@example.com").await;
     schedule(&app, &owner.org_id, &cookie).await;
     s.clickhouse.migrate(&s.pg).await.unwrap();

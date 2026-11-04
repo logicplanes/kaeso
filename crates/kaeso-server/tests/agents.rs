@@ -609,7 +609,7 @@ async fn authorize_refuses_bad_requests_without_leaking_to_strangers() {
 #[tokio::test]
 async fn an_agent_never_exceeds_its_user_or_the_policies() {
     let (_s, app, owner) = setup().await;
-    let (member, member_id) = common::join(
+    let (member, member_id) = common::join_first_project(
         &app,
         &owner,
         json!({ "email": "dev@example.com", "role": "developer" }),
@@ -802,7 +802,7 @@ async fn consent_refuses_what_agents_may_never_have() {
             .contains("instance.updates.apply")
     );
 
-    let (member, _) = common::join(
+    let (member, _) = common::join_first_project(
         &app,
         &owner,
         json!({ "email": "m@example.com", "role": "member" }),
@@ -1199,14 +1199,14 @@ async fn stopped(app: &App, s: &Signed) -> bool {
 async fn agents_stop_when_every_session_of_their_user_ends() {
     let (_s, app, owner) = setup().await;
     let member_grant = grant(&owner.org_id, &["org.view"], &["project.view"]);
-    let (ada, ada_id) = common::join(
+    let (ada, ada_id) = common::join_first_project(
         &app,
         &owner,
         json!({ "email": "ada@example.com", "role": "developer" }),
         "Ada",
     )
     .await;
-    let (grace, grace_id) = common::join(
+    let (grace, grace_id) = common::join_first_project(
         &app,
         &owner,
         json!({ "email": "grace@example.com", "role": "developer" }),
@@ -1704,7 +1704,7 @@ async fn an_agent_sees_only_the_orgs_and_projects_it_can_open() {
 #[tokio::test]
 async fn a_closed_org_cant_be_left_by_the_agent() {
     let (_s, app, owner) = setup().await;
-    let (member, _) = common::join(
+    let (member, _) = common::join_first_project(
         &app,
         &owner,
         json!({ "email": "dev@example.com", "role": "developer" }),

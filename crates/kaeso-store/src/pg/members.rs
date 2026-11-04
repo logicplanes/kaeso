@@ -639,7 +639,6 @@ pub struct UserProject {
     pub org_id: Uuid,
     pub project_id: Uuid,
     pub project_name: String,
-    pub is_default: bool,
     pub project_avatar: Option<String>,
     pub preset: String,
     pub role_id: Option<Uuid>,
@@ -658,7 +657,7 @@ pub async fn projects_of_user(
 ) -> Result<Vec<UserProject>, StoreError> {
     Ok(sqlx::query_as!(
         UserProject,
-        "SELECT p.org_id, p.id AS project_id, p.name AS project_name, p.is_default, p.avatar AS project_avatar, \
+        "SELECT p.org_id, p.id AS project_id, p.name AS project_name, p.avatar AS project_avatar, \
          m.preset, m.role_id, m.rights_added, m.rights_removed, r.name AS \"role_name?\", r.rights AS \"role_rights?\", r.project_rights AS \"role_project_rights?\" FROM project_memberships m JOIN projects p ON p.id = m.project_id \
          LEFT JOIN org_roles r ON r.id = m.role_id \
          WHERE m.user_id = $1 AND p.archived_at IS NULL ORDER BY p.org_id, p.id",

@@ -15,20 +15,22 @@ const titles = async () =>
     .map((c) => c.textContent);
 
 describe("organization projects", () => {
-  it("lists the default project first, then the others by name", async () => {
+  it("lists the projects by name, each with no actions of its own", async () => {
     signedIn({
-      projects: [project({ id: "proj_zeta", name: "Zeta", is_default: false }), project({ id: OTHER_PROJECT, name: "Alpha", is_default: false }), project()],
+      projects: [project({ id: "proj_zeta", name: "Zeta", avatar_url: "/avatars/zeta.webp" }), project({ id: OTHER_PROJECT, name: "Alpha" }), project()],
     });
     const { user, router } = await renderApp(PATH);
-    await within(await list()).findByRole("gridcell", { name: /Zeta/ });
-    expect(await titles()).toEqual(["CCheckout assistantDefaultCreated 15 Oct 2026", "AAlphaCreated 15 Oct 2026", "ZZetaCreated 15 Oct 2026"]);
+    const zeta = await within(await list()).findByRole("gridcell", { name: /Zeta/ });
+    expect(zeta.querySelector('img[src="/avatars/zeta.webp"]')).not.toBeNull();
+    expect(await titles()).toEqual(["AAlphaCreated 15 Oct 2026", "CCheckout assistantCreated 15 Oct 2026", "ZetaCreated 15 Oct 2026"]);
+    expect(within(await list()).queryByRole("button")).not.toBeInTheDocument();
     expect(requests("GET", PROJECTS)[0]?.query.get("include_archived")).toBe("true");
     await user.click(within(await list()).getByRole("gridcell", { name: /Alpha/ }));
     await waitFor(() => expect(router.state.location.pathname).toBe(`/orgs/${ORG}/projects/${OTHER_PROJECT}`));
   });
 
   it("says how many requests each project served in the last 30 days", async () => {
-    signedIn({ projects: [project(), project({ id: OTHER_PROJECT, name: "Support triage", is_default: false })] });
+    signedIn({ projects: [project(), project({ id: OTHER_PROJECT, name: "Support triage" })] });
     on("GET", "orgs/:org/usage", { data: [usageRow(OTHER_PROJECT, { requests: 12_345 })] });
     await renderApp(PATH);
     expect(await within(await list()).findByText("12,345 requests in 30 days")).toBeInTheDocument();
@@ -44,7 +46,7 @@ describe("organization projects", () => {
   });
 
   it("finds projects by name and says when none match", async () => {
-    signedIn({ projects: [project(), project({ id: OTHER_PROJECT, name: "Support triage", is_default: false })] });
+    signedIn({ projects: [project(), project({ id: OTHER_PROJECT, name: "Support triage" })] });
     const { user } = await renderApp(PATH);
     await within(await list()).findByRole("gridcell", { name: /Support triage/ });
     const search = screen.getByRole("searchbox", { name: "Search projects" });
@@ -59,7 +61,7 @@ describe("organization projects", () => {
   });
 
   it("lists only the archived projects under Archived, after Active and before All", async () => {
-    signedIn({ projects: [project(), project({ id: "proj_old", name: "Old pilot", is_default: false, archived_at: "2026-09-01T00:00:00Z" })] });
+    signedIn({ projects: [project(), project({ id: "proj_old", name: "Old pilot", archived_at: "2026-09-01T00:00:00Z" })] });
     const { user } = await renderApp(PATH);
     await within(await list()).findByRole("gridcell", { name: /Checkout assistant/ });
     expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual(["Active", "Archived", "All"]);
@@ -81,7 +83,7 @@ describe("organization projects", () => {
     on("GET", PROJECTS, ({ query }: { query: URLSearchParams }) =>
       page(
         query.get("include_archived") === "true"
-          ? [project(), project({ id: "proj_old", name: "Old pilot", is_default: false, archived_at: "2026-09-01T00:00:00Z" })]
+          ? [project(), project({ id: "proj_old", name: "Old pilot", archived_at: "2026-09-01T00:00:00Z" })]
           : [project()],
       ),
     );
@@ -92,7 +94,6 @@ describe("organization projects", () => {
     const old = await within(await list()).findByRole("gridcell", { name: /Old pilot/ });
     expect(old).toHaveTextContent("Archived");
     expect(old).toHaveTextContent("Archived 1 Sep 2026");
-    expect(within(old).queryByRole("button", { name: "Actions for Old pilot" })).not.toBeInTheDocument();
   });
 
   it("says when there are no projects to see", async () => {
@@ -117,7 +118,7 @@ describe("organization projects", () => {
 
   it("creates a project with the trimmed name and opens it", async () => {
     signedIn();
-    on("POST", PROJECTS, ({ body }: { body: { name: string } }) => project({ id: "proj_new", name: body.name, is_default: false }));
+    on("POST", PROJECTS, ({ body }: { body: { name: string } }) => project({ id: "proj_new", name: body.name }));
     const { user, router } = await renderApp(PATH);
     await list();
     await user.click(screen.getByRole("button", { name: "Create project" }));
@@ -179,46 +180,16 @@ describe("organization projects", () => {
     expect(await screen.findByRole("dialog", { name: "Create project" })).toBeInTheDocument();
   });
 
-  it("makes another project the default", async () => {
-    signedIn({ projects: [project({ avatar_url: "/avatars/checkout.webp" }), project({ id: OTHER_PROJECT, name: "Support triage", is_default: false })] });
-    on("PUT", "orgs/:org/default-project", project({ id: OTHER_PROJECT, name: "Support triage" }));
-    const { user } = await renderApp(PATH);
-    const row = await within(await list()).findByRole("gridcell", { name: /Support triage/ });
-    const current = within(await list()).getByRole("gridcell", { name: /Checkout assistant/ });
-    expect(current.querySelector("button")).toBeNull();
-    expect(current.querySelector('img[src="/avatars/checkout.webp"]')).not.toBeNull();
-    await user.click(within(row).getByRole("button", { name: "Actions for Support triage" }));
-    await user.click(await screen.findByRole("menuitem", { name: "Make default" }));
-    const dialog = await screen.findByRole("dialog", { name: /Make default project/ });
-    expect(within(dialog).getByText("Make Support triage the default?")).toBeInTheDocument();
-    expect(within(dialog).getByText("People who join the organization from now on start there; current members don't join it.")).toBeInTheDocument();
-    expect(within(dialog).getByText("Default now")).toBeInTheDocument();
-    expect(dialog.querySelector('img[src="/avatars/checkout.webp"]')).not.toBeNull();
-    expect(within(dialog).getByText("Checkout assistant stays a project; its members keep their places.")).toBeInTheDocument();
-    await user.click(within(dialog).getByRole("button", { name: "Make default" }));
-    expect(await notifications().findByText("Support triage is the default project")).toBeInTheDocument();
-    expect(requests("PUT", "orgs/:org/default-project").map((r) => r.body)).toEqual([{ project_id: OTHER_PROJECT }]);
-    await waitFor(() => expect(screen.queryByRole("dialog", { name: /Make default project/ })).not.toBeInTheDocument());
-  });
-
-  it("asks plainly when the organization has no default yet", async () => {
-    signedIn({ projects: [project({ is_default: false }), project({ id: OTHER_PROJECT, name: "Support triage", is_default: false })] });
-    const { user } = await renderApp(PATH);
-    const row = await within(await list()).findByRole("gridcell", { name: /Support triage/ });
-    await user.click(within(row).getByRole("button", { name: "Actions for Support triage" }));
-    await user.click(await screen.findByRole("menuitem", { name: "Make default" }));
-    const dialog = await screen.findByRole("dialog", { name: /Make default project/ });
-    expect(within(dialog).queryByText("Default now")).not.toBeInTheDocument();
-    expect(within(dialog).getByText("New default")).toBeInTheDocument();
-    await user.keyboard("{Escape}");
-    await waitFor(() => expect(screen.queryByRole("dialog", { name: /Make default project/ })).not.toBeInTheDocument());
-  });
-
-  it("hides the actions menu without Edit organization", async () => {
-    withRights(["org.view", "projects.create"]);
-    await renderApp(PATH);
-    await within(await list()).findByRole("gridcell", { name: /Support triage/ });
-    expect(screen.queryByRole("button", { name: "Actions for Support triage" })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Create project" })).toBeInTheDocument();
+  it("offers to create the first project in an organization without projects", async () => {
+    signedIn({ projects: [] });
+    on("POST", PROJECTS, ({ body }: { body: { name: string } }) => project({ id: "proj_new", name: body.name }));
+    const { user, router } = await renderApp(PATH);
+    expect(await screen.findByText("No projects you can see")).toBeInTheDocument();
+    const [, inEmpty] = screen.getAllByRole("button", { name: "Create project" });
+    await user.click(inEmpty as HTMLElement);
+    const dialog = await screen.findByRole("dialog", { name: "Create project" });
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "Checkout assistant");
+    await user.click(within(dialog).getByRole("button", { name: "Create project" }));
+    await waitFor(() => expect(router.state.location.pathname).toBe(`/orgs/${ORG}/projects/proj_new`));
   });
 });

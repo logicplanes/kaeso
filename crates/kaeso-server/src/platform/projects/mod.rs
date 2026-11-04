@@ -41,7 +41,6 @@ pub fn routes(s: &Secure) -> OpenApiRouter<AppState> {
         .routes(s.route(Access::Project(R::SecurityKeyPolicyProjectManage), routes!(project::key_policy)))
         .routes(s.route(Access::Project(R::ProjectUpdate), routes!(project::set_avatar, project::remove_avatar)))
         .routes(s.route(Access::Project(R::ProjectArchive), routes!(project::archive)))
-        .routes(s.route(Access::Org(OrgRight::OrgUpdate), routes!(project::set_default)))
         .routes(s.route(Access::Project(R::ProjectMembersView), routes!(members::list)))
         .routes(s.route(Access::Project(R::ProjectMembersView), routes!(members::get)))
         .routes(s.route(Access::Project(R::ProjectMembersAdd), routes!(members::add)))

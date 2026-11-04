@@ -347,6 +347,18 @@ impl App {
     }
 
     pub async fn setup(&self) -> Owner {
+        let owner = self.setup_without_projects().await;
+        self.post(
+            &format!("/orgs/{}/projects", owner.org_id),
+            json!({ "name": "Checkout" }),
+            Some(&owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::CREATED);
+        owner
+    }
+
+    pub async fn setup_without_projects(&self) -> Owner {
         let url = kaeso_server::setup::issue_link(&self.state)
             .await
             .unwrap()
@@ -453,6 +465,52 @@ pub async fn join(app: &App, owner: &Owner, invite: Value, name: &str) -> (Strin
         accepted.cookie().unwrap(),
         accepted.body["user"]["id"].as_str().unwrap().to_owned(),
     )
+}
+
+pub async fn first_project(app: &App, owner: &Owner) -> String {
+    let r = app
+        .get(&format!("/orgs/{}/projects", owner.org_id), &owner.cookie)
+        .await
+        .expect_status(StatusCode::OK);
+    r.body["data"][0]["id"].as_str().unwrap().to_owned()
+}
+
+pub async fn create_project(app: &App, org: &str, cookie: &str, name: &str) -> String {
+    app.post(
+        &format!("/orgs/{org}/projects"),
+        json!({ "name": name }),
+        Some(cookie),
+    )
+    .await
+    .expect_status(StatusCode::CREATED)
+    .body["id"]
+        .as_str()
+        .unwrap()
+        .to_owned()
+}
+
+pub async fn join_first_project(
+    app: &App,
+    owner: &Owner,
+    mut invite: Value,
+    name: &str,
+) -> (String, String) {
+    let project = first_project(app, owner).await;
+    let role = match invite["role"].as_str().or(invite["preset"].as_str()) {
+        Some("owner" | "admin") => "admin",
+        Some("developer") => "developer",
+        _ => "viewer",
+    };
+    let roles = invite["project_roles"]
+        .as_array()
+        .cloned()
+        .unwrap_or_default();
+    if !roles.iter().any(|r| r["project_id"] == project.as_str()) {
+        let mut roles = roles;
+        roles.push(json!({ "project_id": project, "role": role }));
+        invite["project_roles"] = Value::Array(roles);
+    }
+    join(app, owner, invite, name).await
 }
 
 pub async fn manage_domain(app: &App, org: &str, domain: &str) {

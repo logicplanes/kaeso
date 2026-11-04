@@ -13,7 +13,7 @@ Diese Seiten erklären, wie Kaeso arbeitet, damit Sie wissen, was Sie erwartet, 
 | Installation | Eine Kaeso-Bereitstellung: Gateway, Konsole und ihre Datenbanken unter einer Domain ([Selbst hosten](../self-hosting/index.md)) |
 | Instanz-Admin | Ein Benutzer, der die Installation betreibt: ihre Benutzer, Organisationen und Einstellungen. Das gibt keine Rechte in Organisationen ([Instanzverwaltung](../console/instance-administration.md)) |
 | Organisation | Enthält Mitglieder, Anbieter-Schlüssel, Plattform-Schlüssel und Projekte ([Organisationen und Projekte](../console/organizations-and-projects.md)) |
-| Projekt | Enthält einen Modellkatalog, API-Schlüssel, Dienstkonten, Limits und Anfrageprotokolle. Jede Organisation hat ein Standardprojekt |
+| Projekt | Enthält einen Modellkatalog, API-Schlüssel, Dienstkonten, Limits und Anfrageprotokolle. Die Projekte einer Organisation sind alle gleich, und eine neue Organisation hat keines |
 | Mitglied | Eine Person in einer Organisation. Ein Mitglied hat eine Organisationsrolle und in jedem seiner Projekte eine Projektrolle |
 | Dienstkonto | Ein Projektmitglied für Software, etwa ein Deployment oder einen Job. Seine Schlüssel funktionieren weiter, wenn die Personen gehen, die sie erstellt haben |
 | Recht, Rolle | Ein Recht erlaubt eine Art von Aktion, etwa `keys.all.view`. Eine Rolle ist eine benannte Menge von Rechten ([Rechte](rights.md)) |

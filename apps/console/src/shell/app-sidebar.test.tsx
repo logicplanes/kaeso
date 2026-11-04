@@ -109,14 +109,14 @@ describe("the sidebar in a project", () => {
   });
 
   it("names the project it is in even when the organization's list leaves it out", async () => {
-    signedIn({ projects: [project({ id: OTHER_PROJECT, name: "Support triage", is_default: false })] });
+    signedIn({ projects: [project({ id: OTHER_PROJECT, name: "Support triage" })] });
     on("GET", "orgs/:org/projects/:project", project());
     on("GET", "orgs/:org/projects/:project/limits", page([]));
     const { user } = await renderApp(`/orgs/${ORG}/projects/${PROJECT}/limits`);
     await user.click(await within(sidebar()).findByRole("button", { name: "Checkout assistant", description: "Switch project" }));
     const menu = await screen.findByRole("menu");
     expect(within(menu).getAllByRole("menuitemradio")).toHaveLength(2);
-    expect(within(menu).getByRole("menuitemradio", { name: /Checkout assistant/ })).toHaveTextContent("Default");
+    expect(within(menu).getByRole("menuitemradio", { name: /Checkout assistant/ })).toHaveTextContent(/^.Checkout assistant$/);
     expect(within(menu).getByRole("menuitemradio", { name: /Support triage/ })).toBeInTheDocument();
   });
 });
@@ -137,7 +137,7 @@ describe("the sidebar in an organization", () => {
   it("lists projects past the first page", async () => {
     signedIn();
     on("GET", "orgs/:org/projects", ({ query }: { query: URLSearchParams }) =>
-      query.get("after") === "cur_2" ? page([project({ id: "proj_late", name: "Late project", is_default: false })]) : page([project()], "cur_2"),
+      query.get("after") === "cur_2" ? page([project({ id: "proj_late", name: "Late project" })]) : page([project()], "cur_2"),
     );
     await renderApp(`/orgs/${ORG}/projects`);
     const nav = await screen.findByRole("navigation", { name: "Console" });
@@ -320,7 +320,7 @@ describe("pictures in the sidebar", () => {
   it("shows the organization's and the projects' pictures", async () => {
     signedIn({
       session: whoAmI({ memberships: [membership({ org_avatar_url: "/avatars/org.webp" })], user: { ...whoAmI().user, avatar_url: "/avatars/ada.webp" } }),
-      projects: [project({ avatar_url: "/avatars/checkout.webp" }), project({ id: OTHER_PROJECT, name: "Support triage", is_default: false })],
+      projects: [project({ avatar_url: "/avatars/checkout.webp" }), project({ id: OTHER_PROJECT, name: "Support triage" })],
     });
     on("GET", "orgs/:org/projects/:project/limits", page([]));
     const { container } = await renderApp(`/orgs/${ORG}/projects/${PROJECT}/limits`);

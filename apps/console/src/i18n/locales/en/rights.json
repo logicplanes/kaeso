@@ -122,7 +122,7 @@
   "rights.orgDelete.name": "Delete organization",
   "rights.orgOwnershipTransfer.description": "Make another member an owner in your place; only owners hold it.",
   "rights.orgOwnershipTransfer.name": "Transfer ownership",
-  "rights.orgUpdate.description": "Rename the organization, change its picture and general settings, and choose the default project.",
+  "rights.orgUpdate.description": "Rename the organization and change its picture and general settings.",
   "rights.orgUpdate.name": "Edit organization",
   "rights.orgView.description": "See the organization, its settings and its roles.",
   "rights.orgView.name": "View organization",

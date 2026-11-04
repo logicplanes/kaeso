@@ -8,9 +8,9 @@ Eine Organisation umfasst Mitglieder, Anbieter-Schlüssel und Projekte. Ein Proj
 
 ## Organisation erstellen
 
-Öffnen Sie das Menü am Fuß der Seitenleiste und wählen Sie **Organisation erstellen**. Sie werden Inhaber der neuen Organisation, und sie beginnt mit einem Standardprojekt. Wer Organisationen erstellen darf, legt die Installation fest ([Instanzeinstellungen](instance-administration.md#installationseinstellungen-ändern)).
+Öffnen Sie das Menü am Fuß der Seitenleiste und wählen Sie **Organisation erstellen**. Sie werden Inhaber der neuen Organisation, und sie beginnt ohne Projekte. Wer Organisationen erstellen darf, legt die Installation fest ([Instanzeinstellungen](instance-administration.md#installationseinstellungen-ändern)).
 
-Dasselbe Menü listet Ihre Organisationen und wechselt zwischen ihnen.
+Dasselbe Menü listet Ihre Organisationen und wechselt zwischen ihnen. Wer Kaeso oder eine andere Organisation öffnet, sieht die **Übersicht** der Organisation; ein Projekt öffnen Sie dort oder in der Seitenleiste.
 
 ## Nutzung ablesen
 
@@ -122,9 +122,7 @@ Wählen Sie unter **Projekte** **Projekt erstellen** und geben Sie einen Namen e
 
 **Archiviert** listet archivierte Projekte, **Alle** jedes Projekt. Die Suche findet ein Projekt nach seinem Namen, und wer die Nutzung der Organisation sehen darf, sieht bei jedem Projekt seine Anfragen der letzten 30 Tage.
 
-Das Standardprojekt ist das Projekt, in dem neue Mitglieder beginnen. Um den Standard zu verlegen, wählen Sie **Als Standard festlegen** im Menü eines anderen Projekts. Dafür brauchen Sie das Recht **Organisation bearbeiten**.
-
-Nur wer der Organisation danach beitritt, beginnt im neuen Standardprojekt; bisherige Mitglieder behalten ihre Plätze und treten ihm nicht bei. Das bisherige Standardprojekt bleibt ein Projekt mit seinen Mitgliedern. Kaeso lehnt die Verlegung ab, solange offene Einladungen oder die Rolle für Single Sign-on Personen dort Rechte geben würden, die Sie nicht haben.
+Alle Projekte einer Organisation sind gleich. Wer der Organisation beitritt, kommt dadurch in kein Projekt: Eine Einladung nennt die Projekte, denen jemand beitritt, und alle anderen fügen Sie auf der Seite **Mitglieder** eines Projekts hinzu.
 
 ## Projekteinstellungen ändern
 
@@ -134,12 +132,11 @@ Die Seite **Einstellungen** eines Projekts enthält diese Einstellungen:
 | --- | --- |
 | Bild, Projektname | Erscheinen in der Seitenleiste und in den Anfrageprotokollen |
 | Projekt-ID | Die ID, die die Platform API verwendet |
-| Standardprojekt | Nur beim Standardprojekt zu sehen. Neue Organisationsmitglieder treten ihm bei, und es lässt sich nicht archivieren |
 | Maximale Schlüssellaufzeit | **Vorgabe der Organisation verwenden** oder ein kürzeres Maximum für neue Schlüssel dieses Projekts |
 | Inhaltsprotokollierung | Ob Anfragen und Antworten mit ihren Protokolleinträgen gespeichert werden. Lässt sich nicht einschalten, solange die Organisation sie ausgeschaltet hat |
 | Projekt archivieren | Archiviert das Projekt mit seinen Schlüsseln und Dienstkonten endgültig. Seine Schlüssel hören sofort auf zu funktionieren |
 
-Kaeso archiviert Projekte und löscht sie nie, damit ihre Nutzung und Protokolle erhalten bleiben. Das Standardprojekt lässt sich nicht archivieren: Machen Sie zuerst ein anderes Projekt zum Standard.
+Kaeso archiviert Projekte und löscht sie nie, damit ihre Nutzung und Protokolle erhalten bleiben. Jedes Projekt lässt sich archivieren.
 
 ## Nächste Schritte
 

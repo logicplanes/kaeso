@@ -155,7 +155,7 @@ pub async fn create(
         .filter(|u| u.state == "active")
         .ok_or_else(|| ApiError::invalid("owner", "The owner must be an active user."))?;
     let mut tx = state.pg.begin().await?;
-    let (org, _) = org_service::create(&mut tx, &name, owner).await?;
+    let org = org_service::create(&mut tx, &name, owner).await?;
     ctx.audit(Some(org), Action::OrgCreate)
         .target("org", org)
         .after(serde_json::json!({ "name": name, "owner": owner.to_string() }))
@@ -273,7 +273,7 @@ pub async fn appoint_owner(
         return Ok(Json(view(&state, &o).await?));
     }
     let owner = org_to_store(&OrgGrant::preset(OrgPreset::Owner));
-    if !org_service::add_member(&mut tx, org_id, req.user_id, &owner).await? {
+    if !members::insert_org(&mut *tx, o.id, req.user_id.uuid(), &owner).await? {
         members::update_org(&mut *tx, o.id, req.user_id.uuid(), &owner).await?;
     }
     ctx.audit(Some(org_id), Action::OrgOwnerAppointedByInstanceAdmin)

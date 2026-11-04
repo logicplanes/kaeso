@@ -7,7 +7,7 @@ use kaeso_store::pg::{members, projects, roles};
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 
-use super::orgs::{add_member, org_grant};
+use super::orgs::org_grant;
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ProjectRole {
@@ -59,7 +59,7 @@ pub async fn accept(
         (None, _) => org_grant(OrgPreset::Member),
     };
     // Never touch an existing member's roles: a stale invitation would restore what was taken away.
-    if !add_member(&mut *tx, org, user, &grant).await? {
+    if !members::insert_org(&mut *tx, org.uuid(), user.uuid(), &grant).await? {
         return Ok(Accepted::AlreadyMember);
     }
     let revoked_others =
@@ -79,10 +79,7 @@ pub async fn accept(
         if project.archived_at.is_some() {
             continue;
         }
-        let grant = role.grant();
-        if !members::insert_project(&mut *tx, project.id, user.uuid(), &grant).await? {
-            members::update_project(&mut *tx, project.id, user.uuid(), &grant).await?;
-        }
+        members::insert_project(&mut *tx, project.id, user.uuid(), &role.grant()).await?;
     }
     Ok(Accepted::Joined {
         org,

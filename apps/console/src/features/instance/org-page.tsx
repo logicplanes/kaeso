@@ -241,11 +241,7 @@ function Projects({ org, count }: { org: string; count: number }) {
             textValue: p.name,
             title: p.name,
             leading: <Avatar name={p.name} {...(p.avatar_url ? { src: p.avatar_url } : {})} kind="org" size={20} decorative />,
-            meta: p.is_default ? (
-              <Badge>{t("instance.default", "Default")}</Badge>
-            ) : p.archived_at ? (
-              <Badge>{t("common.archived", "Archived")}</Badge>
-            ) : undefined,
+            meta: p.archived_at ? <Badge>{t("common.archived", "Archived")}</Badge> : undefined,
             date: formatDate(p.created_at),
           }))}
         />

@@ -1,6 +1,6 @@
 import type { Locator, Page } from "@playwright/test";
 import { abstractPicture } from "../scripts/png.mjs";
-import { expect, test, signInToProject, toastText } from "./support";
+import { expect, test, FIRST_PROJECT, signInToProject, toastText } from "./support";
 
 test.describe.configure({ mode: "serial" });
 
@@ -33,11 +33,8 @@ test("rename and content logging; provider keys are the organization's alone", a
   await expect(page.getByRole("button", { name: /override/i })).toHaveCount(0);
 });
 
-test("the default project can't be archived; another one is, after typing its name", async ({ page }) => {
+test("a project is archived after typing its name", async ({ page }) => {
   await signInToProject(page);
-  await page.getByRole("link", { name: "Settings", exact: true }).click();
-  await expect(page.getByRole("button", { name: "Archive project" })).toBeDisabled();
-
   await page.goto(`/orgs/${orgOf(page)}/projects?create=true`);
   const create = page.getByRole("dialog", { name: "Create project" });
   await create.getByLabel("Name").fill("Short-lived");
@@ -76,7 +73,7 @@ test("a project's picture is uploaded, shown beside its name, and removed", asyn
   const row = page
     .getByRole("grid", { name: "Projects" })
     .getByRole("gridcell")
-    .filter({ has: page.getByText("Default", { exact: true }) });
+    .filter({ has: page.getByText(FIRST_PROJECT, { exact: true }) });
   await expect(picture(row)).toHaveCount(1);
   await expect(picture(sidebar)).toHaveCount(1);
 
