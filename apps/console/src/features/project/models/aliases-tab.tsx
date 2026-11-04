@@ -1,71 +1,30 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
 import { LoadFailed } from "~/features/org/load-failed";
-import {
-  AlertDialog,
-  Badge,
-  Banner,
-  Button,
-  Code,
-  Dialog,
-  DialogScope,
-  Empty,
-  IconButton,
-  Input,
-  List,
-  Menu,
-  Text,
-  Tooltip,
-  icons,
-} from "@logicplanes/kaeso-ui";
-import { ModelPicker } from "@logicplanes/kaeso-ui/playground";
-import { catalogueModelOption } from "~/kaeso/model-options";
-import { useModelPickerProviders } from "~/kaeso/providers";
-import { modelName } from "~/format/models";
-import { toast } from "~/shell/toast";
+import { Badge, Button, Code, DialogScope, Empty, IconButton, List, Menu, Text, Tooltip, icons } from "@logicplanes/kaeso-ui";
 import { formatRelative } from "@logicplanes/kaeso-ui/format";
-import { api, data } from "~/api/client";
-import { fieldError } from "~/api/field-error";
 import type { AliasView } from "~/api/generated/types";
 import { aliasesQuery, catalogueQuery } from "~/api/queries/models";
-import { projectCatalogue } from "~/api/queries/invalidation";
-import { useApiMutation } from "~/auth/mutation";
 import { t } from "~/i18n";
 import { tRich } from "~/i18n/rich";
 import { common } from "~/i18n/common";
+import { DeleteAliasDialog } from "./delete-alias-dialog";
+import { routeSummary } from "./route-summary";
 
 const MODEL_FIELD = "model";
 
-const singleModel = (a: AliasView): string | undefined => (a.route.type === "model" && !a.route.fallback ? a.route.model : undefined);
-
 const shadowText = (name: string) => t("models.alias.shadows", "Apps that send `{name}` get this alias, not the model with the same name.", { name });
 
-export function AliasesTab({
-  org,
-  project,
-  canManage,
-  creating,
-  onCreatingChange,
-}: {
-  org: string;
-  project: string;
-  canManage: boolean;
-  creating: boolean;
-  onCreatingChange: (open: boolean) => void;
-}) {
+export function AliasesTab({ org, project, canManage }: { org: string; project: string; canManage: boolean }) {
+  const navigate = useNavigate();
   const aliases = useQuery(aliasesQuery(org, project));
   const catalogue = useQuery(catalogueQuery(org, project));
-  const targetName = (a: AliasView) => {
-    const m = catalogue.data?.find((c) => c.id === a.models[0]?.catalogue_model_id);
-    return m && modelName(m) !== m.model_id ? modelName(m) : undefined;
-  };
-  const [editing, setEditing] = useState<AliasView>();
+  const models = new Map(catalogue.data?.map((m) => [m.id, m]));
   const [deleting, setDeleting] = useState<AliasView | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const askDelete = (a: AliasView) => {
-    setDeleting(a);
-    setDeleteOpen(true);
-  };
+  const open = (alias: string) => void navigate({ to: "/orgs/$org/projects/$project/models/aliases/$alias", params: { org, project, alias } });
+  const create = () => void navigate({ to: "/orgs/$org/projects/$project/models/aliases/$alias", params: { org, project, alias: "new" } });
   const list = aliases.data ?? [];
   return (
     <>
@@ -77,13 +36,13 @@ export function AliasesTab({
         <Empty
           size="lg"
           title={t("models.alias.empty", "No aliases yet")}
-          description={tRich("models.alias.emptyHint", "A name like {name} that apps send as {field}; retarget it and all apps follow.", {
+          description={tRich("models.alias.emptyHint", "A name like {name} that apps send as {field}; it falls back when a model fails.", {
             name: <Code>{t("models.alias.nameExample", "fast")}</Code>,
             field: <Code>{MODEL_FIELD}</Code>,
           })}
           actions={
             canManage ? (
-              <Button variant="primary" onClick={() => onCreatingChange(true)}>
+              <Button variant="primary" onClick={create}>
                 {t("models.createAlias", "Create alias")}
               </Button>
             ) : undefined
@@ -92,195 +51,62 @@ export function AliasesTab({
       ) : (
         <List
           aria-label={t("models.aliases", "Aliases")}
-          onOpen={(item) => {
-            const a = list.find((x) => x.id === item.id);
-            if (canManage && a && singleModel(a)) setEditing(a);
-          }}
-          items={list.map((a) => ({
-            id: a.id,
-            textValue: a.name,
-            title: <Text mono>{a.name}</Text>,
-            subtitle: (
-              <span className="flex min-w-0 items-baseline gap-6">
+          onOpen={(item) => open(item.id)}
+          items={list.map((a) => {
+            const removed = a.models.some((m) => !m.target);
+            return {
+              id: a.id,
+              textValue: a.name,
+              title: <Text mono>{a.name}</Text>,
+              subtitle: (
                 <Text variant="small" tone="secondary" truncate>
-                  → {targetName(a) ?? ""}
+                  {routeSummary(a.route, models)}
                 </Text>
-                <Text variant="small" tone="secondary" mono truncate className="flex-1 basis-0">
-                  {a.models.length > 1
-                    ? t("models.alias.routeModels", "{first} and {count, plural, one {# more model} other {# more models}}", {
-                        first: a.models[0]?.target ?? "",
-                        count: a.models.length - 1,
-                      })
-                    : (a.models[0]?.target ?? "")}
-                </Text>
-              </span>
-            ),
-            meta: a.shadows_model ? (
-              <Tooltip content={shadowText(a.name)}>
-                <Badge tone="warning" tabIndex={0}>
-                  {t("models.alias.shadowsModel", "Shadows a model")}
-                </Badge>
-              </Tooltip>
-            ) : undefined,
-            date: formatRelative(a.updated_at),
-            actions: canManage ? (
-              <Menu>
-                <Menu.Trigger>
-                  <IconButton icon={icons.more} aria-label={t("models.alias.actionsFor", "Actions for {name}", { name: a.name })} size="xs" />
-                </Menu.Trigger>
-                <Menu.Content align="end">
-                  {singleModel(a) && (
-                    <Menu.Item icon={icons.edit} onClick={() => setEditing(a)}>
-                      {common.edit()}
-                    </Menu.Item>
+              ),
+              meta: (
+                <span className="flex items-center gap-6">
+                  {removed && <Badge tone="danger">{t("models.alias.modelRemoved", "Model removed")}</Badge>}
+                  {a.shadows_model && (
+                    <Tooltip content={shadowText(a.name)}>
+                      <Badge tone="warning" tabIndex={0}>
+                        {t("models.alias.shadowsModel", "Shadows a model")}
+                      </Badge>
+                    </Tooltip>
                   )}
-                  <Menu.Item icon={icons.delete} variant="danger" onClick={() => askDelete(a)}>
-                    {common.delete()}
-                  </Menu.Item>
-                </Menu.Content>
-              </Menu>
-            ) : undefined,
-          }))}
+                </span>
+              ),
+              date: formatRelative(a.updated_at),
+              actions: canManage ? (
+                <Menu>
+                  <Menu.Trigger>
+                    <IconButton icon={icons.more} aria-label={t("models.alias.actionsFor", "Actions for {name}", { name: a.name })} size="xs" />
+                  </Menu.Trigger>
+                  <Menu.Content align="end">
+                    <Menu.Item icon={icons.edit} onClick={() => open(a.id)}>
+                      {t("models.alias.editRoute", "Edit route")}
+                    </Menu.Item>
+                    <Menu.Item
+                      icon={icons.delete}
+                      variant="danger"
+                      onClick={() => {
+                        setDeleting(a);
+                        setDeleteOpen(true);
+                      }}
+                    >
+                      {common.delete()}
+                    </Menu.Item>
+                  </Menu.Content>
+                </Menu>
+              ) : undefined,
+            };
+          })}
         />
       )}
-      {creating && <AliasDialog org={org} project={project} onClose={() => onCreatingChange(false)} />}
-      {editing && <AliasDialog org={org} project={project} alias={editing} onClose={() => setEditing(undefined)} />}
       {deleting && (
         <DialogScope open={deleteOpen}>
           <DeleteAliasDialog org={org} project={project} alias={deleting} open={deleteOpen} onOpenChange={setDeleteOpen} />
         </DialogScope>
       )}
     </>
-  );
-}
-
-function DeleteAliasDialog({
-  org,
-  project,
-  alias,
-  open,
-  onOpenChange,
-}: {
-  org: string;
-  project: string;
-  alias: AliasView;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}) {
-  const remove = useApiMutation({
-    mutationFn: async () => {
-      await api.DELETE("/platform/v1/orgs/{org}/projects/{project}/aliases/{alias}", { params: { path: { org, project, alias: alias.id } } });
-    },
-    invalidates: projectCatalogue(org, project),
-    onSuccess: () => {
-      toast(t("models.alias.deleted", "Alias {name} deleted", { name: alias.name }));
-      onOpenChange(false);
-    },
-  });
-  return (
-    <AlertDialog
-      open={open}
-      onOpenChange={onOpenChange}
-      tone="danger"
-      title={t("models.alias.deleteTitle", "Delete the alias {name}?", { name: alias.name })}
-      description={t("models.alias.deleteHint", "Requests that send this name are refused, unless a model has the same name.")}
-      confirmLabel={t("models.alias.delete", "Delete alias")}
-      loading={remove.isPending}
-      onConfirm={() => remove.mutateAsync()}
-    />
-  );
-}
-
-function AliasDialog({ org, project, alias, onClose }: { org: string; project: string; alias?: AliasView; onClose: () => void }) {
-  const catalogue = useQuery(catalogueQuery(org, project));
-  const [name, setName] = useState(alias?.name ?? "");
-  const [target, setTarget] = useState<string | null>(alias?.route.type === "model" ? alias.route.model : null);
-  const models = useMemo(() => catalogue.data ?? [], [catalogue.data]);
-  const shadows = models.some((m) => m.model_id === name.trim());
-  const options = useMemo(() => models.map(catalogueModelOption), [models]);
-  const providerIds = useMemo(() => [...new Set(models.map((m) => m.provider))], [models]);
-  const providers = useModelPickerProviders(org, providerIds);
-
-  const save = useApiMutation({
-    mutationFn: async (to: string) => {
-      if (alias) {
-        return data(
-          await api.PATCH("/platform/v1/orgs/{org}/projects/{project}/aliases/{alias}", {
-            params: { path: { org, project, alias: alias.id } },
-            body: {
-              ...(name.trim() !== alias.name ? { name: name.trim() } : {}),
-              ...(to !== singleModel(alias) ? { route: { type: "model" as const, model: to } } : {}),
-            },
-          }),
-        );
-      }
-      return data(
-        await api.POST("/platform/v1/orgs/{org}/projects/{project}/aliases", {
-          params: { path: { org, project } },
-          body: { name: name.trim(), route: { type: "model", model: to } },
-        }),
-      );
-    },
-    invalidates: projectCatalogue(org, project),
-    onSuccess: (a) => {
-      toast(alias ? t("models.alias.saved", "Alias {name} saved", { name: a.name }) : t("models.alias.created", "Alias {name} created", { name: a.name }));
-      onClose();
-    },
-  });
-  const changed = !alias || name.trim() !== alias.name || target !== singleModel(alias);
-  const ready = name.trim().length > 0 && changed ? target : null;
-  const submit = () => ready && save.mutate(ready);
-
-  return (
-    <Dialog
-      busy={save.isPending}
-      open
-      onOpenChange={(o) => !o && onClose()}
-      size="sm"
-      title={alias ? t("models.alias.editTitle", "Edit {name}", { name: alias.name }) : t("models.createAlias", "Create alias")}
-      description={t("models.alias.dialogHint", "Apps send the alias as model and requests use its target, which can change at any time.")}
-      onSubmit={submit}
-      footer={
-        <>
-          <Dialog.Close>
-            <Button>{common.cancel()}</Button>
-          </Dialog.Close>
-          <Button variant="primary" disabled={!ready} loading={save.isPending} onClick={submit}>
-            {alias ? t("models.alias.save", "Save alias") : t("models.createAlias", "Create alias")}
-          </Button>
-        </>
-      }
-    >
-      <div className="flex flex-col gap-20">
-        <Input
-          label={common.name()}
-          value={name}
-          onChange={(e) => {
-            setName(e.target.value);
-            if (save.isError) save.reset();
-          }}
-          error={fieldError(save.error, "name")}
-          autoFocus
-          maxLength={200}
-          placeholder={t("models.alias.nameExample", "fast")}
-        />
-        <ModelPicker
-          label={t("models.alias.target", "Target")}
-          appearance="default"
-          size="md"
-          fullWidth
-          placeholder={t("models.chooseModel", "Choose a model")}
-          value={target}
-          onValueChange={(next: string) => {
-            setTarget(next);
-            if (save.isError) save.reset();
-          }}
-          error={fieldError(save.error, "route.model")}
-          options={options}
-          providers={providers}
-        />
-        {shadows && name.trim() && <Banner tone="warning">{shadowText(name.trim())}</Banner>}
-      </div>
-    </Dialog>
   );
 }

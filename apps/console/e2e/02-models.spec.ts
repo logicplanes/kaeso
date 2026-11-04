@@ -184,36 +184,57 @@ test("the model sheet shows where values come from, resets an override and edits
   await expect(other.getByText("30 s")).toBeVisible();
 });
 
-test("aliases: create, the shadow warning, rename, delete", async ({ page }) => {
+test("aliases: build a route with a fallback, warn about a shadowed model, rename, delete", async ({ page }) => {
   await openModels(page);
   await page.getByRole("tab", { name: /Aliases/ }).click();
   await expect(page.getByText("No aliases yet")).toBeVisible();
   await page.getByRole("button", { name: "Create alias" }).first().click();
-  let dialog = page.getByRole("dialog", { name: "Create alias" });
-  await dialog.getByLabel("Name").fill("fast");
-  await dialog.getByRole("button", { name: "Target" }).click();
+  await expect(page.getByRole("heading", { name: "New alias" })).toBeVisible();
+  await page.getByLabel("Name").fill("fast");
+  const steps = page.getByRole("tree", { name: "Route of fast" });
+  await steps.getByRole("treeitem", { name: /^Model.*No model yet/ }).click();
+  const panel = page.getByRole("complementary", { name: "Step settings" });
+  await panel.getByRole("button", { name: /^Model/ }).click();
   await page.getByRole("option", { name: /^GPT-5\.4 mini/ }).click();
-  await dialog.getByRole("button", { name: "Create alias" }).click();
-  await expect(page.getByText("Alias fast created")).toBeVisible();
-
-  await page.getByRole("button", { name: "Create alias" }).first().click();
-  dialog = page.getByRole("dialog", { name: "Create alias" });
-  await dialog.getByLabel("Name").fill("gpt-5.4-nano");
-  await expect(dialog.getByText("Apps that send `gpt-5.4-nano` get this alias, not the model with the same name.")).toBeVisible();
-  await dialog.getByRole("button", { name: "Target" }).click();
+  await steps.getByRole("treeitem", { name: /^Add a fallback to/ }).click();
+  await page.getByRole("menuitem", { name: "Fall back to a model" }).click();
+  await panel.getByRole("button", { name: /^Model/ }).click();
   await page.getByRole("option", { name: /^GPT-5\.6/ }).click();
-  await dialog.getByRole("button", { name: "Create alias" }).click();
+  await page.getByRole("button", { name: "Create alias" }).click();
+  await expect(page.getByText("Alias fast created")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "fast" })).toBeVisible();
+  await page.getByRole("tab", { name: "Test" }).click();
+  await expect(panel.getByRole("heading", { name: "Test a request" })).toBeVisible();
+  await expect(steps.getByRole("treeitem", { name: /Try 2/ })).toBeVisible();
+  await panel.getByRole("button", { name: "Send" }).click();
+  await expect(panel.getByText("Steps it took")).toBeVisible();
+  await expect(panel.getByRole("listitem").filter({ hasText: "GPT-5.4 mini" })).toContainText("fell back");
+  await expect(panel.getByRole("listitem").filter({ hasText: "GPT-5.6" })).toBeVisible();
+  await expect(panel.getByRole("button", { name: "Open in request log" })).toBeVisible();
+  await panel.getByRole("radio", { name: "Preview" }).click();
+  await expect(panel.getByText("Try 1; tried first")).toBeVisible();
+  await expect(panel.getByText("Try 2; tried when try 1 fails")).toBeVisible();
+  await page.getByRole("tab", { name: "Editor" }).click();
+
+  await page.getByRole("button", { name: "Back to aliases" }).click();
+  await expect(row(page, "fast", "Aliases")).toContainText("GPT-5.4 mini → GPT-5.6");
+  await page.getByRole("button", { name: "Create alias" }).first().click();
+  await page.getByLabel("Name").fill("gpt-5.4-nano");
+  await expect(page.getByText("Apps that send `gpt-5.4-nano` get this alias, not the model with the same name.")).toBeVisible();
+  await page.getByRole("treeitem", { name: /^Model.*No model yet/ }).click();
+  await page.getByRole("complementary", { name: "Step settings" }).getByRole("button", { name: /^Model/ }).click();
+  await page.getByRole("option", { name: /^GPT-5\.6/ }).click();
+  await page.getByRole("button", { name: "Create alias" }).click();
+  await expect(page.getByText("Alias gpt-5.4-nano created")).toBeVisible();
+  await page.getByRole("button", { name: "Back to aliases" }).click();
   await expect(row(page, "gpt-5.4-nano", "Aliases").getByText("Shadows a model")).toBeVisible();
 
   await row(page, "fast", "Aliases").click();
-  dialog = page.getByRole("dialog", { name: "Edit fast" });
-  await dialog.getByLabel("Name").fill("quick");
-  await dialog.getByRole("button", { name: "Save alias" }).click();
+  await page.getByRole("treeitem", { name: /^Start/ }).click();
+  await page.getByLabel("Name").fill("quick");
+  await page.getByRole("button", { name: "Save" }).click();
   await expect(page.getByText("Alias quick saved")).toBeVisible();
-
-  await row(page, "quick", "Aliases").getByRole("button", { name: "Actions for quick" }).click();
-  await page.getByRole("menuitem", { name: "Delete" }).click();
-  await expect(page.getByRole("dialog", { name: "Edit quick" })).toHaveCount(0);
+  await page.getByRole("button", { name: "Delete alias" }).click();
   await page.getByRole("alertdialog").getByRole("button", { name: "Delete alias" }).click();
   await expect(page.getByText("Alias quick deleted")).toBeVisible();
   await expect(row(page, "quick", "Aliases")).toHaveCount(0);

@@ -68,11 +68,17 @@ Choose **Remove from catalogue** in a model's sheet. Kaeso refuses requests for 
 
 ## Create an alias
 
-An alias is the project's own name for a model in its catalogue, such as `fast` for `claude-haiku-4-5`. Apps send the alias as the model, and you can change the model behind it without touching the apps.
+An alias is the project's own name for a model, such as `fast`. Apps send it as the model, and its route picks the model that answers, so you change models without touching the apps.
 
-On the **Aliases** tab, choose **Create alias** and enter a name and a **Target**. A name has 1 to 200 characters, without spaces or `/`. An alias wins over a model with the same name, and the list marks it **Shadows a model**.
+On the **Aliases** tab, choose **Create alias**. The route editor fills the page: name the alias, then pick a shape under **Start from** (one model, a fallback chain, a route by a header, long prompts to another model, or an A/B test), or choose the first step's model and add fallbacks, conditions and splits with **+** ([alias routes](../concepts/alias-routes.md)). A name has 1 to 200 characters, without spaces or `/`. An alias wins over a model with the same name, and the list marks it **Shadows a model**.
 
-An alias can also hold a route that falls back to other models, branches on the request or splits traffic. Set it on the Platform API ([alias routes](../concepts/alias-routes.md)).
+Conditions and splits branch downward; a model's fallbacks continue its row to the right, in the order they are tried. A step's menu, from its **⋯** or with Shift F10, puts a step before it, moves a model to be tried earlier or later, swaps a condition's **Then** and **Else**, or removes it. ⌘Z undoes, ⌘⇧Z redoes and ⌘S saves.
+
+Requests take the route once you choose **Save**. **Versions** lists every save, with the live one marked **Live**: choose one to see its route on the canvas, its changes as JSON, and restore it.
+
+### Test a route
+
+**Test** has two modes. **Send** sends a message through the route as you, saved or not, with the headers you add. The canvas colors each step the request tried by its answer: green for a 2xx status, amber for a 4xx and red for a 5xx, with the status and, for a step that failed, its time. The panel lists the steps it took, then the reply. The request counts against your limits, is charged to the project and appears in the [request log](request-logs.md) with the source **Playground**; **Open in request log** shows it. **Preview** describes a request instead (its API format, input tokens, what it uses, its API key and its headers) and lights up the steps it would take, each model with its try; nothing is sent. **Draw again** draws the splits anew.
 
 ## How a request names a model
 

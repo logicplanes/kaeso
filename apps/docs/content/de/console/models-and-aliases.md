@@ -68,11 +68,17 @@ Wählen Sie **Aus dem Katalog entfernen** im Sheet eines Modells. Kaeso lehnt An
 
 ## Alias erstellen
 
-Ein Alias ist ein eigener Name des Projekts für ein Modell seines Katalogs, etwa `fast` für `claude-haiku-4-5`. Apps senden den Alias als Modell, und Sie können das Modell dahinter wechseln, ohne die Apps anzufassen.
+Ein Alias ist ein eigener Name des Projekts für ein Modell, etwa `fast`. Apps senden ihn als Modell, und seine Route wählt das antwortende Modell, sodass Sie Modelle wechseln, ohne die Apps anzufassen.
 
-Wählen Sie auf dem Tab **Aliasse** **Alias erstellen** und geben Sie einen Namen und ein **Ziel** an. Ein Name hat 1 bis 200 Zeichen, ohne Leerzeichen und ohne `/`. Ein Alias hat Vorrang vor einem gleichnamigen Modell, und die Liste kennzeichnet ihn mit **Verdeckt ein Modell**.
+Wählen Sie auf dem Tab **Aliasse** **Alias erstellen**. Der Routen-Editor füllt die Seite: Benennen Sie den Alias und wählen Sie unter **Beginnen mit** eine Form (ein Modell, eine Fallback-Kette, nach einem Header, lange Prompts zu einem anderen Modell oder einen A/B-Test), oder wählen Sie das Modell des ersten Schritts und fügen Sie mit **+** Fallbacks, Bedingungen und Aufteilungen hinzu ([Alias-Routen](../concepts/alias-routes.md)). Ein Name hat 1 bis 200 Zeichen, ohne Leerzeichen und ohne `/`. Ein Alias hat Vorrang vor einem gleichnamigen Modell, und die Liste kennzeichnet ihn mit **Verdeckt ein Modell**.
 
-Ein Alias kann auch eine Route halten, die auf andere Modelle ausweicht, nach der Anfrage verzweigt oder den Verkehr aufteilt. Setzen Sie sie über die Plattform-API ([Alias-Routen](../concepts/alias-routes.md)).
+Bedingungen und Aufteilungen verzweigen nach unten; die Fallbacks eines Modells setzen seine Zeile nach rechts fort, in der Reihenfolge, in der sie versucht werden. Das Menü eines Schritts, über sein **⋯** oder mit Umschalt F10, setzt einen Schritt davor, lässt ein Modell früher oder später versuchen, tauscht **Dann** und **Sonst** einer Bedingung oder entfernt ihn. ⌘Z macht rückgängig, ⌘⇧Z wiederholt und ⌘S speichert.
+
+Anfragen nehmen die Route, sobald Sie **Speichern** wählen. **Versionen** listet jedes Speichern, das aktive mit **Aktiv** gekennzeichnet: Wählen Sie eines, um seine Route auf der Fläche und seine Änderungen als JSON zu sehen und es wiederherzustellen.
+
+### Eine Route testen
+
+**Testen** hat zwei Modi. **Senden** schickt eine Nachricht als Sie durch die Route, gespeichert oder nicht, mit den Headern, die Sie hinzufügen. Die Fläche färbt jeden Schritt, den die Anfrage versuchte, nach seiner Antwort: grün für einen 2xx-Status, gelb für einen 4xx und rot für einen 5xx, mit dem Status und, bei einem gescheiterten Schritt, seiner Dauer. Das Panel listet die genommenen Schritte und dann die Antwort. Die Anfrage zählt gegen Ihre Limits, wird dem Projekt berechnet und erscheint im [Anfrageprotokoll](request-logs.md) mit der Quelle **Playground**; **Im Anfrageprotokoll öffnen** zeigt sie. **Vorschau** beschreibt stattdessen eine Anfrage (ihr API-Format, ihre Eingabe-Tokens, was sie nutzt, ihren API-Schlüssel und ihre Header) und hebt die Schritte hervor, die sie nähme, jedes Modell mit seinem Versuch; nichts wird gesendet. **Neu ziehen** zieht die Aufteilungen neu.
 
 ## Wie eine Anfrage ein Modell nennt
 

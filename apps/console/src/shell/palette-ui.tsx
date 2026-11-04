@@ -297,7 +297,7 @@ function usePaletteGroups(close: () => void, open: boolean, query: string): { gr
         ? [{ id: "create:model", label: label.models, icon: icons.model, onSelect: go(`${base}/models?add=true`) }]
         : []),
       ...(base && projectRights.has("models.manage") && create?.label !== label.alias
-        ? [{ id: "create:alias", label: label.alias, icon: icons.alias, onSelect: go(`${base}/models?tab=aliases&add=true`) }]
+        ? [{ id: "create:alias", label: label.alias, icon: icons.alias, onSelect: go(`${base}/models/aliases/new`) }]
         : []),
       ...(base && projectRights.has("service_accounts.create") && create?.label !== label.serviceAccount
         ? [{ id: "create:sa", label: label.serviceAccount, icon: icons.serviceAccount, onSelect: go(`${base}/service-accounts?create=true`) }]
