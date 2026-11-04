@@ -265,8 +265,13 @@ pub async fn update(
     let row = alias_row(&state, &ctx, &id).await?;
     let name = req.name.clone().unwrap_or_else(|| row.name.clone());
     check_name(&name)?;
-    let route = req.route.unwrap_or_else(|| row.route.clone());
-    check_route(&state, row.project_id, &route).await?;
+    let route = match req.route {
+        Some(route) => {
+            check_route(&state, row.project_id, &route).await?;
+            route
+        }
+        None => row.route.clone(),
+    };
     let mut tx = state.pg.begin().await?;
     match catalogue::update_alias(&mut *tx, row.project_id, row.id, &name, &route).await? {
         None => {

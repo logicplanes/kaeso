@@ -72,7 +72,7 @@ flowchart TD
 ### 被跳过的步骤
 
 - **密钥无权使用的模型。** Kaeso 跳过该步骤且不提及它，受限的密钥因此无法了解路由。找不到可用步骤的请求会得到 404，与未知模型相同。
-- **已从目录中移除的模型。** Kaeso 跳过该步骤。移除模型会删除只路由到它的别名；同时使用其他模型的路由保留该步骤，别名的 `models` 列表中它没有 `target`。没有其他步骤可用时，请求得到 404：`The alias `fast` names only models removed from the catalogue; ask a project admin.`
+- **已从目录中移除的模型。** Kaeso 跳过该步骤。移除模型会删除只路由到它的别名；同时使用其他模型的路由保留该步骤，别名的 `models` 列表中它没有 `target`。没有其他步骤可用时，请求得到 404：``The alias `fast` has no model left for this request; ask a project admin.`` 别名仍可重命名；要更改其路由，请先替换或删除该步骤。
 
 ## 限额、费用和缓存
 

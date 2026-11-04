@@ -433,8 +433,16 @@ async fn removing_a_model_keeps_the_routes_that_use_others_and_deletes_the_rest(
     let env = env().await;
     let claude = model_id(&env, "claude-haiku-4-5").await;
     let gpt = model_id(&env, "gpt-4o").await;
-    alias(&env, "sturdy", with_fallback(&claude, model_step(&gpt))).await;
+    let sturdy = alias(&env, "sturdy", with_fallback(&claude, model_step(&gpt))).await;
     alias(&env, "haiku", model_step(&claude)).await;
+    let paid = json!({
+        "type": "condition",
+        "match": "all",
+        "rules": [{ "field": "header", "name": "x-plan", "op": "equals", "value": "paid" }],
+        "then": model_step(&claude),
+        "else": model_step(&gpt),
+    });
+    alias(&env, "by-plan", paid).await;
     let r = env
         .app
         .call(
@@ -450,10 +458,11 @@ async fn removing_a_model_keeps_the_routes_that_use_others_and_deletes_the_rest(
         .get(&format!("{}/aliases", base(&env)), &env.owner.cookie)
         .await;
     let data = aliases.body["data"].as_array().unwrap();
-    assert_eq!(data.len(), 1, "{data:?}");
-    assert_eq!(data[0]["name"], "sturdy");
-    assert_eq!(data[0]["models"][0]["target"], Value::Null);
-    assert_eq!(data[0]["models"][1]["target"], "openai/gpt-4o");
+    let names: Vec<&str> = data.iter().filter_map(|a| a["name"].as_str()).collect();
+    assert_eq!(names, ["by-plan", "sturdy"], "{data:?}");
+    let kept = data.iter().find(|a| a["name"] == "sturdy").unwrap();
+    assert_eq!(kept["models"][0]["target"], Value::Null);
+    assert_eq!(kept["models"][1]["target"], "openai/gpt-4o");
     let r = ask(&env, App::Chat, "sturdy", "Hi", false).await;
     assert_eq!(r.status, StatusCode::OK, "{}", r.text());
     assert_eq!(r.header("kaeso-model"), Some("gpt-4o"));
@@ -466,6 +475,43 @@ async fn removing_a_model_keeps_the_routes_that_use_others_and_deletes_the_rest(
     );
     let r = ask(&env, App::Chat, "haiku", "Hi", false).await;
     assert_eq!(r.status, StatusCode::NOT_FOUND);
+    let r = ask_with(&env, "by-plan", &[("x-plan", "paid")]).await;
+    assert_eq!(r.status, StatusCode::NOT_FOUND, "{}", r.text());
+    assert!(
+        r.text().contains(
+            "The alias `by-plan` has no model left for this request; ask a project admin."
+        ),
+        "{}",
+        r.text()
+    );
+    assert_eq!(walked(&r), ["\"route.then\";skipped"]);
+    let r = ask_with(&env, "by-plan", &[("x-plan", "free")]).await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+
+    let at = format!("{}/aliases/{}", base(&env), sturdy["id"].as_str().unwrap());
+    let r = env
+        .app
+        .call(
+            Method::PATCH,
+            &at,
+            Some(json!({ "name": "sturdier" })),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    assert_eq!(r.body["name"], "sturdier");
+    assert_eq!(r.body["route"], sturdy["route"]);
+    let r = env
+        .app
+        .call(
+            Method::PATCH,
+            &at,
+            Some(json!({ "route": sturdy["route"] })),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{:?}", r.body);
+    assert_eq!(r.body["error"]["param"], "route.model");
 }
 
 #[tokio::test]
