@@ -9,11 +9,12 @@ export const docs = {
         "Turns editing on: open slots and a + midway on every connection show, and each opens a menu with these items. Called with the connection's `edge` id and `insert`: false for an open slot, true for the + that puts a step before the connection's step. Without it, open slots are not drawn.",
       "aria-label": 'The tree\'s accessible name: what the route belongs to, such as "Route of fast".',
       background: "A dotted grid that moves with the view, or the plain panel.",
+      busy: "A request is on its way along `trace`: its lines without a `tone` run as moving dashes, or pulse with reduced motion, and the tree is marked busy. Turn it off once the request answers.",
       nodeActions:
         "Menu items for a step, shown in a button on the step and opened with Shift F10 or the context-menu key. Return nothing for a step without actions, such as the start.",
       onDelete: "Called with a step's id when Delete or Backspace is pressed on it.",
       onSelect: "Called with a step's id when it is clicked or chosen with Enter or Space, and with null when the background is clicked or Escape is pressed.",
-      root: "The start of the route. Each node has `kind` (its tag), `title`, an optional `subtitle`, `leading` (such as a provider badge), `status` (a word and a tone), `badge` (a short word at its top right, such as its try), `terminal` (a model: its one connection is its fallback, drawn to its right) and `children`: connections with an `id`, a `label`, a `variant` (`fallback` draws a dashed line) and the `node` they lead to; a connection without a node is an open slot.",
+      root: "The start of the route. Each node has `kind` (its tag), `title`, an optional `subtitle`, `leading` (such as a provider badge), `status` (a word and a tone: `danger`, `warning` and `success` also ring the step), `badge` (a short word at its top right, such as its try), `terminal` (a model: its one connection is its fallback, drawn to its right) and `children`: connections with an `id`, a `label`, a `variant` (`fallback` draws a dashed line), a `tone` (`success`, `warning` or `danger`: on a traced path, the line takes that color, such as the status a tried step answered with) and the `node` they lead to; a connection without a node is an open slot.",
       selected: "The id of the selected step, drawn with the selection ring; the view moves to show it when it changes.",
       trace:
         "The ids of the steps one request passes, such as from a dry run: they and the lines between them stay strong, and every other step turns quieter: secondary text and a hairline, still readable. Leave it out to draw the route evenly.",

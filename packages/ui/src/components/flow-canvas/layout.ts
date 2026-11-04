@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
 export interface FlowCanvasStatus {
-  tone: "danger" | "warning";
+  tone: "danger" | "warning" | "success" | "neutral";
   label: string;
 }
 
@@ -23,6 +23,7 @@ export interface FlowCanvasEdge {
   id: string;
   label?: ReactNode | undefined;
   variant?: "default" | "fallback" | undefined;
+  tone?: "success" | "warning" | "danger" | undefined;
   node?: FlowCanvasNode | undefined;
   addLabel?: string | undefined;
   insertLabel?: string | undefined;

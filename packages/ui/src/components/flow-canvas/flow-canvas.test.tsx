@@ -373,4 +373,76 @@ describe("FlowCanvas", () => {
     expect(container.querySelector('[data-flow-label="mini"]')).toHaveClass("text-fg-tertiary");
     expect(container.querySelector('[data-flow-label="opus"]')).toHaveClass("text-fg-secondary");
   });
+
+  it("colors a tried path by its outcome, rings each tried step and runs the line while the request is on its way", () => {
+    const tried: FlowCanvasNode = {
+      ...route,
+      children: [
+        {
+          id: "root",
+          node: {
+            ...route.children![0]!.node!,
+            children: [
+              {
+                id: "plan-then",
+                label: "Then",
+                tone: "danger",
+                node: {
+                  id: "opus",
+                  kind: "Model",
+                  title: "claude-opus-4-1",
+                  terminal: true,
+                  status: { tone: "danger", label: "529 Overloaded" },
+                  children: [
+                    {
+                      id: "opus-fb",
+                      label: "Fallback",
+                      variant: "fallback",
+                      tone: "success",
+                      node: { id: "sonnet", kind: "Model", title: "claude-sonnet-4-5", terminal: true, status: { tone: "success", label: "200 OK" } },
+                    },
+                  ],
+                },
+              },
+              {
+                id: "plan-else",
+                label: "Else",
+                tone: "warning",
+                node: { id: "mini", kind: "Model", title: "gpt-5-mini", terminal: true, status: { tone: "neutral", label: "Skipped" } },
+              },
+            ],
+          },
+        },
+      ],
+    };
+    const trace = ["start", "plan", "opus", "sonnet"];
+    const { container, rerender } = render(<FlowCanvas root={tried} aria-label="Route" trace={trace} busy />);
+    const wire = (to: string) => container.querySelector(`[data-flow-wire="wire:${to}"]`)!;
+    expect(wire("opus")).toHaveAttribute("stroke", "var(--k-danger-text)");
+    expect(wire("sonnet")).toHaveAttribute("stroke", "var(--k-success-text)");
+    expect(wire("mini")).toHaveAttribute("stroke", "var(--k-line)");
+    expect(wire("plan")).toHaveAttribute("data-flowing");
+    expect(wire("plan")).toHaveClass("animate-flow-wire");
+    expect(wire("plan")).toHaveAttribute("stroke-dasharray", "4 5");
+    expect(wire("opus")).not.toHaveAttribute("data-flowing");
+    const order = [...container.querySelectorAll("[data-flow-wire]")].map((w) => w.getAttribute("data-flow-wire"));
+    expect(order.indexOf("wire:mini")).toBeLessThan(order.indexOf("wire:opus"));
+    expect(screen.getByRole("tree")).toHaveAttribute("aria-busy", "true");
+    const item = (name: RegExp) => screen.getByRole("treeitem", { name });
+    expect(item(/claude-opus-4-1/)).toHaveClass("ring-invalid");
+    expect(item(/claude-sonnet-4-5/)).toHaveClass("ring-success");
+    expect(item(/claude-sonnet-4-5/)).toHaveTextContent("200 OK");
+    expect(item(/gpt-5-mini/)).not.toHaveClass("ring-invalid");
+    expect(item(/gpt-5-mini/)).toHaveTextContent("Skipped");
+
+    rerender(<FlowCanvas root={tried} aria-label="Route" trace={trace} />);
+    expect(wire("plan")).not.toHaveAttribute("data-flowing");
+    expect(wire("plan")).not.toHaveAttribute("stroke-dasharray");
+    expect(screen.getByRole("tree")).not.toHaveAttribute("aria-busy");
+  });
+
+  it("rings a step whose status warns", () => {
+    render(<FlowCanvas root={{ id: "start", kind: "Start", title: "fast", status: { tone: "warning", label: "429 Rate limited" } }} aria-label="Route" />);
+    expect(screen.getByRole("treeitem", { name: /fast/ })).toHaveClass("ring-warning");
+  });
 });

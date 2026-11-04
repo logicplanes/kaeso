@@ -19,7 +19,15 @@ import { icons } from "../../icons/vocabulary.js";
 import { IconButton } from "../icon-button/icon-button.js";
 import { Menu } from "../menu/menu.js";
 import { Status } from "../status-dot/status-dot.js";
-import { layoutFlow, type FlowCanvasNode, type FlowLayout, type Placed } from "./layout.js";
+import { layoutFlow, type FlowCanvasEdge, type FlowCanvasNode, type FlowLayout, type Placed, type Wire } from "./layout.js";
+
+const WIRE_TONE: Record<NonNullable<FlowCanvasEdge["tone"]>, string> = {
+  success: "var(--k-success-text)",
+  warning: "var(--k-warning-text)",
+  danger: "var(--k-danger-text)",
+};
+
+const NODE_RING = { danger: "ring-invalid", warning: "ring-warning", success: "ring-success", neutral: undefined } as const;
 
 export type { FlowCanvasEdge, FlowCanvasNode, FlowCanvasStatus } from "./layout.js";
 
@@ -45,6 +53,7 @@ export interface FlowCanvasProps {
   nodeActions?: ((id: string) => ReactNode) | undefined;
   onDelete?: ((id: string) => void) | undefined;
   trace?: readonly string[] | undefined;
+  busy?: boolean | undefined;
   background?: keyof typeof KAESO_FLOW_CANVAS_VARIANTS.background | undefined;
   className?: string | undefined;
 }
@@ -102,7 +111,7 @@ const plainName = (node: FlowCanvasNode | undefined): string | undefined =>
   node ? (node.label ?? (typeof node.title === "string" ? node.title : typeof node.kind === "string" ? node.kind : undefined)) : undefined;
 
 export const FlowCanvas = forwardRef<HTMLDivElement, FlowCanvasProps>(function FlowCanvas(
-  { root, selected = null, onSelect, addMenu, nodeActions, onDelete, trace, background = "dots", className, "aria-label": ariaLabel },
+  { root, selected = null, onSelect, addMenu, nodeActions, onDelete, trace, busy, background = "dots", className, "aria-label": ariaLabel },
   ref,
 ) {
   const t = useUiText();
@@ -348,8 +357,15 @@ export const FlowCanvas = forwardRef<HTMLDivElement, FlowCanvasProps>(function F
   const positioned = (p: Placed, extra?: CSSProperties): CSSProperties => ({ left: p.x - p.w / 2, top: p.y, width: p.w, height: p.h, ...extra });
   const touches = (from: string, to: string) => selected !== null && (from === selected || to === selected);
   const onTrace = (from: string, to: string) => !traced || (traced.has(from) && traced.has(to));
-  const stroke = (from: string, to: string) =>
-    traced ? (onTrace(from, to) ? "var(--k-text)" : "var(--k-line)") : touches(from, to) ? "var(--k-text-secondary)" : "var(--k-text-tertiary)";
+  const toneOf = (w: Wire) => (w.edge?.tone && onTrace(w.from, w.to) ? w.edge.tone : undefined);
+  const stroke = (w: Wire) => {
+    const tone = toneOf(w);
+    if (tone) return WIRE_TONE[tone];
+    if (traced) return onTrace(w.from, w.to) ? "var(--k-text)" : "var(--k-line)";
+    return touches(w.from, w.to) ? "var(--k-text-secondary)" : "var(--k-text-tertiary)";
+  };
+  const strong = (w: Wire) => !!traced && onTrace(w.from, w.to);
+  const wires = [...layout.wires].sort((a, b) => Number(strong(a)) + Number(!!toneOf(a)) - (Number(strong(b)) + Number(!!toneOf(b))));
   const dots = { "--k-flow-dot-gap": `${round(DOT * view.k)}px`, "--k-flow-dot-x": `${view.x}px`, "--k-flow-dot-y": `${view.y}px` } as CSSProperties;
   const layer = { transform: `translate(${view.x}px, ${view.y}px) scale(${view.k})` };
   const connection = t("flowCanvas.connection", "{from} to {to}");
@@ -377,19 +393,26 @@ export const FlowCanvas = forwardRef<HTMLDivElement, FlowCanvasProps>(function F
     >
       <div aria-hidden className="pointer-events-none absolute top-0 left-0 origin-top-left" style={layer}>
         <svg className="absolute top-0 left-0 overflow-visible" width={1} height={1}>
-          {layout.wires.map((w) => (
-            <path
-              key={w.key}
-              data-flow-wire={w.key}
-              d={w.d}
-              fill="none"
-              stroke={stroke(w.from, w.to)}
-              strokeWidth={traced && onTrace(w.from, w.to) ? 2 : 1.5}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              {...(w.variant === "fallback" ? { strokeDasharray: "4 5" } : {})}
-            />
-          ))}
+          {wires.map((w) => {
+            const tone = toneOf(w);
+            const flowing = !!busy && strong(w) && !tone;
+            return (
+              <path
+                key={w.key}
+                data-flow-wire={w.key}
+                {...(tone ? { "data-tone": tone } : {})}
+                {...(flowing ? { "data-flowing": "" } : {})}
+                d={w.d}
+                fill="none"
+                stroke={stroke(w)}
+                strokeWidth={strong(w) ? 2 : 1.5}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className={flowing ? "animate-flow-wire" : undefined}
+                {...(w.variant === "fallback" || flowing ? { strokeDasharray: "4 5" } : {})}
+              />
+            );
+          })}
         </svg>
         {layout.wires.map(
           (w) =>
@@ -437,7 +460,14 @@ export const FlowCanvas = forwardRef<HTMLDivElement, FlowCanvasProps>(function F
           )}
         </div>
       )}
-      <div role="tree" aria-label={ariaLabel} aria-describedby={hintId} className="absolute top-0 left-0 origin-top-left" style={layer}>
+      <div
+        role="tree"
+        aria-label={ariaLabel}
+        aria-describedby={hintId}
+        aria-busy={busy || undefined}
+        className="absolute top-0 left-0 origin-top-left"
+        style={layer}
+      >
         {layout.order.map((key) => {
           const p = layout.items.get(key)!;
           const level = p.level + 1;
@@ -491,7 +521,7 @@ export const FlowCanvas = forwardRef<HTMLDivElement, FlowCanvasProps>(function F
               className={cn(
                 "absolute flex cursor-pointer flex-col justify-center gap-2 rounded-well bg-panel px-12 py-10 text-left shadow-control transition-control outline-none focus-ring",
                 "hover:shadow-control-hover selected:bg-item-hover selected:shadow-control-selected selected:hover:shadow-control-selected forced-colors:outline-1 forced-colors:outline-solid",
-                node.status?.tone === "danger" && "ring-invalid",
+                node.status && NODE_RING[node.status.tone],
                 off && "shadow-ring",
                 actions && "pr-40",
               )}

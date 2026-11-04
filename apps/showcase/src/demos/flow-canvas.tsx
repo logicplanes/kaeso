@@ -27,6 +27,7 @@ export const meta = {
     "Every connection is also written out for screen readers, such as “gpt-5 to claude-sonnet-4-5, Fallback” or “x-plan is paid to gpt-5, Then”.",
     "A traced request is told in words too: each model on the path carries its try as a badge, and the steps off the path stay in the tree.",
     "A step's status is a word, never a colour alone; a removed model also draws a red ring around its step.",
+    "A sent request's answer is a word on each step it tried, such as “529 Overloaded” or “200 OK”; the colours of its lines and rings repeat it, and the tree is marked busy while the request is on its way.",
     "The + between steps is for the pointer; from the keyboard, a step's actions (Shift F10) carry the same choices.",
   ],
 };
@@ -51,6 +52,13 @@ export const examples = [
     title: "A traced request",
     description: "The path one request takes stays strong and each model on it says which try it is; the rest turns quieter.",
     fn: "Traced",
+    minHeight: 560,
+  },
+  {
+    id: "sent",
+    title: "A request that fell back",
+    description: "Each line a sent request took takes the colour of the answer at its end: the model that failed in red, the one that answered in green.",
+    fn: "Sent",
     minHeight: 560,
   },
   { id: "branches", title: "A condition with a split", fn: "Branches", minHeight: 560 },
@@ -261,6 +269,49 @@ export function Traced() {
   );
 }
 
+const answered = (node: FlowCanvasNode, outcomes: Record<string, { tone: "success" | "danger"; label: string }>): FlowCanvasNode => ({
+  ...node,
+  ...(outcomes[node.id] ? { status: outcomes[node.id] } : {}),
+  ...(node.children
+    ? {
+        children: node.children.map((e) => {
+          if (!e.node) return e;
+          const tone = outcomes[e.node.id]?.tone;
+          return { ...e, ...(tone ? { tone } : {}), node: answered(e.node, outcomes) };
+        }),
+      }
+    : {}),
+});
+
+export function Sent() {
+  const route: Step = {
+    id: "s1",
+    type: "condition",
+    rule: "x-plan is enterprise",
+    matched: {
+      id: "s2",
+      type: "model",
+      provider: "anthropic",
+      model: "claude-sonnet-4-5",
+      fallback: { id: "s3", type: "model", provider: "openai", model: "gpt-5" },
+    },
+    otherwise: { id: "s4", type: "model", provider: "openai", model: "gpt-5-mini" },
+  };
+  return (
+    <Frame>
+      <FlowCanvas
+        aria-label="Route of support"
+        root={answered(startNode("support", route), {
+          s2: { tone: "danger", label: "529 Overloaded" },
+          s3: { tone: "success", label: "200 OK" },
+        })}
+        trace={["start", "s1", "s2", "s3"]}
+        background="plain"
+      />
+    </Frame>
+  );
+}
+
 export function Branches() {
   const route: Step = {
     id: "b1",
@@ -378,6 +429,11 @@ const forced = (id: string, force: string | undefined, extra?: Partial<FlowCanva
   ],
 });
 
+const forcedTone = (id: string, status: { tone: "success" | "danger"; label: string }): FlowCanvasNode => {
+  const start = forced(id, undefined, { status });
+  return { ...start, children: start.children!.map((e) => ({ ...e, tone: status.tone })) };
+};
+
 export function States() {
   const menu = () => <Menu.Item onClick={() => undefined}>Model</Menu.Item>;
   return (
@@ -401,6 +457,21 @@ export function States() {
       <StateSection title="Traced: the path stays strong, each try has a badge, the rest turns quieter">
         <Frame height="h-400">
           <FlowCanvas aria-label="Traced step" root={forced("traced", undefined, { badge: "Try 1" })} trace={["start", "traced"]} />
+        </Frame>
+      </StateSection>
+      <StateSection title="Tried and answered: a green ring, the status in words and a green line">
+        <Frame height="h-400">
+          <FlowCanvas aria-label="Answered step" root={forcedTone("answered", { tone: "success", label: "200 OK" })} trace={["start", "answered"]} />
+        </Frame>
+      </StateSection>
+      <StateSection title="Tried and failed: a red ring, the status in words and a red line">
+        <Frame height="h-400">
+          <FlowCanvas aria-label="Failed step" root={forcedTone("failed", { tone: "danger", label: "503 Unavailable" })} trace={["start", "failed"]} />
+        </Frame>
+      </StateSection>
+      <StateSection title="On its way: the path's lines run until the request answers">
+        <Frame height="h-400">
+          <FlowCanvas aria-label="Step a request is on its way to" root={forced("busy", undefined)} trace={["start", "busy"]} busy />
         </Frame>
       </StateSection>
       <StateSection title="Off a traced path">

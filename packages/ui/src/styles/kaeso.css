@@ -707,6 +707,19 @@
     animation: k-pulse var(--k-skeleton-duration) var(--k-ease-pulse) infinite !important;
   }
 }
+/* A request on its way along a route: the dashes run toward the next step; with reduced motion the
+   line pulses in place instead. */
+@keyframes k-flow-wire {
+  to {
+    stroke-dashoffset: -18;
+  }
+}
+@utility animate-flow-wire {
+  animation: k-flow-wire calc(var(--k-spinner-turn) / 2) linear infinite;
+  @media (prefers-reduced-motion: reduce) {
+    animation: k-pulse var(--k-skeleton-duration) var(--k-ease-pulse) infinite !important;
+  }
+}
 @utility reduced-pulse {
   @media (prefers-reduced-motion: reduce) {
     animation: k-pulse var(--k-skeleton-duration) var(--k-ease-pulse) infinite !important;
@@ -1106,6 +1119,14 @@
 
 @utility ring-invalid {
   box-shadow: inset 0 0 0 1px var(--k-danger);
+}
+
+@utility ring-warning {
+  box-shadow: inset 0 0 0 1px var(--k-warning);
+}
+
+@utility ring-success {
+  box-shadow: inset 0 0 0 1px var(--k-success);
 }
 
 @utility ring-over {
