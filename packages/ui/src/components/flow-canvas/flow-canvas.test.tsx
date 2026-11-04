@@ -325,6 +325,23 @@ describe("FlowCanvas", () => {
     rerender(<FlowCanvas root={route} aria-label="Route" selected="missing" />);
   });
 
+  it("moves the view to the step a trace ends on, once each time that step changes", async () => {
+    size(320, 240);
+    const { rerender } = render(<FlowCanvas root={route} aria-label="Route" />);
+    while (scale() < 1) await userEvent.click(screen.getByRole("button", { name: "Zoom in" }));
+    const [x, y] = translate();
+    rerender(<FlowCanvas root={route} aria-label="Route" trace={["start", "plan", "mini"]} />);
+    const [x2, y2] = translate();
+    expect(x2).toBeLessThan(x!);
+    expect(y2).toBeLessThan(y!);
+    wheel(document.querySelector("[data-flow-canvas]") as HTMLElement, { deltaY: -300 });
+    const panned = transform();
+    rerender(<FlowCanvas root={route} aria-label="Route" trace={["start", "plan", "mini"]} busy />);
+    expect(transform()).toBe(panned);
+    rerender(<FlowCanvas root={route} aria-label="Route" trace={[]} />);
+    expect(transform()).toBe(panned);
+  });
+
   it("speaks the canvas in the provider's language", () => {
     render(
       <LocaleProvider locale="de" messages={de}>

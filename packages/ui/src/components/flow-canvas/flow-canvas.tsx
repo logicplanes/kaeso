@@ -118,7 +118,7 @@ export const FlowCanvas = forwardRef<HTMLDivElement, FlowCanvasProps>(function F
   const hintId = `k-flow-hint-${useId().replace(/[^\w-]/g, "")}`;
   const editing = !!addMenu;
   const tree = useMemo(() => (editing ? root : prune(root)), [root, editing]);
-  const layout = useMemo(() => layoutFlow(tree, { editing }), [tree, editing]);
+  const layout = useMemo(() => layoutFlow(tree), [tree]);
   const traced = useMemo(() => (trace ? new Set(trace) : null), [trace]);
   const viewport = useRef<HTMLDivElement | null>(null);
   const els = useRef(new Map<string, HTMLElement>());
@@ -194,6 +194,10 @@ export const FlowCanvas = forwardRef<HTMLDivElement, FlowCanvasProps>(function F
   useEffect(() => {
     if (selected) revealLatest.current(selected);
   }, [selected]);
+  const traceEnd = trace?.[trace.length - 1];
+  useEffect(() => {
+    if (traceEnd) revealLatest.current(traceEnd);
+  }, [traceEnd]);
 
   useEffect(() => {
     const el = viewport.current;

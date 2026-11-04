@@ -415,7 +415,7 @@ function Editor({
           ))}
         {(shifts.length > 0 || step?.type === "condition") && <Menu.Separator />}
         {shifts.map((to) => (
-          <Menu.Item key={to} icon={to === "earlier" ? icons.moveLeft : icons.moveRight} onClick={() => reshape(move(doc.root, id, to))}>
+          <Menu.Item key={to} icon={to === "earlier" ? icons.moveUp : icons.moveDown} onClick={() => reshape(move(doc.root, id, to))}>
             {moveLabel[to]()}
           </Menu.Item>
         ))}

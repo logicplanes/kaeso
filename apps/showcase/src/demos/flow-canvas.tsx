@@ -6,7 +6,7 @@ import { StateSection } from "~/lib/states";
 
 export const meta = {
   title: "FlowCanvas",
-  description: "An editable route drawn as a tree: conditions and splits branch downward, and each model's fallback continues the row to its right.",
+  description: "An editable route drawn as a tree: conditions and splits branch downward, and each model's fallback hangs straight under it.",
   group: "Components",
   entry: "flow-canvas",
   import: "FlowCanvas",
@@ -36,16 +36,16 @@ export const examples = [
   {
     id: "editor",
     title: "Edit a route",
-    description: "Select a step, add a fallback in the open slot beside a model, or insert a condition, a split or a model with the + between steps.",
+    description: "Select a step, add a fallback in the open slot under a model, or insert a condition, a split or a model with the + between steps.",
     fn: "Editor",
     minHeight: 560,
   },
   {
     id: "fallbacks",
     title: "A fallback chain",
-    description: "Each fallback continues the row to its right, in the order the models are tried.",
+    description: "Each fallback hangs under the model before it, in the order the models are tried.",
     fn: "Fallbacks",
-    minHeight: 400,
+    minHeight: 480,
   },
   {
     id: "trace",
@@ -231,7 +231,7 @@ export function Fallbacks() {
     },
   };
   return (
-    <Frame height="h-400">
+    <Frame>
       <FlowCanvas aria-label="Route of chat-default" root={startNode("chat-default", chain)} />
     </Frame>
   );

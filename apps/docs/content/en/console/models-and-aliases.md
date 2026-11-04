@@ -72,7 +72,7 @@ An alias is the project's own name for a model, such as `fast`. Apps send it as 
 
 On the **Aliases** tab, choose **Create alias**. The route editor fills the page: name the alias, then pick a shape under **Start from** (one model, a fallback chain, a route by a header, long prompts to another model, or an A/B test), or choose the first step's model and add fallbacks, conditions and splits with **+** ([alias routes](../concepts/alias-routes.md)). A name has 1 to 200 characters, without spaces or `/`. An alias wins over a model with the same name, and the list marks it **Shadows a model**.
 
-Conditions and splits branch downward; a model's fallbacks continue its row to the right, in the order they are tried. A step's menu, from its **⋯** or with Shift F10, puts a step before it, moves a model to be tried earlier or later, swaps a condition's **Then** and **Else**, or removes it. ⌘Z undoes, ⌘⇧Z redoes and ⌘S saves.
+Conditions and splits branch downward, their branches side by side; a model's fallbacks hang under it on a dashed line, in the order they are tried, so the route stays as narrow as its widest row of steps. A step's menu, from its **⋯** or with Shift F10, puts a step before it, moves a model to be tried earlier or later, swaps a condition's **Then** and **Else**, or removes it. ⌘Z undoes, ⌘⇧Z redoes and ⌘S saves.
 
 Requests take the route once you choose **Save**. **Versions** lists every save, with the live one marked **Live**: choose one to see its route on the canvas, its changes as JSON, and restore it.
 
