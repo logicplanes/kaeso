@@ -12,6 +12,7 @@ pub const MODEL_HEADER: &str = "kaeso-model";
 pub const PROVIDER_HEADER: &str = "kaeso-provider";
 pub const LEFT_OUT_HEADER: &str = "kaeso-left-out";
 pub const ADAPTED_HEADER: &str = "kaeso-adapted";
+pub const ROUTE_HEADER: &str = "kaeso-route";
 pub const TIMING_HEADER: &str = "server-timing";
 
 #[derive(Clone, Debug, Default)]
@@ -20,6 +21,20 @@ pub struct Served {
     pub provider: Option<String>,
     pub left_out: Vec<String>,
     pub adapted: Vec<String>,
+    pub route: Vec<Walked>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Walked {
+    pub path: String,
+    pub model: Option<String>,
+    pub tried: Option<Tried>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Tried {
+    pub status: u16,
+    pub duration_ms: Option<u64>,
 }
 
 pub fn stamp(resp: &mut Response, served: &Served) {
@@ -43,6 +58,52 @@ pub fn stamp(resp: &mut Response, served: &Served) {
     {
         resp.headers_mut().insert(ADAPTED_HEADER, v);
     }
+    stamp_route(resp, &served.route);
+}
+
+pub fn stamp_route(resp: &mut Response, route: &[Walked]) {
+    if let Some(v) = route_header(route) {
+        resp.headers_mut().insert(ROUTE_HEADER, v);
+    }
+}
+
+// An RFC 9651 structured-field list: each step as a string with parameters, so apps can
+// parse it with any structured-field library.
+fn route_header(route: &[Walked]) -> Option<HeaderValue> {
+    if route.is_empty() {
+        return None;
+    }
+    let items: Vec<String> = route
+        .iter()
+        .map(|w| {
+            let mut item = sf_string(&w.path).unwrap_or_else(|| "\"\"".to_owned());
+            if let Some(model) = w.model.as_deref().and_then(sf_string) {
+                item.push_str(";model=");
+                item.push_str(&model);
+            }
+            match w.tried {
+                Some(t) => {
+                    item.push_str(&format!(";status={}", t.status));
+                    if let Some(ms) = t.duration_ms {
+                        item.push_str(&format!(";dur={ms}"));
+                    }
+                }
+                None => item.push_str(";skipped"),
+            }
+            item
+        })
+        .collect();
+    HeaderValue::from_str(&items.join(", ")).ok()
+}
+
+fn sf_string(text: &str) -> Option<String> {
+    if !text.chars().all(|c| matches!(c, ' '..='~')) {
+        return None;
+    }
+    Some(format!(
+        "\"{}\"",
+        text.replace('\\', "\\\\").replace('"', "\\\"")
+    ))
 }
 
 pub fn server_timing(
@@ -85,4 +146,54 @@ pub fn respond(dialect: DialectId, err: &KppError, served: &Served) -> Response 
 
 pub fn error(kind: ErrorKind, status: u16, message: impl Into<String>) -> KppError {
     KppError::new(kind, message).with_status(status)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn step(path: &str, model: Option<&str>, tried: Option<Tried>) -> Walked {
+        Walked {
+            path: path.to_owned(),
+            model: model.map(str::to_owned),
+            tried,
+        }
+    }
+
+    #[test]
+    fn the_route_header_is_a_structured_field_list_of_the_steps_tried() {
+        assert!(route_header(&[]).is_none());
+        let value = route_header(&[
+            step("route", None, None),
+            step(
+                "route.fallback",
+                Some("anthropic/claude-sonnet-4-5"),
+                Some(Tried {
+                    status: 529,
+                    duration_ms: Some(1204),
+                }),
+            ),
+            step(
+                "route.fallback.fallback",
+                Some("custom/a \"quoted\" \\ model"),
+                Some(Tried {
+                    status: 200,
+                    duration_ms: None,
+                }),
+            ),
+            step(
+                "route.else",
+                Some("custom/modèle"),
+                Some(Tried {
+                    status: 200,
+                    duration_ms: None,
+                }),
+            ),
+        ])
+        .unwrap();
+        assert_eq!(
+            value.to_str().unwrap(),
+            r#""route";skipped, "route.fallback";model="anthropic/claude-sonnet-4-5";status=529;dur=1204, "route.fallback.fallback";model="custom/a \"quoted\" \\ model";status=200, "route.else";status=200"#
+        );
+    }
 }

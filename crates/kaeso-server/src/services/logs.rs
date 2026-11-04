@@ -506,6 +506,12 @@ pub async fn record(state: &AppState, o: &Outcome) {
             .response_cache
             .map(|v| v.as_str().to_owned())
             .unwrap_or_default(),
+        alias: o.alias.clone().unwrap_or_default(),
+        fallbacks: if o.fallbacks.is_empty() {
+            String::new()
+        } else {
+            serde_json::to_string(&o.fallbacks).unwrap_or_default()
+        },
     };
     let content = content.then(|| ContentRow {
         request_id: log.request_id,

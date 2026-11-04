@@ -69,7 +69,7 @@ Jede Änderung am Gateway folgt diesen Regeln, und Lints und Tests setzen die me
 
 1. **Wire-Formate gibt es nur in KPP.** Das Gateway parst oder baut nie von Hand JSON von OpenAI oder Anthropic; das übernimmt `kaeso_codecs::dispatch`. Eigenes JSON des Gateways sind nur die Platform API und ihr Fehler-Envelope.
 2. **Kein Passthrough.** Jede Modellanfrage wird nach KPP dekodiert und neu kodiert, auch wenn App und Anbieter dasselbe Format sprechen.
-3. **Keine Wiederholungen und keine Fallbacks.** Ein fehlgeschlagener Aufruf beim Anbieter schlägt fehl, im Format der App.
+3. **Keine Wiederholungen; Fallbacks nur, wo eine Route sie nennt.** Ein fehlgeschlagener Aufruf beim Anbieter schlägt fehl, im Format der App, außer die Route eines Alias fällt bei diesem Fehler zurück ([Alias-Routen](../../concepts/alias-routes.md)).
 4. **Nie stillschweigend Daten verwerfen.** Was KPP ablehnt (`Unsupported`), geht als Fehler im Format der App zurück, bevor etwas einen Anbieter erreicht. Ein `KppError` wird nie abgefangen und ignoriert.
 5. **Keine Panics in Bibliotheks-Crates.** Kein `unwrap`, `expect`, `panic!`, `todo!`, `unimplemented!`, keine panikauslösende Indizierung und kein `unsafe` außerhalb von Tests und dem Start des Binarys. Die Workspace-Lints und `#![forbid(unsafe_code)]` setzen das durch.
 6. **Geheimnisse verlassen den Speicher nie ungeschützt.** Anbieter-Schlüssel, Hauptschlüssel, Geheimnisse von API-Schlüsseln, Sitzungs-IDs, Anmelde-Tokens, TOTP-Geheimnisse und Passwörter stecken in schwärzenden Wrapper-Typen. Sie werden nie protokolliert, in Traces geschrieben, ausgegeben, in ClickHouse gespeichert, von einer API zurückgegeben oder in eine Fehlermeldung geschrieben.

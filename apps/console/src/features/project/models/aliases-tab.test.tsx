@@ -2,7 +2,7 @@ import { screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { ORG, OTHER_PROJECT, PROJECT, signedIn, without } from "~/test/fixtures";
 import { hoverReason, notifications } from "~/test/fixtures/org";
-import { alias, catalogueModel, modelsApi, projectData, projectPath } from "~/test/fixtures/project";
+import { alias, catalogueModel, modelRoute, modelsApi, projectData, projectPath } from "~/test/fixtures/project";
 import { apiError, on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
 import { queryClient } from "~/query";
@@ -20,7 +20,13 @@ const models = () => [
 
 const aliases = () => [
   alias(),
-  alias({ id: "al_haiku", name: "claude-haiku-4-5", catalogue_model_id: "cm_haiku", target: "anthropic/claude-haiku-4-5", shadows_model: true }),
+  alias({
+    id: "al_haiku",
+    name: "claude-haiku-4-5",
+    route: modelRoute("cm_haiku"),
+    models: [{ catalogue_model_id: "cm_haiku", target: "anthropic/claude-haiku-4-5" }],
+    shadows_model: true,
+  }),
 ];
 
 function setUp({ rights, list = aliases() }: { rights?: string[]; list?: ReturnType<typeof aliases> } = {}) {
@@ -76,7 +82,9 @@ describe("AliasesTab", () => {
     setUp();
     queryClient.setQueryData(PLAYGROUND_MODELS, []);
     queryClient.setQueryData(OTHER_PLAYGROUND_MODELS, []);
-    on("POST", ALIASES, ({ body }: { body: { name: string; catalogue_model_id: string } }) => alias({ id: "al_new", ...body }));
+    on("POST", ALIASES, ({ body }: { body: { name: string; route: { type: "model"; model: string } } }) =>
+      alias({ id: "al_new", name: body.name, route: modelRoute(body.route.model) }),
+    );
     const { user } = await renderApp(projectPath("models?tab=aliases&add=true"));
 
     const dialog = await screen.findByRole("dialog", { name: "Create alias" });
@@ -93,7 +101,7 @@ describe("AliasesTab", () => {
     await user.keyboard("{Meta>}{Enter}{/Meta}");
 
     expect(await notifications().findByText("Alias smart created")).toBeInTheDocument();
-    expect(requests("POST", ALIASES).map((r) => r.body)).toEqual([{ name: "smart", catalogue_model_id: "cm_haiku" }]);
+    expect(requests("POST", ALIASES).map((r) => r.body)).toEqual([{ name: "smart", route: { type: "model", model: "cm_haiku" } }]);
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "Create alias" })).not.toBeInTheDocument());
     expect(playgroundReloads(PLAYGROUND_MODELS)).toBe(true);
     expect(playgroundReloads(OTHER_PLAYGROUND_MODELS)).toBe(false);
@@ -131,15 +139,15 @@ describe("AliasesTab", () => {
     expect(name).not.toHaveAccessibleDescription("An alias name can't contain spaces.");
     expect(within(dialog).queryByText("An alias name can't contain spaces.")).not.toBeInTheDocument();
 
-    on("POST", ALIASES, apiError(400, "invalid_request", "No such model in this project's catalogue.", { param: "catalogue_model_id" }));
+    on("POST", ALIASES, apiError(400, "invalid_request", "This model is not in the project's catalogue.", { param: "route.model" }));
     await user.clear(name);
     await user.type(name, "smart");
     await user.click(within(dialog).getByRole("button", { name: "Create alias" }));
-    expect(await within(dialog).findByText("No such model in this project's catalogue.")).toBeInTheDocument();
+    expect(await within(dialog).findByText("This model is not in the project's catalogue.")).toBeInTheDocument();
     expect(name).not.toHaveAttribute("aria-invalid");
     await user.click(within(dialog).getByRole("button", { name: "Target" }));
     await user.click(await screen.findByRole("option", { name: /claude-haiku-4-5/ }));
-    expect(within(dialog).queryByText("No such model in this project's catalogue.")).not.toBeInTheDocument();
+    expect(within(dialog).queryByText("This model is not in the project's catalogue.")).not.toBeInTheDocument();
   });
 
   it("retargets an alias opened from its row, sending only what changed", async () => {
@@ -155,7 +163,7 @@ describe("AliasesTab", () => {
     await user.click(within(dialog).getByRole("button", { name: "Save alias" }));
 
     expect(await notifications().findByText("Alias fast saved")).toBeInTheDocument();
-    expect(requests("PATCH", ONE_ALIAS).map((r) => [r.params.alias, r.body])).toEqual([["al_fast", { catalogue_model_id: "cm_haiku" }]]);
+    expect(requests("PATCH", ONE_ALIAS).map((r) => [r.params.alias, r.body])).toEqual([["al_fast", { route: { type: "model", model: "cm_haiku" } }]]);
   });
 
   it("renames an alias from its menu", async () => {
@@ -211,5 +219,30 @@ describe("AliasesTab", () => {
 
     expect(await screen.findByText("No aliases yet")).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: "Create alias" })).toHaveLength(1);
+  });
+
+  it("names a routed alias by its first model and how many more, and edits only single-model aliases here", async () => {
+    const routed = (id: string, name: string, first: string | null) =>
+      alias({
+        id,
+        name,
+        route: { type: "model", model: "cm_sonnet", fallback: modelRoute("cm_haiku"), fall_back_on: ["unavailable"], timeout_seconds: null },
+        models: [
+          { catalogue_model_id: "cm_sonnet", target: first },
+          { catalogue_model_id: "cm_haiku", target: "anthropic/claude-haiku-4-5" },
+        ],
+      });
+    const gone = alias({ id: "al_gone", name: "gone", route: modelRoute("cm_gone"), models: [{ catalogue_model_id: "cm_gone", target: null }] });
+    const sturdy = routed("al_sturdy", "sturdy", "anthropic/claude-sonnet-4-5");
+    setUp({ list: [sturdy, routed("al_twin", "twin", null), gone] });
+    const { user } = await renderApp(projectPath("models?tab=aliases"));
+
+    const row = await screen.findByRole("gridcell", { name: /^sturdy/ });
+    expect(row).toHaveTextContent("anthropic/claude-sonnet-4-5 and 1 more model");
+    expect(screen.getByRole("gridcell", { name: /^twin/ })).toHaveTextContent(/^twin→ Claude Sonnet 4\.5 and 1 more model/);
+    expect(screen.getByRole("gridcell", { name: /^gone/ })).toHaveTextContent(/^gone→ \d/);
+    await user.click(within(row).getByRole("button", { name: "Actions for sturdy" }));
+    expect(await screen.findByRole("menuitem", { name: "Delete" })).toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: "Edit" })).not.toBeInTheDocument();
   });
 });

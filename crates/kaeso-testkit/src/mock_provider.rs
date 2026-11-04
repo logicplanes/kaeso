@@ -276,6 +276,17 @@ fn marker<'a>(body: &'a str, name: &str) -> Option<&'a str> {
     Some(rest.get(..end)?.trim_start_matches('='))
 }
 
+// `[mock:fail=<model> <fixture>]` fails only the requests for that model, so one request
+// can fail on one model and succeed on the next; a body may carry several. The fixture
+// `stall` never answers.
+fn failure_for<'a>(body: &'a str, model: &str) -> Option<&'a str> {
+    body.match_indices("[mock:fail=").find_map(|(i, start)| {
+        let rest = body.get(i + start.len()..)?;
+        let (named, fixture) = rest.get(..rest.find(']')?)?.split_once(' ')?;
+        (named == model).then_some(fixture)
+    })
+}
+
 fn fixture_file(dir: &Path, folder: &str, name: &str, extension: &str) -> PathBuf {
     match name
         .strip_prefix("providers/")
@@ -416,6 +427,19 @@ async fn answer(ctx: Ctx, method: Method, uri: Uri, headers: HeaderMap, body: By
         return error_response(&dir, name);
     }
     if let Some(name) = marker(&text, "error") {
+        return error_response(&dir, name);
+    }
+    let asked = serde_json::from_slice::<serde_json::Value>(&body)
+        .ok()
+        .and_then(|v| {
+            v.get("model")
+                .and_then(serde_json::Value::as_str)
+                .map(str::to_owned)
+        });
+    if let Some(name) = asked.as_deref().and_then(|m| failure_for(&text, m)) {
+        if name == "stall" {
+            std::future::pending::<()>().await;
+        }
         return error_response(&dir, name);
     }
     let stream = serde_json::from_slice::<serde_json::Value>(&body)

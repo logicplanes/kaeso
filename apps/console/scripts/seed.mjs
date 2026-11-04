@@ -141,8 +141,46 @@ async function buildOrg() {
     project.models = (await owner.get(`${base}/models`)).data;
   }
   const checkout = `orgs/${org}/projects/${projects[0].id}`;
-  const haiku = projects[0].models.find((m) => m.model_id === "claude-haiku-5-5");
-  if (haiku) await owner.post(`${checkout}/aliases`, { name: "fast", catalogue_model_id: haiku.id });
+  const seeded = (id) => projects[0].models.find((m) => m.model_id === id);
+  const step = (model, fallback = null) => ({ type: "model", model: model.id, fallback });
+  const [haiku, sonnet, mini, sol] = ["claude-haiku-5-5", "claude-sonnet-5-5", "gpt-5.4-mini", "gpt-6-sol"].map(seeded);
+  if (haiku) await owner.post(`${checkout}/aliases`, { name: "fast", route: step(haiku) });
+  if (sonnet && sol && mini)
+    await owner.post(`${checkout}/aliases`, { name: "sturdy", route: step(sonnet, { ...step(sol, step(mini)), fall_back_on: ["unavailable", "limited"] }) });
+  if (haiku && sonnet && mini && sol)
+    await owner.post(`${checkout}/aliases`, {
+      name: "support",
+      route: {
+        type: "condition",
+        match: "any",
+        rules: [
+          { field: "header", name: "x-plan", op: "equals", value: "enterprise" },
+          { field: "input_tokens", op: "at_least", value: 100000 },
+        ],
+        then: step(sonnet, step(sol)),
+        else: {
+          type: "split",
+          by: "caller",
+          branches: [
+            { weight: 80, step: step(haiku, step(mini)) },
+            { weight: 20, step: step(mini) },
+          ],
+        },
+      },
+    });
+  if (haiku && sol)
+    await owner.post(`${checkout}/aliases`, {
+      name: "per-user",
+      route: {
+        type: "split",
+        by: "header",
+        header: "x-user-id",
+        branches: [
+          { weight: 50, step: step(haiku) },
+          { weight: 50, step: step(sol) },
+        ],
+      },
+    });
 
   const people = [];
   for (const [i, person] of PEOPLE.entries()) {

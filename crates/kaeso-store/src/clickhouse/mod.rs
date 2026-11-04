@@ -50,6 +50,11 @@ const MIGRATIONS: &[Migration] = &[
         name: "usage_in_postgres",
         sql: include_str!("../../migrations/clickhouse/0007_usage_in_postgres.sql"),
     },
+    Migration {
+        version: 8,
+        name: "alias_routes",
+        sql: include_str!("../../migrations/clickhouse/0008_alias_routes.sql"),
+    },
 ];
 
 #[derive(Clone)]
@@ -202,7 +207,7 @@ mod tests {
     #[test]
     fn migration_files_split_into_statements() {
         let all: Vec<String> = MIGRATIONS.iter().flat_map(|m| statements(m.sql)).collect();
-        assert_eq!(all.len(), 13);
+        assert_eq!(all.len(), 15);
         assert!(all.iter().all(|s| s.starts_with("CREATE ")
             || s.starts_with("ALTER TABLE ")
             || s.starts_with("DROP ")));

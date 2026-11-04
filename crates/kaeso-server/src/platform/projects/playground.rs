@@ -1,17 +1,26 @@
+use std::collections::BTreeMap;
+
 use axum::extract::State;
-use axum::http::{HeaderMap, HeaderValue, StatusCode, header};
+use axum::http::{HeaderMap, HeaderName, HeaderValue, StatusCode, header};
 use axum::response::{IntoResponse, Response};
-use kaeso_core::id::{CatalogueModelId, OrgId, ProjectId};
+use bytes::Bytes;
+use kaeso_core::catalogue::resolve::Alias;
+use kaeso_core::catalogue::route::{self, Step};
+use kaeso_core::id::{AliasId, CatalogueModelId, OrgId, ProjectId};
 use kaeso_kpp::{DialectId, ErrorKind, KppError, RequestKind};
 use kaeso_store::pg::credentials;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
+use serde_json::value::RawValue;
 use utoipa::ToSchema;
+
+use super::aliases::{TestHeader, check_route};
 
 use crate::model_api::errors::stamp;
 use crate::model_api::hooks::{Caller as ModelCaller, Source};
 use crate::model_api::pipeline::{self, Failure, Incoming, Stage};
 use crate::platform::access::{Caller, Ctx};
 use crate::platform::error::{ApiError, ApiResult};
+use crate::platform::json::data_error;
 use crate::platform::pagination::List;
 use crate::platform::params::Path;
 use crate::state::AppState;
@@ -46,6 +55,99 @@ pub struct PlaygroundRequest {
     #[doc = "Must be `true`: the Playground serves streams only."]
     #[schema(example = true)]
     pub stream: bool,
+    #[doc = "A route to take instead of resolving `model`, such as the route editor's\n\
+        unsaved draft; `model` then names its alias. Checked as saving it would be."]
+    pub route: Option<Step>,
+    #[doc = "The saved alias `route` edits, so its splits draw as they do for the\n\
+        alias's requests; only with `route`."]
+    pub alias: Option<AliasId>,
+    #[doc = "Headers to send as an app would, up to 20, which a route's conditions\n\
+        and splits read; none that carry credentials."]
+    pub headers: Option<Vec<TestHeader>>,
+}
+
+const ROUTE_TEST: [&str; 3] = ["route", "alias", "headers"];
+
+#[derive(Debug, Default, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct RouteTest {
+    #[serde(default)]
+    route: Option<Step>,
+    #[serde(default)]
+    alias: Option<AliasId>,
+    #[serde(default)]
+    headers: Vec<TestHeader>,
+}
+
+struct Split {
+    body: Bytes,
+    model: Option<String>,
+    test: RouteTest,
+}
+
+// The Responses fields pass through byte for byte, so kpp decodes exactly what the
+// console sent; only the Playground's own fields are taken out.
+fn split(bytes: Bytes) -> ApiResult<Split> {
+    let untouched = |body: Bytes| Split {
+        body,
+        model: None,
+        test: RouteTest::default(),
+    };
+    let Ok(fields) = serde_json::from_slice::<BTreeMap<String, &RawValue>>(&bytes) else {
+        return Ok(untouched(bytes));
+    };
+    if !ROUTE_TEST.iter().any(|f| fields.contains_key(*f)) {
+        return Ok(untouched(bytes));
+    }
+    let mut test = serde_json::Map::new();
+    let mut rest = Vec::with_capacity(bytes.len());
+    rest.push(b'{');
+    for (name, value) in &fields {
+        if ROUTE_TEST.contains(&name.as_str()) {
+            let value = serde_json::from_str(value.get()).map_err(|e| {
+                ApiError::internal(format!("a parsed field did not parse again: {e}"))
+            })?;
+            test.insert(name.clone(), value);
+            continue;
+        }
+        if rest.len() > 1 {
+            rest.push(b',');
+        }
+        serde_json::to_writer(&mut rest, name)
+            .map_err(|e| ApiError::internal(format!("a field name did not encode: {e}")))?;
+        rest.push(b':');
+        rest.extend_from_slice(value.get().as_bytes());
+    }
+    rest.push(b'}');
+    let model = fields
+        .get("model")
+        .and_then(|v| serde_json::from_str::<String>(v.get()).ok());
+    let test = serde_path_to_error::deserialize(serde_json::Value::Object(test))
+        .map_err(|e| data_error(&e.to_string()))?;
+    Ok(Split {
+        body: Bytes::from(rest),
+        model,
+        test,
+    })
+}
+
+fn test_headers(headers: &mut HeaderMap, sent: Vec<TestHeader>) -> ApiResult<()> {
+    let pairs: Vec<(String, String)> = sent.into_iter().map(|h| (h.name, h.value)).collect();
+    route::check_test_headers("headers", &pairs)
+        .map_err(|e| ApiError::invalid(&e.param, e.message))?;
+    for (name, _) in &pairs {
+        headers.remove(name.as_str());
+    }
+    for (name, value) in pairs {
+        let (Ok(name), Ok(value)) = (
+            HeaderName::from_bytes(name.as_bytes()),
+            HeaderValue::from_str(&value),
+        ) else {
+            return Err(ApiError::internal("a checked test header did not parse"));
+        };
+        headers.append(name, value);
+    }
+    Ok(())
 }
 
 #[utoipa::path(
@@ -59,9 +161,12 @@ pub struct PlaygroundRequest {
     with keepalive comments while the model is quiet. Closing the stream\n\
     cancels the provider request. The request counts against the member's\n\
     and the project's limits and budgets, is charged to the project, and is\n\
-    logged with the source `playground`. Needs a console session; failures\n\
-    before the stream starts are Platform API errors (`provider_error` when\n\
-    the provider fails, refuses the provider key, is overloaded or times out).",
+    logged with the source `playground`. With `route`, the request takes that\n\
+    route instead of the saved alias's, and `headers` reach its conditions and\n\
+    splits; the `kaeso-route` header names every step it tried. Needs a console\n\
+    session; failures before the stream starts are Platform API errors\n\
+    (`provider_error` when the provider fails, refuses the provider key, is\n\
+    overloaded or times out).",
     tag = "projects",
     params(("org" = OrgId, Path), ("project" = ProjectId, Path)),
     request_body = PlaygroundRequest,
@@ -89,6 +194,11 @@ pub async fn responses(
             "The project is archived; its models cannot be called.".into(),
         ));
     }
+    let max_body = state.config.body_limits.platform_api.as_usize();
+    let bytes = axum::body::to_bytes(body, max_body)
+        .await
+        .map_err(|_| ApiError::TooLarge("The conversation is larger than Kaeso accepts.".into()))?;
+    let Split { body, model, test } = split(bytes)?;
     let mut headers = HeaderMap::new();
     if let Some(ua) = ctx
         .user_agent
@@ -97,11 +207,29 @@ pub async fn responses(
     {
         headers.insert(header::USER_AGENT, ua);
     }
+    test_headers(&mut headers, test.headers)?;
+    let alias = match test.route {
+        Some(route) => {
+            check_route(&state, scope.project.id, &route).await?;
+            Some(Alias {
+                id: test.alias.map(|a| a.uuid()).unwrap_or_default(),
+                name: model.unwrap_or_default(),
+                route,
+            })
+        }
+        None if test.alias.is_some() => {
+            return Err(ApiError::invalid(
+                "alias",
+                "Send `alias` only with `route`.",
+            ));
+        }
+        None => None,
+    };
     let incoming = Incoming {
         ingress: DialectId::OpenAiResponses,
         kind: RequestKind::Generate,
         headers,
-        body,
+        body: axum::body::Body::from(body),
         request_id: ctx.request_id,
         client_ip: ctx.ip,
         caller: Some(ModelCaller {
@@ -113,7 +241,8 @@ pub async fn responses(
         }),
         source: Source::Playground,
         stream_only: true,
-        max_body: state.config.body_limits.platform_api.as_usize(),
+        max_body,
+        alias,
     };
     Ok(pipeline::serve_with(state, incoming, answer).await)
 }

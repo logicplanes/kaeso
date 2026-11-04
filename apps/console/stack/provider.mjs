@@ -89,6 +89,13 @@ function marker(text, name) {
   return match ? (match[1] ?? "") : undefined;
 }
 
+// `[mock:fail=<model> <error>]` fails only the requests for that model, so an alias's route can
+// fall back from it to the next step; a prompt may carry several.
+function failureFor(text, model) {
+  for (const m of text.matchAll(/\[mock:fail=([^\]\s]+) ([^\]]+)\]/g)) if (m[1] === model) return m[2];
+  return undefined;
+}
+
 function numberMarker(text, name) {
   const value = marker(text, name);
   if (value === undefined || value === "") return undefined;
@@ -422,6 +429,8 @@ async function handle(req, res) {
   } catch {
     return sendError(res, dialect, "invalid-request");
   }
+  const failing = typeof body.model === "string" ? failureFor(raw, body.model) : undefined;
+  if (failing !== undefined) return sendError(res, dialect, failing);
   const shape = shapeOf(raw);
   if (path === "/v1/messages/count_tokens") return sendJson(res, 200, { input_tokens: shape.input });
   if (path === "/v1/responses/input_tokens") return sendJson(res, 200, { object: "response.input_tokens", input_tokens: shape.input });

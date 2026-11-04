@@ -181,5 +181,6 @@
   "models.ownUnknown": "Kaeso kennt diese Werte für {provider} nicht; Eingaben, Ausgaben, Limits, Ein- und Ausgabepreis und das Format sind Pflicht.",
   "models.ownFound": "Kaeso hat eingetragen, was {provider} und KPMR über {model} sagen; prüfen Sie es und legen Sie die Preise fest.",
   "models.wantAll": "Alle auf einmal? {all}",
-  "models.field.cacheWrite1hPrice": "Preis für Cache-Schreiben (1 Stunde)"
+  "models.field.cacheWrite1hPrice": "Preis für Cache-Schreiben (1 Stunde)",
+  "models.alias.routeModels": "{first} und {count, plural, one {# weiteres Modell} other {# weitere Modelle}}"
 }

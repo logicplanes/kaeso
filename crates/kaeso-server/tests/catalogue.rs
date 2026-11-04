@@ -314,17 +314,21 @@ async fn aliases_resolve_first_and_warn_when_they_shadow() {
     let r = app
         .post(
             &format!("{b}/aliases"),
-            json!({ "name": "chat-default", "catalogue_model_id": sonnet_id }),
+            json!({ "name": "chat-default", "route": { "type": "model", "model": sonnet_id } }),
             Some(&owner.cookie),
         )
         .await;
     assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
     assert_eq!(r.body["shadows_model"], false);
-    assert_eq!(r.body["target"], "anthropic/claude-sonnet-4-5");
+    assert_eq!(r.body["models"][0]["target"], "anthropic/claude-sonnet-4-5");
+    assert_eq!(
+        r.body["route"]["fall_back_on"],
+        json!(["unavailable", "limited", "unsupported"])
+    );
     let shadow = app
         .post(
             &format!("{b}/aliases"),
-            json!({ "name": "gpt-5", "catalogue_model_id": sonnet_id }),
+            json!({ "name": "gpt-5", "route": { "type": "model", "model": sonnet_id } }),
             Some(&owner.cookie),
         )
         .await;
@@ -332,7 +336,7 @@ async fn aliases_resolve_first_and_warn_when_they_shadow() {
     let dup = app
         .post(
             &format!("{b}/aliases"),
-            json!({ "name": "chat-default", "catalogue_model_id": sonnet_id }),
+            json!({ "name": "chat-default", "route": { "type": "model", "model": sonnet_id } }),
             Some(&owner.cookie),
         )
         .await;
@@ -340,7 +344,7 @@ async fn aliases_resolve_first_and_warn_when_they_shadow() {
     let slash = app
         .post(
             &format!("{b}/aliases"),
-            json!({ "name": "a/b", "catalogue_model_id": sonnet_id }),
+            json!({ "name": "a/b", "route": { "type": "model", "model": sonnet_id } }),
             Some(&owner.cookie),
         )
         .await;
@@ -350,7 +354,17 @@ async fn aliases_resolve_first_and_warn_when_they_shadow() {
     let models = kaeso_server::services::catalogue::project_models(&app.state, project_id.uuid())
         .await
         .unwrap();
-    let resolve = |n: &str| models.catalogue.resolve(n).map(|(e, _)| e.model_id.clone());
+    let resolve = |n: &str| {
+        models.catalogue.resolve(n).map(|r| match r {
+            kaeso_core::catalogue::resolve::Resolved::Model(e, _) => e.model_id.clone(),
+            kaeso_core::catalogue::resolve::Resolved::Alias(a) => models
+                .catalogue
+                .model(a.route.primary().unwrap())
+                .unwrap()
+                .model_id
+                .clone(),
+        })
+    };
     assert_eq!(resolve("chat-default").unwrap(), "claude-sonnet-4-5");
     assert_eq!(resolve("gpt-5").unwrap(), "claude-sonnet-4-5");
     assert_eq!(resolve("openai/gpt-4o").unwrap(), "gpt-4o");
@@ -361,16 +375,65 @@ async fn aliases_resolve_first_and_warn_when_they_shadow() {
         &app,
         &owner,
         &format!("{b}/aliases/{alias}"),
-        json!({ "catalogue_model_id": gpt["id"] }),
+        json!({ "route": { "type": "model", "model": gpt["id"] } }),
     )
     .await;
-    assert_eq!(moved.body["target"], "openai/gpt-4o", "{:?}", moved.body);
+    assert_eq!(
+        moved.body["models"][0]["target"], "openai/gpt-4o",
+        "{:?}",
+        moved.body
+    );
     let models = kaeso_server::services::catalogue::project_models(&app.state, project_id.uuid())
         .await
         .unwrap();
+    let Ok(kaeso_core::catalogue::resolve::Resolved::Alias(moved)) =
+        models.catalogue.resolve("chat-default")
+    else {
+        panic!("chat-default is an alias");
+    };
     assert_eq!(
-        models.catalogue.resolve("chat-default").unwrap().0.model_id,
+        models
+            .catalogue
+            .model(moved.route.primary().unwrap())
+            .unwrap()
+            .model_id,
         "gpt-4o"
+    );
+    let routed = app
+        .post(
+            &format!("{b}/aliases"),
+            json!({
+                "name": "sturdy",
+                "route": {
+                    "type": "model", "model": sonnet_id,
+                    "fallback": { "type": "model", "model": gpt["id"] }
+                }
+            }),
+            Some(&owner.cookie),
+        )
+        .await;
+    assert_eq!(routed.status, StatusCode::CREATED, "{:?}", routed.body);
+    let refused = app
+        .post(
+            &format!("{b}/aliases"),
+            json!({
+                "name": "broken",
+                "route": {
+                    "type": "split", "by": "request",
+                    "branches": [
+                        { "weight": 60, "step": { "type": "model", "model": sonnet_id } },
+                        { "weight": 30, "step": { "type": "model", "model": gpt["id"] } }
+                    ]
+                }
+            }),
+            Some(&owner.cookie),
+        )
+        .await;
+    assert_eq!(refused.status, StatusCode::BAD_REQUEST);
+    assert_eq!(refused.body["error"]["param"], "route.branches");
+    assert_eq!(
+        refused.body["error"]["message"],
+        "A split's weights add up to 100 percent."
     );
     let gone = app
         .call(
@@ -388,7 +451,10 @@ async fn aliases_resolve_first_and_warn_when_they_shadow() {
         .iter()
         .map(|a| a["name"].as_str().unwrap())
         .collect();
-    assert_eq!(names, ["gpt-5"]);
+    assert_eq!(names, ["gpt-5", "sturdy"]);
+    let sturdy = &aliases.body["data"][1];
+    assert_eq!(sturdy["models"][0]["target"], "anthropic/claude-sonnet-4-5");
+    assert_eq!(sturdy["models"][1]["target"], serde_json::Value::Null);
 }
 
 #[tokio::test]

@@ -59,6 +59,8 @@ pub struct LogRow {
     pub cache_breakpoints: Option<u16>,
     pub request_upload_ms: Option<u32>,
     pub response_cache: String,
+    pub alias: String,
+    pub fallbacks: String,
 }
 
 #[derive(Clone, Debug, PartialEq, Row, Serialize, Deserialize)]

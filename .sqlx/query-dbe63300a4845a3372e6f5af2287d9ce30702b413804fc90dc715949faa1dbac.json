@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE aliases SET name = $3, route = $4, updated_at = now() WHERE project_id = $1 AND id = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Jsonb"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "dbe63300a4845a3372e6f5af2287d9ce30702b413804fc90dc715949faa1dbac"
+}

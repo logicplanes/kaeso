@@ -425,7 +425,7 @@ async fn models_and_aliases_resolve_in_this_project_only() {
         .app
         .post(
             &format!("{}/aliases", base(&env)),
-            json!({ "name": "fast", "catalogue_model_id": haiku }),
+            json!({ "name": "fast", "route": { "type": "model", "model": haiku } }),
             Some(&env.owner.cookie),
         )
         .await;
@@ -521,6 +521,140 @@ async fn models_and_aliases_resolve_in_this_project_only() {
         r.body["error"]["message"],
         "The provider is overloaded right now; try again shortly."
     );
+}
+
+async fn catalogue_id(env: &Env, model: &str) -> String {
+    env.app
+        .get(&format!("{}/models", base(env)), &env.owner.cookie)
+        .await
+        .body["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|m| m["model_id"] == model)
+        .unwrap()["id"]
+        .as_str()
+        .unwrap()
+        .to_owned()
+}
+
+fn steps_tried(r: &Answer) -> Vec<String> {
+    r.header("kaeso-route")
+        .unwrap_or_default()
+        .split(", ")
+        .map(|step| {
+            step.split(';')
+                .filter(|p| !p.starts_with("dur="))
+                .collect::<Vec<_>>()
+                .join(";")
+        })
+        .collect()
+}
+
+#[tokio::test]
+async fn a_draft_route_takes_the_headers_sent_with_it_and_names_every_step_it_tried() {
+    let env = captured().await;
+    let path = responses_path(&env);
+    let haiku = catalogue_id(&env, "claude-haiku-4-5").await;
+    let gpt = catalogue_id(&env, "gpt-4o").await;
+    let saved = env
+        .app
+        .post(
+            &format!("{}/aliases", base(&env)),
+            json!({ "name": "tiered", "route": { "type": "model", "model": gpt } }),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert_eq!(saved.status, StatusCode::CREATED, "{:?}", saved.body);
+    let draft = json!({
+        "type": "condition", "match": "all",
+        "rules": [{ "field": "header", "name": "x-plan", "op": "equals", "value": "paid" }],
+        "then": { "type": "model", "model": haiku, "fallback": { "type": "model", "model": gpt } },
+        "else": { "type": "model", "model": gpt }
+    });
+    let mut body = ask("tiered", "Hi [mock:fail=claude-haiku-4-5 overloaded]");
+    body["route"] = draft.clone();
+    body["alias"] = saved.body["id"].clone();
+    body["headers"] = json!([{ "name": "x-plan", "value": "paid" }]);
+    let r = play(&env.app, &path, &env.owner.cookie, &body).await;
+    completed(&r);
+    assert_eq!(
+        steps_tried(&r),
+        [
+            "\"route.then\";model=\"anthropic/claude-haiku-4-5\";status=529",
+            "\"route.then.fallback\";model=\"openai/gpt-4o\";status=200",
+        ]
+    );
+    let o = outcome(&env, r.header("kaeso-request-id").unwrap()).await;
+    assert_eq!(o.source, Source::Playground);
+    assert_eq!(o.alias.as_deref(), Some("tiered"));
+    assert_eq!(o.requested_model.as_deref(), Some("tiered"));
+    assert_eq!(o.model_id.as_deref(), Some("gpt-4o"));
+    assert_eq!(o.fallbacks.len(), 1);
+    assert_eq!(o.fallbacks[0].path, "route.then");
+
+    let mut plain = ask("tiered", "Hi");
+    plain["route"] = draft.clone();
+    let r = play(&env.app, &path, &env.owner.cookie, &plain).await;
+    completed(&r);
+    assert_eq!(
+        steps_tried(&r),
+        ["\"route.else\";model=\"openai/gpt-4o\";status=200"]
+    );
+
+    let saved_route = play(&env.app, &path, &env.owner.cookie, &ask("tiered", "Hi")).await;
+    completed(&saved_route);
+    assert_eq!(
+        steps_tried(&saved_route),
+        ["\"route\";model=\"openai/gpt-4o\";status=200"]
+    );
+}
+
+#[tokio::test]
+async fn a_draft_route_and_its_headers_are_checked_before_anything_is_sent() {
+    let env = captured().await;
+    let path = responses_path(&env);
+    let gpt = catalogue_id(&env, "gpt-4o").await;
+    let route = json!({ "type": "model", "model": gpt });
+    let refused = |body: Value| {
+        let env = &env;
+        let path = &path;
+        async move {
+            let r = play(&env.app, path, &env.owner.cookie, &body).await;
+            assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+            let e = r.json()["error"].clone();
+            (
+                e["param"].as_str().unwrap_or_default().to_owned(),
+                e["message"].as_str().unwrap_or_default().to_owned(),
+            )
+        }
+    };
+    let mut secret = ask("draft", "Hi");
+    secret["route"] = route.clone();
+    secret["headers"] = json!([{ "name": "authorization", "value": "Bearer x" }]);
+    assert_eq!(
+        refused(secret).await,
+        (
+            "headers.0.name".to_owned(),
+            "Routes can't read this header, since it carries credentials.".to_owned()
+        )
+    );
+    let mut lone = ask("draft", "Hi");
+    lone["alias"] = json!("alias_00000000000000000000000000");
+    assert_eq!(
+        refused(lone).await,
+        (
+            "alias".to_owned(),
+            "Send `alias` only with `route`.".to_owned()
+        )
+    );
+    let mut unknown = ask("draft", "Hi");
+    unknown["route"] = json!({ "type": "model", "model": "model_00000000000000000000000000" });
+    assert!(refused(unknown).await.0.starts_with("route"));
+    let mut shapeless = ask("draft", "Hi");
+    shapeless["route"] = json!(5);
+    assert_eq!(refused(shapeless).await.0, "route");
+    assert!(env.mock.received().is_empty());
 }
 
 #[tokio::test]
@@ -972,17 +1106,29 @@ async fn playground_requests_are_charged_and_logged_as_the_members() {
     let mut lines = csv.lines();
     assert!(
         lines.next().unwrap().ends_with(
-            ",usage_estimated,source,overhead_ms,stream_processing_ms,cache_breakpoints,request_upload_ms,response_cache"
+            ",usage_estimated,source,overhead_ms,stream_processing_ms,cache_breakpoints,request_upload_ms,response_cache,alias,fallbacks"
         )
     );
     let row = lines.next().unwrap();
     let (_, rest) = row.split_once(",\"playground\",").unwrap();
-    let [overhead, processing, breakpoints, upload, cache] =
-        rest.split(',').collect::<Vec<_>>()[..]
+    let [
+        overhead,
+        processing,
+        breakpoints,
+        upload,
+        cache,
+        alias,
+        fallbacks,
+    ] = rest.split(',').collect::<Vec<_>>()[..]
     else {
         panic!("{row}");
     };
     assert_eq!(cache, "\"\"", "the cache is off in a new project: {row}");
+    assert_eq!(
+        (alias, fallbacks),
+        ("\"\"", "\"\""),
+        "the request named a model: {row}"
+    );
     assert!(
         [overhead, processing, upload]
             .iter()

@@ -34,6 +34,17 @@ impl Timeouts {
         }
         self
     }
+
+    pub fn with_step_override(mut self, seconds: Option<u32>, streamed: bool) -> Timeouts {
+        if let Some(s) = seconds {
+            let d = Duration::from_secs(u64::from(s));
+            self.first_byte = d;
+            if !streamed {
+                self.request = d;
+            }
+        }
+        self
+    }
 }
 
 #[derive(Debug, thiserror::Error)]

@@ -369,6 +369,29 @@ function Overview({ org, project, e, keyName }: { org: string; project: string; 
               label: common.provider(),
               value: e.provider ? <ProviderBadge provider={e.provider} name={providers.name(e.provider)} withName size="sm" /> : "—",
             },
+            ...(e.alias ? [{ label: t("logs.inspector.alias", "Alias"), value: <Long mono>{e.alias}</Long> }] : []),
+            ...(e.fallbacks.length > 0
+              ? [
+                  {
+                    label: t("logs.inspector.triedFirst", "Tried first"),
+                    value: (
+                      <span className="flex min-w-0 flex-col gap-4">
+                        {e.fallbacks.map((f, i) => (
+                          <span key={`${i}-${f.catalogue_model_id}`} className="flex min-w-0 flex-col">
+                            <span className="flex min-w-0 items-center gap-8">
+                              <StatusCode code={f.status} />
+                              <Long mono>{f.model}</Long>
+                            </span>
+                            <Text variant="small" tone="secondary">
+                              {t("logs.inspector.failedAfter", "Failed after {duration}", { duration: seconds(f.duration_ms) })}
+                            </Text>
+                          </span>
+                        ))}
+                      </span>
+                    ),
+                  },
+                ]
+              : []),
             {
               label: t("logs.inspector.upstreamRequest", "Upstream request"),
               value: e.upstream_request_id ? <Long mono>{e.upstream_request_id}</Long> : "—",

@@ -188,5 +188,8 @@
   "logs.tokens.noBreakpoint": "发送时没有缓存断点，且未缓存任何内容",
   "logs.tokens.reasoning": "{count} 推理",
   "logs.unavailable": "请求日志暂不可用",
-  "logs.unavailableHint": "用量和限额仍正常工作。"
+  "logs.unavailableHint": "用量和限额仍正常工作。",
+  "logs.inspector.alias": "别名",
+  "logs.inspector.triedFirst": "先尝试的模型",
+  "logs.inspector.failedAfter": "{duration}后失败"
 }

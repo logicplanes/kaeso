@@ -47,6 +47,64 @@ async fn logs(env: &Env, query: &str) -> Value {
 }
 
 #[tokio::test]
+async fn an_alias_request_is_logged_with_the_steps_it_tried_first() {
+    let env = env(&[]).await;
+    let models = env
+        .app
+        .get(&format!("{}/models", base(&env)), &env.owner.cookie)
+        .await;
+    let id = |name: &str| {
+        models.body["data"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|m| m["model_id"] == name)
+            .unwrap()["id"]
+            .clone()
+    };
+    let r = env
+        .app
+        .post(
+            &format!("{}/aliases", base(&env)),
+            serde_json::json!({
+                "name": "sturdy",
+                "route": {
+                    "type": "model", "model": id("claude-haiku-4-5"),
+                    "fallback": { "type": "model", "model": id("gpt-4o") }
+                }
+            }),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
+    let answer = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(chat("sturdy", "Hi [mock:fail=claude-haiku-4-5 overloaded]")),
+    )
+    .await;
+    assert_eq!(answer.status, StatusCode::OK, "{}", answer.text());
+    flush(&env).await;
+
+    let entry = &logs(&env, "").await["data"][0];
+    assert_eq!(entry["requested_model"], "sturdy", "{entry}");
+    assert_eq!(entry["alias"], "sturdy", "{entry}");
+    assert_eq!(entry["model"], "gpt-4o", "{entry}");
+    let fell = &entry["fallbacks"][0];
+    assert_eq!(fell["model"], "anthropic/claude-haiku-4-5", "{entry}");
+    assert_eq!(
+        fell["catalogue_model_id"],
+        id("claude-haiku-4-5"),
+        "{entry}"
+    );
+    assert_eq!(fell["status"], 529, "{entry}");
+    assert_eq!(fell["error_kind"], "overloaded", "{entry}");
+    assert!(fell["duration_ms"].is_u64(), "{entry}");
+}
+
+#[tokio::test]
 async fn requests_are_logged_with_metadata_and_content() {
     let env = env(&[]).await;
     let r = call(
@@ -677,6 +735,8 @@ fn row(org: Uuid, project: Uuid, at: OffsetDateTime, i: u64) -> (LogRow, Content
             cache_breakpoints: Some(2),
             request_upload_ms: Some(40),
             response_cache: "hit".into(),
+            alias: String::new(),
+            fallbacks: String::new(),
         },
         ContentRow {
             request_id: id,
@@ -775,7 +835,7 @@ async fn exports_stream_large_ranges_in_both_formats() {
     assert!(text.starts_with("id,started_at,"));
     assert!(
         text.lines().next().unwrap().ends_with(
-            ",source,overhead_ms,stream_processing_ms,cache_breakpoints,request_upload_ms,response_cache"
+            ",source,overhead_ms,stream_processing_ms,cache_breakpoints,request_upload_ms,response_cache,alias,fallbacks"
         ),
         "{text}"
     );
@@ -783,7 +843,7 @@ async fn exports_stream_large_ranges_in_both_formats() {
     assert!(
         text.lines()
             .skip(1)
-            .all(|l| l.ends_with(",\"api\",1,,2,40,\"hit\"")),
+            .all(|l| l.ends_with(",\"api\",1,,2,40,\"hit\",\"\",\"\"")),
         "the overhead, the breakpoints, the upload and the response cache are exported, and a stream's processing time is empty for other requests"
     );
     assert!(text.contains("\"ua, with comma\""), "CSV fields are quoted");

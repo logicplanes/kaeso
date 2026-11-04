@@ -9,8 +9,10 @@ use rust_decimal_macros::dec;
 use uuid::Uuid;
 
 use super::capability::{effort_levels, model_info, prepare};
-use super::resolve::{Access, AccessLevel, Alias, Catalogue, ResolveError, Via};
+use super::resolve::{Access, AccessLevel, Alias, Catalogue, ResolveError, Resolved, Via};
+use super::route::Step;
 use super::*;
+use crate::id::CatalogueModelId;
 use crate::provider;
 
 fn snapshot() -> kpmr::Catalogue {
@@ -377,27 +379,33 @@ fn values_are_checked() {
     assert_eq!(custom.validate_custom(), Ok(()));
 }
 
+fn alias(name: impl Into<String>, target: Uuid) -> Alias {
+    Alias {
+        id: target,
+        name: name.into(),
+        route: Step::model(CatalogueModelId::from_uuid(target)),
+    }
+}
+
+fn target(catalogue: &Catalogue, name: &str) -> Result<(Uuid, Option<Via>), ResolveError> {
+    catalogue.resolve(name).map(|r| match r {
+        Resolved::Model(e, v) => (e.id, Some(v)),
+        Resolved::Alias(a) => (a.route.primary().map_or(Uuid::nil(), |m| m.uuid()), None),
+    })
+}
+
 #[test]
 fn names_resolve_alias_then_prefixed_then_native() {
     let gpt = entry("openai", "gpt-4o");
     let claude = entry("anthropic", "claude-sonnet-4-5");
     let entries = vec![gpt.clone(), claude.clone()];
-    let aliases = vec![
-        Alias {
-            name: "chat-default".into(),
-            target: claude.id,
-        },
-        Alias {
-            name: "gpt-4o".into(),
-            target: claude.id,
-        },
-    ];
+    let aliases = vec![alias("chat-default", claude.id), alias("gpt-4o", claude.id)];
     let catalogue = Catalogue::new(entries.clone(), aliases);
-    let r = |n: &str| catalogue.resolve(n).map(|(e, v)| (e.id, v));
-    assert_eq!(r("chat-default"), Ok((claude.id, Via::Alias)));
-    assert_eq!(r("gpt-4o"), Ok((claude.id, Via::Alias)));
-    assert_eq!(r("openai/gpt-4o"), Ok((gpt.id, Via::Prefixed)));
-    assert_eq!(r("claude-sonnet-4-5"), Ok((claude.id, Via::Native)));
+    let r = |n: &str| target(&catalogue, n);
+    assert_eq!(r("chat-default"), Ok((claude.id, None)));
+    assert_eq!(r("gpt-4o"), Ok((claude.id, None)));
+    assert_eq!(r("openai/gpt-4o"), Ok((gpt.id, Some(Via::Prefixed))));
+    assert_eq!(r("claude-sonnet-4-5"), Ok((claude.id, Some(Via::Native))));
     assert!(matches!(r("gpt-5"), Err(ResolveError::NotInCatalogue(_))));
     assert!(r("anthropic/claude-opus-4-6").is_err());
     let twins = Catalogue::new(
@@ -432,7 +440,7 @@ fn model_ids_with_a_slash_resolve_prefixed_and_native() {
     let qwen = entry("groq", "qwen/qwen3.8-27b");
     let entries = vec![oss.clone(), qwen.clone()];
     let catalogue_entries = Catalogue::new(entries.clone(), vec![]);
-    let r = |n: &str| catalogue_entries.resolve(n).map(|(e, v)| (e.id, v));
+    let r = |n: &str| catalogue_entries.resolve_model(n).map(|(e, v)| (e.id, v));
     assert_eq!(r("groq/openai/gpt-oss-20b"), Ok((oss.id, Via::Prefixed)));
     assert_eq!(r("openai/gpt-oss-20b"), Ok((oss.id, Via::Native)));
     assert_eq!(r("qwen/qwen3.8-27b"), Ok((qwen.id, Via::Native)));
@@ -443,7 +451,7 @@ fn model_ids_with_a_slash_resolve_prefixed_and_native() {
     let gpt = entry("openai", "gpt-oss-20b");
     let both = vec![oss.clone(), gpt.clone()];
     let catalogue_both = Catalogue::new(both.clone(), vec![]);
-    let r = |n: &str| catalogue_both.resolve(n).map(|(e, v)| (e.id, v));
+    let r = |n: &str| catalogue_both.resolve_model(n).map(|(e, v)| (e.id, v));
     assert_eq!(r("openai/gpt-oss-20b"), Ok((gpt.id, Via::Prefixed)));
     assert_eq!(r("groq/openai/gpt-oss-20b"), Ok((oss.id, Via::Prefixed)));
 }
@@ -454,7 +462,7 @@ fn model_ids_with_slashes_resolve_natively_and_with_their_provider_prefix() {
     let oss = entry("togetherai", "openai/gpt-oss-120b");
     let entries = vec![qwen.clone(), oss.clone(), entry("openai", "gpt-4o")];
     let catalogue_entries = Catalogue::new(entries.clone(), vec![]);
-    let r = |n: &str| catalogue_entries.resolve(n).map(|(e, v)| (e.id, v));
+    let r = |n: &str| catalogue_entries.resolve_model(n).map(|(e, v)| (e.id, v));
     assert_eq!(r("Qwen/Qwen3.5-9B"), Ok((qwen.id, Via::Native)));
     assert_eq!(
         r("togetherai/Qwen/Qwen3.5-9B"),
@@ -477,7 +485,7 @@ fn model_ids_with_slashes_and_colons_resolve_natively_or_with_their_provider_pre
     let sonnet = entry("openrouter", "anthropic/claude-sonnet-4.5");
     let entries = vec![free.clone(), sonnet.clone()];
     let catalogue_entries = Catalogue::new(entries.clone(), vec![]);
-    let r = |n: &str| catalogue_entries.resolve(n).map(|(e, v)| (e.id, v));
+    let r = |n: &str| catalogue_entries.resolve_model(n).map(|(e, v)| (e.id, v));
     assert_eq!(
         r("nvidia/nemotron-3.5-lightning:free"),
         Ok((free.id, Via::Native))
@@ -502,7 +510,7 @@ fn a_provider_prefix_wins_over_a_native_id_that_reads_the_same() {
     let direct = entry("openai", "gpt-4o");
     let both = vec![routed.clone(), direct.clone()];
     let catalogue_both = Catalogue::new(both.clone(), vec![]);
-    let r = |n: &str| catalogue_both.resolve(n).map(|(e, v)| (e.id, v));
+    let r = |n: &str| catalogue_both.resolve_model(n).map(|(e, v)| (e.id, v));
     assert_eq!(r("openai/gpt-4o"), Ok((direct.id, Via::Prefixed)));
     assert_eq!(
         r("openrouter/openai/gpt-4o"),
@@ -511,7 +519,7 @@ fn a_provider_prefix_wins_over_a_native_id_that_reads_the_same() {
     assert_eq!(r("gpt-4o"), Ok((direct.id, Via::Native)));
     let only = vec![routed.clone()];
     let catalogue_only = Catalogue::new(only.clone(), vec![]);
-    let r = |n: &str| catalogue_only.resolve(n).map(|(e, v)| (e.id, v));
+    let r = |n: &str| catalogue_only.resolve_model(n).map(|(e, v)| (e.id, v));
     assert_eq!(r("openai/gpt-4o"), Ok((routed.id, Via::Native)));
 }
 
@@ -523,14 +531,8 @@ fn every_name_form_of_a_model_a_key_may_not_use_resolves_to_it_or_to_nothing() {
     let cat = Catalogue::new(
         vec![allowed.clone(), forbidden.clone(), routed.clone()],
         vec![
-            Alias {
-                name: "cheap".into(),
-                target: allowed.id,
-            },
-            Alias {
-                name: "gpt-4o-mini-x".into(),
-                target: forbidden.id,
-            },
+            alias("cheap", allowed.id),
+            alias("gpt-4o-mini-x", forbidden.id),
         ],
     );
     let key: BTreeSet<Uuid> = [allowed.id].into();
@@ -551,12 +553,12 @@ fn every_name_form_of_a_model_a_key_may_not_use_resolves_to_it_or_to_nothing() {
         "openai//gpt-4o",
         "openai/gpt-4o/",
     ] {
-        if let Ok((e, _)) = cat.resolve(name) {
-            assert_ne!(e.id, allowed.id, "{name} resolved to the allowed model");
-            assert_eq!(access.check(e.id), Err(AccessLevel::Key), "{name} passed");
+        if let Ok((e, _)) = target(&cat, name) {
+            assert_ne!(e, allowed.id, "{name} resolved to the allowed model");
+            assert_eq!(access.check(e), Err(AccessLevel::Key), "{name} passed");
         }
     }
-    assert!(access.allows(cat.resolve("cheap").unwrap().0.id));
+    assert!(access.allows(target(&cat, "cheap").unwrap().0));
 }
 
 #[test]
@@ -1256,16 +1258,27 @@ fn adaptive_thinking_is_refused_before_sending_where_the_model_has_none() {
     );
 }
 
-fn linear_resolve<'a>(
-    name: &str,
-    entries: &'a [Entry],
-    aliases: &[Alias],
-) -> Result<(&'a Entry, Via), ResolveError> {
-    if let Some(alias) = aliases.iter().find(|a| a.name == name)
-        && let Some(entry) = entries.iter().find(|e| e.id == alias.target)
-    {
-        return Ok((entry, Via::Alias));
+#[derive(Debug, PartialEq, Eq)]
+enum Found {
+    Alias(String),
+    Model(*const Entry, Via),
+}
+
+fn found(r: Result<Resolved<'_>, ResolveError>) -> Result<Found, ResolveError> {
+    r.map(|r| match r {
+        Resolved::Alias(a) => Found::Alias(a.name.clone()),
+        Resolved::Model(e, v) => Found::Model(std::ptr::from_ref(e), v),
+    })
+}
+
+fn linear_resolve(name: &str, entries: &[Entry], aliases: &[Alias]) -> Result<Found, ResolveError> {
+    if let Some(alias) = aliases.iter().find(|a| a.name == name) {
+        return Ok(Found::Alias(alias.name.clone()));
     }
+    linear_model(name, entries).map(|(e, v)| Found::Model(std::ptr::from_ref(e), v))
+}
+
+fn linear_model<'a>(name: &str, entries: &'a [Entry]) -> Result<(&'a Entry, Via), ResolveError> {
     if let Some((provider, model)) = name.split_once('/')
         && let Some(entry) = entries
             .iter()
@@ -1324,10 +1337,7 @@ mod indexed {
 
     fn aliases() -> impl Strategy<Value = Vec<Alias>> {
         prop::collection::vec(
-            (prop::sample::select(NAMES), 0u8..14).prop_map(|(name, n)| Alias {
-                name: name.into(),
-                target: id(n),
-            }),
+            (prop::sample::select(NAMES), 0u8..14).prop_map(|(name, n)| alias(name, id(n))),
             0..6,
         )
     }
@@ -1353,10 +1363,9 @@ mod indexed {
             name in names(),
         ) {
             let catalogue = Catalogue::new(entries, aliases);
-            let at = |r: Result<(&Entry, Via), ResolveError>| r.map(|(e, v)| (std::ptr::from_ref(e), v));
             prop_assert_eq!(
-                at(catalogue.resolve(&name)),
-                at(linear_resolve(&name, catalogue.entries(), catalogue.aliases()))
+                found(catalogue.resolve(&name)),
+                linear_resolve(&name, catalogue.entries(), catalogue.aliases())
             );
             let empty = kpmr::Catalogue::default();
             prop_assert_eq!(
@@ -1374,7 +1383,7 @@ mod indexed {
                 );
                 let of: Vec<&Alias> = catalogue.aliases_of(e.id).collect();
                 let scanned: Vec<&Alias> =
-                    catalogue.aliases().iter().filter(|a| a.target == e.id).collect();
+                    catalogue.aliases().iter().filter(|a| a.route.uses(CatalogueModelId::from_uuid(e.id))).collect();
                 prop_assert_eq!(of, scanned);
             }
         }
@@ -1387,10 +1396,7 @@ mod indexed {
             .map(|i| entry(&format!("p{}", i % 200), &format!("model-{}", i / 2)))
             .collect();
         let aliases: Vec<Alias> = (0..2_000)
-            .map(|i| Alias {
-                name: format!("alias-{i}"),
-                target: entries[i * 10].id,
-            })
+            .map(|i| alias(format!("alias-{i}"), entries[i * 10].id))
             .collect();
         let names: Vec<String> = (0..1_000)
             .flat_map(|i| {

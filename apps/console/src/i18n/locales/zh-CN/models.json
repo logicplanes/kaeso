@@ -181,5 +181,6 @@
   "models.ownUnknown": "Kaeso 无法得知 {provider} 的这些值；输入、输出、限制、输入和输出价格以及格式均为必填。",
   "models.ownFound": "Kaeso 已填入 {provider} 和 KPMR 关于 {model} 的信息，请检查并设置其价格。",
   "models.wantAll": "想全部添加？{all}",
-  "models.field.cacheWrite1hPrice": "缓存写入价格（1 小时）"
+  "models.field.cacheWrite1hPrice": "缓存写入价格（1 小时）",
+  "models.alias.routeModels": "{first} 及另外 {count, plural, other {# 个模型}}"
 }

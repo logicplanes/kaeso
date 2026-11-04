@@ -69,7 +69,7 @@ Platform API 请求通过会话 Cookie、具有平台访问权限的 API 密钥�
 
 1. **线路格式只存在于 KPP 中。** 网关从不手动解析或构建 OpenAI 或 Anthropic 的 JSON，这些都由 `kaeso_codecs::dispatch` 完成。网关自己的 JSON 只有 Platform API 及其错误信封。
 2. **不做透传。** 每个模型请求都会解码为 KPP 再重新编码，即使应用和服务商使用同一种格式。
-3. **不重试，不回退。** 对服务商的调用失败就是失败，并以应用的格式返回。
+3. **不重试；只在路由指明时回退。** 对服务商的调用失败就是失败，并以应用的格式返回，除非别名的路由在这种失败时回退（[别名路由](../../concepts/alias-routes.md)）。
 4. **绝不悄悄丢弃数据。** KPP 拒绝的内容（`Unsupported`）会在任何内容到达服务商之前，以应用自己的格式作为错误返回。`KppError` 从不被捕获后忽略。
 5. **库 crate 中不出现 panic。** 除测试和可执行文件的启动阶段外，不使用 `unwrap`、`expect`、`panic!`、`todo!`、`unimplemented!`、可能 panic 的索引或 `unsafe`。工作区 lint 和 `#![forbid(unsafe_code)]` 强制执行这一点。
 6. **机密信息绝不以未受保护的形式离开内存。** 服务商密钥、主密钥、API 密钥的机密部分、会话 ID、登录令牌、TOTP 密钥和密码都保存在自动脱敏的包装类型中。它们绝不会被写入日志或追踪、打印、存入 ClickHouse、由 API 返回或写进错误消息。

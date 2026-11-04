@@ -251,7 +251,16 @@ end
 return 1
 ";
 
+const RELEASE_ALL: &str = r"
+for i = 1, #KEYS do
+  release(KEYS[i], ARGV[1])
+end
+return 1
+";
+
 static ADMIT_SCRIPT: std::sync::LazyLock<Script> = std::sync::LazyLock::new(|| Script::new(ADMIT));
+static RELEASE_SCRIPT: std::sync::LazyLock<Script> =
+    std::sync::LazyLock::new(|| Script::new(&[RELEASE, RELEASE_ALL].concat()));
 static CHARGE_SCRIPT: std::sync::LazyLock<Script> =
     std::sync::LazyLock::new(|| Script::new(&[RELEASE, CHARGE].concat()));
 static REBUILD_SCRIPT: std::sync::LazyLock<Script> =
@@ -594,6 +603,21 @@ impl Limits for ValkeyLimits {
             fail(&applicable, &LimitsError::NotRebuilt)
         })
     }
+
+    fn release<'a>(
+        &'a self,
+        state: &'a AppState,
+        held: &'a Reservation,
+        request_id: &'a str,
+    ) -> BoxFuture<'a, ()> {
+        Box::pin(async move {
+            if let Err(e) = release(state, held, request_id).await {
+                metrics::counter!(crate::metrics::VALKEY_FAILURES, "operation" => "reservation")
+                    .increment(1);
+                tracing::warn!(error = %e, "cannot release a failed step's reservation; it expires with its timeout");
+            }
+        })
+    }
 }
 
 fn unavailable() -> Refusal {
@@ -619,6 +643,26 @@ fn reservation(state: &AppState, a: &Admission, applicable: &[&Limit]) -> Reserv
             .collect(),
         ttl: in_flight_ttl(a.timeout),
     }
+}
+
+pub async fn release(
+    state: &AppState,
+    held: &Reservation,
+    request_id: &str,
+) -> Result<(), LimitsError> {
+    if !held.is_held() {
+        return Ok(());
+    }
+    let mut script = RELEASE_SCRIPT.prepare_invoke();
+    for key in &held.counters {
+        script.key(key);
+    }
+    script.arg(request_id);
+    let mut conn = state.valkey.conn();
+    tokio::time::timeout(VALKEY_DEADLINE, script.invoke_async::<i64>(&mut conn))
+        .await
+        .map_err(|_| LimitsError::Timeout)??;
+    Ok(())
 }
 
 pub async fn extend(

@@ -76,6 +76,15 @@ pub trait Limits: Send + Sync + std::fmt::Debug {
         state: &'a AppState,
         a: &'a Admission,
     ) -> BoxFuture<'a, Result<Reservation, Refusal>>;
+
+    fn release<'a>(
+        &'a self,
+        _state: &'a AppState,
+        _held: &'a Reservation,
+        _request_id: &'a str,
+    ) -> BoxFuture<'a, ()> {
+        Box::pin(async {})
+    }
 }
 
 #[derive(Debug, Default)]
@@ -146,6 +155,20 @@ pub struct Outcome {
     pub content_kept: bool,
     pub cache_breakpoints: Option<usize>,
     pub response_cache: Option<crate::services::response_cache::Verdict>,
+    pub alias: Option<String>,
+    pub fallbacks: Vec<FellBack>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub struct FellBack {
+    pub catalogue_model_id: Uuid,
+    #[serde(default)]
+    pub path: String,
+    pub model: String,
+    pub status: u16,
+    pub error_kind: String,
+    pub error_message: String,
+    pub duration_ms: u64,
 }
 
 impl Outcome {

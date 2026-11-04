@@ -24,9 +24,16 @@ pub struct Tool {
     pub input_schema: Value,
 }
 
+// POST operations that change nothing: an agent may call them as freely as a GET.
+const READS: &[&str] = &["post_orgs_org_projects_project_aliases_trace"];
+
 impl Tool {
+    pub fn read_only(&self) -> bool {
+        self.method == Method::GET || READS.contains(&self.name.as_str())
+    }
+
     pub fn listing(&self) -> Value {
-        let read_only = self.method == Method::GET;
+        let read_only = self.read_only();
         json!({
             "name": self.name,
             "title": self.title,
@@ -433,6 +440,35 @@ mod tests {
         )
         .unwrap();
         assert_eq!(c.uri, "/platform/v1/orgs/a%2Fb%20c/audit-log");
+    }
+
+    #[test]
+    fn a_trace_reads_and_carries_the_whole_route_schema() {
+        let trace = tool("post_orgs_org_projects_project_aliases_trace");
+        assert!(trace.read_only());
+        let listed = trace.listing();
+        assert_eq!(listed["annotations"]["readOnlyHint"], true);
+        assert_eq!(listed["annotations"]["idempotentHint"], true);
+        let create = tool("post_orgs_org_projects_project_aliases");
+        assert!(!create.read_only());
+        for t in [trace, create] {
+            for def in [
+                "RouteStep",
+                "RouteModelStep",
+                "RouteConditionStep",
+                "RouteSplitStep",
+                "RouteRule",
+            ] {
+                assert!(
+                    t.input_schema["$defs"][def].is_object(),
+                    "{} lacks {def}",
+                    t.name
+                );
+            }
+        }
+        for name in READS {
+            assert!(catalogue().get(name).is_some(), "{name} is a tool");
+        }
     }
 
     #[test]

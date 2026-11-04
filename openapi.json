@@ -11017,7 +11017,7 @@
           "models"
         ],
         "summary": "Creates an alias.",
-        "description": "**Right:** `models.manage` on the project in the path.",
+        "description": "Every model the route names must be in the project's catalogue. A\nroute has at most 32 steps and is at most 12 steps deep; a refused route\nnames the field in `param`, such as `route.fallback.model`. Send a route to\n`POST …/aliases/trace` first to see the models a request would try.\n\n**Right:** `models.manage` on the project in the path.",
         "operationId": "postOrgsOrgProjectsProjectAliases",
         "parameters": [
           {
@@ -11097,6 +11097,94 @@
           }
         ],
         "x-kaeso-access": "right:models.manage"
+      }
+    },
+    "/platform/v1/orgs/{org}/projects/{project}/aliases/trace": {
+      "post": {
+        "tags": [
+          "models"
+        ],
+        "summary": "Shows the steps a request would take through a route, without sending it.",
+        "description": "Checks the route as saving it would, then sends the request's facts\nthrough it: the conditions it passes, the branch each split draws and every\nmodel it would try in order. Nothing is called or logged.\n\n**Right:** `models.view` on the project in the path.",
+        "operationId": "postOrgsOrgProjectsProjectAliasesTrace",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RouteTraceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RouteTrace"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:models.view"
       }
     },
     "/platform/v1/orgs/{org}/projects/{project}/aliases/{alias}": {
@@ -11258,8 +11346,8 @@
         "tags": [
           "models"
         ],
-        "summary": "Renames or retargets an alias. Requests use the new target at once.",
-        "description": "**Right:** `models.manage` on the project in the path.",
+        "summary": "Renames an alias or changes its route. Requests take the new route at once.",
+        "description": "Send only what changes. The route is checked as on create; send it to\n`POST …/aliases/trace` first to see the models a request would try.\n\n**Right:** `models.manage` on the project in the path.",
         "operationId": "patchOrgsOrgProjectsProjectAliasesAlias",
         "parameters": [
           {
@@ -15274,7 +15362,7 @@
         "tags": [
           "models"
         ],
-        "summary": "Removes a model from the catalogue, with its aliases and from every\nmember and key model list. Requests for it fail from now on.",
+        "summary": "Removes a model from the catalogue, with the aliases that route only to\nit, and from every member and key model list. Requests for it fail from now\non, and routes that also use other models skip it.",
         "description": "With `If-Match`, only while the entry is still at that revision; a\nnewer one answers 412.\n\n**Right:** `models.manage` on the project in the path.",
         "operationId": "deleteOrgsOrgProjectsProjectModelsModel",
         "parameters": [
@@ -15632,7 +15720,7 @@
           "projects"
         ],
         "summary": "Sends a Playground request as the signed-in member.",
-        "description": "Sends a request to one of the project's models as the signed-in member\nand streams the reply as OpenAI Responses events (`response.created`,\n`response.output_item.added`, `response.reasoning_summary_text.delta`,\n`response.output_text.delta`, `response.completed` with usage, `error`),\nwith keepalive comments while the model is quiet. Closing the stream\ncancels the provider request. The request counts against the member's\nand the project's limits and budgets, is charged to the project, and is\nlogged with the source `playground`. Needs a console session; failures\nbefore the stream starts are Platform API errors (`provider_error` when\nthe provider fails, refuses the provider key, is overloaded or times out).\n\n**Right:** `playground.use` on the project in the path.",
+        "description": "Sends a request to one of the project's models as the signed-in member\nand streams the reply as OpenAI Responses events (`response.created`,\n`response.output_item.added`, `response.reasoning_summary_text.delta`,\n`response.output_text.delta`, `response.completed` with usage, `error`),\nwith keepalive comments while the model is quiet. Closing the stream\ncancels the provider request. The request counts against the member's\nand the project's limits and budgets, is charged to the project, and is\nlogged with the source `playground`. With `route`, the request takes that\nroute instead of the saved alias's, and `headers` reach its conditions and\nsplits; the `kaeso-route` header names every step it tried. Needs a console\nsession; failures before the stream starts are Platform API errors\n(`provider_error` when the provider fails, refuses the provider key, is\noverloaded or times out).\n\n**Right:** `playground.use` on the project in the path.",
         "operationId": "postOrgsOrgProjectsProjectPlaygroundResponses",
         "parameters": [
           {
@@ -19453,17 +19541,17 @@
         "description": "A new alias.",
         "required": [
           "name",
-          "catalogue_model_id"
+          "route"
         ],
         "properties": {
-          "catalogue_model_id": {
-            "$ref": "#/components/schemas/CatalogueModelId",
-            "description": "The catalogue entry."
-          },
           "name": {
             "type": "string",
             "description": "The name.",
             "example": "chat-default"
+          },
+          "route": {
+            "$ref": "#/components/schemas/RouteStep",
+            "description": "The route. A single model is `{\"type\": \"model\", \"model\": \"model_…\"}`."
           }
         },
         "additionalProperties": false
@@ -19479,44 +19567,40 @@
         "type": "object",
         "description": "Alias changes.",
         "properties": {
-          "catalogue_model_id": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/CatalogueModelId",
-                "description": "A new target."
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
           "name": {
             "type": [
               "string",
               "null"
             ],
             "description": "A new name."
+          },
+          "route": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/RouteStep",
+                "description": "A new route."
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "additionalProperties": false
       },
       "AliasView": {
         "type": "object",
-        "description": "An alias.",
+        "description": "An alias: a name apps send as `model`, and the route requests take.",
         "required": [
           "id",
           "name",
-          "catalogue_model_id",
-          "target",
+          "route",
+          "models",
           "shadows_model",
           "created_at",
           "updated_at"
         ],
         "properties": {
-          "catalogue_model_id": {
-            "$ref": "#/components/schemas/CatalogueModelId",
-            "description": "The catalogue entry it points at."
-          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -19526,19 +19610,25 @@
             "$ref": "#/components/schemas/AliasId",
             "description": "Id."
           },
+          "models": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RouteModel"
+            },
+            "description": "Every model the route names, in the order the route first names them."
+          },
           "name": {
             "type": "string",
             "description": "The name apps send as `model`.",
             "example": "chat-default"
           },
+          "route": {
+            "$ref": "#/components/schemas/RouteStep",
+            "description": "The route: the steps a request takes, from the first model to its\nfallbacks."
+          },
           "shadows_model": {
             "type": "boolean",
             "description": "Whether the name is also a real model's name, which the alias hides\nin this project."
-          },
-          "target": {
-            "type": "string",
-            "description": "The target as `provider/model`.",
-            "example": "anthropic/claude-sonnet-4-5"
           },
           "updated_at": {
             "type": "string",
@@ -21135,6 +21225,57 @@
             "format": "date",
             "description": "A date; the key stops at its start (UTC).",
             "example": "2026-12-31"
+          }
+        }
+      },
+      "FallbackView": {
+        "type": "object",
+        "description": "A step of an alias's route that failed, so the request moved on.",
+        "required": [
+          "catalogue_model_id",
+          "path",
+          "model",
+          "status",
+          "error_kind",
+          "error_message",
+          "duration_ms"
+        ],
+        "properties": {
+          "catalogue_model_id": {
+            "$ref": "#/components/schemas/CatalogueModelId",
+            "description": "The catalogue entry the step called."
+          },
+          "duration_ms": {
+            "type": "integer",
+            "format": "int64",
+            "description": "How long the step took, in milliseconds.",
+            "minimum": 0
+          },
+          "error_kind": {
+            "type": "string",
+            "description": "The error kind, as in `error_kind`.",
+            "example": "overloaded"
+          },
+          "error_message": {
+            "type": "string",
+            "description": "The error message."
+          },
+          "model": {
+            "type": "string",
+            "description": "The model as `provider/model`.",
+            "example": "openai/gpt-5"
+          },
+          "path": {
+            "type": "string",
+            "description": "Where the step is in the route, as in a trace.",
+            "example": "route.fallback"
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The status the step failed with.",
+            "example": 503,
+            "minimum": 0
           }
         }
       },
@@ -23140,21 +23281,17 @@
             "type": "array",
             "items": {
               "type": "object",
-              "description": "An alias.",
+              "description": "An alias: a name apps send as `model`, and the route requests take.",
               "required": [
                 "id",
                 "name",
-                "catalogue_model_id",
-                "target",
+                "route",
+                "models",
                 "shadows_model",
                 "created_at",
                 "updated_at"
               ],
               "properties": {
-                "catalogue_model_id": {
-                  "$ref": "#/components/schemas/CatalogueModelId",
-                  "description": "The catalogue entry it points at."
-                },
                 "created_at": {
                   "type": "string",
                   "format": "date-time",
@@ -23164,19 +23301,25 @@
                   "$ref": "#/components/schemas/AliasId",
                   "description": "Id."
                 },
+                "models": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RouteModel"
+                  },
+                  "description": "Every model the route names, in the order the route first names them."
+                },
                 "name": {
                   "type": "string",
                   "description": "The name apps send as `model`.",
                   "example": "chat-default"
                 },
+                "route": {
+                  "$ref": "#/components/schemas/RouteStep",
+                  "description": "The route: the steps a request takes, from the first model to its\nfallbacks."
+                },
                 "shadows_model": {
                   "type": "boolean",
                   "description": "Whether the name is also a real model's name, which the alias hides\nin this project."
-                },
-                "target": {
-                  "type": "string",
-                  "description": "The target as `provider/model`.",
-                  "example": "anthropic/claude-sonnet-4-5"
                 },
                 "updated_at": {
                   "type": "string",
@@ -24353,9 +24496,18 @@
                 "user_agent",
                 "client_ip",
                 "upstream_request_id",
-                "has_content"
+                "has_content",
+                "fallbacks"
               ],
               "properties": {
+                "alias": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "The alias the app named, whose route chose the model; `null` when the\napp named a model.",
+                  "example": "chat-default"
+                },
                 "cache_breakpoints": {
                   "type": [
                     "integer",
@@ -24400,6 +24552,13 @@
                     "null"
                   ],
                   "description": "The error message, for failures."
+                },
+                "fallbacks": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FallbackView"
+                  },
+                  "description": "The steps of the alias's route that failed before the one that\nanswered, or before the last one tried, in the order they were tried."
                 },
                 "has_content": {
                   "type": "boolean",
@@ -25706,9 +25865,18 @@
           "user_agent",
           "client_ip",
           "upstream_request_id",
-          "has_content"
+          "has_content",
+          "fallbacks"
         ],
         "properties": {
+          "alias": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The alias the app named, whose route chose the model; `null` when the\napp named a model.",
+            "example": "chat-default"
+          },
           "cache_breakpoints": {
             "type": [
               "integer",
@@ -25753,6 +25921,13 @@
               "null"
             ],
             "description": "The error message, for failures."
+          },
+          "fallbacks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FallbackView"
+            },
+            "description": "The steps of the alias's route that failed before the one that\nanswered, or before the last one tried, in the order they were tried."
           },
           "has_content": {
             "type": "boolean",
@@ -27335,6 +27510,27 @@
           "stream"
         ],
         "properties": {
+          "alias": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AliasId",
+                "description": "The saved alias `route` edits, so its splits draw as they do for the\nalias's requests; only with `route`."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "headers": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/TestHeader"
+            },
+            "description": "Headers to send as an app would, up to 20, which a route's conditions\nand splits read; none that carry credentials."
+          },
           "input": {
             "description": "The conversation: a string, or Responses input items (messages, and\nthe reasoning items of earlier replies, sent back as received)."
           },
@@ -27361,6 +27557,17 @@
           },
           "reasoning": {
             "description": "Reasoning: `effort` (`none`, `minimal`, `low`, `medium`, `high`,\n`xhigh`, `max`) and `summary` (`auto`, `concise`, `detailed`)."
+          },
+          "route": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/RouteStep",
+                "description": "A route to take instead of resolving `model`, such as the route editor's\nunsaved draft; `model` then names its alias. Checked as saving it would be."
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "stream": {
             "type": "boolean",
@@ -28468,6 +28675,681 @@
             "description": "When a custom role last changed; `null` for built-in roles."
           }
         }
+      },
+      "RouteBranch": {
+        "type": "object",
+        "description": "A branch of a split.",
+        "required": [
+          "weight",
+          "step"
+        ],
+        "properties": {
+          "step": {
+            "$ref": "#/components/schemas/RouteStep",
+            "description": "The step for these requests."
+          },
+          "weight": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The share of requests in percent, 1 to 99.",
+            "maximum": 99,
+            "minimum": 1
+          }
+        },
+        "additionalProperties": false
+      },
+      "RouteCmpOp": {
+        "type": "string",
+        "description": "A comparison with a number.",
+        "enum": [
+          "at_least",
+          "below"
+        ]
+      },
+      "RouteConditionStep": {
+        "type": "object",
+        "description": "Branches on rules about the request.",
+        "required": [
+          "match",
+          "rules",
+          "then",
+          "else"
+        ],
+        "properties": {
+          "else": {
+            "$ref": "#/components/schemas/RouteStep",
+            "description": "The step for every other request."
+          },
+          "match": {
+            "$ref": "#/components/schemas/RouteMatch",
+            "description": "`all`: every rule must hold; `any`: one is enough."
+          },
+          "rules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RouteRule"
+            },
+            "description": "The rules, 1 to 10."
+          },
+          "then": {
+            "$ref": "#/components/schemas/RouteStep",
+            "description": "The step for requests the rules hold for."
+          }
+        },
+        "additionalProperties": false
+      },
+      "RouteFailure": {
+        "type": "string",
+        "description": "Why a step failed: `unavailable` (the provider can't be reached, times\nout, is overloaded, answers 5xx, refuses the provider key or doesn't serve the\nmodel), `limited` (a rate limit or quota of the provider, or a Kaeso limit or\nbudget for the model), `unsupported` (the model can't take something the\nrequest uses), `rejected` (the provider refuses the request itself, such as a\ncontext that is too long).",
+        "enum": [
+          "unavailable",
+          "limited",
+          "unsupported",
+          "rejected"
+        ]
+      },
+      "RouteFeature": {
+        "type": "string",
+        "description": "Something a request can use: images, PDFs, tools, reasoning, a JSON\nschema for its output, or a streamed reply.",
+        "enum": [
+          "images",
+          "pdfs",
+          "tools",
+          "reasoning",
+          "structured_output",
+          "streaming"
+        ]
+      },
+      "RouteFeatureRule": {
+        "type": "object",
+        "description": "A rule on what the request uses.",
+        "required": [
+          "op",
+          "value"
+        ],
+        "properties": {
+          "op": {
+            "$ref": "#/components/schemas/RouteUseOp",
+            "description": "`used` or `not_used`."
+          },
+          "value": {
+            "$ref": "#/components/schemas/RouteFeature",
+            "description": "The feature."
+          }
+        },
+        "additionalProperties": false
+      },
+      "RouteFormat": {
+        "type": "string",
+        "description": "An API format apps send.",
+        "enum": [
+          "openai_chat",
+          "openai_responses",
+          "anthropic_messages",
+          "openai_embeddings"
+        ]
+      },
+      "RouteFormatRule": {
+        "type": "object",
+        "description": "A rule on the app's API format.",
+        "required": [
+          "op",
+          "value"
+        ],
+        "properties": {
+          "op": {
+            "$ref": "#/components/schemas/RouteSetOp",
+            "description": "`in` or `not_in` the listed formats."
+          },
+          "value": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RouteFormat"
+            },
+            "description": "The formats."
+          }
+        },
+        "additionalProperties": false
+      },
+      "RouteHeaderOp": {
+        "type": "string",
+        "description": "How a header is compared with the rule's value.",
+        "enum": [
+          "equals",
+          "not_equals",
+          "contains",
+          "present",
+          "absent"
+        ]
+      },
+      "RouteHeaderRule": {
+        "type": "object",
+        "description": "A rule on a request header.",
+        "required": [
+          "name",
+          "op"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The header's name in lowercase, such as `x-plan`.",
+            "example": "x-plan"
+          },
+          "op": {
+            "$ref": "#/components/schemas/RouteHeaderOp",
+            "description": "How the header is compared."
+          },
+          "value": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The text to compare with, exactly as sent; none for `present` and\n`absent`.",
+            "example": "paid"
+          }
+        },
+        "additionalProperties": false
+      },
+      "RouteKeyRule": {
+        "type": "object",
+        "description": "A rule on the API key.",
+        "required": [
+          "op",
+          "value"
+        ],
+        "properties": {
+          "op": {
+            "$ref": "#/components/schemas/RouteSetOp",
+            "description": "`in` or `not_in` the listed keys."
+          },
+          "value": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApiKeyId"
+            },
+            "description": "The keys, 1 to 100."
+          }
+        },
+        "additionalProperties": false
+      },
+      "RouteMatch": {
+        "type": "string",
+        "description": "How rules combine.",
+        "enum": [
+          "all",
+          "any"
+        ]
+      },
+      "RouteMemberRule": {
+        "type": "object",
+        "description": "A rule on the member.",
+        "required": [
+          "op",
+          "value"
+        ],
+        "properties": {
+          "op": {
+            "$ref": "#/components/schemas/RouteSetOp",
+            "description": "`in` or `not_in` the listed members."
+          },
+          "value": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserId"
+            },
+            "description": "The members' user ids, 1 to 100."
+          }
+        },
+        "additionalProperties": false
+      },
+      "RouteModel": {
+        "type": "object",
+        "description": "A model a route names.",
+        "required": [
+          "catalogue_model_id"
+        ],
+        "properties": {
+          "catalogue_model_id": {
+            "$ref": "#/components/schemas/CatalogueModelId",
+            "description": "The catalogue entry."
+          },
+          "target": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The model as `provider/model`, or none when it was removed from the\ncatalogue: requests then skip its steps.",
+            "example": "anthropic/claude-sonnet-4-5"
+          }
+        }
+      },
+      "RouteModelStep": {
+        "type": "object",
+        "description": "Calls a catalogue model.",
+        "required": [
+          "model"
+        ],
+        "properties": {
+          "fall_back_on": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RouteFailure"
+            },
+            "description": "The failures that move on to `fallback`. Defaults to `unavailable`,\n`limited` and `unsupported`.",
+            "uniqueItems": true
+          },
+          "fallback": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/RouteStep",
+                "description": "The step that takes over when this one fails for a reason in\n`fall_back_on`."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "model": {
+            "$ref": "#/components/schemas/CatalogueModelId",
+            "description": "The catalogue model."
+          },
+          "timeout_seconds": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Seconds to wait for the model's first byte, and for a reply that isn't\nstreamed, before the step fails as `unavailable`. Defaults to the model's\nown timeout.",
+            "maximum": 3600,
+            "minimum": 1
+          }
+        },
+        "additionalProperties": false
+      },
+      "RouteRule": {
+        "oneOf": [
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/RouteHeaderRule",
+                "description": "A request header, such as one the app sets to say which plan its user is on."
+              },
+              {
+                "type": "object",
+                "required": [
+                  "field"
+                ],
+                "properties": {
+                  "field": {
+                    "type": "string",
+                    "enum": [
+                      "header"
+                    ]
+                  }
+                }
+              }
+            ],
+            "description": "A request header, such as one the app sets to say which plan its user is on."
+          },
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/RouteFormatRule",
+                "description": "The API format the app sent the request in."
+              },
+              {
+                "type": "object",
+                "required": [
+                  "field"
+                ],
+                "properties": {
+                  "field": {
+                    "type": "string",
+                    "enum": [
+                      "format"
+                    ]
+                  }
+                }
+              }
+            ],
+            "description": "The API format the app sent the request in."
+          },
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/RouteFeatureRule",
+                "description": "Something the request uses, such as images or tools."
+              },
+              {
+                "type": "object",
+                "required": [
+                  "field"
+                ],
+                "properties": {
+                  "field": {
+                    "type": "string",
+                    "enum": [
+                      "feature"
+                    ]
+                  }
+                }
+              }
+            ],
+            "description": "Something the request uses, such as images or tools."
+          },
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/RouteTokensRule",
+                "description": "The request's input tokens, estimated from its size at 4 bytes a token."
+              },
+              {
+                "type": "object",
+                "required": [
+                  "field"
+                ],
+                "properties": {
+                  "field": {
+                    "type": "string",
+                    "enum": [
+                      "input_tokens"
+                    ]
+                  }
+                }
+              }
+            ],
+            "description": "The request's input tokens, estimated from its size at 4 bytes a token."
+          },
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/RouteKeyRule",
+                "description": "The API key that sent the request."
+              },
+              {
+                "type": "object",
+                "required": [
+                  "field"
+                ],
+                "properties": {
+                  "field": {
+                    "type": "string",
+                    "enum": [
+                      "key"
+                    ]
+                  }
+                }
+              }
+            ],
+            "description": "The API key that sent the request."
+          },
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/RouteMemberRule",
+                "description": "The member whose key or Playground sent the request."
+              },
+              {
+                "type": "object",
+                "required": [
+                  "field"
+                ],
+                "properties": {
+                  "field": {
+                    "type": "string",
+                    "enum": [
+                      "member"
+                    ]
+                  }
+                }
+              }
+            ],
+            "description": "The member whose key or Playground sent the request."
+          },
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/RouteServiceAccountRule",
+                "description": "The service account whose key sent the request."
+              },
+              {
+                "type": "object",
+                "required": [
+                  "field"
+                ],
+                "properties": {
+                  "field": {
+                    "type": "string",
+                    "enum": [
+                      "service_account"
+                    ]
+                  }
+                }
+              }
+            ],
+            "description": "The service account whose key sent the request."
+          }
+        ],
+        "description": "A rule about the request, named by its `field`."
+      },
+      "RouteServiceAccountRule": {
+        "type": "object",
+        "description": "A rule on the service account.",
+        "required": [
+          "op",
+          "value"
+        ],
+        "properties": {
+          "op": {
+            "$ref": "#/components/schemas/RouteSetOp",
+            "description": "`in` or `not_in` the listed service accounts."
+          },
+          "value": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ServiceAccountId"
+            },
+            "description": "The service accounts, 1 to 100."
+          }
+        },
+        "additionalProperties": false
+      },
+      "RouteSetOp": {
+        "type": "string",
+        "description": "Whether the request's value is in the list or not.",
+        "enum": [
+          "in",
+          "not_in"
+        ]
+      },
+      "RouteSplitBy": {
+        "type": "string",
+        "description": "What a split draws by.",
+        "enum": [
+          "request",
+          "caller",
+          "header"
+        ]
+      },
+      "RouteSplitStep": {
+        "type": "object",
+        "description": "Sends each request down one of its branches, by weight.",
+        "required": [
+          "by",
+          "branches"
+        ],
+        "properties": {
+          "branches": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RouteBranch"
+            },
+            "description": "The branches, 2 to 8, whose weights add up to 100."
+          },
+          "by": {
+            "$ref": "#/components/schemas/RouteSplitBy",
+            "description": "`request`: each request is drawn anew; `caller`: each key, member or\nservice account stays on one branch; `header`: each value of `header`\nstays on one branch."
+          },
+          "header": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The header a split `by` `header` reads, such as an end user's id.\nRequests without it are drawn anew.",
+            "example": "x-user-id"
+          }
+        },
+        "additionalProperties": false
+      },
+      "RouteStep": {
+        "oneOf": [
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/RouteModelStep",
+                "description": "Calls a catalogue model, and on failure its fallback."
+              },
+              {
+                "type": "object",
+                "required": [
+                  "type"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "model"
+                    ]
+                  }
+                }
+              }
+            ],
+            "description": "Calls a catalogue model, and on failure its fallback."
+          },
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/RouteConditionStep",
+                "description": "Takes `then` when the rules hold for the request, otherwise `else`."
+              },
+              {
+                "type": "object",
+                "required": [
+                  "type"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "condition"
+                    ]
+                  }
+                }
+              }
+            ],
+            "description": "Takes `then` when the rules hold for the request, otherwise `else`."
+          },
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/RouteSplitStep",
+                "description": "Sends each request down one branch, chosen by weight."
+              },
+              {
+                "type": "object",
+                "required": [
+                  "type"
+                ],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "split"
+                    ]
+                  }
+                }
+              }
+            ],
+            "description": "Sends each request down one branch, chosen by weight."
+          }
+        ],
+        "description": "A step of an alias's route: call a model, branch on a condition, or\nsplit requests by weight."
+      },
+      "RouteTokensRule": {
+        "type": "object",
+        "description": "A rule on the request's estimated input tokens.",
+        "required": [
+          "op",
+          "value"
+        ],
+        "properties": {
+          "op": {
+            "$ref": "#/components/schemas/RouteCmpOp",
+            "description": "`at_least` or `below` the value."
+          },
+          "value": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Tokens, 1 to 10,000,000.",
+            "maximum": 10000000,
+            "minimum": 1
+          }
+        },
+        "additionalProperties": false
+      },
+      "RouteTrace": {
+        "type": "object",
+        "description": "The steps a request takes through a route, in order.",
+        "required": [
+          "steps"
+        ],
+        "properties": {
+          "steps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TraceStep"
+            },
+            "description": "Every condition and split the request passes and every model it would\ntry, in order; each model after the first is tried when the one before\nit fails."
+          }
+        }
+      },
+      "RouteTraceRequest": {
+        "type": "object",
+        "description": "A route, saved or not, and a request to send through it.",
+        "required": [
+          "route",
+          "request"
+        ],
+        "properties": {
+          "alias": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AliasId",
+                "description": "The alias the route belongs to, so splits draw as they do for its\nrequests; none for an alias that isn't saved yet."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "request": {
+            "$ref": "#/components/schemas/TracedRequest",
+            "description": "The request."
+          },
+          "route": {
+            "$ref": "#/components/schemas/RouteStep",
+            "description": "The route."
+          }
+        },
+        "additionalProperties": false
+      },
+      "RouteUseOp": {
+        "type": "string",
+        "description": "Whether the request uses the feature.",
+        "enum": [
+          "used",
+          "not_used"
+        ]
       },
       "ScopeCatalogue": {
         "type": "object",
@@ -29744,6 +30626,27 @@
           }
         }
       },
+      "TestHeader": {
+        "type": "object",
+        "description": "A header a tested request sends.",
+        "required": [
+          "name",
+          "value"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The name, lowercase.",
+            "example": "x-plan"
+          },
+          "value": {
+            "type": "string",
+            "description": "The value.",
+            "example": "enterprise"
+          }
+        },
+        "additionalProperties": false
+      },
       "TokenPrice": {
         "oneOf": [
           {
@@ -29879,6 +30782,195 @@
             "example": "JBSWY3DPEHPK3PXP"
           }
         }
+      },
+      "TraceStep": {
+        "oneOf": [
+          {
+            "type": "object",
+            "description": "A model the request would try.",
+            "required": [
+              "path",
+              "catalogue_model_id",
+              "attempt",
+              "type"
+            ],
+            "properties": {
+              "attempt": {
+                "type": "integer",
+                "format": "int32",
+                "description": "Which try it is, from 1.",
+                "minimum": 0
+              },
+              "catalogue_model_id": {
+                "$ref": "#/components/schemas/CatalogueModelId",
+                "description": "The model."
+              },
+              "path": {
+                "type": "string",
+                "description": "Where the step is in the route, such as `route.fallback`."
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "model"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "A condition the request passes.",
+            "required": [
+              "path",
+              "holds",
+              "rules",
+              "type"
+            ],
+            "properties": {
+              "holds": {
+                "type": "boolean",
+                "description": "Whether the request takes `then`."
+              },
+              "path": {
+                "type": "string",
+                "description": "Where the step is in the route."
+              },
+              "rules": {
+                "type": "array",
+                "items": {
+                  "type": "boolean"
+                },
+                "description": "Whether each rule holds, in the condition's order."
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "condition"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "A split the request passes.",
+            "required": [
+              "path",
+              "branch",
+              "weight",
+              "draw",
+              "type"
+            ],
+            "properties": {
+              "branch": {
+                "type": "integer",
+                "format": "int32",
+                "description": "The branch it takes, from 0.",
+                "minimum": 0
+              },
+              "draw": {
+                "type": "integer",
+                "format": "int32",
+                "description": "Its draw from 0 to 99, which falls into the branch's share.",
+                "minimum": 0
+              },
+              "path": {
+                "type": "string",
+                "description": "Where the step is in the route."
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "split"
+                ]
+              },
+              "weight": {
+                "type": "integer",
+                "format": "int32",
+                "description": "The branch's weight in percent.",
+                "minimum": 0
+              }
+            }
+          }
+        ],
+        "description": "A step a traced request passes."
+      },
+      "TracedRequest": {
+        "type": "object",
+        "description": "What the gateway knows about a request when it picks a route's steps.",
+        "properties": {
+          "features": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RouteFeature"
+            },
+            "description": "What the request uses.",
+            "uniqueItems": true
+          },
+          "format": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/RouteFormat",
+                "description": "The API format the app speaks."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "headers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TestHeader"
+            },
+            "description": "Headers the app sends, up to 20."
+          },
+          "input_tokens": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The request's input tokens.",
+            "minimum": 0
+          },
+          "key": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ApiKeyId",
+                "description": "The API key it is sent with."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "member": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/UserId",
+                "description": "The member it is sent by, such as the owner of `key`."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "seed": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Stands in for the request's id where a split draws anew: the same\nseed draws the same branches.",
+            "minimum": 0
+          },
+          "service_account": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ServiceAccountId",
+                "description": "The service account it is sent by, such as the owner of `key`."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
       },
       "UpdateActor": {
         "type": "object",
