@@ -83,7 +83,7 @@ Nichts weicht mehr aus, sobald der Anbieter geantwortet hat: Ein Stream, der sp�
 ## Was Apps und Protokolle sehen
 
 - `kaeso-model` und `kaeso-provider` nennen den Schritt, der antwortete, oder den, der zuletzt scheiterte.
-- `kaeso-fallbacks` nennt die Schritte, die vorher scheiterten, als `provider/model status`, etwa `anthropic/claude-sonnet-4-5 529, openai/gpt-5 429`. Antworten ohne Fallback tragen ihn nicht ([Antwort-Header](../api/model-api.md#antwort-header)).
+- `kaeso-route` nennt jeden Schritt, den die Anfrage erreichte, der Reihe nach mit seinem Pfad in der Route, wie ein Probelauf ihn nennt, mit Modell und Status und, wenn er scheiterte, seiner Dauer in Millisekunden: `"route";model="anthropic/claude-sonnet-4-5";status=529;dur=1204, "route.fallback";model="openai/gpt-5";status=200`. Ein 체bersprungener Schritt tr채gt `skipped` und kein Modell ([Antwort-Header](../api/model-api.md#antwort-header)).
 - Das [Anfrageprotokoll](../console/request-logs.md) h채lt den Alias als angefragtes Modell fest und listet die Schritte, die es zuerst versuchte, jeden mit Status, Fehler und Dauer.
 - `/v1/models` listet den Alias mit den Angaben seines Hauptmodells: die `then`-Seite von Bedingungen und der schwerste Zweig von Aufteilungen. Darf der Schl체ssel dieses Modell nicht nutzen, zeigt der Alias das erste andere Modell, das er nutzen darf.
 - `kaeso_alias_fallbacks_total{provider, reason}` z채hlt die Schritte, die auswichen ([Zustand und Metriken](../self-hosting/monitoring.md)).
@@ -112,6 +112,8 @@ curl -X POST "https://kaeso.example.com/platform/v1/orgs/$ORG/projects/$PROJECT/
 ```
 
 Mit `alias` ziehen Aufteilungen nach Aufrufer und nach Header so wie f체r die Anfragen dieses Alias. Aufteilungen, die je Anfrage ziehen, nehmen `seed` anstelle der ID der Anfrage, sodass derselbe `seed` dieselben Zweige zieht. Agenten bekommen denselben Probelauf als lesendes Tool ([MCP](../api/mcp.md)).
+
+Um eine echte Anfrage durch eine Route zu senden, gespeichert oder nicht, geben Sie der Anfrage des [Playgrounds](../console/playground.md) die Route als `route`, den Alias, den sie bearbeitet, als `alias` und die Header als `headers` mit. Die Anfrage l채uft als Sie, wird abgerechnet und mit der Quelle `playground` protokolliert, und ihr Header `kaeso-route` zeigt jeden Schritt, den sie versuchte.
 
 ## Eine Route setzen
 

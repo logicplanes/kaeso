@@ -34,6 +34,7 @@
   "errors.aliasCharacters": "An alias must not contain spaces, control characters or `/`.",
   "errors.aliasLength": "An alias must be 1 to 200 characters.",
   "errors.aliasModelsRemoved": "The alias `{alias}` names only models removed from the catalogue; ask a project admin.",
+  "errors.aliasOnlyWithRoute": "Send `alias` only with `route`.",
   "errors.aliasTaken": "The alias `{name}` exists in this project.",
   "errors.allowedDomainNeeded": "Add at least one allowed domain to use it.",
   "errors.alreadyHasAccount": "{email} already has an account.",

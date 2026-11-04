@@ -10,6 +10,7 @@
   "errors.aliasCharacters": "Ein Alias darf keine Leer- oder Steuerzeichen und kein `/` enthalten.",
   "errors.aliasLength": "Ein Alias muss 1 bis 200 Zeichen lang sein.",
   "errors.aliasTaken": "Den Alias `{name}` gibt es in diesem Projekt schon.",
+  "errors.aliasOnlyWithRoute": "Senden Sie `alias` nur zusammen mit `route`.",
   "errors.routeSteps": "Eine Route hat höchstens 32 Schritte.",
   "errors.routeDepth": "Eine Route ist höchstens 12 Schritte tief.",
   "errors.routeModel": "Dieses Modell ist nicht im Katalog des Projekts.",

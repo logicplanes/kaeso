@@ -83,7 +83,7 @@ flowchart TD
 ## 应用和日志看到的内容
 
 - `kaeso-model` 和 `kaeso-provider` 给出应答的步骤，或最后失败的步骤。
-- `kaeso-fallbacks` 列出之前失败的步骤，格式为 `provider/model status`，例如 `anthropic/claude-sonnet-4-5 529, openai/gpt-5 429`。没有发生回退的响应不带此请求头（[响应头](../api/model-api.md#响应头)）。
+- `kaeso-route` 按顺序列出请求到达的每个步骤：它在路由中的路径（与试运行的命名相同）、模型和状态，失败时还有耗时（毫秒）：`"route";model="anthropic/claude-sonnet-4-5";status=529;dur=1204, "route.fallback";model="openai/gpt-5";status=200`。被跳过的步骤带 `skipped`，不带模型（[响应头](../api/model-api.md#响应头)）。
 - [请求日志](../console/request-logs.md)把别名记为请求的模型，并列出先尝试的步骤，以及每个步骤的状态、错误和耗时。
 - `/v1/models` 按主模型的信息列出别名：条件取 `then` 一侧，分流取权重最大的分支。密钥无权使用该模型时，别名显示它可用的第一个其他模型。
 - `kaeso_alias_fallbacks_total{provider, reason}` 统计发生回退的步骤（[健康状态和指标](../self-hosting/monitoring.md)）。
@@ -112,6 +112,8 @@ curl -X POST "https://kaeso.example.com/platform/v1/orgs/$ORG/projects/$PROJECT/
 ```
 
 带上 `alias` 时，按调用方和按请求头的分流会像该别名的请求一样抽取。按请求抽取的分流用 `seed` 代替请求 ID，因此相同的 `seed` 抽到相同的分支。智能体也能以只读工具的形式获得同样的试运行（[MCP](../api/mcp.md)）。
+
+要通过路由（无论是否已保存）发送真实请求，请在 [Playground](../console/playground.md) 的请求中带上路由 `route`、它所编辑的别名 `alias` 和请求头 `headers`。请求以你的身份运行，计费并以来源 `playground` 记录，其 `kaeso-route` 响应头显示它尝试过的每个步骤。
 
 ## 设置路由
 

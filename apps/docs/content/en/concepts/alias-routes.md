@@ -83,7 +83,7 @@ Nothing falls back once the provider has answered: a stream that breaks off late
 ## What apps and logs see
 
 - `kaeso-model` and `kaeso-provider` name the step that answered, or the one that failed last.
-- `kaeso-fallbacks` names the steps that failed before it, as `provider/model status`, such as `anthropic/claude-sonnet-4-5 529, openai/gpt-5 429`. Answers without a fallback don't carry it ([response headers](../api/model-api.md#response-headers)).
+- `kaeso-route` names every step the request reached, in order, by its path in the route as a trace names it, with its model and status, and its time in milliseconds when it failed: `"route";model="anthropic/claude-sonnet-4-5";status=529;dur=1204, "route.fallback";model="openai/gpt-5";status=200`. A skipped step carries `skipped` and no model ([response headers](../api/model-api.md#response-headers)).
 - The [request log](../console/request-logs.md) keeps the alias as the requested model and lists the steps it tried first, each with its status, error and time.
 - `/v1/models` lists the alias with the details of its main model: the `then` side of conditions and the heaviest branch of splits. When the key may not use that model, the alias shows the first other model it may use.
 - `kaeso_alias_fallbacks_total{provider, reason}` counts the steps that fell back ([health and metrics](../self-hosting/monitoring.md)).
@@ -112,6 +112,8 @@ curl -X POST "https://kaeso.example.com/platform/v1/orgs/$ORG/projects/$PROJECT/
 ```
 
 With `alias`, splits by caller and by header draw as they do for that alias's requests. Splits that draw per request use `seed` in place of the request's id, so the same `seed` draws the same branches. Agents get the same trace as a read-only tool ([MCP](../api/mcp.md)).
+
+To send a real request through a route, saved or not, give the [Playground](../console/playground.md)'s request the route as `route`, the alias it edits as `alias` and the headers as `headers`. The request runs as you, is charged and logged with the source `playground`, and its `kaeso-route` header shows each step it tried.
 
 ## Set a route
 

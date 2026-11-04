@@ -212,6 +212,7 @@ describe("LogInspector", () => {
           fallbacks: [
             {
               catalogue_model_id: "cm_sonnet",
+              path: "route",
               model: "anthropic/claude-sonnet-4-5",
               status: 529,
               error_kind: "overloaded",

@@ -446,6 +446,7 @@ const messages = (): Rule[] => [
   rule("errors.aliasLength", () => t("errors.aliasLength", "An alias must be 1 to 200 characters.")),
   rule("errors.aliasCharacters", () => t("errors.aliasCharacters", "An alias must not contain spaces, control characters or `/`.")),
   rule("errors.aliasTaken", (v) => t("errors.aliasTaken", "The alias `{name}` exists in this project.", v)),
+  rule("errors.aliasOnlyWithRoute", () => t("errors.aliasOnlyWithRoute", "Send `alias` only with `route`.")),
   rule("errors.routeSteps", () => t("errors.routeSteps", "A route has at most 32 steps.")),
   rule("errors.routeDepth", () => t("errors.routeDepth", "A route is at most 12 steps deep.")),
   rule("errors.routeModel", () => t("errors.routeModel", "This model is not in the project's catalogue.")),

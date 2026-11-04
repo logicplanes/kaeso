@@ -162,6 +162,8 @@ pub struct Outcome {
 #[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct FellBack {
     pub catalogue_model_id: Uuid,
+    #[serde(default)]
+    pub path: String,
     pub model: String,
     pub status: u16,
     pub error_kind: String,

@@ -833,6 +833,9 @@ pub struct LogView {
 pub struct FallbackView {
     #[doc = "The catalogue entry the step called."]
     pub catalogue_model_id: CatalogueModelId,
+    #[doc = "Where the step is in the route, as in a trace."]
+    #[schema(example = "route.fallback")]
+    pub path: String,
     #[doc = "The model as `provider/model`."]
     #[schema(example = "openai/gpt-5")]
     pub model: String,
@@ -860,6 +863,7 @@ fn fallbacks(stored: &str) -> Vec<FallbackView> {
     read.into_iter()
         .map(|f| FallbackView {
             catalogue_model_id: CatalogueModelId::from_uuid(f.catalogue_model_id),
+            path: f.path,
             model: f.model,
             status: f.status,
             error_kind: f.error_kind,

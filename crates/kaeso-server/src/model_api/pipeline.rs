@@ -24,7 +24,9 @@ use kaeso_upstream::{Call, Outgoing, ResponseBody, Timeouts, UpstreamError};
 use url::Url;
 
 use super::auth;
-use super::errors::{Served, TIMING_HEADER, error, respond, server_timing, stamp, stamp_fallbacks};
+use super::errors::{
+    Served, TIMING_HEADER, Tried, Walked, error, respond, server_timing, stamp, stamp_route,
+};
 use super::hooks::{
     Admission, CLIENT_DISCONNECTED, CLIENT_STALLED, Caller, FellBack, Outcome, Reservation,
     SHUT_DOWN, Sink, Source,
@@ -54,6 +56,7 @@ pub struct Incoming {
     pub source: Source,
     pub stream_only: bool,
     pub max_body: usize,
+    pub alias: Option<Alias>,
 }
 
 pub(super) struct Recording {
@@ -611,6 +614,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         caller,
         stream_only,
         max_body,
+        alias,
         ..
     } = inc;
     let caller = match caller {
@@ -737,18 +741,21 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         decoded,
         logged,
     };
-    let target = models
-        .catalogue
-        .resolve(req.model())
-        .map_err(|e| match &e {
-            ResolveError::NotInCatalogue(name) => {
-                Failure::new(no_such_model(name), Stage::UnknownModel(name.clone()))
-            }
-            ResolveError::Ambiguous { name, .. } => Failure::new(
-                error(ErrorKind::InvalidRequest, 400, e.to_string()).with_param("model"),
-                Stage::AmbiguousModel(name.clone()),
-            ),
-        })?;
+    let target = match &alias {
+        Some(a) => Resolved::Alias(a),
+        None => models
+            .catalogue
+            .resolve(req.model())
+            .map_err(|e| match &e {
+                ResolveError::NotInCatalogue(name) => {
+                    Failure::new(no_such_model(name), Stage::UnknownModel(name.clone()))
+                }
+                ResolveError::Ambiguous { name, .. } => Failure::new(
+                    error(ErrorKind::InvalidRequest, 400, e.to_string()).with_param("model"),
+                    Stage::AmbiguousModel(name.clone()),
+                ),
+            })?,
+    };
     match target {
         Resolved::Model(entry, _) => {
             if !models
@@ -865,7 +872,7 @@ async fn attempt(
         provider: Some(eff.provider.id().to_owned()),
         left_out: Vec::new(),
         adapted: Vec::new(),
-        fallbacks: Vec::new(),
+        route: Vec::new(),
     };
     let fail = |stage: Stage| {
         let served = served.clone();
@@ -1377,13 +1384,6 @@ fn provider_failure(err: &KppError) -> RouteFailure {
     }
 }
 
-fn fallback_names(failed: &[FellBack]) -> Vec<String> {
-    failed
-        .iter()
-        .map(|f| format!("{} {}", f.model, f.status))
-        .collect()
-}
-
 fn removed_models(alias: &str) -> KppError {
     error(
         ErrorKind::NotFound,
@@ -1429,17 +1429,29 @@ async fn route(
     let app_req = Arc::new(req);
     let request_id = rec.outcome().request_id.to_string();
     let mut failed: Vec<FellBack> = Vec::new();
+    let mut walked: Vec<Walked> = Vec::new();
     let mut last: Option<Failure> = None;
     let mut refused = false;
     for (i, planned) in plan.iter().enumerate() {
         let step = planned.step;
         let Some(entry) = sh.models.catalogue.model(step.model) else {
+            walked.push(Walked {
+                path: planned.path.clone(),
+                model: None,
+                tried: None,
+            });
             continue;
         };
         if !access.allows(entry.id) {
             refused = true;
+            walked.push(Walked {
+                path: planned.path.clone(),
+                model: None,
+                tried: None,
+            });
             continue;
         }
+        let model = format!("{}/{}", entry.provider, entry.model_id);
         rec.outcome().fallbacks.clone_from(&failed);
         let began = Instant::now();
         let tried = attempt(
@@ -1452,14 +1464,34 @@ async fn route(
             step.timeout_seconds,
         )
         .await;
+        let took = u64::try_from(began.elapsed().as_millis()).unwrap_or(u64::MAX);
         let mut failure = match tried {
-            Ok(done) => return Ok(done.with_fallbacks(&fallback_names(&failed))),
+            Ok(done) => {
+                walked.push(Walked {
+                    path: planned.path.clone(),
+                    model: Some(model),
+                    tried: Some(Tried {
+                        status: done.status(),
+                        duration_ms: None,
+                    }),
+                });
+                return Ok(done.with_route(&walked));
+            }
             Err(f) => f,
         };
+        let status = failure.err.status.unwrap_or(500);
+        walked.push(Walked {
+            path: planned.path.clone(),
+            model: Some(model.clone()),
+            tried: Some(Tried {
+                status,
+                duration_ms: Some(took),
+            }),
+        });
         let falls = i + 1 < plan.len()
             && matches!(classify(&failure), Next::Fall(why) if step.fall_back_on.contains(&why));
         if !falls {
-            failure.served.fallbacks = fallback_names(&failed);
+            failure.served.route = walked;
             return Err(failure);
         }
         let why = match classify(&failure) {
@@ -1467,18 +1499,17 @@ async fn route(
             Next::Stop => "stop",
         };
         let said = failure.logged();
-        let model = format!("{}/{}", entry.provider, entry.model_id);
-        let status = failure.err.status.unwrap_or(500);
         tracing::info!(alias = %alias.name, %model, status, reason = why, error = %said.message, "an alias step failed; falling back");
         metrics::counter!(crate::metrics::ALIAS_FALLBACKS, "provider" => rec.outcome().provider.unwrap_or("unknown"), "reason" => why)
             .increment(1);
         failed.push(FellBack {
             catalogue_model_id: entry.id,
+            path: planned.path.clone(),
             model,
             status,
             error_kind: said.kind.as_str().to_owned(),
             error_message: said.message.clone(),
-            duration_ms: u64::try_from(began.elapsed().as_millis()).unwrap_or(u64::MAX),
+            duration_ms: took,
         });
         let held = std::mem::take(&mut rec.reservation);
         state.limits.release(state, &held, &request_id).await;
@@ -1488,29 +1519,44 @@ async fn route(
         Some(mut failure) => {
             failed.pop();
             rec.outcome().fallbacks.clone_from(&failed);
-            failure.served.fallbacks = fallback_names(&failed);
+            failure.served.route = walked;
             Err(failure)
         }
-        None if refused => Err(Failure::new(
-            no_such_model(&alias.name),
-            Stage::ModelAccess(alias.name.clone()),
-        )),
-        None => Err(Failure::new(
-            removed_models(&alias.name),
-            Stage::UnknownModel(alias.name.clone()),
-        )),
+        None if refused => {
+            let mut f = Failure::new(
+                no_such_model(&alias.name),
+                Stage::ModelAccess(alias.name.clone()),
+            );
+            f.served.route = walked;
+            Err(f)
+        }
+        None => {
+            let mut f = Failure::new(
+                removed_models(&alias.name),
+                Stage::UnknownModel(alias.name.clone()),
+            );
+            f.served.route = walked;
+            Err(f)
+        }
     }
 }
 
 impl Done {
-    fn with_fallbacks(self, names: &[String]) -> Done {
+    fn status(&self) -> u16 {
+        match self {
+            Done::Complete(_, status) => *status,
+            Done::Streaming(resp) => resp.status().as_u16(),
+        }
+    }
+
+    fn with_route(self, walked: &[Walked]) -> Done {
         match self {
             Done::Complete(mut resp, status) => {
-                stamp_fallbacks(&mut resp, names);
+                stamp_route(&mut resp, walked);
                 Done::Complete(resp, status)
             }
             Done::Streaming(mut resp) => {
-                stamp_fallbacks(&mut resp, names);
+                stamp_route(&mut resp, walked);
                 Done::Streaming(resp)
             }
         }

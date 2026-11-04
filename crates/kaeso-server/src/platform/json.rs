@@ -66,7 +66,7 @@ where
     }
 }
 
-fn data_error(text: &str) -> ApiError {
+pub(crate) fn data_error(text: &str) -> ApiError {
     let text = text
         .strip_prefix("Failed to deserialize the JSON body into the target type: ")
         .unwrap_or(text);

@@ -10,6 +10,7 @@
   "errors.aliasCharacters": "别名不能包含空格、控制字符或 `/`。",
   "errors.aliasLength": "别名必须为 1 到 200 个字符。",
   "errors.aliasTaken": "此项目中已存在别名 `{name}`。",
+  "errors.aliasOnlyWithRoute": "`alias` 只能与 `route` 一起发送。",
   "errors.routeSteps": "路由最多有 32 个步骤。",
   "errors.routeDepth": "路由最多嵌套 12 层步骤。",
   "errors.routeModel": "此模型不在项目的目录中。",

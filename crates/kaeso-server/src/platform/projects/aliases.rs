@@ -105,7 +105,11 @@ async fn one(state: &AppState, row: AliasRow) -> ApiResult<AliasView> {
         .ok_or_else(|| ApiError::not_found("alias"))
 }
 
-async fn check_route(state: &AppState, project: uuid::Uuid, route: &Step) -> ApiResult<()> {
+pub(super) async fn check_route(
+    state: &AppState,
+    project: uuid::Uuid,
+    route: &Step,
+) -> ApiResult<()> {
     let known: std::collections::BTreeSet<uuid::Uuid> = catalogue::list(&state.pg, project)
         .await?
         .iter()
@@ -336,7 +340,7 @@ pub struct RouteTraceRequest {
 pub struct TracedRequest {
     #[doc = "Headers the app sends, up to 20."]
     #[serde(default)]
-    pub headers: Vec<TracedHeader>,
+    pub headers: Vec<TestHeader>,
     #[doc = "The API format the app speaks."]
     #[serde(default)]
     pub format: Option<AppFormat>,
@@ -363,8 +367,8 @@ pub struct TracedRequest {
 
 #[derive(Debug, Deserialize, ToSchema)]
 #[serde(deny_unknown_fields)]
-#[schema(description = "A header of a traced request.")]
-pub struct TracedHeader {
+#[schema(description = "A header a tested request sends.")]
+pub struct TestHeader {
     #[doc = "The name, lowercase."]
     #[schema(example = "x-plan")]
     pub name: String,
@@ -439,7 +443,8 @@ pub async fn trace(
     check_route(&state, project, &req.route).await?;
     let r = req.request;
     let pairs: Vec<(String, String)> = r.headers.into_iter().map(|h| (h.name, h.value)).collect();
-    route::check_trace_headers(&pairs).map_err(|e| ApiError::invalid(&e.param, e.message))?;
+    route::check_test_headers("request.headers", &pairs)
+        .map_err(|e| ApiError::invalid(&e.param, e.message))?;
     let mut headers = HeaderList::new();
     for (name, value) in pairs {
         headers.push(name, value);

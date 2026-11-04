@@ -15720,7 +15720,7 @@
           "projects"
         ],
         "summary": "Sends a Playground request as the signed-in member.",
-        "description": "Sends a request to one of the project's models as the signed-in member\nand streams the reply as OpenAI Responses events (`response.created`,\n`response.output_item.added`, `response.reasoning_summary_text.delta`,\n`response.output_text.delta`, `response.completed` with usage, `error`),\nwith keepalive comments while the model is quiet. Closing the stream\ncancels the provider request. The request counts against the member's\nand the project's limits and budgets, is charged to the project, and is\nlogged with the source `playground`. Needs a console session; failures\nbefore the stream starts are Platform API errors (`provider_error` when\nthe provider fails, refuses the provider key, is overloaded or times out).\n\n**Right:** `playground.use` on the project in the path.",
+        "description": "Sends a request to one of the project's models as the signed-in member\nand streams the reply as OpenAI Responses events (`response.created`,\n`response.output_item.added`, `response.reasoning_summary_text.delta`,\n`response.output_text.delta`, `response.completed` with usage, `error`),\nwith keepalive comments while the model is quiet. Closing the stream\ncancels the provider request. The request counts against the member's\nand the project's limits and budgets, is charged to the project, and is\nlogged with the source `playground`. With `route`, the request takes that\nroute instead of the saved alias's, and `headers` reach its conditions and\nsplits; the `kaeso-route` header names every step it tried. Needs a console\nsession; failures before the stream starts are Platform API errors\n(`provider_error` when the provider fails, refuses the provider key, is\noverloaded or times out).\n\n**Right:** `playground.use` on the project in the path.",
         "operationId": "postOrgsOrgProjectsProjectPlaygroundResponses",
         "parameters": [
           {
@@ -21233,6 +21233,7 @@
         "description": "A step of an alias's route that failed, so the request moved on.",
         "required": [
           "catalogue_model_id",
+          "path",
           "model",
           "status",
           "error_kind",
@@ -21263,6 +21264,11 @@
             "type": "string",
             "description": "The model as `provider/model`.",
             "example": "openai/gpt-5"
+          },
+          "path": {
+            "type": "string",
+            "description": "Where the step is in the route, as in a trace.",
+            "example": "route.fallback"
           },
           "status": {
             "type": "integer",
@@ -27504,6 +27510,27 @@
           "stream"
         ],
         "properties": {
+          "alias": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AliasId",
+                "description": "The saved alias `route` edits, so its splits draw as they do for the\nalias's requests; only with `route`."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "headers": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/TestHeader"
+            },
+            "description": "Headers to send as an app would, up to 20, which a route's conditions\nand splits read; none that carry credentials."
+          },
           "input": {
             "description": "The conversation: a string, or Responses input items (messages, and\nthe reasoning items of earlier replies, sent back as received)."
           },
@@ -27530,6 +27557,17 @@
           },
           "reasoning": {
             "description": "Reasoning: `effort` (`none`, `minimal`, `low`, `medium`, `high`,\n`xhigh`, `max`) and `summary` (`auto`, `concise`, `detailed`)."
+          },
+          "route": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/RouteStep",
+                "description": "A route to take instead of resolving `model`, such as the route editor's\nunsaved draft; `model` then names its alias. Checked as saving it would be."
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "stream": {
             "type": "boolean",
@@ -30588,6 +30626,27 @@
           }
         }
       },
+      "TestHeader": {
+        "type": "object",
+        "description": "A header a tested request sends.",
+        "required": [
+          "name",
+          "value"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The name, lowercase.",
+            "example": "x-plan"
+          },
+          "value": {
+            "type": "string",
+            "description": "The value.",
+            "example": "enterprise"
+          }
+        },
+        "additionalProperties": false
+      },
       "TokenPrice": {
         "oneOf": [
           {
@@ -30835,27 +30894,6 @@
         ],
         "description": "A step a traced request passes."
       },
-      "TracedHeader": {
-        "type": "object",
-        "description": "A header of a traced request.",
-        "required": [
-          "name",
-          "value"
-        ],
-        "properties": {
-          "name": {
-            "type": "string",
-            "description": "The name, lowercase.",
-            "example": "x-plan"
-          },
-          "value": {
-            "type": "string",
-            "description": "The value.",
-            "example": "enterprise"
-          }
-        },
-        "additionalProperties": false
-      },
       "TracedRequest": {
         "type": "object",
         "description": "What the gateway knows about a request when it picks a route's steps.",
@@ -30882,7 +30920,7 @@
           "headers": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/TracedHeader"
+              "$ref": "#/components/schemas/TestHeader"
             },
             "description": "Headers the app sends, up to 20."
           },

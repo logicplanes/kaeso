@@ -132,6 +132,21 @@ fn with_fallback(model: &str, fallback: Value) -> Value {
     json!({ "type": "model", "model": model, "fallback": fallback })
 }
 
+fn walked(r: &Answer) -> Vec<String> {
+    r.header("kaeso-route")
+        .map(|h| {
+            h.split(", ")
+                .map(|step| {
+                    step.split(';')
+                        .filter(|p| !p.starts_with("dur="))
+                        .collect::<Vec<_>>()
+                        .join(";")
+                })
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
 fn asked_models(env: &Env) -> Vec<String> {
     env.mock
         .received()
@@ -161,8 +176,11 @@ async fn a_route_falls_back_when_its_model_is_overloaded_in_every_format() {
             assert_eq!(r.header("kaeso-model"), Some("gpt-4o"), "{what}");
             assert_eq!(r.header("kaeso-provider"), Some("openai"), "{what}");
             assert_eq!(
-                r.header("kaeso-fallbacks"),
-                Some("anthropic/claude-haiku-4-5 529"),
+                walked(&r),
+                [
+                    "\"route\";model=\"anthropic/claude-haiku-4-5\";status=529",
+                    "\"route.fallback\";model=\"openai/gpt-4o\";status=200"
+                ],
                 "{what}"
             );
         }
@@ -176,14 +194,17 @@ async fn a_route_falls_back_when_its_model_is_overloaded_in_every_format() {
         assert_eq!(o.model_id.as_deref(), Some("gpt-4o"));
         assert_eq!(o.fallbacks.len(), 1);
         let f = &o.fallbacks[0];
-        assert_eq!(f.model, "anthropic/claude-haiku-4-5");
+        assert_eq!(
+            (f.path.as_str(), f.model.as_str()),
+            ("route", "anthropic/claude-haiku-4-5")
+        );
         assert_eq!((f.status, f.error_kind.as_str()), (529, "overloaded"));
         assert!(!f.error_message.is_empty());
     }
 }
 
 #[tokio::test]
-async fn a_route_that_works_names_no_fallbacks() {
+async fn a_route_that_works_names_the_one_step_it_tried() {
     let env = env().await;
     let claude = model_id(&env, "claude-haiku-4-5").await;
     let gpt = model_id(&env, "gpt-4o").await;
@@ -191,7 +212,10 @@ async fn a_route_that_works_names_no_fallbacks() {
     let r = ask(&env, App::Chat, "sturdy", "Hi", false).await;
     assert_eq!(r.status, StatusCode::OK, "{}", r.text());
     assert_eq!(r.header("kaeso-model"), Some("claude-haiku-4-5"));
-    assert!(r.header("kaeso-fallbacks").is_none());
+    assert_eq!(
+        walked(&r),
+        ["\"route\";model=\"anthropic/claude-haiku-4-5\";status=200"]
+    );
     assert_eq!(asked_models(&env), ["claude-haiku-4-5"]);
     let o = env.outcomes().await.pop().unwrap();
     assert_eq!(o.alias.as_deref(), Some("sturdy"));
@@ -219,7 +243,10 @@ async fn a_failure_the_step_does_not_fall_back_on_goes_back_to_the_app() {
     .await;
     assert_eq!(r.status.as_u16(), 529, "{}", r.text());
     assert_eq!(r.json()["error"]["type"], "overloaded_error");
-    assert!(r.header("kaeso-fallbacks").is_none());
+    assert_eq!(
+        walked(&r),
+        ["\"route\";model=\"anthropic/claude-haiku-4-5\";status=529"]
+    );
     assert_eq!(asked_models(&env), ["claude-haiku-4-5"]);
     let r = ask(
         &env,
@@ -231,8 +258,11 @@ async fn a_failure_the_step_does_not_fall_back_on_goes_back_to_the_app() {
     .await;
     assert_eq!(r.status, StatusCode::OK, "{}", r.text());
     assert_eq!(
-        r.header("kaeso-fallbacks"),
-        Some("anthropic/claude-haiku-4-5 429")
+        walked(&r),
+        [
+            "\"route\";model=\"anthropic/claude-haiku-4-5\";status=429",
+            "\"route.fallback\";model=\"openai/gpt-4o\";status=200"
+        ]
     );
 }
 
@@ -273,8 +303,11 @@ async fn when_every_step_fails_the_app_gets_the_last_error_and_the_earlier_ones_
     assert_eq!(r.status, StatusCode::TOO_MANY_REQUESTS, "{}", r.text());
     assert_eq!(r.header("kaeso-model"), Some("gpt-4o"));
     assert_eq!(
-        r.header("kaeso-fallbacks"),
-        Some("anthropic/claude-haiku-4-5 529")
+        walked(&r),
+        [
+            "\"route\";model=\"anthropic/claude-haiku-4-5\";status=529",
+            "\"route.fallback\";model=\"openai/gpt-4o\";status=429"
+        ]
     );
     assert_eq!(asked_models(&env), ["claude-haiku-4-5", "gpt-4o"]);
     let o = env.outcomes().await.pop().unwrap();
@@ -377,7 +410,13 @@ async fn a_step_the_key_may_not_use_is_skipped_without_naming_it() {
     let r = ask_as(&env, &only_gpt, App::Chat, "sturdy", "Hi", false).await;
     assert_eq!(r.status, StatusCode::OK, "{}", r.text());
     assert_eq!(r.header("kaeso-model"), Some("gpt-4o"));
-    assert!(r.header("kaeso-fallbacks").is_none());
+    assert_eq!(
+        walked(&r),
+        [
+            "\"route\";skipped",
+            "\"route.fallback\";model=\"openai/gpt-4o\";status=200"
+        ]
+    );
     assert_eq!(asked_models(&env), ["gpt-4o"]);
 
     alias(&env, "claude-only", model_step(&claude)).await;
@@ -418,7 +457,13 @@ async fn removing_a_model_keeps_the_routes_that_use_others_and_deletes_the_rest(
     let r = ask(&env, App::Chat, "sturdy", "Hi", false).await;
     assert_eq!(r.status, StatusCode::OK, "{}", r.text());
     assert_eq!(r.header("kaeso-model"), Some("gpt-4o"));
-    assert!(r.header("kaeso-fallbacks").is_none());
+    assert_eq!(
+        walked(&r),
+        [
+            "\"route\";skipped",
+            "\"route.fallback\";model=\"openai/gpt-4o\";status=200"
+        ]
+    );
     let r = ask(&env, App::Chat, "haiku", "Hi", false).await;
     assert_eq!(r.status, StatusCode::NOT_FOUND);
 }
@@ -450,9 +495,20 @@ async fn a_step_that_takes_too_long_moves_on() {
     assert_eq!(r.status, StatusCode::OK, "{}", r.text());
     assert_eq!(r.header("kaeso-model"), Some("gpt-4o"));
     assert_eq!(
-        r.header("kaeso-fallbacks"),
-        Some("anthropic/claude-haiku-4-5 504")
+        walked(&r),
+        [
+            "\"route\";model=\"anthropic/claude-haiku-4-5\";status=504",
+            "\"route.fallback\";model=\"openai/gpt-4o\";status=200"
+        ]
     );
+    let tried = r.header("kaeso-route").unwrap_or_default();
+    let ms: u64 = tried
+        .split(", ")
+        .next()
+        .and_then(|first| first.split(";dur=").nth(1))
+        .and_then(|ms| ms.parse().ok())
+        .expect("a failed step names its duration");
+    assert!((900..10_000).contains(&ms), "{tried}");
     assert!(started.elapsed() < Duration::from_secs(10));
 }
 
@@ -477,8 +533,11 @@ async fn a_limit_on_one_model_sends_its_requests_to_the_fallback() {
     assert_eq!(second.status, StatusCode::OK, "{}", second.text());
     assert_eq!(second.header("kaeso-model"), Some("gpt-4o"));
     assert_eq!(
-        second.header("kaeso-fallbacks"),
-        Some("anthropic/claude-haiku-4-5 429")
+        walked(&second),
+        [
+            "\"route\";model=\"anthropic/claude-haiku-4-5\";status=429",
+            "\"route.fallback\";model=\"openai/gpt-4o\";status=200"
+        ]
     );
 }
 

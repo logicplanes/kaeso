@@ -828,14 +828,14 @@ impl Rule {
     }
 }
 
-pub const MAX_TRACE_HEADERS: usize = 20;
+pub const MAX_TEST_HEADERS: usize = 20;
 
-pub fn check_trace_headers(headers: &[(String, String)]) -> Result<(), RouteError> {
-    if headers.len() > MAX_TRACE_HEADERS {
-        return Err(refuse("request", "headers", "Send up to 20 headers."));
+pub fn check_test_headers(at: &str, headers: &[(String, String)]) -> Result<(), RouteError> {
+    if headers.len() > MAX_TEST_HEADERS {
+        return Err(refuse(at, "", "Send up to 20 headers."));
     }
     for (i, (name, value)) in headers.iter().enumerate() {
-        let path = format!("request.headers.{i}");
+        let path = format!("{at}.{i}");
         header_name(&path, "name", name)?;
         if value.chars().count() > MAX_HEADER_VALUE || value.chars().any(char::is_control) {
             return Err(refuse(
