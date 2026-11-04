@@ -4,6 +4,35 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 ## [Unreleased]
 
+## [0.6.0-rc.1] - 2026-11-04
+
+- **Breaking:** Projects in an organization are all alike: there is no default project, Kaeso opens on the organization's overview, and new members join only the projects their invitation names ([#647](https://github.com/logicplanes/kaeso/pull/647))
+
+### Added
+
+- Aliases route requests: fallbacks, conditions and weighted splits by request, caller or header, with a trace of a request's path and a kaeso-route header naming every step it tried ([#649](https://github.com/logicplanes/kaeso/pull/649))
+- Aliases are built in a full-page route editor with templates, versions and a Test tab that sends a request through the draft and colors each step by its answer ([#650](https://github.com/logicplanes/kaeso/pull/650))
+
+#### UI library
+
+- FlowCanvas and FlowWorkspace draw and edit routes as trees, with fallback chains, traced paths, badges and the answer of each tried step ([#648](https://github.com/logicplanes/kaeso/pull/648))
+
+### Changed
+
+#### Gateway
+
+- A fresh install starts with KPMR's model data as of 4 November 2026, 13:22 UTC ([#652](https://github.com/logicplanes/kaeso/pull/652))
+
+### Removed
+
+- Projects in an organization are all alike: there is no default project, Kaeso opens on the organization's overview, and new members join only the projects their invitation names ([#647](https://github.com/logicplanes/kaeso/pull/647))
+
+### Fixed
+
+#### Documentation
+
+- The request flow page gives the right answers for limits: no Retry-After for a used-up budget, 403 for a spend budget that can't price a feature, and 529 in the Anthropic format when the gateway is busy ([#646](https://github.com/logicplanes/kaeso/pull/646))
+
 ## [0.5.6] - 2026-11-02
 
 ### Added
@@ -1213,7 +1242,8 @@ The first release of Kaeso, the open-source AI gateway you run yourself: the gat
 
 - A Release workflow that runs only from `prod`: it prepares the version changes and the changelog without write access to the repository, lets only jobs that run nothing but git push the release commit and the tag, syncs the release commit back to `dev`, and pins every action by commit SHA.
 
-[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.5.6...HEAD
+[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.6.0-rc.1...HEAD
+[0.6.0-rc.1]: https://github.com/logicplanes/kaeso/releases/tag/v0.6.0-rc.1
 [0.5.6]: https://github.com/logicplanes/kaeso/releases/tag/v0.5.6
 [0.5.5]: https://github.com/logicplanes/kaeso/releases/tag/v0.5.5
 [0.5.4]: https://github.com/logicplanes/kaeso/releases/tag/v0.5.4

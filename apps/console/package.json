@@ -1,6 +1,6 @@
 {
   "name": "kaeso-console",
-  "version": "0.5.6",
+  "version": "0.6.0-rc.1",
   "private": true,
   "type": "module",
   "description": "The web console for the Kaeso gateway.",
