@@ -5,7 +5,7 @@ export const docs = {
     description:
       'Events down a 1px line (the audit log): each event marks the line with a short 3px bar in its tone, no dots; titles, and times on the right. A toned event\'s title starts with its tone in words for screen readers ("Critical: Key revoked"), and a time with `datetime` shows the exact date and time in a tooltip.',
     props: {
-      events: "The events, oldest first.",
+      events: "The events, oldest first. Leave out an event's `time` for steps that have none, such as the steps a request takes.",
     },
   },
 } satisfies ComponentDocs;

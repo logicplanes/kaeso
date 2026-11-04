@@ -19,7 +19,7 @@ export interface TimelineEvent {
   id: string;
   title: ReactNode;
   description?: ReactNode | undefined;
-  time: ReactNode;
+  time?: ReactNode | undefined;
   datetime?: string | undefined;
   tone?: keyof typeof KAESO_TIMELINE_VARIANTS.tone | undefined;
   marker?: ReactNode | undefined;
@@ -58,7 +58,7 @@ export const Timeline = forwardRef<HTMLOListElement, { events: TimelineEvent[]; 
                   </time>
                 </Tooltip>
               ) : (
-                <time className="shrink-0 text-small text-fg-secondary tabular">{e.time}</time>
+                e.time !== undefined && <time className="shrink-0 text-small text-fg-secondary tabular">{e.time}</time>
               )}
             </div>
             {e.description && <div className="text-small text-fg-secondary">{e.description}</div>}

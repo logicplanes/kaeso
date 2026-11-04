@@ -178,6 +178,8 @@ export function kaesoMergeConfig() {
       animate: [{ animate: ["none", ...arbitrary] }],
       rotate: [{ rotate: ["none", isNumber, ...arbitrary] }],
       "translate-x": [{ "translate-x": [isFraction, "full", ...spacing] }],
+      "translate-y": [{ "translate-y": [isFraction, "full", ...spacing] }],
+      "transform-origin": [{ origin: ["center", "top", "top-right", "right", "bottom-right", "bottom", "bottom-left", "left", "top-left", ...arbitrary] }],
       "caret-color": [{ caret: color }],
       cursor: [
         {
