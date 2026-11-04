@@ -15,9 +15,9 @@ sequenceDiagram
   participant Provider as 服务商
   App->>Gateway: 请求
   Note over Gateway: 检查密钥<br>401 或 403
-  Note over Gateway: 读取请求<br>400、413 或 503
+  Note over Gateway: 读取请求<br>400、413、503 或 529
   Note over Gateway: 解析模型<br>400 或 404
-  Note over Gateway: 检查限额<br>429 或 503
+  Note over Gateway: 检查限额<br>403、429 或 503
   Note over Gateway: 选择服务商密钥<br>400
   Gateway->>Provider: 转换后的请求
   Note over Gateway,Provider: 超时 504<br>无法连接 502
@@ -48,7 +48,7 @@ KPP 在解码之前先统计请求正文的内容。请求包含以下任一情�
 
 随后 Kaeso 估算请求在翻译期间占用的内存。估算依据收到的请求体及其消息、内容块和工具。解码之后，Kaeso 只计入解码所保留的部分。
 
-当进行中的翻译已用满 `KAESO_BODY_LIMITS_IN_FLIGHT`（默认 512 MiB），或该密钥已占用其中四分之一时，请求会等待。10 秒后仍无空间时，请求会得到 503 和 `Retry-After: 10`。
+当进行中的翻译已用满 `KAESO_BODY_LIMITS_IN_FLIGHT`（默认 512 MiB），或该密钥已占用其中四分之一时，请求会等待。10 秒后仍无空间时，请求会得到 503 和 `Retry-After: 10`，Anthropic 格式下为 529。
 
 随后，KPP 把请求从应用的格式（例如 Chat Completions 或 Messages）解码为其规范格式。无法读取的请求会在这里被拒绝。要求 Kaeso 从不发送给服务商的内容的请求也会被拒绝，例如多个候选结果或存储的 Responses 状态。
 
@@ -76,7 +76,9 @@ Kaeso 在一步之内检查所有适用的限额：密钥、其成员和项目�
 
 | 情况 | 结果 |
 | --- | --- |
-| 超出速率或硬性预算 | 429，附带 `Retry-After` |
+| 超出速率 | 429，附带 `Retry-After` |
+| 超出硬性预算 | 429。消息会说明预算何时重置 |
+| 受支出预算约束，且使用了它无法计价的功能 | 403，并指出该功能（[支出预算无法计价的功能](../console/limits-and-budgets.md#支出预算无法计价的功能)） |
 | 超出软性预算 | 请求放行。软性预算只发出提醒 |
 | 无法连接 Valkey | 受硬性预算约束的请求返回 503。其他请求不经检查直接放行 |
 | 无法加载项目的限额 | 所有请求返回 503，因为 Kaeso 无法判断哪些限额适用 |

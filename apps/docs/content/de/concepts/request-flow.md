@@ -15,9 +15,9 @@ sequenceDiagram
   participant Provider as Anbieter
   App->>Gateway: Anfrage
   Note over Gateway: Schlüssel prüfen<br>401 oder 403
-  Note over Gateway: Anfrage lesen<br>400, 413 oder 503
+  Note over Gateway: Anfrage lesen<br>400, 413, 503 oder 529
   Note over Gateway: Modell auflösen<br>400 oder 404
-  Note over Gateway: Limits prüfen<br>429 oder 503
+  Note over Gateway: Limits prüfen<br>403, 429 oder 503
   Note over Gateway: Anbieter-Schlüssel wählen<br>400
   Gateway->>Provider: Übersetzte Anfrage
   Note over Gateway,Provider: Zeitüberschreitung 504<br>Nicht erreichbar 502
@@ -48,7 +48,7 @@ KPP zählt, was der Body enthält, bevor es etwas decodiert. Eine Anfrage erhäl
 
 Danach schätzt Kaeso den Speicher, den die Anfrage beim Übersetzen braucht. Die Schätzung beruht auf ihrem Body, wie er ankommt, und auf ihren Nachrichten, Blöcken und Werkzeugen. Nach dem Decodieren zählt Kaeso nur noch, was das Decodieren behalten hat.
 
-Solange die laufenden Übersetzungen `KAESO_BODY_LIMITS_IN_FLIGHT` schon ausschöpfen, standardmäßig 512 MiB, oder der Schlüssel schon ein Viertel davon hält, wartet die Anfrage. Nach 10 Sekunden erhält sie 503 mit `Retry-After: 10`.
+Solange die laufenden Übersetzungen `KAESO_BODY_LIMITS_IN_FLIGHT` schon ausschöpfen, standardmäßig 512 MiB, oder der Schlüssel schon ein Viertel davon hält, wartet die Anfrage. Nach 10 Sekunden erhält sie 503 mit `Retry-After: 10`, im Anthropic-Format 529.
 
 Dann decodiert KPP die Anfrage aus dem Format der App, etwa Chat Completions oder Messages, in sein kanonisches Format. Eine Anfrage, die sich nicht lesen lässt, lehnt Kaeso hier ab. Ebenso eine, die etwas verlangt, das Kaeso nie an einen Anbieter sendet, etwa mehr als eine Auswahl oder gespeicherten Responses-Zustand.
 
@@ -76,7 +76,9 @@ Kaeso prüft jedes zutreffende Limit in einem Schritt: die Raten und Budgets des
 
 | Lage | Ergebnis |
 | --- | --- |
-| Über einer Rate oder einem harten Budget | 429 mit `Retry-After` |
+| Über einer Rate | 429 mit `Retry-After` |
+| Über einem harten Budget | 429. Die Meldung sagt, wann das Budget zurückgesetzt wird |
+| Unter einem Ausgabenbudget, mit einer Funktion, die es nicht bepreisen kann | 403, mit dem Namen der Funktion ([Funktionen, die ein Ausgabenbudget nicht bepreisen kann](../console/limits-and-budgets.md#funktionen-die-ein-ausgabenbudget-nicht-bepreisen-kann)) |
 | Über einem weichen Budget | Die Anfrage geht durch. Weiche Budgets warnen nur |
 | Valkey nicht erreichbar | 503 für eine Anfrage unter einem harten Budget. Jede andere Anfrage geht ungeprüft durch |
 | Die Limits des Projekts lassen sich nicht laden | 503 für jede Anfrage, weil Kaeso nicht erkennen kann, welche Limits gelten |

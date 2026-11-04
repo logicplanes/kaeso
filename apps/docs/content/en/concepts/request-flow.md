@@ -15,9 +15,9 @@ sequenceDiagram
   participant Provider
   App->>Gateway: Request
   Note over Gateway: Check the key<br>401 or 403
-  Note over Gateway: Read the request<br>400, 413 or 503
+  Note over Gateway: Read the request<br>400, 413, 503 or 529
   Note over Gateway: Resolve the model<br>400 or 404
-  Note over Gateway: Check the limits<br>429 or 503
+  Note over Gateway: Check the limits<br>403, 429 or 503
   Note over Gateway: Pick the provider key<br>400
   Gateway->>Provider: Translated request
   Note over Gateway,Provider: Timeout 504<br>Unreachable 502
@@ -48,7 +48,7 @@ KPP counts what the body holds before it decodes anything. A request gets 400 wh
 
 Kaeso then estimates the memory the request takes while it's translated. The estimate comes from its body as received and from its messages, blocks and tools. Once the request is decoded, Kaeso counts only what decoding kept.
 
-While the translations in progress already use `KAESO_BODY_LIMITS_IN_FLIGHT`, 512 MiB by default, or the key already holds a quarter of it, the request waits. After 10 seconds it gets 503 with `Retry-After: 10`.
+While the translations in progress already use `KAESO_BODY_LIMITS_IN_FLIGHT`, 512 MiB by default, or the key already holds a quarter of it, the request waits. After 10 seconds it gets 503 with `Retry-After: 10`, or 529 in the Anthropic format.
 
 KPP then decodes the request from the app's format, such as Chat Completions or Messages, into its canonical format. Kaeso refuses a request it can't read here. It also refuses one that asks for something Kaeso never sends to a provider, such as more than one choice or stored Responses state.
 
@@ -76,7 +76,9 @@ Kaeso checks every limit that applies in one step: the rates and budgets of the 
 
 | Situation | Result |
 | --- | --- |
-| Over a rate or a hard budget | 429 with `Retry-After` |
+| Over a rate | 429 with `Retry-After` |
+| Over a hard budget | 429. The message says when the budget resets |
+| Under a spend budget, with a feature it can't price | 403, naming the feature ([features a spend budget can't price](../console/limits-and-budgets.md#features-a-spend-budget-cant-price)) |
 | Over a soft budget | The request passes. Soft budgets only alert |
 | Valkey unreachable | 503 for a request under a hard budget. Every other request passes unchecked |
 | The project's limits can't be loaded | 503 for every request, since Kaeso can't tell which limits apply |
