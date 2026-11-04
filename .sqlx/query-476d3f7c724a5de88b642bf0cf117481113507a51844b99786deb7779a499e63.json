@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, project_id, name, catalogue_model_id, created_at, updated_at FROM aliases WHERE project_id = $1 ORDER BY name",
+  "query": "SELECT id, project_id, name, route, created_at, updated_at FROM aliases WHERE project_id = $1 AND id = $2",
   "describe": {
     "columns": [
       {
@@ -38,12 +38,12 @@
       },
       {
         "ordinal": 3,
-        "name": "catalogue_model_id",
-        "type_info": "Uuid",
+        "name": "route",
+        "type_info": "Jsonb",
         "origin": {
           "Table": {
             "table": "aliases",
-            "name": "catalogue_model_id"
+            "name": "route"
           }
         }
       },
@@ -72,6 +72,7 @@
     ],
     "parameters": {
       "Left": [
+        "Uuid",
         "Uuid"
       ]
     },
@@ -84,5 +85,5 @@
       false
     ]
   },
-  "hash": "dcb981a03e6f488ff2920c0083304b4e78b0d463479f13d1316a84f18e9ead57"
+  "hash": "476d3f7c724a5de88b642bf0cf117481113507a51844b99786deb7779a499e63"
 }

@@ -425,7 +425,7 @@ async fn models_and_aliases_resolve_in_this_project_only() {
         .app
         .post(
             &format!("{}/aliases", base(&env)),
-            json!({ "name": "fast", "catalogue_model_id": haiku }),
+            json!({ "name": "fast", "route": { "type": "model", "model": haiku } }),
             Some(&env.owner.cookie),
         )
         .await;
@@ -972,17 +972,29 @@ async fn playground_requests_are_charged_and_logged_as_the_members() {
     let mut lines = csv.lines();
     assert!(
         lines.next().unwrap().ends_with(
-            ",usage_estimated,source,overhead_ms,stream_processing_ms,cache_breakpoints,request_upload_ms,response_cache"
+            ",usage_estimated,source,overhead_ms,stream_processing_ms,cache_breakpoints,request_upload_ms,response_cache,alias,fallbacks"
         )
     );
     let row = lines.next().unwrap();
     let (_, rest) = row.split_once(",\"playground\",").unwrap();
-    let [overhead, processing, breakpoints, upload, cache] =
-        rest.split(',').collect::<Vec<_>>()[..]
+    let [
+        overhead,
+        processing,
+        breakpoints,
+        upload,
+        cache,
+        alias,
+        fallbacks,
+    ] = rest.split(',').collect::<Vec<_>>()[..]
     else {
         panic!("{row}");
     };
     assert_eq!(cache, "\"\"", "the cache is off in a new project: {row}");
+    assert_eq!(
+        (alias, fallbacks),
+        ("\"\"", "\"\""),
+        "the request named a model: {row}"
+    );
     assert!(
         [overhead, processing, upload]
             .iter()

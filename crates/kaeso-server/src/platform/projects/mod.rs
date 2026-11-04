@@ -74,6 +74,7 @@ pub fn routes(s: &Secure) -> OpenApiRouter<AppState> {
         .routes(s.route(Access::Project(R::PlaygroundUse), routes!(playground::models)))
         .routes(s.route(Access::Project(R::ModelsView), routes!(aliases::list)))
         .routes(s.route(Access::Project(R::ModelsManage), routes!(aliases::create)))
+        .routes(s.route(Access::Project(R::ModelsView), routes!(aliases::trace)))
         .routes(s.route(Access::Project(R::ModelsView), routes!(aliases::get)))
         .routes(s.route(Access::Project(R::ModelsManage), routes!(aliases::update)))
         .routes(s.route(Access::Project(R::ModelsManage), routes!(aliases::delete)))

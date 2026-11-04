@@ -69,7 +69,7 @@ Every change to the gateway follows these rules, and lints and tests enforce mos
 
 1. **Wire formats live only in KPP.** The gateway never parses or builds OpenAI or Anthropic JSON by hand; `kaeso_codecs::dispatch` does. The gateway's own JSON is the Platform API and its error envelope.
 2. **No passthrough.** Every model request is decoded to KPP and encoded again, even when the app and the provider speak the same format.
-3. **No retries and no fallbacks.** A failed provider call fails, in the app's format.
+3. **No retries; fallbacks only where a route names them.** A failed provider call fails, in the app's format, unless an alias's route falls back on that failure ([alias routes](../../concepts/alias-routes.md)).
 4. **Never drop data silently.** What KPP refuses (`Unsupported`) goes back to the app as an error in its own format, before anything reaches a provider. A `KppError` is never caught and ignored.
 5. **No panics in library crates.** No `unwrap`, `expect`, `panic!`, `todo!`, `unimplemented!`, panicking indexing or `unsafe` outside tests and the binary's startup. The workspace lints and `#![forbid(unsafe_code)]` enforce it.
 6. **Secrets never leave memory unprotected.** Provider keys, master keys, API key secrets, session ids, sign-in tokens, TOTP secrets and passwords live in redacting wrapper types. They are never logged, traced, printed, stored in ClickHouse, returned by an API or put into an error message.

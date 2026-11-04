@@ -54,7 +54,7 @@ Dann decodiert KPP die Anfrage aus dem Format der App, etwa Chat Completions ode
 
 ## Das Modell
 
-Kaeso sucht den Modellnamen im Katalog des Projekts: zuerst als Alias, dann als `provider/model`, dann als eigene ID des Modells. Ein Name, der dort nicht steht, erhält 404. Eine ID, die mehrere Anbieter im Projekt bedienen, erhält 400; nennen Sie sie dann als `provider/model`.
+Kaeso sucht den Modellnamen im Katalog des Projekts: zuerst als Alias, dann als `provider/model`, dann als eigene ID des Modells. Ein Name, der dort nicht steht, erhält 404. Eine ID, die mehrere Anbieter im Projekt bedienen, erhält 400; nennen Sie sie dann als `provider/model`. Die Route eines Alias wählt das Modell, und scheitert es, laufen die Prüfungen ab hier für seinen Fallback erneut ([Alias-Routen](alias-routes.md)).
 
 Darf das Mitglied oder der Schlüssel das Modell nicht nutzen, erhält die Anfrage ebenfalls 404. Die Meldung ist dieselbe wie bei einem unbekannten Namen, damit ein Schlüssel nicht erfährt, welche anderen Modelle das Projekt hat.
 

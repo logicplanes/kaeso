@@ -1,6 +1,6 @@
 use std::net::IpAddr;
 use std::sync::Arc;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use axum::body::Body;
 use axum::http::{HeaderMap, HeaderValue, StatusCode, header};
@@ -9,23 +9,25 @@ use bytes::Bytes;
 use futures::StreamExt;
 use kaeso_codecs::continuity::reasoning_for_tool_calls;
 use kaeso_codecs::{EgressCtx, EncodeCtx, HeaderList, dispatch};
-use kaeso_core::catalogue::resolve::ResolveError;
+use kaeso_core::catalogue::Entry;
+use kaeso_core::catalogue::resolve::{Alias, ResolveError, Resolved};
+use kaeso_core::catalogue::route::{self, Failure as RouteFailure};
 use kaeso_core::catalogue::{Availability, Effective, capability};
 use kaeso_core::estimate::{self, Tally};
-use kaeso_core::id::{OrgId, ProjectId, RequestId};
+use kaeso_core::id::{ApiKeyId, OrgId, ProjectId, RequestId, ServiceAccountId, UserId};
 use kaeso_core::limits::WorstCase;
 use kaeso_core::provider::AuthMethod;
 use kaeso_core::providers::ProviderRef;
 use kaeso_kpp::{DialectId, ErrorKind, KppError, Reply, Request, RequestKind, StreamMode};
-use kaeso_store::pg::catalogue::Answer;
+use kaeso_store::pg::catalogue::{Answer, ProjectModels};
 use kaeso_upstream::{Call, Outgoing, ResponseBody, Timeouts, UpstreamError};
 use url::Url;
 
 use super::auth;
-use super::errors::{Served, TIMING_HEADER, error, respond, server_timing, stamp};
+use super::errors::{Served, TIMING_HEADER, error, respond, server_timing, stamp, stamp_fallbacks};
 use super::hooks::{
-    Admission, CLIENT_DISCONNECTED, CLIENT_STALLED, Caller, Outcome, Reservation, SHUT_DOWN, Sink,
-    Source,
+    Admission, CLIENT_DISCONNECTED, CLIENT_STALLED, Caller, FellBack, Outcome, Reservation,
+    SHUT_DOWN, Sink, Source,
 };
 use super::input_count::InputCounter;
 use super::listing::project_models;
@@ -226,6 +228,8 @@ fn blank_outcome(request_id: RequestId) -> Outcome {
         content_kept: false,
         cache_breakpoints: None,
         response_cache: None,
+        alias: None,
+        fallbacks: Vec::new(),
     }
 }
 
@@ -690,7 +694,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
             .map_err(|_| Failure::new(translating_busy(), Stage::Limits))?,
     );
     let listed = header_list(&headers);
-    let mut req = off_thread(request_bytes, move || {
+    let req = off_thread(request_bytes, move || {
         dispatch::decode_checked_request(kind, &checked, &listed)
     })
     .await
@@ -720,7 +724,20 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
     )
     .await
     .map_err(|e| Failure::new(e, Stage::Catalogue))?;
-    let (entry, _) = models
+    let sh = Shared {
+        ingress,
+        kind,
+        headers: &headers,
+        caller: &caller,
+        models: &models,
+        stream,
+        keep_content,
+        request_bytes,
+        upload,
+        decoded,
+        logged,
+    };
+    let target = models
         .catalogue
         .resolve(req.model())
         .map_err(|e| match &e {
@@ -732,15 +749,90 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
                 Stage::AmbiguousModel(name.clone()),
             ),
         })?;
-    if !models
-        .access(caller.key_id, caller.user_id, caller.service_account_id)
-        .allows(entry.id)
-    {
-        return Err(Failure::new(
-            no_such_model(req.model()),
-            Stage::ModelAccess(req.model().to_owned()),
-        ));
+    match target {
+        Resolved::Model(entry, _) => {
+            if !models
+                .access(caller.key_id, caller.user_id, caller.service_account_id)
+                .allows(entry.id)
+            {
+                return Err(Failure::new(
+                    no_such_model(req.model()),
+                    Stage::ModelAccess(req.model().to_owned()),
+                ));
+            }
+            let app_req = Arc::new(req.clone());
+            attempt(state, rec, &sh, entry, app_req, req, None).await
+        }
+        Resolved::Alias(alias) => {
+            rec.outcome().alias = Some(alias.name.clone());
+            route(state, rec, &sh, alias, req).await
+        }
     }
+}
+
+#[derive(Clone, Copy)]
+struct Shared<'a> {
+    ingress: DialectId,
+    kind: RequestKind,
+    headers: &'a HeaderMap,
+    caller: &'a Caller,
+    models: &'a ProjectModels,
+    stream: bool,
+    keep_content: bool,
+    request_bytes: usize,
+    upload: Duration,
+    decoded: u64,
+    logged: u64,
+}
+
+impl Shared<'_> {
+    fn retained(&self, copies: u64) -> u64 {
+        self.decoded
+            .saturating_mul(copies)
+            .saturating_add(self.logged)
+    }
+}
+
+fn begin_attempt(rec: &mut Recording) {
+    rec.sent_input = None;
+    rec.keep_in_cache = None;
+    let o = rec.outcome();
+    o.egress = None;
+    o.provider = None;
+    o.custom_provider = None;
+    o.catalogue_model_id = None;
+    o.model_id = None;
+    o.prices = None;
+    o.ttfb = None;
+    o.overhead = None;
+    o.upstream_request_id = None;
+    o.cache_breakpoints = None;
+    o.response_cache = None;
+}
+
+async fn attempt(
+    state: &AppState,
+    rec: &mut Recording,
+    sh: &Shared<'_>,
+    entry: &Entry,
+    app_req: Arc<Request>,
+    mut req: Request,
+    step_timeout: Option<u32>,
+) -> Result<Done, Failure> {
+    let Shared {
+        ingress,
+        kind,
+        headers,
+        caller,
+        models,
+        stream,
+        keep_content,
+        request_bytes,
+        upload,
+        ..
+    } = *sh;
+    let retained = |copies: u64| sh.retained(copies);
+    begin_attempt(rec);
     let eff = crate::services::catalogue::effective(state, entry, &models.providers).ok_or_else(|| {
         let turned_off = models
             .providers
@@ -773,6 +865,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         provider: Some(eff.provider.id().to_owned()),
         left_out: Vec::new(),
         adapted: Vec::new(),
+        fallbacks: Vec::new(),
     };
     let fail = |stage: Stage| {
         let served = served.clone();
@@ -791,7 +884,6 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         o.custom_provider = eff.provider.custom().map(|c| c.id().to_string());
         o.prices = Some(eff.fields.clone());
     }
-    let app_req = Arc::new(req.clone());
     let mut plan = capability::prepare(&mut req, ingress, &eff).map_err(|u| {
         let mut e = KppError::unsupported(u.capability, u.message).with_status(400);
         if let Some(p) = u.param {
@@ -817,7 +909,8 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         first_byte: u.first_byte_timeout,
         idle: u.stream_idle_timeout,
     }
-    .with_model_override(eff.fields.timeout_seconds);
+    .with_model_override(eff.fields.timeout_seconds)
+    .with_step_override(step_timeout, stream);
     let credential = credentials::for_provider(
         state,
         OrgId::from_uuid(caller.org_id),
@@ -957,7 +1050,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
     let cached = consult_cache(
         state,
         rec,
-        &headers,
+        headers,
         response_cache::Request {
             org: caller.org_id,
             project: caller.project_id,
@@ -1235,6 +1328,191 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
             reply_with(state, rec, reply, out, counter, carry, &served)
                 .await
                 .map_err(fail(Stage::Reply))
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Next {
+    Fall(RouteFailure),
+    Stop,
+}
+
+fn classify(f: &Failure) -> Next {
+    match &f.stage {
+        Stage::Setup
+        | Stage::CustomProvidersOff
+        | Stage::MissingCredential(_)
+        | Stage::SignedOut(_)
+        | Stage::NoApiAccess(_)
+        | Stage::Credential
+        | Stage::Upstream
+        | Stage::KeyRefused
+        | Stage::Unserved(_) => Next::Fall(RouteFailure::Unavailable),
+        Stage::Capability => Next::Fall(RouteFailure::Unsupported),
+        // Kaeso can't read the counters: every other step would be refused the same way.
+        Stage::Limits if f.err.status == Some(503) => Next::Stop,
+        Stage::Limits => Next::Fall(RouteFailure::Limited),
+        Stage::Provider => Next::Fall(provider_failure(&f.err)),
+        Stage::Caller
+        | Stage::Request
+        | Stage::Catalogue
+        | Stage::UnknownModel(_)
+        | Stage::AmbiguousModel(_)
+        | Stage::ModelAccess(_)
+        | Stage::Reply
+        | Stage::Shutdown => Next::Stop,
+    }
+}
+
+fn provider_failure(err: &KppError) -> RouteFailure {
+    match err.kind {
+        ErrorKind::RateLimited | ErrorKind::Billing => RouteFailure::Limited,
+        ErrorKind::InvalidRequest
+        | ErrorKind::ContextTooLong
+        | ErrorKind::ContentFiltered
+        | ErrorKind::RequestTooLarge
+        | ErrorKind::Unsupported { .. } => RouteFailure::Rejected,
+        _ => RouteFailure::Unavailable,
+    }
+}
+
+fn fallback_names(failed: &[FellBack]) -> Vec<String> {
+    failed
+        .iter()
+        .map(|f| format!("{} {}", f.model, f.status))
+        .collect()
+}
+
+fn removed_models(alias: &str) -> KppError {
+    error(
+        ErrorKind::NotFound,
+        404,
+        format!(
+            "The alias `{alias}` names only models removed from the catalogue; ask a project admin."
+        ),
+    )
+    .with_param("model")
+}
+
+async fn route(
+    state: &AppState,
+    rec: &mut Recording,
+    sh: &Shared<'_>,
+    alias: &Alias,
+    req: Request,
+) -> Result<Done, Failure> {
+    let caller = sh.caller;
+    let listed = header_list(sh.headers);
+    let uses = route::features_of(&req);
+    let facts = route::Facts {
+        alias: alias.id,
+        request: rec.outcome().request_id.uuid(),
+        caller: caller
+            .key_id
+            .or(caller.user_id)
+            .or(caller.service_account_id),
+        format: route::AppFormat::of(sh.ingress),
+        headers: &listed,
+        uses: &uses,
+        input_tokens: estimate::tokens_of_bytes(
+            u64::try_from(sh.request_bytes).unwrap_or(u64::MAX),
+        ),
+        key: caller.key_id.map(ApiKeyId::from_uuid),
+        member: caller.user_id.map(UserId::from_uuid),
+        service_account: caller.service_account_id.map(ServiceAccountId::from_uuid),
+    };
+    let plan = alias.route.plan(&facts);
+    let access = sh
+        .models
+        .access(caller.key_id, caller.user_id, caller.service_account_id);
+    let app_req = Arc::new(req);
+    let request_id = rec.outcome().request_id.to_string();
+    let mut failed: Vec<FellBack> = Vec::new();
+    let mut last: Option<Failure> = None;
+    let mut refused = false;
+    for (i, planned) in plan.iter().enumerate() {
+        let step = planned.step;
+        let Some(entry) = sh.models.catalogue.model(step.model) else {
+            continue;
+        };
+        if !access.allows(entry.id) {
+            refused = true;
+            continue;
+        }
+        rec.outcome().fallbacks.clone_from(&failed);
+        let began = Instant::now();
+        let tried = attempt(
+            state,
+            rec,
+            sh,
+            entry,
+            Arc::clone(&app_req),
+            (*app_req).clone(),
+            step.timeout_seconds,
+        )
+        .await;
+        let mut failure = match tried {
+            Ok(done) => return Ok(done.with_fallbacks(&fallback_names(&failed))),
+            Err(f) => f,
+        };
+        let falls = i + 1 < plan.len()
+            && matches!(classify(&failure), Next::Fall(why) if step.fall_back_on.contains(&why));
+        if !falls {
+            failure.served.fallbacks = fallback_names(&failed);
+            return Err(failure);
+        }
+        let why = match classify(&failure) {
+            Next::Fall(why) => why.as_str(),
+            Next::Stop => "stop",
+        };
+        let said = failure.logged();
+        let model = format!("{}/{}", entry.provider, entry.model_id);
+        let status = failure.err.status.unwrap_or(500);
+        tracing::info!(alias = %alias.name, %model, status, reason = why, error = %said.message, "an alias step failed; falling back");
+        metrics::counter!(crate::metrics::ALIAS_FALLBACKS, "provider" => rec.outcome().provider.unwrap_or("unknown"), "reason" => why)
+            .increment(1);
+        failed.push(FellBack {
+            catalogue_model_id: entry.id,
+            model,
+            status,
+            error_kind: said.kind.as_str().to_owned(),
+            error_message: said.message.clone(),
+            duration_ms: u64::try_from(began.elapsed().as_millis()).unwrap_or(u64::MAX),
+        });
+        let held = std::mem::take(&mut rec.reservation);
+        state.limits.release(state, &held, &request_id).await;
+        last = Some(failure);
+    }
+    match last {
+        Some(mut failure) => {
+            failed.pop();
+            rec.outcome().fallbacks.clone_from(&failed);
+            failure.served.fallbacks = fallback_names(&failed);
+            Err(failure)
+        }
+        None if refused => Err(Failure::new(
+            no_such_model(&alias.name),
+            Stage::ModelAccess(alias.name.clone()),
+        )),
+        None => Err(Failure::new(
+            removed_models(&alias.name),
+            Stage::UnknownModel(alias.name.clone()),
+        )),
+    }
+}
+
+impl Done {
+    fn with_fallbacks(self, names: &[String]) -> Done {
+        match self {
+            Done::Complete(mut resp, status) => {
+                stamp_fallbacks(&mut resp, names);
+                Done::Complete(resp, status)
+            }
+            Done::Streaming(mut resp) => {
+                stamp_fallbacks(&mut resp, names);
+                Done::Streaming(resp)
+            }
         }
     }
 }

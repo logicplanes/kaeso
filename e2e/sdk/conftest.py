@@ -147,7 +147,10 @@ class Install:
             self.models[model] = self.post(f"{self.base}/models", body)["id"]
         self.post(
             f"{self.base}/aliases",
-            {"name": "chat-default", "catalogue_model_id": self.models["claude-haiku-4-5"]},
+            {
+                "name": "chat-default",
+                "route": {"type": "model", "model": self.models["claude-haiku-4-5"]},
+            },
         )
         self.key = self.post(f"{self.base}/keys", {"name": "e2e"})["secret"]
         self.narrow_key = self.post(

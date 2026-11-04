@@ -33,6 +33,7 @@
   "models.alias.emptyHint": "A name like {name} that apps send as {field}; retarget it and all apps follow.",
   "models.alias.loadFailed": "The aliases couldn't load",
   "models.alias.nameExample": "fast",
+  "models.alias.routeModels": "{first} and {count, plural, one {# more model} other {# more models}}",
   "models.alias.save": "Save alias",
   "models.alias.saved": "Alias {name} saved",
   "models.alias.shadows": "Apps that send `{name}` get this alias, not the model with the same name.",

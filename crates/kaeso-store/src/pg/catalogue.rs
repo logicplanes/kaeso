@@ -1,6 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use kaeso_core::catalogue::resolve::{Access, Alias, Catalogue};
+use kaeso_core::catalogue::route::Step;
 use kaeso_core::catalogue::{Availability, Entry, Fields};
 use kaeso_core::kpmr;
 use kaeso_core::providers::OrgProviders;
@@ -422,9 +423,37 @@ pub struct AliasRow {
     pub id: Uuid,
     pub project_id: Uuid,
     pub name: String,
-    pub catalogue_model_id: Uuid,
+    pub route: Step,
     pub created_at: OffsetDateTime,
     pub updated_at: OffsetDateTime,
+}
+
+struct StoredAlias {
+    id: Uuid,
+    project_id: Uuid,
+    name: String,
+    route: serde_json::Value,
+    created_at: OffsetDateTime,
+    updated_at: OffsetDateTime,
+}
+
+impl StoredAlias {
+    fn read(self) -> Result<AliasRow, StoreError> {
+        let route = serde_json::from_value(self.route)
+            .map_err(|e| StoreError::Corrupt(format!("route of alias {}: {e}", self.id)))?;
+        Ok(AliasRow {
+            id: self.id,
+            project_id: self.project_id,
+            name: self.name,
+            route,
+            created_at: self.created_at,
+            updated_at: self.updated_at,
+        })
+    }
+}
+
+fn route_json(route: &Step) -> Result<serde_json::Value, StoreError> {
+    serde_json::to_value(route).map_err(|e| StoreError::Corrupt(format!("route: {e}")))
 }
 
 pub async fn insert_alias(
@@ -433,16 +462,16 @@ pub async fn insert_alias(
     org_id: Uuid,
     project_id: Uuid,
     name: &str,
-    target: Uuid,
+    route: &Step,
 ) -> Result<bool, StoreError> {
     let r = sqlx::query!(
-        "INSERT INTO aliases (id, org_id, project_id, name, catalogue_model_id) VALUES ($1, $2, $3, $4, $5) \
+        "INSERT INTO aliases (id, org_id, project_id, name, route) VALUES ($1, $2, $3, $4, $5) \
          ON CONFLICT (project_id, name) DO NOTHING",
         id,
         org_id,
         project_id,
         name,
-        target
+        route_json(route)?
     )
     .execute(db)
     .await?;
@@ -453,14 +482,17 @@ pub async fn list_aliases(
     db: impl PgExecutor<'_>,
     project_id: Uuid,
 ) -> Result<Vec<AliasRow>, StoreError> {
-    Ok(sqlx::query_as!(
-        AliasRow,
-        "SELECT id, project_id, name, catalogue_model_id, created_at, updated_at FROM aliases \
+    sqlx::query_as!(
+        StoredAlias,
+        "SELECT id, project_id, name, route, created_at, updated_at FROM aliases \
          WHERE project_id = $1 ORDER BY name",
         project_id
     )
     .fetch_all(db)
-    .await?)
+    .await?
+    .into_iter()
+    .map(StoredAlias::read)
+    .collect()
 }
 
 pub async fn get_alias(
@@ -468,15 +500,17 @@ pub async fn get_alias(
     project_id: Uuid,
     id: Uuid,
 ) -> Result<Option<AliasRow>, StoreError> {
-    Ok(sqlx::query_as!(
-        AliasRow,
-        "SELECT id, project_id, name, catalogue_model_id, created_at, updated_at FROM aliases \
+    sqlx::query_as!(
+        StoredAlias,
+        "SELECT id, project_id, name, route, created_at, updated_at FROM aliases \
          WHERE project_id = $1 AND id = $2",
         project_id,
         id
     )
     .fetch_optional(db)
-    .await?)
+    .await?
+    .map(StoredAlias::read)
+    .transpose()
 }
 
 pub async fn update_alias(
@@ -484,14 +518,14 @@ pub async fn update_alias(
     project_id: Uuid,
     id: Uuid,
     name: &str,
-    target: Uuid,
+    route: &Step,
 ) -> Result<Option<bool>, StoreError> {
     let r = sqlx::query!(
-        "UPDATE aliases SET name = $3, catalogue_model_id = $4, updated_at = now() WHERE project_id = $1 AND id = $2",
+        "UPDATE aliases SET name = $3, route = $4, updated_at = now() WHERE project_id = $1 AND id = $2",
         project_id,
         id,
         name,
-        target
+        route_json(route)?
     )
     .execute(db)
     .await;
@@ -516,6 +550,24 @@ pub async fn delete_alias(
     .await?
     .rows_affected()
         == 1)
+}
+
+pub async fn delete_aliases(
+    db: impl PgExecutor<'_>,
+    project_id: Uuid,
+    ids: &[Uuid],
+) -> Result<u64, StoreError> {
+    if ids.is_empty() {
+        return Ok(0);
+    }
+    Ok(sqlx::query!(
+        "DELETE FROM aliases WHERE project_id = $1 AND id = ANY($2)",
+        project_id,
+        ids
+    )
+    .execute(db)
+    .await?
+    .rows_affected())
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -750,8 +802,9 @@ pub async fn project_models(
         .await?
         .into_iter()
         .map(|a| Alias {
+            id: a.id,
             name: a.name,
-            target: a.catalogue_model_id,
+            route: a.route,
         })
         .collect();
     let providers = super::custom_providers::of_project(&mut *db, project_id)
@@ -878,8 +931,9 @@ mod tests {
             catalogue: Catalogue::new(
                 vec![gpt.clone()],
                 vec![Alias {
+                    id: Uuid::now_v7(),
                     name: "fast".into(),
-                    target: gpt.id,
+                    route: Step::model(kaeso_core::id::CatalogueModelId::from_uuid(gpt.id)),
                 }],
             ),
             users: BTreeMap::from([(user, BTreeSet::from([gpt.id]))]),
@@ -909,8 +963,14 @@ mod tests {
         let mut older = json.clone();
         let back: ProjectModels = serde_json::from_value(json).unwrap();
         assert_eq!(back, models);
-        assert_eq!(back.catalogue.resolve("fast").unwrap().0, &gpt);
-        assert_eq!(back.catalogue.resolve("openai/gpt-4o").unwrap().0, &gpt);
+        assert!(matches!(
+            back.catalogue.resolve("fast"),
+            Ok(kaeso_core::catalogue::resolve::Resolved::Alias(a)) if a.route.primary() == Some(kaeso_core::id::CatalogueModelId::from_uuid(gpt.id))
+        ));
+        assert_eq!(
+            back.catalogue.resolve_model("openai/gpt-4o").unwrap().0,
+            &gpt
+        );
         assert!(back.access(None, Some(user), None).allows(gpt.id));
         assert!(!back.access(None, None, None).allows(gpt.id));
         older.as_object_mut().unwrap().remove("open");

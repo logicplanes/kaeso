@@ -1060,7 +1060,7 @@ async fn deleting_a_custom_provider_removes_its_keys_and_its_models_in_every_pro
     let alias = app
         .post(
             &format!("/orgs/{}/projects/{}/aliases", owner.org_id, env.project),
-            json!({ "name": "house", "catalogue_model_id": entries[0] }),
+            json!({ "name": "house", "route": { "type": "model", "model": entries[0] } }),
             Some(&owner.cookie),
         )
         .await;

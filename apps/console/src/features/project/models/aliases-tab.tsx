@@ -36,6 +36,8 @@ import { common } from "~/i18n/common";
 
 const MODEL_FIELD = "model";
 
+const singleModel = (a: AliasView): string | undefined => (a.route.type === "model" && !a.route.fallback ? a.route.model : undefined);
+
 const shadowText = (name: string) => t("models.alias.shadows", "Apps that send `{name}` get this alias, not the model with the same name.", { name });
 
 export function AliasesTab({
@@ -54,7 +56,7 @@ export function AliasesTab({
   const aliases = useQuery(aliasesQuery(org, project));
   const catalogue = useQuery(catalogueQuery(org, project));
   const targetName = (a: AliasView) => {
-    const m = catalogue.data?.find((c) => c.id === a.catalogue_model_id);
+    const m = catalogue.data?.find((c) => c.id === a.models[0]?.catalogue_model_id);
     return m && modelName(m) !== m.model_id ? modelName(m) : undefined;
   };
   const [editing, setEditing] = useState<AliasView>();
@@ -90,7 +92,10 @@ export function AliasesTab({
       ) : (
         <List
           aria-label={t("models.aliases", "Aliases")}
-          onOpen={(item) => canManage && setEditing(list.find((a) => a.id === item.id))}
+          onOpen={(item) => {
+            const a = list.find((x) => x.id === item.id);
+            if (canManage && a && singleModel(a)) setEditing(a);
+          }}
           items={list.map((a) => ({
             id: a.id,
             textValue: a.name,
@@ -101,7 +106,12 @@ export function AliasesTab({
                   → {targetName(a) ?? ""}
                 </Text>
                 <Text variant="small" tone="secondary" mono truncate className="flex-1 basis-0">
-                  {a.target}
+                  {a.models.length > 1
+                    ? t("models.alias.routeModels", "{first} and {count, plural, one {# more model} other {# more models}}", {
+                        first: a.models[0]?.target ?? "",
+                        count: a.models.length - 1,
+                      })
+                    : (a.models[0]?.target ?? "")}
                 </Text>
               </span>
             ),
@@ -119,9 +129,11 @@ export function AliasesTab({
                   <IconButton icon={icons.more} aria-label={t("models.alias.actionsFor", "Actions for {name}", { name: a.name })} size="xs" />
                 </Menu.Trigger>
                 <Menu.Content align="end">
-                  <Menu.Item icon={icons.edit} onClick={() => setEditing(a)}>
-                    {common.edit()}
-                  </Menu.Item>
+                  {singleModel(a) && (
+                    <Menu.Item icon={icons.edit} onClick={() => setEditing(a)}>
+                      {common.edit()}
+                    </Menu.Item>
+                  )}
                   <Menu.Item icon={icons.delete} variant="danger" onClick={() => askDelete(a)}>
                     {common.delete()}
                   </Menu.Item>
@@ -182,7 +194,7 @@ function DeleteAliasDialog({
 function AliasDialog({ org, project, alias, onClose }: { org: string; project: string; alias?: AliasView; onClose: () => void }) {
   const catalogue = useQuery(catalogueQuery(org, project));
   const [name, setName] = useState(alias?.name ?? "");
-  const [target, setTarget] = useState<string | null>(alias?.catalogue_model_id ?? null);
+  const [target, setTarget] = useState<string | null>(alias?.route.type === "model" ? alias.route.model : null);
   const models = useMemo(() => catalogue.data ?? [], [catalogue.data]);
   const shadows = models.some((m) => m.model_id === name.trim());
   const options = useMemo(() => models.map(catalogueModelOption), [models]);
@@ -197,7 +209,7 @@ function AliasDialog({ org, project, alias, onClose }: { org: string; project: s
             params: { path: { org, project, alias: alias.id } },
             body: {
               ...(name.trim() !== alias.name ? { name: name.trim() } : {}),
-              ...(to !== alias.catalogue_model_id ? { catalogue_model_id: to } : {}),
+              ...(to !== singleModel(alias) ? { route: { type: "model" as const, model: to } } : {}),
             },
           }),
         );
@@ -205,7 +217,7 @@ function AliasDialog({ org, project, alias, onClose }: { org: string; project: s
       return data(
         await api.POST("/platform/v1/orgs/{org}/projects/{project}/aliases", {
           params: { path: { org, project } },
-          body: { name: name.trim(), catalogue_model_id: to },
+          body: { name: name.trim(), route: { type: "model", model: to } },
         }),
       );
     },
@@ -215,7 +227,7 @@ function AliasDialog({ org, project, alias, onClose }: { org: string; project: s
       onClose();
     },
   });
-  const changed = !alias || name.trim() !== alias.name || target !== alias.catalogue_model_id;
+  const changed = !alias || name.trim() !== alias.name || target !== singleModel(alias);
   const ready = name.trim().length > 0 && changed ? target : null;
   const submit = () => ready && save.mutate(ready);
 
@@ -263,7 +275,7 @@ function AliasDialog({ org, project, alias, onClose }: { org: string; project: s
             setTarget(next);
             if (save.isError) save.reset();
           }}
-          error={fieldError(save.error, "catalogue_model_id")}
+          error={fieldError(save.error, "route.model")}
           options={options}
           providers={providers}
         />

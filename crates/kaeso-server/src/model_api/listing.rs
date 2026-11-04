@@ -7,7 +7,9 @@ use axum::http::{HeaderMap, HeaderValue, header};
 use axum::response::Response;
 use kaeso_codecs::dispatch;
 use kaeso_core::catalogue::capability::model_info;
+use kaeso_core::catalogue::resolve::{Alias, Resolved};
 use kaeso_core::catalogue::{Effective, Entry};
+use kaeso_core::id::CatalogueModelId;
 use kaeso_kpp::{DialectId, ErrorKind, KppError, ModelInfo, ModelLifecycle, ModelList};
 use kaeso_store::pg::catalogue::ProjectModels;
 use uuid::Uuid;
@@ -57,11 +59,23 @@ async fn visible(
         }
     }
     for alias in models.catalogue.aliases() {
-        if let Some((entry, eff)) = listed.get(&alias.target) {
+        if let Some((entry, eff)) = alias_models(alias).find_map(|m| listed.get(&m.uuid())) {
             out.push(info(state, &alias.name, entry, eff));
         }
     }
     Ok(out)
+}
+
+// An alias reads as its main model, or else the first of its others the key may use.
+fn alias_models(alias: &Alias) -> impl Iterator<Item = CatalogueModelId> + '_ {
+    let main = alias.route.primary();
+    main.into_iter().chain(
+        alias
+            .route
+            .models_in_order()
+            .into_iter()
+            .filter(move |m| Some(*m) != main),
+    )
 }
 
 fn info(state: &AppState, name: &str, entry: &Entry, eff: &Effective) -> ModelInfo {
@@ -140,11 +154,15 @@ async fn get_inner(
             format!("The model `{id}` does not exist or this key may not use it."),
         )
     };
-    let (entry, _) = models.catalogue.resolve(id).map_err(|_| not_found())?;
-    if !models
-        .access(Some(key.id), key.user_id, key.service_account_id)
-        .allows(entry.id)
-    {
+    let access = models.access(Some(key.id), key.user_id, key.service_account_id);
+    let entry = match models.catalogue.resolve(id).map_err(|_| not_found())? {
+        Resolved::Model(entry, _) => entry,
+        Resolved::Alias(alias) => alias_models(alias)
+            .filter_map(|m| models.catalogue.model(m))
+            .find(|e| access.allows(e.id) && !e.is_unavailable())
+            .ok_or_else(not_found)?,
+    };
+    if !access.allows(entry.id) {
         return Err(not_found());
     }
     let eff = crate::services::catalogue::effective(state, entry, &models.providers)

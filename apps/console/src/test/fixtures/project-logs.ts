@@ -31,6 +31,7 @@ export function logRow(overrides: Partial<LogView> = {}): LogView {
     upstream_request_id: "chatcmpl-abc123",
     usage: { input_tokens: 120, output_tokens: 48, cache_read_tokens: 0, cache_write_tokens: 0, reasoning_tokens: 0, estimated: false },
     user_agent: "openai-python/1.40.0",
+    fallbacks: [],
     ...overrides,
   };
 }

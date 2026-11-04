@@ -626,7 +626,7 @@ async fn projects_are_created_listed_by_visibility_and_archived() {
         ),
         (
             "aliases",
-            json!({ "name": "fast", "catalogue_model_id": "model_01k7a3f8m2xq4v9c5r6t8w0yz1" }),
+            json!({ "name": "fast", "route": { "type": "model", "model": "model_01k7a3f8m2xq4v9c5r6t8w0yz1" } }),
             "The project is archived; its models cannot change.",
         ),
     ] {

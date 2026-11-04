@@ -12,6 +12,7 @@ pub const MODEL_HEADER: &str = "kaeso-model";
 pub const PROVIDER_HEADER: &str = "kaeso-provider";
 pub const LEFT_OUT_HEADER: &str = "kaeso-left-out";
 pub const ADAPTED_HEADER: &str = "kaeso-adapted";
+pub const FALLBACKS_HEADER: &str = "kaeso-fallbacks";
 pub const TIMING_HEADER: &str = "server-timing";
 
 #[derive(Clone, Debug, Default)]
@@ -20,6 +21,7 @@ pub struct Served {
     pub provider: Option<String>,
     pub left_out: Vec<String>,
     pub adapted: Vec<String>,
+    pub fallbacks: Vec<String>,
 }
 
 pub fn stamp(resp: &mut Response, served: &Served) {
@@ -42,6 +44,15 @@ pub fn stamp(resp: &mut Response, served: &Served) {
         && let Ok(v) = HeaderValue::from_str(&served.adapted.join(", "))
     {
         resp.headers_mut().insert(ADAPTED_HEADER, v);
+    }
+    stamp_fallbacks(resp, &served.fallbacks);
+}
+
+pub fn stamp_fallbacks(resp: &mut Response, fallbacks: &[String]) {
+    if !fallbacks.is_empty()
+        && let Ok(v) = HeaderValue::from_str(&fallbacks.join(", "))
+    {
+        resp.headers_mut().insert(FALLBACKS_HEADER, v);
     }
 }
 

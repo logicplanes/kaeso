@@ -64,6 +64,10 @@ Kaeso 向用户展示的每个词都有英语、德语和简体中文版本（`e
 | provider | Anbieter | 服务商 |
 | model | Modell | 模型 |
 | alias | Alias | 别名 |
+| route (of an alias) | Route | 路由 |
+| fallback | Fallback | 回退 |
+| condition (of a route) | Bedingung | 条件 |
+| split (of a route) | Aufteilung | 分流 |
 | limit | Limit | 限额 |
 | budget | Budget | 预算 |
 | rate limit | Ratenlimit | 速率限制 |

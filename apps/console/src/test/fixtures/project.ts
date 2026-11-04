@@ -134,12 +134,16 @@ export function catalogueModel(overrides: Partial<CatalogueModelView> = {}): Cat
   };
 }
 
+export function modelRoute(model: string): AliasView["route"] {
+  return { type: "model", model, fallback: null, fall_back_on: ["unavailable", "limited", "unsupported"], timeout_seconds: null };
+}
+
 export function alias(overrides: Partial<AliasView> = {}): AliasView {
   return {
     id: "al_fast",
     name: "fast",
-    catalogue_model_id: "cm_sonnet",
-    target: "anthropic/claude-sonnet-4-5",
+    route: modelRoute("cm_sonnet"),
+    models: [{ catalogue_model_id: "cm_sonnet", target: "anthropic/claude-sonnet-4-5" }],
     shadows_model: false,
     created_at: NOW,
     updated_at: NOW,
@@ -226,6 +230,7 @@ export function failedLog(overrides: Partial<LogView> = {}): LogView {
     upstream_request_id: "",
     user_agent: "test",
     usage: { input_tokens: 0, output_tokens: 0, cache_read_tokens: 0, cache_write_tokens: 0, reasoning_tokens: 0, estimated: false },
+    fallbacks: [],
     ...overrides,
   };
 }

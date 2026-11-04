@@ -64,13 +64,15 @@ A model's sheet shows the **Values in use**, each with where it comes from: KPMR
 
 ## Remove a model
 
-Choose **Remove from catalogue** in a model's sheet. Kaeso refuses requests for the model from then on, and aliases and model lists that name it lose it.
+Choose **Remove from catalogue** in a model's sheet. Kaeso refuses requests for the model from then on, and model lists that name it lose it. Aliases that route only to it are deleted; routes that also use other models skip it.
 
 ## Create an alias
 
 An alias is the project's own name for a model in its catalogue, such as `fast` for `claude-haiku-4-5`. Apps send the alias as the model, and you can change the model behind it without touching the apps.
 
 On the **Aliases** tab, choose **Create alias** and enter a name and a **Target**. A name has 1 to 200 characters, without spaces or `/`. An alias wins over a model with the same name, and the list marks it **Shadows a model**.
+
+An alias can also hold a route that falls back to other models, branches on the request or splits traffic. Set it on the Platform API ([alias routes](../concepts/alias-routes.md)).
 
 ## How a request names a model
 

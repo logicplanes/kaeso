@@ -7,7 +7,9 @@ use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use bytes::Bytes;
 use kaeso_core::cost::cost_from_raw;
-use kaeso_core::id::{ApiKeyId, OrgId, ProjectId, RequestId, ServiceAccountId, UserId};
+use kaeso_core::id::{
+    ApiKeyId, CatalogueModelId, OrgId, ProjectId, RequestId, ServiceAccountId, UserId,
+};
 use kaeso_core::rights::ProjectRight;
 use kaeso_kpp::DialectId;
 use kaeso_store::clickhouse::ClickHouse;
@@ -817,6 +819,54 @@ pub struct LogView {
         (not cacheable, such as a stream, or skipped by `Cache-Control`);\n\
         `null` when the cache was off."]
     pub response_cache: Option<ResponseCacheResult>,
+    #[doc = "The alias the app named, whose route chose the model; `null` when the\n\
+        app named a model."]
+    #[schema(example = "chat-default")]
+    pub alias: Option<String>,
+    #[doc = "The steps of the alias's route that failed before the one that\n\
+        answered, or before the last one tried, in the order they were tried."]
+    pub fallbacks: Vec<FallbackView>,
+}
+
+#[derive(Clone, Debug, Serialize, ToSchema)]
+#[schema(description = "A step of an alias's route that failed, so the request moved on.")]
+pub struct FallbackView {
+    #[doc = "The catalogue entry the step called."]
+    pub catalogue_model_id: CatalogueModelId,
+    #[doc = "The model as `provider/model`."]
+    #[schema(example = "openai/gpt-5")]
+    pub model: String,
+    #[doc = "The status the step failed with."]
+    #[schema(example = 503)]
+    pub status: u16,
+    #[doc = "The error kind, as in `error_kind`."]
+    #[schema(example = "overloaded")]
+    pub error_kind: String,
+    #[doc = "The error message."]
+    pub error_message: String,
+    #[doc = "How long the step took, in milliseconds."]
+    pub duration_ms: u64,
+}
+
+fn fallbacks(stored: &str) -> Vec<FallbackView> {
+    if stored.is_empty() {
+        return Vec::new();
+    }
+    let read: Vec<crate::model_api::hooks::FellBack> =
+        serde_json::from_str(stored).unwrap_or_else(|e| {
+            tracing::warn!(error = %e, "a request log entry's fallbacks cannot be read");
+            Vec::new()
+        });
+    read.into_iter()
+        .map(|f| FallbackView {
+            catalogue_model_id: CatalogueModelId::from_uuid(f.catalogue_model_id),
+            model: f.model,
+            status: f.status,
+            error_kind: f.error_kind,
+            error_message: f.error_message,
+            duration_ms: f.duration_ms,
+        })
+        .collect()
 }
 
 #[derive(Clone, Debug, Serialize, ToSchema)]
@@ -888,6 +938,8 @@ fn view(r: &LogRow) -> LogView {
         }),
         cache_breakpoints: r.cache_breakpoints,
         response_cache: ResponseCacheResult::parse(&r.response_cache),
+        alias: none(&r.alias),
+        fallbacks: fallbacks(&r.fallbacks),
     }
 }
 
@@ -1016,7 +1068,7 @@ pub struct ExportParams {
     pub include_content: Option<bool>,
 }
 
-const CSV_HEADER: &str = "id,started_at,duration_ms,ttfb_ms,key_id,principal_kind,principal_id,endpoint,ingress_dialect,egress_dialect,provider,requested_model,model,stream,status,error_kind,input_tokens,output_tokens,cache_read_tokens,cache_write_tokens,reasoning_tokens,cost,user_agent,client_ip,upstream_request_id,stream_events,stream_bytes,stream_first_byte_ms,stream_keepalives,usage_estimated,source,overhead_ms,stream_processing_ms,cache_breakpoints,request_upload_ms,response_cache\n";
+const CSV_HEADER: &str = "id,started_at,duration_ms,ttfb_ms,key_id,principal_kind,principal_id,endpoint,ingress_dialect,egress_dialect,provider,requested_model,model,stream,status,error_kind,input_tokens,output_tokens,cache_read_tokens,cache_write_tokens,reasoning_tokens,cost,user_agent,client_ip,upstream_request_id,stream_events,stream_bytes,stream_first_byte_ms,stream_keepalives,usage_estimated,source,overhead_ms,stream_processing_ms,cache_breakpoints,request_upload_ms,response_cache,alias,fallbacks\n";
 
 // OWASP CSV injection (https://owasp.org/www-community/attacks/CSV_Injection): quote every
 // text cell and prefix `'` to one that starts a formula or holds a separator a spreadsheet
@@ -1098,6 +1150,14 @@ fn csv_line(v: &LogView) -> String {
             v.response_cache
                 .map(|c| c.as_str().to_owned())
                 .unwrap_or_default(),
+        ),
+        Text(v.alias.clone().unwrap_or_default()),
+        Text(
+            v.fallbacks
+                .iter()
+                .map(|f| format!("{} {}", f.model, f.status))
+                .collect::<Vec<_>>()
+                .join("; "),
         ),
     ];
     let mut line = cells

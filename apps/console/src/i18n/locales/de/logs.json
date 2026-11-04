@@ -188,5 +188,8 @@
   "logs.tokens.noBreakpoint": "Ohne Cache-Breakpoint gesendet, und nichts wurde zwischengespeichert",
   "logs.tokens.reasoning": "{count} Reasoning",
   "logs.unavailable": "Anfrageprotokolle sind vorübergehend nicht verfügbar",
-  "logs.unavailableHint": "Nutzung und Limits funktionieren weiterhin."
+  "logs.unavailableHint": "Nutzung und Limits funktionieren weiterhin.",
+  "logs.inspector.alias": "Alias",
+  "logs.inspector.triedFirst": "Zuerst versucht",
+  "logs.inspector.failedAfter": "Fehlgeschlagen nach {duration}"
 }

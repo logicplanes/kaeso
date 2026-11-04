@@ -1,5 +1,6 @@
 pub mod capability;
 pub mod resolve;
+pub mod route;
 
 use kaeso_kpp::DialectId;
 use rust_decimal::Decimal;

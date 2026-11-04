@@ -115,7 +115,7 @@ pub(super) fn view(
 ) -> ApiResult<CatalogueModelView> {
     let names = aliases
         .iter()
-        .filter(|a| a.catalogue_model_id == row.id)
+        .filter(|a| a.route.uses(CatalogueModelId::from_uuid(row.id)))
         .map(|a| a.name.clone())
         .collect();
     named_view(state, providers, row, names)
@@ -862,10 +862,12 @@ pub async fn list(
     let rows = catalogue::list(&state.pg, project).await?;
     let mut aliases: HashMap<uuid::Uuid, Vec<String>> = HashMap::new();
     for a in catalogue::list_aliases(&state.pg, project).await? {
-        aliases
-            .entry(a.catalogue_model_id)
-            .or_default()
-            .push(a.name);
+        for model in a.route.models() {
+            aliases
+                .entry(model.uuid())
+                .or_default()
+                .push(a.name.clone());
+        }
     }
     Ok(Json(List::complete(
         rows.iter()
@@ -988,8 +990,9 @@ pub async fn update(
 #[utoipa::path(
     delete,
     path = "/orgs/{org}/projects/{project}/models/{model}",
-    summary = "Removes a model from the catalogue, with its aliases and from every\n\
-    member and key model list. Requests for it fail from now on.",
+    summary = "Removes a model from the catalogue, with the aliases that route only to\n\
+    it, and from every member and key model list. Requests for it fail from now\n\
+    on, and routes that also use other models skip it.",
     description = "With `If-Match`, only while the entry is still at that revision; a\n\
     newer one answers 412.",
     tag = "models",
@@ -1007,6 +1010,13 @@ pub async fn delete(
     let mut tx = state.pg.begin().await?;
     let row = locked_entry(&ctx, &mut tx, &id, &if_match).await?;
     let aliases = catalogue::list_aliases(&mut *tx, row.project_id).await?;
+    let model = CatalogueModelId::from_uuid(row.id);
+    let only_this: Vec<uuid::Uuid> = aliases
+        .iter()
+        .filter(|a| a.route.models() == std::collections::BTreeSet::from([model]))
+        .map(|a| a.id)
+        .collect();
+    catalogue::delete_aliases(&mut *tx, row.project_id, &only_this).await?;
     if !catalogue::delete(&mut *tx, row.project_id, row.id).await? {
         return Err(ApiError::not_found("catalogue model"));
     }

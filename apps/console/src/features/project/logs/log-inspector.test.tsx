@@ -200,6 +200,44 @@ describe("LogInspector", () => {
     expect(section(await sheet(), "Usage")).toHaveTextContent(text);
   });
 
+  it("names the alias and the steps its route tried before the model that answered", async () => {
+    signedIn();
+    projectData();
+    logsData({
+      rows: [logRow()],
+      entries: [
+        logEntry({
+          requested_model: "sturdy",
+          alias: "sturdy",
+          fallbacks: [
+            {
+              catalogue_model_id: "cm_sonnet",
+              model: "anthropic/claude-sonnet-4-5",
+              status: 529,
+              error_kind: "overloaded",
+              error_message: "Overloaded",
+              duration_ms: 1200,
+            },
+          ],
+        }),
+      ],
+    });
+    await renderApp(projectPath("logs?log=req_0001"));
+    const route = section(await sheet(), "Route");
+    expect(route).toHaveTextContent("Aliassturdy");
+    expect(route).toHaveTextContent("Tried first529Overloadedanthropic/claude-sonnet-4-5Failed after 1.2 s");
+  });
+
+  it("leaves the alias out for a request that named a model", async () => {
+    signedIn();
+    projectData();
+    logsData({ rows: [logRow()], entries: [logEntry()] });
+    await renderApp(projectPath("logs?log=req_0001"));
+    const route = section(await sheet(), "Route");
+    expect(route).not.toHaveTextContent("Alias");
+    expect(route).not.toHaveTextContent("Tried first");
+  });
+
   it("leaves the response cache out when the project had it off", async () => {
     signedIn();
     projectData();

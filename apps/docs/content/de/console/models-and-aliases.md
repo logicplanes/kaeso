@@ -64,13 +64,15 @@ Das Sheet eines Modells zeigt unter **Verwendete Werte** jeden Wert mit seiner H
 
 ## Modell entfernen
 
-Wählen Sie **Aus dem Katalog entfernen** im Sheet eines Modells. Kaeso lehnt Anfragen nach dem Modell ab sofort ab, und Aliasse und Modelllisten, die es nennen, verlieren es.
+Wählen Sie **Aus dem Katalog entfernen** im Sheet eines Modells. Kaeso lehnt Anfragen nach dem Modell ab sofort ab, und Modelllisten, die es nennen, verlieren es. Aliasse, die nur zu ihm führen, werden gelöscht; Routen, die auch andere Modelle nutzen, überspringen es.
 
 ## Alias erstellen
 
 Ein Alias ist ein eigener Name des Projekts für ein Modell seines Katalogs, etwa `fast` für `claude-haiku-4-5`. Apps senden den Alias als Modell, und Sie können das Modell dahinter wechseln, ohne die Apps anzufassen.
 
 Wählen Sie auf dem Tab **Aliasse** **Alias erstellen** und geben Sie einen Namen und ein **Ziel** an. Ein Name hat 1 bis 200 Zeichen, ohne Leerzeichen und ohne `/`. Ein Alias hat Vorrang vor einem gleichnamigen Modell, und die Liste kennzeichnet ihn mit **Verdeckt ein Modell**.
+
+Ein Alias kann auch eine Route halten, die auf andere Modelle ausweicht, nach der Anfrage verzweigt oder den Verkehr aufteilt. Setzen Sie sie über die Plattform-API ([Alias-Routen](../concepts/alias-routes.md)).
 
 ## Wie eine Anfrage ein Modell nennt
 

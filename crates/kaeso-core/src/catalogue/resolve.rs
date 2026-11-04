@@ -4,18 +4,26 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use super::Entry;
+use super::route::Step;
+use crate::id::CatalogueModelId;
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Alias {
+    pub id: Uuid,
     pub name: String,
-    pub target: Uuid,
+    pub route: Step,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Via {
-    Alias,
     Prefixed,
     Native,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Resolved<'a> {
+    Model(&'a Entry, Via),
+    Alias(&'a Alias),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, thiserror::Error)]
@@ -38,7 +46,7 @@ pub struct Catalogue {
     entries: Vec<Entry>,
     aliases: Vec<Alias>,
     by_id: HashMap<Uuid, usize>,
-    by_alias: HashMap<String, Uuid>,
+    by_alias: HashMap<String, usize>,
     by_target: HashMap<Uuid, Vec<usize>>,
     by_provider: HashMap<String, HashMap<String, usize>>,
     by_model: HashMap<String, Vec<usize>>,
@@ -61,8 +69,10 @@ impl Catalogue {
         let mut by_alias = HashMap::with_capacity(aliases.len());
         let mut by_target: HashMap<Uuid, Vec<usize>> = HashMap::with_capacity(aliases.len());
         for (i, a) in aliases.iter().enumerate() {
-            by_alias.entry(a.name.clone()).or_insert(a.target);
-            by_target.entry(a.target).or_default().push(i);
+            by_alias.entry(a.name.clone()).or_insert(i);
+            for model in a.route.models() {
+                by_target.entry(model.uuid()).or_default().push(i);
+            }
         }
         Catalogue {
             entries,
@@ -99,10 +109,23 @@ impl Catalogue {
         self.by_model.get(model_id).map_or(0, Vec::len)
     }
 
-    pub fn resolve(&self, name: &str) -> Result<(&Entry, Via), ResolveError> {
-        if let Some(entry) = self.by_alias.get(name).and_then(|id| self.entry(*id)) {
-            return Ok((entry, Via::Alias));
+    pub fn alias(&self, name: &str) -> Option<&Alias> {
+        self.by_alias.get(name).and_then(|i| self.aliases.get(*i))
+    }
+
+    pub fn model(&self, id: CatalogueModelId) -> Option<&Entry> {
+        self.entry(id.uuid())
+    }
+
+    pub fn resolve(&self, name: &str) -> Result<Resolved<'_>, ResolveError> {
+        if let Some(alias) = self.alias(name) {
+            return Ok(Resolved::Alias(alias));
         }
+        self.resolve_model(name)
+            .map(|(e, via)| Resolved::Model(e, via))
+    }
+
+    pub fn resolve_model(&self, name: &str) -> Result<(&Entry, Via), ResolveError> {
         if let Some(entry) = self.prefixed(name) {
             return Ok((entry, Via::Prefixed));
         }

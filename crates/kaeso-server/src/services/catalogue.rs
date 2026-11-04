@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use kaeso_core::catalogue::resolve::Catalogue;
+use kaeso_core::catalogue::resolve::{Catalogue, Resolved};
 use kaeso_core::catalogue::{self as core, Effective};
 use kaeso_core::providers::OrgProviders;
 use kaeso_store::StoreError;
@@ -64,7 +64,7 @@ pub fn effective(
 
 pub fn request_name(entry: &core::Entry, catalogue: &Catalogue) -> String {
     match catalogue.resolve(&entry.model_id) {
-        Ok((found, _)) if found.id == entry.id => entry.model_id.clone(),
+        Ok(Resolved::Model(found, _)) if found.id == entry.id => entry.model_id.clone(),
         _ => format!("{}/{}", entry.provider, entry.model_id),
     }
 }
@@ -117,7 +117,7 @@ mod tests {
             );
             assert_eq!(request_name(&direct, &both), direct.model_id);
             for (e, name) in [(&routed, routed_name), (&direct, direct.model_id.clone())] {
-                assert_eq!(both.resolve(&name).unwrap().0.id, e.id);
+                assert_eq!(both.resolve_model(&name).unwrap().0.id, e.id);
             }
             let only = Catalogue::new(vec![routed.clone()], vec![]);
             assert_eq!(request_name(&routed, &only), routed.model_id);
@@ -134,8 +134,11 @@ mod tests {
         assert_eq!(request_name(&a, &all), "openai/gpt-4o");
         assert_eq!(request_name(&b, &all), "azure/gpt-4o");
         let alias = Alias {
+            id: Uuid::now_v7(),
             name: "claude-haiku-4-5".into(),
-            target: a.id,
+            route: kaeso_core::catalogue::route::Step::model(
+                kaeso_core::id::CatalogueModelId::from_uuid(a.id),
+            ),
         };
         assert_eq!(
             request_name(&c, &Catalogue::new(entries, vec![alias])),

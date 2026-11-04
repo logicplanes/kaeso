@@ -36,6 +36,8 @@ The timing keeps Kaeso's own work apart from the app's and the provider's. **Req
 
 A failed request shows its error kind, such as **Rate limited**, **Context too long**, **Timeout**, **Client disconnected** or **Client stalled**. Where the provider sent a message, it shows that too. A stream that broke off is logged as a failure, with how far it got.
 
+A request to an alias shows the **Alias**. When its route fell back, **Tried first** lists the steps that failed before the model that answered, each with its status and time ([alias routes](../concepts/alias-routes.md)). The CSV export has them as `alias` and `fallbacks`.
+
 The **Request** and **Reply** tabs need the right **View prompts and outputs**. They tell you when that right is missing, when content wasn't logged, or when it has passed its retention. Kaeso never keeps embedding vectors. A reply logged in a format this console can't read yet, for example by a newer gateway, is shown as it was stored.
 
 ## Check prompt caching
