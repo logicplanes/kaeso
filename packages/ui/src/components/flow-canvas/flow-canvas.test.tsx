@@ -362,13 +362,15 @@ describe("FlowCanvas", () => {
     const items = screen.getAllByRole("treeitem");
     expect(items.map((i) => i.getAttribute("data-trace"))).toEqual(["on", "on", "on", "off"]);
     expect(items[2]).toHaveTextContent("Try 1");
-    expect(items[3]).toHaveClass("opacity-40");
+    expect(items[3]).toHaveClass("shadow-ring");
+    expect(within(items[3]!).getByText("gpt-5-mini")).toHaveClass("text-fg-secondary");
+    expect(within(items[2]!).getByText("claude-opus-4-1")).toHaveClass("text-fg");
     expect(items[3]).toHaveTextContent("Model removed");
     const stroke = (to: string) => container.querySelector(`[data-flow-wire="wire:${to}"]`)!;
     expect(stroke("opus")).toHaveAttribute("stroke", "var(--k-text)");
     expect(stroke("opus")).toHaveAttribute("stroke-width", "2");
     expect(stroke("mini")).toHaveAttribute("stroke", "var(--k-line)");
-    expect(container.querySelector('[data-flow-label="mini"]')).toHaveClass("opacity-40");
-    expect(container.querySelector('[data-flow-label="opus"]')).not.toHaveClass("opacity-40");
+    expect(container.querySelector('[data-flow-label="mini"]')).toHaveClass("text-fg-tertiary");
+    expect(container.querySelector('[data-flow-label="opus"]')).toHaveClass("text-fg-secondary");
   });
 });

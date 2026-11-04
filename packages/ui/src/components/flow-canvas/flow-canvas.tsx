@@ -82,7 +82,8 @@ function fitView(bounds: FlowLayout["bounds"], width: number, height: number): V
     k * w <= room
       ? rail + room / 2 - (k * (bounds.minX + bounds.maxX)) / 2
       : Math.min(rail + PAD * k - k * bounds.minX, Math.max(rail + room - PAD * k - k * bounds.maxX, rail + room / 2));
-  return { k, x: round(x), y: round(PAD * k - bounds.minY * k) };
+  // Whole pixels, so a step's edges stay crisp at 100%.
+  return { k, x: Math.round(x), y: Math.round(PAD * k - bounds.minY * k) };
 }
 
 function prune(node: FlowCanvasNode): FlowCanvasNode {
@@ -398,7 +399,7 @@ export const FlowCanvas = forwardRef<HTMLDivElement, FlowCanvasProps>(function F
                 data-flow-label={w.to}
                 className={cn(
                   "absolute flex h-20 -translate-x-1/2 -translate-y-1/2 items-center rounded-pill bg-panel px-8 text-caption font-medium whitespace-nowrap text-fg-secondary shadow-ring",
-                  !onTrace(w.from, w.to) && "opacity-40",
+                  !onTrace(w.from, w.to) && "text-fg-tertiary",
                 )}
                 style={{ left: w.labelAt.x, top: w.labelAt.y }}
               >
@@ -474,6 +475,7 @@ export const FlowCanvas = forwardRef<HTMLDivElement, FlowCanvasProps>(function F
             );
           }
           const node = p.node!;
+          const off = !!traced && !traced.has(key);
           const actions = nodeActions?.(key);
           const name = plainName(node) ?? "";
           return (
@@ -490,7 +492,7 @@ export const FlowCanvas = forwardRef<HTMLDivElement, FlowCanvasProps>(function F
                 "absolute flex cursor-pointer flex-col justify-center gap-2 rounded-well bg-panel px-12 py-10 text-left shadow-control transition-control outline-none focus-ring",
                 "hover:shadow-control-hover selected:bg-item-hover selected:shadow-control-selected selected:hover:shadow-control-selected forced-colors:outline-1 forced-colors:outline-solid",
                 node.status?.tone === "danger" && "ring-invalid",
-                traced && !traced.has(key) && "opacity-40",
+                off && "shadow-ring",
                 actions && "pr-40",
               )}
               style={positioned(p)}
@@ -507,10 +509,10 @@ export const FlowCanvas = forwardRef<HTMLDivElement, FlowCanvasProps>(function F
               </span>
               <span className="flex h-20 min-w-0 items-center gap-8">
                 {node.leading && <span className="flex shrink-0">{node.leading}</span>}
-                <span className="truncate text-body font-medium text-fg">{node.title}</span>
+                <span className={cn("truncate text-body font-medium", off ? "text-fg-secondary" : "text-fg")}>{node.title}</span>
               </span>
               {node.subtitle !== undefined && node.subtitle !== null && node.subtitle !== "" && (
-                <span className="h-18 truncate text-small text-fg-secondary">{node.subtitle}</span>
+                <span className={cn("h-18 truncate text-small", off ? "text-fg-tertiary" : "text-fg-secondary")}>{node.subtitle}</span>
               )}
               {actions && (
                 <span

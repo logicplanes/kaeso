@@ -1216,8 +1216,8 @@
   "An editable route drawn as a tree: conditions and splits branch downward, and each model's fallback continues the row to its right.": "以树形绘制的可编辑路由：条件和分流向下分支，每个模型的回退沿同一行向右延续。",
   "Each fallback continues the row to its right, in the order the models are tried.": "每个回退都沿同一行向右延续，顺序即尝试模型的顺序。",
   "A traced request": "一次追踪的请求",
-  "The path one request takes stays strong and each model on it says which try it is; the rest fades.": "一次请求经过的路径保持醒目，路径上的每个模型标明它是第几次尝试；其余部分变淡。",
   "The start of the route. Each node has `kind` (its tag), `title`, an optional `subtitle`, `leading` (such as a provider badge), `status` (a word and a tone), `badge` (a short word at its top right, such as its try), `terminal` (a model: its one connection is its fallback, drawn to its right) and `children`: connections with an `id`, a `label`, a `variant` (`fallback` draws a dashed line) and the `node` they lead to; a connection without a node is an open slot.": "路由的起点。每个节点有 `kind`（其标签）、`title`、可选的 `subtitle`、`leading`（例如服务商徽标）、`status`（一个词和一种色调）、`badge`（右上角的简短文字，例如第几次尝试）、`terminal`（模型：它唯一的连线是它的回退，画在它的右侧）和 `children`：带有 `id`、`label`、`variant`（`fallback` 画虚线）以及所指 `node` 的连线；没有节点的连线是空位。",
-  "The ids of the steps one request passes, such as from a dry run: they and the lines between them stay strong and every other step fades. Leave it out to draw the route evenly.": "一次请求经过的步骤的 ID，例如来自一次试运行：这些步骤及其间的连线保持醒目，其他步骤变淡。不传则均匀绘制整条路由。",
-  "The events, oldest first. Leave out an event's `time` for steps that have none, such as the steps a request takes.": "事件，最早的在前。没有时间的步骤（例如一次请求经过的步骤）不传 `time`。"
+  "The events, oldest first. Leave out an event's `time` for steps that have none, such as the steps a request takes.": "事件，最早的在前。没有时间的步骤（例如一次请求经过的步骤）不传 `time`。",
+  "The ids of the steps one request passes, such as from a dry run: they and the lines between them stay strong, and every other step turns quieter: secondary text and a hairline, still readable. Leave it out to draw the route evenly.": "一次请求经过的步骤的 ID，例如来自一次试运行：这些步骤及其间的连线保持醒目，其他步骤变得低调：次要文字和细线，仍然清晰可读。不传则均匀绘制整条路由。",
+  "The path one request takes stays strong and each model on it says which try it is; the rest turns quieter.": "一次请求经过的路径保持醒目，路径上的每个模型标明它是第几次尝试；其余部分变得低调。"
 }

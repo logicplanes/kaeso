@@ -16,7 +16,7 @@ export const docs = {
       root: "The start of the route. Each node has `kind` (its tag), `title`, an optional `subtitle`, `leading` (such as a provider badge), `status` (a word and a tone), `badge` (a short word at its top right, such as its try), `terminal` (a model: its one connection is its fallback, drawn to its right) and `children`: connections with an `id`, a `label`, a `variant` (`fallback` draws a dashed line) and the `node` they lead to; a connection without a node is an open slot.",
       selected: "The id of the selected step, drawn with the selection ring; the view moves to show it when it changes.",
       trace:
-        "The ids of the steps one request passes, such as from a dry run: they and the lines between them stay strong and every other step fades. Leave it out to draw the route evenly.",
+        "The ids of the steps one request passes, such as from a dry run: they and the lines between them stay strong, and every other step turns quieter: secondary text and a hairline, still readable. Leave it out to draw the route evenly.",
     },
   },
   FlowWorkspace: {

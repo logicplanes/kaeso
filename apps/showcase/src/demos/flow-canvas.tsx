@@ -49,7 +49,7 @@ export const examples = [
   {
     id: "trace",
     title: "A traced request",
-    description: "The path one request takes stays strong and each model on it says which try it is; the rest fades.",
+    description: "The path one request takes stays strong and each model on it says which try it is; the rest turns quieter.",
     fn: "Traced",
     minHeight: 560,
   },
@@ -398,7 +398,7 @@ export function States() {
           </Frame>
         </StateSection>
       ))}
-      <StateSection title="Traced: the path stays strong, each try has a badge, the rest fades">
+      <StateSection title="Traced: the path stays strong, each try has a badge, the rest turns quieter">
         <Frame height="h-400">
           <FlowCanvas aria-label="Traced step" root={forced("traced", undefined, { badge: "Try 1" })} trace={["start", "traced"]} />
         </Frame>
