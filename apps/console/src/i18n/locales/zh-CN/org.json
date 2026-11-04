@@ -12,6 +12,8 @@
   "org.agents.neverUsed": "从未",
   "org.agents.saved": "智能体策略已保存",
   "org.agents.title": "智能体",
+  "org.agents.withAccess": "有访问权限的智能体",
+  "org.agents.withAccessHint": "成员向其开放此组织的每个智能体。",
   "org.auditLog.description": "组织中的每一次变更：由谁、在何时、改了什么。",
   "org.auditLog.hidden": "无权查看审计日志",
   "org.auditLog.title": "审计日志",

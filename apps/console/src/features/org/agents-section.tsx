@@ -42,62 +42,69 @@ export function OrgAgents({ org }: { org: string }) {
   const p = policy.data;
   const locked = canManage ? {} : { disabledReason: needs("members.rights.update") };
   return (
-    <SettingsSection
-      title={t("org.agents.title", "Agents")}
-      description={t("org.agents.description", "Members' agents act here only with rights the member holds and this allows.")}
-    >
-      {p && (
-        <SettingsGroup>
-          <SettingsRow
-            title={t("org.agents.allow", "Allow members' agents")}
-            description={t("org.agents.allowHint", "Off stops every agent here at its next call.")}
-            control={
-              <Switch
-                aria-label={t("org.agents.allow", "Allow members' agents")}
-                checked={p.allowed}
-                disabled={!canManage}
-                {...locked}
-                loading={save.isPending}
-                onCheckedChange={(allowed) => save.mutate({ allowed, max: p.max })}
-              />
-            }
-          />
-          {p.allowed && cat.data && (
+    <>
+      <SettingsSection
+        title={t("org.agents.title", "Agents")}
+        description={t("org.agents.description", "Members' agents act here only with rights the member holds and this allows.")}
+      >
+        {p && (
+          <SettingsGroup>
             <SettingsRow
-              title={t("org.agents.max", "Most an agent may do")}
-              description={cat.data.presets.find((x) => x.id === p.max)?.description}
+              title={t("org.agents.allow", "Allow members' agents")}
+              description={t("org.agents.allowHint", "Off stops every agent here at its next call.")}
               control={
-                <Segmented
-                  aria-label={t("org.agents.max", "Most an agent may do")}
-                  size="sm"
-                  disabled={!canManage || save.isPending}
-                  options={cat.data.presets.map((x) => ({ value: x.id, label: x.name }))}
-                  value={p.max}
-                  onValueChange={(max) => save.mutate({ allowed: p.allowed, max })}
+                <Switch
+                  aria-label={t("org.agents.allow", "Allow members' agents")}
+                  checked={p.allowed}
+                  disabled={!canManage}
+                  {...locked}
+                  loading={save.isPending}
+                  onCheckedChange={(allowed) => save.mutate({ allowed, max: p.max })}
                 />
               }
             />
-          )}
-        </SettingsGroup>
-      )}
+            {p.allowed && cat.data && (
+              <SettingsRow
+                title={t("org.agents.max", "Most an agent may do")}
+                description={cat.data.presets.find((x) => x.id === p.max)?.description}
+                control={
+                  <Segmented
+                    aria-label={t("org.agents.max", "Most an agent may do")}
+                    size="sm"
+                    disabled={!canManage || save.isPending}
+                    options={cat.data.presets.map((x) => ({ value: x.id, label: x.name }))}
+                    value={p.max}
+                    onValueChange={(max) => save.mutate({ allowed: p.allowed, max })}
+                  />
+                }
+              />
+            )}
+          </SettingsGroup>
+        )}
+      </SettingsSection>
       {agents.data && agents.data.length > 0 && (
-        <SettingsGroup>
-          {agents.data.map((a) => (
-            <SettingsRow
-              key={a.id}
-              title={t("org.agents.agentOf", "{agent} of {person}", { agent: a.name, person: a.user.name })}
-              description={t("org.agents.agentDetail", "{model} · used {used}", {
-                model: modelLabel(a.model),
-                used: a.last_used_at ? formatRelative(a.last_used_at) : t("org.agents.neverUsed", "never"),
-              })}
-              control={
-                <Button size="sm" variant="ghost" disabled={!canManage} {...locked} onClick={() => setClosing([a])}>
-                  {t("org.agents.close", "Close access")}
-                </Button>
-              }
-            />
-          ))}
-        </SettingsGroup>
+        <SettingsSection
+          title={t("org.agents.withAccess", "Agents with access")}
+          description={t("org.agents.withAccessHint", "Each agent a member opened this organization to.")}
+        >
+          <SettingsGroup>
+            {agents.data.map((a) => (
+              <SettingsRow
+                key={a.id}
+                title={t("org.agents.agentOf", "{agent} of {person}", { agent: a.name, person: a.user.name })}
+                description={t("org.agents.agentDetail", "{model} · used {used}", {
+                  model: modelLabel(a.model),
+                  used: a.last_used_at ? formatRelative(a.last_used_at) : t("org.agents.neverUsed", "never"),
+                })}
+                control={
+                  <Button size="sm" variant="secondary" disabled={!canManage} {...locked} onClick={() => setClosing([a])}>
+                    {t("org.agents.close", "Close access")}
+                  </Button>
+                }
+              />
+            ))}
+          </SettingsGroup>
+        </SettingsSection>
       )}
       <AlertDialog
         open={closing.length > 0}
@@ -109,6 +116,6 @@ export function OrgAgents({ org }: { org: string }) {
         loading={close.isPending}
         onConfirm={() => close.mutateAsync(closing)}
       />
-    </SettingsSection>
+    </>
   );
 }

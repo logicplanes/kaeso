@@ -12,6 +12,8 @@
   "org.agents.neverUsed": "never",
   "org.agents.saved": "Agent policy saved",
   "org.agents.title": "Agents",
+  "org.agents.withAccess": "Agents with access",
+  "org.agents.withAccessHint": "Each agent a member opened this organization to.",
   "org.auditLog.description": "Every change in the organization: who made it, when and what.",
   "org.auditLog.hidden": "You can't see the audit log here",
   "org.auditLog.title": "Audit log",

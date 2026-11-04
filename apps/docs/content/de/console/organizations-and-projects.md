@@ -92,7 +92,7 @@ Mitglieder können Agenten wie Claude Code oder Codex verbinden, die über den [
 
 Die Richtlinie zu ändern, erfordert **Rollen zuweisen** und eine Konsolensitzung; kein Agent kann sie ändern. [Agenten](../concepts/rights.md#vorlagen) listet, was jede Vorlage enthält.
 
-Dieselbe Seite listet die Agenten, die in der Organisation handeln dürfen, mit ihrem Mitglied, ihrer Modellfamilie und wann sie erstellt und zuletzt genutzt wurden. Sie zu sehen, erfordert **Mitglieder ansehen**. **Zugriff entziehen** schließt die Organisation für einen Agenten und erfordert **Rollen zuweisen**. Der Agent arbeitet in den anderen Organisationen seines Mitglieds weiter, und sein Mitglied kann ihm diese wieder öffnen.
+**Agenten mit Zugang** darunter listet die Agenten, die in der Organisation handeln dürfen, mit ihrem Mitglied, ihrer Modellfamilie und wann sie erstellt und zuletzt genutzt wurden. Sie zu sehen, erfordert **Mitglieder ansehen**. **Zugang schließen** schließt die Organisation für einen Agenten und erfordert **Rollen zuweisen**. Der Agent arbeitet in den anderen Organisationen seines Mitglieds weiter, und sein Mitglied kann ihm diese wieder öffnen.
 
 ## Organisation löschen
 
