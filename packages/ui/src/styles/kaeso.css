@@ -707,6 +707,19 @@
     animation: k-pulse var(--k-skeleton-duration) var(--k-ease-pulse) infinite !important;
   }
 }
+/* A request on its way along a route: the dashes run toward the next step; with reduced motion the
+   line pulses in place instead. */
+@keyframes k-flow-wire {
+  to {
+    stroke-dashoffset: -18;
+  }
+}
+@utility animate-flow-wire {
+  animation: k-flow-wire calc(var(--k-spinner-turn) / 2) linear infinite;
+  @media (prefers-reduced-motion: reduce) {
+    animation: k-pulse var(--k-skeleton-duration) var(--k-ease-pulse) infinite !important;
+  }
+}
 @utility reduced-pulse {
   @media (prefers-reduced-motion: reduce) {
     animation: k-pulse var(--k-skeleton-duration) var(--k-ease-pulse) infinite !important;
@@ -1079,6 +1092,23 @@
     border-inline-start: 1px solid CanvasText;
   }
 }
+@utility divider-t {
+  box-shadow: inset 0 1px 0 var(--k-line);
+  @media (forced-colors: active) {
+    border-block-start: 1px solid CanvasText;
+  }
+}
+
+/* The flow canvas's grid: one dot every 16px of the route, so the dots move and scale with the view
+   (FlowCanvas sets the three variables from its pan and zoom). */
+@utility flow-canvas-dots {
+  background-image: radial-gradient(circle, var(--k-line) 1px, transparent 1.25px);
+  background-size: var(--k-flow-dot-gap, 16px) var(--k-flow-dot-gap, 16px);
+  background-position: var(--k-flow-dot-x, 0) var(--k-flow-dot-y, 0);
+  @media (forced-colors: active) {
+    background-image: none;
+  }
+}
 
 @utility grid-cols-label {
   grid-template-columns: var(--k-width-field-label) minmax(0, 1fr);
@@ -1089,6 +1119,14 @@
 
 @utility ring-invalid {
   box-shadow: inset 0 0 0 1px var(--k-danger);
+}
+
+@utility ring-warning {
+  box-shadow: inset 0 0 0 1px var(--k-warning);
+}
+
+@utility ring-success {
+  box-shadow: inset 0 0 0 1px var(--k-success);
 }
 
 @utility ring-over {

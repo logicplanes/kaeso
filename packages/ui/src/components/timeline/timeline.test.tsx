@@ -30,4 +30,12 @@ describe("Timeline", () => {
     );
     expect(container.querySelector(".bg-line")).toHaveClass("forced-line");
   });
+  it("leaves the time out for steps that have none", () => {
+    const { container } = render(
+      <Timeline events={[{ id: "a", title: "x-plan is enterprise", description: "Holds; takes Then", marker: <span data-testid="mark" /> }]} />,
+    );
+    expect(container.querySelector("time")).toBeNull();
+    expect(screen.getByRole("listitem")).toHaveTextContent("x-plan is enterpriseHolds; takes Then");
+    expect(screen.getByTestId("mark")).toBeInTheDocument();
+  });
 });
