@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE portal_tokens SET revoked_at = $2 WHERE token_hash = $1 AND kind <> 'code' AND revoked_at IS NULL RETURNING family",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "family",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "portal_tokens",
+            "name": "family"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Bytea",
+        "Timestamptz"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "ba8c5c7559800dd4855c0ba0cb6a8afe49b1b6c0515cc6a23a4aca46c980d853"
+}

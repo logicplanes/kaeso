@@ -159,6 +159,11 @@ public_id!(UpdateId, "upd_");
 public_id!(AgentId, "agt_");
 public_id!(AgentClientId, "cli_");
 public_id!(AgentActivityId, "act_");
+public_id!(McpServerId, "mcp_");
+public_id!(McpConnectionId, "conn_");
+public_id!(ToolId, "tool_");
+public_id!(PortalGrantId, "grant_");
+public_id!(ToolCallId, "call_");
 
 #[cfg(test)]
 mod tests {

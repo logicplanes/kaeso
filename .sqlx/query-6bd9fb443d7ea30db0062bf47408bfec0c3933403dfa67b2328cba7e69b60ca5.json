@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM tool_access WHERE project_id = $1 AND membership_id IS NOT DISTINCT FROM $2 AND service_account_id IS NOT DISTINCT FROM $3 AND api_key_id IS NOT DISTINCT FROM $4",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "6bd9fb443d7ea30db0062bf47408bfec0c3933403dfa67b2328cba7e69b60ca5"
+}

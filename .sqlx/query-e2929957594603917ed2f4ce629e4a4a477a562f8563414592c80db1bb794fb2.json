@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE mcp_connections SET auth_error = 'signed_out', updated_at = now() WHERE id = $1 AND auth_error IS NULL",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "e2929957594603917ed2f4ce629e4a4a477a562f8563414592c80db1bb794fb2"
+}

@@ -1,0 +1,52 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT s.id, s.tools_restricted, ta.tool_id AS \"tool?\" FROM service_accounts s LEFT JOIN tool_access ta ON ta.service_account_id = s.id AND s.tools_restricted WHERE s.project_id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "service_accounts",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "tools_restricted",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "service_accounts",
+            "name": "tools_restricted"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "tool?",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "tool_access",
+            "name": "tool_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "6237da3227ff5e381ed974179bae7e352339dafe2fe33145f68b6ed86c0af27f"
+}

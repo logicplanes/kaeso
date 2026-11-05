@@ -1,0 +1,19 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE mcp_tools SET approved_hash = $4, approved = $5, state = 'active', updated_at = $6 WHERE org_id = $1 AND id = $2 AND definition_hash = $3 AND definition_hash = $4 AND state = 'changed'",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Bytea",
+        "Bytea",
+        "Jsonb",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "1c434d94cbfd716b97cd43a053b9ccec72bef4a373b8c4f569386d4a46afdc81"
+}

@@ -1,0 +1,39 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE mcp_connections SET kind = $3, issuer = $4, header_name = $5, ciphertext = $6, nonce = $7, wrapped_key = $8, key_id = $9, last4 = $10, expires_at = $11, account_label = $12, auth_error = NULL, revision = revision + 1, updated_at = now() WHERE server_id = $1 AND user_id IS NOT DISTINCT FROM $2 RETURNING id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "mcp_connections",
+            "name": "id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Text",
+        "Text",
+        "Bytea",
+        "Bytea",
+        "Bytea",
+        "Text",
+        "Text",
+        "Timestamptz",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "5fb23d9692e2cc4098b7ce7fd287154e37b7edd961562a7ffda0c0ddd80f4111"
+}

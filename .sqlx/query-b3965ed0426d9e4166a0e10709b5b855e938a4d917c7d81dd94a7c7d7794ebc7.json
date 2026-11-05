@@ -1,0 +1,258 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT t.id, t.server_id, t.org_id, t.name, t.title, t.description, t.input_schema, t.output_schema, t.annotations, t.meta, t.definition_hash, t.approved_hash, t.approved, t.state, t.first_seen_at, t.changed_at, t.updated_at, s.handle AS server_handle, s.name AS server_name, COALESCE(pt.enabled, false) AS \"enabled!\", COALESCE(pt.confirm, false) AS \"confirm!\" FROM project_mcp_servers ps JOIN mcp_servers s ON s.id = ps.server_id JOIN mcp_tools t ON t.server_id = ps.server_id LEFT JOIN project_tools pt ON pt.project_id = ps.project_id AND pt.tool_id = t.id WHERE ps.project_id = $1 AND t.state <> 'removed' ORDER BY s.handle, t.name",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "mcp_tools",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "server_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "mcp_tools",
+            "name": "server_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "org_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "mcp_tools",
+            "name": "org_id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "name",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "mcp_tools",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "title",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "mcp_tools",
+            "name": "title"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "description",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "mcp_tools",
+            "name": "description"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "input_schema",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "mcp_tools",
+            "name": "input_schema"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "output_schema",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "mcp_tools",
+            "name": "output_schema"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "annotations",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "mcp_tools",
+            "name": "annotations"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "meta",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "mcp_tools",
+            "name": "meta"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "definition_hash",
+        "type_info": "Bytea",
+        "origin": {
+          "Table": {
+            "table": "mcp_tools",
+            "name": "definition_hash"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "approved_hash",
+        "type_info": "Bytea",
+        "origin": {
+          "Table": {
+            "table": "mcp_tools",
+            "name": "approved_hash"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "approved",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "mcp_tools",
+            "name": "approved"
+          }
+        }
+      },
+      {
+        "ordinal": 13,
+        "name": "state",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "mcp_tools",
+            "name": "state"
+          }
+        }
+      },
+      {
+        "ordinal": 14,
+        "name": "first_seen_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "mcp_tools",
+            "name": "first_seen_at"
+          }
+        }
+      },
+      {
+        "ordinal": 15,
+        "name": "changed_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "mcp_tools",
+            "name": "changed_at"
+          }
+        }
+      },
+      {
+        "ordinal": 16,
+        "name": "updated_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "mcp_tools",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 17,
+        "name": "server_handle",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "mcp_servers",
+            "name": "handle"
+          }
+        }
+      },
+      {
+        "ordinal": 18,
+        "name": "server_name",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "mcp_servers",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 19,
+        "name": "enabled!",
+        "type_info": "Bool",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 20,
+        "name": "confirm!",
+        "type_info": "Bool",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      true,
+      true,
+      true,
+      false,
+      true,
+      true,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      null,
+      null
+    ]
+  },
+  "hash": "b3965ed0426d9e4166a0e10709b5b855e938a4d917c7d81dd94a7c7d7794ebc7"
+}

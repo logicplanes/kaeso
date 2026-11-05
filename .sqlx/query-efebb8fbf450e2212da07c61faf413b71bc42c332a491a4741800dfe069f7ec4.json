@@ -1,0 +1,25 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE mcp_tools SET title = $3, description = $4, input_schema = $5, output_schema = $6, annotations = $7, meta = $8, definition_hash = $9, approved_hash = COALESCE($10, approved_hash), approved = COALESCE($11, approved), state = CASE WHEN $9 = COALESCE($10, approved_hash) THEN 'active' ELSE 'changed' END, changed_at = CASE WHEN $9 = COALESCE($10, approved_hash) THEN changed_at ELSE $12 END, updated_at = $12 WHERE id = $1 AND name = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Text",
+        "Text",
+        "Jsonb",
+        "Jsonb",
+        "Jsonb",
+        "Jsonb",
+        "Bytea",
+        "Bytea",
+        "Jsonb",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "efebb8fbf450e2212da07c61faf413b71bc42c332a491a4741800dfe069f7ec4"
+}
