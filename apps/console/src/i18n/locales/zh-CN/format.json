@@ -217,5 +217,22 @@
   "format.audit.action.modelsDevSync": "已同步 models.dev",
   "format.audit.action.modelsDevPriceChange": "models.dev 上的价格已变更",
   "format.audit.action.modelsDevModelDelisted": "模型已从 models.dev 下架",
-  "format.audit.kind.modelsDev": "models.dev"
+  "format.audit.kind.modelsDev": "models.dev",
+  "format.audit.kind.mcpServer": "MCP 服务器",
+  "format.audit.kind.portalGrant": "门户客户端",
+  "format.audit.kind.tool": "工具",
+  "format.audit.kind.toolAccess": "工具访问权限",
+  "format.audit.action.mcpServerCreate": "已添加 MCP 服务器",
+  "format.audit.action.mcpServerUpdate": "已更改 MCP 服务器",
+  "format.audit.action.mcpServerConnect": "已登录 MCP 服务器",
+  "format.audit.action.mcpServerDelete": "已删除 MCP 服务器",
+  "format.audit.action.toolApprove": "已批准变更的工具",
+  "format.audit.action.toolReject": "变更的工具保持关闭",
+  "format.audit.action.projectMcpServersUpdate": "项目的 MCP 服务器已更改",
+  "format.audit.action.projectToolsUpdate": "项目的工具已开启或关闭",
+  "format.audit.action.toolAccessUpdate": "工具访问权限已更改",
+  "format.audit.action.portalGrantRevoke": "客户端已与门户断开",
+  "format.targetKind.mcpServer": "MCP 服务器",
+  "format.targetKind.tool": "工具",
+  "format.targetKind.portalGrant": "门户客户端"
 }

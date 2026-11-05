@@ -9,6 +9,7 @@ pub mod models;
 pub mod playground;
 pub mod project;
 pub mod service_accounts;
+pub mod tools;
 
 use kaeso_core::rights::{OrgRight, ProjectRight as R};
 use utoipa_axum::router::OpenApiRouter;
@@ -103,4 +104,12 @@ pub fn routes(s: &Secure) -> OpenApiRouter<AppState> {
         .routes(s.route(Access::Project(R::ProjectView), routes!(crate::platform::rights::mine)))
         .routes(s.route(Access::Project(R::ProjectMembersView), routes!(crate::platform::rights::project_grantors)))
         .routes(s.route(Access::Project(R::ProjectAuditLogView), routes!(audit::list)))
+        .routes(s.route(Access::Project(R::ToolsView), routes!(tools::list_servers)))
+        .routes(s.route(Access::Project(R::ToolsManage), routes!(tools::set_servers)))
+        .routes(s.route(Access::Project(R::ToolsView), routes!(tools::list_tools)))
+        .routes(s.route(Access::Project(R::ToolsManage), routes!(tools::update_tools)))
+        .routes(s.route(Access::Project(R::ToolsManage), routes!(tools::get_access)))
+        .routes(s.route(Access::Project(R::ToolsManage), routes!(tools::set_access)))
+        .routes(s.route(Access::Project(R::ToolsView), routes!(tools::list_grants)))
+        .routes(s.route(Access::Project(R::ToolsManage), routes!(tools::revoke_grant)))
 }

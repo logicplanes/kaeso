@@ -253,8 +253,10 @@ async fn tools_a_client_would_refuse_are_skipped() {
     assert_eq!(skipped, ["", "no_schema", "get_me", "bad_header"]);
     assert_eq!(
         synced.skipped[3].1,
-        "`Id` sits where only `properties` may lead"
+        mcp_tools::Skip::Header(kaeso_mcp::params::ParamError::Unreachable("Id".into()))
     );
+    assert_eq!(synced.skipped[1].1, mcp_tools::Skip::NoInputSchema);
+    assert_eq!(synced.skipped[2].1, mcp_tools::Skip::ListedTwice);
 }
 
 #[tokio::test]

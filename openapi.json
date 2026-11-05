@@ -9594,6 +9594,1011 @@
         "x-kaeso-access": "right:logs.storage.view"
       }
     },
+    "/platform/v1/orgs/{org}/mcp-servers": {
+      "get": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "The organization's MCP servers, by name.",
+        "description": "**Right:** `mcp_servers.view` on the organization in the path.",
+        "operationId": "getOrgsOrgMcpServers",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/List_McpServerView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:mcp_servers.view"
+      },
+      "post": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "Adds an MCP server to the organization.",
+        "description": "Kaeso checks the address now and on every connection: private, loopback,\nlink-local and cloud metadata addresses are refused unless the instance allows the network\n(`mcp_servers.allowed_networks`). A server without sign-in lists its tools right away; others\ndo once connected (`POST …/connection`).\n\n**Right:** `mcp_servers.manage` on the organization in the path; with a session, a sign-in within the last 15 minutes.",
+        "operationId": "postOrgsOrgMcpServers",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/McpServerCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "The server's revision as an entity tag."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/McpServerView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:mcp_servers.manage"
+      }
+    },
+    "/platform/v1/orgs/{org}/mcp-servers/probe": {
+      "post": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "Checks an MCP server's address before adding it: whether it answers, which MCP\nversion it speaks, how to sign in and which tools it lists.",
+        "description": "Kaeso stores nothing it learns here. The address goes through the same checks\nas a saved server's (`mcp_servers.allowed_networks`).\n\n**Right:** `mcp_servers.manage` on the organization in the path; with a session, a sign-in within the last 15 minutes.",
+        "operationId": "postOrgsOrgMcpServersProbe",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/McpServerProbe"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/McpServerProbeView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:mcp_servers.manage"
+      }
+    },
+    "/platform/v1/orgs/{org}/mcp-servers/{server}": {
+      "get": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "One MCP server.",
+        "description": "**Right:** `mcp_servers.view` on the organization in the path.",
+        "operationId": "getOrgsOrgMcpServersServer",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "server",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/McpServerId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "The server's revision as an entity tag."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/McpServerView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:mcp_servers.view"
+      },
+      "delete": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "Deletes an MCP server with its sign-ins and tools; every project's portal stops\noffering them.",
+        "description": "With `If-Match`, only while the server is still at that revision; a newer one\nanswers 412. The audit log keeps what was removed.\n\n**Right:** `mcp_servers.manage` on the organization in the path; with a session, a sign-in within the last 15 minutes.",
+        "operationId": "deleteOrgsOrgMcpServersServer",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "server",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/McpServerId"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "description": "The `ETag` the change is meant for, such as `\"3\"`.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "204": {},
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "412": {
+            "$ref": "#/components/responses/Stale"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:mcp_servers.manage"
+      },
+      "patch": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "Renames an MCP server, changes its handle or its policy for changed tools.",
+        "description": "With `If-Match`, only while the server is still at that revision; a newer one\nanswers 412.\n\n**Right:** `mcp_servers.manage` on the organization in the path; with a session, a sign-in within the last 15 minutes.",
+        "operationId": "patchOrgsOrgMcpServersServer",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "server",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/McpServerId"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "description": "The `ETag` the change is meant for, such as `\"3\"`.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/McpServerUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "The server's revision as an entity tag."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/McpServerView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "412": {
+            "$ref": "#/components/responses/Stale"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:mcp_servers.manage"
+      }
+    },
+    "/platform/v1/orgs/{org}/mcp-servers/{server}/connection": {
+      "post": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "Sets the shared secret header of an MCP server, or starts its OAuth sign-in.",
+        "description": "A header replaces the one Kaeso had, and Kaeso lists the server's tools with it.\nAn OAuth sign-in answers with `redirect_url`; the person who started it finishes it in the\nbrowser, signed in to Kaeso.\n\n**Right:** `mcp_servers.manage` on the organization in the path; with a session, a sign-in within the last 15 minutes.",
+        "operationId": "postOrgsOrgMcpServersServerConnection",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "server",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/McpServerId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/McpConnectionSet"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/McpConnectionAnswer"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:mcp_servers.manage"
+      }
+    },
+    "/platform/v1/orgs/{org}/mcp-servers/{server}/refresh": {
+      "post": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "Asks an MCP server for its tools now, instead of waiting for the next check.",
+        "description": "New tools are added, removed ones marked, and changed ones held under the\npolicy `hold`. A server Kaeso can't reach or sign in to answers 502, and its `status` and\n`last_error` say why.\n\n**Right:** `mcp_servers.manage` on the organization in the path; with a session, a sign-in within the last 15 minutes.",
+        "operationId": "postOrgsOrgMcpServersServerRefresh",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "server",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/McpServerId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/McpRefreshView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:mcp_servers.manage"
+      }
+    },
+    "/platform/v1/orgs/{org}/mcp-servers/{server}/tools": {
+      "get": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "An MCP server's tools with their definition, hash and state, by name.",
+        "description": "**Right:** `mcp_servers.view` on the organization in the path.",
+        "operationId": "getOrgsOrgMcpServersServerTools",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "server",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/McpServerId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/List_McpToolView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:mcp_servers.view"
+      }
+    },
+    "/platform/v1/orgs/{org}/mcp-servers/{server}/tools/{tool}/approve": {
+      "post": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "Approves a tool's changed definition; projects that have it on offer it again.",
+        "description": "**Right:** `mcp_servers.manage` on the organization in the path; with a session, a sign-in within the last 15 minutes.",
+        "operationId": "postOrgsOrgMcpServersServerToolsToolApprove",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "server",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/McpServerId"
+            }
+          },
+          {
+            "name": "tool",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ToolId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/McpToolApprove"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/McpToolView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:mcp_servers.manage"
+      }
+    },
+    "/platform/v1/orgs/{org}/mcp-servers/{server}/tools/{tool}/change": {
+      "get": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "A tool's approved and current definition, to review a change before approving it.",
+        "description": "**Right:** `mcp_servers.view` on the organization in the path.",
+        "operationId": "getOrgsOrgMcpServersServerToolsToolChange",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "server",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/McpServerId"
+            }
+          },
+          {
+            "name": "tool",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ToolId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/McpToolChange"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:mcp_servers.view"
+      }
+    },
+    "/platform/v1/orgs/{org}/mcp-servers/{server}/tools/{tool}/reject": {
+      "post": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "Keeps a changed tool off: it stays held and is switched off in every project.",
+        "description": "Turn it on again in a project once the server changes it back or someone\napproves a later definition.\n\n**Right:** `mcp_servers.manage` on the organization in the path; with a session, a sign-in within the last 15 minutes.",
+        "operationId": "postOrgsOrgMcpServersServerToolsToolReject",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "server",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/McpServerId"
+            }
+          },
+          {
+            "name": "tool",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ToolId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/McpToolView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:mcp_servers.manage"
+      }
+    },
     "/platform/v1/orgs/{org}/members": {
       "get": {
         "tags": [
@@ -13989,6 +14994,167 @@
         "x-kaeso-access": "right:logs.metadata.view"
       }
     },
+    "/platform/v1/orgs/{org}/projects/{project}/mcp-servers": {
+      "get": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "The MCP servers the project uses, by name.",
+        "description": "**Right:** `tools.view` on the project in the path.",
+        "operationId": "getOrgsOrgProjectsProjectMcpServers",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/List_ProjectMcpServerView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:tools.view"
+      },
+      "put": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "Sets the MCP servers the project uses.",
+        "description": "A server the project starts using has all its tools off; turn them on with\n`PATCH …/tools`. A server it stops using takes its tools out of the portal.\n\n**Right:** `tools.manage` on the project in the path.",
+        "operationId": "putOrgsOrgProjectsProjectMcpServers",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectMcpServersSet"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/List_ProjectMcpServerView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:tools.manage"
+      }
+    },
     "/platform/v1/orgs/{org}/projects/{project}/members": {
       "get": {
         "tags": [
@@ -15877,6 +17043,156 @@
         "x-kaeso-access": "right:playground.use"
       }
     },
+    "/platform/v1/orgs/{org}/projects/{project}/portal-grants": {
+      "get": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "The clients connected to the project's MCP portal, newest first.",
+        "description": "**Right:** `tools.view` on the project in the path.",
+        "operationId": "getOrgsOrgProjectsProjectPortalGrants",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/List_PortalGrantView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:tools.view"
+      }
+    },
+    "/platform/v1/orgs/{org}/projects/{project}/portal-grants/{grant}": {
+      "delete": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "Disconnects a client from the project's MCP portal; its tokens stop working now.",
+        "description": "**Right:** `tools.manage` on the project in the path.",
+        "operationId": "deleteOrgsOrgProjectsProjectPortalGrantsGrant",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          },
+          {
+            "name": "grant",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/PortalGrantId"
+            }
+          }
+        ],
+        "responses": {
+          "204": {},
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:tools.manage"
+      }
+    },
     "/platform/v1/orgs/{org}/projects/{project}/response-cache": {
       "get": {
         "tags": [
@@ -17016,6 +18332,346 @@
           }
         ],
         "x-kaeso-access": "right:limits.manage"
+      }
+    },
+    "/platform/v1/orgs/{org}/projects/{project}/tool-access/{principal}": {
+      "get": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "The tools a project member, service account or key may call.",
+        "description": "**Right:** `tools.manage` on the project in the path.",
+        "operationId": "getOrgsOrgProjectsProjectToolAccessPrincipal",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          },
+          {
+            "name": "principal",
+            "in": "path",
+            "description": "A member's user id (`usr_…`), a service account (`svc_…`) or a key (`key_…`).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ToolAccess"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:tools.manage"
+      },
+      "put": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "Sets the tools a project member, service account or key may call.",
+        "description": "A key's list stays within its member's or service account's. Access only narrows:\na tool must also be on in the project and approved.\n\n**Right:** `tools.manage` on the project in the path.",
+        "operationId": "putOrgsOrgProjectsProjectToolAccessPrincipal",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          },
+          {
+            "name": "principal",
+            "in": "path",
+            "description": "A member's user id (`usr_…`), a service account (`svc_…`) or a key (`key_…`).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ToolAccessUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ToolAccess"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:tools.manage"
+      }
+    },
+    "/platform/v1/orgs/{org}/projects/{project}/tools": {
+      "get": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "The tools of the project's MCP servers, by server handle and name.",
+        "description": "**Right:** `tools.view` on the project in the path.",
+        "operationId": "getOrgsOrgProjectsProjectTools",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/List_ProjectToolView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:tools.view"
+      },
+      "patch": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "Turns tools of the project's MCP servers on or off.",
+        "description": "A tool that is on but held because its definition changed stays out of the\nportal until someone approves the change.\n\n**Right:** `tools.manage` on the project in the path.",
+        "operationId": "patchOrgsOrgProjectsProjectTools",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectToolsUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/List_ProjectToolView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:tools.manage"
       }
     },
     "/platform/v1/orgs/{org}/projects/{project}/usage": {
@@ -24748,6 +26404,296 @@
           }
         }
       },
+      "List_McpServerView": {
+        "type": "object",
+        "description": "A page of results.",
+        "required": [
+          "data",
+          "has_more"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "A remote MCP server of the organization. Projects turn it on and choose which\nof its tools their portal offers.",
+              "required": [
+                "id",
+                "handle",
+                "name",
+                "url",
+                "auth_method",
+                "credential_mode",
+                "scopes",
+                "change_policy",
+                "status",
+                "tools",
+                "projects",
+                "created_by",
+                "created_at",
+                "updated_at",
+                "revision"
+              ],
+              "properties": {
+                "auth_method": {
+                  "$ref": "#/components/schemas/McpAuthMethod",
+                  "description": "How Kaeso signs in to it."
+                },
+                "change_policy": {
+                  "$ref": "#/components/schemas/McpChangePolicy",
+                  "description": "What happens when the server changes a tool."
+                },
+                "connection": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/McpConnectionView",
+                      "description": "The shared sign-in, for `shared` servers that need one; `null` until someone connects it."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "Added."
+                },
+                "created_by": {
+                  "$ref": "#/components/schemas/Party",
+                  "description": "Who added it."
+                },
+                "credential_mode": {
+                  "$ref": "#/components/schemas/McpCredentialMode",
+                  "description": "Whose account a call uses."
+                },
+                "handle": {
+                  "type": "string",
+                  "description": "The short name that prefixes its tools outside Kaeso, as in `x__create_post`.",
+                  "example": "x"
+                },
+                "id": {
+                  "$ref": "#/components/schemas/McpServerId",
+                  "description": "Id."
+                },
+                "last_checked_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time",
+                  "description": "Last checked."
+                },
+                "last_error": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Why the last check failed."
+                },
+                "name": {
+                  "type": "string",
+                  "description": "The name people see.",
+                  "example": "X"
+                },
+                "oauth": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/McpOAuthView",
+                      "description": "The OAuth client, for `oauth` servers."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "projects": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ProjectId"
+                  },
+                  "description": "Projects that use it."
+                },
+                "protocol_version": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "The MCP version it speaks, such as `2026-07-28`.",
+                  "example": "2026-07-28"
+                },
+                "revision": {
+                  "type": "integer",
+                  "format": "int64",
+                  "description": "Goes up with every change. Send it as `If-Match: \"<revision>\"` to change or delete\nthe server only if nothing changed it since.",
+                  "example": 1
+                },
+                "scopes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "The OAuth scopes Kaeso asks for; empty asks for what the server offers."
+                },
+                "server_info": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "description": "What the server says about itself (`name`, `version` and more), as it sent it."
+                },
+                "status": {
+                  "$ref": "#/components/schemas/McpServerStatus",
+                  "description": "How the last check went."
+                },
+                "tools": {
+                  "$ref": "#/components/schemas/McpToolCounts",
+                  "description": "Its tools."
+                },
+                "updated_at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "Last changed."
+                },
+                "url": {
+                  "type": "string",
+                  "description": "Its Streamable HTTP address.",
+                  "example": "https://mcp.example.com/mcp"
+                }
+              }
+            },
+            "description": "The items."
+          },
+          "has_more": {
+            "type": "boolean",
+            "description": "Whether more items follow."
+          },
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Pass as `after` to get the next page; `null` on the last page."
+          }
+        }
+      },
+      "List_McpToolView": {
+        "type": "object",
+        "description": "A page of results.",
+        "required": [
+          "data",
+          "has_more"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "A tool of an MCP server, as the server describes it now.",
+              "required": [
+                "id",
+                "name",
+                "exposed_name",
+                "description",
+                "long_description",
+                "input_schema",
+                "state",
+                "hash",
+                "first_seen_at"
+              ],
+              "properties": {
+                "annotations": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "description": "Hints such as `readOnlyHint`; claims of the server, not guarantees."
+                },
+                "approved_hash": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "The hash of the definition last approved; differs from `hash` while it's held."
+                },
+                "changed_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time",
+                  "description": "Last changed by the server."
+                },
+                "description": {
+                  "type": "string",
+                  "description": "Its description, as clients and their models read it."
+                },
+                "exposed_name": {
+                  "type": "string",
+                  "description": "Its name for clients of a portal: the server's handle, two underscores and the\nname, cut to 64 characters.",
+                  "example": "x__create_post"
+                },
+                "first_seen_at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "First listed."
+                },
+                "hash": {
+                  "type": "string",
+                  "description": "SHA-256 of its definition (name, title, description, schemas and annotations as\ncanonical JSON), in hex."
+                },
+                "id": {
+                  "$ref": "#/components/schemas/ToolId",
+                  "description": "Id."
+                },
+                "input_schema": {
+                  "type": "object",
+                  "description": "Its input schema."
+                },
+                "long_description": {
+                  "type": "boolean",
+                  "description": "Its description is longer than 2,000 characters; read it all before approving."
+                },
+                "name": {
+                  "type": "string",
+                  "description": "Its name on the server.",
+                  "example": "create_post"
+                },
+                "output_schema": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "description": "Its output schema."
+                },
+                "state": {
+                  "$ref": "#/components/schemas/McpToolState",
+                  "description": "Where it stands."
+                },
+                "title": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Its title."
+                }
+              }
+            },
+            "description": "The items."
+          },
+          "has_more": {
+            "type": "boolean",
+            "description": "Whether more items follow."
+          },
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Pass as `after` to get the next page; `null` on the last page."
+          }
+        }
+      },
       "List_MemberView": {
         "type": "object",
         "description": "A page of results.",
@@ -25131,6 +27077,163 @@
           }
         }
       },
+      "List_PortalGrantView": {
+        "type": "object",
+        "description": "A page of results.",
+        "required": [
+          "data",
+          "has_more"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "A client connected to the project's MCP portal on someone's behalf.",
+              "required": [
+                "id",
+                "user",
+                "client_name",
+                "redirect_uri",
+                "created_at"
+              ],
+              "properties": {
+                "client_name": {
+                  "type": "string",
+                  "description": "The client's name, as it calls itself.",
+                  "example": "Claude"
+                },
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "Connected."
+                },
+                "id": {
+                  "$ref": "#/components/schemas/PortalGrantId",
+                  "description": "Id."
+                },
+                "last_used_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time",
+                  "description": "Last used."
+                },
+                "redirect_uri": {
+                  "type": "string",
+                  "description": "Where the client receives its sign-in.",
+                  "example": "https://claude.ai/api/mcp/auth_callback"
+                },
+                "user": {
+                  "$ref": "#/components/schemas/UserId",
+                  "description": "The person who connected it."
+                }
+              }
+            },
+            "description": "The items."
+          },
+          "has_more": {
+            "type": "boolean",
+            "description": "Whether more items follow."
+          },
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Pass as `after` to get the next page; `null` on the last page."
+          }
+        }
+      },
+      "List_ProjectMcpServerView": {
+        "type": "object",
+        "description": "A page of results.",
+        "required": [
+          "data",
+          "has_more"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "An MCP server a project uses.",
+              "required": [
+                "id",
+                "handle",
+                "name",
+                "auth_method",
+                "credential_mode",
+                "connected",
+                "status",
+                "tools",
+                "tools_on",
+                "tools_held"
+              ],
+              "properties": {
+                "auth_method": {
+                  "$ref": "#/components/schemas/McpAuthMethod",
+                  "description": "How Kaeso signs in to it."
+                },
+                "connected": {
+                  "type": "boolean",
+                  "description": "Whether a shared server has a working sign-in. Always `true` for servers without\nsign-in; for `per_user` servers each person connects their own."
+                },
+                "credential_mode": {
+                  "$ref": "#/components/schemas/McpCredentialMode",
+                  "description": "Whose account a call uses."
+                },
+                "handle": {
+                  "type": "string",
+                  "description": "The prefix of its tools' names.",
+                  "example": "x"
+                },
+                "id": {
+                  "$ref": "#/components/schemas/McpServerId",
+                  "description": "Id."
+                },
+                "name": {
+                  "type": "string",
+                  "description": "The name people see.",
+                  "example": "X"
+                },
+                "status": {
+                  "$ref": "#/components/schemas/McpServerStatus",
+                  "description": "How its last check went."
+                },
+                "tools": {
+                  "type": "integer",
+                  "format": "int64",
+                  "description": "Its tools the server lists now."
+                },
+                "tools_held": {
+                  "type": "integer",
+                  "format": "int64",
+                  "description": "Of those, tools held because their definition changed."
+                },
+                "tools_on": {
+                  "type": "integer",
+                  "format": "int64",
+                  "description": "Of those, tools this project has on."
+                }
+              }
+            },
+            "description": "The items."
+          },
+          "has_more": {
+            "type": "boolean",
+            "description": "Whether more items follow."
+          },
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Pass as `after` to get the next page; `null` on the last page."
+          }
+        }
+      },
       "List_ProjectMemberView": {
         "type": "object",
         "description": "A page of results.",
@@ -25167,6 +27270,112 @@
                 "user": {
                   "$ref": "#/components/schemas/MemberUser",
                   "description": "The user."
+                }
+              }
+            },
+            "description": "The items."
+          },
+          "has_more": {
+            "type": "boolean",
+            "description": "Whether more items follow."
+          },
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Pass as `after` to get the next page; `null` on the last page."
+          }
+        }
+      },
+      "List_ProjectToolView": {
+        "type": "object",
+        "description": "A page of results.",
+        "required": [
+          "data",
+          "has_more"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "A tool of one of the project's MCP servers.",
+              "required": [
+                "id",
+                "server",
+                "server_handle",
+                "server_name",
+                "name",
+                "exposed_name",
+                "description",
+                "input_schema",
+                "state",
+                "enabled",
+                "offered"
+              ],
+              "properties": {
+                "annotations": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "description": "Hints such as `readOnlyHint`; claims of the server, not guarantees."
+                },
+                "description": {
+                  "type": "string",
+                  "description": "Its description."
+                },
+                "enabled": {
+                  "type": "boolean",
+                  "description": "The project has it on."
+                },
+                "exposed_name": {
+                  "type": "string",
+                  "description": "Its name for the portal's clients.",
+                  "example": "x__create_post"
+                },
+                "id": {
+                  "$ref": "#/components/schemas/ToolId",
+                  "description": "Id."
+                },
+                "input_schema": {
+                  "type": "object",
+                  "description": "Its input schema."
+                },
+                "name": {
+                  "type": "string",
+                  "description": "Its name on the server.",
+                  "example": "create_post"
+                },
+                "offered": {
+                  "type": "boolean",
+                  "description": "The portal offers it: on and `active`."
+                },
+                "server": {
+                  "$ref": "#/components/schemas/McpServerId",
+                  "description": "Its server."
+                },
+                "server_handle": {
+                  "type": "string",
+                  "description": "Its server's handle.",
+                  "example": "x"
+                },
+                "server_name": {
+                  "type": "string",
+                  "description": "Its server's name.",
+                  "example": "X"
+                },
+                "state": {
+                  "$ref": "#/components/schemas/McpToolState",
+                  "description": "Where it stands at its server."
+                },
+                "title": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Its title."
                 }
               }
             },
@@ -26165,6 +28374,979 @@
           "org": {
             "$ref": "#/components/schemas/OrgId",
             "description": "The org."
+          }
+        }
+      },
+      "McpAuthMethod": {
+        "type": "string",
+        "description": "How Kaeso signs in to an MCP server.",
+        "enum": [
+          "none",
+          "header",
+          "oauth"
+        ]
+      },
+      "McpChangePolicy": {
+        "type": "string",
+        "description": "What happens when an MCP server changes a tool's definition.",
+        "enum": [
+          "hold",
+          "accept"
+        ]
+      },
+      "McpConnectionAnswer": {
+        "type": "object",
+        "description": "The server after a sign-in was set or started.",
+        "required": [
+          "server"
+        ],
+        "properties": {
+          "redirect_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "For OAuth: open this address in the browser to sign in. Kaeso sends the person back\nto the console afterwards. Valid for 10 minutes, for the person who started it."
+          },
+          "server": {
+            "$ref": "#/components/schemas/McpServerView",
+            "description": "The server, with its connection."
+          }
+        }
+      },
+      "McpConnectionId": {
+        "type": "string",
+        "examples": [
+          "conn_01k7a3f8m2xq4v9c5r6t8w0yz1"
+        ],
+        "pattern": "^conn_[0-9a-hjkmnp-tv-z]{26}$"
+      },
+      "McpConnectionKind": {
+        "type": "string",
+        "description": "What a connection to an MCP server holds.",
+        "enum": [
+          "header",
+          "oauth"
+        ]
+      },
+      "McpConnectionSet": {
+        "type": "object",
+        "description": "The shared sign-in: a secret header, or the start of an OAuth sign-in.",
+        "properties": {
+          "header": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/McpHeader",
+                "description": "For `header` servers: the header Kaeso sends from now on."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "oauth": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/McpOAuthStart",
+                "description": "For `oauth` servers: start a sign-in in the browser."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "McpConnectionView": {
+        "type": "object",
+        "description": "A sign-in Kaeso keeps for an MCP server, without its secret.",
+        "required": [
+          "id",
+          "kind",
+          "last4",
+          "signed_out",
+          "updated_at"
+        ],
+        "properties": {
+          "account": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The account it signed in as, when the server says.",
+            "example": "@kaesoapp"
+          },
+          "expires_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When the current access runs out; Kaeso renews it before then."
+          },
+          "header_name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The header's name, for a header connection.",
+            "example": "Authorization"
+          },
+          "id": {
+            "$ref": "#/components/schemas/McpConnectionId",
+            "description": "Id."
+          },
+          "kind": {
+            "$ref": "#/components/schemas/McpConnectionKind",
+            "description": "What it holds."
+          },
+          "last4": {
+            "type": "string",
+            "description": "The last four characters of the secret.",
+            "example": "x9Qa"
+          },
+          "last_used_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "Last used for a call."
+          },
+          "signed_out": {
+            "type": "boolean",
+            "description": "The server stopped accepting it; someone has to sign in again."
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Last signed in."
+          }
+        }
+      },
+      "McpCredentialMode": {
+        "type": "string",
+        "description": "Whose account a call to an MCP server uses.",
+        "enum": [
+          "shared",
+          "per_user"
+        ]
+      },
+      "McpHeader": {
+        "type": "object",
+        "description": "A secret header Kaeso sends to an MCP server.",
+        "required": [
+          "name",
+          "value"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The header's name.",
+            "example": "Authorization"
+          },
+          "value": {
+            "type": "string",
+            "description": "Its value, such as `Bearer <token>`. Kaeso stores it sealed and shows only its last\nfour characters.",
+            "example": "Bearer xyz"
+          }
+        },
+        "additionalProperties": false
+      },
+      "McpOAuthClient": {
+        "type": "object",
+        "description": "An OAuth client an admin registered with the server's authorization server.",
+        "required": [
+          "client_id"
+        ],
+        "properties": {
+          "client_id": {
+            "type": "string",
+            "description": "Its client id."
+          },
+          "client_secret": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Its secret, for a confidential client; absent for a public one."
+          }
+        },
+        "additionalProperties": false
+      },
+      "McpOAuthStart": {
+        "type": "object",
+        "description": "Starts an OAuth sign-in.",
+        "properties": {
+          "client": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/McpOAuthClient",
+                "description": "A client registered by hand, which replaces the one Kaeso has; absent keeps it."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "McpOAuthView": {
+        "type": "object",
+        "description": "How Kaeso signs in to a server with OAuth.",
+        "required": [
+          "registration",
+          "client_secret"
+        ],
+        "properties": {
+          "client_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Kaeso's client id there; `null` before the first sign-in."
+          },
+          "client_secret": {
+            "type": "boolean",
+            "description": "Whether Kaeso holds a client secret for it. The secret is never shown."
+          },
+          "issuer": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The authorization server Kaeso's client belongs to; `null` before the first sign-in.",
+            "example": "https://auth.example.com"
+          },
+          "registration": {
+            "$ref": "#/components/schemas/McpRegistration",
+            "description": "How Kaeso introduced itself to the authorization server."
+          }
+        }
+      },
+      "McpProbeProblem": {
+        "type": "string",
+        "description": "Why a check of an MCP server's address failed.",
+        "enum": [
+          "refused",
+          "unreachable",
+          "timeout",
+          "status",
+          "not_mcp",
+          "header_refused",
+          "sign_in"
+        ]
+      },
+      "McpProbedTool": {
+        "type": "object",
+        "description": "A tool an MCP server lists, as it describes it.",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "annotations": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "Hints such as `readOnlyHint` and `destructiveHint`; claims of the server, not guarantees."
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Its description."
+          },
+          "name": {
+            "type": "string",
+            "description": "Its name on the server.",
+            "example": "create_post"
+          },
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Its title."
+          }
+        }
+      },
+      "McpRefreshView": {
+        "type": "object",
+        "description": "What a fresh look at an MCP server's tools found.",
+        "required": [
+          "added",
+          "held",
+          "accepted",
+          "removed",
+          "skipped",
+          "server"
+        ],
+        "properties": {
+          "accepted": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Tools whose change was approved as it came, under the policy `accept`."
+          },
+          "added": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "New tools."
+          },
+          "held": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Tools whose definition changed and that are held until someone approves them."
+          },
+          "removed": {
+            "type": "integer",
+            "description": "How many tools the server no longer lists.",
+            "minimum": 0
+          },
+          "server": {
+            "$ref": "#/components/schemas/McpServerView",
+            "description": "The server after the check."
+          },
+          "skipped": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/McpSkippedTool"
+            },
+            "description": "Tools Kaeso left out."
+          }
+        }
+      },
+      "McpRegistration": {
+        "type": "string",
+        "description": "How Kaeso introduced itself to an MCP server's authorization server.",
+        "enum": [
+          "cimd",
+          "dcr",
+          "manual"
+        ]
+      },
+      "McpServerCreate": {
+        "type": "object",
+        "description": "A new MCP server.",
+        "required": [
+          "handle",
+          "name",
+          "url",
+          "auth_method"
+        ],
+        "properties": {
+          "auth_method": {
+            "$ref": "#/components/schemas/McpAuthMethod",
+            "description": "How Kaeso signs in to it."
+          },
+          "change_policy": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/McpChangePolicy",
+                "description": "What happens when it changes a tool; `hold` when absent."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "credential_mode": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/McpCredentialMode",
+                "description": "Whose account a call uses; `shared` when absent. `per_user` needs a sign-in."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "handle": {
+            "type": "string",
+            "description": "The short name that prefixes its tools, as in `x__create_post`: 1 to 24 lowercase\nletters, digits and hyphens, unique in the organization.",
+            "example": "x"
+          },
+          "name": {
+            "type": "string",
+            "description": "The name people see, 1 to 100 characters.",
+            "example": "X"
+          },
+          "oauth_client": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/McpOAuthClient",
+                "description": "For `oauth`: a client registered by hand, for an authorization server that takes\nneither client metadata documents nor registration. Absent lets Kaeso introduce itself."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "projects": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ProjectId"
+            },
+            "description": "Projects that use it from the start."
+          },
+          "scopes": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "description": "For `oauth`: the scopes to ask for; absent asks for what the server offers."
+          },
+          "url": {
+            "type": "string",
+            "description": "Its Streamable HTTP address: `https`, or `http` for a network the instance allows.",
+            "example": "https://mcp.example.com/mcp"
+          }
+        },
+        "additionalProperties": false
+      },
+      "McpServerId": {
+        "type": "string",
+        "examples": [
+          "mcp_01k7a3f8m2xq4v9c5r6t8w0yz1"
+        ],
+        "pattern": "^mcp_[0-9a-hjkmnp-tv-z]{26}$"
+      },
+      "McpServerProbe": {
+        "type": "object",
+        "description": "An address to check before adding an MCP server.",
+        "required": [
+          "url"
+        ],
+        "properties": {
+          "header": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/McpHeader",
+                "description": "A secret header to try, for a server that needs one. Kaeso stores it nowhere."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "url": {
+            "type": "string",
+            "description": "The server's Streamable HTTP address.",
+            "example": "https://mcp.example.com/mcp"
+          }
+        },
+        "additionalProperties": false
+      },
+      "McpServerProbeView": {
+        "type": "object",
+        "description": "What Kaeso found at an MCP server's address.",
+        "required": [
+          "url",
+          "handle"
+        ],
+        "properties": {
+          "handle": {
+            "type": "string",
+            "description": "A free handle that fits the server's name.",
+            "example": "x"
+          },
+          "http_status": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "The HTTP status, for `problem: status`.",
+            "minimum": 0
+          },
+          "problem": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/McpProbeProblem",
+                "description": "Why the check failed; `null` when it worked."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "protocol_version": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The MCP version it speaks."
+          },
+          "server_info": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "What the server says about itself."
+          },
+          "sign_in": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/McpSignInOffer",
+                "description": "How to sign in; `null` when Kaeso couldn't tell."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "tools": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/McpProbedTool"
+            },
+            "description": "Its tools, when Kaeso could list them without a sign-in or with the header sent."
+          },
+          "url": {
+            "type": "string",
+            "description": "The address as Kaeso will use it."
+          }
+        }
+      },
+      "McpServerStatus": {
+        "type": "string",
+        "description": "How the last check of an MCP server went.",
+        "enum": [
+          "unchecked",
+          "ok",
+          "unreachable",
+          "signed_out",
+          "error"
+        ]
+      },
+      "McpServerUpdate": {
+        "type": "object",
+        "description": "Changes to an MCP server; absent fields stay as they are.",
+        "properties": {
+          "change_policy": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/McpChangePolicy",
+                "description": "A new policy for changed tools. Switching to `accept` doesn't approve tools held now."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "handle": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "A new handle; the tools' names outside Kaeso change with it."
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "A new name."
+          }
+        },
+        "additionalProperties": false
+      },
+      "McpServerView": {
+        "type": "object",
+        "description": "A remote MCP server of the organization. Projects turn it on and choose which\nof its tools their portal offers.",
+        "required": [
+          "id",
+          "handle",
+          "name",
+          "url",
+          "auth_method",
+          "credential_mode",
+          "scopes",
+          "change_policy",
+          "status",
+          "tools",
+          "projects",
+          "created_by",
+          "created_at",
+          "updated_at",
+          "revision"
+        ],
+        "properties": {
+          "auth_method": {
+            "$ref": "#/components/schemas/McpAuthMethod",
+            "description": "How Kaeso signs in to it."
+          },
+          "change_policy": {
+            "$ref": "#/components/schemas/McpChangePolicy",
+            "description": "What happens when the server changes a tool."
+          },
+          "connection": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/McpConnectionView",
+                "description": "The shared sign-in, for `shared` servers that need one; `null` until someone connects it."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Added."
+          },
+          "created_by": {
+            "$ref": "#/components/schemas/Party",
+            "description": "Who added it."
+          },
+          "credential_mode": {
+            "$ref": "#/components/schemas/McpCredentialMode",
+            "description": "Whose account a call uses."
+          },
+          "handle": {
+            "type": "string",
+            "description": "The short name that prefixes its tools outside Kaeso, as in `x__create_post`.",
+            "example": "x"
+          },
+          "id": {
+            "$ref": "#/components/schemas/McpServerId",
+            "description": "Id."
+          },
+          "last_checked_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "Last checked."
+          },
+          "last_error": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Why the last check failed."
+          },
+          "name": {
+            "type": "string",
+            "description": "The name people see.",
+            "example": "X"
+          },
+          "oauth": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/McpOAuthView",
+                "description": "The OAuth client, for `oauth` servers."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "projects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProjectId"
+            },
+            "description": "Projects that use it."
+          },
+          "protocol_version": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The MCP version it speaks, such as `2026-07-28`.",
+            "example": "2026-07-28"
+          },
+          "revision": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Goes up with every change. Send it as `If-Match: \"<revision>\"` to change or delete\nthe server only if nothing changed it since.",
+            "example": 1
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The OAuth scopes Kaeso asks for; empty asks for what the server offers."
+          },
+          "server_info": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "What the server says about itself (`name`, `version` and more), as it sent it."
+          },
+          "status": {
+            "$ref": "#/components/schemas/McpServerStatus",
+            "description": "How the last check went."
+          },
+          "tools": {
+            "$ref": "#/components/schemas/McpToolCounts",
+            "description": "Its tools."
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Last changed."
+          },
+          "url": {
+            "type": "string",
+            "description": "Its Streamable HTTP address.",
+            "example": "https://mcp.example.com/mcp"
+          }
+        }
+      },
+      "McpSignInOffer": {
+        "type": "object",
+        "description": "How an MCP server wants Kaeso to sign in.",
+        "required": [
+          "method",
+          "client_metadata_documents",
+          "registration",
+          "scopes"
+        ],
+        "properties": {
+          "client_metadata_documents": {
+            "type": "boolean",
+            "description": "Whether it takes Kaeso's client metadata document, so no registration is needed."
+          },
+          "issuer": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The authorization server, for `oauth`."
+          },
+          "method": {
+            "$ref": "#/components/schemas/McpAuthMethod",
+            "description": "The way to sign in."
+          },
+          "registration": {
+            "type": "boolean",
+            "description": "Whether it registers clients itself; without this or `client_metadata_documents`,\nan admin registers a client by hand."
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The scopes it offers."
+          }
+        }
+      },
+      "McpSkipReason": {
+        "type": "string",
+        "description": "Why Kaeso left a tool out.",
+        "enum": [
+          "no_name",
+          "listed_twice",
+          "no_input_schema",
+          "header_annotation"
+        ]
+      },
+      "McpSkippedTool": {
+        "type": "object",
+        "description": "A tool Kaeso left out.",
+        "required": [
+          "name",
+          "reason"
+        ],
+        "properties": {
+          "header": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The header annotation at fault, for `header_annotation`."
+          },
+          "name": {
+            "type": "string",
+            "description": "Its name, as far as it has one."
+          },
+          "reason": {
+            "$ref": "#/components/schemas/McpSkipReason",
+            "description": "Why."
+          }
+        }
+      },
+      "McpToolApprove": {
+        "type": "object",
+        "description": "The definition being approved.",
+        "required": [
+          "hash"
+        ],
+        "properties": {
+          "hash": {
+            "type": "string",
+            "description": "The `hash` of the definition you reviewed; if the server changed the tool again\nsince, nothing is approved."
+          }
+        },
+        "additionalProperties": false
+      },
+      "McpToolChange": {
+        "type": "object",
+        "description": "A tool's approved and current definitions, to review a change.",
+        "required": [
+          "tool",
+          "current"
+        ],
+        "properties": {
+          "approved": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "The definition last approved: `name`, `title`, `description`, `inputSchema`,\n`outputSchema` and `annotations` as the server sent them; `null` if none was."
+          },
+          "current": {
+            "type": "object",
+            "description": "The definition the server lists now, in the same form."
+          },
+          "tool": {
+            "$ref": "#/components/schemas/McpToolView",
+            "description": "The tool."
+          }
+        }
+      },
+      "McpToolCounts": {
+        "type": "object",
+        "description": "How many tools a server lists.",
+        "required": [
+          "total",
+          "changed"
+        ],
+        "properties": {
+          "changed": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Of those, tools held because their definition changed."
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Tools the server lists now."
+          }
+        }
+      },
+      "McpToolState": {
+        "type": "string",
+        "description": "Where a tool stands.",
+        "enum": [
+          "active",
+          "changed",
+          "removed"
+        ]
+      },
+      "McpToolView": {
+        "type": "object",
+        "description": "A tool of an MCP server, as the server describes it now.",
+        "required": [
+          "id",
+          "name",
+          "exposed_name",
+          "description",
+          "long_description",
+          "input_schema",
+          "state",
+          "hash",
+          "first_seen_at"
+        ],
+        "properties": {
+          "annotations": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "Hints such as `readOnlyHint`; claims of the server, not guarantees."
+          },
+          "approved_hash": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The hash of the definition last approved; differs from `hash` while it's held."
+          },
+          "changed_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "Last changed by the server."
+          },
+          "description": {
+            "type": "string",
+            "description": "Its description, as clients and their models read it."
+          },
+          "exposed_name": {
+            "type": "string",
+            "description": "Its name for clients of a portal: the server's handle, two underscores and the\nname, cut to 64 characters.",
+            "example": "x__create_post"
+          },
+          "first_seen_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "First listed."
+          },
+          "hash": {
+            "type": "string",
+            "description": "SHA-256 of its definition (name, title, description, schemas and annotations as\ncanonical JSON), in hex."
+          },
+          "id": {
+            "$ref": "#/components/schemas/ToolId",
+            "description": "Id."
+          },
+          "input_schema": {
+            "type": "object",
+            "description": "Its input schema."
+          },
+          "long_description": {
+            "type": "boolean",
+            "description": "Its description is longer than 2,000 characters; read it all before approving."
+          },
+          "name": {
+            "type": "string",
+            "description": "Its name on the server.",
+            "example": "create_post"
+          },
+          "output_schema": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "Its output schema."
+          },
+          "state": {
+            "$ref": "#/components/schemas/McpToolState",
+            "description": "Where it stands."
+          },
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Its title."
           }
         }
       },
@@ -27639,6 +30821,57 @@
           }
         }
       },
+      "PortalGrantId": {
+        "type": "string",
+        "examples": [
+          "grant_01k7a3f8m2xq4v9c5r6t8w0yz1"
+        ],
+        "pattern": "^grant_[0-9a-hjkmnp-tv-z]{26}$"
+      },
+      "PortalGrantView": {
+        "type": "object",
+        "description": "A client connected to the project's MCP portal on someone's behalf.",
+        "required": [
+          "id",
+          "user",
+          "client_name",
+          "redirect_uri",
+          "created_at"
+        ],
+        "properties": {
+          "client_name": {
+            "type": "string",
+            "description": "The client's name, as it calls itself.",
+            "example": "Claude"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Connected."
+          },
+          "id": {
+            "$ref": "#/components/schemas/PortalGrantId",
+            "description": "Id."
+          },
+          "last_used_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "Last used."
+          },
+          "redirect_uri": {
+            "type": "string",
+            "description": "Where the client receives its sign-in.",
+            "example": "https://claude.ai/api/mcp/auth_callback"
+          },
+          "user": {
+            "$ref": "#/components/schemas/UserId",
+            "description": "The person who connected it."
+          }
+        }
+      },
       "Preview": {
         "type": "object",
         "description": "The values a new entry starts with.",
@@ -27792,6 +31025,86 @@
           "content_logging": {
             "type": "boolean",
             "description": "Log request and reply bodies in this project (only when the org does)."
+          }
+        },
+        "additionalProperties": false
+      },
+      "ProjectMcpServerView": {
+        "type": "object",
+        "description": "An MCP server a project uses.",
+        "required": [
+          "id",
+          "handle",
+          "name",
+          "auth_method",
+          "credential_mode",
+          "connected",
+          "status",
+          "tools",
+          "tools_on",
+          "tools_held"
+        ],
+        "properties": {
+          "auth_method": {
+            "$ref": "#/components/schemas/McpAuthMethod",
+            "description": "How Kaeso signs in to it."
+          },
+          "connected": {
+            "type": "boolean",
+            "description": "Whether a shared server has a working sign-in. Always `true` for servers without\nsign-in; for `per_user` servers each person connects their own."
+          },
+          "credential_mode": {
+            "$ref": "#/components/schemas/McpCredentialMode",
+            "description": "Whose account a call uses."
+          },
+          "handle": {
+            "type": "string",
+            "description": "The prefix of its tools' names.",
+            "example": "x"
+          },
+          "id": {
+            "$ref": "#/components/schemas/McpServerId",
+            "description": "Id."
+          },
+          "name": {
+            "type": "string",
+            "description": "The name people see.",
+            "example": "X"
+          },
+          "status": {
+            "$ref": "#/components/schemas/McpServerStatus",
+            "description": "How its last check went."
+          },
+          "tools": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Its tools the server lists now."
+          },
+          "tools_held": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Of those, tools held because their definition changed."
+          },
+          "tools_on": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Of those, tools this project has on."
+          }
+        }
+      },
+      "ProjectMcpServersSet": {
+        "type": "object",
+        "description": "The MCP servers a project uses.",
+        "required": [
+          "servers"
+        ],
+        "properties": {
+          "servers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/McpServerId"
+            },
+            "description": "Every server the project uses from now on; servers left out are turned off, with\ntheir tools."
           }
         },
         "additionalProperties": false
@@ -28037,6 +31350,123 @@
             "description": "The project."
           }
         }
+      },
+      "ProjectToolSwitch": {
+        "type": "object",
+        "description": "A tool turned on or off.",
+        "required": [
+          "id",
+          "enabled"
+        ],
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "description": "On or off."
+          },
+          "id": {
+            "$ref": "#/components/schemas/ToolId",
+            "description": "The tool."
+          }
+        },
+        "additionalProperties": false
+      },
+      "ProjectToolView": {
+        "type": "object",
+        "description": "A tool of one of the project's MCP servers.",
+        "required": [
+          "id",
+          "server",
+          "server_handle",
+          "server_name",
+          "name",
+          "exposed_name",
+          "description",
+          "input_schema",
+          "state",
+          "enabled",
+          "offered"
+        ],
+        "properties": {
+          "annotations": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "Hints such as `readOnlyHint`; claims of the server, not guarantees."
+          },
+          "description": {
+            "type": "string",
+            "description": "Its description."
+          },
+          "enabled": {
+            "type": "boolean",
+            "description": "The project has it on."
+          },
+          "exposed_name": {
+            "type": "string",
+            "description": "Its name for the portal's clients.",
+            "example": "x__create_post"
+          },
+          "id": {
+            "$ref": "#/components/schemas/ToolId",
+            "description": "Id."
+          },
+          "input_schema": {
+            "type": "object",
+            "description": "Its input schema."
+          },
+          "name": {
+            "type": "string",
+            "description": "Its name on the server.",
+            "example": "create_post"
+          },
+          "offered": {
+            "type": "boolean",
+            "description": "The portal offers it: on and `active`."
+          },
+          "server": {
+            "$ref": "#/components/schemas/McpServerId",
+            "description": "Its server."
+          },
+          "server_handle": {
+            "type": "string",
+            "description": "Its server's handle.",
+            "example": "x"
+          },
+          "server_name": {
+            "type": "string",
+            "description": "Its server's name.",
+            "example": "X"
+          },
+          "state": {
+            "$ref": "#/components/schemas/McpToolState",
+            "description": "Where it stands at its server."
+          },
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Its title."
+          }
+        }
+      },
+      "ProjectToolsUpdate": {
+        "type": "object",
+        "description": "Tools to turn on or off; others stay as they are.",
+        "required": [
+          "tools"
+        ],
+        "properties": {
+          "tools": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProjectToolSwitch"
+            },
+            "description": "The tools, each with its new switch."
+          }
+        },
+        "additionalProperties": false
       },
       "ProjectUpdate": {
         "type": "object",
@@ -30716,6 +34146,66 @@
         "examples": [
           "2.50"
         ]
+      },
+      "ToolAccess": {
+        "type": "object",
+        "description": "The tools a member, service account or key may call.",
+        "required": [
+          "all",
+          "tools",
+          "effective"
+        ],
+        "properties": {
+          "all": {
+            "type": "boolean",
+            "description": "Every tool the level above allows."
+          },
+          "effective": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ToolId"
+            },
+            "description": "The tools it may call now: on in the project, approved, and allowed at every level\nabove."
+          },
+          "tools": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ToolId"
+            },
+            "description": "The chosen tools (empty with `all`)."
+          }
+        }
+      },
+      "ToolAccessUpdate": {
+        "type": "object",
+        "description": "A new tool list: either `all: true`, or `tools`.",
+        "properties": {
+          "all": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Every tool the level above allows."
+          },
+          "tools": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ToolId"
+            },
+            "description": "The chosen tools."
+          }
+        },
+        "additionalProperties": false
+      },
+      "ToolId": {
+        "type": "string",
+        "examples": [
+          "tool_01k7a3f8m2xq4v9c5r6t8w0yz1"
+        ],
+        "pattern": "^tool_[0-9a-hjkmnp-tv-z]{26}$"
       },
       "TotpConfirm": {
         "type": "object",
