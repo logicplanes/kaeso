@@ -27,7 +27,7 @@ const Root = forwardRef<HTMLDivElement, FlowWorkspaceProps>(function FlowWorkspa
       className={cn("flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain scrollbar-quiet lg:flex-row lg:overflow-hidden", className)}
       {...props}
     >
-      <div data-flow-workspace-canvas="" className="relative h-400 shrink-0 lg:h-auto lg:min-h-0 lg:min-w-0 lg:flex-1">
+      <div data-flow-workspace-canvas="" className="relative flow-stacked-height shrink-0 lg:h-auto lg:min-h-0 lg:min-w-0 lg:flex-1">
         {children}
       </div>
       {panel && (

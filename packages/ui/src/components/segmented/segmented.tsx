@@ -1,7 +1,8 @@
-import { forwardRef, useRef, type ReactNode } from "react";
+import { forwardRef, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { RadioGroup as BaseRadioGroup } from "@base-ui/react/radio-group";
 import { Radio as BaseRadio } from "@base-ui/react/radio";
 import { cn } from "../../utils/cn.js";
+import { observeResize } from "../../utils/observe-resize.js";
 import { useControllable } from "../../utils/use-controllable.js";
 import { useIndicator } from "../../hooks/use-indicator.js";
 import { Icon, type IconData } from "../icon/icon.js";
@@ -50,6 +51,26 @@ export const Segmented = forwardRef<HTMLDivElement, SegmentedProps>(function Seg
   const track = useRef<HTMLDivElement | null>(null);
   const ind = useIndicator(track, "[data-checked]", `${current}|${options.length}|${size}`);
   const raised = useRaised();
+  const [overflowing, setOverflowing] = useState(false);
+  const values = options.map((o) => o.value).join("|");
+  useLayoutEffect(() => {
+    const el = track.current;
+    if (!el) return;
+    const items = [...el.querySelectorAll<HTMLElement>('[role="radio"]')];
+    // Measured from the segments, not scrollWidth: their tap targets reach past the track on a touch screen.
+    const measure = () => setOverflowing(items.some((i) => i.offsetLeft + i.offsetWidth > el.clientWidth));
+    measure();
+    return observeResize([el, ...items], measure);
+  }, [values, size]);
+  useLayoutEffect(() => {
+    const el = track.current;
+    const item = el?.querySelector<HTMLElement>("[data-checked]");
+    if (!overflowing || !el || !item) return;
+    const pad = parseFloat(getComputedStyle(el).paddingLeft) || 0;
+    if (item.offsetLeft - pad < el.scrollLeft) el.scrollLeft = item.offsetLeft - pad;
+    else if (item.offsetLeft + item.offsetWidth + pad > el.scrollLeft + el.clientWidth)
+      el.scrollLeft = item.offsetLeft + item.offsetWidth + pad - el.clientWidth;
+  }, [current, overflowing]);
   return (
     <BaseRadioGroup
       ref={(el: HTMLDivElement | null) => {
@@ -63,7 +84,8 @@ export const Segmented = forwardRef<HTMLDivElement, SegmentedProps>(function Seg
       aria-label={ariaLabel}
       {...(force ? { "data-force": force } : {})}
       className={cn(
-        "relative isolate inline-flex items-center rounded-pill",
+        "relative isolate inline-flex max-w-full items-center rounded-pill",
+        overflowing && "overflow-x-auto overflow-y-hidden overscroll-x-contain scrollbar-none",
         raised ? "bg-fill-2" : "bg-fill-1",
         KAESO_SEGMENTED_VARIANTS.size[size].classes,
         fullWidth && "flex w-full",

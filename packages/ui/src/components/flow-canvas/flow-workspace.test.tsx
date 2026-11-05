@@ -29,6 +29,7 @@ describe("FlowWorkspace", () => {
     );
     expect(ref.current).toHaveAttribute("data-flow-workspace");
     expect(screen.getByTestId("canvas").parentElement).toHaveAttribute("data-flow-workspace-canvas");
+    expect(screen.getByTestId("canvas").parentElement).toHaveClass("flow-stacked-height", "lg:h-auto");
     const aside = screen.getByRole("complementary", { name: "Step settings" });
     expect(aside).toHaveClass("lg:w-400", "lg:divider-l", "max-lg:divider-t");
     const section = screen.getByRole("region", { name: "Model step" });
