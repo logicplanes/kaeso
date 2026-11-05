@@ -4,11 +4,52 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 ## [Unreleased]
 
+## [0.6.0-rc.4] - 2026-11-05
+
+- **Breaking:** The UI library exports only documented components: aliases are gone, internal parts are no longer public, and StatusDot is now Status ([#664](https://github.com/logicplanes/kaeso/pull/664))
+- **Breaking:** Tabs, RadioGroup, Section, Skeleton and Kbd take variants instead of PillTabs, RadioCards, SettingsSection, SkeletonLine and KbdSequence ([#665](https://github.com/logicplanes/kaeso/pull/665))
+- **Breaking:** An icon-only button is a Button with an icon, which shows its name as a tooltip; IconButton is removed ([#666](https://github.com/logicplanes/kaeso/pull/666))
+- **Breaking:** Search, password and secret fields are types of Input: SearchInput and SensitiveInput are removed ([#667](https://github.com/logicplanes/kaeso/pull/667))
+- **Breaking:** Button takes pressed, Meter a gauge shape and ParameterPanel a trigger: FilterToggle, Gauge, ParameterPopover and DeleteResource are removed ([#668](https://github.com/logicplanes/kaeso/pull/668))
+- **Breaking:** Stat, StatGroup, CopyButton and Avatar take variants instead of StatTile, StatGrid, MetricRow, ClipboardText, InlineCopyText, AgentAvatar, AgentAttribution and AvatarGroup ([#669](https://github.com/logicplanes/kaeso/pull/669))
+- **Breaking:** The UI library drops components that only wrapped another one: Menubar, Accordion, HoverCard, ProviderCard, EnvironmentSnippet, Grid, Stack, Inline, ThemeSelect, the page blocks and ResourceList ([#672](https://github.com/logicplanes/kaeso/pull/672))
+
 ### Added
+
+- An install can run as a public, read-only demo: KAESO_AUTH_DEMO_USER signs every visitor in as one user and refuses every change ([#670](https://github.com/logicplanes/kaeso/pull/670))
+- Star on GitHub links to Kaeso's repository from the documentation's sidebar and from Instance › Updates, with the star count once it reaches 100 ([#675](https://github.com/logicplanes/kaeso/pull/675))
 
 #### Self-hosting
 
 - Kaeso installs with one command from kaeso.app, which downloads the newest release, writes its settings and master key and starts it ([#662](https://github.com/logicplanes/kaeso/pull/662))
+
+### Changed
+
+- The UI library exports only documented components: aliases are gone, internal parts are no longer public, and StatusDot is now Status ([#664](https://github.com/logicplanes/kaeso/pull/664))
+- Tabs, RadioGroup, Section, Skeleton and Kbd take variants instead of PillTabs, RadioCards, SettingsSection, SkeletonLine and KbdSequence ([#665](https://github.com/logicplanes/kaeso/pull/665))
+- An icon-only button is a Button with an icon, which shows its name as a tooltip; IconButton is removed ([#666](https://github.com/logicplanes/kaeso/pull/666))
+- Search, password and secret fields are types of Input: SearchInput and SensitiveInput are removed ([#667](https://github.com/logicplanes/kaeso/pull/667))
+- Button takes pressed, Meter a gauge shape and ParameterPanel a trigger: FilterToggle, Gauge, ParameterPopover and DeleteResource are removed ([#668](https://github.com/logicplanes/kaeso/pull/668))
+- Stat, StatGroup, CopyButton and Avatar take variants instead of StatTile, StatGrid, MetricRow, ClipboardText, InlineCopyText, AgentAvatar, AgentAttribution and AvatarGroup ([#669](https://github.com/logicplanes/kaeso/pull/669))
+- The README shows how to install Kaeso in one command, send a first request, and how it compares with LiteLLM, Bifrost and Portkey ([#673](https://github.com/logicplanes/kaeso/pull/673))
+
+#### Gateway
+
+- A fresh install starts with KPMR's model data as of 5 November 2026, 15:32 UTC ([#674](https://github.com/logicplanes/kaeso/pull/674))
+
+#### UI library
+
+- The UI library drops components that only wrapped another one: Menubar, Accordion, HoverCard, ProviderCard, EnvironmentSnippet, Grid, Stack, Inline, ThemeSelect, the page blocks and ResourceList ([#672](https://github.com/logicplanes/kaeso/pull/672))
+
+#### Documentation
+
+- GitHub release notes lead with two or three highlights, and a small release goes out every week ([#671](https://github.com/logicplanes/kaeso/pull/671))
+
+### Fixed
+
+#### Console
+
+- On a phone, the update button on Instance › Updates moves under See what's new instead of past the screen's edge ([#676](https://github.com/logicplanes/kaeso/pull/676))
 
 ## [0.6.0-rc.3] - 2026-11-05
 
@@ -1279,7 +1320,8 @@ The first release of Kaeso, the open-source AI gateway you run yourself: the gat
 
 - A Release workflow that runs only from `prod`: it prepares the version changes and the changelog without write access to the repository, lets only jobs that run nothing but git push the release commit and the tag, syncs the release commit back to `dev`, and pins every action by commit SHA.
 
-[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.6.0-rc.3...HEAD
+[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.6.0-rc.4...HEAD
+[0.6.0-rc.4]: https://github.com/logicplanes/kaeso/releases/tag/v0.6.0-rc.4
 [0.6.0-rc.3]: https://github.com/logicplanes/kaeso/releases/tag/v0.6.0-rc.3
 [0.6.0-rc.2]: https://github.com/logicplanes/kaeso/releases/tag/v0.6.0-rc.2
 [0.6.0-rc.1]: https://github.com/logicplanes/kaeso/releases/tag/v0.6.0-rc.1
