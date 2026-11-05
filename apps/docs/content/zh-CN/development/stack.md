@@ -9,14 +9,14 @@ order: 3
 ```mermaid
 flowchart TD
   accTitle: 开发栈
-  accDescr: 浏览器打开 localhost:3000 上的 Vite。Vite 提供控制台，并把 /platform 和 /v1 转发给 127.0.0.1:18080 上的网关。网关与 PostgreSQL、ClickHouse 和 Valkey 一起运行在 Compose 项目 kaeso-dev 中，并调用模拟服务商、模拟 ChatGPT 和 Grok 登录、模拟单点登录、模拟版本和更新器以及 Mailpit。
+  accDescr: 浏览器打开 localhost:3000 上的 Vite。Vite 提供控制台，并把 /platform 和 /v1 转发给 127.0.0.1:18080 上的网关。网关与 PostgreSQL、ClickHouse 和 Valkey 一起运行在 Compose 项目 kaeso-dev 中，并调用模拟服务商、模拟 MCP 服务器、模拟 ChatGPT 和 Grok 登录、模拟单点登录、模拟版本和更新器以及 Mailpit。
   browser[您的浏览器]:::outside -- localhost:3000 --> vite[Vite<br>提供控制台]
   vite -- /platform 和 /v1 --> gateway
   subgraph stack [Compose 项目 kaeso-dev]
     gateway[网关<br>127.0.0.1:18080]:::accent
     data[(PostgreSQL<br>ClickHouse<br>Valkey)]
     subgraph mock [模拟服务]
-      mocks[OpenAI、Anthropic、<br>xAI 和 Together AI<br>ChatGPT 和 Grok 登录<br>单点登录<br>版本和更新器]
+      mocks[OpenAI、Anthropic、<br>xAI 和 Together AI<br>MCP 服务器<br>ChatGPT 和 Grok 登录<br>单点登录<br>版本和更新器]
     end
     mail[Mailpit]
   end
@@ -35,6 +35,7 @@ flowchart TD
 | `postgres`、`clickhouse`、`valkey` | 网关的数据库，Rust 测试也会使用 | `127.0.0.1:55432`、`127.0.0.1:58123`、`127.0.0.1:56379` |
 | `mail` | Mailpit，接收网关发出的每一封邮件 | `http://127.0.0.1:58025`，SMTP 在 `127.0.0.1:51025` |
 | `provider` | 模拟的 OpenAI、Anthropic、xAI 和 Together AI API，因此不需要服务商密钥 | 仅在栈内部 |
+| `mcp` | 带有类似 X 工具的模拟 MCP 服务器：`http://mcp:8080/mcp` 支持所有版本，`/modern/mcp` 只支持 `2026-07-28`，`/legacy/mcp` 只支持带 `initialize` 的版本 | 仅在栈内部 |
 | `idp` | 用于单点登录的模拟 OpenID Connect 身份提供商 | `http://idp.localhost:18091` |
 | `releases` | 模拟的 Kaeso 版本和更新器，供**实例** › **更新**使用 | `http://127.0.0.1:18092` |
 | `accounts` | 栈内位于 `auth.openai.com` 的模拟 ChatGPT 登录，以及位于 `auth.x.ai` 和 `api.x.ai` 的模拟 Grok 登录和 xAI API，带有网关信任的测试证书 | `http://127.0.0.1:18093` |

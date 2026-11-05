@@ -9,14 +9,14 @@ order: 3
 ```mermaid
 flowchart TD
   accTitle: Der Entwicklungs-Stack
-  accDescr: Ihr Browser öffnet Vite auf localhost:3000. Vite liefert die Konsole aus und leitet /platform und /v1 an das Gateway auf 127.0.0.1:18080 weiter. Das Gateway läuft im Compose-Projekt kaeso-dev mit PostgreSQL, ClickHouse und Valkey und ruft die Mock-Anbieter, den Mock für ChatGPT- und Grok-Anmeldung, den Mock für Single Sign-on, die Mock-Releases und den Mock-Updater sowie Mailpit auf.
+  accDescr: Ihr Browser öffnet Vite auf localhost:3000. Vite liefert die Konsole aus und leitet /platform und /v1 an das Gateway auf 127.0.0.1:18080 weiter. Das Gateway läuft im Compose-Projekt kaeso-dev mit PostgreSQL, ClickHouse und Valkey und ruft die Mock-Anbieter, den Mock-MCP-Server, den Mock für ChatGPT- und Grok-Anmeldung, den Mock für Single Sign-on, die Mock-Releases und den Mock-Updater sowie Mailpit auf.
   browser[Ihr Browser]:::outside -- localhost:3000 --> vite[Vite<br>liefert die Konsole aus]
   vite -- /platform und /v1 --> gateway
   subgraph stack [Compose-Projekt kaeso-dev]
     gateway[Gateway<br>127.0.0.1:18080]:::accent
     data[(PostgreSQL<br>ClickHouse<br>Valkey)]
     subgraph mock [Mocks]
-      mocks[OpenAI, Anthropic,<br>xAI und Together AI<br>Anmeldung bei ChatGPT und Grok<br>Single Sign-on<br>Releases und Updater]
+      mocks[OpenAI, Anthropic,<br>xAI und Together AI<br>MCP-Server<br>Anmeldung bei ChatGPT und Grok<br>Single Sign-on<br>Releases und Updater]
     end
     mail[Mailpit]
   end
@@ -35,6 +35,7 @@ Der Entwicklungsserver der Konsole leitet `/platform` und `/v1` an das Gateway w
 | `postgres`, `clickhouse`, `valkey` | Die Datenbanken des Gateways, auch von den Rust-Tests genutzt | `127.0.0.1:55432`, `127.0.0.1:58123`, `127.0.0.1:56379` |
 | `mail` | Mailpit, das jede E-Mail des Gateways abfängt | `http://127.0.0.1:58025`, SMTP auf `127.0.0.1:51025` |
 | `provider` | Ein Mock der APIs von OpenAI, Anthropic, xAI und Together AI, sodass Sie keinen Anbieter-Schlüssel brauchen | Nur im Stack |
+| `mcp` | Ein Mock-MCP-Server mit Tools wie bei X: `http://mcp:8080/mcp` spricht jede Version, `/modern/mcp` nur `2026-07-28` und `/legacy/mcp` nur die Versionen mit `initialize` | Nur im Stack |
 | `idp` | Ein Mock-Identitätsanbieter (OpenID Connect) für Single Sign-on | `http://idp.localhost:18091` |
 | `releases` | Mock-Releases von Kaeso und ein Mock-Updater für **Instanz** › **Updates** | `http://127.0.0.1:18092` |
 | `accounts` | Ein Mock der ChatGPT-Anmeldung unter `auth.openai.com` sowie der Grok-Anmeldung und der xAI-API unter `auth.x.ai` und `api.x.ai` im Stack, mit einem Testzertifikat, dem das Gateway vertraut | `http://127.0.0.1:18093` |

@@ -210,6 +210,14 @@ The gateway calls providers through the proxy in `HTTPS_PROXY` (or `HTTP_PROXY` 
 
 An organization admin chooses a custom provider's base URL, so the gateway guards where it connects. For every connection, it resolves the host's name and checks each address. It refuses private, loopback, link-local and cloud metadata addresses unless `KAESO_CUSTOM_PROVIDERS_ALLOWED_NETWORKS` lists their network. A name that later resolves to another address is checked again on the next connection. Link-local and cloud metadata addresses, such as `169.254.169.254`, stay refused even when a listed network covers them.
 
+### MCP servers
+
+| Variable<br>TOML key | Type | Default | What it does |
+| --- | --- | --- | --- |
+| `KAESO_MCP_SERVERS_ALLOWED_NETWORKS`<br>`mcp_servers.allowed_networks` | text | — | Comma-separated private, loopback or other non-public networks MCP servers may be reached on, such as `10.0.0.0/8`. Plain `http` reaches only these. |
+
+An organization admin chooses an MCP server's address, so the gateway guards it like a custom provider's: every connection, sign-in and metadata request included, is checked after DNS resolution, and private, loopback, link-local and cloud metadata addresses are refused unless `KAESO_MCP_SERVERS_ALLOWED_NETWORKS` lists their network. Redirects are never followed. Link-local and cloud metadata addresses stay refused even when a listed network covers them.
+
 The gateway also follows no redirects from a custom provider, and calls it without the proxy in `HTTPS_PROXY`, because a proxy would resolve the name past these checks. Allow a network only where every organization admin may reach the servers in it through the gateway. For a vLLM on the same host as the gateway's containers, list the Docker network, such as `172.16.0.0/12`.
 
 ### Streams to apps

@@ -52,6 +52,8 @@ pub struct Config {
     pub updater: UpdaterConfig,
     pub providers: ProvidersConfig,
     pub custom_providers: CustomProvidersConfig,
+    #[serde(default)]
+    pub mcp_servers: McpServersConfig,
     pub upstream: UpstreamConfig,
     pub streams: StreamsConfig,
     pub continuity: ContinuityConfig,
@@ -224,6 +226,13 @@ pub struct UpdaterConfig {
 #[serde(deny_unknown_fields)]
 pub struct CustomProvidersConfig {
     pub enabled: bool,
+    #[serde(default, deserialize_with = "networks")]
+    pub allowed_networks: Vec<ipnet::IpNet>,
+}
+
+#[derive(Debug, Default, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct McpServersConfig {
     #[serde(default, deserialize_with = "networks")]
     pub allowed_networks: Vec<ipnet::IpNet>,
 }
