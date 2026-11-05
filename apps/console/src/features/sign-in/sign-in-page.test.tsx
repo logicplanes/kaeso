@@ -102,6 +102,24 @@ describe("the email step", () => {
   });
 });
 
+describe("a read-only demo", () => {
+  it("signs a visitor in with one button and opens the console", async () => {
+    signedOut();
+    on("GET", "auth/methods", methods({ demo: true, password: false, magic_link: false }));
+    on("POST", "auth/demo", () => {
+      signedIn();
+      return signedInReply();
+    });
+    const { user } = await renderApp(`/sign-in?next=/orgs/${ORG}`);
+    expect(await screen.findByRole("heading", { name: "Kaeso demo" })).toBeInTheDocument();
+    expect(screen.getByText("A read-only console with sample data; install Kaeso to connect your own providers.")).toBeInTheDocument();
+    expect(screen.queryByRole("textbox", { name: "Email" })).toBeNull();
+    await user.click(screen.getByRole("button", { name: "Explore the demo" }));
+    await waitFor(() => expect(window.location.pathname).toMatch(new RegExp(`^/orgs/${ORG}`)));
+    expect(requests("POST", "auth/demo")).toHaveLength(1);
+  });
+});
+
 describe("signing in with a password", () => {
   it("signs in and opens the page the person came for", async () => {
     const { user } = await atMethods(`/sign-in?next=/orgs/${ORG}`);

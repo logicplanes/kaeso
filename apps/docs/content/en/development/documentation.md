@@ -499,11 +499,10 @@ The site's own words, such as **Edit on GitHub** or the search, are in `apps/doc
 
 ## The README's recording
 
-The README opens with a short recording of the console in a light and a dark version, `.github/assets/demo-light.gif` and `.github/assets/demo-dark.gif`; GitHub shows the one that matches the reader's theme. `apps/console/scripts/demo.mjs` records both with Playwright against the development stack and its seeded organization, so they show only the mock provider, its placeholder keys and the seed's made-up people. The script takes four steps in the console:
+The README opens with a short recording of the console in a light and a dark version, `.github/assets/demo-light.gif` and `.github/assets/demo-dark.gif`; GitHub shows the one that matches the reader's theme. `apps/console/scripts/demo.mjs` records both with Playwright against the development stack and its seeded organization, so they show only the mock provider, its placeholder keys and the seed's made-up people. Before it records, it creates an API key through the Platform API. Then it takes three steps in the console:
 
 - It connects an Anthropic key on **Providers**.
-- It creates a key on **API keys**.
-- It sends a request with that key from a terminal panel it draws over the page.
+- It sends a request with the API key from a terminal panel it draws over the page.
 - It waits on **Request logs**, with **Live** on, until the request arrives.
 
 To record them again, start from a freshly seeded stack with the console running, and install `ffmpeg` first, for example with `brew install ffmpeg`:
@@ -521,7 +520,7 @@ Then, in a second terminal:
 pnpm demo
 ```
 
-The script records at 1280 × 800 with a device scale factor of 2. It turns the frames into GIFs at 20 frames a second, with one palette each. It writes both into `.github/assets` and prints their sizes. Keep each under 4 MB.
+The script records at 1280 × 800 with a device scale factor of 2. It turns the frames into GIFs at 20 frames a second, with one palette each. It writes both into `.github/assets` and prints their sizes and lengths. Keep each under 4 MB. The script fails when a recording runs 15 seconds or longer, so readers see all of it.
 
 It also runs on a stack it has recorded on before. In that case it first removes the Anthropic key and archives its own key, but the earlier requests stay in the logs. The README links the GIFs on `dev`, so a new recording shows there once its pull request is merged.
 

@@ -118,6 +118,8 @@ const messages = (): Rule[] => [
   rule("errors.tooManyAttempts", (v) => t("errors.tooManyAttempts", "Too many attempts from your address; try again in {wait}.", v), { wait: "wait" }),
   rule("errors.passwordSignInOff", () => t("errors.passwordSignInOff", "Password sign-in is turned off on this install.")),
   rule("errors.magicLinkOff", () => t("errors.magicLinkOff", "Sign-in links are turned off on this install.")),
+  rule("errors.demoReadOnly", () => t("errors.demoReadOnly", "This demo is read-only; install Kaeso to change it.")),
+  rule("errors.noDemo", () => t("errors.noDemo", "This install has no demo.")),
   rule("errors.accountDeactivated", () => t("errors.accountDeactivated", "This account is deactivated.")),
   rule("errors.accountDeactivatedContact", () => t("errors.accountDeactivatedContact", "This account is deactivated; contact your Kaeso administrator.")),
   rule("errors.signInExpired", () => t("errors.signInExpired", "The sign-in has expired; enter your email and password again.")),

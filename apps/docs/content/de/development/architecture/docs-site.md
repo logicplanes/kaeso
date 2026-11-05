@@ -31,6 +31,7 @@ flowchart TD
 | `docs.ts` | Alle Sprachen und die Prüfung, dass sie dieselben Seiten in derselben Reihenfolge enthalten |
 | `diagram.ts`, `mermaid.ts`, `diagrams.ts` | Die Diagramme: ihre Mermaid-Konfiguration aus den Tokens von Kaeso, ihr Zeichnen in Headless-Chromium und `pnpm --filter kaeso-docs diagrams` |
 | `plugin.ts` | Das Vite-Plugin: virtuelle Module, Neuladen in der Entwicklung, eine HTML-Datei pro Seite und Sprache, die `404.html`-Dateien und die Sitemap |
+| `github.ts` | Die Zahl der Sterne von logicplanes/kaeso aus der API von GitHub, einmal pro Build gelesen, mit `GITHUB_TOKEN`, wenn es gesetzt ist; die Seitenleiste zeigt sie ab 100 neben **Stern auf GitHub**, und ein Build, der GitHub nicht erreicht, zeigt keine |
 | `check.ts` | `pnpm --filter kaeso-docs check:content`: dieselben Prüfungen, ohne die App zu bauen |
 
 In der Entwicklung wird ein Problem ausgegeben, und die Seite wird trotzdem gezeichnet. Der Build und `check:content` schlagen daran fehl und nennen die Datei.

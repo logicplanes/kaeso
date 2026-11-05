@@ -36,6 +36,8 @@ flowchart TD
 
 Each entry also carries `art`, the release's artwork, which update.kaeso.app chose once and keeps for good. It is a style, a palette and a seed that the UI library's `ReleaseArt` draws. The gateway stores the first `art` it sees for a version in `update_releases.art` and never replaces it. `me/whats-new` returns it, and the console draws one from the version when a release has none.
 
+Each answer from `v1/releases.json`, a `304` too, carries the `Kaeso-Stars` header with the number of stars logicplanes/kaeso has on GitHub. The gateway keeps the number from its last successful check in memory and returns it as `github_stars` in `instance/updates`. Without the header, as from a mirror, it is `null`. **Instance** › **Updates** shows it beside **Star on GitHub** from 100 stars on.
+
 ## The gateway
 
 `services/updates.rs` and the `update_check` job look for releases. Every minute the job asks whether the next check is due (`update_settings.next_check_at`).

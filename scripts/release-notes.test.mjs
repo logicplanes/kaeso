@@ -721,15 +721,15 @@ test("the answer also carries the short version for the GitHub release, which th
   const { lines, brief } = await run(answer(valid()));
   assert.deepEqual(lines, expected);
   assert.deepEqual(brief, valid().release);
-  assert.match(SYSTEM, /one to 5 changes that matter most/);
+  assert.match(SYSTEM, /two or three changes that matter most to people who run or integrate Kaeso, the most important first, never more than 3/);
   assert.match(SYSTEM, /at most 40 characters/);
 });
 
 test("a short version with too many or no highlights, punctuated titles, long text or other pull requests falls back", async () => {
   const point = (title, prs = [11]) => ({ title, text: "Streams stay open.", prs });
   for (const [change, reason] of [
-    [(output) => (output.release.highlights = []), /one to 5 highlights/],
-    [(output) => (output.release.highlights = Array.from({ length: 6 }, (_, i) => point(`Point ${i + 1}`))), /one to 5 highlights/],
+    [(output) => (output.release.highlights = []), /one to 3 highlights/],
+    [(output) => (output.release.highlights = Array.from({ length: 4 }, (_, i) => point(`Point ${i + 1}`))), /one to 3 highlights/],
     [(output) => (output.release.highlights[0].title = "Batch page."), /title ends with punctuation/],
     [(output) => (output.release.highlights[0].title = "x".repeat(41)), /title is longer than 40 characters/],
     [(output) => (output.release.highlights[0].text = "x".repeat(161)), /highlight 1 is longer than 160 characters/],

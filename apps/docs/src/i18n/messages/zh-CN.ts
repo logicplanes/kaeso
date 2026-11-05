@@ -6,6 +6,7 @@ export const zhCN: Messages = {
   "site.navigation": "文档",
   "nav.introduction": "简介",
   "nav.changelog": "更新日志",
+  "nav.star": "在 GitHub 上加星标",
   "nav.overview": "概览",
   "legal.label": "法律信息",
   "legal.privacy": "隐私政策",

@@ -11,6 +11,7 @@ import {
   sendMagicLink,
   signInMethodsFor,
   signInWithPassword,
+  signInToDemo,
   signInWithTotp,
   startSso,
   type SignInMethods,
@@ -197,6 +198,26 @@ export function SignInPage({
   }
 
   if (page === undefined) return <PublicPage title={t("signIn.title", "Sign in")}>{null}</PublicPage>;
+
+  if (page?.demo) {
+    return (
+      <PublicPage
+        title={t("signIn.demoTitle", "Kaeso demo")}
+        description={t("signIn.demoDescription", "A read-only console with sample data; install Kaeso to connect your own providers.")}
+      >
+        <Button
+          variant="primary"
+          size="xl"
+          fullWidth
+          autoFocus
+          loading={busy === "demo"}
+          onClick={() => void run("demo", async () => (await signInToDemo(), await done()))}
+        >
+          {t("signIn.demo", "Explore the demo")}
+        </Button>
+      </PublicPage>
+    );
+  }
 
   return (
     <PublicPage title={t("signIn.title", "Sign in")}>

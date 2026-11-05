@@ -138,6 +138,7 @@ These settings turn passwords and sign-in links on or off for the whole install.
 | --- | --- | --- | --- |
 | `KAESO_AUTH_PASSWORD`<br>`auth.password` | bool | `true` | Allow sign-in with email and password. |
 | `KAESO_AUTH_MAGIC_LINK`<br>`auth.magic_link` | bool | `true` | Allow sign-in with a link sent by email. |
+| `KAESO_AUTH_DEMO_USER`<br>`auth.demo_user` | text | — | Turns the install into a public, read-only demo: the email of an existing user that every visitor is signed in as. Nothing can be changed, and the model API and MCP are off ([run a public demo](installation.md#run-a-public-demo)). |
 | `KAESO_AUTH_OIDC_ALLOW_PRIVATE_NETWORKS`<br>`auth.oidc_allow_private_networks` | bool | `false` | Allow OIDC requests to private and loopback addresses, for an identity provider on your own network. Turn it on only where organization admins may reach your internal network through the gateway. Link-local and cloud metadata addresses, such as `169.254.169.254`, stay refused. |
 
 ### API key failures

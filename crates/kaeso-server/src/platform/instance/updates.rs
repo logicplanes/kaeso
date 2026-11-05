@@ -328,6 +328,9 @@ pub struct UpdatesView {
     #[doc = "The guide to updating by hand."]
     #[schema(example = "https://docs.kaeso.app/self-hosting/upgrades")]
     pub upgrade_guide: &'static str,
+    #[doc = "How many stars Kaeso has on GitHub, as the release feed said in the gateway's last successful check since it started; `null` before that, or when the feed doesn't say, as a mirror may not."]
+    #[schema(example = 1200)]
+    pub github_stars: Option<u64>,
 }
 
 fn release_view(running: &kaeso_update::Version, k: &Known) -> ReleaseView {
@@ -402,6 +405,7 @@ async fn overview(state: &AppState) -> ApiResult<UpdatesView> {
         },
         job: job.map(UpdateJobView::of),
         upgrade_guide: UPGRADE_GUIDE,
+        github_stars: state.github_stars.get(),
     })
 }
 

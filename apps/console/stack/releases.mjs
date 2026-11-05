@@ -14,7 +14,7 @@ const VERSIONS = {
   major: `${major + 1}.0.0`,
 };
 
-const initial = () => ({ releases: "patch", updater: "ready", outcome: "succeeded", jobs: new Map() });
+const initial = () => ({ releases: "patch", updater: "ready", outcome: "succeeded", stars: 1234, jobs: new Map() });
 let scenario = initial();
 
 const sha = (text) => createHash("sha256").update(text).digest("hex");
@@ -107,7 +107,7 @@ createServer(async (req, res) => {
       res,
       200,
       list().map((r) => release(base, r)),
-      { etag: `"${scenario.releases}"` },
+      { etag: `"${scenario.releases}"`, ...(scenario.stars === null ? {} : { "kaeso-stars": String(scenario.stars) }) },
     );
   }
   const download = /^\/download\/v([^/]+)\/release\.json$/.exec(path);

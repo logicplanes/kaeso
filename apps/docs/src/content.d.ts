@@ -1,6 +1,7 @@
 declare module "virtual:kaeso-docs/site/*" {
   import type { NavGroup, PageContent, PageMeta } from "~/markdown/ast";
   export const editBase: string;
+  export const stars: number | null;
   export const nav: NavGroup[];
   export const pages: Record<string, PageMeta>;
   export const load: Record<string, () => Promise<{ default: PageContent }>>;

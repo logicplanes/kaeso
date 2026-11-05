@@ -6,6 +6,8 @@ order: 11
 
 Kaeso is released as a whole. The gateway, the console, KPP's crates and the UI library's packages share one version, and one run of the Release workflow publishes all of them. Only the maintainer makes releases; contributors never create tags or releases.
 
+A small release goes out every week that `dev` has changes for people who use or run Kaeso and its CI passes: the next pre-release while one is open, otherwise the next patch release. A release with a breaking change waits for the maintainer.
+
 ## Versions
 
 Versions follow [semantic versioning](https://semver.org). A release that needs a manual step from people who run Kaeso, such as a migration that can't run by itself, is a major one. A pre-release adds a suffix, such as `0.2.0-rc.1`. The Git tag is `v` and the version, such as `v0.2.0`.
@@ -48,7 +50,7 @@ pnpm release:notes --dry-run --since v{{version}} --head origin/dev
 
 A stable release after pre-releases of its version folds their sections into one, so its notes cover everything since the last stable release.
 
-The GitHub release opens with one sentence, up to five highlights and the breaking changes. It then lists every entry of the section under its own heading, such as **Added**, **Changed**, **Removed** or **Fixed**. Each entry is one line with its topic and pull requests. The contributors and links to the full changelog and the compare view close it.
+The GitHub release opens with one sentence, two or three highlights and the breaking changes. It then lists every entry of the section under its own heading, such as **Added**, **Changed**, **Removed** or **Fixed**. Each entry is one line with its topic and pull requests. The contributors and links to the full changelog and the compare view close it.
 
 The model writes the opening with the section; without the model, the release has no highlights, and its breaking changes are cut to their first sentence. The preview above prints the GitHub release after the notes.
 
@@ -126,7 +128,7 @@ A release publishes:
 
 | Where | What |
 | --- | --- |
-| GitHub releases | `vX.Y.Z` with its notes, `compose.yaml`, `kaeso.example.toml`, `env.example`, `release.json`, the npm tarballs and the `.crate` files |
+| GitHub releases | `vX.Y.Z` with its notes, `compose.yaml`, `install.sh`, `kaeso.example.toml`, `env.example`, `release.json`, the npm tarballs and the `.crate` files |
 | GitHub Container Registry | `kaeso-gateway`, `kaeso-console` and `kaeso-updater` for `linux/amd64` and `linux/arm64`, with build provenance and a software bill of materials |
 | crates.io | `kaeso-kpp` and `kaeso-codecs` |
 | npm | `@logicplanes/kaeso-ui` and `@logicplanes/kaeso-tokens` |
@@ -181,6 +183,8 @@ pnpm install --frozen-lockfile && pnpm build:packages
 pnpm --filter kaeso-docs build
 pnpm --filter kaeso-showcase build
 ```
+
+The documentation's build reads the star count of logicplanes/kaeso from GitHub's API for its sidebar. Set `GITHUB_TOKEN` so GitHub's limit of 60 requests an hour doesn't apply; without an answer, the site shows no count.
 
 Upload `apps/docs/dist` and `apps/showcase/dist` as they are. They hold every page in every language, `robots.txt`, `sitemap.xml` and a `404.html` per language. The host has to answer `/console` with `console.html`, and an unknown address with the `404.html` of its language.
 

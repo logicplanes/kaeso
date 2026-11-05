@@ -10,6 +10,53 @@
     "version": "0.6.0-rc.3"
   },
   "paths": {
+    "/platform/v1/auth/demo": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Signs in to a read-only demo as its demo user.",
+        "description": "Only on an install that names a demo user (`auth.demo_user`); elsewhere it answers 404. The session sees what the demo user sees, and the install refuses every change.\n\n**Access:** public; no authentication.",
+        "operationId": "postAuthDemo",
+        "responses": {
+          "200": {
+            "description": "Signed in (the session cookie is set).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignedIn"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {}
+        ],
+        "x-kaeso-access": "public"
+      }
+    },
     "/platform/v1/auth/invites/accept": {
       "post": {
         "tags": [
@@ -29979,9 +30026,14 @@
           "magic_link",
           "sso_required",
           "sign_up",
-          "set_up"
+          "set_up",
+          "demo"
         ],
         "properties": {
+          "demo": {
+            "type": "boolean",
+            "description": "The install is a read-only demo: `auth/demo` signs anyone in as its demo\nuser, and every change is refused."
+          },
           "magic_link": {
             "type": "boolean",
             "description": "A sign-in link by email."
@@ -31336,6 +31388,16 @@
             "type": "string",
             "description": "The version the gateway runs.",
             "example": "0.6.0-rc.3"
+          },
+          "github_stars": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "How many stars Kaeso has on GitHub, as the release feed said in the gateway's last successful check since it started; `null` before that, or when the feed doesn't say, as a mirror may not.",
+            "example": 1200,
+            "minimum": 0
           },
           "job": {
             "oneOf": [

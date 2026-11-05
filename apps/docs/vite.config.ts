@@ -8,6 +8,7 @@ import { resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { writeSitePolicy } from "../../scripts/csp.mjs";
 import { kaesoVersion } from "./scripts/content/docs.ts";
+import { githubStars } from "./scripts/content/github.ts";
 import { kaesoDocs } from "./scripts/content/plugin.ts";
 
 const root = fileURLToPath(new URL(".", import.meta.url));
@@ -158,7 +159,7 @@ function uiEntryImports(): Plugin {
 export default defineConfig({
   cacheDir: process.env.KAESO_VITE_CACHE ?? "node_modules/.vite",
   plugins: [
-    kaesoDocs({ root, contentDir, editBase, siteUrl, version: kaesoVersion(root) }),
+    kaesoDocs({ root, contentDir, editBase, siteUrl, version: kaesoVersion(root), stars: () => githubStars({ token: process.env.GITHUB_TOKEN }) }),
     uiEntryImports(),
     themeInit(),
     themeColor(),

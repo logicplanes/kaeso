@@ -141,7 +141,18 @@ pub struct MailConfig {
 pub struct AuthConfig {
     pub password: bool,
     pub magic_link: bool,
+    #[serde(default)]
+    pub demo_user: Option<String>,
     pub oidc_allow_private_networks: bool,
+}
+
+impl AuthConfig {
+    pub fn demo_user(&self) -> Option<&str> {
+        self.demo_user
+            .as_deref()
+            .map(str::trim)
+            .filter(|address| !address.is_empty())
+    }
 }
 
 #[derive(Clone, Copy, Debug, Deserialize)]

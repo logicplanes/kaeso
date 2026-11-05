@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { apply, load } from "~/i18n";
 import { updateJob } from "~/test/fixtures/instance-account";
-import { STEPS, checkErrorText, jobResult, reasonText, stepLabel } from "./update-words";
+import { STEPS, checkErrorText, jobResult, reasonText, starsText, stepLabel } from "./update-words";
 
 afterEach(async () => apply(await load("en")));
 
@@ -77,5 +77,13 @@ describe("update words", () => {
     expect(checkErrorText("the release list from api.github.com is larger than 4 MiB")).toBe("来自 api.github.com 的版本列表超过 4 MiB");
     expect(checkErrorText("no HTTP client")).toBe("网关无法创建 HTTP 客户端");
     expect(checkErrorText("something new")).toBe("something new");
+  });
+
+  it("writes the star count short from 100 on, and nothing below", () => {
+    for (const stars of [null, undefined, 0, 4, 99]) expect(starsText(stars)).toBeNull();
+    expect(starsText(100)).toBe("100");
+    expect(starsText(1234)).toBe("1.2K");
+    expect(starsText(15_300)).toBe("15.3K");
+    expect(starsText(2_450_000)).toBe("2.5M");
   });
 });

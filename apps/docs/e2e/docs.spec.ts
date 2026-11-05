@@ -120,6 +120,18 @@ test("the sidebar's changelog leads to kaeso.app in the page's language", async 
   await expect(page.locator('a[href$="/changelog"]:not([href^="https://kaeso.app"])')).toHaveCount(0);
 });
 
+test("the sidebar's star link leads to Kaeso on GitHub in every language", async ({ page }) => {
+  for (const [path, label] of [
+    ["/", "Star on GitHub"],
+    ["/de", "Stern auf GitHub"],
+    ["/zh-CN", "在 GitHub 上加星标"],
+  ] as const) {
+    await page.goto(path);
+    const star = page.getByRole("navigation").getByRole("link", { name: new RegExp(`^${label}( [\\d.,]+[^\\d\\s]*)?$`) });
+    await expect(star).toHaveAttribute("href", "https://github.com/logicplanes/kaeso");
+  }
+});
+
 test("previous and next follow the sidebar", async ({ page }) => {
   await page.goto("/guides/keys-and-limits");
   const steps = page.getByRole("navigation", { name: "Previous and next page" });

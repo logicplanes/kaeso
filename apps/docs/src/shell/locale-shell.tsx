@@ -11,7 +11,7 @@ export function LocaleShell({ data }: { data: LocaleData }) {
   return (
     <TextProvider locale={data.locale}>
       <LocaleProvider locale={data.locale} messages={data.ui}>
-        <DocsShell locale={data.locale} nav={data.site.nav} />
+        <DocsShell locale={data.locale} nav={data.site.nav} stars={data.site.stars} />
       </LocaleProvider>
     </TextProvider>
   );

@@ -8,6 +8,7 @@ import { documentTitle } from "../../src/page/document-title.ts";
 import { DIAGRAM_COMMAND } from "./diagram.ts";
 import { browserRender, missingDiagrams, syncDiagrams, type Render } from "./diagrams.ts";
 import { buildDocs, type Docs } from "./docs.ts";
+import type { StarCount } from "./github.ts";
 import type { Site, SitePage } from "./site.ts";
 
 export interface DocsOptions {
@@ -17,6 +18,7 @@ export interface DocsOptions {
   siteUrl: string;
   version: string;
   render?: Render;
+  stars?: (() => Promise<StarCount>) | undefined;
 }
 
 export interface PageHead {
@@ -183,10 +185,11 @@ function pageModule(docs: Docs, name: string, root: string): string {
   return page ? withAssets(page, root) : "export default { blocks: [], toc: [] };\n";
 }
 
-function siteModule(site: Site, editBase: string): string {
+function siteModule(site: Site, editBase: string, stars: number | null): string {
   const loaders = site.metas.map((m) => `  ${JSON.stringify(m.path)}: () => import(${JSON.stringify(`${VIRTUAL}${pageModuleId(m.path)}`)}),`);
   return [
     `export const editBase = ${JSON.stringify(editBase)};`,
+    `export const stars = ${JSON.stringify(stars)};`,
     `export const nav = ${JSON.stringify(site.nav)};`,
     `export const pages = ${JSON.stringify(Object.fromEntries(site.metas.map((m) => [m.path, m])))};`,
     `export const load = {`,
@@ -244,6 +247,7 @@ export function kaesoDocs(options: DocsOptions): Plugin {
   const contentDir = resolve(options.root, options.contentDir);
   let docs: Docs | null = null;
   let isBuild = false;
+  let stars: number | null = null;
   const current = () => (docs ??= buildDocs(contentDir, options.root, options.version));
   const summary = (d: Docs) => `content: ${d.problems.length} to fix in ${options.contentDir}/\n  ${d.problems.join("\n  ")}`;
   const render = options.render ?? browserRender(options.root);
@@ -267,6 +271,11 @@ export function kaesoDocs(options: DocsOptions): Plugin {
     },
     async buildStart() {
       docs = null;
+      if (isBuild && options.stars) {
+        const count = await options.stars();
+        stars = count.stars;
+        this.info(count.stars === null ? `github: no star count, since ${count.why}` : `github: ${count.stars} stars`);
+      }
       if (isBuild) {
         const failed = await draw(current(), true);
         if (failed.length) this.error(`diagrams: ${failed.length} to fix\n  ${failed.join("\n  ")}`);
@@ -320,7 +329,7 @@ export function kaesoDocs(options: DocsOptions): Plugin {
       const [kind = "", locale = ""] = name.split("/");
       if (kind === "page") return pageModule(d, name, options.root);
       if (!isLocale(locale)) return null;
-      if (kind === "site") return siteModule(d.sites[locale], options.editBase);
+      if (kind === "site") return siteModule(d.sites[locale], options.editBase, stars);
       if (kind === "search") return `export default ${JSON.stringify(d.sites[locale].search)};\n`;
       return null;
     },

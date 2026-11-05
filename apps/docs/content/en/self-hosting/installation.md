@@ -1,14 +1,85 @@
 ---
 title: Installation
-description: Install a particular release, try Kaeso on your computer, change its services and run its commands.
+description: Install Kaeso by hand or a particular release, try it on your computer, change its services and run its commands.
 order: 3
 ---
 
-The [quick start](../get-started/quick-start.md) installs the newest release on a server. This page covers what you might do differently, and the commands you run on an install.
+The [quick start](../get-started/quick-start.md) installs the newest release on a server with one command. This page shows each step that command takes, what you might do differently, and the commands you run on an install.
+
+## Install by hand
+
+The [installer](../get-started/quick-start.md#install-kaeso) takes these steps for you. Take them yourself to choose the folder, the passwords and the email settings as you go.
+
+### Download the Compose file
+
+Each release publishes a `compose.yaml` that pins its images by version and digest. Download it into a new folder that only you can read:
+
+```bash
+mkdir -m 700 kaeso && cd kaeso
+curl -fsSLO \
+  https://github.com/logicplanes/kaeso/releases/latest/download/compose.yaml
+```
+
+### Write the settings
+
+Create `.env` with your domain and four random passwords. `umask 077` makes it, and every file you create in this shell from now on, readable only by you:
+
+```bash
+umask 077
+cat > .env <<EOF
+KAESO_DOMAIN=kaeso.example.com
+POSTGRES_PASSWORD=$(openssl rand -hex 24)
+POSTGRES_SUPERUSER_PASSWORD=$(openssl rand -hex 24)
+CLICKHOUSE_PASSWORD=$(openssl rand -hex 24)
+VALKEY_PASSWORD=$(openssl rand -hex 24)
+EOF
+```
+
+The gateway sends sign-in links, invitations and alerts by email, and it doesn't start without a way to send them. Add your SMTP server. Kaeso reaches it on port 587 with STARTTLS unless [you change it](../self-hosting/email.md):
+
+```bash
+cat >> .env <<'EOF'
+KAESO_SMTP_HOST=smtp.example.com
+KAESO_SMTP_USER=kaeso
+KAESO_SMTP_PASSWORD=…
+KAESO_SMTP_FROM="Kaeso <kaeso@example.com>"
+EOF
+```
+
+To try Kaeso without a mail server, let the gateway only log its emails. Password sign-in and the setup link still work, but sign-in links and invitations aren't delivered:
+
+```bash
+echo KAESO_MAIL_TRANSPORT=log >> .env
+```
+
+### Create the master key
+
+The master key encrypts the provider keys that Kaeso stores. Generate one into `master-keys`, which Compose hands to the gateway as a Docker secret:
+
+```bash
+docker run --rm ghcr.io/logicplanes/kaeso-gateway:{{version}} \
+  master-key generate > master-keys
+sudo chown 65532:65532 master-keys && sudo chmod 0400 master-keys
+```
+
+The gateway runs as user 65532 in its container, so the file belongs to that user, and no one else can read it. Docker Desktop and Colima read the folder as you, so there run only `chmod 0400 master-keys`. With rootless Docker, give the file to the user that 65532 maps to on the host.
+
+> [!IMPORTANT]
+> Keep a copy of `master-keys` somewhere safe, apart from your database backups. Without it, Kaeso can't decrypt the stored provider keys, and you have to enter them again.
+
+### Start Kaeso
+
+Start every service and wait until each one is healthy:
+
+```bash
+docker compose up -d --wait
+```
+
+The first start takes a minute or two while the images download and the gateway prepares the databases. The command returns once every service is healthy, or names the one that isn't. Caddy requests the certificate in the background, so HTTPS requests can fail until it has one. `docker compose logs caddy` shows when it gets the certificate, or why it can't.
 
 ## Install a particular release
 
-The quick start downloads the `compose.yaml` of the newest stable release. To install another release, download the file from that release's tag:
+The installer downloads the `compose.yaml` of the newest stable release. To install another release, give the installer its version, such as `--version {{version}}`, or download the file from that release's tag:
 
 ```bash
 curl -fsSLO \
@@ -55,6 +126,17 @@ services:
 ```
 
 Apply the change with `docker compose up -d --wait`. Compose recreates only the services whose settings changed. [Configuration](configuration.md) lists every setting of the gateway.
+
+## Run a public demo
+
+A demo lets people look around a real console without installing Kaeso. Fill an install with an organization, projects and usage, then name one of its users as the demo user:
+
+```bash
+echo "KAESO_AUTH_DEMO_USER=owner@example.com" >> .env
+docker compose up -d --wait
+```
+
+The sign-in page then offers **Explore the demo**, which signs every visitor in as that user. The install refuses every change with a message that it's a read-only demo, and the model API and MCP are off, so nothing can be sent through it. Remove the setting to make the install usable again.
 
 ## Choose how to keep request logs
 

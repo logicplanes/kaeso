@@ -31,6 +31,7 @@ flowchart TD
 | `docs.ts` | 所有语言，并检查各语言包含相同的页面、顺序也相同 |
 | `diagram.ts`、`mermaid.ts`、`diagrams.ts` | 图示：基于 Kaeso 令牌的 Mermaid 配置、在无头 Chromium 中的绘制，以及 `pnpm --filter kaeso-docs diagrams` |
 | `plugin.ts` | Vite 插件：虚拟模块、开发时的重新加载、每个页面每种语言一个 HTML 文件、`404.html` 文件和站点地图 |
+| `github.ts` | 从 GitHub API 读取 logicplanes/kaeso 的星标数，每次构建读取一次，设置了 `GITHUB_TOKEN` 时使用它；侧边栏从 100 起在**在 GitHub 上加星标**旁显示该数字，无法访问 GitHub 的构建不显示数字 |
 | `check.ts` | `pnpm --filter kaeso-docs check:content`：不构建应用、执行相同的检查 |
 
 开发时，问题会被打印出来，页面照常渲染。构建和 `check:content` 遇到问题则会失败，并指出文件。

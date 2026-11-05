@@ -1,4 +1,4 @@
-use std::sync::LazyLock;
+use std::sync::{LazyLock, Mutex, PoisonError};
 use std::time::Duration;
 
 use futures::StreamExt;
@@ -36,6 +36,7 @@ const PER_PAGE: &str = "50";
 const MAX_LIST: usize = 4 << 20;
 const MAX_PAGES: usize = 10;
 const MAX_NOTES: usize = 64 << 10;
+const STARS: &str = "kaeso-stars";
 
 static HTTP: LazyLock<Option<reqwest::Client>> = LazyLock::new(|| {
     reqwest::Client::builder()
@@ -55,6 +56,19 @@ static HTTP: LazyLock<Option<reqwest::Client>> = LazyLock::new(|| {
         .inspect_err(|e| tracing::error!(error = %e, "cannot build the release client"))
         .ok()
 });
+
+#[derive(Debug, Default)]
+pub struct GitHubStars(Mutex<Option<u64>>);
+
+impl GitHubStars {
+    pub fn get(&self) -> Option<u64> {
+        *self.0.lock().unwrap_or_else(PoisonError::into_inner)
+    }
+
+    fn set(&self, stars: Option<u64>) {
+        *self.0.lock().unwrap_or_else(PoisonError::into_inner) = stars;
+    }
+}
 
 pub fn running() -> Version {
     Version::parse(env!("CARGO_PKG_VERSION")).unwrap_or_else(|_| Version::new(0, 0, 0))
@@ -239,10 +253,13 @@ struct GitHubAsset {
 }
 
 enum Fetched {
-    NotModified,
+    NotModified {
+        stars: Option<u64>,
+    },
     Releases {
         etag: Option<String>,
         releases: Vec<GitHubRelease>,
+        stars: Option<u64>,
     },
 }
 
@@ -261,12 +278,19 @@ fn kind_of(e: &reqwest::Error) -> &'static str {
 }
 
 enum Page {
-    NotModified,
+    NotModified {
+        stars: Option<u64>,
+    },
     Releases {
         etag: Option<String>,
         next: Option<url::Url>,
         releases: Vec<GitHubRelease>,
+        stars: Option<u64>,
     },
+}
+
+fn stars_of(headers: &reqwest::header::HeaderMap) -> Option<u64> {
+    headers.get(STARS)?.to_str().ok()?.trim().parse().ok()
 }
 
 fn next_page(headers: &reqwest::header::HeaderMap) -> Option<url::Url> {
@@ -300,8 +324,9 @@ async fn fetch_page(
         .await
         .map_err(|e| CheckError::Unreachable(host.clone(), kind_of(&e)))?;
     let status = resp.status();
+    let stars = stars_of(resp.headers());
     if status == StatusCode::NOT_MODIFIED {
-        return Ok(Page::NotModified);
+        return Ok(Page::NotModified { stars });
     }
     if status == StatusCode::TOO_MANY_REQUESTS || status == StatusCode::FORBIDDEN {
         return Err(CheckError::RateLimited(
@@ -335,6 +360,7 @@ async fn fetch_page(
         etag,
         next,
         releases,
+        stars,
     })
 }
 
@@ -342,13 +368,14 @@ async fn fetch_list(state: &AppState, etag: Option<&str>) -> Result<Fetched, Che
     let mut url = state.config.updates.releases_url.clone();
     url.query_pairs_mut().append_pair("per_page", PER_PAGE);
     let origin = url.origin();
-    let (first_etag, mut next, mut all) = match fetch_page(state, url, etag).await? {
-        Page::NotModified => return Ok(Fetched::NotModified),
+    let (first_etag, mut next, mut all, stars) = match fetch_page(state, url, etag).await? {
+        Page::NotModified { stars } => return Ok(Fetched::NotModified { stars }),
         Page::Releases {
             etag,
             next,
             releases,
-        } => (etag, next, releases),
+            stars,
+        } => (etag, next, releases, stars),
     };
     let mut pages = 1;
     while let Some(url) = next.take() {
@@ -356,7 +383,7 @@ async fn fetch_list(state: &AppState, etag: Option<&str>) -> Result<Fetched, Che
             break;
         }
         match fetch_page(state, url, None).await? {
-            Page::NotModified => break,
+            Page::NotModified { .. } => break,
             Page::Releases {
                 next: more,
                 releases,
@@ -371,6 +398,7 @@ async fn fetch_list(state: &AppState, etag: Option<&str>) -> Result<Fetched, Che
     Ok(Fetched::Releases {
         etag: first_etag,
         releases: all,
+        stars,
     })
 }
 
@@ -609,7 +637,8 @@ async fn check_locked(state: &AppState, trigger: Trigger) -> Result<Checked, Sto
     let fetched = fetch_list(state, etag).await;
     let now = state.clock.now();
     match fetched {
-        Ok(Fetched::NotModified) => {
+        Ok(Fetched::NotModified { stars }) => {
+            state.github_stars.set(stars);
             updates::record_check(
                 &state.pg,
                 now,
@@ -621,7 +650,12 @@ async fn check_locked(state: &AppState, trigger: Trigger) -> Result<Checked, Sto
             .await?;
             Ok(Checked::Unchanged)
         }
-        Ok(Fetched::Releases { etag, releases }) => {
+        Ok(Fetched::Releases {
+            etag,
+            releases,
+            stars,
+        }) => {
+            state.github_stars.set(stars);
             let downloads = downloads_of(&state.config.updates.releases_url);
             let rows = rows_of(releases, &previous, &downloads).await;
             let mut tx = state.pg.begin().await?;
@@ -1187,6 +1221,23 @@ mod tests {
             HeaderValue::from_static(r#"<https://api.github.com/x?page=1>; rel="prev""#),
         );
         assert_eq!(next_page(&h), None);
+    }
+
+    #[test]
+    fn the_star_count_is_a_whole_number_or_unknown() {
+        let mut h = HeaderMap::new();
+        assert_eq!(stars_of(&h), None);
+        for (value, stars) in [
+            ("4", Some(4)),
+            (" 1234 ", Some(1234)),
+            ("0", Some(0)),
+            ("-1", None),
+            ("1.2k", None),
+            ("", None),
+        ] {
+            h.insert(STARS, HeaderValue::from_static(value));
+            assert_eq!(stars_of(&h), stars, "{value:?}");
+        }
     }
 
     #[test]

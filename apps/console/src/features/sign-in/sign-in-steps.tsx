@@ -9,7 +9,7 @@ export { showSsoError } from "~/auth/sso-errors";
 
 export const linkSent = (email: string): string => t("signIn.linkSent", "If an account exists for {email}, a sign-in link is on its way.", { email });
 
-export type Busy = "continue" | "password" | "magic_link" | "sso" | "code" | "sign_up";
+export type Busy = "continue" | "password" | "magic_link" | "sso" | "code" | "sign_up" | "demo";
 
 export async function requestSignUp(email: string): Promise<string> {
   return data(await api.POST("/platform/v1/auth/signup", { body: { email } })).message;
