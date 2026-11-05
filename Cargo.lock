@@ -2512,7 +2512,7 @@ dependencies = [
 
 [[package]]
 name = "kaeso"
-version = "0.6.0-rc.1"
+version = "0.6.0-rc.2"
 dependencies = [
  "anyhow",
  "clap",
@@ -2526,7 +2526,7 @@ dependencies = [
 
 [[package]]
 name = "kaeso-bench"
-version = "0.6.0-rc.1"
+version = "0.6.0-rc.2"
 dependencies = [
  "bytes",
  "clap",
@@ -2543,7 +2543,7 @@ dependencies = [
 
 [[package]]
 name = "kaeso-codecs"
-version = "0.6.0-rc.1"
+version = "0.6.0-rc.2"
 dependencies = [
  "base64 0.23.1",
  "indexmap 2.14.2",
@@ -2557,7 +2557,7 @@ dependencies = [
 
 [[package]]
 name = "kaeso-core"
-version = "0.6.0-rc.1"
+version = "0.6.0-rc.2"
 dependencies = [
  "base64 0.23.1",
  "ed25519-dalek",
@@ -2584,7 +2584,7 @@ dependencies = [
 
 [[package]]
 name = "kaeso-crypto"
-version = "0.6.0-rc.1"
+version = "0.6.0-rc.2"
 dependencies = [
  "aes-gcm",
  "argon2",
@@ -2600,7 +2600,7 @@ dependencies = [
 
 [[package]]
 name = "kaeso-kpp"
-version = "0.6.0-rc.1"
+version = "0.6.0-rc.2"
 dependencies = [
  "indexmap 2.14.2",
  "serde",
@@ -2610,7 +2610,7 @@ dependencies = [
 
 [[package]]
 name = "kaeso-mail"
-version = "0.6.0-rc.1"
+version = "0.6.0-rc.2"
 dependencies = [
  "insta",
  "lettre",
@@ -2629,7 +2629,7 @@ dependencies = [
 
 [[package]]
 name = "kaeso-server"
-version = "0.6.0-rc.1"
+version = "0.6.0-rc.2"
 dependencies = [
  "axum",
  "base64 0.23.1",
@@ -2685,7 +2685,7 @@ dependencies = [
 
 [[package]]
 name = "kaeso-store"
-version = "0.6.0-rc.1"
+version = "0.6.0-rc.2"
 dependencies = [
  "clickhouse",
  "futures",
@@ -2711,7 +2711,7 @@ dependencies = [
 
 [[package]]
 name = "kaeso-testkit"
-version = "0.6.0-rc.1"
+version = "0.6.0-rc.2"
 dependencies = [
  "axum",
  "base64 0.23.1",
@@ -2737,7 +2737,7 @@ dependencies = [
 
 [[package]]
 name = "kaeso-update"
-version = "0.6.0-rc.1"
+version = "0.6.0-rc.2"
 dependencies = [
  "jiff",
  "proptest",
@@ -2750,7 +2750,7 @@ dependencies = [
 
 [[package]]
 name = "kaeso-updater"
-version = "0.6.0-rc.1"
+version = "0.6.0-rc.2"
 dependencies = [
  "aws-lc-rs",
  "axum",
@@ -2776,7 +2776,7 @@ dependencies = [
 
 [[package]]
 name = "kaeso-upstream"
-version = "0.6.0-rc.1"
+version = "0.6.0-rc.2"
 dependencies = [
  "bytes",
  "futures",
@@ -2798,7 +2798,7 @@ dependencies = [
 
 [[package]]
 name = "kpp-conformance"
-version = "0.6.0-rc.1"
+version = "0.6.0-rc.2"
 dependencies = [
  "axum",
  "kaeso-codecs",
@@ -6490,7 +6490,7 @@ dependencies = [
 
 [[package]]
 name = "xtask"
-version = "0.6.0-rc.1"
+version = "0.6.0-rc.2"
 dependencies = [
  "base64 0.23.1",
  "clap",

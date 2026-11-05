@@ -4,6 +4,22 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 ## [Unreleased]
 
+## [0.6.0-rc.2] - 2026-11-05
+
+### Changed
+
+- The route canvas hangs a model's fallbacks under it, so a route fits beside the inspector ([#653](https://github.com/logicplanes/kaeso/pull/653))
+- The route editor's Audit log tab replaces Versions, and Test says why a split by caller always takes your branch ([#654](https://github.com/logicplanes/kaeso/pull/654))
+
+#### Gateway
+
+- A fresh install starts with KPMR's model data as of 4 November 2026, 22:33 UTC ([#657](https://github.com/logicplanes/kaeso/pull/657))
+
+### Fixed
+
+- The Security page lists an organization's agents with access in a section of its own ([#655](https://github.com/logicplanes/kaeso/pull/655))
+- An alias whose route names a removed model can be renamed, and its 404 says no model is left for the request ([#658](https://github.com/logicplanes/kaeso/pull/658))
+
 ## [0.6.0-rc.1] - 2026-11-04
 
 - **Breaking:** Projects in an organization are all alike: there is no default project, Kaeso opens on the organization's overview, and new members join only the projects their invitation names ([#647](https://github.com/logicplanes/kaeso/pull/647))
@@ -1242,7 +1258,8 @@ The first release of Kaeso, the open-source AI gateway you run yourself: the gat
 
 - A Release workflow that runs only from `prod`: it prepares the version changes and the changelog without write access to the repository, lets only jobs that run nothing but git push the release commit and the tag, syncs the release commit back to `dev`, and pins every action by commit SHA.
 
-[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.6.0-rc.1...HEAD
+[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.6.0-rc.2...HEAD
+[0.6.0-rc.2]: https://github.com/logicplanes/kaeso/releases/tag/v0.6.0-rc.2
 [0.6.0-rc.1]: https://github.com/logicplanes/kaeso/releases/tag/v0.6.0-rc.1
 [0.5.6]: https://github.com/logicplanes/kaeso/releases/tag/v0.5.6
 [0.5.5]: https://github.com/logicplanes/kaeso/releases/tag/v0.5.5
