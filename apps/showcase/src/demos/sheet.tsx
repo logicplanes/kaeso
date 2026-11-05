@@ -1,4 +1,4 @@
-import { Button, Sheet, KeyValue, StatusCode, RequestTimeline, IconButton, icons } from "@logicplanes/kaeso-ui";
+import { Button, Sheet, KeyValue, StatusCode, RequestTimeline, icons } from "@logicplanes/kaeso-ui";
 import { StateSection } from "~/lib/states";
 
 export const meta = {
@@ -37,7 +37,7 @@ export function Inspector() {
       subtitle="req_01JAR4X2KQ"
       size="md"
       modal={false}
-      actions={<IconButton icon={icons.copy} aria-label="Copy request id" />}
+      actions={<Button variant="ghost" size="sm" icon={icons.copy} aria-label="Copy request id" />}
     >
       {body}
     </Sheet>
@@ -47,7 +47,13 @@ export function States() {
   return (
     <StateSection title="Inline">
       <div className="flex flex-col gap-24">
-        <Sheet inline title="POST /v1/messages" subtitle="req_01JAR4X2KQ" size="sm" actions={<IconButton icon={icons.copy} aria-label="Copy request id" />}>
+        <Sheet
+          inline
+          title="POST /v1/messages"
+          subtitle="req_01JAR4X2KQ"
+          size="sm"
+          actions={<Button variant="ghost" size="sm" icon={icons.copy} aria-label="Copy request id" />}
+        >
           {body}
         </Sheet>
         <Sheet
@@ -55,7 +61,7 @@ export function States() {
           title="POST /v1/organizations/org_01J9Z5A/projects/proj_01J9Z5A/keys"
           subtitle="req_01JAR4X2KQZ8M3N7P5V6W9Y2T4"
           size="sm"
-          actions={<IconButton icon={icons.copy} aria-label="Copy request id" />}
+          actions={<Button variant="ghost" size="sm" icon={icons.copy} aria-label="Copy request id" />}
           footer={
             <>
               <Button>Copy as curl</Button>

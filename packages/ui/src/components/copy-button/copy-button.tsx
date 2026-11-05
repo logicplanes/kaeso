@@ -47,7 +47,7 @@ export const CopyButton = forwardRef<HTMLButtonElement, CopyButtonProps>(functio
     <Tooltip content={copied ? done : label} open={copied || hover} onOpenChange={setHover}>
       <Button
         ref={ref as React.Ref<HTMLButtonElement & HTMLAnchorElement>}
-        shape="circle"
+        tooltip={false}
         size={size}
         variant={variant}
         icon={copied ? icons.check : icons.copy}

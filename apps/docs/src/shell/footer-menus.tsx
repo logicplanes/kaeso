@@ -1,5 +1,5 @@
 import { forwardRef, useEffect, useRef } from "react";
-import { IconButton, Menu, ThemeMenu, icons } from "@logicplanes/kaeso-ui";
+import { Button, Menu, ThemeMenu, icons } from "@logicplanes/kaeso-ui";
 import { LANGUAGE_NAMES, LOCALES, isLocale, type Locale } from "~/i18n/locales";
 import { useSiteLocale, useText } from "~/i18n/text";
 import { useSwitchLocale } from "./use-switch-locale";
@@ -37,7 +37,7 @@ const LegalMenu = forwardRef<HTMLButtonElement>(function LegalMenu(_, ref) {
   return (
     <Menu>
       <Menu.Trigger>
-        <IconButton ref={ref} icon={icons.legal} aria-label={t("legal.label")} />
+        <Button variant="ghost" size="sm" ref={ref} icon={icons.legal} aria-label={t("legal.label")} />
       </Menu.Trigger>
       <Menu.Content side="top" align="start" className="min-w-180">
         <Menu.LinkItem href={legal.privacy}>{t("legal.privacy")}</Menu.LinkItem>
@@ -54,7 +54,7 @@ const LanguageMenu = forwardRef<HTMLButtonElement>(function LanguageMenu(_, ref)
   return (
     <Menu>
       <Menu.Trigger>
-        <IconButton ref={ref} icon={icons.language} aria-label={t("language.label")} />
+        <Button variant="ghost" size="sm" ref={ref} icon={icons.language} aria-label={t("language.label")} />
       </Menu.Trigger>
       <Menu.Content side="top" align="start" className="min-w-180">
         <Menu.RadioGroup

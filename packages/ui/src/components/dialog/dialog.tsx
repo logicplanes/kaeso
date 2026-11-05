@@ -26,7 +26,6 @@ import { useScopedDialog } from "../../utils/dialog-scope.js";
 import { OverNonModalSheet } from "../../utils/over-sheet.js";
 import { icons } from "../../icons/vocabulary.js";
 import { useUiText } from "../../i18n/context.js";
-import { IconButton } from "../icon-button/icon-button.js";
 import { Button } from "../button/button.js";
 import { Input } from "../input/input.js";
 import { focusDialogSection, initialDialogControl } from "./focus.js";
@@ -160,7 +159,7 @@ function DialogFrame({
   useKeepFocus(box, inline);
   const t = useUiText();
   const Title = inline ? "h2" : BaseDialog.Title;
-  const closeButton = <IconButton icon={icons.close} aria-label={t("dialog.close", "Close")} tooltip={false} disabled={!!busy} />;
+  const closeButton = <Button variant="ghost" size="sm" icon={icons.close} aria-label={t("dialog.close", "Close")} tooltip={false} disabled={!!busy} />;
   const close = hideClose ? null : inline ? closeButton : <BaseDialog.Close render={closeButton} />;
   const Description = inline ? "p" : BaseDialog.Description;
   const bar = headerStart !== undefined;
@@ -559,7 +558,9 @@ export const LayerDialog = forwardRef<HTMLDivElement, LayerDialogProps>(function
         }
         headerStart={
           index > 0 ? (
-            <IconButton
+            <Button
+              variant="ghost"
+              size="sm"
               key="back"
               icon={icons.chevronLeft}
               aria-label={t("dialog.back", "Back")}

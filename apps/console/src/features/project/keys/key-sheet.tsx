@@ -1,20 +1,6 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  AlertDialog,
-  Button,
-  DialogScope,
-  Empty,
-  IconButton,
-  KeyDisplay,
-  KeyValue,
-  Link,
-  Menu,
-  Sheet,
-  Skeleton,
-  StepDialog,
-  icons,
-} from "@logicplanes/kaeso-ui";
+import { AlertDialog, Button, DialogScope, Empty, KeyDisplay, KeyValue, Link, Menu, Sheet, Skeleton, StepDialog, icons } from "@logicplanes/kaeso-ui";
 import { toast } from "~/shell/toast";
 import { formatDate, formatRelative } from "@logicplanes/kaeso-ui/format";
 import { api, data } from "~/api/client";
@@ -145,7 +131,9 @@ function KeyBody({ org, project, keyId, onClose }: { org: string; project: strin
         {k.state !== "archived" && (
           <Menu>
             <Menu.Trigger>
-              <IconButton
+              <Button
+                variant="ghost"
+                size="sm"
                 icon={icons.more}
                 aria-label={t("keys.actions", "Key actions")}
                 disabled={!canManage}

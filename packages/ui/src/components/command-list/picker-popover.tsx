@@ -5,7 +5,7 @@ import { cn } from "../../utils/cn.js";
 import { pageBoundary, usePortalContainer } from "../../utils/portal-context.js";
 import { icons } from "../../icons/vocabulary.js";
 import { Icon } from "../icon/icon.js";
-import { IconButton } from "../icon-button/icon-button.js";
+import { Button } from "../button/button.js";
 import { KAESO_SELECT_VARIANTS } from "../select/select.js";
 import { useUiText } from "../../i18n/context.js";
 import { joinIds, showsText, useHiddenDescription } from "../../utils/hidden-description.js";
@@ -61,7 +61,9 @@ export const PickerPopover = forwardRef<HTMLDivElement, PickerPopoverProps>(func
           >
             <div className="flex min-h-60 shrink-0 items-center gap-12 px-24 py-12 hairline-b">
               <BaseDialog.Title className="min-w-0 flex-1 text-title-sm font-semibold text-fg text-balance wrap-anywhere">{title}</BaseDialog.Title>
-              <BaseDialog.Close render={<IconButton icon={icons.close} aria-label={t("pickerPopover.close", "Close")} tooltip={false} />} />
+              <BaseDialog.Close
+                render={<Button variant="ghost" size="sm" icon={icons.close} aria-label={t("pickerPopover.close", "Close")} tooltip={false} />}
+              />
             </div>
             <CommandListHeightContext.Provider value="fill">{children}</CommandListHeightContext.Provider>
           </BaseDialog.Popup>

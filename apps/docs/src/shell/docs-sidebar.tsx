@@ -1,6 +1,6 @@
 import { Suspense, lazy, useState } from "react";
 import { useLocation } from "@tanstack/react-router";
-import { Icon, IconButton, Sidebar, icons, useTheme } from "@logicplanes/kaeso-ui";
+import { Icon, Button, Sidebar, icons, useTheme } from "@logicplanes/kaeso-ui";
 import { homePath, type Locale } from "~/i18n/locales";
 import { useSiteLocale, useText } from "~/i18n/text";
 import type { NavGroup } from "~/markdown/ast";
@@ -9,7 +9,7 @@ import { openSearch } from "./search-store";
 
 export function SearchButton({ tooltip = true }: { tooltip?: boolean }) {
   const t = useText();
-  return <IconButton icon={icons.search} aria-label={t("search.open")} aria-haspopup="dialog" tooltip={tooltip} onClick={openSearch} />;
+  return <Button variant="ghost" size="sm" icon={icons.search} aria-label={t("search.open")} aria-haspopup="dialog" tooltip={tooltip} onClick={openSearch} />;
 }
 
 const CHANGELOG: Record<Locale, string> = {
@@ -25,14 +25,16 @@ function FooterButtons({ onOpen }: { onOpen: (menu: FooterMenu) => void }) {
   const { resolvedTheme } = useTheme();
   return (
     <>
-      <IconButton icon={icons.legal} aria-label={t("legal.label")} aria-haspopup="menu" onClick={() => onOpen("legal")} />
-      <IconButton
+      <Button variant="ghost" size="sm" icon={icons.legal} aria-label={t("legal.label")} aria-haspopup="menu" onClick={() => onOpen("legal")} />
+      <Button
+        variant="ghost"
+        size="sm"
         icon={resolvedTheme === "dark" ? icons.themeDark : icons.themeLight}
         aria-label={t("theme.label")}
         aria-haspopup="menu"
         onClick={() => onOpen("theme")}
       />
-      <IconButton icon={icons.language} aria-label={t("language.label")} aria-haspopup="menu" onClick={() => onOpen("language")} />
+      <Button variant="ghost" size="sm" icon={icons.language} aria-label={t("language.label")} aria-haspopup="menu" onClick={() => onOpen("language")} />
     </>
   );
 }

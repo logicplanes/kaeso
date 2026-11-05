@@ -1,4 +1,4 @@
-import { Button, IconButton, Tooltip, icons } from "@logicplanes/kaeso-ui";
+import { Button, Tooltip, icons } from "@logicplanes/kaeso-ui";
 import { TooltipSurface } from "@kaeso-ui-src/components/tooltip/tooltip";
 import { StateSection } from "~/lib/states";
 
@@ -28,7 +28,7 @@ export const examples = [
 export function Basic() {
   return (
     <Tooltip content="Filter">
-      <IconButton icon={icons.filter} aria-label="Filter" variant="secondary" tooltip={false} />
+      <Button size="sm" icon={icons.filter} aria-label="Filter" variant="secondary" tooltip={false} />
     </Tooltip>
   );
 }
@@ -60,7 +60,7 @@ export function States() {
       <StateSection title="Open on its control">
         <div className="flex h-160 items-start gap-160 pl-8">
           <Tooltip content="Filter" side="bottom" open>
-            <IconButton icon={icons.filter} aria-label="Filter" variant="secondary" tooltip={false} />
+            <Button size="sm" icon={icons.filter} aria-label="Filter" variant="secondary" tooltip={false} />
           </Tooltip>
           <Tooltip content="Requests over a hard limit are refused with 429. Soft limits only send an alert." shape="multiline" side="bottom" open>
             <Button>Hard limit</Button>

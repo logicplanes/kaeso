@@ -7,7 +7,7 @@ import { InsetContent } from "../../utils/inset.js";
 import { Empty } from "../empty/empty.js";
 import { Dialog } from "../dialog/dialog.js";
 import { Menu } from "../menu/menu.js";
-import { IconButton } from "../icon-button/icon-button.js";
+import { Button } from "../button/button.js";
 import { icons } from "../../icons/vocabulary.js";
 
 const items = ["checkout-web", "checkout-worker", "ci-runner"].map((n) => ({ id: n, title: n }));
@@ -150,7 +150,7 @@ describe("List", () => {
           actions: (
             <Menu>
               <Menu.Trigger>
-                <IconButton icon={icons.more} aria-label={`Actions for ${i.id}`} size="xs" />
+                <Button variant="ghost" icon={icons.more} aria-label={`Actions for ${i.id}`} size="xs" />
               </Menu.Trigger>
               <Menu.Content>
                 <Menu.Item onClick={() => chosen.push(i.id)}>Make default</Menu.Item>

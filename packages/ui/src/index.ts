@@ -17,7 +17,6 @@ export * from "./components/layout/index.js";
 export * from "./components/surface/index.js";
 export * from "./components/loader/index.js";
 export * from "./components/button/index.js";
-export * from "./components/icon-button/index.js";
 export * from "./components/button-group/index.js";
 export * from "./components/copy-button/index.js";
 export { useCopy } from "./hooks/use-copy.js";

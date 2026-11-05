@@ -2,7 +2,7 @@ import { forwardRef, type Ref, type ReactNode } from "react";
 import { cn } from "../../utils/cn.js";
 import { devWarn } from "../../utils/dev.js";
 import { icons } from "../../icons/vocabulary.js";
-import { IconButton } from "../icon-button/icon-button.js";
+import { Button } from "../button/button.js";
 import { Popover } from "../popover/popover.js";
 import { Segmented, type SegmentedOption } from "../segmented/segmented.js";
 import { Select, type SelectOption } from "../select/select.js";
@@ -147,7 +147,8 @@ export const DisplayOptions = forwardRef<HTMLElement, DisplayOptionsProps>(funct
   return (
     <Popover>
       <Popover.Trigger>
-        <IconButton
+        <Button
+          size="sm"
           ref={ref as Ref<HTMLButtonElement>}
           icon={icons.displayOptions}
           aria-label={t("displayOptions.displayOptions", "Display options")}

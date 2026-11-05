@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button, Checkbox, CheckboxGroup, Field, IconButton, Input, PageHeader, ProviderBadge, Select, icons } from "@logicplanes/kaeso-ui";
+import { Button, Checkbox, CheckboxGroup, Field, Input, PageHeader, ProviderBadge, Select, icons } from "@logicplanes/kaeso-ui";
 import { FlowCanvas, FlowWorkspace, type FlowCanvasNode } from "@logicplanes/kaeso-ui/flow-canvas";
 import { StateSection } from "~/lib/states";
 
@@ -62,7 +62,7 @@ function Page({
     <div className="flex h-640 w-full flex-col overflow-hidden rounded-frame bg-panel shadow-frame">
       <PageHeader
         title="fast"
-        start={<IconButton icon={icons.chevronLeft} aria-label="Back to aliases" />}
+        start={<Button variant="ghost" size="sm" icon={icons.chevronLeft} aria-label="Back to aliases" />}
         actions={
           <Button variant="primary" size="sm">
             Save alias
@@ -76,7 +76,7 @@ function Page({
             <FlowWorkspace.Panel
               title="Model step"
               description={selected === "primary" ? "Requests go to this model first." : "Requests come here when the model above fails."}
-              actions={<IconButton icon={icons.delete} aria-label="Remove step" />}
+              actions={<Button variant="ghost" size="sm" icon={icons.delete} aria-label="Remove step" />}
             >
               <Select
                 label="Model"

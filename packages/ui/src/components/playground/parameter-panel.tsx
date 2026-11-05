@@ -3,7 +3,6 @@ import { cn } from "../../utils/cn.js";
 import { icons } from "../../icons/vocabulary.js";
 import { formatNumber } from "../../format/index.js";
 import { Button } from "../button/button.js";
-import { IconButton } from "../icon-button/icon-button.js";
 import { NumberInput } from "../input/number-input.js";
 import { Textarea } from "../input/textarea.js";
 import { Popover } from "../popover/popover.js";
@@ -258,14 +257,14 @@ export const ParameterPopover = forwardRef<HTMLDivElement, ParameterPopoverProps
       {...(defaultOpen !== undefined ? { defaultOpen } : {})}
       {...(onOpenChange ? { onOpenChange } : {})}
     >
-      <Popover.Trigger>{trigger ?? <IconButton icon={icons.displayOptions} aria-label={title} size="sm" />}</Popover.Trigger>
+      <Popover.Trigger>{trigger ?? <Button variant="ghost" icon={icons.displayOptions} aria-label={title} size="sm" />}</Popover.Trigger>
       <Popover.Content ref={ref} aria-label={title} side={side} align={align} className="w-320 max-w-(--available-width)">
         <div className="relative">
           <p className="mb-16 flex min-h-32 items-center pr-40 text-body font-semibold text-fg">{title}</p>
           <ParameterPanel {...panel} />
           <div className="absolute top-0 right-0">
             <Popover.Close>
-              <IconButton icon={icons.close} aria-label={t("parameterPopover.close", "Close parameters")} size="sm" />
+              <Button variant="ghost" icon={icons.close} aria-label={t("parameterPopover.close", "Close parameters")} size="sm" />
             </Popover.Close>
           </div>
         </div>

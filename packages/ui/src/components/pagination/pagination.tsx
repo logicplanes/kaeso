@@ -2,7 +2,6 @@ import { forwardRef, useLayoutEffect, useRef, useState, type FocusEvent } from "
 import { cn } from "../../utils/cn.js";
 import { icons } from "../../icons/vocabulary.js";
 import { Button } from "../button/button.js";
-import { IconButton } from "../icon-button/icon-button.js";
 import { useUiText } from "../../i18n/context.js";
 
 export const KAESO_PAGINATION_VARIANTS = {
@@ -68,8 +67,8 @@ export const Pagination = forwardRef<HTMLElement, PaginationProps>(function Pagi
     if (!hasMore && !hasPrevious) return null;
     return (
       <nav ref={ref} aria-label={label} className={cn("flex items-center gap-8", className)}>
-        <IconButton icon={icons.chevronLeft} aria-label={previous} variant="secondary" {...soft(!hasPrevious, onPrevious)} />
-        <IconButton icon={icons.chevronRight} aria-label={next} variant="secondary" {...soft(!hasMore, onNext)} />
+        <Button size="sm" icon={icons.chevronLeft} aria-label={previous} variant="secondary" {...soft(!hasPrevious, onPrevious)} />
+        <Button size="sm" icon={icons.chevronRight} aria-label={next} variant="secondary" {...soft(!hasMore, onNext)} />
       </nav>
     );
   }
@@ -77,7 +76,7 @@ export const Pagination = forwardRef<HTMLElement, PaginationProps>(function Pagi
   const current = Math.min(count, Math.max(1, Math.floor(page)));
   return (
     <nav ref={ref} aria-label={label} className={cn("flex items-center gap-4", className)}>
-      <IconButton icon={icons.chevronLeft} aria-label={previous} variant="secondary" {...soft(current <= 1, () => onPageChange?.(current - 1))} />
+      <Button size="sm" icon={icons.chevronLeft} aria-label={previous} variant="secondary" {...soft(current <= 1, () => onPageChange?.(current - 1))} />
       <span className="flex items-center gap-4 px-4">
         {pageSlots(current, count).map((p, i) =>
           p === "gap" ? (
@@ -103,7 +102,7 @@ export const Pagination = forwardRef<HTMLElement, PaginationProps>(function Pagi
           ),
         )}
       </span>
-      <IconButton icon={icons.chevronRight} aria-label={next} variant="secondary" {...soft(current >= count, () => onPageChange?.(current + 1))} />
+      <Button size="sm" icon={icons.chevronRight} aria-label={next} variant="secondary" {...soft(current >= count, () => onPageChange?.(current + 1))} />
     </nav>
   );
 });

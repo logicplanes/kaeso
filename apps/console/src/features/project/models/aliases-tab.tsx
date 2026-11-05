@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { LoadFailed } from "~/features/org/load-failed";
-import { Badge, Button, Code, DialogScope, Empty, IconButton, List, Menu, Text, Tooltip, icons } from "@logicplanes/kaeso-ui";
+import { Badge, Button, Code, DialogScope, Empty, List, Menu, Text, Tooltip, icons } from "@logicplanes/kaeso-ui";
 import { formatRelative } from "@logicplanes/kaeso-ui/format";
 import type { AliasView } from "~/api/generated/types";
 import { aliasesQuery, catalogueQuery } from "~/api/queries/models";
@@ -79,7 +79,7 @@ export function AliasesTab({ org, project, canManage }: { org: string; project: 
               actions: canManage ? (
                 <Menu>
                   <Menu.Trigger>
-                    <IconButton icon={icons.more} aria-label={t("models.alias.actionsFor", "Actions for {name}", { name: a.name })} size="xs" />
+                    <Button variant="ghost" icon={icons.more} aria-label={t("models.alias.actionsFor", "Actions for {name}", { name: a.name })} size="xs" />
                   </Menu.Trigger>
                   <Menu.Content align="end">
                     <Menu.Item icon={icons.edit} onClick={() => open(a.id)}>

@@ -14,7 +14,6 @@ import {
   DialogScope,
   Empty,
   FilterRow,
-  IconButton,
   Input,
   Menu,
   Tabs,
@@ -165,7 +164,12 @@ export function OrgProvidersPage({ org, search = {} }: { org: string; search?: P
       return (
         <Menu>
           <Menu.Trigger>
-            <IconButton icon={icons.more} aria-label={t("orgHome.actionsForKey", "Actions for {title}", { title: keyTitle(k, providers) })} size="xs" />
+            <Button
+              variant="ghost"
+              icon={icons.more}
+              aria-label={t("orgHome.actionsForKey", "Actions for {title}", { title: keyTitle(k, providers) })}
+              size="xs"
+            />
           </Menu.Trigger>
           <Menu.Content align="end">
             {canChange && !k.is_default && (

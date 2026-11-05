@@ -14,7 +14,7 @@ import {
 } from "react";
 import { cn } from "../../utils/cn.js";
 import { icons } from "../../icons/vocabulary.js";
-import { IconButton } from "../icon-button/icon-button.js";
+import { Button } from "../button/button.js";
 import { useUiText } from "../../i18n/context.js";
 
 export const KAESO_COMPARE_GRID_VARIANTS = {
@@ -151,7 +151,8 @@ const Root = forwardRef<HTMLDivElement, CompareGridProps>(function CompareGrid(
 
   const full = count >= max;
   const add = onAdd ? (
-    <IconButton
+    <Button
+      variant="ghost"
       icon={icons.add}
       aria-label={addLabel ?? t("compareGrid.addModel", "Add model")}
       size="sm"
@@ -173,7 +174,8 @@ const Root = forwardRef<HTMLDivElement, CompareGridProps>(function CompareGrid(
     <div ref={ref} role="group" aria-label={ariaLabel} className={cn("flex h-full min-h-0 min-w-0 flex-col", className)}>
       {(count > 1 || edges?.overflow) && (
         <div className={cn("h-44 shrink-0 items-center gap-4 px-24 hairline-b", switcher)}>
-          <IconButton
+          <Button
+            variant="ghost"
             icon={icons.chevronLeft}
             aria-label={t("compareGrid.previousColumn", "Previous column")}
             size="sm"
@@ -184,7 +186,8 @@ const Root = forwardRef<HTMLDivElement, CompareGridProps>(function CompareGrid(
             <span className="sr-only">{t("compareGrid.namedPosition", "{label}, {index} of {count}", { label, ...position })}</span>
             <span aria-hidden>{t("compareGrid.position", "{index} of {count}", position)}</span>
           </span>
-          <IconButton
+          <Button
+            variant="ghost"
             icon={icons.chevronRight}
             aria-label={t("compareGrid.nextColumn", "Next column")}
             size="sm"
@@ -291,7 +294,8 @@ const Column = forwardRef<HTMLElement, CompareColumnProps>(function CompareGridC
         <div className="flex min-w-0 flex-1 items-center">{header}</div>
         {actions}
         {onRemove && count > 1 && (
-          <IconButton
+          <Button
+            variant="ghost"
             data-compare-remove=""
             icon={icons.close}
             aria-label={removeLabel ?? t("compareGrid.remove", "Remove {label}", { label })}

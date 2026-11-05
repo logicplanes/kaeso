@@ -1,7 +1,7 @@
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useBlocker, useNavigate } from "@tanstack/react-router";
-import { AlertDialog, AppFrame, Button, DialogScope, IconButton, Loader, Menu, PageHeader, Tabs, icons } from "@logicplanes/kaeso-ui";
+import { AlertDialog, AppFrame, Button, DialogScope, Loader, Menu, PageHeader, Tabs, icons } from "@logicplanes/kaeso-ui";
 import { FlowCanvas, FlowWorkspace } from "@logicplanes/kaeso-ui/flow-canvas";
 import { formatDuration } from "@logicplanes/kaeso-ui/format";
 import { api, data } from "~/api/client";
@@ -122,7 +122,7 @@ function Start({ org, project }: { org: string; project: string }) {
   return (
     <span className="flex items-center gap-4">
       <AppFrame.MenuButton />
-      <IconButton
+      <Button
         icon={icons.chevronLeft}
         size="sm"
         variant="ghost"
@@ -522,14 +522,16 @@ function Editor({
           <span className="flex items-center gap-8">
             {!readOnly && (
               <>
-                <IconButton
+                <Button
+                  size="sm"
                   icon={icons.undo}
                   variant="ghost"
                   aria-label={t("models.route.undo", "Undo")}
                   disabled={!history.canUndo || tab !== "editor"}
                   onClick={history.undo}
                 />
-                <IconButton
+                <Button
+                  size="sm"
                   icon={icons.redo}
                   variant="ghost"
                   aria-label={t("models.route.redo", "Redo")}
@@ -538,9 +540,9 @@ function Editor({
                 />
               </>
             )}
-            <IconButton icon={icons.code} variant="ghost" aria-label={t("models.route.showJson", "Show as JSON")} onClick={() => setJson(true)} />
+            <Button size="sm" icon={icons.code} variant="ghost" aria-label={t("models.route.showJson", "Show as JSON")} onClick={() => setJson(true)} />
             {saved && !readOnly && (
-              <IconButton icon={icons.delete} variant="ghost" aria-label={t("models.alias.delete", "Delete alias")} onClick={() => setDeleting(true)} />
+              <Button size="sm" icon={icons.delete} variant="ghost" aria-label={t("models.alias.delete", "Delete alias")} onClick={() => setDeleting(true)} />
             )}
             {!readOnly && (
               <Button

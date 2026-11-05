@@ -1,4 +1,4 @@
-import { Button, Menu, Avatar, IconButton, icons } from "@logicplanes/kaeso-ui";
+import { Button, Menu, Avatar, icons } from "@logicplanes/kaeso-ui";
 import { StateSection } from "~/lib/states";
 
 export const meta = {
@@ -32,7 +32,7 @@ export function Actions() {
   return (
     <Menu>
       <Menu.Trigger>
-        <IconButton icon={icons.more} aria-label="Key actions" variant="secondary" />
+        <Button size="sm" icon={icons.more} aria-label="Key actions" variant="secondary" />
       </Menu.Trigger>
       <Menu.Content align="end">
         <Menu.Item icon={icons.edit}>Rename</Menu.Item>

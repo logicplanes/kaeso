@@ -7,7 +7,6 @@ import { NavSheet } from "./nav-sheet.js";
 import { PageHeader } from "../page-header/page-header.js";
 import { Sidebar } from "../sidebar/sidebar.js";
 import { Button } from "../button/button.js";
-import { IconButton } from "../icon-button/icon-button.js";
 import { icons } from "../../icons/vocabulary.js";
 import { LocaleProvider, type UiMessages } from "../../i18n/index.js";
 import de from "../../i18n/locales/de.js";
@@ -98,7 +97,12 @@ describe("AppFrame's phone bar", () => {
   });
   it("puts its own actions between the wordmark and the navigation toggle", async () => {
     let searched = 0;
-    render(<Shell brandHref="/" phoneActions={<IconButton icon={icons.search} aria-label="Search" tooltip={false} onClick={() => (searched += 1)} />} />);
+    render(
+      <Shell
+        brandHref="/"
+        phoneActions={<Button variant="ghost" size="sm" icon={icons.search} aria-label="Search" tooltip={false} onClick={() => (searched += 1)} />}
+      />,
+    );
     const bar = document.querySelector<HTMLElement>("[data-phone-bar]")!;
     expect(
       within(bar)

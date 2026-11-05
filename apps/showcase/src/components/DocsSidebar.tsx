@@ -1,6 +1,6 @@
 import type * as React from "react";
 import { useEffect, useRef, useState } from "react";
-import { useSidebar, IconButton, Menu, PortalContainer, Toaster, Sidebar, ThemeProvider, ThemeMenu, TooltipProvider, Icon, icons } from "@logicplanes/kaeso-ui";
+import { useSidebar, Button, Menu, PortalContainer, Toaster, Sidebar, ThemeProvider, ThemeMenu, TooltipProvider, Icon, icons } from "@logicplanes/kaeso-ui";
 import { NavSheet } from "@kaeso-ui-src/components/app-frame/nav-sheet";
 import type { NavSection } from "~/lib/nav";
 import { DocsSearch } from "./DocsSearch";
@@ -47,7 +47,14 @@ export default function DocsSidebar({ sections, path: initial }: { sections: Nav
   const nav = (
     <Sidebar aria-label={docsText(lang, "Documentation")}>
       <Sidebar.Brand href={localizedPath(lang, "/")} label={docsText(lang, "Kaeso UI home")}>
-        <IconButton icon={icons.search} aria-label={docsText(lang, "Search")} shortcut={["mod", "k"]} onClick={() => setSearchOpen(true)} />
+        <Button
+          variant="ghost"
+          size="sm"
+          icon={icons.search}
+          aria-label={docsText(lang, "Search")}
+          shortcut={["mod", "k"]}
+          onClick={() => setSearchOpen(true)}
+        />
         <Sidebar.CollapseToggle />
       </Sidebar.Brand>
       <Sidebar.Content>
@@ -69,7 +76,7 @@ export default function DocsSidebar({ sections, path: initial }: { sections: Nav
       <Sidebar.Footer className="gap-8">
         <Menu>
           <Menu.Trigger>
-            <IconButton icon={icons.legal} aria-label={docsText(lang, "Legal")} />
+            <Button variant="ghost" size="sm" icon={icons.legal} aria-label={docsText(lang, "Legal")} />
           </Menu.Trigger>
           <Menu.Content side="top" align="start" className="min-w-180">
             <Menu.LinkItem href={LEGAL[lang].privacy}>{docsText(lang, "Privacy")}</Menu.LinkItem>

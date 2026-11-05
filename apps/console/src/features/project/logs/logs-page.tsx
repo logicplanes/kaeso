@@ -10,7 +10,6 @@ import {
   Empty,
   FilterChip,
   type FilterChipChoice,
-  IconButton,
   Menu,
   SearchInput,
   useProviderGroups,
@@ -330,7 +329,7 @@ export function LogsPage({ org, project, search }: { org: string; project: strin
         <Menu>
           <Menu.Trigger>
             {phone ? (
-              <IconButton icon={icons.add} size="sm" aria-label={t("logs.addFilter", "Add filter")} />
+              <Button variant="ghost" icon={icons.add} size="sm" aria-label={t("logs.addFilter", "Add filter")} />
             ) : (
               <Button variant="ghost" size="sm" leadingIcon={icons.add}>
                 {t("logs.addFilter", "Add filter")}

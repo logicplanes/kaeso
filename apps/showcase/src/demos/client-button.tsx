@@ -1,4 +1,4 @@
-import { Button, ClientButton, IconButton, icons } from "@logicplanes/kaeso-ui";
+import { Button, ClientButton, icons } from "@logicplanes/kaeso-ui";
 import { Matrix, STATE_COLUMNS, StateSection } from "~/lib/states";
 
 export const meta = {
@@ -38,7 +38,7 @@ export function States() {
       />
       <StateSection title="Beside other header buttons">
         <div className="flex items-center gap-8">
-          <IconButton variant="secondary" icon={icons.help} aria-label="Help" />
+          <Button size="sm" variant="secondary" icon={icons.help} aria-label="Help" />
           <ClientButton client="claude" aria-label="Add to Claude Code" />
           <Button size="sm">Connect</Button>
         </div>

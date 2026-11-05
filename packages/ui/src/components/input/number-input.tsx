@@ -76,7 +76,7 @@ export const NumberInput = forwardRef<HTMLInputElement, NumberInputProps>(functi
   };
   const stepButton = (dir: 1 | -1) => (
     <Button
-      shape="circle"
+      tooltip={false}
       variant="quiet"
       size={buttonSize}
       tabIndex={-1}

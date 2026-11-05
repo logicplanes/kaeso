@@ -10,7 +10,6 @@ import {
   KeyValue,
   RequestTimeline,
   Button,
-  IconButton,
   InsetContent,
   Tag,
   VisuallyHidden,
@@ -78,7 +77,7 @@ function RowActions({ label, children }: { label: string; children: React.ReactN
   return (
     <Menu>
       <Menu.Trigger>
-        <IconButton icon={icons.more} aria-label={label} size="xs" />
+        <Button variant="ghost" icon={icons.more} aria-label={label} size="xs" />
       </Menu.Trigger>
       <Menu.Content align="end">{children}</Menu.Content>
     </Menu>

@@ -16,7 +16,7 @@ import { cn } from "../../utils/cn.js";
 import { observeResize } from "../../utils/observe-resize.js";
 import { useUiText } from "../../i18n/context.js";
 import { icons } from "../../icons/vocabulary.js";
-import { IconButton } from "../icon-button/icon-button.js";
+import { Button } from "../button/button.js";
 import { Menu } from "../menu/menu.js";
 import { Status } from "../status/status.js";
 import { layoutFlow, type FlowCanvasEdge, type FlowCanvasNode, type FlowLayout, type Placed, type Wire } from "./layout.js";
@@ -449,7 +449,7 @@ export const FlowCanvas = forwardRef<HTMLDivElement, FlowCanvasProps>(function F
                 >
                   <Menu>
                     <Menu.Trigger>
-                      <IconButton
+                      <Button
                         icon={icons.add}
                         variant="secondary"
                         size="xs"
@@ -493,7 +493,7 @@ export const FlowCanvas = forwardRef<HTMLDivElement, FlowCanvasProps>(function F
               <span key={key} className="absolute flex items-center justify-center" style={positioned(p)}>
                 <Menu>
                   <Menu.Trigger>
-                    <IconButton
+                    <Button
                       ref={register(key)}
                       {...common}
                       aria-selected={false}
@@ -561,7 +561,13 @@ export const FlowCanvas = forwardRef<HTMLDivElement, FlowCanvasProps>(function F
                 >
                   <Menu open={actionsOpen === key} onOpenChange={(o) => setActionsOpen(o ? key : null)}>
                     <Menu.Trigger>
-                      <IconButton icon={icons.more} size="xs" tabIndex={-1} aria-label={t("flowCanvas.actionsFor", "Actions for {name}", { name })} />
+                      <Button
+                        variant="ghost"
+                        icon={icons.more}
+                        size="xs"
+                        tabIndex={-1}
+                        aria-label={t("flowCanvas.actionsFor", "Actions for {name}", { name })}
+                      />
                     </Menu.Trigger>
                     <Menu.Content align="start">{actions}</Menu.Content>
                   </Menu>
@@ -572,7 +578,8 @@ export const FlowCanvas = forwardRef<HTMLDivElement, FlowCanvasProps>(function F
         })}
       </div>
       <div data-flow-interactive="" className="absolute bottom-24 left-24 flex flex-col gap-8">
-        <IconButton
+        <Button
+          size="sm"
           icon={icons.add}
           variant="secondary"
           tooltipSide="right"
@@ -580,7 +587,8 @@ export const FlowCanvas = forwardRef<HTMLDivElement, FlowCanvasProps>(function F
           disabled={view.k >= MAX_K}
           onClick={() => zoomStep(1)}
         />
-        <IconButton
+        <Button
+          size="sm"
           icon={icons.minus}
           variant="secondary"
           tooltipSide="right"
@@ -588,7 +596,7 @@ export const FlowCanvas = forwardRef<HTMLDivElement, FlowCanvasProps>(function F
           disabled={view.k <= MIN_K}
           onClick={() => zoomStep(-1)}
         />
-        <IconButton icon={icons.expand} variant="secondary" tooltipSide="right" aria-label={t("flowCanvas.fit", "Fit to view")} onClick={fit} />
+        <Button size="sm" icon={icons.expand} variant="secondary" tooltipSide="right" aria-label={t("flowCanvas.fit", "Fit to view")} onClick={fit} />
       </div>
       <p id={hintId} className="sr-only">
         {t("flowCanvas.keys", "Arrow keys move between steps, Enter selects one, plus and minus zoom, and 0 fits the view.")}

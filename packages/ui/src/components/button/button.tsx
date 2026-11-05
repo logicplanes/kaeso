@@ -38,8 +38,11 @@ export const KAESO_BUTTON_VARIANTS = {
     },
   },
   shape: {
-    pill: { classes: "rounded-pill", description: "Every button is a pill" },
-    circle: { classes: "rounded-pill p-0 justify-center ghost-end:mr-0 ghost-start:ml-0", description: "Icon-only: a circle of the same height" },
+    pill: { classes: "rounded-pill", description: "A button with a label is a pill" },
+    circle: {
+      classes: "rounded-pill p-0 justify-center ghost-end:mr-0 ghost-start:ml-0",
+      description: "A button with `icon` and no label is a circle of the same height",
+    },
   },
 } as const;
 export const KAESO_BUTTON_DEFAULT_VARIANTS = { variant: "secondary", size: "md", shape: "pill" } as const;
@@ -121,8 +124,8 @@ interface CommonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "chi
 }
 
 export interface PillButtonProps extends CommonProps {
-  shape?: "pill" | undefined;
   children: ReactNode;
+  icon?: never | undefined;
   leadingIcon?: IconData | undefined;
   trailingIcon?: IconData | undefined;
   shortcut?: string[] | string[][] | undefined;
@@ -131,10 +134,12 @@ export interface PillButtonProps extends CommonProps {
 }
 
 export interface CircleButtonProps extends CommonProps {
-  shape: "circle";
   icon: IconData;
   "aria-label": string;
   children?: never | undefined;
+  shortcut?: string[] | string[][] | undefined;
+  tooltip?: boolean | undefined;
+  tooltipSide?: "top" | "bottom" | "left" | "right" | undefined;
 }
 
 export type ButtonProps = PillButtonProps | CircleButtonProps;
@@ -165,18 +170,19 @@ export const Button = forwardRef<HTMLButtonElement | HTMLAnchorElement, ButtonPr
 
   const spinning = useDelayedLoading(loading);
   const busy = loading || spinning;
-  const isCircle = props.shape === "circle";
+  const isCircle = "icon" in props && props.icon !== undefined;
   const iconSize = BUTTON_ICON_SIZE[size];
   const spinnerSize = iconSize === "xs" ? "xs" : iconSize === "sm" ? "sm" : "md";
   const leadingIcon = !isCircle ? (props as PillButtonProps).leadingIcon : undefined;
   const trailingIcon = !isCircle ? (props as PillButtonProps).trailingIcon : undefined;
-  const shortcut = !isCircle ? (props as PillButtonProps).shortcut : undefined;
+  const shortcut = isCircle ? undefined : (props as PillButtonProps).shortcut;
+  const circle = isCircle ? (props as CircleButtonProps) : undefined;
   const count = !isCircle ? (props as PillButtonProps).count : undefined;
   const reserveLabels = !isCircle ? (props as PillButtonProps).reserveLabels : undefined;
   if (isCircle) warnMissingName("Button", !!(props as CircleButtonProps)["aria-label"]);
 
   const domProps = { ...rest, ...(still ? { "data-static": "" } : {}) } as Record<string, unknown>;
-  for (const k of ["shape", "icon", "leadingIcon", "trailingIcon", "shortcut", "count", "children", "reserveLabels"]) delete domProps[k];
+  for (const k of ["icon", "leadingIcon", "trailingIcon", "shortcut", "count", "children", "reserveLabels", "tooltip", "tooltipSide"]) delete domProps[k];
 
   // A natively disabled button that holds focus drops it to <body>; stay focusable until it blurs.
   const softDisabled = (!!disabledReason || focused) && disabled;
@@ -233,6 +239,8 @@ export const Button = forwardRef<HTMLButtonElement | HTMLAnchorElement, ButtonPr
     </>
   );
 
+  const keyShortcuts = shortcut ? ariaKeyShortcuts(shortcut) : circle?.shortcut ? ariaKeyShortcuts(circle.shortcut) : undefined;
+
   const handleClick = (e: MouseEvent<HTMLButtonElement & HTMLAnchorElement>) => {
     if (inert) {
       e.preventDefault();
@@ -261,7 +269,7 @@ export const Button = forwardRef<HTMLButtonElement | HTMLAnchorElement, ButtonPr
         {...(target ? { target } : external ? { target: "_blank" } : {})}
         {...(rel ? { rel } : external ? { rel: "noopener noreferrer" } : {})}
         {...(domProps as object)}
-        {...(shortcut ? { "aria-keyshortcuts": ariaKeyShortcuts(shortcut) } : {})}
+        {...(keyShortcuts ? { "aria-keyshortcuts": keyShortcuts } : {})}
         {...(busy ? { "aria-busy": true, "data-loading": "" } : {})}
         onClick={handleClick}
         onFocus={handleFocus}
@@ -278,7 +286,7 @@ export const Button = forwardRef<HTMLButtonElement | HTMLAnchorElement, ButtonPr
         className={classes}
         disabled={disabled && !softDisabled}
         {...(domProps as object)}
-        {...(shortcut ? { "aria-keyshortcuts": ariaKeyShortcuts(shortcut) } : {})}
+        {...(keyShortcuts ? { "aria-keyshortcuts": keyShortcuts } : {})}
         {...(softDisabled ? { "aria-disabled": true } : {})}
         {...(busy ? { "aria-busy": true, "data-loading": "" } : {})}
         {...(softDisabled ? { "data-disabled": "" } : {})}
@@ -293,6 +301,19 @@ export const Button = forwardRef<HTMLButtonElement | HTMLAnchorElement, ButtonPr
   }
 
   const reasonShown = !!disabledReason && !!disabled;
+  if (circle) {
+    const named = circle.tooltip !== false && !disabled;
+    return (
+      <Tooltip
+        content={reasonShown ? disabledReason : circle["aria-label"]}
+        side={circle.tooltipSide ?? "top"}
+        disabled={!reasonShown && !named}
+        {...(circle.shortcut && !reasonShown ? { shortcut: circle.shortcut } : {})}
+      >
+        {el as ReactElement}
+      </Tooltip>
+    );
+  }
   // The Tooltip stays mounted when it has nothing to say: unwrapping would remount the button and drop its focus.
   return (
     <Tooltip content={reasonShown ? disabledReason : cut ? (props as PillButtonProps).children : ""} disabled={!reasonShown && !cut}>
