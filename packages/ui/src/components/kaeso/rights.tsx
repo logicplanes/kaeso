@@ -4,7 +4,7 @@ import { icons } from "../../icons/vocabulary.js";
 import { Icon } from "../icon/icon.js";
 import { CheckboxBox } from "../checkbox/checkbox.js";
 import { Tooltip } from "../tooltip/tooltip.js";
-import { SearchInput } from "../input/input.js";
+import { Input } from "../input/input.js";
 import { Empty } from "../empty/empty.js";
 import { Badge } from "../badge/badge.js";
 import { Highlight } from "../combobox/combobox.js";
@@ -188,7 +188,9 @@ export const RightsMatrix = forwardRef<HTMLDivElement, RightsMatrixProps>(functi
       className={cn("@container flex min-w-0 flex-col gap-24", className)}
     >
       {searchable && (
-        <SearchInput
+        <Input
+          type="search"
+          size="sm"
           className="w-full"
           aria-label={t("rightsMatrix.searchRights", "Search rights")}
           placeholder={t("rightsMatrix.searchRights", "Search rights")}

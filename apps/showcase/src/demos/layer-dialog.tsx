@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button, Input, KeyValue, LayerDialog, List, ModelLabel, SearchInput, icons, toast } from "@logicplanes/kaeso-ui";
+import { Button, Input, KeyValue, LayerDialog, List, ModelLabel, icons, toast } from "@logicplanes/kaeso-ui";
 import { models, providerNames } from "~/fixtures/kaeso";
 import { StateSection } from "~/lib/states";
 
@@ -45,7 +45,9 @@ export function Wizard() {
   const pick = {
     title: "Add model",
     description: "Pick a model from the KPMR catalogue.",
-    toolbar: <SearchInput aria-label="Search models" placeholder="Search" value={query} onChange={(e) => setQuery(e.target.value)} data-autofocus />,
+    toolbar: (
+      <Input type="search" size="sm" aria-label="Search models" placeholder="Search" value={query} onChange={(e) => setQuery(e.target.value)} data-autofocus />
+    ),
     content: (
       <div className="flex flex-col gap-12">
         <List
@@ -159,7 +161,7 @@ export function States() {
   const searched = [
     {
       ...layers[0]!,
-      toolbar: <SearchInput aria-label="Search models" placeholder="Search" defaultValue="claude" />,
+      toolbar: <Input type="search" size="sm" aria-label="Search models" placeholder="Search" defaultValue="claude" />,
       footerStart: (
         <Button variant="ghost" leadingIcon={icons.add}>
           Add a custom model

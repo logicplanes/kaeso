@@ -19,7 +19,6 @@ import {
   PortalContainer,
   Radio,
   RadioGroup,
-  SearchInput,
   Segmented,
   Select,
   Slider,
@@ -31,6 +30,7 @@ import {
   TooltipProvider,
   icons,
   toast,
+  NumberInput,
 } from "@logicplanes/kaeso-ui";
 import { ToastCapsule } from "@kaeso-ui-src/components/toast/toast";
 
@@ -162,12 +162,9 @@ function Cells() {
             <Select aria-label={t("Log retention")} options={retention} defaultValue="30" fullWidth />
           </div>
         </Cell>
-        <Cell slug="search-input">
-          <div className="flex w-full items-center gap-8">
-            <div className="min-w-0 flex-1">
-              <SearchInput aria-label={t("Search logs")} placeholder={t("Search logs")} />
-            </div>
-            <Button size="sm" icon={icons.filter} aria-label={t("Filter")} variant="secondary" />
+        <Cell slug="number-input">
+          <div className="w-full">
+            <NumberInput aria-label={t("Monthly budget")} defaultValue="1200" unit="USD" step="50" min="0" />
           </div>
         </Cell>
         <Cell slug="autocomplete">

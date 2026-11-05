@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { Button, Input, SensitiveInput, Spinner, Text } from "@logicplanes/kaeso-ui";
+import { Button, Input, Spinner, Text } from "@logicplanes/kaeso-ui";
 import { PublicPage } from "~/shell/public-page";
 import { formatRelative } from "@logicplanes/kaeso-ui/format";
 import { api, data } from "~/api/client";
@@ -228,9 +228,9 @@ function Invitation({ token }: { token: string }) {
           maxLength={100}
           error={fieldError(error, "name")}
         />
-        <SensitiveInput
+        <Input
+          type="password"
           label={t("public.password", "Password")}
-          kind="password"
           size="xl"
           value={password}
           onChange={(e) => setPassword(e.target.value)}

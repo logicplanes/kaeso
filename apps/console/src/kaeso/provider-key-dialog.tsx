@@ -9,7 +9,6 @@ import {
   ProviderPicker,
   Radio,
   RadioGroup,
-  SensitiveInput,
   StepDialog,
   icons,
   useStepDialog,
@@ -267,7 +266,8 @@ export function ProviderKeyDialog({
           : undefined,
     content: (
       <div className="flex flex-col gap-12">
-        <SensitiveInput
+        <Input
+          secret
           label={t("kaeso.providerKey.secret", "{provider} API key", { provider: label })}
           {...(keyPlaceholder(known) ? { placeholder: keyPlaceholder(known) } : {})}
           value={secret}

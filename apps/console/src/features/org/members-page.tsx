@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { Avatar, Badge, Button, Empty, FilterRow, List, SearchInput, Select, SwapText, Tabs, icons } from "@logicplanes/kaeso-ui";
+import { Avatar, Badge, Button, Empty, FilterRow, List, Input, Select, SwapText, Tabs, icons } from "@logicplanes/kaeso-ui";
 import { formatDate } from "@logicplanes/kaeso-ui/format";
 import { orgMembersQuery } from "~/api/queries/orgs";
 import { useMembership, useOrgRights, useSession } from "~/auth/session";
@@ -171,7 +171,9 @@ function MembersPanel({
           ]}
         />
         <div className="w-240">
-          <SearchInput
+          <Input
+            type="search"
+            size="sm"
             aria-label={t("org.members.search", "Search members")}
             placeholder={t("org.members.nameOrEmail", "Name or email")}
             value={query}

@@ -11,7 +11,7 @@ import {
   FilterChip,
   type FilterChipChoice,
   Menu,
-  SearchInput,
+  Input,
   useProviderGroups,
   Select,
   Toolbar,
@@ -449,7 +449,9 @@ function RequestIdSearch({ onOpen }: { onOpen: (id: string) => void }) {
   const [value, setValue] = useState("");
   return (
     <div className="hidden w-200 md:block">
-      <SearchInput
+      <Input
+        type="search"
+        size="sm"
         aria-label={t("logs.openById", "Open a request by id")}
         placeholder={t("logs.column.requestId", "Request id")}
         value={value}

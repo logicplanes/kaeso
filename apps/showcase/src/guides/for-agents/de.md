@@ -99,7 +99,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
 | Einstellungsseite                                | `AppFrame.Settings`, `SettingsGroup`, `SettingsRow`                           |
 | Eine Sammlung, die man überfliegt und bearbeitet | `List` mit Gruppenköpfen                                                      |
 | Eine Sammlung, die man spaltenweise vergleicht   | `DataTable` (virtualisiert, sortierbar)                                       |
-| Filter über einer Sammlung                       | `Toolbar` mit `FilterChip`, `SearchInput`, `DisplayOptions`                   |
+| Filter über einer Sammlung                       | `Toolbar` mit `FilterChip`, `Input type="search"`, `DisplayOptions`           |
 | Eine Wahl zwischen 2–4 Ansichten                 | `Segmented`; Seitenansichten: `Tabs variant="pill"`; Detailabschnitte: `Tabs` |
 | Eine von vielen Optionen                         | `Select`; durchsuchbar: `Combobox`                                            |
 | Eine Bestätigung einer unumkehrbaren Aktion      | `AlertDialog`; Löschen: der Block `DeleteResource`                            |
@@ -113,7 +113,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
 ## Eine Ansicht
 
 ```tsx
-import { AppFrame, Sidebar, PageHeader, Toolbar, FilterChip, SearchInput, DataTable, Button, icons } from "@logicplanes/kaeso-ui";
+import { AppFrame, Sidebar, PageHeader, Toolbar, FilterChip, Input, DataTable, Button, icons } from "@logicplanes/kaeso-ui";
 
 export function RequestLogs({ rows }: { rows: LogRow[] }) {
   return (
@@ -121,7 +121,7 @@ export function RequestLogs({ rows }: { rows: LogRow[] }) {
       <PageHeader start={<AppFrame.MenuButton />} title="Request logs" actions={<Button variant="secondary">Export CSV</Button>} />
       <Toolbar>
         <FilterChip property="Status" operator="is" value="2xx" />
-        <SearchInput aria-label="Search logs" placeholder="Search logs" />
+        <Input type="search" size="sm" aria-label="Search logs" placeholder="Search logs" />
       </Toolbar>
       <AppFrame.Body>
         <DataTable data={rows} columns={columns} />

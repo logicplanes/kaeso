@@ -256,7 +256,6 @@
   "Fills the container's width at 32px high, without the last point's dot, as in a stat tile. Otherwise it is 80×24.": "以 32px 高度填满容器宽度，不显示最后一个点，例如在统计卡片中。否则尺寸为 80×24。",
   "Fills the width of its container.": "填满容器的宽度。",
   "Filter": "筛选",
-  "Filters at the end of the row: a `Select`, a `SearchInput`. At the start when there are no tabs.": "行末的筛选：`Select`、`SearchInput`。没有标签页时位于开头。",
   "Filters in a toolbar": "工具栏中的筛选条件",
   "Filters, search and display options on one 48px row, with arrow-key focus across them.": "筛选、搜索和显示选项位于一行 48px 的工具栏中，可用方向键在其间移动焦点。",
   "Fluid": "自适应",
@@ -1242,5 +1241,15 @@
   "Makes it an icon-only circle with this icon. Give it an `aria-label`: the name screen readers read and the tooltip shows.": "使其成为仅显示该图标的圆形按钮。请为它设置 `aria-label`：这是屏幕阅读器朗读、提示框显示的名称。",
   "A shortcut hint: after the label (lg and xl, and in menus), or in the tooltip of an icon-only button.": "快捷键提示：显示在标签之后（lg 和 xl 尺寸以及菜单中），或显示在仅图标按钮的提示框中。",
   "Turns off an icon-only button's tooltip, for when a visible label sits next to it or the button has a tooltip of its own.": "关闭仅图标按钮的提示框，适用于旁边已有可见标签或按钮自带提示框的情况。",
-  "Where an icon-only button's tooltip appears.": "仅图标按钮的提示框出现的位置。"
+  "Where an icon-only button's tooltip appears.": "仅图标按钮的提示框出现的位置。",
+  "Filters at the end of the row: a `Select`, a search `Input`. At the start when there are no tabs.": "行末的筛选：`Select`、搜索 `Input`。没有标签页时位于开头。",
+  "Search": "搜索",
+  "`type=\"search\"`: a leading icon, a clear circle when filled, and a shortcut hint. Escape clears.": "`type=\"search\"`：开头一个图标，有内容时显示清除圆钮，并显示快捷键提示。按 Escape 清空。",
+  "`secret`: masked, an eye to reveal, mono when revealed, never autocompleted.": "`secret`：内容被遮盖，用眼睛图标显示，显示时使用等宽字体，从不自动填充。",
+  "`type=\"password\"`: the same eye, password managers welcome, and a Caps Lock hint.": "`type=\"password\"`：同样的眼睛图标，支持密码管理器，并提示大写锁定。",
+  "Starts a password or secret shown instead of masked.": "让密码或密钥一开始就显示，而不是被遮盖。",
+  "Called when a search's clear circle is pressed or Escape clears it.": "按下搜索的清除圆钮或按 Escape 清空时调用。",
+  "Masks a key or token behind a reveal circle, sets it in mono when revealed, and keeps it out of autocomplete and password managers.": "将密钥或令牌遮盖在显示圆钮之后，显示时使用等宽字体，并使其不被自动填充和密码管理器读取。",
+  "A shortcut hint at the end of an empty search, hidden while it has focus.": "空搜索框末尾的快捷键提示，获得焦点时隐藏。",
+  "The height of the input: 32px in toolbars, 36px by default.": "输入框的高度：工具栏中为 32px，默认 36px。"
 }

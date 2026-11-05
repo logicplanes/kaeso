@@ -14,7 +14,7 @@ import {
   InlineCopyText,
   KeyValue,
   Link,
-  SearchInput,
+  Input,
   Section,
   Sheet,
   Skeleton,
@@ -217,7 +217,8 @@ export function AuditLog({
         )}
         {!about && (
           <div className={FILTER_FIELD}>
-            <SearchInput
+            <Input
+              type="search"
               aria-label={t("kaeso.audit.targetId", "Target id")}
               size="sm"
               placeholder={t("kaeso.audit.targetId", "Target id")}

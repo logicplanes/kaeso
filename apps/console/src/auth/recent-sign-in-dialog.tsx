@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Button, Dialog, OTPInput, SensitiveInput, Text } from "@logicplanes/kaeso-ui";
+import { Button, Dialog, OTPInput, Input, Text } from "@logicplanes/kaeso-ui";
 import { toastApiError } from "~/api/toast-error";
 import { t } from "~/i18n";
 import { CONFIRMED_PATH, onConfirmed } from "./confirm-channel";
@@ -218,9 +218,9 @@ export default function RecentSignInDialog() {
           </>
         )}
         {step.kind === "choose" && !loading && ways.primary === "password" && (
-          <SensitiveInput
+          <Input
+            type="password"
             label={t("auth.recent.password", "Password")}
-            kind="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             autoComplete="current-password"
@@ -291,9 +291,9 @@ export default function RecentSignInDialog() {
           <Text tone="secondary">{t("auth.recent.codesLocked", "Too many wrong codes locked your authenticator app; enter a recovery code.")}</Text>
         )}
         {step.kind === "totp" && step.recovery && (
-          <SensitiveInput
+          <Input
+            secret
             label={t("auth.recent.recoveryCode", "Recovery code")}
-            kind="secret"
             value={code}
             onChange={(e) => setCode(e.target.value)}
             autoComplete="one-time-code"

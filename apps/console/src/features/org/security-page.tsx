@@ -12,7 +12,6 @@ import {
   Input,
   NumberInput,
   RolePicker,
-  SensitiveInput,
   SettingsGroup,
   SettingsRow,
   Section,
@@ -387,7 +386,8 @@ function SsoDialog({
                 value={clientId}
                 onChange={(e) => setClientId(e.target.value)}
               />
-              <SensitiveInput
+              <Input
+                secret
                 aria-label={t("org.sso.clientSecret", "Client secret")}
                 placeholder={t("org.sso.clientSecret", "Client secret")}
                 value={secret}

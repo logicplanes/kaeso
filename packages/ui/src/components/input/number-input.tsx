@@ -14,7 +14,10 @@ export const KAESO_NUMBER_INPUT_VARIANTS = {
 } as const;
 export const KAESO_NUMBER_INPUT_DEFAULT_VARIANTS = { align: "end" } as const;
 
-export interface NumberInputProps extends Omit<InputProps, "type" | "value" | "defaultValue" | "onChange" | "min" | "max" | "step"> {
+export interface NumberInputProps extends Omit<
+  InputProps,
+  "type" | "value" | "defaultValue" | "onChange" | "min" | "max" | "step" | "shortcut" | "onClear" | "secret" | "defaultRevealed"
+> {
   value?: string | undefined;
   defaultValue?: string | undefined;
   onValueChange?: ((value: string) => void) | undefined;

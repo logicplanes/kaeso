@@ -2,17 +2,22 @@ import type { ComponentDocs } from "../../component-docs.js";
 
 export const docs = {
   Input: {
-    description: "A pill text field with the secondary material and the field focus. Takes label, description and error.",
+    description:
+      'A pill text field with the secondary material and the field focus. Takes label, description and error. `type="search"` makes it a search with a clear circle, `type="password"` a password with a reveal circle, and `secret` a masked key.',
     props: {
       align: "Text alignment of the value; numbers align to the end with tabular digits.",
+      defaultRevealed: "Starts a password or secret shown instead of masked.",
       description: "One sentence of help under the label.",
       invalid: "Shows it as invalid; pair it with a message that says what to fix.",
       label: "The visible label.",
       layout: "The label above the control (`vertical`) or beside it (`horizontal`).",
       leadingIcon: "An icon before the text.",
+      onClear: "Called when a search's clear circle is pressed or Escape clears it.",
       optional: "Adds “Optional” to the label, for forms where most fields are required.",
       prefix: 'Text before the value: "https://".',
-      size: "The height of the input.",
+      secret: "Masks a key or token behind a reveal circle, sets it in mono when revealed, and keeps it out of autocomplete and password managers.",
+      shortcut: "A shortcut hint at the end of an empty search, hidden while it has focus.",
+      size: "The height of the input: 32px in toolbars, 36px by default.",
       suffix: 'Text after the value: "USD", "/ min".',
       trailing: "Any trailing element (a button, a Kbd).",
       error: "The error message, shown under the control in the danger color; it marks the control invalid and is read out with its description.",
@@ -67,42 +72,6 @@ export const docs = {
       onValueChange: "Called with the code as it is typed.",
       size: "The size of each character's box.",
       value: "The code typed so far, when you control it.",
-    },
-  },
-  SearchInput: {
-    description: "Search: a leading icon, a clear circle when filled, an optional shortcut hint. Escape clears.",
-    props: {
-      align: "Text alignment of the value; numbers align to the end with tabular digits.",
-      description: "One sentence of help under the label.",
-      invalid: "Shows it as invalid; pair it with a message that says what to fix.",
-      label: "The visible label.",
-      layout: "The label above the control (`vertical`) or beside it (`horizontal`).",
-      onClear: "Called when the clear button is pressed.",
-      optional: "Adds “Optional” to the label, for forms where most fields are required.",
-      placeholder: 'Defaults to "Search" in the provider\'s language.',
-      shortcut: 'A shortcut hint shown while empty: `["mod", "k"]` or `["/"]`.',
-      size: "The height of the input.",
-      trailing: "Any trailing element (a button, a Kbd).",
-      error: "The error message, shown under the control in the danger color; it marks the control invalid and is read out with its description.",
-    },
-  },
-  SensitiveInput: {
-    description:
-      "Masked by default with an eye circle to reveal. Monospace when revealed, never autocompleted (secrets), paste-friendly, Caps Lock hint for passwords.",
-    props: {
-      align: "Text alignment of the value; numbers align to the end with tabular digits.",
-      defaultRevealed: "Start revealed.",
-      description: "One sentence of help under the label.",
-      invalid: "Shows it as invalid; pair it with a message that says what to fix.",
-      kind: "A password (never revealed once saved) or a secret such as an API key.",
-      label: "The visible label.",
-      layout: "The label above the control (`vertical`) or beside it (`horizontal`).",
-      leadingIcon: "An icon before the text.",
-      optional: "Adds “Optional” to the label, for forms where most fields are required.",
-      prefix: 'Text before the value: "https://".',
-      size: "The height of the input.",
-      suffix: 'Text after the value: "USD", "/ min".',
-      error: "The error message, shown under the control in the danger color; it marks the control invalid and is read out with its description.",
     },
   },
   TagInput: {
