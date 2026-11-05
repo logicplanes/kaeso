@@ -44,6 +44,7 @@
           - deploy/compose.yaml
           - deploy/.env.example
           - deploy/kaeso.example.toml
+          - deploy/install.sh
           - deploy/*.Dockerfile
           - deploy/*.dockerignore
           - deploy/console/**
