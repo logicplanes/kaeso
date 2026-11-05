@@ -8,7 +8,7 @@ order: 1
 
 ## 准备工作
 
-- 一台装有 Docker Engine 和 Docker Compose 2.24 或更高版本的服务器，2 个 vCPU、4 GB 内存和 20 GB 磁盘（[系统要求](../self-hosting/requirements.md)）。
+- 一台服务器，2 个 vCPU、4 GB 内存和 20 GB 磁盘，并装有 Docker Engine 和 Docker Compose 2.24 或更高版本（[系统要求](../self-hosting/requirements.md)）。在 Linux 上，如果缺少 Docker，安装脚本会提议为您安装。
 - 一个域名，例如 `kaeso.example.com`，其 DNS 记录指向该服务器。80 和 443 端口必须向互联网开放，以便 Caddy 获取证书。
 - 一个 [Kaeso 所调用的模型服务商](../concepts/supported-providers.md)（如 OpenAI 或 Anthropic）的 API 密钥。
 
@@ -24,6 +24,8 @@ curl -fsSL https://kaeso.app/install.sh | sh -s -- --domain kaeso.example.com
 ```
 
 首次启动需要一两分钟，期间会下载镜像。安装脚本最后会输出设置链接。在您[添加 SMTP 服务器](../self-hosting/email.md)之前，网关只会把邮件写入日志，因此登录链接和邀请不会送达。[手动安装](../self-hosting/installation.md#手动安装)列出了安装脚本执行的每个步骤。
+
+在同一文件夹中再次运行安装脚本即可重新启动 Kaeso，它会保留设置和主密钥。一台机器只运行一个 Kaeso，因此安装脚本会拒绝在其他文件夹中进行第二次安装。
 
 > [!IMPORTANT]
 > 将 `kaeso/master-keys` 的副本保存在安全的地方，并与数据库备份分开存放。没有它，Kaeso 无法解密已保存的服务商密钥，您只能重新输入。

@@ -8,7 +8,7 @@ Install Kaeso on a server, connect a model provider such as OpenAI or Anthropic,
 
 ## Before you begin
 
-- A server with Docker Engine and Docker Compose 2.24 or newer, 2 vCPUs, 4 GB of memory and 20 GB of disk ([requirements](../self-hosting/requirements.md)).
+- A server with 2 vCPUs, 4 GB of memory and 20 GB of disk, and Docker Engine with Docker Compose 2.24 or newer ([requirements](../self-hosting/requirements.md)). On Linux, the installer offers to install Docker when it's missing.
 - A domain, such as `kaeso.example.com`, whose DNS record points at the server. Ports 80 and 443 must be open to the internet, so Caddy can get a certificate.
 - An API key from a [model provider Kaeso calls](../concepts/supported-providers.md), such as OpenAI or Anthropic.
 
@@ -24,6 +24,8 @@ curl -fsSL https://kaeso.app/install.sh | sh -s -- --domain kaeso.example.com
 ```
 
 The first start takes a minute or two while the images download. The installer ends by printing the setup link. Until you [add your SMTP server](../self-hosting/email.md), the gateway only writes its emails to its log, so sign-in links and invitations aren't delivered. [Install by hand](../self-hosting/installation.md#install-by-hand) shows each step the installer takes.
+
+Run the installer again in the same folder to start Kaeso again; it keeps the settings and the master key. A machine runs one Kaeso, so the installer refuses a second install in another folder.
 
 > [!IMPORTANT]
 > Keep a copy of `kaeso/master-keys` somewhere safe, apart from your database backups. Without it, Kaeso can't decrypt the stored provider keys, and you have to enter them again.
