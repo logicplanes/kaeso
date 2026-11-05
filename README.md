@@ -14,6 +14,7 @@
   <p>
     <a href="https://kaeso.app"><b>Website</b></a> ·
     <a href="https://docs.kaeso.app"><b>Documentation</b></a> ·
+    <a href="https://demo.kaeso.app"><b>Live demo</b></a> ·
     <a href="https://github.com/logicplanes/kaeso/discussions"><b>Discussions</b></a> ·
     <a href="CHANGELOG.md"><b>Changelog</b></a>
   </p>
