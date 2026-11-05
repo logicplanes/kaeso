@@ -15,82 +15,26 @@ Install Kaeso on a server, connect a model provider such as OpenAI or Anthropic,
 > [!TIP]
 > To try Kaeso on your own computer, use `localhost` as the domain and open `https://localhost`. Caddy then signs the certificate itself, and your browser asks you to accept it once. [Trying it on your computer](../self-hosting/installation.md#trying-it-on-your-computer) shows how to make curl and the SDKs trust it.
 
-## Download the Compose file
+## Install Kaeso
 
-Each release publishes a `compose.yaml` that pins its images by version and digest. Download it into a new folder that only you can read:
-
-```bash
-mkdir -m 700 kaeso && cd kaeso
-curl -fsSLO \
-  https://github.com/logicplanes/kaeso/releases/latest/download/compose.yaml
-```
-
-## Write the settings
-
-Create `.env` with your domain and four random passwords. `umask 077` makes it, and every file you create in this shell from now on, readable only by you:
+Run the installer on the server. It creates a folder `kaeso` that only you can read and downloads the newest release's `compose.yaml` into it. Then it writes `.env` with your domain and random passwords, creates the master key and starts every service:
 
 ```bash
-umask 077
-cat > .env <<EOF
-KAESO_DOMAIN=kaeso.example.com
-POSTGRES_PASSWORD=$(openssl rand -hex 24)
-POSTGRES_SUPERUSER_PASSWORD=$(openssl rand -hex 24)
-CLICKHOUSE_PASSWORD=$(openssl rand -hex 24)
-VALKEY_PASSWORD=$(openssl rand -hex 24)
-EOF
+curl -fsSL https://kaeso.app/install.sh | sh -s -- --domain kaeso.example.com
 ```
 
-The gateway sends sign-in links, invitations and alerts by email, and it doesn't start without a way to send them. Add your SMTP server. Kaeso reaches it on port 587 with STARTTLS unless [you change it](../self-hosting/email.md):
-
-```bash
-cat >> .env <<'EOF'
-KAESO_SMTP_HOST=smtp.example.com
-KAESO_SMTP_USER=kaeso
-KAESO_SMTP_PASSWORD=…
-KAESO_SMTP_FROM="Kaeso <kaeso@example.com>"
-EOF
-```
-
-To try Kaeso without a mail server, let the gateway only log its emails. Password sign-in and the setup link still work, but sign-in links and invitations aren't delivered:
-
-```bash
-echo KAESO_MAIL_TRANSPORT=log >> .env
-```
-
-## Create the master key
-
-The master key encrypts the provider keys that Kaeso stores. Generate one into `master-keys`, which Compose hands to the gateway as a Docker secret:
-
-```bash
-docker run --rm ghcr.io/logicplanes/kaeso-gateway:{{version}} \
-  master-key generate > master-keys
-sudo chown 65532:65532 master-keys && sudo chmod 0400 master-keys
-```
-
-The gateway runs as user 65532 in its container, so the file belongs to that user, and no one else can read it. Docker Desktop and Colima read the folder as you, so there run only `chmod 0400 master-keys`. With rootless Docker, give the file to the user that 65532 maps to on the host.
+The first start takes a minute or two while the images download. The installer ends by printing the setup link. Until you [add your SMTP server](../self-hosting/email.md), the gateway only writes its emails to its log, so sign-in links and invitations aren't delivered. [Install by hand](../self-hosting/installation.md#install-by-hand) shows each step the installer takes.
 
 > [!IMPORTANT]
-> Keep a copy of `master-keys` somewhere safe, apart from your database backups. Without it, Kaeso can't decrypt the stored provider keys, and you have to enter them again.
-
-## Start Kaeso
-
-Start every service and wait until each one is healthy:
-
-```bash
-docker compose up -d --wait
-```
-
-The first start takes a minute or two while the images download and the gateway prepares the databases. The command returns once every service is healthy, or names the one that isn't. Caddy requests the certificate in the background, so HTTPS requests can fail until it has one. `docker compose logs caddy` shows when it gets the certificate, or why it can't.
+> Keep a copy of `kaeso/master-keys` somewhere safe, apart from your database backups. Without it, Kaeso can't decrypt the stored provider keys, and you have to enter them again.
 
 ## Create the first user
 
-The setup link creates the first user. Print it in your terminal:
+The setup link the installer printed creates the first user. It works once, within 24 hours. To print a new link, which retires the old one, run this in the `kaeso` folder:
 
 ```bash
 docker compose exec gateway kaeso setup-link
 ```
-
-The link works once, within 24 hours. Running the command again prints a new link and retires the old one.
 
 Open the link and enter your name, your email, a password of 12 to 128 characters and a name for your organization. Then choose **Set up Kaeso**. You are now an instance admin and the owner of the first organization, and Kaeso opens its **Overview**. The organization has no projects yet.
 

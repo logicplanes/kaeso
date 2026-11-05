@@ -887,6 +887,7 @@ jobs:
           assets="$RUNNER_TEMP/assets"
           cp deploy/kaeso.example.toml "$assets/"
           cp deploy/.env.example "$assets/env.example"
+          cp deploy/install.sh "$assets/install.sh"
           for package in tokens ui; do
             curl -fsSL --retry 5 --retry-all-errors -o "$assets/logicplanes-kaeso-$package-$VERSION.tgz" "https://registry.npmjs.org/@logicplanes/kaeso-$package/-/kaeso-$package-$VERSION.tgz"
           done

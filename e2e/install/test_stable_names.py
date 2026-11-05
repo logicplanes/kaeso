@@ -119,10 +119,20 @@ LANGUAGES = ("en", "de", "zh-CN")
 
 @pytest.mark.parametrize(
     "page",
-    [f"apps/docs/content/{lang}/get-started/quick-start.md" for lang in LANGUAGES],
+    [f"apps/docs/content/{lang}/self-hosting/installation.md" for lang in LANGUAGES],
 )
 def test_the_install_pages_download_the_latest_release_asset(page):
     assert re.search(rf"curl -fsSLO (\\\n +)?{re.escape(RELEASE_ASSET)}\n", (ROOT / page).read_text())
+
+
+def test_the_installer_downloads_the_latest_release_asset():
+    assert RELEASE_ASSET in (ROOT / "deploy" / "install.sh").read_text()
+
+
+@pytest.mark.parametrize("lang", LANGUAGES)
+def test_the_quick_start_installs_with_the_installer(lang):
+    page = (ROOT / "apps" / "docs" / "content" / lang / "get-started" / "quick-start.md").read_text()
+    assert "curl -fsSL https://kaeso.app/install.sh | sh" in page
 
 
 @pytest.mark.parametrize("lang", LANGUAGES)
