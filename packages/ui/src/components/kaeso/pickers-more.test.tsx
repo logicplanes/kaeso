@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { EnvironmentSnippet, SecretReveal } from "./moments.js";
+import { SecretReveal } from "./moments.js";
 import { RolePicker } from "./role-picker.js";
 import { DateRangePicker, DEFAULT_RANGE_PRESETS, DatePicker } from "../date-picker/date-picker.js";
 import { FilterChip } from "../filter-chip/filter-chip.js";
@@ -21,16 +21,9 @@ describe("SecretReveal", () => {
     expect(await navigator.clipboard.readText()).toBe("sk-kso-live-1a2b");
   });
 
-  it("names an unnamed secret plainly and shows the environment", () => {
-    render(
-      <>
-        <SecretReveal baseUrl="https://kaeso.example.com" secret="sk" snippets={false} />
-        <EnvironmentSnippet baseUrl="https://kaeso.example.com" model="gpt-5" />
-      </>,
-    );
+  it("names an unnamed secret plainly", () => {
+    render(<SecretReveal baseUrl="https://kaeso.example.com" secret="sk" snippets={false} />);
     expect(screen.getByRole("textbox", { name: "Key" })).toBeInTheDocument();
-    expect(screen.getByText("API key variable")).toBeInTheDocument();
-    expect(screen.getByText("https://kaeso.example.com/v1")).toBeInTheDocument();
   });
 });
 

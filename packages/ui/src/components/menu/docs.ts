@@ -20,11 +20,4 @@ export const docs = {
       open: "Whether it is open, when you control it.",
     },
   },
-  Menubar: {
-    description: "A row of menus, as in a desktop app's title bar.",
-    props: {
-      "aria-label": "The accessible name, for when there is no visible label.",
-      children: "The menus.",
-    },
-  },
 } satisfies ComponentDocs;

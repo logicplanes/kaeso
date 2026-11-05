@@ -1,4 +1,4 @@
-import { Button, KeyDisplay, ProviderBadge, ProviderCard, ModelLabel, StatusCode, RequestTimeline } from "@logicplanes/kaeso-ui";
+import { KeyDisplay, ProviderBadge, ModelLabel, StatusCode, RequestTimeline } from "@logicplanes/kaeso-ui";
 import { keys, models, providerNames, providers } from "~/fixtures/kaeso";
 import { StateCell, StateMatrix, StateRow, StateSection } from "~/lib/states";
 
@@ -7,7 +7,7 @@ export const meta = {
   description: "Kaeso's identities: a redacted key with its state, a model with its provider and capabilities, an HTTP status, a request's timing.",
   group: "Kaeso",
   entry: "kaeso",
-  import: "KeyDisplay, ModelLabel, ProviderBadge, ProviderCard, StatusCode, RequestTimeline",
+  import: "KeyDisplay, ModelLabel, ProviderBadge, StatusCode, RequestTimeline",
   a11y: [
     "Providers show their mark in its owner's colours for the theme; others a letter. The name is always next to it or its accessible label.",
     "Capability icons have tooltips and are summarized in an accessible label.",
@@ -18,34 +18,7 @@ export const examples = [
   { id: "keys", title: "KeyDisplay", fn: "Keys" },
   { id: "models", title: "ModelLabel and ProviderBadge", fn: "Models" },
   { id: "status", title: "StatusCode and RequestTimeline", fn: "Status" },
-  { id: "providers", title: "ProviderCard", fn: "Providers" },
 ];
-export function Providers() {
-  return (
-    <div className="grid w-full grid-cols-1 gap-16 md:grid-cols-2">
-      <ProviderCard
-        provider="openai"
-        name="OpenAI"
-        connected
-        status="The organization's key"
-        keyLabel="Production …4f2a"
-        detail="Last used 2 min ago"
-        actions={<Button size="sm">Use another key here</Button>}
-      />
-      <ProviderCard
-        provider="anthropic"
-        name="Anthropic"
-        connected={false}
-        status="No key yet: requests to Anthropic fail"
-        actions={
-          <Button size="sm" variant="primary">
-            Connect Anthropic
-          </Button>
-        }
-      />
-    </div>
-  );
-}
 export function Keys() {
   return (
     <div className="flex flex-col gap-12">
@@ -112,10 +85,7 @@ export function States() {
         <Models />
       </StateSection>
       <StateSection title="Status">
-        <div className="flex w-full flex-col gap-24">
-          <Status />
-          <Providers />
-        </div>
+        <Status />
       </StateSection>
       <StateSection title="RequestTimeline at 160px, 240px and full: each time over its label, the same height whatever the times">
         <div className="flex flex-col gap-24">

@@ -1,6 +1,5 @@
 import { forwardRef, type ReactNode } from "react";
 import { Collapsible as BaseCollapsible } from "@base-ui/react/collapsible";
-import { Accordion as BaseAccordion } from "@base-ui/react/accordion";
 import { cn } from "../../utils/cn.js";
 import { DISCLOSURE_TRIGGER, DisclosureChevron } from "./disclosure.js";
 
@@ -56,43 +55,3 @@ export const Collapsible = forwardRef<HTMLDivElement, CollapsibleProps>(function
   );
 });
 Collapsible.displayName = "Collapsible";
-
-export interface AccordionItem {
-  value: string;
-  title: ReactNode;
-  content: ReactNode;
-  hint?: ReactNode | undefined;
-}
-
-export interface AccordionProps {
-  items: AccordionItem[];
-  multiple?: boolean | undefined;
-  defaultValue?: string[] | undefined;
-  className?: string | undefined;
-}
-
-export const Accordion = forwardRef<HTMLDivElement, AccordionProps>(function Accordion({ items, multiple = false, defaultValue, className }, ref) {
-  return (
-    <BaseAccordion.Root
-      ref={ref}
-      {...(multiple ? { multiple: true } : {})}
-      {...(defaultValue ? { defaultValue } : {})}
-      className={cn("flex flex-col", className)}
-    >
-      {items.map((it) => (
-        <BaseAccordion.Item key={it.value} value={it.value} className="py-4 hairline-b">
-          <BaseAccordion.Header>
-            <BaseAccordion.Trigger className={TRIGGER}>
-              <DisclosureText title={it.title} hint={it.hint} />
-              <DisclosureChevron />
-            </BaseAccordion.Trigger>
-          </BaseAccordion.Header>
-          <BaseAccordion.Panel className="collapse-motion">
-            <div className="px-12 pt-4 pb-12 text-body text-fg-secondary">{it.content}</div>
-          </BaseAccordion.Panel>
-        </BaseAccordion.Item>
-      ))}
-    </BaseAccordion.Root>
-  );
-});
-Accordion.displayName = "Accordion";

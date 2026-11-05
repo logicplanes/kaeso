@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button, Inline, Select, icons, KAESO_BUTTON_VARIANTS, type ButtonVariant, type ButtonSize } from "@logicplanes/kaeso-ui";
+import { Button, Select, icons, KAESO_BUTTON_VARIANTS, type ButtonVariant, type ButtonSize } from "@logicplanes/kaeso-ui";
 import { StateMatrix, StateRow, StateCell, StateSection } from "~/lib/states";
 
 export const meta = {
@@ -65,55 +65,55 @@ export function Basic() {
 
 export function Primary() {
   return (
-    <Inline gap={12}>
+    <div className="flex flex-wrap items-center gap-12">
       <Button variant="primary">Create key</Button>
       <Button variant="primary" leadingIcon={icons.add}>
         Add model
       </Button>
-    </Inline>
+    </div>
   );
 }
 
 export function Secondary() {
   return (
-    <Inline gap={12}>
+    <div className="flex flex-wrap items-center gap-12">
       <Button>Edit limits</Button>
       <Button leadingIcon={icons.download}>Export CSV</Button>
       <Button trailingIcon={icons.chevronDown}>Last 30 days</Button>
-    </Inline>
+    </div>
   );
 }
 
 export function Ghost() {
   return (
-    <Inline gap={12}>
+    <div className="flex flex-wrap items-center gap-12">
       <Button variant="ghost">Cancel</Button>
       <Button variant="ghost" leadingIcon={icons.add}>
         Add filter
       </Button>
-    </Inline>
+    </div>
   );
 }
 
 export function Soft() {
   return (
-    <Inline gap={12}>
+    <div className="flex flex-wrap items-center gap-12">
       <Button variant="soft" size="sm">
         Errors only
       </Button>
       <Button variant="soft" size="sm" leadingIcon={icons.filter}>
         Filter
       </Button>
-    </Inline>
+    </div>
   );
 }
 
 export function Danger() {
   return (
-    <Inline gap={12}>
+    <div className="flex flex-wrap items-center gap-12">
       <Button variant="danger-secondary">Archive project</Button>
       <Button variant="danger">Delete key</Button>
-    </Inline>
+    </div>
   );
 }
 
@@ -130,35 +130,35 @@ export function LinkVariant() {
 
 export function Sizes() {
   return (
-    <Inline gap={12} align="center">
+    <div className="flex flex-wrap items-center gap-12">
       <Button size="xs">Extra small</Button>
       <Button size="sm">Small</Button>
       <Button size="md">Medium</Button>
       <Button size="lg">Large</Button>
       <Button size="xl">Extra large</Button>
-    </Inline>
+    </div>
   );
 }
 
 export function WithIcons() {
   return (
-    <Inline gap={12}>
+    <div className="flex flex-wrap items-center gap-12">
       <Button variant="primary" leadingIcon={icons.key}>
         Create key
       </Button>
       <Button leadingIcon={icons.copy}>Copy key</Button>
       <Button trailingIcon={icons.externalLink}>Open docs</Button>
-    </Inline>
+    </div>
   );
 }
 
 export function IconOnly() {
   return (
-    <Inline gap={12}>
+    <div className="flex flex-wrap items-center gap-12">
       <Button icon={icons.filter} aria-label="Filter" />
       <Button variant="ghost" icon={icons.more} aria-label="More actions" />
       <Button variant="primary" icon={icons.add} aria-label="Create key" />
-    </Inline>
+    </div>
   );
 }
 
@@ -185,7 +185,7 @@ export function IconWithShortcut() {
 export function Loading() {
   const [saving, setSaving] = useState(false);
   return (
-    <Inline gap={12}>
+    <div className="flex flex-wrap items-center gap-12">
       <Button
         variant="primary"
         loading={saving}
@@ -199,31 +199,31 @@ export function Loading() {
       <Button loading leadingIcon={icons.refresh}>
         Syncing models
       </Button>
-    </Inline>
+    </div>
   );
 }
 
 export function Disabled() {
   return (
-    <Inline gap={12}>
+    <div className="flex flex-wrap items-center gap-12">
       <Button variant="primary" disabled>
         Create key
       </Button>
       <Button disabled disabledReason="Add a provider key first">
         Add model
       </Button>
-    </Inline>
+    </div>
   );
 }
 
 export function CountShortcut() {
   return (
-    <Inline gap={12}>
+    <div className="flex flex-wrap items-center gap-12">
       <Button count={12}>Requests</Button>
       <Button size="lg" variant="primary" shortcut={["mod", "enter"]}>
         Create key
       </Button>
-    </Inline>
+    </div>
   );
 }
 
@@ -247,19 +247,19 @@ export function FullWidth() {
 
 export function DoOnePrimary() {
   return (
-    <Inline gap={8}>
+    <div className="flex flex-wrap items-center gap-8">
       <Button variant="ghost">Cancel</Button>
       <Button variant="primary">Create key</Button>
-    </Inline>
+    </div>
   );
 }
 
 export function DontTwoPrimaries() {
   return (
-    <Inline gap={8}>
+    <div className="flex flex-wrap items-center gap-8">
       <Button variant="primary">Cancel</Button>
       <Button variant="primary">Create key</Button>
-    </Inline>
+    </div>
   );
 }
 

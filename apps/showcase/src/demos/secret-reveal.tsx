@@ -1,4 +1,4 @@
-import { SecretReveal, EnvironmentSnippet, Dialog, Button } from "@logicplanes/kaeso-ui";
+import { SecretReveal, Dialog, Button } from "@logicplanes/kaeso-ui";
 import { SECRET } from "~/fixtures/kaeso";
 import { StateSection } from "~/lib/states";
 
@@ -7,7 +7,7 @@ export const meta = {
   description: "The one-time key: calm, centered, certain. Copy it, store it, see how to use it.",
   group: "Kaeso",
   entry: "kaeso",
-  import: "SecretReveal, EnvironmentSnippet",
+  import: "SecretReveal",
   variants: "MOMENTS",
   a11y: [
     "The key is a read-only text box named “Key for …”; a click selects all of it.",
@@ -18,7 +18,6 @@ export const meta = {
 };
 export const examples = [
   { id: "reveal", title: "After creating a key", fn: "Reveal", minHeight: 560 },
-  { id: "environment", title: "EnvironmentSnippet", fn: "Environment", minHeight: 360 },
   { id: "platform", title: "A Platform API key", fn: "Platform", minHeight: 440 },
 ];
 export function Reveal() {
@@ -46,13 +45,6 @@ export function Platform() {
     </div>
   );
 }
-export function Environment() {
-  return (
-    <div className="w-640">
-      <EnvironmentSnippet baseUrl="https://kaeso.example.com" />
-    </div>
-  );
-}
 export function InDialog() {
   return (
     <Dialog trigger={<Button variant="primary">Create key</Button>} title="Key created" description="checkout-web can call the gateway now." size="lg">
@@ -63,11 +55,8 @@ export function InDialog() {
 export function States() {
   return (
     <>
-      <StateSection title="Reveal and environment">
-        <div className="flex flex-col gap-40">
-          <Reveal />
-          <Environment />
-        </div>
+      <StateSection title="Reveal">
+        <Reveal />
       </StateSection>
       <StateSection title="Phone width, no snippets">
         <div className="w-320">

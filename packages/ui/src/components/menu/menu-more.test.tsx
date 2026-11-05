@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { createRef } from "react";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { ContextMenu, Menu, Menubar } from "./menu.js";
+import { ContextMenu, Menu } from "./menu.js";
 
 describe("Menu parts", () => {
   it("checks items, chooses radios, opens a submenu and shows a header", async () => {
@@ -93,30 +93,13 @@ describe("Menu parts", () => {
     expect(screen.getByText("Right-click actions")).toBeInTheDocument();
     expect(onOpenChange).toHaveBeenCalledWith(true);
   });
-
-  it("puts menus in a menubar", async () => {
-    render(
-      <Menubar aria-label="Editor">
-        <Menubar.Menu>
-          <Menubar.Trigger data-force="hover">File</Menubar.Trigger>
-          <Menubar.Content>
-            <Menubar.Item>Export</Menubar.Item>
-          </Menubar.Content>
-        </Menubar.Menu>
-      </Menubar>,
-    );
-    expect(screen.getByRole("menubar", { name: "Editor" })).toBeInTheDocument();
-    await userEvent.click(screen.getByRole("menuitem", { name: "File" }));
-    expect(await screen.findByRole("menuitem", { name: "Export" })).toBeInTheDocument();
-  });
 });
 
 describe("Menu part refs", () => {
-  it("reach the separator, the header, the context menu's trigger area and the menubar", () => {
+  it("reach the separator, the header, and the context menu's trigger area", () => {
     const separator = createRef<HTMLDivElement>();
     const header = createRef<HTMLDivElement>();
     const area = createRef<HTMLDivElement>();
-    const bar = createRef<HTMLDivElement>();
     render(
       <>
         <Menu.Separator ref={separator} />
@@ -126,16 +109,10 @@ describe("Menu part refs", () => {
             <span>production</span>
           </ContextMenu.Trigger>
         </ContextMenu>
-        <Menubar ref={bar} aria-label="Editor">
-          <Menubar.Menu>
-            <Menubar.Trigger>File</Menubar.Trigger>
-          </Menubar.Menu>
-        </Menubar>
       </>,
     );
     expect(separator.current).toBe(screen.getByRole("separator"));
     expect(header.current).toHaveTextContent("Ada Lovelaceowner@example.com");
     expect(area.current).toContainElement(screen.getByText("production"));
-    expect(bar.current).toBe(screen.getByRole("menubar", { name: "Editor" }));
   });
 });

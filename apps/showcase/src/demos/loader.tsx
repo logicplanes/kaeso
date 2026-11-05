@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button, Inline, Loader, Spinner, icons } from "@logicplanes/kaeso-ui";
+import { Button, Loader, Spinner, icons } from "@logicplanes/kaeso-ui";
 import { StateMatrix, StateRow, StateCell, StateSection } from "~/lib/states";
 
 export const meta = {
@@ -51,7 +51,7 @@ export function Delayed() {
   const [quick, setQuick] = useState(false);
   const [slow, setSlow] = useState(false);
   return (
-    <Inline gap={12}>
+    <div className="flex flex-wrap items-center gap-12">
       <Button
         loading={quick}
         onClick={() => {
@@ -71,7 +71,7 @@ export function Delayed() {
       >
         Slow save (1.8s)
       </Button>
-    </Inline>
+    </div>
   );
 }
 export function PageLoading() {
@@ -98,7 +98,7 @@ export function States() {
         ))}
       </StateMatrix>
       <StateSection title="In controls (busy, after the delay)">
-        <Inline gap={12}>
+        <div className="flex flex-wrap items-center gap-12">
           <Button variant="primary" loading>
             Save changes
           </Button>
@@ -114,7 +114,7 @@ export function States() {
           <Button variant="primary" size="xl" loading>
             Continue
           </Button>
-        </Inline>
+        </div>
       </StateSection>
       <StateSection title="Labels">
         <div className="flex flex-col gap-12">
@@ -128,13 +128,13 @@ export function States() {
         </div>
       </StateSection>
       <StateSection title="On fills">
-        <Inline gap={12}>
+        <div className="flex flex-wrap items-center gap-12">
           {["bg-fill-1", "bg-fill-2", "bg-raised shadow-xs", "material-primary"].map((c) => (
             <span key={c} className={`flex size-48 items-center justify-center rounded-well ${c}`}>
               <Spinner size="lg" />
             </span>
           ))}
-        </Inline>
+        </div>
       </StateSection>
     </>
   );

@@ -6,10 +6,9 @@ import { renderToString } from "react-dom/server";
 import { hydrateRoot } from "react-dom/client";
 import userEvent from "@testing-library/user-event";
 import { Checkbox, CheckboxBox, CheckboxGroup } from "./checkbox.js";
-import { Accordion, Collapsible } from "../collapsible/collapsible.js";
+import { Collapsible } from "../collapsible/collapsible.js";
 import { Input } from "../input/input.js";
 import { Popover } from "../popover/popover.js";
-import { HoverCard } from "../popover/hover-card.js";
 import { focusInputOnPress } from "../../utils/field-press.js";
 
 describe("Checkbox", () => {
@@ -69,7 +68,7 @@ describe("Checkbox", () => {
   });
 });
 
-describe("Collapsible and Accordion", () => {
+describe("Collapsible", () => {
   it("opens and closes, controlled or not", async () => {
     const onOpenChange = vi.fn();
     render(
@@ -99,23 +98,6 @@ describe("Collapsible and Accordion", () => {
     );
     await userEvent.click(screen.getByRole("button", { name: "Notifications" }));
     expect(screen.getByText("Budget reached").closest(".collapse-motion")).not.toBeNull();
-  });
-
-  it("opens several panels when multiple", async () => {
-    render(
-      <Accordion
-        multiple
-        defaultValue={["a"]}
-        items={[
-          { value: "a", title: "Billing", content: <p>Invoices</p>, hint: "Monthly" },
-          { value: "b", title: "Limits", content: <p>Budgets</p> },
-        ]}
-      />,
-    );
-    expect(screen.getByText("Invoices")).toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: "Limits" }));
-    expect(screen.getByText("Budgets")).toBeInTheDocument();
-    expect(screen.getByText("Invoices")).toBeInTheDocument();
   });
 });
 
@@ -158,7 +140,7 @@ describe("a secret Input", () => {
   });
 });
 
-describe("Popover and HoverCard", () => {
+describe("Popover", () => {
   it("opens a popover named by its title", async () => {
     render(
       <Popover>
@@ -186,32 +168,6 @@ describe("Popover and HoverCard", () => {
       </Popover>,
     );
     expect(await screen.findByRole("dialog", { name: "Visible columns" })).toBeInTheDocument();
-  });
-
-  it("opens a hover card when controlled", async () => {
-    const onOpenChange = vi.fn();
-    render(
-      <HoverCard open onOpenChange={onOpenChange}>
-        <HoverCard.Trigger delay={0}>
-          <a href="#m">claude-sonnet-4-5</a>
-        </HoverCard.Trigger>
-        <HoverCard.Content side="top" align="center">
-          <p>$3.00 / M input</p>
-        </HoverCard.Content>
-      </HoverCard>,
-    );
-    expect(await screen.findByText("$3.00 / M input")).toBeInTheDocument();
-    render(
-      <HoverCard defaultOpen>
-        <HoverCard.Trigger>
-          <a href="#n">gpt-5</a>
-        </HoverCard.Trigger>
-        <HoverCard.Content>
-          <p>Default open</p>
-        </HoverCard.Content>
-      </HoverCard>,
-    );
-    expect(await screen.findByText("Default open")).toBeInTheDocument();
   });
 });
 

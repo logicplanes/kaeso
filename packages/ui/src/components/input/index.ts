@@ -1,7 +1,6 @@
 export { Input, KAESO_INPUT_DEFAULT_VARIANTS, KAESO_INPUT_VARIANTS } from "./input.js";
 export type { InputProps } from "./input.js";
-export { InputGroup, KAESO_INPUT_GROUP_DEFAULT_VARIANTS, KAESO_INPUT_GROUP_VARIANTS } from "./input-group.js";
-export type { InputGroupAddonProps, InputGroupButtonProps, InputGroupInputProps, InputGroupProps, InputSize } from "./input-group.js";
+export type { InputSize } from "./input-group.js";
 export { KAESO_NUMBER_INPUT_DEFAULT_VARIANTS, KAESO_NUMBER_INPUT_VARIANTS, NumberInput } from "./number-input.js";
 export type { NumberInputProps } from "./number-input.js";
 export { KAESO_TEXTAREA_DEFAULT_VARIANTS, KAESO_TEXTAREA_VARIANTS, Textarea } from "./textarea.js";

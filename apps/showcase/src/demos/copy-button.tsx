@@ -1,4 +1,4 @@
-import { CopyButton, Inline } from "@logicplanes/kaeso-ui";
+import { CopyButton } from "@logicplanes/kaeso-ui";
 import { StateSection, Matrix } from "~/lib/states";
 
 export const meta = {
@@ -32,10 +32,10 @@ export function Field() {
 }
 export function Button() {
   return (
-    <Inline gap={12}>
+    <div className="flex flex-wrap items-center gap-12">
       <CopyButton value="sk-kso-AbC123…wxyz" label="Copy redacted key" />
       <CopyButton value="req_01JAR4X2" label="Copy id" variant="secondary" />
-    </Inline>
+    </div>
   );
 }
 export function InlineText() {

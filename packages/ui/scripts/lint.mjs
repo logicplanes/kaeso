@@ -45,16 +45,11 @@ const WITHOUT_REF = new Map([
   ["src/components/popover/popover-root.tsx#PopoverRoot", "Base UI's root renders no element"],
   ["src/components/popover/popover-root.tsx#PopoverTrigger", "its child is the trigger and takes its own ref"],
   ["src/components/popover/popover-root.tsx#PopoverClose", "its child is the button and takes its own ref"],
-  ["src/components/popover/hover-card.tsx#HoverRoot", "Base UI's root renders no element"],
-  ["src/components/popover/hover-card.tsx#HoverTrigger", "its child is the trigger and takes its own ref"],
   ["src/components/menu/menu.tsx#Root", "Base UI's root renders no element"],
   ["src/components/menu/menu.tsx#Trigger", "its child is the trigger and takes its own ref"],
   ["src/components/menu/menu.tsx#Sub", "Base UI's submenu root renders no element"],
   ["src/components/menu/menu.tsx#ContextRoot", "Base UI's root renders no element"],
   ["src/components/dialog/dialog.tsx#Close", "its child is the button and takes its own ref"],
-  ["src/blocks/pages/pages.tsx#ListPage", "a page header and body side by side, with no element around them"],
-  ["src/blocks/pages/pages.tsx#OverviewPage", "a page header and body side by side, with no element around them"],
-  ["src/blocks/pages/pages.tsx#EmptyPage", "a page header and body side by side, with no element around them"],
   ["src/components/date-picker/date-popup.tsx#DatePopup", "internal, loaded lazily by DatePicker"],
   ["src/components/date-picker/range-popup.tsx#RangePopup", "internal, loaded lazily by DateRangePicker"],
   ["src/components/date-picker/iso-field.tsx#IsoField", "internal to the date pickers' popups"],
@@ -78,7 +73,7 @@ function walk(dir, out = []) {
   return out;
 }
 
-const componentDirs = [join(root, "src/components"), join(root, "src/blocks")];
+const componentDirs = [join(root, "src/components")];
 const files = componentDirs
   .flatMap((d) => {
     try {

@@ -18,18 +18,12 @@ test.describe("overlays on a 320px screen", () => {
     expect(create.x + create.width).toBeCloseTo(box.x + box.width - 24, 0);
   });
 
-  test("a popover and a hover card stay on the screen", async ({ page }) => {
+  test("a popover stays on the screen", async ({ page }) => {
     await open(page, "/components/popover/examples");
     await page.locator("#ex-form").getByRole("button", { name: "Rename" }).click();
     const popover = (await page.getByRole("dialog", { name: "Rename key" }).boundingBox())!;
     expect(popover.x).toBeGreaterThanOrEqual(8);
     expect(popover.x + popover.width).toBeLessThanOrEqual(312);
-    await page.keyboard.press("Escape");
-    await page.locator("#ex-hover").getByRole("link").focus();
-    const card = page.locator("[data-open].w-320");
-    await expect(card).toBeVisible();
-    const box = (await card.boundingBox())!;
-    expect(box.x + box.width).toBeLessThanOrEqual(312);
   });
 });
 

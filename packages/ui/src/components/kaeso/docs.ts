@@ -39,14 +39,6 @@ export const docs = {
       items: "The lines, short and without a final period.",
     },
   },
-  EnvironmentSnippet: {
-    description: "The gateway's base URL and a key placeholder to copy, with snippets per SDK.",
-    props: {
-      apiKey: "What stands in for the key: the real key right after creation, a placeholder elsewhere.",
-      baseUrl: "The gateway's address.",
-      model: "A model id for the snippet.",
-    },
-  },
   KeyDisplay: {
     description: "A redacted key: mono 13, a word badge for any state but active, a copy of the redacted form, and its access in an outline badge.",
     props: {
@@ -93,18 +85,6 @@ export const docs = {
       provider: "The provider id, such as `openai` or `anthropic`.",
       size: "The badge's size.",
       withName: "Writes the provider's name next to its mark.",
-    },
-  },
-  ProviderCard: {
-    description: "A provider and how this place reaches it: its mark, name and connection, the key in use, and the actions to connect, replace or remove one.",
-    props: {
-      actions: "Buttons: one primary at most.",
-      connected: "Whether requests can reach the provider.",
-      detail: "A line under the provider's name, such as how many keys it has.",
-      keyLabel: "The key: its name and last four characters, and when it was last used.",
-      name: "The provider's name from the gateway's provider list, as the card's title; the id without it.",
-      provider: "The provider id, such as `openai` or `anthropic`.",
-      status: 'Where the key comes from, or what\'s missing: "The organization\'s key", "No key yet".',
     },
   },
   ProviderPicker: {
