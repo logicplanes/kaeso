@@ -4,6 +4,21 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 ## [Unreleased]
 
+## [0.6.0-rc.3] - 2026-11-05
+
+### Changed
+
+#### UI library
+
+- Buttons press to 0.96, icons draw a 1.5px stroke and cross-fade when they change, and pictures get a translucent edge in their own shape ([#660](https://github.com/logicplanes/kaeso/pull/660))
+
+### Fixed
+
+#### UI library
+
+- The route editor stays usable on short screens and phones, and a Segmented wider than its row scrolls instead of being cut off ([#659](https://github.com/logicplanes/kaeso/pull/659))
+- Links in a paragraph no longer overlap each other's touch areas, a small select gets a full hit area, and a system theme change no longer replays transitions ([#661](https://github.com/logicplanes/kaeso/pull/661))
+
 ## [0.6.0-rc.2] - 2026-11-05
 
 ### Changed
@@ -1258,7 +1273,8 @@ The first release of Kaeso, the open-source AI gateway you run yourself: the gat
 
 - A Release workflow that runs only from `prod`: it prepares the version changes and the changelog without write access to the repository, lets only jobs that run nothing but git push the release commit and the tag, syncs the release commit back to `dev`, and pins every action by commit SHA.
 
-[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.6.0-rc.2...HEAD
+[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.6.0-rc.3...HEAD
+[0.6.0-rc.3]: https://github.com/logicplanes/kaeso/releases/tag/v0.6.0-rc.3
 [0.6.0-rc.2]: https://github.com/logicplanes/kaeso/releases/tag/v0.6.0-rc.2
 [0.6.0-rc.1]: https://github.com/logicplanes/kaeso/releases/tag/v0.6.0-rc.1
 [0.5.6]: https://github.com/logicplanes/kaeso/releases/tag/v0.5.6
