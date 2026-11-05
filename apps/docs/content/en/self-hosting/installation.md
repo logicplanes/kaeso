@@ -1,6 +1,6 @@
 ---
 title: Installation
-description: Install Kaeso by hand or a particular release, try it on your computer, change its services and run its commands.
+description: Install Kaeso by hand or a particular release, try it on your computer, change its services, run its commands and remove it.
 order: 3
 ---
 
@@ -90,7 +90,7 @@ Each release also attaches two example files: [`env.example`](https://github.com
 
 ## Trying it on your computer
 
-Set `KAESO_DOMAIN=localhost` in `.env`, start Kaeso and open `https://localhost`. Caddy signs the certificate with its own local authority, which your browser asks you to accept once. Without a mail server, also set `KAESO_MAIL_TRANSPORT=log` ([email](email.md#try-kaeso-without-a-mail-server)).
+Set `KAESO_DOMAIN=localhost` in `.env`, start Kaeso and open `https://localhost`. Caddy signs the certificate with its own local authority, which your browser asks you to accept once. When ports 80 and 443 are taken on your computer, the installer moves Caddy to the first free pair, such as 9080 and 9443, in a `compose.override.yaml`, and sets `KAESO_PUBLIC_URL` to `https://localhost:9443`. Without a mail server, also set `KAESO_MAIL_TRANSPORT=log` ([email](email.md#try-kaeso-without-a-mail-server)).
 
 curl and the SDKs don't trust Caddy's local authority. Copy its root certificate out of the container:
 
@@ -199,6 +199,16 @@ docker compose exec gateway kaeso user reset-2fa owner@example.com
 | `kaeso master-key rewrap` | Re-encrypts stored secrets with the first master key and reports which key ids are still in use ([rotate the master key](backups.md#rotate-the-master-key)) |
 | `kaeso migrate` | Runs the PostgreSQL migrations, and the ClickHouse ones while request logs are on, then exits |
 | `kaeso serve` | Runs the gateway. It is the image's default command |
+
+## Remove Kaeso
+
+Kaeso runs once per machine, so remove an install before you install it again elsewhere. In the install's folder, stop Kaeso and delete its containers, networks and data:
+
+```bash
+docker compose down -v
+```
+
+`-v` deletes the databases with every user, key, setting and request log, and Caddy's certificates. Without it, the data stays in Docker for an install in the same folder. Then delete the folder, after you have copied `master-keys` if you kept the data.
 
 ## Next steps
 

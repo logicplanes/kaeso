@@ -1,6 +1,6 @@
 ---
 title: 安装
-description: 手动安装 Kaeso 或安装指定版本、在自己的电脑上试用、修改其服务并运行其命令。
+description: 手动安装 Kaeso 或安装指定版本、在自己的电脑上试用、修改其服务、运行其命令以及移除它。
 order: 3
 ---
 
@@ -90,7 +90,7 @@ curl -fsSLO \
 
 ## 在自己的电脑上试用
 
-在 `.env` 中设置 `KAESO_DOMAIN=localhost`，启动 Kaeso 后打开 `https://localhost`。Caddy 用自己的本地证书颁发机构签发证书，浏览器会请您确认一次。没有邮件服务器时，再设置 `KAESO_MAIL_TRANSPORT=log`（[邮件](email.md#不用邮件服务器试用-kaeso)）。
+在 `.env` 中设置 `KAESO_DOMAIN=localhost`，启动 Kaeso 后打开 `https://localhost`。Caddy 用自己的本地证书颁发机构签发证书，浏览器会请您确认一次。如果您电脑上的 80 和 443 端口已被占用，安装脚本会在 `compose.override.yaml` 中把 Caddy 移到第一组空闲端口，例如 9080 和 9443，并把 `KAESO_PUBLIC_URL` 设为 `https://localhost:9443`。没有邮件服务器时，再设置 `KAESO_MAIL_TRANSPORT=log`（[邮件](email.md#不用邮件服务器试用-kaeso)）。
 
 curl 和 SDK 不信任 Caddy 的本地证书颁发机构。从容器中复制出它的根证书：
 
@@ -199,6 +199,16 @@ docker compose exec gateway kaeso user reset-2fa owner@example.com
 | `kaeso master-key rewrap` | 用第一个主密钥重新加密已保存的机密，并报告哪些密钥 ID 仍在使用（[轮换主密钥](backups.md#轮换主密钥)） |
 | `kaeso migrate` | 运行 PostgreSQL 迁移，请求日志开启时也运行 ClickHouse 迁移，然后退出 |
 | `kaeso serve` | 运行网关。这是镜像的默认命令 |
+
+## 移除 Kaeso
+
+每台机器只运行一个 Kaeso，因此在别处重新安装之前，请先移除现有安装。在安装文件夹中停止 Kaeso，并删除其容器、网络和数据：
+
+```bash
+docker compose down -v
+```
+
+`-v` 会删除数据库，连同所有用户、密钥、设置和请求日志，以及 Caddy 的证书。不加 `-v` 时，数据会保留在 Docker 中，供同一文件夹中的安装继续使用。之后删除该文件夹；如果保留了数据，请先复制 `master-keys`。
 
 ## 下一步
 

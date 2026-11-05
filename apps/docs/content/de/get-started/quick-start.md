@@ -8,7 +8,7 @@ Installieren Sie Kaeso auf einem Server, verbinden Sie einen Modellanbieter wie 
 
 ## Bevor Sie beginnen
 
-- Ein Server mit Docker Engine und Docker Compose 2.24 oder neuer, 2 vCPUs, 4 GB Arbeitsspeicher und 20 GB Festplatte ([Anforderungen](../self-hosting/requirements.md)).
+- Ein Server mit 2 vCPUs, 4 GB Arbeitsspeicher und 20 GB Festplatte sowie Docker Engine mit Docker Compose 2.24 oder neuer ([Anforderungen](../self-hosting/requirements.md)). Unter Linux bietet das Installationsskript an, Docker zu installieren, wenn es fehlt.
 - Eine Domain wie `kaeso.example.com`, deren DNS-Eintrag auf den Server zeigt. Die Ports 80 und 443 müssen zum Internet offen sein, damit Caddy ein Zertifikat erhält.
 - Ein API-Schlüssel eines [Modellanbieters, den Kaeso aufruft](../concepts/supported-providers.md), etwa OpenAI oder Anthropic.
 
@@ -24,6 +24,8 @@ curl -fsSL https://kaeso.app/install.sh | sh -s -- --domain kaeso.example.com
 ```
 
 Der erste Start dauert ein bis zwei Minuten, während die Images geladen werden. Zum Schluss gibt das Skript den Einrichtungslink aus. Bis Sie [Ihren SMTP-Server eintragen](../self-hosting/email.md), schreibt das Gateway seine E-Mails nur in sein Log, Anmeldelinks und Einladungen kommen also nicht an. [Von Hand installieren](../self-hosting/installation.md#von-hand-installieren) zeigt jeden Schritt des Skripts.
+
+Führen Sie das Skript im selben Ordner erneut aus, um Kaeso wieder zu starten; es behält die Einstellungen und den Hauptschlüssel. Auf einem Rechner läuft ein Kaeso, deshalb lehnt das Skript eine zweite Installation in einem anderen Ordner ab.
 
 > [!IMPORTANT]
 > Bewahren Sie eine Kopie von `kaeso/master-keys` sicher auf, getrennt von Ihren Datenbank-Backups. Ohne sie kann Kaeso die gespeicherten Anbieter-Schlüssel nicht entschlüsseln, und Sie müssen sie neu eingeben.

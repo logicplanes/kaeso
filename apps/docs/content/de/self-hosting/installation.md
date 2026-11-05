@@ -1,6 +1,6 @@
 ---
 title: Installation
-description: Installieren Sie Kaeso von Hand oder ein bestimmtes Release, probieren Sie es lokal aus, ändern Sie Dienste und führen Sie Befehle aus.
+description: Installieren Sie Kaeso oder ein Release von Hand, testen Sie es lokal, ändern Sie Dienste, führen Sie Befehle aus und entfernen Sie es.
 order: 3
 ---
 
@@ -90,7 +90,7 @@ Jedem Release liegen außerdem zwei Beispieldateien bei: [`env.example`](https:/
 
 ## Auf dem eigenen Rechner ausprobieren
 
-Setzen Sie `KAESO_DOMAIN=localhost` in der `.env`, starten Sie Kaeso und öffnen Sie `https://localhost`. Caddy signiert das Zertifikat mit seiner eigenen lokalen Zertifizierungsstelle, die Ihr Browser einmal bestätigen lässt. Ohne Mailserver setzen Sie außerdem `KAESO_MAIL_TRANSPORT=log` ([E-Mail](email.md#kaeso-ohne-mailserver-ausprobieren)).
+Setzen Sie `KAESO_DOMAIN=localhost` in der `.env`, starten Sie Kaeso und öffnen Sie `https://localhost`. Caddy signiert das Zertifikat mit seiner eigenen lokalen Zertifizierungsstelle, die Ihr Browser einmal bestätigen lässt. Sind die Ports 80 und 443 auf Ihrem Rechner belegt, legt das Installationsskript Caddy in einer `compose.override.yaml` auf das erste freie Paar, etwa 9080 und 9443, und setzt `KAESO_PUBLIC_URL` auf `https://localhost:9443`. Ohne Mailserver setzen Sie außerdem `KAESO_MAIL_TRANSPORT=log` ([E-Mail](email.md#kaeso-ohne-mailserver-ausprobieren)).
 
 curl und die SDKs vertrauen Caddys lokaler Zertifizierungsstelle nicht. Kopieren Sie ihr Stammzertifikat aus dem Container:
 
@@ -199,6 +199,16 @@ docker compose exec gateway kaeso user reset-2fa owner@example.com
 | `kaeso master-key rewrap` | Verschlüsselt gespeicherte Secrets mit dem ersten Hauptschlüssel neu und meldet, welche Schlüssel-IDs noch verwendet werden ([Hauptschlüssel rotieren](backups.md#hauptschlüssel-rotieren)) |
 | `kaeso migrate` | Führt die Migrationen von PostgreSQL aus, bei eingeschalteten Anfrageprotokollen auch die von ClickHouse, und beendet sich |
 | `kaeso serve` | Startet das Gateway. Das ist der Standardbefehl des Images |
+
+## Kaeso entfernen
+
+Kaeso läuft einmal pro Rechner. Entfernen Sie deshalb eine Installation, bevor Sie Kaeso an anderer Stelle neu installieren. Halten Sie Kaeso im Ordner der Installation an und löschen Sie seine Container, Netzwerke und Daten:
+
+```bash
+docker compose down -v
+```
+
+`-v` löscht die Datenbanken mit allen Benutzern, Schlüsseln, Einstellungen und Anfrageprotokollen sowie die Zertifikate von Caddy. Ohne `-v` bleiben die Daten für eine Installation im selben Ordner in Docker. Löschen Sie danach den Ordner, nachdem Sie `master-keys` kopiert haben, falls Sie die Daten behalten.
 
 ## Nächste Schritte
 
