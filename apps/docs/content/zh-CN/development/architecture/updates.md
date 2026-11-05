@@ -36,6 +36,8 @@ flowchart TD
 
 每个条目还带有 `art`，即 update.kaeso.app 为该版本一次性选定并永久保留的配图。它由一种风格、一套调色板和一个种子组成，由 UI 库的 `ReleaseArt` 绘制。网关把它为某个版本看到的第一个 `art` 存入 `update_releases.art`，之后从不替换。`me/whats-new` 返回它，版本没有配图时控制台根据版本号绘制一幅。
 
+`v1/releases.json` 的每个响应（包括 `304`）都带有 `Kaeso-Stars` 头，即 logicplanes/kaeso 在 GitHub 上的星标数。网关在内存中保留最近一次成功检查得到的数字，并在 `instance/updates` 中以 `github_stars` 返回。没有该头时（例如来自镜像站点），它为 `null`。**实例** › **更新**从 100 个星标起在**在 GitHub 上加星标**旁显示它。
+
 ## 网关
 
 `services/updates.rs` 和 `update_check` 任务负责查找新版本。该任务每分钟询问一次下一次检查是否到期（`update_settings.next_check_at`）。

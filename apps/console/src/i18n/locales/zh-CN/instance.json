@@ -359,6 +359,7 @@
   "instance.updates.showProgress": "查看进度",
   "instance.updates.stable": "稳定版",
   "instance.updates.stableHint": "经过测试的版本；几乎适合所有实例。",
+  "instance.updates.star": "在 GitHub 上加星标",
   "instance.updates.stateFailed": "未安装",
   "instance.updates.stateNeedsAttention": "需要处理",
   "instance.updates.stateRollbackFailed": "回退失败",

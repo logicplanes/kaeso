@@ -36,7 +36,7 @@ async function loadSearch(locale: Locale): Promise<LoadedSearch> {
 
 const SEARCH_PRELOAD_DELAY = 1500;
 
-export function DocsShell({ locale, nav }: { locale: Locale; nav: NavGroup[] }) {
+export function DocsShell({ locale, nav, stars }: { locale: Locale; nav: NavGroup[]; stars: number | null }) {
   const t = useText();
   const searchOpen = useSearchOpen();
   const [search, setSearch] = useState<LoadedSearch | null>(null);
@@ -64,7 +64,12 @@ export function DocsShell({ locale, nav }: { locale: Locale; nav: NavGroup[] }) 
   return (
     <TooltipProvider>
       <Sidebar.Provider storageKey="kaeso-docs:sidebar">
-        <AppFrame sidebar={<DocsSidebar nav={nav} />} brandHref={homePath(locale)} brandLabel={t("site.home")} phoneActions={<SearchButton tooltip={false} />}>
+        <AppFrame
+          sidebar={<DocsSidebar nav={nav} stars={stars} />}
+          brandHref={homePath(locale)}
+          brandLabel={t("site.home")}
+          phoneActions={<SearchButton tooltip={false} />}
+        >
           <Outlet />
         </AppFrame>
       </Sidebar.Provider>

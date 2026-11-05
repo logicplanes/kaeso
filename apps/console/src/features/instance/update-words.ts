@@ -1,8 +1,17 @@
+import { formatNumber } from "@logicplanes/kaeso-ui/format";
 import type { UpdateJobView } from "~/api/generated/types";
 import { t } from "~/i18n";
 
 export const UPDATER_DOCS = "https://docs.kaeso.app/self-hosting/upgrades#the-updater";
 export const BACKUP_DOCS = "https://docs.kaeso.app/self-hosting/backups";
+export const REPOSITORY = "https://github.com/logicplanes/kaeso";
+
+const STARS_SHOWN_FROM = 100;
+
+export function starsText(stars: number | null | undefined): string | null {
+  if (stars === null || stars === undefined || stars < STARS_SHOWN_FROM) return null;
+  return formatNumber(stars, { notation: "compact", maximumFractionDigits: 1 });
+}
 
 export const STEPS = ["verifying", "downloading", "switching", "migrating", "online"] as const;
 

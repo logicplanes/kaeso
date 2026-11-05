@@ -9,11 +9,16 @@ import { RouterLink } from "~/shell/router-link";
 import { setSearchOpen } from "~/shell/search-store";
 
 const searchIndex = vi.hoisted(() => ({ hold: null as Promise<void> | null }));
+const built = vi.hoisted(() => ({ stars: null as number | null }));
 
 vi.mock("~/site/data", async (importOriginal) => {
   const actual = await importOriginal<typeof import("~/site/data")>();
   return {
     ...actual,
+    loadLocaleData: async (locale: Parameters<typeof actual.loadLocaleData>[0]) => {
+      const data = await actual.loadLocaleData(locale);
+      return { ...data, site: { ...data.site, stars: built.stars } };
+    },
     loadSearchIndex: async (locale: Parameters<typeof actual.loadSearchIndex>[0]) => {
       await searchIndex.hold;
       return actual.loadSearchIndex(locale);
@@ -23,6 +28,7 @@ vi.mock("~/site/data", async (importOriginal) => {
 
 afterEach(() => {
   localStorage.clear();
+  built.stars = null;
   searchIndex.hold = null;
   setSearchOpen(false);
 });
@@ -108,6 +114,43 @@ describe("the site", () => {
     expect(screen.getByRole("button", { name: "法律信息" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "主题" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "语言" })).toBeInTheDocument();
+  });
+
+  it("links to Kaeso on GitHub under the changelog, without a count while it is below 100", async () => {
+    built.stars = 99;
+    app("/");
+    const nav = await screen.findByRole("navigation", { name: "Documentation" });
+    const links = within(nav).getAllByRole("link");
+    const changelog = links.findIndex((link) => link.textContent === "Changelog");
+    expect(links[changelog + 1]).toHaveAccessibleName("Star on GitHub");
+    expect(links[changelog + 1]).toHaveAttribute("href", "https://github.com/logicplanes/kaeso");
+  });
+
+  it("links to GitHub without a count when the build couldn't get one", async () => {
+    app("/de");
+    const nav = await screen.findByRole("navigation", { name: "Dokumentation" });
+    expect(within(nav).getByRole("link", { name: "Stern auf GitHub" })).toHaveAttribute("href", "https://github.com/logicplanes/kaeso");
+  });
+
+  it("shows the star count from 100 on, written short", async () => {
+    built.stars = 1234;
+    app("/");
+    const nav = await screen.findByRole("navigation", { name: "Documentation" });
+    expect(within(within(nav).getByRole("link", { name: /^Star on GitHub/ })).getByText("1.2K")).toBeInTheDocument();
+  });
+
+  it("writes the star count as German does", async () => {
+    built.stars = 12_345;
+    app("/de");
+    const nav = await screen.findByRole("navigation", { name: "Dokumentation" });
+    expect(within(within(nav).getByRole("link", { name: /^Stern auf GitHub/ })).getByText("12.345")).toBeInTheDocument();
+  });
+
+  it("writes the star count as Chinese does", async () => {
+    built.stars = 12_345;
+    app("/zh-CN");
+    const nav = await screen.findByRole("navigation", { name: "文档" });
+    expect(within(within(nav).getByRole("link", { name: /^在 GitHub 上加星标/ })).getByText("1.2万")).toBeInTheDocument();
   });
 
   it("says when an address has no page, in the frame and in its language", async () => {

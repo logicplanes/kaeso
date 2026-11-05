@@ -359,6 +359,7 @@
   "instance.updates.showProgress": "Show progress",
   "instance.updates.stable": "Stable releases",
   "instance.updates.stableHint": "Tested releases; the right choice for almost every install.",
+  "instance.updates.star": "Star on GitHub",
   "instance.updates.stateFailed": "Not installed",
   "instance.updates.stateNeedsAttention": "Needs attention",
   "instance.updates.stateRollbackFailed": "Rollback failed",

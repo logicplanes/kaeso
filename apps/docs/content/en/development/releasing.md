@@ -182,6 +182,8 @@ pnpm --filter kaeso-docs build
 pnpm --filter kaeso-showcase build
 ```
 
+The documentation's build reads the star count of logicplanes/kaeso from GitHub's API for its sidebar. Set `GITHUB_TOKEN` so GitHub's limit of 60 requests an hour doesn't apply; without an answer, the site shows no count.
+
 Upload `apps/docs/dist` and `apps/showcase/dist` as they are. They hold every page in every language, `robots.txt`, `sitemap.xml` and a `404.html` per language. The host has to answer `/console` with `console.html`, and an unknown address with the `404.html` of its language.
 
 ### Content Security Policy

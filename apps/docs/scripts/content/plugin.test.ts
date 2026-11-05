@@ -47,7 +47,7 @@ const TEMPLATE = `<!doctype html>
 
 type Hooks = {
   config: (c: object, env: { command: "build" | "serve" }) => void;
-  buildStart: (this: { addWatchFile: (f: string) => void; error: (m: string) => never }) => Promise<void>;
+  buildStart: (this: { addWatchFile: (f: string) => void; error: (m: string) => never; info?: (m: string) => void }) => Promise<void>;
   resolveId: (id: string) => string | null;
   load: (id: string) => string | null;
   writeBundle: (output: { dir?: string }, bundle: Rollup.OutputBundle) => void;
@@ -350,6 +350,46 @@ describe("the Vite plugin", () => {
     expect(p.load("\0kaeso-docs:site/fr")).toBeNull();
     expect(p.load("\0kaeso-docs:other/en")).toBeNull();
     expect(p.load("/src/main.tsx")).toBeNull();
+  });
+
+  it("asks GitHub for the star count once a build, and gives the sidebar none while serving", async () => {
+    repo();
+    const stars = vi.fn(async () => ({ stars: 1234 }));
+    const info: string[] = [];
+    const ctx = {
+      addWatchFile: () => undefined,
+      error: (m: string): never => {
+        throw new Error(m);
+      },
+      info: (m: string) => info.push(m),
+    };
+    const serve = hooks(kaesoDocs({ root, contentDir: "content", editBase: "", siteUrl: "https://docs.kaeso.app", version: "1.4.0", stars }));
+    serve.config({}, { command: "serve" });
+    await serve.buildStart.call(ctx);
+    expect(stars).not.toHaveBeenCalled();
+    expect(serve.load("\0kaeso-docs:site/en")).toContain("export const stars = null;");
+
+    const build = hooks(kaesoDocs({ root, contentDir: "content", editBase: "", siteUrl: "https://docs.kaeso.app", version: "1.4.0", stars }));
+    build.config({}, { command: "build" });
+    await build.buildStart.call(ctx);
+    expect(stars).toHaveBeenCalledOnce();
+    for (const locale of ["en", "de", "zh-CN"]) expect(build.load(`\0kaeso-docs:site/${locale}`)).toContain("export const stars = 1234;");
+    expect(info).toEqual(["github: 1234 stars"]);
+
+    const offline = hooks(
+      kaesoDocs({
+        root,
+        contentDir: "content",
+        editBase: "",
+        siteUrl: "https://docs.kaeso.app",
+        version: "1.4.0",
+        stars: async () => ({ stars: null, why: "api.github.com can't be reached (fetch failed)" }),
+      }),
+    );
+    offline.config({}, { command: "build" });
+    await offline.buildStart.call(ctx);
+    expect(offline.load("\0kaeso-docs:site/en")).toContain("export const stars = null;");
+    expect(info.at(-1)).toBe("github: no star count, since api.github.com can't be reached (fetch failed)");
   });
 
   it("watches every page, and fails a build on a broken page", async () => {

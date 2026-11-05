@@ -504,6 +504,58 @@ describe("instance updates page", () => {
     history();
     await renderApp(PATH);
     expect(await screen.findByText("The update status couldn't load")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /Star on GitHub/ })).not.toBeInTheDocument();
+  });
+
+  it("links to Kaeso on GitHub in a new tab, without the count while it is below 100", async () => {
+    signedIn();
+    on("GET", "instance/updates", updates({ github_stars: 99 }));
+    history();
+    await renderApp(PATH);
+    const star = await screen.findByRole("link", { name: "Star on GitHub" });
+    expect(star).toHaveAttribute("href", "https://github.com/logicplanes/kaeso");
+    expect(star).toHaveAttribute("target", "_blank");
+    expect(star).toHaveAttribute("rel", "noopener noreferrer");
+  });
+
+  it("links to GitHub without a count when the release feed gave none", async () => {
+    signedIn();
+    on("GET", "instance/updates", updates({ github_stars: null }));
+    history();
+    await renderApp(PATH);
+    expect(await screen.findByRole("link", { name: "Star on GitHub" })).toBeInTheDocument();
+  });
+
+  it("shows the star count from 100 on", async () => {
+    signedIn();
+    on("GET", "instance/updates", updates({ github_stars: 100 }));
+    history();
+    await renderApp(PATH);
+    expect(await screen.findByRole("link", { name: "Star on GitHub 100" })).toHaveAttribute("href", "https://github.com/logicplanes/kaeso");
+  });
+
+  it("writes a large star count short", async () => {
+    signedIn();
+    on("GET", "instance/updates", updates({ github_stars: 1234 }));
+    history();
+    await renderApp(PATH);
+    expect(await screen.findByRole("link", { name: "Star on GitHub 1.2K" })).toBeInTheDocument();
+  });
+
+  it("says Star on GitHub in German, with the count as German writes it", async () => {
+    signedIn();
+    on("GET", "instance/updates", updates({ github_stars: 12_345 }));
+    history();
+    await renderApp(PATH, { locale: "de" });
+    expect(await screen.findByRole("link", { name: "GitHub-Stern geben 12.345" })).toHaveAttribute("href", "https://github.com/logicplanes/kaeso");
+  });
+
+  it("says Star on GitHub in Chinese, with the count as Chinese writes it", async () => {
+    signedIn();
+    on("GET", "instance/updates", updates({ github_stars: 12_345 }));
+    history();
+    await renderApp(PATH, { locale: "zh-CN" });
+    expect(await screen.findByRole("link", { name: "在 GitHub 上加星标 1.2万" })).toHaveAttribute("href", "https://github.com/logicplanes/kaeso");
   });
 
   it("marks Updates in the settings sidebar while a release is available", async () => {

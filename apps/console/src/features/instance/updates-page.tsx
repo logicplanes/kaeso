@@ -31,7 +31,7 @@ import { SettingsLoading } from "~/shell/settings-page";
 import { LoadFailed } from "~/features/org/load-failed";
 import { InstancePage } from "./instance-page";
 import { UpdateDialog, type Opened } from "./update-dialog";
-import { checkErrorText, jobResult, UPDATER_DOCS } from "./update-words";
+import { checkErrorText, jobResult, REPOSITORY, starsText, UPDATER_DOCS } from "./update-words";
 import { hourLabel, weekdayName } from "~/format/time-zones";
 import { t } from "~/i18n";
 import { showWhatsNew } from "~/shell/whats-new-request";
@@ -52,6 +52,7 @@ export function InstanceUpdatesPage() {
     <InstancePage
       title={t("instance.updates.title", "Updates")}
       description={t("instance.updates.hint", "The Kaeso version this install runs, and how it moves to new releases.")}
+      actions={u && <StarOnGitHub stars={u.github_stars} />}
     >
       {updates.isError && !u ? (
         <LoadFailed title={t("instance.updates.failed", "The update status couldn't load")} />
@@ -67,6 +68,23 @@ export function InstanceUpdatesPage() {
       )}
       <DialogScope open={open}>{opened && <UpdateDialog opened={opened} open={open} onOpenChange={setOpen} />}</DialogScope>
     </InstancePage>
+  );
+}
+
+function StarOnGitHub({ stars }: { stars: number | null | undefined }) {
+  const count = starsText(stars);
+  return (
+    <Button size="sm" variant="ghost" href={REPOSITORY} target="_blank" rel="noopener noreferrer" trailingIcon={icons.externalLink}>
+      {t("instance.updates.star", "Star on GitHub")}
+      {count && (
+        <>
+          {" "}
+          <Text tone="secondary" tabular>
+            {count}
+          </Text>
+        </>
+      )}
+    </Button>
   );
 }
 

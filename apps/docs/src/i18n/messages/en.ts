@@ -4,6 +4,7 @@ export const en = {
   "site.navigation": "Documentation",
   "nav.introduction": "Introduction",
   "nav.changelog": "Changelog",
+  "nav.star": "Star on GitHub",
   "nav.overview": "Overview",
   "legal.label": "Legal",
   "legal.privacy": "Privacy",
