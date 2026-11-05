@@ -1,6 +1,7 @@
 pub mod cleanup;
 pub mod key_expiry;
 pub mod kpmr;
+pub mod mcp_sync;
 pub mod org_deletion;
 pub mod update_check;
 
@@ -79,6 +80,12 @@ pub fn all() -> Vec<Job> {
             every: Duration::from_secs(60),
             lock: 6,
             run: |s| Box::pin(update_check::run(s)),
+        },
+        Job {
+            name: "mcp_sync",
+            every: Duration::from_secs(60),
+            lock: 7,
+            run: |s| Box::pin(mcp_sync::run(s)),
         },
     ]
 }

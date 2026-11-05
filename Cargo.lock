@@ -2661,6 +2661,7 @@ dependencies = [
  "kaeso-crypto",
  "kaeso-kpp",
  "kaeso-mail",
+ "kaeso-mcp",
  "kaeso-store",
  "kaeso-testkit",
  "kaeso-update",

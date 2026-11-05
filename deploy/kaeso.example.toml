@@ -105,6 +105,7 @@ allowed_networks = ""
 
 [mcp_servers]
 allowed_networks = ""
+sync_interval = "15m"
 
 [upstream]
 connect_timeout = "10s"

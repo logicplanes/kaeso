@@ -215,6 +215,7 @@ An organization admin chooses a custom provider's base URL, so the gateway guard
 | Variable<br>TOML key | Type | Default | What it does |
 | --- | --- | --- | --- |
 | `KAESO_MCP_SERVERS_ALLOWED_NETWORKS`<br>`mcp_servers.allowed_networks` | text | — | Comma-separated private, loopback or other non-public networks MCP servers may be reached on, such as `10.0.0.0/8`. Plain `http` reaches only these. |
+| `KAESO_MCP_SERVERS_SYNC_INTERVAL`<br>`mcp_servers.sync_interval` | text | `15m` | How often the gateway asks each MCP server for its tools, to find new, changed and removed ones. At least a minute. |
 
 An organization admin chooses an MCP server's address, so the gateway guards it like a custom provider's: every connection, sign-in and metadata request included, is checked after DNS resolution, and private, loopback, link-local and cloud metadata addresses are refused unless `KAESO_MCP_SERVERS_ALLOWED_NETWORKS` lists their network. Redirects are never followed. Link-local and cloud metadata addresses stay refused even when a listed network covers them.
 
