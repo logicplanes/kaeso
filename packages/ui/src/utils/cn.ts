@@ -72,6 +72,8 @@ export function kaesoMergeConfig() {
       "overflow-x": [{ "overflow-x": overflow }],
       "overflow-y": [{ "overflow-y": overflow }],
       overscroll: [{ overscroll: ["auto", "contain", "none"] }],
+      "overscroll-x": [{ "overscroll-x": ["auto", "contain", "none"] }],
+      "overscroll-y": [{ "overscroll-y": ["auto", "contain", "none"] }],
       position: ["static", "fixed", "absolute", "relative", "sticky"],
       inset: [{ inset }],
       "inset-x": [{ "inset-x": inset }],
@@ -248,6 +250,7 @@ export function kaesoMergeConfig() {
     },
     conflictingClassGroups: {
       overflow: ["overflow-x", "overflow-y"],
+      overscroll: ["overscroll-x", "overscroll-y"],
       inset: ["inset-x", "inset-y", "start", "end", "top", "right", "bottom", "left"],
       "inset-x": ["start", "end", "right", "left"],
       "inset-y": ["top", "bottom"],

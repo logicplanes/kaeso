@@ -59,6 +59,56 @@ describe("Segmented", () => {
     expect(onChange).toHaveBeenLastCalledWith("30d");
   });
 
+  const PRESETS = [
+    { value: "observer", label: "Observer" },
+    { value: "builder", label: "Builder" },
+    { value: "operator", label: "Operator" },
+    { value: "full", label: "Full access" },
+  ];
+  const room = (width: number) => {
+    const radios = (el: HTMLElement) => [...(el.parentElement?.querySelectorAll('[role="radio"]') ?? [])];
+    return [
+      vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockImplementation(function (this: HTMLElement) {
+        return this.getAttribute("role") === "radio" ? 80 : 0;
+      }),
+      vi.spyOn(HTMLElement.prototype, "offsetLeft", "get").mockImplementation(function (this: HTMLElement) {
+        return radios(this).indexOf(this) * 80;
+      }),
+      vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockImplementation(function (this: HTMLElement) {
+        return this.getAttribute("role") === "radiogroup" ? width : 0;
+      }),
+    ];
+  };
+
+  it("stays still when its options fit", () => {
+    const spies = room(320);
+    try {
+      render(<Segmented aria-label="Most an agent may do" defaultValue="full" options={PRESETS} />);
+      const group = screen.getByRole("radiogroup", { name: "Most an agent may do" });
+      expect(group).toHaveClass("max-w-full");
+      expect(group).not.toHaveClass("overflow-x-auto");
+      expect(group.scrollLeft).toBe(0);
+    } finally {
+      for (const s of spies) s.mockRestore();
+    }
+  });
+
+  it("scrolls sideways when its options are wider than the room, keeping the chosen one in view", async () => {
+    const spies = room(200);
+    try {
+      render(<Segmented aria-label="Most an agent may do" defaultValue="full" options={PRESETS} />);
+      const group = screen.getByRole("radiogroup", { name: "Most an agent may do" });
+      expect(group).toHaveClass("max-w-full", "overflow-x-auto", "overflow-y-hidden");
+      expect(group.scrollLeft).toBe(120);
+      await userEvent.click(screen.getByRole("radio", { name: "Observer" }));
+      expect(group.scrollLeft).toBe(0);
+      await userEvent.click(screen.getByRole("radio", { name: "Builder" }));
+      expect(group.scrollLeft).toBe(0);
+    } finally {
+      for (const s of spies) s.mockRestore();
+    }
+  });
+
   it("names a segment by its label, and an icon-only one by its aria-label", () => {
     render(
       <Segmented

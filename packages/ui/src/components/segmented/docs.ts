@@ -2,7 +2,8 @@ import type { ComponentDocs } from "../../component-docs.js";
 
 export const docs = {
   Segmented: {
-    description: "Two to five mutually exclusive options: 24h/7d/30d, List/Board, providers.",
+    description:
+      "Two to five mutually exclusive options: 24h/7d/30d, List/Board, providers. Options wider than the room scroll sideways, with the chosen one in view.",
     props: {
       "aria-label": "The control's accessible name.",
       defaultValue: "The chosen option on first render.",

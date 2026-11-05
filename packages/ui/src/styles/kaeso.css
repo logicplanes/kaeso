@@ -1101,6 +1101,12 @@
 
 /* The flow canvas's grid: one dot every 16px of the route, so the dots move and scale with the view
    (FlowCanvas sets the three variables from its pan and zoom). */
+/* Half the screen at most, so the inspector under a stacked canvas shows on a short screen or at
+   200% zoom: the canvas pans on the wheel and would otherwise leave nothing on screen to scroll. */
+@utility flow-stacked-height {
+  height: min(400px, 50dvh);
+}
+
 @utility flow-canvas-dots {
   background-image: radial-gradient(circle, var(--k-line) 1px, transparent 1.25px);
   background-size: var(--k-flow-dot-gap, 16px) var(--k-flow-dot-gap, 16px);

@@ -22,7 +22,7 @@ export const docs = {
   },
   FlowWorkspace: {
     description:
-      "The page body of an editor built on a `FlowCanvas`: the canvas fills the panel under the page header, and an inspector column on the right edits what is selected. From `lg` the inspector is a column of its own that scrolls on its own; below `lg` it sits under a 400px canvas and the page scrolls.",
+      "The page body of an editor built on a `FlowCanvas`: the canvas fills the panel under the page header, and an inspector column on the right edits what is selected. From `lg` the inspector is a column of its own that scrolls on its own; below `lg` it sits under a canvas 400px tall, or half the screen on a shorter one, and the page scrolls.",
     props: {
       children: "The canvas.",
       panel: "The inspector: usually a `FlowWorkspace.Panel`.",

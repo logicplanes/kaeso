@@ -3,7 +3,7 @@ import type { ComponentDocs } from "../../component-docs.js";
 export const docs = {
   PageHeader: {
     description:
-      "The 52px header of a page: its title, pill tabs, actions. On a phone the tabs move to a row of their own under the title and actions, so the title isn't cut to a few letters and the tabs aren't squeezed beside a button.",
+      "The 52px header of a page: its title, pill tabs, actions. On a phone the tabs move to a row of their own under the title and actions, and actions that would leave the title less than 96px move to a row of their own too, so the title isn't cut to a few letters and the tabs aren't squeezed beside a button.",
     props: {
       actions: "At most one ink button; the rest ghost or raised circles with tooltips.",
       icon: "An icon before the title.",
