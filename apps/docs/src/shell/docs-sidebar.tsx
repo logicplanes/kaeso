@@ -1,6 +1,7 @@
 import { Suspense, lazy, useState } from "react";
 import { useLocation } from "@tanstack/react-router";
-import { Icon, Button, Sidebar, icons, useTheme } from "@logicplanes/kaeso-ui";
+import { Icon, Button, Sidebar, Text, icons, useTheme } from "@logicplanes/kaeso-ui";
+import { formatNumber } from "@logicplanes/kaeso-ui/format";
 import { homePath, type Locale } from "~/i18n/locales";
 import { useSiteLocale, useText } from "~/i18n/text";
 import type { NavGroup } from "~/markdown/ast";
@@ -18,7 +19,23 @@ const CHANGELOG: Record<Locale, string> = {
   "zh-CN": "https://kaeso.app/zh-CN/changelog",
 };
 
+const REPOSITORY = "https://github.com/logicplanes/kaeso";
+const STARS_SHOWN_FROM = 100;
+
 const FooterMenus = lazy(() => import("./footer-menus"));
+
+function StarCount({ stars }: { stars: number | null }) {
+  return (
+    <>
+      {stars !== null && stars >= STARS_SHOWN_FROM && (
+        <Text variant="caption" tone="tertiary" tabular>
+          {formatNumber(stars, { notation: "compact", maximumFractionDigits: 1 })}
+        </Text>
+      )}
+      <Icon icon={icons.externalLink} size="xs" />
+    </>
+  );
+}
 
 function FooterButtons({ onOpen }: { onOpen: (menu: FooterMenu) => void }) {
   const t = useText();
@@ -39,7 +56,7 @@ function FooterButtons({ onOpen }: { onOpen: (menu: FooterMenu) => void }) {
   );
 }
 
-export function DocsSidebar({ nav }: { nav: NavGroup[] }) {
+export function DocsSidebar({ nav, stars }: { nav: NavGroup[]; stars: number | null }) {
   const t = useText();
   const [opening, setOpening] = useState<FooterMenu | null>(null);
   const locale = useSiteLocale();
@@ -59,9 +76,14 @@ export function DocsSidebar({ nav }: { nav: NavGroup[] }) {
               </Sidebar.Item>
             ))}
             {i === 0 && (
-              <Sidebar.Item href={CHANGELOG[locale]} trailing={<Icon icon={icons.externalLink} size="xs" />}>
-                {t("nav.changelog")}
-              </Sidebar.Item>
+              <>
+                <Sidebar.Item href={CHANGELOG[locale]} trailing={<Icon icon={icons.externalLink} size="xs" />}>
+                  {t("nav.changelog")}
+                </Sidebar.Item>
+                <Sidebar.Item href={REPOSITORY} trailing={<StarCount stars={stars} />}>
+                  {t("nav.star")}
+                </Sidebar.Item>
+              </>
             )}
           </Sidebar.Group>
         ))}
