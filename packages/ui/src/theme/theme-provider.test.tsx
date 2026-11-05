@@ -73,6 +73,24 @@ describe("ThemeProvider", () => {
     expect(root).not.toHaveAttribute("data-k-theming");
   });
 
+  it("holds transitions for the frame the system switches between light and dark in", () => {
+    const system = mockSystem(false);
+    const frames: FrameRequestCallback[] = [];
+    vi.spyOn(window, "requestAnimationFrame").mockImplementation((cb) => frames.push(cb));
+    render(
+      <ThemeProvider>
+        <Probe />
+      </ThemeProvider>,
+    );
+    act(() => frames.splice(0).forEach((cb) => cb(0)));
+    const root = document.documentElement;
+    act(() => system.change(true));
+    expect(screen.getByRole("status")).toHaveTextContent("system/dark");
+    expect(root).toHaveAttribute("data-k-theming");
+    act(() => frames.splice(0).forEach((cb) => cb(0)));
+    expect(root).not.toHaveAttribute("data-k-theming");
+  });
+
   it("keeps the theme the head script applied while it mounts", () => {
     mockSystem(false);
     localStorage.setItem(THEME_STORAGE_KEY, "dark");

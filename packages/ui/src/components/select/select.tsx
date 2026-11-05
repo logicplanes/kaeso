@@ -165,7 +165,7 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(function Select
         {...(invalid || error ? { "aria-invalid": true } : {})}
         {...(force ? { "data-force": force } : {})}
         className={cn(
-          "group/trigger inline-flex min-w-0 cursor-pointer items-center justify-between rounded-pill font-medium whitespace-nowrap transition-control disabled:cursor-not-allowed",
+          "group/trigger relative inline-flex min-w-0 cursor-pointer items-center justify-between rounded-pill font-medium whitespace-nowrap transition-control tap-target disabled:cursor-not-allowed",
           KAESO_SELECT_VARIANTS.size[size].classes,
           KAESO_SELECT_VARIANTS.appearance[appearance].classes,
           (invalid || error) && appearance !== "default" && "ring-invalid",

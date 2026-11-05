@@ -80,7 +80,7 @@ export const SettingsRow = forwardRef<HTMLDivElement, SettingsRowProps>(function
         <span id={id ? `${id}-title` : undefined} className={cn("text-body-lg font-medium", danger ? "text-danger-text" : "text-fg")}>
           {title}
         </span>
-        {description && <span className="text-small text-fg-secondary text-pretty">{description}</span>}
+        {description && <span className="text-small text-fg-secondary text-pretty wrap-anywhere">{description}</span>}
       </span>
       {control && (
         <span data-row-control="" className={cn("flex max-w-full shrink-0 items-center @max-settings-row:basis-full", icon && "@max-settings-row:pl-36")}>

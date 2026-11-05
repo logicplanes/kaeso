@@ -47,7 +47,8 @@ export const Link = forwardRef<HTMLAnchorElement, LinkProps>(function Link({ hre
       ref={ref}
       href={href}
       className={cn(
-        "relative -mx-2 box-decoration-clone rounded-code px-2 outline-offset-0 transition-control focus-ring tap-target",
+        "relative -mx-2 box-decoration-clone rounded-code px-2 outline-offset-0 transition-control focus-ring",
+        variant !== "inline" && "tap-target",
         KAESO_LINK_VARIANTS.variant[variant].classes,
         variant === "card" && isExternal && "pe-36",
         className,

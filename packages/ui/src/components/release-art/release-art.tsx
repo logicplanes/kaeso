@@ -60,7 +60,7 @@ export const ReleaseArt = forwardRef<SVGSVGElement, ReleaseArtProps>(function Re
   const width = useLayoutWidth(frame);
   const fit = useTitleFit(heading, width, typeof title === "string" ? title : "");
   return (
-    <span ref={frame} className={cn("@container relative block w-full", className)}>
+    <span ref={frame} className={cn("@container relative block w-full rounded-well", className)}>
       <svg
         ref={ref}
         viewBox={`0 0 ${w} ${h}`}
@@ -102,7 +102,7 @@ export const ReleaseArt = forwardRef<SVGSVGElement, ReleaseArtProps>(function Re
           )}
         </span>
       )}
-      <span aria-hidden className="pointer-events-none absolute inset-0 rounded-well shadow-ring" />
+      <span aria-hidden className="pointer-events-none absolute inset-0 image-outline" />
     </span>
   );
 });
