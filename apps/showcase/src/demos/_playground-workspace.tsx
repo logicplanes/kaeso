@@ -4,7 +4,7 @@ import {
   CompareGrid,
   Composer,
   ModelPicker,
-  ParameterPopover,
+  ParameterPanel,
   PromptSuggestions,
   ResponseMetrics,
   ResponseView,
@@ -301,7 +301,7 @@ export function PlaygroundWorkspace({ initial, initialPrompt = "" }: { initial: 
           onStop={gateway.stop}
           streaming={streaming}
           actions={
-            <ParameterPopover
+            <ParameterPanel
               value={params}
               onValueChange={setParams}
               reasoning={reasons}

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button, icons } from "@logicplanes/kaeso-ui";
-import { ParameterPanel, ParameterPopover, type PlaygroundParameters } from "@logicplanes/kaeso-ui/playground";
+import { ParameterPanel, type PlaygroundParameters } from "@logicplanes/kaeso-ui/playground";
 import { instructions } from "~/fixtures/playground";
 import { StateSection } from "~/lib/states";
 
@@ -10,7 +10,7 @@ export const meta = {
     "A request's parameters: system instructions, temperature, top P, max output tokens, and reasoning for models that reason. Unset is the model's default.",
   group: "Playground",
   entry: "playground",
-  import: "ParameterPanel, ParameterPopover",
+  import: "ParameterPanel",
   barrel: false,
   keyboard: [
     ["Left Right", "Moves a slider by a step"],
@@ -27,7 +27,7 @@ export const examples = [
 export function Basic() {
   const [value, setValue] = useState<PlaygroundParameters>({ instructions });
   return (
-    <ParameterPopover
+    <ParameterPanel
       value={value}
       onValueChange={setValue}
       reasoning
@@ -59,7 +59,14 @@ export function States() {
     <div className="grid w-640 grid-cols-2 gap-x-24">
       <StateSection title="In its popover" className="col-span-2">
         <div className="h-720">
-          <ParameterPopover defaultOpen value={{ instructions }} onValueChange={none} reasoning align="start" />
+          <ParameterPanel
+            defaultOpen
+            value={{ instructions }}
+            onValueChange={none}
+            reasoning
+            align="start"
+            trigger={<Button variant="ghost" size="sm" icon={icons.displayOptions} aria-label="Parameters" />}
+          />
         </div>
       </StateSection>
       <StateSection title="Defaults">

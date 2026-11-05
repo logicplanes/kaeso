@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button, Inline, icons, KAESO_BUTTON_VARIANTS, type ButtonVariant, type ButtonSize } from "@logicplanes/kaeso-ui";
+import { Button, Inline, Select, icons, KAESO_BUTTON_VARIANTS, type ButtonVariant, type ButtonSize } from "@logicplanes/kaeso-ui";
 import { StateMatrix, StateRow, StateCell, StateSection } from "~/lib/states";
 
 export const meta = {
@@ -19,6 +19,7 @@ export const meta = {
     "Loading sets aria-busy at once and keeps the button focusable; clicks are ignored until it finishes. The spinner shows once the work has taken 300ms, for at least 400ms. The width never changes.",
     "With disabledReason, the button uses aria-disabled instead of disabled so keyboard users can reach the tooltip that explains why.",
     "Primary and danger labels measure at least 4.5:1 on their fills in both themes.",
+    "With pressed, it is a toggle button (aria-pressed), named by its label; the selector's check is decoration.",
   ],
 };
 
@@ -39,6 +40,12 @@ export const examples = [
   { id: "icons", title: "With icons", fn: "WithIcons", description: "A leading icon takes 2px off its side's padding so the label looks centered." },
   { id: "icon-only", title: "Icon only", fn: "IconOnly", description: "A circle of the same height, with its name in a tooltip." },
   { id: "icon-shortcut", title: "Icon only, with a shortcut", fn: "IconWithShortcut", description: "The shortcut shows in the tooltip as key caps." },
+  {
+    id: "filter-toggle",
+    title: "On-or-off filter",
+    fn: "FilterToggle",
+    description: '`variant="selector"` with `pressed`: quiet like an unset select when off, a check and full text when on.',
+  },
   {
     id: "loading",
     title: "Loading",
@@ -152,6 +159,22 @@ export function IconOnly() {
       <Button variant="ghost" icon={icons.more} aria-label="More actions" />
       <Button variant="primary" icon={icons.add} aria-label="Create key" />
     </Inline>
+  );
+}
+
+export function FilterToggle() {
+  const [agents, setAgents] = useState(false);
+  const [overridden, setOverridden] = useState(true);
+  return (
+    <div className="flex flex-wrap items-center gap-8">
+      <Select size="sm" aria-label="Actor" placeholder="Any actor" options={[{ value: "ada", label: "Ada Okafor" }]} value={null} onValueChange={() => {}} />
+      <Button variant="selector" size="sm" pressed={agents} onPressedChange={setAgents}>
+        Agents
+      </Button>
+      <Button variant="selector" size="sm" pressed={overridden} onPressedChange={setOverridden}>
+        Only overridden
+      </Button>
+    </div>
   );
 }
 

@@ -8,6 +8,5 @@ export { KAESO_SPARKLINE_DEFAULT_VARIANTS, KAESO_SPARKLINE_VARIANTS, Sparkline }
 export { Donut, KAESO_DONUT_DEFAULT_VARIANTS, KAESO_DONUT_VARIANTS, KAESO_SHARE_BAR_DEFAULT_VARIANTS, KAESO_SHARE_BAR_VARIANTS, ShareBar } from "./donut.js";
 export type { Slice } from "./donut.js";
 export { Heatmap, KAESO_HEATMAP_DEFAULT_VARIANTS, KAESO_HEATMAP_VARIANTS } from "./heatmap.js";
-export { Gauge, KAESO_GAUGE_DEFAULT_VARIANTS, KAESO_GAUGE_VARIANTS } from "./gauge.js";
 export { KAESO_SANKEY_DEFAULT_VARIANTS, KAESO_SANKEY_VARIANTS, Sankey } from "./sankey.js";
 export type { SankeyLinkIn, SankeyNodeIn } from "./sankey.js";

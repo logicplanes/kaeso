@@ -1,7 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
-import { DeleteResource } from "../blocks/delete-resource/delete-resource.js";
 import { EmptyPage, ListPage, OverviewPage } from "../blocks/pages/pages.js";
 import { AppFrame } from "./app-frame/app-frame.js";
 import { Label } from "./label/label.js";
@@ -14,39 +12,6 @@ import { devWarn, warnControlled, warnMissingName, warnStylingClassName } from "
 import { resolveVariant } from "../utils/variants.js";
 
 afterEach(() => vi.restoreAllMocks());
-
-describe("DeleteResource", () => {
-  it("asks for the name before deleting", async () => {
-    const onConfirm = vi.fn();
-    render(<DeleteResource inline kind="key" name="production" consequence="Apps that use it stop working." onConfirm={onConfirm} />);
-    expect(screen.getByRole("heading", { name: "Delete “production”?" })).toBeInTheDocument();
-    const confirm = screen.getByRole("button", { name: "Delete key" });
-    expect(confirm).toBeDisabled();
-    await userEvent.type(screen.getByRole("textbox"), "production");
-    await userEvent.click(confirm);
-    expect(onConfirm).toHaveBeenCalled();
-  });
-
-  it("uses its own verb and a simple confirm, controlled", async () => {
-    const onOpenChange = vi.fn();
-    render(
-      <DeleteResource
-        open
-        onOpenChange={onOpenChange}
-        kind="project"
-        name="Checkout"
-        verb="Archive"
-        confirm="simple"
-        consequence="It can be restored."
-        onConfirm={vi.fn()}
-        trigger={<button>Archive</button>}
-      />,
-    );
-    expect(await screen.findByRole("alertdialog", { name: "Archive “Checkout”?" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Archive project" })).toBeEnabled();
-    expect(screen.queryByRole("textbox")).toBeNull();
-  });
-});
 
 describe("page blocks", () => {
   it("compose a list, an overview with an aside, and an empty page", () => {

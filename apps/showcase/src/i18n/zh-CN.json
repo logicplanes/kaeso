@@ -1251,5 +1251,21 @@
   "Called when a search's clear circle is pressed or Escape clears it.": "按下搜索的清除圆钮或按 Escape 清空时调用。",
   "Masks a key or token behind a reveal circle, sets it in mono when revealed, and keeps it out of autocomplete and password managers.": "将密钥或令牌遮盖在显示圆钮之后，显示时使用等宽字体，并使其不被自动填充和密码管理器读取。",
   "A shortcut hint at the end of an empty search, hidden while it has focus.": "空搜索框末尾的快捷键提示，获得焦点时隐藏。",
-  "The height of the input: 32px in toolbars, 36px by default.": "输入框的高度：工具栏中为 32px，默认 36px。"
+  "The height of the input: 32px in toolbars, 36px by default.": "输入框的高度：工具栏中为 32px，默认 36px。",
+  "On-or-off filter": "开关式筛选",
+  "`variant=\"selector\"` with `pressed`: quiet like an unset select when off, a check and full text when on.": "`variant=\"selector\"` 配合 `pressed`：关闭时像未设置的选择框一样低调，开启时显示对勾和正常文字。",
+  "Called with the new state when a toggle button is pressed.": "按下切换按钮时以新状态调用。",
+  "Makes it a toggle button that is on or off (`aria-pressed`); with `variant=\"selector\"`, a check shows while it is on.": "使其成为开或关的切换按钮（`aria-pressed`）；配合 `variant=\"selector\"`，开启时显示对勾。",
+  "Gauge": "仪表盘",
+  "`shape=\"gauge\"`: a half circle for the one number a page is about.": "`shape=\"gauge\"`：用半圆显示页面最关键的那个数字。",
+  "The label above the bar, or the caption under a gauge's arc.": "进度条上方的标签，或仪表盘弧线下方的说明。",
+  "A pill bar (`bar`), or a half circle (`gauge`) that says near or over the limit in its middle.": "胶囊形进度条（`bar`），或在中间提示接近或超出上限的半圆（`gauge`）。",
+  "Alert thresholds as ratios, drawn as ticks: [0.5, 0.8]. A gauge marks 0.8 when none are given.": "以比例表示的提醒阈值，绘制为刻度：[0.5, 0.8]。未指定时仪表盘标记 0.8。",
+  "How the popover lines up with its trigger.": "弹出框与其触发按钮的对齐方式。",
+  "Whether the popover starts open, when the component keeps its own state.": "组件自行管理状态时，弹出框是否一开始就打开。",
+  "Called when the popover opens or closes.": "弹出框打开或关闭时调用。",
+  "Whether the popover is open, when you control it.": "由您控制时，弹出框是否打开。",
+  "The side the popover opens on.": "弹出框打开的方向。",
+  "The popover's title, also its name. Defaults to \"Parameters\" in the provider's language.": "弹出框的标题，也是它的名称。默认为提供者语言中的“参数”。",
+  "The button that opens the parameters in a popover; without one, the parameters sit in the page.": "在弹出框中打开参数的按钮；没有它时，参数直接显示在页面中。"
 }

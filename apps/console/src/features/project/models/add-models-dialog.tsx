@@ -13,7 +13,6 @@ import {
   List,
   ModelLabel,
   ProviderPicker,
-  FilterToggle,
   Text,
   col,
   icons,
@@ -299,7 +298,9 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
       <div className="flex w-full flex-wrap items-center gap-8 sm:flex-nowrap">
         {picker}
         {searchInput}
-        <FilterToggle label={t("models.includeDeprecated", "Include deprecated")} pressed={deprecated} onPressedChange={setDeprecated} />
+        <Button variant="selector" size="sm" pressed={deprecated} onPressedChange={setDeprecated}>
+          {t("models.includeDeprecated", "Include deprecated")}
+        </Button>
       </div>
     ),
     content: (

@@ -102,7 +102,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
 | 集合上方的筛选             | `Toolbar` 搭配 `FilterChip`、`Input type="search"`、`DisplayOptions` |
 | 在 2–4 个视图之间选择      | `Segmented`；页面视图：`Tabs variant="pill"`；详情分区：`Tabs`       |
 | 从众多选项中选一个         | `Select`；可搜索：`Combobox`                                         |
-| 确认不可撤销的操作         | `AlertDialog`；删除：`DeleteResource` 区块                           |
+| 确认不可撤销的操作         | `AlertDialog`；删除：`tone="danger"`，内容多的资源再加 `confirmText` |
 | 分多步完成的任务           | `StepDialog`                                                         |
 | 每次打开都重新开始的对话框 | 用 `DialogScope` 包住保存其状态的组件                                |
 | 操作后的反馈               | `toast()`，可撤销的操作提供撤销                                      |

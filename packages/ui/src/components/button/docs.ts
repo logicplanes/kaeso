@@ -12,8 +12,10 @@ export const docs = {
       href: "Renders a link that looks like the button.",
       icon: "Makes it an icon-only circle with this icon. Give it an `aria-label`: the name screen readers read and the tooltip shows.",
       leadingIcon: "An icon before the text.",
+      onPressedChange: "Called with the new state when a toggle button is pressed.",
       loading:
         "Work is underway: the button is busy and ignores clicks at once; the spinner shows only once the work has taken 300ms, then for at least 400ms (`useDelayedLoading`). It replaces the leading icon, or covers the label; the width never changes.",
+      pressed: 'Makes it a toggle button that is on or off (`aria-pressed`); with `variant="selector"`, a check shows while it is on.',
       rel: "The link's relationship, as on an `a` element.",
       reserveLabels: 'Every label this button can show ("Copy key", "Copied"). The button keeps the width of the widest, so a state change never resizes it.',
       shortcut: "A shortcut hint: after the label (lg and xl, and in menus), or in the tooltip of an icon-only button.",

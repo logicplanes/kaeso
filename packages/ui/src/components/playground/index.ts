@@ -8,8 +8,8 @@ export { KAESO_REASONING_DEFAULT_VARIANTS, KAESO_REASONING_VARIANTS, Reasoning }
 export type { ReasoningProps } from "./reasoning.js";
 export { KAESO_RESPONSE_METRICS_DEFAULT_VARIANTS, KAESO_RESPONSE_METRICS_VARIANTS, ResponseMetrics, formatLatency } from "./response-metrics.js";
 export type { ResponseMetricsProps } from "./response-metrics.js";
-export { KAESO_PARAMETER_PANEL_DEFAULT_VARIANTS, KAESO_PARAMETER_PANEL_VARIANTS, ParameterPanel, ParameterPopover } from "./parameter-panel.js";
-export type { ParameterPanelProps, ParameterPopoverProps, PlaygroundParameters, ReasoningEffort, ReasoningSummary } from "./parameter-panel.js";
+export { KAESO_PARAMETER_PANEL_DEFAULT_VARIANTS, KAESO_PARAMETER_PANEL_VARIANTS, ParameterPanel } from "./parameter-panel.js";
+export type { ParameterPanelProps, PlaygroundParameters, ReasoningEffort, ReasoningSummary } from "./parameter-panel.js";
 export { KAESO_MODEL_PICKER_DEFAULT_VARIANTS, KAESO_MODEL_PICKER_VARIANTS, ModelPicker, useModelGroups } from "./model-picker.js";
 export type { ModelPickerOption, ModelPickerProps, ModelPickerProvider, MultiModelPickerProps, SingleModelPickerProps } from "./model-picker.js";
 export { KAESO_PROMPT_SUGGESTIONS_DEFAULT_VARIANTS, KAESO_PROMPT_SUGGESTIONS_VARIANTS, PromptSuggestions } from "./prompt-suggestions.js";

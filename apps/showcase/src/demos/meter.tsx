@@ -11,10 +11,14 @@ export const meta = {
 };
 export const examples = [
   { id: "budget", title: "Budget", fn: "Budget" },
+  { id: "gauge", title: "Gauge", fn: "GaugeDemo", description: '`shape="gauge"`: a half circle for the one number a page is about.' },
   { id: "progress", title: "Progress", fn: "ProgressDemo" },
 ];
 export function Budget() {
   return <Meter className="w-400" label="Monthly budget" value={0.642} valueLabel="$32.10 of $50.00" thresholds={[0.8]} caption="Resets in 12 days" />;
+}
+export function GaugeDemo() {
+  return <Meter shape="gauge" aria-label="Monthly budget used" value={0.64} label="of $500.00 budget" valueLabel="$320.00" />;
 }
 export function ProgressDemo() {
   return (
@@ -50,6 +54,27 @@ export function States() {
       </StateSection>
       <StateSection title="Progress: determinate and indeterminate">
         <ProgressDemo />
+      </StateSection>
+      <StateSection title="Gauge levels">
+        <div className="flex w-640 flex-wrap gap-32">
+          <Meter shape="gauge" aria-label="Low" value={0.2} label="used" />
+          <Meter shape="gauge" aria-label="Warning" value={0.86} label="used" />
+          <Meter shape="gauge" aria-label="Over" value={1.05} label="over budget" />
+          <Meter shape="gauge" aria-label="Nothing used" value={0} label="used" />
+        </div>
+      </StateSection>
+      <StateSection title="Gauge with a value label, several thresholds, a long label">
+        <div className="flex w-640 flex-wrap gap-32">
+          <Meter shape="gauge" aria-label="Monthly budget used" value={0.64} label="of $2,000.00 budget" valueLabel="$1,284.50" />
+          <Meter shape="gauge" aria-label="Tokens used" value={0.72} thresholds={[0.5, 0.75, 0.9]} label="of 50M tokens" valueLabel="36M" />
+          <Meter
+            shape="gauge"
+            aria-label="Checkout budget used"
+            value={0.93}
+            label="of $2,000.00 monthly budget for checkout-worker-production"
+            valueLabel="$1,860.00"
+          />
+        </div>
       </StateSection>
     </>
   );

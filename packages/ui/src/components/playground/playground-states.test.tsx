@@ -7,7 +7,7 @@ import { CompareGrid } from "./compare-grid.js";
 import { ResponseView, UserMessage } from "./response-view.js";
 import { ResponseMetrics } from "./response-metrics.js";
 import { Reasoning } from "./reasoning.js";
-import { ParameterPanel, ParameterPopover } from "./parameter-panel.js";
+import { ParameterPanel } from "./parameter-panel.js";
 import { PromptSuggestions } from "./prompt-suggestions.js";
 import { ConversationView } from "../kaeso/conversation.js";
 
@@ -259,7 +259,7 @@ describe("ParameterPanel words and the popover's way out", () => {
   });
 
   it("opens on its first field, keeps the focus inside, and closes with its Close button", async () => {
-    render(<ParameterPopover value={{ instructions: "Be brief." }} onValueChange={() => undefined} />);
+    render(<ParameterPanel value={{ instructions: "Be brief." }} onValueChange={() => undefined} trigger={<button type="button">Parameters</button>} />);
     await userEvent.click(screen.getByRole("button", { name: "Parameters" }));
     const dialog = await screen.findByRole("dialog", { name: "Parameters" });
     await vi.waitFor(() => expect(within(dialog).getByRole("textbox", { name: "System instructions" })).toHaveFocus());

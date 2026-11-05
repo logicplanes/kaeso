@@ -8,6 +8,7 @@ import { Kbd } from "../kbd/kbd.js";
 import { Tooltip } from "../tooltip/tooltip.js";
 import { SwapText } from "../swap-text/swap-text.js";
 import { useTruncated } from "../../hooks/use-truncated.js";
+import { icons } from "../../icons/vocabulary.js";
 
 export const KAESO_BUTTON_VARIANTS = {
   variant: {
@@ -19,6 +20,10 @@ export const KAESO_BUTTON_VARIANTS = {
       description: "A ghost in secondary text that darkens on hover: actions inside a field (clear, reveal, copy)",
     },
     soft: { classes: "material-soft", description: "A fill without a ring: the active pill tab" },
+    selector: {
+      classes: "material-selector font-regular text-fg-secondary hover:text-fg aria-pressed:font-medium aria-pressed:text-fg",
+      description: "Quiet like an unset select; with `pressed`, a check and full text: an on-or-off filter in a row of selects",
+    },
     danger: { classes: "material-danger", description: "The destructive confirm, with the primary's material" },
     "danger-secondary": { classes: "material-danger-secondary", description: "Raised with danger text; tints on hover. Destructive triggers." },
     link: {
@@ -120,6 +125,8 @@ interface CommonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "chi
   rel?: string | undefined;
   fullWidth?: boolean | undefined;
   static?: boolean | undefined;
+  pressed?: boolean | undefined;
+  onPressedChange?: ((pressed: boolean) => void) | undefined;
   "data-force"?: string | undefined;
 }
 
@@ -156,6 +163,8 @@ export const Button = forwardRef<HTMLButtonElement | HTMLAnchorElement, ButtonPr
     rel,
     fullWidth,
     static: still = false,
+    pressed,
+    onPressedChange,
     className,
     type,
     onClick,
@@ -173,7 +182,7 @@ export const Button = forwardRef<HTMLButtonElement | HTMLAnchorElement, ButtonPr
   const isCircle = "icon" in props && props.icon !== undefined;
   const iconSize = BUTTON_ICON_SIZE[size];
   const spinnerSize = iconSize === "xs" ? "xs" : iconSize === "sm" ? "sm" : "md";
-  const leadingIcon = !isCircle ? (props as PillButtonProps).leadingIcon : undefined;
+  const leadingIcon = isCircle ? undefined : ((props as PillButtonProps).leadingIcon ?? (variant === "selector" && pressed ? icons.check : undefined));
   const trailingIcon = !isCircle ? (props as PillButtonProps).trailingIcon : undefined;
   const shortcut = isCircle ? undefined : (props as PillButtonProps).shortcut;
   const circle = isCircle ? (props as CircleButtonProps) : undefined;
@@ -247,6 +256,7 @@ export const Button = forwardRef<HTMLButtonElement | HTMLAnchorElement, ButtonPr
       return;
     }
     onClick?.(e as MouseEvent<HTMLButtonElement>);
+    if (pressed !== undefined && !e.defaultPrevented) onPressedChange?.(!pressed);
   };
 
   const handleFocus = (e: FocusEvent<HTMLButtonElement & HTMLAnchorElement>) => {
@@ -287,6 +297,7 @@ export const Button = forwardRef<HTMLButtonElement | HTMLAnchorElement, ButtonPr
         disabled={disabled && !softDisabled}
         {...(domProps as object)}
         {...(keyShortcuts ? { "aria-keyshortcuts": keyShortcuts } : {})}
+        {...(pressed !== undefined ? { "aria-pressed": pressed } : {})}
         {...(softDisabled ? { "aria-disabled": true } : {})}
         {...(busy ? { "aria-busy": true, "data-loading": "" } : {})}
         {...(softDisabled ? { "data-disabled": "" } : {})}
