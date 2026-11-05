@@ -23,6 +23,19 @@ describe("labels", () => {
     );
     expect(screen.getByLabelText("Email")).toBeInstanceOf(HTMLInputElement);
   });
+  it("shrinks inside a row on a phone instead of pushing its row past the screen, in either layout", () => {
+    const { container } = render(
+      <>
+        <Field label="Project name">
+          <Input />
+        </Field>
+        <Field label="Time zone" layout="horizontal">
+          <Input />
+        </Field>
+      </>,
+    );
+    for (const field of container.children) expect(field).toHaveClass("min-w-0");
+  });
 });
 
 describe("errors", () => {

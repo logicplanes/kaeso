@@ -175,4 +175,19 @@ describe("SwapText", () => {
     width.mockRestore();
     client.mockRestore();
   });
+
+  it("scales to 0.96 when pressed unless it is static, which only darkens", () => {
+    render(
+      <>
+        <Button>Create key</Button>
+        <Button static variant="secondary">
+          Load more
+        </Button>
+        <Button shape="circle" icon={icons.copy} aria-label="Copy key" static />
+      </>,
+    );
+    expect(screen.getByRole("button", { name: "Create key" })).not.toHaveAttribute("data-static");
+    expect(screen.getByRole("button", { name: "Load more" })).toHaveAttribute("data-static", "");
+    expect(screen.getByRole("button", { name: "Copy key" })).toHaveAttribute("data-static", "");
+  });
 });

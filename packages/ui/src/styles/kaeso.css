@@ -134,7 +134,9 @@
 
 @utility transition-control {
   transition-property: background-color, color, box-shadow, filter, opacity, transform, outline-color, text-decoration-color;
-  transition-duration: var(--k-duration-fast);
+  transition-duration:
+    var(--k-duration-fast), var(--k-duration-fast), var(--k-duration-fast), var(--k-duration-fast), var(--k-duration-fast), var(--k-duration-press),
+    var(--k-duration-fast), var(--k-duration-fast);
   transition-timing-function: var(--k-ease-standard);
 }
 
@@ -158,7 +160,12 @@
   &:active:not(:disabled, [data-disabled], [aria-disabled="true"]),
   &[data-force~="pressed"] {
     background-color: var(--k-ink-pressed);
-    transform: scale(0.985);
+  }
+  &:active:not(:disabled, [data-disabled], [aria-disabled="true"], [data-static]),
+  &[data-force~="pressed"]:not([data-static]) {
+    @media (prefers-reduced-motion: no-preference) {
+      transform: scale(0.96);
+    }
   }
   &:disabled,
   &[data-disabled],
@@ -190,7 +197,12 @@
   &:active:not(:disabled, [data-disabled], [aria-disabled="true"]),
   &[data-force~="pressed"] {
     filter: brightness(0.94);
-    transform: scale(0.985);
+  }
+  &:active:not(:disabled, [data-disabled], [aria-disabled="true"], [data-static]),
+  &[data-force~="pressed"]:not([data-static]) {
+    @media (prefers-reduced-motion: no-preference) {
+      transform: scale(0.96);
+    }
   }
   &:disabled,
   &[data-disabled],
@@ -231,7 +243,12 @@
   &:active:not(:disabled, [data-disabled], [aria-disabled="true"]),
   &[data-force~="pressed"] {
     background-color: var(--k-raised-pressed);
-    transform: scale(0.985);
+  }
+  &:active:not(:disabled, [data-disabled], [aria-disabled="true"], [data-static]),
+  &[data-force~="pressed"]:not([data-static]) {
+    @media (prefers-reduced-motion: no-preference) {
+      transform: scale(0.96);
+    }
   }
   &:disabled,
   &[data-disabled],
@@ -260,9 +277,11 @@
   &[data-force~="open"] {
     background-color: var(--k-fill-2);
   }
-  &:active:not(:disabled, [data-disabled], [aria-disabled="true"]),
-  &[data-force~="pressed"] {
-    transform: scale(0.985);
+  &:active:not(:disabled, [data-disabled], [aria-disabled="true"], [data-static]),
+  &[data-force~="pressed"]:not([data-static]) {
+    @media (prefers-reduced-motion: no-preference) {
+      transform: scale(0.96);
+    }
   }
   &:disabled,
   &[data-disabled],
@@ -289,9 +308,11 @@
   &[data-force~="open"] {
     background-color: var(--k-fill-3);
   }
-  &:active:not(:disabled, [data-disabled], [aria-disabled="true"]),
-  &[data-force~="pressed"] {
-    transform: scale(0.985);
+  &:active:not(:disabled, [data-disabled], [aria-disabled="true"], [data-static]),
+  &[data-force~="pressed"]:not([data-static]) {
+    @media (prefers-reduced-motion: no-preference) {
+      transform: scale(0.96);
+    }
   }
   &:disabled,
   &[data-disabled],
@@ -320,7 +341,12 @@
   &:active:not(:disabled, [data-disabled], [aria-disabled="true"]),
   &[data-force~="pressed"] {
     background-color: color-mix(in srgb, var(--k-danger) 12%, var(--k-danger-tint));
-    transform: scale(0.985);
+  }
+  &:active:not(:disabled, [data-disabled], [aria-disabled="true"], [data-static]),
+  &[data-force~="pressed"]:not([data-static]) {
+    @media (prefers-reduced-motion: no-preference) {
+      transform: scale(0.96);
+    }
   }
   &:disabled,
   &[data-disabled],
@@ -854,8 +880,8 @@
   h4 {
     text-wrap: balance;
   }
-  p {
-    text-wrap: pretty;
+  body {
+    text-wrap-style: pretty;
   }
   :where(button, [role="button"], a, label, input, select, textarea, summary) {
     -webkit-tap-highlight-color: transparent;
@@ -1096,6 +1122,51 @@
   box-shadow: inset 0 1px 0 var(--k-line);
   @media (forced-colors: active) {
     border-block-start: 1px solid CanvasText;
+  }
+}
+
+/* Pictures: 1px of pure black or white at 10% inside the edge, which deepens the picture's own edge where a
+   grey line would sit on it; it takes the radius of the box that clips the picture. */
+@utility image-outline {
+  outline: 1px solid var(--k-image-outline);
+  outline-offset: -1px;
+  border-radius: inherit;
+}
+
+/* An icon that changes with state (copy to check): the old one shrinks out and the new one grows in from a
+   quarter, through blur; with reduced motion only the opacity changes. */
+@utility icon-swap-in {
+  transition-property: opacity, scale, filter;
+  transition-duration: var(--k-duration-swap);
+  transition-timing-function: var(--k-ease-standard);
+  @starting-style {
+    opacity: 0;
+    scale: 0.25;
+    filter: blur(4px);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    @starting-style {
+      scale: 1;
+      filter: none;
+    }
+  }
+}
+@utility icon-swap-out {
+  opacity: 0;
+  scale: 0.25;
+  filter: blur(4px);
+  pointer-events: none;
+  transition-property: opacity, scale, filter;
+  transition-duration: var(--k-duration-swap);
+  transition-timing-function: var(--k-ease-standard);
+  @starting-style {
+    opacity: 1;
+    scale: 1;
+    filter: blur(0);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    scale: 1;
+    filter: none;
   }
 }
 

@@ -19,6 +19,7 @@ export const docs = {
       shape: "Icon-only buttons are circles and need an accessible name.",
       shortcut: "A shortcut hint after the label (lg and xl, and in menus).",
       size: "The height, from `xs` (24px) to `xl` (48px).",
+      static: "Keeps the button still when pressed, for a control whose 0.96 press would distract; it still darkens.",
       target: "Where the link opens, as on an `a` element.",
       trailingIcon: "An icon after the text.",
       variant:

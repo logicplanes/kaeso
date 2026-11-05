@@ -11,6 +11,7 @@ export const docs = {
       loading: "Shows that work is underway and ignores clicks until it ends.",
       shortcut: "A shortcut shown in the tooltip.",
       size: "The diameter, from `xs` (24px) to `xl` (44px).",
+      static: "Keeps the button still when pressed, as on `Button`.",
       tooltip: "Turn the tooltip off (rare: when a visible label sits next to it).",
       tooltipSide: "Where the tooltip with its name appears.",
       variant: "The look, as on `Button`.",

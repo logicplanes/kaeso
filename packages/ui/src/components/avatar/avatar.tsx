@@ -59,10 +59,9 @@ export const Avatar = forwardRef<HTMLSpanElement, AvatarProps>(function Avatar({
             }}
             src={src}
             alt=""
-            className="size-full object-cover"
+            className="size-full object-cover image-outline"
             onError={() => setFailedSrc(src)}
           />
-          <span aria-hidden className="pointer-events-none absolute inset-0 shadow-ring" />
         </>
       ) : (
         initials(name, size === 20 ? 1 : 2)

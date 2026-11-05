@@ -116,6 +116,7 @@ interface CommonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "chi
   target?: string | undefined;
   rel?: string | undefined;
   fullWidth?: boolean | undefined;
+  static?: boolean | undefined;
   "data-force"?: string | undefined;
 }
 
@@ -149,6 +150,7 @@ export const Button = forwardRef<HTMLButtonElement | HTMLAnchorElement, ButtonPr
     target,
     rel,
     fullWidth,
+    static: still = false,
     className,
     type,
     onClick,
@@ -173,7 +175,7 @@ export const Button = forwardRef<HTMLButtonElement | HTMLAnchorElement, ButtonPr
   const reserveLabels = !isCircle ? (props as PillButtonProps).reserveLabels : undefined;
   if (isCircle) warnMissingName("Button", !!(props as CircleButtonProps)["aria-label"]);
 
-  const domProps = { ...rest } as Record<string, unknown>;
+  const domProps = { ...rest, ...(still ? { "data-static": "" } : {}) } as Record<string, unknown>;
   for (const k of ["shape", "icon", "leadingIcon", "trailingIcon", "shortcut", "count", "children", "reserveLabels"]) delete domProps[k];
 
   // A natively disabled button that holds focus drops it to <body>; stay focusable until it blurs.

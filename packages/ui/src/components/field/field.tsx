@@ -4,9 +4,9 @@ import { Label } from "../label/label.js";
 
 export const KAESO_FIELD_VARIANTS = {
   layout: {
-    vertical: { classes: "flex flex-col gap-8", description: "Label above the control (default)" },
+    vertical: { classes: "flex min-w-0 flex-col gap-8", description: "Label above the control (default)" },
     horizontal: {
-      classes: "grid grid-cols-1 gap-8 md:grid-cols-label md:items-baseline md:gap-x-24",
+      classes: "grid min-w-0 grid-cols-1 gap-8 md:grid-cols-label md:items-baseline md:gap-x-24",
       description: "Label in a 240px column on the left, from 768px",
     },
   },

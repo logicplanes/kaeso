@@ -141,8 +141,8 @@ function Blocks({ blocks, markdown }: { blocks: ContentBlock[]; markdown: boolea
           case "image": {
             if (b.src && DATA_IMAGE.test(b.src))
               return (
-                <span key={i} className="block w-120 overflow-hidden rounded-well ring-over ring-over-line">
-                  <img src={b.src} alt={b.alt ?? t("conversationView.imageInput", "Image input")} className="block h-120 w-120 object-cover" />
+                <span key={i} className="block w-120 overflow-hidden rounded-well">
+                  <img src={b.src} alt={b.alt ?? t("conversationView.imageInput", "Image input")} className="block h-120 w-120 object-cover image-outline" />
                 </span>
               );
             const href = b.src ? webHref(b.src) : null;
