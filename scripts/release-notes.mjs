@@ -17,7 +17,7 @@ const ENTRY_LIMIT = 800;
 const TAGLINE_LIMIT = 160;
 const TITLE_LIMIT = 40;
 const POINT_LIMIT = 160;
-export const HIGHLIGHTS = 5;
+export const HIGHLIGHTS = 3;
 const INTERNAL = "internal";
 const NOT_PEOPLE = new Set([
   "chatgpt-codex-connector",
@@ -240,7 +240,7 @@ Answer with the JSON the schema describes:
 - contributors: exactly the people listed in contributors, with first_time as given.
 - release: the short version for the GitHub release page, read in ten seconds by someone deciding whether to upgrade. The sections stay the full record; release only picks from it.
   - tagline: one sentence of at most ${TAGLINE_LIMIT} characters on what the release brings.
-  - highlights: one to ${HIGHLIGHTS} changes that matter most to people who run or integrate Kaeso, the most important first. title: two to five words that name the change, sentence case, no full stop, at most ${TITLE_LIMIT} characters. text: one sentence of at most ${POINT_LIMIT} characters on what it does for them. prs: the pull requests behind it. Leave out small fixes, tests and documentation polish unless the release has nothing bigger.
+  - highlights: two or three changes that matter most to people who run or integrate Kaeso, the most important first, never more than ${HIGHLIGHTS}; one only when the release has nothing else worth naming. title: two to five words that name the change, sentence case, no full stop, at most ${TITLE_LIMIT} characters. text: one sentence of at most ${POINT_LIMIT} characters on what it does for them. prs: the pull requests behind it. Leave out small fixes, tests and documentation polish unless the release has nothing bigger.
   - breaking: the changes in breaking, in the same order, each one sentence of at most ${POINT_LIMIT} characters that says what changed and what to do, with the same prs.
   - The same rules for plain text apply to tagline, title and text.
 - Never say how these notes were written, and never name assistants, bots or tools as contributors.`;

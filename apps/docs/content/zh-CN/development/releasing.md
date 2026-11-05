@@ -6,6 +6,8 @@ order: 11
 
 Kaeso 作为一个整体发布。网关、控制台、KPP 的 crate 和 UI 库的软件包共用一个版本号，Release 工作流运行一次就会发布全部内容。只有维护者制作版本；贡献者从不创建标签或版本。
 
+只要 `dev` 中有面向 Kaeso 使用者和运维者的变更且 CI 通过，每周都会发布一个小版本：有进行中的预发布时发布下一个预发布版本，否则发布下一个补丁版本。包含破坏性变更的版本由维护者决定何时发布。
+
 ## 版本号
 
 版本号遵循[语义化版本](https://semver.org/lang/zh-CN/)。需要运行 Kaeso 的人手动操作的版本（例如无法自动运行的迁移）是主版本。预发布版本会加上后缀，例如 `0.2.0-rc.1`。Git 标签是 `v` 加版本号，例如 `v0.2.0`。
@@ -48,7 +50,7 @@ pnpm release:notes --dry-run --since v{{version}} --head origin/dev
 
 在同一版本的预发布之后发布稳定版本时，会把预发布的各分节合并为一个，因此稳定版本的说明涵盖自上一个稳定版本以来的全部内容。
 
-GitHub 发布页先给出一句话、最多五个亮点和破坏性变更。然后在各自的标题下（例如 **Added**、**Changed**、**Removed** 或 **Fixed**）列出该分节的每一条。每条一行，附带其主题和拉取请求。最后是贡献者，以及指向完整更新日志和比较视图的链接。
+GitHub 发布页先给出一句话、两到三个亮点和破坏性变更。然后在各自的标题下（例如 **Added**、**Changed**、**Removed** 或 **Fixed**）列出该分节的每一条。每条一行，附带其主题和拉取请求。最后是贡献者，以及指向完整更新日志和比较视图的链接。
 
 开头部分由模型在撰写分节时一并写出；没有模型时，发布页没有亮点，破坏性变更只保留第一句。上面的预览会在说明之后输出 GitHub 发布页的内容。
 
@@ -126,7 +128,7 @@ GitHub 发布页先给出一句话、最多五个亮点和破坏性变更。然�
 
 | 位置 | 内容 |
 | --- | --- |
-| GitHub Releases | `vX.Y.Z` 及其说明，以及 `compose.yaml`、`kaeso.example.toml`、`env.example`、`release.json`、npm 压缩包和 `.crate` 文件 |
+| GitHub Releases | `vX.Y.Z` 及其说明，以及 `compose.yaml`、`install.sh`、`kaeso.example.toml`、`env.example`、`release.json`、npm 压缩包和 `.crate` 文件 |
 | GitHub Container Registry | 面向 `linux/amd64` 和 `linux/arm64` 的 `kaeso-gateway`、`kaeso-console` 和 `kaeso-updater`，带构建来源证明和软件物料清单（SBOM） |
 | crates.io | `kaeso-kpp` 和 `kaeso-codecs` |
 | npm | `@logicplanes/kaeso-ui` 和 `@logicplanes/kaeso-tokens` |
