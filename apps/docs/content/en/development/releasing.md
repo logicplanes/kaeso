@@ -6,6 +6,8 @@ order: 11
 
 Kaeso is released as a whole. The gateway, the console, KPP's crates and the UI library's packages share one version, and one run of the Release workflow publishes all of them. Only the maintainer makes releases; contributors never create tags or releases.
 
+A small release goes out every week that `dev` has changes for people who use or run Kaeso and its CI passes: the next pre-release while one is open, otherwise the next patch release. A release with a breaking change waits for the maintainer.
+
 ## Versions
 
 Versions follow [semantic versioning](https://semver.org). A release that needs a manual step from people who run Kaeso, such as a migration that can't run by itself, is a major one. A pre-release adds a suffix, such as `0.2.0-rc.1`. The Git tag is `v` and the version, such as `v0.2.0`.
