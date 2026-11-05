@@ -18,7 +18,7 @@ import { useUiText } from "../../i18n/context.js";
 import { icons } from "../../icons/vocabulary.js";
 import { IconButton } from "../icon-button/icon-button.js";
 import { Menu } from "../menu/menu.js";
-import { Status } from "../status-dot/status-dot.js";
+import { Status } from "../status/status.js";
 import { layoutFlow, type FlowCanvasEdge, type FlowCanvasNode, type FlowLayout, type Placed, type Wire } from "./layout.js";
 
 const WIRE_TONE: Record<NonNullable<FlowCanvasEdge["tone"]>, string> = {

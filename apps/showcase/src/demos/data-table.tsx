@@ -12,7 +12,7 @@ import {
   Button,
   IconButton,
   InsetContent,
-  Pill,
+  Tag,
   VisuallyHidden,
   icons,
   type ColumnDef,
@@ -43,9 +43,9 @@ const columns: ColumnDef<LogRow, any>[] = [
     (r) => r.streamed,
     (v) =>
       v ? (
-        <Pill size="sm" variant="outline">
+        <Tag size="sm" variant="outline">
           Stream
-        </Pill>
+        </Tag>
       ) : null,
   ),
   col.money({ id: "cost", header: "Cost", size: 112, priority: 2 }, (r) => r.cost, { decimals: 4 }),

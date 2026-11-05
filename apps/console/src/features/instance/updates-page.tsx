@@ -13,7 +13,7 @@ import {
   SettingsGroup,
   SettingsRow,
   SettingsSection,
-  StatusDot,
+  Status,
   Text,
   Tooltip,
   col,
@@ -59,7 +59,7 @@ export function InstanceUpdatesPage() {
         <SettingsLoading rows={3} />
       ) : (
         <>
-          <Status u={u} onUpdate={(release) => show({ release })} onProgress={(job) => show({ job })} />
+          <UpdateState u={u} onUpdate={(release) => show({ release })} onProgress={(job) => show({ job })} />
           <UpdateSettings u={u} />
           {u.latest && <Latest u={u} latest={u.latest} />}
           <History />
@@ -78,7 +78,7 @@ function checkText(u: UpdatesView): string | undefined {
   return undefined;
 }
 
-function Status({ u, onUpdate, onProgress }: { u: UpdatesView; onUpdate: (release: ReleaseView) => void; onProgress: (job: string) => void }) {
+function UpdateState({ u, onUpdate, onProgress }: { u: UpdatesView; onUpdate: (release: ReleaseView) => void; onProgress: (job: string) => void }) {
   const running = u.job?.state === "running" ? u.job : null;
   const latest = u.latest;
   const action = running ? (
@@ -92,9 +92,9 @@ function Status({ u, onUpdate, onProgress }: { u: UpdatesView; onUpdate: (releas
   ) : latest ? (
     <Badge tone="info">{t("instance.updates.availableVersion", "{version} available", { version: latest.version })}</Badge>
   ) : u.state === "up_to_date" ? (
-    <StatusDot tone="success" icon={icons.success}>
+    <Status tone="success" icon={icons.success}>
       {t("instance.updates.upToDate", "Up to date")}
-    </StatusDot>
+    </Status>
   ) : undefined;
   const description = running ? (
     t("instance.updates.runningTitle", "Updating to Kaeso {version}", { version: running.to })
@@ -405,11 +405,11 @@ function History() {
         return r.detail ? (
           <Tooltip content={r.detail}>
             <span className="inline-flex">
-              <StatusDot tone={r.tone}>{r.label}</StatusDot>
+              <Status tone={r.tone}>{r.label}</Status>
             </span>
           </Tooltip>
         ) : (
-          <StatusDot tone={r.tone}>{r.label}</StatusDot>
+          <Status tone={r.tone}>{r.label}</Status>
         );
       },
     ),

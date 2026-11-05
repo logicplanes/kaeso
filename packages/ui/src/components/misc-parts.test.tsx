@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { DeleteResource } from "../blocks/delete-resource/delete-resource.js";
-import { EmptyPage, ListPage, OverviewPage, TablePage } from "../blocks/pages/pages.js";
+import { EmptyPage, ListPage, OverviewPage } from "../blocks/pages/pages.js";
 import { AppFrame } from "./app-frame/app-frame.js";
 import { Label } from "./label/label.js";
 import { Heading } from "./heading/heading.js";
@@ -55,9 +55,6 @@ describe("page blocks", () => {
         <ListPage header={{ title: "API keys" }} toolbar={<div>Toolbar</div>} sheet={<div>Sheet</div>}>
           <p>Rows</p>
         </ListPage>
-        <TablePage header={{ title: "Logs" }}>
-          <p>Table</p>
-        </TablePage>
         <OverviewPage header={{ title: "Usage" }} metrics={<p>Metrics</p>} controls={<button>Period</button>} chart={<p>Chart</p>} aside={<p>Aside</p>}>
           <p>More</p>
         </OverviewPage>
@@ -66,7 +63,7 @@ describe("page blocks", () => {
         <EmptyPage title="Nothing" />
       </AppFrame>,
     );
-    for (const text of ["API keys", "Toolbar", "Sheet", "Table", "Metrics", "Period", "Aside", "Only metrics", "No alerts yet", "Nothing"]) {
+    for (const text of ["API keys", "Toolbar", "Sheet", "Metrics", "Period", "Aside", "Only metrics", "No alerts yet", "Nothing"]) {
       expect(screen.getAllByText(text).length).toBeGreaterThan(0);
     }
   });

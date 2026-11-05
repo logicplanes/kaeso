@@ -1,15 +1,6 @@
 import type { ComponentDocs } from "../../component-docs.js";
 
 export const docs = {
-  AuthPage: {
-    description: "Sign-in and setup pages: no chrome.",
-    props: {
-      children: "The form.",
-      description: "One sentence under the heading.",
-      footer: "Content under the form, such as a link to sign up.",
-      title: "The page's heading.",
-    },
-  },
   EmptyPage: {
     description: "Empty, centered in the panel.",
     props: {

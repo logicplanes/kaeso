@@ -21,7 +21,7 @@ import {
   SettingsRow,
   Sheet,
   SkeletonLine,
-  StatusDot,
+  Status,
   Switch,
   Text,
   col,
@@ -82,7 +82,7 @@ export function InstanceUsersPage({ search }: { search: UsersSearch }) {
         col.custom(
           { id: "state", header: t("instance.state", "State"), size: 104, priority: 1 },
           (u: InstanceUserView) => u.state,
-          (v: string) => (STATE_DOT[v] ? <StatusDot tone={STATE_DOT[v]}>{userStateLabel(v)}</StatusDot> : <Text>{userStateLabel(v)}</Text>),
+          (v: string) => (STATE_DOT[v] ? <Status tone={STATE_DOT[v]}>{userStateLabel(v)}</Status> : <Text>{userStateLabel(v)}</Text>),
         ),
         col.custom(
           { id: "created", header: t("common.created", "Created"), size: CREATED_WIDTH[lang], priority: 3 },

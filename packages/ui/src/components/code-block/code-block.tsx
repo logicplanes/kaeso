@@ -213,5 +213,3 @@ export const CodeBlock = forwardRef<HTMLDivElement, CodeBlockProps>(function Cod
   );
 });
 CodeBlock.displayName = "CodeBlock";
-
-export const CodeHighlighted = CodeBlock;

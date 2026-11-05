@@ -9,7 +9,7 @@ import {
   Empty,
   List,
   ModelLabel,
-  Pill,
+  Tag,
   PillTabs,
   Popover,
   ProviderBadge,
@@ -335,18 +335,18 @@ function ModelMeta({ m }: { m: CatalogueModelView }) {
           overridden > 0 && <Badge>{t("models.overriddenCount", "Overridden {count}", { count: overridden })}</Badge>
         )}
         {m.aliases.slice(0, 2).map((a) => (
-          <Pill key={a} size="sm">
+          <Tag key={a} size="sm">
             {a}
-          </Pill>
+          </Tag>
         ))}
         {m.aliases.length > 2 && (
           <Text variant="small" tone="secondary">
             {t("models.moreAliases", "+{count}", { count: m.aliases.length - 2 })}
           </Text>
         )}
-        <Pill size="sm" variant="outline">
+        <Tag size="sm" variant="outline">
           {dialectPill(m.egress_dialect)}
-        </Pill>
+        </Tag>
         {f.context_limit ? (
           <Tooltip content={t("models.contextHint", "Context window: {tokens} tokens", { tokens: formatNumber(f.context_limit) })}>
             <Text variant="small" tone="secondary" tabular tabIndex={0} className="min-w-48 text-right">

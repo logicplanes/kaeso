@@ -7,8 +7,7 @@ import { Meter, Progress, meterColor } from "../meter/meter.js";
 import { ButtonGroup } from "../button-group/button-group.js";
 import { Pagination } from "../pagination/pagination.js";
 import { Toolbar } from "../toolbar/toolbar.js";
-import { Portal } from "../portal/portal.js";
-import { StatusDot } from "../status-dot/status-dot.js";
+import { Status } from "../status/status.js";
 import { Logo } from "../logo/logo.js";
 import { TableOfContents } from "../toc/toc.js";
 import { ThemeMenu } from "../theme-menu/theme-menu.js";
@@ -157,32 +156,12 @@ describe("Toolbar", () => {
   });
 });
 
-describe("Portal", () => {
-  it("renders into the body, or into a given container", () => {
-    const target = document.createElement("div");
-    document.body.append(target);
-    render(
-      <>
-        <Portal>
-          <p>In body</p>
-        </Portal>
-        <Portal container={target}>
-          <p>In target</p>
-        </Portal>
-      </>,
-    );
-    expect(screen.getByText("In body").parentElement).toBe(document.body);
-    expect(target).toHaveTextContent("In target");
-    target.remove();
-  });
-});
-
-describe("StatusDot", () => {
+describe("Status", () => {
   it("warns when it has no word", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
-    render(<StatusDot tone="success" />);
-    expect(warn).toHaveBeenCalledWith(expect.stringContaining("StatusDot"));
-    render(<StatusDot tone="danger">Failed</StatusDot>);
+    render(<Status tone="success" />);
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("Status"));
+    render(<Status tone="danger">Failed</Status>);
     expect(screen.getByText("Failed")).toBeInTheDocument();
   });
 });

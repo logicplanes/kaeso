@@ -121,7 +121,6 @@
   "All": "Alle",
   "Allows choosing more than one option; `value` is then a list.": "Erlaubt die Wahl mehrerer Optionen; `value` ist dann eine Liste.",
   "An 18px box: raised and ringed, ink when checked, with a check that draws itself.": "Ein 18px-Kästchen: erhaben und umrandet, Ink wenn angehakt, mit einem Haken, der sich selbst zeichnet.",
-  "An 8px semantic dot with its word. Status is never color alone.": "Ein 8px-Punkt in Statusfarbe mit seinem Wort. Status ist nie nur Farbe.",
   "An action after the rows, such as a button that opens every right.": "Eine Aktion nach den Zeilen, etwa ein Button, der alle Rechte öffnet.",
   "An action inside a sentence.": "Eine Aktion innerhalb eines Satzes.",
   "An icon after the text.": "Ein Symbol nach dem Text.",
@@ -1225,5 +1224,7 @@
   "Each line a sent request took takes the colour of the answer at its end: the model that failed in red, the one that answered in green.": "Jede Linie, die eine gesendete Anfrage nahm, trägt die Farbe der Antwort an ihrem Ende: das Modell, das scheiterte, in Rot, das, das antwortete, in Grün.",
   "A sent request's answer is a word on each step it tried, such as “529 Overloaded” or “200 OK”; the colours of its lines and rings repeat it, and the tree is marked busy while the request is on its way.": "Die Antwort einer gesendeten Anfrage steht als Wort an jedem Schritt, den sie versuchte, etwa „529 Overloaded“ oder „200 OK“; die Farben ihrer Linien und Ringe wiederholen es, und der Baum ist als beschäftigt markiert, solange die Anfrage unterwegs ist.",
   "Keeps the button still when pressed, for a control whose 0.96 press would distract; it still darkens.": "Hält den Button beim Drücken still, für ein Steuerelement, bei dem das Verkleinern auf 0,96 ablenken würde; er wird trotzdem dunkler.",
-  "Keeps the button still when pressed, as on `Button`.": "Hält den Button beim Drücken still, wie bei `Button`."
+  "Keeps the button still when pressed, as on `Button`.": "Hält den Button beim Drücken still, wie bei `Button`.",
+  "A status word in its tone's color, with an optional icon. Status is never color alone.": "Ein Statuswort in der Farbe seines Tons, optional mit Symbol. Ein Status ist nie nur Farbe.",
+  "Makes it the select-all box of a `CheckboxGroup`: checked when every value in the group's `allValues` is, a dash when some are, and checking it checks them all.": "Macht es zum Kästchen „Alle auswählen“ einer `CheckboxGroup`: angehakt, wenn jeder Wert aus `allValues` der Gruppe angehakt ist, mit Strich, wenn einige es sind, und ein Klick hakt alle an."
 }

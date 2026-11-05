@@ -28,12 +28,12 @@ import {
   Stat,
   Switch,
   TagInput,
-  ToastCapsule,
   Tooltip,
   TooltipProvider,
   icons,
   toast,
 } from "@logicplanes/kaeso-ui";
+import { ToastCapsule } from "@kaeso-ui-src/components/toast/toast";
 
 import { keys, models } from "~/fixtures/kaeso";
 import { DocsLocale, docsText, useDocsLang } from "~/lib/locale";

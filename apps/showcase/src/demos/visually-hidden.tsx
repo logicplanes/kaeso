@@ -1,4 +1,4 @@
-import { VisuallyHidden, Portal, Surface } from "@logicplanes/kaeso-ui";
+import { VisuallyHidden, Surface } from "@logicplanes/kaeso-ui";
 import { StateSection } from "~/lib/states";
 
 export const meta = {
@@ -6,7 +6,7 @@ export const meta = {
   description: "Utilities: text for assistive technology only, a portal to the body, and the internal Surface.",
   group: "Components",
   entry: "visually-hidden",
-  import: "VisuallyHidden, Portal",
+  import: "VisuallyHidden",
   a11y: ["Surface is internal: it draws only the framed surfaces of the foundations, never a generic card."],
 };
 export const examples = [
@@ -47,4 +47,3 @@ export function States() {
     </>
   );
 }
-void Portal;

@@ -9,7 +9,7 @@ import {
   InlineCopyText,
   JsonView,
   KeyValue,
-  Pill,
+  Tag,
   ProviderBadge,
   RequestTimeline,
   Section,
@@ -604,9 +604,9 @@ function ReplyTab({ e, Conversation }: { e: LogEntryView; Conversation: Conversa
     <div className="mt-24 flex flex-col gap-24">
       <TabHeader control={view && <Switch size="sm" label={t("logs.inspector.showRaw", "Show raw")} checked={raw} onCheckedChange={setRaw} />}>
         {view && (
-          <Pill size="sm" className="shrink-0">
+          <Tag size="sm" className="shrink-0">
             {e.error_kind ? t("logs.inspector.incomplete", "Incomplete") : view.stop}
-          </Pill>
+          </Tag>
         )}
         <Text variant="small" tone="secondary">
           {e.stream

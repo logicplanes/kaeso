@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Button, NumberInput, SettingsGroup, SettingsRow, SettingsSection, StatusDot, Switch } from "@logicplanes/kaeso-ui";
+import { Button, NumberInput, SettingsGroup, SettingsRow, SettingsSection, Status, Switch } from "@logicplanes/kaeso-ui";
 import { api, data } from "~/api/client";
 import type { SettingsView } from "~/api/generated/types";
 import { instanceSettingsQuery } from "~/api/queries/instance";
@@ -129,7 +129,7 @@ function SignIn({ settings }: { settings: SettingsView }) {
           <SettingsRow
             key={label}
             title={label}
-            control={<StatusDot tone={on ? "success" : "neutral"}>{on ? t("common.on", "On") : t("common.off", "Off")}</StatusDot>}
+            control={<Status tone={on ? "success" : "neutral"}>{on ? t("common.on", "On") : t("common.off", "Off")}</Status>}
           />
         ))}
       </SettingsGroup>

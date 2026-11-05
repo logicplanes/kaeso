@@ -5,7 +5,7 @@ import { act, render, screen } from "@testing-library/react";
 import { renderToString } from "react-dom/server";
 import { hydrateRoot } from "react-dom/client";
 import userEvent from "@testing-library/user-event";
-import { Checkbox, CheckboxGroup } from "./checkbox.js";
+import { Checkbox, CheckboxBox, CheckboxGroup } from "./checkbox.js";
 import { Accordion, Collapsible } from "../collapsible/collapsible.js";
 import { SensitiveInput } from "../input/sensitive-input.js";
 import { Popover } from "../popover/popover.js";
@@ -53,7 +53,7 @@ describe("Checkbox", () => {
     const onChange = vi.fn();
     render(
       <CheckboxGroup aria-label="Rights" defaultValue={["read"]} allValues={["read", "write"]} onValueChange={onChange}>
-        <Checkbox.Box parent aria-label="All rights" />
+        <CheckboxBox parent aria-label="All rights" />
         <Checkbox value="read" label="Read" />
         <Checkbox value="write" label="Write" />
       </CheckboxGroup>,

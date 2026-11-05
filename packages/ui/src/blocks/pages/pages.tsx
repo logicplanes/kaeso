@@ -2,16 +2,13 @@ import type { ReactNode } from "react";
 import { AppFrame } from "../../components/app-frame/app-frame.js";
 import { PageHeader, type PageHeaderProps } from "../../components/page-header/page-header.js";
 import { Empty, type EmptyProps } from "../../components/empty/empty.js";
-import { AuthLayout } from "../../components/section/section.js";
 import { SplitView } from "../../components/section/section.js";
 
 export const KAESO_PAGES_VARIANTS = {
   page: {
-    list: { classes: "", description: "Header, toolbar, a full-bleed List" },
-    table: { classes: "", description: "Header, toolbar, a DataTable edge to edge" },
+    list: { classes: "", description: "Header, toolbar, a full-bleed List or a DataTable edge to edge" },
     overview: { classes: "", description: "A metric row, a chart, a breakdown and an optional aside" },
     empty: { classes: "", description: "Empty centered in the panel" },
-    auth: { classes: "", description: "No chrome; a centered 400px column" },
   },
 } as const;
 export const KAESO_PAGES_DEFAULT_VARIANTS = { page: "list" } as const;
@@ -34,8 +31,6 @@ export function ListPage({ header, toolbar, children, sheet }: ListPageProps) {
   );
 }
 ListPage.displayName = "ListPage";
-
-export const TablePage = ListPage;
 
 export function OverviewPage({
   header,
@@ -85,5 +80,3 @@ export function EmptyPage({ header, ...empty }: { header?: PageHeaderProps | und
   );
 }
 EmptyPage.displayName = "EmptyPage";
-
-export const AuthPage = AuthLayout;

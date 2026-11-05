@@ -1,19 +1,7 @@
 import type * as React from "react";
 import { useEffect, useRef, useState } from "react";
-import {
-  useSidebar,
-  IconButton,
-  Menu,
-  NavSheet,
-  PortalContainer,
-  Toaster,
-  Sidebar,
-  ThemeProvider,
-  ThemeMenu,
-  TooltipProvider,
-  Icon,
-  icons,
-} from "@logicplanes/kaeso-ui";
+import { useSidebar, IconButton, Menu, PortalContainer, Toaster, Sidebar, ThemeProvider, ThemeMenu, TooltipProvider, Icon, icons } from "@logicplanes/kaeso-ui";
+import { NavSheet } from "@kaeso-ui-src/components/app-frame/nav-sheet";
 import type { NavSection } from "~/lib/nav";
 import { DocsSearch } from "./DocsSearch";
 import { DocsLanguageMenu, DocsLocale, docsText, useDocsLang } from "~/lib/locale";

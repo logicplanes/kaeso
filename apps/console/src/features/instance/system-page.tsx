@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Code, SettingsGroup, SettingsRow, SettingsSection, StatusDot, Text, Tooltip } from "@logicplanes/kaeso-ui";
+import { Code, SettingsGroup, SettingsRow, SettingsSection, Status, Text, Tooltip } from "@logicplanes/kaeso-ui";
 import { formatBytes, formatNumber, formatRelative } from "@logicplanes/kaeso-ui/format";
 import type { ModelDataView } from "~/api/generated/types";
 import { instanceSettingsQuery, systemQuery } from "~/api/queries/instance";
@@ -22,11 +22,11 @@ function ModelData({ data }: { data: ModelDataView }) {
     data.last_error ? (
       <Tooltip content={data.last_error}>
         <span className="inline-flex">
-          <StatusDot tone="danger">{t("instance.failed", "Failed")}</StatusDot>
+          <Status tone="danger">{t("instance.failed", "Failed")}</Status>
         </span>
       </Tooltip>
     ) : (
-      <StatusDot tone="success">{t("instance.succeeded", "Succeeded")}</StatusDot>
+      <Status tone="success">{t("instance.succeeded", "Succeeded")}</Status>
     )
   ) : (
     <Text tone="secondary">{t("instance.noneYet", "None yet")}</Text>
@@ -50,7 +50,7 @@ function ModelData({ data }: { data: ModelDataView }) {
         <SettingsRow
           title={t("instance.autoSync", "Automatic sync")}
           description={t("instance.gatewaySetting", "Gateway setting")}
-          control={<StatusDot tone={data.sync_enabled ? "success" : "neutral"}>{data.sync_enabled ? t("common.on", "On") : t("common.off", "Off")}</StatusDot>}
+          control={<Status tone={data.sync_enabled ? "success" : "neutral"}>{data.sync_enabled ? t("common.on", "On") : t("common.off", "Off")}</Status>}
         />
         <SettingsRow
           title={t("instance.lastSync", "Last sync")}
@@ -70,9 +70,9 @@ export function InstanceSystemPage() {
   const size = (bytes: number | null | undefined) => (bytes == null ? t("common.unknown", "Unknown") : formatBytes(bytes));
   const service = (state: string) =>
     state === "off" ? (
-      <StatusDot tone="neutral">{t("instance.off", "Off")}</StatusDot>
+      <Status tone="neutral">{t("instance.off", "Off")}</Status>
     ) : (
-      <StatusDot tone={state === "ok" ? "success" : "danger"}>{state === "ok" ? t("instance.up", "Up") : t("instance.down", "Down")}</StatusDot>
+      <Status tone={state === "ok" ? "success" : "danger"}>{state === "ok" ? t("instance.up", "Up") : t("instance.down", "Down")}</Status>
     );
   const logsOff = s?.clickhouse === "off";
   return (
@@ -89,7 +89,7 @@ export function InstanceSystemPage() {
         <>
           <SettingsSection title={t("instance.gateway", "Gateway")}>
             <SettingsGroup>
-              <SettingsRow title={t("common.status", "Status")} control={<StatusDot tone={status.tone}>{status.label}</StatusDot>} />
+              <SettingsRow title={t("common.status", "Status")} control={<Status tone={status.tone}>{status.label}</Status>} />
               <SettingsRow title={t("instance.version", "Version")} control={<Code>{s.version}</Code>} />
             </SettingsGroup>
           </SettingsSection>

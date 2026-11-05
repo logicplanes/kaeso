@@ -152,5 +152,3 @@ export const Tag = forwardRef<HTMLElement, TagProps>(function Tag(
   );
 });
 Tag.displayName = "Tag";
-
-export const Pill = Tag;

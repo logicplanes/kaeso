@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Banner, Button, Code, Dialog, Link, SettingsGroup, SettingsRow, StatusDot, Text } from "@logicplanes/kaeso-ui";
+import { Banner, Button, Code, Dialog, Link, SettingsGroup, SettingsRow, Status, Text } from "@logicplanes/kaeso-ui";
 import { api, data } from "~/api/client";
 import type { ReleaseView, UpdateJobView } from "~/api/generated/types";
 import { updateJobQuery } from "~/api/queries/instance";
@@ -112,7 +112,7 @@ export function UpdateDialog({ opened, open, onOpenChange }: Shown & { opened: O
           <SettingsGroup aria-label={t("instance.updates.steps", "Steps")}>
             {STEPS.map((step) => {
               const s = stepState(j, step);
-              return <SettingsRow key={step} title={stepLabel(step)} control={<StatusDot tone={s.tone}>{s.label}</StatusDot>} />;
+              return <SettingsRow key={step} title={stepLabel(step)} control={<Status tone={s.tone}>{s.label}</Status>} />;
             })}
           </SettingsGroup>
         )}

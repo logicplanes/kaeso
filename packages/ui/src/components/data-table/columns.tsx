@@ -1,7 +1,7 @@
 import type { ColumnDef } from "@tanstack/react-table";
 import type { ReactNode } from "react";
 import { formatDate, formatDuration, formatRelative, formatTokens, formatUSD, formatNumber } from "../../format/index.js";
-import { StatusDot, type StatusDotProps } from "../status-dot/status-dot.js";
+import { Status, type StatusProps } from "../status/status.js";
 import { Avatar } from "../avatar/avatar.js";
 import { Tooltip } from "../tooltip/tooltip.js";
 import { TruncatedText } from "../text/truncated.js";
@@ -108,8 +108,8 @@ export const col = {
         (a, c, id) => new Date(a.getValue(id) as string).getTime() - new Date(c.getValue(id) as string).getTime(),
       ),
     ),
-  status: <T,>(b: Base<T>, get: Accessor<T, { tone: NonNullable<StatusDotProps["tone"]>; label: string }>) =>
-    make(b, get, (v) => <StatusDot tone={v.tone}>{v.label}</StatusDot>, { text: undefined }),
+  status: <T,>(b: Base<T>, get: Accessor<T, { tone: NonNullable<StatusProps["tone"]>; label: string }>) =>
+    make(b, get, (v) => <Status tone={v.tone}>{v.label}</Status>, { text: undefined }),
   avatar: <T,>(b: Base<T>, get: Accessor<T, { name: string; src?: string | undefined }>) =>
     make(
       b,

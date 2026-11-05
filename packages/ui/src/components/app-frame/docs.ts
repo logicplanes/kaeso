@@ -14,15 +14,4 @@ export const docs = {
       sidebar: "The Sidebar.",
     },
   },
-  NavSheet: {
-    description:
-      "The sidebar as a floating panel from the left edge (a peek): the mobile navigation sheet, and the preview of a collapsed sidebar while the expand button is hovered (`peek`: it closes when the pointer leaves).",
-    props: {
-      children: "The navigation, usually the app's `Sidebar`.",
-      onOpenChange: "Called when the navigation opens or closes.",
-      open: "Whether the navigation is shown on phones.",
-      peek: "Shows the sheet as a preview that doesn't trap focus or dim the page, and closes when the pointer leaves it.",
-      returnFocus: "The element that gets focus back when the sheet closes.",
-    },
-  },
 } satisfies ComponentDocs;

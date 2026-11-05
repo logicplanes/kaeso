@@ -55,11 +55,4 @@ export const docs = {
       error: "The error message, shown under the control in the danger color; it marks the control invalid and is read out with its description.",
     },
   },
-  Highlight: {
-    description: "Splits a label around the query: matched characters in text, the rest secondary (7.4).",
-    props: {
-      query: "The part of the text to highlight, ignoring case.",
-      text: "The text to show.",
-    },
-  },
 } satisfies ComponentDocs;

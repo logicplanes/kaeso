@@ -1,4 +1,4 @@
-import { Badge, Banner, JsonView, Link, Pill, Separator, Text, Thumbnail, type ContentBlock, type ConversationMessage } from "@logicplanes/kaeso-ui";
+import { Badge, Banner, JsonView, Link, Tag, Separator, Text, Thumbnail, type ContentBlock, type ConversationMessage } from "@logicplanes/kaeso-ui";
 import { t } from "~/i18n";
 import { tRich } from "~/i18n/rich";
 import { Markdown, safeHref } from "@logicplanes/kaeso-ui/markdown";
@@ -41,9 +41,9 @@ function ImageInput({ src, alt, mediaType }: { src: string | undefined; alt: str
       </Link>
     );
   return (
-    <Pill size="sm" className="w-max">
+    <Tag size="sm" className="w-max">
       {mediaType ? t("logs.conversation.imageType", "Image {type}", { type: mediaType }) : t("logs.conversation.image", "Image")}
-    </Pill>
+    </Tag>
   );
 }
 
@@ -129,9 +129,9 @@ function Blocks({ blocks }: { blocks: ContentBlock[] }) {
             return <ImageInput key={i} src={b.src} alt={b.alt} mediaType={b.media_type} />;
           case "document":
             return (
-              <Pill key={i} size="sm" className="w-max">
+              <Tag key={i} size="sm" className="w-max">
                 {b.name ?? t("logs.conversation.document", "Document")}
-              </Pill>
+              </Tag>
             );
           case "refusal":
             return (

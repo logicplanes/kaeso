@@ -11,7 +11,8 @@
       "@logicplanes/kaeso-ui/i18n": ["../../packages/ui/src/i18n/index.tsx"],
       "@logicplanes/kaeso-ui/markdown": ["../../packages/ui/src/components/markdown/index.ts"],
       "@logicplanes/kaeso-ui/playground": ["../../packages/ui/src/components/playground/index.ts"],
-      "@logicplanes/kaeso-ui/blocks/*": ["../../packages/ui/src/blocks/*/index.ts"]
+      "@logicplanes/kaeso-ui/blocks/*": ["../../packages/ui/src/blocks/*/index.ts"],
+      "@kaeso-ui-src/*": ["../../packages/ui/src/*"]
     }
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"]

@@ -1,4 +1,5 @@
-import { Button, Inline, toast, ToastCapsule } from "@logicplanes/kaeso-ui";
+import { Button, Inline, toast } from "@logicplanes/kaeso-ui";
+import { ToastCapsule } from "@kaeso-ui-src/components/toast/toast";
 import { StateCell, StateMatrix, StateRow, StateSection } from "~/lib/states";
 
 export const meta = {

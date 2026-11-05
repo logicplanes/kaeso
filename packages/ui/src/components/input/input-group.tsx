@@ -128,4 +128,3 @@ const GroupButton = forwardRef<HTMLButtonElement, InputGroupButtonProps>(functio
 GroupButton.displayName = "InputGroup.Button";
 
 export const InputGroup = Object.assign(Root, { Input, Addon, Button: GroupButton });
-export const useInputGroupSize = () => useContext(Ctx).size;

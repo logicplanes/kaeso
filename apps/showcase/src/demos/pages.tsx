@@ -23,7 +23,7 @@ export const meta = {
   description: "List, table, overview and empty pages, composed from the library so the console never invents layout.",
   group: "Blocks",
   entry: "pages",
-  import: "ListPage, TablePage, OverviewPage, EmptyPage, AuthPage",
+  import: "ListPage, OverviewPage, EmptyPage",
   variants: "PAGES",
   source: "blocks/pages",
 };

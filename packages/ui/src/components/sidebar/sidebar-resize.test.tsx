@@ -1,7 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { Sidebar, SidebarSheetContext, useSidebar } from "./sidebar.js";
+import { Sidebar, useSidebar } from "./sidebar.js";
+import { SidebarSheetContext } from "./sidebar-context.js";
 import { icons } from "../../icons/vocabulary.js";
 import { lazyModulesSettled } from "../../utils/lazy-module.js";
 

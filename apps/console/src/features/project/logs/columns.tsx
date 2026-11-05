@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Badge, Icon, InlineCopyText, Pill, ProviderBadge, StatusCode, Text, Tooltip, col, icons } from "@logicplanes/kaeso-ui";
+import { Badge, Icon, InlineCopyText, Tag, ProviderBadge, StatusCode, Text, Tooltip, col, icons } from "@logicplanes/kaeso-ui";
 import { dateFormatter, formatDuration, formatNumber, formatPercent } from "@logicplanes/kaeso-ui/format";
 import type { LogView, Party } from "~/api/generated/types";
 import { errorKindLabel } from "~/format/labels";
@@ -187,9 +187,9 @@ export function logColumns({
       (r: LogView) => r.stream,
       (v) =>
         v ? (
-          <Pill size="sm" variant="outline">
+          <Tag size="sm" variant="outline">
             {t("logs.streamPill", "Stream")}
-          </Pill>
+          </Tag>
         ) : null,
     ),
     duration: col.duration({ id: "duration", header: columnLabel("duration"), size: KEPT_WIDTHS.duration, priority: 2 }, (r: LogView) => r.duration_ms),
@@ -258,9 +258,9 @@ function ModelCell({ row, message, provider }: { row: LogView; message: LogMessa
         </Badge>
       )}
       {row.source === "playground" && (
-        <Pill size="sm" variant="outline" className={row.error_kind ? "hidden shrink-0 @cell-md:inline-flex" : "hidden shrink-0 @cell-sm:inline-flex"}>
+        <Tag size="sm" variant="outline" className={row.error_kind ? "hidden shrink-0 @cell-md:inline-flex" : "hidden shrink-0 @cell-sm:inline-flex"}>
           {t("logs.source.playground", "Playground")}
-        </Pill>
+        </Tag>
       )}
       {aliased && (
         <Text mono variant="small" tone="secondary" truncate className="hidden max-w-240 @cell-lg:block">

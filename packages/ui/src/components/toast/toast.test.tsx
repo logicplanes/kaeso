@@ -4,7 +4,7 @@ import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { Toast, Toaster, toast } from "./toast.js";
+import { Toaster, toast } from "./toast.js";
 
 const css = readFileSync(join(__dirname, "../../styles/kaeso.css"), "utf8");
 const hoverBridges = [...css.matchAll(/([^{}]*\.k-toast[^{}]*)::after\s*\{([^}]*)\}/g)].map(([, selector = "", body = ""]) => ({
@@ -64,12 +64,9 @@ describe("toast", () => {
 });
 
 describe("Toaster's ref", () => {
-  it("reaches the notifications region, also through Toast", () => {
+  it("reaches the notifications region", () => {
     const ref = createRef<HTMLDivElement>();
-    const { unmount } = render(<Toaster ref={ref} />);
-    expect(ref.current).toBe(screen.getByRole("region", { name: "Notifications" }));
-    unmount();
-    render(<Toast ref={ref} />);
+    render(<Toaster ref={ref} />);
     expect(ref.current).toBe(screen.getByRole("region", { name: "Notifications" }));
   });
 });

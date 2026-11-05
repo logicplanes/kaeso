@@ -23,6 +23,7 @@ import { observeResize } from "../../utils/observe-resize.js";
 import { useLinkComponent } from "../../utils/link-provider.js";
 import { showsText, useHiddenDescription } from "../../utils/hidden-description.js";
 import { useStoredState } from "../../hooks/use-stored-state.js";
+import { SidebarFloatingContext, SidebarSheetContext } from "./sidebar-context.js";
 import { Icon, type IconData } from "../icon/icon.js";
 import { icons } from "../../icons/vocabulary.js";
 import { Tooltip } from "../tooltip/tooltip.js";
@@ -89,9 +90,6 @@ const Ctx = createContext<SidebarCtx>({
 });
 export const useSidebar = () => useContext(Ctx);
 
-export const SidebarFloatingContext = createContext(false);
-export const SidebarSheetContext = createContext<{ close: () => void; peek: boolean } | null>(null);
-
 export interface SidebarProviderProps {
   children: ReactNode;
   storageKey?: string | undefined;
@@ -99,7 +97,7 @@ export interface SidebarProviderProps {
   shortcut?: boolean | undefined;
 }
 
-function Provider({ children, storageKey, defaultRail = false, shortcut = true }: SidebarProviderProps) {
+export function Provider({ children, storageKey, defaultRail = false, shortcut = true }: SidebarProviderProps) {
   const [rail, setRail] = useStoredState(storageKey ? `${storageKey}:rail` : undefined, defaultRail);
   const [storedWidth, setWidth] = useStoredState(storageKey ? `${storageKey}:width` : undefined, 248);
   const [preview, previewWidth] = useState<number | null>(null);
