@@ -486,6 +486,7 @@ fn sensitive_rights_need_a_recent_sign_in() {
             "provider_credentials.create",
             "provider_credentials.replace",
             "providers.custom.manage",
+            "mcp_servers.manage",
             "security.sso.manage",
             "security.sso.require",
             "security.2fa.require",

@@ -6,7 +6,7 @@ mod sources;
 
 pub use agents::{
     AgentPreset, InstancePreset, agent_account_rights, agent_instance_rights, agent_org_rights,
-    agent_project_rights, grantable_org_rights, needs_confirmation,
+    agent_project_rights, grantable_org_rights, grantable_project_rights, needs_confirmation,
 };
 pub use catalogue::{
     AccountRight, Category, InstanceRight, OrgRight, ProjectRight, Right, RightParseError,

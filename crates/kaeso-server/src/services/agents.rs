@@ -4,7 +4,7 @@ use kaeso_core::rights::{
     AccountRight, AccountRights, AgentPreset, GrantExceedsHolder, InstanceRight, InstanceRights,
     MissingDependency, OrgGrant, OrgRight, OrgRights, ProjectRight, ProjectRights, Right,
     agent_org_rights, agent_project_rights, effective_project_rights, grantable_org_rights,
-    needs_confirmation,
+    grantable_project_rights, needs_confirmation,
 };
 use kaeso_store::pg::{agents, members};
 use sqlx::PgPool;
@@ -196,6 +196,12 @@ fn project_rights(
     held: ProjectRights,
 ) -> ApiResult<ProjectRights> {
     let rights: ProjectRights = parsed(param, names)?;
+    if let Some(never) = rights.minus(grantable_project_rights()).names().first() {
+        return Err(ApiError::invalid(
+            param,
+            format!("`{never}` can't be given to agents."),
+        ));
+    }
     beyond_policy(param, rights.minus(ceiling).names().first().copied())?;
     exceeds(param, rights.minus(held).names())?;
     needs_met(

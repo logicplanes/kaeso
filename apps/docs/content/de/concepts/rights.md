@@ -28,15 +28,15 @@ Integrierte Rollen sind in jeder Organisation gleich, und niemand kann sie ände
 | Inhaber | Hat jedes Recht, jetzt und in künftigen Versionen; nur Inhaber verwalten Inhaber. |
 | Admin | Verwaltet die Organisation und jedes Projekt, außer Löschen, Inhaberwechsel und Abrechnung. |
 | Abrechnung | Verwaltet die Abrechnung und sieht Nutzung und Kosten aller Projekte. |
-| Entwickler | Erstellt Projekte und sieht Nutzung, Kosten und Anbieter-Schlüssel; arbeitet in zugewiesenen Projekten. |
+| Entwickler | Erstellt Projekte und sieht Nutzung, Kosten, Anbieter-Schlüssel und MCP-Server; arbeitet in zugewiesenen Projekten. |
 | Prüfer | Liest für Prüfungen die ganze Organisation samt Audit-Log und allen Projekten, ändert nichts; sieht nie Prompts oder Ausgaben. |
 | Mitglied | Sieht die Organisation und ihre Mitglieder; arbeitet in zugewiesenen Projekten. |
 
 | Projektrolle | Beschreibung |
 | --- | --- |
-| Admin | Verwaltet das Projekt: Mitglieder, Schlüssel, Dienstkonten, Modelle, Limits, Protokolle und Einstellungen. |
-| Entwickler | Ruft Modelle mit eigenen Schlüsseln und im Playground auf und liest das Projekt, auch Prompts und Ausgaben. |
-| Betrachter | Liest Einstellungen, Modelle, Limits, Schlüssel, Nutzung und Protokoll-Metadaten des Projekts; ändert nichts. |
+| Admin | Verwaltet das Projekt: Mitglieder, Schlüssel, Dienstkonten, Modelle, Tools, Limits, Protokolle und Einstellungen. |
+| Entwickler | Ruft Modelle und Tools auf, wählt die Tools des Projekts und liest das Projekt, auch Prompts und Ausgaben. |
+| Betrachter | Liest Einstellungen, Modelle, Tools, Limits, Schlüssel, Nutzung und Protokoll-Metadaten des Projekts und nutzt seine Tools. |
 
 ### Was jede integrierte Rolle enthält
 
@@ -47,15 +47,15 @@ Eine Organisationsrolle enthält auch Rechte in jedem Projekt, zusätzlich zur e
 | Inhaber | Alle, auch die künftiger Versionen | Alle |
 | Admin | Alle außer `org.delete`, `org.ownership.transfer` und `billing.manage` | Alle |
 | Abrechnung | `org.view`, `members.view`, `projects.view.all`, `logs.storage.view`, `usage.org.view`, `costs.org.view`, `billing.view`, `billing.manage` | Keine |
-| Entwickler | `org.view`, `members.view`, `projects.create`, `provider_credentials.view`, `providers.custom.view`, `logs.storage.view`, `usage.org.view`, `costs.org.view` | Keine |
-| Prüfer | `org.view`, `members.view`, `projects.view.all`, `provider_credentials.view`, `providers.custom.view`, `platform_keys.view`, `logs.storage.view`, `usage.org.view`, `costs.org.view`, `billing.view`, `audit_log.view`, `audit_log.export` | Die des Betrachters und `project.audit_log.view` |
+| Entwickler | `org.view`, `members.view`, `projects.create`, `provider_credentials.view`, `providers.custom.view`, `mcp_servers.view`, `logs.storage.view`, `usage.org.view`, `costs.org.view` | Keine |
+| Prüfer | `org.view`, `members.view`, `projects.view.all`, `provider_credentials.view`, `providers.custom.view`, `mcp_servers.view`, `platform_keys.view`, `logs.storage.view`, `usage.org.view`, `costs.org.view`, `billing.view`, `audit_log.view`, `audit_log.export` | Die des Betrachters ohne `tools.use` und `project.audit_log.view` |
 | Mitglied | `org.view`, `members.view` | Keine |
 
 | Projektrolle | Rechte |
 | --- | --- |
 | Admin | Alle Projektrechte |
-| Entwickler | Die des Betrachters und `api.request`, `playground.use`, `keys.own.create`, `keys.own.manage`, `logs.content.view` |
-| Betrachter | `project.view`, `project.members.view`, `service_accounts.view`, `keys.all.view`, `models.view`, `limits.view`, `logs.metadata.view`, `usage.view`, `costs.view` |
+| Entwickler | Die des Betrachters und `api.request`, `playground.use`, `keys.own.create`, `keys.own.manage`, `logs.content.view`, `tools.manage` |
+| Betrachter | `project.view`, `project.members.view`, `service_accounts.view`, `keys.all.view`, `models.view`, `tools.view`, `tools.use`, `limits.view`, `logs.metadata.view`, `usage.view`, `costs.view` |
 
 Zwei Organisationsrechte reichen ebenfalls in jedes Projekt. `projects.view.all` gibt `project.view`, und `projects.archive.any` gibt `project.view` und `project.archive`.
 
@@ -126,6 +126,13 @@ Die [Platform API](../api/platform-api.md) beschreibt die Routen für Rechte, Ro
 | `provider_credentials.delete` | Anbieter-Schlüssel löschen | Einen Anbieter-Schlüssel aus der Organisation entfernen. | sensibel; erfordert `provider_credentials.view` |
 | `providers.custom.view` | Eigene Anbieter ansehen | Die eigenen Anbieter der Organisation mit ihren Adressen und Formaten sehen. |  |
 | `providers.custom.manage` | Eigene Anbieter verwalten | Eigene Anbieter der Organisation hinzufügen, ändern und löschen, also die Endpunkte, die ihre Anfragen und Schlüssel erhalten. | sensibel; kürzliche Anmeldung; erfordert `providers.custom.view` |
+
+### MCP-Server
+
+| Recht | Name | Was es erlaubt | Hinweise |
+| --- | --- | --- | --- |
+| `mcp_servers.view` | MCP-Server ansehen | Die MCP-Server der Organisation, ihre Tools und wie Kaeso sich bei ihnen anmeldet, sehen (nie Secrets). |  |
+| `mcp_servers.manage` | MCP-Server verwalten | MCP-Server hinzufügen, sich bei ihnen anmelden, sie ändern und löschen und ihre geänderten Tools freigeben. | sensibel; kürzliche Anmeldung; erfordert `mcp_servers.view` |
 
 ### Sicherheit
 
@@ -217,6 +224,14 @@ Die [Platform API](../api/platform-api.md) beschreibt die Routen für Rechte, Ro
 | `models.view` | Modelle ansehen | Modelle, Aliasse und Routing des Projekts sehen. |  |
 | `models.manage` | Modelle verwalten | Modelle und Aliasse hinzufügen, ändern und entfernen. | erfordert `models.view` |
 
+### Tools
+
+| Recht | Name | Was es erlaubt | Hinweise |
+| --- | --- | --- | --- |
+| `tools.view` | Tools ansehen | Die MCP-Server und Tools des Projekts sowie die mit seinem Portal verbundenen Clients sehen. |  |
+| `tools.manage` | Tools verwalten | Server und Tools des Projekts auswählen, festlegen, wer sie nutzen darf, und Clients trennen. | erfordert `tools.view` |
+| `tools.use` | Tools nutzen | Die Tools des Projekts über sein MCP-Portal und im Playground aufrufen. | erfordert `tools.view` |
+
 ### Limits & Budgets
 
 | Recht | Name | Was es erlaubt | Hinweise |
@@ -285,10 +300,10 @@ Die Konsole bietet vier Vorlagen für einen Agenten. Jede ist ein Ausgangspunkt,
 
 | Vorlage | Organisationsrechte | Projektrechte | Kontorechte | Instanz-Vorlage |
 | --- | --- | --- | --- | --- |
-| Observer | `org.view`, `members.view`, `projects.view.all`, `logs.storage.view`, `usage.org.view`, `costs.org.view`, `audit_log.view` | `project.view`, `models.view`, `limits.view`, `logs.metadata.view`, `usage.view`, `costs.view`, `project.audit_log.view` | `account.view` | Lesen |
-| Builder | Die der Rolle Entwickler | Die der Rolle Entwickler ohne `logs.content.view`, und `models.manage` | `account.view`, `account.keys.view` | Keine |
-| Operator | Die der Rolle Admin, ohne die Rechte, die Agenten nie erhalten | Alle | Alle außer `account.keys.manage` und `account.memberships.leave` | Konfigurieren |
-| Vollzugriff | Alle außer den Rechten, die Agenten nie erhalten | Alle | Alle | Admin |
+| Observer | `org.view`, `members.view`, `projects.view.all`, `mcp_servers.view`, `logs.storage.view`, `usage.org.view`, `costs.org.view`, `audit_log.view` | `project.view`, `models.view`, `tools.view`, `limits.view`, `logs.metadata.view`, `usage.view`, `costs.view`, `project.audit_log.view` | `account.view` | Lesen |
+| Builder | Die der Rolle Entwickler | Die der Rolle Entwickler ohne `logs.content.view` und `tools.use`, und `models.manage` | `account.view`, `account.keys.view` | Keine |
+| Operator | Die der Rolle Admin, ohne die Rechte, die Agenten nie erhalten | Alle außer `tools.use` | Alle außer `account.keys.manage` und `account.memberships.leave` | Konfigurieren |
+| Vollzugriff | Alle außer den Rechten, die Agenten nie erhalten | Alle außer `tools.use` | Alle | Admin |
 
 Builder ist der Standard. Die Instanz-Vorlage gilt nur für Instanz-Admins:
 
@@ -312,7 +327,7 @@ Eine Organisation, die keine Agenten zulässt, ist jedem Agenten verschlossen. E
 
 ### Nie für Agenten
 
-Kein Agent erhält `org.ownership.transfer`, `security.sso.manage` oder `security.sso.require`. Agenten können auch ihren eigenen Zugriff nicht erweitern, keine anderen Agenten autorisieren und niemandes Agenten verwalten. Die Kontosicherheit berühren sie nie: die E-Mail-Adresse, das Passwort, die Zwei-Faktor-Authentifizierung, Wiederherstellungscodes, Sitzungen, Verknüpfungen mit Single Sign-on und das Löschen des Kontos. [Tools](../api/mcp.md#tools) listet jede Aktion, die eine Konsolensitzung braucht.
+Kein Agent erhält `org.ownership.transfer`, `security.sso.manage`, `security.sso.require` oder `tools.use`: Ein MCP-Client erreicht die Tools eines Projekts nur über dessen Portal, angemeldet von einer Person. Agenten können auch ihren eigenen Zugriff nicht erweitern, keine anderen Agenten autorisieren und niemandes Agenten verwalten. Die Kontosicherheit berühren sie nie: die E-Mail-Adresse, das Passwort, die Zwei-Faktor-Authentifizierung, Wiederherstellungscodes, Sitzungen, Verknüpfungen mit Single Sign-on und das Löschen des Kontos. [Tools](../api/mcp.md#tools) listet jede Aktion, die eine Konsolensitzung braucht.
 
 ### Sensible Rechte
 

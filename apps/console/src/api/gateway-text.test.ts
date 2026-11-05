@@ -200,7 +200,7 @@ describe("the gateway's words in its answers", () => {
           scope: "project",
           kind: "builtin",
           name: "Admin",
-          description: "Manages the project: members, keys, service accounts, models, limits, logs and settings.",
+          description: "Manages the project: members, keys, service accounts, models, tools, limits, logs and settings.",
           rights: [],
           project_rights: [],
           holders: 0,
@@ -224,7 +224,7 @@ describe("the gateway's words in its answers", () => {
     const roles = data(await api.GET("/platform/v1/orgs/{org}/roles", { params: { path: { org: "org_1" } } })).data;
     expect(roles.map((r) => [r.name, r.description])).toEqual([
       ["所有者", "拥有所有权限，包括未来版本新增的权限；只有所有者可以管理所有者。"],
-      ["管理员", "管理项目：成员、密钥、服务账号、模型、限额、日志和设置。"],
+      ["管理员", "管理项目：成员、密钥、服务账号、模型、工具、限额、日志和设置。"],
       ["Owner", "Holds every right, now and in future releases; only owners manage owners."],
     ]);
   });
@@ -241,7 +241,7 @@ describe("the gateway's words in its answers", () => {
       expect(name, id).toBeTruthy();
       expect(description, id).toBeTruthy();
     }
-    expect(knownRights()).toHaveLength(66);
+    expect(knownRights()).toHaveLength(71);
     for (const id of agentRightIds()) expect(rightEnglish(id)[0], id).toBeTruthy();
     expect(agentRightIds()).toHaveLength(15);
   });

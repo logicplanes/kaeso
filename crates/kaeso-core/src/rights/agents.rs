@@ -33,6 +33,12 @@ pub fn grantable_org_rights() -> OrgRights {
     )
 }
 
+// Management agents never call tools: an MCP client reaches a project's tools only through its
+// own portal grant, where the person sees which tools it may use.
+pub fn grantable_project_rights() -> ProjectRights {
+    ProjectRights::all().minus(ProjectRights::EMPTY.with(ProjectRight::ToolsUse))
+}
+
 pub fn needs_confirmation(right: Right) -> bool {
     right.is_sensitive() || right.needs_recent_sign_in()
 }
@@ -85,6 +91,7 @@ impl AgentPreset {
                 R::OrgView,
                 R::MembersView,
                 R::ProjectsViewAll,
+                R::McpServersView,
                 R::LogsStorageView,
                 R::UsageOrgView,
                 R::CostsOrgView,
@@ -104,6 +111,7 @@ impl AgentPreset {
             AgentPreset::Observer => [
                 R::ProjectView,
                 R::ModelsView,
+                R::ToolsView,
                 R::LimitsView,
                 R::LogsMetadataView,
                 R::UsageView,
@@ -116,8 +124,11 @@ impl AgentPreset {
             AgentPreset::Builder => ProjectPreset::Developer
                 .rights()
                 .minus(ProjectRights::EMPTY.with(R::LogsContentView))
-                .with(R::ModelsManage),
-            AgentPreset::Operator | AgentPreset::Full => ProjectPreset::Admin.rights(),
+                .with(R::ModelsManage)
+                .intersect(grantable_project_rights()),
+            AgentPreset::Operator | AgentPreset::Full => ProjectPreset::Admin
+                .rights()
+                .intersect(grantable_project_rights()),
         }
     }
 

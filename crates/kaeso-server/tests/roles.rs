@@ -84,6 +84,7 @@ async fn the_catalogue_and_the_built_in_roles_are_served() {
             "model_use",
             "keys",
             "models",
+            "tools",
             "limits",
             "logs",
             "usage",

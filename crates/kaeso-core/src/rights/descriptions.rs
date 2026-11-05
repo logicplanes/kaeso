@@ -11,7 +11,7 @@ impl OrgPreset {
             }
             OrgPreset::Billing => "Manages billing and sees usage and costs across all projects.",
             OrgPreset::Developer => {
-                "Creates projects and sees usage, costs and provider keys; works in the projects they are added to."
+                "Creates projects and sees usage, costs, provider keys and MCP servers; works in the projects they are added to."
             }
             OrgPreset::Auditor => {
                 "Reads the whole organization for reviews, including the audit log and every project, and changes nothing; never sees prompts or outputs."
@@ -27,13 +27,13 @@ impl ProjectPreset {
     pub const fn description(self) -> &'static str {
         match self {
             ProjectPreset::Admin => {
-                "Manages the project: members, keys, service accounts, models, limits, logs and settings."
+                "Manages the project: members, keys, service accounts, models, tools, limits, logs and settings."
             }
             ProjectPreset::Developer => {
-                "Calls models with their own keys and in the Playground, and reads the project, including prompts and outputs."
+                "Calls models and tools, chooses the project's tools, and reads the project, including prompts and outputs."
             }
             ProjectPreset::Viewer => {
-                "Reads the project's settings, models, limits, keys, usage and log metadata; changes nothing."
+                "Reads the project's settings, models, tools, limits, keys, usage and log metadata, and uses its tools."
             }
         }
     }

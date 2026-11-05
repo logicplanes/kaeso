@@ -11,6 +11,7 @@ pub enum Category {
     Members,
     Projects,
     Providers,
+    McpServers,
     Security,
     Keys,
     Logs,
@@ -19,6 +20,7 @@ pub enum Category {
     Project,
     ModelUse,
     Models,
+    Tools,
     Limits,
     UsageCosts,
     Instance,
@@ -32,6 +34,7 @@ impl Category {
             Category::Members => "members",
             Category::Projects => "projects",
             Category::Providers => "providers",
+            Category::McpServers => "mcp_servers",
             Category::Security => "security",
             Category::Keys => "keys",
             Category::Logs => "logs",
@@ -40,6 +43,7 @@ impl Category {
             Category::Project => "project",
             Category::ModelUse => "model_use",
             Category::Models => "models",
+            Category::Tools => "tools",
             Category::Limits => "limits",
             Category::Instance => "instance",
             Category::Account => "account",
@@ -52,6 +56,7 @@ impl Category {
             Category::Members => "Members & access",
             Category::Projects => "Projects",
             Category::Providers => "Providers",
+            Category::McpServers => "MCP servers",
             Category::Security => "Security",
             Category::Keys => "Keys",
             Category::Logs => "Logs & data",
@@ -60,6 +65,7 @@ impl Category {
             Category::Project => "Project",
             Category::ModelUse => "Model use",
             Category::Models => "Models",
+            Category::Tools => "Tools",
             Category::Limits => "Limits & budgets",
             Category::UsageCosts => "Usage & costs",
             Category::Instance => "Instance",
@@ -187,6 +193,8 @@ rights!(
         ProviderCredentialsDelete = "provider_credentials.delete", Providers, "Delete provider keys", true, false, false, [ProviderCredentialsView], "Remove a provider key from the organization.";
         ProvidersCustomView = "providers.custom.view", Providers, "View custom providers", false, false, false, [], "See the organization's custom providers, with their addresses and formats.";
         ProvidersCustomManage = "providers.custom.manage", Providers, "Manage custom providers", true, true, false, [ProvidersCustomView], "Add, change and delete the organization's custom providers, the endpoints that get its requests and keys.";
+        McpServersView = "mcp_servers.view", McpServers, "View MCP servers", false, false, false, [], "See the organization's MCP servers, their tools and how Kaeso signs in to them (never secrets).";
+        McpServersManage = "mcp_servers.manage", McpServers, "Manage MCP servers", true, true, false, [McpServersView], "Add, sign in to, change and delete MCP servers, and approve their changed tools.";
         SecuritySsoManage = "security.sso.manage", Security, "Manage SSO", false, true, false, [], "Configure the organization's identity provider and the role of people who arrive through it.";
         SecuritySsoRequire = "security.sso.require", Security, "Require SSO", true, true, false, [], "Require the accounts this organization manages to sign in only through its SSO.";
         Security2faRequire = "security.2fa.require", Security, "Require two-factor", false, true, false, [], "Require two-factor authentication for members.";
@@ -230,6 +238,9 @@ rights!(
         SecurityKeyPolicyProjectManage = "security.key_policy.project.manage", Keys, "Set key lifetime", false, false, false, [], "Set the project's maximum key lifetime.";
         ModelsView = "models.view", Models, "View models", false, false, false, [], "See the project's models, aliases and routing.";
         ModelsManage = "models.manage", Models, "Manage models", false, false, false, [ModelsView], "Add, change and remove models and aliases.";
+        ToolsView = "tools.view", Tools, "View tools", false, false, false, [], "See the project's MCP servers and tools, and the clients connected to its portal.";
+        ToolsManage = "tools.manage", Tools, "Manage tools", false, false, false, [ToolsView], "Choose the project's servers and tools, who may use them, and disconnect clients.";
+        ToolsUse = "tools.use", Tools, "Use tools", false, false, false, [ToolsView], "Call the project's tools through its MCP portal and in the Playground.";
         LimitsView = "limits.view", Limits, "View limits", false, false, false, [], "See project, member and key limits, budgets and model access.";
         LimitsManage = "limits.manage", Limits, "Manage limits", false, false, false, [LimitsView], "Change project, member and key limits, budgets and model access.";
         LogsMetadataView = "logs.metadata.view", Logs, "View request logs", false, false, false, [], "See request logs: model, tokens, cost, latency, status and key.";

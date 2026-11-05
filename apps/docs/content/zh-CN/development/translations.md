@@ -103,6 +103,10 @@ Kaeso 向用户展示的每个词都有英语、德语和简体中文版本（`e
 | single sign-on (SSO) | Single Sign-on (SSO) | 单点登录（SSO） |
 | audit log | Audit-Log | 审计日志 |
 | agent (connected through the MCP server) | Agent | 智能体 |
+| MCP server (an upstream server Kaeso takes tools from) | MCP-Server | MCP 服务器 |
+| tool (of an MCP server) | Tool | 工具 |
+| portal (a project's MCP address) | Portal | 门户 |
+| client (an app signed in to a portal) | Client | 客户端 |
 | model family (of an agent) | Modellfamilie | 模型系列 |
 | preset (of an agent's rights) | Vorlage | 预设 |
 | scheduled for deletion | zur Löschung vorgemerkt | 已计划删除 |
