@@ -27,7 +27,7 @@ for (const name of dirs(resolve(src, "components"))) {
 for (const file of ["identity", "moments", "usage", "conversation", "rights"]) {
   entries[`components/kaeso/${file}`] = resolve(src, "components/kaeso", `${file}.tsx`);
 }
-for (const file of ["timeseries", "bar", "sparkline", "donut", "heatmap", "gauge", "sankey"]) {
+for (const file of ["timeseries", "bar", "sparkline", "donut", "heatmap", "sankey"]) {
   entries[`components/charts/${file}`] = resolve(src, "components/charts", `${file}.tsx`);
 }
 for (const name of dirs(resolve(src, "blocks"))) {

@@ -15,7 +15,6 @@ import {
   ProviderBadge,
   ProviderPicker,
   Select,
-  FilterToggle,
   Text,
   Toolbar,
   Tooltip,
@@ -192,11 +191,9 @@ export function ModelsPage({ org, project, search }: { org: string; project: str
         onValueChange={(v) => setSearch({ cap: capabilityOptions().find((c) => c.value === v)?.value })}
         options={[{ value: "any", label: t("models.anyCapability", "Any capability") }, ...capabilityOptions()]}
       />
-      <FilterToggle
-        label={t("models.onlyOverridden", "Only overridden")}
-        pressed={!!search.overridden}
-        onPressedChange={(v) => setSearch({ overridden: v || undefined })}
-      />
+      <Button variant="selector" size="sm" pressed={!!search.overridden} onPressedChange={(v) => setSearch({ overridden: v || undefined })}>
+        {t("models.onlyOverridden", "Only overridden")}
+      </Button>
     </>
   );
   const activeFilters = [search.provider, search.cap, search.overridden].filter(Boolean).length;

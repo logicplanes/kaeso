@@ -1,25 +1,20 @@
 import { forwardRef, type ReactNode } from "react";
 import { cn } from "../../utils/cn.js";
 import { formatPercent } from "../../format/index.js";
-import { useTweened } from "./core.js";
+import { useTweened } from "../charts/core.js";
 import { useUiText } from "../../i18n/context.js";
 
-export const KAESO_GAUGE_VARIANTS = {
-  size: { md: { classes: "w-180", description: "180px (default)" } },
-} as const;
-export const KAESO_GAUGE_DEFAULT_VARIANTS = { size: "md" } as const;
-
-export const Gauge = forwardRef<
+export const MeterGauge = forwardRef<
   HTMLDivElement,
   {
     value: number;
     thresholds?: number[] | undefined;
     label?: ReactNode | undefined;
     valueLabel?: ReactNode | undefined;
-    "aria-label": string;
+    "aria-label"?: string | undefined;
     className?: string | undefined;
   }
->(function Gauge({ value, thresholds = [0.8], label, valueLabel, className, "aria-label": ariaLabel }, ref) {
+>(function MeterGauge({ value, thresholds = [0.8], label, valueLabel, className, "aria-label": ariaLabel }, ref) {
   const t = useUiText();
   const W = 180;
   const R = 82;
@@ -70,4 +65,4 @@ export const Gauge = forwardRef<
     </div>
   );
 });
-Gauge.displayName = "Gauge";
+MeterGauge.displayName = "Meter";

@@ -1251,5 +1251,21 @@
   "Called when a search's clear circle is pressed or Escape clears it.": "Wird aufgerufen, wenn der Kreis zum Leeren einer Suche gedrückt wird oder Escape sie leert.",
   "Masks a key or token behind a reveal circle, sets it in mono when revealed, and keeps it out of autocomplete and password managers.": "Verdeckt einen Schlüssel oder ein Token hinter einem Kreis zum Anzeigen, zeigt ihn in Monospace und hält ihn aus der automatischen Vervollständigung und aus Passwortmanagern heraus.",
   "A shortcut hint at the end of an empty search, hidden while it has focus.": "Ein Hinweis auf das Tastenkürzel am Ende einer leeren Suche, ausgeblendet, solange sie den Fokus hat.",
-  "The height of the input: 32px in toolbars, 36px by default.": "Die Höhe des Feldes: 32px in Werkzeugleisten, 36px standardmäßig."
+  "The height of the input: 32px in toolbars, 36px by default.": "Die Höhe des Feldes: 32px in Werkzeugleisten, 36px standardmäßig.",
+  "On-or-off filter": "Filter ein oder aus",
+  "`variant=\"selector\"` with `pressed`: quiet like an unset select when off, a check and full text when on.": "`variant=\"selector\"` mit `pressed`: ausgeschaltet zurückhaltend wie ein ungesetztes Select, eingeschaltet mit Haken und voller Schrift.",
+  "Called with the new state when a toggle button is pressed.": "Wird mit dem neuen Zustand aufgerufen, wenn ein Umschaltbutton gedrückt wird.",
+  "Makes it a toggle button that is on or off (`aria-pressed`); with `variant=\"selector\"`, a check shows while it is on.": "Macht ihn zu einem Umschaltbutton, der ein- oder ausgeschaltet ist (`aria-pressed`); mit `variant=\"selector\"` zeigt er einen Haken, solange er eingeschaltet ist.",
+  "Gauge": "Tacho",
+  "`shape=\"gauge\"`: a half circle for the one number a page is about.": "`shape=\"gauge\"`: ein Halbkreis für die eine Zahl, um die es auf einer Seite geht.",
+  "The label above the bar, or the caption under a gauge's arc.": "Die Beschriftung über dem Balken oder unter dem Bogen eines Tachos.",
+  "A pill bar (`bar`), or a half circle (`gauge`) that says near or over the limit in its middle.": "Ein Pill-Balken (`bar`) oder ein Halbkreis (`gauge`), der in seiner Mitte sagt, ob das Limit fast erreicht oder überschritten ist.",
+  "Alert thresholds as ratios, drawn as ticks: [0.5, 0.8]. A gauge marks 0.8 when none are given.": "Warnschwellen als Anteile, als Marken gezeichnet: [0.5, 0.8]. Ein Tacho markiert 0.8, wenn keine angegeben sind.",
+  "How the popover lines up with its trigger.": "Wie das Popover an seinem Auslöser ausgerichtet ist.",
+  "Whether the popover starts open, when the component keeps its own state.": "Ob das Popover zu Beginn offen ist, wenn die Komponente ihren Zustand selbst verwaltet.",
+  "Called when the popover opens or closes.": "Wird aufgerufen, wenn sich das Popover öffnet oder schließt.",
+  "Whether the popover is open, when you control it.": "Ob das Popover offen ist, wenn Sie es steuern.",
+  "The side the popover opens on.": "Die Seite, zu der sich das Popover öffnet.",
+  "The popover's title, also its name. Defaults to \"Parameters\" in the provider's language.": "Der Titel des Popovers, zugleich sein Name. Standardmäßig „Parameter“ in der Sprache des Providers.",
+  "The button that opens the parameters in a popover; without one, the parameters sit in the page.": "Der Button, der die Parameter in einem Popover öffnet; ohne ihn stehen die Parameter in der Seite."
 }

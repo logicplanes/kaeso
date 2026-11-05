@@ -9,7 +9,7 @@ import {
   Combobox,
   Autocomplete,
   Dialog,
-  Gauge,
+  Status,
   Input,
   KeyDisplay,
   Menu,
@@ -268,8 +268,12 @@ function Cells() {
             <Meter label={t("Monthly budget")} value={0.642} valueLabel={t("$32.10 of $50.00")} thresholds={[0.8]} caption={t("Resets in 12 days")} />
           </div>
         </Cell>
-        <Cell slug="gauge">
-          <Gauge aria-label={t("Monthly budget used")} value={0.64} label={t("of $500.00 budget")} valueLabel={t("$320.00")} />
+        <Cell slug="status">
+          <div className="flex flex-col items-start gap-8">
+            <Status tone="success">{t("Active")}</Status>
+            <Status tone="warning">{t("Expiring")}</Status>
+            <Status tone="danger">{t("Disabled")}</Status>
+          </div>
         </Cell>
         <Cell slug="stat">
           <div className="flex w-full flex-col gap-16">

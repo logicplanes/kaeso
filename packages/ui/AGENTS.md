@@ -88,22 +88,22 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
 ## Which component for which job
 
-| Job                                      | Use                                                                     |
-| ---------------------------------------- | ----------------------------------------------------------------------- |
-| App layout                               | `AppFrame` with `Sidebar`, `PageHeader`, `AppFrame.Body`                |
-| Settings page                            | `AppFrame.Settings`, `SettingsGroup`, `SettingsRow`                     |
-| A collection people scan and act on      | `List` with group headers                                               |
-| A collection people compare by column    | `DataTable` (virtualized, sortable)                                     |
-| Filters above a collection               | `Toolbar` with `FilterChip`, `Input type="search"`, `DisplayOptions`    |
-| A choice among 2–4 views                 | `Segmented`; page views: `Tabs variant="pill"`; detail sections: `Tabs` |
-| One of many options                      | `Select`; searchable: `Combobox`                                        |
-| A confirmation of an irreversible action | `AlertDialog`; deletion: the `DeleteResource` block                     |
-| A task in several steps                  | `StepDialog`                                                            |
-| A dialog that opens fresh every time     | `DialogScope` around the component that keeps its state                 |
-| Feedback after an action                 | `toast()`, with Undo for reversible actions                             |
-| A secret shown once                      | `SecretReveal`                                                          |
-| Numbers at a glance                      | `MetricRow` with `Stat`; over time: `TimeseriesChart`                   |
-| Nothing to show yet                      | `Empty` with one action                                                 |
+| Job                                      | Use                                                                                         |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------- |
+| App layout                               | `AppFrame` with `Sidebar`, `PageHeader`, `AppFrame.Body`                                    |
+| Settings page                            | `AppFrame.Settings`, `SettingsGroup`, `SettingsRow`                                         |
+| A collection people scan and act on      | `List` with group headers                                                                   |
+| A collection people compare by column    | `DataTable` (virtualized, sortable)                                                         |
+| Filters above a collection               | `Toolbar` with `FilterChip`, `Input type="search"`, `DisplayOptions`                        |
+| A choice among 2–4 views                 | `Segmented`; page views: `Tabs variant="pill"`; detail sections: `Tabs`                     |
+| One of many options                      | `Select`; searchable: `Combobox`                                                            |
+| A confirmation of an irreversible action | `AlertDialog`; deletion: `tone="danger"`, and `confirmText` for a resource that holds a lot |
+| A task in several steps                  | `StepDialog`                                                                                |
+| A dialog that opens fresh every time     | `DialogScope` around the component that keeps its state                                     |
+| Feedback after an action                 | `toast()`, with Undo for reversible actions                                                 |
+| A secret shown once                      | `SecretReveal`                                                                              |
+| Numbers at a glance                      | `MetricRow` with `Stat`; over time: `TimeseriesChart`                                       |
+| Nothing to show yet                      | `Empty` with one action                                                                     |
 
 ## A screen
 

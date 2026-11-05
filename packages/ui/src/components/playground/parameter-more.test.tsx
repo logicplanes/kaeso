@@ -2,7 +2,7 @@ import { createRef } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { ParameterPanel, ParameterPopover } from "./parameter-panel.js";
+import { ParameterPanel } from "./parameter-panel.js";
 
 describe("ParameterPanel reasoning and limits", () => {
   it("offers only the efforts a model supports, and sets the summary", async () => {
@@ -49,24 +49,26 @@ describe("ParameterPanel reasoning and limits", () => {
   });
 });
 
-describe("ParameterPopover", () => {
-  it("opens the panel from its circle and from a custom trigger", async () => {
+describe("ParameterPanel with a trigger", () => {
+  it("opens in a popover from its trigger, named Parameters unless titled", async () => {
     const onOpenChange = vi.fn();
-    const { rerender } = render(<ParameterPopover value={{}} onValueChange={vi.fn()} onOpenChange={onOpenChange} />);
+    const { rerender } = render(
+      <ParameterPanel value={{}} onValueChange={vi.fn()} onOpenChange={onOpenChange} trigger={<button type="button">Parameters</button>} />,
+    );
     await userEvent.click(screen.getByRole("button", { name: "Parameters" }));
     expect(onOpenChange).toHaveBeenCalledWith(true);
     expect(await screen.findByRole("dialog", { name: "Parameters" })).toBeInTheDocument();
-    rerender(<ParameterPopover value={{}} onValueChange={vi.fn()} open title="Settings" trigger={<button>Tune</button>} side="top" align="start" />);
+    rerender(<ParameterPanel value={{}} onValueChange={vi.fn()} open title="Settings" trigger={<button>Tune</button>} side="top" align="start" />);
     expect(await screen.findByRole("dialog", { name: "Settings" })).toBeInTheDocument();
-    render(<ParameterPopover value={{}} onValueChange={vi.fn()} defaultOpen title="Defaults" />);
+    render(<ParameterPanel value={{}} onValueChange={vi.fn()} defaultOpen title="Defaults" trigger={<button type="button">Defaults</button>} />);
     expect(await screen.findByRole("dialog", { name: "Defaults" })).toBeInTheDocument();
   });
 });
 
-describe("ParameterPopover's ref", () => {
+describe("ParameterPanel's ref with a trigger", () => {
   it("reaches the open popover", async () => {
     const ref = createRef<HTMLDivElement>();
-    render(<ParameterPopover ref={ref} value={{}} onValueChange={vi.fn()} defaultOpen />);
+    render(<ParameterPanel ref={ref} value={{}} onValueChange={vi.fn()} defaultOpen trigger={<button type="button">Tune</button>} />);
     expect(ref.current).toBe(await screen.findByRole("dialog", { name: "Parameters" }));
   });
 });

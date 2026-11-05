@@ -13,7 +13,7 @@ import { useUiText, type UiText } from "../../i18n/context.js";
 
 export const KAESO_PARAMETER_PANEL_VARIANTS = {
   layout: {
-    popover: { classes: "w-full gap-20", description: "Inside a 320px popover (ParameterPopover) (default)" },
+    popover: { classes: "w-full gap-20", description: "Inside a 320px popover, as with a `trigger` (default)" },
     panel: { classes: "w-full gap-24", description: "A side panel or sheet: a little more room between groups" },
   },
 } as const;
@@ -54,7 +54,16 @@ export interface ParameterPanelProps {
   disabled?: boolean | undefined;
   layout?: keyof typeof KAESO_PARAMETER_PANEL_VARIANTS.layout | undefined;
   className?: string | undefined;
+  trigger?: ReactElement | undefined;
+  title?: string | undefined;
+  open?: boolean | undefined;
+  defaultOpen?: boolean | undefined;
+  onOpenChange?: ((open: boolean) => void) | undefined;
+  side?: "top" | "bottom" | "left" | "right" | undefined;
+  align?: "start" | "center" | "end" | undefined;
 }
+
+type PanelBodyProps = Omit<ParameterPanelProps, "trigger" | "title" | "open" | "defaultOpen" | "onOpenChange" | "side" | "align">;
 
 function SliderRow({
   label,
@@ -103,7 +112,7 @@ function SliderRow({
   );
 }
 
-export const ParameterPanel = forwardRef<HTMLDivElement, ParameterPanelProps>(function ParameterPanel(
+const PanelBody = forwardRef<HTMLDivElement, PanelBodyProps>(function PanelBody(
   {
     value,
     onValueChange,
@@ -232,23 +241,14 @@ export const ParameterPanel = forwardRef<HTMLDivElement, ParameterPanelProps>(fu
     </div>
   );
 });
-ParameterPanel.displayName = "ParameterPanel";
+PanelBody.displayName = "ParameterPanel";
 
-export interface ParameterPopoverProps extends Omit<ParameterPanelProps, "layout" | "className"> {
-  trigger?: ReactElement | undefined;
-  title?: string | undefined;
-  open?: boolean | undefined;
-  defaultOpen?: boolean | undefined;
-  onOpenChange?: ((open: boolean) => void) | undefined;
-  side?: "top" | "bottom" | "left" | "right" | undefined;
-  align?: "start" | "center" | "end" | undefined;
-}
-
-export const ParameterPopover = forwardRef<HTMLDivElement, ParameterPopoverProps>(function ParameterPopover(
+export const ParameterPanel = forwardRef<HTMLDivElement, ParameterPanelProps>(function ParameterPanel(
   { trigger, title: titleProp, open, defaultOpen, onOpenChange, side = "bottom", align = "end", ...panel },
   ref,
 ) {
   const t = useUiText();
+  if (!trigger) return <PanelBody ref={ref} {...panel} />;
   const title = titleProp ?? t("parameterPopover.parameters", "Parameters");
   return (
     <Popover
@@ -257,11 +257,11 @@ export const ParameterPopover = forwardRef<HTMLDivElement, ParameterPopoverProps
       {...(defaultOpen !== undefined ? { defaultOpen } : {})}
       {...(onOpenChange ? { onOpenChange } : {})}
     >
-      <Popover.Trigger>{trigger ?? <Button variant="ghost" icon={icons.displayOptions} aria-label={title} size="sm" />}</Popover.Trigger>
+      <Popover.Trigger>{trigger}</Popover.Trigger>
       <Popover.Content ref={ref} aria-label={title} side={side} align={align} className="w-320 max-w-(--available-width)">
         <div className="relative">
           <p className="mb-16 flex min-h-32 items-center pr-40 text-body font-semibold text-fg">{title}</p>
-          <ParameterPanel {...panel} />
+          <PanelBody {...panel} layout="popover" />
           <div className="absolute top-0 right-0">
             <Popover.Close>
               <Button variant="ghost" icon={icons.close} aria-label={t("parameterPopover.close", "Close parameters")} size="sm" />
@@ -272,4 +272,4 @@ export const ParameterPopover = forwardRef<HTMLDivElement, ParameterPopoverProps
     </Popover>
   );
 });
-ParameterPopover.displayName = "ParameterPopover";
+ParameterPanel.displayName = "ParameterPanel";

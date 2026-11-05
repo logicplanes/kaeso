@@ -1,6 +1,7 @@
 import { forwardRef, type CSSProperties, type ReactNode } from "react";
 import { cn } from "../../utils/cn.js";
 import { useUiText } from "../../i18n/context.js";
+import { MeterGauge } from "./gauge.js";
 import { TruncatedText } from "../text/truncated.js";
 
 export const KAESO_METER_VARIANTS = {
@@ -12,8 +13,12 @@ export const KAESO_METER_VARIANTS = {
     },
     neutral: { classes: "bg-fg-secondary", description: "A plain share" },
   },
+  shape: {
+    bar: { classes: "", description: "A 6px pill bar under its label and value (default)" },
+    gauge: { classes: "w-180", description: "A 180px half circle with the value in its middle, for one number a page is about" },
+  },
 } as const;
-export const KAESO_METER_DEFAULT_VARIANTS = { tone: "auto" } as const;
+export const KAESO_METER_DEFAULT_VARIANTS = { tone: "auto", shape: "bar" } as const;
 
 export interface MeterProps {
   value: number;
@@ -22,6 +27,7 @@ export interface MeterProps {
   caption?: ReactNode | undefined;
   thresholds?: number[] | undefined;
   tone?: keyof typeof KAESO_METER_VARIANTS.tone | undefined;
+  shape?: keyof typeof KAESO_METER_VARIANTS.shape | undefined;
   leading?: ReactNode | undefined;
   trailing?: ReactNode | undefined;
   "aria-label"?: string | undefined;
@@ -52,10 +58,24 @@ function thresholdMask(thresholds: number[]): CSSProperties | undefined {
 }
 
 export const Meter = forwardRef<HTMLDivElement, MeterProps>(function Meter(
-  { value, label, valueLabel, caption, thresholds = [], tone = "auto", leading, trailing, className, "aria-label": ariaLabel },
+  { value, label, valueLabel, caption, thresholds: given, tone = "auto", shape = "bar", leading, trailing, className, "aria-label": ariaLabel },
   ref,
 ) {
   const t = useUiText();
+  if (shape === "gauge") {
+    return (
+      <MeterGauge
+        ref={ref}
+        value={value}
+        label={label}
+        valueLabel={valueLabel}
+        className={className}
+        {...(given ? { thresholds: given } : {})}
+        {...((ariaLabel ?? (typeof label === "string" ? label : undefined)) ? { "aria-label": ariaLabel ?? (label as string) } : {})}
+      />
+    );
+  }
+  const thresholds = given ?? [];
   const pct = Math.max(0, Math.min(1, value));
   const now = Math.round(value * 100);
   const state = tone === "auto" ? meterState(value, thresholds) : "under";

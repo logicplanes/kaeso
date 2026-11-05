@@ -18,7 +18,6 @@ import {
   Section,
   Sheet,
   Skeleton,
-  FilterToggle,
   Text,
   Tooltip,
   col,
@@ -233,11 +232,9 @@ export function AuditLog({
             />
           </div>
         )}
-        <FilterToggle
-          label={t("kaeso.audit.byAgents", "Agents")}
-          pressed={!!filters.by_agents}
-          onPressedChange={(on) => set({ by_agents: on || undefined, event: undefined })}
-        />
+        <Button variant="selector" size="sm" pressed={!!filters.by_agents} onPressedChange={(on) => set({ by_agents: on || undefined, event: undefined })}>
+          {t("kaeso.audit.byAgents", "Agents")}
+        </Button>
         <DateRangePicker
           size="sm"
           aria-label={t("kaeso.audit.days", "Days")}

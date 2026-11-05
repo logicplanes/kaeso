@@ -2,15 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { AppFrame, Button, Empty, icons } from "@logicplanes/kaeso-ui";
-import {
-  CompareGrid,
-  Composer,
-  ModelPicker,
-  ParameterPopover,
-  PromptSuggestions,
-  ResponseMetrics,
-  type ReasoningEffort,
-} from "@logicplanes/kaeso-ui/playground";
+import { CompareGrid, Composer, ModelPicker, ParameterPanel, PromptSuggestions, ResponseMetrics, type ReasoningEffort } from "@logicplanes/kaeso-ui/playground";
 import { playgroundModelsQuery, type PlaygroundModel } from "~/api/queries/playground";
 import { useProjectRights } from "~/auth/rights";
 import { playgroundModelOption, recentModels, rememberModel } from "~/kaeso/model-options";
@@ -216,7 +208,7 @@ export function PlaygroundPage({ org, project, search }: { org: string; project:
                 {common.clear()}
               </Button>
             )}
-            <ParameterPopover
+            <ParameterPanel
               value={parameters}
               onValueChange={setParameters}
               sampling={chosen.length === 0 || chosen.some((m) => m.temperature)}

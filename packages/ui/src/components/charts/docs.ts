@@ -53,17 +53,6 @@ export const docs = {
       totalLabel: 'The word under the total. Defaults to "Total" in the provider\'s language.',
     },
   },
-  Gauge: {
-    description:
-      'A semicircle meter for one share of a limit, such as "budget used". At the first threshold it says "Near the limit" and turns to warning; at 100% it says "Over the limit" and turns to danger.',
-    props: {
-      "aria-label": 'The chart\'s accessible name ("Requests by model").',
-      label: 'A caption under the arc ("of $500.00 budget"); it wraps when long.',
-      thresholds: "Fractions marked as ticks on the arc (`[0.8]` by default). From the lowest one, the arc turns to warning.",
-      value: "The share used, from 0 to 1. Values above 1 fill the arc and turn it to danger; a missing value (NaN) shows a dash and no arc.",
-      valueLabel: "Replaces the value in the center, which is otherwise the percentage. Pass a string so screen readers hear it with the unit.",
-    },
-  },
   Heatmap: {
     description:
       "A grid of cells shaded on a five-step ramp, for one value across two dimensions such as hour by weekday. One tab stop: the arrow keys move between cells and show each value, the table toggle lists them all, and a grid wider than its column scrolls with a fade at the edge.",

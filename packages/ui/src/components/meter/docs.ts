@@ -3,13 +3,14 @@ import type { ComponentDocs } from "../../component-docs.js";
 export const docs = {
   Meter: {
     description:
-      'A limit or quota: label and value, a 6px pill track, threshold ticks cut out of the bar, a caption. Past the first threshold the bar turns amber and the value and caption turn the warning color, at the limit red, and screen readers hear "near the limit" or "over the limit" after the value; in light the bar\'s end keeps 3:1 against the track.',
+      'A limit or quota: label and value, a 6px pill track, threshold ticks cut out of the bar, a caption. Past the first threshold the bar turns amber and the value and caption turn the warning color, at the limit red, and screen readers hear "near the limit" or "over the limit" after the value; in light the bar\'s end keeps 3:1 against the track. With `shape="gauge"` it is a half circle with the value in its middle, for the one number a page is about.',
     props: {
       "aria-label": "The accessible name, for when there is no visible label.",
       caption: '"Resets in 12 days"; near or over the limit, say what happens, such as "Over the limit: requests are refused".',
-      label: "The label above the bar.",
+      label: "The label above the bar, or the caption under a gauge's arc.",
       leading: "Leading content in the label row (an icon).",
-      thresholds: "Alert thresholds as ratios, drawn as ticks: [0.5, 0.8].",
+      shape: "A pill bar (`bar`), or a half circle (`gauge`) that says near or over the limit in its middle.",
+      thresholds: "Alert thresholds as ratios, drawn as ticks: [0.5, 0.8]. A gauge marks 0.8 when none are given.",
       tone: "Colors the bar by how full it is (`auto`) or keeps it neutral.",
       trailing: "Content at the end of the label row, such as the value.",
       value: "0–1 (or more when over the limit).",
