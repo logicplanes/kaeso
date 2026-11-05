@@ -184,6 +184,8 @@ pnpm --filter kaeso-docs build
 pnpm --filter kaeso-showcase build
 ```
 
+文档的构建会从 GitHub API 读取 logicplanes/kaeso 的星标数，显示在侧边栏中。请设置 `GITHUB_TOKEN`，这样就不受 GitHub 每小时 60 次请求的限制；没有得到响应时，网站不显示数字。
+
 把 `apps/docs/dist` 和 `apps/showcase/dist` 原样上传。它们包含每种语言的每个页面、`robots.txt`、`sitemap.xml`，以及每种语言一个 `404.html`。托管服务需要用 `console.html` 响应 `/console`，并用对应语言的 `404.html` 响应未知地址。
 
 ### 内容安全策略

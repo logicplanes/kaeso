@@ -184,6 +184,8 @@ pnpm --filter kaeso-docs build
 pnpm --filter kaeso-showcase build
 ```
 
+Der Build der Dokumentation liest die Zahl der Sterne von logicplanes/kaeso für ihre Seitenleiste aus der API von GitHub. Setzen Sie `GITHUB_TOKEN`, damit das Limit von GitHub mit 60 Anfragen pro Stunde nicht gilt; ohne Antwort zeigt die Website keine Zahl.
+
 Laden Sie `apps/docs/dist` und `apps/showcase/dist` unverändert hoch. Sie enthalten jede Seite in jeder Sprache, `robots.txt`, `sitemap.xml` und eine `404.html` pro Sprache. Der Host muss `/console` mit `console.html` beantworten und eine unbekannte Adresse mit der `404.html` ihrer Sprache.
 
 ### Content Security Policy

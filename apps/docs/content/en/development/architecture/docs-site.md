@@ -31,6 +31,7 @@ flowchart TD
 | `docs.ts` | Every language, and the check that they hold the same pages in the same order |
 | `diagram.ts`, `mermaid.ts`, `diagrams.ts` | The diagrams: their Mermaid configuration from Kaeso's tokens, their drawing in headless Chromium, and `pnpm --filter kaeso-docs diagrams` |
 | `plugin.ts` | The Vite plugin: virtual modules, reloads in development, an HTML file per page and language, the `404.html` files and the sitemap |
+| `github.ts` | The star count of logicplanes/kaeso from GitHub's API, read once a build with `GITHUB_TOKEN` when it is set; the sidebar shows it beside **Star on GitHub** from 100 on, and a build that can't reach GitHub shows none |
 | `check.ts` | `pnpm --filter kaeso-docs check:content`: the same checks without building the app |
 
 In development, a problem is printed and the page still renders. The build and `check:content` fail on it, naming the file.

@@ -4,6 +4,7 @@ import type { NavGroup, PageContent, PageMeta, SearchEntry } from "~/markdown/as
 
 export interface LocaleSite {
   editBase: string;
+  stars: number | null;
   nav: NavGroup[];
   pages: Record<string, PageMeta>;
   load: Record<string, () => Promise<{ default: PageContent }>>;

@@ -68,6 +68,7 @@ struct GitHub {
     downloads: u32,
     manual_since: Option<String>,
     art: Vec<(String, Value)>,
+    stars: Option<&'static str>,
 }
 
 fn etag_of(releases: &[(String, bool, bool)]) -> String {
@@ -99,8 +100,12 @@ async fn list(
         return resp;
     }
     let etag = etag_of(&gh.releases);
+    let mut stars = HeaderMap::new();
+    if let Some(count) = gh.stars {
+        stars.insert("kaeso-stars", count.parse().unwrap());
+    }
     if conditional.as_deref() == Some(etag.as_str()) {
-        return StatusCode::NOT_MODIFIED.into_response();
+        return (StatusCode::NOT_MODIFIED, stars).into_response();
     }
     let base = gh.download_base.clone().unwrap_or_else(|| gh.base.clone());
     let body: Vec<Value> = gh
@@ -123,7 +128,7 @@ async fn list(
         .collect();
     let pages: Vec<&[Value]> = body.chunks(50).collect();
     let this = pages.get(page - 1).map(|p| p.to_vec()).unwrap_or_default();
-    let mut resp = ([(header::ETAG, etag)], axum::Json(this)).into_response();
+    let mut resp = (stars, [(header::ETAG, etag)], axum::Json(this)).into_response();
     if page < pages.len() {
         let next = format!(
             "<{}repos/logicplanes/kaeso/releases?per_page=50&page={}>; rel=\"next\"",
@@ -469,6 +474,57 @@ async fn every_page_is_read_whatever_order_github_lists_releases_in() {
         .await;
     assert_eq!(r.body["releases"].as_array().unwrap().len(), 55);
     assert_eq!(gh.lock().unwrap().requests.len(), 2, "two pages");
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn the_star_count_comes_from_the_feed_on_every_successful_check() {
+    let s = TestServices::start().await;
+    let (gh, url) = github(stable()).await;
+    gh.lock().unwrap().stars = Some("1234");
+    let app = App::start_with(&s, &[("KAESO_UPDATES_RELEASES_URL", url.as_str())]).await;
+    let owner = app.setup().await;
+    let check = || app.post("/instance/updates/check", json!({}), Some(&owner.cookie));
+
+    let before = app.get("/instance/updates", &owner.cookie).await;
+    assert_eq!(before.body["github_stars"], Value::Null);
+    assert_eq!(check().await.body["github_stars"], 1234);
+
+    gh.lock().unwrap().stars = Some("1240");
+    let unchanged = check().await;
+    assert_eq!(
+        gh.lock().unwrap().requests.last().unwrap(),
+        &Some(etag_of(&stable()))
+    );
+    assert_eq!(unchanged.body["github_stars"], 1240, "a 304 carries it too");
+    assert_eq!(
+        app.get("/instance/updates", &owner.cookie).await.body["github_stars"],
+        1240
+    );
+
+    gh.lock().unwrap().status = Some((502, None));
+    let failed = check().await;
+    assert!(failed.body["check"]["error"].is_string());
+    assert_eq!(failed.body["github_stars"], 1240, "a failed check keeps it");
+
+    {
+        let mut feed = gh.lock().unwrap();
+        feed.status = None;
+        feed.stars = Some("many");
+        feed.releases.push((next_minor_rc(), true, false));
+    }
+    let garbled = check().await;
+    assert_eq!(garbled.body["check"]["error"], Value::Null);
+    assert_eq!(garbled.body["github_stars"], Value::Null);
+
+    gh.lock().unwrap().stars = None;
+    let mirror = check().await;
+    assert_eq!(mirror.body["check"]["error"], Value::Null);
+    assert_eq!(
+        mirror.body["github_stars"],
+        Value::Null,
+        "a mirror may not say"
+    );
     s.cleanup().await;
 }
 

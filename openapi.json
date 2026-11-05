@@ -31389,6 +31389,16 @@
             "description": "The version the gateway runs.",
             "example": "0.6.0-rc.3"
           },
+          "github_stars": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "How many stars Kaeso has on GitHub, as the release feed said in the gateway's last successful check since it started; `null` before that, or when the feed doesn't say, as a mirror may not.",
+            "example": 1200,
+            "minimum": 0
+          },
           "job": {
             "oneOf": [
               {

@@ -6,6 +6,7 @@ export const de: Messages = {
   "site.navigation": "Dokumentation",
   "nav.introduction": "Einführung",
   "nav.changelog": "Änderungen",
+  "nav.star": "Stern auf GitHub",
   "nav.overview": "Übersicht",
   "legal.label": "Rechtliches",
   "legal.privacy": "Datenschutz",
