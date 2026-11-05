@@ -1,12 +1,12 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { ClipboardText, InlineCopyText } from "./copy-button.js";
+import { CopyButton } from "./copy-button.js";
 import { DataTable } from "../data-table/data-table.js";
 import { col } from "../data-table/columns.js";
 import { lazyModulesSettled } from "../../utils/lazy-module.js";
 
-describe("InlineCopyText", () => {
+describe("an inline CopyButton", () => {
   afterEach(() => {
     vi.useRealTimers();
     vi.restoreAllMocks();
@@ -14,7 +14,7 @@ describe("InlineCopyText", () => {
   it("copies and says so, and its tooltip stays controlled when Copied goes away", async () => {
     Object.defineProperty(navigator, "clipboard", { value: { writeText: vi.fn().mockResolvedValue(undefined) }, configurable: true });
     const errors = vi.spyOn(console, "error").mockImplementation(() => undefined);
-    render(<InlineCopyText value="org_123" />);
+    render(<CopyButton display="inline" value="org_123" />);
     await act(() => lazyModulesSettled());
     vi.useFakeTimers({ shouldAdvanceTime: true });
     fireEvent.click(screen.getByRole("button", { name: /org_123/ }));
@@ -26,7 +26,7 @@ describe("InlineCopyText", () => {
     expect(errors.mock.calls.map((c) => String(c[0])).filter((m) => /controlled/.test(m))).toEqual([]);
   });
   it("never grows wider than its container: a long value ends in an ellipsis", () => {
-    render(<InlineCopyText value="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36" />);
+    render(<CopyButton display="inline" value="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36" />);
     const button = screen.getByRole("button", { name: /Mozilla/ });
     expect(button).toHaveClass("max-w-full-bleed-4", "min-w-0");
     expect(screen.getByText(/^Mozilla/)).toHaveClass("truncate");
@@ -37,7 +37,7 @@ describe("InlineCopyText", () => {
     render(
       <div style={{ display: "flex", paddingRight: "20px" }}>
         <span style={{ display: "flex" }}>
-          <InlineCopyText value="usr_01m5mbctmseffb5006sxv8cn1j" label="Copy account id" />
+          <CopyButton display="inline" value="usr_01m5mbctmseffb5006sxv8cn1j" label="Copy account id" />
         </span>
       </div>,
     );
@@ -54,7 +54,7 @@ describe("InlineCopyText", () => {
   it("keeps room for its icon when a button follows it, so the icon never lands on the button", () => {
     render(
       <div style={{ display: "flex", paddingRight: "20px" }}>
-        <InlineCopyText value="kaeso-verify=ulCEmQL4y35R" label="Copy TXT value" />
+        <CopyButton display="inline" value="kaeso-verify=ulCEmQL4y35R" label="Copy TXT value" />
         <button type="button">Verify</button>
       </div>,
     );
@@ -65,13 +65,13 @@ describe("InlineCopyText", () => {
     render(
       <>
         <p style={{ paddingRight: "24px" }}>
-          Send <InlineCopyText value="org_01m5" /> with every request.
+          Send <CopyButton display="inline" value="org_01m5" /> with every request.
         </p>
         <table>
           <tbody>
             <tr>
               <td style={{ paddingRight: "12px" }}>
-                <InlineCopyText value="req_01m5" />
+                <CopyButton display="inline" value="req_01m5" />
               </td>
               <td>12:22</td>
             </tr>
@@ -88,7 +88,7 @@ describe("InlineCopyText", () => {
       <div role="row" style={{ display: "flex", paddingRight: "24px" }}>
         <div role="cell">12:22</div>
         <div role="cell" style={{ overflow: "hidden", paddingRight: "12px" }}>
-          <InlineCopyText value="req_01m5mgxq" />
+          <CopyButton display="inline" value="req_01m5mgxq" />
         </div>
       </div>,
     );
@@ -100,7 +100,7 @@ describe("InlineCopyText", () => {
       return (
         <div style={{ paddingRight: "24px" }}>
           <div style={{ display: "flex" }}>
-            <InlineCopyText value="req_01m5mbcwbfe7" />
+            <CopyButton display="inline" value="req_01m5mbcwbfe7" />
             {verify && <button type="button">Verify</button>}
           </div>
           <pre>{"{}"}</pre>
@@ -118,7 +118,7 @@ describe("InlineCopyText", () => {
     try {
       render(
         <div style={{ display: "flex", paddingRight: "20px" }}>
-          <InlineCopyText value="proj_01m5" />
+          <CopyButton display="inline" value="proj_01m5" />
         </div>,
       );
       expect(icon(/proj_01m5/)).not.toHaveClass("absolute");
@@ -142,7 +142,7 @@ describe("InlineCopyText", () => {
           col.custom<{ id: string }, string>(
             { id: "request", header: "Request", size: 248 },
             (r) => r.id,
-            (v) => <InlineCopyText value={v} label="Copy request id" />,
+            (v) => <CopyButton display="inline" value={v} label="Copy request id" />,
           ),
         ]}
       />,
@@ -160,13 +160,13 @@ describe("InlineCopyText", () => {
   });
 });
 
-describe("ClipboardText", () => {
+describe("a field CopyButton", () => {
   afterEach(() => vi.restoreAllMocks());
   it("lets people read a cut value in full: it becomes focusable and shows the whole value in a tooltip", async () => {
     vi.spyOn(HTMLElement.prototype, "scrollWidth", "get").mockReturnValue(400);
     vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockReturnValue(200);
     const url = "https://kaeso.example.com/v1/organizations/org_01m5mbctmseffb5006sxv8cn1j";
-    render(<ClipboardText value={url} label="Copy base URL" />);
+    render(<CopyButton display="field" size="md" value={url} label="Copy base URL" />);
     await act(() => lazyModulesSettled());
     const text = screen.getByText(url);
     expect(text).toHaveAttribute("tabindex", "0");
@@ -176,7 +176,7 @@ describe("ClipboardText", () => {
   });
 
   it("keeps a value that fits out of the tab order", () => {
-    render(<ClipboardText value="$KAESO_API_KEY" label="Copy variable name" />);
+    render(<CopyButton display="field" size="md" value="$KAESO_API_KEY" label="Copy variable name" />);
     expect(screen.getByText("$KAESO_API_KEY")).not.toHaveAttribute("tabindex");
   });
 });

@@ -10,7 +10,7 @@ export const meta = {
 };
 export const examples = [
   { id: "inline", title: "Inline", fn: "InlineDemo" },
-  { id: "fluid", title: "Fluid", fn: "Fluid", description: "fluid fills its container's width, as in a StatTile; the line keeps its weight at any width." },
+  { id: "fluid", title: "Fluid", fn: "Fluid", description: "fluid fills its container's width, as in a tile Stat; the line keeps its weight at any width." },
 ];
 export function Fluid() {
   return (

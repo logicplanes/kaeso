@@ -6,7 +6,7 @@ import {
   CodeBlock,
   Collapsible,
   Empty,
-  InlineCopyText,
+  CopyButton,
   JsonView,
   KeyValue,
   Tag,
@@ -15,8 +15,8 @@ import {
   Section,
   Sheet,
   Skeleton,
-  StatGrid,
-  StatTile,
+  StatGroup,
+  Stat,
   StatusCode,
   Switch,
   Tabs,
@@ -303,8 +303,9 @@ function Overview({ org, project, e, keyName }: { org: string; project: string; 
           </div>
         </Section>
       )}
-      <StatGrid aria-label={t("logs.inspector.summary", "Summary")}>
-        <StatTile
+      <StatGroup aria-label={t("logs.inspector.summary", "Summary")}>
+        <Stat
+          variant="tile"
           label={t("logs.column.duration", "Duration")}
           value={seconds(e.duration_ms)}
           detail={
@@ -313,12 +314,14 @@ function Overview({ org, project, e, keyName }: { org: string; project: string; 
             </Tooltip>
           }
         />
-        <StatTile
+        <Stat
+          variant="tile"
           label={t("logs.column.firstByte", "First byte")}
           value={known(e.ttfb_ms) ? seconds(e.ttfb_ms) : "—"}
           detail={known(e.ttfb_ms) ? t("logs.inspector.fromProvider", "From the provider") : t("logs.inspector.noneArrived", "None arrived")}
         />
-        <StatTile
+        <Stat
+          variant="tile"
           label={common.tokens()}
           value={formatNumber(totalTokens(u))}
           detail={
@@ -333,8 +336,8 @@ function Overview({ org, project, e, keyName }: { org: string; project: string; 
                 : t("logs.inspector.tokensInOut", "{input} in · {output} out", { input: formatNumber(tokensIn), output: formatNumber(u.output_tokens) })
           }
         />
-        <StatTile label={common.cost()} value={costUSD(e.cost)} detail={u.estimated ? t("logs.inspector.estimated", "Estimated") : undefined} />
-      </StatGrid>
+        <Stat variant="tile" label={common.cost()} value={costUSD(e.cost)} detail={u.estimated ? t("logs.inspector.estimated", "Estimated") : undefined} />
+      </StatGroup>
       {(known(e.ttfb_ms) || timing.length > 0) && (
         <Section title={t("logs.inspector.timing", "Timing")} spacing="none">
           <div className="flex flex-col gap-16">
@@ -643,7 +646,7 @@ function RawTab({ e, canContent }: { e: LogEntryView; canContent: boolean }) {
   const { content, ...meta } = e;
   return (
     <div className="mt-24 flex flex-col gap-24">
-      <TabHeader control={<InlineCopyText value={e.id} label={t("logs.copyRequestId", "Copy request id")} />}>
+      <TabHeader control={<CopyButton display="inline" value={e.id} label={t("logs.copyRequestId", "Copy request id")} />}>
         <Text variant="small" tone="secondary">
           {t("logs.inspector.rawHint", "The log entry as the API returns it.")}
         </Text>

@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { Section, StatGrid, StatTile, TimeseriesChart, VIZ, type TimeSeries } from "@logicplanes/kaeso-ui";
+import { Section, StatGroup, Stat, TimeseriesChart, VIZ, type TimeSeries } from "@logicplanes/kaeso-ui";
 import { formatNumber, formatPercent, formatTokens, formatUSD } from "@logicplanes/kaeso-ui/format";
 import type { UsageRow } from "~/api/generated/types";
 import { bucketAxisLabel, bucketLabel, bucketsBetween, partialBuckets, spansYears, type Granularity } from "~/format/buckets";
@@ -82,25 +82,27 @@ export function UsageMetrics({
   const cost = sum.cost ?? (showCost && rows.length === 0 ? "0" : null);
   const known = <T extends { trend: number[] }>(props: T): T | { trend: number[] } => (loading ? { trend: [] } : props);
   if (failed) {
-    const tile = (label: string) => <StatTile label={label} value="—" detail={t("kaeso.usage.tileFailed", "Couldn't load")} />;
+    const tile = (label: string) => <Stat variant="tile" label={label} value="—" detail={t("kaeso.usage.tileFailed", "Couldn't load")} />;
     return (
-      <StatGrid aria-label={t("kaeso.usage.inPeriod", "Usage in the period")}>
+      <StatGroup aria-label={t("kaeso.usage.inPeriod", "Usage in the period")}>
         {tile(t("common.requests", "Requests"))}
         {tile(t("common.tokens", "Tokens"))}
         {showCost && tile(t("common.cost", "Cost"))}
         {tile(t("kaeso.usage.errors", "Errors"))}
-      </StatGrid>
+      </StatGroup>
     );
   }
   return (
-    <StatGrid aria-label={t("kaeso.usage.inPeriod", "Usage in the period")}>
-      <StatTile
+    <StatGroup aria-label={t("kaeso.usage.inPeriod", "Usage in the period")}>
+      <Stat
+        variant="tile"
         label={t("common.requests", "Requests")}
         value={formatNumber(sum.requests)}
         loading={loading}
         {...known({ ...delta(sum.requests, p?.requests), trend: days.map((d) => d.row?.requests ?? 0) })}
       />
-      <StatTile
+      <Stat
+        variant="tile"
         label={t("common.tokens", "Tokens")}
         value={formatTokens(sum.tokens)}
         loading={loading}
@@ -108,7 +110,8 @@ export function UsageMetrics({
         trendColor={VIZ[1]}
       />
       {showCost && cost !== null && (
-        <StatTile
+        <Stat
+          variant="tile"
           label={t("common.cost", "Cost")}
           value={tileUSD(cost)}
           loading={loading}
@@ -116,7 +119,8 @@ export function UsageMetrics({
           trendColor={VIZ[2]}
         />
       )}
-      <StatTile
+      <Stat
+        variant="tile"
         label={t("kaeso.usage.errors", "Errors")}
         value={formatNumber(sum.errors)}
         loading={loading}
@@ -127,7 +131,7 @@ export function UsageMetrics({
         })}
         trendColor={VIZ[3]}
       />
-    </StatGrid>
+    </StatGroup>
   );
 }
 

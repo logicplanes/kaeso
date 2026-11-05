@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { LocaleContext } from "../../i18n/context.js";
 import de from "../../i18n/locales/de.js";
 import zhCN from "../../i18n/locales/zh-CN.js";
-import { AGENT_MODELS, AgentAttribution, AgentAvatar, agentModel, modelName, useModelName } from "./index.js";
+import { AGENT_MODELS, Avatar, agentModel, modelName, useModelName } from "./index.js";
 
 const glyphOf = (el: HTMLElement) => el.querySelector("svg")?.innerHTML;
 
@@ -14,32 +14,32 @@ function inLocale(locale: string, messages: Record<string, string>) {
   };
 }
 
-describe("AgentAvatar", () => {
+describe("an agent Avatar", () => {
   it("is a picture named after the agent", () => {
-    render(<AgentAvatar name="Release helper" />);
+    render(<Avatar kind="agent" name="Release helper" />);
     expect(screen.getByRole("img", { name: "Release helper" }).querySelector("svg")).toBeInTheDocument();
   });
 
   it("draws the same face for every agent and every size", () => {
     render(
       <>
-        <AgentAvatar name="Release helper" size={20} />
-        <AgentAvatar name="Docs bot" size={40} />
+        <Avatar kind="agent" name="Release helper" size={20} />
+        <Avatar kind="agent" name="Docs bot" size={40} />
       </>,
     );
     expect(glyphOf(screen.getByRole("img", { name: "Release helper" }))).toBe(glyphOf(screen.getByRole("img", { name: "Docs bot" })));
   });
 
   it("leaves the reading to the text beside it when decorative", () => {
-    const { container } = render(<AgentAvatar name="Release helper" size={40} decorative />);
+    const { container } = render(<Avatar kind="agent" name="Release helper" size={40} decorative />);
     expect(screen.queryByRole("img")).not.toBeInTheDocument();
     expect(container.firstElementChild).toHaveAttribute("aria-hidden", "true");
   });
 });
 
-describe("AgentAttribution", () => {
+describe("an Avatar with an agent", () => {
   it("names the person and the agent that acted for them", () => {
-    render(<AgentAttribution name="Ada Okafor" agent={{ name: "Release helper", model: "claude" }} />);
+    render(<Avatar name="Ada Okafor" agent={{ name: "Release helper", model: "claude" }} />);
     const picture = screen.getByRole("img", { name: "Ada Okafor via Release helper (Claude)" });
     expect(picture).toHaveTextContent("AO");
     expect(glyphOf(picture.querySelector<HTMLElement>("[data-agent-badge]") as HTMLElement)).toBeTruthy();
@@ -48,7 +48,7 @@ describe("AgentAttribution", () => {
 
   it("keeps the badge inside the avatar's square at every size, so no cell clips it", () => {
     for (const size of [20, 24, 28, 32, 40] as const) {
-      const { container, unmount } = render(<AgentAttribution name="Ada Okafor" agent={{ name: "Release helper", model: "claude" }} size={size} />);
+      const { container, unmount } = render(<Avatar name="Ada Okafor" agent={{ name: "Release helper", model: "claude" }} size={size} />);
       const badge = container.querySelector("[data-agent-badge]");
       expect(badge?.className).toMatch(/\bright-0\b/);
       expect(badge?.className).toMatch(/\bbottom-0\b/);
@@ -60,9 +60,7 @@ describe("AgentAttribution", () => {
   it("shows the person's picture under the badge", () => {
     const loaded = vi.spyOn(HTMLImageElement.prototype, "naturalWidth", "get").mockReturnValue(64);
     onTestFinished(() => loaded.mockRestore());
-    const { container } = render(
-      <AgentAttribution name="Ada Okafor" src="https://example.com/ada.png" size={40} agent={{ name: "Nightly fixer", model: "falcon" }} />,
-    );
+    const { container } = render(<Avatar name="Ada Okafor" src="https://example.com/ada.png" size={40} agent={{ name: "Nightly fixer", model: "falcon" }} />);
     expect(container.querySelector("img")).toHaveAttribute("src", "https://example.com/ada.png");
     expect(screen.getByRole("img", { name: "Ada Okafor via Nightly fixer (Unknown)" })).toBeInTheDocument();
   });
@@ -70,8 +68,8 @@ describe("AgentAttribution", () => {
   it("speaks the page's language", () => {
     render(
       <>
-        <AgentAttribution name="Ada Okafor" agent={{ name: "Docs bot", model: "unknown" }} />
-        <AgentAttribution name="Lin Park" agent={{ name: "Key rotation", model: "deepseek" }} />
+        <Avatar name="Ada Okafor" agent={{ name: "Docs bot", model: "unknown" }} />
+        <Avatar name="Lin Park" agent={{ name: "Key rotation", model: "deepseek" }} />
       </>,
       { wrapper: inLocale("de", de) },
     );
@@ -122,9 +120,9 @@ describe("modelName", () => {
   });
 });
 
-describe("AgentAttribution, legibility", () => {
+describe("an Avatar with an agent, legibility", () => {
   it("draws a round badge of about 40% that a gap separates from the face on any surface, and says who acted in a tooltip too", () => {
-    const { container } = render(<AgentAttribution name="Ada Okafor" agent={{ name: "Release helper", model: "claude" }} size={24} />);
+    const { container } = render(<Avatar name="Ada Okafor" agent={{ name: "Release helper", model: "claude" }} size={24} />);
     const badge = container.querySelector("[data-agent-badge]")!;
     expect(badge).toHaveClass("size-10", "rounded-pill");
     const face = container.querySelector<HTMLElement>(".cutout")!;

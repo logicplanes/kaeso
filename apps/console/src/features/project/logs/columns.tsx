@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Badge, Icon, InlineCopyText, Tag, ProviderBadge, StatusCode, Text, Tooltip, col, icons } from "@logicplanes/kaeso-ui";
+import { Badge, Icon, CopyButton, Tag, ProviderBadge, StatusCode, Text, Tooltip, col, icons } from "@logicplanes/kaeso-ui";
 import { dateFormatter, formatDuration, formatNumber, formatPercent } from "@logicplanes/kaeso-ui/format";
 import type { LogView, Party } from "~/api/generated/types";
 import { errorKindLabel } from "~/format/labels";
@@ -224,7 +224,7 @@ export function logColumns({
     request: col.custom(
       { id: "request", header: columnLabel("request"), size: 248, priority: 5 },
       (r: LogView) => r.id,
-      (v) => <InlineCopyText value={v} label={t("logs.copyRequestId", "Copy request id")} />,
+      (v) => <CopyButton display="inline" value={v} label={t("logs.copyRequestId", "Copy request id")} />,
     ),
     agent: col.text({ id: "agent", header: columnLabel("agent"), size: 200, priority: 5 }, (r: LogView) => r.user_agent),
   };

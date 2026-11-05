@@ -1,15 +1,15 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { StatGrid, StatTile, statGridFit, statGridLayout } from "./stat.js";
+import { Stat, StatGroup, statGridFit, statGridLayout } from "./stat.js";
 
-describe("StatTile", () => {
+describe("a tile Stat", () => {
   it("keeps room for a trend only when it has one, loading or drawn", () => {
     render(
-      <StatGrid aria-label="Usage">
-        <StatTile label="Requests" value="334" detail="11 a day on average" />
-        <StatTile label="Tokens" value="27.2K" trend={[]} />
-        <StatTile label="Cost" value="$0.09" trend={[1, 3, 2]} />
-      </StatGrid>,
+      <StatGroup aria-label="Usage">
+        <Stat variant="tile" label="Requests" value="334" detail="11 a day on average" />
+        <Stat variant="tile" label="Tokens" value="27.2K" trend={[]} />
+        <Stat variant="tile" label="Cost" value="$0.09" trend={[1, 3, 2]} />
+      </StatGroup>,
     );
     const [plain, loading, drawn] = screen.getAllByRole("listitem");
     expect(plain?.children).toHaveLength(3);
@@ -19,12 +19,12 @@ describe("StatTile", () => {
   });
 });
 
-describe("StatTile loading", () => {
+describe("a tile Stat while loading", () => {
   it("shows the tile's shape at its final height instead of a number, and says it is busy", () => {
     render(
-      <StatGrid aria-label="Usage">
-        <StatTile label="Requests" value="334" detail="vs. the previous 30 days" change={{ value: 0.29 }} trend={[]} loading />
-      </StatGrid>,
+      <StatGroup aria-label="Usage">
+        <Stat variant="tile" label="Requests" value="334" detail="vs. the previous 30 days" change={{ value: 0.29 }} trend={[]} loading />
+      </StatGroup>,
     );
     const tile = screen.getByRole("listitem");
     expect(tile).toHaveAttribute("aria-busy", "true");
@@ -35,31 +35,31 @@ describe("StatTile loading", () => {
   });
   it("keeps a plain tile's height and padding while loading: no trend row it won't have", () => {
     const { rerender } = render(
-      <StatGrid aria-label="Usage">
-        <StatTile label="Projects" value="5" loading />
-      </StatGrid>,
+      <StatGroup aria-label="Usage">
+        <Stat variant="tile" label="Projects" value="5" loading />
+      </StatGroup>,
     );
     const tile = screen.getByRole("listitem");
     expect(tile.children).toHaveLength(3);
     expect(tile).toHaveClass("pb-16");
     rerender(
-      <StatGrid aria-label="Usage">
-        <StatTile label="Projects" value="5" />
-      </StatGrid>,
+      <StatGroup aria-label="Usage">
+        <Stat variant="tile" label="Projects" value="5" />
+      </StatGroup>,
     );
     expect(screen.getByRole("listitem").children).toHaveLength(3);
     expect(screen.getByRole("listitem")).toHaveClass("pb-16");
   });
 });
 
-describe("StatGrid", () => {
+describe("StatGroup", () => {
   it("gives three tiles three columns and never an empty fourth cell", () => {
     render(
-      <StatGrid aria-label="Usage">
-        <StatTile label="Requests" value="12" />
-        <StatTile label="Tokens" value="1.2K" />
-        <StatTile label="Errors" value="0" />
-      </StatGrid>,
+      <StatGroup aria-label="Usage">
+        <Stat variant="tile" label="Requests" value="12" />
+        <Stat variant="tile" label="Tokens" value="1.2K" />
+        <Stat variant="tile" label="Errors" value="0" />
+      </StatGroup>,
     );
     const grid = screen.getByRole("list", { name: "Usage" });
     expect(grid).toHaveClass("lg:grid-cols-3");
@@ -67,38 +67,38 @@ describe("StatGrid", () => {
   });
   it("gives four tiles four columns", () => {
     render(
-      <StatGrid aria-label="Usage">
+      <StatGroup aria-label="Usage">
         {["Requests", "Tokens", "Cost", "Errors"].map((l) => (
-          <StatTile key={l} label={l} value="1" />
+          <Stat variant="tile" key={l} label={l} value="1" />
         ))}
-      </StatGrid>,
+      </StatGroup>,
     );
     expect(screen.getByRole("list", { name: "Usage" })).toHaveClass("lg:grid-cols-4");
   });
 });
 
-const tiles = (n: number) => Array.from({ length: n }, (_, i) => <StatTile key={i} label={`Metric ${i + 1}`} value={String(i)} />);
+const tiles = (n: number) => Array.from({ length: n }, (_, i) => <Stat variant="tile" key={i} label={`Metric ${i + 1}`} value={String(i)} />);
 
-describe("StatGrid rows", () => {
+describe("StatGroup rows", () => {
   it("widens the last of five so no cell stays empty, on two columns and on four", () => {
-    render(<StatGrid aria-label="Five">{tiles(5)}</StatGrid>);
+    render(<StatGroup aria-label="Five">{tiles(5)}</StatGroup>);
     const items = screen.getAllByRole("listitem");
     expect(items.at(-1)).toHaveClass("col-span-2", "lg:col-span-4");
     expect(items[0]).not.toHaveClass("col-span-2");
   });
   it("names the change as better or worse by its direction", () => {
-    render(<StatTile label="Errors" value="0.4%" change={{ value: -0.31, better: "down" }} />);
+    render(<Stat variant="tile" label="Errors" value="0.4%" change={{ value: -0.31, better: "down" }} />);
     const badge = screen.getByText("↓31%").closest(".rounded-pill")!;
     expect(badge).toHaveClass("text-success-text");
     expect(badge).toHaveTextContent("↓31% better");
   });
   it("says a change is worse in words, not only in red", () => {
-    render(<StatTile label="Tokens" value="18.4M" change={{ value: -0.04 }} />);
+    render(<Stat variant="tile" label="Tokens" value="18.4M" change={{ value: -0.04 }} />);
     expect(screen.getByText("↓4.0%").closest(".rounded-pill")).toHaveTextContent("↓4.0% worse");
   });
 });
 
-describe("StatGrid on a narrow screen", () => {
+describe("StatGroup on a narrow screen", () => {
   it("keeps the largest size while every number fits its tile", () => {
     expect(statGridFit([106, 120, 136, 100], 1100, true)).toEqual({ step: 0, single: false, two: false });
   });
@@ -116,24 +116,24 @@ describe("StatGrid on a narrow screen", () => {
     expect(statGridFit([60, 60, 240], 342, false)).toEqual({ step: 0, single: false, two: false });
   });
   it("draws the numbers at the grid's step, in a line of the largest size's height", () => {
-    render(<StatTile label="Cost" value="$1,041.13" />);
+    render(<Stat variant="tile" label="Cost" value="$1,041.13" />);
     const value = screen.getByText("$1,041.13");
     expect(value).toHaveClass("text-metric", "truncate");
     expect(value.parentElement).toHaveClass("h-34");
   });
 });
 
-describe("StatGrid with live values", () => {
+describe("StatGroup with live values", () => {
   it("steps every value down when a number grows, and holds that size when it shrinks again at the same width", () => {
     const width = vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockReturnValue(342);
     const scroll = vi.spyOn(HTMLElement.prototype, "scrollWidth", "get").mockImplementation(function (this: HTMLElement) {
       return (this.textContent ?? "").length * 15;
     });
     const grid = (cost: string) => (
-      <StatGrid aria-label="Usage">
-        <StatTile label="Requests" value="18,204" />
-        <StatTile label="Cost" value={cost} />
-      </StatGrid>
+      <StatGroup aria-label="Usage">
+        <Stat variant="tile" label="Requests" value="18,204" />
+        <Stat variant="tile" label="Cost" value={cost} />
+      </StatGroup>
     );
     const { rerender } = render(grid("$41.13"));
     const size = () => screen.getByText(/^\$/).className.match(/text-(metric|title|title-sm)\b/)?.[1];

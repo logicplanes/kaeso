@@ -10,6 +10,11 @@ import { icons } from "../../icons/vocabulary.js";
 import { useUiText } from "../../i18n/context.js";
 
 export const KAESO_COPY_BUTTON_VARIANTS = {
+  display: {
+    icon: { classes: "", description: "A circle that copies a value (default)" },
+    inline: { classes: "", description: "Mono text in a sentence or a row that copies itself on click" },
+    field: { classes: "rounded-pill bg-fill-1", description: "A read-only pill field: the value in mono and a copy circle inside" },
+  },
   variant: {
     ghost: { classes: "material-ghost", description: "Inside fields and wells (default)" },
     secondary: { classes: "material-secondary", description: "On its own" },
@@ -22,10 +27,12 @@ export const KAESO_COPY_BUTTON_VARIANTS = {
     xl: { classes: "size-48", description: "48px circle" },
   },
 } as const;
-export const KAESO_COPY_BUTTON_DEFAULT_VARIANTS = { variant: "ghost", size: "sm" } as const;
+export const KAESO_COPY_BUTTON_DEFAULT_VARIANTS = { display: "icon", variant: "ghost", size: "sm" } as const;
 
-export interface CopyButtonProps {
+export interface CopyButtonProps extends Omit<HTMLAttributes<HTMLElement>, "children" | "onCopy"> {
   value: string;
+  display?: keyof typeof KAESO_COPY_BUTTON_VARIANTS.display | undefined;
+  children?: ReactNode | undefined;
   label?: string | undefined;
   size?: ButtonSize | undefined;
   variant?: keyof typeof KAESO_COPY_BUTTON_VARIANTS.variant | undefined;
@@ -34,8 +41,15 @@ export interface CopyButtonProps {
   "data-force"?: string | undefined;
 }
 
-export const CopyButton = forwardRef<HTMLButtonElement, CopyButtonProps>(function CopyButton(
-  { value, label: labelProp, size = "sm", variant = "ghost", onCopy, className, ...props },
+export const CopyButton = forwardRef<HTMLElement, CopyButtonProps>(function CopyButton({ display = "icon", ...props }, ref) {
+  if (display === "inline") return <InlineCopy ref={ref as React.Ref<HTMLButtonElement>} {...props} />;
+  if (display === "field") return <CopyField ref={ref as React.Ref<HTMLDivElement>} {...props} />;
+  return <CopyCircle ref={ref as React.Ref<HTMLButtonElement>} {...props} />;
+});
+CopyButton.displayName = "CopyButton";
+
+const CopyCircle = forwardRef<HTMLButtonElement, Omit<CopyButtonProps, "display">>(function CopyCircle(
+  { value, label: labelProp, size = "sm", variant = "ghost", onCopy, className, children: _children, ...props },
   ref,
 ) {
   const { copied, copy } = useCopy();
@@ -56,31 +70,23 @@ export const CopyButton = forwardRef<HTMLButtonElement, CopyButtonProps>(functio
         onClick={async () => {
           if (await copy(value)) onCopy?.(value);
         }}
-        {...props}
+        {...(props as Record<string, unknown>)}
       />
     </Tooltip>
   );
 });
-CopyButton.displayName = "CopyButton";
+CopyCircle.displayName = "CopyButton";
 
-export const KAESO_CLIPBOARD_TEXT_VARIANTS = {
-  size: {
-    sm: { classes: "h-32 pl-12 pr-0 text-small", description: "32px" },
-    md: { classes: "h-36 pl-16 pr-2 text-small", description: "36px (default)" },
-    lg: { classes: "h-40 pl-18 pr-4 text-small", description: "40px" },
-  },
-} as const;
-export const KAESO_CLIPBOARD_TEXT_DEFAULT_VARIANTS = { size: "md" } as const;
+const FIELD_SIZE: Record<ButtonSize, string> = {
+  xs: "h-32 pl-12 pr-0 text-small",
+  sm: "h-32 pl-12 pr-0 text-small",
+  md: "h-36 pl-16 pr-2 text-small",
+  lg: "h-40 pl-18 pr-4 text-small",
+  xl: "h-40 pl-18 pr-4 text-small",
+};
 
-export interface ClipboardTextProps extends Omit<HTMLAttributes<HTMLDivElement>, "children"> {
-  value: string;
-  display?: ReactNode | undefined;
-  label?: string | undefined;
-  size?: keyof typeof KAESO_CLIPBOARD_TEXT_VARIANTS.size | undefined;
-}
-
-export const ClipboardText = forwardRef<HTMLDivElement, ClipboardTextProps>(function ClipboardText(
-  { value, display, label, size = "md", className, ...props },
+const CopyField = forwardRef<HTMLDivElement, Omit<CopyButtonProps, "display">>(function CopyField(
+  { value, children: display, label, size = "sm", variant: _variant, onCopy, className, ...props },
   ref,
 ) {
   const text = useRef<HTMLSpanElement>(null);
@@ -93,7 +99,7 @@ export const ClipboardText = forwardRef<HTMLDivElement, ClipboardTextProps>(func
   return (
     <div
       ref={ref}
-      className={cn("inline-flex min-w-0 max-w-full items-center gap-8 rounded-pill bg-fill-1", KAESO_CLIPBOARD_TEXT_VARIANTS.size[size].classes, className)}
+      className={cn("inline-flex min-w-0 max-w-full items-center gap-8", KAESO_COPY_BUTTON_VARIANTS.display.field.classes, FIELD_SIZE[size], className)}
       {...props}
     >
       {cut ? (
@@ -103,19 +109,11 @@ export const ClipboardText = forwardRef<HTMLDivElement, ClipboardTextProps>(func
       ) : (
         shown
       )}
-      <CopyButton value={value} label={label} size="sm" />
+      <CopyCircle value={value} label={label} size="sm" {...(onCopy ? { onCopy } : {})} />
     </div>
   );
 });
-ClipboardText.displayName = "ClipboardText";
-
-export interface InlineCopyTextProps extends Omit<HTMLAttributes<HTMLButtonElement>, "children" | "onCopy"> {
-  value: string;
-  children?: ReactNode | undefined;
-  label?: string | undefined;
-  onCopy?: ((value: string) => void) | undefined;
-  "data-force"?: string | undefined;
-}
+CopyField.displayName = "CopyButton";
 
 const ICON_ROOM = 18;
 
@@ -161,8 +159,8 @@ function useRoomAfter() {
   return [room, setButton] as const;
 }
 
-export const InlineCopyText = forwardRef<HTMLButtonElement, InlineCopyTextProps>(function InlineCopyText(
-  { value, children, label, onCopy, className, ...props },
+const InlineCopy = forwardRef<HTMLButtonElement, Omit<CopyButtonProps, "display">>(function InlineCopy(
+  { value, children, label, onCopy, className, size: _size, variant: _variant, ...props },
   ref,
 ) {
   const { copied, copy } = useCopy();
@@ -219,4 +217,4 @@ export const InlineCopyText = forwardRef<HTMLButtonElement, InlineCopyTextProps>
     </Tooltip>
   );
 });
-InlineCopyText.displayName = "InlineCopyText";
+InlineCopy.displayName = "CopyButton";

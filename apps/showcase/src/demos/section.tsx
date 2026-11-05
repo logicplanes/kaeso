@@ -1,4 +1,4 @@
-import { Section, SplitView, AuthLayout, Button, Input, Select, MetricRow, Stat } from "@logicplanes/kaeso-ui";
+import { Section, SplitView, AuthLayout, Button, Input, Select, StatGroup, Stat } from "@logicplanes/kaeso-ui";
 import { StateSection } from "~/lib/states";
 
 export const meta = {
@@ -40,10 +40,10 @@ export function Split() {
         }
       >
         <Section title="Usage" description="Last 30 days">
-          <MetricRow>
+          <StatGroup variant="row">
             <Stat value="12,480" unit="requests" />
             <Stat value="$184.20" unit="total spend" />
-          </MetricRow>
+          </StatGroup>
         </Section>
       </SplitView>
     </div>

@@ -8,7 +8,7 @@ import {
   Dialog,
   DialogScope,
   Empty,
-  InlineCopyText,
+  CopyButton,
   Input,
   KeyValue,
   List,
@@ -16,8 +16,8 @@ import {
   SettingsRow,
   Section,
   Skeleton,
-  StatGrid,
-  StatTile,
+  StatGroup,
+  Stat,
   StepDialog,
   Text,
 } from "@logicplanes/kaeso-ui";
@@ -88,7 +88,7 @@ function Usage({ org }: { org: string }) {
       title={t("instance.last30Days", "Last 30 days")}
       description={t("instance.last30DaysHint", "Requests, tokens and cost across its projects, and the logs it stores")}
     >
-      <StatGrid aria-label={t("instance.usage30Days", "Usage in the last 30 days")}>{u ? usageTiles(u) : loadingTiles()}</StatGrid>
+      <StatGroup aria-label={t("instance.usage30Days", "Usage in the last 30 days")}>{u ? usageTiles(u) : loadingTiles()}</StatGroup>
     </Section>
   );
 }
@@ -97,19 +97,22 @@ function usageTiles(u: InstanceOrgUsage) {
   const n = u.requests_30d;
   const perRequest = (v: number) => v / n;
   return [
-    <StatTile
+    <Stat
+      variant="tile"
       key="requests"
       label={t("common.requests", "Requests")}
       value={formatNumber(n)}
       detail={n ? t("instance.perDay", "{count} per day", { count: formatNumber(Math.round(n / 30)) }) : t("instance.noneInPeriod", "None in this period")}
     />,
-    <StatTile
+    <Stat
+      variant="tile"
       key="tokens"
       label={t("common.tokens", "Tokens")}
       value={formatTokens(u.tokens_30d)}
       detail={n ? t("instance.perRequest", "{value} per request", { value: formatTokens(Math.round(perRequest(u.tokens_30d))) }) : undefined}
     />,
-    <StatTile
+    <Stat
+      variant="tile"
       key="cost"
       label={t("common.cost", "Cost")}
       value={formatUSD(u.cost_30d)}
@@ -117,7 +120,8 @@ function usageTiles(u: InstanceOrgUsage) {
         n ? t("instance.perRequest", "{value} per request", { value: formatUSD(perRequest(Number(u.cost_30d)).toFixed(8), { significant: 2 }) }) : undefined
       }
     />,
-    <StatTile
+    <Stat
+      variant="tile"
       key="logs"
       label={t("instance.logs", "Logs")}
       value={u.log_logical_bytes == null ? t("instance.logsOffValue", "Off") : formatBytes(u.log_logical_bytes)}
@@ -128,7 +132,7 @@ function usageTiles(u: InstanceOrgUsage) {
 
 const loadingTiles = () =>
   [t("common.requests", "Requests"), t("common.tokens", "Tokens"), t("common.cost", "Cost"), t("instance.logs", "Logs")].map((label) => (
-    <StatTile key={label} label={label} value={<Skeleton shape="line" className="w-64" />} />
+    <Stat variant="tile" key={label} label={label} value={<Skeleton shape="line" className="w-64" />} />
   ));
 
 function signIn(o: InstanceOrgView): string {
@@ -145,7 +149,7 @@ function Facts({ org, o }: { org: string; o: InstanceOrgView }) {
         <SettingsRow title={t("common.name", "Name")} description={o.name} control={<Rename o={o} />} />
         <SettingsRow
           title={t("instance.orgId", "Organization id")}
-          control={<InlineCopyText value={o.id} label={t("instance.copyOrgId", "Copy organization id")} />}
+          control={<CopyButton display="inline" value={o.id} label={t("instance.copyOrgId", "Copy organization id")} />}
         />
         <SettingsRow title={t("common.created", "Created")} control={<Text tone="secondary">{formatDate(o.created_at)}</Text>} />
         <SettingsRow

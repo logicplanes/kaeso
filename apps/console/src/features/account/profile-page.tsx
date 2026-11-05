@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertDialog, Button, Dialog, DialogScope, InlineCopyText, Input, SettingsGroup, SettingsRow, Section, Text } from "@logicplanes/kaeso-ui";
+import { AlertDialog, Button, Dialog, DialogScope, CopyButton, Input, SettingsGroup, SettingsRow, Section, Text } from "@logicplanes/kaeso-ui";
 import { toast } from "~/shell/toast";
 import { formatDate } from "@logicplanes/kaeso-ui/format";
 import { api, data } from "~/api/client";
@@ -40,7 +40,7 @@ export function ProfilePage() {
               <SettingsRow
                 title={t("account.accountId", "Account id")}
                 description={t("account.accountIdHint", "Used by instance administrators and in the audit log.")}
-                control={<InlineCopyText value={m.id} label={t("account.copyAccountId", "Copy account id")} />}
+                control={<CopyButton display="inline" value={m.id} label={t("account.copyAccountId", "Copy account id")} />}
               />
               <SettingsRow title={t("common.created", "Created")} control={<Text tone="secondary">{formatDate(m.created_at)}</Text>} />
             </SettingsGroup>
