@@ -37,7 +37,7 @@ docker compose start gateway
 
 So stellen Sie auf einem neuen Server wieder her:
 
-1. Legen Sie `compose.yaml`, `.env` und `master-keys` zurück in den Ordner der Installation, und übergeben Sie `master-keys` dem Benutzer des Gateways wie unter [Den Hauptschlüssel erzeugen](../get-started/quick-start.md#den-hauptschlüssel-erzeugen).
+1. Legen Sie `compose.yaml`, `.env` und `master-keys` zurück in den Ordner der Installation, und übergeben Sie `master-keys` dem Benutzer des Gateways wie unter [Den Hauptschlüssel erzeugen](installation.md#den-hauptschlüssel-erzeugen).
 2. Starten Sie nur PostgreSQL mit `docker compose up -d --wait postgres`.
 3. Stellen Sie den Dump mit dem `pg_restore`-Befehl oben wieder her.
 4. Starten Sie den Rest mit `docker compose up -d --wait`.
