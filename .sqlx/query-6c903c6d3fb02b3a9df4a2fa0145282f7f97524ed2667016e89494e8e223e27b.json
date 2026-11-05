@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, org_id, project_id, user_id, service_account_id, name, secret_prefix, secret_last4, inference, platform, expires_at, disabled_at, archived_at, last_used_at, created_by_kind, created_by_id, created_at, rotated_from, replaced_by FROM api_keys WHERE user_id = $1 AND org_id = ANY($5) AND ($6::uuid[] IS NULL OR project_id = ANY($6)) AND ($2 OR archived_at IS NULL) AND ($3::uuid IS NULL OR id > $3) ORDER BY id LIMIT $4",
+  "query": "SELECT id, org_id, project_id, user_id, service_account_id, name, secret_prefix, secret_last4, inference, platform, tools, expires_at, disabled_at, archived_at, last_used_at, created_by_kind, created_by_id, created_at, rotated_from, replaced_by FROM api_keys WHERE user_id = $1 AND org_id = ANY($5) AND ($6::uuid[] IS NULL OR project_id = ANY($6)) AND ($2 OR archived_at IS NULL) AND ($3::uuid IS NULL OR id > $3) ORDER BY id LIMIT $4",
   "describe": {
     "columns": [
       {
@@ -115,6 +115,17 @@
       },
       {
         "ordinal": 10,
+        "name": "tools",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "api_keys",
+            "name": "tools"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
         "name": "expires_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -125,7 +136,7 @@
         }
       },
       {
-        "ordinal": 11,
+        "ordinal": 12,
         "name": "disabled_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -136,7 +147,7 @@
         }
       },
       {
-        "ordinal": 12,
+        "ordinal": 13,
         "name": "archived_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -147,7 +158,7 @@
         }
       },
       {
-        "ordinal": 13,
+        "ordinal": 14,
         "name": "last_used_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -158,7 +169,7 @@
         }
       },
       {
-        "ordinal": 14,
+        "ordinal": 15,
         "name": "created_by_kind",
         "type_info": "Text",
         "origin": {
@@ -169,7 +180,7 @@
         }
       },
       {
-        "ordinal": 15,
+        "ordinal": 16,
         "name": "created_by_id",
         "type_info": "Uuid",
         "origin": {
@@ -180,7 +191,7 @@
         }
       },
       {
-        "ordinal": 16,
+        "ordinal": 17,
         "name": "created_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -191,7 +202,7 @@
         }
       },
       {
-        "ordinal": 17,
+        "ordinal": 18,
         "name": "rotated_from",
         "type_info": "Uuid",
         "origin": {
@@ -202,7 +213,7 @@
         }
       },
       {
-        "ordinal": 18,
+        "ordinal": 19,
         "name": "replaced_by",
         "type_info": "Uuid",
         "origin": {
@@ -234,6 +245,7 @@
       false,
       false,
       false,
+      false,
       true,
       true,
       true,
@@ -245,5 +257,5 @@
       true
     ]
   },
-  "hash": "42e49ebfead22518feaee42345f0400117f534e2836904d758759306c5eb33d2"
+  "hash": "6c903c6d3fb02b3a9df4a2fa0145282f7f97524ed2667016e89494e8e223e27b"
 }

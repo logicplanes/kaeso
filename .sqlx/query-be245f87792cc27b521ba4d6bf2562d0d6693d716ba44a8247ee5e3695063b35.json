@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO api_keys (id, org_id, project_id, user_id, service_account_id, name, secret_hash, secret_prefix, secret_last4, inference, platform, tools, expires_at, created_by_kind, created_by_id, rotated_from) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Bytea",
+        "Text",
+        "Text",
+        "Bool",
+        "Bool",
+        "Bool",
+        "Timestamptz",
+        "Text",
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "be245f87792cc27b521ba4d6bf2562d0d6693d716ba44a8247ee5e3695063b35"
+}

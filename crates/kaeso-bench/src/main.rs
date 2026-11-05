@@ -130,6 +130,7 @@ impl Options {
                     Scenario::Cancellation,
                     Scenario::SlowClients,
                     Scenario::Mixed,
+                    Scenario::Portal,
                 ]
             } else {
                 self.scenarios
@@ -155,6 +156,8 @@ impl Options {
             mixed_baseline_concurrency: pick(smoke, 16, 4),
             opening_at_once: self.opening.unwrap_or(100),
             gateway_max_connections: biggest + 1000,
+            portal_seconds: pick(smoke, 10, 1),
+            portal_concurrency: pick(smoke, 8, 2),
         }
     }
 }

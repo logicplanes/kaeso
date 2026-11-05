@@ -82,7 +82,7 @@ pub async fn not_allowed() -> Response {
 
 // The MCP transport requires servers to check `Origin` against DNS rebinding; clients outside a
 // browser send none.
-fn origin_allowed(state: &AppState, headers: &HeaderMap) -> bool {
+pub(crate) fn origin_allowed(state: &AppState, headers: &HeaderMap) -> bool {
     match headers.get(header::ORIGIN).and_then(|v| v.to_str().ok()) {
         None => true,
         Some(o) => {
@@ -92,7 +92,7 @@ fn origin_allowed(state: &AppState, headers: &HeaderMap) -> bool {
     }
 }
 
-fn client_address(
+pub(crate) fn client_address(
     state: &AppState,
     peer: Option<SocketAddr>,
     headers: &HeaderMap,

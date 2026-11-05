@@ -24,7 +24,7 @@ flowchart TD
   end
   providers[模型服务商]:::outside
   clients -- HTTPS --> caddy
-  caddy -- /v1、/platform、/mcp 和 OAuth --> gateway
+  caddy -- /v1、/platform、/mcp、/mcp/* 和 OAuth --> gateway
   caddy -- 其他所有路径 --> console
   gateway --> postgres & clickhouse & valkey
   gateway -- HTTPS --> providers

@@ -236,6 +236,9 @@ pub async fn apply(
     if !synced.changed.is_empty() {
         tracing::info!(server = %server.id, tools = ?synced.changed, "an MCP server changed tools; they wait for review");
     }
+    if synced != Synced::default() {
+        crate::portal::snapshot::forget_server(state, server.id).await;
+    }
     Ok(synced)
 }
 
@@ -249,7 +252,7 @@ pub async fn approve(
         return Ok(false);
     };
     let definition = definition_of(&row);
-    store::approve(
+    let approved = store::approve(
         &state.pg,
         org,
         tool,
@@ -260,7 +263,11 @@ pub async fn approve(
         },
         state.clock.now(),
     )
-    .await
+    .await?;
+    if approved {
+        crate::portal::snapshot::forget_server(state, row.server_id).await;
+    }
+    Ok(approved)
 }
 
 // Rejecting keeps the change held and switches the tool off wherever it was on, so nothing uses
@@ -272,5 +279,10 @@ pub async fn reject(state: &AppState, org: Uuid, tool: Uuid) -> Result<Option<u6
     if row.state != "changed" {
         return Ok(Some(0));
     }
-    Ok(Some(store::disable_everywhere(&state.pg, tool).await?))
+    let projects = store::projects_using(&state.pg, tool).await?;
+    let switched = store::disable_everywhere(&state.pg, tool).await?;
+    for p in projects {
+        crate::portal::snapshot::forget(state, p).await;
+    }
+    Ok(Some(switched))
 }

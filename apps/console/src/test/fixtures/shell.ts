@@ -8,6 +8,7 @@ function key(overrides: Partial<KeyView> = {}): KeyView {
     redacted: "sk-kso-ab…cd",
     state: "active",
     access: "inference",
+    tools: false,
     created_at: NOW,
     created_by: { kind: "user", id: USER },
     principal: { kind: "user", id: USER },

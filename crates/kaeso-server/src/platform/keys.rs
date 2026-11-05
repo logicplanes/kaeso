@@ -132,6 +132,8 @@ pub struct KeyView {
     pub principal: Party,
     #[doc = "What it may call."]
     pub access: KeyAccess,
+    #[doc = "Whether it may call the project's tools through its MCP portal."]
+    pub tools: bool,
     #[doc = "A redacted form for recognising it, e.g. `sk-kso-AbC123…wxyz`."]
     #[schema(example = "sk-kso-AbC123…wxyz")]
     pub redacted: String,
@@ -207,6 +209,7 @@ impl KeyView {
             name: k.name.clone(),
             principal,
             access: KeyAccess::from_flags(k.inference, k.platform),
+            tools: k.tools,
             redacted: format!("{PROJECT_PREFIX}{}…{}", k.secret_prefix, k.secret_last4),
             state: state_of(
                 k.archived_at.is_some(),

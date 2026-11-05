@@ -107,6 +107,10 @@ allowed_networks = ""
 allowed_networks = ""
 sync_interval = "15m"
 
+[mcp_portal]
+response_limit = "4MiB"
+call_timeout = "60s"
+
 [upstream]
 connect_timeout = "10s"
 request_timeout = "600s"

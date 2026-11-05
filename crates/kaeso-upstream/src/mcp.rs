@@ -51,6 +51,7 @@ pub struct McpCall<'a> {
     pub url: &'a Url,
     pub body: Bytes,
     pub headers: Vec<(&'static str, String)>,
+    pub params: Vec<(String, String)>,
     pub secret: Option<SecretHeader<'a>>,
     pub limits: Limits,
 }
@@ -148,6 +149,10 @@ impl McpUpstream {
             http: self.build(self.reach.without_public())?,
         };
         Ok(self.clients.get_or_init(|| built))
+    }
+
+    pub fn client_info(&self) -> Value {
+        json!({ "name": CLIENT_NAME, "title": "Kaeso", "version": self.version })
     }
 
     pub fn lookup(&self) -> &Lookup {
@@ -264,6 +269,9 @@ impl McpUpstream {
             .header(reqwest::header::ACCEPT, ACCEPT);
         for (name, value) in &call.headers {
             builder = builder.header(*name, value.as_str());
+        }
+        for (name, value) in &call.params {
+            builder = builder.header(name.as_str(), value.as_str());
         }
         if let Some(secret) = call.secret {
             let name = reqwest::header::HeaderName::from_bytes(secret.name.as_bytes())
@@ -389,7 +397,7 @@ pub struct Client<'a> {
 
 impl Client<'_> {
     fn client_info(&self) -> Value {
-        json!({ "name": CLIENT_NAME, "title": "Kaeso", "version": self.upstream.version })
+        self.upstream.client_info()
     }
 
     fn headers(
@@ -479,6 +487,7 @@ impl Client<'_> {
                 url: self.url,
                 body: Bytes::from(body),
                 headers,
+                params: Vec::new(),
                 secret: self.secret,
                 limits: self.limits,
             })
@@ -488,6 +497,39 @@ impl Client<'_> {
                 status: answer.status,
                 challenge: answer.header("www-authenticate").map(str::to_owned),
             });
+        }
+        Ok(answer)
+    }
+
+    // Sends a message as its caller built it, byte for byte, with the headers its version needs;
+    // the answer comes back unread so an event stream can be passed on as it arrives.
+    pub async fn forward(
+        &self,
+        hs: &Handshake,
+        method: &str,
+        name: Option<&str>,
+        body: Bytes,
+        params: Vec<(String, String)>,
+    ) -> Result<McpAnswer, McpError> {
+        let answer = self
+            .upstream
+            .post(McpCall {
+                url: self.url,
+                body,
+                headers: self.headers(Some(hs), method, name),
+                params,
+                secret: self.secret,
+                limits: self.limits,
+            })
+            .await?;
+        if answer.status == 401 || answer.status == 403 {
+            return Err(McpError::Unauthorized {
+                status: answer.status,
+                challenge: answer.header("www-authenticate").map(str::to_owned),
+            });
+        }
+        if answer.status == 404 && hs.session.is_some() {
+            return Err(McpError::SessionGone);
         }
         Ok(answer)
     }
@@ -614,6 +656,7 @@ impl Client<'_> {
                 url: self.url,
                 body: Bytes::from(notice),
                 headers: self.headers(Some(&hs), "notifications/initialized", None),
+                params: Vec::new(),
                 secret: self.secret,
                 limits: self.limits,
             })

@@ -21,6 +21,8 @@ pub struct KeyAuth {
     pub service_account_archived_at: Option<OffsetDateTime>,
     pub inference: bool,
     pub platform: bool,
+    #[serde(default)]
+    pub tools: bool,
     #[serde(with = "time::serde::rfc3339::option")]
     pub expires_at: Option<OffsetDateTime>,
     #[serde(with = "time::serde::rfc3339::option")]
@@ -50,7 +52,7 @@ pub async fn auth_by_hash(
         KeyAuth,
         "SELECT k.id, k.secret_hash, k.org_id, o.state AS org_state, k.project_id, p.archived_at AS project_archived_at, \
          k.user_id, u.state AS \"user_state?\", k.service_account_id, s.archived_at AS \"service_account_archived_at?\", \
-         k.inference, k.platform, k.expires_at, k.disabled_at, k.archived_at, k.last_used_at, \
+         k.inference, k.platform, k.tools, k.expires_at, k.disabled_at, k.archived_at, k.last_used_at, \
          om.preset AS \"org_preset?\", COALESCE(om.rights_added, '{}') AS \"org_rights_added!\", \
          COALESCE(om.rights_removed, '{}') AS \"org_rights_removed!\", \
          om.role_id AS \"org_role_id?\", orr.rights AS \"org_role_rights?\", orr.project_rights AS \"org_role_project_rights?\", \
@@ -116,6 +118,7 @@ pub struct KeyRow {
     pub secret_last4: String,
     pub inference: bool,
     pub platform: bool,
+    pub tools: bool,
     pub expires_at: Option<OffsetDateTime>,
     pub disabled_at: Option<OffsetDateTime>,
     pub archived_at: Option<OffsetDateTime>,
@@ -140,6 +143,7 @@ pub struct NewKey<'a> {
     pub secret_last4: &'a str,
     pub inference: bool,
     pub platform: bool,
+    pub tools: bool,
     pub expires_at: Option<OffsetDateTime>,
     pub created_by_kind: &'a str,
     pub created_by_id: Option<Uuid>,
@@ -149,8 +153,8 @@ pub struct NewKey<'a> {
 pub async fn insert(db: impl PgExecutor<'_>, k: &NewKey<'_>) -> Result<(), StoreError> {
     sqlx::query!(
         "INSERT INTO api_keys (id, org_id, project_id, user_id, service_account_id, name, secret_hash, secret_prefix, \
-         secret_last4, inference, platform, expires_at, created_by_kind, created_by_id, rotated_from) \
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)",
+         secret_last4, inference, platform, tools, expires_at, created_by_kind, created_by_id, rotated_from) \
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)",
         k.id,
         k.org_id,
         k.project_id,
@@ -162,6 +166,7 @@ pub async fn insert(db: impl PgExecutor<'_>, k: &NewKey<'_>) -> Result<(), Store
         k.secret_last4,
         k.inference,
         k.platform,
+        k.tools,
         k.expires_at,
         k.created_by_kind,
         k.created_by_id,
@@ -180,7 +185,7 @@ pub async fn get(
     Ok(sqlx::query_as!(
         KeyRow,
         "SELECT id, org_id, project_id, user_id, service_account_id, name, secret_prefix, secret_last4, inference, \
-         platform, expires_at, disabled_at, archived_at, last_used_at, created_by_kind, created_by_id, created_at, rotated_from, replaced_by \
+         platform, tools, expires_at, disabled_at, archived_at, last_used_at, created_by_kind, created_by_id, created_at, rotated_from, replaced_by \
          FROM api_keys WHERE project_id = $1 AND id = $2",
         project_id,
         id
@@ -197,7 +202,7 @@ pub async fn get_of_user(
     Ok(sqlx::query_as!(
         KeyRow,
         "SELECT id, org_id, project_id, user_id, service_account_id, name, secret_prefix, secret_last4, inference, \
-         platform, expires_at, disabled_at, archived_at, last_used_at, created_by_kind, created_by_id, created_at, rotated_from, replaced_by \
+         platform, tools, expires_at, disabled_at, archived_at, last_used_at, created_by_kind, created_by_id, created_at, rotated_from, replaced_by \
          FROM api_keys WHERE user_id = $1 AND id = $2",
         user_id,
         id
@@ -223,7 +228,7 @@ pub async fn list(
     Ok(sqlx::query_as!(
         KeyRow,
         "SELECT id, org_id, project_id, user_id, service_account_id, name, secret_prefix, secret_last4, inference, \
-         platform, expires_at, disabled_at, archived_at, last_used_at, created_by_kind, created_by_id, created_at, rotated_from, replaced_by \
+         platform, tools, expires_at, disabled_at, archived_at, last_used_at, created_by_kind, created_by_id, created_at, rotated_from, replaced_by \
          FROM api_keys WHERE project_id = $1 AND ($2::uuid IS NULL OR user_id = $2) \
          AND ($3::uuid IS NULL OR service_account_id = $3) AND ($4 OR archived_at IS NULL) \
          AND ($5::uuid IS NULL OR id > $5) ORDER BY id LIMIT $6",
@@ -250,7 +255,7 @@ pub async fn list_of_user(
     Ok(sqlx::query_as!(
         KeyRow,
         "SELECT id, org_id, project_id, user_id, service_account_id, name, secret_prefix, secret_last4, inference, \
-         platform, expires_at, disabled_at, archived_at, last_used_at, created_by_kind, created_by_id, created_at, rotated_from, replaced_by \
+         platform, tools, expires_at, disabled_at, archived_at, last_used_at, created_by_kind, created_by_id, created_at, rotated_from, replaced_by \
          FROM api_keys WHERE user_id = $1 AND org_id = ANY($5) AND ($6::uuid[] IS NULL OR project_id = ANY($6)) \
          AND ($2 OR archived_at IS NULL) AND ($3::uuid IS NULL OR id > $3) ORDER BY id LIMIT $4",
         user_id,

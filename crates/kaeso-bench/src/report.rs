@@ -154,6 +154,36 @@ pub(crate) fn table(r: &Report<'_>) -> String {
             ],
         );
     }
+    if let Some(b) = &r.results.portal {
+        let _ = writeln!(out, "\n### MCP portal: warm tool calls\n");
+        header(
+            &mut out,
+            &[
+                "Calls",
+                "Connections",
+                "Calls/s",
+                "Added latency p50 / p99 / p99.9",
+                "MCP server p50 / p99",
+                "Failed",
+            ],
+        );
+        row(
+            &mut out,
+            &[
+                b.requests.to_string(),
+                b.concurrency.to_string(),
+                format!("{:.0}", b.requests_per_second),
+                format!(
+                    "{} / {} / {}",
+                    ms(b.overhead_ms.p50),
+                    ms(b.overhead_ms.p99),
+                    ms(b.overhead_ms.p999)
+                ),
+                percentiles(&b.upstream_ms),
+                b.failed.to_string(),
+            ],
+        );
+    }
     if !r.results.streams.is_empty() {
         let _ = writeln!(out, "\n### Concurrent streams\n");
         header(

@@ -1082,6 +1082,7 @@ async fn a_key_with_a_model_list_gets_no_other_model_from_models_cached_before_i
             secret_last4: &secret.last4,
             inference: true,
             platform: false,
+            tools: false,
             expires_at: None,
             created_by_kind: "user",
             created_by_id: Some(owner),

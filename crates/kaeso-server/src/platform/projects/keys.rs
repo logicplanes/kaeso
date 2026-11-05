@@ -33,6 +33,9 @@ pub struct KeyCreate {
     #[doc = "What it may call; default `inference`."]
     #[serde(default)]
     pub access: KeyAccess,
+    #[doc = "Whether it may also call the project's tools through its MCP portal; default `false`."]
+    #[serde(default)]
+    pub tools: bool,
     #[doc = "When it expires."]
     #[serde(flatten)]
     pub expiry: ExpiryRequest,
@@ -130,6 +133,7 @@ async fn create_key(
             secret_last4: &secret.last4,
             inference,
             platform,
+            tools: req.tools,
             expires_at,
             created_by_kind: created_kind,
             created_by_id: created_id,
@@ -599,6 +603,7 @@ async fn replacement(
     Ok(KeyCreate {
         name: old.name.clone(),
         access: KeyAccess::from_flags(old.inference, old.platform),
+        tools: old.tools,
         expiry: req.expiry.clone(),
         models: models.map(|m| m.into_iter().map(CatalogueModelId::from_uuid).collect()),
         limits: (!limits.is_empty()).then_some(limits),

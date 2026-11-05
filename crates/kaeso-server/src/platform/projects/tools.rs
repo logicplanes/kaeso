@@ -244,6 +244,7 @@ pub async fn set_servers(
         .write(&mut tx)
         .await?;
     tx.commit().await?;
+    crate::portal::snapshot::forget(&state, project).await;
     Ok(Json(List::complete(server_views(&state, project).await?)))
 }
 
@@ -337,6 +338,7 @@ pub async fn update_tools(
             .write(&mut tx)
             .await?;
         tx.commit().await?;
+        crate::portal::snapshot::forget(&state, project).await;
     }
     let rows = tools::of_project(&state.pg, project).await?;
     Ok(Json(List::complete(rows.iter().map(tool_view).collect())))
@@ -573,6 +575,7 @@ pub async fn set_access(
         .write(&mut tx)
         .await?;
     tx.commit().await?;
+    crate::portal::snapshot::forget(&state, project).await;
     Ok(Json(access_view(list.as_ref(), &above)))
 }
 

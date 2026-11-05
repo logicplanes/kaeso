@@ -4,7 +4,7 @@ use axum::Router;
 use axum::middleware;
 
 use crate::state::AppState;
-use crate::{health, http, mcp, model_api, platform};
+use crate::{health, http, mcp, model_api, platform, portal};
 
 pub fn router(state: AppState) -> Router {
     let (platform, _) = platform::router(&state);
@@ -18,6 +18,7 @@ pub fn router(state: AppState) -> Router {
         router
             .merge(model_api::router())
             .merge(mcp::router(&state, in_process))
+            .merge(portal::router(&state))
     };
     let router = router
         .route_layer(middleware::from_fn_with_state(

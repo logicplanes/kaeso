@@ -216,6 +216,8 @@ An organization admin chooses a custom provider's base URL, so the gateway guard
 | --- | --- | --- | --- |
 | `KAESO_MCP_SERVERS_ALLOWED_NETWORKS`<br>`mcp_servers.allowed_networks` | text | — | Comma-separated private, loopback or other non-public networks MCP servers may be reached on, such as `10.0.0.0/8`. Plain `http` reaches only these. |
 | `KAESO_MCP_SERVERS_SYNC_INTERVAL`<br>`mcp_servers.sync_interval` | text | `15m` | How often the gateway asks each MCP server for its tools, to find new, changed and removed ones. At least a minute. |
+| `KAESO_MCP_PORTAL_RESPONSE_LIMIT`<br>`mcp_portal.response_limit` | text | `4MiB` | Largest answer to one tool call a project's MCP portal passes on. A larger one ends the call with an error. |
+| `KAESO_MCP_PORTAL_CALL_TIMEOUT`<br>`mcp_portal.call_timeout` | text | `60s` | How long a project's MCP portal waits for an MCP server to finish a tool call. 1s to 1h. |
 
 An organization admin chooses an MCP server's address, so the gateway guards it like a custom provider's: every connection, sign-in and metadata request included, is checked after DNS resolution, and private, loopback, link-local and cloud metadata addresses are refused unless `KAESO_MCP_SERVERS_ALLOWED_NETWORKS` lists their network. Redirects are never followed. Link-local and cloud metadata addresses stay refused even when a listed network covers them.
 

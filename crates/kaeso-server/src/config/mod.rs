@@ -54,6 +54,8 @@ pub struct Config {
     pub custom_providers: CustomProvidersConfig,
     #[serde(default)]
     pub mcp_servers: McpServersConfig,
+    #[serde(default)]
+    pub mcp_portal: McpPortalConfig,
     pub upstream: UpstreamConfig,
     pub streams: StreamsConfig,
     pub continuity: ContinuityConfig,
@@ -248,6 +250,32 @@ impl Default for McpServersConfig {
         McpServersConfig {
             allowed_networks: Vec::new(),
             sync_interval: fifteen_minutes(),
+        }
+    }
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct McpPortalConfig {
+    #[serde(default = "four_mib")]
+    pub response_limit: ByteSize,
+    #[serde(with = "humantime_serde", default = "sixty_seconds")]
+    pub call_timeout: Duration,
+}
+
+const fn four_mib() -> ByteSize {
+    ByteSize(4 << 20)
+}
+
+const fn sixty_seconds() -> Duration {
+    Duration::from_secs(60)
+}
+
+impl Default for McpPortalConfig {
+    fn default() -> McpPortalConfig {
+        McpPortalConfig {
+            response_limit: four_mib(),
+            call_timeout: sixty_seconds(),
         }
     }
 }
@@ -555,6 +583,7 @@ impl Config {
                 self.body_limits.provider_response,
             ),
             ("logs.buffer_size", self.logs.buffer_size),
+            ("mcp_portal.response_limit", self.mcp_portal.response_limit),
             (
                 "response_cache.max_entry_size",
                 self.response_cache.max_entry_size,
@@ -563,6 +592,14 @@ impl Config {
             if size.0 == 0 {
                 return invalid(key, "must be larger than zero".into());
             }
+        }
+        if !(Duration::from_secs(1)..=Duration::from_secs(3600))
+            .contains(&self.mcp_portal.call_timeout)
+        {
+            return invalid(
+                "mcp_portal.call_timeout",
+                "must be between 1s and 1h".into(),
+            );
         }
         if self.logs.flush_rows == 0 {
             return invalid("logs.flush_rows", "must be at least 1".into());

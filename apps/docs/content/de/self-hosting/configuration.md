@@ -216,6 +216,8 @@ Die Basis-URL eines eigenen Anbieters wählt ein Organisations-Admin, also über
 | --- | --- | --- | --- |
 | `KAESO_MCP_SERVERS_ALLOWED_NETWORKS`<br>`mcp_servers.allowed_networks` | text | — | Kommagetrennte private, Loopback- oder andere nicht öffentliche Netze, in denen MCP-Server erreicht werden dürfen, etwa `10.0.0.0/8`. Reines `http` erreicht nur diese. |
 | `KAESO_MCP_SERVERS_SYNC_INTERVAL`<br>`mcp_servers.sync_interval` | text | `15m` | Wie oft das Gateway jeden MCP-Server nach seinen Tools fragt, um neue, geänderte und entfernte zu finden. Mindestens eine Minute. |
+| `KAESO_MCP_PORTAL_RESPONSE_LIMIT`<br>`mcp_portal.response_limit` | text | `4MiB` | Größte Antwort auf einen Tool-Aufruf, die das MCP-Portal eines Projekts weitergibt. Eine größere beendet den Aufruf mit einem Fehler. |
+| `KAESO_MCP_PORTAL_CALL_TIMEOUT`<br>`mcp_portal.call_timeout` | text | `60s` | Wie lange das MCP-Portal eines Projekts darauf wartet, dass ein MCP-Server einen Tool-Aufruf beendet. 1s bis 1h. |
 
 Die Adresse eines MCP-Servers wählt ein Organisations-Admin, also überwacht das Gateway sie wie die eines eigenen Anbieters: Jede Verbindung, auch Anmelde- und Metadaten-Anfragen, prüft es nach der DNS-Auflösung, und private, Loopback-, Link-Local- und Cloud-Metadaten-Adressen lehnt es ab, außer `KAESO_MCP_SERVERS_ALLOWED_NETWORKS` nennt ihr Netz. Weiterleitungen folgt es nie. Link-Local- und Cloud-Metadaten-Adressen bleiben abgelehnt, auch wenn ein genanntes Netz sie umfasst.
 

@@ -152,6 +152,7 @@ export function key(overrides: Partial<KeyView> = {}): KeyView {
     id: "key_support",
     name: "support-bot",
     access: "inference",
+    tools: false,
     created_at: NOW,
     created_by: { kind: "user", id: USER },
     principal: { kind: "user", id: USER },

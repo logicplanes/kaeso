@@ -73,6 +73,17 @@ pub(crate) enum Until {
 }
 
 pub(crate) async fn run(addr: SocketAddr, key: &str, concurrency: usize, until: Until) -> Baseline {
+    run_on(addr, key, PATH, body(), concurrency, until).await
+}
+
+pub(crate) async fn run_on(
+    addr: SocketAddr,
+    key: &str,
+    path: &str,
+    body: Bytes,
+    concurrency: usize,
+    until: Until,
+) -> Baseline {
     let claimed = Arc::new(AtomicUsize::new(0));
     let (limit, stopped) = match until {
         Until::Count(n) => (n, None),
@@ -83,8 +94,12 @@ pub(crate) async fn run(addr: SocketAddr, key: &str, concurrency: usize, until: 
     for _ in 0..concurrency.max(1) {
         let claimed = claimed.clone();
         let key = key.to_owned();
+        let path = path.to_owned();
+        let body = body.clone();
         let stopped = stopped.clone();
-        tasks.spawn(async move { worker(addr, &key, &claimed, limit, stopped).await });
+        tasks.spawn(
+            async move { worker(addr, (&key, &path, &body), &claimed, limit, stopped).await },
+        );
     }
     let mut all = Sample::default();
     while let Some(done) = tasks.join_next().await {
@@ -115,7 +130,7 @@ pub(crate) async fn run(addr: SocketAddr, key: &str, concurrency: usize, until: 
 
 async fn worker(
     addr: SocketAddr,
-    key: &str,
+    (key, path, body): (&str, &str, &Bytes),
     claimed: &AtomicUsize,
     limit: usize,
     stopped: Option<watch::Receiver<bool>>,
@@ -130,7 +145,7 @@ async fn worker(
             return sample;
         }
         let started = Instant::now();
-        let failure = match call(addr, key, &mut conn).await {
+        let failure = match call(addr, (key, path, body), &mut conn).await {
             Ok((200, timing, _)) => {
                 sample
                     .latency_ms
@@ -163,7 +178,7 @@ fn message(body: &[u8]) -> String {
 
 async fn call(
     addr: SocketAddr,
-    key: &str,
+    (key, path, body): (&str, &str, &Bytes),
     conn: &mut Option<Conn>,
 ) -> crate::Result<(u16, crate::client::Timing, Bytes)> {
     if conn.is_none() {
@@ -173,11 +188,11 @@ async fn call(
     let resp = c
         .send(Call {
             method: Method::POST,
-            path: PATH,
+            path,
             bearer: Some(key),
             origin: None,
             cookie: None,
-            body: Some(body()),
+            body: Some(body.clone()),
         })
         .await?;
     let timing = server_timing(resp.headers());

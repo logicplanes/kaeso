@@ -2,6 +2,7 @@ use std::collections::{BTreeMap, HashMap};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
+use bytes::Bytes;
 use clap::ValueEnum;
 use serde::Serialize;
 use tokio::sync::{Semaphore, watch};
@@ -22,6 +23,7 @@ pub(crate) enum Scenario {
     Cancellation,
     SlowClients,
     Mixed,
+    Portal,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -48,6 +50,8 @@ pub(crate) struct Plan {
     pub(crate) mixed_baseline_concurrency: usize,
     pub(crate) opening_at_once: usize,
     pub(crate) gateway_max_connections: usize,
+    pub(crate) portal_seconds: u64,
+    pub(crate) portal_concurrency: usize,
 }
 
 impl Plan {
@@ -128,6 +132,7 @@ pub(crate) struct Results {
     pub(crate) cancellation: Option<CancelResult>,
     pub(crate) slow_clients: Option<SlowResult>,
     pub(crate) mixed: Option<MixedResult>,
+    pub(crate) portal: Option<Baseline>,
     pub(crate) checks: Vec<Check>,
 }
 
@@ -188,6 +193,10 @@ pub(crate) async fn run(plan: &Plan, install: &mut Install) -> Results {
             Scenario::Mixed => {
                 bench.fresh("mixed").await;
                 bench.mixed().await;
+            }
+            Scenario::Portal => {
+                bench.fresh("portal").await;
+                bench.portal().await;
             }
         }
     }
@@ -272,6 +281,64 @@ impl Bench<'_> {
             format!("{} of {} failed{}", b.failed, b.requests, b.why()),
         );
         self.results.baseline = Some(b);
+    }
+
+    // Warm tool calls through a project's MCP portal to the mock MCP server on loopback; the
+    // portal's own time comes from its `Server-Timing`, as the baseline's does.
+    async fn portal(&mut self) {
+        let p = self.plan;
+        let portal = self.install.portal.clone();
+        let body = Bytes::from(
+            serde_json::json!({
+                "jsonrpc": "2.0",
+                "id": 1,
+                "method": "tools/call",
+                "params": { "name": "bench__search_posts", "arguments": { "query": "kaeso" } },
+            })
+            .to_string(),
+        );
+        let gw = self.install.gateway.addr;
+        let _ = baseline::run_on(
+            gw,
+            &portal.key,
+            &portal.path,
+            body.clone(),
+            2,
+            Until::Count(50),
+        )
+        .await;
+        say(&format!(
+            "portal: tool calls for {} s over {} connections",
+            p.portal_seconds, p.portal_concurrency
+        ));
+        let (stop, stopped) = tokio::sync::watch::channel(false);
+        let seconds = p.portal_seconds;
+        tokio::spawn(async move {
+            tokio::time::sleep(Duration::from_secs(seconds)).await;
+            let _ = stop.send(true);
+        });
+        let b = baseline::run_on(
+            gw,
+            &portal.key,
+            &portal.path,
+            body,
+            p.portal_concurrency,
+            Until::Stopped(stopped),
+        )
+        .await;
+        self.check(
+            "portal",
+            "every tool call reached the MCP server",
+            b.failed == 0 && b.overhead_ms.count == b.requests && b.requests > 0,
+            format!(
+                "{} of {} failed, {} were timed{}",
+                b.failed,
+                b.requests,
+                b.overhead_ms.count,
+                b.why()
+            ),
+        );
+        self.results.portal = Some(b);
     }
 
     async fn mock_alone(&mut self, n: usize) -> Profile {

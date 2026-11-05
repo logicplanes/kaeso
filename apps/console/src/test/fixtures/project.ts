@@ -67,6 +67,7 @@ export function apiKey(overrides: Partial<KeyView> = {}): KeyView {
     redacted: "sk-kso-AbC123…wxyz",
     state: "active",
     access: "inference",
+    tools: false,
     project_id: PROJECT,
     created_at: NOW,
     created_by: { kind: "user", id: USER },
