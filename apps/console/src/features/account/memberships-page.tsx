@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { AlertDialog, Avatar, Button, DialogScope, SettingsGroup, SettingsRow, SettingsSection, Text } from "@logicplanes/kaeso-ui";
+import { AlertDialog, Avatar, Button, DialogScope, SettingsGroup, SettingsRow, Section, Text } from "@logicplanes/kaeso-ui";
 import { toast } from "~/shell/toast";
 import { api } from "~/api/client";
 import type { MyMembership } from "~/api/generated/types";
@@ -27,7 +27,8 @@ export function MembershipsPage() {
     >
       {memberships.length === 0 && <Text tone="secondary">{t("account.noMemberships", "You don't belong to an organization.")}</Text>}
       {memberships.map((m) => (
-        <SettingsSection
+        <Section
+          spacing="settings"
           key={m.org_id}
           title={m.org_name}
           description={t("account.orgRole", "{role} of the organization", { role: m.role.name })}
@@ -63,7 +64,7 @@ export function MembershipsPage() {
               ))
             )}
           </SettingsGroup>
-        </SettingsSection>
+        </Section>
       ))}
       {leaving && (
         <DialogScope open={leaveOpen}>

@@ -1,12 +1,12 @@
-import { Radio, RadioGroup, RadioCards } from "@logicplanes/kaeso-ui";
+import { Radio, RadioGroup } from "@logicplanes/kaeso-ui";
 import { Matrix, StateSection } from "~/lib/states";
 
 export const meta = {
   title: "Radio",
-  description: "One of a few choices: an ink donut around a panel center; RadioCards for choices with descriptions.",
+  description: 'One of a few choices: an ink donut around a panel center; cards (`variant="cards"`) for choices with descriptions.',
   group: "Components",
   entry: "radio",
-  import: "Radio, RadioGroup, RadioCards",
+  import: "Radio, RadioGroup",
   keyboard: [
     ["Up Down", "Moves between choices"],
     ["Space", "Selects"],
@@ -15,7 +15,7 @@ export const meta = {
 };
 export const examples = [
   { id: "basic", title: "Basic", fn: "Basic" },
-  { id: "cards", title: "RadioCards", fn: "Cards" },
+  { id: "cards", title: "Cards", fn: "Cards" },
 ];
 export function Basic() {
   return (
@@ -29,10 +29,10 @@ export function Basic() {
 export function Cards() {
   return (
     <div className="w-480">
-      <RadioCards defaultValue="responses" aria-label="OpenAI dialect">
+      <RadioGroup variant="cards" defaultValue="responses" aria-label="OpenAI dialect">
         <Radio value="responses" label="Responses" description="The default. Reasoning and tools work best here." />
         <Radio value="chat" label="Chat Completions" description="For models or proxies that only speak the older API." />
-      </RadioCards>
+      </RadioGroup>
     </div>
   );
 }
@@ -68,12 +68,12 @@ export function States() {
       </StateSection>
       <StateSection title="Cards">
         <div className="w-480">
-          <RadioCards defaultValue="responses" aria-label="OpenAI dialect">
+          <RadioGroup variant="cards" defaultValue="responses" aria-label="OpenAI dialect">
             <Radio value="responses" label="Responses" description="The default. Reasoning and tools work best here." />
             <Radio value="chat" label="Chat Completions" description="For models or proxies that only speak the older API." data-force="hover" />
             <Radio value="anthropic" label="Anthropic Messages" description="Focus moves with the arrow keys." data-force="focus" />
             <Radio value="legacy" label="Completions" description="Retired by the provider." disabled />
-          </RadioCards>
+          </RadioGroup>
         </div>
       </StateSection>
     </>

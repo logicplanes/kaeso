@@ -8,7 +8,7 @@ export const docs = {
       children: "Filters at the end of the row: a `Select`, a `SearchInput`. At the start when there are no tabs.",
       filtersLabel: "The name of the filters' toolbar. Defaults to \"Filters\" in the provider's language.",
       size: "By default `inset` in a settings column and `md` elsewhere.",
-      tabs: "Pill tabs at the start of the row (`PillTabs`). In a settings column their first label lines up with the title.",
+      tabs: 'Pill tabs at the start of the row (`Tabs variant="pill"`). In a settings column their first label lines up with the title.',
     },
   },
 } satisfies ComponentDocs;

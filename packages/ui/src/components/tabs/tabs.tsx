@@ -16,8 +16,6 @@ export const KAESO_TABS_VARIANTS = {
   },
 } as const;
 export const KAESO_TABS_DEFAULT_VARIANTS = { variant: "underline" } as const;
-export const KAESO_PILL_TABS_VARIANTS = { variant: KAESO_TABS_VARIANTS.variant } as const;
-export const KAESO_PILL_TABS_DEFAULT_VARIANTS = { variant: "pill" } as const;
 type Variant = keyof typeof KAESO_TABS_VARIANTS.variant;
 
 const Ctx = createContext<Variant>("underline");
@@ -31,28 +29,25 @@ export interface TabsProps {
   children: ReactNode;
 }
 
-function makeRoot(defaultVariant: Variant, name: string) {
-  const Root = forwardRef<HTMLDivElement, TabsProps>(function TabsRoot(
-    { value, defaultValue, onValueChange, variant = defaultVariant, className, children },
-    ref,
-  ) {
-    return (
-      <Ctx.Provider value={variant}>
-        <BaseTabs.Root
-          ref={ref}
-          {...(value !== undefined ? { value } : {})}
-          {...(defaultValue !== undefined ? { defaultValue } : {})}
-          {...(onValueChange ? { onValueChange: (v: unknown) => onValueChange(String(v)) } : {})}
-          className={cn("flex min-w-0 flex-col", className)}
-        >
-          {children}
-        </BaseTabs.Root>
-      </Ctx.Provider>
-    );
-  });
-  Root.displayName = name;
-  return Root;
-}
+const Root = forwardRef<HTMLDivElement, TabsProps>(function Tabs(
+  { value, defaultValue, onValueChange, variant = KAESO_TABS_DEFAULT_VARIANTS.variant, className, children },
+  ref,
+) {
+  return (
+    <Ctx.Provider value={variant}>
+      <BaseTabs.Root
+        ref={ref}
+        {...(value !== undefined ? { value } : {})}
+        {...(defaultValue !== undefined ? { defaultValue } : {})}
+        {...(onValueChange ? { onValueChange: (v: unknown) => onValueChange(String(v)) } : {})}
+        className={cn("flex min-w-0 flex-col", className)}
+      >
+        {children}
+      </BaseTabs.Root>
+    </Ctx.Provider>
+  );
+});
+Root.displayName = "Tabs";
 
 export interface TabsListProps {
   className?: string | undefined;
@@ -163,5 +158,4 @@ const Panel = forwardRef<
 });
 Panel.displayName = "Tabs.Panel";
 
-export const Tabs = Object.assign(makeRoot(KAESO_TABS_DEFAULT_VARIANTS.variant, "Tabs"), { List, Tab, Panel });
-export const PillTabs = Object.assign(makeRoot(KAESO_PILL_TABS_DEFAULT_VARIANTS.variant, "PillTabs"), { List, Tab, Panel });
+export const Tabs = Object.assign(Root, { List, Tab, Panel });

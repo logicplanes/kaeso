@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { SettingsGroup, SettingsRow, SettingsSection } from "./settings.js";
+import { SettingsGroup, SettingsRow } from "./settings.js";
+import { Section } from "../section/section.js";
 import { Switch } from "../switch/switch.js";
 import { Button } from "../button/button.js";
 import { icons } from "../../icons/vocabulary.js";
@@ -10,14 +11,14 @@ describe("Settings", () => {
   it("lays out a section with rows that link, act, show a value or hold a control", async () => {
     const onClick = vi.fn();
     render(
-      <SettingsSection title="Security" description="How people sign in." actions={<button>Audit log</button>}>
+      <Section spacing="settings" title="Security" description="How people sign in." actions={<button>Audit log</button>}>
         <SettingsGroup aria-label="Sign-in">
           <SettingsRow title="Single sign-on" description="Okta" href="/settings/sso" icon={icons.key} data-force="hover" />
           <SettingsRow title="Sessions" value="3 active" onClick={onClick} data-force="focus" />
           <SettingsRow title="Require two-factor" control={<Switch aria-label="Require two-factor" />} id="2fa" />
           <SettingsRow title="Delete organization" danger data-force="hover" />
         </SettingsGroup>
-      </SettingsSection>,
+      </Section>,
     );
     expect(screen.getByRole("heading", { name: "Security" })).toBeInTheDocument();
     expect(screen.getByText("How people sign in.")).toBeInTheDocument();
@@ -59,9 +60,9 @@ describe("Settings", () => {
 
   it("leaves out the heading when a section has none", () => {
     render(
-      <SettingsSection>
+      <Section spacing="settings">
         <p>Rows</p>
-      </SettingsSection>,
+      </Section>,
     );
     expect(screen.queryByRole("heading")).toBeNull();
   });
@@ -95,9 +96,9 @@ describe("Settings rows", () => {
 
   it("gives a settings section the same header as Section: wrapping, actions on the title's line", () => {
     render(
-      <SettingsSection title="Members" description="People in the organization." actions={<button type="button">Invite</button>}>
+      <Section spacing="settings" title="Members" description="People in the organization." actions={<button type="button">Invite</button>}>
         <p>Rows</p>
-      </SettingsSection>,
+      </Section>,
     );
     const header = screen.getByRole("heading", { name: "Members" }).closest("header")!;
     expect(header).toHaveClass("mb-16", "flex-wrap");

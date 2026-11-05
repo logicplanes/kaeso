@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertDialog, Button, Dialog, DialogScope, InlineCopyText, Input, SettingsGroup, SettingsRow, SettingsSection, Text } from "@logicplanes/kaeso-ui";
+import { AlertDialog, Button, Dialog, DialogScope, InlineCopyText, Input, SettingsGroup, SettingsRow, Section, Text } from "@logicplanes/kaeso-ui";
 import { toast } from "~/shell/toast";
 import { formatDate } from "@logicplanes/kaeso-ui/format";
 import { api, data } from "~/api/client";
@@ -31,7 +31,7 @@ export function ProfilePage() {
         <SettingsLoading rows={5} />
       ) : (
         <>
-          <SettingsSection title={t("account.title", "Account")}>
+          <Section spacing="settings" title={t("account.title", "Account")}>
             <SettingsGroup>
               <PictureRow name={m.name} src={m.avatar_url} />
               <NameRow name={m.name} />
@@ -44,7 +44,7 @@ export function ProfilePage() {
               />
               <SettingsRow title={t("common.created", "Created")} control={<Text tone="secondary">{formatDate(m.created_at)}</Text>} />
             </SettingsGroup>
-          </SettingsSection>
+          </Section>
           <DeleteAccount email={m.email ?? ""} />
         </>
       )}
@@ -211,7 +211,7 @@ function ChangeEmailDialog({
 function DeleteAccount({ email }: { email: string }) {
   const [open, setOpen] = useState(false);
   return (
-    <SettingsSection title={t("account.deleteAccount", "Delete account")}>
+    <Section spacing="settings" title={t("account.deleteAccount", "Delete account")}>
       <SettingsGroup>
         <SettingsRow
           danger
@@ -227,7 +227,7 @@ function DeleteAccount({ email }: { email: string }) {
       <DialogScope open={open}>
         <DeleteAccountDialog email={email} open={open} onOpenChange={setOpen} />
       </DialogScope>
-    </SettingsSection>
+    </Section>
   );
 }
 

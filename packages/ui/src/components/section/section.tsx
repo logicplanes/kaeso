@@ -6,6 +6,7 @@ import { SectionHeader } from "./section-header.js";
 export const KAESO_SECTION_VARIANTS = {
   spacing: {
     default: { classes: "mt-48 first:mt-0", description: "48px between sections (default)" },
+    settings: { classes: "mt-48 first:mt-40", description: "A section of a settings page: 40px under the header, 48px between sections" },
     none: { classes: "", description: "No outer spacing" },
   },
 } as const;

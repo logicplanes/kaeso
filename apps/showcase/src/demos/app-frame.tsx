@@ -4,7 +4,7 @@ import {
   Sidebar,
   useSidebar,
   PageHeader,
-  PillTabs,
+  Tabs,
   IconButton,
   Avatar,
   Empty,
@@ -95,12 +95,12 @@ export function Frame({ settings = false, page, collapsed }: { settings?: boolea
                   start={<AppFrame.MenuButton />}
                   title="Request logs"
                   tabs={
-                    <PillTabs defaultValue="all">
-                      <PillTabs.List aria-label="Logs">
-                        <PillTabs.Tab value="all">All</PillTabs.Tab>
-                        <PillTabs.Tab value="errors">Errors</PillTabs.Tab>
-                      </PillTabs.List>
-                    </PillTabs>
+                    <Tabs variant="pill" defaultValue="all">
+                      <Tabs.List aria-label="Logs">
+                        <Tabs.Tab value="all">All</Tabs.Tab>
+                        <Tabs.Tab value="errors">Errors</Tabs.Tab>
+                      </Tabs.List>
+                    </Tabs>
                   }
                   actions={<IconButton icon={icons.displayOptions} aria-label="Display options" variant="secondary" />}
                 />
@@ -141,13 +141,13 @@ function MembersPage({ empty = false }: { empty?: boolean }) {
     >
       <FilterRow
         tabs={
-          <PillTabs defaultValue={empty ? "suspended" : "all"}>
-            <PillTabs.List aria-label="State">
-              <PillTabs.Tab value="all">All</PillTabs.Tab>
-              <PillTabs.Tab value="active">Active</PillTabs.Tab>
-              <PillTabs.Tab value="suspended">Suspended</PillTabs.Tab>
-            </PillTabs.List>
-          </PillTabs>
+          <Tabs variant="pill" defaultValue={empty ? "suspended" : "all"}>
+            <Tabs.List aria-label="State">
+              <Tabs.Tab value="all">All</Tabs.Tab>
+              <Tabs.Tab value="active">Active</Tabs.Tab>
+              <Tabs.Tab value="suspended">Suspended</Tabs.Tab>
+            </Tabs.List>
+          </Tabs>
         }
       >
         <Select

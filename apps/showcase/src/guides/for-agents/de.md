@@ -93,22 +93,22 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
 ## Welche Komponente für welche Aufgabe
 
-| Aufgabe                                          | Verwenden                                                           |
-| ------------------------------------------------ | ------------------------------------------------------------------- |
-| App-Layout                                       | `AppFrame` mit `Sidebar`, `PageHeader`, `AppFrame.Body`             |
-| Einstellungsseite                                | `AppFrame.Settings`, `SettingsGroup`, `SettingsRow`                 |
-| Eine Sammlung, die man überfliegt und bearbeitet | `List` mit Gruppenköpfen                                            |
-| Eine Sammlung, die man spaltenweise vergleicht   | `DataTable` (virtualisiert, sortierbar)                             |
-| Filter über einer Sammlung                       | `Toolbar` mit `FilterChip`, `SearchInput`, `DisplayOptions`         |
-| Eine Wahl zwischen 2–4 Ansichten                 | `Segmented`; Seitenabschnitte: `PillTabs`; Detailabschnitte: `Tabs` |
-| Eine von vielen Optionen                         | `Select`; durchsuchbar: `Combobox`                                  |
-| Eine Bestätigung einer unumkehrbaren Aktion      | `AlertDialog`; Löschen: der Block `DeleteResource`                  |
-| Eine Aufgabe in mehreren Schritten               | `StepDialog`                                                        |
-| Ein Dialog, der jedes Mal frisch öffnet          | `DialogScope` um die Komponente, die seinen Zustand hält            |
-| Rückmeldung nach einer Aktion                    | `toast()`, mit Rückgängig für umkehrbare Aktionen                   |
-| Ein Geheimnis, das einmal gezeigt wird           | `SecretReveal`                                                      |
-| Zahlen auf einen Blick                           | `MetricRow` mit `Stat`; im Zeitverlauf: `TimeseriesChart`           |
-| Noch nichts zu zeigen                            | `Empty` mit einer Aktion                                            |
+| Aufgabe                                          | Verwenden                                                                     |
+| ------------------------------------------------ | ----------------------------------------------------------------------------- |
+| App-Layout                                       | `AppFrame` mit `Sidebar`, `PageHeader`, `AppFrame.Body`                       |
+| Einstellungsseite                                | `AppFrame.Settings`, `SettingsGroup`, `SettingsRow`                           |
+| Eine Sammlung, die man überfliegt und bearbeitet | `List` mit Gruppenköpfen                                                      |
+| Eine Sammlung, die man spaltenweise vergleicht   | `DataTable` (virtualisiert, sortierbar)                                       |
+| Filter über einer Sammlung                       | `Toolbar` mit `FilterChip`, `SearchInput`, `DisplayOptions`                   |
+| Eine Wahl zwischen 2–4 Ansichten                 | `Segmented`; Seitenansichten: `Tabs variant="pill"`; Detailabschnitte: `Tabs` |
+| Eine von vielen Optionen                         | `Select`; durchsuchbar: `Combobox`                                            |
+| Eine Bestätigung einer unumkehrbaren Aktion      | `AlertDialog`; Löschen: der Block `DeleteResource`                            |
+| Eine Aufgabe in mehreren Schritten               | `StepDialog`                                                                  |
+| Ein Dialog, der jedes Mal frisch öffnet          | `DialogScope` um die Komponente, die seinen Zustand hält                      |
+| Rückmeldung nach einer Aktion                    | `toast()`, mit Rückgängig für umkehrbare Aktionen                             |
+| Ein Geheimnis, das einmal gezeigt wird           | `SecretReveal`                                                                |
+| Zahlen auf einen Blick                           | `MetricRow` mit `Stat`; im Zeitverlauf: `TimeseriesChart`                     |
+| Noch nichts zu zeigen                            | `Empty` mit einer Aktion                                                      |
 
 ## Eine Ansicht
 

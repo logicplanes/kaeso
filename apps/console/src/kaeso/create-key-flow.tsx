@@ -8,7 +8,7 @@ import {
   DialogScope,
   Input,
   Radio,
-  RadioCards,
+  RadioGroup,
   SecretReveal,
   Section,
   Select,
@@ -189,7 +189,7 @@ function CreateKeyFlow({ org, project, open, onClose, fixedServiceAccount }: Cre
             id: "access",
             title: t("kaeso.createKey.whatCalls", "What can it call?"),
             content: (
-              <RadioCards aria-label={t("kaeso.createKey.access", "Access")} value={access} onValueChange={(v) => setAccess(v as Access)}>
+              <RadioGroup variant="cards" aria-label={t("kaeso.createKey.access", "Access")} value={access} onValueChange={(v) => setAccess(v as Access)}>
                 <Radio
                   value="inference"
                   label={t("format.access.inference", "Inference")}
@@ -211,7 +211,7 @@ function CreateKeyFlow({ org, project, open, onClose, fixedServiceAccount }: Cre
                   description={canPlatform ? t("kaeso.createKey.bothHint", "Both. Needs a recent sign-in.") : needs("keys.platform_access.grant")}
                   disabled={!canPlatform}
                 />
-              </RadioCards>
+              </RadioGroup>
             ),
           },
           {

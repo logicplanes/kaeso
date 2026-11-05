@@ -20,7 +20,7 @@ import { Menubar as BaseMenubar } from "@base-ui/react/menubar";
 import { cn } from "../../utils/cn.js";
 import { useLinkComponent } from "../../utils/link-provider.js";
 import { Icon, type IconData } from "../icon/icon.js";
-import { KbdSequence } from "../kbd/kbd.js";
+import { Kbd } from "../kbd/kbd.js";
 import { icons } from "../../icons/vocabulary.js";
 import { anchorWidthStyle, useLayoutWidth } from "../../hooks/use-layout-width.js";
 import { MENU_DANGER, MENU_HINT, MENU_ICON, MENU_ITEM, MENU_LABEL, MENU_POPUP, MENU_SEPARATOR } from "./styles.js";
@@ -208,7 +208,7 @@ function ItemContent({
       {(shortcut || hint) && (
         <span id={hintId} aria-hidden className={MENU_HINT}>
           {hint}
-          {shortcut && <KbdSequence keys={shortcut} />}
+          {shortcut && <Kbd keys={shortcut} />}
         </span>
       )}
     </>

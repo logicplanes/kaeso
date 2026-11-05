@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, render, screen } from "@testing-library/react";
 import { renderToString } from "react-dom/server";
 import { hydrateRoot } from "react-dom/client";
-import { Kbd, KbdSequence } from "./kbd.js";
+import { Kbd } from "./kbd.js";
 
 const onPlatform = (platform: string) => Object.defineProperty(navigator, "platform", { configurable: true, value: platform });
 
@@ -43,7 +43,7 @@ describe("Kbd", () => {
 
   it("renders a repeated key in a sequence without a duplicate React key", () => {
     const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
-    render(<KbdSequence keys={[["g", "g"]]} />);
+    render(<Kbd keys={[["g", "g"]]} />);
     expect(error).not.toHaveBeenCalled();
     error.mockRestore();
   });

@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { SettingsGroup, SettingsRow, SettingsSection, Switch } from "@logicplanes/kaeso-ui";
+import { SettingsGroup, SettingsRow, Section, Switch } from "@logicplanes/kaeso-ui";
 import { api, data } from "~/api/client";
 import type { OrgResponseCache } from "~/api/generated/types";
 import { useApiMutation } from "~/auth/mutation";
@@ -32,7 +32,8 @@ export function OrgResponseCacheSection({ org }: { org: string }) {
   const unavailable = !!p && !p.available;
   const reason = !canUpdate ? needs("org.update") : unavailable ? t("org.responseCache.unavailable", "Off on this install") : undefined;
   return (
-    <SettingsSection
+    <Section
+      spacing="settings"
       title={t("org.responseCache.title", "Response cache")}
       description={t("org.responseCache.hint", "Projects may answer a repeated identical request from a stored reply.")}
     >
@@ -58,6 +59,6 @@ export function OrgResponseCacheSection({ org }: { org: string }) {
           }
         />
       </SettingsGroup>
-    </SettingsSection>
+    </Section>
   );
 }

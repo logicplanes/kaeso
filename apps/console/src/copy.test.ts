@@ -10,8 +10,8 @@ const HEADER_BESIDE_ACTIONS = 70;
 const DIALOG = 100;
 const EMPTY = 90;
 
-const TAG = /<(SettingsRow|SettingsSection|SettingsPage|OrgPage|AppFrame\.Settings|Dialog|AlertDialog|Empty)(?![\w.])/g;
-const HEADERS = new Set(["SettingsSection", "SettingsPage", "OrgPage", "AppFrame.Settings"]);
+const TAG = /<(SettingsRow|Section|SettingsPage|OrgPage|AppFrame\.Settings|Dialog|AlertDialog|Empty)(?![\w.])/g;
+const HEADERS = new Set(["Section", "SettingsPage", "OrgPage", "AppFrame.Settings"]);
 const DIALOGS = new Set(["Dialog", "AlertDialog"]);
 const STEP = "StepDialog step";
 

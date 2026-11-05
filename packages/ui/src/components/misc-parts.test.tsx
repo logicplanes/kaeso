@@ -8,7 +8,7 @@ import { Label } from "./label/label.js";
 import { Heading } from "./heading/heading.js";
 import { Timeline } from "./timeline/timeline.js";
 import { ScrollArea } from "./scroll-area/scroll-area.js";
-import { Skeleton, SkeletonLine } from "./skeleton/skeleton.js";
+import { Skeleton } from "./skeleton/skeleton.js";
 import { ConversationView } from "./kaeso/conversation.js";
 import { devWarn, warnControlled, warnMissingName, warnStylingClassName } from "../utils/dev.js";
 import { resolveVariant } from "../utils/variants.js";
@@ -93,8 +93,8 @@ describe("small parts", () => {
           <p>Wide</p>
         </ScrollArea>
         <Skeleton shape="circle" />
-        <SkeletonLine lines={3} data-testid="lines" />
-        <SkeletonLine data-testid="one" />
+        <Skeleton lines={3} data-testid="lines" />
+        <Skeleton lines={1} data-testid="one" />
       </>,
     );
     expect(screen.getByText("Name")).toHaveTextContent("Optional");

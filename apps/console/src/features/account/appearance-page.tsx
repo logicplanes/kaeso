@@ -1,5 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { Select, SettingsGroup, SettingsRow, SettingsSection, icons, useTheme } from "@logicplanes/kaeso-ui";
+import { Select, SettingsGroup, SettingsRow, Section, icons, useTheme } from "@logicplanes/kaeso-ui";
 import { UI_LOCALE_NAMES, UI_LOCALES } from "@logicplanes/kaeso-ui/i18n";
 import { api, data } from "~/api/client";
 import { useApiMutation } from "~/auth/mutation";
@@ -30,7 +30,7 @@ export function AppearancePage() {
       context={t("account.title", "Account")}
       description={t("account.appearanceHint", "How the console looks in this browser, and the language it speaks to you.")}
     >
-      <SettingsSection>
+      <Section spacing="settings">
         <SettingsGroup>
           <SettingsRow
             title={t("account.theme", "Theme")}
@@ -67,7 +67,7 @@ export function AppearancePage() {
             }
           />
         </SettingsGroup>
-      </SettingsSection>
+      </Section>
     </SettingsPage>
   );
 }

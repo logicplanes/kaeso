@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { Tabs, PillTabs, InsetContent, icons } from "@logicplanes/kaeso-ui";
+import { Tabs, InsetContent, icons } from "@logicplanes/kaeso-ui";
 import { StateCell, StateMatrix, StateRow, StateSection } from "~/lib/states";
 
 export const meta = {
@@ -7,7 +7,7 @@ export const meta = {
   description: "Underline tabs for detail pages and pill tabs for page headers.",
   group: "Components",
   entry: "tabs",
-  import: "Tabs, PillTabs",
+  import: "Tabs",
   keyboard: [
     ["Left Right", "Moves focus between tabs"],
     ["Home End", "Moves focus to the first or last tab"],
@@ -39,20 +39,20 @@ export function Underline() {
 }
 export function Pills() {
   return (
-    <PillTabs defaultValue="all">
-      <PillTabs.List aria-label="Keys">
-        <PillTabs.Tab value="all" count={6}>
+    <Tabs variant="pill" defaultValue="all">
+      <Tabs.List aria-label="Keys">
+        <Tabs.Tab value="all" count={6}>
           All
-        </PillTabs.Tab>
-        <PillTabs.Tab value="active" count={3}>
+        </Tabs.Tab>
+        <Tabs.Tab value="active" count={3}>
           Active
-        </PillTabs.Tab>
-        <PillTabs.Tab value="disabled">Disabled</PillTabs.Tab>
-        <PillTabs.Tab value="archived" icon={icons.stack}>
+        </Tabs.Tab>
+        <Tabs.Tab value="disabled">Disabled</Tabs.Tab>
+        <Tabs.Tab value="archived" icon={icons.stack}>
           Archived
-        </PillTabs.Tab>
-      </PillTabs.List>
-    </PillTabs>
+        </Tabs.Tab>
+      </Tabs.List>
+    </Tabs>
   );
 }
 type Force = "hover" | "pressed" | "focus" | undefined;
@@ -71,13 +71,13 @@ function OnePill({
   count?: number;
 }) {
   return (
-    <PillTabs value={selected ? "t" : "other"}>
-      <PillTabs.List aria-label={label}>
-        <PillTabs.Tab value="t" {...(force ? { "data-force": force } : {})} {...(disabled ? { disabled } : {})} {...(count !== undefined ? { count } : {})}>
+    <Tabs variant="pill" value={selected ? "t" : "other"}>
+      <Tabs.List aria-label={label}>
+        <Tabs.Tab value="t" {...(force ? { "data-force": force } : {})} {...(disabled ? { disabled } : {})} {...(count !== undefined ? { count } : {})}>
           {label}
-        </PillTabs.Tab>
-      </PillTabs.List>
-    </PillTabs>
+        </Tabs.Tab>
+      </Tabs.List>
+    </Tabs>
   );
 }
 

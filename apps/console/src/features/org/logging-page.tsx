@@ -14,7 +14,7 @@ import {
   Select,
   SettingsGroup,
   SettingsRow,
-  SettingsSection,
+  Section,
   Skeleton,
   StatGrid,
   StatTile,
@@ -205,7 +205,7 @@ function LogSettingsForm({ org, settings, canManage }: { org: string; settings: 
   const shortDays = shortening && t("org.days", "{count, plural, one {# day} other {# days}}", { count: shortening.days });
   return (
     <div>
-      <SettingsSection title={t("org.logging.content", "Content logging")}>
+      <Section spacing="settings" title={t("org.logging.content", "Content logging")}>
         <SettingsGroup>
           <SettingsRow
             title={t("org.logging.logContent", "Log request content")}
@@ -222,8 +222,9 @@ function LogSettingsForm({ org, settings, canManage }: { org: string; settings: 
             }
           />
         </SettingsGroup>
-      </SettingsSection>
-      <SettingsSection
+      </Section>
+      <Section
+        spacing="settings"
         title={t("org.logging.retention", "Retention")}
         description={t("org.logging.retentionHint", "Shortening deletes older entries; lengthening applies to new ones.")}
       >
@@ -273,7 +274,7 @@ function LogSettingsForm({ org, settings, canManage }: { org: string; settings: 
             }
           />
         </SettingsGroup>
-      </SettingsSection>
+      </Section>
       {shortening && shortDays && (
         <AlertDialog
           open={confirming}
@@ -418,7 +419,8 @@ function Deletions({ org }: { org: string }) {
   const list = jobs.data ?? [];
   return (
     <div>
-      <SettingsSection
+      <Section
+        spacing="settings"
         title={t("org.logging.delete", "Delete logs")}
         description={t("org.logging.deleteHint", "Deletes a period's entries for good, in one project or all.")}
         actions={
@@ -476,7 +478,7 @@ function Deletions({ org }: { org: string }) {
             </Table.Body>
           </Table>
         )}
-      </SettingsSection>
+      </Section>
       {deleting && <DeleteLogsDialog org={org} onClose={() => setDeleting(false)} />}
     </div>
   );

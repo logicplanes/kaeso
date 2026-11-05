@@ -15,7 +15,7 @@ import {
   SensitiveInput,
   SettingsGroup,
   SettingsRow,
-  SettingsSection,
+  Section,
   Skeleton,
   StepDialog,
   Switch,
@@ -83,7 +83,8 @@ function SingleSignOn({ org, security }: { org: string; security: SecurityView }
     },
   });
   return (
-    <SettingsSection
+    <Section
+      spacing="settings"
       title={t("org.sso.title", "Single sign-on")}
       description={t("org.sso.description", "Members sign in through your identity provider (OpenID Connect).")}
     >
@@ -224,7 +225,7 @@ function SingleSignOn({ org, security }: { org: string; security: SecurityView }
       <DialogScope open={disconnecting}>
         <DisconnectDialog org={org} required={security.require_sso} open={disconnecting} onOpenChange={setDisconnecting} />
       </DialogScope>
-    </SettingsSection>
+    </Section>
   );
 }
 
@@ -487,7 +488,7 @@ function Requirements({ org, security }: { org: string; security: SecurityView }
       : undefined;
   const tfaReason = rights.has("security.2fa.require") ? undefined : needs("security.2fa.require");
   return (
-    <SettingsSection title={t("org.security.requirements", "Requirements")}>
+    <Section spacing="settings" title={t("org.security.requirements", "Requirements")}>
       <SettingsGroup>
         <SettingsRow
           title={t("org.sso.require", "Require single sign-on")}
@@ -528,7 +529,7 @@ function Requirements({ org, security }: { org: string; security: SecurityView }
       <DialogScope open={confirming === "2fa"}>
         <Require2faDialog org={org} open={confirming === "2fa"} onOpenChange={(o) => !o && setConfirming(null)} />
       </DialogScope>
-    </SettingsSection>
+    </Section>
   );
 }
 
@@ -617,7 +618,8 @@ function KeyPolicy({ org, days }: { org: string; days: number | null }) {
         ? t("org.noChange", "No change to save")
         : undefined;
   return (
-    <SettingsSection
+    <Section
+      spacing="settings"
       title={t("org.keyLifetime.title", "Maximum key lifetime")}
       description={t("org.keyLifetime.description", 'Existing keys keep their expiry; new keys lose the "Never" option.')}
     >
@@ -675,6 +677,6 @@ function KeyPolicy({ org, days }: { org: string; days: number | null }) {
           />
         )}
       </SettingsGroup>
-    </SettingsSection>
+    </Section>
   );
 }

@@ -29,18 +29,4 @@ export const docs = {
       variant: "A plain list of radios, or rows inside a settings group with the radio at the end (`cards`).",
     },
   },
-  RadioCards: {
-    description: "Choices with descriptions as rows in a settings group.",
-    props: {
-      "aria-label": "The accessible name, for when there is no visible label.",
-      "aria-labelledby": "The id of the element that names it, when its label is elsewhere on the page.",
-      children: "The cards, one per option.",
-      defaultValue: "The chosen option on first render.",
-      disabled: "Turns off every card.",
-      name: "The field name the value is sent under in a form.",
-      onValueChange: "Called with the chosen option.",
-      orientation: "Lays the items out in a row (`horizontal`) or a column (`vertical`).",
-      value: "The chosen option, when you control it.",
-    },
-  },
 } satisfies ComponentDocs;

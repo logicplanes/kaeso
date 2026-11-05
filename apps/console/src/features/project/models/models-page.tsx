@@ -10,7 +10,7 @@ import {
   List,
   ModelLabel,
   Tag,
-  PillTabs,
+  Tabs,
   Popover,
   ProviderBadge,
   ProviderPicker,
@@ -208,16 +208,16 @@ export function ModelsPage({ org, project, search }: { org: string; project: str
         page={common.models()}
         path="models"
         tabs={
-          <PillTabs value={tab} onValueChange={(v) => setSearch({ tab: v === "aliases" ? "aliases" : undefined, model: undefined })}>
-            <PillTabs.List aria-label={common.models()}>
-              <PillTabs.Tab value="catalogue" {...(catalogue.data ? { count: catalogue.data.length } : {})}>
+          <Tabs variant="pill" value={tab} onValueChange={(v) => setSearch({ tab: v === "aliases" ? "aliases" : undefined, model: undefined })}>
+            <Tabs.List aria-label={common.models()}>
+              <Tabs.Tab value="catalogue" {...(catalogue.data ? { count: catalogue.data.length } : {})}>
                 {t("models.catalogue", "Catalogue")}
-              </PillTabs.Tab>
-              <PillTabs.Tab value="aliases" {...(aliases.data ? { count: aliases.data.length } : {})}>
+              </Tabs.Tab>
+              <Tabs.Tab value="aliases" {...(aliases.data ? { count: aliases.data.length } : {})}>
                 {t("models.aliases", "Aliases")}
-              </PillTabs.Tab>
-            </PillTabs.List>
-          </PillTabs>
+              </Tabs.Tab>
+            </Tabs.List>
+          </Tabs>
         }
         actions={addButton}
       />

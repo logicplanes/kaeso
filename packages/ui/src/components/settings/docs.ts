@@ -23,13 +23,4 @@ export const docs = {
       value: "A value in secondary before a chevron: makes the row a navigation row.",
     },
   },
-  SettingsSection: {
-    description: "A settings section: a title-sm heading 48px above, 12px below; usually one SettingsGroup.",
-    props: {
-      actions: "Right of the title.",
-      children: "The section's groups of rows.",
-      description: "One sentence under the heading.",
-      title: "The section's heading.",
-    },
-  },
 } satisfies ComponentDocs;

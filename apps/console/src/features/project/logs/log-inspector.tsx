@@ -15,7 +15,6 @@ import {
   Section,
   Sheet,
   Skeleton,
-  SkeletonLine,
   StatGrid,
   StatTile,
   StatusCode,
@@ -71,7 +70,7 @@ function ConversationPending({ messages }: { messages: number }) {
       {Array.from({ length: Math.min(messages, 4) }, (_, i) => (
         <div key={i} className="flex flex-col gap-8">
           <Skeleton shape="line" className="w-64" />
-          <SkeletonLine lines={3} />
+          <Skeleton lines={3} />
         </div>
       ))}
     </div>

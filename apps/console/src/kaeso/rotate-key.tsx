@@ -1,5 +1,5 @@
 import { useState, type ComponentProps } from "react";
-import { Radio, RadioCards, type StepDialog } from "@logicplanes/kaeso-ui";
+import { Radio, RadioGroup, type StepDialog } from "@logicplanes/kaeso-ui";
 import type { KeyRotate } from "~/api/generated/types";
 import { t } from "~/i18n";
 import { ExpiryPicker, defaultExpiry, expiryRequest, type Expiry } from "./expiry-picker";
@@ -43,7 +43,7 @@ export function rotationSteps(c: RotationChoices, maxDays: number | null | undef
       title: t("kaeso.rotateKey.whenOldStops", "When does the old key stop working?"),
       description: t("kaeso.rotateKey.whenOldStopsHint", "Both keys work until then, so you can move your apps to the new one."),
       content: (
-        <RadioCards aria-label={t("kaeso.rotateKey.gracePeriod", "Grace period")} value={c.grace} onValueChange={(v) => c.setGrace(v as Grace)}>
+        <RadioGroup variant="cards" aria-label={t("kaeso.rotateKey.gracePeriod", "Grace period")} value={c.grace} onValueChange={(v) => c.setGrace(v as Grace)}>
           <Radio
             value="0"
             label={t("kaeso.rotateKey.now", "Immediately")}
@@ -52,7 +52,7 @@ export function rotationSteps(c: RotationChoices, maxDays: number | null | undef
           <Radio value="1" label={t("kaeso.rotateKey.afterHour", "After 1 hour")} />
           <Radio value="24" label={t("kaeso.rotateKey.afterDay", "After 24 hours")} />
           <Radio value="168" label={t("kaeso.rotateKey.afterWeek", "After 7 days")} />
-        </RadioCards>
+        </RadioGroup>
       ),
     },
     {

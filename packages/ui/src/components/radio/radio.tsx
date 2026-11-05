@@ -160,9 +160,3 @@ Root.displayName = "Radio";
 
 export const Radio = Root;
 export const RadioGroup = Group;
-export type RadioCardsProps = Omit<RadioGroupProps, "variant">;
-
-export const RadioCards = forwardRef<HTMLDivElement, RadioCardsProps>(function RadioCards(props, ref) {
-  return <Group ref={ref} variant="cards" {...props} />;
-});
-RadioCards.displayName = "RadioCards";

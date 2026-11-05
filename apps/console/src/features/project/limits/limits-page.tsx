@@ -12,7 +12,7 @@ import {
   List,
   Menu,
   Meter,
-  PillTabs,
+  Tabs,
   Segmented,
   StepDialog,
   Text,
@@ -139,16 +139,16 @@ export function LimitsPage({ org, project, search }: { org: string; project: str
         page={t("limits.title", "Limits")}
         path="limits"
         tabs={
-          <PillTabs value={search.level ?? "all"} onValueChange={(v) => setLevel(v === "all" ? undefined : (v as Level))}>
-            <PillTabs.List aria-label={t("limits.level", "Level")}>
-              <PillTabs.Tab value="all">{common.all()}</PillTabs.Tab>
+          <Tabs variant="pill" value={search.level ?? "all"} onValueChange={(v) => setLevel(v === "all" ? undefined : (v as Level))}>
+            <Tabs.List aria-label={t("limits.level", "Level")}>
+              <Tabs.Tab value="all">{common.all()}</Tabs.Tab>
               {levelList.map((l) => (
-                <PillTabs.Tab key={l.value} value={l.value}>
+                <Tabs.Tab key={l.value} value={l.value}>
                   {l.label}
-                </PillTabs.Tab>
+                </Tabs.Tab>
               ))}
-            </PillTabs.List>
-          </PillTabs>
+            </Tabs.List>
+          </Tabs>
         }
         actions={
           <Button

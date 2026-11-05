@@ -1,7 +1,7 @@
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useBlocker, useNavigate } from "@tanstack/react-router";
-import { AlertDialog, AppFrame, Button, DialogScope, IconButton, Loader, Menu, PageHeader, PillTabs, icons } from "@logicplanes/kaeso-ui";
+import { AlertDialog, AppFrame, Button, DialogScope, IconButton, Loader, Menu, PageHeader, Tabs, icons } from "@logicplanes/kaeso-ui";
 import { FlowCanvas, FlowWorkspace } from "@logicplanes/kaeso-ui/flow-canvas";
 import { formatDuration } from "@logicplanes/kaeso-ui/format";
 import { api, data } from "~/api/client";
@@ -510,13 +510,13 @@ function Editor({
         start={<Start org={org} project={project} />}
         title={saved?.name ?? (doc.name.trim() || t("models.route.newAlias", "New alias"))}
         tabs={
-          <PillTabs value={tab} onValueChange={(v) => setTab(v === "audit" || v === "test" ? v : "editor")}>
-            <PillTabs.List aria-label={t("models.route.views", "Alias views")}>
-              <PillTabs.Tab value="editor">{t("models.route.editor", "Editor")}</PillTabs.Tab>
-              <PillTabs.Tab value="test">{t("models.route.testTab", "Test")}</PillTabs.Tab>
-              {saved && canSeeAudit && <PillTabs.Tab value="audit">{t("models.route.auditLog", "Audit log")}</PillTabs.Tab>}
-            </PillTabs.List>
-          </PillTabs>
+          <Tabs variant="pill" value={tab} onValueChange={(v) => setTab(v === "audit" || v === "test" ? v : "editor")}>
+            <Tabs.List aria-label={t("models.route.views", "Alias views")}>
+              <Tabs.Tab value="editor">{t("models.route.editor", "Editor")}</Tabs.Tab>
+              <Tabs.Tab value="test">{t("models.route.testTab", "Test")}</Tabs.Tab>
+              {saved && canSeeAudit && <Tabs.Tab value="audit">{t("models.route.auditLog", "Audit log")}</Tabs.Tab>}
+            </Tabs.List>
+          </Tabs>
         }
         actions={
           <span className="flex items-center gap-8">

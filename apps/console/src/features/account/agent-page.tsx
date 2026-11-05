@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { AlertDialog, Banner, Button, Code, Empty, GrantSummary, Input, SettingsGroup, SettingsRow, SettingsSection } from "@logicplanes/kaeso-ui";
+import { AlertDialog, Banner, Button, Code, Empty, GrantSummary, Input, SettingsGroup, SettingsRow, Section } from "@logicplanes/kaeso-ui";
 import { formatRelative } from "@logicplanes/kaeso-ui/format";
 import { api, data } from "~/api/client";
 import { isApiError } from "~/api/errors";
@@ -129,7 +129,7 @@ function Loaded({ agent, cat, grantable, search }: { agent: AgentView; cat: Agen
             : t("account.agentAsksNotHeldHint", "Ask an admin for it first; an agent never gets more than you hold.")}
         </Banner>
       )}
-      <SettingsSection title={t("account.agentDetails", "Details")}>
+      <Section spacing="settings" title={t("account.agentDetails", "Details")}>
         <div className="flex flex-col gap-16">
           <Input
             label={t("common.name", "Name")}
@@ -150,8 +150,8 @@ function Loaded({ agent, cat, grantable, search }: { agent: AgentView; cat: Agen
             </Button>
           </div>
         </div>
-      </SettingsSection>
-      <SettingsSection title={t("account.agentRights", "Rights")}>
+      </Section>
+      <Section spacing="settings" title={t("account.agentRights", "Rights")}>
         <div className="flex flex-col gap-16">
           <PresetPicker cat={cat} grantable={grantable} value={draft} onChange={setDraft} />
           <GrantSummary
@@ -183,7 +183,7 @@ function Loaded({ agent, cat, grantable, search }: { agent: AgentView; cat: Agen
             </Button>
           </div>
         </div>
-      </SettingsSection>
+      </Section>
       <Activity agent={agent.id} />
       <AlertDialog
         open={confirming !== null}
@@ -222,7 +222,11 @@ function Activity({ agent }: { agent: string }) {
   const activity = useInfiniteQuery(agentActivityQuery(agent));
   const calls = activity.data?.pages.flatMap((p) => p.data) ?? [];
   return (
-    <SettingsSection title={t("account.agentActivity", "Activity")} description={t("account.agentActivityHint", "Every tool call of the last 90 days.")}>
+    <Section
+      spacing="settings"
+      title={t("account.agentActivity", "Activity")}
+      description={t("account.agentActivityHint", "Every tool call of the last 90 days.")}
+    >
       {activity.isError ? (
         <LoadFailed title={t("account.agentActivityFailed", "The activity couldn't load")} />
       ) : activity.isPending ? (
@@ -252,6 +256,6 @@ function Activity({ agent }: { agent: string }) {
           </Button>
         </div>
       )}
-    </SettingsSection>
+    </Section>
   );
 }

@@ -1,16 +1,16 @@
 import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { PillTabs, Tabs } from "./tabs.js";
+import { Tabs } from "./tabs.js";
 import { InsetContent } from "../../utils/inset.js";
 
 const pills = (
-  <PillTabs defaultValue="all">
-    <PillTabs.List aria-label="Keys">
-      <PillTabs.Tab value="all">All</PillTabs.Tab>
-      <PillTabs.Tab value="active">Active</PillTabs.Tab>
-    </PillTabs.List>
-  </PillTabs>
+  <Tabs variant="pill" defaultValue="all">
+    <Tabs.List aria-label="Keys">
+      <Tabs.Tab value="all">All</Tabs.Tab>
+      <Tabs.Tab value="active">Active</Tabs.Tab>
+    </Tabs.List>
+  </Tabs>
 );
 
 const underline = (
@@ -22,7 +22,7 @@ const underline = (
   </Tabs>
 );
 
-describe("PillTabs", () => {
+describe("Tabs with pills", () => {
   it("never pulls the list into the gutter, in a padded column too", () => {
     const { rerender } = render(pills);
     expect(screen.getByRole("tablist").className).not.toMatch(/(^|\s)-m[xl]?-\d+/);

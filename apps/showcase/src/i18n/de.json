@@ -1226,5 +1226,14 @@
   "Keeps the button still when pressed, for a control whose 0.96 press would distract; it still darkens.": "Hält den Button beim Drücken still, für ein Steuerelement, bei dem das Verkleinern auf 0,96 ablenken würde; er wird trotzdem dunkler.",
   "Keeps the button still when pressed, as on `Button`.": "Hält den Button beim Drücken still, wie bei `Button`.",
   "A status word in its tone's color, with an optional icon. Status is never color alone.": "Ein Statuswort in der Farbe seines Tons, optional mit Symbol. Ein Status ist nie nur Farbe.",
-  "Makes it the select-all box of a `CheckboxGroup`: checked when every value in the group's `allValues` is, a dash when some are, and checking it checks them all.": "Macht es zum Kästchen „Alle auswählen“ einer `CheckboxGroup`: angehakt, wenn jeder Wert aus `allValues` der Gruppe angehakt ist, mit Strich, wenn einige es sind, und ein Klick hakt alle an."
+  "Makes it the select-all box of a `CheckboxGroup`: checked when every value in the group's `allValues` is, a dash when some are, and checking it checks them all.": "Macht es zum Kästchen „Alle auswählen“ einer `CheckboxGroup`: angehakt, wenn jeder Wert aus `allValues` der Gruppe angehakt ist, mit Strich, wenn einige es sind, und ein Klick hakt alle an.",
+  "Pill tabs at the start of the row (`Tabs variant=\"pill\"`). In a settings column their first label lines up with the title.": "Pill-Tabs am Anfang der Zeile (`Tabs variant=\"pill\"`). In einer Einstellungsspalte steht ihre erste Beschriftung auf einer Linie mit dem Titel.",
+  "A key name (`mod`, `shift`, `k`, `enter`) or any text, for one key.": "Ein Tastenname (`mod`, `shift`, `k`, `enter`) oder beliebiger Text, für eine einzelne Taste.",
+  "A whole shortcut instead of one key. Chords are arrays pressed together, and the outer list is pressed in order: `[[\"g\"], [\"l\"]]` is G then L.": "Ein ganzes Tastenkürzel statt einer Taste. Akkorde sind Arrays, die zusammen gedrückt werden, und die äußere Liste wird nacheinander gedrückt: `[[\"g\"], [\"l\"]]` ist G, dann L.",
+  "One of a few choices: an ink donut around a panel center; cards (`variant=\"cards\"`) for choices with descriptions.": "Eine von wenigen Optionen: ein Tintenring um eine Mitte in Panelfarbe; Karten (`variant=\"cards\"`) für Optionen mit Beschreibung.",
+  "Cards": "Karten",
+  "The group's accessible name.": "Der zugängliche Name der Gruppe.",
+  "The rows of the group.": "Die Zeilen der Gruppe.",
+  "Stands in for that many lines of text, the last one shorter; it takes the place of `shape`.": "Steht für so viele Textzeilen, die letzte kürzer; ersetzt `shape`.",
+  "`underline` for the sections of a detail page; `pill` for a page's views, right under its header.": "`underline` für die Abschnitte einer Detailseite; `pill` für die Ansichten einer Seite, direkt unter ihrem Kopf."
 }

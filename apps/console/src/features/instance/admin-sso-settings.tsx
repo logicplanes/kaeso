@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Select, SettingsGroup, SettingsRow, SettingsSection } from "@logicplanes/kaeso-ui";
+import { Select, SettingsGroup, SettingsRow, Section } from "@logicplanes/kaeso-ui";
 import { api, data } from "~/api/client";
 import type { SettingsView } from "~/api/generated/types";
 import { instanceSsoOrgsQuery } from "~/api/queries/instance";
@@ -34,7 +34,8 @@ export function AdminSsoSettings({ settings }: { settings: SettingsView }) {
       ? t("instance.adminSso.onHint", "Applies to admins whose account the organization manages.")
       : t("instance.adminSso.disconnected", "{org} has no SSO connection, so this has no effect.", { org: current.name });
   return (
-    <SettingsSection
+    <Section
+      spacing="settings"
       title={t("instance.adminSso.title", "Instance admins")}
       description={t("instance.adminSso.sectionHint", "Changing it needs a recent sign-in with a password or an email link.")}
     >
@@ -57,6 +58,6 @@ export function AdminSsoSettings({ settings }: { settings: SettingsView }) {
           }
         />
       </SettingsGroup>
-    </SettingsSection>
+    </Section>
   );
 }

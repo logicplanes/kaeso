@@ -11,7 +11,7 @@ import {
   KeyValue,
   SettingsGroup,
   SettingsRow,
-  SettingsSection,
+  Section,
   Skeleton,
   StepDialog,
   Text,
@@ -49,7 +49,7 @@ export function OrgGeneralPage({ org }: { org: string }) {
         <Skeleton className="h-full w-full" />
       ) : (
         <>
-          <SettingsSection title={common.organization()}>
+          <Section spacing="settings" title={common.organization()}>
             <SettingsGroup>
               <PictureRow org={org} name={o.name} src={o.avatar_url} canUpdate={rights.has("org.update")} />
               <NameRow key={o.name} org={org} name={o.name} canUpdate={rights.has("org.update")} />
@@ -60,7 +60,7 @@ export function OrgGeneralPage({ org }: { org: string }) {
               />
               <SettingsRow title={common.created()} control={<Text tone="secondary">{formatDate(o.created_at)}</Text>} />
             </SettingsGroup>
-          </SettingsSection>
+          </Section>
           {rights.has("org.ownership.transfer") && <TransferOwnership org={org} />}
           {rights.has("org.delete") && o.state === "active" && session.org_deletion.allowed && <DeleteOrg org={org} name={o.name} />}
         </>
@@ -156,7 +156,7 @@ function TransferOwnership({ org }: { org: string }) {
   const candidates = (members.data ?? []).filter((m) => m.user.id !== session.user.id && m.user.state === "active");
   const [open, setOpen] = useState(false);
   return (
-    <SettingsSection title={t("org.ownership.title", "Ownership")}>
+    <Section spacing="settings" title={t("org.ownership.title", "Ownership")}>
       <SettingsGroup>
         <SettingsRow
           title={t("org.ownership.transfer", "Transfer ownership")}
@@ -171,7 +171,7 @@ function TransferOwnership({ org }: { org: string }) {
       <DialogScope open={open}>
         <TransferDialog org={org} candidates={candidates} loading={members.isPending} open={open} onOpenChange={setOpen} />
       </DialogScope>
-    </SettingsSection>
+    </Section>
   );
 }
 
@@ -249,7 +249,7 @@ function DeleteOrg({ org, name }: { org: string; name: string }) {
   const [open, setOpen] = useState(false);
   const grace = t("org.days", "{count, plural, one {# day} other {# days}}", { count: session.org_deletion.grace_days });
   return (
-    <SettingsSection title={t("org.delete.title", "Delete organization")}>
+    <Section spacing="settings" title={t("org.delete.title", "Delete organization")}>
       <SettingsGroup>
         <SettingsRow
           danger
@@ -265,7 +265,7 @@ function DeleteOrg({ org, name }: { org: string; name: string }) {
       <DialogScope open={open}>
         <DeleteOrgDialog org={org} name={name} grace={grace} open={open} onOpenChange={setOpen} />
       </DialogScope>
-    </SettingsSection>
+    </Section>
   );
 }
 

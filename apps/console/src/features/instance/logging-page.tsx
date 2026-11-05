@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Button, Empty, NumberInput, SettingsGroup, SettingsRow, SettingsSection } from "@logicplanes/kaeso-ui";
+import { Button, Empty, NumberInput, SettingsGroup, SettingsRow, Section } from "@logicplanes/kaeso-ui";
 import { api, data } from "~/api/client";
 import type { SettingsView } from "~/api/generated/types";
 import { instanceSettingsQuery } from "~/api/queries/instance";
@@ -99,7 +99,8 @@ function Retention({ settings }: { settings: SettingsView }) {
     );
   };
   return (
-    <SettingsSection
+    <Section
+      spacing="settings"
       title={t("instance.retention", "Request log retention")}
       description={t("instance.retentionHint", "Defaults for new organizations, and the most any organization may choose.")}
     >
@@ -141,6 +142,6 @@ function Retention({ settings }: { settings: SettingsView }) {
           )}
         />
       </SettingsGroup>
-    </SettingsSection>
+    </Section>
   );
 }
