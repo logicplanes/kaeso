@@ -10,7 +10,6 @@ import {
   Dialog,
   Empty,
   FilterRow,
-  IconButton,
   Input,
   Menu,
   Tabs,
@@ -123,7 +122,7 @@ export function InstanceOrgsPage({ search }: { search: InstanceOrgsSearch }) {
           <Button size="sm" variant="primary" leadingIcon={icons.add} className="hidden sm:inline-flex" onClick={() => setCreating(true)}>
             {t("instance.createOrg", "Create organization")}
           </Button>
-          <IconButton
+          <Button
             size="sm"
             variant="primary"
             icon={icons.add}

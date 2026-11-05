@@ -116,7 +116,7 @@ const GroupButton = forwardRef<HTMLButtonElement, InputGroupButtonProps>(functio
     <Button
       {...(disabled ? { disabled: true } : {})}
       ref={ref as React.Ref<HTMLButtonElement & HTMLAnchorElement>}
-      shape="circle"
+      tooltip={false}
       variant="quiet"
       size={size === "xl" ? "md" : size === "lg" ? "sm" : size === "md" ? "sm" : "xs"}
       icon={icon}

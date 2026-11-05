@@ -7,7 +7,7 @@ import { cn } from "../../utils/cn.js";
 import { useRestoreFocus } from "../../utils/restore-focus.js";
 import { useScopedDialog } from "../../utils/dialog-scope.js";
 import { icons } from "../../icons/vocabulary.js";
-import { IconButton } from "../icon-button/icon-button.js";
+import { Button } from "../button/button.js";
 import { useUiText } from "../../i18n/context.js";
 import { useResizeMotion } from "../../utils/resize-motion.js";
 
@@ -55,7 +55,9 @@ function Frame({ title, subtitle, actions, children, footer, inline, onOpenChang
   const headRef = useCallback((el: HTMLElement | null) => setBox(grows ? (el?.parentElement ?? null) : null), [grows]);
   useResizeMotion(box);
   const close = (
-    <IconButton
+    <Button
+      variant="ghost"
+      size="sm"
       icon={icons.close}
       aria-label={t("sheet.close", "Close")}
       tooltip={false}

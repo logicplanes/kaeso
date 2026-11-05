@@ -8,7 +8,6 @@ import {
   DataTable,
   DialogScope,
   Empty,
-  IconButton,
   Input,
   LayerDialog,
   List,
@@ -583,7 +582,8 @@ function hitColumns(providerName: (id: string) => string, review: (modelId: stri
         (h: SearchHit) => h.model_id,
         (_id: string, h: SearchHit) =>
           h.catalogue_model_id ? null : (
-            <IconButton
+            <Button
+              variant="ghost"
               size="sm"
               icon={icons.chevronRight}
               aria-label={t("models.reviewModel", "Review {model}", { model: h.model_id })}

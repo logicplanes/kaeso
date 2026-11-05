@@ -5,7 +5,7 @@ import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { List, type ListGroup, type ListItemData } from "./list.js";
 import { Dialog } from "../dialog/dialog.js";
-import { IconButton } from "../icon-button/icon-button.js";
+import { Button } from "../button/button.js";
 import { icons } from "../../icons/vocabulary.js";
 import { lazyModulesSettled } from "../../utils/lazy-module.js";
 
@@ -21,8 +21,8 @@ const withActions = (list: ListItemData[]) =>
     ...i,
     actions: (
       <>
-        <IconButton icon={icons.copy} aria-label={`Copy ${i.id}`} size="xs" tooltip={false} />
-        <IconButton icon={icons.more} aria-label={`More for ${i.id}`} size="xs" tooltip={false} />
+        <Button variant="ghost" icon={icons.copy} aria-label={`Copy ${i.id}`} size="xs" tooltip={false} />
+        <Button variant="ghost" icon={icons.more} aria-label={`More for ${i.id}`} size="xs" tooltip={false} />
       </>
     ),
   }));

@@ -15,7 +15,7 @@ export const meta = {
   ],
   a11y: [
     'Renders a native <button type="button">, or an <a> when href is set.',
-    "Icon-only buttons are circles and require aria-label at the type level; use IconButton, which also shows the name as a tooltip.",
+    "A button with an icon and no label is a circle. Its aria-label is required by the types and also shows as its tooltip, with a shortcut as key caps, so sighted and screen-reader users get the same name.",
     "Loading sets aria-busy at once and keeps the button focusable; clicks are ignored until it finishes. The spinner shows once the work has taken 300ms, for at least 400ms. The width never changes.",
     "With disabledReason, the button uses aria-disabled instead of disabled so keyboard users can reach the tooltip that explains why.",
     "Primary and danger labels measure at least 4.5:1 on their fills in both themes.",
@@ -37,7 +37,8 @@ export const examples = [
     description: "24 for chips inside rows, 32 in toolbars, 36 by default, 40 for prominent actions, 48 in sign-in and setup forms.",
   },
   { id: "icons", title: "With icons", fn: "WithIcons", description: "A leading icon takes 2px off its side's padding so the label looks centered." },
-  { id: "icon-only", title: "Icon only", fn: "IconOnly", description: "A circle of the same height. Prefer IconButton, which adds the tooltip." },
+  { id: "icon-only", title: "Icon only", fn: "IconOnly", description: "A circle of the same height, with its name in a tooltip." },
+  { id: "icon-shortcut", title: "Icon only, with a shortcut", fn: "IconWithShortcut", description: "The shortcut shows in the tooltip as key caps." },
   {
     id: "loading",
     title: "Loading",
@@ -147,11 +148,15 @@ export function WithIcons() {
 export function IconOnly() {
   return (
     <Inline gap={12}>
-      <Button shape="circle" icon={icons.filter} aria-label="Filter" />
-      <Button shape="circle" variant="ghost" icon={icons.more} aria-label="More actions" />
-      <Button shape="circle" variant="primary" icon={icons.add} aria-label="Create key" />
+      <Button icon={icons.filter} aria-label="Filter" />
+      <Button variant="ghost" icon={icons.more} aria-label="More actions" />
+      <Button variant="primary" icon={icons.add} aria-label="Create key" />
     </Inline>
   );
+}
+
+export function IconWithShortcut() {
+  return <Button size="sm" icon={icons.search} aria-label="Search" shortcut={["mod", "k"]} />;
 }
 
 export function Loading() {
@@ -256,6 +261,19 @@ export function States() {
   return (
     <>
       {STATE_SETS.map((states, i) => (
+        <StateMatrix key={`icon-${i}`} title={i === 0 ? "Icon only × states" : "Icon only × more states"} columns={states.map(([s]) => s)}>
+          {VARIANTS.filter((v) => v !== "link").map((v) => (
+            <StateRow key={v} label={v}>
+              {states.map(([s, p]) => (
+                <StateCell key={s} id={`icon-${v}-${s.toLowerCase()}`}>
+                  <Button variant={v} size="sm" icon={icons.filter} aria-label="Filter" tooltip={false} {...p} />
+                </StateCell>
+              ))}
+            </StateRow>
+          ))}
+        </StateMatrix>
+      ))}
+      {STATE_SETS.map((states, i) => (
         <StateMatrix key={i} title={i === 0 ? "Variants × states" : "Variants × more states"} columns={states.map(([s]) => s)}>
           {VARIANTS.map((v) => (
             <StateRow key={v} label={v}>
@@ -317,7 +335,7 @@ export function States() {
               ) : (
                 <>
                   <StateCell>
-                    <Button size={s} shape="circle" icon={icons.filter} aria-label="Filter" />
+                    <Button size={s} icon={icons.filter} aria-label="Filter" />
                   </StateCell>
                   <StateCell>
                     <Button size={s} count={8}>

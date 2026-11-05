@@ -1235,5 +1235,12 @@
   "The group's accessible name.": "该组的无障碍名称。",
   "The rows of the group.": "该组中的行。",
   "Stands in for that many lines of text, the last one shorter; it takes the place of `shape`.": "代替相应行数的文本，最后一行较短；它取代 `shape`。",
-  "`underline` for the sections of a detail page; `pill` for a page's views, right under its header.": "`underline` 用于详情页的各个分区；`pill` 用于页面的各个视图，紧贴页面标题栏下方。"
+  "`underline` for the sections of a detail page; `pill` for a page's views, right under its header.": "`underline` 用于详情页的各个分区；`pill` 用于页面的各个视图，紧贴页面标题栏下方。",
+  "A circle of the same height, with its name in a tooltip.": "相同高度的圆形，名称显示在提示框中。",
+  "Icon only, with a shortcut": "仅图标，带快捷键",
+  "The shortcut shows in the tooltip as key caps.": "快捷键以键帽形式显示在提示框中。",
+  "Makes it an icon-only circle with this icon. Give it an `aria-label`: the name screen readers read and the tooltip shows.": "使其成为仅显示该图标的圆形按钮。请为它设置 `aria-label`：这是屏幕阅读器朗读、提示框显示的名称。",
+  "A shortcut hint: after the label (lg and xl, and in menus), or in the tooltip of an icon-only button.": "快捷键提示：显示在标签之后（lg 和 xl 尺寸以及菜单中），或显示在仅图标按钮的提示框中。",
+  "Turns off an icon-only button's tooltip, for when a visible label sits next to it or the button has a tooltip of its own.": "关闭仅图标按钮的提示框，适用于旁边已有可见标签或按钮自带提示框的情况。",
+  "Where an icon-only button's tooltip appears.": "仅图标按钮的提示框出现的位置。"
 }

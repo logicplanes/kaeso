@@ -6,7 +6,6 @@ import {
   DialogScope,
   Empty,
   FilterRow,
-  IconButton,
   icons,
   Input,
   KeyDisplay,
@@ -96,7 +95,7 @@ export function PlatformKeysPage({ org }: { org: string }) {
         k.state === "archived" || !canRevoke ? undefined : (
           <Menu>
             <Menu.Trigger>
-              <IconButton icon={icons.more} aria-label={t("org.platformKeys.actions", "Actions for {name}", { name: k.name })} size="xs" />
+              <Button variant="ghost" icon={icons.more} aria-label={t("org.platformKeys.actions", "Actions for {name}", { name: k.name })} size="xs" />
             </Menu.Trigger>
             <Menu.Content align="end">
               {k.state === "disabled" ? (

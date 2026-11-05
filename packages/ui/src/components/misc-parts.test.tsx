@@ -163,8 +163,8 @@ describe("developer warnings", () => {
     warnStylingClassName("Button", "mt-8 bg-red-500 rounded-lg");
     warnStylingClassName("Button", "mt-8 w-full");
     warnStylingClassName("Button", undefined);
-    warnMissingName("IconButton", false);
-    warnMissingName("IconButton", true);
+    warnMissingName("Button", false);
+    warnMissingName("Button", true);
     warnControlled("Switch", "checked", true, undefined);
     warnControlled("Switch", "checked", true, () => undefined);
     devWarn("same message");

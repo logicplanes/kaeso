@@ -10,7 +10,6 @@ import {
   Dialog,
   DialogScope,
   Empty,
-  IconButton,
   Input,
   Menu,
   ProviderBadge,
@@ -115,7 +114,7 @@ export function CustomProvidersTab({ org, adding, onAddingChange }: { org: strin
       canManage ? (
         <Menu>
           <Menu.Trigger>
-            <IconButton icon={icons.more} aria-label={t("orgHome.custom.actionsFor", "Actions for {name}", { name: p.name })} size="xs" />
+            <Button variant="ghost" icon={icons.more} aria-label={t("orgHome.custom.actionsFor", "Actions for {name}", { name: p.name })} size="xs" />
           </Menu.Trigger>
           <Menu.Content align="end">
             <Menu.Item icon={icons.edit} onClick={() => setEditing(p)}>

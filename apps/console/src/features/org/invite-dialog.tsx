@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Button, IconButton, RolePicker, Select, StepDialog, TagInput, Text, icons } from "@logicplanes/kaeso-ui";
+import { Button, RolePicker, Select, StepDialog, TagInput, Text, icons } from "@logicplanes/kaeso-ui";
 import { api, data } from "~/api/client";
 import { isApiError, type ApiError } from "~/api/errors";
 import { orgProjectsQuery } from "~/api/queries/projects";
@@ -154,7 +154,8 @@ export function InviteDialog({ org, onClose }: { org: string; onClose: () => voi
                       roles={roleOptions(cat, projectRoles, held[i]?.data ? { held: held[i].data, isOwner: giver.isOwner } : null)}
                     />
                   </div>
-                  <IconButton
+                  <Button
+                    variant="ghost"
                     icon={icons.close}
                     aria-label={t("org.invite.removeProject", "Remove this project")}
                     size="sm"

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQueries, useQuery } from "@tanstack/react-query";
-import { AlertDialog, Button, Dialog, DialogScope, IconButton, LimitMeter, Section, Text, icons } from "@logicplanes/kaeso-ui";
+import { AlertDialog, Button, Dialog, DialogScope, LimitMeter, Section, Text, icons } from "@logicplanes/kaeso-ui";
 import { toast } from "~/shell/toast";
 import { formatNumber, formatRelative, formatUSD } from "@logicplanes/kaeso-ui/format";
 import { api, data, ifMatch } from "~/api/client";
@@ -156,13 +156,15 @@ function LimitRow({ org, project, limit, canEdit }: { org: string; project: stri
       </div>
       {canEdit && (
         <span className="flex items-center gap-4">
-          <IconButton
+          <Button
+            variant="ghost"
             icon={icons.edit}
             aria-label={t("kaeso.limits.editThe", "Edit the {limit}", { limit: limitDescription(limit) })}
             size="sm"
             onClick={() => setEditing(true)}
           />
-          <IconButton
+          <Button
+            variant="ghost"
             icon={icons.delete}
             aria-label={t("kaeso.limits.removeThe", "Remove the {limit}", { limit: limitDescription(limit) })}
             size="sm"

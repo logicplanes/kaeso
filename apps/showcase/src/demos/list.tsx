@@ -5,7 +5,6 @@ import {
   Badge,
   Button,
   Empty,
-  IconButton,
   InsetContent,
   PortalContainer,
   SelectionAction,
@@ -39,8 +38,8 @@ const groups: ListGroup[] = (["active", "disabled", "expired"] as const).map((st
       avatar: <Avatar name={k.owner} size={20} decorative />,
       actions: (
         <>
-          <IconButton icon={icons.copy} aria-label="Copy key id" size="xs" />
-          <IconButton icon={icons.more} aria-label="More" size="xs" />
+          <Button variant="ghost" icon={icons.copy} aria-label="Copy key id" size="xs" />
+          <Button variant="ghost" icon={icons.more} aria-label="More" size="xs" />
         </>
       ),
     })),

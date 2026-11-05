@@ -8,7 +8,6 @@ import {
   Combobox,
   Empty,
   Icon,
-  IconButton,
   List,
   Menu,
   Meter,
@@ -110,7 +109,12 @@ export function LimitsPage({ org, project, search }: { org: string; project: str
           actions: canManage ? (
             <Menu>
               <Menu.Trigger>
-                <IconButton icon={icons.more} aria-label={t("limits.rowActions", "Actions for the {limit}", { limit: limitDescription(x) })} size="xs" />
+                <Button
+                  variant="ghost"
+                  icon={icons.more}
+                  aria-label={t("limits.rowActions", "Actions for the {limit}", { limit: limitDescription(x) })}
+                  size="xs"
+                />
               </Menu.Trigger>
               <Menu.Content align="end">
                 <Menu.Item icon={icons.edit} onClick={() => setEditing(x)}>

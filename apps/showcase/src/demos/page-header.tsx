@@ -1,4 +1,4 @@
-import { PageHeader, Tabs, IconButton, Button, icons } from "@logicplanes/kaeso-ui";
+import { PageHeader, Tabs, Button, icons } from "@logicplanes/kaeso-ui";
 import { StateSection } from "~/lib/states";
 
 export const meta = {
@@ -19,9 +19,9 @@ const tabs = (
 );
 const actions = (
   <>
-    <IconButton icon={icons.filter} aria-label="Filter" variant="secondary" />
-    <IconButton icon={icons.displayOptions} aria-label="Display options" variant="secondary" />
-    <IconButton icon={icons.sidePanel} aria-label="Toggle side panel" variant="secondary" />
+    <Button size="sm" icon={icons.filter} aria-label="Filter" variant="secondary" />
+    <Button size="sm" icon={icons.displayOptions} aria-label="Display options" variant="secondary" />
+    <Button size="sm" icon={icons.sidePanel} aria-label="Toggle side panel" variant="secondary" />
   </>
 );
 export const examples = [
@@ -94,7 +94,7 @@ export function States() {
                 </Tabs.List>
               </Tabs>
             }
-            actions={<IconButton icon={icons.filter} aria-label="Filtern" variant="secondary" />}
+            actions={<Button size="sm" icon={icons.filter} aria-label="Filtern" variant="secondary" />}
           />
         </div>
       </StateSection>

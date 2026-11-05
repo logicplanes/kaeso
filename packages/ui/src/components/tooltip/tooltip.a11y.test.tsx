@@ -3,7 +3,6 @@ import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Tooltip } from "./tooltip.js";
 import { TooltipProvider } from "./tooltip-provider.js";
-import { IconButton } from "../icon-button/icon-button.js";
 import { Button } from "../button/button.js";
 import { icons } from "../../icons/vocabulary.js";
 import { lazyModulesSettled } from "../../utils/lazy-module.js";
@@ -30,7 +29,7 @@ describe("Tooltip for a screen reader", () => {
   it("adds no description when it repeats the name of an icon button", async () => {
     render(
       <TooltipProvider>
-        <IconButton icon={icons.filter} aria-label="Filter" />
+        <Button variant="ghost" size="sm" icon={icons.filter} aria-label="Filter" />
       </TooltipProvider>,
     );
     await settled();

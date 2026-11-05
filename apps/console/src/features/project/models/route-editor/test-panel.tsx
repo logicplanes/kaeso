@@ -1,6 +1,6 @@
 import { useMemo, type ReactNode } from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { Banner, Button, IconButton, Input, Segmented, Select, StatusCode, Text, Timeline, icons } from "@logicplanes/kaeso-ui";
+import { Banner, Button, Input, Segmented, Select, StatusCode, Text, Timeline, icons } from "@logicplanes/kaeso-ui";
 import { FlowWorkspace } from "@logicplanes/kaeso-ui/flow-canvas";
 import { formatDuration, formatNumber } from "@logicplanes/kaeso-ui/format";
 import { Composer, ResponseMetrics, ResponseView } from "@logicplanes/kaeso-ui/playground";
@@ -213,7 +213,8 @@ function HeaderRows({ request, onRequest }: { request: TestRequest; onRequest: (
               value={h.value}
               onChange={(e) => setHeader(h.id, { value: e.target.value })}
             />
-            <IconButton
+            <Button
+              size="sm"
               icon={icons.close}
               variant="ghost"
               aria-label={t("models.route.removeHeaderN", "Remove header {n}", { n: formatNumber(i + 1) })}

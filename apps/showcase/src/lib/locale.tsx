@@ -1,6 +1,6 @@
 import { useSyncExternalStore, type ReactNode } from "react";
 import { navigate } from "astro:transitions/client";
-import { IconButton, Menu, icons } from "@logicplanes/kaeso-ui";
+import { Button, Menu, icons } from "@logicplanes/kaeso-ui";
 import { LocaleProvider, loadUiMessages, type UiMessages } from "@logicplanes/kaeso-ui/i18n";
 import { DOCS_LANGUAGES, DOCS_LANG_STORAGE_KEY, docsLangOf, localizedPath, pageOfPath, parseDocsLang, type DocsLang } from "./languages";
 
@@ -190,7 +190,7 @@ export function DocsLanguageMenu() {
   return (
     <Menu>
       <Menu.Trigger>
-        <IconButton icon={icons.language} aria-label={docsText(lang, "Language")} />
+        <Button variant="ghost" size="sm" icon={icons.language} aria-label={docsText(lang, "Language")} />
       </Menu.Trigger>
       <Menu.Content side="top" align="start" className="min-w-180">
         <Menu.RadioGroup value={lang} onValueChange={(v) => setDocsLang(parseDocsLang(String(v)) ?? "en")}>

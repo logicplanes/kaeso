@@ -3,7 +3,7 @@ import { cn } from "../../utils/cn.js";
 import { useGutterPadded, useInset } from "../../utils/inset.js";
 import { icons } from "../../icons/vocabulary.js";
 import { Icon, type IconData } from "../icon/icon.js";
-import { IconButton } from "../icon-button/icon-button.js";
+import { Button } from "../button/button.js";
 import { Text } from "../text/text.js";
 import { TruncatedText } from "../text/truncated.js";
 import { Skeleton } from "../skeleton/skeleton.js";
@@ -682,7 +682,7 @@ export const GroupHeader = forwardRef<HTMLDivElement, GroupHeaderProps>(function
         <span className="flex-1" />
         {onAdd && (
           <span className="flex opacity-0 transition-control group-hover/gh:opacity-100 group-focus-within/gh:opacity-100 coarse:opacity-100">
-            <IconButton icon={icons.add} aria-label={addLabel ?? t("list.add", "Add")} size="xs" onClick={onAdd} />
+            <Button variant="ghost" icon={icons.add} aria-label={addLabel ?? t("list.add", "Add")} size="xs" onClick={onAdd} />
           </span>
         )}
       </div>

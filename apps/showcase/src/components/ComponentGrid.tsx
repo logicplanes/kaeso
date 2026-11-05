@@ -10,7 +10,6 @@ import {
   Autocomplete,
   Dialog,
   Gauge,
-  IconButton,
   Input,
   KeyDisplay,
   Menu,
@@ -168,7 +167,7 @@ function Cells() {
             <div className="min-w-0 flex-1">
               <SearchInput aria-label={t("Search logs")} placeholder={t("Search logs")} />
             </div>
-            <IconButton icon={icons.filter} aria-label={t("Filter")} variant="secondary" />
+            <Button size="sm" icon={icons.filter} aria-label={t("Filter")} variant="secondary" />
           </div>
         </Cell>
         <Cell slug="autocomplete">
@@ -202,7 +201,7 @@ function Cells() {
             <Tooltip content={t("Go to request logs")} shortcut={[["g"], ["l"]]}>
               <Button>{t("Request logs")}</Button>
             </Tooltip>
-            <IconButton icon={icons.filter} aria-label={t("Filter")} variant="secondary" />
+            <Button size="sm" icon={icons.filter} aria-label={t("Filter")} variant="secondary" />
           </div>
         </Cell>
         <Cell slug="menu">

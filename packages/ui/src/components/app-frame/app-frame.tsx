@@ -16,8 +16,7 @@ import {
 import { GutterContent, InsetContent } from "../../utils/inset.js";
 import { cn } from "../../utils/cn.js";
 import { icons } from "../../icons/vocabulary.js";
-import { IconButton } from "../icon-button/icon-button.js";
-import { buttonClasses } from "../button/button.js";
+import { Button, buttonClasses } from "../button/button.js";
 import { useSidebar, BrandWordmark } from "../sidebar/sidebar.js";
 import { PortalContainer } from "../../utils/portal-context.js";
 import { lazyModule, useLazyModule } from "../../utils/lazy-module.js";
@@ -147,7 +146,9 @@ function PhoneBar({
         <BrandWordmark href={href} label={label} />
         <span className="flex items-center">
           {actions}
-          <IconButton
+          <Button
+            variant="ghost"
+            size="sm"
             ref={toggleRef}
             icon={icons.sidebar}
             aria-label={t("appFrame.openNavigation", "Open navigation")}
@@ -241,7 +242,9 @@ const MenuButton = forwardRef<HTMLButtonElement, { className?: string | undefine
   const t = useUiText();
   const wide = () => typeof window !== "undefined" && window.matchMedia("(min-width: 1024px)").matches;
   return (
-    <IconButton
+    <Button
+      variant="ghost"
+      size="sm"
       ref={ref}
       onPointerEnter={() => {
         clearTimeout(intent.current);

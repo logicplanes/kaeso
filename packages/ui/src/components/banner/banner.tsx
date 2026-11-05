@@ -2,7 +2,7 @@ import { forwardRef, useState, type ReactNode } from "react";
 import { cn } from "../../utils/cn.js";
 import { icons } from "../../icons/vocabulary.js";
 import { Icon, type IconData } from "../icon/icon.js";
-import { IconButton } from "../icon-button/icon-button.js";
+import { Button } from "../button/button.js";
 import { useUiText } from "../../i18n/context.js";
 import { devWarn } from "../../utils/dev.js";
 
@@ -83,7 +83,8 @@ export const Banner = forwardRef<HTMLDivElement, BannerProps>(function Banner(
           {actions && <div className={cn("flex shrink-0 flex-wrap items-center gap-8 @banner:ml-0", mark && "ml-24")}>{actions}</div>}
         </div>
         {dismissible && (
-          <IconButton
+          <Button
+            variant="ghost"
             icon={icons.close}
             aria-label={t("banner.dismiss", "Dismiss")}
             size="xs"

@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { AlertDialog, DialogScope, Empty, FilterRow, IconButton, KeyDisplay, List, Menu, Text, icons, type ListGroup } from "@logicplanes/kaeso-ui";
+import { AlertDialog, DialogScope, Empty, FilterRow, Button, KeyDisplay, List, Menu, Text, icons, type ListGroup } from "@logicplanes/kaeso-ui";
 import { ScopeTabs, type Scope } from "~/kaeso/scope-tabs";
 import { toast } from "~/shell/toast";
 import { api, data } from "~/api/client";
@@ -89,7 +89,7 @@ export function AccountKeysPage() {
             k.state === "archived" || readOnly.has(where.get(k.project_id)?.org ?? "") ? undefined : (
               <Menu>
                 <Menu.Trigger>
-                  <IconButton icon={icons.more} aria-label={t("account.keyActions", "Actions for {name}", { name: k.name })} size="xs" />
+                  <Button variant="ghost" icon={icons.more} aria-label={t("account.keyActions", "Actions for {name}", { name: k.name })} size="xs" />
                 </Menu.Trigger>
                 <Menu.Content align="end">
                   {k.state === "disabled" ? (

@@ -1,20 +1,5 @@
 import { useEffect, type ReactNode } from "react";
-import {
-  AppFrame,
-  Sidebar,
-  useSidebar,
-  PageHeader,
-  Tabs,
-  IconButton,
-  Avatar,
-  Empty,
-  Button,
-  FilterRow,
-  List,
-  Badge,
-  Select,
-  icons,
-} from "@logicplanes/kaeso-ui";
+import { AppFrame, Sidebar, useSidebar, PageHeader, Tabs, Button, Avatar, Empty, FilterRow, List, Badge, Select, icons } from "@logicplanes/kaeso-ui";
 import { members } from "~/fixtures/kaeso";
 import { StateSection } from "~/lib/states";
 
@@ -102,7 +87,7 @@ export function Frame({ settings = false, page, collapsed }: { settings?: boolea
                       </Tabs.List>
                     </Tabs>
                   }
-                  actions={<IconButton icon={icons.displayOptions} aria-label="Display options" variant="secondary" />}
+                  actions={<Button size="sm" icon={icons.displayOptions} aria-label="Display options" variant="secondary" />}
                 />
                 <AppFrame.Body padding="page">
                   <Empty

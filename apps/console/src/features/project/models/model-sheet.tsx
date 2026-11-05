@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { AlertDialog, Badge, Button, DialogScope, Empty, KeyValue, Menu, IconButton, ModelLabel, Sheet, Skeleton, Text, icons } from "@logicplanes/kaeso-ui";
+import { AlertDialog, Badge, Button, DialogScope, Empty, KeyValue, Menu, ModelLabel, Sheet, Skeleton, Text, icons } from "@logicplanes/kaeso-ui";
 import { toast } from "~/shell/toast";
 import { formatDate, formatNumber, formatUSD } from "@logicplanes/kaeso-ui/format";
 import { api, data, ifMatch } from "~/api/client";
@@ -134,7 +134,9 @@ function ModelBody({ org, project, modelId, onClose }: { org: string; project: s
         />
         <Menu>
           <Menu.Trigger>
-            <IconButton
+            <Button
+              variant="ghost"
+              size="sm"
               icon={icons.more}
               aria-label={t("models.actions", "Model actions")}
               disabled={!canManage}

@@ -8,7 +8,6 @@ import {
   CodeBlock,
   Code,
   Combobox,
-  IconButton,
   Input,
   KeyValue,
   Menu,
@@ -405,7 +404,7 @@ export function ConditionPanel({ ctx, step }: { ctx: InspectorContext; step: Dra
               {t("models.route.ruleN", "Rule {n}", { n: formatNumber(i + 1) })}
             </Text>
             {!ctx.readOnly && step.rules.length > 1 && (
-              <IconButton
+              <Button
                 icon={icons.close}
                 size="xs"
                 variant="ghost"
@@ -494,7 +493,8 @@ export function SplitPanel({ ctx, step }: { ctx: InspectorContext; step: DraftSp
             }}
           />
           {!ctx.readOnly && step.branches.length > 2 && (
-            <IconButton
+            <Button
+              size="sm"
               icon={icons.close}
               variant="ghost"
               aria-label={t("models.route.removeBranchN", "Remove branch {n}", { n: formatNumber(i + 1) })}

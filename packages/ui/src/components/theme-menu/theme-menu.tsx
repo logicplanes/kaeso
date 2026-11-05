@@ -1,7 +1,7 @@
 import { forwardRef } from "react";
 import { icons } from "../../icons/vocabulary.js";
 import { useTheme, type ThemePreference } from "../../theme/theme-provider.js";
-import { IconButton } from "../icon-button/icon-button.js";
+import { Button } from "../button/button.js";
 import { Menu } from "../menu/menu.js";
 import { useUiText } from "../../i18n/context.js";
 
@@ -30,7 +30,7 @@ export const ThemeMenu = forwardRef<HTMLButtonElement, ThemeMenuProps>(function 
   return (
     <Menu>
       <Menu.Trigger>
-        <IconButton
+        <Button
           ref={ref}
           icon={resolvedTheme === "dark" ? icons.themeDark : icons.themeLight}
           aria-label={t("themeMenu.theme", "Theme")}

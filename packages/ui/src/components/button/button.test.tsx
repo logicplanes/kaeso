@@ -116,7 +116,7 @@ describe("Button", () => {
         <Button variant="quiet" size="md">
           Show
         </Button>
-        <Button variant="ghost" shape="circle" size="sm" icon={icons.more} aria-label="More" />
+        <Button variant="ghost" size="sm" icon={icons.more} aria-label="More" />
       </>,
     );
     expect(screen.getByRole("button", { name: "End session" })).toHaveClass("material-ghost", "px-12", "ghost-end:-mr-12", "ghost-start:-ml-12");
@@ -183,7 +183,7 @@ describe("SwapText", () => {
         <Button static variant="secondary">
           Load more
         </Button>
-        <Button shape="circle" icon={icons.copy} aria-label="Copy key" static />
+        <Button icon={icons.copy} aria-label="Copy key" static />
       </>,
     );
     expect(screen.getByRole("button", { name: "Create key" })).not.toHaveAttribute("data-static");

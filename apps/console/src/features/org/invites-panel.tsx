@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { AlertDialog, Badge, DialogScope, Empty, FilterRow, IconButton, List, Menu, Text, icons } from "@logicplanes/kaeso-ui";
+import { AlertDialog, Badge, DialogScope, Empty, FilterRow, Button, List, Menu, Text, icons } from "@logicplanes/kaeso-ui";
 import { formatDate } from "@logicplanes/kaeso-ui/format";
 import { ScopeTabs, type Scope } from "~/kaeso/scope-tabs";
 import { api, data } from "~/api/client";
@@ -99,7 +99,12 @@ export function InvitesPanel({ org }: { org: string }) {
         pending && (canInvite || canRevoke) ? (
           <Menu>
             <Menu.Trigger>
-              <IconButton icon={icons.more} aria-label={t("org.invites.actions", "Actions for the invitation to {email}", { email: i.email })} size="xs" />
+              <Button
+                variant="ghost"
+                icon={icons.more}
+                aria-label={t("org.invites.actions", "Actions for the invitation to {email}", { email: i.email })}
+                size="xs"
+              />
             </Menu.Trigger>
             <Menu.Content align="end">
               {canInvite && (
