@@ -17,6 +17,7 @@ pub enum TokenKind {
     OidcState,
     ProviderOAuth,
     ProviderDevice,
+    McpOAuth,
 }
 
 impl TokenKind {
@@ -32,6 +33,7 @@ impl TokenKind {
             TokenKind::OidcState => "oidc_state",
             TokenKind::ProviderOAuth => "provider_oauth",
             TokenKind::ProviderDevice => "provider_device",
+            TokenKind::McpOAuth => "mcp_oauth",
         }
     }
 }

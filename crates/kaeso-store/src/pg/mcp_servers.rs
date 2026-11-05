@@ -224,6 +224,31 @@ pub async fn set_oauth_client(
         == 1)
 }
 
+// A client the admin registered by hand: its issuer is learned on the first sign-in.
+pub async fn set_manual_client(
+    db: impl PgExecutor<'_>,
+    id: Uuid,
+    client_id: &str,
+    secret: Option<&Sealed<'_>>,
+) -> Result<bool, StoreError> {
+    Ok(sqlx::query!(
+        "UPDATE mcp_servers SET oauth_registration = 'manual', oauth_issuer = NULL, oauth_client_id = $2, \
+         oauth_client_secret_ciphertext = $3, oauth_client_secret_nonce = $4, \
+         oauth_client_secret_wrapped_key = $5, oauth_client_secret_key_id = $6, \
+         revision = revision + 1, updated_at = now() WHERE id = $1 AND auth_method = 'oauth'",
+        id,
+        client_id,
+        secret.map(|s| s.ciphertext),
+        secret.map(|s| s.nonce),
+        secret.map(|s| s.wrapped_key),
+        secret.map(|s| s.key_id)
+    )
+    .execute(db)
+    .await?
+    .rows_affected()
+        == 1)
+}
+
 pub async fn client_secret(
     db: impl PgExecutor<'_>,
     id: Uuid,
