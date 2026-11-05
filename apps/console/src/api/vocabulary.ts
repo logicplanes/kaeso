@@ -294,7 +294,11 @@ const roleDescriptions: Readonly<Record<string, [string, () => string]>> = {
   ],
   "org.developer": [
     "Creates projects and sees usage, costs, provider keys and MCP servers; works in the projects they are added to.",
-    () => t("rights.role.org.developer.description", "Creates projects and sees usage, costs, provider keys and MCP servers; works in the projects they are added to."),
+    () =>
+      t(
+        "rights.role.org.developer.description",
+        "Creates projects and sees usage, costs, provider keys and MCP servers; works in the projects they are added to.",
+      ),
   ],
   "org.auditor": [
     "Reads the whole organization for reviews, including the audit log and every project, and changes nothing; never sees prompts or outputs.",
