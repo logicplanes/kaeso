@@ -83,8 +83,9 @@ describe("Avatar", () => {
     expect(container.querySelector(".ring-panel")).toBeNull();
   });
 
-  it("draws a hairline around a photo so a light picture keeps its edge", () => {
+  it("outlines a photo in its own shape, so a light picture keeps its edge without a grey line on it", () => {
     const { container } = render(<Avatar name="Ada Okafor" src="https://example.com/ada.png" />);
-    expect(container.querySelector("img + .shadow-ring")).toBeInTheDocument();
+    expect(container.querySelector("img")).toHaveClass("image-outline");
+    expect(container.querySelector(".shadow-ring")).toBeNull();
   });
 });

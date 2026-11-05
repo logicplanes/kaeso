@@ -38,6 +38,7 @@ export interface IconButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLBut
   loading?: boolean | undefined;
   disabledReason?: string | undefined;
   href?: string | undefined;
+  static?: boolean | undefined;
   "data-force"?: string | undefined;
 }
 

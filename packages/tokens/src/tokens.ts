@@ -27,6 +27,7 @@ export const neutral = {
   focus: mode(brand.color.light.focus, brand.color.dark.focus),
   overlay: mode("rgb(0 0 0 / 0.24)", "rgb(0 0 0 / 0.72)"),
   "panel-ring": mode(brand.color.light.border, "#1a1a1a"),
+  "image-outline": mode("oklch(0 0 0 / 0.1)", "oklch(1 0 0 / 0.1)"),
   "toast-bg": mode("#0a0a0a", "#1c1c1c"),
   scan: mode("#ffffff", "#ffffff"),
   "on-scan": mode("#0a0a0a", "#0a0a0a"),
@@ -258,6 +259,8 @@ export const material = {
 export const motion = {
   duration: {
     fast: 120,
+    press: 150,
+    swap: 300,
     "close-overlay": 110,
     overlay: 160,
     "close-dialog": 140,

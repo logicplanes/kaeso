@@ -6,7 +6,9 @@ Quick, decelerating, from the trigger, never bouncing and never in the way. Moti
 
 | Token                                                | Use                                          |
 | ---------------------------------------------------- | -------------------------------------------- |
-| `--k-duration-fast`                                  | Hover, press and color changes               |
+| `--k-duration-fast`                                  | Hover and color changes                      |
+| `--k-duration-press`                                 | A button scaling down while pressed          |
+| `--k-duration-swap`                                  | An icon that changes with state cross-fading |
 | `--k-duration-overlay`, `--k-duration-close-overlay` | Menus and popovers opening, closing          |
 | `--k-duration-dialog`, `--k-duration-close-dialog`   | Dialogs opening, closing                     |
 | `--k-duration-sheet`, `--k-duration-close-sheet`     | Sheets opening, closing                      |
@@ -32,6 +34,7 @@ Loading keeps one beat of 800ms on the pulse easing. The spinner is three routes
 
 ## Rules
 
+- A pressed button scales to 0.96 and back, and never when it is disabled; `static` keeps one still where the movement would distract. With reduced motion it only darkens.
 - Overlays scale from 0.97 and fade from their trigger; dialogs from 0.98 in the center; sheets slide from their edge.
 - A dialog whose content changes stays centered and grows or shrinks to its new size from the size it has, in `--k-duration-dialog` on the `standard` curve; a sheet from the bottom grows upwards. Keep one dialog open through a task, and change its content, rather than closing one dialog and opening another.
 - No page-enter animation and no loops but loading's.

@@ -39,7 +39,7 @@ export const Thumbnail = forwardRef<HTMLSpanElement, ThumbnailProps>(function Th
           alt={alt}
           loading="lazy"
           decoding="async"
-          className="size-full object-cover"
+          className="size-full object-cover image-outline"
           onError={() => setFailedSrc(src)}
         />
       ) : (
@@ -49,9 +49,9 @@ export const Thumbnail = forwardRef<HTMLSpanElement, ThumbnailProps>(function Th
           className={cn("flex size-full items-center justify-center overflow-hidden text-center text-fg-tertiary wrap-anywhere", FALLBACK[size])}
         >
           <span className={LINES[size]}>{alt}</span>
+          <span aria-hidden className="pointer-events-none absolute inset-0 rounded-well shadow-ring" />
         </span>
       )}
-      <span aria-hidden className="pointer-events-none absolute inset-0 rounded-well shadow-ring" />
     </span>
   );
 });

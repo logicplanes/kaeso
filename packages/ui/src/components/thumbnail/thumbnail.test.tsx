@@ -20,7 +20,8 @@ describe("Thumbnail", () => {
     expect(img).toHaveClass("object-cover");
     expect(ref.current).toContainElement(img);
     expect(ref.current).toHaveClass("size-120", "rounded-well", "mt-8");
-    expect(ref.current?.querySelector("span[aria-hidden]")).toHaveClass("shadow-ring", "pointer-events-none");
+    expect(img).toHaveClass("image-outline");
+    expect(ref.current?.querySelector("span[aria-hidden]")).toBeNull();
   });
 
   it("takes its size from the scale, with a 12px fallback at 64px", () => {
