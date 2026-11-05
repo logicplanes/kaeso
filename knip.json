@@ -22,7 +22,6 @@
         "src/components/*/index.ts",
         "src/components/kaeso/{identity,moments,usage,conversation,rights}.tsx",
         "src/components/charts/{timeseries,bar,sparkline,donut,heatmap,gauge,sankey}.tsx",
-        "src/blocks/*/index.ts",
         "scripts/*.mjs",
         "src/component-docs.ts",
         "src/**/docs.ts",

@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { KeyDisplay, ModelLabel, ProviderBadge, ProviderCard, StatusCode, KAESO_IDENTITY_VARIANTS, providerName } from "./identity.js";
+import { KeyDisplay, ModelLabel, ProviderBadge, StatusCode, KAESO_IDENTITY_VARIANTS, providerName } from "./identity.js";
 import { providerMark } from "@logicplanes/kaeso-tokens";
 import { PROVIDER_MARKS, type ProviderMark, type ProviderMarkPart } from "./provider-marks.js";
 import { Slider } from "../slider/slider.js";
@@ -98,19 +98,6 @@ describe("identity parts", () => {
     expect(screen.getByText("Expired")).toBeInTheDocument();
     expect(screen.getByText("Inference + platform")).toBeInTheDocument();
     expect(screen.queryByRole("button")).toBeNull();
-  });
-
-  it("shows a provider card with its key and actions", () => {
-    render(
-      <ProviderCard provider="openai" name="OpenAI" connected status="Healthy" keyLabel="sk-…9f" detail="Added by Ada" actions={<button>Rotate</button>} />,
-    );
-    const card = screen.getByRole("region", { name: "OpenAI" });
-    expect(card).toHaveTextContent("Connected");
-    expect(card).toHaveTextContent("Added by Ada");
-    render(<ProviderCard provider="anthropic" name="Anthropic" connected={false} status="Add a key to use Anthropic" />);
-    expect(screen.getByRole("region", { name: "Anthropic" })).toHaveTextContent("Not connected");
-    render(<ProviderCard provider="acme" connected={false} status="No key yet" />);
-    expect(screen.getByRole("heading", { name: "acme" })).toBeInTheDocument();
   });
 });
 

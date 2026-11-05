@@ -52,10 +52,6 @@
       "types": "./dist/types/i18n/index.d.ts",
       "import": "./dist/i18n.js"
     },
-    "./blocks/*": {
-      "types": "./dist/types/blocks/*/index.d.ts",
-      "import": "./dist/blocks/*.js"
-    },
     "./ai/component-registry.json": "./ai/component-registry.json",
     "./charts/*": {
       "types": "./dist/types/components/charts/*.d.ts",

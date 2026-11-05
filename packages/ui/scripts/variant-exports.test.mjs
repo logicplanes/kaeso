@@ -18,7 +18,7 @@ describe("variantExport", () => {
 
 describe("variantProblems", () => {
   it("accepts components that export both, with defaults their axes list", () => {
-    expect(variantProblems({ PAGES: { entry: "blocks/pages", variants: {}, defaults: {} } })).toEqual([]);
+    expect(variantProblems({ SECTION: { entry: "components/section", variants: {}, defaults: {} } })).toEqual([]);
     expect(variantProblems({ AVATAR: { entry: "components/avatar", variants: { size: { 24: "24px", 32: "32px" } }, defaults: { size: "24" } } })).toEqual([]);
   });
 
@@ -36,11 +36,11 @@ describe("variantProblems", () => {
   it("names a component that exports only one of them", () => {
     expect(
       variantProblems({
-        PAGES: { entry: "blocks/pages", defaults: {} },
+        SECTION: { entry: "components/section", defaults: {} },
         BUTTON: { entry: "components/button", variants: {} },
       }),
     ).toEqual([
-      "blocks/pages exports KAESO_PAGES_DEFAULT_VARIANTS without KAESO_PAGES_VARIANTS",
+      "components/section exports KAESO_SECTION_DEFAULT_VARIANTS without KAESO_SECTION_VARIANTS",
       "components/button exports KAESO_BUTTON_VARIANTS without KAESO_BUTTON_DEFAULT_VARIANTS",
     ]);
   });

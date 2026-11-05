@@ -16,7 +16,6 @@ import {
 } from "react";
 import { Menu as BaseMenu } from "@base-ui/react/menu";
 import { ContextMenu as BaseContextMenu } from "@base-ui/react/context-menu";
-import { Menubar as BaseMenubar } from "@base-ui/react/menubar";
 import { cn } from "../../utils/cn.js";
 import { useLinkComponent } from "../../utils/link-provider.js";
 import { Icon, type IconData } from "../icon/icon.js";
@@ -562,52 +561,6 @@ export const ContextMenu = Object.assign(ContextRoot, {
   Content: ContextContent,
   Item,
   LinkItem,
-  CheckboxItem,
-  RadioGroup,
-  RadioItem,
-  Group,
-  Separator,
-  Sub,
-  SubTrigger,
-  SubContent,
-});
-
-export const KAESO_MENUBAR_VARIANTS = {} as const;
-export const KAESO_MENUBAR_DEFAULT_VARIANTS = {} as const;
-
-const MenubarRoot = forwardRef<HTMLDivElement, { children: ReactNode; className?: string | undefined; "aria-label"?: string | undefined }>(function Menubar(
-  { children, className, "aria-label": ariaLabel },
-  ref,
-) {
-  return (
-    <BaseMenubar ref={ref} className={cn("inline-flex items-center gap-8", className)} {...(ariaLabel ? { "aria-label": ariaLabel } : {})}>
-      {children}
-    </BaseMenubar>
-  );
-});
-MenubarRoot.displayName = "Menubar";
-const MenubarTrigger = forwardRef<HTMLButtonElement, { children: ReactNode; className?: string | undefined; "data-force"?: string | undefined }>(
-  function MenubarTrigger({ children, className, "data-force": force }, ref) {
-    return (
-      <BaseMenu.Trigger
-        ref={ref}
-        {...(force ? { "data-force": force } : {})}
-        className={cn(
-          "relative inline-flex h-32 cursor-pointer items-center rounded-pill px-12 text-body font-medium text-fg material-ghost transition-control focus-ring tap-target",
-          className,
-        )}
-      >
-        {children}
-      </BaseMenu.Trigger>
-    );
-  },
-);
-MenubarTrigger.displayName = "Menubar.Trigger";
-export const Menubar = Object.assign(MenubarRoot, {
-  Menu: Root,
-  Trigger: MenubarTrigger,
-  Content,
-  Item,
   CheckboxItem,
   RadioGroup,
   RadioItem,

@@ -18,7 +18,6 @@ export const KAESO_PICKER_POPOVER_VARIANTS = {
     lg: { classes: "w-560", description: "560px: models with their details" },
   },
 } as const;
-export const KAESO_PICKER_POPOVER_DEFAULT_VARIANTS = { width: "md" } as const;
 
 const NARROW = "(max-width: 767px)";
 const subscribeNarrow = (onChange: () => void) => {

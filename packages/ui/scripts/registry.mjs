@@ -8,10 +8,7 @@ import { objectAssignName } from "./component-names.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const src = join(root, "src");
-const groups = [
-  ["components", join(src, "components")],
-  ["blocks", join(src, "blocks")],
-];
+const groups = [["components", join(src, "components")]];
 
 const files = [];
 const entries = [];
@@ -137,7 +134,7 @@ for (const [key, list] of byEntry) {
   components.push({
     entry,
     kind,
-    import: kind === "blocks" ? `@logicplanes/kaeso-ui/blocks/${entry}` : `@logicplanes/kaeso-ui/${entry}`,
+    import: `@logicplanes/kaeso-ui/${entry}`,
     components: list.sort((a, b) => a.name.localeCompare(b.name)),
     variants: Object.fromEntries(v.map(([name, x]) => [name, { axes: x.variants ?? {}, defaults: x.defaults ?? {} }])),
   });

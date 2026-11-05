@@ -1,4 +1,4 @@
-import { Button, Inline, toast } from "@logicplanes/kaeso-ui";
+import { Button, toast } from "@logicplanes/kaeso-ui";
 import { ToastCapsule } from "@kaeso-ui-src/components/toast/toast";
 import { StateCell, StateMatrix, StateRow, StateSection } from "~/lib/states";
 
@@ -20,7 +20,7 @@ export const examples = [{ id: "basic", title: "Basic", fn: "Basic" }];
 export function Basic() {
   return (
     <>
-      <Inline gap={8}>
+      <div className="flex flex-wrap items-center gap-8">
         <Button onClick={() => toast("Key copied")}>Copy key</Button>
         <Button onClick={() => toast.success("Provider saved")}>Save provider</Button>
         <Button onClick={() => toast.error("Couldn't reach the provider.", { description: "Check the provider key, then try again." })}>Test provider</Button>
@@ -32,7 +32,7 @@ export function Basic() {
         >
           Sync models
         </Button>
-      </Inline>
+      </div>
     </>
   );
 }

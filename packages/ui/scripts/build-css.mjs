@@ -13,8 +13,8 @@ cpSync(join(styles, "fonts"), join(dist, "fonts"), { recursive: true });
 for (const f of ["fonts.css", "kaeso.css"]) cpSync(join(styles, f), join(dist, f));
 
 const SOURCE_LINE = /^@source (not )?"([^"]+)";\r?(?:\n|$)/gm;
-const SOURCES_IN_SRC = ["../components", "../blocks", "../theme", "../utils", "not ../utils/cn.ts", "not ../**/*.test.{ts,tsx}", "not ../**/docs.ts"];
-const SOURCES_IN_DIST = ["./components", "./blocks", "./chunks", "./index.js", "not ./chunks/cn-*"];
+const SOURCES_IN_SRC = ["../components", "../theme", "../utils", "not ../utils/cn.ts", "not ../**/*.test.{ts,tsx}", "not ../**/docs.ts"];
+const SOURCES_IN_DIST = ["./components", "./chunks", "./index.js", "not ./chunks/cn-*"];
 const sourceLine = (s) => (s.startsWith("not ") ? `@source not "${s.slice(4)}";` : `@source "${s}";`);
 
 const src = readFileSync(join(styles, "tailwind.css"), "utf8");

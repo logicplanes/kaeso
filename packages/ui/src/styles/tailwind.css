@@ -3,7 +3,6 @@
 @import "./fonts.css";
 @import "./kaeso.css";
 @source "../components";
-@source "../blocks";
 @source "../theme";
 @source "../utils";
 @source not "../utils/cn.ts";

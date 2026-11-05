@@ -152,10 +152,9 @@ const ident = (s) => s.replace(/-([a-z])/g, (_, c) => c.toUpperCase()).replace(/
 for (const [slug, page] of Object.entries(out)) {
   const D = `D${ident(slug)}`;
   const previews = `  <Preview slot="primary" example={page.examples[0]}>\n    <${D}.${page.examples[0].fn} client:visible />\n  </Preview>`;
-  if (page.group !== "Blocks")
-    writeFileSync(
-      join(localizedPagesDir, `${slug}.astro`),
-      `---
+  writeFileSync(
+    join(localizedPagesDir, `${slug}.astro`),
+    `---
 import DocPage from "~/layouts/DocPage.astro";
 import Preview from "~/components/Preview.astro";
 import * as ${D} from "~/generated/islands/${slug}";
@@ -173,7 +172,7 @@ const doc = docPages["${slug}"];
 ${previews}
 </DocPage>
 `,
-    );
+  );
   mkdirSync(join(localizedPagesDir, slug), { recursive: true });
   writeFileSync(
     join(localizedPagesDir, slug, "examples.astro"),
@@ -262,7 +261,6 @@ for (const page of Object.values(out).sort((a, b) => a.title.localeCompare(b.tit
 writeFileSync(join(root, "../../packages/ui/ai/component-guides.md"), `${guide.join("\n").replace(/\n{3,}/g, "\n\n")}\n`);
 const shown = new Set();
 for (const page of Object.values(out)) {
-  if (page.group === "Blocks") continue;
   shown.add(norm(page.description ?? ""));
   for (const ex of page.examples) {
     shown.add(norm(ex.title));

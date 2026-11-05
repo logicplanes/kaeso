@@ -22,10 +22,7 @@ export const overview: NavItem[] = [
 
 const pages = Object.values(demos);
 
-export const components: NavItem[] = pages
-  .filter((p) => p.group !== "Blocks")
-  .sort((a, b) => a.title.localeCompare(b.title))
-  .map((p) => ({ title: p.title, href: `/components/${p.slug}` }));
+export const components: NavItem[] = pages.sort((a, b) => a.title.localeCompare(b.title)).map((p) => ({ title: p.title, href: `/components/${p.slug}` }));
 
 export function sections(lang: DocsLang): NavSection[] {
   const local = (items: NavItem[]) => items.map((it) => ({ ...it, href: it.external ? kaesoApp(lang, it.href) : localizedPath(lang, it.href) }));

@@ -1,4 +1,4 @@
-import { forwardRef, useId, type ReactNode } from "react";
+import { forwardRef, useId } from "react";
 import { cn } from "../../utils/cn.js";
 import { icons } from "../../icons/vocabulary.js";
 import { Icon, type IconData } from "../icon/icon.js";
@@ -309,44 +309,3 @@ export const RequestTimeline = forwardRef<
   );
 });
 RequestTimeline.displayName = "RequestTimeline";
-
-export interface ProviderCardProps {
-  provider: string;
-  name?: string | undefined;
-  connected: boolean;
-  status: ReactNode;
-  keyLabel?: ReactNode | undefined;
-  detail?: ReactNode | undefined;
-  actions?: ReactNode | undefined;
-  className?: string | undefined;
-}
-
-export const ProviderCard = forwardRef<HTMLDivElement, ProviderCardProps>(function ProviderCard(
-  { provider, name, connected, status, keyLabel, detail, actions, className },
-  ref,
-) {
-  const t = useUiText();
-  const label = providerName(provider, name);
-  return (
-    <section ref={ref} aria-label={label} className={cn("flex min-w-0 flex-col gap-16 rounded-group bg-raised p-20 shadow-xs", className)}>
-      <div className="flex min-w-0 items-center gap-12">
-        <ProviderBadge provider={provider} name={name} size="xl" />
-        <div className="flex min-w-0 flex-1 flex-col gap-2">
-          <h3 className="truncate text-body-lg font-semibold text-fg">{label}</h3>
-          <span className="text-small text-fg-secondary text-pretty">{status}</span>
-        </div>
-        <Badge tone={connected ? "success" : "neutral"}>
-          {connected ? t("providerCard.connected", "Connected") : t("providerCard.notConnected", "Not connected")}
-        </Badge>
-      </div>
-      {(keyLabel || detail) && (
-        <div className="flex min-w-0 flex-col gap-2 rounded-well bg-fill-1 px-12 py-10">
-          {keyLabel && <span className="truncate text-body text-fg">{keyLabel}</span>}
-          {detail && <span className="truncate text-small text-fg-tertiary">{detail}</span>}
-        </div>
-      )}
-      {actions && <div className="mt-auto flex flex-wrap items-center gap-8">{actions}</div>}
-    </section>
-  );
-});
-ProviderCard.displayName = "ProviderCard";

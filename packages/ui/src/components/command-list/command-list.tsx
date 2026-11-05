@@ -37,7 +37,6 @@ export const KAESO_COMMAND_LIST_VARIANTS = {
     lg: { classes: "", description: "A 56px search over 40px rows: the command palette" },
   },
 } as const;
-export const KAESO_COMMAND_LIST_DEFAULT_VARIANTS = { height: "popover", size: "md" } as const;
 
 const SIZES = {
   md: { search: "h-44 gap-10 px-16", input: "text-body", row: 34, item: "", caption: "px-16" },

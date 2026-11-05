@@ -1,7 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
-import { EmptyPage, ListPage, OverviewPage } from "../blocks/pages/pages.js";
-import { AppFrame } from "./app-frame/app-frame.js";
 import { Label } from "./label/label.js";
 import { Heading } from "./heading/heading.js";
 import { Timeline } from "./timeline/timeline.js";
@@ -12,27 +10,6 @@ import { devWarn, warnControlled, warnMissingName, warnStylingClassName } from "
 import { resolveVariant } from "../utils/variants.js";
 
 afterEach(() => vi.restoreAllMocks());
-
-describe("page blocks", () => {
-  it("compose a list, an overview with an aside, and an empty page", () => {
-    render(
-      <AppFrame sidebar={<nav aria-label="Main" />}>
-        <ListPage header={{ title: "API keys" }} toolbar={<div>Toolbar</div>} sheet={<div>Sheet</div>}>
-          <p>Rows</p>
-        </ListPage>
-        <OverviewPage header={{ title: "Usage" }} metrics={<p>Metrics</p>} controls={<button>Period</button>} chart={<p>Chart</p>} aside={<p>Aside</p>}>
-          <p>More</p>
-        </OverviewPage>
-        <OverviewPage header={{ title: "Plain" }} metrics={<p>Only metrics</p>} />
-        <EmptyPage header={{ title: "Alerts" }} title="No alerts yet" />
-        <EmptyPage title="Nothing" />
-      </AppFrame>,
-    );
-    for (const text of ["API keys", "Toolbar", "Sheet", "Metrics", "Period", "Aside", "Only metrics", "No alerts yet", "Nothing"]) {
-      expect(screen.getAllByText(text).length).toBeGreaterThan(0);
-    }
-  });
-});
 
 describe("small parts", () => {
   it("label, heading, timeline, scroll area and skeletons", () => {

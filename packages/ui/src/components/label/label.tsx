@@ -8,7 +8,6 @@ export const KAESO_LABEL_VARIANTS = {
     sm: { classes: "text-small font-medium", description: "13/500: compact forms" },
   },
 } as const;
-export const KAESO_LABEL_DEFAULT_VARIANTS = { size: "md" } as const;
 
 export interface LabelProps extends LabelHTMLAttributes<HTMLLabelElement> {
   size?: keyof typeof KAESO_LABEL_VARIANTS.size | undefined;

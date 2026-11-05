@@ -30,9 +30,6 @@ for (const file of ["identity", "moments", "usage", "conversation", "rights"]) {
 for (const file of ["timeseries", "bar", "sparkline", "donut", "heatmap", "sankey"]) {
   entries[`components/charts/${file}`] = resolve(src, "components/charts", `${file}.tsx`);
 }
-for (const name of dirs(resolve(src, "blocks"))) {
-  if (existsSync(resolve(src, "blocks", name, "index.ts"))) entries[`blocks/${name}`] = resolve(src, "blocks", name, "index.ts");
-}
 
 const pkg = JSON.parse(readFileSync(resolve(import.meta.dirname, "package.json"), "utf8")) as {
   dependencies?: Record<string, string>;
@@ -47,7 +44,7 @@ function stripVariantDescriptions() {
     name: "kaeso-strip-variant-descriptions",
     enforce: "pre" as const,
     transform(code: string, id: string) {
-      if (!id.includes("/src/components/") && !id.includes("/src/blocks/")) return null;
+      if (!id.includes("/src/components/")) return null;
       if (!code.includes("_VARIANTS")) return null;
       const out = code.replace(
         /(export const KAESO_\w+_VARIANTS = \{)([\s\S]*?)(\n\} as const;)/g,
@@ -66,7 +63,7 @@ function directIcons() {
     name: "kaeso-direct-icons",
     enforce: "pre" as const,
     transform(code: string, id: string) {
-      if (!id.includes("/src/components/") && !id.includes("/src/blocks/")) return null;
+      if (!id.includes("/src/components/")) return null;
       if (!/import \{ icons \} from "\.\.\/\.\.\/icons\/vocabulary\.js";/.test(code)) return null;
       const used = new Set<string>();
       let out = code.replace(/\bicons\.(\w+)\b/g, (whole, name: string) => {

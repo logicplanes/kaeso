@@ -1,23 +1,20 @@
-import { Button, Popover, HoverCard, Input, KeyValue, Link, ModelLabel } from "@logicplanes/kaeso-ui";
+import { Button, Popover, Input } from "@logicplanes/kaeso-ui";
 import { StateSection } from "~/lib/states";
 
 export const meta = {
   title: "Popover",
-  description: "A floating panel next to its trigger; HoverCard previews on hover, never as the only way in.",
+  description: "A floating panel next to its trigger, opened by a click and closed with Escape.",
   group: "Components",
   entry: "popover",
-  import: "Popover, HoverCard",
+  import: "Popover",
   keyboard: [["Escape", "Closes and returns focus"]],
   a11y: [
     "Popovers with a form trap focus (trapFocus); others do not.",
     "The title names the popover's dialog; without a title, give the content an aria-label.",
-    "A popover and a hover card are never wider than the screen.",
+    "A popover is never wider than the screen.",
   ],
 };
-export const examples = [
-  { id: "form", title: "With a form", fn: "Form" },
-  { id: "hover", title: "HoverCard", fn: "Hover" },
-];
+export const examples = [{ id: "form", title: "With a form", fn: "Form" }];
 export function Form() {
   return (
     <Popover trapFocus>
@@ -40,32 +37,9 @@ export function Form() {
     </Popover>
   );
 }
-export function Hover() {
-  return (
-    <HoverCard>
-      <HoverCard.Trigger>
-        <Link href="#models/claude-sonnet-4-5" className="mono text-small">
-          claude-sonnet-4-5
-        </Link>
-      </HoverCard.Trigger>
-      <HoverCard.Content>
-        <div className="flex flex-col gap-12">
-          <ModelLabel provider="anthropic" providerName="Anthropic" model="claude-sonnet-4-5" capabilities={["tools", "reasoning", "vision", "pdf"]} />
-          <KeyValue
-            items={[
-              { label: "Input", value: "$3.00 / M" },
-              { label: "Output", value: "$15.00 / M" },
-              { label: "Context", value: "200,000 tokens" },
-            ]}
-          />
-        </div>
-      </HoverCard.Content>
-    </HoverCard>
-  );
-}
 export function States() {
   return (
-    <StateSection title="Open: a form, a list without a title, a hover card">
+    <StateSection title="Open: a form, and a list without a title">
       <div className="flex flex-col gap-24">
         <div className="h-160 w-400">
           <Popover open>
@@ -92,26 +66,6 @@ export function States() {
               </div>
             </Popover.Content>
           </Popover>
-        </div>
-        <div className="h-280 w-400">
-          <HoverCard open>
-            <HoverCard.Trigger>
-              <Link href="#models/claude-sonnet-4-5" className="mono text-small">
-                claude-sonnet-4-5
-              </Link>
-            </HoverCard.Trigger>
-            <HoverCard.Content>
-              <div className="flex flex-col gap-12">
-                <ModelLabel provider="anthropic" providerName="Anthropic" model="claude-sonnet-4-5" capabilities={["tools", "reasoning", "vision", "pdf"]} />
-                <KeyValue
-                  items={[
-                    { label: "Input", value: "$3.00 / M" },
-                    { label: "Output", value: "$15.00 / M" },
-                  ]}
-                />
-              </div>
-            </HoverCard.Content>
-          </HoverCard>
         </div>
       </div>
     </StateSection>

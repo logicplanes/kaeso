@@ -23,17 +23,6 @@ export const docs = {
       error: "The error message, shown under the control in the danger color; it marks the control invalid and is read out with its description.",
     },
   },
-  InputGroup: {
-    description: "Joins an input with buttons or text before or after it into one pill.",
-    props: {
-      disabled: "Turns off every control in the group.",
-      invalid: "Shows the whole group as invalid.",
-      leadingIcon: "Leading content is an icon: the left padding drops by 2px (optical).",
-      readOnly: "Shows the value without letting people change it.",
-      size: "The height of the group.",
-      trailingButton: "Trailing content is a button: the right padding drops so the circle sits concentric in the pill.",
-    },
-  },
   NumberInput: {
     description:
       "Numbers that stay exact: end-aligned tabular digits, a unit, quiet stepper circles, thousands separators on blur, and a decimal string value.",

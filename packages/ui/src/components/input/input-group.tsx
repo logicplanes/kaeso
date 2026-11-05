@@ -13,7 +13,6 @@ export const KAESO_INPUT_GROUP_VARIANTS = {
     xl: { classes: "h-48 px-22 gap-8 text-body-lg", description: "48px: sign-in and setup forms" },
   },
 } as const;
-export const KAESO_INPUT_GROUP_DEFAULT_VARIANTS = { size: "md" } as const;
 export type InputSize = keyof typeof KAESO_INPUT_GROUP_VARIANTS.size;
 
 export const LEADING: Record<InputSize, string> = { sm: "pl-10", md: "pl-14", lg: "pl-16", xl: "pl-20" };

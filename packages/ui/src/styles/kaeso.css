@@ -1488,7 +1488,7 @@
 }
 
 @utility collapse-motion {
-  height: var(--collapsible-panel-height, var(--accordion-panel-height, auto));
+  height: var(--collapsible-panel-height, auto);
   overflow: clip;
   transition-property: height, opacity;
   transition-duration: var(--k-duration-disclosure);
