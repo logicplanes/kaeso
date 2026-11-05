@@ -1,4 +1,4 @@
-import { Button, Input, Link, OTPInput, SensitiveInput, Text } from "@logicplanes/kaeso-ui";
+import { Button, Input, Link, OTPInput, Text } from "@logicplanes/kaeso-ui";
 import { formatRelative } from "@logicplanes/kaeso-ui/format";
 import { api, data } from "~/api/client";
 import type { SignInMethods, SsoProvider } from "~/auth/sign-in-api";
@@ -63,9 +63,9 @@ export function MethodsStep({
         )}
         {m.password && (
           <>
-            <SensitiveInput
+            <Input
+              type="password"
               label={t("signIn.password", "Password")}
-              kind="password"
               size="xl"
               value={password}
               onChange={(e) => onPasswordChange(e.target.value)}

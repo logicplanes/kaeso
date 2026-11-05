@@ -1,7 +1,7 @@
 import { forwardRef, useMemo, useState, type ReactNode } from "react";
 import { List, SelectionAction, type ListGroup, type ListItemData } from "../../components/list/list.js";
 import { Toolbar } from "../../components/toolbar/toolbar.js";
-import { SearchInput } from "../../components/input/input.js";
+import { Input } from "../../components/input/input.js";
 import { Empty } from "../../components/empty/empty.js";
 import type { IconData } from "../../components/icon/icon.js";
 import { useLocale, useUiText } from "../../i18n/context.js";
@@ -58,7 +58,9 @@ export const ResourceList = forwardRef<HTMLDivElement, ResourceListProps>(functi
         {toolbar}
         <Toolbar.Spacer />
         <div className="w-240">
-          <SearchInput
+          <Input
+            type="search"
+            size="sm"
             aria-label={t("resourceList.search", "Search")}
             placeholder={t("resourceList.search", "Search")}
             value={query}

@@ -14,7 +14,6 @@ import {
   Input,
   KeyValue,
   List,
-  SearchInput,
   Section,
   Tabs,
   SettingsGroup,
@@ -118,7 +117,9 @@ export function InstanceUsersPage({ search }: { search: UsersSearch }) {
         }
       >
         <div className="w-240">
-          <SearchInput
+          <Input
+            type="search"
+            size="sm"
             aria-label={t("instance.searchUsers", "Search users")}
             placeholder={t("instance.nameOrEmail", "Name or email")}
             value={q}

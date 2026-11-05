@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { JsonView, SearchInput } from "@logicplanes/kaeso-ui";
+import { JsonView, Input } from "@logicplanes/kaeso-ui";
 import { StateSection } from "~/lib/states";
 
 const body = {
@@ -32,7 +32,15 @@ export function Basic() {
   const [q, setQ] = useState("");
   return (
     <div className="flex w-560 flex-col gap-12">
-      <SearchInput aria-label="Search JSON" placeholder="Search keys and values" value={q} onChange={(e) => setQ(e.target.value)} onClear={() => setQ("")} />
+      <Input
+        type="search"
+        size="sm"
+        aria-label="Search JSON"
+        placeholder="Search keys and values"
+        value={q}
+        onChange={(e) => setQ(e.target.value)}
+        onClear={() => setQ("")}
+      />
       <JsonView value={body} query={q || undefined} />
     </div>
   );

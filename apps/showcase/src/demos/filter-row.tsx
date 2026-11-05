@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import { FilterRow, Tabs, Select, SearchInput, List, Empty, Badge, InsetContent, type ListItemData } from "@logicplanes/kaeso-ui";
+import { FilterRow, Tabs, Select, Input, List, Empty, Badge, InsetContent, type ListItemData } from "@logicplanes/kaeso-ui";
 import { members, projects } from "~/fixtures/kaeso";
 import { StateSection } from "~/lib/states";
 
@@ -74,7 +74,7 @@ export function Page() {
     <div className="w-full rounded-well bg-panel shadow-frame">
       <FilterRow tabs={stateTabs(state, setState)}>
         <div className="w-240">
-          <SearchInput aria-label="Search members" placeholder="Name or email" />
+          <Input type="search" size="sm" aria-label="Search members" placeholder="Name or email" />
         </div>
         <Select
           aria-label="Project"
@@ -117,7 +117,7 @@ export function States() {
         <Column width="w-360">
           <FilterRow tabs={stateTabs("all", () => undefined)}>
             <div className="w-240">
-              <SearchInput aria-label="Search members" placeholder="Name or email" />
+              <Input type="search" size="sm" aria-label="Search members" placeholder="Name or email" />
             </div>
           </FilterRow>
           <List

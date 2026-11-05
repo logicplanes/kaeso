@@ -10,7 +10,7 @@ import {
   TimeseriesChart,
   Button,
   Toolbar,
-  SearchInput,
+  Input,
   icons,
   List,
 } from "@logicplanes/kaeso-ui";
@@ -94,7 +94,7 @@ export function ListDemo() {
           <Toolbar aria-label="Filters">
             <Toolbar.Spacer />
             <div className="w-240">
-              <SearchInput aria-label="Search keys" />
+              <Input type="search" size="sm" aria-label="Search keys" />
             </div>
           </Toolbar>
         }

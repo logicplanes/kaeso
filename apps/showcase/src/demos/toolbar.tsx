@@ -1,4 +1,4 @@
-import { Toolbar, FilterChip, Button, SearchInput, DisplayOptions, icons } from "@logicplanes/kaeso-ui";
+import { Toolbar, FilterChip, Button, Input, DisplayOptions, icons } from "@logicplanes/kaeso-ui";
 import { useLogDisplayOptions } from "~/lib/display-options";
 import { StateSection } from "~/lib/states";
 
@@ -27,7 +27,7 @@ export function Logs() {
         </Button>
         <Toolbar.Spacer />
         <div className="order-last basis-full sm:order-none sm:basis-auto sm:w-240">
-          <SearchInput aria-label="Search logs" placeholder="Search logs" />
+          <Input type="search" size="sm" aria-label="Search logs" placeholder="Search logs" />
         </div>
         <DisplayOptions {...display} />
       </Toolbar>

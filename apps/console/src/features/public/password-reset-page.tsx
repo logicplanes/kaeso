@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { Button, Input, Link, SensitiveInput, Text } from "@logicplanes/kaeso-ui";
+import { Button, Input, Link, Text } from "@logicplanes/kaeso-ui";
 import { PublicPage } from "~/shell/public-page";
 import { api, data } from "~/api/client";
 import { isApiError } from "~/api/errors";
@@ -115,9 +115,9 @@ function NewPassword({ token }: { token: string }) {
         }}
       >
         {account.data && <input type="email" name="username" autoComplete="username" value={account.data.email} readOnly hidden />}
-        <SensitiveInput
+        <Input
+          type="password"
           label={t("public.newPassword", "New password")}
-          kind="password"
           size="xl"
           value={password}
           onChange={(e) => setPassword(e.target.value)}

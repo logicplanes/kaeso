@@ -1,7 +1,7 @@
 import { useState, type ReactNode, type SyntheticEvent } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocation, useNavigate, useParams } from "@tanstack/react-router";
-import { Badge, SearchInput, Sidebar, Text } from "@logicplanes/kaeso-ui";
+import { Badge, Input, Sidebar, Text } from "@logicplanes/kaeso-ui";
 import { updatesQuery } from "~/api/queries/instance";
 import { prefetchSettingsPath } from "~/api/queries/settings-prefetch";
 import { useMemberships, useOrgRights, useSession } from "~/auth/session";
@@ -65,7 +65,8 @@ export function SettingsSidebar() {
       <Sidebar.Content onPointerOver={prefetch} onFocus={prefetch}>
         <div className="flex flex-col gap-8">
           <Sidebar.BackLink href={back}>{t("shell.backToApp", "Back to app")}</Sidebar.BackLink>
-          <SearchInput
+          <Input
+            type="search"
             aria-label={t("shell.searchSettings", "Search settings")}
             placeholder={t("shell.searchSettings", "Search settings")}
             value={query}

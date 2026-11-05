@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { Button, Code, Input, SensitiveInput, Text } from "@logicplanes/kaeso-ui";
+import { Button, Code, Input, Text } from "@logicplanes/kaeso-ui";
 import { PublicPage } from "~/shell/public-page";
 import { api } from "~/api/client";
 import { forgetFragment, takeFragment } from "~/auth/fragment";
@@ -107,9 +107,9 @@ function SetupForm({ token }: { token: string }) {
           error={fieldError(error, "email")}
         />
         {withPassword && (
-          <SensitiveInput
+          <Input
+            type="password"
             label={t("public.password", "Password")}
-            kind="password"
             size="xl"
             value={password}
             onChange={(e) => setPassword(e.target.value)}

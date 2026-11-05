@@ -94,7 +94,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
 | Settings page                            | `AppFrame.Settings`, `SettingsGroup`, `SettingsRow`                     |
 | A collection people scan and act on      | `List` with group headers                                               |
 | A collection people compare by column    | `DataTable` (virtualized, sortable)                                     |
-| Filters above a collection               | `Toolbar` with `FilterChip`, `SearchInput`, `DisplayOptions`            |
+| Filters above a collection               | `Toolbar` with `FilterChip`, `Input type="search"`, `DisplayOptions`    |
 | A choice among 2–4 views                 | `Segmented`; page views: `Tabs variant="pill"`; detail sections: `Tabs` |
 | One of many options                      | `Select`; searchable: `Combobox`                                        |
 | A confirmation of an irreversible action | `AlertDialog`; deletion: the `DeleteResource` block                     |
@@ -108,7 +108,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
 ## A screen
 
 ```tsx
-import { AppFrame, Sidebar, PageHeader, Toolbar, FilterChip, SearchInput, DataTable, Button, icons } from "@logicplanes/kaeso-ui";
+import { AppFrame, Sidebar, PageHeader, Toolbar, FilterChip, Input, DataTable, Button, icons } from "@logicplanes/kaeso-ui";
 
 export function RequestLogs({ rows }: { rows: LogRow[] }) {
   return (
@@ -116,7 +116,7 @@ export function RequestLogs({ rows }: { rows: LogRow[] }) {
       <PageHeader start={<AppFrame.MenuButton />} title="Request logs" actions={<Button variant="secondary">Export CSV</Button>} />
       <Toolbar>
         <FilterChip property="Status" operator="is" value="2xx" />
-        <SearchInput aria-label="Search logs" placeholder="Search logs" />
+        <Input type="search" size="sm" aria-label="Search logs" placeholder="Search logs" />
       </Toolbar>
       <AppFrame.Body>
         <DataTable data={rows} columns={columns} />

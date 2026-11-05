@@ -13,7 +13,6 @@ import {
   Input,
   Menu,
   Tabs,
-  SearchInput,
   Text,
   col,
   icons,
@@ -148,7 +147,9 @@ export function InstanceOrgsPage({ search }: { search: InstanceOrgsSearch }) {
         }
       >
         <div className="w-240">
-          <SearchInput
+          <Input
+            type="search"
+            size="sm"
             aria-label={t("instance.searchOrgs", "Search organizations")}
             placeholder={t("common.name", "Name")}
             value={q}

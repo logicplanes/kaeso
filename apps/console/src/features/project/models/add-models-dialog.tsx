@@ -13,7 +13,6 @@ import {
   List,
   ModelLabel,
   ProviderPicker,
-  SearchInput,
   FilterToggle,
   Text,
   col,
@@ -210,7 +209,9 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
   );
   const searchInput = (
     <div className="min-w-0 flex-1 basis-120">
-      <SearchInput
+      <Input
+        type="search"
+        size="sm"
         aria-label={t("models.search", "Search models")}
         placeholder={common.search()}
         value={q}

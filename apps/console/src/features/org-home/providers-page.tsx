@@ -18,7 +18,6 @@ import {
   Menu,
   Tabs,
   ProviderBadge,
-  SearchInput,
   Text,
   Tooltip,
   VisuallyHidden,
@@ -369,7 +368,9 @@ export function OrgProvidersPage({ org, search = {} }: { org: string; search?: P
           {canView && searchable && (
             <FilterRow>
               <div className="w-240">
-                <SearchInput
+                <Input
+                  type="search"
+                  size="sm"
                   aria-label={t("orgHome.searchProviderKeys", "Search provider keys")}
                   placeholder={t("orgHome.providerKeyOrProject", "Provider, key or project")}
                   value={query}

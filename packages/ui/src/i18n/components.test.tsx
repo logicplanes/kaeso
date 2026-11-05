@@ -9,7 +9,7 @@ import { Dialog } from "../components/dialog/dialog.js";
 import { Pagination } from "../components/pagination/pagination.js";
 import { Calendar } from "../components/calendar/calendar.js";
 import { DateRangePicker } from "../components/date-picker/date-picker.js";
-import { SearchInput } from "../components/input/input.js";
+import { Input } from "../components/input/input.js";
 import { CopyButton } from "../components/copy-button/copy-button.js";
 import { TableOfContents } from "../components/toc/toc.js";
 import { RightsMatrix } from "../components/kaeso/rights.js";
@@ -77,7 +77,7 @@ describe("components in German and Chinese", () => {
       zhCN,
       <>
         <Calendar defaultMonth={new Date(2026, 9, 1)} />
-        <SearchInput aria-label="搜索密钥" />
+        <Input type="search" size="sm" aria-label="搜索密钥" />
         <TableOfContents items={[{ id: "a", label: "Intro" }]} active="a" />
         <RightsMatrix
           searchable

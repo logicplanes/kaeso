@@ -14,7 +14,6 @@ import {
   Menu,
   ProviderBadge,
   Select,
-  SensitiveInput,
   StepDialog,
   Switch,
   Text,
@@ -544,7 +543,8 @@ export function AddCustomProviderDialog({ org, onClose }: { org: string; onClose
                 inputMode="url"
                 autoFocus
               />
-              <SensitiveInput
+              <Input
+                secret
                 label={t("orgHome.custom.key", "API key")}
                 description={
                   savesKey

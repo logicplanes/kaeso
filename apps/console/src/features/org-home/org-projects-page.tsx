@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { AppFrame, Avatar, Badge, Button, Empty, FilterRow, List, SearchInput, icons } from "@logicplanes/kaeso-ui";
+import { AppFrame, Avatar, Badge, Button, Empty, FilterRow, List, Input, icons } from "@logicplanes/kaeso-ui";
 import { formatDate, formatNumber } from "@logicplanes/kaeso-ui/format";
 import { orgProjectsQuery } from "~/api/queries/projects";
 import { orgUsageQuery } from "~/api/queries/usage";
@@ -73,7 +73,9 @@ export function OrgProjectsPage({ org, search }: { org: string; search: OrgProje
       />
       <FilterRow tabs={<ScopeTabs label={t("common.projects", "Projects")} value={scope} onChange={setScope} />}>
         <div className="w-240">
-          <SearchInput
+          <Input
+            type="search"
+            size="sm"
             aria-label={t("orgHome.searchProjects", "Search projects")}
             placeholder={t("orgHome.projectName", "Project name")}
             value={query}

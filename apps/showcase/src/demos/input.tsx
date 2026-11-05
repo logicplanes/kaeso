@@ -8,11 +8,16 @@ export const meta = {
   group: "Components",
   entry: "input",
   import: "Input",
-  keyboard: [["Tab", "Moves focus in and out"]],
+  keyboard: [
+    ["Tab", "Moves focus in and out"],
+    ["Escape", "Clears a search"],
+  ],
   a11y: [
     "Pass label and description and the input wraps itself in Field, wiring aria-describedby; invalid sets aria-invalid, and an error shows under the input.",
     "Placeholders are hints, never labels.",
     "Read-only fields stay selectable and focusable.",
+    "type=search lets assistive technology announce a search field; its clear button is named “Clear search”, and a shortcut hint hides while the field has focus without moving anything.",
+    "A secret or password is masked behind a circle named “Show key” or “Show password”; a revealed key is set in mono, and a password field announces Caps Lock once.",
   ],
 };
 export const examples = [
@@ -26,6 +31,14 @@ export const examples = [
   { id: "sizes", title: "Sizes", fn: "Sizes" },
   { id: "addons", title: "Icon, prefix and suffix", fn: "Addons" },
   { id: "readonly", title: "Read-only and disabled", fn: "ReadOnly" },
+  {
+    id: "search",
+    title: "Search",
+    fn: "Search",
+    description: '`type="search"`: a leading icon, a clear circle when filled, and a shortcut hint. Escape clears.',
+  },
+  { id: "secret", title: "Provider key", fn: "Secret", description: "`secret`: masked, an eye to reveal, mono when revealed, never autocompleted." },
+  { id: "password", title: "Password", fn: "Password", description: '`type="password"`: the same eye, password managers welcome, and a Caps Lock hint.' },
 ];
 export function Basic() {
   return (
@@ -124,6 +137,100 @@ export function States() {
           <Input label="Description" optional placeholder="What this key is for" />
           <Input label="Rate limit" layout="horizontal" description="Requests per minute for this key." defaultValue="600" suffix="/ min" />
           <Input label="Origin" defaultValue="https://checkout.northwind.example/api/v2/callbacks/payment-confirmation" />
+        </div>
+      </StateSection>
+      <SearchStates />
+      <StateSection title="Search in the settings sidebar">
+        <SearchSettings />
+      </StateSection>
+      <MaskedStates />
+    </>
+  );
+}
+
+export function Search() {
+  return (
+    <div className="w-240">
+      <Input type="search" size="sm" aria-label="Search logs" placeholder="gpt-5, req_01…" shortcut={["mod", "k"]} />
+    </div>
+  );
+}
+function SearchSettings() {
+  return (
+    <div className="w-240">
+      <Input type="search" size="md" aria-label="Search settings" placeholder="Rate limit, budget" />
+    </div>
+  );
+}
+function SearchStates() {
+  return (
+    <>
+      <StateGrid
+        title="Search × states"
+        kinds={[
+          { label: "Empty, with shortcut", id: "empty" },
+          { label: "Filled", id: "filled" },
+        ]}
+        states={FIELD_STATES.filter((s) => s.id !== "invalid")}
+        render={(k, p) => (
+          <div className="w-200">
+            <Input
+              type="search"
+              size="sm"
+              aria-label="Search logs"
+              placeholder="gpt-5, req_01…"
+              shortcut={["mod", "k"]}
+              {...(k.id === "filled" ? { defaultValue: "gpt-5" } : {})}
+              {...p}
+            />
+          </div>
+        )}
+      />
+      <StateSection title="Search sizes">
+        <div className="flex w-240 flex-col gap-12">
+          {(["sm", "md", "lg", "xl"] as const).map((s) => (
+            <Input type="search" key={s} size={s} aria-label={`Search, ${s}`} placeholder="gpt-5, req_01…" />
+          ))}
+        </div>
+      </StateSection>
+    </>
+  );
+}
+
+export function Secret() {
+  return (
+    <div className="w-400">
+      <Input secret label="Provider key" description="Only the last four characters stay visible after saving." placeholder="sk-ant-…" />
+    </div>
+  );
+}
+export function Password() {
+  return (
+    <div className="w-320">
+      <Input type="password" label="Password" />
+    </div>
+  );
+}
+function MaskedStates() {
+  return (
+    <>
+      <StateGrid
+        title="Secret × states"
+        kinds={[
+          { label: "Masked", id: "masked" },
+          { label: "Revealed", id: "revealed" },
+        ]}
+        states={FIELD_STATES}
+        render={(k, p) => (
+          <div className="w-240">
+            <Input secret aria-label="Provider key" defaultValue="sk-ant-api03-Xf7Lq2" defaultRevealed={k.id === "revealed"} {...p} />
+          </div>
+        )}
+      />
+      <StateSection title="Password, with a description">
+        <div className="flex w-320 flex-col gap-16">
+          <Input type="password" label="Password" description="At least 12 characters." defaultValue="correct horse" />
+          <Input secret label="Provider key" description="Only the last four characters stay visible after saving." placeholder="sk-ant-…" />
         </div>
       </StateSection>
     </>

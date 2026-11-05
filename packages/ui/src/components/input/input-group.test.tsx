@@ -1,7 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { SensitiveInput } from "./sensitive-input.js";
-import { Input, SearchInput } from "./input.js";
+import { Input } from "./input.js";
 import { InputGroup } from "./input-group.js";
 import { icons } from "../../icons/vocabulary.js";
 import { useState } from "react";
@@ -12,17 +11,17 @@ afterEach(() => vi.restoreAllMocks());
 describe("InputGroup.Button", () => {
   it("follows the library's own className rule (no layout warning)", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
-    render(<SensitiveInput label="Password" defaultValue="secret" />);
+    render(<Input secret label="Password" defaultValue="secret" />);
     expect(screen.getByLabelText("Password")).toBeInTheDocument();
     expect(warn.mock.calls.filter((c) => String(c[0]).includes("className is for layout only"))).toEqual([]);
   });
 });
 
-describe("SearchInput", () => {
+describe("a search Input", () => {
   it("clears a controlled field through its onChange", async () => {
     function Demo() {
       const [q, setQ] = useState("req_01");
-      return <SearchInput aria-label="Search" value={q} onChange={(e) => setQ(e.target.value)} />;
+      return <Input type="search" size="sm" aria-label="Search" value={q} onChange={(e) => setQ(e.target.value)} />;
     }
     render(<Demo />);
     await userEvent.click(screen.getByRole("button", { name: "Clear search" }));
@@ -51,18 +50,18 @@ describe("InputGroup state", () => {
   });
 
   it("hides a search shortcut while the field has focus, keeping its room", () => {
-    render(<SearchInput aria-label="Search logs" shortcut={["mod", "k"]} />);
+    render(<Input type="search" size="sm" aria-label="Search logs" shortcut={["mod", "k"]} />);
     expect(screen.getByText("K").closest("span[class*='group-focus-within']")).toHaveClass("group-focus-within/field:invisible");
   });
 });
 
-describe("SearchInput that cannot change", () => {
+describe("a search Input that cannot change", () => {
   it("offers no clear button while read-only or disabled", () => {
-    const { rerender } = render(<SearchInput aria-label="Search logs" defaultValue="gpt-5" readOnly />);
+    const { rerender } = render(<Input type="search" size="sm" aria-label="Search logs" defaultValue="gpt-5" readOnly />);
     expect(screen.queryByRole("button", { name: "Clear search" })).toBeNull();
-    rerender(<SearchInput aria-label="Search logs" defaultValue="gpt-5" disabled />);
+    rerender(<Input type="search" size="sm" aria-label="Search logs" defaultValue="gpt-5" disabled />);
     expect(screen.queryByRole("button", { name: "Clear search" })).toBeNull();
-    rerender(<SearchInput aria-label="Search logs" defaultValue="gpt-5" />);
+    rerender(<Input type="search" size="sm" aria-label="Search logs" defaultValue="gpt-5" />);
     expect(screen.getByRole("button", { name: "Clear search" })).toBeInTheDocument();
   });
 });

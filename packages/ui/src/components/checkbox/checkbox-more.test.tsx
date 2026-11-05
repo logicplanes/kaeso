@@ -7,7 +7,7 @@ import { hydrateRoot } from "react-dom/client";
 import userEvent from "@testing-library/user-event";
 import { Checkbox, CheckboxBox, CheckboxGroup } from "./checkbox.js";
 import { Accordion, Collapsible } from "../collapsible/collapsible.js";
-import { SensitiveInput } from "../input/sensitive-input.js";
+import { Input } from "../input/input.js";
 import { Popover } from "../popover/popover.js";
 import { HoverCard } from "../popover/hover-card.js";
 import { focusInputOnPress } from "../../utils/field-press.js";
@@ -119,9 +119,9 @@ describe("Collapsible and Accordion", () => {
   });
 });
 
-describe("SensitiveInput", () => {
+describe("a secret Input", () => {
   it("reveals and hides a secret in mono", async () => {
-    render(<SensitiveInput aria-label="API key" defaultValue="sk-kso-live" />);
+    render(<Input secret aria-label="API key" defaultValue="sk-kso-live" />);
     const input = screen.getByLabelText("API key");
     expect(input).toHaveAttribute("type", "password");
     expect(input).toHaveAttribute("data-1p-ignore");
@@ -133,7 +133,7 @@ describe("SensitiveInput", () => {
   });
 
   it("names its reveal button after the password it shows", async () => {
-    render(<SensitiveInput kind="password" label="Password" />);
+    render(<Input type="password" label="Password" />);
     const input = screen.getByLabelText("Password");
     await userEvent.click(screen.getByRole("button", { name: "Show password" }));
     expect(input).toHaveAttribute("type", "text");
@@ -144,7 +144,7 @@ describe("SensitiveInput", () => {
   it("warns about Caps Lock in a password", async () => {
     const onKeyDown = vi.fn();
     const onKeyUp = vi.fn();
-    render(<SensitiveInput kind="password" label="Password" description="At least 12 characters" onKeyDown={onKeyDown} onKeyUp={onKeyUp} />);
+    render(<Input type="password" label="Password" description="At least 12 characters" onKeyDown={onKeyDown} onKeyUp={onKeyUp} />);
     const input = screen.getByLabelText("Password");
     expect(input).toHaveAttribute("autocomplete", "current-password");
     await userEvent.type(input, "{CapsLock}a");

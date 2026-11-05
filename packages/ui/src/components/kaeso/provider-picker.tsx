@@ -2,7 +2,7 @@ import { forwardRef, useMemo, useState, type ReactNode, type Ref } from "react";
 import { Radio as BaseRadio } from "@base-ui/react/radio";
 import { RadioGroup as BaseRadioGroup } from "@base-ui/react/radio-group";
 import { cn } from "../../utils/cn.js";
-import { SearchInput } from "../input/input.js";
+import { Input } from "../input/input.js";
 import { useLocale, useUiText } from "../../i18n/context.js";
 import { CommandList, type CommandListGroup } from "../command-list/command-list.js";
 import { PickerPopover, PickerTrigger } from "../command-list/picker-popover.js";
@@ -86,7 +86,9 @@ function ProviderTiles({
   return (
     <div className={cn("flex min-w-0 flex-col gap-16", className)}>
       {searchable && (
-        <SearchInput
+        <Input
+          type="search"
+          size="sm"
           aria-label={t("providerPicker.search", "Search providers")}
           placeholder={t("providerPicker.search", "Search providers")}
           {...(disabled ? { disabled: true } : {})}

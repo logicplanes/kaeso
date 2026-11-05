@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { Button, Input, Link, SensitiveInput, Text } from "@logicplanes/kaeso-ui";
+import { Button, Input, Link, Text } from "@logicplanes/kaeso-ui";
 import { PublicPage } from "~/shell/public-page";
 import { api, data } from "~/api/client";
 import { forgetFragment, takeFragment } from "~/auth/fragment";
@@ -135,10 +135,10 @@ export function SignUpVerifyPage() {
           maxLength={100}
           error={fieldError(error, "name")}
         />
-        <SensitiveInput
+        <Input
+          type="password"
           label={t("public.password", "Password")}
           optional
-          kind="password"
           size="xl"
           value={password}
           onChange={(e) => setPassword(e.target.value)}

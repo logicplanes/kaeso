@@ -13,7 +13,7 @@ import {
   Link,
   OTPInput,
   QRCode,
-  SensitiveInput,
+  Input,
   SettingsGroup,
   SettingsRow,
   Section,
@@ -163,8 +163,8 @@ function PasswordDialog({
       <div className="flex flex-col gap-16">
         {email && <input type="email" name="username" autoComplete="username" value={email} readOnly hidden />}
         {hasPassword && (
-          <SensitiveInput
-            kind="password"
+          <Input
+            type="password"
             label={t("account.currentPassword", "Current password")}
             autoComplete="current-password"
             value={current}
@@ -173,8 +173,8 @@ function PasswordDialog({
             error={fieldError(save.error, "current_password")}
           />
         )}
-        <SensitiveInput
-          kind="password"
+        <Input
+          type="password"
           label={t("account.newPassword", "New password")}
           autoComplete="new-password"
           description={passwordHint(next)}

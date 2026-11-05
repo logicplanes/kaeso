@@ -25,11 +25,17 @@ export interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 
   trailing?: ReactNode | undefined;
   invalid?: boolean | undefined;
   align?: "start" | "end" | undefined;
+  shortcut?: string[] | undefined;
+  onClear?: (() => void) | undefined;
+  secret?: boolean | undefined;
+  defaultRevealed?: boolean | undefined;
   "data-force"?: string | undefined;
   className?: string | undefined;
 }
 
-export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(props, ref) {
+type BaseProps = Omit<InputProps, "shortcut" | "onClear" | "secret" | "defaultRevealed">;
+
+const BaseInput = forwardRef<HTMLInputElement, BaseProps>(function BaseInput(props, ref) {
   const {
     size = "md",
     leadingIcon,
@@ -83,6 +89,14 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(pro
   if (field) return inner;
   return withField({ label, description, error, optional, required, layout, id: fc.wrapId ?? id, disabled, className }, inner);
 });
+BaseInput.displayName = "Input";
+
+export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(props, ref) {
+  if (props.type === "search") return <SearchField ref={ref} {...props} />;
+  if (props.type === "password" || props.secret) return <MaskedField ref={ref} {...props} />;
+  const { shortcut: _shortcut, onClear: _onClear, secret: _secret, defaultRevealed: _revealed, ...rest } = props;
+  return <BaseInput ref={ref} {...rest} />;
+});
 Input.displayName = "Input";
 
 function InputGroupFromField({
@@ -130,24 +144,8 @@ function InputGroupFromField({
   );
 }
 
-export const KAESO_SEARCH_INPUT_VARIANTS = {
-  size: {
-    sm: { classes: KAESO_INPUT_VARIANTS.size.sm.classes, description: "32px: toolbars (default)" },
-    md: { classes: KAESO_INPUT_VARIANTS.size.md.classes, description: "36px: a search at the top of a page or dialog" },
-    lg: { classes: KAESO_INPUT_VARIANTS.size.lg.classes, description: "40px" },
-    xl: { classes: KAESO_INPUT_VARIANTS.size.xl.classes, description: "48px" },
-  },
-} as const;
-export const KAESO_SEARCH_INPUT_DEFAULT_VARIANTS = { size: "sm" } as const;
-
-export interface SearchInputProps extends Omit<InputProps, "leadingIcon" | "type" | "prefix" | "suffix"> {
-  shortcut?: string[] | undefined;
-  onClear?: (() => void) | undefined;
-  placeholder?: string | undefined;
-}
-
-export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(function SearchInput(
-  { shortcut, onClear, value, defaultValue, onChange, onKeyDown, placeholder, size = "sm", ...props },
+const SearchField = forwardRef<HTMLInputElement, InputProps>(function SearchField(
+  { shortcut, onClear, value, defaultValue, onChange, onKeyDown, placeholder, secret: _secret, defaultRevealed: _revealed, ...props },
   ref,
 ) {
   const t = useUiText();
@@ -166,14 +164,12 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(functi
     el?.focus();
   };
   return (
-    <Input
+    <BaseInput
       ref={(el) => {
         input.current = el;
         if (typeof ref === "function") ref(el);
         else if (ref) ref.current = el;
       }}
-      type="search"
-      size={size}
       leadingIcon={icons.search}
       placeholder={placeholder ?? t("searchInput.placeholder", "Search")}
       autoComplete="off"
@@ -204,4 +200,69 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(functi
     />
   );
 });
-SearchInput.displayName = "SearchInput";
+SearchField.displayName = "Input";
+
+const MaskedField = forwardRef<HTMLInputElement, InputProps>(function MaskedField(
+  { type, secret, defaultRevealed = false, shortcut: _shortcut, onClear: _onClear, onKeyDown, onKeyUp, onBlur, ...props },
+  ref,
+) {
+  const t = useUiText();
+  const password = type === "password" && !secret;
+  const [revealed, setRevealed] = useState(defaultRevealed);
+  const [caps, setCaps] = useState(false);
+  const checkCaps = (e: KeyboardEvent<HTMLInputElement>) => setCaps(password && e.getModifierState?.("CapsLock"));
+  return (
+    <BaseInput
+      ref={ref}
+      type={revealed ? "text" : "password"}
+      autoComplete={password ? "current-password" : "off"}
+      autoCorrect="off"
+      autoCapitalize="off"
+      spellCheck={false}
+      data-1p-ignore={password ? undefined : true}
+      data-lpignore={password ? undefined : "true"}
+      data-mono={revealed || undefined}
+      onBlur={(e) => {
+        setCaps(false);
+        onBlur?.(e);
+      }}
+      onKeyDown={(e) => {
+        checkCaps(e);
+        onKeyDown?.(e);
+      }}
+      onKeyUp={(e) => {
+        checkCaps(e);
+        onKeyUp?.(e);
+      }}
+      trailing={
+        <>
+          {password && (
+            <span className="inline-flex shrink-0 items-center gap-4 text-small text-warning-text select-none">
+              {caps && <Icon icon={icons.warning} size="sm" />}
+              {caps && t("sensitiveInput.capsLockShort", "Caps Lock")}
+              <span role="status" className="sr-only">
+                {caps ? t("sensitiveInput.capsLock", "Caps Lock is on.") : ""}
+              </span>
+            </span>
+          )}
+          <InputGroup.Button
+            icon={revealed ? icons.hide : icons.show}
+            aria-label={
+              password
+                ? revealed
+                  ? t("sensitiveInput.hidePassword", "Hide password")
+                  : t("sensitiveInput.showPassword", "Show password")
+                : revealed
+                  ? t("sensitiveInput.hideKey", "Hide key")
+                  : t("sensitiveInput.showKey", "Show key")
+            }
+            onClick={() => setRevealed((r) => !r)}
+            disabled={props.disabled}
+          />
+        </>
+      }
+      {...props}
+    />
+  );
+});
+MaskedField.displayName = "Input";
