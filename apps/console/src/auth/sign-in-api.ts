@@ -54,6 +54,10 @@ export const signInMethodsQuery = {
   networkMode: "always" as const,
 };
 
+export async function signInToDemo(): Promise<void> {
+  data(await api.POST("/platform/v1/auth/demo"));
+}
+
 export async function signInMethodsFor(email: string): Promise<SignInMethods> {
   return data(await api.POST("/platform/v1/auth/methods", { body: { email } }));
 }

@@ -127,6 +127,17 @@ services:
 
 Apply the change with `docker compose up -d --wait`. Compose recreates only the services whose settings changed. [Configuration](configuration.md) lists every setting of the gateway.
 
+## Run a public demo
+
+A demo lets people look around a real console without installing Kaeso. Fill an install with an organization, projects and usage, then name one of its users as the demo user:
+
+```bash
+echo "KAESO_AUTH_DEMO_USER=owner@example.com" >> .env
+docker compose up -d --wait
+```
+
+The sign-in page then offers **Explore the demo**, which signs every visitor in as that user. The install refuses every change with a message that it's a read-only demo, and the model API and MCP are off, so nothing can be sent through it. Remove the setting to make the install usable again.
+
 ## Choose how to keep request logs
 
 Request logs live in ClickHouse. The bundled ClickHouse in `compose.yaml` is the recommended setup: it needs nothing from you and keeps the logs on the same server. Usage, limits, budgets and budget alerts don't depend on it, because Kaeso keeps usage in PostgreSQL. ClickHouse takes the most memory of the services ([requirements](requirements.md#memory-and-images)), so an install can also use a ClickHouse you already run, or keep no request logs at all.

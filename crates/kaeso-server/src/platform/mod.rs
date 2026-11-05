@@ -160,7 +160,13 @@ pub fn router(state: &AppState) -> (Router<AppState>, OpenApiDoc) {
     let router = router
         .route(PREFIX, any(error::unknown_endpoint))
         .route(&format!("{PREFIX}/{{*rest}}"), any(error::unknown_endpoint))
-        .method_not_allowed_fallback(error::method_not_allowed)
+        .method_not_allowed_fallback(error::method_not_allowed);
+    let router = if state.config.auth.demo_user().is_some() {
+        router.layer(axum::middleware::from_fn(read_only))
+    } else {
+        router
+    };
+    let router = router
         .layer(axum::extract::DefaultBodyLimit::max(limit))
         .layer(axum::middleware::from_fn_with_state(
             state.clone(),
@@ -170,6 +176,33 @@ pub fn router(state: &AppState) -> (Router<AppState>, OpenApiDoc) {
             security_headers(req, next, hsts)
         }));
     (router, doc)
+}
+
+// A read-only demo lets visitors sign in and out and dismiss what's new; every other request
+// that could change something is refused before it reaches a handler.
+const READ_ONLY_OPEN: [&str; 4] = [
+    "/auth/demo",
+    "/auth/methods",
+    "/auth/logout",
+    "/me/whats-new/seen",
+];
+
+async fn read_only(
+    req: axum::extract::Request,
+    next: axum::middleware::Next,
+) -> axum::response::Response {
+    use axum::http::Method;
+    use axum::response::IntoResponse;
+    let reads = matches!(*req.method(), Method::GET | Method::HEAD | Method::OPTIONS);
+    let open = req
+        .uri()
+        .path()
+        .strip_prefix(PREFIX)
+        .is_some_and(|path| READ_ONLY_OPEN.contains(&path));
+    if reads || open {
+        return next.run(req).await;
+    }
+    error::ApiError::PermissionDenied(auth::demo::READ_ONLY.into()).into_response()
 }
 
 pub const TIME_ZONE_HEADER: &str = "kaeso-time-zone";

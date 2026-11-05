@@ -35,6 +35,9 @@ pub struct SignInMethodsView {
     #[doc = "The install is set up: its first user exists, so a setup link no longer\n\
         works and people sign in instead."]
     pub set_up: bool,
+    #[doc = "The install is a read-only demo: `auth/demo` signs anyone in as its demo\n\
+        user, and every change is refused."]
+    pub demo: bool,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -83,6 +86,7 @@ fn install(state: &AppState, sign_up: bool, set_up: bool) -> SignInMethodsView {
         sign_up,
         provider: None,
         set_up,
+        demo: a.demo_user().is_some(),
     }
 }
 

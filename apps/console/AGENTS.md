@@ -8,7 +8,7 @@ The **Kaeso console**: the web interface of a Kaeso install. People set Kaeso up
 
 - **Is:** a single-page React application served on the same domain as the gateway. It talks only to the Platform API under `/platform/v1`.
 - **Is not:** a design system. Every visible element is a `@logicplanes/kaeso-ui` component; the console owns composition, data and behavior. A missing component or variant is added to `packages/ui`, in the same pull request when the console needs it.
-- **Is not:** a backend. No mock API, no demo mode, no server code. Development and tests run against a real gateway, built from this repository, in Docker (`pnpm stack:up`).
+- **Is not:** a backend. No mock API, no fake data, no server code. Development and tests run against a real gateway, built from this repository, in Docker (`pnpm stack:up`). A read-only demo is the gateway's `auth.demo_user`; the console only offers its sign-in when `auth/methods` says so.
 - **Not a place for plans.** Roadmaps, to-do lists and open questions go into issues.
 
 ## Setup

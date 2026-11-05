@@ -127,6 +127,17 @@ services:
 
 用 `docker compose up -d --wait` 应用修改。Compose 只会重建设置有变化的服务。[配置](configuration.md)列出了网关的每项设置。
 
+## 运行公开演示
+
+演示让人们无需安装 Kaeso 就能浏览真实的控制台。先在实例中创建组织、项目和用量数据，再将其中一个用户设为演示用户：
+
+```bash
+echo "KAESO_AUTH_DEMO_USER=owner@example.com" >> .env
+docker compose up -d --wait
+```
+
+登录页随后会提供**浏览演示**，让每位访客以该用户身份登录。实例会拒绝一切更改，并提示这是只读演示；模型 API 和 MCP 处于关闭状态，因此无法通过它发送任何请求。移除该设置即可恢复正常使用。
+
 ## 选择请求日志的保存方式
 
 请求日志保存在 ClickHouse 中。`compose.yaml` 自带的 ClickHouse 是推荐的方式：它不需要您做任何事，并把日志保存在同一台服务器上。用量、限额、预算和预算提醒都不依赖它，因为 Kaeso 把用量保存在 PostgreSQL 中。ClickHouse 是所有服务中占用内存最多的（[系统要求](requirements.md#内存和镜像)），因此实例也可以使用您已有的 ClickHouse，或者完全不保存请求日志。
