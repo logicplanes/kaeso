@@ -103,4 +103,9 @@ describe("Settings rows", () => {
     expect(header).toHaveClass("mb-16", "flex-wrap");
     expect(screen.getByRole("button", { name: "Invite" }).parentElement).toHaveClass("shrink-0");
   });
+
+  it("breaks a long id or address in a description instead of widening the row", () => {
+    render(<SettingsRow title="Identity provider" description="https://login.northwind.example/realms/northwind-labs/protocol/openid-connect" />);
+    expect(screen.getByText(/^https:\/\/login/)).toHaveClass("wrap-anywhere");
+  });
 });

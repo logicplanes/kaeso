@@ -83,4 +83,17 @@ describe("Link with an external icon", () => {
     const hash = [...link.querySelectorAll("span")].find((s) => s.textContent === "#");
     expect(icon && hash && icon.compareDocumentPosition(hash) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
+
+  it("keeps a link in running text to its own line's height, and widens a standalone one to a full hit area", () => {
+    render(
+      <>
+        <Link href="/docs/limits">limits</Link>
+        <Link href="/changelog" variant="quiet">
+          Changelog
+        </Link>
+      </>,
+    );
+    expect(screen.getByRole("link", { name: "limits" })).not.toHaveClass("tap-target");
+    expect(screen.getByRole("link", { name: "Changelog" })).toHaveClass("tap-target");
+  });
 });

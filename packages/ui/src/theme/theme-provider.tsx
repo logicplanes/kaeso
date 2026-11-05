@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 export type ThemePreference = "system" | "light" | "dark";
 export type ResolvedTheme = "light" | "dark";
@@ -57,17 +57,34 @@ export interface ThemeProviderProps {
   target?: (() => HTMLElement) | undefined;
 }
 
+// Every color changes at once; without this, each control's color transition replays the switch on its own,
+// showing light controls on a dark page for a moment.
+function holdTransitions(el: HTMLElement): () => void {
+  el.setAttribute("data-k-theming", "");
+  void getComputedStyle(el).color;
+  const settled = requestAnimationFrame(() => el.removeAttribute("data-k-theming"));
+  return () => {
+    cancelAnimationFrame(settled);
+    el.removeAttribute("data-k-theming");
+  };
+}
+
 export function ThemeProvider({ children, defaultTheme = "system", target }: ThemeProviderProps) {
   const [chosen, setThemeState] = useState<ThemePreference | null>(null);
   const [system, setSystem] = useState<ResolvedTheme>("light");
   const theme = chosen ?? defaultTheme;
+  const root = useRef(target);
+  root.current = target;
 
   useEffect(() => {
     installFocusModality();
     setThemeState(readStored(defaultTheme));
     setSystem(systemTheme());
     const mq = window.matchMedia?.("(prefers-color-scheme: dark)");
-    const onChange = () => setSystem(mq.matches ? "dark" : "light");
+    const onChange = () => {
+      holdTransitions(root.current ? root.current() : document.documentElement);
+      setSystem(mq.matches ? "dark" : "light");
+    };
     const follow = (event: Event) => setThemeState((event as CustomEvent<ThemePreference>).detail);
     mq?.addEventListener("change", onChange);
     window.addEventListener(THEME_EVENT, follow);
@@ -80,17 +97,10 @@ export function ThemeProvider({ children, defaultTheme = "system", target }: The
   useEffect(() => {
     if (chosen === null) return;
     const el = target ? target() : document.documentElement;
-    // Every color changes at once; without this, each control's color transition replays the
-    // switch on its own, showing light controls on a dark page for a moment.
-    el.setAttribute("data-k-theming", "");
+    const release = holdTransitions(el);
     if (chosen === "system") el.removeAttribute("data-theme");
     else el.setAttribute("data-theme", chosen);
-    void getComputedStyle(el).color;
-    const settled = requestAnimationFrame(() => el.removeAttribute("data-k-theming"));
-    return () => {
-      cancelAnimationFrame(settled);
-      el.removeAttribute("data-k-theming");
-    };
+    return release;
   }, [chosen, target]);
 
   const setTheme = useCallback((next: ThemePreference) => {

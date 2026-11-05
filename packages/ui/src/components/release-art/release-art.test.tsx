@@ -120,7 +120,7 @@ describe("ReleaseArt", () => {
     const { container } = render(<ReleaseArt seed="0.1.0" label="Kaeso 0.1.0" title="0.1.0" eyebrow="What's new in Kaeso" shape="wide" />);
     const img = screen.getByRole("img", { name: "Kaeso 0.1.0" });
     expect(img).toHaveAttribute("viewBox", "0 0 840 360");
-    const text = container.querySelector<HTMLElement>("span[aria-hidden]:not(.shadow-ring)")!;
+    const text = container.querySelector<HTMLElement>("span[aria-hidden]:not(.image-outline)")!;
     expect(text).toHaveTextContent("What's new in Kaeso0.1.0");
     expect(text.firstElementChild).toHaveClass("text-caption", "@cell-lg:text-body-lg");
     expect(text.lastElementChild?.className).toMatch(/\btext-(display|title-lg|title|title-sm)\b/);

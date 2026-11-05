@@ -94,4 +94,9 @@ describe("Select", () => {
     expect(block("material-field")).toMatch(focus);
     expect(selector).toMatch(focus);
   });
+
+  it("gives a small trigger the hit area of every other control", () => {
+    render(<Select size="sm" aria-label="Language" options={[{ value: "de", label: "Deutsch" }]} defaultValue="de" />);
+    expect(screen.getByRole("combobox", { name: "Language" })).toHaveClass("relative", "tap-target");
+  });
 });
