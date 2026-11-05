@@ -501,11 +501,10 @@ TypeScript、TSX、JavaScript、JSON、Bash（`sh`、`shell`、`console`）、Py
 
 ## README 中的录屏
 
-README 开头是一段控制台的短录屏，分浅色和深色两个版本：`.github/assets/demo-light.gif` 和 `.github/assets/demo-dark.gif`，GitHub 会按读者的主题显示对应的一个。`apps/console/scripts/demo.mjs` 用 Playwright 在开发栈及其种子组织上录制这两个版本，画面里只有模拟服务商、它的占位密钥和种子数据里虚构的人员。脚本在控制台中执行四个步骤：
+README 开头是一段控制台的短录屏，分浅色和深色两个版本：`.github/assets/demo-light.gif` 和 `.github/assets/demo-dark.gif`，GitHub 会按读者的主题显示对应的一个。`apps/console/scripts/demo.mjs` 用 Playwright 在开发栈及其种子组织上录制这两个版本，画面里只有模拟服务商、它的占位密钥和种子数据里虚构的人员。录制前，它先通过 Platform API 创建一个 API 密钥。然后在控制台中执行三个步骤：
 
 - 在**服务商**页面连接一个 Anthropic 密钥。
-- 在 **API 密钥**页面创建一个密钥。
-- 从它叠加在页面上的终端面板用这个密钥发送一个请求。
+- 从它叠加在页面上的终端面板用这个 API 密钥发送一个请求。
 - 在开启**实时**的**请求日志**页面等待这个请求出现。
 
 重新录制时，先准备一个刚填充过种子数据的栈并运行控制台，并事先安装 `ffmpeg`，例如用 `brew install ffmpeg`：
@@ -523,7 +522,7 @@ pnpm dev
 pnpm demo
 ```
 
-脚本以 1280 × 800、设备缩放比例 2 录制。它把画面转成每秒 20 帧、各用一个调色板的 GIF。它把两者写入 `.github/assets` 并输出它们的大小。每个都要小于 4 MB。
+脚本以 1280 × 800、设备缩放比例 2 录制。它把画面转成每秒 20 帧、各用一个调色板的 GIF。它把两者写入 `.github/assets` 并输出它们的大小和时长。每个都要小于 4 MB。录屏达到或超过 15 秒时脚本会失败，这样读者能看完整段。
 
 在已经录制过的栈上也能再次运行。这时它会先删除 Anthropic 密钥并归档自己的密钥，但之前的请求仍留在日志里。README 链接的是 `dev` 上的 GIF，因此新的录屏在其拉取请求合并后才会显示。
 

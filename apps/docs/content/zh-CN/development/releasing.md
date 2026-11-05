@@ -126,7 +126,7 @@ GitHub 发布页先给出一句话、最多五个亮点和破坏性变更。然�
 
 | 位置 | 内容 |
 | --- | --- |
-| GitHub Releases | `vX.Y.Z` 及其说明，以及 `compose.yaml`、`kaeso.example.toml`、`env.example`、`release.json`、npm 压缩包和 `.crate` 文件 |
+| GitHub Releases | `vX.Y.Z` 及其说明，以及 `compose.yaml`、`install.sh`、`kaeso.example.toml`、`env.example`、`release.json`、npm 压缩包和 `.crate` 文件 |
 | GitHub Container Registry | 面向 `linux/amd64` 和 `linux/arm64` 的 `kaeso-gateway`、`kaeso-console` 和 `kaeso-updater`，带构建来源证明和软件物料清单（SBOM） |
 | crates.io | `kaeso-kpp` 和 `kaeso-codecs` |
 | npm | `@logicplanes/kaeso-ui` 和 `@logicplanes/kaeso-tokens` |

@@ -126,7 +126,7 @@ A release publishes:
 
 | Where | What |
 | --- | --- |
-| GitHub releases | `vX.Y.Z` with its notes, `compose.yaml`, `kaeso.example.toml`, `env.example`, `release.json`, the npm tarballs and the `.crate` files |
+| GitHub releases | `vX.Y.Z` with its notes, `compose.yaml`, `install.sh`, `kaeso.example.toml`, `env.example`, `release.json`, the npm tarballs and the `.crate` files |
 | GitHub Container Registry | `kaeso-gateway`, `kaeso-console` and `kaeso-updater` for `linux/amd64` and `linux/arm64`, with build provenance and a software bill of materials |
 | crates.io | `kaeso-kpp` and `kaeso-codecs` |
 | npm | `@logicplanes/kaeso-ui` and `@logicplanes/kaeso-tokens` |
