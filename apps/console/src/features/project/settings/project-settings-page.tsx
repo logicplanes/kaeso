@@ -8,7 +8,7 @@ import {
   DialogScope,
   Field,
   Input,
-  InlineCopyText,
+  CopyButton,
   NumberInput,
   SettingsGroup,
   SettingsRow,
@@ -154,7 +154,7 @@ function General({
         <SettingsRow
           title={t("project.settings.id", "Project id")}
           description={t("project.settings.idHint", "Used by the Platform API.")}
-          control={<InlineCopyText value={id} label={t("project.settings.copyId", "Copy project id")} />}
+          control={<CopyButton display="inline" value={id} label={t("project.settings.copyId", "Copy project id")} />}
         />
         <SettingsRow title={common.created()} control={<Text tone="secondary">{formatDate(createdAt)}</Text>} />
       </SettingsGroup>

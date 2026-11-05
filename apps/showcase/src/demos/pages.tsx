@@ -5,7 +5,7 @@ import {
   ListPage,
   OverviewPage,
   EmptyPage,
-  MetricRow,
+  StatGroup,
   Stat,
   TimeseriesChart,
   Button,
@@ -63,10 +63,10 @@ export function Overview() {
       <OverviewPage
         header={{ title: "Overview" }}
         metrics={
-          <MetricRow>
+          <StatGroup variant="row">
             <Stat value="12,480" unit="requests" />
             <Stat value="$184.20" unit="total spend" />
-          </MetricRow>
+          </StatGroup>
         }
         controls={
           <Button size="sm" trailingIcon={icons.chevronDown}>

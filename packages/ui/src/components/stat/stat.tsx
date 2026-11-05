@@ -20,22 +20,38 @@ import { TruncatedText } from "../text/truncated.js";
 import { useLocale, useUiText, type UiText } from "../../i18n/context.js";
 
 export const KAESO_STAT_VARIANTS = {
+  variant: {
+    plain: { classes: "", description: "A number with its unit and change, in a row of numbers (default)" },
+    tile: { classes: "bg-raised", description: "A tile in a StatGroup: label, number, change, detail and an optional trend" },
+  },
   size: {
     md: { classes: "text-metric", description: "28/32 metric (default)" },
     sm: { classes: "text-title", description: "20/28 for dense rows" },
   },
 } as const;
-export const KAESO_STAT_DEFAULT_VARIANTS = { size: "md" } as const;
+export const KAESO_STAT_DEFAULT_VARIANTS = { variant: "plain", size: "md" } as const;
 
 export interface StatProps {
   value: ReactNode;
+  variant?: keyof typeof KAESO_STAT_VARIANTS.variant | undefined;
+  label?: ReactNode | undefined;
   unit?: ReactNode | undefined;
   delta?: { label: string; tone?: "success" | "danger" | "neutral" | undefined } | undefined;
   size?: keyof typeof KAESO_STAT_VARIANTS.size | undefined;
+  change?: { value: number; better?: "up" | "down" | undefined } | undefined;
+  detail?: ReactNode | undefined;
+  trend?: number[] | undefined;
+  trendColor?: string | undefined;
+  loading?: boolean | undefined;
   className?: string | undefined;
 }
 
-export const Stat = forwardRef<HTMLDivElement, StatProps>(function Stat({ value, unit, delta, size = "md", className }, ref) {
+export const Stat = forwardRef<HTMLDivElement, StatProps>(function Stat(props, ref) {
+  return props.variant === "tile" ? <StatTile ref={ref} {...props} /> : <PlainStat ref={ref} {...props} />;
+});
+Stat.displayName = "Stat";
+
+const PlainStat = forwardRef<HTMLDivElement, StatProps>(function PlainStat({ value, unit, delta, size = "md", className }, ref) {
   return (
     <div ref={ref} className={cn("flex min-w-0 flex-wrap items-baseline gap-x-8 gap-y-4", className)}>
       <span className={cn("font-semibold text-fg tabular", KAESO_STAT_VARIANTS.size[size].classes)}>{value}</span>
@@ -48,27 +64,7 @@ export const Stat = forwardRef<HTMLDivElement, StatProps>(function Stat({ value,
     </div>
   );
 });
-Stat.displayName = "Stat";
-
-export const MetricRow = forwardRef<HTMLDivElement, { children: ReactNode; className?: string | undefined }>(function MetricRow({ children, className }, ref) {
-  return (
-    <div ref={ref} className={cn("flex flex-wrap items-baseline gap-x-48 gap-y-16", className)}>
-      {children}
-    </div>
-  );
-});
-MetricRow.displayName = "MetricRow";
-
-export interface StatTileProps {
-  label: ReactNode;
-  value: ReactNode;
-  change?: { value: number; better?: "up" | "down" | undefined } | undefined;
-  detail?: ReactNode | undefined;
-  trend?: number[] | undefined;
-  trendColor?: string | undefined;
-  loading?: boolean | undefined;
-  className?: string | undefined;
-}
+PlainStat.displayName = "Stat";
 
 const changeLabel = (v: number, t: UiText, locale: string) => {
   const pct = Math.abs(v) * 100;
@@ -81,7 +77,7 @@ const changeLabel = (v: number, t: UiText, locale: string) => {
   return `${v > 0 ? "↑" : v < 0 ? "↓" : ""}${t("statTile.percent", "{value}%", { value: shown })}`;
 };
 
-export const STAT_VALUE_STEPS = [
+const STAT_VALUE_STEPS = [
   { classes: "text-metric", px: 28 },
   { classes: "text-title", px: 20 },
   { classes: "text-title-sm", px: 17 },
@@ -89,10 +85,7 @@ export const STAT_VALUE_STEPS = [
 
 const StatStepContext = createContext(0);
 
-export const StatTile = forwardRef<HTMLDivElement, StatTileProps>(function StatTile(
-  { label, value, change, detail, trend, trendColor, loading, className },
-  ref,
-) {
+const StatTile = forwardRef<HTMLDivElement, StatProps>(function StatTile({ label, value, change, detail, trend, trendColor, loading, className }, ref) {
   const t = useUiText();
   const locale = useLocale();
   const good = change && change.value !== 0 ? change.value > 0 === ((change.better ?? "up") === "up") : undefined;
@@ -155,7 +148,7 @@ export const StatTile = forwardRef<HTMLDivElement, StatTileProps>(function StatT
     </div>
   );
 });
-StatTile.displayName = "StatTile";
+StatTile.displayName = "Stat";
 
 const GRID_COLS: Record<number, string> = { 1: "grid-cols-1", 2: "grid-cols-2" };
 const LG_GRID_COLS: Record<number, string> = { 3: "lg:grid-cols-3", 4: "lg:grid-cols-4" };
@@ -194,67 +187,102 @@ export function statGridFit(needs: number[], width: number, wide: boolean): { st
   return { step: single >= 0 ? single : STAT_VALUE_STEPS.length - 1, single: true, two: false };
 }
 
-export const StatGrid = forwardRef<HTMLDivElement, { children: ReactNode; "aria-label"?: string | undefined; className?: string | undefined }>(
-  function StatGrid({ children, className, ...props }, ref) {
-    const tiles = Children.toArray(children).filter(isValidElement) as ReactElement<{ className?: string | undefined }>[];
-    const n = tiles.length;
-    const grid = useRef<HTMLDivElement | null>(null);
-    const [fit, setFit] = useState({ step: 0, single: false, two: false });
-    const measure = useRef(() => {});
-    const measuredAt = useRef(0);
-    measure.current = () => {
-      const el = grid.current;
-      if (!el || !el.clientWidth) return;
-      const values = [...el.querySelectorAll<HTMLElement>("[data-stat-value]")];
-      const needs = values.map((v) => (v.scrollWidth * STAT_VALUE_STEPS[0].px) / (Number(v.dataset.statValue) || STAT_VALUE_STEPS[0].px));
-      const wide = typeof window.matchMedia === "function" && window.matchMedia("(min-width: 1024px)").matches;
-      const fitted = statGridFit(needs, el.clientWidth, wide);
-      const sameWidth = measuredAt.current === el.clientWidth;
-      measuredAt.current = el.clientWidth;
-      setFit((f) => {
-        // At the same width, live values only ever step the size down, so a digit that comes and goes doesn't make every tile jump.
-        const next = sameWidth && fitted.step < f.step ? { ...fitted, step: f.step } : fitted;
-        return f.step === next.step && f.single === next.single && f.two === next.two ? f : next;
-      });
-    };
-    useLayoutEffect(() => measure.current());
-    useLayoutEffect(() => {
-      const el = grid.current;
-      if (!el || typeof ResizeObserver === "undefined") return;
-      const stop = observeResize([el, ...el.querySelectorAll("[data-stat-value]")], () => measure.current());
-      void document.fonts?.ready.then(() => measure.current());
-      return stop;
-    }, [n]);
-    const narrow = statGridLayout(n, false);
-    const wide = statGridLayout(n, true);
-    const span = (i: number) => {
-      const small = narrow.spans[i] ?? 1;
-      const large = wide.spans[i] ?? 1;
-      return cn(COL_SPAN[small], !fit.two && large !== small && LG_COL_SPAN[large]) || undefined;
-    };
+export const KAESO_STAT_GROUP_VARIANTS = {
+  variant: {
+    grid: {
+      classes: "grid gap-1 overflow-hidden rounded-group bg-line shadow-xs forced-line",
+      description: "Tiles in one group that fits its columns and the size of every number to the room (default)",
+    },
+    row: { classes: "flex flex-wrap items-baseline gap-x-48 gap-y-16", description: "Plain numbers in a row that wraps" },
+  },
+} as const;
+export const KAESO_STAT_GROUP_DEFAULT_VARIANTS = { variant: "grid" } as const;
+
+export interface StatGroupProps {
+  children: ReactNode;
+  variant?: keyof typeof KAESO_STAT_GROUP_VARIANTS.variant | undefined;
+  "aria-label"?: string | undefined;
+  className?: string | undefined;
+}
+
+export const StatGroup = forwardRef<HTMLDivElement, StatGroupProps>(function StatGroup({ variant = "grid", children, className, ...props }, ref) {
+  if (variant === "row") {
     return (
-      <div
-        ref={(e) => {
-          grid.current = e;
-          if (typeof ref === "function") ref(e);
-          else if (ref) ref.current = e;
-        }}
-        role="list"
-        className={cn(
-          "grid gap-1 overflow-hidden rounded-group bg-line shadow-xs forced-line",
-          fit.single ? "grid-cols-1" : fit.two ? "grid-cols-2" : cn(GRID_COLS[narrow.cols], wide.cols !== narrow.cols && LG_GRID_COLS[wide.cols]),
-          className,
-        )}
-        {...props}
-      >
-        <StatStepContext.Provider value={fit.step}>
-          {tiles.map((t, i) => {
-            const extra = fit.single ? undefined : span(i);
-            return extra ? cloneElement(t, { className: cn(t.props.className, extra) }) : t;
-          })}
-        </StatStepContext.Provider>
+      <div ref={ref} className={cn(KAESO_STAT_GROUP_VARIANTS.variant.row.classes, className)} {...props}>
+        {children}
       </div>
     );
-  },
-);
-StatGrid.displayName = "StatGrid";
+  }
+  return (
+    <StatGrid ref={ref} className={className} {...props}>
+      {children}
+    </StatGrid>
+  );
+});
+StatGroup.displayName = "StatGroup";
+
+const StatGrid = forwardRef<HTMLDivElement, { children: ReactNode; "aria-label"?: string | undefined; className?: string | undefined }>(function StatGrid(
+  { children, className, ...props },
+  ref,
+) {
+  const tiles = Children.toArray(children).filter(isValidElement) as ReactElement<{ className?: string | undefined }>[];
+  const n = tiles.length;
+  const grid = useRef<HTMLDivElement | null>(null);
+  const [fit, setFit] = useState({ step: 0, single: false, two: false });
+  const measure = useRef(() => {});
+  const measuredAt = useRef(0);
+  measure.current = () => {
+    const el = grid.current;
+    if (!el || !el.clientWidth) return;
+    const values = [...el.querySelectorAll<HTMLElement>("[data-stat-value]")];
+    const needs = values.map((v) => (v.scrollWidth * STAT_VALUE_STEPS[0].px) / (Number(v.dataset.statValue) || STAT_VALUE_STEPS[0].px));
+    const wide = typeof window.matchMedia === "function" && window.matchMedia("(min-width: 1024px)").matches;
+    const fitted = statGridFit(needs, el.clientWidth, wide);
+    const sameWidth = measuredAt.current === el.clientWidth;
+    measuredAt.current = el.clientWidth;
+    setFit((f) => {
+      // At the same width, live values only ever step the size down, so a digit that comes and goes doesn't make every tile jump.
+      const next = sameWidth && fitted.step < f.step ? { ...fitted, step: f.step } : fitted;
+      return f.step === next.step && f.single === next.single && f.two === next.two ? f : next;
+    });
+  };
+  useLayoutEffect(() => measure.current());
+  useLayoutEffect(() => {
+    const el = grid.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const stop = observeResize([el, ...el.querySelectorAll("[data-stat-value]")], () => measure.current());
+    void document.fonts?.ready.then(() => measure.current());
+    return stop;
+  }, [n]);
+  const narrow = statGridLayout(n, false);
+  const wide = statGridLayout(n, true);
+  const span = (i: number) => {
+    const small = narrow.spans[i] ?? 1;
+    const large = wide.spans[i] ?? 1;
+    return cn(COL_SPAN[small], !fit.two && large !== small && LG_COL_SPAN[large]) || undefined;
+  };
+  return (
+    <div
+      ref={(e) => {
+        grid.current = e;
+        if (typeof ref === "function") ref(e);
+        else if (ref) ref.current = e;
+      }}
+      role="list"
+      className={cn(
+        KAESO_STAT_GROUP_VARIANTS.variant.grid.classes,
+        fit.single ? "grid-cols-1" : fit.two ? "grid-cols-2" : cn(GRID_COLS[narrow.cols], wide.cols !== narrow.cols && LG_GRID_COLS[wide.cols]),
+        className,
+      )}
+      {...props}
+    >
+      <StatStepContext.Provider value={fit.step}>
+        {tiles.map((t, i) => {
+          const extra = fit.single ? undefined : span(i);
+          return extra ? cloneElement(t, { className: cn(t.props.className, extra) }) : t;
+        })}
+      </StatStepContext.Provider>
+    </div>
+  );
+});
+StatGrid.displayName = "StatGroup";

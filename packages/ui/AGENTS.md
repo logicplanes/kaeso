@@ -102,7 +102,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
 | A dialog that opens fresh every time     | `DialogScope` around the component that keeps its state                                     |
 | Feedback after an action                 | `toast()`, with Undo for reversible actions                                                 |
 | A secret shown once                      | `SecretReveal`                                                                              |
-| Numbers at a glance                      | `MetricRow` with `Stat`; over time: `TimeseriesChart`                                       |
+| Numbers at a glance                      | `StatGroup` with `Stat variant="tile"`; over time: `TimeseriesChart`                        |
 | Nothing to show yet                      | `Empty` with one action                                                                     |
 
 ## A screen

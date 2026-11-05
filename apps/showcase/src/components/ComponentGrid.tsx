@@ -14,7 +14,7 @@ import {
   KeyDisplay,
   Menu,
   Meter,
-  MetricRow,
+  StatGroup,
   Tabs,
   PortalContainer,
   Radio,
@@ -277,10 +277,10 @@ function Cells() {
         </Cell>
         <Cell slug="stat">
           <div className="flex w-full flex-col gap-16">
-            <MetricRow>
+            <StatGroup variant="row">
               <Stat value={t("12,480")} unit={t("requests")} />
               <Stat value={t("$184.20")} unit={t("spend")} />
-            </MetricRow>
+            </StatGroup>
             <Sparkline fluid aria-label={t("Requests over 14 days, rising")} values={[12, 18, 15, 22, 28, 26, 34, 31, 36, 40, 38, 44, 47, 52]} />
           </div>
         </Cell>

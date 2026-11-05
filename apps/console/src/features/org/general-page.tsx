@@ -6,7 +6,7 @@ import {
   Combobox,
   Dialog,
   DialogScope,
-  InlineCopyText,
+  CopyButton,
   Input,
   KeyValue,
   SettingsGroup,
@@ -56,7 +56,7 @@ export function OrgGeneralPage({ org }: { org: string }) {
               <SettingsRow
                 title={t("org.general.id", "Organization id")}
                 description={t("org.general.idHint", "For the Platform API and support.")}
-                control={<InlineCopyText value={o.id} label={t("org.general.copyId", "Copy organization id")} />}
+                control={<CopyButton display="inline" value={o.id} label={t("org.general.copyId", "Copy organization id")} />}
               />
               <SettingsRow title={common.created()} control={<Text tone="secondary">{formatDate(o.created_at)}</Text>} />
             </SettingsGroup>

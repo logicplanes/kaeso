@@ -8,7 +8,7 @@ import {
   Combobox,
   DialogScope,
   Field,
-  InlineCopyText,
+  CopyButton,
   Input,
   NumberInput,
   RolePicker,
@@ -157,7 +157,7 @@ function SingleSignOn({ org, security }: { org: string; security: SecurityView }
                 control={
                   d.verified ? undefined : (
                     <div className="flex min-w-0 items-center gap-8">
-                      <InlineCopyText value={d.record_value} label={t("org.sso.copyRecord", "Copy TXT value")} />
+                      <CopyButton display="inline" value={d.record_value} label={t("org.sso.copyRecord", "Copy TXT value")} />
                       <Button
                         size="sm"
                         disabled={!canManage}
@@ -202,7 +202,7 @@ function SingleSignOn({ org, security }: { org: string; security: SecurityView }
             <SettingsRow
               title={t("org.sso.redirectUrl", "Redirect URL")}
               description={t("org.sso.registerRedirect", "Register it at the provider as the sign-in callback.")}
-              control={<InlineCopyText value={sso.redirect_url} label={t("org.sso.copyRedirect", "Copy redirect URL")} />}
+              control={<CopyButton display="inline" value={sso.redirect_url} label={t("org.sso.copyRedirect", "Copy redirect URL")} />}
             />
             <SettingsRow
               title={t("org.sso.keyId", "Key id")}
@@ -359,7 +359,7 @@ function SsoDialog({
           content: (
             <div className="flex flex-col gap-16">
               <Field label={t("org.sso.redirectUrl", "Redirect URL")}>
-                <InlineCopyText value={redirectUrl} label={t("org.sso.copyRedirect", "Copy redirect URL")} />
+                <CopyButton display="inline" value={redirectUrl} label={t("org.sso.copyRedirect", "Copy redirect URL")} />
               </Field>
               <Input
                 label={t("org.sso.issuerUrl", "Issuer URL")}

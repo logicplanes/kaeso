@@ -3,6 +3,8 @@ import { cn } from "../../utils/cn.js";
 import { useHydrating } from "../../hooks/use-hydrating.js";
 import { useUiText } from "../../i18n/context.js";
 import { Tooltip } from "../tooltip/tooltip.js";
+import { AGENT_TILE, AgentBadge, AgentGlyph } from "./agent.js";
+import { modelName } from "./model-name.js";
 
 export const KAESO_AVATAR_VARIANTS = {
   size: {
@@ -15,6 +17,7 @@ export const KAESO_AVATAR_VARIANTS = {
   kind: {
     person: { classes: "rounded-pill", description: "People are round" },
     org: { classes: "rounded-org", description: "Organizations and projects: radius 8" },
+    agent: { classes: "bg-fill-3", description: "An agent acting for a person: one bot face on a square, the same for every agent" },
   },
 } as const;
 export const KAESO_AVATAR_DEFAULT_VARIANTS = { size: 24, kind: "person" } as const;
@@ -31,11 +34,44 @@ export interface AvatarProps {
   src?: string | undefined;
   size?: keyof typeof KAESO_AVATAR_VARIANTS.size | undefined;
   kind?: keyof typeof KAESO_AVATAR_VARIANTS.kind | undefined;
+  agent?: { name: string; model: string } | undefined;
   decorative?: boolean | undefined;
   className?: string | undefined;
 }
 
-export const Avatar = forwardRef<HTMLSpanElement, AvatarProps>(function Avatar({ name, src, size = 24, kind = "person", decorative, className }, ref) {
+const Root = forwardRef<HTMLSpanElement, AvatarProps>(function Avatar(props, ref) {
+  const { name, size = 24, kind = "person", agent, decorative, className } = props;
+  const t = useUiText();
+  if (kind === "agent") {
+    return (
+      <span
+        ref={ref}
+        {...(decorative ? { "aria-hidden": true } : { role: "img", "aria-label": name })}
+        className={cn(
+          "inline-flex shrink-0 items-center justify-center bg-fill-3 text-fg select-none forced-colors:outline forced-colors:-outline-offset-1",
+          AGENT_TILE[size].classes,
+          className,
+        )}
+      >
+        <AgentGlyph size={size} />
+      </span>
+    );
+  }
+  if (agent) {
+    const label = t("agentAttribution.label", "{name} via {agent} ({model})", { name, agent: agent.name, model: modelName(agent.model, t) });
+    return (
+      <Tooltip content={label}>
+        <AgentBadge ref={ref} size={size} label={label} className={className}>
+          <Face {...props} agent={undefined} className={undefined} decorative />
+        </AgentBadge>
+      </Tooltip>
+    );
+  }
+  return <Face ref={ref} {...props} />;
+});
+Root.displayName = "Avatar";
+
+const Face = forwardRef<HTMLSpanElement, AvatarProps>(function Face({ name, src, size = 24, kind = "person", decorative, className }, ref) {
   const [failedSrc, setFailedSrc] = useState<string | undefined>(undefined);
   const hydrating = useHydrating();
   return (
@@ -69,7 +105,7 @@ export const Avatar = forwardRef<HTMLSpanElement, AvatarProps>(function Avatar({
     </span>
   );
 });
-Avatar.displayName = "Avatar";
+Face.displayName = "Avatar";
 
 export interface AvatarGroupProps {
   people: { name: string; src?: string | undefined }[];
@@ -91,7 +127,7 @@ function cutFor(size: number, overlap: number): CSSProperties {
   } as CSSProperties;
 }
 
-export const AvatarGroup = forwardRef<HTMLDivElement, AvatarGroupProps>(function AvatarGroup({ people, size = 24, max = 4, className, children }, ref) {
+export const Group = forwardRef<HTMLDivElement, AvatarGroupProps>(function AvatarGroup({ people, size = 24, max = 4, className, children }, ref) {
   const t = useUiText();
   const shown = people.slice(0, max);
   const rest = people.length - shown.length;
@@ -113,7 +149,7 @@ export const AvatarGroup = forwardRef<HTMLDivElement, AvatarGroupProps>(function
       aria-label={people.map((p) => p.name).join(t("avatarGroup.listSeparator", ", "))}
       className={cn("flex items-center", className)}
     >
-      {shown.map((p, i) => slot(i, <Avatar name={p.name} {...(p.src ? { src: p.src } : {})} size={size} decorative />, p.name + i))}
+      {shown.map((p, i) => slot(i, <Face name={p.name} {...(p.src ? { src: p.src } : {})} size={size} decorative />, p.name + i))}
       {rest > 0 &&
         slot(
           shown.length,
@@ -139,4 +175,6 @@ export const AvatarGroup = forwardRef<HTMLDivElement, AvatarGroupProps>(function
     </div>
   );
 });
-AvatarGroup.displayName = "AvatarGroup";
+Group.displayName = "Avatar.Group";
+
+export const Avatar = Object.assign(Root, { Group });

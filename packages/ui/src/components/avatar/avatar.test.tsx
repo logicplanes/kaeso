@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { renderToString } from "react-dom/server";
 import { hydrateRoot } from "react-dom/client";
-import { Avatar, AvatarGroup, initials } from "./avatar.js";
+import { Avatar, initials } from "./avatar.js";
 
 describe("Avatar", () => {
   let loaded: ReturnType<typeof vi.spyOn> | undefined;
@@ -46,7 +46,7 @@ describe("Avatar", () => {
   });
 
   it("names a group by its people and counts the rest", () => {
-    render(<AvatarGroup people={[{ name: "Ada Okafor" }, { name: "Lena Park" }, { name: "Tomás Reyes" }, { name: "Mei Chen" }]} max={2} />);
+    render(<Avatar.Group people={[{ name: "Ada Okafor" }, { name: "Lena Park" }, { name: "Tomás Reyes" }, { name: "Mei Chen" }]} max={2} />);
     const g = screen.getByRole("group", { name: "Ada Okafor, Lena Park, Tomás Reyes, Mei Chen" });
     expect(g).toHaveTextContent("+2");
   });
@@ -62,15 +62,15 @@ describe("Avatar", () => {
 
   it("shows its content after the avatars", () => {
     render(
-      <AvatarGroup people={[{ name: "Ada Okafor" }]}>
+      <Avatar.Group people={[{ name: "Ada Okafor" }]}>
         <button type="button">Invite people</button>
-      </AvatarGroup>,
+      </Avatar.Group>,
     );
     expect(screen.getByRole("group", { name: "Ada Okafor" })).toContainElement(screen.getByRole("button", { name: "Invite people" }));
   });
 
   it("separates overlapping avatars with a gap cut out of the one below, which works on any surface", () => {
-    const { container } = render(<AvatarGroup size={32} people={[{ name: "Ada Okafor" }, { name: "Lin Park" }, { name: "Mira Sato" }]} max={2} />);
+    const { container } = render(<Avatar.Group size={32} people={[{ name: "Ada Okafor" }, { name: "Lin Park" }, { name: "Mira Sato" }]} max={2} />);
     const slots = [...container.querySelectorAll<HTMLElement>("[role=group] > span")];
     expect(slots).toHaveLength(3);
     expect(slots[0]).toHaveClass("cutout");

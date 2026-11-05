@@ -1,4 +1,4 @@
-import { SettingsGroup, SettingsRow, Section, Select, Switch, Button, Link, Input, InlineCopyText, icons } from "@logicplanes/kaeso-ui";
+import { SettingsGroup, SettingsRow, Section, Select, Switch, Button, Link, Input, CopyButton, icons } from "@logicplanes/kaeso-ui";
 import { StateCell, StateMatrix, StateRow, StateSection } from "~/lib/states";
 
 export const meta = {
@@ -122,7 +122,7 @@ export function States() {
               <SettingsRow
                 title="Organization id"
                 description="Used by the Platform API."
-                control={<InlineCopyText value="org_01m5btmm86ee096rh834eenxs1" label="Copy organization id" />}
+                control={<CopyButton display="inline" value="org_01m5btmm86ee096rh834eenxs1" label="Copy organization id" />}
               />
               <SettingsRow
                 title="Delete organization"
@@ -160,7 +160,7 @@ export function Narrow() {
         <SettingsRow
           title="Account id"
           description="Used by instance administrators and in the audit log."
-          control={<InlineCopyText value="usr_01m4sprwt3eksbpepefnnzdg4a" label="Copy account id" />}
+          control={<CopyButton display="inline" value="usr_01m4sprwt3eksbpepefnnzdg4a" label="Copy account id" />}
         />
         <SettingsRow title="Email" description="owner@example.com" control={<Button size="sm">Change email</Button>} />
         <SettingsRow title="Show times in UTC" description="Request logs and the audit log use UTC." control={<Switch aria-label="Show times in UTC" />} />

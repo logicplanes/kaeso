@@ -1,7 +1,6 @@
 import { useCallback, useMemo, useState, type ReactNode } from "react";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import {
-  AgentAttribution,
   Avatar,
   Button,
   CodeBlock,
@@ -11,7 +10,7 @@ import {
   DiffView,
   Empty,
   FilterRow,
-  InlineCopyText,
+  CopyButton,
   KeyValue,
   Link,
   Input,
@@ -306,7 +305,7 @@ function AgentActor({ agent, label, phone }: { agent: NonNullable<ActorView["age
   return (
     <Tooltip content={text}>
       <span className="flex min-w-0 items-center gap-8">
-        <AgentAttribution name={label.name} src={label.avatarUrl} agent={shown} size={20} />
+        <Avatar name={label.name} src={label.avatarUrl} agent={shown} size={20} />
         {!phone && <span className="truncate">{partyText(label)}</span>}
       </span>
     </Tooltip>
@@ -422,7 +421,7 @@ function AuditEventSheet({
                     <span className="flex min-w-0 flex-col gap-4">
                       <TargetCell kind={e.target_kind} id={e.target_id} href={targetHref} name={targetName} />
                       {targetName?.(e.target_kind, e.target_id) && (
-                        <InlineCopyText value={e.target_id} label={t("kaeso.audit.copyTargetId", "Copy target id")} />
+                        <CopyButton display="inline" value={e.target_id} label={t("kaeso.audit.copyTargetId", "Copy target id")} />
                       )}
                     </span>
                   ) : (
@@ -435,7 +434,7 @@ function AuditEventSheet({
                 ? [
                     {
                       label: t("kaeso.audit.requestId", "Request id"),
-                      value: <InlineCopyText value={e.request_id} label={t("kaeso.audit.copyRequestId", "Copy request id")} />,
+                      value: <CopyButton display="inline" value={e.request_id} label={t("kaeso.audit.copyRequestId", "Copy request id")} />,
                     },
                   ]
                 : []),

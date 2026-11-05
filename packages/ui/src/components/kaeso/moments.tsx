@@ -5,7 +5,7 @@ import { useCopy } from "../../hooks/use-copy.js";
 import { Icon } from "../icon/icon.js";
 import { Button } from "../button/button.js";
 import { CodeBlock, type CodeTab } from "../code-block/code-block.js";
-import { ClipboardText } from "../copy-button/copy-button.js";
+import { CopyButton } from "../copy-button/copy-button.js";
 import { useUiText } from "../../i18n/context.js";
 
 export const KAESO_MOMENTS_VARIANTS = {
@@ -112,11 +112,11 @@ export const EnvironmentSnippet = forwardRef<HTMLDivElement, SnippetOptions & { 
       <div className="grid gap-12 md:grid-cols-2">
         <div className="flex min-w-0 flex-col gap-6">
           <span className="text-small font-medium text-fg-secondary">{t("environmentSnippet.baseUrl", "Base URL")}</span>
-          <ClipboardText value={`${baseUrl}/v1`} label={t("environmentSnippet.copyBaseUrl", "Copy base URL")} />
+          <CopyButton display="field" size="md" value={`${baseUrl}/v1`} label={t("environmentSnippet.copyBaseUrl", "Copy base URL")} />
         </div>
         <div className="flex min-w-0 flex-col gap-6">
           <span className="text-small font-medium text-fg-secondary">{t("environmentSnippet.apiKeyVariable", "API key variable")}</span>
-          <ClipboardText value={apiKey} label={t("environmentSnippet.copyVariableName", "Copy variable name")} />
+          <CopyButton display="field" size="md" value={apiKey} label={t("environmentSnippet.copyVariableName", "Copy variable name")} />
         </div>
       </div>
       <CodeBlock tabs={sdkSnippets({ baseUrl, apiKey, ...(model ? { model } : {}) })} />

@@ -1,12 +1,12 @@
-import { ClipboardText, CopyButton, InlineCopyText, Inline } from "@logicplanes/kaeso-ui";
+import { CopyButton, Inline } from "@logicplanes/kaeso-ui";
 import { StateSection, Matrix } from "~/lib/states";
 
 export const meta = {
-  title: "ClipboardText",
+  title: "CopyButton",
   description: "Copy a value: a read-only pill field, a copy circle, or inline text that copies itself.",
   group: "Components",
   entry: "copy-button",
-  import: "ClipboardText, CopyButton, InlineCopyText",
+  import: "CopyButton",
   keyboard: [
     ["Enter", "Copies"],
     ["Space", "Copies"],
@@ -14,19 +14,19 @@ export const meta = {
   a11y: [
     "The copy circle's name changes to “Copied” for 1.2 seconds and the tooltip says it.",
     "A value too long for its pill ends in an ellipsis; the text then becomes focusable and shows the whole value in a tooltip.",
-    "InlineCopyText announces “Copied” through a polite live region.",
+    "Inline text announces “Copied” through a polite live region.",
     "Nothing changes size when the state changes.",
   ],
 };
 export const examples = [
-  { id: "field", title: "ClipboardText", fn: "Field", description: "A read-only pill with the value in mono and a copy circle inside." },
-  { id: "button", title: "CopyButton", fn: "Button" },
-  { id: "inline", title: "InlineCopyText", fn: "InlineText" },
+  { id: "button", title: "Circle", fn: "Button" },
+  { id: "field", title: "Field", fn: "Field", description: '`display="field"`: a read-only pill with the value in mono and a copy circle inside.' },
+  { id: "inline", title: "Inline", fn: "InlineText", description: '`display="inline"`: mono text that copies itself on click.' },
 ];
 export function Field() {
   return (
     <div className="w-400">
-      <ClipboardText value="https://kaeso.example.com/v1" label="Copy base URL" />
+      <CopyButton display="field" size="md" value="https://kaeso.example.com/v1" label="Copy base URL" />
     </div>
   );
 }
@@ -41,7 +41,11 @@ export function Button() {
 export function InlineText() {
   return (
     <p className="text-body text-fg-secondary">
-      Request <InlineCopyText value="req_01JAR4X2">req_01JAR4X2</InlineCopyText> took 1.2 s.
+      Request{" "}
+      <CopyButton display="inline" value="req_01JAR4X2">
+        req_01JAR4X2
+      </CopyButton>{" "}
+      took 1.2 s.
     </p>
   );
 }
@@ -50,12 +54,12 @@ const LONG_URL = "https://kaeso.example.com/v1/organizations/org_01m5mbctmseffb5
 export function States() {
   return (
     <>
-      <StateSection title="ClipboardText sizes and a cut value">
+      <StateSection title="Field sizes and a cut value">
         <div className="flex w-400 flex-col gap-12">
           {(["sm", "md", "lg"] as const).map((s) => (
-            <ClipboardText key={s} size={s} value="https://kaeso.example.com/v1" label="Copy base URL" />
+            <CopyButton display="field" key={s} size={s} value="https://kaeso.example.com/v1" label="Copy base URL" />
           ))}
-          <ClipboardText value={LONG_URL} label="Copy project URL" />
+          <CopyButton display="field" size="md" value={LONG_URL} label="Copy project URL" />
         </div>
       </StateSection>
       <Matrix
@@ -70,7 +74,7 @@ export function States() {
         render={(r, p) => <CopyButton value="req_01JAR4X2" label="Copy id" variant={r.label as "ghost"} {...p} />}
       />
       <Matrix
-        title="InlineCopyText"
+        title="Inline"
         rows={[{ label: "inline" }]}
         columns={[
           { label: "Rest", props: {} },
@@ -79,17 +83,17 @@ export function States() {
         ]}
         render={(_, p) => (
           <span className="text-body text-fg-secondary">
-            Key <InlineCopyText value="key_01JA1" {...p} />
+            Key <CopyButton display="inline" value="key_01JA1" {...p} />
           </span>
         )}
       />
-      <StateSection title="InlineCopyText in running text and cut">
+      <StateSection title="Inline, in running text and cut">
         <div className="flex w-320 flex-col gap-12">
           <p className="text-body text-fg-secondary">
-            Request <InlineCopyText value="req_01JAR4X2" data-force="focus" /> took 1.2 s and used 1,284 tokens.
+            Request <CopyButton display="inline" value="req_01JAR4X2" data-force="focus" /> took 1.2 s and used 1,284 tokens.
           </p>
           <div className="flex w-200">
-            <InlineCopyText value="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36" label="Copy user agent" />
+            <CopyButton display="inline" value="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36" label="Copy user agent" />
           </div>
         </div>
       </StateSection>

@@ -16,8 +16,8 @@ import {
   SettingsRow,
   Section,
   Skeleton,
-  StatGrid,
-  StatTile,
+  StatGroup,
+  Stat,
   StepDialog,
   Switch,
   Table,
@@ -316,8 +316,9 @@ function Storage({ org }: { org: string }) {
       {storage.isError ? (
         <LoadFailed title={t("org.logging.storageFailed", "The log storage couldn't load")} />
       ) : (
-        <StatGrid aria-label={t("org.logging.totals", "Log storage in total")}>
-          <StatTile
+        <StatGroup aria-label={t("org.logging.totals", "Log storage in total")}>
+          <Stat
+            variant="tile"
             label={t("org.logging.entries", "Entries")}
             value={s ? formatNumber(s.entries) : loadingValue}
             detail={
@@ -328,17 +329,19 @@ function Storage({ org }: { org: string }) {
                 : undefined
             }
           />
-          <StatTile
+          <Stat
+            variant="tile"
             label={t("org.logging.logicalSize", "Logical size")}
             value={s ? formatBytes(s.logical_bytes) : loadingValue}
             detail={s ? t("org.logging.asReceived", "As received") : undefined}
           />
-          <StatTile
+          <Stat
+            variant="tile"
             label={t("org.logging.onDisk", "On disk")}
             value={s ? formatBytes(s.estimated_disk_bytes) : loadingValue}
             detail={s ? t("org.logging.estimated", "Estimated") : undefined}
           />
-        </StatGrid>
+        </StatGroup>
       )}
       {s && (
         <>
