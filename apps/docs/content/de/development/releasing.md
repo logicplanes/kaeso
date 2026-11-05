@@ -6,6 +6,8 @@ order: 11
 
 Kaeso erscheint als Ganzes. Gateway, Konsole, die Crates von KPP und die Pakete der UI-Bibliothek teilen sich eine Version, und ein Lauf des Release-Workflows veröffentlicht sie alle. Nur der Maintainer erstellt Releases; Mitwirkende legen nie Tags oder Releases an.
 
+Jede Woche, in der `dev` Änderungen für Nutzer und Betreiber von Kaeso hat und seine CI besteht, erscheint ein kleines Release: die nächste Vorabversion, solange eine läuft, sonst das nächste Patch-Release. Ein Release mit Breaking Change wartet auf den Maintainer.
+
 ## Versionen
 
 Versionen folgen [Semantic Versioning](https://semver.org). Ein Release, das von Betreibern einen Schritt von Hand verlangt, etwa eine Migration, die nicht von selbst laufen kann, ist ein Major-Release. Eine Vorabversion hängt ein Suffix an, etwa `0.2.0-rc.1`. Der Git-Tag ist `v` plus Version, etwa `v0.2.0`.
@@ -48,7 +50,7 @@ pnpm release:notes --dry-run --since v{{version}} --head origin/dev
 
 Ein stabiles Release nach Vorabversionen seiner Version fasst deren Abschnitte zu einem zusammen, sodass seine Notizen alles seit dem letzten stabilen Release abdecken.
 
-Das GitHub-Release beginnt mit einem Satz, bis zu fünf Highlights und den Breaking Changes. Danach listet es jeden Eintrag des Abschnitts unter seiner Überschrift, etwa **Added**, **Changed**, **Removed** oder **Fixed**. Jeder Eintrag ist eine Zeile mit seinem Thema und seinen Pull Requests. Am Ende stehen die Mitwirkenden und Links zum vollständigen Changelog und zum Vergleich.
+Das GitHub-Release beginnt mit einem Satz, zwei oder drei Highlights und den Breaking Changes. Danach listet es jeden Eintrag des Abschnitts unter seiner Überschrift, etwa **Added**, **Changed**, **Removed** oder **Fixed**. Jeder Eintrag ist eine Zeile mit seinem Thema und seinen Pull Requests. Am Ende stehen die Mitwirkenden und Links zum vollständigen Changelog und zum Vergleich.
 
 Den Anfang schreibt das Modell zusammen mit dem Abschnitt; ohne Modell hat das Release keine Highlights, und seine Breaking Changes sind auf ihren ersten Satz gekürzt. Die Vorschau oben gibt nach den Notizen auch das GitHub-Release aus.
 
