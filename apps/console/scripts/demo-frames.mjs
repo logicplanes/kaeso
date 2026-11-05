@@ -1,3 +1,12 @@
+/** The README asks for a recording under 15 seconds, so a reader sees all of it before scrolling on. */
+export const MAX_SECONDS = 15;
+
+/** How long the GIF made from these frames plays, with the last frame held for `hold` seconds. */
+export function seconds(frames, hold) {
+  if (!frames.length) return 0;
+  return frames.at(-1).time - frames[0].time + hold;
+}
+
 export function concatList(frames, hold) {
   if (!frames.length) throw new Error("demo: the screencast sent no frames");
   const last = frames.at(-1);

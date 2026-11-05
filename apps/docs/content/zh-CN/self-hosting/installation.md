@@ -1,14 +1,85 @@
 ---
 title: 安装
-description: 安装指定版本、在自己的电脑上试用 Kaeso、修改其服务并运行其命令。
+description: 手动安装 Kaeso 或安装指定版本、在自己的电脑上试用、修改其服务并运行其命令。
 order: 3
 ---
 
-[快速开始](../get-started/quick-start.md)会在服务器上安装最新版本。本页介绍可以换一种做法的地方，以及在实例上运行的命令。
+[快速开始](../get-started/quick-start.md)用一条命令在服务器上安装最新版本。本页介绍这条命令执行的每个步骤、可以换一种做法的地方，以及在实例上运行的命令。
+
+## 手动安装
+
+[安装脚本](../get-started/quick-start.md#安装-kaeso)会替您完成这些步骤。自己执行它们，可以边做边选择文件夹、密码和邮件设置。
+
+### 下载 Compose 文件
+
+每个版本都会发布一个 `compose.yaml`，其中按版本和摘要固定了该版本的镜像。把它下载到一个只有您能读取的新文件夹中：
+
+```bash
+mkdir -m 700 kaeso && cd kaeso
+curl -fsSLO \
+  https://github.com/logicplanes/kaeso/releases/latest/download/compose.yaml
+```
+
+### 写入设置
+
+创建 `.env`，写入您的域名和四个随机密码。`umask 077` 让它以及您之后在这个 shell 中创建的每个文件都只有您自己可读：
+
+```bash
+umask 077
+cat > .env <<EOF
+KAESO_DOMAIN=kaeso.example.com
+POSTGRES_PASSWORD=$(openssl rand -hex 24)
+POSTGRES_SUPERUSER_PASSWORD=$(openssl rand -hex 24)
+CLICKHOUSE_PASSWORD=$(openssl rand -hex 24)
+VALKEY_PASSWORD=$(openssl rand -hex 24)
+EOF
+```
+
+网关通过电子邮件发送登录链接、邀请和提醒，没有发信途径就不会启动。添加您的 SMTP 服务器。除非[另行设置](../self-hosting/email.md)，Kaeso 通过 587 端口和 STARTTLS 连接它：
+
+```bash
+cat >> .env <<'EOF'
+KAESO_SMTP_HOST=smtp.example.com
+KAESO_SMTP_USER=kaeso
+KAESO_SMTP_PASSWORD=…
+KAESO_SMTP_FROM="Kaeso <kaeso@example.com>"
+EOF
+```
+
+没有邮件服务器时，可以让网关只记录邮件来试用 Kaeso。密码登录和设置链接照常可用，但登录链接和邀请不会送达：
+
+```bash
+echo KAESO_MAIL_TRANSPORT=log >> .env
+```
+
+### 创建主密钥
+
+主密钥用于加密 Kaeso 保存的服务商密钥。将一个主密钥生成到 `master-keys` 中，Compose 会把它作为 Docker secret 交给网关：
+
+```bash
+docker run --rm ghcr.io/logicplanes/kaeso-gateway:{{version}} \
+  master-key generate > master-keys
+sudo chown 65532:65532 master-keys && sudo chmod 0400 master-keys
+```
+
+网关在容器内以用户 65532 运行，因此该文件归这个用户所有，其他人都无法读取。Docker Desktop 和 Colima 以您的身份读取该文件夹，因此在它们上面只需运行 `chmod 0400 master-keys`。使用 rootless Docker 时，请把文件交给 65532 在主机上映射到的用户。
+
+> [!IMPORTANT]
+> 将 `master-keys` 的副本保存在安全的地方，并与数据库备份分开存放。没有它，Kaeso 无法解密已保存的服务商密钥，您只能重新输入。
+
+### 启动 Kaeso
+
+启动所有服务，并等待每个服务都正常运行：
+
+```bash
+docker compose up -d --wait
+```
+
+首次启动需要一两分钟，期间会下载镜像，网关会准备数据库。每个服务都正常运行后命令才返回；有服务未能正常运行时，命令会给出它的名称。Caddy 在后台申请证书，因此在拿到证书之前，HTTPS 请求可能失败。`docker compose logs caddy` 会显示何时拿到证书，或者为什么拿不到。
 
 ## 安装指定版本
 
-快速开始下载的是最新稳定版本的 `compose.yaml`。要安装其他版本，从该版本的标签下载此文件：
+安装脚本下载的是最新稳定版本的 `compose.yaml`。要安装其他版本，把版本号交给安装脚本，例如 `--version {{version}}`，或从该版本的标签下载此文件：
 
 ```bash
 curl -fsSLO \
