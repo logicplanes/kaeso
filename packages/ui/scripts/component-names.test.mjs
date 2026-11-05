@@ -4,15 +4,15 @@ import { objectAssignName } from "./component-names.mjs";
 
 function nameOf(code, exported) {
   const source = ts.createSourceFile("parts.tsx", code, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
-  const host = ts.createCompilerHost({});
-  const program = ts.createProgram(
-    ["parts.tsx"],
-    { jsx: ts.JsxEmit.ReactJSX },
-    { ...host, getSourceFile: (name) => (name === "parts.tsx" ? source : host.getSourceFile(name, ts.ScriptTarget.Latest)) },
-  );
+  const host = {
+    ...ts.createCompilerHost({}),
+    getSourceFile: (name) => (name === "parts.tsx" ? source : undefined),
+    fileExists: (name) => name === "parts.tsx",
+  };
+  const program = ts.createProgram(["parts.tsx"], { jsx: ts.JsxEmit.Preserve, noLib: true, noResolve: true, types: [] }, host);
   const checker = program.getTypeChecker();
-  const symbol = checker.getExportsOfModule(checker.getSymbolAtLocation(program.getSourceFile("parts.tsx")))?.find((s) => s.getName() === exported);
-  return objectAssignName(symbol, program.getSourceFile("parts.tsx"));
+  const symbol = checker.getExportsOfModule(checker.getSymbolAtLocation(source)).find((s) => s.getName() === exported);
+  return objectAssignName(symbol, source);
 }
 
 describe("objectAssignName", () => {
