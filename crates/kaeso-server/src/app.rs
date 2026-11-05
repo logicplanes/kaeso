@@ -10,11 +10,16 @@ pub fn router(state: AppState) -> Router {
     let (platform, _) = platform::router(&state);
     let in_process = platform.clone().with_state(state.clone());
     let origins = state.config.cors.origins.clone();
-    let router = Router::new()
-        .merge(health::router())
-        .merge(model_api::router())
-        .merge(platform)
-        .merge(mcp::router(&state, in_process))
+    let router = Router::new().merge(health::router()).merge(platform);
+    // A read-only demo has no keys anyone could use, and agents could change it through MCP.
+    let router = if state.config.auth.demo_user().is_some() {
+        router
+    } else {
+        router
+            .merge(model_api::router())
+            .merge(mcp::router(&state, in_process))
+    };
+    let router = router
         .route_layer(middleware::from_fn_with_state(
             state.clone(),
             http::metrics::middleware,

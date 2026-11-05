@@ -1,3 +1,4 @@
+pub mod demo;
 pub mod invites;
 pub mod magic;
 pub mod methods;
@@ -31,6 +32,7 @@ pub fn routes(s: &Secure) -> OpenApiRouter<AppState> {
     OpenApiRouter::new()
         .routes(s.route(Access::Public, routes!(setup::setup)))
         .routes(s.route(Access::Public, routes!(methods::get, methods::lookup)))
+        .routes(s.route(Access::Public, routes!(demo::demo)))
         .routes(s.route(Access::Public, routes!(password::password)))
         .routes(s.route(Access::Public, routes!(password::totp)))
         .routes(s.route(Access::Public, routes!(magic::request)))

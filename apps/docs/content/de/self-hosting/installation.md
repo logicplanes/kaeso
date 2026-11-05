@@ -127,6 +127,17 @@ services:
 
 Übernehmen Sie die Änderung mit `docker compose up -d --wait`. Compose erstellt nur die Dienste neu, deren Einstellungen sich geändert haben. [Konfiguration](configuration.md) listet jede Einstellung des Gateways.
 
+## Eine öffentliche Demo betreiben
+
+Mit einer Demo können sich Menschen eine echte Konsole ansehen, ohne Kaeso zu installieren. Füllen Sie eine Installation mit einer Organisation, Projekten und Nutzung, und nennen Sie dann einen ihrer Benutzer als Demo-Benutzer:
+
+```bash
+echo "KAESO_AUTH_DEMO_USER=owner@example.com" >> .env
+docker compose up -d --wait
+```
+
+Die Anmeldeseite bietet dann **Demo erkunden** an, womit jeder Besucher als dieser Benutzer angemeldet wird. Die Installation lehnt jede Änderung mit dem Hinweis ab, dass sie eine schreibgeschützte Demo ist, und die Modell-API und MCP sind aus, sodass nichts über sie gesendet werden kann. Entfernen Sie die Einstellung, um die Installation wieder normal zu nutzen.
+
 ## Festlegen, wie Anfrageprotokolle gespeichert werden
 
 Anfrageprotokolle liegen in ClickHouse. Das mitgelieferte ClickHouse in der `compose.yaml` ist die empfohlene Einrichtung: Es braucht nichts von Ihnen und hält die Protokolle auf demselben Server. Nutzung, Limits, Budgets und Budget-Warnungen hängen nicht davon ab, denn Kaeso speichert die Nutzung in PostgreSQL. ClickHouse braucht von allen Diensten den meisten Arbeitsspeicher ([Anforderungen](requirements.md#arbeitsspeicher-und-images)). Eine Installation kann deshalb auch ein ClickHouse nutzen, das Sie bereits betreiben, oder gar keine Anfrageprotokolle speichern.
