@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import { FilterRow, PillTabs, Select, SearchInput, List, Empty, Badge, InsetContent, type ListItemData } from "@logicplanes/kaeso-ui";
+import { FilterRow, Tabs, Select, SearchInput, List, Empty, Badge, InsetContent, type ListItemData } from "@logicplanes/kaeso-ui";
 import { members, projects } from "~/fixtures/kaeso";
 import { StateSection } from "~/lib/states";
 
@@ -27,13 +27,13 @@ const presets = ["Owner", "Admin", "Developer", "Viewer"];
 const presetOptions = [{ value: "all", label: "Every preset" }, ...presets.map((p) => ({ value: p, label: p }))];
 
 const stateTabs = (value: string, onChange: (v: string) => void) => (
-  <PillTabs value={value} onValueChange={onChange}>
-    <PillTabs.List aria-label="State">
-      <PillTabs.Tab value="all">All</PillTabs.Tab>
-      <PillTabs.Tab value="active">Active</PillTabs.Tab>
-      <PillTabs.Tab value="suspended">Suspended</PillTabs.Tab>
-    </PillTabs.List>
-  </PillTabs>
+  <Tabs variant="pill" value={value} onValueChange={onChange}>
+    <Tabs.List aria-label="State">
+      <Tabs.Tab value="all">All</Tabs.Tab>
+      <Tabs.Tab value="active">Active</Tabs.Tab>
+      <Tabs.Tab value="suspended">Suspended</Tabs.Tab>
+    </Tabs.List>
+  </Tabs>
 );
 
 function Column({ width = "w-640", children }: { width?: string; children: ReactNode }) {

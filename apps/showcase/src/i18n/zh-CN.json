@@ -1226,5 +1226,14 @@
   "Keeps the button still when pressed, for a control whose 0.96 press would distract; it still darkens.": "按下时按钮保持不动，用于按下缩小到 0.96 会分散注意力的控件；颜色仍会变深。",
   "Keeps the button still when pressed, as on `Button`.": "按下时按钮保持不动，与 `Button` 相同。",
   "A status word in its tone's color, with an optional icon. Status is never color alone.": "以其色调颜色显示的状态词，可带一个图标。状态从不只靠颜色表达。",
-  "Makes it the select-all box of a `CheckboxGroup`: checked when every value in the group's `allValues` is, a dash when some are, and checking it checks them all.": "使其成为 `CheckboxGroup` 的全选框：组内 `allValues` 中的每个值都选中时它被选中，部分选中时显示横线，勾选它会选中全部。"
+  "Makes it the select-all box of a `CheckboxGroup`: checked when every value in the group's `allValues` is, a dash when some are, and checking it checks them all.": "使其成为 `CheckboxGroup` 的全选框：组内 `allValues` 中的每个值都选中时它被选中，部分选中时显示横线，勾选它会选中全部。",
+  "Pill tabs at the start of the row (`Tabs variant=\"pill\"`). In a settings column their first label lines up with the title.": "行首的胶囊标签页（`Tabs variant=\"pill\"`）。在设置栏中，第一个标签与标题对齐。",
+  "A key name (`mod`, `shift`, `k`, `enter`) or any text, for one key.": "单个按键的键名（`mod`、`shift`、`k`、`enter`）或任意文本。",
+  "A whole shortcut instead of one key. Chords are arrays pressed together, and the outer list is pressed in order: `[[\"g\"], [\"l\"]]` is G then L.": "整个快捷键，而不是单个按键。和弦是同时按下的数组，外层列表按顺序按下：`[[\"g\"], [\"l\"]]` 表示先按 G 再按 L。",
+  "One of a few choices: an ink donut around a panel center; cards (`variant=\"cards\"`) for choices with descriptions.": "几个选项中的一个：面板色中心外的墨色圆环；带说明的选项使用卡片（`variant=\"cards\"`）。",
+  "Cards": "卡片",
+  "The group's accessible name.": "该组的无障碍名称。",
+  "The rows of the group.": "该组中的行。",
+  "Stands in for that many lines of text, the last one shorter; it takes the place of `shape`.": "代替相应行数的文本，最后一行较短；它取代 `shape`。",
+  "`underline` for the sections of a detail page; `pill` for a page's views, right under its header.": "`underline` 用于详情页的各个分区；`pill` 用于页面的各个视图，紧贴页面标题栏下方。"
 }

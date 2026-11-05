@@ -4,7 +4,7 @@ import { mergeProps } from "@base-ui/react/merge-props";
 import { pageBoundary, usePortalContainer } from "../../utils/portal-context.js";
 import { cn } from "../../utils/cn.js";
 import { observeResize } from "../../utils/observe-resize.js";
-import { KbdSequence } from "../kbd/kbd.js";
+import { Kbd } from "../kbd/kbd.js";
 import { KAESO_TOOLTIP_DEFAULT_VARIANTS, KAESO_TOOLTIP_VARIANTS, type TooltipProps } from "./tooltip.js";
 import type { TriggerProps, TriggerPropsStore } from "./trigger-props.js";
 
@@ -35,7 +35,7 @@ export function TooltipRoot({
         <BaseTooltip.Positioner positionMethod="fixed" collisionBoundary={pageBoundary()} side={side} sideOffset={sideOffset} collisionPadding={8}>
           <TooltipPopup shape={shape}>
             <span>{content}</span>
-            {shortcut && <KbdSequence keys={shortcut} />}
+            {shortcut && <Kbd keys={shortcut} />}
           </TooltipPopup>
         </BaseTooltip.Positioner>
       </BaseTooltip.Portal>

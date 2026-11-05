@@ -17,7 +17,7 @@ import {
   IconButton,
   Input,
   Menu,
-  PillTabs,
+  Tabs,
   ProviderBadge,
   SearchInput,
   Text,
@@ -134,19 +134,20 @@ export function OrgProvidersPage({ org, search = {} }: { org: string; search?: P
         : null,
   );
   const tabs = canSeeCustom ? (
-    <PillTabs
+    <Tabs
+      variant="pill"
       value={tab}
       onValueChange={(v) => void navigate({ to: "/orgs/$org/providers", params: { org }, search: v === "custom" ? { tab: "custom" } : {}, replace: true })}
     >
-      <PillTabs.List aria-label={t("orgHome.providers", "Providers")}>
-        <PillTabs.Tab value="keys" {...(credentials.data ? { count: credentials.data.length } : {})}>
+      <Tabs.List aria-label={t("orgHome.providers", "Providers")}>
+        <Tabs.Tab value="keys" {...(credentials.data ? { count: credentials.data.length } : {})}>
           {t("orgHome.providerKeys", "Provider keys")}
-        </PillTabs.Tab>
-        <PillTabs.Tab value="custom" {...(custom.data ? { count: custom.data.length } : {})}>
+        </Tabs.Tab>
+        <Tabs.Tab value="custom" {...(custom.data ? { count: custom.data.length } : {})}>
           {t("orgHome.customProviders", "Custom providers")}
-        </PillTabs.Tab>
-      </PillTabs.List>
-    </PillTabs>
+        </Tabs.Tab>
+      </Tabs.List>
+    </Tabs>
   ) : undefined;
 
   const makeDefault = useApiMutation({

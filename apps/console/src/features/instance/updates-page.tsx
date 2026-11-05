@@ -12,7 +12,7 @@ import {
   Select,
   SettingsGroup,
   SettingsRow,
-  SettingsSection,
+  Section,
   Status,
   Text,
   Tooltip,
@@ -166,7 +166,8 @@ function Latest({ u, latest }: { u: UpdatesView; latest: ReleaseView }) {
   ].join("\n");
   const guide = httpsHref(u.upgrade_guide);
   return (
-    <SettingsSection
+    <Section
+      spacing="settings"
       title={t("instance.updates.release", "Kaeso {version}", { version: latest.version })}
       description={t("instance.updates.published", "Published {date}", { date: formatDate(latest.published_at) })}
     >
@@ -199,7 +200,7 @@ function Latest({ u, latest }: { u: UpdatesView; latest: ReleaseView }) {
           <Notes key={r.version} release={r} />
         ))}
       </div>
-    </SettingsSection>
+    </Section>
   );
 }
 
@@ -268,7 +269,7 @@ function UpdateSettings({ u }: { u: UpdatesView }) {
   const plan = (change: Partial<UpdateSchedule>) =>
     save.mutate({ schedule: { frequency: schedule.frequency, weekday: schedule.weekday, hour: schedule.hour, ...change } });
   return (
-    <SettingsSection title={t("common.settings", "Settings")}>
+    <Section spacing="settings" title={t("common.settings", "Settings")}>
       <SettingsGroup>
         <SettingsRow
           title={t("instance.updates.channel", "Releases")}
@@ -375,7 +376,7 @@ function UpdateSettings({ u }: { u: UpdatesView }) {
           />
         )}
       </SettingsGroup>
-    </SettingsSection>
+    </Section>
   );
 }
 
@@ -421,7 +422,8 @@ function History() {
     ),
   ].map((c) => ({ ...c, enableSorting: false }));
   return (
-    <SettingsSection
+    <Section
+      spacing="settings"
       title={t("instance.updates.history", "History")}
       description={t("instance.updates.historyHint", "Every update is also in the instance audit log.")}
     >
@@ -444,6 +446,6 @@ function History() {
           />
         }
       />
-    </SettingsSection>
+    </Section>
   );
 }

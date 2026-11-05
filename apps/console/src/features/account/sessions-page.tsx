@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { AlertDialog, Badge, Button, DialogScope, SettingsGroup, SettingsRow, SettingsSection } from "@logicplanes/kaeso-ui";
+import { AlertDialog, Badge, Button, DialogScope, SettingsGroup, SettingsRow, Section } from "@logicplanes/kaeso-ui";
 import { toast } from "~/shell/toast";
 import { formatRelative } from "@logicplanes/kaeso-ui/format";
 import { api, data } from "~/api/client";
@@ -49,7 +49,7 @@ export function SessionsPage() {
       ) : sessions.isPending ? (
         <SettingsLoading rows={3} />
       ) : (
-        <SettingsSection>
+        <Section spacing="settings">
           <SettingsGroup>
             {list.map((s) => (
               <SettingsRow
@@ -77,7 +77,7 @@ export function SessionsPage() {
               />
             ))}
           </SettingsGroup>
-        </SettingsSection>
+        </Section>
       )}
       {ending && (
         <DialogScope open={endOpen}>

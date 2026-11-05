@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Code, SettingsGroup, SettingsRow, SettingsSection, Status, Text, Tooltip } from "@logicplanes/kaeso-ui";
+import { Code, SettingsGroup, SettingsRow, Section, Status, Text, Tooltip } from "@logicplanes/kaeso-ui";
 import { formatBytes, formatNumber, formatRelative } from "@logicplanes/kaeso-ui/format";
 import type { ModelDataView } from "~/api/generated/types";
 import { instanceSettingsQuery, systemQuery } from "~/api/queries/instance";
@@ -32,7 +32,8 @@ function ModelData({ data }: { data: ModelDataView }) {
     <Text tone="secondary">{t("instance.noneYet", "None yet")}</Text>
   );
   return (
-    <SettingsSection
+    <Section
+      spacing="settings"
       title={t("instance.modelData", "Model data")}
       description={t("instance.modelDataHint", "Model names, limits and prices from KPMR, the Kaeso Provider & Model Registry.")}
     >
@@ -58,7 +59,7 @@ function ModelData({ data }: { data: ModelDataView }) {
           control={lastSync}
         />
       </SettingsGroup>
-    </SettingsSection>
+    </Section>
   );
 }
 
@@ -87,13 +88,13 @@ export function InstanceSystemPage() {
         <SettingsLoading rows={4} />
       ) : (
         <>
-          <SettingsSection title={t("instance.gateway", "Gateway")}>
+          <Section spacing="settings" title={t("instance.gateway", "Gateway")}>
             <SettingsGroup>
               <SettingsRow title={t("common.status", "Status")} control={<Status tone={status.tone}>{status.label}</Status>} />
               <SettingsRow title={t("instance.version", "Version")} control={<Code>{s.version}</Code>} />
             </SettingsGroup>
-          </SettingsSection>
-          <SettingsSection title={t("instance.services", "Services")}>
+          </Section>
+          <Section spacing="settings" title={t("instance.services", "Services")}>
             <SettingsGroup>
               <SettingsRow
                 title={SERVICE.postgres}
@@ -107,9 +108,9 @@ export function InstanceSystemPage() {
               />
               <SettingsRow title={SERVICE.valkey} description={t("instance.valkeyHint", "Limits and caches.")} control={service(s.valkey)} />
             </SettingsGroup>
-          </SettingsSection>
+          </Section>
           {!logsOff && (
-            <SettingsSection title={t("instance.logBuffer", "Request log buffer")}>
+            <Section spacing="settings" title={t("instance.logBuffer", "Request log buffer")}>
               <SettingsGroup>
                 <SettingsRow
                   title={t("instance.waiting", "Waiting")}
@@ -130,9 +131,10 @@ export function InstanceSystemPage() {
                   }
                 />
               </SettingsGroup>
-            </SettingsSection>
+            </Section>
           )}
-          <SettingsSection
+          <Section
+            spacing="settings"
             title={t("instance.storage", "Storage")}
             description={t("instance.storageHint", "The whole install; each organization shows its own on its Logging page.")}
           >
@@ -150,7 +152,7 @@ export function InstanceSystemPage() {
                 </>
               )}
             </SettingsGroup>
-          </SettingsSection>
+          </Section>
           <ModelData data={s.model_data} />
           {settings.data && <Mail settings={settings.data} />}
         </>

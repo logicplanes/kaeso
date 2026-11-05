@@ -3,7 +3,7 @@ import { warnStylingClassName } from "../../utils/dev.js";
 import { useField, useFieldControl, withField, type FieldWrapProps } from "../field/field.js";
 import { InputGroup, INPUT_ICON_SIZE, type InputSize } from "./input-group.js";
 import { Icon, type IconData } from "../icon/icon.js";
-import { KbdSequence } from "../kbd/kbd.js";
+import { Kbd } from "../kbd/kbd.js";
 import { icons } from "../../icons/vocabulary.js";
 import { useUiText } from "../../i18n/context.js";
 
@@ -197,7 +197,7 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(functi
       }
       suffix={
         !current && shortcut ? (
-          <KbdSequence keys={shortcut} className={props["data-force"]?.includes("focus") ? "invisible" : "group-focus-within/field:invisible"} />
+          <Kbd keys={shortcut} className={props["data-force"]?.includes("focus") ? "invisible" : "group-focus-within/field:invisible"} />
         ) : undefined
       }
       {...props}

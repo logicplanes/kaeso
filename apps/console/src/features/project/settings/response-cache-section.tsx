@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Button, Select, SettingsGroup, SettingsRow, SettingsSection, Switch } from "@logicplanes/kaeso-ui";
+import { Button, Select, SettingsGroup, SettingsRow, Section, Switch } from "@logicplanes/kaeso-ui";
 import { api, data } from "~/api/client";
 import type { ProjectResponseCache } from "~/api/generated/types";
 import { useApiMutation } from "~/auth/mutation";
@@ -58,7 +58,8 @@ export function ResponseCacheSection({ org, project, canChange, archived }: { or
         : undefined;
   const ttls = s && !TTLS.some((v) => v === s.ttl_seconds) ? [...TTLS, s.ttl_seconds].sort((a, b) => a - b) : [...TTLS];
   return (
-    <SettingsSection
+    <Section
+      spacing="settings"
       title={t("project.responseCache.title", "Response cache")}
       description={t("project.responseCache.hint", "Answers a repeated identical request from a stored reply, at no provider cost.")}
     >
@@ -125,6 +126,6 @@ export function ResponseCacheSection({ org, project, canChange, archived }: { or
           </>
         )}
       </SettingsGroup>
-    </SettingsSection>
+    </Section>
   );
 }

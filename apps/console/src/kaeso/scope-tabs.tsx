@@ -1,4 +1,4 @@
-import { PillTabs } from "@logicplanes/kaeso-ui";
+import { Tabs } from "@logicplanes/kaeso-ui";
 import { t } from "~/i18n";
 
 export type Scope = "active" | "archived" | "all";
@@ -17,12 +17,12 @@ export function ScopeTabs({
   archivedLabel?: string | null;
 }) {
   return (
-    <PillTabs value={value} onValueChange={(v) => onChange(v === "archived" || v === "all" ? v : "active")}>
-      <PillTabs.List aria-label={label}>
-        <PillTabs.Tab value="active">{activeLabel}</PillTabs.Tab>
-        {archivedLabel && <PillTabs.Tab value="archived">{archivedLabel}</PillTabs.Tab>}
-        <PillTabs.Tab value="all">{t("common.all", "All")}</PillTabs.Tab>
-      </PillTabs.List>
-    </PillTabs>
+    <Tabs variant="pill" value={value} onValueChange={(v) => onChange(v === "archived" || v === "all" ? v : "active")}>
+      <Tabs.List aria-label={label}>
+        <Tabs.Tab value="active">{activeLabel}</Tabs.Tab>
+        {archivedLabel && <Tabs.Tab value="archived">{archivedLabel}</Tabs.Tab>}
+        <Tabs.Tab value="all">{t("common.all", "All")}</Tabs.Tab>
+      </Tabs.List>
+    </Tabs>
   );
 }

@@ -1,4 +1,4 @@
-import { Dialog, KbdSequence, Text } from "@logicplanes/kaeso-ui";
+import { Dialog, Kbd, Text } from "@logicplanes/kaeso-ui";
 import { useRequestLogs } from "~/auth/session";
 import { t } from "~/i18n";
 
@@ -35,7 +35,7 @@ export default function ShortcutSheet({ open, onOpenChange }: { open: boolean; o
               <Text>{s.label}</Text>
             </dt>
             <dd>
-              <KbdSequence keys={s.keys} />
+              <Kbd keys={s.keys} />
             </dd>
           </div>
         ))}

@@ -2,7 +2,7 @@ import { createRef } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { Radio, RadioCards, RadioGroup } from "./radio.js";
+import { Radio, RadioGroup } from "./radio.js";
 
 describe("Radio", () => {
   it("chooses one option in a group, with labels and descriptions", async () => {
@@ -23,10 +23,10 @@ describe("Radio", () => {
     const onChange = vi.fn();
     render(
       <>
-        <RadioCards aria-label="Plan" value="team" onValueChange={onChange}>
+        <RadioGroup variant="cards" aria-label="Plan" value="team" onValueChange={onChange}>
           <Radio value="team" label="Team" description="Up to 20 people" />
           <Radio value="org" label="Organization" disabled />
-        </RadioCards>
+        </RadioGroup>
         <RadioGroup aria-label="Bare" disabled>
           <Radio value="x" aria-label="Only option" id="only" data-force="focus" />
         </RadioGroup>
@@ -46,9 +46,9 @@ describe("Radio", () => {
           <Radio value="us" label="United States" description="Virginia" aria-describedby="region-note" />
         </RadioGroup>
         <p id="region-note">Data stays in the region.</p>
-        <RadioCards aria-label="Plan" value="team">
+        <RadioGroup variant="cards" aria-label="Plan" value="team">
           <Radio value="team" label="Team" description="Up to 20 people" />
-        </RadioCards>
+        </RadioGroup>
       </>,
     );
     const europe = screen.getByRole("radio", { name: "Europe" });
@@ -58,14 +58,14 @@ describe("Radio", () => {
   });
 });
 
-describe("RadioCards' ref", () => {
+describe("RadioGroup with cards: its ref", () => {
   it("reaches the radio group", () => {
     const ref = createRef<HTMLDivElement>();
     render(
-      <RadioCards ref={ref} aria-label="Plan" value="team">
+      <RadioGroup variant="cards" ref={ref} aria-label="Plan" value="team">
         <Radio value="team" label="Team" />
         <Radio value="business" label="Business" />
-      </RadioCards>,
+      </RadioGroup>,
     );
     expect(ref.current).toBe(screen.getByRole("radiogroup", { name: "Plan" }));
   });

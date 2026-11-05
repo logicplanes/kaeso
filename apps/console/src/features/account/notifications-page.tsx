@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { SettingsGroup, SettingsRow, SettingsSection, Switch } from "@logicplanes/kaeso-ui";
+import { SettingsGroup, SettingsRow, Section, Switch } from "@logicplanes/kaeso-ui";
 import { toast } from "~/shell/toast";
 import { api, data } from "~/api/client";
 import type { Notifications } from "~/api/generated/types";
@@ -35,7 +35,8 @@ export function NotificationsPage() {
       ) : !n ? (
         <SettingsLoading rows={2} />
       ) : (
-        <SettingsSection
+        <Section
+          spacing="settings"
           title={t("common.email", "Email")}
           description={t("account.emailNotificationsHint", "To your account's address; security emails are always sent.")}
         >
@@ -65,7 +66,7 @@ export function NotificationsPage() {
               }
             />
           </SettingsGroup>
-        </SettingsSection>
+        </Section>
       )}
     </SettingsPage>
   );

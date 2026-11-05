@@ -12,7 +12,7 @@ import {
   NumberInput,
   SettingsGroup,
   SettingsRow,
-  SettingsSection,
+  Section,
   Skeleton,
   Switch,
   Text,
@@ -109,7 +109,7 @@ function General({
   const locked = !canUpdate ? needs("project.update") : archived ? archivedReadOnly() : undefined;
   const reason = locked ?? (!next ? t("org.general.enterName", "Enter a name") : next === name ? t("org.noChange", "No change to save") : undefined);
   return (
-    <SettingsSection title={common.project()}>
+    <Section spacing="settings" title={common.project()}>
       <SettingsGroup>
         <PictureRow
           org={org}
@@ -158,7 +158,7 @@ function General({
         />
         <SettingsRow title={common.created()} control={<Text tone="secondary">{formatDate(createdAt)}</Text>} />
       </SettingsGroup>
-    </SettingsSection>
+    </Section>
   );
 }
 
@@ -227,7 +227,8 @@ function KeyLifetime({ org, project, days, archived }: { org: string; project: s
         ? t("project.settings.orgAllowsAtMost", "The organization allows at most {days, plural, one {# day} other {# days}}.", { days: orgMax })
         : null;
   return (
-    <SettingsSection
+    <Section
+      spacing="settings"
       title={t("project.settings.keyLifetime", "Key lifetime")}
       description={t("project.settings.keyLifetimeHint", "The longest a new key here may live; existing keys keep theirs.")}
     >
@@ -286,7 +287,7 @@ function KeyLifetime({ org, project, days, archived }: { org: string; project: s
           />
         )}
       </SettingsGroup>
-    </SettingsSection>
+    </Section>
   );
 }
 
@@ -305,7 +306,8 @@ function ContentLogging({ org, project, canChange, archived }: { org: string; pr
   const s = settings.data;
   const orgOff = !!s && s.content_logging && !s.effective_content_logging;
   return (
-    <SettingsSection
+    <Section
+      spacing="settings"
       title={t("project.settings.contentLogging", "Content logging")}
       description={t("project.settings.contentLoggingHint", "Whether request and reply bodies are kept with each request log entry.")}
     >
@@ -330,7 +332,7 @@ function ContentLogging({ org, project, canChange, archived }: { org: string; pr
           }
         />
       </SettingsGroup>
-    </SettingsSection>
+    </Section>
   );
 }
 
@@ -338,7 +340,7 @@ const archivedReadOnly = () => t("project.settings.archivedReadOnly", "An archiv
 
 function ArchivedOn({ date }: { date: string }) {
   return (
-    <SettingsSection title={common.archive()}>
+    <Section spacing="settings" title={common.archive()}>
       <SettingsGroup>
         <SettingsRow
           title={t("project.settings.archivedTitle", "Archived")}
@@ -346,7 +348,7 @@ function ArchivedOn({ date }: { date: string }) {
           control={<Text tone="secondary">{formatDate(date)}</Text>}
         />
       </SettingsGroup>
-    </SettingsSection>
+    </Section>
   );
 }
 
@@ -358,7 +360,7 @@ function Archive({ org, project, name }: { org: string; project: string; name: s
     </Button>
   );
   return (
-    <SettingsSection title={common.archive()}>
+    <Section spacing="settings" title={common.archive()}>
       <SettingsGroup>
         <SettingsRow
           danger
@@ -370,7 +372,7 @@ function Archive({ org, project, name }: { org: string; project: string; name: s
       <DialogScope open={open}>
         <ArchiveDialog org={org} project={project} name={name} open={open} onOpenChange={setOpen} />
       </DialogScope>
-    </SettingsSection>
+    </Section>
   );
 }
 

@@ -17,7 +17,7 @@ import { joinIds } from "../../utils/hidden-description.js";
 import { cn } from "../../utils/cn.js";
 import { lazyModule, useLazyModuleRetried } from "../../utils/lazy-module.js";
 import { HandedTrigger, triggerPropsStore, type TriggerPropsStore } from "./trigger-props.js";
-import { KbdSequence } from "../kbd/kbd.js";
+import { Kbd } from "../kbd/kbd.js";
 
 export const KAESO_TOOLTIP_VARIANTS = {
   side: {
@@ -162,7 +162,7 @@ export const TooltipSurface = forwardRef<HTMLDivElement, TooltipSurfaceProps>(fu
       className={cn("inline-flex items-center gap-8 bg-tooltip text-small font-medium text-fg shadow-raised", KAESO_TOOLTIP_VARIANTS.shape[shape].classes)}
     >
       <span>{children}</span>
-      {shortcut && <KbdSequence keys={shortcut} />}
+      {shortcut && <Kbd keys={shortcut} />}
     </div>
   );
 });

@@ -16,7 +16,7 @@ import {
   Menu,
   Meter,
   MetricRow,
-  PillTabs,
+  Tabs,
   PortalContainer,
   Radio,
   RadioGroup,
@@ -235,17 +235,17 @@ function Cells() {
           />
         </Cell>
         <Cell slug="tabs">
-          <PillTabs defaultValue="all">
-            <PillTabs.List aria-label={t("Keys")}>
-              <PillTabs.Tab value="all" count={6}>
+          <Tabs variant="pill" defaultValue="all">
+            <Tabs.List aria-label={t("Keys")}>
+              <Tabs.Tab value="all" count={6}>
                 {t("All")}
-              </PillTabs.Tab>
-              <PillTabs.Tab value="active" count={3}>
+              </Tabs.Tab>
+              <Tabs.Tab value="active" count={3}>
                 {t("Active")}
-              </PillTabs.Tab>
-              <PillTabs.Tab value="disabled">{t("Disabled")}</PillTabs.Tab>
-            </PillTabs.List>
-          </PillTabs>
+              </Tabs.Tab>
+              <Tabs.Tab value="disabled">{t("Disabled")}</Tabs.Tab>
+            </Tabs.List>
+          </Tabs>
         </Cell>
         <Cell slug="checkbox">
           <CheckboxGroup defaultValue={["text", "image"]} aria-label={t("Input types")}>

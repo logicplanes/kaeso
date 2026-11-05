@@ -14,9 +14,8 @@ import {
   List,
   SettingsGroup,
   SettingsRow,
-  SettingsSection,
+  Section,
   Skeleton,
-  SkeletonLine,
   StatGrid,
   StatTile,
   StepDialog,
@@ -66,9 +65,9 @@ export function InstanceOrgPage({ org }: { org: string }) {
     >
       <Usage org={org} />
       {!o ? (
-        <SettingsSection title={t("common.organization", "Organization")}>
-          <SkeletonLine lines={4} />
-        </SettingsSection>
+        <Section spacing="settings" title={t("common.organization", "Organization")}>
+          <Skeleton lines={4} />
+        </Section>
       ) : (
         <>
           <Facts org={org} o={o} />
@@ -84,12 +83,13 @@ function Usage({ org }: { org: string }) {
   const usage = useQuery(instanceOrgUsageQuery(org));
   const u = usage.data;
   return (
-    <SettingsSection
+    <Section
+      spacing="settings"
       title={t("instance.last30Days", "Last 30 days")}
       description={t("instance.last30DaysHint", "Requests, tokens and cost across its projects, and the logs it stores")}
     >
       <StatGrid aria-label={t("instance.usage30Days", "Usage in the last 30 days")}>{u ? usageTiles(u) : loadingTiles()}</StatGrid>
-    </SettingsSection>
+    </Section>
   );
 }
 
@@ -140,7 +140,7 @@ function signIn(o: InstanceOrgView): string {
 
 function Facts({ org, o }: { org: string; o: InstanceOrgView }) {
   return (
-    <SettingsSection title={t("common.organization", "Organization")}>
+    <Section spacing="settings" title={t("common.organization", "Organization")}>
       <SettingsGroup>
         <SettingsRow title={t("common.name", "Name")} description={o.name} control={<Rename o={o} />} />
         <SettingsRow
@@ -176,7 +176,7 @@ function Facts({ org, o }: { org: string; o: InstanceOrgView }) {
         />
         {o.state === "scheduled_for_deletion" ? <ScheduledRows o={o} /> : <ScheduleDeletionRow o={o} />}
       </SettingsGroup>
-    </SettingsSection>
+    </Section>
   );
 }
 
@@ -191,7 +191,7 @@ function Members({ org, count }: { org: string; count: number }) {
         })
       : t("instance.memberCount", "{count, plural, one {# member} other {# members}}, with their role and the day they joined", { count });
   return (
-    <SettingsSection title={t("common.members", "Members")} description={description}>
+    <Section spacing="settings" title={t("common.members", "Members")} description={description}>
       {!members.isPending && list.length === 0 ? (
         <Text tone="secondary">{t("instance.noMembers", "No members.")}</Text>
       ) : (
@@ -214,7 +214,7 @@ function Members({ org, count }: { org: string; count: number }) {
           }))}
         />
       )}
-    </SettingsSection>
+    </Section>
   );
 }
 
@@ -229,7 +229,7 @@ function Projects({ org, count }: { org: string; count: number }) {
         })
       : t("instance.projectCount", "{count, plural, one {# project} other {# projects}}, with the day each was created", { count });
   return (
-    <SettingsSection title={t("common.projects", "Projects")} description={description}>
+    <Section spacing="settings" title={t("common.projects", "Projects")} description={description}>
       {!projects.isPending && list.length === 0 ? (
         <Text tone="secondary">{t("instance.noProjects", "No projects.")}</Text>
       ) : (
@@ -246,7 +246,7 @@ function Projects({ org, count }: { org: string; count: number }) {
           }))}
         />
       )}
-    </SettingsSection>
+    </Section>
   );
 }
 

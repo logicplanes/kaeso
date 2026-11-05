@@ -4,7 +4,7 @@ import { useLinkComponent, isExternalHref } from "../../utils/link-provider.js";
 import { warnMissingName, warnStylingClassName } from "../../utils/dev.js";
 import { Icon, type IconData, type IconSize } from "../icon/icon.js";
 import { Spinner, useDelayedLoading } from "../loader/loader.js";
-import { KbdSequence } from "../kbd/kbd.js";
+import { Kbd } from "../kbd/kbd.js";
 import { Tooltip } from "../tooltip/tooltip.js";
 import { SwapText } from "../swap-text/swap-text.js";
 import { useTruncated } from "../../hooks/use-truncated.js";
@@ -220,7 +220,7 @@ export const Button = forwardRef<HTMLButtonElement | HTMLAnchorElement, ButtonPr
         </span>
       )}
       {shortcut && (
-        <KbdSequence
+        <Kbd
           aria-hidden
           data-shortcut=""
           keys={shortcut}

@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Segmented, SettingsGroup, SettingsRow, SettingsSection, Switch } from "@logicplanes/kaeso-ui";
+import { Segmented, SettingsGroup, SettingsRow, Section, Switch } from "@logicplanes/kaeso-ui";
 import { api, data } from "~/api/client";
 import { agentCatalogueQuery, instanceAgentPolicyQuery } from "~/api/queries/agents";
 import { useApiMutation } from "~/auth/mutation";
@@ -17,7 +17,8 @@ export function AgentsSettings() {
   const p = policy.data;
   if (!p) return null;
   return (
-    <SettingsSection
+    <Section
+      spacing="settings"
       title={t("instance.agents.title", "Agents")}
       description={t("instance.agents.description", "Agents sign in through the MCP server at /mcp and act for their user.")}
     >
@@ -51,6 +52,6 @@ export function AgentsSettings() {
           />
         )}
       </SettingsGroup>
-    </SettingsSection>
+    </Section>
   );
 }

@@ -13,34 +13,21 @@ export const KAESO_SKELETON_DEFAULT_VARIANTS = { shape: "block" } as const;
 
 export interface SkeletonProps extends HTMLAttributes<HTMLDivElement> {
   shape?: keyof typeof KAESO_SKELETON_VARIANTS.shape | undefined;
+  lines?: number | undefined;
 }
 
-export const Skeleton = forwardRef<HTMLDivElement, SkeletonProps>(function Skeleton({ shape = "block", className, ...props }, ref) {
-  return (
-    <div
-      ref={ref}
-      aria-hidden
-      className={cn(
-        "bg-fill-2 animate-pulse-quiet forced-colors:outline forced-colors:-outline-offset-1",
-        KAESO_SKELETON_VARIANTS.shape[shape].classes,
-        className,
-      )}
-      {...props}
-    />
-  );
+const BASE = "bg-fill-2 animate-pulse-quiet forced-colors:outline forced-colors:-outline-offset-1";
+
+export const Skeleton = forwardRef<HTMLDivElement, SkeletonProps>(function Skeleton({ shape = "block", lines, className, ...props }, ref) {
+  if (lines !== undefined) {
+    return (
+      <div ref={ref} aria-hidden className={cn("flex flex-col gap-8", className)} {...props}>
+        {Array.from({ length: lines }, (_, i) => (
+          <div key={i} className={cn(BASE, KAESO_SKELETON_VARIANTS.shape.line.classes, i === lines - 1 && lines > 1 ? "w-3/5" : "w-full")} />
+        ))}
+      </div>
+    );
+  }
+  return <div ref={ref} aria-hidden className={cn(BASE, KAESO_SKELETON_VARIANTS.shape[shape].classes, className)} {...props} />;
 });
 Skeleton.displayName = "Skeleton";
-
-export const SkeletonLine = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement> & { lines?: number | undefined }>(function SkeletonLine(
-  { lines = 1, className, ...props },
-  ref,
-) {
-  return (
-    <div ref={ref} aria-hidden className={cn("flex flex-col gap-8", className)} {...props}>
-      {Array.from({ length: lines }, (_, i) => (
-        <Skeleton key={i} shape="line" className={i === lines - 1 && lines > 1 ? "w-3/5" : "w-full"} />
-      ))}
-    </div>
-  );
-});
-SkeletonLine.displayName = "SkeletonLine";

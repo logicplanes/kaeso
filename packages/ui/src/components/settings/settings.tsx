@@ -4,7 +4,6 @@ import { cn } from "../../utils/cn.js";
 import { useLinkComponent } from "../../utils/link-provider.js";
 import { icons } from "../../icons/vocabulary.js";
 import { Icon, type IconData } from "../icon/icon.js";
-import { SectionHeader } from "../section/section-header.js";
 
 export const KAESO_SETTINGS_VARIANTS = {
   row: {
@@ -13,30 +12,6 @@ export const KAESO_SETTINGS_VARIANTS = {
   },
 } as const;
 export const KAESO_SETTINGS_DEFAULT_VARIANTS = { row: "default" } as const;
-
-export interface SettingsSectionProps {
-  title?: ReactNode | undefined;
-  description?: ReactNode | undefined;
-  actions?: ReactNode | undefined;
-  children: ReactNode;
-  className?: string | undefined;
-}
-
-export const KAESO_SETTINGS_SECTION_VARIANTS = {} as const;
-export const KAESO_SETTINGS_SECTION_DEFAULT_VARIANTS = {} as const;
-
-export const SettingsSection = forwardRef<HTMLElement, SettingsSectionProps>(function SettingsSection(
-  { title, description, actions, children, className },
-  ref,
-) {
-  return (
-    <section ref={ref} className={cn("mt-48 first:mt-40", className)}>
-      {(title || actions) && <SectionHeader title={title} description={description} actions={actions} />}
-      {children}
-    </section>
-  );
-});
-SettingsSection.displayName = "SettingsSection";
 
 export const SettingsGroup = forwardRef<HTMLDivElement, { children: ReactNode; className?: string | undefined; "aria-label"?: string | undefined }>(
   function SettingsGroup({ children, className, ...props }, ref) {

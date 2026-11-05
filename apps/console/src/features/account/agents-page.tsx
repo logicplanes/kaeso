@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Badge, Code, CopyButton, Empty, SettingsGroup, SettingsRow, SettingsSection } from "@logicplanes/kaeso-ui";
+import { Badge, Code, CopyButton, Empty, SettingsGroup, SettingsRow, Section } from "@logicplanes/kaeso-ui";
 import { formatDate, formatRelative } from "@logicplanes/kaeso-ui/format";
 import { modelLabel } from "~/format/model";
 import type { AgentView } from "~/api/generated/types";
@@ -28,7 +28,7 @@ export function AgentsPage() {
       context={t("account.title", "Account")}
       description={t("account.agentsHint", "Add the MCP server to an agent; it acts with the rights you give it.")}
     >
-      <SettingsSection>
+      <Section spacing="settings">
         <SettingsGroup>
           <SettingsRow
             title={t("account.mcpServer", "MCP server")}
@@ -41,7 +41,7 @@ export function AgentsPage() {
             control={<ConnectClients />}
           />
         </SettingsGroup>
-      </SettingsSection>
+      </Section>
       {agents.isError ? (
         <LoadFailed title={t("account.agentsFailed", "Your agents couldn't load")} />
       ) : agents.isPending ? (
@@ -52,7 +52,7 @@ export function AgentsPage() {
           description={t("account.noAgentsHint", "Add the MCP server to Claude Code, Codex or another agent and sign in from there.")}
         />
       ) : (
-        <SettingsSection>
+        <Section spacing="settings">
           <SettingsGroup>
             {list.map((a) => (
               <SettingsRow
@@ -73,7 +73,7 @@ export function AgentsPage() {
               />
             ))}
           </SettingsGroup>
-        </SettingsSection>
+        </Section>
       )}
     </SettingsPage>
   );

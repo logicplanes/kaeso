@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { FilterRow } from "./filter-row.js";
-import { PillTabs } from "../tabs/tabs.js";
+import { Tabs } from "../tabs/tabs.js";
 import { Button } from "../button/button.js";
 import { InsetContent } from "../../utils/inset.js";
 
@@ -11,13 +11,13 @@ function Row() {
     <FilterRow
       data-testid="row"
       tabs={
-        <PillTabs defaultValue="all">
-          <PillTabs.List aria-label="State">
-            <PillTabs.Tab value="all">All</PillTabs.Tab>
-            <PillTabs.Tab value="active">Active</PillTabs.Tab>
-            <PillTabs.Tab value="suspended">Suspended</PillTabs.Tab>
-          </PillTabs.List>
-        </PillTabs>
+        <Tabs variant="pill" defaultValue="all">
+          <Tabs.List aria-label="State">
+            <Tabs.Tab value="all">All</Tabs.Tab>
+            <Tabs.Tab value="active">Active</Tabs.Tab>
+            <Tabs.Tab value="suspended">Suspended</Tabs.Tab>
+          </Tabs.List>
+        </Tabs>
       }
     >
       <Button size="sm">Every preset</Button>

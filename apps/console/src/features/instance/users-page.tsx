@@ -16,11 +16,11 @@ import {
   List,
   SearchInput,
   Section,
-  PillTabs,
+  Tabs,
   SettingsGroup,
   SettingsRow,
   Sheet,
-  SkeletonLine,
+  Skeleton,
   Status,
   Switch,
   Text,
@@ -105,16 +105,16 @@ export function InstanceUsersPage({ search }: { search: UsersSearch }) {
     >
       <FilterRow
         tabs={
-          <PillTabs value={search.state ?? "all"} onValueChange={(v) => setSearch({ state: STATES.find((s) => s === v), user: undefined })}>
-            <PillTabs.List aria-label={t("instance.state", "State")}>
-              <PillTabs.Tab value="all">{t("common.all", "All")}</PillTabs.Tab>
+          <Tabs variant="pill" value={search.state ?? "all"} onValueChange={(v) => setSearch({ state: STATES.find((s) => s === v), user: undefined })}>
+            <Tabs.List aria-label={t("instance.state", "State")}>
+              <Tabs.Tab value="all">{t("common.all", "All")}</Tabs.Tab>
               {STATES.map((id) => (
-                <PillTabs.Tab key={id} value={id}>
+                <Tabs.Tab key={id} value={id}>
                   {userStateLabel(id)}
-                </PillTabs.Tab>
+                </Tabs.Tab>
               ))}
-            </PillTabs.List>
-          </PillTabs>
+            </Tabs.List>
+          </Tabs>
         }
       >
         <div className="w-240">
@@ -249,7 +249,7 @@ function UserBody({ userId, onClose }: { userId: string; onClose: () => void }) 
       ),
   });
 
-  if (user.isPending) return <SkeletonLine lines={5} />;
+  if (user.isPending) return <Skeleton lines={5} />;
   if (user.isError) {
     const gone = isApiError(user.error) && user.error.type === "not_found";
     return (

@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Button, Combobox, SettingsGroup, SettingsRow, SettingsSection, Text } from "@logicplanes/kaeso-ui";
+import { Button, Combobox, SettingsGroup, SettingsRow, Section, Text } from "@logicplanes/kaeso-ui";
 import { setFormatTimeZone } from "@logicplanes/kaeso-ui/format";
 import { api, data } from "~/api/client";
 import type { SettingsView } from "~/api/generated/types";
@@ -25,7 +25,8 @@ export function TimeZoneSettings({ settings }: { settings: SettingsView }) {
   });
   const choose = (next: string | null) => next && next !== zone && save.mutate(next);
   return (
-    <SettingsSection
+    <Section
+      spacing="settings"
       title={t("instance.timeZone", "Time zone")}
       description={t("instance.timeZoneHint", "Every time in the console and the automatic update window follow it.")}
     >
@@ -67,6 +68,6 @@ export function TimeZoneSettings({ settings }: { settings: SettingsView }) {
           />
         )}
       </SettingsGroup>
-    </SettingsSection>
+    </Section>
   );
 }

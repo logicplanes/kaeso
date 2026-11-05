@@ -8,7 +8,7 @@ import {
   ProviderBadge,
   ProviderPicker,
   Radio,
-  RadioCards,
+  RadioGroup,
   SensitiveInput,
   StepDialog,
   icons,
@@ -384,7 +384,8 @@ export function ProviderKeyDialog({
     id: "method",
     title: t("kaeso.providerKey.methodTitle", "Add an API key or sign in with {product}?", { product }),
     content: (
-      <RadioCards
+      <RadioGroup
+        variant="cards"
         aria-label={t("kaeso.providerKey.method", "Sign-in method")}
         value={method}
         onValueChange={(v) => {
@@ -411,7 +412,7 @@ export function ProviderKeyDialog({
           }
           description={t("kaeso.providerKey.accountHint", "Requests use the plan of the {product} account you sign in with.", { product })}
         />
-      </RadioCards>
+      </RadioGroup>
     ),
   };
   const defaultStep: DialogStep[] = current
@@ -421,7 +422,8 @@ export function ProviderKeyDialog({
           title: t("kaeso.providerKey.makeDefaultTitle", "Make it the {provider} default?", { provider: label }),
           description: t("kaeso.providerKey.makeDefaultHint", "Projects without an assigned key use the default."),
           content: (
-            <RadioCards
+            <RadioGroup
+              variant="cards"
               aria-label={t("kaeso.providerKey.default", "Default")}
               value={makeDefault ? "yes" : "no"}
               onValueChange={(v) => {
@@ -439,7 +441,7 @@ export function ProviderKeyDialog({
                 label={t("kaeso.providerKey.makeDefault", "Make this key the default")}
                 description={t("kaeso.providerKey.makeDefaultSwitch", "Projects without an assigned key switch to it.")}
               />
-            </RadioCards>
+            </RadioGroup>
           ),
         },
       ]

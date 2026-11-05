@@ -1,4 +1,4 @@
-import { PageHeader, PillTabs, IconButton, Button, icons } from "@logicplanes/kaeso-ui";
+import { PageHeader, Tabs, IconButton, Button, icons } from "@logicplanes/kaeso-ui";
 import { StateSection } from "~/lib/states";
 
 export const meta = {
@@ -9,13 +9,13 @@ export const meta = {
   import: "PageHeader",
 };
 const tabs = (
-  <PillTabs defaultValue="all">
-    <PillTabs.List aria-label="Logs">
-      <PillTabs.Tab value="all">All</PillTabs.Tab>
-      <PillTabs.Tab value="errors">Errors</PillTabs.Tab>
-      <PillTabs.Tab value="slow">Slow</PillTabs.Tab>
-    </PillTabs.List>
-  </PillTabs>
+  <Tabs variant="pill" defaultValue="all">
+    <Tabs.List aria-label="Logs">
+      <Tabs.Tab value="all">All</Tabs.Tab>
+      <Tabs.Tab value="errors">Errors</Tabs.Tab>
+      <Tabs.Tab value="slow">Slow</Tabs.Tab>
+    </Tabs.List>
+  </Tabs>
 );
 const actions = (
   <>
@@ -56,12 +56,12 @@ export function WithTabsAndPrimary() {
       <PageHeader
         title="Projects"
         tabs={
-          <PillTabs defaultValue="active">
-            <PillTabs.List aria-label="Projects">
-              <PillTabs.Tab value="all">All</PillTabs.Tab>
-              <PillTabs.Tab value="active">Active</PillTabs.Tab>
-            </PillTabs.List>
-          </PillTabs>
+          <Tabs variant="pill" defaultValue="active">
+            <Tabs.List aria-label="Projects">
+              <Tabs.Tab value="all">All</Tabs.Tab>
+              <Tabs.Tab value="active">Active</Tabs.Tab>
+            </Tabs.List>
+          </Tabs>
         }
         actions={
           <Button variant="primary" size="sm" leadingIcon={icons.add}>
@@ -87,12 +87,12 @@ export function States() {
           <PageHeader
             title="Anfrageprotokolle für alle Projekte dieser Organisation"
             tabs={
-              <PillTabs defaultValue="all">
-                <PillTabs.List aria-label="Protokolle">
-                  <PillTabs.Tab value="all">Alle</PillTabs.Tab>
-                  <PillTabs.Tab value="errors">Fehler</PillTabs.Tab>
-                </PillTabs.List>
-              </PillTabs>
+              <Tabs variant="pill" defaultValue="all">
+                <Tabs.List aria-label="Protokolle">
+                  <Tabs.Tab value="all">Alle</Tabs.Tab>
+                  <Tabs.Tab value="errors">Fehler</Tabs.Tab>
+                </Tabs.List>
+              </Tabs>
             }
             actions={<IconButton icon={icons.filter} aria-label="Filtern" variant="secondary" />}
           />

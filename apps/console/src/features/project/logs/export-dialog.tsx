@@ -1,6 +1,6 @@
 import { useNeedsRight } from "~/auth/needs-right";
 import { useState } from "react";
-import { DialogScope, KeyValue, Radio, RadioCards, StepDialog } from "@logicplanes/kaeso-ui";
+import { DialogScope, KeyValue, Radio, RadioGroup, StepDialog } from "@logicplanes/kaeso-ui";
 import type { LogFilters } from "~/api/queries/logs";
 import { startExport } from "~/shell/export-job";
 import { t } from "~/i18n";
@@ -51,7 +51,7 @@ function ExportSteps({ org, project, filters, names, canContent, open, onOpenCha
           content: (
             <div className="flex flex-col gap-16">
               {applied.length > 0 && <KeyValue items={applied} />}
-              <RadioCards aria-label={t("logs.inspector.format", "Format")} value={format} onValueChange={(v) => setFormat(v as ExportFormat)}>
+              <RadioGroup variant="cards" aria-label={t("logs.inspector.format", "Format")} value={format} onValueChange={(v) => setFormat(v as ExportFormat)}>
                 <Radio value="csv" label="CSV" description={t("logs.export.csvHint", "Metadata, for spreadsheets.")} />
                 <Radio value="jsonl" label={JSON_LINES} description={t("logs.export.jsonlHint", "Metadata, one request per line.")} />
                 <Radio
@@ -60,7 +60,7 @@ function ExportSteps({ org, project, filters, names, canContent, open, onOpenCha
                   description={canContent ? t("logs.export.jsonlContentHint", "Adds the stored request and reply bodies.") : needs("logs.content.view")}
                   disabled={!canContent}
                 />
-              </RadioCards>
+              </RadioGroup>
             </div>
           ),
         },

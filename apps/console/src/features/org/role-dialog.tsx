@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Input, Radio, RadioCards, RightsMatrix, Select, StepDialog, type RightChange } from "@logicplanes/kaeso-ui";
+import { Input, Radio, RadioGroup, RightsMatrix, Select, StepDialog, type RightChange } from "@logicplanes/kaeso-ui";
 import { api, data } from "~/api/client";
 import type { RoleView } from "~/api/generated/types";
 import { useApiMutation } from "~/auth/mutation";
@@ -102,7 +102,8 @@ export function RoleDialog({ org, draft, onClose, onCreated }: { org: string; dr
             maxLength={200}
             onChange={(e) => setRole({ ...role, description: e.target.value })}
           />
-          <RadioCards
+          <RadioGroup
+            variant="cards"
             aria-label={t("org.role.scope", "Where it applies")}
             value={role.scope}
             onValueChange={(scope) => {
@@ -120,7 +121,7 @@ export function RoleDialog({ org, draft, onClose, onCreated }: { org: string; dr
               label={t("org.role.orgRole", "Organization role")}
               description={t("org.role.orgRoleHint", "Given to members of the organization; may reach every project.")}
             />
-          </RadioCards>
+          </RadioGroup>
         </div>
       ),
     },

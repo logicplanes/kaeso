@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { AlertDialog, Button, Segmented, SettingsGroup, SettingsRow, SettingsSection, Switch } from "@logicplanes/kaeso-ui";
+import { AlertDialog, Button, Segmented, SettingsGroup, SettingsRow, Section, Switch } from "@logicplanes/kaeso-ui";
 import { formatRelative } from "@logicplanes/kaeso-ui/format";
 import { modelLabel } from "~/format/model";
 import { api, data } from "~/api/client";
@@ -43,7 +43,8 @@ export function OrgAgents({ org }: { org: string }) {
   const locked = canManage ? {} : { disabledReason: needs("members.rights.update") };
   return (
     <>
-      <SettingsSection
+      <Section
+        spacing="settings"
         title={t("org.agents.title", "Agents")}
         description={t("org.agents.description", "Members' agents act here only with rights the member holds and this allows.")}
       >
@@ -81,9 +82,10 @@ export function OrgAgents({ org }: { org: string }) {
             )}
           </SettingsGroup>
         )}
-      </SettingsSection>
+      </Section>
       {agents.data && agents.data.length > 0 && (
-        <SettingsSection
+        <Section
+          spacing="settings"
           title={t("org.agents.withAccess", "Agents with access")}
           description={t("org.agents.withAccessHint", "Each agent a member opened this organization to.")}
         >
@@ -104,7 +106,7 @@ export function OrgAgents({ org }: { org: string }) {
               />
             ))}
           </SettingsGroup>
-        </SettingsSection>
+        </Section>
       )}
       <AlertDialog
         open={closing.length > 0}

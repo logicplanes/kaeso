@@ -6,7 +6,7 @@ import { useRestoreFocus } from "../../utils/restore-focus.js";
 import { useOpenSession, useScopedDialog } from "../../utils/dialog-scope.js";
 import { icons } from "../../icons/vocabulary.js";
 import { Icon, type IconData } from "../icon/icon.js";
-import { KbdSequence, Kbd } from "../kbd/kbd.js";
+import { Kbd } from "../kbd/kbd.js";
 import { useUiText } from "../../i18n/context.js";
 import { useResizeMotion } from "../../utils/resize-motion.js";
 import { CommandList, type CommandListGroup, type CommandListItem, type CommandListRowState } from "../command-list/command-list.js";
@@ -130,7 +130,7 @@ function Palette({
                 {item.shortcut && (
                   <>
                     <span className="sr-only">, </span>
-                    <KbdSequence keys={item.shortcut} />
+                    <Kbd keys={item.shortcut} />
                   </>
                 )}
                 {item.children && <Icon icon={icons.chevronRight} size="sm" className="text-fg-tertiary" />}

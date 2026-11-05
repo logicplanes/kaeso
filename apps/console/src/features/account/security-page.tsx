@@ -16,8 +16,8 @@ import {
   SensitiveInput,
   SettingsGroup,
   SettingsRow,
-  SettingsSection,
-  SkeletonLine,
+  Section,
+  Skeleton,
   Text,
 } from "@logicplanes/kaeso-ui";
 import { toast } from "~/shell/toast";
@@ -70,7 +70,7 @@ function PasswordSection({ hasPassword, email }: { hasPassword: boolean; email: 
     </Button>
   );
   return (
-    <SettingsSection title={t("account.password", "Password")}>
+    <Section spacing="settings" title={t("account.password", "Password")}>
       <SettingsGroup>
         <SettingsRow
           title={t("account.password", "Password")}
@@ -87,7 +87,7 @@ function PasswordSection({ hasPassword, email }: { hasPassword: boolean; email: 
       <DialogScope open={open}>
         <PasswordDialog hasPassword={hasPassword} email={email} open={open} onOpenChange={setOpen} />
       </DialogScope>
-    </SettingsSection>
+    </Section>
   );
 }
 
@@ -211,7 +211,8 @@ function TwoFactorSection({ enabled, codesLeft }: { enabled: boolean; codesLeft:
   }, []);
   const closeTwoFactor = useCallback(() => setTwoFactor(TWO_FACTOR_CLOSED), []);
   return (
-    <SettingsSection
+    <Section
+      spacing="settings"
       title={t("account.twoFactor", "Two-factor authentication")}
       description={t("account.twoFactorHint", "A code at each password or link sign-in; SSO leaves it to your provider.")}
     >
@@ -266,7 +267,7 @@ function TwoFactorSection({ enabled, codesLeft }: { enabled: boolean; codesLeft:
       <DialogScope open={regenerating}>
         <RegenerateDialog open={regenerating} onOpenChange={setRegenerating} onRegenerated={regenerated} />
       </DialogScope>
-    </SettingsSection>
+    </Section>
   );
 }
 
@@ -472,7 +473,7 @@ function TwoFactorDialog({
             </div>
           </div>
         ) : (
-          <SkeletonLine lines={6} />
+          <Skeleton lines={6} />
         )}
         <Field label={t("account.appCode", "Code from the app")}>
           <OTPInput aria-label={t("account.appCode", "Code from the app")} value={code} onValueChange={setCode} onComplete={turnOn} />
@@ -497,7 +498,8 @@ function SingleSignOnSection() {
   const rows = links.data?.data ?? [];
   if (rows.length === 0) return null;
   return (
-    <SettingsSection
+    <Section
+      spacing="settings"
       title={t("account.sso", "Single sign-on")}
       description={t("account.ssoHint", "Only a linked account signs in through an organization's identity provider.")}
     >
@@ -536,7 +538,7 @@ function SingleSignOnSection() {
       <DialogScope open={unlinking}>
         <UnlinkDialog target={target} open={unlinking} onOpenChange={setUnlinking} />
       </DialogScope>
-    </SettingsSection>
+    </Section>
   );
 }
 

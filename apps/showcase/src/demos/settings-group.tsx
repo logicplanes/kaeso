@@ -1,4 +1,4 @@
-import { SettingsGroup, SettingsRow, SettingsSection, Select, Switch, Button, Link, Input, InlineCopyText, icons } from "@logicplanes/kaeso-ui";
+import { SettingsGroup, SettingsRow, Section, Select, Switch, Button, Link, Input, InlineCopyText, icons } from "@logicplanes/kaeso-ui";
 import { StateCell, StateMatrix, StateRow, StateSection } from "~/lib/states";
 
 export const meta = {
@@ -6,7 +6,8 @@ export const meta = {
   description: "Settings rows in a rounded group, title and description left, the control right.",
   group: "Layout",
   entry: "settings",
-  import: "SettingsSection, SettingsGroup, SettingsRow",
+  import: "SettingsGroup, SettingsRow",
+  variants: "SETTINGS",
   a11y: ["Name controls in rows with aria-label or aria-labelledby pointing at the row title.", "Navigation rows are links; the whole row is the target."],
 };
 export const examples = [
@@ -17,7 +18,7 @@ export const examples = [
 export function Preferences() {
   return (
     <div className="w-560">
-      <SettingsSection title="General">
+      <Section spacing="settings" title="General">
         <SettingsGroup>
           <SettingsRow
             title="Default project"
@@ -57,8 +58,8 @@ export function Preferences() {
             control={<Switch aria-label="Show times in UTC" />}
           />
         </SettingsGroup>
-      </SettingsSection>
-      <SettingsSection title="Security">
+      </Section>
+      <Section spacing="settings" title="Security">
         <SettingsGroup>
           <SettingsRow title="Two-step verification" description="Codes from an authenticator app." control={<Button size="sm">Set up</Button>} />
           <SettingsRow
@@ -71,7 +72,7 @@ export function Preferences() {
             }
           />
         </SettingsGroup>
-      </SettingsSection>
+      </Section>
     </div>
   );
 }

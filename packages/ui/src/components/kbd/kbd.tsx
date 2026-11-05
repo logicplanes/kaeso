@@ -1,4 +1,4 @@
-import { forwardRef, Fragment, useSyncExternalStore, type HTMLAttributes, type ReactNode } from "react";
+import { forwardRef, Fragment, useSyncExternalStore, type HTMLAttributes, type ReactNode, type Ref } from "react";
 import { cn } from "../../utils/cn.js";
 import { englishText, useUiText, type UiText } from "../../i18n/context.js";
 
@@ -42,21 +42,21 @@ export function keyLabel(key: string, t: UiText = englishText, mac: boolean = is
 }
 
 export interface KbdProps extends HTMLAttributes<HTMLElement> {
-  children: ReactNode;
+  children?: ReactNode | undefined;
+  keys?: string[][] | string[] | undefined;
   tone?: keyof typeof KAESO_KBD_VARIANTS.tone | undefined;
 }
 
-export const Kbd = forwardRef<HTMLElement, KbdProps>(function Kbd({ children, tone = "default", className, ...props }, ref) {
+function KeyCap({ children, tone, className, ...props }: KbdProps & { ref?: Ref<HTMLElement> | undefined }) {
   const t = useUiText();
   const mac = useMac();
   const label = typeof children === "string" ? keyLabel(children, t, mac) : null;
   const spoken = label && label.spoken.toLowerCase() !== label.visual.toLowerCase() ? label.spoken : null;
   return (
     <kbd
-      ref={ref}
       className={cn(
         "relative inline-flex h-20 min-w-20 shrink-0 items-center justify-center rounded-kbd px-5 font-sans text-caption font-medium tabular",
-        KAESO_KBD_VARIANTS.tone[tone].classes,
+        KAESO_KBD_VARIANTS.tone[tone ?? "default"].classes,
         className,
       )}
       {...props}
@@ -73,16 +73,17 @@ export const Kbd = forwardRef<HTMLElement, KbdProps>(function Kbd({ children, to
       )}
     </kbd>
   );
-});
-Kbd.displayName = "Kbd";
-
-export interface KbdSequenceProps extends HTMLAttributes<HTMLSpanElement> {
-  keys: string[][] | string[];
-  tone?: keyof typeof KAESO_KBD_VARIANTS.tone | undefined;
 }
 
-export const KbdSequence = forwardRef<HTMLSpanElement, KbdSequenceProps>(function KbdSequence({ keys, tone = "default", className, ...props }, ref) {
+export const Kbd = forwardRef<HTMLElement, KbdProps>(function Kbd({ children, keys, tone = "default", className, ...props }, ref) {
   const t = useUiText();
+  if (!keys) {
+    return (
+      <KeyCap ref={ref} tone={tone} className={className} {...props}>
+        {children}
+      </KeyCap>
+    );
+  }
   const steps: string[][] = keys.length > 0 && Array.isArray(keys[0]) ? (keys as string[][]) : [keys as string[]];
   return (
     <span ref={ref} className={cn("inline-flex items-center gap-4 align-middle", className)} {...props}>
@@ -91,9 +92,9 @@ export const KbdSequence = forwardRef<HTMLSpanElement, KbdSequenceProps>(functio
           {i > 0 && <span className={cn("text-caption font-medium", tone === "onInk" ? "text-on-ink/70" : "text-fg-secondary")}>{t("kbd.then", "then")}</span>}
           <span className="inline-flex items-center gap-2">
             {chord.map((k, j) => (
-              <Kbd key={`${k}-${j}`} tone={tone}>
+              <KeyCap key={`${k}-${j}`} tone={tone}>
                 {k}
-              </Kbd>
+              </KeyCap>
             ))}
           </span>
         </Fragment>
@@ -101,4 +102,4 @@ export const KbdSequence = forwardRef<HTMLSpanElement, KbdSequenceProps>(functio
     </span>
   );
 });
-KbdSequence.displayName = "KbdSequence";
+Kbd.displayName = "Kbd";

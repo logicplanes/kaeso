@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Button, NumberInput, SettingsGroup, SettingsRow, SettingsSection, Status, Switch } from "@logicplanes/kaeso-ui";
+import { Button, NumberInput, SettingsGroup, SettingsRow, Section, Status, Switch } from "@logicplanes/kaeso-ui";
 import { api, data } from "~/api/client";
 import type { SettingsView } from "~/api/generated/types";
 import { instanceSettingsQuery } from "~/api/queries/instance";
@@ -65,7 +65,8 @@ function OrgDeletion({ settings }: { settings: SettingsView }) {
         ? t("instance.noChange", "No change to save")
         : undefined;
   return (
-    <SettingsSection
+    <Section
+      spacing="settings"
       title={t("instance.deletingOrgs", "Deleting organizations")}
       description={t("instance.deletingOrgsHint", "Owners delete their organization in its settings.")}
     >
@@ -113,7 +114,7 @@ function OrgDeletion({ settings }: { settings: SettingsView }) {
           }
         />
       </SettingsGroup>
-    </SettingsSection>
+    </Section>
   );
 }
 
@@ -123,7 +124,11 @@ function SignIn({ settings }: { settings: SettingsView }) {
     [t("instance.signInLink", "Sign-in link"), settings.sign_in.magic_link],
   ];
   return (
-    <SettingsSection title={t("instance.signInMethods", "Sign-in methods")} description={t("instance.setInConfig", "Set in the gateway's configuration.")}>
+    <Section
+      spacing="settings"
+      title={t("instance.signInMethods", "Sign-in methods")}
+      description={t("instance.setInConfig", "Set in the gateway's configuration.")}
+    >
       <SettingsGroup>
         {methods.map(([label, on]) => (
           <SettingsRow
@@ -133,6 +138,6 @@ function SignIn({ settings }: { settings: SettingsView }) {
           />
         ))}
       </SettingsGroup>
-    </SettingsSection>
+    </Section>
   );
 }

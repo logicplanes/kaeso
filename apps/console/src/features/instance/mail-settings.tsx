@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button, Code, Dialog, DialogScope, Input, SettingsGroup, SettingsRow, SettingsSection, Text } from "@logicplanes/kaeso-ui";
+import { Button, Code, Dialog, DialogScope, Input, SettingsGroup, SettingsRow, Section, Text } from "@logicplanes/kaeso-ui";
 import { api, data } from "~/api/client";
 import type { SettingsView } from "~/api/generated/types";
 import { useApiMutation } from "~/auth/mutation";
@@ -16,7 +16,8 @@ export function Mail({ settings }: { settings: SettingsView }) {
   const [open, setOpen] = useState(false);
   const mail = settings.mail;
   return (
-    <SettingsSection
+    <Section
+      spacing="settings"
       title={t("instance.mail", "Mail")}
       description={t("instance.setInConfig", "Set in the gateway's configuration.")}
       actions={
@@ -37,7 +38,7 @@ export function Mail({ settings }: { settings: SettingsView }) {
       <DialogScope open={open}>
         <TestEmailDialog open={open} onOpenChange={setOpen} />
       </DialogScope>
-    </SettingsSection>
+    </Section>
   );
 }
 

@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Checkbox, CheckboxGroup } from "./checkbox.js";
-import { Radio, RadioCards, RadioGroup } from "../radio/radio.js";
+import { Radio, RadioGroup } from "../radio/radio.js";
 import { Switch } from "../switch/switch.js";
 import { Field } from "../field/field.js";
 
@@ -100,10 +100,10 @@ describe("Radio", () => {
   });
   it("shows a card row's keyboard focus on the row and hovers it on the raised tone", () => {
     render(
-      <RadioCards aria-label="Dialect" defaultValue="responses">
+      <RadioGroup variant="cards" aria-label="Dialect" defaultValue="responses">
         <Radio value="responses" label="Responses" />
         <Radio value="legacy" label="Completions" disabled />
-      </RadioCards>,
+      </RadioGroup>,
     );
     const row = screen.getByText("Responses").closest("label");
     expect(row).toHaveClass("focus-ring-card-row-within", "hover:bg-raised-hover", "active:bg-raised-pressed");

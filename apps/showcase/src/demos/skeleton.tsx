@@ -1,4 +1,4 @@
-import { Skeleton, SkeletonLine } from "@logicplanes/kaeso-ui";
+import { Skeleton } from "@logicplanes/kaeso-ui";
 import { StateSection } from "~/lib/states";
 
 export const meta = {
@@ -6,7 +6,7 @@ export const meta = {
   description: "Shapes of the content that is loading, with a quiet pulse, never a shimmer.",
   group: "Components",
   entry: "skeleton",
-  import: "Skeleton, SkeletonLine",
+  import: "Skeleton",
   a11y: ["Skeletons are hidden from assistive technology; mark the region aria-busy while it loads."],
 };
 export const examples = [
@@ -31,7 +31,7 @@ export function Metric() {
       {[0, 1, 2].map((i) => (
         <div key={i} className="flex flex-col gap-8">
           <Skeleton className="h-32 w-120" />
-          <SkeletonLine className="w-80" />
+          <Skeleton shape="line" className="w-80" />
         </div>
       ))}
     </div>
@@ -45,7 +45,7 @@ export function States() {
           <Skeleton shape="circle" className="size-32" />
           <Skeleton shape="control" className="w-120" />
           <Skeleton className="h-80 w-160" />
-          <SkeletonLine lines={3} className="w-240" />
+          <Skeleton lines={3} className="w-240" />
         </div>
       </StateSection>
       <StateSection title="Rows">

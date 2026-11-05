@@ -1,4 +1,4 @@
-import { Button, Kbd, KbdSequence } from "@logicplanes/kaeso-ui";
+import { Button, Kbd } from "@logicplanes/kaeso-ui";
 import { StateSection } from "~/lib/states";
 
 export const meta = {
@@ -6,7 +6,7 @@ export const meta = {
   description: "Key caps and shortcuts: ⌘ ⌥ ⇧ ⌃ on macOS, words elsewhere; sequences like G then M.",
   group: "Components",
   entry: "kbd",
-  import: "Kbd, KbdSequence",
+  import: "Kbd",
   a11y: [
     "A symbol such as ⌘ is hidden from screen readers and its name (“Command”) is read instead; letters need no extra name.",
     "Inside a button, the shortcut stays out of the button's name, which is its visible label.",
@@ -31,8 +31,8 @@ export function Keys() {
 export function Sequence() {
   return (
     <div className="flex flex-col items-start gap-12">
-      <KbdSequence keys={["mod", "k"]} />
-      <KbdSequence keys={[["g"], ["l"]]} />
+      <Kbd keys={["mod", "k"]} />
+      <Kbd keys={[["g"], ["l"]]} />
     </div>
   );
 }
@@ -53,9 +53,9 @@ export function States() {
       <StateSection title="Sequences and ink surfaces">
         <div className="flex flex-wrap items-center gap-24">
           <Sequence />
-          <KbdSequence keys={[["g"], ["g"]]} />
+          <Kbd keys={[["g"], ["g"]]} />
           <span className="inline-flex h-44 items-center gap-8 rounded-pill bg-ink px-16 text-body font-medium text-on-ink">
-            Undo <KbdSequence keys={["mod", "z"]} tone="onInk" />
+            Undo <Kbd keys={["mod", "z"]} tone="onInk" />
           </span>
         </div>
       </StateSection>

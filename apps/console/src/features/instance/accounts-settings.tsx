@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button, Dialog, DialogScope, Select, SettingsGroup, SettingsRow, SettingsSection, TagInput } from "@logicplanes/kaeso-ui";
+import { Button, Dialog, DialogScope, Select, SettingsGroup, SettingsRow, Section, TagInput } from "@logicplanes/kaeso-ui";
 import { api, data } from "~/api/client";
 import type { AccountCreation, OrgCreation, SettingsView, SettingsUpdate } from "~/api/generated/types";
 import { useApiMutation } from "~/auth/mutation";
@@ -102,7 +102,8 @@ export function AccountsSettings({ settings }: { settings: SettingsView }) {
   };
   const usesDomains = settings.account_creation === "allowed_domains" || settings.org_creation === "allowed_domains";
   return (
-    <SettingsSection
+    <Section
+      spacing="settings"
       title={t("instance.accounts", "Accounts")}
       description={t("instance.accountsHint", "Who can create an account, and who can create organizations.")}
     >
@@ -162,7 +163,7 @@ export function AccountsSettings({ settings }: { settings: SettingsView }) {
           onOpenChange={setEditing}
         />
       </DialogScope>
-    </SettingsSection>
+    </Section>
   );
 }
 
