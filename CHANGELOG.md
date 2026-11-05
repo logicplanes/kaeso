@@ -4,6 +4,12 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 ## [Unreleased]
 
+### Added
+
+#### Self-hosting
+
+- Kaeso installs with one command from kaeso.app, which downloads the newest release, writes its settings and master key and starts it ([#662](https://github.com/logicplanes/kaeso/pull/662))
+
 ## [0.6.0-rc.3] - 2026-11-05
 
 ### Changed
