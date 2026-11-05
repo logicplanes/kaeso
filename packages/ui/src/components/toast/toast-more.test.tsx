@@ -1,11 +1,11 @@
 import { createRef } from "react";
 import { describe, expect, it } from "vitest";
 import { act, render, screen, waitFor } from "@testing-library/react";
-import { Toast, ToastCapsule, toast } from "./toast.js";
+import { ToastCapsule, Toaster, toast } from "./toast.js";
 
 describe("toast tones and promises", () => {
   it("shows each tone with a description, and dismisses by id", async () => {
-    render(<Toast limit={5} timeout={0} />);
+    render(<Toaster limit={5} timeout={0} />);
     act(() => {
       toast.success("Key created", { description: "Copy it now.", id: "created" });
       toast.warning("Budget at 80%");
@@ -16,11 +16,11 @@ describe("toast tones and promises", () => {
     expect(screen.getByText("Budget at 80%")).toBeInTheDocument();
     act(() => toast.dismiss("created"));
     await waitFor(() => expect(screen.queryByText("Key created")).toBeNull());
-    act(() => Toast.add.dismiss());
+    act(() => toast.dismiss());
   });
 
   it("keeps as many toasts in the stack as its limit allows", async () => {
-    render(<Toast limit={5} timeout={0} />);
+    render(<Toaster limit={5} timeout={0} />);
     act(() => {
       for (const name of ["production", "staging", "preview", "eval", "batch"]) toast(`Key ${name} rotated`);
     });
@@ -34,7 +34,7 @@ describe("toast tones and promises", () => {
   });
 
   it("follows a promise from loading to success or failure", async () => {
-    render(<Toast />);
+    render(<Toaster />);
     let resolve: (v: string) => void = () => undefined;
     act(() => {
       void toast.promise(new Promise<string>((r) => (resolve = r)), { loading: "Saving…", success: (v) => `Saved ${v}`, error: "Couldn't save" });

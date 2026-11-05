@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button, Checkbox, Field, IconButton, Input, PageHeader, ProviderBadge, Select, icons } from "@logicplanes/kaeso-ui";
+import { Button, Checkbox, CheckboxGroup, Field, IconButton, Input, PageHeader, ProviderBadge, Select, icons } from "@logicplanes/kaeso-ui";
 import { FlowCanvas, FlowWorkspace, type FlowCanvasNode } from "@logicplanes/kaeso-ui/flow-canvas";
 import { StateSection } from "~/lib/states";
 
@@ -85,12 +85,12 @@ function Page({
                 options={models.map((m) => ({ value: m.value, label: m.label }))}
               />
               <Field label="Fall back when">
-                <Checkbox.Group aria-label="Fall back when" defaultValue={["unavailable", "limited", "unsupported"]}>
+                <CheckboxGroup aria-label="Fall back when" defaultValue={["unavailable", "limited", "unsupported"]}>
                   <Checkbox value="unavailable" label="The provider is unavailable" />
                   <Checkbox value="limited" label="A limit refuses the request" />
                   <Checkbox value="unsupported" label="The model can't take the request" />
                   <Checkbox value="rejected" label="The provider rejects the request" />
-                </Checkbox.Group>
+                </CheckboxGroup>
               </Field>
               <Input label="Time to first token" placeholder="The model's own" type="number" />
             </FlowWorkspace.Panel>

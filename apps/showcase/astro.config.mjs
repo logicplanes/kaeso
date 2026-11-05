@@ -33,6 +33,7 @@ export default defineConfig({
         { find: /^@logicplanes\/kaeso-ui\/(markdown|playground)$/, replacement: `${ui}/components/$1/index.ts` },
         { find: /^@logicplanes\/kaeso-ui\/blocks\/(.*)$/, replacement: `${ui}/blocks/$1/index.ts` },
         { find: /^@logicplanes\/kaeso-ui\/styles\/(.*)$/, replacement: `${ui}/styles/$1` },
+        { find: /^@kaeso-ui-src\/(.*)$/, replacement: `${ui}/$1` },
         { find: /^~\/(.*)$/, replacement: fileURLToPath(new URL("./src/$1", import.meta.url)) },
       ],
     },

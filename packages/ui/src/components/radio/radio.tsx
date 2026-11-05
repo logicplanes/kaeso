@@ -95,7 +95,7 @@ export const RadioCircle = forwardRef<HTMLButtonElement, RadioProps>(function Ra
     </BaseRadio.Root>
   );
 });
-RadioCircle.displayName = "Radio.Circle";
+RadioCircle.displayName = "RadioCircle";
 
 const Root = forwardRef<HTMLButtonElement, RadioProps>(function Radio({ label, description, id, className, ...props }, ref) {
   const { variant, disabled: groupDisabled } = useContext(Ctx);
@@ -158,7 +158,7 @@ const Root = forwardRef<HTMLButtonElement, RadioProps>(function Radio({ label, d
 });
 Root.displayName = "Radio";
 
-export const Radio = Object.assign(Root, { Group, Circle: RadioCircle });
+export const Radio = Root;
 export const RadioGroup = Group;
 export type RadioCardsProps = Omit<RadioGroupProps, "variant">;
 

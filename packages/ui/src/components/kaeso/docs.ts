@@ -95,12 +95,6 @@ export const docs = {
       withName: "Writes the provider's name next to its mark.",
     },
   },
-  CapabilityIcons: {
-    description: "A model's capabilities as small icons, each named in a tooltip and read as one list by screen readers.",
-    props: {
-      capabilities: "The capabilities: tools, reasoning, vision, pdf, structuredOutput.",
-    },
-  },
   ProviderCard: {
     description: "A provider and how this place reaches it: its mark, name and connection, the key in use, and the actions to connect, replace or remove one.",
     props: {

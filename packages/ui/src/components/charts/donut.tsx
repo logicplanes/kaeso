@@ -205,7 +205,6 @@ export const Donut = forwardRef<
   );
 });
 Donut.displayName = "Donut";
-export const Ring = Donut;
 
 export const KAESO_SHARE_BAR_VARIANTS = {
   size: { md: { classes: "h-8", description: "One 8px pill (default)" } },

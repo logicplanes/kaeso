@@ -46,10 +46,13 @@ if (missingDocs.length) fail(missingDocs);
 const dataScript = `(async () => {
 const entries = ${JSON.stringify(entries.map((e) => `${e.kind}/${e.entry}`))};
 const { variantExport } = await import(${JSON.stringify(join(root, "scripts/variant-exports.mjs"))});
-const out = { variants: {}, docs: {}, common: (await import(${JSON.stringify(join(src, "component-docs.ts"))})).COMMON_PROP_DOCS };
+const out = { variants: {}, docs: {}, components: {}, common: (await import(${JSON.stringify(join(src, "component-docs.ts"))})).COMMON_PROP_DOCS };
 for (const e of entries) {
   out.docs[e] = (await import(${JSON.stringify(`${src}/`)} + e + "/docs.ts")).docs;
   const m = await import(${JSON.stringify(`${src}/`)} + e + "/index.ts");
+  out.components[e] = Object.entries(m)
+    .filter(([k, v]) => /^[A-Z]/.test(k) && !/^[A-Z0-9_]+$/.test(k) && (typeof v === "function" || (typeof v === "object" && v !== null && typeof v.$$typeof === "symbol")))
+    .map(([k]) => k);
   for (const [k, v] of Object.entries(m)) {
     const found = variantExport(k);
     if (!found) continue;
@@ -71,10 +74,9 @@ function fail(problems) {
   process.exit(1);
 }
 
-function isComponent(doc, file) {
+function isComponent(doc, key) {
   if (/^[A-Z0-9_]+$/.test(doc.displayName) || doc.displayName.endsWith("Context") || !/^[A-Z]/.test(doc.displayName)) return false;
-  if (doc.displayName.includes(".")) return true;
-  return new RegExp(`^export (?:const|function) ${doc.displayName}\\b`, "m").test(readFileSync(file, "utf8"));
+  return data.components[key].includes(doc.displayName.split(".")[0]);
 }
 
 const problems = [];
@@ -82,8 +84,9 @@ const byEntry = new Map();
 const documented = new Set();
 for (const d of parsed) {
   const f = files.find((x) => x.file === d.filePath);
-  if (!f || !isComponent(d, f.file)) continue;
+  if (!f) continue;
   const key = `${f.kind}/${f.entry}`;
+  if (!isComponent(d, key)) continue;
   const where = `${relative(root, join(src, key, "docs.ts"))}: ${d.displayName}`;
   const doc = data.docs[key]?.[d.displayName];
   documented.add(`${key}/${d.displayName}`);
@@ -113,6 +116,12 @@ for (const d of parsed) {
     .sort((a, b) => Number(b.required) - Number(a.required) || a.name.localeCompare(b.name));
   if (!byEntry.has(key)) byEntry.set(key, []);
   byEntry.get(key).push({ name: d.displayName, description: doc.description, props, file: relative(root, d.filePath) });
+}
+for (const [key, names] of Object.entries(data.components)) {
+  for (const name of names) {
+    if (!documented.has(`${key}/${name}`))
+      problems.push(`${relative(root, join(src, key, "index.ts"))}: ${name} is exported but has no entry in docs.ts; document it or stop exporting it`);
+  }
 }
 for (const [key, docs] of Object.entries(data.docs)) {
   for (const name of Object.keys(docs)) {

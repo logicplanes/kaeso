@@ -1,4 +1,5 @@
-import { Button, IconButton, Tooltip, TooltipSurface, icons } from "@logicplanes/kaeso-ui";
+import { Button, IconButton, Tooltip, icons } from "@logicplanes/kaeso-ui";
+import { TooltipSurface } from "@kaeso-ui-src/components/tooltip/tooltip";
 import { StateSection } from "~/lib/states";
 
 export const meta = {

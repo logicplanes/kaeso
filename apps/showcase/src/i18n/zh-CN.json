@@ -121,7 +121,6 @@
   "All": "全部",
   "Allows choosing more than one option; `value` is then a list.": "允许选择多个选项；此时 `value` 为列表。",
   "An 18px box: raised and ringed, ink when checked, with a check that draws itself.": "18px 的方框：凸起并带描边，选中时为墨色，勾号会以动画绘出。",
-  "An 8px semantic dot with its word. Status is never color alone.": "8px 的语义圆点及其文字。状态从不只靠颜色表达。",
   "An action after the rows, such as a button that opens every right.": "行之后的操作，例如打开全部权限的按钮。",
   "An action inside a sentence.": "句子中的操作。",
   "An icon after the text.": "文字后的图标。",
@@ -1225,5 +1224,7 @@
   "Each line a sent request took takes the colour of the answer at its end: the model that failed in red, the one that answered in green.": "已发送请求经过的每条连线都采用其末端应答的颜色：失败的模型为红色，应答的模型为绿色。",
   "A sent request's answer is a word on each step it tried, such as “529 Overloaded” or “200 OK”; the colours of its lines and rings repeat it, and the tree is marked busy while the request is on its way.": "已发送请求的应答以文字显示在它尝试过的每个步骤上，例如“529 Overloaded”或“200 OK”；连线和描边的颜色只是重复这一信息，请求进行中时树被标记为忙碌。",
   "Keeps the button still when pressed, for a control whose 0.96 press would distract; it still darkens.": "按下时按钮保持不动，用于按下缩小到 0.96 会分散注意力的控件；颜色仍会变深。",
-  "Keeps the button still when pressed, as on `Button`.": "按下时按钮保持不动，与 `Button` 相同。"
+  "Keeps the button still when pressed, as on `Button`.": "按下时按钮保持不动，与 `Button` 相同。",
+  "A status word in its tone's color, with an optional icon. Status is never color alone.": "以其色调颜色显示的状态词，可带一个图标。状态从不只靠颜色表达。",
+  "Makes it the select-all box of a `CheckboxGroup`: checked when every value in the group's `allValues` is, a dash when some are, and checking it checks them all.": "使其成为 `CheckboxGroup` 的全选框：组内 `allValues` 中的每个值都选中时它被选中，部分选中时显示横线，勾选它会选中全部。"
 }

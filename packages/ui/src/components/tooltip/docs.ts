@@ -25,12 +25,4 @@ export const docs = {
       delay: "How long the pointer has to rest before the first tooltip opens, in milliseconds.",
     },
   },
-  TooltipSurface: {
-    description: "A static tooltip surface for documentation and state matrices.",
-    props: {
-      children: "The tooltip's text.",
-      shape: "A pill for a short label, or a box for several lines.",
-      shortcut: "The keyboard shortcut shown after the text.",
-    },
-  },
 } satisfies ComponentDocs;

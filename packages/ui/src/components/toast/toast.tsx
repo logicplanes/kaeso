@@ -255,11 +255,3 @@ export const Toaster = forwardRef<HTMLDivElement, ToasterProps>(function Toaster
   );
 });
 Toaster.displayName = "Toaster";
-
-export const Toast = Object.assign(
-  forwardRef<HTMLDivElement, ToasterProps>(function Toast(props, ref) {
-    return <Toaster ref={ref} {...props} />;
-  }),
-  { add: toast },
-);
-Toast.displayName = "Toast";

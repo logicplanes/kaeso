@@ -1,7 +1,7 @@
 import { forwardRef, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
 import { Dialog } from "@base-ui/react/dialog";
 import { usePortalContainer } from "../../utils/portal-context.js";
-import { SidebarFloatingContext, SidebarSheetContext } from "../sidebar/sidebar.js";
+import { SidebarFloatingContext, SidebarSheetContext } from "../sidebar/sidebar-context.js";
 import { mergeRefs } from "../../utils/merge-refs.js";
 import { cn } from "../../utils/cn.js";
 import { useUiText } from "../../i18n/context.js";

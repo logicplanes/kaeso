@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { render, screen, within } from "@testing-library/react";
-import { AuthPage, EmptyPage, ListPage, OverviewPage, TablePage } from "./pages.js";
+import { EmptyPage, ListPage, OverviewPage } from "./pages.js";
+import { AuthLayout } from "../../components/section/section.js";
 
 describe("page blocks", () => {
   it("draws a list page with its heading, toolbar, rows and sheet", () => {
@@ -20,7 +21,6 @@ describe("page blocks", () => {
     expect(screen.getByRole("toolbar", { name: "Filters" })).toBeInTheDocument();
     expect(within(screen.getByRole("list", { name: "Keys" })).getByText("production")).toBeInTheDocument();
     expect(screen.getByRole("complementary", { name: "Key details" })).toBeInTheDocument();
-    expect(TablePage).toBe(ListPage);
     expect(screen.getByRole("list", { name: "Keys" }).parentElement).toHaveClass("pt-8");
   });
 
@@ -61,9 +61,9 @@ describe("page blocks", () => {
 
   it("draws a sign-in page with the wordmark, a heading and its form", () => {
     render(
-      <AuthPage title="Sign in to Kaeso" description="Use your work email." footer={<span>Self-hosted at kaeso.example.com</span>}>
+      <AuthLayout title="Sign in to Kaeso" description="Use your work email." footer={<span>Self-hosted at kaeso.example.com</span>}>
         <button type="button">Continue with SSO</button>
-      </AuthPage>,
+      </AuthLayout>,
     );
     expect(screen.getByRole("heading", { level: 1, name: "Sign in to Kaeso" })).toBeInTheDocument();
     expect(screen.getByText("Use your work email.")).toBeInTheDocument();

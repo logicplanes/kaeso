@@ -25,6 +25,7 @@ export interface CheckboxProps {
   value?: string | undefined;
   label?: ReactNode | undefined;
   description?: ReactNode | undefined;
+  parent?: boolean | undefined;
   id?: string | undefined;
   "aria-label"?: string | undefined;
   "aria-describedby"?: string | undefined;
@@ -35,7 +36,7 @@ export interface CheckboxProps {
 
 const GroupDisabled = createContext(false);
 
-export const CheckboxBox = forwardRef<HTMLButtonElement, CheckboxProps & { parent?: boolean | undefined }>(function CheckboxBox(
+export const CheckboxBox = forwardRef<HTMLButtonElement, CheckboxProps>(function CheckboxBox(
   {
     checked,
     defaultChecked,
@@ -101,7 +102,7 @@ export const CheckboxBox = forwardRef<HTMLButtonElement, CheckboxProps & { paren
     </BaseCheckbox.Root>
   );
 });
-CheckboxBox.displayName = "Checkbox.Box";
+CheckboxBox.displayName = "CheckboxBox";
 
 const Root = forwardRef<HTMLButtonElement, CheckboxProps>(function Checkbox({ label, description, id, className, ...own }, ref) {
   const auto = useId();
@@ -183,5 +184,5 @@ const Group = forwardRef<HTMLDivElement, CheckboxGroupProps>(function CheckboxGr
 });
 Group.displayName = "CheckboxGroup";
 
-export const Checkbox = Object.assign(Root, { Box: CheckboxBox, Group });
+export const Checkbox = Root;
 export const CheckboxGroup = Group;

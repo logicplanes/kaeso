@@ -2,7 +2,7 @@ import { Fragment, useId, useRef, type ReactNode } from "react";
 import { flushSync } from "react-dom";
 import {
   Banner,
-  CheckboxBox,
+  Checkbox,
   Code,
   CodeBlock,
   Figure,
@@ -263,7 +263,7 @@ function Item({ item, ordered, n, ctx }: { item: ListItem; ordered: boolean; n: 
     <li className="flex gap-12">
       {item.task ? (
         <span className="flex shrink-0 items-center">
-          <CheckboxBox checked={!!item.checked} readOnly aria-label={name} />
+          <Checkbox checked={!!item.checked} readOnly aria-label={name} />
         </span>
       ) : (
         <Text

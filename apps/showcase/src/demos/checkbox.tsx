@@ -71,12 +71,7 @@ function GroupWithParent() {
   const [value, setValue] = useState(["text"]);
   return (
     <CheckboxGroup value={value} onValueChange={setValue} allValues={all} aria-label="Input types">
-      <label htmlFor="input-types-all" className="inline-flex min-h-32 cursor-pointer items-center gap-10 select-none">
-        <Checkbox.Box parent id="input-types-all" aria-labelledby="input-types-all-name" />
-        <span id="input-types-all-name" className="text-body text-fg">
-          All input types
-        </span>
-      </label>
+      <Checkbox parent label="All input types" />
       <div className="flex flex-col pl-28">
         <Checkbox value="text" label="Text" />
         <Checkbox value="image" label="Images" />

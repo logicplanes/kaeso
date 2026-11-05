@@ -19,23 +19,6 @@ export const docs = {
       wrap: "Long lines wrap instead of scrolling sideways: code in a narrow column (a model's response). `phone` wraps them only below 640px, with wrapped parts indented, and scrolls from there up.",
     },
   },
-  CodeHighlighted: {
-    description: "The same component as `CodeBlock`, under another name.",
-    props: {
-      code: "The code to show.",
-      collapseAfter: "Collapse beyond this many lines (24 by default; 0 never collapses).",
-      copy: "Hide the copy circle.",
-      highlightLines: "1-based line numbers to highlight.",
-      lang: "The language of the code, for highlighting.",
-      lineNumbers: "Shows line numbers.",
-      surface: "On a filled well (`well`) or on the panel itself (`plain`).",
-      onTabChange: "Called with the label of the tab a person chooses, to remember it.",
-      tab: "The label of the tab to show, such as a language the reader chose before. A label the block lacks leaves its own choice.",
-      tabs: 'Several versions: "Python · Node · curl", shown as pill tabs.',
-      title: "A file name in the title bar.",
-      wrap: "Long lines wrap instead of scrolling sideways: code in a narrow column (a model's response). `phone` wraps them only below 640px, with wrapped parts indented, and scrolls from there up.",
-    },
-  },
   DiffView: {
     description:
       "Two versions of a text side by side in one column: removed lines on red, added lines on green, the changed words inside them marked, syntax highlighted, and long unchanged runs folded away.",

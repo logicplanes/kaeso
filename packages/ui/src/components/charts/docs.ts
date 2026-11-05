@@ -32,39 +32,6 @@ export const docs = {
         "Shows each series' share of the category's total in the tooltip (on by default). Turn it off when one series is part of another, such as errors within requests.",
     },
   },
-  ChartFrame: {
-    description:
-      'The frame every chart draws in: a hidden data table for assistive technology, a "View as table" toggle that shows the table at the chart\'s height, scrolling inside, and the empty, loading and error states. The toggle sits at the right end of the last line of the legend; when the frame is narrower than 480px (the `chart-legend` container size, a phone), it moves to its own line under the legend, so it never reads as one of the series. Use it to build a chart of your own that behaves like the others.',
-    props: {
-      children: "The plot, usually an SVG, drawn at `height`.",
-      height: "The plot's height in px. The empty, loading and error states keep it, so nothing below moves.",
-      label: "The chart's accessible name, also the caption of the hidden data table.",
-      legend: "A legend under the plot, usually a `Legend`. It is hidden while the table is shown.",
-      state: "The chart's `loading`, `error`, `onRetry`, `empty` and `emptyText`, as the charts take them.",
-      table: "The data as `columns` and `rows`, for screen readers and the table view. Without it there is no table and no toggle.",
-      toggle: 'Shows the "View as table" button when there is a `table` (on by default).',
-    },
-  },
-  ChartLive: {
-    description:
-      "A polite live region that announces what the keyboard highlight shows once it settles. Charts use it because their tooltip is hidden from assistive technology.",
-    props: {
-      children: "The line to announce, usually from `liveLine`; nothing while nothing is highlighted.",
-    },
-  },
-  ChartTooltip: {
-    description:
-      "The tooltip a chart shows for a highlighted point or category: a heading with the x value and one row per series. It flips to the left past the middle and stays inside the chart.",
-    props: {
-      heading: "The heading, usually the highlighted time or category.",
-      rows: "One row per series, each with an `id`, a `label`, a `color`, a `value` and an optional `share`.",
-      visible: "Shows the tooltip; it fades out when false.",
-      width: "The chart's width in px, so the tooltip flips and stays inside it.",
-      x: "The anchor's x position in px from the chart's left edge. The tooltip sits 16px to its right.",
-      xLeft: "Where the tooltip ends when it flips to the left, such as the left edge of a highlighted bar group, so it never covers it. Defaults to `x`.",
-      y: "The anchor's y position in px from the chart's top.",
-    },
-  },
   Donut: {
     description: "A ring of shares with the total in the center and a legend beside it, or under it when narrow. Use it for a few parts of one whole.",
     props: {
@@ -109,37 +76,6 @@ export const docs = {
       values: "The values by row, then column: `values[row][column]`. The darkest step is the largest value.",
     },
   },
-  Legend: {
-    description: "Pills with swatches that name a chart's series. With `onToggle` they show and hide series, and hovering one can isolate it.",
-    props: {
-      hidden: "The `id`s of the series that are hidden; their pills show as off.",
-      items: "One item per series, each with an `id`, a `label`, a `color` and an optional `value`.",
-      onHover: "Called with a series `id` when its pill is hovered or focused, and with `null` when it is left.",
-      onToggle: "Called with a series `id` when its pill is pressed. Without it, the pills are plain labels.",
-      shape: "The swatch: `square` for filled marks (default) or `line` for lines.",
-    },
-  },
-  Ring: {
-    description: "The same component as `Donut` under another name, with the same props.",
-    props: {
-      "aria-label": 'The chart\'s accessible name ("Requests by model").',
-      empty:
-        "Shows the empty state (`emptyText`) in place of the ring and legend. By default it shows when every value is 0, since a ring of nothing has no shares.",
-      emptyText: 'What the empty state says. Defaults to "No data for this period" in the provider\'s language.',
-      error:
-        "The data failed to load: the chart keeps its height, hides its legend and table toggle, and says so quietly, with Try again when there is `onRetry` and otherwise a hint to reload the page. Errors are toasts, so the value isn't shown; pass `true` and toast the message where the request fails.",
-      formatValue: "Formats the total in the center and the values in the legend. Defaults to `formatNumber`.",
-      loading:
-        "The data is loading: the chart keeps its height and is marked busy; data already on screen dims and breathes, and with none yet the plot is a skeleton.",
-      onRetry: "Called when Try again is pressed after `error`; without it, the button doesn't show.",
-      size: "The ring's diameter: `sm` 140px, `md` 160px (default) or `lg` 180px.",
-      slices:
-        "The parts of the whole, each with an `id`, a `label`, a `value` and an optional `color`. Slices under 2% are grouped as Other when there are two or more, and past the eighth slice the rest are grouped too, so no two slices share a color.",
-      total:
-        "Replaces the total in the center, which is otherwise the sum of the slices written with `formatValue`. A long total steps down a size to fit the ring.",
-      totalLabel: 'The word under the total. Defaults to "Total" in the provider\'s language.',
-    },
-  },
   Sankey: {
     description:
       "A flow diagram, such as requests from keys to models to providers, with ribbons as wide as each flow. Hovering a node, or reaching it with the arrow keys, highlights its paths. Each column keeps room for its labels; when narrow, the values go first, then long names end in an ellipsis.",
@@ -174,14 +110,6 @@ export const docs = {
       color: "The line's color (`var(--k-viz-1)` by default). Pass `seriesColor(id)` to match the series elsewhere.",
       fluid: "Fills the container's width at 32px high, without the last point's dot, as in a stat tile. Otherwise it is 80×24.",
       values: "The values in order, oldest first. One value is a dot at the newest end; none is a quiet flat line.",
-    },
-  },
-  Swatch: {
-    description: "The mark that keys a series: a short stroke for lines, a small rounded square for filled marks. Never a dot.",
-    props: {
-      color: "The series color.",
-      off: "Draws the swatch as an outline in the series color, for a hidden series.",
-      shape: "`square` for filled marks (default) or `line` for lines.",
     },
   },
   TimeseriesChart: {

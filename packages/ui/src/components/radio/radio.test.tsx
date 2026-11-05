@@ -27,9 +27,9 @@ describe("Radio", () => {
           <Radio value="team" label="Team" description="Up to 20 people" />
           <Radio value="org" label="Organization" disabled />
         </RadioCards>
-        <Radio.Group aria-label="Bare" disabled>
+        <RadioGroup aria-label="Bare" disabled>
           <Radio value="x" aria-label="Only option" id="only" data-force="focus" />
-        </Radio.Group>
+        </RadioGroup>
       </>,
     );
     expect(screen.getByRole("radio", { name: /Team/ })).toHaveAttribute("aria-checked", "true");
