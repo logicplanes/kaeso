@@ -80,11 +80,11 @@ main() {
       echo "CLICKHOUSE_PASSWORD=$(secret)"
       echo "VALKEY_PASSWORD=$(secret)"
       echo "KAESO_MAIL_TRANSPORT=log"
-      subnet="$(free_subnet)" || subnet="$DEFAULT_SUBNET"
-      [ "$subnet" = "$DEFAULT_SUBNET" ] || echo "EDGE_SUBNET=$subnet"
     } >.env.part
     mv .env.part .env
   fi
+
+  pin_subnet "$project"
 
   if [ ! -f compose.override.yaml ] && [ -z "$(docker compose ps -q --status running caddy </dev/null 2>/dev/null)" ]; then
     free_ports
@@ -298,6 +298,14 @@ free_subnet() {
     fi
   done
   return 1
+}
+
+# Until the edge network exists, nothing depends on its range, so an install that never started can still move it.
+pin_subnet() {
+  grep -q '^EDGE_SUBNET=' .env && return 0
+  docker network inspect "$1_edge" >/dev/null 2>&1 </dev/null && return 0
+  subnet="$(free_subnet)" || return 0
+  [ "$subnet" = "$DEFAULT_SUBNET" ] || echo "EDGE_SUBNET=$subnet" >>.env
 }
 
 clean_domain() {

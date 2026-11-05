@@ -173,3 +173,21 @@ def test_a_domain_install_stops_when_port_80_is_taken(tmp_path):
     assert result.returncode == 1
     assert "Port 80 on this machine is taken by another program" in result.stderr
     assert not (tmp_path / "compose.override.yaml").exists()
+
+
+@pytest.mark.parametrize(
+    ("network_exists", "written"),
+    [(False, "EDGE_SUBNET=172.31.83.0/24"), (True, None)],
+)
+def test_an_install_that_never_started_moves_its_edge_network_off_a_taken_range(network_exists, written, tmp_path):
+    (tmp_path / ".env").write_text("KAESO_DOMAIN=localhost\n")
+    inspect = "exit 0" if network_exists else "exit 1"
+    env = stub(
+        tmp_path,
+        "docker",
+        f'case "$*" in "network inspect kaeso_edge") {inspect} ;; "network ls -q") echo bridge ;; *) echo "172.30.0.0/16" ;; esac',
+    )
+    result = run_part("pin_subnet kaeso", tmp_path, env)
+    assert result.returncode == 0, result.stderr
+    lines = (tmp_path / ".env").read_text().splitlines()
+    assert [line for line in lines if line.startswith("EDGE_SUBNET=")] == ([written] if written else [])
