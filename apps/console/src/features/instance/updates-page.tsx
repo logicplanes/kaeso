@@ -129,7 +129,7 @@ function UpdateState({ u, onUpdate, onProgress }: { u: UpdatesView; onUpdate: (r
         title={t("instance.updates.runningVersion", "Kaeso {version}", { version: u.current })}
         description={description}
         control={
-          <div className="flex items-center gap-8">
+          <div className="flex min-w-0 flex-wrap items-center gap-8">
             <Button size="sm" variant="ghost" onClick={showWhatsNew}>
               {t("instance.updates.whatsNew", "See what's new")}
             </Button>

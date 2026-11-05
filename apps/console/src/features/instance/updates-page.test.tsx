@@ -68,7 +68,8 @@ describe("instance updates page", () => {
       return polls < 2 ? updateJob({ step: "migrating" }) : updateJob({ state: "succeeded", step: "online", finished_at: "2026-10-15T12:01:00Z" });
     });
     const { user } = await renderApp(PATH);
-    expect(await screen.findByRole("button", { name: "Update to 40.4.3" })).toBeInTheDocument();
+    const update = await screen.findByRole("button", { name: "Update to 40.4.3" });
+    expect(update.parentElement, "on a phone, the update button moves under See what's new instead of past the edge").toHaveClass("flex-wrap");
     expect(screen.getByRole("heading", { name: "Kaeso 40.4.3" })).toBeInTheDocument();
     const notes = screen.getByRole("region", { name: "Release notes of 40.4.3" });
     expect(within(notes).getByText("Streams keep their last chunk when a provider closes early.")).toBeInTheDocument();
