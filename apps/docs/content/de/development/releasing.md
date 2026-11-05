@@ -126,7 +126,7 @@ Ein Release veröffentlicht:
 
 | Wo | Was |
 | --- | --- |
-| GitHub-Releases | `vX.Y.Z` mit seinen Notizen, `compose.yaml`, `kaeso.example.toml`, `env.example`, `release.json`, den npm-Tarballs und den `.crate`-Dateien |
+| GitHub-Releases | `vX.Y.Z` mit seinen Notizen, `compose.yaml`, `install.sh`, `kaeso.example.toml`, `env.example`, `release.json`, den npm-Tarballs und den `.crate`-Dateien |
 | GitHub Container Registry | `kaeso-gateway`, `kaeso-console` und `kaeso-updater` für `linux/amd64` und `linux/arm64`, mit Build-Provenienz und einer Software-Stückliste (SBOM) |
 | crates.io | `kaeso-kpp` und `kaeso-codecs` |
 | npm | `@logicplanes/kaeso-ui` und `@logicplanes/kaeso-tokens` |

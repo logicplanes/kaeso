@@ -15,82 +15,26 @@ Installieren Sie Kaeso auf einem Server, verbinden Sie einen Modellanbieter wie 
 > [!TIP]
 > Um Kaeso auf Ihrem eigenen Rechner auszuprobieren, verwenden Sie `localhost` als Domain und öffnen `https://localhost`. Caddy signiert das Zertifikat dann selbst, und Ihr Browser fragt einmal, ob er es akzeptieren soll. [Auf dem eigenen Rechner ausprobieren](../self-hosting/installation.md#auf-dem-eigenen-rechner-ausprobieren) zeigt, wie curl und die SDKs ihm vertrauen.
 
-## Die Compose-Datei herunterladen
+## Kaeso installieren
 
-Jedes Release veröffentlicht eine `compose.yaml`, die seine Images auf Version und Digest festlegt. Laden Sie sie in einen neuen Ordner, den nur Sie lesen können:
-
-```bash
-mkdir -m 700 kaeso && cd kaeso
-curl -fsSLO \
-  https://github.com/logicplanes/kaeso/releases/latest/download/compose.yaml
-```
-
-## Die Einstellungen schreiben
-
-Legen Sie `.env` mit Ihrer Domain und vier zufälligen Passwörtern an. `umask 077` macht sie, und jede Datei, die Sie in dieser Shell danach anlegen, nur für Sie lesbar:
+Führen Sie das Installationsskript auf dem Server aus. Es legt einen Ordner `kaeso` an, den nur Sie lesen können, und lädt die `compose.yaml` des neuesten Releases hinein. Dann schreibt es `.env` mit Ihrer Domain und zufälligen Passwörtern, erzeugt den Hauptschlüssel und startet alle Dienste:
 
 ```bash
-umask 077
-cat > .env <<EOF
-KAESO_DOMAIN=kaeso.example.com
-POSTGRES_PASSWORD=$(openssl rand -hex 24)
-POSTGRES_SUPERUSER_PASSWORD=$(openssl rand -hex 24)
-CLICKHOUSE_PASSWORD=$(openssl rand -hex 24)
-VALKEY_PASSWORD=$(openssl rand -hex 24)
-EOF
+curl -fsSL https://kaeso.app/install.sh | sh -s -- --domain kaeso.example.com
 ```
 
-Das Gateway verschickt Anmeldelinks, Einladungen und Warnungen per E-Mail und startet nicht ohne einen Weg, sie zu senden. Ergänzen Sie Ihren SMTP-Server. Kaeso erreicht ihn über Port 587 mit STARTTLS, sofern [Sie nichts anderes einstellen](../self-hosting/email.md):
-
-```bash
-cat >> .env <<'EOF'
-KAESO_SMTP_HOST=smtp.example.com
-KAESO_SMTP_USER=kaeso
-KAESO_SMTP_PASSWORD=…
-KAESO_SMTP_FROM="Kaeso <kaeso@example.com>"
-EOF
-```
-
-Um Kaeso ohne Mailserver auszuprobieren, lassen Sie das Gateway seine E-Mails nur protokollieren. Anmeldung mit Passwort und Einrichtungslink funktionieren weiterhin, Anmeldelinks und Einladungen werden aber nicht zugestellt:
-
-```bash
-echo KAESO_MAIL_TRANSPORT=log >> .env
-```
-
-## Den Hauptschlüssel erzeugen
-
-Der Hauptschlüssel verschlüsselt die Anbieter-Schlüssel, die Kaeso speichert. Erzeugen Sie einen in die Datei `master-keys`, die Compose dem Gateway als Docker-Secret übergibt:
-
-```bash
-docker run --rm ghcr.io/logicplanes/kaeso-gateway:{{version}} \
-  master-key generate > master-keys
-sudo chown 65532:65532 master-keys && sudo chmod 0400 master-keys
-```
-
-Das Gateway läuft in seinem Container als Benutzer 65532, deshalb gehört die Datei diesem Benutzer, und niemand sonst kann sie lesen. Docker Desktop und Colima lesen den Ordner als Sie, führen Sie dort also nur `chmod 0400 master-keys` aus. Mit rootless Docker übergeben Sie die Datei dem Benutzer, auf den 65532 auf dem Host abgebildet wird.
+Der erste Start dauert ein bis zwei Minuten, während die Images geladen werden. Zum Schluss gibt das Skript den Einrichtungslink aus. Bis Sie [Ihren SMTP-Server eintragen](../self-hosting/email.md), schreibt das Gateway seine E-Mails nur in sein Log, Anmeldelinks und Einladungen kommen also nicht an. [Von Hand installieren](../self-hosting/installation.md#von-hand-installieren) zeigt jeden Schritt des Skripts.
 
 > [!IMPORTANT]
-> Bewahren Sie eine Kopie von `master-keys` sicher auf, getrennt von Ihren Datenbank-Backups. Ohne sie kann Kaeso die gespeicherten Anbieter-Schlüssel nicht entschlüsseln, und Sie müssen sie neu eingeben.
-
-## Kaeso starten
-
-Starten Sie alle Dienste, und warten Sie, bis jeder gesund ist:
-
-```bash
-docker compose up -d --wait
-```
-
-Der erste Start dauert ein bis zwei Minuten, während die Images geladen werden und das Gateway die Datenbanken vorbereitet. Der Befehl kehrt zurück, sobald jeder Dienst gesund ist, oder nennt den Dienst, der es nicht ist. Caddy beantragt das Zertifikat im Hintergrund, deshalb können HTTPS-Anfragen fehlschlagen, bis es eines hat. `docker compose logs caddy` zeigt, wann es das Zertifikat erhält oder warum nicht.
+> Bewahren Sie eine Kopie von `kaeso/master-keys` sicher auf, getrennt von Ihren Datenbank-Backups. Ohne sie kann Kaeso die gespeicherten Anbieter-Schlüssel nicht entschlüsseln, und Sie müssen sie neu eingeben.
 
 ## Den ersten Benutzer anlegen
 
-Der Einrichtungslink legt den ersten Benutzer an. Geben Sie ihn im Terminal aus:
+Der Einrichtungslink, den das Skript ausgegeben hat, legt den ersten Benutzer an. Er funktioniert einmal, innerhalb von 24 Stunden. Einen neuen Link, der den alten ungültig macht, geben Sie im Ordner `kaeso` aus:
 
 ```bash
 docker compose exec gateway kaeso setup-link
 ```
-
-Der Link funktioniert einmal, innerhalb von 24 Stunden. Rufen Sie den Befehl erneut auf, gibt er einen neuen Link aus und macht den alten ungültig.
 
 Öffnen Sie den Link, und geben Sie Ihren Namen, Ihre E-Mail-Adresse, ein Passwort mit 12 bis 128 Zeichen und einen Namen für Ihre Organisation ein. Wählen Sie dann **Kaeso einrichten**. Damit sind Sie Instanz-Admin und Inhaber der ersten Organisation, und Kaeso öffnet ihre **Übersicht**. Die Organisation hat noch keine Projekte.
 

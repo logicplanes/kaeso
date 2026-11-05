@@ -1,14 +1,85 @@
 ---
 title: Installation
-description: Installieren Sie ein bestimmtes Release, probieren Sie Kaeso auf Ihrem Rechner aus, ändern Sie die Dienste und führen Sie Befehle aus.
+description: Installieren Sie Kaeso von Hand oder ein bestimmtes Release, probieren Sie es lokal aus, ändern Sie Dienste und führen Sie Befehle aus.
 order: 3
 ---
 
-Der [Schnellstart](../get-started/quick-start.md) installiert das neueste Release auf einem Server. Diese Seite zeigt, was Sie anders machen können, und die Befehle, die Sie auf einer Installation ausführen.
+Der [Schnellstart](../get-started/quick-start.md) installiert das neueste Release mit einem Befehl auf einem Server. Diese Seite zeigt jeden Schritt dieses Befehls, was Sie anders machen können, und die Befehle, die Sie auf einer Installation ausführen.
+
+## Von Hand installieren
+
+Das [Installationsskript](../get-started/quick-start.md#kaeso-installieren) erledigt diese Schritte für Sie. Gehen Sie sie selbst durch, um Ordner, Passwörter und E-Mail-Einstellungen unterwegs zu wählen.
+
+### Die Compose-Datei herunterladen
+
+Jedes Release veröffentlicht eine `compose.yaml`, die seine Images auf Version und Digest festlegt. Laden Sie sie in einen neuen Ordner, den nur Sie lesen können:
+
+```bash
+mkdir -m 700 kaeso && cd kaeso
+curl -fsSLO \
+  https://github.com/logicplanes/kaeso/releases/latest/download/compose.yaml
+```
+
+### Die Einstellungen schreiben
+
+Legen Sie `.env` mit Ihrer Domain und vier zufälligen Passwörtern an. `umask 077` macht sie, und jede Datei, die Sie in dieser Shell danach anlegen, nur für Sie lesbar:
+
+```bash
+umask 077
+cat > .env <<EOF
+KAESO_DOMAIN=kaeso.example.com
+POSTGRES_PASSWORD=$(openssl rand -hex 24)
+POSTGRES_SUPERUSER_PASSWORD=$(openssl rand -hex 24)
+CLICKHOUSE_PASSWORD=$(openssl rand -hex 24)
+VALKEY_PASSWORD=$(openssl rand -hex 24)
+EOF
+```
+
+Das Gateway verschickt Anmeldelinks, Einladungen und Warnungen per E-Mail und startet nicht ohne einen Weg, sie zu senden. Ergänzen Sie Ihren SMTP-Server. Kaeso erreicht ihn über Port 587 mit STARTTLS, sofern [Sie nichts anderes einstellen](../self-hosting/email.md):
+
+```bash
+cat >> .env <<'EOF'
+KAESO_SMTP_HOST=smtp.example.com
+KAESO_SMTP_USER=kaeso
+KAESO_SMTP_PASSWORD=…
+KAESO_SMTP_FROM="Kaeso <kaeso@example.com>"
+EOF
+```
+
+Um Kaeso ohne Mailserver auszuprobieren, lassen Sie das Gateway seine E-Mails nur protokollieren. Anmeldung mit Passwort und Einrichtungslink funktionieren weiterhin, Anmeldelinks und Einladungen werden aber nicht zugestellt:
+
+```bash
+echo KAESO_MAIL_TRANSPORT=log >> .env
+```
+
+### Den Hauptschlüssel erzeugen
+
+Der Hauptschlüssel verschlüsselt die Anbieter-Schlüssel, die Kaeso speichert. Erzeugen Sie einen in die Datei `master-keys`, die Compose dem Gateway als Docker-Secret übergibt:
+
+```bash
+docker run --rm ghcr.io/logicplanes/kaeso-gateway:{{version}} \
+  master-key generate > master-keys
+sudo chown 65532:65532 master-keys && sudo chmod 0400 master-keys
+```
+
+Das Gateway läuft in seinem Container als Benutzer 65532, deshalb gehört die Datei diesem Benutzer, und niemand sonst kann sie lesen. Docker Desktop und Colima lesen den Ordner als Sie, führen Sie dort also nur `chmod 0400 master-keys` aus. Mit rootless Docker übergeben Sie die Datei dem Benutzer, auf den 65532 auf dem Host abgebildet wird.
+
+> [!IMPORTANT]
+> Bewahren Sie eine Kopie von `master-keys` sicher auf, getrennt von Ihren Datenbank-Backups. Ohne sie kann Kaeso die gespeicherten Anbieter-Schlüssel nicht entschlüsseln, und Sie müssen sie neu eingeben.
+
+### Kaeso starten
+
+Starten Sie alle Dienste, und warten Sie, bis jeder gesund ist:
+
+```bash
+docker compose up -d --wait
+```
+
+Der erste Start dauert ein bis zwei Minuten, während die Images geladen werden und das Gateway die Datenbanken vorbereitet. Der Befehl kehrt zurück, sobald jeder Dienst gesund ist, oder nennt den Dienst, der es nicht ist. Caddy beantragt das Zertifikat im Hintergrund, deshalb können HTTPS-Anfragen fehlschlagen, bis es eines hat. `docker compose logs caddy` zeigt, wann es das Zertifikat erhält oder warum nicht.
 
 ## Ein bestimmtes Release installieren
 
-Der Schnellstart lädt die `compose.yaml` des neuesten stabilen Releases. Für ein anderes Release laden Sie die Datei vom Tag dieses Releases:
+Das Installationsskript lädt die `compose.yaml` des neuesten stabilen Releases. Für ein anderes Release geben Sie dem Skript dessen Version, etwa `--version {{version}}`, oder laden die Datei vom Tag dieses Releases:
 
 ```bash
 curl -fsSLO \

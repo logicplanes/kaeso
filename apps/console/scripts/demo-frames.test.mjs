@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { concatList, gifFilter } from "./demo-frames.mjs";
+import { MAX_SECONDS, concatList, gifFilter, seconds } from "./demo-frames.mjs";
 
 describe("the README demo's frames", () => {
   it("shows each frame until the next one arrived and holds the last", () => {
@@ -30,6 +30,20 @@ describe("the README demo's frames", () => {
       1,
     );
     expect(list).toContain("file 'a.jpg'\nduration 0.000\n");
+  });
+
+  it("plays from the first frame to the end of the last frame's hold, under 15 seconds", () => {
+    expect(
+      seconds(
+        [
+          { file: "a.jpg", time: 100 },
+          { file: "b.jpg", time: 112.5 },
+        ],
+        0.05,
+      ),
+    ).toBeCloseTo(12.55);
+    expect(seconds([], 1)).toBe(0);
+    expect(MAX_SECONDS).toBe(15);
   });
 
   it("refuses a recording without frames", () => {

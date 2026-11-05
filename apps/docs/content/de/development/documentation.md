@@ -501,11 +501,10 @@ Die eigenen Texte der Website, etwa **Auf GitHub bearbeiten** oder die Suche, st
 
 ## Die Aufnahme im README
 
-Das README beginnt mit einer kurzen Aufnahme der Konsole in einer hellen und einer dunklen Fassung, `.github/assets/demo-light.gif` und `.github/assets/demo-dark.gif`; GitHub zeigt die, die zum Theme der Leser passt. `apps/console/scripts/demo.mjs` nimmt beide mit Playwright gegen den Entwicklungs-Stack und seine mit Beispieldaten gefüllte Organisation auf, sodass nur der Mock-Anbieter, seine Platzhalter-Schlüssel und die erfundenen Personen des Seeds zu sehen sind. Das Skript erledigt in der Konsole vier Schritte:
+Das README beginnt mit einer kurzen Aufnahme der Konsole in einer hellen und einer dunklen Fassung, `.github/assets/demo-light.gif` und `.github/assets/demo-dark.gif`; GitHub zeigt die, die zum Theme der Leser passt. `apps/console/scripts/demo.mjs` nimmt beide mit Playwright gegen den Entwicklungs-Stack und seine mit Beispieldaten gefüllte Organisation auf, sodass nur der Mock-Anbieter, seine Platzhalter-Schlüssel und die erfundenen Personen des Seeds zu sehen sind. Vor der Aufnahme erstellt es über die Platform API einen API-Schlüssel. Dann erledigt es in der Konsole drei Schritte:
 
 - Es verbindet auf **Anbieter** einen Anthropic-Schlüssel.
-- Es erstellt auf **API-Schlüssel** einen Schlüssel.
-- Es sendet damit eine Anfrage aus einem Terminal-Fenster, das es über die Seite legt.
+- Es sendet mit dem API-Schlüssel eine Anfrage aus einem Terminal-Fenster, das es über die Seite legt.
 - Es wartet auf **Anfrageprotokolle** mit eingeschaltetem **Live**, bis die Anfrage erscheint.
 
 Für eine neue Aufnahme beginnen Sie mit einem frischen Stack voller Beispieldaten und laufender Konsole und installieren vorher `ffmpeg`, zum Beispiel mit `brew install ffmpeg`:
@@ -523,7 +522,7 @@ Dann in einem zweiten Terminal:
 pnpm demo
 ```
 
-Das Skript nimmt mit 1280 × 800 und dem Geräte-Skalierungsfaktor 2 auf. Es macht aus den Bildern GIFs mit 20 Bildern pro Sekunde und je einer Palette. Es schreibt beide nach `.github/assets` und nennt ihre Größe. Halten Sie jedes unter 4 MB.
+Das Skript nimmt mit 1280 × 800 und dem Geräte-Skalierungsfaktor 2 auf. Es macht aus den Bildern GIFs mit 20 Bildern pro Sekunde und je einer Palette. Es schreibt beide nach `.github/assets` und nennt ihre Größe und Länge. Halten Sie jedes unter 4 MB. Das Skript schlägt fehl, wenn eine Aufnahme 15 Sekunden oder länger läuft, damit Leser sie ganz sehen.
 
 Es läuft auch auf einem Stack, auf dem es schon aufgenommen hat. Dann entfernt es vorher den Anthropic-Schlüssel und archiviert seinen eigenen Schlüssel, die früheren Anfragen bleiben aber in den Protokollen. Das README verlinkt die GIFs auf `dev`, eine neue Aufnahme erscheint dort also, sobald ihr Pull Request gemergt ist.
 
