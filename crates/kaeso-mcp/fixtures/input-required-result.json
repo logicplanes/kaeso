@@ -1,0 +1,25 @@
+{
+  "jsonrpc": "2.0",
+  "id": 4,
+  "result": {
+    "resultType": "input_required",
+    "inputRequests": {
+      "confirm": {
+        "method": "elicitation/create",
+        "params": {
+          "mode": "form",
+          "message": "Post this?",
+          "requestedSchema": {
+            "type": "object",
+            "properties": {
+              "ok": {
+                "type": "boolean"
+              }
+            }
+          }
+        }
+      }
+    },
+    "requestState": "opaque-state-1"
+  }
+}

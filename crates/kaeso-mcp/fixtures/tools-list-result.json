@@ -1,0 +1,50 @@
+{
+  "jsonrpc": "2.0",
+  "id": 2,
+  "result": {
+    "resultType": "complete",
+    "tools": [
+      {
+        "name": "execute_sql",
+        "title": "Run SQL",
+        "description": "Execute SQL on Google Cloud Spanner",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "region": {
+              "type": "string",
+              "x-mcp-header": "Region"
+            },
+            "query": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "region",
+            "query"
+          ]
+        },
+        "outputSchema": {
+          "type": "object",
+          "properties": {
+            "rows": {
+              "type": "array"
+            }
+          }
+        },
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": true
+        },
+        "_meta": {
+          "io.modelcontextprotocol/ui": {
+            "resourceUri": "ui://sql/result"
+          }
+        }
+      }
+    ],
+    "nextCursor": "c-2",
+    "ttlMs": 300000,
+    "cacheScope": "private"
+  }
+}

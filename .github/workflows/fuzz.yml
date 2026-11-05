@@ -34,7 +34,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [decode_anthropic_messages, decode_openai_chat, decode_openai_embeddings, decode_openai_responses, sse]
+        target: [decode_anthropic_messages, decode_openai_chat, decode_openai_embeddings, decode_openai_responses, mcp, sse]
     env:
       FUZZ_TARGET: ${{ matrix.target }}
       SECONDS_PER_TARGET: ${{ inputs.seconds || 600 }}
@@ -46,7 +46,7 @@ jobs:
         run: |
           set -euo pipefail
           listed="$(sed -n 's/^name = "\(.*\)"$/\1/p' fuzz/Cargo.toml | grep -vx kpp-fuzz | sort | paste -sd ' ' -)"
-          if [[ "$listed" != "decode_anthropic_messages decode_openai_chat decode_openai_embeddings decode_openai_responses sse" ]]; then
+          if [[ "$listed" != "decode_anthropic_messages decode_openai_chat decode_openai_embeddings decode_openai_responses mcp sse" ]]; then
             echo "::error::fuzz/Cargo.toml has the targets $listed; list each one in the matrix of .github/workflows/fuzz.yml."
             exit 1
           fi
@@ -64,6 +64,7 @@ jobs:
           set -euo pipefail
           seed=crates/kaeso-codecs/fixtures
           if [[ "$FUZZ_TARGET" == decode_* ]]; then seed="$seed/${FUZZ_TARGET#decode_}"; fi
+          if [[ "$FUZZ_TARGET" == mcp ]]; then seed=crates/kaeso-mcp/fixtures; fi
           mkdir -p "fuzz/corpus/$FUZZ_TARGET"
           host="$(rustc +nightly -vV | sed -n 's/^host: //p')"
           cargo +nightly fuzz run --target "$host" "$FUZZ_TARGET" "fuzz/corpus/$FUZZ_TARGET" "$seed" -- -max_total_time="$SECONDS_PER_TARGET" -rss_limit_mb=2048 -max_len=65536

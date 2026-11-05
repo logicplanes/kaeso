@@ -235,7 +235,7 @@ e2e/.venv/bin/pytest -q e2e/install
 
 ## 模糊测试
 
-`fuzz/` 为每个 KPP 解码器提供一个 [cargo-fuzz](https://rust-fuzz.github.io/book/cargo-fuzz.html) 目标 `decode_<dialect>`，并为 SSE 解析器提供目标 `sse`。解码器目标检查每个解码器接受任意字节都不会 panic，并且把结果编码为每种方言时也不会 panic。`sse` 目标检查无论输入如何切分，解析器都产生相同的条目。`fuzz/` 是一个独立的 Cargo 工作区，因此 `libfuzzer-sys` 永远不会进入库 crate。
+`fuzz/` 为每个 KPP 解码器提供一个 [cargo-fuzz](https://rust-fuzz.github.io/book/cargo-fuzz.html) 目标 `decode_<dialect>`，为 SSE 解析器提供目标 `sse`，并为 MCP 消息提供目标 `mcp`。解码器目标检查每个解码器接受任意字节都不会 panic，并且把结果编码为每种方言时也不会 panic。`sse` 目标检查无论输入如何切分，解析器都产生相同的条目。`mcp` 目标检查 Kaeso 读取的每条消息都能完整写回（重命名其工具之后也是如此），并且请求头的值解码后与编码前一致；它的种子语料是 `crates/kaeso-mcp/fixtures`。`fuzz/` 是一个独立的 Cargo 工作区，因此 `libfuzzer-sys` 永远不会进入库 crate。
 
 每项变更都会检查这些目标能够构建，并且通过格式和 lint 检查：
 
@@ -261,7 +261,7 @@ cargo +nightly fuzz run decode_openai_chat \
   -- -max_total_time=600 -rss_limit_mb=2048 -max_len=65536
 ```
 
-**Fuzz** 工作流每晚让每个目标运行 10 分钟；每个修改 KPP 或 `fuzz/` 的拉取请求，则让每个目标运行 60 秒。出现崩溃时它会失败，并把输入保存为制品 `fuzz-crash-<target>`。崩溃会写入 `fuzz/artifacts/<target>/`。用 `cargo +nightly fuzz run <target> <file>` 复现它，把它变成编解码器中的回归测试，然后修复编解码器。
+**Fuzz** 工作流每晚让每个目标运行 10 分钟；每个修改 KPP、`crates/kaeso-mcp` 或 `fuzz/` 的拉取请求，则让每个目标运行 60 秒。出现崩溃时它会失败，并把输入保存为制品 `fuzz-crash-<target>`。崩溃会写入 `fuzz/artifacts/<target>/`。用 `cargo +nightly fuzz run <target> <file>` 复现它，把它变成编解码器中的回归测试，然后修复编解码器。
 
 ## 持续集成
 
@@ -284,7 +284,7 @@ CI 工作流 `.github/workflows/ci.yml` 在每个拉取请求、每次推送到 
 | Rust dependencies | 用工作区和 KPP 的政策运行 `cargo deny check` |
 | Fuzz targets | 模糊测试目标能够构建 |
 | Published crates | 为 `kaeso-kpp` 和 `kaeso-codecs` 运行 `cargo publish --dry-run` 和把警告视为错误的 `cargo doc`，并运行 `cargo semver-checks`：对照最近发布的版本检查是否适合次版本发布；在拉取请求中对照其基础提交检查是否适合补丁发布，除非它带有 `breaking` 标签 |
-| Fuzz runs | KPP 或 `fuzz/` 有变化时，以每个目标 60 秒运行 **Fuzz** 工作流 |
+| Fuzz runs | KPP、`crates/kaeso-mcp` 或 `fuzz/` 有变化时，以每个目标 60 秒运行 **Fuzz** 工作流 |
 | SDK conformance、SDK end-to-end | `pytest -q e2e/conformance` 和 `pytest -q e2e/sdk` |
 | Compose config | 对两个 Compose 文件运行 `docker compose config` |
 | Images（gateway、mock provider、updater、console） | 构建四个镜像；控制台的作业还检查其镜像以内容安全策略提供控制台 |

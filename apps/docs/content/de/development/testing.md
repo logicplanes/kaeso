@@ -235,7 +235,7 @@ Das Image der Konsole führt wie in einer echten Installation auch Caddy aus. `K
 
 ## Fuzzing
 
-`fuzz/` enthält ein [cargo-fuzz](https://rust-fuzz.github.io/book/cargo-fuzz.html)-Target pro KPP-Decoder, `decode_<dialect>`, und eines für den SSE-Parser, `sse`. Die Decoder-Targets prüfen, dass jeder Decoder beliebige Bytes ohne Panic annimmt und dass auch das Kodieren des Ergebnisses in jeden Dialekt keine Panic auslöst. Das Target `sse` prüft, dass der Parser dieselben Einträge liefert, egal wie die Eingabe geteilt ist. `fuzz/` ist ein eigener Cargo-Workspace, sodass `libfuzzer-sys` nie die Bibliotheks-Crates erreicht.
+`fuzz/` enthält ein [cargo-fuzz](https://rust-fuzz.github.io/book/cargo-fuzz.html)-Target pro KPP-Decoder, `decode_<dialect>`, eines für den SSE-Parser, `sse`, und eines für MCP-Nachrichten, `mcp`. Die Decoder-Targets prüfen, dass jeder Decoder beliebige Bytes ohne Panic annimmt und dass auch das Kodieren des Ergebnisses in jeden Dialekt keine Panic auslöst. Das Target `sse` prüft, dass der Parser dieselben Einträge liefert, egal wie die Eingabe geteilt ist. Das Target `mcp` prüft, dass jede Nachricht, die Kaeso liest, vollständig zurückgeschrieben wird, auch nach dem Umbenennen ihres Tools, und dass Header-Werte zu dem dekodieren, was kodiert wurde; sein Start-Korpus ist `crates/kaeso-mcp/fixtures`. `fuzz/` ist ein eigener Cargo-Workspace, sodass `libfuzzer-sys` nie die Bibliotheks-Crates erreicht.
 
 Jede Änderung prüft, dass die Targets bauen und formatiert und gelintet sind:
 
@@ -261,7 +261,7 @@ cargo +nightly fuzz run decode_openai_chat \
   -- -max_total_time=600 -rss_limit_mb=2048 -max_len=65536
 ```
 
-Der Workflow **Fuzz** lässt jedes Target jede Nacht 10 Minuten laufen und 60 Sekunden bei jedem Pull Request, der KPP oder `fuzz/` ändert. Er schlägt bei einem Absturz fehl und behält die Eingabe als Artefakt `fuzz-crash-<target>`. Ein Absturz landet in `fuzz/artifacts/<target>/`. Reproduzieren Sie ihn mit `cargo +nightly fuzz run <target> <file>`, machen Sie daraus einen Regressionstest im Codec und korrigieren Sie dann den Codec.
+Der Workflow **Fuzz** lässt jedes Target jede Nacht 10 Minuten laufen und 60 Sekunden bei jedem Pull Request, der KPP, `crates/kaeso-mcp` oder `fuzz/` ändert. Er schlägt bei einem Absturz fehl und behält die Eingabe als Artefakt `fuzz-crash-<target>`. Ein Absturz landet in `fuzz/artifacts/<target>/`. Reproduzieren Sie ihn mit `cargo +nightly fuzz run <target> <file>`, machen Sie daraus einen Regressionstest im Codec und korrigieren Sie dann den Codec.
 
 ## Continuous Integration
 
@@ -284,7 +284,7 @@ Die einzige erforderliche Prüfung ist **CI**. Sie besteht, wenn **Changes** und
 | Rust dependencies | `cargo deny check`, mit der Richtlinie des Workspaces und der von KPP |
 | Fuzz targets | Die Fuzz-Targets bauen |
 | Published crates | `cargo publish --dry-run` und `cargo doc` mit Warnungen als Fehler für `kaeso-kpp` und `kaeso-codecs`, und `cargo semver-checks`: gegen die zuletzt veröffentlichte Version für ein Minor-Release und bei einem Pull Request gegen seine Basis für ein Patch-Release, außer er trägt das Label `breaking` |
-| Fuzz runs | Der Workflow **Fuzz** mit 60 Sekunden je Target, wenn sich KPP oder `fuzz/` geändert hat |
+| Fuzz runs | Der Workflow **Fuzz** mit 60 Sekunden je Target, wenn sich KPP, `crates/kaeso-mcp` oder `fuzz/` geändert hat |
 | SDK conformance, SDK end-to-end | `pytest -q e2e/conformance` und `pytest -q e2e/sdk` |
 | Compose config | `docker compose config` für beide Compose-Dateien |
 | Images (gateway, mock provider, updater, console) | Bauen die vier Images; der Job der Konsole prüft außerdem, dass ihr Image die Konsole mit einer Content Security Policy ausliefert |

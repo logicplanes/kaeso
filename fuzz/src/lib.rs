@@ -5,6 +5,7 @@ use kaeso_kpp::{
     CountTokensResponse, DialectId, EmbedResponse, ModelList, Reply, Request, RequestKind,
     Response, StreamEvent, StreamMode,
 };
+use kaeso_mcp::{Message, RequestHeaders, headers, names};
 
 const KINDS: [RequestKind; 3] = [
     RequestKind::Generate,
@@ -227,6 +228,47 @@ pub fn sse(data: &[u8]) {
         }
         let limit = SSE_LIMIT.max(written.len());
         assert_eq!(parse(limit, [written.as_slice()]), Ok(items));
+    }
+}
+
+pub fn mcp(data: &[u8]) {
+    if let Ok(text) = std::str::from_utf8(data) {
+        let encoded = headers::encode(text);
+        assert_eq!(headers::decode(encoded.as_bytes()).as_deref(), Some(text));
+        let name = names::exposed("fuzz", text);
+        assert!(!name.is_empty() && name.len() <= names::MAX_NAME);
+    }
+    let Ok(message) = Message::parse(data) else {
+        return;
+    };
+    let written = message.to_vec();
+    let again = match Message::parse(&written) {
+        Ok(m) => m,
+        Err(e) => panic!("a written message doesn't parse again: {}", e.message),
+    };
+    assert_eq!(again.kind(), message.kind());
+    assert_eq!(again.to_vec(), written);
+    let request = RequestHeaders {
+        protocol_version: Some(if salt(data).is_multiple_of(2) {
+            b"2026-07-28"
+        } else {
+            b"2025-11-25"
+        }),
+        method: message.method().map(str::as_bytes),
+        name: data.get(..usize::from(salt(data)).min(data.len())),
+    };
+    if let Ok(version) = headers::version_of(&request, &message) {
+        let _ = headers::check(version, &request, &message);
+    }
+    let mut renamed = message.clone();
+    renamed.set_name("fuzz__renamed");
+    if renamed.name_field().is_some() && renamed.params().is_some() {
+        let bytes = renamed.to_vec();
+        let parsed = match Message::parse(&bytes) {
+            Ok(m) => m,
+            Err(e) => panic!("a renamed message doesn't parse again: {}", e.message),
+        };
+        assert_eq!(parsed.name().as_deref(), Some("fuzz__renamed"));
     }
 }
 

@@ -54,6 +54,7 @@ Eine Anfrage an die Platform API authentifiziert sich mit einem Sitzungscookie, 
 | `kaeso-crypto` | Envelope-Verschlüsselung (AES-256-GCM), der Schlüsselring der Hauptschlüssel, Passwörter, TOTP und die schwärzenden Typen für Geheimnisse |
 | `kaeso-mail` | Der SMTP-Versand und jede E-Mail, in drei Sprachen ([E-Mails](emails.md)) |
 | `kaeso-update` | Updates ohne I/O: das Release-Manifest, die Update-Richtlinie und das Protokoll des Updaters ([Updates](updates.md)) |
+| `kaeso-mcp` | MCP-Nachrichten ohne I/O: der JSON-RPC-Umschlag, der jedes Mitglied so behält, wie es geschrieben wurde, Protokollversionen, Anfrage-Metadaten, Header-Prüfungen, Fehlercodes und die Namen, die Tools außerhalb von Kaeso tragen |
 | `kaeso-updater` | Der optionale Updater, der einzige Teil von Kaeso, der mit Docker spricht ([Updates](updates.md)) |
 | `kaeso-testkit` | Nur für Tests: Datenbanken für Entwicklung und Tests, der aus den Fixtures von KPP gebaute Mock-Anbieter und ein Mock-Identitätsanbieter |
 | `kaeso-bench` | Der [Gateway-Benchmark](../benchmark.md): das ganze Gateway in einem eigenen Prozess, zwischen echten Clients und dem Mock-Anbieter |
