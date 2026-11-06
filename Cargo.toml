@@ -18,6 +18,7 @@ kaeso-codecs = { path = "crates/kaeso-codecs", version = "0.6.0-rc.4" }
 kaeso-core = { path = "crates/kaeso-core" }
 kaeso-crypto = { path = "crates/kaeso-crypto" }
 kaeso-mail = { path = "crates/kaeso-mail" }
+kaeso-mcp = { path = "crates/kaeso-mcp" }
 kaeso-server = { path = "crates/kaeso-server" }
 kaeso-store = { path = "crates/kaeso-store" }
 kaeso-testkit = { path = "crates/kaeso-testkit" }

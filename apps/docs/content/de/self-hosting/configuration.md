@@ -210,6 +210,14 @@ Das Gateway ruft Anbieter über den Proxy in `HTTPS_PROXY` auf (oder `HTTP_PROXY
 
 Die Basis-URL eines eigenen Anbieters wählt ein Organisations-Admin, also überwacht das Gateway, wohin es sich verbindet. Für jede Verbindung löst es den Namen des Hosts auf und prüft jede Adresse. Private, Loopback-, Link-Local- und Cloud-Metadaten-Adressen lehnt es ab, außer `KAESO_CUSTOM_PROVIDERS_ALLOWED_NETWORKS` nennt ihr Netz. Löst ein Name später zu einer anderen Adresse auf, wird sie bei der nächsten Verbindung erneut geprüft. Link-Local- und Cloud-Metadaten-Adressen wie `169.254.169.254` bleiben abgelehnt, auch wenn ein genanntes Netz sie umfasst.
 
+### MCP-Server
+
+| Variable<br>TOML-Schlüssel | Typ | Standard | Was sie bewirkt |
+| --- | --- | --- | --- |
+| `KAESO_MCP_SERVERS_ALLOWED_NETWORKS`<br>`mcp_servers.allowed_networks` | text | — | Kommagetrennte private, Loopback- oder andere nicht öffentliche Netze, in denen MCP-Server erreicht werden dürfen, etwa `10.0.0.0/8`. Reines `http` erreicht nur diese. |
+
+Die Adresse eines MCP-Servers wählt ein Organisations-Admin, also überwacht das Gateway sie wie die eines eigenen Anbieters: Jede Verbindung, auch Anmelde- und Metadaten-Anfragen, prüft es nach der DNS-Auflösung, und private, Loopback-, Link-Local- und Cloud-Metadaten-Adressen lehnt es ab, außer `KAESO_MCP_SERVERS_ALLOWED_NETWORKS` nennt ihr Netz. Weiterleitungen folgt es nie. Link-Local- und Cloud-Metadaten-Adressen bleiben abgelehnt, auch wenn ein genanntes Netz sie umfasst.
+
 Das Gateway folgt außerdem keinen Weiterleitungen eines eigenen Anbieters und ruft ihn ohne den Proxy in `HTTPS_PROXY` auf, weil ein Proxy den Namen an diesen Prüfungen vorbei auflösen würde. Erlauben Sie ein Netz nur, wo jeder Organisations-Admin die Server darin über das Gateway erreichen darf. Für ein vLLM auf demselben Host wie die Container des Gateways nennen Sie das Docker-Netz, etwa `172.16.0.0/12`.
 
 ### Streams an Apps

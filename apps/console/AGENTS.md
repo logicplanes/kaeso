@@ -22,29 +22,29 @@ pnpm seed
 pnpm dev
 ```
 
-Node.js 24, pnpm 11 and a Docker engine with Compose. `pnpm stack:up` builds the gateway's image from `deploy/gateway.Dockerfile` (`KAESO_GATEWAY_IMAGE` names a prebuilt one instead) and starts it with PostgreSQL, ClickHouse, Valkey, Mailpit, a mock model provider, a mock identity provider, a mock ChatGPT and Grok sign-in and a mock release feed (the `console` profile of `deploy/compose.dev.yaml`, the repository's one development stack); `pnpm seed` creates an organization with projects, members, keys and weeks of usage; `pnpm dev` builds the libraries in `packages/`, starts the stack and serves the console at http://localhost:3000. Sign in as `owner@example.com` with the password `correct horse battery staple`.
+Node.js 24, pnpm 11 and a Docker engine with Compose. `pnpm stack:up` builds the gateway's image from `deploy/gateway.Dockerfile` (`KAESO_GATEWAY_IMAGE` names a prebuilt one instead) and starts it with PostgreSQL, ClickHouse, Valkey, Mailpit, a mock model provider, a mock identity provider, a mock MCP server, a mock ChatGPT and Grok sign-in and a mock release feed (the `console` profile of `deploy/compose.dev.yaml`, the repository's one development stack); `pnpm seed` creates an organization with projects, members, keys and weeks of usage; `pnpm dev` builds the libraries in `packages/`, starts the stack and serves the console at http://localhost:3000. Sign in as `owner@example.com` with the password `correct horse battery staple`.
 
 ## Where things are
 
 How the console reads data, checks rights, loads its code and shows errors is in [console architecture](https://docs.kaeso.app/development/architecture/console).
 
-| Folder          | Job                                                                                                                                                                         |
-| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/routes/`   | File-based routes: public pages, app mode (`/orgs/{org}/projects/{project}/…`) and settings mode (`/settings/…`), each with a loader, a pending skeleton and an error state |
-| `src/api/`      | The client (its types generated from the repository's `openapi.json`), errors, paging, streamed downloads, and one query hook per resource                                  |
-| `src/auth/`     | The session, rights helpers, guards (two-factor, single sign-on, scheduled deletion) and the recent sign-in dialog                                                          |
-| `src/shell/`    | `AppFrame` in both modes, the sidebar, switchers, the command palette and shortcuts                                                                                         |
-| `src/features/` | One folder per area: sign-in, public pages, account, the organization's home (`org-home/`: overview, projects, providers) and settings (`org/`), project, instance          |
-| `src/kaeso/`    | Console-only compositions of library parts: the rights and limit editors, the create-key flow, usage panels                                                                 |
-| `src/format/`   | Money, periods, labels and other values as the console writes them                                                                                                          |
-| `src/i18n/`     | The message function, the catalogs in English, German and Simplified Chinese, and the language at start                                                                     |
-| `src/test/`     | The unit-test harness: rendering the app, the network stub, the fixed clock and the fixtures                                                                                |
-| `src/`          | At its top: the entry point, the router, the query client, search-parameter patches and the storage helpers                                                                 |
-| `eslint/`       | The layout-only, no-color and no-literal-text lint rules, with tests                                                                                                        |
-| `scripts/`      | Client and route generation, the stack, the seed, the README's recording, bundle budgets, the licence check and the catalog check                                           |
-| `stack/`        | The mock provider, the mock identity provider, the mock ChatGPT and Grok sign-in, the mock release feed and updater, and the master key the local stack uses                |
-| `public/`       | The favicons and the web app manifest                                                                                                                                       |
-| `e2e/`          | Playwright suites against a stack of their own                                                                                                                              |
+| Folder          | Job                                                                                                                                                                               |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/routes/`   | File-based routes: public pages, app mode (`/orgs/{org}/projects/{project}/…`) and settings mode (`/settings/…`), each with a loader, a pending skeleton and an error state       |
+| `src/api/`      | The client (its types generated from the repository's `openapi.json`), errors, paging, streamed downloads, and one query hook per resource                                        |
+| `src/auth/`     | The session, rights helpers, guards (two-factor, single sign-on, scheduled deletion) and the recent sign-in dialog                                                                |
+| `src/shell/`    | `AppFrame` in both modes, the sidebar, switchers, the command palette and shortcuts                                                                                               |
+| `src/features/` | One folder per area: sign-in, public pages, account, the organization's home (`org-home/`: overview, projects, providers) and settings (`org/`), project, instance                |
+| `src/kaeso/`    | Console-only compositions of library parts: the rights and limit editors, the create-key flow, usage panels                                                                       |
+| `src/format/`   | Money, periods, labels and other values as the console writes them                                                                                                                |
+| `src/i18n/`     | The message function, the catalogs in English, German and Simplified Chinese, and the language at start                                                                           |
+| `src/test/`     | The unit-test harness: rendering the app, the network stub, the fixed clock and the fixtures                                                                                      |
+| `src/`          | At its top: the entry point, the router, the query client, search-parameter patches and the storage helpers                                                                       |
+| `eslint/`       | The layout-only, no-color and no-literal-text lint rules, with tests                                                                                                              |
+| `scripts/`      | Client and route generation, the stack, the seed, the README's recording, bundle budgets, the licence check and the catalog check                                                 |
+| `stack/`        | The mock provider, the mock MCP server, the mock identity provider, the mock ChatGPT and Grok sign-in, the mock release feed and updater, and the master key the local stack uses |
+| `public/`       | The favicons and the web app manifest                                                                                                                                             |
+| `e2e/`          | Playwright suites against a stack of their own                                                                                                                                    |
 
 ## Checks
 

@@ -28,6 +28,7 @@ pub struct Inner {
     pub response_cache: crate::services::response_cache::Shared,
     pub kpmr: crate::services::kpmr::Kpmr,
     pub upstream: kaeso_upstream::Upstream,
+    pub mcp: kaeso_upstream::mcp::McpUpstream,
     pub limits: Arc<dyn crate::model_api::hooks::Limits>,
     pub sink: Arc<dyn crate::model_api::hooks::Sink>,
     pub usage: crate::services::usage::Batch,
@@ -66,6 +67,7 @@ impl AppState {
         let reach = kaeso_upstream::guard::Reach::networks(
             p.config.custom_providers.allowed_networks.clone(),
         );
+        let mcp_networks = p.config.mcp_servers.allowed_networks.clone();
         let translating = crate::model_api::memory::Budget::new(p.config.body_limits.in_flight.0);
         caches.listen(&p.valkey);
         AppState(Arc::new(Inner {
@@ -84,6 +86,12 @@ impl AppState {
                 concat!("kaeso-gateway/", env!("CARGO_PKG_VERSION")),
             )
             .guarding(reach),
+            mcp: kaeso_upstream::mcp::McpUpstream::new(
+                kaeso_upstream::guard::Reach::networks(mcp_networks),
+                kaeso_upstream::guard::Lookup::default(),
+                connect_timeout,
+                concat!("kaeso-gateway/", env!("CARGO_PKG_VERSION")),
+            ),
             limits: p
                 .limits
                 .unwrap_or_else(|| Arc::new(crate::services::limits::ValkeyLimits)),

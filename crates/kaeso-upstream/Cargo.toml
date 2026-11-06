@@ -12,16 +12,19 @@ publish.workspace = true
 [dependencies]
 kaeso-core.workspace = true
 kaeso-codecs.workspace = true
+kaeso-mcp.workspace = true
 reqwest.workspace = true
 bytes.workspace = true
 futures.workspace = true
 ipnet.workspace = true
 secrecy.workspace = true
+serde_json.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
 url.workspace = true
 
 [dev-dependencies]
+kaeso-testkit.workspace = true
 tokio = { workspace = true, features = ["test-util"] }
 hyper.workspace = true
 hyper-util.workspace = true
