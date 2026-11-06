@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT tools_restricted FROM service_accounts WHERE project_id = $1 AND id = $2",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "tools_restricted",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "service_accounts",
+            "name": "tools_restricted"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "0e5db1e43f50b08d1b62fc9ea139787d7df78dc69eb9619716bfd8826e97efc8"
+}

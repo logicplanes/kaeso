@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id FROM mcp_servers WHERE last_checked_at IS NULL OR last_checked_at < $1 ORDER BY last_checked_at NULLS FIRST, id LIMIT $2",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "mcp_servers",
+            "name": "id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Timestamptz",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "71eafe783e18b719a736fd39cc7c9d30f9ab93e648b7b8289d0392a0abf3b93a"
+}

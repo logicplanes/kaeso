@@ -1,0 +1,196 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id, server_id, org_id, user_id, kind, issuer, header_name, last4, expires_at, account_label, auth_error, last_used_at, created_at, updated_at, revision FROM mcp_connections WHERE server_id = $1 ORDER BY user_id NULLS FIRST, created_at",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "mcp_connections",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "server_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "mcp_connections",
+            "name": "server_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "org_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "mcp_connections",
+            "name": "org_id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "user_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "mcp_connections",
+            "name": "user_id"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "kind",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "mcp_connections",
+            "name": "kind"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "issuer",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "mcp_connections",
+            "name": "issuer"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "header_name",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "mcp_connections",
+            "name": "header_name"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "last4",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "mcp_connections",
+            "name": "last4"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "expires_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "mcp_connections",
+            "name": "expires_at"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "account_label",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "mcp_connections",
+            "name": "account_label"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "auth_error",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "mcp_connections",
+            "name": "auth_error"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "last_used_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "mcp_connections",
+            "name": "last_used_at"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "created_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "mcp_connections",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 13,
+        "name": "updated_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "mcp_connections",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 14,
+        "name": "revision",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "mcp_connections",
+            "name": "revision"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      false,
+      true,
+      true,
+      false,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "2004ec45bb9741f6b3597ff449afc2747180d36a3c551025bc527f5c783b2fcf"
+}

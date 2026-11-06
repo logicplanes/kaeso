@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO tool_access (project_id, membership_id, service_account_id, api_key_id, tool_id) SELECT $1, $2, $3, $4, t.id FROM mcp_tools t JOIN project_mcp_servers ps ON ps.server_id = t.server_id AND ps.project_id = $1 WHERE t.id = ANY($5::uuid[])",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "UuidArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "1e2eaa0a01a6a46840e30b2c84508bd7eb9ba08f41ce3a5c9e3ba1cd82552e06"
+}

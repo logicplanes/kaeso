@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE service_accounts SET tools_restricted = $3, updated_at = now() WHERE project_id = $1 AND id = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Bool"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "72415a1fb6fbea526c4b7063edaa157ffd3ff8146cffcf618af79408e55aaaff"
+}

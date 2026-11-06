@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO project_mcp_servers (project_id, org_id, server_id) SELECT $2, s.org_id, s.id FROM mcp_servers s WHERE s.org_id = $1 AND s.id = ANY($3::uuid[]) ON CONFLICT DO NOTHING",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "UuidArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "f2a8067194135d40d709fbf54597d0a0a381239f23435198d7abef3a103fcab5"
+}

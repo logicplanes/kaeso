@@ -1,0 +1,76 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id, oauth_client_secret_ciphertext AS \"ciphertext!\", oauth_client_secret_nonce AS \"nonce!\", oauth_client_secret_wrapped_key AS \"wrapped_key!\", oauth_client_secret_key_id AS \"key_id!\" FROM mcp_servers WHERE id = $1 AND oauth_client_secret_ciphertext IS NOT NULL",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "mcp_servers",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "ciphertext!",
+        "type_info": "Bytea",
+        "origin": {
+          "Table": {
+            "table": "mcp_servers",
+            "name": "oauth_client_secret_ciphertext"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "nonce!",
+        "type_info": "Bytea",
+        "origin": {
+          "Table": {
+            "table": "mcp_servers",
+            "name": "oauth_client_secret_nonce"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "wrapped_key!",
+        "type_info": "Bytea",
+        "origin": {
+          "Table": {
+            "table": "mcp_servers",
+            "name": "oauth_client_secret_wrapped_key"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "key_id!",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "mcp_servers",
+            "name": "oauth_client_secret_key_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "ba48e233a4c968e31e94ec17ab6b53c44ba84618d3633a236c3a275afbc15fdf"
+}

@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 use kaeso_crypto::{CryptoError, KeyRing, Sealed};
 use kaeso_store::StoreError;
-use kaeso_store::pg::{credentials, oidc, totp};
+use kaeso_store::pg::{credentials, mcp_connections, mcp_servers, oidc, totp};
 use sqlx::PgPool;
 
 #[derive(Debug, thiserror::Error)]
@@ -91,6 +91,46 @@ pub async fn rewrap(pg: &PgPool, ring: &KeyRing) -> Result<RewrapReport, MasterK
             && oidc::set_wrapped_key(
                 pg,
                 c.org_id,
+                &sealed.wrapped_key,
+                &new.wrapped_key,
+                &new.key_id,
+            )
+            .await?
+        {
+            report.rewrapped += 1;
+        }
+    }
+    for c in mcp_connections::all_sealed(pg).await? {
+        let sealed = Sealed {
+            ciphertext: c.ciphertext,
+            nonce: c.nonce,
+            wrapped_key: c.wrapped_key,
+            key_id: c.key_id,
+        };
+        if let Some(new) = kaeso_crypto::rewrap(ring, &sealed)?
+            && mcp_connections::set_wrapped_key(
+                pg,
+                c.id,
+                &sealed.wrapped_key,
+                &new.wrapped_key,
+                &new.key_id,
+            )
+            .await?
+        {
+            report.rewrapped += 1;
+        }
+    }
+    for s in mcp_servers::all_sealed(pg).await? {
+        let sealed = Sealed {
+            ciphertext: s.ciphertext,
+            nonce: s.nonce,
+            wrapped_key: s.wrapped_key,
+            key_id: s.key_id,
+        };
+        if let Some(new) = kaeso_crypto::rewrap(ring, &sealed)?
+            && mcp_servers::set_wrapped_key(
+                pg,
+                s.server_id,
                 &sealed.wrapped_key,
                 &new.wrapped_key,
                 &new.key_id,

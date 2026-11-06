@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO project_tools (project_id, server_id, tool_id, enabled) SELECT ps.project_id, t.server_id, t.id, $3 FROM mcp_tools t JOIN project_mcp_servers ps ON ps.server_id = t.server_id AND ps.project_id = $1 WHERE t.id = ANY($2::uuid[]) ON CONFLICT (project_id, tool_id) DO UPDATE SET enabled = EXCLUDED.enabled, updated_at = now()",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "UuidArray",
+        "Bool"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "d14eecc2b05bf84a88209e0f7268202129bf7a3ac2ab8b9145cf72f92f1db794"
+}

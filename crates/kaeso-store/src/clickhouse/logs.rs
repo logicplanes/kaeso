@@ -329,9 +329,14 @@ pub async fn delete_range(
     content_only: bool,
 ) -> Result<(), StoreError> {
     let tables: &[&str] = if content_only {
-        &["request_content"]
+        &["request_content", "tool_call_content"]
     } else {
-        &["request_log", "request_content"]
+        &[
+            "request_log",
+            "request_content",
+            "tool_calls",
+            "tool_call_content",
+        ]
     };
     for table in tables {
         let mut sql = String::from(
@@ -358,7 +363,12 @@ pub async fn delete_range(
     Ok(())
 }
 
-const ORG_TABLES: &[&str] = &["request_log", "request_content"];
+const ORG_TABLES: &[&str] = &[
+    "request_log",
+    "request_content",
+    "tool_calls",
+    "tool_call_content",
+];
 
 pub async fn delete_org(ch: &ClickHouse, org: Uuid) -> Result<(), StoreError> {
     for table in ORG_TABLES {

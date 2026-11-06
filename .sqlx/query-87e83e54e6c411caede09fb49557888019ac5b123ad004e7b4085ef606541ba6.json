@@ -1,0 +1,21 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE mcp_servers SET oauth_registration = $2, oauth_issuer = $3, oauth_client_id = $4, oauth_client_secret_ciphertext = $5, oauth_client_secret_nonce = $6, oauth_client_secret_wrapped_key = $7, oauth_client_secret_key_id = $8, revision = revision + 1, updated_at = now() WHERE id = $1 AND auth_method = 'oauth'",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Text",
+        "Text",
+        "Bytea",
+        "Bytea",
+        "Bytea",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "87e83e54e6c411caede09fb49557888019ac5b123ad004e7b4085ef606541ba6"
+}

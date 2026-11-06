@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT tools_restricted FROM api_keys WHERE project_id = $1 AND id = $2",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "tools_restricted",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "api_keys",
+            "name": "tools_restricted"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "0556b769a6d090134ce9b0981562e7312aa6d1523bac694ff06f22017094b38e"
+}
