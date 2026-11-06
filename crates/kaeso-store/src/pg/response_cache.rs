@@ -101,12 +101,18 @@ pub async fn set_org(
     Ok(())
 }
 
-pub async fn clear_org(db: impl PgExecutor<'_>, org_id: Uuid) -> Result<Vec<Uuid>, StoreError> {
-    Ok(sqlx::query_scalar!(
+pub async fn clear_org(
+    db: impl PgExecutor<'_>,
+    org_id: Uuid,
+) -> Result<Vec<(Uuid, i64)>, StoreError> {
+    Ok(sqlx::query!(
         "UPDATE projects SET response_cache_generation = response_cache_generation + 1 \
-         WHERE org_id = $1 RETURNING id",
+         WHERE org_id = $1 RETURNING id, response_cache_generation AS generation",
         org_id
     )
     .fetch_all(db)
-    .await?)
+    .await?
+    .into_iter()
+    .map(|row| (row.id, row.generation))
+    .collect())
 }

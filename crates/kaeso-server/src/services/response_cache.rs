@@ -17,7 +17,7 @@ use crate::state::AppState;
 pub const HEADER: &str = "kaeso-cache";
 
 // Bump when `Stored` changes shape: older entries are then never looked up and expire by TTL.
-const ENTRY_VERSION: &str = "v1";
+const ENTRY_VERSION: &str = "v2";
 
 const MEMORY_EVERY: Duration = Duration::from_secs(10);
 
@@ -219,7 +219,12 @@ pub fn slot(state: &AppState, active: Active, r: &Request<'_>) -> Slot {
         &r.encoded.body,
     ]);
     Slot {
-        key: format!("{}{}", prefix(state, r.project), hex(&tag)),
+        key: format!(
+            "{}{}:{}",
+            prefix(state, r.project),
+            active.generation,
+            hex(&tag)
+        ),
         ttl: active.ttl,
     }
 }
@@ -346,11 +351,11 @@ async fn write(state: &AppState, slot: &Slot, stored: &Stored) -> &'static str {
     }
 }
 
-pub fn sweep(state: &AppState, projects: Vec<Uuid>) {
+pub fn sweep(state: &AppState, retired: Vec<(Uuid, i64)>) {
     let task = state.clone();
     tokio::spawn(async move {
-        for project in projects {
-            if let Err(e) = unlink(&task, project).await {
+        for (project, generation) in retired {
+            if let Err(e) = remove_retired(&task, project, generation).await {
                 metrics::counter!(crate::metrics::VALKEY_FAILURES, "operation" => "response_cache_clear")
                     .increment(1);
                 tracing::warn!(error = %e, "cannot remove cleared response cache entries; they expire with their TTL");
@@ -359,8 +364,13 @@ pub fn sweep(state: &AppState, projects: Vec<Uuid>) {
     });
 }
 
-async fn unlink(state: &AppState, project: Uuid) -> Result<(), redis::RedisError> {
-    let pattern = format!("{}*", glob_escape(&prefix(state, project)));
+pub async fn remove_retired(
+    state: &AppState,
+    project: Uuid,
+    generation: i64,
+) -> Result<(), redis::RedisError> {
+    let prefix = prefix(state, project);
+    let pattern = format!("{}*", glob_escape(&prefix));
     let mut conn = state.valkey.bulk();
     let mut cursor: u64 = 0;
     loop {
@@ -372,6 +382,10 @@ async fn unlink(state: &AppState, project: Uuid) -> Result<(), redis::RedisError
             .arg(CLEAR_BATCH)
             .query_async(&mut conn)
             .await?;
+        let keys: Vec<String> = keys
+            .into_iter()
+            .filter(|key| retired(key, &prefix, generation))
+            .collect();
         if !keys.is_empty() {
             let _: i64 = redis::cmd("UNLINK")
                 .arg(&keys)
@@ -383,6 +397,13 @@ async fn unlink(state: &AppState, project: Uuid) -> Result<(), redis::RedisError
         }
         cursor = next;
     }
+}
+
+fn retired(key: &str, prefix: &str, current: i64) -> bool {
+    key.strip_prefix(prefix)
+        .and_then(|rest| rest.split_once(':'))
+        .and_then(|(generation, _)| generation.parse::<i64>().ok())
+        .is_none_or(|generation| generation < current)
 }
 
 fn glob_escape(s: &str) -> String {
@@ -538,6 +559,17 @@ mod tests {
             },
             100
         ));
+    }
+
+    #[test]
+    fn a_sweep_removes_only_the_generations_before_the_current_one() {
+        let prefix = "kaeso:rc:v2:p:";
+        assert!(retired("kaeso:rc:v2:p:3:abc", prefix, 4));
+        assert!(retired("kaeso:rc:v2:p:0:abc", prefix, 4));
+        assert!(!retired("kaeso:rc:v2:p:4:abc", prefix, 4));
+        assert!(!retired("kaeso:rc:v2:p:5:abc", prefix, 4));
+        assert!(retired("kaeso:rc:v2:p:abc", prefix, 4));
+        assert!(retired("kaeso:rc:v2:p:x:abc", prefix, 4));
     }
 
     #[test]
