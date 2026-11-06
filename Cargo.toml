@@ -71,7 +71,7 @@ p256 = { version = "0.14", default-features = false, features = ["ecdsa", "getra
 chrono = { version = "0.4", default-features = false, features = ["clock"] }
 
 maud = "0.27"
-resvg = { version = "0.48", default-features = false }
+resvg = { version = "0.49", default-features = false }
 lettre = { version = "0.11", default-features = false, features = ["builder", "smtp-transport", "tokio1", "tokio1-rustls", "hostname", "rustls-platform-verifier", "aws-lc-rs"] }
 
 uuid = { version = "1.28", features = ["v7", "serde", "fast-rng"] }

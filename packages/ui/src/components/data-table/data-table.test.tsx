@@ -88,6 +88,20 @@ describe("DataTable", () => {
       expect(screen.getByText("staging").closest<HTMLElement>("[role=row]")?.style.gridTemplateColumns).toBe("minmax(160px, 1fr) 120px");
     });
 
+    it("shows an empty table without a header that would only scroll sideways", () => {
+      narrow(200);
+      render(<DataTable aria-label="Costs" data={[]} columns={growing} getRowId={(r) => r.id} empty="No costs yet" />);
+      const table = screen.getByRole("table", { name: "Costs" });
+      expect(within(table).getByText("No costs yet")).toBeInTheDocument();
+      expect(within(table).queryByRole("columnheader")).not.toBeInTheDocument();
+      expect(table).toHaveAttribute("aria-rowcount", "0");
+    });
+    it("keeps an empty table's header while its columns fit", () => {
+      narrow(800);
+      render(<DataTable aria-label="Costs" data={[]} columns={growing} getRowId={(r) => r.id} empty="No costs yet" />);
+      expect(screen.getAllByRole("columnheader").map((h) => h.textContent)).toEqual(["Key", "Cost"]);
+    });
+
     type Log = { id: string; time: string; status: number; model: string; key: string; cost: string };
     const logs: Log[] = [{ id: "r1", time: "2 min ago", status: 200, model: "claude-sonnet-4-5", key: "checkout-web", cost: "0.0108" }];
     const logColumns = [
