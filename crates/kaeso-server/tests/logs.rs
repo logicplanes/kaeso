@@ -1019,30 +1019,23 @@ async fn retention_shrinks_and_deletions_remove_rows() {
         )
         .await;
     assert_eq!(r.status, StatusCode::ACCEPTED, "{:?}", r.body);
+    let deletions = format!("/orgs/{}/logs/deletions", env.owner.org_id);
+    let all_done = |jobs: &Value| {
+        jobs["data"]
+            .as_array()
+            .is_some_and(|a| a.iter().all(|j| j["state"] == "done"))
+    };
+    let mut jobs = Value::Null;
     for _ in 0..100 {
         left = count("?limit=100").await;
-        if left == 2 {
+        jobs = env.app.get(&deletions, &env.owner.cookie).await.body;
+        if left == 2 && all_done(&jobs) {
             break;
         }
         tokio::time::sleep(Duration::from_millis(100)).await;
     }
     assert_eq!(left, 2);
-    let jobs = env
-        .app
-        .get(
-            &format!("/orgs/{}/logs/deletions", env.owner.org_id),
-            &env.owner.cookie,
-        )
-        .await;
-    assert!(
-        jobs.body["data"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .all(|j| j["state"] == "done"),
-        "{:?}",
-        jobs.body
-    );
+    assert!(all_done(&jobs), "{jobs:?}");
     let audit = env
         .app
         .get(
