@@ -14,7 +14,9 @@ CONTEXT = [
     "deploy/console.Dockerfile",
     "deploy/console.Dockerfile.dockerignore",
     "deploy/console/Caddyfile",
+    "deploy/console/edge.Caddyfile",
     "deploy/console/serve.sh",
+    "deploy/console/edge.sh",
 ]
 DIST = {
     "index.html": '<!doctype html><div id="root"></div>',
