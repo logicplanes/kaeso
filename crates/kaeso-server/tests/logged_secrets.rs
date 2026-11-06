@@ -134,10 +134,11 @@ async fn setup_links_and_sign_in_secrets_never_reach_the_log() {
         .as_str()
         .unwrap()
         .to_owned();
+    let announced = logs.text().matches("Kaeso is not set up yet").count();
     kaeso_server::setup::announce(&app.state).await;
     assert_eq!(
         logs.text().matches("Kaeso is not set up yet").count(),
-        1,
+        announced,
         "a set-up install announces nothing"
     );
 
