@@ -33,10 +33,14 @@ RUN apk add --no-cache ca-certificates mailcap \
 ENV XDG_DATA_HOME=/var/lib/console/data XDG_CONFIG_HOME=/var/lib/console/config
 COPY --from=caddy --chmod=0555 /caddy /usr/bin/caddy
 COPY --chmod=0444 deploy/console/Caddyfile /etc/caddy/Caddyfile
+COPY --chmod=0444 deploy/console/edge.Caddyfile /etc/caddy/edge.Caddyfile
 COPY --chmod=0555 deploy/console/serve.sh /usr/local/bin/kaeso-console
+COPY --chmod=0555 deploy/console/edge.sh /usr/local/bin/kaeso-edge
 COPY --from=build --chmod=0555 /app/apps/console/dist /srv
 USER console
-RUN caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+RUN caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile \
+  && KAESO_GATEWAY_UPSTREAM=kaeso-gateway:8080 KAESO_CONSOLE_UPSTREAM=kaeso-console:3000 \
+     caddy validate --config /etc/caddy/edge.Caddyfile --adapter caddyfile
 EXPOSE 3000
 HEALTHCHECK --interval=15s --timeout=3s --start-period=5s --start-interval=1s CMD ["wget", "-qO-", "http://127.0.0.1:3000/healthz"]
 CMD ["/usr/local/bin/kaeso-console"]

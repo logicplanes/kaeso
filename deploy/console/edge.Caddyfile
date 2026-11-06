@@ -1,0 +1,66 @@
+{
+	admin off
+	auto_https off
+	persist_config off
+	servers {
+		trusted_proxies static {$KAESO_EDGE_TRUSTED_PROXIES:private_ranges}
+		client_ip_headers X-Forwarded-For
+	}
+}
+
+:{$PORT:8080} {
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		-Server
+	}
+	@api path /v1/* /platform/* /mcp /mcp/* /oauth/* /.well-known/oauth-authorization-server /.well-known/oauth-protected-resource /.well-known/oauth-protected-resource/*
+	route {
+		handle /kaeso-edge/healthz {
+			header Cache-Control "no-store"
+			respond "ok"
+		}
+		handle @api {
+			reverse_proxy {$KAESO_GATEWAY_UPSTREAM} {
+				flush_interval -1
+				header_up X-Forwarded-For {client_ip}
+				transport http {
+					keepalive 25s
+					keepalive_idle_conns_per_host 512
+				}
+			}
+		}
+		handle {
+			reverse_proxy {$KAESO_CONSOLE_UPSTREAM} {
+				header_up X-Forwarded-For {client_ip}
+			}
+		}
+	}
+	handle_errors 502 503 504 {
+		header {
+			Strict-Transport-Security "max-age=31536000"
+			Retry-After "30"
+			Cache-Control "no-store"
+			-Server
+		}
+		vars message "Kaeso can't be reached right now; try again in a minute."
+		@platform path /platform/* /mcp /mcp/* /oauth/* /.well-known/oauth-*
+		@anthropic expression path('/v1/messages', '/v1/messages/*') || (header({'Anthropic-Version': '*'}) && !path('/v1/chat/completions', '/v1/responses', '/v1/responses/*', '/v1/embeddings'))
+		@openai path /v1 /v1/*
+		handle @platform {
+			header Content-Type "application/json"
+			respond `{"error":{"type":"unavailable","message":"{vars.message}"}}` 503
+		}
+		handle @anthropic {
+			header Content-Type "application/json"
+			respond `{"type":"error","error":{"type":"overloaded_error","message":"{vars.message}"},"request_id":null}` 529
+		}
+		handle @openai {
+			header Content-Type "application/json"
+			respond `{"error":{"message":"{vars.message}","type":"service_unavailable_error","param":null,"code":"server_is_overloaded"}}` 503
+		}
+		handle {
+			header Content-Type "text/plain; charset=utf-8"
+			respond "{vars.message}" 503
+		}
+	}
+}
