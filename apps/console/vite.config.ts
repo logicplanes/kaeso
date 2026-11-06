@@ -206,8 +206,8 @@ export default defineConfig({
     tanstackRouter({
       target: "react",
       autoCodeSplitting: true,
-      // Routes lazy() their pending components instead: the router shows one without awaiting its chunk, and a split one suspends through
-      // lazyRouteComponent's conditional use(), which a slow load reports as https://react.dev/warnings/conditional-use-of-use.
+      // Pending components stay out of the split: the router shows one without awaiting its chunk, so routes load them with React's
+      // lazy() through lazyPending, whose preload() the router runs with the page.
       codeSplittingOptions: { defaultBehavior: [["loader"], ["component"], ["errorComponent"], ["notFoundComponent"]] },
       routesDirectory: "src/routes",
       generatedRouteTree: "src/routeTree.gen.ts",
