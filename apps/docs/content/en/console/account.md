@@ -14,7 +14,8 @@ Your account is under **Account**, in the menu at the foot of the sidebar. It ha
 | Agents | The agents you connected through the [MCP server](../api/mcp.md), with their rights and activity |
 | API keys | Your own keys in every project ([API keys](api-keys.md)) |
 | Memberships | Your organizations and their projects, with your roles, and leaving an organization |
-| Notifications | Which emails you receive |
+| Connections | Your own accounts at MCP servers that each person signs in to ([MCP portal](../concepts/mcp-portal.md#connections)) |
+| Notifications | Which emails you receive, and when |
 | Appearance | Theme and language |
 
 ## Change your email address
@@ -106,7 +107,43 @@ Without a password, choose **Email me a link** under **Account** › **Security*
 
 ## Choose your emails
 
-Under **Notifications**, **Budget alerts** and **Expiring keys** turn those emails on or off. Kaeso always sends security emails, such as one about a changed password.
+Kaeso emails you about what your rights make you responsible for, in the instance, your organizations, your projects and their portals. **Notifications** lists only the emails you can receive, in the areas **Security**, **Personal**, **Project**, **Tools**, **Organization** and **Instance**. For each one, choose when it goes out:
+
+| Choice | What happens |
+| --- | --- |
+| Now | Kaeso sends it at once |
+| Daily | It goes into one digest a day, sent only when something happened |
+| Off | Kaeso doesn't send it |
+
+Security emails, such as one about a changed password or a new app that can act as you, have no choice: Kaeso always sends them at once. Kaeso never emails you about something you did yourself.
+
+| Area | Email | Who can get it | Default |
+| --- | --- | --- | --- |
+| Security | Account security, A new app can act as you | You | Always |
+| Personal | Export finished | Whoever started the export (`logs.export`, `audit_log.export`) | Now |
+| Personal | Weekly summary | `usage.view` | Off |
+| Project | Your access changed | You | Now |
+| Project | Budget alerts, Limit reached | `limits.manage`, or the owner of a key with a limit | Now, Daily |
+| Project | Your key expires, Your key changed | The key's owner | Now |
+| Project | Content logging changed | Every member of the project | Daily |
+| Tools | MCP servers need attention | `mcp_servers.manage` | Now |
+| Tools | Your connection expired | You, for a server you connected your own account to | Now |
+| Tools | New client on a portal | `tools.manage` | Daily |
+| Organization | Security settings changed | `security.sso.manage` or `platform_keys.view` | Now |
+| Organization | Ownership and deletion | Owners | Always |
+| Organization | Member changes | `members.invite` | Daily |
+| Organization | Your invitation was accepted | Whoever sent it | Now |
+| Organization | Provider keys need attention | `provider_credentials.replace` | Now |
+| Organization | Model changes | `models.manage` in a project that uses the model | Daily |
+| Organization | Monthly cost report | `costs.org.view` | Now |
+| Instance | Updates, Instance settings changed | Instance admins | Now |
+| Instance | New organizations and people | Instance admins | Daily |
+
+**Send a test email** sends one to your address, at most once a minute. When the install only writes emails to its log, the page says so and offers no choices.
+
+To stop every email about one organization except security emails, turn off **Email me about this organization** for it under **Memberships**.
+
+Every email except security emails ends with a link that turns off that one kind, without signing in. Mail apps that show their own unsubscribe button use the same link. Turn the email back on under **Notifications**.
 
 ## Choose a theme and language
 

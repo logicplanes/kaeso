@@ -97,6 +97,7 @@ export function myMembership(overrides: Partial<MyMembership> = {}): MyMembershi
     preset: "owner",
     projects: [myProject(), myProject({ id: OTHER_PROJECT, name: "Support triage" })],
     last_owner: false,
+    notifications_muted: false,
     ...overrides,
   };
 }

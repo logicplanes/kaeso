@@ -6,6 +6,7 @@ import { logJob, logSettings, paged, platformKey, security, storage } from "~/te
 import { auditEvent } from "~/test/fixtures/shell";
 import { on, page, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
+import { notificationSettings } from "~/test/fixtures/notifications";
 
 const sent = (path: string) => requests("GET", path).map((r) => Object.fromEntries(r.query));
 
@@ -57,7 +58,7 @@ describe("account settings", () => {
     signedIn();
     on("GET", "me", me());
     on("GET", "me/keys", paged([]));
-    on("GET", "me/notifications", { data: [] });
+    on("GET", "me/notifications", notificationSettings());
     on("GET", "me/sessions", { data: [] });
     await renderApp(`/settings/account/${path}`);
     expect(await screen.findByRole("heading", { name: title, level: 1 })).toBeInTheDocument();

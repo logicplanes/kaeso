@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { AlertDialog, Avatar, Button, DialogScope, SettingsGroup, SettingsRow, Section, Text } from "@logicplanes/kaeso-ui";
+import { AlertDialog, Avatar, Button, DialogScope, SettingsGroup, SettingsRow, Section, Switch, Text } from "@logicplanes/kaeso-ui";
 import { toast } from "~/shell/toast";
-import { api } from "~/api/client";
+import { api, data } from "~/api/client";
 import type { MyMembership } from "~/api/generated/types";
 import { useApiMutation } from "~/auth/mutation";
-import { useMemberships } from "~/auth/session";
+import { membershipsQuery, useMemberships } from "~/auth/session";
 import { formatDate } from "@logicplanes/kaeso-ui/format";
 import { projectPath } from "~/shell/pages";
 import { SettingsPage } from "~/shell/settings-page";
@@ -64,6 +64,9 @@ export function MembershipsPage() {
               ))
             )}
           </SettingsGroup>
+          <SettingsGroup className="mt-12" aria-label={t("account.emailsAbout", "Emails about {org}", { org: m.org_name })}>
+            <OrgEmails membership={m} />
+          </SettingsGroup>
         </Section>
       ))}
       {leaving && (
@@ -114,5 +117,38 @@ function LeaveButton({ membership: m, onLeave }: { membership: MyMembership; onL
     >
       {t("account.leaveOrg", "Leave organization")}
     </Button>
+  );
+}
+
+function OrgEmails({ membership: m }: { membership: MyMembership }) {
+  const queryClient = useQueryClient();
+  const mute = useApiMutation({
+    mutationFn: async (muted: boolean) =>
+      data(await api.PUT("/platform/v1/me/memberships/{org}/notifications", { params: { path: { org: m.org_id } }, body: { muted } })),
+    onSuccess: ({ muted }) => {
+      queryClient.setQueryData(membershipsQuery.queryKey, (all: MyMembership[] | undefined) =>
+        all?.map((x) => (x.org_id === m.org_id ? { ...x, notifications_muted: muted } : x)),
+      );
+      toast.success(
+        muted
+          ? t("account.orgEmailsOff", "Emails about {org} stopped", { org: m.org_name })
+          : t("account.orgEmailsOn", "Emails about {org} back on", { org: m.org_name }),
+      );
+    },
+  });
+  const muted = mute.isPending ? mute.variables : m.notifications_muted;
+  return (
+    <SettingsRow
+      title={t("account.emailMeAboutOrg", "Email me about this organization")}
+      description={t("account.emailMeAboutOrgHint", "Security emails arrive either way.")}
+      control={
+        <Switch
+          aria-label={t("account.emailMeAboutOrg", "Email me about this organization")}
+          checked={!muted}
+          disabled={mute.isPending}
+          onCheckedChange={(on) => mute.mutate(!on)}
+        />
+      }
+    />
   );
 }

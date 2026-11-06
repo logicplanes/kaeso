@@ -621,5 +621,11 @@
   "errors.limits.toolCallRateModel": "Eine Tool-Aufrufrate zählt jedes Tool; lassen Sie `model` weg.",
   "errors.notFound.toolCall": "Tool-Aufruf nicht gefunden oder nicht sichtbar.",
   "errors.tools.personCalls": "Eine Person ruft Tools im Playground auf; nutzen Sie eine Konsolensitzung.",
-  "errors.tools.unavailable": "Kaeso kann die Tools dieses Projekts gerade nicht laden; versuchen Sie es gleich erneut."
+  "errors.tools.unavailable": "Kaeso kann die Tools dieses Projekts gerade nicht laden; versuchen Sie es gleich erneut.",
+  "errors.notifications.invalidLink": "Dieser Abmeldelink ist ungültig; wählen Sie Ihre E-Mails unter Konto › Benachrichtigungen.",
+  "errors.notifications.unknownKind": "`{kind}` ist keine Art von E-Mail.",
+  "errors.notifications.securityAlways": "Sicherheits-E-Mails werden immer gesendet; sie haben keine Einstellung.",
+  "errors.notifications.noAddress": "Ihr Konto hat keine E-Mail-Adresse.",
+  "errors.notifications.testTooSoon": "Sie haben gerade eine Test-E-Mail gesendet; in {wait} erneut versuchen.",
+  "errors.notifications.testNotSent": "Die E-Mail wurde nicht gesendet; bitten Sie einen Instanz-Admin, die Mail-Einstellungen zu prüfen."
 }

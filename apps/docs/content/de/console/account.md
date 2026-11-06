@@ -14,7 +14,8 @@ Ihr Konto finden Sie unter **Konto** im Menü am Fuß der Seitenleiste. Es hat d
 | Agenten | Die Agenten, die Sie über den [MCP-Server](../api/mcp.md) verbunden haben, mit ihren Rechten und ihrer Aktivität |
 | API-Schlüssel | Ihre eigenen Schlüssel in allen Projekten ([API-Schlüssel](api-keys.md)) |
 | Mitgliedschaften | Ihre Organisationen und deren Projekte mit Ihren Rollen sowie das Verlassen einer Organisation |
-| Benachrichtigungen | Welche E-Mails Sie erhalten |
+| Verbindungen | Ihre eigenen Konten bei MCP-Servern, bei denen sich jede Person anmeldet ([MCP-Portal](../concepts/mcp-portal.md#verbindungen)) |
+| Benachrichtigungen | Welche E-Mails Sie erhalten, und wann |
 | Darstellung | Design und Sprache |
 
 ## E-Mail-Adresse ändern
@@ -106,7 +107,43 @@ Ohne Passwort wählen Sie **Link per E-Mail senden** unter **Konto** › **Siche
 
 ## E-Mails wählen
 
-Unter **Benachrichtigungen** schalten **Budget-Warnungen** und **Ablaufende Schlüssel** diese E-Mails ein oder aus. Sicherheits-E-Mails, etwa zu einem geänderten Passwort, schickt Kaeso immer.
+Kaeso schreibt Ihnen zu dem, wofür Ihre Rechte Sie verantwortlich machen: in der Instanz, Ihren Organisationen, Ihren Projekten und deren Portalen. **Benachrichtigungen** listet nur die E-Mails, die Sie erhalten können, in den Bereichen **Sicherheit**, **Persönlich**, **Projekt**, **Tools**, **Organisation** und **Instanz**. Wählen Sie für jede, wann sie rausgeht:
+
+| Auswahl | Was passiert |
+| --- | --- |
+| Sofort | Kaeso sendet sie sofort |
+| Täglich | Sie kommt in eine Zusammenfassung pro Tag, die nur rausgeht, wenn etwas passiert ist |
+| Aus | Kaeso sendet sie nicht |
+
+Sicherheits-E-Mails, etwa zu einem geänderten Passwort oder einer neuen App, die als Sie handeln kann, haben keine Auswahl: Kaeso sendet sie immer sofort. Zu etwas, das Sie selbst getan haben, schreibt Kaeso Ihnen nie.
+
+| Bereich | E-Mail | Wer sie erhalten kann | Standard |
+| --- | --- | --- | --- |
+| Sicherheit | Kontosicherheit, Eine neue App kann als Sie handeln | Sie | Immer |
+| Persönlich | Export abgeschlossen | Wer den Export gestartet hat (`logs.export`, `audit_log.export`) | Sofort |
+| Persönlich | Wochenübersicht | `usage.view` | Aus |
+| Projekt | Ihr Zugriff hat sich geändert | Sie | Sofort |
+| Projekt | Budget-Warnungen, Limit erreicht | `limits.manage` oder der Inhaber eines Schlüssels mit Limit | Sofort, Täglich |
+| Projekt | Ihr Schlüssel läuft ab, Ihr Schlüssel wurde geändert | Der Inhaber des Schlüssels | Sofort |
+| Projekt | Inhaltsprotokollierung geändert | Jedes Mitglied des Projekts | Täglich |
+| Tools | MCP-Server brauchen Aufmerksamkeit | `mcp_servers.manage` | Sofort |
+| Tools | Ihre Verbindung ist abgelaufen | Sie, bei einem Server, mit dem Sie Ihr eigenes Konto verbunden haben | Sofort |
+| Tools | Neuer Client an einem Portal | `tools.manage` | Täglich |
+| Organisation | Sicherheitseinstellungen geändert | `security.sso.manage` oder `platform_keys.view` | Sofort |
+| Organisation | Inhaberschaft und Löschung | Inhaber | Immer |
+| Organisation | Mitgliederänderungen | `members.invite` | Täglich |
+| Organisation | Ihre Einladung wurde angenommen | Wer sie gesendet hat | Sofort |
+| Organisation | Anbieter-Schlüssel brauchen Aufmerksamkeit | `provider_credentials.replace` | Sofort |
+| Organisation | Modelländerungen | `models.manage` in einem Projekt, das das Modell nutzt | Täglich |
+| Organisation | Monatlicher Kostenbericht | `costs.org.view` | Sofort |
+| Instanz | Updates, Instanzeinstellungen geändert | Instanz-Admins | Sofort |
+| Instanz | Neue Organisationen und Personen | Instanz-Admins | Täglich |
+
+**Test-E-Mail senden** schickt eine an Ihre Adresse, höchstens einmal pro Minute. Schreibt die Installation E-Mails nur in ihr Protokoll, sagt die Seite das und bietet keine Auswahl.
+
+Um alle E-Mails zu einer Organisation außer Sicherheits-E-Mails zu stoppen, schalten Sie unter **Mitgliedschaften** für sie **Mir E-Mails zu dieser Organisation senden** aus.
+
+Jede E-Mail außer Sicherheits-E-Mails endet mit einem Link, der genau diese Art ausschaltet, ohne Anmeldung. Mail-Apps mit eigener Abmelde-Schaltfläche nutzen denselben Link. Schalten Sie die E-Mail unter **Benachrichtigungen** wieder ein.
 
 ## Design und Sprache wählen
 

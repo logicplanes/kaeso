@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, email, name, password_hash, email_verified_at, state, is_instance_admin, notify_budget_alerts, notify_key_expiry, created_at, avatar FROM users WHERE id = $1",
+  "query": "SELECT id, email, name, password_hash, email_verified_at, state, is_instance_admin, created_at, avatar FROM users WHERE ($1::uuid IS NULL OR id > $1) AND ($3::text IS NULL OR email ILIKE $3 OR name ILIKE $3 OR email ILIKE $5) AND ($4::text IS NULL OR state = $4) ORDER BY id LIMIT $2",
   "describe": {
     "columns": [
       {
@@ -82,28 +82,6 @@
       },
       {
         "ordinal": 7,
-        "name": "notify_budget_alerts",
-        "type_info": "Bool",
-        "origin": {
-          "Table": {
-            "table": "users",
-            "name": "notify_budget_alerts"
-          }
-        }
-      },
-      {
-        "ordinal": 8,
-        "name": "notify_key_expiry",
-        "type_info": "Bool",
-        "origin": {
-          "Table": {
-            "table": "users",
-            "name": "notify_key_expiry"
-          }
-        }
-      },
-      {
-        "ordinal": 9,
         "name": "created_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -114,7 +92,7 @@
         }
       },
       {
-        "ordinal": 10,
+        "ordinal": 8,
         "name": "avatar",
         "type_info": "Text",
         "origin": {
@@ -127,7 +105,11 @@
     ],
     "parameters": {
       "Left": [
-        "Uuid"
+        "Uuid",
+        "Int8",
+        "Text",
+        "Text",
+        "Text"
       ]
     },
     "nullable": [
@@ -139,10 +121,8 @@
       false,
       false,
       false,
-      false,
-      false,
       true
     ]
   },
-  "hash": "7f0d9edfd19e994aff2b1bcab88db39d529f4803f1ef229551ac9f99f3b5a3cf"
+  "hash": "dc3368bf72ae9c99f6384bb15230b09bc57babb7db36c19b2511363ea90b12d2"
 }

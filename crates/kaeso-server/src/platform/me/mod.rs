@@ -2,6 +2,7 @@ pub mod account;
 pub mod agents;
 pub mod keys;
 pub mod mcp_connections;
+pub mod notifications;
 pub mod profile;
 pub mod security;
 pub mod sessions;
@@ -44,8 +45,11 @@ pub fn routes(s: &Secure) -> OpenApiRouter<AppState> {
         .routes(s.route(Access::Account, routes!(account::create_org)))
         .routes(s.route(Access::Me(AccountView), routes!(account::memberships)))
         .routes(s.route(Access::Me(AccountMembershipsLeave), routes!(account::leave)))
-        .routes(s.route(Access::Me(AccountView), routes!(account::notifications)))
-        .routes(s.route(Access::Me(AccountNotificationsManage), routes!(account::set_notifications)))
+        .routes(s.route(Access::Me(AccountView), routes!(notifications::get)))
+        .routes(s.route(Access::Me(AccountNotificationsManage), routes!(notifications::update)))
+        .routes(s.route(Access::Me(AccountNotificationsManage), routes!(notifications::mute)))
+        .routes(s.route(Access::Me(AccountNotificationsManage), routes!(notifications::test)))
+        .routes(s.route(Access::Public, routes!(notifications::unsubscribe_link, notifications::unsubscribe)))
         .routes(s.route(Access::Account, routes!(account::delete_account)))
         .routes(s.route(Access::Me(AccountKeysView), routes!(keys::list)))
         .routes(s.route(Access::Me(AccountKeysView), routes!(keys::get)))

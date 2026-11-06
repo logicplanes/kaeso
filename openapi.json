@@ -5730,12 +5730,89 @@
         "x-kaeso-access": "right:account.memberships.leave"
       }
     },
+    "/platform/v1/me/memberships/{org}/notifications": {
+      "put": {
+        "tags": [
+          "me"
+        ],
+        "summary": "Mutes or unmutes emails about an org. Security emails still arrive.",
+        "description": "**Access:** a signed-in console session, or an agent granted `account.notifications.manage`.",
+        "operationId": "putMeMembershipsOrgNotifications",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MembershipNotifications"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MembershipNotifications"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:account.notifications.manage"
+      }
+    },
     "/platform/v1/me/notifications": {
       "get": {
         "tags": [
           "me"
         ],
-        "summary": "The user's alert email preferences. Security emails are always sent.",
+        "summary": "The emails the user's rights let them receive, grouped by area, each with\nthe right that makes them responsible and when it goes out.",
         "description": "**Access:** a signed-in console session, or an agent granted `account.view`.",
         "operationId": "getMeNotifications",
         "responses": {
@@ -5743,7 +5820,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Notifications"
+                  "$ref": "#/components/schemas/NotificationSettings"
                 }
               }
             }
@@ -5787,14 +5864,14 @@
         "tags": [
           "me"
         ],
-        "summary": "Turns alert emails on or off.",
+        "summary": "Chooses when emails go out: now, in the daily digest or not at all.\nSecurity emails have no setting.",
         "description": "**Access:** a signed-in console session, or an agent granted `account.notifications.manage`.",
         "operationId": "putMeNotifications",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Notifications"
+                "$ref": "#/components/schemas/NotificationsUpdate"
               }
             }
           },
@@ -5805,7 +5882,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Notifications"
+                  "$ref": "#/components/schemas/NotificationSettings"
                 }
               }
             }
@@ -5827,6 +5904,60 @@
           },
           "413": {
             "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:account.notifications.manage"
+      }
+    },
+    "/platform/v1/me/notifications/test": {
+      "post": {
+        "tags": [
+          "me"
+        ],
+        "summary": "Sends a test email to the user's address, at most once a minute.",
+        "description": "**Access:** a signed-in console session, or an agent granted `account.notifications.manage`.",
+        "operationId": "postMeNotificationsTest",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TestEmailResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
           },
           "429": {
             "$ref": "#/components/responses/RateLimited"
@@ -6751,6 +6882,118 @@
           }
         ],
         "x-kaeso-access": "session"
+      }
+    },
+    "/platform/v1/notifications/unsubscribe": {
+      "get": {
+        "tags": [
+          "me"
+        ],
+        "summary": "The email an unsubscribe link stops, without a session.",
+        "description": "**Access:** public; no authentication.",
+        "operationId": "getNotificationsUnsubscribe",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "query",
+            "description": "The signed token from the email's unsubscribe link.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Unsubscribe"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {}
+        ],
+        "x-kaeso-access": "public"
+      },
+      "post": {
+        "tags": [
+          "me"
+        ],
+        "summary": "Turns one kind of email off with the link from such an email, without a\nsession.",
+        "description": "Mail apps send `List-Unsubscribe=One-Click` here as RFC 8058 describes, without `Origin`; the signed token is the authority, so the request needs neither a session nor `Origin`. Any body is ignored.\n\n**Access:** public; no authentication.",
+        "operationId": "postNotificationsUnsubscribe",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "query",
+            "description": "The signed token from the email's unsubscribe link.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Unsubscribe"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {}
+        ],
+        "x-kaeso-access": "public"
       }
     },
     "/platform/v1/orgs/{org}": {
@@ -30496,6 +30739,20 @@
         ],
         "pattern": "^mem_[0-9a-hjkmnp-tv-z]{26}$"
       },
+      "MembershipNotifications": {
+        "type": "object",
+        "description": "Whether the user gets emails about an org.",
+        "required": [
+          "muted"
+        ],
+        "properties": {
+          "muted": {
+            "type": "boolean",
+            "description": "`true` stops every email about the org except security emails."
+          }
+        },
+        "additionalProperties": false
+      },
       "Memberships": {
         "type": "object",
         "description": "The user's memberships.",
@@ -30759,12 +31016,17 @@
           "role",
           "preset",
           "projects",
-          "last_owner"
+          "last_owner",
+          "notifications_muted"
         ],
         "properties": {
           "last_owner": {
             "type": "boolean",
             "description": "The user is the org's only owner, so `DELETE me/memberships/{org}` is\nrefused until someone else is an owner too."
+          },
+          "notifications_muted": {
+            "type": "boolean",
+            "description": "The user muted emails about the org; security emails still arrive."
           },
           "org_avatar_url": {
             "type": [
@@ -30847,21 +31109,123 @@
           }
         }
       },
-      "Notifications": {
+      "NotificationArea": {
         "type": "object",
-        "description": "Alert emails the user wants.",
+        "description": "The emails of one area.",
         "required": [
-          "budget_alerts",
-          "key_expiry"
+          "area",
+          "name",
+          "kinds"
         ],
         "properties": {
-          "budget_alerts": {
-            "type": "boolean",
-            "description": "Budget threshold alerts."
+          "area": {
+            "type": "string",
+            "description": "`security`, `personal`, `project`, `tools`, `organization` or `instance`."
           },
-          "key_expiry": {
+          "kinds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NotificationKindView"
+            },
+            "description": "Its emails the user can receive."
+          },
+          "name": {
+            "type": "string",
+            "description": "Its name in English."
+          }
+        }
+      },
+      "NotificationDelivery": {
+        "type": "string",
+        "description": "When an email goes out: `now`, in the `daily` digest, or `off`.",
+        "enum": [
+          "now",
+          "daily",
+          "off"
+        ]
+      },
+      "NotificationKindView": {
+        "type": "object",
+        "description": "An email the user can receive.",
+        "required": [
+          "kind",
+          "name",
+          "description",
+          "always",
+          "default",
+          "delivery"
+        ],
+        "properties": {
+          "always": {
             "type": "boolean",
-            "description": "Key expiry warnings."
+            "description": "A security email: always sent at once, even for a muted org, with no setting."
+          },
+          "default": {
+            "$ref": "#/components/schemas/NotificationDelivery",
+            "description": "The delivery without a choice of the user's."
+          },
+          "delivery": {
+            "$ref": "#/components/schemas/NotificationDelivery",
+            "description": "The delivery that applies."
+          },
+          "description": {
+            "type": "string",
+            "description": "What it is about, in English."
+          },
+          "kind": {
+            "type": "string",
+            "description": "The kind, such as `budget_alerts`."
+          },
+          "name": {
+            "type": "string",
+            "description": "Its name in English."
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The right that makes the user responsible, such as `members.invite`; `null` for\nan email about the user's own account, access or keys."
+          }
+        }
+      },
+      "NotificationSettings": {
+        "type": "object",
+        "description": "The emails the user's rights let them receive, and when each goes out.",
+        "required": [
+          "sends_email",
+          "areas"
+        ],
+        "properties": {
+          "areas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NotificationArea"
+            },
+            "description": "Areas in page order; an area without an email the user can receive is left out."
+          },
+          "sends_email": {
+            "type": "boolean",
+            "description": "`false` when the install only writes emails to its log (`mail.transport` is\n`log`), so none reach anyone."
+          }
+        }
+      },
+      "NotificationsUpdate": {
+        "type": "object",
+        "description": "Deliveries to change; kinds left out keep theirs.",
+        "required": [
+          "kinds"
+        ],
+        "properties": {
+          "kinds": {
+            "type": "object",
+            "description": "Kind to delivery, such as `{\"org_members\": \"off\"}`.",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/NotificationDelivery"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
           }
         },
         "additionalProperties": false
@@ -35861,6 +36225,36 @@
           }
         },
         "additionalProperties": false
+      },
+      "Unsubscribe": {
+        "type": "object",
+        "description": "The email an unsubscribe link stops.",
+        "required": [
+          "kind",
+          "name",
+          "delivery"
+        ],
+        "properties": {
+          "delivery": {
+            "$ref": "#/components/schemas/NotificationDelivery",
+            "description": "Its delivery now; `off` after `POST`."
+          },
+          "email": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The account's email address."
+          },
+          "kind": {
+            "type": "string",
+            "description": "The kind, such as `weekly_summary`."
+          },
+          "name": {
+            "type": "string",
+            "description": "Its name in English."
+          }
+        }
       },
       "UpdateActor": {
         "type": "object",

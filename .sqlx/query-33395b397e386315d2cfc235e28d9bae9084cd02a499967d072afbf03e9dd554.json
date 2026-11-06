@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO notification_settings (user_id, kind, delivery) VALUES ($1, $2, $3) ON CONFLICT (user_id, kind) DO UPDATE SET delivery = EXCLUDED.delivery, updated_at = now()",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "33395b397e386315d2cfc235e28d9bae9084cd02a499967d072afbf03e9dd554"
+}

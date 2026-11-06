@@ -6,10 +6,12 @@ use futures::future::BoxFuture;
 use kaeso_core::cost;
 use kaeso_core::id::{ApiKeyId, OrgId};
 use kaeso_core::limits::{self, Limit, Subject};
+use kaeso_core::notifications::Kind;
 use kaeso_kpp::Usage;
 use kaeso_mail::{Budget, BudgetScope, LimitKind, LimitPeriod};
 use kaeso_store::StoreError;
 use kaeso_store::pg::limits::{self as store, UsageRow};
+use kaeso_store::pg::notifications;
 use kaeso_store::pg::usage as store_usage;
 use rust_decimal::Decimal;
 use time::{Date, OffsetDateTime};
@@ -561,7 +563,13 @@ async fn key_owner(
     let Some(u) = kaeso_store::pg::users::get(&state.pg, user).await? else {
         return Ok(None);
     };
-    Ok((u.state == "active" && u.notify_budget_alerts)
+    let off = !notifications::turned_off(&state.pg, &[u.id], Kind::BudgetAlerts.as_str())
+        .await?
+        .is_empty();
+    let muted = notifications::mutes_of(&state.pg, &[u.id])
+        .await?
+        .contains(&(u.id, k.org_id));
+    Ok((u.state == "active" && !off && !muted)
         .then_some(u.email.map(|e| (u.id, e)))
         .flatten())
 }

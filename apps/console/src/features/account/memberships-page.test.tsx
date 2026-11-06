@@ -110,4 +110,27 @@ describe("memberships", () => {
     await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
     expect(requests("DELETE", "me/memberships/:org")).toHaveLength(0);
   });
+
+  it("stops and restarts emails about one organization", async () => {
+    twoOrgs({ notifications_muted: true });
+    on("PUT", "me/memberships/:org/notifications", ({ body }: { body: { muted: boolean } }) => body);
+    const { user } = await renderApp(PATH);
+    const northwind = within(await screen.findByRole("group", { name: "Emails about Northwind Labs" })).getByRole("switch", {
+      name: "Email me about this organization",
+    });
+    const emails = screen.getAllByRole("group", { name: /^Emails about / });
+    expect(emails.map((g) => g.getAttribute("aria-label"))).toEqual(["Emails about Northwind Labs", "Emails about Contoso"]);
+    expect(northwind).toBeChecked();
+    const contoso = within(screen.getByRole("group", { name: "Emails about Contoso" })).getByRole("switch");
+    expect(contoso).not.toBeChecked();
+    expect(within(screen.getByRole("group", { name: "Emails about Contoso" })).getByText("Security emails arrive either way.")).toBeInTheDocument();
+
+    await user.click(northwind);
+    expect(await notifications().findByText("Emails about Northwind Labs stopped")).toBeInTheDocument();
+    expect(northwind).not.toBeChecked();
+    await user.click(contoso);
+    expect(await notifications().findByText("Emails about Contoso back on")).toBeInTheDocument();
+    expect(contoso).toBeChecked();
+    expect(requests("PUT", "me/memberships/:org/notifications").map((r) => r.body)).toEqual([{ muted: true }, { muted: false }]);
+  });
 });

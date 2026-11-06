@@ -736,7 +736,7 @@ async fn soft_budgets_alert_once_per_threshold() {
         .call(
             Method::PUT,
             "/me/notifications",
-            Some(json!({ "budget_alerts": false, "key_expiry": true })),
+            Some(json!({ "kinds": { "budget_alerts": "off" } })),
             Some(&env.owner.cookie),
         )
         .await;

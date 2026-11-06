@@ -678,7 +678,7 @@ async fn users_manage_their_own_keys_and_get_expiry_warnings() {
     app.call(
         Method::PUT,
         "/me/notifications",
-        Some(json!({ "budget_alerts": true, "key_expiry": false })),
+        Some(json!({ "kinds": { "key_expiry": "off" } })),
         Some(&fresh),
     )
     .await

@@ -26,7 +26,12 @@ fn every_route_declares_exactly_one_access() {
             .as_str()
             .unwrap_or_else(|| panic!("{route} declares no access"));
         let rest = path.trim_start_matches("/platform/v1/");
-        if rest.starts_with("auth/") {
+        if rest == "notifications/unsubscribe" {
+            assert_eq!(
+                access, "public",
+                "{route}: the signed link is its only check"
+            );
+        } else if rest.starts_with("auth/") {
             assert!(
                 access == "public" || access == "session",
                 "{route}: {access}"

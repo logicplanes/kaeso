@@ -18,6 +18,7 @@ pub mod master_key;
 pub mod mcp_connections;
 pub mod mcp_servers;
 pub mod mcp_tools;
+pub mod notifications;
 pub mod orgs;
 pub mod provider_accounts;
 pub mod provider_detection;
