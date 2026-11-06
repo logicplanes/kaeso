@@ -354,6 +354,8 @@ const messages = (): Rule[] => [
   rule("errors.secretCharacters", () => t("errors.secretCharacters", "The secret must not contain spaces or control characters.")),
   rule("errors.providerIdForm", () => t("errors.providerIdForm", "`provider` must be a provider id, such as `openai`.")),
   rule("errors.providerUnknown", () => t("errors.providerUnknown", "This organization has no such provider; choose one under Providers.")),
+  rule("errors.agentRequest.forPortal", () => t("errors.agentRequest.forPortal", "This sign-in is for a project's MCP portal; reload the page.")),
+  rule("errors.agentRequest.forAgent", () => t("errors.agentRequest.forAgent", "This sign-in is for an agent, not a project's MCP portal; reload the page.")),
   rule("errors.notFound.mcpServer", () => t("errors.notFound.mcpServer", "No such MCP server, or you cannot see it.")),
   rule("errors.notFound.tool", () => t("errors.notFound.tool", "No such tool, or you cannot see it.")),
   rule("errors.notFound.portalClient", () => t("errors.notFound.portalClient", "No such portal client, or you cannot see it.")),

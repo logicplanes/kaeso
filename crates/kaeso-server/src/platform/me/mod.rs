@@ -27,6 +27,7 @@ pub fn routes(s: &Secure) -> OpenApiRouter<AppState> {
         .routes(s.route(Access::Session, routes!(agents::activity)))
         .routes(s.route(Access::Session, routes!(agents::request)))
         .routes(s.route(Access::Session, routes!(agents::approve)))
+        .routes(s.route(Access::Session, routes!(agents::approve_portal)))
         .routes(s.route(Access::Session, routes!(agents::deny)))
         .routes(s.route(Access::Me(AccountUpdate), routes!(profile::update)))
         .routes(s.route(Access::Me(AccountUpdate), routes!(profile::set_avatar, profile::remove_avatar)))

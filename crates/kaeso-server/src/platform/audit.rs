@@ -101,6 +101,7 @@ actions! {
         PlatformKeyDisable = "platform_key.disable",
         PlatformKeyEnable = "platform_key.enable",
         PlatformKeyRotate = "platform_key.rotate",
+        PortalGrantCreate = "portal_grant.create",
         PortalGrantRevoke = "portal_grant.revoke",
         ProjectArchive = "project.archive",
         ProjectCreate = "project.create",

@@ -234,5 +234,6 @@
   "format.audit.action.portalGrantRevoke": "Client vom Portal getrennt",
   "format.targetKind.mcpServer": "MCP-Server",
   "format.targetKind.tool": "Tool",
-  "format.targetKind.portalGrant": "Portal-Client"
+  "format.targetKind.portalGrant": "Portal-Client",
+  "format.audit.action.portalGrantCreate": "Client mit dem Portal verbunden"
 }

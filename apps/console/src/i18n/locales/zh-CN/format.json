@@ -234,5 +234,6 @@
   "format.audit.action.portalGrantRevoke": "客户端已与门户断开",
   "format.targetKind.mcpServer": "MCP 服务器",
   "format.targetKind.tool": "工具",
-  "format.targetKind.portalGrant": "门户客户端"
+  "format.targetKind.portalGrant": "门户客户端",
+  "format.audit.action.portalGrantCreate": "客户端已连接到门户"
 }

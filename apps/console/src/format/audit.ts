@@ -105,6 +105,7 @@ const ACTION_LABELS: Record<string, () => string> = {
   "platform_key.enable": () => t("format.audit.action.platformKeyEnable", "Platform key enabled"),
   "platform_key.archive": () => t("format.audit.action.platformKeyArchive", "Platform key archived"),
   "platform_key.rotate": () => t("format.audit.action.platformKeyRotate", "Platform key rotated"),
+  "portal_grant.create": () => t("format.audit.action.portalGrantCreate", "Client connected to the portal"),
   "portal_grant.revoke": () => t("format.audit.action.portalGrantRevoke", "Client disconnected from the portal"),
   "project.create": () => t("format.audit.action.projectCreate", "Project created"),
   "project.update": () => t("format.audit.action.projectUpdate", "Project changed"),

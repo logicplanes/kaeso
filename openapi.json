@@ -4054,6 +4054,70 @@
         "x-kaeso-access": "session"
       }
     },
+    "/platform/v1/me/agent-requests/approve-portal": {
+      "post": {
+        "tags": [
+          "agents"
+        ],
+        "summary": "Lets a client call a project's tools through its MCP portal as you.",
+        "description": "The client gets your access to the project's tools until you or a project admin\ndisconnect it. Its token is good only at this portal. The browser goes on to `redirect_to`,\nwhere the client exchanges the code for tokens.\n\n**Access:** a signed-in console session; no right is needed. Agents can't use it.",
+        "operationId": "postMeAgentRequestsApprovePortal",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentRequestRef"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentRedirect"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "x-kaeso-access": "session"
+      }
+    },
     "/platform/v1/me/agent-requests/deny": {
       "post": {
         "tags": [
@@ -21165,6 +21229,17 @@
             "format": "date-time",
             "description": "When the request ends."
           },
+          "portal": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PortalRequestView",
+                "description": "For a client asking to use a project's MCP portal: the portal and its tools; `null`\nfor an agent of Kaeso's own MCP server."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "redirect_host": {
             "type": "string",
             "description": "Where the browser goes back to after the decision.",
@@ -30888,6 +30963,58 @@
           "user": {
             "$ref": "#/components/schemas/UserId",
             "description": "The person who connected it."
+          }
+        }
+      },
+      "PortalRequestView": {
+        "type": "object",
+        "description": "A client asking to call a project's tools as the signed-in person.",
+        "required": [
+          "org",
+          "org_name",
+          "project",
+          "project_name",
+          "tools",
+          "local"
+        ],
+        "properties": {
+          "client_host": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "For a client known by its metadata document: the host it is published on, which\nvouches for the client's name.",
+            "example": "claude.ai"
+          },
+          "local": {
+            "type": "boolean",
+            "description": "Whether the client receives the sign-in on this computer, as a desktop app does."
+          },
+          "org": {
+            "$ref": "#/components/schemas/OrgId",
+            "description": "The organization."
+          },
+          "org_name": {
+            "type": "string",
+            "description": "Its name."
+          },
+          "project": {
+            "$ref": "#/components/schemas/ProjectId",
+            "description": "The project whose portal the client asks for."
+          },
+          "project_name": {
+            "type": "string",
+            "description": "Its name."
+          },
+          "tools": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The tools the client could call: those the project offers and you may use.",
+            "example": [
+              "x__create_post"
+            ]
           }
         }
       },

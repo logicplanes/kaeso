@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { AlertDialog, Button, GrantSummary, Input, Spinner, Text } from "@logicplanes/kaeso-ui";
+import { AlertDialog, Banner, Button, GrantSummary, Input, Spinner, Text } from "@logicplanes/kaeso-ui";
 import { api, data } from "~/api/client";
 import { isApiError } from "~/api/errors";
 import { fieldError } from "~/api/field-error";
-import type { AgentCatalogue, AgentRequestView, Grantable } from "~/api/generated/types";
+import type { AgentCatalogue, AgentRequestView, Grantable, PortalRequestView } from "~/api/generated/types";
 import { agentCatalogueQuery, grantableQuery } from "~/api/queries/agents";
 import { forgetFragment, takeFragment } from "~/auth/fragment";
 import { withSignInAgain } from "~/auth/mutation";
@@ -108,6 +108,7 @@ function Consent({ token, account }: { token: string; account: string }) {
       </PublicPage>
     );
   }
+  if (request.data?.portal) return <PortalConsent token={token} account={account} request={request.data} portal={request.data.portal} />;
   if (request.isError || cat.isError || grantable.isError) {
     return (
       <PublicPage
@@ -122,6 +123,77 @@ function Consent({ token, account }: { token: string; account: string }) {
   }
   if (!request.data || !cat.data || !grantable.data) return <Opening />;
   return <ConsentForm token={token} account={account} request={request.data} cat={cat.data} grantable={grantable.data} />;
+}
+
+function Leaving({ host }: { host: string }) {
+  return (
+    <PublicPage title={t("public.backToAgent", "Back to the agent…")}>
+      <div className="flex justify-center show-after-delay">
+        <Spinner label={t("public.returningToAgent", "Returning to {host}", { host })} />
+      </div>
+    </PublicPage>
+  );
+}
+
+function PortalConsent({ token, account, request, portal }: { token: string; account: string; request: AgentRequestView; portal: PortalRequestView }) {
+  const [leaving, setLeaving] = useState(false);
+  const { busy, submit } = useSubmit();
+  const leave = (to: string) => {
+    setLeaving(true);
+    forget(token);
+    window.location.assign(to);
+  };
+  const connect = () =>
+    submit(async () => {
+      const result = data(await api.POST("/platform/v1/me/agent-requests/approve-portal", { body: { request: token } }));
+      leave(result.redirect_to);
+    });
+  const deny = () =>
+    submit(async () => {
+      const result = data(await api.POST("/platform/v1/me/agent-requests/deny", { body: { request: token } }));
+      leave(result.redirect_to);
+    });
+  if (leaving) return <Leaving host={request.redirect_host} />;
+  return (
+    <PublicPage
+      title={t("public.connectPortalTitle", "Connect {client} to {project}", { client: request.client, project: portal.project_name })}
+      description={t("public.connectPortalLead", "It calls this project's tools as you, with your access to them.")}
+      footer={
+        <Text variant="small" tone="tertiary" className="text-center">
+          {t("public.agentSignedInAs", "Signed in as {account} · returns to {host}", { account, host: request.redirect_host })}
+        </Text>
+      }
+    >
+      <div className="flex flex-col gap-16">
+        {portal.local ? (
+          <Banner tone="warning" title={t("public.portalLocalTitle", "It returns to this computer")}>
+            {t("public.portalLocal", "Continue only if you started this from an app on this device.")}
+          </Banner>
+        ) : null}
+        <GrantSummary
+          aria-label={t("public.portalTools", "Tools it can call")}
+          items={portal.tools.length ? portal.tools : [t("public.portalNoTools", "None yet; it gets the tools a project admin turns on.")]}
+          footer={t("public.portalUntilDisconnected", "In {org} › {project}, until you or a project admin disconnect it", {
+            org: portal.org_name,
+            project: portal.project_name,
+          })}
+        />
+        {portal.client_host ? (
+          <Text variant="small" tone="secondary">
+            {t("public.portalClientHost", "{host} publishes this client's name and return addresses.", { host: portal.client_host })}
+          </Text>
+        ) : null}
+      </div>
+      <div className="mt-8 flex flex-col gap-8">
+        <Button variant="primary" size="xl" fullWidth loading={busy} disabled={busy} onClick={() => void connect()}>
+          {t("public.connectPortal", "Connect")}
+        </Button>
+        <Button variant="ghost" size="xl" fullWidth disabled={busy} onClick={() => void deny()}>
+          {t("public.denyAgent", "Deny")}
+        </Button>
+      </div>
+    </PublicPage>
+  );
 }
 
 function ConsentForm({
@@ -171,15 +243,7 @@ function ConsentForm({
     else void authorize();
   };
 
-  if (leaving) {
-    return (
-      <PublicPage title={t("public.backToAgent", "Back to the agent…")}>
-        <div className="flex justify-center show-after-delay">
-          <Spinner label={t("public.returningToAgent", "Returning to {host}", { host: request.redirect_host })} />
-        </div>
-      </PublicPage>
-    );
-  }
+  if (leaving) return <Leaving host={request.redirect_host} />;
   const shownName = name.trim() || request.client;
   return (
     <PublicPage

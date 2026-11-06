@@ -267,13 +267,16 @@ Kaeso 自己就是授权服务器。其颁发者是实例的公共 URL，例如 
 | 端点 | 作用 |
 | --- | --- |
 | `GET /.well-known/oauth-protected-resource/mcp` | 资源元数据：`/mcp` 的地址、作为其授权服务器的 Kaeso，以及 scope `kaeso`。也可通过 `/.well-known/oauth-protected-resource` 获取 |
-| `GET /.well-known/oauth-authorization-server` | 授权服务器元数据：下列端点、唯一的 PKCE 方法 `S256`、仅限公共客户端（`none`），以及每次重定向中的 `iss`（RFC 9207） |
+| `GET /.well-known/oauth-protected-resource/mcp/{project}` | 项目的 MCP 门户作为独立资源 `/mcp/proj_…`，scope 为 `tools` |
+| `GET /.well-known/oauth-authorization-server` | 授权服务器元数据：下列端点、唯一的 PKCE 方法 `S256`、仅限公共客户端（`none`）、客户端 ID 元数据文档，以及每次重定向中的 `iss`（RFC 9207） |
 | `POST /oauth/register` | 注册客户端（RFC 7591），带 1 到 10 个重定向 URI，并返回其 `client_id`（`cli_…`）。重定向 URI 使用 HTTPS、任意端口的回环地址或私有 scheme |
-| `GET /oauth/authorize` | 接受 `response_type=code`、`client_id`、`redirect_uri`、`state` 以及带 `code_challenge_method=S256` 的 `code_challenge`。`scope` 只能是 `kaeso`；如果发送 `resource`，它必须是 `/mcp` 的地址；`state` 最多 2000 个字符。有人授权过该客户端的智能体之后，被拒绝的请求才会带着 `error` 返回环回地址或私有方案的重定向 URI；在此之前，以及对 HTTPS 地址，改由控制台显示错误 |
+| `GET /oauth/authorize` | 接受 `response_type=code`、`client_id`、`redirect_uri`、`state` 以及带 `code_challenge_method=S256` 的 `code_challenge`。如果发送 `resource`，它是 `/mcp` 的地址（`scope` 为 `kaeso`），或项目的门户（`scope` 为 `tools`）；`state` 最多 2000 个字符。有人授权过该客户端的智能体之后，被拒绝的请求才会带着 `error` 返回环回地址或私有方案的重定向 URI；在此之前，以及对 HTTPS 地址，改由控制台显示错误 |
 | `POST /oauth/token` | 表单编码。`grant_type=authorization_code` 带 `code`、`client_id`、`redirect_uri` 和 `code_verifier`，或 `grant_type=refresh_token` 带 `refresh_token` 和 `client_id` |
 | `POST /oauth/revoke` | 表单编码的 `token`。结束该令牌所属的登录；对未知令牌也返回 200 |
 
 按照 RFC 8252 的规定，回环重定向 URI 每次登录都可以换端口。其主机和路径必须与注册时一致。
+
+客户端也可以不注册，而是把其客户端 ID 元数据文档的 HTTPS 地址用作 `client_id`，claude.ai 就是这样做的。Kaeso 会通过与 MCP 服务器相同的地址检查获取该文档（最多 5 KiB），并保留 10 分钟。文档必须把该地址写作 `client_id`，列出其重定向 URI，且不要求客户端认证；授权页面会显示文档所在的主机。
 
 智能体在重启后会保留其 `client_id`，但 Kaeso 会删除从未完成登录的注册，新数据库中也没有任何注册。当智能体使用 Kaeso 不认识的 `client_id` 和回环重定向 URI 登录时，Kaeso 会以该 ID 将其重新注册为“MCP client”，登录继续进行。您可以在授权页面上为它改名。对于其他重定向 URI，控制台会提示它不认识该智能体。
 

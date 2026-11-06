@@ -302,6 +302,18 @@ pub async fn authenticate(
     .await?)
 }
 
+pub async fn access_hashes(
+    db: impl PgExecutor<'_>,
+    grant: Uuid,
+) -> Result<Vec<Vec<u8>>, StoreError> {
+    Ok(sqlx::query_scalar!(
+        "SELECT token_hash FROM portal_tokens WHERE grant_id = $1 AND kind = 'access'",
+        grant
+    )
+    .fetch_all(db)
+    .await?)
+}
+
 pub async fn sweep(db: impl PgExecutor<'_>, before: OffsetDateTime) -> Result<u64, StoreError> {
     Ok(sqlx::query!(
         "DELETE FROM portal_tokens WHERE (expires_at IS NOT NULL AND expires_at < $1) \

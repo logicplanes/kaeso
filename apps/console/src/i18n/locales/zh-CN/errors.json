@@ -614,5 +614,7 @@
   "errors.mcp.hashForm": "`hash` 必须是该工具 64 个字符的十六进制哈希。",
   "errors.mcp.toolRemoved": "服务器已不再列出此工具。",
   "errors.mcp.toolChangedAgain": "自您审核后该工具又发生了变更；请重新审核。",
-  "errors.mcp.noChange": "此工具没有待审核的变更。"
+  "errors.mcp.noChange": "此工具没有待审核的变更。",
+  "errors.agentRequest.forPortal": "此登录用于项目的 MCP 门户；请重新加载页面。",
+  "errors.agentRequest.forAgent": "此登录用于智能体，而不是项目的 MCP 门户；请重新加载页面。"
 }

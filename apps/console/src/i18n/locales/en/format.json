@@ -78,6 +78,7 @@
   "format.audit.action.platformKeyDisable": "Platform key disabled",
   "format.audit.action.platformKeyEnable": "Platform key enabled",
   "format.audit.action.platformKeyRotate": "Platform key rotated",
+  "format.audit.action.portalGrantCreate": "Client connected to the portal",
   "format.audit.action.portalGrantRevoke": "Client disconnected from the portal",
   "format.audit.action.projectArchive": "Project archived",
   "format.audit.action.projectCreate": "Project created",

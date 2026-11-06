@@ -123,5 +123,14 @@
   "public.startAgain": "Neu beginnen",
   "public.staySignedInAs": "Als {email} angemeldet bleiben",
   "public.toSignIn": "Zur Anmeldung",
-  "public.withoutPassword": "Ohne Passwort melden Sie sich per E-Mail-Link an. Die Einladung für {email} läuft {when} ab."
+  "public.withoutPassword": "Ohne Passwort melden Sie sich per E-Mail-Link an. Die Einladung für {email} läuft {when} ab.",
+  "public.connectPortalTitle": "{client} mit {project} verbinden",
+  "public.connectPortalLead": "Es ruft die Tools dieses Projekts in Ihrem Namen auf, mit Ihrem Zugriff darauf.",
+  "public.portalLocalTitle": "Es kehrt zu diesem Computer zurück",
+  "public.portalLocal": "Fahren Sie nur fort, wenn Sie dies aus einer App auf diesem Gerät gestartet haben.",
+  "public.portalTools": "Tools, die es aufrufen kann",
+  "public.portalNoTools": "Noch keine; es erhält die Tools, die ein Projekt-Admin einschaltet.",
+  "public.portalUntilDisconnected": "In {org} › {project}, bis Sie oder ein Projekt-Admin es trennen",
+  "public.portalClientHost": "{host} veröffentlicht den Namen und die Rückkehradressen dieses Clients.",
+  "public.connectPortal": "Verbinden"
 }

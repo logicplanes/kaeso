@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM agent_clients WHERE id IN (SELECT c.id FROM agent_clients c WHERE c.id <> $2 AND NOT EXISTS (SELECT 1 FROM agents a WHERE a.client_id = c.id) AND NOT EXISTS (SELECT 1 FROM portal_grants g WHERE g.client_id = c.id) ORDER BY c.created_at DESC, c.id DESC OFFSET $1)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "6be6058193bab8abe5ff3dadfc4b2dba88dc78ef9c3227911fe3fcb17219ddfc"
+}

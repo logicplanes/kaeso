@@ -387,6 +387,7 @@ pub(super) async fn call(state: &AppState, r: Request<'_>) -> Response {
         .and_then(|m| RawObject::of(m).ok())
         .and_then(|m| meta::client_info(&m))
         .map(|i| i.name)
+        .or_else(|| r.caller.client.clone())
         .unwrap_or_default();
     let arguments = r
         .message

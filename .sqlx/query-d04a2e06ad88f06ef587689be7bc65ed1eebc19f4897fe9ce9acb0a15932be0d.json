@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT r.id, r.client_id, c.name AS client_name, c.software_id, r.redirect_uri, r.state, r.code_challenge, r.expires_at FROM agent_requests r JOIN agent_clients c ON c.id = r.client_id WHERE r.token_hash = $1 AND r.used_at IS NULL AND r.expires_at > $2",
+  "query": "SELECT r.id, r.client_id, c.name AS client_name, c.software_id, r.redirect_uri, r.state, r.code_challenge, r.expires_at, r.resource FROM agent_requests r JOIN agent_clients c ON c.id = r.client_id WHERE r.token_hash = $1 AND r.used_at IS NULL AND r.expires_at > $2",
   "describe": {
     "columns": [
       {
@@ -90,6 +90,17 @@
             "name": "expires_at"
           }
         }
+      },
+      {
+        "ordinal": 8,
+        "name": "resource",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "agent_requests",
+            "name": "resource"
+          }
+        }
       }
     ],
     "parameters": {
@@ -106,8 +117,9 @@
       false,
       true,
       false,
-      false
+      false,
+      true
     ]
   },
-  "hash": "c80855a2b9510ec90a41269bc1693f2bfc1b950d756ec21a6b2ce7ee48fb75f1"
+  "hash": "d04a2e06ad88f06ef587689be7bc65ed1eebc19f4897fe9ce9acb0a15932be0d"
 }
