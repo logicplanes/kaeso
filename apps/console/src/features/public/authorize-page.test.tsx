@@ -101,6 +101,62 @@ describe("connecting an agent", () => {
     expect(window.sessionStorage.getItem(PENDING)).toBeNull();
   });
 
+  it("asks before a client calls a project's tools as the person, then connects it", async () => {
+    signedIn();
+    on("POST", "me/agent-requests/view", {
+      client: "Claude",
+      redirect_host: "claude.example",
+      expires_at: "2026-10-15T12:15:00Z",
+      portal: {
+        org: ORG,
+        org_name: "Northwind",
+        project: "proj_checkout",
+        project_name: "Checkout",
+        tools: ["x__create_post", "x__search_posts"],
+        client_host: "claude.example",
+        local: false,
+      },
+    });
+    on("POST", "me/agent-requests/approve-portal", { redirect_to: "https://claude.example/api/mcp/auth_callback?code=c", agent: null });
+    const assign = vi.spyOn(window.location, "assign").mockImplementation(() => undefined);
+    const { user } = await renderApp("/authorize#request=req_tok");
+    expect(await screen.findByRole("heading", { name: "Connect Claude to Checkout" })).toBeInTheDocument();
+    expect(screen.getByText("It calls this project's tools as you, with your access to them.")).toBeInTheDocument();
+    expect(
+      within(screen.getByRole("list", { name: "Tools it can call" }))
+        .getAllByRole("listitem")
+        .map((li) => li.textContent),
+    ).toEqual(["x__create_post", "x__search_posts"]);
+    expect(screen.getByText("In Northwind › Checkout, until you or a project admin disconnect it")).toBeInTheDocument();
+    expect(screen.getByText("claude.example publishes this client's name and return addresses.")).toBeInTheDocument();
+    expect(screen.queryByText("It returns to this computer")).toBeNull();
+    expect(requests("GET", "me/agents/catalogue")).toHaveLength(0);
+    await user.click(screen.getByRole("button", { name: "Connect" }));
+    await waitFor(() => expect(assign).toHaveBeenCalledWith("https://claude.example/api/mcp/auth_callback?code=c"));
+    expect(requests("POST", "me/agent-requests/approve-portal").map((r) => r.body)).toEqual([{ request: "req_tok" }]);
+    expect(window.sessionStorage.getItem(PENDING)).toBeNull();
+  });
+
+  it("warns about a client on this computer, says when no tool is on yet, and denies", async () => {
+    signedIn();
+    on("POST", "me/agent-requests/view", {
+      client: "Desk app",
+      redirect_host: "127.0.0.1",
+      expires_at: "2026-10-15T12:15:00Z",
+      portal: { org: ORG, org_name: "Northwind", project: "proj_checkout", project_name: "Checkout", tools: [], client_host: null, local: true },
+    });
+    on("POST", "me/agent-requests/deny", { redirect_to: "http://127.0.0.1:3333/callback?error=access_denied", agent: null });
+    const assign = vi.spyOn(window.location, "assign").mockImplementation(() => undefined);
+    const { user } = await renderApp("/authorize#request=req_tok");
+    expect(await screen.findByText("It returns to this computer")).toBeInTheDocument();
+    expect(screen.getByText("Continue only if you started this from an app on this device.")).toBeInTheDocument();
+    expect(screen.getByText("None yet; it gets the tools a project admin turns on.")).toBeInTheDocument();
+    expect(screen.queryByText(/publishes this client's name/)).toBeNull();
+    await user.click(screen.getByRole("button", { name: "Deny" }));
+    await waitFor(() => expect(assign).toHaveBeenCalledWith("http://127.0.0.1:3333/callback?error=access_denied"));
+    expect(screen.getByText("Back to the agent…")).toBeInTheDocument();
+  });
+
   it("says when the request has ended", async () => {
     signedIn();
     request();

@@ -267,13 +267,16 @@ Kaeso is its own authorization server. Its issuer is the install's public URL, s
 | Endpoint | Does |
 | --- | --- |
 | `GET /.well-known/oauth-protected-resource/mcp` | The resource metadata: the `/mcp` address, Kaeso as its authorization server and the scope `kaeso`. Also at `/.well-known/oauth-protected-resource` |
-| `GET /.well-known/oauth-authorization-server` | The authorization server metadata: the endpoints below, `S256` as the only PKCE method, public clients only (`none`), and `iss` in every redirect (RFC 9207) |
+| `GET /.well-known/oauth-protected-resource/mcp/{project}` | A project's MCP portal as its own resource, `/mcp/proj_…`, with the scope `tools` |
+| `GET /.well-known/oauth-authorization-server` | The authorization server metadata: the endpoints below, `S256` as the only PKCE method, public clients only (`none`), client ID metadata documents, and `iss` in every redirect (RFC 9207) |
 | `POST /oauth/register` | Registers a client (RFC 7591) with 1 to 10 redirect URIs and answers with its `client_id` (`cli_…`). A redirect URI uses HTTPS, a loopback address on any port, or a private-use scheme |
-| `GET /oauth/authorize` | Takes `response_type=code`, `client_id`, `redirect_uri`, `state` and `code_challenge` with `code_challenge_method=S256`. `scope` may only be `kaeso`, `resource`, when sent, must be the `/mcp` address, and `state` holds at most 2,000 characters. A request it refuses goes back with `error` to a loopback or private-use redirect URI once someone has authorized an agent of that client. Before that, and with an HTTPS redirect URI, the console shows the error instead |
+| `GET /oauth/authorize` | Takes `response_type=code`, `client_id`, `redirect_uri`, `state` and `code_challenge` with `code_challenge_method=S256`. `resource`, when sent, is the `/mcp` address with `scope` `kaeso`, or a project's portal with `scope` `tools`, and `state` holds at most 2,000 characters. A request it refuses goes back with `error` to a loopback or private-use redirect URI once someone has authorized an agent of that client. Before that, and with an HTTPS redirect URI, the console shows the error instead |
 | `POST /oauth/token` | Form-encoded. `grant_type=authorization_code` with `code`, `client_id`, `redirect_uri` and `code_verifier`, or `grant_type=refresh_token` with `refresh_token` and `client_id` |
 | `POST /oauth/revoke` | Form-encoded `token`. Ends the sign-in the token belongs to, and answers 200 for a token it doesn't know |
 
 A loopback redirect URI may change its port at every sign-in, as RFC 8252 allows. Its host and path must stay as registered.
+
+Instead of registering, a client may use the HTTPS address of its client ID metadata document as its `client_id`, as claude.ai does. Kaeso fetches the document, at most 5 KiB, through the same address checks as MCP servers and keeps it for 10 minutes. The document must name that address as its `client_id`, list its redirect URIs and ask for no client authentication; the consent page shows the host it comes from.
 
 An agent keeps its `client_id` across restarts, but Kaeso deletes registrations that never led to a sign-in, and a new database has none. When an agent signs in with a `client_id` Kaeso doesn't know and a loopback redirect URI, Kaeso registers it again under that id as "MCP client", and the sign-in goes on. You can rename it on the consent page. For any other redirect URI, the console says it doesn't know the agent.
 

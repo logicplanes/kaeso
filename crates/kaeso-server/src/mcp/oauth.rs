@@ -8,11 +8,12 @@ use axum::http::{HeaderMap, HeaderValue, StatusCode, header};
 use axum::response::{IntoResponse, Redirect, Response};
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
-use kaeso_core::id::AgentClientId;
+use kaeso_core::id::{AgentClientId, ProjectId};
 use kaeso_core::secret;
 use kaeso_crypto::random_token;
 use kaeso_store::StoreError;
 use kaeso_store::pg::agents::{self, Client, NewRequest, NewToken, Request, TokenKind};
+use kaeso_store::pg::portal_grants;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use sha2::{Digest, Sha256};
@@ -20,6 +21,7 @@ use time::OffsetDateTime;
 use url::Url;
 use uuid::Uuid;
 
+use super::cimd;
 use crate::auth::agents::{
     ACCESS_LIFETIME, ACCESS_PREFIX, CODE_LIFETIME, CODE_PREFIX, REFRESH_PREFIX, REQUEST_LIFETIME,
     unused_too_long,
@@ -30,9 +32,14 @@ use crate::auth::throttle::{
     AGENT_TOKENS_PER_IP, Throttle,
 };
 use crate::http::client_ip::ClientIp;
+use crate::platform::params::Path;
 use crate::state::AppState;
 
 pub const SCOPE: &str = "kaeso";
+pub const PORTAL_SCOPE: &str = "tools";
+pub const PORTAL_CODE_PREFIX: &str = "kso_pc_";
+pub const PORTAL_ACCESS_PREFIX: &str = "kso_pa_";
+pub const PORTAL_REFRESH_PREFIX: &str = "kso_pr_";
 const MAX_REDIRECT_URIS: usize = 10;
 const MAX_URI_LEN: usize = 2000;
 const MAX_STATE_LEN: usize = 2000;
@@ -55,6 +62,30 @@ pub fn endpoint(state: &AppState, path: &str) -> String {
 
 pub fn resource(state: &AppState) -> String {
     endpoint(state, "mcp")
+}
+
+pub fn portal_resource(state: &AppState, project: Uuid) -> String {
+    endpoint(state, &format!("mcp/{}", ProjectId::from_uuid(project)))
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Target {
+    Management,
+    Portal(Uuid),
+}
+
+// RFC 8707: a token is for one resource. Kaeso's management server and each project's portal are
+// separate resources, so a token for one is never good at another.
+pub fn target_of(state: &AppState, presented: &str) -> Option<Target> {
+    let presented = presented.trim_end_matches('/');
+    let management = resource(state);
+    if presented == management {
+        return Some(Target::Management);
+    }
+    presented
+        .strip_prefix(&format!("{management}/"))
+        .and_then(|p| p.parse::<ProjectId>().ok())
+        .map(|p| Target::Portal(p.uuid()))
 }
 
 fn no_store(mut r: Response) -> Response {
@@ -126,6 +157,30 @@ pub async fn protected_resource(State(state): State<AppState>) -> Response {
     )
 }
 
+pub async fn portal_resource_metadata(
+    State(state): State<AppState>,
+    Path(project): Path<String>,
+) -> Response {
+    let Ok(project) = project.parse::<ProjectId>() else {
+        return oauth_error(
+            StatusCode::NOT_FOUND,
+            "invalid_target",
+            "No such MCP portal; check the project id in its address.",
+        );
+    };
+    no_store(
+        Json(json!({
+            "resource": portal_resource(&state, project.uuid()),
+            "authorization_servers": [issuer(&state)],
+            "bearer_methods_supported": ["header"],
+            "scopes_supported": [PORTAL_SCOPE],
+            "resource_name": "Kaeso MCP portal",
+            "resource_documentation": "https://docs.kaeso.app/concepts/mcp-portal",
+        }))
+        .into_response(),
+    )
+}
+
 pub async fn authorization_server(State(state): State<AppState>) -> Response {
     no_store(
         Json(json!({
@@ -140,8 +195,9 @@ pub async fn authorization_server(State(state): State<AppState>) -> Response {
             "code_challenge_methods_supported": ["S256"],
             "token_endpoint_auth_methods_supported": ["none"],
             "revocation_endpoint_auth_methods_supported": ["none"],
-            "scopes_supported": [SCOPE],
+            "scopes_supported": [SCOPE, PORTAL_SCOPE],
             "authorization_response_iss_parameter_supported": true,
+            "client_id_metadata_document_supported": true,
             "service_documentation": "https://docs.kaeso.app/api/mcp",
         }))
         .into_response(),
@@ -200,6 +256,13 @@ fn redirect_matches(registered: &str, presented: &str) -> bool {
         && r.host() == p.host()
         && r.path() == p.path()
         && r.query() == p.query()
+}
+
+pub fn redirects_locally(uri: &str) -> bool {
+    Url::parse(uri).is_ok_and(|u| match u.scheme() {
+        "http" | "https" => is_loopback(&u),
+        _ => true,
+    })
 }
 
 pub fn redirect_host(uri: &str) -> String {
@@ -458,15 +521,32 @@ fn request_error(state: &AppState, p: &HashMap<String, String>) -> Option<&'stat
     if get("state").is_some_and(|s| s.len() > MAX_STATE_LEN) {
         return Some("invalid_request");
     }
-    if let Some(r) = get("resource")
-        && r.trim_end_matches('/') != resource(state)
-    {
-        return Some("invalid_target");
-    }
-    if get("scope").is_some_and(|s| s.split(' ').any(|s| !s.is_empty() && s != SCOPE)) {
+    let target = match get("resource") {
+        None => Target::Management,
+        Some(r) => match target_of(state, r) {
+            Some(t) => t,
+            None => return Some("invalid_target"),
+        },
+    };
+    let scope = match target {
+        Target::Management => SCOPE,
+        Target::Portal(_) => PORTAL_SCOPE,
+    };
+    if get("scope").is_some_and(|s| s.split(' ').any(|s| !s.is_empty() && s != scope)) {
         return Some("invalid_scope");
     }
     None
+}
+
+async fn registered_client(
+    state: &AppState,
+    id: AgentClientId,
+    redirect_uri: Option<&str>,
+) -> Result<Option<Client>, StoreError> {
+    match agents::get_client(&state.pg, id.uuid()).await? {
+        Some(c) => Ok(Some(c)),
+        None => reregister(state, id, redirect_uri).await,
+    }
 }
 
 pub async fn authorize(
@@ -479,22 +559,30 @@ pub async fn authorize(
     }
     let p = params(query.as_deref().unwrap_or_default());
     let get = |k: &str| p.get(k).map(String::as_str).filter(|v| !v.is_empty());
-    let Some(client_id) = get("client_id").and_then(|c| c.parse::<AgentClientId>().ok()) else {
-        return console_error(&state, "invalid_client");
-    };
-    let client = match agents::get_client(&state.pg, client_id.uuid()).await {
-        Ok(Some(c)) => c,
-        Ok(None) => match reregister(&state, client_id, get("redirect_uri")).await {
+    let presented_client = get("client_id").unwrap_or_default();
+    let client = if cimd::is_document_url(presented_client) {
+        match cimd::client(&state, presented_client).await {
+            Ok(Ok(c)) => c,
+            Ok(Err(refused)) => {
+                tracing::info!(?refused, "a client metadata document was refused");
+                return console_error(&state, "invalid_client");
+            }
+            Err(e) => {
+                tracing::error!(error = %e, "an agent sign-in step failed");
+                return console_error(&state, "server_error");
+            }
+        }
+    } else {
+        let Ok(client_id) = presented_client.parse::<AgentClientId>() else {
+            return console_error(&state, "invalid_client");
+        };
+        match registered_client(&state, client_id, get("redirect_uri")).await {
             Ok(Some(c)) => c,
             Ok(None) => return console_error(&state, "invalid_client"),
             Err(e) => {
                 tracing::error!(error = %e, "an agent sign-in step failed");
                 return console_error(&state, "server_error");
             }
-        },
-        Err(e) => {
-            tracing::error!(error = %e, "an agent sign-in step failed");
-            return console_error(&state, "server_error");
         }
     };
     let redirect_uri = match get("redirect_uri") {
@@ -513,6 +601,7 @@ pub async fn authorize(
         &redirect_uri,
         client_state,
         get("code_challenge").unwrap_or_default(),
+        get("resource").map(|r| r.trim_end_matches('/')),
         &token,
     )
     .await;
@@ -534,6 +623,7 @@ async fn store_request(
     redirect_uri: &str,
     client_state: Option<&str>,
     challenge: &str,
+    target: Option<&str>,
     token: &str,
 ) -> Result<(), StoreError> {
     let now = state.clock.now();
@@ -547,6 +637,7 @@ async fn store_request(
             redirect_uri,
             state: client_state,
             code_challenge: challenge,
+            resource: target,
             now,
             expires_at: now + REQUEST_LIFETIME,
         },
@@ -698,13 +789,26 @@ pub async fn token(
         );
     };
     let now = state.clock.now();
+    let presented_to = Presented {
+        client_id: get("client_id"),
+        redirect_uri: get("redirect_uri"),
+        verifier: get("code_verifier"),
+        resource: get("resource"),
+    };
+    if presented.starts_with(PORTAL_CODE_PREFIX) || presented.starts_with(PORTAL_REFRESH_PREFIX) {
+        return match portal_exchange(&state, kind, presented, &presented_to, now).await {
+            Ok(Ok(tokens)) => no_store(Json(tokens).into_response()),
+            Ok(Err(refused)) => refused,
+            Err(e) => store_failed(&e),
+        };
+    }
     match exchange(
         &state,
         kind,
         presented,
-        get("client_id"),
-        get("redirect_uri"),
-        get("code_verifier"),
+        presented_to.client_id,
+        presented_to.redirect_uri,
+        presented_to.verifier,
         now,
     )
     .await
@@ -713,6 +817,154 @@ pub async fn token(
         Ok(Err(refused)) => refused,
         Err(e) => store_failed(&e),
     }
+}
+
+struct Presented<'a> {
+    client_id: Option<&'a str>,
+    redirect_uri: Option<&'a str>,
+    verifier: Option<&'a str>,
+    resource: Option<&'a str>,
+}
+
+async fn client_uuid(
+    db: &mut sqlx::PgConnection,
+    presented: Option<&str>,
+) -> Result<Option<Uuid>, StoreError> {
+    let Some(p) = presented else {
+        return Ok(None);
+    };
+    if let Ok(id) = p.parse::<AgentClientId>() {
+        return Ok(Some(id.uuid()));
+    }
+    if cimd::is_document_url(p) {
+        return agents::client_by_metadata_url(db, p).await;
+    }
+    Ok(None)
+}
+
+pub async fn issue_portal_code(
+    db: &mut sqlx::PgConnection,
+    grant: Uuid,
+    request: &Request,
+    target: &str,
+    now: OffsetDateTime,
+) -> Result<String, StoreError> {
+    let code = format!("{PORTAL_CODE_PREFIX}{}", random_token());
+    portal_grants::insert_token(
+        db,
+        &portal_grants::NewToken {
+            id: Uuid::now_v7(),
+            grant_id: grant,
+            kind: TokenKind::Code,
+            token_hash: &secret::hash(&code),
+            family: Uuid::now_v7(),
+            resource: target,
+            redirect_uri: Some(&request.redirect_uri),
+            code_challenge: Some(&request.code_challenge),
+            now,
+            expires_at: Some(now + CODE_LIFETIME),
+        },
+    )
+    .await?;
+    Ok(code)
+}
+
+#[derive(Debug, Serialize)]
+struct PortalTokens {
+    access_token: String,
+    token_type: &'static str,
+    expires_in: i64,
+    refresh_token: String,
+    scope: &'static str,
+}
+
+// The same rules as an agent's sign-in, for a person's grant to one portal: codes and refresh
+// tokens are single-use, PKCE and the redirect are checked, and every token keeps its resource.
+async fn portal_exchange(
+    state: &AppState,
+    kind: TokenKind,
+    presented: &str,
+    p: &Presented<'_>,
+    now: OffsetDateTime,
+) -> Result<Result<PortalTokens, Response>, StoreError> {
+    let mut tx = state.pg.begin().await?;
+    let Some(spent) = portal_grants::spend(&mut tx, kind, &secret::hash(presented), now).await?
+    else {
+        return Ok(Err(invalid_grant(
+            "The grant is invalid, expired or revoked.",
+        )));
+    };
+    if !spent.fresh {
+        portal_grants::revoke_family(&mut *tx, spent.family, now).await?;
+        tx.commit().await?;
+        return Ok(Err(invalid_grant(
+            "The grant was already used; sign in to the portal again.",
+        )));
+    }
+    let refused = if client_uuid(&mut tx, p.client_id).await? != Some(spent.client_id) {
+        Some(oauth_error(
+            StatusCode::UNAUTHORIZED,
+            "invalid_client",
+            "The grant belongs to another client.",
+        ))
+    } else if kind == TokenKind::Code && p.redirect_uri != spent.redirect_uri.as_deref() {
+        Some(invalid_grant(
+            "`redirect_uri` differs from the one authorized.",
+        ))
+    } else if kind == TokenKind::Code
+        && !p
+            .verifier
+            .is_some_and(|v| pkce_matches(v, spent.code_challenge.as_deref().unwrap_or_default()))
+    {
+        Some(invalid_grant("The PKCE code verifier doesn't match."))
+    } else if p
+        .resource
+        .is_some_and(|r| r.trim_end_matches('/') != spent.resource)
+    {
+        Some(oauth_error(
+            StatusCode::BAD_REQUEST,
+            "invalid_target",
+            "The grant is for another resource.",
+        ))
+    } else {
+        None
+    };
+    if let Some(r) = refused {
+        tx.commit().await?;
+        return Ok(Err(r));
+    }
+    let access = format!("{PORTAL_ACCESS_PREFIX}{}", random_token());
+    let refresh = format!("{PORTAL_REFRESH_PREFIX}{}", random_token());
+    for (kind, token, expires_at) in [
+        (TokenKind::Access, &access, Some(now + ACCESS_LIFETIME)),
+        (TokenKind::Refresh, &refresh, None),
+    ] {
+        portal_grants::insert_token(
+            &mut *tx,
+            &portal_grants::NewToken {
+                id: Uuid::now_v7(),
+                grant_id: spent.grant_id,
+                kind,
+                token_hash: &secret::hash(token),
+                family: spent.family,
+                resource: &spent.resource,
+                redirect_uri: None,
+                code_challenge: None,
+                now,
+                expires_at,
+            },
+        )
+        .await?;
+    }
+    portal_grants::touch(&mut *tx, spent.grant_id, now).await?;
+    tx.commit().await?;
+    Ok(Ok(PortalTokens {
+        access_token: access,
+        token_type: "Bearer",
+        expires_in: ACCESS_LIFETIME.whole_seconds(),
+        refresh_token: refresh,
+        scope: PORTAL_SCOPE,
+    }))
 }
 
 async fn exchange(
@@ -769,9 +1021,7 @@ async fn check_grant(
     verifier: Option<&str>,
     now: OffsetDateTime,
 ) -> Result<Result<(), Response>, StoreError> {
-    let client = client_id
-        .and_then(|c| c.parse::<AgentClientId>().ok())
-        .map(|c| c.uuid());
+    let client = client_uuid(&mut *tx, client_id).await?;
     if client.is_none() || client != spent.client_id {
         return Ok(Err(oauth_error(
             StatusCode::UNAUTHORIZED,
@@ -820,6 +1070,20 @@ pub async fn revoke(
         );
     };
     let now = state.clock.now();
+    if token.starts_with(PORTAL_ACCESS_PREFIX) || token.starts_with(PORTAL_REFRESH_PREFIX) {
+        let revoked = async {
+            let hash = secret::hash(token);
+            if let Some(family) = portal_grants::revoke_token(&state.pg, &hash, now).await? {
+                portal_grants::revoke_family(&state.pg, family, now).await?;
+            }
+            crate::portal::auth::forget(&state, &hash).await;
+            Ok::<_, StoreError>(())
+        };
+        if let Err(e) = revoked.await {
+            return store_failed(&e);
+        }
+        return no_store(StatusCode::OK.into_response());
+    }
     match agents::revoke_token(&state.pg, &secret::hash(token), now).await {
         Ok(Some(family)) => {
             if let Err(e) = agents::revoke_family(&state.pg, family, now).await {

@@ -1,3 +1,4 @@
+pub mod cimd;
 pub mod oauth;
 pub mod server;
 pub mod tools;
@@ -19,6 +20,10 @@ pub fn router(state: &AppState, platform: Router) -> Router<AppState> {
         .route(
             "/.well-known/oauth-protected-resource/mcp",
             get(oauth::protected_resource),
+        )
+        .route(
+            "/.well-known/oauth-protected-resource/mcp/{project}",
+            get(oauth::portal_resource_metadata),
         )
         .route(
             "/.well-known/oauth-authorization-server",

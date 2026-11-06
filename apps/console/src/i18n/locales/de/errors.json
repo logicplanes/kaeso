@@ -614,5 +614,7 @@
   "errors.mcp.hashForm": "`hash` muss der 64-stellige Hex-Hash des Tools sein.",
   "errors.mcp.toolRemoved": "Der Server listet dieses Tool nicht mehr.",
   "errors.mcp.toolChangedAgain": "Das Tool hat sich seit Ihrer Prüfung erneut geändert; prüfen Sie es noch einmal.",
-  "errors.mcp.noChange": "Für dieses Tool wartet keine Änderung auf Prüfung."
+  "errors.mcp.noChange": "Für dieses Tool wartet keine Änderung auf Prüfung.",
+  "errors.agentRequest.forPortal": "Diese Anmeldung gilt dem MCP-Portal eines Projekts; laden Sie die Seite neu.",
+  "errors.agentRequest.forAgent": "Diese Anmeldung gilt einem Agenten, nicht dem MCP-Portal eines Projekts; laden Sie die Seite neu."
 }

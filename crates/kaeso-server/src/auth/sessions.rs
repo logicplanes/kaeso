@@ -187,6 +187,7 @@ pub async fn revoke_all_in(
     }
     if keep.is_none() {
         kaeso_store::pg::agents::revoke_of_user(&mut *tx, user.uuid(), now).await?;
+        kaeso_store::pg::portal_grants::revoke_of_user(&mut *tx, user.uuid(), now).await?;
     }
     Ok(hashes)
 }

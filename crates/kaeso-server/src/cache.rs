@@ -679,6 +679,8 @@ pub struct Caches {
     pub portal: TieredCache<crate::portal::snapshot::PortalSnapshot>,
     pub mcp_credentials: MemoryCache<crate::services::mcp_connections::Held>,
     pub mcp_handshakes: Cache<String, Arc<kaeso_upstream::mcp::Handshake>>,
+    pub client_documents: Cache<String, Arc<kaeso_store::pg::agents::Client>>,
+    pub portal_tokens: TieredCache<crate::portal::auth::TokenAuth>,
     pub kpmr_changed: Arc<tokio::sync::Notify>,
     pub touched: Cache<uuid::Uuid, ()>,
     pub unknown_keys: Cache<String, ()>,
@@ -727,6 +729,16 @@ impl Caches {
                 .max_capacity(10_000)
                 .time_to_live(HANDSHAKE_TTL)
                 .build(),
+            client_documents: Cache::builder()
+                .max_capacity(10_000)
+                .time_to_live(HANDSHAKE_TTL)
+                .build(),
+            portal_tokens: TieredCache::new(
+                "ptok",
+                valkey.clone(),
+                subscription.clone(),
+                mac.clone(),
+            ),
             kpmr_changed: Arc::new(tokio::sync::Notify::new()),
             touched: Cache::builder()
                 .max_capacity(1_000_000)
@@ -782,6 +794,7 @@ impl Caches {
                 Some(("lcfg", key)) => self.log_settings.drop_local(key).await,
                 Some(("rcfg", key)) => self.response_cache.drop_local(key).await,
                 Some(("ptl", key)) => self.portal.drop_local(key).await,
+                Some(("ptok", key)) => self.portal_tokens.drop_local(key).await,
                 Some(("mcred", group)) => self.mcp_credentials.drop_group(group),
                 Some(("kpmr", _)) => self.kpmr_changed.notify_one(),
                 _ => self.clear_local(),
@@ -799,6 +812,7 @@ impl Caches {
         self.log_settings.clear_subscribed();
         self.response_cache.clear_subscribed();
         self.portal.clear_subscribed();
+        self.portal_tokens.clear_subscribed();
         self.mcp_credentials.clear_subscribed();
         self.mcp_handshakes.invalidate_all();
     }
@@ -813,6 +827,7 @@ impl Caches {
         self.log_settings.clear_local();
         self.response_cache.clear_local();
         self.portal.clear_local();
+        self.portal_tokens.clear_local();
         self.mcp_credentials.clear_local();
         self.mcp_handshakes.invalidate_all();
     }

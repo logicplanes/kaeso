@@ -57,6 +57,7 @@ pub async fn keep_unused_clients(
     let dropped = sqlx::query!(
         "DELETE FROM agent_clients WHERE id IN (SELECT c.id FROM agent_clients c \
          WHERE c.id <> $2 AND NOT EXISTS (SELECT 1 FROM agents a WHERE a.client_id = c.id) \
+         AND NOT EXISTS (SELECT 1 FROM portal_grants g WHERE g.client_id = c.id) \
          ORDER BY c.created_at DESC, c.id DESC OFFSET $1)",
         (keep - 1).max(0),
         newest,
@@ -73,6 +74,55 @@ pub async fn approved(db: impl PgExecutor<'_>, client: Uuid) -> Result<bool, Sto
     )
     .fetch_one(db)
     .await?)
+}
+
+// A client known by its metadata document is one row per document URL, refreshed whenever Kaeso
+// fetches the document again.
+pub async fn put_metadata_client(
+    db: impl PgExecutor<'_>,
+    url: &str,
+    c: &Client,
+    fetched_at: OffsetDateTime,
+) -> Result<Client, StoreError> {
+    Ok(sqlx::query_as!(
+        Client,
+        "INSERT INTO agent_clients (id, name, redirect_uris, software_id, software_version, created_at, \
+         metadata_url, metadata_fetched_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) \
+         ON CONFLICT (metadata_url) DO UPDATE SET name = EXCLUDED.name, redirect_uris = EXCLUDED.redirect_uris, \
+         software_id = EXCLUDED.software_id, software_version = EXCLUDED.software_version, \
+         metadata_fetched_at = EXCLUDED.metadata_fetched_at \
+         RETURNING id, name, redirect_uris, software_id, software_version, created_at",
+        c.id,
+        c.name,
+        &c.redirect_uris,
+        c.software_id,
+        c.software_version,
+        c.created_at,
+        url,
+        fetched_at,
+    )
+    .fetch_one(db)
+    .await?)
+}
+
+pub async fn client_by_metadata_url(
+    db: impl PgExecutor<'_>,
+    url: &str,
+) -> Result<Option<Uuid>, StoreError> {
+    Ok(
+        sqlx::query_scalar!("SELECT id FROM agent_clients WHERE metadata_url = $1", url)
+            .fetch_optional(db)
+            .await?,
+    )
+}
+
+pub async fn metadata_url(db: impl PgExecutor<'_>, id: Uuid) -> Result<Option<String>, StoreError> {
+    Ok(
+        sqlx::query_scalar!("SELECT metadata_url FROM agent_clients WHERE id = $1", id)
+            .fetch_optional(db)
+            .await?
+            .flatten(),
+    )
 }
 
 pub async fn get_client(db: impl PgExecutor<'_>, id: Uuid) -> Result<Option<Client>, StoreError> {
@@ -94,14 +144,15 @@ pub struct NewRequest<'a> {
     pub redirect_uri: &'a str,
     pub state: Option<&'a str>,
     pub code_challenge: &'a str,
+    pub resource: Option<&'a str>,
     pub now: OffsetDateTime,
     pub expires_at: OffsetDateTime,
 }
 
 pub async fn insert_request(db: impl PgExecutor<'_>, r: &NewRequest<'_>) -> Result<(), StoreError> {
     sqlx::query!(
-        "INSERT INTO agent_requests (id, token_hash, client_id, redirect_uri, state, code_challenge, created_at, expires_at) \
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+        "INSERT INTO agent_requests (id, token_hash, client_id, redirect_uri, state, code_challenge, created_at, expires_at, resource) \
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
         r.id,
         r.token_hash,
         r.client_id,
@@ -110,6 +161,7 @@ pub async fn insert_request(db: impl PgExecutor<'_>, r: &NewRequest<'_>) -> Resu
         r.code_challenge,
         r.now,
         r.expires_at,
+        r.resource,
     )
     .execute(db)
     .await?;
@@ -144,6 +196,7 @@ pub struct Request {
     pub state: Option<String>,
     pub code_challenge: String,
     pub expires_at: OffsetDateTime,
+    pub resource: Option<String>,
 }
 
 pub async fn pending_request(
@@ -154,7 +207,7 @@ pub async fn pending_request(
     Ok(sqlx::query_as!(
         Request,
         "SELECT r.id, r.client_id, c.name AS client_name, c.software_id, r.redirect_uri, r.state, \
-         r.code_challenge, r.expires_at FROM agent_requests r JOIN agent_clients c ON c.id = r.client_id \
+         r.code_challenge, r.expires_at, r.resource FROM agent_requests r JOIN agent_clients c ON c.id = r.client_id \
          WHERE r.token_hash = $1 AND r.used_at IS NULL AND r.expires_at > $2",
         token_hash,
         now

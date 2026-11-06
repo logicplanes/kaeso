@@ -123,5 +123,14 @@
   "public.startAgain": "重新开始",
   "public.staySignedInAs": "保持以 {email} 身份登录",
   "public.toSignIn": "前往登录",
-  "public.withoutPassword": "没有密码时，您将通过邮件链接登录。发给 {email} 的邀请将在 {when}过期。"
+  "public.withoutPassword": "没有密码时，您将通过邮件链接登录。发给 {email} 的邀请将在 {when}过期。",
+  "public.connectPortalTitle": "将 {client} 连接到 {project}",
+  "public.connectPortalLead": "它以您的身份、按您的访问权限调用此项目的工具。",
+  "public.portalLocalTitle": "它会返回到这台电脑",
+  "public.portalLocal": "仅当您是从此设备上的应用发起时才继续。",
+  "public.portalTools": "它可以调用的工具",
+  "public.portalNoTools": "暂无；它会获得项目管理员开启的工具。",
+  "public.portalUntilDisconnected": "在 {org} › {project} 中，直到您或项目管理员将其断开",
+  "public.portalClientHost": "{host} 发布了此客户端的名称和返回地址。",
+  "public.connectPortal": "连接"
 }

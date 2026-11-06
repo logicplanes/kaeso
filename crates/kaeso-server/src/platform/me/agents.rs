@@ -766,6 +766,98 @@ pub struct AgentRequestView {
     #[doc = "When the request ends."]
     #[serde(with = "time::serde::rfc3339")]
     pub expires_at: OffsetDateTime,
+    #[doc = "For a client asking to use a project's MCP portal: the portal and its tools; `null`\n\
+        for an agent of Kaeso's own MCP server."]
+    pub portal: Option<PortalRequestView>,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+#[schema(description = "A client asking to call a project's tools as the signed-in person.")]
+pub struct PortalRequestView {
+    #[doc = "The organization."]
+    pub org: OrgId,
+    #[doc = "Its name."]
+    pub org_name: String,
+    #[doc = "The project whose portal the client asks for."]
+    pub project: ProjectId,
+    #[doc = "Its name."]
+    pub project_name: String,
+    #[doc = "The tools the client could call: those the project offers and you may use."]
+    #[schema(example = json!(["x__create_post"]))]
+    pub tools: Vec<String>,
+    #[doc = "For a client known by its metadata document: the host it is published on, which\n\
+        vouches for the client's name."]
+    #[schema(example = "claude.ai")]
+    pub client_host: Option<String>,
+    #[doc = "Whether the client receives the sign-in on this computer, as a desktop app does."]
+    pub local: bool,
+}
+
+fn portal_of(state: &AppState, r: &agents::Request) -> Option<uuid::Uuid> {
+    match r
+        .resource
+        .as_deref()
+        .and_then(|t| oauth::target_of(state, t))
+    {
+        Some(oauth::Target::Portal(project)) => Some(project),
+        _ => None,
+    }
+}
+
+async fn portal_view(
+    state: &AppState,
+    user: uuid::Uuid,
+    r: &agents::Request,
+    project: uuid::Uuid,
+) -> ApiResult<PortalRequestView> {
+    let mut conn = state.pg.acquire().await?;
+    let row = sqlx::query_scalar!("SELECT org_id FROM projects WHERE id = $1", project)
+        .fetch_optional(&mut *conn)
+        .await
+        .map_err(kaeso_store::StoreError::from)?
+        .ok_or_else(|| ApiError::not_found("project"))?;
+    let found = kaeso_store::pg::members::access_context(&mut conn, row, Some(user), Some(project))
+        .await?
+        .ok_or_else(|| ApiError::not_found("project"))?;
+    let (Some(org_grant), Some(p)) = (found.org_grant.as_ref(), found.project.as_ref()) else {
+        return Err(ApiError::not_found("project"));
+    };
+    if p.archived_at.is_some() {
+        return Err(ApiError::not_found("project"));
+    }
+    let org_grant = crate::platform::grants::org_from_store(org_grant)?;
+    let project_grant = found
+        .project_grant
+        .as_ref()
+        .map(crate::platform::grants::project_from_store)
+        .transpose()?;
+    let rights =
+        kaeso_core::rights::effective_project_rights(Some(&org_grant), project_grant.as_ref());
+    if !rights.contains(ProjectRight::ToolsUse) {
+        return Err(crate::platform::access::denied(
+            kaeso_core::rights::Right::Project(ProjectRight::ToolsUse),
+            "project",
+        ));
+    }
+    let snapshot = crate::portal::snapshot::get(state, project).await?;
+    let tools = snapshot
+        .offered()
+        .filter(|t| snapshot.access.allows(Some(user), None, None, t.id))
+        .map(|t| t.exposed.clone())
+        .collect();
+    let client_host = agents::metadata_url(&mut *conn, r.client_id)
+        .await?
+        .and_then(|u| url::Url::parse(&u).ok())
+        .and_then(|u| u.host_str().map(str::to_owned));
+    Ok(PortalRequestView {
+        org: OrgId::from_uuid(found.org.id),
+        org_name: found.org.name.clone(),
+        project: ProjectId::from_uuid(project),
+        project_name: p.name.clone(),
+        tools,
+        client_host,
+        local: oauth::redirects_locally(&r.redirect_uri),
+    })
 }
 
 async fn pending(state: &AppState, ctx: &Ctx, req: &AgentRequestRef) -> ApiResult<agents::Request> {
@@ -796,12 +888,17 @@ pub async fn request(
     ctx: Ctx,
     Body(req): Body<AgentRequestRef>,
 ) -> ApiResult<Json<AgentRequestView>> {
-    ctx.session()?;
+    let user = ctx.session()?.user_id;
     let r = pending(&state, &ctx, &req).await?;
+    let portal = match portal_of(&state, &r) {
+        Some(project) => Some(portal_view(&state, user, &r, project).await?),
+        None => None,
+    };
     Ok(Json(AgentRequestView {
-        client: r.client_name,
         redirect_host: oauth::redirect_host(&r.redirect_uri),
+        client: r.client_name,
         expires_at: r.expires_at,
+        portal,
     }))
 }
 
@@ -855,6 +952,11 @@ pub async fn approve(
         },
     )
     .await?;
+    if portal_of(&state, &r).is_some() {
+        return Err(ApiError::Conflict(
+            "This sign-in is for a project's MCP portal; reload the page.".into(),
+        ));
+    }
     let grant = validated(&state, &ctx, None, &req.grant).await?;
     let id = AgentId::new();
     let mut tx = state.pg.begin().await?;
@@ -902,6 +1004,78 @@ pub async fn approve(
     Ok(Json(AgentRedirect {
         redirect_to: oauth::redirect_with_code(&state, &r, &code),
         agent: Some(id),
+    }))
+}
+
+#[utoipa::path(
+    post,
+    path = "/me/agent-requests/approve-portal",
+    summary = "Lets a client call a project's tools through its MCP portal as you.",
+    description = "The client gets your access to the project's tools until you or a project admin\n\
+    disconnect it. Its token is good only at this portal. The browser goes on to `redirect_to`,\n\
+    where the client exchanges the code for tokens.",
+    tag = "agents",
+    request_body = AgentRequestRef,
+    responses((status = 200, body = AgentRedirect))
+)]
+pub async fn approve_portal(
+    State(state): State<AppState>,
+    ctx: Ctx,
+    Body(req): Body<AgentRequestRef>,
+) -> ApiResult<Json<AgentRedirect>> {
+    let user = ctx.session()?.user_id;
+    let r = pending(&state, &ctx, &req).await?;
+    let Some(project) = portal_of(&state, &r) else {
+        return Err(ApiError::Conflict(
+            "This sign-in is for an agent, not a project's MCP portal; reload the page.".into(),
+        ));
+    };
+    let view = portal_view(&state, user, &r, project).await?;
+    let grant = uuid::Uuid::now_v7();
+    let mut tx = state.pg.begin().await?;
+    if !agents::use_request(&mut *tx, r.id, ctx.now).await? {
+        return Err(ApiError::NotFound(
+            "This sign-in request has ended or was used; connect the agent again.".into(),
+        ));
+    }
+    kaeso_store::pg::portal_grants::insert(
+        &mut *tx,
+        &kaeso_store::pg::portal_grants::NewGrant {
+            id: grant,
+            user_id: user,
+            org_id: view.org.uuid(),
+            project_id: project,
+            client_id: r.client_id,
+            redirect_uri: &r.redirect_uri,
+            now: ctx.now,
+        },
+    )
+    .await?;
+    let code = oauth::issue_portal_code(
+        &mut tx,
+        grant,
+        &r,
+        &oauth::portal_resource(&state, project),
+        ctx.now,
+    )
+    .await?;
+    ctx.audit(Some(view.org), Action::PortalGrantCreate)
+        .project(view.project)
+        .target(
+            "portal_grant",
+            kaeso_core::id::PortalGrantId::from_uuid(grant),
+        )
+        .after(serde_json::json!({
+            "client": r.client_name,
+            "client_host": view.client_host,
+            "tools": view.tools,
+        }))
+        .write(&mut tx)
+        .await?;
+    tx.commit().await?;
+    Ok(Json(AgentRedirect {
+        redirect_to: oauth::redirect_with_code(&state, &r, &code),
+        agent: None,
     }))
 }
 

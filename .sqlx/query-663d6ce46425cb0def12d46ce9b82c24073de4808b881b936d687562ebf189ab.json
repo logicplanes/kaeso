@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT metadata_url FROM agent_clients WHERE id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "metadata_url",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "agent_clients",
+            "name": "metadata_url"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "663d6ce46425cb0def12d46ce9b82c24073de4808b881b936d687562ebf189ab"
+}

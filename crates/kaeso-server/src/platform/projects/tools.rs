@@ -658,5 +658,6 @@ pub async fn revoke_grant(
         .write(&mut tx)
         .await?;
     tx.commit().await?;
+    crate::portal::auth::forget_grant(&state, row.id).await;
     Ok(StatusCode::NO_CONTENT)
 }
