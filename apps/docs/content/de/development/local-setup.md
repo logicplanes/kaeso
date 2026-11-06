@@ -59,7 +59,7 @@ Richten Sie die Installation über die Platform API ein und füllen Sie sie mit 
 pnpm seed
 ```
 
-Sie erhalten die Organisation Northwind Labs mit fünf Projekten, sechs Mitgliedern, Schlüsseln, Modellen, einem Alias und Limits. Der Befehl sendet außerdem einige hundert Anfragen an den Mock-Anbieter und legt einen Verlauf früherer Anfragen über 70 Tage an. Um die Installation stattdessen von Hand einzurichten, überspringen Sie diesen Schritt und öffnen den Einrichtungslink.
+Sie erhalten die Organisation Northwind Labs mit fünf Projekten, sechs Mitgliedern, zehn Schlüsseln, Modellen, Aliassen und Limits. Der Befehl schickt einige tausend Support-E-Mails und Slack-Fragen über das Gateway, die der Mock-Anbieter mit ausformulierten Antworten beantwortet, und legt dann einen Anfrageverlauf über 70 Tage an: jede App und jede Person mit eigenen Modellen, Clients und Uhrzeiten, Inhalten dort, wo das Projekt sie speichert, Treffern im Antwort-Cache, Fallbacks während ein Anbieter überlastet ist, und einem während eines Sales erreichten Limit. Mit `KAESO_SEED_WHOLE_DAYS=1` endet der Verlauf gestern statt vor zehn Minuten, für eine Demo, die ihre Daten nach vorn verschiebt. Um die Installation stattdessen von Hand einzurichten, überspringen Sie diesen Schritt und öffnen den Einrichtungslink.
 
 ## Konsole öffnen
 

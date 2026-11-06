@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from "node:crypto";
 import { createServer } from "node:http";
+import { scriptedReply } from "./conversations.mjs";
 
 const PORT = Number(process.env.PORT ?? 8080);
 const TOKENS_PER_DELTA = 4;
@@ -129,6 +130,25 @@ function shapeOf(raw) {
     reasoning: numberMarker(raw, "reasoning") ?? 0,
     tps: numberMarker(raw, "tps") || DEFAULT_TOKENS_PER_SECOND,
     pieces: pieces(output, seed),
+  };
+}
+
+// The seed's prompts get their written answers, streamed fast so seeding stays quick. Tokens are
+// counted from the text the way real tokenizers come out on average, about 3.6 characters each.
+function scriptedShape(raw, body, reply) {
+  const tokens = (text) => Math.ceil([...text].length / 3.6);
+  const texts = (value) =>
+    typeof value === "string" ? [value] : Array.isArray(value) ? value.flatMap((part) => texts(part?.text ?? part?.content ?? "")) : [];
+  const system = texts(body.system).reduce((sum, text) => sum + tokens(text), 0);
+  const messages = (body.messages ?? []).reduce((sum, m) => sum + 4 + texts(m.content).reduce((n, text) => n + tokens(text), 0), 0);
+  const input = Math.max(1, system + messages + (typeof body.input === "string" ? tokens(body.input) : 0) + 3);
+  return {
+    output: Math.max(1, tokens(reply)),
+    input,
+    cached: raw.includes('"cache_control"') ? Math.min(system, input - 1) : 0,
+    reasoning: 0,
+    tps: 4000,
+    pieces: reply.match(new RegExp(`[\\s\\S]{1,${TOKENS_PER_DELTA * 4}}`, "g")) ?? [reply],
   };
 }
 
@@ -431,7 +451,8 @@ async function handle(req, res) {
   }
   const failing = typeof body.model === "string" ? failureFor(raw, body.model) : undefined;
   if (failing !== undefined) return sendError(res, dialect, failing);
-  const shape = shapeOf(raw);
+  const scripted = dialect === "openai_embeddings" ? undefined : scriptedReply(body);
+  const shape = scripted === undefined ? shapeOf(raw) : scriptedShape(raw, body, scripted);
   if (path === "/v1/messages/count_tokens") return sendJson(res, 200, { input_tokens: shape.input });
   if (path === "/v1/responses/input_tokens") return sendJson(res, 200, { object: "response.input_tokens", input_tokens: shape.input });
   if (dialect === "openai_embeddings") return embeddings(res, body);
