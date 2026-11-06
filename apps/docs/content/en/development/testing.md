@@ -152,7 +152,7 @@ Three more tests guard text. `crates/kaeso-server/tests/error_copy.rs` checks ev
 
 ## End-to-end tests
 
-The suites in `e2e/` run the official OpenAI and Anthropic Python SDKs, pinned in `e2e/requirements.txt`, against KPP's encoders, the gateway and a fresh install. Set up their virtual environment once:
+The suites in `e2e/` run the official OpenAI, Anthropic and MCP Python SDKs, pinned in `e2e/requirements.txt`, against KPP's encoders, the gateway, its MCP portal and a fresh install. Set up their virtual environment once:
 
 ```bash
 python3 -m venv e2e/.venv
@@ -223,6 +223,14 @@ The mock provider (`crates/kaeso-testkit/src/mock_provider.rs`) chooses its repl
 
 `MockProvider::gate()` makes a gate and returns its marker. `wait_for(n)` returns once `n` requests have reached it, and `open()` lets them all through. That is how a test holds a request in flight without a sleep.
 
+### MCP portal suite
+
+```bash
+e2e/.venv/bin/pytest -q e2e/mcp
+```
+
+This suite runs the official MCP Python SDK against a project's [MCP portal](../concepts/mcp-portal.md), on the development databases. It starts the mock MCP server (`kaeso-testkit mock-mcp`), which wants a secret header, and the gateway. It then adds the server with that header through the Platform API. The tests list and call tools in protocol version `2026-07-28` and through the `initialize` handshake of `2025-11-25`, and find each call in the request logs. They also check that the portal refuses a tool the project left off and a key without tool access.
+
 ### Install test
 
 ```bash
@@ -285,7 +293,7 @@ The one required check is **CI**. It passes when **Changes** and **Comments** pa
 | Fuzz targets | The fuzz targets build |
 | Published crates | `cargo publish --dry-run` and `cargo doc` with warnings as errors for `kaeso-kpp` and `kaeso-codecs`, and `cargo semver-checks`: against the last published version for a minor release, and on a pull request against its base for a patch release, unless it is labelled `breaking` |
 | Fuzz runs | The **Fuzz** workflow for 60 seconds per target, when KPP, `crates/kaeso-mcp` or `fuzz/` changed |
-| SDK conformance, SDK end-to-end | `pytest -q e2e/conformance` and `pytest -q e2e/sdk` |
+| SDK conformance, SDK end-to-end | `pytest -q e2e/conformance`, `pytest -q e2e/sdk` and `pytest -q e2e/mcp` |
 | Compose config | `docker compose config` for both Compose files |
 | Images (gateway, mock provider, updater, console) | Build the four images; the console's job also checks that its image serves the console with a content security policy |
 | Install test | `pytest -q e2e/install` with those images |
