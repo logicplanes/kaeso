@@ -238,7 +238,7 @@ jobs:
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0
         with:
           save-if: ${{ github.ref == 'refs/heads/dev' }}
-      - uses: taiki-e/install-action@1e29709c0ec63babbe8f266397a465f29a825f91
+      - uses: taiki-e/install-action@68a389c788b2cd04016ce8c80ee23b80d2ab3d68
         with:
           tool: cargo-llvm-cov
       - run: cargo coverage-kpp
@@ -307,7 +307,7 @@ jobs:
         with:
           key: published-crates
           save-if: ${{ github.ref == 'refs/heads/dev' }}
-      - uses: taiki-e/install-action@1e29709c0ec63babbe8f266397a465f29a825f91
+      - uses: taiki-e/install-action@68a389c788b2cd04016ce8c80ee23b80d2ab3d68
         with:
           tool: cargo-semver-checks
       - name: Both crates package and would publish
@@ -363,7 +363,7 @@ jobs:
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0
         with:
           save-if: ${{ github.ref == 'refs/heads/dev' }}
-      - uses: taiki-e/install-action@1e29709c0ec63babbe8f266397a465f29a825f91
+      - uses: taiki-e/install-action@68a389c788b2cd04016ce8c80ee23b80d2ab3d68
         with:
           tool: cargo-llvm-cov,cargo-nextest
       - run: docker compose -f deploy/compose.dev.yaml up -d --wait
@@ -418,7 +418,7 @@ jobs:
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0
         with:
           save-if: ${{ github.ref == 'refs/heads/dev' }}
-      - uses: taiki-e/install-action@1e29709c0ec63babbe8f266397a465f29a825f91
+      - uses: taiki-e/install-action@68a389c788b2cd04016ce8c80ee23b80d2ab3d68
         with:
           tool: sqlx-cli
       - run: docker compose -f deploy/compose.dev.yaml up -d --wait postgres
