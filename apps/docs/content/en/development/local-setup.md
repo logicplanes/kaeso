@@ -59,7 +59,7 @@ Set the install up through the Platform API and fill it with sample data:
 pnpm seed
 ```
 
-You get the organization Northwind Labs with five projects, six members, keys, models, an alias and limits. It also sends a few hundred requests to the mock provider and adds 70 days of earlier request history. To set the install up by hand instead, skip this step and open the setup link.
+You get the organization Northwind Labs with five projects, six members, ten keys, models, aliases and limits. It sends a few thousand support emails and Slack questions through the gateway, which the mock provider answers with written replies, then adds 70 days of request history: each app and person with its own models, clients and hours, content where the project keeps it, response cache hits, fallbacks while a provider is overloaded and a limit reached during a sale. With `KAESO_SEED_WHOLE_DAYS=1` the history ends with yesterday instead of ten minutes ago, for a demo that moves its dates forward. To set the install up by hand instead, skip this step and open the setup link.
 
 ## Open the console
 
