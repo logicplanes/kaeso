@@ -71,6 +71,7 @@ impl AppState {
         let mcp_networks = p.config.mcp_servers.allowed_networks.clone();
         let translating = crate::model_api::memory::Budget::new(p.config.body_limits.in_flight.0);
         caches.listen(&p.valkey);
+        p.valkey.keep_healthy();
         AppState(Arc::new(Inner {
             config: p.config,
             pg: p.pg,
