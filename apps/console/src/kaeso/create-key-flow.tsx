@@ -12,6 +12,7 @@ import {
   RadioGroup,
   SecretReveal,
   Section,
+  SettingsGroup,
   Select,
   StepDialog,
   icons,
@@ -192,7 +193,7 @@ function CreateKeyFlow({ org, project, open, onClose, fixedServiceAccount }: Cre
             id: "access",
             title: t("kaeso.createKey.whatCalls", "What can it call?"),
             content: (
-              <div className="flex flex-col gap-16">
+              <SettingsGroup aria-label={t("kaeso.createKey.whatCalls", "What can it call?")}>
                 <RadioGroup variant="cards" aria-label={t("kaeso.createKey.access", "Access")} value={access} onValueChange={(v) => setAccess(v as Access)}>
                   <Radio
                     value="inference"
@@ -225,7 +226,7 @@ function CreateKeyFlow({ org, project, open, onClose, fixedServiceAccount }: Cre
                     onCheckedChange={setTools}
                   />
                 )}
-              </div>
+              </SettingsGroup>
             ),
           },
           {

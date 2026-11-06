@@ -1149,5 +1149,7 @@
   "The trend's color; the first series color by default.": "Die Farbe des Verlaufs; standardmäßig die erste Serienfarbe.",
   "A plain number with its unit and delta, or a tile in a `StatGroup` with its label, change, detail and trend.": "Eine einfache Zahl mit Einheit und Delta oder eine Kachel in einer `StatGroup` mit Beschriftung, Veränderung, Detail und Verlauf.",
   "The box with its label beside it, or a row of a settings group with the box at the end (`card`), as the rows of a `CheckboxGroup` with `variant=\"cards\"` are.": "Das Kästchen mit seiner Beschriftung daneben, oder eine Zeile einer Einstellungsgruppe mit dem Kästchen am Ende (`card`), wie die Zeilen einer `CheckboxGroup` mit `variant=\"cards\"`.",
-  "A plain list of checkboxes, or rows inside a settings group with the box at the end (`cards`).": "Eine einfache Liste von Kontrollkästchen, oder Zeilen in einer Einstellungsgruppe mit dem Kästchen am Ende (`cards`)."
+  "A plain list of checkboxes, or rows inside a settings group with the box at the end (`cards`).": "Eine einfache Liste von Kontrollkästchen, oder Zeilen in einer Einstellungsgruppe mit dem Kästchen am Ende (`cards`).",
+  "A plain list of radios, or rows with the radio at the end (`cards`), on their own surface or sharing a `SettingsGroup`'s.": "Eine einfache Liste von Optionsfeldern, oder Zeilen mit dem Optionsfeld am Ende (`cards`), auf eigener Fläche oder auf der einer `SettingsGroup`.",
+  "The rows of the group: `SettingsRow`s, a `RadioGroup` with `variant=\"cards\"`, or `Checkbox`es with `variant=\"card\"`, which share its surface.": "Die Zeilen der Gruppe: `SettingsRow`s, eine `RadioGroup` mit `variant=\"cards\"` oder `Checkbox`es mit `variant=\"card\"`, die ihre Fläche teilen."
 }

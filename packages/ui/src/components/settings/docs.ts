@@ -5,7 +5,7 @@ export const docs = {
     description: "A group of settings rows: radius 14, raised, ring and a whisper of shadow; hairlines inset to the text.",
     props: {
       "aria-label": "The group's accessible name.",
-      children: "The rows of the group.",
+      children: 'The rows of the group: `SettingsRow`s, a `RadioGroup` with `variant="cards"`, or `Checkbox`es with `variant="card"`, which share its surface.',
     },
   },
   SettingsRow: {

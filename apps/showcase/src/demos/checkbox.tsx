@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Checkbox, CheckboxGroup, Field } from "@logicplanes/kaeso-ui";
+import { Checkbox, CheckboxGroup, Field, Radio, RadioGroup, SettingsGroup } from "@logicplanes/kaeso-ui";
 import { Matrix, StateSection } from "~/lib/states";
 
 export const meta = {
@@ -30,12 +30,14 @@ export function Group() {
 }
 export function Cards() {
   return (
-    <div className="flex w-480 flex-col gap-16">
-      <CheckboxGroup variant="cards" defaultValue={["content"]} aria-label="What the log keeps">
-        <Checkbox value="content" label="Request content" description="Prompts and completions, for 30 days." />
-        <Checkbox value="tools" label="Tool calls" description="Arguments and results of every tool a model called." />
-      </CheckboxGroup>
-      <Checkbox variant="card" label="Tools" description="Also calls the project's tools through its MCP portal, as its owner." />
+    <div className="w-480">
+      <SettingsGroup aria-label="What the key can call">
+        <RadioGroup variant="cards" defaultValue="inference" aria-label="Access">
+          <Radio value="inference" label="Inference" description="Calls the model API." />
+          <Radio value="platform" label="Platform" description="Calls the Platform API with its owner's rights." />
+        </RadioGroup>
+        <Checkbox variant="card" label="Tools" description="Also calls the project's tools through its MCP portal, as its owner." />
+      </SettingsGroup>
     </div>
   );
 }
@@ -82,7 +84,14 @@ export function States() {
             <Checkbox value="images" label="Images" description="Focus moves with Tab." data-force="focus" />
             <Checkbox value="audio" label="Audio" description="Not kept on this install." disabled />
           </CheckboxGroup>
-          <Checkbox variant="card" label="Tools" description="Also calls the project's tools through its MCP portal, as its owner." defaultChecked />
+          <SettingsGroup aria-label="What the key can call">
+            <RadioGroup variant="cards" defaultValue="inference" aria-label="Access">
+              <Radio value="inference" label="Inference" description="Calls the model API." />
+              <Radio value="platform" label="Platform" description="Calls the Platform API with its owner's rights." />
+            </RadioGroup>
+            <Checkbox variant="card" label="Tools" description="Also calls the project's tools through its MCP portal, as its owner." defaultChecked />
+          </SettingsGroup>
+          <Checkbox variant="card" label="Tools" description="On its own surface, when there is nothing to group it with." />
         </div>
       </StateSection>
     </>

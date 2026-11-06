@@ -3,6 +3,7 @@ import { Radio as BaseRadio } from "@base-ui/react/radio";
 import { RadioGroup as BaseRadioGroup } from "@base-ui/react/radio-group";
 import { cn } from "../../utils/cn.js";
 import { labelled } from "./labelled.js";
+import { GroupSurface } from "../settings/settings.js";
 
 export const KAESO_RADIO_VARIANTS = {
   variant: {
@@ -35,6 +36,7 @@ const Group = forwardRef<HTMLDivElement, RadioGroupProps>(function RadioGroup(
   { value, defaultValue, onValueChange, disabled, name, variant = "default", orientation = "vertical", className, children, ...props },
   ref,
 ) {
+  const surface = useContext(GroupSurface);
   return (
     <Ctx.Provider value={{ variant, disabled: !!disabled }}>
       <BaseRadioGroup
@@ -45,7 +47,7 @@ const Group = forwardRef<HTMLDivElement, RadioGroupProps>(function RadioGroup(
         {...(disabled !== undefined ? { disabled } : {})}
         {...(name ? { name } : {})}
         className={cn(
-          KAESO_RADIO_VARIANTS.variant[variant].classes,
+          variant === "cards" && surface ? "flex flex-col not-first:hairline-t" : KAESO_RADIO_VARIANTS.variant[variant].classes,
           orientation === "horizontal" && variant === "default" && "flex-row flex-wrap gap-x-24",
           className,
         )}

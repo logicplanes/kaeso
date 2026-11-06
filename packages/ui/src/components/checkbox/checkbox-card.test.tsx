@@ -1,6 +1,8 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { Checkbox, CheckboxGroup } from "./checkbox.js";
+import { Radio, RadioGroup } from "../radio/radio.js";
+import { SettingsGroup } from "../settings/settings.js";
 
 describe("Checkbox cards", () => {
   it("as a card on its own, is a raised row with the label first and the box at the end", () => {
@@ -26,5 +28,26 @@ describe("Checkbox cards", () => {
     expect(row).not.toHaveClass("rounded-group");
     expect(screen.getByText("Audio").closest("label")).toHaveClass("cursor-not-allowed");
     expect(screen.getByText("Audio")).toHaveClass("text-fg-disabled");
+  });
+  it("inside a settings group, radio cards and a card checkbox share the group's surface as one box", () => {
+    render(
+      <SettingsGroup aria-label="What the key can call">
+        <RadioGroup variant="cards" aria-label="Access" defaultValue="inference">
+          <Radio value="inference" label="Inference" description="Calls the model API." />
+          <Radio value="platform" label="Platform" />
+        </RadioGroup>
+        <Checkbox variant="card" label="Tools" description="Also calls the project's tools." />
+      </SettingsGroup>,
+    );
+    const box = screen.getByRole("group", { name: "What the key can call" });
+    expect(box).toHaveClass("rounded-group", "bg-raised", "shadow-xs");
+    const radios = screen.getByRole("radiogroup", { name: "Access" });
+    expect(radios).toHaveClass("not-first:hairline-t");
+    expect(radios).not.toHaveClass("rounded-group", "shadow-xs");
+    expect(screen.getByText("Platform").closest("label")).toHaveClass("not-first:hairline-t");
+    const tools = screen.getByText("Tools").closest("label");
+    expect(tools).toHaveClass("not-first:hairline-t");
+    expect(tools).not.toHaveClass("rounded-group", "shadow-xs");
+    expect(screen.getByRole("checkbox", { name: "Tools" })).toHaveAccessibleDescription("Also calls the project's tools.");
   });
 });

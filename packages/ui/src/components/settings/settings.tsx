@@ -1,5 +1,5 @@
 import type * as React from "react";
-import { forwardRef, type MouseEvent, type ReactNode } from "react";
+import { createContext, forwardRef, type MouseEvent, type ReactNode } from "react";
 import { cn } from "../../utils/cn.js";
 import { useLinkComponent } from "../../utils/link-provider.js";
 import { icons } from "../../icons/vocabulary.js";
@@ -13,12 +13,16 @@ export const KAESO_SETTINGS_VARIANTS = {
 } as const;
 export const KAESO_SETTINGS_DEFAULT_VARIANTS = { row: "default" } as const;
 
+export const GroupSurface = createContext(false);
+
 export const SettingsGroup = forwardRef<HTMLDivElement, { children: ReactNode; className?: string | undefined; "aria-label"?: string | undefined }>(
   function SettingsGroup({ children, className, ...props }, ref) {
     return (
-      <div ref={ref} role="group" className={cn("flex flex-col overflow-hidden rounded-group bg-raised shadow-xs", className)} {...props}>
-        {children}
-      </div>
+      <GroupSurface.Provider value={true}>
+        <div ref={ref} role="group" className={cn("flex flex-col overflow-hidden rounded-group bg-raised shadow-xs", className)} {...props}>
+          {children}
+        </div>
+      </GroupSurface.Provider>
     );
   },
 );

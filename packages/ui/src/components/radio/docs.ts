@@ -26,7 +26,7 @@ export const docs = {
       onValueChange: "Called with the chosen option.",
       orientation: "Lays the items out in a row (`horizontal`) or a column (`vertical`).",
       value: "The chosen option, when you control it.",
-      variant: "A plain list of radios, or rows inside a settings group with the radio at the end (`cards`).",
+      variant: "A plain list of radios, or rows with the radio at the end (`cards`), on their own surface or sharing a `SettingsGroup`'s.",
     },
   },
 } satisfies ComponentDocs;

@@ -4,6 +4,7 @@ import { CheckboxGroup as BaseCheckboxGroup } from "@base-ui/react/checkbox-grou
 import { cn } from "../../utils/cn.js";
 import { labelled } from "../radio/labelled.js";
 import { useField } from "../field/field.js";
+import { GroupSurface } from "../settings/settings.js";
 
 export const KAESO_CHECKBOX_VARIANTS = {
   size: {
@@ -119,6 +120,8 @@ const Root = forwardRef<HTMLButtonElement, CheckboxProps>(function Checkbox({ la
   const field = useField();
   const groupDisabled = useContext(GroupDisabled);
   const groupCards = useContext(GroupCards);
+  const groupSurface = useContext(GroupSurface);
+  const surface = groupCards || groupSurface;
   const fieldDescribedBy = [own["aria-describedby"], field?.descriptionId, field?.errorId].filter(Boolean).join(" ");
   const props = {
     ...own,
@@ -137,7 +140,7 @@ const Root = forwardRef<HTMLButtonElement, CheckboxProps>(function Checkbox({ la
         {...(props["data-force"] ? { "data-force": props["data-force"] } : {})}
         className={cn(
           KAESO_CHECKBOX_VARIANTS.variant.card.classes,
-          groupCards ? "not-first:hairline-t" : "rounded-group bg-raised shadow-xs",
+          surface ? "not-first:hairline-t" : "rounded-group bg-raised shadow-xs",
           off ? "cursor-not-allowed" : "hover:bg-raised-hover active:bg-raised-pressed focus-ring-card-row-within",
           className,
         )}
