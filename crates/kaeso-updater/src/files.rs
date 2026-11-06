@@ -65,6 +65,8 @@ pub struct Switched {
     pub new_id: Option<String>,
     #[serde(default)]
     pub phase: Phase,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub stop_seconds: Option<u32>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -177,6 +179,7 @@ mod tests {
                 old_id: "old".into(),
                 new_id: Some("new".into()),
                 phase: Phase::Started,
+                stop_seconds: Some(75),
             }],
             project: Some("kaeso".into()),
             images: vec![Image {
@@ -198,6 +201,7 @@ mod tests {
             "an older state assumes the database migrates"
         );
         assert_eq!(loaded.switched.first().unwrap().phase, Phase::Stopping);
+        assert_eq!(loaded.switched.first().unwrap().stop_seconds, None);
         std::fs::write(d.join(STATE_FILE), b"{").unwrap();
         assert_eq!(state.load(), None);
         std::fs::remove_dir_all(&d).unwrap();

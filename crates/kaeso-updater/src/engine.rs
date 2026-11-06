@@ -667,6 +667,7 @@ impl Engine {
                 },
             )
         })?;
+        let stop_seconds = clone::stop_timeout(&t.container);
         self.record(|s| {
             s.switched.push(Switched {
                 service: t.service,
@@ -674,10 +675,11 @@ impl Engine {
                 old_id: t.id.clone(),
                 new_id: None,
                 phase: Phase::Stopping,
+                stop_seconds,
             })
         })?;
         self.docker
-            .stop(&t.id, self.settings.stop_seconds)
+            .stop(&t.id, stop_seconds.unwrap_or(self.settings.stop_seconds))
             .await
             .map_err(docker)?;
         self.docker
@@ -777,7 +779,8 @@ impl Engine {
     async fn restore(&self, w: &Switched, project: Option<&str>) -> Result<(), String> {
         match (&w.new_id, project) {
             (Some(new_id), _) => {
-                if let Err(e) = self.docker.stop(new_id, self.settings.stop_seconds).await {
+                let seconds = w.stop_seconds.unwrap_or(self.settings.stop_seconds);
+                if let Err(e) = self.docker.stop(new_id, seconds).await {
                     tracing::warn!(error = %e, "cannot stop the new container");
                 }
                 self.docker

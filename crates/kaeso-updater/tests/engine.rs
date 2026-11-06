@@ -114,6 +114,53 @@ async fn a_gateway_unhealthy_while_it_migrates_is_waited_for() {
     assert_eq!(world.running("kaeso-gateway-1").image, "sha256:new-gateway");
 }
 
+fn with_stop_timeout(seconds: u32) -> Daemon {
+    let mut daemon = Daemon::install();
+    daemon
+        .containers
+        .iter_mut()
+        .find(|c| c.name == "kaeso-gateway-1")
+        .unwrap()
+        .stop_timeout = Some(seconds);
+    daemon
+}
+
+fn stops(world: &World) -> Vec<(String, String)> {
+    world.daemon.lock().unwrap().stops.clone()
+}
+
+#[tokio::test]
+async fn a_container_gets_the_stop_timeout_compose_gave_it() {
+    let world = World::new("stop-timeout", with_stop_timeout(75), Verifier::default()).await;
+    let job = update(&world, TO).await;
+    assert_eq!(job.state, JobState::Succeeded, "{job:?}");
+    let stops = stops(&world);
+    assert_eq!(stops.len(), 2, "{stops:?}");
+    assert!(stops[0].0.contains("consoleold"), "{stops:?}");
+    assert_eq!(stops[0].1, "0", "the console has none, so the default");
+    assert!(stops[1].0.contains("gatewayold"), "{stops:?}");
+    assert_eq!(stops[1].1, "75");
+    assert_eq!(world.running("kaeso-gateway-1").stop_timeout, Some(75));
+}
+
+#[tokio::test]
+async fn a_new_gateway_rolled_back_gets_the_same_stop_timeout() {
+    let mut daemon = with_stop_timeout(75);
+    daemon
+        .new_health
+        .insert("gateway".into(), Health::Unhealthy);
+    let world = World::new("stop-timeout-rollback", daemon, Verifier::default()).await;
+    let job = update(&world, TO).await;
+    assert_eq!(job.state, JobState::RolledBack, "{job:?}");
+    let stops = stops(&world);
+    let new: Vec<&str> = stops
+        .iter()
+        .filter(|(path, _)| path.contains("containers/new"))
+        .map(|(_, t)| t.as_str())
+        .collect();
+    assert!(new.contains(&"75"), "only the gateway has 75: {stops:?}");
+}
+
 #[tokio::test]
 async fn a_gateway_that_stays_unhealthy_rolls_back_when_nothing_migrates() {
     let mut daemon = Daemon::install();
@@ -666,6 +713,7 @@ fn switched(service: Service, old_id: String, new_id: Option<&str>, phase: Phase
         old_id,
         new_id: new_id.map(str::to_owned),
         phase,
+        stop_seconds: None,
     }
 }
 

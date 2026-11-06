@@ -72,6 +72,13 @@ pub fn name(container: &Value) -> Result<String, CloneError> {
         .ok_or(CloneError::Missing("Name"))
 }
 
+pub fn stop_timeout(container: &Value) -> Option<u32> {
+    container
+        .pointer("/Config/StopTimeout")
+        .and_then(Value::as_u64)
+        .and_then(|s| u32::try_from(s).ok())
+}
+
 pub fn version_of(image: &Value) -> Option<&str> {
     image
         .pointer(&format!(
