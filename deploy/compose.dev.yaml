@@ -25,7 +25,7 @@ services:
       retries: 30
 
   clickhouse:
-    image: clickhouse/clickhouse-server:26.3.59.10-alpine@sha256:b10f8517402e545025dbed6f47a2407a40712f599a5e6ccb99911d1838c512de
+    image: clickhouse/clickhouse-server:26.3.62.3-alpine@sha256:1d45e52080e6ed136a6377863046a0e53d69fb0418d799f12e23184ed6460c55
     environment:
       CLICKHOUSE_USER: kaeso
       CLICKHOUSE_PASSWORD: kaeso
@@ -46,7 +46,7 @@ services:
       retries: 30
 
   valkey:
-    image: valkey/valkey:9.1.2-alpine@sha256:48332870af354a799964c0012ae1194a0bf2bf894eb508f945810596dc2d8d11
+    image: valkey/valkey:9.1.3-alpine@sha256:bf09d58e96d6b4524a15396b65b242bbe18beebbcc15a04d8ee75ddac62fae0b
     ports:
       - 127.0.0.1:${KAESO_VALKEY_PORT:-56379}:6379
     healthcheck:
