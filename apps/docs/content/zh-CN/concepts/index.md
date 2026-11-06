@@ -30,6 +30,7 @@ order: 2
 | API 格式 | 请求及其回复的形式：OpenAI Chat Completions、Responses 或 Embeddings，或 Anthropic Messages |
 | KPP | Kaeso Provider Protocol，一种统一格式：网关把每种 API 格式转换为它，再从它转换回去（[格式转换](format-translation.md)） |
 | 模型 API、Platform API | 实例的两个 API。应用在 `/v1` 上调用模型，控制台和脚本在 `/platform/v1` 上管理实例（[API](../api/index.md)） |
+| MCP 服务器、MCP 门户 | MCP 服务器提供工具，例如在 X 上发帖。每个项目都在 `/mcp/<项目 ID>` 有一个 MCP 门户，把其服务器的工具提供给 claude.ai 等客户端（[MCP 门户](mcp-portal.md)） |
 
 ## 下一步
 
@@ -40,3 +41,4 @@ order: 2
 - [格式转换](format-translation.md)：了解应用调用其他服务商的模型时，哪些内容能够保留。
 - [权限](rights.md)：查阅每项权限、哪些角色拥有它，以及授予它的规则。
 - [KPMR](kpmr.md)：了解模型数据从何而来，以及实例如何保持其最新。
+- [MCP 门户](mcp-portal.md)：把 MCP 服务器的工具提供给 AI 客户端，并使用 Kaeso 的登录、权限、限额和日志。

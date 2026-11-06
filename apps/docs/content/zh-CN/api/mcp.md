@@ -6,6 +6,8 @@ order: 5
 
 通过 MCP 服务器，Claude Code 或 Codex 等智能体可以借助 Platform API 为您管理实例。智能体通过您的浏览器登录，由您决定它能做什么。服务器位于实例域名下的 `/mcp`。
 
+这个服务器用于管理 Kaeso 本身。要把您自己的 MCP 服务器的工具（例如在 X 上发帖）提供给客户端，请改用项目的 [MCP 门户](mcp-portal.md)，地址为 `/mcp/<项目 ID>`。
+
 用实例的地址将它添加到 Claude Code：
 
 ```bash
