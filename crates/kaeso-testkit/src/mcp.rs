@@ -145,9 +145,11 @@ pub struct MockMcp {
 
 impl MockMcp {
     pub async fn start(options: Options) -> MockMcp {
-        let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
-            .await
-            .expect("bind");
+        MockMcp::start_on("127.0.0.1:0", options).await
+    }
+
+    pub async fn start_on(addr: &str, options: Options) -> MockMcp {
+        let listener = tokio::net::TcpListener::bind(addr).await.expect("bind");
         let addr = listener.local_addr().expect("addr");
         let inner = Arc::new(Inner {
             held: AtomicBool::new(false),

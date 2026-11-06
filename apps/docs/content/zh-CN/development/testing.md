@@ -152,7 +152,7 @@ cargo install cargo-deny cargo-llvm-cov cargo-nextest sqlx-cli --locked
 
 ## 端到端测试
 
-`e2e/` 中的套件用 `e2e/requirements.txt` 中固定版本的 OpenAI 和 Anthropic 官方 Python SDK，测试 KPP 的编码器、网关和全新实例。先设置一次它们的虚拟环境：
+`e2e/` 中的套件用 `e2e/requirements.txt` 中固定版本的 OpenAI、Anthropic 和 MCP 官方 Python SDK，测试 KPP 的编码器、网关、其 MCP 门户和全新实例。先设置一次它们的虚拟环境：
 
 ```bash
 python3 -m venv e2e/.venv
@@ -223,6 +223,14 @@ e2e/.venv/bin/pytest -q e2e/sdk
 
 `MockProvider::gate()` 创建一个闸门并返回它的标记。`wait_for(n)` 在 `n` 个请求到达后返回，`open()` 放行所有请求。测试就是这样在不使用 sleep 的情况下让请求保持在进行中。
 
+### MCP 门户测试套件
+
+```bash
+e2e/.venv/bin/pytest -q e2e/mcp
+```
+
+该套件在开发数据库上用官方 MCP Python SDK 测试项目的 [MCP 门户](../concepts/mcp-portal.md)。它启动需要密钥请求头的模拟 MCP 服务器（`kaeso-testkit mock-mcp`）和网关，然后通过 Platform API 用该请求头添加服务器。测试以协议版本 `2026-07-28` 以及通过 `2025-11-25` 的 `initialize` 握手列出并调用工具，并在请求日志中找到每次调用。测试还检查门户会拒绝项目关闭的工具和没有工具访问权限的密钥。
+
 ### 安装测试
 
 ```bash
@@ -285,7 +293,7 @@ CI 工作流 `.github/workflows/ci.yml` 在每个拉取请求、每次推送到 
 | Fuzz targets | 模糊测试目标能够构建 |
 | Published crates | 为 `kaeso-kpp` 和 `kaeso-codecs` 运行 `cargo publish --dry-run` 和把警告视为错误的 `cargo doc`，并运行 `cargo semver-checks`：对照最近发布的版本检查是否适合次版本发布；在拉取请求中对照其基础提交检查是否适合补丁发布，除非它带有 `breaking` 标签 |
 | Fuzz runs | KPP、`crates/kaeso-mcp` 或 `fuzz/` 有变化时，以每个目标 60 秒运行 **Fuzz** 工作流 |
-| SDK conformance、SDK end-to-end | `pytest -q e2e/conformance` 和 `pytest -q e2e/sdk` |
+| SDK conformance、SDK end-to-end | `pytest -q e2e/conformance`、`pytest -q e2e/sdk` 和 `pytest -q e2e/mcp` |
 | Compose config | 对两个 Compose 文件运行 `docker compose config` |
 | Images（gateway、mock provider、updater、console） | 构建四个镜像；控制台的作业还检查其镜像以内容安全策略提供控制台 |
 | Install test | 用这些镜像运行 `pytest -q e2e/install` |

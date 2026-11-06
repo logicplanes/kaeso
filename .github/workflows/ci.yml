@@ -523,6 +523,7 @@ jobs:
       - run: pip install --require-hashes -r e2e/requirements.txt
       - run: docker compose -f deploy/compose.dev.yaml up -d --wait
       - run: pytest -q e2e/sdk
+      - run: pytest -q e2e/mcp
 
   compose:
     name: Compose config

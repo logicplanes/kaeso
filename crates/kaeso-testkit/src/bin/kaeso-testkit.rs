@@ -12,6 +12,17 @@ async fn main() -> std::process::ExitCode {
             std::future::pending::<()>().await;
             std::process::ExitCode::SUCCESS
         }
+        Some("mock-mcp") => {
+            let addr = args.get(1).map_or("127.0.0.1:0", String::as_str);
+            let options = kaeso_testkit::mcp::Options {
+                token: args.get(2).cloned(),
+                ..kaeso_testkit::mcp::Options::default()
+            };
+            let mcp = kaeso_testkit::mcp::MockMcp::start_on(addr, options).await;
+            println!("{}", mcp.url());
+            std::future::pending::<()>().await;
+            std::process::ExitCode::SUCCESS
+        }
         Some("mock-idp") => {
             let (Some(addr), Some(id), Some(secret)) = (args.get(1), args.get(2), args.get(3))
             else {
@@ -61,7 +72,7 @@ async fn main() -> std::process::ExitCode {
         }
         _ => {
             eprintln!(
-                "usage: kaeso-testkit mock-provider [ADDR] | mock-idp ADDR CLIENT_ID CLIENT_SECRET | fresh-services [--temporary] | drop-services NAME"
+                "usage: kaeso-testkit mock-provider [ADDR] | mock-mcp [ADDR] [TOKEN] | mock-idp ADDR CLIENT_ID CLIENT_SECRET | fresh-services [--temporary] | drop-services NAME"
             );
             std::process::ExitCode::from(2)
         }

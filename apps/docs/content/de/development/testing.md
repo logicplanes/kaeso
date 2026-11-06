@@ -152,7 +152,7 @@ Drei weitere Tests wachen über Texte. `crates/kaeso-server/tests/error_copy.rs`
 
 ## End-to-End-Tests
 
-Die Suites in `e2e/` führen die offiziellen Python-SDKs von OpenAI und Anthropic, festgelegt in `e2e/requirements.txt`, gegen die Encoder von KPP, das Gateway und eine frische Installation aus. Richten Sie ihre virtuelle Umgebung einmalig ein:
+Die Suites in `e2e/` führen die offiziellen Python-SDKs von OpenAI, Anthropic und MCP, festgelegt in `e2e/requirements.txt`, gegen die Encoder von KPP, das Gateway, sein MCP-Portal und eine frische Installation aus. Richten Sie ihre virtuelle Umgebung einmalig ein:
 
 ```bash
 python3 -m venv e2e/.venv
@@ -223,6 +223,14 @@ Der Mock-Anbieter (`crates/kaeso-testkit/src/mock_provider.rs`) wählt seine Ant
 
 `MockProvider::gate()` erzeugt ein Gate und gibt seine Markierung zurück. `wait_for(n)` kehrt zurück, sobald `n` Anfragen es erreicht haben, und `open()` lässt sie alle durch. So hält ein Test eine Anfrage ohne Sleep in der Schwebe.
 
+### MCP-Portal-Suite
+
+```bash
+e2e/.venv/bin/pytest -q e2e/mcp
+```
+
+Diese Suite führt das offizielle MCP-SDK für Python gegen das [MCP-Portal](../concepts/mcp-portal.md) eines Projekts aus, auf den Datenbanken der Entwicklung. Sie startet den Mock-MCP-Server (`kaeso-testkit mock-mcp`), der einen geheimen Header verlangt, und das Gateway. Dann fügt sie den Server mit diesem Header über die Platform API hinzu. Die Tests listen und rufen Tools in der Protokollversion `2026-07-28` und über den `initialize`-Handshake von `2025-11-25` auf und finden jeden Aufruf in den Anfrageprotokollen. Sie prüfen außerdem, dass das Portal ein Tool ablehnt, das das Projekt ausgeschaltet hat, und einen Schlüssel ohne Tool-Zugriff.
+
 ### Installationstest
 
 ```bash
@@ -285,7 +293,7 @@ Die einzige erforderliche Prüfung ist **CI**. Sie besteht, wenn **Changes** und
 | Fuzz targets | Die Fuzz-Targets bauen |
 | Published crates | `cargo publish --dry-run` und `cargo doc` mit Warnungen als Fehler für `kaeso-kpp` und `kaeso-codecs`, und `cargo semver-checks`: gegen die zuletzt veröffentlichte Version für ein Minor-Release und bei einem Pull Request gegen seine Basis für ein Patch-Release, außer er trägt das Label `breaking` |
 | Fuzz runs | Der Workflow **Fuzz** mit 60 Sekunden je Target, wenn sich KPP, `crates/kaeso-mcp` oder `fuzz/` geändert hat |
-| SDK conformance, SDK end-to-end | `pytest -q e2e/conformance` und `pytest -q e2e/sdk` |
+| SDK conformance, SDK end-to-end | `pytest -q e2e/conformance`, `pytest -q e2e/sdk` und `pytest -q e2e/mcp` |
 | Compose config | `docker compose config` für beide Compose-Dateien |
 | Images (gateway, mock provider, updater, console) | Bauen die vier Images; der Job der Konsole prüft außerdem, dass ihr Image die Konsole mit einer Content Security Policy ausliefert |
 | Install test | `pytest -q e2e/install` mit diesen Images |
