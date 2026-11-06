@@ -22,6 +22,8 @@ export const docs = {
       readOnly: "Shows the value without letting people change it.",
       required: "Marks it as required in a form.",
       value: "The value sent with the form, and the value in a `CheckboxGroup`.",
+      variant:
+        'The box with its label beside it, or a row of a settings group with the box at the end (`card`), as the rows of a `CheckboxGroup` with `variant="cards"` are.',
     },
   },
   CheckboxGroup: {
@@ -35,6 +37,7 @@ export const docs = {
       disabled: "Turns off every checkbox in the group.",
       onValueChange: "Called with the checked values whenever one changes.",
       value: "The checked values, when you control them.",
+      variant: "A plain list of checkboxes, or rows inside a settings group with the box at the end (`cards`).",
     },
   },
 } satisfies ComponentDocs;

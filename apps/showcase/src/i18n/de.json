@@ -1147,5 +1147,7 @@
   "While the numbers load: the value, the change and the trend show their shape at the tile's final height.": "Während die Zahlen laden: Wert, Veränderung und Verlauf zeigen ihre Form in der endgültigen Höhe der Kachel.",
   "One value per day (or step), drawn as a sparkline across the tile. A tile without it has no room for one; pass `[]` while a trend loads to keep it.": "Ein Wert pro Tag (oder Schritt), als Sparkline über die Kachel gezeichnet. Eine Kachel ohne ihn hat keinen Platz dafür; übergeben Sie `[]`, solange ein Verlauf lädt, um ihn zu behalten.",
   "The trend's color; the first series color by default.": "Die Farbe des Verlaufs; standardmäßig die erste Serienfarbe.",
-  "A plain number with its unit and delta, or a tile in a `StatGroup` with its label, change, detail and trend.": "Eine einfache Zahl mit Einheit und Delta oder eine Kachel in einer `StatGroup` mit Beschriftung, Veränderung, Detail und Verlauf."
+  "A plain number with its unit and delta, or a tile in a `StatGroup` with its label, change, detail and trend.": "Eine einfache Zahl mit Einheit und Delta oder eine Kachel in einer `StatGroup` mit Beschriftung, Veränderung, Detail und Verlauf.",
+  "The box with its label beside it, or a row of a settings group with the box at the end (`card`), as the rows of a `CheckboxGroup` with `variant=\"cards\"` are.": "Das Kästchen mit seiner Beschriftung daneben, oder eine Zeile einer Einstellungsgruppe mit dem Kästchen am Ende (`card`), wie die Zeilen einer `CheckboxGroup` mit `variant=\"cards\"`.",
+  "A plain list of checkboxes, or rows inside a settings group with the box at the end (`cards`).": "Eine einfache Liste von Kontrollkästchen, oder Zeilen in einer Einstellungsgruppe mit dem Kästchen am Ende (`cards`)."
 }

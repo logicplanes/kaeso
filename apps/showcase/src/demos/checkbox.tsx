@@ -14,6 +14,7 @@ export const meta = {
 export const examples = [
   { id: "basic", title: "Basic", fn: "Basic" },
   { id: "group", title: "Group", fn: "Group" },
+  { id: "cards", title: "Cards", fn: "Cards" },
 ];
 export function Basic() {
   return <Checkbox label="Log request content" description="Prompts and completions are stored for 30 days." defaultChecked />;
@@ -25,6 +26,17 @@ export function Group() {
       <Checkbox value="image" label="Images" />
       <Checkbox value="pdf" label="PDF" />
     </CheckboxGroup>
+  );
+}
+export function Cards() {
+  return (
+    <div className="flex w-480 flex-col gap-16">
+      <CheckboxGroup variant="cards" defaultValue={["content"]} aria-label="What the log keeps">
+        <Checkbox value="content" label="Request content" description="Prompts and completions, for 30 days." />
+        <Checkbox value="tools" label="Tool calls" description="Arguments and results of every tool a model called." />
+      </CheckboxGroup>
+      <Checkbox variant="card" label="Tools" description="Also calls the project's tools through its MCP portal, as its owner." />
+    </div>
   );
 }
 export function States() {
@@ -61,6 +73,17 @@ export function States() {
       </StateSection>
       <StateSection title="Group with a parent">
         <GroupWithParent />
+      </StateSection>
+      <StateSection title="Cards">
+        <div className="flex w-480 flex-col gap-16">
+          <CheckboxGroup variant="cards" defaultValue={["content"]} aria-label="What the log keeps">
+            <Checkbox value="content" label="Request content" description="Prompts and completions, for 30 days." />
+            <Checkbox value="tools" label="Tool calls" description="The row answers the pointer." data-force="hover" />
+            <Checkbox value="images" label="Images" description="Focus moves with Tab." data-force="focus" />
+            <Checkbox value="audio" label="Audio" description="Not kept on this install." disabled />
+          </CheckboxGroup>
+          <Checkbox variant="card" label="Tools" description="Also calls the project's tools through its MCP portal, as its owner." defaultChecked />
+        </div>
       </StateSection>
     </>
   );

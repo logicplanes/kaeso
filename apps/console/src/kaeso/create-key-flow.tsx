@@ -218,6 +218,7 @@ function CreateKeyFlow({ org, project, open, onClose, fixedServiceAccount }: Cre
                 </RadioGroup>
                 {rights.has("tools.view") && (
                   <Checkbox
+                    variant="card"
                     label={t("kaeso.createKey.tools", "Tools")}
                     description={t("kaeso.createKey.toolsHint", "Also calls the project's tools through its MCP portal, as its owner.")}
                     checked={tools}
