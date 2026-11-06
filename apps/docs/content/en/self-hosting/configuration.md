@@ -54,7 +54,7 @@ Every service in `compose.yaml` has a memory limit and a process limit. The defa
 | `updater` | `UPDATER_MEMORY`, `256m` | `UPDATER_PIDS`, `128` |
 | `docker-proxy` | `DOCKER_PROXY_MEMORY`, `128m` | `DOCKER_PROXY_PIDS`, `64` |
 
-Memory takes Docker's units, such as `768m` or `3g`. Docker stops and restarts a service that reaches its memory limit. ClickHouse sizes its own memory use to the limit.
+Memory takes Docker's units, such as `768m` or `3g`. Docker stops and restarts a service that reaches its memory limit. ClickHouse sizes its own memory use to the limit. PostgreSQL gives a quarter of its limit to shared buffers and plans with three quarters as cache.
 
 Valkey keeps its data within `VALKEY_MAXMEMORY`, `512mb` by default, which stays below `VALKEY_MEMORY` so Valkey is never stopped for memory. It never evicts a key to make room, so a rate or budget counter is never dropped without notice.
 
@@ -85,7 +85,7 @@ Docker rotates each service's log at 10 MB and keeps five files.
 | `KAESO_METRICS_LISTEN`<br>`metrics_listen` | text | `127.0.0.1:9100` | Address of the Prometheus metrics. Never route it publicly. The gateway image sets `0.0.0.0:9100`, so a port published from the container reaches it; [health and metrics](monitoring.md#metrics) shows how. |
 | `KAESO_PUBLIC_URL`<br>`public_url` | text | required | The address people and apps use, such as `https://kaeso.example.com`, without a path. It must be `https`, except `http` on a loopback address for development. |
 | `KAESO_TRUSTED_PROXIES`<br>`trusted_proxies` | text | `127.0.0.0/8,::1/128` | Comma-separated networks of proxies whose `X-Forwarded-For` the gateway believes. `trusted_proxies = ""` in the TOML file trusts none; an empty variable keeps the default. |
-| `KAESO_SHUTDOWN_GRACE`<br>`shutdown_grace` | text | `30s` | How long requests and streams in flight may run after a shutdown signal. Those still open then end with 503 and are charged and logged. |
+| `KAESO_SHUTDOWN_GRACE`<br>`shutdown_grace` | text | `30s` | How long requests and streams in flight may run after a shutdown signal. Those still open then end with 503 and are charged and logged. Compose gives the gateway 75 seconds to stop; when you raise this, raise the `gateway` service's `stop_grace_period` in `compose.override.yaml` by as much. |
 | `KAESO_SERVER_HEADER_READ_TIMEOUT`<br>`server.header_read_timeout` | text | `30s` | How long a client may take to send a request's headers, or leave a connection idle between requests; 1s to 10m. It never cuts off a reply in progress. |
 | `KAESO_SERVER_BODY_READ_TIMEOUT`<br>`server.body_read_timeout` | text | `30s` | How long the gateway waits for the next part of a request body before it refuses the request with 400; 1s to 10m. |
 | `KAESO_SERVER_BODY_READ_DEADLINE`<br>`server.body_read_deadline` | text | `60s` | How long the gateway waits for a whole request body, however steadily its parts arrive, before it refuses the request with 400; 1s to 1h. A 32 MiB body, the model API's default limit, arrives in time at 4.5 Mbit/s; raise it for apps on slower links. |
@@ -138,7 +138,7 @@ These settings turn passwords and sign-in links on or off for the whole install.
 | --- | --- | --- | --- |
 | `KAESO_AUTH_PASSWORD`<br>`auth.password` | bool | `true` | Allow sign-in with email and password. |
 | `KAESO_AUTH_MAGIC_LINK`<br>`auth.magic_link` | bool | `true` | Allow sign-in with a link sent by email. |
-| `KAESO_AUTH_DEMO_USER`<br>`auth.demo_user` | text | — | Turns the install into a public, read-only demo: the email of an existing user that every visitor is signed in as. Nothing can be changed, and the model API and MCP are off ([run a public demo](installation.md#run-a-public-demo)). |
+| `KAESO_AUTH_DEMO_USER`<br>`auth.demo_user` | text | — | Turns the install into a public, read-only demo: the email of an existing user that every visitor is signed in as. Each visitor sees only their own session, nothing can be changed, and the model API and MCP are off ([run a public demo](installation.md#run-a-public-demo)). |
 | `KAESO_AUTH_OIDC_ALLOW_PRIVATE_NETWORKS`<br>`auth.oidc_allow_private_networks` | bool | `false` | Allow OIDC requests to private and loopback addresses, for an identity provider on your own network. Turn it on only where organization admins may reach your internal network through the gateway. Link-local and cloud metadata addresses, such as `169.254.169.254`, stay refused. |
 
 ### API key failures
@@ -158,8 +158,6 @@ The gateway keeps its model data current from [KPMR](../concepts/kpmr.md), the K
 | `KAESO_KPMR_URL`<br>`kpmr.url` | text | `https://kpmr.kaeso.app/v1/catalogue` | Where the KPMR catalogue is fetched from, KPMR or a mirror: `https`, or `http` on localhost; redirects must stay on its host and `https`, at most 3. |
 | `KAESO_KPMR_INTERVAL`<br>`kpmr.interval` | text | `auto` | How often KPMR is asked for changes: `auto` follows the catalogue's `refresh_seconds` within 5 minutes to 24 hours, or a duration such as `6h`. |
 | `KAESO_KPMR_PUBLIC_KEYS`<br>`kpmr.public_keys` | text | — | Comma-separated keys to trust besides KPMR's built-in one, each `<key id>:<base64 Ed25519 public key>`, for a registry of your own; a catalogue whose signature no trusted key verifies is refused. |
-
-The `models_dev.*` settings of earlier versions (`KAESO_MODELS_DEV_*`) are deprecated: they still work in 0.5 and are removed in 0.6. Until then, `models_dev.sync` counts as `kpmr.sync` when `kpmr.sync` isn't set, and `models_dev.url` and `models_dev.interval` are ignored; the gateway logs a warning for each at startup. Rename them to the `kpmr.*` settings above.
 
 ### Updates
 

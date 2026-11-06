@@ -26,7 +26,7 @@ Anthropic 对其思考块签名，OpenAI 对其推理 item 加密。不透明的
 | Anthropic 预算 | OpenAI | 取自下表的推理强度 |
 | Anthropic `thinking: {type: "disabled"}` | OpenAI | 推理强度 `none` |
 
-两种 OpenAI 方言都把 `none` 记为它们共用的 `ReasoningEffort` 枚举中的最低值，因此禁用的 Anthropic 思考总有对应的值。推理强度 `minimal` 在表中没有对应的行，对 Anthropic 仍为 `Unsupported`。
+两种 OpenAI 方言都把 `none` 记为它们共用的 `ReasoningEffort` 枚举中的最低值，因此禁用的 Anthropic 思考有对应的值，始终推理的模型除外（见[始终推理的模型](#始终推理的模型)）。推理强度 `minimal` 在表中没有对应的行，对 Anthropic 仍为 `Unsupported`。
 
 转换逻辑位于 `kaeso_codecs::cross::reasoning_map`。
 
@@ -62,6 +62,12 @@ Claude Code 会在每个请求中发送 `output_config.effort` 和自适应思�
 模型的回答与没有该设置时相同。每个被省略的设置都会以应用中的字段名出现在回复的 `kaeso-left-out` 响应头中，例如 `output_config.effort` 或 `thinking`，也会记录在网关日志中；记录的请求正文保留应用的设置。网关在编码之前执行这一步，因此同一格式内也适用。
 
 对于有推理强度等级的模型，网关仍会拒绝其未列出的推理强度，例如 `kimi-k3` 的 `medium`，因为改发相邻等级只是猜测。对于不支持推理的模型，网关也会拒绝 `enabled` 思考和思考预算。
+
+## 始终推理的模型
+
+有些模型始终进行推理，其推理强度等级中没有 `none`，例如 GPT-OSS（`low`、`medium`、`high`）和 Kimi K3（`low`、`high`、`max`）。它们的服务商会拒绝 `reasoning_effort: "none"`。当应用关闭思考时（Anthropic 的 `thinking: {type: "disabled"}` 或推理强度 `none`），网关会改发该模型的最低推理强度等级。这是模型思考最少的设置，因此最接近应用的请求。
+
+响应的 `kaeso-adapted` 头会以应用中的字段名说明这一调整，例如 `thinking` 或 `reasoning_effort`。网关在编码之前完成这一步，因此在同一格式内同样适用。Claude 模型会自行关闭思考，列出了 `none` 的模型会收到 `none`。
 
 ## 可读推理与摘要
 

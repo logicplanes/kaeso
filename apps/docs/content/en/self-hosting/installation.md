@@ -136,7 +136,7 @@ echo "KAESO_AUTH_DEMO_USER=owner@example.com" >> .env
 docker compose up -d --wait
 ```
 
-The sign-in page then offers **Explore the demo**, which signs every visitor in as that user. Once signed in, every page of the console says it's a read-only demo with sample data and links to this guide. The install refuses every change with a message that it's a read-only demo, and the model API and MCP are off, so nothing can be sent through it. Remove the setting to make the install usable again.
+The sign-in page then offers **Explore the demo**, which signs every visitor in as that user. Once signed in, every page of the console says it's a read-only demo with sample data and links to this guide. Each visitor sees only their own session under **Account** › **Sessions**, never another visitor's address or browser. The install refuses every change with a message that it's a read-only demo, and the model API and MCP are off, so nothing can be sent through it. Remove the setting to make the install usable again.
 
 ## Choose how to keep request logs
 

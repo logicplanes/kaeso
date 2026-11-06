@@ -63,6 +63,7 @@ pub struct Container {
     pub inspected: u32,
     pub started: bool,
     pub restarts: u32,
+    pub stop_timeout: Option<u32>,
 }
 
 pub type Hook = Box<dyn Fn() + Send>;
@@ -72,6 +73,7 @@ pub struct Daemon {
     pub containers: Vec<Container>,
     pub images: HashMap<String, Value>,
     pub calls: Vec<String>,
+    pub stops: Vec<(String, String)>,
     pub fail_pull: bool,
     pub pulled_version: Option<String>,
     pub new_health: HashMap<String, Health>,
@@ -139,6 +141,7 @@ impl Daemon {
                 inspected: 0,
                 started: true,
                 restarts: 0,
+                stop_timeout: None,
             });
         }
         d
@@ -164,7 +167,7 @@ impl Daemon {
             _ => "starting",
         };
         let restarts = c.restarts + u32::from(c.health == Health::Restarting);
-        json!({
+        let mut doc = json!({
             "Id": c.id,
             "Name": format!("/{}", c.name),
             "Image": c.image,
@@ -185,7 +188,11 @@ impl Daemon {
                 "ExitCode": if c.running { 0 } else { 1 },
                 "Health": { "Status": health }
             }
-        })
+        });
+        if let Some(seconds) = c.stop_timeout {
+            doc["Config"]["StopTimeout"] = json!(seconds);
+        }
+        doc
     }
 }
 
@@ -207,6 +214,10 @@ async fn daemon(
     let q = query(&uri);
     let mut d = d.lock().unwrap();
     d.calls.push(format!("{method} {path}"));
+    if path.ends_with("/stop") {
+        let seconds = q.get("t").cloned().unwrap_or_default();
+        d.stops.push((path.clone(), seconds));
+    }
     let not_found = || {
         (
             StatusCode::NOT_FOUND,
@@ -299,6 +310,9 @@ async fn daemon(
                 inspected: 0,
                 started: false,
                 restarts: 0,
+                stop_timeout: spec["StopTimeout"]
+                    .as_u64()
+                    .map(|s| u32::try_from(s).unwrap()),
             });
             (StatusCode::CREATED, axum::Json(json!({ "Id": id }))).into_response()
         }

@@ -1,5 +1,5 @@
-use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::{Arc, PoisonError, RwLock};
 use std::time::Duration;
 
 use futures::StreamExt;
@@ -15,6 +15,7 @@ const RESPONSE_TIMEOUT: Duration = Duration::from_secs(1);
 const MAX_RECONNECT_DELAY: Duration = Duration::from_millis(200);
 const SUBSCRIBE_RETRY_WAIT: Duration = Duration::from_secs(1);
 const BULK_CONNECTIONS: usize = 2;
+const HEAL_EVERY: Duration = Duration::from_secs(5);
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Invalidation {
@@ -26,20 +27,40 @@ pub enum Invalidation {
 #[derive(Clone)]
 pub struct Valkey {
     client: redis::Client,
-    manager: ConnectionManager,
+    config: ConnectionManagerConfig,
+    manager: Arc<Slot>,
     bulk: Arc<Bulk>,
     prefix: String,
 }
 
+struct Slot(RwLock<ConnectionManager>);
+
+impl Slot {
+    fn get(&self) -> ConnectionManager {
+        self.0
+            .read()
+            .unwrap_or_else(PoisonError::into_inner)
+            .clone()
+    }
+
+    fn set(&self, fresh: ConnectionManager) {
+        *self.0.write().unwrap_or_else(PoisonError::into_inner) = fresh;
+    }
+}
+
 struct Bulk {
-    managers: Vec<ConnectionManager>,
+    managers: Vec<Slot>,
     next: AtomicUsize,
 }
 
 impl Bulk {
-    fn pick(&self) -> Option<&ConnectionManager> {
+    fn pick(&self) -> Option<&Slot> {
         self.managers.get(turn(&self.next, self.managers.len())?)
     }
+}
+
+fn stuck(e: &redis::RedisError) -> bool {
+    e.is_unrecoverable_error() && !e.is_io_error()
 }
 
 fn turn(next: &AtomicUsize, len: usize) -> Option<usize> {
@@ -63,12 +84,17 @@ impl Valkey {
             .set_response_timeout(Some(RESPONSE_TIMEOUT))
             .set_number_of_retries(1)
             .set_max_delay(MAX_RECONNECT_DELAY);
-        let manager = ConnectionManager::new_lazy_with_config(client.clone(), config.clone())?;
+        let lazy = || {
+            ConnectionManager::new_lazy_with_config(client.clone(), config.clone())
+                .map(|m| Slot(RwLock::new(m)))
+        };
+        let manager = Arc::new(lazy()?);
         let managers = (0..BULK_CONNECTIONS)
-            .map(|_| ConnectionManager::new_lazy_with_config(client.clone(), config.clone()))
+            .map(|_| lazy())
             .collect::<Result<_, _>>()?;
         Ok(Valkey {
             client,
+            config,
             manager,
             bulk: Arc::new(Bulk {
                 managers,
@@ -79,11 +105,51 @@ impl Valkey {
     }
 
     pub fn conn(&self) -> ConnectionManager {
-        self.manager.clone()
+        self.manager.get()
     }
 
     pub fn bulk(&self) -> ConnectionManager {
-        self.bulk.pick().unwrap_or(&self.manager).clone()
+        self.bulk.pick().unwrap_or(&self.manager).get()
+    }
+
+    // redis-rs replaces a manager's connection only after an I/O error: a connection whose
+    // sign-in failed, such as an AUTH that Valkey refused while its password was being changed,
+    // stays failed for good (`reconnect_if_io_error` in redis/src/aio/connection_manager.rs,
+    // https://github.com/redis-rs/redis-rs/blob/redis-1.8.0/redis/src/aio/connection_manager.rs).
+    // Such a manager is swapped for a new one, which signs in again on its next command.
+    pub async fn heal(&self) -> usize {
+        let mut healed = 0;
+        for slot in std::iter::once(&*self.manager).chain(&self.bulk.managers) {
+            let got: Result<String, redis::RedisError> =
+                redis::cmd("PING").query_async(&mut slot.get()).await;
+            if let Err(e) = got
+                && stuck(&e)
+                && let Ok(fresh) = ConnectionManager::new_lazy_with_config(
+                    self.client.clone(),
+                    self.config.clone(),
+                )
+            {
+                slot.set(fresh);
+                healed += 1;
+            }
+        }
+        healed
+    }
+
+    pub fn keep_healthy(&self) {
+        let valkey = self.clone();
+        tokio::spawn(async move {
+            loop {
+                tokio::time::sleep(HEAL_EVERY).await;
+                let healed = valkey.heal().await;
+                if healed > 0 {
+                    tracing::warn!(
+                        healed,
+                        "Valkey connections that failed to sign in were opened again"
+                    );
+                }
+            }
+        });
     }
 
     pub fn key(&self, suffix: &str) -> String {
@@ -176,8 +242,78 @@ mod tests {
     async fn bulk_connections_are_lazy_while_valkey_is_unreachable() {
         let valkey = Valkey::new(&SecretString::from("redis://127.0.0.1:1"), "kaeso:").unwrap();
         assert_eq!(valkey.bulk.managers.len(), BULK_CONNECTIONS);
+        assert_eq!(
+            valkey.heal().await,
+            0,
+            "an unreachable Valkey is an I/O error redis-rs retries"
+        );
         let got: Result<String, _> = redis::cmd("PING").query_async(&mut valkey.bulk()).await;
         assert!(got.is_err());
         assert!(valkey.ping().await.is_err());
+    }
+
+    // A stand-in for Valkey that refuses every sign-in until `accept` is set, as a Valkey does
+    // while it runs with another password.
+    async fn fussy_valkey() -> (String, Arc<std::sync::atomic::AtomicBool>) {
+        use tokio::io::{AsyncReadExt, AsyncWriteExt};
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let url = format!("redis://:secret@{}", listener.local_addr().unwrap());
+        let accept = Arc::new(std::sync::atomic::AtomicBool::new(false));
+        let open = accept.clone();
+        tokio::spawn(async move {
+            loop {
+                let Ok((mut socket, _)) = listener.accept().await else {
+                    return;
+                };
+                let open = open.clone();
+                tokio::spawn(async move {
+                    let mut buf = vec![0_u8; 4096];
+                    loop {
+                        let Ok(n) = socket.read(&mut buf).await else {
+                            return;
+                        };
+                        if n == 0 {
+                            return;
+                        }
+                        let text = String::from_utf8_lossy(&buf[..n]).to_uppercase();
+                        let mut out = String::new();
+                        for command in text.split('*').skip(1) {
+                            if command.contains("AUTH") && !open.load(Ordering::SeqCst) {
+                                out.push_str("-WRONGPASS invalid username-password pair\r\n");
+                            } else if command.contains("PING") {
+                                out.push_str("+PONG\r\n");
+                            } else {
+                                out.push_str("+OK\r\n");
+                            }
+                        }
+                        if socket.write_all(out.as_bytes()).await.is_err() {
+                            return;
+                        }
+                    }
+                });
+            }
+        });
+        (url, accept)
+    }
+
+    #[tokio::test]
+    async fn a_connection_whose_sign_in_failed_is_opened_again() {
+        let (url, accept) = fussy_valkey().await;
+        let valkey = Valkey::new(&SecretString::from(url), "kaeso:").unwrap();
+        let first: Result<String, _> = redis::cmd("PING").query_async(&mut valkey.conn()).await;
+        assert_eq!(
+            first.unwrap_err().kind(),
+            redis::ErrorKind::AuthenticationFailed
+        );
+        accept.store(true, Ordering::SeqCst);
+        let again: Result<String, _> = redis::cmd("PING").query_async(&mut valkey.conn()).await;
+        assert!(again.is_err(), "redis-rs keeps the failed connection");
+        assert!(valkey.heal().await >= 1);
+        let healed: String = redis::cmd("PING")
+            .query_async(&mut valkey.conn())
+            .await
+            .unwrap();
+        assert_eq!(healed, "PONG");
+        assert_eq!(valkey.heal().await, 0, "a healthy connection stays");
     }
 }

@@ -54,7 +54,7 @@ Jeder Dienst in `compose.yaml` hat eine Speicher- und eine Prozessgrenze. Die St
 | `updater` | `UPDATER_MEMORY`, `256m` | `UPDATER_PIDS`, `128` |
 | `docker-proxy` | `DOCKER_PROXY_MEMORY`, `128m` | `DOCKER_PROXY_PIDS`, `64` |
 
-Speicher nimmt die Einheiten von Docker, etwa `768m` oder `3g`. Docker beendet einen Dienst, der seine Speichergrenze erreicht, und startet ihn neu. ClickHouse richtet seinen Speicherverbrauch selbst an der Grenze aus.
+Speicher nimmt die Einheiten von Docker, etwa `768m` oder `3g`. Docker beendet einen Dienst, der seine Speichergrenze erreicht, und startet ihn neu. ClickHouse richtet seinen Speicherverbrauch selbst an der Grenze aus. PostgreSQL gibt ein Viertel seiner Grenze den Shared Buffers und plant mit drei Vierteln als Cache.
 
 Valkey hält seine Daten innerhalb von `VALKEY_MAXMEMORY`, standardmäßig `512mb`, was unter `VALKEY_MEMORY` bleibt, damit Valkey nie wegen Speicher beendet wird. Es verdrängt nie einen Schlüssel, um Platz zu schaffen, sodass kein Raten- oder Budgetzähler unbemerkt verschwindet.
 
@@ -85,7 +85,7 @@ Docker rotiert das Log jedes Dienstes bei 10 MB und behält fünf Dateien.
 | `KAESO_METRICS_LISTEN`<br>`metrics_listen` | Text | `127.0.0.1:9100` | Adresse der Prometheus-Metriken. Nie öffentlich weiterleiten. Das Gateway-Image setzt `0.0.0.0:9100`, damit ein aus dem Container veröffentlichter Port sie erreicht; [Zustand und Metriken](monitoring.md#metriken) zeigt, wie. |
 | `KAESO_PUBLIC_URL`<br>`public_url` | Text | erforderlich | Die Adresse, die Personen und Apps verwenden, etwa `https://kaeso.example.com`, ohne Pfad. Sie muss `https` sein, außer `http` auf einer Loopback-Adresse für die Entwicklung. |
 | `KAESO_TRUSTED_PROXIES`<br>`trusted_proxies` | Text | `127.0.0.0/8,::1/128` | Kommagetrennte Netze von Proxys, deren `X-Forwarded-For` das Gateway vertraut. `trusted_proxies = ""` in der TOML-Datei vertraut keinem; eine leere Variable behält den Standard. |
-| `KAESO_SHUTDOWN_GRACE`<br>`shutdown_grace` | Text | `30s` | Wie lange laufende Anfragen und Streams nach dem Signal zum Beenden noch laufen dürfen. Was dann noch offen ist, endet mit 503 und wird abgerechnet und protokolliert. |
+| `KAESO_SHUTDOWN_GRACE`<br>`shutdown_grace` | Text | `30s` | Wie lange laufende Anfragen und Streams nach dem Signal zum Beenden noch laufen dürfen. Was dann noch offen ist, endet mit 503 und wird abgerechnet und protokolliert. Compose gibt dem Gateway 75 Sekunden zum Beenden; wenn Sie diesen Wert erhöhen, erhöhen Sie `stop_grace_period` des Dienstes `gateway` in `compose.override.yaml` um ebenso viel. |
 | `KAESO_SERVER_HEADER_READ_TIMEOUT`<br>`server.header_read_timeout` | Text | `30s` | Wie lange ein Client für die Header einer Anfrage brauchen oder eine Verbindung zwischen Anfragen ruhen lassen darf; 1s bis 10m. Eine laufende Antwort bricht es nie ab. |
 | `KAESO_SERVER_BODY_READ_TIMEOUT`<br>`server.body_read_timeout` | Text | `30s` | Wie lange das Gateway auf den nächsten Teil eines Anfrage-Bodys wartet, bevor es die Anfrage mit 400 ablehnt; 1s bis 10m. |
 | `KAESO_SERVER_BODY_READ_DEADLINE`<br>`server.body_read_deadline` | Text | `60s` | Wie lange das Gateway auf einen ganzen Anfrage-Body wartet, wie gleichmäßig seine Teile auch ankommen, bevor es die Anfrage mit 400 ablehnt; 1s bis 1h. Ein Body von 32 MiB, die Standardgrenze der Modell-API, kommt bei 4,5 Mbit/s rechtzeitig an; erhöhen Sie den Wert für Apps mit langsameren Verbindungen. |
@@ -138,7 +138,7 @@ Diese Einstellungen schalten Passwörter und Anmeldelinks für die ganze Install
 | --- | --- | --- | --- |
 | `KAESO_AUTH_PASSWORD`<br>`auth.password` | Bool | `true` | Anmeldung mit E-Mail und Passwort erlauben. |
 | `KAESO_AUTH_MAGIC_LINK`<br>`auth.magic_link` | Bool | `true` | Anmeldung mit einem Link per E-Mail erlauben. |
-| `KAESO_AUTH_DEMO_USER`<br>`auth.demo_user` | Text | — | Macht die Installation zu einer öffentlichen, schreibgeschützten Demo: die E-Mail-Adresse eines bestehenden Benutzers, als der jeder Besucher angemeldet wird. Nichts lässt sich ändern, und die Modell-API und MCP sind aus ([eine öffentliche Demo betreiben](installation.md#eine-öffentliche-demo-betreiben)). |
+| `KAESO_AUTH_DEMO_USER`<br>`auth.demo_user` | Text | — | Macht die Installation zu einer öffentlichen, schreibgeschützten Demo: die E-Mail-Adresse eines bestehenden Benutzers, als der jeder Besucher angemeldet wird. Jeder Besucher sieht nur seine eigene Sitzung, nichts lässt sich ändern, und die Modell-API und MCP sind aus ([eine öffentliche Demo betreiben](installation.md#eine-öffentliche-demo-betreiben)). |
 | `KAESO_AUTH_OIDC_ALLOW_PRIVATE_NETWORKS`<br>`auth.oidc_allow_private_networks` | Bool | `false` | OIDC-Anfragen an private und Loopback-Adressen erlauben, für einen Identitätsanbieter in Ihrem eigenen Netz. Schalten Sie es nur ein, wo Admins von Organisationen Ihr internes Netz über das Gateway erreichen dürfen. Link-lokale Adressen und Metadaten-Adressen von Clouds wie `169.254.169.254` bleiben gesperrt. |
 
 ### Fehlgeschlagene Schlüsselprüfungen
@@ -158,8 +158,6 @@ Das Gateway hält seine Modelldaten über [KPMR](../concepts/kpmr.md) aktuell, d
 | `KAESO_KPMR_URL`<br>`kpmr.url` | Text | `https://kpmr.kaeso.app/v1/catalogue` | Woher der KPMR-Katalog kommt, von KPMR oder einem Spiegel: `https`, oder `http` auf localhost; Weiterleitungen müssen auf seinem Host und bei `https` bleiben, höchstens 3. |
 | `KAESO_KPMR_INTERVAL`<br>`kpmr.interval` | Text | `auto` | Wie oft KPMR nach Änderungen gefragt wird: `auto` folgt `refresh_seconds` des Katalogs innerhalb von 5 Minuten bis 24 Stunden, oder eine Dauer wie `6h`. |
 | `KAESO_KPMR_PUBLIC_KEYS`<br>`kpmr.public_keys` | Text | — | Kommagetrennte Schlüssel, denen das Gateway neben dem eingebauten Schlüssel von KPMR vertraut, je `<key id>:<base64 Ed25519 public key>`, für eine eigene Registry; ein Katalog, dessen Signatur kein vertrauenswürdiger Schlüssel bestätigt, wird abgelehnt. |
-
-Die Einstellungen `models_dev.*` früherer Versionen (`KAESO_MODELS_DEV_*`) sind veraltet: Sie funktionieren in 0.5 noch und werden in 0.6 entfernt. Bis dahin gilt `models_dev.sync` als `kpmr.sync`, wenn `kpmr.sync` nicht gesetzt ist, und `models_dev.url` und `models_dev.interval` werden ignoriert; das Gateway schreibt beim Start für jede eine Warnung ins Log. Benennen Sie sie in die obigen Einstellungen `kpmr.*` um.
 
 ### Updates
 

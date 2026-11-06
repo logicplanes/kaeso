@@ -26,7 +26,7 @@ Reasoning settings convert between an effort and a token budget:
 | An Anthropic budget | OpenAI | An effort from the table below |
 | Anthropic `thinking: {type: "disabled"}` | OpenAI | Effort `none` |
 
-Both OpenAI dialects document `none` as the lowest value of their shared `ReasoningEffort` enum, so disabled Anthropic thinking always has an equivalent. The effort `minimal` has no row and stays `Unsupported` for Anthropic.
+Both OpenAI dialects document `none` as the lowest value of their shared `ReasoningEffort` enum, so disabled Anthropic thinking has an equivalent, except for a model that always reasons ([models that always reason](#models-that-always-reason)). The effort `minimal` has no row and stays `Unsupported` for Anthropic.
 
 The conversion lives in `kaeso_codecs::cross::reasoning_map`.
 
@@ -62,6 +62,12 @@ Claude Code sends `output_config.effort` and adaptive thinking, and Codex sends 
 The model answers as it would without the setting. Each setting left out is named in the reply's `kaeso-left-out` header by the app's field, such as `output_config.effort` or `thinking`, and in the gateway's log; a logged request body keeps the app's settings. The gateway does this before encoding, so it applies within a format too.
 
 The gateway still refuses an effort that a model with effort levels doesn't list, such as `medium` for `kimi-k3`, since sending a neighbouring level would be a guess. It also refuses `enabled` thinking and a thinking budget for a model that doesn't reason.
+
+## Models that always reason
+
+Some models always reason and list no `none` among their effort levels, such as GPT-OSS (`low`, `medium`, `high`) and Kimi K3 (`low`, `high`, `max`). Their providers refuse `reasoning_effort: "none"`. When an app turns thinking off, with Anthropic `thinking: {type: "disabled"}` or the effort `none`, the gateway sends the model's lowest effort level instead. That is the least the model thinks, so it is the closest to the app's request.
+
+The reply's `kaeso-adapted` header names the change by the app's field, such as `thinking` or `reasoning_effort`. The gateway does this before encoding, so it applies within a format too. Claude models turn thinking off themselves, and a model that lists `none` gets `none`.
 
 ## Readable reasoning and summaries
 

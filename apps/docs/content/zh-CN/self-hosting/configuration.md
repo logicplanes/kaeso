@@ -54,7 +54,7 @@ services:
 | `updater` | `UPDATER_MEMORY`，`256m` | `UPDATER_PIDS`，`128` |
 | `docker-proxy` | `DOCKER_PROXY_MEMORY`，`128m` | `DOCKER_PROXY_PIDS`，`64` |
 
-内存使用 Docker 的单位，例如 `768m` 或 `3g`。Docker 会停止并重新启动达到内存上限的服务。ClickHouse 会按上限自行调整内存用量。
+内存使用 Docker 的单位，例如 `768m` 或 `3g`。Docker 会停止并重新启动达到内存上限的服务。ClickHouse 会按上限自行调整内存用量。PostgreSQL 把上限的四分之一用作共享缓冲区，并按四分之三的缓存规划查询。
 
 Valkey 把数据保持在 `VALKEY_MAXMEMORY` 之内，默认 `512mb`，低于 `VALKEY_MEMORY`，因此 Valkey 不会因内存不足被停止。它从不为腾出空间而驱逐键，因此速率或预算计数器不会在无提示的情况下丢失。
 
@@ -85,7 +85,7 @@ Docker 会在每个服务的日志达到 10 MB 时轮转，并保留五个文件
 | `KAESO_METRICS_LISTEN`<br>`metrics_listen` | 文本 | `127.0.0.1:9100` | Prometheus 指标的地址。切勿公开转发。网关镜像设置为 `0.0.0.0:9100`，使从容器发布的端口能够访问它；[健康状态和指标](monitoring.md#指标)说明了做法。 |
 | `KAESO_PUBLIC_URL`<br>`public_url` | 文本 | 必填 | 用户和应用使用的地址，例如 `https://kaeso.example.com`，不带路径。必须是 `https`，开发时可在回环地址上使用 `http`。 |
 | `KAESO_TRUSTED_PROXIES`<br>`trusted_proxies` | 文本 | `127.0.0.0/8,::1/128` | 以逗号分隔的代理网段，网关信任来自这些代理的 `X-Forwarded-For`。TOML 文件中的 `trusted_proxies = ""` 不信任任何代理；空变量保留默认值。 |
-| `KAESO_SHUTDOWN_GRACE`<br>`shutdown_grace` | 文本 | `30s` | 收到关闭信号后，进行中的请求和流还能运行多久。届时仍未结束的以 503 结束，并照常计费和记录。 |
+| `KAESO_SHUTDOWN_GRACE`<br>`shutdown_grace` | 文本 | `30s` | 收到关闭信号后，进行中的请求和流还能运行多久。届时仍未结束的以 503 结束，并照常计费和记录。Compose 给网关 75 秒时间停止；调高此值时，请在 `compose.override.yaml` 中把 `gateway` 服务的 `stop_grace_period` 调高同样的幅度。 |
 | `KAESO_SERVER_HEADER_READ_TIMEOUT`<br>`server.header_read_timeout` | 文本 | `30s` | 客户端发送请求头、或在两次请求之间保持连接空闲的最长时间；1s 到 10m。它从不中断正在进行的回复。 |
 | `KAESO_SERVER_BODY_READ_TIMEOUT`<br>`server.body_read_timeout` | 文本 | `30s` | 网关等待请求体下一部分的最长时间，超时后以 400 拒绝请求；1s 到 10m。 |
 | `KAESO_SERVER_BODY_READ_DEADLINE`<br>`server.body_read_deadline` | 文本 | `60s` | 网关等待整个请求体的最长时间，无论各部分到达得多均匀，超时后以 400 拒绝请求；1s 到 1h。32 MiB 的请求体（模型 API 的默认上限）以 4.5 Mbit/s 传输即可按时到达；应用的网络更慢时请调高此值。 |
@@ -138,7 +138,7 @@ Docker 会在每个服务的日志达到 10 MB 时轮转，并保留五个文件
 | --- | --- | --- | --- |
 | `KAESO_AUTH_PASSWORD`<br>`auth.password` | 布尔 | `true` | 允许用邮箱和密码登录。 |
 | `KAESO_AUTH_MAGIC_LINK`<br>`auth.magic_link` | 布尔 | `true` | 允许用邮件中的链接登录。 |
-| `KAESO_AUTH_DEMO_USER`<br>`auth.demo_user` | 文本 | — | 将实例变为公开的只读演示：填写一个现有用户的邮箱，每位访客都以该用户身份登录。任何内容都无法更改，模型 API 和 MCP 关闭（[运行公开演示](installation.md#运行公开演示)）。 |
+| `KAESO_AUTH_DEMO_USER`<br>`auth.demo_user` | 文本 | — | 将实例变为公开的只读演示：填写一个现有用户的邮箱，每位访客都以该用户身份登录。每位访客只能看到自己的会话，任何内容都无法更改，模型 API 和 MCP 关闭（[运行公开演示](installation.md#运行公开演示)）。 |
 | `KAESO_AUTH_OIDC_ALLOW_PRIVATE_NETWORKS`<br>`auth.oidc_allow_private_networks` | 布尔 | `false` | 允许向私有地址和回环地址发出 OIDC 请求，用于部署在您自己网络中的身份提供商。仅在允许组织管理员借网关访问您内部网络的情况下开启。链路本地地址和云元数据地址（例如 `169.254.169.254`）始终被拒绝。 |
 
 ### API 密钥查找失败
@@ -158,8 +158,6 @@ Docker 会在每个服务的日志达到 10 MB 时轮转，并保留五个文件
 | `KAESO_KPMR_URL`<br>`kpmr.url` | 文本 | `https://kpmr.kaeso.app/v1/catalogue` | 从哪里获取 KPMR 目录：KPMR 或其镜像。必须使用 `https`，localhost 上可用 `http`；重定向必须留在同一主机并使用 `https`，最多 3 次。 |
 | `KAESO_KPMR_INTERVAL`<br>`kpmr.interval` | 文本 | `auto` | 多久向 KPMR 询问一次变更：`auto` 跟随目录的 `refresh_seconds`，限定在 5 分钟到 24 小时之间；也可设为时长，例如 `6h`。 |
 | `KAESO_KPMR_PUBLIC_KEYS`<br>`kpmr.public_keys` | 文本 | — | 除 KPMR 内置密钥外还要信任的密钥，以逗号分隔，每个为 `<key id>:<base64 Ed25519 public key>`，用于您自己的注册表；签名无法由任何受信任密钥验证的目录会被拒绝。 |
-
-早期版本的 `models_dev.*` 设置（`KAESO_MODELS_DEV_*`）已弃用：0.5 中仍可使用，0.6 中将被移除。在此之前，未设置 `kpmr.sync` 时 `models_dev.sync` 视为 `kpmr.sync`，`models_dev.url` 和 `models_dev.interval` 会被忽略；网关启动时会为每一项记录一条警告。请把它们改为上面的 `kpmr.*` 设置。
 
 ### 更新
 

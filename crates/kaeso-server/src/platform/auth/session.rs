@@ -260,13 +260,22 @@ pub struct SessionList {
     get,
     path = "/auth/sessions",
     summary = "The signed-in user's active sessions, newest first.",
+    description = "On a public demo (`auth.demo_user`), only this session: every visitor is \
+    the demo user, and the others' addresses and browsers stay private.",
     tag = "auth",
     responses((status = 200, body = SessionList))
 )]
 pub async fn list(State(state): State<AppState>, ctx: Ctx) -> ApiResult<Json<SessionList>> {
     let me = ctx.session()?;
-    let rows =
-        store::list_for_user(&state.pg, me.user_id, ctx.now, ctx.now - IDLE_LIFETIME).await?;
+    let only = state.config.auth.demo_user().is_some().then_some(me.id);
+    let rows = store::list_for_user(
+        &state.pg,
+        me.user_id,
+        only,
+        ctx.now,
+        ctx.now - IDLE_LIFETIME,
+    )
+    .await?;
     Ok(Json(SessionList {
         data: rows
             .into_iter()

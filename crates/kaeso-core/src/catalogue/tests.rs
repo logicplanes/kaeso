@@ -713,7 +713,6 @@ fn efforts_are_refused_not_replaced() {
     let err = refused("xhigh", DialectId::OpenAiChat, &gpt5);
     assert!(err.contains("`minimal`, `low`, `medium`, `high`"), "{err}");
     kept("minimal", DialectId::OpenAiChat, &gpt5);
-    refused("none", DialectId::OpenAiChat, &gpt5);
     let haiku = eff(&entry("anthropic", "claude-haiku-4-5"));
     assert_eq!(
         effort_levels(&haiku, DialectId::OpenAiChat),
@@ -1001,7 +1000,10 @@ fn kimi_k3_models_think_at_the_effort_levels_moonshot_documents() {
         kept("max", DialectId::OpenAiResponses, &k3);
         let err = refused("medium", DialectId::OpenAiChat, &k3);
         assert!(err.contains("`low`, `high`, `max`"), "{err}");
-        refused("none", DialectId::OpenAiChat, &k3);
+        assert_eq!(
+            adapted(with_effort("none"), DialectId::OpenAiChat, &k3).0,
+            Some(ReasoningEffort::Low)
+        );
     }
     let k26 = eff(&entry("moonshotai", "kimi-k2.6"));
     kept("none", DialectId::OpenAiChat, &k26);
@@ -1546,7 +1548,6 @@ fn cerebras_models_speak_chat_completions_with_kpmrs_prices_limits_and_effort_le
         ["low", "medium", "high"]
     );
     kept("high", DialectId::OpenAiResponses, &gpt_oss);
-    refused("none", DialectId::OpenAiChat, &gpt_oss);
     refused("minimal", DialectId::OpenAiChat, &gpt_oss);
     let qwen = eff(&entry("cerebras", "qwen-3.8-27b"));
     assert_eq!(
@@ -1554,4 +1555,83 @@ fn cerebras_models_speak_chat_completions_with_kpmrs_prices_limits_and_effort_le
         ["none", "low", "medium", "high"]
     );
     kept("none", DialectId::OpenAiResponses, &qwen);
+}
+
+fn adapted(
+    g: GenerateRequest,
+    ingress: DialectId,
+    e: &Effective,
+) -> (Option<ReasoningEffort>, Option<ReasoningMode>, Vec<String>) {
+    let mut req = Request::Generate(g);
+    let plan = prepare(&mut req, ingress, e).unwrap();
+    let Request::Generate(g) = req else {
+        unreachable!()
+    };
+    let r = g.reasoning.unwrap_or_default();
+    (r.effort, r.mode, plan.adapted)
+}
+
+fn thinking_off() -> GenerateRequest {
+    let mut g = user(vec![Block::text("hi")]);
+    let mut r = ReasoningConfig::default();
+    r.mode = Some(ReasoningMode::Disabled);
+    g.reasoning = Some(r);
+    g
+}
+
+#[test]
+fn thinking_off_becomes_the_lowest_effort_of_a_model_that_always_reasons() {
+    use DialectId::{AnthropicMessages as A, OpenAiChat as C, OpenAiResponses as R};
+    let gpt_oss = eff(&entry("cerebras", "gpt-oss-120b"));
+    assert_eq!(
+        adapted(thinking_off(), A, &gpt_oss),
+        (
+            Some(ReasoningEffort::Low),
+            None,
+            vec!["thinking".to_owned()]
+        )
+    );
+    assert_eq!(
+        adapted(with_effort("none"), C, &gpt_oss),
+        (
+            Some(ReasoningEffort::Low),
+            None,
+            vec!["reasoning_effort".to_owned()]
+        )
+    );
+    assert_eq!(
+        adapted(with_effort("none"), R, &gpt_oss),
+        (
+            Some(ReasoningEffort::Low),
+            None,
+            vec!["reasoning.effort".to_owned()]
+        )
+    );
+    let gpt5 = eff(&entry("openai", "gpt-5"));
+    assert_eq!(
+        adapted(with_effort("none"), C, &gpt5).0,
+        Some(ReasoningEffort::Minimal),
+        "the lowest level, not the first one listed"
+    );
+
+    let qwen = eff(&entry("cerebras", "qwen-3.8-27b"));
+    assert_eq!(
+        adapted(thinking_off(), A, &qwen).2,
+        Vec::<String>::new(),
+        "a model that lists `none` takes it"
+    );
+    kept("none", C, &qwen);
+    let haiku = eff(&entry("anthropic", "claude-haiku-4-5"));
+    assert_eq!(
+        adapted(thinking_off(), C, &haiku),
+        (None, Some(ReasoningMode::Disabled), Vec::new()),
+        "Claude turns thinking off itself"
+    );
+    let gpt4o = eff(&entry("openai", "gpt-4o"));
+    assert_eq!(
+        adapted(thinking_off(), A, &gpt4o).2,
+        Vec::<String>::new(),
+        "a model that doesn't reason is left alone"
+    );
+    kept("high", C, &gpt_oss);
 }

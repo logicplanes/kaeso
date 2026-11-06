@@ -26,7 +26,7 @@ Reasoning-Einstellungen werden zwischen einer Aufwandsstufe und einem Token-Budg
 | Ein Anthropic-Budget | OpenAI | Ein Aufwand aus der Tabelle unten |
 | Anthropic `thinking: {type: "disabled"}` | OpenAI | Aufwand `none` |
 
-Beide OpenAI-Dialekte dokumentieren `none` als niedrigsten Wert ihres gemeinsamen Enums `ReasoningEffort`, daher hat abgeschaltetes Thinking von Anthropic immer eine Entsprechung. Die Aufwandsstufe `minimal` hat keine Zeile und bleibt für Anthropic `Unsupported`.
+Beide OpenAI-Dialekte dokumentieren `none` als niedrigsten Wert ihres gemeinsamen Enums `ReasoningEffort`, daher hat abgeschaltetes Thinking von Anthropic eine Entsprechung, außer bei einem Modell, das immer Reasoning nutzt ([Modelle, die immer Reasoning nutzen](#modelle-die-immer-reasoning-nutzen)). Die Aufwandsstufe `minimal` hat keine Zeile und bleibt für Anthropic `Unsupported`.
 
 Die Umrechnung steckt in `kaeso_codecs::cross::reasoning_map`.
 
@@ -62,6 +62,12 @@ Claude Code sendet `output_config.effort` und adaptives Denken, Codex sendet `re
 Das Modell antwortet so, wie es ohne die Einstellung antworten würde. Jede weggelassene Einstellung nennt der Header `kaeso-left-out` der Antwort mit dem Feld der App, etwa `output_config.effort` oder `thinking`, ebenso das Log des Gateways; ein protokollierter Anfrage-Body behält die Einstellungen der App. Das Gateway tut das vor dem Kodieren, also auch innerhalb eines Formats.
 
 Eine Aufwandsstufe, die ein Modell mit Aufwandsstufen nicht nennt, lehnt das Gateway weiterhin ab, etwa `medium` für `kimi-k3`, denn eine benachbarte Stufe zu senden wäre geraten. Ebenso lehnt es `enabled`-Denken und ein Denk-Budget für ein Modell ab, das kein Reasoning nutzt.
+
+## Modelle, die immer Reasoning nutzen
+
+Manche Modelle nutzen immer Reasoning und nennen `none` nicht unter ihren Aufwandsstufen, etwa GPT-OSS (`low`, `medium`, `high`) und Kimi K3 (`low`, `high`, `max`). Ihre Anbieter lehnen `reasoning_effort: "none"` ab. Schaltet eine App das Thinking ab, mit `thinking: {type: "disabled"}` von Anthropic oder der Aufwandsstufe `none`, sendet das Gateway stattdessen die niedrigste Aufwandsstufe des Modells. So denkt das Modell am wenigsten, was der Anfrage der App am nächsten kommt.
+
+Der Header `kaeso-adapted` der Antwort nennt die Änderung mit dem Feld der App, etwa `thinking` oder `reasoning_effort`. Das Gateway tut das vor dem Kodieren, es gilt also auch innerhalb eines Formats. Claude-Modelle schalten das Thinking selbst ab, und ein Modell, das `none` nennt, bekommt `none`.
 
 ## Lesbares Reasoning und Zusammenfassungen
 

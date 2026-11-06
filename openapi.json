@@ -956,7 +956,7 @@
           "auth"
         ],
         "summary": "The signed-in user's active sessions, newest first.",
-        "description": "**Access:** a signed-in console session; no right is needed. Agents can't use it.",
+        "description": "On a public demo (`auth.demo_user`), only this session: every visitor is the demo user, and the others' addresses and browsers stay private.\n\n**Access:** a signed-in console session; no right is needed. Agents can't use it.",
         "operationId": "getAuthSessions",
         "responses": {
           "200": {
@@ -6179,7 +6179,7 @@
           "me"
         ],
         "summary": "The user's sessions, the current one first.",
-        "description": "**Access:** a signed-in console session; no right is needed. Agents can't use it.",
+        "description": "On a public demo (`auth.demo_user`), only this session: every visitor is the demo user, and the others' addresses and browsers stay private.\n\n**Access:** a signed-in console session; no right is needed. Agents can't use it.",
         "operationId": "getMeSessions",
         "responses": {
           "200": {
@@ -16932,7 +16932,7 @@
           "models"
         ],
         "summary": "Asks a custom provider which models it lists, with the project's key for it.",
-        "description": "Calls the provider's model listing (`GET /v1/models`) in its generation\nformat, through the same address checks as requests. Nothing is recorded.\n\n**Right:** `models.manage` on the project in the path.",
+        "description": "Calls the provider's model listing (`GET /v1/models`) in its generation\nformat, through the same address checks as requests. Nothing is recorded. A public demo\n(`auth.demo_user`) answers 403 and calls no provider.\n\n**Right:** `models.manage` on the project in the path.",
         "operationId": "getOrgsOrgProjectsProjectModelsOffered",
         "parameters": [
           {

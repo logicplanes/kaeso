@@ -119,6 +119,7 @@ const messages = (): Rule[] => [
   rule("errors.passwordSignInOff", () => t("errors.passwordSignInOff", "Password sign-in is turned off on this install.")),
   rule("errors.magicLinkOff", () => t("errors.magicLinkOff", "Sign-in links are turned off on this install.")),
   rule("errors.demoReadOnly", () => t("errors.demoReadOnly", "This demo is read-only; install Kaeso to change it.")),
+  rule("errors.demoNoProviders", () => t("errors.demoNoProviders", "This demo calls no providers; install Kaeso to connect your own.")),
   rule("errors.noDemo", () => t("errors.noDemo", "This install has no demo.")),
   rule("errors.accountDeactivated", () => t("errors.accountDeactivated", "This account is deactivated.")),
   rule("errors.accountDeactivatedContact", () => t("errors.accountDeactivatedContact", "This account is deactivated; contact your Kaeso administrator.")),

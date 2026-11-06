@@ -17,6 +17,7 @@ An app may speak one API format while the provider speaks another. These are the
 | Cache hints | Dropped where the target caches by itself | — |
 | Sampling settings the target lacks | `Unsupported` | — |
 | Stop reasons the app's format lacks | — | The closest one it has |
+| Thinking off for a model that always reasons | The model's lowest effort level, named in `kaeso-adapted` ([models that always reason](reasoning.md#models-that-always-reason)) | — |
 
 ## Requests
 
