@@ -103,7 +103,8 @@ pub fn prepare(
         }
         Request::Generate(g) => {
             let left_out = leave_out_reasoning(g, ingress, eff);
-            let mut adapted = fit_end_user(g, ingress, eff);
+            let mut adapted = lowest_effort_for_off(g, ingress, eff);
+            adapted.extend(fit_end_user(g, ingress, eff));
             adapted.extend(fit_output_limit(g, ingress, eff));
             check_generation(g, ingress, eff)?;
             let dialect = eff.dialect;
@@ -131,7 +132,8 @@ pub fn prepare(
                 ));
             };
             let left_out = leave_out_reasoning(g, ingress, eff);
-            let adapted = fit_end_user(g, ingress, eff);
+            let mut adapted = lowest_effort_for_off(g, ingress, eff);
+            adapted.extend(fit_end_user(g, ingress, eff));
             check_generation(g, ingress, eff)?;
             Ok(Plan {
                 dialect,
@@ -185,6 +187,46 @@ fn leave_out_reasoning(
         g.reasoning = None;
     }
     left_out
+}
+
+const EFFORT_ORDER: [&str; 7] = ["none", "minimal", "low", "medium", "high", "xhigh", "max"];
+
+// A model that always reasons, such as GPT-OSS, refuses `none` when its effort levels don't list
+// it; its lowest level is the least it thinks, so that stands in for thinking off (#643).
+fn lowest_effort_for_off(
+    g: &mut GenerateRequest,
+    ingress: DialectId,
+    eff: &Effective,
+) -> Vec<String> {
+    let Some(r) = g.reasoning.as_mut() else {
+        return Vec::new();
+    };
+    let effort_off = r.effort == Some(ReasoningEffort::None);
+    let mode_off = r.effort.is_none() && r.mode == Some(ReasoningMode::Disabled);
+    if eff.dialect == DialectId::AnthropicMessages
+        || eff.fields.reasoning != Some(true)
+        || !(effort_off || mode_off)
+    {
+        return Vec::new();
+    }
+    let levels = effort_levels(eff, ingress);
+    if levels.iter().any(|l| l == "none") {
+        return Vec::new();
+    }
+    let Some(lowest) = levels.iter().min_by_key(|l| {
+        EFFORT_ORDER
+            .iter()
+            .position(|o| o == l)
+            .unwrap_or(usize::MAX)
+    }) else {
+        return Vec::new();
+    };
+    r.effort = Some(ReasoningEffort::from_wire(lowest));
+    if mode_off {
+        r.mode = None;
+    }
+    let field = if effort_off { "effort" } else { "reasoning" };
+    vec![app_param(ingress, field).to_owned()]
 }
 
 // Anthropic's `metadata.user_id` may be longer than a provider takes, such as Claude Code's

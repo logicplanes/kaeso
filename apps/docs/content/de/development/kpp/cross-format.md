@@ -17,6 +17,7 @@ Eine App kann ein API-Format sprechen, während der Anbieter ein anderes spricht
 | Cache-Hinweise | Weggelassen, wo das Ziel selbst cacht | — |
 | Sampling-Einstellungen, die das Ziel nicht hat | `Unsupported` | — |
 | Stoppgründe, die das Format der App nicht hat | — | Der nächstliegende, den es hat |
+| Abgeschaltetes Thinking für ein Modell, das immer Reasoning nutzt | Die niedrigste Aufwandsstufe des Modells, genannt in `kaeso-adapted` ([Modelle, die immer Reasoning nutzen](reasoning.md#modelle-die-immer-reasoning-nutzen)) | — |
 
 ## Anfragen
 
