@@ -36,6 +36,7 @@ jobs:
     outputs:
       rust: ${{ steps.filter.outcome != 'success' || steps.filter.outputs.rust == 'true' || steps.filter.outputs.workflows == 'true' }}
       kpp: ${{ steps.filter.outcome != 'success' || steps.filter.outputs.kpp == 'true' || steps.filter.outputs.workflows == 'true' }}
+      fuzz: ${{ steps.filter.outcome != 'success' || steps.filter.outputs.fuzz == 'true' || steps.filter.outputs.workflows == 'true' }}
       node: ${{ steps.filter.outcome != 'success' || steps.filter.outputs.node == 'true' || steps.filter.outputs.workflows == 'true' }}
       deploy: ${{ steps.filter.outcome != 'success' || steps.filter.outputs.deploy == 'true' || steps.filter.outputs.workflows == 'true' }}
       repository: ${{ steps.filter.outcome != 'success' || steps.filter.outputs.repository == 'true' || steps.filter.outputs.workflows == 'true' }}
@@ -67,6 +68,13 @@ jobs:
               - rust-toolchain.toml
               - crates/kaeso-kpp/**
               - crates/kaeso-codecs/**
+              - fuzz/**
+            fuzz:
+              - Cargo.lock
+              - rust-toolchain.toml
+              - crates/kaeso-kpp/**
+              - crates/kaeso-codecs/**
+              - crates/kaeso-mcp/**
               - fuzz/**
             node:
               - package.json
@@ -332,7 +340,7 @@ jobs:
   fuzz-runs:
     name: Fuzz runs
     needs: changes
-    if: needs.changes.outputs.kpp == 'true'
+    if: needs.changes.outputs.fuzz == 'true'
     permissions:
       contents: read
     uses: ./.github/workflows/fuzz.yml

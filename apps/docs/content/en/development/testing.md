@@ -235,7 +235,7 @@ The console image also runs Caddy, as in a real install. `KAESO_TEST_GATEWAY_IMA
 
 ## Fuzzing
 
-`fuzz/` holds one [cargo-fuzz](https://rust-fuzz.github.io/book/cargo-fuzz.html) target per KPP decoder, `decode_<dialect>`, and one for the SSE parser, `sse`. The decoder targets check that every decoder accepts any bytes without panicking, and that encoding the result into every dialect doesn't panic either. The `sse` target checks that the parser yields the same items however the input is split. `fuzz/` is a Cargo workspace of its own, so `libfuzzer-sys` never reaches the library crates.
+`fuzz/` holds one [cargo-fuzz](https://rust-fuzz.github.io/book/cargo-fuzz.html) target per KPP decoder, `decode_<dialect>`, one for the SSE parser, `sse`, and one for MCP messages, `mcp`. The decoder targets check that every decoder accepts any bytes without panicking, and that encoding the result into every dialect doesn't panic either. The `sse` target checks that the parser yields the same items however the input is split. The `mcp` target checks that any message Kaeso reads is written back whole, also after its tool is renamed, and that header values decode to what was encoded; its seed corpus is `crates/kaeso-mcp/fixtures`. `fuzz/` is a Cargo workspace of its own, so `libfuzzer-sys` never reaches the library crates.
 
 Every change checks that the targets build, and are formatted and linted:
 
@@ -261,7 +261,7 @@ cargo +nightly fuzz run decode_openai_chat \
   -- -max_total_time=600 -rss_limit_mb=2048 -max_len=65536
 ```
 
-The **Fuzz** workflow runs every target for 10 minutes each night, and for 60 seconds on every pull request that changes KPP or `fuzz/`. It fails on a crash and keeps the input as the artifact `fuzz-crash-<target>`. A crash is written to `fuzz/artifacts/<target>/`. Reproduce it with `cargo +nightly fuzz run <target> <file>`, turn it into a regression test in the codec, then fix the codec.
+The **Fuzz** workflow runs every target for 10 minutes each night, and for 60 seconds on every pull request that changes KPP, `crates/kaeso-mcp` or `fuzz/`. It fails on a crash and keeps the input as the artifact `fuzz-crash-<target>`. A crash is written to `fuzz/artifacts/<target>/`. Reproduce it with `cargo +nightly fuzz run <target> <file>`, turn it into a regression test in the codec, then fix the codec.
 
 ## Continuous integration
 
@@ -284,7 +284,7 @@ The one required check is **CI**. It passes when **Changes** and **Comments** pa
 | Rust dependencies | `cargo deny check`, with the workspace's policy and KPP's |
 | Fuzz targets | The fuzz targets build |
 | Published crates | `cargo publish --dry-run` and `cargo doc` with warnings as errors for `kaeso-kpp` and `kaeso-codecs`, and `cargo semver-checks`: against the last published version for a minor release, and on a pull request against its base for a patch release, unless it is labelled `breaking` |
-| Fuzz runs | The **Fuzz** workflow for 60 seconds per target, when KPP or `fuzz/` changed |
+| Fuzz runs | The **Fuzz** workflow for 60 seconds per target, when KPP, `crates/kaeso-mcp` or `fuzz/` changed |
 | SDK conformance, SDK end-to-end | `pytest -q e2e/conformance` and `pytest -q e2e/sdk` |
 | Compose config | `docker compose config` for both Compose files |
 | Images (gateway, mock provider, updater, console) | Build the four images; the console's job also checks that its image serves the console with a content security policy |

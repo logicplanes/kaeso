@@ -13,6 +13,7 @@ cargo-fuzz = true
 libfuzzer-sys = "0.4"
 kaeso-kpp = { path = "../crates/kaeso-kpp" }
 kaeso-codecs = { path = "../crates/kaeso-codecs" }
+kaeso-mcp = { path = "../crates/kaeso-mcp" }
 
 [[bin]]
 name = "sse"
@@ -45,6 +46,13 @@ bench = false
 [[bin]]
 name = "decode_openai_embeddings"
 path = "fuzz_targets/decode_openai_embeddings.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "mcp"
+path = "fuzz_targets/mcp.rs"
 test = false
 doc = false
 bench = false

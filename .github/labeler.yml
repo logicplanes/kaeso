@@ -5,6 +5,7 @@
           - crates/kaeso-core/**
           - crates/kaeso-crypto/**
           - crates/kaeso-mail/**
+          - crates/kaeso-mcp/**
           - crates/kaeso-server/**
           - crates/kaeso-store/**
           - crates/kaeso-update/**

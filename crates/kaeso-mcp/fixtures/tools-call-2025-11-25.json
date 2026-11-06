@@ -1,0 +1,14 @@
+{
+  "jsonrpc": "2.0",
+  "id": "call-2",
+  "method": "tools/call",
+  "params": {
+    "name": "get_weather",
+    "arguments": {
+      "location": "Seattle, WA"
+    },
+    "_meta": {
+      "progressToken": "p-1"
+    }
+  }
+}
