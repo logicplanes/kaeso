@@ -315,5 +315,6 @@
   "kaeso.toolAccess.loading": "正在加载工具…",
   "kaeso.toolAccess.none": "尚无可调用的工具。",
   "kaeso.toolAccess.ownerCount": "{count, plural, other {其所有者可用的所有工具：# 个工具。}}",
-  "kaeso.toolAccess.projectCount": "{count, plural, other {项目提供的所有工具：# 个工具。}}"
+  "kaeso.toolAccess.projectCount": "{count, plural, other {项目提供的所有工具：# 个工具。}}",
+  "kaeso.toolAccess.edit": "编辑工具"
 }

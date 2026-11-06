@@ -315,5 +315,6 @@
   "kaeso.toolAccess.loading": "Tools werden geladen…",
   "kaeso.toolAccess.none": "Noch keine Tools zum Aufrufen.",
   "kaeso.toolAccess.ownerCount": "{count, plural, one {Jedes Tool, das sein Inhaber nutzen darf: # Tool.} other {Jedes Tool, das sein Inhaber nutzen darf: # Tools.}}",
-  "kaeso.toolAccess.projectCount": "{count, plural, one {Jedes Tool, das das Projekt anbietet: # Tool.} other {Jedes Tool, das das Projekt anbietet: # Tools.}}"
+  "kaeso.toolAccess.projectCount": "{count, plural, one {Jedes Tool, das das Projekt anbietet: # Tool.} other {Jedes Tool, das das Projekt anbietet: # Tools.}}",
+  "kaeso.toolAccess.edit": "Tools bearbeiten"
 }

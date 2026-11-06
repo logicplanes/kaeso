@@ -45,7 +45,7 @@ export function ToolAccessSection({ org, project, subject, canEdit }: { org: str
       spacing="none"
       actions={
         canEdit && editing === null && a ? (
-          <Button size="sm" variant="ghost" onClick={() => setEditing({ all: a.all, tools: a.tools })}>
+          <Button size="sm" variant="ghost" aria-label={t("kaeso.toolAccess.edit", "Edit tools")} onClick={() => setEditing({ all: a.all, tools: a.tools })}>
             {t("common.edit", "Edit")}
           </Button>
         ) : undefined

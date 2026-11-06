@@ -285,6 +285,7 @@
   "kaeso.rotateKey.whenNewExpires": "When does the new key expire?",
   "kaeso.rotateKey.whenOldStops": "When does the old key stop working?",
   "kaeso.rotateKey.whenOldStopsHint": "Both keys work until then, so you can move your apps to the new one.",
+  "kaeso.toolAccess.edit": "Edit tools",
   "kaeso.toolAccess.loading": "Loading tools…",
   "kaeso.toolAccess.none": "No tools to call yet.",
   "kaeso.toolAccess.ownerCount": "{count, plural, one {Every tool its owner may use: # tool.} other {Every tool its owner may use: # tools.}}",

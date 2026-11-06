@@ -25,7 +25,7 @@ describe("ToolAccessSection", () => {
     access({ usr_grace: { all: true, tools: [], effective: ["tool_get_me", "tool_create_post"] } });
     const { user } = await renderUi(<ToolAccessSection org={ORG} project={PROJECT} subject={{ principal: "usr_grace" }} canEdit />);
     expect(await screen.findByText("Every tool the project offers: 2 tools.")).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Edit" }));
+    await user.click(screen.getByRole("button", { name: "Edit tools" }));
     await user.click(screen.getByRole("switch", { name: "Every tool the project offers" }));
     const group = screen.getByRole("group", { name: "Tools" });
     expect(within(group).queryByRole("checkbox", { name: "x__search" })).not.toBeInTheDocument();
@@ -43,12 +43,12 @@ describe("ToolAccessSection", () => {
     });
     const { user } = await renderUi(<ToolAccessSection org={ORG} project={PROJECT} subject={{ principal: "key_web", owner: "usr_ada" }} canEdit />);
     expect(await screen.findByText("x__create_post, tool_gone")).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Edit" }));
+    await user.click(screen.getByRole("button", { name: "Edit tools" }));
     const group = await screen.findByRole("group", { name: "Tools" });
     await waitFor(() => expect(within(group).getByRole("checkbox", { name: "x__get_me" })).toBeInTheDocument());
     expect(within(group).getByRole("checkbox", { name: "tool_gone" })).toBeChecked();
     await user.click(screen.getByRole("button", { name: "Cancel" }));
-    await user.click(screen.getByRole("button", { name: "Edit" }));
+    await user.click(screen.getByRole("button", { name: "Edit tools" }));
     await user.click(screen.getByRole("switch", { name: "Every tool its owner may use" }));
     await user.click(screen.getByRole("button", { name: "Save" }));
     await waitFor(() => expect(requests("PUT", TOOL_ACCESS)[0]?.body).toEqual({ all: true }));
@@ -71,6 +71,6 @@ describe("ToolAccessSection", () => {
     expect(await screen.findByText("Every tool its owner may use: 1 tool.")).toBeInTheDocument();
     expect(await screen.findByText("No tools to call yet.")).toBeInTheDocument();
     expect(await screen.findByText("None")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Edit" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Edit tools" })).not.toBeInTheDocument();
   });
 });
