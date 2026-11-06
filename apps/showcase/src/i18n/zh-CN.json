@@ -1147,5 +1147,9 @@
   "While the numbers load: the value, the change and the trend show their shape at the tile's final height.": "数字加载期间：值、变化和趋势以磁贴最终高度显示其占位形状。",
   "One value per day (or step), drawn as a sparkline across the tile. A tile without it has no room for one; pass `[]` while a trend loads to keep it.": "每天（或每步）一个值，在磁贴上绘制为微型折线图。没有它的磁贴不预留空间；趋势加载期间请传入 `[]` 以保留空间。",
   "The trend's color; the first series color by default.": "趋势的颜色；默认为第一个系列颜色。",
-  "A plain number with its unit and delta, or a tile in a `StatGroup` with its label, change, detail and trend.": "带单位和变化量的普通数字，或 `StatGroup` 中带标签、变化、详情和趋势的磁贴。"
+  "A plain number with its unit and delta, or a tile in a `StatGroup` with its label, change, detail and trend.": "带单位和变化量的普通数字，或 `StatGroup` 中带标签、变化、详情和趋势的磁贴。",
+  "The box with its label beside it, or a row of a settings group with the box at the end (`card`), as the rows of a `CheckboxGroup` with `variant=\"cards\"` are.": "复选框与旁边的标签，或设置组中复选框位于末尾的一行（`card`），与 `variant=\"cards\"` 的 `CheckboxGroup` 的各行相同。",
+  "A plain list of checkboxes, or rows inside a settings group with the box at the end (`cards`).": "普通的复选框列表，或设置组中复选框位于末尾的各行（`cards`）。",
+  "A plain list of radios, or rows with the radio at the end (`cards`), on their own surface or sharing a `SettingsGroup`'s.": "普通的单选列表，或单选按钮位于末尾的各行（`cards`），使用自己的表面或共享 `SettingsGroup` 的表面。",
+  "The rows of the group: `SettingsRow`s, a `RadioGroup` with `variant=\"cards\"`, or `Checkbox`es with `variant=\"card\"`, which share its surface.": "组中的各行：`SettingsRow`、`variant=\"cards\"` 的 `RadioGroup`，或 `variant=\"card\"` 的 `Checkbox`，它们共享该组的表面。"
 }
