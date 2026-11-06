@@ -7,7 +7,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use axum::http::{Method, StatusCode};
-use common::v1::{Answer, Capture, Env, call, chat, messages};
+use common::v1::{Answer, Capture, Env, call, call_app, chat, messages};
 use serde_json::{Value, json};
 
 #[derive(Clone, Copy, Debug)]
@@ -422,6 +422,74 @@ async fn an_empty_balance_skips_every_model_of_the_provider_at_once() {
     env.app.clock.advance(time::Duration::minutes(5));
     let r = ask(&env, App::Messages, "save", "Topped up", false).await;
     assert_eq!(r.header("kaeso-model"), Some("claude-haiku-4-5"));
+}
+
+#[tokio::test]
+async fn a_step_held_by_one_gateway_is_skipped_by_every_other_until_one_sees_it_answer() {
+    let env = env().await;
+    let claude = model_id(&env, "claude-haiku-4-5").await;
+    let gpt = model_id(&env, "gpt-4o").await;
+    alias(&env, "sturdy", with_fallback(&claude, model_step(&gpt))).await;
+    let other = env.second_gateway().await;
+    let ask_other = |text: &'static str| {
+        call_app(
+            &other,
+            App::Chat.path(),
+            Some(&env.key),
+            false,
+            Some(App::Chat.body("sturdy", text, false)),
+        )
+    };
+    let r = ask(
+        &env,
+        App::Chat,
+        "sturdy",
+        "Hi [mock:fail=claude-haiku-4-5 overloaded]",
+        false,
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    let r = ask_other("Hi from the other gateway").await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(
+        walked(&r),
+        [
+            "\"route\";model=\"anthropic/claude-haiku-4-5\";skipped",
+            "\"route.fallback\";model=\"openai/gpt-4o\";status=200"
+        ],
+        "the other gateway never called the held model"
+    );
+    assert_eq!(asked_models(&env), ["claude-haiku-4-5", "gpt-4o", "gpt-4o"]);
+
+    env.app.clock.advance(time::Duration::seconds(31));
+    let r = ask_other("The wait is over").await;
+    assert_eq!(r.header("kaeso-model"), Some("claude-haiku-4-5"));
+    let r = ask(
+        &env,
+        App::Chat,
+        "sturdy",
+        "Hi [mock:fail=claude-haiku-4-5 overloaded]",
+        false,
+    )
+    .await;
+    assert_eq!(r.header("kaeso-model"), Some("gpt-4o"));
+    let r = ask_other("Held again, seen by the other").await;
+    assert_eq!(r.header("kaeso-model"), Some("gpt-4o"));
+    env.app.clock.advance(time::Duration::seconds(31));
+    let r = ask_other("Answers again").await;
+    assert_eq!(r.header("kaeso-model"), Some("claude-haiku-4-5"));
+    let r = ask(
+        &env,
+        App::Chat,
+        "sturdy",
+        "And the first gateway sees the release",
+        false,
+    )
+    .await;
+    assert_eq!(
+        walked(&r),
+        ["\"route\";model=\"anthropic/claude-haiku-4-5\";status=200"]
+    );
 }
 
 #[tokio::test]
