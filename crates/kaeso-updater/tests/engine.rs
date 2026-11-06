@@ -162,6 +162,84 @@ async fn a_new_gateway_rolled_back_gets_the_same_stop_timeout() {
 }
 
 #[tokio::test]
+async fn every_gateway_replica_is_stopped_before_any_new_one_starts() {
+    let mut daemon = Daemon::install();
+    daemon.add_gateway_replica(2);
+    let world = World::new("replicas", daemon, Verifier::default()).await;
+    let job = update(&world, TO).await;
+    assert_eq!(job.state, JobState::Succeeded, "{job:?}");
+    for name in ["kaeso-gateway-1", "kaeso-gateway-2"] {
+        let c = world.running(name);
+        assert_eq!(c.image, "sha256:new-gateway", "{name}");
+        assert!(c.reference.contains("@sha256:"), "{}", c.reference);
+    }
+    assert_eq!(world.running("kaeso-console-1").image, "sha256:new-console");
+    assert_eq!(
+        world.names(),
+        [
+            "kaeso-console-1",
+            "kaeso-gateway-1",
+            "kaeso-gateway-2",
+            "kaeso-updater-1"
+        ]
+    );
+    let calls = world.calls("");
+    let stops: Vec<usize> = calls
+        .iter()
+        .enumerate()
+        .filter(|(_, c)| c.contains("gateway") && c.ends_with("/stop"))
+        .map(|(i, _)| i)
+        .collect();
+    let creates: Vec<usize> = calls
+        .iter()
+        .enumerate()
+        .filter(|(_, c)| c.ends_with("containers/create"))
+        .map(|(i, _)| i)
+        .collect();
+    assert_eq!((stops.len(), creates.len()), (2, 3), "{calls:?}");
+    assert!(
+        stops.iter().all(|s| *s < creates[1]),
+        "both old gateways stop before the first new one is created: {calls:?}"
+    );
+    let saved = StateFile::new(world.dir.join("state")).load().unwrap();
+    assert_eq!(saved.switched.len(), 3);
+    assert!(saved.switched.iter().all(|w| w.phase == Phase::Started));
+}
+
+#[tokio::test]
+async fn an_unhealthy_replica_rolls_every_gateway_back() {
+    let mut daemon = Daemon::install();
+    daemon.add_gateway_replica(2);
+    daemon
+        .new_health
+        .insert("gateway".into(), Health::Unhealthy);
+    let world = World::new("replicas-rollback", daemon, Verifier::default()).await;
+    let job = update(&world, TO).await;
+    assert_eq!(job.state, JobState::RolledBack, "{job:?}");
+    assert!(
+        job.detail
+            .as_deref()
+            .unwrap()
+            .contains("the new gateway was not healthy within"),
+        "{job:?}"
+    );
+    assert!(job.detail.as_deref().unwrap().contains("(kaeso-gateway-1)"));
+    for name in ["kaeso-gateway-1", "kaeso-gateway-2", "kaeso-console-1"] {
+        let c = world.running(name);
+        assert!(c.image.starts_with("sha256:old-"), "{name}: {}", c.image);
+    }
+    assert_eq!(
+        world.names(),
+        [
+            "kaeso-console-1",
+            "kaeso-gateway-1",
+            "kaeso-gateway-2",
+            "kaeso-updater-1"
+        ]
+    );
+}
+
+#[tokio::test]
 async fn a_gateway_that_stays_unhealthy_rolls_back_when_nothing_migrates() {
     let mut daemon = Daemon::install();
     daemon
@@ -359,18 +437,6 @@ async fn refusals_before_anything_changes() {
             Box::new(|d| d.pulled_version = Some("40.1.9".into())),
             Reason::Unverified,
             "says it is 40.1.9",
-        ),
-        (
-            "two",
-            TO,
-            Box::new(|d| {
-                let mut extra = d.container("kaeso-console-1").unwrap().clone();
-                extra.id = format!("{:0<64}", "consoletwo");
-                extra.name = "kaeso-console-2".into();
-                d.containers.push(extra);
-            }),
-            Reason::ServicesNotFound,
-            "(kaeso-console-1, kaeso-console-2); remove all but the one Compose started",
         ),
         (
             "stale",
@@ -771,6 +837,72 @@ async fn a_container_created_before_the_updater_saved_it_is_removed_on_rollback(
     assert_eq!(
         world.names(),
         ["kaeso-console-1", "kaeso-gateway-1", "kaeso-updater-1"]
+    );
+}
+
+#[tokio::test]
+async fn a_replica_the_restart_left_stopped_starts_once_the_new_gateway_is_healthy() {
+    let mut daemon = Daemon::install();
+    daemon.add_gateway_replica(2);
+    let old_1 = previous(&mut daemon, "gateway");
+    let old_2 = {
+        let c = daemon
+            .containers
+            .iter_mut()
+            .find(|c| c.name == "kaeso-gateway-2")
+            .unwrap();
+        c.name = "kaeso-gateway-2-previous".into();
+        c.running = false;
+        c.id.clone()
+    };
+    let mut new = daemon.container("kaeso-console-1").unwrap().clone();
+    new.id = format!("{:0<64}", "new7");
+    new.name = "kaeso-gateway-1".into();
+    new.image = "sha256:new-gateway".into();
+    new.labels
+        .insert("com.docker.compose.service".into(), "gateway".into());
+    new.started = true;
+    daemon.containers.push(new);
+    daemon.add_pulled_image(Service::Gateway);
+    let dir = fresh("recover-replica");
+    let state = StateFile::new(dir.join("state"));
+    state.keep_compose(&compose_text(FROM)).unwrap();
+    let mut saved = interrupted(
+        Step::Migrating,
+        vec![
+            switched(
+                Service::Gateway,
+                old_1,
+                Some(&format!("{:0<64}", "new7")),
+                Phase::Started,
+            ),
+            Switched {
+                service: Service::Gateway,
+                name: "kaeso-gateway-2".into(),
+                old_id: old_2,
+                new_id: None,
+                phase: Phase::Creating,
+                stop_seconds: Some(75),
+            },
+        ],
+    );
+    saved.images = release_images();
+    state.save(&saved).unwrap();
+    let world = World::with(dir, daemon, Releases::default(), Verifier::default()).await;
+    world.engine.recover().await;
+    let job = world.engine.last().unwrap();
+    assert_eq!(job.state, JobState::Succeeded, "{job:?}");
+    let replica = world.running("kaeso-gateway-2");
+    assert_eq!(replica.image, "sha256:new-gateway");
+    assert_eq!(replica.stop_timeout, None);
+    assert_eq!(
+        world.names(),
+        [
+            "kaeso-console-1",
+            "kaeso-gateway-1",
+            "kaeso-gateway-2",
+            "kaeso-updater-1"
+        ]
     );
 }
 

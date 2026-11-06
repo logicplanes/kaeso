@@ -151,6 +151,22 @@ impl Daemon {
         self.containers.iter().find(|c| c.name == name)
     }
 
+    pub fn add_pulled_image(&mut self, service: Service) {
+        let reference = format!("{}@{}", service.image(), digest_of(service));
+        let id = format!("sha256:new-{}", service.as_str());
+        self.images
+            .insert(reference.clone(), image_doc(&id, TO, &reference));
+        self.images
+            .insert(id.clone(), image_doc(&id, TO, &reference));
+    }
+
+    pub fn add_gateway_replica(&mut self, n: usize) {
+        let mut replica = self.container("kaeso-gateway-1").unwrap().clone();
+        replica.id = format!("{:0<64}", format!("gateway{n}old"));
+        replica.name = format!("kaeso-gateway-{n}");
+        self.containers.push(replica);
+    }
+
     fn find(&mut self, key: &str) -> Option<&mut Container> {
         self.containers
             .iter_mut()

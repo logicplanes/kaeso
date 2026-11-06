@@ -34,6 +34,15 @@ services:
       - "127.0.0.1:9100:9100"
 ```
 
+在[多个网关](scaling.md)的情况下，请改为发布一个端口范围，每个副本一个端口，并抓取每个端口：
+
+```yaml title="compose.override.yaml"
+services:
+  gateway:
+    ports:
+      - "127.0.0.1:9100-9109:9100"
+```
+
 | 指标 | 关注点 |
 | --- | --- |
 | `kaeso_requests_total{surface, route, status, provider, model}` | `surface="model_api"` 上 `status=~"5.."` 的增长。KPMR 未收录的模型，`model` 为 `custom` |
