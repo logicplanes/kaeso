@@ -60,7 +60,7 @@ AWS und Google Cloud sind kein Ein-Klick-Weg: Sie wählen Region, Domain und ihr
 
 Edge, Gateway und Konsole wurden in diesem Aufbau mit den Release-Images am 6. November 2026 lokal mit Docker getestet: Pfadweiterleitung, Streams in Chunks, gefälschte Client-Adressen und das Fehlerformat jeder API, während das Gateway fehlt (`e2e/install/test_edge.py`). Der Render-Blueprint und die Railway-Datei wurden gegen die Spezifikationen der Plattformen geprüft, die CloudFormation-Vorlagen mit `cfn-lint` und das Terraform mit `tofu validate`; CI wiederholt jede Prüfung.
 
-Keiner der vier Wege wurde bisher von einem leeren Konto aus auf seiner Plattform ausgerollt. Bis dieser Test existiert, gibt es keinen Deploy-Button, und jede Seite sagt, worauf sie beruht.
+Keiner der vier Wege wurde bisher von einem leeren Konto aus auf seiner Plattform ausgerollt, deshalb sagt jede Seite, worauf sie beruht. [Render](render.md) und [Google Cloud](gcp.md) öffnen sich über einen Link, der auf den Branch `prod` zeigt, der das neueste Release enthält; Railway braucht eine veröffentlichte Vorlage und AWS die Vorlagen in einem S3-Bucket, bevor es einen solchen Link geben kann.
 
 ## Nächste Schritte
 

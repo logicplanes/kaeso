@@ -8,7 +8,7 @@ order: 4
 
 ## Schneller Server
 
-`deploy/gcp/quick-server/` legt eine Compute-Engine-Instanz mit Ubuntu 24.04 an, eine statische Adresse, Firewall-Regeln für HTTP, HTTPS und HTTP/3, SSH aus Adressbereichen Ihrer Wahl und einen optionalen Cloud-DNS-Eintrag. Beim ersten Start führt die Instanz den Installer aus, der Docker installiert, die Einstellungen schreibt und das Compose-Paket mit Caddy, gebündeltem ClickHouse und dem Updater startet ([Installation](../installation.md)).
+`deploy/gcp/quick-server/` legt eine Compute-Engine-Instanz mit Ubuntu 24.04 an, eine statische Adresse, Firewall-Regeln für HTTP, HTTPS und HTTP/3, SSH aus Adressbereichen Ihrer Wahl und einen optionalen Cloud-DNS-Eintrag. Beim ersten Start führt die Instanz den Installer aus, der Docker installiert, die Einstellungen schreibt und das Compose-Paket mit Caddy, gebündeltem ClickHouse und dem Updater startet ([Installation](../installation.md)). [Open in Cloud Shell](https://shell.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/logicplanes/kaeso&cloudshell_git_branch=prod&cloudshell_workspace=deploy/gcp/quick-server) klont den Branch `prod`, der das neueste Release enthält, mit diesem Ordner als Arbeitsbereich; die folgenden Befehle laufen dort mit `terraform` statt `tofu`, das Cloud Shell nicht installiert.
 
 ```bash
 cd deploy/gcp/quick-server

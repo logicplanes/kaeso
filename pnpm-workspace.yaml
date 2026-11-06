@@ -8,3 +8,7 @@ overrides:
   katex: 0.18.2
   # GHSA-g3hv-75wg-m249 is fixed only in 11.0.1; eslint and typescript-eslint still ask for ^10 and use only Minimatch#match, which 11 keeps.
   minimatch@>=10 <11.0.1: 11.0.3
+patchedDependencies:
+  # Lazy skips use() once its module arrived, which React 19 reports when it replays a suspended render
+  # (https://github.com/TanStack/router/issues/8487); the patch calls use() on the fulfilled promise too.
+  "@tanstack/react-router@1.170.46": patches/@tanstack__react-router@1.170.46.patch

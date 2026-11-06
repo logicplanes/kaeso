@@ -1,0 +1,50 @@
+diff --git a/dist/cjs/lazyRouteComponent.cjs b/dist/cjs/lazyRouteComponent.cjs
+index b2a3d8b8ab098d94c610cfbc00dc025557c13af9..bfa386e8c3ccf933ef69a16f24daa57b4e130a41 100644
+--- a/dist/cjs/lazyRouteComponent.cjs
++++ b/dist/cjs/lazyRouteComponent.cjs
+@@ -22,10 +22,7 @@ function lazyRouteComponent(importer, exportName) {
+ 		if (!loadPromise) {
+ 			error = void 0;
+ 			loadPromise = importer().then((res) => {
+-				if (!(_tanstack_router_core_isServer.isServer ?? typeof window === "undefined")) {
+-					loadPromise = void 0;
+-					lazyComp.preload = void 0;
+-				}
++				if (!(_tanstack_router_core_isServer.isServer ?? typeof window === "undefined")) lazyComp.preload = void 0;
+ 				comp = res[exportName ?? "default"];
+ 			}).catch((err) => {
+ 				loadPromise = void 0;
+@@ -49,7 +46,7 @@ function lazyRouteComponent(importer, exportName) {
+ 		if (!comp) {
+ 			if (require_utils.reactUse) require_utils.reactUse(load());
+ 			else throw load();
+-		}
++		} else if (require_utils.reactUse && loadPromise?.status === "fulfilled") require_utils.reactUse(loadPromise);
+ 		return react.createElement(comp, props);
+ 	};
+ 	lazyComp.preload = load;
+diff --git a/dist/esm/lazyRouteComponent.js b/dist/esm/lazyRouteComponent.js
+index 7788648a35e73af6625769575ec15596b4abe2ee..3868d3f5cf9a3e259ba139b05f133618b1f83135 100644
+--- a/dist/esm/lazyRouteComponent.js
++++ b/dist/esm/lazyRouteComponent.js
+@@ -20,10 +20,7 @@ function lazyRouteComponent(importer, exportName) {
+ 		if (!loadPromise) {
+ 			error = void 0;
+ 			loadPromise = importer().then((res) => {
+-				if (!(isServer ?? typeof window === "undefined")) {
+-					loadPromise = void 0;
+-					lazyComp.preload = void 0;
+-				}
++				if (!(isServer ?? typeof window === "undefined")) lazyComp.preload = void 0;
+ 				comp = res[exportName ?? "default"];
+ 			}).catch((err) => {
+ 				loadPromise = void 0;
+@@ -47,7 +44,7 @@ function lazyRouteComponent(importer, exportName) {
+ 		if (!comp) {
+ 			if (reactUse) reactUse(load());
+ 			else throw load();
+-		}
++		} else if (reactUse && loadPromise?.status === "fulfilled") reactUse(loadPromise);
+ 		return React$1.createElement(comp, props);
+ 	};
+ 	lazyComp.preload = load;

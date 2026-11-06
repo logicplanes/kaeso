@@ -268,7 +268,7 @@ pub async fn update_project(
         forget(&state, id).await;
     }
     if cleared {
-        sweep(&state, vec![id]);
+        sweep(&state, vec![(id, after.generation)]);
     }
     Ok(Json(ProjectResponseCache::of(&state, &after, org_allowed)))
 }
@@ -302,6 +302,6 @@ pub async fn clear(
         .await?;
     tx.commit().await?;
     forget(&state, id).await;
-    sweep(&state, vec![id]);
+    sweep(&state, vec![(id, p.generation)]);
     Ok(StatusCode::NO_CONTENT)
 }

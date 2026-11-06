@@ -26,7 +26,7 @@ order: 1
    docker run --rm ghcr.io/logicplanes/kaeso-gateway:{{version}} master-key generate
    ```
 
-2. 在 Render 中从仓库 `logicplanes/kaeso` 的 `prod` 分支创建 **Blueprint**，该分支包含最新版本。Render 会显示蓝图需要的值：
+2. 在 Render 中从仓库 `logicplanes/kaeso` 的 `prod` 分支创建 **Blueprint**，该分支包含最新版本；[Deploy to Render](https://render.com/deploy?repo=https://github.com/logicplanes/kaeso/tree/prod) 会打开已填好仓库和分支的该表单。Render 会显示蓝图需要的值：
 
    | 值 | 填写内容 |
    | --- | --- |

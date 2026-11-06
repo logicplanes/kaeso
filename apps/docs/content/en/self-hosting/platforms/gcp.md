@@ -8,7 +8,7 @@ order: 4
 
 ## Quick server
 
-`deploy/gcp/quick-server/` creates one Compute Engine instance with Ubuntu 24.04, a static address, firewall rules for HTTP, HTTPS and HTTP/3, SSH from address ranges you choose, and an optional Cloud DNS record. At first boot, the instance runs the installer, which installs Docker, writes the settings and starts the Compose package with Caddy, bundled ClickHouse and the updater ([installation](../installation.md)).
+`deploy/gcp/quick-server/` creates one Compute Engine instance with Ubuntu 24.04, a static address, firewall rules for HTTP, HTTPS and HTTP/3, SSH from address ranges you choose, and an optional Cloud DNS record. At first boot, the instance runs the installer, which installs Docker, writes the settings and starts the Compose package with Caddy, bundled ClickHouse and the updater ([installation](../installation.md)). [Open in Cloud Shell](https://shell.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/logicplanes/kaeso&cloudshell_git_branch=prod&cloudshell_workspace=deploy/gcp/quick-server) clones the `prod` branch, which holds the latest release, with this folder as the workspace; the commands below run there with `terraform` in place of `tofu`, which Cloud Shell doesn't install.
 
 ```bash
 cd deploy/gcp/quick-server
