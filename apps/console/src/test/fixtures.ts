@@ -71,6 +71,7 @@ export function whoAmI(overrides: Partial<WhoAmI> = {}): WhoAmI {
     locale: "auto",
     timezone: "UTC",
     request_logs: true,
+    demo: false,
     ...overrides,
   } as WhoAmI;
 }

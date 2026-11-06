@@ -17,6 +17,8 @@
   "shell.createOrg.done": "Organisation erstellt",
   "shell.deletion.on": "Löschung am {day}",
   "shell.deletion.scheduled": "Zur Löschung vorgemerkt",
+  "shell.demo.install": "installieren Sie Kaeso",
+  "shell.demo.notice": "Dies ist eine schreibgeschützte Demo mit Beispieldaten; {install}, um eigene Anbieter zu verbinden.",
   "shell.export.canceled": "Export abgebrochen",
   "shell.export.failed": "Der Export brach vorzeitig ab; bitte erneut versuchen.",
   "shell.export.inBrowser": "Der Browser zeigt den Fortschritt an.",

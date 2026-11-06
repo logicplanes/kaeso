@@ -37031,7 +37031,8 @@
           "org_deletion",
           "locale",
           "timezone",
-          "request_logs"
+          "request_logs",
+          "demo"
         ],
         "properties": {
           "can_administer_instance": {
@@ -37041,6 +37042,10 @@
           "can_create_orgs": {
             "type": "boolean",
             "description": "Whether the user may create organizations (`POST me/orgs`): always\nfor instance admins; for everyone else as the instance setting\n`org_creation` says, by their email domain when it is\n`allowed_domains`. Never from a session that came from the SSO of an\norg that doesn't manage the account."
+          },
+          "demo": {
+            "type": "boolean",
+            "description": "Whether the install is a public, read-only demo (`auth.demo_user`):\nevery visitor is its demo user, and every change is refused."
           },
           "locale": {
             "$ref": "#/components/schemas/UserLocale",

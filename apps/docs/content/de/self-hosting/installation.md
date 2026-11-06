@@ -136,7 +136,7 @@ echo "KAESO_AUTH_DEMO_USER=owner@example.com" >> .env
 docker compose up -d --wait
 ```
 
-Die Anmeldeseite bietet dann **Demo erkunden** an, womit jeder Besucher als dieser Benutzer angemeldet wird. Jeder Besucher sieht unter **Konto** › **Sitzungen** nur seine eigene Sitzung, nie die Adresse oder den Browser eines anderen Besuchers. Die Installation lehnt jede Änderung mit dem Hinweis ab, dass sie eine schreibgeschützte Demo ist, und die Modell-API und MCP sind aus, sodass nichts über sie gesendet werden kann. Entfernen Sie die Einstellung, um die Installation wieder normal zu nutzen.
+Die Anmeldeseite bietet dann **Demo erkunden** an, womit jeder Besucher als dieser Benutzer angemeldet wird. Nach der Anmeldung sagt jede Seite der Konsole, dass es sich um eine schreibgeschützte Demo mit Beispieldaten handelt, und verlinkt auf diese Anleitung. Jeder Besucher sieht unter **Konto** › **Sitzungen** nur seine eigene Sitzung, nie die Adresse oder den Browser eines anderen Besuchers. Die Installation lehnt jede Änderung mit dem Hinweis ab, dass sie eine schreibgeschützte Demo ist, und die Modell-API und MCP sind aus, sodass nichts über sie gesendet werden kann. Entfernen Sie die Einstellung, um die Installation wieder normal zu nutzen.
 
 ## Festlegen, wie Anfrageprotokolle gespeichert werden
 
