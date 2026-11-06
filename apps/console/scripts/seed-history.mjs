@@ -246,13 +246,15 @@ const OFFICE = "198.51.100.7";
 
 // Every caller of the seeded organization: when it sends requests and what they look like.
 function workloads(ctx) {
-  const chat = (next, model, input, output) => {
+  // The assistant's system prompt and tools (cached when warm), then the conversation so far.
+  const chat = (next, model, conversation, output) => {
     const anthropic = MODELS[model].provider === "anthropic";
+    const prefix = anthropic ? 1850 : 1792;
     const warm = next();
-    const cacheRead = anthropic ? (warm < 0.82 ? 1850 : 0) : warm < 0.72 ? 1792 : 0;
-    const cacheWrite = anthropic && warm >= 0.82 && warm < 0.9 ? 1850 : 0;
+    const cacheRead = anthropic ? (warm < 0.82 ? prefix : 0) : warm < 0.72 ? prefix : 0;
+    const cacheWrite = anthropic && warm >= 0.82 && warm < 0.9 ? prefix : 0;
     const reasoning = model === "gpt-6-sol" ? Math.round(lognormal(next, 120, 0.6)) : 0;
-    return { input: Math.max(120, input - cacheRead - cacheWrite), cacheRead, cacheWrite, output: output + reasoning, reasoning };
+    return { input: prefix + conversation - cacheRead - cacheWrite, cacheRead, cacheWrite, output: output + reasoning, reasoning };
   };
   return [
     {
@@ -266,7 +268,7 @@ function workloads(ctx) {
         const shape = chat(
           next,
           route.model,
-          Math.round(lognormal(next, 2700, 0.35)),
+          Math.round(lognormal(next, 820, 0.65)),
           tool ? Math.round(lognormal(next, 38, 0.3)) : Math.round(lognormal(next, 170, 0.55)),
         );
         return {
