@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { closeSync, existsSync, openSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -260,7 +260,13 @@ const commands = {
     run("cargo", ["update", "--workspace"]);
     const fuzz = entriesOf(gitRepo(root), "fuzz/Cargo.lock").map((entry) => entry.name);
     run("cargo", ["update", "--manifest-path", "fuzz/Cargo.toml", ...fuzz]);
-    writeFileSync(join(root, "openapi.json"), run("cargo", ["run", "-q", "-p", "kaeso", "--", "openapi"], { stdio: ["ignore", "pipe", "inherit"] }));
+    // Straight into the file: the document is larger than the 1 MiB execFileSync buffers.
+    const openapi = openSync(join(root, "openapi.json"), "w");
+    try {
+      run("cargo", ["run", "-q", "-p", "kaeso", "--", "openapi"], { stdio: ["ignore", openapi, "inherit"] });
+    } finally {
+      closeSync(openapi);
+    }
     commands.check();
   },
   check: (planned) => {
