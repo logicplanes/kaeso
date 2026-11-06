@@ -21,6 +21,7 @@ import { useApiMutation } from "~/auth/mutation";
 import { t } from "~/i18n";
 import { tRich } from "~/i18n/rich";
 import { toast } from "~/shell/toast";
+import { openBlankTab } from "./blank-tab";
 import { DeviceCode, type DeviceState } from "./device-sign-in";
 import { keyTitle, providerOptions, useProviders } from "./providers";
 
@@ -71,12 +72,6 @@ function ProviderChoice({ choices, value, onChoose }: { choices: ProviderPickerO
 const pending = (answer: CredentialView | AccountPending): answer is AccountPending => "interval" in answer;
 
 const receivedAt = (): number => Date.now();
-
-function openBlankTab(): Window | null {
-  const tab = window.open("about:blank", "_blank");
-  if (tab) tab.opener = null;
-  return tab;
-}
 
 export function ProviderKeyDialog({
   org,

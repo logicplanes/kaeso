@@ -129,5 +129,8 @@
   "shell.whatsNew.preEyebrow": "Kaeso-Vorabversion",
   "shell.whatsNew.published": "Veröffentlicht am {date}",
   "shell.whatsNew.show": "Verbesserungen zeigen",
-  "shell.whatsNew.title": "Neu in Kaeso"
+  "shell.whatsNew.title": "Neu in Kaeso",
+  "shell.page.mcpServers": "MCP-Server",
+  "shell.keyword.tools": "Tools",
+  "shell.keyword.connectors": "Konnektoren"
 }

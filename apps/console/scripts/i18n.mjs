@@ -124,6 +124,7 @@ export const SAME_AS_ENGLISH = new Set([
   "kaeso.createKey.limitNumber",
   "logs.param.topK",
   "logs.param.topP",
+  "orgHome.mcp.headerValuePlaceholder",
 ]);
 
 const visible = (text) =>

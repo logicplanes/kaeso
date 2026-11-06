@@ -794,23 +794,14 @@ pub struct McpServerCreate {
     pub projects: Option<Vec<ProjectId>>,
 }
 
-fn after_sync(state: &AppState, server: ServerRow) {
-    let st = state.clone();
-    state.in_flight.finish(async move {
-        if let Err(e) = sync::sync(&st, &server).await {
-            tracing::info!(server = %server.id, error = %e, "an MCP server couldn't be synced");
-        }
-    });
-}
-
 #[utoipa::path(
     post,
     path = "/orgs/{org}/mcp-servers",
     summary = "Adds an MCP server to the organization.",
     description = "Kaeso checks the address now and on every connection: private, loopback,\n\
     link-local and cloud metadata addresses are refused unless the instance allows the network\n\
-    (`mcp_servers.allowed_networks`). A server without sign-in lists its tools right away; others\n\
-    do once connected (`POST …/connection`).",
+    (`mcp_servers.allowed_networks`). A server without sign-in lists its tools before the answer;\n\
+    others do once connected (`POST …/connection`).",
     tag = "orgs",
     params(("org" = OrgId, Path)),
     request_body = McpServerCreate,
@@ -907,11 +898,19 @@ pub async fn create(
     let row = store::get(&state.pg, org, id)
         .await?
         .ok_or_else(|| ApiError::internal("new MCP server vanished"))?;
-    if req.auth_method == McpAuthMethod::None {
-        after_sync(&state, row.clone());
+    if req.auth_method == McpAuthMethod::None
+        && let Err(e) = sync::sync(&state, &row).await
+    {
+        tracing::info!(server = %row.id, error = %e, "an MCP server couldn't be synced");
     }
-    let shown = view(&row, ServerTools::default(), None, &projects);
-    Ok((StatusCode::CREATED, etag(row.revision), Json(shown)))
+    let row = store::get(&state.pg, org, id)
+        .await?
+        .ok_or_else(|| ApiError::internal("new MCP server vanished"))?;
+    Ok((
+        StatusCode::CREATED,
+        etag(row.revision),
+        Json(one(&state, &row).await?),
+    ))
 }
 
 #[derive(Deserialize, ToSchema)]
@@ -924,12 +923,16 @@ pub struct McpServerUpdate {
     pub handle: Option<String>,
     #[doc = "A new policy for changed tools. Switching to `accept` doesn't approve tools held now."]
     pub change_policy: Option<McpChangePolicy>,
+    #[doc = "The projects that use it, replacing the list; projects left out stop offering its\n\
+        tools."]
+    pub projects: Option<Vec<ProjectId>>,
 }
 
 #[utoipa::path(
     patch,
     path = "/orgs/{org}/mcp-servers/{server}",
-    summary = "Renames an MCP server, changes its handle or its policy for changed tools.",
+    summary = "Renames an MCP server, changes its handle, its policy for changed tools or the\n\
+    projects that use it.",
     description = "With `If-Match`, only while the server is still at that revision; a newer one\n\
     answers 412.",
     tag = "orgs",
@@ -949,6 +952,10 @@ pub async fn update(
     if_match.check(before_row.revision, "MCP server")?;
     let name = req.name.as_deref().map(checked_name).transpose()?;
     let handle = req.handle.as_deref().map(checked_handle).transpose()?;
+    let projects = match &req.projects {
+        Some(p) => Some(org_projects(&state, org, p).await?),
+        None => None,
+    };
     let before = one(&state, &before_row).await?;
     let mut tx = state.pg.begin().await?;
     let row = match store::update(
@@ -967,6 +974,9 @@ pub async fn update(
         Updated::NotFound => return Err(ApiError::not_found("MCP server")),
         Updated::HandleTaken => return Err(handle_taken(handle.unwrap_or_default())),
     };
+    if let Some(p) = &projects {
+        store::set_projects(&mut tx, org, row.id, p).await?;
+    }
     let after = view(
         &row,
         ServerTools {
@@ -978,7 +988,10 @@ pub async fn update(
     );
     let after = McpServerView {
         connection: before.connection.clone(),
-        projects: before.projects.clone(),
+        projects: match &projects {
+            Some(p) => p.iter().copied().map(ProjectId::from_uuid).collect(),
+            None => before.projects.clone(),
+        },
         ..after
     };
     ctx.audit(Some(ctx.org()?.id()), Action::McpServerUpdate)
@@ -989,6 +1002,11 @@ pub async fn update(
         .await?;
     tx.commit().await?;
     crate::portal::snapshot::forget_server(&state, row.id).await;
+    if projects.is_some() {
+        for p in &before.projects {
+            crate::portal::snapshot::forget(&state, p.uuid()).await;
+        }
+    }
     Ok((etag(row.revision), Json(after)))
 }
 
