@@ -188,7 +188,7 @@ The updater is equivalent to root on the server. It can create containers, and `
 
 - It answers only the gateway, on an internal network, and only with the shared token. The gateway passes it a version number and nothing else.
 - It reaches Docker only through `docker-proxy`, which lets through only the calls an update needs. It allows bind mounts only from `KAESO_DIR`, the install's folder, so change `KAESO_DIR` when you move the folder.
-- It replaces only the gateway and console containers of its own Compose project, with images it verified.
+- It replaces only the gateway and console containers of its own Compose project, with images it verified. With [several gateways](scaling.md), it stops every one before it starts the new ones, so no old gateway runs against a database the new one is migrating.
 - It refuses to create a container whose privileges, capabilities, devices, namespaces, network, mounts, ports, name resolution, groups or limits differ from the one it replaces. It pulls only Kaeso's images, by digest.
 - It changes only the image versions and digests in `compose.yaml`, and leaves a file that differs from the release's alone.
 

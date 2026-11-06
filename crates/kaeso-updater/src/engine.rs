@@ -248,35 +248,47 @@ impl Engine {
             return self.end(JobState::Failed, Some(f)).await;
         }
         self.step(Step::Switching);
-        for target in &prepared.targets {
-            if let Err(f) = self.switch(target).await {
-                return self.roll_back(f).await;
+        // Every replica of a service stops before any new one starts, so no old gateway runs
+        // against a database the new one is migrating.
+        for service in ORDER {
+            let group: Vec<&Target> = prepared
+                .targets
+                .iter()
+                .filter(|t| t.service == service)
+                .collect();
+            for target in &group {
+                if let Err(f) = self.retire(target).await {
+                    return self.roll_back(f).await;
+                }
             }
-            let new_id = self.new_id(target.service);
-            let (timeout, patient) = match target.service {
+            let (timeout, patient) = match service {
                 Service::Gateway => {
                     self.step(Step::Migrating);
                     (self.settings.gateway_timeout, true)
                 }
                 _ => (self.settings.console_timeout, false),
             };
-            if let Err(why) = self.healthy(&new_id, timeout, patient, 0).await {
-                let f = fail(
-                    Reason::Unhealthy,
-                    format!("the new {} {why}", target.service.as_str()),
-                );
-                return self.roll_back(f).await;
+            for target in &group {
+                let new_id = match self.launch(target).await {
+                    Ok(id) => id,
+                    Err(f) => return self.roll_back(f).await,
+                };
+                if let Err(why) = self.healthy(&new_id, timeout, patient, 0).await {
+                    let which = if group.len() > 1 {
+                        format!(" ({})", target.name)
+                    } else {
+                        String::new()
+                    };
+                    let f = fail(
+                        Reason::Unhealthy,
+                        format!("the new {} {why}{which}", service.as_str()),
+                    );
+                    return self.roll_back(f).await;
+                }
             }
         }
         self.step(Step::Online);
         self.finish(&prepared.from, &to, false).await;
-    }
-
-    fn new_id(&self, service: Service) -> String {
-        self.snapshot()
-            .and_then(|s| s.switched.into_iter().find(|w| w.service == service))
-            .and_then(|w| w.new_id)
-            .unwrap_or_default()
     }
 
     fn write_compose(
@@ -414,7 +426,7 @@ impl Engine {
         self.update(|s| s.project = Some(project.clone()));
         let mut targets = Vec::new();
         for service in ORDER {
-            targets.push(self.target(&project, service, &manifest).await?);
+            targets.extend(self.targets(&project, service, &manifest).await?);
         }
         let from = targets
             .iter()
@@ -481,8 +493,8 @@ impl Engine {
                     format!("{} says it is {says}, not {to}", image.reference()),
                 ));
             }
-            if let Some(t) = targets.iter_mut().find(|t| t.image == *image) {
-                t.new_image = local;
+            for t in targets.iter_mut().filter(|t| t.image == *image) {
+                t.new_image = local.clone();
             }
         }
         let migrates = self.migrates(&from, &manifest).await;
@@ -517,18 +529,18 @@ impl Engine {
             })
     }
 
-    async fn target(
+    async fn targets(
         &self,
         project: &str,
         service: Service,
         manifest: &Manifest,
-    ) -> Result<Target, Failure> {
+    ) -> Result<Vec<Target>, Failure> {
         let listed = self
             .docker
             .containers(project, service.as_str())
             .await
             .map_err(|e| fail(Reason::DockerUnavailable, e))?;
-        let (left, current): (Vec<Listed>, Vec<Listed>) = listed
+        let (left, mut current): (Vec<Listed>, Vec<Listed>) = listed
             .into_iter()
             .partition(|c| c.name.ends_with(PREVIOUS_SUFFIX));
         if let Some(stale) = left.first() {
@@ -540,22 +552,26 @@ impl Engine {
                 ),
             ));
         }
-        let [Listed { id, .. }] = current.as_slice() else {
-            let names: Vec<&str> = current.iter().map(|c| c.name.as_str()).collect();
+        if current.is_empty() {
             return Err(fail(
                 Reason::ServicesNotFound,
-                if names.is_empty() {
-                    format!("{project} has no {} container", service.as_str())
-                } else {
-                    format!(
-                        "{project} has {} {} containers ({}); remove all but the one Compose started",
-                        names.len(),
-                        service.as_str(),
-                        names.join(", ")
-                    )
-                },
+                format!("{project} has no {} container", service.as_str()),
             ));
-        };
+        }
+        current.sort_by(|a, b| a.name.cmp(&b.name));
+        let mut targets = Vec::with_capacity(current.len());
+        for Listed { id, .. } in &current {
+            targets.push(self.target_of(service, id, manifest).await?);
+        }
+        Ok(targets)
+    }
+
+    async fn target_of(
+        &self,
+        service: Service,
+        id: &str,
+        manifest: &Manifest,
+    ) -> Result<Target, Failure> {
         let container = self
             .docker
             .inspect(id)
@@ -581,7 +597,7 @@ impl Engine {
         Ok(Target {
             service,
             image: manifest.image(service).clone(),
-            id: id.clone(),
+            id: id.to_owned(),
             name,
             container,
             old_image,
@@ -630,14 +646,9 @@ impl Engine {
         })
     }
 
-    fn set_phase(
-        &self,
-        service: Service,
-        phase: Phase,
-        new_id: Option<String>,
-    ) -> Result<(), Failure> {
+    fn set_phase(&self, name: &str, phase: Phase, new_id: Option<String>) -> Result<(), Failure> {
         self.record(|s| {
-            if let Some(w) = s.switched.iter_mut().find(|w| w.service == service) {
+            if let Some(w) = s.switched.iter_mut().find(|w| w.name == name) {
                 w.phase = phase;
                 if new_id.is_some() {
                     w.new_id = new_id;
@@ -646,8 +657,7 @@ impl Engine {
         })
     }
 
-    async fn switch(&self, t: &Target) -> Result<(), Failure> {
-        let docker = |e: crate::docker::DockerError| fail(Reason::DockerUnavailable, e);
+    fn spec_of(&self, t: &Target) -> Result<Value, Failure> {
         let mut spec = clone::spec(
             &t.container,
             &t.old_image,
@@ -667,6 +677,13 @@ impl Engine {
                 },
             )
         })?;
+        Ok(spec)
+    }
+
+    // Stops the running container and frees its name; the service is away from here on.
+    async fn retire(&self, t: &Target) -> Result<(), Failure> {
+        let docker = |e: crate::docker::DockerError| fail(Reason::DockerUnavailable, e);
+        self.spec_of(t)?;
         let stop_seconds = clone::stop_timeout(&t.container);
         self.record(|s| {
             s.switched.push(Switched {
@@ -686,15 +703,21 @@ impl Engine {
             .rename(&t.id, &format!("{}{PREVIOUS_SUFFIX}", t.name))
             .await
             .map_err(docker)?;
-        self.set_phase(t.service, Phase::Creating, None)?;
+        self.set_phase(&t.name, Phase::Creating, None)
+    }
+
+    async fn launch(&self, t: &Target) -> Result<String, Failure> {
+        let docker = |e: crate::docker::DockerError| fail(Reason::DockerUnavailable, e);
+        let spec = self.spec_of(t)?;
         let new_id = self
             .docker
             .create(&t.name, &spec, &t.container)
             .await
             .map_err(docker)?;
-        self.set_phase(t.service, Phase::Created, Some(new_id.clone()))?;
+        self.set_phase(&t.name, Phase::Created, Some(new_id.clone()))?;
         self.docker.start(&new_id).await.map_err(docker)?;
-        self.set_phase(t.service, Phase::Started, None)
+        self.set_phase(&t.name, Phase::Started, None)?;
+        Ok(new_id)
     }
 
     async fn healthy(
@@ -849,6 +872,90 @@ impl Engine {
         }
     }
 
+    // Replicas the restart caught between stopping and starting: rebuilt from their previous
+    // container, since the new gateway already runs and may have migrated the database.
+    async fn relaunch_rest(&self, saved: &Saved, healthy_id: &str) -> Result<(), Failure> {
+        let left: Vec<Switched> = saved
+            .switched
+            .iter()
+            .filter(|w| w.phase != Phase::Started && w.new_id.as_deref() != Some(healthy_id))
+            .cloned()
+            .collect();
+        for w in left {
+            let new_id = match w.new_id.as_deref() {
+                Some(id) if w.phase == Phase::Created => {
+                    self.docker
+                        .start(id)
+                        .await
+                        .map_err(|e| fail(Reason::DockerUnavailable, e))?;
+                    self.set_phase(&w.name, Phase::Started, None)?;
+                    id.to_owned()
+                }
+                _ => {
+                    let target = self.target_from_switched(&w, &saved.images).await?;
+                    self.launch(&target).await?
+                }
+            };
+            let (timeout, patient) = match w.service {
+                Service::Gateway => (self.settings.gateway_timeout, true),
+                _ => (self.settings.console_timeout, false),
+            };
+            self.healthy(&new_id, timeout, patient, 0)
+                .await
+                .map_err(|why| {
+                    fail(
+                        Reason::Unhealthy,
+                        format!("the new {} {why} ({})", w.service.as_str(), w.name),
+                    )
+                })?;
+        }
+        Ok(())
+    }
+
+    async fn target_from_switched(
+        &self,
+        w: &Switched,
+        images: &[Image],
+    ) -> Result<Target, Failure> {
+        let docker = |e: crate::docker::DockerError| fail(Reason::DockerUnavailable, e);
+        let missing = |what: String| fail(Reason::ServicesNotFound, what);
+        let image = images
+            .iter()
+            .find(|i| i.name == w.service.image())
+            .cloned()
+            .ok_or_else(|| missing(format!("the update names no {} image", w.service.as_str())))?;
+        let mut container = self.docker.inspect(&w.old_id).await.map_err(docker)?;
+        // The previous container was renamed when it stopped; the new one takes the name back.
+        if let Some(fields) = container.as_object_mut() {
+            fields.insert("Name".into(), Value::String(format!("/{}", w.name)));
+        }
+        let image_id = container
+            .get("Image")
+            .and_then(Value::as_str)
+            .ok_or_else(|| missing("a container names no image".into()))?;
+        let old_image = self
+            .docker
+            .image(image_id)
+            .await
+            .map_err(docker)?
+            .ok_or_else(|| missing("the previous image is missing".into()))?;
+        let new_image = self
+            .docker
+            .image(&image.reference())
+            .await
+            .map_err(docker)?
+            .ok_or_else(|| missing(format!("{} is not in Docker", image.reference())))?;
+        Ok(Target {
+            service: w.service,
+            image,
+            id: w.old_id.clone(),
+            name: w.name.clone(),
+            container,
+            old_image,
+            new_image,
+        })
+    }
+
     async fn roll_back(&self, failure: Failure) {
         let Some(saved) = self.snapshot() else {
             return self.end(JobState::Failed, Some(failure)).await;
@@ -975,6 +1082,9 @@ impl Engine {
                     .await
                     .is_ok()
             {
+                if let Err(f) = self.relaunch_rest(&saved, new_id).await {
+                    return self.end(JobState::NeedsAttention, Some(f)).await;
+                }
                 self.step(Step::Online);
                 return self.finish(&from, &to, true).await;
             }

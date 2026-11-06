@@ -79,6 +79,8 @@ services:
     read_only: true
     mem_limit: ${GATEWAY_MEMORY:-2g}
     pids_limit: ${GATEWAY_PIDS:-1024}
+    deploy:
+      replicas: ${GATEWAY_REPLICAS:-1}
     # KAESO_SHUTDOWN_GRACE (30s), then up to 10s each to record outcomes, write logs and send mail.
     stop_grace_period: 75s
     ulimits:
@@ -322,7 +324,14 @@ configs:
       			error 503
       		}
       		handle @api {
-      			reverse_proxy gateway:8080 {
+      			reverse_proxy {
+      				dynamic a {
+      					name gateway
+      					port 8080
+      					refresh 1s
+      				}
+      				lb_policy least_conn
+      				fail_duration 5s
       				flush_interval -1
       				transport http {
       					keepalive 25s

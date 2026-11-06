@@ -230,7 +230,9 @@ def test_the_gateway_may_open_a_connection_to_a_provider_for_every_app_connectio
 
 def test_caddy_closes_idle_connections_to_the_gateway_before_the_gateway_does():
     caddyfile = config()["configs"]["caddyfile"]["content"]
-    proxy = caddyfile.split("reverse_proxy gateway:8080 {\n", 1)[1].split("\n\t\t\t}\n", 1)[0]
+    proxy = caddyfile.split("handle @api {\n", 1)[1].split("\n\t\thandle {\n", 1)[0]
+    assert re.search(r"^\t+dynamic a {\n\t+name gateway\n\t+port 8080\n", proxy, re.M), "every gateway replica, by Docker's DNS"
+    assert re.search(r"^\t+lb_policy least_conn$", proxy, re.M), proxy
     keepalive = re.search(r"^\t+keepalive (\S+)$", proxy, re.M)
     header_read_timeout = 30
     assert keepalive and seconds(keepalive[1]) < header_read_timeout, proxy

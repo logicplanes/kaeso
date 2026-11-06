@@ -34,6 +34,15 @@ services:
       - "127.0.0.1:9100:9100"
 ```
 
+Bei [mehreren Gateways](scaling.md) veröffentlichen Sie stattdessen einen Bereich, einen Port je Replikat, und fragen jeden Port ab:
+
+```yaml title="compose.override.yaml"
+services:
+  gateway:
+    ports:
+      - "127.0.0.1:9100-9109:9100"
+```
+
 | Metrik | Worauf achten |
 | --- | --- |
 | `kaeso_requests_total{surface, route, status, provider, model}` | Ein Anstieg von `status=~"5.."` bei `surface="model_api"`. `model` ist `custom` für Modelle, die KPMR nicht führt |

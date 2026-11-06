@@ -35,6 +35,7 @@ Apply a change with `docker compose up -d --wait`. A gateway setting written onl
 | `DOCKER_SOCKET` | no | The path of Docker's socket for the updater, when it isn't `/var/run/docker.sock`. |
 | `KAESO_TRUSTED_PROXIES` | no | The networks of proxies whose `X-Forwarded-For` the gateway believes, `127.0.0.0/8,::1/128` and `EDGE_SUBNET` by default. Set it to your own proxy's address ([your own reverse proxy](domains-and-tls.md#use-your-own-reverse-proxy)). |
 | `EDGE_SUBNET` | no | The subnet of the `edge` network, `172.30.83.0/24` by default, whose `X-Forwarded-For` the gateway believes. Change it when the server already uses that range. |
+| `GATEWAY_REPLICAS` | no | How many gateways run, `1` by default; Caddy spreads requests over them ([several gateways](scaling.md)). |
 | `CADDY_MEMORY`, `GATEWAY_MEMORY`, … and `CADDY_PIDS`, `GATEWAY_PIDS`, …, `VALKEY_MAXMEMORY` | no | The services' memory and process limits, and the memory Valkey keeps its data in ([container limits](#container-limits)). |
 
 Use only letters and digits in the passwords, as `openssl rand -hex` writes them, because they go into connection URLs. PostgreSQL keeps the passwords it had when its volume was created, so changing `POSTGRES_PASSWORD` later locks the gateway out. ClickHouse and Valkey take their password from `.env` at every start.

@@ -35,6 +35,7 @@ services:
 | `DOCKER_SOCKET` | nein | Der Pfad des Docker-Sockets für den Updater, wenn er nicht `/var/run/docker.sock` ist. |
 | `KAESO_TRUSTED_PROXIES` | nein | Die Netze von Proxys, deren `X-Forwarded-For` das Gateway vertraut, standardmäßig `127.0.0.0/8,::1/128` und `EDGE_SUBNET`. Setzen Sie es auf die Adresse Ihres eigenen Proxys ([eigener Reverse Proxy](domains-and-tls.md#eigenen-reverse-proxy-verwenden)). |
 | `EDGE_SUBNET` | nein | Das Subnetz des Netzwerks `edge`, standardmäßig `172.30.83.0/24`, dessen `X-Forwarded-For` das Gateway glaubt. Ändern Sie es, wenn der Server diesen Bereich schon nutzt. |
+| `GATEWAY_REPLICAS` | nein | Wie viele Gateways laufen, standardmäßig `1`; Caddy verteilt die Anfragen auf sie ([mehrere Gateways](scaling.md)). |
 | `CADDY_MEMORY`, `GATEWAY_MEMORY`, … und `CADDY_PIDS`, `GATEWAY_PIDS`, …, `VALKEY_MAXMEMORY` | nein | Die Speicher- und Prozessgrenzen der Dienste und der Speicher, in dem Valkey seine Daten hält ([Container-Grenzen](#container-grenzen)). |
 
 Verwenden Sie in den Passwörtern nur Buchstaben und Ziffern, wie `openssl rand -hex` sie schreibt, denn sie stehen in Verbindungs-URLs. PostgreSQL behält die Passwörter, die es beim Anlegen seines Volumes hatte; ändern Sie `POSTGRES_PASSWORD` später, sperrt das das Gateway aus. ClickHouse und Valkey übernehmen ihr Passwort bei jedem Start aus der `.env`.

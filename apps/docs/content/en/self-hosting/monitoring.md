@@ -34,6 +34,15 @@ services:
       - "127.0.0.1:9100:9100"
 ```
 
+With [several gateways](scaling.md), publish a range instead, one port for each replica, and scrape every port:
+
+```yaml title="compose.override.yaml"
+services:
+  gateway:
+    ports:
+      - "127.0.0.1:9100-9109:9100"
+```
+
 | Metric | Watch for |
 | --- | --- |
 | `kaeso_requests_total{surface, route, status, provider, model}` | A rise in `status=~"5.."` on `surface="model_api"`. `model` is `custom` for models KPMR doesn't list |

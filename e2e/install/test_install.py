@@ -97,6 +97,7 @@ def install(tmp_path_factory):
         "KAESO_UPDATER_TOKEN": os.urandom(32).hex(),
         "COMPOSE_PROFILES": "updater",
         "KAESO_DIR": str(work),
+        "GATEWAY_REPLICAS": "2",
     }
     (work / ".env").touch(mode=0o600)
     (work / ".env").write_text("".join(f"{name}={value}\n" for name, value in env.items()))
@@ -230,6 +231,23 @@ def test_the_gateway_logs_the_address_caddy_saw_and_never_one_the_client_sends(i
 def test_wait_returns_once_every_service_is_healthy_caddy_included(install):
     shipped = ("caddy", "gateway", "console", "postgres", "clickhouse", "valkey")
     assert {name: install.health.get(name) for name in shipped} == dict.fromkeys(shipped, "healthy")
+
+
+def test_two_gateway_replicas_share_the_edge_and_one_serves_while_the_other_is_down(install, owner):
+    listed = install.run("ps", "--format", "json", "gateway", capture_output=True).stdout
+    gateways = {s["Name"]: s["Health"] for s in map(json.loads, listed.splitlines())}
+    assert gateways == {f"{PROJECT}-gateway-1": "healthy", f"{PROJECT}-gateway-2": "healthy"}
+    probe = lambda: httpx.get(f"{install.url}/platform/v1/auth/methods", timeout=10).status_code
+    assert probe() == 200
+    subprocess.run(["docker", "stop", f"{PROJECT}-gateway-1"], check=True, capture_output=True)
+    try:
+        answered = [probe() for _ in range(10)]
+        assert answered.count(200) >= 9, f"the other replica keeps serving: {answered}"
+        session = owner.get("/platform/v1/auth/session")
+        assert session.status_code == 200, "the session, kept in PostgreSQL, is valid on any replica"
+    finally:
+        subprocess.run(["docker", "start", f"{PROJECT}-gateway-1"], check=True, capture_output=True)
+    poll(lambda: probe() == 200 or None, "the edge serving again", seconds=60)
 
 
 def test_everything_outside_the_apis_is_the_console(install):

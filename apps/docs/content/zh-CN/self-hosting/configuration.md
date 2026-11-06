@@ -35,6 +35,7 @@ services:
 | `DOCKER_SOCKET` | 否 | Docker 套接字不在 `/var/run/docker.sock` 时，供更新器使用的路径。 |
 | `KAESO_TRUSTED_PROXIES` | 否 | 网关信任其 `X-Forwarded-For` 的代理网段，默认为 `127.0.0.0/8,::1/128` 和 `EDGE_SUBNET`。请设为您自己代理的地址（[使用自己的反向代理](domains-and-tls.md#使用自己的反向代理)）。 |
 | `EDGE_SUBNET` | 否 | `edge` 网络的子网，默认为 `172.30.83.0/24`，网关信任来自该子网的 `X-Forwarded-For`。服务器已在使用这个网段时请修改它。 |
+| `GATEWAY_REPLICAS` | 否 | 运行多少个网关，默认 `1`；Caddy 把请求分发到它们（[多个网关](scaling.md)）。 |
 | `CADDY_MEMORY`、`GATEWAY_MEMORY` 等，`CADDY_PIDS`、`GATEWAY_PIDS` 等，以及 `VALKEY_MAXMEMORY` | 否 | 各服务的内存和进程数上限，以及 Valkey 存放数据的内存（[容器限制](#容器限制)）。 |
 
 密码中只用字母和数字，就像 `openssl rand -hex` 生成的那样，因为它们会写进连接 URL。PostgreSQL 保留卷创建时的密码，之后修改 `POSTGRES_PASSWORD` 会让网关无法登录。ClickHouse 和 Valkey 每次启动时都从 `.env` 读取密码。
