@@ -25,5 +25,17 @@
   "playground.suggestion.raceCondition": "Erklären Sie einer neuen Entwicklerin eine Race Condition",
   "playground.suggestion.restGrpc": "Vergleichen Sie REST und gRPC in drei Stichpunkten",
   "playground.title": "Playground",
-  "playground.undoClear": "Rückgängig"
+  "playground.undoClear": "Rückgängig",
+  "playground.tools.switch": "Tools",
+  "playground.tools.none": "Das Projekt bietet noch keine Tools an",
+  "playground.tools.sent": "{count, plural, one {Antwort des Tools gesendet} other {Antworten der Tools gesendet}}",
+  "playground.tools.unknown": "Dieses Projekt hat kein Tool {name}.",
+  "playground.tools.skippedOutput": "Die Person hat sich entschieden, dieses Tool nicht auszuführen.",
+  "playground.tools.wants": "Das Modell möchte {tool} aufrufen.",
+  "playground.tools.run": "Ausführen",
+  "playground.tools.skip": "Überspringen",
+  "playground.tools.skipped": "Übersprungen",
+  "playground.tools.error": "Fehlgeschlagen",
+  "playground.tools.ran": "Ausgeführt",
+  "playground.tools.called": "{tool} aufgerufen."
 }

@@ -230,6 +230,7 @@ async fn handle(
                     started,
                     at,
                     request_bytes: body.len(),
+                    source: "portal",
                 },
             )
             .await
@@ -245,3 +246,85 @@ async fn handle(
         ),
     }
 }
+
+pub enum PlaygroundRefusal {
+    NoTool,
+    Unavailable,
+    Unreadable,
+}
+
+// The Playground calls a tool through the same path as the portal, as the signed-in person, so
+// the project's tool switches, access, limits and logs apply alike; its answer is the JSON-RPC
+// message a client would get.
+pub async fn playground_call(
+    state: &AppState,
+    org: uuid::Uuid,
+    project: uuid::Uuid,
+    user: uuid::Uuid,
+    tool: uuid::Uuid,
+    arguments: &serde_json::Value,
+) -> Result<serde_json::Value, PlaygroundRefusal> {
+    let started = Instant::now();
+    let at = state.clock.now();
+    let snapshot = snapshot::get(state, project).await.map_err(|e| {
+        tracing::error!(error = %e, "a portal's tools couldn't be loaded");
+        PlaygroundRefusal::Unavailable
+    })?;
+    let exposed = snapshot
+        .tools
+        .iter()
+        .find(|t| t.id == tool)
+        .map(|t| t.exposed.clone())
+        .ok_or(PlaygroundRefusal::NoTool)?;
+    let body = serde_json::to_vec(&serde_json::json!({
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "tools/call",
+        "params": { "name": exposed, "arguments": arguments },
+    }))
+    .map_err(|_| PlaygroundRefusal::Unreadable)?;
+    let message = Message::parse(&body).map_err(|_| PlaygroundRefusal::Unreadable)?;
+    let caller = auth::Caller {
+        org,
+        project,
+        key: None,
+        grant: None,
+        user: Some(user),
+        service_account: None,
+        client: Some(PLAYGROUND_CLIENT.to_owned()),
+    };
+    let answer = call::call(
+        state,
+        call::Request {
+            caller: &caller,
+            snapshot: &snapshot,
+            version: kaeso_mcp::Version::LATEST,
+            message: &message,
+            body: &body,
+            started,
+            at,
+            request_bytes: body.len(),
+            source: "playground",
+        },
+    )
+    .await;
+    let stream = answer
+        .headers()
+        .get(header::CONTENT_TYPE)
+        .is_some_and(|v| v.as_bytes().starts_with(b"text/event-stream"));
+    let bytes = axum::body::to_bytes(answer.into_body(), usize::MAX)
+        .await
+        .map_err(|_| PlaygroundRefusal::Unreadable)?;
+    let text = String::from_utf8_lossy(&bytes);
+    let last = if stream {
+        text.lines()
+            .filter_map(|l| l.strip_prefix("data:"))
+            .filter_map(|d| serde_json::from_str::<serde_json::Value>(d.trim()).ok())
+            .rfind(|m| m.get("id").is_some())
+    } else {
+        serde_json::from_str(&text).ok()
+    };
+    last.ok_or(PlaygroundRefusal::Unreadable)
+}
+
+const PLAYGROUND_CLIENT: &str = "Kaeso Playground";

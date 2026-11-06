@@ -19175,6 +19175,102 @@
         "x-kaeso-access": "right:tools.manage"
       }
     },
+    "/platform/v1/orgs/{org}/projects/{project}/tools/{tool}/call": {
+      "post": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "Calls one of the project's tools from the Playground, as you.",
+        "description": "The call goes through the project's portal like any client's: the tool must be\non and approved, your tool access and the tool call rates apply, and the call is logged with\nthe source `playground`. Needs `playground.use` too.\n\n**Right:** `tools.use` on the project in the path.",
+        "operationId": "postOrgsOrgProjectsProjectToolsToolCall",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          },
+          {
+            "name": "tool",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ToolId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlaygroundToolCall"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaygroundToolAnswer"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:tools.use"
+      }
+    },
     "/platform/v1/orgs/{org}/projects/{project}/usage": {
       "get": {
         "tags": [
@@ -31719,6 +31815,16 @@
             "format": "double",
             "description": "Sampling temperature."
           },
+          "tools": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "object"
+            },
+            "description": "Responses `function` tools the model may call, such as the project's tools when\nthe Playground's Tools switch is on; the Playground runs each call only when asked to."
+          },
           "top_p": {
             "type": [
               "number",
@@ -31728,6 +31834,37 @@
             "description": "Nucleus sampling."
           }
         }
+      },
+      "PlaygroundToolAnswer": {
+        "type": "object",
+        "description": "What the tool answered, as an MCP client would get it.",
+        "properties": {
+          "error": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "Why the call was refused (`code` and `message`), as a JSON-RPC error."
+          },
+          "result": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "The tool's result (`content`, `isError` and more), when the call went through."
+          }
+        }
+      },
+      "PlaygroundToolCall": {
+        "type": "object",
+        "description": "A tool call from the Playground.",
+        "properties": {
+          "arguments": {
+            "type": "object",
+            "description": "The arguments, as the model wrote them."
+          }
+        },
+        "additionalProperties": false
       },
       "PortalConnectView": {
         "type": "object",

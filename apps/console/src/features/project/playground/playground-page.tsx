@@ -1,16 +1,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { AppFrame, Button, Empty, icons } from "@logicplanes/kaeso-ui";
+import { AppFrame, Button, Empty, Switch, icons } from "@logicplanes/kaeso-ui";
 import { CompareGrid, Composer, ModelPicker, ParameterPanel, PromptSuggestions, ResponseMetrics, type ReasoningEffort } from "@logicplanes/kaeso-ui/playground";
 import { playgroundModelsQuery, type PlaygroundModel } from "~/api/queries/playground";
+import { projectToolsQuery } from "~/api/queries/tools";
 import { useProjectRights } from "~/auth/rights";
 import { playgroundModelOption, recentModels, rememberModel } from "~/kaeso/model-options";
 import { useModelPickerProviders, useProviders } from "~/kaeso/providers";
 import { usePageCreateAction } from "~/shell/create-action";
 import { ProjectHeader } from "~/shell/project-header";
 import { metricsOf } from "./metrics";
-import { modelRef, requestFor } from "./request";
+import { modelRef, requestFor, type FunctionTool } from "./request";
 import { parametersOf, searchOf } from "./search";
 import { EFFORTS, MAX_COLUMNS, parseModels, validatePlaygroundSearch, type PlaygroundSearch } from "~/format/playground-search";
 import Thread from "./thread";
@@ -113,7 +114,14 @@ export function PlaygroundPage({ org, project, search }: { org: string; project:
   useEffect(() => {
     shownRefs.current = refs;
   });
-  const { threads, busy, send, retry, stop, add, remove, clear, restore } = useThreads(org, project, refs.length, {
+  const toolsAllowed = rights.has("tools.use");
+  const [toolsOn, setToolsOn] = useState(false);
+  const projectTools = useQuery({ ...projectToolsQuery(org, project), enabled: toolsAllowed });
+  const offered = useMemo(() => (projectTools.data ?? []).filter((x) => x.offered), [projectTools.data]);
+  const defs: FunctionTool[] = toolsOn
+    ? offered.map((x) => ({ type: "function", name: x.exposed_name, description: x.description, parameters: x.input_schema }))
+    : [];
+  const { threads, busy, send, retry, followUp, stop, add, remove, clear, restore } = useThreads(org, project, refs.length, {
     initial: saved && same(saved.refs, refs) ? saved.threads : undefined,
     onLeave: (left) => {
       if (left.some((x) => x.turns.length)) remember<Conversation>(conversationKey(project), { refs: shownRefs.current, threads: left });
@@ -146,12 +154,13 @@ export function PlaygroundPage({ org, project, search }: { org: string; project:
   const submit = (text: string) => {
     const sends = threads.flatMap((thread, i) => {
       const m = models[i];
-      return m ? [{ column: i, request: requestFor(m, thread.turns, text, parameters) }] : [];
+      return m ? [{ column: i, request: requestFor(m, thread.turns, text, parameters, defs) }] : [];
     });
     send(text, sends);
     changePrompt("");
   };
-  const retryColumn = (i: number, m: PlaygroundModel, earlier: Turn[], last: Turn) => retry(i, requestFor(m, earlier, last.prompt, parameters));
+  const retryColumn = (i: number, m: PlaygroundModel, earlier: Turn[], last: Turn) =>
+    retry(i, requestFor(m, earlier, last.outputs ?? last.prompt, parameters, defs));
 
   const noModels = catalogue.isSuccess && chat.length === 0;
   usePageCreateAction(noModels ? null : { label: t("playground.addColumn", "Add column"), run: addColumn, disabledReason: full ? fullReason() : undefined });
@@ -207,6 +216,16 @@ export function PlaygroundPage({ org, project, search }: { org: string; project:
               <Button size="sm" variant="ghost" onClick={clearAll}>
                 {common.clear()}
               </Button>
+            )}
+            {toolsAllowed && (
+              <Switch
+                size="sm"
+                label={t("playground.tools.switch", "Tools")}
+                checked={toolsOn}
+                onCheckedChange={setToolsOn}
+                disabled={noModels || offered.length === 0}
+                {...(offered.length === 0 ? { disabledReason: t("playground.tools.none", "The project offers no tools yet") } : {})}
+              />
             )}
             <ParameterPanel
               value={parameters}
@@ -287,6 +306,16 @@ export function PlaygroundPage({ org, project, search }: { org: string; project:
                           model={m}
                           label={label}
                           onRetry={m && !busy ? () => retryColumn(i, m, thread.turns.slice(0, -1), lastTurn) : null}
+                          tools={
+                            m && toolsOn
+                              ? {
+                                  org,
+                                  project,
+                                  list: offered,
+                                  onOutputs: (outputs) => followUp(i, outputs, requestFor(m, thread.turns, outputs, parameters, defs)),
+                                }
+                              : undefined
+                          }
                         />
                       ) : empty && i === 0 ? (
                         <Empty

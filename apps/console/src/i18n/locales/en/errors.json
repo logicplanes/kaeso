@@ -594,6 +594,8 @@
   "errors.tools.notMemberTool": "`{tool}` is not among the tools the key's member may call.",
   "errors.tools.notOrgServer": "`{server}` is not an MCP server of this organization.",
   "errors.tools.notProjectTool": "`{tool}` is not a tool of the project's MCP servers.",
+  "errors.tools.personCalls": "A person calls tools from the Playground; use a console session.",
+  "errors.tools.unavailable": "Kaeso can't load this project's tools right now; try again shortly.",
   "errors.transferBeforeDeleteAccount": "Transfer ownership of {orgs} before you delete the account.",
   "errors.turnOn2faFirst": "Turn on two-factor authentication first.",
   "errors.twoFactorAlreadyOn": "Two-factor authentication is already on; turn it off to set it up again.",
