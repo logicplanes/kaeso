@@ -60,9 +60,20 @@ pub struct Env {
     pub key: String,
     pub capture: Arc<Capture>,
     pub services: TestServices,
+    pub extra: Vec<(String, String)>,
 }
 
 impl Env {
+    // Another gateway of the same install: the same databases, Valkey, clock and mock provider.
+    pub async fn second_gateway(&self) -> App {
+        let extra: Vec<(&str, &str)> = self
+            .extra
+            .iter()
+            .map(|(k, v)| (k.as_str(), v.as_str()))
+            .collect();
+        self.app.second_instance_with(&self.services, &extra).await
+    }
+
     pub async fn outcomes(&self) -> Vec<Outcome> {
         self.app.state.in_flight.settled().await;
         self.capture.all()
@@ -104,6 +115,10 @@ async fn env_with(
         .collect();
     settings.extend_from_slice(extra.unwrap_or(&[]));
     let app = App::start_hooked(&s, &settings, limits, sink).await;
+    let extra: Vec<(String, String)> = settings
+        .iter()
+        .map(|(k, v)| ((*k).to_owned(), (*v).to_owned()))
+        .collect();
     let capture = capture.unwrap_or_default();
     let owner = app.setup().await;
     let project = app
@@ -161,6 +176,7 @@ async fn env_with(
         key,
         capture,
         services: s,
+        extra,
     }
 }
 

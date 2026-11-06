@@ -196,8 +196,12 @@ impl App {
     }
 
     pub async fn second_instance(&self, s: &TestServices) -> App {
+        self.second_instance_with(s, &[]).await
+    }
+
+    pub async fn second_instance_with(&self, s: &TestServices, extra: &[(&str, &str)]) -> App {
         let state = kaeso_server::serve::prepare_with(
-            config(s, &[]),
+            config(s, extra),
             Overrides {
                 clock: Some(Arc::new(self.clock.clone())),
                 mail: Some(kaeso_mail::Transport::Memory(self.mail.clone())),

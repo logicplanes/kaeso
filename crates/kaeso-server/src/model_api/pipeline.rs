@@ -1356,9 +1356,9 @@ async fn attempt(
 }
 
 fn ready(
-    state: &AppState,
     sh: &Shared<'_>,
     access: &Access<'_>,
+    held: &cooldowns::Lookup,
     project: Uuid,
     model: CatalogueModelId,
     now: OffsetDateTime,
@@ -1370,20 +1370,25 @@ fn ready(
             provider: &provider,
             model: entry.id,
         };
-        access.allows(entry.id) && state.cooldowns.held(&at, now).is_none()
+        access.allows(entry.id) && held.held(&at, now).is_none()
     })
 }
 
-fn hold(state: &AppState, at: &cooldowns::Step<'_>, failure: &Failure, status: u16) {
+async fn hold(
+    state: &AppState,
+    at: &cooldowns::Step<'_>,
+    failure: &Failure,
+    status: u16,
+) -> Option<(cooldowns::Reach, cooldowns::Held)> {
     let cause = match failure.stage {
         Stage::Upstream => cooldowns::Cause::Unreachable,
         Stage::KeyRefused => cooldowns::Cause::KeyRefused,
         Stage::Provider => cooldowns::Cause::Provider(&failure.err),
-        _ => return,
+        _ => return None,
     };
     let (Some((reach, length)), Next::Fall(reason)) = (cooldowns::length(cause), classify(failure))
     else {
-        return;
+        return None;
     };
     let said = failure.logged();
     let now = state.clock.now();
@@ -1394,7 +1399,11 @@ fn hold(state: &AppState, at: &cooldowns::Step<'_>, failure: &Failure, status: u
         error_kind: said.kind.as_str().to_owned(),
         error_message: said.message.clone(),
     };
-    state.cooldowns.hold(at, reach, held, now);
+    state
+        .cooldowns
+        .hold(&state.valkey, at, reach, held.clone(), now)
+        .await;
+    Some((reach, held))
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -1484,6 +1493,23 @@ async fn route(
         .access(caller.key_id, caller.user_id, caller.service_account_id);
     let app_req = Arc::new(req);
     let request_id = rec.outcome().request_id.to_string();
+    let providers: Vec<(String, Uuid)> = plan
+        .iter()
+        .filter_map(|p| sh.models.catalogue.model(p.step.model))
+        .map(|e| (e.provider.to_string(), e.id))
+        .collect();
+    let steps: Vec<cooldowns::Step<'_>> = providers
+        .iter()
+        .map(|(provider, model)| cooldowns::Step {
+            project: caller.project_id,
+            provider,
+            model: *model,
+        })
+        .collect();
+    let mut held_steps = state
+        .cooldowns
+        .lookup(&state.valkey, &steps, state.clock.now())
+        .await;
     let mut failed: Vec<FellBack> = Vec::new();
     let mut walked: Vec<Walked> = Vec::new();
     let mut last: Option<Failure> = None;
@@ -1515,13 +1541,18 @@ async fn route(
             model: entry.id,
         };
         let now = state.clock.now();
-        if let Some(held) = state.cooldowns.held(&at, now)
+        if let Some(held) = held_steps.held(&at, now)
             && step.fall_back_on.contains(&held.reason)
-            && plan
-                .get(i + 1..)
-                .unwrap_or_default()
-                .iter()
-                .any(|p| ready(state, sh, &access, caller.project_id, p.step.model, now))
+            && plan.get(i + 1..).unwrap_or_default().iter().any(|p| {
+                ready(
+                    sh,
+                    &access,
+                    &held_steps,
+                    caller.project_id,
+                    p.step.model,
+                    now,
+                )
+            })
         {
             tracing::debug!(alias = %alias.name, %model, reason = held.reason.as_str(), "an alias step failed moments ago; skipping it");
             metrics::counter!(crate::metrics::ALIAS_FALLBACKS, "provider" => provider_id.clone(), "reason" => held.reason.as_str())
@@ -1558,7 +1589,7 @@ async fn route(
         let took = u64::try_from(began.elapsed().as_millis()).unwrap_or(u64::MAX);
         let mut failure = match tried {
             Ok(done) => {
-                state.cooldowns.release(&at);
+                state.cooldowns.release(&state.valkey, &at).await;
                 walked.push(Walked {
                     path: planned.path.clone(),
                     model: Some(model),
@@ -1580,7 +1611,9 @@ async fn route(
                 duration_ms: Some(took),
             }),
         });
-        hold(state, &at, &failure, status);
+        if let Some((reach, held)) = hold(state, &at, &failure, status).await {
+            held_steps.add(&at, reach, held);
+        }
         let falls = i + 1 < plan.len()
             && matches!(classify(&failure), Next::Fall(why) if step.fall_back_on.contains(&why));
         if !falls {
