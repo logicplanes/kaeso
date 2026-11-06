@@ -494,6 +494,11 @@ WITH ranked AS (
 UPDATE audit_events e SET at = ${at(0)} - make_interval(days => s.days) + make_interval(mins => r.n::int)
   FROM ranked r JOIN story s ON s.action = r.action AND s.n = r.n WHERE e.id = r.id;
 UPDATE audit_events SET at = ${at(AGE.settings)} WHERE at > now() - interval '1 day' AND action NOT LIKE 'invite.%';
+UPDATE invites SET created_at = now() - interval '4 days', updated_at = now() - interval '4 days', expires_at = now() + interval '17 days'
+  WHERE accepted_at IS NULL AND revoked_at IS NULL;
+UPDATE audit_events SET at = now() - interval '4 days' WHERE action = 'invite.create' AND at > now() - interval '1 day';
+-- The audit log lists events by id, a UUIDv7 of when each was written; a moved event needs an id from its new time.
+UPDATE audit_events SET id = uuidv7(at - clock_timestamp());
 UPDATE audit_events SET ip = '198.51.100.7', user_agent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/19.1 Safari/605.1.15'
   WHERE ip IS NOT NULL;
 COMMIT;
