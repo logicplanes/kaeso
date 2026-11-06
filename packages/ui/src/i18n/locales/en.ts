@@ -396,6 +396,7 @@ const en: Readonly<Record<string, string>> = {
   "statusCode.notFound": "Not found",
   "statusCode.ok": "OK",
   "statusCode.overloaded": "Overloaded",
+  "statusCode.paymentRequired": "Payment required",
   "statusCode.rateLimited": "Rate limited",
   "statusCode.serverError": "Server error",
   "statusCode.timeout": "Timeout",

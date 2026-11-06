@@ -183,6 +183,7 @@ async fn a_route_falls_back_when_its_model_is_overloaded_in_every_format() {
                 ],
                 "{what}"
             );
+            env.app.clock.advance(time::Duration::seconds(31));
         }
     }
     let outcomes = env.outcomes().await;
@@ -315,6 +316,159 @@ async fn when_every_step_fails_the_app_gets_the_last_error_and_the_earlier_ones_
     assert_eq!(o.model_id.as_deref(), Some("gpt-4o"));
     assert_eq!(o.error_kind.as_deref(), Some("rate_limited"));
     assert_eq!(o.fallbacks.len(), 1);
+}
+
+#[tokio::test]
+async fn a_step_that_failed_for_a_lasting_reason_is_skipped_until_the_wait_ends() {
+    let env = env().await;
+    let claude = model_id(&env, "claude-haiku-4-5").await;
+    let gpt = model_id(&env, "gpt-4o").await;
+    alias(&env, "sturdy", with_fallback(&claude, model_step(&gpt))).await;
+    let r = ask(
+        &env,
+        App::Chat,
+        "sturdy",
+        "Hi [mock:fail=claude-haiku-4-5 overloaded]",
+        false,
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    let r = ask(&env, App::Chat, "sturdy", "Hi again", false).await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(
+        walked(&r),
+        [
+            "\"route\";model=\"anthropic/claude-haiku-4-5\";skipped",
+            "\"route.fallback\";model=\"openai/gpt-4o\";status=200"
+        ]
+    );
+    assert_eq!(asked_models(&env), ["claude-haiku-4-5", "gpt-4o", "gpt-4o"]);
+    let skipped = env.outcomes().await.pop().unwrap().fallbacks;
+    assert_eq!(skipped.len(), 1);
+    assert!(skipped[0].skipped);
+    assert_eq!(
+        (
+            skipped[0].status,
+            skipped[0].error_kind.as_str(),
+            skipped[0].duration_ms
+        ),
+        (529, "overloaded", 0)
+    );
+
+    env.app.clock.advance(time::Duration::seconds(31));
+    let r = ask(&env, App::Chat, "sturdy", "Hi once more", false).await;
+    assert_eq!(
+        walked(&r),
+        ["\"route\";model=\"anthropic/claude-haiku-4-5\";status=200"]
+    );
+    let r = ask(&env, App::Chat, "sturdy", "And again", false).await;
+    assert_eq!(r.header("kaeso-model"), Some("claude-haiku-4-5"));
+}
+
+#[tokio::test]
+async fn an_empty_balance_skips_every_model_of_the_provider_at_once() {
+    let env = env().await;
+    let added = env
+        .app
+        .post(
+            &format!("{}/models", base(&env)),
+            json!({ "provider": "anthropic", "model_id": "claude-sonnet-4-5" }),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert_eq!(added.status, StatusCode::CREATED, "{:?}", added.body);
+    let haiku = model_id(&env, "claude-haiku-4-5").await;
+    let sonnet = model_id(&env, "claude-sonnet-4-5").await;
+    let gpt = model_id(&env, "gpt-4o").await;
+    alias(
+        &env,
+        "save",
+        with_fallback(&haiku, with_fallback(&sonnet, model_step(&gpt))),
+    )
+    .await;
+    let r = ask(
+        &env,
+        App::Messages,
+        "save",
+        "Hi [mock:fail=claude-haiku-4-5 billing-credit-balance]",
+        false,
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(
+        walked(&r),
+        [
+            "\"route\";model=\"anthropic/claude-haiku-4-5\";status=502",
+            "\"route.fallback\";model=\"anthropic/claude-sonnet-4-5\";skipped",
+            "\"route.fallback.fallback\";model=\"openai/gpt-4o\";status=200"
+        ]
+    );
+    assert_eq!(asked_models(&env), ["claude-haiku-4-5", "gpt-4o"]);
+    let fallbacks = env.outcomes().await.pop().unwrap().fallbacks;
+    let kinds: Vec<_> = fallbacks
+        .iter()
+        .map(|f| (f.model.as_str(), f.error_kind.as_str(), f.skipped))
+        .collect();
+    assert_eq!(
+        kinds,
+        [
+            ("anthropic/claude-haiku-4-5", "billing", false),
+            ("anthropic/claude-sonnet-4-5", "billing", true)
+        ]
+    );
+    let r = ask(&env, App::Messages, "save", "Hi again", false).await;
+    assert_eq!(r.header("kaeso-model"), Some("gpt-4o"));
+    assert_eq!(asked_models(&env), ["claude-haiku-4-5", "gpt-4o", "gpt-4o"]);
+    env.app.clock.advance(time::Duration::minutes(5));
+    let r = ask(&env, App::Messages, "save", "Topped up", false).await;
+    assert_eq!(r.header("kaeso-model"), Some("claude-haiku-4-5"));
+}
+
+#[tokio::test]
+async fn a_refusal_of_the_request_itself_never_holds_a_step() {
+    let env = env().await;
+    let claude = model_id(&env, "claude-haiku-4-5").await;
+    let gpt = model_id(&env, "gpt-4o").await;
+    alias(
+        &env,
+        "forgiving",
+        json!({ "type": "model", "model": claude, "fall_back_on": ["unavailable", "rejected"], "fallback": model_step(&gpt) }),
+    )
+    .await;
+    let r = ask(
+        &env,
+        App::Messages,
+        "forgiving",
+        "Hi [mock:fail=claude-haiku-4-5 invalid-request-prefill]",
+        false,
+    )
+    .await;
+    assert_eq!(r.header("kaeso-model"), Some("gpt-4o"));
+    let r = ask(&env, App::Messages, "forgiving", "Hi again", false).await;
+    assert_eq!(r.header("kaeso-model"), Some("claude-haiku-4-5"));
+}
+
+#[tokio::test]
+async fn a_held_step_is_tried_when_no_later_step_is_ready() {
+    let env = env().await;
+    let claude = model_id(&env, "claude-haiku-4-5").await;
+    let gpt = model_id(&env, "gpt-4o").await;
+    alias(&env, "sturdy", with_fallback(&claude, model_step(&gpt))).await;
+    let r = ask(
+        &env,
+        App::Chat,
+        "sturdy",
+        "Hi [mock:fail=claude-haiku-4-5 overloaded] [mock:fail=gpt-4o rate-limit-tokens-429]",
+        false,
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::TOO_MANY_REQUESTS, "{}", r.text());
+    let r = ask(&env, App::Chat, "sturdy", "Hi again", false).await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(
+        walked(&r),
+        ["\"route\";model=\"anthropic/claude-haiku-4-5\";status=200"]
+    );
 }
 
 #[tokio::test]

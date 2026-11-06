@@ -39,6 +39,9 @@ fn kind_for_status(status: u16) -> ErrorKind {
 
 // Anthropic's context overflow message, which Claude Code reads to compact the conversation.
 const CONTEXT_TOO_LONG: &str = "prompt is too long";
+// Anthropic answers an empty credit balance with 400 `invalid_request_error`, not the 402
+// `billing_error` its errors page documents (fixtures/anthropic_messages/errors/billing-credit-balance.json).
+const CREDIT_BALANCE: &str = "Your credit balance is too low";
 
 fn wire_for_kind(kind: &ErrorKind) -> (u16, &'static str) {
     match kind {
@@ -81,10 +84,13 @@ fn decode_body(body: &[u8], status: Option<u16>) -> KppError {
         Some(e) => {
             let mut kind = kind_for_type(&e.known.error.ty)
                 .unwrap_or_else(|| status.map_or(ErrorKind::ProviderError, kind_for_status));
-            if kind == ErrorKind::InvalidRequest
-                && e.known.error.message.starts_with(CONTEXT_TOO_LONG)
-            {
-                kind = ErrorKind::ContextTooLong;
+            if kind == ErrorKind::InvalidRequest {
+                let said = e.known.error.message.as_str();
+                if said.starts_with(CONTEXT_TOO_LONG) {
+                    kind = ErrorKind::ContextTooLong;
+                } else if said.starts_with(CREDIT_BALANCE) {
+                    kind = ErrorKind::Billing;
+                }
             }
             let message = if e.known.error.message.is_empty() {
                 format!("Anthropic returned `{}`.", e.known.error.ty)

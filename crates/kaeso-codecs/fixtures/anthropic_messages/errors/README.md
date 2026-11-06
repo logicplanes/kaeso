@@ -1,6 +1,6 @@
 # anthropic_messages / errors
 
-`<name>.json` is the exact error body; `<name>.meta.json` is `{"status": N, "headers": {...}}`. Shape per https://platform.claude.com/docs/en/api/errors#error-shapes: `{"type": "error", "error": {"type", "message"}, "request_id"}`. The mid-stream error is in `streams/error-overloaded-mid-stream.sse`. Status table (errors page): 400 invalid_request_error, 401 authentication_error, 402 billing_error, 403 permission_error, 404 not_found_error, 409 conflict_error (not used by Messages, no fixture), 413 request_too_large, 429 rate_limit_error, 500 api_error, 504 timeout_error, 529 overloaded_error.
+`<name>.json` is the exact error body; `<name>.meta.json` is `{"status": N, "headers": {...}}`, plus `kind` where Kaeso reads the body as another kind than its status says. Shape per https://platform.claude.com/docs/en/api/errors#error-shapes: `{"type": "error", "error": {"type", "message"}, "request_id"}`. The mid-stream error is in `streams/error-overloaded-mid-stream.sse`. Status table (errors page): 400 invalid_request_error, 401 authentication_error, 402 billing_error, 403 permission_error, 404 not_found_error, 409 conflict_error (not used by Messages, no fixture), 413 request_too_large, 429 rate_limit_error, 500 api_error, 504 timeout_error, 529 overloaded_error.
 
 | file | what it covers | provenance |
 |---|---|---|
@@ -12,6 +12,8 @@
 | `authentication.meta.json` | HTTP status (and headers) for the body above. | schema: ErrorResponse, AuthenticationError |
 | `billing.json` | 402 `billing_error`. | schema: ErrorResponse, BillingError |
 | `billing.meta.json` | HTTP status (and headers) for the body above. | schema: ErrorResponse, BillingError |
+| `billing-credit-balance.json` | 400 `invalid_request_error` for an empty credit balance, which Anthropic sends instead of the documented 402 `billing_error`. Kaeso reads it as `Billing` and gives an Anthropic app the body as received; the meta names the kind. | live: `claude-sonnet-5-5` on 2026-11-05 (`req_011CgkB9j4UjbexEPc3Egizh`), status, type and message from Kaeso's request log |
+| `billing-credit-balance.meta.json` | HTTP status and the kind it decodes to. | live, as above |
 | `permission.json` | 403 `permission_error`. | schema: ErrorResponse, PermissionError |
 | `permission.meta.json` | HTTP status (and headers) for the body above. | schema: ErrorResponse, PermissionError |
 | `tool-search-all-deferred.json` | 400 `invalid_request_error` for a request whose tools all have `defer_loading: true`. Kaeso refuses such a request with the same message for other formats. | live: `claude-sonnet-5-5` through Kaeso (same format) on 2026-10-25; same message as https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-search-tool#http-errors-400-status |

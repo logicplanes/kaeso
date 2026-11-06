@@ -10,18 +10,22 @@ use futures::StreamExt;
 use kaeso_codecs::continuity::reasoning_for_tool_calls;
 use kaeso_codecs::{EgressCtx, EncodeCtx, HeaderList, dispatch};
 use kaeso_core::catalogue::Entry;
-use kaeso_core::catalogue::resolve::{Alias, ResolveError, Resolved};
+use kaeso_core::catalogue::resolve::{Access, Alias, ResolveError, Resolved};
 use kaeso_core::catalogue::route::{self, Failure as RouteFailure};
 use kaeso_core::catalogue::{Availability, Effective, capability};
 use kaeso_core::estimate::{self, Tally};
-use kaeso_core::id::{ApiKeyId, OrgId, ProjectId, RequestId, ServiceAccountId, UserId};
+use kaeso_core::id::{
+    ApiKeyId, CatalogueModelId, OrgId, ProjectId, RequestId, ServiceAccountId, UserId,
+};
 use kaeso_core::limits::WorstCase;
 use kaeso_core::provider::AuthMethod;
 use kaeso_core::providers::ProviderRef;
 use kaeso_kpp::{DialectId, ErrorKind, KppError, Reply, Request, RequestKind, StreamMode};
 use kaeso_store::pg::catalogue::{Answer, ProjectModels};
 use kaeso_upstream::{Call, Outgoing, ResponseBody, Timeouts, UpstreamError};
+use time::OffsetDateTime;
 use url::Url;
+use uuid::Uuid;
 
 use super::auth;
 use super::errors::{
@@ -36,6 +40,7 @@ use super::listing::project_models;
 use super::stream;
 use crate::services::availability::{self, Probe};
 use crate::services::continuity;
+use crate::services::cooldowns;
 use crate::services::credentials::{self, ResolveError as CredentialError};
 use crate::services::response_cache::{self, Verdict};
 use crate::state::AppState;
@@ -1212,7 +1217,7 @@ async fn attempt(
                 }
                 stream::Gathered::Provider(err) => {
                     count_upstream_error(err.kind.as_str(), provider);
-                    fail(Stage::Provider)(super::accounts::usage_limit(account, err))
+                    fail(Stage::Provider)(super::accounts::account_error(account, err))
                 }
                 stream::Gathered::Broken(err) => fail(Stage::Reply)(err),
             })?;
@@ -1302,7 +1307,7 @@ async fn attempt(
                     &ectx,
                 );
                 count_upstream_error(err.kind.as_str(), provider);
-                let err = super::accounts::usage_limit(account, err);
+                let err = super::accounts::account_error(account, err);
                 if err.kind == ErrorKind::NotFound
                     && !credential.is_keyless()
                     && let Probe::Unserved =
@@ -1348,6 +1353,48 @@ async fn attempt(
                 .map_err(fail(Stage::Reply))
         }
     }
+}
+
+fn ready(
+    state: &AppState,
+    sh: &Shared<'_>,
+    access: &Access<'_>,
+    project: Uuid,
+    model: CatalogueModelId,
+    now: OffsetDateTime,
+) -> bool {
+    sh.models.catalogue.model(model).is_some_and(|entry| {
+        let provider = entry.provider.to_string();
+        let at = cooldowns::Step {
+            project,
+            provider: &provider,
+            model: entry.id,
+        };
+        access.allows(entry.id) && state.cooldowns.held(&at, now).is_none()
+    })
+}
+
+fn hold(state: &AppState, at: &cooldowns::Step<'_>, failure: &Failure, status: u16) {
+    let cause = match failure.stage {
+        Stage::Upstream => cooldowns::Cause::Unreachable,
+        Stage::KeyRefused => cooldowns::Cause::KeyRefused,
+        Stage::Provider => cooldowns::Cause::Provider(&failure.err),
+        _ => return,
+    };
+    let (Some((reach, length)), Next::Fall(reason)) = (cooldowns::length(cause), classify(failure))
+    else {
+        return;
+    };
+    let said = failure.logged();
+    let now = state.clock.now();
+    let held = cooldowns::Held {
+        until: now + length,
+        reason,
+        status,
+        error_kind: said.kind.as_str().to_owned(),
+        error_message: said.message.clone(),
+    };
+    state.cooldowns.hold(at, reach, held, now);
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -1461,6 +1508,41 @@ async fn route(
             continue;
         }
         let model = format!("{}/{}", entry.provider, entry.model_id);
+        let provider_id = entry.provider.to_string();
+        let at = cooldowns::Step {
+            project: caller.project_id,
+            provider: &provider_id,
+            model: entry.id,
+        };
+        let now = state.clock.now();
+        if let Some(held) = state.cooldowns.held(&at, now)
+            && step.fall_back_on.contains(&held.reason)
+            && plan
+                .get(i + 1..)
+                .unwrap_or_default()
+                .iter()
+                .any(|p| ready(state, sh, &access, caller.project_id, p.step.model, now))
+        {
+            tracing::debug!(alias = %alias.name, %model, reason = held.reason.as_str(), "an alias step failed moments ago; skipping it");
+            metrics::counter!(crate::metrics::ALIAS_FALLBACKS, "provider" => provider_id.clone(), "reason" => held.reason.as_str())
+                .increment(1);
+            walked.push(Walked {
+                path: planned.path.clone(),
+                model: Some(model.clone()),
+                tried: None,
+            });
+            failed.push(FellBack {
+                catalogue_model_id: entry.id,
+                path: planned.path.clone(),
+                model,
+                status: held.status,
+                error_kind: held.error_kind,
+                error_message: held.error_message,
+                duration_ms: 0,
+                skipped: true,
+            });
+            continue;
+        }
         rec.outcome().fallbacks.clone_from(&failed);
         let began = Instant::now();
         let tried = attempt(
@@ -1476,6 +1558,7 @@ async fn route(
         let took = u64::try_from(began.elapsed().as_millis()).unwrap_or(u64::MAX);
         let mut failure = match tried {
             Ok(done) => {
+                state.cooldowns.release(&at);
                 walked.push(Walked {
                     path: planned.path.clone(),
                     model: Some(model),
@@ -1497,6 +1580,7 @@ async fn route(
                 duration_ms: Some(took),
             }),
         });
+        hold(state, &at, &failure, status);
         let falls = i + 1 < plan.len()
             && matches!(classify(&failure), Next::Fall(why) if step.fall_back_on.contains(&why));
         if !falls {
@@ -1519,6 +1603,7 @@ async fn route(
             error_kind: said.kind.as_str().to_owned(),
             error_message: said.message.clone(),
             duration_ms: took,
+            skipped: false,
         });
         let held = std::mem::take(&mut rec.reservation);
         state.limits.release(state, &held, &request_id).await;

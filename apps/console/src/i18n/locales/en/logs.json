@@ -117,6 +117,7 @@
   "logs.inspector.sentBy": "Sent by",
   "logs.inspector.serviceAccount": "Service account",
   "logs.inspector.showRaw": "Show raw",
+  "logs.inspector.skippedRecently": "Skipped; it failed moments ago",
   "logs.inspector.started": "Started {when}",
   "logs.inspector.stream": "Stream",
   "logs.inspector.streamProcessing": "Stream processing",

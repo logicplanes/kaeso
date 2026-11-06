@@ -39,6 +39,7 @@ pub struct Inner {
     pub in_flight: crate::model_api::in_flight::InFlight,
     pub translating: crate::model_api::memory::Budget,
     pub availability: crate::services::availability::Recall,
+    pub cooldowns: crate::services::cooldowns::Cooldowns,
     pub dns: Arc<dyn crate::services::dns::TxtLookup>,
     pub accounts: crate::services::provider_accounts::Endpoints,
     pub github_stars: crate::services::updates::GitHubStars,
@@ -108,6 +109,7 @@ impl AppState {
             in_flight: crate::model_api::in_flight::InFlight::default(),
             translating,
             availability: crate::services::availability::Recall::default(),
+            cooldowns: crate::services::cooldowns::Cooldowns::default(),
             dns: p
                 .dns
                 .unwrap_or_else(|| Arc::new(crate::services::dns::SystemResolver::default())),

@@ -29,7 +29,12 @@ def test_anthropic_endpoint(base_url, scenario):
     c = anthropic.Anthropic(base_url=base_url, api_key="test", max_retries=0)
     with pytest.raises(anthropic.APIStatusError) as info:
         c.messages.create(model=f"{scenario['source']}:{scenario['name']}", max_tokens=8, messages=MESSAGES)
-    assert info.value.status_code in ANTHROPIC_STATUS[want["error_kind"]], want
+    allowed = set(ANTHROPIC_STATUS[want["error_kind"]])
+    if scenario["source"] == "anthropic_messages":
+        # An Anthropic error reaches an Anthropic app as sent, even when Kaeso reads its kind
+        # from the message, as for the 400 Anthropic answers an empty credit balance with.
+        allowed.add(want["status"])
+    assert info.value.status_code in allowed, want
     body = info.value.body
     assert isinstance(body, dict) and body.get("type") == "error", body
     if want["status"] == 429 and want.get("retry_after"):

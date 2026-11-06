@@ -72,6 +72,7 @@ Nichts weicht mehr aus, sobald der Anbieter geantwortet hat: Ein Stream, der sp�
 ### Übersprungene Schritte
 
 - **Ein Modell, das der Schlüssel nicht nutzen darf.** Kaeso überspringt den Schritt, ohne ihn zu nennen, damit ein eingeschränkter Schlüssel nichts über die Route erfährt. Eine Anfrage, die keinen erlaubten Schritt findet, erhält 404, wie für ein unbekanntes Modell.
+- **Ein Modell, das gerade scheiterte.** Scheitert ein Schritt aus einem Grund, der anhält, überspringen spätere Anfragen ihn eine Weile und gehen direkt zum nächsten Schritt. Ein Anbieter, der den Schlüssel des Projekts ablehnte oder kein Guthaben mehr hat, wird 5 Minuten lang übersprungen, mit allen seinen Modellen. Ein Modell, das der Anbieter dem Schlüssel nicht bereitstellt, wird 5 Minuten lang übersprungen. Ein Ratenlimit hält so lange, wie sein `Retry-After` sagt, höchstens 5 Minuten. Ein unerreichbares oder überlastetes Modell, eine Zeitüberschreitung oder eine 5xx-Antwort hält 30 Sekunden. Kaeso überspringt einen Schritt nur, wenn sein `fall_back_on` den Grund nennt und ein späterer Schritt antworten kann; sonst versucht es den Schritt erneut. Eine Antwort des Modells beendet das Warten. Jeder Gateway-Prozess hält dies im Speicher, ein Neustart vergisst es also.
 - **Ein aus dem Katalog entferntes Modell.** Kaeso überspringt den Schritt. Das Entfernen eines Modells löscht die Aliasse, die nur zu ihm führen; eine Route, die auch andere Modelle nutzt, behält es als Schritt, den die `models`-Liste des Alias ohne `target` zeigt. Bleibt kein anderer Schritt, erhält die Anfrage 404: ``The alias `fast` has no model left for this request; ask a project admin.`` Umbenennen lässt sich der Alias weiterhin; um seine Route zu ändern, ersetzen oder entfernen Sie zuerst diesen Schritt.
 
 ## Limits, Kosten und der Cache
@@ -83,10 +84,10 @@ Nichts weicht mehr aus, sobald der Anbieter geantwortet hat: Ein Stream, der sp�
 ## Was Apps und Protokolle sehen
 
 - `kaeso-model` und `kaeso-provider` nennen den Schritt, der antwortete, oder den, der zuletzt scheiterte.
-- `kaeso-route` nennt jeden Schritt, den die Anfrage erreichte, der Reihe nach mit seinem Pfad in der Route, wie ein Probelauf ihn nennt, mit Modell und Status und, wenn er scheiterte, seiner Dauer in Millisekunden: `"route";model="anthropic/claude-sonnet-4-5";status=529;dur=1204, "route.fallback";model="openai/gpt-5";status=200`. Ein übersprungener Schritt trägt `skipped` und kein Modell ([Antwort-Header](../api/model-api.md#antwort-header)).
-- Das [Anfrageprotokoll](../console/request-logs.md) hält den Alias als angefragtes Modell fest und listet die Schritte, die es zuerst versuchte, jeden mit Status, Fehler und Dauer.
+- `kaeso-route` nennt jeden Schritt, den die Anfrage erreichte, der Reihe nach mit seinem Pfad in der Route, wie ein Probelauf ihn nennt, mit Modell und Status und, wenn er scheiterte, seiner Dauer in Millisekunden: `"route";model="anthropic/claude-sonnet-4-5";status=529;dur=1204, "route.fallback";model="openai/gpt-5";status=200`. Ein Schritt, den der Schlüssel nicht nutzen darf, trägt `skipped` und kein Modell; ein Schritt, der übersprungen wurde, weil er gerade scheiterte, trägt `skipped` und sein Modell ([Antwort-Header](../api/model-api.md#antwort-header)).
+- Das [Anfrageprotokoll](../console/request-logs.md) hält den Alias als angefragtes Modell fest und listet die Schritte, die es zuerst versuchte oder übersprang, jeden mit Status, Fehler und Dauer.
 - `/v1/models` listet den Alias mit den Angaben seines Hauptmodells: die `then`-Seite von Bedingungen und der schwerste Zweig von Aufteilungen. Darf der Schlüssel dieses Modell nicht nutzen, zeigt der Alias das erste andere Modell, das er nutzen darf.
-- `kaeso_alias_fallbacks_total{provider, reason}` zählt die Schritte, die auswichen ([Zustand und Metriken](../self-hosting/monitoring.md)).
+- `kaeso_alias_fallbacks_total{provider, reason}` zählt die Schritte, die auswichen oder übersprungen wurden ([Zustand und Metriken](../self-hosting/monitoring.md)).
 
 ## Eine Route testen
 

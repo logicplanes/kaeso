@@ -218,6 +218,7 @@ describe("LogInspector", () => {
               error_kind: "overloaded",
               error_message: "Overloaded",
               duration_ms: 1200,
+              skipped: false,
             },
           ],
         }),
@@ -227,6 +228,36 @@ describe("LogInspector", () => {
     const route = section(await sheet(), "Route");
     expect(route).toHaveTextContent("Aliassturdy");
     expect(route).toHaveTextContent("Tried first529Overloadedanthropic/claude-sonnet-4-5Failed after 1.2 s");
+  });
+
+  it("says which steps the route skipped because they failed moments ago", async () => {
+    signedIn();
+    projectData();
+    logsData({
+      rows: [logRow()],
+      entries: [
+        logEntry({
+          requested_model: "save",
+          alias: "save",
+          fallbacks: [
+            {
+              catalogue_model_id: "cm_fable",
+              path: "route",
+              model: "anthropic/claude-fable-5-1",
+              status: 402,
+              error_kind: "billing",
+              error_message: "Your credit balance is too low to access the Anthropic API.",
+              duration_ms: 0,
+              skipped: true,
+            },
+          ],
+        }),
+      ],
+    });
+    await renderApp(projectPath("logs?log=req_0001"));
+    const route = section(await sheet(), "Route");
+    expect(route).toHaveTextContent("Tried first402Payment requiredanthropic/claude-fable-5-1Skipped; it failed moments ago");
+    expect(route).not.toHaveTextContent("Failed after");
   });
 
   it("leaves the alias out for a request that named a model", async () => {

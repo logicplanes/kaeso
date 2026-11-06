@@ -72,6 +72,7 @@ flowchart TD
 ### 被跳过的步骤
 
 - **密钥无权使用的模型。** Kaeso 跳过该步骤且不提及它，受限的密钥因此无法了解路由。找不到可用步骤的请求会得到 404，与未知模型相同。
+- **刚刚失败过的模型。** 步骤因持续存在的原因失败后，后续请求会暂时跳过它，直接进入下一个步骤。拒绝项目密钥或余额用尽的提供商会被跳过 5 分钟，连同它的所有模型。提供商不向该密钥提供的模型会被跳过 5 分钟。速率限制按其 `Retry-After` 持续，最长 5 分钟。无法连接或过载的模型、超时或 5xx 应答持续 30 秒。只有当步骤的 `fall_back_on` 包含该原因、且后面有能应答的步骤时，Kaeso 才会跳过它；否则会再次尝试。模型一旦应答，等待即结束。每个网关进程在内存中保存这些信息，因此重启后会清空。
 - **已从目录中移除的模型。** Kaeso 跳过该步骤。移除模型会删除只路由到它的别名；同时使用其他模型的路由保留该步骤，别名的 `models` 列表中它没有 `target`。没有其他步骤可用时，请求得到 404：``The alias `fast` has no model left for this request; ask a project admin.`` 别名仍可重命名；要更改其路由，请先替换或删除该步骤。
 
 ## 限额、费用和缓存
@@ -83,10 +84,10 @@ flowchart TD
 ## 应用和日志看到的内容
 
 - `kaeso-model` 和 `kaeso-provider` 给出应答的步骤，或最后失败的步骤。
-- `kaeso-route` 按顺序列出请求到达的每个步骤：它在路由中的路径（与试运行的命名相同）、模型和状态，失败时还有耗时（毫秒）：`"route";model="anthropic/claude-sonnet-4-5";status=529;dur=1204, "route.fallback";model="openai/gpt-5";status=200`。被跳过的步骤带 `skipped`，不带模型（[响应头](../api/model-api.md#响应头)）。
-- [请求日志](../console/request-logs.md)把别名记为请求的模型，并列出先尝试的步骤，以及每个步骤的状态、错误和耗时。
+- `kaeso-route` 按顺序列出请求到达的每个步骤：它在路由中的路径（与试运行的命名相同）、模型和状态，失败时还有耗时（毫秒）：`"route";model="anthropic/claude-sonnet-4-5";status=529;dur=1204, "route.fallback";model="openai/gpt-5";status=200`。密钥无权使用的步骤带 `skipped`，不带模型；因刚刚失败而被跳过的步骤带 `skipped` 和它的模型（[响应头](../api/model-api.md#响应头)）。
+- [请求日志](../console/request-logs.md)把别名记为请求的模型，并列出先尝试或跳过的步骤，以及每个步骤的状态、错误和耗时。
 - `/v1/models` 按主模型的信息列出别名：条件取 `then` 一侧，分流取权重最大的分支。密钥无权使用该模型时，别名显示它可用的第一个其他模型。
-- `kaeso_alias_fallbacks_total{provider, reason}` 统计发生回退的步骤（[健康状态和指标](../self-hosting/monitoring.md)）。
+- `kaeso_alias_fallbacks_total{provider, reason}` 统计发生回退或被跳过的步骤（[健康状态和指标](../self-hosting/monitoring.md)）。
 
 ## 测试路由
 

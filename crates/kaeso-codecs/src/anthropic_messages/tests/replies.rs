@@ -293,18 +293,20 @@ fn every_error_fixture_round_trips_with_status_and_retry_after() {
         let err = AnthropicMessages::decode_error(status, &headers, &body);
         assert_eq!(err.status, Some(status), "{name}");
         assert!(err.origin.as_ref().unwrap().is(A));
-        let expected = match status {
-            400 => K::InvalidRequest,
-            401 => K::Authentication,
-            402 => K::Billing,
-            403 => K::PermissionDenied,
-            404 => K::NotFound,
-            413 => K::RequestTooLarge,
-            429 => K::RateLimited,
-            500 => K::ProviderError,
-            504 => K::Timeout,
-            529 => K::Overloaded,
-            other => panic!("{name}: unexpected status {other}"),
+        let expected = match (meta["kind"].as_str(), status) {
+            (Some("billing"), _) => K::Billing,
+            (Some(other), _) => panic!("{name}: unexpected kind {other}"),
+            (None, 400) => K::InvalidRequest,
+            (None, 401) => K::Authentication,
+            (None, 402) => K::Billing,
+            (None, 403) => K::PermissionDenied,
+            (None, 404) => K::NotFound,
+            (None, 413) => K::RequestTooLarge,
+            (None, 429) => K::RateLimited,
+            (None, 500) => K::ProviderError,
+            (None, 504) => K::Timeout,
+            (None, 529) => K::Overloaded,
+            (None, other) => panic!("{name}: unexpected status {other}"),
         };
         assert_eq!(err.kind, expected, "{name}");
         assert!(!err.message.is_empty());
@@ -318,7 +320,7 @@ fn every_error_fixture_round_trips_with_status_and_retry_after() {
         );
         n += 1;
     }
-    assert!(n >= 13, "{n}");
+    assert!(n >= 14, "{n}");
 }
 
 #[test]

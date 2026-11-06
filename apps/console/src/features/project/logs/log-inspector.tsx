@@ -385,7 +385,9 @@ function Overview({ org, project, e, keyName }: { org: string; project: string; 
                               <Long mono>{f.model}</Long>
                             </span>
                             <Text variant="small" tone="secondary">
-                              {t("logs.inspector.failedAfter", "Failed after {duration}", { duration: seconds(f.duration_ms) })}
+                              {f.skipped
+                                ? t("logs.inspector.skippedRecently", "Skipped; it failed moments ago")
+                                : t("logs.inspector.failedAfter", "Failed after {duration}", { duration: seconds(f.duration_ms) })}
                             </Text>
                           </span>
                         ))}

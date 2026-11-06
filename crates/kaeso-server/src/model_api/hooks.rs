@@ -169,6 +169,8 @@ pub struct FellBack {
     pub error_kind: String,
     pub error_message: String,
     pub duration_ms: u64,
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub skipped: bool,
 }
 
 impl Outcome {
