@@ -21,6 +21,10 @@ Kaeso protokolliert jede Modellanfrage: das Modell, den Anbieter, den Status, To
 
 Die Protokolle zu lesen erfordert das Recht **Anfrageprotokolle ansehen**.
 
+## Tool-Aufruf finden
+
+**Tools** oben auf der Seite listet stattdessen die Aufrufe, die MCP-Clients über das MCP-Portal des Projekts gemacht haben: das Tool, ob es aufgerufen wurde, fehlschlug oder abgelehnt wurde, den Aufrufer, den Client und wie lange der Server brauchte. Ein abgelehnter Aufruf nennt den Grund, etwa ein ausgeschaltetes Tool, eines, das auf Prüfung wartet oder außerhalb des Zugriffs des Aufrufers liegt, oder eine Tool-Aufrufrate. Mit eingeschalteter Inhaltsprotokollierung behält ein Aufruf auch seine Argumente und seine Antwort, sichtbar nur mit dem Recht **Prompts und Ausgaben ansehen**.
+
 ## Anfrage lesen
 
 Wählen Sie eine Anfrage, um sie zu öffnen:

@@ -1,0 +1,19 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO tool_usage_daily (day, org_id, project_id, server_id, calls, errors) SELECT * FROM UNNEST($1::date[], $2::uuid[], $3::uuid[], $4::uuid[], $5::bigint[], $6::bigint[]) ON CONFLICT (project_id, day, server_id) DO UPDATE SET calls = tool_usage_daily.calls + EXCLUDED.calls, errors = tool_usage_daily.errors + EXCLUDED.errors",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "DateArray",
+        "UuidArray",
+        "UuidArray",
+        "UuidArray",
+        "Int8Array",
+        "Int8Array"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "dad88cf5f0b4df824e9ee93021786910081811b0989bd8b012aaffc353bf92d2"
+}

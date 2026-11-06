@@ -302,5 +302,8 @@
   "kaeso.agents.topic.usage": "Nutzung und Kosten",
   "kaeso.audit.byAgents": "Agenten",
   "kaeso.audit.deletedAgent": "Gelöschter Agent",
-  "kaeso.audit.viaAgent": "{name} · über {agent} ({model})"
+  "kaeso.audit.viaAgent": "{name} · über {agent} ({model})",
+  "kaeso.limitEditor.toolCallRateHelp": "Tool-Aufrufe über das MCP-Portal pro Minute",
+  "kaeso.limits.allTools": "Alle Tools",
+  "kaeso.usage.toolCalls": "Tool-Aufrufe"
 }

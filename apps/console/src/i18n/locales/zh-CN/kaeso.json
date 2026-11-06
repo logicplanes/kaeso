@@ -302,5 +302,8 @@
   "kaeso.agents.topic.usage": "用量和费用",
   "kaeso.audit.byAgents": "智能体",
   "kaeso.audit.deletedAgent": "已删除的智能体",
-  "kaeso.audit.viaAgent": "{name} · 通过 {agent}（{model}）"
+  "kaeso.audit.viaAgent": "{name} · 通过 {agent}（{model}）",
+  "kaeso.limitEditor.toolCallRateHelp": "每分钟通过 MCP 门户的工具调用",
+  "kaeso.limits.allTools": "所有工具",
+  "kaeso.usage.toolCalls": "工具调用"
 }

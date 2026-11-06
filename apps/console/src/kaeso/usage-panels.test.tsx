@@ -54,12 +54,29 @@ describe("usage sums", () => {
   });
 
   it("totals requests, errors, tokens and cost", () => {
-    expect(totals(twoDays)).toEqual({ requests: 140, errors: 5, tokens: 3500, cost: "1.75" });
+    expect(totals(twoDays)).toEqual({ requests: 140, errors: 5, tokens: 3500, cost: "1.75", toolCalls: 0 });
     expect(totals([usage({ cost: null })]).cost).toBeNull();
   });
 });
 
 describe("UsageMetrics", () => {
+  it("shows tool calls only when the period or the one before had some", async () => {
+    const { unmount } = await renderUi(<UsageMetrics rows={twoDays} from="2026-10-13" to="2026-10-14" showCost={false} />);
+    expect(screen.queryByText("Tool calls")).not.toBeInTheDocument();
+    unmount();
+    await renderUi(
+      <UsageMetrics
+        rows={[usage({ tool_calls: 12, tool_call_errors: 1 })]}
+        previous={[usage({ tool_calls: 6 })]}
+        from="2026-10-13"
+        to="2026-10-14"
+        compare="vs last week"
+        showCost={false}
+      />,
+    );
+    expect(tile("Tool calls")).toHaveTextContent("12");
+  });
+
   it("compares the period with the previous one", async () => {
     await renderUi(
       <UsageMetrics

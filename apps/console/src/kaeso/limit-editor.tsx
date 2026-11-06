@@ -7,7 +7,7 @@ import { useModelPickerProviders } from "./providers";
 import { limitKindLabel, limitUnit } from "~/format/labels";
 import { t } from "~/i18n";
 
-export type LimitKind = "request_rate" | "token_rate" | "token_budget" | "spend_budget";
+export type LimitKind = "request_rate" | "token_rate" | "token_budget" | "spend_budget" | "tool_call_rate";
 type BudgetPeriod = "day" | "month" | "total";
 
 export interface LimitDraft {
@@ -21,11 +21,11 @@ export interface LimitDraft {
 
 export const newLimit = (): LimitDraft => ({ kind: "spend_budget", amount: "", period: "month", model: null, hard: true, alert_thresholds: [50, 80, 100] });
 
-const isRate = (k: LimitKind) => k === "request_rate" || k === "token_rate";
+const isRate = (k: LimitKind) => k === "request_rate" || k === "token_rate" || k === "tool_call_rate";
 
 export const alertThresholds = (d: LimitDraft): number[] => (isRate(d.kind) ? [] : d.alert_thresholds);
 
-const KINDS: LimitKind[] = ["spend_budget", "token_budget", "request_rate", "token_rate"];
+const KINDS: LimitKind[] = ["spend_budget", "token_budget", "request_rate", "token_rate", "tool_call_rate"];
 const kindHelp = (k: LimitKind): string => {
   switch (k) {
     case "spend_budget":
@@ -34,6 +34,8 @@ const kindHelp = (k: LimitKind): string => {
       return t("kaeso.limitEditor.tokenBudgetHelp", "Tokens per day, month or in total");
     case "request_rate":
       return t("kaeso.limitEditor.requestRateHelp", "Requests per minute");
+    case "tool_call_rate":
+      return t("kaeso.limitEditor.toolCallRateHelp", "Tool calls through the MCP portal per minute");
     default:
       return t("kaeso.limitEditor.tokenRateHelp", "Tokens per minute");
   }
@@ -97,7 +99,13 @@ export function LimitEditor({
           label={t("kaeso.limitEditor.kind", "What it limits")}
           fullWidth
           value={value.kind}
-          onValueChange={(k) => set({ kind: k as LimitKind, period: isRate(k as LimitKind) ? "minute" : value.period === "minute" ? "month" : value.period })}
+          onValueChange={(k) =>
+            set({
+              kind: k as LimitKind,
+              period: isRate(k as LimitKind) ? "minute" : value.period === "minute" ? "month" : value.period,
+              ...(k === "tool_call_rate" ? { model: null } : {}),
+            })
+          }
           options={KINDS.map((k) => ({ value: k, label: limitKindLabel(k), description: kindHelp(k) }))}
         />
       )}
@@ -134,7 +142,7 @@ export function LimitEditor({
           </Field>
         )
       )}
-      {!fixedKind && (
+      {!fixedKind && value.kind !== "tool_call_rate" && (
         <ModelPicker
           label={t("common.model", "Model")}
           appearance="default"

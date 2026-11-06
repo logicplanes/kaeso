@@ -32,6 +32,7 @@ pub struct Inner {
     pub limits: Arc<dyn crate::model_api::hooks::Limits>,
     pub sink: Arc<dyn crate::model_api::hooks::Sink>,
     pub usage: crate::services::usage::Batch,
+    pub tool_usage: crate::services::usage::ToolBatch,
     pub distrusted: crate::services::limits::Distrusted,
     pub rebuilds: crate::services::limits::Rebuilds,
     pub logs: crate::services::logs::Buffer,
@@ -99,6 +100,7 @@ impl AppState {
                 .sink
                 .unwrap_or_else(|| Arc::new(crate::services::logs::Recorder)),
             usage: crate::services::usage::Batch::default(),
+            tool_usage: crate::services::usage::ToolBatch::default(),
             distrusted: crate::services::limits::Distrusted::default(),
             rebuilds: crate::services::limits::Rebuilds::default(),
             logs: crate::services::logs::Buffer::default(),

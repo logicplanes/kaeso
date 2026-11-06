@@ -12,6 +12,7 @@ pub enum Kind {
     TokenRate,
     TokenBudget,
     SpendBudget,
+    ToolCallRate,
 }
 
 impl Kind {
@@ -21,6 +22,7 @@ impl Kind {
             Kind::TokenRate => "token_rate",
             Kind::TokenBudget => "token_budget",
             Kind::SpendBudget => "spend_budget",
+            Kind::ToolCallRate => "tool_call_rate",
         }
     }
 
@@ -30,13 +32,17 @@ impl Kind {
             Kind::TokenRate,
             Kind::TokenBudget,
             Kind::SpendBudget,
+            Kind::ToolCallRate,
         ]
         .into_iter()
         .find(|k| k.as_str() == s)
     }
 
     pub fn is_rate(self) -> bool {
-        matches!(self, Kind::RequestRate | Kind::TokenRate)
+        matches!(
+            self,
+            Kind::RequestRate | Kind::TokenRate | Kind::ToolCallRate
+        )
     }
 
     pub fn default_thresholds(self) -> Vec<u8> {
@@ -53,6 +59,7 @@ impl Kind {
             Kind::TokenRate => "token rate",
             Kind::TokenBudget => "token budget",
             Kind::SpendBudget => "spend budget",
+            Kind::ToolCallRate => "tool call rate",
         }
     }
 }
@@ -199,6 +206,7 @@ impl Limit {
             Kind::TokenRate => format!("{} tokens per minute", self.amount.normalize()),
             Kind::TokenBudget => format!("{} tokens", self.amount.normalize()),
             Kind::SpendBudget => format!("{} USD", self.amount.normalize()),
+            Kind::ToolCallRate => format!("{} tool calls per minute", self.amount.normalize()),
         };
         let what = if self.kind.is_rate() { "" } else { period };
         format!("{what}{} of {amount}", self.kind.label())
@@ -248,10 +256,18 @@ pub fn validate(l: &Limit) -> Result<(), LimitError> {
         Kind::SpendBudget if l.amount.scale() > 9 => {
             return Err(invalid("amount", "A spend budget has at most 9 decimals."));
         }
-        Kind::RequestRate | Kind::TokenRate | Kind::TokenBudget if !l.amount.fract().is_zero() => {
+        Kind::RequestRate | Kind::TokenRate | Kind::TokenBudget | Kind::ToolCallRate
+            if !l.amount.fract().is_zero() =>
+        {
             return Err(invalid("amount", "The amount must be a whole number."));
         }
         _ => {}
+    }
+    if l.kind == Kind::ToolCallRate && l.model.is_some() {
+        return Err(invalid(
+            "model",
+            "A tool call rate counts every tool; leave `model` out.",
+        ));
     }
     if l.kind.is_rate() && !l.thresholds.is_empty() {
         return Err(invalid(
@@ -288,7 +304,25 @@ pub fn applicable(
             let subject = l.subject == Subject::Project(project)
                 || Some(l.subject) == member
                 || key.is_some_and(|k| l.subject == Subject::Key(k));
-            subject && l.model.is_none_or(|m| m == model)
+            subject && l.kind != Kind::ToolCallRate && l.model.is_none_or(|m| m == model)
+        })
+        .collect()
+}
+
+// A tool call counts against the tool call rates of its project, its member and its key.
+pub fn applicable_to_tools(
+    limits: &[Limit],
+    project: Uuid,
+    member: Option<Subject>,
+    key: Option<Uuid>,
+) -> Vec<&Limit> {
+    limits
+        .iter()
+        .filter(|l| {
+            l.kind == Kind::ToolCallRate
+                && (l.subject == Subject::Project(project)
+                    || Some(l.subject) == member
+                    || key.is_some_and(|k| l.subject == Subject::Key(k)))
         })
         .collect()
 }
@@ -376,7 +410,7 @@ impl WorstCase {
 
     pub fn units(&self, kind: Kind) -> i64 {
         match kind {
-            Kind::RequestRate => 0,
+            Kind::RequestRate | Kind::ToolCallRate => 0,
             Kind::TokenRate | Kind::TokenBudget => self.tokens,
             Kind::SpendBudget => self.nano_usd,
         }
@@ -714,6 +748,7 @@ mod tests {
         );
         assert_eq!(Kind::TokenBudget.default_thresholds(), [50, 80, 100]);
         assert!(Kind::RequestRate.default_thresholds().is_empty());
+        assert!(Kind::ToolCallRate.default_thresholds().is_empty());
     }
 
     #[test]
@@ -846,5 +881,44 @@ mod tests {
         l.amount = dec!(60);
         assert_eq!(l.describe(), "request rate of 60 requests per minute");
         assert!(l.enforced());
+    }
+
+    #[test]
+    fn tool_call_rates_count_tools_only() {
+        let project = Uuid::from_u128(1);
+        let key = Uuid::from_u128(2);
+        let mut tools = limit(
+            Subject::Key(key),
+            Kind::ToolCallRate,
+            Period::Minute,
+            dec!(30),
+        );
+        let requests = limit(
+            Subject::Project(project),
+            Kind::RequestRate,
+            Period::Minute,
+            dec!(30),
+        );
+        assert_eq!(
+            tools.describe(),
+            "tool call rate of 30 tool calls per minute"
+        );
+        assert!(validate(&tools).is_ok());
+        let all = [tools.clone(), requests.clone()];
+        let model = Uuid::from_u128(3);
+        assert_eq!(
+            applicable(&all, project, None, Some(key), model),
+            [&requests]
+        );
+        assert_eq!(
+            applicable_to_tools(&all, project, None, Some(key)),
+            [&tools]
+        );
+        assert!(applicable_to_tools(&all, project, None, None).is_empty());
+        tools.model = Some(model);
+        assert_eq!(validate(&tools).map_err(|e| e.field), Err("model"));
+        tools.model = None;
+        tools.amount = dec!(1.5);
+        assert_eq!(validate(&tools).map_err(|e| e.field), Err("amount"));
     }
 }

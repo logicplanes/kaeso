@@ -14975,6 +14975,267 @@
         "x-kaeso-access": "right:logs.content.manage"
       }
     },
+    "/platform/v1/orgs/{org}/projects/{project}/logs/tool-calls": {
+      "get": {
+        "tags": [
+          "logs"
+        ],
+        "summary": "The project's tool calls, newest first (metadata only).",
+        "description": "**Right:** `logs.metadata.view` on the project in the path.",
+        "operationId": "getOrgsOrgProjectsProjectLogsToolCalls",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "How many items to return, 1 to 100. Default 20.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "maximum": 100,
+              "minimum": 1
+            },
+            "example": 20
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "description": "The `next_cursor` of the previous page.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "description": "From (inclusive), RFC 3339.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "description": "To (exclusive), RFC 3339.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "description": "Only calls with this key.",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ApiKeyId"
+            }
+          },
+          {
+            "name": "user",
+            "in": "query",
+            "description": "Only this user's calls.",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/UserId"
+            }
+          },
+          {
+            "name": "service_account",
+            "in": "query",
+            "description": "Only this service account's calls.",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ServiceAccountId"
+            }
+          },
+          {
+            "name": "server",
+            "in": "query",
+            "description": "Only this MCP server's tools.",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/McpServerId"
+            }
+          },
+          {
+            "name": "tool",
+            "in": "query",
+            "description": "Only this tool, by its name for clients, such as `x__create_post`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Only calls that went through (`ok`), failed (`error`) or were refused before\nreaching the server (`refused`).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "error_type",
+            "in": "query",
+            "description": "Only this error type: `denied`, `tool_off`, `tool_changed`, `limited`,\n`upstream_auth`, `upstream_unreachable`, `upstream_error`, `timeout` or\n`too_large`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/List_ToolCallView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:logs.metadata.view"
+      }
+    },
+    "/platform/v1/orgs/{org}/projects/{project}/logs/tool-calls/{call}": {
+      "get": {
+        "tags": [
+          "logs"
+        ],
+        "summary": "One tool call; arguments and result only with `logs.content.view`.",
+        "description": "**Right:** `logs.metadata.view` on the project in the path.",
+        "operationId": "getOrgsOrgProjectsProjectLogsToolCallsCall",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          },
+          {
+            "name": "call",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ToolCallId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ToolCallEntryView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:logs.metadata.view"
+      }
+    },
     "/platform/v1/orgs/{org}/projects/{project}/logs/{log}": {
       "get": {
         "tags": [
@@ -24387,7 +24648,7 @@
           },
           "amount": {
             "$ref": "#/components/schemas/LimitAmount",
-            "description": "Requests, tokens, or USD; at most 10^12, and 1,000,000,000 USD for a spend\nbudget."
+            "description": "Requests, tool calls, tokens, or USD; at most 10^12, and 1,000,000,000 USD for a spend\nbudget."
           },
           "hard": {
             "type": [
@@ -24398,7 +24659,7 @@
           },
           "kind": {
             "type": "string",
-            "description": "What it counts.",
+            "description": "What it counts: `request_rate`, `token_rate`, `tool_call_rate` (tool calls\nthrough the project's MCP portal, for every tool), `token_budget` or `spend_budget`.",
             "example": "spend_budget"
           },
           "model": {
@@ -24622,7 +24883,7 @@
           },
           "amount": {
             "$ref": "#/components/schemas/LimitAmount",
-            "description": "Requests, tokens, or USD; at most 10^12, and 1,000,000,000 USD for a spend\nbudget."
+            "description": "Requests, tool calls, tokens, or USD; at most 10^12, and 1,000,000,000 USD for a spend\nbudget."
           },
           "hard": {
             "type": [
@@ -24644,7 +24905,7 @@
           },
           "kind": {
             "type": "string",
-            "description": "What it counts.",
+            "description": "What it counts: `request_rate`, `token_rate`, `tool_call_rate` (tool calls\nthrough the project's MCP portal, for every tool), `token_budget` or `spend_budget`.",
             "example": "spend_budget"
           },
           "level": {
@@ -24766,7 +25027,7 @@
           },
           "amount": {
             "type": "string",
-            "description": "Requests, tokens, or USD (a decimal string).",
+            "description": "Requests, tool calls, tokens, or USD (a decimal string).",
             "example": "50"
           },
           "created_at": {
@@ -26078,7 +26339,7 @@
                 },
                 "amount": {
                   "type": "string",
-                  "description": "Requests, tokens, or USD (a decimal string).",
+                  "description": "Requests, tool calls, tokens, or USD (a decimal string).",
                   "example": "50"
                 },
                 "created_at": {
@@ -27871,6 +28132,161 @@
           }
         }
       },
+      "List_ToolCallView": {
+        "type": "object",
+        "description": "A page of results.",
+        "required": [
+          "data",
+          "has_more"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "A tool call through the project's MCP portal.",
+              "required": [
+                "id",
+                "started_at",
+                "tool",
+                "upstream_tool",
+                "server",
+                "caller",
+                "client",
+                "protocol_version",
+                "source",
+                "status",
+                "error_type",
+                "error_message",
+                "duration_ms",
+                "request_bytes",
+                "response_bytes",
+                "has_content"
+              ],
+              "properties": {
+                "caller": {
+                  "$ref": "#/components/schemas/Party",
+                  "description": "The person or service account the call ran as."
+                },
+                "client": {
+                  "type": "string",
+                  "description": "The client's name, as it calls itself.",
+                  "example": "claude-ai"
+                },
+                "duration_ms": {
+                  "type": "integer",
+                  "format": "int32",
+                  "description": "Total time in milliseconds.",
+                  "minimum": 0
+                },
+                "error_message": {
+                  "type": "string",
+                  "description": "What the client was told; empty when it went through."
+                },
+                "error_type": {
+                  "type": "string",
+                  "description": "Why it failed or was refused; empty when it went through."
+                },
+                "grant_id": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/PortalGrantId",
+                      "description": "The client's sign-in to the portal, for a signed-in client."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "has_content": {
+                  "type": "boolean",
+                  "description": "Whether arguments and result were logged (content logging was on)."
+                },
+                "id": {
+                  "$ref": "#/components/schemas/ToolCallId",
+                  "description": "Id."
+                },
+                "key_id": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiKeyId",
+                      "description": "The key it came with, for a key."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "protocol_version": {
+                  "type": "string",
+                  "description": "The MCP version the client spoke.",
+                  "example": "2026-07-28"
+                },
+                "request_bytes": {
+                  "type": "integer",
+                  "format": "int64",
+                  "description": "Bytes of the client's request.",
+                  "minimum": 0
+                },
+                "response_bytes": {
+                  "type": "integer",
+                  "format": "int64",
+                  "description": "Bytes of the answer.",
+                  "minimum": 0
+                },
+                "server": {
+                  "$ref": "#/components/schemas/McpServerId",
+                  "description": "The MCP server."
+                },
+                "source": {
+                  "type": "string",
+                  "description": "`portal` or `playground`."
+                },
+                "started_at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "Arrival."
+                },
+                "status": {
+                  "type": "string",
+                  "description": "`ok`, `error` or `refused`."
+                },
+                "tool": {
+                  "type": "string",
+                  "description": "The tool, by its name for clients.",
+                  "example": "x__create_post"
+                },
+                "upstream_ms": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "format": "int32",
+                  "description": "The MCP server's part, in milliseconds; `null` when the call never reached it.",
+                  "minimum": 0
+                },
+                "upstream_tool": {
+                  "type": "string",
+                  "description": "Its name on the server.",
+                  "example": "create_post"
+                }
+              }
+            },
+            "description": "The items."
+          },
+          "has_more": {
+            "type": "boolean",
+            "description": "Whether more items follow."
+          },
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Pass as `after` to get the next page; `null` on the last page."
+          }
+        }
+      },
       "List_UpdateJobView": {
         "type": "object",
         "description": "A page of results.",
@@ -27998,7 +28414,9 @@
                 "output_tokens",
                 "cache_read_tokens",
                 "cache_write_tokens",
-                "reasoning_tokens"
+                "reasoning_tokens",
+                "tool_calls",
+                "tool_call_errors"
               ],
               "properties": {
                 "cache_hit_rate": {
@@ -28060,6 +28478,18 @@
                   "type": "integer",
                   "format": "int64",
                   "description": "Model requests of the group, made with a key or from the Playground:\nevery one, the gateway's own refusals (limits, unknown models,\ncapability checks) included.",
+                  "minimum": 0
+                },
+                "tool_call_errors": {
+                  "type": "integer",
+                  "format": "int64",
+                  "description": "Of those, the ones refused or failed.",
+                  "minimum": 0
+                },
+                "tool_calls": {
+                  "type": "integer",
+                  "format": "int64",
+                  "description": "Tool calls through the project's MCP portals, refusals included. Counted by\nday and project, so 0 when grouped by model, key, member or route.",
                   "minimum": 0
                 }
               }
@@ -34346,6 +34776,186 @@
         },
         "additionalProperties": false
       },
+      "ToolCallContentView": {
+        "type": "object",
+        "description": "A tool call's arguments and result.",
+        "required": [
+          "arguments",
+          "result"
+        ],
+        "properties": {
+          "arguments": {
+            "type": "object",
+            "description": "The arguments as the client sent them."
+          },
+          "result": {
+            "type": "object",
+            "description": "The JSON-RPC answer the client got."
+          }
+        }
+      },
+      "ToolCallEntryView": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ToolCallView",
+            "description": "The metadata."
+          },
+          {
+            "type": "object",
+            "properties": {
+              "content": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/ToolCallContentView",
+                    "description": "Arguments and result, for callers with `logs.content.view` when they were logged."
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "description": "A tool call with its arguments and result."
+      },
+      "ToolCallId": {
+        "type": "string",
+        "examples": [
+          "call_01k7a3f8m2xq4v9c5r6t8w0yz1"
+        ],
+        "pattern": "^call_[0-9a-hjkmnp-tv-z]{26}$"
+      },
+      "ToolCallView": {
+        "type": "object",
+        "description": "A tool call through the project's MCP portal.",
+        "required": [
+          "id",
+          "started_at",
+          "tool",
+          "upstream_tool",
+          "server",
+          "caller",
+          "client",
+          "protocol_version",
+          "source",
+          "status",
+          "error_type",
+          "error_message",
+          "duration_ms",
+          "request_bytes",
+          "response_bytes",
+          "has_content"
+        ],
+        "properties": {
+          "caller": {
+            "$ref": "#/components/schemas/Party",
+            "description": "The person or service account the call ran as."
+          },
+          "client": {
+            "type": "string",
+            "description": "The client's name, as it calls itself.",
+            "example": "claude-ai"
+          },
+          "duration_ms": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Total time in milliseconds.",
+            "minimum": 0
+          },
+          "error_message": {
+            "type": "string",
+            "description": "What the client was told; empty when it went through."
+          },
+          "error_type": {
+            "type": "string",
+            "description": "Why it failed or was refused; empty when it went through."
+          },
+          "grant_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PortalGrantId",
+                "description": "The client's sign-in to the portal, for a signed-in client."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "has_content": {
+            "type": "boolean",
+            "description": "Whether arguments and result were logged (content logging was on)."
+          },
+          "id": {
+            "$ref": "#/components/schemas/ToolCallId",
+            "description": "Id."
+          },
+          "key_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ApiKeyId",
+                "description": "The key it came with, for a key."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "protocol_version": {
+            "type": "string",
+            "description": "The MCP version the client spoke.",
+            "example": "2026-07-28"
+          },
+          "request_bytes": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Bytes of the client's request.",
+            "minimum": 0
+          },
+          "response_bytes": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Bytes of the answer.",
+            "minimum": 0
+          },
+          "server": {
+            "$ref": "#/components/schemas/McpServerId",
+            "description": "The MCP server."
+          },
+          "source": {
+            "type": "string",
+            "description": "`portal` or `playground`."
+          },
+          "started_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Arrival."
+          },
+          "status": {
+            "type": "string",
+            "description": "`ok`, `error` or `refused`."
+          },
+          "tool": {
+            "type": "string",
+            "description": "The tool, by its name for clients.",
+            "example": "x__create_post"
+          },
+          "upstream_ms": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "The MCP server's part, in milliseconds; `null` when the call never reached it.",
+            "minimum": 0
+          },
+          "upstream_tool": {
+            "type": "string",
+            "description": "Its name on the server.",
+            "example": "create_post"
+          }
+        }
+      },
       "ToolId": {
         "type": "string",
         "examples": [
@@ -35102,7 +35712,9 @@
           "output_tokens",
           "cache_read_tokens",
           "cache_write_tokens",
-          "reasoning_tokens"
+          "reasoning_tokens",
+          "tool_calls",
+          "tool_call_errors"
         ],
         "properties": {
           "cache_hit_rate": {
@@ -35164,6 +35776,18 @@
             "type": "integer",
             "format": "int64",
             "description": "Model requests of the group, made with a key or from the Playground:\nevery one, the gateway's own refusals (limits, unknown models,\ncapability checks) included.",
+            "minimum": 0
+          },
+          "tool_call_errors": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Of those, the ones refused or failed.",
+            "minimum": 0
+          },
+          "tool_calls": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Tool calls through the project's MCP portals, refusals included. Counted by\nday and project, so 0 when grouped by model, key, member or route.",
             "minimum": 0
           }
         }

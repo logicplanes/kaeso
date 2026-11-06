@@ -55,6 +55,8 @@ export function usage(overrides: Partial<UsageRow> = {}): UsageRow {
     cache_read_tokens: 200,
     cache_write_tokens: 50,
     cost: "1.25",
+    tool_calls: 0,
+    tool_call_errors: 0,
     ...overrides,
   };
 }

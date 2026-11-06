@@ -36,6 +36,7 @@ import { COLUMNS, columnLabel, logColumns, logsLayout, providerInModel, storeCol
 import { ExportDialog } from "./export-dialog";
 import { scrollParentOf, useLiveLogs } from "./live";
 import { LogInspector } from "./log-inspector";
+import { KindSwitch } from "./tool-calls";
 import { useGatewayErrors } from "./messages";
 import { useProjectRights } from "~/auth/rights";
 import { useNeedsRight } from "~/auth/needs-right";
@@ -43,9 +44,9 @@ import { t } from "~/i18n";
 import { common } from "~/i18n/common";
 import { patchSearch, type SearchPatch } from "~/search";
 
-export type LogsSearch = LogFilters & { log?: string; live?: boolean };
+export type LogsSearch = LogFilters & { log?: string; live?: boolean; kind?: "tools"; call?: string; call_status?: "ok" | "error" | "refused" };
 
-const ranges = (): { value: LogRange; label: string }[] => [
+export const ranges = (): { value: LogRange; label: string }[] => [
   { value: "1h", label: t("logs.range.hour", "Last hour") },
   { value: "24h", label: t("logs.range.day", "Last 24 hours") },
   { value: "7d", label: t("logs.range.week", "Last 7 days") },
@@ -86,7 +87,7 @@ export function LogsPage({ org, project, search }: { org: string; project: strin
   const navigate = useNavigate();
   const rights = useProjectRights(org, project);
   const needs = useNeedsRight(org, project);
-  const { log, live, ...filters } = search;
+  const { log, live, kind: _kind, call: _call, call_status: _status, ...filters } = search;
   const logs = useInfiniteQuery(logsInfiniteQuery(org, project, filters));
   const keys = useQuery({ ...allKeysQuery(org, project, { include_archived: true }), enabled: rights.has("keys.all.view") });
   const members = useQuery({ ...projectMembersQuery(org, project), enabled: rights.has("project.members.view") });
@@ -261,6 +262,7 @@ export function LogsPage({ org, project, search }: { org: string; project: strin
         />
       )}
       <Toolbar aria-label={t("logs.filtersLabel", "Filter requests")}>
+        <KindSwitch value="models" onChange={(kind) => setSearch({ kind, log: undefined, live: undefined })} />
         <div className="shrink-0">
           <Select
             aria-label={t("logs.timeRange", "Time range")}

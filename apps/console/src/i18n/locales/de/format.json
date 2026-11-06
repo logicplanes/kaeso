@@ -235,5 +235,8 @@
   "format.targetKind.mcpServer": "MCP-Server",
   "format.targetKind.tool": "Tool",
   "format.targetKind.portalGrant": "Portal-Client",
-  "format.audit.action.portalGrantCreate": "Client mit dem Portal verbunden"
+  "format.audit.action.portalGrantCreate": "Client mit dem Portal verbunden",
+  "format.limitKind.toolCallRate": "Tool-Aufrufrate",
+  "format.limitUnit.toolCallsPerMinute": "Tool-Aufrufe / Min.",
+  "format.limit.toolCallRate": "Tool-Aufrufrate von {amount} Tool-Aufrufen pro Minute"
 }

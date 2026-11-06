@@ -24,6 +24,7 @@ Seeing limits needs the right **View limits**, and changing them **Manage limits
 | Token budget | Tokens | A day, a month or in total |
 | Request rate | Requests | A sliding minute |
 | Token rate | Tokens | A sliding minute |
+| Tool call rate | Calls to the project's tools through its MCP portal | A sliding minute |
 
 Days and months are calendar days and months in UTC, and a total never resets. A limit applies to every model or to one. A request the [response cache](response-cache.md) answers costs nothing, but counts its request and tokens.
 
@@ -61,6 +62,7 @@ Kaeso answers a refused request with status 429, in the app's own API format, wi
 
 - Over a rate, the message says when to retry, and the `Retry-After` header gives the seconds.
 - With a budget used up, the message says when the budget resets.
+- Over a tool call rate, an MCP client gets status 429 with `Retry-After` and a JSON-RPC error that says when to retry.
 
 While requests still running could use up a hard budget or a token rate, Kaeso refuses the next request with `Retry-After: 1` until they finish. Each running request holds what it can cost at most, at the model's prices. That is its input, estimated from its size, and its output limit (`max_tokens` or `max_output_tokens`, or else the model's own). A stream holds it for as long as it runs.
 

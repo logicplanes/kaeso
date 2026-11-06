@@ -1,7 +1,7 @@
 import { infiniteQueryOptions, queryOptions } from "@tanstack/react-query";
 import { dayEnd, dayStart } from "~/format/zone";
 import { api, data } from "../client";
-import type { LogEntryView, LogView } from "../generated/types";
+import type { LogEntryView, LogView, ToolCallEntryView } from "../generated/types";
 import { nextPageParam, refetchOnFocusWhileOnePage } from "../paging";
 
 export type LogRange = "1h" | "24h" | "7d" | "30d";
@@ -100,4 +100,43 @@ export const logEntryQuery = (org: string, project: string, log: string) =>
     queryFn: async (): Promise<LogEntryView> =>
       data(await api.GET("/platform/v1/orgs/{org}/projects/{project}/logs/{log}", { params: { path: { org, project, log } } })),
     staleTime: 5 * 60_000,
+  });
+
+export interface ToolCallFilters {
+  range?: LogRange;
+  from?: string;
+  to?: string;
+  status?: "ok" | "error" | "refused";
+}
+
+export const toolCallsInfiniteQuery = (org: string, project: string, filters: ToolCallFilters) =>
+  infiniteQueryOptions({
+    queryKey: ["orgs", org, "projects", project, "logs", "tool-calls", filters],
+    initialPageParam: undefined as { after: string; from: string } | undefined,
+    queryFn: async ({ pageParam, signal }) => {
+      const { from, to } = logsParams({
+        ...(filters.range ? { range: filters.range } : {}),
+        ...(filters.from && filters.to ? { from: filters.from, to: filters.to } : {}),
+      });
+      const query = { from, ...(to ? { to } : {}), ...(filters.status ? { status: filters.status } : {}), ...pageParam };
+      const page = data(
+        await api.GET("/platform/v1/orgs/{org}/projects/{project}/logs/tool-calls", {
+          params: { path: { org, project }, query: { ...query, limit: 100 } },
+          signal,
+        }),
+      );
+      return { ...page, from: query.from };
+    },
+    getNextPageParam: (page) => {
+      const after = nextPageParam(page);
+      return after ? { after, from: page.from } : undefined;
+    },
+    refetchOnWindowFocus: refetchOnFocusWhileOnePage,
+  });
+
+export const toolCallQuery = (org: string, project: string, call: string) =>
+  queryOptions({
+    queryKey: ["orgs", org, "projects", project, "logs", "tool-call", call],
+    queryFn: async ({ signal }): Promise<ToolCallEntryView> =>
+      data(await api.GET("/platform/v1/orgs/{org}/projects/{project}/logs/tool-calls/{call}", { params: { path: { org, project, call } }, signal })),
   });

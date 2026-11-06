@@ -24,6 +24,7 @@ Limits zu sehen erfordert das Recht **Limits ansehen**, sie zu ändern **Limits 
 | Token-Budget | Token | Ein Tag, ein Monat oder insgesamt |
 | Anfragerate | Anfragen | Eine gleitende Minute |
 | Token-Rate | Token | Eine gleitende Minute |
+| Tool-Aufrufrate | Aufrufe der Tools des Projekts über sein MCP-Portal | Eine gleitende Minute |
 
 Tage und Monate sind Kalendertage und -monate in UTC, und „insgesamt“ beginnt nie neu. Ein Limit gilt für alle Modelle oder für eines. Eine Anfrage, die der [Antwort-Cache](response-cache.md) beantwortet, kostet nichts, zählt aber ihre Anfrage und ihre Token.
 
@@ -61,6 +62,7 @@ Kaeso beantwortet eine abgelehnte Anfrage mit Status 429, im API-Format der App,
 
 - Über einer Rate sagt die Meldung, wann ein neuer Versuch möglich ist, und der Header `Retry-After` nennt die Sekunden.
 - Bei einem aufgebrauchten Budget sagt die Meldung, wann das Budget neu beginnt.
+- Über einer Tool-Aufrufrate erhält ein MCP-Client Status 429 mit `Retry-After` und einen JSON-RPC-Fehler, der sagt, wann ein neuer Versuch möglich ist.
 
 Solange noch laufende Anfragen ein hartes Budget oder eine Token-Rate aufbrauchen könnten, lehnt Kaeso die nächste Anfrage mit `Retry-After: 1` ab, bis sie fertig sind. Jede laufende Anfrage hält, was sie höchstens kosten kann, zu den Preisen des Modells. Das sind ihre Eingabe, aus ihrer Größe geschätzt, und ihr Ausgabelimit (`max_tokens` oder `max_output_tokens`, sonst das des Modells). Ein Stream hält es, solange er läuft.
 

@@ -3,6 +3,7 @@ import type { LogRange } from "~/api/queries/logs";
 import { sessionQuery, useRequestLogs } from "~/auth/session";
 import { LogsOff } from "~/features/project/logs/logs-off";
 import { LogsPage, type LogsSearch } from "~/features/project/logs/logs-page";
+import { ToolCallsPage } from "~/features/project/logs/tool-calls";
 import { parseDay } from "~/format/period-search";
 
 const RANGES = new Set(["1h", "7d", "30d"]);
@@ -29,6 +30,9 @@ function validateLogsSearch(s: Record<string, unknown>): LogsSearch {
     ...text("ingress", s.ingress),
     ...text("egress", s.egress),
     ...text("log", s.log),
+    ...(s.kind === "tools" ? { kind: "tools" as const } : {}),
+    ...text("call", s.call),
+    ...(s.call_status === "ok" || s.call_status === "error" || s.call_status === "refused" ? { call_status: s.call_status } : {}),
     ...(bool(s.live) ? { live: true } : {}),
   };
   return out;
@@ -37,11 +41,11 @@ function validateLogsSearch(s: Record<string, unknown>): LogsSearch {
 export const Route = createFileRoute("/_app/orgs/$org/projects/$project/logs")({
   validateSearch: validateLogsSearch,
   loaderDeps: ({ search }) => {
-    const { log: _log, live: _live, ...filters } = validateLogsSearch(search);
+    const { log: _log, live: _live, call: _call, ...filters } = validateLogsSearch(search);
     return filters;
   },
   loader: ({ context, params, deps }) => {
-    if (context.queryClient.getQueryData(sessionQuery.queryKey)?.request_logs === false) return;
+    if (context.queryClient.getQueryData(sessionQuery.queryKey)?.request_logs === false || deps.kind === "tools") return;
     void import("~/api/queries/route-prefetch").then((m) => m.prefetchLogs(context.queryClient, params.org, params.project, deps));
   },
   component: Logs,
@@ -51,5 +55,6 @@ function Logs() {
   const { org, project } = Route.useParams();
   const search = Route.useSearch({ select: validateLogsSearch, structuralSharing: true });
   if (!useRequestLogs()) return <LogsOff org={org} project={project} />;
+  if (search.kind === "tools") return <ToolCallsPage org={org} project={project} search={search} />;
   return <LogsPage org={org} project={project} search={search} />;
 }

@@ -21,6 +21,10 @@ Open a project's **Request logs** page. It lists requests newest first, from the
 
 Reading the logs needs the right **View request logs**.
 
+## Find a tool call
+
+**Tools** at the top of the page lists the calls MCP clients made through the project's MCP portal instead: the tool, whether it was called, failed or was refused, the caller, the client and how long the server took. A refused call says why, such as a tool that is off, waits for review or is beyond the caller's access, or a tool call rate. With content logging on, a call also keeps its arguments and its answer, shown only with the right **View prompts and outputs**.
+
 ## Read a request
 
 Choose a request to open it:

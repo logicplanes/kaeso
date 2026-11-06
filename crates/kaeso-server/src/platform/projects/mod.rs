@@ -93,6 +93,8 @@ pub fn routes(s: &Secure) -> OpenApiRouter<AppState> {
         .routes(s.route(Access::Project(R::LogsMetadataView), routes!(crate::platform::logs::list)))
         .routes(s.route(Access::Project(R::LogsExport), routes!(crate::platform::logs::export)))
         .routes(s.route(Access::Project(R::LogsMetadataView), routes!(crate::platform::logs::get)))
+        .routes(s.route(Access::Project(R::LogsMetadataView), routes!(crate::platform::tool_logs::list)))
+        .routes(s.route(Access::Project(R::LogsMetadataView), routes!(crate::platform::tool_logs::get)))
         .routes(s.route(Access::Project(R::UsageView), routes!(crate::platform::usage::project)))
         .routes(s.route(Access::Project(R::UsageView), routes!(crate::platform::usage::project_span)))
         .routes(s.route(Access::Project(R::LimitsView), routes!(limits::list)))

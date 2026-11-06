@@ -123,9 +123,16 @@ export function useLimitText(org: string, project: string, limit: LimitView) {
   const fmt = (v: string) => (money ? formatUSD(v) : formatNumber(Number(v)));
   const catalogueModel = limit.model ? catalogue.data?.find((m) => m.id === limit.model) : undefined;
   return {
-    kind: (money ? "spend" : limit.kind === "request_rate" ? "requests" : "tokens") as "spend" | "requests" | "tokens",
+    kind: (money ? "spend" : limit.kind === "request_rate" || limit.kind === "tool_call_rate" ? "requests" : "tokens") as "spend" | "requests" | "tokens",
     value: t("kaeso.limits.usedOf", "{used} of {amount}", { used: fmt(limit.used ?? "0"), amount: fmt(limit.amount) }),
-    model: limit.model ? (catalogueModel ? modelName(catalogueModel) : limit.model) : t("kaeso.limits.allModels", "All models"),
+    model:
+      limit.kind === "tool_call_rate"
+        ? t("kaeso.limits.allTools", "All tools")
+        : limit.model
+          ? catalogueModel
+            ? modelName(catalogueModel)
+            : limit.model
+          : t("kaeso.limits.allModels", "All models"),
     resets:
       limit.period === "minute"
         ? t("kaeso.limits.overLastMinute", "Over the last minute")

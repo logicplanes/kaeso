@@ -14,6 +14,8 @@ import {
   limitUnit,
   periodLabel,
   sessionMethodLabel,
+  toolCallStatus,
+  toolErrorLabel,
   userStateLabel,
 } from "./labels";
 
@@ -36,6 +38,7 @@ describe("limitDescription", () => {
     expect(limitDescription({ kind: "token_budget", period: "day", amount: "5000" })).toBe("daily token budget of 5000 tokens");
     expect(limitDescription({ kind: "token_budget", period: "month", amount: "5000" })).toBe("monthly token budget of 5000 tokens");
     expect(limitDescription({ kind: "spend_budget", period: "total", amount: "0.123456789" })).toBe("total spend budget of 0.123457 USD");
+    expect(limitDescription({ kind: "tool_call_rate", period: "minute", amount: "30" })).toBe("tool call rate of 30 tool calls per minute");
   });
 
   it("groups large amounts and keeps the period in German", async () => {
@@ -161,5 +164,32 @@ describe("labels", () => {
     expect(joinList([])).toBe("");
     await speak("zh-CN");
     expect(joinList(["Ada", "Grace"])).toBe("Ada、Grace");
+  });
+});
+
+describe("tool call labels", () => {
+  it("name every status and error type, and keep one they don't know", () => {
+    expect(["ok", "error", "refused", "later"].map((s) => toolCallStatus(s))).toEqual([
+      { tone: "success", label: "Called" },
+      { tone: "danger", label: "Failed" },
+      { tone: "warning", label: "Refused" },
+      { tone: "warning", label: "later" },
+    ]);
+    expect(
+      ["denied", "limited", "tool_off", "tool_changed", "upstream_auth", "upstream_unreachable", "upstream_error", "timeout", "too_large", "other"].map(
+        toolErrorLabel,
+      ),
+    ).toEqual([
+      "Caller may not use the tool",
+      "Tool call rate reached",
+      "Tool is off",
+      "Tool waits for review",
+      "Server sign-in failed",
+      "Server unreachable",
+      "Server or tool error",
+      "Server too slow",
+      "Answer too large",
+      "other",
+    ]);
   });
 });

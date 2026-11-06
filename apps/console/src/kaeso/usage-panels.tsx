@@ -24,6 +24,7 @@ export interface UsageTotals {
   errors: number;
   tokens: number;
   cost: string | null;
+  toolCalls: number;
 }
 
 export function totals(rows: UsageRow[]): UsageTotals {
@@ -33,6 +34,7 @@ export function totals(rows: UsageRow[]): UsageTotals {
     errors: rows.reduce((a, r) => a + r.errors, 0),
     tokens: rows.reduce((a, r) => a + totalTokens(r), 0),
     cost: withCost ? sumUSD(rows.map((r) => r.cost)) : null,
+    toolCalls: rows.reduce((a, r) => a + r.tool_calls, 0),
   };
 }
 
@@ -131,6 +133,16 @@ export function UsageMetrics({
         })}
         trendColor={VIZ[3]}
       />
+      {(sum.toolCalls > 0 || (p?.toolCalls ?? 0) > 0) && (
+        <Stat
+          variant="tile"
+          label={t("kaeso.usage.toolCalls", "Tool calls")}
+          value={formatNumber(sum.toolCalls)}
+          loading={loading}
+          {...known({ ...delta(sum.toolCalls, p?.toolCalls), trend: days.map((d) => d.row?.tool_calls ?? 0) })}
+          trendColor={VIZ[4]}
+        />
+      )}
     </StatGroup>
   );
 }
