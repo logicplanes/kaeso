@@ -158,15 +158,102 @@ impl McpUpstream {
         }
     }
 
-    pub async fn post(&self, call: McpCall<'_>) -> Result<McpAnswer, UpstreamError> {
-        guard::check_literal(call.url, &self.reach_for(call.url))
-            .map_err(UpstreamError::Refused)?;
+    fn client_for(&self, url: &Url) -> Result<&reqwest::Client, UpstreamError> {
+        guard::check_literal(url, &self.reach_for(url)).map_err(UpstreamError::Refused)?;
         let clients = self.clients()?;
-        let client = if call.url.scheme() == "https" {
+        Ok(if url.scheme() == "https" {
             &clients.https
         } else {
             &clients.http
+        })
+    }
+
+    async fn plain(
+        &self,
+        builder: reqwest::RequestBuilder,
+        limits: Limits,
+    ) -> Result<(u16, Bytes), UpstreamError> {
+        let fut = async {
+            let resp = builder.send().await.map_err(classify)?;
+            let status = resp.status().as_u16();
+            let body = crate::read_capped(resp, limits.max_body).await?;
+            Ok::<_, UpstreamError>((status, body))
         };
+        tokio::time::timeout(limits.first_byte, fut)
+            .await
+            .map_err(|_| UpstreamError::Timeout("request"))?
+    }
+
+    // Sign-in discovery and token calls go to addresses an MCP server names, so they take the
+    // same guard and never follow a redirect: a 3xx comes back as its status.
+    pub async fn get_json(&self, url: &Url, limits: Limits) -> Result<(u16, Bytes), UpstreamError> {
+        let builder = self
+            .client_for(url)?
+            .get(url.clone())
+            .header(reqwest::header::ACCEPT, "application/json");
+        self.plain(builder, limits).await
+    }
+
+    pub async fn get_json_signed(
+        &self,
+        url: &Url,
+        header: &str,
+        value: &SecretString,
+        limits: Limits,
+    ) -> Result<(u16, Bytes), UpstreamError> {
+        let mut v = reqwest::header::HeaderValue::from_str(value.expose_secret())
+            .map_err(|_| UpstreamError::Method("a sign-in header value"))?;
+        v.set_sensitive(true);
+        let builder = self
+            .client_for(url)?
+            .get(url.clone())
+            .header(reqwest::header::ACCEPT, "application/json")
+            .header(header, v);
+        self.plain(builder, limits).await
+    }
+
+    pub async fn post_form(
+        &self,
+        url: &Url,
+        form: &[(&str, &str)],
+        basic: Option<(&str, &SecretString)>,
+        limits: Limits,
+    ) -> Result<(u16, Bytes), UpstreamError> {
+        let body = url::form_urlencoded::Serializer::new(String::new())
+            .extend_pairs(form)
+            .finish();
+        let mut builder = self
+            .client_for(url)?
+            .post(url.clone())
+            .header(
+                reqwest::header::CONTENT_TYPE,
+                "application/x-www-form-urlencoded",
+            )
+            .header(reqwest::header::ACCEPT, "application/json")
+            .body(body);
+        if let Some((user, password)) = basic {
+            builder = builder.header(reqwest::header::AUTHORIZATION, basic_auth(user, password)?);
+        }
+        self.plain(builder, limits).await
+    }
+
+    pub async fn post_json(
+        &self,
+        url: &Url,
+        body: Bytes,
+        limits: Limits,
+    ) -> Result<(u16, Bytes), UpstreamError> {
+        let builder = self
+            .client_for(url)?
+            .post(url.clone())
+            .header(reqwest::header::ACCEPT, "application/json")
+            .header(reqwest::header::CONTENT_TYPE, "application/json")
+            .body(body);
+        self.plain(builder, limits).await
+    }
+
+    pub async fn post(&self, call: McpCall<'_>) -> Result<McpAnswer, UpstreamError> {
+        let client = self.client_for(call.url)?;
         let mut builder = client
             .post(call.url.clone())
             .header(reqwest::header::CONTENT_TYPE, "application/json")
@@ -215,6 +302,24 @@ impl McpUpstream {
             body,
         })
     }
+}
+
+// RFC 6749 §2.3.1: the client id and secret are form-encoded before they are joined and
+// encoded for HTTP Basic authentication.
+fn basic_auth(
+    user: &str,
+    password: &SecretString,
+) -> Result<reqwest::header::HeaderValue, UpstreamError> {
+    use base64::Engine;
+    let encode = |s: &str| url::form_urlencoded::byte_serialize(s.as_bytes()).collect::<String>();
+    let joined = format!("{}:{}", encode(user), encode(password.expose_secret()));
+    let mut value = reqwest::header::HeaderValue::from_str(&format!(
+        "Basic {}",
+        base64::engine::general_purpose::STANDARD.encode(joined)
+    ))
+    .map_err(|_| UpstreamError::Method("a client secret"))?;
+    value.set_sensitive(true);
+    Ok(value)
 }
 
 // Reads one JSON-RPC message from an answer: the body itself, or from an event stream the first

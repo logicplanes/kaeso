@@ -113,6 +113,16 @@ pub async fn put(db: &mut PgConnection, c: &NewConnection<'_>) -> Result<Uuid, S
     Ok(c.id)
 }
 
+pub async fn lock_refresh(db: &mut PgConnection, id: Uuid) -> Result<(), StoreError> {
+    sqlx::query!(
+        "SELECT pg_advisory_xact_lock(hashtextextended('mcp_connection_refresh:' || $1::uuid::text, 0))",
+        id
+    )
+    .execute(db)
+    .await?;
+    Ok(())
+}
+
 pub async fn sealed(
     db: impl PgExecutor<'_>,
     server_id: Uuid,

@@ -448,3 +448,153 @@ async fn grok_device_codes_and_tokens_never_reach_the_log_the_audit_trail_or_cli
     }
     s.cleanup().await;
 }
+
+#[tokio::test]
+async fn mcp_sign_in_secrets_and_tokens_never_reach_the_log() {
+    use kaeso_server::services::mcp_connections;
+    use kaeso_store::pg::mcp_servers::{self, NewServer};
+    use kaeso_testkit::mcp::{MockMcp, OAuth, Options};
+
+    let logs = Captured::default();
+    let subscriber = tracing_subscriber::fmt()
+        .json()
+        .with_max_level(tracing::Level::TRACE)
+        .with_writer(logs.clone())
+        .finish();
+    let _logging = tracing::subscriber::set_default(subscriber);
+    let s = TestServices::start().await;
+    let mock = MockMcp::start(Options {
+        oauth: Some(OAuth {
+            cimd: false,
+            confidential: true,
+            expires_in: 120,
+            ..OAuth::default()
+        }),
+        ..Options::default()
+    })
+    .await;
+    let app = App::start_with(&s, &[("KAESO_MCP_SERVERS_ALLOWED_NETWORKS", "127.0.0.0/8")]).await;
+    let owner = app.setup().await;
+    let org = common::uuid(&owner.org_id);
+    let add = |handle: &'static str, auth: &'static str| NewServer {
+        id: uuid::Uuid::now_v7(),
+        org_id: org,
+        handle,
+        name: "X",
+        url: "",
+        auth_method: auth,
+        credential_mode: "shared",
+        oauth_registration: (auth == "oauth").then_some("cimd"),
+        scopes: &[],
+        change_policy: "hold",
+        created_by_kind: "system",
+        created_by_id: None,
+    };
+    let url = mock.url();
+    let oauth = NewServer {
+        url: &url,
+        ..add("x", "oauth")
+    };
+    mcp_servers::insert(&app.state.pg, &oauth).await.unwrap();
+    let row = mcp_servers::get(&app.state.pg, org, oauth.id)
+        .await
+        .unwrap()
+        .unwrap();
+
+    let begun = mcp_connections::begin(&app.state, &row, None, common::uuid(&owner.user_id), None)
+        .await
+        .unwrap();
+    let (verifier,): (String,) =
+        sqlx::query_as("SELECT data->>'verifier' FROM sign_in_tokens WHERE kind = 'mcp_oauth'")
+            .fetch_one(&app.state.pg)
+            .await
+            .unwrap();
+    let back = mock.authorize(&begun.url);
+    let back_url = url::Url::parse(&back).unwrap();
+    let code = back_url
+        .query_pairs()
+        .find(|(k, _)| k == "code")
+        .unwrap()
+        .1
+        .into_owned();
+    let state = back_url
+        .query_pairs()
+        .find(|(k, _)| k == "state")
+        .unwrap()
+        .1
+        .into_owned();
+    let r = app
+        .raw(
+            Request::builder()
+                .uri(format!("{}?{}", back_url.path(), back_url.query().unwrap()))
+                .header(
+                    header::COOKIE,
+                    format!("__Host-kaeso_session={}", owner.cookie),
+                )
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::SEE_OTHER);
+    let row = mcp_servers::get(&app.state.pg, org, oauth.id)
+        .await
+        .unwrap()
+        .unwrap();
+    app.clock.advance(time::Duration::seconds(61));
+    mcp_connections::credential(&app.state, &row, None)
+        .await
+        .unwrap();
+    mock.revoke_refresh_tokens();
+    app.clock.advance(time::Duration::seconds(121));
+    assert!(
+        mcp_connections::credential(&app.state, &row, None)
+            .await
+            .is_err()
+    );
+
+    let header = add("h", "header");
+    let header = NewServer {
+        url: &url,
+        ..header
+    };
+    mcp_servers::insert(&app.state.pg, &header).await.unwrap();
+    let header_row = mcp_servers::get(&app.state.pg, org, header.id)
+        .await
+        .unwrap()
+        .unwrap();
+    let header_secret = "hdr-secret-value-7781";
+    mcp_connections::set_header(
+        &app.state,
+        &header_row,
+        None,
+        "X-Api-Key",
+        &secrecy::SecretString::from(header_secret),
+    )
+    .await
+    .unwrap();
+    mcp_connections::credential(&app.state, &header_row, None)
+        .await
+        .unwrap();
+
+    let client = mock.registered_clients().pop().unwrap();
+    let secrets = [
+        verifier,
+        code,
+        state,
+        format!("secret-{client}"),
+        "at-1".to_owned(),
+        "at-2".to_owned(),
+        "rt-1".to_owned(),
+        "rt-2".to_owned(),
+        header_secret.to_owned(),
+    ];
+    let logged = logs.text();
+    assert!(logged.contains("an MCP server ended a connection's sign-in"));
+    for secret in &secrets {
+        assert!(
+            !logged.contains(&format!("\"{secret}\"")) && !logged.contains(&format!("={secret}")),
+            "{secret} is in the log"
+        );
+    }
+    s.cleanup().await;
+}

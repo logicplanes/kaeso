@@ -1,15 +1,18 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::net::SocketAddr;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, PoisonError};
 
 use axum::Router;
 use axum::body::{Body, Bytes};
-use axum::extract::State;
+use axum::extract::{Form, State};
 use axum::http::{HeaderMap, HeaderValue, StatusCode, header};
 use axum::response::{IntoResponse, Response};
-use axum::routing::post;
+use axum::routing::{get, post};
+use base64::Engine;
+use base64::engine::general_purpose::{STANDARD, URL_SAFE_NO_PAD};
 use serde_json::{Value, json};
+use sha2::{Digest, Sha256};
 
 pub const MODERN: &str = "2026-07-28";
 const LEGACY: [&str; 3] = ["2025-11-25", "2025-06-18", "2025-03-26"];
@@ -23,9 +26,33 @@ pub enum Era {
 }
 
 #[derive(Clone, Debug)]
+pub struct OAuth {
+    pub cimd: bool,
+    pub dcr: bool,
+    pub confidential: bool,
+    pub iss: bool,
+    pub expires_in: i64,
+    pub label: Option<String>,
+}
+
+impl Default for OAuth {
+    fn default() -> OAuth {
+        OAuth {
+            cimd: true,
+            dcr: true,
+            confidential: false,
+            iss: true,
+            expires_in: 3600,
+            label: Some("kaesoapp".to_owned()),
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
 pub struct Options {
     pub era: Era,
     pub token: Option<String>,
+    pub oauth: Option<OAuth>,
     pub stream_calls: bool,
     pub page_size: usize,
     pub tools: Vec<Value>,
@@ -36,6 +63,7 @@ impl Default for Options {
         Options {
             era: Era::Both,
             token: None,
+            oauth: None,
             stream_calls: false,
             page_size: 50,
             tools: default_tools(),
@@ -81,8 +109,26 @@ pub struct Seen {
     pub body: Value,
 }
 
+struct Code {
+    client_id: String,
+    redirect_uri: String,
+    challenge: String,
+    resource: String,
+}
+
+#[derive(Default)]
+struct Auth {
+    codes: HashMap<String, Code>,
+    access: HashSet<String>,
+    refresh: HashSet<String>,
+    clients: HashMap<String, Option<String>>,
+    token_requests: Vec<HashMap<String, String>>,
+    issued: usize,
+}
+
 struct Inner {
     options: Options,
+    auth: Mutex<Auth>,
     tools: Mutex<Vec<Value>>,
     sessions: Mutex<HashSet<String>>,
     next: AtomicUsize,
@@ -105,6 +151,7 @@ impl MockMcp {
             tools: Mutex::new(options.tools.clone()),
             options,
             sessions: Mutex::default(),
+            auth: Mutex::default(),
             next: AtomicUsize::new(1),
             seen: Mutex::default(),
             base: format!("http://{addr}"),
@@ -112,6 +159,17 @@ impl MockMcp {
         let app = Router::new()
             .route("/mcp", post(handle).get(not_allowed).delete(not_allowed))
             .route("/moved", post(moved).get(moved))
+            .route(
+                "/.well-known/oauth-protected-resource/mcp",
+                get(resource_metadata),
+            )
+            .route(
+                "/.well-known/oauth-authorization-server",
+                get(server_metadata),
+            )
+            .route("/token", post(token))
+            .route("/register", post(register))
+            .route("/userinfo", get(userinfo))
             .with_state(inner.clone());
         tokio::spawn(async move {
             let _ = axum::serve(listener, app).await;
@@ -143,6 +201,52 @@ impl MockMcp {
             .clone()
     }
 
+    pub fn base(&self) -> String {
+        self.inner.base.clone()
+    }
+
+    // Plays the person's browser at the authorization endpoint: approves at once and returns
+    // the address the server sends them back to, with the code, the state and the issuer.
+    pub fn authorize(&self, authorization_url: &str) -> String {
+        let url = url::Url::parse(authorization_url).expect("authorization URL");
+        let q: HashMap<String, String> = url.query_pairs().into_owned().collect();
+        let get = |k: &str| q.get(k).cloned().unwrap_or_default();
+        let code = format!("code-{}", self.inner.next.fetch_add(1, Ordering::SeqCst));
+        self.inner.lock_auth().codes.insert(
+            code.clone(),
+            Code {
+                client_id: get("client_id"),
+                redirect_uri: get("redirect_uri"),
+                challenge: get("code_challenge"),
+                resource: get("resource"),
+            },
+        );
+        let mut back = url::Url::parse(&get("redirect_uri")).expect("redirect URI");
+        {
+            let mut p = back.query_pairs_mut();
+            p.append_pair("code", &code)
+                .append_pair("state", &get("state"));
+            if self.inner.options.oauth.as_ref().is_some_and(|o| o.iss) {
+                p.append_pair("iss", &self.inner.base);
+            }
+        }
+        back.to_string()
+    }
+
+    pub fn revoke_refresh_tokens(&self) {
+        let mut auth = self.inner.lock_auth();
+        auth.refresh.clear();
+        auth.access.clear();
+    }
+
+    pub fn token_requests(&self) -> Vec<HashMap<String, String>> {
+        self.inner.lock_auth().token_requests.clone()
+    }
+
+    pub fn registered_clients(&self) -> Vec<String> {
+        self.inner.lock_auth().clients.keys().cloned().collect()
+    }
+
     pub fn end_sessions(&self) {
         self.inner
             .sessions
@@ -150,6 +254,177 @@ impl MockMcp {
             .unwrap_or_else(PoisonError::into_inner)
             .clear();
     }
+}
+
+impl Inner {
+    fn lock_auth(&self) -> std::sync::MutexGuard<'_, Auth> {
+        self.auth.lock().unwrap_or_else(PoisonError::into_inner)
+    }
+
+    fn challenge(&self) -> Response {
+        let mut r = StatusCode::UNAUTHORIZED.into_response();
+        let challenge = format!(
+            "Bearer resource_metadata=\"{}/.well-known/oauth-protected-resource/mcp\"",
+            self.base
+        );
+        if let Ok(v) = HeaderValue::from_str(&challenge) {
+            r.headers_mut().insert(header::WWW_AUTHENTICATE, v);
+        }
+        r
+    }
+}
+
+async fn resource_metadata(State(inner): State<Arc<Inner>>) -> Response {
+    if inner.options.oauth.is_none() {
+        return StatusCode::NOT_FOUND.into_response();
+    }
+    axum::Json(json!({
+        "resource": format!("{}/mcp", inner.base),
+        "authorization_servers": [inner.base],
+        "scopes_supported": ["posts.read", "posts.write"]
+    }))
+    .into_response()
+}
+
+async fn server_metadata(State(inner): State<Arc<Inner>>) -> Response {
+    let Some(o) = &inner.options.oauth else {
+        return StatusCode::NOT_FOUND.into_response();
+    };
+    let b = &inner.base;
+    let mut meta = json!({
+        "issuer": b,
+        "authorization_endpoint": format!("{b}/authorize"),
+        "token_endpoint": format!("{b}/token"),
+        "userinfo_endpoint": format!("{b}/userinfo"),
+        "code_challenge_methods_supported": ["S256"],
+        "client_id_metadata_document_supported": o.cimd,
+        "authorization_response_iss_parameter_supported": o.iss
+    });
+    if o.dcr {
+        meta["registration_endpoint"] = json!(format!("{b}/register"));
+    }
+    axum::Json(meta).into_response()
+}
+
+fn oauth_error(error: &str) -> Response {
+    (
+        StatusCode::BAD_REQUEST,
+        axum::Json(json!({ "error": error })),
+    )
+        .into_response()
+}
+
+fn basic_client(headers: &HeaderMap) -> Option<(String, String)> {
+    let value = header_of(headers, "authorization")?;
+    let encoded = value.strip_prefix("Basic ")?;
+    let decoded = String::from_utf8(STANDARD.decode(encoded).ok()?).ok()?;
+    let (id, secret) = decoded.split_once(':')?;
+    let unescape = |s: &str| {
+        url::form_urlencoded::parse(format!("x={s}").as_bytes())
+            .next()
+            .map(|(_, v)| v.into_owned())
+            .unwrap_or_default()
+    };
+    Some((unescape(id), unescape(secret)))
+}
+
+async fn token(
+    State(inner): State<Arc<Inner>>,
+    headers: HeaderMap,
+    Form(form): Form<HashMap<String, String>>,
+) -> Response {
+    let Some(o) = inner.options.oauth.clone() else {
+        return StatusCode::NOT_FOUND.into_response();
+    };
+    let mut auth = inner.lock_auth();
+    auth.token_requests.push(form.clone());
+    let get = |k: &str| form.get(k).cloned().unwrap_or_default();
+    let client_id = get("client_id");
+    if let Some(Some(secret)) = auth.clients.get(&client_id) {
+        let sent = basic_client(&headers)
+            .filter(|(id, _)| *id == client_id)
+            .map(|(_, s)| s)
+            .or_else(|| form.get("client_secret").cloned());
+        if sent.as_deref() != Some(secret.as_str()) {
+            return oauth_error("invalid_client");
+        }
+    }
+    match get("grant_type").as_str() {
+        "authorization_code" => {
+            let Some(code) = auth.codes.remove(&get("code")) else {
+                return oauth_error("invalid_grant");
+            };
+            let verifier = get("code_verifier");
+            let challenge = URL_SAFE_NO_PAD.encode(Sha256::digest(verifier.as_bytes()));
+            if code.client_id != client_id
+                || code.redirect_uri != get("redirect_uri")
+                || code.challenge != challenge
+                || code.resource != get("resource")
+            {
+                return oauth_error("invalid_grant");
+            }
+        }
+        "refresh_token" => {
+            if !auth.refresh.remove(&get("refresh_token")) {
+                return oauth_error("invalid_grant");
+            }
+        }
+        _ => return oauth_error("unsupported_grant_type"),
+    }
+    auth.issued += 1;
+    let n = auth.issued;
+    let access = format!("at-{n}");
+    let refresh = format!("rt-{n}");
+    auth.access.insert(access.clone());
+    auth.refresh.insert(refresh.clone());
+    axum::Json(json!({
+        "access_token": access,
+        "refresh_token": refresh,
+        "token_type": "Bearer",
+        "expires_in": o.expires_in
+    }))
+    .into_response()
+}
+
+async fn register(State(inner): State<Arc<Inner>>, body: Bytes) -> Response {
+    let Some(o) = inner.options.oauth.clone() else {
+        return StatusCode::NOT_FOUND.into_response();
+    };
+    if !o.dcr {
+        return StatusCode::NOT_FOUND.into_response();
+    }
+    let Ok(request) = serde_json::from_slice::<Value>(&body) else {
+        return oauth_error("invalid_client_metadata");
+    };
+    if request
+        .get("application_type")
+        .and_then(Value::as_str)
+        .is_none()
+    {
+        return oauth_error("invalid_client_metadata");
+    }
+    let id = format!("dcr-{}", inner.next.fetch_add(1, Ordering::SeqCst));
+    let secret = o.confidential.then(|| format!("secret-{id}"));
+    inner.lock_auth().clients.insert(id.clone(), secret.clone());
+    let mut answer = json!({ "client_id": id, "redirect_uris": request.get("redirect_uris") });
+    if let Some(s) = secret {
+        answer["client_secret"] = json!(s);
+        answer["token_endpoint_auth_method"] = json!("client_secret_basic");
+    }
+    (StatusCode::CREATED, axum::Json(answer)).into_response()
+}
+
+async fn userinfo(State(inner): State<Arc<Inner>>, headers: HeaderMap) -> Response {
+    let Some(o) = inner.options.oauth.clone() else {
+        return StatusCode::NOT_FOUND.into_response();
+    };
+    let token = header_of(&headers, "authorization")
+        .and_then(|v| v.strip_prefix("Bearer ").map(str::to_owned))
+        .unwrap_or_default();
+    if !inner.lock_auth().access.contains(&token) {
+        return StatusCode::UNAUTHORIZED.into_response();
+    }
+    axum::Json(json!({ "preferred_username": o.label })).into_response()
 }
 
 fn header_of(headers: &HeaderMap, name: &str) -> Option<String> {
@@ -202,6 +477,14 @@ fn events(messages: &[Value]) -> Response {
 }
 
 async fn handle(State(inner): State<Arc<Inner>>, headers: HeaderMap, body: Bytes) -> Response {
+    if inner.options.oauth.is_some() {
+        let token = header_of(&headers, "authorization")
+            .and_then(|v| v.strip_prefix("Bearer ").map(str::to_owned))
+            .unwrap_or_default();
+        if !inner.lock_auth().access.contains(&token) {
+            return inner.challenge();
+        }
+    }
     if let Some(token) = &inner.options.token {
         let sent = header_of(&headers, "authorization");
         if sent.as_deref() != Some(&format!("Bearer {token}")) {

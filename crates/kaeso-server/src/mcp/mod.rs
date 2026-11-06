@@ -1,6 +1,7 @@
 pub mod oauth;
 pub mod server;
 pub mod tools;
+pub mod upstream;
 
 use axum::Router;
 use axum::extract::DefaultBodyLimit;
@@ -27,6 +28,8 @@ pub fn router(state: &AppState, platform: Router) -> Router<AppState> {
         .route("/oauth/authorize", get(oauth::authorize))
         .route("/oauth/token", post(oauth::token))
         .route("/oauth/revoke", post(oauth::revoke))
+        .route("/oauth/client.json", get(upstream::client_document))
+        .route("/oauth/upstream/callback", get(upstream::callback))
         .route(
             "/mcp",
             post(server::post)
