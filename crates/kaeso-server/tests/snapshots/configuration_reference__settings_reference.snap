@@ -21,6 +21,7 @@ expression: settings_reference()
 | `KAESO_VALKEY_URL` | `valkey.url` | text, secret | required | Valkey (or Redis) URL, e.g. `redis://valkey:6379`. Required. |
 | `KAESO_VALKEY_KEY_PREFIX` | `valkey.key_prefix` | text | `kaeso:` | Prefix of every Valkey key and channel, for sharing one Valkey between installs that trust each other. |
 | `KAESO_MASTER_KEYS` | `master_keys` | text, secret | required | Master keys as `id:base64,...`, active key first. Required. Generate one with `kaeso master-key generate`. |
+| `KAESO_SETUP_EMAIL` | `setup.email` | text | — | While no user exists, email the one-time setup link to this address at every start, for installs with no shell to run `kaeso setup-link` in. Needs `mail.transport` `smtp`. |
 | `KAESO_SMTP_HOST` | `smtp.host` | text | — | SMTP server. Required unless `mail.transport` is `log`. |
 | `KAESO_SMTP_PORT` | `smtp.port` | integer | `587` | SMTP port. |
 | `KAESO_SMTP_TLS` | `smtp.tls` | text | `starttls` | `starttls`, `tls` (implicit TLS, usually port 465) or `none` (only for a local mail catcher). |

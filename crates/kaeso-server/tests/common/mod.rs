@@ -32,6 +32,13 @@ pub const ORIGIN: &str = "https://kaeso.test";
 pub const PASSWORD: &str = "correct horse battery";
 
 pub fn config(s: &TestServices, extra: &[(&str, &str)]) -> Config {
+    config_result(s, extra).unwrap()
+}
+
+pub fn config_result(
+    s: &TestServices,
+    extra: &[(&str, &str)],
+) -> Result<Config, kaeso_server::config::ConfigError> {
     let mut source = MapSource::new()
         .set("KAESO_PUBLIC_URL", ORIGIN)
         .set("KAESO_POSTGRES_URL", s.pg_url.expose_secret())
@@ -52,7 +59,7 @@ pub fn config(s: &TestServices, extra: &[(&str, &str)]) -> Config {
     for (k, v) in extra {
         source = source.set(k, *v);
     }
-    config::load(&source).unwrap()
+    config::load(&source)
 }
 
 pub async fn state(s: &TestServices) -> AppState {
@@ -196,8 +203,12 @@ impl App {
     }
 
     pub async fn second_instance(&self, s: &TestServices) -> App {
+        self.second_instance_with(s, &[]).await
+    }
+
+    pub async fn second_instance_with(&self, s: &TestServices, extra: &[(&str, &str)]) -> App {
         let state = kaeso_server::serve::prepare_with(
-            config(s, &[]),
+            config(s, extra),
             Overrides {
                 clock: Some(Arc::new(self.clock.clone())),
                 mail: Some(kaeso_mail::Transport::Memory(self.mail.clone())),
@@ -228,6 +239,7 @@ impl App {
         valkey_reachable: bool,
     ) -> App {
         kaeso_server::services::kpmr::spawn_reloader(&state);
+        kaeso_server::setup::announce(&state).await;
         let router = kaeso_server::app::router(state.clone());
         if valkey_reachable {
             eventually("the cache invalidation subscription", || {

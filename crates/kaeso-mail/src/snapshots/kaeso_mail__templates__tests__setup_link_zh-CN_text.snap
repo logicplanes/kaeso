@@ -1,0 +1,17 @@
+---
+source: crates/kaeso-mail/src/templates.rs
+expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
+---
+Subject: 设置 Kaeso
+
+设置 Kaeso
+
+此链接用于创建第一个用户（实例管理员）；仅可使用一次，24 小时后过期。
+
+设置 Kaeso：
+https://kaeso.example.com/auth/magic-link#token=kGq3VbX9yZ2mN7pR4sT8uW1aC5dE6fH0jK
+
+在第一个用户创建之前，网关每次启动都会发送新的链接。
+
+-- 
+此邮件由 kaeso.example.com 上的 Kaeso 发送。

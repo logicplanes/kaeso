@@ -1,0 +1,17 @@
+---
+source: crates/kaeso-mail/src/templates.rs
+expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
+---
+Subject: Kaeso einrichten
+
+Kaeso einrichten
+
+Der Link legt den ersten Benutzer an, einen Instanz-Admin; er funktioniert einmal und läuft in 24 Stunden ab.
+
+Kaeso einrichten:
+https://kaeso.example.com/auth/magic-link#token=kGq3VbX9yZ2mN7pR4sT8uW1aC5dE6fH0jK
+
+Bis der erste Benutzer existiert, sendet jeder Start des Gateways einen neuen Link.
+
+-- 
+Gesendet von Kaeso unter kaeso.example.com.

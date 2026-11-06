@@ -1,0 +1,17 @@
+---
+source: crates/kaeso-mail/src/templates.rs
+expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
+---
+Subject: Set up Kaeso
+
+Set up Kaeso
+
+The link creates the first user, an instance admin; it works once and expires in 24 hours.
+
+Set up Kaeso:
+https://kaeso.example.com/auth/magic-link#token=kGq3VbX9yZ2mN7pR4sT8uW1aC5dE6fH0jK
+
+Every start of the gateway sends a fresh link until the first user exists.
+
+-- 
+Sent by Kaeso at kaeso.example.com.

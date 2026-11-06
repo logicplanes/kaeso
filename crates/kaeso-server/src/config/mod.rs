@@ -41,6 +41,8 @@ pub struct Config {
     pub clickhouse: ClickHouseConfig,
     pub valkey: ValkeyConfig,
     pub master_keys: SecretString,
+    #[serde(default)]
+    pub setup: SetupConfig,
     pub smtp: SmtpConfig,
     pub mail: MailConfig,
     pub auth: AuthConfig,
@@ -123,6 +125,19 @@ pub struct SmtpConfig {
     pub user: Option<String>,
     pub password: Option<SecretString>,
     pub from: String,
+}
+
+#[derive(Debug, Default, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct SetupConfig {
+    #[serde(default)]
+    email: Option<String>,
+}
+
+impl SetupConfig {
+    pub fn email(&self) -> Option<&str> {
+        self.email.as_deref().filter(|e| !e.is_empty())
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize)]
@@ -477,6 +492,17 @@ impl Config {
         }
         if self.smtp.password.is_some() && self.smtp.user.is_none() {
             return invalid("smtp.user", "is required when smtp.password is set".into());
+        }
+        if let Some(email) = self.setup.email() {
+            if self.mail.transport != MailTransport::Smtp {
+                return invalid(
+                    "setup.email",
+                    "needs mail.transport smtp, so the setup link can be sent".into(),
+                );
+            }
+            if !email.contains('@') || email.contains(['\n', '\r', ',']) {
+                return invalid("setup.email", "must be one email address".into());
+            }
         }
         for (key, url) in [
             ("updates.releases_url", &self.updates.releases_url),

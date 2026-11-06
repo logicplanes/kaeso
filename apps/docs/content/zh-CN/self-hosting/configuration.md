@@ -117,6 +117,7 @@ Docker 会在每个服务的日志达到 10 MB 时轮转，并保留五个文件
 | 变量<br>TOML 键 | 类型 | 默认值 | 作用 |
 | --- | --- | --- | --- |
 | `KAESO_MASTER_KEYS`<br>`master_keys` | 文本，机密 | 必填 | 格式为 `id:base64,…` 的主密钥，当前使用的排在最前。用 `kaeso master-key generate` 生成（[备份和主密钥](backups.md)）。 |
+| `KAESO_SETUP_EMAIL`<br>`setup.email` | 文本 | 未设置 | 在还没有用户时，网关每次启动都会把一次性设置链接发到此地址，供无法在 shell 中运行 `kaeso setup-link` 的安装使用；需要 `mail.transport` 为 `smtp`（[首次启动](how-it-works.md#首次启动)）。 |
 
 ### 电子邮件
 
