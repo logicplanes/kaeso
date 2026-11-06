@@ -10,7 +10,7 @@ order: 6
 
 1. Öffnen Sie die Seite **Tools** des Projekts. Der Tab **Tools** listet die Tools jedes Servers, mit der Verbindung des Servers und wie viele seiner Tools an sind.
 2. Finden Sie ein Tool über seinen Namen oder seine Beschreibung, oder filtern Sie nach **Server**, **Zustand** und **Hinweis**. Hinweise wie **Nur lesend** und **Destruktiv** sind Angaben des Servers, keine Garantien.
-3. Schalten Sie ein Tool mit seinem Schalter ein. Sein Zustand wechselt zu **An**, und das Portal bietet es sofort an.
+3. Schalten Sie ein Tool mit seinem Schalter ein, oder alle Tools eines Servers mit **Alle einschalten** in der Kopfzeile des Servers; **Alle ausschalten** schaltet sie wieder aus. Der Zustand eines Tools wechselt zu **An**, und das Portal bietet es sofort an.
 
 Ein Tool mit **Geändert** wartet darauf, dass ein Admin seine neue Definition unter [MCP-Server der Organisation](mcp-servers.md#ein-geändertes-tool-prüfen) prüft, und lässt sich bis dahin nicht einschalten. Wählen Sie ein Tool, um seine Details, sein Eingabeschema, seine Aufrufe der letzten 7 Tage und **Aufrufe ansehen** zu sehen, das die [Anfrageprotokolle](request-logs.md) gefiltert auf das Tool öffnet.
 
@@ -27,7 +27,7 @@ Der Tab **Verbinden** oder **Client verbinden** in der Kopfzeile zeigt die Porta
 
 1. Wählen Sie den Client: Claude, ChatGPT, Cursor oder GitHub Copilot. Der Dialog zeigt die Schritte dieses Clients mit der Adresse.
 2. Fügen Sie die Adresse im Client hinzu. Der Client öffnet Ihren Browser, in dem Sie sich bei Kaeso anmelden.
-3. Prüfen Sie, worum der Client bittet, und wählen Sie dann **Verbinden**. Die Zustimmungsseite listet die Tools, die er aufrufen kann, und die Server, bei denen Sie noch Ihr eigenes Konto verbinden müssen.
+3. Prüfen Sie, worum der Client bittet, und wählen Sie dann **Verbinden**. Die Zustimmungsseite nennt jeden Server mit der Zahl seiner Tools, die der Client aufrufen kann, klappt zu den Namen der Tools auf und listet die Server, bei denen Sie noch Ihr eigenes Konto verbinden müssen.
 
 **Verbundene Clients** listet jeden Client, den jemand verbunden hat, wer ihn verbunden hat, wo er seine Anmeldungen empfängt und wann er verbunden und zuletzt genutzt wurde. **Trennen** beendet seine Tokens sofort.
 

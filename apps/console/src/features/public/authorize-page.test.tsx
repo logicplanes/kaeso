@@ -112,7 +112,10 @@ describe("connecting an agent", () => {
         org_name: "Northwind",
         project: "proj_checkout",
         project_name: "Checkout",
-        tools: ["x__create_post", "x__search_posts"],
+        servers: [
+          { server: "mcp_x", handle: "x", name: "X", tools: ["x__create_post", "x__search_posts"] },
+          { server: "mcp_linear", handle: "linear", name: "Linear", tools: ["linear__get_issue"] },
+        ],
         client_host: "claude.example",
         local: false,
         connect: [{ server: "mcp_github", name: "GitHub", auth_method: "oauth" }],
@@ -123,12 +126,13 @@ describe("connecting an agent", () => {
     const { user } = await renderApp("/authorize#request=req_tok");
     expect(await screen.findByRole("heading", { name: "Connect Claude to Checkout" })).toBeInTheDocument();
     expect(screen.getByText("It calls this project's tools as you, with your access to them.")).toBeInTheDocument();
-    expect(
-      within(screen.getByRole("list", { name: "Tools it can call" }))
-        .getAllByRole("listitem")
-        .map((li) => li.textContent),
-    ).toEqual(["x__create_post", "x__search_posts"]);
-    expect(screen.getByText("In Northwind › Checkout, until you or a project admin disconnect it")).toBeInTheDocument();
+    const servers = within(screen.getByRole("list", { name: "Tools it can call" }));
+    expect(servers.getAllByRole("button").map((b) => b.textContent)).toEqual(["X2 tools", "Linear1 tool"]);
+    expect(screen.queryByText("x__create_post")).toBeNull();
+    await user.click(servers.getByRole("button", { name: /^X/ }));
+    expect(await screen.findByText("x__create_post")).toBeInTheDocument();
+    expect(screen.getByText("x__search_posts")).toBeInTheDocument();
+    expect(screen.getByText("3 tools in Northwind › Checkout, until you or a project admin disconnect it")).toBeInTheDocument();
     expect(screen.getByText("claude.example publishes this client's name and return addresses.")).toBeInTheDocument();
     expect(screen.queryByText("It returns to this computer")).toBeNull();
     expect(screen.getByText("These servers need your own account; their tools fail for you until you connect.")).toBeInTheDocument();
@@ -147,7 +151,7 @@ describe("connecting an agent", () => {
       client: "Desk app",
       redirect_host: "127.0.0.1",
       expires_at: "2026-10-15T12:15:00Z",
-      portal: { org: ORG, org_name: "Northwind", project: "proj_checkout", project_name: "Checkout", tools: [], client_host: null, local: true, connect: [] },
+      portal: { org: ORG, org_name: "Northwind", project: "proj_checkout", project_name: "Checkout", servers: [], client_host: null, local: true, connect: [] },
     });
     on("POST", "me/agent-requests/deny", { redirect_to: "http://127.0.0.1:3333/callback?error=access_denied", agent: null });
     const assign = vi.spyOn(window.location, "assign").mockImplementation(() => undefined);

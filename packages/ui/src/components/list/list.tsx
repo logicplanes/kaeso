@@ -51,6 +51,7 @@ export interface ListGroup {
   items: ListItemData[];
   onAdd?: (() => void) | undefined;
   addLabel?: string | undefined;
+  actions?: ReactNode | undefined;
   defaultCollapsed?: boolean | undefined;
 }
 
@@ -294,6 +295,7 @@ export const List = forwardRef<HTMLDivElement, ListProps>(function List(
         }}
         onAdd={f.group.onAdd}
         addLabel={f.group.addLabel}
+        actions={f.group.actions}
         indent={!!selectable}
         first={i === 0}
         index={i}
@@ -633,6 +635,7 @@ export interface GroupHeaderProps {
   onToggle?: (() => void) | undefined;
   onAdd?: (() => void) | undefined;
   addLabel?: string | undefined;
+  actions?: ReactNode | undefined;
   indent?: boolean | undefined;
   first?: boolean | undefined;
   index?: number | undefined;
@@ -641,7 +644,7 @@ export interface GroupHeaderProps {
 }
 
 export const GroupHeader = forwardRef<HTMLDivElement, GroupHeaderProps>(function GroupHeader(
-  { title, glyph, count, collapsed, onToggle, onAdd, addLabel, indent, first, index, active, onFocus },
+  { title, glyph, count, collapsed, onToggle, onAdd, addLabel, actions, indent, first, index, active, onFocus },
   ref,
 ) {
   const card = useInset();
@@ -680,6 +683,7 @@ export const GroupHeader = forwardRef<HTMLDivElement, GroupHeaderProps>(function
           </svg>
         </button>
         <span className="flex-1" />
+        {actions && <span className="flex shrink-0 items-center gap-4">{actions}</span>}
         {onAdd && (
           <span className="flex opacity-0 transition-control group-hover/gh:opacity-100 group-focus-within/gh:opacity-100 coarse:opacity-100">
             <Button variant="ghost" icon={icons.add} aria-label={addLabel ?? t("list.add", "Add")} size="xs" onClick={onAdd} />

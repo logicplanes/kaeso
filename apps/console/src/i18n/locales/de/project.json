@@ -245,5 +245,9 @@
   "project.tools.hint.readOnly": "Nur lesend",
   "project.tools.hint.destructive": "Destruktiv",
   "project.tools.hint.openWorld": "Offene Welt",
-  "project.tools.serversToolbar": "Server"
+  "project.tools.serversToolbar": "Server",
+  "project.tools.allOn": "Alle einschalten",
+  "project.tools.allOff": "Alle ausschalten",
+  "project.tools.turnedAllOn": "{count, plural, one {# Tool} other {# Tools}} von {server} an",
+  "project.tools.turnedAllOff": "{count, plural, one {# Tool} other {# Tools}} von {server} aus"
 }

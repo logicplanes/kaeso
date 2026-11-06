@@ -251,7 +251,14 @@ async fn a_client_with_a_metadata_document_signs_in_to_one_portal_after_consent(
     let portal = &view.body["portal"];
     assert_eq!(portal["project"], e.project);
     assert_eq!(portal["project_name"], "Checkout");
-    assert_eq!(portal["tools"], json!(["x__create_post"]));
+    let servers = portal["servers"]
+        .as_array()
+        .unwrap_or_else(|| panic!("{portal:?}"));
+    assert_eq!(servers.len(), 1, "{servers:?}");
+    assert_eq!(servers[0]["handle"], "x");
+    assert_eq!(servers[0]["name"], "X");
+    assert_eq!(servers[0]["tools"], json!(["x__create_post"]));
+    assert!(servers[0]["server"].as_str().unwrap().starts_with("mcp_"));
     assert_eq!(portal["client_host"], "claude.example");
     assert_eq!(portal["local"], false);
     assert_eq!(

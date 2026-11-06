@@ -782,9 +782,9 @@ pub struct PortalRequestView {
     pub project: ProjectId,
     #[doc = "Its name."]
     pub project_name: String,
-    #[doc = "The tools the client could call: those the project offers and you may use."]
-    #[schema(example = json!(["x__create_post"]))]
-    pub tools: Vec<String>,
+    #[doc = "The servers whose tools the client could call: those the project offers and you may\n\
+        use, each with its tools' names on the portal."]
+    pub servers: Vec<PortalServerView>,
     #[doc = "For a client known by its metadata document: the host it is published on, which\n\
         vouches for the client's name."]
     #[schema(example = "claude.ai")]
@@ -794,6 +794,22 @@ pub struct PortalRequestView {
     #[doc = "Servers of the project where each person signs in and you haven't yet: their tools\n\
         fail for you until you connect."]
     pub connect: Vec<PortalConnectView>,
+}
+
+#[derive(Clone, Debug, Serialize, ToSchema)]
+#[schema(description = "One of the project's servers with the tools the client could call there.")]
+pub struct PortalServerView {
+    #[doc = "The server."]
+    pub server: McpServerId,
+    #[doc = "Its handle, the first part of each tool's name on the portal."]
+    #[schema(example = "x")]
+    pub handle: String,
+    #[doc = "Its name."]
+    #[schema(example = "X")]
+    pub name: String,
+    #[doc = "The tools' names on the portal."]
+    #[schema(example = json!(["x__create_post"]))]
+    pub tools: Vec<String>,
 }
 
 #[derive(Clone, Debug, Serialize, ToSchema)]
@@ -884,11 +900,25 @@ async fn portal_view(
         ));
     }
     let snapshot = crate::portal::snapshot::get(state, project).await?;
-    let tools = snapshot
+    let mut servers: Vec<PortalServerView> = snapshot
+        .servers
+        .iter()
+        .map(|s| PortalServerView {
+            server: McpServerId::from_uuid(s.id),
+            handle: s.handle.clone(),
+            name: s.name.clone(),
+            tools: Vec::new(),
+        })
+        .collect();
+    for tool in snapshot
         .offered()
         .filter(|t| snapshot.access.allows(Some(user), None, None, t.id))
-        .map(|t| t.exposed.clone())
-        .collect();
+    {
+        if let Some(server) = servers.get_mut(tool.server) {
+            server.tools.push(tool.exposed.clone());
+        }
+    }
+    servers.retain(|s| !s.tools.is_empty());
     let client_host = agents::metadata_url(&mut *conn, r.client_id)
         .await?
         .and_then(|u| url::Url::parse(&u).ok())
@@ -898,7 +928,7 @@ async fn portal_view(
         org_name: found.org.name.clone(),
         project: ProjectId::from_uuid(project),
         project_name: p.name.clone(),
-        tools,
+        servers,
         client_host,
         local: oauth::redirects_locally(&r.redirect_uri),
         connect: to_connect(state, user, project).await?,
@@ -1113,7 +1143,7 @@ pub async fn approve_portal(
         .after(serde_json::json!({
             "client": r.client_name,
             "client_host": view.client_host,
-            "tools": view.tools,
+            "tools": view.servers.iter().flat_map(|s| s.tools.iter()).collect::<Vec<_>>(),
         }))
         .write(&mut tx)
         .await?;

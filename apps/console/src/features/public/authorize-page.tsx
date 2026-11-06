@@ -154,6 +154,7 @@ function PortalConsent({ token, account, request, portal }: { token: string; acc
       leave(result.redirect_to);
     });
   if (leaving) return <Leaving host={request.redirect_host} />;
+  const toolCount = portal.servers.reduce((n, s) => n + s.tools.length, 0);
   return (
     <PublicPage
       title={t("public.connectPortalTitle", "Connect {client} to {project}", { client: request.client, project: portal.project_name })}
@@ -172,11 +173,29 @@ function PortalConsent({ token, account, request, portal }: { token: string; acc
         ) : null}
         <GrantSummary
           aria-label={t("public.portalTools", "Tools it can call")}
-          items={portal.tools.length ? portal.tools : [t("public.portalNoTools", "None yet; it gets the tools a project admin turns on.")]}
-          footer={t("public.portalUntilDisconnected", "In {org} › {project}, until you or a project admin disconnect it", {
-            org: portal.org_name,
-            project: portal.project_name,
-          })}
+          {...(toolCount > 0
+            ? {
+                sections: portal.servers.map((s) => ({
+                  id: s.server,
+                  title: s.name,
+                  hint: t("public.portalServerTools", "{count, plural, one {# tool} other {# tools}}", { count: s.tools.length }),
+                  items: s.tools,
+                  defaultOpen: portal.servers.length === 1,
+                })),
+              }
+            : { items: [t("public.portalNoTools", "None yet; it gets the tools a project admin turns on.")] })}
+          footer={
+            toolCount > 0
+              ? t("public.portalToolsUntil", "{count, plural, one {# tool} other {# tools}} in {org} › {project}, until you or a project admin disconnect it", {
+                  count: toolCount,
+                  org: portal.org_name,
+                  project: portal.project_name,
+                })
+              : t("public.portalUntilDisconnected", "In {org} › {project}, until you or a project admin disconnect it", {
+                  org: portal.org_name,
+                  project: portal.project_name,
+                })
+          }
         />
         {portal.client_host ? (
           <Text variant="small" tone="secondary">

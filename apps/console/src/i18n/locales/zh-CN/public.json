@@ -148,5 +148,7 @@
   "public.chooseOtherEmails": "选择其他邮件",
   "public.unsubscribeFrom": "退订“{kind}”？",
   "public.unsubscribeFromHint": "Kaeso 将不再向 {email} 发送这类邮件；安全邮件仍会送达。",
-  "public.unsubscribeAction": "退订"
+  "public.unsubscribeAction": "退订",
+  "public.portalServerTools": "{count, plural, other {# 个工具}}",
+  "public.portalToolsUntil": "{org} › {project} 中的 {count, plural, other {# 个工具}}，直到您或项目管理员断开连接"
 }

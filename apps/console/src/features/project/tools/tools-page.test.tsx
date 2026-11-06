@@ -65,6 +65,28 @@ describe("Project › Tools", () => {
     expect(await notifications().findByText("x__get_me is off")).toBeInTheDocument();
   });
 
+  it("turns every tool of a server on or off at once, leaving held tools alone", async () => {
+    signedIn();
+    tools({ list: [post, getMe, changed] });
+    on("PATCH", PROJECT_TOOLS, page([]));
+    const { user } = await renderApp(projectPath("tools"));
+    const grid = await list();
+    await user.click(within(grid).getByRole("button", { name: "Turn all on" }));
+    expect(await notifications().findByText("1 tool of X on")).toBeInTheDocument();
+    expect(requests("PATCH", PROJECT_TOOLS)[0]?.body).toEqual({ tools: [{ id: "tool_create_post", enabled: true }] });
+    await user.click(within(grid).getByRole("button", { name: "Turn all off" }));
+    expect(await notifications().findByText("1 tool of X off")).toBeInTheDocument();
+    expect(requests("PATCH", PROJECT_TOOLS)[1]?.body).toEqual({ tools: [{ id: "tool_get_me", enabled: false }] });
+  });
+
+  it("offers no bulk switch to someone who may not manage tools", async () => {
+    signedIn({ projectRights: ALL_PROJECT_RIGHTS.filter((r) => r !== "tools.manage") });
+    tools();
+    await renderApp(projectPath("tools"));
+    const grid = await list();
+    expect(within(grid).queryByRole("button", { name: /Turn all/ })).toBeNull();
+  });
+
   it("searches and filters tools by server, state and hint", async () => {
     signedIn();
     tools({ list: [post, getMe, changed] });
