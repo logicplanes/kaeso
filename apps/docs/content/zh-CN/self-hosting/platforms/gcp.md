@@ -8,7 +8,7 @@ order: 4
 
 ## 快速服务器
 
-`deploy/gcp/quick-server/` 创建一台运行 Ubuntu 24.04 的 Compute Engine 实例、一个静态地址、允许 HTTP、HTTPS 和 HTTP/3 的防火墙规则、来自您选定地址范围的 SSH，以及可选的 Cloud DNS 记录。首次启动时，实例运行安装程序：安装 Docker、写入设置，并启动带 Caddy、内置 ClickHouse 和更新器的 Compose 软件包（[安装](../installation.md)）。
+`deploy/gcp/quick-server/` 创建一台运行 Ubuntu 24.04 的 Compute Engine 实例、一个静态地址、允许 HTTP、HTTPS 和 HTTP/3 的防火墙规则、来自您选定地址范围的 SSH，以及可选的 Cloud DNS 记录。首次启动时，实例运行安装程序：安装 Docker、写入设置，并启动带 Caddy、内置 ClickHouse 和更新器的 Compose 软件包（[安装](../installation.md)）。[Open in Cloud Shell](https://shell.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/logicplanes/kaeso&cloudshell_git_branch=prod&cloudshell_workspace=deploy/gcp/quick-server) 会把包含最新版本的 `prod` 分支克隆到 Cloud Shell，并以此文件夹作为工作区；下面的命令在那里用 `terraform` 代替 `tofu` 运行，因为 Cloud Shell 没有安装 `tofu`。
 
 ```bash
 cd deploy/gcp/quick-server

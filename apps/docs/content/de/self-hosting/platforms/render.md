@@ -26,7 +26,7 @@ Nur der Edge ist öffentlich. Renders privates Netz trägt Anfragen vom Edge zum
    docker run --rm ghcr.io/logicplanes/kaeso-gateway:{{version}} master-key generate
    ```
 
-2. Legen Sie in Render einen **Blueprint** aus dem Repository `logicplanes/kaeso`, Branch `prod`, an, der das neueste Release enthält. Render zeigt die Werte, die der Blueprint abfragt:
+2. Legen Sie in Render einen **Blueprint** aus dem Repository `logicplanes/kaeso`, Branch `prod`, an, der das neueste Release enthält; [Deploy to Render](https://render.com/deploy?repo=https://github.com/logicplanes/kaeso/tree/prod) öffnet dieses Formular mit Repository und Branch bereits eingetragen. Render zeigt die Werte, die der Blueprint abfragt:
 
    | Wert | Was einzutragen ist |
    | --- | --- |

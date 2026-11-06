@@ -60,7 +60,7 @@ AWS and Google Cloud are not one click: you choose a region, a domain and its ce
 
 The edge, the gateway and the console were tested in this layout with the release images, locally with Docker, on 2026-11-06: path routing, chunked streams, forged client addresses and each API's error format while the gateway is away (`e2e/install/test_edge.py`). The Render blueprint and the Railway file were checked against the platforms' specifications, the CloudFormation templates with `cfn-lint`, and the Terraform with `tofu validate`; CI repeats every check.
 
-None of the four paths has yet been deployed on its platform from an empty account. Until that test exists, there is no deploy button, and each page says what it is based on.
+None of the four paths has yet been deployed on its platform from an empty account, so each page says what it is based on. [Render](render.md) and [Google Cloud](gcp.md) open from a link that points at the `prod` branch, which holds the latest release; Railway needs a published template and AWS the templates in an S3 bucket before such a link can exist.
 
 ## Next steps
 
