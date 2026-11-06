@@ -39,10 +39,10 @@
     "demo": "pnpm --filter kaeso-console demo"
   },
   "devDependencies": {
-    "@anthropic-ai/sdk": "1.1.0",
-    "knip": "6.42.1",
+    "@anthropic-ai/sdk": "1.3.0",
+    "knip": "6.44.0",
     "prettier": "3.9.10",
-    "prettier-plugin-astro": "1.1.1",
+    "prettier-plugin-astro": "1.1.2",
     "semver": "7.8.5"
   }
 }
