@@ -344,6 +344,23 @@ pub async fn projects(db: impl PgExecutor<'_>, server_id: Uuid) -> Result<Vec<Uu
     .await?)
 }
 
+pub async fn project_links(
+    db: impl PgExecutor<'_>,
+    org_id: Uuid,
+) -> Result<Vec<(Uuid, Uuid)>, StoreError> {
+    let rows = sqlx::query!(
+        "SELECT server_id, project_id FROM project_mcp_servers WHERE org_id = $1 \
+         ORDER BY server_id, created_at, project_id",
+        org_id
+    )
+    .fetch_all(db)
+    .await?;
+    Ok(rows
+        .into_iter()
+        .map(|r| (r.server_id, r.project_id))
+        .collect())
+}
+
 pub async fn set_projects(
     db: &mut PgConnection,
     org_id: Uuid,

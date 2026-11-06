@@ -79,6 +79,10 @@ actions! {
         LogsExport = "logs.export",
         LogsProjectContentLogging = "logs.project_content_logging",
         LogsSettingsUpdate = "logs.settings_update",
+        McpServerConnect = "mcp_server.connect",
+        McpServerCreate = "mcp_server.create",
+        McpServerDelete = "mcp_server.delete",
+        McpServerUpdate = "mcp_server.update",
         MemberJoinBySso = "member.join_by_sso",
         MemberRemove = "member.remove",
         MemberRightsUpdate = "member.rights_update",
@@ -97,12 +101,15 @@ actions! {
         PlatformKeyDisable = "platform_key.disable",
         PlatformKeyEnable = "platform_key.enable",
         PlatformKeyRotate = "platform_key.rotate",
+        PortalGrantRevoke = "portal_grant.revoke",
         ProjectArchive = "project.archive",
         ProjectCreate = "project.create",
         ProjectKeyPolicy = "project.key_policy",
+        ProjectMcpServersUpdate = "project.mcp_servers_update",
         ProjectMemberAdd = "project.member_add",
         ProjectMemberRemove = "project.member_remove",
         ProjectMemberRightsUpdate = "project.member_rights_update",
+        ProjectToolsUpdate = "project.tools_update",
         ProjectUpdate = "project.update",
         ResponseCacheClear = "response_cache.clear",
         ResponseCacheOrgUpdate = "response_cache.org_update",
@@ -120,6 +127,9 @@ actions! {
         ServiceAccountArchive = "service_account.archive",
         ServiceAccountCreate = "service_account.create",
         ServiceAccountUpdate = "service_account.update",
+        ToolApprove = "tool.approve",
+        ToolReject = "tool.reject",
+        ToolAccessUpdate = "tool_access.update",
         User2faReset = "user.2fa_reset",
         UserCreateByInvite = "user.create_by_invite",
         UserCreateBySso = "user.create_by_sso",
@@ -269,6 +279,40 @@ pub async fn system_change(
 ) -> ApiResult<()> {
     system_event(db, org, action, target, before, after, at).await?;
     Ok(())
+}
+
+// For what a person finishes outside the Platform API, such as a sign-in that returns through
+// a browser redirect, where there is no request context to take the actor from.
+pub async fn user_event(
+    db: &mut sqlx::PgConnection,
+    org: OrgId,
+    user: UserId,
+    action: Action,
+    target: (&'static str, String),
+    after: Option<Value>,
+    at: time::OffsetDateTime,
+) -> Result<(), kaeso_store::StoreError> {
+    audit::insert(
+        db,
+        &NewEvent {
+            id: AuditEventId::new().uuid(),
+            org_id: Some(org.uuid()),
+            project_id: None,
+            actor_kind: "user",
+            actor_id: Some(user.uuid()),
+            agent_id: None,
+            action: action.as_str(),
+            target_kind: Some(target.0),
+            target_id: Some(target.1.as_str()),
+            before: None,
+            after,
+            ip: None,
+            user_agent: None,
+            request_id: None,
+            at,
+        },
+    )
+    .await
 }
 
 pub async fn system_event(

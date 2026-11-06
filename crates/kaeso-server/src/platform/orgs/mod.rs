@@ -3,6 +3,7 @@ pub mod credential_accounts;
 pub mod credentials;
 pub mod custom_providers;
 pub mod invites;
+pub mod mcp_servers;
 pub mod members;
 pub mod org;
 pub mod platform_keys;
@@ -140,6 +141,18 @@ pub fn routes(s: &Secure) -> OpenApiRouter<AppState> {
         .routes(s.route(Access::Org(R::ProvidersCustomManage), routes!(custom_providers::update)))
         .routes(s.route(Access::Org(R::ProvidersCustomManage), routes!(custom_providers::delete)))
         .routes(s.route(Access::Org(R::ProvidersCustomManage), routes!(custom_providers::detect)))
+        .routes(s.route(Access::Org(R::McpServersView), routes!(mcp_servers::list)))
+        .routes(s.route(Access::Org(R::McpServersView), routes!(mcp_servers::get)))
+        .routes(s.route(Access::Org(R::McpServersManage), routes!(mcp_servers::probe)))
+        .routes(s.route(Access::Org(R::McpServersManage), routes!(mcp_servers::create)))
+        .routes(s.route(Access::Org(R::McpServersManage), routes!(mcp_servers::update)))
+        .routes(s.route(Access::Org(R::McpServersManage), routes!(mcp_servers::delete)))
+        .routes(s.route(Access::Org(R::McpServersManage), routes!(mcp_servers::connect)))
+        .routes(s.route(Access::Org(R::McpServersManage), routes!(mcp_servers::refresh)))
+        .routes(s.route(Access::Org(R::McpServersView), routes!(mcp_servers::list_tools)))
+        .routes(s.route(Access::Org(R::McpServersView), routes!(mcp_servers::change)))
+        .routes(s.route(Access::Org(R::McpServersManage), routes!(mcp_servers::approve)))
+        .routes(s.route(Access::Org(R::McpServersManage), routes!(mcp_servers::reject)))
         .routes(s.route(Access::Org(R::MembersView), routes!(crate::platform::rights::member)))
         .routes(s.route(Access::Org(R::MembersView), routes!(crate::platform::rights::org_grantors)))
 }

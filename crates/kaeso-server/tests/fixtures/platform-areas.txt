@@ -19,6 +19,7 @@ org | Projects | orgs/{org}/projects | projects.* |
 org | Providers | orgs/{org}/providers | org.view |
 org | Provider credentials | orgs/{org}/credentials | provider_credentials.* |
 org | Custom providers | orgs/{org}/custom-providers | providers.custom.* |
+org | MCP servers | orgs/{org}/mcp-servers | mcp_servers.* |
 org | Security | orgs/{org}/security | security.* |
 org | Org platform keys | orgs/{org}/platform-keys | platform_keys.* |
 org | Logs | orgs/{org}/logs/settings, orgs/{org}/logs/storage, orgs/{org}/logs/deletions | logs.settings.manage, logs.storage.view, logs.delete |
@@ -31,6 +32,7 @@ project | Service accounts | orgs/{org}/projects/{project}/service-accounts, org
 project | API keys | orgs/{org}/projects/{project}/keys | keys.*, keys.platform_access.grant |
 project | Models | orgs/{org}/projects/{project}/models, orgs/{org}/projects/{project}/models/search, orgs/{org}/projects/{project}/models/preview, orgs/{org}/projects/{project}/models/batch, orgs/{org}/projects/{project}/models/offered | models.view, models.manage |
 project | Aliases | orgs/{org}/projects/{project}/aliases | models.manage |
+project | Tools | orgs/{org}/projects/{project}/mcp-servers, orgs/{org}/projects/{project}/tools, orgs/{org}/projects/{project}/tool-access, orgs/{org}/projects/{project}/portal-grants | tools.view, tools.manage |
 project | Limits | orgs/{org}/projects/{project}/limits | limits.view, limits.manage |
 project | Logs | orgs/{org}/projects/{project}/logs, orgs/{org}/projects/{project}/logs/export | logs.metadata.view, logs.content.view, logs.export |
 project | Playground | orgs/{org}/projects/{project}/playground/responses, orgs/{org}/projects/{project}/playground/models | playground.use |

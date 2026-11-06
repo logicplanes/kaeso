@@ -61,11 +61,21 @@ pub enum SignInError {
     #[error("the sign-in was declined: {0}")]
     Denied(String),
     #[error("the header can't carry a secret: {0}")]
-    BadHeader(&'static str),
+    BadHeader(HeaderProblem),
     #[error(transparent)]
     Store(#[from] StoreError),
     #[error(transparent)]
     Crypto(#[from] CryptoError),
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, thiserror::Error)]
+pub enum HeaderProblem {
+    #[error("its name must be 1 to 100 characters a header name may hold")]
+    Name,
+    #[error("Kaeso sets that header itself")]
+    Reserved,
+    #[error("its value must be printable ASCII")]
+    Value,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -777,23 +787,31 @@ async fn put_connection(
 }
 
 fn valid_header(name: &str) -> Result<(), SignInError> {
-    if name.is_empty() || name.len() > 100 {
-        return Err(SignInError::BadHeader(
-            "its name must have 1 to 100 characters",
-        ));
-    }
-    if !name
-        .bytes()
-        .all(|b| b.is_ascii_alphanumeric() || b"!#$%&'*+.^_`|~-".contains(&b))
+    if name.is_empty()
+        || name.len() > 100
+        || !name
+            .bytes()
+            .all(|b| b.is_ascii_alphanumeric() || b"!#$%&'*+.^_`|~-".contains(&b))
     {
-        return Err(SignInError::BadHeader(
-            "its name holds characters a header can't",
-        ));
+        return Err(SignInError::BadHeader(HeaderProblem::Name));
     }
     if HEADER_FORBIDDEN.contains(&name.to_ascii_lowercase().as_str())
         || name.to_ascii_lowercase().starts_with("mcp-param-")
     {
-        return Err(SignInError::BadHeader("Kaeso sets that header itself"));
+        return Err(SignInError::BadHeader(HeaderProblem::Reserved));
+    }
+    Ok(())
+}
+
+pub fn check_header(name: &str, value: &SecretString) -> Result<(), HeaderProblem> {
+    match valid_header(name) {
+        Err(SignInError::BadHeader(p)) => return Err(p),
+        Err(_) => return Err(HeaderProblem::Name),
+        Ok(()) => {}
+    }
+    let v = value.expose_secret();
+    if v.is_empty() || !v.bytes().all(|b| b == b'\t' || (0x20..=0x7e).contains(&b)) {
+        return Err(HeaderProblem::Value);
     }
     Ok(())
 }
@@ -805,11 +823,8 @@ pub async fn set_header(
     name: &str,
     value: &SecretString,
 ) -> Result<Uuid, SignInError> {
-    valid_header(name)?;
+    check_header(name, value).map_err(SignInError::BadHeader)?;
     let v = value.expose_secret();
-    if v.is_empty() || !v.bytes().all(|b| b == b'\t' || (0x20..=0x7e).contains(&b)) {
-        return Err(SignInError::BadHeader("its value must be printable ASCII"));
-    }
     put_connection(
         state,
         server,

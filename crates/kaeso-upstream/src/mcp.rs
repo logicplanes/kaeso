@@ -150,6 +150,10 @@ impl McpUpstream {
         Ok(self.clients.get_or_init(|| built))
     }
 
+    pub fn lookup(&self) -> &Lookup {
+        &self.lookup
+    }
+
     pub fn reach_for(&self, url: &Url) -> Reach {
         if url.scheme() == "https" {
             self.reach.clone()

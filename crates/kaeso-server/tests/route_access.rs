@@ -129,7 +129,7 @@ fn every_conditional_change_documents_its_precondition() {
             }
         }
     }
-    assert_eq!(conditional, 6);
+    assert_eq!(conditional, 8);
 }
 
 #[test]

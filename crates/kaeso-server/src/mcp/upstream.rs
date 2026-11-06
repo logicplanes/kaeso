@@ -2,12 +2,15 @@ use axum::Json;
 use axum::extract::{RawQuery, State};
 use axum::http::{HeaderMap, HeaderValue, header};
 use axum::response::{IntoResponse, Redirect, Response};
-use kaeso_core::id::{McpServerId, OrgId};
+use kaeso_core::id::{McpServerId, OrgId, UserId};
+use kaeso_store::pg::mcp_servers;
 
 use super::oauth::endpoint;
 use crate::auth::sessions;
+use crate::platform::audit::{self, Action};
 use crate::platform::cookies;
 use crate::services::mcp_connections::{self, CallbackParams, Finished, SignInError};
+use crate::services::mcp_tools;
 use crate::state::AppState;
 
 pub async fn client_document(State(state): State<AppState>) -> Response {
@@ -44,6 +47,37 @@ fn result_of(e: &SignInError) -> &'static str {
     }
 }
 
+async fn connected(state: &AppState, f: Finished, by: uuid::Uuid) {
+    let recorded = async {
+        let mut conn = state.pg.acquire().await?;
+        audit::user_event(
+            &mut conn,
+            OrgId::from_uuid(f.org),
+            UserId::from_uuid(by),
+            Action::McpServerConnect,
+            ("mcp_server", McpServerId::from_uuid(f.server).to_string()),
+            Some(serde_json::json!({ "kind": "oauth" })),
+            state.clock.now(),
+        )
+        .await
+    };
+    if let Err(e) = recorded.await {
+        tracing::error!(error = %e, "an MCP sign-in couldn't be audited");
+    }
+    let st = state.clone();
+    state.in_flight.finish(async move {
+        match mcp_servers::get_by_id(&st.pg, f.server).await {
+            Ok(Some(server)) => {
+                if let Err(e) = mcp_tools::sync(&st, &server).await {
+                    tracing::info!(server = %server.id, error = %e, "an MCP server couldn't be synced");
+                }
+            }
+            Ok(None) => {}
+            Err(e) => tracing::error!(error = %e, "an MCP server couldn't be loaded for a sync"),
+        }
+    });
+}
+
 pub async fn callback(
     State(state): State<AppState>,
     headers: HeaderMap,
@@ -74,7 +108,12 @@ pub async fn callback(
         None => None,
     };
     match mcp_connections::finish(&state, &params, user).await {
-        Ok(f) => Redirect::to(&back(&state, f, "connected")).into_response(),
+        Ok(f) => {
+            if let (None, Some(by)) = (f.user, user) {
+                connected(&state, f, by).await;
+            }
+            Redirect::to(&back(&state, f, "connected")).into_response()
+        }
         Err((Some(f), e)) => {
             tracing::warn!(error = %e, server = %f.server, "an MCP sign-in didn't finish");
             Redirect::to(&back(&state, f, result_of(&e))).into_response()

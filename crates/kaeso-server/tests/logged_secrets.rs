@@ -575,6 +575,28 @@ async fn mcp_sign_in_secrets_and_tokens_never_reach_the_log() {
     mcp_connections::credential(&app.state, &header_row, None)
         .await
         .unwrap();
+    let api_secret = "api-hdr-secret-4410";
+    let header_body = json!({ "name": "X-Api-Key", "value": api_secret });
+    let r = app
+        .post(
+            &format!("/orgs/{}/mcp-servers/probe", owner.org_id),
+            json!({ "url": url, "header": header_body }),
+            Some(&owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    let r = app
+        .post(
+            &format!(
+                "/orgs/{}/mcp-servers/{}/connection",
+                owner.org_id,
+                kaeso_core::id::McpServerId::from_uuid(header.id)
+            ),
+            json!({ "header": header_body }),
+            Some(&owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
 
     let client = mock.registered_clients().pop().unwrap();
     let secrets = [
@@ -587,6 +609,7 @@ async fn mcp_sign_in_secrets_and_tokens_never_reach_the_log() {
         "rt-1".to_owned(),
         "rt-2".to_owned(),
         header_secret.to_owned(),
+        api_secret.to_owned(),
     ];
     let logged = logs.text();
     assert!(logged.contains("an MCP server ended a connection's sign-in"));

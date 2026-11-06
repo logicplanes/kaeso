@@ -49,13 +49,21 @@ impl SyncError {
     }
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Skip {
+    NoName,
+    ListedTwice,
+    NoInputSchema,
+    Header(params::ParamError),
+}
+
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct Synced {
     pub added: Vec<String>,
     pub changed: Vec<String>,
     pub accepted: Vec<String>,
     pub removed: usize,
-    pub skipped: Vec<(String, String)>,
+    pub skipped: Vec<(String, Skip)>,
 }
 
 pub fn definition_of(row: &ToolRow) -> Value {
@@ -149,26 +157,21 @@ pub async fn apply(
     let mut seen = HashSet::new();
     for tool in tools {
         let Some(name) = valid_name(tool) else {
-            synced
-                .skipped
-                .push((String::new(), "the tool has no usable name".to_owned()));
+            let shown = tool.get("name").and_then(Value::as_str).unwrap_or_default();
+            let shown: String = shown.chars().take(MAX_NAME).collect();
+            synced.skipped.push((shown, Skip::NoName));
             continue;
         };
         if !seen.insert(name.to_owned()) {
-            synced.skipped.push((
-                name.to_owned(),
-                "the server lists the name twice".to_owned(),
-            ));
+            synced.skipped.push((name.to_owned(), Skip::ListedTwice));
             continue;
         }
         let Some(input) = tool.get("inputSchema").filter(|s| s.is_object()) else {
-            synced
-                .skipped
-                .push((name.to_owned(), "the tool has no input schema".to_owned()));
+            synced.skipped.push((name.to_owned(), Skip::NoInputSchema));
             continue;
         };
         if let Err(e) = params::param_headers(input) {
-            synced.skipped.push((name.to_owned(), e.to_string()));
+            synced.skipped.push((name.to_owned(), Skip::Header(e)));
             continue;
         }
         present.push(name.to_owned());

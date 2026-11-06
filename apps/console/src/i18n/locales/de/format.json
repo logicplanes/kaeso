@@ -217,5 +217,22 @@
   "format.audit.action.modelsDevSync": "models.dev synchronisiert",
   "format.audit.action.modelsDevPriceChange": "Preis auf models.dev geändert",
   "format.audit.action.modelsDevModelDelisted": "Modell von models.dev entfernt",
-  "format.audit.kind.modelsDev": "models.dev"
+  "format.audit.kind.modelsDev": "models.dev",
+  "format.audit.kind.mcpServer": "MCP-Server",
+  "format.audit.kind.portalGrant": "Portal-Clients",
+  "format.audit.kind.tool": "Tools",
+  "format.audit.kind.toolAccess": "Tool-Zugriff",
+  "format.audit.action.mcpServerCreate": "MCP-Server hinzugefügt",
+  "format.audit.action.mcpServerUpdate": "MCP-Server geändert",
+  "format.audit.action.mcpServerConnect": "Bei einem MCP-Server angemeldet",
+  "format.audit.action.mcpServerDelete": "MCP-Server gelöscht",
+  "format.audit.action.toolApprove": "Geändertes Tool freigegeben",
+  "format.audit.action.toolReject": "Geändertes Tool ausgeschaltet gelassen",
+  "format.audit.action.projectMcpServersUpdate": "MCP-Server des Projekts geändert",
+  "format.audit.action.projectToolsUpdate": "Tools des Projekts ein- oder ausgeschaltet",
+  "format.audit.action.toolAccessUpdate": "Tool-Zugriff geändert",
+  "format.audit.action.portalGrantRevoke": "Client vom Portal getrennt",
+  "format.targetKind.mcpServer": "MCP-Server",
+  "format.targetKind.tool": "Tool",
+  "format.targetKind.portalGrant": "Portal-Client"
 }
