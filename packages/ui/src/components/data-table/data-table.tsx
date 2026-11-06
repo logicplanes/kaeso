@@ -308,6 +308,8 @@ function DataTableInner<T>(
   const pinEnd = overflow && cols.length > 1 && !cols[cols.length - 1]?.columnDef.meta?.grow;
 
   const rows = table.getRowModel().rows;
+  // A header wider than its table only scrolls sideways; with no rows, the empty state says enough.
+  const headless = overflow && rows.length === 0 && !loading && !error;
   const virtual = rows.length > virtualizeAbove;
   const rowHeight = Math.max(ROW_H[density], useCoarsePointer() ? 44 : 0);
   const getScrollElement = () => scrollParent(root.current);
@@ -676,7 +678,7 @@ function DataTableInner<T>(
       <div
         role={focusable ? "grid" : "table"}
         aria-label={ariaLabel}
-        aria-rowcount={rows.length + 1}
+        aria-rowcount={rows.length + (headless ? 0 : 1)}
         aria-multiselectable={selectable || undefined}
         aria-busy={loading || undefined}
         className={cn("w-full overflow-clip", inset && "rounded-group bg-raised shadow-xs")}
@@ -684,6 +686,7 @@ function DataTableInner<T>(
         <div
           ref={head}
           role="rowgroup"
+          hidden={headless}
           className={cn("sticky top-0 z-20 overflow-hidden", onRaised ? "bg-raised" : "bg-panel")}
           onKeyDown={onHeadKeyDown}
           onFocus={(e) => {
