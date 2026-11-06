@@ -2,6 +2,7 @@ pub mod cleanup;
 pub mod key_expiry;
 pub mod kpmr;
 pub mod mcp_sync;
+pub mod notifications;
 pub mod org_deletion;
 pub mod update_check;
 
@@ -23,6 +24,8 @@ pub enum JobError {
     Store(#[from] StoreError),
     #[error(transparent)]
     Kpmr(#[from] SyncError),
+    #[error(transparent)]
+    Notify(#[from] crate::platform::error::ApiError),
     #[error("the job panicked: {0}")]
     Panicked(String),
 }
@@ -82,6 +85,12 @@ pub fn all() -> Vec<Job> {
             run: |s| Box::pin(update_check::run(s)),
         },
         Job {
+            name: "notifications",
+            every: Duration::from_secs(60),
+            lock: 8,
+            run: |s| Box::pin(notifications::run(s)),
+        },
+        Job {
             name: "mcp_sync",
             every: Duration::from_secs(60),
             lock: 7,
@@ -93,14 +102,21 @@ pub fn all() -> Vec<Job> {
 pub async fn run_once(state: &AppState, job: Job) -> Result<Option<String>, JobError> {
     let st = state.clone();
     // A panic is caught inside the lock so the lock is released and the job's loop keeps running.
-    let outcome = try_with_advisory_lock(&state.pg, locks::JOBS_BASE + job.lock, || async move {
-        Ok(AssertUnwindSafe(async move { (job.run)(st).await })
-            .catch_unwind()
-            .await
-            .unwrap_or_else(|payload| Err(JobError::Panicked(panic_message(&*payload)))))
-    })
-    .await?;
-    match outcome {
+    let (outcome, events) = crate::services::notifications::dispatch::collecting(
+        try_with_advisory_lock(&state.pg, locks::JOBS_BASE + job.lock, || async move {
+            Ok(AssertUnwindSafe(async move { (job.run)(st).await })
+                .catch_unwind()
+                .await
+                .unwrap_or_else(|payload| Err(JobError::Panicked(panic_message(&*payload)))))
+        }),
+    )
+    .await;
+    // Events of a job that failed may come from a transaction that rolled back; only a finished
+    // job's changes are known to be committed.
+    if matches!(outcome, Ok(Some(Ok(_)))) {
+        crate::services::notifications::dispatch::dispatch(state, &events).await;
+    }
+    match outcome? {
         None => Ok(None),
         Some(Ok(summary)) => Ok(Some(summary)),
         Some(Err(e)) => Err(e),

@@ -264,8 +264,25 @@ async fn emails_without_a_browser_follow_the_recipients_choice() {
     )
     .await;
     assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
-    let (lang, subject) = last(&app, "owner@example.com", 2).await;
-    assert_eq!((lang, subject.as_str()), (Locale::ZhCn, "Acme 已计划删除"));
+    app.wait_for_mail("owner@example.com", 3).await;
+    let of_kind = |kind: &str| {
+        let mail = app
+            .mail
+            .to("owner@example.com")
+            .into_iter()
+            .find(|m| m.kind.as_str() == kind)
+            .unwrap();
+        (mail.lang, mail.subject)
+    };
+    assert_eq!(
+        of_kind("invite_accepted"),
+        (Locale::ZhCn, "[Acme] Member 已接受邀请".to_owned()),
+        "the inviter hears in their own language"
+    );
+    assert_eq!(
+        of_kind("org_scheduled_for_deletion"),
+        (Locale::ZhCn, "Acme 已计划删除".to_owned())
+    );
     let (lang, subject) = last(&app, "member@example.com", 2).await;
     assert_eq!(
         (lang, subject.as_str()),

@@ -172,7 +172,12 @@ pub async fn page(
     ))
 }
 
-pub fn export(pg: PgPool, org: Option<OrgId>, filter: AuditFilter) -> ApiResult<Response> {
+pub fn export(
+    pg: PgPool,
+    org: Option<OrgId>,
+    filter: AuditFilter,
+    done: impl Future<Output = ()> + Send + 'static,
+) -> ApiResult<Response> {
     let state = (pg, org, filter, None::<Uuid>, false);
     let body = stream::unfold(state, |(pg, org, filter, before, done)| async move {
         if done {
@@ -201,7 +206,10 @@ pub fn export(pg: PgPool, org: Option<OrgId>, filter: AuditFilter) -> ApiResult<
         }
     })
     .filter(|chunk| std::future::ready(!matches!(chunk, Ok(c) if c.is_empty())));
-    let mut response = HttpBody::from_stream(body).into_response();
+    let mut response = HttpBody::from_stream(crate::services::notifications::system::when_done(
+        body, done,
+    ))
+    .into_response();
     let headers = response.headers_mut();
     headers.insert(
         header::CONTENT_TYPE,

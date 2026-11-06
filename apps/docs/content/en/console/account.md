@@ -112,10 +112,10 @@ Kaeso emails you about what your rights make you responsible for, in the instanc
 | Choice | What happens |
 | --- | --- |
 | Now | Kaeso sends it at once |
-| Daily | It goes into one digest a day, sent only when something happened |
+| Daily | It goes into one digest at 8:31 in the morning, in the install's time zone, sent only when something happened |
 | Off | Kaeso doesn't send it |
 
-Security emails, such as one about a changed password or a new app that can act as you, have no choice: Kaeso always sends them at once. Kaeso never emails you about something you did yourself.
+Security emails, such as one about a changed password or a new app that can act as you, have no choice: Kaeso always sends them at once. Kaeso never emails you about something you did yourself, sends at most one email about the same thing a day, and moves emails past 20 in an hour into the digest.
 
 | Area | Email | Who can get it | Default |
 | --- | --- | --- | --- |

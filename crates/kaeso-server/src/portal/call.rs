@@ -556,7 +556,9 @@ pub(super) async fn call(state: &AppState, r: Request<'_>) -> Response {
         Ok(a) => a,
         Err(e) => {
             if matches!(e, McpError::Unauthorized { .. }) {
-                if let Err(err) = mcp_connections::rejected(state, server.id, owner).await {
+                if let Err(err) =
+                    mcp_connections::rejected(state, r.caller.org, server.id, owner).await
+                {
                     tracing::error!(error = %err, "a refused MCP sign-in couldn't be marked");
                 }
                 state.caches.mcp_handshakes.invalidate(&key).await;

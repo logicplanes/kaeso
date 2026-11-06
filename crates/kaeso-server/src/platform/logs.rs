@@ -1351,6 +1351,21 @@ pub async fn export(
     let stream = futures::stream::unfold(start, |mut s| async move {
         next_chunk(&mut s).await.map(|item| (item, s))
     });
+    let (org, project) = (scope.project.org_id, scope.project.id);
+    let user = ctx.user_id().ok().map(|u| u.uuid());
+    let done = async move {
+        if let Some(user) = user {
+            crate::services::notifications::system::export_finished(
+                &state,
+                org,
+                Some(project),
+                user,
+                kaeso_mail::notices::Export::Logs,
+            )
+            .await;
+        }
+    };
+    let stream = crate::services::notifications::system::when_done(stream, done);
     let mut resp = Response::new(Body::from_stream(stream));
     let (ct, ext) = if csv {
         ("text/csv; charset=utf-8", "csv")

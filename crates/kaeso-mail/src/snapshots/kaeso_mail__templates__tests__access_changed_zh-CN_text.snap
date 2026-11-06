@@ -1,0 +1,18 @@
+---
+source: crates/kaeso-mail/src/templates.rs
+expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
+---
+Subject: [Checkout] 您已被添加
+
+您已被添加
+
+Ada Lovelace 已将您添加为 Developer。
+
+打开 Kaeso：
+https://kaeso.example.com/orgs/org_1
+
+-- 
+此邮件由 kaeso.example.com 上的 Kaeso 发送。
+您收到此邮件，是因为它与您的账户有关。
+选择邮件： https://kaeso.example.com/settings/account/notifications
+退订： https://kaeso.example.com/unsubscribe#token=usr_1.org_members.tag

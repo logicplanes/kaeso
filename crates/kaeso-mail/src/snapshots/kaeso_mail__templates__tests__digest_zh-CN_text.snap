@@ -1,0 +1,20 @@
+---
+source: crates/kaeso-mail/src/templates.rs
+expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
+---
+Subject: Kaeso 的 2 条更新
+
+Kaeso 的 2 条更新
+
+以下是自上次摘要以来发生的事。
+
+- [Acme] Grace Hopper 已离开
+- [Checkout] 内容记录已关闭
+
+打开 Kaeso：
+https://kaeso.example.com/orgs/org_1
+
+-- 
+此邮件由 kaeso.example.com 上的 Kaeso 发送。
+您收到此邮件，是因为您选择了每日邮件。
+选择邮件： https://kaeso.example.com/settings/account/notifications

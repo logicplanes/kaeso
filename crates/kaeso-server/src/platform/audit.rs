@@ -5,6 +5,7 @@ use serde_json::Value;
 
 use super::access::{Caller, Ctx};
 use super::error::ApiResult;
+use crate::services::notifications::dispatch::{Event as Notice, record};
 
 macro_rules! actions {
     (pub const $list:ident = [$($variant:ident = $name:literal,)*];) => {
@@ -226,6 +227,17 @@ impl Event<'_> {
             (None, Caller::OrgKey(k)) => ("org_platform_key", Some(k.id)),
             (None, Caller::Anonymous) => ("system", None),
         };
+        let notice = notices(self.action).then(|| Notice {
+            action: self.action,
+            org: self.org.map(|o| o.uuid()),
+            project: self.project.map(|p| p.uuid()),
+            actor: matches!(actor_kind, "user" | "agent")
+                .then_some(actor_id)
+                .flatten(),
+            target: self.target.as_ref().map(|(_, id)| id.clone()),
+            before: self.before.clone(),
+            after: self.after.clone(),
+        });
         audit::insert(
             db,
             &NewEvent {
@@ -247,8 +259,15 @@ impl Event<'_> {
             },
         )
         .await?;
+        if let Some(n) = notice {
+            record(n);
+        }
         Ok(())
     }
+}
+
+fn notices(action: Action) -> bool {
+    !crate::services::notifications::dispatch::kinds(action).is_empty()
 }
 
 fn snapshot(action: &'static str, side: &'static str, v: impl Serialize) -> Option<Value> {
@@ -294,6 +313,15 @@ pub async fn user_event(
     after: Option<Value>,
     at: time::OffsetDateTime,
 ) -> Result<(), kaeso_store::StoreError> {
+    let notice = notices(action).then(|| Notice {
+        action,
+        org: Some(org.uuid()),
+        project: None,
+        actor: Some(user.uuid()),
+        target: Some(target.1.clone()),
+        before: None,
+        after: after.clone(),
+    });
     audit::insert(
         db,
         &NewEvent {
@@ -314,7 +342,11 @@ pub async fn user_event(
             at,
         },
     )
-    .await
+    .await?;
+    if let Some(n) = notice {
+        record(n);
+    }
+    Ok(())
 }
 
 pub async fn system_event(
@@ -326,6 +358,15 @@ pub async fn system_event(
     after: Option<Value>,
     at: time::OffsetDateTime,
 ) -> Result<(), kaeso_store::StoreError> {
+    let notice = notices(action).then(|| Notice {
+        action,
+        org: org.map(|o| o.uuid()),
+        project: None,
+        actor: None,
+        target: target.as_ref().map(|(_, id)| id.clone()),
+        before: before.clone(),
+        after: after.clone(),
+    });
     audit::insert(
         db,
         &NewEvent {
@@ -346,7 +387,11 @@ pub async fn system_event(
             at,
         },
     )
-    .await
+    .await?;
+    if let Some(n) = notice {
+        record(n);
+    }
+    Ok(())
 }
 
 #[cfg(test)]

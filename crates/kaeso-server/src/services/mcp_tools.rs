@@ -126,6 +126,8 @@ pub async fn sync(state: &AppState, server: &ServerRow) -> Result<Synced, SyncEr
                 },
             )
             .await?;
+            crate::services::notifications::system::tools_held(state, server, &synced.changed)
+                .await;
             Ok(synced)
         }
         Err(e) => {

@@ -1,0 +1,18 @@
+---
+source: crates/kaeso-mail/src/templates.rs
+expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
+---
+Subject: [Checkout] ChatGPT 已连接
+
+ChatGPT 已连接
+
+Ada Lovelace 已将 ChatGPT 连接到门户；它会以该用户的身份调用工具。
+
+打开已连接的客户端：
+https://kaeso.example.com/orgs/org_1
+
+-- 
+此邮件由 kaeso.example.com 上的 Kaeso 发送。
+您收到此邮件，是因为您拥有 tools.manage。
+选择邮件： https://kaeso.example.com/settings/account/notifications
+退订： https://kaeso.example.com/unsubscribe#token=usr_1.org_members.tag

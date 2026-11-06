@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-use lettre::message::header::ContentType;
+use lettre::message::header::{ContentType, HeaderName, HeaderValue};
 use lettre::message::{Attachment, Mailbox, MultiPart, SinglePart};
 use lettre::transport::smtp::authentication::Credentials;
 use lettre::{AsyncSmtpTransport, AsyncTransport, Message, Tokio1Executor};
@@ -272,10 +272,22 @@ async fn deliver(sender: &Sender, from: &Mailbox, email: &Rendered) -> Result<()
                 .to
                 .parse()
                 .map_err(|_| MailError::Invalid("the recipient address".into()))?;
-            let message = Message::builder()
+            let mut message = Message::builder()
                 .from(from.clone())
                 .to(to)
-                .subject(email.subject.clone())
+                .subject(email.subject.clone());
+            if let Some(url) = &email.list_unsubscribe {
+                message = message
+                    .raw_header(HeaderValue::new(
+                        HeaderName::new_from_ascii_str("List-Unsubscribe"),
+                        format!("<{url}>"),
+                    ))
+                    .raw_header(HeaderValue::new(
+                        HeaderName::new_from_ascii_str("List-Unsubscribe-Post"),
+                        "List-Unsubscribe=One-Click".to_owned(),
+                    ));
+            }
+            let message = message
                 .multipart(body(email)?)
                 .map_err(|e| MailError::Invalid(e.to_string()))?;
             transport.send(message).await.map(|_| ()).map_err(|e| {

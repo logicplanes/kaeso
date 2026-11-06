@@ -1,0 +1,18 @@
+---
+source: crates/kaeso-mail/src/templates.rs
+expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
+---
+Subject: [Checkout] 您的导出已完成
+
+您的导出已完成
+
+您发起的请求日志导出已完成。
+
+打开 Kaeso：
+https://kaeso.example.com/orgs/org_1
+
+-- 
+此邮件由 kaeso.example.com 上的 Kaeso 发送。
+您收到此邮件，是因为您拥有 logs.export。
+选择邮件： https://kaeso.example.com/settings/account/notifications
+退订： https://kaeso.example.com/unsubscribe#token=usr_1.org_members.tag

@@ -1,0 +1,18 @@
+---
+source: crates/kaeso-mail/src/templates.rs
+expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
+---
+Subject: Kaeso 0.6.0 已发布
+
+Kaeso 0.6.0 已发布
+
+Kaeso 0.6.0 可以安装了。
+
+打开更新：
+https://kaeso.example.com/orgs/org_1
+
+-- 
+此邮件由 kaeso.example.com 上的 Kaeso 发送。
+您收到此邮件，是因为您拥有 instance.updates.manage。
+选择邮件： https://kaeso.example.com/settings/account/notifications
+退订： https://kaeso.example.com/unsubscribe#token=usr_1.org_members.tag

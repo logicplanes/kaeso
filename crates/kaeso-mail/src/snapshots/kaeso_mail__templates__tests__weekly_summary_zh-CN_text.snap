@@ -1,0 +1,23 @@
+---
+source: crates/kaeso-mail/src/templates.rs
+expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
+---
+Subject: 您在 Kaeso 的一周
+
+您在 Kaeso 的一周
+
+上周您的项目发送了 12480 次请求和 312 次工具调用，成本为 $41.20。
+
+- Checkout：9120 次请求，$30.10
+- Support：3360 次请求，$11.10
+
+打开用量：
+https://kaeso.example.com/orgs/org_1
+
+常用模型：claude-haiku-4-5、gpt-4o。
+
+-- 
+此邮件由 kaeso.example.com 上的 Kaeso 发送。
+您收到此邮件，是因为您拥有 usage.view。
+选择邮件： https://kaeso.example.com/settings/account/notifications
+退订： https://kaeso.example.com/unsubscribe#token=usr_1.org_members.tag

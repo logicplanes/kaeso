@@ -284,6 +284,7 @@ async fn renewed(state: &AppState, r: Renewal) -> Result<(), ResolveError> {
             credentials::sign_out(&mut *tx, id, SIGNED_OUT).await?;
             tx.commit().await.map_err(StoreError::from)?;
             forget_org(state, org.uuid()).await;
+            crate::services::notifications::system::account_signed_out(state, org.uuid(), id).await;
             Err(ResolveError::SignedOut { product: r.product })
         }
         Err(AccountError::NoApiAccess) => {

@@ -1,0 +1,20 @@
+---
+source: crates/kaeso-mail/src/templates.rs
+expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
+---
+Subject: 2 Neuigkeiten von Kaeso
+
+2 Neuigkeiten von Kaeso
+
+Das ist seit der letzten Zusammenfassung passiert.
+
+- [Acme] Grace Hopper ist ausgetreten
+- [Checkout] Inhalte werden nicht mehr protokolliert
+
+Kaeso öffnen:
+https://kaeso.example.com/orgs/org_1
+
+-- 
+Gesendet von Kaeso unter kaeso.example.com.
+Sie erhalten diese E-Mail, weil Sie tägliche E-Mails gewählt haben.
+E-Mails wählen: https://kaeso.example.com/settings/account/notifications

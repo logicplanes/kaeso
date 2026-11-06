@@ -168,6 +168,10 @@ pub fn router(state: &AppState) -> (Router<AppState>, OpenApiDoc) {
         router
     };
     let router = router
+        .layer(axum::middleware::from_fn_with_state(
+            state.clone(),
+            notify_after,
+        ))
         .layer(axum::extract::DefaultBodyLimit::max(limit))
         .layer(axum::middleware::from_fn_with_state(
             state.clone(),
@@ -177,6 +181,20 @@ pub fn router(state: &AppState) -> (Router<AppState>, OpenApiDoc) {
             security_headers(req, next, hsts)
         }));
     (router, doc)
+}
+
+// Handlers write audit events inside their transactions; emails about them go out only once the
+// request succeeded, so a change that rolled back never notifies anyone.
+async fn notify_after(
+    axum::extract::State(state): axum::extract::State<AppState>,
+    req: axum::extract::Request,
+    next: axum::middleware::Next,
+) -> axum::response::Response {
+    let (resp, events) = crate::services::notifications::dispatch::collecting(next.run(req)).await;
+    if resp.status().is_success() {
+        crate::services::notifications::dispatch::spawn(&state, events);
+    }
+    resp
 }
 
 // A read-only demo lets visitors sign in and out and dismiss what's new; every other request

@@ -1,0 +1,18 @@
+---
+source: crates/kaeso-mail/src/templates.rs
+expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
+---
+Subject: Claude 可以代表您操作
+
+Claude 可以代表您操作
+
+您已允许 Claude 代表您操作；如果不是您允许的，请立即断开它。
+
+检查访问权限：
+https://kaeso.example.com/orgs/org_1
+
+-- 
+此邮件由 kaeso.example.com 上的 Kaeso 发送。
+您收到此邮件，是因为它与您的账户有关。
+选择邮件： https://kaeso.example.com/settings/account/notifications
+退订： https://kaeso.example.com/unsubscribe#token=usr_1.org_members.tag

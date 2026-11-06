@@ -960,6 +960,7 @@ pub async fn forget(state: &AppState, server: Uuid) {
 // connection flips once, so the people responsible hear about it once.
 pub async fn rejected(
     state: &AppState,
+    org: Uuid,
     server: Uuid,
     user: Option<Uuid>,
 ) -> Result<(), StoreError> {
@@ -967,6 +968,10 @@ pub async fn rejected(
         && store::sign_out(&state.pg, row.id).await?
     {
         tracing::warn!(server = %server, connection = %row.id, "an MCP server refused Kaeso's sign-in; it needs a new one");
+        if let Some(found) = mcp_servers::get(&state.pg, org, server).await? {
+            crate::services::notifications::system::server_signed_out(state, &found, row.user_id)
+                .await;
+        }
     }
     forget(state, server).await;
     Ok(())
@@ -1057,10 +1062,10 @@ async fn renewed(
         None => None,
     };
     let Some(refresh) = tokens.refresh_token.clone() else {
-        return signed_out(tx, server, row, "no refresh token").await;
+        return signed_out(state, tx, server, row, "no refresh token").await;
     };
     let Ok(endpoint) = Url::parse(&tokens.token_endpoint) else {
-        return signed_out(tx, server, row, "no token endpoint").await;
+        return signed_out(state, tx, server, row, "no token endpoint").await;
     };
     let form = vec![
         ("grant_type", "refresh_token"),
@@ -1099,7 +1104,7 @@ async fn renewed(
             tx.commit().await.map_err(StoreError::from)?;
             Ok(renewed)
         }
-        Err(SignInError::Refused(why)) => signed_out(tx, server, row, &why).await,
+        Err(SignInError::Refused(why)) => signed_out(state, tx, server, row, &why).await,
         Err(e) => {
             tracing::warn!(error = %e, server = %server.id, "cannot renew an MCP connection's access token");
             drop(tx);
@@ -1109,6 +1114,7 @@ async fn renewed(
 }
 
 async fn signed_out(
+    state: &AppState,
     mut tx: sqlx::Transaction<'_, sqlx::Postgres>,
     server: &ServerRow,
     row: SealedConnection,
@@ -1118,6 +1124,7 @@ async fn signed_out(
     tx.commit().await.map_err(StoreError::from)?;
     if flipped {
         tracing::warn!(server = %server.id, connection = %row.id, reason = %why, "an MCP server ended a connection's sign-in; it needs a new one");
+        crate::services::notifications::system::server_signed_out(state, server, row.user_id).await;
     }
     Ok(SealedConnection {
         auth_error: Some("signed_out".to_owned()),

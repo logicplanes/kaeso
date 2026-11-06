@@ -30,12 +30,13 @@ pub(crate) enum Reason {
     Security,
     Org,
     Alert,
+    Notice,
 }
 
 impl Reason {
     fn tail(self, lang: Locale) -> &'static str {
         match (lang, self) {
-            (_, Reason::Request) => match lang {
+            (_, Reason::Request | Reason::Notice) => match lang {
                 Locale::ZhCn => "。",
                 Locale::En | Locale::De => ".",
             },
@@ -71,11 +72,25 @@ pub(crate) struct Action {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct Link {
+    pub label: &'static str,
+    pub url: String,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct Footnote {
+    pub because: String,
+    pub links: Vec<Link>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct Content {
     pub heading: String,
     pub sentence: Option<String>,
+    pub items: Vec<String>,
     pub action: Option<Action>,
     pub note: Option<String>,
+    pub footnote: Option<Footnote>,
     pub reason: Reason,
     pub lang: Locale,
 }
@@ -85,11 +100,23 @@ impl Content {
         Content {
             heading: heading.into(),
             sentence: None,
+            items: Vec::new(),
             action: None,
             note: None,
+            footnote: None,
             reason,
             lang,
         }
+    }
+
+    pub(crate) fn items(mut self, items: Vec<String>) -> Content {
+        self.items = items;
+        self
+    }
+
+    pub(crate) fn footnote(mut self, footnote: Footnote) -> Content {
+        self.footnote = Some(footnote);
+        self
     }
 
     pub(crate) fn sentence(mut self, s: impl Into<String>) -> Content {
@@ -124,11 +151,17 @@ pub(crate) fn text(content: &Content, instance: &Instance) -> String {
         out.push_str(s);
         out.push_str("\n\n");
     }
+    for item in &content.items {
+        out.push_str(&format!("- {item}\n"));
+    }
+    if !content.items.is_empty() {
+        out.push('\n');
+    }
+    let colon = match content.lang {
+        Locale::ZhCn => "：",
+        Locale::En | Locale::De => ":",
+    };
     if let Some(a) = &content.action {
-        let colon = match content.lang {
-            Locale::ZhCn => "：",
-            Locale::En | Locale::De => ":",
-        };
         out.push_str(&format!("{}{colon}\n{}\n\n", a.label, a.url));
     }
     if let Some(n) = &content.note {
@@ -141,6 +174,13 @@ pub(crate) fn text(content: &Content, instance: &Instance) -> String {
         instance.name,
         content.reason.tail(content.lang)
     ));
+    if let Some(f) = &content.footnote {
+        out.push_str(&f.because);
+        out.push('\n');
+        for link in &f.links {
+            out.push_str(&format!("{}{colon} {}\n", link.label, link.url));
+        }
+    }
     out
 }
 
@@ -194,6 +234,13 @@ fn body(content: &Content, instance: &Instance) -> Markup {
                 p.(class::SECONDARY) style=(style::SENTENCE) { (s) }
             } }
         }
+        @if !content.items.is_empty() {
+            tr { td style="padding:16px 28px 0 2px;" {
+                @for item in &content.items {
+                    p.(class::SECONDARY) style=(style::ITEM) { "• " (item) }
+                }
+            } }
+        }
         @if let Some(a) = &content.action {
             tr { td style="padding:32px 28px 0 2px;" { (button(a)) } }
         }
@@ -208,6 +255,15 @@ fn body(content: &Content, instance: &Instance) -> Markup {
                 a href=(instance.url) style=(style::FOOTER_LINK) { (instance.name) }
                 (footer(content.lang).1)
                 (content.reason.tail(content.lang))
+            }
+            @if let Some(f) = &content.footnote {
+                p.(class::TERTIARY) style=(style::FOOTNOTE) {
+                    (f.because)
+                    @for (i, link) in f.links.iter().enumerate() {
+                        @if i == 0 { " " } @else { " · " }
+                        a href=(link.url) style=(style::FOOTNOTE_LINK) { (link.label) }
+                    }
+                }
             }
         } }
     }

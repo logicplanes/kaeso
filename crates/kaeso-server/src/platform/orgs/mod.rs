@@ -215,5 +215,19 @@ pub async fn audit_export(
     ctx.audit(Some(org), Action::AuditLogExport)
         .write(&mut *state.pg.acquire().await?)
         .await?;
-    audit_log::export(state.pg.clone(), Some(org), filter)
+    let user = ctx.user_id().ok().map(|u| u.uuid());
+    let pg = state.pg.clone();
+    let done = async move {
+        if let Some(user) = user {
+            crate::services::notifications::system::export_finished(
+                &state,
+                org.uuid(),
+                None,
+                user,
+                kaeso_mail::notices::Export::AuditLog,
+            )
+            .await;
+        }
+    };
+    audit_log::export(pg, Some(org), filter, done)
 }

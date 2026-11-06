@@ -1,0 +1,18 @@
+---
+source: crates/kaeso-mail/src/templates.rs
+expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
+---
+Subject: [Acme] A platform key was created
+
+A platform key was created
+
+Ada Lovelace created the platform key deploy.
+
+Open security:
+https://kaeso.example.com/orgs/org_1
+
+-- 
+Sent by Kaeso at kaeso.example.com.
+You get this email because you hold platform_keys.view.
+Choose your emails: https://kaeso.example.com/settings/account/notifications
+Unsubscribe: https://kaeso.example.com/unsubscribe#token=usr_1.org_members.tag
