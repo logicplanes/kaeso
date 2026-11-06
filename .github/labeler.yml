@@ -51,6 +51,7 @@
           - deploy/console/**
           - deploy/aws/**
           - deploy/gcp/**
+          - deploy/gcp/**/.terraform.lock.hcl
           - render.yaml
           - .railway/**
 
