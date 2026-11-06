@@ -2,6 +2,7 @@
 !package.json
 !pnpm-lock.yaml
 !pnpm-workspace.yaml
+!patches
 !tsconfig.base.json
 !openapi.json
 !packages/tokens
