@@ -1,0 +1,23 @@
+---
+source: crates/kaeso-mail/src/templates.rs
+expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
+---
+Subject: Your week in Kaeso
+
+Your week in Kaeso
+
+Last week your projects sent 12480 requests and 312 tool calls for $41.20.
+
+- Checkout: 9120 requests, $30.10
+- Support: 3360 requests, $11.10
+
+Open usage:
+https://kaeso.example.com/orgs/org_1
+
+Top models: claude-haiku-4-5, gpt-4o.
+
+-- 
+Sent by Kaeso at kaeso.example.com.
+You get this email because you hold usage.view.
+Choose your emails: https://kaeso.example.com/settings/account/notifications
+Unsubscribe: https://kaeso.example.com/unsubscribe#token=usr_1.org_members.tag

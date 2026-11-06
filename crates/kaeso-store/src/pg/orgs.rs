@@ -198,3 +198,11 @@ pub async fn delete_final(tx: &mut sqlx::PgConnection, org_id: Uuid) -> Result<(
         .await?;
     Ok(())
 }
+
+pub async fn active_ids(db: impl PgExecutor<'_>) -> Result<Vec<Uuid>, StoreError> {
+    Ok(
+        sqlx::query_scalar!("SELECT id FROM organizations WHERE state = 'active' ORDER BY id")
+            .fetch_all(db)
+            .await?,
+    )
+}

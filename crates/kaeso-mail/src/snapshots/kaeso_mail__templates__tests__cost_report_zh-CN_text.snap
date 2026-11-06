@@ -1,0 +1,21 @@
+---
+source: crates/kaeso-mail/src/templates.rs
+expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
+---
+Subject: [Acme] 2026-10 的成本为 $412.50
+
+2026-10 的成本为 $412.50
+
+以下是上个月成本最高的项目。
+
+- Checkout：$300.00
+- Support：$112.50
+
+打开用量：
+https://kaeso.example.com/orgs/org_1
+
+-- 
+此邮件由 kaeso.example.com 上的 Kaeso 发送。
+您收到此邮件，是因为您拥有 costs.org.view。
+选择邮件： https://kaeso.example.com/settings/account/notifications
+退订： https://kaeso.example.com/unsubscribe#token=usr_1.org_members.tag

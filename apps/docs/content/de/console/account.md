@@ -112,10 +112,10 @@ Kaeso schreibt Ihnen zu dem, wofür Ihre Rechte Sie verantwortlich machen: in de
 | Auswahl | Was passiert |
 | --- | --- |
 | Sofort | Kaeso sendet sie sofort |
-| Täglich | Sie kommt in eine Zusammenfassung pro Tag, die nur rausgeht, wenn etwas passiert ist |
+| Täglich | Sie kommt in eine Zusammenfassung um 8:31 Uhr in der Zeitzone der Installation, die nur rausgeht, wenn etwas passiert ist |
 | Aus | Kaeso sendet sie nicht |
 
-Sicherheits-E-Mails, etwa zu einem geänderten Passwort oder einer neuen App, die als Sie handeln kann, haben keine Auswahl: Kaeso sendet sie immer sofort. Zu etwas, das Sie selbst getan haben, schreibt Kaeso Ihnen nie.
+Sicherheits-E-Mails, etwa zu einem geänderten Passwort oder einer neuen App, die als Sie handeln kann, haben keine Auswahl: Kaeso sendet sie immer sofort. Zu etwas, das Sie selbst getan haben, schreibt Kaeso Ihnen nie. Zum selben Thema sendet Kaeso höchstens eine E-Mail pro Tag, und E-Mails über 20 pro Stunde kommen in die Zusammenfassung.
 
 | Bereich | E-Mail | Wer sie erhalten kann | Standard |
 | --- | --- | --- | --- |

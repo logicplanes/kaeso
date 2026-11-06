@@ -1,0 +1,23 @@
+---
+source: crates/kaeso-mail/src/templates.rs
+expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
+---
+Subject: Ihre Woche in Kaeso
+
+Ihre Woche in Kaeso
+
+Ihre Projekte sendeten letzte Woche 12480 Anfragen und 312 Tool-Aufrufe für $41.20.
+
+- Checkout: 9120 Anfragen, $30.10
+- Support: 3360 Anfragen, $11.10
+
+Nutzung öffnen:
+https://kaeso.example.com/orgs/org_1
+
+Meistgenutzte Modelle: claude-haiku-4-5, gpt-4o.
+
+-- 
+Gesendet von Kaeso unter kaeso.example.com.
+Sie erhalten diese E-Mail, weil Sie usage.view haben.
+E-Mails wählen: https://kaeso.example.com/settings/account/notifications
+Abmelden: https://kaeso.example.com/unsubscribe#token=usr_1.org_members.tag

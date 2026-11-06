@@ -1179,6 +1179,9 @@ async fn attempt(
     if success && entry.is_unavailable() {
         availability::record(state, &learnt(Availability::Available)).await;
     }
+    if success {
+        crate::services::notifications::system::key_answered(credential.id.uuid());
+    }
 
     let counter = InputCounter {
         state: state.clone(),
@@ -1315,6 +1318,14 @@ async fn attempt(
                 {
                     let said = redacted(err);
                     tracing::warn!(provider, status, kind = said.kind.as_str(), upstream = %said.message, "the provider refused the project's provider key");
+                    if !credential.is_keyless() {
+                        crate::services::notifications::system::key_refused(
+                            state,
+                            caller.org_id,
+                            credential.id.uuid(),
+                        )
+                        .await;
+                    }
                     let mut failure = fail(Stage::KeyRefused)(refused);
                     failure.provider_said = Some(said);
                     return Err(failure);

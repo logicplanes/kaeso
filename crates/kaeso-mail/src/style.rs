@@ -37,6 +37,14 @@ pub(crate) const SENTENCE: &str = concat!(
     ";mso-line-height-rule:exactly;",
 );
 
+pub(crate) const ITEM: &str = concat!(
+    "margin:0 0 6px 0;font-family:",
+    token!(font),
+    ";font-size:15px;line-height:22px;font-weight:400;color:",
+    token!(secondary),
+    ";mso-line-height-rule:exactly;",
+);
+
 pub(crate) const NOTE: &str = concat!(
     "margin:0;font-family:",
     token!(font),
@@ -54,6 +62,17 @@ pub(crate) const FOOTER: &str = concat!(
 );
 
 pub(crate) const FOOTER_LINK: &str = concat!("color:", token!(tertiary), ";text-decoration:none;");
+
+pub(crate) const FOOTNOTE: &str = concat!(
+    "margin:8px 0 0 0;font-family:",
+    token!(font),
+    ";font-size:12px;line-height:16px;font-weight:400;color:",
+    token!(tertiary),
+    ";mso-line-height-rule:exactly;",
+);
+
+pub(crate) const FOOTNOTE_LINK: &str =
+    concat!("color:", token!(tertiary), ";text-decoration:underline;");
 
 pub(crate) const BUTTON: &str = concat!(
     "display:inline-block;padding:13px 22px;border-radius:9999px;background-color:",

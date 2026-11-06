@@ -20,7 +20,7 @@ Every email Kaeso sends comes from `crates/kaeso-mail`: one layout, one styleshe
 - **No card.** A single left-aligned column, at most 562px wide, on the canvas: white in light mode, black in dark mode.
 - **Copy limits.** A subject of at most 60 characters without a period, a heading of at most 48, and sentences of at most 100. German and Chinese get 15% more: 69, 55 and 115. A test enforces the limits.
 - **No raw links.** The HTML never shows a URL; the button carries it. The plain-text part has the link in full on its own line, and it says the same words in the same order.
-- **Footer.** "Sent by Kaeso at" the install's host, from `KAESO_PUBLIC_URL`. Notices also say why they arrived: security and organization notices are always sent, and alerts say how to turn them off.
+- **Footer.** "Sent by Kaeso at" the install's host, from `KAESO_PUBLIC_URL`. Notices also say why they arrived: security and organization notices are always sent, and alerts say how to turn them off. Notifications name the right that made the person get them, link to their settings and, unless they are security emails, to a one-click unsubscribe, which `List-Unsubscribe` and `List-Unsubscribe-Post` carry too.
 
 The text and HTML of every email are snapshots in `crates/kaeso-mail/src/snapshots/`.
 
@@ -29,6 +29,7 @@ The text and HTML of every email are snapshots in `crates/kaeso-mail/src/snapsho
 | File | Job |
 | --- | --- |
 | `templates.rs` | One function per email, which is the catalogue of [what Kaeso sends](../../self-hosting/email.md#what-kaeso-sends): subject, heading, sentence, button, quiet line and why it is sent, in each language |
+| `notices.rs` | The notifications: one `Fact` per kind of event, rendered as `[Organization or project] fact` with the reason and links, and the daily digest |
 | `locale.rs` | `Locale` (`en`, `de`, `zh-CN`), and dates and numbers as each language writes them |
 | `layout.rs` | The shared layout, as HTML with maud and as plain text |
 | `style.rs` | The values of `@logicplanes/kaeso-tokens` in its `token!` macro, each role's inline style, and the stylesheet. The layout never writes a colour or size of its own |
@@ -39,6 +40,16 @@ The text and HTML of every email are snapshots in `crates/kaeso-mail/src/snapsho
 - **The button** is a padded link with a full radius. For Outlook for Windows, which can't pad or round a link, it is a VML `roundrect` whose width comes from the label, so it never wraps.
 - **Escaping.** maud escapes the names people choose, such as organizations, keys and projects, in text and attributes. The only unescaped markup is fixed: the doctype, Outlook's conditional comments and the VML button, which escapes what it embeds. Tests send markup and quotes through every name.
 - **MIME.** `multipart/alternative` with the plain text first, and an HTML part that carries both wordmark PNGs inline by `Content-ID`, so mail apps don't list them as attachments.
+
+## Notifications
+
+`services::notifications` in `kaeso-server` decides who gets a notification and when.
+
+1. Every audit event is collected for the request or job that wrote it. The dispatcher runs once the request answered with success or the job finished, so a change that rolled back notifies nobody.
+2. `dispatch::kinds` maps each audit `Action` to the kinds it notifies about, in one `match` without a wildcard, so a new action needs a decision. Events without an action call `system` directly: a connection or provider account that signs out, a held tool, a provider key refused three times in a row, a finished export, a hard budget used up and a new release.
+3. Recipients come from rights, never from role names: the rights of the kind in `kaeso-core`'s notification catalogue, held in the organization or project, the instance admins, or the person the event is about. The person who acted is left out, except for security emails.
+4. Each person's setting chooses now, daily or off, and a muted organization stops all but security emails. `notifications_sent` keeps one email per subject and day, and past 20 immediate emails an hour the rest go to `notification_digest`.
+5. The `notifications` job runs every minute. At 8:31 in the install's time zone it sends waiting digests, on the 1st the monthly cost report and on Mondays the weekly summary.
 
 ## Languages
 

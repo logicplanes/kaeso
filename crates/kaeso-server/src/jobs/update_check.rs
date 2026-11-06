@@ -9,9 +9,18 @@ pub async fn run(state: AppState) -> Result<String, JobError> {
         None => String::new(),
     };
     let checked = if updates::due(&state).await? {
+        let before = newest(&state).await?;
         match updates::check(&state, Trigger::Schedule).await? {
             Checked::Unchanged => "releases unchanged",
-            Checked::Changed => "release list fetched",
+            Checked::Changed => {
+                if let Some(version) = newest(&state).await?
+                    && Some(&version) != before.as_ref()
+                {
+                    crate::services::notifications::system::update_available(&state, &version)
+                        .await;
+                }
+                "release list fetched"
+            }
             Checked::Failed(_) => "check failed",
         }
     } else {
@@ -21,4 +30,10 @@ pub async fn run(state: AppState) -> Result<String, JobError> {
         Auto::Off => format!("{job}{checked}"),
         auto => format!("{job}{checked}; {}", auto.summary()),
     })
+}
+
+async fn newest(state: &AppState) -> Result<Option<String>, JobError> {
+    let settings = kaeso_store::pg::updates::settings(&state.pg).await?;
+    let releases = updates::known(kaeso_store::pg::updates::releases(&state.pg).await?);
+    Ok(updates::plan(&settings, &releases).map(|p| p.target.version.to_string()))
 }

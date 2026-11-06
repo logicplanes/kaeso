@@ -20,7 +20,7 @@ Jede E-Mail, die Kaeso sendet, stammt aus `crates/kaeso-mail`: ein Layout, ein a
 - **Keine Karte.** Eine einzige linksbündige Spalte, höchstens 562 px breit, auf der Fläche: weiß im hellen Modus, schwarz im dunklen.
 - **Längen.** Ein Betreff von höchstens 60 Zeichen ohne Punkt, eine Überschrift von höchstens 48 und Sätze von höchstens 100. Deutsch und Chinesisch bekommen 15 % mehr: 69, 55 und 115. Ein Test setzt die Grenzen durch.
 - **Keine nackten Links.** Das HTML zeigt nie eine URL; der Button trägt sie. Der Textteil enthält den vollständigen Link auf einer eigenen Zeile und sagt dieselben Worte in derselben Reihenfolge.
-- **Fußzeile.** „Gesendet von Kaeso unter“ und der Host der Installation, aus `KAESO_PUBLIC_URL`. Hinweise sagen außerdem, warum sie ankamen: Sicherheits- und Organisationshinweise werden immer gesendet, und Warnungen sagen, wie man sie abschaltet.
+- **Fußzeile.** „Gesendet von Kaeso unter“ und der Host der Installation, aus `KAESO_PUBLIC_URL`. Hinweise sagen außerdem, warum sie ankamen: Sicherheits- und Organisationshinweise werden immer gesendet, und Warnungen sagen, wie man sie abschaltet. Benachrichtigungen nennen das Recht, wegen dessen die Person sie erhält, verlinken ihre Einstellungen und, außer bei Sicherheits-E-Mails, eine Ein-Klick-Abmeldung, die auch `List-Unsubscribe` und `List-Unsubscribe-Post` tragen.
 
 Text und HTML jeder E-Mail sind Snapshots in `crates/kaeso-mail/src/snapshots/`.
 
@@ -29,6 +29,7 @@ Text und HTML jeder E-Mail sind Snapshots in `crates/kaeso-mail/src/snapshots/`.
 | Datei | Aufgabe |
 | --- | --- |
 | `templates.rs` | Eine Funktion pro E-Mail, der Katalog dessen, [was Kaeso sendet](../../self-hosting/email.md#was-kaeso-sendet): Betreff, Überschrift, Satz, Button, leise Zeile und warum sie gesendet wird, in jeder Sprache |
+| `notices.rs` | Die Benachrichtigungen: ein `Fact` pro Art von Ereignis, gesetzt als `[Organisation oder Projekt] Tatsache` mit Grund und Links, und die tägliche Zusammenfassung |
 | `locale.rs` | `Locale` (`en`, `de`, `zh-CN`) sowie Datumsangaben und Zahlen, wie jede Sprache sie schreibt |
 | `layout.rs` | Das gemeinsame Layout, als HTML mit maud und als reiner Text |
 | `style.rs` | Die Werte von `@logicplanes/kaeso-tokens` in seinem Makro `token!`, der Inline-Stil jeder Rolle und das Stylesheet. Das Layout schreibt nie eine eigene Farbe oder Größe |
@@ -39,6 +40,16 @@ Text und HTML jeder E-Mail sind Snapshots in `crates/kaeso-mail/src/snapshots/`.
 - **Der Button** ist ein Link mit Innenabstand und vollem Radius. Für Outlook für Windows, das einen Link weder auffüllen noch runden kann, ist er ein VML-`roundrect`, dessen Breite aus der Beschriftung kommt, sodass er nie umbricht.
 - **Escaping.** maud escapet die Namen, die Menschen wählen, etwa Organisationen, Schlüssel und Projekte, in Text und Attributen. Das einzige nicht escapete Markup ist fest: der Doctype, die bedingten Kommentare für Outlook und der VML-Button, der escapet, was er einbettet. Tests schicken Markup und Anführungszeichen durch jeden Namen.
 - **MIME.** `multipart/alternative` mit dem Text zuerst und einem HTML-Teil, der beide PNGs der Wortmarke per `Content-ID` eingebettet trägt, sodass Mail-Apps sie nicht als Anhänge aufführen.
+
+## Benachrichtigungen
+
+`services::notifications` in `kaeso-server` entscheidet, wer eine Benachrichtigung erhält und wann.
+
+1. Jedes Audit-Ereignis wird für die Anfrage oder den Job gesammelt, die es geschrieben haben. Der Dispatcher läuft, sobald die Anfrage erfolgreich geantwortet hat oder der Job fertig ist, sodass eine zurückgerollte Änderung niemanden benachrichtigt.
+2. `dispatch::kinds` ordnet jeder Audit-`Action` die Arten zu, über die sie benachrichtigt, in einem `match` ohne Platzhalter, sodass eine neue Aktion eine Entscheidung braucht. Ereignisse ohne Aktion rufen `system` direkt auf: eine Verbindung oder ein Anbieterkonto, das sich abmeldet, ein zurückgehaltenes Tool, ein dreimal nacheinander abgelehnter Anbieter-Schlüssel, ein abgeschlossener Export, ein aufgebrauchtes hartes Budget und eine neue Version.
+3. Empfänger ergeben sich aus Rechten, nie aus Rollennamen: aus den Rechten der Art im Benachrichtigungskatalog von `kaeso-core`, gehalten in der Organisation oder dem Projekt, aus den Instanz-Admins oder aus der Person, um die es geht. Wer gehandelt hat, bleibt außen vor, außer bei Sicherheits-E-Mails.
+4. Die Einstellung jeder Person wählt sofort, täglich oder aus, und eine stummgeschaltete Organisation stoppt alles außer Sicherheits-E-Mails. `notifications_sent` hält eine E-Mail pro Thema und Tag, und über 20 sofortige E-Mails pro Stunde kommt der Rest in `notification_digest`.
+5. Der Job `notifications` läuft jede Minute. Um 8:31 Uhr in der Zeitzone der Installation sendet er wartende Zusammenfassungen, am 1. den monatlichen Kostenbericht und montags die Wochenübersicht.
 
 ## Sprachen
 

@@ -4,7 +4,7 @@ description: Verbinden Sie einen SMTP-Server, testen Sie ihn und sehen Sie, welc
 order: 6
 ---
 
-Das Gateway sendet jede E-Mail selbst, über SMTP: Anmeldelinks, Einladungen, Passwort-Resets, Warnungen zum Ablauf von Schlüsseln, Budgetwarnungen und Sicherheitshinweise. Ohne SMTP-Server startet es nicht, außer Sie lassen E-Mails nur protokollieren.
+Das Gateway sendet jede E-Mail selbst, über SMTP: Anmeldelinks, Einladungen, Passwort-Resets, Sicherheitshinweise und Benachrichtigungen zu dem, wofür jede Person verantwortlich ist. Ohne SMTP-Server startet es nicht, außer Sie lassen E-Mails nur protokollieren.
 
 ## SMTP einrichten
 
@@ -58,9 +58,11 @@ Die Anmeldung mit Passwort funktioniert weiter, und `kaeso setup-link` gibt den 
 | Inhaberschaft | Jemand eine Person zum Inhaber macht |
 | Ablauf eines Schlüssels | Einer der API-Schlüssel einer Person bald abläuft |
 | Budgetwarnung | Ein Budget eine seiner Warnschwellen erreicht |
-| Test | Ein Instanz-Admin eine Test-E-Mail sendet |
+| Benachrichtigungen | Etwas passiert, wofür eine Person verantwortlich ist, etwa ein Mitglied tritt bei, ein Anbieter-Schlüssel wird immer wieder abgelehnt oder eine neue Version von Kaeso erscheint ([die E-Mails und wer sie erhält](../console/account.md#e-mails-wählen)) |
+| Tägliche Zusammenfassung | Um 8:31 Uhr in der Zeitzone der Installation, wenn Benachrichtigungen auf sie warten |
+| Test | Ein Instanz-Admin eine Test-E-Mail sendet, oder eine Person sich selbst eine unter **Konto** › **Benachrichtigungen** |
 
-Sicherheits- und Organisationshinweise werden immer gesendet. Welche Warnungen sie erhält, wählt jede Person unter **Konto** › **Benachrichtigungen**, und jede Warnung sagt in ihrer Fußzeile, wie sie sich abschalten lässt.
+Sicherheits- und Organisationshinweise werden immer gesendet. Für jede andere Benachrichtigung wählt jede Person unter **Konto** › **Benachrichtigungen** sofort, täglich oder aus. Kaeso sendet zum selben Thema höchstens eine E-Mail pro Tag und höchstens 20 sofort pro Stunde; der Rest wartet auf die Zusammenfassung. Jede Benachrichtigung nennt das Recht, wegen dessen die Person sie erhält, und verlinkt ihre Einstellungen. Alle außer Sicherheits-E-Mails tragen einen Ein-Klick-Abmeldelink, auch im Header `List-Unsubscribe` (RFC 8058).
 
 Jede E-Mail hat einen HTML- und einen Textteil, hell und dunkel. Ihre Bilder sind in die E-Mail eingebettet, sodass sie nichts von Ihrer Installation lädt und keine Tracking-Pixel enthält.
 

@@ -417,6 +417,34 @@ pub async fn account(state: &AppState, outcome: &Outcome) {
     };
     match engine::charge(state, &caller, entry, &request_id, at, charge).await {
         Ok(moved) => {
+            let used_up: Vec<_> = moved
+                .iter()
+                .filter(|(limit, before, after)| {
+                    limit.hard
+                        && !limit.kind.is_rate()
+                        && *before < limit.units()
+                        && *after >= limit.units()
+                })
+                .map(|(limit, _, _)| limit.clone())
+                .collect();
+            if !used_up.is_empty() {
+                let task = state.clone();
+                state.in_flight.spawn(async move {
+                    for limit in used_up {
+                        let period = limit.period.start(at).unwrap_or(Date::MIN);
+                        let budget = budget_of(&limit);
+                        crate::services::notifications::system::limit_reached(
+                            &task,
+                            caller.org_id,
+                            caller.project_id,
+                            &limit,
+                            &budget,
+                            period,
+                        )
+                        .await;
+                    }
+                });
+            }
             let alerts: Vec<_> = moved
                 .into_iter()
                 .filter_map(|(limit, before, after)| {

@@ -1,0 +1,21 @@
+---
+source: crates/kaeso-mail/src/templates.rs
+expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
+---
+Subject: [Acme] 2026-10 kostete $412.50
+
+2026-10 kostete $412.50
+
+Diese Projekte haben im letzten Monat am meisten gekostet.
+
+- Checkout: $300.00
+- Support: $112.50
+
+Nutzung öffnen:
+https://kaeso.example.com/orgs/org_1
+
+-- 
+Gesendet von Kaeso unter kaeso.example.com.
+Sie erhalten diese E-Mail, weil Sie costs.org.view haben.
+E-Mails wählen: https://kaeso.example.com/settings/account/notifications
+Abmelden: https://kaeso.example.com/unsubscribe#token=usr_1.org_members.tag

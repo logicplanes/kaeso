@@ -219,6 +219,23 @@ pub async fn get(
     .await?)
 }
 
+pub async fn in_org(
+    db: impl PgExecutor<'_>,
+    org_id: Uuid,
+    id: Uuid,
+) -> Result<Option<EntryRow>, StoreError> {
+    Ok(sqlx::query_as!(
+        EntryRow,
+        "SELECT id, org_id, project_id, provider, model_id, overrides, custom, delisted_at, last_known, \
+         availability, availability_checked_at, created_by_kind, created_by_id, created_at, updated_at, revision \
+         FROM catalogue_models WHERE org_id = $1 AND id = $2",
+        org_id,
+        id
+    )
+    .fetch_optional(db)
+    .await?)
+}
+
 pub async fn get_for_update(
     db: impl PgExecutor<'_>,
     project_id: Uuid,

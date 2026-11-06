@@ -1,0 +1,20 @@
+---
+source: crates/kaeso-mail/src/templates.rs
+expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
+---
+Subject: 2 updates from Kaeso
+
+2 updates from Kaeso
+
+Here is what happened since the last summary.
+
+- [Acme] Grace Hopper left
+- [Checkout] Content logging is off
+
+Open Kaeso:
+https://kaeso.example.com/orgs/org_1
+
+-- 
+Sent by Kaeso at kaeso.example.com.
+You get this email because you chose daily emails.
+Choose your emails: https://kaeso.example.com/settings/account/notifications

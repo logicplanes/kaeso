@@ -4,6 +4,7 @@ pub mod assets;
 mod layout;
 mod locale;
 mod mailer;
+pub mod notices;
 mod style;
 pub mod templates;
 

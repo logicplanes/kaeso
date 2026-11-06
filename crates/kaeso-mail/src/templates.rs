@@ -24,6 +24,26 @@ pub enum EmailKind {
     OwnershipTransferred,
     KeyExpiryWarning,
     BudgetAlert,
+    NewApp,
+    ExportReady,
+    WeeklySummary,
+    AccessChanged,
+    LimitReached,
+    KeyChanged,
+    ContentLogging,
+    McpServers,
+    ConnectionExpired,
+    PortalClient,
+    OrgSecurity,
+    MemberChanges,
+    InviteAccepted,
+    ProviderKeys,
+    ModelChanges,
+    CostReport,
+    InstanceUpdates,
+    InstancePeople,
+    InstanceSettings,
+    Digest,
     Test,
 }
 
@@ -49,6 +69,26 @@ impl EmailKind {
             EmailKind::OwnershipTransferred => "ownership_transferred",
             EmailKind::KeyExpiryWarning => "key_expiry_warning",
             EmailKind::BudgetAlert => "budget_alert",
+            EmailKind::NewApp => "new_app",
+            EmailKind::ExportReady => "export_ready",
+            EmailKind::WeeklySummary => "weekly_summary",
+            EmailKind::AccessChanged => "access_changed",
+            EmailKind::LimitReached => "limit_reached",
+            EmailKind::KeyChanged => "key_changed",
+            EmailKind::ContentLogging => "content_logging",
+            EmailKind::McpServers => "mcp_servers",
+            EmailKind::ConnectionExpired => "connection_expired",
+            EmailKind::PortalClient => "portal_client",
+            EmailKind::OrgSecurity => "org_security",
+            EmailKind::MemberChanges => "member_changes",
+            EmailKind::InviteAccepted => "invite_accepted",
+            EmailKind::ProviderKeys => "provider_keys",
+            EmailKind::ModelChanges => "model_changes",
+            EmailKind::CostReport => "cost_report",
+            EmailKind::InstanceUpdates => "instance_updates",
+            EmailKind::InstancePeople => "instance_people",
+            EmailKind::InstanceSettings => "instance_settings",
+            EmailKind::Digest => "digest",
             EmailKind::Test => "test",
         }
     }
@@ -60,6 +100,7 @@ pub struct Email {
     pub kind: EmailKind,
     pub lang: Locale,
     pub subject: String,
+    pub list_unsubscribe: Option<String>,
     content: Content,
 }
 
@@ -71,17 +112,24 @@ pub struct Rendered {
     pub subject: String,
     pub text: String,
     pub html: String,
+    pub list_unsubscribe: Option<String>,
 }
 
 impl Email {
-    fn new(to: &str, kind: EmailKind, subject: String, content: Content) -> Email {
+    pub(crate) fn new(to: &str, kind: EmailKind, subject: String, content: Content) -> Email {
         Email {
             to: to.to_owned(),
             kind,
             lang: content.lang,
             subject,
+            list_unsubscribe: None,
             content,
         }
+    }
+
+    pub(crate) fn list_unsubscribe(mut self, url: Option<String>) -> Email {
+        self.list_unsubscribe = url;
+        self
     }
 
     pub fn render(&self, instance: &Instance) -> Rendered {
@@ -92,6 +140,7 @@ impl Email {
             subject: self.subject.clone(),
             text: crate::layout::text(&self.content, instance),
             html: crate::layout::html(&self.subject, &self.content, instance),
+            list_unsubscribe: self.list_unsubscribe.clone(),
         }
     }
 }
@@ -120,7 +169,7 @@ impl<'a> From<&'a String> for Actor<'a> {
 }
 
 impl Actor<'_> {
-    fn name(self, lang: Locale) -> String {
+    pub(crate) fn name(self, lang: Locale) -> String {
         match (lang, self) {
             (_, Actor::Person(name)) => name.to_owned(),
             (Locale::En, Actor::Member) => "A member".to_owned(),
@@ -200,7 +249,7 @@ impl Budget {
         format!("{period}{label} of {amount}")
     }
 
-    fn german_genitive(&self) -> String {
+    pub(crate) fn german_genitive(&self) -> String {
         let n = Locale::De.number(&self.amount);
         let budget = match self.period {
             LimitPeriod::Day => "Tagesbudgets",
@@ -217,7 +266,7 @@ impl Budget {
         }
     }
 
-    fn chinese(&self) -> String {
+    pub(crate) fn chinese(&self) -> String {
         let n = Locale::ZhCn.number(&self.amount);
         match (self.kind, self.period) {
             (LimitKind::RequestRate, _) => format!("速率限制（每分钟 {n} 次请求）"),
@@ -1028,7 +1077,7 @@ pub fn budget_alert(
     )
 }
 
-fn scope_en(scope: BudgetScope<'_>) -> String {
+pub(crate) fn scope_en(scope: BudgetScope<'_>) -> String {
     match scope {
         BudgetScope::Project => "The project".to_owned(),
         BudgetScope::Member => "A member of the project".to_owned(),
@@ -1129,6 +1178,213 @@ mod tests {
             budget_alert(l, TO, &monthly_spend("50"), BudgetScope::Project, 80, URL),
             test(l, TO),
         ]
+        .into_iter()
+        .chain(notices(l))
+        .collect()
+    }
+
+    fn notices(l: Locale) -> Vec<Email> {
+        use crate::notices::*;
+        let links = Links {
+            settings: "https://kaeso.example.com/settings/account/notifications".to_owned(),
+            unsubscribe: Some(Unsubscribe {
+                page: "https://kaeso.example.com/unsubscribe#token=usr_1.org_members.tag".to_owned(),
+                one_click: "https://kaeso.example.com/platform/v1/notifications/unsubscribe?token=usr_1.org_members.tag".to_owned(),
+            }),
+        };
+        let open = "https://kaeso.example.com/orgs/org_1";
+        let ada = Actor::Person("Ada Lovelace");
+        let budget = monthly_spend("50");
+        let one = |place: Option<&str>, fact: Fact<'_>, why: Because<'_>| {
+            notice(l, TO, place, &fact, why, open, &links)
+        };
+        vec![
+            one(None, Fact::NewApp { app: "Claude" }, Because::AboutYou),
+            one(
+                Some("Checkout"),
+                Fact::ExportReady(Export::Logs),
+                Because::Right("logs.export"),
+            ),
+            one(
+                None,
+                Fact::WeeklySummary {
+                    requests: "12480".to_owned(),
+                    tool_calls: "312".to_owned(),
+                    cost: "$41.20".to_owned(),
+                    projects: vec![
+                        ProjectUse {
+                            name: "Checkout".to_owned(),
+                            requests: Some("9120".to_owned()),
+                            cost: "$30.10".to_owned(),
+                        },
+                        ProjectUse {
+                            name: "Support".to_owned(),
+                            requests: Some("3360".to_owned()),
+                            cost: "$11.10".to_owned(),
+                        },
+                    ],
+                    top_models: vec!["claude-haiku-4-5".to_owned(), "gpt-4o".to_owned()],
+                },
+                Because::Right("usage.view"),
+            ),
+            one(
+                Some("Checkout"),
+                Fact::AccessChanged {
+                    change: Access::Added("Developer"),
+                    by: ada,
+                },
+                Because::AboutYou,
+            ),
+            one(
+                Some("Checkout"),
+                Fact::LimitReached {
+                    budget: &budget,
+                    scope: BudgetScope::Project,
+                },
+                Because::Right("limits.manage"),
+            ),
+            one(
+                Some("Checkout"),
+                Fact::KeyChanged {
+                    key: "ci-deploy",
+                    change: KeyChange::Rotated,
+                    by: ada,
+                },
+                Because::Right("keys.own.create"),
+            ),
+            one(
+                Some("Checkout"),
+                Fact::ContentLogging { on: true, by: ada },
+                Because::Right("project.view"),
+            ),
+            one(
+                Some("Acme"),
+                Fact::ToolHeld {
+                    server: "X",
+                    tool: "create_post",
+                },
+                Because::Right("mcp_servers.manage"),
+            ),
+            one(
+                Some("Acme"),
+                Fact::ConnectionExpired { server: "GitHub" },
+                Because::Right("tools.use"),
+            ),
+            one(
+                Some("Checkout"),
+                Fact::PortalClient {
+                    client: "ChatGPT",
+                    by: ada,
+                },
+                Because::Right("tools.manage"),
+            ),
+            one(
+                Some("Acme"),
+                Fact::OrgSecurity {
+                    change: Security::PlatformKeyCreated("deploy"),
+                    by: ada,
+                },
+                Because::Right("platform_keys.view"),
+            ),
+            one(
+                Some("Acme"),
+                Fact::Member {
+                    person: "Grace Hopper",
+                    change: Membership::Joined,
+                },
+                Because::Right("members.invite"),
+            ),
+            one(
+                Some("Acme"),
+                Fact::InviteAccepted {
+                    person: "Grace Hopper",
+                },
+                Because::Right("members.invite"),
+            ),
+            one(
+                Some("Acme"),
+                Fact::ProviderKey {
+                    key: "OpenAI prod",
+                    change: ProviderKey::Refused,
+                },
+                Because::Right("provider_credentials.replace"),
+            ),
+            one(
+                Some("Checkout"),
+                Fact::Model {
+                    model: "gpt-4o",
+                    change: ModelChange::Delisted,
+                },
+                Because::Right("models.manage"),
+            ),
+            one(
+                Some("Acme"),
+                Fact::CostReport {
+                    month: "2026-10",
+                    total: "$412.50",
+                    projects: vec![
+                        ProjectUse {
+                            name: "Checkout".to_owned(),
+                            requests: None,
+                            cost: "$300.00".to_owned(),
+                        },
+                        ProjectUse {
+                            name: "Support".to_owned(),
+                            requests: None,
+                            cost: "$112.50".to_owned(),
+                        },
+                    ],
+                },
+                Because::Right("costs.org.view"),
+            ),
+            one(
+                None,
+                Fact::InstanceUpdate {
+                    version: "0.6.0",
+                    change: Update::Available,
+                },
+                Because::Right("instance.updates.manage"),
+            ),
+            one(
+                None,
+                Fact::SignedUp {
+                    person: "Grace Hopper",
+                },
+                Because::Right("instance.users.view"),
+            ),
+            one(
+                None,
+                Fact::InstanceChanged {
+                    change: Instance::Settings,
+                    by: ada,
+                },
+                Because::Right("instance.settings.manage"),
+            ),
+            digest(
+                l,
+                TO,
+                &[
+                    line(
+                        l,
+                        Some("Acme"),
+                        &Fact::Member {
+                            person: "Grace Hopper",
+                            change: Membership::Left,
+                        },
+                    ),
+                    line(
+                        l,
+                        Some("Checkout"),
+                        &Fact::ContentLogging { on: false, by: ada },
+                    ),
+                ],
+                open,
+                &Links {
+                    settings: links.settings.clone(),
+                    unsubscribe: None,
+                },
+            ),
+        ]
     }
 
     fn visible_text(html: &str) -> String {
@@ -1195,6 +1451,26 @@ mod tests {
             EmailKind::OwnershipTransferred,
             EmailKind::KeyExpiryWarning,
             EmailKind::BudgetAlert,
+            EmailKind::NewApp,
+            EmailKind::ExportReady,
+            EmailKind::WeeklySummary,
+            EmailKind::AccessChanged,
+            EmailKind::LimitReached,
+            EmailKind::KeyChanged,
+            EmailKind::ContentLogging,
+            EmailKind::McpServers,
+            EmailKind::ConnectionExpired,
+            EmailKind::PortalClient,
+            EmailKind::OrgSecurity,
+            EmailKind::MemberChanges,
+            EmailKind::InviteAccepted,
+            EmailKind::ProviderKeys,
+            EmailKind::ModelChanges,
+            EmailKind::CostReport,
+            EmailKind::InstanceUpdates,
+            EmailKind::InstancePeople,
+            EmailKind::InstanceSettings,
+            EmailKind::Digest,
             EmailKind::Test,
         ] {
             assert!(kinds.contains(&kind.as_str()), "{}", kind.as_str());
@@ -1372,7 +1648,7 @@ mod tests {
 
     #[test]
     fn every_email_speaks_each_language() {
-        let expected: [(EmailKind, [&str; 2], [&str; 2]); 20] = [
+        let expected: [(EmailKind, [&str; 2], [&str; 2]); 40] = [
             (
                 EmailKind::Invitation,
                 [
@@ -1523,6 +1799,154 @@ mod tests {
                 EmailKind::Test,
                 ["Kaeso-Test-E-Mail", "E-Mail funktioniert"],
                 ["Kaeso 测试邮件", "邮件发送正常"],
+            ),
+            (
+                EmailKind::NewApp,
+                ["Claude kann als Sie handeln", "Claude kann als Sie handeln"],
+                ["Claude 可以代表您操作", "Claude 可以代表您操作"],
+            ),
+            (
+                EmailKind::ExportReady,
+                [
+                    "[Checkout] Ihr Export ist abgeschlossen",
+                    "Ihr Export ist abgeschlossen",
+                ],
+                ["[Checkout] 您的导出已完成", "您的导出已完成"],
+            ),
+            (
+                EmailKind::WeeklySummary,
+                ["Ihre Woche in Kaeso", "Ihre Woche in Kaeso"],
+                ["您在 Kaeso 的一周", "您在 Kaeso 的一周"],
+            ),
+            (
+                EmailKind::AccessChanged,
+                [
+                    "[Checkout] Sie wurden hinzugefügt",
+                    "Sie wurden hinzugefügt",
+                ],
+                ["[Checkout] 您已被添加", "您已被添加"],
+            ),
+            (
+                EmailKind::LimitReached,
+                [
+                    "[Checkout] Ein Budget ist aufgebraucht",
+                    "Ein Budget ist aufgebraucht",
+                ],
+                ["[Checkout] 预算已用完", "预算已用完"],
+            ),
+            (
+                EmailKind::KeyChanged,
+                [
+                    "[Checkout] Ihr Schlüssel wurde rotiert",
+                    "Ihr Schlüssel wurde rotiert",
+                ],
+                ["[Checkout] 您的密钥已轮换", "您的密钥已轮换"],
+            ),
+            (
+                EmailKind::ContentLogging,
+                [
+                    "[Checkout] Inhalte werden protokolliert",
+                    "Inhalte werden protokolliert",
+                ],
+                ["[Checkout] 内容记录已开启", "内容记录已开启"],
+            ),
+            (
+                EmailKind::McpServers,
+                [
+                    "[Acme] create_post hat sich geändert",
+                    "create_post hat sich geändert",
+                ],
+                ["[Acme] create_post 已变更", "create_post 已变更"],
+            ),
+            (
+                EmailKind::ConnectionExpired,
+                [
+                    "[Acme] GitHub hat Sie abgemeldet",
+                    "GitHub hat Sie abgemeldet",
+                ],
+                ["[Acme] GitHub 已让您退出登录", "GitHub 已让您退出登录"],
+            ),
+            (
+                EmailKind::PortalClient,
+                [
+                    "[Checkout] ChatGPT wurde verbunden",
+                    "ChatGPT wurde verbunden",
+                ],
+                ["[Checkout] ChatGPT 已连接", "ChatGPT 已连接"],
+            ),
+            (
+                EmailKind::OrgSecurity,
+                [
+                    "[Acme] Plattformschlüssel erstellt",
+                    "Plattformschlüssel erstellt",
+                ],
+                ["[Acme] 已创建平台密钥", "已创建平台密钥"],
+            ),
+            (
+                EmailKind::MemberChanges,
+                [
+                    "[Acme] Grace Hopper ist beigetreten",
+                    "Grace Hopper ist beigetreten",
+                ],
+                ["[Acme] Grace Hopper 已加入", "Grace Hopper 已加入"],
+            ),
+            (
+                EmailKind::InviteAccepted,
+                [
+                    "[Acme] Grace Hopper hat angenommen",
+                    "Grace Hopper hat angenommen",
+                ],
+                ["[Acme] Grace Hopper 已接受邀请", "Grace Hopper 已接受邀请"],
+            ),
+            (
+                EmailKind::ProviderKeys,
+                [
+                    "[Acme] OpenAI prod wird abgelehnt",
+                    "OpenAI prod wird abgelehnt",
+                ],
+                ["[Acme] OpenAI prod 一再被拒绝", "OpenAI prod 一再被拒绝"],
+            ),
+            (
+                EmailKind::ModelChanges,
+                [
+                    "[Checkout] gpt-4o wird eingestellt",
+                    "gpt-4o wird eingestellt",
+                ],
+                ["[Checkout] gpt-4o 已下架", "gpt-4o 已下架"],
+            ),
+            (
+                EmailKind::CostReport,
+                ["[Acme] 2026-10 kostete $412.50", "2026-10 kostete $412.50"],
+                [
+                    "[Acme] 2026-10 的成本为 $412.50",
+                    "2026-10 的成本为 $412.50",
+                ],
+            ),
+            (
+                EmailKind::InstanceUpdates,
+                ["Kaeso 0.6.0 ist erschienen", "Kaeso 0.6.0 ist erschienen"],
+                ["Kaeso 0.6.0 已发布", "Kaeso 0.6.0 已发布"],
+            ),
+            (
+                EmailKind::InstancePeople,
+                [
+                    "Grace Hopper hat sich registriert",
+                    "Grace Hopper hat sich registriert",
+                ],
+                ["Grace Hopper 已注册", "Grace Hopper 已注册"],
+            ),
+            (
+                EmailKind::InstanceSettings,
+                [
+                    "Instanzeinstellungen geändert",
+                    "Instanzeinstellungen geändert",
+                ],
+                ["实例设置已变更", "实例设置已变更"],
+            ),
+            (
+                EmailKind::Digest,
+                ["2 Neuigkeiten von Kaeso", "2 Neuigkeiten von Kaeso"],
+                ["Kaeso 的 2 条更新", "Kaeso 的 2 条更新"],
             ),
         ];
         for (lang, column) in [(Locale::De, 0), (Locale::ZhCn, 1)] {
