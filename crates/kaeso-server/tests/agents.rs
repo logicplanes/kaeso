@@ -783,6 +783,22 @@ async fn consent_refuses_what_agents_may_never_have() {
         sso.body["error"]["message"],
         "`security.sso.manage` can't be given to agents."
     );
+    let tools = approve(
+        &app,
+        &owner.cookie,
+        &request,
+        grant(
+            &owner.org_id,
+            &["org.view"],
+            &["project.view", "tools.view", "tools.use"],
+        ),
+    )
+    .await;
+    assert_eq!(tools.status, StatusCode::BAD_REQUEST);
+    assert_eq!(
+        tools.body["error"]["message"],
+        "`tools.use` can't be given to agents."
+    );
     let mut g = builder(&owner.org_id);
     g["instance"] = json!([
         "instance.updates.apply",

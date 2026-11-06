@@ -40,7 +40,7 @@ describe("GrantEditor", () => {
     const { user } = await renderUi(<Editor start={{ role: "viewer", rights_added: [], rights_removed: [] }} onChange={onChange} />);
 
     expect(screen.getByRole("combobox", { name: "Role" })).toHaveTextContent("Viewer");
-    expect(screen.getByText("Reads the project's settings, models, limits, keys, usage and log metadata; changes nothing.")).toBeInTheDocument();
+    expect(screen.getByText("Reads the project's settings, models, tools, limits, keys, usage and log metadata, and uses its tools.")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: /Customize/ }));
     expect(screen.getByRole("group", { name: "Rights in the project" })).toBeInTheDocument();
     await user.click(checkbox(/^Export logs/));

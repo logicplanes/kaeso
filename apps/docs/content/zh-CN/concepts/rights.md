@@ -28,15 +28,15 @@ order: 4
 | 所有者 | 拥有所有权限，包括未来版本新增的权限；只有所有者可以管理所有者。 |
 | 管理员 | 管理组织和所有项目，但不能删除组织、转让所有权或更改账单。 |
 | 财务 | 管理账单，并查看所有项目的用量和费用。 |
-| 开发者 | 创建项目，查看用量、费用和服务商密钥；在被添加的项目中工作。 |
+| 开发者 | 创建项目，查看用量、费用、服务商密钥和 MCP 服务器；在被添加的项目中工作。 |
 | 审计员 | 查看整个组织以供审查，包括审计日志和所有项目，但不做任何更改；看不到提示词或输出。 |
 | 成员 | 查看组织及其成员；在被添加的项目中工作。 |
 
 | 项目角色 | 描述 |
 | --- | --- |
-| 管理员 | 管理项目：成员、密钥、服务账号、模型、限额、日志和设置。 |
-| 开发者 | 使用自己的密钥和试验场调用模型，并可查看项目，包括提示词和输出。 |
-| 查看者 | 查看项目的设置、模型、限额、密钥、用量和日志元数据；不做任何更改。 |
+| 管理员 | 管理项目：成员、密钥、服务账号、模型、工具、限额、日志和设置。 |
+| 开发者 | 调用模型和工具，选择项目的工具，并可查看项目，包括提示词和输出。 |
+| 查看者 | 查看项目的设置、模型、工具、限额、密钥、用量和日志元数据，并使用其工具。 |
 
 ### 每个内置角色拥有的权限
 
@@ -47,15 +47,15 @@ order: 4
 | 所有者 | 全部，包括未来版本新增的权限 | 全部 |
 | 管理员 | 除 `org.delete`、`org.ownership.transfer` 和 `billing.manage` 之外的全部 | 全部 |
 | 财务 | `org.view`、`members.view`、`projects.view.all`、`logs.storage.view`、`usage.org.view`、`costs.org.view`、`billing.view`、`billing.manage` | 无 |
-| 开发者 | `org.view`、`members.view`、`projects.create`、`provider_credentials.view`、`providers.custom.view`、`logs.storage.view`、`usage.org.view`、`costs.org.view` | 无 |
-| 审计员 | `org.view`、`members.view`、`projects.view.all`、`provider_credentials.view`、`providers.custom.view`、`platform_keys.view`、`logs.storage.view`、`usage.org.view`、`costs.org.view`、`billing.view`、`audit_log.view`、`audit_log.export` | 查看者的权限，以及 `project.audit_log.view` |
+| 开发者 | `org.view`、`members.view`、`projects.create`、`provider_credentials.view`、`providers.custom.view`、`mcp_servers.view`、`logs.storage.view`、`usage.org.view`、`costs.org.view` | 无 |
+| 审计员 | `org.view`、`members.view`、`projects.view.all`、`provider_credentials.view`、`providers.custom.view`、`mcp_servers.view`、`platform_keys.view`、`logs.storage.view`、`usage.org.view`、`costs.org.view`、`billing.view`、`audit_log.view`、`audit_log.export` | 查看者的权限去掉 `tools.use`，以及 `project.audit_log.view` |
 | 成员 | `org.view`、`members.view` | 无 |
 
 | 项目角色 | 权限 |
 | --- | --- |
 | 管理员 | 所有项目权限 |
-| 开发者 | 查看者的权限，以及 `api.request`、`playground.use`、`keys.own.create`、`keys.own.manage`、`logs.content.view` |
-| 查看者 | `project.view`、`project.members.view`、`service_accounts.view`、`keys.all.view`、`models.view`、`limits.view`、`logs.metadata.view`、`usage.view`、`costs.view` |
+| 开发者 | 查看者的权限，以及 `api.request`、`playground.use`、`keys.own.create`、`keys.own.manage`、`logs.content.view`、`tools.manage` |
+| 查看者 | `project.view`、`project.members.view`、`service_accounts.view`、`keys.all.view`、`models.view`、`tools.view`、`tools.use`、`limits.view`、`logs.metadata.view`、`usage.view`、`costs.view` |
 
 有两项组织权限还会延伸到每个项目中。`projects.view.all` 授予 `project.view`，`projects.archive.any` 授予 `project.view` 和 `project.archive`。
 
@@ -126,6 +126,13 @@ order: 4
 | `provider_credentials.delete` | 删除服务商密钥 | 从组织中移除服务商密钥。 | 敏感；需要 `provider_credentials.view` |
 | `providers.custom.view` | 查看自定义服务商 | 查看组织的自定义服务商及其地址和格式。 |  |
 | `providers.custom.manage` | 管理自定义服务商 | 添加、修改和删除组织的自定义服务商，即接收其请求和密钥的端点。 | 敏感；近期登录；需要 `providers.custom.view` |
+
+### MCP 服务器
+
+| 权限 | 名称 | 允许的操作 | 备注 |
+| --- | --- | --- | --- |
+| `mcp_servers.view` | 查看 MCP 服务器 | 查看组织的 MCP 服务器、其工具以及 Kaeso 登录它们的方式（不含任何机密）。 |  |
+| `mcp_servers.manage` | 管理 MCP 服务器 | 添加、登录、修改和删除 MCP 服务器，并批准其已更改的工具。 | 敏感；近期登录；需要 `mcp_servers.view` |
 
 ### 安全
 
@@ -217,6 +224,14 @@ order: 4
 | `models.view` | 查看模型 | 查看项目的模型、别名和路由。 |  |
 | `models.manage` | 管理模型 | 添加、更改和移除模型及别名。 | 需要 `models.view` |
 
+### 工具
+
+| 权限 | 名称 | 允许的操作 | 备注 |
+| --- | --- | --- | --- |
+| `tools.view` | 查看工具 | 查看项目的 MCP 服务器和工具，以及连接到其门户的客户端。 |  |
+| `tools.manage` | 管理工具 | 选择项目的服务器和工具、谁可以使用它们，并断开客户端。 | 需要 `tools.view` |
+| `tools.use` | 使用工具 | 通过项目的 MCP 门户和在试验场中调用项目的工具。 | 需要 `tools.view` |
+
 ### 限额与预算
 
 | 权限 | 名称 | 允许的操作 | 备注 |
@@ -285,10 +300,10 @@ order: 4
 
 | 预设 | 组织权限 | 项目权限 | 账户权限 | 实例预设 |
 | --- | --- | --- | --- | --- |
-| 观察者 | `org.view`、`members.view`、`projects.view.all`、`logs.storage.view`、`usage.org.view`、`costs.org.view`、`audit_log.view` | `project.view`、`models.view`、`limits.view`、`logs.metadata.view`、`usage.view`、`costs.view`、`project.audit_log.view` | `account.view` | 只读 |
-| 构建者 | 开发者角色的权限 | 开发者角色的权限去掉 `logs.content.view`，再加上 `models.manage` | `account.view`、`account.keys.view` | 无 |
-| 运维者 | 管理员角色的权限，去掉不会授予智能体的权限 | 全部 | 除 `account.keys.manage` 和 `account.memberships.leave` 外的全部 | 配置 |
-| 完全访问 | 除不会授予智能体的权限外的全部 | 全部 | 全部 | 管理员 |
+| 观察者 | `org.view`、`members.view`、`projects.view.all`、`mcp_servers.view`、`logs.storage.view`、`usage.org.view`、`costs.org.view`、`audit_log.view` | `project.view`、`models.view`、`tools.view`、`limits.view`、`logs.metadata.view`、`usage.view`、`costs.view`、`project.audit_log.view` | `account.view` | 只读 |
+| 构建者 | 开发者角色的权限 | 开发者角色的权限去掉 `logs.content.view` 和 `tools.use`，再加上 `models.manage` | `account.view`、`account.keys.view` | 无 |
+| 运维者 | 管理员角色的权限，去掉不会授予智能体的权限 | 除 `tools.use` 外的全部 | 除 `account.keys.manage` 和 `account.memberships.leave` 外的全部 | 配置 |
+| 完全访问 | 除不会授予智能体的权限外的全部 | 除 `tools.use` 外的全部 | 全部 | 管理员 |
 
 默认预设是构建者。实例预设只适用于实例管理员：
 
@@ -312,7 +327,7 @@ Kaeso 在每次请求时重新计算智能体的权限，因此对用户、角�
 
 ### 不会授予智能体的权限
 
-任何智能体都不会获得 `org.ownership.transfer`、`security.sso.manage` 或 `security.sso.require`。智能体也不能扩大自己的访问权限、授权其他智能体或管理任何人的智能体。它们从不触及账户安全：邮箱地址、密码、双重验证、恢复码、会话、单点登录关联以及删除账户。[工具](../api/mcp.md#工具)列出需要控制台会话的每项操作。
+任何智能体都不会获得 `org.ownership.transfer`、`security.sso.manage`、`security.sso.require` 或 `tools.use`：MCP 客户端只能通过项目的门户、由某个人登录后才能使用项目的工具。智能体也不能扩大自己的访问权限、授权其他智能体或管理任何人的智能体。它们从不触及账户安全：邮箱地址、密码、双重验证、恢复码、会话、单点登录关联以及删除账户。[工具](../api/mcp.md#工具)列出需要控制台会话的每项操作。
 
 ### 敏感权限
 

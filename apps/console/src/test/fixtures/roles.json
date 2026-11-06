@@ -170,7 +170,7 @@
       "scope": "org",
       "kind": "builtin",
       "name": "Developer",
-      "description": "Creates projects and sees usage, costs and provider keys; works in the projects they are added to.",
+      "description": "Creates projects and sees usage, costs, provider keys and MCP servers; works in the projects they are added to.",
       "rights": ["org.view", "members.view", "projects.create", "provider_credentials.view", "logs.storage.view", "usage.org.view", "costs.org.view"],
       "project_rights": [],
       "holders": 2,
@@ -229,7 +229,7 @@
       "scope": "project",
       "kind": "builtin",
       "name": "Admin",
-      "description": "Manages the project: members, keys, service accounts, models, limits, logs and settings.",
+      "description": "Manages the project: members, keys, service accounts, models, tools, limits, logs and settings.",
       "rights": [
         "project.view",
         "project.update",
@@ -273,7 +273,7 @@
       "scope": "project",
       "kind": "builtin",
       "name": "Developer",
-      "description": "Calls models with their own keys and in the Playground, and reads the project, including prompts and outputs.",
+      "description": "Calls models and tools, chooses the project's tools, and reads the project, including prompts and outputs.",
       "rights": [
         "project.view",
         "project.members.view",
@@ -300,7 +300,7 @@
       "scope": "project",
       "kind": "builtin",
       "name": "Viewer",
-      "description": "Reads the project's settings, models, limits, keys, usage and log metadata; changes nothing.",
+      "description": "Reads the project's settings, models, tools, limits, keys, usage and log metadata, and uses its tools.",
       "rights": [
         "project.view",
         "project.members.view",

@@ -72,6 +72,14 @@ const rights: Readonly<Record<string, () => [string, string]>> = {
     t("rights.providersCustomManage.name", "Manage custom providers"),
     t("rights.providersCustomManage.description", "Add, change and delete the organization's custom providers, the endpoints that get its requests and keys."),
   ],
+  "mcp_servers.view": () => [
+    t("rights.mcpServersView.name", "View MCP servers"),
+    t("rights.mcpServersView.description", "See the organization's MCP servers, their tools and how Kaeso signs in to them (never secrets)."),
+  ],
+  "mcp_servers.manage": () => [
+    t("rights.mcpServersManage.name", "Manage MCP servers"),
+    t("rights.mcpServersManage.description", "Add, sign in to, change and delete MCP servers, and approve their changed tools."),
+  ],
   "security.sso.manage": () => [
     t("rights.securitySsoManage.name", "Manage SSO"),
     t("rights.securitySsoManage.description", "Configure the organization's identity provider and the role of people who arrive through it."),
@@ -200,6 +208,18 @@ const rights: Readonly<Record<string, () => [string, string]>> = {
   ],
   "models.view": () => [t("rights.modelsView.name", "View models"), t("rights.modelsView.description", "See the project's models, aliases and routing.")],
   "models.manage": () => [t("rights.modelsManage.name", "Manage models"), t("rights.modelsManage.description", "Add, change and remove models and aliases.")],
+  "tools.view": () => [
+    t("rights.toolsView.name", "View tools"),
+    t("rights.toolsView.description", "See the project's MCP servers and tools, and the clients connected to its portal."),
+  ],
+  "tools.manage": () => [
+    t("rights.toolsManage.name", "Manage tools"),
+    t("rights.toolsManage.description", "Choose the project's servers and tools, who may use them, and disconnect clients."),
+  ],
+  "tools.use": () => [
+    t("rights.toolsUse.name", "Use tools"),
+    t("rights.toolsUse.description", "Call the project's tools through its MCP portal and in the Playground."),
+  ],
   "limits.view": () => [
     t("rights.limitsView.name", "View limits"),
     t("rights.limitsView.description", "See project, member and key limits, budgets and model access."),
@@ -234,6 +254,7 @@ const categories: Readonly<Record<string, [string, () => string]>> = {
   "Members & access": ["members", () => t("rights.category.members", "Members & access")],
   Projects: ["projects", () => t("rights.category.projects", "Projects")],
   Providers: ["providers", () => t("rights.category.providers", "Providers")],
+  "MCP servers": ["mcp_servers", () => t("rights.category.mcpServers", "MCP servers")],
   Security: ["security", () => t("rights.category.security", "Security")],
   Keys: ["keys", () => t("rights.category.keys", "Keys")],
   "Logs & data": ["logs", () => t("rights.category.logs", "Logs & data")],
@@ -242,6 +263,7 @@ const categories: Readonly<Record<string, [string, () => string]>> = {
   Project: ["project", () => t("rights.category.project", "Project")],
   "Model use": ["model_use", () => t("rights.category.modelUse", "Model use")],
   Models: ["models", () => t("rights.category.models", "Models")],
+  Tools: ["tools", () => t("rights.category.tools", "Tools")],
   "Limits & budgets": ["limits", () => t("rights.category.limits", "Limits & budgets")],
   "Usage & costs": ["usage", () => t("rights.category.usageCosts", "Usage & costs")],
 };
@@ -271,8 +293,12 @@ const roleDescriptions: Readonly<Record<string, [string, () => string]>> = {
     () => t("rights.role.org.billing.description", "Manages billing and sees usage and costs across all projects."),
   ],
   "org.developer": [
-    "Creates projects and sees usage, costs and provider keys; works in the projects they are added to.",
-    () => t("rights.role.org.developer.description", "Creates projects and sees usage, costs and provider keys; works in the projects they are added to."),
+    "Creates projects and sees usage, costs, provider keys and MCP servers; works in the projects they are added to.",
+    () =>
+      t(
+        "rights.role.org.developer.description",
+        "Creates projects and sees usage, costs, provider keys and MCP servers; works in the projects they are added to.",
+      ),
   ],
   "org.auditor": [
     "Reads the whole organization for reviews, including the audit log and every project, and changes nothing; never sees prompts or outputs.",
@@ -287,20 +313,20 @@ const roleDescriptions: Readonly<Record<string, [string, () => string]>> = {
     () => t("rights.role.org.member.description", "Sees the organization and its members; works in the projects they are added to."),
   ],
   "project.admin": [
-    "Manages the project: members, keys, service accounts, models, limits, logs and settings.",
-    () => t("rights.role.project.admin.description", "Manages the project: members, keys, service accounts, models, limits, logs and settings."),
+    "Manages the project: members, keys, service accounts, models, tools, limits, logs and settings.",
+    () => t("rights.role.project.admin.description", "Manages the project: members, keys, service accounts, models, tools, limits, logs and settings."),
   ],
   "project.developer": [
-    "Calls models with their own keys and in the Playground, and reads the project, including prompts and outputs.",
+    "Calls models and tools, chooses the project's tools, and reads the project, including prompts and outputs.",
     () =>
       t(
         "rights.role.project.developer.description",
-        "Calls models with their own keys and in the Playground, and reads the project, including prompts and outputs.",
+        "Calls models and tools, chooses the project's tools, and reads the project, including prompts and outputs.",
       ),
   ],
   "project.viewer": [
-    "Reads the project's settings, models, limits, keys, usage and log metadata; changes nothing.",
-    () => t("rights.role.project.viewer.description", "Reads the project's settings, models, limits, keys, usage and log metadata; changes nothing."),
+    "Reads the project's settings, models, tools, limits, keys, usage and log metadata, and uses its tools.",
+    () => t("rights.role.project.viewer.description", "Reads the project's settings, models, tools, limits, keys, usage and log metadata, and uses its tools."),
   ],
 };
 

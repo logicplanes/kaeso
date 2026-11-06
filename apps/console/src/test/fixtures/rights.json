@@ -235,6 +235,34 @@
         ]
       },
       {
+        "id": "mcp_servers",
+        "name": "MCP servers",
+        "rights": [
+          {
+            "id": "mcp_servers.view",
+            "scope": "org",
+            "name": "View MCP servers",
+            "description": "See the organization's MCP servers, their tools and how Kaeso signs in to them (never secrets).",
+            "sensitive": false,
+            "recent_sign_in": false,
+            "cloud_only": false,
+            "owner_only": false,
+            "needs": ["org.view"]
+          },
+          {
+            "id": "mcp_servers.manage",
+            "scope": "org",
+            "name": "Manage MCP servers",
+            "description": "Add, sign in to, change and delete MCP servers, and approve their changed tools.",
+            "sensitive": true,
+            "recent_sign_in": true,
+            "cloud_only": false,
+            "owner_only": false,
+            "needs": ["org.view", "mcp_servers.view"]
+          }
+        ]
+      },
+      {
         "id": "security",
         "name": "Security",
         "rights": [
@@ -713,6 +741,45 @@
             "cloud_only": false,
             "owner_only": false,
             "needs": ["project.view", "models.view"]
+          }
+        ]
+      },
+      {
+        "id": "tools",
+        "name": "Tools",
+        "rights": [
+          {
+            "id": "tools.view",
+            "scope": "project",
+            "name": "View tools",
+            "description": "See the project's MCP servers and tools, and the clients connected to its portal.",
+            "sensitive": false,
+            "recent_sign_in": false,
+            "cloud_only": false,
+            "owner_only": false,
+            "needs": ["project.view"]
+          },
+          {
+            "id": "tools.manage",
+            "scope": "project",
+            "name": "Manage tools",
+            "description": "Choose the project's servers and tools, who may use them, and disconnect clients.",
+            "sensitive": false,
+            "recent_sign_in": false,
+            "cloud_only": false,
+            "owner_only": false,
+            "needs": ["project.view", "tools.view"]
+          },
+          {
+            "id": "tools.use",
+            "scope": "project",
+            "name": "Use tools",
+            "description": "Call the project's tools through its MCP portal and in the Playground.",
+            "sensitive": false,
+            "recent_sign_in": false,
+            "cloud_only": false,
+            "owner_only": false,
+            "needs": ["project.view", "tools.view"]
           }
         ]
       },

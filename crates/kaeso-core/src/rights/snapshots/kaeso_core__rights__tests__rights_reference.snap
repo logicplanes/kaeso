@@ -25,6 +25,8 @@ expression: rights_reference()
 | `provider_credentials.delete` ⚠ | Providers | Delete provider keys | Remove a provider key from the organization. | `provider_credentials.view` |  |  |
 | `providers.custom.view` | Providers | View custom providers | See the organization's custom providers, with their addresses and formats. |  |  |  |
 | `providers.custom.manage` ⚠ | Providers | Manage custom providers | Add, change and delete the organization's custom providers, the endpoints that get its requests and keys. | `providers.custom.view` | ✓ |  |
+| `mcp_servers.view` | MCP servers | View MCP servers | See the organization's MCP servers, their tools and how Kaeso signs in to them (never secrets). |  |  |  |
+| `mcp_servers.manage` ⚠ | MCP servers | Manage MCP servers | Add, sign in to, change and delete MCP servers, and approve their changed tools. | `mcp_servers.view` | ✓ |  |
 | `security.sso.manage` | Security | Manage SSO | Configure the organization's identity provider and the role of people who arrive through it. |  | ✓ |  |
 | `security.sso.require` ⚠ | Security | Require SSO | Require the accounts this organization manages to sign in only through its SSO. |  | ✓ |  |
 | `security.2fa.require` | Security | Require two-factor | Require two-factor authentication for members. |  | ✓ |  |
@@ -68,6 +70,9 @@ expression: rights_reference()
 | `security.key_policy.project.manage` | Keys | Set key lifetime | Set the project's maximum key lifetime. |  |  |  |
 | `models.view` | Models | View models | See the project's models, aliases and routing. |  |  |  |
 | `models.manage` | Models | Manage models | Add, change and remove models and aliases. | `models.view` |  |  |
+| `tools.view` | Tools | View tools | See the project's MCP servers and tools, and the clients connected to its portal. |  |  |  |
+| `tools.manage` | Tools | Manage tools | Choose the project's servers and tools, who may use them, and disconnect clients. | `tools.view` |  |  |
+| `tools.use` | Tools | Use tools | Call the project's tools through its MCP portal and in the Playground. | `tools.view` |  |  |
 | `limits.view` | Limits & budgets | View limits | See project, member and key limits, budgets and model access. |  |  |  |
 | `limits.manage` | Limits & budgets | Manage limits | Change project, member and key limits, budgets and model access. | `limits.view` |  |  |
 | `logs.metadata.view` | Logs & data | View request logs | See request logs: model, tokens, cost, latency, status and key. |  |  |  |
@@ -85,7 +90,7 @@ expression: rights_reference()
 | Owner | `owner` | Holds every right, now and in future releases; only owners manage owners. |
 | Admin | `admin` | Manages the organization and every project, except deleting it, transferring ownership and changing billing. |
 | Billing | `billing` | Manages billing and sees usage and costs across all projects. |
-| Developer | `developer` | Creates projects and sees usage, costs and provider keys; works in the projects they are added to. |
+| Developer | `developer` | Creates projects and sees usage, costs, provider keys and MCP servers; works in the projects they are added to. |
 | Auditor | `auditor` | Reads the whole organization for reviews, including the audit log and every project, and changes nothing; never sees prompts or outputs. |
 | Member | `member` | Sees the organization and its members; works in the projects they are added to. |
 
@@ -93,9 +98,9 @@ expression: rights_reference()
 
 | Role | Id | Description |
 |---|---|---|
-| Admin | `admin` | Manages the project: members, keys, service accounts, models, limits, logs and settings. |
-| Developer | `developer` | Calls models with their own keys and in the Playground, and reads the project, including prompts and outputs. |
-| Viewer | `viewer` | Reads the project's settings, models, limits, keys, usage and log metadata; changes nothing. |
+| Admin | `admin` | Manages the project: members, keys, service accounts, models, tools, limits, logs and settings. |
+| Developer | `developer` | Calls models and tools, chooses the project's tools, and reads the project, including prompts and outputs. |
+| Viewer | `viewer` | Reads the project's settings, models, tools, limits, keys, usage and log metadata, and uses its tools. |
 
 ## Organization roles
 
@@ -120,6 +125,8 @@ expression: rights_reference()
 | `provider_credentials.delete` | ✓ | ✓ |  |  |  |  |
 | `providers.custom.view` | ✓ | ✓ |  | ✓ | ✓ |  |
 | `providers.custom.manage` | ✓ | ✓ |  |  |  |  |
+| `mcp_servers.view` | ✓ | ✓ |  | ✓ | ✓ |  |
+| `mcp_servers.manage` | ✓ | ✓ |  |  |  |  |
 | `security.sso.manage` | ✓ | ✓ |  |  |  |  |
 | `security.sso.require` | ✓ | ✓ |  |  |  |  |
 | `security.2fa.require` | ✓ | ✓ |  |  |  |  |
@@ -163,6 +170,9 @@ expression: rights_reference()
 | `security.key_policy.project.manage` | ✓ | ✓ |  |  |  |  |
 | `models.view` | ✓ | ✓ |  |  | ✓ |  |
 | `models.manage` | ✓ | ✓ |  |  |  |  |
+| `tools.view` | ✓ | ✓ |  |  | ✓ |  |
+| `tools.manage` | ✓ | ✓ |  |  |  |  |
+| `tools.use` | ✓ | ✓ |  |  |  |  |
 | `limits.view` | ✓ | ✓ |  |  | ✓ |  |
 | `limits.manage` | ✓ | ✓ |  |  |  |  |
 | `logs.metadata.view` | ✓ | ✓ |  |  | ✓ |  |
@@ -199,6 +209,9 @@ expression: rights_reference()
 | `security.key_policy.project.manage` | ✓ |  |  |
 | `models.view` | ✓ | ✓ | ✓ |
 | `models.manage` | ✓ |  |  |
+| `tools.view` | ✓ | ✓ | ✓ |
+| `tools.manage` | ✓ | ✓ |  |
+| `tools.use` | ✓ | ✓ | ✓ |
 | `limits.view` | ✓ | ✓ | ✓ |
 | `limits.manage` | ✓ |  |  |
 | `logs.metadata.view` | ✓ | ✓ | ✓ |
@@ -266,6 +279,8 @@ expression: rights_reference()
 | `provider_credentials.delete` |  |  | ✓ | ✓ |
 | `providers.custom.view` |  | ✓ | ✓ | ✓ |
 | `providers.custom.manage` |  |  | ✓ | ✓ |
+| `mcp_servers.view` | ✓ | ✓ | ✓ | ✓ |
+| `mcp_servers.manage` |  |  | ✓ | ✓ |
 | `security.sso.manage` |  |  |  |  |
 | `security.sso.require` |  |  |  |  |
 | `security.2fa.require` |  |  | ✓ | ✓ |
@@ -309,6 +324,9 @@ expression: rights_reference()
 | `security.key_policy.project.manage` |  |  | ✓ | ✓ |
 | `models.view` | ✓ | ✓ | ✓ | ✓ |
 | `models.manage` |  | ✓ | ✓ | ✓ |
+| `tools.view` | ✓ | ✓ | ✓ | ✓ |
+| `tools.manage` |  | ✓ | ✓ | ✓ |
+| `tools.use` |  |  |  |  |
 | `limits.view` | ✓ | ✓ | ✓ | ✓ |
 | `limits.manage` |  |  | ✓ | ✓ |
 | `logs.metadata.view` | ✓ | ✓ | ✓ | ✓ |

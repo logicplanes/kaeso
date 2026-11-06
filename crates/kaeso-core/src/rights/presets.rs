@@ -58,6 +58,7 @@ impl OrgPreset {
             OrgPreset::Owner | OrgPreset::Admin => ProjectRights::all(),
             OrgPreset::Auditor => ProjectPreset::Viewer
                 .rights()
+                .minus(ProjectRights::EMPTY.with(ProjectRight::ToolsUse))
                 .with(ProjectRight::ProjectAuditLogView),
             OrgPreset::Billing | OrgPreset::Developer | OrgPreset::Member => ProjectRights::EMPTY,
         }
@@ -90,6 +91,7 @@ impl OrgPreset {
                 R::ProjectsCreate,
                 R::ProviderCredentialsView,
                 R::ProvidersCustomView,
+                R::McpServersView,
                 R::LogsStorageView,
                 R::UsageOrgView,
                 R::CostsOrgView,
@@ -102,6 +104,7 @@ impl OrgPreset {
                 R::ProjectsViewAll,
                 R::ProviderCredentialsView,
                 R::ProvidersCustomView,
+                R::McpServersView,
                 R::PlatformKeysView,
                 R::LogsStorageView,
                 R::UsageOrgView,
@@ -148,6 +151,8 @@ impl ProjectPreset {
             R::KeysAllView,
             R::ServiceAccountsView,
             R::ModelsView,
+            R::ToolsView,
+            R::ToolsUse,
             R::LimitsView,
             R::LogsMetadataView,
             R::UsageView,
@@ -164,6 +169,7 @@ impl ProjectPreset {
                     R::KeysOwnCreate,
                     R::KeysOwnManage,
                     R::LogsContentView,
+                    R::ToolsManage,
                 ]
                 .into_iter()
                 .collect(),
