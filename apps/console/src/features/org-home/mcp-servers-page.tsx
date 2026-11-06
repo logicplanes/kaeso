@@ -24,8 +24,8 @@ export interface McpServersSearch {
   add?: boolean;
 }
 
-function signInToast(result: SignInResult, server: McpServerView | undefined) {
-  const name = server?.name ?? t("orgHome.mcp.theServer", "the server");
+export function signInToast(result: SignInResult, server: string | undefined) {
+  const name = server ?? t("orgHome.mcp.theServer", "the server");
   if (result === "connected") toast.success(t("orgHome.mcp.signedInTo", "Signed in to {name}", { name }));
   else if (result === "declined") toast.error(t("orgHome.mcp.signInDeclined", "The sign-in to {name} was declined.", { name }));
   else if (result === "expired") toast.error(t("orgHome.mcp.signInExpired", "The sign-in took too long; start it again."));
@@ -56,10 +56,7 @@ export function OrgMcpServersPage({ org, search = {} }: { org: string; search?: 
   const loaded = servers.isSuccess || servers.isError || !canView;
   useEffect(() => {
     if (!result || !loaded) return;
-    signInToast(
-      result,
-      list.find((s) => s.id === search.server),
-    );
+    signInToast(result, list.find((s) => s.id === search.server)?.name);
     void navigate({ to: "/orgs/$org/mcp-servers", params: { org }, search: search.server ? { server: search.server } : {}, replace: true });
   }, [result, loaded, list, search.server, navigate, org]);
 

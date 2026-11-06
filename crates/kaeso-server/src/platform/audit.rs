@@ -82,6 +82,7 @@ actions! {
         McpServerConnect = "mcp_server.connect",
         McpServerCreate = "mcp_server.create",
         McpServerDelete = "mcp_server.delete",
+        McpServerDisconnect = "mcp_server.disconnect",
         McpServerUpdate = "mcp_server.update",
         MemberJoinBySso = "member.join_by_sso",
         MemberRemove = "member.remove",

@@ -56,7 +56,7 @@ async fn connected(state: &AppState, f: Finished, by: uuid::Uuid) {
             UserId::from_uuid(by),
             Action::McpServerConnect,
             ("mcp_server", McpServerId::from_uuid(f.server).to_string()),
-            Some(serde_json::json!({ "kind": "oauth" })),
+            Some(serde_json::json!({ "kind": "oauth", "person": f.user.is_some() })),
             state.clock.now(),
         )
         .await
@@ -109,7 +109,7 @@ pub async fn callback(
     };
     match mcp_connections::finish(&state, &params, user).await {
         Ok(f) => {
-            if let (None, Some(by)) = (f.user, user) {
+            if let Some(by) = user {
                 connected(&state, f, by).await;
             }
             Redirect::to(&back(&state, f, "connected")).into_response()

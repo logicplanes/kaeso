@@ -238,5 +238,6 @@
   "format.audit.action.portalGrantCreate": "客户端已连接到门户",
   "format.limitKind.toolCallRate": "工具调用速率",
   "format.limitUnit.toolCallsPerMinute": "次工具调用 / 分钟",
-  "format.limit.toolCallRate": "工具调用速率：每分钟 {amount} 次工具调用"
+  "format.limit.toolCallRate": "工具调用速率：每分钟 {amount} 次工具调用",
+  "format.audit.action.mcpServerDisconnect": "已退出 MCP 服务器"
 }

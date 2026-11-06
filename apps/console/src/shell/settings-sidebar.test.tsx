@@ -49,6 +49,7 @@ describe("the settings sidebar", () => {
       "Sessions",
       "API keys",
       "Agents",
+      "Connections",
       "Memberships",
       "Notifications",
       "Appearance",

@@ -1,6 +1,7 @@
 pub mod account;
 pub mod agents;
 pub mod keys;
+pub mod mcp_connections;
 pub mod profile;
 pub mod security;
 pub mod sessions;
@@ -48,6 +49,8 @@ pub fn routes(s: &Secure) -> OpenApiRouter<AppState> {
         .routes(s.route(Access::Account, routes!(account::delete_account)))
         .routes(s.route(Access::Me(AccountKeysView), routes!(keys::list)))
         .routes(s.route(Access::Me(AccountKeysView), routes!(keys::get)))
+        .routes(s.route(Access::Session, routes!(mcp_connections::list)))
+        .routes(s.route(Access::Session, routes!(mcp_connections::connect, mcp_connections::disconnect)))
         .routes(s.route(Access::Session, routes!(sessions::list)))
         .routes(s.route(Access::Session, routes!(sessions::revoke)))
         .routes(s.route(Access::Session, routes!(sessions::revoke_all)))

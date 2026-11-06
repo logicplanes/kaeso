@@ -115,6 +115,7 @@ describe("connecting an agent", () => {
         tools: ["x__create_post", "x__search_posts"],
         client_host: "claude.example",
         local: false,
+        connect: [{ server: "mcp_github", name: "GitHub", auth_method: "oauth" }],
       },
     });
     on("POST", "me/agent-requests/approve-portal", { redirect_to: "https://claude.example/api/mcp/auth_callback?code=c", agent: null });
@@ -130,6 +131,9 @@ describe("connecting an agent", () => {
     expect(screen.getByText("In Northwind › Checkout, until you or a project admin disconnect it")).toBeInTheDocument();
     expect(screen.getByText("claude.example publishes this client's name and return addresses.")).toBeInTheDocument();
     expect(screen.queryByText("It returns to this computer")).toBeNull();
+    expect(screen.getByText("These servers need your own account; their tools fail for you until you connect.")).toBeInTheDocument();
+    expect(screen.getByText("GitHub")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Connect/ })).toHaveAttribute("href", "/settings/account/connections?server=mcp_github");
     expect(requests("GET", "me/agents/catalogue")).toHaveLength(0);
     await user.click(screen.getByRole("button", { name: "Connect" }));
     await waitFor(() => expect(assign).toHaveBeenCalledWith("https://claude.example/api/mcp/auth_callback?code=c"));
@@ -143,7 +147,7 @@ describe("connecting an agent", () => {
       client: "Desk app",
       redirect_host: "127.0.0.1",
       expires_at: "2026-10-15T12:15:00Z",
-      portal: { org: ORG, org_name: "Northwind", project: "proj_checkout", project_name: "Checkout", tools: [], client_host: null, local: true },
+      portal: { org: ORG, org_name: "Northwind", project: "proj_checkout", project_name: "Checkout", tools: [], client_host: null, local: true, connect: [] },
     });
     on("POST", "me/agent-requests/deny", { redirect_to: "http://127.0.0.1:3333/callback?error=access_denied", agent: null });
     const assign = vi.spyOn(window.location, "assign").mockImplementation(() => undefined);

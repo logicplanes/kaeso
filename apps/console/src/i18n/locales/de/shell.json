@@ -138,5 +138,6 @@
   "shell.palette.actions": "Aktionen",
   "shell.palette.copyPortal": "Portaladresse kopieren",
   "shell.keyword.mcp": "MCP",
-  "shell.palette.portalCopied": "Portaladresse kopiert"
+  "shell.palette.portalCopied": "Portaladresse kopiert",
+  "shell.settings.connections": "Verbindungen"
 }

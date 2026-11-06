@@ -56,6 +56,7 @@
   "format.audit.action.mcpServerConnect": "Signed in to an MCP server",
   "format.audit.action.mcpServerCreate": "MCP server added",
   "format.audit.action.mcpServerDelete": "MCP server deleted",
+  "format.audit.action.mcpServerDisconnect": "Signed out of an MCP server",
   "format.audit.action.mcpServerUpdate": "MCP server changed",
   "format.audit.action.memberJoinBySso": "Member joined through single sign-on",
   "format.audit.action.memberRemove": "Member removed",

@@ -98,6 +98,8 @@
   "public.passwordRule": "12 to 128 characters. A few unrelated words are easy to remember and hard to guess.",
   "public.passwordShort": "{count, plural, one {# more character to go.} other {# more characters to go.}}",
   "public.portalClientHost": "{host} publishes this client's name and return addresses.",
+  "public.portalConnect": "These servers need your own account; their tools fail for you until you connect.",
+  "public.portalConnectServer": "Connect",
   "public.portalLocal": "Continue only if you started this from an app on this device.",
   "public.portalLocalTitle": "It returns to this computer",
   "public.portalNoTools": "None yet; it gets the tools a project admin turns on.",

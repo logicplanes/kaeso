@@ -132,5 +132,7 @@
   "public.portalNoTools": "暂无；它会获得项目管理员开启的工具。",
   "public.portalUntilDisconnected": "在 {org} › {project} 中，直到您或项目管理员将其断开",
   "public.portalClientHost": "{host} 发布了此客户端的名称和返回地址。",
-  "public.connectPortal": "连接"
+  "public.connectPortal": "连接",
+  "public.portalConnect": "这些服务器需要您自己的账户；在您连接之前，它们的工具对您不可用。",
+  "public.portalConnectServer": "连接"
 }
