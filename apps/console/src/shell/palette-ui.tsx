@@ -18,6 +18,8 @@ import { readRecent, recentHint, type RecentIcons } from "./recent";
 import { ACCOUNT_PAGES, INSTANCE_PAGES, ORG_SETTINGS_PAGES } from "./settings-pages";
 import { openShortcutSheet } from "./shortcuts-store";
 import { useProjectRights } from "~/auth/rights";
+import { portalUrl } from "~/kaeso/mcp-servers";
+import { toast } from "./toast";
 
 const orgKeywords = (id: string): string[] | undefined =>
   id === "overview"
@@ -287,6 +289,7 @@ function usePaletteGroups(close: () => void, open: boolean, query: string): { gr
       limit: t("shell.create.limit", "Add limit"),
       project: t("shell.create.project", "Create project"),
       invite: t("shell.create.invite", "Invite member"),
+      mcpServer: t("shell.create.mcpServer", "Add MCP server"),
     };
     const creates: CommandItem[] = [
       ...(create && !create.disabledReason
@@ -313,8 +316,27 @@ function usePaletteGroups(close: () => void, open: boolean, query: string): { gr
       ...(org && orgRights.has("members.invite") && create?.label !== label.invite
         ? [{ id: "create:invite", label: label.invite, icon: icons.mail, onSelect: go(`/settings/orgs/${org}/members?tab=invites&invite=true`) }]
         : []),
+      ...(org && orgRights.has("mcp_servers.manage") && create?.label !== t("orgHome.mcp.add", "Add server")
+        ? [{ id: "create:mcp-server", label: label.mcpServer, icon: icons.instance, onSelect: go(`${orgPath(org)}/mcp-servers?add=true`) }]
+        : []),
     ];
     if (creates.length) groups.push({ label: t("common.create", "Create"), items: creates });
+    if (base && projectRights.has("tools.view"))
+      groups.push({
+        label: t("shell.palette.actions", "Actions"),
+        items: [
+          {
+            id: "copy:portal",
+            label: t("shell.palette.copyPortal", "Copy portal address"),
+            icon: icons.copy,
+            keywords: [t("shell.keyword.mcp", "MCP"), t("shell.keyword.tools", "tools")],
+            onSelect: () => {
+              close();
+              void navigator.clipboard.writeText(portalUrl(project)).then(() => toast(t("shell.palette.portalCopied", "Portal address copied")));
+            },
+          },
+        ],
+      });
     const switchItems: CommandItem[] = [];
     if (memberships.length > 1) {
       switchItems.push({

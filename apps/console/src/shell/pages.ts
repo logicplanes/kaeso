@@ -51,6 +51,7 @@ export const PROJECT_PAGES: ProjectPage[] = [
     shortcut: [["g"], ["l"]],
   },
   { id: "models", label: () => t("common.models", "Models"), icon: icons.model, path: "models", right: "models.view", key: "m", shortcut: [["g"], ["m"]] },
+  { id: "tools", label: () => t("shell.page.tools", "Tools"), icon: icons.tools, path: "tools", right: "tools.view", key: "t", shortcut: [["g"], ["t"]] },
   { id: "limits", label: () => t("shell.page.limits", "Limits"), icon: icons.limit, path: "limits", right: "limits.view" },
   { id: "members", label: () => t("common.members", "Members"), icon: icons.members, path: "members", right: "project.members.view" },
   {

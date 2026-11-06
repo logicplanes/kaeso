@@ -107,6 +107,7 @@ export interface ToolCallFilters {
   from?: string;
   to?: string;
   status?: "ok" | "error" | "refused";
+  tool?: string;
 }
 
 export const toolCallsInfiniteQuery = (org: string, project: string, filters: ToolCallFilters) =>
@@ -118,7 +119,13 @@ export const toolCallsInfiniteQuery = (org: string, project: string, filters: To
         ...(filters.range ? { range: filters.range } : {}),
         ...(filters.from && filters.to ? { from: filters.from, to: filters.to } : {}),
       });
-      const query = { from, ...(to ? { to } : {}), ...(filters.status ? { status: filters.status } : {}), ...pageParam };
+      const query = {
+        from,
+        ...(to ? { to } : {}),
+        ...(filters.status ? { status: filters.status } : {}),
+        ...(filters.tool ? { tool: filters.tool } : {}),
+        ...pageParam,
+      };
       const page = data(
         await api.GET("/platform/v1/orgs/{org}/projects/{project}/logs/tool-calls", {
           params: { path: { org, project }, query: { ...query, limit: 100 } },

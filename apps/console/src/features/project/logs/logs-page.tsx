@@ -44,7 +44,14 @@ import { t } from "~/i18n";
 import { common } from "~/i18n/common";
 import { patchSearch, type SearchPatch } from "~/search";
 
-export type LogsSearch = LogFilters & { log?: string; live?: boolean; kind?: "tools"; call?: string; call_status?: "ok" | "error" | "refused" };
+export type LogsSearch = LogFilters & {
+  log?: string;
+  live?: boolean;
+  kind?: "tools";
+  call?: string;
+  call_status?: "ok" | "error" | "refused";
+  call_tool?: string;
+};
 
 export const ranges = (): { value: LogRange; label: string }[] => [
   { value: "1h", label: t("logs.range.hour", "Last hour") },
@@ -87,7 +94,7 @@ export function LogsPage({ org, project, search }: { org: string; project: strin
   const navigate = useNavigate();
   const rights = useProjectRights(org, project);
   const needs = useNeedsRight(org, project);
-  const { log, live, kind: _kind, call: _call, call_status: _status, ...filters } = search;
+  const { log, live, kind: _kind, call: _call, call_status: _status, call_tool: _tool, ...filters } = search;
   const logs = useInfiniteQuery(logsInfiniteQuery(org, project, filters));
   const keys = useQuery({ ...allKeysQuery(org, project, { include_archived: true }), enabled: rights.has("keys.all.view") });
   const members = useQuery({ ...projectMembersQuery(org, project), enabled: rights.has("project.members.view") });

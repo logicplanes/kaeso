@@ -29,6 +29,7 @@ import { CreateKeyDialog } from "~/kaeso/create-key-flow";
 import { asGrant, sameGrant, type Grant } from "~/kaeso/grant";
 import { LimitsSection } from "~/kaeso/limits-section";
 import { ModelAccessSection } from "~/kaeso/model-access-section";
+import { ToolAccessSection } from "~/kaeso/tool-access-section";
 import { GrantEditor } from "~/kaeso/rights-editor";
 import { useCatalogue } from "~/kaeso/catalogue";
 import { rolesOfScope, useRoles } from "~/kaeso/roles";
@@ -259,6 +260,9 @@ function AccountBody({ org, project, accountId, onClose }: { org: string; projec
       )}
       {rights.has("limits.view") && (
         <ModelAccessSection org={org} project={project} subject={{ kind: "service_account", id: a.id }} canEdit={rights.has("limits.manage") && !archived} />
+      )}
+      {rights.has("tools.view") && (
+        <ToolAccessSection org={org} project={project} subject={{ principal: a.id }} canEdit={rights.has("tools.manage") && !archived} />
       )}
       {rights.has("limits.view") && (
         <LimitsSection

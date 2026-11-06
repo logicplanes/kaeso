@@ -32,6 +32,7 @@ function validateLogsSearch(s: Record<string, unknown>): LogsSearch {
     ...text("log", s.log),
     ...(s.kind === "tools" ? { kind: "tools" as const } : {}),
     ...text("call", s.call),
+    ...text("call_tool", s.call_tool),
     ...(s.call_status === "ok" || s.call_status === "error" || s.call_status === "refused" ? { call_status: s.call_status } : {}),
     ...(bool(s.live) ? { live: true } : {}),
   };

@@ -172,6 +172,31 @@ async fn tool_calls_are_logged_with_their_content_where_content_is_kept() {
         .await;
     assert_eq!(r.status, StatusCode::BAD_REQUEST);
 
+    let tools = e
+        .app
+        .get(&format!("{}/tools", e.at()), &e.owner.cookie)
+        .await;
+    let counted: Vec<(&str, &Value)> = tools.body["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|t| (t["name"].as_str().unwrap(), &t["calls_7d"]))
+        .collect();
+    assert!(counted.contains(&("create_post", &json!(1))), "{counted:?}");
+    assert!(counted.contains(&("get_me", &json!(1))), "{counted:?}");
+    assert!(
+        counted.contains(&("search_posts", &json!(0))),
+        "{counted:?}"
+    );
+    let servers = e
+        .app
+        .get(&format!("{}/mcp-servers", e.at()), &e.owner.cookie)
+        .await;
+    let x = &servers.body["data"][0];
+    assert_eq!(x["calls_7d"], 2);
+    assert!(x["last_call_at"].is_string());
+    assert!(x["url"].as_str().unwrap().starts_with("http://127.0.0.1"));
+
     e.app
         .call(
             Method::PATCH,

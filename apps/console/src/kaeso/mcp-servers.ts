@@ -1,4 +1,4 @@
-import type { McpProbeProblem, McpServerProbeView, McpServerStatus, McpServerView, McpToolState } from "~/api/generated/types";
+import type { McpProbeProblem, McpServerProbeView, McpServerStatus, McpServerView, McpToolState, ProjectMcpServerView } from "~/api/generated/types";
 import { t } from "~/i18n";
 
 type Tone = "success" | "warning" | "danger" | "info" | "neutral";
@@ -9,6 +9,8 @@ export const MAX_HANDLE = 24;
 
 // Clients take only `[a-zA-Z0-9_-]`, and Kaeso writes a handle's hyphens as underscores in tool names.
 export const toolPrefix = (handle: string): string => `${(handle || "x").replace(/-/g, "_")}__`;
+
+export const portalUrl = (project: string): string => `${window.location.origin}/mcp/${project}`;
 
 export function hostOf(url: string): string {
   try {
@@ -28,6 +30,32 @@ export function connectionWord(s: McpServerView): Word {
   return c.account
     ? { tone: "success", label: t("orgHome.mcp.connection.account", "Connected as {account}", { account: c.account }) }
     : { tone: "success", label: t("orgHome.mcp.connection.connected", "Connected") };
+}
+
+export function projectServerWord(s: ProjectMcpServerView): Word {
+  if (s.auth_method === "none") return { tone: "neutral", label: t("orgHome.mcp.connection.none", "No sign-in") };
+  if (s.credential_mode === "per_user") return { tone: "neutral", label: t("orgHome.mcp.connection.perUser", "Each person signs in") };
+  return s.connected
+    ? { tone: "success", label: t("orgHome.mcp.connection.connected", "Connected") }
+    : { tone: "warning", label: t("orgHome.mcp.connection.signedOut", "Signed out") };
+}
+
+export type Hint = "read_only" | "destructive" | "open_world";
+
+const HINT_KEYS: Record<Hint, "readOnlyHint" | "destructiveHint" | "openWorldHint"> = {
+  read_only: "readOnlyHint",
+  destructive: "destructiveHint",
+  open_world: "openWorldHint",
+};
+
+export const HINTS: Hint[] = ["read_only", "destructive", "open_world"];
+
+export const hintsOf = (annotations: unknown): Hint[] => HINTS.filter((h) => hint(annotations, HINT_KEYS[h]));
+
+export function hintLabel(h: Hint): string {
+  if (h === "read_only") return t("project.tools.hint.readOnly", "Read-only");
+  if (h === "destructive") return t("project.tools.hint.destructive", "Destructive");
+  return t("project.tools.hint.openWorld", "Open world");
 }
 
 export function statusWord(status: McpServerStatus): Word {

@@ -1,6 +1,6 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import type { UserEvent } from "@testing-library/user-event";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { ALL_PROJECT_RIGHTS, ORG, OTHER_PROJECT, PROJECT, membership, myMembership, signedIn, user as person, whoAmI } from "~/test/fixtures";
 import { apiKey, catalogueModel, projectData, projectMember, serviceAccount } from "~/test/fixtures/project";
 import { me } from "~/test/fixtures/instance-account";
@@ -53,6 +53,24 @@ describe("the command palette", () => {
     expect(ids).not.toContain("create:limit");
     expect(ids).not.toContain("switch:org");
     expect(within(list).getByRole("option", { name: /Add limit/ })).toHaveTextContent("C");
+  });
+
+  it("copies the project's portal address and adds an MCP server", async () => {
+    signedIn();
+    projectData();
+    on("GET", "orgs/:org/mcp-servers", paged([]));
+    const { user, router } = await renderApp(LIMITS);
+    const writeText = vi.spyOn(navigator.clipboard, "writeText");
+    let list = await openPalette(user);
+    await user.click(await option(list, "copy:portal"));
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith(`${window.location.origin}/mcp/${PROJECT}`));
+    expect(await screen.findByText("Portal address copied")).toBeInTheDocument();
+    list = await openPalette(user);
+    await user.click(await option(list, "create:mcp-server"));
+    await waitFor(() => expect(router.state.location.pathname).toBe(`/orgs/${ORG}/mcp-servers`));
+    const dialog = await screen.findByRole("dialog", { name: "Add MCP server" });
+    await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
+    await waitFor(() => expect(router.state.location.search).toEqual({}));
   });
 
   it("goes to a page and closes", async () => {

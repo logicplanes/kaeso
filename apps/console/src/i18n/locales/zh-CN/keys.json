@@ -56,5 +56,6 @@
   "keys.title": "API 密钥",
   "keys.undo": "撤销",
   "keys.used": "{when}使用",
-  "keys.whose": "密钥所有者"
+  "keys.whose": "密钥所有者",
+  "keys.accessWithTools": "{access}和工具"
 }

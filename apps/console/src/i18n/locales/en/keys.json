@@ -1,5 +1,6 @@
 {
   "keys.access": "Access",
+  "keys.accessWithTools": "{access} and tools",
   "keys.actions": "Key actions",
   "keys.archiveHint": "Applications using it stop authenticating; archiving can't be undone, and its history stays.",
   "keys.archiveKey": "Archive key",

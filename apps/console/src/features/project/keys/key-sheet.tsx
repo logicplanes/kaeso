@@ -16,6 +16,7 @@ import { useSession } from "~/auth/session";
 import { accessLabel } from "~/format/labels";
 import { LimitsSection } from "~/kaeso/limits-section";
 import { ModelAccessSection } from "~/kaeso/model-access-section";
+import { ToolAccessSection } from "~/kaeso/tool-access-section";
 import { expiryDetail } from "./expiry";
 import { asKeyState, usePartyName } from "./party";
 import { useRememberRecent } from "~/shell/recent";
@@ -172,7 +173,10 @@ function KeyBody({ org, project, keyId, onClose }: { org: string; project: strin
       <KeyValue
         items={[
           { label: t("keys.for", "For"), value: partyName(k.principal) },
-          { label: t("keys.access", "Access"), value: accessLabel(k.access) },
+          {
+            label: t("keys.access", "Access"),
+            value: k.tools ? t("keys.accessWithTools", "{access} and tools", { access: accessLabel(k.access) }) : accessLabel(k.access),
+          },
           { label: common.created(), value: t("keys.createdBy", "{date} by {name}", { date: formatDate(k.created_at), name: partyName(k.created_by) }) },
           { label: common.expires(), value: k.expires_at ? expiryDetail(k.expires_at) : common.never() },
           { label: common.lastUsed(), value: k.last_used_at ? formatRelative(k.last_used_at) : common.never() },
@@ -191,6 +195,14 @@ function KeyBody({ org, project, keyId, onClose }: { org: string; project: strin
             owner: { kind: k.principal.kind === "service_account" ? "service_account" : "user", id: k.principal.id ?? "" },
           }}
           canEdit={rights.has("limits.manage")}
+        />
+      )}
+      {k.tools && rights.has("tools.view") && (
+        <ToolAccessSection
+          org={org}
+          project={project}
+          subject={{ principal: k.id, owner: k.principal.id }}
+          canEdit={rights.has("tools.manage") && k.state !== "archived"}
         />
       )}
       {rights.has("limits.view") && (

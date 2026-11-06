@@ -6,6 +6,7 @@ const RESULTS: SignInResult[] = ["connected", "declined", "expired", "failed"];
 const mcpServersSearch = (s: Record<string, unknown>): McpServersSearch => ({
   ...(typeof s.server === "string" && s.server ? { server: s.server } : {}),
   ...(RESULTS.includes(s.result as SignInResult) ? { result: s.result as SignInResult } : {}),
+  ...(s.add === true || s.add === "true" ? { add: true } : {}),
 });
 
 export const Route = createFileRoute("/_app/orgs/$org/mcp-servers")({ validateSearch: mcpServersSearch, component: McpServers });

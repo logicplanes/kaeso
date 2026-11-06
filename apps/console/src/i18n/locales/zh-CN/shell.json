@@ -132,5 +132,11 @@
   "shell.whatsNew.title": "Kaeso 新功能",
   "shell.page.mcpServers": "MCP 服务器",
   "shell.keyword.tools": "工具",
-  "shell.keyword.connectors": "连接器"
+  "shell.keyword.connectors": "连接器",
+  "shell.page.tools": "工具",
+  "shell.create.mcpServer": "添加 MCP 服务器",
+  "shell.palette.actions": "操作",
+  "shell.palette.copyPortal": "复制门户地址",
+  "shell.keyword.mcp": "MCP",
+  "shell.palette.portalCopied": "已复制门户地址"
 }

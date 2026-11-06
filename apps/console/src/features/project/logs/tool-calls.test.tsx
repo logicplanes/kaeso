@@ -155,6 +155,18 @@ describe("Tool calls in the request logs", () => {
     expect(await screen.findByText("You can't see request content")).toBeInTheDocument();
   });
 
+  it("shows only one tool's calls when opened from the tool", async () => {
+    signedIn();
+    projectData({ members: [projectMember()] });
+    calls([toolCall()]);
+    const { user } = await renderApp(projectPath("logs?kind=tools&call_tool=x__create_post"));
+    await screen.findByRole("row", { name: /x__create_post/ });
+    expect(requests("GET", CALLS)[0]?.query.get("tool")).toBe("x__create_post");
+    await user.click(screen.getByRole("button", { name: "Remove the Tool filter" }));
+    await waitFor(() => expect(window.location.search).not.toContain("call_tool"));
+    await waitFor(() => expect(requests("GET", CALLS).at(-1)?.query.get("tool")).toBeNull());
+  });
+
   it("explains an empty range", async () => {
     signedIn();
     projectData({ members: [projectMember()] });

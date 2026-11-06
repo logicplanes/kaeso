@@ -21,6 +21,7 @@ export type SignInResult = "connected" | "declined" | "expired" | "failed";
 export interface McpServersSearch {
   server?: string;
   result?: SignInResult;
+  add?: boolean;
 }
 
 function signInToast(result: SignInResult, server: McpServerView | undefined) {
@@ -42,7 +43,7 @@ export function OrgMcpServersPage({ org, search = {} }: { org: string; search?: 
   const canManage = rights.has("mcp_servers.manage");
   const servers = useQuery({ ...mcpServersQuery(org), enabled: canView });
   const projects = useQuery({ ...orgProjectsQuery(org), enabled: canView });
-  const [adding, setAdding] = useState(false);
+  const [adding, setAdding] = useState(!!search.add);
   const list = useMemo(() => servers.data ?? [], [servers.data]);
   const all = useMemo(() => projects.data ?? [], [projects.data]);
   const addReason = canManage ? undefined : needs("mcp_servers.manage");
@@ -190,7 +191,15 @@ export function OrgMcpServersPage({ org, search = {} }: { org: string; search?: 
       </AppFrame.Body>
       {canView && <McpServerSheet org={org} serverId={search.server} onClose={() => open(undefined)} />}
       <DialogScope open={adding}>
-        <AddServerDialog org={org} open={adding} onClose={() => setAdding(false)} onAdded={(s) => open(s.id)} />
+        <AddServerDialog
+          org={org}
+          open={adding}
+          onClose={() => {
+            setAdding(false);
+            if (search.add) open(search.server);
+          }}
+          onAdded={(s) => open(s.id)}
+        />
       </DialogScope>
     </>
   );

@@ -216,3 +216,34 @@ pub async fn search(
     }
     Ok(q.fetch_all::<ToolCallRow>().await?)
 }
+
+#[derive(Clone, Debug, PartialEq, Eq, Row, Deserialize)]
+pub struct ToolCallCount {
+    #[serde(with = "clickhouse::serde::uuid")]
+    pub server_id: Uuid,
+    pub upstream_tool: String,
+    pub calls: u64,
+    #[serde(with = "clickhouse::serde::time::datetime64::millis")]
+    pub last: OffsetDateTime,
+}
+
+// One row per tool called since `since`, for the project's tool lists.
+pub async fn counts(
+    ch: &ClickHouse,
+    org: Uuid,
+    project: Uuid,
+    since: OffsetDateTime,
+) -> Result<Vec<ToolCallCount>, StoreError> {
+    Ok(ch
+        .client()
+        .query(
+            "SELECT server_id, upstream_tool, count() AS calls, max(started_at) AS last FROM tool_calls \
+             WHERE org_id = ? AND project_id = ? AND started_at >= fromUnixTimestamp64Milli(?) \
+             GROUP BY server_id, upstream_tool",
+        )
+        .bind(org)
+        .bind(project)
+        .bind(millis(since))
+        .fetch_all::<ToolCallCount>()
+        .await?)
+}

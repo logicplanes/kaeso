@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { CLIENT_MARKS, ClientButton } from "./client-button.js";
+import { PROVIDER_MARKS } from "./provider-marks.js";
 
 describe("ClientButton", () => {
   it("is a button named after the client that draws its mark", async () => {
@@ -13,8 +14,9 @@ describe("ClientButton", () => {
     expect(onClick).toHaveBeenCalledOnce();
   });
 
-  it("draws a different mark for every client", () => {
+  it("draws a different mark for every client, and ChatGPT with OpenAI's", () => {
     expect(new Set(Object.values(CLIENT_MARKS)).size).toBe(Object.keys(CLIENT_MARKS).length);
+    expect(CLIENT_MARKS.chatgpt).toBe(PROVIDER_MARKS.openai?.d);
   });
 
   it("is a circle like the header buttons beside it, and takes a forced state for the states page", () => {
