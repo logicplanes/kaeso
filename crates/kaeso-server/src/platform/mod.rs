@@ -19,6 +19,7 @@ pub mod projects;
 pub mod providers;
 pub mod response_cache;
 pub mod rights;
+pub mod tool_logs;
 pub mod usage;
 pub mod validate;
 pub mod views;

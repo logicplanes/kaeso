@@ -126,3 +126,93 @@ pub async fn content(
         .fetch_optional::<ToolCallContentRow>()
         .await?)
 }
+
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct Filter {
+    pub from: Option<OffsetDateTime>,
+    pub to: Option<OffsetDateTime>,
+    pub key: Option<Uuid>,
+    pub caller: Option<Uuid>,
+    pub server: Option<Uuid>,
+    pub tool: Option<String>,
+    pub status: Option<String>,
+    pub error_type: Option<String>,
+}
+
+enum Bind {
+    Uuid(Uuid),
+    Millis(OffsetDateTime),
+    Str(String),
+    I64(i64),
+}
+
+fn millis(t: OffsetDateTime) -> i64 {
+    i64::try_from(t.unix_timestamp_nanos() / 1_000_000).unwrap_or(0)
+}
+
+// Newest first, by `(started_at, id)`, so a page continues where the last one ended.
+pub async fn search(
+    ch: &ClickHouse,
+    org: Uuid,
+    project: Uuid,
+    f: &Filter,
+    after: Option<(OffsetDateTime, Uuid)>,
+    limit: i64,
+) -> Result<Vec<ToolCallRow>, StoreError> {
+    let mut sql =
+        String::from("SELECT ?fields FROM tool_calls WHERE org_id = ? AND project_id = ?");
+    let mut binds = vec![Bind::Uuid(org), Bind::Uuid(project)];
+    let mut push = |clause: &str, bind: Bind| {
+        sql.push_str(clause);
+        binds.push(bind);
+    };
+    if let Some(t) = f.from {
+        push(
+            " AND started_at >= fromUnixTimestamp64Milli(?)",
+            Bind::Millis(t),
+        );
+    }
+    if let Some(t) = f.to {
+        push(
+            " AND started_at < fromUnixTimestamp64Milli(?)",
+            Bind::Millis(t),
+        );
+    }
+    if let Some(k) = f.key {
+        push(" AND key_id = ?", Bind::Uuid(k));
+    }
+    if let Some(c) = f.caller {
+        push(" AND caller_id = ?", Bind::Uuid(c));
+    }
+    if let Some(s) = f.server {
+        push(" AND server_id = ?", Bind::Uuid(s));
+    }
+    if let Some(t) = &f.tool {
+        push(" AND tool = ?", Bind::Str(t.clone()));
+    }
+    if let Some(s) = &f.status {
+        push(" AND status = ?", Bind::Str(s.clone()));
+    }
+    if let Some(e) = &f.error_type {
+        push(" AND error_type = ?", Bind::Str(e.clone()));
+    }
+    if let Some((at, id)) = after {
+        push(
+            " AND (started_at, id) < (fromUnixTimestamp64Milli(?), ?)",
+            Bind::Millis(at),
+        );
+        binds.push(Bind::Uuid(id));
+    }
+    sql.push_str(" ORDER BY started_at DESC, id DESC LIMIT ?");
+    binds.push(Bind::I64(limit));
+    let mut q = ch.client().query(&sql);
+    for b in binds {
+        q = match b {
+            Bind::Uuid(u) => q.bind(u),
+            Bind::Millis(t) => q.bind(millis(t)),
+            Bind::Str(s) => q.bind(s),
+            Bind::I64(v) => q.bind(v),
+        };
+    }
+    Ok(q.fetch_all::<ToolCallRow>().await?)
+}

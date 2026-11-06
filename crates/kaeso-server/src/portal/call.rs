@@ -6,6 +6,7 @@ use axum::http::{HeaderValue, StatusCode, header};
 use axum::response::{IntoResponse, Response};
 use futures::StreamExt;
 use kaeso_codecs::sse::{SseItem, SseParser};
+use kaeso_core::limits::Subject;
 use kaeso_mcp::raw::{self, RawObject};
 use kaeso_mcp::{Kind, Message, RpcError, Version, meta, params};
 use kaeso_store::clickhouse::tool_calls::ToolCallRow;
@@ -22,6 +23,9 @@ use super::snapshot::{PortalServer, PortalSnapshot, Standing};
 use super::{json_bytes, rpc_error};
 use crate::services::mcp_connections::{self, ConnectionError, Credential};
 use crate::state::AppState;
+
+// JSON-RPC leaves -32000 to -32099 to the server; a rate limit is one of those.
+const LIMITED: i64 = -32000;
 
 pub(super) struct Request<'a> {
     pub(super) caller: &'a Caller,
@@ -51,6 +55,7 @@ struct Logged {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum Failure {
     Denied,
+    Limited,
     ToolOff,
     ToolChanged,
     UpstreamAuth,
@@ -64,6 +69,7 @@ impl Failure {
     fn as_str(self) -> &'static str {
         match self {
             Failure::Denied => "denied",
+            Failure::Limited => "limited",
             Failure::ToolOff => "tool_off",
             Failure::ToolChanged => "tool_changed",
             Failure::UpstreamAuth => "upstream_auth",
@@ -77,7 +83,7 @@ impl Failure {
     fn refused(self) -> bool {
         matches!(
             self,
-            Failure::Denied | Failure::ToolOff | Failure::ToolChanged
+            Failure::Denied | Failure::Limited | Failure::ToolOff | Failure::ToolChanged
         )
     }
 }
@@ -140,8 +146,15 @@ fn log(
                 .unwrap_or_default(),
         )
     });
+    state.tool_usage.add(
+        l.at,
+        l.caller.org,
+        l.caller.project,
+        l.server,
+        failure.is_some(),
+    );
     let st = state.clone();
-    state.in_flight.spawn(async move {
+    state.in_flight.finish(async move {
         crate::services::logs::record_tool_call(&st, row, content).await;
     });
 }
@@ -429,6 +442,39 @@ pub(super) async fn call(state: &AppState, r: Request<'_>) -> Response {
     if let Some((failure, message)) = refusal {
         log(state, &logged, Some((failure, &message)), None, None);
         return refuse(id, message);
+    }
+    let member = r
+        .caller
+        .user
+        .map(Subject::User)
+        .or(r.caller.service_account.map(Subject::ServiceAccount));
+    if let Err(limited) = crate::services::limits::admit_tool_call(
+        state,
+        r.caller.project,
+        member,
+        r.caller.key,
+        r.at,
+    )
+    .await
+    {
+        log(
+            state,
+            &logged,
+            Some((Failure::Limited, &limited.message)),
+            None,
+            None,
+        );
+        let mut response = rpc_error(
+            StatusCode::TOO_MANY_REQUESTS,
+            id,
+            &RpcError::new(LIMITED, limited.message),
+        );
+        if let Some(after) = limited.retry_after {
+            response
+                .headers_mut()
+                .insert(header::RETRY_AFTER, HeaderValue::from(after.as_secs()));
+        }
+        return response;
     }
     let fail = |failure: Failure, message: String, upstream_ms: Option<u32>| {
         log(state, &logged, Some((failure, &message)), upstream_ms, None);

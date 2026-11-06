@@ -314,7 +314,7 @@ impl Distrusted {
 
 fn script_type(kind: Kind) -> i64 {
     match kind {
-        Kind::RequestRate => 1,
+        Kind::RequestRate | Kind::ToolCallRate => 1,
         Kind::TokenRate => 2,
         Kind::TokenBudget | Kind::SpendBudget => 3,
     }
@@ -351,6 +351,103 @@ pub async fn project_limits(
         })
         .await?;
     Ok(found.unwrap_or_default())
+}
+
+// A tool call counts when it is admitted, in the same per-second counter as a request rate, so
+// the limits page reads it the same way. Like model requests, it passes unchecked when the
+// counters can't be reached.
+pub async fn admit_tool_call(
+    state: &AppState,
+    project: Uuid,
+    member: Option<Subject>,
+    key: Option<Uuid>,
+    at: OffsetDateTime,
+) -> Result<(), Refusal> {
+    let all = match project_limits(state, project).await {
+        Ok(l) => l,
+        Err(e) => {
+            tracing::warn!(error = %e, "limits unavailable; the tool call passes unchecked");
+            metrics::counter!(crate::metrics::FAIL_OPEN, "reason" => "limits").increment(1);
+            return Ok(());
+        }
+    };
+    let applicable = kaeso_core::limits::applicable_to_tools(&all, project, member, key);
+    if applicable.is_empty() {
+        return Ok(());
+    }
+    let now = at.unix_timestamp();
+    let mut pipe = redis::pipe();
+    for l in &applicable {
+        let counter = state.valkey.key(&l.counter(at));
+        pipe.cmd("HINCRBY")
+            .arg(&counter)
+            .arg(now)
+            .arg(1)
+            .ignore()
+            .cmd("EXPIRE")
+            .arg(&counter)
+            .arg(120)
+            .ignore()
+            .cmd("HGETALL")
+            .arg(&counter);
+    }
+    let mut conn = state.valkey.conn();
+    let windows: Vec<HashMap<String, i64>> = match tokio::time::timeout(
+        VALKEY_DEADLINE,
+        pipe.query_async(&mut conn),
+    )
+    .await
+    {
+        Ok(Ok(w)) => w,
+        Ok(Err(e)) => {
+            tracing::warn!(error = %e, "tool call counters unavailable; the call passes unchecked");
+            metrics::counter!(crate::metrics::FAIL_OPEN, "reason" => "valkey").increment(1);
+            return Ok(());
+        }
+        Err(_) => {
+            tracing::warn!("tool call counters timed out; the call passes unchecked");
+            metrics::counter!(crate::metrics::FAIL_OPEN, "reason" => "valkey").increment(1);
+            return Ok(());
+        }
+    };
+    let cutoff = now - 60;
+    let mut refused = None;
+    let mut undo = redis::pipe();
+    for (l, window) in applicable.iter().zip(&windows) {
+        let counter = state.valkey.key(&l.counter(at));
+        let seconds: Vec<(i64, i64)> = window
+            .iter()
+            .filter_map(|(s, n)| s.parse::<i64>().ok().map(|s| (s, *n)))
+            .collect();
+        for (s, _) in seconds.iter().filter(|(s, _)| *s <= cutoff) {
+            undo.cmd("HDEL").arg(&counter).arg(*s).ignore();
+        }
+        let used: i64 = seconds
+            .iter()
+            .filter(|(s, _)| *s > cutoff)
+            .map(|(_, n)| n)
+            .sum();
+        if refused.is_none() && used > l.units() {
+            let oldest = seconds
+                .iter()
+                .filter(|(s, _)| *s > cutoff)
+                .map(|(s, _)| *s)
+                .min()
+                .unwrap_or(now);
+            refused = Some(refusal(l, at, Why::Over(oldest + 60 - now)));
+        }
+    }
+    if refused.is_some() {
+        for l in &applicable {
+            undo.cmd("HINCRBY")
+                .arg(state.valkey.key(&l.counter(at)))
+                .arg(now)
+                .arg(-1)
+                .ignore();
+        }
+    }
+    let _: Result<(), _> = undo.query_async(&mut conn).await;
+    refused.map_or(Ok(()), Err)
 }
 
 pub async fn forget(state: &AppState, project: Uuid) {

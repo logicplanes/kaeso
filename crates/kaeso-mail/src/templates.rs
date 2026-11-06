@@ -155,6 +155,7 @@ pub enum LimitKind {
     TokenRate,
     TokenBudget,
     SpendBudget,
+    ToolCallRate,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -180,15 +181,17 @@ impl Budget {
             LimitKind::TokenRate => format!("{n} tokens per minute"),
             LimitKind::TokenBudget => format!("{n} tokens"),
             LimitKind::SpendBudget => format!("{n} USD"),
+            LimitKind::ToolCallRate => format!("{n} tool calls per minute"),
         };
         let label = match self.kind {
             LimitKind::RequestRate => "request rate",
             LimitKind::TokenRate => "token rate",
             LimitKind::TokenBudget => "token budget",
             LimitKind::SpendBudget => "spend budget",
+            LimitKind::ToolCallRate => "tool call rate",
         };
         let period = match (self.kind, self.period) {
-            (LimitKind::RequestRate | LimitKind::TokenRate, _) => "",
+            (LimitKind::RequestRate | LimitKind::TokenRate | LimitKind::ToolCallRate, _) => "",
             (_, LimitPeriod::Minute) => "per-minute ",
             (_, LimitPeriod::Day) => "daily ",
             (_, LimitPeriod::Month) => "monthly ",
@@ -210,6 +213,7 @@ impl Budget {
             LimitKind::TokenRate => format!("Ratenlimits von {n} Token pro Minute"),
             LimitKind::TokenBudget => format!("{budget} von {n} Token"),
             LimitKind::SpendBudget => format!("{budget} von {n} USD"),
+            LimitKind::ToolCallRate => format!("Ratenlimits von {n} Tool-Aufrufen pro Minute"),
         }
     }
 
@@ -218,6 +222,7 @@ impl Budget {
         match (self.kind, self.period) {
             (LimitKind::RequestRate, _) => format!("速率限制（每分钟 {n} 次请求）"),
             (LimitKind::TokenRate, _) => format!("速率限制（每分钟 {n} 个 Token）"),
+            (LimitKind::ToolCallRate, _) => format!("速率限制（每分钟 {n} 次工具调用）"),
             (LimitKind::TokenBudget, LimitPeriod::Day) => {
                 format!("每日 Token 预算（{n} 个 Token）")
             }

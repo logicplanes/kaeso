@@ -70,6 +70,11 @@ pub struct UsageRow {
     #[doc = "Cost in USD; `null` without the right to see costs."]
     #[schema(value_type = Option<String>)]
     pub cost: Option<String>,
+    #[doc = "Tool calls through the project's MCP portals, refusals included. Counted by\n\
+        day and project, so 0 when grouped by model, key, member or route."]
+    pub tool_calls: u64,
+    #[doc = "Of those, the ones refused or failed."]
+    pub tool_call_errors: u64,
 }
 
 fn public_key(group: GroupBy, key: String) -> String {
@@ -167,11 +172,15 @@ async fn usage(
     let rows = store::usage(&state.pg, org, project, from, to, group)
         .await
         .map_err(|e| ApiError::unavailable(USAGE_UNAVAILABLE, e))?;
-    Ok(Json(List::complete(
-        rows.into_iter()
-            .map(|r| UsageRow {
+    let tools = store::tool_usage(&state.pg, org, project, from, to, group)
+        .await
+        .map_err(|e| ApiError::unavailable(USAGE_UNAVAILABLE, e))?;
+    let mut merged: std::collections::BTreeMap<String, UsageRow> = rows
+        .into_iter()
+        .map(|r| {
+            let row = UsageRow {
                 cache_hit_rate: cache_hit_rate(group, &r),
-                key: public_key(group, r.key),
+                key: public_key(group, r.key.clone()),
                 requests: count(r.requests),
                 errors: count(r.errors),
                 input_tokens: count(r.input_tokens),
@@ -180,9 +189,31 @@ async fn usage(
                 cache_write_tokens: count(r.cache_write_tokens),
                 reasoning_tokens: count(r.reasoning_tokens),
                 cost: costs.then(|| r.cost.normalize().to_string()),
-            })
-            .collect(),
-    )))
+                tool_calls: 0,
+                tool_call_errors: 0,
+            };
+            (r.key, row)
+        })
+        .collect();
+    for t in tools {
+        let row = merged.entry(t.key.clone()).or_insert_with(|| UsageRow {
+            key: public_key(group, t.key.clone()),
+            requests: 0,
+            errors: 0,
+            input_tokens: 0,
+            output_tokens: 0,
+            cache_read_tokens: 0,
+            cache_write_tokens: 0,
+            reasoning_tokens: 0,
+            cache_hit_rate: None,
+            cost: costs.then(|| "0".to_owned()),
+            tool_calls: 0,
+            tool_call_errors: 0,
+        });
+        row.tool_calls = count(t.calls);
+        row.tool_call_errors = count(t.errors);
+    }
+    Ok(Json(List::complete(merged.into_values().collect())))
 }
 
 #[utoipa::path(

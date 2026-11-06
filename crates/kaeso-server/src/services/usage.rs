@@ -10,6 +10,7 @@ use kaeso_kpp::Usage;
 use kaeso_mail::{Budget, BudgetScope, LimitKind, LimitPeriod};
 use kaeso_store::StoreError;
 use kaeso_store::pg::limits::{self as store, UsageRow};
+use kaeso_store::pg::usage as store_usage;
 use rust_decimal::Decimal;
 use time::{Date, OffsetDateTime};
 use uuid::Uuid;
@@ -190,7 +191,90 @@ fn never_fits(e: &StoreError) -> bool {
         .is_some_and(|code| code.starts_with("22") || code.starts_with("23"))
 }
 
+// Tool calls are counted in memory per day, project and server, so a warm call writes nothing;
+// the same flush as model usage writes them.
+#[derive(Debug, Default)]
+pub struct ToolBatch(std::sync::Mutex<HashMap<ToolKey, (i64, i64)>>);
+
+type ToolKey = (time::Date, Uuid, Uuid, Uuid);
+
+impl ToolBatch {
+    pub fn add(
+        &self,
+        at: time::OffsetDateTime,
+        org: Uuid,
+        project: Uuid,
+        server: Uuid,
+        failed: bool,
+    ) {
+        let day = at.to_offset(time::UtcOffset::UTC).date();
+        let mut open = self
+            .0
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let counts = open.entry((day, org, project, server)).or_default();
+        counts.0 += 1;
+        counts.1 += i64::from(failed);
+    }
+
+    fn take(&self) -> Vec<store_usage::ToolUsageRow> {
+        let mut open = self
+            .0
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        open.drain()
+            .map(|((day, org_id, project_id, server_id), (calls, errors))| {
+                store_usage::ToolUsageRow {
+                    day,
+                    org_id,
+                    project_id,
+                    server_id,
+                    calls,
+                    errors,
+                }
+            })
+            .collect()
+    }
+
+    fn restore(&self, rows: Vec<store_usage::ToolUsageRow>) {
+        let mut open = self
+            .0
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        for r in rows {
+            let counts = open
+                .entry((r.day, r.org_id, r.project_id, r.server_id))
+                .or_default();
+            counts.0 += r.calls;
+            counts.1 += r.errors;
+        }
+    }
+}
+
+async fn flush_tools(state: &AppState) -> Result<usize, StoreError> {
+    let rows = state.tool_usage.take();
+    let n = rows.len();
+    match store_usage::add_tool_usage(&state.pg, &rows).await {
+        Ok(()) => Ok(n),
+        Err(e) if never_fits(&e) => {
+            metrics::counter!(crate::metrics::USAGE_ROWS_DROPPED).increment(n as u64);
+            tracing::error!(error = %e, rows = n, "tool usage cannot be recorded; it is dropped");
+            Ok(0)
+        }
+        Err(e) => {
+            state.tool_usage.restore(rows);
+            Err(e)
+        }
+    }
+}
+
 pub async fn flush(state: &AppState) -> Result<usize, StoreError> {
+    let tools = flush_tools(state).await;
+    let models = flush_models(state).await;
+    Ok(tools? + models?)
+}
+
+async fn flush_models(state: &AppState) -> Result<usize, StoreError> {
     let taken = state.usage.take();
     let n = taken.rows.len();
     match store::add_usage(&state.pg, &taken.rows).await {
@@ -451,6 +535,7 @@ fn budget_of(limit: &Limit) -> Budget {
             limits::Kind::TokenRate => LimitKind::TokenRate,
             limits::Kind::TokenBudget => LimitKind::TokenBudget,
             limits::Kind::SpendBudget => LimitKind::SpendBudget,
+            limits::Kind::ToolCallRate => LimitKind::ToolCallRate,
         },
         period: match limit.period {
             limits::Period::Minute => LimitPeriod::Minute,

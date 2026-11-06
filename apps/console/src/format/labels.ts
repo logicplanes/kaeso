@@ -55,6 +55,10 @@ const LIMIT_KINDS: Record<string, { label: () => string; unit: () => string }> =
   token_rate: { label: () => t("format.limitKind.tokenRate", "Token rate"), unit: () => t("format.limitUnit.tokensPerMinute", "tokens / min") },
   token_budget: { label: () => t("format.limitKind.tokenBudget", "Token budget"), unit: () => t("format.limitUnit.tokens", "tokens") },
   spend_budget: { label: () => t("format.limitKind.spendBudget", "Spend budget"), unit: () => "USD" },
+  tool_call_rate: {
+    label: () => t("format.limitKind.toolCallRate", "Tool call rate"),
+    unit: () => t("format.limitUnit.toolCallsPerMinute", "tool calls / min"),
+  },
 };
 export const limitKindLabel = (k: string) => LIMIT_KINDS[k]?.label() ?? titled(k);
 export const limitUnit = (k: string) => LIMIT_KINDS[k]?.unit() ?? "";
@@ -67,6 +71,8 @@ export function limitDescription(l: { kind: string; period: string; amount: stri
       return t("format.limit.requestRate", "request rate of {amount} requests per minute", { amount });
     case "token_rate":
       return t("format.limit.tokenRate", "token rate of {amount} tokens per minute", { amount });
+    case "tool_call_rate":
+      return t("format.limit.toolCallRate", "tool call rate of {amount} tool calls per minute", { amount });
     case "token_budget":
       return t("format.limit.tokenBudget", "{period, select, day {daily} month {monthly} other {total}} token budget of {amount} tokens", { period, amount });
     default:
@@ -105,3 +111,28 @@ const INVITE_STATES: Record<string, () => string> = {
   expired: () => t("common.expired", "Expired"),
 };
 export const inviteStateLabel = (s: string) => INVITE_STATES[s]?.() ?? titled(s);
+
+type ToolTone = "success" | "danger" | "warning";
+export const TOOL_CALL_STATUSES = ["ok", "error", "refused"] as const;
+const TOOL_STATUS: Record<string, { tone: ToolTone; label: () => string }> = {
+  ok: { tone: "success", label: () => t("logs.tools.status.ok", "Called") },
+  error: { tone: "danger", label: () => t("logs.tools.status.error", "Failed") },
+  refused: { tone: "warning", label: () => t("logs.tools.status.refused", "Refused") },
+};
+export const toolCallStatus = (s: string): { tone: ToolTone; label: string } => {
+  const found = TOOL_STATUS[s];
+  return found ? { tone: found.tone, label: found.label() } : { tone: "warning", label: s };
+};
+
+const TOOL_ERRORS: Record<string, () => string> = {
+  denied: () => t("logs.tools.error.denied", "Caller may not use the tool"),
+  limited: () => t("logs.tools.error.limited", "Tool call rate reached"),
+  tool_off: () => t("logs.tools.error.toolOff", "Tool is off"),
+  tool_changed: () => t("logs.tools.error.toolChanged", "Tool waits for review"),
+  upstream_auth: () => t("logs.tools.error.upstreamAuth", "Server sign-in failed"),
+  upstream_unreachable: () => t("logs.tools.error.upstreamUnreachable", "Server unreachable"),
+  upstream_error: () => t("logs.tools.error.upstreamError", "Server or tool error"),
+  timeout: () => t("logs.tools.error.timeout", "Server too slow"),
+  too_large: () => t("logs.tools.error.tooLarge", "Answer too large"),
+};
+export const toolErrorLabel = (e: string) => TOOL_ERRORS[e]?.() ?? e;

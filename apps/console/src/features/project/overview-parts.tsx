@@ -312,7 +312,7 @@ function ProjectLimit({ limit }: { limit: LimitView }) {
   const fmt = (v: string | number) => (money ? formatUSD(String(v)) : formatNumber(Number(v)));
   return (
     <LimitMeter
-      kind={limit.kind === "spend_budget" ? "spend" : limit.kind === "request_rate" ? "requests" : "tokens"}
+      kind={limit.kind === "spend_budget" ? "spend" : limit.kind === "request_rate" || limit.kind === "tool_call_rate" ? "requests" : "tokens"}
       scope={limitKindLabel(limit.kind)}
       window={periodLabel(limit.period)}
       used={used}

@@ -148,7 +148,7 @@
   "errors.limit.whoAmount": "{who}（{amount}）",
   "errors.limitAboveParent": "此限额高于上级限额（{who}：{limit}；数额 {amount}）。",
   "errors.limitExists": "该对象已有相同类型、模型和周期的限额。",
-  "errors.limitKindValues": "请使用 `request_rate`、`token_rate`、`token_budget` 或 `spend_budget`。",
+  "errors.limitKindValues": "请使用 `request_rate`、`token_rate`、`tool_call_rate`、`token_budget` 或 `spend_budget`。",
   "errors.limitLevelValues": "请使用 `project`、`member` 或 `key`。",
   "errors.limitOncePerKind": "每种类型、模型和周期的组合只能出现一次。",
   "errors.limitParamRange": "`limit` 必须介于 1 到 {max} 之间。",
@@ -616,5 +616,8 @@
   "errors.mcp.toolChangedAgain": "自您审核后该工具又发生了变更；请重新审核。",
   "errors.mcp.noChange": "此工具没有待审核的变更。",
   "errors.agentRequest.forPortal": "此登录用于项目的 MCP 门户；请重新加载页面。",
-  "errors.agentRequest.forAgent": "此登录用于智能体，而不是项目的 MCP 门户；请重新加载页面。"
+  "errors.agentRequest.forAgent": "此登录用于智能体，而不是项目的 MCP 门户；请重新加载页面。",
+  "errors.toolCalls.status": "`status` 必须是 `ok`、`error` 或 `refused`。",
+  "errors.limits.toolCallRateModel": "工具调用速率统计所有工具；请省略 `model`。",
+  "errors.notFound.toolCall": "工具调用不存在，或您无权查看。"
 }

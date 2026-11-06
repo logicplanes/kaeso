@@ -1,7 +1,7 @@
 import type { LimitView } from "~/api/generated/types";
 import type { LimitDraft } from "./limit-editor";
 
-const isRate = (k: string) => k === "request_rate" || k === "token_rate";
+const isRate = (k: string) => k === "request_rate" || k === "token_rate" || k === "tool_call_rate";
 
 export function parentConflict(draft: LimitDraft, parents: LimitView[]): LimitView | null {
   const amount = Number(draft.amount);

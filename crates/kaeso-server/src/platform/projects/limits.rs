@@ -49,7 +49,7 @@ pub struct LimitView {
     pub model: Option<CatalogueModelId>,
     #[doc = "`minute` (rates), `day`, `month` or `total` (budgets; UTC calendar periods)."]
     pub period: &'static str,
-    #[doc = "Requests, tokens, or USD (a decimal string)."]
+    #[doc = "Requests, tool calls, tokens, or USD (a decimal string)."]
     #[schema(value_type = String, example = "50")]
     pub amount: String,
     #[doc = "Hard budgets refuse requests once used up; soft budgets only alert."]
@@ -153,7 +153,8 @@ pub struct LimitCreate {
     pub service_account: Option<ServiceAccountId>,
     #[doc = "The key, for `key`."]
     pub key: Option<ApiKeyId>,
-    #[doc = "What it counts."]
+    #[doc = "What it counts: `request_rate`, `token_rate`, `tool_call_rate` (tool calls\n\
+        through the project's MCP portal, for every tool), `token_budget` or `spend_budget`."]
     #[schema(example = "spend_budget")]
     pub kind: String,
     #[doc = "One catalogue model; every model when absent."]
@@ -161,7 +162,7 @@ pub struct LimitCreate {
     #[doc = "`minute` for rates; `day`, `month` or `total` for budgets."]
     #[schema(example = "month")]
     pub period: String,
-    #[doc = "Requests, tokens, or USD; at most 10^12, and 1,000,000,000 USD for a spend\n\
+    #[doc = "Requests, tool calls, tokens, or USD; at most 10^12, and 1,000,000,000 USD for a spend\n\
         budget."]
     #[schema(value_type = LimitAmount, example = "50")]
     #[serde(deserialize_with = "kaeso_core::limits::amount")]
@@ -228,7 +229,7 @@ pub(crate) async fn limit_from(
     let kind = Kind::parse(&req.kind).ok_or_else(|| {
         ApiError::invalid(
             "kind",
-            "Use `request_rate`, `token_rate`, `token_budget` or `spend_budget`.",
+            "Use `request_rate`, `token_rate`, `tool_call_rate`, `token_budget` or `spend_budget`.",
         )
     })?;
     let period = Period::parse(&req.period)
@@ -596,7 +597,8 @@ pub async fn delete(
 #[schema(description = "A limit set when a key is created: only tighter than\n\
     the member's and the project's.")]
 pub struct KeyLimit {
-    #[doc = "What it counts."]
+    #[doc = "What it counts: `request_rate`, `token_rate`, `tool_call_rate` (tool calls\n\
+        through the project's MCP portal, for every tool), `token_budget` or `spend_budget`."]
     #[schema(example = "spend_budget")]
     pub kind: String,
     #[doc = "One catalogue model; every model when absent."]
@@ -604,7 +606,7 @@ pub struct KeyLimit {
     #[doc = "`minute` for rates; `day`, `month` or `total` for budgets."]
     #[schema(example = "day")]
     pub period: String,
-    #[doc = "Requests, tokens, or USD; at most 10^12, and 1,000,000,000 USD for a spend\n\
+    #[doc = "Requests, tool calls, tokens, or USD; at most 10^12, and 1,000,000,000 USD for a spend\n\
         budget."]
     #[schema(value_type = LimitAmount, example = "5")]
     #[serde(deserialize_with = "kaeso_core::limits::amount")]

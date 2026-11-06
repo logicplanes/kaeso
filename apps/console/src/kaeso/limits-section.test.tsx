@@ -62,10 +62,21 @@ async function startDraft(user: UserEvent, section: HTMLElement) {
 
 describe("LimitsSection", () => {
   it("shows each limit's use, period, model and reset", async () => {
-    const { section } = await memberLimits([memberBudget, memberRate, totalTokens]);
+    const toolRate = limit({
+      id: "lim_tools",
+      level: "member",
+      subject: grace,
+      kind: "tool_call_rate",
+      period: "minute",
+      amount: "30",
+      used: "4",
+      model: null,
+    });
+    const { section } = await memberLimits([memberBudget, memberRate, totalTokens, toolRate]);
 
     const meters = await within(section).findAllByRole("meter");
-    expect(meters).toHaveLength(3);
+    expect(meters).toHaveLength(4);
+    expect(section).toHaveTextContent("4 of 30 · Per minute · All tools");
     expect(section).toHaveTextContent("$5.00 of $20.00 · Per month · All models");
     expect(section).toHaveTextContent("Resets 1 Nov");
     expect(section).toHaveTextContent("3 of 60 · Per minute · Sonnet 4.5");
@@ -168,6 +179,10 @@ describe("LimitsSection", () => {
     await user.click(within(section).getByRole("combobox", { name: "What it limits" }));
     await user.click(await screen.findByRole("option", { name: /Spend budget/ }));
     expect(within(section).getByRole("radio", { name: "Month" })).toHaveAttribute("aria-checked", "true");
+    await user.click(within(section).getByRole("combobox", { name: "What it limits" }));
+    await user.click(await screen.findByRole("option", { name: /Tool call rate/ }));
+    expect(within(section).getByText("tool calls / min")).toBeInTheDocument();
+    expect(within(section).queryByRole("combobox", { name: "Model" })).not.toBeInTheDocument();
     await user.click(within(section).getByRole("combobox", { name: "What it limits" }));
     await user.click(await screen.findByRole("option", { name: /Token rate/ }));
     await user.click(addButton(section));

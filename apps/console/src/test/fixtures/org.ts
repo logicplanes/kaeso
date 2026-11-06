@@ -192,6 +192,8 @@ export function usageRow(key: string, overrides: Partial<UsageRow> = {}): UsageR
     cache_write_tokens: 0,
     reasoning_tokens: 0,
     cost: null,
+    tool_calls: 0,
+    tool_call_errors: 0,
     ...overrides,
   };
 }

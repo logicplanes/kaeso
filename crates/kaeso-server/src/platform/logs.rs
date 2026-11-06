@@ -35,11 +35,11 @@ const LOGS_UNAVAILABLE: &str = "Request logs are unavailable right now; try agai
 
 pub(crate) const LOGS_OFF: &str = "Request logs are off on this install.";
 
-fn unavailable(e: impl std::fmt::Display) -> ApiError {
+pub(crate) fn unavailable(e: impl std::fmt::Display) -> ApiError {
     ApiError::unavailable(LOGS_UNAVAILABLE, e)
 }
 
-fn log_store(state: &AppState) -> ApiResult<&ClickHouse> {
+pub(crate) fn log_store(state: &AppState) -> ApiResult<&ClickHouse> {
     state
         .clickhouse
         .as_ref()
@@ -472,7 +472,7 @@ fn provider_filter(id: &str) -> ApiResult<String> {
         })
 }
 
-fn parse_time(field: &str, s: &str) -> ApiResult<OffsetDateTime> {
+pub(crate) fn parse_time(field: &str, s: &str) -> ApiResult<OffsetDateTime> {
     OffsetDateTime::parse(s, &Rfc3339).map_err(|_| {
         ApiError::invalid(
             field,
@@ -952,7 +952,7 @@ fn encode_cursor(r: &LogRow) -> String {
     URL_SAFE_NO_PAD.encode(format!("{millis}.{}", r.request_id))
 }
 
-fn decode_cursor(c: &str) -> Option<(OffsetDateTime, Uuid)> {
+pub(crate) fn decode_cursor(c: &str) -> Option<(OffsetDateTime, Uuid)> {
     let text = String::from_utf8(URL_SAFE_NO_PAD.decode(c).ok()?).ok()?;
     let (millis, id) = text.split_once('.')?;
     let nanos = millis.parse::<i128>().ok()?.checked_mul(1_000_000)?;

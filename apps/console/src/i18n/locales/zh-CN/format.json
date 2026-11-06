@@ -235,5 +235,8 @@
   "format.targetKind.mcpServer": "MCP 服务器",
   "format.targetKind.tool": "工具",
   "format.targetKind.portalGrant": "门户客户端",
-  "format.audit.action.portalGrantCreate": "客户端已连接到门户"
+  "format.audit.action.portalGrantCreate": "客户端已连接到门户",
+  "format.limitKind.toolCallRate": "工具调用速率",
+  "format.limitUnit.toolCallsPerMinute": "次工具调用 / 分钟",
+  "format.limit.toolCallRate": "工具调用速率：每分钟 {amount} 次工具调用"
 }

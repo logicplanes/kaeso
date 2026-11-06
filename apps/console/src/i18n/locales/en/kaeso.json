@@ -143,11 +143,13 @@
   "kaeso.limitEditor.thresholdRange": "Alert thresholds are between 1 and 100 percent.",
   "kaeso.limitEditor.tokenBudgetHelp": "Tokens per day, month or in total",
   "kaeso.limitEditor.tokenRateHelp": "Tokens per minute",
+  "kaeso.limitEditor.toolCallRateHelp": "Tool calls through the MCP portal per minute",
   "kaeso.limitEditor.wholeNumbers": "Requests and tokens are whole numbers.",
   "kaeso.limitEditor.wholePercent": "A whole percent between 1 and 100",
   "kaeso.limits.add": "Add limit",
   "kaeso.limits.added": "Limit added",
   "kaeso.limits.allModels": "All models",
+  "kaeso.limits.allTools": "All tools",
   "kaeso.limits.edit": "Edit limit",
   "kaeso.limits.editHint": "The {limit}; to change its kind, period or model, remove it and add another.",
   "kaeso.limits.editThe": "Edit the {limit}",
@@ -301,6 +303,7 @@
   "kaeso.usage.tileFailed": "Couldn't load",
   "kaeso.usage.tokensByKind": "Tokens by kind per {granularity, select, week {week} month {month} other {day}}",
   "kaeso.usage.tokensPerUtc": "By kind, per {granularity, select, week {week} month {month} other {day}} (UTC)",
+  "kaeso.usage.toolCalls": "Tool calls",
   "kaeso.usage.totalCost": "Total cost",
   "kaeso.usage.upFromNone": "Up from none"
 }
