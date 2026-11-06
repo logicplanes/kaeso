@@ -22,6 +22,9 @@ database = "kaeso"
 [valkey]
 key_prefix = "kaeso:"
 
+[setup]
+email = ""
+
 [smtp]
 host = "smtp.example.com"
 port = 587

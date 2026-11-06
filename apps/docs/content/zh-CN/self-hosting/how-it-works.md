@@ -67,7 +67,7 @@ Caddy 启动前，`caddy-init` 会运行一次，把 Caddy 的卷交给 Caddy �
 1. PostgreSQL、ClickHouse 和 Valkey 启动。网关等待 PostgreSQL 和 Valkey 变为健康。
 2. 网关检查自己的设置。缺少或无效的设置会让它停止，并给出指明该设置的消息，但从不显示其值。
 3. 网关在提供任何服务之前先迁移 PostgreSQL。ClickHouse 则在后台迁移，并一直重试到 ClickHouse 响应为止。请求日志关闭时，网关会记录这一点并跳过 ClickHouse。
-4. 在实例还没有用户时，网关会在日志中说明尚未完成设置。它从不把设置链接写入日志，因为任何能读日志的人都能借此接管实例。
+4. 在实例还没有用户时，网关会在日志中说明尚未完成设置。它从不把设置链接写入日志，因为任何能读日志的人都能借此接管实例。设置了 `KAESO_SETUP_EMAIL` 时，它会改为把链接发到该地址（[配置](configuration.md#设置)）。
 5. 网关和控制台健康后，Caddy 启动，并在后台申请证书。
 
 `kaeso setup-link` 会打印设置链接，用它创建第一个用户。该用户成为实例管理员，以及第一个组织的所有者。其他人通过邀请加入，或在实例允许时自行注册（[实例管理](../console/instance-administration.md)）。

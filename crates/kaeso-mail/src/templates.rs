@@ -8,6 +8,7 @@ pub enum EmailKind {
     Invitation,
     InstanceInvitation,
     MagicLink,
+    SetupLink,
     PasswordReset,
     EmailChangeConfirmation,
     Signup,
@@ -53,6 +54,7 @@ impl EmailKind {
             EmailKind::Invitation => "invitation",
             EmailKind::InstanceInvitation => "instance_invitation",
             EmailKind::MagicLink => "magic_link",
+            EmailKind::SetupLink => "setup_link",
             EmailKind::PasswordReset => "password_reset",
             EmailKind::EmailChangeConfirmation => "email_change_confirmation",
             EmailKind::Signup => "signup",
@@ -458,6 +460,38 @@ pub fn magic_link(lang: Locale, to: &str, url: &str) -> Email {
     Email::new(
         to,
         EmailKind::MagicLink,
+        subject.to_owned(),
+        Content::new(lang, subject, Reason::Request)
+            .sentence(sentence)
+            .action(action, url)
+            .note(note),
+    )
+}
+
+pub fn setup_link(lang: Locale, to: &str, url: &str) -> Email {
+    let (subject, sentence, action, note) = match lang {
+        Locale::En => (
+            "Set up Kaeso",
+            "The link creates the first user, an instance admin; it works once and expires in 24 hours.",
+            "Set up Kaeso",
+            "Every start of the gateway sends a fresh link until the first user exists.",
+        ),
+        Locale::De => (
+            "Kaeso einrichten",
+            "Der Link legt den ersten Benutzer an, einen Instanz-Admin; er funktioniert einmal und läuft in 24 Stunden ab.",
+            "Kaeso einrichten",
+            "Bis der erste Benutzer existiert, sendet jeder Start des Gateways einen neuen Link.",
+        ),
+        Locale::ZhCn => (
+            "设置 Kaeso",
+            "此链接用于创建第一个用户（实例管理员）；仅可使用一次，24 小时后过期。",
+            "设置 Kaeso",
+            "在第一个用户创建之前，网关每次启动都会发送新的链接。",
+        ),
+    };
+    Email::new(
+        to,
+        EmailKind::SetupLink,
         subject.to_owned(),
         Content::new(lang, subject, Reason::Request)
             .sentence(sentence)
@@ -1144,6 +1178,7 @@ mod tests {
             invitation(l, TO, "Ada Lovelace", "Acme", "developer", URL),
             instance_invitation(l, TO, "Ada Lovelace", URL),
             magic_link(l, TO, URL),
+            setup_link(l, TO, URL),
             password_reset(l, TO, URL),
             email_change_confirmation(l, TO, URL),
             signup(l, TO, URL),
@@ -1435,6 +1470,7 @@ mod tests {
             EmailKind::Invitation,
             EmailKind::InstanceInvitation,
             EmailKind::MagicLink,
+            EmailKind::SetupLink,
             EmailKind::PasswordReset,
             EmailKind::EmailChangeConfirmation,
             EmailKind::Signup,
@@ -1648,7 +1684,7 @@ mod tests {
 
     #[test]
     fn every_email_speaks_each_language() {
-        let expected: [(EmailKind, [&str; 2], [&str; 2]); 40] = [
+        let expected: [(EmailKind, [&str; 2], [&str; 2]); 41] = [
             (
                 EmailKind::Invitation,
                 [
@@ -1672,6 +1708,11 @@ mod tests {
                 EmailKind::MagicLink,
                 ["Bei Kaeso anmelden", "Bei Kaeso anmelden"],
                 ["登录 Kaeso", "登录 Kaeso"],
+            ),
+            (
+                EmailKind::SetupLink,
+                ["Kaeso einrichten", "Kaeso einrichten"],
+                ["设置 Kaeso", "设置 Kaeso"],
             ),
             (
                 EmailKind::PasswordReset,

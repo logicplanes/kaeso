@@ -67,7 +67,7 @@ Keep copies of `.env` and `master-keys` apart from the database backups ([backup
 1. PostgreSQL, ClickHouse and Valkey start. The gateway waits until PostgreSQL and Valkey are healthy.
 2. The gateway checks its settings. A missing or invalid setting stops it with a message that names the setting, never its value.
 3. The gateway migrates PostgreSQL before it serves anything. It migrates ClickHouse in the background and retries until ClickHouse answers. With request logs off, it logs that and skips ClickHouse.
-4. While the install has no users, the gateway logs that it isn't set up yet. It never logs the setup link, because anyone who reads the log could take the install over with it.
+4. While the install has no users, the gateway logs that it isn't set up yet. It never logs the setup link, because anyone who reads the log could take the install over with it. With `KAESO_SETUP_EMAIL` set, it emails the link to that address instead ([configuration](configuration.md#settings)).
 5. Once the gateway and the console are healthy, Caddy starts and gets the certificate in the background.
 
 `kaeso setup-link` prints the setup link, which creates the first user. That user becomes an instance admin and the owner of the first organization. Everyone else joins by invitation, or signs up where the instance allows it ([instance administration](../console/instance-administration.md)).

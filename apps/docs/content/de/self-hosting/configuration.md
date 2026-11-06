@@ -117,6 +117,7 @@ Ohne diese Einstellung sendet Kaeso keine CORS-Header. Die [Modell-API](../api/m
 | Variable<br>TOML-Schlüssel | Typ | Standard | Was sie bewirkt |
 | --- | --- | --- | --- |
 | `KAESO_MASTER_KEYS`<br>`master_keys` | Text, Secret | erforderlich | Hauptschlüssel als `id:base64,…`, der aktive zuerst. `kaeso master-key generate` erzeugt einen ([Backups und Hauptschlüssel](backups.md)). |
+| `KAESO_SETUP_EMAIL`<br>`setup.email` | Text | nicht gesetzt | Solange kein Benutzer existiert, sendet jeder Start des Gateways den einmaligen Einrichtungslink an diese Adresse, für Installationen ohne Shell für `kaeso setup-link`; braucht `mail.transport` `smtp` ([der erste Start](how-it-works.md#der-erste-start)). |
 
 ### E-Mail
 

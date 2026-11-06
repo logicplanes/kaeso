@@ -117,6 +117,7 @@ Without this setting, Kaeso sends no CORS headers. The [model API](../api/model-
 | Variable<br>TOML key | Type | Default | What it does |
 | --- | --- | --- | --- |
 | `KAESO_MASTER_KEYS`<br>`master_keys` | text, secret | required | Master keys as `id:base64,…`, the active key first. `kaeso master-key generate` makes one ([backups and master keys](backups.md)). |
+| `KAESO_SETUP_EMAIL`<br>`setup.email` | text | unset | While no user exists, every start of the gateway emails the one-time setup link to this address, for installs with no shell to run `kaeso setup-link` in; needs `mail.transport` `smtp` ([the first start](how-it-works.md#the-first-start)). |
 
 ### Email
 
