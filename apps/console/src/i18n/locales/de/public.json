@@ -134,5 +134,19 @@
   "public.portalClientHost": "{host} veröffentlicht den Namen und die Rückkehradressen dieses Clients.",
   "public.connectPortal": "Verbinden",
   "public.portalConnect": "Diese Server brauchen Ihr eigenes Konto; ihre Tools schlagen für Sie fehl, bis Sie sich verbinden.",
-  "public.portalConnectServer": "Verbinden"
+  "public.portalConnectServer": "Verbinden",
+  "public.unsubscribe": "Abmelden",
+  "public.needsUnsubscribeLink": "Diese Seite braucht den Abmeldelink",
+  "public.needsUnsubscribeLinkHint": "Öffnen Sie den Link unten in einer E-Mail von Kaeso; er endet mit #token=…",
+  "public.openNotificationSettings": "Benachrichtigungen öffnen",
+  "public.openingUnsubscribe": "Link wird geöffnet…",
+  "public.lookingUpLink": "Link wird geprüft",
+  "public.unsubscribeInvalid": "Dieser Abmeldelink ist ungültig",
+  "public.unsubscribeInvalidHint": "Melden Sie sich an und wählen Sie Ihre E-Mails unter Konto › Benachrichtigungen.",
+  "public.unsubscribed": "Sie sind abgemeldet",
+  "public.unsubscribedHint": "Kaeso sendet „{kind}“ nicht mehr an {email}.",
+  "public.chooseOtherEmails": "Andere E-Mails wählen",
+  "public.unsubscribeFrom": "Von „{kind}“ abmelden?",
+  "public.unsubscribeFromHint": "Kaeso sendet diese nicht mehr an {email}; Sicherheits-E-Mails kommen weiter an.",
+  "public.unsubscribeAction": "Abmelden"
 }

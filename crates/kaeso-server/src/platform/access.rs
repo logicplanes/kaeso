@@ -33,6 +33,9 @@ use crate::http::{client_ip, request_id};
 use crate::state::AppState;
 
 const WHILE_SCHEDULED: &[&str] = &["/orgs/{org}/restore"];
+// RFC 8058 one-click unsubscribes come from mail providers without `Origin`; the signed token in
+// the link is the authority, so a forged request can do nothing the link's holder couldn't.
+const WITHOUT_ORIGIN: &[&str] = &["/notifications/unsubscribe"];
 pub const AGENT_NEEDS_SESSION: &str = "Agents can't do this; it needs a console session.";
 const SESSION_ONLY: &str = "Only a console session can do this; API keys and agents can't.";
 const ORG_REFUSES_AGENTS: &str = "This organization doesn't allow agents; ask one of its admins.";
@@ -473,7 +476,12 @@ async fn check(
     };
     let state_changing = !matches!(req.method, Method::GET | Method::HEAD | Method::OPTIONS);
     let browser = matches!(caller, Caller::Session(_)) || access == Access::Public;
-    if state_changing && browser {
+    let signed_link = access == Access::Public
+        && req
+            .extensions
+            .get::<MatchedPath>()
+            .is_some_and(|p| WITHOUT_ORIGIN.iter().any(|w| p.as_str().ends_with(w)));
+    if state_changing && browser && !signed_link {
         check_origin(state, req)?;
     }
     let changes_org = state_changing

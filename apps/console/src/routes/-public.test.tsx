@@ -58,6 +58,7 @@ describe("the public pages", () => {
     ["/auth/password-reset", "Reset your password"],
     ["/auth/signup", "This page needs the sign-up link"],
     ["/me/email/confirm", "This page needs the confirmation link"],
+    ["/unsubscribe", "This page needs the unsubscribe link"],
   ])("open %s without a session", async (path, title) => {
     signedOut();
     on("GET", "auth/methods", methods({ sign_up: true }));

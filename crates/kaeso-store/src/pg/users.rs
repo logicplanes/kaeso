@@ -13,8 +13,6 @@ pub struct User {
     pub email_verified_at: Option<OffsetDateTime>,
     pub state: String,
     pub is_instance_admin: bool,
-    pub notify_budget_alerts: bool,
-    pub notify_key_expiry: bool,
     pub created_at: OffsetDateTime,
     pub avatar: Option<String>,
 }
@@ -76,7 +74,7 @@ pub async fn get(db: impl PgExecutor<'_>, id: Uuid) -> Result<Option<User>, Stor
     Ok(sqlx::query_as!(
         User,
         "SELECT id, email, name, password_hash, email_verified_at, state, is_instance_admin, \
-         notify_budget_alerts, notify_key_expiry, created_at, avatar FROM users WHERE id = $1",
+         created_at, avatar FROM users WHERE id = $1",
         id
     )
     .fetch_optional(db)
@@ -91,7 +89,7 @@ pub async fn get_by_email(
     let mut same = sqlx::query_as!(
         User,
         "SELECT id, email, name, password_hash, email_verified_at, state, is_instance_admin, \
-         notify_budget_alerts, notify_key_expiry, created_at, avatar FROM users \
+         created_at, avatar FROM users \
          WHERE email_key(email) = email_key($1) ORDER BY id",
         email
     )
@@ -144,7 +142,6 @@ pub struct Recipient {
     pub id: Uuid,
     pub email: Option<String>,
     pub state: String,
-    pub notify_key_expiry: bool,
     pub locale: Option<String>,
 }
 
@@ -154,7 +151,7 @@ pub async fn recipients(
 ) -> Result<Vec<Recipient>, StoreError> {
     Ok(sqlx::query_as!(
         Recipient,
-        "SELECT id, email, state, notify_key_expiry, locale FROM users WHERE id = ANY($1) ORDER BY id",
+        "SELECT id, email, state, locale FROM users WHERE id = ANY($1) ORDER BY id",
         ids
     )
     .fetch_all(db)
@@ -227,23 +224,6 @@ pub async fn mark_verified(
         "UPDATE users SET email_verified_at = COALESCE(email_verified_at, $2), updated_at = now() WHERE id = $1",
         id,
         at
-    )
-    .execute(db)
-    .await?;
-    Ok(())
-}
-
-pub async fn set_notifications(
-    db: impl PgExecutor<'_>,
-    id: Uuid,
-    budget_alerts: bool,
-    key_expiry: bool,
-) -> Result<(), StoreError> {
-    sqlx::query!(
-        "UPDATE users SET notify_budget_alerts = $2, notify_key_expiry = $3, updated_at = now() WHERE id = $1",
-        id,
-        budget_alerts,
-        key_expiry
     )
     .execute(db)
     .await?;
@@ -341,7 +321,7 @@ pub async fn list(
     Ok(sqlx::query_as!(
         User,
         "SELECT id, email, name, password_hash, email_verified_at, state, is_instance_admin, \
-         notify_budget_alerts, notify_key_expiry, created_at, avatar FROM users \
+         created_at, avatar FROM users \
          WHERE ($1::uuid IS NULL OR id > $1) \
          AND ($3::text IS NULL OR email ILIKE $3 OR name ILIKE $3 OR email ILIKE $5) \
          AND ($4::text IS NULL OR state = $4) \

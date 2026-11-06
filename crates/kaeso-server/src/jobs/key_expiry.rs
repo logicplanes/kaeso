@@ -1,10 +1,11 @@
 use std::collections::{BTreeSet, HashMap};
 
 use kaeso_core::id::{OrgId, ProjectId};
+use kaeso_core::notifications::Kind;
 use kaeso_core::rights::ProjectRight;
 use kaeso_mail::Locale;
 use kaeso_store::StoreError;
-use kaeso_store::pg::{keys, members, users};
+use kaeso_store::pg::{keys, members, notifications, users};
 use uuid::Uuid;
 
 use crate::jobs::JobError;
@@ -50,6 +51,15 @@ pub async fn run(state: AppState) -> Result<String, JobError> {
             .into_iter()
             .map(|r| (r.id, r))
             .collect();
+        let off: BTreeSet<Uuid> =
+            notifications::turned_off(&state.pg, &wanted, Kind::KeyExpiry.as_str())
+                .await?
+                .into_iter()
+                .collect();
+        let muted: BTreeSet<(Uuid, Uuid)> = notifications::mutes_of(&state.pg, &wanted)
+            .await?
+            .into_iter()
+            .collect();
         for key in &expiring {
             let to: &[Uuid] = match &key.user_id {
                 Some(user) => std::slice::from_ref(user),
@@ -62,7 +72,10 @@ pub async fn run(state: AppState) -> Result<String, JobError> {
                 ProjectId::from_uuid(key.project_id)
             );
             for person in to.iter().filter_map(|id| people.get(id)) {
-                if person.state != "active" || !person.notify_key_expiry {
+                if person.state != "active"
+                    || off.contains(&person.id)
+                    || muted.contains(&(person.id, key.org_id))
+                {
                     continue;
                 }
                 let Some(email) = &person.email else {

@@ -114,6 +114,8 @@ pub struct MyMembership {
     #[doc = "The user is the org's only owner, so `DELETE me/memberships/{org}` is\n\
         refused until someone else is an owner too."]
     pub last_owner: bool,
+    #[doc = "The user muted emails about the org; security emails still arrive."]
+    pub notifications_muted: bool,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -145,6 +147,7 @@ pub async fn memberships(State(state): State<AppState>, ctx: Ctx) -> ApiResult<J
         });
     }
     let last_owner = members::orgs_where_last_owner(&state.pg, me.uuid()).await?;
+    let muted = kaeso_store::pg::notifications::muted_orgs(&state.pg, me.uuid()).await?;
     Ok(Json(Memberships {
         data: orgs
             .into_iter()
@@ -168,6 +171,7 @@ pub async fn memberships(State(state): State<AppState>, ctx: Ctx) -> ApiResult<J
                 org_deletion_due_at: o.org_deletion_due_at,
                 preset: o.preset,
                 last_owner: last_owner.iter().any(|(id, _)| *id == o.org_id),
+                notifications_muted: muted.contains(&o.org_id),
             })
             .collect(),
     }))
@@ -211,61 +215,6 @@ pub async fn leave(
     crate::services::orgs::ensure_changeable(&state.pg, org.uuid()).await?;
     remove_member(&state, &ctx, org, me, Removal::Leaving).await?;
     Ok(StatusCode::NO_CONTENT)
-}
-
-#[derive(Debug, Serialize, Deserialize, ToSchema)]
-#[serde(deny_unknown_fields)]
-#[schema(description = "Alert emails the user wants.")]
-pub struct Notifications {
-    #[doc = "Budget threshold alerts."]
-    pub budget_alerts: bool,
-    #[doc = "Key expiry warnings."]
-    pub key_expiry: bool,
-}
-
-#[utoipa::path(
-    get,
-    path = "/me/notifications",
-    summary = "The user's alert email preferences. Security emails are always sent.",
-    tag = "me",
-    responses((status = 200, body = Notifications))
-)]
-pub async fn notifications(
-    State(state): State<AppState>,
-    ctx: Ctx,
-) -> ApiResult<Json<Notifications>> {
-    let u = users::get(&state.pg, ctx.user_id()?.uuid())
-        .await?
-        .ok_or_else(|| ApiError::not_found("user"))?;
-    Ok(Json(Notifications {
-        budget_alerts: u.notify_budget_alerts,
-        key_expiry: u.notify_key_expiry,
-    }))
-}
-
-#[utoipa::path(
-    put,
-    path = "/me/notifications",
-    summary = "Turns alert emails on or off.",
-    tag = "me",
-    request_body = Notifications,
-    responses((status = 200, body = Notifications))
-)]
-pub async fn set_notifications(
-    State(state): State<AppState>,
-    ctx: Ctx,
-    Body(req): Body<Notifications>,
-) -> ApiResult<Json<Notifications>> {
-    let me = ctx.user_id()?;
-    let mut tx = state.pg.begin().await?;
-    users::set_notifications(&mut *tx, me.uuid(), req.budget_alerts, req.key_expiry).await?;
-    ctx.audit(None, Action::UserNotifications)
-        .target("user", me)
-        .after(&req)
-        .write(&mut tx)
-        .await?;
-    tx.commit().await?;
-    Ok(Json(req))
 }
 
 #[utoipa::path(

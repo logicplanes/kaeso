@@ -15,6 +15,7 @@ pub mod keys;
 pub mod kpmr;
 pub mod limits;
 pub mod net;
+pub mod notifications;
 pub mod provider;
 pub mod providers;
 pub mod rights;

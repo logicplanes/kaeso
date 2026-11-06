@@ -6,6 +6,7 @@ import { apiError, json, on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
 import { announceConfirmed } from "./confirm-channel";
 import { requestRecentSignIn } from "./recent-sign-in-store";
+import { notificationSettings, testEmailSent } from "~/test/fixtures/notifications";
 
 const PATH = "/settings/account/notifications";
 const notifications = async () => within(await screen.findByRole("region", { name: "Notifications" }));
@@ -22,11 +23,9 @@ const ACME_ID = { org_id: "org_01hxacme", org_name: "Acme", provider_name: "Acme
 function needsRecentSignIn(options: { session?: Parameters<typeof whoAmI>[0]; ways?: Partial<Ways> } = {}) {
   signedIn(options.session ? { session: whoAmI(options.session) } : {});
   on("GET", "me/sign-in-again", { password: true, magic_link: true, set_password: false, sso: [], ...options.ways });
-  on("GET", "me/notifications", { budget_alerts: false, key_expiry: false });
+  on("GET", "me/notifications", notificationSettings());
   let calls = 0;
-  on("PUT", "me/notifications", ({ body }: { body: unknown }) =>
-    ++calls === 1 ? apiError(403, "recent_sign_in_required", "Sign in again to do this.") : body,
-  );
+  on("POST", "me/notifications/test", () => (++calls === 1 ? apiError(403, "recent_sign_in_required", "Sign in again to do this.") : testEmailSent));
 }
 
 function popupWindow() {
@@ -36,7 +35,7 @@ function popupWindow() {
 }
 
 async function toggle(user: Awaited<ReturnType<typeof renderApp>>["user"]) {
-  await user.click(await screen.findByRole("switch", { name: "Budget alerts" }));
+  await user.click(await screen.findByRole("button", { name: "Send a test email" }));
   return dialog();
 }
 
@@ -54,9 +53,9 @@ describe("signing in again with a password", () => {
     expect(within(box).getByRole("button", { name: "Sign in" })).toBeDisabled();
     await user.type(await within(box).findByLabelText("Password"), "correct horse battery");
     await user.keyboard("{Meta>}{Enter}{/Meta}");
-    expect(await (await notifications()).findByText("Notifications saved")).toBeInTheDocument();
+    expect(await (await notifications()).findByText("Test email sent")).toBeInTheDocument();
     expect(requests("POST", "auth/password").map((r) => r.body)).toEqual([{ email: "owner@example.com", password: "correct horse battery" }]);
-    expect(requests("PUT", "me/notifications")).toHaveLength(2);
+    expect(requests("POST", "me/notifications/test")).toHaveLength(2);
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "Sign in again to continue" })).not.toBeInTheDocument());
   });
 
@@ -69,7 +68,7 @@ describe("signing in again with a password", () => {
     await user.click(within(box).getByRole("button", { name: "Sign in" }));
     expect((await (await notifications()).findAllByText("That email and password don't match.")).length).toBeGreaterThan(0);
     expect(screen.getByRole("dialog", { name: "Sign in again to continue" })).toBeInTheDocument();
-    expect(requests("PUT", "me/notifications")).toHaveLength(1);
+    expect(requests("POST", "me/notifications/test")).toHaveLength(1);
   });
 
   it("drops the change quietly when cancelled", async () => {
@@ -78,7 +77,7 @@ describe("signing in again with a password", () => {
     const box = await toggle(user);
     await user.click(within(box).getByRole("button", { name: "Cancel" }));
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "Sign in again to continue" })).not.toBeInTheDocument());
-    expect(requests("PUT", "me/notifications")).toHaveLength(1);
+    expect(requests("POST", "me/notifications/test")).toHaveLength(1);
     expect(screen.queryByText("Sign in again to do this.")).not.toBeInTheDocument();
   });
 
@@ -101,7 +100,7 @@ describe("signing in again with a password", () => {
     expect(requests("POST", "auth/password")).toHaveLength(1);
     expect(within(box).getByRole("button", { name: "Verify" })).toBeDisabled();
     await user.type(within(box).getByRole("textbox"), "123456");
-    expect(await (await notifications()).findByText("Notifications saved")).toBeInTheDocument();
+    expect(await (await notifications()).findByText("Test email sent")).toBeInTheDocument();
     expect(requests("POST", "auth/totp").map((r) => r.body)).toEqual([{ challenge: "chl_42", code: "123456" }]);
   });
 
@@ -121,7 +120,7 @@ describe("signing in again with a password", () => {
     await user.type(within(box).getByRole("textbox"), "{Backspace}7");
     expect(requests("POST", "auth/totp")).toHaveLength(1);
     respond(signedInReply());
-    expect(await (await notifications()).findByText("Notifications saved")).toBeInTheDocument();
+    expect(await (await notifications()).findByText("Test email sent")).toBeInTheDocument();
     expect(requests("POST", "auth/totp")).toHaveLength(1);
   });
 
@@ -137,7 +136,7 @@ describe("signing in again with a password", () => {
     await user.type(await within(box).findByRole("textbox"), "123456");
     expect((await (await notifications()).findAllByText("That code didn't work.")).length).toBeGreaterThan(0);
     await user.click(within(box).getByRole("button", { name: "Verify" }));
-    expect(await (await notifications()).findByText("Notifications saved")).toBeInTheDocument();
+    expect(await (await notifications()).findByText("Test email sent")).toBeInTheDocument();
     expect(requests("POST", "auth/totp").map((r) => r.body)).toEqual([
       { challenge: "chl_42", code: "123456" },
       { challenge: "chl_42", code: "123456" },
@@ -175,7 +174,7 @@ describe("signing in again with a password", () => {
     needsRecentSignIn();
     on("POST", "auth/password", signedInReply());
     const { user } = await renderApp(PATH);
-    await screen.findByRole("switch", { name: "Budget alerts" });
+    await screen.findByRole("button", { name: "Send a test email" });
     const [first, second] = await act(async () => [requestRecentSignIn(), requestRecentSignIn()]);
     const box = await dialog();
     expect(screen.getAllByRole("dialog", { name: "Sign in again to continue" })).toHaveLength(1);
@@ -201,7 +200,7 @@ describe("signing in again with a password", () => {
     expect(verify).toBeDisabled();
     await user.type(within(box).getByLabelText("Recovery code"), " abcd-efgh ");
     await user.keyboard("{Meta>}{Enter}{/Meta}");
-    expect(await (await notifications()).findByText("Notifications saved")).toBeInTheDocument();
+    expect(await (await notifications()).findByText("Test email sent")).toBeInTheDocument();
     expect(requests("POST", "auth/totp").map((r) => r.body)).toEqual([{ challenge: "chl_42", recovery_code: "abcd-efgh" }]);
   });
 
@@ -228,7 +227,7 @@ describe("signing in again without a password", () => {
     const closes = within(box).getAllByRole("button", { name: "Close" });
     await user.click(closes[closes.length - 1] as HTMLElement);
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "Sign in again to continue" })).not.toBeInTheDocument());
-    expect(requests("PUT", "me/notifications")).toHaveLength(1);
+    expect(requests("POST", "me/notifications/test")).toHaveLength(1);
   });
 
   it("confirms at the identity provider in a window of its own and repeats the change, keeping the page", async () => {
@@ -245,8 +244,8 @@ describe("signing in again without a password", () => {
     await waitFor(() => expect(popup.location.href).toBe("https://idp.example.com/authorize?state=again"));
     expect(await within(box).findByText("Finish signing in at Acme ID in the window that opened; the action continues by itself.")).toBeInTheDocument();
     act(() => announceConfirmed(null));
-    expect(await (await notifications()).findByText("Notifications saved")).toBeInTheDocument();
-    expect(requests("PUT", "me/notifications")).toHaveLength(2);
+    expect(await (await notifications()).findByText("Test email sent")).toBeInTheDocument();
+    expect(requests("POST", "me/notifications/test")).toHaveLength(2);
   });
 
   it("says why the identity provider didn't confirm, and lets the person try again", async () => {
@@ -260,7 +259,7 @@ describe("signing in again without a password", () => {
     act(() => announceConfirmed("other_account"));
     expect((await screen.findAllByText("You signed in at the identity provider as someone else; sign in there as yourself.")).length).toBeGreaterThan(0);
     expect(await within(box).findByRole("button", { name: "Continue with Acme ID" })).toBeInTheDocument();
-    expect(requests("PUT", "me/notifications")).toHaveLength(1);
+    expect(requests("POST", "me/notifications/test")).toHaveLength(1);
   });
 
   it("names a provider that can't confirm a recent sign-in, and offers only the other ways afterwards", async () => {
@@ -277,7 +276,7 @@ describe("signing in again without a password", () => {
     expect(await within(box).findByRole("button", { name: "Email me a sign-in link" })).toBeInTheDocument();
     expect(within(box).queryByRole("button", { name: "Continue with Acme ID" })).not.toBeInTheDocument();
     expect(within(box).queryByRole("button", { name: "Continue with Acme ID instead" })).not.toBeInTheDocument();
-    expect(requests("PUT", "me/notifications")).toHaveLength(1);
+    expect(requests("POST", "me/notifications/test")).toHaveLength(1);
   });
 
   it("offers to set a password when the only provider can't confirm and no link is sent", async () => {
@@ -352,8 +351,8 @@ describe("when Kaeso can't tell how to sign in again", () => {
     signedIn();
     let asked = 0;
     on("GET", "me/sign-in-again", () => (++asked === 1 ? apiError(503, "unavailable", "Try again shortly.") : { password: true, magic_link: false, sso: [] }));
-    on("GET", "me/notifications", { budget_alerts: false, key_expiry: false });
-    on("PUT", "me/notifications", apiError(403, "recent_sign_in_required", "Sign in again to do this."));
+    on("GET", "me/notifications", notificationSettings());
+    on("POST", "me/notifications/test", apiError(403, "recent_sign_in_required", "Sign in again to do this."));
     const { user } = await renderApp(PATH);
     const box = await toggle(user);
     expect(await within(box).findByText("Kaeso couldn't check how you can sign in again.")).toBeInTheDocument();
@@ -411,7 +410,7 @@ describe("signing in again from the organization that manages the account", () =
     expect(within(box).getByRole("button", { name: "Email me a sign-in link instead" })).toBeInTheDocument();
     await user.type(password, "correct horse battery");
     await user.click(within(box).getByRole("button", { name: "Sign in" }));
-    expect(await (await notifications()).findByText("Notifications saved")).toBeInTheDocument();
+    expect(await (await notifications()).findByText("Test email sent")).toBeInTheDocument();
   });
 
   it("offers its provider first when single sign-on is the only way", async () => {

@@ -5,6 +5,7 @@ import { memberUser } from "~/test/fixtures/public";
 import { apiError, on } from "~/test/network";
 import { renderApp } from "~/test/render";
 import { placeOf } from "./missing-right-toast";
+import { notificationSettings } from "~/test/fixtures/notifications";
 
 const notifications = async () => within(await screen.findByRole("region", { name: "Notifications" }));
 
@@ -28,10 +29,10 @@ describe("a change refused for a missing right", () => {
 
   it("shows the gateway's message outside an organization", async () => {
     signedIn();
-    on("GET", "me/notifications", { budget_alerts: false, key_expiry: false });
-    on("PUT", "me/notifications", apiError(403, "permission_denied", "Your account can't change notifications.", { right: "org.edit" }));
+    on("GET", "me/notifications", notificationSettings());
+    on("POST", "me/notifications/test", apiError(403, "permission_denied", "Your account can't change notifications.", { right: "org.edit" }));
     const { user } = await renderApp("/settings/account/notifications");
-    await user.click(await screen.findByRole("switch", { name: "Budget alerts" }));
+    await user.click(await screen.findByRole("button", { name: "Send a test email" }));
     expect((await (await notifications()).findAllByText("Your account can't change notifications.")).length).toBeGreaterThan(0);
   });
 });

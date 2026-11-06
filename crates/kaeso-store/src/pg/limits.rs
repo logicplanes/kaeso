@@ -340,10 +340,14 @@ pub async fn alert_recipients(
 ) -> Result<Vec<(Uuid, String)>, StoreError> {
     let rows = sqlx::query!(
         "SELECT DISTINCT u.id, u.email AS \"email!\" FROM users u \
-         WHERE u.state = 'active' AND u.notify_budget_alerts AND u.email IS NOT NULL AND ( \
+         WHERE u.state = 'active' AND u.email IS NOT NULL AND ( \
            u.id IN (SELECT user_id FROM project_memberships WHERE project_id = $1 AND preset = 'admin') \
            OR u.id IN (SELECT m.user_id FROM org_memberships m JOIN projects p ON p.org_id = m.org_id \
-                       WHERE p.id = $1 AND m.preset IN ('owner', 'admin')))",
+                       WHERE p.id = $1 AND m.preset IN ('owner', 'admin'))) \
+         AND NOT EXISTS (SELECT 1 FROM notification_settings s \
+                         WHERE s.user_id = u.id AND s.kind = 'budget_alerts' AND s.delivery = 'off') \
+         AND NOT EXISTS (SELECT 1 FROM notification_mutes n JOIN projects p ON p.org_id = n.org_id \
+                         WHERE n.user_id = u.id AND p.id = $1)",
         project_id
     )
     .fetch_all(db)

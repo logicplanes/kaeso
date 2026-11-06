@@ -1,0 +1,29 @@
+---
+source: crates/kaeso-core/src/notifications/tests.rs
+expression: reference()
+---
+| Kind | Area | Name | Default | Always | Rights | Description |
+| --- | --- | --- | --- | --- | --- | --- |
+| `account_security` | Security | Account security | now | ✓ |  | Your password, two-factor authentication, email address or sessions changed. |
+| `new_app` | Security | A new app can act as you | now | ✓ |  | You let an app or an MCP client act as you. |
+| `export_ready` | Personal | Export finished | now |  | `logs.export`, `audit_log.export` | A log or audit log export you started finished. |
+| `weekly_summary` | Personal | Weekly summary | off |  | `usage.view` | On Mondays: requests, cost, tool calls and top models of your projects. |
+| `access_changed` | Project | Your access changed | now |  |  | You were added or removed, or your rights changed. |
+| `budget_alerts` | Project | Budget alerts | now |  | `limits.manage`, `keys.own.create` | A budget you're responsible for crosses a threshold. |
+| `limit_reached` | Project | Limit reached | daily |  | `limits.manage`, `keys.own.create` | A limit blocks requests of a project or of your keys. |
+| `key_expiry` | Project | Your key expires | now |  | `keys.own.create`, `keys.all.manage` | A key you own expires soon. |
+| `key_changed` | Project | Your key changed | now |  | `keys.own.create` | Someone else disabled, rotated or archived a key you own. |
+| `content_logging` | Project | Content logging changed | daily |  | `project.view` | A project you're in starts or stops keeping prompts and replies. |
+| `mcp_servers` | Tools | MCP servers need attention | now |  | `mcp_servers.manage` | A shared connection signed out, or a changed tool waits for review. |
+| `connection_expired` | Tools | Your connection expired | now |  | `tools.use` | A server signed your own connection out. |
+| `portal_clients` | Tools | New client on a portal | daily |  | `tools.manage` | Someone connected a new client to a project's MCP portal. |
+| `org_security` | Organization | Security settings changed | now |  | `security.sso.manage`, `platform_keys.view` | Someone else changed sign-in rules, single sign-on or platform keys. |
+| `org_ownership` | Organization | Ownership and deletion | now | ✓ | `org.ownership.transfer` | An organization changes owners, is scheduled for deletion or is restored. |
+| `org_members` | Organization | Member changes | daily |  | `members.invite` | People join or leave an organization. |
+| `invite_accepted` | Organization | Your invitation was accepted | now |  | `members.invite` | Someone you invited joined. |
+| `provider_keys` | Organization | Provider keys need attention | now |  | `provider_credentials.replace` | A provider rejects a key again and again, or an account signed out. |
+| `model_changes` | Organization | Model changes | daily |  | `models.manage` | A model a project uses is delisted or changes its price. |
+| `cost_report` | Organization | Monthly cost report | now |  | `costs.org.view` | On the 1st: last month's cost by project and model. |
+| `instance_updates` | Instance | Updates | now |  | `instance.updates.manage` | A new version is out, or an update finished or was rolled back. |
+| `instance_people` | Instance | New organizations and people | daily |  | `instance.users.view` | Someone signed up or created an organization. |
+| `instance_settings` | Instance | Instance settings changed | now |  | `instance.settings.manage` | Another admin changed the instance's settings, sign-in or agent policy. |

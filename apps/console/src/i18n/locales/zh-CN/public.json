@@ -134,5 +134,19 @@
   "public.portalClientHost": "{host} 发布了此客户端的名称和返回地址。",
   "public.connectPortal": "连接",
   "public.portalConnect": "这些服务器需要您自己的账户；在您连接之前，它们的工具对您不可用。",
-  "public.portalConnectServer": "连接"
+  "public.portalConnectServer": "连接",
+  "public.unsubscribe": "退订",
+  "public.needsUnsubscribeLink": "此页面需要退订链接",
+  "public.needsUnsubscribeLinkHint": "请打开 Kaeso 邮件底部的链接；它以 #token=… 结尾。",
+  "public.openNotificationSettings": "打开通知设置",
+  "public.openingUnsubscribe": "正在打开链接…",
+  "public.lookingUpLink": "正在查找链接",
+  "public.unsubscribeInvalid": "此退订链接无效",
+  "public.unsubscribeInvalidHint": "请登录并在“账户 › 通知”中选择您的邮件。",
+  "public.unsubscribed": "您已退订",
+  "public.unsubscribedHint": "Kaeso 不再向 {email} 发送“{kind}”。",
+  "public.chooseOtherEmails": "选择其他邮件",
+  "public.unsubscribeFrom": "退订“{kind}”？",
+  "public.unsubscribeFromHint": "Kaeso 将不再向 {email} 发送这类邮件；安全邮件仍会送达。",
+  "public.unsubscribeAction": "退订"
 }

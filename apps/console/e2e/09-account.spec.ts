@@ -36,11 +36,17 @@ test("profile, notifications, sessions and memberships", async ({ page }) => {
   await page.getByRole("button", { name: "Save", exact: true }).click();
 
   await page.getByRole("link", { name: "Notifications" }).click();
-  const budget = page.getByRole("switch", { name: "Budget alerts" });
-  const before = await budget.isChecked();
+  await expect(page.getByText("Always sent").first()).toBeVisible();
+  const budget = page.getByRole("combobox", { name: "Budget alerts" });
   await budget.click();
+  await page.getByRole("option", { name: "Daily" }).click();
   await expect(page.getByText("Notifications saved")).toBeVisible();
-  await expect(budget).toBeChecked({ checked: !before });
+  await expect(budget).toHaveText("Daily");
+  await budget.click();
+  await page.getByRole("option", { name: "Now" }).click();
+  await expect(budget).toHaveText("Now");
+  await page.getByRole("button", { name: "Send a test email" }).click();
+  await expect(page.getByText("Test email sent")).toBeVisible();
 
   await page.getByRole("link", { name: "Sessions" }).click();
   await expect(page.getByText("This device")).toBeVisible();
@@ -48,6 +54,12 @@ test("profile, notifications, sessions and memberships", async ({ page }) => {
   await page.getByRole("link", { name: "Memberships" }).click();
   await expect(page.getByRole("heading", { name: OWNER.org })).toBeVisible();
   await expect(page.getByText("Owner of the organization")).toBeVisible();
+  const emails = page.getByRole("group", { name: `Emails about ${OWNER.org}` }).getByRole("switch");
+  await emails.click();
+  await expect(page.getByText(`Emails about ${OWNER.org} stopped`)).toBeVisible();
+  await expect(emails).not.toBeChecked();
+  await emails.click();
+  await expect(emails).toBeChecked();
 });
 
 test("two-factor authentication: a setup cancelled half-way starts again with a new key and an empty code", async ({ page }) => {

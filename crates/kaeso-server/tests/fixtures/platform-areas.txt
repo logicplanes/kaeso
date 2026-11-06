@@ -3,7 +3,7 @@ me | Profile | me, me/email | |
 me | Security | me/password, me/totp, me/recovery-codes, me/sessions | |
 me | Memberships | me/memberships | |
 me | Own keys | me/keys | |
-me | Notifications | me/notifications | |
+me | Notifications | me/notifications, notifications/unsubscribe | |
 me | Account | me | |
 instance | Users | instance/users | |
 instance | Organizations | instance/orgs, instance/orgs/{org}/members, instance/orgs/{org}/projects, instance/orgs/{org}/usage, instance/orgs/{org}/owner, instance/orgs/{org}/restore | |

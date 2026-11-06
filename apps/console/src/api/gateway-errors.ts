@@ -390,6 +390,18 @@ const messages = (): Rule[] => [
   rule("errors.mcp.personSignsIn", () => t("errors.mcp.personSignsIn", "A person signs in to an MCP server; start it from a console session.")),
   rule("errors.tools.personCalls", () => t("errors.tools.personCalls", "A person calls tools from the Playground; use a console session.")),
   rule("errors.tools.unavailable", () => t("errors.tools.unavailable", "Kaeso can't load this project's tools right now; try again shortly.")),
+  rule("errors.notifications.invalidLink", () =>
+    t("errors.notifications.invalidLink", "This unsubscribe link is invalid; choose your emails under Account › Notifications."),
+  ),
+  rule("errors.notifications.unknownKind", (v) => t("errors.notifications.unknownKind", "`{kind}` is not an email kind.", v)),
+  rule("errors.notifications.securityAlways", () => t("errors.notifications.securityAlways", "Security emails are always sent; they have no setting.")),
+  rule("errors.notifications.noAddress", () => t("errors.notifications.noAddress", "Your account has no email address.")),
+  rule("errors.notifications.testTooSoon", (v) => t("errors.notifications.testTooSoon", "You sent a test email a moment ago; try again in {wait}.", v), {
+    wait: "wait",
+  }),
+  rule("errors.notifications.testNotSent", () =>
+    t("errors.notifications.testNotSent", "The email was not sent; ask an instance admin to check the mail settings."),
+  ),
   rule("errors.mcp.headerOrOauth", () => t("errors.mcp.headerOrOauth", "Send either `header` or `oauth`.")),
   rule("errors.mcp.sendOauth", () => t("errors.mcp.sendOauth", "This server signs in with OAuth; send `oauth`.")),
   rule("errors.mcp.sendHeader", () => t("errors.mcp.sendHeader", "This server takes a secret header; send `header`.")),

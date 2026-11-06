@@ -8,6 +8,7 @@ import { methods } from "~/test/fixtures/public";
 import { apiError, on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
 import { sessionQuery } from "./session-queries";
+import { notificationSettings } from "~/test/fixtures/notifications";
 
 const PROFILE = "/settings/account/profile";
 const NOTIFICATIONS = "/settings/account/notifications";
@@ -56,13 +57,13 @@ describe("a session that ends while the console is open", () => {
 
   it("checks again before opening a page while the last session check said signed out", async () => {
     const { user } = await openProfile();
-    on("GET", "me/notifications", { budget_alerts: true, key_expiry: false });
+    on("GET", "me/notifications", notificationSettings());
     const ended = { status: "error" as const, error: new ApiError({ type: "authentication", status: 401, message: "Sign in to continue." }) };
     queryClient.getQueryCache().find({ queryKey: sessionQuery.queryKey })?.setState(ended);
     const checks = requests("GET", "auth/session").length;
 
     await user.click(within(screen.getByRole("navigation", { name: "Settings" })).getByRole("link", { name: "Notifications" }));
-    expect(await screen.findByRole("switch", { name: "Budget alerts" })).toBeChecked();
+    expect(await screen.findByRole("combobox", { name: "Budget alerts" })).toHaveTextContent("Now");
     expect(requests("GET", "auth/session").length).toBeGreaterThan(checks);
     expect(window.location.pathname).toBe(NOTIFICATIONS);
 
