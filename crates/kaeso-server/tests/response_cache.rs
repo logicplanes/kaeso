@@ -340,6 +340,61 @@ async fn a_provider_error_is_never_cached() {
 }
 
 #[tokio::test]
+async fn a_sweep_that_finishes_after_the_clear_keeps_the_replies_stored_since_then() {
+    let env = env(&[]).await;
+    turn_on(&env).await;
+    ask(&env, &env.key, hello(), None).await;
+    let r = env
+        .app
+        .post(
+            &format!("{}/clear", project_path(&env, &env.project)),
+            json!({}),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::NO_CONTENT, "{:?}", r.body);
+    assert_eq!(
+        ask(&env, &env.key, hello(), None)
+            .await
+            .header("kaeso-cache"),
+        Some("miss")
+    );
+
+    let state = &env.app.state;
+    let project = env
+        .project
+        .parse::<kaeso_core::id::ProjectId>()
+        .unwrap()
+        .uuid();
+    let generation = kaeso_store::pg::response_cache::settings(&state.pg, project)
+        .await
+        .unwrap()
+        .unwrap()
+        .generation;
+    kaeso_server::services::response_cache::remove_retired(state, project, generation)
+        .await
+        .unwrap();
+
+    assert_eq!(
+        ask(&env, &env.key, hello(), None)
+            .await
+            .header("kaeso-cache"),
+        Some("hit")
+    );
+    assert_eq!(env.mock.received().len(), 2);
+    let mut conn = state.valkey.bulk();
+    let keys: Vec<String> = redis::cmd("KEYS")
+        .arg(format!(
+            "{}*",
+            state.valkey.key(&format!("rc:v2:{project}:"))
+        ))
+        .query_async(&mut conn)
+        .await
+        .unwrap();
+    assert_eq!(keys.len(), 1, "{keys:?}");
+}
+
+#[tokio::test]
 async fn clearing_or_turning_off_stops_serving_stored_replies() {
     let env = env(&[]).await;
     turn_on(&env).await;
@@ -421,7 +476,7 @@ async fn cleared_entries_leave_valkey() {
     let env = env(&[]).await;
     turn_on(&env).await;
     ask(&env, &env.key, hello(), None).await;
-    let pattern = env.app.state.valkey.key("rc:v1:*");
+    let pattern = env.app.state.valkey.key("rc:v2:*");
     let keys = || async {
         let mut conn = env.app.state.valkey.conn();
         let keys: Vec<String> = redis::cmd("KEYS")
@@ -490,7 +545,7 @@ async fn the_ttl_is_validated_and_applies_to_new_entries() {
     ask(&env, &env.key, hello(), None).await;
     let mut conn = env.app.state.valkey.conn();
     let keys: Vec<String> = redis::cmd("KEYS")
-        .arg(env.app.state.valkey.key("rc:v1:*"))
+        .arg(env.app.state.valkey.key("rc:v2:*"))
         .query_async(&mut conn)
         .await
         .unwrap();
