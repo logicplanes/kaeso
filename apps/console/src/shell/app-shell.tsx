@@ -3,7 +3,7 @@ import { Outlet, useLocation, useParams } from "@tanstack/react-router";
 import { AppFrame, Sidebar, TooltipProvider } from "@logicplanes/kaeso-ui";
 import { RecentSignInHost } from "~/auth/recent-sign-in";
 import { SsoErrorHost } from "~/auth/sso-error-host";
-import { useMemberships } from "~/auth/session";
+import { useMemberships, useSession } from "~/auth/session";
 import { t } from "~/i18n";
 import { AppSidebar } from "./app-sidebar";
 import { CommandPaletteHost } from "./palette";
@@ -15,6 +15,7 @@ import { orgPath, placePath } from "./pages";
 import { loadSettingsSidebar, loadedSettingsSidebar } from "./settings-sidebar-load";
 
 const ShellListeners = lazy(() => import("./listeners"));
+const DemoNotice = lazy(() => import("./demo-notice").then((m) => ({ default: m.DemoNotice })));
 
 if (location.pathname.startsWith("/settings")) void loadSettingsSidebar();
 
@@ -30,6 +31,7 @@ export function AppShell() {
   const settings = useLocation({ select: (l) => l.pathname.startsWith("/settings") });
   const params = useParams({ strict: false });
   const memberships = useMemberships();
+  const demo = useSession().demo;
   const last = readLast();
   const org = params.org ?? last?.org ?? memberships[0]?.org_id;
   const brand = settings
@@ -44,6 +46,11 @@ export function AppShell() {
       <CreateActionProvider>
         <Sidebar.Provider storageKey="kaeso:sidebar">
           <AppFrame sidebar={settings ? <SettingsSidebarSlot /> : <AppSidebar />} {...brand}>
+            {demo && (
+              <Suspense fallback={null}>
+                <DemoNotice />
+              </Suspense>
+            )}
             <Outlet />
           </AppFrame>
           <Suspense fallback={null}>

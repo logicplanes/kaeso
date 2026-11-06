@@ -100,6 +100,9 @@ pub struct WhoAmI {
     #[doc = "Whether the install keeps request logs. When `false`, the logs\n\
         endpoints answer `404` and usage is still counted."]
     pub request_logs: bool,
+    #[doc = "Whether the install is a public, read-only demo (`auth.demo_user`):\n\
+        every visitor is its demo user, and every change is refused."]
+    pub demo: bool,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -202,6 +205,7 @@ pub async fn current(State(state): State<AppState>, ctx: Ctx) -> ApiResult<Json<
         ),
         timezone: instance.timezone,
         request_logs: state.request_logs(),
+        demo: state.config.auth.demo_user().is_some(),
     }))
 }
 

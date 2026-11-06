@@ -18,6 +18,8 @@
   "shell.createOrg.done": "Organization created",
   "shell.deletion.on": "Deletion on {day}",
   "shell.deletion.scheduled": "Scheduled for deletion",
+  "shell.demo.install": "install Kaeso",
+  "shell.demo.notice": "This is a read-only demo with sample data; {install} to connect your own providers.",
   "shell.export.canceled": "Export canceled",
   "shell.export.failed": "The export stopped before the end; try again.",
   "shell.export.inBrowser": "Your browser shows its progress.",

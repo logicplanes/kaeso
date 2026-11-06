@@ -17,6 +17,8 @@
   "shell.createOrg.done": "组织已创建",
   "shell.deletion.on": "将于 {day}删除",
   "shell.deletion.scheduled": "已计划删除",
+  "shell.demo.install": "安装 Kaeso",
+  "shell.demo.notice": "这是带示例数据的只读演示；{install}即可连接您自己的服务商。",
   "shell.export.canceled": "导出已取消",
   "shell.export.failed": "导出未完成即已中断，请重试。",
   "shell.export.inBrowser": "浏览器会显示导出进度。",

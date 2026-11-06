@@ -28,11 +28,13 @@ async fn visit(demo: &App) -> String {
 
 #[tokio::test]
 async fn a_visitor_signs_in_as_the_demo_user_with_one_request() {
-    let (_s, app, _owner, demo) = demo().await;
+    let (_s, app, owner, demo) = demo().await;
     let methods = demo.call(Method::GET, "/auth/methods", None, None).await;
     assert_eq!(methods.body["demo"], json!(true), "{:?}", methods.body);
     let elsewhere = app.call(Method::GET, "/auth/methods", None, None).await;
     assert_eq!(elsewhere.body["demo"], json!(false));
+    let session_elsewhere = app.get("/auth/session", &owner.cookie).await;
+    assert_eq!(session_elsewhere.body["demo"], json!(false));
 
     let cookie = visit(&demo).await;
     let session = demo
@@ -45,6 +47,7 @@ async fn a_visitor_signs_in_as_the_demo_user_with_one_request() {
         "{:?}",
         session.body
     );
+    assert_eq!(session.body["demo"], json!(true));
     let org = session.body["memberships"][0]["org_id"]
         .as_str()
         .unwrap()
