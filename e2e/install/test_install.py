@@ -253,6 +253,15 @@ def test_the_gateway_gets_no_more_database_rights_than_it_needs(install):
     assert "NOAUTH" in anonymous.stdout
 
 
+def test_postgres_gives_a_quarter_of_its_memory_limit_to_shared_buffers(install):
+    def show(setting: str) -> str:
+        query = ["postgres", "psql", "-U", "kaeso", "-d", "kaeso", "-tAc", f"SHOW {setting}"]
+        return install.run("exec", "-T", *query, capture_output=True).stdout.strip()
+
+    assert show("shared_buffers") == "512MB"
+    assert show("effective_cache_size") == "1536MB"
+
+
 def test_the_updater_reaches_docker_only_through_its_proxy(install, owner):
     assert {name: install.health.get(name) for name in ("updater", "docker-proxy")} == {
         "updater": "healthy",

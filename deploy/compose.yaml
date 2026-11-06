@@ -79,6 +79,10 @@ services:
     read_only: true
     mem_limit: ${GATEWAY_MEMORY:-2g}
     pids_limit: ${GATEWAY_PIDS:-1024}
+    # KAESO_SHUTDOWN_GRACE (30s), then up to 10s each to record outcomes, write logs and send mail.
+    stop_grace_period: 75s
+    ulimits:
+      nofile: { soft: 65536, hard: 65536 }
     logging: *logging
     environment:
       KAESO_PUBLIC_URL: ${KAESO_PUBLIC_URL:-https://${KAESO_DOMAIN:?set KAESO_DOMAIN in .env}}
@@ -202,6 +206,16 @@ services:
     mem_limit: ${POSTGRES_MEMORY:-2g}
     pids_limit: ${POSTGRES_PIDS:-512}
     logging: *logging
+    # PostgreSQL's sizing advice: a quarter of the memory for shared buffers, three quarters as the planner's cache estimate.
+    command:
+      - sh
+      - -c
+      - |
+        limit=$$(cat /sys/fs/cgroup/memory.max 2>/dev/null || cat /sys/fs/cgroup/memory/memory.limit_in_bytes 2>/dev/null)
+        case "$$limit" in ''|*[!0-9]*) limit=2147483648 ;; esac
+        [ "$$limit" -le 1099511627776 ] || limit=2147483648
+        mb=$$((limit / 1048576))
+        exec docker-entrypoint.sh postgres -c shared_buffers=$$((mb / 4))MB -c effective_cache_size=$$((mb * 3 / 4))MB
     environment:
       POSTGRES_PASSWORD: ${POSTGRES_SUPERUSER_PASSWORD:?set POSTGRES_SUPERUSER_PASSWORD in .env}
       KAESO_POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -310,6 +324,10 @@ configs:
       		handle @api {
       			reverse_proxy gateway:8080 {
       				flush_interval -1
+      				transport http {
+      					keepalive 25s
+      					keepalive_idle_conns_per_host 512
+      				}
       			}
       		}
       		handle {

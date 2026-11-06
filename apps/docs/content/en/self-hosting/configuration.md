@@ -54,7 +54,7 @@ Every service in `compose.yaml` has a memory limit and a process limit. The defa
 | `updater` | `UPDATER_MEMORY`, `256m` | `UPDATER_PIDS`, `128` |
 | `docker-proxy` | `DOCKER_PROXY_MEMORY`, `128m` | `DOCKER_PROXY_PIDS`, `64` |
 
-Memory takes Docker's units, such as `768m` or `3g`. Docker stops and restarts a service that reaches its memory limit. ClickHouse sizes its own memory use to the limit.
+Memory takes Docker's units, such as `768m` or `3g`. Docker stops and restarts a service that reaches its memory limit. ClickHouse sizes its own memory use to the limit. PostgreSQL gives a quarter of its limit to shared buffers and plans with three quarters as cache.
 
 Valkey keeps its data within `VALKEY_MAXMEMORY`, `512mb` by default, which stays below `VALKEY_MEMORY` so Valkey is never stopped for memory. It never evicts a key to make room, so a rate or budget counter is never dropped without notice.
 
@@ -85,7 +85,7 @@ Docker rotates each service's log at 10 MB and keeps five files.
 | `KAESO_METRICS_LISTEN`<br>`metrics_listen` | text | `127.0.0.1:9100` | Address of the Prometheus metrics. Never route it publicly. The gateway image sets `0.0.0.0:9100`, so a port published from the container reaches it; [health and metrics](monitoring.md#metrics) shows how. |
 | `KAESO_PUBLIC_URL`<br>`public_url` | text | required | The address people and apps use, such as `https://kaeso.example.com`, without a path. It must be `https`, except `http` on a loopback address for development. |
 | `KAESO_TRUSTED_PROXIES`<br>`trusted_proxies` | text | `127.0.0.0/8,::1/128` | Comma-separated networks of proxies whose `X-Forwarded-For` the gateway believes. `trusted_proxies = ""` in the TOML file trusts none; an empty variable keeps the default. |
-| `KAESO_SHUTDOWN_GRACE`<br>`shutdown_grace` | text | `30s` | How long requests and streams in flight may run after a shutdown signal. Those still open then end with 503 and are charged and logged. |
+| `KAESO_SHUTDOWN_GRACE`<br>`shutdown_grace` | text | `30s` | How long requests and streams in flight may run after a shutdown signal. Those still open then end with 503 and are charged and logged. Compose gives the gateway 75 seconds to stop; when you raise this, raise the `gateway` service's `stop_grace_period` in `compose.override.yaml` by as much. |
 | `KAESO_SERVER_HEADER_READ_TIMEOUT`<br>`server.header_read_timeout` | text | `30s` | How long a client may take to send a request's headers, or leave a connection idle between requests; 1s to 10m. It never cuts off a reply in progress. |
 | `KAESO_SERVER_BODY_READ_TIMEOUT`<br>`server.body_read_timeout` | text | `30s` | How long the gateway waits for the next part of a request body before it refuses the request with 400; 1s to 10m. |
 | `KAESO_SERVER_BODY_READ_DEADLINE`<br>`server.body_read_deadline` | text | `60s` | How long the gateway waits for a whole request body, however steadily its parts arrive, before it refuses the request with 400; 1s to 1h. A 32 MiB body, the model API's default limit, arrives in time at 4.5 Mbit/s; raise it for apps on slower links. |

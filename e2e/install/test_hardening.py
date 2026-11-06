@@ -211,6 +211,40 @@ def test_every_service_has_memory_pids_and_log_limits_that_env_can_raise(service
     assert raised["clickhouse"]["pids_limit"] == 9000
 
 
+def seconds(duration: str) -> int:
+    parts = re.fullmatch(r"(?:(\d+)m)?(?:(\d+)s)?", duration)
+    assert parts and duration, duration
+    return int(parts[1] or 0) * 60 + int(parts[2] or 0)
+
+
+def test_docker_waits_for_the_gateway_to_drain_before_it_kills_it(services):
+    shutdown_grace, outcomes, logs, mail = 30, 10, 10, 10
+    assert seconds(services["gateway"]["stop_grace_period"]) > shutdown_grace + outcomes + logs + mail
+
+
+def test_the_gateway_may_open_a_connection_to_a_provider_for_every_app_connection(services):
+    max_connections = 4096
+    nofile = services["gateway"]["ulimits"]["nofile"]
+    assert nofile["soft"] == nofile["hard"] >= 2 * max_connections + 256
+
+
+def test_caddy_closes_idle_connections_to_the_gateway_before_the_gateway_does():
+    caddyfile = config()["configs"]["caddyfile"]["content"]
+    proxy = caddyfile.split("reverse_proxy gateway:8080 {\n", 1)[1].split("\n\t\t\t}\n", 1)[0]
+    keepalive = re.search(r"^\t+keepalive (\S+)$", proxy, re.M)
+    header_read_timeout = 30
+    assert keepalive and seconds(keepalive[1]) < header_read_timeout, proxy
+    assert re.search(r"^\t+keepalive_idle_conns_per_host 512$", proxy, re.M), proxy
+
+
+def test_postgres_sizes_its_memory_from_its_limit():
+    postgres = config({"POSTGRES_MEMORY": "8g"})["services"]["postgres"]
+    assert postgres["mem_limit"] == str(8 << 30)
+    script = postgres["command"][2].replace("$$", "$")
+    assert "/sys/fs/cgroup/memory.max" in script
+    assert script.splitlines()[-1].startswith("exec docker-entrypoint.sh postgres ")
+
+
 def test_valkey_reads_its_password_from_a_file_and_never_evicts_counters():
     found = config({"VALKEY_MAXMEMORY": "300mb"})
     valkey = found["services"]["valkey"]
