@@ -22,3 +22,4 @@ apps/console/src/api/generated
 apps/console/src/routeTree.gen.ts
 apps/docs/content
 apps/docs/e2e/fixtures/content
+.terraform

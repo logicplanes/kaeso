@@ -111,6 +111,13 @@ const RULES = [
     write: (text, version) => replaceGroup(text, IMAGE_TAG, version),
   },
   {
+    what: "platform image tag",
+    match: (file) => ["render.yaml", ".railway/railway.ts", "deploy/aws/managed.yaml", "deploy/gcp/managed/main.tf"].includes(file),
+    required: true,
+    read: (text) => matches(text, IMAGE_TAG, 2),
+    write: (text, version) => replaceGroup(text, IMAGE_TAG, version),
+  },
+  {
     what: "dependency on a Kaeso crate",
     match: (file) => /^crates\/[^/]+\/README\.md$/.test(file),
     expect: requirement,

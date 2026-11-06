@@ -19,3 +19,4 @@ Kaeso 以一个 Docker Compose 项目的形式运行在您的服务器上。[快
 - [备份和主密钥](backups.md)：备份数据库和主密钥，并轮换主密钥。
 - [健康状态和指标](monitoring.md)：检查健康状态、抓取 Prometheus 指标并阅读日志。
 - [故障排除](troubleshooting.md)：为遇到的问题找到解决方法。
+- [托管平台](platforms/index.md)：用仓库中的模板在 Render、Railway、AWS 或 Google Cloud 上运行 Kaeso。

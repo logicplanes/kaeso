@@ -1,0 +1,94 @@
+# Kaeso on Render: a public edge, a private gateway and console, Render Postgres and Key Value.
+# Docs: https://docs.kaeso.app/self-hosting/platforms/render
+services:
+  - type: web
+    name: kaeso-edge
+    runtime: image
+    image:
+      url: ghcr.io/logicplanes/kaeso-console:0.6.0-rc.4
+    plan: 0.5c-512mb
+    region: frankfurt
+    dockerCommand: kaeso-edge
+    healthCheckPath: /kaeso-edge/healthz
+    autoDeployTrigger: off
+    envVars:
+      - key: KAESO_GATEWAY_UPSTREAM
+        fromService:
+          name: kaeso-gateway
+          type: pserv
+          property: hostport
+      - key: KAESO_CONSOLE_UPSTREAM
+        fromService:
+          name: kaeso-console
+          type: pserv
+          property: hostport
+
+  - type: pserv
+    name: kaeso-gateway
+    runtime: image
+    image:
+      url: ghcr.io/logicplanes/kaeso-gateway:0.6.0-rc.4
+    plan: 2c-4g
+    region: frankfurt
+    autoDeployTrigger: off
+    envVars:
+      - key: KAESO_PUBLIC_URL
+        sync: false
+      - key: KAESO_MASTER_KEYS
+        sync: false
+      - key: KAESO_SETUP_EMAIL
+        sync: false
+      - key: KAESO_CLICKHOUSE_URL
+        sync: false
+      - key: KAESO_SMTP_HOST
+        sync: false
+      - key: KAESO_SMTP_PORT
+        value: "587"
+      - key: KAESO_SMTP_USER
+        sync: false
+      - key: KAESO_SMTP_PASSWORD
+        sync: false
+      - key: KAESO_SMTP_FROM
+        sync: false
+      - key: KAESO_POSTGRES_URL
+        fromDatabase:
+          name: kaeso-postgres
+          property: connectionString
+      - key: KAESO_VALKEY_URL
+        fromService:
+          name: kaeso-valkey
+          type: keyvalue
+          property: connectionString
+      # Only the edge, on Render's private network, reaches the gateway.
+      - key: KAESO_TRUSTED_PROXIES
+        value: 10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,fc00::/7,127.0.0.0/8,::1/128
+      # Render takes the one port a private service binds on every interface as its port.
+      - key: KAESO_METRICS_LISTEN
+        value: 127.0.0.1:9100
+      - key: KAESO_LOG_FORMAT
+        value: json
+
+  - type: pserv
+    name: kaeso-console
+    runtime: image
+    image:
+      url: ghcr.io/logicplanes/kaeso-console:0.6.0-rc.4
+    plan: 0.5c-512mb
+    region: frankfurt
+    autoDeployTrigger: off
+
+  - type: keyvalue
+    name: kaeso-valkey
+    plan: 256mb
+    region: frankfurt
+    maxmemoryPolicy: noeviction
+    ipAllowList: []
+
+databases:
+  - name: kaeso-postgres
+    plan: 1c-2g
+    region: frankfurt
+    postgresMajorVersion: "18"
+    databaseName: kaeso
+    user: kaeso
+    ipAllowList: []

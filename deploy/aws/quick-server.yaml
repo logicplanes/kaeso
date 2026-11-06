@@ -1,0 +1,126 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Kaeso on one EC2 instance with the Compose package, Caddy, bundled ClickHouse and the updater. Docs at https://docs.kaeso.app/self-hosting/platforms/aws
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label: { default: Kaeso }
+        Parameters: [Domain, KaesoVersion]
+      - Label: { default: Server }
+        Parameters: [InstanceType, DiskSizeGb, KeyName, AllowedSshCidr]
+      - Label: { default: DNS }
+        Parameters: [HostedZoneId]
+
+Parameters:
+  Domain:
+    Type: String
+    Description: The domain Kaeso answers on, such as kaeso.example.com; point it at the instance's address, or give the hosted zone below.
+    AllowedPattern: ^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$
+  KaesoVersion:
+    Type: String
+    Default: ""
+    Description: The Kaeso release to install, such as 0.6.0; empty installs the newest stable release.
+    AllowedPattern: ^$|^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$
+  InstanceType:
+    Type: String
+    Default: t4g.medium
+    Description: A Graviton (arm64) instance type with at least 2 vCPUs and 4 GB of memory.
+    AllowedPattern: ^[a-z0-9]+g[a-z]*\.[a-z0-9]+$
+  DiskSizeGb:
+    Type: Number
+    Default: 40
+    MinValue: 20
+    MaxValue: 2000
+    Description: Root disk in GB; request logs grow it.
+  KeyName:
+    Type: String
+    Default: ""
+    Description: An EC2 key pair for SSH, which kaeso setup-link and upgrades by hand need; empty gives no SSH access.
+  AllowedSshCidr:
+    Type: String
+    Default: 0.0.0.0/0
+    Description: Who may reach SSH; narrow it to your address.
+    AllowedPattern: ^(\d{1,3}\.){3}\d{1,3}/\d{1,2}$
+  HostedZoneId:
+    Type: String
+    Default: ""
+    Description: A Route 53 hosted zone of the domain, to create its record; empty leaves DNS to you.
+  LatestAmiId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/canonical/ubuntu/server/24.04/stable/current/arm64/hvm/ebs-gp3/ami-id
+    Description: Ubuntu 24.04 for arm64, resolved from the public SSM parameter.
+
+Conditions:
+  HasKeyName: !Not [!Equals [!Ref KeyName, ""]]
+  HasHostedZone: !Not [!Equals [!Ref HostedZoneId, ""]]
+  HasVersion: !Not [!Equals [!Ref KaesoVersion, ""]]
+
+Resources:
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Kaeso edge, HTTPS and HTTP/3 to everyone, SSH to the allowed range
+      SecurityGroupIngress:
+        - { IpProtocol: tcp, FromPort: 80, ToPort: 80, CidrIp: 0.0.0.0/0, Description: HTTP for the certificate and redirects }
+        - { IpProtocol: tcp, FromPort: 443, ToPort: 443, CidrIp: 0.0.0.0/0, Description: HTTPS }
+        - { IpProtocol: udp, FromPort: 443, ToPort: 443, CidrIp: 0.0.0.0/0, Description: HTTP/3 }
+        - { IpProtocol: tcp, FromPort: 80, ToPort: 80, CidrIpv6: "::/0", Description: HTTP for the certificate and redirects }
+        - { IpProtocol: tcp, FromPort: 443, ToPort: 443, CidrIpv6: "::/0", Description: HTTPS }
+        - { IpProtocol: udp, FromPort: 443, ToPort: 443, CidrIpv6: "::/0", Description: HTTP/3 }
+        - { IpProtocol: tcp, FromPort: 22, ToPort: 22, CidrIp: !Ref AllowedSshCidr, Description: SSH }
+      Tags:
+        - { Key: Name, Value: !Sub "${AWS::StackName}-kaeso" }
+
+  Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref LatestAmiId
+      InstanceType: !Ref InstanceType
+      KeyName: !If [HasKeyName, !Ref KeyName, !Ref "AWS::NoValue"]
+      SecurityGroupIds: [!Ref SecurityGroup]
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs: { VolumeType: gp3, VolumeSize: !Ref DiskSizeGb, Encrypted: true, DeleteOnTermination: true }
+      MetadataOptions: { HttpTokens: required, HttpEndpoint: enabled }
+      UserData:
+        Fn::Base64: !Sub
+          - |
+            #!/bin/bash
+            set -euo pipefail
+            export DEBIAN_FRONTEND=noninteractive
+            apt-get update -q
+            apt-get install -y -q curl ca-certificates
+            curl -fsSL https://kaeso.app/install.sh | sh -s -- --domain "${Domain}" --dir /opt/kaeso --install-docker ${VersionFlag}
+            chown -R ubuntu:ubuntu /opt/kaeso
+          - VersionFlag: !If [HasVersion, !Sub "--version ${KaesoVersion}", ""]
+      Tags:
+        - { Key: Name, Value: !Sub "${AWS::StackName}-kaeso" }
+
+  Address:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+      InstanceId: !Ref Instance
+      Tags:
+        - { Key: Name, Value: !Sub "${AWS::StackName}-kaeso" }
+
+  Record:
+    Type: AWS::Route53::RecordSet
+    Condition: HasHostedZone
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Ref Domain
+      Type: A
+      TTL: "300"
+      ResourceRecords: [!Ref Address]
+
+Outputs:
+  Url:
+    Description: Where Kaeso answers once the certificate is issued, a minute or two after the instance is up.
+    Value: !Sub "https://${Domain}"
+  PublicIp:
+    Description: The instance's address; point the domain's A record at it when no hosted zone was given.
+    Value: !Ref Address
+  SetupLink:
+    Description: Prints the one-time setup link; the install's folder is /opt/kaeso.
+    Value: !Sub "ssh ubuntu@${Address} 'cd /opt/kaeso && sudo docker compose exec gateway kaeso setup-link'"

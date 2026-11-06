@@ -33,3 +33,5 @@ lcov.info
 *.rs.bk
 *.proptest-regressions
 master-keys
+
+.terraform/
