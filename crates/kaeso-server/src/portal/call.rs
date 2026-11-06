@@ -36,10 +36,12 @@ pub(super) struct Request<'a> {
     pub(super) started: Instant,
     pub(super) at: OffsetDateTime,
     pub(super) request_bytes: usize,
+    pub(super) source: &'static str,
 }
 
 #[derive(Clone, Debug)]
 struct Logged {
+    source: &'static str,
     caller: Caller,
     server: Uuid,
     tool: String,
@@ -119,7 +121,7 @@ fn log(
         grant_id: l.caller.grant,
         client_name: l.client.clone(),
         protocol_version: l.version.as_str().to_owned(),
-        source: "portal".to_owned(),
+        source: l.source.to_owned(),
         status: match failure {
             None => "ok",
             Some((f, _)) if f.refused() => "refused",
@@ -409,6 +411,7 @@ pub(super) async fn call(state: &AppState, r: Request<'_>) -> Response {
         .map(|a| a.get().to_owned());
     let keeps = crate::services::logs::keeps_content(state, r.caller.project).await;
     let logged = Logged {
+        source: r.source,
         caller: r.caller.clone(),
         server: server.id,
         tool: tool.exposed.clone(),

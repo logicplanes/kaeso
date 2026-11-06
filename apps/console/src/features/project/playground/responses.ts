@@ -151,10 +151,28 @@ export function endResponse(state: ResponseState, status: "stopped" | "failed", 
 
 export type InputItem = { role: "user" | "assistant"; content: string } | OutputItem;
 
+export interface ToolOutput {
+  call_id: string;
+  output: string;
+}
+
 export interface Turn {
   id: string;
   prompt: string;
   response: ResponseState;
+  outputs?: ToolOutput[] | undefined;
+}
+
+export interface FunctionCall {
+  call_id: string;
+  name: string;
+  arguments: string;
+}
+
+export function functionCalls(r: ResponseState): FunctionCall[] {
+  return r.status === "completed"
+    ? r.output.filter((o) => o.type === "function_call").map((o) => ({ call_id: str(o.call_id), name: str(o.name), arguments: str(o.arguments) }))
+    : [];
 }
 
 function messageText(item: OutputItem): string {
@@ -167,14 +185,15 @@ function messageText(item: OutputItem): string {
 
 export function historyItems(turns: readonly Turn[]): InputItem[] {
   const items: InputItem[] = [];
-  for (const { prompt, response: r } of turns) {
+  for (const { prompt, response: r, outputs } of turns) {
     if (isLive(r)) continue;
     const finished = r.status === "completed" || r.status === "incomplete";
     if (!finished && !r.text) continue;
-    items.push({ role: "user", content: prompt });
+    if (outputs) for (const o of outputs) items.push({ type: "function_call_output", call_id: o.call_id, output: o.output });
+    else items.push({ role: "user", content: prompt });
     if (finished && r.output.length) {
       for (const item of r.output) {
-        if (item.type === "reasoning" && typeof item.encrypted_content === "string") items.push(item);
+        if ((item.type === "reasoning" && typeof item.encrypted_content === "string") || item.type === "function_call") items.push(item);
         else if (item.type === "message") {
           const text = messageText(item);
           if (text) items.push({ role: "assistant", content: text });

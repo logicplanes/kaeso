@@ -619,5 +619,7 @@
   "errors.agentRequest.forAgent": "此登录用于智能体，而不是项目的 MCP 门户；请重新加载页面。",
   "errors.toolCalls.status": "`status` 必须是 `ok`、`error` 或 `refused`。",
   "errors.limits.toolCallRateModel": "工具调用速率统计所有工具；请省略 `model`。",
-  "errors.notFound.toolCall": "工具调用不存在，或您无权查看。"
+  "errors.notFound.toolCall": "工具调用不存在，或您无权查看。",
+  "errors.tools.personCalls": "工具由人在 Playground 中调用；请使用控制台会话。",
+  "errors.tools.unavailable": "Kaeso 暂时无法加载此项目的工具；请稍后重试。"
 }

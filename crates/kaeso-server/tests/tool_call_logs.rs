@@ -304,3 +304,92 @@ async fn a_tool_call_rate_stops_calls_with_retry_after_and_usage_counts_them() {
         .await;
     assert_eq!(by_model.body["data"], json!([]));
 }
+
+#[tokio::test]
+async fn the_playground_calls_a_tool_as_the_person_and_logs_it() {
+    let s = TestServices::start().await;
+    let mock = MockMcp::start(Options::default()).await;
+    let e = env(&s, &mock).await;
+    let tools = e
+        .app
+        .get(&format!("{}/tools", e.at()), &e.owner.cookie)
+        .await;
+    let id = |name: &str| {
+        tools.body["data"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|t| t["name"] == name)
+            .unwrap()["id"]
+            .as_str()
+            .unwrap()
+            .to_owned()
+    };
+    let call = |tool: String| {
+        let at = e.at();
+        let cookie = e.owner.cookie.clone();
+        let app = &e.app;
+        async move {
+            app.post(
+                &format!("{at}/tools/{tool}/call"),
+                json!({ "arguments": { "text": "Hello" } }),
+                Some(&cookie),
+            )
+            .await
+        }
+    };
+    let ran = call(id("create_post")).await;
+    assert_eq!(ran.status, StatusCode::OK, "{:?}", ran.body);
+    assert_eq!(ran.body["result"]["isError"], false);
+    assert_eq!(ran.body["error"], Value::Null);
+    let off = call(id("get_me")).await;
+    assert_eq!(off.status, StatusCode::OK);
+    assert_eq!(off.body["error"]["code"], -32602);
+    assert_eq!(
+        call("tool_00000000000000000000000000".to_owned())
+            .await
+            .status,
+        StatusCode::NOT_FOUND
+    );
+    assert_eq!(call("nope".to_owned()).await.status, StatusCode::NOT_FOUND);
+
+    flushed(&e).await;
+    let logged = calls(&e, "?status=ok").await;
+    assert_eq!(logged["data"][0]["source"], "playground");
+    assert_eq!(logged["data"][0]["client"], "Kaeso Playground");
+    assert_eq!(logged["data"][0]["caller"]["id"], e.owner.user_id);
+}
+
+#[tokio::test]
+async fn the_playground_reads_a_tool_answer_that_arrives_as_a_stream() {
+    let s = TestServices::start().await;
+    let mock = MockMcp::start(Options {
+        stream_calls: true,
+        ..Options::default()
+    })
+    .await;
+    let e = env(&s, &mock).await;
+    let tools = e
+        .app
+        .get(&format!("{}/tools", e.at()), &e.owner.cookie)
+        .await;
+    let post = tools.body["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|t| t["name"] == "create_post")
+        .unwrap()["id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let r = e
+        .app
+        .post(
+            &format!("{}/tools/{post}/call", e.at()),
+            json!({ "arguments": { "text": "Hello" } }),
+            Some(&e.owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    assert_eq!(r.body["result"]["isError"], false);
+}

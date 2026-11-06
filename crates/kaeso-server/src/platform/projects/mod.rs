@@ -110,6 +110,7 @@ pub fn routes(s: &Secure) -> OpenApiRouter<AppState> {
         .routes(s.route(Access::Project(R::ToolsManage), routes!(tools::set_servers)))
         .routes(s.route(Access::Project(R::ToolsView), routes!(tools::list_tools)))
         .routes(s.route(Access::Project(R::ToolsManage), routes!(tools::update_tools)))
+        .routes(s.route(Access::Project(R::ToolsUse), routes!(tools::call_tool)))
         .routes(s.route(Access::Project(R::ToolsManage), routes!(tools::get_access)))
         .routes(s.route(Access::Project(R::ToolsManage), routes!(tools::set_access)))
         .routes(s.route(Access::Project(R::ToolsView), routes!(tools::list_grants)))

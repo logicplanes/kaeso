@@ -25,5 +25,17 @@
   "playground.suggestion.raceCondition": "Explain a race condition to a new engineer",
   "playground.suggestion.restGrpc": "Compare REST and gRPC in three bullets",
   "playground.title": "Playground",
+  "playground.tools.called": "Called {tool}.",
+  "playground.tools.error": "Failed",
+  "playground.tools.none": "The project offers no tools yet",
+  "playground.tools.ran": "Ran",
+  "playground.tools.run": "Run",
+  "playground.tools.sent": "{count, plural, one {Sent the tool's answer} other {Sent the tools' answers}}",
+  "playground.tools.skip": "Skip",
+  "playground.tools.skipped": "Skipped",
+  "playground.tools.skippedOutput": "The person chose not to run this tool.",
+  "playground.tools.switch": "Tools",
+  "playground.tools.unknown": "This project has no tool {name}.",
+  "playground.tools.wants": "The model wants to call {tool}.",
   "playground.undoClear": "Undo"
 }

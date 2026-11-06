@@ -6,6 +6,7 @@ use axum::http::StatusCode;
 use kaeso_core::id::{
     ApiKeyId, McpServerId, OrgId, PortalGrantId, ProjectId, ServiceAccountId, ToolId, UserId,
 };
+use kaeso_core::rights::ProjectRight;
 use kaeso_mcp::names;
 use kaeso_store::clickhouse::tool_calls::{self as calls, ToolCallCount};
 use kaeso_store::pg::catalogue::Subject;
@@ -738,4 +739,81 @@ pub async fn revoke_grant(
     tx.commit().await?;
     crate::portal::auth::forget_grant(&state, row.id).await;
     Ok(StatusCode::NO_CONTENT)
+}
+
+#[derive(Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
+#[schema(description = "A tool call from the Playground.")]
+pub struct PlaygroundToolCall {
+    #[doc = "The arguments, as the model wrote them."]
+    #[serde(default)]
+    #[schema(value_type = Object)]
+    pub arguments: Value,
+}
+
+#[derive(Clone, Debug, Serialize, ToSchema)]
+#[schema(description = "What the tool answered, as an MCP client would get it.")]
+pub struct PlaygroundToolAnswer {
+    #[doc = "The tool's result (`content`, `isError` and more), when the call went through."]
+    #[schema(value_type = Option<Object>)]
+    pub result: Option<Value>,
+    #[doc = "Why the call was refused (`code` and `message`), as a JSON-RPC error."]
+    #[schema(value_type = Option<Object>)]
+    pub error: Option<Value>,
+}
+
+#[utoipa::path(
+    post,
+    path = "/orgs/{org}/projects/{project}/tools/{tool}/call",
+    summary = "Calls one of the project's tools from the Playground, as you.",
+    description = "The call goes through the project's portal like any client's: the tool must be\n\
+    on and approved, your tool access and the tool call rates apply, and the call is logged with\n\
+    the source `playground`. Needs `playground.use` too.",
+    tag = "projects",
+    params(("org" = OrgId, Path), ("project" = ProjectId, Path), ("tool" = ToolId, Path)),
+    request_body = PlaygroundToolCall,
+    responses((status = 200, body = PlaygroundToolAnswer))
+)]
+pub async fn call_tool(
+    State(state): State<AppState>,
+    ctx: Ctx,
+    Path((_o, _p, tool)): Path<(String, String, String)>,
+    Body(req): Body<PlaygroundToolCall>,
+) -> ApiResult<Json<PlaygroundToolAnswer>> {
+    let scope = ctx.project()?;
+    if !scope.rights.contains(ProjectRight::PlaygroundUse) {
+        return Err(crate::platform::access::denied(
+            kaeso_core::rights::Right::Project(ProjectRight::PlaygroundUse),
+            "project",
+        ));
+    }
+    let user = ctx.acting_user().ok_or_else(|| {
+        ApiError::Conflict(
+            "A person calls tools from the Playground; use a console session.".into(),
+        )
+    })?;
+    let id: ToolId = tool.parse().map_err(|_| ApiError::not_found("tool"))?;
+    let p = &scope.project;
+    let answer = crate::portal::playground_call(
+        &state,
+        p.org_id,
+        p.id,
+        user.uuid(),
+        id.uuid(),
+        &req.arguments,
+    )
+    .await
+    .map_err(|e| match e {
+        crate::portal::PlaygroundRefusal::NoTool => ApiError::not_found("tool"),
+        crate::portal::PlaygroundRefusal::Unavailable => ApiError::Unavailable(
+            "Kaeso can't load this project's tools right now; try again shortly.".into(),
+        ),
+        crate::portal::PlaygroundRefusal::Unreadable => {
+            ApiError::internal("a playground tool call had no readable answer")
+        }
+    })?;
+    Ok(Json(PlaygroundToolAnswer {
+        result: answer.get("result").cloned(),
+        error: answer.get("error").cloned(),
+    }))
 }

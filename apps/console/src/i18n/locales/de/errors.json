@@ -619,5 +619,7 @@
   "errors.agentRequest.forAgent": "Diese Anmeldung gilt einem Agenten, nicht dem MCP-Portal eines Projekts; laden Sie die Seite neu.",
   "errors.toolCalls.status": "`status` muss `ok`, `error` oder `refused` sein.",
   "errors.limits.toolCallRateModel": "Eine Tool-Aufrufrate zählt jedes Tool; lassen Sie `model` weg.",
-  "errors.notFound.toolCall": "Tool-Aufruf nicht gefunden oder nicht sichtbar."
+  "errors.notFound.toolCall": "Tool-Aufruf nicht gefunden oder nicht sichtbar.",
+  "errors.tools.personCalls": "Eine Person ruft Tools im Playground auf; nutzen Sie eine Konsolensitzung.",
+  "errors.tools.unavailable": "Kaeso kann die Tools dieses Projekts gerade nicht laden; versuchen Sie es gleich erneut."
 }

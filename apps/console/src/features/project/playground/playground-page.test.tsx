@@ -5,6 +5,7 @@ import { hoverReason, notifications } from "~/test/fixtures/org";
 import { apiError, on, page, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
 import { eventStream, playgroundModel, sse } from "~/test/fixtures/project-logs";
+import { projectTool } from "~/test/fixtures/mcp";
 
 const MODELS = "orgs/:org/projects/:project/playground/models";
 const RESPONSES = "orgs/:org/projects/:project/playground/responses";
@@ -467,5 +468,105 @@ describe("PlaygroundPage", () => {
     expect(within(option).getAllByText("gpt-5.4-nano")).toHaveLength(1);
     await user.click(option);
     await waitFor(() => expect(router.state.location.search).toEqual({ models: "openai/gpt-5.4-mini,openai/gpt-5.4-nano" }));
+  });
+});
+
+describe("PlaygroundPage with tools", () => {
+  const TOOLS = "orgs/:org/projects/:project/tools";
+  const CALL = `${TOOLS}/:tool/call`;
+  const calling = (calls: { call_id: string; name: string; arguments: string }[]) =>
+    eventStream(
+      sse([
+        { type: "response.created" },
+        { type: "response.completed", response: { output: calls.map((c) => ({ type: "function_call", ...c })), usage: { input_tokens: 3, output_tokens: 2 } } },
+      ]),
+    );
+
+  it("sends the project's tools, asks before each call, and answers the model", async () => {
+    signedIn();
+    on("GET", MODELS, page([playgroundModel()]));
+    on("GET", TOOLS, page([projectTool(), projectTool({ name: "create_post" }), projectTool({ name: "off", offered: false })]));
+    let replies = 0;
+    on("POST", RESPONSES, () =>
+      ++replies === 1
+        ? calling([
+            { call_id: "fc_1", name: "x__get_me", arguments: '{"who":"me"}' },
+            { call_id: "fc_2", name: "x__create_post", arguments: "not json" },
+            { call_id: "fc_3", name: "x__gone", arguments: "{}" },
+          ])
+        : reply("You are Ada."),
+    );
+    on("POST", CALL, ({ params }: { params: Record<string, string> }) =>
+      params.tool === "tool_get_me"
+        ? { result: { content: [{ type: "text", text: "Ada" }], isError: false }, error: null }
+        : apiError(503, "unavailable", "Try again."),
+    );
+    const { user } = await renderApp(PLAYGROUND);
+    await screen.findByText("gpt-5.4-mini");
+    await user.click(screen.getByRole("switch", { name: "Tools" }));
+    await user.type(screen.getByRole("textbox", { name: "Prompt" }), "Who am I?");
+    await user.click(screen.getByRole("button", { name: "Send" }));
+    expect(await screen.findByText("x__get_me")).toBeInTheDocument();
+    const sent = sentBodies()[0] as { tools: { name: string }[] };
+    expect(sent.tools.map((x) => x.name)).toEqual(["x__get_me", "x__create_post"]);
+    const runs = screen.getAllByRole("button", { name: "Run" });
+    await user.click(runs[0] as HTMLElement);
+    expect(await screen.findByText("Ada")).toBeInTheDocument();
+    await user.click(screen.getAllByRole("button", { name: "Run" })[0] as HTMLElement);
+    expect(await screen.findByText("Try again.")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Run" }));
+    expect(await screen.findByText("You are Ada.")).toBeInTheDocument();
+    expect(screen.getByText("This project has no tool x__gone.")).toBeInTheDocument();
+    expect(screen.getAllByText(/^Called/)).toHaveLength(3);
+    expect(screen.getByText("Sent the tools' answers")).toBeInTheDocument();
+    const follow = sentBodies()[1] as { input: Record<string, unknown>[] };
+    expect(follow.input.filter((i) => i.type === "function_call_output")).toEqual([
+      { type: "function_call_output", call_id: "fc_1", output: "Ada" },
+      { type: "function_call_output", call_id: "fc_2", output: "Try again." },
+      { type: "function_call_output", call_id: "fc_3", output: "This project has no tool x__gone." },
+    ]);
+    expect(requests("POST", CALL).map((r) => r.body)).toEqual([{ arguments: { who: "me" } }, { arguments: "not json" }]);
+  });
+
+  it("skips a call, retries the answer, and keeps tools off without the right", async () => {
+    signedIn();
+    on("GET", MODELS, page([playgroundModel()]));
+    on("GET", TOOLS, page([projectTool()]));
+    let replies = 0;
+    on("POST", RESPONSES, () => {
+      replies += 1;
+      if (replies === 1) return calling([{ call_id: "fc_1", name: "x__get_me", arguments: "{}" }]);
+      if (replies === 2) return apiError(503, "unavailable", "Try again shortly.");
+      return reply("Fine.");
+    });
+    const { user } = await renderApp(PLAYGROUND);
+    await screen.findByText("gpt-5.4-mini");
+    await user.click(screen.getByRole("switch", { name: "Tools" }));
+    await user.type(screen.getByRole("textbox", { name: "Prompt" }), "Who am I?");
+    await user.click(screen.getByRole("button", { name: "Send" }));
+    await user.click(await screen.findByRole("button", { name: "Skip" }));
+    expect(await screen.findByText("The person chose not to run this tool.")).toBeInTheDocument();
+    await user.click(await screen.findByRole("button", { name: "Retry" }, { timeout: 5000 }));
+    expect(await screen.findByText("Fine.")).toBeInTheDocument();
+    const retried = sentBodies()[2] as { input: Record<string, unknown>[] };
+    expect(retried.input.at(-1)).toEqual({ type: "function_call_output", call_id: "fc_1", output: "The person chose not to run this tool." });
+  });
+
+  it("offers no tools without the right to use them, and none when the project offers none", async () => {
+    signedIn({ projectRights: without("tools.use") });
+    on("GET", MODELS, page([playgroundModel()]));
+    await renderApp(PLAYGROUND);
+    await screen.findByText("gpt-5.4-mini");
+    expect(screen.queryByRole("switch", { name: "Tools" })).not.toBeInTheDocument();
+  });
+
+  it("says the project offers no tools yet", async () => {
+    signedIn();
+    on("GET", MODELS, page([playgroundModel()]));
+    on("GET", TOOLS, page([]));
+    await renderApp(PLAYGROUND);
+    await screen.findByText("gpt-5.4-mini");
+    expect(screen.getByRole("switch", { name: "Tools" })).toHaveAttribute("aria-disabled", "true");
+    expect(screen.getAllByText("The project offers no tools yet").length).toBeGreaterThan(0);
   });
 });

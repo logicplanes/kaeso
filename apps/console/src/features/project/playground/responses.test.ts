@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyEvent, endResponse, historyItems, newResponse, type ResponseState, type Turn } from "./responses";
+import { applyEvent, endResponse, functionCalls, historyItems, newResponse, type ResponseState, type Turn } from "./responses";
 
 const run = (events: [string, Record<string, unknown>][], start = newResponse(0)) =>
   events.reduce<ResponseState>((s, [type, data], i) => applyEvent(s, type, { type, ...data }, (i + 1) * 10), start);
@@ -140,7 +140,7 @@ describe("historyItems", () => {
             output: [
               { type: "message", content: [{ type: "refusal", refusal: "I can't help with that." }, { type: "annotation" }] },
               { type: "message" },
-              { type: "function_call", name: "lookup" },
+              { type: "web_search_call" },
             ],
           },
         },
@@ -150,6 +150,23 @@ describe("historyItems", () => {
       { role: "user", content: "Hi" },
       { role: "assistant", content: "I can't help with that." },
     ]);
+  });
+
+  it("keeps the model's tool calls, sends the answers back after them and lists the calls of a finished reply", () => {
+    const call = { type: "function_call", call_id: "fc_1", name: "x__get_me", arguments: "{}" };
+    const asked = run([["response.completed", { response: { output: [call] } }]]);
+    const answered = { ...turn("", run([["response.completed", { response: { output: [message] } }]])), outputs: [{ call_id: "fc_1", output: "Ada" }] };
+    expect(historyItems([turn("Who am I?", asked), answered])).toEqual([
+      { role: "user", content: "Who am I?" },
+      call,
+      { type: "function_call_output", call_id: "fc_1", output: "Ada" },
+      { role: "assistant", content: "Hello there." },
+    ]);
+    expect(functionCalls(asked)).toEqual([{ call_id: "fc_1", name: "x__get_me", arguments: "{}" }]);
+    expect(functionCalls(run([["response.completed", { response: { output: [{ type: "function_call" }] } }]]))).toEqual([
+      { call_id: "", name: "", arguments: "" },
+    ]);
+    expect(functionCalls(newResponse(0))).toEqual([]);
   });
 
   it("sends only the prompt of a finished turn that returned nothing", () => {

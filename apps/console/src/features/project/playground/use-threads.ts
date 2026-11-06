@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { isApiError } from "~/api/errors";
 import { streamPlayground, type PlaygroundRequest } from "~/api/playground";
 import { locale, t } from "~/i18n";
-import { applyEvent, endResponse, isLive, newResponse, type ResponseState, type Turn } from "./responses";
+import { applyEvent, endResponse, isLive, newResponse, type ResponseState, type ToolOutput, type Turn } from "./responses";
 
 async function inLanguage(message: string): Promise<string> {
   if (locale() === "en") return message;
@@ -157,12 +157,22 @@ export function useThreads(
       const thread = threads[column];
       const last = thread?.turns.at(-1);
       if (!thread || !last || isLive(last.response)) return;
-      const turn: Turn = { id: id("turn"), prompt: last.prompt, response: newResponse(performance.now()) };
+      const turn: Turn = { id: id("turn"), prompt: last.prompt, ...(last.outputs ? { outputs: last.outputs } : {}), response: newResponse(performance.now()) };
       live.current.set(turn.id, turn.response);
       setThreads((ts) => ts.map((t) => (t.key === thread.key ? { ...t, turns: [...t.turns.slice(0, -1), turn] } : t)));
       void run(turn, request);
     },
     [threads, run],
+  );
+
+  const followUp = useCallback(
+    (column: number, outputs: ToolOutput[], request: PlaygroundRequest) => {
+      const turn: Turn = { id: id("turn"), prompt: "", outputs, response: newResponse(performance.now()) };
+      live.current.set(turn.id, turn.response);
+      setThreads((ts) => ts.map((t, i) => (i === column ? { ...t, turns: [...t.turns, turn] } : t)));
+      void run(turn, request);
+    },
+    [run],
   );
 
   const stop = useCallback(() => {
@@ -192,5 +202,5 @@ export function useThreads(
     );
 
   const busy = threads.some((t) => t.turns.some((x) => isLive(x.response)));
-  return { threads, busy, send, retry, stop, add, remove, clear, restore };
+  return { threads, busy, send, retry, followUp, stop, add, remove, clear, restore };
 }

@@ -25,5 +25,17 @@
   "playground.suggestion.raceCondition": "向新工程师解释什么是竞态条件",
   "playground.suggestion.restGrpc": "用三个要点比较 REST 和 gRPC",
   "playground.title": "试验场",
-  "playground.undoClear": "撤销"
+  "playground.undoClear": "撤销",
+  "playground.tools.switch": "工具",
+  "playground.tools.none": "项目尚未提供工具",
+  "playground.tools.sent": "{count, plural, other {已发送工具的回答}}",
+  "playground.tools.unknown": "此项目没有工具 {name}。",
+  "playground.tools.skippedOutput": "用户选择不运行此工具。",
+  "playground.tools.wants": "模型想要调用 {tool}。",
+  "playground.tools.run": "运行",
+  "playground.tools.skip": "跳过",
+  "playground.tools.skipped": "已跳过",
+  "playground.tools.error": "失败",
+  "playground.tools.ran": "已运行",
+  "playground.tools.called": "已调用 {tool}。"
 }

@@ -64,6 +64,10 @@ pub struct PlaygroundRequest {
     #[doc = "Headers to send as an app would, up to 20, which a route's conditions\n\
         and splits read; none that carry credentials."]
     pub headers: Option<Vec<TestHeader>>,
+    #[doc = "Responses `function` tools the model may call, such as the project's tools when\n\
+        the Playground's Tools switch is on; the Playground runs each call only when asked to."]
+    #[schema(value_type = Option<Vec<Object>>)]
+    pub tools: Option<Vec<serde_json::Value>>,
 }
 
 const ROUTE_TEST: [&str; 3] = ["route", "alias", "headers"];
