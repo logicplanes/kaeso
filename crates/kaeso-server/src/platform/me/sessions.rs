@@ -13,6 +13,8 @@ use crate::state::AppState;
     get,
     path = "/me/sessions",
     summary = "The user's sessions, the current one first.",
+    description = "On a public demo (`auth.demo_user`), only this session: every visitor is \
+    the demo user, and the others' addresses and browsers stay private.",
     tag = "me",
     responses((status = 200, body = SessionList))
 )]

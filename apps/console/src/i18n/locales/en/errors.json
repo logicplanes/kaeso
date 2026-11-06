@@ -129,6 +129,7 @@
   "errors.databaseUnavailable": "Kaeso cannot reach its database right now; try again shortly.",
   "errors.daysRangeInstall": "Must be 1 to {max} days on this install.",
   "errors.defaultAboveMaximum": "A default retention cannot exceed its maximum.",
+  "errors.demoNoProviders": "This demo calls no providers; install Kaeso to connect your own.",
   "errors.demoReadOnly": "This demo is read-only; install Kaeso to change it.",
   "errors.displayNameLength": "The display name must be 1 to 200 characters.",
   "errors.dnsUnreadable": "The domain's DNS records couldn't be read; try again shortly.",

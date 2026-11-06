@@ -10,6 +10,7 @@ use crate::platform::error::{ApiError, ApiResult};
 use crate::state::AppState;
 
 pub const READ_ONLY: &str = "This demo is read-only; install Kaeso to change it.";
+pub const NO_PROVIDERS: &str = "This demo calls no providers; install Kaeso to connect your own.";
 
 #[utoipa::path(
     post,
