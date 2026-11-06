@@ -30,6 +30,7 @@ Diese Seiten erklären, wie Kaeso arbeitet, damit Sie wissen, was Sie erwartet, 
 | API-Format | Die Form einer Anfrage und ihrer Antwort: OpenAI Chat Completions, Responses oder Embeddings oder Anthropic Messages |
 | KPP | Das Kaeso Provider Protocol, das eine Format, in das und aus dem das Gateway jedes API-Format übersetzt ([Formatübersetzung](format-translation.md)) |
 | Modell-API, Platform API | Die beiden APIs einer Installation. Apps rufen Modelle über `/v1` auf, Konsole und Skripte verwalten die Installation über `/platform/v1` ([API](../api/index.md)) |
+| MCP-Server, MCP-Portal | Ein MCP-Server bietet Tools an, etwa das Posten auf X. Jedes Projekt hat unter `/mcp/<Projekt-ID>` ein MCP-Portal, das die Tools seiner Server Clients wie claude.ai anbietet ([MCP-Portal](mcp-portal.md)) |
 
 ## Nächste Schritte
 
@@ -40,3 +41,4 @@ Diese Seiten erklären, wie Kaeso arbeitet, damit Sie wissen, was Sie erwartet, 
 - [Formatübersetzung](format-translation.md): Sehen Sie, was erhalten bleibt, wenn eine App das Modell eines anderen Anbieters aufruft.
 - [Rechte](rights.md): Schlagen Sie jedes Recht nach, welche Rollen es haben und nach welchen Regeln Sie es vergeben.
 - [KPMR](kpmr.md): Erfahren Sie, woher die Modelldaten kommen und wie eine Installation sie aktuell hält.
+- [MCP-Portal](mcp-portal.md): Geben Sie KI-Clients die Tools Ihrer MCP-Server, mit Anmeldung, Rechten, Limits und Protokollen von Kaeso.

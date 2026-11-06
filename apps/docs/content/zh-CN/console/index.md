@@ -20,8 +20,10 @@ order: 3
 - [成员和角色](members-and-roles.md)：邀请成员，为其分配角色和权限，并创建服务账号。
 - [服务商密钥](provider-keys.md)：连接模型服务商密钥，并选择各项目使用哪个密钥。
 - [自定义服务商](custom-providers.md)：将您自己的服务器，例如自托管的 vLLM 或内部代理，添加为服务商。
+- [组织的 MCP 服务器](mcp-servers.md)：添加组织的 MCP 服务器，登录这些服务器，并审核它们变更的工具。
 - [模型和别名](models-and-aliases.md)：选择项目可调用的模型，并为其设置自己的名称。
 - [API 密钥](api-keys.md)：为应用和脚本创建密钥，加以限制，并在需要时停用。
+- [工具](tools.md)：选择项目门户提供的 MCP 工具，决定谁可以调用它们，并连接客户端。
 - [限额和预算](limits-and-budgets.md)：限制项目、成员或密钥的请求数、Token 和支出。
 - [请求日志](request-logs.md)：查找任意请求，导出日志，并选择保留哪些内容。
 - [响应缓存](response-cache.md)：用已存储的回复应答重复的相同请求。

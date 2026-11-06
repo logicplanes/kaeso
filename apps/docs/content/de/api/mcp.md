@@ -6,6 +6,8 @@ order: 5
 
 Über den MCP-Server verwaltet ein Agent wie Claude Code oder Codex Ihre Installation mit der Platform API. Der Agent meldet sich über Ihren Browser an, und Sie legen fest, was er darf. Der Server antwortet unter `/mcp` auf der Domain Ihrer Installation.
 
+Dieser Server verwaltet Kaeso selbst. Um Clients die Tools Ihrer eigenen MCP-Server zu geben, etwa das Posten auf X, nutzen Sie stattdessen das [MCP-Portal](mcp-portal.md) eines Projekts unter `/mcp/<Projekt-ID>`.
+
 Fügen Sie ihn mit der Adresse Ihrer Installation zu Claude Code hinzu:
 
 ```bash

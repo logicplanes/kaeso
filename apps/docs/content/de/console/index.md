@@ -20,8 +20,10 @@ Eine Liste, etwa der API-Schlüssel oder Mitglieder, ist ein einziger Tab-Stopp.
 - [Mitglieder und Rollen](members-and-roles.md): Laden Sie Personen ein, geben Sie ihnen Rollen und Rechte, und erstellen Sie Dienstkonten.
 - [Anbieter-Schlüssel](provider-keys.md): Verbinden Sie Ihre Schlüssel für Modellanbieter und wählen Sie, welche Projekte welchen nutzen.
 - [Eigene Anbieter](custom-providers.md): Fügen Sie einen eigenen Server, etwa ein selbst betriebenes vLLM oder einen internen Proxy, als Anbieter hinzu.
+- [MCP-Server der Organisation](mcp-servers.md): Fügen Sie die MCP-Server der Organisation hinzu, melden Sie sich an und prüfen Sie die Tools, die sie ändern.
 - [Modelle und Aliasse](models-and-aliases.md): Wählen Sie die Modelle, die ein Projekt aufrufen darf, und geben Sie ihnen eigene Namen.
 - [API-Schlüssel](api-keys.md): Erstellen Sie Schlüssel für Apps und Skripte, begrenzen Sie sie und schalten Sie sie ab.
+- [Tools](tools.md): Wählen Sie die MCP-Tools, die das Portal eines Projekts anbietet, wer sie aufruft, und verbinden Sie Clients.
 - [Limits und Budgets](limits-and-budgets.md): Begrenzen Sie Anfragen, Token und Ausgaben eines Projekts, eines Mitglieds oder eines Schlüssels.
 - [Anfrageprotokolle](request-logs.md): Finden Sie jede Anfrage, exportieren Sie Protokolle und wählen Sie, was bleibt.
 - [Antwort-Cache](response-cache.md): Beantworten Sie wiederholte, gleiche Anfragen aus einer gespeicherten Antwort.

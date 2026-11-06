@@ -58,7 +58,7 @@ The Anthropic SDK works the same way with `base_url="https://kaeso.example.com"`
 
 ## How it compares
 
-Checked on 5 November 2026 against each project's repository and documentation. [Open an issue](https://github.com/logicplanes/kaeso/issues/new/choose) when a row is out of date.
+Checked on 6 November 2026 against each project's repository and documentation. [Open an issue](https://github.com/logicplanes/kaeso/issues/new/choose) when a row is out of date.
 
 |                                          | Kaeso               | LiteLLM                                                                           | Bifrost                                                 | Portkey Gateway                                                                                               |
 | ---------------------------------------- | ------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
@@ -67,11 +67,13 @@ Checked on 5 November 2026 against each project's repository and documentation. 
 | Single sign-on when self-hosted for free | Yes, OpenID Connect | Up to 5 users ([docs](https://docs.litellm.ai/docs/proxy/admin_ui_sso))           | Enterprise ([pricing](https://www.getmaxim.ai/pricing)) | Enterprise ([docs](https://portkey.ai/docs/product/enterprise-offering/org-management/sso))                   |
 | Budgets when self-hosted for free        | Yes                 | Yes ([docs](https://docs.litellm.ai/docs/proxy/users))                            | Yes ([pricing](https://www.getmaxim.ai/pricing))        | Enterprise and some Pro plans ([docs](https://portkey.ai/docs/product/ai-gateway/virtual-keys/budget-limits)) |
 | Web console when self-hosted             | Yes                 | Yes                                                                               | Yes                                                     | Request logs only ([README](https://github.com/Portkey-AI/gateway#readme))                                    |
+| MCP portal for your own MCP servers      | Yes, per project    | Yes ([docs](https://docs.litellm.ai/docs/mcp))                                    | Yes ([docs](https://docs.getbifrost.ai/mcp/gateway))    | Yes ([docs](https://portkey.ai/docs/product/mcp-gateway))                                                     |
 
 ## Works with
 
 - **[Claude Code](https://docs.kaeso.app/get-started/coding-tools#set-up-claude-code)** and **[Codex](https://docs.kaeso.app/get-started/coding-tools#set-up-codex)**, with Kaeso as their model provider.
 - **[Cursor](https://docs.kaeso.app/api/mcp#cursor)** and Claude Code, which manage Kaeso through its MCP server.
+- **[claude.ai](https://docs.kaeso.app/console/tools#connect-a-client)**, **ChatGPT** and any other MCP client, which call your MCP servers' tools through a project's [MCP portal](https://docs.kaeso.app/concepts/mcp-portal).
 - **The [OpenAI SDK](https://docs.kaeso.app/get-started/calling-models)** and **the [Anthropic SDK](https://docs.kaeso.app/get-started/calling-models#use-the-anthropic-sdk)**, in any language, and any tool that lets you set an OpenAI or Anthropic base URL.
 
 ## Community
