@@ -1,10 +1,12 @@
 #![forbid(unsafe_code)]
 
+pub mod canonical;
 pub mod error;
 pub mod headers;
 pub mod message;
 pub mod meta;
 pub mod names;
+pub mod params;
 pub mod raw;
 pub mod version;
 

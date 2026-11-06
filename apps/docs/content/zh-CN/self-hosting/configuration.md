@@ -215,6 +215,7 @@ Docker 会在每个服务的日志达到 10 MB 时轮转，并保留五个文件
 | 变量<br>TOML 键 | 类型 | 默认值 | 作用 |
 | --- | --- | --- | --- |
 | `KAESO_MCP_SERVERS_ALLOWED_NETWORKS`<br>`mcp_servers.allowed_networks` | text | — | 可以访问 MCP 服务器的私有、环回或其他非公网网络，以逗号分隔，例如 `10.0.0.0/8`。明文 `http` 只能访问这些网络。 |
+| `KAESO_MCP_SERVERS_SYNC_INTERVAL`<br>`mcp_servers.sync_interval` | text | `15m` | 网关向每个 MCP 服务器查询其工具的频率，用于发现新增、变更和移除的工具。至少一分钟。 |
 
 MCP 服务器的地址由组织管理员选择，因此网关会像对待自定义服务商一样把关：每次连接（包括登录和元数据请求）都会在 DNS 解析后检查，私有、环回、链路本地和云元数据地址都会被拒绝，除非 `KAESO_MCP_SERVERS_ALLOWED_NETWORKS` 列出了它们所在的网络。网关从不跟随重定向。链路本地和云元数据地址即使被列出的网络覆盖，也始终会被拒绝。
 

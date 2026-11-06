@@ -16,6 +16,7 @@ pub mod mail_lang;
 pub mod managed;
 pub mod master_key;
 pub mod mcp_connections;
+pub mod mcp_tools;
 pub mod orgs;
 pub mod provider_accounts;
 pub mod provider_detection;

@@ -215,6 +215,7 @@ Die Basis-URL eines eigenen Anbieters wählt ein Organisations-Admin, also über
 | Variable<br>TOML-Schlüssel | Typ | Standard | Was sie bewirkt |
 | --- | --- | --- | --- |
 | `KAESO_MCP_SERVERS_ALLOWED_NETWORKS`<br>`mcp_servers.allowed_networks` | text | — | Kommagetrennte private, Loopback- oder andere nicht öffentliche Netze, in denen MCP-Server erreicht werden dürfen, etwa `10.0.0.0/8`. Reines `http` erreicht nur diese. |
+| `KAESO_MCP_SERVERS_SYNC_INTERVAL`<br>`mcp_servers.sync_interval` | text | `15m` | Wie oft das Gateway jeden MCP-Server nach seinen Tools fragt, um neue, geänderte und entfernte zu finden. Mindestens eine Minute. |
 
 Die Adresse eines MCP-Servers wählt ein Organisations-Admin, also überwacht das Gateway sie wie die eines eigenen Anbieters: Jede Verbindung, auch Anmelde- und Metadaten-Anfragen, prüft es nach der DNS-Auflösung, und private, Loopback-, Link-Local- und Cloud-Metadaten-Adressen lehnt es ab, außer `KAESO_MCP_SERVERS_ALLOWED_NETWORKS` nennt ihr Netz. Weiterleitungen folgt es nie. Link-Local- und Cloud-Metadaten-Adressen bleiben abgelehnt, auch wenn ein genanntes Netz sie umfasst.
 

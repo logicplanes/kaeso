@@ -230,11 +230,26 @@ pub struct CustomProvidersConfig {
     pub allowed_networks: Vec<ipnet::IpNet>,
 }
 
-#[derive(Debug, Default, Deserialize)]
+#[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct McpServersConfig {
     #[serde(default, deserialize_with = "networks")]
     pub allowed_networks: Vec<ipnet::IpNet>,
+    #[serde(with = "humantime_serde", default = "fifteen_minutes")]
+    pub sync_interval: Duration,
+}
+
+const fn fifteen_minutes() -> Duration {
+    Duration::from_secs(15 * 60)
+}
+
+impl Default for McpServersConfig {
+    fn default() -> McpServersConfig {
+        McpServersConfig {
+            allowed_networks: Vec::new(),
+            sync_interval: fifteen_minutes(),
+        }
+    }
 }
 
 #[derive(Debug, Deserialize)]
