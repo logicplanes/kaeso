@@ -170,6 +170,58 @@ async fn logged(p: &Portal) -> Vec<ToolCallRow> {
 }
 
 #[tokio::test]
+async fn a_newest_version_client_calling_an_older_server_keeps_its_meta_but_not_its_claims() {
+    let s = TestServices::start().await;
+    let mock = MockMcp::start(Options {
+        era: Era::Legacy,
+        ..Options::default()
+    })
+    .await;
+    let p = portal(&s, &mock, &[]).await;
+
+    let call = rpc(
+        1,
+        "tools/call",
+        json!({ "name": "x__create_post", "arguments": { "text": "Hi" }, "_meta": { "progressToken": "p1" } }),
+    );
+    let r = send(&p, Some(MODERN), call).await;
+    assert_eq!(r.body["result"]["isError"], false, "{:?}", r.body);
+    let upstream = mock
+        .seen()
+        .into_iter()
+        .rfind(|s| s.method == "tools/call")
+        .unwrap();
+    assert!(
+        upstream.session.is_some(),
+        "the older server got its session"
+    );
+    assert_eq!(upstream.protocol_version.as_deref(), Some("2025-11-25"));
+    assert_eq!(
+        upstream.body["params"]["_meta"],
+        json!({ "progressToken": "p1" }),
+        "the client's own `_meta` stays; the newest version's claims go"
+    );
+
+    let bare = rpc(
+        2,
+        "tools/call",
+        json!({ "name": "x__create_post", "arguments": { "text": "Hi" } }),
+    );
+    let r = send(&p, Some(MODERN), bare).await;
+    assert_eq!(r.body["result"]["isError"], false, "{:?}", r.body);
+    let upstream = mock
+        .seen()
+        .into_iter()
+        .rfind(|s| s.method == "tools/call")
+        .unwrap();
+    assert!(
+        upstream.body["params"].get("_meta").is_none(),
+        "an emptied `_meta` is dropped: {:?}",
+        upstream.body
+    );
+}
+
+#[tokio::test]
 async fn a_key_lists_and_calls_the_projects_tools_in_both_protocol_eras() {
     let s = TestServices::start().await;
     let mock = MockMcp::start(Options::default()).await;
