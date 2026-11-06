@@ -51,10 +51,10 @@ services:
 
 | 路径 | 转发到 |
 | --- | --- |
-| `/v1/`、`/platform/`、`/mcp`、`/oauth/` 和 `/.well-known/oauth-` | 网关，端口 8080 |
+| `/v1/`、`/platform/`、`/mcp`、`/mcp/`、`/oauth/` 和 `/.well-known/oauth-` | 网关，端口 8080 |
 | 其他所有路径 | 控制台，端口 3000 |
 
-智能体通过 `/oauth/` 和 `/.well-known/oauth-` 登录，然后调用 `/mcp`（[MCP 服务器](../api/mcp.md)）。如果代理把这些路径转给控制台，任何智能体都无法连接。
+智能体通过 `/oauth/` 和 `/.well-known/oauth-` 登录，然后调用 `/mcp`（[MCP 服务器](../api/mcp.md)）；MCP 客户端在 `/mcp/<项目 ID>` 调用项目的门户。如果代理把这些路径转给控制台，任何智能体都无法连接。
 
 为 Kaeso 设置代理：
 

@@ -11,6 +11,7 @@ pub mod mcp;
 pub mod metrics;
 pub mod model_api;
 pub mod platform;
+pub mod portal;
 pub mod serve;
 pub mod services;
 pub mod setup;

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT k.id, k.secret_hash, k.org_id, o.state AS org_state, k.project_id, p.archived_at AS project_archived_at, k.user_id, u.state AS \"user_state?\", k.service_account_id, s.archived_at AS \"service_account_archived_at?\", k.inference, k.platform, k.expires_at, k.disabled_at, k.archived_at, k.last_used_at, om.preset AS \"org_preset?\", COALESCE(om.rights_added, '{}') AS \"org_rights_added!\", COALESCE(om.rights_removed, '{}') AS \"org_rights_removed!\", om.role_id AS \"org_role_id?\", orr.rights AS \"org_role_rights?\", orr.project_rights AS \"org_role_project_rights?\", COALESCE(pm.preset, s.preset) AS \"project_preset?\", COALESCE(pm.role_id, s.role_id) AS \"project_role_id?\", prr.rights AS \"project_role_rights?\", COALESCE(pm.rights_added, s.rights_added, '{}') AS \"project_rights_added!\", COALESCE(pm.rights_removed, s.rights_removed, '{}') AS \"project_rights_removed!\" FROM api_keys k JOIN organizations o ON o.id = k.org_id JOIN projects p ON p.id = k.project_id LEFT JOIN users u ON u.id = k.user_id LEFT JOIN service_accounts s ON s.id = k.service_account_id LEFT JOIN org_memberships om ON om.org_id = k.org_id AND om.user_id = k.user_id LEFT JOIN project_memberships pm ON pm.project_id = k.project_id AND pm.user_id = k.user_id LEFT JOIN org_roles orr ON orr.id = om.role_id LEFT JOIN org_roles prr ON prr.id = COALESCE(pm.role_id, s.role_id) WHERE k.secret_hash = $1",
+  "query": "SELECT k.id, k.secret_hash, k.org_id, o.state AS org_state, k.project_id, p.archived_at AS project_archived_at, k.user_id, u.state AS \"user_state?\", k.service_account_id, s.archived_at AS \"service_account_archived_at?\", k.inference, k.platform, k.tools, k.expires_at, k.disabled_at, k.archived_at, k.last_used_at, om.preset AS \"org_preset?\", COALESCE(om.rights_added, '{}') AS \"org_rights_added!\", COALESCE(om.rights_removed, '{}') AS \"org_rights_removed!\", om.role_id AS \"org_role_id?\", orr.rights AS \"org_role_rights?\", orr.project_rights AS \"org_role_project_rights?\", COALESCE(pm.preset, s.preset) AS \"project_preset?\", COALESCE(pm.role_id, s.role_id) AS \"project_role_id?\", prr.rights AS \"project_role_rights?\", COALESCE(pm.rights_added, s.rights_added, '{}') AS \"project_rights_added!\", COALESCE(pm.rights_removed, s.rights_removed, '{}') AS \"project_rights_removed!\" FROM api_keys k JOIN organizations o ON o.id = k.org_id JOIN projects p ON p.id = k.project_id LEFT JOIN users u ON u.id = k.user_id LEFT JOIN service_accounts s ON s.id = k.service_account_id LEFT JOIN org_memberships om ON om.org_id = k.org_id AND om.user_id = k.user_id LEFT JOIN project_memberships pm ON pm.project_id = k.project_id AND pm.user_id = k.user_id LEFT JOIN org_roles orr ON orr.id = om.role_id LEFT JOIN org_roles prr ON prr.id = COALESCE(pm.role_id, s.role_id) WHERE k.secret_hash = $1",
   "describe": {
     "columns": [
       {
@@ -137,6 +137,17 @@
       },
       {
         "ordinal": 12,
+        "name": "tools",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "api_keys",
+            "name": "tools"
+          }
+        }
+      },
+      {
+        "ordinal": 13,
         "name": "expires_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -147,7 +158,7 @@
         }
       },
       {
-        "ordinal": 13,
+        "ordinal": 14,
         "name": "disabled_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -158,7 +169,7 @@
         }
       },
       {
-        "ordinal": 14,
+        "ordinal": 15,
         "name": "archived_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -169,7 +180,7 @@
         }
       },
       {
-        "ordinal": 15,
+        "ordinal": 16,
         "name": "last_used_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -180,7 +191,7 @@
         }
       },
       {
-        "ordinal": 16,
+        "ordinal": 17,
         "name": "org_preset?",
         "type_info": "Text",
         "origin": {
@@ -191,19 +202,19 @@
         }
       },
       {
-        "ordinal": 17,
+        "ordinal": 18,
         "name": "org_rights_added!",
         "type_info": "TextArray",
         "origin": "Expression"
       },
       {
-        "ordinal": 18,
+        "ordinal": 19,
         "name": "org_rights_removed!",
         "type_info": "TextArray",
         "origin": "Expression"
       },
       {
-        "ordinal": 19,
+        "ordinal": 20,
         "name": "org_role_id?",
         "type_info": "Uuid",
         "origin": {
@@ -214,7 +225,7 @@
         }
       },
       {
-        "ordinal": 20,
+        "ordinal": 21,
         "name": "org_role_rights?",
         "type_info": "TextArray",
         "origin": {
@@ -225,7 +236,7 @@
         }
       },
       {
-        "ordinal": 21,
+        "ordinal": 22,
         "name": "org_role_project_rights?",
         "type_info": "TextArray",
         "origin": {
@@ -236,19 +247,19 @@
         }
       },
       {
-        "ordinal": 22,
+        "ordinal": 23,
         "name": "project_preset?",
         "type_info": "Text",
         "origin": "Expression"
       },
       {
-        "ordinal": 23,
+        "ordinal": 24,
         "name": "project_role_id?",
         "type_info": "Uuid",
         "origin": "Expression"
       },
       {
-        "ordinal": 24,
+        "ordinal": 25,
         "name": "project_role_rights?",
         "type_info": "TextArray",
         "origin": {
@@ -259,13 +270,13 @@
         }
       },
       {
-        "ordinal": 25,
+        "ordinal": 26,
         "name": "project_rights_added!",
         "type_info": "TextArray",
         "origin": "Expression"
       },
       {
-        "ordinal": 26,
+        "ordinal": 27,
         "name": "project_rights_removed!",
         "type_info": "TextArray",
         "origin": "Expression"
@@ -289,6 +300,7 @@
       true,
       false,
       false,
+      false,
       true,
       true,
       true,
@@ -306,5 +318,5 @@
       null
     ]
   },
-  "hash": "b054792423c2239f12da1f73f2c4a7aa659d32dea42592c7309399b180cb930f"
+  "hash": "400ff18f516db2a547fcff9aeb2898b6d6c2942590e327f90f180188eca51bb9"
 }

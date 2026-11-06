@@ -183,6 +183,10 @@ def test_agents_reach_the_mcp_server_and_its_sign_in_through_the_proxy(install):
     mcp = httpx.post(f"{install.url}/mcp", json={"jsonrpc": "2.0", "id": 1, "method": "ping"}, timeout=10)
     assert mcp.status_code == 401
     assert "resource_metadata=" in mcp.headers["www-authenticate"]
+    project = "proj_00000000000000000000000000"
+    portal = httpx.post(f"{install.url}/mcp/{project}", json={"jsonrpc": "2.0", "id": 1, "method": "ping"}, timeout=10)
+    assert portal.status_code == 401
+    assert f"/.well-known/oauth-protected-resource/mcp/{project}" in portal.headers["www-authenticate"]
     consent = httpx.get(f"{install.url}/authorize", timeout=10)
     assert consent.status_code == 200
     assert "text/html" in consent.headers["content-type"]
@@ -331,6 +335,9 @@ def test_the_edge_answers_every_api_in_its_format_while_kaeso_is_away(install, o
             assert platform.status_code == 503
             assert platform.headers["retry-after"] == "30"
             assert platform.json() == {"error": {"type": "unavailable", "message": message}}
+            portal = httpx.post(f"{url}/mcp/proj_00000000000000000000000000", json={}, timeout=10)
+            assert portal.status_code == 503
+            assert portal.json() == {"error": {"type": "unavailable", "message": message}}
 
             oa = openai.OpenAI(base_url=f"{url}/v1", api_key="sk-kso-test", max_retries=0)
             with pytest.raises(openai.APIStatusError) as raised:

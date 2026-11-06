@@ -21881,6 +21881,7 @@
               "name",
               "principal",
               "access",
+              "tools",
               "redacted",
               "state",
               "created_by",
@@ -21964,6 +21965,10 @@
                 "type": "string",
                 "description": "`active`, `disabled`, `expired` or `archived`.",
                 "example": "active"
+              },
+              "tools": {
+                "type": "boolean",
+                "description": "Whether it may call the project's tools through its MCP portal."
               }
             }
           },
@@ -24274,6 +24279,10 @@
                 "type": "string",
                 "description": "A name to recognise it by.",
                 "example": "support-bot"
+              },
+              "tools": {
+                "type": "boolean",
+                "description": "Whether it may also call the project's tools through its MCP portal; default `false`."
               }
             }
           }
@@ -24405,6 +24414,7 @@
           "name",
           "principal",
           "access",
+          "tools",
           "redacted",
           "state",
           "created_by",
@@ -24488,6 +24498,10 @@
             "type": "string",
             "description": "`active`, `disabled`, `expired` or `archived`.",
             "example": "active"
+          },
+          "tools": {
+            "type": "boolean",
+            "description": "Whether it may call the project's tools through its MCP portal."
           }
         }
       },
@@ -25844,6 +25858,7 @@
                 "name",
                 "principal",
                 "access",
+                "tools",
                 "redacted",
                 "state",
                 "created_by",
@@ -25927,6 +25942,10 @@
                   "type": "string",
                   "description": "`active`, `disabled`, `expired` or `archived`.",
                   "example": "active"
+                },
+                "tools": {
+                  "type": "boolean",
+                  "description": "Whether it may call the project's tools through its MCP portal."
                 }
               }
             },

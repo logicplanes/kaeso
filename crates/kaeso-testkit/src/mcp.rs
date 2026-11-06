@@ -1,6 +1,6 @@
 use std::collections::{HashMap, HashSet};
 use std::net::SocketAddr;
-use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, PoisonError};
 
 use axum::Router;
@@ -134,6 +134,8 @@ struct Inner {
     next: AtomicUsize,
     seen: Mutex<Vec<Seen>>,
     base: String,
+    held: AtomicBool,
+    release: tokio::sync::Notify,
 }
 
 pub struct MockMcp {
@@ -148,6 +150,8 @@ impl MockMcp {
             .expect("bind");
         let addr = listener.local_addr().expect("addr");
         let inner = Arc::new(Inner {
+            held: AtomicBool::new(false),
+            release: tokio::sync::Notify::new(),
             tools: Mutex::new(options.tools.clone()),
             options,
             sessions: Mutex::default(),
@@ -191,6 +195,16 @@ impl MockMcp {
             .tools
             .lock()
             .unwrap_or_else(PoisonError::into_inner) = tools;
+    }
+
+    // With `stream_calls`, a call's answer waits after its first event until `release`.
+    pub fn hold_calls(&self) {
+        self.inner.held.store(true, Ordering::SeqCst);
+    }
+
+    pub fn release(&self) {
+        self.inner.held.store(false, Ordering::SeqCst);
+        self.inner.release.notify_waiters();
     }
 
     pub fn seen(&self) -> Vec<Seen> {
@@ -476,6 +490,28 @@ fn events(messages: &[Value]) -> Response {
         .expect("response")
 }
 
+fn held_events(inner: Arc<Inner>, first: Value, last: Value) -> Response {
+    let frame = |m: &Value| Bytes::from(format!("event: message\ndata: {m}\n\n"));
+    let first = frame(&first);
+    let last = frame(&last);
+    let rest = async move {
+        let released = inner.release.notified();
+        if inner.held.load(Ordering::SeqCst) {
+            released.await;
+        }
+        Ok::<_, std::io::Error>(last)
+    };
+    let body = futures::StreamExt::chain(
+        futures::stream::once(async move { Ok::<_, std::io::Error>(first) }),
+        futures::stream::once(rest),
+    );
+    Response::builder()
+        .status(StatusCode::OK)
+        .header(header::CONTENT_TYPE, "text/event-stream")
+        .body(Body::from_stream(body))
+        .expect("response")
+}
+
 async fn handle(State(inner): State<Arc<Inner>>, headers: HeaderMap, body: Bytes) -> Response {
     if inner.options.oauth.is_some() {
         let token = header_of(&headers, "authorization")
@@ -700,7 +736,11 @@ async fn handle(State(inner): State<Arc<Inner>>, headers: HeaderMap, body: Bytes
                     "method": "notifications/progress",
                     "params": { "progressToken": "p", "progress": 1, "total": 2 }
                 });
-                events(&[progress, ok(result)])
+                if inner.held.load(Ordering::SeqCst) {
+                    held_events(inner.clone(), progress, ok(result))
+                } else {
+                    events(&[progress, ok(result)])
+                }
             } else {
                 json_reply(StatusCode::OK, &ok(result), None)
             }

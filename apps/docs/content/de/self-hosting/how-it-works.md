@@ -24,7 +24,7 @@ flowchart TD
   end
   providers[Modellanbieter]:::outside
   clients -- HTTPS --> caddy
-  caddy -- /v1, /platform, /mcp und OAuth --> gateway
+  caddy -- /v1, /platform, /mcp, /mcp/* und OAuth --> gateway
   caddy -- alle anderen Pfade --> console
   gateway --> postgres & clickhouse & valkey
   gateway -- HTTPS --> providers

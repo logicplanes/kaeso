@@ -783,6 +783,8 @@ async fn put_connection(
         },
     )
     .await?;
+    drop(conn);
+    forget(state, server.id).await;
     Ok(id)
 }
 
@@ -900,8 +902,83 @@ pub async fn credential(
     server: &ServerRow,
     user: Option<Uuid>,
 ) -> Result<Option<Credential>, ConnectionError> {
+    resolve(state, server, user).await.map(|(c, _)| c)
+}
+
+#[derive(Clone)]
+pub struct Held {
+    credential: Option<Credential>,
+    renew_at: Option<OffsetDateTime>,
+}
+
+fn owner_key(user: Option<Uuid>) -> String {
+    user.map_or_else(|| "shared".to_owned(), |u| u.to_string())
+}
+
+// The portal's credentials stay in memory until a connection changes or its token is due, so a
+// warm call reads no row; only the instance's own memory ever holds them opened.
+pub async fn cached(
+    state: &AppState,
+    server: Uuid,
+    user: Option<Uuid>,
+) -> Result<Option<Credential>, ConnectionError> {
+    let group = server.to_string();
+    let rest = owner_key(user);
+    for _ in 0..2 {
+        let held = state
+            .caches
+            .mcp_credentials
+            .get_or_load(&group, &rest, || async {
+                let row = mcp_servers::get_by_id(&state.pg, server)
+                    .await?
+                    .ok_or(ConnectionError::NotConnected)?;
+                let (credential, expires) = resolve(state, &row, user).await?;
+                Ok::<_, ConnectionError>(Some(Held {
+                    credential,
+                    renew_at: expires.map(|e| e - RENEW_BEFORE),
+                }))
+            })
+            .await?
+            .ok_or(ConnectionError::NotConnected)?;
+        if held.renew_at.is_none_or(|r| state.clock.now() < r) {
+            return Ok(held.credential.clone());
+        }
+        state.caches.mcp_credentials.invalidate_group(&group).await;
+    }
+    Err(ConnectionError::Unrenewed)
+}
+
+pub async fn forget(state: &AppState, server: Uuid) {
+    state
+        .caches
+        .mcp_credentials
+        .invalidate_group(&server.to_string())
+        .await;
+}
+
+// A server that refuses a credential Kaeso still thought good has ended the sign-in; the
+// connection flips once, so the people responsible hear about it once.
+pub async fn rejected(
+    state: &AppState,
+    server: Uuid,
+    user: Option<Uuid>,
+) -> Result<(), StoreError> {
+    if let Some(row) = store::sealed(&state.pg, server, user).await?
+        && store::sign_out(&state.pg, row.id).await?
+    {
+        tracing::warn!(server = %server, connection = %row.id, "an MCP server refused Kaeso's sign-in; it needs a new one");
+    }
+    forget(state, server).await;
+    Ok(())
+}
+
+async fn resolve(
+    state: &AppState,
+    server: &ServerRow,
+    user: Option<Uuid>,
+) -> Result<(Option<Credential>, Option<OffsetDateTime>), ConnectionError> {
     if server.auth_method == "none" {
-        return Ok(None);
+        return Ok((None, None));
     }
     let owner = if server.credential_mode == "per_user" {
         Some(user.ok_or(ConnectionError::NotConnected)?)
@@ -923,9 +1000,9 @@ pub async fn credential(
         if renewed.expires_at.is_some_and(|e| now >= e) {
             return Err(ConnectionError::Unrenewed);
         }
-        return credential_of(state, &renewed).map(Some);
+        return Ok((Some(credential_of(state, &renewed)?), renewed.expires_at));
     }
-    credential_of(state, &row).map(Some)
+    Ok((Some(credential_of(state, &row)?), row.expires_at))
 }
 
 // OAuth servers may rotate the refresh token as they answer, so the answer must be stored even

@@ -5,7 +5,7 @@ use crate::headers::{PARAM_PREFIX, encode};
 pub const ANNOTATION: &str = "x-mcp-header";
 const SAFE_INTEGER: i64 = (1 << 53) - 1;
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct ParamHeader {
     pub name: String,
     pub path: Vec<String>,

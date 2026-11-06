@@ -8,6 +8,7 @@ use kaeso_core::id::RequestId;
 use kaeso_kpp::{DialectId, RequestKind, Response};
 use kaeso_store::StoreError;
 use kaeso_store::clickhouse::logs::{self as ch, ContentRow, LogRow};
+use kaeso_store::clickhouse::tool_calls::{self, ToolCallContentRow, ToolCallRow};
 use kaeso_store::pg::log_jobs::{self, LogSettings};
 use rust_decimal::Decimal;
 use time::OffsetDateTime;
@@ -27,12 +28,17 @@ struct Entry {
     seq: u64,
     log: Option<LogRow>,
     content: Option<ContentRow>,
+    call: Option<ToolCallRow>,
+    call_content: Option<ToolCallContentRow>,
     size: u64,
 }
 
 impl Entry {
-    fn content_only(self) -> Entry {
-        Entry { log: None, ..self }
+    fn holds_any(&self) -> bool {
+        self.log.is_some()
+            || self.content.is_some()
+            || self.call.is_some()
+            || self.call_content.is_some()
     }
 }
 
@@ -214,32 +220,69 @@ async fn flush_by(state: &AppState, deadline: Option<tokio::time::Instant>) -> F
         return Flushed::Wrote(0);
     }
     let taken = batch.len();
-    let logs: Vec<&LogRow> = batch.iter().filter_map(|e| e.log.as_ref()).collect();
-    match within(deadline, ch::insert_logs(clickhouse, logs)).await {
-        Some(Ok(())) => {}
-        Some(Err(e)) => return Flushed::Failed(keep_unwritten(state, batch, e)),
-        None => {
-            put_back(state, batch);
-            return Flushed::OutOfTime;
+    // One table at a time, each row dropped from the batch once written: a later table that
+    // fails puts back only what it still holds, so nothing is written twice.
+    let mut batch = batch;
+    for stage in [
+        Stage::Logs,
+        Stage::Calls,
+        Stage::Contents,
+        Stage::CallContents,
+    ] {
+        let written = match stage {
+            Stage::Logs => {
+                let rows: Vec<&LogRow> = batch.iter().filter_map(|e| e.log.as_ref()).collect();
+                within(deadline, ch::insert_logs(clickhouse, rows)).await
+            }
+            Stage::Calls => {
+                let rows: Vec<&ToolCallRow> =
+                    batch.iter().filter_map(|e| e.call.as_ref()).collect();
+                within(deadline, tool_calls::insert_calls(clickhouse, rows)).await
+            }
+            Stage::Contents => {
+                let rows: Vec<&ContentRow> =
+                    batch.iter().filter_map(|e| e.content.as_ref()).collect();
+                within(deadline, ch::insert_contents(clickhouse, rows)).await
+            }
+            Stage::CallContents => {
+                let rows: Vec<&ToolCallContentRow> = batch
+                    .iter()
+                    .filter_map(|e| e.call_content.as_ref())
+                    .collect();
+                within(deadline, tool_calls::insert_contents(clickhouse, rows)).await
+            }
+        };
+        match written {
+            Some(Ok(())) => {}
+            Some(Err(e)) => return Flushed::Failed(keep_unwritten(state, batch, e)),
+            None => {
+                put_back(state, batch);
+                return Flushed::OutOfTime;
+            }
         }
+        batch = batch
+            .into_iter()
+            .map(|mut e| {
+                match stage {
+                    Stage::Logs => e.log = None,
+                    Stage::Calls => e.call = None,
+                    Stage::Contents => e.content = None,
+                    Stage::CallContents => e.call_content = None,
+                }
+                e
+            })
+            .filter(Entry::holds_any)
+            .collect();
     }
-    let unwritten: Vec<Entry> = batch
-        .into_iter()
-        .filter(|e| e.content.is_some())
-        .map(Entry::content_only)
-        .collect();
-    let contents: Vec<&ContentRow> = unwritten
-        .iter()
-        .filter_map(|e| e.content.as_ref())
-        .collect();
-    match within(deadline, ch::insert_contents(clickhouse, contents)).await {
-        Some(Ok(())) => Flushed::Wrote(taken),
-        Some(Err(e)) => Flushed::Failed(keep_unwritten(state, unwritten, e)),
-        None => {
-            put_back(state, unwritten);
-            Flushed::OutOfTime
-        }
-    }
+    Flushed::Wrote(taken)
+}
+
+#[derive(Clone, Copy)]
+enum Stage {
+    Logs,
+    Calls,
+    Contents,
+    CallContents,
 }
 
 fn put_back(state: &AppState, entries: Vec<Entry>) {
@@ -529,10 +572,66 @@ pub async fn record(state: &AppState, o: &Outcome) {
             seq: 0,
             log: Some(log),
             content,
+            call: None,
+            call_content: None,
             size,
         },
         cfg.buffer_size.0,
         cfg.flush_rows as usize,
+    );
+}
+
+// A tool call joins the request log's queue, written in the same batches; its content is kept
+// only where the organization and the project keep request content.
+pub async fn record_tool_call(
+    state: &AppState,
+    mut row: ToolCallRow,
+    content: Option<(String, String)>,
+) {
+    if !state.request_logs() {
+        return;
+    }
+    let cfg = match settings(state, row.project_id).await {
+        Ok(Some(cfg)) => cfg,
+        Ok(None) => return,
+        Err(e) => {
+            metrics::counter!(crate::metrics::LOG_ROWS_DROPPED).increment(1);
+            tracing::error!(error = %e, call = %row.id, "cannot load the project's log settings; the tool call's log is lost");
+            return;
+        }
+    };
+    row.expires_at = days(row.started_at, cfg.metadata_days);
+    let content = content.filter(|_| cfg.org_content && cfg.project_content);
+    row.has_content = content.is_some();
+    let call_content = content.map(|(arguments, result)| ToolCallContentRow {
+        id: row.id,
+        org_id: row.org_id,
+        project_id: row.project_id,
+        started_at: row.started_at,
+        arguments,
+        result,
+        expires_at: days(row.started_at, cfg.content_days.min(cfg.metadata_days)),
+    });
+    let size = 512
+        + (row.tool.len()
+            + row.upstream_tool.len()
+            + row.error_message.len()
+            + row.client_name.len()) as u64
+        + call_content
+            .as_ref()
+            .map_or(0, |c| (c.arguments.len() + c.result.len()) as u64);
+    let limits = &state.config.logs;
+    state.logs.push(
+        Entry {
+            seq: 0,
+            log: None,
+            content: None,
+            call: Some(row),
+            call_content,
+            size,
+        },
+        limits.buffer_size.0,
+        limits.flush_rows as usize,
     );
 }
 
@@ -611,6 +710,8 @@ mod tests {
             seq: 0,
             log: None,
             content: None,
+            call: None,
+            call_content: None,
             size,
         }
     }

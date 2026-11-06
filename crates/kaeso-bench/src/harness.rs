@@ -7,6 +7,7 @@ use std::time::{Duration, Instant};
 use bytes::Bytes;
 use hyper::Method;
 use hyper::header::SET_COOKIE;
+use kaeso_testkit::mcp::{MockMcp, Options as McpOptions};
 use kaeso_testkit::mock_provider::MockProvider;
 use kaeso_testkit::services::TestServices;
 use secrecy::ExposeSecret;
@@ -37,6 +38,12 @@ pub(crate) struct Gateway {
     metrics: SocketAddr,
 }
 
+#[derive(Clone, Debug)]
+pub(crate) struct Portal {
+    pub(crate) path: String,
+    pub(crate) key: String,
+}
+
 pub(crate) struct Install {
     pub(crate) gateway: Gateway,
     pub(crate) mock: MockProvider,
@@ -44,6 +51,8 @@ pub(crate) struct Install {
     pub(crate) mock_addr: SocketAddr,
     pub(crate) key: String,
     pub(crate) slow_key: String,
+    pub(crate) portal: Portal,
+    _mcp: MockMcp,
     services: TestServices,
     settings: Settings,
     log: PathBuf,
@@ -68,9 +77,12 @@ impl Install {
             .trim_start_matches("http://")
             .parse()
             .map_err(|_| fail("the mock provider's address"))?;
+        let mcp = mock_runtime
+            .spawn(MockMcp::start(McpOptions::default()))
+            .await?;
         let (gateway, token) = Gateway::start(&services, &mock.base_url, settings, log).await?;
         let token = token.ok_or_else(|| fail("the gateway printed no setup link"))?;
-        let (key, slow_key) = set_up(gateway.addr, &token).await?;
+        let (key, slow_key, portal) = set_up(gateway.addr, &token, &mcp.url()).await?;
         Ok(Install {
             gateway,
             mock,
@@ -78,6 +90,8 @@ impl Install {
             mock_addr,
             key,
             slow_key,
+            portal,
+            _mcp: mcp,
             services,
             settings: settings.clone(),
             log: log.to_owned(),
@@ -148,6 +162,7 @@ impl Gateway {
             .env("KAESO_KPMR_SYNC", "false")
             .env("KAESO_UPDATES_CHECK", "false")
             .env("KAESO_PROVIDERS_OPENAI_BASE_URL", mock)
+            .env("KAESO_MCP_SERVERS_ALLOWED_NETWORKS", "127.0.0.0/8")
             .env(
                 "KAESO_SERVER_MAX_CONNECTIONS",
                 settings.max_connections.to_string(),
@@ -350,7 +365,7 @@ fn text(v: &Value, pointer: &str) -> Result<String> {
         .ok_or_else(|| fail(&format!("no {pointer} in {v}")))
 }
 
-async fn set_up(addr: SocketAddr, token: &str) -> Result<(String, String)> {
+async fn set_up(addr: SocketAddr, token: &str, mcp: &str) -> Result<(String, String, Portal)> {
     let mut p = Platform {
         addr,
         origin: format!("http://localhost:{}", addr.port()),
@@ -402,7 +417,56 @@ async fn set_up(addr: SocketAddr, token: &str) -> Result<(String, String)> {
     )
     .await?;
     let slow_key = serving_key(&mut p, &org, &slow).await?;
-    Ok((key, slow_key))
+    let portal = portal(&mut p, &org, &project, mcp).await?;
+    Ok((key, slow_key, portal))
+}
+
+// A server without sign-in whose read-only tool the portal offers; Kaeso lists the tools in the
+// background after the server is added.
+async fn portal(p: &mut Platform, org: &str, project: &str, mcp: &str) -> Result<Portal> {
+    p.call(
+        Method::POST,
+        &format!("orgs/{org}/mcp-servers"),
+        Some(json!({ "handle": "bench", "name": "Bench", "url": mcp, "auth_method": "none", "projects": [project] })),
+    )
+    .await?;
+    let mut tool = None;
+    for _ in 0..100 {
+        let tools = p
+            .call(
+                Method::GET,
+                &format!("orgs/{org}/projects/{project}/tools"),
+                None,
+            )
+            .await?;
+        tool = tools
+            .pointer("/data")
+            .and_then(Value::as_array)
+            .and_then(|all| all.iter().find(|t| t["name"] == "search_posts"))
+            .map(|t| t["id"].clone());
+        if tool.is_some() {
+            break;
+        }
+        tokio::time::sleep(Duration::from_millis(100)).await;
+    }
+    let tool = tool.ok_or_else(|| fail("the MCP server's tools never appeared"))?;
+    p.call(
+        Method::PATCH,
+        &format!("orgs/{org}/projects/{project}/tools"),
+        Some(json!({ "tools": [{ "id": tool, "enabled": true }] })),
+    )
+    .await?;
+    let key = p
+        .call(
+            Method::POST,
+            &format!("orgs/{org}/projects/{project}/keys"),
+            Some(json!({ "name": "portal", "tools": true })),
+        )
+        .await?;
+    Ok(Portal {
+        path: format!("/mcp/{project}"),
+        key: text(&key, "/secret")?,
+    })
 }
 
 async fn serving_key(p: &mut Platform, org: &str, project: &str) -> Result<String> {

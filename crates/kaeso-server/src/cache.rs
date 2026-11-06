@@ -21,6 +21,9 @@ const KEY_BLOCK_TTL: Duration = Duration::from_secs(3600);
 const FLIGHT_IDLE: Duration = Duration::from_secs(60);
 
 pub const TOUCH_EVERY: Duration = Duration::from_secs(60);
+// An upstream MCP server's version and, for older ones, its session; a session the server has
+// ended is rebuilt on its 404 before this runs out.
+const HANDSHAKE_TTL: Duration = Duration::from_secs(600);
 
 #[derive(Debug, Default)]
 struct Subscription {
@@ -673,6 +676,9 @@ pub struct Caches {
     pub project_limits: TieredCache<Vec<kaeso_core::limits::Limit>>,
     pub log_settings: TieredCache<crate::services::logs::Cached>,
     pub response_cache: TieredCache<crate::services::response_cache::Cached>,
+    pub portal: TieredCache<crate::portal::snapshot::PortalSnapshot>,
+    pub mcp_credentials: MemoryCache<crate::services::mcp_connections::Held>,
+    pub mcp_handshakes: Cache<String, Arc<kaeso_upstream::mcp::Handshake>>,
     pub kpmr_changed: Arc<tokio::sync::Notify>,
     pub touched: Cache<uuid::Uuid, ()>,
     pub unknown_keys: Cache<String, ()>,
@@ -715,6 +721,12 @@ impl Caches {
                 subscription.clone(),
                 mac.clone(),
             ),
+            portal: TieredCache::new("ptl", valkey.clone(), subscription.clone(), mac.clone()),
+            mcp_credentials: MemoryCache::new("mcred", valkey.clone(), subscription.clone()),
+            mcp_handshakes: Cache::builder()
+                .max_capacity(10_000)
+                .time_to_live(HANDSHAKE_TTL)
+                .build(),
             kpmr_changed: Arc::new(tokio::sync::Notify::new()),
             touched: Cache::builder()
                 .max_capacity(1_000_000)
@@ -769,6 +781,8 @@ impl Caches {
                 Some(("plim", key)) => self.project_limits.drop_local(key).await,
                 Some(("lcfg", key)) => self.log_settings.drop_local(key).await,
                 Some(("rcfg", key)) => self.response_cache.drop_local(key).await,
+                Some(("ptl", key)) => self.portal.drop_local(key).await,
+                Some(("mcred", group)) => self.mcp_credentials.drop_group(group),
                 Some(("kpmr", _)) => self.kpmr_changed.notify_one(),
                 _ => self.clear_local(),
             },
@@ -784,6 +798,9 @@ impl Caches {
         self.project_limits.clear_subscribed();
         self.log_settings.clear_subscribed();
         self.response_cache.clear_subscribed();
+        self.portal.clear_subscribed();
+        self.mcp_credentials.clear_subscribed();
+        self.mcp_handshakes.invalidate_all();
     }
 
     fn clear_local(&self) {
@@ -795,6 +812,9 @@ impl Caches {
         self.project_limits.clear_local();
         self.log_settings.clear_local();
         self.response_cache.clear_local();
+        self.portal.clear_local();
+        self.mcp_credentials.clear_local();
+        self.mcp_handshakes.invalidate_all();
     }
 }
 

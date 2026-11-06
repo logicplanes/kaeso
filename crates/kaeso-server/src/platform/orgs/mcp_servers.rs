@@ -896,6 +896,9 @@ pub async fn create(
         .write(&mut tx)
         .await?;
     tx.commit().await?;
+    for p in &projects {
+        crate::portal::snapshot::forget(&state, *p).await;
+    }
     if let Some(c) = &req.oauth_client {
         signin::set_manual_client(&state, id, &c.client_id, c.client_secret.as_ref())
             .await
@@ -985,6 +988,7 @@ pub async fn update(
         .write(&mut tx)
         .await?;
     tx.commit().await?;
+    crate::portal::snapshot::forget_server(&state, row.id).await;
     Ok((etag(row.revision), Json(after)))
 }
 
@@ -1019,6 +1023,10 @@ pub async fn delete(
         .write(&mut tx)
         .await?;
     tx.commit().await?;
+    for p in &before.projects {
+        crate::portal::snapshot::forget(&state, p.uuid()).await;
+    }
+    signin::forget(&state, row.id).await;
     Ok(StatusCode::NO_CONTENT)
 }
 

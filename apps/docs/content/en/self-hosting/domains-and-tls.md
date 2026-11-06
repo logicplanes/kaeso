@@ -51,10 +51,10 @@ Then route these paths:
 
 | Path | To |
 | --- | --- |
-| `/v1/`, `/platform/`, `/mcp`, `/oauth/` and `/.well-known/oauth-` | The gateway, port 8080 |
+| `/v1/`, `/platform/`, `/mcp`, `/mcp/`, `/oauth/` and `/.well-known/oauth-` | The gateway, port 8080 |
 | Everything else | The console, port 3000 |
 
-Agents sign in through `/oauth/` and `/.well-known/oauth-` and then call `/mcp` ([MCP server](../api/mcp.md)). A proxy that sends these paths to the console stops every agent from connecting.
+Agents sign in through `/oauth/` and `/.well-known/oauth-` and then call `/mcp` ([MCP server](../api/mcp.md)); MCP clients call a project's portal at `/mcp/<project id>`. A proxy that sends these paths to the console stops every agent from connecting.
 
 Set up the proxy for Kaeso:
 

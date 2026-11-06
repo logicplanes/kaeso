@@ -310,6 +310,7 @@ mod tests {
             service_account_id: None,
             service_account_archived_at: None,
             inference: true,
+            tools: false,
             platform: false,
             expires_at: Some(datetime!(2026-11-01 0:00 UTC)),
             disabled_at: None,

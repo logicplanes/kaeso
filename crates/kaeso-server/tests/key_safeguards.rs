@@ -420,6 +420,7 @@ async fn deleting_an_account_archives_a_key_created_meanwhile() {
             secret_last4: "late",
             inference: true,
             platform: false,
+            tools: false,
             expires_at: None,
             created_by_kind: "user",
             created_by_id: Some(common::uuid(&dev_id)),

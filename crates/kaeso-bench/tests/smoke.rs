@@ -42,6 +42,7 @@ fn every_scenario_runs_at_small_sizes_without_leaks_or_unbounded_memory() {
         "cancellation",
         "slow-clients",
         "mixed",
+        "portal",
     ] {
         assert!(
             checks.iter().any(|c| c["scenario"] == scenario),
@@ -77,4 +78,6 @@ fn every_scenario_runs_at_small_sizes_without_leaks_or_unbounded_memory() {
     assert_eq!(report["parameters"]["smoke"], true);
     assert!(table.contains("| Machine |"), "{table}");
     assert!(table.contains("### Slow clients"), "{table}");
+    assert!(table.contains("### MCP portal: warm tool calls"), "{table}");
+    assert!(results["portal"]["overhead_ms"]["count"].as_u64().unwrap() > 0);
 }
