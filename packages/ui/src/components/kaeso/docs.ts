@@ -3,7 +3,7 @@ import type { ComponentDocs } from "../../component-docs.js";
 export const docs = {
   ClientButton: {
     description:
-      "An agent client's mark, such as Claude, Cursor or GitHub Copilot, in a raised circle beside the other header buttons, as a button that opens how to connect it.",
+      "An agent client's mark, such as Claude, Cursor, GitHub Copilot or ChatGPT, in a raised circle beside the other header buttons, as a button that opens how to connect it.",
     props: {
       "aria-label": "The client's name; also the tooltip.",
       client: "Which client's mark it shows.",

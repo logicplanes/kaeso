@@ -132,5 +132,11 @@
   "shell.whatsNew.title": "Neu in Kaeso",
   "shell.page.mcpServers": "MCP-Server",
   "shell.keyword.tools": "Tools",
-  "shell.keyword.connectors": "Konnektoren"
+  "shell.keyword.connectors": "Konnektoren",
+  "shell.page.tools": "Tools",
+  "shell.create.mcpServer": "MCP-Server hinzufügen",
+  "shell.palette.actions": "Aktionen",
+  "shell.palette.copyPortal": "Portaladresse kopieren",
+  "shell.keyword.mcp": "MCP",
+  "shell.palette.portalCopied": "Portaladresse kopiert"
 }

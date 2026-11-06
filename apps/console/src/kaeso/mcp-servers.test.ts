@@ -1,6 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { mcpConnection, mcpServer } from "~/test/fixtures/mcp";
-import { connectionWord, fatalProblem, hint, hostOf, problemText, serverInfoText, signInLabel, statusWord, toolStateWord } from "./mcp-servers";
+import { mcpConnection, mcpServer, projectServer } from "~/test/fixtures/mcp";
+import {
+  connectionWord,
+  fatalProblem,
+  hint,
+  hostOf,
+  problemText,
+  projectServerWord,
+  serverInfoText,
+  signInLabel,
+  statusWord,
+  toolStateWord,
+} from "./mcp-servers";
 
 describe("MCP server words", () => {
   it("names how Kaeso is connected to a server", () => {
@@ -26,6 +37,17 @@ describe("MCP server words", () => {
       "Signed out",
       "Signed out",
     ]);
+  });
+
+  it("names how a project's server is connected", () => {
+    expect(
+      [
+        projectServer(),
+        projectServer({ connected: false }),
+        projectServer({ credential_mode: "per_user", connected: true }),
+        projectServer({ auth_method: "none" }),
+      ].map((s) => projectServerWord(s).label),
+    ).toEqual(["Connected", "Signed out", "Each person signs in", "No sign-in"]);
   });
 
   it("names the last check, a tool's state and a sign-in method", () => {

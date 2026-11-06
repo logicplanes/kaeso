@@ -27518,6 +27518,7 @@
                 "id",
                 "handle",
                 "name",
+                "url",
                 "auth_method",
                 "credential_mode",
                 "connected",
@@ -27530,6 +27531,15 @@
                 "auth_method": {
                   "$ref": "#/components/schemas/McpAuthMethod",
                   "description": "How Kaeso signs in to it."
+                },
+                "calls_7d": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "format": "int64",
+                  "description": "Calls to its tools in the last 7 days; `null` without request logs.",
+                  "minimum": 0
                 },
                 "connected": {
                   "type": "boolean",
@@ -27547,6 +27557,14 @@
                 "id": {
                   "$ref": "#/components/schemas/McpServerId",
                   "description": "Id."
+                },
+                "last_call_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time",
+                  "description": "The last of those calls."
                 },
                 "name": {
                   "type": "string",
@@ -27571,6 +27589,10 @@
                   "type": "integer",
                   "format": "int64",
                   "description": "Of those, tools this project has on."
+                },
+                "url": {
+                  "type": "string",
+                  "description": "Its Streamable HTTP address."
                 }
               }
             },
@@ -27677,6 +27699,15 @@
                   ],
                   "description": "Hints such as `readOnlyHint`; claims of the server, not guarantees."
                 },
+                "calls_7d": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "format": "int64",
+                  "description": "Calls in the last 7 days; `null` without request logs.",
+                  "minimum": 0
+                },
                 "description": {
                   "type": "string",
                   "description": "Its description."
@@ -27697,6 +27728,14 @@
                 "input_schema": {
                   "type": "object",
                   "description": "Its input schema."
+                },
+                "last_call_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time",
+                  "description": "The last of those calls."
                 },
                 "name": {
                   "type": "string",
@@ -31622,6 +31661,7 @@
           "id",
           "handle",
           "name",
+          "url",
           "auth_method",
           "credential_mode",
           "connected",
@@ -31634,6 +31674,15 @@
           "auth_method": {
             "$ref": "#/components/schemas/McpAuthMethod",
             "description": "How Kaeso signs in to it."
+          },
+          "calls_7d": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Calls to its tools in the last 7 days; `null` without request logs.",
+            "minimum": 0
           },
           "connected": {
             "type": "boolean",
@@ -31651,6 +31700,14 @@
           "id": {
             "$ref": "#/components/schemas/McpServerId",
             "description": "Id."
+          },
+          "last_call_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "The last of those calls."
           },
           "name": {
             "type": "string",
@@ -31675,6 +31732,10 @@
             "type": "integer",
             "format": "int64",
             "description": "Of those, tools this project has on."
+          },
+          "url": {
+            "type": "string",
+            "description": "Its Streamable HTTP address."
           }
         }
       },
@@ -31980,6 +32041,15 @@
             ],
             "description": "Hints such as `readOnlyHint`; claims of the server, not guarantees."
           },
+          "calls_7d": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Calls in the last 7 days; `null` without request logs.",
+            "minimum": 0
+          },
           "description": {
             "type": "string",
             "description": "Its description."
@@ -32000,6 +32070,14 @@
           "input_schema": {
             "type": "object",
             "description": "Its input schema."
+          },
+          "last_call_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "The last of those calls."
           },
           "name": {
             "type": "string",

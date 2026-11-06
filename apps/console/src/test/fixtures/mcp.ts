@@ -1,4 +1,12 @@
-import type { McpConnectionView, McpServerProbeView, McpServerView, McpToolView } from "~/api/generated/types";
+import type {
+  McpConnectionView,
+  McpServerProbeView,
+  McpServerView,
+  McpToolView,
+  PortalGrantView,
+  ProjectMcpServerView,
+  ProjectToolView,
+} from "~/api/generated/types";
 import { NOW, PROJECT, USER } from "../fixtures";
 
 export const obj = (value: Record<string, unknown>) => value as Record<string, never>;
@@ -85,6 +93,64 @@ export function probeView(overrides: Partial<McpServerProbeView> = {}): McpServe
     sign_in: { method: "none", issuer: null, client_metadata_documents: false, registration: false, scopes: [] },
     tools: PROBED_TOOLS,
     handle: "mock-x",
+    ...overrides,
+  };
+}
+
+export const PROJECT_TOOLS = "orgs/:org/projects/:project/tools";
+export const PROJECT_SERVERS = "orgs/:org/projects/:project/mcp-servers";
+export const PORTAL_GRANTS = "orgs/:org/projects/:project/portal-grants";
+export const TOOL_ACCESS = "orgs/:org/projects/:project/tool-access/:principal";
+
+export function projectTool(overrides: Partial<ProjectToolView> = {}): ProjectToolView {
+  const name = overrides.name ?? "get_me";
+  return {
+    id: `tool_${name}`,
+    server: "mcp_x",
+    server_handle: "x",
+    server_name: "X",
+    name,
+    exposed_name: `x__${name}`,
+    title: null,
+    description: `The ${name} tool.`,
+    input_schema: obj({ type: "object" }),
+    annotations: obj({ readOnlyHint: true }),
+    state: "active",
+    enabled: true,
+    offered: true,
+    calls_7d: 3,
+    last_call_at: "2026-10-15T11:00:00Z",
+    ...overrides,
+  };
+}
+
+export function projectServer(overrides: Partial<ProjectMcpServerView> = {}): ProjectMcpServerView {
+  return {
+    id: "mcp_x",
+    name: "X",
+    handle: "x",
+    url: "https://mcp.x.example/mcp",
+    auth_method: "oauth",
+    credential_mode: "shared",
+    connected: true,
+    status: "ok",
+    tools: 2,
+    tools_on: 1,
+    tools_held: 0,
+    calls_7d: 4,
+    last_call_at: "2026-10-15T11:00:00Z",
+    ...overrides,
+  };
+}
+
+export function portalGrant(overrides: Partial<PortalGrantView> = {}): PortalGrantView {
+  return {
+    id: "pgr_claude",
+    client_name: "Claude",
+    redirect_uri: "https://claude.ai/api/mcp/auth_callback",
+    user: USER,
+    created_at: "2026-10-14T12:00:00Z",
+    last_used_at: null,
     ...overrides,
   };
 }

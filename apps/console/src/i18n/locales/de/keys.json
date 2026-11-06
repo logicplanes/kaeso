@@ -56,5 +56,6 @@
   "keys.title": "API-Schlüssel",
   "keys.undo": "Rückgängig",
   "keys.used": "Verwendet {when}",
-  "keys.whose": "Inhaber der Schlüssel"
+  "keys.whose": "Inhaber der Schlüssel",
+  "keys.accessWithTools": "{access} und Tools"
 }

@@ -1339,6 +1339,28 @@ async fn tool_calls_are_logged_and_deleted_with_the_request_log() {
             .unwrap(),
         Some(content)
     );
+    let mut counted = tool_calls::counts(&s.clickhouse, org, project, at(-1))
+        .await
+        .unwrap();
+    counted.sort_by_key(|c| c.last);
+    assert_eq!(
+        counted
+            .iter()
+            .map(|c| (c.server_id, c.upstream_tool.as_str(), c.calls, c.last))
+            .collect::<Vec<_>>(),
+        [
+            (rows[0].server_id, "create_post", 1, at(0)),
+            (rows[1].server_id, "create_post", 1, at(5)),
+        ]
+    );
+    assert_eq!(
+        tool_calls::counts(&s.clickhouse, org, project, at(1))
+            .await
+            .unwrap()
+            .len(),
+        1,
+        "calls before `since` aren't counted"
+    );
 
     // ClickHouse applies lightweight deletes in the background; wait for each to land.
     async fn gone<F, Fut>(check: F)

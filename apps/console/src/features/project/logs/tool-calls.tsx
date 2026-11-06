@@ -5,6 +5,7 @@ import {
   AppFrame,
   DataTable,
   Empty,
+  FilterChip,
   JsonView,
   KeyValue,
   Section,
@@ -55,6 +56,7 @@ export function ToolCallsPage({ org, project, search }: { org: string; project: 
     ...(search.range ? { range: search.range } : {}),
     ...(search.from && search.to ? { from: search.from, to: search.to } : {}),
     ...(search.call_status ? { status: search.call_status } : {}),
+    ...(search.call_tool ? { tool: search.call_tool } : {}),
   };
   const calls = useInfiniteQuery(toolCallsInfiniteQuery(org, project, filters));
   const rows = useMemo(() => calls.data?.pages.flatMap((p) => p.data) ?? [], [calls.data]);
@@ -83,7 +85,7 @@ export function ToolCallsPage({ org, project, search }: { org: string; project: 
     <>
       <ProjectHeader org={org} project={project} page={t("logs.title", "Request logs")} path="logs" />
       <Toolbar aria-label={t("logs.tools.filtersLabel", "Filter tool calls")}>
-        <KindSwitch value="tools" onChange={(kind) => setSearch({ kind, call: undefined, call_status: undefined })} />
+        <KindSwitch value="tools" onChange={(kind) => setSearch({ kind, call: undefined, call_status: undefined, call_tool: undefined })} />
         <div className="shrink-0">
           <Select
             aria-label={t("logs.timeRange", "Time range")}
@@ -94,6 +96,14 @@ export function ToolCallsPage({ org, project, search }: { org: string; project: 
             options={ranges()}
           />
         </div>
+        {search.call_tool && (
+          <FilterChip
+            property={t("logs.tools.tool", "Tool")}
+            operator={t("logs.filter.is", "is")}
+            value={search.call_tool}
+            onRemove={() => setSearch({ call_tool: undefined })}
+          />
+        )}
         <div className="shrink-0">
           <Select
             aria-label={common.status()}
@@ -159,8 +169,7 @@ function CallBody({ org, project, call }: { org: string; project: string; call: 
   const needs = useNeedsRight(org, project);
   const partyName = usePartyName(org, project);
   const c = call.data;
-  if (call.isError)
-    return <Empty title={t("logs.tools.callFailed", "This tool call couldn't load")} description={isApiError(call.error) ? call.error.message : undefined} />;
+  if (call.isError) return <Empty title={t("logs.tools.callFailed", "This tool call couldn't load")} description={call.error.message} />;
   if (!c) return <Skeleton lines={4} />;
   const status = statusOf(c.status);
   return (

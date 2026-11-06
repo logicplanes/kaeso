@@ -16,6 +16,7 @@ import { useCatalogue } from "~/kaeso/catalogue";
 import { asGrant, sameGrant, type Grant } from "~/kaeso/grant";
 import { LimitsSection } from "~/kaeso/limits-section";
 import { ModelAccessSection } from "~/kaeso/model-access-section";
+import { ToolAccessSection } from "~/kaeso/tool-access-section";
 import { GrantEditor } from "~/kaeso/rights-editor";
 import { holdsAll, rolesOfScope, useRoles } from "~/kaeso/roles";
 import { useRememberRecent } from "~/shell/recent";
@@ -139,6 +140,7 @@ function MemberBody({ org, project, userId, onClose }: { org: string; project: s
       {rights.has("limits.view") && (
         <ModelAccessSection org={org} project={project} subject={{ kind: "user", id: m.user.id }} canEdit={rights.has("limits.manage")} />
       )}
+      {rights.has("tools.view") && <ToolAccessSection org={org} project={project} subject={{ principal: m.user.id }} canEdit={rights.has("tools.manage")} />}
       {rights.has("limits.view") && (
         <LimitsSection
           org={org}

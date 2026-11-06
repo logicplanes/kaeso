@@ -125,6 +125,7 @@ export const SAME_AS_ENGLISH = new Set([
   "logs.param.topK",
   "logs.param.topP",
   "orgHome.mcp.headerValuePlaceholder",
+  "project.tools.claudeCode",
 ]);
 
 const visible = (text) =>

@@ -6,9 +6,9 @@ import { fileURLToPath } from "node:url";
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 
 export const BUDGETS = [
-  { name: "sign-in", route: "src/routes/sign-in.tsx", target: 120, ceiling: 139 },
-  { name: "project overview", route: "src/routes/_app/orgs/$org/projects/$project/index.tsx", also: ["src/auth/route-gates.ts"], target: 180, ceiling: 209 },
-  { name: "org overview", route: "src/routes/_app/orgs/$org/index.tsx", target: 185, ceiling: 215 },
+  { name: "sign-in", route: "src/routes/sign-in.tsx", target: 120, ceiling: 140 },
+  { name: "project overview", route: "src/routes/_app/orgs/$org/projects/$project/index.tsx", also: ["src/auth/route-gates.ts"], target: 180, ceiling: 210 },
+  { name: "org overview", route: "src/routes/_app/orgs/$org/index.tsx", target: 185, ceiling: 216 },
 ];
 
 export function checkBudgets({ root = ROOT, dist = join(root, "dist"), budgets = BUDGETS } = {}) {

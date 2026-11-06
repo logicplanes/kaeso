@@ -7,6 +7,7 @@ use kaeso_core::id::{
     ApiKeyId, McpServerId, OrgId, PortalGrantId, ProjectId, ServiceAccountId, ToolId, UserId,
 };
 use kaeso_mcp::names;
+use kaeso_store::clickhouse::tool_calls::{self as calls, ToolCallCount};
 use kaeso_store::pg::catalogue::Subject;
 use kaeso_store::pg::mcp_connections as connections;
 use kaeso_store::pg::mcp_servers as servers;
@@ -43,6 +44,8 @@ pub struct ProjectMcpServerView {
     #[doc = "The name people see."]
     #[schema(example = "X")]
     pub name: String,
+    #[doc = "Its Streamable HTTP address."]
+    pub url: String,
     #[doc = "How Kaeso signs in to it."]
     pub auth_method: McpAuthMethod,
     #[doc = "Whose account a call uses."]
@@ -58,6 +61,11 @@ pub struct ProjectMcpServerView {
     pub tools_on: i64,
     #[doc = "Of those, tools held because their definition changed."]
     pub tools_held: i64,
+    #[doc = "Calls to its tools in the last 7 days; `null` without request logs."]
+    pub calls_7d: Option<u64>,
+    #[doc = "The last of those calls."]
+    #[serde(with = "time::serde::rfc3339::option")]
+    pub last_call_at: Option<OffsetDateTime>,
 }
 
 #[derive(Clone, Debug, Serialize, ToSchema)]
@@ -95,10 +103,49 @@ pub struct ProjectToolView {
     pub enabled: bool,
     #[doc = "The portal offers it: on and `active`."]
     pub offered: bool,
+    #[doc = "Calls in the last 7 days; `null` without request logs."]
+    pub calls_7d: Option<u64>,
+    #[doc = "The last of those calls."]
+    #[serde(with = "time::serde::rfc3339::option")]
+    pub last_call_at: Option<OffsetDateTime>,
 }
 
-fn tool_view(r: &ProjectToolRow) -> ProjectToolView {
+// The window the tools page counts calls in.
+const RECENT_DAYS: i64 = 7;
+
+async fn recent_calls(state: &AppState, org: Uuid, project: Uuid) -> Option<Vec<ToolCallCount>> {
+    let ch = state.clickhouse.as_ref()?;
+    let since = state.clock.now() - time::Duration::days(RECENT_DAYS);
+    match calls::counts(ch, org, project, since).await {
+        Ok(c) => Some(c),
+        Err(e) => {
+            tracing::warn!(error = %e, "a project's tool calls couldn't be counted");
+            None
+        }
+    }
+}
+
+fn tally<'a>(counts: impl Iterator<Item = &'a ToolCallCount>) -> (u64, Option<OffsetDateTime>) {
+    counts.fold((0, None), |(n, last), c| {
+        (
+            n + c.calls,
+            Some(last.map_or(c.last, |l: OffsetDateTime| l.max(c.last))),
+        )
+    })
+}
+
+fn tool_view(r: &ProjectToolRow, recent: Option<&[ToolCallCount]>) -> ProjectToolView {
     let state = tool_state(&r.tool);
+    let (calls_7d, last_call_at) = match recent {
+        Some(c) => {
+            let (n, last) = tally(
+                c.iter()
+                    .filter(|c| c.server_id == r.tool.server_id && c.upstream_tool == r.tool.name),
+            );
+            (Some(n), last)
+        }
+        None => (None, None),
+    };
     ProjectToolView {
         id: ToolId::from_uuid(r.tool.id),
         server: McpServerId::from_uuid(r.tool.server_id),
@@ -113,10 +160,17 @@ fn tool_view(r: &ProjectToolRow) -> ProjectToolView {
         state,
         enabled: r.enabled,
         offered: r.enabled && state == McpToolState::Active,
+        calls_7d,
+        last_call_at,
     }
 }
 
-async fn server_views(state: &AppState, project: Uuid) -> ApiResult<Vec<ProjectMcpServerView>> {
+async fn server_views(
+    state: &AppState,
+    org: Uuid,
+    project: Uuid,
+) -> ApiResult<Vec<ProjectMcpServerView>> {
+    let recent = recent_calls(state, org, project).await;
     let rows = servers::of_project(&state.pg, project).await?;
     let project_tools = tools::of_project(&state.pg, project).await?;
     let mut counts: BTreeMap<Uuid, (i64, i64, i64)> = BTreeMap::new();
@@ -136,10 +190,18 @@ async fn server_views(state: &AppState, project: Uuid) -> ApiResult<Vec<ProjectM
                 .any(|c| c.user_id.is_none() && c.auth_error.is_none()),
         };
         let (total, on, held) = counts.get(&s.id).copied().unwrap_or_default();
+        let (calls_7d, last_call_at) = match &recent {
+            Some(c) => {
+                let (n, last) = tally(c.iter().filter(|c| c.server_id == s.id));
+                (Some(n), last)
+            }
+            None => (None, None),
+        };
         out.push(ProjectMcpServerView {
             id: McpServerId::from_uuid(s.id),
             handle: s.handle,
             name: s.name,
+            url: s.url,
             auth_method: match s.auth_method.as_str() {
                 "header" => McpAuthMethod::Header,
                 "oauth" => McpAuthMethod::Oauth,
@@ -161,6 +223,8 @@ async fn server_views(state: &AppState, project: Uuid) -> ApiResult<Vec<ProjectM
             tools: total,
             tools_on: on,
             tools_held: held,
+            calls_7d,
+            last_call_at,
         });
     }
     Ok(out)
@@ -179,8 +243,10 @@ pub async fn list_servers(
     ctx: Ctx,
     Path((_o, _p)): Path<(String, String)>,
 ) -> ApiResult<Json<List<ProjectMcpServerView>>> {
-    let project = ctx.project()?.project.id;
-    Ok(Json(List::complete(server_views(&state, project).await?)))
+    let p = &ctx.project()?.project;
+    Ok(Json(List::complete(
+        server_views(&state, p.org_id, p.id).await?,
+    )))
 }
 
 #[derive(Deserialize, ToSchema)]
@@ -245,7 +311,9 @@ pub async fn set_servers(
         .await?;
     tx.commit().await?;
     crate::portal::snapshot::forget(&state, project).await;
-    Ok(Json(List::complete(server_views(&state, project).await?)))
+    Ok(Json(List::complete(
+        server_views(&state, org, project).await?,
+    )))
 }
 
 #[utoipa::path(
@@ -261,9 +329,14 @@ pub async fn list_tools(
     ctx: Ctx,
     Path((_o, _p)): Path<(String, String)>,
 ) -> ApiResult<Json<List<ProjectToolView>>> {
-    let project = ctx.project()?.project.id;
-    let rows = tools::of_project(&state.pg, project).await?;
-    Ok(Json(List::complete(rows.iter().map(tool_view).collect())))
+    let p = &ctx.project()?.project;
+    let recent = recent_calls(&state, p.org_id, p.id).await;
+    let rows = tools::of_project(&state.pg, p.id).await?;
+    Ok(Json(List::complete(
+        rows.iter()
+            .map(|r| tool_view(r, recent.as_deref()))
+            .collect(),
+    )))
 }
 
 #[derive(Deserialize, ToSchema)]
@@ -340,8 +413,13 @@ pub async fn update_tools(
         tx.commit().await?;
         crate::portal::snapshot::forget(&state, project).await;
     }
+    let recent = recent_calls(&state, ctx.org()?.org.id, project).await;
     let rows = tools::of_project(&state.pg, project).await?;
-    Ok(Json(List::complete(rows.iter().map(tool_view).collect())))
+    Ok(Json(List::complete(
+        rows.iter()
+            .map(|r| tool_view(r, recent.as_deref()))
+            .collect(),
+    )))
 }
 
 #[derive(Clone, Debug, Serialize, ToSchema)]

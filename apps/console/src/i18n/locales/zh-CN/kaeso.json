@@ -305,5 +305,15 @@
   "kaeso.audit.viaAgent": "{name} · 通过 {agent}（{model}）",
   "kaeso.limitEditor.toolCallRateHelp": "每分钟通过 MCP 门户的工具调用",
   "kaeso.limits.allTools": "所有工具",
-  "kaeso.usage.toolCalls": "工具调用"
+  "kaeso.usage.toolCalls": "工具调用",
+  "kaeso.createKey.tools": "工具",
+  "kaeso.createKey.toolsHint": "还会以其所有者身份，通过项目的 MCP 门户调用项目的工具。",
+  "kaeso.toolAccess.ownerTools": "其所有者可用的所有工具",
+  "kaeso.toolAccess.projectTools": "项目提供的所有工具",
+  "kaeso.toolAccess.saved": "已保存工具",
+  "kaeso.toolAccess.title": "工具",
+  "kaeso.toolAccess.loading": "正在加载工具…",
+  "kaeso.toolAccess.none": "尚无可调用的工具。",
+  "kaeso.toolAccess.ownerCount": "{count, plural, other {其所有者可用的所有工具：# 个工具。}}",
+  "kaeso.toolAccess.projectCount": "{count, plural, other {项目提供的所有工具：# 个工具。}}"
 }

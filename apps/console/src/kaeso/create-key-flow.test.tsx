@@ -59,6 +59,29 @@ describe("CreateKeyDialog", () => {
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "Key created" })).not.toBeInTheDocument());
   });
 
+  it("lets a key call the project's tools too", async () => {
+    signedIn();
+    projectData();
+    on("POST", KEYS, createdKey());
+    const { user, dialog } = await openDialog();
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "claude-ai{Enter}");
+    await next(user, dialog, "What can it call?");
+    await user.click(within(dialog).getByRole("checkbox", { name: /Tools/ }));
+    await next(user, dialog, "Models and limits");
+    await user.click(within(dialog).getByRole("button", { name: "Create key" }));
+    await screen.findByRole("dialog", { name: "Key created" });
+    expect(requests("POST", KEYS).map((r) => r.body)).toEqual([{ name: "claude-ai", access: "inference", tools: true, expires_in_days: 90 }]);
+  });
+
+  it("offers no tools to someone who can't see the project's tools", async () => {
+    signedIn({ projectRights: without("tools.view", "tools.manage", "tools.use") });
+    projectData();
+    const { user, dialog } = await openDialog();
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "batch{Enter}");
+    await next(user, dialog, "What can it call?");
+    expect(within(dialog).queryByRole("checkbox", { name: /Tools/ })).not.toBeInTheDocument();
+  });
+
   it("opens on the first step with an empty name after a key was shown, without the old key", async () => {
     signedIn();
     projectData({ keys: [apiKey()] });

@@ -5,6 +5,7 @@ import { ModelPicker } from "@logicplanes/kaeso-ui/playground";
 import {
   AlertDialog,
   Button,
+  Checkbox,
   DialogScope,
   Input,
   Radio,
@@ -69,6 +70,7 @@ function CreateKeyFlow({ org, project, open, onClose, fixedServiceAccount }: Cre
   const [picked, setExpiry] = useState<Expiry | null>(null);
   const [date, setDate] = useState<Date | null>(null);
   const [access, setAccess] = useState<Access>("inference");
+  const [tools, setTools] = useState(false);
   const [models, setModels] = useState<string[]>([]);
   const [limits, setLimits] = useState<LimitDraft[]>([]);
   const lastLimit = useRef<HTMLElement>(null);
@@ -99,6 +101,7 @@ function CreateKeyFlow({ org, project, open, onClose, fixedServiceAccount }: Cre
       const body = {
         name: name.trim(),
         access,
+        ...(tools ? { tools } : {}),
         ...expiryRequest(expiry, date),
         ...(keptModels.length ? { models: keptModels } : {}),
         ...(keptLimits.length ? { limits: keptLimits.map(limitBody) } : {}),
@@ -189,29 +192,39 @@ function CreateKeyFlow({ org, project, open, onClose, fixedServiceAccount }: Cre
             id: "access",
             title: t("kaeso.createKey.whatCalls", "What can it call?"),
             content: (
-              <RadioGroup variant="cards" aria-label={t("kaeso.createKey.access", "Access")} value={access} onValueChange={(v) => setAccess(v as Access)}>
-                <Radio
-                  value="inference"
-                  label={t("format.access.inference", "Inference")}
-                  description={t("kaeso.createKey.inferenceHint", "Calls the model API.")}
-                />
-                <Radio
-                  value="platform"
-                  label={t("format.access.platform", "Platform")}
-                  description={
-                    canPlatform
-                      ? t("kaeso.createKey.platformHint", "Calls the Platform API with its owner's rights, in this project. Needs a recent sign-in.")
-                      : needs("keys.platform_access.grant")
-                  }
-                  disabled={!canPlatform}
-                />
-                <Radio
-                  value="both"
-                  label={t("kaeso.createKey.both", "Inference and platform")}
-                  description={canPlatform ? t("kaeso.createKey.bothHint", "Both. Needs a recent sign-in.") : needs("keys.platform_access.grant")}
-                  disabled={!canPlatform}
-                />
-              </RadioGroup>
+              <div className="flex flex-col gap-16">
+                <RadioGroup variant="cards" aria-label={t("kaeso.createKey.access", "Access")} value={access} onValueChange={(v) => setAccess(v as Access)}>
+                  <Radio
+                    value="inference"
+                    label={t("format.access.inference", "Inference")}
+                    description={t("kaeso.createKey.inferenceHint", "Calls the model API.")}
+                  />
+                  <Radio
+                    value="platform"
+                    label={t("format.access.platform", "Platform")}
+                    description={
+                      canPlatform
+                        ? t("kaeso.createKey.platformHint", "Calls the Platform API with its owner's rights, in this project. Needs a recent sign-in.")
+                        : needs("keys.platform_access.grant")
+                    }
+                    disabled={!canPlatform}
+                  />
+                  <Radio
+                    value="both"
+                    label={t("kaeso.createKey.both", "Inference and platform")}
+                    description={canPlatform ? t("kaeso.createKey.bothHint", "Both. Needs a recent sign-in.") : needs("keys.platform_access.grant")}
+                    disabled={!canPlatform}
+                  />
+                </RadioGroup>
+                {rights.has("tools.view") && (
+                  <Checkbox
+                    label={t("kaeso.createKey.tools", "Tools")}
+                    description={t("kaeso.createKey.toolsHint", "Also calls the project's tools through its MCP portal, as its owner.")}
+                    checked={tools}
+                    onCheckedChange={setTools}
+                  />
+                )}
+              </div>
             ),
           },
           {

@@ -5,7 +5,8 @@ import { signedIn, without } from "~/test/fixtures";
 import { hoverReason, notifications } from "~/test/fixtures/org";
 import { apiKey, projectData, projectMember, projectPath, serviceAccount } from "~/test/fixtures/project";
 import { createdKey } from "~/test/fixtures/shell";
-import { apiError, on, requests } from "~/test/network";
+import { apiError, on, page, requests } from "~/test/network";
+import { PROJECT_TOOLS, TOOL_ACCESS, projectTool } from "~/test/fixtures/mcp";
 import { renderApp } from "~/test/render";
 
 const KEY = "orgs/:org/projects/:project/keys/:key";
@@ -40,6 +41,18 @@ describe("KeySheet", () => {
     expect(within(dialog).getByText("Limits")).toBeInTheDocument();
     expect(within(dialog).getByText("Models")).toBeInTheDocument();
     expect(requests("GET", "orgs/:org/projects/:project/limits").some((r) => r.query.get("key") === "key_web")).toBe(true);
+  });
+
+  it("shows that a key may call tools, and which ones", async () => {
+    signedIn();
+    projectData({ keys: [apiKey()] });
+    keyApi(apiKey({ tools: true }));
+    on("GET", PROJECT_TOOLS, page([projectTool()]));
+    on("GET", TOOL_ACCESS, { all: false, tools: ["tool_get_me"], effective: ["tool_get_me"] });
+    await renderApp(projectPath("keys?key=key_web"));
+    const dialog = await sheet();
+    expect(dialog).toHaveTextContent("Inference and tools");
+    expect(await within(dialog).findByText("x__get_me")).toBeInTheDocument();
   });
 
   it("shows the other key's own details when another row opens in the sheet", async () => {
