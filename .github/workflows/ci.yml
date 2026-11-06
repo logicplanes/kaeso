@@ -726,10 +726,13 @@ jobs:
           cache: pip
           cache-dependency-path: e2e/requirements.txt
       - run: pip install --require-hashes -r e2e/requirements.txt
-      - uses: opentofu/setup-opentofu@a1320f892987e89d278cc92dc5adc984fb93aca4
-        with:
-          tofu_version: 1.13.9
-          tofu_wrapper: false
+      - name: Install OpenTofu
+        run: |
+          set -euo pipefail
+          curl -fsSLo "$RUNNER_TEMP/tofu.zip" https://github.com/opentofu/opentofu/releases/download/v1.13.9/tofu_1.13.9_linux_amd64.zip
+          echo "bc44eb6b06446ba83bd4072114891987f590f66cca712737a7f1147c50c539ce  $RUNNER_TEMP/tofu.zip" | sha256sum --check --quiet
+          sudo unzip -q -o "$RUNNER_TEMP/tofu.zip" tofu -d /usr/local/bin
+          tofu version
       - run: pytest -q e2e/install
 
   node-lint:
