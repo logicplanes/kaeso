@@ -149,6 +149,12 @@ function travelTime({ samples }: Motion, key: "h" | "w") {
   return arrived - left;
 }
 
+function inFlight({ samples }: Motion, key: "h" | "w") {
+  const from = samples[0]?.[key] ?? 0;
+  const to = samples.at(-1)?.[key] ?? 0;
+  return samples.filter((s) => Math.abs(s[key] - from) > 1 && Math.abs(s[key] - to) > 1).length;
+}
+
 function animationTime({ samples, duration, easing }: Motion, key: "h" | "w") {
   const span = Math.abs((samples.at(-1)?.[key] ?? 0) - (samples[0]?.[key] ?? 0));
   return duration * timeToReach(easing, 1 - 1 / span);
@@ -177,6 +183,8 @@ function expectSmooth(motion: Motion, key: "h" | "w") {
   expect(duration).toBeGreaterThan(0);
   expect(Math.abs((samples.at(-1)?.[key] ?? 0) - (samples[0]?.[key] ?? 0)), trace).toBeGreaterThan(8);
   expect(travelTime(motion, key), trace).toBeGreaterThanOrEqual(animationTime(motion, key) / 2);
+  // A runner that stalls can paint no frame during a whole animation; only then does a jump look the same.
+  if (inFlight(motion, key) === 0) expect(travelTime(motion, key), trace).toBeGreaterThanOrEqual(duration);
   expect(stepsBack(motion, key), trace).toBe(0);
 }
 
@@ -258,7 +266,7 @@ test("a dialog that jumps to its new size in one frame fails the smoothness chec
     await expect(reveal).toBeVisible();
   });
   expect(moved(jump)).toBe(true);
-  expect(travelTime(jump, "h"), traceOf(jump, "h")).toBeLessThan(animationTime(jump, "h") / 2);
+  expect(inFlight(jump, "h"), traceOf(jump, "h")).toBe(0);
   const top = await anchorTop(page);
   expect(() => expectAnchoredAndSmooth(jump, top, "h")).toThrow();
   await anchoredAtNaturalSize(page, reveal);
