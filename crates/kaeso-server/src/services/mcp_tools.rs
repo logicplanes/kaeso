@@ -3,6 +3,7 @@ use std::time::Duration;
 
 use kaeso_mcp::{canonical, params};
 use kaeso_store::StoreError;
+use kaeso_store::pg::mcp_connections as connections;
 use kaeso_store::pg::mcp_servers::{self, Check, ServerRow};
 use kaeso_store::pg::mcp_tools::{self as store, Approval, Definition, ToolRow};
 use kaeso_upstream::UpstreamError;
@@ -77,9 +78,13 @@ pub fn definition_of(row: &ToolRow) -> Value {
     }))
 }
 
-async fn fetch(state: &AppState, server: &ServerRow) -> Result<(Handshake, Vec<Value>), SyncError> {
+async fn fetch(
+    state: &AppState,
+    server: &ServerRow,
+    person: Option<Uuid>,
+) -> Result<(Handshake, Vec<Value>), SyncError> {
     let url = Url::parse(&server.url).map_err(|_| SyncError::Address)?;
-    let credential = mcp_connections::credential(state, server, None).await?;
+    let credential = mcp_connections::credential(state, server, person).await?;
     let client = Client {
         upstream: &state.mcp,
         url: &url,
@@ -94,11 +99,19 @@ async fn fetch(state: &AppState, server: &ServerRow) -> Result<(Handshake, Vec<V
     Ok((hs, tools))
 }
 
-// Per-person servers list the same tools for everyone, so the sync signs in as nobody when the
-// server allows it and otherwise waits for a shared connection; per-person tools come later.
+// A per-person server lists the same tools for everyone, so the sync signs in as one person who
+// connected; until someone has, there is nothing to list and the server stays unchecked.
 pub async fn sync(state: &AppState, server: &ServerRow) -> Result<Synced, SyncError> {
     let now = state.clock.now();
-    match fetch(state, server).await {
+    let person = if server.credential_mode == "per_user" {
+        match connections::person_for_sync(&state.pg, server.id).await? {
+            Some(p) => Some(p),
+            None => return Ok(Synced::default()),
+        }
+    } else {
+        None
+    };
+    match fetch(state, server, person).await {
         Ok((hs, tools)) => {
             let synced = apply(state, server, &tools).await?;
             mcp_servers::record_check(

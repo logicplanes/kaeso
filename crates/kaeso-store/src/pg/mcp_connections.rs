@@ -310,3 +310,19 @@ pub async fn set_wrapped_key(
     .rows_affected()
         == 1)
 }
+
+// A per-person server lists the same tools to everyone, so its sync signs in as whoever used it
+// last with a working connection.
+pub async fn person_for_sync(
+    db: impl PgExecutor<'_>,
+    server_id: Uuid,
+) -> Result<Option<Uuid>, StoreError> {
+    Ok(sqlx::query_scalar!(
+        "SELECT user_id AS \"user_id!\" FROM mcp_connections \
+         WHERE server_id = $1 AND user_id IS NOT NULL AND auth_error IS NULL \
+         ORDER BY last_used_at DESC NULLS LAST, updated_at DESC LIMIT 1",
+        server_id
+    )
+    .fetch_optional(db)
+    .await?)
+}

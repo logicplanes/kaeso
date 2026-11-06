@@ -225,6 +225,17 @@ async fn a_client_with_a_metadata_document_signs_in_to_one_portal_after_consent(
     let mock = MockMcp::start(Options::default()).await;
     let e = env(&s, &mock).await;
 
+    let github = e
+        .app
+        .post(
+            &format!("/orgs/{}/mcp-servers", e.owner.org_id),
+            json!({ "handle": "gh", "name": "GitHub", "url": mock.url(), "auth_method": "header", "credential_mode": "per_user", "projects": [e.project] }),
+            Some(&e.owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::CREATED)
+        .body["id"]
+        .clone();
     let request = request_of(&authorize(&e.app, CLAUDE, &resource(&e.project), "tools").await);
     let view = e
         .app
@@ -243,6 +254,11 @@ async fn a_client_with_a_metadata_document_signs_in_to_one_portal_after_consent(
     assert_eq!(portal["tools"], json!(["x__create_post"]));
     assert_eq!(portal["client_host"], "claude.example");
     assert_eq!(portal["local"], false);
+    assert_eq!(
+        portal["connect"],
+        json!([{ "server": github, "name": "GitHub", "auth_method": "header" }]),
+        "a per-person server the person hasn't connected yet"
+    );
     let r = e
         .app
         .post(

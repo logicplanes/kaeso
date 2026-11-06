@@ -183,6 +183,21 @@ function PortalConsent({ token, account, request, portal }: { token: string; acc
             {t("public.portalClientHost", "{host} publishes this client's name and return addresses.", { host: portal.client_host })}
           </Text>
         ) : null}
+        {portal.connect.length > 0 && (
+          <div className="flex flex-col gap-8">
+            <Text variant="small" tone="secondary">
+              {t("public.portalConnect", "These servers need your own account; their tools fail for you until you connect.")}
+            </Text>
+            {portal.connect.map((c) => (
+              <span key={c.server} className="flex items-center justify-between gap-12">
+                <Text>{c.name}</Text>
+                <Button size="sm" href={`/settings/account/connections?server=${c.server}`} target="_blank">
+                  {t("public.portalConnectServer", "Connect")}
+                </Button>
+              </span>
+            ))}
+          </div>
+        )}
       </div>
       <div className="mt-8 flex flex-col gap-8">
         <Button variant="primary" size="xl" fullWidth loading={busy} disabled={busy} onClick={() => void connect()}>

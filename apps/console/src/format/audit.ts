@@ -85,6 +85,7 @@ const ACTION_LABELS: Record<string, () => string> = {
   "mcp_server.update": () => t("format.audit.action.mcpServerUpdate", "MCP server changed"),
   "mcp_server.connect": () => t("format.audit.action.mcpServerConnect", "Signed in to an MCP server"),
   "mcp_server.delete": () => t("format.audit.action.mcpServerDelete", "MCP server deleted"),
+  "mcp_server.disconnect": () => t("format.audit.action.mcpServerDisconnect", "Signed out of an MCP server"),
   "member.rights_update": () => t("format.audit.action.memberRightsUpdate", "Member's role or rights changed"),
   "member.remove": () => t("format.audit.action.memberRemove", "Member removed"),
   "member.join_by_sso": () => t("format.audit.action.memberJoinBySso", "Member joined through single sign-on"),

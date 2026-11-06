@@ -1,7 +1,7 @@
 use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
-use kaeso_core::id::{AgentActivityId, AgentId, OrgId, ProjectId};
+use kaeso_core::id::{AgentActivityId, AgentId, McpServerId, OrgId, ProjectId};
 use kaeso_core::rights::{
     AccountRight, AgentPreset, InstancePreset, InstanceRight, OrgRight, ProjectRight,
     grantable_org_rights,
@@ -791,6 +791,50 @@ pub struct PortalRequestView {
     pub client_host: Option<String>,
     #[doc = "Whether the client receives the sign-in on this computer, as a desktop app does."]
     pub local: bool,
+    #[doc = "Servers of the project where each person signs in and you haven't yet: their tools\n\
+        fail for you until you connect."]
+    pub connect: Vec<PortalConnectView>,
+}
+
+#[derive(Clone, Debug, Serialize, ToSchema)]
+#[schema(
+    description = "A server where you sign in with your own account before its tools work for you."
+)]
+pub struct PortalConnectView {
+    #[doc = "The server."]
+    pub server: McpServerId,
+    #[doc = "Its name."]
+    #[schema(example = "X")]
+    pub name: String,
+    #[doc = "How you sign in: `header` or `oauth`."]
+    pub auth_method: crate::platform::orgs::mcp_servers::McpAuthMethod,
+}
+
+async fn to_connect(
+    state: &AppState,
+    user: uuid::Uuid,
+    project: uuid::Uuid,
+) -> ApiResult<Vec<PortalConnectView>> {
+    let mine = kaeso_store::pg::mcp_connections::of_user(&state.pg, user).await?;
+    Ok(kaeso_store::pg::mcp_servers::of_project(&state.pg, project)
+        .await?
+        .into_iter()
+        .filter(|s| s.credential_mode == "per_user" && s.auth_method != "none")
+        .filter(|s| {
+            !mine
+                .iter()
+                .any(|c| c.connection.server_id == s.id && c.connection.auth_error.is_none())
+        })
+        .map(|s| PortalConnectView {
+            server: McpServerId::from_uuid(s.id),
+            auth_method: if s.auth_method == "header" {
+                crate::platform::orgs::mcp_servers::McpAuthMethod::Header
+            } else {
+                crate::platform::orgs::mcp_servers::McpAuthMethod::Oauth
+            },
+            name: s.name,
+        })
+        .collect())
 }
 
 fn portal_of(state: &AppState, r: &agents::Request) -> Option<uuid::Uuid> {
@@ -857,6 +901,7 @@ async fn portal_view(
         tools,
         client_host,
         local: oauth::redirects_locally(&r.redirect_uri),
+        connect: to_connect(state, user, project).await?,
     })
 }
 

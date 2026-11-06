@@ -200,5 +200,19 @@
   "account.revokeAgent": "Widerrufen",
   "account.revokeAgentConfirm": "{name} widerrufen?",
   "account.revokeAgentConfirmHint": "Er wird sofort abgemeldet und kann erst wieder für Sie handeln, wenn Sie ihn neu verbinden.",
-  "account.saveAgentRights": "Rechte speichern"
+  "account.saveAgentRights": "Rechte speichern",
+  "account.connections.notConnected": "Nicht verbunden",
+  "account.connections.title": "Verbindungen",
+  "account.connections.hint": "MCP-Server, bei denen Sie sich mit Ihrem eigenen Konto anmelden.",
+  "account.connections.failed": "Ihre Verbindungen konnten nicht geladen werden",
+  "account.connections.empty": "Kein Server verlangt Ihr eigenes Konto",
+  "account.connections.emptyHint": "Fügt eine Organisation einen Server hinzu, bei dem sich jede Person anmeldet, erscheint er hier.",
+  "account.connections.connect": "Verbinden",
+  "account.connections.disconnect": "Trennen",
+  "account.connections.connected": "Mit {name} verbunden",
+  "account.connections.headerTitle": "Mit {name} verbinden",
+  "account.connections.headerHint": "Kaeso sendet diesen Header mit Ihren Aufrufen an den Server und zeigt ihn nie wieder.",
+  "account.connections.disconnected": "Von {name} getrennt",
+  "account.connections.disconnectTitle": "Von {name} trennen?",
+  "account.connections.disconnectHint": "Seine Tools funktionieren für Sie nicht mehr, bis Sie sich wieder verbinden."
 }

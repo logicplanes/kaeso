@@ -132,5 +132,7 @@
   "public.portalNoTools": "Noch keine; es erhält die Tools, die ein Projekt-Admin einschaltet.",
   "public.portalUntilDisconnected": "In {org} › {project}, bis Sie oder ein Projekt-Admin es trennen",
   "public.portalClientHost": "{host} veröffentlicht den Namen und die Rückkehradressen dieses Clients.",
-  "public.connectPortal": "Verbinden"
+  "public.connectPortal": "Verbinden",
+  "public.portalConnect": "Diese Server brauchen Ihr eigenes Konto; ihre Tools schlagen für Sie fehl, bis Sie sich verbinden.",
+  "public.portalConnectServer": "Verbinden"
 }

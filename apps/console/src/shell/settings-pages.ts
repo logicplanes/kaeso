@@ -15,6 +15,7 @@ export const ACCOUNT_PAGES: SettingsPage[] = [
   { id: "sessions", label: () => t("shell.settings.sessions", "Sessions"), icon: icons.session, path: "sessions" },
   { id: "keys", label: () => t("shell.page.apiKeys", "API keys"), icon: icons.key, path: "keys" },
   { id: "agents", label: () => t("shell.settings.agents", "Agents"), icon: icons.agent, path: "agents" },
+  { id: "connections", label: () => t("shell.settings.connections", "Connections"), icon: icons.instance, path: "connections" },
   { id: "memberships", label: () => t("shell.settings.memberships", "Memberships"), icon: icons.organization, path: "memberships" },
   { id: "notifications", label: () => t("shell.settings.notifications", "Notifications"), icon: icons.notification, path: "notifications" },
   { id: "appearance", label: () => t("shell.settings.appearance", "Appearance"), icon: icons.themeSystem, path: "appearance" },

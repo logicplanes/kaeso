@@ -1,0 +1,287 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT s.id, s.org_id, s.handle, s.name, s.url, s.auth_method, s.credential_mode, s.oauth_registration, s.oauth_issuer, s.oauth_client_id, s.oauth_client_secret_ciphertext IS NOT NULL AS \"has_client_secret!\", s.scopes, s.change_policy, s.protocol_version, s.server_info, s.status, s.last_checked_at, s.last_error, s.created_by_kind, s.created_by_id, s.created_at, s.updated_at, s.revision FROM mcp_servers s JOIN org_memberships m ON m.org_id = s.org_id AND m.user_id = $1 WHERE s.credential_mode = 'per_user' AND s.auth_method <> 'none' ORDER BY s.name, s.handle",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "mcp_servers",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "org_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "mcp_servers",
+            "name": "org_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "handle",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "mcp_servers",
+            "name": "handle"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "name",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "mcp_servers",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "url",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "mcp_servers",
+            "name": "url"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "auth_method",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "mcp_servers",
+            "name": "auth_method"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "credential_mode",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "mcp_servers",
+            "name": "credential_mode"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "oauth_registration",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "mcp_servers",
+            "name": "oauth_registration"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "oauth_issuer",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "mcp_servers",
+            "name": "oauth_issuer"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "oauth_client_id",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "mcp_servers",
+            "name": "oauth_client_id"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "has_client_secret!",
+        "type_info": "Bool",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 11,
+        "name": "scopes",
+        "type_info": "TextArray",
+        "origin": {
+          "Table": {
+            "table": "mcp_servers",
+            "name": "scopes"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "change_policy",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "mcp_servers",
+            "name": "change_policy"
+          }
+        }
+      },
+      {
+        "ordinal": 13,
+        "name": "protocol_version",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "mcp_servers",
+            "name": "protocol_version"
+          }
+        }
+      },
+      {
+        "ordinal": 14,
+        "name": "server_info",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "mcp_servers",
+            "name": "server_info"
+          }
+        }
+      },
+      {
+        "ordinal": 15,
+        "name": "status",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "mcp_servers",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 16,
+        "name": "last_checked_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "mcp_servers",
+            "name": "last_checked_at"
+          }
+        }
+      },
+      {
+        "ordinal": 17,
+        "name": "last_error",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "mcp_servers",
+            "name": "last_error"
+          }
+        }
+      },
+      {
+        "ordinal": 18,
+        "name": "created_by_kind",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "mcp_servers",
+            "name": "created_by_kind"
+          }
+        }
+      },
+      {
+        "ordinal": 19,
+        "name": "created_by_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "mcp_servers",
+            "name": "created_by_id"
+          }
+        }
+      },
+      {
+        "ordinal": 20,
+        "name": "created_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "mcp_servers",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 21,
+        "name": "updated_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "mcp_servers",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 22,
+        "name": "revision",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "mcp_servers",
+            "name": "revision"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      null,
+      false,
+      false,
+      true,
+      true,
+      false,
+      true,
+      true,
+      false,
+      true,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "c6b8eec5eb9ad3e83202efc3bf78d7b616fd982df5c5d2df8cb473596058db78"
+}

@@ -351,7 +351,7 @@ async fn one(state: &AppState, row: &ServerRow) -> ApiResult<McpServerView> {
     Ok(view(row, counts, connection.as_ref(), &projects))
 }
 
-fn server_param(raw: &str) -> ApiResult<Uuid> {
+pub(crate) fn server_param(raw: &str) -> ApiResult<Uuid> {
     id_param::<McpServerId>(raw, "MCP server").map(|id| id.uuid())
 }
 
@@ -427,7 +427,7 @@ fn handle_taken(handle: &str) -> ApiError {
     ))
 }
 
-fn header_problem(p: HeaderProblem) -> ApiError {
+pub(crate) fn header_problem(p: HeaderProblem) -> ApiError {
     match p {
         HeaderProblem::Name => ApiError::invalid(
             "header.name",
@@ -1172,7 +1172,7 @@ pub async fn connect(
     }
 }
 
-fn sign_in_refused(e: SignInError) -> ApiError {
+pub(crate) fn sign_in_refused(e: SignInError) -> ApiError {
     let message = match &e {
         SignInError::Unreachable(_) => {
             "Kaeso couldn't reach the server's sign-in; check the address and try again."

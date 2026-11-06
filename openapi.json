@@ -5442,6 +5442,182 @@
         "x-kaeso-access": "right:account.keys.manage"
       }
     },
+    "/platform/v1/me/mcp-connections": {
+      "get": {
+        "tags": [
+          "me"
+        ],
+        "summary": "The MCP servers where you sign in with your own account, with your connection.",
+        "description": "**Access:** a signed-in console session; no right is needed. Agents can't use it.",
+        "operationId": "getMeMcpConnections",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/List_PersonConnectionView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "x-kaeso-access": "session"
+      }
+    },
+    "/platform/v1/me/mcp-connections/{server}": {
+      "post": {
+        "tags": [
+          "me"
+        ],
+        "summary": "Connects your own account to an MCP server where each person signs in.",
+        "description": "A header replaces the one Kaeso had for you, and Kaeso lists the server's\ntools with it. An OAuth sign-in answers with `redirect_url`.\n\n**Access:** a signed-in console session; no right is needed. Agents can't use it.",
+        "operationId": "postMeMcpConnectionsServer",
+        "parameters": [
+          {
+            "name": "server",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/McpServerId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PersonConnectionSet"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonConnectionAnswer"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "x-kaeso-access": "session"
+      },
+      "delete": {
+        "tags": [
+          "me"
+        ],
+        "summary": "Removes your own connection to an MCP server; its tools stop working for you.",
+        "description": "**Access:** a signed-in console session; no right is needed. Agents can't use it.",
+        "operationId": "deleteMeMcpConnectionsServer",
+        "parameters": [
+          {
+            "name": "server",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/McpServerId"
+            }
+          }
+        ],
+        "responses": {
+          "204": {},
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "x-kaeso-access": "session"
+      }
+    },
     "/platform/v1/me/memberships": {
       "get": {
         "tags": [
@@ -27279,6 +27455,77 @@
           }
         }
       },
+      "List_PersonConnectionView": {
+        "type": "object",
+        "description": "A page of results.",
+        "required": [
+          "data",
+          "has_more"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "An MCP server where each person signs in with their own account.",
+              "required": [
+                "server",
+                "server_name",
+                "server_handle",
+                "org",
+                "auth_method"
+              ],
+              "properties": {
+                "auth_method": {
+                  "$ref": "#/components/schemas/McpAuthMethod",
+                  "description": "How you sign in to it: `header` or `oauth`."
+                },
+                "connection": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/McpConnectionView",
+                      "description": "Your connection, without its secret; `null` until you connect."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "org": {
+                  "$ref": "#/components/schemas/OrgId",
+                  "description": "Its organization."
+                },
+                "server": {
+                  "$ref": "#/components/schemas/McpServerId",
+                  "description": "The server."
+                },
+                "server_handle": {
+                  "type": "string",
+                  "description": "The prefix of its tools' names.",
+                  "example": "x"
+                },
+                "server_name": {
+                  "type": "string",
+                  "description": "Its name.",
+                  "example": "X"
+                }
+              }
+            },
+            "description": "The items."
+          },
+          "has_more": {
+            "type": "boolean",
+            "description": "Whether more items follow."
+          },
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Pass as `after` to get the next page; `null` on the last page."
+          }
+        }
+      },
       "List_PlaygroundModel": {
         "type": "object",
         "description": "A page of results.",
@@ -31175,6 +31422,94 @@
         },
         "additionalProperties": false
       },
+      "PersonConnectionAnswer": {
+        "type": "object",
+        "description": "Your connection after it was set, or the sign-in that sets it.",
+        "required": [
+          "connection"
+        ],
+        "properties": {
+          "connection": {
+            "$ref": "#/components/schemas/PersonConnectionView",
+            "description": "The server with your connection."
+          },
+          "redirect_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "For OAuth: open this address to sign in; Kaeso sends you back to Account ›\nConnections afterwards. Valid for 10 minutes."
+          }
+        }
+      },
+      "PersonConnectionSet": {
+        "type": "object",
+        "description": "Your own sign-in to an MCP server: a secret header, or an OAuth sign-in.",
+        "properties": {
+          "header": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/McpHeader",
+                "description": "For `header` servers: the header Kaeso sends for you."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "oauth": {
+            "type": "boolean",
+            "description": "For `oauth` servers: `true` starts a sign-in in the browser."
+          }
+        },
+        "additionalProperties": false
+      },
+      "PersonConnectionView": {
+        "type": "object",
+        "description": "An MCP server where each person signs in with their own account.",
+        "required": [
+          "server",
+          "server_name",
+          "server_handle",
+          "org",
+          "auth_method"
+        ],
+        "properties": {
+          "auth_method": {
+            "$ref": "#/components/schemas/McpAuthMethod",
+            "description": "How you sign in to it: `header` or `oauth`."
+          },
+          "connection": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/McpConnectionView",
+                "description": "Your connection, without its secret; `null` until you connect."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "org": {
+            "$ref": "#/components/schemas/OrgId",
+            "description": "Its organization."
+          },
+          "server": {
+            "$ref": "#/components/schemas/McpServerId",
+            "description": "The server."
+          },
+          "server_handle": {
+            "type": "string",
+            "description": "The prefix of its tools' names.",
+            "example": "x"
+          },
+          "server_name": {
+            "type": "string",
+            "description": "Its name.",
+            "example": "X"
+          }
+        }
+      },
       "PlaygroundModel": {
         "type": "object",
         "description": "A model the member can call in the Playground.",
@@ -31394,6 +31729,30 @@
           }
         }
       },
+      "PortalConnectView": {
+        "type": "object",
+        "description": "A server where you sign in with your own account before its tools work for you.",
+        "required": [
+          "server",
+          "name",
+          "auth_method"
+        ],
+        "properties": {
+          "auth_method": {
+            "$ref": "#/components/schemas/McpAuthMethod",
+            "description": "How you sign in: `header` or `oauth`."
+          },
+          "name": {
+            "type": "string",
+            "description": "Its name.",
+            "example": "X"
+          },
+          "server": {
+            "$ref": "#/components/schemas/McpServerId",
+            "description": "The server."
+          }
+        }
+      },
       "PortalGrantId": {
         "type": "string",
         "examples": [
@@ -31454,7 +31813,8 @@
           "project",
           "project_name",
           "tools",
-          "local"
+          "local",
+          "connect"
         ],
         "properties": {
           "client_host": {
@@ -31464,6 +31824,13 @@
             ],
             "description": "For a client known by its metadata document: the host it is published on, which\nvouches for the client's name.",
             "example": "claude.ai"
+          },
+          "connect": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PortalConnectView"
+            },
+            "description": "Servers of the project where each person signs in and you haven't yet: their tools\nfail for you until you connect."
           },
           "local": {
             "type": "boolean",

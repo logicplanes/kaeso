@@ -238,5 +238,6 @@
   "format.audit.action.portalGrantCreate": "Client mit dem Portal verbunden",
   "format.limitKind.toolCallRate": "Tool-Aufrufrate",
   "format.limitUnit.toolCallsPerMinute": "Tool-Aufrufe / Min.",
-  "format.limit.toolCallRate": "Tool-Aufrufrate von {amount} Tool-Aufrufen pro Minute"
+  "format.limit.toolCallRate": "Tool-Aufrufrate von {amount} Tool-Aufrufen pro Minute",
+  "format.audit.action.mcpServerDisconnect": "Von einem MCP-Server abgemeldet"
 }

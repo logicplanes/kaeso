@@ -455,3 +455,23 @@ pub async fn set_wrapped_key(
     .rows_affected()
         == 1)
 }
+
+// The servers where each person signs in with their own account, in every organization the
+// person belongs to.
+pub async fn per_person_of_member(
+    db: impl PgExecutor<'_>,
+    user_id: Uuid,
+) -> Result<Vec<ServerRow>, StoreError> {
+    Ok(sqlx::query_as!(
+        ServerRow,
+        "SELECT s.id, s.org_id, s.handle, s.name, s.url, s.auth_method, s.credential_mode, s.oauth_registration, \
+         s.oauth_issuer, s.oauth_client_id, s.oauth_client_secret_ciphertext IS NOT NULL AS \"has_client_secret!\", \
+         s.scopes, s.change_policy, s.protocol_version, s.server_info, s.status, s.last_checked_at, s.last_error, \
+         s.created_by_kind, s.created_by_id, s.created_at, s.updated_at, s.revision \
+         FROM mcp_servers s JOIN org_memberships m ON m.org_id = s.org_id AND m.user_id = $1 \
+         WHERE s.credential_mode = 'per_user' AND s.auth_method <> 'none' ORDER BY s.name, s.handle",
+        user_id
+    )
+    .fetch_all(db)
+    .await?)
+}

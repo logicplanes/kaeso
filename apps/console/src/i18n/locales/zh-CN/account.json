@@ -200,5 +200,19 @@
   "account.revokeAgent": "撤销",
   "account.revokeAgentConfirm": "撤销 {name}？",
   "account.revokeAgentConfirmHint": "它会立即退出登录，在您重新连接之前无法代表您操作。",
-  "account.saveAgentRights": "保存权限"
+  "account.saveAgentRights": "保存权限",
+  "account.connections.notConnected": "未连接",
+  "account.connections.title": "连接",
+  "account.connections.hint": "需要您使用自己账户登录的 MCP 服务器。",
+  "account.connections.failed": "无法加载您的连接",
+  "account.connections.empty": "没有服务器需要您自己的账户",
+  "account.connections.emptyHint": "组织添加需要每个人自行登录的服务器后，它会显示在这里。",
+  "account.connections.connect": "连接",
+  "account.connections.disconnect": "断开连接",
+  "account.connections.connected": "已连接到 {name}",
+  "account.connections.headerTitle": "连接到 {name}",
+  "account.connections.headerHint": "Kaeso 会在您调用服务器时发送此请求头，且不再显示。",
+  "account.connections.disconnected": "已断开与 {name} 的连接",
+  "account.connections.disconnectTitle": "断开与 {name} 的连接？",
+  "account.connections.disconnectHint": "在您重新连接之前，其工具对您不可用。"
 }
