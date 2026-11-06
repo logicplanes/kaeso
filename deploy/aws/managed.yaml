@@ -1,0 +1,543 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Kaeso on ECS Fargate behind an Application Load Balancer, with RDS PostgreSQL, ElastiCache Valkey and Secrets Manager. Docs at https://docs.kaeso.app/self-hosting/platforms/aws
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label: { default: Kaeso }
+        Parameters: [Domain, CertificateArn, HostedZoneId, MasterKeys, SetupEmail, ClickHouseUrl]
+      - Label: { default: Email }
+        Parameters: [SmtpHost, SmtpPort, SmtpUser, SmtpPassword, SmtpFrom]
+      - Label: { default: Sizes }
+        Parameters: [GatewayCpu, GatewayMemory, GatewayCount, ConsoleCount, DatabaseInstanceClass, DatabaseStorageGb, CacheNodeType]
+
+Parameters:
+  Domain:
+    Type: String
+    Description: The domain Kaeso answers on, such as kaeso.example.com.
+    AllowedPattern: ^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$
+  CertificateArn:
+    Type: String
+    Description: An ACM certificate for the domain, in this region.
+    AllowedPattern: ^arn:aws:acm:.+$
+  HostedZoneId:
+    Type: String
+    Default: ""
+    Description: A Route 53 hosted zone of the domain, to alias it to the load balancer; empty leaves DNS to you.
+  MasterKeys:
+    Type: String
+    NoEcho: true
+    Description: The master keys as id:base64, from kaeso master-key generate; keep a copy in a password manager.
+    MinLength: 20
+  SetupEmail:
+    Type: String
+    Description: Where the gateway emails the one-time setup link until the first user exists.
+    AllowedPattern: ^[^@\s,]+@[^@\s,]+$
+  ClickHouseUrl:
+    Type: String
+    NoEcho: true
+    Default: ""
+    Description: A ClickHouse HTTP URL with user and password for request logs, such as ClickHouse Cloud; empty keeps request logs off.
+  SmtpHost:
+    Type: String
+    Description: The SMTP server for sign-in links, invitations and alerts.
+    MinLength: 1
+  SmtpPort:
+    Type: Number
+    Default: 587
+  SmtpUser:
+    Type: String
+    Default: ""
+  SmtpPassword:
+    Type: String
+    NoEcho: true
+    Default: ""
+  SmtpFrom:
+    Type: String
+    Description: The sender, such as Kaeso <kaeso@example.com>.
+    MinLength: 3
+  GatewayCpu:
+    Type: Number
+    Default: 2048
+    AllowedValues: [1024, 2048, 4096]
+    Description: Fargate CPU units for the gateway; 1024 is one vCPU.
+  GatewayMemory:
+    Type: Number
+    Default: 4096
+    AllowedValues: [2048, 4096, 8192, 16384]
+    Description: Fargate memory for the gateway, in MiB; it must fit the CPU units.
+  GatewayCount:
+    Type: Number
+    Default: 2
+    MinValue: 1
+    MaxValue: 20
+    Description: Gateway tasks; they share limits, caches and route cooldowns through Valkey.
+  ConsoleCount:
+    Type: Number
+    Default: 1
+    MinValue: 1
+    MaxValue: 10
+  DatabaseInstanceClass:
+    Type: String
+    Default: db.t4g.small
+  DatabaseStorageGb:
+    Type: Number
+    Default: 50
+    MinValue: 20
+  CacheNodeType:
+    Type: String
+    Default: cache.t4g.small
+
+Conditions:
+  HasHostedZone: !Not [!Equals [!Ref HostedZoneId, ""]]
+  HasSmtpUser: !Not [!Equals [!Ref SmtpUser, ""]]
+  HasSmtpPassword: !Not [!Equals [!Ref SmtpPassword, ""]]
+  HasClickHouse: !Not [!Equals [!Ref ClickHouseUrl, ""]]
+
+Mappings:
+  Network:
+    Vpc:
+      Cidr: 10.83.0.0/16
+      PublicA: 10.83.0.0/22
+      PublicB: 10.83.4.0/22
+      PrivateA: 10.83.16.0/20
+      PrivateB: 10.83.32.0/20
+
+Resources:
+  Vpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !FindInMap [Network, Vpc, Cidr]
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags: [{ Key: Name, Value: !Sub "${AWS::StackName}-vpc" }]
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+  VpcGateway:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties: { VpcId: !Ref Vpc, InternetGatewayId: !Ref InternetGateway }
+  PublicSubnetA:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref Vpc
+      CidrBlock: !FindInMap [Network, Vpc, PublicA]
+      AvailabilityZone: !Select [0, !GetAZs ""]
+      MapPublicIpOnLaunch: false
+      Tags: [{ Key: Name, Value: !Sub "${AWS::StackName}-public-a" }]
+  PublicSubnetB:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref Vpc
+      CidrBlock: !FindInMap [Network, Vpc, PublicB]
+      AvailabilityZone: !Select [1, !GetAZs ""]
+      MapPublicIpOnLaunch: false
+      Tags: [{ Key: Name, Value: !Sub "${AWS::StackName}-public-b" }]
+  PrivateSubnetA:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref Vpc
+      CidrBlock: !FindInMap [Network, Vpc, PrivateA]
+      AvailabilityZone: !Select [0, !GetAZs ""]
+      Tags: [{ Key: Name, Value: !Sub "${AWS::StackName}-private-a" }]
+  PrivateSubnetB:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref Vpc
+      CidrBlock: !FindInMap [Network, Vpc, PrivateB]
+      AvailabilityZone: !Select [1, !GetAZs ""]
+      Tags: [{ Key: Name, Value: !Sub "${AWS::StackName}-private-b" }]
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties: { VpcId: !Ref Vpc }
+  PublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: VpcGateway
+    Properties: { RouteTableId: !Ref PublicRouteTable, DestinationCidrBlock: 0.0.0.0/0, GatewayId: !Ref InternetGateway }
+  PublicRouteA:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties: { SubnetId: !Ref PublicSubnetA, RouteTableId: !Ref PublicRouteTable }
+  PublicRouteB:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties: { SubnetId: !Ref PublicSubnetB, RouteTableId: !Ref PublicRouteTable }
+  NatAddress:
+    Type: AWS::EC2::EIP
+    Properties: { Domain: vpc }
+  NatGateway:
+    Type: AWS::EC2::NatGateway
+    Properties: { AllocationId: !GetAtt NatAddress.AllocationId, SubnetId: !Ref PublicSubnetA }
+  PrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties: { VpcId: !Ref Vpc }
+  PrivateRoute:
+    Type: AWS::EC2::Route
+    Properties: { RouteTableId: !Ref PrivateRouteTable, DestinationCidrBlock: 0.0.0.0/0, NatGatewayId: !Ref NatGateway }
+  PrivateRouteA:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties: { SubnetId: !Ref PrivateSubnetA, RouteTableId: !Ref PrivateRouteTable }
+  PrivateRouteB:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties: { SubnetId: !Ref PrivateSubnetB, RouteTableId: !Ref PrivateRouteTable }
+
+  LoadBalancerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: The load balancer, HTTPS and HTTP from everyone
+      VpcId: !Ref Vpc
+      SecurityGroupIngress:
+        - { IpProtocol: tcp, FromPort: 443, ToPort: 443, CidrIp: 0.0.0.0/0 }
+        - { IpProtocol: tcp, FromPort: 80, ToPort: 80, CidrIp: 0.0.0.0/0 }
+        - { IpProtocol: tcp, FromPort: 443, ToPort: 443, CidrIpv6: "::/0" }
+        - { IpProtocol: tcp, FromPort: 80, ToPort: 80, CidrIpv6: "::/0" }
+  ServiceSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: The gateway and console, reached only by the load balancer
+      VpcId: !Ref Vpc
+      SecurityGroupIngress:
+        - { IpProtocol: tcp, FromPort: 8080, ToPort: 8080, SourceSecurityGroupId: !Ref LoadBalancerSecurityGroup }
+        - { IpProtocol: tcp, FromPort: 3000, ToPort: 3000, SourceSecurityGroupId: !Ref LoadBalancerSecurityGroup }
+  DataSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: PostgreSQL and Valkey, reached only by the gateway
+      VpcId: !Ref Vpc
+      SecurityGroupIngress:
+        - { IpProtocol: tcp, FromPort: 5432, ToPort: 5432, SourceSecurityGroupId: !Ref ServiceSecurityGroup }
+        - { IpProtocol: tcp, FromPort: 6379, ToPort: 6379, SourceSecurityGroupId: !Ref ServiceSecurityGroup }
+
+  DatabaseSubnets:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: Private subnets for PostgreSQL
+      SubnetIds: [!Ref PrivateSubnetA, !Ref PrivateSubnetB]
+  DatabasePassword:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Description: The PostgreSQL password of the kaeso user
+      GenerateSecretString:
+        SecretStringTemplate: '{"username": "kaeso"}'
+        GenerateStringKey: password
+        PasswordLength: 32
+        ExcludeCharacters: "\"@/\\'`$&?#%:;"
+  Database:
+    Type: AWS::RDS::DBInstance
+    DeletionPolicy: Snapshot
+    UpdateReplacePolicy: Snapshot
+    Properties:
+      Engine: postgres
+      EngineVersion: "18"
+      DBInstanceClass: !Ref DatabaseInstanceClass
+      AllocatedStorage: !Ref DatabaseStorageGb
+      StorageType: gp3
+      StorageEncrypted: true
+      DBName: kaeso
+      MasterUsername: kaeso
+      MasterUserPassword: !Sub "{{resolve:secretsmanager:${DatabasePassword}:SecretString:password}}"
+      DBSubnetGroupName: !Ref DatabaseSubnets
+      VPCSecurityGroups: [!Ref DataSecurityGroup]
+      PubliclyAccessible: false
+      MultiAZ: false
+      BackupRetentionPeriod: 7
+      DeletionProtection: true
+      AutoMinorVersionUpgrade: true
+
+  CacheSubnets:
+    Type: AWS::ElastiCache::SubnetGroup
+    Properties:
+      Description: Private subnets for Valkey
+      SubnetIds: [!Ref PrivateSubnetA, !Ref PrivateSubnetB]
+  CacheAuthToken:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Description: The Valkey AUTH token
+      GenerateSecretString:
+        PasswordLength: 48
+        ExcludePunctuation: true
+  Cache:
+    Type: AWS::ElastiCache::ReplicationGroup
+    Properties:
+      ReplicationGroupDescription: Kaeso limit counters and shared caches
+      Engine: valkey
+      EngineVersion: "8.0"
+      CacheNodeType: !Ref CacheNodeType
+      NumCacheClusters: 1
+      CacheSubnetGroupName: !Ref CacheSubnets
+      SecurityGroupIds: [!Ref DataSecurityGroup]
+      TransitEncryptionEnabled: true
+      AtRestEncryptionEnabled: true
+      AuthToken: !Sub "{{resolve:secretsmanager:${CacheAuthToken}:SecretString}}"
+      AutomaticFailoverEnabled: false
+      # Kaeso's counters and budgets must never be evicted.
+      CacheParameterGroupName: !Ref CacheParameters
+  CacheParameters:
+    Type: AWS::ElastiCache::ParameterGroup
+    Properties:
+      CacheParameterGroupFamily: valkey8
+      Description: Kaeso keeps every key
+      Properties:
+        maxmemory-policy: noeviction
+
+  MasterKeysSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Description: The Kaeso master keys; keep a copy outside AWS
+      SecretString: !Ref MasterKeys
+  ClickHouseSecret:
+    Type: AWS::SecretsManager::Secret
+    Condition: HasClickHouse
+    Properties:
+      Description: The ClickHouse URL with its credentials
+      SecretString: !Ref ClickHouseUrl
+  SmtpPasswordSecret:
+    Type: AWS::SecretsManager::Secret
+    Condition: HasSmtpPassword
+    Properties:
+      Description: The SMTP password
+      SecretString: !Ref SmtpPassword
+
+  LoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Type: application
+      Scheme: internet-facing
+      IpAddressType: dualstack
+      Subnets: [!Ref PublicSubnetA, !Ref PublicSubnetB]
+      SecurityGroups: [!Ref LoadBalancerSecurityGroup]
+      LoadBalancerAttributes:
+        # Streams send a keepalive every 15 seconds; a model may be silent for minutes.
+        - { Key: idle_timeout.timeout_seconds, Value: "300" }
+        - { Key: routing.http.drop_invalid_header_fields.enabled, Value: "true" }
+  GatewayTargets:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      VpcId: !Ref Vpc
+      TargetType: ip
+      Protocol: HTTP
+      Port: 8080
+      HealthCheckPath: /readyz
+      HealthCheckIntervalSeconds: 15
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 3
+      TargetGroupAttributes:
+        - { Key: deregistration_delay.timeout_seconds, Value: "75" }
+  ConsoleTargets:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      VpcId: !Ref Vpc
+      TargetType: ip
+      Protocol: HTTP
+      Port: 3000
+      HealthCheckPath: /healthz
+      HealthCheckIntervalSeconds: 15
+  HttpListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref LoadBalancer
+      Port: 80
+      Protocol: HTTP
+      DefaultActions:
+        - Type: redirect
+          RedirectConfig: { Protocol: HTTPS, Port: "443", StatusCode: HTTP_301 }
+  HttpsListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref LoadBalancer
+      Port: 443
+      Protocol: HTTPS
+      SslPolicy: ELBSecurityPolicy-TLS13-1-2-2021-06
+      Certificates: [{ CertificateArn: !Ref CertificateArn }]
+      DefaultActions:
+        - { Type: forward, TargetGroupArn: !Ref ConsoleTargets }
+  ApiRule:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      ListenerArn: !Ref HttpsListener
+      Priority: 10
+      Conditions:
+        - Field: path-pattern
+          PathPatternConfig:
+            Values: ["/v1/*", "/platform/*", "/mcp", "/mcp/*", "/oauth/*"]
+      Actions:
+        - { Type: forward, TargetGroupArn: !Ref GatewayTargets }
+  WellKnownRule:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      ListenerArn: !Ref HttpsListener
+      Priority: 11
+      Conditions:
+        - Field: path-pattern
+          PathPatternConfig:
+            Values: ["/.well-known/oauth-*"]
+      Actions:
+        - { Type: forward, TargetGroupArn: !Ref GatewayTargets }
+
+  Cluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterSettings: [{ Name: containerInsights, Value: enabled }]
+  ExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal: { Service: ecs-tasks.amazonaws.com }
+            Action: sts:AssumeRole
+      ManagedPolicyArns: [arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy]
+      Policies:
+        - PolicyName: read-secrets
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: secretsmanager:GetSecretValue
+                Resource:
+                  - !Ref DatabasePassword
+                  - !Ref CacheAuthToken
+                  - !Ref MasterKeysSecret
+                  - !If [HasClickHouse, !Ref ClickHouseSecret, !Ref "AWS::NoValue"]
+                  - !If [HasSmtpPassword, !Ref SmtpPasswordSecret, !Ref "AWS::NoValue"]
+  GatewayLogs:
+    Type: AWS::Logs::LogGroup
+    Properties: { RetentionInDays: 30 }
+  ConsoleLogs:
+    Type: AWS::Logs::LogGroup
+    Properties: { RetentionInDays: 30 }
+  GatewayTask:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: !Sub "${AWS::StackName}-gateway"
+      RequiresCompatibilities: [FARGATE]
+      NetworkMode: awsvpc
+      Cpu: !Ref GatewayCpu
+      Memory: !Ref GatewayMemory
+      RuntimePlatform: { CpuArchitecture: ARM64, OperatingSystemFamily: LINUX }
+      ExecutionRoleArn: !GetAtt ExecutionRole.Arn
+      ContainerDefinitions:
+        - Name: gateway
+          Image: ghcr.io/logicplanes/kaeso-gateway:0.6.0-rc.4
+          Essential: true
+          PortMappings: [{ ContainerPort: 8080, Protocol: tcp }]
+          ReadonlyRootFilesystem: true
+          StopTimeout: 75
+          HealthCheck:
+            Command: [CMD, /usr/local/bin/kaeso, healthcheck]
+            Interval: 10
+            Timeout: 5
+            StartPeriod: 60
+            Retries: 3
+          Environment:
+            - { Name: KAESO_PUBLIC_URL, Value: !Sub "https://${Domain}" }
+            - { Name: KAESO_METRICS_LISTEN, Value: 127.0.0.1:9100 }
+            - { Name: KAESO_TRUSTED_PROXIES, Value: !FindInMap [Network, Vpc, Cidr] }
+            - { Name: KAESO_SETUP_EMAIL, Value: !Ref SetupEmail }
+            - { Name: KAESO_SMTP_HOST, Value: !Ref SmtpHost }
+            - { Name: KAESO_SMTP_PORT, Value: !Ref SmtpPort }
+            - { Name: KAESO_SMTP_USER, Value: !If [HasSmtpUser, !Ref SmtpUser, ""] }
+            - { Name: KAESO_SMTP_FROM, Value: !Ref SmtpFrom }
+            - { Name: KAESO_LOG_FORMAT, Value: json }
+            - Name: KAESO_POSTGRES_URL
+              Value: !Sub
+                - "postgres://kaeso:${Password}@${Host}:${Port}/kaeso?sslmode=require"
+                - Password: !Sub "{{resolve:secretsmanager:${DatabasePassword}:SecretString:password}}"
+                  Host: !GetAtt Database.Endpoint.Address
+                  Port: !GetAtt Database.Endpoint.Port
+            - Name: KAESO_VALKEY_URL
+              Value: !Sub
+                - "rediss://:${Token}@${Host}:${Port}"
+                - Token: !Sub "{{resolve:secretsmanager:${CacheAuthToken}:SecretString}}"
+                  Host: !GetAtt Cache.PrimaryEndPoint.Address
+                  Port: !GetAtt Cache.PrimaryEndPoint.Port
+          Secrets:
+            - { Name: KAESO_MASTER_KEYS, ValueFrom: !Ref MasterKeysSecret }
+            - !If [HasClickHouse, { Name: KAESO_CLICKHOUSE_URL, ValueFrom: !Ref ClickHouseSecret }, !Ref "AWS::NoValue"]
+            - !If [HasSmtpPassword, { Name: KAESO_SMTP_PASSWORD, ValueFrom: !Ref SmtpPasswordSecret }, !Ref "AWS::NoValue"]
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref GatewayLogs
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: gateway
+  ConsoleTask:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: !Sub "${AWS::StackName}-console"
+      RequiresCompatibilities: [FARGATE]
+      NetworkMode: awsvpc
+      Cpu: 512
+      Memory: 1024
+      RuntimePlatform: { CpuArchitecture: ARM64, OperatingSystemFamily: LINUX }
+      ExecutionRoleArn: !GetAtt ExecutionRole.Arn
+      ContainerDefinitions:
+        - Name: console
+          Image: ghcr.io/logicplanes/kaeso-console:0.6.0-rc.4
+          Essential: true
+          PortMappings: [{ ContainerPort: 3000, Protocol: tcp }]
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref ConsoleLogs
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: console
+  GatewayService:
+    Type: AWS::ECS::Service
+    DependsOn: [HttpsListener, ApiRule, WellKnownRule]
+    Properties:
+      Cluster: !Ref Cluster
+      LaunchType: FARGATE
+      TaskDefinition: !Ref GatewayTask
+      DesiredCount: !Ref GatewayCount
+      HealthCheckGracePeriodSeconds: 120
+      DeploymentConfiguration:
+        MinimumHealthyPercent: 100
+        MaximumPercent: 200
+        DeploymentCircuitBreaker: { Enable: true, Rollback: true }
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: DISABLED
+          Subnets: [!Ref PrivateSubnetA, !Ref PrivateSubnetB]
+          SecurityGroups: [!Ref ServiceSecurityGroup]
+      LoadBalancers:
+        - { ContainerName: gateway, ContainerPort: 8080, TargetGroupArn: !Ref GatewayTargets }
+  ConsoleService:
+    Type: AWS::ECS::Service
+    DependsOn: HttpsListener
+    Properties:
+      Cluster: !Ref Cluster
+      LaunchType: FARGATE
+      TaskDefinition: !Ref ConsoleTask
+      DesiredCount: !Ref ConsoleCount
+      DeploymentConfiguration:
+        MinimumHealthyPercent: 100
+        MaximumPercent: 200
+        DeploymentCircuitBreaker: { Enable: true, Rollback: true }
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: DISABLED
+          Subnets: [!Ref PrivateSubnetA, !Ref PrivateSubnetB]
+          SecurityGroups: [!Ref ServiceSecurityGroup]
+      LoadBalancers:
+        - { ContainerName: console, ContainerPort: 3000, TargetGroupArn: !Ref ConsoleTargets }
+
+  Record:
+    Type: AWS::Route53::RecordSet
+    Condition: HasHostedZone
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Ref Domain
+      Type: A
+      AliasTarget:
+        DNSName: !GetAtt LoadBalancer.DNSName
+        HostedZoneId: !GetAtt LoadBalancer.CanonicalHostedZoneID
+
+Outputs:
+  Url:
+    Description: Where Kaeso answers once the services are healthy.
+    Value: !Sub "https://${Domain}"
+  LoadBalancerDnsName:
+    Description: Point the domain's CNAME or alias here when no hosted zone was given.
+    Value: !GetAtt LoadBalancer.DNSName
+  MasterKeysSecretArn:
+    Description: The Secrets Manager secret holding the master keys; back it up outside AWS.
+    Value: !Ref MasterKeysSecret

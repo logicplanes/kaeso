@@ -49,6 +49,10 @@
           - deploy/*.Dockerfile
           - deploy/*.dockerignore
           - deploy/console/**
+          - deploy/aws/**
+          - deploy/gcp/**
+          - render.yaml
+          - .railway/**
 
 internal:
   - changed-files:

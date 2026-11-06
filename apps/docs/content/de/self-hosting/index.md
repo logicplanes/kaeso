@@ -19,3 +19,4 @@ Kaeso läuft auf Ihrem Server als ein Docker-Compose-Projekt. Der [Schnellstart]
 - [Backups und Hauptschlüssel](backups.md): Sichern Sie die Datenbanken und Hauptschlüssel und rotieren Sie den Hauptschlüssel.
 - [Zustand und Metriken](monitoring.md): Prüfen Sie den Zustand, lesen Sie Prometheus-Metriken ab und lesen Sie die Protokolle.
 - [Fehlerbehebung](troubleshooting.md): Finden Sie die Lösung für ein Problem, das Sie sehen.
+- [Verwaltete Plattformen](platforms/index.md): Betreiben Sie Kaeso auf Render, Railway, AWS oder Google Cloud mit den Vorlagen im Repository.

@@ -19,3 +19,4 @@ Kaeso runs on your server as one Docker Compose project. The [quick start](../ge
 - [Backups and master keys](backups.md): Back up the databases and master keys, and rotate the master key.
 - [Health and metrics](monitoring.md): Check health, scrape Prometheus metrics and read the logs.
 - [Troubleshooting](troubleshooting.md): Find the fix for a problem you see.
+- [Managed platforms](platforms/index.md): Run Kaeso on Render, Railway, AWS or Google Cloud with the templates in the repository.
