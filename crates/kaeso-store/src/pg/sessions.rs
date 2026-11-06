@@ -234,6 +234,7 @@ pub async fn revoke_other_sign_ins_at(
 pub async fn list_for_user(
     db: impl PgExecutor<'_>,
     user_id: Uuid,
+    only: Option<Uuid>,
     now: OffsetDateTime,
     idle_since: OffsetDateTime,
 ) -> Result<Vec<SessionListing>, StoreError> {
@@ -241,10 +242,12 @@ pub async fn list_for_user(
         SessionListing,
         "SELECT id, method, second_factor, oidc_org_id, created_at, signed_in_at, last_used_at, expires_at, ip, user_agent \
          FROM sessions WHERE user_id = $1 AND revoked_at IS NULL AND expires_at > $2 AND last_used_at > $3 \
+         AND ($4::uuid IS NULL OR id = $4) \
          ORDER BY id DESC",
         user_id,
         now,
-        idle_since
+        idle_since,
+        only
     )
     .fetch_all(db)
     .await?)

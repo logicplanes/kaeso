@@ -531,7 +531,8 @@ pub struct OfferedModels {
     path = "/orgs/{org}/projects/{project}/models/offered",
     summary = "Asks a custom provider which models it lists, with the project's key for it.",
     description = "Calls the provider's model listing (`GET /v1/models`) in its generation\n\
-    format, through the same address checks as requests. Nothing is recorded.",
+    format, through the same address checks as requests. Nothing is recorded. A public demo\n\
+    (`auth.demo_user`) answers 403 and calls no provider.",
     tag = "models",
     params(("org" = OrgId, Path), ("project" = ProjectId, Path), OfferedParams),
     responses((status = 200, body = OfferedModels))
@@ -542,6 +543,11 @@ pub async fn offered(
     Path(_p): Path<(String, String)>,
     Query(p): Query<OfferedParams>,
 ) -> ApiResult<Json<OfferedModels>> {
+    if state.config.auth.demo_user().is_some() {
+        return Err(ApiError::PermissionDenied(
+            crate::platform::auth::demo::NO_PROVIDERS.into(),
+        ));
+    }
     let providers = org_providers(&state, &ctx).await?;
     let prov = provider_of(&providers, &p.provider)?;
     let Some(custom) = prov.custom() else {
