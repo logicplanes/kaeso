@@ -36,6 +36,15 @@ curl -fsSL https://kaeso.app/install.sh | sh
 
 It installs Kaeso with PostgreSQL, ClickHouse and Valkey into `./kaeso`, starts it at `https://localhost` and prints the link that creates the first user. Add `-s -- --domain kaeso.example.com` to serve your own domain. The [quick start](https://docs.kaeso.app/get-started/quick-start) continues from there, and [install by hand](https://docs.kaeso.app/self-hosting/installation#install-by-hand) shows each step.
 
+On a managed platform, the [platform templates](https://docs.kaeso.app/self-hosting/platforms) run the same release with the platform's TLS and databases:
+
+| Platform     | Deploy                                                                                                                                                                                                                                                        | Guide                                                             |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| Render       | [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/logicplanes/kaeso/tree/prod)                                                                                                   | [Render](https://docs.kaeso.app/self-hosting/platforms/render)    |
+| Google Cloud | [![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://shell.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/logicplanes/kaeso&cloudshell_git_branch=prod&cloudshell_workspace=deploy/gcp/quick-server) | [Google Cloud](https://docs.kaeso.app/self-hosting/platforms/gcp) |
+| Railway      | From the infrastructure file with the Railway CLI                                                                                                                                                                                                             | [Railway](https://docs.kaeso.app/self-hosting/platforms/railway)  |
+| AWS          | From the CloudFormation templates with the AWS CLI                                                                                                                                                                                                            | [AWS](https://docs.kaeso.app/self-hosting/platforms/aws)          |
+
 ## Send your first request
 
 Point the OpenAI SDK at Kaeso and call any model in your project, Claude included:

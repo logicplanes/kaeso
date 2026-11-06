@@ -60,7 +60,7 @@ AWS 和 Google Cloud 不是一键部署：您需要选择区域、域名及其�
 
 2026 年 11 月 6 日，边缘服务、网关和控制台按此布局用发布镜像在本地 Docker 中完成了测试：路径转发、分块的流、伪造的客户端地址，以及网关不可用时各 API 的错误格式（`e2e/install/test_edge.py`）。Render 蓝图和 Railway 文件对照各平台的规范做了检查，CloudFormation 模板通过 `cfn-lint` 检查，Terraform 通过 `tofu validate` 检查；CI 会重复每项检查。
 
-四条路径都尚未从一个空账户部署到对应平台。在完成该测试之前没有部署按钮，每个页面都会说明其依据。
+四条路径都尚未从一个空账户部署到对应平台，因此每个页面都会说明其依据。[Render](render.md) 和 [Google Cloud](gcp.md) 可通过指向 `prod` 分支（包含最新版本）的链接打开；Railway 需要先发布模板，AWS 需要先把模板放入 S3 存储桶，之后才能提供这样的链接。
 
 ## 下一步
 
