@@ -24,7 +24,9 @@ const orgKeywords = (id: string): string[] | undefined =>
     ? [t("shell.keyword.usage", "usage"), t("shell.keyword.cost", "cost"), t("shell.keyword.requests", "requests"), t("shell.keyword.tokens", "tokens")]
     : id === "providers"
       ? [t("shell.keyword.providerKeys", "provider keys"), t("shell.keyword.credentials", "credentials")]
-      : undefined;
+      : id === "mcp-servers"
+        ? [t("shell.keyword.tools", "tools"), t("shell.keyword.connectors", "connectors")]
+        : undefined;
 
 const RECENT_ICON: RecentIcons = {
   key: icons.key,

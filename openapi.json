@@ -9729,7 +9729,7 @@
           "orgs"
         ],
         "summary": "Adds an MCP server to the organization.",
-        "description": "Kaeso checks the address now and on every connection: private, loopback,\nlink-local and cloud metadata addresses are refused unless the instance allows the network\n(`mcp_servers.allowed_networks`). A server without sign-in lists its tools right away; others\ndo once connected (`POST …/connection`).\n\n**Right:** `mcp_servers.manage` on the organization in the path; with a session, a sign-in within the last 15 minutes.",
+        "description": "Kaeso checks the address now and on every connection: private, loopback,\nlink-local and cloud metadata addresses are refused unless the instance allows the network\n(`mcp_servers.allowed_networks`). A server without sign-in lists its tools before the answer;\nothers do once connected (`POST …/connection`).\n\n**Right:** `mcp_servers.manage` on the organization in the path; with a session, a sign-in within the last 15 minutes.",
         "operationId": "postOrgsOrgMcpServers",
         "parameters": [
           {
@@ -10057,7 +10057,7 @@
         "tags": [
           "orgs"
         ],
-        "summary": "Renames an MCP server, changes its handle or its policy for changed tools.",
+        "summary": "Renames an MCP server, changes its handle, its policy for changed tools or the\nprojects that use it.",
         "description": "With `If-Match`, only while the server is still at that revision; a newer one\nanswers 412.\n\n**Right:** `mcp_servers.manage` on the organization in the path; with a session, a sign-in within the last 15 minutes.",
         "operationId": "patchOrgsOrgMcpServersServer",
         "parameters": [
@@ -29489,6 +29489,16 @@
               "null"
             ],
             "description": "A new name."
+          },
+          "projects": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ProjectId"
+            },
+            "description": "The projects that use it, replacing the list; projects left out stop offering its\ntools."
           }
         },
         "additionalProperties": false

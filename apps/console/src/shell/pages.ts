@@ -14,6 +14,7 @@ export const ORG_AREA_PAGES: OrgAreaPage[] = [
   { id: "overview", label: () => t("shell.page.overview", "Overview"), icon: icons.overview, path: "", right: "org.view" },
   { id: "projects", label: () => t("common.projects", "Projects"), icon: icons.project, path: "projects", right: "org.view" },
   { id: "providers", label: () => t("shell.page.providers", "Providers"), icon: icons.provider, path: "providers", right: "provider_credentials.view" },
+  { id: "mcp-servers", label: () => t("shell.page.mcpServers", "MCP servers"), icon: icons.instance, path: "mcp-servers", right: "mcp_servers.view" },
 ];
 
 export const orgPath = (org: string) => `/orgs/${org}`;

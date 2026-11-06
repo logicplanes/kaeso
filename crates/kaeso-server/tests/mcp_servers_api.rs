@@ -98,8 +98,15 @@ async fn an_admin_adds_a_server_turns_its_tools_on_and_reviews_a_change() {
     assert_eq!(created["change_policy"], "hold");
     assert_eq!(created["projects"], json!([project]));
     assert_eq!(created["created_by"]["id"], owner.user_id);
+    assert_eq!(
+        (
+            created["status"].as_str(),
+            created["tools"]["total"].as_u64()
+        ),
+        (Some("ok"), Some(3)),
+        "a server without sign-in answers with its tools listed"
+    );
     let server = created["id"].as_str().unwrap().to_owned();
-    settled(&app).await;
     let r = app
         .post(
             &servers(&owner),
@@ -264,6 +271,37 @@ async fn an_admin_adds_a_server_turns_its_tools_on_and_reviews_a_change() {
         named(&tools.body, "name", "create_post")["exposed_name"],
         "x_two__create_post"
     );
+    let r = app
+        .call(
+            Method::PATCH,
+            &base,
+            Some(json!({ "projects": [] })),
+            Some(&owner.cookie),
+        )
+        .await;
+    assert_eq!(r.body["projects"], json!([]));
+    let used = app
+        .get(&format!("{at_project}/mcp-servers"), &owner.cookie)
+        .await;
+    assert_eq!(used.body["data"], json!([]), "the project stops using it");
+    let r = app
+        .call(
+            Method::PATCH,
+            &base,
+            Some(json!({ "projects": ["proj_00000000000000000000000000"] })),
+            Some(&owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST);
+    let r = app
+        .call(
+            Method::PATCH,
+            &base,
+            Some(json!({ "projects": [project] })),
+            Some(&owner.cookie),
+        )
+        .await;
+    assert_eq!(r.body["projects"], json!([project]));
 
     let r = app
         .call(Method::DELETE, &base, None, Some(&owner.cookie))

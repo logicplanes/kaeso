@@ -28,3 +28,8 @@ export const projectLogSettings =
   (org: string): QueryMatch =>
   ({ queryKey }) =>
     projectPart(queryKey, "logs", org) && queryKey[5] === "settings";
+
+export const projectToolViews =
+  (org: string): QueryMatch =>
+  ({ queryKey }) =>
+    projectPart(queryKey, "tools", org);

@@ -129,5 +129,8 @@
   "shell.whatsNew.preEyebrow": "Kaeso 预发布版本",
   "shell.whatsNew.published": "发布于 {date}",
   "shell.whatsNew.show": "查看改进",
-  "shell.whatsNew.title": "Kaeso 新功能"
+  "shell.whatsNew.title": "Kaeso 新功能",
+  "shell.page.mcpServers": "MCP 服务器",
+  "shell.keyword.tools": "工具",
+  "shell.keyword.connectors": "连接器"
 }
