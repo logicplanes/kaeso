@@ -239,7 +239,7 @@ Schema `ErrorResponse`。解码错误（无论是请求还是服务商的响应�
 
 | HTTP | `error.type` | `ErrorKind`（解码） | 由 `ErrorKind` 编码 |
 |---|---|---|---|
-| 400 | `invalid_request_error` | `InvalidRequest`；消息以 `prompt is too long` 开头时为 `ContextTooLong` | `InvalidRequest`、`ContextTooLong`、`ContentFiltered`、`Unsupported`；不以 `prompt is too long` 开头的 `ContextTooLong` 消息会在前面加上 `prompt is too long: `，Claude Code 据此压缩对话 |
+| 400 | `invalid_request_error` | `InvalidRequest`；消息以 `prompt is too long` 开头时为 `ContextTooLong`；以 `Your credit balance is too low` 开头时为 `Billing`，这是 Anthropic 在余额用尽时的回答 | `InvalidRequest`、`ContextTooLong`、`ContentFiltered`、`Unsupported`；不以 `prompt is too long` 开头的 `ContextTooLong` 消息会在前面加上 `prompt is too long: `，Claude Code 据此压缩对话 |
 | 401 | `authentication_error` | `Authentication` | `Authentication` |
 | 402 | `billing_error` | `Billing` | `Billing` |
 | 403 | `permission_error` | `PermissionDenied` | `PermissionDenied` |

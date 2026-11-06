@@ -829,7 +829,9 @@ pub struct LogView {
 }
 
 #[derive(Clone, Debug, Serialize, ToSchema)]
-#[schema(description = "A step of an alias's route that failed, so the request moved on.")]
+#[schema(
+    description = "A step of an alias's route that failed or was skipped, so the request moved on."
+)]
 pub struct FallbackView {
     #[doc = "The catalogue entry the step called."]
     pub catalogue_model_id: CatalogueModelId,
@@ -847,8 +849,11 @@ pub struct FallbackView {
     pub error_kind: String,
     #[doc = "The error message."]
     pub error_message: String,
-    #[doc = "How long the step took, in milliseconds."]
+    #[doc = "How long the step took, in milliseconds; 0 when it was skipped."]
     pub duration_ms: u64,
+    #[doc = "The step wasn't tried because it failed moments ago for a reason that\n\
+        lasts; `status` and the error are from that failure."]
+    pub skipped: bool,
 }
 
 fn fallbacks(stored: &str) -> Vec<FallbackView> {
@@ -869,6 +874,7 @@ fn fallbacks(stored: &str) -> Vec<FallbackView> {
             error_kind: f.error_kind,
             error_message: f.error_message,
             duration_ms: f.duration_ms,
+            skipped: f.skipped,
         })
         .collect()
 }
@@ -1159,7 +1165,10 @@ fn csv_line(v: &LogView) -> String {
         Text(
             v.fallbacks
                 .iter()
-                .map(|f| format!("{} {}", f.model, f.status))
+                .map(|f| {
+                    let skipped = if f.skipped { " skipped" } else { "" };
+                    format!("{} {}{skipped}", f.model, f.status)
+                })
                 .collect::<Vec<_>>()
                 .join("; "),
         ),

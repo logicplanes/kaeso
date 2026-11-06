@@ -241,6 +241,7 @@ function statusTexts(t: UiText): Record<number, string> {
     204: t("statusCode.noContent", "No content"),
     400: t("statusCode.badRequest", "Bad request"),
     401: t("statusCode.unauthorized", "Unauthorized"),
+    402: t("statusCode.paymentRequired", "Payment required"),
     403: t("statusCode.forbidden", "Forbidden"),
     404: t("statusCode.notFound", "Not found"),
     408: t("statusCode.timeout", "Timeout"),

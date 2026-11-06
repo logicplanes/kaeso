@@ -192,6 +192,7 @@
   "logs.inspector.alias": "别名",
   "logs.inspector.triedFirst": "先尝试的模型",
   "logs.inspector.failedAfter": "{duration}后失败",
+  "logs.inspector.skippedRecently": "已跳过；刚刚失败过",
   "logs.kind": "显示内容",
   "logs.kind.models": "模型",
   "logs.kind.tools": "工具",

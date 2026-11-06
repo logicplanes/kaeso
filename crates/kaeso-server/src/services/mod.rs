@@ -4,6 +4,7 @@ pub mod agents;
 pub mod availability;
 pub mod catalogue;
 pub mod continuity;
+pub mod cooldowns;
 pub mod credentials;
 pub mod custom_providers;
 pub mod dns;

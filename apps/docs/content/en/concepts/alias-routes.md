@@ -72,6 +72,7 @@ Nothing falls back once the provider has answered: a stream that breaks off late
 ### Steps that are skipped
 
 - **A model the key may not use.** Kaeso skips the step without naming it, so a restricted key learns nothing about the route. A request that finds no step it may use gets 404, as for an unknown model.
+- **A model that failed moments ago.** When a step fails for a reason that lasts, later requests skip it for a while and go straight to the next step. A provider that refused the project's key or ran out of credit is skipped for 5 minutes, with every model of it. A model the provider doesn't serve to the key is skipped for 5 minutes. A rate limit lasts as long as its `Retry-After` says, up to 5 minutes. An unreachable or overloaded model, a timeout or a 5xx answer lasts 30 seconds. Kaeso skips a step only when its `fall_back_on` lists the reason and a later step is ready to answer; otherwise it tries the step again. An answer from the model ends the wait. Each gateway process keeps this in memory, so a restart forgets it.
 - **A model removed from the catalogue.** Kaeso skips the step. Removing a model deletes the aliases that route only to it; a route that also uses other models keeps it as a step, which the alias's `models` list shows without a `target`. When no other step is left, the request gets 404: ``The alias `fast` has no model left for this request; ask a project admin.`` The alias can still be renamed; to change its route, replace or remove that step first.
 
 ## Limits, costs and the cache
@@ -83,10 +84,10 @@ Nothing falls back once the provider has answered: a stream that breaks off late
 ## What apps and logs see
 
 - `kaeso-model` and `kaeso-provider` name the step that answered, or the one that failed last.
-- `kaeso-route` names every step the request reached, in order, by its path in the route as a trace names it, with its model and status, and its time in milliseconds when it failed: `"route";model="anthropic/claude-sonnet-4-5";status=529;dur=1204, "route.fallback";model="openai/gpt-5";status=200`. A skipped step carries `skipped` and no model ([response headers](../api/model-api.md#response-headers)).
-- The [request log](../console/request-logs.md) keeps the alias as the requested model and lists the steps it tried first, each with its status, error and time.
+- `kaeso-route` names every step the request reached, in order, by its path in the route as a trace names it, with its model and status, and its time in milliseconds when it failed: `"route";model="anthropic/claude-sonnet-4-5";status=529;dur=1204, "route.fallback";model="openai/gpt-5";status=200`. A step the key may not use carries `skipped` and no model; a step skipped because it failed moments ago carries `skipped` and its model ([response headers](../api/model-api.md#response-headers)).
+- The [request log](../console/request-logs.md) keeps the alias as the requested model and lists the steps it tried or skipped first, each with its status, error and time.
 - `/v1/models` lists the alias with the details of its main model: the `then` side of conditions and the heaviest branch of splits. When the key may not use that model, the alias shows the first other model it may use.
-- `kaeso_alias_fallbacks_total{provider, reason}` counts the steps that fell back ([health and metrics](../self-hosting/monitoring.md)).
+- `kaeso_alias_fallbacks_total{provider, reason}` counts the steps that fell back or were skipped ([health and metrics](../self-hosting/monitoring.md)).
 
 ## Test a route
 

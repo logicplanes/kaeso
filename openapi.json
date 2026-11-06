@@ -23789,7 +23789,7 @@
       },
       "FallbackView": {
         "type": "object",
-        "description": "A step of an alias's route that failed, so the request moved on.",
+        "description": "A step of an alias's route that failed or was skipped, so the request moved on.",
         "required": [
           "catalogue_model_id",
           "path",
@@ -23797,7 +23797,8 @@
           "status",
           "error_kind",
           "error_message",
-          "duration_ms"
+          "duration_ms",
+          "skipped"
         ],
         "properties": {
           "catalogue_model_id": {
@@ -23807,7 +23808,7 @@
           "duration_ms": {
             "type": "integer",
             "format": "int64",
-            "description": "How long the step took, in milliseconds.",
+            "description": "How long the step took, in milliseconds; 0 when it was skipped.",
             "minimum": 0
           },
           "error_kind": {
@@ -23828,6 +23829,10 @@
             "type": "string",
             "description": "Where the step is in the route, as in a trace.",
             "example": "route.fallback"
+          },
+          "skipped": {
+            "type": "boolean",
+            "description": "The step wasn't tried because it failed moments ago for a reason that\nlasts; `status` and the error are from that failure."
           },
           "status": {
             "type": "integer",

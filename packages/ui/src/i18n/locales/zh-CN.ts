@@ -396,6 +396,7 @@ const zhCN: Readonly<Record<string, string>> = {
   "statusCode.notFound": "未找到",
   "statusCode.ok": "成功",
   "statusCode.overloaded": "过载",
+  "statusCode.paymentRequired": "需要付款",
   "statusCode.rateLimited": "触发速率限制",
   "statusCode.serverError": "服务器错误",
   "statusCode.timeout": "超时",

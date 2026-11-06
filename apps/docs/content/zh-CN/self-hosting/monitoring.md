@@ -41,7 +41,7 @@ services:
 | `kaeso_gateway_overhead_seconds{provider}` | Kaeso 调用服务商之前自身花费的时间，不含请求上传：校验密钥、转换格式和检查限额。分桶从 0.1 ms 开始。如果 `kaeso_time_to_first_byte_seconds` 没有同样上升，多出的耗时来自 Kaeso，而不是服务商 |
 | `kaeso_request_upload_seconds{provider}` | 应用发送请求体所用的时间。它随提示词的大小和应用的网络连接增长；这里的上升来自应用或网络，而不是 Kaeso |
 | `kaeso_upstream_errors_total{kind, provider}` | `overloaded`、`timeout` 或 `connect`：服务商故障。`authentication` 或 `billing`：某个服务商密钥需要处理 |
-| `kaeso_alias_fallbacks_total{provider, reason}` | [别名路由](../concepts/alias-routes.md)中失败并回退的步骤，按失败步骤的服务商统计。某个服务商的数值上升，说明您的路由正在兜住一次故障 |
+| `kaeso_alias_fallbacks_total{provider, reason}` | [别名路由](../concepts/alias-routes.md)中失败并回退、或因刚刚失败而被跳过的步骤，按步骤的服务商统计。某个服务商的数值上升，说明您的路由正在兜住一次故障 |
 | `kaeso_stream_failures_total{kind, provider}` | 在响应头发出后失败的流。`kaeso_requests_total` 把它们计为 200，请求日志则计为失败。`client_stalled`：应用不再读取其流 |
 | `kaeso_usage_estimates_total{reason, provider}` | Kaeso 不得不估算的用量。`unreported`：服务商结束回复时没有报告用量。`cancelled` 和 `failed`：断开连接的应用和中途中断的流 |
 | `kaeso_limit_refusals_total{kind, level}` | 预算即将用完 |

@@ -192,6 +192,7 @@
   "logs.inspector.alias": "Alias",
   "logs.inspector.triedFirst": "Zuerst versucht",
   "logs.inspector.failedAfter": "Fehlgeschlagen nach {duration}",
+  "logs.inspector.skippedRecently": "Übersprungen; kurz zuvor fehlgeschlagen",
   "logs.kind": "Was angezeigt wird",
   "logs.kind.models": "Modelle",
   "logs.kind.tools": "Tools",
