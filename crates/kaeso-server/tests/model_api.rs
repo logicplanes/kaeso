@@ -823,7 +823,8 @@ async fn tool_and_reasoning_controls_a_model_rejects_are_refused_in_the_apps_wor
         "low",
         "the nearest level Claude lists"
     );
-    let turbo = json!({"model": "claude-opus-5-5", "input": "Hi", "reasoning": {"effort": "turbo"}});
+    let turbo =
+        json!({"model": "claude-opus-5-5", "input": "Hi", "reasoning": {"effort": "turbo"}});
     let r = call(&env, "/v1/responses", Some(&env.key), false, Some(turbo)).await;
     assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
     assert_eq!(r.json()["error"]["param"], "reasoning.effort");
