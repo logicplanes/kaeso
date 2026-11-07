@@ -69,6 +69,7 @@ def test_the_quick_servers_install_the_newest_stable_release_unless_told_a_versi
         assert "kaeso.app/install.sh" in text and "--install-docker" in text, file
         assert not images_in(text), file
         assert VERSION not in text, file
+        assert "chown" not in text, f"{file}: the installer owns the master key file; a chown after it locks the gateway out"
 
 
 @pytest.fixture(scope="module")
