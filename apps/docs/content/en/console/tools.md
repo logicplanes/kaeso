@@ -37,10 +37,6 @@ Your own agent calls the portal with an API key that has the **Tools** ability. 
 
 Every member, service account and key may call every tool the project offers, as long as they have `tools.use`. To narrow it, open the member, the service account or the key and edit its **Tools** section: turn off **Every tool the project offers** and choose the tools. A key's tools are always within its owner's.
 
-## Try tools in the Playground
-
-In the [Playground](playground.md), the **Tools** switch sends the project's tools to the model. When the model asks for a call, the reply shows the tool and its arguments. **Run** calls the tool as you, and **Skip** tells the model you declined. Once every call is decided, the answers go back to the model. Playground calls are logged like any other.
-
 ## Next steps
 
 - [Organization MCP servers](mcp-servers.md): Add servers, sign in to them and review changed tools.

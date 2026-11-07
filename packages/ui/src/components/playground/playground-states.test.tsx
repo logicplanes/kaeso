@@ -8,7 +8,6 @@ import { ResponseView, UserMessage } from "./response-view.js";
 import { ResponseMetrics } from "./response-metrics.js";
 import { Reasoning } from "./reasoning.js";
 import { ParameterPanel } from "./parameter-panel.js";
-import { PromptSuggestions } from "./prompt-suggestions.js";
 import { ConversationView } from "../kaeso/conversation.js";
 
 function Chat({ onStop }: { onStop?: () => void }) {
@@ -101,13 +100,15 @@ describe("CompareGrid focus and headers", () => {
     expect(screen.getByRole("button", { name: "Claude Sonnet 4.5" })).toHaveFocus();
   });
 
-  it("keeps every header the same, with Add in a rail of its own after the columns", () => {
+  it("keeps every header the same, with Add at the end of the last column's header and no rail after it", () => {
     render(<Grid />);
     const headers = screen.getAllByRole("region", { name: /^(GPT-5|Claude Sonnet 4\.5)$/ }).map((r) => r.querySelector("header")!);
-    expect(headers.map((h) => h.children.length)).toEqual([2, 2]);
-    for (const h of headers) expect(within(h).queryByRole("button", { name: "Add model" })).toBeNull();
-    const rail = screen.getAllByRole("button", { name: "Add model" }).at(-1)!.closest(".w-56");
-    expect(rail).toHaveClass("hairline-l", "md:flex");
+    expect(headers.map((h) => h.children.length)).toEqual([2, 3]);
+    expect(within(headers[0]!).queryByRole("button", { name: "Add model" })).toBeNull();
+    const add = within(headers[1]!).getByRole("button", { name: "Add model" });
+    expect(add).toHaveClass("size-32", "material-ghost");
+    expect(add.parentElement).toHaveClass("max-md:hidden");
+    expect(document.querySelector(".w-56")).toBeNull();
   });
 
   it("keeps the focus on Next column when it reaches the last column", async () => {
@@ -180,10 +181,39 @@ describe("ResponseView marks and announcements", () => {
     }
   });
 
-  it("sets text 12px in and leaves code and tables on the edge; the footer on the text line", () => {
-    const { container } = render(<ResponseView text={"Two did:\n\n```json\n{}\n```"} footer={<ResponseMetrics duration={1200} />} />);
+  it("sets text 12px in and leaves code and tables on the edge; the footer on the text line, after Copy and Retry", () => {
+    const { container } = render(<ResponseView text={"Two did:\n\n```json\n{}\n```"} footer={<ResponseMetrics duration={1200} />} onRetry={() => undefined} />);
     expect(container.querySelector(".markdown-text-inset")).toBeInTheDocument();
+    const metrics = screen.getByLabelText("Metrics").parentElement!;
+    expect(metrics).toHaveClass("px-8");
+    expect(metrics.parentElement).toHaveClass("min-h-32");
+    expect(metrics.parentElement).not.toHaveClass("px-4");
+    const row = metrics.parentElement!;
+    expect(within(row).getByRole("button", { name: "Copy response" })).toHaveClass("size-32", "text-fg-secondary");
+    expect(within(row).getByRole("button", { name: "Retry" })).toHaveClass("material-ghost", "text-fg-secondary");
+  });
+
+  it("keeps the metrics on the text line when no Copy or Retry comes before them", () => {
+    render(<ResponseView status="done" text="" footer={<ResponseMetrics duration={1200} />} />);
     expect(screen.getByLabelText("Metrics").parentElement).toHaveClass("px-12");
+  });
+
+  it("offers Copy and the icon Retry only under a finished reply with text", () => {
+    const { rerender } = render(<ResponseView status="streaming" text="Half" onRetry={() => undefined} />);
+    expect(screen.queryByRole("button", { name: "Copy response" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Retry" })).toBeNull();
+    rerender(<ResponseView status="done" text="" onRetry={() => undefined} />);
+    expect(screen.queryByRole("button", { name: "Copy response" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Retry" })).toHaveClass("material-ghost", "text-fg-secondary");
+    rerender(<ResponseView status="error" error="Timed out." onRetry={() => undefined} />);
+    expect(screen.getAllByRole("button", { name: "Retry" })).toHaveLength(1);
+  });
+
+  it("sets the prompt in a bubble at the end of the line, apart from the response that starts at the other edge", () => {
+    render(<UserMessage>{"Why did errors spike?"}</UserMessage>);
+    const group = screen.getByRole("group", { name: "Prompt" });
+    expect(group).toHaveClass("items-end");
+    expect(group.querySelector("p")).toHaveClass("bg-fill-1", "rounded-frame", "px-16", "py-10", "text-body-lg", "text-fg", "max-w-prose");
   });
 
   it("opens a long prompt with a disclosure button that says whether it is open", async () => {
@@ -265,17 +295,5 @@ describe("ParameterPanel words and the popover's way out", () => {
     await vi.waitFor(() => expect(within(dialog).getByRole("textbox", { name: "System instructions" })).toHaveFocus());
     await userEvent.click(within(dialog).getByRole("button", { name: "Close parameters" }));
     await vi.waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
-  });
-});
-
-describe("PromptSuggestions rows", () => {
-  it("draws pill rows that grow for a coarse pointer, and keeps two identical prompts", async () => {
-    const onSelect = vi.fn();
-    render(<PromptSuggestions suggestions={["Explain our refund policy", "Explain our refund policy"]} onSelect={onSelect} />);
-    const rows = screen.getAllByRole("button", { name: "Explain our refund policy" });
-    expect(rows).toHaveLength(2);
-    expect(rows[0]).toHaveClass("rounded-pill", "coarse:h-44", "focus-visible:text-fg", "active:bg-fill-2");
-    await userEvent.click(rows[1]!);
-    expect(onSelect).toHaveBeenCalledWith("Explain our refund policy");
   });
 });

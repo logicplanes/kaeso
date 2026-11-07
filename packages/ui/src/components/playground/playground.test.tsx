@@ -10,7 +10,6 @@ import { Reasoning } from "./reasoning.js";
 import { ParameterPanel, type PlaygroundParameters } from "./parameter-panel.js";
 import { ModelPicker } from "./model-picker.js";
 import { KAESO_SELECT_VARIANTS } from "../select/select.js";
-import { PromptSuggestions } from "./prompt-suggestions.js";
 import * as playground from "./index.js";
 
 describe("Composer", () => {
@@ -159,6 +158,18 @@ describe("Composer", () => {
     expect(onSubmit).not.toHaveBeenCalled();
   });
 
+  it("sends with a round arrow and stops with a square, each named and sized like the library's circles", () => {
+    const { rerender } = render(<Composer defaultValue="Hi" />);
+    const send = screen.getByRole("button", { name: "Send" });
+    expect(send).toHaveClass("rounded-pill", "material-primary");
+    expect(send.querySelector("svg")).toBeInTheDocument();
+    expect(send).not.toHaveTextContent(/\S/);
+    rerender(<Composer defaultValue="Hi" streaming />);
+    const stop = screen.getByRole("button", { name: "Stop" });
+    expect(stop).toHaveClass("material-secondary");
+    expect(stop).not.toHaveTextContent(/\S/);
+  });
+
   it("ignores Enter while composing with an input method", () => {
     const onSubmit = vi.fn();
     render(<Composer defaultValue="日本" onSubmit={onSubmit} />);
@@ -206,12 +217,13 @@ describe("CompareGrid", () => {
   it("adds columns up to four, then disables add with a reason", async () => {
     render(<Grid />);
     const adds = () => screen.getAllByRole("button", { name: "Add model" });
-    expect(within(screen.getByRole("region", { name: "Claude Sonnet 4.5" })).queryByRole("button", { name: "Add model" })).toBeNull();
+    expect(within(screen.getByRole("region", { name: "GPT-5" })).queryByRole("button", { name: "Add model" })).toBeNull();
+    expect(within(screen.getByRole("region", { name: "Claude Sonnet 4.5" })).getByRole("button", { name: "Add model" })).toBeInTheDocument();
     await userEvent.click(adds()[0]!);
     await userEvent.click(adds()[0]!);
     expect(screen.getAllByRole("region", { name: /^(GPT-5|Claude Sonnet 4.5|Model \d)$/ })).toHaveLength(4);
     for (const b of adds()) expect(b).toHaveAttribute("aria-disabled", "true");
-    expect(adds().at(-1)!.closest("[role=region]")).toBeNull();
+    expect(adds().at(-1)!.closest("section")).toHaveAccessibleName("Model 4");
   });
 
   it("removes a column, and hides remove on the last one", async () => {
@@ -538,6 +550,11 @@ describe("ModelPicker", () => {
     expect(trigger).toHaveAccessibleName("openai GPT-5 gpt-5");
   });
 
+  it("never scales its trigger on a press: a header-wide control would visibly shrink", () => {
+    render(<ModelPicker value="gpt-5" options={[{ value: "gpt-5", provider: "openai", name: "GPT-5" }]} />);
+    expect(screen.getByRole("button", { description: "Model" })).toHaveAttribute("data-static");
+  });
+
   it("draws its ghost in full text colour through Select's own appearance, without a styling warning", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
     try {
@@ -550,21 +567,10 @@ describe("ModelPicker", () => {
   });
 });
 
-describe("PromptSuggestions", () => {
-  it("offers up to three prompts as buttons", async () => {
-    const onSelect = vi.fn();
-    render(<PromptSuggestions suggestions={["One", "Two", "Three", "Four"]} onSelect={onSelect} />);
-    const list = screen.getByRole("list", { name: "Example prompts" });
-    expect(within(list).getAllByRole("button")).toHaveLength(3);
-    await userEvent.click(screen.getByRole("button", { name: "Two" }));
-    expect(onSelect).toHaveBeenCalledWith("Two");
-  });
-});
-
 describe("playground variants", () => {
   it("document every key", () => {
     const entries = Object.entries(playground).filter(([k]) => /^KAESO_.+_VARIANTS$/.test(k) && !k.endsWith("_DEFAULT_VARIANTS"));
-    expect(entries.length).toBe(8);
+    expect(entries.length).toBe(7);
     for (const [, variants] of entries)
       for (const keys of Object.values(variants as Record<string, Record<string, { classes: string; description: string }>>))
         for (const v of Object.values(keys)) {

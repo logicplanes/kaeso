@@ -11,7 +11,7 @@ export const docs = {
       onCopy: "Called with the copied text.",
       size: "The circle's height, or a field's: 32px (`sm`) by default.",
       value: "The text that is copied.",
-      variant: "A filled circle (`secondary`) or a quiet one (`ghost`).",
+      variant: "A filled circle (`secondary`), a ghost (`ghost`), or a ghost in secondary text until hovered (`quiet`).",
     },
   },
 } satisfies ComponentDocs;

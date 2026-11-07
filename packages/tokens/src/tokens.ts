@@ -215,6 +215,11 @@ export const shadow = {
   field: mode("inset 0 0 0 1px var(--k-line-field), 0 1px 2px rgb(0 0 0 / 0.05)", "inset 0 0 0 1px var(--k-line-field)"),
   "field-hover": mode("inset 0 0 0 1px var(--k-line-field-hover), 0 1px 2px rgb(0 0 0 / 0.05)", "inset 0 0 0 1px var(--k-line-field-hover)"),
   selector: mode("inset 0 0 0 1px var(--k-line-field), 0 1px 2px rgb(0 0 0 / 0.05)", "inset 0 0 0 1px var(--k-line-field)"),
+  composer: mode("inset 0 0 0 1px var(--k-line-field), 0 1px 2px rgb(0 0 0 / 0.04), 0 8px 24px -12px rgb(0 0 0 / 0.12)", "inset 0 0 0 1px var(--k-line-field)"),
+  "composer-hover": mode(
+    "inset 0 0 0 1px var(--k-line-field-hover), 0 1px 2px rgb(0 0 0 / 0.04), 0 8px 24px -12px rgb(0 0 0 / 0.12)",
+    "inset 0 0 0 1px var(--k-line-field-hover)",
+  ),
   "selector-hover": mode("inset 0 0 0 1px var(--k-line-field-hover), 0 1px 2px rgb(0 0 0 / 0.05)", "inset 0 0 0 1px var(--k-line-field-hover)"),
   frame: mode("0 0 0 1px var(--k-line)", "0 0 0 1px var(--k-line)"),
   xs: mode("0 0 0 1px var(--k-line), 0 1px 2px rgb(0 0 0 / 0.03)", "0 0 0 1px var(--k-line)"),

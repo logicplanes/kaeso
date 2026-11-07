@@ -17,6 +17,7 @@ export const KAESO_COPY_BUTTON_VARIANTS = {
   },
   variant: {
     ghost: { classes: "material-ghost", description: "Inside fields and wells (default)" },
+    quiet: { classes: "material-ghost text-fg-secondary hover:text-fg", description: "Secondary text until hovered: under a response, beside its metrics" },
     secondary: { classes: "material-secondary", description: "On its own" },
   },
   size: {

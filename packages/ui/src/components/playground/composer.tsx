@@ -2,12 +2,16 @@ import { forwardRef, useCallback, useId, useLayoutEffect, useRef, useSyncExterna
 import { useUiText } from "../../i18n/context.js";
 import { cn } from "../../utils/cn.js";
 import { useControllable } from "../../utils/use-controllable.js";
+import { icons } from "../../icons/vocabulary.js";
 import { Button } from "../button/button.js";
 
 export const KAESO_COMPOSER_VARIANTS = {
   size: {
-    md: { classes: "rounded-frame", description: "Text 14/20, 8px around the buttons; the outline concentric with them (16 + 8) (default)" },
-    sm: { classes: "rounded-frame", description: "The same box starting one line tall: a follow-up field under a thread" },
+    md: {
+      classes: "rounded-frame",
+      description: "Text 14/20 starting two lines tall, 8px around the buttons; the outline concentric with them (16 + 8) (default)",
+    },
+    sm: { classes: "rounded-frame", description: "The same box starting one line tall: a chat's prompt box, a follow-up field under a thread" },
   },
 } as const;
 export const KAESO_COMPOSER_DEFAULT_VARIANTS = { size: "md" } as const;
@@ -165,13 +169,9 @@ export const Composer = forwardRef<HTMLTextAreaElement, ComposerProps>(function 
       <div className="flex min-w-0 items-center gap-8 p-8 pt-4 controls-on-fill">
         <div className="flex min-w-0 flex-1 items-center gap-4">{actions}</div>
         {streaming ? (
-          <Button type="button" size="sm" variant="secondary" reserveLabels={[submitLabel, stopLabel]} onClick={() => onStop?.()} disabled={disabled}>
-            {stopLabel}
-          </Button>
+          <Button type="button" size="sm" variant="secondary" icon={icons.stop} aria-label={stopLabel} onClick={() => onStop?.()} disabled={disabled} />
         ) : (
-          <Button type="submit" size="sm" variant="primary" reserveLabels={[submitLabel, stopLabel]} loading={loading} disabled={!canSend && !loading}>
-            {submitLabel}
-          </Button>
+          <Button type="submit" size="sm" variant="primary" icon={icons.send} aria-label={submitLabel} loading={loading} disabled={!canSend && !loading} />
         )}
       </div>
     </form>

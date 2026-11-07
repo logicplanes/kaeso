@@ -143,6 +143,7 @@ export const PickerTrigger = forwardRef<HTMLButtonElement, PickerTriggerProps>(f
         ref={ref}
         type={type}
         data-picker=""
+        data-static=""
         {...props}
         {...(held ? { "aria-disabled": true, "data-disabled": "" } : { disabled })}
         onFocus={(e) => {

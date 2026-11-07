@@ -1,6 +1,8 @@
 import { forwardRef, useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { cn } from "../../utils/cn.js";
 import { Button } from "../button/button.js";
+import { CopyButton } from "../copy-button/copy-button.js";
+import { icons } from "../../icons/vocabulary.js";
 import { Markdown } from "../markdown/markdown.js";
 import { Reasoning } from "./reasoning.js";
 import { useTruncated } from "../../hooks/use-truncated.js";
@@ -94,11 +96,20 @@ export const ResponseView = forwardRef<HTMLElement, ResponseViewProps>(function 
         ? t("responseView.endedIncomplete", "{label}: {reason}", { label: ariaLabel, reason: incompleteText(t, incompleteReason) })
         : t("responseView.endedDone", "{label} finished", { label: ariaLabel });
   const said = useEndAnnouncement(status, ended);
+  const retryLabel = t("responseView.retry", "Retry");
   const retry = onRetry ? (
     <Button size="sm" variant="secondary" onClick={onRetry}>
-      {t("responseView.retry", "Retry")}
+      {retryLabel}
     </Button>
   ) : null;
+  const tools =
+    status === "done" && (hasText || onRetry) ? (
+      <>
+        {hasText && <CopyButton value={text} size="sm" variant="quiet" label={t("responseView.copy", "Copy response")} />}
+        {onRetry && <Button size="sm" variant="quiet" icon={icons.retry} aria-label={retryLabel} onClick={onRetry} />}
+      </>
+    ) : null;
+  const hasFooter = footer !== undefined && footer !== null;
   return (
     <article
       ref={ref}
@@ -156,7 +167,12 @@ export const ResponseView = forwardRef<HTMLElement, ResponseViewProps>(function 
         </div>
       )}
       {status === "done" && !hasText && <span className="px-12 text-small text-fg-tertiary">{t("responseView.noText", "The model returned no text")}</span>}
-      {footer !== undefined && footer !== null && <div className="min-w-0 px-12">{footer}</div>}
+      {(tools || hasFooter) && (
+        <div className="flex min-h-32 min-w-0 flex-wrap items-center gap-x-4 gap-y-4">
+          {tools}
+          {hasFooter && <div className={cn("min-w-0", tools ? "px-8" : "px-12")}>{footer}</div>}
+        </div>
+      )}
       <span id={announce} className="sr-only">
         {status === "pending"
           ? t("responseView.waiting", "Waiting for the response")
@@ -194,12 +210,12 @@ export const UserMessage = forwardRef<HTMLDivElement, UserMessageProps>(function
   const text = useRef<HTMLParagraphElement | null>(null);
   const clamped = useTruncated(text, maxLines > 0 && !all);
   return (
-    <div ref={ref} role="group" aria-label={ariaLabel} className={cn("flex min-w-0 flex-col items-start gap-2", className)}>
+    <div ref={ref} role="group" aria-label={ariaLabel} className={cn("flex min-w-0 flex-col items-end gap-2", className)}>
       <p
         id={body}
         ref={text}
         className={cn(
-          "max-w-prose min-w-0 px-12 text-body font-medium whitespace-pre-wrap wrap-break-word text-fg-secondary",
+          "max-w-prose min-w-0 rounded-frame bg-fill-1 px-16 py-10 text-body-lg whitespace-pre-wrap wrap-break-word text-fg",
           maxLines !== 0 && !all && CLAMP[maxLines],
         )}
       >

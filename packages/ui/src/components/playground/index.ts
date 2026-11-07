@@ -12,5 +12,3 @@ export { KAESO_PARAMETER_PANEL_DEFAULT_VARIANTS, KAESO_PARAMETER_PANEL_VARIANTS,
 export type { ParameterPanelProps, PlaygroundParameters, ReasoningEffort, ReasoningSummary } from "./parameter-panel.js";
 export { KAESO_MODEL_PICKER_DEFAULT_VARIANTS, KAESO_MODEL_PICKER_VARIANTS, ModelPicker, useModelGroups } from "./model-picker.js";
 export type { ModelPickerOption, ModelPickerProps, ModelPickerProvider, MultiModelPickerProps, SingleModelPickerProps } from "./model-picker.js";
-export { KAESO_PROMPT_SUGGESTIONS_DEFAULT_VARIANTS, KAESO_PROMPT_SUGGESTIONS_VARIANTS, PromptSuggestions } from "./prompt-suggestions.js";
-export type { PromptSuggestionsProps } from "./prompt-suggestions.js";

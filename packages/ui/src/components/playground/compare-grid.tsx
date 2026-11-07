@@ -208,16 +208,11 @@ const Root = forwardRef<HTMLDivElement, CompareGridProps>(function CompareGrid(
           className="relative min-h-0 min-w-0 flex-1 compare-grid"
         >
           {columns.map((col, i) => (
-            <ColumnContext.Provider key={col.key ?? i} value={{ index: i, count, divider, add: count === 1 ? add : null, removing }}>
+            <ColumnContext.Provider key={col.key ?? i} value={{ index: i, count, divider, add: i === count - 1 ? add : null, removing }}>
               {col}
             </ColumnContext.Provider>
           ))}
         </div>
-        {add && (
-          <div className={cn("hidden w-56 shrink-0 flex-col md:flex", KAESO_COMPARE_GRID_VARIANTS.divider[divider].classes)}>
-            <div className="flex h-52 shrink-0 items-center justify-center hairline-b">{add}</div>
-          </div>
-        )}
       </div>
     </div>
   );
@@ -306,7 +301,7 @@ const Column = forwardRef<HTMLElement, CompareColumnProps>(function CompareGridC
             }}
           />
         )}
-        {add && <span className="flex shrink-0 md:hidden">{add}</span>}
+        {add && <span className={cn("flex shrink-0", count > 1 && "max-md:hidden")}>{add}</span>}
       </header>
       <div className="min-h-0 min-w-0 compare-thread">
         <div

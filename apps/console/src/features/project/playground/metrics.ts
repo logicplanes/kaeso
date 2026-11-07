@@ -2,8 +2,7 @@ import type { PlaygroundModel } from "~/api/queries/playground";
 import { replyCost } from "./cost";
 import type { ResponseState } from "./responses";
 
-export function metricsOf(r: ResponseState | null, model: PlaygroundModel | null) {
-  if (!r) return {};
+export function metricsOf(r: ResponseState, model: PlaygroundModel | null) {
   const u = r.usage ?? null;
   return {
     timeToFirstToken: r.firstTokenAt != null ? Math.max(0, Math.round(r.firstTokenAt - r.startedAt)) : null,

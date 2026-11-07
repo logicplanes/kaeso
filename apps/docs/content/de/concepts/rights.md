@@ -230,7 +230,7 @@ Die [Platform API](../api/platform-api.md) beschreibt die Routen für Rechte, Ro
 | --- | --- | --- | --- |
 | `tools.view` | Tools ansehen | Die MCP-Server und Tools des Projekts sowie die mit seinem Portal verbundenen Clients sehen. |  |
 | `tools.manage` | Tools verwalten | Server und Tools des Projekts auswählen, festlegen, wer sie nutzen darf, und Clients trennen. | erfordert `tools.view` |
-| `tools.use` | Tools nutzen | Die Tools des Projekts über sein MCP-Portal und im Playground aufrufen. | erfordert `tools.view` |
+| `tools.use` | Tools nutzen | Die Tools des Projekts über sein MCP-Portal aufrufen. | erfordert `tools.view` |
 
 ### Limits & Budgets
 

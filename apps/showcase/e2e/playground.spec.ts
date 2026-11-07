@@ -23,7 +23,7 @@ test("Send and Stop keep the focus through a whole response", async ({ page }) =
   await expect(composer.getByRole("button", { name: "Send" })).toBeFocused();
 });
 
-test("a response keeps its text, footer and metrics on one line, code and tables on the edge", async ({ page }) => {
+test("a response keeps its text on one line, Copy on the edge before its metrics, code and tables on the edge", async ({ page }) => {
   await open(page, "/components/response-view/states");
   const light = page.locator('[data-states-theme="light"]');
   const withFooter = light.locator("[data-matrix='Done, no reasoning, with metrics'] article");
@@ -38,7 +38,10 @@ test("a response keeps its text, footer and metrics on one line, code and tables
         return Math.round(range.getBoundingClientRect().left);
       });
   const boxLeft = async (selector: string, scope = withFooter) => Math.round((await scope.locator(selector).first().boundingBox())!.x);
-  expect(await textLeft("dl")).toBe(await textLeft("p"));
+  const article = Math.round((await withFooter.boundingBox())!.x);
+  expect(await boxLeft("button")).toBe(article);
+  expect(await textLeft("p")).toBe(article + 12);
+  expect(await boxLeft("dl")).toBeGreaterThan(await boxLeft("button"));
   const mixed = light.locator("[data-matrix='A table and code'] article");
   const edge = Math.round((await mixed.boundingBox())!.x);
   expect(await boxLeft("table", mixed)).toBe(edge);

@@ -163,7 +163,7 @@
   "rights.serviceAccountsView.name": "查看服务账号",
   "rights.toolsManage.description": "选择项目的服务器和工具、谁可以使用它们，并断开客户端。",
   "rights.toolsManage.name": "管理工具",
-  "rights.toolsUse.description": "通过项目的 MCP 门户和在试验场中调用项目的工具。",
+  "rights.toolsUse.description": "通过项目的 MCP 门户调用项目的工具。",
   "rights.toolsUse.name": "使用工具",
   "rights.toolsView.description": "查看项目的 MCP 服务器和工具，以及连接到其门户的客户端。",
   "rights.toolsView.name": "查看工具",

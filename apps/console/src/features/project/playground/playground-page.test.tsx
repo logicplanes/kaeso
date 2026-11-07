@@ -5,7 +5,6 @@ import { hoverReason, notifications } from "~/test/fixtures/org";
 import { apiError, on, page, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
 import { eventStream, playgroundModel, sse } from "~/test/fixtures/project-logs";
-import { projectTool } from "~/test/fixtures/mcp";
 
 const MODELS = "orgs/:org/projects/:project/playground/models";
 const RESPONSES = "orgs/:org/projects/:project/playground/responses";
@@ -39,6 +38,8 @@ const pointer = (fine: boolean) =>
       }) as unknown as MediaQueryList,
   );
 const sentBodies = () => requests("POST", RESPONSES).map((r) => r.body as Record<string, unknown>);
+const addColumn = () => screen.getAllByRole("button", { name: "Add column" })[0] as HTMLElement;
+const EMPTY = "Send a prompt below to start.";
 
 describe("PlaygroundPage", () => {
   it("puts the cursor in the prompt once the models are ready, with a mouse or trackpad", async () => {
@@ -81,7 +82,7 @@ describe("PlaygroundPage", () => {
 
     expect(await screen.findByText("No models to try yet")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Add models" })).toHaveAttribute("href", `${PLAYGROUND.replace("/playground", "")}/models?add=true`);
-    expect(screen.getByRole("button", { name: "Add column" })).toBeDisabled();
+    expect(screen.queryByRole("button", { name: "Add column" })).not.toBeInTheDocument();
   });
 
   it("doesn't offer to add models without the right", async () => {
@@ -104,14 +105,14 @@ describe("PlaygroundPage", () => {
     const { user, router } = await renderApp(PLAYGROUND);
 
     await screen.findByText("claude-opus-5-5");
-    await user.click(screen.getByRole("button", { name: "Add column" }));
+    await user.click(addColumn());
     await waitFor(() => expect(router.state.location.search).toEqual({ models: "anthropic/claude-opus-5-5,openai/gpt-5.4-mini" }));
-    await user.click(screen.getByRole("button", { name: "Add column" }));
-    await user.click(screen.getByRole("button", { name: "Add column" }));
+    await user.click(addColumn());
+    await user.click(addColumn());
     await waitFor(() => expect(screen.getAllByRole("button", { description: "Model" })).toHaveLength(4));
-    const add = screen.getByRole("button", { name: "Add column" });
+    const add = addColumn();
     expect(add).toHaveAttribute("aria-disabled", "true");
-    await hoverReason(user, add, "Compare up to 4 models at once");
+    await hoverReason(user, add, "Compare up to 4 at once");
 
     expect(screen.getByRole("textbox", { name: "Prompt" })).toHaveAttribute("placeholder", "Send a prompt to every model");
     await user.type(screen.getByRole("textbox", { name: "Prompt" }), "Hi");
@@ -165,7 +166,7 @@ describe("PlaygroundPage", () => {
     const nano = within(await screen.findByRole("listbox")).getByRole("option", { name: /GPT-5.4 nano/ });
     act(() => {
       fireEvent.click(nano);
-      fireEvent.click(screen.getByRole("button", { name: "Add column" }));
+      fireEvent.click(addColumn());
     });
     await waitFor(() => expect(router.state.location.search).toEqual({ models: "openai/gpt-5.4-nano,anthropic/claude-opus-5-5" }));
   });
@@ -188,7 +189,7 @@ describe("PlaygroundPage", () => {
     expect(llama).toHaveAttribute("aria-disabled", "true");
     expect(llama).toHaveTextContent("The provider doesn't serve it");
     await user.keyboard("{Escape}{Escape}");
-    await user.click(screen.getByRole("button", { name: "Add column" }));
+    await user.click(addColumn());
     await waitFor(() => expect(router.state.location.search).toEqual({ models: "openai/gpt-5.4-mini,openai/gpt-5.4-mini" }));
   });
 
@@ -233,7 +234,7 @@ describe("PlaygroundPage", () => {
     await waitFor(() => expect(router.state.location.search).toEqual({ system: "Be terse." }));
   });
 
-  it("fills the prompt from a suggestion and keeps the draft", async () => {
+  it("brings back an unsent draft and keeps what is typed", async () => {
     signedIn();
     on("GET", MODELS, page([playgroundModel()]));
     window.localStorage.setItem(`kaeso:playground-draft:${PROJECT}`, "Unsent question");
@@ -241,9 +242,9 @@ describe("PlaygroundPage", () => {
 
     const prompt = await screen.findByRole("textbox", { name: "Prompt" });
     expect(prompt).toHaveValue("Unsent question");
-    await user.click(screen.getByRole("button", { name: "Write a haiku about latency" }));
-    expect(prompt).toHaveValue("Write a haiku about latency");
-    expect(window.localStorage.getItem(`kaeso:playground-draft:${PROJECT}`)).toBe("Write a haiku about latency");
+    await user.type(prompt, " again");
+    expect(prompt).toHaveValue("Unsent question again");
+    expect(window.localStorage.getItem(`kaeso:playground-draft:${PROJECT}`)).toBe("Unsent question again");
   });
 
   it("retries a failed reply and clears the threads", async () => {
@@ -258,7 +259,7 @@ describe("PlaygroundPage", () => {
     const { user } = await renderApp(PLAYGROUND);
 
     await screen.findByText("gpt-5.4-mini");
-    expect(screen.getByText("Nothing sent yet")).toBeInTheDocument();
+    expect(screen.getByText(EMPTY)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Clear" })).not.toBeInTheDocument();
     await user.type(screen.getByRole("textbox", { name: "Prompt" }), "Hi");
     await user.click(screen.getByRole("button", { name: "Send" }));
@@ -273,7 +274,7 @@ describe("PlaygroundPage", () => {
 
     await user.click(screen.getByRole("button", { name: "Clear" }));
     await waitFor(() => expect(screen.queryByText("Second try worked.")).not.toBeInTheDocument());
-    expect(screen.getByRole("button", { name: "Write a haiku about latency" })).toBeInTheDocument();
+    expect(screen.getByText(EMPTY)).toBeInTheDocument();
     expect(await notifications().findByText("Conversation cleared")).toBeInTheDocument();
     await user.click(notifications().getByRole("button", { name: "Undo" }));
     expect(await screen.findByText("Second try worked.")).toBeInTheDocument();
@@ -316,7 +317,7 @@ describe("PlaygroundPage", () => {
     await user.click(screen.getByRole("button", { name: "Clear" }));
     await router.navigate({ to: "/orgs/$org/projects/$project/keys", params: { org: ORG, project: PROJECT } });
     await router.navigate({ to: "/orgs/$org/projects/$project/playground", params: { org: ORG, project: PROJECT } });
-    expect(await screen.findByText("Nothing sent yet")).toBeInTheDocument();
+    expect(await screen.findByText(EMPTY)).toBeInTheDocument();
   });
 
   it("sends the earlier turns with a follow-up", async () => {
@@ -437,7 +438,7 @@ describe("PlaygroundPage", () => {
     const { user, router } = await renderApp(PLAYGROUND);
 
     expect((await notifications().findAllByText("Models are hidden from you.")).length).toBeGreaterThan(0);
-    await user.click(screen.getByRole("button", { name: "Add column" }));
+    await user.click(addColumn());
     expect(router.state.location.search).toEqual({});
     expect(screen.getAllByRole("button", { description: "Model" })).toHaveLength(1);
   });
@@ -471,102 +472,35 @@ describe("PlaygroundPage", () => {
   });
 });
 
-describe("PlaygroundPage with tools", () => {
-  const TOOLS = "orgs/:org/projects/:project/tools";
-  const CALL = `${TOOLS}/:tool/call`;
-  const calling = (calls: { call_id: string; name: string; arguments: string }[]) =>
-    eventStream(
-      sse([
-        { type: "response.created" },
-        { type: "response.completed", response: { output: calls.map((c) => ({ type: "function_call", ...c })), usage: { input_tokens: 3, output_tokens: 2 } } },
-      ]),
-    );
-
-  it("sends the project's tools, asks before each call, and answers the model", async () => {
+describe("PlaygroundPage without tools", () => {
+  it("sends the prompt alone, with no tools and no Tools switch, and puts the metrics under the reply", async () => {
     signedIn();
     on("GET", MODELS, page([playgroundModel()]));
-    on("GET", TOOLS, page([projectTool(), projectTool({ name: "create_post" }), projectTool({ name: "off", offered: false })]));
-    let replies = 0;
-    on("POST", RESPONSES, () =>
-      ++replies === 1
-        ? calling([
-            { call_id: "fc_1", name: "x__get_me", arguments: '{"who":"me"}' },
-            { call_id: "fc_2", name: "x__create_post", arguments: "not json" },
-            { call_id: "fc_3", name: "x__gone", arguments: "{}" },
-          ])
-        : reply("You are Ada."),
-    );
-    on("POST", CALL, ({ params }: { params: Record<string, string> }) =>
-      params.tool === "tool_get_me"
-        ? { result: { content: [{ type: "text", text: "Ada" }], isError: false }, error: null }
-        : apiError(503, "unavailable", "Try again."),
-    );
+    on("POST", RESPONSES, () => reply("Hello."));
     const { user } = await renderApp(PLAYGROUND);
     await screen.findByText("gpt-5.4-mini");
-    await user.click(screen.getByRole("switch", { name: "Tools" }));
-    await user.type(screen.getByRole("textbox", { name: "Prompt" }), "Who am I?");
+    expect(screen.queryByRole("switch")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { description: "Model" })).not.toHaveClass("w-full");
+    await user.type(screen.getByRole("textbox", { name: "Prompt" }), "Hi");
     await user.click(screen.getByRole("button", { name: "Send" }));
-    expect(await screen.findByText("x__get_me")).toBeInTheDocument();
-    const sent = sentBodies()[0] as { tools: { name: string }[] };
-    expect(sent.tools.map((x) => x.name)).toEqual(["x__get_me", "x__create_post"]);
-    const runs = screen.getAllByRole("button", { name: "Run" });
-    await user.click(runs[0] as HTMLElement);
-    expect(await screen.findByText("Ada")).toBeInTheDocument();
-    await user.click(screen.getAllByRole("button", { name: "Run" })[0] as HTMLElement);
-    expect(await screen.findByText("Try again.")).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Run" }));
-    expect(await screen.findByText("You are Ada.")).toBeInTheDocument();
-    expect(screen.getByText("This project has no tool x__gone.")).toBeInTheDocument();
-    expect(screen.getAllByText(/^Called/)).toHaveLength(3);
-    expect(screen.getByText("Sent the tools' answers")).toBeInTheDocument();
-    const follow = sentBodies()[1] as { input: Record<string, unknown>[] };
-    expect(follow.input.filter((i) => i.type === "function_call_output")).toEqual([
-      { type: "function_call_output", call_id: "fc_1", output: "Ada" },
-      { type: "function_call_output", call_id: "fc_2", output: "Try again." },
-      { type: "function_call_output", call_id: "fc_3", output: "This project has no tool x__gone." },
-    ]);
-    expect(requests("POST", CALL).map((r) => r.body)).toEqual([{ arguments: { who: "me" } }, { arguments: "not json" }]);
+    const answer = await screen.findByRole("article", { name: "GPT-5.4 mini response" });
+    expect(await within(answer).findByText("3 in · 2 out")).toBeInTheDocument();
+    expect(sentBodies()[0]).not.toHaveProperty("tools");
+    expect(screen.queryByText(EMPTY)).not.toBeInTheDocument();
   });
 
-  it("skips a call, retries the answer, and keeps tools off without the right", async () => {
+  it("tells a column added mid-conversation that answers arrive from the next prompt, and shows no metrics for a refused reply", async () => {
     signedIn();
-    on("GET", MODELS, page([playgroundModel()]));
-    on("GET", TOOLS, page([projectTool()]));
-    let replies = 0;
-    on("POST", RESPONSES, () => {
-      replies += 1;
-      if (replies === 1) return calling([{ call_id: "fc_1", name: "x__get_me", arguments: "{}" }]);
-      if (replies === 2) return apiError(503, "unavailable", "Try again shortly.");
-      return reply("Fine.");
-    });
+    on("GET", MODELS, page([playgroundModel(), claude]));
+    on("POST", RESPONSES, () => apiError(502, "internal", "The gateway failed."));
     const { user } = await renderApp(PLAYGROUND);
-    await screen.findByText("gpt-5.4-mini");
-    await user.click(screen.getByRole("switch", { name: "Tools" }));
-    await user.type(screen.getByRole("textbox", { name: "Prompt" }), "Who am I?");
+    await screen.findByText("claude-opus-5-5");
+    await user.type(screen.getByRole("textbox", { name: "Prompt" }), "Hi");
     await user.click(screen.getByRole("button", { name: "Send" }));
-    await user.click(await screen.findByRole("button", { name: "Skip" }));
-    expect(await screen.findByText("The person chose not to run this tool.")).toBeInTheDocument();
-    await user.click(await screen.findByRole("button", { name: "Retry" }, { timeout: 5000 }));
-    expect(await screen.findByText("Fine.")).toBeInTheDocument();
-    const retried = sentBodies()[2] as { input: Record<string, unknown>[] };
-    expect(retried.input.at(-1)).toEqual({ type: "function_call_output", call_id: "fc_1", output: "The person chose not to run this tool." });
-  });
-
-  it("offers no tools without the right to use them, and none when the project offers none", async () => {
-    signedIn({ projectRights: without("tools.use") });
-    on("GET", MODELS, page([playgroundModel()]));
-    await renderApp(PLAYGROUND);
-    await screen.findByText("gpt-5.4-mini");
-    expect(screen.queryByRole("switch", { name: "Tools" })).not.toBeInTheDocument();
-  });
-
-  it("says the project offers no tools yet", async () => {
-    signedIn();
-    on("GET", MODELS, page([playgroundModel()]));
-    on("GET", TOOLS, page([]));
-    await renderApp(PLAYGROUND);
-    await screen.findByText("gpt-5.4-mini");
-    expect(screen.getByRole("switch", { name: "Tools" })).toHaveAttribute("aria-disabled", "true");
-    expect(screen.getAllByText("The project offers no tools yet").length).toBeGreaterThan(0);
+    const failure = await screen.findByRole("alert");
+    expect(failure).toHaveTextContent("The gateway failed.");
+    expect(screen.queryByRole("definition")).not.toBeInTheDocument();
+    await user.click(addColumn());
+    expect(await screen.findByText("Answers appear here from the next prompt you send.")).toBeInTheDocument();
   });
 });
