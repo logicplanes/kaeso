@@ -8,7 +8,7 @@ order: 4
 
 ## 快速服务器
 
-[在 AWS 上启动](https://console.aws.amazon.com/cloudformation/home#/stacks/create/review?templateURL=https%3A%2F%2Fkaeso-cloudformation.s3.amazonaws.com%2Flatest%2Fquick-server.yaml&stackName=kaeso) 会在 CloudFormation 中打开已发布的快速服务器模板。同一文件位于仓库的 `deploy/aws/quick-server.yaml`。
+[在 AWS 上启动](https://console.aws.amazon.com/cloudformation/home#/stacks/create/review?templateURL=https%3A%2F%2Fkaeso-cloudformation.s3.amazonaws.com%2Flatest%2Fquick-server.yaml&stackName=kaeso) 会在 CloudFormation 中打开已发布的快速服务器模板。同一文件位于仓库的 `deploy/aws/quick-server.yaml`。每个版本都会把两个模板上传到 `https://kaeso-cloudformation.s3.amazonaws.com/vX.Y.Z/`，稳定版本还会上传到 `latest/`（[发布](../../development/releasing.md)）。
 
 `deploy/aws/quick-server.yaml` 创建一台运行 Ubuntu 24.04 的 Graviton 实例、一个弹性 IP、一个允许 HTTP、HTTPS 和 HTTP/3 的安全组、来自您选定地址范围的 SSH，以及可选的 Route 53 记录。首次启动时，实例运行安装程序：安装 Docker、写入设置，并启动带 Caddy、内置 ClickHouse 和更新器的 Compose 软件包（[安装](../installation.md)）。
 

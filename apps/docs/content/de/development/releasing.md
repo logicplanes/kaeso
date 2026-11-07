@@ -132,6 +132,7 @@ Ein Release veröffentlicht:
 | GitHub Container Registry | `kaeso-gateway`, `kaeso-console` und `kaeso-updater` für `linux/amd64` und `linux/arm64`, mit Build-Provenienz und einer Software-Stückliste (SBOM) |
 | crates.io | `kaeso-kpp` und `kaeso-codecs` |
 | npm | `@logicplanes/kaeso-ui` und `@logicplanes/kaeso-tokens` |
+| Amazon S3 | `deploy/aws/quick-server.yaml` und `managed.yaml` unter `https://kaeso-cloudformation.s3.amazonaws.com/vX.Y.Z/` und, bei stabilen Releases, `latest/`, das der Knopf „Auf AWS starten“ öffnet ([AWS](../self-hosting/platforms/aws.md)) |
 
 Images bekommen die Version als Tag und bei stabilen Releases außerdem `MAJOR.MINOR`, `latest` und ab 1.0.0 `MAJOR`.
 

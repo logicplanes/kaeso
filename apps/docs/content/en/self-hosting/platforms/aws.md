@@ -8,7 +8,7 @@ order: 4
 
 ## Quick server
 
-[Launch on AWS](https://console.aws.amazon.com/cloudformation/home#/stacks/create/review?templateURL=https%3A%2F%2Fkaeso-cloudformation.s3.amazonaws.com%2Flatest%2Fquick-server.yaml&stackName=kaeso) opens the published quick-server template in CloudFormation. The same file is at `deploy/aws/quick-server.yaml` in the repository.
+[Launch on AWS](https://console.aws.amazon.com/cloudformation/home#/stacks/create/review?templateURL=https%3A%2F%2Fkaeso-cloudformation.s3.amazonaws.com%2Flatest%2Fquick-server.yaml&stackName=kaeso) opens the published quick-server template in CloudFormation. The same file is at `deploy/aws/quick-server.yaml` in the repository. Every release uploads both templates to `https://kaeso-cloudformation.s3.amazonaws.com/vX.Y.Z/`, and a stable release to `latest/` ([releasing](../../development/releasing.md)).
 
 `deploy/aws/quick-server.yaml` creates one Graviton instance with Ubuntu 24.04, an Elastic IP, a security group for HTTP, HTTPS and HTTP/3, SSH from an address range you choose, and an optional Route 53 record. At first boot, the instance runs the installer, which installs Docker, writes the settings and starts the Compose package with Caddy, bundled ClickHouse and the updater ([installation](../installation.md)).
 
