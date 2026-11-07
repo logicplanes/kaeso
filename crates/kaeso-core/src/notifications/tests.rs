@@ -53,6 +53,35 @@ fn security_kinds_are_always_sent_now() {
 }
 
 #[test]
+fn scheduled_kinds_are_on_or_off_and_the_rest_take_the_digest() {
+    let scheduled: Vec<&str> = Kind::ALL
+        .iter()
+        .filter(|k| k.scheduled())
+        .map(|k| k.as_str())
+        .collect();
+    assert_eq!(scheduled, ["weekly_summary", "cost_report"]);
+    for k in Kind::ALL {
+        assert!(!(k.scheduled() && k.always()), "{k}");
+        assert!(
+            k.deliveries().contains(&k.default_delivery()),
+            "{k}'s default is one of its choices"
+        );
+        if k.scheduled() {
+            assert_eq!(k.deliveries(), [Delivery::Now, Delivery::Off], "{k}");
+            assert!(!k.allows(Delivery::Daily), "{k}");
+            assert_eq!(k.chosen(Some(Delivery::Daily)), Delivery::Now, "{k}");
+        } else if k.always() {
+            assert!(Delivery::ALL.iter().all(|d| !k.allows(*d)), "{k}");
+            assert_eq!(k.chosen(Some(Delivery::Off)), Delivery::Now, "{k}");
+        } else {
+            assert_eq!(k.deliveries(), Delivery::ALL, "{k}");
+            assert_eq!(k.chosen(Some(Delivery::Daily)), Delivery::Daily, "{k}");
+        }
+        assert_eq!(k.chosen(None), k.default_delivery(), "{k}");
+    }
+}
+
+#[test]
 fn only_kinds_about_yourself_name_no_right() {
     let about_you: Vec<&str> = Kind::ALL
         .iter()
@@ -72,17 +101,24 @@ fn only_kinds_about_yourself_name_no_right() {
 
 fn reference() -> String {
     let mut out = String::from(
-        "| Kind | Area | Name | Default | Always | Rights | Description |\n| --- | --- | --- | --- | --- | --- | --- |\n",
+        "| Kind | Area | Name | Default | Choices | Always | Rights | Description |\n| --- | --- | --- | --- | --- | --- | --- | --- |\n",
     );
     for k in Kind::ALL {
         let rights: Vec<String> = k.rights().iter().map(|r| format!("`{r}`")).collect();
+        let choices: Vec<String> = k.deliveries().iter().map(|d| d.to_string()).collect();
+        let choices = if k.always() {
+            String::new()
+        } else {
+            choices.join(", ")
+        };
         let _ = writeln!(
             out,
-            "| `{}` | {} | {} | {} | {} | {} | {} |",
+            "| `{}` | {} | {} | {} | {} | {} | {} | {} |",
             k.as_str(),
             k.area().name(),
             k.name(),
             k.default_delivery(),
+            choices,
             if k.always() { "✓" } else { "" },
             rights.join(", "),
             k.description()

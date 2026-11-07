@@ -93,12 +93,7 @@ pub fn deliveries(settings: &[notifications::Setting]) -> HashMap<Kind, Delivery
                 .iter()
                 .find(|s| s.kind == k.as_str())
                 .and_then(|s| s.delivery.parse().ok());
-            let delivery = if k.always() {
-                Delivery::Now
-            } else {
-                chosen.unwrap_or(k.default_delivery())
-            };
-            (*k, delivery)
+            (*k, k.chosen(chosen))
         })
         .collect()
 }

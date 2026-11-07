@@ -5864,7 +5864,7 @@
         "tags": [
           "me"
         ],
-        "summary": "Chooses when emails go out: now, in the daily digest or not at all.\nSecurity emails have no setting.",
+        "summary": "Chooses when emails go out: now, in the daily digest or not at all. A\nscheduled email is on (`now`) or `off`; security emails have no setting.",
         "description": "**Access:** a signed-in console session, or an agent granted `account.notifications.manage`.",
         "operationId": "putMeNotifications",
         "requestBody": {
@@ -31157,6 +31157,8 @@
           "name",
           "description",
           "always",
+          "scheduled",
+          "deliveries",
           "default",
           "delivery"
         ],
@@ -31168,6 +31170,13 @@
           "default": {
             "$ref": "#/components/schemas/NotificationDelivery",
             "description": "The delivery without a choice of the user's."
+          },
+          "deliveries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NotificationDelivery"
+            },
+            "description": "The deliveries the user can choose; empty for a security email."
           },
           "delivery": {
             "$ref": "#/components/schemas/NotificationDelivery",
@@ -31191,6 +31200,10 @@
               "null"
             ],
             "description": "The right that makes the user responsible, such as `members.invite`; `null` for\nan email about the user's own account, access or keys."
+          },
+          "scheduled": {
+            "type": "boolean",
+            "description": "Goes out on the schedule its description names, such as every Monday; `now` turns\nit on and `off` off, and the daily digest is no choice."
           }
         }
       },

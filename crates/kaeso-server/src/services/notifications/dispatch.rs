@@ -309,14 +309,7 @@ pub async fn deliver(
         if person.state != "active" || muted.contains(&person.id) {
             continue;
         }
-        let delivery = if kind.always() {
-            Delivery::Now
-        } else {
-            chosen
-                .get(&person.id)
-                .copied()
-                .unwrap_or(kind.default_delivery())
-        };
+        let delivery = kind.chosen(chosen.get(&person.id).copied());
         if delivery == Delivery::Off {
             continue;
         }
