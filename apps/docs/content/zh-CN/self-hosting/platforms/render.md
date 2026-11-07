@@ -47,7 +47,7 @@ order: 1
 
 ## 依据
 
-蓝图的结构、服务类型、套餐名称、`fromService` 和 `fromDatabase` 引用以及 `ipAllowList` 都遵循 2026 年 11 月 6 日阅读的 Render 蓝图规范。2026-11-07，蓝图从法兰克福的空白 Render 项目创建。它创建了全部五个资源，设置邮件送达，健康与就绪检查通过，流式回复进入请求日志，伪造的 `X-Forwarded-For` 被 Cloudflare 的 `CF-Connecting-IP` 地址替换（[已验证的内容](index.md#已验证的内容)）。实际测试发现并验证了转发地址问题的修复。
+蓝图的结构、服务类型、套餐名称、`fromService` 和 `fromDatabase` 引用以及 `ipAllowList` 都遵循 2026 年 11 月 6 日阅读的 Render 蓝图规范。2026-11-07，蓝图从法兰克福的空白 Render 项目创建。它创建了全部五个资源，设置邮件送达，健康与就绪检查通过，流式回复进入请求日志。实际测试还发现 Render 会追加调用方的 `X-Forwarded-For`；边缘现在改为读取由 Cloudflare 覆盖的 `CF-Connecting-IP`。该修复通过了本地边缘集成测试和 Render 配置检查，但尚未在实际部署上重新测试（[已验证的内容](index.md#已验证的内容)）。
 
 ## 下一步
 

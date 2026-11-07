@@ -47,7 +47,7 @@ Ein Release ändert die Image-Tags in `render.yaml`. Auf der Seite des Blueprint
 
 ## Worauf das beruht
 
-Form des Blueprints, Diensttypen, Plannamen, die Verweise `fromService` und `fromDatabase` sowie `ipAllowList` folgen Renders Blueprint-Spezifikation, gelesen am 6. November 2026. Am 2026-11-07 wurde der Blueprint aus einem leeren Render-Projekt in Frankfurt erstellt. Er legte alle fünf Ressourcen an, die Einrichtungs-E-Mail kam an, Health- und Readiness-Prüfungen bestanden, eine gestreamte Antwort erschien im Anfrageprotokoll, und ein gefälschtes `X-Forwarded-For` wurde durch die Adresse in Cloudflares `CF-Connecting-IP` ersetzt ([was geprüft wurde](index.md#was-geprüft-wurde)). Der Live-Test fand den Fehler mit der weitergeleiteten Adresse und prüfte die korrigierte Konfiguration.
+Form des Blueprints, Diensttypen, Plannamen, die Verweise `fromService` und `fromDatabase` sowie `ipAllowList` folgen Renders Blueprint-Spezifikation, gelesen am 6. November 2026. Am 2026-11-07 wurde der Blueprint aus einem leeren Render-Projekt in Frankfurt erstellt. Er legte alle fünf Ressourcen an, die Einrichtungs-E-Mail kam an, Health- und Readiness-Prüfungen bestanden und eine gestreamte Antwort erschien im Anfrageprotokoll. Der Live-Test zeigte außerdem, dass Render an das vom Aufrufer gesetzte `X-Forwarded-For` anhängt; der Edge liest nun den von Cloudflare überschriebenen Header `CF-Connecting-IP`. Diese Korrektur besteht den lokalen Edge-Integrationstest und die Prüfung der Render-Konfiguration, wurde aber noch nicht auf einer Live-Bereitstellung erneut getestet ([was geprüft wurde](index.md#was-geprüft-wurde)).
 
 ## Nächste Schritte
 

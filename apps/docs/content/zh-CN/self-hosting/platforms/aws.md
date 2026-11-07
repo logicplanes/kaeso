@@ -63,7 +63,7 @@ aws cloudformation deploy --stack-name kaeso --template-file deploy/aws/managed.
 
 ## 依据
 
-两个模板都通过 `cfn-lint`，CI 会运行它。2026-11-07，已发布的快速服务器模板在空白 AWS 账户的 `us-east-1` 中创建了堆栈，并安装 第 8 个候选版本。设置链接、HTTPS 健康与就绪检查、控制台和 API 路由、流式回复、ClickHouse 请求日志，以及替换伪造 `X-Forwarded-For` 均通过（[已验证的内容](index.md#已验证的内容)）。托管堆栈只通过了 lint；使用前请先在一次性账户中部署。
+两个模板都通过 `cfn-lint`，CI 会运行它。2026-11-07，已发布的快速服务器模板在空白 AWS 账户的 `us-east-1` 中创建了堆栈，并安装 第 8 个候选版本。首次启动暴露出所有权问题：模板在安装后更改了 `/opt/kaeso` 的所有权，导致网关无法读取主密钥文件。在测试实例上恢复所有权后，设置链接、HTTPS 健康与就绪检查、控制台和 API 路由、流式回复、ClickHouse 请求日志，以及替换伪造 `X-Forwarded-For` 均通过（[已验证的内容](index.md#已验证的内容)）。模板现在不再更改安装器拥有的文件，并有回归检查拒绝旧的 `chown`；修正后的模板尚未从空白账户重新部署。托管堆栈只通过了 lint；使用前请先在一次性账户中部署。
 
 ## 下一步
 

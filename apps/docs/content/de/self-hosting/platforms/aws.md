@@ -63,7 +63,7 @@ Ein Release ändert die Image-Tags in `managed.yaml`. Rollen Sie die neue Vorlag
 
 ## Worauf das beruht
 
-Beide Vorlagen bestehen `cfn-lint`, das CI ausführt. Am 2026-11-07 legte die veröffentlichte Vorlage des schnellen Servers in einem leeren AWS-Konto in `us-east-1` einen Stack an und installierte den achten Release-Kandidaten. Einrichtungslink, HTTPS-Health- und Readiness-Prüfungen, Konsole und API-Pfade, eine gestreamte Antwort, das ClickHouse-Anfrageprotokoll und das Ersetzen eines gefälschten `X-Forwarded-For` bestanden ([was geprüft wurde](index.md#was-geprüft-wurde)). Der verwaltete Stack wurde nur gelintet; rollen Sie ihn vor dem produktiven Einsatz in einem Wegwerf-Konto aus.
+Beide Vorlagen bestehen `cfn-lint`, das CI ausführt. Am 2026-11-07 legte die veröffentlichte Vorlage des schnellen Servers in einem leeren AWS-Konto in `us-east-1` einen Stack an und installierte den achten Release-Kandidaten. Der erste Start zeigte einen Besitzfehler: Die Vorlage übernahm `/opt/kaeso` nach der Installation, sodass das Gateway die Master-Key-Datei nicht lesen konnte. Nachdem der Besitz auf der Testinstanz wiederhergestellt war, bestanden Einrichtungslink, HTTPS-Health- und Readiness-Prüfungen, Konsole und API-Pfade, eine gestreamte Antwort, das ClickHouse-Anfrageprotokoll und das Ersetzen eines gefälschten `X-Forwarded-For` ([was geprüft wurde](index.md#was-geprüft-wurde)). Die Vorlage lässt die Datei des Installers jetzt unverändert, und ein Regressionstest lehnt das alte `chown` ab; die korrigierte Vorlage wurde noch nicht erneut aus einem leeren Konto ausgerollt. Der verwaltete Stack wurde nur gelintet; rollen Sie ihn vor dem produktiven Einsatz in einem Wegwerf-Konto aus.
 
 ## Nächste Schritte
 

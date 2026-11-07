@@ -60,14 +60,14 @@ AWS 和 Google Cloud 不是一键部署：您需要选择区域、域名及其�
 
 2026-11-06，边缘、网关和控制台已在本地 Docker 中验证：路径路由、分块流、伪造的客户端地址，以及网关不可用时各 API 的错误格式（`e2e/install/test_edge.py`）。CI 会重复模板、lint 和格式检查。
 
-2026-11-07，快速服务器已从空白云账户部署：AWS 模板在 `us-east-1` 创建 CloudFormation 堆栈，Google Cloud 配置在 `europe-west3` 的新项目中应用；两者都安装了 第 8 个候选版本。两者都创建了第一个用户，通过一个 HTTPS 源提供控制台和 API，流式发送了五个 SSE 事件且文本正好为 `Kaeso stream works.`，把请求写入 ClickHouse，并忽略了伪造的 `X-Forwarded-For`。
+2026-11-07，快速服务器已从空白云账户部署：AWS 模板在 `us-east-1` 创建 CloudFormation 堆栈，Google Cloud 配置在 `europe-west3` 的新项目中应用；两者都安装了 第 8 个候选版本。Google Cloud 部署创建了第一个用户，通过一个 HTTPS 源提供控制台和 API，流式发送了五个 SSE 事件且文本正好为 `Kaeso stream works.`，把请求写入 ClickHouse，并忽略了伪造的 `X-Forwarded-For`。AWS 部署在测试实例上恢复密钥文件的安装器所有权后，才创建第一个用户并通过相同检查。模板现在不再更改该所有权，但修正后的模板尚未从空白账户重新部署。
 
-同一天，Render 蓝图从法兰克福的空白 Render 项目创建。它按固定版本的 `render.yaml` 创建了全部五个资源，发送了一次性设置邮件，通过边缘、网关和就绪检查，流式发送同一回复并记录请求。实际测试发现 Render 会追加调用方的 `X-Forwarded-For`；现在 Render 上的边缘读取由 Cloudflare 覆盖的 `CF-Connecting-IP` 头。修复后，带伪造 `X-Forwarded-For` 的测试通过。
+同一天，Render 蓝图从法兰克福的空白 Render 项目创建。它按固定版本的 `render.yaml` 创建了全部五个资源，发送了一次性设置邮件，通过边缘、网关和就绪检查，流式发送同一回复并记录请求。实际测试还发现 Render 会追加调用方的 `X-Forwarded-For`；现在 Render 上的边缘读取由 Cloudflare 覆盖的 `CF-Connecting-IP` 头。该修复通过了本地边缘集成测试和 Render 配置检查，但尚未在实际 Render 部署上重新测试。
 
 | 平台 | 从空白账户进行的实际测试 |
 | --- | --- |
-| Render | 蓝图和设置邮件流程于 2026-11-07 通过 |
-| AWS 快速服务器 | CloudFormation 堆栈和设置链接于 2026-11-07 通过 |
+| Render | 蓝图、设置邮件、路由、流和日志记录于 2026-11-07 通过；修正后的客户端地址有本地回归测试，但未重新进行实际测试 |
+| AWS 快速服务器 | 2026-11-07 在测试实例上修正主密钥所有权后，堆栈和应用检查通过；修正后的模板尚未重新部署 |
 | Google Cloud 快速服务器 | Terraform 配置和设置链接于 2026-11-07 通过 |
 | AWS 和 Google Cloud 托管堆栈 | 已通过 CI 的 lint 和格式检查；本轮未部署 |
 | Railway | 受阻：登录的测试工作区试用已过期，Railway 要求升级套餐后才能应用新基础设施 |
