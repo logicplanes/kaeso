@@ -91,7 +91,6 @@ Resources:
             apt-get update -q
             apt-get install -y -q curl ca-certificates
             curl -fsSL https://kaeso.app/install.sh | sh -s -- --domain "${Domain}" --dir /opt/kaeso --install-docker ${VersionFlag}
-            chown -R ubuntu:ubuntu /opt/kaeso
           - VersionFlag: !If [HasVersion, !Sub "--version ${KaesoVersion}", ""]
       Tags:
         - { Key: Name, Value: !Sub "${AWS::StackName}-kaeso" }
