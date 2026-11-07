@@ -4,6 +4,33 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 ## [Unreleased]
 
+## [0.6.0-rc.7] - 2026-11-07
+
+### Changed
+
+- The console patches the router's code-split wrapper so a route replayed after its module arrived calls use() again, as React 19 expects ([#731](https://github.com/logicplanes/kaeso/pull/731))
+- The README shows the console's pages in a theme-aware grid, a diagram of where Kaeso sits, what makes it different and the deploy buttons ([#734](https://github.com/logicplanes/kaeso/pull/734))
+- The create-key step shows its access choices and Tools as one box, through card variants of Checkbox and CheckboxGroup that share a SettingsGroup's surface ([#735](https://github.com/logicplanes/kaeso/pull/735))
+- The consent page sums up a client's tools per server and opens to their names, and the Tools tab turns every tool of a server on or off at once ([#738](https://github.com/logicplanes/kaeso/pull/738))
+- The create-key step offers Inference, Platform and Tools as three checkboxes in one box, and needs at least one API ([#739](https://github.com/logicplanes/kaeso/pull/739))
+- The gateway connects to Valkey over TLS, with KAESO_VALKEY_CA for a server whose authority is private ([#740](https://github.com/logicplanes/kaeso/pull/740))
+- DigitalOcean App Platform runs Kaeso from an app spec, with a guide, CI checks and the release pinning its images ([#741](https://github.com/logicplanes/kaeso/pull/741))
+
+#### Gateway
+
+- A response cache clear keeps the replies stored since the clear, because the sweep removes only the retired generations ([#732](https://github.com/logicplanes/kaeso/pull/732))
+- A fresh install starts with KPMR's model data as of 6 November 2026, 23:33 UTC ([#737](https://github.com/logicplanes/kaeso/pull/737))
+
+#### Documentation
+
+- The README offers Deploy to Render and Open in Cloud Shell buttons, and the platform pages link the same way ([#730](https://github.com/logicplanes/kaeso/pull/730))
+
+### Fixed
+
+#### Gateway
+
+- Tool calls from newest-version clients reach older MCP servers without the newest version's `_meta` claims ([#736](https://github.com/logicplanes/kaeso/pull/736))
+
 ## [0.6.0-rc.6] - 2026-11-06
 
 This release gives every project an MCP portal for approved upstream tools, with client sign-in, change review, access controls, limits, logs and console management. It also adds configurable notification emails, managed-platform deployment templates, multi-gateway Compose installs and more resilient alias routing. One configuration compatibility path is removed: installs still using `models_dev.*` settings must rename them before upgrading.
@@ -1402,7 +1429,8 @@ The first release of Kaeso, the open-source AI gateway you run yourself: the gat
 
 - A Release workflow that runs only from `prod`: it prepares the version changes and the changelog without write access to the repository, lets only jobs that run nothing but git push the release commit and the tag, syncs the release commit back to `dev`, and pins every action by commit SHA.
 
-[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.6.0-rc.6...HEAD
+[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.6.0-rc.7...HEAD
+[0.6.0-rc.7]: https://github.com/logicplanes/kaeso/releases/tag/v0.6.0-rc.7
 [0.6.0-rc.6]: https://github.com/logicplanes/kaeso/releases/tag/v0.6.0-rc.6
 [0.6.0-rc.4]: https://github.com/logicplanes/kaeso/releases/tag/v0.6.0-rc.4
 [0.6.0-rc.3]: https://github.com/logicplanes/kaeso/releases/tag/v0.6.0-rc.3
