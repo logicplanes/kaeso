@@ -813,21 +813,32 @@ async fn tool_and_reasoning_controls_a_model_rejects_are_refused_in_the_apps_wor
     let r = call(&env, "/v1/messages", Some(&env.key), true, Some(own)).await;
     assert_eq!(r.status, StatusCode::OK, "{}", r.text());
 
-    let before = env.mock.received().len();
     let minimal =
         json!({"model": "claude-opus-5-5", "input": "Hi", "reasoning": {"effort": "minimal"}});
     let r = call(&env, "/v1/responses", Some(&env.key), false, Some(minimal)).await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(r.header("kaeso-adapted"), Some("reasoning.effort"));
+    assert_eq!(
+        env.mock.last().unwrap().json()["output_config"]["effort"],
+        "low",
+        "the nearest level Claude lists"
+    );
+    let turbo = json!({"model": "claude-opus-5-5", "input": "Hi", "reasoning": {"effort": "turbo"}});
+    let r = call(&env, "/v1/responses", Some(&env.key), false, Some(turbo)).await;
     assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
     assert_eq!(r.json()["error"]["param"], "reasoning.effort");
+    let before = env.mock.received().len();
     let mut adaptive = messages("claude-opus-4-5", "Hi");
     adaptive["thinking"] = json!({"type": "adaptive"});
     let r = call(&env, "/v1/messages", Some(&env.key), true, Some(adaptive)).await;
-    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(r.header("kaeso-adapted"), Some("thinking"));
     assert_eq!(
-        r.json()["error"]["message"],
-        "The model `claude-opus-4-5` has no adaptive thinking; send `enabled` thinking with `budget_tokens`."
+        env.mock.last().unwrap().json()["thinking"],
+        json!({"type": "enabled", "budget_tokens": 8192}),
+        "adaptive thinking becomes a medium budget on a Claude model without it"
     );
-    assert_eq!(env.mock.received().len(), before, "nothing was sent");
+    assert_eq!(env.mock.received().len(), before + 1);
     let mut effort = messages("claude-haiku-4-5", "Hi");
     effort["output_config"] = json!({"effort": "low"});
     let r = call(&env, "/v1/messages", Some(&env.key), true, Some(effort)).await;

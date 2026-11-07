@@ -61,7 +61,7 @@ Claude Code 会在每个请求中发送 `output_config.effort` 和自适应思�
 
 模型的回答与没有该设置时相同。每个被省略的设置都会以应用中的字段名出现在回复的 `kaeso-left-out` 响应头中，例如 `output_config.effort` 或 `thinking`，也会记录在网关日志中；记录的请求正文保留应用的设置。网关在编码之前执行这一步，因此同一格式内也适用。
 
-对于有推理强度等级的模型，网关仍会拒绝其未列出的推理强度，例如 `kimi-k3` 的 `medium`，因为改发相邻等级只是猜测。对于不支持推理的模型，网关也会拒绝 `enabled` 思考和思考预算。
+对于有推理强度等级的模型，其未列出的推理强度会变为它所列出的最近等级，例如 `kimi-k3`（`low`、`high`、`max`）上的 `medium` 变为 `low`：距离相同时取较低的等级，但绝不取会关闭推理的 `none`。对不支持自适应思考的 Claude 模型（例如 Claude Haiku 4.5）使用的自适应思考，会变为带该推理强度所对应预算的 `enabled` 思考（[推理强度与预算](#推理强度与预算)），没有推理强度时为 8,192 个 token，`none` 时则关闭思考。这两种改动都会以应用中的字段名出现在回复的 `kaeso-adapted` 响应头中，例如 `output_config.effort` 或 `thinking`。Claude Code 在对话中途系统消息的 `output_config` 中重复的推理强度会跟随请求的推理强度：随之改变，也随之以 `messages[i].output_config.effort` 的名义被省略。网关仍会拒绝它不认识的推理强度，以及发给不支持推理的模型的 `enabled` 思考和思考预算。
 
 ## 始终推理的模型
 

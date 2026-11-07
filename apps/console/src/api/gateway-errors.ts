@@ -716,10 +716,6 @@ const messages = (): Rule[] => [
   ),
   rule("errors.model.noStructured", (v) => t("errors.model.noStructured", "The model `{model}` does not support structured output (a JSON schema).", v)),
   rule("errors.model.noReasoning", (v) => t("errors.model.noReasoning", "The model `{model}` does not support reasoning.", v)),
-  rule("errors.model.noAdaptive", (v) =>
-    t("errors.model.noAdaptive", "The model `{model}` has no adaptive thinking; send `enabled` thinking with `budget_tokens`.", v),
-  ),
-  rule("errors.model.noTemperature", (v) => t("errors.model.noTemperature", "The model `{model}` does not accept `temperature` (only the default of 1).", v)),
   rule(
     "errors.model.budgetAtLeast",
     (v) => t("errors.model.budgetAtLeast", "A `budget_tokens` of {budget} means `{effort}`; `{model}` needs at least {min}.", v),
