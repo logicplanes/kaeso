@@ -13,12 +13,6 @@
     },
     "packages/ui": {
       "entry": [
-        "src/index.ts",
-        "src/format/index.ts",
-        "src/theme/index.ts",
-        "src/utils/index.ts",
-        "src/i18n/index.tsx",
-        "src/i18n/provider.tsx",
         "src/components/*/index.ts",
         "src/components/kaeso/{identity,moments,usage,conversation,rights}.tsx",
         "src/components/charts/{timeseries,bar,sparkline,donut,heatmap,gauge,sankey}.tsx",
