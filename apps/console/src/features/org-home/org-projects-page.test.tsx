@@ -65,6 +65,9 @@ describe("organization projects", () => {
     const { user } = await renderApp(PATH);
     await within(await list()).findByRole("gridcell", { name: /Checkout assistant/ });
     expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual(["Active", "Archived", "All"]);
+    const header = screen.getAllByRole("banner").filter((h) => within(h).queryByRole("heading", { name: "Projects" }));
+    expect(header).toHaveLength(1);
+    expect(within(header[0]).getAllByRole("tab")).toHaveLength(3);
     await user.click(screen.getByRole("tab", { name: "Archived" }));
     expect(await within(await list()).findByRole("gridcell", { name: /Old pilot/ })).toBeInTheDocument();
     expect(within(await list()).queryByRole("gridcell", { name: /Checkout assistant/ })).not.toBeInTheDocument();
