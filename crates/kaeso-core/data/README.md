@@ -9,10 +9,10 @@ A snapshot of the catalogue of [KPMR](https://kpmr.kaeso.app), the Kaeso Provide
 | | |
 |---|---|
 | Source | `https://kpmr.kaeso.app/v1/catalogue` |
-| Revision | `2026-11-06T11:23:00Z-893e4ddb8f1d` |
-| Generated | 2026-11-06T11:23:00Z |
-| Content | the providers Kaeso calls (`alibaba`, `anthropic`, `cerebras`, `cohere`, `deepseek`, `groq`, `mistral`, `moonshotai`, `ollama-cloud`, `openai`, `openrouter`, `togetherai`, `vercel`, `xai`); 1059 models |
-| SHA-256 | `648a99eef7d02f1356987172b2c1b9ab8cc07d1ddd64762ecd963a941a21698e` |
+| Revision | `2026-11-06T23:33:42Z-9c3cd23c6a10` |
+| Generated | 2026-11-06T23:33:42Z |
+| Content | the providers Kaeso calls (`alibaba`, `anthropic`, `cerebras`, `cohere`, `deepseek`, `groq`, `mistral`, `moonshotai`, `ollama-cloud`, `openai`, `openrouter`, `togetherai`, `vercel`, `xai`); 1061 models |
+| SHA-256 | `22fadb365c13753f4b02fa1f117e48e6fa0339745dde47eefb6ab3c8fb0a2fc5` |
 | License | MIT, © models.dev contributors (see [NOTICE.md](https://github.com/logicplanes/kaeso/blob/dev/NOTICE.md)) |
 
 To refresh it for a release, download the catalogue and check its signature against the built-in key:
