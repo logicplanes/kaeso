@@ -60,14 +60,14 @@ AWS and Google Cloud are not one click: you choose a region, a domain and its ce
 
 The edge, gateway and console were tested locally with Docker on 2026-11-06: path routing, chunked streams, forged client addresses and each API's error format while the gateway is away (`e2e/install/test_edge.py`). CI repeats the template, lint and format checks.
 
-The quick servers were then deployed from empty cloud accounts on 2026-11-07. The AWS template ran as a CloudFormation stack in `us-east-1` and the Google Cloud configuration in a new project in `europe-west3`; both installed the eighth release candidate. Each created the first user, routed the console and APIs on one HTTPS origin, streamed five SSE events whose text was exactly `Kaeso stream works.`, wrote the request to ClickHouse, and ignored a forged `X-Forwarded-For` address.
+The quick servers were then deployed from empty cloud accounts on 2026-11-07. The AWS template ran as a CloudFormation stack in `us-east-1` and the Google Cloud configuration in a new project in `europe-west3`; both installed the eighth release candidate. The Google Cloud deployment created the first user, routed the console and APIs on one HTTPS origin, streamed five SSE events whose text was exactly `Kaeso stream works.`, wrote the request to ClickHouse, and ignored a forged `X-Forwarded-For` address. The AWS deployment created its first user and passed the same checks only after the key file was put back under the installer's ownership on the test instance. The template now leaves that ownership alone, but the corrected template has not been redeployed from an empty account.
 
-The Render Blueprint was created from an empty Render project in Frankfurt on the same day. It created all five resources from the release-pinned `render.yaml`, emailed the one-time setup link, passed the edge, gateway and readiness checks, streamed the same completion and logged the request. The live test found that Render appends to the caller's `X-Forwarded-For`; the edge now reads Cloudflare's overwritten `CF-Connecting-IP` header on Render, and the test passed with a forged `X-Forwarded-For` after that fix.
+The Render Blueprint was created from an empty Render project in Frankfurt on the same day. It created all five resources from the release-pinned `render.yaml`, emailed the one-time setup link, passed the edge, gateway and readiness checks, streamed the same completion and logged the request. The live test found that Render appends to the caller's `X-Forwarded-For`; the edge now reads Cloudflare's overwritten `CF-Connecting-IP` header on Render. The corrected header behavior passes the local edge integration test and the Render configuration check, but the corrected edge image has not been retested on a live Render deployment.
 
 | Platform | Live empty-account test |
 | --- | --- |
-| Render | Blueprint and setup-email path passed on 2026-11-07 |
-| AWS quick server | CloudFormation stack and setup-link path passed on 2026-11-07 |
+| Render | Blueprint, setup email, routing, streaming and logging passed on 2026-11-07; the corrected client-address path has local regression coverage, but no live retest |
+| AWS quick server | Stack and app checks passed after correcting master-key ownership on the test instance on 2026-11-07; the corrected template has not been redeployed |
 | Google Cloud quick server | Terraform configuration and setup-link path passed on 2026-11-07 |
 | AWS and Google Cloud managed stacks | Linted and formatted by CI; not deployed in this pass |
 | Railway | Blocked: the signed-in test workspace's trial had expired, and Railway requires a plan before applying new infrastructure |

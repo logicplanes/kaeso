@@ -63,7 +63,7 @@ A release changes the image tags in `managed.yaml`. Deploy the new template over
 
 ## What this is based on
 
-Both templates pass `cfn-lint`, which CI runs. On 2026-11-07 the published quick-server template created a stack from an empty AWS account in `us-east-1` and installed the eighth release candidate. The setup link, HTTPS health and readiness checks, console and API routing, a streamed completion, the ClickHouse request log and the replacement of a forged `X-Forwarded-For` all passed ([what was validated](index.md#what-was-validated)). The managed stack has only been linted; deploy it in a disposable account before relying on it.
+Both templates pass `cfn-lint`, which CI runs. On 2026-11-07 the published quick-server template created a stack from an empty AWS account in `us-east-1` and installed the eighth release candidate. Its first boot exposed an ownership bug: the template reclaimed `/opt/kaeso` after installation, so the gateway could not read the master-key file. After restoring ownership on that test instance, the setup link, HTTPS health and readiness checks, console and API routing, a streamed completion, the ClickHouse request log and the replacement of a forged `X-Forwarded-For` passed ([what was validated](index.md#what-was-validated)). The template now leaves the installer-owned file alone, and a regression check rejects the old `chown`; the corrected template has not been redeployed from an empty account. The managed stack has only been linted; deploy it in a disposable account before relying on it.
 
 ## Next steps
 
