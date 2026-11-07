@@ -12,7 +12,7 @@ import { orgPath, projectPath } from "./pages";
 import { forgetUserData } from "~/auth/user-data";
 import { Picture } from "./project-switcher";
 
-const PERIOD = ["from", "to", "by"] as const;
+const PERIOD = ["period", "from", "to", "by", "metric"] as const;
 
 export function ProjectMenu({
   org,
@@ -27,9 +27,11 @@ export function ProjectMenu({
 }) {
   const navigate = useNavigate();
   const pathname = useLocation({ select: (l) => l.pathname });
-  const section = pathname.slice(projectPath(org, project).length).split("/")[1] ?? "";
+  const tail = pathname.slice(projectPath(org, project).length);
+  const section = tail.split("/")[1] ?? "";
+  const analytics = section === "analytics";
   const search = useLocation({ select: (l) => l.search as Record<string, unknown> });
-  const kept = section
+  const kept = !analytics
     ? ""
     : new URLSearchParams(
         PERIOD.flatMap((k) => {
@@ -44,7 +46,7 @@ export function ProjectMenu({
         <Menu.RadioGroup
           value={project}
           onValueChange={(next) =>
-            void navigate({ href: section ? `${projectPath(org, next)}/${section}` : `${projectPath(org, next)}${kept ? `?${kept}` : ""}` })
+            void navigate({ href: `${projectPath(org, next)}${analytics ? tail : section ? `/${section}` : ""}${kept ? `?${kept}` : ""}` })
           }
         >
           {list.map((p) => (

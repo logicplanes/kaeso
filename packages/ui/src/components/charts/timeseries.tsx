@@ -45,6 +45,8 @@ export interface TimeSeries {
   label: string;
   points: TimePoint[];
   color?: string | undefined;
+  /** Drawn as a thin dashed line without an area, for a comparison such as the previous period. */
+  dashed?: boolean | undefined;
 }
 
 export interface TimeseriesChartProps extends ChartState {
@@ -162,11 +164,8 @@ export const TimeseriesChart = forwardRef<HTMLDivElement, TimeseriesChartProps>(
   const drawn = useTweened([...flatValues.map((v) => (Number.isFinite(v) ? v : 0)), niceLo, niceHi], !!state.loading);
   const lo = drawn[drawn.length - 2] ?? niceLo;
   const hi = drawn[drawn.length - 1] ?? niceHi;
-  const yTicks = empty
-    ? []
-    : onlyZero(flatValues)
-      ? [0]
-      : wholeTicks(readableTicks(axis, axisLabel), finite(flatValues)).filter((v) => v >= lo - 1e-9 && v <= hi + 1e-9);
+  const yTicks = empty ? [] : onlyZero(flatValues) ? [0] : wholeTicks(readableTicks(axis, axisLabel), finite(flatValues));
+  const inView = (v: number) => v >= Math.min(lo, hi) - 1e-9 && v <= Math.max(lo, hi) + 1e-9;
   const M = { top: 8, right: axisRoom(yTicks.map(axisLabel), { max: size.width ? size.width * 0.4 : Infinity }), bottom: 28, left: 0 };
   const w = Math.max(0, size.width - M.left - M.right);
   const h = Math.max(0, height - M.top - M.bottom);
@@ -262,10 +261,15 @@ export const TimeseriesChart = forwardRef<HTMLDivElement, TimeseriesChartProps>(
     setHover({ i, y: Math.round(e.clientY - r.top + M.top) });
   };
 
-  const table = {
-    columns: [t("timeseriesChart.time", "Time"), ...series.map((s) => s.label)],
-    rows: times.map((_, i) => [headingFormat(i), ...series.map((s) => (Number.isFinite(s.points[i]?.v) ? format(s.points[i]!.v) : "–"))]),
-  };
+  // Built once per dataset, not on each frame of a tween: it formats every point of every series.
+  const table = useMemo(
+    () => ({
+      columns: [t("timeseriesChart.time", "Time"), ...series.map((s) => s.label)],
+      rows: times.map((_, i) => [headingFormat(i), ...series.map((s) => (Number.isFinite(s.points[i]?.v) ? format(s.points[i]!.v) : "–"))]),
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [series, times, formatTime, formatValue, locale, zone, partial?.first, partial?.last, partial?.ongoing],
+  );
 
   const blank = !!state.loading || empty;
   const keys = useChartKeys(blank || state.error ? 0 : times.length);
@@ -344,16 +348,16 @@ export const TimeseriesChart = forwardRef<HTMLDivElement, TimeseriesChartProps>(
                     </clipPath>
                   </>
                 )}
-                {visible.map((s) => (
-                  <linearGradient key={s.id} id={`${gid}-${s.id}`} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={color(s)} className="chart-fill-top" />
-                    <stop offset="100%" stopColor={color(s)} stopOpacity={0} />
+                {visible.map((s, si) => (
+                  <linearGradient key={si} id={`${gid}-s${si}`} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={color(s)} className="chart-fill-top chart-color-motion" />
+                    <stop offset="100%" stopColor={color(s)} stopOpacity={0} className="chart-color-motion" />
                   </linearGradient>
                 ))}
               </defs>
               <g transform={`translate(${M.left},${M.top})`}>
                 {yTicks.map((tick) => (
-                  <g key={tick} transform={`translate(0,${Math.round(y(tick)) + 0.5})`}>
+                  <g key={tick} transform={`translate(0,${Math.round(y(tick)) + 0.5})`} opacity={inView(tick) ? 1 : 0} className="opacity-motion">
                     {tick !== 0 && <line x2={w} {...AXIS.grid} />}
                     <text x={w + 12} dy="0.32em" {...AXIS.label}>
                       {axisLabel(tick)}
@@ -387,16 +391,28 @@ export const TimeseriesChart = forwardRef<HTMLDivElement, TimeseriesChartProps>(
                           );
                         })
                       : visible.map((s, si) => (
-                          <g key={s.id} opacity={focus && focus !== s.id ? 0.3 : 1} className="opacity-motion">
-                            {kind === "area" && <path d={areaGen(values[si] ?? []) ?? ""} fill={`url(#${gid}-${s.id})`} />}
-                            {partialLine({
-                              d: lineGen(values[si] ?? []) ?? "",
-                              fill: "none",
-                              stroke: color(s),
-                              strokeWidth: 2,
-                              strokeLinejoin: "round",
-                              strokeLinecap: "round",
-                            })}
+                          <g key={si} opacity={focus && focus !== s.id ? 0.3 : 1} className="opacity-motion chart-color-motion">
+                            {kind === "area" && !s.dashed && <path d={areaGen(values[si] ?? []) ?? ""} fill={`url(#${gid}-s${si})`} />}
+                            {s.dashed ? (
+                              <path
+                                d={lineGen(values[si] ?? []) ?? ""}
+                                fill="none"
+                                stroke={color(s)}
+                                strokeWidth={1.5}
+                                strokeDasharray="3 4"
+                                strokeLinecap="round"
+                                data-compare=""
+                              />
+                            ) : (
+                              partialLine({
+                                d: lineGen(values[si] ?? []) ?? "",
+                                fill: "none",
+                                stroke: color(s),
+                                strokeWidth: 2,
+                                strokeLinejoin: "round",
+                                strokeLinecap: "round",
+                              })
+                            )}
                             {lonely(values[si] ?? []).map((i) => (
                               <circle key={i} data-point="" cx={Math.round(at(i))} cy={y(values[si]![i]!)} r={2.5} fill={color(s)} />
                             ))}

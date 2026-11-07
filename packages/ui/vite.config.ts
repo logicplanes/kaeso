@@ -30,6 +30,10 @@ for (const file of ["identity", "moments", "usage", "conversation", "rights"]) {
 for (const file of ["timeseries", "bar", "sparkline", "donut", "heatmap", "sankey"]) {
   entries[`components/charts/${file}`] = resolve(src, "components/charts", `${file}.tsx`);
 }
+// The dashboard's parts are entries of their own, so a page loads only the parts it shows.
+for (const file of ["metric-tabs", "rank-list", "legend", "model-card"]) {
+  entries[`components/dashboard/${file}`] = resolve(src, "components/dashboard", `${file}.tsx`);
+}
 
 const pkg = JSON.parse(readFileSync(resolve(import.meta.dirname, "package.json"), "utf8")) as {
   dependencies?: Record<string, string>;

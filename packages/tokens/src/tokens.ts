@@ -277,6 +277,7 @@ export const motion = {
     indicator: 180,
     disclosure: 200,
     chart: 240,
+    roll: 560,
     check: 140,
     radio: 160,
     copied: 1200,

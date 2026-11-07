@@ -1,5 +1,5 @@
 import type { QueryClient } from "@tanstack/react-query";
-import { granularity } from "~/format/buckets";
+import { analyticsGranularity } from "~/format/buckets";
 import type { PeriodSearch } from "~/format/period";
 import { resolvePeriod } from "~/format/presets";
 import { auditLogQuery, type AuditFilters } from "./audit";
@@ -14,9 +14,9 @@ export function prefetchProjectAuditLog(client: QueryClient, org: string, projec
   return client.prefetchInfiniteQuery(auditLogQuery({ org, project }, filters));
 }
 
-export async function prefetchProjectOverview(client: QueryClient, org: string, project: string, search: PeriodSearch): Promise<void> {
+export async function prefetchProjectAnalytics(client: QueryClient, org: string, project: string, search: PeriodSearch): Promise<void> {
   const span = search.period === "all" ? await client.ensureQueryData(usageSpanQuery(org, project)).catch(() => undefined) : undefined;
   if (search.period === "all" && !span) return;
   const { from, to } = resolvePeriod(search, span?.first_day);
-  await client.prefetchQuery(projectUsageQuery(org, project, from, to, granularity(from, to)));
+  await client.prefetchQuery(projectUsageQuery(org, project, from, to, analyticsGranularity(from, to)));
 }

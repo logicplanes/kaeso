@@ -123,6 +123,7 @@ pub fn routes(s: &Secure) -> OpenApiRouter<AppState> {
         .routes(s.route(Access::Org(R::LogsStorageView), routes!(crate::platform::logs::deletions)))
         .routes(s.route(Access::Org(R::UsageOrgView), routes!(crate::platform::usage::org)))
         .routes(s.route(Access::Org(R::UsageOrgView), routes!(crate::platform::usage::org_span)))
+        .routes(s.route(Access::Org(R::UsageOrgView), routes!(crate::platform::usage::org_timeline)))
         .routes(s.route(Access::Org(R::AuditLogView), routes!(audit_list)))
         .routes(s.route(Access::Org(R::AuditLogView), routes!(audit_get)))
         .routes(s.route(Access::Org(R::MembersView), routes!(invites::get)))

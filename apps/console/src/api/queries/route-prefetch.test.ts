@@ -7,7 +7,7 @@ import { auditEvent } from "~/test/fixtures/shell";
 import { on, page, requests } from "~/test/network";
 import { auditLogQuery } from "./audit";
 import { logsInfiniteQuery } from "./logs";
-import { prefetchLogs, prefetchProjectAuditLog, prefetchProjectOverview } from "./route-prefetch";
+import { prefetchLogs, prefetchProjectAuditLog, prefetchProjectAnalytics } from "./route-prefetch";
 
 atFixtureTime();
 
@@ -30,7 +30,7 @@ describe("starting a page's data while its route loads", () => {
 
   it("starts the overview's daily usage for the chosen days", async () => {
     on("GET", USAGE, { data: [] });
-    await prefetchProjectOverview(queryClient, ORG, PROJECT, { from: "2026-10-01", to: "2026-10-07" });
+    await prefetchProjectAnalytics(queryClient, ORG, PROJECT, { from: "2026-10-01", to: "2026-10-07" });
     expect(usageQueries()).toEqual([{ from: "2026-10-01", to: "2026-10-07", group_by: "day" }]);
     expect(requests("GET", `${USAGE}/span`)).toHaveLength(0);
   });
@@ -38,13 +38,13 @@ describe("starting a page's data while its route loads", () => {
   it("reads the first day with usage before starting the whole period", async () => {
     on("GET", `${USAGE}/span`, { first_day: "2026-09-01", last_day: "2026-10-14" });
     on("GET", USAGE, { data: [] });
-    await prefetchProjectOverview(queryClient, ORG, PROJECT, { period: "all" });
+    await prefetchProjectAnalytics(queryClient, ORG, PROJECT, { period: "all" });
     expect(usageQueries()).toEqual([{ from: "2026-09-01", to: "2026-10-15", group_by: "day" }]);
   });
 
   it("leaves the whole period to the page when the first day can't be read", async () => {
     on("GET", `${USAGE}/span`, () => new Response(JSON.stringify({ error: { type: "invalid_request", message: "No." } }), { status: 400 }));
-    await prefetchProjectOverview(queryClient, ORG, PROJECT, { period: "all" });
+    await prefetchProjectAnalytics(queryClient, ORG, PROJECT, { period: "all" });
     expect(requests("GET", USAGE)).toHaveLength(0);
   });
 });

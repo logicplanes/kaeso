@@ -41,7 +41,12 @@ function OrgArea({ org }: { org: string }) {
         {ORG_AREA_PAGES.filter((p) => rights.has(p.right)).map((p) => {
           const href = p.path ? `${base}/${p.path}` : base;
           return (
-            <Sidebar.Item key={p.id} icon={p.icon} href={href} active={pathname === href || pathname === `${href}/`}>
+            <Sidebar.Item
+              key={p.id}
+              icon={p.icon}
+              href={href}
+              active={pathname === href || pathname === `${href}/` || (!!p.subpages && pathname.startsWith(`${href}/`))}
+            >
               {p.label()}
             </Sidebar.Item>
           );

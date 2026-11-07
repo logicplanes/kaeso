@@ -1151,6 +1151,70 @@
     }
   }
 }
+/* A number that changes in place, for a new period or a new total: the new value rises 4px into place as it
+   fades in; with reduced motion only the opacity changes. Never on first paint: the caller adds it on change. */
+@utility value-swap-in {
+  transition-property: opacity, translate;
+  transition-duration: var(--k-duration-chart);
+  transition-timing-function: var(--k-ease-standard);
+  @starting-style {
+    opacity: 0;
+    translate: 0 4px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    @starting-style {
+      translate: 0 0;
+    }
+  }
+}
+/* A number whose digits roll to their new value, like a counter: each digit is a column of 0 to 9 in a window
+   one line high, slid to its place. With reduced motion the digits change in place. */
+@utility digit-window {
+  display: inline-block;
+  height: 1lh;
+  overflow: clip;
+  vertical-align: bottom;
+}
+@utility digit-strip {
+  display: block;
+  white-space: pre;
+  translate: 0 calc(var(--k-digit, 0) * -1lh);
+  &::before {
+    content: "0\A 1\A 2\A 3\A 4\A 5\A 6\A 7\A 8\A 9";
+  }
+  transition-property: translate;
+  transition-duration: var(--k-duration-roll);
+  transition-timing-function: var(--k-ease-overlay);
+  @media (prefers-reduced-motion: reduce) {
+    transition-duration: 0s;
+  }
+}
+/* A rolling number's other characters, drawn from their data attribute so the text in the page stays the value alone. */
+@utility digit-char {
+  white-space: pre;
+  &::before {
+    content: attr(data-char);
+  }
+}
+/* A character that joins a rolling number, such as the fifth digit of 10,000: it widens in from nothing. */
+@utility digit-enter {
+  transition-property: opacity, translate;
+  transition-duration: var(--k-duration-roll);
+  transition-timing-function: var(--k-ease-overlay);
+  @starting-style {
+    opacity: 0;
+    translate: 0 -0.5lh;
+  }
+}
+/* Numbers kept on screen while the next ones load: they stay readable but step back. */
+@utility busy-dim {
+  transition-property: opacity;
+  transition-duration: var(--k-duration-fast);
+  transition-timing-function: var(--k-ease-standard);
+  &[aria-busy="true"] {
+    opacity: 0.6;
+  }
+}
 @utility icon-swap-out {
   opacity: 0;
   scale: 0.25;
@@ -1838,6 +1902,19 @@
   display: var(--k-show-dark);
   @media print {
     display: none;
+  }
+}
+/* A series that changes what it shows (another total chosen above the chart) blends its color as its line morphs. */
+@utility chart-color-motion {
+  &:is(stop) {
+    transition-property: stop-color;
+    transition-duration: var(--k-duration-chart);
+    transition-timing-function: var(--k-ease-standard);
+  }
+  & :where(path, circle) {
+    transition-property: stroke, fill;
+    transition-duration: var(--k-duration-chart);
+    transition-timing-function: var(--k-ease-standard);
   }
 }
 @utility opacity-motion {

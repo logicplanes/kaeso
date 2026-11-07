@@ -14,11 +14,11 @@ The same menu lists your organizations and switches between them. Opening Kaeso,
 
 ## Read usage
 
-The organization's **Overview** shows requests, tokens, cost and errors for a period you choose, from today to all time. It also breaks the cost down by project, and the usage by project, model or member.
+The organization's **Overview** is its home. It leads with the release Kaeso runs, then shows requests, tokens, cache hits and failed requests over the last 7, 14 or 30 days, and with the right to see costs the month's spend split by project. Below are the projects with their requests today, the members, provider keys, MCP servers, recent changes and the newest models in the catalogue. Each total opens **Analytics** at that metric.
 
-The page compares each total with the period before it, except for today, which isn't over yet, and all time. Charts count by UTC day. They draw a day, week or month that is still running dashed or lighter, and its tooltip says "so far". Seeing usage needs the right **View org usage**, and seeing cost **View org costs**.
+**Analytics** shows requests, tokens, cost, errors and tool calls for a period you choose, from today to all time, and compares each total with the period before it, except for today, which isn't over yet, and all time. With request logs on, it charts today by the minute and periods up to 31 days by the hour; longer periods, and installs without request logs, count by UTC day. A day, week or month that is still running is drawn dashed or lighter, and its tooltip says "so far". **Projects**, **Models** and **Members** break the period down one row each, with its share, what grew and what shrank, its error rate, tokens, cache hits and cost. Seeing usage needs the right **View org usage**, and seeing cost **View org costs**.
 
-A project's **Overview** shows the same numbers for one project, broken down by time, model, key, member or route. It also lists the project's limits with what is used, and its recent errors.
+A project's **Overview** shows its activity over the last days, its latest requests as they arrive, its limits with what is used, its models by use, its keys by last use, its members and its recent changes. Its **Analytics** shows the same as the organization's for one project, with **Models**, **Keys** and **Members**, and a breakdown by time, model, key, member or route under the charts.
 
 A route is the app's format, the format Kaeso sent to the provider, and the provider. Its breakdown has a **Cache hit** column: the share of the input read from the prompt cache. The same model can hit the cache through one route and never through another, so **By route** shows where caching fails. Requests from before Kaeso recorded routes show as **Route not recorded**.
 

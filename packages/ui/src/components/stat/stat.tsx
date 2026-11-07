@@ -14,10 +14,11 @@ import {
 import { cn } from "../../utils/cn.js";
 import { observeResize } from "../../utils/observe-resize.js";
 import { Badge } from "../badge/badge.js";
+import { Delta } from "./delta.js";
 import { Sparkline } from "../charts/sparkline.js";
 import { Skeleton } from "../skeleton/skeleton.js";
 import { TruncatedText } from "../text/truncated.js";
-import { useLocale, useUiText, type UiText } from "../../i18n/context.js";
+import { useUiText } from "../../i18n/context.js";
 
 export const KAESO_STAT_VARIANTS = {
   variant: {
@@ -66,17 +67,6 @@ const PlainStat = forwardRef<HTMLDivElement, StatProps>(function PlainStat({ val
 });
 PlainStat.displayName = "Stat";
 
-const changeLabel = (v: number, t: UiText, locale: string) => {
-  const pct = Math.abs(v) * 100;
-  const digits = pct >= 10 || pct === 0 ? 0 : 1;
-  const shown = new Intl.NumberFormat(locale === "en" ? "en-US" : locale, {
-    minimumFractionDigits: digits,
-    maximumFractionDigits: digits,
-    useGrouping: false,
-  }).format(digits ? Number(pct.toFixed(1)) : Math.round(pct));
-  return `${v > 0 ? "↑" : v < 0 ? "↓" : ""}${t("statTile.percent", "{value}%", { value: shown })}`;
-};
-
 const STAT_VALUE_STEPS = [
   { classes: "text-metric", px: 28 },
   { classes: "text-title", px: 20 },
@@ -87,8 +77,6 @@ const StatStepContext = createContext(0);
 
 const StatTile = forwardRef<HTMLDivElement, StatProps>(function StatTile({ label, value, change, detail, trend, trendColor, loading, className }, ref) {
   const t = useUiText();
-  const locale = useLocale();
-  const good = change && change.value !== 0 ? change.value > 0 === ((change.better ?? "up") === "up") : undefined;
   const step = STAT_VALUE_STEPS[useContext(StatStepContext)] ?? STAT_VALUE_STEPS[0];
   return (
     <div
@@ -122,14 +110,7 @@ const StatTile = forwardRef<HTMLDivElement, StatProps>(function StatTile({ label
         </>
       ) : (
         <span className="mt-2 flex min-h-20 min-w-0 flex-wrap items-center gap-x-6 gap-y-2 text-small text-fg-tertiary">
-          {change && Number.isFinite(change.value) && (
-            <span className="flex h-20 shrink-0 items-center">
-              <Badge tone={good === undefined ? "neutral" : good ? "success" : "danger"} className="shrink-0 tabular">
-                {changeLabel(change.value, t, locale)}
-                {good !== undefined && <span className="sr-only"> {good ? t("statTile.better", "better") : t("statTile.worse", "worse")}</span>}
-              </Badge>
-            </span>
-          )}
+          {change && Number.isFinite(change.value) && <Delta value={change.value} better={change.better ?? "up"} />}
           {detail && <span className="min-w-0">{detail}</span>}
         </span>
       )}

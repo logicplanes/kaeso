@@ -88,13 +88,14 @@ describe("StatGroup rows", () => {
   });
   it("names the change as better or worse by its direction", () => {
     render(<Stat variant="tile" label="Errors" value="0.4%" change={{ value: -0.31, better: "down" }} />);
-    const badge = screen.getByText("↓31%").closest(".rounded-pill")!;
-    expect(badge).toHaveClass("text-success-text");
-    expect(badge).toHaveTextContent("↓31% better");
+    const delta = screen.getByText("↓31%").parentElement?.parentElement;
+    expect(delta).toHaveClass("text-success-text");
+    expect(delta).not.toHaveClass("rounded-pill");
+    expect(delta).toHaveTextContent("↓31% better");
   });
   it("says a change is worse in words, not only in red", () => {
     render(<Stat variant="tile" label="Tokens" value="18.4M" change={{ value: -0.04 }} />);
-    expect(screen.getByText("↓4.0%").closest(".rounded-pill")).toHaveTextContent("↓4.0% worse");
+    expect(screen.getByText("↓4.0%").parentElement?.parentElement).toHaveTextContent("↓4.0% worse");
   });
 });
 

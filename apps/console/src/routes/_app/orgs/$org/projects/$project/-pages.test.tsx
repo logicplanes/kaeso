@@ -10,15 +10,15 @@ import { renderApp } from "~/test/render";
 const BASE = `/orgs/${ORG}/projects/${PROJECT}`;
 const sent = (path: string) => requests("GET", path).map((r) => Object.fromEntries(r.query));
 
-describe("the project overview address", () => {
+describe("the project analytics address", () => {
   it("breaks usage down the way the address asks", async () => {
     signedIn();
     on("GET", "orgs/:org/projects/:project/usage/span", { first_day: "2026-09-01", last_day: "2026-10-15" });
     on("GET", "orgs/:org/projects/:project/usage", { data: [] });
     on("GET", "orgs/:org/projects/:project/models", { data: [] });
     on("GET", "orgs/:org/projects/:project/logs", listed([]));
-    await renderApp(`${BASE}?by=key&period=7d`);
-    expect(await screen.findByRole("heading", { name: "Overview", level: 1 })).toBeInTheDocument();
+    await renderApp(`${BASE}/analytics?by=key&period=7d`);
+    expect(await screen.findByRole("heading", { name: "Analytics", level: 1 })).toBeInTheDocument();
     await waitFor(() => expect(sent("orgs/:org/projects/:project/usage").map((q) => q.group_by)).toContain("key"));
     expect((await screen.findAllByText("Last 7 days")).length).toBeGreaterThan(0);
   });
@@ -29,7 +29,7 @@ describe("the project overview address", () => {
     on("GET", "orgs/:org/projects/:project/usage", { data: [] });
     on("GET", "orgs/:org/projects/:project/models", { data: [] });
     on("GET", "orgs/:org/projects/:project/logs", listed([]));
-    await renderApp(`${BASE}?by=week&period=forever`);
+    await renderApp(`${BASE}/analytics?by=week&period=forever`);
     await waitFor(() => expect(sent("orgs/:org/projects/:project/usage").map((q) => q.group_by)).toContain("model"));
     expect(sent("orgs/:org/projects/:project/usage").map((q) => q.group_by)).not.toContain("week");
     expect(screen.getAllByText("Last 30 days").length).toBeGreaterThan(0);

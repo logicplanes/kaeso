@@ -174,4 +174,14 @@ describe("keyboard shortcuts", () => {
     await user.keyboard("?");
     expect(await screen.findByRole("dialog", { name: "Keyboard shortcuts" })).toBeInTheDocument();
   });
+
+  it("leaves the request logs out of the shortcuts when request logs are off", async () => {
+    signedIn({ session: whoAmI({ request_logs: false }) });
+    const { user } = await renderApp(`/orgs/${ORG}/projects`);
+    await ready();
+    await user.keyboard("?");
+    const sheet = await screen.findByRole("dialog", { name: "Keyboard shortcuts" });
+    expect(within(sheet).getByText("Go to analytics")).toBeInTheDocument();
+    expect(within(sheet).queryByText("Go to request logs")).not.toBeInTheDocument();
+  });
 });

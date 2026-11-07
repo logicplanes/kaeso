@@ -16,6 +16,7 @@ Quick, decelerating, from the trigger, never bouncing and never in the way. Moti
 | `--k-duration-indicator`                             | Tab and segment indicators, the switch thumb |
 | `--k-duration-disclosure`                            | Collapsibles and sidebar groups              |
 | `--k-duration-chart`                                 | Chart values changing                        |
+| `--k-duration-roll`                                  | A number's digits rolling to a new value     |
 | `--k-duration-check`, `--k-duration-radio`           | The checkmark drawing in, the radio dot      |
 | `--k-duration-copied`                                | How long "Copied" stays                      |
 

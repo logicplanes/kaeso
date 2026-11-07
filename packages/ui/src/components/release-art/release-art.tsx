@@ -21,6 +21,7 @@ export interface ReleaseArtProps {
   title?: ReactNode | undefined;
   eyebrow?: ReactNode | undefined;
   shape?: keyof typeof KAESO_RELEASE_ART_VARIANTS.shape | undefined;
+  flush?: boolean | undefined;
   className?: string | undefined;
 }
 
@@ -45,7 +46,7 @@ function useTitleFit(ref: { current: HTMLSpanElement | null }, width: number | n
 }
 
 export const ReleaseArt = forwardRef<SVGSVGElement, ReleaseArtProps>(function ReleaseArt(
-  { seed, label, art, src, title, eyebrow, shape = "banner", className },
+  { seed, label, art, src, title, eyebrow, shape = "banner", flush, className },
   ref,
 ) {
   const { w, h } = RELEASE_ART_VIEW[shape];
@@ -60,14 +61,14 @@ export const ReleaseArt = forwardRef<SVGSVGElement, ReleaseArtProps>(function Re
   const width = useLayoutWidth(frame);
   const fit = useTitleFit(heading, width, typeof title === "string" ? title : "");
   return (
-    <span ref={frame} className={cn("@container relative block w-full rounded-well", className)}>
+    <span ref={frame} className={cn("@container relative block w-full", flush ? "h-full" : "rounded-well", className)}>
       <svg
         ref={ref}
         viewBox={`0 0 ${w} ${h}`}
         role="img"
         aria-label={label}
         preserveAspectRatio="xMidYMid slice"
-        className={cn("block w-full overflow-hidden rounded-well", KAESO_RELEASE_ART_VARIANTS.shape[shape].classes)}
+        className={cn("block w-full overflow-hidden", flush ? "h-full" : cn("rounded-well", KAESO_RELEASE_ART_VARIANTS.shape[shape].classes))}
       >
         {src && failed !== src ? (
           <image href={src} width={w} height={h} preserveAspectRatio="xMidYMid slice" onError={() => setFailed(src)} />
@@ -102,7 +103,7 @@ export const ReleaseArt = forwardRef<SVGSVGElement, ReleaseArtProps>(function Re
           )}
         </span>
       )}
-      <span aria-hidden className="pointer-events-none absolute inset-0 image-outline" />
+      {!flush && <span aria-hidden className="pointer-events-none absolute inset-0 image-outline" />}
     </span>
   );
 });

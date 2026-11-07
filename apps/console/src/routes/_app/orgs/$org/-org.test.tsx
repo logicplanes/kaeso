@@ -12,12 +12,12 @@ function usageApi() {
   on("GET", "orgs/:org/usage", { data: [] });
 }
 
-describe("the organization overview address", () => {
+describe("the organization analytics address", () => {
   it("breaks usage down by member over the period it names", async () => {
     signedIn();
     usageApi();
-    await renderApp(`/orgs/${ORG}?by=member&period=90d`);
-    expect(await screen.findByRole("heading", { name: "Overview", level: 1 })).toBeInTheDocument();
+    await renderApp(`/orgs/${ORG}/analytics?by=member&period=90d`);
+    expect(await screen.findByRole("heading", { name: "Analytics", level: 1 })).toBeInTheDocument();
     await waitFor(() => expect(groups()).toContain("member"));
     expect(screen.getAllByText("Last 90 days").length).toBeGreaterThan(0);
   });
@@ -25,7 +25,7 @@ describe("the organization overview address", () => {
   it("falls back to projects and the last 30 days for values it doesn't know", async () => {
     signedIn();
     usageApi();
-    await renderApp(`/orgs/${ORG}?by=planet&period=bogus`);
+    await renderApp(`/orgs/${ORG}/analytics?by=planet&period=bogus`);
     await waitFor(() => expect(groups()).toContain("project"));
     expect(groups()).not.toContain("planet");
     expect(screen.getAllByText("Last 30 days").length).toBeGreaterThan(0);
@@ -34,7 +34,7 @@ describe("the organization overview address", () => {
   it("reads a custom range of days", async () => {
     signedIn();
     usageApi();
-    await renderApp(`/orgs/${ORG}?from=2026-10-01&to=2026-10-07`);
+    await renderApp(`/orgs/${ORG}/analytics?from=2026-10-01&to=2026-10-07`);
     await waitFor(() =>
       expect(requests("GET", "orgs/:org/usage").map((r) => [r.query.get("from"), r.query.get("to")])).toContainEqual(["2026-10-01", "2026-10-07"]),
     );

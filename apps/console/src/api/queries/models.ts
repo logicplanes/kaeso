@@ -79,3 +79,20 @@ export const modelPreviewQuery = (org: string, project: string, provider: string
     },
     staleTime: 60_000,
   });
+
+const NEWEST_POOL = 200;
+
+export const newestModelsQuery = (org: string, project: string) =>
+  queryOptions({
+    queryKey: ["orgs", org, "projects", project, "models", "search", "newest"],
+    staleTime: 60 * 60_000,
+    queryFn: async ({ signal }): Promise<ModelSearch["data"]> => {
+      const found = data(
+        await api.GET("/platform/v1/orgs/{org}/projects/{project}/models/search", {
+          params: { path: { org, project }, query: { current: true, limit: NEWEST_POOL } },
+          signal,
+        }),
+      );
+      return [...found.data].sort((a, b) => (b.release_date ?? "").localeCompare(a.release_date ?? ""));
+    },
+  });

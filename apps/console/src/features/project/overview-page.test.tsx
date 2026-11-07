@@ -1,426 +1,243 @@
 import { screen, waitFor, within } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import type { UsageRow } from "~/api/generated/types";
+import { atFixtureTime } from "~/test/clock";
 import { signedIn, whoAmI, without } from "~/test/fixtures";
-import { apiKey, catalogueModel, failedLog, limit, listed, projectData, projectMember, projectPath, serviceAccount, usageRow } from "~/test/fixtures/project";
+import { apiKey, catalogueModel, limit, listed, me, projectData, projectMember, projectPath, serviceAccount, usageRow } from "~/test/fixtures/project";
+import { logRow } from "~/test/fixtures/project-logs";
+import { auditEvent } from "~/test/fixtures/shell";
 import { apiError, on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
 
 const USAGE = "orgs/:org/projects/:project/usage";
-const PERIOD = "from=2026-10-01&to=2026-10-14";
-const breakdown = () => screen.findByRole("table", { name: "Usage breakdown" });
-const bodyRows = (table: HTMLElement) => within(table).getAllByRole("row").slice(1);
 
-function usage(by: Partial<Record<string, UsageRow[] | Response>> = {}): void {
-  on("GET", `${USAGE}/span`, { first_day: "2026-09-01", last_day: "2026-10-14" });
+function usage(byFrom: Record<string, UsageRow[]>, byGroup: Partial<Record<string, UsageRow[]>> = {}): void {
   on("GET", USAGE, ({ query }: { query: URLSearchParams }) => {
-    const rows = by[query.get("group_by") ?? "day"] ?? [];
-    return rows instanceof Response ? rows : { data: rows };
+    const group = query.get("group_by") ?? "day";
+    if (group !== "day") return { data: byGroup[group] ?? [] };
+    return { data: byFrom[query.get("from") ?? ""] ?? [] };
   });
+  on("GET", `${USAGE}/timeline`, { data: [] });
 }
 
-function onPhone() {
-  vi.stubGlobal("matchMedia", (query: string) => ({
-    matches: query === "(max-width: 639px)",
-    media: query,
-    addEventListener() {},
-    removeEventListener() {},
-    addListener() {},
-    removeListener() {},
-  }));
-  vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({
-    width: 327,
-    height: 0,
-    top: 0,
-    left: 0,
-    right: 327,
-    bottom: 0,
-    x: 0,
-    y: 0,
-    toJSON: () => ({}),
-  });
-}
+const cell = (title: string) => screen.getByRole("link", { name: title }).closest("section") as HTMLElement;
 
-describe("OverviewPage", () => {
-  afterEach(() => {
-    vi.unstubAllGlobals();
-    vi.restoreAllMocks();
-  });
+describe("the project overview", () => {
+  atFixtureTime();
 
-  it("keeps requests and cost beside the model on a phone", async () => {
-    onPhone();
+  it("shows the last 14 days against the 14 before, and the last 7 days when asked", async () => {
     signedIn();
-    projectData({ models: [catalogueModel()] });
-    usage({ model: [usageRow({ key: "anthropic/claude-sonnet-4-5", requests: 120, errors: 0, cost: "2.5" })] });
-    await renderApp(projectPath(`?${PERIOD}&by=model`));
+    projectData();
+    on("GET", "orgs/:org/projects/:project/logs", listed([]));
+    usage({
+      "2026-10-02": [usageRow({ key: "2026-10-14", requests: 40, errors: 2, cost: "1.5", cache_read_tokens: 1000 })],
+      "2026-09-18": [usageRow({ key: "2026-09-20", requests: 20, errors: 2, cost: "1", cache_read_tokens: 500 })],
+    });
+    const { user } = await renderApp(projectPath());
 
-    const table = await breakdown();
-    await waitFor(() => expect(bodyRows(table)).toHaveLength(1));
+    expect(await screen.findByRole("heading", { name: "Activity", level: 2 })).toBeInTheDocument();
+    await waitFor(() => expect(cell("Requests")).toHaveTextContent("40"));
+    expect(cell("Requests")).toHaveTextContent("↑100% bettervs. the 14 days before");
+    expect(cell("Failed requests")).toHaveTextContent("↓50% better5% of requests");
+    expect(cell("Cache hit")).toHaveTextContent(/50%.*vs\. the 14 days before/);
+    expect(screen.getByRole("link", { name: "Requests" })).toHaveAttribute("href", `${projectPath("analytics")}?period=30d&metric=requests`);
+
+    await user.click(screen.getByRole("radio", { name: "7d" }));
+    await waitFor(() => expect(requests("GET", USAGE).map((r) => r.query.get("from"))).toContain("2026-10-09"));
+    expect(screen.getByRole("link", { name: "Requests" })).toHaveAttribute("href", `${projectPath("analytics")}?period=7d&metric=requests`);
+  });
+
+  it("lists the latest requests with their models and keys, and opens one in the request logs", async () => {
+    signedIn();
+    projectData({ keys: [apiKey()] });
+    usage({});
+    on("GET", "orgs/:org/projects/:project/logs", listed([logRow()]));
+    const { user, router } = await renderApp(projectPath());
+
+    const latest = await screen.findByRole("list", { name: "Latest requests" });
+    const row = await within(latest).findByRole("button", { name: /checkout-web/ });
+    expect(row).toHaveTextContent("200");
+    expect(row).toHaveTextContent("gpt-5.4-mini");
+    expect(row).toHaveTextContent("2 min ago");
+    expect(row).toHaveTextContent("1.3 s");
+    await user.click(row);
+    await waitFor(() => expect(router.state.location.searchStr).toBe("?log=req_0001"));
+    expect(router.state.location.pathname).toBe(projectPath("logs"));
+  });
+
+  it("shows the project's limits, its models by use, its keys by last use and its members", async () => {
+    signedIn();
+    projectData({
+      limits: [limit()],
+      models: [
+        catalogueModel(),
+        catalogueModel({ id: "cm_mini", provider: "openai", model_id: "gpt-5.4-mini" }),
+        catalogueModel({ id: "cm_b", provider: "openai", model_id: "b-model", effective: { ...catalogueModel().effective, display_name: "b-model" } }),
+        catalogueModel({ id: "cm_a", provider: "openai", model_id: "a-model", effective: { ...catalogueModel().effective, display_name: "a-model" } }),
+      ],
+      keys: [
+        apiKey({ id: "key_old", name: "old-batch", last_used_at: null }),
+        apiKey({ last_used_at: "2026-10-15T11:00:00Z" }),
+        apiKey({ id: "key_idle", name: "idle", last_used_at: null }),
+      ],
+      members: [projectMember()],
+    });
+    on("GET", "orgs/:org/projects/:project/logs", listed([]));
+    usage({}, { model: [usageRow({ key: "openai/gpt-5.4-mini", requests: 30 }), usageRow({ key: "anthropic/claude-sonnet-4-5", requests: 10 })] });
+    await renderApp(projectPath());
+
+    const models = await screen.findByRole("list", { name: "Models" });
+    await waitFor(() => expect(within(models).getAllByRole("button")[0]).toHaveTextContent("75%"));
+    expect(within(models).getAllByRole("button")[0]).toHaveTextContent("gpt-5.4-mini");
     expect(
-      within(table)
-        .getAllByRole("columnheader")
-        .map((h) => h.textContent),
-    ).toEqual(["Model", "Requests", "Cost"]);
-    expect(bodyRows(table)[0]).toHaveTextContent("$2.50");
+      within(models)
+        .getAllByRole("button")
+        .map((b) => b.textContent),
+    ).toEqual([
+      expect.stringContaining("gpt-5.4-mini"),
+      expect.stringContaining("Claude Sonnet 4.5"),
+      expect.stringContaining("a-model"),
+      expect.stringContaining("b-model"),
+    ]);
+    const keys = screen.getByRole("list", { name: "API keys" });
+    expect(within(keys).getAllByRole("button")[0]).toHaveTextContent("checkout-web");
+    expect(await screen.findByRole("list", { name: "Members" })).toHaveTextContent("Developer");
+    const limits = screen.getByRole("heading", { name: "Limits" }).closest("section") as HTMLElement;
+    expect(within(limits).getByText("Hard limit")).toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: "Manage" }).map((l) => l.getAttribute("href"))).toEqual([
+      projectPath("limits"),
+      projectPath("models"),
+      projectPath("keys"),
+      projectPath("members"),
+    ]);
   });
 
-  it("gives the model the room the number columns leave", async () => {
+  it("words every kind of limit by its window", async () => {
     signedIn();
-    projectData({ models: [catalogueModel()] });
-    usage({ model: [usageRow({ key: "anthropic/claude-sonnet-4-5" })] });
-    await renderApp(projectPath(`?${PERIOD}&by=model`));
-
-    const header = within(await breakdown()).getAllByRole("row")[0] as HTMLElement;
-    expect(header.style.gridTemplateColumns).toBe("minmax(200px, 1fr) 88px 88px 88px 88px 96px");
-  });
-
-  it("breaks usage down by model with names from the catalogue", async () => {
-    signedIn();
-    projectData({ models: [catalogueModel()] });
-    usage({
-      day: [usageRow({ key: "2026-10-13" })],
-      model: [
-        usageRow({ key: "openai/gpt-5.4-mini", requests: 40, errors: 4, cost: null }),
-        usageRow({ key: "anthropic/claude-sonnet-4-5", requests: 120, errors: 0, cost: "2.5" }),
-        usageRow({ key: "anthropic/", requests: 3, errors: 0, cost: "0.001" }),
+    projectData({
+      limits: [
+        limit({ id: "lim_rate", kind: "request_rate", period: "minute", amount: "600", used: "12", hard: false }),
+        limit({ id: "lim_tokens", kind: "token_budget", period: "day", amount: "1000000", used: null, resets_at: null }),
       ],
     });
-    await renderApp(projectPath(`?${PERIOD}`));
-
-    const table = await breakdown();
-    await waitFor(() => expect(bodyRows(table)).toHaveLength(3));
-    const [first, second, third] = bodyRows(table);
-    expect(first).toHaveTextContent("Claude Sonnet 4.5");
-    expect(first).toHaveTextContent("120");
-    expect(first).toHaveTextContent("$2.50");
-    expect(second).toHaveTextContent("gpt-5.4-mini");
-    expect(second).toHaveTextContent("—");
-    expect(third).toHaveTextContent("No model");
-    expect(third).toHaveTextContent("<$0.01");
-    expect(within(table).getByRole("columnheader", { name: "Model" })).toBeInTheDocument();
-    expect(within(table).getByRole("columnheader", { name: "Cost" })).toBeInTheDocument();
-    expect(screen.getByText("Requests, errors, tokens, cache hits and cost in the period")).toBeInTheDocument();
-    expect((await screen.findAllByText("Cost by model")).length).toBeGreaterThan(0);
-    expect(requests("GET", USAGE).map((r) => Object.fromEntries(r.query))).toContainEqual({ from: "2026-10-01", to: "2026-10-14", group_by: "model" });
+    on("GET", "orgs/:org/projects/:project/logs", listed([]));
+    usage({});
+    await renderApp(projectPath());
+    const limits = (await screen.findByRole("heading", { name: "Limits" })).closest("section") as HTMLElement;
+    await waitFor(() => expect(limits).toHaveTextContent("Over the last minute"));
+    expect(limits).toHaveTextContent("12 of 600");
+    expect(limits).toHaveTextContent("0 of 1,000,000");
+    expect(limits).toHaveTextContent("Never resets");
   });
 
-  it("breaks usage down by route with the share of the input read from the cache", async () => {
-    signedIn();
-    projectData({ models: [catalogueModel()] });
-    usage({
-      route: [
-        usageRow({ key: "anthropic_messages:anthropic_messages:anthropic", requests: 80, cache_hit_rate: 0.78 }),
-        usageRow({ key: "openai_responses:anthropic_messages:anthropic", requests: 120, cache_hit_rate: 0 }),
-        usageRow({ key: "::anthropic", requests: 5, cache_hit_rate: null }),
-        usageRow({ key: "openai_embeddings:openai_embeddings:openai", requests: 3, input_tokens: 900, cache_hit_rate: null }),
-      ],
-    });
-    await renderApp(projectPath(`?${PERIOD}&by=route`));
-
-    const table = await breakdown();
-    await waitFor(() => expect(bodyRows(table)).toHaveLength(4));
-    const [first, second, third, fourth] = bodyRows(table);
-    expect(first).toHaveTextContent("Responses→ Messages");
-    expect(first).toHaveTextContent("0%");
-    expect(second).toHaveTextContent("Messages→ Messages");
-    expect(second).toHaveTextContent("78%");
-    expect(third).toHaveTextContent("Route not recorded");
-    expect(third).toHaveTextContent("—");
-    expect(fourth).toHaveTextContent("Embeddings");
-    expect(fourth).toHaveTextContent("—");
-    expect(fourth).not.toHaveTextContent("0%");
-    expect(within(table).getByRole("columnheader", { name: "Route" })).toBeInTheDocument();
-    expect(within(table).getByRole("columnheader", { name: "Cache hit" })).toBeInTheDocument();
-    expect(screen.getByRole("radio", { name: "By route" })).toBeChecked();
-  });
-
-  it("tells a replaced key from its replacement in usage by key", async () => {
-    signedIn();
-    projectData({ keys: [apiKey({ replaced_by: "key_next" }), apiKey({ id: "key_next", rotated_from: "key_web" })] });
-    usage({ key: [usageRow({ key: "key_next", requests: 10 }), usageRow({ key: "key_web", requests: 3 })] });
-    await renderApp(projectPath(`?${PERIOD}&by=key`));
-
-    const table = await breakdown();
-    await waitFor(() =>
-      expect(bodyRows(table).map((r) => r.textContent)).toEqual([expect.stringMatching(/^checkout-web\d/), expect.stringContaining("checkout-web (replaced)")]),
-    );
-  });
-
-  it("groups by key, member and day from the segmented control", async () => {
-    signedIn();
-    projectData({ keys: [apiKey()], members: [projectMember()], accounts: [serviceAccount()] });
-    usage({
-      day: [usageRow({ key: "2026-10-12", requests: 5 }), usageRow({ key: "2026-10-13", requests: 9 })],
-      key: [usageRow({ key: "key_web", requests: 10 }), usageRow({ key: "playground", requests: 4 }), usageRow({ key: "key_gone", requests: 1 })],
-      member: [
-        usageRow({ key: "user:usr_grace", requests: 8 }),
-        usageRow({ key: "service_account:sa_deploy", requests: 6 }),
-        usageRow({ key: "user:usr_ada", requests: 2 }),
-      ],
-    });
-    const { user, router } = await renderApp(projectPath(`?${PERIOD}`));
-
-    await breakdown();
-    await user.click(screen.getByRole("radio", { name: "By key" }));
-    await waitFor(() => expect(router.state.location.search).toMatchObject({ by: "key" }));
-    let table = await breakdown();
-    await waitFor(() =>
-      expect(bodyRows(table).map((r) => r.textContent)).toEqual([
-        expect.stringContaining("checkout-web"),
-        expect.stringContaining("Playground"),
-        expect.stringContaining("key_gone"),
-      ]),
-    );
-    expect(within(table).getByRole("columnheader", { name: "Key" })).toBeInTheDocument();
-
-    await user.click(screen.getByRole("radio", { name: "By member" }));
-    table = await breakdown();
-    await waitFor(() =>
-      expect(bodyRows(table).map((r) => r.textContent)).toEqual([
-        expect.stringContaining("Grace Hopper"),
-        expect.stringContaining("ci-deploy (service account)"),
-        expect.stringContaining("Ada Okafor (you)"),
-      ]),
-    );
-    expect(within(table).getByRole("columnheader", { name: "Member" })).toBeInTheDocument();
-
-    await user.click(screen.getByRole("radio", { name: "By day" }));
-    await waitFor(() => expect(router.state.location.search).toMatchObject({ by: "day" }));
-    table = await breakdown();
-    await waitFor(() => expect(bodyRows(table).map((r) => r.textContent)).toEqual([expect.stringContaining("13 Oct"), expect.stringContaining("12 Oct")]));
-    expect(within(table).getByRole("columnheader", { name: "Day" })).toBeInTheDocument();
-  });
-
-  it("says when the period has no requests, and offers a retry when the rows fail", async () => {
+  it("says when there are no limits, and when the latest requests couldn't load", async () => {
     signedIn();
     projectData();
-    let calls = 0;
-    on("GET", `${USAGE}/span`, { first_day: null, last_day: null });
-    on("GET", USAGE, ({ query }: { query: URLSearchParams }) =>
-      query.get("group_by") === "key" && ++calls === 1 ? apiError(403, "permission_denied", "Usage by key is hidden.") : { data: [] },
-    );
-    const { user } = await renderApp(projectPath(`?${PERIOD}&by=key`));
-
-    expect(await screen.findByText("Couldn't load these rows")).toBeInTheDocument();
-    await user.click(within(await breakdown()).getByRole("button", { name: "Try again" }));
-    expect(await within(await breakdown()).findByText("No requests in this period")).toBeInTheDocument();
+    usage({});
+    on("GET", "orgs/:org/projects/:project/logs", () => apiError(500, "api_error", "The log store is down."));
+    await renderApp(projectPath());
+    expect(await screen.findByText("No project limits. Keys and members can still have their own.")).toBeInTheDocument();
+    expect(await screen.findByText("The latest requests couldn't load; the notification says why.")).toBeInTheDocument();
   });
 
-  it("offers a retry across the whole row when the rows fail without the right to see cost", async () => {
-    signedIn({ projectRights: without("costs.view") });
+  it("says why the limits couldn't load when no notification did", async () => {
+    signedIn();
     projectData();
-    usage({ model: apiError(500, "internal", "Usage is down.") });
-    await renderApp(projectPath(`?${PERIOD}`));
-
-    const table = await breakdown();
-    expect(await within(table).findByText("Couldn't load these rows")).toBeInTheDocument();
-    expect(within(table).getByText("Couldn't load these rows").closest("[role=cell]")).toHaveAttribute("aria-colspan", "5");
+    usage({});
+    on("GET", "orgs/:org/projects/:project/logs", listed([]));
+    on("GET", "orgs/:org/projects/:project/limits", () => apiError(404, "not_found", "This project's limits are gone."));
+    await renderApp(projectPath());
+    expect(await screen.findByText("This project's limits are gone.")).toBeInTheDocument();
   });
 
-  it("leaves cost out without the right to see it", async () => {
-    signedIn({ projectRights: without("costs.view", "models.view") });
-    projectData({ models: [catalogueModel()] });
-    usage({ model: [usageRow({ key: "anthropic/claude-sonnet-4-5" })] });
-    await renderApp(projectPath(`?${PERIOD}`));
-
-    const table = await breakdown();
-    await waitFor(() => expect(bodyRows(table)[0]).toHaveTextContent("claude-sonnet-4-5"));
-    expect(bodyRows(table)[0]).not.toHaveTextContent("Claude Sonnet 4.5");
-    expect(within(table).queryByRole("columnheader", { name: "Cost" })).not.toBeInTheDocument();
-    expect(screen.getByText("Requests, errors, tokens and cache hits in the period")).toBeInTheDocument();
-    expect(screen.queryByText("Cost by model")).not.toBeInTheDocument();
-    expect(requests("GET", "orgs/:org/projects/:project/models")).toHaveLength(0);
+  it("names requests from the playground, from keys it doesn't know and to models no provider answered", async () => {
+    signedIn();
+    projectData({
+      keys: [apiKey()],
+      models: [catalogueModel({ model_id: "gpt-5.4-mini", provider: "openai", effective: { ...catalogueModel().effective, display_name: "GPT mini" } })],
+    });
+    usage({});
+    on(
+      "GET",
+      "orgs/:org/projects/:project/logs",
+      listed([logRow({ id: "req_play", key_id: null }), logRow({ id: "req_gone", key_id: "key_deleted", provider: "", model: "", requested_model: "fast" })]),
+    );
+    await renderApp(projectPath());
+    const latest = await screen.findByRole("list", { name: "Latest requests" });
+    await waitFor(() => expect(within(latest).getAllByRole("button")).toHaveLength(2));
+    const [play, gone] = within(latest).getAllByRole("button");
+    expect(play).toHaveTextContent(/GPT mini.*Playground.*1\.3 s/);
+    expect(gone).toHaveTextContent("fast");
+    expect(gone).not.toHaveTextContent("key_deleted");
   });
 
-  it("shows the project's limits, recent errors and counts beside the charts", async () => {
+  it("opens models, keys and members from their lists", async () => {
     signedIn();
     projectData({
       models: [catalogueModel()],
-      keys: [apiKey(), apiKey({ id: "key_old", state: "archived" })],
-      limits: [
-        limit(),
-        limit({ id: "lim_rate", kind: "request_rate", period: "minute", amount: "60", used: "12", resets_at: null }),
-        limit({ id: "lim_tokens", kind: "token_budget", period: "total", amount: "1000000", used: null, resets_at: null }),
-      ],
+      keys: [apiKey()],
+      members: [me({ user: { avatar_url: "https://avatars.example/ada.png" } }), projectMember()],
     });
-    on("GET", "orgs/:org/projects/:project/logs", listed([failedLog(), failedLog({ id: "log_2", status: 500, error_kind: null, requested_model: "gpt-x" })]));
-    usage();
-    const { user, router } = await renderApp(projectPath(`?${PERIOD}`));
-
-    expect(await screen.findByText("$12.50 of $50.00")).toBeInTheDocument();
-    expect(screen.getByText("12 of 60")).toBeInTheDocument();
-    expect(screen.getByText("Over the last minute")).toBeInTheDocument();
-    expect(screen.getByText("0 of 1,000,000")).toBeInTheDocument();
-    expect(screen.getByText("Never resets")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Limits" }).closest("section")).toHaveTextContent(/Resets \S/);
-
-    const errors = screen.getByRole("grid", { name: "Recent errors" });
-    expect(within(errors).getByRole("gridcell", { name: /Rate limited/ })).toBeInTheDocument();
-    expect(within(errors).getByRole("gridcell", { name: /gpt-x/ })).toBeInTheDocument();
-    const project = screen.getByRole("grid", { name: "This project" });
-    expect(within(project).getByRole("gridcell", { name: /Models/ })).toHaveTextContent("1");
-    expect(within(project).getByRole("gridcell", { name: /Keys/ })).toHaveTextContent("1");
-    expect(requests("GET", "orgs/:org/projects/:project/limits")[0]?.query.get("level")).toBe("project");
-    expect(Object.fromEntries(requests("GET", "orgs/:org/projects/:project/logs")[0]?.query ?? [])).toEqual({ failed: "true", limit: "5" });
-
-    await user.click(within(errors).getByRole("gridcell", { name: /Rate limited/ }));
-    await waitFor(() => expect(router.state.location.pathname).toBe(projectPath("logs")));
-    expect(router.state.location.search).toEqual({ log: "log_1" });
-  });
-
-  it("opens the keys from the project's counts, which include every page of active keys", async () => {
-    signedIn();
-    projectData();
-    on("GET", "orgs/:org/projects/:project/keys", ({ query }: { query: URLSearchParams }) =>
-      query.get("after")
-        ? listed([apiKey({ id: "key_two", name: "second-page" }), apiKey({ id: "key_old", name: "archived", state: "archived" })])
-        : listed([apiKey()], "cur_2"),
-    );
     on("GET", "orgs/:org/projects/:project/logs", listed([]));
-    usage();
-    const { user, router } = await renderApp(projectPath(`?${PERIOD}`));
+    usage({});
+    const { user, router } = await renderApp(projectPath());
 
-    expect(await screen.findByText("No project limits. Keys and members can still have their own.")).toBeInTheDocument();
-    expect(screen.getByText("No failed requests.")).toBeInTheDocument();
-    const keys = within(screen.getByRole("grid", { name: "This project" })).getByRole("gridcell", { name: /Keys/ });
-    expect(keys).toHaveTextContent("2");
-    await user.click(keys);
+    await user.click(await within(await screen.findByRole("list", { name: "Models" })).findByRole("button", { name: /Claude Sonnet 4\.5/ }));
+    await waitFor(() => expect(router.state.location.pathname).toBe(projectPath("models")));
+    expect(router.state.location.searchStr).toBe("?provider=anthropic");
+
+    await router.navigate({ to: projectPath() });
+    await user.click(await within(await screen.findByRole("list", { name: "API keys" })).findByRole("button", { name: /checkout-web/ }));
     await waitFor(() => expect(router.state.location.pathname).toBe(projectPath("keys")));
+    expect(router.state.location.searchStr).toBe("?key=key_web");
+
+    await router.navigate({ to: projectPath() });
+    const members = await screen.findByRole("list", { name: "Members" });
+    expect(await within(members).findByRole("button", { name: /Ada Okafor \(you\)/ })).toBeInTheDocument();
+    await user.click(within(members).getByRole("button", { name: /Grace Hopper/ }));
+    await waitFor(() => expect(router.state.location.pathname).toBe(projectPath("members")));
   });
 
-  it("hides the limits, errors and key count without the rights", async () => {
-    signedIn({ projectRights: without("limits.view", "logs.metadata.view", "keys.all.view") });
-    projectData({ models: [catalogueModel()] });
-    usage();
-    await renderApp(projectPath(`?${PERIOD}`));
-
-    const project = await screen.findByRole("grid", { name: "This project" });
-    expect(within(project).getByRole("gridcell", { name: /Models/ })).toBeInTheDocument();
-    expect(within(project).queryByRole("gridcell", { name: /Keys/ })).not.toBeInTheDocument();
-    expect(screen.queryByText("Limits")).not.toBeInTheDocument();
-    expect(screen.queryByText("Recent errors")).not.toBeInTheDocument();
-    expect(requests("GET", "orgs/:org/projects/:project/limits")).toHaveLength(0);
-    expect(requests("GET", "orgs/:org/projects/:project/logs")).toHaveLength(0);
-  });
-
-  it("leaves out recent errors on an install without request logs", async () => {
-    signedIn({ session: whoAmI({ request_logs: false }) });
-    projectData({ models: [catalogueModel()] });
-    usage();
-    await renderApp(projectPath(`?${PERIOD}`));
-
-    expect(await screen.findByRole("grid", { name: "This project" })).toBeInTheDocument();
-    expect(screen.queryByText("Recent errors")).not.toBeInTheDocument();
-    expect(requests("GET", "orgs/:org/projects/:project/logs")).toHaveLength(0);
-  });
-
-  it("leaves out the project's counts when neither can be seen", async () => {
-    signedIn({ projectRights: without("limits.view", "logs.metadata.view", "keys.all.view", "models.view") });
-    projectData();
-    usage();
-    await renderApp(projectPath(`?${PERIOD}`));
-
-    await screen.findByRole("table", { name: "Usage breakdown" });
-    expect(screen.queryByText("This project")).not.toBeInTheDocument();
-  });
-
-  it("reads usage from the first day when the whole span is chosen", async () => {
+  it("lists the project's recent changes by who made them", async () => {
     signedIn();
-    projectData();
-    usage();
-    await renderApp(projectPath("?period=all"));
-
-    await breakdown();
-    await waitFor(() => expect(requests("GET", USAGE).map((r) => r.query.get("from"))).toContain("2026-09-01"));
-    expect(requests("GET", USAGE).every((r) => r.query.get("from") === "2026-09-01")).toBe(true);
-  });
-
-  it("loads the daily usage again from a chart that couldn't load", async () => {
-    signedIn();
-    projectData();
-    let failing = true;
-    on("GET", `${USAGE}/span`, { first_day: "2026-09-01", last_day: "2026-10-14" });
-    on("GET", USAGE, ({ query }: { query: URLSearchParams }) =>
-      query.get("group_by") === "day" && failing
-        ? apiError(403, "permission_denied", "Usage is hidden for now.")
-        : { data: [usageRow({ key: "2026-10-13", requests: 7 })] },
-    );
-    const { user } = await renderApp(projectPath(`?${PERIOD}&by=day`));
-
-    const requestsChart = (await screen.findByRole("heading", { name: "Requests" })).closest("section") as HTMLElement;
-    expect(await within(requestsChart).findByText("Couldn't load this chart")).toBeInTheDocument();
-    expect(await within(await breakdown()).findByText("Couldn't load these rows")).toBeInTheDocument();
-    expect(screen.getAllByText("Couldn't load").length).toBeGreaterThanOrEqual(3);
-    failing = false;
-    await user.click(within(requestsChart).getByRole("button", { name: "Try again" }));
-    await waitFor(() => expect(within(requestsChart).queryByText("Couldn't load this chart")).not.toBeInTheDocument());
-    await waitFor(() => expect(bodyRows(screen.getByRole("table", { name: "Usage breakdown" }))[0]).toHaveTextContent("13 Oct"));
-  });
-
-  it("loads the daily rows again from the breakdown", async () => {
-    signedIn();
-    projectData();
-    let failing = true;
-    on("GET", `${USAGE}/span`, { first_day: "2026-09-01", last_day: "2026-10-14" });
-    on("GET", USAGE, ({ query }: { query: URLSearchParams }) =>
-      query.get("group_by") === "day" && failing
-        ? apiError(403, "permission_denied", "Usage is hidden for now.")
-        : { data: [usageRow({ key: "2026-10-13", requests: 7 })] },
-    );
-    const { user } = await renderApp(projectPath(`?${PERIOD}&by=day`));
-
-    expect(await within(await breakdown()).findByText("Couldn't load these rows")).toBeInTheDocument();
-    failing = false;
-    await user.click(within(await breakdown()).getByRole("button", { name: "Try again" }));
-    await waitFor(() => expect(bodyRows(screen.getByRole("table", { name: "Usage breakdown" }))[0]).toHaveTextContent("13 Oct"));
-  });
-
-  it("loads the cost by model again when it couldn't load", async () => {
-    signedIn();
-    projectData({ models: [catalogueModel()] });
-    let calls = 0;
-    on("GET", `${USAGE}/span`, { first_day: "2026-09-01", last_day: "2026-10-14" });
-    on("GET", USAGE, ({ query }: { query: URLSearchParams }) =>
-      query.get("group_by") === "model" && ++calls === 1
-        ? apiError(403, "permission_denied", "Usage is hidden for now.")
-        : { data: query.get("group_by") === "model" ? [usageRow({ key: "anthropic/claude-sonnet-4-5", cost: "2.5" })] : [] },
-    );
-    const { user } = await renderApp(projectPath(`?${PERIOD}`));
-
-    const share = (await screen.findByRole("heading", { name: "Cost by model" })).closest("section") as HTMLElement;
-    expect(await within(share).findByText("Couldn't load this chart")).toBeInTheDocument();
-    await user.click(within(share).getByRole("button", { name: "Try again" }));
-    await waitFor(() => expect(within(share).queryByText("Couldn't load this chart")).not.toBeInTheDocument());
-    expect(calls).toBe(2);
-  });
-
-  it("names the year of every week when the period spans two years", async () => {
-    signedIn();
-    projectData();
-    on("GET", `${USAGE}/span`, { first_day: "2025-10-01", last_day: "2026-10-14" });
-    on("GET", USAGE, ({ query }: { query: URLSearchParams }) => ({
-      data: query.get("group_by") === "week" ? [usageRow({ key: "2025-10-20", requests: 3 }), usageRow({ key: "2026-10-12", requests: 7 })] : [],
-    }));
-    await renderApp(projectPath("?from=2025-10-21&to=2026-10-14&by=day"));
-    await breakdown();
-    await waitFor(() =>
-      expect(bodyRows(screen.getByRole("table", { name: "Usage breakdown" })).map((r) => within(r).getAllByRole("cell")[0]?.textContent)).toEqual([
-        "Week of 12 Oct 2026",
-        "Week of 20 Oct 2025",
+    projectData({ accounts: [serviceAccount()] });
+    on("GET", "orgs/:org/projects/:project/logs", listed([]));
+    on(
+      "GET",
+      "orgs/:org/projects/:project/audit-log",
+      listed([
+        auditEvent({ action: "key.create", actor: { kind: "service_account", id: serviceAccount().id } }),
+        auditEvent({ id: "evt_2", action: "key.create" }),
       ]),
     );
+    usage({});
+    const { user, router } = await renderApp(projectPath());
+    const changes = await screen.findByRole("list", { name: "Recent changes" });
+    const rows = await within(changes).findAllByRole("button", { name: /Key created/ });
+    expect(rows).toHaveLength(2);
+    await user.click(rows[0] as HTMLElement);
+    await waitFor(() => expect(router.state.location.pathname).toBe(projectPath("audit-log")));
+    expect(router.state.location.searchStr).toBe("?event=evt_1");
   });
 
-  it("chooses a period from the picker", async () => {
-    signedIn();
+  it("gives the latest requests the whole row without the right to see limits", async () => {
+    signedIn({ projectRights: without("limits.view", "project.audit_log.view") });
     projectData();
-    usage();
-    const { user, router } = await renderApp(projectPath(`?${PERIOD}`));
+    usage({});
+    on("GET", "orgs/:org/projects/:project/logs", listed([]));
+    await renderApp(projectPath());
+    expect(await screen.findByRole("heading", { name: "Latest requests" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Limits" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Recent changes" })).not.toBeInTheDocument();
+  });
 
-    await breakdown();
-    await user.click(screen.getByRole("button", { description: "Period" }));
-    const dialog = await screen.findByRole("dialog", { name: "Choose a date range" });
-    await user.click(within(dialog).getByRole("option", { name: "Last 7 days" }));
-    await waitFor(() => expect(router.state.location.search).toMatchObject({ period: "7d" }));
+  it("leaves out the latest requests when request logs are off", async () => {
+    signedIn({ session: whoAmI({ request_logs: false }) });
+    projectData();
+    usage({});
+    await renderApp(projectPath());
+    expect(await screen.findByRole("heading", { name: "Limits" })).toBeInTheDocument();
+    expect(screen.queryByRole("list", { name: "Latest requests" })).not.toBeInTheDocument();
+    expect(requests("GET", "orgs/:org/projects/:project/logs")).toHaveLength(0);
   });
 });

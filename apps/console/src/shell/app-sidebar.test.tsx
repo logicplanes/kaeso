@@ -52,26 +52,26 @@ describe("the sidebar in a project", () => {
     await waitFor(() => expect(router.state.location.pathname).toBe(`/orgs/${ORG}/projects/${OTHER_PROJECT}/limits`));
   });
 
-  it("keeps the chosen period when switching from the overview", async () => {
+  it("keeps the analytics view and its period when switching projects", async () => {
     signedIn({ projectRights: ["usage.view", "project.view"] });
     on("GET", "orgs/:org/projects/:project/usage/span", { first: null, last: null });
     on("GET", "orgs/:org/projects/:project/usage", { data: [] });
     on("GET", "orgs/:org/projects/:project/models", { data: [] });
     on("GET", "orgs/:org/projects/:project/logs", page([]));
-    const { user, router } = await renderApp(`/orgs/${ORG}/projects/${PROJECT}?from=2026-10-01&to=2026-10-07`);
+    const { user, router } = await renderApp(`/orgs/${ORG}/projects/${PROJECT}/analytics/models?from=2026-10-01&to=2026-10-07&metric=cost&q=x`);
     await user.click(await within(sidebar()).findByRole("button", { name: "Checkout assistant", description: "Switch project" }));
     await user.click(await screen.findByRole("menuitemradio", { name: /Support triage/ }));
-    await waitFor(() => expect(router.state.location.pathname).toBe(`/orgs/${ORG}/projects/${OTHER_PROJECT}`));
-    expect(router.state.location.search).toMatchObject({ from: "2026-10-01", to: "2026-10-07" });
+    await waitFor(() => expect(router.state.location.pathname).toBe(`/orgs/${ORG}/projects/${OTHER_PROJECT}/analytics/models`));
+    expect(router.state.location.search).toEqual({ from: "2026-10-01", to: "2026-10-07", metric: "cost" });
   });
 
-  it("switches from an overview without a chosen period to the other project's overview", async () => {
+  it("switches from an overview to the other project's overview, with nothing in its address", async () => {
     signedIn({ projectRights: ["usage.view", "project.view"] });
     on("GET", "orgs/:org/projects/:project/usage/span", { first: null, last: null });
     on("GET", "orgs/:org/projects/:project/usage", { data: [] });
     on("GET", "orgs/:org/projects/:project/models", { data: [] });
     on("GET", "orgs/:org/projects/:project/logs", page([]));
-    const { user, router } = await renderApp(`/orgs/${ORG}/projects/${PROJECT}`);
+    const { user, router } = await renderApp(`/orgs/${ORG}/projects/${PROJECT}?from=2026-10-01`);
     await user.click(await within(sidebar()).findByRole("button", { name: "Checkout assistant", description: "Switch project" }));
     await user.click(await screen.findByRole("menuitemradio", { name: /Support triage/ }));
     await waitFor(() => expect(router.state.location.pathname).toBe(`/orgs/${ORG}/projects/${OTHER_PROJECT}`));

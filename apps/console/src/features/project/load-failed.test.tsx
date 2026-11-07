@@ -1,4 +1,4 @@
-import { screen, within } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { signedIn } from "~/test/fixtures";
 import { notifications } from "~/test/fixtures/org";
@@ -30,48 +30,46 @@ describe("a project page whose list couldn't load", () => {
     expect((await notifications().findAllByText("The project is being moved; try again.")).length).toBeGreaterThan(0);
   });
 
-  it("says on the overview when the limits or the recent errors couldn't load", async () => {
+  it("says on the overview when the limits or the latest requests couldn't load", async () => {
     signedIn();
     projectData();
-    on("GET", "orgs/:org/projects/:project/usage/span", { first_day: "2026-09-01", last_day: "2026-10-14" });
-    on("GET", "orgs/:org/projects/:project/usage", { data: [] });
+    overviewUsage();
     on("GET", "orgs/:org/projects/:project/limits", refused);
     on("GET", "orgs/:org/projects/:project/logs", refused);
     on("GET", "orgs/:org/projects/:project/keys", listed([]));
-    await renderApp(projectPath("?from=2026-10-01&to=2026-10-14"));
-    const aside = (await screen.findByText("The limits couldn't load; the notification says why.")).closest("aside") ?? document.body;
-    expect(within(aside).getByText("The recent errors couldn't load; the notification says why.")).toBeInTheDocument();
-    expect(within(aside).queryByText("No project limits. Keys and members can still have their own.")).not.toBeInTheDocument();
-    expect(within(aside).queryByText("No failed requests.")).not.toBeInTheDocument();
+    await renderApp(projectPath());
+    expect(await screen.findByText("The limits couldn't load; the notification says why.")).toBeInTheDocument();
+    expect(await screen.findByText("The latest requests couldn't load; the notification says why.")).toBeInTheDocument();
+    expect(screen.queryByText("No project limits. Keys and members can still have their own.")).not.toBeInTheDocument();
+    expect(screen.queryByText("No requests yet; they show here as they arrive")).not.toBeInTheDocument();
   });
 
-  it("says on the overview why the recent errors are missing when request logs are unavailable, where no notification does", async () => {
+  it("says on the overview why the latest requests are missing when request logs are unavailable, where no notification does", async () => {
     signedIn();
     projectData();
     overviewUsage();
     on("GET", "orgs/:org/projects/:project/logs", apiError(503, "unavailable", "Request logs are unavailable right now; try again shortly."));
     on("GET", "orgs/:org/projects/:project/keys", listed([]));
-    await renderApp(projectPath("?from=2026-10-01&to=2026-10-14"));
-    const aside = (await screen.findByText("Request logs are unavailable right now; try again shortly.")).closest("aside") ?? document.body;
-    expect(within(aside).queryByText("The recent errors couldn't load; the notification says why.")).not.toBeInTheDocument();
-    expect(within(aside).getByText("No project limits. Keys and members can still have their own.")).toBeInTheDocument();
+    await renderApp(projectPath());
+    expect(await screen.findByText("Request logs are unavailable right now; try again shortly.")).toBeInTheDocument();
+    expect(screen.queryByText("The latest requests couldn't load; the notification says why.")).not.toBeInTheDocument();
+    expect(screen.getByText("No project limits. Keys and members can still have their own.")).toBeInTheDocument();
     expect(notifications().queryByText("Request logs are unavailable right now; try again shortly.")).not.toBeInTheDocument();
   });
 
-  it("shows each part beside the overview as soon as it has loaded, without waiting for the others", async () => {
+  it("shows each part of the overview as soon as it has loaded, without waiting for the others", async () => {
     signedIn();
     projectData();
     overviewUsage();
     let answer: (rows: unknown) => void = () => {};
     on("GET", "orgs/:org/projects/:project/logs", () => new Promise((resolve) => (answer = resolve)));
     on("GET", "orgs/:org/projects/:project/keys", listed([]));
-    await renderApp(projectPath("?from=2026-10-01&to=2026-10-14"));
+    await renderApp(projectPath());
     expect(await screen.findByText("No project limits. Keys and members can still have their own.")).toBeInTheDocument();
-    expect(screen.getByRole("grid", { name: "This project" })).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "Recent errors" })).not.toBeInTheDocument();
+    expect(screen.getByRole("list", { name: "Latest requests" })).toHaveAttribute("aria-busy", "true");
 
     answer(listed([]));
-    expect(await screen.findByText("No failed requests.")).toBeInTheDocument();
+    expect(await screen.findByText("No requests yet; they show here as they arrive")).toBeInTheDocument();
   });
 });
 

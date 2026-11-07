@@ -72,4 +72,5 @@ export * from "./components/table/index.js";
 export * from "./components/settings/index.js";
 export * from "./components/section/index.js";
 export * from "./components/charts/index.js";
+export * from "./components/dashboard/index.js";
 export * from "./components/kaeso/index.js";

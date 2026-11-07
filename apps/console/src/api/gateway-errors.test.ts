@@ -203,3 +203,17 @@ describe("a refusal to create an account or an organization", () => {
     );
   });
 });
+
+describe("a refusal of a timeline's range or step", () => {
+  it("is translated in German and Chinese", async () => {
+    await speak("de");
+    expect((await errorFromResponse(refusal("Use `minute` or `hour`."))).message).toBe("`minute` oder `hour` verwenden.");
+    expect((await errorFromResponse(refusal("By minute, `from` and `to` are at most 2 days apart; use `hour`."))).message).toBe(
+      "Pro Minute liegen `from` und `to` höchstens 2 Tage auseinander; `hour` verwenden.",
+    );
+    await speak("zh-CN");
+    expect((await errorFromResponse(refusal("By hour, `from` and `to` are at most 62 days apart; use the daily usage."))).message).toBe(
+      "按小时统计时，`from` 与 `to` 最多相隔 62 天，请使用每日用量。",
+    );
+  });
+});

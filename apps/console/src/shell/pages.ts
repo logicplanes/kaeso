@@ -8,10 +8,12 @@ export interface OrgAreaPage {
   icon: IconData;
   path: string;
   right: string;
+  subpages?: true;
 }
 
 export const ORG_AREA_PAGES: OrgAreaPage[] = [
   { id: "overview", label: () => t("shell.page.overview", "Overview"), icon: icons.overview, path: "", right: "org.view" },
+  { id: "analytics", label: () => t("shell.page.analytics", "Analytics"), icon: icons.usage, path: "analytics", right: "usage.org.view", subpages: true },
   { id: "projects", label: () => t("common.projects", "Projects"), icon: icons.project, path: "projects", right: "org.view" },
   { id: "providers", label: () => t("shell.page.providers", "Providers"), icon: icons.provider, path: "providers", right: "provider_credentials.view" },
   { id: "mcp-servers", label: () => t("shell.page.mcpServers", "MCP servers"), icon: icons.instance, path: "mcp-servers", right: "mcp_servers.view" },
@@ -38,6 +40,15 @@ export const PROJECT_PAGES: ProjectPage[] = [
     right: "usage.view",
     key: "o",
     shortcut: [["g"], ["o"]],
+  },
+  {
+    id: "analytics",
+    label: () => t("shell.page.analytics", "Analytics"),
+    icon: icons.usage,
+    path: "analytics",
+    right: "usage.view",
+    key: "u",
+    shortcut: [["g"], ["u"]],
   },
   { id: "playground", label: () => t("shell.page.playground", "Playground"), icon: icons.code, path: "playground", right: "playground.use" },
   { id: "keys", label: () => t("shell.page.apiKeys", "API keys"), icon: icons.key, path: "keys", right: "keys.all.view", key: "k", shortcut: [["g"], ["k"]] },

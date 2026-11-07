@@ -405,18 +405,13 @@ test("platform keys: a rotated key stops at once when there is no grace period",
   expect((await request.get(projects, { headers: { authorization: `Bearer ${rotated}` } })).status()).toBe(200);
 });
 
-test("usage: the old settings page opens the overview with its period", async ({ page }) => {
+test("usage: the old settings page opens analytics with its period", async ({ page }) => {
   await openOrgSettings(page, "General");
   await expect(page.locator(`nav[aria-label="Settings"] a[href^="/settings/orgs/"]`).getByText("Usage", { exact: true })).toHaveCount(0);
   const org = /\/settings\/orgs\/([^/]+)/.exec(new URL(page.url()).pathname)?.[1] ?? "";
   await page.goto(`/settings/orgs/${org}/usage?from=2026-01-01&to=2026-01-31`);
-  await expect(page).toHaveURL(new RegExp(`/orgs/${org}\\?from=2026-01-01&to=2026-01-31$`));
-  await expect(page.getByRole("heading", { level: 1, name: "Overview" })).toBeVisible();
+  await expect(page).toHaveURL(new RegExp(`/orgs/${org}/analytics\\?from=2026-01-01&to=2026-01-31$`));
+  await expect(page.getByRole("heading", { level: 1, name: "Analytics" })).toBeVisible();
   await expect(page.getByLabel("Usage in the period")).toBeVisible();
-  await expect(
-    page
-      .getByRole("grid", { name: "Projects" })
-      .getByText(/requests?$/)
-      .first(),
-  ).toBeVisible();
+  await expect(page.getByRole("table", { name: "Usage breakdown" })).toBeVisible();
 });

@@ -106,6 +106,8 @@ async fn every_request_log_endpoint_says_logs_are_off() {
         ),
         format!("{}/logs/export", project(&env)),
         format!("{org}/logs/storage"),
+        format!("{}/usage/timeline", project(&env)),
+        format!("{org}/usage/timeline"),
     ] {
         off(&env.app.get(&path, &env.owner.cookie).await);
     }
