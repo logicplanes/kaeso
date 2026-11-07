@@ -9,6 +9,7 @@ const toolsSearch = (s: Record<string, unknown>): ToolsSearch => {
   const tab = one(s.tab, ["servers", "connect"] as const);
   const state = one(s.state, ["on", "off", "changed"] as const);
   const hint = one(s.hint, ["read_only", "destructive", "open_world"] as const);
+  const sort = one(s.sort, ["calls", "used", "on"] as const);
   const tool = text(s.tool);
   const server = text(s.server);
   if (tab) out.tab = tab;
@@ -16,6 +17,7 @@ const toolsSearch = (s: Record<string, unknown>): ToolsSearch => {
   if (server) out.server = server;
   if (state) out.state = state;
   if (hint) out.hint = hint;
+  if (sort) out.sort = sort;
   return out;
 };
 
