@@ -255,7 +255,9 @@ describe("Project › Tools › Servers", () => {
     await screen.findByRole("grid", { name: "Servers" });
     expect(names()).toEqual(["Alpha", "Bravo", "Charlie", "Delta"]);
     expect(
-      within(screen.getByRole("grid", { name: "Servers" })).getByRole("row", { name: /^Alpha/ }).querySelector('[role="meter"]'),
+      within(screen.getByRole("grid", { name: "Servers" }))
+        .getByRole("row", { name: /^Alpha/ })
+        .querySelector('[role="meter"]'),
     ).toHaveAttribute("aria-valuenow", "33");
     const sort = screen.getByRole("combobox", { name: "Sort" });
     await user.click(sort);
