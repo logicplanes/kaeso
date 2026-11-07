@@ -8,7 +8,7 @@ services:
       registry_type: GHCR
       registry: logicplanes
       repository: kaeso-gateway
-      tag: 0.6.0-rc.6
+      tag: 0.6.0-rc.7
     http_port: 8080
     instance_size_slug: apps-s-1vcpu-2gb
     instance_count: 1
@@ -59,7 +59,7 @@ services:
       registry_type: GHCR
       registry: logicplanes
       repository: kaeso-console
-      tag: 0.6.0-rc.6
+      tag: 0.6.0-rc.7
     http_port: 3000
     instance_size_slug: apps-s-1vcpu-0.5gb
     instance_count: 1
