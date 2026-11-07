@@ -1,8 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="264" height="48" viewBox="0 0 264 48" role="img" aria-label="Open in Google Cloud Shell">
   <defs>
     <linearGradient id="gcp-bg" x1="0" y1="0" x2="264" y2="48" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#1A73E8"/>
-      <stop offset="1" stop-color="#4C9AFF"/>
+      <stop stop-color="#0B57D0"/>
+      <stop offset="1" stop-color="#1967D2"/>
     </linearGradient>
   </defs>
   <rect width="264" height="48" rx="10" fill="url(#gcp-bg)"/>
