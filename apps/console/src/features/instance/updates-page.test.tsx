@@ -283,20 +283,28 @@ describe("instance updates page", () => {
     expect(screen.getByText("Pre-release")).toBeInTheDocument();
   });
 
-  it.each([
-    [{ updater: { state: "not_installed", version: null } }, "The updater isn't installed; this install updates by hand."],
-    [{ updater: { state: "unreachable", version: null } }, "The updater doesn't answer; check that its container runs."],
-    [{ updater: { state: "outdated", version: "40.4.0" } }, "This release needs a newer updater; update by hand once."],
-  ] as const)("shows the commands to update by hand when the updater can't (%#)", async (change, reason) => {
+  it("shows the one command that turns the updater on when it's off", async () => {
     signedIn();
-    on("GET", "instance/updates", available({ can_apply: false, ...change }));
+    on("GET", "instance/updates", available({ can_apply: false, updater: { state: "not_installed", version: null } }));
     history();
     await renderApp(PATH);
-    expect(await screen.findByText(reason)).toBeInTheDocument();
-    expect(screen.getByText(/releases\/download\/v40\.4\.3\/compose\.yaml/)).toBeInTheDocument();
+    expect(await screen.findByText("The updater is off; turn it on to update from here.")).toBeInTheDocument();
+    expect(screen.getByText("Turn the updater on, in the install's folder")).toBeInTheDocument();
+    expect(document.body.textContent).toContain("curl -fsSL https://kaeso.app/install.sh | sh");
+    expect(screen.getByRole("link", { name: /How the updater works/ })).toHaveAttribute("href", "https://docs.kaeso.app/self-hosting/upgrades#the-updater");
+    expect(screen.queryByText(/releases\/download/)).not.toBeInTheDocument();
+  });
+
+  it("shows how to start the updater again when it doesn't answer", async () => {
+    signedIn();
+    on("GET", "instance/updates", available({ can_apply: false, updater: { state: "unreachable", version: null } }));
+    history();
+    await renderApp(PATH);
+    expect(await screen.findByText("The updater doesn't answer; check that its container runs.")).toBeInTheDocument();
+    expect(screen.getByText("40.4.3 available")).toBeInTheDocument();
+    expect(screen.getByText("Start the updater again, in the install's folder")).toBeInTheDocument();
     expect(document.body.textContent).toContain("docker compose up -d --wait");
-    for (const link of screen.getAllByRole("link", { name: /Set up the updater/ }))
-      expect(link).toHaveAttribute("href", "https://docs.kaeso.app/self-hosting/upgrades#the-updater");
+    expect(screen.queryByText(/releases\/download/)).not.toBeInTheDocument();
   });
 
   it("says when the last check failed", async () => {
@@ -374,12 +382,12 @@ describe("instance updates page", () => {
     expect(screen.queryByText("Updater")).not.toBeInTheDocument();
   });
 
-  it("says when the updater doesn't answer", async () => {
+  it("shows the commands to update by hand once when the updater is too old for the release", async () => {
     signedIn();
-    on("GET", "instance/updates", available({ can_apply: false, updater: { state: "unreachable", version: null } }));
+    on("GET", "instance/updates", available({ can_apply: false, updater: { state: "outdated", version: "40.4.0" } }));
     history();
     await renderApp(PATH);
-    expect(await screen.findByText("The updater doesn't answer; check that its container runs.")).toBeInTheDocument();
+    expect(await screen.findByText("This release needs a newer updater; update by hand once.")).toBeInTheDocument();
     expect(screen.getByText("40.4.3 available")).toBeInTheDocument();
     const commands = screen.getByText(/releases\/download\/v40\.4\.3\/compose\.yaml/).closest("pre")?.textContent ?? "";
     const steps = [

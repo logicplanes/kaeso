@@ -25,7 +25,7 @@ curl -fsSL https://kaeso.app/install.sh | sh -s -- --domain kaeso.example.com
 
 Vor der Installation startet das Skript Docker, falls es gestoppt ist, und prüft, ob Ihre Domain einen DNS-Eintrag hat. Der erste Start dauert ein bis zwei Minuten, während die Images geladen werden. Danach prüft das Skript, ob Caddy das Zertifikat der Domain erhalten hat, und erklärt sonst die Antwort der Zertifizierungsstelle. Zum Schluss gibt es den Einrichtungslink aus und öffnet ihn im Browser, wenn Sie es auf Ihrem eigenen Rechner ausführen; `--no-open` lässt ihn geschlossen. Bis Sie [Ihren SMTP-Server eintragen](../self-hosting/email.md), schreibt das Gateway seine E-Mails nur in sein Log, Anmeldelinks und Einladungen kommen also nicht an. [Von Hand installieren](../self-hosting/installation.md#von-hand-installieren) zeigt jeden Schritt des Skripts.
 
-Führen Sie das Skript im selben Ordner erneut aus, um Kaeso wieder zu starten; es behält die Einstellungen und den Hauptschlüssel. Auf einem Rechner läuft ein Kaeso, deshalb lehnt das Skript eine zweite Installation in einem anderen Ordner ab.
+Führen Sie das Skript im Ordner der Installation erneut aus, um Kaeso wieder zu starten; es behält die Einstellungen und den Hauptschlüssel. Das Skript schaltet auch den [Updater](../self-hosting/upgrades.md#der-updater) ein, sodass **Auf … aktualisieren** unter **Instanz** › **Updates** neue Releases installiert. Auf einem Rechner läuft ein Kaeso, deshalb lehnt das Skript eine zweite Installation in einem anderen Ordner ab.
 
 > [!IMPORTANT]
 > Bewahren Sie eine Kopie von `kaeso/master-keys` sicher auf, getrennt von Ihren Datenbank-Backups. Ohne sie kann Kaeso die gespeicherten Anbieter-Schlüssel nicht entschlüsseln, und Sie müssen sie neu eingeben.

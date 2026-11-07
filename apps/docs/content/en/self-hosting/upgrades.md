@@ -75,11 +75,17 @@ The gateway then uses the model data built into the release, the **Updates** pag
 
 ## The updater
 
-The updater is an optional service in `compose.yaml`, with its own Docker socket proxy. It is the only part of Kaeso that talks to Docker, so it is off until you turn it on.
+The updater is an optional service in `compose.yaml`, with its own Docker socket proxy. It is the only part of Kaeso that talks to Docker. The installer turns it on, and an install by hand turns it on in `.env`.
 
 ### Turn on the updater
 
-The updater needs Docker Engine 25 or newer.
+The updater needs Docker Engine 25 or newer. The installer turns it on unless you pass `--no-updater`. To turn it on for an install that runs without it, run the installer again in the install's folder:
+
+```bash
+curl -fsSL https://kaeso.app/install.sh | sh
+```
+
+To turn it on by hand instead:
 
 1. In the install's folder, give the gateway and the updater a shared token, turn on the `updater` profile and name the install's folder:
 

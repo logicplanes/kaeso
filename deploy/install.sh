@@ -9,11 +9,13 @@ set -eu
 # Wrapped in a function so that a download cut off halfway runs nothing.
 main() {
   domain="${KAESO_DOMAIN:-}"
-  dir="${KAESO_INSTALL_DIR:-kaeso}"
+  dir="${KAESO_INSTALL_DIR:-}"
   version="${KAESO_VERSION:-latest}"
   install_docker="${KAESO_INSTALL_DOCKER:-}"
   open_browser=yes
   [ "${KAESO_NO_OPEN:-}" != yes ] || open_browser=no
+  updater=yes
+  [ "${KAESO_NO_UPDATER:-}" != yes ] || updater=no
   while [ $# -gt 0 ]; do
     case "$1" in
       --domain) domain="${2:?--domain needs a value}"; shift 2 ;;
@@ -21,10 +23,16 @@ main() {
       --version) version="${2:?--version needs a value}"; shift 2 ;;
       --install-docker) install_docker=yes; shift ;;
       --no-open) open_browser=no; shift ;;
+      --no-updater) updater=no; shift ;;
       -h | --help) usage; return 0 ;;
       *) fail "Unknown option $1. Run with --help to see the options." ;;
     esac
   done
+
+  if [ -z "$dir" ]; then
+    dir=kaeso
+    ! is_install . || dir=.
+  fi
 
   command -v curl >/dev/null 2>&1 || command -v wget >/dev/null 2>&1 || fail "The installer needs curl or wget."
   docker_ready
@@ -89,6 +97,7 @@ main() {
   fi
 
   pin_subnet "$project"
+  turn_on_updater
 
   if [ ! -f compose.override.yaml ] && [ -z "$(docker compose ps -q --status running caddy </dev/null 2>/dev/null)" ]; then
     free_ports
@@ -103,7 +112,11 @@ main() {
     docker image inspect "$image" >/dev/null 2>&1 </dev/null || missing=yes
   done
   if [ -n "$missing" ]; then
-    say "Downloading Kaeso's images, about 2 GB; this takes a minute or two"
+    if [ -n "$fresh" ]; then
+      say "Downloading Kaeso's images, about 2 GB; this takes a minute or two"
+    else
+      say "Downloading the images this install is missing"
+    fi
     quiet=--quiet
     [ ! -t 2 ] || quiet=
     docker compose pull $quiet </dev/null || fail "Couldn't download Kaeso's images. Check the connection and run the installer again."
@@ -169,14 +182,16 @@ Installs Kaeso with Docker Compose into a new folder and starts it.
 Usage: curl -fsSL https://kaeso.app/install.sh | sh -s -- [options]
 
   --domain DOMAIN    the domain Kaeso answers on (default: localhost)
-  --dir DIR          the folder to install into (default: ./kaeso)
+  --dir DIR          the folder to install into (default: this folder when it holds an install, otherwise ./kaeso)
   --version VERSION  the release to install (default: the newest stable release)
   --install-docker   on Linux, install Docker Engine first if it's missing, without asking
   --no-open          don't open the setup link in the browser
+  --no-updater       leave the updater off, so Kaeso updates only by hand
 
-The environment variables KAESO_DOMAIN, KAESO_INSTALL_DIR, KAESO_VERSION, KAESO_INSTALL_DOCKER=yes and KAESO_NO_OPEN=yes
-set the same options.
-Running it again in the same folder keeps the settings and the master key, and starts Kaeso if it's stopped.
+The environment variables KAESO_DOMAIN, KAESO_INSTALL_DIR, KAESO_VERSION, KAESO_INSTALL_DOCKER=yes, KAESO_NO_OPEN=yes and
+KAESO_NO_UPDATER=yes set the same options.
+Running it again in the same folder keeps the settings and the master key, turns on the updater if it's off, and starts
+Kaeso if it's stopped.
 When Docker Desktop, OrbStack or Colima is installed but stopped, the installer starts it.
 EOF
 }
@@ -400,6 +415,45 @@ choose_domain() {
     clean_domain "$answer" && return 0
     printf '"%s" is not a domain. Give one such as kaeso.example.com, or localhost.\n' "$answer" >/dev/tty
   done
+}
+
+is_install() {
+  [ -f "$1/compose.yaml" ] && [ -f "$1/.env" ] && grep -q '^KAESO_DOMAIN=' "$1/.env" 2>/dev/null
+}
+
+# The updater is what makes Update in the console work. Its proxy speaks Docker API 1.44, which Docker Engine 25 brought.
+turn_on_updater() {
+  [ "$updater" = yes ] || return 0
+  grep -q '^KAESO_UPDATER_TOKEN' .env && return 0
+  ! grep -qs 'KAESO_UPDATER_TOKEN_FILE' compose.override.yaml || return 0
+  engine="$(docker version --format '{{.Server.Version}}' </dev/null 2>/dev/null)" || engine=
+  if ! at_least "$engine" 25 0; then
+    note "The updater needs Docker Engine 25 or newer, and this is ${engine:-an older one}, so Kaeso updates by hand here: https://docs.kaeso.app/self-hosting/upgrades#update-by-hand"
+    return 0
+  fi
+  [ -n "$fresh" ] || say "Turning on the updater, so Update in the console installs new releases"
+  {
+    echo "KAESO_UPDATER_TOKEN=$(secret)$(secret)"
+    echo "KAESO_DIR=$here"
+    socket="$(rootless_socket)" && echo "DOCKER_SOCKET=$socket"
+  } >>.env
+  if grep -q '^COMPOSE_PROFILES=' .env; then
+    awk '/^COMPOSE_PROFILES=/ && $0 !~ /[=,]updater(,|$)/ { $0 = $0 (/=$/ ? "" : ",") "updater" } { print }' .env >.env.part
+    cat .env.part >.env
+    rm -f .env.part
+  else
+    echo "COMPOSE_PROFILES=updater" >>.env
+  fi
+}
+
+# Rootless Docker keeps its socket in the user's runtime folder instead of /var/run/docker.sock.
+rootless_socket() {
+  docker info --format '{{.SecurityOptions}}' </dev/null 2>/dev/null | grep -q rootless || return 1
+  host="$(docker context inspect --format '{{.Endpoints.docker.Host}}' </dev/null 2>/dev/null)" || return 1
+  case "$host" in
+    unix://*) printf '%s\n' "${host#unix://}" ;;
+    *) return 1 ;;
+  esac
 }
 
 # Caddy signs these itself instead of asking a public certificate authority.
