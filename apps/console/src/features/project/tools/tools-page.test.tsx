@@ -241,31 +241,34 @@ describe("Project › Tools › Servers", () => {
     signedIn();
     tools({
       servers: [
-        projectServer({ id: "mcp_b", name: "Bravo", tools: 4, tools_on: 4, calls_7d: 1, last_call_at: "2026-10-01T11:00:00Z" }),
+        projectServer({ id: "mcp_b", name: "Bravo", tools: 4, tools_on: 1, calls_7d: 9, last_call_at: "2026-10-14T11:00:00Z" }),
         projectServer({ id: "mcp_a", name: "Alpha", tools: 3, tools_on: 1, calls_7d: 9, last_call_at: "2026-10-14T11:00:00Z" }),
         projectServer({ id: "mcp_c", name: "Charlie", tools: 0, tools_on: 0, calls_7d: null, last_call_at: null }),
+        projectServer({ id: "mcp_d", name: "Delta", tools: 3, tools_on: 1, calls_7d: 0, last_call_at: "2026-10-01T11:00:00Z" }),
       ],
     });
     const { user } = await renderApp(projectPath("tools?tab=servers"));
     const names = () =>
       within(screen.getByRole("grid", { name: "Servers" }))
         .getAllByRole("row")
-        .map((r) => r.textContent?.match(/^(Alpha|Bravo|Charlie)/)?.[1]);
+        .map((r) => r.textContent?.match(/^(Alpha|Bravo|Charlie|Delta)/)?.[1]);
     await screen.findByRole("grid", { name: "Servers" });
-    expect(names()).toEqual(["Alpha", "Bravo", "Charlie"]);
-    expect(within(screen.getByRole("grid", { name: "Servers" })).getByRole("meter", { name: "1 of 3 on" })).toHaveAttribute("aria-valuenow", "33");
+    expect(names()).toEqual(["Alpha", "Bravo", "Charlie", "Delta"]);
+    expect(
+      within(screen.getByRole("grid", { name: "Servers" })).getByRole("row", { name: /^Alpha/ }).querySelector('[role="meter"]'),
+    ).toHaveAttribute("aria-valuenow", "33");
     const sort = screen.getByRole("combobox", { name: "Sort" });
     await user.click(sort);
     await user.click(await screen.findByRole("option", { name: "Calls in 7 days" }));
     await waitFor(() => expect(window.location.search).toContain("sort=calls"));
-    expect(names()).toEqual(["Alpha", "Bravo", "Charlie"]);
+    expect(names()).toEqual(["Alpha", "Bravo", "Delta", "Charlie"]);
     await user.click(sort);
     await user.click(await screen.findByRole("option", { name: "Tools on" }));
-    await waitFor(() => expect(names()).toEqual(["Bravo", "Alpha", "Charlie"]));
+    await waitFor(() => expect(names()).toEqual(["Bravo", "Alpha", "Delta", "Charlie"]));
     await user.click(sort);
     await user.click(await screen.findByRole("option", { name: "Last used" }));
     await waitFor(() => expect(window.location.search).toContain("sort=used"));
-    expect(names()).toEqual(["Alpha", "Bravo", "Charlie"]);
+    expect(names()).toEqual(["Alpha", "Bravo", "Delta", "Charlie"]);
     await user.click(sort);
     await user.click(await screen.findByRole("option", { name: "Name" }));
     await waitFor(() => expect(window.location.search).not.toContain("sort="));
