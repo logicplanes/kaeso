@@ -22,12 +22,6 @@ function subscribeCoarse(onChange: () => void) {
 const isCoarse = () => typeof window !== "undefined" && !!window.matchMedia?.(COARSE).matches;
 const useCoarsePointer = () => useSyncExternalStore(subscribeCoarse, isCoarse, () => false);
 const isMac = () => typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
-const useMac = () =>
-  useSyncExternalStore(
-    () => () => undefined,
-    isMac,
-    () => false,
-  );
 
 export interface ComposerProps {
   value?: string | undefined;
@@ -112,7 +106,7 @@ export const Composer = forwardRef<HTMLTextAreaElement, ComposerProps>(function 
     if (clearOnSubmit && value === undefined) setText("");
   };
   const coarse = useCoarsePointer();
-  const mac = useMac();
+  const mac = isMac();
   const enterSends = submitOn === "enter" && !coarse;
   const hint =
     disabled || streaming || loading || coarse

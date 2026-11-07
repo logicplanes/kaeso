@@ -166,8 +166,18 @@ describe("Composer", () => {
     expect(hint()).toHaveTextContent("Enter sends, Shift Enter adds a line");
     expect(hint()).toHaveAttribute("aria-hidden");
     expect(screen.getByRole("button", { name: "Send" })).not.toHaveAccessibleDescription(/Enter sends/);
-    rerender(<Composer submitOn="mod-enter" />);
-    expect(hint()).toHaveTextContent(/(⌘|Ctrl) Enter sends/);
+    const platform = Object.getOwnPropertyDescriptor(Navigator.prototype, "platform");
+    try {
+      Object.defineProperty(navigator, "platform", { value: "MacIntel", configurable: true });
+      rerender(<Composer submitOn="mod-enter" key="mac" />);
+      expect(hint()).toHaveTextContent("⌘ Enter sends");
+      Object.defineProperty(navigator, "platform", { value: "Win32", configurable: true });
+      rerender(<Composer submitOn="mod-enter" key="win" />);
+      expect(hint()).toHaveTextContent("Ctrl Enter sends");
+    } finally {
+      delete (navigator as { platform?: string }).platform;
+      if (platform) Object.defineProperty(Navigator.prototype, "platform", platform);
+    }
     rerender(<Composer streaming />);
     expect(hint()).toBeNull();
     rerender(<Composer disabled />);
