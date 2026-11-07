@@ -85,6 +85,8 @@ The list shows each key's name, its last four characters, the projects that use 
 
 An account shows **Signed out** when the provider has ended its session, for example after its owner disconnected Kaeso in ChatGPT. A Grok account shows **No API access** when xAI refuses its plan. In both cases, its requests fail until someone with **Change provider keys** chooses **Sign in again**.
 
+When a provider refuses a key three times in a row, or ends an account's session, Kaeso emails everyone with **Change provider keys**. The email names the provider, the key and its last four characters or the account, the projects that use it, what the provider answered, when the refusals happened and when the key was last used, so the reader can decide whether to replace it, top up the account or sign in again ([choose your emails](account.md#choose-your-emails)).
+
 When you delete the default, the provider's most recently added other key becomes the default. If there is none, requests to that provider fail. The dialog tells you which applies.
 
 > [!NOTE]

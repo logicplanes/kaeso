@@ -2,11 +2,20 @@
 source: crates/kaeso-mail/src/templates.rs
 expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
 ---
-Subject: [Acme] OpenAI prod keeps being refused
+Subject: [Acme] OpenAI key Production keeps being refused
 
-OpenAI prod keeps being refused
+OpenAI key Production keeps being refused
 
-The provider refused OpenAI prod three times in a row; replace it.
+OpenAI refused the key Production (…WXYZ) three times in a row; replace it.
+
+Organization: Acme
+Provider: OpenAI
+Key: Production (…WXYZ)
+Used by: Checkout, Support, and every project without a key of its own
+Provider's answer: HTTP 401: Incorrect API key provided: sk-pr***XYZ.
+First refused: 2026-11-07 09:10 UTC
+Last refused: 2026-11-07 09:12 UTC
+Last used: 2026-11-06 18:40 UTC
 
 Open provider keys:
 https://kaeso.example.com/orgs/org_1

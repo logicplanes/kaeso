@@ -12,5 +12,5 @@ pub use layout::Instance;
 pub use locale::Locale;
 pub use mailer::{MailError, Mailer, MemorySink, SmtpSecurity, SmtpSettings, Transport};
 pub use templates::{
-    Actor, Budget, BudgetScope, Email, EmailKind, LimitKind, LimitPeriod, Rendered,
+    Actor, Budget, BudgetAlert, BudgetScope, Email, EmailKind, LimitKind, LimitPeriod, Rendered,
 };

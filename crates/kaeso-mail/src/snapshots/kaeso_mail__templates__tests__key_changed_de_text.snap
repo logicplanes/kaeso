@@ -2,9 +2,9 @@
 source: crates/kaeso-mail/src/templates.rs
 expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
 ---
-Subject: [Checkout] Ihr Schlüssel wurde rotiert
+Subject: [Checkout] Ihr Schlüssel ci-deploy wurde rotiert
 
-Ihr Schlüssel wurde rotiert
+Ihr Schlüssel ci-deploy wurde rotiert
 
 Ada Lovelace hat Ihren Schlüssel ci-deploy rotiert.
 

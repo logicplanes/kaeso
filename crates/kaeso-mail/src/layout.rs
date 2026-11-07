@@ -57,6 +57,116 @@ impl Reason {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum Label {
+    Organization,
+    Project,
+    AppliesTo,
+    Budget,
+    Used,
+    Resets,
+    Provider,
+    Key,
+    Account,
+    UsedBy,
+    Answer,
+    FirstRefused,
+    LastRefused,
+    LastUsed,
+    SignedOut,
+    Model,
+    InputPrice,
+    OutputPrice,
+    CacheReadPrice,
+    CacheWritePrice,
+    CacheWriteHourPrice,
+}
+
+impl Label {
+    pub(crate) fn text(self, lang: Locale) -> &'static str {
+        match (lang, self) {
+            (Locale::En, Label::Organization) => "Organization",
+            (Locale::En, Label::Project) => "Project",
+            (Locale::En, Label::AppliesTo) => "Applies to",
+            (Locale::En, Label::Budget) => "Budget",
+            (Locale::En, Label::Used) => "Used",
+            (Locale::En, Label::Resets) => "Resets",
+            (Locale::En, Label::Provider) => "Provider",
+            (Locale::En, Label::Key) => "Key",
+            (Locale::En, Label::Account) => "Account",
+            (Locale::En, Label::UsedBy) => "Used by",
+            (Locale::En, Label::Answer) => "Provider's answer",
+            (Locale::En, Label::FirstRefused) => "First refused",
+            (Locale::En, Label::LastRefused) => "Last refused",
+            (Locale::En, Label::LastUsed) => "Last used",
+            (Locale::En, Label::SignedOut) => "Signed out",
+            (Locale::En, Label::Model) => "Model",
+            (Locale::En, Label::InputPrice) => "Input price",
+            (Locale::En, Label::OutputPrice) => "Output price",
+            (Locale::En, Label::CacheReadPrice) => "Cache read price",
+            (Locale::En, Label::CacheWritePrice) => "Cache write price",
+            (Locale::En, Label::CacheWriteHourPrice) => "Cache write price (1 hour)",
+            (Locale::De, Label::Organization) => "Organisation",
+            (Locale::De, Label::Project) => "Projekt",
+            (Locale::De, Label::AppliesTo) => "Gilt für",
+            (Locale::De, Label::Budget) => "Budget",
+            (Locale::De, Label::Used) => "Verbraucht",
+            (Locale::De, Label::Resets) => "Zurückgesetzt",
+            (Locale::De, Label::Provider) => "Anbieter",
+            (Locale::De, Label::Key) => "Schlüssel",
+            (Locale::De, Label::Account) => "Konto",
+            (Locale::De, Label::UsedBy) => "Verwendet von",
+            (Locale::De, Label::Answer) => "Antwort des Anbieters",
+            (Locale::De, Label::FirstRefused) => "Erste Ablehnung",
+            (Locale::De, Label::LastRefused) => "Letzte Ablehnung",
+            (Locale::De, Label::LastUsed) => "Zuletzt verwendet",
+            (Locale::De, Label::SignedOut) => "Abgemeldet",
+            (Locale::De, Label::Model) => "Modell",
+            (Locale::De, Label::InputPrice) => "Eingabepreis",
+            (Locale::De, Label::OutputPrice) => "Ausgabepreis",
+            (Locale::De, Label::CacheReadPrice) => "Preis für Cache-Lesen",
+            (Locale::De, Label::CacheWritePrice) => "Preis für Cache-Schreiben",
+            (Locale::De, Label::CacheWriteHourPrice) => "Preis für Cache-Schreiben (1 Stunde)",
+            (Locale::ZhCn, Label::Organization) => "组织",
+            (Locale::ZhCn, Label::Project) => "项目",
+            (Locale::ZhCn, Label::AppliesTo) => "适用于",
+            (Locale::ZhCn, Label::Budget) => "预算",
+            (Locale::ZhCn, Label::Used) => "已用",
+            (Locale::ZhCn, Label::Resets) => "重置时间",
+            (Locale::ZhCn, Label::Provider) => "服务商",
+            (Locale::ZhCn, Label::Key) => "密钥",
+            (Locale::ZhCn, Label::Account) => "账户",
+            (Locale::ZhCn, Label::UsedBy) => "使用方",
+            (Locale::ZhCn, Label::Answer) => "服务商的回复",
+            (Locale::ZhCn, Label::FirstRefused) => "首次拒绝",
+            (Locale::ZhCn, Label::LastRefused) => "最近拒绝",
+            (Locale::ZhCn, Label::LastUsed) => "最近使用",
+            (Locale::ZhCn, Label::SignedOut) => "退出登录时间",
+            (Locale::ZhCn, Label::Model) => "模型",
+            (Locale::ZhCn, Label::InputPrice) => "输入价格",
+            (Locale::ZhCn, Label::OutputPrice) => "输出价格",
+            (Locale::ZhCn, Label::CacheReadPrice) => "缓存读取价格",
+            (Locale::ZhCn, Label::CacheWritePrice) => "缓存写入价格",
+            (Locale::ZhCn, Label::CacheWriteHourPrice) => "缓存写入价格（1 小时）",
+        }
+    }
+
+    pub(crate) fn of(self, lang: Locale, value: impl Into<String>) -> Detail {
+        Detail {
+            label: self.text(lang),
+            value: value.into(),
+        }
+    }
+}
+
+pub(crate) fn never(lang: Locale) -> &'static str {
+    match lang {
+        Locale::En => "never",
+        Locale::De => "nie",
+        Locale::ZhCn => "从不",
+    }
+}
+
 fn footer(lang: Locale) -> (&'static str, &'static str) {
     match lang {
         Locale::En => ("Sent by Kaeso at ", ""),
@@ -78,6 +188,12 @@ pub(crate) struct Link {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct Detail {
+    pub label: &'static str,
+    pub value: String,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct Footnote {
     pub because: String,
     pub links: Vec<Link>,
@@ -87,6 +203,7 @@ pub(crate) struct Footnote {
 pub(crate) struct Content {
     pub heading: String,
     pub sentence: Option<String>,
+    pub details: Vec<Detail>,
     pub items: Vec<String>,
     pub action: Option<Action>,
     pub note: Option<String>,
@@ -100,6 +217,7 @@ impl Content {
         Content {
             heading: heading.into(),
             sentence: None,
+            details: Vec::new(),
             items: Vec::new(),
             action: None,
             note: None,
@@ -107,6 +225,11 @@ impl Content {
             reason,
             lang,
         }
+    }
+
+    pub(crate) fn details(mut self, details: Vec<Detail>) -> Content {
+        self.details = details;
+        self
     }
 
     pub(crate) fn items(mut self, items: Vec<String>) -> Content {
@@ -151,16 +274,22 @@ pub(crate) fn text(content: &Content, instance: &Instance) -> String {
         out.push_str(s);
         out.push_str("\n\n");
     }
+    let colon = match content.lang {
+        Locale::ZhCn => "：",
+        Locale::En | Locale::De => ":",
+    };
+    for d in &content.details {
+        out.push_str(&format!("{}{colon} {}\n", d.label, d.value));
+    }
+    if !content.details.is_empty() {
+        out.push('\n');
+    }
     for item in &content.items {
         out.push_str(&format!("- {item}\n"));
     }
     if !content.items.is_empty() {
         out.push('\n');
     }
-    let colon = match content.lang {
-        Locale::ZhCn => "：",
-        Locale::En | Locale::De => ":",
-    };
     if let Some(a) = &content.action {
         out.push_str(&format!("{}{colon}\n{}\n\n", a.label, a.url));
     }
@@ -232,6 +361,18 @@ fn body(content: &Content, instance: &Instance) -> Markup {
         @if let Some(s) = &content.sentence {
             tr { td style="padding:12px 28px 0 2px;" {
                 p.(class::SECONDARY) style=(style::SENTENCE) { (s) }
+            } }
+        }
+        @if !content.details.is_empty() {
+            tr { td style="padding:22px 28px 0 2px;" {
+                table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" {
+                    @for d in &content.details {
+                        tr {
+                            td.(class::TERTIARY) width="150" style=(style::DETAIL_LABEL) { (d.label) }
+                            td.(class::TEXT) style=(style::DETAIL_VALUE) { (d.value) }
+                        }
+                    }
+                }
             } }
         }
         @if !content.items.is_empty() {

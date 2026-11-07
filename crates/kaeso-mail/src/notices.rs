@@ -1,6 +1,8 @@
-use crate::layout::{Content, Footnote, Link, Reason};
+use time::PrimitiveDateTime;
+
+use crate::layout::{Content, Detail, Footnote, Label, Link, Reason, never};
 use crate::locale::{Locale, zh};
-use crate::templates::{Actor, Budget, BudgetScope, Email, EmailKind, scope_en};
+use crate::templates::{Actor, Budget, BudgetScope, Email, EmailKind, budget_details};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Because<'a> {
@@ -61,15 +63,160 @@ pub enum Membership<'a> {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum ProviderKey {
-    Refused,
-    SignedOut,
+pub struct Answer<'a> {
+    pub status: u16,
+    pub message: &'a str,
+    pub billing: bool,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ProviderKey<'a> {
+    Refused {
+        answer: Answer<'a>,
+        first: PrimitiveDateTime,
+        last: PrimitiveDateTime,
+    },
+    SignedOut {
+        at: PrimitiveDateTime,
+    },
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Credential<'a> {
+    pub organization: &'a str,
+    pub provider: &'a str,
+    pub name: &'a str,
+    pub last4: Option<&'a str>,
+    pub account: Option<&'a str>,
+    pub default: bool,
+    pub projects: &'a [String],
+    pub last_used: Option<PrimitiveDateTime>,
+    pub zone: &'a str,
+}
+
+impl Credential<'_> {
+    fn is_account(&self) -> bool {
+        self.account.is_some()
+    }
+
+    fn shown(&self, lang: Locale) -> String {
+        let (open, close) = match lang {
+            Locale::En | Locale::De => (" (", ")"),
+            Locale::ZhCn => ("（", "）"),
+        };
+        match (self.account, self.last4) {
+            (Some(account), _) => format!("{}{open}{account}{close}", self.name),
+            (None, Some(last4)) => format!("{}{open}…{last4}{close}", self.name),
+            (None, None) => self.name.to_owned(),
+        }
+    }
+
+    fn used_by(&self, lang: Locale) -> String {
+        let list = self.projects.join(match lang {
+            Locale::En | Locale::De => ", ",
+            Locale::ZhCn => "、",
+        });
+        match (lang, self.default, self.projects.is_empty()) {
+            (Locale::En, true, true) => "Every project without a key of its own".to_owned(),
+            (Locale::En, true, false) => {
+                format!("{list}, and every project without a key of its own")
+            }
+            (Locale::En, false, true) => "No project".to_owned(),
+            (Locale::De, true, true) => "Jedes Projekt ohne eigenen Schlüssel".to_owned(),
+            (Locale::De, true, false) => {
+                format!("{list} und jedes Projekt ohne eigenen Schlüssel")
+            }
+            (Locale::De, false, true) => "Kein Projekt".to_owned(),
+            (Locale::ZhCn, true, true) => "所有没有自己密钥的项目".to_owned(),
+            (Locale::ZhCn, true, false) => zh(&[&list, "，以及所有没有自己密钥的项目"]),
+            (Locale::ZhCn, false, true) => "没有项目".to_owned(),
+            (_, false, false) => list,
+        }
+    }
+
+    fn details(&self, lang: Locale, change: &ProviderKey<'_>) -> Vec<Detail> {
+        let which = if self.is_account() {
+            Label::Account
+        } else {
+            Label::Key
+        };
+        let mut out = vec![
+            Label::Organization.of(lang, self.organization),
+            Label::Provider.of(lang, self.provider),
+            which.of(lang, self.shown(lang)),
+            Label::UsedBy.of(lang, self.used_by(lang)),
+        ];
+        match change {
+            ProviderKey::Refused {
+                answer,
+                first,
+                last,
+            } => {
+                let said = match lang {
+                    Locale::En | Locale::De => {
+                        format!("HTTP {}: {}", answer.status, answer.message)
+                    }
+                    Locale::ZhCn => format!("HTTP {}：{}", answer.status, answer.message),
+                };
+                out.push(Label::Answer.of(lang, said));
+                out.push(Label::FirstRefused.of(lang, lang.moment(*first, self.zone)));
+                out.push(Label::LastRefused.of(lang, lang.moment(*last, self.zone)));
+            }
+            ProviderKey::SignedOut { at } => {
+                out.push(Label::SignedOut.of(lang, lang.moment(*at, self.zone)));
+            }
+        }
+        out.push(
+            Label::LastUsed.of(
+                lang,
+                self.last_used
+                    .map_or_else(|| never(lang).to_owned(), |at| lang.moment(at, self.zone)),
+            ),
+        );
+        out
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Price {
+    Input,
+    Output,
+    CacheRead,
+    CacheWrite,
+    CacheWriteHour,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PriceChange {
+    pub price: Price,
+    pub from: Option<String>,
+    pub to: Option<String>,
+}
+
+impl PriceChange {
+    fn detail(&self, lang: Locale) -> Detail {
+        let label = match self.price {
+            Price::Input => Label::InputPrice,
+            Price::Output => Label::OutputPrice,
+            Price::CacheRead => Label::CacheReadPrice,
+            Price::CacheWrite => Label::CacheWritePrice,
+            Price::CacheWriteHour => Label::CacheWriteHourPrice,
+        };
+        let n = |v: &Option<String>| v.as_deref().map_or("—".to_owned(), |v| lang.number(v));
+        let (from, to) = (n(&self.from), n(&self.to));
+        let value = match lang {
+            Locale::En => format!("{from} → {to} USD per million tokens"),
+            Locale::De => format!("{from} → {to} USD pro Million Token"),
+            Locale::ZhCn => format!("每百万 Token {from} → {to} USD"),
+        };
+        label.of(lang, value)
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ModelChange {
     Delisted,
-    Price,
+    Price(Vec<PriceChange>),
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -125,8 +272,11 @@ pub enum Fact<'a> {
         by: Actor<'a>,
     },
     LimitReached {
+        organization: &'a str,
+        project: &'a str,
         budget: &'a Budget,
         scope: BudgetScope<'a>,
+        resets: Option<PrimitiveDateTime>,
     },
     KeyChanged {
         key: &'a str,
@@ -163,10 +313,12 @@ pub enum Fact<'a> {
         person: &'a str,
     },
     ProviderKey {
-        key: &'a str,
-        change: ProviderKey,
+        key: &'a Credential<'a>,
+        change: ProviderKey<'a>,
     },
     Model {
+        provider: &'a str,
+        project: &'a str,
         model: &'a str,
         change: ModelChange,
     },
@@ -243,6 +395,36 @@ impl Fact<'_> {
         }
     }
 
+    fn details(&self, lang: Locale) -> Vec<Detail> {
+        match self {
+            Fact::LimitReached {
+                organization,
+                project,
+                budget,
+                scope,
+                resets,
+            } => budget_details(lang, organization, project, *scope, budget, None, *resets),
+            Fact::ProviderKey { key, change } => key.details(lang, change),
+            Fact::Model {
+                provider,
+                project,
+                model,
+                change,
+            } => {
+                let mut out = vec![
+                    Label::Project.of(lang, *project),
+                    Label::Provider.of(lang, *provider),
+                    Label::Model.of(lang, *model),
+                ];
+                if let ModelChange::Price(changes) = change {
+                    out.extend(changes.iter().map(|c| c.detail(lang)));
+                }
+                out
+            }
+            _ => Vec::new(),
+        }
+    }
+
     fn words(&self, lang: Locale) -> Words {
         match lang {
             Locale::En => self.en(),
@@ -312,23 +494,38 @@ impl Fact<'_> {
                 };
                 w(heading, sentence, "Open Kaeso")
             }
-            Fact::LimitReached { budget, scope } => w(
-                "A budget is used up".to_owned(),
-                format!(
-                    "{} used all of its {}; requests over it are refused.",
-                    scope_en(*scope),
-                    budget.english()
-                ),
-                "Open limits",
-            ),
-            Fact::KeyChanged { key, change, by } => {
-                let (heading, verb) = match change {
-                    KeyChange::Disabled => ("Your key was disabled", "disabled"),
-                    KeyChange::Rotated => ("Your key was rotated", "rotated"),
-                    KeyChange::Archived => ("Your key was archived", "archived"),
+            Fact::LimitReached {
+                project,
+                budget,
+                scope,
+                ..
+            } => {
+                let who = scope.name(Locale::En, project);
+                let its = match scope {
+                    BudgetScope::Project | BudgetScope::Key(_) => "its",
+                    BudgetScope::Member(_) => "the",
                 };
                 w(
-                    heading.to_owned(),
+                    format!(
+                        "{} reached {its} {}",
+                        scope.short(Locale::En, project),
+                        budget.label_en()
+                    ),
+                    format!(
+                        "{who} used all of {its} {}; requests over it are refused.",
+                        budget.english()
+                    ),
+                    "Open limits",
+                )
+            }
+            Fact::KeyChanged { key, change, by } => {
+                let verb = match change {
+                    KeyChange::Disabled => "disabled",
+                    KeyChange::Rotated => "rotated",
+                    KeyChange::Archived => "archived",
+                };
+                w(
+                    format!("Your key {key} was {verb}"),
                     format!("{} {verb} your key {key}.", who(by)),
                     "Open keys",
                 )
@@ -431,27 +628,61 @@ impl Fact<'_> {
                 format!("{person} accepted your invitation and joined."),
                 "Open members",
             ),
-            Fact::ProviderKey { key, change } => match change {
-                ProviderKey::Refused => w(
-                    format!("{key} keeps being refused"),
-                    format!("The provider refused {key} three times in a row; replace it."),
-                    "Open provider keys",
-                ),
-                ProviderKey::SignedOut => w(
-                    format!("{key} signed out"),
-                    format!("The account {key} signed out; sign in to it again."),
-                    "Open provider keys",
-                ),
-            },
-            Fact::Model { model, change } => match change {
+            Fact::ProviderKey { key, change } => {
+                let (provider, name, shown) = (key.provider, key.name, key.shown(Locale::En));
+                match change {
+                    ProviderKey::Refused { answer, .. } => {
+                        let (heading, sentence) = match (key.is_account(), answer.billing) {
+                            (false, false) => (
+                                format!("{provider} key {name} keeps being refused"),
+                                format!(
+                                    "{provider} refused the key {shown} three times in a row; replace it."
+                                ),
+                            ),
+                            (false, true) => (
+                                format!("{provider} key {name} keeps being refused"),
+                                format!(
+                                    "{provider} refused {shown} three times over billing; add credit or replace the key."
+                                ),
+                            ),
+                            (true, false) => (
+                                format!("{provider} account {name} keeps being refused"),
+                                format!(
+                                    "{provider} refused the account {shown} three times in a row; sign in to it again."
+                                ),
+                            ),
+                            (true, true) => (
+                                format!("{provider} account {name} keeps being refused"),
+                                format!(
+                                    "{provider} refused the account {shown} three times over billing; check its plan."
+                                ),
+                            ),
+                        };
+                        w(heading, sentence, "Open provider keys")
+                    }
+                    ProviderKey::SignedOut { .. } => w(
+                        format!("{provider} account {name} signed out"),
+                        format!(
+                            "{provider} ended the session of the account {shown}; sign in to it again."
+                        ),
+                        "Open provider keys",
+                    ),
+                }
+            }
+            Fact::Model {
+                provider,
+                project,
+                model,
+                change,
+            } => match change {
                 ModelChange::Delisted => w(
                     format!("{model} is delisted"),
-                    format!("The provider delisted {model}; requests to it may fail."),
+                    format!("{provider} delisted {model}; requests to it from {project} may fail."),
                     "Open models",
                 ),
-                ModelChange::Price => w(
+                ModelChange::Price(_) => w(
                     format!("{model} changed its price"),
-                    format!("{model} has a new price; costs from now on use it."),
+                    format!("{provider} changed the price of {model}; costs from now on use it."),
                     "Open models",
                 ),
             },
@@ -582,29 +813,32 @@ impl Fact<'_> {
                 };
                 w(heading, sentence, "Kaeso öffnen")
             }
-            Fact::LimitReached { budget, scope } => {
-                let scope = match scope {
-                    BudgetScope::Project => "Das Projekt".to_owned(),
-                    BudgetScope::Member => "Ein Mitglied des Projekts".to_owned(),
-                    BudgetScope::Key(id) => format!("Der API-Schlüssel {id}"),
-                };
-                w(
-                    "Ein Budget ist aufgebraucht".to_owned(),
-                    format!(
-                        "{scope} hat das gesamte {} verbraucht; weitere Anfragen werden abgelehnt.",
-                        budget.german_genitive()
-                    ),
-                    "Limits öffnen",
-                )
-            }
+            Fact::LimitReached {
+                project,
+                budget,
+                scope,
+                ..
+            } => w(
+                format!(
+                    "{} hat das {} erreicht",
+                    scope.short(Locale::De, project),
+                    budget.label_de()
+                ),
+                format!(
+                    "{} hat das gesamte {} verbraucht; weitere Anfragen werden abgelehnt.",
+                    scope.name(Locale::De, project),
+                    budget.german_accusative()
+                ),
+                "Limits öffnen",
+            ),
             Fact::KeyChanged { key, change, by } => {
-                let (heading, verb) = match change {
-                    KeyChange::Disabled => ("Ihr Schlüssel wurde deaktiviert", "deaktiviert"),
-                    KeyChange::Rotated => ("Ihr Schlüssel wurde rotiert", "rotiert"),
-                    KeyChange::Archived => ("Ihr Schlüssel wurde archiviert", "archiviert"),
+                let verb = match change {
+                    KeyChange::Disabled => "deaktiviert",
+                    KeyChange::Rotated => "rotiert",
+                    KeyChange::Archived => "archiviert",
                 };
                 w(
-                    heading.to_owned(),
+                    format!("Ihr Schlüssel {key} wurde {verb}"),
                     format!("{} hat Ihren Schlüssel {key} {verb}.", who(by)),
                     "Schlüssel öffnen",
                 )
@@ -711,31 +945,65 @@ impl Fact<'_> {
                 format!("{person} hat Ihre Einladung angenommen und ist beigetreten."),
                 "Mitglieder öffnen",
             ),
-            Fact::ProviderKey { key, change } => match change {
-                ProviderKey::Refused => w(
-                    format!("{key} wird abgelehnt"),
-                    format!(
-                        "Der Anbieter hat {key} dreimal nacheinander abgelehnt; ersetzen Sie ihn."
+            Fact::ProviderKey { key, change } => {
+                let (provider, name, shown) = (key.provider, key.name, key.shown(Locale::De));
+                match change {
+                    ProviderKey::Refused { answer, .. } => {
+                        let (heading, sentence) = match (key.is_account(), answer.billing) {
+                            (false, false) => (
+                                format!("{provider}-Schlüssel {name} wird abgelehnt"),
+                                format!(
+                                    "{provider} hat den Schlüssel {shown} dreimal nacheinander abgelehnt; ersetzen Sie ihn."
+                                ),
+                            ),
+                            (false, true) => (
+                                format!("{provider}-Schlüssel {name} wird abgelehnt"),
+                                format!(
+                                    "{provider} hat {shown} dreimal wegen Abrechnung abgelehnt; Konto aufladen oder Schlüssel ersetzen."
+                                ),
+                            ),
+                            (true, false) => (
+                                format!("{provider}-Konto {name} wird abgelehnt"),
+                                format!(
+                                    "{provider} hat das Konto {shown} dreimal nacheinander abgelehnt; melden Sie sich erneut an."
+                                ),
+                            ),
+                            (true, true) => (
+                                format!("{provider}-Konto {name} wird abgelehnt"),
+                                format!(
+                                    "{provider} hat das Konto {shown} dreimal wegen Abrechnung abgelehnt; prüfen Sie seinen Tarif."
+                                ),
+                            ),
+                        };
+                        w(heading, sentence, "Anbieter-Schlüssel öffnen")
+                    }
+                    ProviderKey::SignedOut { .. } => w(
+                        format!("{provider}-Konto {name} ist abgemeldet"),
+                        format!(
+                            "{provider} hat die Sitzung des Kontos {shown} beendet; melden Sie sich erneut an."
+                        ),
+                        "Anbieter-Schlüssel öffnen",
                     ),
-                    "Anbieter-Schlüssel öffnen",
-                ),
-                ProviderKey::SignedOut => w(
-                    format!("{key} ist abgemeldet"),
-                    format!("Das Konto {key} wurde abgemeldet; melden Sie sich erneut an."),
-                    "Anbieter-Schlüssel öffnen",
-                ),
-            },
-            Fact::Model { model, change } => match change {
+                }
+            }
+            Fact::Model {
+                provider,
+                project,
+                model,
+                change,
+            } => match change {
                 ModelChange::Delisted => w(
                     format!("{model} wird eingestellt"),
                     format!(
-                        "Der Anbieter hat {model} eingestellt; Anfragen daran können fehlschlagen."
+                        "{provider} hat {model} eingestellt; Anfragen aus {project} daran können fehlschlagen."
                     ),
                     "Modelle öffnen",
                 ),
-                ModelChange::Price => w(
+                ModelChange::Price(_) => w(
                     format!("{model} hat einen neuen Preis"),
-                    format!("{model} hat einen neuen Preis; Kosten ab jetzt nutzen ihn."),
+                    format!(
+                        "{provider} hat den Preis von {model} geändert; Kosten ab jetzt nutzen ihn."
+                    ),
                     "Modelle öffnen",
                 ),
             },
@@ -876,30 +1144,33 @@ impl Fact<'_> {
                 };
                 w(heading, sentence, "打开 Kaeso")
             }
-            Fact::LimitReached { budget, scope } => {
-                let whose = match scope {
-                    BudgetScope::Project => "该项目的".to_owned(),
-                    BudgetScope::Member => "项目中一名成员的".to_owned(),
-                    BudgetScope::Key(id) => zh(&["API 密钥", id, "的"]),
-                };
-                w(
-                    "预算已用完".to_owned(),
-                    zh(&[
-                        &whose,
-                        &budget.chinese(),
-                        "已全部用完；超出的请求会被拒绝。",
-                    ]),
-                    "打开限额",
-                )
-            }
+            Fact::LimitReached {
+                project,
+                budget,
+                scope,
+                ..
+            } => w(
+                zh(&[
+                    &scope.short(Locale::ZhCn, project),
+                    "已达到",
+                    budget.label_zh(),
+                ]),
+                zh(&[
+                    &scope.name(Locale::ZhCn, project),
+                    "的",
+                    &budget.chinese(),
+                    "已全部用完；超出的请求会被拒绝。",
+                ]),
+                "打开限额",
+            ),
             Fact::KeyChanged { key, change, by } => {
-                let (heading, verb) = match change {
-                    KeyChange::Disabled => ("您的密钥已停用", "停用了"),
-                    KeyChange::Rotated => ("您的密钥已轮换", "轮换了"),
-                    KeyChange::Archived => ("您的密钥已归档", "归档了"),
+                let (done, verb) = match change {
+                    KeyChange::Disabled => ("已停用", "停用了"),
+                    KeyChange::Rotated => ("已轮换", "轮换了"),
+                    KeyChange::Archived => ("已归档", "归档了"),
                 };
                 w(
-                    heading.to_owned(),
+                    zh(&["您的密钥", key, done]),
                     zh(&[&who(by), verb, "您的密钥 ", key, "。"]),
                     "打开密钥",
                 )
@@ -991,27 +1262,73 @@ impl Fact<'_> {
                 zh(&[person, "已接受您的邀请并加入。"]),
                 "打开成员",
             ),
-            Fact::ProviderKey { key, change } => match change {
-                ProviderKey::Refused => w(
-                    zh(&[key, "一再被拒绝"]),
-                    zh(&["服务商连续三次拒绝了 ", key, "；请替换它。"]),
-                    "打开服务商密钥",
-                ),
-                ProviderKey::SignedOut => w(
-                    zh(&[key, "已退出登录"]),
-                    zh(&["账户 ", key, " 已退出登录；请重新登录。"]),
-                    "打开服务商密钥",
-                ),
-            },
-            Fact::Model { model, change } => match change {
+            Fact::ProviderKey { key, change } => {
+                let (provider, name, shown) = (key.provider, key.name, key.shown(Locale::ZhCn));
+                match change {
+                    ProviderKey::Refused { answer, .. } => {
+                        let (heading, sentence) = match (key.is_account(), answer.billing) {
+                            (false, false) => (
+                                zh(&[provider, "密钥", name, "一再被拒绝"]),
+                                zh(&[provider, "连续三次拒绝了密钥", &shown, "；请替换它。"]),
+                            ),
+                            (false, true) => (
+                                zh(&[provider, "密钥", name, "一再被拒绝"]),
+                                zh(&[
+                                    provider,
+                                    "因账单问题连续三次拒绝了",
+                                    &shown,
+                                    "；请为账户充值或替换密钥。",
+                                ]),
+                            ),
+                            (true, false) => (
+                                zh(&[provider, "账户", name, "一再被拒绝"]),
+                                zh(&[provider, "连续三次拒绝了账户", &shown, "；请重新登录。"]),
+                            ),
+                            (true, true) => (
+                                zh(&[provider, "账户", name, "一再被拒绝"]),
+                                zh(&[
+                                    provider,
+                                    "因账单或配额问题连续三次拒绝了账户",
+                                    &shown,
+                                    "；请检查其套餐。",
+                                ]),
+                            ),
+                        };
+                        w(heading, sentence, "打开服务商密钥")
+                    }
+                    ProviderKey::SignedOut { .. } => w(
+                        zh(&[provider, "账户", name, "已退出登录"]),
+                        zh(&[provider, "结束了账户", &shown, "的会话；请重新登录。"]),
+                        "打开服务商密钥",
+                    ),
+                }
+            }
+            Fact::Model {
+                provider,
+                project,
+                model,
+                change,
+            } => match change {
                 ModelChange::Delisted => w(
                     zh(&[model, "已下架"]),
-                    zh(&["服务商已下架 ", model, "；对它的请求可能失败。"]),
+                    zh(&[
+                        provider,
+                        "已下架",
+                        model,
+                        "；",
+                        project,
+                        "对它的请求可能失败。",
+                    ]),
                     "打开模型",
                 ),
-                ModelChange::Price => w(
+                ModelChange::Price(_) => w(
                     zh(&[model, "的价格已变更"]),
-                    zh(&[model, " 有了新价格；此后的成本按新价格计算。"]),
+                    zh(&[
+                        provider,
+                        "更改了",
+                        model,
+                        "的价格；此后的成本按新价格计算。",
+                    ]),
                     "打开模型",
                 ),
             },
@@ -1140,6 +1457,7 @@ pub fn notice(
     let words = fact.words(lang);
     let mut content = Content::new(lang, words.heading.clone(), Reason::Notice)
         .sentence(words.sentence)
+        .details(fact.details(lang))
         .items(fact.items(lang))
         .action(words.button, open)
         .footnote(footnote(lang, why, links));

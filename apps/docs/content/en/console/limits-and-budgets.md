@@ -34,7 +34,7 @@ A limit can't be higher than the same limit one level up. A key's spend budget s
 
 A rate always refuses requests above it, and never alerts. A budget is hard while **Refuse requests when used up** is on, as it is for a new limit. A hard budget refuses requests until its period resets. A soft budget lets requests through and only alerts.
 
-A budget alerts at up to 10 percentages of its amount, by default at 50, 80 and 100 percent. At each, Kaeso emails the organization's owners and admins and the project's admins. For a key's budget, it also emails the key's owner. Anyone can turn these emails off under **Budget alerts** in their account.
+A budget alerts at up to 10 percentages of its amount, by default at 50, 80 and 100 percent. At each, Kaeso emails the organization's owners and admins and the project's admins. For a key's budget, it also emails the key's owner. Each email names the organization, the project, what the budget applies to, its amount, what was used and when it resets; a hard budget that is used up sends the same facts under **Limit reached**. Anyone can turn the alerts off under **Budget alerts** in their account.
 
 ## Features a spend budget can't price
 

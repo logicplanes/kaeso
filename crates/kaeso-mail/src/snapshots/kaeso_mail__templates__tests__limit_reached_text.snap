@@ -2,11 +2,17 @@
 source: crates/kaeso-mail/src/templates.rs
 expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
 ---
-Subject: [Checkout] A budget is used up
+Subject: [Checkout] Checkout reached its monthly spend budget
 
-A budget is used up
+Checkout reached its monthly spend budget
 
-The project used all of its monthly spend budget of 50 USD; requests over it are refused.
+Checkout used all of its monthly spend budget of 50 USD; requests over it are refused.
+
+Organization: Acme
+Project: Checkout
+Applies to: The whole project
+Budget: 50 USD per month
+Resets: 2026-12-01 00:00 UTC
 
 Open limits:
 https://kaeso.example.com/orgs/org_1

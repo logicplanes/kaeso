@@ -3,9 +3,10 @@ use kaeso_core::notifications::Kind;
 use kaeso_core::rights::{InstanceRight, OrgRight, ProjectRight};
 use kaeso_mail::Actor;
 use kaeso_mail::notices::{
-    Access, Fact, Instance, KeyChange, Membership, ModelChange, Security, Update,
+    Access, Fact, Instance, KeyChange, Membership, ModelChange, Price, PriceChange, Security,
+    Update,
 };
-use kaeso_store::pg::{catalogue, invites, keys, orgs, projects, users};
+use kaeso_store::pg::{catalogue, custom_providers, invites, keys, orgs, projects, users};
 use serde_json::Value;
 use uuid::Uuid;
 
@@ -46,6 +47,39 @@ pub(crate) async fn project_name(state: &AppState, org: Uuid, project: Uuid) -> 
     Ok(projects::get(&state.pg, org, project)
         .await?
         .map_or_else(|| ProjectId::from_uuid(project).to_string(), |p| p.name))
+}
+
+pub(crate) async fn provider_name(state: &AppState, org: Uuid, id: &str) -> ApiResult<String> {
+    if let Some(p) = kaeso_core::provider::provider(id) {
+        return Ok(p.name.to_owned());
+    }
+    Ok(custom_providers::get(&state.pg, org, id)
+        .await?
+        .map_or_else(|| id.to_owned(), |c| c.name))
+}
+
+fn price_text(v: Option<&Value>, key: &str) -> Option<String> {
+    match v?.get(key)? {
+        Value::String(s) => Some(s.clone()),
+        Value::Number(n) => Some(n.to_string()),
+        _ => None,
+    }
+}
+
+fn price_changes(before: Option<&Value>, after: Option<&Value>) -> Vec<PriceChange> {
+    [
+        (Price::Input, "input_price"),
+        (Price::Output, "output_price"),
+        (Price::CacheRead, "cache_read_price"),
+        (Price::CacheWrite, "cache_write_price"),
+        (Price::CacheWriteHour, "cache_write_1h_price"),
+    ]
+    .into_iter()
+    .filter_map(|(price, key)| {
+        let (from, to) = (price_text(before, key), price_text(after, key));
+        (from != to).then_some(PriceChange { price, from, to })
+    })
+    .collect()
 }
 
 async fn actor_name(state: &AppState, e: &Event) -> ApiResult<Option<String>> {
@@ -439,12 +473,15 @@ async fn model_changes(state: &AppState, e: &Event) -> ApiResult<usize> {
         }
     };
     let change = match e.action {
-        A::CatalogueModelPriceChange => ModelChange::Price,
+        A::CatalogueModelPriceChange => {
+            ModelChange::Price(price_changes(e.before.as_ref(), e.after.as_ref()))
+        }
         _ => ModelChange::Delisted,
     };
     let mut sent = 0;
     for entry in entries {
         let place = project_name(state, entry.org_id, entry.project_id).await?;
+        let provider = provider_name(state, entry.org_id, &entry.provider).await?;
         let send = Send {
             kind: Kind::ModelChanges,
             org: Some(entry.org_id),
@@ -470,8 +507,10 @@ async fn model_changes(state: &AppState, e: &Event) -> ApiResult<usize> {
             state,
             &send,
             &Fact::Model {
+                provider: &provider,
+                project: &place,
                 model: &entry.model_id,
-                change,
+                change: change.clone(),
             },
             to,
         )

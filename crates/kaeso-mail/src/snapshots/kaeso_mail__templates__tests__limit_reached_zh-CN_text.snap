@@ -2,11 +2,17 @@
 source: crates/kaeso-mail/src/templates.rs
 expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
 ---
-Subject: [Checkout] 预算已用完
+Subject: [Checkout] Checkout 已达到每月支出预算
 
-预算已用完
+Checkout 已达到每月支出预算
 
-该项目的每月支出预算（50 USD）已全部用完；超出的请求会被拒绝。
+Checkout 的每月支出预算（50 USD）已全部用完；超出的请求会被拒绝。
+
+组织： Acme
+项目： Checkout
+适用于： 整个项目
+预算： 每月 50 USD
+重置时间： 2026年12月1日 00:00 UTC
 
 打开限额：
 https://kaeso.example.com/orgs/org_1

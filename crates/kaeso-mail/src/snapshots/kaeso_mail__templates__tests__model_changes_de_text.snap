@@ -6,7 +6,11 @@ Subject: [Checkout] gpt-4o wird eingestellt
 
 gpt-4o wird eingestellt
 
-Der Anbieter hat gpt-4o eingestellt; Anfragen daran können fehlschlagen.
+OpenAI hat gpt-4o eingestellt; Anfragen aus Checkout daran können fehlschlagen.
+
+Projekt: Checkout
+Anbieter: OpenAI
+Modell: gpt-4o
 
 Modelle öffnen:
 https://kaeso.example.com/orgs/org_1

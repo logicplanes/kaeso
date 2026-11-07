@@ -2,11 +2,18 @@
 source: crates/kaeso-mail/src/templates.rs
 expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
 ---
-Subject: Das Projekt hat 80 % des Monatsbudgets von 50 USD verbraucht
+Subject: Checkout hat 80 % des Monatsbudgets verbraucht
 
-Ein Budget ist zu 80 % verbraucht
+Checkout hat 80 % des Monatsbudgets verbraucht
 
-Das Projekt hat 80 % des Monatsbudgets von 50 USD verbraucht.
+Checkout hat 80 % des Monatsbudgets von 50 USD verbraucht.
+
+Organisation: Acme
+Projekt: Checkout
+Gilt für: Das ganze Projekt
+Budget: 50 USD pro Monat
+Verbraucht: 40 USD (80 %)
+Zurückgesetzt: 1. Dez. 2026, 00:00 UTC
 
 Limits öffnen:
 https://kaeso.example.com/auth/magic-link#token=kGq3VbX9yZ2mN7pR4sT8uW1aC5dE6fH0jK

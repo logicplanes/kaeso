@@ -2,11 +2,20 @@
 source: crates/kaeso-mail/src/templates.rs
 expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
 ---
-Subject: [Acme] OpenAI prod wird abgelehnt
+Subject: [Acme] OpenAI-Schlüssel Production wird abgelehnt
 
-OpenAI prod wird abgelehnt
+OpenAI-Schlüssel Production wird abgelehnt
 
-Der Anbieter hat OpenAI prod dreimal nacheinander abgelehnt; ersetzen Sie ihn.
+OpenAI hat den Schlüssel Production (…WXYZ) dreimal nacheinander abgelehnt; ersetzen Sie ihn.
+
+Organisation: Acme
+Anbieter: OpenAI
+Schlüssel: Production (…WXYZ)
+Verwendet von: Checkout, Support und jedes Projekt ohne eigenen Schlüssel
+Antwort des Anbieters: HTTP 401: Incorrect API key provided: sk-pr***XYZ.
+Erste Ablehnung: 7. Nov. 2026, 09:10 UTC
+Letzte Ablehnung: 7. Nov. 2026, 09:12 UTC
+Zuletzt verwendet: 6. Nov. 2026, 18:40 UTC
 
 Anbieter-Schlüssel öffnen:
 https://kaeso.example.com/orgs/org_1

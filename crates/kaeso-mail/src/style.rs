@@ -45,6 +45,22 @@ pub(crate) const ITEM: &str = concat!(
     ";mso-line-height-rule:exactly;",
 );
 
+pub(crate) const DETAIL_LABEL: &str = concat!(
+    "padding:0 16px 10px 0;font-family:",
+    token!(font),
+    ";font-size:13px;line-height:22px;font-weight:400;color:",
+    token!(tertiary),
+    ";mso-line-height-rule:exactly;vertical-align:top;",
+);
+
+pub(crate) const DETAIL_VALUE: &str = concat!(
+    "padding:0 0 10px 0;font-family:",
+    token!(font),
+    ";font-size:15px;line-height:22px;font-weight:400;color:",
+    token!(text),
+    ";mso-line-height-rule:exactly;vertical-align:top;",
+);
+
 pub(crate) const NOTE: &str = concat!(
     "margin:0;font-family:",
     token!(font),

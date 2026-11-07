@@ -2,8 +2,8 @@ use std::time::Duration;
 
 use kaeso_mail::templates::{self, Email};
 use kaeso_mail::{
-    Actor, Budget, BudgetScope, Instance, LimitKind, LimitPeriod, Locale, Mailer, SmtpSecurity,
-    SmtpSettings, Transport,
+    Actor, Budget, BudgetAlert, BudgetScope, Instance, LimitKind, LimitPeriod, Locale, Mailer,
+    SmtpSecurity, SmtpSettings, Transport,
 };
 use serde_json::Value;
 use time::macros::date;
@@ -60,7 +60,20 @@ fn every_email(to: &str) -> Vec<Email> {
                     "UTC",
                     url,
                 ),
-                templates::budget_alert(l, to, &budget, BudgetScope::Project, 80, url),
+                templates::budget_alert(
+                    l,
+                    to,
+                    &BudgetAlert {
+                        organization: "Acme",
+                        project: "Checkout",
+                        scope: BudgetScope::Project,
+                        budget: &budget,
+                        percent: 80,
+                        used: "40",
+                        resets: Some(date!(2026 - 12 - 01).midnight()),
+                    },
+                    url,
+                ),
                 templates::test(l, to),
             ]
         })
