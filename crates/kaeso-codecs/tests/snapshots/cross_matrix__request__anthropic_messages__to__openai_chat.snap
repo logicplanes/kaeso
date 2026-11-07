@@ -73,7 +73,7 @@ expression: outcomes
           ]
         },
         {
-          "content": "# Changelog\n\n## 0.6.0-rc.8\n\n- Scaling page with the rc.7 benchmark.",
+          "content": "# Changelog\n\n## 1.4.0\n\n- Scaling page with the rc.7 benchmark.",
           "role": "tool",
           "tool_call_id": "toolu_0127nwtMC8EpLtB9tqss7psa"
         },
@@ -87,7 +87,7 @@ expression: outcomes
           "tool_calls": [
             {
               "function": {
-                "arguments": "{\n            \"container\": {\n              \"kind\": \"project\",\n              \"create\": {\n                \"name\": \"Release notes 0.6.0-rc.8\"\n              }\n            },\n            \"batch\": []\n          }",
+                "arguments": "{\n            \"container\": {\n              \"kind\": \"project\",\n              \"create\": {\n                \"name\": \"Release notes 1.4.0\"\n              }\n            },\n            \"batch\": []\n          }",
                 "name": "mcp__claude_ai_Claude_Docs__batch"
               },
               "id": "toolu_01F5jfKeGzEgwTcm6JheL7SD",
@@ -96,7 +96,7 @@ expression: outcomes
           ]
         },
         {
-          "content": "Created doc \"Release notes 0.6.0-rc.8\".",
+          "content": "Created doc \"Release notes 1.4.0\".",
           "role": "tool",
           "tool_call_id": "toolu_01F5jfKeGzEgwTcm6JheL7SD"
         },

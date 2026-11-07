@@ -40,7 +40,7 @@
         {
           "type": "tool_result",
           "tool_use_id": "toolu_0127nwtMC8EpLtB9tqss7psa",
-          "content": "# Changelog\n\n## 0.6.0-rc.8\n\n- Scaling page with the rc.7 benchmark.",
+          "content": "# Changelog\n\n## 1.4.0\n\n- Scaling page with the rc.7 benchmark.",
           "is_error": false
         }
       ]
@@ -127,7 +127,7 @@
             "container": {
               "kind": "project",
               "create": {
-                "name": "Release notes 0.6.0-rc.8"
+                "name": "Release notes 1.4.0"
               }
             },
             "batch": []
@@ -144,7 +144,7 @@
         {
           "type": "tool_result",
           "tool_use_id": "toolu_01F5jfKeGzEgwTcm6JheL7SD",
-          "content": "Created doc \"Release notes 0.6.0-rc.8\".",
+          "content": "Created doc \"Release notes 1.4.0\".",
           "is_error": false
         }
       ]
