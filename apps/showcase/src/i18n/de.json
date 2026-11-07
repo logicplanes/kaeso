@@ -1160,5 +1160,6 @@
   "The height of a fluid sparkline in px; 32 by default.": "Die Höhe einer flexiblen Sparkline in px; standardmäßig 32.",
   "One name per value, such as each day; with them the sparkline can be inspected by pointer or arrow keys, with a crosshair and a tooltip.": "Ein Name pro Wert, etwa jeder Tag; damit lässt sich die Sparkline per Zeiger oder Pfeiltasten untersuchen, mit Fadenkreuz und Tooltip.",
   "What the values are, named in the tooltip.": "Was die Werte sind, im Tooltip genannt.",
-  "The artwork on the right, 16:9 at 320px: a `ReleaseArt` with `flush`, so the whole cover shows.": "Die Grafik rechts, 16:9 bei 320px: ein `ReleaseArt` mit `flush`, damit das ganze Cover zu sehen ist."
+  "The artwork on the right, 16:9 at 320px: a `ReleaseArt` with `flush`, so the whole cover shows.": "Die Grafik rechts, 16:9 bei 320px: ein `ReleaseArt` mit `flush`, damit das ganze Cover zu sehen ist.",
+  "The level of the cells' titles: 3 below a section's heading (the default), 2 when the page's title is the only heading above.": "Die Ebene der Zellentitel: 3 unter der Überschrift eines Abschnitts (Standard), 2, wenn darüber nur der Seitentitel steht."
 }

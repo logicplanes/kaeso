@@ -37,7 +37,7 @@ export function Overview() {
   const [metric, setMetric] = useState("requests");
   return (
     <div className="w-full">
-      <Dashboard aria-label="Usage in the period">
+      <Dashboard aria-label="Usage in the period" headingLevel={2}>
         <MetricTabs aria-label="Metric to chart" items={TABS} value={metric} onValueChange={setMetric} controls="dashboard-chart" />
         <DashboardCell className="lg:col-span-8" title="Requests per day, UTC">
           <CellInset grow>

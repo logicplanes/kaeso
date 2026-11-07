@@ -1,4 +1,4 @@
-import { forwardRef, type ReactNode } from "react";
+import { createContext, forwardRef, useContext, type ReactNode } from "react";
 import { useLinkComponent } from "../../utils/link-provider.js";
 import { icons } from "../../icons/vocabulary.js";
 import { Icon } from "../icon/icon.js";
@@ -33,6 +33,8 @@ const LG_COLS: Record<number, string> = {
   12: "lg:grid-cols-12",
 };
 
+const HeadingLevel = createContext<2 | 3>(3);
+
 export const Dashboard = forwardRef<
   HTMLDivElement,
   {
@@ -40,20 +42,23 @@ export const Dashboard = forwardRef<
     columns?: 2 | 3 | 4 | 5 | 6 | 12 | undefined;
     wideColumns?: 2 | 3 | 4 | 6 | 12 | undefined;
     busy?: boolean | undefined;
+    headingLevel?: 2 | 3 | undefined;
     "aria-label"?: string | undefined;
     className?: string | undefined;
   }
->(function Dashboard({ children, columns = 12, wideColumns, busy, "aria-label": ariaLabel, className }, ref) {
+>(function Dashboard({ children, columns = 12, wideColumns, busy, headingLevel = 3, "aria-label": ariaLabel, className }, ref) {
   return (
-    <div
-      ref={ref}
-      role="group"
-      aria-label={ariaLabel}
-      aria-busy={busy || undefined}
-      className={cn(KAESO_DASHBOARD_VARIANTS.surface.grid.classes, "busy-dim grid-cols-1", LG_COLS[columns], wideColumns && XL_COLS[wideColumns], className)}
-    >
-      {children}
-    </div>
+    <HeadingLevel.Provider value={headingLevel}>
+      <div
+        ref={ref}
+        role="group"
+        aria-label={ariaLabel}
+        aria-busy={busy || undefined}
+        className={cn(KAESO_DASHBOARD_VARIANTS.surface.grid.classes, "busy-dim grid-cols-1", LG_COLS[columns], wideColumns && XL_COLS[wideColumns], className)}
+      >
+        {children}
+      </div>
+    </HeadingLevel.Provider>
   );
 });
 Dashboard.displayName = "Dashboard";
@@ -69,13 +74,14 @@ export const DashboardCell = forwardRef<
   }
 >(function DashboardCell({ title, href, actions, children, className }, ref) {
   const Link = useLinkComponent();
+  const Heading = useContext(HeadingLevel) === 2 ? "h2" : "h3";
   return (
     <section ref={ref} className={cn("flex min-w-0 flex-col bg-raised px-8 pt-16 pb-20", className)}>
       {(title || actions) && (
         <header className={cn("flex h-24 min-w-0 items-center justify-between gap-12", actions ? "pr-0" : "pr-12", href ? "pl-8" : "pl-12")}>
           {title &&
             (href ? (
-              <h3 className="min-w-0">
+              <Heading className="min-w-0">
                 <Link
                   href={href}
                   className="group inline-flex h-24 max-w-full items-center gap-2 rounded-cell px-4 text-small font-medium text-fg-secondary transition-control hover:text-fg focus-ring"
@@ -83,9 +89,9 @@ export const DashboardCell = forwardRef<
                   <span className="truncate">{title}</span>
                   <Icon icon={icons.chevronRight} size="xs" className="shrink-0 transition-control group-hover:translate-x-1" />
                 </Link>
-              </h3>
+              </Heading>
             ) : (
-              <h3 className="truncate text-small font-medium text-fg-secondary">{title}</h3>
+              <Heading className="truncate text-small font-medium text-fg-secondary">{title}</Heading>
             ))}
           {actions && <div className="flex shrink-0 items-center gap-4">{actions}</div>}
         </header>

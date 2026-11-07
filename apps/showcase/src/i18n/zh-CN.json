@@ -1160,5 +1160,6 @@
   "The height of a fluid sparkline in px; 32 by default.": "自适应微型折线图的高度（px）；默认为 32。",
   "One name per value, such as each day; with them the sparkline can be inspected by pointer or arrow keys, with a crosshair and a tooltip.": "每个值一个名称，例如每一天；有了它们，就可以用指针或方向键查看微型折线图，并显示十字线和提示。",
   "What the values are, named in the tooltip.": "这些值是什么，在提示中注明。",
-  "The artwork on the right, 16:9 at 320px: a `ReleaseArt` with `flush`, so the whole cover shows.": "右侧的插图，宽 320px、比例 16:9：使用带 `flush` 的 `ReleaseArt`，以完整显示封面。"
+  "The artwork on the right, 16:9 at 320px: a `ReleaseArt` with `flush`, so the whole cover shows.": "右侧的插图，宽 320px、比例 16:9：使用带 `flush` 的 `ReleaseArt`，以完整显示封面。",
+  "The level of the cells' titles: 3 below a section's heading (the default), 2 when the page's title is the only heading above.": "单元格标题的级别：位于某个区块标题下方时为 3（默认），上方只有页面标题时为 2。"
 }

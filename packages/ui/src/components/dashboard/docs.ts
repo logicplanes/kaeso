@@ -7,6 +7,7 @@ export const docs = {
     props: {
       "aria-label": 'The surface\'s accessible name, such as "Usage in the period".',
       busy: "Keeps the numbers on screen, a step back, while the next ones load.",
+      headingLevel: "The level of the cells' titles: 3 below a section's heading (the default), 2 when the page's title is the only heading above.",
       children: "`MetricTabs` and `DashboardCell`s.",
       wideColumns:
         "Columns from 1280px, when the surface needs more room per cell than `columns` gives at 1024px: two at 1024px and four at 1280px keeps every cell wide enough to read.",

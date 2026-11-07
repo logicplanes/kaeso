@@ -225,7 +225,7 @@ export function DimensionView({ o, dim }: { o: Overview; dim: Dimension }) {
 
   return (
     <div className="flex flex-col">
-      <Dashboard aria-label={dimensionTitle(dim)} columns={2} wideColumns={4} busy={now.isPlaceholderData}>
+      <Dashboard aria-label={dimensionTitle(dim)} columns={2} wideColumns={4} busy={now.isPlaceholderData} headingLevel={2}>
         <DashboardCell className="lg:col-span-1" title={t("kaeso.analytics.active", "Active in the period")}>
           <Readout
             size="sm"

@@ -490,7 +490,7 @@ export function ControlRoom({ o, initial = "requests" }: { o: Overview; initial?
   const ids: MetricId[] = ["requests", "tokens", ...(o.showCost ? (["cost"] as const) : []), "errors", ...(o.now.toolCalls > 0 ? (["tools"] as const) : [])];
   const top: Ranked[] = o.project ? ["model", "key"] : ["project", "model"];
   return (
-    <Dashboard aria-label={t("kaeso.overview.usage", "Usage in the period")} busy={o.refreshing} columns={2} wideColumns={4}>
+    <Dashboard aria-label={t("kaeso.overview.usage", "Usage in the period")} busy={o.refreshing} columns={2} wideColumns={4} headingLevel={2}>
       <ChartCell o={o} metric={metric} className="lg:col-span-2 xl:col-span-3" />
       <MetricTabs
         aria-label={t("kaeso.overview.metric", "Metric to chart")}

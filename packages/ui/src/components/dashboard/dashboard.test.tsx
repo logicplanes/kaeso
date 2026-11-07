@@ -123,6 +123,23 @@ describe("Dashboard", () => {
   });
 });
 
+describe("Dashboard headings", () => {
+  it("titles its cells one level below the heading above it", () => {
+    const { rerender } = render(
+      <Dashboard aria-label="Usage">
+        <DashboardCell title="Cache hit" />
+      </Dashboard>,
+    );
+    expect(screen.getByRole("heading", { name: "Cache hit", level: 3 })).toBeInTheDocument();
+    rerender(
+      <Dashboard aria-label="Usage" headingLevel={2}>
+        <DashboardCell title="Cache hit" href="/analytics" />
+      </Dashboard>,
+    );
+    expect(screen.getByRole("heading", { name: "Cache hit", level: 2 })).toBeInTheDocument();
+  });
+});
+
 describe("Readout", () => {
   it("rolls to a new total in place", () => {
     const { rerender } = render(<Readout label="Requests" value="1,204" />);
