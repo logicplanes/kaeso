@@ -216,10 +216,7 @@ const rights: Readonly<Record<string, () => [string, string]>> = {
     t("rights.toolsManage.name", "Manage tools"),
     t("rights.toolsManage.description", "Choose the project's servers and tools, who may use them, and disconnect clients."),
   ],
-  "tools.use": () => [
-    t("rights.toolsUse.name", "Use tools"),
-    t("rights.toolsUse.description", "Call the project's tools through its MCP portal and in the Playground."),
-  ],
+  "tools.use": () => [t("rights.toolsUse.name", "Use tools"), t("rights.toolsUse.description", "Call the project's tools through its MCP portal.")],
   "limits.view": () => [
     t("rights.limitsView.name", "View limits"),
     t("rights.limitsView.description", "See project, member and key limits, budgets and model access."),

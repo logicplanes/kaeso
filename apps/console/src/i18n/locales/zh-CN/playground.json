@@ -6,9 +6,6 @@
   "playground.connectionClosed": "回复完成前连接已关闭，请重试。",
   "playground.empty": "暂无可试用的模型",
   "playground.emptyHint": "此项目目录中您有权调用的模型会显示在这里。",
-  "playground.emptyThread": "尚未发送任何内容",
-  "playground.emptyThreadCompare": "在下方发送提示词，每一列会并排给出回答。",
-  "playground.emptyThreadHint": "在下方发送提示词，或从示例开始。",
   "playground.errorWithRequest": "{error} 请求 {id}",
   "playground.full": "最多同时比较 {count} 个模型",
   "playground.loadingModels": "正在加载模型",
@@ -26,16 +23,6 @@
   "playground.suggestion.restGrpc": "用三个要点比较 REST 和 gRPC",
   "playground.title": "试验场",
   "playground.undoClear": "撤销",
-  "playground.tools.switch": "工具",
-  "playground.tools.none": "项目尚未提供工具",
-  "playground.tools.sent": "{count, plural, other {已发送工具的回答}}",
-  "playground.tools.unknown": "此项目没有工具 {name}。",
-  "playground.tools.skippedOutput": "用户选择不运行此工具。",
-  "playground.tools.wants": "模型想要调用 {tool}。",
-  "playground.tools.run": "运行",
-  "playground.tools.skip": "跳过",
-  "playground.tools.skipped": "已跳过",
-  "playground.tools.error": "失败",
-  "playground.tools.ran": "已运行",
-  "playground.tools.called": "已调用 {tool}。"
+  "playground.emptyThread": "在下方发送提示词，或从示例开始。",
+  "playground.emptyColumn": "从下一条发送的提示词起，回答会显示在这里。"
 }

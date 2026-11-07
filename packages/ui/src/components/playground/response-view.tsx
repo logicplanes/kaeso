@@ -199,7 +199,7 @@ export const UserMessage = forwardRef<HTMLDivElement, UserMessageProps>(function
         id={body}
         ref={text}
         className={cn(
-          "max-w-prose min-w-0 px-12 text-body font-medium whitespace-pre-wrap wrap-break-word text-fg-secondary",
+          "max-w-prose min-w-0 rounded-well bg-fill-1 px-12 py-8 text-body whitespace-pre-wrap wrap-break-word text-fg",
           maxLines !== 0 && !all && CLAMP[maxLines],
         )}
       >

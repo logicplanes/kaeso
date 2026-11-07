@@ -230,7 +230,7 @@ Every change of roles and rights follows these rules:
 | --- | --- | --- | --- |
 | `tools.view` | View tools | See the project's MCP servers and tools, and the clients connected to its portal. |  |
 | `tools.manage` | Manage tools | Choose the project's servers and tools, who may use them, and disconnect clients. | needs `tools.view` |
-| `tools.use` | Use tools | Call the project's tools through its MCP portal and in the Playground. | needs `tools.view` |
+| `tools.use` | Use tools | Call the project's tools through its MCP portal. | needs `tools.view` |
 
 ### Limits & budgets
 

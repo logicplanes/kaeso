@@ -6,7 +6,7 @@ const suggestions = ["Apologize for a late order in two sentences", "Explain our
 
 export const meta = {
   title: "PromptSuggestions",
-  description: "Example prompts before a thread starts: up to three quiet rows that take a fill on hover and go once a prompt is sent.",
+  description: "Example prompts before a thread starts: up to three quiet chips that take a fill on hover and go once a prompt is sent.",
   group: "Playground",
   entry: "playground",
   import: "PromptSuggestions",
@@ -65,7 +65,7 @@ export function States() {
       <StateSection title="One suggestion">
         <PromptSuggestions suggestions={[suggestions[1]!]} onSelect={none} />
       </StateSection>
-      <StateSection title="Too long for the row: the full prompt in a tooltip">
+      <StateSection title="Too long for the row: the chip truncates and shows the full prompt in a tooltip">
         <div className="w-400">
           <PromptSuggestions suggestions={[long, suggestions[2]!]} onSelect={none} />
         </div>

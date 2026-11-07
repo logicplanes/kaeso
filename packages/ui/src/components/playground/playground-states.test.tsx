@@ -186,6 +186,11 @@ describe("ResponseView marks and announcements", () => {
     expect(screen.getByLabelText("Metrics").parentElement).toHaveClass("px-12");
   });
 
+  it("sets the prompt on a quiet fill with the well radius, apart from the response under it", () => {
+    render(<UserMessage>{"Why did errors spike?"}</UserMessage>);
+    expect(screen.getByRole("group", { name: "Prompt" }).querySelector("p")).toHaveClass("bg-fill-1", "rounded-well", "px-12", "py-8", "text-fg");
+  });
+
   it("opens a long prompt with a disclosure button that says whether it is open", async () => {
     const height = vi.spyOn(HTMLElement.prototype, "scrollHeight", "get").mockReturnValue(200);
     try {
@@ -268,13 +273,14 @@ describe("ParameterPanel words and the popover's way out", () => {
   });
 });
 
-describe("PromptSuggestions rows", () => {
-  it("draws pill rows that grow for a coarse pointer, and keeps two identical prompts", async () => {
+describe("PromptSuggestions chips", () => {
+  it("draws ringed chips that grow for a coarse pointer, and keeps two identical prompts", async () => {
     const onSelect = vi.fn();
     render(<PromptSuggestions suggestions={["Explain our refund policy", "Explain our refund policy"]} onSelect={onSelect} />);
     const rows = screen.getAllByRole("button", { name: "Explain our refund policy" });
     expect(rows).toHaveLength(2);
-    expect(rows[0]).toHaveClass("rounded-pill", "coarse:h-44", "focus-visible:text-fg", "active:bg-fill-2");
+    expect(rows[0]).toHaveClass("rounded-pill", "h-32", "coarse:h-44", "focus-visible:text-fg", "material-ghost", "shadow-ring");
+    expect(rows[0]!.closest("ul")).toHaveClass("flex-wrap", "gap-8", "justify-start");
     await userEvent.click(rows[1]!);
     expect(onSelect).toHaveBeenCalledWith("Explain our refund policy");
   });

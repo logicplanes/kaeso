@@ -37,10 +37,6 @@ Ihr eigener Agent ruft das Portal mit einem API-Schlüssel auf, der die Fähigke
 
 Jedes Mitglied, jedes Dienstkonto und jeder Schlüssel darf jedes Tool aufrufen, das das Projekt anbietet, sofern es `tools.use` hat. Um das einzuschränken, öffnen Sie das Mitglied, das Dienstkonto oder den Schlüssel und bearbeiten den Abschnitt **Tools**: Schalten Sie **Jedes Tool, das das Projekt anbietet** aus und wählen Sie die Tools. Die Tools eines Schlüssels liegen immer innerhalb derer seines Inhabers.
 
-## Tools im Playground ausprobieren
-
-Im [Playground](playground.md) sendet der Schalter **Tools** die Tools des Projekts an das Modell. Bittet das Modell um einen Aufruf, zeigt die Antwort das Tool und seine Argumente. **Ausführen** ruft das Tool als Sie auf, und **Überspringen** teilt dem Modell mit, dass Sie abgelehnt haben. Sobald jeder Aufruf entschieden ist, gehen die Antworten zurück an das Modell. Aufrufe aus dem Playground werden wie alle anderen protokolliert.
-
 ## Nächste Schritte
 
 - [MCP-Server der Organisation](mcp-servers.md): Fügen Sie Server hinzu, melden Sie sich bei ihnen an und prüfen Sie geänderte Tools.

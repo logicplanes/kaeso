@@ -64,6 +64,8 @@ const zhCN: Readonly<Record<string, string>> = {
   "compareGrid.previousColumn": "上一列",
   "compareGrid.remove": "移除 {label}",
   "compareGrid.thread": "{label} 对话",
+  "composer.enterHint": "Enter 发送，Shift Enter 换行",
+  "composer.modEnterHint": "{mod} Enter 发送",
   "composer.placeholder": "输入提示词",
   "composer.prompt": "提示词",
   "composer.send": "发送",

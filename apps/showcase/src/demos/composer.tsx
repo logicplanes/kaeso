@@ -17,7 +17,7 @@ export const meta = {
     ["⌘ Enter", "Sends (Ctrl Enter on Windows and Linux)"],
   ],
   a11y: [
-    "The text box is named by aria-label (“Prompt” by default) and announces its shortcuts through aria-keyshortcuts; no hint is drawn.",
+    "The text box is named by aria-label (“Prompt” by default) and announces its shortcuts through aria-keyshortcuts; the caption beside Send repeats them for sighted readers and is hidden from screen readers.",
     "Enter never sends while an input method is composing (Chinese, Japanese, Korean): the Enter that picks a candidate stays the input method's.",
     "On a touch screen Enter adds a line and the Send button sends, as in the messaging apps there; elsewhere the on-screen keyboard's Enter key reads Send (enterkeyhint).",
     "Send and Stop are one button that keeps its place and width, so the focus stays on it when a response starts or ends.",

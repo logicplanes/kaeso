@@ -21,6 +21,13 @@ function subscribeCoarse(onChange: () => void) {
 }
 const isCoarse = () => typeof window !== "undefined" && !!window.matchMedia?.(COARSE).matches;
 const useCoarsePointer = () => useSyncExternalStore(subscribeCoarse, isCoarse, () => false);
+const isMac = () => typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
+const useMac = () =>
+  useSyncExternalStore(
+    () => () => undefined,
+    isMac,
+    () => false,
+  );
 
 export interface ComposerProps {
   value?: string | undefined;
@@ -105,7 +112,14 @@ export const Composer = forwardRef<HTMLTextAreaElement, ComposerProps>(function 
     if (clearOnSubmit && value === undefined) setText("");
   };
   const coarse = useCoarsePointer();
+  const mac = useMac();
   const enterSends = submitOn === "enter" && !coarse;
+  const hint =
+    disabled || streaming || loading || coarse
+      ? null
+      : enterSends
+        ? t("composer.enterHint", "Enter sends, Shift Enter adds a line")
+        : t("composer.modEnterHint", "{mod} Enter sends", { mod: mac ? "⌘" : t("kbd.ctrl", "Ctrl") });
   const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key !== "Enter") return;
     if (e.nativeEvent.isComposing || e.keyCode === 229) return;
@@ -164,6 +178,11 @@ export const Composer = forwardRef<HTMLTextAreaElement, ComposerProps>(function 
       </span>
       <div className="flex min-w-0 items-center gap-8 p-8 pt-4 controls-on-fill">
         <div className="flex min-w-0 flex-1 items-center gap-4">{actions}</div>
+        {hint && (
+          <span aria-hidden data-hint="" className="hidden shrink-0 text-caption text-fg-tertiary sm:inline">
+            {hint}
+          </span>
+        )}
         {streaming ? (
           <Button type="button" size="sm" variant="secondary" reserveLabels={[submitLabel, stopLabel]} onClick={() => onStop?.()} disabled={disabled}>
             {stopLabel}

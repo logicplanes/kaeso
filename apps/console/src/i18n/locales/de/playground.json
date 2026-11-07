@@ -6,9 +6,6 @@
   "playground.connectionClosed": "Die Verbindung brach vor dem Ende der Antwort ab. Bitte erneut versuchen.",
   "playground.empty": "Noch keine Modelle zum Ausprobieren",
   "playground.emptyHint": "Hier erscheinen die Modelle aus dem Katalog dieses Projekts, die aufgerufen werden dürfen.",
-  "playground.emptyThread": "Noch nichts gesendet",
-  "playground.emptyThreadCompare": "Unten einen Prompt senden; jede Spalte beantwortet ihn nebeneinander.",
-  "playground.emptyThreadHint": "Unten einen Prompt senden oder mit einem der Beispiele beginnen.",
   "playground.errorWithRequest": "{error} Anfrage {id}",
   "playground.full": "Bis zu {count} Modelle gleichzeitig vergleichen",
   "playground.loadingModels": "Modelle werden geladen",
@@ -26,16 +23,6 @@
   "playground.suggestion.restGrpc": "Vergleichen Sie REST und gRPC in drei Stichpunkten",
   "playground.title": "Playground",
   "playground.undoClear": "Rückgängig",
-  "playground.tools.switch": "Tools",
-  "playground.tools.none": "Das Projekt bietet noch keine Tools an",
-  "playground.tools.sent": "{count, plural, one {Antwort des Tools gesendet} other {Antworten der Tools gesendet}}",
-  "playground.tools.unknown": "Dieses Projekt hat kein Tool {name}.",
-  "playground.tools.skippedOutput": "Die Person hat sich entschieden, dieses Tool nicht auszuführen.",
-  "playground.tools.wants": "Das Modell möchte {tool} aufrufen.",
-  "playground.tools.run": "Ausführen",
-  "playground.tools.skip": "Überspringen",
-  "playground.tools.skipped": "Übersprungen",
-  "playground.tools.error": "Fehlgeschlagen",
-  "playground.tools.ran": "Ausgeführt",
-  "playground.tools.called": "{tool} aufgerufen."
+  "playground.emptyThread": "Unten einen Prompt senden oder mit einem Beispiel beginnen.",
+  "playground.emptyColumn": "Antworten erscheinen hier ab dem nächsten gesendeten Prompt."
 }

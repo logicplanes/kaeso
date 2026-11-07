@@ -64,6 +64,8 @@ const en: Readonly<Record<string, string>> = {
   "compareGrid.previousColumn": "Previous column",
   "compareGrid.remove": "Remove {label}",
   "compareGrid.thread": "{label} thread",
+  "composer.enterHint": "Enter sends, Shift Enter adds a line",
+  "composer.modEnterHint": "{mod} Enter sends",
   "composer.placeholder": "Write a prompt",
   "composer.prompt": "Prompt",
   "composer.send": "Send",

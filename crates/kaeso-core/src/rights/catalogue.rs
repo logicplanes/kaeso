@@ -240,7 +240,7 @@ rights!(
         ModelsManage = "models.manage", Models, "Manage models", false, false, false, [ModelsView], "Add, change and remove models and aliases.";
         ToolsView = "tools.view", Tools, "View tools", false, false, false, [], "See the project's MCP servers and tools, and the clients connected to its portal.";
         ToolsManage = "tools.manage", Tools, "Manage tools", false, false, false, [ToolsView], "Choose the project's servers and tools, who may use them, and disconnect clients.";
-        ToolsUse = "tools.use", Tools, "Use tools", false, false, false, [ToolsView], "Call the project's tools through its MCP portal and in the Playground.";
+        ToolsUse = "tools.use", Tools, "Use tools", false, false, false, [ToolsView], "Call the project's tools through its MCP portal.";
         LimitsView = "limits.view", Limits, "View limits", false, false, false, [], "See project, member and key limits, budgets and model access.";
         LimitsManage = "limits.manage", Limits, "Manage limits", false, false, false, [LimitsView], "Change project, member and key limits, budgets and model access.";
         LogsMetadataView = "logs.metadata.view", Logs, "View request logs", false, false, false, [], "See request logs: model, tokens, cost, latency, status and key.";

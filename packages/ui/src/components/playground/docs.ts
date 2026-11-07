@@ -18,7 +18,7 @@ export const docs = {
   },
   Composer: {
     description:
-      "The prompt box: a text box that grows with what is written up to `maxRows`, then scrolls, its edge fading where more lines wait; Send, which becomes Stop while a response streams. Enter sends and Shift Enter adds a line (`submitOn`); ⌘ Enter or Ctrl Enter also sends. On a touch screen Enter adds a line and the button sends. A click anywhere in the box, the button row included, puts the cursor in the text.",
+      "The prompt box: a text box that grows with what is written up to `maxRows`, then scrolls, its edge fading where more lines wait; Send, which becomes Stop while a response streams, and a quiet caption beside it that says which key sends. Enter sends and Shift Enter adds a line (`submitOn`); ⌘ Enter or Ctrl Enter also sends. On a touch screen Enter adds a line and the button sends, and no caption is drawn. A click anywhere in the box, the button row included, puts the cursor in the text.",
     props: {
       actions: "Controls at the start of the button row: parameters, clear. Ghost and secondary buttons there take tones made for the composer's surface.",
       "aria-label": 'The text box\'s accessible name ("Prompt" by default).',
@@ -103,9 +103,9 @@ export const docs = {
   },
   PromptSuggestions: {
     description:
-      "Example prompts before a thread starts: up to three pill rows of secondary text that take a quiet fill on hover. No outlines, no icons; a prompt too long for its row shows in full in a tooltip. Leave them out once a prompt is sent.",
+      "Example prompts before a thread starts: up to three chips in a row that wraps, each a pill with a hairline ring and secondary text that takes a quiet fill on hover. No icons; a prompt too long for the row shows in full in a tooltip. Leave them out once a prompt is sent.",
     props: {
-      align: "Aligns the suggestions at the start or in the center.",
+      align: "Starts the chips on the composer's edge, or centers them under an empty thread's title.",
       "aria-label": "The list's accessible name. Defaults to \"Example prompts\" in the provider's language.",
       onSelect: "Puts the prompt in the composer (or sends it). The list usually goes away then, so move focus to the composer.",
       suggestions: "Up to three short prompts; more are left out.",
@@ -171,7 +171,7 @@ export const docs = {
   },
   UserMessage: {
     description:
-      'A person\'s turn: their prompt as quiet text that opens the turn, no bubble. A long prompt shows its first lines until "Show all", a disclosure button under them.',
+      'A person\'s turn: their prompt on a quiet fill with the well radius, so it reads apart from the response under it. A long prompt shows its first lines until "Show all", a disclosure button under them.',
     props: {
       "aria-label": "The message's accessible name. Defaults to \"Prompt\" in the provider's language.",
       children: "The prompt as it was written: plain text, line breaks kept.",

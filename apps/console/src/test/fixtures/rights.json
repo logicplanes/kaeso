@@ -774,7 +774,7 @@
             "id": "tools.use",
             "scope": "project",
             "name": "Use tools",
-            "description": "Call the project's tools through its MCP portal and in the Playground.",
+            "description": "Call the project's tools through its MCP portal.",
             "sensitive": false,
             "recent_sign_in": false,
             "cloud_only": false,

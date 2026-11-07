@@ -80,6 +80,7 @@ describe("Composer", () => {
       expect(box).toHaveValue("Summarize\nthe incident");
       expect(box).not.toHaveAttribute("enterkeyhint");
       expect(box).toHaveAttribute("aria-keyshortcuts", "Meta+Enter Control+Enter");
+      expect(document.querySelector("[data-hint]")).toBeNull();
       await userEvent.click(screen.getByRole("button", { name: "Send" }));
       expect(onSubmit).toHaveBeenCalledWith("Summarize\nthe incident");
     } finally {
@@ -157,6 +158,20 @@ describe("Composer", () => {
     expect(screen.getByRole("button", { name: "Send" })).toBeDisabled();
     fireEvent.keyDown(box, { key: "Enter" });
     expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it("says beside Send which key sends, for sighted readers only, and keeps quiet while sending or on a touch screen", () => {
+    const { container, rerender } = render(<Composer />);
+    const hint = () => container.querySelector("[data-hint]");
+    expect(hint()).toHaveTextContent("Enter sends, Shift Enter adds a line");
+    expect(hint()).toHaveAttribute("aria-hidden");
+    expect(screen.getByRole("button", { name: "Send" })).not.toHaveAccessibleDescription(/Enter sends/);
+    rerender(<Composer submitOn="mod-enter" />);
+    expect(hint()).toHaveTextContent(/(⌘|Ctrl) Enter sends/);
+    rerender(<Composer streaming />);
+    expect(hint()).toBeNull();
+    rerender(<Composer disabled />);
+    expect(hint()).toBeNull();
   });
 
   it("ignores Enter while composing with an input method", () => {
@@ -536,6 +551,11 @@ describe("ModelPicker", () => {
     );
     const trigger = screen.getByRole("button", { description: "Model" });
     expect(trigger).toHaveAccessibleName("openai GPT-5 gpt-5");
+  });
+
+  it("never scales its trigger on a press: a header-wide control would visibly shrink", () => {
+    render(<ModelPicker value="gpt-5" options={[{ value: "gpt-5", provider: "openai", name: "GPT-5" }]} />);
+    expect(screen.getByRole("button", { description: "Model" })).toHaveAttribute("data-static");
   });
 
   it("draws its ghost in full text colour through Select's own appearance, without a styling warning", () => {

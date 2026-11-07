@@ -1,17 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { AppFrame, Button, Empty, Switch, icons } from "@logicplanes/kaeso-ui";
-import { CompareGrid, Composer, ModelPicker, ParameterPanel, PromptSuggestions, ResponseMetrics, type ReasoningEffort } from "@logicplanes/kaeso-ui/playground";
+import { AppFrame, Button, Empty, Text } from "@logicplanes/kaeso-ui";
+import { CompareGrid, Composer, ModelPicker, ParameterPanel, PromptSuggestions, type ReasoningEffort } from "@logicplanes/kaeso-ui/playground";
 import { playgroundModelsQuery, type PlaygroundModel } from "~/api/queries/playground";
-import { projectToolsQuery } from "~/api/queries/tools";
 import { useProjectRights } from "~/auth/rights";
 import { playgroundModelOption, recentModels, rememberModel } from "~/kaeso/model-options";
 import { useModelPickerProviders, useProviders } from "~/kaeso/providers";
 import { usePageCreateAction } from "~/shell/create-action";
 import { ProjectHeader } from "~/shell/project-header";
-import { metricsOf } from "./metrics";
-import { modelRef, requestFor, type FunctionTool } from "./request";
+import { modelRef, requestFor } from "./request";
 import { parametersOf, searchOf } from "./search";
 import { EFFORTS, MAX_COLUMNS, parseModels, validatePlaygroundSearch, type PlaygroundSearch } from "~/format/playground-search";
 import Thread from "./thread";
@@ -114,14 +112,7 @@ export function PlaygroundPage({ org, project, search }: { org: string; project:
   useEffect(() => {
     shownRefs.current = refs;
   });
-  const toolsAllowed = rights.has("tools.use");
-  const [toolsOn, setToolsOn] = useState(false);
-  const projectTools = useQuery({ ...projectToolsQuery(org, project), enabled: toolsAllowed });
-  const offered = useMemo(() => (projectTools.data ?? []).filter((x) => x.offered), [projectTools.data]);
-  const defs: FunctionTool[] = toolsOn
-    ? offered.map((x) => ({ type: "function", name: x.exposed_name, description: x.description, parameters: x.input_schema }))
-    : [];
-  const { threads, busy, send, retry, followUp, stop, add, remove, clear, restore } = useThreads(org, project, refs.length, {
+  const { threads, busy, send, retry, stop, add, remove, clear, restore } = useThreads(org, project, refs.length, {
     initial: saved && same(saved.refs, refs) ? saved.threads : undefined,
     onLeave: (left) => {
       if (left.some((x) => x.turns.length)) remember<Conversation>(conversationKey(project), { refs: shownRefs.current, threads: left });
@@ -154,13 +145,12 @@ export function PlaygroundPage({ org, project, search }: { org: string; project:
   const submit = (text: string) => {
     const sends = threads.flatMap((thread, i) => {
       const m = models[i];
-      return m ? [{ column: i, request: requestFor(m, thread.turns, text, parameters, defs) }] : [];
+      return m ? [{ column: i, request: requestFor(m, thread.turns, text, parameters) }] : [];
     });
     send(text, sends);
     changePrompt("");
   };
-  const retryColumn = (i: number, m: PlaygroundModel, earlier: Turn[], last: Turn) =>
-    retry(i, requestFor(m, earlier, last.outputs ?? last.prompt, parameters, defs));
+  const retryColumn = (i: number, m: PlaygroundModel, earlier: Turn[], last: Turn) => retry(i, requestFor(m, earlier, last.prompt, parameters));
 
   const noModels = catalogue.isSuccess && chat.length === 0;
   usePageCreateAction(noModels ? null : { label: t("playground.addColumn", "Add column"), run: addColumn, disabledReason: full ? fullReason() : undefined });
@@ -211,21 +201,11 @@ export function PlaygroundPage({ org, project, search }: { org: string; project:
         page={t("playground.title", "Playground")}
         path="playground"
         actions={
-          <div className="flex items-center gap-8">
+          <>
             {!empty && (
               <Button size="sm" variant="ghost" onClick={clearAll}>
                 {common.clear()}
               </Button>
-            )}
-            {toolsAllowed && (
-              <Switch
-                size="sm"
-                label={t("playground.tools.switch", "Tools")}
-                checked={toolsOn}
-                onCheckedChange={setToolsOn}
-                disabled={noModels || offered.length === 0}
-                {...(offered.length === 0 ? { disabledReason: t("playground.tools.none", "The project offers no tools yet") } : {})}
-              />
             )}
             <ParameterPanel
               value={parameters}
@@ -238,10 +218,7 @@ export function PlaygroundPage({ org, project, search }: { org: string; project:
                 </Button>
               }
             />
-            <Button size="sm" leadingIcon={icons.add} disabled={full || noModels} disabledReason={full ? fullReason() : undefined} onClick={addColumn}>
-              {t("playground.addColumn", "Add column")}
-            </Button>
-          </div>
+          </>
         }
       />
       <AppFrame.Body padding="none">
@@ -261,12 +238,11 @@ export function PlaygroundPage({ org, project, search }: { org: string; project:
         ) : (
           <div className="flex h-full min-h-0 flex-col">
             <div className="min-h-0 flex-1">
-              <CompareGrid aria-label={common.models()}>
+              <CompareGrid aria-label={common.models()} onAdd={addColumn} addLabel={t("playground.addColumn", "Add column")} max={MAX_COLUMNS}>
                 {refs.map((ref, i) => {
                   const m = models[i] ?? null;
                   const thread = threads[i];
                   const lastTurn = thread?.turns.at(-1);
-                  const last = lastTurn?.response ?? null;
                   const label = m?.display_name ?? common.model();
                   return (
                     <CompareGrid.Column
@@ -293,12 +269,10 @@ export function PlaygroundPage({ org, project, search }: { org: string; project:
                           providers={pickerProviders}
                           recent={recentModels(project)}
                           disabled={catalogue.isPending || catalogue.isError}
-                          fullWidth
                         />
                       }
                       onRemove={() => removeColumn(i)}
                       removeLabel={t("playground.removeColumn", "Remove {model}", { model: label })}
-                      footer={<ResponseMetrics {...metricsOf(last, m)} />}
                     >
                       {thread && lastTurn ? (
                         <Thread
@@ -306,35 +280,24 @@ export function PlaygroundPage({ org, project, search }: { org: string; project:
                           model={m}
                           label={label}
                           onRetry={m && !busy ? () => retryColumn(i, m, thread.turns.slice(0, -1), lastTurn) : null}
-                          tools={
-                            m && toolsOn
-                              ? {
-                                  org,
-                                  project,
-                                  list: offered,
-                                  onOutputs: (outputs) => followUp(i, outputs, requestFor(m, thread.turns, outputs, parameters, defs)),
-                                }
-                              : undefined
-                          }
                         />
-                      ) : empty && i === 0 ? (
-                        <Empty
-                          size="md"
-                          className="my-auto"
-                          title={t("playground.emptyThread", "Nothing sent yet")}
-                          description={
-                            refs.length > 1
-                              ? t("playground.emptyThreadCompare", "Send a prompt below and every column answers it side by side.")
-                              : t("playground.emptyThreadHint", "Send a prompt below, or start from one of the examples.")
-                          }
-                        />
-                      ) : null}
+                      ) : empty ? (
+                        i === 0 && (
+                          <Text as="p" variant="body" tone="secondary" className="m-auto max-w-prose text-center text-pretty">
+                            {t("playground.emptyThread", "Send a prompt below, or start from an example.")}
+                          </Text>
+                        )
+                      ) : (
+                        <Text as="p" variant="body" tone="secondary" className="m-auto max-w-prose text-center text-pretty">
+                          {t("playground.emptyColumn", "Answers appear here from the next prompt you send.")}
+                        </Text>
+                      )}
                     </CompareGrid.Column>
                   );
                 })}
               </CompareGrid>
             </div>
-            <div className="mx-24 mt-12 mb-16 flex flex-col gap-8">
+            <div className="mx-24 mt-4 mb-24 flex shrink-0 flex-col gap-12">
               {empty && (
                 <PromptSuggestions
                   suggestions={suggestions()}

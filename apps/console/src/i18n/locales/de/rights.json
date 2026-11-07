@@ -163,7 +163,7 @@
   "rights.serviceAccountsView.name": "Dienstkonten ansehen",
   "rights.toolsManage.description": "Server und Tools des Projekts auswählen, festlegen, wer sie nutzen darf, und Clients trennen.",
   "rights.toolsManage.name": "Tools verwalten",
-  "rights.toolsUse.description": "Die Tools des Projekts über sein MCP-Portal und im Playground aufrufen.",
+  "rights.toolsUse.description": "Die Tools des Projekts über sein MCP-Portal aufrufen.",
   "rights.toolsUse.name": "Tools nutzen",
   "rights.toolsView.description": "Die MCP-Server und Tools des Projekts sowie die mit seinem Portal verbundenen Clients sehen.",
   "rights.toolsView.name": "Tools ansehen",

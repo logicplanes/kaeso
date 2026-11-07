@@ -6,8 +6,8 @@ import { Tooltip } from "../tooltip/tooltip.js";
 
 export const KAESO_PROMPT_SUGGESTIONS_VARIANTS = {
   align: {
-    start: { classes: "items-stretch", description: "Rows the composer's width, their text on its text (default)" },
-    center: { classes: "items-center text-center", description: "Centered under an empty thread's title" },
+    start: { classes: "justify-start", description: "Chips from the composer's edge, wrapping (default)" },
+    center: { classes: "justify-center", description: "Centered under an empty thread's title" },
   },
 } as const;
 export const KAESO_PROMPT_SUGGESTIONS_DEFAULT_VARIANTS = { align: "start" } as const;
@@ -21,30 +21,17 @@ export interface PromptSuggestionsProps {
   "data-force"?: string | undefined;
 }
 
-function Suggestion({
-  prompt,
-  align,
-  force,
-  onSelect,
-}: {
-  prompt: string;
-  align: keyof typeof KAESO_PROMPT_SUGGESTIONS_VARIANTS.align;
-  force: string | undefined;
-  onSelect: (prompt: string) => void;
-}) {
+function Suggestion({ prompt, force, onSelect }: { prompt: string; force: string | undefined; onSelect: (prompt: string) => void }) {
   const text = useRef<HTMLSpanElement | null>(null);
   const truncated = useTruncated(text);
   return (
-    <li className={cn("flex min-w-0", align === "center" && "justify-center")}>
+    <li className="flex max-w-full min-w-0">
       <Tooltip content={prompt} disabled={!truncated} shape="multiline">
         <button
           type="button"
           {...(force ? { "data-force": force } : {})}
           onClick={() => onSelect(prompt)}
-          className={cn(
-            "flex h-36 max-w-full min-w-0 cursor-pointer items-center rounded-pill px-16 text-body text-fg-secondary transition-control hover:bg-fill-1 hover:text-fg focus-visible:text-fg active:bg-fill-2 active:text-fg focus-ring-inset coarse:h-44",
-            align === "start" && "flex-1",
-          )}
+          className="flex h-32 max-w-full min-w-0 cursor-pointer items-center rounded-pill px-12 text-body text-fg-secondary material-ghost shadow-ring transition-control hover:text-fg focus-visible:text-fg active:text-fg focus-ring coarse:h-44"
         >
           <span ref={text} className="min-w-0 truncate">
             {prompt}
@@ -62,9 +49,9 @@ export const PromptSuggestions = forwardRef<HTMLUListElement, PromptSuggestionsP
   const t = useUiText();
   const ariaLabel = ariaLabelProp ?? t("promptSuggestions.examplePrompts", "Example prompts");
   return (
-    <ul ref={ref} aria-label={ariaLabel} className={cn("flex min-w-0 flex-col gap-2", KAESO_PROMPT_SUGGESTIONS_VARIANTS.align[align].classes, className)}>
+    <ul ref={ref} aria-label={ariaLabel} className={cn("flex min-w-0 flex-wrap gap-8", KAESO_PROMPT_SUGGESTIONS_VARIANTS.align[align].classes, className)}>
       {suggestions.slice(0, 3).map((s, i) => (
-        <Suggestion key={i} prompt={s} align={align} force={force} onSelect={onSelect} />
+        <Suggestion key={i} prompt={s} force={force} onSelect={onSelect} />
       ))}
     </ul>
   );
