@@ -6,6 +6,7 @@ mod codec;
 pub mod continuity;
 pub mod cross;
 pub mod dispatch;
+mod inline_tools;
 mod keepalive;
 pub mod limits;
 mod models;
@@ -13,6 +14,7 @@ mod openai_models;
 pub mod sse;
 mod struct_fields;
 pub mod testing;
+mod tool_patterns;
 mod tool_roots;
 mod tool_search;
 mod verbosity;
@@ -34,4 +36,5 @@ pub use codec::{
     StreamDecoder, StreamEncoder, is_forwarded_header, parse_retry_after,
 };
 pub use keepalive::HIDDEN_TEXT_PER_KEEPALIVE;
+pub use tool_patterns::ToolPatterns;
 pub use tool_roots::ToolSchemaRoot;

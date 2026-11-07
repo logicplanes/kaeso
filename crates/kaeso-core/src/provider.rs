@@ -3,9 +3,9 @@ use std::fmt;
 use std::str::FromStr;
 use std::sync::LazyLock;
 
-use kaeso_codecs::ToolSchemaRoot;
 use kaeso_codecs::openai_chat::ChatProfile;
 use kaeso_codecs::openai_responses::ResponsesProfile;
+use kaeso_codecs::{ToolPatterns, ToolSchemaRoot};
 use kaeso_kpp::DialectId;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
@@ -272,7 +272,8 @@ pub const PROVIDERS: &[Provider] = &[
             .max_tokens()
             .system_role()
             .reasoning_fields(&["reasoning_content"])
-            .tool_schema_root(ToolSchemaRoot::TypedObjectUnions),
+            .tool_schema_root(ToolSchemaRoot::TypedObjectUnions)
+            .tool_patterns(ToolPatterns::Compiled),
         responses: ResponsesProfile::compatible("DeepSeek"),
         account: None,
     },
@@ -819,6 +820,16 @@ mod tests {
                 ReasoningReplay::WithoutNullContent
             )]
         );
+    }
+
+    #[test]
+    fn only_deepseek_compiles_tool_patterns() {
+        let compiling: Vec<&str> = PROVIDERS
+            .iter()
+            .filter(|p| p.chat.request.tool_patterns != ToolPatterns::AsSent)
+            .map(|p| p.id)
+            .collect();
+        assert_eq!(compiling, ["deepseek"]);
     }
 
     #[test]

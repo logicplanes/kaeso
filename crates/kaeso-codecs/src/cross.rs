@@ -24,6 +24,11 @@ pub const EXTRAS_ALLOWLIST: &[(DialectId, Scope, &str)] = &[
     (DialectId::OpenAiResponses, "request", "header:openai-beta"),
     (DialectId::OpenAiEmbeddings, "request", "header:openai-beta"),
     (DialectId::AnthropicMessages, "request", "cache_control"),
+    (
+        DialectId::AnthropicMessages,
+        "tool",
+        "eager_input_streaming",
+    ),
     (DialectId::AnthropicMessages, "reasoning", "display"),
     (DialectId::OpenAiChat, "image", "image_url.detail"),
     (DialectId::OpenAiChat, "document", "file.filename"),

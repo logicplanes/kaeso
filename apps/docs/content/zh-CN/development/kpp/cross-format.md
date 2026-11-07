@@ -80,6 +80,7 @@ OpenAI Chat 已弃用的函数调用在 Chat 内部可以往返，但不会转�
 | `header:anthropic-version` | request，来自 `anthropic_messages` | Anthropic 线路格式的 API 版本控制，在其他地方没有意义。等于固定版本的值根本不会被保存（[Anthropic 版本](#anthropic-版本)）。 | Anthropic SDK |
 | `header:openai-beta` | request，来自 `openai_chat`、`openai_responses`、`openai_embeddings` | 同 `anthropic-beta`。 | Codex 发送 `OpenAI-Beta: responses=experimental` |
 | `cache_control` | request，来自 `anthropic_messages` | 顶层的自动提示缓存。缓存提示属于提示字段（[缓存提示](#缓存提示)）。 | `anthropic_messages/requests/system-string-multi-turn.json`、`explicit-nulls.json` |
+| `eager_input_streaming` | tool，来自 `anthropic_messages` | 只决定 Claude 是否在写出工具参数的同时流式发送它们（细粒度工具流式传输）；参数本身相同，其他格式照常流式传输。 | Claude Code 会在会话期间连接上的 MCP 服务器的工具上发送它；`anthropic_messages/requests/claude-code-inline-tools.json` |
 | `display`（`thinking.display`） | reasoning，来自 `anthropic_messages` | 只控制是否返回思考文本（`summarized` 或 `omitted`）。发往 OpenAI Responses 时改为 `reasoning.summary: "auto"`，除非其值为 `omitted`（[可读推理与摘要](reasoning.md#可读推理与摘要)）。 | `anthropic_messages/requests/thinking-display-omitted.json`、`thinking-adaptive-effort.json` |
 | `image_url.detail` | image，来自 `openai_chat` | 图像分辨率提示（`low`、`high`、`auto`）：它改变的是图像的 Token 成本，而不是提问内容；没有该字段的目标会自行选择分辨率。 | `openai_chat/requests/image-base64-detail.json` |
 | `file.filename` | document，来自 `openai_chat` | OpenAI 要求随内联 `file_data` 一起提供的文件名。属于元数据，不是指令。 | `openai_chat/requests/file-pdf-data.json` |
@@ -149,6 +150,18 @@ Anthropic 的工具搜索按需加载工具。带 `defer_loading: true` 的工�
 - **拒绝**并返回 `Unsupported`：不是布尔值的 `defer_loading`，以及位于 `tool_result` 之外或带有 Kaeso 不认识字段的 `tool_reference`。
 
 Anthropic 模型按原样收到延迟加载的工具和引用。开启工具搜索的 beta `advanced-tool-use-2025-11-20` 位于 `anthropic-beta` 请求头中，其他格式不会收到该请求头（[允许列表](#允许列表)）。
+
+## 内联工具
+
+Anthropic 的内联工具在对话中途改变工具列表：一条 `role: "system"` 消息携带 `tool_addition` 和 `tool_removal` 块，从该位置起向模型提供某个工具或撤回它，而 `tools` 保持原样、提示缓存继续命中（[对话中途的工具变更](https://platform.claude.com/docs/en/build-with-claude/mid-conversation-system-messages#mid-conversation-tool-changes)）。`tool_addition` 用 `tool_reference` 指名一个已声明的工具（这也会让延迟加载的工具出现），或用 `tool_definition` 按值定义一个新工具。Claude Code 就是这样发送会话期间连接上的 MCP 服务器的工具，并在服务器断开时再撤回它们。其他格式每个请求只接受一份工具列表，所以 Kaeso 发给它们对话结束时提供的工具：
+
+- **定义**变为普通工具；与已声明工具同名的定义会原位替换它，新名称加到列表末尾。带 `defer_loading: true` 的定义保持隐藏，直到某个 `tool_reference` 提供它（[工具搜索](#工具搜索)）。块上的 `cache_control` 成为该工具的缓存提示。
+- **引用**提供被指名的工具，无论它是延迟加载的还是先前被撤回的；`tool_removal` 撤回它，即使之后的搜索会加载它。这些块从系统消息中移除；没有其他内容的消息会被省略，带文本的消息保留文本（[系统消息](#系统消息)）。
+- **在 `kaeso-adapted` 中注明**，以块的路径列出，例如 `messages[4].blocks[1]`，让应用知道模型收到的是 Kaeso 构建的工具列表（[响应头](../../api/model-api.md#响应头)）。记录的请求体保留这些块。
+- **像 Anthropic 一样拒绝**，返回 `InvalidRequest`：引用了 `tools` 和先前定义都没有指名的工具，以及携带定义的 `tool_removal`。
+- **拒绝**并返回 `Unsupported`：带有 Kaeso 不认识字段的块或引用，MCP 连接器的 `mcp_tool_reference` 和 `mcp_toolset_reference`（其他格式没有对应物），以及服务器工具的定义，它会像 `tools` 中的同一工具一样被拒绝。
+
+Anthropic 模型按原样收到这些块，连同 `anthropic-beta` 中的 beta `inline-tools-2026-09-15`。Fixture：`anthropic_messages/requests/claude-code-inline-tools.json`。
 
 ## 托管网页搜索
 
