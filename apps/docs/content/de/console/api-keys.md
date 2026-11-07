@@ -11,7 +11,7 @@ Apps und Skripte rufen Kaeso mit einem API-Schlüssel auf. Ein Schlüssel gehör
 1. Wählen Sie auf der Seite **API-Schlüssel** eines Projekts **Schlüssel erstellen**.
 2. **Wofür ist der Schlüssel?** Geben Sie ihm einen Namen, etwa `checkout-web`. Anfrageprotokolle und Warnungen zeigen ihn. Wählen Sie unter **Für** sich selbst oder ein Dienstkonto des Projekts.
 3. **Wann läuft er ab?** Wählen Sie 1, 7, 30 oder 90 Tage, **An einem Datum** oder **Nie**. Ein Schlüssel mit Datum endet zu Beginn dieses Tages, UTC.
-4. **Was darf er aufrufen?** Wählen Sie **Inferenz** für Apps, die Modelle aufrufen, **Plattform** für Skripte, die das Projekt über die Platform API verwalten, oder **Inferenz und Plattform** für beides.
+4. **Was darf er aufrufen?** Haken Sie **Inferenz** für Apps an, die Modelle aufrufen, **Plattform** für Skripte, die das Projekt über die Platform API verwalten, oder beides; **Tools** fügt die Tools des Projekts über sein MCP-Portal hinzu. Ein Schlüssel braucht Inferenz oder Plattform.
 5. **Modelle und Limits**, optional: Wählen Sie die Modelle, die der Schlüssel aufrufen darf, und setzen Sie eigene [Limits](limits-and-budgets.md). Ein als [Nicht verfügbar](models-and-aliases.md) markiertes Modell ist ausgegraut, weil der Anbieter es dem Schlüssel des Projekts nicht bereitstellt. Ohne sie darf der Schlüssel aufrufen, was sein Inhaber darf, innerhalb der Limits seines Inhabers und des Projekts.
 
 **Schlüssel erstellt** zeigt dann den Schlüssel und eine Beispielanfrage damit. Ein Schlüssel besteht aus `sk-kso-` und 48 Buchstaben und Ziffern, und danach zeigt die Konsole nur noch seine ersten und letzten Zeichen.
@@ -23,10 +23,10 @@ Standardmäßig läuft ein Schlüssel nach 90 Tagen ab, oder nach der längsten 
 
 Einen Schlüssel zu erstellen erfordert diese Rechte:
 
-| Zu erstellen | Recht |
-| --- | --- |
-| Eigene Schlüssel | **Eigene Schlüssel erstellen** |
-| Schlüssel eines Dienstkontos | **Dienstkonto-Schlüssel erstellen** |
+| Zu erstellen                       | Recht                                                                                                                            |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| Eigene Schlüssel                   | **Eigene Schlüssel erstellen**                                                                                                   |
+| Schlüssel eines Dienstkontos       | **Dienstkonto-Schlüssel erstellen**                                                                                              |
 | Ein Schlüssel mit Plattformzugriff | Zusätzlich **Plattformzugriff vergeben**, eine Konsolensitzung und eine kürzliche Anmeldung; ein Schlüssel kann keinen erstellen |
 
 Geben Sie jeder App und jeder Umgebung einen eigenen Schlüssel. Dann sind ihre Nutzung, Protokolle und Limits ihre eigenen, und das Abschalten eines Schlüssels betrifft nichts anderes.
@@ -51,11 +51,11 @@ Das Sheet des alten Schlüssels zeigt **Ersetzt durch**, das des neuen **Rotiert
 
 Einen Schlüssel zu rotieren erfordert diese Rechte:
 
-| Zu rotieren | Rechte |
-| --- | --- |
-| Ihr eigener Schlüssel | **Eigene Schlüssel erstellen** sowie **Eigene Schlüssel verwalten** oder **Alle Schlüssel verwalten** |
-| Schlüssel eines Dienstkontos | **Dienstkonto-Schlüssel erstellen** und **Alle Schlüssel verwalten** |
-| Ein Schlüssel mit Plattformzugriff | Zusätzlich **Plattformzugriff vergeben**, eine Konsolensitzung und eine kürzliche Anmeldung |
+| Zu rotieren                        | Rechte                                                                                                |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Ihr eigener Schlüssel              | **Eigene Schlüssel erstellen** sowie **Eigene Schlüssel verwalten** oder **Alle Schlüssel verwalten** |
+| Schlüssel eines Dienstkontos       | **Dienstkonto-Schlüssel erstellen** und **Alle Schlüssel verwalten**                                  |
+| Ein Schlüssel mit Plattformzugriff | Zusätzlich **Plattformzugriff vergeben**, eine Konsolensitzung und eine kürzliche Anmeldung           |
 
 Den Schlüssel eines Mitglieds rotiert nur sein Inhaber, weil der neue Schlüssel mit dessen Rechten handelt. Ein archivierter oder bereits rotierter Schlüssel lässt sich nicht rotieren; rotieren Sie stattdessen seinen Nachfolger. Ein deaktivierter Schlüssel auch nicht, weil sein Nachfolger aktiviert beginnen würde; aktivieren Sie ihn zuerst.
 
@@ -63,11 +63,11 @@ Den Schlüssel eines Mitglieds rotiert nur sein Inhaber, weil der neue Schlüsse
 
 Neben **Rotieren** hat das Menü im Sheet eines Schlüssels drei Aktionen:
 
-| Aktion | Wirkung |
-| --- | --- |
-| Deaktivieren | Der Schlüssel hört sofort auf zu funktionieren. Sie können ihn wieder aktivieren |
-| Aktivieren | Ein deaktivierter Schlüssel funktioniert wieder. Hat eine Person ihn deaktiviert, aktiviert ihn nur eine Person, und unter **API-Schlüssel** im Konto lässt sich nur das eigene Deaktivieren rückgängig machen |
-| Archivieren | Der Schlüssel hört endgültig auf zu funktionieren. Sein Verlauf bleibt erhalten |
+| Aktion       | Wirkung                                                                                                                                                                                                        |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Deaktivieren | Der Schlüssel hört sofort auf zu funktionieren. Sie können ihn wieder aktivieren                                                                                                                               |
+| Aktivieren   | Ein deaktivierter Schlüssel funktioniert wieder. Hat eine Person ihn deaktiviert, aktiviert ihn nur eine Person, und unter **API-Schlüssel** im Konto lässt sich nur das eigene Deaktivieren rückgängig machen |
+| Archivieren  | Der Schlüssel hört endgültig auf zu funktionieren. Sein Verlauf bleibt erhalten                                                                                                                                |
 
 Die eigenen Schlüssel zu ändern erfordert das Recht **Eigene Schlüssel verwalten**, die Schlüssel aller Personen zu ändern erfordert **Alle Schlüssel verwalten**.
 

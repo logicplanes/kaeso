@@ -37,9 +37,6 @@
   "kaeso.audit.timeWithZone": "{time} {zone}",
   "kaeso.audit.title": "Audit-Log",
   "kaeso.audit.userAgent": "User-Agent",
-  "kaeso.createKey.access": "Zugriff",
-  "kaeso.createKey.both": "Inferenz und Plattform",
-  "kaeso.createKey.bothHint": "Beides. Erfordert eine kürzliche Anmeldung.",
   "kaeso.createKey.closeWithoutCopying": "Ohne Kopieren schließen",
   "kaeso.createKey.copied": "Schlüssel kopiert?",
   "kaeso.createKey.copiedHint": "Er kann nicht erneut angezeigt werden; ohne ihn ist ein neuer Schlüssel nötig.",
@@ -307,7 +304,7 @@
   "kaeso.limits.allTools": "Alle Tools",
   "kaeso.usage.toolCalls": "Tool-Aufrufe",
   "kaeso.createKey.tools": "Tools",
-  "kaeso.createKey.toolsHint": "Ruft zusätzlich die Tools des Projekts über sein MCP-Portal auf, als sein Inhaber.",
+  "kaeso.createKey.toolsHint": "Ruft die Tools des Projekts über sein MCP-Portal auf, als sein Inhaber.",
   "kaeso.toolAccess.ownerTools": "Jedes Tool, das sein Inhaber nutzen darf",
   "kaeso.toolAccess.projectTools": "Jedes Tool, das das Projekt anbietet",
   "kaeso.toolAccess.saved": "Tools gespeichert",
@@ -316,5 +313,6 @@
   "kaeso.toolAccess.none": "Noch keine Tools zum Aufrufen.",
   "kaeso.toolAccess.ownerCount": "{count, plural, one {Jedes Tool, das sein Inhaber nutzen darf: # Tool.} other {Jedes Tool, das sein Inhaber nutzen darf: # Tools.}}",
   "kaeso.toolAccess.projectCount": "{count, plural, one {Jedes Tool, das das Projekt anbietet: # Tool.} other {Jedes Tool, das das Projekt anbietet: # Tools.}}",
-  "kaeso.toolAccess.edit": "Tools bearbeiten"
+  "kaeso.toolAccess.edit": "Tools bearbeiten",
+  "kaeso.createKey.chooseApi": "Wählen Sie mindestens eine API"
 }

@@ -37,9 +37,6 @@
   "kaeso.audit.timeWithZone": "{time} {zone}",
   "kaeso.audit.title": "审计日志",
   "kaeso.audit.userAgent": "用户代理",
-  "kaeso.createKey.access": "访问权限",
-  "kaeso.createKey.both": "模型调用和平台",
-  "kaeso.createKey.bothHint": "两者皆可。需要近期登录过。",
   "kaeso.createKey.closeWithoutCopying": "不复制直接关闭",
   "kaeso.createKey.copied": "是否已复制密钥？",
   "kaeso.createKey.copiedHint": "密钥无法再次显示；如未保存，需要创建新密钥。",
@@ -307,7 +304,7 @@
   "kaeso.limits.allTools": "所有工具",
   "kaeso.usage.toolCalls": "工具调用",
   "kaeso.createKey.tools": "工具",
-  "kaeso.createKey.toolsHint": "还会以其所有者身份，通过项目的 MCP 门户调用项目的工具。",
+  "kaeso.createKey.toolsHint": "以其所有者身份，通过项目的 MCP 门户调用项目的工具。",
   "kaeso.toolAccess.ownerTools": "其所有者可用的所有工具",
   "kaeso.toolAccess.projectTools": "项目提供的所有工具",
   "kaeso.toolAccess.saved": "已保存工具",
@@ -316,5 +313,6 @@
   "kaeso.toolAccess.none": "尚无可调用的工具。",
   "kaeso.toolAccess.ownerCount": "{count, plural, other {其所有者可用的所有工具：# 个工具。}}",
   "kaeso.toolAccess.projectCount": "{count, plural, other {项目提供的所有工具：# 个工具。}}",
-  "kaeso.toolAccess.edit": "编辑工具"
+  "kaeso.toolAccess.edit": "编辑工具",
+  "kaeso.createKey.chooseApi": "至少选择一个 API"
 }

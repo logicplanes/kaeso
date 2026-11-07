@@ -8,8 +8,6 @@ import {
   Checkbox,
   DialogScope,
   Input,
-  Radio,
-  RadioGroup,
   SecretReveal,
   Section,
   SettingsGroup,
@@ -70,8 +68,10 @@ function CreateKeyFlow({ org, project, open, onClose, fixedServiceAccount }: Cre
   const [owner, setOwner] = useState<string>(fixedServiceAccount ? fixedServiceAccount.id : "me");
   const [picked, setExpiry] = useState<Expiry | null>(null);
   const [date, setDate] = useState<Date | null>(null);
-  const [access, setAccess] = useState<Access>("inference");
+  const [inference, setInference] = useState(true);
+  const [platform, setPlatform] = useState(false);
   const [tools, setTools] = useState(false);
+  const access: Access | null = inference && platform ? "both" : inference ? "inference" : platform ? "platform" : null;
   const [models, setModels] = useState<string[]>([]);
   const [limits, setLimits] = useState<LimitDraft[]>([]);
   const lastLimit = useRef<HTMLElement>(null);
@@ -95,10 +95,11 @@ function CreateKeyFlow({ org, project, open, onClose, fixedServiceAccount }: Cre
   const expiry: Expiry = picked ?? defaultExpiry(maxDays);
 
   const problems = keptLimits.map(limitProblem).filter(Boolean);
-  const ready = name.trim().length > 0 && (expiry !== "date" || date !== null) && problems.length === 0;
+  const ready = name.trim().length > 0 && access !== null && (expiry !== "date" || date !== null) && problems.length === 0;
 
   const create = useApiMutation({
     mutationFn: async () => {
+      if (!access) throw new Error("the key needs an API to call");
       const body = {
         name: name.trim(),
         access,
@@ -192,36 +193,33 @@ function CreateKeyFlow({ org, project, open, onClose, fixedServiceAccount }: Cre
           {
             id: "access",
             title: t("kaeso.createKey.whatCalls", "What can it call?"),
+            blockedReason: access ? undefined : t("kaeso.createKey.chooseApi", "Choose at least one API"),
             content: (
               <SettingsGroup aria-label={t("kaeso.createKey.whatCalls", "What can it call?")}>
-                <RadioGroup variant="cards" aria-label={t("kaeso.createKey.access", "Access")} value={access} onValueChange={(v) => setAccess(v as Access)}>
-                  <Radio
-                    value="inference"
-                    label={t("format.access.inference", "Inference")}
-                    description={t("kaeso.createKey.inferenceHint", "Calls the model API.")}
-                  />
-                  <Radio
-                    value="platform"
-                    label={t("format.access.platform", "Platform")}
-                    description={
-                      canPlatform
-                        ? t("kaeso.createKey.platformHint", "Calls the Platform API with its owner's rights, in this project. Needs a recent sign-in.")
-                        : needs("keys.platform_access.grant")
-                    }
-                    disabled={!canPlatform}
-                  />
-                  <Radio
-                    value="both"
-                    label={t("kaeso.createKey.both", "Inference and platform")}
-                    description={canPlatform ? t("kaeso.createKey.bothHint", "Both. Needs a recent sign-in.") : needs("keys.platform_access.grant")}
-                    disabled={!canPlatform}
-                  />
-                </RadioGroup>
+                <Checkbox
+                  variant="card"
+                  label={t("format.access.inference", "Inference")}
+                  description={t("kaeso.createKey.inferenceHint", "Calls the model API.")}
+                  checked={inference}
+                  onCheckedChange={setInference}
+                />
+                <Checkbox
+                  variant="card"
+                  label={t("format.access.platform", "Platform")}
+                  description={
+                    canPlatform
+                      ? t("kaeso.createKey.platformHint", "Calls the Platform API with its owner's rights, in this project. Needs a recent sign-in.")
+                      : needs("keys.platform_access.grant")
+                  }
+                  checked={platform}
+                  disabled={!canPlatform}
+                  onCheckedChange={setPlatform}
+                />
                 {rights.has("tools.view") && (
                   <Checkbox
                     variant="card"
                     label={t("kaeso.createKey.tools", "Tools")}
-                    description={t("kaeso.createKey.toolsHint", "Also calls the project's tools through its MCP portal, as its owner.")}
+                    description={t("kaeso.createKey.toolsHint", "Calls the project's tools through its MCP portal, as its owner.")}
                     checked={tools}
                     onCheckedChange={setTools}
                   />
