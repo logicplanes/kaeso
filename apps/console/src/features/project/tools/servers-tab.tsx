@@ -1,6 +1,22 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { AlertDialog, AppFrame, Button, Combobox, DialogScope, Empty, List, Menu, Meter, Popover, Status, Text, Toolbar, icons } from "@logicplanes/kaeso-ui";
+import {
+  AlertDialog,
+  AppFrame,
+  Button,
+  Combobox,
+  DialogScope,
+  Empty,
+  List,
+  Menu,
+  Meter,
+  Popover,
+  Select,
+  Status,
+  Text,
+  Toolbar,
+  icons,
+} from "@logicplanes/kaeso-ui";
 import { api, data } from "~/api/client";
 import type { ProjectMcpServerView } from "~/api/generated/types";
 import { projectToolViews } from "~/api/queries/invalidation";
@@ -11,12 +27,40 @@ import { useNeedsRight } from "~/auth/needs-right";
 import { useProjectRights } from "~/auth/rights";
 import { useOrgRights } from "~/auth/session";
 import { LoadFailed } from "~/features/org/load-failed";
+import { compareNames } from "~/format/collate";
 import { t } from "~/i18n";
 import { LastUsed } from "~/kaeso/last-used";
 import { hostOf, projectServerWord } from "~/kaeso/mcp-servers";
+import type { SearchPatch } from "~/search";
 import { toast } from "~/shell/toast";
+import type { ToolsSearch } from "./tools-page";
 
-export function ServersTab({ org, project, onTools }: { org: string; project: string; onTools: () => void }) {
+export type ServersSort = "name" | "calls" | "used" | "on";
+
+function sorted(list: ProjectMcpServerView[], sort: ServersSort): ProjectMcpServerView[] {
+  const byName = (a: ProjectMcpServerView, b: ProjectMcpServerView) => compareNames(a.name, b.name);
+  const by = {
+    name: byName,
+    calls: (a: ProjectMcpServerView, b: ProjectMcpServerView) => (b.calls_7d ?? -1) - (a.calls_7d ?? -1) || byName(a, b),
+    used: (a: ProjectMcpServerView, b: ProjectMcpServerView) => (b.last_call_at ?? "").localeCompare(a.last_call_at ?? "") || byName(a, b),
+    on: (a: ProjectMcpServerView, b: ProjectMcpServerView) => b.tools_on - a.tools_on || b.tools - a.tools || byName(a, b),
+  }[sort];
+  return [...list].sort(by);
+}
+
+export function ServersTab({
+  org,
+  project,
+  search,
+  setSearch,
+  onTools,
+}: {
+  org: string;
+  project: string;
+  search: ToolsSearch;
+  setSearch: (patch: SearchPatch<ToolsSearch>) => void;
+  onTools: () => void;
+}) {
   const rights = useProjectRights(org, project);
   const orgRights = useOrgRights(org);
   const needs = useNeedsRight(org, project);
@@ -27,6 +71,7 @@ export function ServersTab({ org, project, onTools }: { org: string; project: st
   const servers = useQuery(projectServersQuery(org, project));
   const [stopping, setStopping] = useState<ProjectMcpServerView | null>(null);
   const [stopOpen, setStopOpen] = useState(false);
+  const sort = search.sort ?? "name";
   const list = servers.data ?? [];
   const use = (
     <UseServer
@@ -40,12 +85,25 @@ export function ServersTab({ org, project, onTools }: { org: string; project: st
   return (
     <>
       <Toolbar aria-label={t("project.tools.serversToolbar", "Servers")}>
+        <Select
+          aria-label={t("project.tools.sort", "Sort")}
+          size="sm"
+          icon={icons.sort}
+          value={sort}
+          onValueChange={(v) => setSearch({ sort: v === "calls" || v === "used" || v === "on" ? v : undefined })}
+          options={[
+            { value: "name", label: t("project.tools.sortName", "Name") },
+            { value: "calls", label: t("project.tools.sortCalls", "Calls in 7 days") },
+            { value: "used", label: t("project.tools.sortUsed", "Last used") },
+            { value: "on", label: t("project.tools.sortOn", "Tools on") },
+          ]}
+        />
         <Toolbar.Spacer />
         {use}
       </Toolbar>
       <AppFrame.Body padding="list">
         <Servers
-          list={list}
+          list={sorted(list, sort)}
           pending={servers.isPending}
           failed={servers.isError}
           canManage={canManage}
@@ -102,18 +160,23 @@ function Servers({
           title: s.name,
           subtitle: hostOf(s.url),
           meta: (
-            <span className="flex items-center gap-16">
-              <Status tone={word.tone}>{word.label}</Status>
-              <span className="hidden w-160 md:block">
+            <span className="flex flex-wrap items-center gap-x-16 gap-y-4">
+              <Status tone={word.tone} className="shrink-0 text-nowrap">
+                {word.label}
+              </Status>
+              <span className="flex shrink-0 items-center gap-8">
+                <Text variant="small" tone="secondary" tabular className="text-nowrap">
+                  {t("project.tools.onCount", "{on} of {total} on", { on: s.tools_on, total: s.tools })}
+                </Text>
                 <Meter
                   tone="neutral"
-                  value={s.tools ? (s.tools_on / s.tools) * 100 : 0}
+                  value={s.tools ? s.tools_on / s.tools : 0}
                   aria-label={t("project.tools.onCount", "{on} of {total} on", { on: s.tools_on, total: s.tools })}
-                  label={t("project.tools.onCount", "{on} of {total} on", { on: s.tools_on, total: s.tools })}
+                  className="hidden w-80 md:flex"
                 />
               </span>
               {s.calls_7d != null && (
-                <Text variant="small" tone="secondary" tabular>
+                <Text variant="small" tone="secondary" tabular className="shrink-0 text-nowrap">
                   {t("project.tools.calls7dCount", "{count, plural, one {# call} other {# calls}} in 7 days", { count: s.calls_7d })}
                 </Text>
               )}

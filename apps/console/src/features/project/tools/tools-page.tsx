@@ -8,7 +8,7 @@ import { usePageCreateAction } from "~/shell/create-action";
 import { ProjectHeader } from "~/shell/project-header";
 import type { Hint } from "~/kaeso/mcp-servers";
 import { ConnectTab } from "./connect-tab";
-import { ServersTab } from "./servers-tab";
+import { ServersTab, type ServersSort } from "./servers-tab";
 import { ToolSheet } from "./tool-sheet";
 import { ToolsTab } from "./tools-tab";
 
@@ -20,6 +20,7 @@ export interface ToolsSearch {
   server?: string;
   state?: ToolState;
   hint?: Hint;
+  sort?: ServersSort;
 }
 
 export function ToolsPage({ org, project, search }: { org: string; project: string; search: ToolsSearch }) {
@@ -66,7 +67,7 @@ export function ToolsPage({ org, project, search }: { org: string; project: stri
       {tab === "tools" ? (
         <ToolsTab org={org} project={project} search={search} setSearch={setSearch} />
       ) : tab === "servers" ? (
-        <ServersTab org={org} project={project} onTools={() => setSearch({ tab: undefined })} />
+        <ServersTab org={org} project={project} search={search} setSearch={setSearch} onTools={() => setSearch({ tab: undefined })} />
       ) : (
         <AppFrame.Body padding="page">
           <ConnectTab org={org} project={project} />
