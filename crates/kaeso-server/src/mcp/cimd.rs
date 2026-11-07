@@ -149,7 +149,23 @@ pub async fn client(state: &AppState, raw: &str) -> Result<Result<Client, Refuse
         return Ok(Err(Refused::Document));
     };
     if let Some(c) = state.caches.client_documents.get(raw).await {
-        return Ok(Ok((*c).clone()));
+        if agents::get_client(&state.pg, c.id).await?.is_some() {
+            return Ok(Ok((*c).clone()));
+        }
+        // Registrations without a sign-in are trimmed by count, and a document's row counts among
+        // them until someone approves its client; the document read minutes ago still describes it.
+        return remember(
+            state,
+            raw,
+            Described {
+                name: c.name.clone(),
+                redirect_uris: c.redirect_uris.clone(),
+                software_id: c.software_id.clone(),
+                software_version: c.software_version.clone(),
+            },
+        )
+        .await
+        .map(Ok);
     }
     let (status, body) = match state.mcp.get_json(&url, LIMITS).await {
         Ok(answer) => answer,
