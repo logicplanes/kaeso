@@ -41,7 +41,7 @@ docker compose -f deploy/compose.dev.yaml up -d --wait
 python3 -m venv e2e/.venv && e2e/.venv/bin/pip install -r e2e/requirements.txt
 ```
 
-The development stack runs PostgreSQL, ClickHouse, Valkey and Mailpit for the Rust tests; `pnpm stack:up` adds the gateway built from the checkout, the mock provider and the mock identity provider for the console. [Local setup](https://docs.kaeso.app/development/local-setup) has every step.
+`pnpm bootstrap --check` checks every prerequisite, the free disk and the ports, with the fix for each; `pnpm bootstrap --all` runs these steps and also starts the console's stack with sample data. The development stack runs PostgreSQL, ClickHouse, Valkey and Mailpit for the Rust tests; `pnpm stack:up` adds the gateway built from the checkout, the mock provider and the mock identity provider for the console. [Local setup](https://docs.kaeso.app/development/local-setup) has every step.
 
 ## Definition of done
 

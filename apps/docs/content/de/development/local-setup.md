@@ -31,35 +31,25 @@ git clone https://github.com/logicplanes/kaeso
 cd kaeso
 ```
 
-## Abhängigkeiten installieren
+## Einrichten
 
-Installieren Sie Konsole, Dokumentation, Showcase und die Bibliotheken in `packages/`:
-
-```bash
-pnpm install
-```
-
-Cargo holt die Rust-Crates beim ersten Build.
-
-## Entwicklungs-Stack starten
-
-Bauen Sie das Gateway aus Ihrem Checkout und starten Sie es mit seinen Datenbanken und Mock-Diensten:
+Ein Befehl prüft, was das Repository braucht, installiert die Abhängigkeiten, baut die UI-Bibliothek, startet den Entwicklungs-Stack und füllt ihn mit Beispieldaten:
 
 ```bash
-pnpm stack:up
+pnpm bootstrap
 ```
 
-Der erste Build kompiliert das Gateway und dauert einige Minuten; spätere Builds nutzen den Cache von Docker. Sobald alle Dienste gesund sind, gibt der Befehl einen Einrichtungslink aus, `http://localhost:3000/setup#token=…`.
+Er hält an, bevor er etwas ändert, wenn eine Voraussetzung fehlt oder zu alt ist, wenn Docker nicht antwortet oder wenn ein anderes Programm einen Port belegt, den der Stack braucht. Dann sagt er, wie Sie das beheben, etwa mit `corepack enable` oder der Variable, die den Port verlegt. Führen Sie ihn jederzeit erneut aus: Eine eingerichtete Installation behält ihre Daten.
 
-## Beispieldaten anlegen
+Der erste Lauf baut das Gateway aus Ihrem Checkout und dauert einige Minuten; spätere Läufe nutzen den Cache von Docker. Die Beispieldaten sind die Organisation Northwind Labs mit fünf Projekten, sechs Mitgliedern, zehn Schlüsseln, Modellen, Aliassen und Limits. Einige tausend Support-E-Mails und Slack-Fragen gehen über das Gateway, die der Mock-Anbieter mit ausformulierten Antworten beantwortet. Danach folgt ein Anfrageverlauf über 70 Tage: jede App und jede Person mit eigenen Modellen, Clients und Uhrzeiten, Inhalten dort, wo das Projekt sie speichert, Treffern im Antwort-Cache, Fallbacks während ein Anbieter überlastet ist, und einem während eines Sales erreichten Limit.
 
-Richten Sie die Installation über die Platform API ein und füllen Sie sie mit Beispieldaten:
+| Option | Was sie bewirkt |
+| --- | --- |
+| `--check` | Prüft nur die Voraussetzungen, den freien Speicherplatz und die Ports |
+| `--all` | Installiert auch die Browser, die Cargo-Werkzeuge und die Python-Pakete, die die [vollständigen Testsuiten](testing.md) brauchen |
+| `--no-seed` | Startet den Stack ohne Beispieldaten; öffnen Sie den ausgegebenen Einrichtungslink, um Kaeso von Hand einzurichten |
 
-```bash
-pnpm seed
-```
-
-Sie erhalten die Organisation Northwind Labs mit fünf Projekten, sechs Mitgliedern, zehn Schlüsseln, Modellen, Aliassen und Limits. Der Befehl schickt einige tausend Support-E-Mails und Slack-Fragen über das Gateway, die der Mock-Anbieter mit ausformulierten Antworten beantwortet, und legt dann einen Anfrageverlauf über 70 Tage an: jede App und jede Person mit eigenen Modellen, Clients und Uhrzeiten, Inhalten dort, wo das Projekt sie speichert, Treffern im Antwort-Cache, Fallbacks während ein Anbieter überlastet ist, und einem während eines Sales erreichten Limit. Mit `KAESO_SEED_WHOLE_DAYS=1` endet der Verlauf gestern statt vor zehn Minuten, für eine Demo, die ihre Daten nach vorn verschiebt. Um die Installation stattdessen von Hand einzurichten, überspringen Sie diesen Schritt und öffnen den Einrichtungslink.
+Mit `KAESO_SEED_WHOLE_DAYS=1` endet der Verlauf gestern statt vor zehn Minuten, für eine Demo, die ihre Daten nach vorn verschiebt. `pnpm stack:up` und `pnpm seed` starten den Stack und die Beispieldaten einzeln ([Entwicklungs-Stack](stack.md)).
 
 ## Konsole öffnen
 
