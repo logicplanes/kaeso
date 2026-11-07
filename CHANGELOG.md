@@ -4,6 +4,26 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 ## [Unreleased]
 
+## [0.6.0-rc.8] - 2026-11-07
+
+This release candidate fixes a sign-in failure for MCP clients known by their metadata document: when registration churn trimmed such a client's registration while its description was still cached, an authorize request stored a request for a client that no longer existed and the console showed server_error until the cache lapsed. The scaling page is re-measured with the rc.7 images and now shows both streamed and non-streamed throughput for one, two and three gateways.
+
+**Contributors:** @dvnold
+
+**Full changes:** [v0.6.0-rc.7...v0.6.0-rc.8](https://github.com/logicplanes/kaeso/compare/v0.6.0-rc.7...v0.6.0-rc.8)
+
+### Changed
+
+#### Documentation
+
+- The scaling page shows what one, two and three gateways serve for streamed and non-streamed requests, re-measured with the rc.7 images, one CPU per gateway, Caddy in front and the mock provider behind. Three gateways serve twice the completions of one and 2.8 times the streams, at half the latency; the page said streams gain capacity rather than speed, but their translation costs CPU on every event, so they gain throughput too, and the table carries both columns in all three languages. ([#744](https://github.com/logicplanes/kaeso/pull/744))
+
+### Fixed
+
+#### Gateway
+
+- An MCP client known by its metadata document signs in again after registration churn trimmed its registration. Its description stayed cached for ten minutes after the row was gone, so an `/oauth/authorize` from that client stored a request for a client that no longer existed and the console showed `server_error` until the cache lapsed; a cache hit now checks that the row still exists and, when it is gone, puts the document's description back under the same URL, which takes one indexed read per interactive sign-in. ([#743](https://github.com/logicplanes/kaeso/pull/743))
+
 ## [0.6.0-rc.7] - 2026-11-07
 
 ### Changed
@@ -1429,7 +1449,8 @@ The first release of Kaeso, the open-source AI gateway you run yourself: the gat
 
 - A Release workflow that runs only from `prod`: it prepares the version changes and the changelog without write access to the repository, lets only jobs that run nothing but git push the release commit and the tag, syncs the release commit back to `dev`, and pins every action by commit SHA.
 
-[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.6.0-rc.7...HEAD
+[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.6.0-rc.8...HEAD
+[0.6.0-rc.8]: https://github.com/logicplanes/kaeso/releases/tag/v0.6.0-rc.8
 [0.6.0-rc.7]: https://github.com/logicplanes/kaeso/releases/tag/v0.6.0-rc.7
 [0.6.0-rc.6]: https://github.com/logicplanes/kaeso/releases/tag/v0.6.0-rc.6
 [0.6.0-rc.4]: https://github.com/logicplanes/kaeso/releases/tag/v0.6.0-rc.4

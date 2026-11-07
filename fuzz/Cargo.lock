@@ -144,7 +144,7 @@ dependencies = [
 
 [[package]]
 name = "kaeso-codecs"
-version = "0.6.0-rc.7"
+version = "0.6.0-rc.8"
 dependencies = [
  "base64",
  "indexmap",
@@ -156,7 +156,7 @@ dependencies = [
 
 [[package]]
 name = "kaeso-kpp"
-version = "0.6.0-rc.7"
+version = "0.6.0-rc.8"
 dependencies = [
  "indexmap",
  "serde",
@@ -166,7 +166,7 @@ dependencies = [
 
 [[package]]
 name = "kaeso-mcp"
-version = "0.6.0-rc.7"
+version = "0.6.0-rc.8"
 dependencies = [
  "base64",
  "serde",
