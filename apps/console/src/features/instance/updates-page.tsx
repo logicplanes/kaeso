@@ -144,11 +144,11 @@ function UpdateState({ u, onUpdate, onProgress }: { u: UpdatesView; onUpdate: (r
 function manualReason(u: UpdatesView, version: string): string {
   switch (u.manual) {
     case "major":
-      return t("instance.updates.manualMajor", "Kaeso {version} is a new major version: update by hand with the upgrade guide.", { version });
+      return t("instance.updates.manualMajor", "Kaeso {version} is a new major version: read the upgrade guide, then update with the installer.", { version });
     case "manual_steps":
-      return t("instance.updates.manualSteps", "A release on the way asks for steps by hand: follow the upgrade guide.");
+      return t("instance.updates.manualSteps", "A release on the way asks for steps of its own: follow the upgrade guide, then update with the installer.");
     default:
-      return t("instance.updates.manualUnprepared", "This release can't be applied from here: update by hand with the upgrade guide.");
+      return t("instance.updates.manualUnprepared", "This release can't be applied from here: update with the installer.");
   }
 }
 
@@ -159,32 +159,18 @@ function blocked(u: UpdatesView): string | null {
     case "unreachable":
       return t("instance.updates.updaterDown", "The updater doesn't answer; check that its container runs.");
     case "outdated":
-      return t("instance.updates.updaterOld", "This release needs a newer updater; update by hand once.");
+      return t("instance.updates.updaterOld", "This release needs a newer updater; update once with the installer.");
     default:
       return null;
   }
 }
 
-const TURN_ON_UPDATER = "curl -fsSL https://kaeso.app/install.sh | sh";
+const INSTALLER = "curl -fsSL https://kaeso.app/install.sh | sh";
+const TURN_ON_UPDATER = INSTALLER;
 const START_UPDATER = "docker compose up -d --wait";
 
 function Latest({ u, latest }: { u: UpdatesView; latest: ReleaseView }) {
-  const download = `https://github.com/logicplanes/kaeso/releases/download/v${latest.version}`;
-  const commands = [
-    "(",
-    "  set -euo pipefail",
-    '  dir="$(mktemp -d)"',
-    `  curl -fsSL -o "$dir/compose.yaml" ${download}/compose.yaml`,
-    `  curl -fsSL -o "$dir/release.json" ${download}/release.json`,
-    '  gh attestation verify "$dir/release.json" --repo logicplanes/kaeso --signer-workflow logicplanes/kaeso/.github/workflows/release.yml --source-ref refs/heads/prod',
-    '  echo "$(jq -r .compose.sha256 "$dir/release.json")  $dir/compose.yaml" | sha256sum -c -',
-    `  jq -e '.version == "${latest.version}"' "$dir/release.json"`,
-    '  mv "$dir/compose.yaml" "$dir/release.json" .',
-    '  rmdir "$dir"',
-    "  docker compose pull",
-    "  docker compose up -d --wait",
-    ")",
-  ].join("\n");
+  const update = `${INSTALLER} -s -- --update --version ${latest.version}`;
   const guide = httpsHref(u.upgrade_guide);
   return (
     <Section
@@ -194,19 +180,22 @@ function Latest({ u, latest }: { u: UpdatesView; latest: ReleaseView }) {
     >
       <div className="flex flex-col gap-16">
         {u.manual ? (
-          <Banner
-            tone="warning"
-            title={t("instance.updates.byHand", "Update by hand")}
-            actions={
-              guide && (
-                <Button size="sm" href={guide} target="_blank" rel="noopener noreferrer" trailingIcon={icons.externalLink}>
-                  {t("instance.updates.guide", "Open the upgrade guide")}
-                </Button>
-              )
-            }
-          >
-            {manualReason(u, latest.version)}
-          </Banner>
+          <>
+            <Banner
+              tone="warning"
+              title={t("instance.updates.withInstaller", "Update with the installer")}
+              actions={
+                guide && (
+                  <Button size="sm" href={guide} target="_blank" rel="noopener noreferrer" trailingIcon={icons.externalLink}>
+                    {t("instance.updates.guide", "Open the upgrade guide")}
+                  </Button>
+                )
+              }
+            >
+              {manualReason(u, latest.version)}
+            </Banner>
+            <CodeBlock title={t("instance.updates.thenUpdateTitle", "Then update, in the install's folder")} lang="bash" code={update} collapseAfter={0} />
+          </>
         ) : u.updater.state === "not_installed" ? (
           <div className="flex flex-col gap-12">
             <CodeBlock
@@ -229,7 +218,12 @@ function Latest({ u, latest }: { u: UpdatesView; latest: ReleaseView }) {
         ) : (
           !u.can_apply &&
           u.updater.state === "outdated" && (
-            <CodeBlock title={t("instance.updates.byHandTitle", "Update by hand, in the install's folder")} lang="bash" code={commands} collapseAfter={0} />
+            <CodeBlock
+              title={t("instance.updates.updateOnceTitle", "Update once with the installer, in the install's folder")}
+              lang="bash"
+              code={update}
+              collapseAfter={0}
+            />
           )
         )}
         {u.releases.map((r) => (

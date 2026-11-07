@@ -16,6 +16,8 @@ main() {
   [ "${KAESO_NO_OPEN:-}" != yes ] || open_browser=no
   updater=yes
   [ "${KAESO_NO_UPDATER:-}" != yes ] || updater=no
+  update="${KAESO_UPDATE:-}"
+  updated=
   while [ $# -gt 0 ]; do
     case "$1" in
       --domain) domain="${2:?--domain needs a value}"; shift 2 ;;
@@ -24,6 +26,7 @@ main() {
       --install-docker) install_docker=yes; shift ;;
       --no-open) open_browser=no; shift ;;
       --no-updater) updater=no; shift ;;
+      --update) update=yes; shift ;;
       -h | --help) usage; return 0 ;;
       *) fail "Unknown option $1. Run with --help to see the options." ;;
     esac
@@ -62,7 +65,11 @@ main() {
       note "This install keeps its domain $current. To change it, set KAESO_DOMAIN in .env and run docker compose up -d."
     fi
     domain="$current"
-    say "Kaeso is installed in $here; starting it"
+    if [ "$update" = yes ]; then
+      update_compose
+    else
+      say "Kaeso is installed in $here; starting it"
+    fi
   else
     fresh=yes
     [ -n "$domain" ] || domain="$(choose_domain)"
@@ -187,9 +194,10 @@ Usage: curl -fsSL https://kaeso.app/install.sh | sh -s -- [options]
   --install-docker   on Linux, install Docker Engine first if it's missing, without asking
   --no-open          don't open the setup link in the browser
   --no-updater       leave the updater off, so Kaeso updates only by hand
+  --update           in an install, update it to the newest stable release, or to the one --version names
 
-The environment variables KAESO_DOMAIN, KAESO_INSTALL_DIR, KAESO_VERSION, KAESO_INSTALL_DOCKER=yes, KAESO_NO_OPEN=yes and
-KAESO_NO_UPDATER=yes set the same options.
+The environment variables KAESO_DOMAIN, KAESO_INSTALL_DIR, KAESO_VERSION, KAESO_INSTALL_DOCKER=yes, KAESO_NO_OPEN=yes,
+KAESO_NO_UPDATER=yes and KAESO_UPDATE=yes set the same options.
 Running it again in the same folder keeps the settings and the master key, turns on the updater if it's off, and starts
 Kaeso if it's stopped.
 When Docker Desktop, OrbStack or Colima is installed but stopped, the installer starts it.
@@ -417,6 +425,85 @@ choose_domain() {
   done
 }
 
+sha256() {
+  if command -v sha256sum >/dev/null 2>&1; then
+    sha256sum "$1" | cut -d' ' -f1
+  elif command -v shasum >/dev/null 2>&1; then
+    shasum -a 256 "$1" | cut -d' ' -f1
+  else
+    openssl dgst -sha256 -r "$1" | cut -d' ' -f1
+  fi
+}
+
+# Semantic versioning: a release is newer than its own pre-releases, so 0.6.0 is newer than 0.6.0-rc.8.
+newer() {
+  awk -v a="$1" -v b="$2" '
+    function cmp(x, y,   xc, yc, xp, yp, xa, ya, nx, ny, i) {
+      xc = x; sub(/-.*/, "", xc); yc = y; sub(/-.*/, "", yc)
+      split(xc, xa, "."); split(yc, ya, ".")
+      for (i = 1; i <= 3; i++) if (xa[i] + 0 != ya[i] + 0) return xa[i] + 0 > ya[i] + 0 ? 1 : -1
+      xp = index(x, "-") ? substr(x, index(x, "-") + 1) : ""
+      yp = index(y, "-") ? substr(y, index(y, "-") + 1) : ""
+      if (xp == yp) return 0
+      if (xp == "") return 1
+      if (yp == "") return -1
+      nx = split(xp, xa, "."); ny = split(yp, ya, ".")
+      for (i = 1; i <= nx || i <= ny; i++) {
+        if (xa[i] == ya[i]) continue
+        if (i > nx) return -1
+        if (i > ny) return 1
+        if (xa[i] ~ /^[0-9]+$/ && ya[i] ~ /^[0-9]+$/) return xa[i] + 0 > ya[i] + 0 ? 1 : -1
+        return xa[i] > ya[i] ? 1 : -1
+      }
+      return 0
+    }
+    BEGIN { exit cmp(a, b) == 1 ? 0 : 1 }'
+}
+
+running_version() {
+  sed -n 's#.*ghcr\.io/logicplanes/kaeso-gateway:\([0-9A-Za-z.+-]*\).*#\1#p' compose.yaml | head -n 1
+}
+
+# The new compose.yaml only replaces the install's once its hash matches the release's manifest. It is written in place,
+# so the file keeps the owner and mode the updater relies on.
+update_compose() {
+  releases="${KAESO_RELEASES_URL:-https://github.com/logicplanes/kaeso/releases}"
+  if [ "$version" = latest ]; then
+    from="$releases/latest/download"
+  else
+    from="$releases/download/v${version#v}"
+  fi
+  for file in release.json compose.yaml; do
+    download "$from/$file" "$file.part" || {
+      rm -f release.json.part compose.yaml.part
+      fail "Couldn't download $from/$file. Check the version and the connection, and run the installer again."
+    }
+  done
+  manifest="$(tr -d ' \t\r\n' <release.json.part)"
+  want="$(printf '%s' "$manifest" | sed -n 's/.*"compose":{[^}]*"sha256":"\([0-9a-f]\{64\}\)".*/\1/p')"
+  target="$(printf '%s' "$manifest" | sed -n 's/^{.*"version":"\([^"]*\)".*/\1/p')"
+  if [ -z "$want" ] || [ "$(sha256 compose.yaml.part)" != "$want" ]; then
+    rm -f release.json.part compose.yaml.part
+    fail "The downloaded compose.yaml doesn't match its release's manifest, so the install stays as it is. Run the installer again."
+  fi
+  rm -f release.json.part
+  running="$(running_version)"
+  if [ "$running" = "$target" ]; then
+    rm -f compose.yaml.part
+    say "Kaeso $target is installed in $here already; starting it"
+    return 0
+  fi
+  if [ -n "$running" ] && newer "$running" "$target"; then
+    rm -f compose.yaml.part
+    fail "Kaeso $running runs here, which is newer than $target. To install a particular release, give it with --version."
+  fi
+  cp compose.yaml compose.yaml.previous
+  cat compose.yaml.part >compose.yaml
+  rm -f compose.yaml.part
+  updated="${running:-the previous release}"
+  say "Updating Kaeso in $here from ${running:-its release} to $target"
+}
+
 is_install() {
   [ -f "$1/compose.yaml" ] && [ -f "$1/.env" ] && grep -q '^KAESO_DOMAIN=' "$1/.env" 2>/dev/null
 }
@@ -605,6 +692,7 @@ explain_failure() {
     printf '\n%s, the last lines of its log:\n' "$service" >&2
     docker compose logs --no-log-prefix --tail 15 "$service" </dev/null >&2 || true
   done
+  [ -z "$updated" ] || note "The compose.yaml of $updated is in compose.yaml.previous. Going back to it needs the database backup from before the update: https://docs.kaeso.app/self-hosting/upgrades#downgrade"
   fail "Kaeso didn't start. Fix the cause above and run the installer again; docker compose logs in $here shows more."
 }
 

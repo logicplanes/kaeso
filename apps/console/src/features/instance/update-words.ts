@@ -48,7 +48,7 @@ export function reasonText(reason: string | null | undefined): string | null {
     case "not_newer":
       return t("instance.updates.whyNotNewer", "This version runs already.");
     case "updater_outdated":
-      return t("instance.updates.whyOutdated", "The updater is too old for this release; update by hand once.");
+      return t("instance.updates.whyOutdated", "The updater is too old for this release; update once with the installer.");
     case "compose_changed":
       return t("instance.updates.whyCompose", "Your compose.yaml has changes of its own; update by hand.");
     case "compose_unwritable":

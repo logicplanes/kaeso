@@ -10,7 +10,13 @@ order: 8
 
 1. 阅读发布说明，看是否有需要您处理的事项。发布说明位于[版本页面](https://github.com/logicplanes/kaeso/releases)，以及**实例** › **更新**中。
 2. [备份](backups.md) PostgreSQL，以及保存请求日志的 ClickHouse，以便在需要时[回退](#降级)。
-3. 在实例文件夹中，把 `version` 设为要更新到的版本，然后下载、检查并启动它。这些命令会把 `compose.yaml` 和 `release.json` 下载到一个临时文件夹，并借助已登录的 [GitHub CLI](https://cli.github.com) 和 `jq` 检查：
+3. 在实例文件夹中，带上 `--update` 和要更新到的版本运行安装脚本。它会下载该版本的 `compose.yaml` 和 `release.json`，只有当 `compose.yaml` 的哈希与 `release.json` 中写明的一致时，才会替换实例的 `compose.yaml`。它会把旧文件保留为 `compose.yaml.previous`，绝不会退回到更旧的版本，然后拉取镜像并启动它们。不带 `--version` 时，它会安装最新的稳定版本。
+
+```bash
+curl -fsSL https://kaeso.app/install.sh | sh -s -- --update --version {{version}}
+```
+
+4. 如需同时自行检查 Kaeso 发布工作流的签名，请改用以下命令代替安装脚本。把 `version` 设为要更新到的版本，然后下载、检查并启动它。这些命令会把 `compose.yaml` 和 `release.json` 下载到一个临时文件夹，并借助已登录的 [GitHub CLI](https://cli.github.com) 和 `jq` 检查：
    - `release.json` 上 Kaeso Release 工作流的签名；
    - `release.json` 写明的 `compose.yaml` 哈希，进而检查每个 Kaeso 镜像的摘要；
    - `release.json` 写明的版本号。
@@ -42,7 +48,7 @@ version={{version}}
 
 网关启动时会迁移数据库。迁移只会向前、按顺序执行，因此可以跨版本升级。
 
-更新器无法安装某个版本时，控制台会显示带有确切版本号的这些命令。
+更新器无法安装某个版本时，控制台会显示带有确切版本号的安装脚本命令。
 
 ## 新版本
 
@@ -119,7 +125,7 @@ secrets:
 
 ### 更新器会安装哪些版本
 
-版本满足以下所有条件时，更新器会安装它。否则，控制台会显示其发布说明和手动更新的命令。
+版本满足以下所有条件时，更新器会安装它。否则，控制台会显示其发布说明，以及更新到该版本的安装脚本命令。
 
 - 它不是新的主版本。需要手动步骤的迁移总会随新的主版本发布。
 - 途经的版本中没有需要手动步骤的版本。当某个版本的 `compose.yaml` 除镜像版本外还有其他变化，或维护者如此标记时，就需要手动步骤。

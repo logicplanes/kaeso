@@ -10,7 +10,13 @@ Every release gives all parts of Kaeso one version number and follows semantic v
 
 1. Read the release notes for anything that needs action. They are on the [releases page](https://github.com/logicplanes/kaeso/releases) and under **Instance** › **Updates**.
 2. [Back up](backups.md) PostgreSQL, and ClickHouse while it keeps request logs, so you can [go back](#downgrade) if you need to.
-3. In the install's folder, set `version` to the release you update to, then download, check and start it. The commands download `compose.yaml` and `release.json` into a temporary folder and check them, with the [GitHub CLI](https://cli.github.com) signed in and `jq`:
+3. In the install's folder, run the installer with `--update` and the release you update to. It downloads that release's `compose.yaml` and `release.json`, and replaces the install's `compose.yaml` only when its hash matches the one `release.json` names. It keeps the old file as `compose.yaml.previous`, never goes back to an older release, and then pulls the images and starts them. Without `--version`, it installs the newest stable release.
+
+```bash
+curl -fsSL https://kaeso.app/install.sh | sh -s -- --update --version {{version}}
+```
+
+4. To also check the signature of Kaeso's Release workflow yourself, use these commands instead of the installer. Set `version` to the release you update to, then download, check and start it. The commands download `compose.yaml` and `release.json` into a temporary folder and check them, with the [GitHub CLI](https://cli.github.com) signed in and `jq`:
    - the signature of Kaeso's Release workflow on `release.json`;
    - the hash of `compose.yaml` that `release.json` names, and with it the digest of each Kaeso image;
    - the version `release.json` names.
@@ -42,7 +48,7 @@ The commands stop at the first one that fails and leave the install as it was. D
 
 The gateway migrates the databases when it starts. Migrations only move forward and run in order, so you can skip versions.
 
-When the updater can't install a release, the console shows these commands with the exact version.
+When the updater can't install a release, the console shows the installer's command with the exact version.
 
 ## New releases
 
@@ -119,7 +125,7 @@ secrets:
 
 ### Which releases the updater installs
 
-The updater installs a release when all of these hold. Otherwise, the console shows its notes and the commands to update by hand.
+The updater installs a release when all of these hold. Otherwise, the console shows its notes and the installer's command that updates to it.
 
 - It isn't a new major version. A migration that needs a manual step always makes a major version.
 - No release on the way asks for steps by hand. A release does when its `compose.yaml` changes beyond the image versions, or when the maintainers mark it so.

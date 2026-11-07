@@ -447,3 +447,113 @@ def test_the_installer_run_in_an_install_uses_that_folder(tmp_path):
     assert run_part("is_install .", tmp_path).returncode == 0
     (tmp_path / ".env").write_text("OTHER=1\n")
     assert run_part("is_install .", tmp_path).returncode == 1
+
+
+@pytest.mark.parametrize(
+    ("a", "b", "is_newer"),
+    [
+        ("0.6.0", "0.6.0-rc.8", True),
+        ("0.6.0-rc.8", "0.6.0", False),
+        ("0.6.0-rc.10", "0.6.0-rc.9", True),
+        ("0.6.1", "0.6.0", True),
+        ("1.0.0", "0.99.99", True),
+        ("0.6.0", "0.6.0", False),
+        ("0.5.6", "0.6.0-rc.1", False),
+        ("0.6.0-rc.1", "0.6.0-beta.2", True),
+    ],
+)
+def test_versions_compare_as_semantic_versioning_says(a, b, is_newer, tmp_path):
+    assert (run_part(f"newer {a} {b}", tmp_path).returncode == 0) is is_newer
+
+
+def release_dir(tmp_path: Path, version: str, compose: str, digest: str | None = None, latest: bool = False) -> None:
+    import hashlib
+    import json
+
+    for folder in [tmp_path / "releases" / "download" / f"v{version}"] + ([tmp_path / "releases" / "latest" / "download"] if latest else []):
+        folder.mkdir(parents=True, exist_ok=True)
+        (folder / "compose.yaml").write_text(compose)
+        sha = digest or hashlib.sha256(compose.encode()).hexdigest()
+        (folder / "release.json").write_text(json.dumps({"schema": 1, "version": version, "compose": {"name": "compose.yaml", "sha256": sha}}, indent=2))
+
+
+def compose_of(version: str) -> str:
+    return f"services:\n  gateway:\n    image: ghcr.io/logicplanes/kaeso-gateway:{version}@sha256:{'a' * 64}\n"
+
+
+def update_in(tmp_path: Path, version: str = "latest") -> subprocess.CompletedProcess:
+    install = tmp_path / "kaeso"
+    return run_part(
+        f'cd "{install}"; version={version}; here="{install}"; updated=; update_compose; echo "updated=$updated"',
+        tmp_path,
+        {"KAESO_RELEASES_URL": (tmp_path / "releases").as_uri()},
+    )
+
+
+def an_install(tmp_path: Path, version: str) -> Path:
+    install = tmp_path / "kaeso"
+    install.mkdir()
+    (install / "compose.yaml").write_text(compose_of(version))
+    (install / "compose.yaml").chmod(0o660)
+    return install
+
+
+def test_update_installs_the_newest_stable_release_after_checking_its_hash(tmp_path):
+    install = an_install(tmp_path, "0.6.0-rc.8")
+    inode = (install / "compose.yaml").stat().st_ino
+    release_dir(tmp_path, "0.6.0", compose_of("0.6.0"), latest=True)
+    result = update_in(tmp_path)
+    assert result.returncode == 0, result.stderr
+    assert "Updating Kaeso in" in result.stdout and "from 0.6.0-rc.8 to 0.6.0" in result.stdout
+    assert "updated=0.6.0-rc.8" in result.stdout
+    assert (install / "compose.yaml").read_text() == compose_of("0.6.0")
+    assert (install / "compose.yaml.previous").read_text() == compose_of("0.6.0-rc.8")
+    assert (install / "compose.yaml").stat().st_ino == inode, "written in place, so the updater's mount still sees it"
+    assert stat.S_IMODE((install / "compose.yaml").stat().st_mode) == 0o660
+    assert sorted(p.name for p in install.iterdir()) == ["compose.yaml", "compose.yaml.previous"]
+
+
+def test_update_installs_the_release_version_names(tmp_path):
+    install = an_install(tmp_path, "0.6.0-rc.8")
+    release_dir(tmp_path, "0.6.0-rc.9", compose_of("0.6.0-rc.9"))
+    result = update_in(tmp_path, "0.6.0-rc.9")
+    assert result.returncode == 0, result.stderr
+    assert (install / "compose.yaml").read_text() == compose_of("0.6.0-rc.9")
+
+
+def test_update_refuses_a_compose_file_that_does_not_match_the_manifest(tmp_path):
+    install = an_install(tmp_path, "0.6.0-rc.8")
+    release_dir(tmp_path, "0.6.0", compose_of("0.6.0"), digest="b" * 64, latest=True)
+    result = update_in(tmp_path)
+    assert result.returncode == 1
+    assert "doesn't match its release's manifest, so the install stays as it is" in result.stderr
+    assert (install / "compose.yaml").read_text() == compose_of("0.6.0-rc.8")
+    assert sorted(p.name for p in install.iterdir()) == ["compose.yaml"]
+
+
+def test_update_never_goes_back_to_an_older_release(tmp_path):
+    install = an_install(tmp_path, "0.6.0-rc.8")
+    release_dir(tmp_path, "0.5.6", compose_of("0.5.6"), latest=True)
+    result = update_in(tmp_path)
+    assert result.returncode == 1
+    assert "Kaeso 0.6.0-rc.8 runs here, which is newer than 0.5.6" in result.stderr
+    assert (install / "compose.yaml").read_text() == compose_of("0.6.0-rc.8")
+
+
+def test_update_to_the_running_release_just_starts_it(tmp_path):
+    install = an_install(tmp_path, "0.6.0")
+    release_dir(tmp_path, "0.6.0", compose_of("0.6.0"), latest=True)
+    result = update_in(tmp_path)
+    assert result.returncode == 0, result.stderr
+    assert "Kaeso 0.6.0 is installed in" in result.stdout
+    assert "updated=\n" in result.stdout
+    assert sorted(p.name for p in install.iterdir()) == ["compose.yaml"]
+
+
+def test_update_that_cannot_download_changes_nothing(tmp_path):
+    install = an_install(tmp_path, "0.6.0-rc.8")
+    (tmp_path / "releases").mkdir()
+    result = update_in(tmp_path, "9.9.9")
+    assert result.returncode == 1
+    assert "Couldn't download" in result.stderr
+    assert sorted(p.name for p in install.iterdir()) == ["compose.yaml"]
