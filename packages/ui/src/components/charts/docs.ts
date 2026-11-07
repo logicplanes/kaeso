@@ -95,6 +95,10 @@ export const docs = {
   Sparkline: {
     description: "A small line chart of one series, inline beside a value, with its last point marked. Set `fluid` to fill a stat tile's width.",
     props: {
+      formatValue: 'Writes a value in the tooltip, such as "1,467" or "$2.06".',
+      height: "The height of a fluid sparkline in px; 32 by default.",
+      labels: "One name per value, such as each day; with them the sparkline can be inspected by pointer or arrow keys, with a crosshair and a tooltip.",
+      seriesLabel: "What the values are, named in the tooltip.",
       "aria-label": 'The chart\'s accessible name ("Requests by model").',
       color: "The line's color (`var(--k-viz-1)` by default). Pass `seriesColor(id)` to match the series elsewhere.",
       fluid: "Fills the container's width at 32px high, without the last point's dot, as in a stat tile. Otherwise it is 80×24.",

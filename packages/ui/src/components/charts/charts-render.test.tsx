@@ -32,6 +32,15 @@ beforeEach(() => {
 afterEach(() => vi.restoreAllMocks());
 
 describe("TimeseriesChart", () => {
+  it("draws a comparison series as a thin dashed line without an area", () => {
+    const [now, before] = series(days(30));
+    const { container } = render(<TimeseriesChart aria-label="Requests" kind="area" series={[now!, { ...before!, dashed: true }]} hideLegend />);
+    const dashed = container.querySelectorAll("[data-compare]");
+    expect(dashed).toHaveLength(1);
+    expect(dashed[0]).toHaveAttribute("stroke-dasharray", "3 4");
+    expect(container.querySelectorAll("path[fill^='url(']")).toHaveLength(1);
+  });
+
   it("draws lines, shows a tooltip on hover and hides a series from the legend", async () => {
     const { container } = render(<TimeseriesChart aria-label="Requests" series={series(hours(24))} threshold={{ value: 200, label: "Limit" }} />);
     const plot = screen.getByRole("group", { name: "Requests" });

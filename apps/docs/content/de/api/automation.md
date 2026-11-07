@@ -116,6 +116,7 @@ Eine Anfrage erscheint innerhalb weniger Sekunden in den Protokollen. Die Nutzun
 - `group_by`: `day` (Standard), `week`, `month`, `model`, `key`, `member` oder `route`. Der Schlüssel einer Route lautet `<Format der App>:<Format des Anbieters>:<Anbieter>`, etwa `openai_responses:anthropic_messages:anthropic`.
 - `from` und `to`: Tage in UTC, etwa `2026-08-15`. Nach Tagen gruppiert liegen sie höchstens 400 Tage auseinander.
 - `usage/span` antwortet mit dem ersten und letzten Tag mit Nutzung, damit Sie einen langen Zeitraum nach Woche oder Monat lesen können.
+- `usage/timeline` liest das Anfrageprotokoll nach `step=minute` (höchstens 2 Tage) oder `step=hour` (höchstens 62 Tage), von `from` bis `to`, Zeiten in RFC 3339; ohne sie liest es den letzten Tag. Es braucht Anfrageprotokolle.
 
 Jede Zeile der Nutzung hat `cache_hit_rate`, den Anteil ihrer Eingabe, der aus dem Cache gelesen wurde, von 0 bis 1. Sie ist `null` für eine Zeile ohne Eingabe und für Routen von Embeddings, die nie zwischengespeichert werden. Die Protokolle nehmen `ingress_dialect` und `egress_dialect`, um eine Route zu wählen, etwa `logs?ingress_dialect=openai_responses&egress_dialect=anthropic_messages`. Ihr Export nimmt dieselben Filter.
 

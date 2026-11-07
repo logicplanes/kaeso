@@ -44,7 +44,7 @@ describe("opening the app", () => {
     const { router } = await renderApp("/");
     await waitFor(() => expect(router.state.location.pathname).toBe(`/orgs/${ORG}`));
     expect(await screen.findByRole("heading", { name: "Overview", level: 1 })).toBeInTheDocument();
-    expect(await screen.findByRole("grid", { name: "Projects" })).toBeInTheDocument();
+    expect(await screen.findByRole("list", { name: "Projects" })).toBeInTheDocument();
     expect(requests("GET", "orgs/:org/projects/:project")).toHaveLength(0);
   });
 

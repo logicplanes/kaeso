@@ -1,27 +1,17 @@
-import { useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { DataTable, Empty, InsetContent, LimitMeter, List, ModelLabel, ProviderBadge, Section, Segmented, StatusCode, Text, col } from "@logicplanes/kaeso-ui";
-import { formatNumber, formatPercent, formatRelative, formatTokens, formatUSD } from "@logicplanes/kaeso-ui/format";
-import type { LimitView, UsageRow } from "~/api/generated/types";
-import { untoldReason } from "~/api/load-error";
+import { DataTable, Empty, ModelLabel, ProviderBadge, Section, Segmented, Text, col } from "@logicplanes/kaeso-ui";
+import { formatNumber, formatPercent, formatTokens } from "@logicplanes/kaeso-ui/format";
+import type { UsageRow } from "~/api/generated/types";
 import { allKeysQuery } from "~/api/queries/keys";
-import { limitsQuery } from "~/api/queries/limits";
-import { recentErrorsQuery } from "~/api/queries/recent-errors";
-import { errorKindLabel, limitKindLabel, periodLabel } from "~/format/labels";
-import { alertMarks } from "~/format/alert-marks";
 import { useProviders } from "~/kaeso/providers";
 import { totalTokens } from "~/kaeso/tokens";
 import { periodUSD } from "~/kaeso/usage-panels";
 import { bucketLabel, type Granularity } from "~/format/buckets";
 import { keyLabel, serviceAccountName, usePartyName, usePartyNamesLoading } from "./keys/party";
-import { projectPath } from "~/shell/pages";
-import type { OverviewSearch } from "./overview-page";
+import type { AnalyticsSearch } from "~/kaeso/overview/views";
 import { useProjectRights } from "~/auth/rights";
-import { useRequestLogs } from "~/auth/session";
 import { t } from "~/i18n";
 import { common } from "~/i18n/common";
-
-export { CostShare } from "~/kaeso/cost-share";
 
 const byOptions = (g: Granularity) => [
   { value: "day", label: t("project.overview.byTime", "{granularity, select, week {By week} month {By month} other {By day}}", { granularity: g }) },
@@ -56,7 +46,7 @@ export function Breakdown({
   org: string;
   project: string;
   rows: UsageRow[];
-  by: NonNullable<OverviewSearch["by"]>;
+  by: NonNullable<AnalyticsSearch["by"]>;
   granularity?: Granularity | undefined;
   withYear?: boolean | undefined;
   showCost: boolean;
@@ -64,7 +54,7 @@ export function Breakdown({
   loading: boolean;
   failed: boolean;
   onRetry: () => void;
-  onByChange: (by: NonNullable<OverviewSearch["by"]>) => void;
+  onByChange: (by: NonNullable<AnalyticsSearch["by"]>) => void;
 }) {
   const rights = useProjectRights(org, project);
   const providers = useProviders(org);
@@ -181,7 +171,7 @@ export function Breakdown({
           aria-label={t("project.overview.groupBy", "Group by")}
           size="sm"
           value={by}
-          onValueChange={(v) => onByChange(v as NonNullable<OverviewSearch["by"]>)}
+          onValueChange={(v) => onByChange(v as NonNullable<AnalyticsSearch["by"]>)}
           options={byOptions(granularity)}
         />
       }
@@ -226,107 +216,5 @@ function RouteLabel({ route, providerName }: { route: string; providerName: (id:
         <Text tone="secondary">{t("project.overview.routeNotRecorded", "Route not recorded")}</Text>
       )}
     </span>
-  );
-}
-
-export function Aside({ org, project, modelCount }: { org: string; project: string; modelCount: number | undefined }) {
-  const rights = useProjectRights(org, project);
-  const navigate = useNavigate();
-  const base = projectPath(org, project);
-  const limits = useQuery({ ...limitsQuery(org, project, { level: "project" }), enabled: rights.has("limits.view") });
-  const showErrors = useRequestLogs() && rights.has("logs.metadata.view");
-  const errors = useQuery({ ...recentErrorsQuery(org, project), enabled: showErrors });
-  const recent = errors.data ?? [];
-  const keys = useQuery({ ...allKeysQuery(org, project), enabled: rights.has("keys.all.view") });
-  const keyCount = keys.data ? formatNumber(keys.data.length) : undefined;
-  const go = (href: string) => void navigate({ href });
-  return (
-    <InsetContent>
-      {rights.has("limits.view") && !limits.isPending && (
-        <Section title={t("project.overview.limits", "Limits")} spacing="none">
-          <div className="flex flex-col gap-16">
-            {limits.isError ? (
-              <Text tone="secondary">
-                {untoldReason(limits.error) ?? t("project.overview.limitsFailed", "The limits couldn't load; the notification says why.")}
-              </Text>
-            ) : (
-              limits.data?.length === 0 && (
-                <Text tone="secondary">{t("project.overview.noLimits", "No project limits. Keys and members can still have their own.")}</Text>
-              )
-            )}
-            {(limits.data ?? []).map((l) => (
-              <ProjectLimit key={l.id} limit={l} />
-            ))}
-          </div>
-        </Section>
-      )}
-      {showErrors && !errors.isPending && (
-        <Section title={t("project.overview.recentErrors", "Recent errors")} spacing="none">
-          {errors.isError ? (
-            <Text tone="secondary">
-              {untoldReason(errors.error) ?? t("project.overview.errorsFailed", "The recent errors couldn't load; the notification says why.")}
-            </Text>
-          ) : recent.length === 0 ? (
-            <Text tone="secondary">{t("project.overview.noErrors", "No failed requests.")}</Text>
-          ) : (
-            <List
-              aria-label={t("project.overview.recentErrors", "Recent errors")}
-              density="compact"
-              items={recent.map((l) => ({
-                id: l.id,
-                textValue: `${l.status} ${l.error_kind ? errorKindLabel(l.error_kind) : ""} ${l.requested_model}`,
-                title: (
-                  <span className="flex min-w-0 items-center gap-8">
-                    <StatusCode code={l.status} />
-                    <span className="min-w-0 truncate">{l.error_kind ? errorKindLabel(l.error_kind) : l.requested_model}</span>
-                  </span>
-                ),
-                date: formatRelative(l.started_at),
-              }))}
-              onOpen={(item) => go(`${base}/logs?log=${encodeURIComponent(item.id)}`)}
-            />
-          )}
-        </Section>
-      )}
-      {(modelCount !== undefined || keyCount !== undefined) && !(rights.has("keys.all.view") && keys.isPending) && (
-        <Section title={t("project.overview.thisProject", "This project")} spacing="none">
-          <List
-            aria-label={t("project.overview.thisProject", "This project")}
-            density="compact"
-            items={[
-              ...(modelCount !== undefined ? [{ id: "models", title: common.models(), meta: <Text tone="secondary">{formatNumber(modelCount)}</Text> }] : []),
-              ...(keyCount !== undefined ? [{ id: "keys", title: t("project.overview.keys", "Keys"), meta: <Text tone="secondary">{keyCount}</Text> }] : []),
-            ]}
-            onOpen={(item) => go(`${base}/${item.id}`)}
-          />
-        </Section>
-      )}
-    </InsetContent>
-  );
-}
-
-function ProjectLimit({ limit }: { limit: LimitView }) {
-  const used = Number(limit.used ?? 0);
-  const amount = Number(limit.amount);
-  const money = limit.kind === "spend_budget";
-  const fmt = (v: string | number) => (money ? formatUSD(String(v)) : formatNumber(Number(v)));
-  return (
-    <LimitMeter
-      kind={limit.kind === "spend_budget" ? "spend" : limit.kind === "request_rate" || limit.kind === "tool_call_rate" ? "requests" : "tokens"}
-      scope={limitKindLabel(limit.kind)}
-      window={periodLabel(limit.period)}
-      used={used}
-      limit={amount}
-      valueLabel={t("project.overview.limitUse", "{used} of {limit}", { used: fmt(limit.used ?? 0), limit: fmt(limit.amount) })}
-      alerts={alertMarks(limit)}
-      hard={limit.hard}
-      resets={
-        limit.period === "minute"
-          ? t("project.overview.lastMinute", "Over the last minute")
-          : limit.resets_at
-            ? t("project.overview.resets", "Resets {when}", { when: formatRelative(limit.resets_at) })
-            : t("project.overview.neverResets", "Never resets")
-      }
-    />
   );
 }

@@ -12,6 +12,8 @@ export const docs = {
       title: "Large text on the artwork, e.g. the version number.",
       eyebrow: "Small text above the title, e.g. “What's new in Kaeso”.",
       shape: "The artwork's aspect ratio.",
+      flush:
+        "Drops the rounded corners and outline and fills the height it is given, cropping to its shape, for artwork that meets the edges of the surface it sits in, such as an `Announcement`.",
     },
   },
 } satisfies ComponentDocs;

@@ -398,3 +398,47 @@ pub async fn disk(ch: &ClickHouse) -> Result<Disk, StoreError> {
         .fetch_one::<Disk>()
         .await?)
 }
+
+#[derive(Clone, Debug, PartialEq, Row, Deserialize)]
+pub struct TimelineRow {
+    pub start_unix: i64,
+    pub requests: u64,
+    pub errors: u64,
+    pub input_tokens: u64,
+    pub output_tokens: u64,
+    pub cache_read_tokens: u64,
+    pub cache_write_tokens: u64,
+    pub reasoning_tokens: u64,
+    pub cost: i128,
+}
+
+pub async fn timeline(
+    ch: &ClickHouse,
+    org: Uuid,
+    project: Option<Uuid>,
+    from: OffsetDateTime,
+    to: OffsetDateTime,
+    step_seconds: u32,
+) -> Result<Vec<TimelineRow>, StoreError> {
+    let mut sql = String::from(
+        "SELECT toInt64(toUnixTimestamp(toStartOfInterval(started_at, toIntervalSecond(?)))) AS start_unix, \
+         count() AS requests, countIf(status >= 400) AS errors, \
+         sum(input_tokens) AS input_tokens, sum(output_tokens) AS output_tokens, \
+         sum(cache_read_tokens) AS cache_read_tokens, sum(cache_write_tokens) AS cache_write_tokens, \
+         sum(reasoning_tokens) AS reasoning_tokens, sum(cost) AS cost \
+         FROM request_log WHERE org_id = ?",
+    );
+    let mut binds: Vec<Bind> = vec![Bind::I64(i64::from(step_seconds)), Bind::Uuid(org)];
+    if let Some(p) = project {
+        sql.push_str(" AND project_id = ?");
+        binds.push(Bind::Uuid(p));
+    }
+    sql.push_str(" AND started_at >= fromUnixTimestamp64Milli(?) AND started_at < fromUnixTimestamp64Milli(?) GROUP BY start_unix ORDER BY start_unix");
+    binds.push(Bind::Millis(from));
+    binds.push(Bind::Millis(to));
+    let mut q = ch.client().query(&sql);
+    for b in binds {
+        q = b.bind(q);
+    }
+    Ok(q.fetch_all::<TimelineRow>().await?)
+}

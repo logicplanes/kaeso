@@ -9,6 +9,7 @@ const sheet = (requestLogs: boolean): { id: string; label: string; keys: string[
   { id: "sidebar", label: t("shell.shortcut.sidebar", "Collapse or expand the sidebar"), keys: ["["] },
   { id: "close", label: t("shell.shortcut.close", "Close a dialog or panel"), keys: ["escape"] },
   { id: "overview", label: t("shell.goToOverview", "Go to the overview"), keys: [["g"], ["o"]] },
+  { id: "analytics", label: t("shell.shortcut.analytics", "Go to analytics"), keys: [["g"], ["u"]] },
   { id: "keys", label: t("shell.shortcut.keys", "Go to API keys"), keys: [["g"], ["k"]] },
   { id: "models", label: t("shell.shortcut.models", "Go to models"), keys: [["g"], ["m"]] },
   ...(requestLogs ? [{ id: "logs", label: t("shell.shortcut.logs", "Go to request logs"), keys: [["g"], ["l"]] }] : []),

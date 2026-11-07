@@ -1,6 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { api, data } from "../client";
-import type { UsageRow, UsageSpan } from "../generated/types";
+import type { TimelineBucket, UsageRow, UsageSpan } from "../generated/types";
 
 export type GroupBy = "day" | "week" | "month" | "model" | "key" | "member" | "route" | "project";
 
@@ -31,4 +31,21 @@ export const usageSpanQuery = (org: string, project?: string) =>
       project
         ? data(await api.GET("/platform/v1/orgs/{org}/projects/{project}/usage/span", { params: { path: { org, project } } }))
         : data(await api.GET("/platform/v1/orgs/{org}/usage/span", { params: { path: { org } } })),
+  });
+
+export type TimelineStep = "minute" | "hour";
+
+export const timelineQuery = (org: string, project: string | undefined, from: string, to: string, step: TimelineStep) =>
+  queryOptions({
+    ...CHARTED,
+    queryKey: project ? ["orgs", org, "projects", project, "usage", "timeline", { from, to, step }] : ["orgs", org, "usage", "timeline", { from, to, step }],
+    queryFn: async ({ signal }): Promise<TimelineBucket[]> =>
+      project
+        ? data(
+            await api.GET("/platform/v1/orgs/{org}/projects/{project}/usage/timeline", {
+              params: { path: { org, project }, query: { from, to, step } },
+              signal,
+            }),
+          ).data
+        : data(await api.GET("/platform/v1/orgs/{org}/usage/timeline", { params: { path: { org }, query: { from, to, step } }, signal })).data,
   });

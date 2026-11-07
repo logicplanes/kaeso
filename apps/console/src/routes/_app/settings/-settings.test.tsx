@@ -19,7 +19,7 @@ describe("settings addresses that moved", () => {
     [`/settings/orgs/${ORG}/logs?tab=storage`, `/settings/orgs/${ORG}/logging`, { tab: "storage" }],
     [`/settings/orgs/${ORG}/projects?create=true`, `/orgs/${ORG}/projects`, { create: true }],
     [`/settings/orgs/${ORG}/provider-keys`, `/orgs/${ORG}/providers`, {}],
-    [`/settings/orgs/${ORG}/usage?from=2026-10-01&to=2026-10-07`, `/orgs/${ORG}`, { from: "2026-10-01", to: "2026-10-07" }],
+    [`/settings/orgs/${ORG}/usage?from=2026-10-01&to=2026-10-07`, `/orgs/${ORG}/analytics`, { from: "2026-10-01", to: "2026-10-07" }],
   ])("%s opens %s", async (from, to, search) => {
     signedIn();
     on("GET", "me", me());

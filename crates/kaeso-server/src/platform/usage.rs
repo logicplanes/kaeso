@@ -1,8 +1,10 @@
 use axum::Json;
 use axum::extract::State;
+use kaeso_core::cost::cost_from_raw;
 use kaeso_core::id::{ApiKeyId, OrgId, ProjectId, ServiceAccountId, UserId};
 use kaeso_core::rights::{OrgRight, ProjectRight};
 use kaeso_kpp::DialectId;
+use kaeso_store::clickhouse::logs as ch_logs;
 use kaeso_store::pg::usage::{self as store, GroupBy, UsageGroup};
 use serde::{Deserialize, Serialize};
 use time::Date;
@@ -308,4 +310,153 @@ pub async fn project_span(
 ) -> ApiResult<Json<UsageSpan>> {
     let scope = ctx.project()?;
     span(&state, scope.project.org_id, Some(scope.project.id)).await
+}
+
+const MINUTE_SPAN: time::Duration = time::Duration::days(2);
+const HOUR_SPAN: time::Duration = time::Duration::days(62);
+
+#[derive(Debug, Deserialize, IntoParams)]
+#[into_params(parameter_in = Query)]
+pub struct TimelineQuery {
+    #[doc = "Start (RFC 3339, inclusive); default 24 hours before `to`."]
+    pub from: Option<String>,
+    #[doc = "End (RFC 3339, exclusive); default now."]
+    pub to: Option<String>,
+    #[doc = "`minute` (at most 2 days) or `hour` (at most 62 days); default `minute`\n\
+        for up to 2 days, `hour` beyond."]
+    pub step: Option<String>,
+}
+
+#[derive(Clone, Debug, Serialize, ToSchema)]
+#[schema(description = "The requests of one minute or hour, from the request log.")]
+pub struct TimelineBucket {
+    #[doc = "The minute or hour it starts at (RFC 3339, UTC)."]
+    pub start: String,
+    #[doc = "Model requests that started in it, refusals included."]
+    pub requests: u64,
+    #[doc = "Of those, the ones answered with a status of 400 or above."]
+    pub errors: u64,
+    #[doc = "Uncached input tokens."]
+    pub input_tokens: u64,
+    #[doc = "Output tokens."]
+    pub output_tokens: u64,
+    #[doc = "Cache reads."]
+    pub cache_read_tokens: u64,
+    #[doc = "Cache writes."]
+    pub cache_write_tokens: u64,
+    #[doc = "Reasoning tokens."]
+    pub reasoning_tokens: u64,
+    #[doc = "Cost in USD; `null` without the right to see costs."]
+    #[schema(value_type = Option<String>)]
+    pub cost: Option<String>,
+}
+
+fn parse_instant(
+    field: &str,
+    s: Option<&str>,
+    default: time::OffsetDateTime,
+) -> ApiResult<time::OffsetDateTime> {
+    match s {
+        None => Ok(default),
+        Some(s) => time::OffsetDateTime::parse(s, &time::format_description::well_known::Rfc3339)
+            .map_err(|_| ApiError::invalid(field, format!("`{field}` must be a time, RFC 3339."))),
+    }
+}
+
+async fn timeline(
+    state: &AppState,
+    ctx: &Ctx,
+    org: Uuid,
+    project: Option<Uuid>,
+    q: &TimelineQuery,
+    costs: bool,
+) -> ApiResult<Json<List<TimelineBucket>>> {
+    let to = parse_instant("to", q.to.as_deref(), ctx.now)?;
+    let from = parse_instant("from", q.from.as_deref(), to - time::Duration::days(1))?;
+    if from >= to {
+        return Err(ApiError::invalid("from", "`from` must be before `to`."));
+    }
+    let span = to - from;
+    let (step, most) = match q.step.as_deref() {
+        Some("minute") => (60, MINUTE_SPAN),
+        Some("hour") => (3600, HOUR_SPAN),
+        None if span <= MINUTE_SPAN => (60, MINUTE_SPAN),
+        None => (3600, HOUR_SPAN),
+        Some(_) => return Err(ApiError::invalid("step", "Use `minute` or `hour`.")),
+    };
+    if span > most {
+        return Err(ApiError::invalid(
+            "from",
+            if step == 60 {
+                "By minute, `from` and `to` are at most 2 days apart; use `hour`."
+            } else {
+                "By hour, `from` and `to` are at most 62 days apart; use the daily usage."
+            },
+        ));
+    }
+    let rows = ch_logs::timeline(super::logs::log_store(state)?, org, project, from, to, step)
+        .await
+        .map_err(super::logs::unavailable)?;
+    let format = time::format_description::well_known::Rfc3339;
+    Ok(Json(List::complete(
+        rows.into_iter()
+            .filter_map(|r| {
+                let start = time::OffsetDateTime::from_unix_timestamp(r.start_unix)
+                    .ok()?
+                    .format(&format)
+                    .ok()?;
+                Some(TimelineBucket {
+                    start,
+                    requests: r.requests,
+                    errors: r.errors,
+                    input_tokens: r.input_tokens,
+                    output_tokens: r.output_tokens,
+                    cache_read_tokens: r.cache_read_tokens,
+                    cache_write_tokens: r.cache_write_tokens,
+                    reasoning_tokens: r.reasoning_tokens,
+                    cost: costs.then(|| cost_from_raw(r.cost).normalize().to_string()),
+                })
+            })
+            .collect(),
+    )))
+}
+
+#[utoipa::path(
+    get,
+    path = "/orgs/{org}/usage/timeline",
+    summary = "Requests across the org's projects by minute or hour, from the request log.",
+    tag = "orgs",
+    params(("org" = OrgId, Path), TimelineQuery),
+    responses((status = 200, body = List<TimelineBucket>))
+)]
+pub async fn org_timeline(
+    State(state): State<AppState>,
+    ctx: Ctx,
+    Path(_o): Path<String>,
+    Query(q): Query<TimelineQuery>,
+) -> ApiResult<Json<List<TimelineBucket>>> {
+    let scope = ctx.org()?;
+    let costs = scope.rights.contains(OrgRight::CostsOrgView);
+    let org = scope.org.id;
+    timeline(&state, &ctx, org, None, &q, costs).await
+}
+
+#[utoipa::path(
+    get,
+    path = "/orgs/{org}/projects/{project}/usage/timeline",
+    summary = "The project's requests by minute or hour, from the request log.",
+    tag = "projects",
+    params(("org" = OrgId, Path), ("project" = ProjectId, Path), TimelineQuery),
+    responses((status = 200, body = List<TimelineBucket>))
+)]
+pub async fn project_timeline(
+    State(state): State<AppState>,
+    ctx: Ctx,
+    Path(_p): Path<(String, String)>,
+    Query(q): Query<TimelineQuery>,
+) -> ApiResult<Json<List<TimelineBucket>>> {
+    let scope = ctx.project()?;
+    let costs = scope.rights.contains(ProjectRight::CostsView);
+    let (org, project) = (scope.project.org_id, scope.project.id);
+    timeline(&state, &ctx, org, Some(project), &q, costs).await
 }

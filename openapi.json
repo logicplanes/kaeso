@@ -19691,6 +19691,108 @@
         "x-kaeso-access": "right:usage.view"
       }
     },
+    "/platform/v1/orgs/{org}/projects/{project}/usage/timeline": {
+      "get": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "The project's requests by minute or hour, from the request log.",
+        "description": "**Right:** `usage.view` on the project in the path.",
+        "operationId": "getOrgsOrgProjectsProjectUsageTimeline",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "description": "Start (RFC 3339, inclusive); default 24 hours before `to`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "description": "End (RFC 3339, exclusive); default now.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "step",
+            "in": "query",
+            "description": "`minute` (at most 2 days) or `hour` (at most 62 days); default `minute`\nfor up to 2 days, `hour` beyond.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/List_TimelineBucket"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:usage.view"
+      }
+    },
     "/platform/v1/orgs/{org}/providers": {
       "get": {
         "tags": [
@@ -21253,6 +21355,100 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/UsageSpan"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:usage.org.view"
+      }
+    },
+    "/platform/v1/orgs/{org}/usage/timeline": {
+      "get": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "Requests across the org's projects by minute or hour, from the request log.",
+        "description": "**Right:** `usage.org.view` on the organization in the path.",
+        "operationId": "getOrgsOrgUsageTimeline",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "description": "Start (RFC 3339, inclusive); default 24 hours before `to`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "description": "End (RFC 3339, exclusive); default now.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "step",
+            "in": "query",
+            "description": "`minute` (at most 2 days) or `hour` (at most 62 days); default `minute`\nfor up to 2 days, `hour` beyond.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/List_TimelineBucket"
                 }
               }
             }
@@ -28762,6 +28958,100 @@
           }
         }
       },
+      "List_TimelineBucket": {
+        "type": "object",
+        "description": "A page of results.",
+        "required": [
+          "data",
+          "has_more"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "The requests of one minute or hour, from the request log.",
+              "required": [
+                "start",
+                "requests",
+                "errors",
+                "input_tokens",
+                "output_tokens",
+                "cache_read_tokens",
+                "cache_write_tokens",
+                "reasoning_tokens"
+              ],
+              "properties": {
+                "cache_read_tokens": {
+                  "type": "integer",
+                  "format": "int64",
+                  "description": "Cache reads.",
+                  "minimum": 0
+                },
+                "cache_write_tokens": {
+                  "type": "integer",
+                  "format": "int64",
+                  "description": "Cache writes.",
+                  "minimum": 0
+                },
+                "cost": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Cost in USD; `null` without the right to see costs."
+                },
+                "errors": {
+                  "type": "integer",
+                  "format": "int64",
+                  "description": "Of those, the ones answered with a status of 400 or above.",
+                  "minimum": 0
+                },
+                "input_tokens": {
+                  "type": "integer",
+                  "format": "int64",
+                  "description": "Uncached input tokens.",
+                  "minimum": 0
+                },
+                "output_tokens": {
+                  "type": "integer",
+                  "format": "int64",
+                  "description": "Output tokens.",
+                  "minimum": 0
+                },
+                "reasoning_tokens": {
+                  "type": "integer",
+                  "format": "int64",
+                  "description": "Reasoning tokens.",
+                  "minimum": 0
+                },
+                "requests": {
+                  "type": "integer",
+                  "format": "int64",
+                  "description": "Model requests that started in it, refusals included.",
+                  "minimum": 0
+                },
+                "start": {
+                  "type": "string",
+                  "description": "The minute or hour it starts at (RFC 3339, UTC)."
+                }
+              }
+            },
+            "description": "The items."
+          },
+          "has_more": {
+            "type": "boolean",
+            "description": "Whether more items follow."
+          },
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Pass as `after` to get the next page; `null` on the last page."
+          }
+        }
+      },
       "List_ToolCallView": {
         "type": "object",
         "description": "A page of results.",
@@ -35711,6 +36001,75 @@
           }
         },
         "additionalProperties": false
+      },
+      "TimelineBucket": {
+        "type": "object",
+        "description": "The requests of one minute or hour, from the request log.",
+        "required": [
+          "start",
+          "requests",
+          "errors",
+          "input_tokens",
+          "output_tokens",
+          "cache_read_tokens",
+          "cache_write_tokens",
+          "reasoning_tokens"
+        ],
+        "properties": {
+          "cache_read_tokens": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Cache reads.",
+            "minimum": 0
+          },
+          "cache_write_tokens": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Cache writes.",
+            "minimum": 0
+          },
+          "cost": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Cost in USD; `null` without the right to see costs."
+          },
+          "errors": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Of those, the ones answered with a status of 400 or above.",
+            "minimum": 0
+          },
+          "input_tokens": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Uncached input tokens.",
+            "minimum": 0
+          },
+          "output_tokens": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Output tokens.",
+            "minimum": 0
+          },
+          "reasoning_tokens": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Reasoning tokens.",
+            "minimum": 0
+          },
+          "requests": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Model requests that started in it, refusals included.",
+            "minimum": 0
+          },
+          "start": {
+            "type": "string",
+            "description": "The minute or hour it starts at (RFC 3339, UTC)."
+          }
+        }
       },
       "TokenPrice": {
         "oneOf": [

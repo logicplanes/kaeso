@@ -1416,3 +1416,141 @@ async fn a_clickhouse_that_stops_answering_does_not_hold_the_log_writer() {
     );
     held.abort();
 }
+
+#[tokio::test]
+async fn the_timeline_counts_requests_by_minute_and_hour() {
+    let env = env(&[]).await;
+    let hour = env
+        .app
+        .clock
+        .now()
+        .replace_minute(0)
+        .unwrap()
+        .replace_second(0)
+        .unwrap()
+        .replace_nanosecond(0)
+        .unwrap()
+        - time::Duration::hours(2);
+    seed(&env, 3, hour + time::Duration::minutes(5)).await;
+    seed(&env, 2, hour + time::Duration::minutes(7)).await;
+    let org: kaeso_core::id::OrgId = env.owner.org_id.parse().unwrap();
+    let project: kaeso_core::id::ProjectId = env.project.parse().unwrap();
+    let (mut priced, _) = row(
+        org.uuid(),
+        project.uuid(),
+        hour + time::Duration::minutes(7),
+        9,
+    );
+    priced.cost = 1_250_000_000;
+    ch::insert_logs(env.app.state.clickhouse.as_ref().unwrap(), &[priced])
+        .await
+        .unwrap();
+    let rfc = |t: OffsetDateTime| {
+        t.format(&time::format_description::well_known::Rfc3339)
+            .unwrap()
+    };
+    let range = format!(
+        "from={}&to={}",
+        rfc(hour),
+        rfc(hour + time::Duration::hours(1))
+    );
+
+    let by_minute = env
+        .app
+        .get(
+            &format!("{}/usage/timeline?{range}&step=minute", base(&env)),
+            &env.owner.cookie,
+        )
+        .await;
+    assert_eq!(by_minute.status, StatusCode::OK, "{:?}", by_minute.body);
+    let data = by_minute.body["data"].as_array().unwrap();
+    assert_eq!(data.len(), 2);
+    assert_eq!(data[0]["start"], rfc(hour + time::Duration::minutes(5)));
+    assert_eq!(data[0]["requests"], 3);
+    assert_eq!(data[0]["input_tokens"], 3);
+    assert_eq!(data[0]["output_tokens"], 3);
+    assert_eq!(data[1]["requests"], 3);
+    assert_eq!(data[1]["cost"], "0.00125");
+
+    let by_hour = env
+        .app
+        .get(
+            &format!(
+                "/orgs/{}/usage/timeline?{range}&step=hour",
+                env.owner.org_id
+            ),
+            &env.owner.cookie,
+        )
+        .await;
+    assert_eq!(by_hour.status, StatusCode::OK, "{:?}", by_hour.body);
+    let data = by_hour.body["data"].as_array().unwrap();
+    assert_eq!(data.len(), 1);
+    assert_eq!(data[0]["start"], rfc(hour));
+    assert_eq!(data[0]["requests"], 6);
+
+    let too_long = env
+        .app
+        .get(
+            &format!(
+                "{}/usage/timeline?from={}&to={}&step=minute",
+                base(&env),
+                rfc(hour - time::Duration::days(3)),
+                rfc(hour)
+            ),
+            &env.owner.cookie,
+        )
+        .await;
+    assert_eq!(too_long.status, StatusCode::BAD_REQUEST);
+    assert_eq!(too_long.body["error"]["param"], "from");
+    let unknown = env
+        .app
+        .get(
+            &format!("{}/usage/timeline?{range}&step=second", base(&env)),
+            &env.owner.cookie,
+        )
+        .await;
+    assert_eq!(unknown.status, StatusCode::BAD_REQUEST);
+    assert_eq!(unknown.body["error"]["param"], "step");
+
+    let env = &env;
+    let get = |query: String| async move {
+        env.app
+            .get(
+                &format!("{}/usage/timeline?{query}", base(env)),
+                &env.owner.cookie,
+            )
+            .await
+    };
+    let last_day = get(String::new()).await;
+    assert_eq!(last_day.status, StatusCode::OK, "{:?}", last_day.body);
+    assert_eq!(last_day.body["data"].as_array().unwrap().len(), 2);
+    let ten_days = get(format!(
+        "from={}&to={}",
+        rfc(hour - time::Duration::days(9)),
+        rfc(hour + time::Duration::days(1))
+    ))
+    .await;
+    assert_eq!(ten_days.status, StatusCode::OK, "{:?}", ten_days.body);
+    assert_eq!(ten_days.body["data"][0]["start"], rfc(hour));
+    for (query, param) in [
+        ("from=yesterday".to_string(), "from"),
+        (format!("from={}&to={}", rfc(hour), rfc(hour)), "from"),
+        (
+            format!(
+                "from={}&to={}&step=hour",
+                rfc(hour - time::Duration::days(70)),
+                rfc(hour)
+            ),
+            "from",
+        ),
+    ] {
+        let refused = get(query).await;
+        assert_eq!(
+            refused.status,
+            StatusCode::BAD_REQUEST,
+            "{:?}",
+            refused.body
+        );
+        assert_eq!(refused.body["error"]["param"], param);
+    }
+}

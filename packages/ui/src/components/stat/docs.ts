@@ -6,7 +6,7 @@ export const docs = {
       'A number. Plain, it is a big number followed by its word, no box, as on a usage page. As a `tile` (`variant="tile"`), it is one metric of a dashboard row in a `StatGroup`: its label, the number, the change against the previous period and the trend.',
     props: {
       change:
-        'The change against the previous period, as a fraction (0.12 is +12%). `better` says which direction is good: errors are better down. The badge is green or red and says "better" or "worse" to screen readers.',
+        'The change against the previous period, as a fraction (0.12 is +12%). `better` says which direction is good: errors are better down. It is written as text by `Delta`: green or red, and "better" or "worse" for screen readers.',
       delta: 'A delta badge: "+12%".',
       detail: 'A quiet line under the number: "vs. the previous 30 days", "0.4% of requests".',
       label: 'What the number is: "Requests", "Cost".',
@@ -27,6 +27,21 @@ export const docs = {
       "aria-label": "The grid's accessible name.",
       children: "The stats.",
       variant: "Tiles in a fitted grid (`grid`), or plain numbers in a row that wraps (`row`).",
+    },
+  },
+  Delta: {
+    description:
+      'A change written as text, "↑16%", in the success or danger text color only when one direction is better, and said as "better" or "worse" to screen readers. No pill: it sits beside a quiet note such as "vs. prior 30 days".',
+    props: {
+      better: "Which direction is good: `down` for errors and latency. Without a better side the change is written in the secondary text color.",
+      value: "The change as a fraction: 0.16 for 16% more, -0.04 for 4% less.",
+    },
+  },
+  RollingNumber: {
+    description:
+      "A formatted number whose digits roll to their new value when it changes, each digit a column sliding to its place, and characters that join it (the fifth digit of 10,000) drop in. It sits still on first paint, and with reduced motion the digits change in place. The page's text stays the value itself, for screen readers, tests and copying.",
+    props: {
+      value: 'The number, already formatted: "59,415", "$62.19", "137.1M".',
     },
   },
 } satisfies ComponentDocs;

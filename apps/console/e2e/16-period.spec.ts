@@ -10,6 +10,12 @@ const popover = (page: Page) => page.getByRole("dialog", { name: "Choose a date 
 const search = (page: Page) => new URL(page.url()).searchParams;
 const thisMonth = () => new Date(`${new Date().toISOString().slice(0, 10)}T12:00:00`).toLocaleDateString("en-US", { month: "long", year: "numeric" });
 
+async function openAnalytics(page: Page) {
+  await signInToProject(page);
+  await page.getByRole("link", { name: "Open analytics" }).click();
+  await expect(trigger(page)).toBeVisible();
+}
+
 async function openPicker(page: Page) {
   await trigger(page).hover();
   await trigger(page).click();
@@ -22,8 +28,8 @@ async function pick(page: Page, preset: string) {
   await expect(popover(page)).toBeHidden();
 }
 
-test("the overview's presets: a short list, and the calendars on the period's months", async ({ page }) => {
-  await signInToProject(page);
+test("analytics' presets: a short list, and the calendars on the period's months", async ({ page }) => {
+  await openAnalytics(page);
   await openPicker(page);
   const presets = popover(page).getByRole("listbox", { name: "Presets" });
   await expect(presets.getByRole("option")).toHaveText([
@@ -42,23 +48,23 @@ test("the overview's presets: a short list, and the calendars on the period's mo
 });
 
 test("a preset stays itself in the address, through a reload", async ({ page }) => {
-  await signInToProject(page);
+  await openAnalytics(page);
   await pick(page, "Last 6 months");
   await expect.poll(() => search(page).get("period")).toBe("6m");
   expect(search(page).get("from")).toBeNull();
-  await expect(page.getByText("Requests and errors per week (UTC)")).toBeVisible();
+  await expect(page.getByText("Requests per day, UTC")).toBeVisible();
   await page.reload();
   expect(search(page).get("period")).toBe("6m");
   await expect(trigger(page)).toHaveText("Last 6 months");
-  await expect(page.getByText("Requests and errors per week (UTC)")).toBeVisible();
-  await expect(page.getByText("By kind, per week (UTC)")).toBeVisible();
+  await expect(page.getByText("Requests per day, UTC")).toBeVisible();
+  await expect(page.getByText("Tokens per request")).toBeVisible();
   await openPicker(page);
   await expect(popover(page).getByRole("grid").last()).toHaveAccessibleName(thisMonth());
   await page.keyboard.press("Escape");
 
   await pick(page, "Last 12 months");
   await expect.poll(() => search(page).get("period")).toBe("12m");
-  await expect(page.getByText("Requests and errors per week (UTC)")).toBeVisible();
+  await expect(page.getByText("Requests per day, UTC")).toBeVisible();
 
   await pick(page, "All time");
   await expect.poll(() => search(page).get("period")).toBe("all");
@@ -69,11 +75,11 @@ test("a preset stays itself in the address, through a reload", async ({ page }) 
 
   await pick(page, "Last 7 days");
   await expect.poll(() => search(page).get("period")).toBe("7d");
-  await expect(page.getByText("Requests and errors per day (UTC)")).toBeVisible();
+  await expect(page.getByText("Requests per hour, UTC")).toBeVisible();
 });
 
 test("custom days go into the address as days, and an unknown preset is the default period", async ({ page }) => {
-  await signInToProject(page);
+  await openAnalytics(page);
   const today = new Date().toISOString().slice(0, 10);
   const start = new Date(Date.now() - 20 * 86_400_000).toISOString().slice(0, 10);
   const before = page.url();
@@ -96,19 +102,19 @@ test("custom days go into the address as days, and an unknown preset is the defa
   expect([search(page).get("from"), search(page).get("to")]).toEqual([start, today]);
 
   await page.goto(`${new URL(page.url()).pathname}?period=5y`);
-  await expect(trigger(page)).toBeVisible();
-  await expect(page.getByText("Requests and errors per day (UTC)")).toBeVisible();
+  await expect(trigger(page)).toHaveText("Last 30 days");
+  await expect(page.getByText("Requests per hour, UTC")).toBeVisible();
 });
 
-test("the organization's overview takes the same periods", async ({ page }) => {
+test("the organization's analytics take the same periods", async ({ page }) => {
   await signInToProject(page);
   const org = /\/orgs\/([^/]+)/.exec(new URL(page.url()).pathname)?.[1] ?? "";
-  await page.goto(`/orgs/${org}?period=12m`);
-  await expect(page.getByText("Requests and errors per week (UTC)")).toBeVisible();
+  await page.goto(`/orgs/${org}/analytics?period=12m`);
+  await expect(page.getByText("Requests per day, UTC")).toBeVisible();
   await pick(page, "Last 90 days");
   await expect.poll(() => search(page).get("period")).toBe("90d");
-  await expect(page.getByText("Requests and errors per day (UTC)")).toBeVisible();
+  await expect(page.getByText("Requests per day, UTC")).toBeVisible();
   await page.goto(`/settings/orgs/${org}/usage?period=all`);
-  await expect.poll(() => new URL(page.url()).pathname).toBe(`/orgs/${org}`);
+  await expect.poll(() => new URL(page.url()).pathname).toBe(`/orgs/${org}/analytics`);
   expect(search(page).get("period")).toBe("all");
 });

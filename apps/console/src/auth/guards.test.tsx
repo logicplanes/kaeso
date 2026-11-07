@@ -93,7 +93,11 @@ describe("an organization scheduled for deletion", () => {
     );
     await renderApp(`/orgs/${ORG}`);
     expect(await screen.findByText("It's read-only until 22 Oct 2026; ask Ada Okafor to restore it.")).toBeInTheDocument();
-    expect(requests("GET", "orgs/:org/members").map((r) => Object.fromEntries(r.query))).toEqual([{ role: "owner", limit: "3" }]);
+    expect(
+      requests("GET", "orgs/:org/members")
+        .filter((r) => r.query.get("role") === "owner")
+        .map((r) => Object.fromEntries(r.query)),
+    ).toEqual([{ role: "owner", limit: "3" }]);
     expect(screen.queryByRole("button", { name: "Restore organization" })).not.toBeInTheDocument();
   });
 
@@ -119,7 +123,7 @@ describe("an organization scheduled for deletion", () => {
       paged([member(), member({ user: { id: "usr_grace", name: "Grace Hopper" } }), member({ user: { id: "usr_linus", name: "Linus" } })]),
     );
     await renderApp(`/orgs/${ORG}`);
-    await waitFor(() => expect(requests("GET", "orgs/:org/members")).toHaveLength(1));
+    await waitFor(() => expect(requests("GET", "orgs/:org/members").filter((r) => r.query.get("role") === "owner")).toHaveLength(1));
     expect(await screen.findByText("It's read-only until it's deleted; ask an owner to restore it.")).toBeInTheDocument();
   });
 

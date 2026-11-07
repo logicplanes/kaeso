@@ -116,6 +116,7 @@ curl -s "$ORG_URL/projects/$PROJECT/logs?limit=10" \
 - `group_by`：`day`（默认）、`week`、`month`、`model`、`key`、`member` 或 `route`。路由的键形如 `<应用格式>:<服务商格式>:<服务商>`，例如 `openai_responses:anthropic_messages:anthropic`。
 - `from` 和 `to`：UTC 日期，例如 `2026-08-15`。按天分组时，两者最多相隔 400 天。
 - `usage/span` 返回有用量的第一天和最后一天，便于按周或按月读取较长的时间段。
+- `usage/timeline` 按 `step=minute`（最多 2 天）或 `step=hour`（最多 62 天）读取请求日志，范围从 `from` 到 `to`，时间采用 RFC 3339；不指定时读取最近一天。它需要开启请求日志。
 
 每行用量都有 `cache_hit_rate`，即其输入中从缓存读取的占比，取值 0 到 1。没有输入的行以及嵌入的路由（从不缓存）为 `null`。日志接受 `ingress_dialect` 和 `egress_dialect` 以选择一条路由，例如 `logs?ingress_dialect=openai_responses&egress_dialect=anthropic_messages`。日志导出接受相同的筛选条件。
 
