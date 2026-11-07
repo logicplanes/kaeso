@@ -626,6 +626,7 @@
   "errors.notifications.invalidLink": "此退订链接无效；请在“账户 › 通知”中选择您的邮件。",
   "errors.notifications.unknownKind": "`{kind}` 不是一种邮件。",
   "errors.notifications.securityAlways": "安全邮件始终会发送，没有设置。",
+  "errors.notifications.scheduledOnOff": "`{kind}` 按计划发送；请选择 `now` 或 `off`。",
   "errors.notifications.noAddress": "您的账户没有邮箱地址。",
   "errors.notifications.testTooSoon": "您刚刚发送过测试邮件，请 {wait}后重试。",
   "errors.notifications.testNotSent": "邮件未发送；请让实例管理员检查邮件设置。"

@@ -89,7 +89,25 @@ async fn each_person_sees_the_emails_their_rights_let_them_receive() {
         (&joins["default"], &joins["delivery"], &joins["reason"]),
         (&json!("daily"), &json!("daily"), &json!("members.invite"))
     );
-    assert_eq!(kind(&mine.body, "weekly_summary")["delivery"], "off");
+    assert_eq!(
+        (&joins["scheduled"], &joins["deliveries"]),
+        (&json!(false), &json!(["now", "daily", "off"]))
+    );
+    let weekly = kind(&mine.body, "weekly_summary");
+    assert_eq!(
+        (
+            &weekly["delivery"],
+            &weekly["scheduled"],
+            &weekly["deliveries"]
+        ),
+        (&json!("off"), &json!(true), &json!(["now", "off"])),
+        "a scheduled email is on or off; the digest would only delay it"
+    );
+    assert_eq!(
+        kind(&mine.body, "cost_report")["deliveries"],
+        json!(["now", "off"])
+    );
+    assert_eq!(security["deliveries"], json!([]));
 
     let (developer, _) = common::join_first_project(
         &app,
@@ -168,6 +186,16 @@ async fn deliveries_change_one_kind_at_a_time_and_security_emails_have_none() {
             "kinds.gossip",
             "`gossip` is not an email kind.",
         ),
+        (
+            json!({ "kinds": { "weekly_summary": "daily" } }),
+            "kinds.weekly_summary",
+            "`weekly_summary` goes out on a schedule; choose `now` or `off`.",
+        ),
+        (
+            json!({ "kinds": { "cost_report": "daily" } }),
+            "kinds.cost_report",
+            "`cost_report` goes out on a schedule; choose `now` or `off`.",
+        ),
     ] {
         let r = put(body).await;
         assert_eq!(r.status, StatusCode::BAD_REQUEST, "{:?}", r.body);
@@ -193,6 +221,46 @@ async fn deliveries_change_one_kind_at_a_time_and_security_emails_have_none() {
         audit.body["data"][0]["after"],
         json!({ "org_members": "daily" })
     );
+}
+
+#[tokio::test]
+async fn a_digest_setting_kept_from_before_reads_as_on_for_a_scheduled_email() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let user: uuid::Uuid = owner.user_id.parse::<UserId>().unwrap().uuid();
+    for kind in ["weekly_summary", "cost_report"] {
+        sqlx::query(
+            "INSERT INTO notification_settings (user_id, kind, delivery) VALUES ($1, $2, 'daily')",
+        )
+        .bind(user)
+        .bind(kind)
+        .execute(&app.state.pg)
+        .await
+        .unwrap();
+    }
+    let mine = app
+        .get("/me/notifications", &owner.cookie)
+        .await
+        .expect_status(StatusCode::OK);
+    assert_eq!(kind(&mine.body, "weekly_summary")["delivery"], "now");
+    assert_eq!(kind(&mine.body, "cost_report")["delivery"], "now");
+    let token = unsubscribe_token(
+        &app.state,
+        owner.user_id.parse().unwrap(),
+        Kind::WeeklySummary,
+    );
+    let shown = app
+        .call_with(
+            Method::GET,
+            &format!("/notifications/unsubscribe?token={token}"),
+            None,
+            None,
+            None,
+        )
+        .await
+        .expect_status(StatusCode::OK);
+    assert_eq!(shown.body["delivery"], "now");
 }
 
 async fn mute(app: &App, owner: &common::Owner, org: &str, muted: bool) -> common::Resp {

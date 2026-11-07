@@ -115,7 +115,7 @@ Kaeso schreibt Ihnen zu dem, wofür Ihre Rechte Sie verantwortlich machen: in de
 | Täglich | Sie kommt in eine Zusammenfassung um 8:31 Uhr in der Zeitzone der Installation, die nur rausgeht, wenn etwas passiert ist |
 | Aus | Kaeso sendet sie nicht |
 
-Sicherheits-E-Mails, etwa zu einem geänderten Passwort oder einer neuen App, die als Sie handeln kann, haben keine Auswahl: Kaeso sendet sie immer sofort. Zu etwas, das Sie selbst getan haben, schreibt Kaeso Ihnen nie. Zum selben Thema sendet Kaeso höchstens eine E-Mail pro Tag, und E-Mails über 20 pro Stunde kommen in die Zusammenfassung.
+Die Wochenübersicht und der monatliche Kostenbericht gehen nach ihrem eigenen Zeitplan raus und sind deshalb nur ein oder aus. Sicherheits-E-Mails, etwa zu einem geänderten Passwort oder einer neuen App, die als Sie handeln kann, haben keine Auswahl: Kaeso sendet sie immer sofort. Zu etwas, das Sie selbst getan haben, schreibt Kaeso Ihnen nie. Zum selben Thema sendet Kaeso höchstens eine E-Mail pro Tag, und E-Mails über 20 pro Stunde kommen in die Zusammenfassung.
 
 | Bereich | E-Mail | Wer sie erhalten kann | Standard |
 | --- | --- | --- | --- |
@@ -135,7 +135,7 @@ Sicherheits-E-Mails, etwa zu einem geänderten Passwort oder einer neuen App, di
 | Organisation | Ihre Einladung wurde angenommen | Wer sie gesendet hat | Sofort |
 | Organisation | Anbieter-Schlüssel brauchen Aufmerksamkeit | `provider_credentials.replace` | Sofort |
 | Organisation | Modelländerungen | `models.manage` in einem Projekt, das das Modell nutzt | Täglich |
-| Organisation | Monatlicher Kostenbericht | `costs.org.view` | Sofort |
+| Organisation | Monatlicher Kostenbericht | `costs.org.view` | Ein |
 | Instanz | Updates, Instanzeinstellungen geändert | Instanz-Admins | Sofort |
 | Instanz | Neue Organisationen und Personen | Instanz-Admins | Täglich |
 

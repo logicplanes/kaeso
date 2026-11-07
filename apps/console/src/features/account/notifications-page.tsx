@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Banner, Button, Section, Select, SettingsGroup, SettingsRow, Status } from "@logicplanes/kaeso-ui";
+import { Banner, Button, Section, Select, SettingsGroup, SettingsRow, Status, Switch } from "@logicplanes/kaeso-ui";
 import { toast } from "~/shell/toast";
 import { api, data } from "~/api/client";
 import type { NotificationDelivery, NotificationSettings } from "~/api/generated/types";
@@ -75,6 +75,13 @@ export function NotificationsPage() {
                       control={
                         kind.always ? (
                           <Status tone="neutral">{t("account.alwaysSent", "Always sent")}</Status>
+                        ) : kind.scheduled ? (
+                          <Switch
+                            aria-label={words.name}
+                            checked={value !== "off"}
+                            disabled={!sends || save.isPending}
+                            onCheckedChange={(on) => save.mutate({ kind: kind.kind, delivery: on ? "now" : "off" })}
+                          />
                         ) : (
                           <Select
                             aria-label={words.name}
@@ -82,7 +89,7 @@ export function NotificationsPage() {
                             value={value}
                             disabled={!sends || save.isPending}
                             onValueChange={(v) => save.mutate({ kind: kind.kind, delivery: v as NotificationDelivery })}
-                            options={deliveryOptions()}
+                            options={deliveryOptions(kind.deliveries)}
                           />
                         )
                       }

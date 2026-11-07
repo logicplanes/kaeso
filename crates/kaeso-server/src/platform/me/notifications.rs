@@ -69,6 +69,11 @@ pub struct NotificationKindView {
     pub description: &'static str,
     #[doc = "A security email: always sent at once, even for a muted org, with no setting."]
     pub always: bool,
+    #[doc = "Goes out on the schedule its description names, such as every Monday; `now` turns\n\
+        it on and `off` off, and the daily digest is no choice."]
+    pub scheduled: bool,
+    #[doc = "The deliveries the user can choose; empty for a security email."]
+    pub deliveries: Vec<NotificationDelivery>,
     #[doc = "The delivery without a choice of the user's."]
     pub default: NotificationDelivery,
     #[doc = "The delivery that applies."]
@@ -153,12 +158,14 @@ async fn settings_of(state: &AppState, user: &users::User) -> ApiResult<Notifica
                         name: k.name(),
                         description: k.description(),
                         always: k.always(),
+                        scheduled: k.scheduled(),
+                        deliveries: if k.always() {
+                            Vec::new()
+                        } else {
+                            k.deliveries().iter().map(|d| (*d).into()).collect()
+                        },
                         default: k.default_delivery().into(),
-                        delivery: chosen
-                            .get(k)
-                            .copied()
-                            .unwrap_or(k.default_delivery())
-                            .into(),
+                        delivery: k.chosen(chosen.get(k).copied()).into(),
                         reason: match reason {
                             Reason::AboutYou => None,
                             Reason::Holds(r) => Some(r.as_str()),
@@ -197,8 +204,8 @@ pub async fn get(State(state): State<AppState>, ctx: Ctx) -> ApiResult<Json<Noti
 #[utoipa::path(
     put,
     path = "/me/notifications",
-    summary = "Chooses when emails go out: now, in the daily digest or not at all.\n\
-    Security emails have no setting.",
+    summary = "Chooses when emails go out: now, in the daily digest or not at all. A\n\
+    scheduled email is on (`now`) or `off`; security emails have no setting.",
     tag = "me",
     request_body = NotificationsUpdate,
     responses((status = 200, body = NotificationSettings))
@@ -221,7 +228,14 @@ pub async fn update(
                 "Security emails are always sent; they have no setting.",
             ));
         }
-        changes.push((kind, Delivery::from(*delivery)));
+        let delivery = Delivery::from(*delivery);
+        if !kind.allows(delivery) {
+            return Err(ApiError::invalid(
+                &param,
+                format!("`{key}` goes out on a schedule; choose `now` or `off`."),
+            ));
+        }
+        changes.push((kind, delivery));
     }
     let mut tx = state.pg.begin().await?;
     for (kind, delivery) in &changes {
