@@ -57,7 +57,7 @@ test("switching projects client-side shows the new project's data, at its top, w
   const wide = await projectWithUsage(page, org, "Switch wide", ["gpt-5.4-mini", "gpt-5.4-nano"], 4);
   const narrow = await projectWithUsage(page, org, "Switch narrow", ["gpt-5.4-nano"], 1);
 
-  await page.goto(`/orgs/${org}/projects/${wide}?by=model`);
+  await page.goto(`/orgs/${org}/projects/${wide}/analytics?by=model`);
   await expect(breakdownRows(page)).toHaveCount(2);
 
   const body = page.locator("main > div.overflow-y-auto");
@@ -65,26 +65,26 @@ test("switching projects client-side shows the new project's data, at its top, w
   await expect.poll(() => body.evaluate((el) => (el as unknown as Scroller).scrollTop)).toBeGreaterThan(0);
   await page.getByRole("button", { name: "Switch wide", description: "Switch project", exact: true }).click();
   await page.getByRole("menuitemradio", { name: "Switch narrow" }).click();
-  await expect(page).toHaveURL(new RegExp(`/projects/${narrow}\\?by=model$`));
+  await expect(page).toHaveURL(new RegExp(`/projects/${narrow}/analytics\\?by=model$`));
   await expect(page.getByRole("menu")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Switch narrow", description: "Switch project", exact: true })).toBeVisible();
   await expect(breakdownRows(page)).toHaveCount(1);
   await expect(breakdownRows(page).first()).toContainText("gpt-5.4-nano");
-  await expect(page.getByRole("figure", { name: "Requests and errors per day" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Requests per hour, UTC" })).toBeVisible();
   expect(await page.locator("main > div.overflow-y-auto").evaluate((el) => (el as unknown as Scroller).scrollTop)).toBe(0);
 
   await page.goBack();
-  await expect(page).toHaveURL(new RegExp(`/projects/${wide}\\?by=model$`));
+  await expect(page).toHaveURL(new RegExp(`/projects/${wide}/analytics\\?by=model$`));
   await expect(breakdownRows(page)).toHaveCount(2);
   await expect.poll(() => body.evaluate((el) => (el as unknown as Scroller).scrollTop)).toBeGreaterThan(0);
   await page.goForward();
-  await expect(page).toHaveURL(new RegExp(`/projects/${narrow}\\?by=model$`));
+  await expect(page).toHaveURL(new RegExp(`/projects/${narrow}/analytics\\?by=model$`));
   await expect(breakdownRows(page)).toHaveCount(1);
   expect(await body.evaluate((el) => (el as unknown as Scroller).scrollTop)).toBe(0);
 
   await page.getByRole("button", { name: "Switch narrow", description: "Switch project", exact: true }).click();
   await page.getByRole("menuitemradio", { name: "Switch wide" }).click();
-  await expect(page).toHaveURL(new RegExp(`/projects/${wide}\\?by=model$`));
+  await expect(page).toHaveURL(new RegExp(`/projects/${wide}/analytics\\?by=model$`));
   await expect(breakdownRows(page)).toHaveCount(2);
 
   await page.goto(`/orgs/${org}/projects`);

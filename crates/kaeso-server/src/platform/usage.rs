@@ -359,7 +359,12 @@ fn parse_instant(
     match s {
         None => Ok(default),
         Some(s) => time::OffsetDateTime::parse(s, &time::format_description::well_known::Rfc3339)
-            .map_err(|_| ApiError::invalid(field, format!("`{field}` must be a time, RFC 3339."))),
+            .map_err(|_| {
+                ApiError::invalid(
+                    field,
+                    format!("`{field}` must be a time such as 2026-10-01T00:00:00Z."),
+                )
+            }),
     }
 }
 
