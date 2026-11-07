@@ -11,6 +11,7 @@ use kaeso_server::mcp::cimd::{self, Described};
 use kaeso_testkit::mcp::{MockMcp, Options};
 use kaeso_testkit::services::TestServices;
 use serde_json::{Value, json};
+use uuid::Uuid;
 
 const LOOPBACK: (&str, &str) = ("KAESO_MCP_SERVERS_ALLOWED_NETWORKS", "127.0.0.0/8");
 const VERIFIER: &str = "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk";
@@ -348,6 +349,32 @@ async fn a_client_with_a_metadata_document_signs_in_to_one_portal_after_consent(
             .iter()
             .any(|ev| ev["action"] == "portal_grant.create")
     );
+}
+
+#[tokio::test]
+async fn a_metadata_client_trimmed_after_its_document_was_read_still_signs_in() {
+    let s = TestServices::start().await;
+    let mock = MockMcp::start(Options::default()).await;
+    let e = env(&s, &mock).await;
+    let dropped = kaeso_store::pg::agents::keep_unused_clients(&e.app.state.pg, 0, Uuid::nil())
+        .await
+        .unwrap();
+    assert_eq!(dropped, 1, "the document's client had no sign-in yet");
+
+    let request = request_of(&authorize(&e.app, CLAUDE, &resource(&e.project), "tools").await);
+    let view = e
+        .app
+        .post(
+            "/me/agent-requests/view",
+            json!({ "request": request }),
+            Some(&e.owner.cookie),
+        )
+        .await;
+    assert_eq!(view.status, StatusCode::OK, "{:?}", view.body);
+    assert_eq!(view.body["client"], "Claude");
+    let (access, _, _) = signed_in(&e).await;
+    let list = mcp(&e.app, &format!("/mcp/{}", e.project), &access).await;
+    assert_eq!(list.status, StatusCode::OK, "{:?}", list.body);
 }
 
 #[tokio::test]
