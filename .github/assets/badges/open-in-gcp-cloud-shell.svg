@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="264" height="48" viewBox="0 0 264 48" role="img" aria-label="Open in Google Cloud Shell">
+  <defs>
+    <linearGradient id="gcp-bg" x1="0" y1="0" x2="264" y2="48" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1A73E8"/>
+      <stop offset="1" stop-color="#4C9AFF"/>
+    </linearGradient>
+  </defs>
+  <rect width="264" height="48" rx="10" fill="url(#gcp-bg)"/>
+  <g fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="20" y="15" width="30" height="21" rx="3"/>
+    <path d="m27 22 5 3.5-5 3.5m9 .5h7"/>
+  </g>
+  <text x="58" y="30" fill="#fff" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif" font-size="16.5" font-weight="650">Open in Cloud Shell</text>
+</svg>
