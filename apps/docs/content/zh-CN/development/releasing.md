@@ -132,6 +132,7 @@ GitHub 发布页先给出一句话、两到三个亮点和破坏性变更。然�
 | GitHub Container Registry | 面向 `linux/amd64` 和 `linux/arm64` 的 `kaeso-gateway`、`kaeso-console` 和 `kaeso-updater`，带构建来源证明和软件物料清单（SBOM） |
 | crates.io | `kaeso-kpp` 和 `kaeso-codecs` |
 | npm | `@logicplanes/kaeso-ui` 和 `@logicplanes/kaeso-tokens` |
+| Amazon S3 | `deploy/aws/quick-server.yaml` 和 `managed.yaml`，位于 `https://kaeso-cloudformation.s3.amazonaws.com/vX.Y.Z/`，稳定版本还会放到 `latest/`，"在 AWS 上启动"按钮打开的就是它（[AWS](../self-hosting/platforms/aws.md)） |
 
 镜像以版本号作为标签；稳定版本还会打上 `MAJOR.MINOR` 和 `latest`，从 1.0.0 起还有 `MAJOR`。
 
