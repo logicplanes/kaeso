@@ -159,7 +159,7 @@ async fn settings_mutes_and_dedupe_decide_what_goes_out() {
     );
     assert!(
         mail.text
-            .contains("You get this email because you hold tools.manage."),
+            .contains("You get this email because you hold the right “Manage tools”."),
         "{}",
         mail.text
     );

@@ -5,6 +5,7 @@ mod layout;
 mod locale;
 mod mailer;
 pub mod notices;
+mod right_names;
 mod style;
 pub mod templates;
 

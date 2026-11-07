@@ -1393,11 +1393,19 @@ impl Fact<'_> {
 }
 
 fn because(lang: Locale, why: Because<'_>) -> String {
+    let why = match why {
+        Because::Right(id) => {
+            Because::Right(crate::right_names::right_name(lang, id).unwrap_or(id))
+        }
+        other => other,
+    };
     match (lang, why) {
         (Locale::En, Because::AboutYou) => {
             "You get this email because it's about your account.".to_owned()
         }
-        (Locale::En, Because::Right(r)) => format!("You get this email because you hold {r}."),
+        (Locale::En, Because::Right(r)) => {
+            format!("You get this email because you hold the right “{r}”.")
+        }
         (Locale::En, Because::Daily) => {
             "You get this email because you chose daily emails.".to_owned()
         }
@@ -1405,13 +1413,13 @@ fn because(lang: Locale, why: Because<'_>) -> String {
             "Sie erhalten diese E-Mail, weil sie Ihr Konto betrifft.".to_owned()
         }
         (Locale::De, Because::Right(r)) => {
-            format!("Sie erhalten diese E-Mail, weil Sie {r} haben.")
+            format!("Sie erhalten diese E-Mail, weil Sie das Recht „{r}“ haben.")
         }
         (Locale::De, Because::Daily) => {
             "Sie erhalten diese E-Mail, weil Sie tägliche E-Mails gewählt haben.".to_owned()
         }
         (Locale::ZhCn, Because::AboutYou) => "您收到此邮件，是因为它与您的账户有关。".to_owned(),
-        (Locale::ZhCn, Because::Right(r)) => zh(&["您收到此邮件，是因为您拥有 ", r, "。"]),
+        (Locale::ZhCn, Because::Right(r)) => zh(&["您收到此邮件，是因为您拥有“", r, "”权限。"]),
         (Locale::ZhCn, Because::Daily) => "您收到此邮件，是因为您选择了每日邮件。".to_owned(),
     }
 }

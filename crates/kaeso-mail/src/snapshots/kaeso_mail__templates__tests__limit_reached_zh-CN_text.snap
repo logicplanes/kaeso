@@ -19,6 +19,6 @@ https://kaeso.example.com/orgs/org_1
 
 -- 
 此邮件由 kaeso.example.com 上的 Kaeso 发送。
-您收到此邮件，是因为您拥有 limits.manage。
+您收到此邮件，是因为您拥有“管理限额”权限。
 选择邮件： https://kaeso.example.com/settings/account/notifications
 退订： https://kaeso.example.com/unsubscribe#token=usr_1.org_members.tag
