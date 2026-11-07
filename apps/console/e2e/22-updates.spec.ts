@@ -107,13 +107,14 @@ test("manual steps: a release that asks for them is never installed by the updat
   await expect(page.getByText("A release on the way asks for steps by hand: follow the upgrade guide.")).toBeVisible();
 });
 
-test("updater away: the commands to update by hand", async ({ page }) => {
-  const { versions } = await scenario({ releases: "patch", updater: "down" });
+test("updater away: how to start it again, and no commands to update by hand", async ({ page }) => {
+  await scenario({ releases: "patch", updater: "down" });
   await openUpdates(page);
   await lookNow(page);
   await expect(page.getByText("The updater doesn't answer; check that its container runs.")).toBeVisible();
-  await expect(page.getByText(`releases/download/v${versions.patch}/compose.yaml`, { exact: false })).toBeVisible();
-  await expect(page.getByText(`gh attestation verify "$dir/release.json"`, { exact: false })).toBeVisible();
+  await expect(page.getByText("Start the updater again, in the install's folder")).toBeVisible();
+  await expect(page.getByText("docker compose up -d --wait", { exact: false })).toBeVisible();
+  await expect(page.getByText("releases/download/", { exact: false })).toHaveCount(0);
 });
 
 test("settings: pre-releases are offered and updates install automatically in a window", async ({ page }) => {
