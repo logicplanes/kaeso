@@ -76,9 +76,29 @@ impl std::fmt::Debug for Valkey {
 }
 
 impl Valkey {
-    pub fn new(url: &SecretString, prefix: &str) -> Result<Valkey, StoreError> {
-        let client = redis::Client::open(url.expose_secret())
-            .map_err(|_| StoreError::Config("KAESO_VALKEY_URL is not a valid Valkey URL".into()))?;
+    pub fn new(url: &SecretString, prefix: &str, ca: Option<&str>) -> Result<Valkey, StoreError> {
+        let client = match ca {
+            Some(pem) if !pem.contains("-----BEGIN CERTIFICATE-----") => {
+                return Err(StoreError::Config(
+                    "KAESO_VALKEY_CA is not a certificate in PEM form".into(),
+                ));
+            }
+            Some(pem) => redis::Client::build_with_tls(
+                url.expose_secret(),
+                redis::TlsCertificates {
+                    client_tls: None,
+                    root_cert: Some(pem.as_bytes().to_vec()),
+                },
+            )
+            .map_err(|_| {
+                StoreError::Config(
+                    "KAESO_VALKEY_URL and KAESO_VALKEY_CA don't make a TLS connection".into(),
+                )
+            })?,
+            None => redis::Client::open(url.expose_secret()).map_err(|_| {
+                StoreError::Config("KAESO_VALKEY_URL is not a valid Valkey URL".into())
+            })?,
+        };
         let config = ConnectionManagerConfig::new()
             .set_connection_timeout(Some(CONNECTION_TIMEOUT))
             .set_response_timeout(Some(RESPONSE_TIMEOUT))
@@ -216,6 +236,28 @@ impl Valkey {
 
 #[cfg(test)]
 mod tests {
+    #[tokio::test]
+    async fn a_tls_url_connects_with_the_system_roots_or_the_authority_given() {
+        use secrecy::SecretString;
+        let url = SecretString::from("rediss://:secret@valkey.example:6379");
+        assert!(super::Valkey::new(&url, "kaeso:", None).is_ok());
+        use base64::Engine;
+        let der = rcgen::generate_simple_self_signed(vec!["valkey.example".to_owned()])
+            .unwrap()
+            .cert
+            .der()
+            .to_vec();
+        let ca = format!(
+            "-----BEGIN CERTIFICATE-----\n{}\n-----END CERTIFICATE-----\n",
+            base64::engine::general_purpose::STANDARD.encode(der)
+        );
+        assert!(super::Valkey::new(&url, "kaeso:", Some(&ca)).is_ok());
+        assert!(matches!(
+            super::Valkey::new(&url, "kaeso:", Some("not a certificate")),
+            Err(crate::StoreError::Config(_))
+        ));
+    }
+
     use super::*;
 
     #[test]
@@ -240,7 +282,8 @@ mod tests {
 
     #[tokio::test]
     async fn bulk_connections_are_lazy_while_valkey_is_unreachable() {
-        let valkey = Valkey::new(&SecretString::from("redis://127.0.0.1:1"), "kaeso:").unwrap();
+        let valkey =
+            Valkey::new(&SecretString::from("redis://127.0.0.1:1"), "kaeso:", None).unwrap();
         assert_eq!(valkey.bulk.managers.len(), BULK_CONNECTIONS);
         assert_eq!(
             valkey.heal().await,
@@ -299,7 +342,7 @@ mod tests {
     #[tokio::test]
     async fn a_connection_whose_sign_in_failed_is_opened_again() {
         let (url, accept) = fussy_valkey().await;
-        let valkey = Valkey::new(&SecretString::from(url), "kaeso:").unwrap();
+        let valkey = Valkey::new(&SecretString::from(url), "kaeso:", None).unwrap();
         let first: Result<String, _> = redis::cmd("PING").query_async(&mut valkey.conn()).await;
         assert_eq!(
             first.unwrap_err().kind(),

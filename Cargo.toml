@@ -40,7 +40,7 @@ bytes = "1.12"
 
 sqlx = { version = "0.9", default-features = false, features = ["postgres", "runtime-tokio", "tls-rustls", "uuid", "time", "rust_decimal", "json", "migrate", "macros", "ipnet"] }
 clickhouse = { version = "0.15", default-features = false, features = ["uuid", "time", "lz4", "rustls-tls"] }
-redis = { version = "1.7", default-features = false, features = ["tokio-comp", "connection-manager", "script", "aio"] }
+redis = { version = "1.7", default-features = false, features = ["tokio-comp", "tokio-rustls-comp", "connection-manager", "script", "aio"] }
 
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["raw_value", "float_roundtrip"] }

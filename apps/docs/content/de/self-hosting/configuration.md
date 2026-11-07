@@ -112,6 +112,7 @@ Ohne diese Einstellung sendet Kaeso keine CORS-Header. Die [Modell-API](../api/m
 | `KAESO_CLICKHOUSE_DATABASE`<br>`clickhouse.database` | Text | `kaeso` | ClickHouse-Datenbank für die Anfrageprotokolle, aus Buchstaben, Ziffern und `_`. Das Gateway legt sie an, wenn sie fehlt. |
 | `KAESO_VALKEY_URL`<br>`valkey.url` | Text, Secret | erforderlich | URL für Valkey (oder Redis) mit dem Passwort, etwa `redis://:secret@valkey:6379`. |
 | `KAESO_VALKEY_KEY_PREFIX`<br>`valkey.key_prefix` | Text | `kaeso:` | Präfix aller Valkey-Schlüssel und -Kanäle, um eine Valkey-Instanz zwischen Installationen zu teilen, die einander vertrauen. |
+| `KAESO_VALKEY_CA`<br>`valkey.ca` | Text | nicht gesetzt | PEM der Stelle, die das Zertifikat des Valkey-Servers signiert hat, für eine `rediss://`-URL mit privater Stelle, wie sie eine verwaltete Datenbank oft hat. |
 
 ### Hauptschlüssel
 

@@ -106,6 +106,14 @@ pub struct ClickHouseConfig {
 pub struct ValkeyConfig {
     pub url: SecretString,
     pub key_prefix: String,
+    #[serde(default)]
+    pub ca: Option<String>,
+}
+
+impl ValkeyConfig {
+    pub fn ca(&self) -> Option<&str> {
+        self.ca.as_deref().map(str::trim).filter(|c| !c.is_empty())
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize)]
@@ -492,6 +500,12 @@ impl Config {
         }
         if self.smtp.password.is_some() && self.smtp.user.is_none() {
             return invalid("smtp.user", "is required when smtp.password is set".into());
+        }
+        if self.valkey.ca().is_some() && !self.valkey.url.expose_secret().starts_with("rediss://") {
+            return invalid(
+                "valkey.ca",
+                "needs a rediss:// URL in valkey.url, since it verifies a TLS connection".into(),
+            );
         }
         if let Some(email) = self.setup.email() {
             if self.mail.transport != MailTransport::Smtp {

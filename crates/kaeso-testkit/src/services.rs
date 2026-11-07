@@ -188,7 +188,7 @@ async fn create(
     let clickhouse = ClickHouse::new(&databases.clickhouse_url, &name).expect("ClickHouse client");
     let valkey_url = SecretString::from(vk);
     let valkey_prefix = format!("kaeso:{name}:");
-    let valkey = Valkey::new(&valkey_url, &valkey_prefix).expect("Valkey client");
+    let valkey = Valkey::new(&valkey_url, &valkey_prefix, None).expect("Valkey client");
     TestServices {
         pg: pool,
         pg_url,
