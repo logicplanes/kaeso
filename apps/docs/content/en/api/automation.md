@@ -113,12 +113,13 @@ curl -s "$ORG_URL/projects/$PROJECT/logs?limit=10" \
 
 A request shows in the logs within a few seconds. Usage includes costs when the caller has the right `costs.view`, and takes these query parameters:
 
-- `group_by`: `day` (the default), `week`, `month`, `model`, `key`, `member` or `route`. A route's key reads `<app format>:<provider format>:<provider>`, such as `openai_responses:anthropic_messages:anthropic`.
+- `group_by`: `day` (the default), `week`, `month`, `model`, `provider`, `key`, `member` or `route`. A route's key reads `<app format>:<provider format>:<provider>`, such as `openai_responses:anthropic_messages:anthropic`.
 - `from` and `to`: days in UTC, such as `2026-08-15`. Grouped by day, they are at most 400 days apart.
+- `model`, `provider`, `key`, `member` and `route`: only the usage of one group, written as its grouping's `key`, such as `model=openai/gpt-5` or `key=playground`. Filters combine with each other and with any `group_by`, so `group_by=day&model=openai/gpt-5&key=key_…` is the daily usage of one model through one key. The organization's usage also takes `project`.
 - `usage/span` answers with the first and last day that have usage, so you can read a long period by week or month.
-- `usage/timeline` reads the request log by `step=minute` (at most 2 days) or `step=hour` (at most 62 days), from `from` to `to`, times in RFC 3339; without them it reads the last day. It needs request logs.
+- `usage/timeline` reads the request log by `step=minute` (at most 2 days) or `step=hour` (at most 62 days), from `from` to `to`, times in RFC 3339; without them it reads the last day. It needs request logs. It takes the same filters and `failed`. With `group_by` it has a bucket per step for each model, provider, key, member, route, error kind (`error_kind`) or, for the organization, project, and `top` keeps the 1 to 50 groups with the most requests. Each bucket has the median, 95th percentile and longest time of its requests (`duration_p50_ms`, `duration_p95_ms`, `duration_max_ms`) and the median and 95th percentile time to the provider's first byte (`ttfb_p50_ms`, `ttfb_p95_ms`), in milliseconds.
 
-Each usage row has `cache_hit_rate`, the share of its input read from the cache, from 0 to 1. It is `null` for a row without input and for routes of embeddings, which are never cached. Logs take `ingress_dialect` and `egress_dialect` to select one route, such as `logs?ingress_dialect=openai_responses&egress_dialect=anthropic_messages`. Their export takes the same filters.
+Each usage row has `cache_hit_rate`, the share of its input read from the cache, from 0 to 1. It is `null` for a row without input and for routes of embeddings, which are never cached. Logs take `ingress_dialect` and `egress_dialect` to select one route, such as `logs?ingress_dialect=openai_responses&egress_dialect=anthropic_messages`, and `min_duration_ms` to find slow requests, such as those above a bucket's `duration_p95_ms`. Their export takes the same filters.
 
 Add a log's id to read one request, such as `logs/req_…`. It includes the request's content when the project logs content.
 

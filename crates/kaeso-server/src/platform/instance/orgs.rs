@@ -535,6 +535,7 @@ pub async fn usage(
         to - time::Duration::days(29),
         to,
         store::GroupBy::Project,
+        &store::Filter::default(),
     )
     .await
     .map_err(unavailable)?;

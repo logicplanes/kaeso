@@ -20,3 +20,14 @@ An alias is a name apps send as `model`; its `route` picks the model that answer
 - Read the catalogue first (`get_orgs_org_projects_project_models`): a route names models by their `model_…` id.
 - Before you save a route, send it with a sample request to `post_orgs_org_projects_project_aliases_trace`. It sends nothing and shows the conditions, the split draws and every model the request would try, in order.
 - Saving takes effect at once for every app that sends the alias. To change part of a route, read the alias, change its `route` and send the whole route back with `patch_orgs_org_projects_project_aliases_alias`.
+
+## Usage, costs and latency
+
+Go from wide to narrow. Each tool has a `get_orgs_org_projects_project_…` twin for one project.
+
+1. `get_orgs_org_usage_span` gives the first and last day with usage.
+2. `get_orgs_org_usage` sums requests, errors, tokens, cost and tool calls by `day`, `week`, `month`, `model`, `provider`, `key`, `member`, `route` or `project`. Its filters (`model`, `provider`, `key`, `member`, `route`, `project`) take a row's `key` as it is, and combine with each other and any grouping: `group_by=day`, `model=openai/gpt-5` and `key=key_…` is the daily usage of one model through one key.
+3. `get_orgs_org_usage_timeline` reads the request log by `minute` (up to 2 days) or `hour` (up to 62 days), with the same filters plus `failed`. `group_by` (also `error_kind`) gives a bucket per step and group, and `top` keeps the busiest groups. Each bucket has latency percentiles in milliseconds, so it shows when something spiked and which model, key or error drove it.
+4. `get_orgs_org_projects_project_logs` lists the single requests behind a bucket: its range as `from` and `to`, then `failed=true` or `min_duration_ms`. There a member is `user` or `service_account`, and `model` is the provider's model id, with `provider` apart.
+
+Days and buckets are UTC. Costs are USD strings; `null` means you lack the right to see costs, not that nothing was spent. The timeline reaches back only as far as the organization keeps logs; use usage for older periods.

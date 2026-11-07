@@ -14778,7 +14778,7 @@
           "logs"
         ],
         "summary": "The project's request log, newest first (metadata only).",
-        "description": "**Right:** `logs.metadata.view` on the project in the path.",
+        "description": "One entry per model request, kept for the org's metadata retention:\ntimings in milliseconds (`duration_ms`, `ttfb_ms`, `overhead_ms`), status and\n`error_kind`, tokens, cost in USD, key, member, model and route. Filters\ncombine; `from` and `to` are RFC 3339 times. To explain a spike in the usage\ntimeline, list its bucket's range with the same model or key and\n`failed=true`, or `min_duration_ms` set to the bucket's `duration_p95_ms`.\nPages hold up to 100 entries; pass `next_cursor` as `after` for the next.\n\n**Right:** `logs.metadata.view` on the project in the path.",
         "operationId": "getOrgsOrgProjectsProjectLogs",
         "parameters": [
           {
@@ -14867,7 +14867,7 @@
           {
             "name": "model",
             "in": "query",
-            "description": "Only this provider model id.",
+            "description": "Only this provider model id, such as `gpt-5`, without its provider\n(filter that with `provider`).",
             "required": false,
             "schema": {
               "type": "string"
@@ -14954,6 +14954,17 @@
             "required": false,
             "schema": {
               "$ref": "#/components/schemas/ResponseCacheResult"
+            }
+          },
+          {
+            "name": "min_duration_ms",
+            "in": "query",
+            "description": "Only requests that took at least this many milliseconds in total\n(`duration_ms`), such as the `duration_p95_ms` of a timeline bucket.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
             }
           }
         ],
@@ -15097,7 +15108,7 @@
           {
             "name": "model",
             "in": "query",
-            "description": "Only this provider model id.",
+            "description": "Only this provider model id, such as `gpt-5`, without its provider\n(filter that with `provider`).",
             "required": false,
             "schema": {
               "type": "string"
@@ -15184,6 +15195,17 @@
             "required": false,
             "schema": {
               "$ref": "#/components/schemas/ResponseCacheResult"
+            }
+          },
+          {
+            "name": "min_duration_ms",
+            "in": "query",
+            "description": "Only requests that took at least this many milliseconds in total\n(`duration_ms`), such as the `duration_p95_ms` of a timeline bucket.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
             }
           }
         ],
@@ -15661,7 +15683,7 @@
           "logs"
         ],
         "summary": "One log entry; content only with `logs.content.view`.",
-        "description": "**Right:** `logs.metadata.view` on the project in the path.",
+        "description": "The entry the request log lists, by its request id (the\n`kaeso-request-id` header), plus the request and reply bodies when content\nwas logged and the caller holds `logs.content.view`.\n\n**Right:** `logs.metadata.view` on the project in the path.",
         "operationId": "getOrgsOrgProjectsProjectLogsLog",
         "parameters": [
           {
@@ -19519,8 +19541,8 @@
         "tags": [
           "projects"
         ],
-        "summary": "The project's usage; costs with `costs.view`.",
-        "description": "**Right:** `usage.view` on the project in the path.",
+        "summary": "The project's usage by day, week, month, model, provider, key, member or route.",
+        "description": "Requests (refusals included), errors, tokens, cost and MCP tool calls\nof the project, from daily totals that reach back to the first request\n(`usage/span`) and never expire; days are UTC. One row per group of\n`group_by`, sorted by `key`; groups without usage are left out. Every filter\ntakes a `key` as its grouping returns it, so filters and groupings combine:\n`group_by=day&model=openai/gpt-5&key=key_…` is the daily usage of one model\nthrough one key. `cost` is in USD and `null` without `costs.view`. For\nminutes, hours, latency or error kinds use `usage/timeline`; for single\nrequests, `logs`.\n\n**Right:** `usage.view` on the project in the path.",
         "operationId": "getOrgsOrgProjectsProjectUsage",
         "parameters": [
           {
@@ -19560,7 +19582,52 @@
           {
             "name": "group_by",
             "in": "query",
-            "description": "`day` (default), `week` (Monday to Sunday, named by its Monday),\n`month` (named by its first day), `model`, `key`, `member`, `route`,\nor for orgs `project`. A week or month that starts before `from` or\nends after `to` counts only the days in the period.",
+            "description": "`day` (default), `week` (Monday to Sunday, named by its Monday),\n`month` (named by its first day), `model`, `provider`, `key`, `member`,\n`route`, or for orgs `project`. A week or month that starts before `from`\nor ends after `to` counts only the days in the period.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "model",
+            "in": "query",
+            "description": "Only this model, as `provider/model` like the `key` of a row grouped\nby `model`, such as `openai/gpt-5`; a model id without `/` matches it at\nevery provider.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "provider",
+            "in": "query",
+            "description": "Only this provider, such as `openai`.",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ProviderId"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "description": "Only this key: a key id, or `playground` for the requests members made\nin the console's Playground.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "member",
+            "in": "query",
+            "description": "Only this member: `user:<id>` or `service_account:<id>`, as grouping by\n`member` names them.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "description": "Only this route, `<app format>:<provider format>:<provider>` as\ngrouping by `route` names it, such as\n`openai_responses:anthropic_messages:anthropic`.",
             "required": false,
             "schema": {
               "type": "string"
@@ -19696,8 +19763,8 @@
         "tags": [
           "projects"
         ],
-        "summary": "The project's requests by minute or hour, from the request log.",
-        "description": "**Right:** `usage.view` on the project in the path.",
+        "summary": "The project's requests and latency by minute or hour, from the request log.",
+        "description": "A bucket per `step` (a minute or an hour, UTC) with the project's\nrequests that started in it: requests, errors, tokens, cost, and latency in\nmilliseconds (`duration_*` for the whole request, `ttfb_*` to the provider's\nfirst byte; percentiles are estimated from a sample in buckets of more than\n8,192 requests). Steps without requests are left out. It reads the request\nlog, so it reaches back only as far as the org keeps metadata; for longer\nperiods use `usage`. It takes the filters of `usage` plus `failed`; with\n`group_by` there is a bucket per step and group, `key` naming the group as\n`usage` does, and `top` keeps the busiest groups. `cost` is in USD and\n`null` without `costs.view`.\n\n**Right:** `usage.view` on the project in the path.",
         "operationId": "getOrgsOrgProjectsProjectUsageTimeline",
         "parameters": [
           {
@@ -19738,6 +19805,81 @@
             "name": "step",
             "in": "query",
             "description": "`minute` (at most 2 days) or `hour` (at most 62 days); default `minute`\nfor up to 2 days, `hour` beyond.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "group_by",
+            "in": "query",
+            "description": "A bucket per step and `model`, `provider`, `key`, `member`, `route`,\n`error_kind` (the request log's, empty for requests that succeeded), or\nfor orgs `project`; default one bucket per step.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "top",
+            "in": "query",
+            "description": "With `group_by`, only the groups with the most requests in the whole\nrange, 1 to 50; the others are left out.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "maximum": 50,
+              "minimum": 1
+            }
+          },
+          {
+            "name": "failed",
+            "in": "query",
+            "description": "Only failed (`true`) or successful (`false`) requests.",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "model",
+            "in": "query",
+            "description": "Only this model, as `provider/model` like the `key` of a row grouped\nby `model`, such as `openai/gpt-5`; a model id without `/` matches it at\nevery provider.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "provider",
+            "in": "query",
+            "description": "Only this provider, such as `openai`.",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ProviderId"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "description": "Only this key: a key id, or `playground` for the requests members made\nin the console's Playground.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "member",
+            "in": "query",
+            "description": "Only this member: `user:<id>` or `service_account:<id>`, as grouping by\n`member` names them.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "description": "Only this route, `<app format>:<provider format>:<provider>` as\ngrouping by `route` names it, such as\n`openai_responses:anthropic_messages:anthropic`.",
             "required": false,
             "schema": {
               "type": "string"
@@ -21242,8 +21384,8 @@
         "tags": [
           "orgs"
         ],
-        "summary": "Usage across the org's projects; costs with `costs.org.view`.",
-        "description": "**Right:** `usage.org.view` on the organization in the path.",
+        "summary": "The org's usage by day, week, month, model, provider, key, member, route or project.",
+        "description": "Requests (refusals included), errors, tokens, cost and MCP tool calls\nacross the org's projects, from daily totals that reach back to the first\nrequest (`usage/span`) and never expire; days are UTC. One row per group of\n`group_by`, sorted by `key`; groups without usage are left out. Every filter\ntakes a `key` as its grouping returns it, so filters and groupings combine:\n`group_by=day&model=openai/gpt-5&key=key_…` is the daily usage of one model\nthrough one key. `cost` is in USD and `null` without `costs.org.view`. For\nminutes, hours, latency or error kinds use `usage/timeline`; for single\nrequests, a project's `logs`.\n\n**Right:** `usage.org.view` on the organization in the path.",
         "operationId": "getOrgsOrgUsage",
         "parameters": [
           {
@@ -21275,10 +21417,64 @@
           {
             "name": "group_by",
             "in": "query",
-            "description": "`day` (default), `week` (Monday to Sunday, named by its Monday),\n`month` (named by its first day), `model`, `key`, `member`, `route`,\nor for orgs `project`. A week or month that starts before `from` or\nends after `to` counts only the days in the period.",
+            "description": "`day` (default), `week` (Monday to Sunday, named by its Monday),\n`month` (named by its first day), `model`, `provider`, `key`, `member`,\n`route`, or for orgs `project`. A week or month that starts before `from`\nor ends after `to` counts only the days in the period.",
             "required": false,
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "name": "model",
+            "in": "query",
+            "description": "Only this model, as `provider/model` like the `key` of a row grouped\nby `model`, such as `openai/gpt-5`; a model id without `/` matches it at\nevery provider.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "provider",
+            "in": "query",
+            "description": "Only this provider, such as `openai`.",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ProviderId"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "description": "Only this key: a key id, or `playground` for the requests members made\nin the console's Playground.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "member",
+            "in": "query",
+            "description": "Only this member: `user:<id>` or `service_account:<id>`, as grouping by\n`member` names them.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "description": "Only this route, `<app format>:<provider format>:<provider>` as\ngrouping by `route` names it, such as\n`openai_responses:anthropic_messages:anthropic`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "project",
+            "in": "query",
+            "description": "Only this project.",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
             }
           }
         ],
@@ -21403,8 +21599,8 @@
         "tags": [
           "orgs"
         ],
-        "summary": "Requests across the org's projects by minute or hour, from the request log.",
-        "description": "**Right:** `usage.org.view` on the organization in the path.",
+        "summary": "The org's requests and latency by minute or hour, from the request log.",
+        "description": "A bucket per `step` (a minute or an hour, UTC) with the requests that\nstarted in it across the org's projects: requests, errors, tokens, cost, and\nlatency in milliseconds (`duration_*` for the whole request, `ttfb_*` to the\nprovider's first byte; percentiles are estimated from a sample in buckets of\nmore than 8,192 requests). Steps without requests are left out. It reads the\nrequest log, so it reaches back only as far as the org keeps metadata; for\nlonger periods use `usage`. It takes the filters of `usage` plus `failed`;\nwith `group_by` there is a bucket per step and group, `key` naming the group\nas `usage` does, and `top` keeps the busiest groups. `cost` is in USD and\n`null` without `costs.org.view`.\n\n**Right:** `usage.org.view` on the organization in the path.",
         "operationId": "getOrgsOrgUsageTimeline",
         "parameters": [
           {
@@ -21440,6 +21636,90 @@
             "required": false,
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "name": "group_by",
+            "in": "query",
+            "description": "A bucket per step and `model`, `provider`, `key`, `member`, `route`,\n`error_kind` (the request log's, empty for requests that succeeded), or\nfor orgs `project`; default one bucket per step.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "top",
+            "in": "query",
+            "description": "With `group_by`, only the groups with the most requests in the whole\nrange, 1 to 50; the others are left out.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "maximum": 50,
+              "minimum": 1
+            }
+          },
+          {
+            "name": "failed",
+            "in": "query",
+            "description": "Only failed (`true`) or successful (`false`) requests.",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "model",
+            "in": "query",
+            "description": "Only this model, as `provider/model` like the `key` of a row grouped\nby `model`, such as `openai/gpt-5`; a model id without `/` matches it at\nevery provider.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "provider",
+            "in": "query",
+            "description": "Only this provider, such as `openai`.",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ProviderId"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "description": "Only this key: a key id, or `playground` for the requests members made\nin the console's Playground.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "member",
+            "in": "query",
+            "description": "Only this member: `user:<id>` or `service_account:<id>`, as grouping by\n`member` names them.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "description": "Only this route, `<app format>:<provider format>:<provider>` as\ngrouping by `route` names it, such as\n`openai_responses:anthropic_messages:anthropic`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "project",
+            "in": "query",
+            "description": "Only this project.",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
             }
           }
         ],
@@ -28970,7 +29250,7 @@
             "type": "array",
             "items": {
               "type": "object",
-              "description": "The requests of one minute or hour, from the request log.",
+              "description": "The requests of one minute or hour, and of one group with `group_by`, from the request log.",
               "required": [
                 "start",
                 "requests",
@@ -28979,7 +29259,10 @@
                 "output_tokens",
                 "cache_read_tokens",
                 "cache_write_tokens",
-                "reasoning_tokens"
+                "reasoning_tokens",
+                "duration_p50_ms",
+                "duration_p95_ms",
+                "duration_max_ms"
               ],
               "properties": {
                 "cache_read_tokens": {
@@ -29001,6 +29284,24 @@
                   ],
                   "description": "Cost in USD; `null` without the right to see costs."
                 },
+                "duration_max_ms": {
+                  "type": "integer",
+                  "format": "int32",
+                  "description": "The longest total time of its requests, in milliseconds.",
+                  "minimum": 0
+                },
+                "duration_p50_ms": {
+                  "type": "integer",
+                  "format": "int32",
+                  "description": "The median total time of its requests, in milliseconds.",
+                  "minimum": 0
+                },
+                "duration_p95_ms": {
+                  "type": "integer",
+                  "format": "int32",
+                  "description": "The 95th percentile of the total time of its requests, in milliseconds.",
+                  "minimum": 0
+                },
                 "errors": {
                   "type": "integer",
                   "format": "int64",
@@ -29012,6 +29313,13 @@
                   "format": "int64",
                   "description": "Uncached input tokens.",
                   "minimum": 0
+                },
+                "key": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "The group, as usage grouped the same way names it; `null` without\n`group_by`."
                 },
                 "output_tokens": {
                   "type": "integer",
@@ -29034,6 +29342,24 @@
                 "start": {
                   "type": "string",
                   "description": "The minute or hour it starts at (RFC 3339, UTC)."
+                },
+                "ttfb_p50_ms": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "format": "int32",
+                  "description": "The median time to the provider's first byte, in milliseconds; `null`\nwhen no request reached a provider, such as refusals and cache hits.",
+                  "minimum": 0
+                },
+                "ttfb_p95_ms": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "format": "int32",
+                  "description": "The 95th percentile of the time to the provider's first byte, in\nmilliseconds; `null` when no request reached a provider.",
+                  "minimum": 0
                 }
               }
             },
@@ -29380,7 +29706,7 @@
                 },
                 "key": {
                   "type": "string",
-                  "description": "The day, the Monday of the week, the first day of the month,\n`provider/model`, key id (`playground` for the requests members made\nin the console's Playground, without a key), member (`user:<id>` or\n`service_account:<id>`), route (`<app format>:<provider format>:<provider>`,\nsuch as `openai_responses:anthropic_messages:anthropic`; both formats are\nempty for requests made before Kaeso recorded them, and the provider\nformat for requests refused before a provider was chosen), or project\nid."
+                  "description": "The day, the Monday of the week, the first day of the month,\n`provider/model`, provider, key id (`playground` for the requests members\nmade in the console's Playground, without a key), member (`user:<id>` or\n`service_account:<id>`), route (`<app format>:<provider format>:<provider>`,\nsuch as `openai_responses:anthropic_messages:anthropic`; both formats are\nempty for requests made before Kaeso recorded them, and the provider\nformat for requests refused before a provider was chosen), or project\nid. The filter of the same name takes it as it is."
                 },
                 "output_tokens": {
                   "type": "integer",
@@ -29409,7 +29735,7 @@
                 "tool_calls": {
                   "type": "integer",
                   "format": "int64",
-                  "description": "Tool calls through the project's MCP portals, refusals included. Counted by\nday and project, so 0 when grouped by model, key, member or route.",
+                  "description": "Tool calls through the project's MCP portals, refusals included. Counted by\nday and project, so 0 when grouped or filtered by model, provider, key,\nmember or route.",
                   "minimum": 0
                 }
               }
@@ -36004,7 +36330,7 @@
       },
       "TimelineBucket": {
         "type": "object",
-        "description": "The requests of one minute or hour, from the request log.",
+        "description": "The requests of one minute or hour, and of one group with `group_by`, from the request log.",
         "required": [
           "start",
           "requests",
@@ -36013,7 +36339,10 @@
           "output_tokens",
           "cache_read_tokens",
           "cache_write_tokens",
-          "reasoning_tokens"
+          "reasoning_tokens",
+          "duration_p50_ms",
+          "duration_p95_ms",
+          "duration_max_ms"
         ],
         "properties": {
           "cache_read_tokens": {
@@ -36035,6 +36364,24 @@
             ],
             "description": "Cost in USD; `null` without the right to see costs."
           },
+          "duration_max_ms": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The longest total time of its requests, in milliseconds.",
+            "minimum": 0
+          },
+          "duration_p50_ms": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The median total time of its requests, in milliseconds.",
+            "minimum": 0
+          },
+          "duration_p95_ms": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The 95th percentile of the total time of its requests, in milliseconds.",
+            "minimum": 0
+          },
           "errors": {
             "type": "integer",
             "format": "int64",
@@ -36046,6 +36393,13 @@
             "format": "int64",
             "description": "Uncached input tokens.",
             "minimum": 0
+          },
+          "key": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The group, as usage grouped the same way names it; `null` without\n`group_by`."
           },
           "output_tokens": {
             "type": "integer",
@@ -36068,6 +36422,24 @@
           "start": {
             "type": "string",
             "description": "The minute or hour it starts at (RFC 3339, UTC)."
+          },
+          "ttfb_p50_ms": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "The median time to the provider's first byte, in milliseconds; `null`\nwhen no request reached a provider, such as refusals and cache hits.",
+            "minimum": 0
+          },
+          "ttfb_p95_ms": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "The 95th percentile of the time to the provider's first byte, in\nmilliseconds; `null` when no request reached a provider.",
+            "minimum": 0
           }
         }
       },
@@ -37154,7 +37526,7 @@
           },
           "key": {
             "type": "string",
-            "description": "The day, the Monday of the week, the first day of the month,\n`provider/model`, key id (`playground` for the requests members made\nin the console's Playground, without a key), member (`user:<id>` or\n`service_account:<id>`), route (`<app format>:<provider format>:<provider>`,\nsuch as `openai_responses:anthropic_messages:anthropic`; both formats are\nempty for requests made before Kaeso recorded them, and the provider\nformat for requests refused before a provider was chosen), or project\nid."
+            "description": "The day, the Monday of the week, the first day of the month,\n`provider/model`, provider, key id (`playground` for the requests members\nmade in the console's Playground, without a key), member (`user:<id>` or\n`service_account:<id>`), route (`<app format>:<provider format>:<provider>`,\nsuch as `openai_responses:anthropic_messages:anthropic`; both formats are\nempty for requests made before Kaeso recorded them, and the provider\nformat for requests refused before a provider was chosen), or project\nid. The filter of the same name takes it as it is."
           },
           "output_tokens": {
             "type": "integer",
@@ -37183,7 +37555,7 @@
           "tool_calls": {
             "type": "integer",
             "format": "int64",
-            "description": "Tool calls through the project's MCP portals, refusals included. Counted by\nday and project, so 0 when grouped by model, key, member or route.",
+            "description": "Tool calls through the project's MCP portals, refusals included. Counted by\nday and project, so 0 when grouped or filtered by model, provider, key,\nmember or route.",
             "minimum": 0
           }
         }

@@ -122,8 +122,16 @@ async fn cost_reports(state: &AppState, today: Date) -> Result<usize, JobError> 
     let month = format!("{}-{:02}", from.year(), u8::from(from.month()));
     let mut sent = 0;
     for org in orgs::active_ids(&state.pg).await? {
-        let by_project =
-            usage::usage(&state.pg, org, None, from, to, usage::GroupBy::Project).await?;
+        let by_project = usage::usage(
+            &state.pg,
+            org,
+            None,
+            from,
+            to,
+            usage::GroupBy::Project,
+            &usage::Filter::default(),
+        )
+        .await?;
         let total: Decimal = by_project.iter().map(|p| p.cost).sum();
         if by_project.iter().all(|p| p.requests == 0) {
             continue;
@@ -195,6 +203,7 @@ async fn weekly(state: &AppState, today: Date) -> Result<usize, JobError> {
                 from,
                 to,
                 usage::GroupBy::Model,
+                &usage::Filter::default(),
             )
             .await?;
             let tools = usage::tool_usage(
@@ -204,6 +213,7 @@ async fn weekly(state: &AppState, today: Date) -> Result<usize, JobError> {
                 from,
                 to,
                 usage::GroupBy::Project,
+                &usage::Filter::default(),
             )
             .await?;
             let r: i64 = rows.iter().map(|m| m.requests).sum();

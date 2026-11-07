@@ -29,7 +29,13 @@ const INSTRUCTIONS: &str = "Kaeso is a self-hosted AI gateway. These tools read 
     can use now. Ids look like `org_…` and `proj_…`; list organizations with `get_me_memberships` \
     first. Every tool takes `agent_model`, the model family you are, or `unknown`. A call that fails \
     with `insufficient_rights` names a link where the user can grant the right; ask them to open \
-    it.";
+    it. To analyse usage, go from wide to narrow: `get_orgs_org_usage_span` gives the days with \
+    usage; `get_orgs_org_usage` sums them by day, week or month, or by model, provider, key, \
+    member, route or project, and its filters take any `key` a grouping returns, so they combine; \
+    `get_orgs_org_usage_timeline` reads the request log by minute or hour with the same filters, \
+    a `group_by` and latency percentiles; `get_orgs_org_projects_project_logs` lists the single \
+    requests behind a spike. The `get_orgs_org_projects_project_usage…` tools do the same for one \
+    project. Costs are USD strings, `null` without the right to see costs.";
 
 #[derive(Clone)]
 pub struct Platform(pub Router);
@@ -490,5 +496,36 @@ async fn record(
     .await;
     if let Err(e) = stored {
         tracing::warn!(error = %e, tool = %tool.name, "an agent's tool call could not be recorded");
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_instructions_name_only_tools_that_exist() {
+        let tools = tools::catalogue();
+        let named: Vec<&str> = INSTRUCTIONS
+            .split('`')
+            .skip(1)
+            .step_by(2)
+            .filter(|w| w.starts_with("get_"))
+            .collect();
+        assert!(named.len() >= 5, "{named:?}");
+        for name in named {
+            match name.strip_suffix('…') {
+                Some(prefix) => assert!(
+                    tools
+                        .all()
+                        .iter()
+                        .filter(|t| t.name.starts_with(prefix))
+                        .count()
+                        >= 3,
+                    "{name}"
+                ),
+                None => assert!(tools.get(name).is_some(), "{name}"),
+            }
+        }
     }
 }

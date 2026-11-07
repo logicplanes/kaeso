@@ -1554,3 +1554,297 @@ async fn the_timeline_counts_requests_by_minute_and_hour() {
         assert_eq!(refused.body["error"]["param"], param);
     }
 }
+
+#[tokio::test]
+async fn the_timeline_filters_groups_and_measures_latency() {
+    let env = env(&[]).await;
+    let hour = env
+        .app
+        .clock
+        .now()
+        .replace_minute(0)
+        .unwrap()
+        .replace_second(0)
+        .unwrap()
+        .replace_nanosecond(0)
+        .unwrap()
+        - time::Duration::hours(2);
+    let org: kaeso_core::id::OrgId = env.owner.org_id.parse().unwrap();
+    let project: kaeso_core::id::ProjectId = env.project.parse().unwrap();
+    let other_id =
+        common::create_project(&env.app, &env.owner.org_id, &env.owner.cookie, "Other").await;
+    let other: kaeso_core::id::ProjectId = other_id.parse().unwrap();
+    let (user, account, key) = (Uuid::now_v7(), Uuid::now_v7(), Uuid::now_v7());
+    let five = hour + time::Duration::minutes(5);
+    let seven = hour + time::Duration::minutes(7);
+    let anthropic = |at: OffsetDateTime, duration_ms: u32, ttfb_ms: Option<u32>| LogRow {
+        principal_id: user,
+        duration_ms,
+        ttfb_ms,
+        ..row(org.uuid(), project.uuid(), at, 1).0
+    };
+    let openai = |duration_ms: u32, status: u16, error_kind: &str| LogRow {
+        key_id: key,
+        principal_kind: "service_account".into(),
+        principal_id: account,
+        provider: "openai".into(),
+        resolved_model: "gpt-5".into(),
+        ingress_dialect: "openai_chat".into(),
+        egress_dialect: "openai_responses".into(),
+        duration_ms,
+        ttfb_ms: None,
+        status,
+        error_kind: error_kind.into(),
+        ..row(org.uuid(), project.uuid(), five, 1).0
+    };
+    let rows = [
+        anthropic(five, 100, Some(40)),
+        anthropic(five, 300, Some(60)),
+        anthropic(five, 200, Some(80)),
+        openai(1000, 429, "rate_limited"),
+        openai(2000, 200, ""),
+        LogRow {
+            status: 502,
+            error_kind: "provider_error".into(),
+            ..anthropic(seven, 50, None)
+        },
+        row(org.uuid(), other.uuid(), five, 1).0,
+    ];
+    ch::insert_logs(env.app.state.clickhouse.as_ref().unwrap(), &rows)
+        .await
+        .unwrap();
+    let rfc = |t: OffsetDateTime| {
+        t.format(&time::format_description::well_known::Rfc3339)
+            .unwrap()
+    };
+    let range = format!(
+        "from={}&to={}&step=minute",
+        rfc(hour),
+        rfc(hour + time::Duration::hours(1))
+    );
+    let o = format!("/orgs/{}", env.owner.org_id);
+    let p = base(&env);
+    let env = &env;
+    let get = async |path: String| {
+        let r = env.app.get(&path, &env.owner.cookie).await;
+        assert_eq!(r.status, StatusCode::OK, "{path}: {:?}", r.body);
+        r.body["data"].as_array().unwrap().clone()
+    };
+    let summary = |data: &[Value]| -> Vec<(String, Value, u64)> {
+        data.iter()
+            .map(|b| {
+                (
+                    b["start"].as_str().unwrap().to_owned(),
+                    b["key"].clone(),
+                    b["requests"].as_u64().unwrap(),
+                )
+            })
+            .collect()
+    };
+    let (at5, at7) = (rfc(five), rfc(seven));
+    let bucket = |at: &str, key: Value, n: u64| (at.to_owned(), key, n);
+
+    let all = get(format!("{p}/usage/timeline?{range}")).await;
+    assert_eq!(
+        summary(&all),
+        [bucket(&at5, Value::Null, 5), bucket(&at7, Value::Null, 1)]
+    );
+    assert_eq!(all[0]["errors"], 1);
+    assert_eq!(all[0]["duration_p50_ms"], 300);
+    assert_eq!(all[0]["duration_max_ms"], 2000);
+    let p95 = all[0]["duration_p95_ms"].as_u64().unwrap();
+    assert!((1000..=2000).contains(&p95), "{p95}");
+    assert_eq!(all[0]["ttfb_p50_ms"], 60);
+    let ttfb_p95 = all[0]["ttfb_p95_ms"].as_u64().unwrap();
+    assert!((60..=80).contains(&ttfb_p95), "{ttfb_p95}");
+    assert_eq!(all[0]["cost"], "0");
+    assert_eq!(
+        (
+            &all[1]["duration_p50_ms"],
+            &all[1]["duration_p95_ms"],
+            &all[1]["duration_max_ms"]
+        ),
+        (&json!(50), &json!(50), &json!(50))
+    );
+    assert_eq!(
+        all[1]["ttfb_p50_ms"],
+        Value::Null,
+        "no request reached a provider"
+    );
+    assert_eq!(all[1]["ttfb_p95_ms"], Value::Null);
+
+    let by_model = get(format!("{p}/usage/timeline?{range}&group_by=model")).await;
+    assert_eq!(
+        summary(&by_model),
+        [
+            bucket(&at5, json!("anthropic/m"), 3),
+            bucket(&at5, json!("openai/gpt-5"), 2),
+            bucket(&at7, json!("anthropic/m"), 1),
+        ]
+    );
+    assert_eq!(by_model[0]["duration_p50_ms"], 200);
+    assert_eq!(by_model[1]["ttfb_p50_ms"], Value::Null);
+    let busiest = get(format!("{p}/usage/timeline?{range}&group_by=model&top=1")).await;
+    assert_eq!(
+        summary(&busiest),
+        [
+            bucket(&at5, json!("anthropic/m"), 3),
+            bucket(&at7, json!("anthropic/m"), 1),
+        ]
+    );
+    let errors = get(format!(
+        "{p}/usage/timeline?{range}&group_by=error_kind&failed=true"
+    ))
+    .await;
+    assert_eq!(
+        summary(&errors),
+        [
+            bucket(&at5, json!("rate_limited"), 1),
+            bucket(&at7, json!("provider_error"), 1),
+        ]
+    );
+    let succeeded = get(format!("{p}/usage/timeline?{range}&failed=false")).await;
+    assert_eq!(summary(&succeeded), [bucket(&at5, Value::Null, 4)]);
+    assert_eq!(succeeded[0]["errors"], 0);
+
+    let key_id = kaeso_core::id::ApiKeyId::from_uuid(key).to_string();
+    let by_key = get(format!("{p}/usage/timeline?{range}&group_by=key")).await;
+    assert_eq!(
+        summary(&by_key),
+        [
+            bucket(&at5, json!(key_id), 2),
+            bucket(&at5, json!("playground"), 3),
+            bucket(&at7, json!("playground"), 1),
+        ]
+    );
+    let user_id = format!("user:{}", kaeso_core::id::UserId::from_uuid(user));
+    let account_id = format!(
+        "service_account:{}",
+        kaeso_core::id::ServiceAccountId::from_uuid(account)
+    );
+    let by_member = get(format!("{p}/usage/timeline?{range}&group_by=member")).await;
+    assert_eq!(
+        summary(&by_member),
+        [
+            bucket(&at5, json!(account_id), 2),
+            bucket(&at5, json!(user_id), 3),
+            bucket(&at7, json!(user_id), 1),
+        ]
+    );
+    let by_route = get(format!("{p}/usage/timeline?{range}&group_by=route")).await;
+    assert_eq!(
+        by_route[0]["key"],
+        "anthropic_messages:anthropic_messages:anthropic"
+    );
+
+    for (filter, expected) in [
+        (
+            "key=playground".to_owned(),
+            vec![bucket(&at5, Value::Null, 3), bucket(&at7, Value::Null, 1)],
+        ),
+        (format!("key={key_id}"), vec![bucket(&at5, Value::Null, 2)]),
+        (
+            format!("member={account_id}"),
+            vec![bucket(&at5, Value::Null, 2)],
+        ),
+        (
+            "model=openai/gpt-5".to_owned(),
+            vec![bucket(&at5, Value::Null, 2)],
+        ),
+        (
+            "model=m".to_owned(),
+            vec![bucket(&at5, Value::Null, 3), bucket(&at7, Value::Null, 1)],
+        ),
+        ("model=openai/m".to_owned(), vec![]),
+        (
+            "provider=openai".to_owned(),
+            vec![bucket(&at5, Value::Null, 2)],
+        ),
+        (
+            "route=openai_chat:openai_responses:openai".to_owned(),
+            vec![bucket(&at5, Value::Null, 2)],
+        ),
+    ] {
+        let data = get(format!("{p}/usage/timeline?{range}&{filter}")).await;
+        assert_eq!(summary(&data), expected, "{filter}");
+    }
+
+    let by_project = get(format!("{o}/usage/timeline?{range}&group_by=project")).await;
+    let mut projects = summary(&by_project)[..2].to_vec();
+    projects.sort_by_key(|p| p.2);
+    assert_eq!(
+        projects,
+        [
+            bucket(&at5, json!(other_id), 1),
+            bucket(&at5, json!(env.project), 5)
+        ]
+    );
+    let other_only = get(format!("{o}/usage/timeline?{range}&project={other_id}")).await;
+    assert_eq!(summary(&other_only), [bucket(&at5, Value::Null, 1)]);
+
+    for (path, param, message) in [
+        (
+            format!("{p}/usage/timeline?{range}&group_by=project"),
+            "group_by",
+            "Use `model`, `provider`, `key`, `member`, `route` or `error_kind`.",
+        ),
+        (
+            format!("{o}/usage/timeline?{range}&group_by=day"),
+            "group_by",
+            "Use `model`, `provider`, `key`, `member`, `route`, `error_kind` or `project`.",
+        ),
+        (
+            format!("{p}/usage/timeline?{range}&group_by=model&top=0"),
+            "top",
+            "`top` is out of range.",
+        ),
+        (
+            format!("{p}/usage/timeline?{range}&group_by=model&top=51"),
+            "top",
+            "`top` is out of range.",
+        ),
+        (
+            format!("{p}/usage/timeline?{range}&member=nobody"),
+            "member",
+            "`member` must be a `key` that grouping by `member` returns.",
+        ),
+    ] {
+        let r = env.app.get(&path, &env.owner.cookie).await;
+        assert_eq!(r.status, StatusCode::BAD_REQUEST, "{path}: {:?}", r.body);
+        assert_eq!(r.body["error"]["param"], param, "{path}");
+        assert_eq!(r.body["error"]["message"], message, "{path}");
+    }
+}
+
+#[tokio::test]
+async fn the_request_log_finds_requests_that_took_long() {
+    let env = env(&[]).await;
+    let now = env.app.clock.now().replace_nanosecond(0).unwrap();
+    let org: kaeso_core::id::OrgId = env.owner.org_id.parse().unwrap();
+    let project: kaeso_core::id::ProjectId = env.project.parse().unwrap();
+    let rows: Vec<LogRow> = [120, 900, 4000]
+        .into_iter()
+        .map(|duration_ms| LogRow {
+            duration_ms,
+            ..row(
+                org.uuid(),
+                project.uuid(),
+                now - time::Duration::minutes(1),
+                1,
+            )
+            .0
+        })
+        .collect();
+    ch::insert_logs(env.app.state.clickhouse.as_ref().unwrap(), &rows)
+        .await
+        .unwrap();
+    let slow = logs(&env, "?min_duration_ms=900").await;
+    let mut durations: Vec<u64> = slow["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|l| l["duration_ms"].as_u64().unwrap())
+        .collect();
+    durations.sort_unstable();
+    assert_eq!(durations, [900, 4000]);
+}

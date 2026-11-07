@@ -461,7 +461,7 @@ fn job_view(j: &log_jobs::LogJob) -> LogJobView {
     }
 }
 
-fn provider_filter(id: &str) -> ApiResult<String> {
+pub(crate) fn provider_filter(id: &str) -> ApiResult<String> {
     kaeso_core::provider::ProviderId::parse(id)
         .map(|p| p.as_str().to_owned())
         .map_err(|_| {
@@ -582,7 +582,8 @@ pub struct LogFilter {
     pub user: Option<UserId>,
     #[doc = "Only this service account's requests."]
     pub service_account: Option<ServiceAccountId>,
-    #[doc = "Only this provider model id."]
+    #[doc = "Only this provider model id, such as `gpt-5`, without its provider\n\
+        (filter that with `provider`)."]
     pub model: Option<String>,
     #[doc = "Only this provider."]
     #[param(value_type = Option<kaeso_core::provider::ProviderId>)]
@@ -609,6 +610,9 @@ pub struct LogFilter {
     #[doc = "Only requests the response cache answered (`hit`), sent on (`miss`)\n\
         or passed by (`bypass`)."]
     pub response_cache: Option<ResponseCacheResult>,
+    #[doc = "Only requests that took at least this many milliseconds in total\n\
+        (`duration_ms`), such as the `duration_p95_ms` of a timeline bucket."]
+    pub min_duration_ms: Option<u32>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
@@ -686,6 +690,7 @@ impl LogFilter {
                 .map(|d| dialect_filter("egress_dialect", d))
                 .transpose()?,
             response_cache: self.response_cache.map(|c| c.as_str().to_owned()),
+            min_duration_ms: self.min_duration_ms,
         })
     }
 }
@@ -970,6 +975,13 @@ pub(crate) fn decode_cursor(c: &str) -> Option<(OffsetDateTime, Uuid)> {
     get,
     path = "/orgs/{org}/projects/{project}/logs",
     summary = "The project's request log, newest first (metadata only).",
+    description = "One entry per model request, kept for the org's metadata retention:\n\
+    timings in milliseconds (`duration_ms`, `ttfb_ms`, `overhead_ms`), status and\n\
+    `error_kind`, tokens, cost in USD, key, member, model and route. Filters\n\
+    combine; `from` and `to` are RFC 3339 times. To explain a spike in the usage\n\
+    timeline, list its bucket's range with the same model or key and\n\
+    `failed=true`, or `min_duration_ms` set to the bucket's `duration_p95_ms`.\n\
+    Pages hold up to 100 entries; pass `next_cursor` as `after` for the next.",
     tag = "logs",
     params(("org" = OrgId, Path), ("project" = ProjectId, Path), PageParams, LogFilter),
     responses((status = 200, body = List<LogView>))
@@ -1037,6 +1049,9 @@ fn content_view(c: &ch::ContentRow) -> ContentView {
     get,
     path = "/orgs/{org}/projects/{project}/logs/{log}",
     summary = "One log entry; content only with `logs.content.view`.",
+    description = "The entry the request log lists, by its request id (the\n\
+    `kaeso-request-id` header), plus the request and reply bodies when content\n\
+    was logged and the caller holds `logs.content.view`.",
     tag = "logs",
     params(("org" = OrgId, Path), ("project" = ProjectId, Path), ("log" = RequestId, Path)),
     responses((status = 200, body = LogEntryView))

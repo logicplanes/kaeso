@@ -472,6 +472,45 @@ mod tests {
     }
 
     #[test]
+    fn usage_tools_take_every_filter_and_say_what_their_numbers_mean() {
+        for (name, org_wide, timeline) in [
+            ("get_orgs_org_usage", true, false),
+            ("get_orgs_org_projects_project_usage", false, false),
+            ("get_orgs_org_usage_timeline", true, true),
+            ("get_orgs_org_projects_project_usage_timeline", false, true),
+        ] {
+            let t = tool(name);
+            for param in [
+                "from", "to", "group_by", "model", "provider", "key", "member", "route",
+            ] {
+                assert!(t.query_params.iter().any(|p| p == param), "{name} {param}");
+            }
+            assert_eq!(
+                t.query_params.iter().any(|p| p == "project"),
+                org_wide,
+                "{name}"
+            );
+            for param in ["step", "top", "failed"] {
+                assert_eq!(
+                    t.query_params.iter().any(|p| p == param),
+                    timeline,
+                    "{name} {param}"
+                );
+            }
+            assert!(t.title.len() <= 90, "{name}: {}", t.title);
+            for told in ["USD", "`null` without", "**Right:**"] {
+                assert!(t.description.contains(told), "{name} says {told}");
+            }
+            if timeline {
+                assert!(t.description.contains("milliseconds"), "{name}");
+            }
+        }
+        let logs = tool("get_orgs_org_projects_project_logs");
+        assert!(logs.query_params.iter().any(|p| p == "min_duration_ms"));
+        assert!(logs.description.contains("milliseconds"));
+    }
+
+    #[test]
     fn names_are_snake_case_operation_ids() {
         assert_eq!(snake("getOrgsOrgProjects"), "get_orgs_org_projects");
         assert_eq!(snake("postMeTotpConfirm"), "post_me_totp_confirm");

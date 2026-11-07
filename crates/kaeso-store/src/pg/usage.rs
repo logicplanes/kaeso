@@ -12,6 +12,7 @@ pub enum GroupBy {
     Month,
     Project,
     Model,
+    Provider,
     Key,
     Member,
     Route,
@@ -25,12 +26,62 @@ impl GroupBy {
             GroupBy::Month => "to_char(date_trunc('month', day), 'YYYY-MM-DD')",
             GroupBy::Project => "project_id::text",
             GroupBy::Model => "provider || '/' || model_id",
+            GroupBy::Provider => "provider",
             GroupBy::Key => "coalesce(api_key_id, '00000000-0000-0000-0000-000000000000')::text",
             GroupBy::Member => {
                 "CASE WHEN user_id IS NOT NULL THEN 'user:' || user_id::text \
                  ELSE 'service_account:' || coalesce(service_account_id, '00000000-0000-0000-0000-000000000000')::text END"
             }
             GroupBy::Route => "ingress_dialect || ':' || egress_dialect || ':' || provider",
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Member {
+    User(Uuid),
+    ServiceAccount(Uuid),
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct Model {
+    pub provider: Option<String>,
+    pub id: String,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct Route {
+    pub ingress_dialect: String,
+    pub egress_dialect: String,
+    pub provider: String,
+}
+
+// `key` is the nil id for the Playground's requests, which have no key.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct Filter {
+    pub provider: Option<String>,
+    pub model: Option<Model>,
+    pub key: Option<Uuid>,
+    pub member: Option<Member>,
+    pub route: Option<Route>,
+}
+
+impl Filter {
+    pub fn narrows_requests(&self) -> bool {
+        *self != Filter::default()
+    }
+
+    fn user(&self) -> Option<Uuid> {
+        match self.member {
+            Some(Member::User(u)) => Some(u),
+            _ => None,
+        }
+    }
+
+    fn service_account(&self) -> Option<Uuid> {
+        match self.member {
+            Some(Member::ServiceAccount(s)) => Some(s),
+            _ => None,
         }
     }
 }
@@ -55,6 +106,7 @@ pub async fn usage(
     from: Date,
     to: Date,
     group: GroupBy,
+    filter: &Filter,
 ) -> Result<Vec<UsageGroup>, StoreError> {
     // The grouping expression comes from the enum above, never from input; the
     // values are bound. "C" orders keys by bytes, as the API always has.
@@ -64,14 +116,31 @@ pub async fn usage(
          sum(cache_read_tokens)::bigint AS cache_read_tokens, sum(cache_write_tokens)::bigint AS cache_write_tokens, \
          sum(reasoning_tokens)::bigint AS reasoning_tokens, sum(cost) AS cost \
          FROM usage_daily WHERE org_id = $1 AND ($2::uuid IS NULL OR project_id = $2) AND day >= $3 AND day <= $4 \
+         AND ($5::text IS NULL OR provider = $5) AND ($6::text IS NULL OR model_id = $6) \
+         AND ($7::uuid IS NULL OR coalesce(api_key_id, '00000000-0000-0000-0000-000000000000') = $7) \
+         AND ($8::uuid IS NULL OR user_id = $8) \
+         AND ($9::uuid IS NULL OR (user_id IS NULL AND service_account_id = $9)) \
+         AND ($10::text IS NULL OR (ingress_dialect = $10 AND egress_dialect = $11 AND provider = $12)) \
+         AND ($13::text IS NULL OR provider = $13) \
          GROUP BY 1 ORDER BY ({key}) COLLATE \"C\"",
         key = group.key()
     );
+    let route = filter.route.as_ref();
+    let model = filter.model.as_ref();
     Ok(sqlx::query_as::<_, UsageGroup>(sqlx::AssertSqlSafe(sql))
         .bind(org)
         .bind(project)
         .bind(from)
         .bind(to)
+        .bind(filter.provider.as_deref())
+        .bind(model.map(|m| m.id.as_str()))
+        .bind(filter.key)
+        .bind(filter.user())
+        .bind(filter.service_account())
+        .bind(route.map(|r| r.ingress_dialect.as_str()))
+        .bind(route.map(|r| r.egress_dialect.as_str()))
+        .bind(route.map(|r| r.provider.as_str()))
+        .bind(model.and_then(|m| m.provider.as_deref()))
         .fetch_all(db)
         .await?)
 }
@@ -139,7 +208,8 @@ pub struct ToolUsageGroup {
     pub errors: i64,
 }
 
-// Tool calls are counted by day, project and server only, so only those groupings have them.
+// Tool calls are counted by day, project and server only, so only those groupings and no
+// other filter have them.
 pub async fn tool_usage(
     db: impl PgExecutor<'_>,
     org: Uuid,
@@ -147,11 +217,14 @@ pub async fn tool_usage(
     from: Date,
     to: Date,
     group: GroupBy,
+    filter: &Filter,
 ) -> Result<Vec<ToolUsageGroup>, StoreError> {
-    if !matches!(
-        group,
-        GroupBy::Day | GroupBy::Week | GroupBy::Month | GroupBy::Project
-    ) {
+    if filter.narrows_requests()
+        || !matches!(
+            group,
+            GroupBy::Day | GroupBy::Week | GroupBy::Month | GroupBy::Project
+        )
+    {
         return Ok(Vec::new());
     }
     let sql = format!(
