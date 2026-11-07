@@ -10,15 +10,20 @@ Jede E-Mail, die Kaeso sendet, stammt aus `crates/kaeso-mail`: ein Layout, ein a
 
 | Teil | In der Anmelde-E-Mail | Stil |
 | --- | --- | --- |
-| Wortmarke | Kaeso | Allein, oben links, 28 px nach innen und 28 px nach unten |
+| Wortmarke oder Titelbild | Kaeso | Die Wortmarke allein, oben links; Ankündigungen beginnen stattdessen mit einem [Titelbild](#titelbilder) |
+| Wo, wenn eine Benachrichtigung eine Organisation oder ein Projekt betrifft | Acme / Checkout | `small`, tertiär, über der Überschrift |
 | Überschrift | Bei Kaeso anmelden | `title-lg` |
 | Ein Satz | Der Link funktioniert einmal und läuft in 15 Minuten ab. | `body-lg`, sekundär |
-| Details, wenn es Fakten gibt | Organisation: Acme, Anbieter: Anthropic, Schlüssel: Production (…8QAA) | Eine Liste aus Bezeichnung und Wert, `small` tertiär und `body-lg` |
-| Ein Button | Anmelden | Die Pille `xl`, Tinte auf Weiß |
+| Kennzahlen, wenn ein Bericht sie hat | 12.480 Anfragen, 312 Tool-Aufrufe, 41,20 $ | Eine Fläche mit bis zu drei Werten, `title` und `caption` |
+| Details, wenn es Fakten gibt | Organisation: Acme, Anbieter: Anthropic, Schlüssel: Production (…8QAA) | Bezeichnung und Wert zwischen Haarlinien, `small` tertiär und `body-lg` |
+| Eine Tabelle, wenn ein Bericht Projekte aufführt | Checkout, 9.120, 30,10 $ | Zeilen zwischen Haarlinien, Zahlen rechtsbündig in Tabellenziffern, bei mehreren Organisationen unter dem Namen jeder Organisation gruppiert |
+| Eine Liste, wenn es Änderungen gibt | Was sich ändert, dann bis zu vier Zeilen der Release-Notizen; in der Zusammenfassung die Zeilen unter Acme oder Acme / Checkout | Eine kurze Bezeichnung und Zeilen mit Aufzählungspunkten |
+| Ein Button | Anmelden | Die Pille `xl`, Tinte auf Weiß, 48 px hoch |
+| Ein Textlink, wenn es mehr zu lesen gibt | Release-Notizen lesen | Unterstrichen, Tinte |
 | Eine leise Zeile | Wenn Sie keine Anmeldung angefordert haben, können Sie diese E-Mail ignorieren. | `small`, tertiär |
 | Fußzeile | Gesendet von Kaeso unter kaeso.example.com. | `caption` |
 
-- **Keine Karte.** Eine einzige linksbündige Spalte, höchstens 562 px breit, auf der Fläche: weiß im hellen Modus, schwarz im dunklen.
+- **Keine Karte.** Eine einzige linksbündige Spalte, höchstens 560 px breit, auf der Fläche: weiß im hellen Modus, schwarz im dunklen. Die Abstände folgen dem 8-px-Raster, zwischen Gruppen mit mehr Raum als in ihnen; auf dem Telefon schrumpfen die Ränder auf 16 px und die Überschrift auf 24 px.
 - **Längen.** Ein Betreff von höchstens 60 Zeichen ohne Punkt, eine Überschrift von höchstens 48 und Sätze von höchstens 100. Deutsch und Chinesisch bekommen 15 % mehr: 69, 55 und 115. Ein Test setzt die Grenzen durch.
 - **Details benennen die Sache.** Eine E-Mail über einen Schlüssel, ein Budget oder ein Modell beantwortet was, wo und wann von selbst: Eine Liste aus Bezeichnungen und Werten unter dem Satz nennt die Organisation, das Projekt, den Anbieter, den Schlüssel und seine letzten vier Zeichen, den verbrauchten Betrag und wann er zurückgesetzt wird, die Antwort des Anbieters und die Zeitpunkte. Jede sendende Stelle übergibt, was sie weiß; die E-Mail rät nie.
 - **Keine nackten Links.** Das HTML zeigt nie eine URL; der Button trägt sie. Der Textteil enthält den vollständigen Link auf einer eigenen Zeile und sagt dieselben Worte in derselben Reihenfolge.
@@ -35,13 +40,13 @@ Text und HTML jeder E-Mail sind Snapshots in `crates/kaeso-mail/src/snapshots/`.
 | `locale.rs` | `Locale` (`en`, `de`, `zh-CN`) sowie Datumsangaben und Zahlen, wie jede Sprache sie schreibt |
 | `layout.rs` | Das gemeinsame Layout, als HTML mit maud und als reiner Text |
 | `style.rs` | Die Werte von `@logicplanes/kaeso-tokens` in seinem Makro `token!`, der Inline-Stil jeder Rolle und das Stylesheet. Das Layout schreibt nie eine eigene Farbe oder Größe |
-| `assets.rs`, `assets/` | Die Bilder der Wortmarke und ihre SVG-Quellen |
+| `assets.rs`, `assets/` | Die Bilder der Wortmarke und der Titelbilder und ihre SVG-Quellen |
 | `mailer.rs` | Eine Warteschlange für bis zu 1.024 E-Mails, drei Wiederholungen nach 1, 5 und 30 Sekunden, die Transporte SMTP, Log und Speicher sowie die MIME-Struktur |
 
-- **E-Mail-taugliches HTML.** Tabellen geben die Struktur vor, und alles, was ein Inline-Stil sein kann, ist einer. Ein `<style>`-Block enthält nur Farbschemata, Resets und den Dunkelmodus. Bedingte Kommentare geben Outlook für Windows eine feste Spalte von 562 px. Keine Webfonts, externen Bilder, Skripte oder Tracking-Pixel.
+- **E-Mail-taugliches HTML.** Tabellen geben die Struktur vor, und alles, was ein Inline-Stil sein kann, ist einer. Ein `<style>`-Block enthält nur Farbschemata, Resets und den Dunkelmodus. Bedingte Kommentare geben Outlook für Windows eine feste Spalte von 560 px. Keine Webfonts, externen Bilder, Skripte oder Tracking-Pixel.
 - **Der Button** ist ein Link mit Innenabstand und vollem Radius. Für Outlook für Windows, das einen Link weder auffüllen noch runden kann, ist er ein VML-`roundrect`, dessen Breite aus der Beschriftung kommt, sodass er nie umbricht.
 - **Escaping.** maud escapet die Namen, die Menschen wählen, etwa Organisationen, Schlüssel und Projekte, in Text und Attributen. Das einzige nicht escapete Markup ist fest: der Doctype, die bedingten Kommentare für Outlook und der VML-Button, der escapet, was er einbettet. Tests schicken Markup und Anführungszeichen durch jeden Namen.
-- **MIME.** `multipart/alternative` mit dem Text zuerst und einem HTML-Teil, der beide PNGs der Wortmarke per `Content-ID` eingebettet trägt, sodass Mail-Apps sie nicht als Anhänge aufführen.
+- **MIME.** `multipart/alternative` mit dem Text zuerst und einem HTML-Teil, der die Bilder, die er zeigt, per `Content-ID` eingebettet trägt, die beiden PNGs der Wortmarke oder das Titelbild, sodass Mail-Apps sie nicht als Anhänge aufführen.
 
 ## Benachrichtigungen
 
@@ -51,7 +56,7 @@ Text und HTML jeder E-Mail sind Snapshots in `crates/kaeso-mail/src/snapshots/`.
 2. `dispatch::kinds` ordnet jeder Audit-`Action` die Arten zu, über die sie benachrichtigt, in einem `match` ohne Platzhalter, sodass eine neue Aktion eine Entscheidung braucht. Ereignisse ohne Aktion rufen `system` direkt auf: eine Verbindung oder ein Anbieterkonto, das sich abmeldet, ein zurückgehaltenes Tool, ein dreimal nacheinander abgelehnter Anbieter-Schlüssel, ein abgeschlossener Export, ein aufgebrauchtes hartes Budget und eine neue Version.
 3. Empfänger ergeben sich aus Rechten, nie aus Rollennamen: aus den Rechten der Art im Benachrichtigungskatalog von `kaeso-core`, gehalten in der Organisation oder dem Projekt, aus den Instanz-Admins oder aus der Person, um die es geht. Wer gehandelt hat, bleibt außen vor, außer bei Sicherheits-E-Mails.
 4. Die Einstellung jeder Person wählt sofort, täglich oder aus, und eine stummgeschaltete Organisation stoppt alles außer Sicherheits-E-Mails. `notifications_sent` hält eine E-Mail pro Thema und Tag, und über 20 sofortige E-Mails pro Stunde kommt der Rest in `notification_digest`.
-5. Der Job `notifications` läuft jede Minute. Um 8:31 Uhr in der Zeitzone der Installation sendet er wartende Zusammenfassungen, am 1. den monatlichen Kostenbericht und montags die Wochenübersicht.
+5. Der Job `notifications` läuft jede Minute. Um 8:31 Uhr in der Zeitzone der Installation sendet er wartende Zusammenfassungen, am 1. den monatlichen Kostenbericht und montags die Wochenübersicht. Die Wochenübersicht nennt die Woche und jede Organisation, und ihr Button öffnet die Nutzung dieser Woche; eine Zeile der Zusammenfassung behält die Organisation und das Projekt, um die es ging, sodass die Zusammenfassung ihre Zeilen danach gruppiert.
 
 ## Sprachen
 
@@ -63,8 +68,10 @@ Die Funktion jeder E-Mail hat ein `match` auf die Sprache, mit ganzen Sätzen un
 
 | | Englisch | Deutsch | Chinesisch |
 | --- | --- | --- | --- |
-| Datum | `2026-10-14` | `14. Okt. 2026` | `2026年10月14日` |
-| Betrag | `1250` | `1.250` | `1,250` |
+| Datum | `14 Oct 2026` | `14. Okt. 2026` | `2026年10月14日` |
+| Monat | `October 2026` | `Oktober 2026` | `2026年10月` |
+| Betrag | `1,250` | `1.250` | `1,250` |
+| Dollar | `$1,250.00` | `1.250,00 $` | `$1,250.00` |
 | Prozent | `80%` | `80 %` | `80%` |
 
 ## Die Wortmarke
@@ -76,6 +83,19 @@ Jedes PNG hat die dreifache Anzeigegröße und wird aus `assets/wordmark-light.s
 ```bash
 KAESO_UPDATE_MAIL_ASSETS=1 cargo test -p kaeso-mail assets
 ```
+
+## Titelbilder
+
+Ankündigungen beginnen mit einem Titelbild statt der Wortmarke: Einladungen, Links zur Registrierung und Einrichtung, die Test-E-Mail, eine neue App, eine angenommene Einladung, die Wochenübersicht, die Zusammenfassung, der monatliche Kostenbericht und eine neue oder installierte Version. Warnungen, Sicherheits- und Organisations-E-Mails nie; sie bleiben kurz und beginnen mit der Wortmarke.
+
+Jedes Titelbild ist die Release-Grafik von Kaeso, gezeichnet von `drawReleaseArt` in `packages/ui` in ihrer breiten Form, mit der Wortmarke in der Ecke, die die Grafik frei lässt. Es reist eingebettet wie die Wortmarke: ein PNG mit 1120 × 480 Pixeln, angezeigt mit 560 × 240, unter 60 KB, mit Alternativtext in jeder Sprache. Es enthält keinen Text außer der Wortmarke, braucht also keine Übersetzung und sieht hell und dunkel gleich aus. `scripts/mail-covers.mjs` schreibt die SVGs, ein Test daneben prüft sie gegen die Release-Grafik, und der Asset-Test rendert die PNGs daraus. So zeichnen Sie sie neu, nachdem sich die Release-Grafik geändert hat:
+
+```bash
+node scripts/mail-covers.mjs
+KAESO_UPDATE_MAIL_ASSETS=1 cargo test -p kaeso-mail assets
+```
+
+Die E-Mail zu einer neuen Version schreibt die Version als Text, nicht ins Titelbild. Sie führt die ersten vier Änderungen der Release-Notizen auf und wie viele weitere es gibt, sagt, ob sich das Release im Update-Fenster selbst installiert, über die Update-Seite oder von Hand, und verlinkt die Notizen.
 
 ## Dunkelmodus
 
@@ -95,4 +115,4 @@ Der [Entwicklungs-Stack](../stack.md) enthält Mailpit, dessen Weboberfläche un
 cargo test -p kaeso-mail --test smtp
 ```
 
-Der Test prüft, dass jede E-Mail mit beiden Teilen und beiden eingebetteten Bildern ankommt und dass die HTML-Prüfung von Mailpit genug Unterstützung über die Mail-Apps meldet. Danach löscht er seine Nachrichten. `KAESO_TEST_SMTP_URL` und `KAESO_TEST_MAIL_API` lenken ihn anderswohin.
+Der Test prüft, dass jede E-Mail mit beiden Teilen und genau den Bildern, die sie zeigt, eingebettet ankommt und dass die HTML-Prüfung von Mailpit genug Unterstützung über die Mail-Apps meldet. Danach löscht er seine Nachrichten. `KAESO_TEST_SMTP_URL` und `KAESO_TEST_MAIL_API` lenken ihn anderswohin.

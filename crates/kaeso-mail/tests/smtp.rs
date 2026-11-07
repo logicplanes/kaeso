@@ -1,12 +1,15 @@
 use std::time::Duration;
 
+use kaeso_mail::notices::{
+    self, Because, DigestItem, Fact, Install, Links, Notes, ProjectUse, Update,
+};
 use kaeso_mail::templates::{self, Email};
 use kaeso_mail::{
     Actor, Budget, BudgetAlert, BudgetScope, Instance, LimitKind, LimitPeriod, Locale, Mailer,
     SmtpSecurity, SmtpSettings, Transport,
 };
 use serde_json::Value;
-use time::macros::date;
+use time::macros::{date, datetime};
 
 const MIN_SUPPORTED: f64 = 88.0;
 
@@ -55,7 +58,10 @@ fn every_email(to: &str) -> Vec<Email> {
                     l,
                     to,
                     "ci-deploy",
-                    "Default project",
+                    notices::Place {
+                        organization: "Acme",
+                        project: Some("Default project"),
+                    },
                     expires.midnight(),
                     "UTC",
                     url,
@@ -76,7 +82,78 @@ fn every_email(to: &str) -> Vec<Email> {
                 ),
                 templates::test(l, to),
             ]
+            .into_iter()
+            .chain(reports(l, to))
         })
+        .collect()
+}
+
+fn reports(l: Locale, to: &str) -> Vec<Email> {
+    let links = Links {
+        settings: "https://kaeso.example.com/settings/account/notifications".to_owned(),
+        unsubscribe: None,
+    };
+    let open = "https://kaeso.example.com/settings/instance/updates";
+    let project = |name: &str, requests: Option<&str>, cost: &str| ProjectUse {
+        organization: "Acme".to_owned(),
+        name: name.to_owned(),
+        requests: requests.map(str::to_owned),
+        cost: cost.to_owned(),
+    };
+    let facts = [
+        Fact::WeeklySummary {
+            from: date!(2026 - 11 - 02),
+            to: date!(2026 - 11 - 08),
+            requests: "12480".to_owned(),
+            tool_calls: "312".to_owned(),
+            cost: "41.20".to_owned(),
+            projects: vec![project("Checkout", Some("9120"), "30.10")],
+            top_models: vec!["gpt-4o".to_owned()],
+        },
+        Fact::CostReport {
+            month: date!(2026 - 10 - 01),
+            total: "412.50",
+            projects: vec![project("Checkout", None, "300.00")],
+        },
+        Fact::InstanceUpdate {
+            version: "0.6.0",
+            change: Update::Available {
+                running: "0.5.6",
+                install: Install::Window {
+                    at: datetime!(2026 - 11 - 09 03:00),
+                    zone: "UTC",
+                },
+            },
+            notes: Some(Notes {
+                markdown: "### Added\n\n- Cerebras is a built-in provider [#642](https://github.com/logicplanes/kaeso/pull/642)\n",
+                url: "https://github.com/logicplanes/kaeso/releases/tag/v0.6.0",
+            }),
+        },
+    ];
+    facts
+        .iter()
+        .map(|fact| {
+            notices::notice(
+                l,
+                to,
+                None,
+                fact,
+                Because::Right("usage.view"),
+                open,
+                &links,
+            )
+        })
+        .chain([notices::digest(
+            l,
+            to,
+            &[DigestItem {
+                line: "Grace Hopper left".to_owned(),
+                organization: Some("Acme".to_owned()),
+                project: None,
+            }],
+            open,
+            &links,
+        )])
         .collect()
 }
 
@@ -146,20 +223,24 @@ async fn every_email_reaches_an_smtp_server_whole() {
             .any(|footer| text.contains(footer)),
             "{subject}: no plain text"
         );
-        assert!(
-            msg["HTML"]
-                .as_str()
-                .unwrap_or_default()
-                .contains("cid:wordmark-light@kaeso"),
-            "{subject}: no HTML"
-        );
+        let html = msg["HTML"].as_str().unwrap_or_default();
+        let referenced: Vec<&str> = html
+            .match_indices("src=\"cid:")
+            .filter_map(|(at, _)| html[at + 9..].split('"').next())
+            .collect();
+        assert!(!referenced.is_empty(), "{subject}: no HTML images");
         let inline: Vec<&str> = msg["Inline"]
             .as_array()
             .map(|a| a.iter().filter_map(|p| p["ContentID"].as_str()).collect())
             .unwrap_or_default();
-        assert!(
-            inline.contains(&"wordmark-light@kaeso") && inline.contains(&"wordmark-dark@kaeso"),
-            "{subject}: inline images {inline:?}"
+        let mut wanted = referenced.clone();
+        wanted.sort_unstable();
+        wanted.dedup();
+        let mut attached = inline.clone();
+        attached.sort_unstable();
+        assert_eq!(
+            attached, wanted,
+            "{subject}: every inline image is shown and every shown image is inline"
         );
         assert_eq!(
             msg["Attachments"].as_array().map_or(0, Vec::len),

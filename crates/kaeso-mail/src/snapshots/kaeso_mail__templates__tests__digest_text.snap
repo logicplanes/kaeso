@@ -2,14 +2,18 @@
 source: crates/kaeso-mail/src/templates.rs
 expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
 ---
-Subject: 2 updates from Kaeso
+Subject: 4 updates from Kaeso
 
-2 updates from Kaeso
+4 updates from Kaeso
 
 Here is what happened since the last summary.
 
-- [Acme] Grace Hopper left
-- [Checkout] Content logging is off
+- Grace Hopper signed up
+Acme
+- Grace Hopper left
+Acme / Checkout
+- Content logging is off
+- Content logging is on
 
 Open Kaeso:
 https://kaeso.example.com/orgs/org_1

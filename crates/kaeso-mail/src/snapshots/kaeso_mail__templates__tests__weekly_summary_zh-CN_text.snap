@@ -6,15 +6,22 @@ Subject: 您在 Kaeso 的一周
 
 您在 Kaeso 的一周
 
-上周您的项目发送了 12480 次请求和 312 次工具调用，成本为 $41.20。
+以下是您的项目在 2026年11月2日–8日期间使用 Kaeso 的情况。
 
-- Checkout：9120 次请求，$30.10
-- Support：3360 次请求，$11.10
+请求： 12,480
+工具调用： 312
+成本： $41.20
+
+常用模型： claude-haiku-4-5、gpt-4o
+
+Acme
+- Checkout：9,120 次请求，$30.10
+- Support：960 次请求，$2.50
+Globex
+- Research：2,400 次请求，$8.60
 
 打开用量：
 https://kaeso.example.com/orgs/org_1
-
-常用模型：claude-haiku-4-5、gpt-4o。
 
 -- 
 此邮件由 kaeso.example.com 上的 Kaeso 发送。

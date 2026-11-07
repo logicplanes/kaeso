@@ -7,7 +7,9 @@ use kaeso_core::limits::{Limit, Subject};
 use kaeso_core::notifications::Kind;
 use kaeso_core::rights::{OrgRight, ProjectRight};
 use kaeso_mail::BudgetScope;
-use kaeso_mail::notices::{Answer, Because, Credential, Export, Fact, ProviderKey, Update};
+use kaeso_mail::notices::{
+    Answer, Because, Credential, Export, Fact, Install, ProviderKey, Update,
+};
 use kaeso_store::pg::mcp_servers::ServerRow;
 use kaeso_store::pg::{credentials, keys, service_accounts};
 use time::{OffsetDateTime, PrimitiveDateTime};
@@ -394,14 +396,37 @@ pub async fn limit_reached(
 }
 
 pub async fn update_available(state: &AppState, version: &str) {
-    warn(
-        super::triggers::update(
-            state,
-            version,
-            Update::Available,
-            format!("available:{version}"),
-        )
-        .await,
-        "update_available",
-    );
+    warn(available(state, version).await, "update_available");
+}
+
+async fn available(state: &AppState, version: &str) -> ApiResult<usize> {
+    use crate::services::updates;
+    let settings = kaeso_store::pg::updates::settings(&state.pg).await?;
+    let releases = updates::known(kaeso_store::pg::updates::releases(&state.pg).await?);
+    let manual = updates::plan(&settings, &releases).and_then(|p| p.manual);
+    let timezone = kaeso_store::pg::instance::time_zone(&state.pg).await?;
+    let zone = crate::time_zone::or_utc(&timezone);
+    let zone_name = zone.iana_name().unwrap_or("UTC");
+    let install = if manual.is_some() || crate::services::updater::of(state).is_none() {
+        Install::ByHand
+    } else {
+        match updates::next_auto_update(&settings, &timezone, state.clock.now()) {
+            Some(at) => Install::Window {
+                at: local(at, &zone),
+                zone: zone_name,
+            },
+            None => Install::FromConsole,
+        }
+    };
+    let running = updates::running().to_string();
+    super::triggers::update(
+        state,
+        version,
+        Update::Available {
+            running: &running,
+            install,
+        },
+        format!("available:{version}"),
+    )
+    .await
 }

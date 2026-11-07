@@ -2,9 +2,11 @@
 source: crates/kaeso-mail/src/templates.rs
 expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
 ---
-Subject: [Acme] 2026-10 cost $412.50
+Subject: [Acme] October 2026 cost $412.50
 
-2026-10 cost $412.50
+October 2026 cost $412.50
+
+Acme
 
 These projects cost the most last month.
 

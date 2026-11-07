@@ -1,6 +1,6 @@
 use time::PrimitiveDateTime;
 
-use crate::layout::{Content, Instance, Label, Reason, never};
+use crate::layout::{Content, Cover, Instance, Label, Reason, never};
 use crate::locale::{Locale, zh};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -114,6 +114,7 @@ pub struct Rendered {
     pub subject: String,
     pub text: String,
     pub html: String,
+    pub images: Vec<crate::assets::Image>,
     pub list_unsubscribe: Option<String>,
 }
 
@@ -142,6 +143,7 @@ impl Email {
             subject: self.subject.clone(),
             text: crate::layout::text(&self.content, instance),
             html: crate::layout::html(&self.subject, &self.content, instance),
+            images: self.content.images(),
             list_unsubscribe: self.list_unsubscribe.clone(),
         }
     }
@@ -226,6 +228,14 @@ pub struct Budget {
 
 impl Budget {
     pub fn english(&self) -> String {
+        format!(
+            "{} of {}",
+            self.label_en(),
+            self.quantity_of(Locale::En, self.amount.clone())
+        )
+    }
+
+    pub(crate) fn english_grouped(&self) -> String {
         format!(
             "{} of {}",
             self.label_en(),
@@ -323,7 +333,10 @@ impl Budget {
     }
 
     pub(crate) fn quantity(&self, lang: Locale, plain: &str) -> String {
-        let n = lang.number(plain);
+        self.quantity_of(lang, lang.number(plain))
+    }
+
+    fn quantity_of(&self, lang: Locale, n: String) -> String {
         match (lang, self.kind) {
             (Locale::En, LimitKind::RequestRate) => format!("{n} requests per minute"),
             (Locale::En, LimitKind::TokenRate) => format!("{n} tokens per minute"),
@@ -513,6 +526,7 @@ pub fn invitation<'a>(
         EmailKind::Invitation,
         subject,
         Content::new(lang, heading, Reason::Request)
+            .cover(Cover::Welcome)
             .sentence(sentence)
             .action(action, url)
             .note(invitation_note(lang)),
@@ -588,6 +602,7 @@ pub fn instance_invitation<'a>(
         EmailKind::InstanceInvitation,
         subject,
         Content::new(lang, heading, Reason::Request)
+            .cover(Cover::Welcome)
             .sentence(sentence)
             .action(action, url)
             .note(invitation_note(lang)),
@@ -652,6 +667,7 @@ pub fn setup_link(lang: Locale, to: &str, url: &str) -> Email {
         EmailKind::SetupLink,
         subject.to_owned(),
         Content::new(lang, subject, Reason::Request)
+            .cover(Cover::Welcome)
             .sentence(sentence)
             .action(action, url)
             .note(note),
@@ -757,6 +773,7 @@ pub fn signup(lang: Locale, to: &str, url: &str) -> Email {
         EmailKind::Signup,
         subject.to_owned(),
         Content::new(lang, heading, Reason::Request)
+            .cover(Cover::Welcome)
             .sentence(sentence)
             .action(action, url)
             .note(note),
@@ -1145,7 +1162,7 @@ pub fn key_expiry_warning(
     lang: Locale,
     to: &str,
     key: &str,
-    project: &str,
+    place: crate::notices::Place<'_>,
     expires: PrimitiveDateTime,
     zone: &str,
     url: &str,
@@ -1158,6 +1175,13 @@ pub fn key_expiry_warning(
         expires.hour().to_string(),
         format!("{:02}", expires.minute()),
     );
+    let project = place.project.unwrap_or_default();
+    let details = vec![
+        Label::Organization.of(lang, place.organization),
+        Label::Project.of(lang, project),
+        Label::Key.of(lang, key),
+        Label::Expires.of(lang, lang.moment(expires, zone)),
+    ];
     let expires = lang.date(expires.date());
     let (subject, heading, sentence, action, note) = match lang {
         Locale::En => (
@@ -1203,6 +1227,7 @@ pub fn key_expiry_warning(
         subject,
         Content::new(lang, heading, Reason::Alert)
             .sentence(sentence)
+            .details(details)
             .action(action, url)
             .note(note),
     )
@@ -1231,7 +1256,7 @@ pub fn budget_alert(lang: Locale, to: &str, alert: &BudgetAlert<'_>, url: &str) 
             format!(
                 "{who} has used {p} of {} {}.",
                 scope.its_en(),
-                budget.english()
+                budget.english_grouped()
             ),
             "Open limits",
         ),
@@ -1297,7 +1322,9 @@ pub fn test(lang: Locale, to: &str) -> Email {
         to,
         EmailKind::Test,
         subject.to_owned(),
-        Content::new(lang, heading, Reason::Request).sentence(sentence),
+        Content::new(lang, heading, Reason::Request)
+            .cover(Cover::Welcome)
+            .sentence(sentence),
     )
 }
 
@@ -1311,6 +1338,7 @@ mod tests {
     const URL: &str =
         "https://kaeso.example.com/auth/magic-link#token=kGq3VbX9yZ2mN7pR4sT8uW1aC5dE6fH0jK";
     const RESET_URL: &str = "https://kaeso.example.com/auth/password-reset";
+    const RELEASE_NOTES: &str = "This release adds Cerebras and speeds up streams.\n\n### Added\n\n- Cerebras is a built-in provider: add its key and call its models from any app format [#642](https://github.com/logicplanes/kaeso/pull/642)\n\n### Changed\n\n- **Gateway:** The gateway serves more requests per second under heavy load and spends less CPU on each [#600](https://github.com/logicplanes/kaeso/pull/600)\n- **KPP:** Kaeso translates streamed replies with less work per chunk, 1.3 to 1.6 times faster for the common pairs [#641](https://github.com/logicplanes/kaeso/pull/641)\n\n### Fixed\n\n- Streamed tool calls keep the tool name the app defined [#598](https://github.com/logicplanes/kaeso/pull/598)\n- The `postgres.pool_size` setting now says it sizes each instance's pool ([#633](https://github.com/logicplanes/kaeso/pull/633))\n- Date pickers name the day you picked [#613](https://github.com/logicplanes/kaeso/pull/613)\n";
 
     fn instance() -> Instance {
         Instance::new("https://kaeso.example.com/")
@@ -1375,7 +1403,10 @@ mod tests {
                 l,
                 TO,
                 "ci-deploy",
-                "Default project",
+                crate::notices::Place {
+                    organization: "Acme",
+                    project: Some("Default project"),
+                },
                 datetime!(2026 - 10 - 18 0:00),
                 "UTC",
                 URL,
@@ -1418,7 +1449,7 @@ mod tests {
             zone: "UTC",
         };
         let one = |place: Option<&str>, fact: Fact<'_>, why: Because<'_>| {
-            notice(l, TO, place, &fact, why, open, &links)
+            notice(l, TO, place.map(at), &fact, why, open, &links)
         };
         vec![
             one(None, Fact::NewApp { app: "Claude" }, Because::AboutYou),
@@ -1430,19 +1461,29 @@ mod tests {
             one(
                 None,
                 Fact::WeeklySummary {
+                    from: date!(2026 - 11 - 02),
+                    to: date!(2026 - 11 - 08),
                     requests: "12480".to_owned(),
                     tool_calls: "312".to_owned(),
-                    cost: "$41.20".to_owned(),
+                    cost: "41.20".to_owned(),
                     projects: vec![
                         ProjectUse {
+                            organization: "Acme".to_owned(),
                             name: "Checkout".to_owned(),
                             requests: Some("9120".to_owned()),
-                            cost: "$30.10".to_owned(),
+                            cost: "30.10".to_owned(),
                         },
                         ProjectUse {
+                            organization: "Globex".to_owned(),
+                            name: "Research".to_owned(),
+                            requests: Some("2400".to_owned()),
+                            cost: "8.60".to_owned(),
+                        },
+                        ProjectUse {
+                            organization: "Acme".to_owned(),
                             name: "Support".to_owned(),
-                            requests: Some("3360".to_owned()),
-                            cost: "$11.10".to_owned(),
+                            requests: Some("960".to_owned()),
+                            cost: "2.50".to_owned(),
                         },
                     ],
                     top_models: vec!["claude-haiku-4-5".to_owned(), "gpt-4o".to_owned()],
@@ -1555,18 +1596,20 @@ mod tests {
             one(
                 Some("Acme"),
                 Fact::CostReport {
-                    month: "2026-10",
-                    total: "$412.50",
+                    month: date!(2026 - 10 - 01),
+                    total: "412.50",
                     projects: vec![
                         ProjectUse {
+                            organization: "Acme".to_owned(),
                             name: "Checkout".to_owned(),
                             requests: None,
-                            cost: "$300.00".to_owned(),
+                            cost: "300.00".to_owned(),
                         },
                         ProjectUse {
+                            organization: "Acme".to_owned(),
                             name: "Support".to_owned(),
                             requests: None,
-                            cost: "$112.50".to_owned(),
+                            cost: "112.50".to_owned(),
                         },
                     ],
                 },
@@ -1576,7 +1619,17 @@ mod tests {
                 None,
                 Fact::InstanceUpdate {
                     version: "0.6.0",
-                    change: Update::Available,
+                    change: Update::Available {
+                        running: "0.5.6",
+                        install: Install::Window {
+                            at: datetime!(2026 - 11 - 09 03:00),
+                            zone: "UTC",
+                        },
+                    },
+                    notes: Some(Notes {
+                        markdown: RELEASE_NOTES,
+                        url: "https://github.com/logicplanes/kaeso/releases/tag/v0.6.0",
+                    }),
                 },
                 Because::Right("instance.updates.manage"),
             ),
@@ -1599,19 +1652,37 @@ mod tests {
                 l,
                 TO,
                 &[
-                    line(
-                        l,
-                        Some("Acme"),
-                        &Fact::Member {
-                            person: "Grace Hopper",
-                            change: Membership::Left,
-                        },
-                    ),
-                    line(
-                        l,
-                        Some("Checkout"),
-                        &Fact::ContentLogging { on: false, by: ada },
-                    ),
+                    DigestItem {
+                        line: line(
+                            l,
+                            &Fact::Member {
+                                person: "Grace Hopper",
+                                change: Membership::Left,
+                            },
+                        ),
+                        organization: Some("Acme".to_owned()),
+                        project: None,
+                    },
+                    DigestItem {
+                        line: line(l, &Fact::ContentLogging { on: false, by: ada }),
+                        organization: Some("Acme".to_owned()),
+                        project: Some("Checkout".to_owned()),
+                    },
+                    DigestItem {
+                        line: line(l, &Fact::ContentLogging { on: true, by: ada }),
+                        organization: Some("Acme".to_owned()),
+                        project: Some("Checkout".to_owned()),
+                    },
+                    DigestItem {
+                        line: line(
+                            l,
+                            &Fact::SignedUp {
+                                person: "Grace Hopper",
+                            },
+                        ),
+                        organization: None,
+                        project: None,
+                    },
                 ],
                 open,
                 &Links {
@@ -1620,6 +1691,13 @@ mod tests {
                 },
             ),
         ]
+    }
+
+    fn at(place: &str) -> crate::notices::Place<'_> {
+        crate::notices::Place {
+            organization: "Acme",
+            project: (place != "Acme").then_some(place),
+        }
     }
 
     fn visible_text(html: &str) -> String {
@@ -1725,19 +1803,373 @@ mod tests {
                 r#"<meta name="supported-color-schemes" content="light dark">"#,
                 ":root{color-scheme:light dark;supported-color-schemes:light dark}",
                 "@media (prefers-color-scheme:dark){",
-                "[data-ogsc] .k-text{",
+                "[data-ogsc] .k-text,",
                 "[data-ogsb] .k-bg{",
-                r#"src="cid:wordmark-light@kaeso""#,
-                r#"src="cid:wordmark-dark@kaeso""#,
-                r#"alt="Kaeso""#,
                 "Sent by Kaeso at",
             ] {
                 assert!(r.html.contains(needle), "{kind}: {needle}");
+            }
+            let heads = match email.content.cover {
+                Some(cover) => vec![format!(r#"src="cid:{}""#, cover.image().cid)],
+                None => vec![
+                    r#"src="cid:wordmark-light@kaeso""#.to_owned(),
+                    r#"src="cid:wordmark-dark@kaeso""#.to_owned(),
+                    r#"alt="Kaeso""#.to_owned(),
+                ],
+            };
+            for needle in heads {
+                assert!(r.html.contains(&needle), "{kind}: {needle}");
+            }
+            for cid in r
+                .html
+                .match_indices("src=\"cid:")
+                .map(|(at, _)| r.html[at + 9..].split('"').next().unwrap_or_default())
+            {
+                assert!(r.images.iter().any(|i| i.cid == cid), "{kind}: {cid}");
             }
             for banned in ["<link", "<script", "@import", "@font-face", "src=\"http"] {
                 assert!(!r.html.contains(banned), "{kind}: {banned}");
             }
             assert!(r.html.len() < 30 * 1024, "{kind}: {}", r.html.len());
+        }
+    }
+
+    #[test]
+    fn announcements_get_a_cover_and_alerts_stay_compact() {
+        let covered = [
+            EmailKind::Invitation,
+            EmailKind::InstanceInvitation,
+            EmailKind::SetupLink,
+            EmailKind::Signup,
+            EmailKind::Test,
+            EmailKind::NewApp,
+            EmailKind::WeeklySummary,
+            EmailKind::InviteAccepted,
+            EmailKind::CostReport,
+            EmailKind::InstanceUpdates,
+            EmailKind::Digest,
+        ];
+        for lang in Locale::ALL {
+            for email in all_in(lang) {
+                let kind = email.kind;
+                assert_eq!(
+                    email.content.cover.is_some(),
+                    covered.contains(&kind),
+                    "{}",
+                    kind.as_str()
+                );
+                let r = email.render(&instance());
+                assert_eq!(
+                    r.images
+                        .iter()
+                        .filter(|i| i.cid.starts_with("cover-"))
+                        .count(),
+                    usize::from(covered.contains(&kind)),
+                    "{}",
+                    kind.as_str()
+                );
+                if matches!(
+                    email.content.reason,
+                    Reason::Security | Reason::Alert | Reason::Org
+                ) {
+                    assert!(!r.html.contains("cid:cover-"), "{}", kind.as_str());
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn a_failed_update_has_no_cover_and_no_release_notes() {
+        use crate::notices::*;
+        let links = Links {
+            settings: "https://kaeso.example.com/settings".to_owned(),
+            unsubscribe: None,
+        };
+        for change in [Update::RolledBack, Update::Failed] {
+            let email = notice(
+                Locale::En,
+                TO,
+                None,
+                &Fact::InstanceUpdate {
+                    version: "0.6.0",
+                    change,
+                    notes: Some(Notes {
+                        markdown: RELEASE_NOTES,
+                        url: "https://github.com/logicplanes/kaeso/releases/tag/v0.6.0",
+                    }),
+                },
+                Because::Right("instance.updates.manage"),
+                "https://kaeso.example.com/settings/instance/updates",
+                &links,
+            );
+            assert_eq!(email.content.cover, None);
+            assert!(email.content.list.items.is_empty());
+            assert_eq!(email.content.link, None);
+        }
+    }
+
+    #[test]
+    fn the_update_email_says_how_it_installs_and_what_changed() {
+        use crate::notices::*;
+        let links = Links {
+            settings: "https://kaeso.example.com/settings".to_owned(),
+            unsubscribe: None,
+        };
+        let notes = Notes {
+            markdown: RELEASE_NOTES,
+            url: "https://github.com/logicplanes/kaeso/releases/tag/v0.6.0",
+        };
+        let at = datetime!(2026 - 11 - 09 03:00);
+        let cases = [
+            (
+                Locale::En,
+                Install::Window { at, zone: "UTC" },
+                "It installs by itself in the next update window.",
+                "By itself, 9 Nov 2026, 03:00 UTC",
+            ),
+            (
+                Locale::En,
+                Install::FromConsole,
+                "Install it from the updates page when it suits you.",
+                "From the updates page",
+            ),
+            (
+                Locale::En,
+                Install::ByHand,
+                "It needs steps by hand; the upgrade guide lists them.",
+                "By hand, with the upgrade guide",
+            ),
+            (
+                Locale::De,
+                Install::Window {
+                    at,
+                    zone: "Europe/Berlin",
+                },
+                "Es wird im nächsten Update-Fenster automatisch installiert.",
+                "Automatisch, 9. Nov. 2026, 03:00 Europe/Berlin",
+            ),
+            (
+                Locale::ZhCn,
+                Install::ByHand,
+                "此版本需要手动操作；升级指南列出了具体步骤。",
+                "按照升级指南手动更新",
+            ),
+        ];
+        for (lang, install, sentence, installs) in cases {
+            let email = notice(
+                lang,
+                TO,
+                None,
+                &Fact::InstanceUpdate {
+                    version: "0.6.0",
+                    change: Update::Available {
+                        running: "0.5.6",
+                        install,
+                    },
+                    notes: Some(notes),
+                },
+                Because::Right("instance.updates.manage"),
+                "https://kaeso.example.com/settings/instance/updates",
+                &links,
+            );
+            let c = &email.content;
+            assert_eq!(c.sentence.as_deref(), Some(sentence));
+            assert_eq!(c.details.last().map(|d| d.value.as_str()), Some(installs));
+            assert_eq!(c.details.first().map(|d| d.value.as_str()), Some("0.6.0"));
+            assert_eq!(c.list.items.len(), 4);
+            assert_eq!(c.list.lang, (lang != Locale::En).then_some(Locale::En));
+            assert_eq!(c.link.as_ref().map(|l| l.url.as_str()), Some(notes.url));
+            let html = email.render(&instance()).html;
+            assert!(html.contains(&format!(r#"href="{}""#, notes.url)));
+        }
+    }
+
+    #[test]
+    fn release_highlights_are_plain_short_sentences() {
+        let (items, more) = crate::notices::highlights(RELEASE_NOTES);
+        assert_eq!(
+            items,
+            [
+                "Cerebras is a built-in provider: add its key and call its models from any app format.",
+                "The gateway serves more requests per second under heavy load and spends less CPU on each.",
+                "Kaeso translates streamed replies with less work per chunk, 1.3 to 1.6 times faster for the common pairs.",
+                "Streamed tool calls keep the tool name the app defined.",
+            ]
+        );
+        assert_eq!(more, 2);
+        let (items, _) = crate::notices::highlights(
+            "- The `postgres.pool_size` setting now says it sizes each pool ([#633](https://github.com/logicplanes/kaeso/pull/633))\n- An MCP client known by its metadata document signs in again after registration churn trimmed its registration. Its description stayed cached for ten minutes after the row was gone, so it failed. ([#743](https://example.com))\n",
+        );
+        assert_eq!(
+            items,
+            [
+                "The postgres.pool_size setting now says it sizes each pool.",
+                "An MCP client known by its metadata document signs in again after registration churn trimmed its registration.",
+            ]
+        );
+        assert_eq!(crate::notices::highlights("No list here.\n"), (vec![], 0));
+        let long = format!("- {}\n", "word ".repeat(60));
+        let (items, _) = crate::notices::highlights(&long);
+        assert!(
+            items[0].ends_with('…') && items[0].chars().count() <= 161,
+            "{}",
+            items[0]
+        );
+    }
+
+    #[test]
+    fn usage_reports_format_numbers_and_dollars_per_language() {
+        let all = |lang| {
+            all_in(lang)
+                .into_iter()
+                .find(|e| e.kind == EmailKind::WeeklySummary)
+                .unwrap()
+        };
+        let en = all(Locale::En).render(&instance());
+        assert!(en.html.contains(">12,480</p>") && en.html.contains(">$41.20</p>"));
+        assert!(en.html.contains(">9,120</td>") && en.html.contains(">$30.10</td>"));
+        assert!(
+            en.text
+                .contains("Requests: 12,480\nTool calls: 312\nCost: $41.20\n"),
+            "{}",
+            en.text
+        );
+        assert!(
+            en.text.contains("- Checkout: 9,120 requests, $30.10\n"),
+            "{}",
+            en.text
+        );
+        assert!(en.html.contains(
+            "Last week your projects sent 12,480 requests and 312 tool calls for $41.20."
+        ));
+        let de = all(Locale::De).render(&instance());
+        assert!(de.html.contains(">12.480</p>") && de.html.contains(">41,20\u{a0}$</p>"));
+        let zh = all(Locale::ZhCn).render(&instance());
+        assert!(zh.text.contains("请求： 12,480\n"), "{}", zh.text);
+    }
+
+    #[test]
+    fn the_weekly_summary_names_each_organization_and_the_week() {
+        use crate::notices::*;
+        let links = Links {
+            settings: "https://kaeso.example.com/settings".to_owned(),
+            unsubscribe: None,
+        };
+        let project = |org: &str, name: &str| ProjectUse {
+            organization: org.to_owned(),
+            name: name.to_owned(),
+            requests: Some("10".to_owned()),
+            cost: "1.00".to_owned(),
+        };
+        let week = |lang, projects| {
+            notice(
+                lang,
+                TO,
+                None,
+                &Fact::WeeklySummary {
+                    from: date!(2026 - 10 - 27),
+                    to: date!(2026 - 11 - 02),
+                    requests: "20".to_owned(),
+                    tool_calls: "0".to_owned(),
+                    cost: "2.00".to_owned(),
+                    projects,
+                    top_models: Vec::new(),
+                },
+                Because::Right("usage.view"),
+                URL,
+                &links,
+            )
+        };
+        let one = vec![project("Acme", "Checkout"), project("Acme", "Support")];
+        let two = vec![project("Acme", "Checkout"), project("Globex", "Research")];
+        for (lang, single, several) in [
+            (
+                Locale::En,
+                "Here is how your projects in Acme used Kaeso, 27 Oct – 2 Nov 2026.",
+                "Here is how your projects used Kaeso, 27 Oct – 2 Nov 2026.",
+            ),
+            (
+                Locale::De,
+                "So haben Ihre Projekte in Acme Kaeso im Zeitraum 27. Okt. – 2. Nov. 2026 genutzt.",
+                "So haben Ihre Projekte Kaeso im Zeitraum 27. Okt. – 2. Nov. 2026 genutzt.",
+            ),
+            (
+                Locale::ZhCn,
+                "以下是您在 Acme 中的项目在 2026年10月27日–11月2日期间使用 Kaeso 的情况。",
+                "以下是您的项目在 2026年10月27日–11月2日期间使用 Kaeso 的情况。",
+            ),
+        ] {
+            let alone = week(lang, one.clone());
+            assert_eq!(alone.content.sentence.as_deref(), Some(single));
+            let rows = &alone.content.table.as_ref().unwrap().rows;
+            assert!(rows.iter().all(|r| !r.heading));
+            let both = week(lang, two.clone());
+            assert_eq!(both.content.sentence.as_deref(), Some(several));
+            let headings: Vec<&str> = both
+                .content
+                .table
+                .as_ref()
+                .unwrap()
+                .rows
+                .iter()
+                .filter(|r| r.heading)
+                .map(|r| r.text.as_str())
+                .collect();
+            assert_eq!(headings, ["Acme", "Globex"]);
+            let text = both.render(&instance()).text;
+            assert!(text.contains("Acme\n- Checkout"), "{text}");
+            assert!(text.contains("Globex\n- Research"), "{text}");
+        }
+    }
+
+    #[test]
+    fn the_digest_groups_its_lines_by_organization_and_project_without_brackets() {
+        let digest = all_in(Locale::En)
+            .into_iter()
+            .find(|e| e.kind == EmailKind::Digest)
+            .unwrap();
+        let list = &digest.content.list;
+        assert_eq!(list.items, ["Grace Hopper signed up"]);
+        let groups: Vec<(&str, usize)> = list
+            .groups
+            .iter()
+            .map(|g| (g.title.as_str(), g.items.len()))
+            .collect();
+        assert_eq!(groups, [("Acme", 1), ("Acme / Checkout", 2)]);
+        let r = digest.render(&instance());
+        assert!(!r.text.contains('[') && !visible_text(&r.html).contains('['));
+        assert!(r.text.contains(
+            "- Grace Hopper signed up\nAcme\n- Grace Hopper left\nAcme / Checkout\n- Content logging is off\n- Content logging is on\n"
+        ), "{}", r.text);
+    }
+
+    #[test]
+    fn a_notice_names_its_organization_and_project_in_the_body() {
+        for email in all_in(Locale::En) {
+            let r = email.render(&instance());
+            let Some(place) = email
+                .subject
+                .strip_prefix('[')
+                .and_then(|s| s.split_once(']'))
+            else {
+                continue;
+            };
+            let scope = if place.0 == "Acme" {
+                "Acme".to_owned()
+            } else {
+                format!("Acme / {}", place.0)
+            };
+            assert_eq!(email.content.eyebrow.as_deref(), Some(scope.as_str()));
+            assert!(
+                r.html.contains(&format!(">{scope}</p>")),
+                "{}",
+                email.kind.as_str()
+            );
+            assert!(
+                r.text.contains(&format!("\n\n{scope}\n\n")),
+                "{}",
+                email.kind.as_str()
+            );
         }
     }
 
@@ -1794,7 +2226,18 @@ mod tests {
                 sessions_ended(l, TO, evil),
                 org_scheduled_for_deletion(l, TO, evil, evil, day.midnight(), "UTC", URL),
                 ownership_transferred(l, TO, evil, evil, URL),
-                key_expiry_warning(l, TO, evil, evil, day.midnight(), "UTC", URL),
+                key_expiry_warning(
+                    l,
+                    TO,
+                    evil,
+                    crate::notices::Place {
+                        organization: evil,
+                        project: Some(evil),
+                    },
+                    day.midnight(),
+                    "UTC",
+                    URL,
+                ),
                 budget_alert(
                     l,
                     TO,
@@ -2180,10 +2623,13 @@ mod tests {
             ),
             (
                 EmailKind::CostReport,
-                ["[Acme] 2026-10 kostete $412.50", "2026-10 kostete $412.50"],
                 [
-                    "[Acme] 2026-10 的成本为 $412.50",
-                    "2026-10 的成本为 $412.50",
+                    "[Acme] Oktober 2026 kostete 412,50\u{a0}$",
+                    "Oktober 2026 kostete 412,50\u{a0}$",
+                ],
+                [
+                    "[Acme] 2026年10月的成本为 $412.50",
+                    "2026年10月的成本为 $412.50",
                 ],
             ),
             (
@@ -2209,8 +2655,8 @@ mod tests {
             ),
             (
                 EmailKind::Digest,
-                ["2 Neuigkeiten von Kaeso", "2 Neuigkeiten von Kaeso"],
-                ["Kaeso 的 2 条更新", "Kaeso 的 2 条更新"],
+                ["4 Neuigkeiten von Kaeso", "4 Neuigkeiten von Kaeso"],
+                ["Kaeso 的 4 条更新", "Kaeso 的 4 条更新"],
             ),
         ];
         for (lang, column) in [(Locale::De, 0), (Locale::ZhCn, 1)] {
@@ -2236,6 +2682,19 @@ mod tests {
                     .to_owned()
             })
             .collect()
+    }
+
+    fn without_german_abbreviations(line: &str) -> String {
+        let mut out = line.to_owned();
+        for month in [
+            "Jan.", "Feb.", "Apr.", "Aug.", "Sept.", "Okt.", "Nov.", "Dez.",
+        ] {
+            out = out.replace(&format!("{month} "), "month ");
+        }
+        for day in 1..=31 {
+            out = out.replace(&format!("{day}. "), "day ");
+        }
+        out
     }
 
     fn unspaced_seam(s: &str) -> Option<String> {
@@ -2292,7 +2751,7 @@ mod tests {
                 for line in [&c.sentence, &c.note].into_iter().flatten() {
                     assert!(line.chars().count() <= 115, "{kind}: {line}");
                     assert!(line.ends_with(stop), "{kind}: {line}");
-                    let body = line.trim_end_matches(stop);
+                    let body = without_german_abbreviations(line.trim_end_matches(stop));
                     assert!(
                         !body.contains(". ") && !body.contains('。'),
                         "{kind}: {line}"
@@ -2348,7 +2807,7 @@ mod tests {
         );
         let html = password_changed(Locale::ZhCn, TO).render(&instance()).html;
         assert!(html.contains(
-            r#"此邮件由 <a href="https://kaeso.example.com/" style="color:#707070;text-decoration:none;">kaeso.example.com</a> 上的 Kaeso 发送；安全通知始终会发送。"#
+            r#"此邮件由 <a href="https://kaeso.example.com/" style="color:#6b6b6b;text-decoration:none;">kaeso.example.com</a> 上的 Kaeso 发送；安全通知始终会发送。"#
         ));
     }
 
@@ -2427,6 +2886,10 @@ mod tests {
         };
         let tokens = b(LimitKind::TokenBudget, LimitPeriod::Day, "1500000");
         assert_eq!(tokens.english(), "daily token budget of 1500000 tokens");
+        assert_eq!(
+            tokens.english_grouped(),
+            "daily token budget of 1,500,000 tokens"
+        );
         assert_eq!(tokens.german_genitive(), "Tagesbudgets von 1.500.000 Token");
         assert_eq!(tokens.chinese(), "每日 Token 预算（1,500,000 个 Token）");
         let rate = b(LimitKind::RequestRate, LimitPeriod::Minute, "600");
@@ -2506,8 +2969,8 @@ mod tests {
         );
         let text = member.render(&instance()).text;
         assert!(text.contains("Applies to: Grace Hopper\n"), "{text}");
-        assert!(text.contains("Used: 750000 tokens (50%)\n"), "{text}");
-        assert!(text.contains("Resets: 2026-11-08 00:00 UTC\n"), "{text}");
+        assert!(text.contains("Used: 750,000 tokens (50%)\n"), "{text}");
+        assert!(text.contains("Resets: 8 Nov 2026, 00:00 UTC\n"), "{text}");
     }
 
     #[test]
@@ -2556,7 +3019,7 @@ mod tests {
             notice(
                 lang,
                 TO,
-                Some("Acme"),
+                Some(at("Acme")),
                 &Fact::ProviderKey { key, change },
                 Because::Right("provider_credentials.replace"),
                 URL,
@@ -2579,8 +3042,8 @@ mod tests {
             "Key: Logicplanes (…8QAA)\n",
             "Used by: Checkout\n",
             "Provider's answer: HTTP 402: Your credit balance is too low.\n",
-            "First refused: 2026-11-07 09:10 Europe/Berlin\n",
-            "Last refused: 2026-11-07 09:12 Europe/Berlin\n",
+            "First refused: 7 Nov 2026, 09:10 Europe/Berlin\n",
+            "Last refused: 7 Nov 2026, 09:12 Europe/Berlin\n",
             "Last used: never\n",
         ] {
             assert!(text.contains(line), "{line}\n{text}");
@@ -2633,7 +3096,7 @@ mod tests {
         );
         let text = signed_out.render(&instance()).text;
         assert!(
-            text.contains("Signed out: 2026-11-07 09:12 Europe/Berlin\n"),
+            text.contains("Signed out: 7 Nov 2026, 09:12 Europe/Berlin\n"),
             "{text}"
         );
         assert!(!text.contains("refused"), "{text}");
@@ -2701,7 +3164,7 @@ mod tests {
             notice(
                 lang,
                 TO,
-                Some("Checkout"),
+                Some(at("Checkout")),
                 &fact,
                 Because::Right("models.manage"),
                 URL,
@@ -2740,7 +3203,7 @@ mod tests {
         let text = notice(
             Locale::En,
             TO,
-            Some("Checkout"),
+            Some(at("Checkout")),
             &delisted,
             Because::Right("models.manage"),
             URL,
@@ -2815,7 +3278,10 @@ mod tests {
         );
         assert!(r.html.contains(">Verbraucht</td>"));
         assert!(r.html.contains(">40 USD (80\u{a0}%)</td>"));
-        let labels = r.html.matches("class=\"k-tertiary\" width=\"150\"").count();
+        let labels = r
+            .html
+            .matches("class=\"k-tertiary k-dt\" width=\"168\"")
+            .count();
         assert_eq!(labels, 6);
         let zh = budget_alert(
             Locale::ZhCn,

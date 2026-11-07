@@ -5,7 +5,7 @@ use kaeso_core::id::{OrgId, ProjectId, UserId};
 use kaeso_core::notifications::{Delivery, Kind};
 use kaeso_core::rights::{OrgRight, ProjectRight, Right, effective_project_rights};
 use kaeso_mail::Locale;
-use kaeso_mail::notices::{self, Because, Fact, Links, Unsubscribe};
+use kaeso_mail::notices::{self, Because, Fact, Links, Place, Unsubscribe};
 use kaeso_store::pg::{members, notifications, users};
 use serde_json::{Value, json};
 use uuid::Uuid;
@@ -297,6 +297,22 @@ pub async fn deliver(
             .collect(),
         _ => BTreeSet::new(),
     };
+    let organization = match (send.org, send.project, send.place) {
+        (Some(org), Some(_), Some(_)) => Some(super::triggers::org_name(state, org).await?),
+        _ => None,
+    };
+    let place = send
+        .place
+        .map(|name| match (send.project, organization.as_deref()) {
+            (Some(_), Some(org)) => Place {
+                organization: org,
+                project: Some(name),
+            },
+            _ => Place {
+                organization: name,
+                project: None,
+            },
+        });
     let now = state.clock.now();
     let zone = crate::time_zone::or_utc(&kaeso_store::pg::instance::time_zone(&state.pg).await?);
     let today = crate::time_zone::local(now, &zone).date();
@@ -333,7 +349,11 @@ pub async fn deliver(
                     kind: kind.as_str(),
                     org_id: send.org,
                     project_id: send.project,
-                    payload: json!({ "line": notices::line(lang, send.place, fact) }),
+                    payload: json!({
+                        "line": notices::line(lang, fact),
+                        "organization": place.map(|p| p.organization),
+                        "project": place.and_then(|p| p.project),
+                    }),
                     at: now,
                 },
             )
@@ -355,7 +375,7 @@ pub async fn deliver(
         state.mailer.send(notices::notice(
             lang,
             email,
-            send.place,
+            place,
             fact,
             *why,
             &format!("{base}{}", send.open),

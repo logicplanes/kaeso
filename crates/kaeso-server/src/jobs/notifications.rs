@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use kaeso_core::notifications::Kind;
 use kaeso_core::rights::{OrgRight, ProjectRight, effective_project_rights};
 use kaeso_mail::Locale;
-use kaeso_mail::notices::{self, Because, Fact, Links, ProjectUse};
+use kaeso_mail::notices::{self, Because, DigestItem, Fact, Links, ProjectUse};
 use kaeso_store::pg::{instance, members, notifications, orgs, usage, users};
 use rust_decimal::Decimal;
 use time::macros::time;
@@ -12,7 +12,7 @@ use uuid::Uuid;
 
 use crate::jobs::JobError;
 use crate::platform::grants::{org_from_store, project_from_store};
-use crate::services::notifications::dispatch::{Send, deliver, org_holders, settings_path};
+use crate::services::notifications::dispatch::{Send, deliver, org_holders, org_path};
 use crate::state::AppState;
 
 // Spec: digests, the monthly cost report and the weekly summary go out at 8:31 in the morning.
@@ -85,10 +85,20 @@ async fn digests(
             return Ok(sent);
         }
         let rows = notifications::claim_waiting(&state.pg, &users_waiting, cutoff, now).await?;
-        let mut lines: BTreeMap<Uuid, Vec<String>> = BTreeMap::new();
+        let mut lines: BTreeMap<Uuid, Vec<DigestItem>> = BTreeMap::new();
         for row in rows {
-            if let Some(line) = row.payload.get("line").and_then(|l| l.as_str()) {
-                lines.entry(row.user_id).or_default().push(line.to_owned());
+            let text = |key: &str| {
+                row.payload
+                    .get(key)
+                    .and_then(|v| v.as_str())
+                    .map(str::to_owned)
+            };
+            if let Some(line) = text("line") {
+                lines.entry(row.user_id).or_default().push(DigestItem {
+                    line,
+                    organization: text("organization"),
+                    project: text("project"),
+                });
             }
         }
         let ids: Vec<Uuid> = lines.keys().copied().collect();
@@ -113,7 +123,7 @@ async fn digests(
 }
 
 fn money(amount: Decimal) -> String {
-    format!("${}", amount.round_dp(2))
+    format!("{:.2}", amount.round_dp(2))
 }
 
 async fn cost_reports(state: &AppState, today: Date) -> Result<usize, JobError> {
@@ -136,6 +146,7 @@ async fn cost_reports(state: &AppState, today: Date) -> Result<usize, JobError> 
         if by_project.iter().all(|p| p.requests == 0) {
             continue;
         }
+        let place = crate::services::notifications::triggers::org_name(state, org).await?;
         let mut top: Vec<_> = by_project.iter().collect();
         top.sort_by_key(|p| std::cmp::Reverse(p.cost));
         let mut projects = Vec::new();
@@ -146,12 +157,12 @@ async fn cost_reports(state: &AppState, today: Date) -> Result<usize, JobError> 
             let name =
                 crate::services::notifications::triggers::project_name(state, org, project).await?;
             projects.push(ProjectUse {
+                organization: place.clone(),
                 name,
                 requests: None,
                 cost: money(p.cost),
             });
         }
-        let place = crate::services::notifications::triggers::org_name(state, org).await?;
         let total = money(total);
         let send = Send {
             kind: Kind::CostReport,
@@ -159,12 +170,15 @@ async fn cost_reports(state: &AppState, today: Date) -> Result<usize, JobError> 
             project: None,
             place: Some(&place),
             subject: format!("cost:{month}"),
-            open: format!("{}/usage", settings_path(org)),
+            open: format!(
+                "{}/analytics?from={from}&to={to}&by=project&metric=cost",
+                org_path(org)
+            ),
             actor: None,
         };
         let to = org_holders(state, org, &[OrgRight::CostsOrgView]).await?;
         let fact = Fact::CostReport {
-            month: &month,
+            month: from,
             total: &total,
             projects,
         };
@@ -179,6 +193,10 @@ async fn weekly(state: &AppState, today: Date) -> Result<usize, JobError> {
     let mut sent = 0;
     for user in notifications::opted_in(&state.pg, Kind::WeeklySummary.as_str()).await? {
         let orgs_of = members::orgs_of_user(&state.pg, user).await?;
+        let names: BTreeMap<Uuid, &str> = orgs_of
+            .iter()
+            .map(|o| (o.org_id, o.org_name.as_str()))
+            .collect();
         let mut grants = BTreeMap::new();
         for o in &orgs_of {
             if let Ok(g) = org_from_store(&o.grant()) {
@@ -227,7 +245,11 @@ async fn weekly(state: &AppState, today: Date) -> Result<usize, JobError> {
             if r > 0 {
                 projects.push((
                     c,
+                    p.org_id,
                     ProjectUse {
+                        organization: names
+                            .get(&p.org_id)
+                            .map_or_else(|| p.org_id.to_string(), |n| (*n).to_owned()),
                         name: p.project_name.clone(),
                         requests: Some(r.to_string()),
                         cost: money(c),
@@ -241,11 +263,19 @@ async fn weekly(state: &AppState, today: Date) -> Result<usize, JobError> {
         projects.sort_by_key(|p| std::cmp::Reverse(p.0));
         let mut top: Vec<(String, i64)> = models.into_iter().collect();
         top.sort_by_key(|m| std::cmp::Reverse(m.1));
+        let open = projects.first().map_or_else(String::new, |(_, org, _)| {
+            format!(
+                "{}/analytics?from={from}&to={to}&by=project",
+                org_path(*org)
+            )
+        });
         let fact = Fact::WeeklySummary {
+            from,
+            to,
             requests: requests.to_string(),
             tool_calls: calls.to_string(),
             cost: money(cost),
-            projects: projects.into_iter().take(TOP).map(|(_, l)| l).collect(),
+            projects: projects.into_iter().take(TOP).map(|(_, _, l)| l).collect(),
             top_models: top.into_iter().take(3).map(|(m, _)| m).collect(),
         };
         let send = Send {
@@ -254,11 +284,25 @@ async fn weekly(state: &AppState, today: Date) -> Result<usize, JobError> {
             project: None,
             place: None,
             subject: format!("weekly:{today}"),
-            open: String::new(),
+            open,
             actor: None,
         };
         let to = BTreeMap::from([(user, Because::Right(ProjectRight::UsageView.as_str()))]);
         sent += deliver(state, &send, &fact, to).await?;
     }
     Ok(sent)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn money_is_a_plain_amount_with_cents_for_the_email_to_format() {
+        let amount = |s: &str| s.parse::<Decimal>().unwrap_or_default();
+        assert_eq!(money(amount("41.2")), "41.20");
+        assert_eq!(money(amount("1412.505")), "1412.50");
+        assert_eq!(money(amount("0")), "0.00");
+        assert_eq!(money(amount("3.14159")), "3.14");
+    }
 }

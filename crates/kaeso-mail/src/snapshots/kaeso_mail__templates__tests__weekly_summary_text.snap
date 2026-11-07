@@ -6,15 +6,22 @@ Subject: Your week in Kaeso
 
 Your week in Kaeso
 
-Last week your projects sent 12480 requests and 312 tool calls for $41.20.
+Here is how your projects used Kaeso, 2–8 Nov 2026.
 
-- Checkout: 9120 requests, $30.10
-- Support: 3360 requests, $11.10
+Requests: 12,480
+Tool calls: 312
+Cost: $41.20
+
+Top models: claude-haiku-4-5, gpt-4o
+
+Acme
+- Checkout: 9,120 requests, $30.10
+- Support: 960 requests, $2.50
+Globex
+- Research: 2,400 requests, $8.60
 
 Open usage:
 https://kaeso.example.com/orgs/org_1
-
-Top models: claude-haiku-4-5, gpt-4o.
 
 -- 
 Sent by Kaeso at kaeso.example.com.

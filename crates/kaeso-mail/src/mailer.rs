@@ -9,7 +9,6 @@ use lettre::{AsyncSmtpTransport, AsyncTransport, Message, Tokio1Executor};
 use secrecy::{ExposeSecret, SecretString};
 use tokio::sync::{Semaphore, mpsc, oneshot};
 
-use crate::assets;
 use crate::layout::Instance;
 use crate::templates::{Email, Rendered};
 
@@ -304,7 +303,7 @@ async fn deliver(sender: &Sender, from: &Mailbox, email: &Rendered) -> Result<()
 fn body(email: &Rendered) -> Result<MultiPart, MailError> {
     let png = ContentType::parse("image/png").map_err(|e| MailError::Invalid(e.to_string()))?;
     let mut related = MultiPart::related().singlepart(SinglePart::html(email.html.clone()));
-    for image in assets::ALL {
+    for image in &email.images {
         related = related.singlepart(
             Attachment::new_inline(image.cid.to_owned()).body(image.png.to_vec(), png.clone()),
         );
