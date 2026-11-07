@@ -266,3 +266,321 @@ fn token_counting_leaves_out_tools_that_are_not_loaded() {
     let sent: Value = serde_json::from_slice(&enc.body).unwrap();
     assert_eq!(tool_names(R, &sent), ["Read", "ToolSearch"]);
 }
+
+fn inline_tools_with(change: impl FnOnce(&mut Value)) -> Request {
+    let (mut body, headers) = claude_code("claude-code-inline-tools");
+    change(&mut body);
+    decode(&body, &headers)
+}
+
+fn system_texts(target: DialectId, body: &Value) -> Vec<String> {
+    let turns = match target {
+        C => body["messages"].as_array().unwrap(),
+        _ => body["input"].as_array().unwrap(),
+    };
+    turns
+        .iter()
+        .filter(|m| m["role"] == "system" || m["role"] == "developer")
+        .map(|m| match &m["content"] {
+            Value::String(s) => s.clone(),
+            Value::Array(parts) => parts
+                .iter()
+                .map(|p| p["text"].as_str().unwrap_or_default())
+                .collect::<Vec<_>>()
+                .concat(),
+            other => panic!("{other}"),
+        })
+        .collect()
+}
+
+fn adapted(target: DialectId, req: &Request) -> Vec<String> {
+    let mut ctx = EgressCtx::new(req);
+    dispatch::encode_request(target, req, &mut ctx).unwrap();
+    ctx.adapted
+}
+
+#[test]
+fn tools_defined_and_withdrawn_in_system_messages_reach_other_formats_as_the_final_tool_list() {
+    let (body, headers) = claude_code("claude-code-inline-tools");
+    let req = decode(&body, &headers);
+    for target in [C, R] {
+        let sent = send(target, &req).unwrap_or_else(|e| panic!("{target}: {e}"));
+        assert_eq!(
+            tool_names(target, &sent),
+            [
+                "Read",
+                "ToolSearch",
+                "Artifact",
+                "mcp__aws-mcp__aws___run_script"
+            ],
+            "{target}"
+        );
+        let text = sent.to_string();
+        for absent in [
+            "tool_addition",
+            "tool_removal",
+            "tool_definition",
+            "eager_input_streaming",
+            "defer_loading",
+        ] {
+            assert!(!text.contains(absent), "{target}: {absent} in {text}");
+        }
+        let texts = system_texts(target, &sent);
+        let reminders = texts
+            .iter()
+            .filter(|t| t.starts_with("Only you see that command's output"))
+            .count();
+        assert_eq!(reminders, 2, "{target}: {texts:?}");
+        assert_eq!(
+            adapted(target, &req),
+            [
+                "messages[4].blocks[1]",
+                "messages[4].blocks[2]",
+                "messages[7].blocks[1]",
+                "messages[7].blocks[2]",
+                "messages[7].blocks[3]",
+            ],
+            "{target}"
+        );
+    }
+}
+
+#[test]
+fn claude_keeps_inline_tool_changes_as_sent() {
+    let (body, headers) = claude_code("claude-code-inline-tools");
+    let req = decode(&body, &headers);
+    let sent = send(A, &req).unwrap();
+    assert_eq!(sent, body);
+    assert!(adapted(A, &req).is_empty());
+}
+
+#[test]
+fn a_definition_replaces_a_declared_tool_of_the_same_name_in_place() {
+    let req = inline_tools_with(|b| {
+        b["messages"][7]["content"][3]["tool"]["definition"]["name"] = json!("ToolSearch");
+        b["messages"][7]["content"][3]["tool"]["definition"]["description"] = json!("Replaced.");
+    });
+    for target in [C, R] {
+        let sent = send(target, &req).unwrap_or_else(|e| panic!("{target}: {e}"));
+        assert_eq!(
+            tool_names(target, &sent),
+            ["Read", "ToolSearch", "Artifact"],
+            "{target}"
+        );
+        assert!(sent.to_string().contains("Replaced."), "{target}");
+        assert!(!sent.to_string().contains("deferred tools"), "{target}");
+    }
+}
+
+#[test]
+fn a_deferred_definition_stays_out_until_a_reference_offers_it() {
+    let deferred = |b: &mut Value| {
+        b["messages"][7]["content"][3]["tool"]["definition"]["defer_loading"] = json!(true);
+    };
+    let req = inline_tools_with(deferred);
+    for target in [C, R] {
+        let sent = send(target, &req).unwrap_or_else(|e| panic!("{target}: {e}"));
+        assert_eq!(
+            tool_names(target, &sent),
+            ["Read", "ToolSearch", "Artifact"],
+            "{target}"
+        );
+    }
+    let req = inline_tools_with(|b| {
+        deferred(b);
+        b["messages"][7]["content"]
+            .as_array_mut()
+            .unwrap()
+            .push(json!({"type": "tool_addition", "tool": {"type": "tool_reference", "name": "mcp__aws-mcp__aws___run_script"}}));
+    });
+    for target in [C, R] {
+        let sent = send(target, &req).unwrap_or_else(|e| panic!("{target}: {e}"));
+        assert_eq!(
+            tool_names(target, &sent),
+            [
+                "Read",
+                "ToolSearch",
+                "Artifact",
+                "mcp__aws-mcp__aws___run_script"
+            ],
+            "{target}"
+        );
+    }
+}
+
+#[test]
+fn a_reference_offers_a_deferred_tool_and_re_offers_a_withdrawn_one() {
+    let req = inline_tools_with(|b| {
+        b["messages"][4]["content"].as_array_mut().unwrap().extend([
+            json!({"type": "tool_removal", "tool": {"type": "tool_reference", "name": "Read"}}),
+            json!({"type": "tool_addition", "tool": {"type": "tool_reference", "name": "WebFetch"}}),
+        ]);
+        b["messages"][7]["content"].as_array_mut().unwrap().push(
+            json!({"type": "tool_addition", "tool": {"type": "tool_reference", "name": "Read"}}),
+        );
+    });
+    for target in [C, R] {
+        let sent = send(target, &req).unwrap_or_else(|e| panic!("{target}: {e}"));
+        assert_eq!(
+            tool_names(target, &sent),
+            [
+                "Read",
+                "ToolSearch",
+                "Artifact",
+                "WebFetch",
+                "mcp__aws-mcp__aws___run_script"
+            ],
+            "{target}"
+        );
+    }
+}
+
+#[test]
+fn a_system_message_left_with_only_tool_changes_disappears() {
+    let whole = inline_tools_with(|_| {});
+    let req = inline_tools_with(|b| {
+        b["messages"][7]["content"]
+            .as_array_mut()
+            .unwrap()
+            .remove(0);
+    });
+    for target in [C, R] {
+        let before = system_texts(target, &send(target, &whole).unwrap()).len();
+        let sent = send(target, &req).unwrap_or_else(|e| panic!("{target}: {e}"));
+        assert_eq!(system_texts(target, &sent).len(), before - 1, "{target}");
+        assert_eq!(
+            tool_names(target, &sent),
+            [
+                "Read",
+                "ToolSearch",
+                "Artifact",
+                "mcp__aws-mcp__aws___run_script"
+            ],
+            "{target}"
+        );
+    }
+}
+
+#[test]
+fn a_change_that_names_a_tool_the_request_does_not_declare_is_refused_like_claude_does() {
+    for (index, block) in [
+        (
+            "messages[7].blocks[1]",
+            json!({"type": "tool_removal", "tool": {"type": "tool_reference", "name": "get_forecast"}}),
+        ),
+        (
+            "messages[7].blocks[1]",
+            json!({"type": "tool_addition", "tool": {"type": "tool_reference", "name": "get_forecast"}}),
+        ),
+    ] {
+        let req = inline_tools_with(|b| b["messages"][7]["content"][1] = block);
+        for target in [C, R] {
+            let e = send(target, &req).unwrap_err();
+            assert_eq!(e.kind.as_str(), "invalid_request", "{target}");
+            assert_eq!(
+                e.message,
+                "Tool reference 'get_forecast' not found in available tools"
+            );
+            assert_eq!(e.param.as_deref(), Some(index), "{target}");
+        }
+    }
+}
+
+#[test]
+fn changes_kaeso_cannot_read_are_refused_with_their_path() {
+    for (block, feature) in [
+        (
+            json!({"type": "tool_addition", "tool": {"type": "tool_reference", "name": "Read"}, "x_future": 1}),
+            "inline tool change with `x_future` on the block",
+        ),
+        (
+            json!({"type": "tool_addition", "tool": {"type": "tool_reference", "name": "Read", "x_future": 1}}),
+            "inline tool change with `x_future` on its `tool_reference` tool",
+        ),
+        (
+            json!({"type": "tool_addition", "tool": {"type": "tool_reference"}}),
+            "inline tool change with a `tool_reference` without a `name`",
+        ),
+        (
+            json!({"type": "tool_addition", "tool": {"type": "mcp_toolset_reference", "server_name": "calendar"}}),
+            "`mcp_toolset_reference` in a `tool_addition` block",
+        ),
+        (
+            json!({"type": "tool_removal", "tool": {"type": "mcp_tool_reference", "server_name": "calendar", "name": "list"}}),
+            "`mcp_tool_reference` in a `tool_removal` block",
+        ),
+    ] {
+        let req = inline_tools_with(|b| b["messages"][7]["content"][1] = block.clone());
+        for target in [C, R] {
+            let e = send(target, &req).unwrap_err();
+            assert_eq!(e.unsupported_feature(), Some(feature), "{target}: {block}");
+            assert_eq!(
+                e.param.as_deref(),
+                Some("messages[7].blocks[1]"),
+                "{target}"
+            );
+            assert!(
+                e.message.contains("original format"),
+                "{target}: {}",
+                e.message
+            );
+        }
+        assert_eq!(send(A, &req).unwrap()["messages"][7]["content"][1], block);
+    }
+}
+
+#[test]
+fn a_removal_with_a_definition_and_a_server_tool_definition_are_refused() {
+    let req = inline_tools_with(|b| {
+        b["messages"][7]["content"][1] =
+            json!({"type": "tool_removal", "tool": b["messages"][7]["content"][3]["tool"].clone()});
+    });
+    for target in [C, R] {
+        let e = send(target, &req).unwrap_err();
+        assert_eq!(e.kind.as_str(), "invalid_request", "{target}");
+        assert_eq!(
+            e.param.as_deref(),
+            Some("messages[7].blocks[1]"),
+            "{target}"
+        );
+    }
+    let req = inline_tools_with(|b| {
+        b["messages"][7]["content"][3]["tool"]["definition"] =
+            json!({"type": "advisor_20260301", "name": "advisor", "model": "claude-opus-5-5"});
+    });
+    for target in [C, R] {
+        let e = send(target, &req).unwrap_err();
+        assert_eq!(
+            e.unsupported_feature(),
+            Some("advisor_20260301 tool"),
+            "{target}"
+        );
+        assert!(
+            e.message.contains("Input tag 'advisor_20260301'"),
+            "{target}: {}",
+            e.message
+        );
+    }
+}
+
+#[test]
+fn token_counting_takes_inline_tool_changes_too() {
+    let (body, headers) = claude_code("claude-code-inline-tools");
+    let req = dispatch::decode_request(
+        A,
+        RequestKind::CountTokens,
+        &serde_json::to_vec(&body).unwrap(),
+        &headers,
+    )
+    .unwrap();
+    let sent = send(R, &req).unwrap();
+    assert_eq!(
+        tool_names(R, &sent),
+        [
+            "Read",
+            "ToolSearch",
+            "Artifact",
+            "mcp__aws-mcp__aws___run_script"
+        ]
+    );
+}

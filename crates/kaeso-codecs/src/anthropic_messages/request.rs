@@ -4,6 +4,7 @@ use kaeso_kpp::{
     ReasoningEffort, ReasoningMode, Request, RequestKind, Role, StreamMode, ToolChoice, ToolDef,
 };
 use serde_json::Value;
+use serde_json::value::RawValue;
 
 use super::blocks::{
     BlockEncoder, Dec, Side, decode_block, decode_cache, decode_content, empty_parameters,
@@ -106,6 +107,33 @@ fn describe(object: &serde_json::Map<String, Value>, err: &serde_json::Error) ->
         }
     }
     invalid_body(without_position(err))
+}
+
+pub(crate) fn decode_tool(
+    raw: &RawValue,
+    origin: &Origin,
+    path: &str,
+) -> Result<ToolDef, KppError> {
+    let ty = type_tag(raw).ok().flatten();
+    if ty.is_some() && ty.as_deref() != Some("custom") {
+        return Ok(ToolDef::Unknown(RawItem::new(
+            origin.clone(),
+            RawJson::from(raw),
+        )));
+    }
+    let t: Ext<ToolW> = Ext::from_raw(raw).map_err(|e| {
+        KppError::invalid_request(format!(
+            "The request body is not a valid Anthropic Messages request: invalid tool: {}.",
+            without_position(&e)
+        ))
+        .with_param(path)
+    })?;
+    let mut f = FunctionTool::new(t.known.name, Some(RawJson::from(t.known.input_schema)));
+    f.description = t.known.description;
+    f.strict = t.known.strict;
+    f.cache = t.known.cache_control.map(|c| decode_cache(c, origin));
+    f.extras = extras_from(origin, t.extra, t.verbatim);
+    Ok(ToolDef::Function(f))
 }
 
 pub(crate) fn decode_request(
@@ -267,27 +295,8 @@ pub(crate) fn decode_request(
     }
 
     for (i, raw) in w.tools.iter().enumerate() {
-        let ty = type_tag(raw).ok().flatten();
-        if ty.is_none() || ty.as_deref() == Some("custom") {
-            let t: Ext<ToolW> = Ext::from_raw(raw).map_err(|e| {
-                KppError::invalid_request(format!(
-                    "The request body is not a valid Anthropic Messages request: invalid tool: {}.",
-                    without_position(&e)
-                ))
-                .with_param(format!("tools[{i}]"))
-            })?;
-            let mut f = FunctionTool::new(t.known.name, Some(RawJson::from(t.known.input_schema)));
-            f.description = t.known.description;
-            f.strict = t.known.strict;
-            f.cache = t.known.cache_control.map(|c| decode_cache(c, &origin));
-            f.extras = extras_from(&origin, t.extra, t.verbatim);
-            req.tools.push(ToolDef::Function(f));
-        } else {
-            req.tools.push(ToolDef::Unknown(RawItem::new(
-                origin.clone(),
-                RawJson::from(raw.as_ref()),
-            )));
-        }
+        req.tools
+            .push(decode_tool(raw, &origin, &format!("tools[{i}]"))?);
     }
 
     match kind {

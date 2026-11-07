@@ -9,7 +9,8 @@ use super::common::{
 };
 use super::wire::{
     CacheControlW, CitationsConfigW, DataSourceW, DocumentW, FileSourceW, ImageW, Raw,
-    RedactedThinkingW, TextW, ThinkingW, ToolReferenceW, ToolResultW, ToolUseW, UrlSourceW,
+    RedactedThinkingW, TextW, ThinkingW, ToolChangeW, ToolHandleW, ToolReferenceW, ToolResultW,
+    ToolUseW, UrlSourceW,
 };
 use crate::codec::EgressCtx;
 use crate::cross::{ReplyPolicy, reasoning_replayable, reasoning_reply_policy};
@@ -289,6 +290,67 @@ pub(crate) fn tool_reference(item: &RawItem) -> Option<(String, Block)> {
     b.cache = w.known.cache_control.map(|c| decode_cache(c, &item.origin));
     b.extras = extras_from(&item.origin, w.extra, w.verbatim);
     Some((w.known.tool_name, Block::Text(b)))
+}
+
+pub(crate) enum ToolChange {
+    Added(ToolHandle),
+    Removed(ToolHandle),
+}
+
+pub(crate) struct ToolHandle {
+    pub(crate) tool: ToolReferent,
+    pub(crate) cache: Option<CacheHint>,
+}
+
+pub(crate) enum ToolReferent {
+    Reference(String),
+    Definition(Raw),
+    Other(String),
+}
+
+fn unknown_field(what: &str, w: &Ext<impl serde::Serialize>) -> Result<(), String> {
+    match w.extra.keys().chain(w.verbatim.keys()).next() {
+        Some(key) => Err(format!("`{key}` on {what}")),
+        None => Ok(()),
+    }
+}
+
+fn tool_referent(raw: &RawValue) -> Result<ToolReferent, String> {
+    let w: Ext<ToolHandleW> = Ext::from_raw(raw).map_err(|e| without_position(&e))?;
+    if w.known.ty != "tool_reference" && w.known.ty != "tool_definition" {
+        return Ok(ToolReferent::Other(w.known.ty));
+    }
+    unknown_field(&format!("its `{}` tool", w.known.ty), &w)?;
+    match (w.known.ty.as_str(), w.known.name, w.known.definition) {
+        ("tool_reference", Some(name), None) => Ok(ToolReferent::Reference(name)),
+        ("tool_definition", None, Some(definition)) => Ok(ToolReferent::Definition(definition)),
+        ("tool_reference", _, _) => Err("a `tool_reference` without a `name`".to_owned()),
+        _ => Err("a `tool_definition` without a `definition`".to_owned()),
+    }
+}
+
+pub(crate) fn tool_change(item: &RawItem) -> Option<Result<ToolChange, String>> {
+    if !item.origin.is(D) {
+        return None;
+    }
+    let ty = type_tag(item.raw.as_raw()).ok().flatten()?;
+    if ty != "tool_addition" && ty != "tool_removal" {
+        return None;
+    }
+    let read = || {
+        let w: Ext<ToolChangeW> =
+            Ext::from_raw(item.raw.as_raw()).map_err(|e| without_position(&e))?;
+        unknown_field("the block", &w)?;
+        let handle = ToolHandle {
+            tool: tool_referent(&w.known.tool)?,
+            cache: w.known.cache_control.map(|c| decode_cache(c, &item.origin)),
+        };
+        Ok(match ty.as_str() {
+            "tool_addition" => ToolChange::Added(handle),
+            _ => ToolChange::Removed(handle),
+        })
+    };
+    Some(read())
 }
 
 fn parse<T: serde::de::DeserializeOwned + serde::Serialize>(
