@@ -58,6 +58,7 @@ export function OrgProjectsPage({ org, search }: { org: string; search: OrgProje
       <OrgHeader
         org={org}
         page={t("common.projects", "Projects")}
+        tabs={<ScopeTabs label={t("common.projects", "Projects")} value={scope} onChange={setScope} />}
         actions={
           <Button
             size="sm"
@@ -71,7 +72,7 @@ export function OrgProjectsPage({ org, search }: { org: string; search: OrgProje
           </Button>
         }
       />
-      <FilterRow tabs={<ScopeTabs label={t("common.projects", "Projects")} value={scope} onChange={setScope} />}>
+      <FilterRow>
         <div className="w-240">
           <Input
             type="search"
