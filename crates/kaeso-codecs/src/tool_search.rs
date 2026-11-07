@@ -7,7 +7,7 @@ use crate::anthropic_messages::tool_reference;
 const ANTHROPIC: DialectId = DialectId::AnthropicMessages;
 const DEFER: &str = "defer_loading";
 
-fn deferral(t: &ToolDef) -> Option<bool> {
+pub(crate) fn deferral(t: &ToolDef) -> Option<bool> {
     let ToolDef::Function(f) = t else {
         return None;
     };

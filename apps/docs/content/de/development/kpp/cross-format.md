@@ -80,6 +80,7 @@ Die Fixture-Pfade in diesen Tabellen sind relativ zu `crates/kaeso-codecs/fixtur
 | `header:anthropic-version` | request, aus `anthropic_messages` | Versionierung des Anthropic-Wire-Formats; anderswo bedeutungslos. Ein Wert gleich der festgelegten Version wird gar nicht gespeichert ([die Anthropic-Version](#die-anthropic-version)). | Anthropic-SDKs |
 | `header:openai-beta` | request, aus `openai_chat`, `openai_responses`, `openai_embeddings` | Wie `anthropic-beta`. | Codex sendet `OpenAI-Beta: responses=experimental` |
 | `cache_control` | request, aus `anthropic_messages` | Automatisches Prompt-Caching auf oberster Ebene. Cache-Hinweise sind Hinweise ([Cache-Hinweise](#cache-hinweise)). | `anthropic_messages/requests/system-string-multi-turn.json`, `explicit-nulls.json` |
+| `eager_input_streaming` | tool, aus `anthropic_messages` | Entscheidet nur, ob Claude die Argumente des Tools streamt, während es sie schreibt (feingranulares Tool-Streaming); die Argumente sind dieselben, und andere Formate streamen wie gewohnt. | Claude Code sendet es an den Tools von MCP-Servern, die sich während einer Sitzung verbinden; `anthropic_messages/requests/claude-code-inline-tools.json` |
 | `display` (`thinking.display`) | reasoning, aus `anthropic_messages` | Steuert nur, ob Thinking-Text zurückkommt (`summarized` oder `omitted`). OpenAI Responses bekommt stattdessen `reasoning.summary: "auto"`, außer der Wert ist `omitted` ([lesbares Reasoning und Zusammenfassungen](reasoning.md#lesbares-reasoning-und-zusammenfassungen)). | `anthropic_messages/requests/thinking-display-omitted.json`, `thinking-adaptive-effort.json` |
 | `image_url.detail` | image, aus `openai_chat` | Hinweis zur Bildauflösung (`low`, `high`, `auto`): Er ändert die Token-Kosten des Bildes, nicht die Frage; Ziele ohne ihn wählen ihre Auflösung selbst. | `openai_chat/requests/image-base64-detail.json` |
 | `file.filename` | document, aus `openai_chat` | Der Dateiname, den OpenAI neben eingebettetem `file_data` verlangt. Metadaten, keine Anweisung. | `openai_chat/requests/file-pdf-data.json` |
@@ -149,6 +150,18 @@ Anthropics Tool-Suche lädt Tools bei Bedarf. Ein Tool mit `defer_loading: true`
 - **Abgelehnt** mit `Unsupported`: ein `defer_loading`, das kein Boolean ist, und eine `tool_reference` außerhalb eines `tool_result` oder mit einem Feld, das Kaeso nicht kennt.
 
 Anthropic-Modelle bekommen zurückgestellte Tools und Referenzen wie gesendet. Die Beta `advanced-tool-use-2025-11-20`, die die Tool-Suche einschaltet, steht im Header `anthropic-beta`, den andere Formate nicht bekommen ([Allowlist](#allowlist)).
+
+## Inline-Tools
+
+Anthropics Inline-Tools ändern die Tool-Liste mitten im Gespräch: Eine Nachricht mit `role: "system"` trägt `tool_addition`- und `tool_removal`-Blöcke, die dem Modell ein Tool ab dieser Stelle anbieten oder es entziehen, während `tools` wie gesendet bleibt und der Prompt-Cache hält ([Tool-Änderungen mitten im Gespräch](https://platform.claude.com/docs/en/build-with-claude/mid-conversation-system-messages#mid-conversation-tool-changes)). Eine `tool_addition` nennt ein deklariertes Tool mit einer `tool_reference`, was auch ein zurückgestelltes Tool sichtbar macht, oder definiert mit einer `tool_definition` ein neues Tool. Claude Code sendet so die Tools eines MCP-Servers, der sich während einer Sitzung verbindet, und entzieht sie wieder, wenn der Server verschwindet. Andere Formate nehmen eine Tool-Liste pro Anfrage, daher sendet Kaeso ihnen die Tools, die am Ende des Gesprächs angeboten sind:
+
+- **Definitionen** werden gewöhnliche Tools; eine mit dem Namen eines deklarierten Tools ersetzt es an seiner Stelle, ein neuer Name kommt ans Ende der Liste. Eine Definition mit `defer_loading: true` bleibt draußen, bis eine `tool_reference` sie anbietet ([Tool-Suche](#tool-suche)). Das `cache_control` des Blocks wird zum Cache-Hinweis des Tools.
+- **Referenzen** bieten das genannte Tool an, ob zurückgestellt oder zuvor entzogen, und ein `tool_removal` entzieht es, auch wenn eine spätere Suche es laden würde. Die Blöcke verlassen die Systemnachricht; eine Nachricht ohne weiteren Inhalt wird weggelassen, eine mit Text behält den Text ([Systemnachrichten](#systemnachrichten)).
+- **Genannt in `kaeso-adapted`** mit dem Pfad des Blocks, etwa `messages[4].blocks[1]`, damit die App sieht, dass das Modell eine von Kaeso gebaute Tool-Liste bekam ([Antwort-Header](../../api/model-api.md#antwort-header)). Ein protokollierter Anfragekörper behält die Blöcke.
+- **Abgelehnt wie bei Anthropic**, mit `InvalidRequest`: eine Referenz auf ein Tool, das weder `tools` noch eine frühere Definition nennt, und ein `tool_removal`, das eine Definition trägt.
+- **Abgelehnt** mit `Unsupported`: ein Block oder eine Referenz mit einem Feld, das Kaeso nicht kennt, `mcp_tool_reference` und `mcp_toolset_reference` des MCP-Connectors, die in anderen Formaten keine Entsprechung haben, und die Definition eines Server-Tools, die wie dasselbe Tool in `tools` abgelehnt wird.
+
+Anthropic-Modelle bekommen die Blöcke wie gesendet, zusammen mit der Beta `inline-tools-2026-09-15` in `anthropic-beta`. Fixture: `anthropic_messages/requests/claude-code-inline-tools.json`.
 
 ## Gehostete Websuche
 

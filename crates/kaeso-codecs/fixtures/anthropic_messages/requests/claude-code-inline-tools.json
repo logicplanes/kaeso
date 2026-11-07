@@ -1,0 +1,338 @@
+{
+  "model": "deepseek-flash",
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "<system-reminder>\nToday's date is 2026-11-07.\n</system-reminder>\n"
+        },
+        {
+          "type": "text",
+          "text": "Write the release notes into a doc, then check the S3 bucket with the AWS script."
+        }
+      ]
+    },
+    {
+      "role": "system",
+      "content": "Today's date is 2026-11-07."
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_0127nwtMC8EpLtB9tqss7psa",
+          "name": "Read",
+          "input": {
+            "file_path": "/home/user/project/CHANGELOG.md"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_0127nwtMC8EpLtB9tqss7psa",
+          "content": "# Changelog\n\n## 0.6.0-rc.8\n\n- Scaling page with the rc.7 benchmark.",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "system",
+      "content": [
+        {
+          "type": "text",
+          "text": "Only you see that command's output — the user's terminal shows at most a few lines of it. If the user needs to read any of it, put it in your reply."
+        },
+        {
+          "type": "tool_addition",
+          "tool": {
+            "type": "tool_definition",
+            "definition": {
+              "name": "mcp__claude_ai_Claude_Docs__batch",
+              "description": "Create a doc, or apply several operations to one doc atomically.",
+              "input_schema": {
+                "type": "object",
+                "properties": {
+                  "batch": {
+                    "type": "array"
+                  },
+                  "container": {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string"
+                      },
+                      "id": {
+                        "type": "string"
+                      },
+                      "create": {
+                        "type": "object"
+                      }
+                    },
+                    "required": [
+                      "kind"
+                    ]
+                  },
+                  "verbose": {
+                    "type": "boolean"
+                  },
+                  "opId": {
+                    "type": "string"
+                  }
+                }
+              },
+              "eager_input_streaming": true
+            }
+          }
+        },
+        {
+          "type": "tool_addition",
+          "tool": {
+            "type": "tool_definition",
+            "definition": {
+              "name": "mcp__claude_ai_Claude_Docs__guide",
+              "description": "Docs guides: topic.instructions repeats the server instructions. Also topic.<name>, refusal.<code>.",
+              "input_schema": {
+                "type": "object",
+                "properties": {
+                  "items": {
+                    "type": "array",
+                    "description": "topic.<name> or refusal.<code>; several per call is fine."
+                  }
+                }
+              },
+              "eager_input_streaming": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01F5jfKeGzEgwTcm6JheL7SD",
+          "name": "mcp__claude_ai_Claude_Docs__batch",
+          "input": {
+            "container": {
+              "kind": "project",
+              "create": {
+                "name": "Release notes 0.6.0-rc.8"
+              }
+            },
+            "batch": []
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_01F5jfKeGzEgwTcm6JheL7SD",
+          "content": "Created doc \"Release notes 0.6.0-rc.8\".",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "system",
+      "content": [
+        {
+          "type": "text",
+          "text": "Only you see that command's output — the user's terminal shows at most a few lines of it. If the user needs to read any of it, put it in your reply."
+        },
+        {
+          "type": "tool_removal",
+          "tool": {
+            "type": "tool_reference",
+            "name": "mcp__claude_ai_Claude_Docs__batch"
+          }
+        },
+        {
+          "type": "tool_removal",
+          "tool": {
+            "type": "tool_reference",
+            "name": "mcp__claude_ai_Claude_Docs__guide"
+          }
+        },
+        {
+          "type": "tool_addition",
+          "tool": {
+            "type": "tool_definition",
+            "definition": {
+              "name": "mcp__aws-mcp__aws___run_script",
+              "description": "Execute Python code in sandboxed environment with AWS API access via `call_boto3`. No network except `call_boto3`.",
+              "input_schema": {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "description": "Python code to execute",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "code"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ]
+    }
+  ],
+  "system": [
+    {
+      "type": "text",
+      "text": "x-anthropic-billing-header: cc_version=2.1.319.600; cc_entrypoint=cli;"
+    },
+    {
+      "type": "text",
+      "text": "You are Claude Code, Anthropic's official CLI for Claude.",
+      "cache_control": {
+        "type": "ephemeral"
+      }
+    },
+    {
+      "type": "text",
+      "text": "\nYou are an agent working with the user toward their goals, using your own judgment along the way.\n",
+      "cache_control": {
+        "type": "ephemeral"
+      }
+    }
+  ],
+  "tools": [
+    {
+      "name": "Read",
+      "description": "Reads a file from the local filesystem.",
+      "input_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "file_path": {
+            "description": "The absolute path to the file to read",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file_path"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "ToolSearch",
+      "description": "Fetches full schema definitions for deferred tools so they can be called.",
+      "input_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "query": {
+            "description": "Query to find deferred tools. Use \"select:<tool_name>\" for direct selection, or keywords to search.",
+            "type": "string"
+          },
+          "max_results": {
+            "description": "Maximum number of results to return (default: 5)",
+            "default": 5,
+            "type": "number"
+          }
+        },
+        "required": [
+          "query",
+          "max_results"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "Artifact",
+      "description": "The Artifact tool renders an HTML file as an Artifact: a web page hosted on claude.ai that is private by default. Claude",
+      "input_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "file_path": {
+            "description": "publish: the local page Kaeso publishes.",
+            "type": "string"
+          },
+          "file_paths": {
+            "description": "publish with `asset: true` only: several local files in place of `file_path`, up to 25 in one call.",
+            "minItems": 1,
+            "maxItems": 25,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1024,
+              "pattern": "^[^\\0]*$"
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "WebFetch",
+      "description": "Fetches a URL, converts the page to markdown, and answers `prompt` against it using a small fast model.",
+      "input_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "url": {
+            "description": "The URL to fetch content from",
+            "type": "string",
+            "format": "uri"
+          },
+          "prompt": {
+            "description": "The prompt to run on the fetched content",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url",
+          "prompt"
+        ],
+        "additionalProperties": false
+      },
+      "defer_loading": true
+    }
+  ],
+  "metadata": {
+    "user_id": "{\"device_id\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"account_uuid\":\"\",\"session_id\":\"00000000-0000-4000-8000-000000000000\"}"
+  },
+  "max_tokens": 32000,
+  "thinking": {
+    "type": "adaptive",
+    "display": "updates"
+  },
+  "context_management": {
+    "edits": [
+      {
+        "type": "clear_thinking_20251015",
+        "keep": "all"
+      }
+    ]
+  },
+  "output_config": {
+    "effort": "high"
+  },
+  "stream": true
+}

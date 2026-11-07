@@ -8,6 +8,181 @@ expression: outcomes
     "param": "max_tokens",
     "unsupported": "max_tokens 0"
   },
+  "claude-code-inline-tools": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": [
+            {
+              "text": "x-anthropic-billing-header: cc_version=2.1.319.600; cc_entrypoint=cli;",
+              "type": "input_text"
+            },
+            {
+              "text": "You are Claude Code, Anthropic's official CLI for Claude.",
+              "type": "input_text"
+            },
+            {
+              "text": "\nYou are an agent working with the user toward their goals, using your own judgment along the way.\n",
+              "type": "input_text"
+            }
+          ],
+          "role": "developer"
+        },
+        {
+          "content": [
+            {
+              "text": "<system-reminder>\nToday's date is 2026-11-07.\n</system-reminder>\n",
+              "type": "input_text"
+            },
+            {
+              "text": "Write the release notes into a doc, then check the S3 bucket with the AWS script.",
+              "type": "input_text"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "content": "Today's date is 2026-11-07.",
+          "role": "developer"
+        },
+        {
+          "arguments": "{\n            \"file_path\": \"/home/user/project/CHANGELOG.md\"\n          }",
+          "call_id": "toolu_0127nwtMC8EpLtB9tqss7psa",
+          "name": "Read",
+          "type": "function_call"
+        },
+        {
+          "call_id": "toolu_0127nwtMC8EpLtB9tqss7psa",
+          "output": "# Changelog\n\n## 0.6.0-rc.8\n\n- Scaling page with the rc.7 benchmark.",
+          "type": "function_call_output"
+        },
+        {
+          "content": "Only you see that command's output — the user's terminal shows at most a few lines of it. If the user needs to read any of it, put it in your reply.",
+          "role": "developer"
+        },
+        {
+          "arguments": "{\n            \"container\": {\n              \"kind\": \"project\",\n              \"create\": {\n                \"name\": \"Release notes 0.6.0-rc.8\"\n              }\n            },\n            \"batch\": []\n          }",
+          "call_id": "toolu_01F5jfKeGzEgwTcm6JheL7SD",
+          "name": "mcp__claude_ai_Claude_Docs__batch",
+          "type": "function_call"
+        },
+        {
+          "call_id": "toolu_01F5jfKeGzEgwTcm6JheL7SD",
+          "output": "Created doc \"Release notes 0.6.0-rc.8\".",
+          "type": "function_call_output"
+        },
+        {
+          "content": "Only you see that command's output — the user's terminal shows at most a few lines of it. If the user needs to read any of it, put it in your reply.",
+          "role": "developer"
+        }
+      ],
+      "max_output_tokens": 32000,
+      "model": "deepseek-flash",
+      "reasoning": {
+        "effort": "high",
+        "summary": "auto"
+      },
+      "safety_identifier": "{\"device_id\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"account_uuid\":\"\",\"session_id\":\"00000000-0000-4000-8000-000000000000\"}",
+      "store": false,
+      "stream": true,
+      "tools": [
+        {
+          "description": "Reads a file from the local filesystem.",
+          "name": "Read",
+          "parameters": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "additionalProperties": false,
+            "properties": {
+              "file_path": {
+                "description": "The absolute path to the file to read",
+                "type": "string"
+              }
+            },
+            "required": [
+              "file_path"
+            ],
+            "type": "object"
+          },
+          "type": "function"
+        },
+        {
+          "description": "Fetches full schema definitions for deferred tools so they can be called.",
+          "name": "ToolSearch",
+          "parameters": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "additionalProperties": false,
+            "properties": {
+              "max_results": {
+                "default": 5,
+                "description": "Maximum number of results to return (default: 5)",
+                "type": "number"
+              },
+              "query": {
+                "description": "Query to find deferred tools. Use \"select:<tool_name>\" for direct selection, or keywords to search.",
+                "type": "string"
+              }
+            },
+            "required": [
+              "query",
+              "max_results"
+            ],
+            "type": "object"
+          },
+          "type": "function"
+        },
+        {
+          "description": "The Artifact tool renders an HTML file as an Artifact: a web page hosted on claude.ai that is private by default. Claude",
+          "name": "Artifact",
+          "parameters": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "additionalProperties": false,
+            "properties": {
+              "file_path": {
+                "description": "publish: the local page Kaeso publishes.",
+                "type": "string"
+              },
+              "file_paths": {
+                "description": "publish with `asset: true` only: several local files in place of `file_path`, up to 25 in one call.",
+                "items": {
+                  "maxLength": 1024,
+                  "minLength": 1,
+                  "pattern": "^[^\\0]*$",
+                  "type": "string"
+                },
+                "maxItems": 25,
+                "minItems": 1,
+                "type": "array"
+              }
+            },
+            "type": "object"
+          },
+          "type": "function"
+        },
+        {
+          "description": "Execute Python code in sandboxed environment with AWS API access via `call_boto3`. No network except `call_boto3`.",
+          "name": "mcp__aws-mcp__aws___run_script",
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "code": {
+                "description": "Python code to execute",
+                "type": "string"
+              }
+            },
+            "required": [
+              "code"
+            ],
+            "type": "object"
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
+  },
   "claude-code-mid-conversation-system": {
     "body": {
       "include": [

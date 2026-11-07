@@ -3,8 +3,8 @@ use kaeso_kpp::{Block, GenerateRequest, KppError, Role};
 
 use super::DIALECT;
 use super::wire::ChatRequest;
-use crate::ToolSchemaRoot;
 use crate::wire::Ext;
+use crate::{ToolPatterns, ToolSchemaRoot};
 use serde_json::value::RawValue;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -34,6 +34,7 @@ pub struct RequestProfile {
     pub leading_system_only: bool,
     pub replay_reasoning_as_read: bool,
     pub tool_schema_root: ToolSchemaRoot,
+    pub tool_patterns: ToolPatterns,
     pub tool_parameters: bool,
     pub refused_fields: &'static [&'static str],
     pub refused_message_fields: &'static [&'static str],
@@ -93,6 +94,7 @@ impl RequestProfile {
         leading_system_only: false,
         replay_reasoning_as_read: false,
         tool_schema_root: ToolSchemaRoot::AsSent,
+        tool_patterns: ToolPatterns::AsSent,
         tool_parameters: false,
         refused_fields: &[],
         refused_message_fields: &[],
@@ -216,6 +218,12 @@ impl ChatProfile {
     #[must_use]
     pub const fn tool_schema_root(mut self, root: ToolSchemaRoot) -> Self {
         self.request.tool_schema_root = root;
+        self
+    }
+
+    #[must_use]
+    pub const fn tool_patterns(mut self, patterns: ToolPatterns) -> Self {
+        self.request.tool_patterns = patterns;
         self
     }
 

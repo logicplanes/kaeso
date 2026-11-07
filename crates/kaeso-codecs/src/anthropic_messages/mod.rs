@@ -21,7 +21,10 @@ use crate::codec::{
     StreamEncoder,
 };
 
-pub(crate) use blocks::{block_form, tool_reference};
+pub(crate) use blocks::{
+    ToolChange, ToolHandle, ToolReferent, block_form, tool_change, tool_reference,
+};
+pub(crate) use request::decode_tool;
 
 pub const ANTHROPIC_VERSION: &str = "2023-06-01";
 

@@ -111,6 +111,25 @@ pub(crate) struct CacheControlW {
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
+pub(crate) struct ToolChangeW {
+    #[serde(rename = "type")]
+    pub(crate) ty: String,
+    pub(crate) tool: Raw,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) cache_control: Option<Ext<CacheControlW>>,
+}
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+pub(crate) struct ToolHandleW {
+    #[serde(rename = "type")]
+    pub(crate) ty: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) name: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) definition: Option<Raw>,
+}
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub(crate) struct ToolReferenceW {
     #[serde(rename = "type")]
     pub(crate) ty: String,

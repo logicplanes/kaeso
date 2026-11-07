@@ -722,11 +722,11 @@ fn claude_code_server_tools_and_beta_tool_fields_get_actionable_errors() {
         panic!()
     };
     f.extras.fields.insert(
-        "eager_input_streaming".into(),
-        kaeso_kpp::RawJson::from_string("true".into()).unwrap(),
+        "allowed_callers".into(),
+        kaeso_kpp::RawJson::from_string("[\"direct\"]".into()).unwrap(),
     );
     for (feature, message) in refused(&req) {
-        assert_eq!(feature, "tools[1].eager_input_streaming");
+        assert_eq!(feature, "tools[1].allowed_callers");
         assert!(
             message.contains("CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1"),
             "{message}"
