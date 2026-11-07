@@ -66,7 +66,7 @@ Ein Release ändert die Image-Tags in `main.tf`. Wenden Sie die neue Konfigurati
 
 ## Worauf das beruht
 
-Beide Konfigurationen bestehen `tofu fmt` und `tofu validate` mit dem Google-Provider, was CI ausführt. Gateway- und Konsolen-Image wurden hinter einem pfadweiterleitenden Edge lokal mit Docker getestet ([was geprüft wurde](index.md#was-geprüft-wurde)). Keine der beiden Konfigurationen wurde bisher in einem Google-Cloud-Projekt angewendet; wenden Sie die verwaltete zuerst in einem Wegwerf-Projekt an und prüfen Sie die Proxy-Bereiche, die das Gateway in `X-Forwarded-For` sieht, die Einrichtungs-E-Mail, eine gestreamte Antwort, die länger als eine Minute dauert, und ein Update.
+Beide Konfigurationen bestehen `tofu fmt` und `tofu validate` mit dem Google-Provider, was CI ausführt. Am 2026-11-07 wurde die Konfiguration des schnellen Servers in einem neuen Projekt in `europe-west3` angewendet und installierte `v0.6.0-rc.8`. Einrichtungslink, HTTPS-Health- und Readiness-Prüfungen, Konsole und API-Pfade, eine gestreamte Antwort, das ClickHouse-Anfrageprotokoll und das Ersetzen eines gefälschten `X-Forwarded-For` bestanden ([was geprüft wurde](index.md#was-geprüft-wurde)). Die verwaltete Konfiguration wurde nur validiert; wenden Sie sie vor dem produktiven Einsatz in einem Wegwerf-Projekt an.
 
 ## Nächste Schritte
 

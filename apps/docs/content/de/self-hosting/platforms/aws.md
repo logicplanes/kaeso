@@ -8,6 +8,8 @@ order: 4
 
 ## Schneller Server
 
+[Auf AWS starten](https://console.aws.amazon.com/cloudformation/home#/stacks/create/review?templateURL=https%3A%2F%2Fkaeso-cloudformation.s3.amazonaws.com%2Flatest%2Fquick-server.yaml&stackName=kaeso) öffnet die veröffentlichte Vorlage für den schnellen Server in CloudFormation. Dieselbe Datei liegt unter `deploy/aws/quick-server.yaml` im Repository.
+
 `deploy/aws/quick-server.yaml` legt eine Graviton-Instanz mit Ubuntu 24.04 an, eine Elastic IP, eine Security Group für HTTP, HTTPS und HTTP/3, SSH aus einem Adressbereich Ihrer Wahl und einen optionalen Route-53-Eintrag. Beim ersten Start führt die Instanz den Installer aus, der Docker installiert, die Einstellungen schreibt und das Compose-Paket mit Caddy, gebündeltem ClickHouse und dem Updater startet ([Installation](../installation.md)).
 
 ```bash
@@ -61,7 +63,7 @@ Ein Release ändert die Image-Tags in `managed.yaml`. Rollen Sie die neue Vorlag
 
 ## Worauf das beruht
 
-Beide Vorlagen bestehen `cfn-lint`, das CI ausführt. Gateway- und Konsolen-Image wurden hinter einem pfadweiterleitenden Edge lokal mit Docker getestet ([was geprüft wurde](index.md#was-geprüft-wurde)). Keiner der beiden Stacks wurde bisher in einem AWS-Konto angelegt; legen Sie den verwalteten Stack zuerst in einem Wegwerf-Konto an und prüfen Sie die Einrichtungs-E-Mail, eine gestreamte Antwort, die länger als eine Minute dauert, die Client-Adresse in einem Anfrageprotokoll gegen ein gefälschtes `X-Forwarded-For` und ein Update.
+Beide Vorlagen bestehen `cfn-lint`, das CI ausführt. Am 2026-11-07 legte die veröffentlichte Vorlage des schnellen Servers in einem leeren AWS-Konto in `us-east-1` einen Stack an und installierte `v0.6.0-rc.8`. Einrichtungslink, HTTPS-Health- und Readiness-Prüfungen, Konsole und API-Pfade, eine gestreamte Antwort, das ClickHouse-Anfrageprotokoll und das Ersetzen eines gefälschten `X-Forwarded-For` bestanden ([was geprüft wurde](index.md#was-geprüft-wurde)). Der verwaltete Stack wurde nur gelintet; rollen Sie ihn vor dem produktiven Einsatz in einem Wegwerf-Konto aus.
 
 ## Nächste Schritte
 

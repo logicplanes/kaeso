@@ -58,9 +58,20 @@ AWS 和 Google Cloud 不是一键部署：您需要选择区域、域名及其�
 
 ## 已验证的内容
 
-2026 年 11 月 6 日，边缘服务、网关和控制台按此布局用发布镜像在本地 Docker 中完成了测试：路径转发、分块的流、伪造的客户端地址，以及网关不可用时各 API 的错误格式（`e2e/install/test_edge.py`）。Render 蓝图、Railway 文件和 DigitalOcean 应用规范对照各平台的规范做了检查，CloudFormation 模板通过 `cfn-lint` 检查，Terraform 通过 `tofu validate` 检查；CI 会重复每项检查。
+2026-11-06，边缘、网关和控制台已在本地 Docker 中验证：路径路由、分块流、伪造的客户端地址，以及网关不可用时各 API 的错误格式（`e2e/install/test_edge.py`）。CI 会重复模板、lint 和格式检查。
 
-五条路径都尚未从一个空账户部署到对应平台，因此每个页面都会说明其依据。[Render](render.md) 和 [Google Cloud](gcp.md) 可通过指向 `prod` 分支（包含最新版本）的链接打开；Railway 需要先发布模板，AWS 需要先把模板放入 S3 存储桶，而 DigitalOcean 的按钮只部署一个服务，所以其规范通过 `doctl` 应用。
+2026-11-07，快速服务器已从空白云账户部署：AWS 模板在 `us-east-1` 创建 CloudFormation 堆栈，Google Cloud 配置在 `europe-west3` 的新项目中应用；两者都安装了 `v0.6.0-rc.8`。两者都创建了第一个用户，通过一个 HTTPS 源提供控制台和 API，流式发送了五个 SSE 事件且文本正好为 `Kaeso stream works.`，把请求写入 ClickHouse，并忽略了伪造的 `X-Forwarded-For`。
+
+同一天，Render 蓝图从法兰克福的空白 Render 项目创建。它按固定版本的 `render.yaml` 创建了全部五个资源，发送了一次性设置邮件，通过边缘、网关和就绪检查，流式发送同一回复并记录请求。实际测试发现 Render 会追加调用方的 `X-Forwarded-For`；现在 Render 上的边缘读取由 Cloudflare 覆盖的 `CF-Connecting-IP` 头。修复后，带伪造 `X-Forwarded-For` 的测试通过。
+
+| 平台 | 从空白账户进行的实际测试 |
+| --- | --- |
+| Render | 蓝图和设置邮件流程于 2026-11-07 通过 |
+| AWS 快速服务器 | CloudFormation 堆栈和设置链接于 2026-11-07 通过 |
+| Google Cloud 快速服务器 | Terraform 配置和设置链接于 2026-11-07 通过 |
+| AWS 和 Google Cloud 托管堆栈 | 已通过 CI 的 lint 和格式检查；本轮未部署 |
+| Railway | 受阻：登录的测试工作区试用已过期，Railway 要求升级套餐后才能应用新基础设施 |
+| DigitalOcean | 本轮未测试 |
 
 ## 下一步
 

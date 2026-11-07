@@ -39,7 +39,7 @@ Only the edge is public. Render's private network carries requests from the edge
 3. Wait until every service is live. The gateway emails the one-time setup link to `KAESO_SETUP_EMAIL`; open it to create the first user ([the first start](../how-it-works.md#the-first-start)).
 4. For your own domain, add it to `kaeso-edge` under **Settings**, point its DNS record where Render says, set `KAESO_PUBLIC_URL` on `kaeso-gateway` to `https://` and the domain, and redeploy the gateway.
 
-The gateway listens on port 8080 and keeps its metrics on its loopback address, since Render takes the one port a private service binds on every interface as its port. The edge trusts `X-Forwarded-For` from Render's private network, where its own proxy sits, and the gateway trusts the edge.
+The gateway listens on port 8080 and keeps its metrics on its loopback address, since Render takes the one port a private service binds on every interface as its port. Public traffic reaches Cloudflare before Render. The edge reads `CF-Connecting-IP`, which Cloudflare overwrites, rather than the caller-controlled `X-Forwarded-For`; the gateway trusts only the edge.
 
 ## Update and roll back
 
@@ -47,7 +47,7 @@ A release changes the image tags in `render.yaml`. On the blueprint's page, **Ma
 
 ## What this is based on
 
-The blueprint's shape, the service types, the plan names, `fromService` and `fromDatabase` references and `ipAllowList` follow Render's blueprint specification, read on 2026-11-06. The three images were tested in this layout locally with Docker ([what was validated](index.md#what-was-validated)). The blueprint has not yet been deployed on Render from an empty account; do that in a disposable workspace first, and check the setup email, a streamed completion, the client address in a request log, and an update.
+The blueprint's shape, the service types, the plan names, `fromService` and `fromDatabase` references and `ipAllowList` follow Render's blueprint specification, read on 2026-11-06. On 2026-11-07 the blueprint was created from an empty Render project in Frankfurt. It created all five resources, the setup email arrived, the health and readiness checks passed, a streamed completion reached the console's request log, and a forged `X-Forwarded-For` was replaced by the address in Cloudflare's `CF-Connecting-IP` ([what was validated](index.md#what-was-validated)). The live test found and fixed the forwarded-address case in the edge before this result.
 
 ## Next steps
 

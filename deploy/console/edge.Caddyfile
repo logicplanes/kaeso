@@ -4,7 +4,7 @@
 	persist_config off
 	servers {
 		trusted_proxies static {$KAESO_EDGE_TRUSTED_PROXIES:private_ranges}
-		client_ip_headers X-Forwarded-For
+		client_ip_headers {$KAESO_EDGE_CLIENT_IP_HEADERS:X-Forwarded-For}
 	}
 }
 

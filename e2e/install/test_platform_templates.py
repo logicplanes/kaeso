@@ -88,9 +88,10 @@ def test_render_runs_a_public_edge_in_front_of_private_services(render):
         if service["type"] != "keyvalue":
             assert service["autoDeployTrigger"] in ("off", False), name
             assert service["runtime"] == "image", name
-    upstreams = {e["key"]: e["fromService"] for e in services["kaeso-edge"]["envVars"]}
-    assert upstreams["KAESO_GATEWAY_UPSTREAM"] == {"name": "kaeso-gateway", "type": "pserv", "property": "hostport"}
-    assert upstreams["KAESO_CONSOLE_UPSTREAM"] == {"name": "kaeso-console", "type": "pserv", "property": "hostport"}
+    edge_env = {e["key"]: e for e in services["kaeso-edge"]["envVars"]}
+    assert edge_env["KAESO_EDGE_CLIENT_IP_HEADERS"]["value"] == "CF-Connecting-IP", "Render appends to X-Forwarded-For"
+    assert edge_env["KAESO_GATEWAY_UPSTREAM"]["fromService"] == {"name": "kaeso-gateway", "type": "pserv", "property": "hostport"}
+    assert edge_env["KAESO_CONSOLE_UPSTREAM"]["fromService"] == {"name": "kaeso-console", "type": "pserv", "property": "hostport"}
 
 
 def test_render_keeps_secrets_out_of_the_blueprint_and_counters_out_of_eviction(render):
@@ -112,6 +113,14 @@ def test_render_keeps_secrets_out_of_the_blueprint_and_counters_out_of_eviction(
     }
     [database] = render["databases"]
     assert database["ipAllowList"] == [] and database["databaseName"] == "kaeso"
+
+
+def test_platform_launch_links_use_the_published_templates():
+    readme = (ROOT / "README.md").read_text()
+    assert "https://render.com/deploy?repo=https://github.com/logicplanes/kaeso/tree/prod" in readme
+    assert "kaeso-cloudformation.s3.amazonaws.com%2Flatest%2Fquick-server.yaml" in readme
+    assert "cloudshell_workspace=deploy/gcp/quick-server" in readme
+    assert "KAESO_EDGE_CLIENT_IP_HEADERS" in (ROOT / "deploy/console/edge.Caddyfile").read_text()
 
 
 def test_railway_listens_on_ipv6_and_takes_secrets_from_shared_variables():
