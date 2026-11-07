@@ -253,10 +253,13 @@ async fn reasoning_effort_reaches_cohere_only_as_none_or_high() {
         Some(body),
     )
     .await;
-    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
-    let message = r.json()["error"]["message"].as_str().unwrap().to_owned();
-    assert!(message.contains("`none`, `high`"), "{message}");
-    assert!(env.mock.received().is_empty());
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(r.header("kaeso-adapted"), Some("reasoning_effort"));
+    let sent = sent_to_cohere(&env, "/v1/chat/completions", REASONING);
+    assert_eq!(
+        sent["reasoning_effort"], "high",
+        "the nearest level Cohere lists"
+    );
 }
 
 #[tokio::test]
