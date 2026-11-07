@@ -39,7 +39,7 @@ Nur der Edge ist öffentlich. Renders privates Netz trägt Anfragen vom Edge zum
 3. Warten Sie, bis jeder Dienst läuft. Das Gateway sendet den einmaligen Einrichtungslink an `KAESO_SETUP_EMAIL`; öffnen Sie ihn, um den ersten Benutzer anzulegen ([der erste Start](../how-it-works.md#der-erste-start)).
 4. Für Ihre eigene Domain fügen Sie sie bei `kaeso-edge` unter **Settings** hinzu, richten den DNS-Eintrag ein, wie Render es angibt, setzen `KAESO_PUBLIC_URL` bei `kaeso-gateway` auf `https://` und die Domain und rollen das Gateway neu aus.
 
-Das Gateway lauscht auf Port 8080 und hält seine Metriken auf seiner Loopback-Adresse, denn Render nimmt den einen Port, den ein Private Service auf allen Schnittstellen bindet, als seinen Port. Der Edge vertraut `X-Forwarded-For` aus Renders privatem Netz, in dem Renders eigener Proxy sitzt, und das Gateway vertraut dem Edge.
+Das Gateway lauscht auf Port 8080 und hält seine Metriken auf seiner Loopback-Adresse, denn Render nimmt den einen Port, den ein Private Service auf allen Schnittstellen bindet, als seinen Port. Öffentlicher Verkehr erreicht vor Render Cloudflare. Der Edge liest `CF-Connecting-IP`, das Cloudflare überschreibt, statt des vom Aufrufer kontrollierten `X-Forwarded-For`; das Gateway vertraut nur dem Edge.
 
 ## Aktualisieren und zurückrollen
 
@@ -47,7 +47,7 @@ Ein Release ändert die Image-Tags in `render.yaml`. Auf der Seite des Blueprint
 
 ## Worauf das beruht
 
-Form des Blueprints, Diensttypen, Plannamen, die Verweise `fromService` und `fromDatabase` sowie `ipAllowList` folgen Renders Blueprint-Spezifikation, gelesen am 6. November 2026. Die drei Images wurden in diesem Aufbau lokal mit Docker getestet ([was geprüft wurde](index.md#was-geprüft-wurde)). Der Blueprint wurde noch nicht von einem leeren Konto aus auf Render ausgerollt; tun Sie das zuerst in einem Wegwerf-Workspace und prüfen Sie die Einrichtungs-E-Mail, eine gestreamte Antwort, die Client-Adresse in einem Anfrageprotokoll und ein Update.
+Form des Blueprints, Diensttypen, Plannamen, die Verweise `fromService` und `fromDatabase` sowie `ipAllowList` folgen Renders Blueprint-Spezifikation, gelesen am 6. November 2026. Am 2026-11-07 wurde der Blueprint aus einem leeren Render-Projekt in Frankfurt erstellt. Er legte alle fünf Ressourcen an, die Einrichtungs-E-Mail kam an, Health- und Readiness-Prüfungen bestanden, eine gestreamte Antwort erschien im Anfrageprotokoll, und ein gefälschtes `X-Forwarded-For` wurde durch die Adresse in Cloudflares `CF-Connecting-IP` ersetzt ([was geprüft wurde](index.md#was-geprüft-wurde)). Der Live-Test fand den Fehler mit der weitergeleiteten Adresse und prüfte die korrigierte Konfiguration.
 
 ## Nächste Schritte
 

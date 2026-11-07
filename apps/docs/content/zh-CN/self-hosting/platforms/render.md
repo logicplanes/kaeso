@@ -39,7 +39,7 @@ order: 1
 3. 等待所有服务上线。网关会把一次性设置链接发送到 `KAESO_SETUP_EMAIL`；打开它创建第一个用户（[首次启动](../how-it-works.md#首次启动)）。
 4. 要使用自己的域名，在 `kaeso-edge` 的 **Settings** 中添加域名，按 Render 的提示设置 DNS 记录，把 `kaeso-gateway` 的 `KAESO_PUBLIC_URL` 设为 `https://` 加该域名，然后重新部署网关。
 
-网关在端口 8080 上监听，并把指标保留在回环地址上，因为 Render 把私有服务在所有接口上绑定的那一个端口当作其端口。边缘服务只信任来自 Render 私有网络（Render 自己的代理所在）的 `X-Forwarded-For`，网关则只信任边缘服务。
+网关在端口 8080 上监听，并把指标保留在回环地址上，因为 Render 把私有服务在所有接口上绑定的那一个端口当作其端口。公开流量在到达 Render 前经过 Cloudflare。边缘服务读取由 Cloudflare 覆盖的 `CF-Connecting-IP`，不使用调用方可控制的 `X-Forwarded-For`；网关只信任边缘服务。
 
 ## 更新和回滚
 
@@ -47,7 +47,7 @@ order: 1
 
 ## 依据
 
-蓝图的结构、服务类型、套餐名称、`fromService` 和 `fromDatabase` 引用以及 `ipAllowList` 都遵循 2026 年 11 月 6 日阅读的 Render 蓝图规范。三个镜像已按此布局在本地 Docker 中测试（[已验证的内容](index.md#已验证的内容)）。蓝图尚未从空账户部署到 Render；请先在一次性工作区中部署，并检查设置邮件、一次流式回复、请求日志中的客户端地址以及一次更新。
+蓝图的结构、服务类型、套餐名称、`fromService` 和 `fromDatabase` 引用以及 `ipAllowList` 都遵循 2026 年 11 月 6 日阅读的 Render 蓝图规范。2026-11-07，蓝图从法兰克福的空白 Render 项目创建。它创建了全部五个资源，设置邮件送达，健康与就绪检查通过，流式回复进入请求日志，伪造的 `X-Forwarded-For` 被 Cloudflare 的 `CF-Connecting-IP` 地址替换（[已验证的内容](index.md#已验证的内容)）。实际测试发现并验证了转发地址问题的修复。
 
 ## 下一步
 

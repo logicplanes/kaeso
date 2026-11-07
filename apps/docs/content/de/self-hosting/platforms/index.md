@@ -58,9 +58,20 @@ AWS und Google Cloud sind kein Ein-Klick-Weg: Sie wählen Region, Domain und ihr
 
 ## Was geprüft wurde
 
-Edge, Gateway und Konsole wurden in diesem Aufbau mit den Release-Images am 6. November 2026 lokal mit Docker getestet: Pfadweiterleitung, Streams in Chunks, gefälschte Client-Adressen und das Fehlerformat jeder API, während das Gateway fehlt (`e2e/install/test_edge.py`). Der Render-Blueprint, die Railway-Datei und die DigitalOcean-App-Spec wurden gegen die Spezifikationen der Plattformen geprüft, die CloudFormation-Vorlagen mit `cfn-lint` und das Terraform mit `tofu validate`; CI wiederholt jede Prüfung.
+Edge, Gateway und Konsole wurden am 2026-11-06 lokal mit Docker geprüft: Pfadweiterleitung, gestreamte Antworten, gefälschte Client-Adressen und die Fehlerformate der APIs, während das Gateway nicht erreichbar war (`e2e/install/test_edge.py`). CI wiederholt die Prüfungen der Vorlagen, Linter und Formatierung.
 
-Keiner der fünf Wege wurde bisher von einem leeren Konto aus auf seiner Plattform ausgerollt, deshalb sagt jede Seite, worauf sie beruht. [Render](render.md) und [Google Cloud](gcp.md) öffnen sich über einen Link, der auf den Branch `prod` zeigt, der das neueste Release enthält; Railway braucht eine veröffentlichte Vorlage, AWS die Vorlagen in einem S3-Bucket, und DigitalOceans Button rollt nur einen Dienst aus, deshalb geht die Spec über `doctl`.
+Am 2026-11-07 wurden die schnellen Server aus leeren Cloud-Konten angelegt: die AWS-Vorlage als CloudFormation-Stack in `us-east-1` und die Google-Cloud-Konfiguration in einem neuen Projekt in `europe-west3`; beide installierten den achten Release-Kandidaten. Beide legten den ersten Benutzer an, lieferten Konsole und APIs über einen HTTPS-Ursprung aus, streamten fünf SSE-Ereignisse mit exakt dem Text `Kaeso stream works.`, schrieben die Anfrage nach ClickHouse und ignorierten ein gefälschtes `X-Forwarded-For`.
+
+Der Render-Blueprint wurde am selben Tag aus einem leeren Render-Projekt in Frankfurt erstellt. Er legte alle fünf Ressourcen aus der release-gebundenen `render.yaml` an, versandte den einmaligen Einrichtungslink per E-Mail, bestand die Health- und Readiness-Prüfungen, streamte dieselbe Antwort und protokollierte die Anfrage. Der Test fand, dass Render an das vom Aufrufer gesetzte `X-Forwarded-For` anhängt; der Edge liest bei Render jetzt den von Cloudflare überschriebenen Header `CF-Connecting-IP`. Mit dieser Korrektur bestand der Test auch mit einem gefälschten `X-Forwarded-For`.
+
+| Plattform | Live-Test aus einem leeren Konto |
+| --- | --- |
+| Render | Blueprint und Einrichtung per E-Mail am 2026-11-07 bestanden |
+| AWS, schneller Server | CloudFormation-Stack und Einrichtungslink am 2026-11-07 bestanden |
+| Google Cloud, schneller Server | Terraform-Konfiguration und Einrichtungslink am 2026-11-07 bestanden |
+| AWS und Google Cloud, verwaltete Stacks | In CI gelintet und formatiert; in diesem Durchlauf nicht ausgerollt |
+| Railway | Blockiert: Die Testversion des angemeldeten Test-Workspace war abgelaufen; Railway verlangt vor neuer Infrastruktur einen Tarif |
+| DigitalOcean | In diesem Durchlauf nicht getestet |
 
 ## Nächste Schritte
 

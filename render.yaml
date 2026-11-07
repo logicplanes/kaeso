@@ -12,6 +12,9 @@ services:
     healthCheckPath: /kaeso-edge/healthz
     autoDeployTrigger: off
     envVars:
+      # Cloudflare overwrites this header; Render appends to the caller-controlled X-Forwarded-For.
+      - key: KAESO_EDGE_CLIENT_IP_HEADERS
+        value: CF-Connecting-IP
       - key: KAESO_GATEWAY_UPSTREAM
         fromService:
           name: kaeso-gateway
