@@ -50,6 +50,7 @@ On a managed platform, the [platform templates](https://docs.kaeso.app/self-host
 <p align="center">
   <a href="https://docs.kaeso.app/self-hosting/platforms/render">Render</a> ·
   <a href="https://docs.kaeso.app/self-hosting/platforms/railway">Railway</a> ·
+  <a href="https://docs.kaeso.app/self-hosting/platforms/digitalocean">DigitalOcean</a> ·
   <a href="https://docs.kaeso.app/self-hosting/platforms/aws">AWS</a> ·
   <a href="https://docs.kaeso.app/self-hosting/platforms/gcp">Google Cloud</a>
 </p>

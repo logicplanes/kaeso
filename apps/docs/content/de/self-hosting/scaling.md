@@ -47,7 +47,7 @@ Ein Gateway, das neu startet, für ein Update oder nach einem Absturz, kostet ni
 
 ## Auf einer verwalteten Plattform
 
-Die [Plattformvorlagen](platforms/index.md) nehmen die Zahl der Gateways als `GatewayCount` auf AWS und `gateway_min_instances` auf Google Cloud entgegen; Render und Railway skalieren einen Dienst aus ihren Dashboards. Der Load Balancer davor braucht nichts Klebriges, denn nichts, wovon eine Anfrage abhängt, liegt auf einem einzelnen Gateway.
+Die [Plattformvorlagen](platforms/index.md) nehmen die Zahl der Gateways als `GatewayCount` auf AWS und `gateway_min_instances` auf Google Cloud und `instance_count` auf DigitalOcean entgegen; Render und Railway skalieren einen Dienst aus ihren Dashboards. Der Load Balancer davor braucht nichts Klebriges, denn nichts, wovon eine Anfrage abhängt, liegt auf einem einzelnen Gateway.
 
 ## Nächste Schritte
 

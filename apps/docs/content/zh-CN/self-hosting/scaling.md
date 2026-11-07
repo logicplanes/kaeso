@@ -47,7 +47,7 @@ Compose 会启动 `gateway-1`、`gateway-2` 等，每个都有自己的内存和
 
 ## 在托管平台上
 
-[平台模板](platforms/index.md)在 AWS 上以 `GatewayCount`、在 Google Cloud 上以 `gateway_min_instances` 接受网关数量；Render 和 Railway 在各自的控制面板中扩展服务。前面的负载均衡器不需要任何会话粘性，因为请求依赖的内容都不保存在单个网关上。
+[平台模板](platforms/index.md)在 AWS 上以 `GatewayCount`、在 Google Cloud 上以 `gateway_min_instances`、在 DigitalOcean 上以 `instance_count` 接受网关数量；Render 和 Railway 在各自的控制面板中扩展服务。前面的负载均衡器不需要任何会话粘性，因为请求依赖的内容都不保存在单个网关上。
 
 ## 下一步
 

@@ -20,4 +20,4 @@ Kaeso läuft auf Ihrem Server als ein Docker-Compose-Projekt. Der [Schnellstart]
 - [Zustand und Metriken](monitoring.md): Prüfen Sie den Zustand, lesen Sie Prometheus-Metriken ab und lesen Sie die Protokolle.
 - [Fehlerbehebung](troubleshooting.md): Finden Sie die Lösung für ein Problem, das Sie sehen.
 - [Mehrere Gateways](scaling.md): Betreiben Sie mehr als ein Gateway hinter Caddy oder einem Load Balancer und wissen Sie, was sie teilen.
-- [Verwaltete Plattformen](platforms/index.md): Betreiben Sie Kaeso auf Render, Railway, AWS oder Google Cloud mit den Vorlagen im Repository.
+- [Verwaltete Plattformen](platforms/index.md): Betreiben Sie Kaeso auf Render, Railway, DigitalOcean, AWS oder Google Cloud mit den Vorlagen im Repository.

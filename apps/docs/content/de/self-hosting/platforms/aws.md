@@ -1,7 +1,7 @@
 ---
 title: AWS
 description: Betreiben Sie Kaeso auf AWS, als EC2-Server mit dem Compose-Paket oder auf ECS Fargate mit Application Load Balancer, RDS und ElastiCache.
-order: 3
+order: 4
 ---
 
 `deploy/aws/` im Repository enthält zwei CloudFormation-Vorlagen. Der schnelle Server ist das Compose-Paket auf einer Instanz, wie auf Ihrem eigenen Server. Der verwaltete Stack ist Kaeso auf ECS Fargate mit den Datenspeichern von AWS, für Installationen, denen eine Maschine nicht mehr reicht.

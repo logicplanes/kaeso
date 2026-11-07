@@ -1,7 +1,7 @@
 ---
 title: AWS
 description: 在 AWS 上运行 Kaeso：一台运行 Compose 软件包的 EC2 服务器，或带 Application Load Balancer、RDS 和 ElastiCache 的 ECS Fargate。
-order: 3
+order: 4
 ---
 
 仓库中的 `deploy/aws/` 包含两个 CloudFormation 模板。快速服务器是在一台实例上运行 Compose 软件包，与您自己的服务器相同。托管堆栈是在 ECS Fargate 上运行 Kaeso 并使用 AWS 的数据存储，适合一台机器不够用的安装。

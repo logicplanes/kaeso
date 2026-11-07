@@ -1,7 +1,7 @@
 ---
 title: Google Cloud
 description: 在 Google Cloud 上运行 Kaeso：一台运行 Compose 软件包的 Compute Engine 服务器，或带负载均衡器、Cloud SQL 和 Memorystore 的 Cloud Run。
-order: 4
+order: 5
 ---
 
 仓库中的 `deploy/gcp/` 包含两套 Terraform 配置，OpenTofu 也能应用。快速服务器是在一台虚拟机上运行 Compose 软件包，与您自己的服务器相同。托管配置是在 Cloud Run 上运行 Kaeso 并使用 Google 的数据存储，适合一台机器不够用的安装。

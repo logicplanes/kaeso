@@ -25,6 +25,44 @@ def test_every_platform_file_pins_the_gateway_and_console_to_this_release():
         assert all(tag == VERSION for _, tag in found), (file, found)
 
 
+@pytest.fixture(scope="module")
+def app_spec() -> dict:
+    return yaml.safe_load((ROOT / ".do/app.yaml").read_text())
+
+
+def test_digitalocean_runs_both_images_of_this_release_behind_the_apps_edge(app_spec):
+    services = {s["name"]: s for s in app_spec["services"]}
+    assert set(services) == {"kaeso-gateway", "kaeso-console"}
+    for name, repository in [("kaeso-gateway", "kaeso-gateway"), ("kaeso-console", "kaeso-console")]:
+        image = services[name]["image"]
+        assert image == {"registry_type": "GHCR", "registry": "logicplanes", "repository": repository, "tag": VERSION}, name
+    assert services["kaeso-gateway"]["http_port"] == 8080 and services["kaeso-gateway"]["health_check"]["http_path"] == "/healthz"
+    assert services["kaeso-console"]["http_port"] == 3000
+    rules = app_spec["ingress"]["rules"]
+    gateway_prefixes = [r["match"]["path"]["prefix"] for r in rules if r["component"]["name"] == "kaeso-gateway"]
+    assert gateway_prefixes == ["/v1", "/platform", "/mcp", "/oauth", "/.well-known"]
+    assert all(r["component"]["preserve_path_prefix"] for r in rules if r["component"]["name"] == "kaeso-gateway")
+    assert rules[-1] == {"match": {"path": {"prefix": "/"}}, "component": {"name": "kaeso-console"}}, "the console takes every other path, last"
+
+
+def test_digitalocean_binds_the_databases_and_keeps_secrets_out_of_the_spec(app_spec):
+    [gateway] = [s for s in app_spec["services"] if s["name"] == "kaeso-gateway"]
+    env = {e["key"]: e for e in gateway["envs"]}
+    for key in ["KAESO_MASTER_KEYS", "KAESO_SMTP_PASSWORD", "KAESO_CLICKHOUSE_URL"]:
+        assert env[key]["type"] == "SECRET" and env[key]["value"] == "", key
+    for key in ["KAESO_SETUP_EMAIL", "KAESO_SMTP_HOST", "KAESO_SMTP_USER", "KAESO_SMTP_FROM"]:
+        assert env[key]["value"] == "", key
+    assert env["KAESO_PUBLIC_URL"]["value"] == "${APP_URL}"
+    assert env["KAESO_POSTGRES_URL"] == {"key": "KAESO_POSTGRES_URL", "type": "SECRET", "value": "${kaeso-postgres.DATABASE_URL}"}
+    assert env["KAESO_VALKEY_URL"] == {"key": "KAESO_VALKEY_URL", "type": "SECRET", "value": "${kaeso-valkey.DATABASE_URL}"}
+    assert env["KAESO_VALKEY_CA"]["value"] == "${kaeso-valkey.CA_CERT}", "managed Valkey speaks TLS with DigitalOcean's own authority"
+    assert env["KAESO_METRICS_LISTEN"]["value"] == "127.0.0.1:9100"
+    assert "fc00::/7" in env["KAESO_TRUSTED_PROXIES"]["value"]
+    databases = {d["name"]: d for d in app_spec["databases"]}
+    assert databases["kaeso-postgres"] == {"name": "kaeso-postgres", "engine": "PG", "version": "18", "production": False}
+    assert databases["kaeso-valkey"] == {"name": "kaeso-valkey", "engine": "VALKEY", "production": True, "cluster_name": "kaeso-valkey"}
+
+
 def test_the_quick_servers_install_the_newest_stable_release_unless_told_a_version():
     for file in ["deploy/aws/quick-server.yaml", "deploy/gcp/quick-server/main.tf"]:
         text = (ROOT / file).read_text()

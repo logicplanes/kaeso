@@ -1,7 +1,7 @@
 ---
 title: Google Cloud
 description: Betreiben Sie Kaeso auf Google Cloud, als Compute-Engine-Server mit Compose oder auf Cloud Run mit Load Balancer, Cloud SQL und Memorystore.
-order: 4
+order: 5
 ---
 
 `deploy/gcp/` im Repository enthält zwei Terraform-Konfigurationen, die auch OpenTofu anwendet. Der schnelle Server ist das Compose-Paket auf einer virtuellen Maschine, wie auf Ihrem eigenen Server. Die verwaltete Konfiguration ist Kaeso auf Cloud Run mit den Datenspeichern von Google, für Installationen, denen eine Maschine nicht mehr reicht.

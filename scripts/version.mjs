@@ -84,6 +84,7 @@ const cargoManifest = (text) => {
 
 const PACKAGE_VERSION = /^( {2}"version": ")([^"]*)(")/m;
 const IMAGE_TAG = /(ghcr\.io\/logicplanes\/kaeso-[a-z]+:)([0-9A-Za-z.+-]+)()/g;
+const APP_SPEC_TAG = /(?<=repository: kaeso-[a-z]+\n\s+)(tag: )([0-9A-Za-z.+-]+)()/g;
 const CRATE_REQUIREMENT = /^(kaeso-[a-z-]+ = ")([^"]+)(")$/gm;
 
 const RULES = [
@@ -116,6 +117,13 @@ const RULES = [
     required: true,
     read: (text) => matches(text, IMAGE_TAG, 2),
     write: (text, version) => replaceGroup(text, IMAGE_TAG, version),
+  },
+  {
+    what: "App Platform image tag",
+    match: (file) => file === ".do/app.yaml",
+    required: true,
+    read: (text) => matches(text, APP_SPEC_TAG, 2),
+    write: (text, version) => replaceGroup(text, APP_SPEC_TAG, version),
   },
   {
     what: "dependency on a Kaeso crate",

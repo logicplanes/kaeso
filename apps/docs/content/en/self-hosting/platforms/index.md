@@ -1,6 +1,6 @@
 ---
 title: Managed platforms
-description: Run Kaeso on Render, Railway, AWS or Google Cloud with the templates in the repository.
+description: Run Kaeso on Render, Railway, DigitalOcean, AWS or Google Cloud with the templates in the repository.
 order: 12
 ---
 
@@ -31,7 +31,7 @@ flowchart LR
 
 | Path | What it is | Where |
 | --- | --- | --- |
-| Platform template | One file the platform reads, with a public edge, a private gateway and console, and the platform's PostgreSQL and Valkey | [Render](render.md), [Railway](railway.md) |
+| Platform template | One file the platform reads, with a public edge, a private gateway and console, and the platform's PostgreSQL and Valkey | [Render](render.md), [Railway](railway.md), [DigitalOcean](digitalocean.md) |
 | Quick server | One virtual machine with the Compose package, Caddy, bundled ClickHouse and the updater, as on your own server | [AWS](aws.md), [Google Cloud](gcp.md) |
 | Managed production | The platform's containers, load balancer, PostgreSQL and Valkey, with secrets in its secret store | [AWS](aws.md), [Google Cloud](gcp.md) |
 
@@ -39,7 +39,7 @@ AWS and Google Cloud are not one click: you choose a region, a domain and its ce
 
 ## What every path keeps
 
-- **One origin.** The console and the APIs answer on one domain. `/v1/*`, `/platform/*`, `/mcp`, `/mcp/*`, `/oauth/*` and `/.well-known/oauth-*` reach the gateway; every other path reaches the console. On Render and Railway, `kaeso-edge`, a second command in the console image, does this; on AWS and Google Cloud, the load balancer's path rules do.
+- **One origin.** The console and the APIs answer on one domain. `/v1/*`, `/platform/*`, `/mcp`, `/mcp/*`, `/oauth/*` and `/.well-known/oauth-*` reach the gateway; every other path reaches the console. On Render and Railway, `kaeso-edge`, a second command in the console image, does this; on DigitalOcean, the app's ingress rules; on AWS and Google Cloud, the load balancer's path rules.
 - **Streams stay unbuffered.** The edge flushes every chunk, and a load balancer's idle timeout is longer than the gateway's keepalive interval ([long streams](../domains-and-tls.md#long-streams)).
 - **The client address is believed only from the platform's proxy.** The edge takes `X-Forwarded-For` only from the platform's private network and sends the gateway one address; the gateway trusts the edge alone ([`KAESO_TRUSTED_PROXIES`](../configuration.md#settings)).
 - **Health checks** use `/healthz` for the process and `/readyz` for PostgreSQL, Valkey and ClickHouse ([health and metrics](../monitoring.md)). The metrics port is never public.
@@ -58,13 +58,14 @@ AWS and Google Cloud are not one click: you choose a region, a domain and its ce
 
 ## What was validated
 
-The edge, the gateway and the console were tested in this layout with the release images, locally with Docker, on 2026-11-06: path routing, chunked streams, forged client addresses and each API's error format while the gateway is away (`e2e/install/test_edge.py`). The Render blueprint and the Railway file were checked against the platforms' specifications, the CloudFormation templates with `cfn-lint`, and the Terraform with `tofu validate`; CI repeats every check.
+The edge, the gateway and the console were tested in this layout with the release images, locally with Docker, on 2026-11-06: path routing, chunked streams, forged client addresses and each API's error format while the gateway is away (`e2e/install/test_edge.py`). The Render blueprint, the Railway file and the DigitalOcean app spec were checked against the platforms' specifications, the CloudFormation templates with `cfn-lint`, and the Terraform with `tofu validate`; CI repeats every check.
 
-None of the four paths has yet been deployed on its platform from an empty account, so each page says what it is based on. [Render](render.md) and [Google Cloud](gcp.md) open from a link that points at the `prod` branch, which holds the latest release; Railway needs a published template and AWS the templates in an S3 bucket before such a link can exist.
+None of the five paths has yet been deployed on its platform from an empty account, so each page says what it is based on. [Render](render.md) and [Google Cloud](gcp.md) open from a link that points at the `prod` branch, which holds the latest release; Railway needs a published template, AWS the templates in an S3 bucket, and DigitalOcean's button deploys one service only, so its spec goes through `doctl`.
 
 ## Next steps
 
 - [Render](render.md): Deploy the blueprint with Render Postgres and Key Value.
 - [Railway](railway.md): Apply the infrastructure file with Railway Postgres and Redis.
+- [DigitalOcean](digitalocean.md): Create the app from the spec with a dev PostgreSQL and a managed Valkey.
 - [AWS](aws.md): Launch one EC2 server, or ECS Fargate with an Application Load Balancer, RDS and ElastiCache.
 - [Google Cloud](gcp.md): Launch one Compute Engine server, or Cloud Run with a load balancer, Cloud SQL and Memorystore.
