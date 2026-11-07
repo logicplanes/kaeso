@@ -68,7 +68,8 @@ export function ReleaseBanner() {
             seed={latest.version}
             art={isReleaseArtSpec(latest.art) ? latest.art : undefined}
             label={t("shell.whatsNew.artLabel", "Kaeso {version}", { version: latest.version })}
-            shape="wide"
+            eyebrow={latest.prerelease ? t("shell.whatsNew.preEyebrow", "Kaeso pre-release") : t("shell.whatsNew.eyebrow", "Kaeso")}
+            title={latest.version}
             flush
           />
         }

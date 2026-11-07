@@ -89,7 +89,7 @@ export const docs = {
       "One piece of news across the top of a home page: an eyebrow, a title, a line and an action beside its artwork, such as a new release with a flush `ReleaseArt`. The artwork leaves on narrow screens.",
     props: {
       actions: "One or two buttons.",
-      art: "The artwork on the right: a `ReleaseArt` with `flush`.",
+      art: "The artwork on the right, 16:9 at 320px: a `ReleaseArt` with `flush`, so the whole cover shows.",
       description: "One line, two at most.",
       eyebrow: 'What kind of news: "New release".',
       title: "The news itself.",

@@ -57,7 +57,7 @@ export const Announcement = forwardRef<
         {description && <p className="mt-6 line-clamp-2 max-w-640 text-body text-fg-secondary">{description}</p>}
         {actions && <div className="mt-16 flex flex-wrap items-center gap-8">{actions}</div>}
       </div>
-      {art && <div className="hidden min-h-140 w-320 shrink-0 md:block">{art}</div>}
+      {art && <div className="hidden aspect-video w-320 shrink-0 md:block">{art}</div>}
     </section>
   );
 });
