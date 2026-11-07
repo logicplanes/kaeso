@@ -66,7 +66,7 @@ A release changes the image tags in `main.tf`. Apply the new configuration; Clou
 
 ## What this is based on
 
-Both configurations pass `tofu fmt` and `tofu validate` with the Google provider, which CI runs. On 2026-11-07 the quick-server configuration was applied in a new project in `europe-west3` and installed `v0.6.0-rc.8`. The setup link, HTTPS health and readiness checks, console and API routing, a streamed completion, the ClickHouse request log and the replacement of a forged `X-Forwarded-For` all passed ([what was validated](index.md#what-was-validated)). The managed configuration has only been validated; apply it in a disposable project before relying on it.
+Both configurations pass `tofu fmt` and `tofu validate` with the Google provider, which CI runs. On 2026-11-07 the quick-server configuration was applied in a new project in `europe-west3` and installed the eighth release candidate. The setup link, HTTPS health and readiness checks, console and API routing, a streamed completion, the ClickHouse request log and the replacement of a forged `X-Forwarded-For` all passed ([what was validated](index.md#what-was-validated)). The managed configuration has only been validated; apply it in a disposable project before relying on it.
 
 ## Next steps
 
