@@ -267,13 +267,16 @@ impl Bench<'_> {
             "baseline: {} requests over {} connections",
             p.baseline_requests, p.baseline_concurrency
         ));
-        let b = baseline::run(
+        let pid = self.install.gateway.pid;
+        let cpu_before = crate::machine::cpu_seconds(pid);
+        let mut b = baseline::run(
             self.install.gateway.addr,
             &self.install.key,
             p.baseline_concurrency,
             Until::Count(p.baseline_requests),
         )
         .await;
+        b.gateway_cpu_us_per_request = cpu_per_request(cpu_before, pid, b.requests);
         self.check(
             "baseline",
             "every request succeeded",
@@ -317,7 +320,9 @@ impl Bench<'_> {
             tokio::time::sleep(Duration::from_secs(seconds)).await;
             let _ = stop.send(true);
         });
-        let b = baseline::run_on(
+        let pid = self.install.gateway.pid;
+        let cpu_before = crate::machine::cpu_seconds(pid);
+        let mut b = baseline::run_on(
             gw,
             &portal.key,
             &portal.path,
@@ -326,6 +331,7 @@ impl Bench<'_> {
             Until::Stopped(stopped),
         )
         .await;
+        b.gateway_cpu_us_per_request = cpu_per_request(cpu_before, pid, b.requests);
         self.check(
             "portal",
             "every tool call reached the MCP server",
@@ -758,4 +764,11 @@ fn first_error(runs: &[Run]) -> String {
     }
     let listed: Vec<String> = why.iter().map(|(w, n)| format!("{n} × {w}")).collect();
     format!("; {}", listed.join(", "))
+}
+
+// Everything the gateway process did meanwhile counts, its background flushes included, so
+// this is what each request costs a machine running Kaeso.
+fn cpu_per_request(before: Option<f64>, pid: u32, requests: usize) -> Option<f64> {
+    let used = crate::machine::cpu_seconds(pid)? - before?;
+    (requests > 0).then(|| used * 1_000_000.0 / requests as f64)
 }

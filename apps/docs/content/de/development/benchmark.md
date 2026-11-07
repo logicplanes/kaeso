@@ -83,6 +83,7 @@ Jede Zeit erscheint als Perzentile über alle Anfragen oder Chunks eines Laufs:
 | Requests/s | Nicht gestreamte Anfragen, die das Gateway pro Sekunde beantwortet hat, die Zeit des Mocks eingeschlossen |
 | Overhead | Die eigene Zeit von Kaeso, bevor es den Anbieter aufrief, aus dem Eintrag `kaeso` des [Headers `server-timing`](../api/model-api.md#antwort-header). Sie beginnt, wenn die Anfrage den Handler von Kaeso erreicht, und lässt die Zeit aus, die der Client zum Senden des Bodys brauchte |
 | Latency | Die Zeit des Clients für eine ganze nicht gestreamte Anfrage |
+| Gateway CPU per request | Die CPU-Zeit, User und System, die der Gateway-Prozess während der Baseline verbraucht hat, geteilt durch ihre Anfragen, seine Hintergrundarbeit eingeschlossen. Das kostet jede Anfrage den Rechner, auf dem Kaeso läuft, ohne die Clients und den Mock |
 | Added time to first byte | Die Zeit des Clients bis zum ersten Chunk minus die Zeit des Anbieters bis zur Antwort, den Eintrag `upstream` von `server-timing`. Sie enthält den Overhead, die Arbeit von Kaeso am ersten Chunk und die zusätzliche Verbindung |
 | Added chunk gap | Ein Perzentil der Abstände zwischen den Lesevorgängen des Clients über Kaeso, minus dasselbe Perzentil mit dem Mock allein. Werte um null bedeuten, dass Kaeso zwischen Chunks keine Verzögerung hinzufügt |
 | Gateway memory | Der residente Speicher des Gateway-Prozesses, mit `ps` gelesen: nach dem Aufwärmen, am Höchststand und als die meisten Streams offen waren |

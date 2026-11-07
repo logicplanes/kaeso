@@ -25,6 +25,7 @@ pub(crate) struct Baseline {
     pub(crate) overhead_ms: Summary,
     pub(crate) upstream_ms: Summary,
     pub(crate) latency_ms: Summary,
+    pub(crate) gateway_cpu_us_per_request: Option<f64>,
     pub(crate) failed: usize,
     pub(crate) failures: BTreeMap<String, usize>,
 }
@@ -123,6 +124,7 @@ pub(crate) async fn run_on(
         overhead_ms: Summary::of(&all.overhead_ms),
         upstream_ms: Summary::of(&all.upstream_ms),
         latency_ms: Summary::of(&all.latency_ms),
+        gateway_cpu_us_per_request: None,
         failed,
         failures: all.failures,
     }
