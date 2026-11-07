@@ -34,4 +34,6 @@ ipnet.workspace = true
 workspace = true
 
 [dev-dependencies]
+base64.workspace = true
 kaeso-testkit.workspace = true
+rcgen.workspace = true

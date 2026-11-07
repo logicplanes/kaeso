@@ -112,6 +112,7 @@ Docker 会在每个服务的日志达到 10 MB 时轮转，并保留五个文件
 | `KAESO_CLICKHOUSE_DATABASE`<br>`clickhouse.database` | 文本 | `kaeso` | 存放请求日志的 ClickHouse 数据库，由字母、数字和 `_` 组成。不存在时网关会创建它。 |
 | `KAESO_VALKEY_URL`<br>`valkey.url` | 文本，机密 | 必填 | 带密码的 Valkey（或 Redis）URL，例如 `redis://:secret@valkey:6379`。 |
 | `KAESO_VALKEY_KEY_PREFIX`<br>`valkey.key_prefix` | 文本 | `kaeso:` | 每个 Valkey 键和频道的前缀，便于相互信任的多个安装共用一个 Valkey。 |
+| `KAESO_VALKEY_CA`<br>`valkey.ca` | 文本 | 未设置 | 签发 Valkey 服务器证书的机构的 PEM，用于机构为私有的 `rediss://` URL，托管数据库通常如此。 |
 
 ### 主密钥
 

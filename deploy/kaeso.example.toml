@@ -21,6 +21,7 @@ database = "kaeso"
 
 [valkey]
 key_prefix = "kaeso:"
+ca = ""
 
 [setup]
 email = ""

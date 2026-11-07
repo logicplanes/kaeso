@@ -95,7 +95,11 @@ pub async fn prepare_with(config: Config, overrides: Overrides) -> Result<AppSta
         .as_ref()
         .map(|url| ClickHouse::new(url, &config.clickhouse.database))
         .transpose()?;
-    let valkey = Valkey::new(&config.valkey.url, &config.valkey.key_prefix)?;
+    let valkey = Valkey::new(
+        &config.valkey.url,
+        &config.valkey.key_prefix,
+        config.valkey.ca(),
+    )?;
     instance::seed(&pool, &instance_defaults(&config)).await?;
     pg::updates::seed(&pool, &crate::services::updates::defaults(&config)).await?;
     let transport = overrides.mail.unwrap_or_else(|| mail_transport(&config));

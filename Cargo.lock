@@ -2743,6 +2743,7 @@ dependencies = [
 name = "kaeso-store"
 version = "0.6.0-rc.6"
 dependencies = [
+ "base64 0.23.1",
  "clickhouse",
  "futures",
  "ipnet",
@@ -2751,6 +2752,7 @@ dependencies = [
  "kaeso-testkit",
  "metrics",
  "percent-encoding",
+ "rcgen",
  "redis",
  "rust_decimal",
  "secrecy",
@@ -4179,10 +4181,13 @@ dependencies = [
  "itoa",
  "percent-encoding",
  "pin-project-lite",
+ "rustls",
+ "rustls-native-certs",
  "ryu",
  "sha1_smol",
  "socket2",
  "tokio",
+ "tokio-rustls",
  "tokio-util",
  "url",
  "xxhash-rust",

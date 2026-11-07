@@ -852,8 +852,12 @@ mod tests {
     use super::*;
 
     fn unreachable_valkey() -> Valkey {
-        Valkey::new(&SecretString::from("redis://127.0.0.1:1"), "kaeso-test:")
-            .unwrap_or_else(|e| panic!("{e}"))
+        Valkey::new(
+            &SecretString::from("redis://127.0.0.1:1"),
+            "kaeso-test:",
+            None,
+        )
+        .unwrap_or_else(|e| panic!("{e}"))
     }
 
     fn ring() -> KeyRing {
