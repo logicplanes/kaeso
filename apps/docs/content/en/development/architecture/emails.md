@@ -10,15 +10,20 @@ Every email Kaeso sends comes from `crates/kaeso-mail`: one layout, one styleshe
 
 | Part | In the sign-in email | Style |
 | --- | --- | --- |
-| Wordmark | Kaeso | Alone, top left, 28px in and 28px down |
+| Wordmark or cover | Kaeso | The wordmark alone, top left; announcements open with a [cover](#covers) instead |
+| Where, when a notification is about an organization or project | Acme / Checkout | `small`, tertiary, above the heading |
 | Heading | Sign in to Kaeso | `title-lg` |
 | One sentence | The link works once and expires in 15 minutes. | `body-lg`, secondary |
-| Details, when there are facts | Organization: Acme, Provider: Anthropic, Key: Production (…8QAA) | A list of label and value, `small` tertiary and `body-lg` |
-| One button | Sign in | The `xl` pill, ink on white |
+| Figures, when a report has them | 12,480 requests, 312 tool calls, $41.20 | A panel of up to three values, `title` and `caption` |
+| Details, when there are facts | Organization: Acme, Provider: Anthropic, Key: Production (…8QAA) | Label and value between hairlines, `small` tertiary and `body-lg` |
+| A table, when a report lists projects | Checkout, 9,120, $30.10 | Rows between hairlines, numbers right-aligned in tabular figures, grouped under each organization's name when there are several |
+| A list, when there are changes | What changed, then up to four lines of the release notes; in the digest, the lines under Acme or Acme / Checkout | A short label and bulleted lines |
+| One button | Sign in | The `xl` pill, ink on white, 48px tall |
+| A text link, when there is more to read | Read the release notes | Underlined, ink |
 | One quiet line | If you did not ask to sign in, you can ignore this email. | `small`, tertiary |
 | Footer | Sent by Kaeso at kaeso.example.com. | `caption` |
 
-- **No card.** A single left-aligned column, at most 562px wide, on the canvas: white in light mode, black in dark mode.
+- **No card.** A single left-aligned column, at most 560px wide, on the canvas: white in light mode, black in dark mode. Spacing follows the 8px grid, with more space between groups than inside them; on a phone the margins shrink to 16px and the heading to 24px.
 - **Copy limits.** A subject of at most 60 characters without a period, a heading of at most 48, and sentences of at most 100. German and Chinese get 15% more: 69, 55 and 115. A test enforces the limits.
 - **Details name the thing.** An email about a key, a budget or a model answers what, where and when on its own: a list of labels and values under the sentence names the organization, the project, the provider, the key and its last four characters, the amount used and when it resets, the provider's answer and the times. Each send site passes what it knows; the email never guesses.
 - **No raw links.** The HTML never shows a URL; the button carries it. The plain-text part has the link in full on its own line, and it says the same words in the same order.
@@ -35,13 +40,13 @@ The text and HTML of every email are snapshots in `crates/kaeso-mail/src/snapsho
 | `locale.rs` | `Locale` (`en`, `de`, `zh-CN`), and dates and numbers as each language writes them |
 | `layout.rs` | The shared layout, as HTML with maud and as plain text |
 | `style.rs` | The values of `@logicplanes/kaeso-tokens` in its `token!` macro, each role's inline style, and the stylesheet. The layout never writes a colour or size of its own |
-| `assets.rs`, `assets/` | The wordmark images and their SVG sources |
+| `assets.rs`, `assets/` | The wordmark and cover images and their SVG sources |
 | `mailer.rs` | A queue of up to 1,024 emails, three retries after 1, 5 and 30 seconds, the SMTP, log and in-memory transports, and the MIME structure |
 
-- **Email-safe HTML.** Tables give the structure, and everything that can be an inline style is one. A `<style>` block holds only color schemes, resets and dark mode. Conditional comments give Outlook for Windows a fixed 562px column. No web fonts, external images, scripts or tracking pixels.
+- **Email-safe HTML.** Tables give the structure, and everything that can be an inline style is one. A `<style>` block holds only color schemes, resets and dark mode. Conditional comments give Outlook for Windows a fixed 560px column. No web fonts, external images, scripts or tracking pixels.
 - **The button** is a padded link with a full radius. For Outlook for Windows, which can't pad or round a link, it is a VML `roundrect` whose width comes from the label, so it never wraps.
 - **Escaping.** maud escapes the names people choose, such as organizations, keys and projects, in text and attributes. The only unescaped markup is fixed: the doctype, Outlook's conditional comments and the VML button, which escapes what it embeds. Tests send markup and quotes through every name.
-- **MIME.** `multipart/alternative` with the plain text first, and an HTML part that carries both wordmark PNGs inline by `Content-ID`, so mail apps don't list them as attachments.
+- **MIME.** `multipart/alternative` with the plain text first, and an HTML part that carries the images it shows inline by `Content-ID`, the two wordmark PNGs or the cover, so mail apps don't list them as attachments.
 
 ## Notifications
 
@@ -51,7 +56,7 @@ The text and HTML of every email are snapshots in `crates/kaeso-mail/src/snapsho
 2. `dispatch::kinds` maps each audit `Action` to the kinds it notifies about, in one `match` without a wildcard, so a new action needs a decision. Events without an action call `system` directly: a connection or provider account that signs out, a held tool, a provider key refused three times in a row, a finished export, a hard budget used up and a new release.
 3. Recipients come from rights, never from role names: the rights of the kind in `kaeso-core`'s notification catalogue, held in the organization or project, the instance admins, or the person the event is about. The person who acted is left out, except for security emails.
 4. Each person's setting chooses now, daily or off, and a muted organization stops all but security emails. `notifications_sent` keeps one email per subject and day, and past 20 immediate emails an hour the rest go to `notification_digest`.
-5. The `notifications` job runs every minute. At 8:31 in the install's time zone it sends waiting digests, on the 1st the monthly cost report and on Mondays the weekly summary.
+5. The `notifications` job runs every minute. At 8:31 in the install's time zone it sends waiting digests, on the 1st the monthly cost report and on Mondays the weekly summary. The weekly summary names the week and each organization, and its button opens the usage of that week; a digest line keeps the organization and project it was about, so the digest groups its lines by them.
 
 ## Languages
 
@@ -63,8 +68,10 @@ Each email's function has one `match` on the language, with whole sentences and 
 
 | | English | German | Chinese |
 | --- | --- | --- | --- |
-| Date | `2026-10-14` | `14. Okt. 2026` | `2026年10月14日` |
-| Amount | `1250` | `1.250` | `1,250` |
+| Date | `14 Oct 2026` | `14. Okt. 2026` | `2026年10月14日` |
+| Month | `October 2026` | `Oktober 2026` | `2026年10月` |
+| Amount | `1,250` | `1.250` | `1,250` |
+| Dollars | `$1,250.00` | `1.250,00 $` | `$1,250.00` |
 | Percentage | `80%` | `80 %` | `80%` |
 
 ## The wordmark
@@ -76,6 +83,19 @@ Each PNG is three times its display size and rendered from `assets/wordmark-ligh
 ```bash
 KAESO_UPDATE_MAIL_ASSETS=1 cargo test -p kaeso-mail assets
 ```
+
+## Covers
+
+Announcements open with a cover instead of the wordmark: invitations, sign-up and setup links, the test email, a new app, an accepted invitation, the weekly summary, the digest, the monthly cost report, and a new or installed version. Alerts, security and organization emails never do; they stay short and start with the wordmark.
+
+Each cover is Kaeso's release art, drawn by `drawReleaseArt` in `packages/ui` in its wide shape, with the wordmark in the corner the art keeps clear. It travels inline like the wordmark: a 1120×480 PNG shown at 560×240, under 60 KB, with alt text in each language. It holds no text but the wordmark, so it needs no translation and looks the same in light and dark. `scripts/mail-covers.mjs` writes the SVGs, a test next to it checks them against the release art, and the assets test renders the PNGs from them. To draw them again after the release art changes:
+
+```bash
+node scripts/mail-covers.mjs
+KAESO_UPDATE_MAIL_ASSETS=1 cargo test -p kaeso-mail assets
+```
+
+The email about a new version writes the version as text, not into the cover. It lists the first four changes of the release notes and how many more there are, says whether the release installs by itself in the update window, from the updates page or by hand, and links to the notes.
 
 ## Dark mode
 
@@ -95,4 +115,4 @@ The [development stack](../stack.md) includes Mailpit, whose web interface at ht
 cargo test -p kaeso-mail --test smtp
 ```
 
-The test checks that each email arrives with both parts and both images inline, and that Mailpit's HTML check reports enough support across mail apps. It then deletes its messages. `KAESO_TEST_SMTP_URL` and `KAESO_TEST_MAIL_API` point it elsewhere.
+The test checks that each email arrives with both parts and exactly the images it shows inline, and that Mailpit's HTML check reports enough support across mail apps. It then deletes its messages. `KAESO_TEST_SMTP_URL` and `KAESO_TEST_MAIL_API` point it elsewhere.

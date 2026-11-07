@@ -6,13 +6,15 @@ Subject: [Checkout] Checkout reached its monthly spend budget
 
 Checkout reached its monthly spend budget
 
+Acme / Checkout
+
 Checkout used all of its monthly spend budget of 50 USD; requests over it are refused.
 
 Organization: Acme
 Project: Checkout
 Applies to: The whole project
 Budget: 50 USD per month
-Resets: 2026-12-01 00:00 UTC
+Resets: 1 Dec 2026, 00:00 UTC
 
 Open limits:
 https://kaeso.example.com/orgs/org_1

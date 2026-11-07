@@ -64,7 +64,7 @@ Die Anmeldung mit Passwort funktioniert weiter, und `kaeso setup-link` gibt den 
 
 Sicherheits- und Organisationshinweise werden immer gesendet. Für jede andere Benachrichtigung wählt jede Person unter **Konto** › **Benachrichtigungen** sofort, täglich oder aus. Kaeso sendet zum selben Thema höchstens eine E-Mail pro Tag und höchstens 20 sofort pro Stunde; der Rest wartet auf die Zusammenfassung. Jede Benachrichtigung nennt das Recht, wegen dessen die Person sie erhält, und verlinkt ihre Einstellungen. Alle außer Sicherheits-E-Mails tragen einen Ein-Klick-Abmeldelink, auch im Header `List-Unsubscribe` (RFC 8058).
 
-Jede E-Mail hat einen HTML- und einen Textteil, hell und dunkel. Ihre Bilder sind in die E-Mail eingebettet, sodass sie nichts von Ihrer Installation lädt und keine Tracking-Pixel enthält.
+Jede E-Mail hat einen HTML- und einen Textteil, hell und dunkel. Ihre Bilder sind in die E-Mail eingebettet, sodass sie nichts von Ihrer Installation lädt und keine Tracking-Pixel enthält. Ankündigungen wie eine Einladung, eine neue Version, die Wochenübersicht und der monatliche Kostenbericht beginnen mit einem Titelbild aus der Release-Grafik von Kaeso; Warnungen und Sicherheits-E-Mails bleiben kurz. Die E-Mail zu einer neuen Version führt ihre ersten Änderungen auf und sagt, ob sie sich im Update-Fenster selbst installiert, über die Update-Seite oder von Hand.
 
 ## Sprachen
 

@@ -57,7 +57,7 @@ impl Locale {
     pub fn date(self, date: Date) -> String {
         let (y, d) = (date.year(), date.day());
         match self {
-            Locale::En => format!("{y:04}-{:02}-{d:02}", u8::from(date.month())),
+            Locale::En => format!("{d} {} {y}", english_month(date.month())),
             Locale::De => format!("{d}. {} {y}", german_month(date.month())),
             Locale::ZhCn => format!("{y}年{}月{d}日", u8::from(date.month())),
         }
@@ -66,16 +66,65 @@ impl Locale {
     pub fn moment(self, at: PrimitiveDateTime, zone: &str) -> String {
         let (h, m) = (at.hour(), at.minute());
         match self {
-            Locale::En | Locale::ZhCn => format!("{} {h:02}:{m:02} {zone}", self.date(at.date())),
-            Locale::De => format!("{}, {h:02}:{m:02} {zone}", self.date(at.date())),
+            Locale::ZhCn => format!("{} {h:02}:{m:02} {zone}", self.date(at.date())),
+            Locale::En | Locale::De => format!("{}, {h:02}:{m:02} {zone}", self.date(at.date())),
+        }
+    }
+
+    pub fn range(self, from: Date, to: Date) -> String {
+        let (same_year, same_month) = (
+            from.year() == to.year(),
+            from.year() == to.year() && from.month() == to.month(),
+        );
+        let (d1, d2, y) = (from.day(), to.day(), to.year());
+        match self {
+            Locale::En if same_month => format!("{d1}–{d2} {} {y}", english_month(to.month())),
+            Locale::En if same_year => format!(
+                "{d1} {} – {d2} {} {y}",
+                english_month(from.month()),
+                english_month(to.month())
+            ),
+            Locale::De if same_month => format!("{d1}.–{d2}. {} {y}", german_month(to.month())),
+            Locale::De if same_year => format!(
+                "{d1}. {} – {d2}. {} {y}",
+                german_month(from.month()),
+                german_month(to.month())
+            ),
+            Locale::ZhCn if same_month => format!("{y}年{}月{d1}日–{d2}日", u8::from(to.month())),
+            Locale::ZhCn if same_year => format!(
+                "{y}年{}月{d1}日–{}月{d2}日",
+                u8::from(from.month()),
+                u8::from(to.month())
+            ),
+            Locale::En | Locale::De => format!("{} – {}", self.date(from), self.date(to)),
+            Locale::ZhCn => format!("{}–{}", self.date(from), self.date(to)),
+        }
+    }
+
+    pub fn month(self, date: Date) -> String {
+        let y = date.year();
+        match self {
+            Locale::En => format!("{} {y}", date.month()),
+            Locale::De => format!("{} {y}", german_month_long(date.month())),
+            Locale::ZhCn => format!("{y}年{}月", u8::from(date.month())),
+        }
+    }
+
+    pub fn usd(self, plain: &str) -> String {
+        let (sign, digits) = plain
+            .strip_prefix('-')
+            .map_or(("", plain), |rest| ("−", rest));
+        let n = self.number(digits);
+        match self {
+            Locale::De => format!("{sign}{n}\u{a0}$"),
+            Locale::En | Locale::ZhCn => format!("{sign}${n}"),
         }
     }
 
     pub fn number(self, plain: &str) -> String {
         let (group, point) = match self {
-            Locale::En => return plain.to_owned(),
+            Locale::En | Locale::ZhCn => (',', '.'),
             Locale::De => ('.', ','),
-            Locale::ZhCn => (',', '.'),
         };
         let (sign, digits) = plain
             .strip_prefix('-')
@@ -122,6 +171,40 @@ fn quality(q: &str) -> Option<u16> {
     let frac: u16 = format!("{frac:0<3}").parse().ok()?;
     let value = whole + frac;
     (value <= 1000).then_some(value)
+}
+
+fn english_month(m: Month) -> &'static str {
+    match m {
+        Month::January => "Jan",
+        Month::February => "Feb",
+        Month::March => "Mar",
+        Month::April => "Apr",
+        Month::May => "May",
+        Month::June => "Jun",
+        Month::July => "Jul",
+        Month::August => "Aug",
+        Month::September => "Sep",
+        Month::October => "Oct",
+        Month::November => "Nov",
+        Month::December => "Dec",
+    }
+}
+
+fn german_month_long(m: Month) -> &'static str {
+    match m {
+        Month::January => "Januar",
+        Month::February => "Februar",
+        Month::March => "März",
+        Month::April => "April",
+        Month::May => "Mai",
+        Month::June => "Juni",
+        Month::July => "Juli",
+        Month::August => "August",
+        Month::September => "September",
+        Month::October => "Oktober",
+        Month::November => "November",
+        Month::December => "Dezember",
+    }
 }
 
 fn german_month(m: Month) -> &'static str {
@@ -211,17 +294,17 @@ mod tests {
     #[test]
     fn dates_follow_the_language() {
         let d = date!(2026 - 10 - 14);
-        assert_eq!(Locale::En.date(d), "2026-10-14");
+        assert_eq!(Locale::En.date(d), "14 Oct 2026");
         assert_eq!(Locale::De.date(d), "14. Okt. 2026");
         assert_eq!(Locale::ZhCn.date(d), "2026年10月14日");
         assert_eq!(Locale::De.date(date!(2027 - 03 - 01)), "1. März 2027");
-        assert_eq!(Locale::En.date(date!(2027 - 03 - 01)), "2027-03-01");
+        assert_eq!(Locale::En.date(date!(2027 - 03 - 01)), "1 Mar 2027");
     }
 
     #[test]
     fn moments_follow_the_language_and_name_the_zone() {
         let at = date!(2026 - 11 - 07).with_hms(9, 5, 0).unwrap();
-        assert_eq!(Locale::En.moment(at, "UTC"), "2026-11-07 09:05 UTC");
+        assert_eq!(Locale::En.moment(at, "UTC"), "7 Nov 2026, 09:05 UTC");
         assert_eq!(
             Locale::De.moment(at, "Europe/Berlin"),
             "7. Nov. 2026, 09:05 Europe/Berlin"
@@ -231,7 +314,8 @@ mod tests {
 
     #[test]
     fn numbers_follow_the_language() {
-        assert_eq!(Locale::En.number("1234567.5"), "1234567.5");
+        assert_eq!(Locale::En.number("1234567.5"), "1,234,567.5");
+        assert_eq!(Locale::En.number("12480"), "12,480");
         assert_eq!(Locale::De.number("1234567.5"), "1.234.567,5");
         assert_eq!(Locale::ZhCn.number("1234567.5"), "1,234,567.5");
         assert_eq!(Locale::De.number("50"), "50");
@@ -241,6 +325,34 @@ mod tests {
         assert_eq!(Locale::De.number("-1500"), "-1.500");
         assert_eq!(Locale::De.percent(80), "80\u{a0}%");
         assert_eq!(Locale::ZhCn.percent(80), "80%");
+    }
+
+    #[test]
+    fn ranges_name_the_month_and_year_once() {
+        let (a, b) = (date!(2026 - 11 - 02), date!(2026 - 11 - 08));
+        assert_eq!(Locale::En.range(a, b), "2–8 Nov 2026");
+        assert_eq!(Locale::De.range(a, b), "2.–8. Nov. 2026");
+        assert_eq!(Locale::ZhCn.range(a, b), "2026年11月2日–8日");
+        let (a, b) = (date!(2026 - 10 - 27), date!(2026 - 11 - 02));
+        assert_eq!(Locale::En.range(a, b), "27 Oct – 2 Nov 2026");
+        assert_eq!(Locale::De.range(a, b), "27. Okt. – 2. Nov. 2026");
+        assert_eq!(Locale::ZhCn.range(a, b), "2026年10月27日–11月2日");
+        let (a, b) = (date!(2026 - 12 - 29), date!(2027 - 01 - 04));
+        assert_eq!(Locale::En.range(a, b), "29 Dec 2026 – 4 Jan 2027");
+        assert_eq!(Locale::De.range(a, b), "29. Dez. 2026 – 4. Jan. 2027");
+        assert_eq!(Locale::ZhCn.range(a, b), "2026年12月29日–2027年1月4日");
+    }
+
+    #[test]
+    fn months_and_dollars_follow_the_language() {
+        let d = date!(2026 - 10 - 01);
+        assert_eq!(Locale::En.month(d), "October 2026");
+        assert_eq!(Locale::De.month(d), "Oktober 2026");
+        assert_eq!(Locale::ZhCn.month(d), "2026年10月");
+        assert_eq!(Locale::En.usd("1412.50"), "$1,412.50");
+        assert_eq!(Locale::De.usd("1412.50"), "1.412,50\u{a0}$");
+        assert_eq!(Locale::ZhCn.usd("41.20"), "$41.20");
+        assert_eq!(Locale::En.usd("-3.10"), "−$3.10");
     }
 
     #[test]

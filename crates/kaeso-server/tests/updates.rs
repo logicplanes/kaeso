@@ -1856,3 +1856,120 @@ async fn a_releases_artwork_is_kept_as_the_feed_first_gave_it() {
     assert_eq!(art_of(&rows, &next_major()), None);
     s.cleanup().await;
 }
+
+async fn announced(app: &App) -> kaeso_mail::Rendered {
+    run_update_check(app).await;
+    app.state.mailer.flush().await;
+    app.mail
+        .to("owner@example.com")
+        .into_iter()
+        .find(|m| m.kind.as_str() == "instance_updates")
+        .unwrap()
+}
+
+#[tokio::test]
+async fn a_new_release_is_announced_with_what_changed_and_how_it_installs() {
+    let s = TestServices::start().await;
+    let (_, url) = github(stable()).await;
+    let (_, updater_url) = updater().await;
+    let app = App::start_with(
+        &s,
+        &[
+            ("KAESO_UPDATES_RELEASES_URL", url.as_str()),
+            ("KAESO_UPDATES_CHECK", "true"),
+            ("KAESO_UPDATER_URL", updater_url.as_str()),
+            ("KAESO_UPDATER_TOKEN", token()),
+        ],
+    )
+    .await;
+    let owner = app.setup().await;
+    let window = next_hour(&app);
+    update_settings(
+        &app,
+        &owner,
+        json!({
+            "mode": "automatic",
+            "schedule": { "frequency": "daily", "weekday": "monday", "hour": window.hour() },
+        }),
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    let mail = announced(&app).await;
+    let version = next_patch();
+    assert_eq!(mail.subject, format!("Kaeso {version} is out"));
+    for line in [
+        "It installs by itself in the next update window.\n".to_owned(),
+        format!("Version: {version}\n"),
+        format!("Running now: {RUNNING}\n"),
+        format!("What changed\n- Everything in {version}.\n"),
+        format!(
+            "Read the release notes:\nhttps://github.com/logicplanes/kaeso/releases/tag/v{version}\n"
+        ),
+    ] {
+        assert!(mail.text.contains(&line), "{line}\n{}", mail.text);
+    }
+    assert!(mail.text.contains("Installs: By itself, "), "{}", mail.text);
+    assert!(mail.html.contains(r#"src="cid:cover-release@kaeso""#));
+    assert_eq!(mail.images, vec![kaeso_mail::assets::COVER_RELEASE]);
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn without_the_updater_a_new_release_is_announced_as_an_update_by_hand() {
+    let s = TestServices::start().await;
+    let (_, url) = github(stable()).await;
+    let app = App::start_with(
+        &s,
+        &[
+            ("KAESO_UPDATES_RELEASES_URL", url.as_str()),
+            ("KAESO_UPDATES_CHECK", "true"),
+        ],
+    )
+    .await;
+    app.setup().await;
+    let mail = announced(&app).await;
+    assert!(
+        mail.text
+            .contains("It needs steps by hand; the upgrade guide lists them.\n"),
+        "{}",
+        mail.text
+    );
+    assert!(
+        mail.text
+            .contains("Installs: By hand, with the upgrade guide\n"),
+        "{}",
+        mail.text
+    );
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn with_manual_updates_a_new_release_is_installed_from_the_console() {
+    let s = TestServices::start().await;
+    let (_, url) = github(stable()).await;
+    let (_, updater_url) = updater().await;
+    let app = App::start_with(
+        &s,
+        &[
+            ("KAESO_UPDATES_RELEASES_URL", url.as_str()),
+            ("KAESO_UPDATES_CHECK", "true"),
+            ("KAESO_UPDATER_URL", updater_url.as_str()),
+            ("KAESO_UPDATER_TOKEN", token()),
+        ],
+    )
+    .await;
+    app.setup().await;
+    let mail = announced(&app).await;
+    assert!(
+        mail.text
+            .contains("Install it from the updates page when it suits you.\n"),
+        "{}",
+        mail.text
+    );
+    assert!(
+        mail.text.contains("Installs: From the updates page\n"),
+        "{}",
+        mail.text
+    );
+    s.cleanup().await;
+}

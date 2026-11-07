@@ -6,10 +6,24 @@ Subject: Kaeso 0.6.0 已发布
 
 Kaeso 0.6.0 已发布
 
-Kaeso 0.6.0 可以安装了。
+它会在下一个更新窗口内自动安装。
+
+版本： 0.6.0
+当前版本： 0.5.6
+安装方式： 自动安装，2026年11月9日 03:00 UTC
+
+更新内容
+- Cerebras is a built-in provider: add its key and call its models from any app format.
+- The gateway serves more requests per second under heavy load and spends less CPU on each.
+- Kaeso translates streamed replies with less work per chunk, 1.3 to 1.6 times faster for the common pairs.
+- Streamed tool calls keep the tool name the app defined.
+发布说明中还有 2 项更改。
 
 打开更新：
 https://kaeso.example.com/orgs/org_1
+
+阅读发布说明：
+https://github.com/logicplanes/kaeso/releases/tag/v0.6.0
 
 -- 
 此邮件由 kaeso.example.com 上的 Kaeso 发送。

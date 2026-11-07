@@ -2,14 +2,18 @@
 source: crates/kaeso-mail/src/templates.rs
 expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
 ---
-Subject: 2 Neuigkeiten von Kaeso
+Subject: 4 Neuigkeiten von Kaeso
 
-2 Neuigkeiten von Kaeso
+4 Neuigkeiten von Kaeso
 
 Das ist seit der letzten Zusammenfassung passiert.
 
-- [Acme] Grace Hopper ist ausgetreten
-- [Checkout] Inhalte werden nicht mehr protokolliert
+- Grace Hopper hat sich registriert
+Acme
+- Grace Hopper ist ausgetreten
+Acme / Checkout
+- Inhalte werden nicht mehr protokolliert
+- Inhalte werden protokolliert
 
 Kaeso öffnen:
 https://kaeso.example.com/orgs/org_1

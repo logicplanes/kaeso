@@ -6,6 +6,8 @@ Subject: [Acme] OpenAI key Production keeps being refused
 
 OpenAI key Production keeps being refused
 
+Acme
+
 OpenAI refused the key Production (…WXYZ) three times in a row; replace it.
 
 Organization: Acme
@@ -13,9 +15,9 @@ Provider: OpenAI
 Key: Production (…WXYZ)
 Used by: Checkout, Support, and every project without a key of its own
 Provider's answer: HTTP 401: Incorrect API key provided: sk-pr***XYZ.
-First refused: 2026-11-07 09:10 UTC
-Last refused: 2026-11-07 09:12 UTC
-Last used: 2026-11-06 18:40 UTC
+First refused: 7 Nov 2026, 09:10 UTC
+Last refused: 7 Nov 2026, 09:12 UTC
+Last used: 6 Nov 2026, 18:40 UTC
 
 Open provider keys:
 https://kaeso.example.com/orgs/org_1

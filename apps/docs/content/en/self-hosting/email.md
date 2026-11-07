@@ -64,7 +64,7 @@ Password sign-in still works, and `kaeso setup-link` prints the setup link eithe
 
 Security and organization notices are always sent. For every other notification, each person chooses now, daily or off under **Account** › **Notifications**. Kaeso sends at most one email about the same thing a day and at most 20 at once an hour; the rest wait for the digest. Every notification names the right that made the person get it and links to their settings. All but security emails carry a one-click unsubscribe link, also in the `List-Unsubscribe` header (RFC 8058).
 
-Every email has an HTML and a plain-text part, in light and dark. Its images travel inside the email, so it loads nothing from your install and carries no tracking pixels.
+Every email has an HTML and a plain-text part, in light and dark. Its images travel inside the email, so it loads nothing from your install and carries no tracking pixels. Announcements, such as an invitation, a new version, the weekly summary and the monthly cost report, open with a cover drawn from Kaeso's release art; alerts and security emails stay short. The email about a new version lists its first changes and says whether it installs by itself in the update window, from the updates page or by hand.
 
 ## Languages
 

@@ -3,8 +3,8 @@ use kaeso_core::notifications::Kind;
 use kaeso_core::rights::{InstanceRight, OrgRight, ProjectRight};
 use kaeso_mail::Actor;
 use kaeso_mail::notices::{
-    Access, Fact, Instance, KeyChange, Membership, ModelChange, Price, PriceChange, Security,
-    Update,
+    Access, Fact, Instance, KeyChange, Membership, ModelChange, Notes, Price, PriceChange,
+    Security, Update,
 };
 use kaeso_store::pg::{catalogue, custom_providers, invites, keys, orgs, projects, users};
 use serde_json::Value;
@@ -199,9 +199,17 @@ async fn update_finished(state: &AppState, e: &Event) -> ApiResult<usize> {
 pub(crate) async fn update(
     state: &AppState,
     version: &str,
-    change: Update,
+    change: Update<'_>,
     subject: String,
 ) -> ApiResult<usize> {
+    let releases = kaeso_store::pg::updates::releases(&state.pg).await?;
+    let notes = releases
+        .iter()
+        .find(|r| r.version == version)
+        .map(|r| Notes {
+            markdown: &r.notes,
+            url: &r.url,
+        });
     let send = Send {
         kind: Kind::InstanceUpdates,
         org: None,
@@ -212,7 +220,17 @@ pub(crate) async fn update(
         actor: None,
     };
     let to = instance_admins(state, InstanceRight::InstanceUpdatesManage).await?;
-    deliver(state, &send, &Fact::InstanceUpdate { version, change }, to).await
+    deliver(
+        state,
+        &send,
+        &Fact::InstanceUpdate {
+            version,
+            change,
+            notes,
+        },
+        to,
+    )
+    .await
 }
 
 async fn people(state: &AppState, e: &Event) -> ApiResult<usize> {

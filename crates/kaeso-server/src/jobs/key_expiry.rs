@@ -60,7 +60,20 @@ pub async fn run(state: AppState) -> Result<String, JobError> {
             .await?
             .into_iter()
             .collect();
+        let mut organizations = std::collections::BTreeMap::new();
         for key in &expiring {
+            if let std::collections::btree_map::Entry::Vacant(slot) =
+                organizations.entry(key.org_id)
+            {
+                slot.insert(
+                    crate::services::notifications::triggers::org_name(&state, key.org_id).await?,
+                );
+            }
+        }
+        for key in &expiring {
+            let organization = organizations
+                .get(&key.org_id)
+                .map_or_else(String::new, Clone::clone);
             let to: &[Uuid] = match &key.user_id {
                 Some(user) => std::slice::from_ref(user),
                 None => admins.get(&key.project_id).map_or(&[], Vec::as_slice),
@@ -86,7 +99,10 @@ pub async fn run(state: AppState) -> Result<String, JobError> {
                     lang,
                     email,
                     &key.name,
-                    &key.project_name,
+                    kaeso_mail::notices::Place {
+                        organization: &organization,
+                        project: Some(&key.project_name),
+                    },
                     crate::time_zone::local(key.expires_at, &zone),
                     zone_name,
                     &url,

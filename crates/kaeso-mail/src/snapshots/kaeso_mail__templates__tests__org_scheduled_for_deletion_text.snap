@@ -4,7 +4,7 @@ expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
 ---
 Subject: Acme is scheduled for deletion
 
-Acme will be deleted on 2026-11-10
+Acme will be deleted on 10 Nov 2026
 
 Ada Lovelace scheduled it for deletion; its API keys stopped working.
 

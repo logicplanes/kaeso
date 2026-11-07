@@ -2,14 +2,18 @@
 source: crates/kaeso-mail/src/templates.rs
 expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
 ---
-Subject: Kaeso 的 2 条更新
+Subject: Kaeso 的 4 条更新
 
-Kaeso 的 2 条更新
+Kaeso 的 4 条更新
 
 以下是自上次摘要以来发生的事。
 
-- [Acme] Grace Hopper 已离开
-- [Checkout] 内容记录已关闭
+- Grace Hopper 已注册
+Acme
+- Grace Hopper 已离开
+Acme / Checkout
+- 内容记录已关闭
+- 内容记录已开启
 
 打开 Kaeso：
 https://kaeso.example.com/orgs/org_1

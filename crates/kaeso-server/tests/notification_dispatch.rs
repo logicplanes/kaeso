@@ -13,6 +13,7 @@ use kaeso_core::notifications::Kind;
 use kaeso_mail::notices::{Because, Fact};
 use kaeso_server::services::notifications::dispatch::{Recipients, Send, deliver};
 use kaeso_server::services::notifications::system::{self, Refusal};
+use kaeso_store::pg::limits::UsageRow;
 use kaeso_testkit::services::TestServices;
 use serde_json::json;
 use time::macros::time;
@@ -244,14 +245,16 @@ async fn daily_emails_and_those_over_the_hourly_cap_wait_for_the_morning_digest(
         client: "Cursor",
         by: kaeso_mail::Actor::Person("Ada"),
     };
-    deliver(
-        &app.state,
-        &send(Kind::PortalClients, "daily", None, None),
-        &other,
-        to(me),
-    )
-    .await
-    .unwrap();
+    let support = common::create_project(&app, &owner.org_id, &owner.cookie, "Support").await;
+    let in_support = Send {
+        org: Some(common::uuid(&owner.org_id)),
+        project: Some(common::uuid(&support)),
+        place: Some("Support"),
+        ..send(Kind::PortalClients, "daily", None, None)
+    };
+    deliver(&app.state, &in_support, &other, to(me))
+        .await
+        .unwrap();
     settle(&app).await;
     assert_eq!(
         kinds(&app, OWNER).iter().filter(|k| *k == "digest").count(),
@@ -273,15 +276,13 @@ async fn daily_emails_and_those_over_the_hourly_cap_wait_for_the_morning_digest(
         .unwrap();
     assert_eq!(digest.subject, "2 updates from Kaeso");
     assert!(
-        digest.text.contains("- [Acme] ChatGPT was connected"),
+        digest
+            .text
+            .contains("Acme\n- ChatGPT was connected\nAcme / Support\n- Cursor was connected\n"),
         "{}",
         digest.text
     );
-    assert!(
-        digest.text.contains("- [Acme] Cursor was connected"),
-        "{}",
-        digest.text
-    );
+    assert!(!digest.text.contains('['), "{}", digest.text);
 }
 
 async fn second(app: &App, owner: &Owner, email: &str, role: &str) -> (String, Uuid) {
@@ -594,4 +595,102 @@ async fn a_finished_audit_log_export_is_confirmed_to_whoever_ran_it() {
         .find(|m| m.kind.as_str() == "export_ready")
         .unwrap();
     assert_eq!(done.subject, "[Acme] Your export finished");
+}
+
+fn usage(day: time::Date, org: Uuid, project: Uuid, requests: i64, cost: &str) -> UsageRow {
+    UsageRow {
+        day,
+        org_id: org,
+        project_id: project,
+        user_id: None,
+        service_account_id: None,
+        api_key_id: None,
+        catalogue_model_id: None,
+        model_id: "claude-haiku-4-5".into(),
+        provider: "anthropic".into(),
+        ingress_dialect: "anthropic_messages".into(),
+        egress_dialect: "anthropic_messages".into(),
+        requests,
+        errors: 0,
+        input_tokens: 10,
+        output_tokens: 0,
+        cache_read_tokens: 0,
+        cache_write_tokens: 0,
+        reasoning_tokens: 0,
+        cost: cost.parse().unwrap(),
+    }
+}
+
+#[tokio::test]
+async fn the_weekly_summary_names_each_organization_and_the_week_and_links_to_usage() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup_without_projects().await;
+    let checkout = common::create_project(&app, &owner.org_id, &owner.cookie, "Checkout").await;
+    let globex = app
+        .post("/me/orgs", json!({ "name": "Globex" }), Some(&owner.cookie))
+        .await
+        .expect_status(StatusCode::CREATED)
+        .body["id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let research = common::create_project(&app, &globex, &owner.cookie, "Research").await;
+    choose(&app, &owner.cookie, json!({ "weekly_summary": "now" })).await;
+    let mut monday = app.state.clock.now().date().next_day().unwrap();
+    while monday.weekday() != time::Weekday::Monday {
+        monday = monday.next_day().unwrap();
+    }
+    let (from, to) = (
+        monday - time::Duration::days(7),
+        monday.previous_day().unwrap(),
+    );
+    let day = monday - time::Duration::days(3);
+    kaeso_store::pg::limits::add_usage(
+        &app.state.pg,
+        &[
+            usage(
+                day,
+                common::uuid(&owner.org_id),
+                common::uuid(&checkout),
+                9120,
+                "30.10",
+            ),
+            usage(
+                day,
+                common::uuid(&globex),
+                common::uuid(&research),
+                2400,
+                "8.60",
+            ),
+        ],
+    )
+    .await
+    .unwrap();
+    app.clock.set(monday.with_time(time!(8:31)).assume_utc());
+    assert!(
+        run_notices(&app).await.contains("1 weekly summaries"),
+        "one summary for the person"
+    );
+    settle(&app).await;
+    let week = app
+        .mail
+        .to(OWNER)
+        .into_iter()
+        .find(|m| m.kind.as_str() == "weekly_summary")
+        .unwrap();
+    let range = kaeso_mail::Locale::En.range(from, to);
+    let base = app.state.config.public_url.as_str();
+    for line in [
+        format!("Here is how your projects used Kaeso, {range}.\n"),
+        "Acme\n- Checkout: 9,120 requests, $30.10\n".to_owned(),
+        "Globex\n- Research: 2,400 requests, $8.60\n".to_owned(),
+        format!(
+            "Open usage:\n{base}orgs/{}/analytics?from={from}&to={to}&by=project\n",
+            owner.org_id
+        ),
+    ] {
+        assert!(week.text.contains(&line), "{line}\n{}", week.text);
+    }
+    s.cleanup().await;
 }

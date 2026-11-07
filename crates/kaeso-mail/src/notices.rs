@@ -1,6 +1,8 @@
-use time::PrimitiveDateTime;
+use time::{Date, PrimitiveDateTime};
 
-use crate::layout::{Content, Detail, Footnote, Label, Link, Reason, never};
+use crate::layout::{
+    Content, Cover, Detail, Footnote, Group, Label, Link, List, Reason, Row, Stat, Table, never,
+};
 use crate::locale::{Locale, zh};
 use crate::templates::{Actor, Budget, BudgetScope, Email, EmailKind, budget_details};
 
@@ -220,11 +222,96 @@ pub enum ModelChange {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Update {
-    Available,
+pub enum Install<'a> {
+    Window {
+        at: PrimitiveDateTime,
+        zone: &'a str,
+    },
+    FromConsole,
+    ByHand,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Update<'a> {
+    Available {
+        running: &'a str,
+        install: Install<'a>,
+    },
     Finished,
     RolledBack,
     Failed,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Notes<'a> {
+    pub markdown: &'a str,
+    pub url: &'a str,
+}
+
+const HIGHLIGHTS: usize = 4;
+const HIGHLIGHT_CHARS: usize = 160;
+
+pub fn highlights(markdown: &str) -> (Vec<String>, usize) {
+    let all: Vec<String> = markdown
+        .lines()
+        .filter_map(|line| line.strip_prefix("- "))
+        .map(plain)
+        .filter(|line| !line.is_empty())
+        .collect();
+    let more = all.len().saturating_sub(HIGHLIGHTS);
+    (
+        all.into_iter().take(HIGHLIGHTS).map(shorten).collect(),
+        more,
+    )
+}
+
+fn plain(line: &str) -> String {
+    let mut out = String::new();
+    let mut rest = line.trim();
+    if let Some(after) = rest.strip_prefix("**").and_then(|r| r.split_once(":**")) {
+        rest = after.1.trim_start();
+    }
+    while let Some(open) = rest.find('[') {
+        out.push_str(&rest[..open]);
+        let tail = &rest[open + 1..];
+        match tail
+            .split_once("](")
+            .and_then(|(text, after)| after.split_once(')').map(|(_, after)| (text, after)))
+        {
+            Some((text, after)) => {
+                if !text.starts_with('#') {
+                    out.push_str(text);
+                }
+                rest = after;
+            }
+            None => {
+                out.push('[');
+                rest = tail;
+            }
+        }
+    }
+    out.push_str(rest);
+    let out = out.replace(['`', '*'], "").replace("()", "");
+    out.split_whitespace().collect::<Vec<_>>().join(" ")
+}
+
+fn shorten(line: String) -> String {
+    if line.chars().count() <= HIGHLIGHT_CHARS {
+        return end_with_stop(line);
+    }
+    let head: String = line.chars().take(HIGHLIGHT_CHARS).collect();
+    if let Some(at) = head.find("; ").or_else(|| head.find(". ")) {
+        return end_with_stop(head[..at].to_owned());
+    }
+    let cut = head.rfind(' ').map_or(head.as_str(), |at| &head[..at]);
+    format!("{}…", cut.trim_end_matches([',', ';', ':']))
+}
+
+fn end_with_stop(mut line: String) -> String {
+    if !line.ends_with(['.', '!', '?', '…']) {
+        line.push('.');
+    }
+    line
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -237,6 +324,7 @@ pub enum Instance<'a> {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ProjectUse {
+    pub organization: String,
     pub name: String,
     pub requests: Option<String>,
     pub cost: String,
@@ -244,14 +332,155 @@ pub struct ProjectUse {
 
 impl ProjectUse {
     fn line(&self, lang: Locale) -> String {
-        match (lang, &self.requests) {
-            (Locale::En, Some(r)) => format!("{}: {r} requests, {}", self.name, self.cost),
-            (Locale::De, Some(r)) => format!("{}: {r} Anfragen, {}", self.name, self.cost),
-            (Locale::ZhCn, Some(r)) => zh(&[&self.name, "：", r, " 次请求，", &self.cost]),
-            (Locale::En | Locale::De, None) => format!("{}: {}", self.name, self.cost),
-            (Locale::ZhCn, None) => zh(&[&self.name, "：", &self.cost]),
+        let cost = lang.usd(&self.cost);
+        match (lang, self.requests.as_deref().map(|r| lang.number(r))) {
+            (Locale::En, Some(r)) => format!("{}: {r} requests, {cost}", self.name),
+            (Locale::De, Some(r)) => format!("{}: {r} Anfragen, {cost}", self.name),
+            (Locale::ZhCn, Some(r)) => zh(&[&self.name, "：", &r, " 次请求，", &cost]),
+            (Locale::En | Locale::De, None) => format!("{}: {cost}", self.name),
+            (Locale::ZhCn, None) => zh(&[&self.name, "：", &cost]),
         }
     }
+
+    fn row(&self, lang: Locale) -> Row {
+        let mut cells = vec![self.name.clone()];
+        cells.extend(self.requests.as_deref().map(|r| lang.number(r)));
+        cells.push(lang.usd(&self.cost));
+        Row {
+            cells,
+            text: self.line(lang),
+            heading: false,
+        }
+    }
+}
+
+fn organizations(projects: &[ProjectUse]) -> Vec<&str> {
+    let mut out: Vec<&str> = Vec::new();
+    for p in projects {
+        if !out.contains(&p.organization.as_str()) {
+            out.push(&p.organization);
+        }
+    }
+    out
+}
+
+fn only_organization(projects: &[ProjectUse]) -> Option<&str> {
+    match organizations(projects).as_slice() {
+        [one] => Some(one),
+        _ => None,
+    }
+}
+
+fn projects_table(lang: Locale, projects: &[ProjectUse], requests: bool) -> Option<Table> {
+    if projects.is_empty() {
+        return None;
+    }
+    let (project, count, cost) = match lang {
+        Locale::En => ("Project", "Requests", "Cost"),
+        Locale::De => ("Projekt", "Anfragen", "Kosten"),
+        Locale::ZhCn => ("项目", "请求", "成本"),
+    };
+    let mut head = vec![project];
+    if requests {
+        head.push(count);
+    }
+    head.push(cost);
+    let orgs = organizations(projects);
+    let rows = if orgs.len() > 1 {
+        orgs.iter()
+            .flat_map(|org| {
+                std::iter::once(Row {
+                    cells: vec![(*org).to_owned()],
+                    text: (*org).to_owned(),
+                    heading: true,
+                })
+                .chain(
+                    projects
+                        .iter()
+                        .filter(|p| p.organization == *org)
+                        .map(|p| p.row(lang)),
+                )
+            })
+            .collect()
+    } else {
+        projects.iter().map(|p| p.row(lang)).collect()
+    };
+    Some(Table { head, rows })
+}
+
+fn usage_stats(lang: Locale, requests: &str, tool_calls: &str, cost: &str) -> Vec<Stat> {
+    let (r, t, c) = match lang {
+        Locale::En => ("Requests", "Tool calls", "Cost"),
+        Locale::De => ("Anfragen", "Tool-Aufrufe", "Kosten"),
+        Locale::ZhCn => ("请求", "工具调用", "成本"),
+    };
+    vec![
+        Stat {
+            label: r,
+            value: lang.number(requests),
+        },
+        Stat {
+            label: t,
+            value: lang.number(tool_calls),
+        },
+        Stat {
+            label: c,
+            value: lang.usd(cost),
+        },
+    ]
+}
+
+fn installs(lang: Locale, install: Install<'_>) -> String {
+    match (lang, install) {
+        (Locale::En, Install::Window { at, zone }) => {
+            format!("By itself, {}", lang.moment(at, zone))
+        }
+        (Locale::De, Install::Window { at, zone }) => {
+            format!("Automatisch, {}", lang.moment(at, zone))
+        }
+        (Locale::ZhCn, Install::Window { at, zone }) => zh(&["自动安装，", &lang.moment(at, zone)]),
+        (Locale::En, Install::FromConsole) => "From the updates page".to_owned(),
+        (Locale::De, Install::FromConsole) => "Über die Update-Seite".to_owned(),
+        (Locale::ZhCn, Install::FromConsole) => "在更新页面安装".to_owned(),
+        (Locale::En, Install::ByHand) => "By hand, with the upgrade guide".to_owned(),
+        (Locale::De, Install::ByHand) => "Von Hand, mit der Upgrade-Anleitung".to_owned(),
+        (Locale::ZhCn, Install::ByHand) => "按照升级指南手动更新".to_owned(),
+    }
+}
+
+fn release_list(lang: Locale, notes: &Notes<'_>) -> List {
+    let (items, more) = highlights(notes.markdown);
+    let label = match lang {
+        Locale::En => "What changed",
+        Locale::De => "Was sich ändert",
+        Locale::ZhCn => "更新内容",
+    };
+    let more = (more > 0).then(|| match (lang, more) {
+        (Locale::En, 1) => "And 1 more change in the release notes.".to_owned(),
+        (Locale::En, n) => format!("And {n} more changes in the release notes."),
+        (Locale::De, 1) => "Und 1 weitere Änderung in den Release-Notizen.".to_owned(),
+        (Locale::De, n) => format!("Und {n} weitere Änderungen in den Release-Notizen."),
+        (Locale::ZhCn, n) => zh(&["发布说明中还有 ", &n.to_string(), " 项更改。"]),
+    });
+    List {
+        label: (!items.is_empty()).then_some(label),
+        items,
+        groups: Vec::new(),
+        more,
+        lang: (lang != Locale::En).then_some(Locale::En),
+    }
+}
+
+fn notes_link(lang: Locale, notes: &Notes<'_>) -> Option<Link> {
+    let label = match lang {
+        Locale::En => "Read the release notes",
+        Locale::De => "Release-Notizen lesen",
+        Locale::ZhCn => "阅读发布说明",
+    };
+    (!notes.url.is_empty()).then(|| Link {
+        label,
+        url: notes.url.to_owned(),
+    })
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -261,6 +490,8 @@ pub enum Fact<'a> {
     },
     ExportReady(Export),
     WeeklySummary {
+        from: Date,
+        to: Date,
         requests: String,
         tool_calls: String,
         cost: String,
@@ -323,13 +554,14 @@ pub enum Fact<'a> {
         change: ModelChange,
     },
     CostReport {
-        month: &'a str,
+        month: Date,
         total: &'a str,
         projects: Vec<ProjectUse>,
     },
     InstanceUpdate {
         version: &'a str,
-        change: Update,
+        change: Update<'a>,
+        notes: Option<Notes<'a>>,
     },
     SignedUp {
         person: &'a str,
@@ -344,17 +576,6 @@ struct Words {
     heading: String,
     sentence: String,
     button: &'static str,
-}
-
-fn top_models(lang: Locale, models: &[String]) -> Option<String> {
-    if models.is_empty() {
-        return None;
-    }
-    Some(match lang {
-        Locale::En => format!("Top models: {}.", models.join(", ")),
-        Locale::De => format!("Meistgenutzte Modelle: {}.", models.join(", ")),
-        Locale::ZhCn => zh(&["常用模型：", &models.join("、"), "。"]),
-    })
 }
 
 impl Fact<'_> {
@@ -386,13 +607,94 @@ impl Fact<'_> {
         }
     }
 
-    fn items(&self, lang: Locale) -> Vec<String> {
+    fn table(&self, lang: Locale) -> Option<Table> {
         match self {
-            Fact::WeeklySummary { projects, .. } | Fact::CostReport { projects, .. } => {
-                projects.iter().map(|p| p.line(lang)).collect()
-            }
+            Fact::WeeklySummary { projects, .. } => projects_table(lang, projects, true),
+            Fact::CostReport { projects, .. } => projects_table(lang, projects, false),
+            _ => None,
+        }
+    }
+
+    fn stats(&self, lang: Locale) -> Vec<Stat> {
+        match self {
+            Fact::WeeklySummary {
+                requests,
+                tool_calls,
+                cost,
+                ..
+            } => usage_stats(lang, requests, tool_calls, cost),
             _ => Vec::new(),
         }
+    }
+
+    fn cover(&self) -> Option<Cover> {
+        match self {
+            Fact::NewApp { .. } => Some(Cover::Apps),
+            Fact::WeeklySummary { .. } => Some(Cover::Summary),
+            Fact::CostReport { .. } => Some(Cover::Costs),
+            Fact::InviteAccepted { .. } => Some(Cover::Welcome),
+            Fact::InstanceUpdate {
+                change: Update::Available { .. } | Update::Finished,
+                ..
+            } => Some(Cover::Release),
+            _ => None,
+        }
+    }
+
+    fn list(&self, lang: Locale) -> List {
+        match self {
+            Fact::InstanceUpdate {
+                change: Update::Available { .. } | Update::Finished,
+                notes: Some(notes),
+                ..
+            } => release_list(lang, notes),
+            _ => List::default(),
+        }
+    }
+
+    fn link(&self, lang: Locale) -> Option<Link> {
+        match self {
+            Fact::InstanceUpdate {
+                change: Update::Available { .. } | Update::Finished,
+                notes: Some(notes),
+                ..
+            } => notes_link(lang, notes),
+            _ => None,
+        }
+    }
+
+    fn preheader(&self, lang: Locale) -> Option<String> {
+        let Fact::WeeklySummary {
+            requests,
+            tool_calls,
+            cost,
+            ..
+        } = self
+        else {
+            return None;
+        };
+        let (r, t, c) = (
+            lang.number(requests),
+            lang.number(tool_calls),
+            lang.usd(cost),
+        );
+        Some(match lang {
+            Locale::En => {
+                format!("Last week your projects sent {r} requests and {t} tool calls for {c}.")
+            }
+            Locale::De => format!(
+                "Ihre Projekte sendeten letzte Woche {r} Anfragen und {t} Tool-Aufrufe für {c}."
+            ),
+            Locale::ZhCn => zh(&[
+                "上周您的项目发送了 ",
+                &r,
+                " 次请求和 ",
+                &t,
+                " 次工具调用，成本为 ",
+                &c,
+                "。",
+            ]),
+        })
     }
 
     fn details(&self, lang: Locale) -> Vec<Detail> {
@@ -405,6 +707,22 @@ impl Fact<'_> {
                 resets,
             } => budget_details(lang, organization, project, *scope, budget, None, *resets),
             Fact::ProviderKey { key, change } => key.details(lang, change),
+            Fact::WeeklySummary { top_models, .. } if !top_models.is_empty() => {
+                let list = top_models.join(match lang {
+                    Locale::En | Locale::De => ", ",
+                    Locale::ZhCn => "、",
+                });
+                vec![Label::TopModels.of(lang, list)]
+            }
+            Fact::InstanceUpdate {
+                version,
+                change: Update::Available { running, install },
+                ..
+            } => vec![
+                Label::Version.of(lang, *version),
+                Label::Running.of(lang, *running),
+                Label::Installs.of(lang, installs(lang, *install)),
+            ],
             Fact::Model {
                 provider,
                 project,
@@ -458,17 +776,20 @@ impl Fact<'_> {
                 )
             }
             Fact::WeeklySummary {
-                requests,
-                tool_calls,
-                cost,
-                ..
-            } => w(
-                "Your week in Kaeso".to_owned(),
-                format!(
-                    "Last week your projects sent {requests} requests and {tool_calls} tool calls for {cost}."
-                ),
-                "Open usage",
-            ),
+                from, to, projects, ..
+            } => {
+                let range = Locale::En.range(*from, *to);
+                w(
+                    "Your week in Kaeso".to_owned(),
+                    match only_organization(projects) {
+                        Some(org) => {
+                            format!("Here is how your projects in {org} used Kaeso, {range}.")
+                        }
+                        None => format!("Here is how your projects used Kaeso, {range}."),
+                    },
+                    "Open usage",
+                )
+            }
             Fact::AccessChanged { change, by } => {
                 let (heading, sentence) = match change {
                     Access::Added(role) => (
@@ -513,7 +834,7 @@ impl Fact<'_> {
                     ),
                     format!(
                         "{who} used all of {its} {}; requests over it are refused.",
-                        budget.english()
+                        budget.english_grouped()
                     ),
                     "Open limits",
                 )
@@ -687,14 +1008,29 @@ impl Fact<'_> {
                 ),
             },
             Fact::CostReport { month, total, .. } => w(
-                format!("{month} cost {total}"),
+                format!(
+                    "{} cost {}",
+                    Locale::En.month(*month),
+                    Locale::En.usd(total)
+                ),
                 "These projects cost the most last month.".to_owned(),
                 "Open usage",
             ),
-            Fact::InstanceUpdate { version, change } => match change {
-                Update::Available => w(
+            Fact::InstanceUpdate {
+                version, change, ..
+            } => match change {
+                Update::Available { install, .. } => w(
                     format!("Kaeso {version} is out"),
-                    format!("Kaeso {version} is ready to install."),
+                    match install {
+                        Install::Window { .. } => {
+                            "It installs by itself in the next update window."
+                        }
+                        Install::FromConsole => {
+                            "Install it from the updates page when it suits you."
+                        }
+                        Install::ByHand => "It needs steps by hand; the upgrade guide lists them.",
+                    }
+                    .to_owned(),
                     "Open updates",
                 ),
                 Update::Finished => w(
@@ -771,17 +1107,22 @@ impl Fact<'_> {
                 )
             }
             Fact::WeeklySummary {
-                requests,
-                tool_calls,
-                cost,
-                ..
-            } => w(
-                "Ihre Woche in Kaeso".to_owned(),
-                format!(
-                    "Ihre Projekte sendeten letzte Woche {requests} Anfragen und {tool_calls} Tool-Aufrufe für {cost}."
-                ),
-                "Nutzung öffnen",
-            ),
+                from, to, projects, ..
+            } => {
+                let range = Locale::De.range(*from, *to);
+                w(
+                    "Ihre Woche in Kaeso".to_owned(),
+                    match only_organization(projects) {
+                        Some(org) => format!(
+                            "So haben Ihre Projekte in {org} Kaeso im Zeitraum {range} genutzt."
+                        ),
+                        None => {
+                            format!("So haben Ihre Projekte Kaeso im Zeitraum {range} genutzt.")
+                        }
+                    },
+                    "Nutzung öffnen",
+                )
+            }
             Fact::AccessChanged { change, by } => {
                 let (heading, sentence) = match change {
                     Access::Added(role) => (
@@ -1008,14 +1349,31 @@ impl Fact<'_> {
                 ),
             },
             Fact::CostReport { month, total, .. } => w(
-                format!("{month} kostete {total}"),
+                format!(
+                    "{} kostete {}",
+                    Locale::De.month(*month),
+                    Locale::De.usd(total)
+                ),
                 "Diese Projekte haben im letzten Monat am meisten gekostet.".to_owned(),
                 "Nutzung öffnen",
             ),
-            Fact::InstanceUpdate { version, change } => match change {
-                Update::Available => w(
+            Fact::InstanceUpdate {
+                version, change, ..
+            } => match change {
+                Update::Available { install, .. } => w(
                     format!("Kaeso {version} ist erschienen"),
-                    format!("Kaeso {version} kann installiert werden."),
+                    match install {
+                        Install::Window { .. } => {
+                            "Es wird im nächsten Update-Fenster automatisch installiert."
+                        }
+                        Install::FromConsole => {
+                            "Installieren Sie es über die Update-Seite, wann es Ihnen passt."
+                        }
+                        Install::ByHand => {
+                            "Es verlangt Schritte von Hand; die Upgrade-Anleitung nennt sie."
+                        }
+                    }
+                    .to_owned(),
                     "Updates öffnen",
                 ),
                 Update::Finished => w(
@@ -1102,23 +1460,24 @@ impl Fact<'_> {
                 )
             }
             Fact::WeeklySummary {
-                requests,
-                tool_calls,
-                cost,
-                ..
-            } => w(
-                "您在 Kaeso 的一周".to_owned(),
-                zh(&[
-                    "上周您的项目发送了 ",
-                    requests,
-                    " 次请求和 ",
-                    tool_calls,
-                    " 次工具调用，成本为 ",
-                    cost,
-                    "。",
-                ]),
-                "打开用量",
-            ),
+                from, to, projects, ..
+            } => {
+                let range = Locale::ZhCn.range(*from, *to);
+                w(
+                    "您在 Kaeso 的一周".to_owned(),
+                    match only_organization(projects) {
+                        Some(org) => zh(&[
+                            "以下是您在 ",
+                            org,
+                            " 中的项目在",
+                            &range,
+                            "期间使用 Kaeso 的情况。",
+                        ]),
+                        None => zh(&["以下是您的项目在", &range, "期间使用 Kaeso 的情况。"]),
+                    },
+                    "打开用量",
+                )
+            }
             Fact::AccessChanged { change, by } => {
                 let by = who(by);
                 let (heading, sentence) = match change {
@@ -1333,14 +1692,25 @@ impl Fact<'_> {
                 ),
             },
             Fact::CostReport { month, total, .. } => w(
-                zh(&[month, "的成本为 ", total]),
+                zh(&[
+                    &Locale::ZhCn.month(*month),
+                    "的成本为 ",
+                    &Locale::ZhCn.usd(total),
+                ]),
                 "以下是上个月成本最高的项目。".to_owned(),
                 "打开用量",
             ),
-            Fact::InstanceUpdate { version, change } => match change {
-                Update::Available => w(
+            Fact::InstanceUpdate {
+                version, change, ..
+            } => match change {
+                Update::Available { install, .. } => w(
                     zh(&["Kaeso ", version, " 已发布"]),
-                    zh(&["Kaeso ", version, " 可以安装了。"]),
+                    match install {
+                        Install::Window { .. } => "它会在下一个更新窗口内自动安装。",
+                        Install::FromConsole => "您可以随时在更新页面安装。",
+                        Install::ByHand => "此版本需要手动操作；升级指南列出了具体步骤。",
+                    }
+                    .to_owned(),
                     "打开更新",
                 ),
                 Update::Finished => w(
@@ -1446,9 +1816,32 @@ fn footnote(lang: Locale, why: Because<'_>, links: &Links) -> Footnote {
     }
 }
 
-fn subject(place: Option<&str>, heading: &str) -> String {
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Place<'a> {
+    pub organization: &'a str,
+    pub project: Option<&'a str>,
+}
+
+impl<'a> Place<'a> {
+    fn name(self) -> &'a str {
+        self.project.unwrap_or(self.organization)
+    }
+
+    fn scope(self) -> String {
+        scope(self.organization, self.project)
+    }
+}
+
+fn scope(organization: &str, project: Option<&str>) -> String {
+    match project {
+        Some(p) => format!("{organization} / {p}"),
+        None => organization.to_owned(),
+    }
+}
+
+fn subject(place: Option<Place<'_>>, heading: &str) -> String {
     match place {
-        Some(p) => format!("[{p}] {heading}"),
+        Some(p) => format!("[{}] {heading}", p.name()),
         None => heading.to_owned(),
     }
 }
@@ -1456,7 +1849,7 @@ fn subject(place: Option<&str>, heading: &str) -> String {
 pub fn notice(
     lang: Locale,
     to: &str,
-    place: Option<&str>,
+    place: Option<Place<'_>>,
     fact: &Fact<'_>,
     why: Because<'_>,
     open: &str,
@@ -1464,28 +1857,57 @@ pub fn notice(
 ) -> Email {
     let words = fact.words(lang);
     let mut content = Content::new(lang, words.heading.clone(), Reason::Notice)
+        .eyebrow(place.map(Place::scope))
         .sentence(words.sentence)
+        .stats(fact.stats(lang))
         .details(fact.details(lang))
-        .items(fact.items(lang))
+        .table(fact.table(lang))
+        .list(fact.list(lang))
         .action(words.button, open)
+        .link(fact.link(lang))
         .footnote(footnote(lang, why, links));
-    if let Fact::WeeklySummary {
-        top_models: models, ..
-    } = fact
-        && let Some(note) = top_models(lang, models)
-    {
-        content = content.note(note);
+    if let Some(cover) = fact.cover() {
+        content = content.cover(cover);
+    }
+    if let Some(preheader) = fact.preheader(lang) {
+        content = content.preheader(preheader);
     }
     Email::new(to, fact.kind(), subject(place, &words.heading), content)
         .list_unsubscribe(links.unsubscribe.as_ref().map(|u| u.one_click.clone()))
 }
 
-pub fn line(lang: Locale, place: Option<&str>, fact: &Fact<'_>) -> String {
-    subject(place, &fact.words(lang).heading)
+pub fn line(lang: Locale, fact: &Fact<'_>) -> String {
+    fact.words(lang).heading
 }
 
-pub fn digest(lang: Locale, to: &str, lines: &[String], open: &str, links: &Links) -> Email {
-    let n = lines.len();
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct DigestItem {
+    pub line: String,
+    pub organization: Option<String>,
+    pub project: Option<String>,
+}
+
+fn digest_list(items: &[DigestItem]) -> List {
+    let mut list = List::default();
+    for item in items {
+        let Some(org) = &item.organization else {
+            list.items.push(item.line.clone());
+            continue;
+        };
+        let title = scope(org, item.project.as_deref());
+        match list.groups.iter_mut().find(|g| g.title == title) {
+            Some(group) => group.items.push(item.line.clone()),
+            None => list.groups.push(Group {
+                title,
+                items: vec![item.line.clone()],
+            }),
+        }
+    }
+    list
+}
+
+pub fn digest(lang: Locale, to: &str, items: &[DigestItem], open: &str, links: &Links) -> Email {
+    let n = items.len();
     let (heading, sentence, button) = match lang {
         Locale::En => (
             if n == 1 {
@@ -1516,8 +1938,9 @@ pub fn digest(lang: Locale, to: &str, lines: &[String], open: &str, links: &Link
         EmailKind::Digest,
         heading.clone(),
         Content::new(lang, heading, Reason::Notice)
+            .cover(Cover::Summary)
             .sentence(sentence)
-            .items(lines.to_vec())
+            .list(digest_list(items))
             .action(button, open)
             .footnote(footnote(lang, Because::Daily, links)),
     )

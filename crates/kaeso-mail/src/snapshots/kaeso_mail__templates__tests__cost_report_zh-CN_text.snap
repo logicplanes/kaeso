@@ -2,9 +2,11 @@
 source: crates/kaeso-mail/src/templates.rs
 expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
 ---
-Subject: [Acme] 2026-10 的成本为 $412.50
+Subject: [Acme] 2026年10月的成本为 $412.50
 
-2026-10 的成本为 $412.50
+2026年10月的成本为 $412.50
+
+Acme
 
 以下是上个月成本最高的项目。
 

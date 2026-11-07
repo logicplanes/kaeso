@@ -80,6 +80,11 @@ pub(crate) enum Label {
     CacheReadPrice,
     CacheWritePrice,
     CacheWriteHourPrice,
+    Version,
+    Running,
+    Installs,
+    Expires,
+    TopModels,
 }
 
 impl Label {
@@ -106,6 +111,11 @@ impl Label {
             (Locale::En, Label::CacheReadPrice) => "Cache read price",
             (Locale::En, Label::CacheWritePrice) => "Cache write price",
             (Locale::En, Label::CacheWriteHourPrice) => "Cache write price (1 hour)",
+            (Locale::En, Label::Version) => "Version",
+            (Locale::En, Label::Running) => "Running now",
+            (Locale::En, Label::Installs) => "Installs",
+            (Locale::En, Label::Expires) => "Expires",
+            (Locale::En, Label::TopModels) => "Top models",
             (Locale::De, Label::Organization) => "Organisation",
             (Locale::De, Label::Project) => "Projekt",
             (Locale::De, Label::AppliesTo) => "Gilt für",
@@ -127,6 +137,11 @@ impl Label {
             (Locale::De, Label::CacheReadPrice) => "Preis für Cache-Lesen",
             (Locale::De, Label::CacheWritePrice) => "Preis für Cache-Schreiben",
             (Locale::De, Label::CacheWriteHourPrice) => "Preis für Cache-Schreiben (1 Stunde)",
+            (Locale::De, Label::Version) => "Version",
+            (Locale::De, Label::Running) => "Läuft jetzt",
+            (Locale::De, Label::Installs) => "Installation",
+            (Locale::De, Label::Expires) => "Läuft ab",
+            (Locale::De, Label::TopModels) => "Meistgenutzte Modelle",
             (Locale::ZhCn, Label::Organization) => "组织",
             (Locale::ZhCn, Label::Project) => "项目",
             (Locale::ZhCn, Label::AppliesTo) => "适用于",
@@ -148,6 +163,11 @@ impl Label {
             (Locale::ZhCn, Label::CacheReadPrice) => "缓存读取价格",
             (Locale::ZhCn, Label::CacheWritePrice) => "缓存写入价格",
             (Locale::ZhCn, Label::CacheWriteHourPrice) => "缓存写入价格（1 小时）",
+            (Locale::ZhCn, Label::Version) => "版本",
+            (Locale::ZhCn, Label::Running) => "当前版本",
+            (Locale::ZhCn, Label::Installs) => "安装方式",
+            (Locale::ZhCn, Label::Expires) => "过期时间",
+            (Locale::ZhCn, Label::TopModels) => "常用模型",
         }
     }
 
@@ -175,6 +195,63 @@ fn footer(lang: Locale) -> (&'static str, &'static str) {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum Cover {
+    Release,
+    Welcome,
+    Summary,
+    Costs,
+    Apps,
+}
+
+impl Cover {
+    pub(crate) fn image(self) -> assets::Image {
+        match self {
+            Cover::Release => assets::COVER_RELEASE,
+            Cover::Welcome => assets::COVER_WELCOME,
+            Cover::Summary => assets::COVER_SUMMARY,
+            Cover::Costs => assets::COVER_COSTS,
+            Cover::Apps => assets::COVER_APPS,
+        }
+    }
+
+    pub(crate) fn alt(self, lang: Locale) -> &'static str {
+        match (lang, self) {
+            (Locale::En, Cover::Release) => {
+                "The Kaeso wordmark beside release art of orange, yellow and blue shapes"
+            }
+            (Locale::En, Cover::Welcome) => {
+                "The Kaeso wordmark beside arcs of teal, coral and gold"
+            }
+            (Locale::En, Cover::Summary) => {
+                "The Kaeso wordmark beside rows of peaks like a usage chart"
+            }
+            (Locale::En, Cover::Costs) => "The Kaeso wordmark beside nested orange and red squares",
+            (Locale::En, Cover::Apps) => "The Kaeso wordmark beside a pattern of linked red curves",
+            (Locale::De, Cover::Release) => {
+                "Der Kaeso-Schriftzug neben Release-Grafik aus orangen, gelben und blauen Formen"
+            }
+            (Locale::De, Cover::Welcome) => {
+                "Der Kaeso-Schriftzug neben Bögen in Petrol, Koralle und Gold"
+            }
+            (Locale::De, Cover::Summary) => {
+                "Der Kaeso-Schriftzug neben Reihen von Spitzen wie in einem Nutzungsdiagramm"
+            }
+            (Locale::De, Cover::Costs) => {
+                "Der Kaeso-Schriftzug neben ineinanderliegenden orangen und roten Quadraten"
+            }
+            (Locale::De, Cover::Apps) => {
+                "Der Kaeso-Schriftzug neben einem Muster aus verbundenen roten Bögen"
+            }
+            (Locale::ZhCn, Cover::Release) => "Kaeso 字标，旁边是由橙、黄、蓝色图形组成的版本插图",
+            (Locale::ZhCn, Cover::Welcome) => "Kaeso 字标，旁边是青绿、珊瑚红和金色的弧线",
+            (Locale::ZhCn, Cover::Summary) => "Kaeso 字标，旁边是一排排如用量图表般的峰线",
+            (Locale::ZhCn, Cover::Costs) => "Kaeso 字标，旁边是层层嵌套的橙色和红色方块",
+            (Locale::ZhCn, Cover::Apps) => "Kaeso 字标，旁边是由相连红色弧线组成的图案",
+        }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct Action {
     pub label: &'static str,
@@ -194,6 +271,46 @@ pub(crate) struct Detail {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct Stat {
+    pub label: &'static str,
+    pub value: String,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct Row {
+    pub cells: Vec<String>,
+    pub text: String,
+    pub heading: bool,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct Table {
+    pub head: Vec<&'static str>,
+    pub rows: Vec<Row>,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub(crate) struct List {
+    pub label: Option<&'static str>,
+    pub items: Vec<String>,
+    pub groups: Vec<Group>,
+    pub more: Option<String>,
+    pub lang: Option<Locale>,
+}
+
+impl List {
+    fn is_empty(&self) -> bool {
+        self.items.is_empty() && self.groups.is_empty()
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct Group {
+    pub title: String,
+    pub items: Vec<String>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct Footnote {
     pub because: String,
     pub links: Vec<Link>,
@@ -202,10 +319,16 @@ pub(crate) struct Footnote {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct Content {
     pub heading: String,
+    pub eyebrow: Option<String>,
     pub sentence: Option<String>,
+    pub preheader: Option<String>,
+    pub cover: Option<Cover>,
+    pub stats: Vec<Stat>,
     pub details: Vec<Detail>,
-    pub items: Vec<String>,
+    pub table: Option<Table>,
+    pub list: List,
     pub action: Option<Action>,
+    pub link: Option<Link>,
     pub note: Option<String>,
     pub footnote: Option<Footnote>,
     pub reason: Reason,
@@ -216,10 +339,16 @@ impl Content {
     pub(crate) fn new(lang: Locale, heading: impl Into<String>, reason: Reason) -> Content {
         Content {
             heading: heading.into(),
+            eyebrow: None,
             sentence: None,
+            preheader: None,
+            cover: None,
+            stats: Vec::new(),
             details: Vec::new(),
-            items: Vec::new(),
+            table: None,
+            list: List::default(),
             action: None,
+            link: None,
             note: None,
             footnote: None,
             reason,
@@ -227,13 +356,28 @@ impl Content {
         }
     }
 
+    pub(crate) fn cover(mut self, cover: Cover) -> Content {
+        self.cover = Some(cover);
+        self
+    }
+
+    pub(crate) fn stats(mut self, stats: Vec<Stat>) -> Content {
+        self.stats = stats;
+        self
+    }
+
     pub(crate) fn details(mut self, details: Vec<Detail>) -> Content {
         self.details = details;
         self
     }
 
-    pub(crate) fn items(mut self, items: Vec<String>) -> Content {
-        self.items = items;
+    pub(crate) fn table(mut self, table: Option<Table>) -> Content {
+        self.table = table;
+        self
+    }
+
+    pub(crate) fn list(mut self, list: List) -> Content {
+        self.list = list;
         self
     }
 
@@ -255,14 +399,37 @@ impl Content {
         self
     }
 
+    pub(crate) fn link(mut self, link: Option<Link>) -> Content {
+        self.link = link;
+        self
+    }
+
+    pub(crate) fn eyebrow(mut self, eyebrow: Option<String>) -> Content {
+        self.eyebrow = eyebrow;
+        self
+    }
+
+    pub(crate) fn preheader(mut self, s: impl Into<String>) -> Content {
+        self.preheader = Some(s.into());
+        self
+    }
+
     pub(crate) fn note(mut self, s: impl Into<String>) -> Content {
         self.note = Some(s.into());
         self
     }
 
+    pub(crate) fn images(&self) -> Vec<assets::Image> {
+        match self.cover {
+            Some(cover) => vec![cover.image()],
+            None => assets::WORDMARKS.to_vec(),
+        }
+    }
+
     fn preview(&self) -> &str {
-        self.sentence
+        self.preheader
             .as_deref()
+            .or(self.sentence.as_deref())
             .or(self.note.as_deref())
             .unwrap_or(&self.heading)
     }
@@ -270,6 +437,10 @@ impl Content {
 
 pub(crate) fn text(content: &Content, instance: &Instance) -> String {
     let mut out = format!("{}\n\n", content.heading);
+    if let Some(e) = &content.eyebrow {
+        out.push_str(e);
+        out.push_str("\n\n");
+    }
     if let Some(s) = &content.sentence {
         out.push_str(s);
         out.push_str("\n\n");
@@ -278,24 +449,62 @@ pub(crate) fn text(content: &Content, instance: &Instance) -> String {
         Locale::ZhCn => "：",
         Locale::En | Locale::De => ":",
     };
-    for d in &content.details {
-        out.push_str(&format!("{}{colon} {}\n", d.label, d.value));
+    let mut block = |lines: Vec<String>| {
+        if !lines.is_empty() {
+            out.push_str(&lines.join("\n"));
+            out.push_str("\n\n");
+        }
+    };
+    block(
+        content
+            .stats
+            .iter()
+            .map(|s| format!("{}{colon} {}", s.label, s.value))
+            .collect(),
+    );
+    block(
+        content
+            .details
+            .iter()
+            .map(|d| format!("{}{colon} {}", d.label, d.value))
+            .collect(),
+    );
+    if let Some(t) = &content.table {
+        block(
+            t.rows
+                .iter()
+                .map(|r| {
+                    if r.heading {
+                        r.text.clone()
+                    } else {
+                        format!("- {}", r.text)
+                    }
+                })
+                .collect(),
+        );
     }
-    if !content.details.is_empty() {
-        out.push('\n');
-    }
-    for item in &content.items {
-        out.push_str(&format!("- {item}\n"));
-    }
-    if !content.items.is_empty() {
-        out.push('\n');
+    let list = &content.list;
+    if !list.is_empty() {
+        block(
+            list.label
+                .map(str::to_owned)
+                .into_iter()
+                .chain(list.items.iter().map(|i| format!("- {i}")))
+                .chain(list.groups.iter().flat_map(|g| {
+                    std::iter::once(g.title.clone()).chain(g.items.iter().map(|i| format!("- {i}")))
+                }))
+                .chain(list.more.clone())
+                .collect(),
+        );
     }
     if let Some(a) = &content.action {
-        out.push_str(&format!("{}{colon}\n{}\n\n", a.label, a.url));
+        block(vec![format!("{}{colon}", a.label), a.url.clone()]);
+    }
+    if let Some(l) = &content.link {
+        block(vec![format!("{}{colon}", l.label), l.url.clone()]);
     }
     if let Some(n) = &content.note {
-        out.push_str(n);
-        out.push_str("\n\n");
+        block(vec![n.clone()]);
     }
     let (before, after) = footer(content.lang);
     out.push_str(&format!(
@@ -335,11 +544,14 @@ pub(crate) fn html(subject: &str, content: &Content, instance: &Instance) -> Str
             }
             div.(class::BG) role="article" aria-roledescription="email" aria-label=(subject) lang=(content.lang.tag()) style=(style::CANVAS_STYLE) {
                 table.(class::BG) role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor=(style::CANVAS) style=(style::CANVAS_STYLE) {
-                    tr { td align="left" style="padding:26px 0 48px 26px;" {
+                    tr { td.k-gutter align="left" style="padding:40px 32px 48px 32px;" {
                         (PreEscaped(OUTLOOK_COLUMN_OPEN))
-                        div style="max-width:562px;" {
+                        div style={ "max-width:" (style::COLUMN) "px;" } {
                             table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" {
-                                tr { td style="padding:0 0 46px 0;" { (logo()) } }
+                                @match content.cover {
+                                    Some(c) => tr { td style="padding:0 0 32px 0;" { (cover(c, content.lang)) } },
+                                    None => tr { td style="padding:0 0 40px 0;" { (logo()) } },
+                                }
                                 (body(content, instance))
                             }
                         }
@@ -354,59 +566,171 @@ pub(crate) fn html(subject: &str, content: &Content, instance: &Instance) -> Str
 }
 
 fn body(content: &Content, instance: &Instance) -> Markup {
+    let list = &content.list;
     html! {
-        tr { td style="padding:0 28px 0 2px;" {
-            h1.(class::TEXT) style=(style::HEADING) { (content.heading) }
-        } }
-        @if let Some(s) = &content.sentence {
-            tr { td style="padding:12px 28px 0 2px;" {
-                p.(class::SECONDARY) style=(style::SENTENCE) { (s) }
+        @if let Some(e) = &content.eyebrow {
+            tr { td style="padding:0 0 8px 0;" {
+                p.(class::TERTIARY) style=(style::EYEBROW) { (e) }
             } }
         }
+        tr { td {
+            h1.(class::TEXT).k-h1 style=(style::HEADING) { (content.heading) }
+        } }
+        @if let Some(s) = &content.sentence {
+            tr { td style="padding:12px 0 0 0;" {
+                p.(class::SECONDARY) style=(style::LEAD) { (s) }
+            } }
+        }
+        @if !content.stats.is_empty() {
+            tr { td style="padding:32px 0 0 0;" { (stats(&content.stats)) } }
+        }
         @if !content.details.is_empty() {
-            tr { td style="padding:22px 28px 0 2px;" {
+            tr { td style="padding:24px 0 0 0;" { (details(&content.details)) } }
+        }
+        @if let Some(t) = &content.table {
+            tr { td style="padding:32px 0 0 0;" { (table(t)) } }
+        }
+        @if !list.is_empty() {
+            tr { td style="padding:32px 0 0 0;" { (items(list)) } }
+        }
+        @if let Some(a) = &content.action {
+            tr { td style="padding:32px 0 0 0;" { (button(a)) } }
+        }
+        @if let Some(l) = &content.link {
+            tr { td style="padding:16px 0 0 0;" {
+                a.(class::TEXT) href=(l.url) target="_blank" style=(style::LINK) { (l.label) }
+            } }
+        }
+        @if let Some(n) = &content.note {
+            tr { td style="padding:24px 0 0 0;" {
+                p.(class::TERTIARY) style=(style::NOTE) { (n) }
+            } }
+        }
+        tr { td style="padding:48px 0 0 0;" {
+            table.(class::RULE) role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" {
+                tr { td style={ (style::RULE) "padding:24px 0 0 0;" } {
+                    p.(class::TERTIARY) style=(style::FOOTER) {
+                        (footer(content.lang).0)
+                        a href=(instance.url) style=(style::FOOTER_LINK) { (instance.name) }
+                        (footer(content.lang).1)
+                        (content.reason.tail(content.lang))
+                    }
+                    @if let Some(f) = &content.footnote {
+                        p.(class::TERTIARY) style=(style::FOOTNOTE) {
+                            (f.because)
+                            @for (i, link) in f.links.iter().enumerate() {
+                                @if i == 0 { " " } @else { " · " }
+                                a href=(link.url) style=(style::FOOTNOTE_LINK) { (link.label) }
+                            }
+                        }
+                    }
+                } }
+            }
+        } }
+    }
+}
+
+fn cover(cover: Cover, lang: Locale) -> Markup {
+    let image = cover.image();
+    html! {
+        img src={ "cid:" (image.cid) } width=(image.width) height=(image.height) alt=(cover.alt(lang)) style=(style::COVER);
+    }
+}
+
+fn stats(stats: &[Stat]) -> Markup {
+    let last = stats.len().saturating_sub(1);
+    let width = format!("{}%", 100 / stats.len().max(1));
+    html! {
+        table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" {
+            tr { td.(class::PANEL) bgcolor=(style::PANEL) style=(style::PANEL_STYLE) {
                 table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" {
-                    @for d in &content.details {
-                        tr {
-                            td.(class::TERTIARY) width="150" style=(style::DETAIL_LABEL) { (d.label) }
-                            td.(class::TEXT) style=(style::DETAIL_VALUE) { (d.value) }
+                    tr {
+                        @for (i, s) in stats.iter().enumerate() {
+                            td valign="top" width=(width) style={ "padding:0 " (if i == last { "0" } else { "16px" }) " 0 0;" } {
+                                p.(class::TEXT).k-stat-value style=(style::STAT_VALUE) { (s.value) }
+                                p.(class::TERTIARY) style=(style::STAT_LABEL) { (s.label) }
+                            }
                         }
                     }
                 }
             } }
         }
-        @if !content.items.is_empty() {
-            tr { td style="padding:16px 28px 0 2px;" {
-                @for item in &content.items {
-                    p.(class::SECONDARY) style=(style::ITEM) { "• " (item) }
+    }
+}
+
+fn details(details: &[Detail]) -> Markup {
+    html! {
+        table.(class::RULE) role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" {
+            @for d in details {
+                tr {
+                    td.(class::TERTIARY).k-dt width="168" style=(style::DETAIL_LABEL) { (d.label) }
+                    td.(class::TEXT) style=(style::DETAIL_VALUE) { (d.value) }
                 }
-            } }
-        }
-        @if let Some(a) = &content.action {
-            tr { td style="padding:32px 28px 0 2px;" { (button(a)) } }
-        }
-        @if let Some(n) = &content.note {
-            tr { td style="padding:32px 28px 0 2px;" {
-                p.(class::TERTIARY) style=(style::NOTE) { (n) }
-            } }
-        }
-        tr { td style="padding:56px 28px 0 2px;" {
-            p.(class::TERTIARY) style=(style::FOOTER) {
-                (footer(content.lang).0)
-                a href=(instance.url) style=(style::FOOTER_LINK) { (instance.name) }
-                (footer(content.lang).1)
-                (content.reason.tail(content.lang))
             }
-            @if let Some(f) = &content.footnote {
-                p.(class::TERTIARY) style=(style::FOOTNOTE) {
-                    (f.because)
-                    @for (i, link) in f.links.iter().enumerate() {
-                        @if i == 0 { " " } @else { " · " }
-                        a href=(link.url) style=(style::FOOTNOTE_LINK) { (link.label) }
+            tr { td colspan="2" style={ (style::RULE) "font-size:0;line-height:0;" } { "\u{200b}" } }
+        }
+    }
+}
+
+fn table(t: &Table) -> Markup {
+    let columns = t.head.len();
+    html! {
+        table.(class::RULE) role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" {
+            tr {
+                @for (i, h) in t.head.iter().enumerate() {
+                    @if i == 0 {
+                        td.(class::TERTIARY) align="left" style=(style::TABLE_HEAD) { (h) }
+                    } @else {
+                        td.(class::TERTIARY) align="right" style={ (style::TABLE_HEAD) "padding-left:16px;text-align:right;" } { (h) }
                     }
                 }
             }
-        } }
+            @for (n, row) in t.rows.iter().enumerate() {
+                @if row.heading {
+                    tr { td.(class::TEXT) colspan=(columns) style={ (style::TABLE_GROUP) (if n == 0 { "padding-top:8px;" } else { "" }) } { (row.cells.concat()) } }
+                } @else { tr {
+                    @for (i, cell) in row.cells.iter().enumerate() {
+                        @if i == 0 {
+                            td.(class::TEXT) style=(style::TABLE_CELL) { (cell) }
+                        } @else {
+                            td.(class::TEXT) align="right" style=(style::TABLE_NUMBER) { (cell) }
+                        }
+                    }
+                } }
+            }
+            tr { td colspan=(columns) style={ (style::RULE) "font-size:0;line-height:0;" } { "\u{200b}" } }
+        }
+    }
+}
+
+fn items(list: &List) -> Markup {
+    html! {
+        @if let Some(label) = list.label {
+            h2.(class::TEXT) style={ (style::SECTION) "padding:0 0 8px 0;" } { (label) }
+        }
+        @if !list.items.is_empty() {
+            (bullets(&list.items, list.lang))
+        }
+        @for (i, group) in list.groups.iter().enumerate() {
+            p.(class::TERTIARY) style={ (style::EYEBROW) "padding:" (if i == 0 && list.items.is_empty() { "0" } else { "16px" }) " 0 8px 0;" } { (group.title) }
+            (bullets(&group.items, list.lang))
+        }
+        @if let Some(more) = &list.more {
+            p.(class::TERTIARY) style={ (style::NOTE) "padding:0 0 0 16px;" } { (more) }
+        }
+    }
+}
+
+fn bullets(items: &[String], lang: Option<Locale>) -> Markup {
+    html! {
+        table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" lang=[lang.map(Locale::tag)] {
+            @for item in items {
+                tr {
+                    td.(class::TERTIARY) style={ (style::BULLET) "padding:0 0 8px 0;" } { "•" }
+                    td.(class::SECONDARY) style={ (style::BODY) "padding:0 0 8px 0;" } { (item) }
+                }
+            }
+        }
     }
 }
 
@@ -445,7 +769,7 @@ fn vml_width(label: &str) -> usize {
         .chars()
         .map(|c| if is_wide(c) { 16 } else { 9 })
         .sum::<usize>()
-        + 44
+        + 48
 }
 
 fn is_wide(c: char) -> bool {
@@ -458,10 +782,10 @@ fn escape(s: &str) -> String {
 
 const OUTLOOK_HEAD: &str = concat!(
     "<!--[if mso]><noscript><xml><o:OfficeDocumentSettings><o:AllowPNG/><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml></noscript>",
-    "<style>table,td,div,p,a,h1{font-family:'Segoe UI',Arial,sans-serif!important}</style><![endif]-->",
+    "<style>table,td,div,p,a,h1,h2{font-family:'Segoe UI',Arial,sans-serif!important}</style><![endif]-->",
 );
 
-const OUTLOOK_COLUMN_OPEN: &str = r#"<!--[if mso]><table role="presentation" width="562" cellpadding="0" cellspacing="0" border="0" align="left"><tr><td><![endif]-->"#;
+const OUTLOOK_COLUMN_OPEN: &str = r#"<!--[if mso]><table role="presentation" width="560" cellpadding="0" cellspacing="0" border="0" align="left"><tr><td><![endif]-->"#;
 const OUTLOOK_COLUMN_CLOSE: &str = "<!--[if mso]></td></tr></table><![endif]-->";
 
 const PREVIEW_FILL: &str = "&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;";
@@ -489,5 +813,107 @@ mod tests {
         .into_string();
         assert!(b.contains("href=\"https://kaeso.example.com/a?x=1&amp;y=&quot;2&quot;\""));
         assert!(!b.contains("y=\"2\""));
+    }
+
+    fn page(content: &Content) -> String {
+        html(
+            "Subject",
+            content,
+            &Instance::new("https://kaeso.example.com/"),
+        )
+    }
+
+    #[test]
+    fn a_cover_replaces_the_wordmark_and_says_what_it_shows() {
+        for lang in Locale::ALL {
+            for cover in [
+                Cover::Release,
+                Cover::Welcome,
+                Cover::Summary,
+                Cover::Costs,
+                Cover::Apps,
+            ] {
+                let content = Content::new(lang, "Heading", Reason::Notice).cover(cover);
+                let html = page(&content);
+                let image = cover.image();
+                assert!(html.contains(&format!(
+                    r#"<img src="cid:{}" width="560" height="240" alt="{}""#,
+                    image.cid,
+                    cover.alt(lang)
+                )));
+                assert!(!html.contains("cid:wordmark-light@kaeso"));
+                assert!(cover.alt(lang).contains("Kaeso"));
+                assert_eq!(content.images(), vec![image]);
+                assert!(html.find(image.cid) < html.find("<h1"));
+            }
+        }
+    }
+
+    #[test]
+    fn without_a_cover_the_wordmark_heads_the_email_and_no_cover_is_attached() {
+        let content = Content::new(Locale::En, "Heading", Reason::Security);
+        let html = page(&content);
+        assert!(html.contains(r#"src="cid:wordmark-light@kaeso""#));
+        assert!(!html.contains("cid:cover-"));
+        assert_eq!(content.images(), assets::WORDMARKS.to_vec());
+    }
+
+    #[test]
+    fn stats_tables_and_lists_render_in_html_and_text() {
+        let content = Content::new(Locale::En, "Heading", Reason::Notice)
+            .stats(vec![Stat {
+                label: "Requests",
+                value: "12,480".to_owned(),
+            }])
+            .table(Some(Table {
+                head: vec!["Project", "Cost"],
+                rows: vec![
+                    Row {
+                        cells: vec!["Acme".to_owned()],
+                        text: "Acme".to_owned(),
+                        heading: true,
+                    },
+                    Row {
+                        cells: vec!["Checkout".to_owned(), "$30.10".to_owned()],
+                        text: "Checkout: $30.10".to_owned(),
+                        heading: false,
+                    },
+                ],
+            }))
+            .list(List {
+                label: Some("What changed"),
+                items: vec!["Faster streams".to_owned()],
+                groups: vec![Group {
+                    title: "Acme / Checkout".to_owned(),
+                    items: vec!["Content logging is off".to_owned()],
+                }],
+                more: Some("And 3 more changes.".to_owned()),
+                lang: Some(Locale::En),
+            })
+            .link(Some(Link {
+                label: "Read the release notes",
+                url: "https://example.com/notes".to_owned(),
+            }));
+        let html = page(&content);
+        for needle in [
+            ">12,480</p>",
+            ">Requests</p>",
+            ">Project</td>",
+            r#"align="right" style="#,
+            ">$30.10</td>",
+            r#"colspan="2" style="#,
+            ">Acme</td>",
+            ">Acme / Checkout</p>",
+            ">Content logging is off</td>",
+            ">What changed</h2>",
+            r#"lang="en""#,
+            ">Faster streams</td>",
+            ">And 3 more changes.</p>",
+            r#"href="https://example.com/notes""#,
+        ] {
+            assert!(html.contains(needle), "{needle}");
+        }
+        let text = text(&content, &Instance::new("https://kaeso.example.com/"));
+        assert!(text.contains("Requests: 12,480\n\nAcme\n- Checkout: $30.10\n\nWhat changed\n- Faster streams\nAcme / Checkout\n- Content logging is off\nAnd 3 more changes.\n\nRead the release notes:\nhttps://example.com/notes\n"), "{text}");
     }
 }
