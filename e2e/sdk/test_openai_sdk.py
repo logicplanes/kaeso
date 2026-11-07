@@ -98,9 +98,9 @@ def test_reasoning(oa, mock):
     oa.chat.completions.create(model="claude-haiku-4-5", messages=user("Think."), reasoning_effort="low")
     thinking = mock.last()["body"]["thinking"]
     assert thinking["type"] == "enabled" and thinking["budget_tokens"] == 2048
-    with pytest.raises(openai.BadRequestError) as e:
-        oa.chat.completions.create(model="gpt-5-mini", messages=user("Think."), reasoning_effort="xhigh")
-    assert "`minimal`, `low`, `medium`, `high`" in str(e.value)
+    r = oa.chat.completions.with_raw_response.create(model="gpt-5-mini", messages=user("Think."), reasoning_effort="xhigh")
+    assert r.headers.get("kaeso-adapted") == "reasoning_effort"
+    assert mock.last()["body"]["reasoning"]["effort"] == "high", "the nearest level gpt-5-mini lists"
 
 
 def test_reasoning_summaries_from_claude_through_a_tool_loop(oa, mock):

@@ -61,7 +61,7 @@ Claude Code sends `output_config.effort` and adaptive thinking, and Codex sends 
 
 The model answers as it would without the setting. Each setting left out is named in the reply's `kaeso-left-out` header by the app's field, such as `output_config.effort` or `thinking`, and in the gateway's log; a logged request body keeps the app's settings. The gateway does this before encoding, so it applies within a format too.
 
-The gateway still refuses an effort that a model with effort levels doesn't list, such as `medium` for `kimi-k3`, since sending a neighbouring level would be a guess. It also refuses `enabled` thinking and a thinking budget for a model that doesn't reason.
+An effort that a model with effort levels doesn't list becomes the nearest level it lists, such as `low` for `medium` on `kimi-k3` (`low`, `high`, `max`): on a tie the lower level, never `none`, which would turn reasoning off. Adaptive thinking for a Claude model without it, such as Claude Haiku 4.5, becomes `enabled` thinking with the budget the effort stands for ([effort and budget](#effort-and-budget)), 8,192 tokens without an effort, and thinking off for `none`. Both changes are named in the reply's `kaeso-adapted` header by the app's field, such as `output_config.effort` or `thinking`. The effort that Claude Code repeats in `output_config` on its mid-conversation system messages follows the request's: it changes with it, and is left out with it as `messages[i].output_config.effort`. The gateway still refuses an effort it doesn't know, and `enabled` thinking and a thinking budget for a model that doesn't reason.
 
 ## Models that always reason
 

@@ -316,7 +316,6 @@ async fn fields_moonshot_ignores_and_out_of_range_values_are_refused_before_it_i
         ("parallel_tool_calls", json!(false)),
         ("store", json!(true)),
         ("service_tier", json!("flex")),
-        ("temperature", json!(0.5)),
     ] {
         let mut body = json!({
             "model": K26,
@@ -346,9 +345,32 @@ async fn fields_moonshot_ignores_and_out_of_range_values_are_refused_before_it_i
         })),
     )
     .await;
-    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
-    assert!(r.text().contains("`low`, `high`, `max`"), "{}", r.text());
-    assert_eq!(env.mock.received().len(), before);
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(r.header("kaeso-adapted"), Some("reasoning_effort"));
+    assert_eq!(
+        sent_to_moonshot(&env, K3)["reasoning_effort"],
+        "low",
+        "the nearest level Kimi K3 lists, the lower one on a tie"
+    );
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(json!({
+            "model": K26,
+            "temperature": 0.5,
+            "messages": [{ "role": "user", "content": "Hi" }],
+        })),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(r.header("kaeso-left-out"), Some("temperature"));
+    assert!(
+        sent_to_moonshot(&env, K26).get("temperature").is_none(),
+        "a model that takes only its default temperature gets none"
+    );
+    assert_eq!(env.mock.received().len(), before + 2);
 }
 
 #[tokio::test]

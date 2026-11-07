@@ -102,8 +102,11 @@ pub fn prepare(
             })
         }
         Request::Generate(g) => {
-            let left_out = leave_out_reasoning(g, ingress, eff);
-            let mut adapted = lowest_effort_for_off(g, ingress, eff);
+            let mut adapted = adaptive_to_budget(g, ingress, eff);
+            let mut left_out = leave_out_reasoning(g, ingress, eff);
+            left_out.extend(leave_out_temperature(g, ingress, eff));
+            adapted.extend(nearest_effort(g, ingress, eff));
+            adapted.extend(lowest_effort_for_off(g, ingress, eff));
             adapted.extend(fit_end_user(g, ingress, eff));
             adapted.extend(fit_output_limit(g, ingress, eff));
             check_generation(g, ingress, eff)?;
@@ -131,8 +134,10 @@ pub fn prepare(
                     format!("The model `{name}` cannot count tokens."),
                 ));
             };
+            let mut adapted = adaptive_to_budget(g, ingress, eff);
             let left_out = leave_out_reasoning(g, ingress, eff);
-            let mut adapted = lowest_effort_for_off(g, ingress, eff);
+            adapted.extend(nearest_effort(g, ingress, eff));
+            adapted.extend(lowest_effort_for_off(g, ingress, eff));
             adapted.extend(fit_end_user(g, ingress, eff));
             check_generation(g, ingress, eff)?;
             Ok(Plan {
@@ -164,12 +169,14 @@ fn leave_out_reasoning(
         return left_out;
     };
     let reasons = eff.fields.reasoning == Some(true);
+    let mut effort_gone = false;
     if r.effort
         .as_ref()
         .is_some_and(|e| *e != ReasoningEffort::None)
         && (!reasons || effort_levels(eff, ingress).is_empty())
     {
         r.effort = None;
+        effort_gone = true;
         left_out.push(app_param(ingress, "effort").to_owned());
     }
     if !reasons && r.mode == Some(ReasoningMode::Adaptive) {
@@ -186,7 +193,157 @@ fn leave_out_reasoning(
     if !left_out.is_empty() && nothing_left {
         g.reasoning = None;
     }
+    if effort_gone {
+        left_out.extend(message_efforts(g, None, None));
+    }
     left_out
+}
+
+const OUTPUT_CONFIG: &str = "output_config";
+
+// Claude Code repeats the request's effort in `output_config` on its mid-conversation system
+// messages; what the request's effort becomes, theirs becomes too, or they would be refused
+// as a setting other formats can't carry.
+fn message_efforts(g: &mut GenerateRequest, from: Option<&str>, to: Option<&str>) -> Vec<String> {
+    let mut named = Vec::new();
+    for (i, m) in g.messages.iter_mut().enumerate() {
+        if m.role != kaeso_kpp::Role::System || !m.extras.is_from(DialectId::AnthropicMessages) {
+            continue;
+        }
+        let Some(raw) = m.extras.fields.get(OUTPUT_CONFIG) else {
+            continue;
+        };
+        let Ok(serde_json::Value::Object(mut config)) = raw.to_value() else {
+            continue;
+        };
+        let Some(serde_json::Value::String(effort)) = config.get("effort") else {
+            continue;
+        };
+        if from.is_some_and(|f| f != effort) {
+            continue;
+        }
+        match to {
+            Some(level) => {
+                config.insert("effort".to_owned(), level.into());
+            }
+            None => {
+                config.remove("effort");
+            }
+        }
+        let Ok(written) = kaeso_kpp::RawJson::from_serialize(&config) else {
+            continue;
+        };
+        if config.is_empty() {
+            m.extras.fields.shift_remove(OUTPUT_CONFIG);
+        } else {
+            m.extras.fields.insert(OUTPUT_CONFIG.to_owned(), written);
+        }
+        named.push(format!("messages[{i}].{OUTPUT_CONFIG}.effort"));
+    }
+    named
+}
+
+fn rank(level: &str) -> usize {
+    EFFORT_ORDER
+        .iter()
+        .position(|o| *o == level)
+        .unwrap_or(usize::MAX)
+}
+
+// Claude Code and Codex send one effort to every model; a model that lists levels but not that
+// one gets the nearest level it lists, the lower one on a tie, never `none`.
+fn nearest_effort(g: &mut GenerateRequest, ingress: DialectId, eff: &Effective) -> Vec<String> {
+    let Some(r) = g.reasoning.as_mut() else {
+        return Vec::new();
+    };
+    let Some(effort) = r.effort.as_ref() else {
+        return Vec::new();
+    };
+    let wire = effort.as_wire().to_owned();
+    let levels = effort_levels(eff, ingress);
+    if *effort == ReasoningEffort::None
+        || rank(&wire) == usize::MAX
+        || levels.is_empty()
+        || levels.contains(&wire)
+    {
+        return Vec::new();
+    }
+    let distance = |l: &String| rank(l).abs_diff(rank(&wire));
+    let Some(best) = levels
+        .iter()
+        .filter(|l| rank(l) != usize::MAX)
+        .map(distance)
+        .min()
+    else {
+        return Vec::new();
+    };
+    let mut nearest: Vec<&String> = levels
+        .iter()
+        .filter(|l| rank(l) != usize::MAX && distance(l) == best)
+        .collect();
+    nearest.sort_by_key(|l| rank(l));
+    let Some(level) = nearest
+        .iter()
+        .find(|l| l.as_str() != "none")
+        .or(nearest.first())
+    else {
+        return Vec::new();
+    };
+    let level = (*level).clone();
+    r.effort = Some(ReasoningEffort::from_wire(&level));
+    message_efforts(g, Some(&wire), Some(&level));
+    vec![app_param(ingress, "effort").to_owned()]
+}
+
+// Claude Code sends adaptive thinking to every model; a Claude model without it takes
+// `enabled` thinking with a budget, which the effort sets as it does for requests from other
+// formats ([reasoning_map]).
+fn adaptive_to_budget(g: &mut GenerateRequest, ingress: DialectId, eff: &Effective) -> Vec<String> {
+    let Some(r) = g.reasoning.as_mut() else {
+        return Vec::new();
+    };
+    if eff.dialect != DialectId::AnthropicMessages
+        || eff.fields.adaptive_thinking != Some(false)
+        || eff.fields.reasoning != Some(true)
+        || r.mode != Some(ReasoningMode::Adaptive)
+    {
+        return Vec::new();
+    }
+    let budget = match r.effort.as_ref() {
+        None => reasoning_map::budget_for_effort(&ReasoningEffort::Medium),
+        Some(effort) => reasoning_map::budget_for_effort(effort),
+    };
+    match budget {
+        Some(budget) => {
+            r.mode = Some(ReasoningMode::Enabled);
+            r.budget_tokens = Some(budget);
+        }
+        None => {
+            r.mode = Some(ReasoningMode::Disabled);
+        }
+    }
+    r.extras.fields.shift_remove("display");
+    vec![app_param(ingress, "reasoning").to_owned()]
+}
+
+// Apps send a temperature with no switch per model; Claude 5 models take only the default,
+// so the model answers at its default instead of refusing every such app.
+fn leave_out_temperature(
+    g: &mut GenerateRequest,
+    ingress: DialectId,
+    eff: &Effective,
+) -> Vec<String> {
+    let Some(t) = g.sampling.temperature else {
+        return Vec::new();
+    };
+    if eff.fields.temperature != Some(false)
+        || (t - 1.0).abs() <= f64::EPSILON
+        || kpp_turns_thinking_on(g, ingress, eff)
+    {
+        return Vec::new();
+    }
+    g.sampling.temperature = None;
+    vec!["temperature".to_owned()]
 }
 
 const EFFORT_ORDER: [&str; 7] = ["none", "minimal", "low", "medium", "high", "xhigh", "max"];
@@ -342,30 +499,6 @@ fn check_generation(
             "reasoning",
             Some(app_param(ingress, "reasoning")),
             format!("The model `{name}` does not support reasoning."),
-        ));
-    }
-    if eff.fields.adaptive_thinking == Some(false)
-        && g.reasoning
-            .as_ref()
-            .is_some_and(|r| r.mode == Some(ReasoningMode::Adaptive))
-    {
-        return Err(refuse(
-            "adaptive thinking",
-            Some("thinking"),
-            format!(
-                "The model `{name}` has no adaptive thinking; send `enabled` thinking with `budget_tokens`."
-            ),
-        ));
-    }
-    if let Some(t) = g.sampling.temperature
-        && eff.fields.temperature == Some(false)
-        && (t - 1.0).abs() > f64::EPSILON
-        && !kpp_turns_thinking_on(g, ingress, eff)
-    {
-        return Err(refuse(
-            "temperature",
-            Some("temperature"),
-            format!("The model `{name}` does not accept `temperature` (only the default of 1)."),
         ));
     }
     if let Some(effort) = g.reasoning.as_ref().and_then(|r| r.effort.as_ref()) {

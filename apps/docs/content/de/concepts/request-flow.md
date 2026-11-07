@@ -61,12 +61,11 @@ Darf das Mitglied oder der Schlüssel das Modell nicht nutzen, erhält die Anfra
 Der Katalogeintrag sagt, was das Modell kann. Kaeso antwortet mit 400, wenn eine Anfrage etwas braucht, das dem Modell fehlt:
 
 - Bilder, PDFs, Tools, ein JSON-Schema, `enabled`-Denken oder ein Denk-Budget;
-- eine Aufwandsstufe, die das Modell unter seinen Aufwandsstufen nicht listet, oder adaptives Denken für ein Claude-Modell ohne adaptives Denken;
+- eine Aufwandsstufe, die Kaeso nicht kennt;
 - eine erzwungene Tool-Wahl (`required`, `any` oder ein benanntes Tool) für ein Modell, das keine annimmt, etwa Claude Fable 5.1, Opus 5.5 und Sonnet 5.5;
-- eine Temperatur ungleich 1 für ein Modell, das keine annimmt, es sei denn, Kaeso schaltet das Denken von Claude ein und lässt die Temperatur weg;
 - Embeddings von einem Generierungsmodell oder Text von einem Embeddings-Modell.
 
-Ein Modell ohne Aufwandsstufen erhält stattdessen keine Aufwandsstufe, ein Modell ohne Reasoning kein adaptives Denken. Der Header `kaeso-left-out` der Antwort nennt, was Kaeso weggelassen hat ([Modelle ohne Aufwandsstufen](../development/kpp/reasoning.md#modelle-ohne-aufwandsstufen)).
+Ein Modell ohne Aufwandsstufen erhält stattdessen keine Aufwandsstufe, ein Modell ohne Reasoning kein adaptives Denken, und ein Modell, das nur die Standardtemperatur annimmt, keine Temperatur. Der Header `kaeso-left-out` der Antwort nennt, was Kaeso weggelassen hat. Eine Aufwandsstufe, die das Modell nicht nennt, wird zur nächstgelegenen Stufe, die es nennt, und adaptives Denken für ein Claude-Modell ohne adaptives Denken zu `enabled`-Denken mit Budget; das nennt der Header `kaeso-adapted` der Antwort ([Modelle ohne Aufwandsstufen](../development/kpp/reasoning.md#modelle-ohne-aufwandsstufen)).
 
 Eine Anfrage in einem OpenAI-Format für ein Claude-Modell braucht kein Ausgabelimit: Kaeso sendet das Maximum des Modells. Eine Messages-Anfrage ohne `max_tokens` erhält 400, so wie bei Anthropic. Eine Anfrage aus einem anderen Format, die mehr Ausgabe verlangt, als das Modell schreiben kann, erhält stattdessen das Maximum des Modells, und der Header `kaeso-adapted` der Antwort nennt das Feld, etwa `max_tokens`. Claude Code etwa verlangt von jedem Modell, das es nicht kennt, 32.000 Token.
 
