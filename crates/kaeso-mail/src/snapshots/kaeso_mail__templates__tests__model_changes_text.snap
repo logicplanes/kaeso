@@ -6,7 +6,11 @@ Subject: [Checkout] gpt-4o is delisted
 
 gpt-4o is delisted
 
-The provider delisted gpt-4o; requests to it may fail.
+OpenAI delisted gpt-4o; requests to it from Checkout may fail.
+
+Project: Checkout
+Provider: OpenAI
+Model: gpt-4o
 
 Open models:
 https://kaeso.example.com/orgs/org_1

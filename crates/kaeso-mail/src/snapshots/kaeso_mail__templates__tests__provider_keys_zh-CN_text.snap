@@ -2,11 +2,20 @@
 source: crates/kaeso-mail/src/templates.rs
 expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
 ---
-Subject: [Acme] OpenAI prod 一再被拒绝
+Subject: [Acme] OpenAI 密钥 Production 一再被拒绝
 
-OpenAI prod 一再被拒绝
+OpenAI 密钥 Production 一再被拒绝
 
-服务商连续三次拒绝了 OpenAI prod；请替换它。
+OpenAI 连续三次拒绝了密钥 Production（…WXYZ）；请替换它。
+
+组织： Acme
+服务商： OpenAI
+密钥： Production（…WXYZ）
+使用方： Checkout、Support，以及所有没有自己密钥的项目
+服务商的回复： HTTP 401：Incorrect API key provided: sk-pr***XYZ.
+首次拒绝： 2026年11月7日 09:10 UTC
+最近拒绝： 2026年11月7日 09:12 UTC
+最近使用： 2026年11月6日 18:40 UTC
 
 打开服务商密钥：
 https://kaeso.example.com/orgs/org_1

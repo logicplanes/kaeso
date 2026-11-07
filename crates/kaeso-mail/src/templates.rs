@@ -1,6 +1,6 @@
 use time::PrimitiveDateTime;
 
-use crate::layout::{Content, Instance, Reason};
+use crate::layout::{Content, Instance, Label, Reason, never};
 use crate::locale::{Locale, zh};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -226,14 +226,14 @@ pub struct Budget {
 
 impl Budget {
     pub fn english(&self) -> String {
-        let n = &self.amount;
-        let amount = match self.kind {
-            LimitKind::RequestRate => format!("{n} requests per minute"),
-            LimitKind::TokenRate => format!("{n} tokens per minute"),
-            LimitKind::TokenBudget => format!("{n} tokens"),
-            LimitKind::SpendBudget => format!("{n} USD"),
-            LimitKind::ToolCallRate => format!("{n} tool calls per minute"),
-        };
+        format!(
+            "{} of {}",
+            self.label_en(),
+            self.quantity(Locale::En, &self.amount)
+        )
+    }
+
+    pub(crate) fn label_en(&self) -> String {
         let label = match self.kind {
             LimitKind::RequestRate => "request rate",
             LimitKind::TokenRate => "token rate",
@@ -248,42 +248,119 @@ impl Budget {
             (_, LimitPeriod::Month) => "monthly ",
             (_, LimitPeriod::Total) => "total ",
         };
-        format!("{period}{label} of {amount}")
+        format!("{period}{label}")
     }
 
     pub(crate) fn german_genitive(&self) -> String {
-        let n = Locale::De.number(&self.amount);
-        let budget = match self.period {
+        format!("{} von {}", self.genitive_de(), self.von_de())
+    }
+
+    pub(crate) fn german_accusative(&self) -> String {
+        format!("{} von {}", self.label_de(), self.von_de())
+    }
+
+    fn von_de(&self) -> String {
+        match self.kind {
+            LimitKind::ToolCallRate => format!(
+                "{} Tool-Aufrufen pro Minute",
+                Locale::De.number(&self.amount)
+            ),
+            _ => self.quantity(Locale::De, &self.amount),
+        }
+    }
+
+    pub(crate) fn genitive_de(&self) -> &'static str {
+        if self.is_rate() {
+            return "Ratenlimits";
+        }
+        match self.period {
             LimitPeriod::Day => "Tagesbudgets",
             LimitPeriod::Month => "Monatsbudgets",
             LimitPeriod::Total => "Gesamtbudgets",
             LimitPeriod::Minute => "Budgets",
-        };
-        match self.kind {
-            LimitKind::RequestRate => format!("Ratenlimits von {n} Anfragen pro Minute"),
-            LimitKind::TokenRate => format!("Ratenlimits von {n} Token pro Minute"),
-            LimitKind::TokenBudget => format!("{budget} von {n} Token"),
-            LimitKind::SpendBudget => format!("{budget} von {n} USD"),
-            LimitKind::ToolCallRate => format!("Ratenlimits von {n} Tool-Aufrufen pro Minute"),
+        }
+    }
+
+    pub(crate) fn label_de(&self) -> &'static str {
+        if self.is_rate() {
+            return "Ratenlimit";
+        }
+        match self.period {
+            LimitPeriod::Day => "Tagesbudget",
+            LimitPeriod::Month => "Monatsbudget",
+            LimitPeriod::Total => "Gesamtbudget",
+            LimitPeriod::Minute => "Budget",
         }
     }
 
     pub(crate) fn chinese(&self) -> String {
-        let n = Locale::ZhCn.number(&self.amount);
+        format!(
+            "{}（{}）",
+            self.label_zh(),
+            self.quantity(Locale::ZhCn, &self.amount)
+        )
+    }
+
+    pub(crate) fn label_zh(&self) -> &'static str {
         match (self.kind, self.period) {
-            (LimitKind::RequestRate, _) => format!("速率限制（每分钟 {n} 次请求）"),
-            (LimitKind::TokenRate, _) => format!("速率限制（每分钟 {n} 个 Token）"),
-            (LimitKind::ToolCallRate, _) => format!("速率限制（每分钟 {n} 次工具调用）"),
-            (LimitKind::TokenBudget, LimitPeriod::Day) => {
-                format!("每日 Token 预算（{n} 个 Token）")
+            (LimitKind::RequestRate | LimitKind::TokenRate | LimitKind::ToolCallRate, _) => {
+                "速率限制"
             }
-            (LimitKind::TokenBudget, LimitPeriod::Month) => {
-                format!("每月 Token 预算（{n} 个 Token）")
-            }
-            (LimitKind::TokenBudget, _) => format!("Token 总预算（{n} 个 Token）"),
-            (LimitKind::SpendBudget, LimitPeriod::Day) => format!("每日支出预算（{n} USD）"),
-            (LimitKind::SpendBudget, LimitPeriod::Month) => format!("每月支出预算（{n} USD）"),
-            (LimitKind::SpendBudget, _) => format!("总支出预算（{n} USD）"),
+            (LimitKind::TokenBudget, LimitPeriod::Day) => "每日 Token 预算",
+            (LimitKind::TokenBudget, LimitPeriod::Month) => "每月 Token 预算",
+            (LimitKind::TokenBudget, _) => "Token 总预算",
+            (LimitKind::SpendBudget, LimitPeriod::Day) => "每日支出预算",
+            (LimitKind::SpendBudget, LimitPeriod::Month) => "每月支出预算",
+            (LimitKind::SpendBudget, _) => "总支出预算",
+        }
+    }
+
+    fn is_rate(&self) -> bool {
+        matches!(
+            self.kind,
+            LimitKind::RequestRate | LimitKind::TokenRate | LimitKind::ToolCallRate
+        )
+    }
+
+    pub(crate) fn quantity(&self, lang: Locale, plain: &str) -> String {
+        let n = lang.number(plain);
+        match (lang, self.kind) {
+            (Locale::En, LimitKind::RequestRate) => format!("{n} requests per minute"),
+            (Locale::En, LimitKind::TokenRate) => format!("{n} tokens per minute"),
+            (Locale::En, LimitKind::TokenBudget) => format!("{n} tokens"),
+            (Locale::En, LimitKind::SpendBudget) => format!("{n} USD"),
+            (Locale::En, LimitKind::ToolCallRate) => format!("{n} tool calls per minute"),
+            (Locale::De, LimitKind::RequestRate) => format!("{n} Anfragen pro Minute"),
+            (Locale::De, LimitKind::TokenRate) => format!("{n} Token pro Minute"),
+            (Locale::De, LimitKind::TokenBudget) => format!("{n} Token"),
+            (Locale::De, LimitKind::SpendBudget) => format!("{n} USD"),
+            (Locale::De, LimitKind::ToolCallRate) => format!("{n} Tool-Aufrufe pro Minute"),
+            (Locale::ZhCn, LimitKind::RequestRate) => format!("每分钟 {n} 次请求"),
+            (Locale::ZhCn, LimitKind::TokenRate) => format!("每分钟 {n} 个 Token"),
+            (Locale::ZhCn, LimitKind::TokenBudget) => format!("{n} 个 Token"),
+            (Locale::ZhCn, LimitKind::SpendBudget) => format!("{n} USD"),
+            (Locale::ZhCn, LimitKind::ToolCallRate) => format!("每分钟 {n} 次工具调用"),
+        }
+    }
+
+    pub(crate) fn per_period(&self, lang: Locale) -> String {
+        let q = self.quantity(lang, &self.amount);
+        if self.is_rate() {
+            return q;
+        }
+        match (lang, self.period) {
+            (Locale::En, LimitPeriod::Minute) => format!("{q} per minute"),
+            (Locale::En, LimitPeriod::Day) => format!("{q} per day"),
+            (Locale::En, LimitPeriod::Month) => format!("{q} per month"),
+            (Locale::En, LimitPeriod::Total) => format!("{q} in total"),
+            (Locale::De, LimitPeriod::Minute) => format!("{q} pro Minute"),
+            (Locale::De, LimitPeriod::Day) => format!("{q} pro Tag"),
+            (Locale::De, LimitPeriod::Month) => format!("{q} pro Monat"),
+            (Locale::De, LimitPeriod::Total) => format!("{q} insgesamt"),
+            (Locale::ZhCn, LimitPeriod::Minute) => format!("每分钟 {q}"),
+            (Locale::ZhCn, LimitPeriod::Day) => format!("每日 {q}"),
+            (Locale::ZhCn, LimitPeriod::Month) => format!("每月 {q}"),
+            (Locale::ZhCn, LimitPeriod::Total) => format!("总计 {q}"),
         }
     }
 }
@@ -291,8 +368,89 @@ impl Budget {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum BudgetScope<'a> {
     Project,
-    Member,
+    Member(&'a str),
     Key(&'a str),
+}
+
+impl BudgetScope<'_> {
+    pub(crate) fn name(self, lang: Locale, project: &str) -> String {
+        match (lang, self) {
+            (_, BudgetScope::Project) => project.to_owned(),
+            (_, BudgetScope::Member(name)) => name.to_owned(),
+            (Locale::En, BudgetScope::Key(key)) => format!("The API key {key}"),
+            (Locale::De, BudgetScope::Key(key)) => format!("Der API-Schlüssel {key}"),
+            (Locale::ZhCn, BudgetScope::Key(key)) => zh(&["API 密钥", key]),
+        }
+    }
+
+    pub(crate) fn short(self, lang: Locale, project: &str) -> String {
+        match (lang, self) {
+            (Locale::En, BudgetScope::Key(key)) => format!("Key {key}"),
+            (Locale::De, BudgetScope::Key(key)) => format!("Schlüssel {key}"),
+            (Locale::ZhCn, BudgetScope::Key(key)) => zh(&["密钥", key]),
+            _ => self.name(lang, project),
+        }
+    }
+
+    pub(crate) fn applies_to(self, lang: Locale) -> String {
+        match (lang, self) {
+            (Locale::En, BudgetScope::Project) => "The whole project".to_owned(),
+            (Locale::De, BudgetScope::Project) => "Das ganze Projekt".to_owned(),
+            (Locale::ZhCn, BudgetScope::Project) => "整个项目".to_owned(),
+            (_, BudgetScope::Member(name)) => name.to_owned(),
+            (_, BudgetScope::Key(_)) => self.name(lang, ""),
+        }
+    }
+
+    fn its_en(self) -> &'static str {
+        match self {
+            BudgetScope::Project | BudgetScope::Key(_) => "its",
+            BudgetScope::Member(_) => "the",
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct BudgetAlert<'a> {
+    pub organization: &'a str,
+    pub project: &'a str,
+    pub scope: BudgetScope<'a>,
+    pub budget: &'a Budget,
+    pub percent: u32,
+    pub used: &'a str,
+    pub resets: Option<PrimitiveDateTime>,
+}
+
+pub(crate) fn budget_details(
+    lang: Locale,
+    organization: &str,
+    project: &str,
+    scope: BudgetScope<'_>,
+    budget: &Budget,
+    used: Option<(&str, u32)>,
+    resets: Option<PrimitiveDateTime>,
+) -> Vec<crate::layout::Detail> {
+    let mut out = vec![
+        Label::Organization.of(lang, organization),
+        Label::Project.of(lang, project),
+        Label::AppliesTo.of(lang, scope.applies_to(lang)),
+        Label::Budget.of(lang, budget.per_period(lang)),
+    ];
+    if let Some((n, percent)) = used {
+        let value = match lang {
+            Locale::En | Locale::De => {
+                format!("{} ({})", budget.quantity(lang, n), lang.percent(percent))
+            }
+            Locale::ZhCn => format!("{}（{}）", budget.quantity(lang, n), lang.percent(percent)),
+        };
+        out.push(Label::Used.of(lang, value));
+    }
+    // Budget periods are days and months in UTC, so their reset is said in UTC.
+    out.push(Label::Resets.of(
+        lang,
+        resets.map_or_else(|| never(lang).to_owned(), |at| lang.moment(at, "UTC")),
+    ));
+    out
 }
 
 const NOT_YOU: &str =
@@ -1050,73 +1208,71 @@ pub fn key_expiry_warning(
     )
 }
 
-pub fn budget_alert(
-    lang: Locale,
-    to: &str,
-    budget: &Budget,
-    scope: BudgetScope<'_>,
-    percent: u32,
-    url: &str,
-) -> Email {
-    let p = lang.percent(percent);
-    let (subject, heading, sentence, action) = match lang {
-        Locale::En => {
-            let (budget, scope) = (budget.english(), scope_en(scope));
-            (
-                format!("{scope} used {p} of its {budget}"),
-                format!("A budget is {p} used"),
-                format!("{scope} has used {p} of its {budget}."),
-                "Open limits",
-            )
-        }
-        Locale::De => {
-            let scope = match scope {
-                BudgetScope::Project => "Das Projekt".to_owned(),
-                BudgetScope::Member => "Ein Mitglied des Projekts".to_owned(),
-                BudgetScope::Key(id) => format!("Der API-Schlüssel {id}"),
-            };
-            let line = format!(
-                "{scope} hat {p} des {} verbraucht",
-                budget.german_genitive()
-            );
-            (
-                line.clone(),
-                format!("Ein Budget ist zu {p} verbraucht"),
-                format!("{line}."),
-                "Limits öffnen",
-            )
-        }
-        Locale::ZhCn => {
-            let whose = match scope {
-                BudgetScope::Project => "该项目的".to_owned(),
-                BudgetScope::Member => "项目中一名成员的".to_owned(),
-                BudgetScope::Key(id) => zh(&["API 密钥", id, "的"]),
-            };
-            let line = zh(&[&whose, &budget.chinese(), "已用", &p]);
-            (
-                line.clone(),
-                zh(&["预算已用", &p]),
-                format!("{line}。"),
-                "打开限额",
-            )
-        }
+pub fn budget_alert(lang: Locale, to: &str, alert: &BudgetAlert<'_>, url: &str) -> Email {
+    let BudgetAlert {
+        organization,
+        project,
+        scope,
+        budget,
+        percent,
+        used,
+        resets,
+    } = alert;
+    let (scope, p) = (*scope, lang.percent(*percent));
+    let who = scope.name(lang, project);
+    let (heading, sentence, action) = match lang {
+        Locale::En => (
+            format!(
+                "{} used {p} of {} {}",
+                scope.short(lang, project),
+                scope.its_en(),
+                budget.label_en()
+            ),
+            format!(
+                "{who} has used {p} of {} {}.",
+                scope.its_en(),
+                budget.english()
+            ),
+            "Open limits",
+        ),
+        Locale::De => (
+            format!(
+                "{} hat {p} des {} verbraucht",
+                scope.short(lang, project),
+                budget.genitive_de()
+            ),
+            format!("{who} hat {p} des {} verbraucht.", budget.german_genitive()),
+            "Limits öffnen",
+        ),
+        Locale::ZhCn => (
+            zh(&[
+                &scope.short(lang, project),
+                "的",
+                budget.label_zh(),
+                "已用",
+                &p,
+            ]),
+            zh(&[&who, "的", &budget.chinese(), "已用", &p, "。"]),
+            "打开限额",
+        ),
     };
     Email::new(
         to,
         EmailKind::BudgetAlert,
-        subject,
+        heading.clone(),
         Content::new(lang, heading, Reason::Alert)
             .sentence(sentence)
+            .details(budget_details(
+                lang,
+                organization,
+                project,
+                scope,
+                budget,
+                Some((used, *percent)),
+                *resets,
+            ))
             .action(action, url),
     )
-}
-
-pub(crate) fn scope_en(scope: BudgetScope<'_>) -> String {
-    match scope {
-        BudgetScope::Project => "The project".to_owned(),
-        BudgetScope::Member => "A member of the project".to_owned(),
-        BudgetScope::Key(id) => format!("The API key {id}"),
-    }
 }
 
 pub fn test(lang: Locale, to: &str) -> Email {
@@ -1168,6 +1324,20 @@ mod tests {
         }
     }
 
+    const RESETS: PrimitiveDateTime = datetime!(2026 - 12 - 01 0:00);
+
+    fn alert<'a>(budget: &'a Budget, scope: BudgetScope<'a>, percent: u32) -> BudgetAlert<'a> {
+        BudgetAlert {
+            organization: "Acme",
+            project: "Checkout",
+            scope,
+            budget,
+            percent,
+            used: "40",
+            resets: Some(RESETS),
+        }
+    }
+
     fn all() -> Vec<Email> {
         all_in(Locale::En)
     }
@@ -1210,7 +1380,12 @@ mod tests {
                 "UTC",
                 URL,
             ),
-            budget_alert(l, TO, &monthly_spend("50"), BudgetScope::Project, 80, URL),
+            budget_alert(
+                l,
+                TO,
+                &alert(&monthly_spend("50"), BudgetScope::Project, 80),
+                URL,
+            ),
             test(l, TO),
         ]
         .into_iter()
@@ -1230,6 +1405,18 @@ mod tests {
         let open = "https://kaeso.example.com/orgs/org_1";
         let ada = Actor::Person("Ada Lovelace");
         let budget = monthly_spend("50");
+        let projects = ["Checkout".to_owned(), "Support".to_owned()];
+        let key = Credential {
+            organization: "Acme",
+            provider: "OpenAI",
+            name: "Production",
+            last4: Some("WXYZ"),
+            account: None,
+            default: true,
+            projects: &projects,
+            last_used: Some(datetime!(2026 - 11 - 06 18:40)),
+            zone: "UTC",
+        };
         let one = |place: Option<&str>, fact: Fact<'_>, why: Because<'_>| {
             notice(l, TO, place, &fact, why, open, &links)
         };
@@ -1273,8 +1460,11 @@ mod tests {
             one(
                 Some("Checkout"),
                 Fact::LimitReached {
+                    organization: "Acme",
+                    project: "Checkout",
                     budget: &budget,
                     scope: BudgetScope::Project,
+                    resets: Some(RESETS),
                 },
                 Because::Right("limits.manage"),
             ),
@@ -1339,14 +1529,24 @@ mod tests {
             one(
                 Some("Acme"),
                 Fact::ProviderKey {
-                    key: "OpenAI prod",
-                    change: ProviderKey::Refused,
+                    key: &key,
+                    change: ProviderKey::Refused {
+                        answer: Answer {
+                            status: 401,
+                            message: "Incorrect API key provided: sk-pr***XYZ.",
+                            billing: false,
+                        },
+                        first: datetime!(2026 - 11 - 07 09:10),
+                        last: datetime!(2026 - 11 - 07 09:12),
+                    },
                 },
                 Because::Right("provider_credentials.replace"),
             ),
             one(
                 Some("Checkout"),
                 Fact::Model {
+                    provider: "OpenAI",
+                    project: "Checkout",
                     model: "gpt-4o",
                     change: ModelChange::Delisted,
                 },
@@ -1595,7 +1795,20 @@ mod tests {
                 org_scheduled_for_deletion(l, TO, evil, evil, day.midnight(), "UTC", URL),
                 ownership_transferred(l, TO, evil, evil, URL),
                 key_expiry_warning(l, TO, evil, evil, day.midnight(), "UTC", URL),
-                budget_alert(l, TO, &monthly_spend(evil), BudgetScope::Key(evil), 80, URL),
+                budget_alert(
+                    l,
+                    TO,
+                    &BudgetAlert {
+                        organization: evil,
+                        project: evil,
+                        scope: BudgetScope::Key(evil),
+                        budget: &monthly_spend(evil),
+                        percent: 80,
+                        used: evil,
+                        resets: None,
+                    },
+                    URL,
+                ),
             ]
         }) {
             let r = email.render(&instance());
@@ -1624,9 +1837,7 @@ mod tests {
         let r = budget_alert(
             Locale::En,
             TO,
-            &monthly_spend("50"),
-            BudgetScope::Project,
-            80,
+            &alert(&monthly_spend("50"), BudgetScope::Project, 80),
             URL,
         )
         .render(&Instance::new("http://localhost:3000/"));
@@ -1831,10 +2042,13 @@ mod tests {
             (
                 EmailKind::BudgetAlert,
                 [
-                    "Das Projekt hat 80\u{a0}% des Monatsbudgets von 50 USD verbraucht",
-                    "Ein Budget ist zu 80\u{a0}% verbraucht",
+                    "Checkout hat 80\u{a0}% des Monatsbudgets verbraucht",
+                    "Checkout hat 80\u{a0}% des Monatsbudgets verbraucht",
                 ],
-                ["该项目的每月支出预算（50 USD）已用 80%", "预算已用 80%"],
+                [
+                    "Checkout 的每月支出预算已用 80%",
+                    "Checkout 的每月支出预算已用 80%",
+                ],
             ),
             (
                 EmailKind::Test,
@@ -1870,18 +2084,24 @@ mod tests {
             (
                 EmailKind::LimitReached,
                 [
-                    "[Checkout] Ein Budget ist aufgebraucht",
-                    "Ein Budget ist aufgebraucht",
+                    "[Checkout] Checkout hat das Monatsbudget erreicht",
+                    "Checkout hat das Monatsbudget erreicht",
                 ],
-                ["[Checkout] 预算已用完", "预算已用完"],
+                [
+                    "[Checkout] Checkout 已达到每月支出预算",
+                    "Checkout 已达到每月支出预算",
+                ],
             ),
             (
                 EmailKind::KeyChanged,
                 [
-                    "[Checkout] Ihr Schlüssel wurde rotiert",
-                    "Ihr Schlüssel wurde rotiert",
+                    "[Checkout] Ihr Schlüssel ci-deploy wurde rotiert",
+                    "Ihr Schlüssel ci-deploy wurde rotiert",
                 ],
-                ["[Checkout] 您的密钥已轮换", "您的密钥已轮换"],
+                [
+                    "[Checkout] 您的密钥 ci-deploy 已轮换",
+                    "您的密钥 ci-deploy 已轮换",
+                ],
             ),
             (
                 EmailKind::ContentLogging,
@@ -1942,10 +2162,13 @@ mod tests {
             (
                 EmailKind::ProviderKeys,
                 [
-                    "[Acme] OpenAI prod wird abgelehnt",
-                    "OpenAI prod wird abgelehnt",
+                    "[Acme] OpenAI-Schlüssel Production wird abgelehnt",
+                    "OpenAI-Schlüssel Production wird abgelehnt",
                 ],
-                ["[Acme] OpenAI prod 一再被拒绝", "OpenAI prod 一再被拒绝"],
+                [
+                    "[Acme] OpenAI 密钥 Production 一再被拒绝",
+                    "OpenAI 密钥 Production 一再被拒绝",
+                ],
             ),
             (
                 EmailKind::ModelChanges,
@@ -2215,24 +2438,395 @@ mod tests {
         assert_eq!(rate.chinese(), "速率限制（每分钟 600 次请求）");
         let spend = b(LimitKind::SpendBudget, LimitPeriod::Total, "12.5");
         assert_eq!(spend.english(), "total spend budget of 12.5 USD");
+        assert_eq!(spend.per_period(Locale::En), "12.5 USD in total");
+        assert_eq!(tokens.per_period(Locale::De), "1.500.000 Token pro Tag");
+        assert_eq!(rate.per_period(Locale::ZhCn), "每分钟 600 次请求");
+        assert_eq!(tokens.per_period(Locale::ZhCn), "每日 1,500,000 个 Token");
         let alert = |lang| {
-            budget_alert(lang, TO, &spend, BudgetScope::Key("key_01J9"), 90, URL)
+            budget_alert(
+                lang,
+                TO,
+                &BudgetAlert {
+                    organization: "Acme",
+                    project: "Checkout",
+                    scope: BudgetScope::Key("ci-deploy"),
+                    budget: &spend,
+                    percent: 90,
+                    used: "11.25",
+                    resets: None,
+                },
+                URL,
+            )
+        };
+        let sentence = |lang| alert(lang).content.sentence.unwrap_or_default();
+        assert_eq!(
+            sentence(Locale::En),
+            "The API key ci-deploy has used 90% of its total spend budget of 12.5 USD."
+        );
+        assert_eq!(
+            sentence(Locale::De),
+            "Der API-Schlüssel ci-deploy hat 90\u{a0}% des Gesamtbudgets von 12,5 USD verbraucht."
+        );
+        assert_eq!(
+            sentence(Locale::ZhCn),
+            "API 密钥 ci-deploy 的总支出预算（12.5 USD）已用 90%。"
+        );
+        assert_eq!(
+            alert(Locale::En).content.heading,
+            "Key ci-deploy used 90% of its total spend budget"
+        );
+        let text = alert(Locale::En).render(&instance()).text;
+        for line in [
+            "Organization: Acme",
+            "Project: Checkout",
+            "Applies to: The API key ci-deploy",
+            "Budget: 12.5 USD in total",
+            "Used: 11.25 USD (90%)",
+            "Resets: never",
+        ] {
+            assert!(text.contains(line), "{line}\n{text}");
+        }
+        let member = budget_alert(
+            Locale::En,
+            TO,
+            &BudgetAlert {
+                organization: "Acme",
+                project: "Checkout",
+                scope: BudgetScope::Member("Grace Hopper"),
+                budget: &tokens,
+                percent: 50,
+                used: "750000",
+                resets: Some(datetime!(2026 - 11 - 08 0:00)),
+            },
+            URL,
+        );
+        assert_eq!(
+            member.subject,
+            "Grace Hopper used 50% of the daily token budget"
+        );
+        let text = member.render(&instance()).text;
+        assert!(text.contains("Applies to: Grace Hopper\n"), "{text}");
+        assert!(text.contains("Used: 750000 tokens (50%)\n"), "{text}");
+        assert!(text.contains("Resets: 2026-11-08 00:00 UTC\n"), "{text}");
+    }
+
+    #[test]
+    fn provider_key_notices_say_who_refused_what_and_why() {
+        use crate::notices::*;
+        let links = Links {
+            settings: "https://kaeso.example.com/settings/account/notifications".to_owned(),
+            unsubscribe: None,
+        };
+        let projects = ["Checkout".to_owned()];
+        let key = Credential {
+            organization: "Acme",
+            provider: "Anthropic",
+            name: "Logicplanes",
+            last4: Some("8QAA"),
+            account: None,
+            default: false,
+            projects: &projects,
+            last_used: None,
+            zone: "Europe/Berlin",
+        };
+        let account = Credential {
+            provider: "OpenAI",
+            name: "Team",
+            last4: None,
+            account: Some("ada@example.com"),
+            projects: &[],
+            ..key.clone()
+        };
+        let refused = |answer| ProviderKey::Refused {
+            answer,
+            first: datetime!(2026 - 11 - 07 09:10),
+            last: datetime!(2026 - 11 - 07 09:12),
+        };
+        let billing = Answer {
+            status: 402,
+            message: "Your credit balance is too low.",
+            billing: true,
+        };
+        let auth = Answer {
+            status: 401,
+            message: "invalid x-api-key",
+            billing: false,
+        };
+        let mail = |lang, key: &Credential<'_>, change| {
+            notice(
+                lang,
+                TO,
+                Some("Acme"),
+                &Fact::ProviderKey { key, change },
+                Because::Right("provider_credentials.replace"),
+                URL,
+                &links,
+            )
+        };
+        let en = mail(Locale::En, &key, refused(billing));
+        assert_eq!(
+            en.subject,
+            "[Acme] Anthropic key Logicplanes keeps being refused"
+        );
+        assert_eq!(
+            en.content.sentence.as_deref(),
+            Some(
+                "Anthropic refused Logicplanes (…8QAA) three times over billing; add credit or replace the key."
+            )
+        );
+        let text = en.render(&instance()).text;
+        for line in [
+            "Key: Logicplanes (…8QAA)\n",
+            "Used by: Checkout\n",
+            "Provider's answer: HTTP 402: Your credit balance is too low.\n",
+            "First refused: 2026-11-07 09:10 Europe/Berlin\n",
+            "Last refused: 2026-11-07 09:12 Europe/Berlin\n",
+            "Last used: never\n",
+        ] {
+            assert!(text.contains(line), "{line}\n{text}");
+        }
+        assert_eq!(
+            mail(Locale::De, &key, refused(billing))
                 .content
                 .sentence
-                .unwrap_or_default()
+                .as_deref(),
+            Some(
+                "Anthropic hat Logicplanes (…8QAA) dreimal wegen Abrechnung abgelehnt; Konto aufladen oder Schlüssel ersetzen."
+            )
+        );
+        assert_eq!(
+            mail(Locale::ZhCn, &key, refused(billing))
+                .content
+                .sentence
+                .as_deref(),
+            Some(
+                "Anthropic 因账单问题连续三次拒绝了 Logicplanes（…8QAA）；请为账户充值或替换密钥。"
+            )
+        );
+        let account_mail = mail(Locale::En, &account, refused(auth));
+        assert_eq!(
+            account_mail.content.heading,
+            "OpenAI account Team keeps being refused"
+        );
+        assert_eq!(
+            account_mail.content.sentence.as_deref(),
+            Some(
+                "OpenAI refused the account Team (ada@example.com) three times in a row; sign in to it again."
+            )
+        );
+        let text = account_mail.render(&instance()).text;
+        assert!(text.contains("Account: Team (ada@example.com)\n"), "{text}");
+        assert!(text.contains("Used by: No project\n"), "{text}");
+        let signed_out = mail(
+            Locale::En,
+            &account,
+            ProviderKey::SignedOut {
+                at: datetime!(2026 - 11 - 07 09:12),
+            },
+        );
+        assert_eq!(signed_out.subject, "[Acme] OpenAI account Team signed out");
+        assert_eq!(
+            signed_out.content.sentence.as_deref(),
+            Some(
+                "OpenAI ended the session of the account Team (ada@example.com); sign in to it again."
+            )
+        );
+        let text = signed_out.render(&instance()).text;
+        assert!(
+            text.contains("Signed out: 2026-11-07 09:12 Europe/Berlin\n"),
+            "{text}"
+        );
+        assert!(!text.contains("refused"), "{text}");
+        let de = mail(
+            Locale::De,
+            &account,
+            ProviderKey::SignedOut {
+                at: datetime!(2026 - 11 - 07 09:12),
+            },
+        );
+        assert_eq!(de.content.heading, "OpenAI-Konto Team ist abgemeldet");
+        let zh = mail(
+            Locale::ZhCn,
+            &account,
+            ProviderKey::SignedOut {
+                at: datetime!(2026 - 11 - 07 09:12),
+            },
+        );
+        assert_eq!(zh.content.heading, "OpenAI 账户 Team 已退出登录");
+        assert_eq!(
+            zh.content.sentence.as_deref(),
+            Some("OpenAI 结束了账户 Team（ada@example.com）的会话；请重新登录。")
+        );
+        for lang in Locale::ALL {
+            for email in [
+                mail(lang, &key, refused(billing)),
+                mail(lang, &account, refused(billing)),
+                mail(lang, &account, refused(auth)),
+            ] {
+                let c = &email.content;
+                let limit = if lang == Locale::En { 100 } else { 115 };
+                let sentence = c.sentence.as_deref().unwrap_or_default();
+                assert!(sentence.chars().count() <= limit, "{sentence}");
+                assert!(c.heading.chars().count() <= 55, "{}", c.heading);
+                assert_eq!(c.details.len(), 8, "{}", lang.tag());
+            }
+        }
+    }
+
+    #[test]
+    fn price_changes_list_each_price_that_moved() {
+        use crate::notices::*;
+        let links = Links {
+            settings: "https://kaeso.example.com/settings/account/notifications".to_owned(),
+            unsubscribe: None,
         };
-        assert_eq!(
-            alert(Locale::En),
-            "The API key key_01J9 has used 90% of its total spend budget of 12.5 USD."
+        let fact = Fact::Model {
+            provider: "OpenAI",
+            project: "Checkout",
+            model: "gpt-4o",
+            change: ModelChange::Price(vec![
+                PriceChange {
+                    price: Price::Input,
+                    from: Some("2.5".to_owned()),
+                    to: Some("2".to_owned()),
+                },
+                PriceChange {
+                    price: Price::CacheWrite,
+                    from: None,
+                    to: Some("3.75".to_owned()),
+                },
+            ]),
+        };
+        let mail = |lang| {
+            notice(
+                lang,
+                TO,
+                Some("Checkout"),
+                &fact,
+                Because::Right("models.manage"),
+                URL,
+                &links,
+            )
+            .render(&instance())
+            .text
+        };
+        let en = mail(Locale::En);
+        assert!(
+            en.contains("OpenAI changed the price of gpt-4o; costs from now on use it."),
+            "{en}"
         );
-        assert_eq!(
-            alert(Locale::De),
-            "Der API-Schlüssel key_01J9 hat 90\u{a0}% des Gesamtbudgets von 12,5 USD verbraucht."
+        assert!(
+            en.contains("Input price: 2.5 → 2 USD per million tokens\n"),
+            "{en}"
         );
-        assert_eq!(
-            alert(Locale::ZhCn),
-            "API 密钥 key_01J9 的总支出预算（12.5 USD）已用 90%。"
+        assert!(
+            en.contains("Cache write price: — → 3.75 USD per million tokens\n"),
+            "{en}"
         );
+        assert!(!en.contains("Output price"), "{en}");
+        let de = mail(Locale::De);
+        assert!(
+            de.contains("Eingabepreis: 2,5 → 2 USD pro Million Token\n"),
+            "{de}"
+        );
+        let zh = mail(Locale::ZhCn);
+        assert!(zh.contains("输入价格： 每百万 Token 2.5 → 2 USD\n"), "{zh}");
+        let delisted = Fact::Model {
+            provider: "OpenAI",
+            project: "Checkout",
+            model: "gpt-4o",
+            change: ModelChange::Delisted,
+        };
+        let text = notice(
+            Locale::En,
+            TO,
+            Some("Checkout"),
+            &delisted,
+            Because::Right("models.manage"),
+            URL,
+            &links,
+        )
+        .render(&instance())
+        .text;
+        assert!(
+            text.contains("OpenAI delisted gpt-4o; requests to it from Checkout may fail."),
+            "{text}"
+        );
+        assert!(text.contains("Provider: OpenAI\nModel: gpt-4o\n"), "{text}");
+    }
+
+    #[test]
+    fn detail_labels_follow_each_language() {
+        use crate::layout::Label;
+        for label in [
+            Label::Organization,
+            Label::Project,
+            Label::AppliesTo,
+            Label::Budget,
+            Label::Used,
+            Label::Resets,
+            Label::Provider,
+            Label::Key,
+            Label::Account,
+            Label::UsedBy,
+            Label::Answer,
+            Label::FirstRefused,
+            Label::LastRefused,
+            Label::LastUsed,
+            Label::SignedOut,
+            Label::Model,
+            Label::InputPrice,
+            Label::OutputPrice,
+            Label::CacheReadPrice,
+            Label::CacheWritePrice,
+            Label::CacheWriteHourPrice,
+        ] {
+            let (en, de, zh) = (
+                label.text(Locale::En),
+                label.text(Locale::De),
+                label.text(Locale::ZhCn),
+            );
+            assert!(en != de || en == "Budget", "{en}");
+            assert_ne!(en, zh, "{en}");
+            for text in [en, de, zh] {
+                assert!(!text.ends_with(':') && !text.ends_with('：'), "{text}");
+                assert!(text.chars().count() <= 40, "{text}");
+            }
+            assert!(!zh.contains([',', ';', ':', '?', '!']), "{zh}");
+            assert_eq!(unspaced_seam(zh), None, "{zh}");
+        }
+    }
+
+    #[test]
+    fn details_name_the_facts_in_text_and_html() {
+        let email = budget_alert(
+            Locale::De,
+            TO,
+            &alert(&monthly_spend("50"), BudgetScope::Project, 80),
+            URL,
+        );
+        let r = email.render(&instance());
+        assert!(
+            r.text.contains(
+                "Organisation: Acme\nProjekt: Checkout\nGilt für: Das ganze Projekt\nBudget: 50 USD pro Monat\nVerbraucht: 40 USD (80\u{a0}%)\nZurückgesetzt: 1. Dez. 2026, 00:00 UTC\n\nLimits öffnen:"
+            ),
+            "{}",
+            r.text
+        );
+        assert!(r.html.contains(">Verbraucht</td>"));
+        assert!(r.html.contains(">40 USD (80\u{a0}%)</td>"));
+        let labels = r.html.matches("class=\"k-tertiary\" width=\"150\"").count();
+        assert_eq!(labels, 6);
+        let zh = budget_alert(
+            Locale::ZhCn,
+            TO,
+            &alert(&monthly_spend("50"), BudgetScope::Project, 80),
+            URL,
+        )
+        .render(&instance())
+        .text;
+        assert!(zh.contains("已用： 40 USD（80%）\n"), "{zh}");
+        assert!(zh.contains("重置时间： 2026年12月1日 00:00 UTC\n"), "{zh}");
     }
 
     #[test]

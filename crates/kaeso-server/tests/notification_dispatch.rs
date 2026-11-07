@@ -12,7 +12,7 @@ use common::{App, Owner};
 use kaeso_core::notifications::Kind;
 use kaeso_mail::notices::{Because, Fact};
 use kaeso_server::services::notifications::dispatch::{Recipients, Send, deliver};
-use kaeso_server::services::notifications::system;
+use kaeso_server::services::notifications::system::{self, Refusal};
 use kaeso_testkit::services::TestServices;
 use serde_json::json;
 use time::macros::time;
@@ -461,24 +461,30 @@ async fn a_provider_key_refused_three_times_in_a_row_needs_attention_once() {
     let key = app
         .post(
             &format!("/orgs/{}/credentials", owner.org_id),
-            json!({ "provider": "openai", "name": "OpenAI prod", "secret": "sk-test-org-secret-0123456789WXYZ" }),
+            json!({ "provider": "openai", "name": "Production", "secret": "sk-test-org-secret-0123456789WXYZ" }),
             Some(&owner.cookie),
         )
         .await
         .expect_status(StatusCode::CREATED);
     let credential = common::uuid(key.body["id"].as_str().unwrap());
-    system::key_refused(&app.state, org, credential).await;
-    system::key_refused(&app.state, org, credential).await;
+    let refused = Refusal {
+        status: 401,
+        message: "Incorrect API key provided: sk-te***WXYZ.",
+        billing: false,
+    };
+    system::key_refused(&app.state, org, credential, refused).await;
+    system::key_refused(&app.state, org, credential, refused).await;
     system::key_answered(credential);
-    system::key_refused(&app.state, org, credential).await;
-    system::key_refused(&app.state, org, credential).await;
+    system::key_refused(&app.state, org, credential, refused).await;
+    system::key_refused(&app.state, org, credential, refused).await;
     settle(&app).await;
     assert!(
         !kinds(&app, OWNER).contains(&"provider_keys".to_owned()),
         "an answer in between resets the count"
     );
-    system::key_refused(&app.state, org, credential).await;
-    system::key_refused(&app.state, org, credential).await;
+    app.clock.advance(time::Duration::minutes(2));
+    system::key_refused(&app.state, org, credential, refused).await;
+    system::key_refused(&app.state, org, credential, refused).await;
     settle(&app).await;
     let mails: Vec<_> = app
         .mail
@@ -487,7 +493,38 @@ async fn a_provider_key_refused_three_times_in_a_row_needs_attention_once() {
         .filter(|m| m.kind.as_str() == "provider_keys")
         .collect();
     assert_eq!(mails.len(), 1);
-    assert_eq!(mails[0].subject, "[Acme] OpenAI prod keeps being refused");
+    assert_eq!(
+        mails[0].subject,
+        "[Acme] OpenAI key Production keeps being refused"
+    );
+    let text = &mails[0].text;
+    for line in [
+        "OpenAI refused the key Production (…WXYZ) three times in a row; replace it.",
+        "Organization: Acme\n",
+        "Provider: OpenAI\n",
+        "Key: Production (…WXYZ)\n",
+        "Used by: Every project without a key of its own\n",
+        "Provider's answer: HTTP 401: Incorrect API key provided: sk-te***WXYZ.\n",
+        "Last used: never\n",
+    ] {
+        assert!(text.contains(line), "{line}\n{text}");
+    }
+    let at = |label: &str| {
+        text.lines()
+            .find_map(|l| l.strip_prefix(label))
+            .map(str::to_owned)
+            .unwrap_or_default()
+    };
+    assert!(at("First refused: ").ends_with(" UTC"), "{text}");
+    assert_ne!(
+        at("First refused: "),
+        at("Last refused: "),
+        "the third refusal came two minutes after the first\n{text}"
+    );
+    assert!(
+        text.contains(&format!("{}/provider-keys\n", owner.org_id)),
+        "{text}"
+    );
 }
 
 #[tokio::test]

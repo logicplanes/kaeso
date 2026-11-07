@@ -13,12 +13,14 @@ Every email Kaeso sends comes from `crates/kaeso-mail`: one layout, one styleshe
 | Wordmark | Kaeso | Alone, top left, 28px in and 28px down |
 | Heading | Sign in to Kaeso | `title-lg` |
 | One sentence | The link works once and expires in 15 minutes. | `body-lg`, secondary |
+| Details, when there are facts | Organization: Acme, Provider: Anthropic, Key: Production (…8QAA) | A list of label and value, `small` tertiary and `body-lg` |
 | One button | Sign in | The `xl` pill, ink on white |
 | One quiet line | If you did not ask to sign in, you can ignore this email. | `small`, tertiary |
 | Footer | Sent by Kaeso at kaeso.example.com. | `caption` |
 
 - **No card.** A single left-aligned column, at most 562px wide, on the canvas: white in light mode, black in dark mode.
 - **Copy limits.** A subject of at most 60 characters without a period, a heading of at most 48, and sentences of at most 100. German and Chinese get 15% more: 69, 55 and 115. A test enforces the limits.
+- **Details name the thing.** An email about a key, a budget or a model answers what, where and when on its own: a list of labels and values under the sentence names the organization, the project, the provider, the key and its last four characters, the amount used and when it resets, the provider's answer and the times. Each send site passes what it knows; the email never guesses.
 - **No raw links.** The HTML never shows a URL; the button carries it. The plain-text part has the link in full on its own line, and it says the same words in the same order.
 - **Footer.** "Sent by Kaeso at" the install's host, from `KAESO_PUBLIC_URL`. Notices also say why they arrived: security and organization notices are always sent, and alerts say how to turn them off. Notifications name the right that made the person get them, link to their settings and, unless they are security emails, to a one-click unsubscribe, which `List-Unsubscribe` and `List-Unsubscribe-Post` carry too.
 

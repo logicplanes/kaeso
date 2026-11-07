@@ -1,4 +1,4 @@
-use time::{Date, Month};
+use time::{Date, Month, PrimitiveDateTime};
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 pub enum Locale {
@@ -60,6 +60,14 @@ impl Locale {
             Locale::En => format!("{y:04}-{:02}-{d:02}", u8::from(date.month())),
             Locale::De => format!("{d}. {} {y}", german_month(date.month())),
             Locale::ZhCn => format!("{y}年{}月{d}日", u8::from(date.month())),
+        }
+    }
+
+    pub fn moment(self, at: PrimitiveDateTime, zone: &str) -> String {
+        let (h, m) = (at.hour(), at.minute());
+        match self {
+            Locale::En | Locale::ZhCn => format!("{} {h:02}:{m:02} {zone}", self.date(at.date())),
+            Locale::De => format!("{}, {h:02}:{m:02} {zone}", self.date(at.date())),
         }
     }
 
@@ -208,6 +216,17 @@ mod tests {
         assert_eq!(Locale::ZhCn.date(d), "2026年10月14日");
         assert_eq!(Locale::De.date(date!(2027 - 03 - 01)), "1. März 2027");
         assert_eq!(Locale::En.date(date!(2027 - 03 - 01)), "2027-03-01");
+    }
+
+    #[test]
+    fn moments_follow_the_language_and_name_the_zone() {
+        let at = date!(2026 - 11 - 07).with_hms(9, 5, 0).unwrap();
+        assert_eq!(Locale::En.moment(at, "UTC"), "2026-11-07 09:05 UTC");
+        assert_eq!(
+            Locale::De.moment(at, "Europe/Berlin"),
+            "7. Nov. 2026, 09:05 Europe/Berlin"
+        );
+        assert_eq!(Locale::ZhCn.moment(at, "UTC"), "2026年11月7日 09:05 UTC");
     }
 
     #[test]

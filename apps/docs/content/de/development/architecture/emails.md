@@ -13,12 +13,14 @@ Jede E-Mail, die Kaeso sendet, stammt aus `crates/kaeso-mail`: ein Layout, ein a
 | Wortmarke | Kaeso | Allein, oben links, 28 px nach innen und 28 px nach unten |
 | Überschrift | Bei Kaeso anmelden | `title-lg` |
 | Ein Satz | Der Link funktioniert einmal und läuft in 15 Minuten ab. | `body-lg`, sekundär |
+| Details, wenn es Fakten gibt | Organisation: Acme, Anbieter: Anthropic, Schlüssel: Production (…8QAA) | Eine Liste aus Bezeichnung und Wert, `small` tertiär und `body-lg` |
 | Ein Button | Anmelden | Die Pille `xl`, Tinte auf Weiß |
 | Eine leise Zeile | Wenn Sie keine Anmeldung angefordert haben, können Sie diese E-Mail ignorieren. | `small`, tertiär |
 | Fußzeile | Gesendet von Kaeso unter kaeso.example.com. | `caption` |
 
 - **Keine Karte.** Eine einzige linksbündige Spalte, höchstens 562 px breit, auf der Fläche: weiß im hellen Modus, schwarz im dunklen.
 - **Längen.** Ein Betreff von höchstens 60 Zeichen ohne Punkt, eine Überschrift von höchstens 48 und Sätze von höchstens 100. Deutsch und Chinesisch bekommen 15 % mehr: 69, 55 und 115. Ein Test setzt die Grenzen durch.
+- **Details benennen die Sache.** Eine E-Mail über einen Schlüssel, ein Budget oder ein Modell beantwortet was, wo und wann von selbst: Eine Liste aus Bezeichnungen und Werten unter dem Satz nennt die Organisation, das Projekt, den Anbieter, den Schlüssel und seine letzten vier Zeichen, den verbrauchten Betrag und wann er zurückgesetzt wird, die Antwort des Anbieters und die Zeitpunkte. Jede sendende Stelle übergibt, was sie weiß; die E-Mail rät nie.
 - **Keine nackten Links.** Das HTML zeigt nie eine URL; der Button trägt sie. Der Textteil enthält den vollständigen Link auf einer eigenen Zeile und sagt dieselben Worte in derselben Reihenfolge.
 - **Fußzeile.** „Gesendet von Kaeso unter“ und der Host der Installation, aus `KAESO_PUBLIC_URL`. Hinweise sagen außerdem, warum sie ankamen: Sicherheits- und Organisationshinweise werden immer gesendet, und Warnungen sagen, wie man sie abschaltet. Benachrichtigungen nennen das Recht, wegen dessen die Person sie erhält, verlinken ihre Einstellungen und, außer bei Sicherheits-E-Mails, eine Ein-Klick-Abmeldung, die auch `List-Unsubscribe` und `List-Unsubscribe-Post` tragen.
 

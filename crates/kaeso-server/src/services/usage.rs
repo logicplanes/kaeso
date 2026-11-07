@@ -4,11 +4,11 @@ use std::sync::{Mutex, PoisonError};
 use futures::future::BoxFuture;
 
 use kaeso_core::cost;
-use kaeso_core::id::{ApiKeyId, OrgId};
+use kaeso_core::id::OrgId;
 use kaeso_core::limits::{self, Limit, Subject};
 use kaeso_core::notifications::Kind;
 use kaeso_kpp::Usage;
-use kaeso_mail::{Budget, BudgetScope, LimitKind, LimitPeriod};
+use kaeso_mail::{Budget, BudgetAlert, LimitKind, LimitPeriod};
 use kaeso_store::StoreError;
 use kaeso_store::pg::limits::{self as store, UsageRow};
 use kaeso_store::pg::notifications;
@@ -20,6 +20,7 @@ use uuid::Uuid;
 use crate::model_api::hooks::{Outcome, Sink};
 use crate::platform::audit::Action;
 use crate::services::limits::{self as engine, Charge};
+use crate::services::notifications::system;
 use crate::state::AppState;
 
 type BatchKey = (
@@ -431,7 +432,6 @@ pub async fn account(state: &AppState, outcome: &Outcome) {
                 let task = state.clone();
                 state.in_flight.spawn(async move {
                     for limit in used_up {
-                        let period = limit.period.start(at).unwrap_or(Date::MIN);
                         let budget = budget_of(&limit);
                         crate::services::notifications::system::limit_reached(
                             &task,
@@ -439,7 +439,7 @@ pub async fn account(state: &AppState, outcome: &Outcome) {
                             caller.project_id,
                             &limit,
                             &budget,
-                            period,
+                            at,
                         )
                         .await;
                     }
@@ -510,16 +510,35 @@ async fn alert(
         {
             to.push(owner);
         }
-        let key_id = match limit.subject {
-            Subject::Key(k) => ApiKeyId::from_uuid(k).to_string(),
-            _ => String::new(),
+        let (organization, project_name, name) = match names(state, org, project, limit).await {
+            Ok(n) => n,
+            Err(e) => {
+                tracing::warn!(error = %e, "cannot name the project of a budget alert");
+                (
+                    OrgId::from_uuid(org).to_string(),
+                    kaeso_core::id::ProjectId::from_uuid(project).to_string(),
+                    None,
+                )
+            }
         };
-        let scope = match limit.subject {
-            Subject::Project(_) => BudgetScope::Project,
-            Subject::User(_) | Subject::ServiceAccount(_) => BudgetScope::Member,
-            Subject::Key(_) => BudgetScope::Key(&key_id),
-        };
+        let scope = system::scope(limit.subject, name.as_deref());
         let budget = budget_of(limit);
+        let used_amount = match limit.kind {
+            limits::Kind::SpendBudget => (Decimal::from(used) / Decimal::from(1_000_000_000_i64))
+                .round_dp(4)
+                .normalize()
+                .to_string(),
+            _ => used.to_string(),
+        };
+        let alert = BudgetAlert {
+            organization: &organization,
+            project: &project_name,
+            scope,
+            budget: &budget,
+            percent: u32::from(*t),
+            used: &used_amount,
+            resets: system::resets(limit, at),
+        };
         let url = format!(
             "{}orgs/{}/projects/{}/limits",
             state.config.public_url,
@@ -529,12 +548,7 @@ async fn alert(
         for (user, email) in &to {
             let lang = crate::services::mail_lang::of_user(&state.pg, *user, None).await;
             state.mailer.send(kaeso_mail::templates::budget_alert(
-                lang,
-                email,
-                &budget,
-                scope,
-                u32::from(*t),
-                &url,
+                lang, email, &alert, &url,
             ));
         }
         let audited = match state.pg.acquire().await {
@@ -556,6 +570,21 @@ async fn alert(
             tracing::warn!(error = %e, threshold = t, "cannot audit a budget alert");
         }
     }
+}
+
+async fn names(
+    state: &AppState,
+    org: Uuid,
+    project: Uuid,
+    limit: &Limit,
+) -> crate::platform::error::ApiResult<(String, String, Option<String>)> {
+    use crate::services::notifications::triggers::{org_name, project_name};
+    let (name, _) = system::scope_of(state, project, limit.subject).await?;
+    Ok((
+        org_name(state, org).await?,
+        project_name(state, org, project).await?,
+        name,
+    ))
 }
 
 fn budget_of(limit: &Limit) -> Budget {

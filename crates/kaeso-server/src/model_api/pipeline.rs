@@ -1328,6 +1328,11 @@ async fn attempt(
                             state,
                             caller.org_id,
                             credential.id.uuid(),
+                            crate::services::notifications::system::Refusal {
+                                status,
+                                message: &said.message,
+                                billing: said.kind == ErrorKind::Billing,
+                            },
                         )
                         .await;
                     }

@@ -85,6 +85,8 @@ Die Liste zeigt zu jedem Schlüssel seinen Namen, die letzten vier Zeichen, die 
 
 Ein Konto zeigt **Abgemeldet**, wenn der Anbieter seine Sitzung beendet hat, etwa nachdem sein Inhaber Kaeso in ChatGPT getrennt hat. Ein Grok-Konto zeigt **Kein API-Zugang**, wenn xAI sein Abo ablehnt. In beiden Fällen schlagen seine Anfragen fehl, bis jemand mit **Anbieter-Schlüssel ändern** **Erneut anmelden** wählt.
 
+Lehnt ein Anbieter einen Schlüssel dreimal nacheinander ab oder beendet er die Sitzung eines Kontos, schickt Kaeso allen mit **Anbieter-Schlüssel ändern** eine E-Mail. Sie nennt den Anbieter, den Schlüssel mit seinen letzten vier Zeichen oder das Konto, die Projekte, die ihn verwenden, die Antwort des Anbieters, die Zeitpunkte der Ablehnungen und die letzte Verwendung, damit die Lesenden entscheiden können, ob sie ihn ersetzen, das Konto aufladen oder sich erneut anmelden ([E-Mails wählen](account.md#e-mails-wählen)).
+
 Wenn Sie den Standard löschen, wird der zuletzt hinzugefügte andere Schlüssel des Anbieters zum Standard. Gibt es keinen, schlagen Anfragen an diesen Anbieter fehl. Der Dialog sagt Ihnen, was zutrifft.
 
 > [!NOTE]

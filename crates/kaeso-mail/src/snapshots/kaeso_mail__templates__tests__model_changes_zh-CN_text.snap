@@ -6,7 +6,11 @@ Subject: [Checkout] gpt-4o 已下架
 
 gpt-4o 已下架
 
-服务商已下架 gpt-4o；对它的请求可能失败。
+OpenAI 已下架 gpt-4o；Checkout 对它的请求可能失败。
+
+项目： Checkout
+服务商： OpenAI
+模型： gpt-4o
 
 打开模型：
 https://kaeso.example.com/orgs/org_1
