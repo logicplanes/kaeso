@@ -309,7 +309,8 @@ async fn handshake(
 }
 
 // The client's message goes on as it came, `arguments` and `_meta` byte for byte; only the tool's
-// name changes, and a server of the newest version is told whom it talks to.
+// name changes. A server of the newest version is told whom it talks to; an older one is spared
+// the newest version's `_meta` claims, which belong to a protocol it doesn't speak.
 fn outgoing(
     body: &[u8],
     upstream: &str,
@@ -339,6 +340,22 @@ fn outgoing(
             m.set(meta::CLIENT_CAPABILITIES, raw::empty_object());
         }
         params.set(meta::KEY, m.into_raw());
+    } else if let Some(m) = params.borrowed(meta::KEY) {
+        // An older server takes the version from the handshake and the headers; a newest-version
+        // client's claims in `_meta` would contradict them, and some servers (Linear) refuse that.
+        let mut m = RawObject::of(m)?;
+        for key in [
+            meta::PROTOCOL_VERSION,
+            meta::CLIENT_INFO,
+            meta::CLIENT_CAPABILITIES,
+        ] {
+            m.remove(key);
+        }
+        if m.is_empty() {
+            params.remove(meta::KEY);
+        } else {
+            params.set(meta::KEY, m.into_raw());
+        }
     }
     top.set("params", params.into_raw());
     Ok(top.to_vec())
