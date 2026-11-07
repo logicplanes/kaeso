@@ -1,0 +1,117 @@
+# Kaeso on DigitalOcean App Platform: a gateway and a console behind the app's edge, a dev
+# PostgreSQL and a managed Valkey. Docs: https://docs.kaeso.app/self-hosting/platforms/digitalocean
+name: kaeso
+region: fra
+services:
+  - name: kaeso-gateway
+    image:
+      registry_type: GHCR
+      registry: logicplanes
+      repository: kaeso-gateway
+      tag: 0.6.0-rc.6
+    http_port: 8080
+    instance_size_slug: apps-s-1vcpu-2gb
+    instance_count: 1
+    health_check:
+      http_path: /healthz
+      port: 8080
+    envs:
+      - key: KAESO_PUBLIC_URL
+        value: ${APP_URL}
+      - key: KAESO_MASTER_KEYS
+        type: SECRET
+        value: ""
+      - key: KAESO_SETUP_EMAIL
+        value: ""
+      - key: KAESO_CLICKHOUSE_URL
+        type: SECRET
+        value: ""
+      - key: KAESO_SMTP_HOST
+        value: ""
+      - key: KAESO_SMTP_PORT
+        value: "587"
+      - key: KAESO_SMTP_USER
+        value: ""
+      - key: KAESO_SMTP_PASSWORD
+        type: SECRET
+        value: ""
+      - key: KAESO_SMTP_FROM
+        value: ""
+      - key: KAESO_POSTGRES_URL
+        type: SECRET
+        value: ${kaeso-postgres.DATABASE_URL}
+      - key: KAESO_VALKEY_URL
+        type: SECRET
+        value: ${kaeso-valkey.DATABASE_URL}
+      # Managed Valkey speaks TLS with a certificate of DigitalOcean's own authority.
+      - key: KAESO_VALKEY_CA
+        value: ${kaeso-valkey.CA_CERT}
+      # Only the app's edge, on the private network, reaches the gateway.
+      - key: KAESO_TRUSTED_PROXIES
+        value: 10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,fc00::/7,127.0.0.0/8,::1/128
+      - key: KAESO_METRICS_LISTEN
+        value: 127.0.0.1:9100
+      - key: KAESO_LOG_FORMAT
+        value: json
+
+  - name: kaeso-console
+    image:
+      registry_type: GHCR
+      registry: logicplanes
+      repository: kaeso-console
+      tag: 0.6.0-rc.6
+    http_port: 3000
+    instance_size_slug: apps-s-1vcpu-0.5gb
+    instance_count: 1
+    health_check:
+      http_path: /
+      port: 3000
+
+ingress:
+  rules:
+    - match:
+        path:
+          prefix: /v1
+      component:
+        name: kaeso-gateway
+        preserve_path_prefix: true
+    - match:
+        path:
+          prefix: /platform
+      component:
+        name: kaeso-gateway
+        preserve_path_prefix: true
+    - match:
+        path:
+          prefix: /mcp
+      component:
+        name: kaeso-gateway
+        preserve_path_prefix: true
+    - match:
+        path:
+          prefix: /oauth
+      component:
+        name: kaeso-gateway
+        preserve_path_prefix: true
+    - match:
+        path:
+          prefix: /.well-known
+      component:
+        name: kaeso-gateway
+        preserve_path_prefix: true
+    - match:
+        path:
+          prefix: /
+      component:
+        name: kaeso-console
+
+databases:
+  - name: kaeso-postgres
+    engine: PG
+    version: "18"
+    production: false
+  # Created beforehand with noeviction, since a dev database exists only for PostgreSQL.
+  - name: kaeso-valkey
+    engine: VALKEY
+    production: true
+    cluster_name: kaeso-valkey

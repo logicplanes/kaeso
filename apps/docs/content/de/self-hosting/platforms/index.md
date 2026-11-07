@@ -1,6 +1,6 @@
 ---
 title: Verwaltete Plattformen
-description: Betreiben Sie Kaeso auf Render, Railway, AWS oder Google Cloud mit den Vorlagen im Repository.
+description: Betreiben Sie Kaeso auf Render, Railway, DigitalOcean, AWS oder Google Cloud mit den Vorlagen im Repository.
 order: 12
 ---
 
@@ -31,7 +31,7 @@ flowchart LR
 
 | Weg | Was es ist | Wo |
 | --- | --- | --- |
-| Plattformvorlage | Eine Datei, die die Plattform liest, mit öffentlichem Edge, privatem Gateway und privater Konsole sowie PostgreSQL und Valkey der Plattform | [Render](render.md), [Railway](railway.md) |
+| Plattformvorlage | Eine Datei, die die Plattform liest, mit öffentlichem Edge, privatem Gateway und privater Konsole sowie PostgreSQL und Valkey der Plattform | [Render](render.md), [Railway](railway.md), [DigitalOcean](digitalocean.md) |
 | Schneller Server | Eine virtuelle Maschine mit dem Compose-Paket, Caddy, gebündeltem ClickHouse und dem Updater, wie auf Ihrem eigenen Server | [AWS](aws.md), [Google Cloud](gcp.md) |
 | Verwalteter Betrieb | Die Container, der Load Balancer, PostgreSQL und Valkey der Plattform, mit Geheimnissen in ihrem Secret Store | [AWS](aws.md), [Google Cloud](gcp.md) |
 
@@ -39,7 +39,7 @@ AWS und Google Cloud sind kein Ein-Klick-Weg: Sie wählen Region, Domain und ihr
 
 ## Was jeder Weg beibehält
 
-- **Ein Ursprung.** Konsole und APIs antworten auf einer Domain. `/v1/*`, `/platform/*`, `/mcp`, `/mcp/*`, `/oauth/*` und `/.well-known/oauth-*` erreichen das Gateway; jeder andere Pfad erreicht die Konsole. Auf Render und Railway übernimmt das `kaeso-edge`, ein zweiter Befehl im Konsolen-Image; auf AWS und Google Cloud die Pfadregeln des Load Balancers.
+- **Ein Ursprung.** Konsole und APIs antworten auf einer Domain. `/v1/*`, `/platform/*`, `/mcp`, `/mcp/*`, `/oauth/*` und `/.well-known/oauth-*` erreichen das Gateway; jeder andere Pfad erreicht die Konsole. Auf Render und Railway übernimmt das `kaeso-edge`, ein zweiter Befehl im Konsolen-Image; auf DigitalOcean die Ingress-Regeln der App; auf AWS und Google Cloud die Pfadregeln des Load Balancers.
 - **Streams bleiben ungepuffert.** Der Edge leitet jeden Chunk sofort weiter, und das Leerlauf-Timeout eines Load Balancers ist länger als das Keepalive-Intervall des Gateways ([lange Streams](../domains-and-tls.md#lange-streams)).
 - **Die Client-Adresse wird nur dem Proxy der Plattform geglaubt.** Der Edge nimmt `X-Forwarded-For` nur aus dem privaten Netz der Plattform an und sendet dem Gateway eine Adresse; das Gateway vertraut allein dem Edge ([`KAESO_TRUSTED_PROXIES`](../configuration.md#einstellungen)).
 - **Health-Checks** nutzen `/healthz` für den Prozess und `/readyz` für PostgreSQL, Valkey und ClickHouse ([Zustand und Metriken](../monitoring.md)). Der Metrik-Port ist nie öffentlich.
@@ -58,13 +58,14 @@ AWS und Google Cloud sind kein Ein-Klick-Weg: Sie wählen Region, Domain und ihr
 
 ## Was geprüft wurde
 
-Edge, Gateway und Konsole wurden in diesem Aufbau mit den Release-Images am 6. November 2026 lokal mit Docker getestet: Pfadweiterleitung, Streams in Chunks, gefälschte Client-Adressen und das Fehlerformat jeder API, während das Gateway fehlt (`e2e/install/test_edge.py`). Der Render-Blueprint und die Railway-Datei wurden gegen die Spezifikationen der Plattformen geprüft, die CloudFormation-Vorlagen mit `cfn-lint` und das Terraform mit `tofu validate`; CI wiederholt jede Prüfung.
+Edge, Gateway und Konsole wurden in diesem Aufbau mit den Release-Images am 6. November 2026 lokal mit Docker getestet: Pfadweiterleitung, Streams in Chunks, gefälschte Client-Adressen und das Fehlerformat jeder API, während das Gateway fehlt (`e2e/install/test_edge.py`). Der Render-Blueprint, die Railway-Datei und die DigitalOcean-App-Spec wurden gegen die Spezifikationen der Plattformen geprüft, die CloudFormation-Vorlagen mit `cfn-lint` und das Terraform mit `tofu validate`; CI wiederholt jede Prüfung.
 
-Keiner der vier Wege wurde bisher von einem leeren Konto aus auf seiner Plattform ausgerollt, deshalb sagt jede Seite, worauf sie beruht. [Render](render.md) und [Google Cloud](gcp.md) öffnen sich über einen Link, der auf den Branch `prod` zeigt, der das neueste Release enthält; Railway braucht eine veröffentlichte Vorlage und AWS die Vorlagen in einem S3-Bucket, bevor es einen solchen Link geben kann.
+Keiner der fünf Wege wurde bisher von einem leeren Konto aus auf seiner Plattform ausgerollt, deshalb sagt jede Seite, worauf sie beruht. [Render](render.md) und [Google Cloud](gcp.md) öffnen sich über einen Link, der auf den Branch `prod` zeigt, der das neueste Release enthält; Railway braucht eine veröffentlichte Vorlage, AWS die Vorlagen in einem S3-Bucket, und DigitalOceans Button rollt nur einen Dienst aus, deshalb geht die Spec über `doctl`.
 
 ## Nächste Schritte
 
 - [Render](render.md): Rollen Sie den Blueprint mit Render Postgres und Key Value aus.
 - [Railway](railway.md): Wenden Sie die Infrastrukturdatei mit Railway Postgres und Redis an.
+- [DigitalOcean](digitalocean.md): Legen Sie die App aus der Spec an, mit einer Dev-PostgreSQL und einer verwalteten Valkey.
 - [AWS](aws.md): Starten Sie einen EC2-Server oder ECS Fargate mit Application Load Balancer, RDS und ElastiCache.
 - [Google Cloud](gcp.md): Starten Sie einen Compute-Engine-Server oder Cloud Run mit Load Balancer, Cloud SQL und Memorystore.

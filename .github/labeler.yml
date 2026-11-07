@@ -54,6 +54,7 @@
           - deploy/gcp/**/.terraform.lock.hcl
           - render.yaml
           - .railway/**
+          - .do/**
 
 internal:
   - changed-files:

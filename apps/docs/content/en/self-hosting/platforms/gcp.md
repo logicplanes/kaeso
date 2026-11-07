@@ -1,7 +1,7 @@
 ---
 title: Google Cloud
 description: Run Kaeso on Google Cloud: one Compute Engine server with the Compose package, or Cloud Run with a load balancer, Cloud SQL and Memorystore.
-order: 4
+order: 5
 ---
 
 `deploy/gcp/` in the repository holds two Terraform configurations, which OpenTofu also applies. The quick server is the Compose package on one virtual machine, as on your own server. The managed configuration is Kaeso on Cloud Run with Google's data stores, for installs that outgrow one machine.

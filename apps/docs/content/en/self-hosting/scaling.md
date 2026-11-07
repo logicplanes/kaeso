@@ -47,7 +47,7 @@ A gateway that restarts, for an update or after a crash, costs nothing while the
 
 ## On a managed platform
 
-The [platform templates](platforms/index.md) take the number of gateways as `GatewayCount` on AWS and `gateway_min_instances` on Google Cloud; Render and Railway scale a service from their dashboards. The load balancer in front needs nothing sticky, because nothing a request depends on is kept on one gateway.
+The [platform templates](platforms/index.md) take the number of gateways as `GatewayCount` on AWS and `gateway_min_instances` on Google Cloud and `instance_count` on DigitalOcean; Render and Railway scale a service from their dashboards. The load balancer in front needs nothing sticky, because nothing a request depends on is kept on one gateway.
 
 ## Next steps
 

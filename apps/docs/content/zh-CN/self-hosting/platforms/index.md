@@ -1,6 +1,6 @@
 ---
 title: 托管平台
-description: 用仓库中的模板在 Render、Railway、AWS 或 Google Cloud 上运行 Kaeso。
+description: 用仓库中的模板在 Render、Railway、DigitalOcean、AWS 或 Google Cloud 上运行 Kaeso。
 order: 12
 ---
 
@@ -31,7 +31,7 @@ flowchart LR
 
 | 路径 | 是什么 | 在哪里 |
 | --- | --- | --- |
-| 平台模板 | 平台读取的一个文件：公开边缘、私有网关和控制台，以及平台的 PostgreSQL 和 Valkey | [Render](render.md)、[Railway](railway.md) |
+| 平台模板 | 平台读取的一个文件：公开边缘、私有网关和控制台，以及平台的 PostgreSQL 和 Valkey | [Render](render.md)、[Railway](railway.md)、[DigitalOcean](digitalocean.md) |
 | 快速服务器 | 一台虚拟机，运行 Compose 软件包、Caddy、内置 ClickHouse 和更新器，与您自己的服务器相同 | [AWS](aws.md)、[Google Cloud](gcp.md) |
 | 托管生产环境 | 平台的容器、负载均衡器、PostgreSQL 和 Valkey，机密保存在平台的密钥存储中 | [AWS](aws.md)、[Google Cloud](gcp.md) |
 
@@ -39,7 +39,7 @@ AWS 和 Google Cloud 不是一键部署：您需要选择区域、域名及其�
 
 ## 每条路径都保持的内容
 
-- **同一来源。** 控制台和 API 在同一个域名上应答。`/v1/*`、`/platform/*`、`/mcp`、`/mcp/*`、`/oauth/*` 和 `/.well-known/oauth-*` 到达网关，其他所有路径到达控制台。在 Render 和 Railway 上由控制台镜像的第二个命令 `kaeso-edge` 负责，在 AWS 和 Google Cloud 上由负载均衡器的路径规则负责。
+- **同一来源。** 控制台和 API 在同一个域名上应答。`/v1/*`、`/platform/*`、`/mcp`、`/mcp/*`、`/oauth/*` 和 `/.well-known/oauth-*` 到达网关，其他所有路径到达控制台。在 Render 和 Railway 上由控制台镜像的第二个命令 `kaeso-edge` 负责，在 DigitalOcean 上由应用的 ingress 规则负责，在 AWS 和 Google Cloud 上由负载均衡器的路径规则负责。
 - **流不被缓冲。** 边缘服务立即转发每个数据块，负载均衡器的空闲超时长于网关的保活间隔（[长时间的流](../domains-and-tls.md#长时间的流)）。
 - **只相信平台代理给出的客户端地址。** 边缘服务只接受来自平台私有网络的 `X-Forwarded-For`，并只向网关传递一个地址；网关只信任边缘服务（[`KAESO_TRUSTED_PROXIES`](../configuration.md#设置)）。
 - **健康检查**用 `/healthz` 检查进程，用 `/readyz` 检查 PostgreSQL、Valkey 和 ClickHouse（[健康状态和指标](../monitoring.md)）。指标端口永不公开。
@@ -58,13 +58,14 @@ AWS 和 Google Cloud 不是一键部署：您需要选择区域、域名及其�
 
 ## 已验证的内容
 
-2026 年 11 月 6 日，边缘服务、网关和控制台按此布局用发布镜像在本地 Docker 中完成了测试：路径转发、分块的流、伪造的客户端地址，以及网关不可用时各 API 的错误格式（`e2e/install/test_edge.py`）。Render 蓝图和 Railway 文件对照各平台的规范做了检查，CloudFormation 模板通过 `cfn-lint` 检查，Terraform 通过 `tofu validate` 检查；CI 会重复每项检查。
+2026 年 11 月 6 日，边缘服务、网关和控制台按此布局用发布镜像在本地 Docker 中完成了测试：路径转发、分块的流、伪造的客户端地址，以及网关不可用时各 API 的错误格式（`e2e/install/test_edge.py`）。Render 蓝图、Railway 文件和 DigitalOcean 应用规范对照各平台的规范做了检查，CloudFormation 模板通过 `cfn-lint` 检查，Terraform 通过 `tofu validate` 检查；CI 会重复每项检查。
 
-四条路径都尚未从一个空账户部署到对应平台，因此每个页面都会说明其依据。[Render](render.md) 和 [Google Cloud](gcp.md) 可通过指向 `prod` 分支（包含最新版本）的链接打开；Railway 需要先发布模板，AWS 需要先把模板放入 S3 存储桶，之后才能提供这样的链接。
+五条路径都尚未从一个空账户部署到对应平台，因此每个页面都会说明其依据。[Render](render.md) 和 [Google Cloud](gcp.md) 可通过指向 `prod` 分支（包含最新版本）的链接打开；Railway 需要先发布模板，AWS 需要先把模板放入 S3 存储桶，而 DigitalOcean 的按钮只部署一个服务，所以其规范通过 `doctl` 应用。
 
 ## 下一步
 
 - [Render](render.md)：用 Render Postgres 和 Key Value 部署蓝图。
 - [Railway](railway.md)：用 Railway Postgres 和 Redis 应用基础设施文件。
+- [DigitalOcean](digitalocean.md)：用规范创建应用，使用开发用 PostgreSQL 和托管 Valkey。
 - [AWS](aws.md)：启动一台 EC2 服务器，或使用带 Application Load Balancer、RDS 和 ElastiCache 的 ECS Fargate。
 - [Google Cloud](gcp.md)：启动一台 Compute Engine 服务器，或使用带负载均衡器、Cloud SQL 和 Memorystore 的 Cloud Run。
