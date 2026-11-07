@@ -58,7 +58,7 @@ Railway 的私有网络只有 IPv6，因此网关在 `[::]:8080` 上监听，并
 
 ## 依据
 
-该文件遵循 2026 年 11 月 6 日阅读的 Railway TypeScript 编写参考：`defineRailway`、`project`、`service`、`image`、`postgres`、`redis`、来自 `db.env` 和 `cache.env` 的服务环境、通过 `ctx.shared` 引用的共享变量，以及用于私有地址的 `${{service.RAILWAY_PRIVATE_DOMAIN}}`。Railway 把该功能标记为实验性，其 API 仍可能变化。三个镜像已按此布局在本地 Docker 中测试（[已验证的内容](index.md#已验证的内容)）。该文件尚未从空项目应用到 Railway；请先完成这一步，并检查私有 DNS 名称、设置邮件、一次流式回复和一次更新。
+该文件遵循 2026 年 11 月 6 日阅读的 Railway TypeScript 编写参考：`defineRailway`、`project`、`service`、`image`、`postgres`、`redis`、来自 `db.env` 和 `cache.env` 的服务环境、通过 `ctx.shared` 引用的共享变量，以及用于私有地址的 `${{service.RAILWAY_PRIVATE_DOMAIN}}`。Railway 把该功能标记为实验性，其 API 仍可能变化。三个镜像已按此布局在本地 Docker 中测试（[已验证的内容](index.md#已验证的内容)）。2026-11-07，已登录测试工作区的试用已过期；Railway 要求升级套餐后才能创建新项目并应用基础设施，因此无法从空项目部署。
 
 ## 下一步
 

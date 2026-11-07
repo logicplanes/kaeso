@@ -8,6 +8,8 @@ order: 4
 
 ## 快速服务器
 
+[在 AWS 上启动](https://console.aws.amazon.com/cloudformation/home#/stacks/create/review?templateURL=https%3A%2F%2Fkaeso-cloudformation.s3.amazonaws.com%2Flatest%2Fquick-server.yaml&stackName=kaeso) 会在 CloudFormation 中打开已发布的快速服务器模板。同一文件位于仓库的 `deploy/aws/quick-server.yaml`。
+
 `deploy/aws/quick-server.yaml` 创建一台运行 Ubuntu 24.04 的 Graviton 实例、一个弹性 IP、一个允许 HTTP、HTTPS 和 HTTP/3 的安全组、来自您选定地址范围的 SSH，以及可选的 Route 53 记录。首次启动时，实例运行安装程序：安装 Docker、写入设置，并启动带 Caddy、内置 ClickHouse 和更新器的 Compose 软件包（[安装](../installation.md)）。
 
 ```bash
@@ -61,7 +63,7 @@ aws cloudformation deploy --stack-name kaeso --template-file deploy/aws/managed.
 
 ## 依据
 
-两个模板都通过 `cfn-lint`，CI 会运行它。网关和控制台镜像已在本地 Docker 中放在按路径转发的边缘服务后面测试（[已验证的内容](index.md#已验证的内容)）。两个堆栈都尚未在 AWS 账户中创建；请先在一次性账户中创建托管堆栈，并检查设置邮件、一次超过一分钟的流式回复、请求日志中的客户端地址是否不受伪造 `X-Forwarded-For` 的影响，以及一次更新。
+两个模板都通过 `cfn-lint`，CI 会运行它。2026-11-07，已发布的快速服务器模板在空白 AWS 账户的 `us-east-1` 中创建了堆栈，并安装 第 8 个候选版本。设置链接、HTTPS 健康与就绪检查、控制台和 API 路由、流式回复、ClickHouse 请求日志，以及替换伪造 `X-Forwarded-For` 均通过（[已验证的内容](index.md#已验证的内容)）。托管堆栈只通过了 lint；使用前请先在一次性账户中部署。
 
 ## 下一步
 

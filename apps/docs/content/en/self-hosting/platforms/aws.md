@@ -8,6 +8,8 @@ order: 4
 
 ## Quick server
 
+[Launch on AWS](https://console.aws.amazon.com/cloudformation/home#/stacks/create/review?templateURL=https%3A%2F%2Fkaeso-cloudformation.s3.amazonaws.com%2Flatest%2Fquick-server.yaml&stackName=kaeso) opens the published quick-server template in CloudFormation. The same file is at `deploy/aws/quick-server.yaml` in the repository.
+
 `deploy/aws/quick-server.yaml` creates one Graviton instance with Ubuntu 24.04, an Elastic IP, a security group for HTTP, HTTPS and HTTP/3, SSH from an address range you choose, and an optional Route 53 record. At first boot, the instance runs the installer, which installs Docker, writes the settings and starts the Compose package with Caddy, bundled ClickHouse and the updater ([installation](../installation.md)).
 
 ```bash
@@ -61,7 +63,7 @@ A release changes the image tags in `managed.yaml`. Deploy the new template over
 
 ## What this is based on
 
-Both templates pass `cfn-lint`, which CI runs. The gateway and console images were tested behind a path-routing edge locally with Docker ([what was validated](index.md#what-was-validated)). Neither stack has yet been created in an AWS account; create the managed stack in a disposable account first, and check the setup email, a streamed completion that outlasts a minute, the client address in a request log against a forged `X-Forwarded-For`, and an update.
+Both templates pass `cfn-lint`, which CI runs. On 2026-11-07 the published quick-server template created a stack from an empty AWS account in `us-east-1` and installed the eighth release candidate. The setup link, HTTPS health and readiness checks, console and API routing, a streamed completion, the ClickHouse request log and the replacement of a forged `X-Forwarded-For` all passed ([what was validated](index.md#what-was-validated)). The managed stack has only been linted; deploy it in a disposable account before relying on it.
 
 ## Next steps
 

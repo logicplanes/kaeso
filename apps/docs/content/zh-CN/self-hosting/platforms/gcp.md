@@ -66,7 +66,7 @@ Memorystore 只通过私有网络访问，不用密码也不用 TLS，因为网�
 
 ## 依据
 
-两套配置都通过 Google 提供商的 `tofu fmt` 和 `tofu validate`，CI 会运行它们。网关和控制台镜像已在本地 Docker 中放在按路径转发的边缘服务后面测试（[已验证的内容](index.md#已验证的内容)）。两套配置都尚未在 Google Cloud 项目中应用；请先在一次性项目中应用托管配置，并检查网关在 `X-Forwarded-For` 中看到的代理范围、设置邮件、一次超过一分钟的流式回复，以及一次更新。
+两套配置都通过 Google 提供商的 `tofu fmt` 和 `tofu validate`，CI 会运行它们。2026-11-07，快速服务器配置已应用到一个位于 `europe-west3` 的新项目，并安装 第 8 个候选版本。设置链接、HTTPS 健康与就绪检查、控制台和 API 路由、流式回复、ClickHouse 请求日志，以及替换伪造 `X-Forwarded-For` 均通过（[已验证的内容](index.md#已验证的内容)）。托管配置只通过了验证；使用前请先在一次性项目中应用。
 
 ## 下一步
 

@@ -58,7 +58,7 @@ Ein Release ändert die Image-Tags in `railway.ts`. Wenden Sie die neue Datei ge
 
 ## Worauf das beruht
 
-Die Datei folgt Railways TypeScript-Referenz, gelesen am 6. November 2026: `defineRailway`, `project`, `service`, `image`, `postgres`, `redis`, Dienstumgebungen aus `db.env` und `cache.env`, geteilte Variablen über `ctx.shared` und `${{service.RAILWAY_PRIVATE_DOMAIN}}` für die privaten Adressen. Railway kennzeichnet die Funktion als experimentell, ihre API kann sich also noch ändern. Die drei Images wurden in diesem Aufbau lokal mit Docker getestet ([was geprüft wurde](index.md#was-geprüft-wurde)). Die Datei wurde noch nicht von einem leeren Projekt aus auf Railway angewendet; tun Sie das zuerst und prüfen Sie die privaten DNS-Namen, die Einrichtungs-E-Mail, eine gestreamte Antwort und ein Update.
+Die Datei folgt Railways TypeScript-Referenz, gelesen am 6. November 2026: `defineRailway`, `project`, `service`, `image`, `postgres`, `redis`, Dienstumgebungen aus `db.env` und `cache.env`, geteilte Variablen über `ctx.shared` und `${{service.RAILWAY_PRIVATE_DOMAIN}}` für die privaten Adressen. Railway kennzeichnet die Funktion als experimentell, ihre API kann sich also noch ändern. Die drei Images wurden in diesem Aufbau lokal mit Docker getestet ([was geprüft wurde](index.md#was-geprüft-wurde)). Am 2026-11-07 war die Testversion des angemeldeten Test-Workspace abgelaufen; Railway verlangt vor einem neuen Projekt und neuer Infrastruktur einen Tarif, daher war kein Ausrollen aus einem leeren Projekt möglich.
 
 ## Nächste Schritte
 
