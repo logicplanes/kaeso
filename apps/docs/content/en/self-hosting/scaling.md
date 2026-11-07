@@ -33,15 +33,15 @@ The updater handles every replica: it stops all of them, then starts the new one
 
 ## What it brings
 
-Measured on 2026-11-06 with Docker 29.5 on an Apple M-series Mac, each gateway limited to one CPU, Caddy in front, the mock provider behind, and 64 connections sending non-streamed chat completions for 20 seconds (the middle of three runs):
+Measured on 2026-11-07 with Docker 29.5 on an Apple M-series Mac, each gateway limited to one CPU, Caddy in front, the mock provider behind, and 64 connections sending chat completions for 20 seconds: non-streamed in three runs (the middle one), streamed in two (the lower one):
 
-| Gateways | Requests per second | Median | 99th percentile |
-| --- | --- | --- | --- |
-| 1 | 8,670 | 7.2 ms | 12.2 ms |
-| 2 | 14,836 | 4.1 ms | 8.9 ms |
-| 3 | 17,361 | 3.4 ms | 8.6 ms |
+| Gateways | Requests per second | Median | 99th percentile | Streams per second | Stream median |
+| --- | --- | --- | --- | --- | --- |
+| 1 | 7,951 | 7.7 ms | 16.6 ms | 2,614 | 23.9 ms |
+| 2 | 11,910 | 5.1 ms | 11.2 ms | 4,561 | 13.8 ms |
+| 3 | 16,143 | 3.6 ms | 9.5 ms | 7,355 | 8.3 ms |
 
-Two gateways serve 1.7 times the requests of one, at half the latency; the third adds less, because Caddy, the mock provider and the load generator shared the same machine. On separate hosts, or with a CPU each, the gain stays close to the number of gateways. Streams, which wait on the provider rather than the CPU, gain capacity rather than speed: each gateway holds its own `KAESO_SERVER_MAX_CONNECTIONS` ([configuration](configuration.md#settings)).
+Three gateways serve twice the completions of one at half the latency, and 2.8 times the streams, whose translation costs CPU on every event. Completions gain less than the number of gateways because Caddy, the mock provider and the load generator shared the same machine; on separate hosts, or with a CPU each, the gain stays close to it. Long streams that wait on a real provider gain capacity as well: each gateway holds its own `KAESO_SERVER_MAX_CONNECTIONS` ([configuration](configuration.md#settings)).
 
 A gateway that restarts, for an update or after a crash, costs nothing while the others serve. Caddy stops sending to it within 5 seconds and returns once it is healthy.
 

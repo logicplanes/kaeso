@@ -33,15 +33,15 @@ Der Updater behandelt jedes Replikat: Er stoppt alle, startet dann die neuen nac
 
 ## Was es bringt
 
-Gemessen am 6. November 2026 mit Docker 29.5 auf einem Apple-M-Mac, jedes Gateway auf eine CPU begrenzt, Caddy davor, der Mock-Anbieter dahinter und 64 Verbindungen, die 20 Sekunden lang nicht gestreamte Chat Completions senden (der mittlere von drei Läufen):
+Gemessen am 7. November 2026 mit Docker 29.5 auf einem Apple-M-Mac, jedes Gateway auf eine CPU begrenzt, Caddy davor, der Mock-Anbieter dahinter und 64 Verbindungen, die 20 Sekunden lang Chat Completions senden: nicht gestreamt in drei Läufen (der mittlere), gestreamt in zwei (der niedrigere):
 
-| Gateways | Anfragen pro Sekunde | Median | 99. Perzentil |
-| --- | --- | --- | --- |
-| 1 | 8.670 | 7,2 ms | 12,2 ms |
-| 2 | 14.836 | 4,1 ms | 8,9 ms |
-| 3 | 17.361 | 3,4 ms | 8,6 ms |
+| Gateways | Anfragen pro Sekunde | Median | 99. Perzentil | Streams pro Sekunde | Median der Streams |
+| --- | --- | --- | --- | --- | --- |
+| 1 | 7.951 | 7,7 ms | 16,6 ms | 2.614 | 23,9 ms |
+| 2 | 11.910 | 5,1 ms | 11,2 ms | 4.561 | 13,8 ms |
+| 3 | 16.143 | 3,6 ms | 9,5 ms | 7.355 | 8,3 ms |
 
-Zwei Gateways bedienen das 1,7-Fache der Anfragen eines einzelnen, bei halber Latenz; das dritte bringt weniger, weil Caddy, der Mock-Anbieter und der Lastgenerator dieselbe Maschine teilten. Auf getrennten Hosts oder mit je einer CPU bleibt der Gewinn nahe an der Zahl der Gateways. Streams, die auf den Anbieter statt auf die CPU warten, gewinnen Kapazität statt Geschwindigkeit: Jedes Gateway hat sein eigenes `KAESO_SERVER_MAX_CONNECTIONS` ([Konfiguration](configuration.md#einstellungen)).
+Drei Gateways bedienen doppelt so viele Completions wie eines bei halber Latenz und das 2,8-Fache der Streams, deren Übersetzung bei jedem Ereignis CPU kostet. Completions gewinnen weniger als die Zahl der Gateways, weil Caddy, der Mock-Anbieter und der Lastgenerator dieselbe Maschine teilten; auf getrennten Hosts oder mit je einer CPU bleibt der Gewinn nahe daran. Lange Streams, die auf einen echten Anbieter warten, gewinnen ebenfalls Kapazität: Jedes Gateway hat sein eigenes `KAESO_SERVER_MAX_CONNECTIONS` ([Konfiguration](configuration.md#einstellungen)).
 
 Ein Gateway, das neu startet, für ein Update oder nach einem Absturz, kostet nichts, während die anderen bedienen. Caddy schickt ihm innerhalb von 5 Sekunden nichts mehr und kehrt zurück, sobald es gesund ist.
 
