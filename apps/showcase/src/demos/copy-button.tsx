@@ -64,7 +64,7 @@ export function States() {
       </StateSection>
       <Matrix
         title="CopyButton"
-        rows={[{ label: "ghost" }, { label: "secondary" }]}
+        rows={[{ label: "ghost" }, { label: "quiet" }, { label: "secondary" }]}
         columns={[
           { label: "Rest", props: {} },
           { label: "Hover", props: { "data-force": "hover" } },

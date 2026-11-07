@@ -39,7 +39,7 @@ const pointer = (fine: boolean) =>
   );
 const sentBodies = () => requests("POST", RESPONSES).map((r) => r.body as Record<string, unknown>);
 const addColumn = () => screen.getAllByRole("button", { name: "Add column" })[0] as HTMLElement;
-const EMPTY = "Send a prompt below, or start from an example.";
+const EMPTY = "Send a prompt below to start.";
 
 describe("PlaygroundPage", () => {
   it("puts the cursor in the prompt once the models are ready, with a mouse or trackpad", async () => {
@@ -234,7 +234,7 @@ describe("PlaygroundPage", () => {
     await waitFor(() => expect(router.state.location.search).toEqual({ system: "Be terse." }));
   });
 
-  it("fills the prompt from a suggestion and keeps the draft", async () => {
+  it("brings back an unsent draft and keeps what is typed", async () => {
     signedIn();
     on("GET", MODELS, page([playgroundModel()]));
     window.localStorage.setItem(`kaeso:playground-draft:${PROJECT}`, "Unsent question");
@@ -242,9 +242,9 @@ describe("PlaygroundPage", () => {
 
     const prompt = await screen.findByRole("textbox", { name: "Prompt" });
     expect(prompt).toHaveValue("Unsent question");
-    await user.click(screen.getByRole("button", { name: "Write a haiku about latency" }));
-    expect(prompt).toHaveValue("Write a haiku about latency");
-    expect(window.localStorage.getItem(`kaeso:playground-draft:${PROJECT}`)).toBe("Write a haiku about latency");
+    await user.type(prompt, " again");
+    expect(prompt).toHaveValue("Unsent question again");
+    expect(window.localStorage.getItem(`kaeso:playground-draft:${PROJECT}`)).toBe("Unsent question again");
   });
 
   it("retries a failed reply and clears the threads", async () => {
@@ -274,7 +274,7 @@ describe("PlaygroundPage", () => {
 
     await user.click(screen.getByRole("button", { name: "Clear" }));
     await waitFor(() => expect(screen.queryByText("Second try worked.")).not.toBeInTheDocument());
-    expect(screen.getByRole("button", { name: "Write a haiku about latency" })).toBeInTheDocument();
+    expect(screen.getByText(EMPTY)).toBeInTheDocument();
     expect(await notifications().findByText("Conversation cleared")).toBeInTheDocument();
     await user.click(notifications().getByRole("button", { name: "Undo" }));
     expect(await screen.findByText("Second try worked.")).toBeInTheDocument();
@@ -487,7 +487,6 @@ describe("PlaygroundPage without tools", () => {
     expect(await within(answer).findByText("3 in · 2 out")).toBeInTheDocument();
     expect(sentBodies()[0]).not.toHaveProperty("tools");
     expect(screen.queryByText(EMPTY)).not.toBeInTheDocument();
-    expect(screen.queryByRole("list", { name: "Example prompts" })).not.toBeInTheDocument();
   });
 
   it("tells a column added mid-conversation that answers arrive from the next prompt, and shows no metrics for a refused reply", async () => {

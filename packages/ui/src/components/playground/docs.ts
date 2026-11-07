@@ -13,12 +13,12 @@ export const docs = {
       max: "Columns at most (4 by default): the add circle is disabled there, with the reason in its tooltip.",
       onActiveChange: "Called with the index of the column in focus.",
       onAdd:
-        "Adds a column: a circle in a narrow rail after the columns (on a phone, in the switcher, or in the header of a single column). Focus moves to the new column's header.",
+        "Adds a column: a circle at the end of the last column's header (on a phone with several columns, in the switcher). Focus moves to the new column's header.",
     },
   },
   Composer: {
     description:
-      "The prompt box: a text box that grows with what is written up to `maxRows`, then scrolls, its edge fading where more lines wait; Send, which becomes Stop while a response streams, and a quiet caption beside it that says which key sends. Enter sends and Shift Enter adds a line (`submitOn`); ⌘ Enter or Ctrl Enter also sends. On a touch screen Enter adds a line and the button sends, and no caption is drawn. A click anywhere in the box, the button row included, puts the cursor in the text.",
+      "The prompt box: a text box that grows with what is written up to `maxRows`, then scrolls, its edge fading where more lines wait; under it a row with the caller's actions at the start and a round Send arrow at the end, which becomes a Stop square while a response streams. Enter sends and Shift Enter adds a line (`submitOn`); ⌘ Enter or Ctrl Enter also sends. On a touch screen Enter adds a line and the button sends. A click anywhere in the box, the button row included, puts the cursor in the text.",
     props: {
       actions: "Controls at the start of the button row: parameters, clear. Ghost and secondary buttons there take tones made for the composer's surface.",
       "aria-label": 'The text box\'s accessible name ("Prompt" by default).',
@@ -35,10 +35,10 @@ export const docs = {
       onValueChange: "Called with the message as it is typed.",
       placeholder: "Text shown while there is no value.",
       size: "The composer's height.",
-      stopLabel: 'The Stop button\'s label, shown while a response streams ("Stop" by default).',
+      stopLabel: 'The Stop button\'s name and tooltip, while a response streams ("Stop" by default).',
       streaming:
         "A response is arriving: Send becomes Stop. The text box stays editable for the next prompt; Enter waits, and the text box's description says to stop the response to send.",
-      submitLabel: 'The Send button\'s label ("Send" by default).',
+      submitLabel: 'The Send button\'s name and tooltip ("Send" by default).',
       submitOn:
         'The key that sends from the text box. `"enter"` (default): Enter sends and Shift Enter adds a line; on a touch screen Enter adds a line and the Send button sends. `"mod-enter"`: Enter adds a line and only ⌘ Enter (Ctrl Enter) sends. ⌘ Enter and Ctrl Enter send with either.',
       value: "The message being written, when you control it.",
@@ -101,16 +101,6 @@ export const docs = {
       value: "The parameters, such as temperature and effort.",
     },
   },
-  PromptSuggestions: {
-    description:
-      "Example prompts before a thread starts: up to three chips in a row that wraps, each a pill with a hairline ring and secondary text that takes a quiet fill on hover. No icons; a prompt too long for the row shows in full in a tooltip. Leave them out once a prompt is sent.",
-    props: {
-      align: "Starts the chips on the composer's edge, or centers them under an empty thread's title.",
-      "aria-label": "The list's accessible name. Defaults to \"Example prompts\" in the provider's language.",
-      onSelect: "Puts the prompt in the composer (or sends it). The list usually goes away then, so move focus to the composer.",
-      suggestions: "Up to three short prompts; more are left out.",
-    },
-  },
   Reasoning: {
     description:
       "A model's reasoning behind a quiet disclosure, closed by default: a chevron, then “Thought for 4.2 s” when it is done, or “Thinking” with the latest line beside it while it streams. Opened, the reasoning reads in small secondary text under the title, beside a line under the chevron. The Playground and the request log (ConversationView) show reasoning with it.",
@@ -151,11 +141,11 @@ export const docs = {
       defaultReasoningOpen: "Whether the reasoning starts expanded.",
       error:
         'Why the reply failed, shown under "No response" with status "error": the gateway\'s message in the reader\'s language; `code` spans render as code.',
-      footer: "Under the response, on its text line: its metrics, actions.",
+      footer: "Under the response, after Copy and Retry on their row: its metrics.",
       incompleteReason:
         'Why the model cut the reply off, with status "incomplete": `max_output_tokens` reads "Stopped at the output limit", `content_filter` names the filter.',
       onReasoningOpenChange: "Called when the reasoning is expanded or collapsed.",
-      onRetry: "Sends the turn again: a Retry button after a stop, a cut-off reply or an error.",
+      onRetry: "Sends the turn again: a Retry button after a stop, a cut-off reply or an error, and a quiet Retry circle under a finished reply.",
       reasoning: 'The reasoning summary so far, as Markdown. A "Thinking" disclosure shows it, closed by default.',
       reasoningDuration: 'How long the model reasoned, in milliseconds: "Thought for 4.2 s".',
       reasoningOpen: "Whether the reasoning is expanded, when you control it.",
@@ -171,7 +161,7 @@ export const docs = {
   },
   UserMessage: {
     description:
-      'A person\'s turn: their prompt on a quiet fill with the well radius, so it reads apart from the response under it. A long prompt shows its first lines until "Show all", a disclosure button under them.',
+      'A person\'s turn: their prompt in a bubble on a quiet fill at the end of the line, so it reads apart from the response that starts at the other edge. A long prompt shows its first lines until "Show all", a disclosure button under them.',
     props: {
       "aria-label": "The message's accessible name. Defaults to \"Prompt\" in the provider's language.",
       children: "The prompt as it was written: plain text, line breaks kept.",

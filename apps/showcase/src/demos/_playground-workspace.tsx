@@ -5,7 +5,6 @@ import {
   Composer,
   ModelPicker,
   ParameterPanel,
-  PromptSuggestions,
   ResponseMetrics,
   ResponseView,
   Thread,
@@ -179,8 +178,6 @@ export function EmptyColumn({ name }: { name: string }) {
   );
 }
 
-const suggestions = ["Apologize for a late order in two sentences", "Explain our refund policy in plain words", "Sort these support emails by topic"];
-
 const empty = (): Response => ({ status: "pending", text: "", reasoning: "", startedAt: Date.now(), metrics: {} });
 
 export function PlaygroundWorkspace({ initial, initialPrompt = "" }: { initial: Column[]; initialPrompt?: string }) {
@@ -212,7 +209,6 @@ export function PlaygroundWorkspace({ initial, initialPrompt = "" }: { initial: 
     setColumns((cs) => [...cs, { id: `col_${next.current++}`, model, thread: [] }]);
   };
   const reasons = columns.some((c) => modelOf(c.model).reasoning);
-  const fresh = columns.every((c) => c.thread.length === 0);
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -280,18 +276,9 @@ export function PlaygroundWorkspace({ initial, initialPrompt = "" }: { initial: 
         </CompareGrid>
       </div>
       <div className="flex shrink-0 flex-col gap-12 px-24 pt-4 pb-24">
-        {fresh && (
-          <PromptSuggestions
-            className="mx-auto w-full max-w-800"
-            suggestions={suggestions}
-            onSelect={(p) => {
-              setDraft(p);
-              prompt.current?.focus();
-            }}
-          />
-        )}
         <Composer
           ref={prompt}
+          size="sm"
           className="mx-auto w-full max-w-800"
           aria-label="Message all models"
           placeholder={columns.length > 1 ? `Message ${columns.length} models` : "Message the model"}
@@ -307,11 +294,7 @@ export function PlaygroundWorkspace({ initial, initialPrompt = "" }: { initial: 
               reasoning={reasons}
               side="top"
               align="start"
-              trigger={
-                <Button size="sm" variant="ghost" leadingIcon={icons.displayOptions}>
-                  Parameters
-                </Button>
-              }
+              trigger={<Button size="sm" variant="ghost" icon={icons.displayOptions} aria-label="Parameters" />}
             />
           }
         />

@@ -18,11 +18,8 @@
   "playground.removeColumn": "{model} entfernen",
   "playground.response": "Antwort von {model}",
   "playground.streamEnded": "Der Stream endete, bevor das Modell fertig war. Bitte erneut versuchen.",
-  "playground.suggestion.haiku": "Schreiben Sie ein Haiku über Latenz",
-  "playground.suggestion.raceCondition": "Erklären Sie einer neuen Entwicklerin eine Race Condition",
-  "playground.suggestion.restGrpc": "Vergleichen Sie REST und gRPC in drei Stichpunkten",
   "playground.title": "Playground",
   "playground.undoClear": "Rückgängig",
-  "playground.emptyThread": "Unten einen Prompt senden oder mit einem Beispiel beginnen.",
+  "playground.emptyThread": "Unten einen Prompt senden, um zu beginnen.",
   "playground.emptyColumn": "Antworten erscheinen hier ab dem nächsten gesendeten Prompt."
 }

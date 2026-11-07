@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { AppFrame, Button, Empty, Text } from "@logicplanes/kaeso-ui";
-import { CompareGrid, Composer, ModelPicker, ParameterPanel, PromptSuggestions, type ReasoningEffort } from "@logicplanes/kaeso-ui/playground";
+import { AppFrame, Button, Empty, Text, icons } from "@logicplanes/kaeso-ui";
+import { CompareGrid, Composer, ModelPicker, ParameterPanel, type ReasoningEffort } from "@logicplanes/kaeso-ui/playground";
 import { playgroundModelsQuery, type PlaygroundModel } from "~/api/queries/playground";
 import { useProjectRights } from "~/auth/rights";
 import { playgroundModelOption, recentModels, rememberModel } from "~/kaeso/model-options";
@@ -23,11 +23,6 @@ import { forget, recall, remember } from "~/shell/session-memory";
 import { toast } from "~/shell/toast";
 import { patchSearch, type SearchPatch } from "~/search";
 
-const suggestions = () => [
-  t("playground.suggestion.raceCondition", "Explain a race condition to a new engineer"),
-  t("playground.suggestion.haiku", "Write a haiku about latency"),
-  t("playground.suggestion.restGrpc", "Compare REST and gRPC in three bullets"),
-];
 const fullReason = () => t("playground.full", "Compare up to {count} models at once", { count: MAX_COLUMNS });
 
 function readDraft(project: string): string {
@@ -201,24 +196,11 @@ export function PlaygroundPage({ org, project, search }: { org: string; project:
         page={t("playground.title", "Playground")}
         path="playground"
         actions={
-          <>
-            {!empty && (
-              <Button size="sm" variant="ghost" onClick={clearAll}>
-                {common.clear()}
-              </Button>
-            )}
-            <ParameterPanel
-              value={parameters}
-              onValueChange={setParameters}
-              sampling={chosen.length === 0 || chosen.some((m) => m.temperature)}
-              reasoning={efforts}
-              trigger={
-                <Button size="sm" disabled={noModels}>
-                  {t("playground.parameters", "Parameters")}
-                </Button>
-              }
-            />
-          </>
+          !empty ? (
+            <Button size="sm" variant="ghost" onClick={clearAll}>
+              {common.clear()}
+            </Button>
+          ) : undefined
         }
       />
       <AppFrame.Body padding="none">
@@ -276,6 +258,7 @@ export function PlaygroundPage({ org, project, search }: { org: string; project:
                     >
                       {thread && lastTurn ? (
                         <Thread
+                          className="mx-auto w-full max-w-800"
                           turns={thread.turns}
                           model={m}
                           label={label}
@@ -284,7 +267,7 @@ export function PlaygroundPage({ org, project, search }: { org: string; project:
                       ) : empty ? (
                         i === 0 && (
                           <Text as="p" variant="body" tone="secondary" className="m-auto max-w-prose text-center text-pretty">
-                            {t("playground.emptyThread", "Send a prompt below, or start from an example.")}
+                            {t("playground.emptyThread", "Send a prompt below to start.")}
                           </Text>
                         )
                       ) : (
@@ -297,26 +280,39 @@ export function PlaygroundPage({ org, project, search }: { org: string; project:
                 })}
               </CompareGrid>
             </div>
-            <div className="mx-24 mt-4 mb-24 flex shrink-0 flex-col gap-12">
-              {empty && (
-                <PromptSuggestions
-                  suggestions={suggestions()}
-                  onSelect={(p) => {
-                    changePrompt(p);
-                    composer.current?.focus();
-                  }}
+            <div className="mx-24 mt-4 mb-24 flex shrink-0 justify-center">
+              <div className="flex w-full max-w-800 min-w-0 flex-col gap-12">
+                <Composer
+                  ref={composer}
+                  size="sm"
+                  value={prompt}
+                  onValueChange={changePrompt}
+                  onSubmit={submit}
+                  onStop={stop}
+                  streaming={busy}
+                  disabled={catalogue.isPending || chosen.length === 0}
+                  placeholder={refs.length > 1 ? t("playground.promptEvery", "Send a prompt to every model") : t("playground.prompt", "Send a prompt")}
+                  actions={
+                    <ParameterPanel
+                      value={parameters}
+                      onValueChange={setParameters}
+                      sampling={chosen.length === 0 || chosen.some((m) => m.temperature)}
+                      reasoning={efforts}
+                      side="top"
+                      align="start"
+                      trigger={
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          icon={icons.displayOptions}
+                          aria-label={t("playground.parameters", "Parameters")}
+                          disabled={noModels}
+                        />
+                      }
+                    />
+                  }
                 />
-              )}
-              <Composer
-                ref={composer}
-                value={prompt}
-                onValueChange={changePrompt}
-                onSubmit={submit}
-                onStop={stop}
-                streaming={busy}
-                disabled={catalogue.isPending || chosen.length === 0}
-                placeholder={refs.length > 1 ? t("playground.promptEvery", "Send a prompt to every model") : t("playground.prompt", "Send a prompt")}
-              />
+              </div>
             </div>
           </div>
         )}

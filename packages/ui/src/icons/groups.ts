@@ -47,6 +47,8 @@ export const ICON_GROUPS = {
     "upload",
     "refresh",
     "retry",
+    "send",
+    "stop",
     "undo",
     "redo",
     "swap",

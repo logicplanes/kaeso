@@ -17,7 +17,7 @@ export const meta = {
     ["⌘ Enter", "Sends (Ctrl Enter on Windows and Linux)"],
   ],
   a11y: [
-    "The text box is named by aria-label (“Prompt” by default) and announces its shortcuts through aria-keyshortcuts; the caption beside Send repeats them for sighted readers and is hidden from screen readers.",
+    "The text box is named by aria-label (“Prompt” by default) and announces its shortcuts through aria-keyshortcuts; Send and Stop are icon buttons named by their labels, which their tooltips show.",
     "Enter never sends while an input method is composing (Chinese, Japanese, Korean): the Enter that picks a candidate stays the input method's.",
     "On a touch screen Enter adds a line and the Send button sends, as in the messaging apps there; elsewhere the on-screen keyboard's Enter key reads Send (enterkeyhint).",
     "Send and Stop are one button that keeps its place and width, so the focus stays on it when a response starts or ends.",
@@ -55,11 +55,7 @@ export function WithActions() {
       className="w-full max-w-640"
       aria-label="Message all models"
       placeholder="Message 3 models"
-      actions={
-        <Button size="sm" variant="ghost" leadingIcon={icons.displayOptions}>
-          Parameters
-        </Button>
-      }
+      actions={<Button size="sm" variant="ghost" icon={icons.displayOptions} aria-label="Parameters" />}
     />
   );
 }
@@ -77,9 +73,7 @@ function Disabled() {
 export function States() {
   const long = Array.from({ length: 14 }, (_, i) => `${i + 1}. ${prompts[0]}`).join("\n");
   const parameters = (force?: string) => (
-    <Button size="sm" variant="ghost" leadingIcon={icons.displayOptions} {...(force ? { "data-force": force } : {})}>
-      Parameters
-    </Button>
+    <Button size="sm" variant="ghost" icon={icons.displayOptions} aria-label="Parameters" {...(force ? { "data-force": force } : {})} />
   );
   return (
     <div className="flex w-640 flex-col">

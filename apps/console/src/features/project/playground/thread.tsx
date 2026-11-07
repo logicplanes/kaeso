@@ -9,15 +9,17 @@ export default function Thread({
   model,
   label,
   onRetry,
+  className,
 }: {
   turns: Turn[];
   model: PlaygroundModel | null;
   label: string;
   onRetry: (() => void) | null;
+  className?: string | undefined;
 }) {
   const last = turns.at(-1);
   return (
-    <Turns>
+    <Turns className={className}>
       {turns.map((turn) => {
         const r = turn.response;
         const metrics = r.status === "failed" && !r.usage ? null : <ResponseMetrics {...metricsOf(r, model)} />;
