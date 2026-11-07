@@ -95,11 +95,18 @@ async fn each_person_sees_the_emails_their_rights_let_them_receive() {
     );
     let weekly = kind(&mine.body, "weekly_summary");
     assert_eq!(
-        (&weekly["delivery"], &weekly["scheduled"], &weekly["deliveries"]),
+        (
+            &weekly["delivery"],
+            &weekly["scheduled"],
+            &weekly["deliveries"]
+        ),
         (&json!("off"), &json!(true), &json!(["now", "off"])),
         "a scheduled email is on or off; the digest would only delay it"
     );
-    assert_eq!(kind(&mine.body, "cost_report")["deliveries"], json!(["now", "off"]));
+    assert_eq!(
+        kind(&mine.body, "cost_report")["deliveries"],
+        json!(["now", "off"])
+    );
     assert_eq!(security["deliveries"], json!([]));
 
     let (developer, _) = common::join_first_project(
@@ -223,12 +230,14 @@ async fn a_digest_setting_kept_from_before_reads_as_on_for_a_scheduled_email() {
     let owner = app.setup().await;
     let user: uuid::Uuid = owner.user_id.parse::<UserId>().unwrap().uuid();
     for kind in ["weekly_summary", "cost_report"] {
-        sqlx::query("INSERT INTO notification_settings (user_id, kind, delivery) VALUES ($1, $2, 'daily')")
-            .bind(user)
-            .bind(kind)
-            .execute(&app.state.pg)
-            .await
-            .unwrap();
+        sqlx::query(
+            "INSERT INTO notification_settings (user_id, kind, delivery) VALUES ($1, $2, 'daily')",
+        )
+        .bind(user)
+        .bind(kind)
+        .execute(&app.state.pg)
+        .await
+        .unwrap();
     }
     let mine = app
         .get("/me/notifications", &owner.cookie)
@@ -236,7 +245,11 @@ async fn a_digest_setting_kept_from_before_reads_as_on_for_a_scheduled_email() {
         .expect_status(StatusCode::OK);
     assert_eq!(kind(&mine.body, "weekly_summary")["delivery"], "now");
     assert_eq!(kind(&mine.body, "cost_report")["delivery"], "now");
-    let token = unsubscribe_token(&app.state, owner.user_id.parse().unwrap(), Kind::WeeklySummary);
+    let token = unsubscribe_token(
+        &app.state,
+        owner.user_id.parse().unwrap(),
+        Kind::WeeklySummary,
+    );
     let shown = app
         .call_with(
             Method::GET,
