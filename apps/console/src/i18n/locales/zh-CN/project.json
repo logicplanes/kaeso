@@ -245,5 +245,9 @@
   "project.tools.hint.readOnly": "只读",
   "project.tools.hint.destructive": "破坏性",
   "project.tools.hint.openWorld": "开放世界",
-  "project.tools.serversToolbar": "服务器"
+  "project.tools.serversToolbar": "服务器",
+  "project.tools.allOn": "全部开启",
+  "project.tools.allOff": "全部关闭",
+  "project.tools.turnedAllOn": "{server} 的 {count, plural, other {# 个工具}}已开启",
+  "project.tools.turnedAllOff": "{server} 的 {count, plural, other {# 个工具}}已关闭"
 }

@@ -37,6 +37,8 @@ export const docs = {
       "aria-label": 'The list\'s accessible name ("What it can do").',
       footer: "A note under the lines in secondary text, such as how long it lasts.",
       items: "The lines, short and without a final period.",
+      sections:
+        "Collapsible sections in place of the lines, one per server: a title, a hint such as its count, the names as code once opened, and whether it starts open.",
     },
   },
   KeyDisplay: {

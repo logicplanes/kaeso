@@ -79,12 +79,51 @@ export function ToolsTab({
       ),
   });
 
+  const toggleAll = useApiMutation({
+    mutationFn: async ({ tools: list, enabled }: { server: string; tools: ProjectToolView[]; enabled: boolean }) =>
+      data(
+        await api.PATCH("/platform/v1/orgs/{org}/projects/{project}/tools", {
+          params: { path: { org, project } },
+          body: { tools: list.map((x) => ({ id: x.id, enabled })) },
+        }),
+      ),
+    invalidates: [projectToolViews(org)],
+    onSuccess: (_list, { server, tools: list, enabled }) =>
+      toast(
+        enabled
+          ? t("project.tools.turnedAllOn", "{count, plural, one {# tool} other {# tools}} of {server} on", { count: list.length, server })
+          : t("project.tools.turnedAllOff", "{count, plural, one {# tool} other {# tools}} of {server} off", { count: list.length, server }),
+      ),
+  });
+
   const groups: ListGroup[] = (servers.data ?? [])
     .map((s) => {
       const items = shown.filter((x) => x.server === s.id);
       const word = projectServerWord(s);
+      const switchable = items.filter((x) => x.state === "active");
+      const off = switchable.filter((x) => !x.enabled);
+      const on = switchable.filter((x) => x.enabled);
+      const bulk = (list: ProjectToolView[], enabled: boolean) => toggleAll.mutate({ server: s.name, tools: list, enabled });
       return {
         id: s.id,
+        ...(canManage && switchable.length > 1
+          ? {
+              actions: (
+                <>
+                  {off.length > 0 && (
+                    <Button variant="ghost" size="xs" disabled={toggleAll.isPending} onClick={() => bulk(off, true)}>
+                      {t("project.tools.allOn", "Turn all on")}
+                    </Button>
+                  )}
+                  {on.length > 0 && (
+                    <Button variant="ghost" size="xs" disabled={toggleAll.isPending} onClick={() => bulk(on, false)}>
+                      {t("project.tools.allOff", "Turn all off")}
+                    </Button>
+                  )}
+                </>
+              ),
+            }
+          : {}),
         title: (
           <span className="flex min-w-0 items-center gap-12">
             <Text weight="medium" truncate>

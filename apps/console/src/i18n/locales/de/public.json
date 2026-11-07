@@ -148,5 +148,7 @@
   "public.chooseOtherEmails": "Andere E-Mails wählen",
   "public.unsubscribeFrom": "Von „{kind}“ abmelden?",
   "public.unsubscribeFromHint": "Kaeso sendet diese nicht mehr an {email}; Sicherheits-E-Mails kommen weiter an.",
-  "public.unsubscribeAction": "Abmelden"
+  "public.unsubscribeAction": "Abmelden",
+  "public.portalServerTools": "{count, plural, one {# Tool} other {# Tools}}",
+  "public.portalToolsUntil": "{count, plural, one {# Tool} other {# Tools}} in {org} › {project}, bis Sie oder ein Projekt-Admin die Verbindung trennen"
 }

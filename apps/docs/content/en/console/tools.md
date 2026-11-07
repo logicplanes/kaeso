@@ -10,7 +10,7 @@ order: 6
 
 1. Open the project's **Tools** page. The **Tools** tab lists each server's tools, with the server's connection and how many of its tools are on.
 2. Find a tool by searching its name or description, or filter by **Server**, **State** and **Hint**. Hints such as **Read-only** and **Destructive** are what the server claims, not guarantees.
-3. Turn a tool on with its switch. Its state changes to **On**, and the portal offers it at once.
+3. Turn a tool on with its switch, or every tool of a server with **Turn all on** at the server's header; **Turn all off** turns them off again. A tool's state changes to **On**, and the portal offers it at once.
 
 A tool that shows **Changed** waits for an admin to review its new definition under [Organization MCP servers](mcp-servers.md#review-a-changed-tool), and can't be turned on until then. Choose a tool to see its details, its input schema, its calls in the last 7 days and **See its calls**, which opens [request logs](request-logs.md) filtered to it.
 
@@ -27,7 +27,7 @@ The **Connect** tab, or **Connect a client** in the header, shows the portal add
 
 1. Choose the client: Claude, ChatGPT, Cursor or GitHub Copilot. The dialog shows that client's steps with the address filled in.
 2. Add the address in the client. The client opens your browser, where you sign in to Kaeso.
-3. Check what the client asks for, then choose **Connect**. The consent page lists the tools it can call, and the servers where you still need to connect your own account.
+3. Check what the client asks for, then choose **Connect**. The consent page names each server with how many of its tools the client can call, opens to the tools' names, and lists the servers where you still need to connect your own account.
 
 **Connected clients** lists every client someone connected, who connected it, where it receives its sign-ins, and when it was connected and last used. **Disconnect** ends its tokens at once.
 

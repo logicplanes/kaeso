@@ -32318,7 +32318,7 @@
           "org_name",
           "project",
           "project_name",
-          "tools",
+          "servers",
           "local",
           "connect"
         ],
@@ -32358,12 +32358,45 @@
             "type": "string",
             "description": "Its name."
           },
+          "servers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PortalServerView"
+            },
+            "description": "The servers whose tools the client could call: those the project offers and you may\nuse, each with its tools' names on the portal."
+          }
+        }
+      },
+      "PortalServerView": {
+        "type": "object",
+        "description": "One of the project's servers with the tools the client could call there.",
+        "required": [
+          "server",
+          "handle",
+          "name",
+          "tools"
+        ],
+        "properties": {
+          "handle": {
+            "type": "string",
+            "description": "Its handle, the first part of each tool's name on the portal.",
+            "example": "x"
+          },
+          "name": {
+            "type": "string",
+            "description": "Its name.",
+            "example": "X"
+          },
+          "server": {
+            "$ref": "#/components/schemas/McpServerId",
+            "description": "The server."
+          },
           "tools": {
             "type": "array",
             "items": {
               "type": "string"
             },
-            "description": "The tools the client could call: those the project offers and you may use.",
+            "description": "The tools' names on the portal.",
             "example": [
               "x__create_post"
             ]
