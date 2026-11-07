@@ -133,7 +133,7 @@ export function States() {
         <Columns columns={answered(four.slice(0, 1), 1)} height={360} />
       </StateSection>
       <StateSection title="More columns than fit: Previous and Next, faded edges">
-        <Columns columns={answered(four.slice(0, 2), 1)} height={400} />
+        <Columns columns={answered(four.slice(0, 3), 1)} height={400} />
       </StateSection>
       <StateSection title="4 columns: Add is off at the maximum, with its reason">
         <Columns columns={answered(four, 1)} height={400} />

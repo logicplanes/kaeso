@@ -186,10 +186,16 @@ describe("ResponseView marks and announcements", () => {
     expect(container.querySelector(".markdown-text-inset")).toBeInTheDocument();
     const metrics = screen.getByLabelText("Metrics").parentElement!;
     expect(metrics).toHaveClass("px-8");
-    expect(metrics.parentElement).toHaveClass("px-4", "min-h-32");
+    expect(metrics.parentElement).toHaveClass("min-h-32");
+    expect(metrics.parentElement).not.toHaveClass("px-4");
     const row = metrics.parentElement!;
     expect(within(row).getByRole("button", { name: "Copy response" })).toHaveClass("size-32", "text-fg-secondary");
     expect(within(row).getByRole("button", { name: "Retry" })).toHaveClass("material-ghost", "text-fg-secondary");
+  });
+
+  it("keeps the metrics on the text line when no Copy or Retry comes before them", () => {
+    render(<ResponseView status="done" text="" footer={<ResponseMetrics duration={1200} />} />);
+    expect(screen.getByLabelText("Metrics").parentElement).toHaveClass("px-12");
   });
 
   it("offers Copy and the icon Retry only under a finished reply with text", () => {
