@@ -191,3 +191,174 @@ def test_an_install_that_never_started_moves_its_edge_network_off_a_taken_range(
     assert result.returncode == 0, result.stderr
     lines = (tmp_path / ".env").read_text().splitlines()
     assert [line for line in lines if line.startswith("EDGE_SUBNET=")] == ([written] if written else [])
+
+
+def run_detached(call: str, tmp_path: Path, env: dict[str, str], stdout_tty: bool = False) -> tuple[int, str, str]:
+    """Runs one of the installer's functions without a controlling terminal, so it can't ask, optionally writing to a terminal."""
+    functions = SCRIPT.read_text().rsplit("main \"$@\"", 1)[0]
+    full_env = {key: value for key, value in {**os.environ, **env}.items() if key != "SSH_CONNECTION" or "SSH_CONNECTION" in env}
+    if not stdout_tty:
+        result = subprocess.run(
+            ["sh", "-c", f"{functions}\n{call}"], cwd=tmp_path, env=full_env, capture_output=True, text=True, start_new_session=True,
+        )
+        return result.returncode, result.stdout, result.stderr
+    import pty
+
+    leader, follower = pty.openpty()
+    proc = subprocess.Popen(
+        ["sh", "-c", f"{functions}\n{call}"], cwd=tmp_path, env=full_env, stdout=follower, stderr=subprocess.PIPE, text=True, start_new_session=True,
+    )
+    os.close(follower)
+    output = b""
+    while True:
+        try:
+            chunk = os.read(leader, 4096)
+        except OSError:
+            break
+        if not chunk:
+            break
+        output += chunk
+    os.close(leader)
+    stderr = proc.stderr.read() if proc.stderr else ""
+    return proc.wait(), output.decode(), stderr
+
+
+def engine_stubs(tmp_path: Path, context: str, starter: str) -> dict[str, str]:
+    """A stopped Docker engine on a Mac: docker info fails until the starter has run."""
+    started = tmp_path / "started"
+    env = stub(tmp_path, "uname", "echo Darwin")
+    stub(tmp_path, "sleep", ":")
+    stub(
+        tmp_path,
+        "docker",
+        f'case "$*" in "context show") echo {context} ;; info*) [ -f "{started}" ] || {{ echo "Cannot connect to the Docker daemon" >&2; exit 1; }} ;; esac',
+    )
+    stub(tmp_path, starter, f'echo "$*" >> "{tmp_path}/calls"; touch "{started}"')
+    return env
+
+
+@pytest.mark.parametrize(
+    ("context", "starter", "said", "called"),
+    [
+        ("orbstack", "orb", "Starting OrbStack", "start"),
+        ("colima", "colima", "Starting Colima", "start"),
+        ("colima-work", "colima", "Starting Colima", "start --profile work"),
+        ("desktop-linux", "open", "Starting Docker Desktop", "-a Docker"),
+    ],
+)
+def test_a_stopped_docker_engine_on_a_mac_is_started(context, starter, said, called, tmp_path):
+    env = engine_stubs(tmp_path, context, starter)
+    code, out, err = run_detached("start_docker", tmp_path, env)
+    assert code == 0, err
+    assert said in out
+    assert (tmp_path / "calls").read_text().strip() == called
+
+
+def test_an_engine_that_never_comes_up_lets_the_installer_explain(tmp_path):
+    env = engine_stubs(tmp_path, "orbstack", "orb")
+    stub(tmp_path, "orb", ":")
+    code, out, _ = run_detached("start_docker", tmp_path, env)
+    assert code == 1
+    assert "Starting OrbStack" in out
+
+
+def test_a_mac_without_a_known_engine_is_not_touched(tmp_path):
+    env = stub(tmp_path, "uname", "echo Darwin")
+    stub(tmp_path, "docker", 'case "$*" in "context show") echo default ;; *) exit 1 ;; esac')
+    code, out, _ = run_detached(f'HOME="{tmp_path}"; PATH="{tmp_path}/bin:/usr/bin:/bin"; [ -d /Applications/Docker.app ] && exit 3; start_docker', tmp_path, env)
+    if code == 3:
+        pytest.skip("this Mac has Docker Desktop in /Applications")
+    assert code == 1
+    assert out == ""
+
+
+@pytest.mark.parametrize(
+    ("domain", "own"),
+    [
+        ("localhost", True),
+        ("kaeso.localhost", True),
+        ("kaeso.internal", True),
+        ("printer.local", True),
+        ("nas.home.arpa", True),
+        (":80", True),
+        ("203.0.113.7", True),
+        ("kaeso.example.com", False),
+        ("203-0-113-7.sslip.io", False),
+    ],
+)
+def test_caddy_signs_its_own_certificate_only_for_local_names_and_addresses(domain, own, tmp_path):
+    assert (run_part(f"own_certificate '{domain}'", tmp_path).returncode == 0) is own
+
+
+def test_a_domain_without_a_dns_record_is_reported_before_installing(tmp_path):
+    env = stub(tmp_path, "getent", "exit 2")
+    code, _, err = run_detached("check_dns kaeso.example.com", tmp_path, env)
+    assert code == 0
+    assert "kaeso.example.com has no DNS record yet" in err
+
+
+def test_a_domain_with_a_dns_record_and_localhost_pass_quietly(tmp_path):
+    env = stub(tmp_path, "getent", '[ "$2" = kaeso.example.com ]')
+    for domain in ("kaeso.example.com", "localhost"):
+        code, _, err = run_detached(f"check_dns {domain}", tmp_path, env)
+        assert (code, err) == (0, "")
+
+
+def test_the_certificate_check_asks_caddy_on_this_machine(tmp_path):
+    (tmp_path / ".env").write_text("KAESO_DOMAIN=kaeso.example.com\n")
+    env = stub(tmp_path, "curl", f'echo "$*" >> "{tmp_path}/calls"')
+    code, _, err = run_detached("domain=kaeso.example.com; certificate_ready", tmp_path, env)
+    assert code == 0, err
+    assert "--resolve kaeso.example.com:443:127.0.0.1 https://kaeso.example.com/healthz" in (tmp_path / "calls").read_text()
+
+
+def test_a_missing_certificate_is_explained_with_caddys_reason(tmp_path):
+    (tmp_path / ".env").write_text("KAESO_DOMAIN=kaeso.example.com\n")
+    env = stub(tmp_path, "curl", "exit 60")
+    stub(tmp_path, "sleep", ":")
+    stub(
+        tmp_path,
+        "docker",
+        "echo '{\"level\":\"error\",\"msg\":\"could not get certificate from issuer\",\"error\":\"acme: challenge failed: connection refused\"}'",
+    )
+    code, _, err = run_detached("domain=kaeso.example.com; here=/srv/kaeso; certificate_ready || explain_certificate", tmp_path, env)
+    assert code == 0
+    assert "Caddy hasn't got a certificate for kaeso.example.com yet" in err
+    assert "The certificate authority answered: acme: challenge failed: connection refused" in err
+    assert "ports 80 and 443 are open to the internet" in err
+
+
+def test_a_localhost_install_skips_the_certificate_check(tmp_path):
+    (tmp_path / ".env").write_text("KAESO_DOMAIN=localhost\n")
+    env = stub(tmp_path, "curl", "exit 60")
+    code, _, _ = run_detached("domain=localhost; certificate_ready", tmp_path, env)
+    assert code == 0
+
+
+@pytest.mark.parametrize(
+    ("setting", "opened"),
+    [("open_browser=yes", True), ("open_browser=no", False), ("open_browser=yes; SSH_CONNECTION='203.0.113.9 5000 203.0.113.7 22'", False)],
+)
+def test_the_setup_link_opens_in_the_browser_on_this_computer(setting, opened, tmp_path):
+    env = stub(tmp_path, "uname", "echo Darwin")
+    stub(tmp_path, "open", f'echo "$*" > "{tmp_path}/opened"')
+    code, out, err = run_detached(f"{setting}; open_link 'https://localhost/setup#token=stp_1'", tmp_path, env, stdout_tty=True)
+    assert code == 0, err
+    assert (tmp_path / "opened").exists() is opened
+    if opened:
+        assert (tmp_path / "opened").read_text().strip() == "https://localhost/setup#token=stp_1"
+        assert "It's open in your browser." in out
+
+
+def test_the_setup_link_stays_closed_when_the_output_is_not_a_terminal(tmp_path):
+    env = stub(tmp_path, "uname", "echo Darwin")
+    stub(tmp_path, "open", f'touch "{tmp_path}/opened"')
+    code, _, _ = run_detached("open_browser=yes; open_link 'https://localhost/setup#token=stp_1'", tmp_path, env)
+    assert code == 0
+    assert not (tmp_path / "opened").exists()
+
+
+def test_no_open_is_an_option(tmp_path):
+    with SCRIPT.open() as script:
+        result = subprocess.run(["sh", "-s", "--", "--help"], stdin=script, capture_output=True, text=True)
+    assert "--no-open" in result.stdout

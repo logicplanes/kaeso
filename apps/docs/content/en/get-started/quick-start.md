@@ -23,7 +23,7 @@ Run the installer on the server. It creates a folder `kaeso` that only you can r
 curl -fsSL https://kaeso.app/install.sh | sh -s -- --domain kaeso.example.com
 ```
 
-The first start takes a minute or two while the images download. The installer ends by printing the setup link. Until you [add your SMTP server](../self-hosting/email.md), the gateway only writes its emails to its log, so sign-in links and invitations aren't delivered. [Install by hand](../self-hosting/installation.md#install-by-hand) shows each step the installer takes.
+Before it installs, the installer starts Docker if it's stopped and checks that your domain has a DNS record. The first start takes a minute or two while the images download. Then the installer checks that Caddy got the domain's certificate, and explains the certificate authority's answer if it didn't. It ends by printing the setup link, and opens it in your browser when you run it on your own computer; `--no-open` keeps it closed. Until you [add your SMTP server](../self-hosting/email.md), the gateway only writes its emails to its log, so sign-in links and invitations aren't delivered. [Install by hand](../self-hosting/installation.md#install-by-hand) shows each step the installer takes.
 
 Run the installer again in the same folder to start Kaeso again; it keeps the settings and the master key. A machine runs one Kaeso, so the installer refuses a second install in another folder.
 
