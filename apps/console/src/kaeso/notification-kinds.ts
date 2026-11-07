@@ -119,8 +119,13 @@ export function areaName(area: { area: string; name: string }): string {
   return areas[area.area]?.() ?? area.name;
 }
 
-export const deliveryOptions = (): { value: NotificationDelivery; label: string }[] => [
-  { value: "now", label: t("account.delivery.now", "Now") },
-  { value: "daily", label: t("account.delivery.daily", "Daily") },
-  { value: "off", label: t("account.delivery.off", "Off") },
-];
+const everyDelivery: NotificationDelivery[] = ["now", "daily", "off"];
+
+export const deliveryOptions = (offered: readonly NotificationDelivery[] = everyDelivery): { value: NotificationDelivery; label: string }[] =>
+  (
+    [
+      { value: "now", label: t("account.delivery.now", "Now") },
+      { value: "daily", label: t("account.delivery.daily", "Daily") },
+      { value: "off", label: t("account.delivery.off", "Off") },
+    ] as const
+  ).filter((o) => offered.includes(o.value));

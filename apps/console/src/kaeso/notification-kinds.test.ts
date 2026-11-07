@@ -34,4 +34,9 @@ describe("notification words", () => {
     expect(areaName({ area: "billing", name: "Billing" })).toBe("Billing");
     expect(deliveryOptions().map((o) => o.value)).toEqual(["now", "daily", "off"]);
   });
+
+  it("offers only the deliveries a kind takes, in the catalogue's order", () => {
+    expect(deliveryOptions(["off", "now"]).map((o) => o.label)).toEqual(["Now", "Off"]);
+    expect(deliveryOptions([])).toEqual([]);
+  });
 });

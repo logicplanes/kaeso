@@ -429,6 +429,7 @@
   "errors.notResponsesRequest": "The request is not a Responses request Kaeso can read.",
   "errors.notifications.invalidLink": "This unsubscribe link is invalid; choose your emails under Account › Notifications.",
   "errors.notifications.noAddress": "Your account has no email address.",
+  "errors.notifications.scheduledOnOff": "`{kind}` goes out on a schedule; choose `now` or `off`.",
   "errors.notifications.securityAlways": "Security emails are always sent; they have no setting.",
   "errors.notifications.testNotSent": "The email was not sent; ask an instance admin to check the mail settings.",
   "errors.notifications.testTooSoon": "You sent a test email a moment ago; try again in {wait}.",

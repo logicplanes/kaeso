@@ -5,13 +5,17 @@ function kind(
   name: string,
   description: string,
   delivery: NotificationDelivery,
-  options: { always?: boolean; reason?: string | null; default?: NotificationDelivery } = {},
+  options: { always?: boolean; scheduled?: boolean; reason?: string | null; default?: NotificationDelivery } = {},
 ): NotificationKindView {
+  const always = options.always ?? false;
+  const scheduled = options.scheduled ?? false;
   return {
     kind: key,
     name,
     description,
-    always: options.always ?? false,
+    always,
+    scheduled,
+    deliveries: always ? [] : scheduled ? ["now", "off"] : ["now", "daily", "off"],
     default: options.default ?? delivery,
     delivery,
     reason: options.reason ?? null,
@@ -31,6 +35,17 @@ export function notificationSettings(
         kinds: [
           kind("account_security", "Account security", "Your password, two-factor authentication, email address or sessions changed.", "now", { always: true }),
           kind("new_app", "A new app can act as you", "You let an app or an MCP client act as you.", "now", { always: true }),
+        ],
+      },
+      {
+        area: "personal",
+        name: "Personal",
+        kinds: [
+          kind("weekly_summary", "Weekly summary", "On Mondays: requests, cost, tool calls and top models of your projects.", d("weekly_summary", "off"), {
+            scheduled: true,
+            reason: "usage.view",
+            default: "off",
+          }),
         ],
       },
       {

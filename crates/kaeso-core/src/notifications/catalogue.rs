@@ -92,7 +92,7 @@ pub struct KindParseError(pub String);
 
 macro_rules! kinds {
     (
-        $( $variant:ident = $str:literal, $area:ident, $name:literal, $default:ident, $always:literal, [$($holder:expr),*], $description:literal; )*
+        $( $variant:ident = $str:literal, $area:ident, $name:literal, $default:ident, $always:literal, $scheduled:literal, [$($holder:expr),*], $description:literal; )*
     ) => {
         #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
         pub enum Kind {
@@ -141,6 +141,12 @@ macro_rules! kinds {
                 }
             }
 
+            pub const fn scheduled(self) -> bool {
+                match self {
+                    $(Kind::$variant => $scheduled,)*
+                }
+            }
+
             pub fn rights(self) -> &'static [Right] {
                 match self {
                     $(Kind::$variant => &[$($holder),*],)*
@@ -150,30 +156,57 @@ macro_rules! kinds {
     };
 }
 
+impl Kind {
+    // An email that goes out on its own schedule is on (`now`, when it is due) or off; the
+    // daily digest would only delay it to the same morning.
+    pub const fn deliveries(self) -> &'static [Delivery] {
+        if self.scheduled() {
+            &[Delivery::Now, Delivery::Off]
+        } else {
+            Delivery::ALL
+        }
+    }
+
+    pub fn allows(self, delivery: Delivery) -> bool {
+        !self.always() && self.deliveries().contains(&delivery)
+    }
+
+    pub fn chosen(self, delivery: Option<Delivery>) -> Delivery {
+        if self.always() {
+            return Delivery::Now;
+        }
+        match delivery {
+            Some(d) if self.deliveries().contains(&d) => d,
+            Some(Delivery::Daily) if self.scheduled() => Delivery::Now,
+            _ => self.default_delivery(),
+        }
+    }
+}
+
 kinds! {
-    AccountSecurity = "account_security", Security, "Account security", Now, true, [], "Your password, two-factor authentication, email address or sessions changed.";
-    NewApp = "new_app", Security, "A new app can act as you", Now, true, [], "You let an app or an MCP client act as you.";
-    ExportReady = "export_ready", Personal, "Export finished", Now, false, [Right::Project(ProjectRight::LogsExport), Right::Org(OrgRight::AuditLogExport)], "A log or audit log export you started finished.";
-    WeeklySummary = "weekly_summary", Personal, "Weekly summary", Off, false, [Right::Project(ProjectRight::UsageView)], "On Mondays: requests, cost, tool calls and top models of your projects.";
-    AccessChanged = "access_changed", Project, "Your access changed", Now, false, [], "You were added or removed, or your rights changed.";
-    BudgetAlerts = "budget_alerts", Project, "Budget alerts", Now, false, [Right::Project(ProjectRight::LimitsManage), Right::Project(ProjectRight::KeysOwnCreate)], "A budget you're responsible for crosses a threshold.";
-    LimitReached = "limit_reached", Project, "Limit reached", Daily, false, [Right::Project(ProjectRight::LimitsManage), Right::Project(ProjectRight::KeysOwnCreate)], "A limit blocks requests of a project or of your keys.";
-    KeyExpiry = "key_expiry", Project, "Your key expires", Now, false, [Right::Project(ProjectRight::KeysOwnCreate), Right::Project(ProjectRight::KeysAllManage)], "A key you own expires soon.";
-    KeyChanged = "key_changed", Project, "Your key changed", Now, false, [Right::Project(ProjectRight::KeysOwnCreate)], "Someone else disabled, rotated or archived a key you own.";
-    ContentLogging = "content_logging", Project, "Content logging changed", Daily, false, [Right::Project(ProjectRight::ProjectView)], "A project you're in starts or stops keeping prompts and replies.";
-    McpServers = "mcp_servers", Tools, "MCP servers need attention", Now, false, [Right::Org(OrgRight::McpServersManage)], "A shared connection signed out, or a changed tool waits for review.";
-    ConnectionExpired = "connection_expired", Tools, "Your connection expired", Now, false, [Right::Project(ProjectRight::ToolsUse)], "A server signed your own connection out.";
-    PortalClients = "portal_clients", Tools, "New client on a portal", Daily, false, [Right::Project(ProjectRight::ToolsManage)], "Someone connected a new client to a project's MCP portal.";
-    OrgSecurity = "org_security", Organization, "Security settings changed", Now, false, [Right::Org(OrgRight::SecuritySsoManage), Right::Org(OrgRight::PlatformKeysView)], "Someone else changed sign-in rules, single sign-on or platform keys.";
-    OrgOwnership = "org_ownership", Organization, "Ownership and deletion", Now, true, [Right::Org(OrgRight::OrgOwnershipTransfer)], "An organization changes owners, is scheduled for deletion or is restored.";
-    OrgMembers = "org_members", Organization, "Member changes", Daily, false, [Right::Org(OrgRight::MembersInvite)], "People join or leave an organization.";
-    InviteAccepted = "invite_accepted", Organization, "Your invitation was accepted", Now, false, [Right::Org(OrgRight::MembersInvite)], "Someone you invited joined.";
-    ProviderKeys = "provider_keys", Organization, "Provider keys need attention", Now, false, [Right::Org(OrgRight::ProviderCredentialsReplace)], "A provider rejects a key again and again, or an account signed out.";
-    ModelChanges = "model_changes", Organization, "Model changes", Daily, false, [Right::Project(ProjectRight::ModelsManage)], "A model a project uses is delisted or changes its price.";
-    CostReport = "cost_report", Organization, "Monthly cost report", Now, false, [Right::Org(OrgRight::CostsOrgView)], "On the 1st: last month's cost by project and model.";
-    InstanceUpdates = "instance_updates", Instance, "Updates", Now, false, [Right::Instance(InstanceRight::InstanceUpdatesManage)], "A new version is out, or an update finished or was rolled back.";
-    InstancePeople = "instance_people", Instance, "New organizations and people", Daily, false, [Right::Instance(InstanceRight::InstanceUsersView)], "Someone signed up or created an organization.";
-    InstanceSettings = "instance_settings", Instance, "Instance settings changed", Now, false, [Right::Instance(InstanceRight::InstanceSettingsManage)], "Another admin changed the instance's settings, sign-in or agent policy.";
+    AccountSecurity = "account_security", Security, "Account security", Now, true, false, [], "Your password, two-factor authentication, email address or sessions changed.";
+    NewApp = "new_app", Security, "A new app can act as you", Now, true, false, [], "You let an app or an MCP client act as you.";
+    ExportReady = "export_ready", Personal, "Export finished", Now, false, false, [Right::Project(ProjectRight::LogsExport), Right::Org(OrgRight::AuditLogExport)], "A log or audit log export you started finished.";
+    WeeklySummary = "weekly_summary", Personal, "Weekly summary", Off, false, true, [Right::Project(ProjectRight::UsageView)], "On Mondays: requests, cost, tool calls and top models of your projects.";
+    AccessChanged = "access_changed", Project, "Your access changed", Now, false, false, [], "You were added or removed, or your rights changed.";
+    BudgetAlerts = "budget_alerts", Project, "Budget alerts", Now, false, false, [Right::Project(ProjectRight::LimitsManage), Right::Project(ProjectRight::KeysOwnCreate)], "A budget you're responsible for crosses a threshold.";
+    LimitReached = "limit_reached", Project, "Limit reached", Daily, false, false, [Right::Project(ProjectRight::LimitsManage), Right::Project(ProjectRight::KeysOwnCreate)], "A limit blocks requests of a project or of your keys.";
+    KeyExpiry = "key_expiry", Project, "Your key expires", Now, false, false, [Right::Project(ProjectRight::KeysOwnCreate), Right::Project(ProjectRight::KeysAllManage)], "A key you own expires soon.";
+    KeyChanged = "key_changed", Project, "Your key changed", Now, false, false, [Right::Project(ProjectRight::KeysOwnCreate)], "Someone else disabled, rotated or archived a key you own.";
+    ContentLogging = "content_logging", Project, "Content logging changed", Daily, false, false, [Right::Project(ProjectRight::ProjectView)], "A project you're in starts or stops keeping prompts and replies.";
+    McpServers = "mcp_servers", Tools, "MCP servers need attention", Now, false, false, [Right::Org(OrgRight::McpServersManage)], "A shared connection signed out, or a changed tool waits for review.";
+    ConnectionExpired = "connection_expired", Tools, "Your connection expired", Now, false, false, [Right::Project(ProjectRight::ToolsUse)], "A server signed your own connection out.";
+    PortalClients = "portal_clients", Tools, "New client on a portal", Daily, false, false, [Right::Project(ProjectRight::ToolsManage)], "Someone connected a new client to a project's MCP portal.";
+    OrgSecurity = "org_security", Organization, "Security settings changed", Now, false, false, [Right::Org(OrgRight::SecuritySsoManage), Right::Org(OrgRight::PlatformKeysView)], "Someone else changed sign-in rules, single sign-on or platform keys.";
+    OrgOwnership = "org_ownership", Organization, "Ownership and deletion", Now, true, false, [Right::Org(OrgRight::OrgOwnershipTransfer)], "An organization changes owners, is scheduled for deletion or is restored.";
+    OrgMembers = "org_members", Organization, "Member changes", Daily, false, false, [Right::Org(OrgRight::MembersInvite)], "People join or leave an organization.";
+    InviteAccepted = "invite_accepted", Organization, "Your invitation was accepted", Now, false, false, [Right::Org(OrgRight::MembersInvite)], "Someone you invited joined.";
+    ProviderKeys = "provider_keys", Organization, "Provider keys need attention", Now, false, false, [Right::Org(OrgRight::ProviderCredentialsReplace)], "A provider rejects a key again and again, or an account signed out.";
+    ModelChanges = "model_changes", Organization, "Model changes", Daily, false, false, [Right::Project(ProjectRight::ModelsManage)], "A model a project uses is delisted or changes its price.";
+    CostReport = "cost_report", Organization, "Monthly cost report", Now, false, true, [Right::Org(OrgRight::CostsOrgView)], "On the 1st: last month's cost by project and model.";
+    InstanceUpdates = "instance_updates", Instance, "Updates", Now, false, false, [Right::Instance(InstanceRight::InstanceUpdatesManage)], "A new version is out, or an update finished or was rolled back.";
+    InstancePeople = "instance_people", Instance, "New organizations and people", Daily, false, false, [Right::Instance(InstanceRight::InstanceUsersView)], "Someone signed up or created an organization.";
+    InstanceSettings = "instance_settings", Instance, "Instance settings changed", Now, false, false, [Right::Instance(InstanceRight::InstanceSettingsManage)], "Another admin changed the instance's settings, sign-in or agent policy.";
 }
 
 impl fmt::Display for Kind {
