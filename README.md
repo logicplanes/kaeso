@@ -43,11 +43,11 @@ It installs Kaeso with PostgreSQL, ClickHouse and Valkey into `./kaeso`, starts 
 On a managed platform, the [platform templates](https://docs.kaeso.app/self-hosting/platforms) run the same release with the platform's TLS and databases:
 
 <p align="center">
-  <a href="https://render.com/deploy?repo=https://github.com/logicplanes/kaeso/tree/prod"><img alt="Deploy to Render" src="https://render.com/images/deploy-to-render-button.svg" height="36"></a>
+  <a href="https://render.com/deploy?repo=https://github.com/logicplanes/kaeso/tree/prod"><img alt="Deploy to Render" src="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/badges/deploy-to-render.svg" height="42"></a>
   &nbsp;&nbsp;
-  <a href="https://console.aws.amazon.com/cloudformation/home#/stacks/create/review?templateURL=https%3A%2F%2Fkaeso-cloudformation.s3.amazonaws.com%2Flatest%2Fquick-server.yaml&stackName=kaeso"><img alt="Launch on AWS" src="https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png" height="36"></a>
+  <a href="https://console.aws.amazon.com/cloudformation/home#/stacks/create/review?templateURL=https%3A%2F%2Fkaeso-cloudformation.s3.amazonaws.com%2Flatest%2Fquick-server.yaml&stackName=kaeso"><img alt="Launch on AWS" src="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/badges/launch-on-aws.svg" height="42"></a>
   &nbsp;&nbsp;
-  <a href="https://shell.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/logicplanes/kaeso&cloudshell_git_branch=prod&cloudshell_workspace=deploy/gcp/quick-server"><img alt="Open in Cloud Shell" src="https://gstatic.com/cloudssh/images/open-btn.svg" height="36"></a>
+  <a href="https://shell.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/logicplanes/kaeso&cloudshell_git_branch=prod&cloudshell_workspace=deploy/gcp/quick-server"><img alt="Open in Google Cloud Shell" src="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/badges/open-in-gcp-cloud-shell.svg" height="42"></a>
 </p>
 <p align="center">
   <a href="https://docs.kaeso.app/self-hosting/platforms/render">Render</a> ·
