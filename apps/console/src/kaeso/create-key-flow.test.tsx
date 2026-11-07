@@ -122,7 +122,7 @@ describe("CreateKeyDialog", () => {
     const dialog = await screen.findByRole("dialog", { name: /Create key/ });
     await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "checkout-web{Enter}");
     await next(user, dialog, "What can it call?");
-    await user.click(within(dialog).getByRole("radio", { name: /^Platform/ }));
+    await user.click(within(dialog).getByRole("checkbox", { name: "Platform" }));
     await user.keyboard("{Escape}");
     await waitFor(() => expect(screen.queryByRole("dialog", { name: /Create key/ })).not.toBeInTheDocument());
 
@@ -132,7 +132,8 @@ describe("CreateKeyDialog", () => {
     expect(within(again).getByRole("textbox", { name: "Name" })).toHaveValue("");
     await user.type(within(again).getByRole("textbox", { name: "Name" }), "web{Enter}");
     await next(user, again, "What can it call?");
-    expect(within(again).getByRole("radio", { name: /^Inference(?! and)/ })).toBeChecked();
+    expect(within(again).getByRole("checkbox", { name: "Inference" })).toBeChecked();
+    expect(within(again).getByRole("checkbox", { name: "Platform" })).not.toBeChecked();
   });
 
   it("closes without asking once the key is copied", async () => {
@@ -259,7 +260,7 @@ describe("CreateKeyDialog", () => {
     await user.click(await within(dialog).findByRole("combobox", { name: "Expires" }));
     await user.click(await screen.findByRole("option", { name: "Never" }));
     await next(user, dialog, "What can it call?");
-    await user.click(within(dialog).getByRole("radio", { name: /Inference and platform/ }));
+    await user.click(within(dialog).getByRole("checkbox", { name: "Platform" }));
     await next(user, dialog, "Models and limits");
 
     await user.click(within(dialog).getByRole("button", { name: "Models" }));
@@ -402,6 +403,21 @@ describe("CreateKeyDialog", () => {
     expect(within(dialog).getByRole("button", { name: "Continue" })).toHaveAttribute("aria-disabled", "true");
   });
 
+  it("needs at least one API checked before it goes on, and sends platform alone when that is all", async () => {
+    signedIn();
+    projectData({});
+    on("POST", KEYS, createdKey());
+    const { user, dialog } = await openDialog();
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "ops{Enter}");
+    await next(user, dialog, "What can it call?");
+    await user.click(within(dialog).getByRole("checkbox", { name: "Inference" }));
+    await hoverReason(user, within(dialog).getByRole("button", { name: "Continue" }), "Choose at least one API");
+    await user.click(within(dialog).getByRole("checkbox", { name: "Platform" }));
+    await next(user, dialog, "Models and limits");
+    await user.click(within(dialog).getByRole("button", { name: "Create key" }));
+    await waitFor(() => expect(requests("POST", KEYS).at(-1)?.body).toMatchObject({ name: "ops", access: "platform" }));
+  });
+
   it("explains why platform access can't be given", async () => {
     signedIn({ projectRights: without("keys.platform_access.grant", "service_accounts.keys.create") });
     projectData({ accounts: [serviceAccount()] });
@@ -411,9 +427,8 @@ describe("CreateKeyDialog", () => {
     expect(within(dialog).queryByRole("combobox", { name: "For" })).not.toBeInTheDocument();
     await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "{Enter}");
     await next(user, dialog, "What can it call?");
-    expect(within(dialog).getByRole("radio", { name: /^Platform/ })).toHaveAttribute("aria-disabled", "true");
-    expect(within(dialog).getByRole("radio", { name: /Inference and platform/ })).toHaveAttribute("aria-disabled", "true");
-    expect(within(dialog).getAllByText("You need Give keys platform access; ask Lin Wei for it.")).toHaveLength(2);
+    expect(within(dialog).getByRole("checkbox", { name: "Platform" })).toHaveAttribute("aria-disabled", "true");
+    expect(within(dialog).getByText("You need Give keys platform access; ask Lin Wei for it.")).toBeInTheDocument();
   });
 
   it("goes back to the name and says under it why the key is refused", async () => {

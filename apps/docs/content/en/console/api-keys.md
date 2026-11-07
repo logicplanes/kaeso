@@ -11,7 +11,7 @@ Apps and scripts call Kaeso with an API key. A key belongs to a member or a serv
 1. On a project's **API keys** page, choose **Create key**.
 2. **What is it for?** Give the key a name, such as `checkout-web`. Request logs and alerts show it. Under **For**, choose yourself or a service account of the project.
 3. **When does it expire?** Choose 1, 7, 30 or 90 days, **On a date**, or **Never**. A key with a date stops at the start of that day, UTC.
-4. **What can it call?** Choose **Inference** for apps that call models, **Platform** for scripts that manage the project through the Platform API, or **Inference and platform** for both.
+4. **What can it call?** Check **Inference** for apps that call models, **Platform** for scripts that manage the project through the Platform API, or both; **Tools** adds the project's tools through its MCP portal. A key needs Inference or Platform.
 5. **Models and limits**, optional: choose the models the key may call and set [limits](limits-and-budgets.md) of its own. A model marked [Unavailable](models-and-aliases.md) is greyed out, because the provider doesn't serve it to the project's key. Without them, the key may call what its owner may, within its owner's and the project's limits.
 
 **Key created** then shows the key and a sample request that uses it. A key is `sk-kso-` followed by 48 letters and digits, and afterwards the console shows only its first and last characters.
@@ -23,10 +23,10 @@ The default expiry is 90 days, or the longest choice allowed. When the organizat
 
 Creating a key needs these rights:
 
-| To create | Right |
-| --- | --- |
-| Your own keys | **Create own keys** |
-| A service account's keys | **Create service account keys** |
+| To create                  | Right                                                                                              |
+| -------------------------- | -------------------------------------------------------------------------------------------------- |
+| Your own keys              | **Create own keys**                                                                                |
+| A service account's keys   | **Create service account keys**                                                                    |
 | A key with platform access | Also **Give keys platform access**, a console session and a recent sign-in; a key can't create one |
 
 Give each app and each environment its own key. Its usage, logs and limits are then its own, and turning it off affects nothing else.
@@ -51,10 +51,10 @@ The old key's sheet shows **Replaced by** and the new key's sheet **Rotated from
 
 Rotating a key needs these rights:
 
-| To rotate | Rights |
-| --- | --- |
-| Your own key | **Create own keys**, and **Manage own keys** or **Manage all keys** |
-| A service account's key | **Create service account keys** and **Manage all keys** |
+| To rotate                  | Rights                                                                     |
+| -------------------------- | -------------------------------------------------------------------------- |
+| Your own key               | **Create own keys**, and **Manage own keys** or **Manage all keys**        |
+| A service account's key    | **Create service account keys** and **Manage all keys**                    |
 | A key with platform access | Also **Give keys platform access**, a console session and a recent sign-in |
 
 Only its owner can rotate a member's key, because the new key acts with the owner's rights. A key that is archived or was rotated already can't be rotated; rotate its replacement instead. Neither can a disabled key, because its replacement would start out enabled; enable it first.
@@ -63,11 +63,11 @@ Only its owner can rotate a member's key, because the new key acts with the owne
 
 Besides **Rotate**, the menu of a key's sheet has three actions:
 
-| Action | What it does |
-| --- | --- |
-| Disable | The key stops working at once. You can enable it again |
-| Enable | A disabled key works again. A key that a person disabled is enabled only by a person, and only its owner's own disable can be undone under **API keys** in the account |
-| Archive | The key stops working for good. Its history stays |
+| Action  | What it does                                                                                                                                                           |
+| ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Disable | The key stops working at once. You can enable it again                                                                                                                 |
+| Enable  | A disabled key works again. A key that a person disabled is enabled only by a person, and only its owner's own disable can be undone under **API keys** in the account |
+| Archive | The key stops working for good. Its history stays                                                                                                                      |
 
 Changing your own keys needs the right **Manage own keys**, and changing anyone's keys **Manage all keys**.
 
