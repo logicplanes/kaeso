@@ -629,3 +629,175 @@ async fn usage_is_written_as_soon_as_shutdown_begins_and_while_requests_drain() 
     written(2).await;
     stop.cancel();
 }
+
+#[tokio::test]
+async fn usage_filters_take_the_keys_groupings_return_and_combine_with_any_grouping() {
+    let env = common::v1::env(None, None).await;
+    let (org, project) = (uuid(&env.owner.org_id), uuid(&env.project));
+    let other_id =
+        common::create_project(&env.app, &env.owner.org_id, &env.owner.cookie, "Other").await;
+    let other = uuid(&other_id);
+    let today = env.app.clock.now().date();
+    let yesterday = today - time::Duration::days(1);
+    let (user, account) = (Uuid::now_v7(), Uuid::now_v7());
+    let (key, account_key, other_key) = (Uuid::now_v7(), Uuid::now_v7(), Uuid::now_v7());
+    let row = |day, project, requests| kaeso_store::pg::limits::UsageRow {
+        user_id: Some(user),
+        api_key_id: Some(key),
+        requests,
+        ..usage_row(day, org, project, 1)
+    };
+    kaeso_store::pg::limits::add_usage(
+        &env.app.state.pg,
+        &[
+            row(yesterday, project, 2),
+            kaeso_store::pg::limits::UsageRow {
+                model_id: "gpt-5".into(),
+                provider: "openai".into(),
+                ingress_dialect: "openai_chat".into(),
+                egress_dialect: "openai_responses".into(),
+                ..row(today, project, 3)
+            },
+            kaeso_store::pg::limits::UsageRow {
+                user_id: None,
+                service_account_id: Some(account),
+                api_key_id: Some(account_key),
+                ..row(today, project, 5)
+            },
+            kaeso_store::pg::limits::UsageRow {
+                api_key_id: None,
+                ..row(today, project, 7)
+            },
+            kaeso_store::pg::limits::UsageRow {
+                api_key_id: Some(other_key),
+                ..row(today, other, 11)
+            },
+        ],
+    )
+    .await
+    .unwrap();
+    kaeso_store::pg::usage::add_tool_usage(
+        &env.app.state.pg,
+        &[kaeso_store::pg::usage::ToolUsageRow {
+            day: today,
+            org_id: org,
+            project_id: project,
+            server_id: Uuid::now_v7(),
+            calls: 4,
+            errors: 1,
+        }],
+    )
+    .await
+    .unwrap();
+    let get = async |path: String| {
+        let r = env.app.get(&path, &env.owner.cookie).await;
+        assert_eq!(r.status, StatusCode::OK, "{path}: {:?}", r.body);
+        r.body
+    };
+    let rows = |pairs: &[(&str, u64)]| -> Vec<(String, u64)> {
+        pairs.iter().map(|(k, n)| ((*k).to_owned(), *n)).collect()
+    };
+    let (key_id, user_id, account_id) = (
+        kaeso_core::id::ApiKeyId::from_uuid(key).to_string(),
+        format!("user:{}", kaeso_core::id::UserId::from_uuid(user)),
+        format!(
+            "service_account:{}",
+            kaeso_core::id::ServiceAccountId::from_uuid(account)
+        ),
+    );
+    let (today, yesterday) = (today.to_string(), yesterday.to_string());
+    let p = base(&env);
+
+    let one_model_through_one_key = get(format!(
+        "{p}/usage?group_by=day&model=anthropic/claude-haiku-4-5&key={key_id}"
+    ))
+    .await;
+    assert_eq!(keyed(&one_model_through_one_key), rows(&[(&yesterday, 2)]));
+    let any_provider = get(format!("{p}/usage?group_by=day&model=claude-haiku-4-5")).await;
+    assert_eq!(keyed(&any_provider), rows(&[(&yesterday, 2), (&today, 12)]));
+    let by_provider = get(format!("{p}/usage?group_by=provider")).await;
+    assert_eq!(
+        keyed(&by_provider),
+        rows(&[("anthropic", 14), ("openai", 3)])
+    );
+    let one_provider = get(format!("{p}/usage?group_by=model&provider=openai")).await;
+    assert_eq!(keyed(&one_provider), rows(&[("openai/gpt-5", 3)]));
+    let one_route = get(format!(
+        "{p}/usage?group_by=model&route=openai_chat:openai_responses:openai"
+    ))
+    .await;
+    assert_eq!(keyed(&one_route), rows(&[("openai/gpt-5", 3)]));
+    let mut keys_of_user = keyed(&get(format!("{p}/usage?group_by=key&member={user_id}")).await);
+    keys_of_user.sort();
+    let mut expected = rows(&[(&key_id, 5), ("playground", 7)]);
+    expected.sort();
+    assert_eq!(keys_of_user, expected);
+    let playground = get(format!("{p}/usage?group_by=member&key=playground")).await;
+    assert_eq!(keyed(&playground), rows(&[(&user_id, 7)]));
+
+    let unfiltered = get(format!("{p}/usage?group_by=day")).await;
+    assert_eq!(unfiltered["data"][1]["key"], today.as_str());
+    assert_eq!(unfiltered["data"][1]["tool_calls"], 4);
+    let account_days = get(format!("{p}/usage?group_by=day&member={account_id}")).await;
+    assert_eq!(keyed(&account_days), rows(&[(&today, 5)]));
+    assert_eq!(
+        account_days["data"][0]["tool_calls"], 0,
+        "tool calls are not counted by member"
+    );
+
+    let o = format!("/orgs/{}", env.owner.org_id);
+    let by_project = get(format!(
+        "{o}/usage?group_by=project&model=anthropic/claude-haiku-4-5"
+    ))
+    .await;
+    let mut got = keyed(&by_project);
+    got.sort();
+    let mut expected = rows(&[(&env.project, 14), (&other_id, 11)]);
+    expected.sort();
+    assert_eq!(got, expected);
+    let other_days = get(format!("{o}/usage?group_by=day&project={other_id}")).await;
+    assert_eq!(keyed(&other_days), rows(&[(&today, 11)]));
+
+    for (path, param, message) in [
+        (
+            format!("{p}/usage?key=nope"),
+            "key",
+            "`key` must be a `key` that grouping by `key` returns.",
+        ),
+        (
+            format!("{p}/usage?member=user:nope"),
+            "member",
+            "`member` must be a `key` that grouping by `member` returns.",
+        ),
+        (
+            format!("{p}/usage?member=robot"),
+            "member",
+            "`member` must be a `key` that grouping by `member` returns.",
+        ),
+        (
+            format!("{o}/usage?route=openai_chat:openai"),
+            "route",
+            "`route` must be a `key` that grouping by `route` returns.",
+        ),
+        (
+            format!("{p}/usage?provider=Open%20AI"),
+            "provider",
+            "`provider` must be a provider id, such as `openai`.",
+        ),
+        (
+            format!("{p}/usage?group_by=project"),
+            "group_by",
+            "Use `day`, `week`, `month`, `model`, `provider`, `key`, `member` or `route`.",
+        ),
+        (
+            format!("{o}/usage?group_by=hour"),
+            "group_by",
+            "Use `day`, `week`, `month`, `model`, `provider`, `key`, `member`, `route` or `project`.",
+        ),
+    ] {
+        let r = env.app.get(&path, &env.owner.cookie).await;
+        assert_eq!(r.status, StatusCode::BAD_REQUEST, "{path}: {:?}", r.body);
+        assert_eq!(r.body["error"]["param"], param, "{path}");
+        assert_eq!(r.body["error"]["message"], message, "{path}");
+    }
+}

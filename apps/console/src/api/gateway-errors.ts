@@ -318,9 +318,17 @@ const messages = (): Rule[] => [
   rule("errors.exportFormat", () => t("errors.exportFormat", "Use `jsonl` or `csv`.")),
   rule("errors.csvMetadataOnly", () => t("errors.csvMetadataOnly", "CSV exports carry metadata only.")),
   rule("errors.exportContentRight", () => t("errors.exportContentRight", "Exporting content needs the right `logs.content.view`.")),
-  rule("errors.usageGroupValues", () => t("errors.usageGroupValues", "Use `day`, `week`, `month`, `model`, `key`, `member`, `route`, or `project` for orgs.")),
+  rule("errors.usageGroupValues", () =>
+    t("errors.usageGroupValues", "Use `day`, `week`, `month`, `model`, `provider`, `key`, `member`, `route` or `project`."),
+  ),
+  rule("errors.usageGroupValuesProject", () =>
+    t("errors.usageGroupValuesProject", "Use `day`, `week`, `month`, `model`, `provider`, `key`, `member` or `route`."),
+  ),
+  rule("errors.usageFilterKey", (v) => t("errors.usageFilterKey", "`{name}` must be a `key` that grouping by `{name}` returns.", v)),
   rule("errors.usageByDayRange", () => t("errors.usageByDayRange", "By day, `from` and `to` are at most 400 days apart; use `week` or `month`.")),
   rule("errors.timelineStepValues", () => t("errors.timelineStepValues", "Use `minute` or `hour`.")),
+  rule("errors.timelineGroupValues", () => t("errors.timelineGroupValues", "Use `model`, `provider`, `key`, `member`, `route`, `error_kind` or `project`.")),
+  rule("errors.timelineGroupValuesProject", () => t("errors.timelineGroupValuesProject", "Use `model`, `provider`, `key`, `member`, `route` or `error_kind`.")),
   rule("errors.timelineMinuteRange", () => t("errors.timelineMinuteRange", "By minute, `from` and `to` are at most 2 days apart; use `hour`.")),
   rule("errors.timelineHourRange", () => t("errors.timelineHourRange", "By hour, `from` and `to` are at most 62 days apart; use the daily usage.")),
   rule("errors.projectArchived", () => t("errors.projectArchived", "The project is archived and cannot be changed.")),

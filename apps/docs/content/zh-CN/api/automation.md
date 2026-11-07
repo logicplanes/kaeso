@@ -113,12 +113,13 @@ curl -s "$ORG_URL/projects/$PROJECT/logs?limit=10" \
 
 请求会在几秒内出现在日志中。调用方拥有 `costs.view` 权限时，用量中包含费用。用量接受以下查询参数：
 
-- `group_by`：`day`（默认）、`week`、`month`、`model`、`key`、`member` 或 `route`。路由的键形如 `<应用格式>:<服务商格式>:<服务商>`，例如 `openai_responses:anthropic_messages:anthropic`。
+- `group_by`：`day`（默认）、`week`、`month`、`model`、`provider`、`key`、`member` 或 `route`。路由的键形如 `<应用格式>:<服务商格式>:<服务商>`，例如 `openai_responses:anthropic_messages:anthropic`。
 - `from` 和 `to`：UTC 日期，例如 `2026-08-15`。按天分组时，两者最多相隔 400 天。
+- `model`、`provider`、`key`、`member` 和 `route`：只看一个分组的用量，写法与该分组返回的 `key` 相同，例如 `model=openai/gpt-5` 或 `key=playground`。筛选条件可以相互组合，也可以与任意 `group_by` 组合：`group_by=day&model=openai/gpt-5&key=key_…` 即一个模型经由一个密钥的每日用量。组织的用量还接受 `project`。
 - `usage/span` 返回有用量的第一天和最后一天，便于按周或按月读取较长的时间段。
-- `usage/timeline` 按 `step=minute`（最多 2 天）或 `step=hour`（最多 62 天）读取请求日志，范围从 `from` 到 `to`，时间采用 RFC 3339；不指定时读取最近一天。它需要开启请求日志。
+- `usage/timeline` 按 `step=minute`（最多 2 天）或 `step=hour`（最多 62 天）读取请求日志，范围从 `from` 到 `to`，时间采用 RFC 3339；不指定时读取最近一天。它需要开启请求日志。它接受相同的筛选条件以及 `failed`。指定 `group_by` 时，每个时间步按模型、服务商、密钥、成员、路由、错误类型（`error_kind`）或（组织级）项目各有一个条目，`top` 只保留请求最多的 1 到 50 个分组。每个条目包含其请求耗时的中位数、第 95 百分位和最大值（`duration_p50_ms`、`duration_p95_ms`、`duration_max_ms`），以及到服务商首字节时间的中位数和第 95 百分位（`ttfb_p50_ms`、`ttfb_p95_ms`），单位为毫秒。
 
-每行用量都有 `cache_hit_rate`，即其输入中从缓存读取的占比，取值 0 到 1。没有输入的行以及嵌入的路由（从不缓存）为 `null`。日志接受 `ingress_dialect` 和 `egress_dialect` 以选择一条路由，例如 `logs?ingress_dialect=openai_responses&egress_dialect=anthropic_messages`。日志导出接受相同的筛选条件。
+每行用量都有 `cache_hit_rate`，即其输入中从缓存读取的占比，取值 0 到 1。没有输入的行以及嵌入的路由（从不缓存）为 `null`。日志接受 `ingress_dialect` 和 `egress_dialect` 以选择一条路由，例如 `logs?ingress_dialect=openai_responses&egress_dialect=anthropic_messages`；`min_duration_ms` 可用来查找慢请求，例如超过某个条目 `duration_p95_ms` 的请求。日志导出接受相同的筛选条件。
 
 在地址后加上日志条目的 ID 即可读取单个请求，例如 `logs/req_…`。项目记录内容时，条目中包含请求的内容。
 

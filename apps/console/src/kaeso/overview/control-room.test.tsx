@@ -25,6 +25,11 @@ function bucket(start: string, overrides: Partial<TimelineBucket> = {}): Timelin
     cache_write_tokens: 50,
     reasoning_tokens: 100,
     cost: "2",
+    duration_p50_ms: 900,
+    duration_p95_ms: 2400,
+    duration_max_ms: 3100,
+    ttfb_p50_ms: 300,
+    ttfb_p95_ms: 800,
     ...overrides,
   };
 }

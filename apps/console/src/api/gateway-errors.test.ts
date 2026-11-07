@@ -204,6 +204,37 @@ describe("a refusal to create an account or an organization", () => {
   });
 });
 
+describe("a refusal of a usage grouping or filter", () => {
+  it("is translated in German and Chinese", async () => {
+    await speak("de");
+    expect((await errorFromResponse(refusal("Use `day`, `week`, `month`, `model`, `provider`, `key`, `member`, `route` or `project`."))).message).toBe(
+      "`day`, `week`, `month`, `model`, `provider`, `key`, `member`, `route` oder `project` verwenden.",
+    );
+    expect((await errorFromResponse(refusal("Use `model`, `provider`, `key`, `member`, `route` or `error_kind`."))).message).toBe(
+      "`model`, `provider`, `key`, `member`, `route` oder `error_kind` verwenden.",
+    );
+    expect((await errorFromResponse(refusal("`member` must be a `key` that grouping by `member` returns."))).message).toBe(
+      "`member` muss ein `key` sein, wie ihn die Gruppierung nach `member` liefert.",
+    );
+    await speak("zh-CN");
+    expect((await errorFromResponse(refusal("Use `day`, `week`, `month`, `model`, `provider`, `key`, `member` or `route`."))).message).toBe(
+      "请使用 `day`、`week`、`month`、`model`、`provider`、`key`、`member` 或 `route`。",
+    );
+    expect((await errorFromResponse(refusal("Use `model`, `provider`, `key`, `member`, `route`, `error_kind` or `project`."))).message).toBe(
+      "请使用 `model`、`provider`、`key`、`member`、`route`、`error_kind` 或 `project`。",
+    );
+    expect((await errorFromResponse(refusal("`route` must be a `key` that grouping by `route` returns."))).message).toBe(
+      "`route` 必须是按 `route` 分组时返回的 `key`。",
+    );
+  });
+
+  it("stays as the gateway wrote it when the two fields differ", async () => {
+    await speak("de");
+    const message = "`key` must be a `key` that grouping by `member` returns.";
+    expect((await errorFromResponse(refusal(message))).message).toBe(message);
+  });
+});
+
 describe("a refusal of a timeline's range or step", () => {
   it("is translated in German and Chinese", async () => {
     await speak("de");

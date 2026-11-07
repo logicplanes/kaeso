@@ -5,6 +5,7 @@ use uuid::Uuid;
 
 use super::ClickHouse;
 use crate::StoreError;
+use crate::pg::usage::{Filter as UsageFilter, Member};
 
 #[derive(Clone, Debug, PartialEq, Row, Serialize, Deserialize)]
 pub struct LogRow {
@@ -127,6 +128,7 @@ pub struct Filter {
     pub ingress_dialect: Option<String>,
     pub egress_dialect: Option<String>,
     pub response_cache: Option<String>,
+    pub min_duration_ms: Option<u32>,
 }
 
 pub async fn search(
@@ -238,6 +240,10 @@ fn filter_sql(f: &Filter, sql: &mut String, binds: &mut Vec<Bind>) {
     if let Some(d) = &f.egress_dialect {
         sql.push_str(" AND egress_dialect = ?");
         binds.push(Bind::Str(d.clone()));
+    }
+    if let Some(ms) = f.min_duration_ms {
+        sql.push_str(" AND duration_ms >= ?");
+        binds.push(Bind::I64(i64::from(ms)));
     }
 }
 
@@ -399,9 +405,44 @@ pub async fn disk(ch: &ClickHouse) -> Result<Disk, StoreError> {
         .await?)
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum TimelineGroup {
+    Project,
+    Model,
+    Provider,
+    Key,
+    Member,
+    Route,
+    ErrorKind,
+}
+
+impl TimelineGroup {
+    fn key(self) -> &'static str {
+        match self {
+            TimelineGroup::Project => "toString(project_id)",
+            TimelineGroup::Model => "concat(provider, '/', resolved_model)",
+            TimelineGroup::Provider => "provider",
+            TimelineGroup::Key => "toString(key_id)",
+            TimelineGroup::Member => "concat(principal_kind, ':', toString(principal_id))",
+            TimelineGroup::Route => "concat(ingress_dialect, ':', egress_dialect, ':', provider)",
+            TimelineGroup::ErrorKind => "error_kind",
+        }
+    }
+}
+
+#[derive(Clone, Debug, Default)]
+pub struct Timeline {
+    pub project: Option<Uuid>,
+    pub filter: UsageFilter,
+    pub failed: Option<bool>,
+    pub group: Option<TimelineGroup>,
+    pub top: Option<u32>,
+}
+
 #[derive(Clone, Debug, PartialEq, Row, Deserialize)]
 pub struct TimelineRow {
     pub start_unix: i64,
+    pub key: String,
     pub requests: u64,
     pub errors: u64,
     pub input_tokens: u64,
@@ -410,32 +451,100 @@ pub struct TimelineRow {
     pub cache_write_tokens: u64,
     pub reasoning_tokens: u64,
     pub cost: i128,
+    pub duration: Vec<f64>,
+    pub duration_max: u32,
+    pub ttfb: Vec<f64>,
+    pub with_ttfb: u64,
+}
+
+fn timeline_where(
+    org: Uuid,
+    from: OffsetDateTime,
+    to: OffsetDateTime,
+    t: &Timeline,
+    sql: &mut String,
+    binds: &mut Vec<Bind>,
+) {
+    sql.push_str(" FROM request_log WHERE org_id = ?");
+    binds.push(Bind::Uuid(org));
+    if let Some(p) = t.project {
+        sql.push_str(" AND project_id = ?");
+        binds.push(Bind::Uuid(p));
+    }
+    sql.push_str(" AND started_at >= fromUnixTimestamp64Milli(?) AND started_at < fromUnixTimestamp64Milli(?)");
+    binds.push(Bind::Millis(from));
+    binds.push(Bind::Millis(to));
+    let f = &t.filter;
+    if let Some(p) = &f.provider {
+        sql.push_str(" AND provider = ?");
+        binds.push(Bind::Str(p.clone()));
+    }
+    if let Some(m) = &f.model {
+        sql.push_str(" AND resolved_model = ?");
+        binds.push(Bind::Str(m.id.clone()));
+        if let Some(p) = &m.provider {
+            sql.push_str(" AND provider = ?");
+            binds.push(Bind::Str(p.clone()));
+        }
+    }
+    if let Some(k) = f.key {
+        sql.push_str(" AND key_id = ?");
+        binds.push(Bind::Uuid(k));
+    }
+    if let Some(m) = f.member {
+        let (kind, id) = match m {
+            Member::User(u) => ("user", u),
+            Member::ServiceAccount(s) => ("service_account", s),
+        };
+        sql.push_str(" AND principal_kind = ? AND principal_id = ?");
+        binds.push(Bind::Str(kind.to_owned()));
+        binds.push(Bind::Uuid(id));
+    }
+    if let Some(r) = &f.route {
+        sql.push_str(" AND ingress_dialect = ? AND egress_dialect = ? AND provider = ?");
+        binds.push(Bind::Str(r.ingress_dialect.clone()));
+        binds.push(Bind::Str(r.egress_dialect.clone()));
+        binds.push(Bind::Str(r.provider.clone()));
+    }
+    if let Some(failed) = t.failed {
+        sql.push_str(if failed {
+            " AND status >= 400"
+        } else {
+            " AND status < 400"
+        });
+    }
 }
 
 pub async fn timeline(
     ch: &ClickHouse,
     org: Uuid,
-    project: Option<Uuid>,
     from: OffsetDateTime,
     to: OffsetDateTime,
     step_seconds: u32,
+    t: &Timeline,
 ) -> Result<Vec<TimelineRow>, StoreError> {
-    let mut sql = String::from(
+    // The grouping expression comes from the enum above, never from input; the values are bound.
+    let key = t.group.map_or("''", TimelineGroup::key);
+    let mut sql = format!(
         "SELECT toInt64(toUnixTimestamp(toStartOfInterval(started_at, toIntervalSecond(?)))) AS start_unix, \
-         count() AS requests, countIf(status >= 400) AS errors, \
+         {key} AS key, count() AS requests, countIf(status >= 400) AS errors, \
          sum(input_tokens) AS input_tokens, sum(output_tokens) AS output_tokens, \
          sum(cache_read_tokens) AS cache_read_tokens, sum(cache_write_tokens) AS cache_write_tokens, \
-         sum(reasoning_tokens) AS reasoning_tokens, sum(cost) AS cost \
-         FROM request_log WHERE org_id = ?",
+         sum(reasoning_tokens) AS reasoning_tokens, sum(cost) AS cost, \
+         quantiles(0.5, 0.95)(duration_ms) AS duration, max(duration_ms) AS duration_max, \
+         quantilesIf(0.5, 0.95)(assumeNotNull(ttfb_ms), isNotNull(ttfb_ms)) AS ttfb, \
+         countIf(isNotNull(ttfb_ms)) AS with_ttfb"
     );
-    let mut binds: Vec<Bind> = vec![Bind::I64(i64::from(step_seconds)), Bind::Uuid(org)];
-    if let Some(p) = project {
-        sql.push_str(" AND project_id = ?");
-        binds.push(Bind::Uuid(p));
+    let mut binds: Vec<Bind> = vec![Bind::I64(i64::from(step_seconds))];
+    timeline_where(org, from, to, t, &mut sql, &mut binds);
+    if let (Some(group), Some(top)) = (t.group, t.top) {
+        let key = group.key();
+        sql.push_str(&format!(" AND {key} IN (SELECT {key} AS top_key"));
+        timeline_where(org, from, to, t, &mut sql, &mut binds);
+        sql.push_str(" GROUP BY top_key ORDER BY count() DESC, top_key LIMIT ?)");
+        binds.push(Bind::I64(i64::from(top)));
     }
-    sql.push_str(" AND started_at >= fromUnixTimestamp64Milli(?) AND started_at < fromUnixTimestamp64Milli(?) GROUP BY start_unix ORDER BY start_unix");
-    binds.push(Bind::Millis(from));
-    binds.push(Bind::Millis(to));
+    sql.push_str(" GROUP BY start_unix, key ORDER BY start_unix, key");
     let mut q = ch.client().query(&sql);
     for b in binds {
         q = b.bind(q);

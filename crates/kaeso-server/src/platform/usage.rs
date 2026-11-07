@@ -4,7 +4,7 @@ use kaeso_core::cost::cost_from_raw;
 use kaeso_core::id::{ApiKeyId, OrgId, ProjectId, ServiceAccountId, UserId};
 use kaeso_core::rights::{OrgRight, ProjectRight};
 use kaeso_kpp::DialectId;
-use kaeso_store::clickhouse::logs as ch_logs;
+use kaeso_store::clickhouse::logs::{self as ch_logs, TimelineGroup};
 use kaeso_store::pg::usage::{self as store, GroupBy, UsageGroup};
 use serde::{Deserialize, Serialize};
 use time::Date;
@@ -28,23 +28,115 @@ pub struct UsageQuery {
         after `from`; other groupings take any period."]
     pub to: Option<String>,
     #[doc = "`day` (default), `week` (Monday to Sunday, named by its Monday),\n\
-        `month` (named by its first day), `model`, `key`, `member`, `route`,\n\
-        or for orgs `project`. A week or month that starts before `from` or\n\
-        ends after `to` counts only the days in the period."]
+        `month` (named by its first day), `model`, `provider`, `key`, `member`,\n\
+        `route`, or for orgs `project`. A week or month that starts before `from`\n\
+        or ends after `to` counts only the days in the period."]
     pub group_by: Option<String>,
+}
+
+#[derive(Debug, Default, Deserialize, IntoParams)]
+#[into_params(parameter_in = Query)]
+pub struct UsageFilter {
+    #[doc = "Only this model, as `provider/model` like the `key` of a row grouped\n\
+        by `model`, such as `openai/gpt-5`; a model id without `/` matches it at\n\
+        every provider."]
+    pub model: Option<String>,
+    #[doc = "Only this provider, such as `openai`."]
+    #[param(value_type = Option<kaeso_core::provider::ProviderId>)]
+    pub provider: Option<String>,
+    #[doc = "Only this key: a key id, or `playground` for the requests members made\n\
+        in the console's Playground."]
+    pub key: Option<String>,
+    #[doc = "Only this member: `user:<id>` or `service_account:<id>`, as grouping by\n\
+        `member` names them."]
+    pub member: Option<String>,
+    #[doc = "Only this route, `<app format>:<provider format>:<provider>` as\n\
+        grouping by `route` names it, such as\n\
+        `openai_responses:anthropic_messages:anthropic`."]
+    pub route: Option<String>,
+}
+
+#[derive(Debug, Default, Deserialize, IntoParams)]
+#[into_params(parameter_in = Query)]
+pub struct ProjectFilter {
+    #[doc = "Only this project."]
+    pub project: Option<ProjectId>,
+}
+
+fn not_a_key(field: &str) -> ApiError {
+    ApiError::invalid(
+        field,
+        format!("`{field}` must be a `key` that grouping by `{field}` returns."),
+    )
+}
+
+impl UsageFilter {
+    fn parse(&self) -> ApiResult<store::Filter> {
+        let model = self.model.as_deref().map(|m| match m.split_once('/') {
+            Some((provider, id)) => store::Model {
+                provider: Some(provider.to_owned()),
+                id: id.to_owned(),
+            },
+            None => store::Model {
+                provider: None,
+                id: m.to_owned(),
+            },
+        });
+        let key = match self.key.as_deref() {
+            None => None,
+            Some("playground") => Some(Uuid::nil()),
+            Some(k) => Some(k.parse::<ApiKeyId>().map_err(|_| not_a_key("key"))?.uuid()),
+        };
+        let member = match self.member.as_deref().map(|m| m.split_once(':')) {
+            None => None,
+            Some(Some(("user", id))) => Some(store::Member::User(
+                id.parse::<UserId>()
+                    .map_err(|_| not_a_key("member"))?
+                    .uuid(),
+            )),
+            Some(Some(("service_account", id))) => Some(store::Member::ServiceAccount(
+                id.parse::<ServiceAccountId>()
+                    .map_err(|_| not_a_key("member"))?
+                    .uuid(),
+            )),
+            Some(_) => return Err(not_a_key("member")),
+        };
+        let route = match self.route.as_deref() {
+            None => None,
+            Some(r) => match r.split(':').collect::<Vec<_>>().as_slice() {
+                [ingress, egress, provider] => Some(store::Route {
+                    ingress_dialect: (*ingress).to_owned(),
+                    egress_dialect: (*egress).to_owned(),
+                    provider: (*provider).to_owned(),
+                }),
+                _ => return Err(not_a_key("route")),
+            },
+        };
+        Ok(store::Filter {
+            provider: self
+                .provider
+                .as_deref()
+                .map(super::logs::provider_filter)
+                .transpose()?,
+            model,
+            key,
+            member,
+            route,
+        })
+    }
 }
 
 #[derive(Clone, Debug, Serialize, ToSchema)]
 #[schema(description = "Usage of one group.")]
 pub struct UsageRow {
     #[doc = "The day, the Monday of the week, the first day of the month,\n\
-        `provider/model`, key id (`playground` for the requests members made\n\
-        in the console's Playground, without a key), member (`user:<id>` or\n\
+        `provider/model`, provider, key id (`playground` for the requests members\n\
+        made in the console's Playground, without a key), member (`user:<id>` or\n\
         `service_account:<id>`), route (`<app format>:<provider format>:<provider>`,\n\
         such as `openai_responses:anthropic_messages:anthropic`; both formats are\n\
         empty for requests made before Kaeso recorded them, and the provider\n\
         format for requests refused before a provider was chosen), or project\n\
-        id."]
+        id. The filter of the same name takes it as it is."]
     pub key: String,
     #[doc = "Model requests of the group, made with a key or from the Playground:\n\
         every one, the gateway's own refusals (limits, unknown models,\n\
@@ -73,23 +165,46 @@ pub struct UsageRow {
     #[schema(value_type = Option<String>)]
     pub cost: Option<String>,
     #[doc = "Tool calls through the project's MCP portals, refusals included. Counted by\n\
-        day and project, so 0 when grouped by model, key, member or route."]
+        day and project, so 0 when grouped or filtered by model, provider, key,\n\
+        member or route."]
     pub tool_calls: u64,
     #[doc = "Of those, the ones refused or failed."]
     pub tool_call_errors: u64,
 }
 
-fn public_key(group: GroupBy, key: String) -> String {
-    let id = |s: &str| Uuid::parse_str(s).ok();
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Ids {
+    Plain,
+    Project,
+    Key,
+    Member,
+}
+
+fn ids_of(group: GroupBy) -> Ids {
     match group {
-        GroupBy::Day | GroupBy::Week | GroupBy::Month | GroupBy::Model | GroupBy::Route => key,
-        GroupBy::Project => id(&key).map_or(key, |u| ProjectId::from_uuid(u).to_string()),
-        GroupBy::Key => match id(&key) {
+        GroupBy::Day
+        | GroupBy::Week
+        | GroupBy::Month
+        | GroupBy::Model
+        | GroupBy::Provider
+        | GroupBy::Route => Ids::Plain,
+        GroupBy::Project => Ids::Project,
+        GroupBy::Key => Ids::Key,
+        GroupBy::Member => Ids::Member,
+    }
+}
+
+fn public_key(ids: Ids, key: String) -> String {
+    let id = |s: &str| Uuid::parse_str(s).ok();
+    match ids {
+        Ids::Plain => key,
+        Ids::Project => id(&key).map_or(key, |u| ProjectId::from_uuid(u).to_string()),
+        Ids::Key => match id(&key) {
             Some(u) if u.is_nil() => "playground".to_owned(),
             Some(u) => ApiKeyId::from_uuid(u).to_string(),
             None => key,
         },
-        GroupBy::Member => match key.split_once(':') {
+        Ids::Member => match key.split_once(':') {
             Some(("user", rest)) => {
                 id(rest).map_or(key.clone(), |u| format!("user:{}", UserId::from_uuid(u)))
             }
@@ -132,13 +247,29 @@ fn parse_day(field: &str, s: Option<&str>, default: Date) -> ApiResult<Date> {
     }
 }
 
+#[derive(Clone, Copy)]
+struct Scope {
+    org: Uuid,
+    project: Option<Uuid>,
+    org_wide: bool,
+    costs: bool,
+}
+
+impl Scope {
+    fn narrowed(self, filter: &ProjectFilter) -> Scope {
+        Scope {
+            project: self.project.or(filter.project.map(|p| p.uuid())),
+            ..self
+        }
+    }
+}
+
 async fn usage(
     state: &AppState,
     ctx: &Ctx,
-    org: Uuid,
-    project: Option<Uuid>,
+    scope: Scope,
     q: &UsageQuery,
-    costs: bool,
+    f: &UsageFilter,
 ) -> ApiResult<Json<List<UsageRow>>> {
     let today = ctx.now.date();
     let to = parse_day("to", q.to.as_deref(), today)?;
@@ -154,14 +285,19 @@ async fn usage(
         "week" => GroupBy::Week,
         "month" => GroupBy::Month,
         "model" => GroupBy::Model,
+        "provider" => GroupBy::Provider,
         "key" => GroupBy::Key,
         "member" => GroupBy::Member,
         "route" => GroupBy::Route,
-        "project" if project.is_none() => GroupBy::Project,
+        "project" if scope.org_wide => GroupBy::Project,
         _ => {
             return Err(ApiError::invalid(
                 "group_by",
-                "Use `day`, `week`, `month`, `model`, `key`, `member`, `route`, or `project` for orgs.",
+                if scope.org_wide {
+                    "Use `day`, `week`, `month`, `model`, `provider`, `key`, `member`, `route` or `project`."
+                } else {
+                    "Use `day`, `week`, `month`, `model`, `provider`, `key`, `member` or `route`."
+                },
             ));
         }
     };
@@ -171,18 +307,21 @@ async fn usage(
             "By day, `from` and `to` are at most 400 days apart; use `week` or `month`.",
         ));
     }
-    let rows = store::usage(&state.pg, org, project, from, to, group)
+    let filter = f.parse()?;
+    let (org, project, costs) = (scope.org, scope.project, scope.costs);
+    let rows = store::usage(&state.pg, org, project, from, to, group, &filter)
         .await
         .map_err(|e| ApiError::unavailable(USAGE_UNAVAILABLE, e))?;
-    let tools = store::tool_usage(&state.pg, org, project, from, to, group)
+    let tools = store::tool_usage(&state.pg, org, project, from, to, group, &filter)
         .await
         .map_err(|e| ApiError::unavailable(USAGE_UNAVAILABLE, e))?;
+    let ids = ids_of(group);
     let mut merged: std::collections::BTreeMap<String, UsageRow> = rows
         .into_iter()
         .map(|r| {
             let row = UsageRow {
                 cache_hit_rate: cache_hit_rate(group, &r),
-                key: public_key(group, r.key.clone()),
+                key: public_key(ids, r.key.clone()),
                 requests: count(r.requests),
                 errors: count(r.errors),
                 input_tokens: count(r.input_tokens),
@@ -199,7 +338,7 @@ async fn usage(
         .collect();
     for t in tools {
         let row = merged.entry(t.key.clone()).or_insert_with(|| UsageRow {
-            key: public_key(group, t.key.clone()),
+            key: public_key(ids, t.key.clone()),
             requests: 0,
             errors: 0,
             input_tokens: 0,
@@ -221,9 +360,18 @@ async fn usage(
 #[utoipa::path(
     get,
     path = "/orgs/{org}/usage",
-    summary = "Usage across the org's projects; costs with `costs.org.view`.",
+    summary = "The org's usage by day, week, month, model, provider, key, member, route or project.",
+    description = "Requests (refusals included), errors, tokens, cost and MCP tool calls\n\
+    across the org's projects, from daily totals that reach back to the first\n\
+    request (`usage/span`) and never expire; days are UTC. One row per group of\n\
+    `group_by`, sorted by `key`; groups without usage are left out. Every filter\n\
+    takes a `key` as its grouping returns it, so filters and groupings combine:\n\
+    `group_by=day&model=openai/gpt-5&key=key_…` is the daily usage of one model\n\
+    through one key. `cost` is in USD and `null` without `costs.org.view`. For\n\
+    minutes, hours, latency or error kinds use `usage/timeline`; for single\n\
+    requests, a project's `logs`.",
     tag = "orgs",
-    params(("org" = OrgId, Path), UsageQuery),
+    params(("org" = OrgId, Path), UsageQuery, UsageFilter, ProjectFilter),
     responses((status = 200, body = List<UsageRow>))
 )]
 pub async fn org(
@@ -231,19 +379,28 @@ pub async fn org(
     ctx: Ctx,
     Path(_o): Path<String>,
     Query(q): Query<UsageQuery>,
+    Query(f): Query<UsageFilter>,
+    Query(p): Query<ProjectFilter>,
 ) -> ApiResult<Json<List<UsageRow>>> {
-    let scope = ctx.org()?;
-    let costs = scope.rights.contains(OrgRight::CostsOrgView);
-    let org = scope.org.id;
-    usage(&state, &ctx, org, None, &q, costs).await
+    let scope = org_scope(&ctx)?.narrowed(&p);
+    usage(&state, &ctx, scope, &q, &f).await
 }
 
 #[utoipa::path(
     get,
     path = "/orgs/{org}/projects/{project}/usage",
-    summary = "The project's usage; costs with `costs.view`.",
+    summary = "The project's usage by day, week, month, model, provider, key, member or route.",
+    description = "Requests (refusals included), errors, tokens, cost and MCP tool calls\n\
+    of the project, from daily totals that reach back to the first request\n\
+    (`usage/span`) and never expire; days are UTC. One row per group of\n\
+    `group_by`, sorted by `key`; groups without usage are left out. Every filter\n\
+    takes a `key` as its grouping returns it, so filters and groupings combine:\n\
+    `group_by=day&model=openai/gpt-5&key=key_…` is the daily usage of one model\n\
+    through one key. `cost` is in USD and `null` without `costs.view`. For\n\
+    minutes, hours, latency or error kinds use `usage/timeline`; for single\n\
+    requests, `logs`.",
     tag = "projects",
-    params(("org" = OrgId, Path), ("project" = ProjectId, Path), UsageQuery),
+    params(("org" = OrgId, Path), ("project" = ProjectId, Path), UsageQuery, UsageFilter),
     responses((status = 200, body = List<UsageRow>))
 )]
 pub async fn project(
@@ -251,11 +408,29 @@ pub async fn project(
     ctx: Ctx,
     Path(_p): Path<(String, String)>,
     Query(q): Query<UsageQuery>,
+    Query(f): Query<UsageFilter>,
 ) -> ApiResult<Json<List<UsageRow>>> {
+    usage(&state, &ctx, project_scope(&ctx)?, &q, &f).await
+}
+
+fn org_scope(ctx: &Ctx) -> ApiResult<Scope> {
+    let scope = ctx.org()?;
+    Ok(Scope {
+        org: scope.org.id,
+        project: None,
+        org_wide: true,
+        costs: scope.rights.contains(OrgRight::CostsOrgView),
+    })
+}
+
+fn project_scope(ctx: &Ctx) -> ApiResult<Scope> {
     let scope = ctx.project()?;
-    let costs = scope.rights.contains(ProjectRight::CostsView);
-    let (org, project) = (scope.project.org_id, scope.project.id);
-    usage(&state, &ctx, org, Some(project), &q, costs).await
+    Ok(Scope {
+        org: scope.project.org_id,
+        project: Some(scope.project.id),
+        org_wide: false,
+        costs: scope.rights.contains(ProjectRight::CostsView),
+    })
 }
 
 #[derive(Clone, Debug, Serialize, ToSchema)]
@@ -314,6 +489,7 @@ pub async fn project_span(
 
 const MINUTE_SPAN: time::Duration = time::Duration::days(2);
 const HOUR_SPAN: time::Duration = time::Duration::days(62);
+const MOST_TOP: u32 = 50;
 
 #[derive(Debug, Deserialize, IntoParams)]
 #[into_params(parameter_in = Query)]
@@ -325,13 +501,28 @@ pub struct TimelineQuery {
     #[doc = "`minute` (at most 2 days) or `hour` (at most 62 days); default `minute`\n\
         for up to 2 days, `hour` beyond."]
     pub step: Option<String>,
+    #[doc = "A bucket per step and `model`, `provider`, `key`, `member`, `route`,\n\
+        `error_kind` (the request log's, empty for requests that succeeded), or\n\
+        for orgs `project`; default one bucket per step."]
+    pub group_by: Option<String>,
+    #[doc = "With `group_by`, only the groups with the most requests in the whole\n\
+        range, 1 to 50; the others are left out."]
+    #[param(minimum = 1, maximum = 50)]
+    pub top: Option<u32>,
+    #[doc = "Only failed (`true`) or successful (`false`) requests."]
+    pub failed: Option<bool>,
 }
 
 #[derive(Clone, Debug, Serialize, ToSchema)]
-#[schema(description = "The requests of one minute or hour, from the request log.")]
+#[schema(
+    description = "The requests of one minute or hour, and of one group with `group_by`, from the request log."
+)]
 pub struct TimelineBucket {
     #[doc = "The minute or hour it starts at (RFC 3339, UTC)."]
     pub start: String,
+    #[doc = "The group, as usage grouped the same way names it; `null` without\n\
+        `group_by`."]
+    pub key: Option<String>,
     #[doc = "Model requests that started in it, refusals included."]
     pub requests: u64,
     #[doc = "Of those, the ones answered with a status of 400 or above."]
@@ -349,6 +540,18 @@ pub struct TimelineBucket {
     #[doc = "Cost in USD; `null` without the right to see costs."]
     #[schema(value_type = Option<String>)]
     pub cost: Option<String>,
+    #[doc = "The median total time of its requests, in milliseconds."]
+    pub duration_p50_ms: u32,
+    #[doc = "The 95th percentile of the total time of its requests, in milliseconds."]
+    pub duration_p95_ms: u32,
+    #[doc = "The longest total time of its requests, in milliseconds."]
+    pub duration_max_ms: u32,
+    #[doc = "The median time to the provider's first byte, in milliseconds; `null`\n\
+        when no request reached a provider, such as refusals and cache hits."]
+    pub ttfb_p50_ms: Option<u32>,
+    #[doc = "The 95th percentile of the time to the provider's first byte, in\n\
+        milliseconds; `null` when no request reached a provider."]
+    pub ttfb_p95_ms: Option<u32>,
 }
 
 fn parse_instant(
@@ -368,13 +571,26 @@ fn parse_instant(
     }
 }
 
+fn millis(quantiles: &[f64], at: usize) -> Option<u32> {
+    let q = *quantiles.get(at)?;
+    q.is_finite().then(|| q.round() as u32)
+}
+
+fn timeline_ids(group: Option<TimelineGroup>) -> Ids {
+    match group {
+        Some(TimelineGroup::Project) => Ids::Project,
+        Some(TimelineGroup::Key) => Ids::Key,
+        Some(TimelineGroup::Member) => Ids::Member,
+        _ => Ids::Plain,
+    }
+}
+
 async fn timeline(
     state: &AppState,
     ctx: &Ctx,
-    org: Uuid,
-    project: Option<Uuid>,
+    scope: Scope,
     q: &TimelineQuery,
-    costs: bool,
+    f: &UsageFilter,
 ) -> ApiResult<Json<List<TimelineBucket>>> {
     let to = parse_instant("to", q.to.as_deref(), ctx.now)?;
     let from = parse_instant("from", q.from.as_deref(), to - time::Duration::days(1))?;
@@ -399,39 +615,97 @@ async fn timeline(
             },
         ));
     }
-    let rows = ch_logs::timeline(super::logs::log_store(state)?, org, project, from, to, step)
-        .await
-        .map_err(super::logs::unavailable)?;
+    let group = match q.group_by.as_deref() {
+        None => None,
+        Some("model") => Some(TimelineGroup::Model),
+        Some("provider") => Some(TimelineGroup::Provider),
+        Some("key") => Some(TimelineGroup::Key),
+        Some("member") => Some(TimelineGroup::Member),
+        Some("route") => Some(TimelineGroup::Route),
+        Some("error_kind") => Some(TimelineGroup::ErrorKind),
+        Some("project") if scope.org_wide => Some(TimelineGroup::Project),
+        Some(_) => {
+            return Err(ApiError::invalid(
+                "group_by",
+                if scope.org_wide {
+                    "Use `model`, `provider`, `key`, `member`, `route`, `error_kind` or `project`."
+                } else {
+                    "Use `model`, `provider`, `key`, `member`, `route` or `error_kind`."
+                },
+            ));
+        }
+    };
+    if q.top.is_some_and(|n| !(1..=MOST_TOP).contains(&n)) {
+        return Err(ApiError::invalid("top", "`top` is out of range."));
+    }
+    let query = ch_logs::Timeline {
+        project: scope.project,
+        filter: f.parse()?,
+        failed: q.failed,
+        group,
+        top: q.top,
+    };
+    let rows = ch_logs::timeline(
+        super::logs::log_store(state)?,
+        scope.org,
+        from,
+        to,
+        step,
+        &query,
+    )
+    .await
+    .map_err(super::logs::unavailable)?;
     let format = time::format_description::well_known::Rfc3339;
-    Ok(Json(List::complete(
-        rows.into_iter()
-            .filter_map(|r| {
-                let start = time::OffsetDateTime::from_unix_timestamp(r.start_unix)
-                    .ok()?
-                    .format(&format)
-                    .ok()?;
-                Some(TimelineBucket {
-                    start,
-                    requests: r.requests,
-                    errors: r.errors,
-                    input_tokens: r.input_tokens,
-                    output_tokens: r.output_tokens,
-                    cache_read_tokens: r.cache_read_tokens,
-                    cache_write_tokens: r.cache_write_tokens,
-                    reasoning_tokens: r.reasoning_tokens,
-                    cost: costs.then(|| cost_from_raw(r.cost).normalize().to_string()),
-                })
+    let ids = timeline_ids(group);
+    let mut buckets: Vec<TimelineBucket> = rows
+        .into_iter()
+        .filter_map(|r| {
+            let start = time::OffsetDateTime::from_unix_timestamp(r.start_unix)
+                .ok()?
+                .format(&format)
+                .ok()?;
+            let reached = r.with_ttfb > 0;
+            Some(TimelineBucket {
+                start,
+                key: group.map(|_| public_key(ids, r.key)),
+                requests: r.requests,
+                errors: r.errors,
+                input_tokens: r.input_tokens,
+                output_tokens: r.output_tokens,
+                cache_read_tokens: r.cache_read_tokens,
+                cache_write_tokens: r.cache_write_tokens,
+                reasoning_tokens: r.reasoning_tokens,
+                cost: scope
+                    .costs
+                    .then(|| cost_from_raw(r.cost).normalize().to_string()),
+                duration_p50_ms: millis(&r.duration, 0).unwrap_or(r.duration_max),
+                duration_p95_ms: millis(&r.duration, 1).unwrap_or(r.duration_max),
+                duration_max_ms: r.duration_max,
+                ttfb_p50_ms: millis(&r.ttfb, 0).filter(|_| reached),
+                ttfb_p95_ms: millis(&r.ttfb, 1).filter(|_| reached),
             })
-            .collect(),
-    )))
+        })
+        .collect();
+    buckets.sort_by(|a, b| (&a.start, &a.key).cmp(&(&b.start, &b.key)));
+    Ok(Json(List::complete(buckets)))
 }
 
 #[utoipa::path(
     get,
     path = "/orgs/{org}/usage/timeline",
-    summary = "Requests across the org's projects by minute or hour, from the request log.",
+    summary = "The org's requests and latency by minute or hour, from the request log.",
+    description = "A bucket per `step` (a minute or an hour, UTC) with the requests that\n\
+    started in it across the org's projects: requests, errors, tokens, cost, and\n\
+    latency in milliseconds (`duration_*` for the whole request, `ttfb_*` to the\n\
+    provider's first byte; percentiles are estimated from a sample in buckets of\n\
+    more than 8,192 requests). Steps without requests are left out. It reads the\n\
+    request log, so it reaches back only as far as the org keeps metadata; for\n\
+    longer periods use `usage`. It takes the filters of `usage` plus `failed`;\n\
+    with `group_by` there is a bucket per step and group, `key` naming the group\n\
+    as `usage` does, and `top` keeps the busiest groups. `cost` is in USD and\n\
+    `null` without `costs.org.view`.",
     tag = "orgs",
-    params(("org" = OrgId, Path), TimelineQuery),
+    params(("org" = OrgId, Path), TimelineQuery, UsageFilter, ProjectFilter),
     responses((status = 200, body = List<TimelineBucket>))
 )]
 pub async fn org_timeline(
@@ -439,19 +713,29 @@ pub async fn org_timeline(
     ctx: Ctx,
     Path(_o): Path<String>,
     Query(q): Query<TimelineQuery>,
+    Query(f): Query<UsageFilter>,
+    Query(p): Query<ProjectFilter>,
 ) -> ApiResult<Json<List<TimelineBucket>>> {
-    let scope = ctx.org()?;
-    let costs = scope.rights.contains(OrgRight::CostsOrgView);
-    let org = scope.org.id;
-    timeline(&state, &ctx, org, None, &q, costs).await
+    let scope = org_scope(&ctx)?.narrowed(&p);
+    timeline(&state, &ctx, scope, &q, &f).await
 }
 
 #[utoipa::path(
     get,
     path = "/orgs/{org}/projects/{project}/usage/timeline",
-    summary = "The project's requests by minute or hour, from the request log.",
+    summary = "The project's requests and latency by minute or hour, from the request log.",
+    description = "A bucket per `step` (a minute or an hour, UTC) with the project's\n\
+    requests that started in it: requests, errors, tokens, cost, and latency in\n\
+    milliseconds (`duration_*` for the whole request, `ttfb_*` to the provider's\n\
+    first byte; percentiles are estimated from a sample in buckets of more than\n\
+    8,192 requests). Steps without requests are left out. It reads the request\n\
+    log, so it reaches back only as far as the org keeps metadata; for longer\n\
+    periods use `usage`. It takes the filters of `usage` plus `failed`; with\n\
+    `group_by` there is a bucket per step and group, `key` naming the group as\n\
+    `usage` does, and `top` keeps the busiest groups. `cost` is in USD and\n\
+    `null` without `costs.view`.",
     tag = "projects",
-    params(("org" = OrgId, Path), ("project" = ProjectId, Path), TimelineQuery),
+    params(("org" = OrgId, Path), ("project" = ProjectId, Path), TimelineQuery, UsageFilter),
     responses((status = 200, body = List<TimelineBucket>))
 )]
 pub async fn project_timeline(
@@ -459,9 +743,7 @@ pub async fn project_timeline(
     ctx: Ctx,
     Path(_p): Path<(String, String)>,
     Query(q): Query<TimelineQuery>,
+    Query(f): Query<UsageFilter>,
 ) -> ApiResult<Json<List<TimelineBucket>>> {
-    let scope = ctx.project()?;
-    let costs = scope.rights.contains(ProjectRight::CostsView);
-    let (org, project) = (scope.project.org_id, scope.project.id);
-    timeline(&state, &ctx, org, Some(project), &q, costs).await
+    timeline(&state, &ctx, project_scope(&ctx)?, &q, &f).await
 }

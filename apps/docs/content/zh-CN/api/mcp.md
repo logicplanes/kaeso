@@ -212,7 +212,7 @@ sequenceDiagram
 - **结果。** 工具以文本和 `structuredContent` 两种形式返回 Platform API 的 JSON。超过 200 KB 的结果会被截断；请用 `limit` 请求更小的一页。
 - **模型。** 每个工具都接受 `agent_model`，即智能体所用的模型系列：`claude`、`gpt`、`gemini`、`gemma`、`grok`、`llama`、`mistral`、`deepseek`、`qwen`、`kimi`、`glm`、`minimax`、`command`、`nova`、`phi`、`granite`、`jamba`、`ernie`、`hunyuan`、`doubao`、`yi`、`nemotron`、`olmo`、`sonar`、`reka` 或 `unknown`。Kaeso 在每次调用时保存它，并在智能体旁显示该系列的名称；其他值一律视为 `unknown`。在首次调用之前，智能体显示为 `unknown`。
 - **提示。** 读取类工具标有 `readOnlyHint`，其中包括不发送任何请求的 `post_orgs_org_projects_project_aliases_trace`；删除类工具标有 `destructiveHint`。
-- **说明。** 服务器提示智能体先用 `get_me_memberships` 列出其组织。它只列出智能体能打开的组织和项目，`get_orgs_org_members_user_rights` 中成员的权限也是如此。
+- **说明。** 服务器提示智能体先用 `get_me_memberships` 列出其组织，并说明如何由粗到细分析用量：有用量的日期（`get_orgs_org_usage_span`）；按时间段或按模型、服务商、密钥、成员、路由、项目汇总的用量，其筛选条件接受任意分组的 `key`（`get_orgs_org_usage`）；按分钟或小时的请求与延迟（`get_orgs_org_usage_timeline`）；以及峰值背后的单个请求（`get_orgs_org_projects_project_logs`）。它只列出智能体能打开的组织和项目，`get_orgs_org_members_user_rights` 中成员的权限也是如此。
 
 以下操作需要控制台会话，因此任何智能体都没有对应的工具：
 
