@@ -12,12 +12,15 @@ main() {
   dir="${KAESO_INSTALL_DIR:-kaeso}"
   version="${KAESO_VERSION:-latest}"
   install_docker="${KAESO_INSTALL_DOCKER:-}"
+  open_browser=yes
+  [ "${KAESO_NO_OPEN:-}" != yes ] || open_browser=no
   while [ $# -gt 0 ]; do
     case "$1" in
       --domain) domain="${2:?--domain needs a value}"; shift 2 ;;
       --dir) dir="${2:?--dir needs a value}"; shift 2 ;;
       --version) version="${2:?--version needs a value}"; shift 2 ;;
       --install-docker) install_docker=yes; shift ;;
+      --no-open) open_browser=no; shift ;;
       -h | --help) usage; return 0 ;;
       *) fail "Unknown option $1. Run with --help to see the options." ;;
     esac
@@ -55,6 +58,7 @@ main() {
   else
     fresh=yes
     [ -n "$domain" ] || domain="$(choose_domain)"
+    check_dns "$domain"
     say "Installing Kaeso in $here"
   fi
 
@@ -100,7 +104,9 @@ main() {
   done
   if [ -n "$missing" ]; then
     say "Downloading Kaeso's images, about 2 GB; this takes a minute or two"
-    docker compose pull --quiet </dev/null || fail "Couldn't download Kaeso's images. Check the connection and run the installer again."
+    quiet=--quiet
+    [ ! -t 2 ] || quiet=
+    docker compose pull $quiet </dev/null || fail "Couldn't download Kaeso's images. Check the connection and run the installer again."
   fi
 
   # Docker Desktop, Colima and OrbStack share only some folders, such as your home folder, with their Linux machine.
@@ -127,11 +133,15 @@ main() {
   fi
   rm -f "$log"
 
+  certificate_ready || explain_certificate
+
   setup="$(docker compose exec -T gateway kaeso setup-link </dev/null 2>&1 || true)"
-  if printf '%s\n' "$setup" | grep -q '/setup#token='; then
+  link="$(printf '%s\n' "$setup" | grep -m1 -oE 'https?://[^[:space:]]*/setup#token=[^[:space:]]+' || true)"
+  if [ -n "$link" ]; then
     say "Kaeso is running. Open this link to create the first user:"
     echo
     printf '%s\n' "$setup"
+    open_link "$link"
   else
     say "Kaeso is running at $(address). Sign in there."
   fi
@@ -146,6 +156,9 @@ main() {
     echo "https://docs.kaeso.app/self-hosting/email"
     echo
     echo "Keep a copy of $here/master-keys apart from your backups: without it, stored provider keys can't be decrypted."
+    echo
+    echo "Next, add a provider key and create an API key in the console:"
+    echo "https://docs.kaeso.app/get-started/quick-start#add-a-provider-key"
   fi
 }
 
@@ -159,9 +172,12 @@ Usage: curl -fsSL https://kaeso.app/install.sh | sh -s -- [options]
   --dir DIR          the folder to install into (default: ./kaeso)
   --version VERSION  the release to install (default: the newest stable release)
   --install-docker   on Linux, install Docker Engine first if it's missing, without asking
+  --no-open          don't open the setup link in the browser
 
-The environment variables KAESO_DOMAIN, KAESO_INSTALL_DIR, KAESO_VERSION and KAESO_INSTALL_DOCKER=yes set the same options.
+The environment variables KAESO_DOMAIN, KAESO_INSTALL_DIR, KAESO_VERSION, KAESO_INSTALL_DOCKER=yes and KAESO_NO_OPEN=yes
+set the same options.
 Running it again in the same folder keeps the settings and the master key, and starts Kaeso if it's stopped.
+When Docker Desktop, OrbStack or Colima is installed but stopped, the installer starts it.
 EOF
 }
 
@@ -219,10 +235,12 @@ docker_ready() {
       *"permission denied"*)
         fail "$(id -un) can't use Docker. Add it to the docker group with sudo usermod -aG docker $(id -un), log in again and run the installer again." ;;
       *)
-        if [ "$(uname -s)" = Linux ] && command -v systemctl >/dev/null 2>&1; then
-          fail "Docker isn't running. Start it with sudo systemctl start docker and run the installer again."
-        fi
-        fail "Docker isn't running. Start it and run the installer again." ;;
+        if ! start_docker; then
+          if [ "$(uname -s)" = Linux ] && command -v systemctl >/dev/null 2>&1; then
+            fail "Docker isn't running. Start it with sudo systemctl start docker and run the installer again."
+          fi
+          fail "Docker isn't running. Start it and run the installer again."
+        fi ;;
     esac
   fi
 
@@ -240,8 +258,61 @@ docker_ready() {
   # The documented minimum is 4 GB; Docker reports a little less than the machine has.
   memory="$(docker info --format '{{.MemTotal}}' </dev/null)"
   if [ "$memory" -gt 0 ] 2>/dev/null && [ "$memory" -lt 3500000000 ]; then
-    note "Docker has $((memory / 1000000)) MB of memory, and Kaeso needs 4 GB. ClickHouse may run out of memory: give Docker more, or turn request logs off (https://docs.kaeso.app/self-hosting/installation#turn-request-logs-off)."
+    more="give Docker more"
+    case "$(docker context show 2>/dev/null </dev/null)" in
+      colima*) more="give Colima more with colima stop and colima start --memory 4" ;;
+    esac
+    note "Docker has $((memory / 1000000)) MB of memory, and Kaeso needs 4 GB. ClickHouse may run out of memory: $more, or turn request logs off (https://docs.kaeso.app/self-hosting/installation#turn-request-logs-off)."
   fi
+}
+
+# Docker Desktop, OrbStack and Colima don't always start with the computer. The Docker context names the one in use.
+start_docker() {
+  case "$(uname -s)" in
+    Darwin)
+      context="$(docker context show 2>/dev/null </dev/null)" || context=
+      profile=
+      case "$context" in
+        orbstack) engine=orbstack ;;
+        colima) engine=colima ;;
+        colima-*) engine=colima profile="${context#colima-}" ;;
+        desktop-linux) engine=desktop ;;
+        *)
+          if command -v orb >/dev/null 2>&1; then
+            engine=orbstack
+          elif command -v colima >/dev/null 2>&1; then
+            engine=colima
+          elif [ -d /Applications/Docker.app ] || [ -d "$HOME/Applications/Docker.app" ]; then
+            engine=desktop
+          else
+            return 1
+          fi ;;
+      esac
+      case "$engine" in
+        orbstack)
+          command -v orb >/dev/null 2>&1 || return 1
+          say "Starting OrbStack"
+          orb start </dev/null >/dev/null 2>&1 || return 1 ;;
+        colima)
+          command -v colima >/dev/null 2>&1 || return 1
+          say "Starting Colima; this takes a minute"
+          colima start ${profile:+--profile "$profile"} </dev/null >/dev/null 2>&1 || return 1 ;;
+        desktop)
+          say "Starting Docker Desktop; this takes a minute"
+          open -a Docker </dev/null >/dev/null 2>&1 || return 1 ;;
+      esac ;;
+    Linux)
+      [ "$(id -u)" -eq 0 ] && command -v systemctl >/dev/null 2>&1 || return 1
+      say "Starting Docker"
+      systemctl start docker </dev/null >/dev/null 2>&1 || return 1 ;;
+    *) return 1 ;;
+  esac
+  tries=0
+  until info="$(docker info 2>&1 </dev/null)"; do
+    tries=$((tries + 1))
+    [ "$tries" -lt 90 ] || return 1
+    sleep 2
+  done
 }
 
 get_docker() {
@@ -329,6 +400,75 @@ choose_domain() {
     clean_domain "$answer" && return 0
     printf '"%s" is not a domain. Give one such as kaeso.example.com, or localhost.\n' "$answer" >/dev/tty
   done
+}
+
+# Caddy signs these itself instead of asking a public certificate authority.
+own_certificate() {
+  case "$1" in
+    localhost | *.localhost | *.local | *.internal | *.home.arpa | :*) return 0 ;;
+    *[!0-9.]*) return 1 ;;
+    *) return 0 ;;
+  esac
+}
+
+resolves() {
+  if command -v getent >/dev/null 2>&1; then
+    getent hosts "$1" >/dev/null 2>&1
+  elif command -v dscacheutil >/dev/null 2>&1; then
+    dscacheutil -q host -a name "$1" 2>/dev/null | grep -q address
+  elif command -v host >/dev/null 2>&1; then
+    host "$1" >/dev/null 2>&1
+  else
+    return 0
+  fi
+}
+
+check_dns() {
+  own_certificate "$1" && return 0
+  resolves "$1" && return 0
+  if can_ask; then
+    ask "$1 has no DNS record yet, so Caddy can't get its certificate. Install anyway? [y/N] "
+    case "$answer" in
+      y | Y | yes | Yes) return 0 ;;
+      *) fail "Point an A or AAAA record for $1 at this server, wait until it resolves, and run the installer again. To try Kaeso first, use --domain localhost." ;;
+    esac
+  fi
+  note "$1 has no DNS record yet, so Caddy can't get its certificate. Point an A or AAAA record at this server; Caddy keeps trying until it resolves."
+}
+
+# Asks Caddy on this machine, so a router that can't loop back to its own public address doesn't matter.
+certificate_ready() {
+  own_certificate "$domain" && return 0
+  [ -z "$(sed -n 's/^KAESO_PUBLIC_URL=//p' .env | head -n 1)" ] || return 0
+  command -v curl >/dev/null 2>&1 || return 0
+  tries=0
+  until curl -fsS -o /dev/null --max-time 5 --resolve "$domain:443:127.0.0.1" "https://$domain/healthz" </dev/null 2>/dev/null; do
+    tries=$((tries + 1))
+    [ "$tries" -lt 30 ] || return 1
+    sleep 2
+  done
+}
+
+explain_certificate() {
+  note "Caddy hasn't got a certificate for $domain yet, so browsers can't open Kaeso there."
+  answer="$(docker compose logs --no-log-prefix --tail 200 caddy </dev/null 2>/dev/null | grep 'could not get certificate' | sed -n 's/.*"error":"\([^"]*\)".*/\1/p' | tail -n 1)"
+  [ -z "$answer" ] || note "The certificate authority answered: $answer"
+  note "Check that the DNS record of $domain points at this server and that ports 80 and 443 are open to the internet. Caddy keeps trying; docker compose logs caddy in $here shows its progress."
+}
+
+open_link() {
+  [ "$open_browser" = yes ] && [ -t 1 ] && [ -z "${SSH_CONNECTION:-}" ] || return 0
+  if [ "$(uname -s)" = Darwin ]; then
+    opener=open
+  elif { [ -n "${DISPLAY:-}" ] || [ -n "${WAYLAND_DISPLAY:-}" ]; } && command -v xdg-open >/dev/null 2>&1; then
+    opener=xdg-open
+  else
+    return 0
+  fi
+  if "$opener" "$1" </dev/null >/dev/null 2>&1; then
+    echo
+    echo "It's open in your browser."
+  fi
 }
 
 address() {
