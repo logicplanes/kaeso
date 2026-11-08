@@ -142,6 +142,7 @@ KPP 的值和错误都按值返回。`KppError` 和部分枚举变体较大，�
 | `sampling.frequency_penalty`、`.presence_penalty` | 语义 | 仅限 OpenAI Chat Completions；其他目标返回 `Unsupported`（[采样参数](cross-format.md#采样参数)）。 |
 | `user` | 提示 | 用于滥用监控的最终用户 ID，从不改变输出。Chat 配置中没有最终用户字段的服务商收不到它，Chat 应用与 `safety_identifier` 一起发送的 `user` 也不会发送（[服务商配置](openai-chat-providers.md#服务商配置)）。 |
 | `stream` | 语义 | |
+| `output_modalities`、`audio_output.voice`、`.format` | 语义 | 只有 Chat Completions 和 Gemini 生成音频，只有 Gemini 生成图像；声音只会传给列出它的目标，格式从不转码（[音频和图像回复](cross-format.md#音频和图像回复)）。 |
 | `extras.fields` | 语义 | 只写回来源方言；发往其他方言时返回 `Unsupported`，除非该字段在 [Extras 允许列表](cross-format.md#extras)中。 |
 | `extras.form` | 提示 | 用于呈现的形式标记，其他方言会忽略。 |
 
@@ -162,6 +163,7 @@ KPP 的值和错误都按值返回。`KppError` 和部分枚举变体较大，�
 | `Text.cache`、`Image.cache`、`Document.cache`、`Audio.cache`、`Video.cache`、`ToolCall.cache`、`ToolResult.cache` | 提示 | 发往 OpenAI 时丢弃，因为 OpenAI 会自行缓存（[缓存提示](cross-format.md#缓存提示)）。 |
 | `Image.source` | 语义 | `FileId` 只能用于签发它的服务商（[文件](cross-format.md#文件)）。OpenAI Chat Completions 只接受 URL 或 base64 形式的图片。 |
 | `Document.source` | 语义 | 文本来源仅限 Anthropic。OpenAI Chat Completions 也不接受 URL 来源。 |
+| `Audio.transcript` | 语义 | 目标无法接收音频本身时，作为助手的文本发送（[音频和图像回复](cross-format.md#音频和图像回复)）。 |
 | `Audio.source`、`Video.source` | 语义 | 每个目标接受其文档列出的内容，否则拒绝（[音频和视频](cross-format.md#音频和视频)）。 |
 | `Document.title`、`.context` | 语义 | 仅限 Anthropic；发往 OpenAI 时返回 `Unsupported`。 |
 | `Document.citations` | 语义 | 仅限 Anthropic；OpenAI 无法引用文档，返回 `Unsupported`。 |

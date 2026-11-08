@@ -452,6 +452,9 @@ pub(crate) enum Setting {
     OutputFormat,
     Reasoning,
     ReasoningEffort,
+    Modalities,
+    Voice,
+    AudioFormat,
 }
 
 pub(crate) fn app_field(r: &GenerateRequest, setting: Setting, target: DialectId) -> &'static str {
@@ -477,7 +480,45 @@ pub(crate) fn app_field(r: &GenerateRequest, setting: Setting, target: DialectId
         (Setting::ReasoningEffort, A) => "output_config.effort",
         (Setting::ReasoningEffort, C) => "reasoning_effort",
         (Setting::ReasoningEffort, _) => "reasoning.effort",
+        (Setting::Modalities, G) => "generationConfig.responseModalities",
+        (Setting::Modalities, _) => "modalities",
+        (Setting::Voice, G) => "generationConfig.speechConfig",
+        (Setting::Voice, _) => "audio.voice",
+        (Setting::AudioFormat, G) => "generationConfig.responseFormat.audio",
+        (Setting::AudioFormat, _) => "audio.format",
     }
+}
+
+/// Refuses output modalities other than text, and audio settings, for a target that replies with
+/// text only; `what` is how its replies are described.
+pub(crate) fn check_text_only(
+    r: &GenerateRequest,
+    target: DialectId,
+    what: &str,
+) -> Result<(), KppError> {
+    if let Some(m) = r
+        .output_modalities
+        .iter()
+        .find(|m| **m != kaeso_kpp::Modality::Text)
+    {
+        return Err(KppError::unsupported_by(
+            format!("{} output", m.as_wire()),
+            target,
+            format!(
+                "{what} hold text only; send the request to a model of a format that writes it."
+            ),
+        )
+        .with_param(app_field(r, Setting::Modalities, target)));
+    }
+    if r.audio_output.is_some() {
+        return Err(KppError::unsupported_by(
+            "audio output settings",
+            target,
+            format!("{what} hold text only; remove the audio settings."),
+        )
+        .with_param(app_field(r, Setting::Voice, target)));
+    }
+    Ok(())
 }
 
 pub fn check_foreign(req: &Request, target: &Origin) -> Result<(), KppError> {
@@ -495,6 +536,9 @@ pub fn check_foreign(req: &Request, target: &Origin) -> Result<(), KppError> {
 fn check_generate(r: &GenerateRequest, target: &Origin) -> Result<(), KppError> {
     let dialect = target.dialect;
     check_extras(&r.extras, dialect, "", "request")?;
+    if let Some(audio) = &r.audio_output {
+        check_extras(&audio.extras, dialect, "audio_output", "audio_output")?;
+    }
     for (i, b) in r.system.iter().enumerate() {
         check_block(b, target, &format!("system[{i}]"))?;
     }

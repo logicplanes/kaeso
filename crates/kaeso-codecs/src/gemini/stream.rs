@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
 use kaeso_kpp::{
-    Block, BlockDelta, BlockHeader, BlockStart, BlockStop, Delta, Extras, KppError, OpaqueKind,
-    Origin, RawItem, RawJson, ReasoningHeader, ResponseDelta, ResponseStart, ResponseStop,
-    StreamEvent, ToolCallHeader,
+    AudioDelta, AudioHeader, Block, BlockDelta, BlockHeader, BlockStart, BlockStop, Delta, Extras,
+    KppError, OpaqueKind, Origin, RawItem, RawJson, ReasoningHeader, ResponseDelta, ResponseStart,
+    ResponseStop, StreamEvent, ToolCallHeader,
 };
 use serde_json::{Map, Value, json};
 
@@ -32,6 +32,7 @@ pub(crate) const KEEPALIVE_FRAME: &[u8] = b"\n";
 enum Open {
     Text,
     Reasoning,
+    Audio,
 }
 
 pub(crate) struct Decoder {
@@ -46,6 +47,27 @@ pub(crate) struct Decoder {
     saw_calls: bool,
     seed: String,
     generated: usize,
+    audio_media: String,
+}
+
+// A part that is only audio bytes, as Gemini's speech models stream them (a chunk of 16-bit PCM
+// each), continues the open audio block; a part with anything else beside stays whole.
+fn audio_only(raw: &Raw) -> Option<(String, String)> {
+    let Ok(Value::Object(part)) = serde_json::from_str::<Value>(raw.get()) else {
+        return None;
+    };
+    let [(key, Value::Object(blob))] = part.iter().collect::<Vec<_>>()[..] else {
+        return None;
+    };
+    if key != "inlineData" || blob.len() != 2 {
+        return None;
+    }
+    match (blob.get("mimeType"), blob.get("data")) {
+        (Some(Value::String(mime)), Some(Value::String(data))) if crate::media::is_audio(mime) => {
+            Some((mime.clone(), data.clone()))
+        }
+        _ => None,
+    }
 }
 
 impl Decoder {
@@ -62,6 +84,7 @@ impl Decoder {
             saw_calls: false,
             seed: String::new(),
             generated: 0,
+            audio_media: String::new(),
         }
     }
 
@@ -91,6 +114,26 @@ impl Decoder {
     }
 
     fn part(&mut self, raw: &Raw, out: &mut Vec<StreamEvent>) -> Result<(), KppError> {
+        if let Some((mime, data)) = audio_only(raw) {
+            let index = match self.open {
+                Some((i, Open::Audio)) if self.audio_media == mime => i,
+                _ => {
+                    self.close(out);
+                    let header = BlockHeader::Audio(AudioHeader::new(mime.clone()));
+                    let i = self.start(header, self.extras(), out);
+                    self.open = Some((i, Open::Audio));
+                    self.audio_media = mime;
+                    i
+                }
+            };
+            Self::delta(
+                index,
+                Delta::Audio(AudioDelta::new(Some(data), None)),
+                self.extras(),
+                out,
+            );
+            return Ok(());
+        }
         let mut blocks = Vec::new();
         let mut dec = PartDecoder {
             origin: &self.origin,
@@ -434,6 +477,7 @@ enum Kind {
     Thought,
     Hidden,
     Tool,
+    Audio(String),
     Other,
 }
 
@@ -618,6 +662,7 @@ impl Encoder {
                         );
                         Kind::Tool
                     }
+                    BlockHeader::Audio(h) => Kind::Audio(h.media_type.clone()),
                     BlockHeader::Unknown(item) => {
                         if reply_policy(Some(&item.origin), D) == ReplyPolicy::Keep {
                             let part: Value = item.raw.to_value().map_err(provider_error)?;
@@ -666,6 +711,12 @@ impl Encoder {
                                 let part = json!({"text": "", "thought": true, "thoughtSignature": o.data});
                                 self.push(part, out)?;
                             }
+                        }
+                    }
+                    (Kind::Audio(media), Delta::Audio(piece)) => {
+                        if let Some(data) = &piece.data {
+                            let part = json!({"inlineData": {"mimeType": media, "data": data}});
+                            self.push(part, out)?;
                         }
                     }
                     (Kind::Tool, Delta::ToolArguments(a)) => {

@@ -34,6 +34,7 @@ pub(crate) fn check(
         .with_param(field));
     }
     if generate {
+        crate::cross::check_text_only(r, D, "Anthropic Messages replies")?;
         check_output(r)?;
         check_sampling(r)?;
         check_reasoning(r)?;

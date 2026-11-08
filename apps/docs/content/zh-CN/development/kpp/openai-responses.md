@@ -96,6 +96,7 @@ order: 7
 - 未知的推理模式，以其线路值命名；
 - 文本文档、文档的 `title`/`context`/`citations`，以及文本形式的图像来源；
 - 音频块和视频块，因为 `InputContent` 只有 `input_text`、`input_image` 和 `input_file`（`audio block`、`video block`）；OpenRouter 的 `input_audio` 和 `input_video` 部分不属于 OpenAI，保持为 `Block::Unknown`；
+- 文本以外的输出模态和音频设置（`audio output`、`image output`、`audio output settings`）：`CreateResponse` 没有 `modalities` 也没有 `audio` 参数，其 `OutputMessageContent` 只包含文本和拒绝。来自 Gemini 的图像在 Responses 回复中被省略，而不是显示为 `image_generation_call`，因为后者属于 `image_generation` 工具；
 - `cross::check_foreign` 拒绝的一切（外来 extras、未知的块、工具和工具选择、外来文件 ID、外来引用；参见[请求](cross-format.md#请求)）。
 
 无法回放的推理块会被丢弃（参见[推理](reasoning.md)），来自其他方言的缓存提示也会被丢弃（参见[缓存提示](cross-format.md#缓存提示)）。`ToolResult::is_error` 同样会被丢弃：它是提示字段，失败情况由内容本身描述（参见[工具错误](cross-format.md#工具错误)）。

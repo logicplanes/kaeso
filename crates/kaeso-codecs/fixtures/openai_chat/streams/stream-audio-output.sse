@@ -1,0 +1,16 @@
+data: {"id":"chatcmpl-AUDIOstream0000000000000001","object":"chat.completion.chunk","created":1791734800,"model":"gpt-audio-mini-2025-12-15","service_tier":"default","system_fingerprint":"fp_9c0636e4c8","choices":[{"index":0,"delta":{"role":"assistant","content":null,"refusal":null,"audio":{"id":"audio_7f3ab2c1d4e5f60718293a4b5c6d7e8f","transcript":"Hello"}},"logprobs":null,"finish_reason":null}],"usage":null}
+
+data: {"id":"chatcmpl-AUDIOstream0000000000000001","object":"chat.completion.chunk","created":1791734800,"model":"gpt-audio-mini-2025-12-15","service_tier":"default","system_fingerprint":"fp_9c0636e4c8","choices":[{"index":0,"delta":{"audio":{"transcript":"!"}},"logprobs":null,"finish_reason":null}],"usage":null}
+
+data: {"id":"chatcmpl-AUDIOstream0000000000000001","object":"chat.completion.chunk","created":1791734800,"model":"gpt-audio-mini-2025-12-15","service_tier":"default","system_fingerprint":"fp_9c0636e4c8","choices":[{"index":0,"delta":{"audio":{"data":"AAAAAP//AQD+/w=="}},"logprobs":null,"finish_reason":null}],"usage":null}
+
+data: {"id":"chatcmpl-AUDIOstream0000000000000001","object":"chat.completion.chunk","created":1791734800,"model":"gpt-audio-mini-2025-12-15","service_tier":"default","system_fingerprint":"fp_9c0636e4c8","choices":[{"index":0,"delta":{"audio":{"data":"AgD9/wMA/P8EAA=="}},"logprobs":null,"finish_reason":null}],"usage":null}
+
+data: {"id":"chatcmpl-AUDIOstream0000000000000001","object":"chat.completion.chunk","created":1791734800,"model":"gpt-audio-mini-2025-12-15","service_tier":"default","system_fingerprint":"fp_9c0636e4c8","choices":[{"index":0,"delta":{"audio":{"expires_at":1791738400}},"logprobs":null,"finish_reason":null}],"usage":null}
+
+data: {"id":"chatcmpl-AUDIOstream0000000000000001","object":"chat.completion.chunk","created":1791734800,"model":"gpt-audio-mini-2025-12-15","service_tier":"default","system_fingerprint":"fp_9c0636e4c8","choices":[{"index":0,"delta":{},"logprobs":null,"finish_reason":"stop"}],"usage":null}
+
+data: {"id":"chatcmpl-AUDIOstream0000000000000001","object":"chat.completion.chunk","created":1791734800,"model":"gpt-audio-mini-2025-12-15","service_tier":"default","system_fingerprint":"fp_9c0636e4c8","choices":[],"usage":{"prompt_tokens":14,"completion_tokens":31,"total_tokens":45,"prompt_tokens_details":{"cached_tokens":0,"audio_tokens":0},"completion_tokens_details":{"reasoning_tokens":0,"audio_tokens":25,"accepted_prediction_tokens":0,"rejected_prediction_tokens":0}}}
+
+data: [DONE]
+

@@ -699,6 +699,40 @@ fn audio_and_video_need_a_model_that_takes_them() {
     assert_eq!(refused.param, Some("contents"));
 }
 
+#[test]
+fn audio_and_image_output_need_a_model_that_writes_them() {
+    use kaeso_kpp::{AudioOutput, Modality};
+    let tts = eff(&entry("google", "gemini-3.1-flash-tts-preview"));
+    let flash = eff(&entry("google", "gemini-3.5-flash"));
+    let image = eff(&entry("google", "gemini-3.1-flash-image"));
+    let mut speech = user(vec![Block::text("Say hi.")]);
+    speech.output_modalities = vec![Modality::Text, Modality::Audio];
+    speech.audio_output = Some(AudioOutput::new(Some("Kore".into()), None));
+    assert!(check(speech.clone(), DialectId::OpenAiChat, &tts).is_ok());
+    assert_eq!(
+        check(speech.clone(), DialectId::OpenAiChat, &flash).unwrap_err(),
+        "The model `gemini-3.5-flash` does not produce audio."
+    );
+    let mut req = Request::Generate(speech);
+    assert_eq!(
+        prepare(&mut req, DialectId::Gemini, &flash)
+            .unwrap_err()
+            .param,
+        Some("generationConfig.responseModalities")
+    );
+    assert_eq!(
+        check(user(vec![Block::text("Hi")]), DialectId::OpenAiChat, &tts).unwrap_err(),
+        "The model `gemini-3.1-flash-tts-preview` does not produce text."
+    );
+    let mut draw = user(vec![Block::text("Draw a circle.")]);
+    draw.output_modalities = vec![Modality::Text, Modality::Image];
+    assert!(check(draw.clone(), DialectId::Gemini, &image).is_ok());
+    assert_eq!(
+        check(draw, DialectId::Gemini, &flash).unwrap_err(),
+        "The model `gemini-3.5-flash` does not produce images."
+    );
+}
+
 fn effort_of(req: &Request) -> Option<&ReasoningEffort> {
     match req {
         Request::Generate(g) => g.reasoning.as_ref().and_then(|r| r.effort.as_ref()),

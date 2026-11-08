@@ -137,7 +137,22 @@ pub enum BlockHeader {
     ToolCall(ToolCallHeader),
     Reasoning(ReasoningHeader),
     Refusal,
+    Audio(AudioHeader),
     Unknown(RawItem),
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[non_exhaustive]
+pub struct AudioHeader {
+    pub media_type: String,
+}
+
+impl AudioHeader {
+    pub fn new(media_type: impl Into<String>) -> Self {
+        AudioHeader {
+            media_type: media_type.into(),
+        }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -185,7 +200,23 @@ pub enum Delta {
     Opaque(Opaque),
     Citation(Citation),
     Refusal(String),
+    Audio(AudioDelta),
     Unknown(RawItem),
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[non_exhaustive]
+pub struct AudioDelta {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub data: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub transcript: Option<String>,
+}
+
+impl AudioDelta {
+    pub fn new(data: Option<String>, transcript: Option<String>) -> Self {
+        AudioDelta { data, transcript }
+    }
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -225,6 +256,14 @@ mod tests {
             StreamEvent::BlockStart(BlockStart::new(
                 2,
                 BlockHeader::Reasoning(ReasoningHeader::new(DialectId::AnthropicMessages)),
+            )),
+            StreamEvent::BlockStart(BlockStart::new(
+                3,
+                BlockHeader::Audio(AudioHeader::new("audio/wav")),
+            )),
+            StreamEvent::BlockDelta(BlockDelta::new(
+                3,
+                Delta::Audio(AudioDelta::new(Some("UklGRg==".into()), Some("Hi".into()))),
             )),
             StreamEvent::BlockStop(BlockStop::new(0)),
             StreamEvent::ResponseDelta(ResponseDelta::new(Some(StopReason::ToolUse), None)),

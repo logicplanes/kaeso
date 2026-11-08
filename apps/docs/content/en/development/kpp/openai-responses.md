@@ -96,6 +96,7 @@ The error names the field, never a parser position, and sets `param`: `` The req
 - unknown reasoning modes, named by their wire value;
 - text documents, document `title`/`context`/`citations`, and text image sources;
 - audio and video blocks, because `InputContent` has only `input_text`, `input_image` and `input_file` (`audio block`, `video block`); OpenRouter's `input_audio` and `input_video` parts, which OpenAI doesn't have, stay `Block::Unknown`;
+- output modalities other than text and audio settings (`audio output`, `image output`, `audio output settings`): `CreateResponse` has no `modalities` and no `audio` parameter, and its `OutputMessageContent` holds text and refusals only. Images from Gemini are left out of a Responses reply rather than shown as an `image_generation_call`, which belongs to the `image_generation` tool;
 - everything `cross::check_foreign` refuses (foreign extras, unknown blocks, tools and choices, foreign file ids, foreign citations; see [requests](cross-format.md#requests)).
 
 Reasoning blocks that can't be replayed are dropped ([reasoning](reasoning.md)), and so are cache hints from other dialects ([cache hints](cross-format.md#cache-hints)). `ToolResult::is_error` is dropped too: it is a hint, and the content describes the failure ([tool errors](cross-format.md#tool-errors)).

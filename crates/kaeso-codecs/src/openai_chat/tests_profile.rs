@@ -476,7 +476,8 @@ fn a_refused_field_kaeso_models_is_found_as_well_as_one_it_passes_through() {
         "frequency_penalty": 0, "presence_penalty": 0, "n": 1, "reasoning_effort": "low",
         "response_format": {}, "tools": [{}], "tool_choice": "auto",
         "parallel_tool_calls": true, "user": "u", "safety_identifier": "s",
-        "stream": true, "stream_options": {}
+        "stream": true, "stream_options": {}, "modalities": ["text"],
+        "audio": {"voice": "marin"}
     }))
     .unwrap();
     for field in crate::wire::struct_fields::<ChatRequest>() {

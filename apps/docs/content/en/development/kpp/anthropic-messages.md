@@ -141,6 +141,7 @@ What `encode_request` writes for a KPP request that did not come from Anthropic 
 | base64 images other than JPEG, PNG, GIF or WebP; text image sources | `Unsupported` | `Base64ImageSource`. |
 | base64 documents other than `application/pdf`; text documents other than `text/plain` | `Unsupported` | `Base64PDFSource`, `PlainTextSource`. |
 | `Block::Audio`; `Block::Video` unless the profile has `video_media_types` | `Unsupported` (`audio block`, `video block`) | The content union has neither; the message asks for a transcript or frames as images. |
+| `output_modalities` other than text; `audio_output` | `Unsupported` (`audio output`, `image output`, `audio output settings`) | Replies hold text only ([audio and image replies](cross-format.md#audio-and-image-replies)). |
 | tool call arguments from another dialect that are not an object | an object: text as `{"input": text}`, other values as `{"input": value}`, `null` as `{}`; named in `kaeso-adapted` | Anthropic refuses the whole request otherwise ([tool call arguments](cross-format.md#tool-call-arguments)). |
 | `tool_use.input` from an Anthropic app that is not an object; tool parameters that are not an object | `Unsupported` | `input` and `input_schema` are objects. |
 | `Request::CountTokens` from another dialect | `/v1/messages/count_tokens` without `max_tokens`, sampling, `metadata` and `stream` | They don't change the input count, and the endpoint rejects them. An Anthropic app's own token-counting request is sent as received. |

@@ -296,6 +296,8 @@
   "errors.model.forcedTool": "The model `{model}` does not accept {choice}; send `auto` and name the tool in the prompt.",
   "errors.model.generationOnly": "The model `{model}` is a generation model; it cannot create embeddings.",
   "errors.model.noAudio": "The model `{model}` does not accept audio.",
+  "errors.model.noAudioOutput": "The model `{model}` does not produce audio.",
+  "errors.model.noImageOutput": "The model `{model}` does not produce images.",
   "errors.model.noImages": "The model `{model}` does not accept images.",
   "errors.model.noPdf": "The model `{model}` does not accept PDF documents.",
   "errors.model.noReasoning": "The model `{model}` does not support reasoning.",

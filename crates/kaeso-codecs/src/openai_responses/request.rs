@@ -603,7 +603,10 @@ pub(super) fn check(req: &Request, target: &Origin) -> Result<(), KppError> {
     check_rules(req)?;
     check_foreign(req, target)?;
     match req {
-        Request::Generate(r) => check_output_limit(r),
+        Request::Generate(r) => {
+            crate::cross::check_text_only(r, DIALECT, "OpenAI Responses replies")?;
+            check_output_limit(r)
+        }
         _ => Ok(()),
     }
 }

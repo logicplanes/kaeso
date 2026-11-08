@@ -19,7 +19,7 @@ Look up any field of the Gemini API here: where it goes in KPP and the source of
 ## How to read the tables
 
 - **KPP**: the typed field the wire value maps to.
-- **fields**: kept raw in `Extras::fields`, bound to `gemini` (or `gemini_embeddings`). Other dialects refuse them with `Unsupported` ([extras](cross-format.md#extras)). Nested objects use dotted key paths, such as `generationConfig.responseModalities`.
+- **fields**: kept raw in `Extras::fields`, bound to `gemini` (or `gemini_embeddings`). Other dialects refuse them with `Unsupported` ([extras](cross-format.md#extras)). Nested objects use dotted key paths, such as `generationConfig.imageConfig`.
 - **form**: a codec-private presentation marker in `Extras::form`, ignored by other dialects. `verbatim` means the generic `wire::Ext` mechanism (`null`, `false` and `[]` spellings).
 - **raw**: kept whole in a `RawItem` or `RawUsage`.
 - **Own** data has extras or an origin of `gemini`; **foreign** data comes from another dialect.
@@ -62,7 +62,10 @@ Schema `GenerateContentRequest`.
 | `responseMimeType: application/json` alone | `output = JsonObject` | |
 | Any other `responseMimeType`, and a schema without `application/json` | fields `generationConfig.*` | |
 | `generationConfig.thinkingConfig` | `reasoning` | See [thinking](#thinking). |
-| `generationConfig.responseModalities`, `.speechConfig`, `.imageConfig`, `.mediaResolution`, `.responseLogprobs`, `.logprobs`, `.audioTranscriptionConfig`, `.translationConfig`, `.enableAffectiveDialog`, `.enableEnhancedCivicAnswers`, `.responseFormat` | fields `generationConfig.*` | |
+| `generationConfig.imageConfig`, `.mediaResolution`, `.responseLogprobs`, `.logprobs`, `.audioTranscriptionConfig`, `.translationConfig`, `.enableAffectiveDialog`, `.enableEnhancedCivicAnswers`, `.responseFormat` | fields `generationConfig.*` | |
+| `generationConfig.responseModalities` | `output_modalities` | `TEXT`, `IMAGE`, `AUDIO` ↔ `Text`, `Image`, `Audio`; other values as written; `[]`: form `modalities_empty`. From other dialects: `["AUDIO"]` when they ask for audio, because a Chat app's `["text", "audio"]` means audio with its transcript and Gemini's speech models answer an exact `["AUDIO"]` only. |
+| `generationConfig.speechConfig.voiceConfig.prebuiltVoiceConfig.voiceName`, or `.voiceConfig.voice` | `audio_output.voice` | form `voice` names the spelling; `languageCode`, `multiSpeakerVoiceConfig` and other keys: extras of `audio_output`, refused across dialects. From other dialects: a prebuilt voice the speech guide lists (Zephyr, Puck, Charon, Kore and 26 more), else `Unsupported`. |
+| `generationConfig.responseFormat` with only `audio.mimeType` `AUDIO_WAV`, `AUDIO_MP3` or `AUDIO_L16` (at 24 kHz) | `audio_output.format` `Wav`, `Mp3`, `Pcm16` | Any other `responseFormat`, such as `AUDIO_MULAW` or an image format: field `generationConfig.responseFormat`. From other dialects: `flac`, `opus` and `aac` are `Unsupported`; nothing is transcoded. |
 | `safetySettings`, `cachedContent`, `labels`, `serviceTier`, `store`, `continuationToken` | fields | |
 | `model` (in a body) | form `model` | The path decides the model. |
 
@@ -112,6 +115,7 @@ Schema `Part`. A part carries exactly one of `text`, `inlineData`, `fileData`, `
 - **Strict tools.** A function tool with `strict: true` and an automatic `tool_choice` sends `mode: VALIDATED`, which checks calls against their schemas.
 - **Hosted web search** is [left out](cross-format.md#tools-left-out).
 - **Cache hints** are dropped: Gemini caches implicitly.
+- **Audio replies** from other dialects reach Gemini apps as `inlineData` with their media type; a transcript has no place there and is left out.
 - **`user`** is dropped: Gemini has no end-user field.
 
 ### Requests from google-genai
@@ -190,6 +194,7 @@ A count from another dialect with a system prompt or tools goes as `generateCont
 
 `streamGenerateContent?alt=sse` sends every chunk as a whole `GenerateContentResponse` in a `data:` line. Function calls arrive whole: the documentation has no streamed function call arguments.
 
+- **Audio.** A part that holds only `inlineData` audio, as speech models stream 16-bit PCM pieces (`streams/recorded-stream-speech.sse`), opens an audio block, and the next such parts of the same media type continue it as `Audio` deltas; other dialects get the pieces in order.
 - **Blocks.** Text parts continue the open text block and thought parts the open reasoning block. A function call is a whole tool call block: start, one argument delta, stop. A signature on a thought part is an `Opaque` delta in its block; on another part it is a signature-only reasoning block before it. Other parts are unknown blocks.
 - **Usage and the end.** Every chunk carries `usageMetadata`; the one with `finishReason` becomes a `ResponseDelta` after the last block stops. A stream that ends without a `finishReason` ends with an error.
 - **Same-dialect replay.** The first event of each chunk carries the form marker `chunk`: the chunk without its parts, its finish reason and its final usage. The encoder puts them back, so every chunk comes out as received.

@@ -11,6 +11,7 @@ const FLASH: &str = "gemini-3.5-flash";
 const OLD_FLASH: &str = "gemini-2.5-flash";
 const EMBEDDING: &str = "gemini-embedding-2";
 const IMAGE_MODEL: &str = "gemini-3.1-flash-image";
+const TTS: &str = "gemini-3.1-flash-tts-preview";
 
 fn fixture(name: &str) -> String {
     format!("[mock:fixture={name}]")
@@ -32,7 +33,7 @@ async fn env() -> Env {
         )
         .await;
     assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
-    for model in [FLASH, OLD_FLASH, EMBEDDING, IMAGE_MODEL] {
+    for model in [FLASH, OLD_FLASH, EMBEDDING, IMAGE_MODEL, TTS] {
         let r = env
             .app
             .post(
@@ -129,6 +130,106 @@ async fn a_chat_apps_audio_reaches_gemini_inline_and_a_model_without_audio_input
         "The model `gemini-3.1-flash-image` does not accept audio."
     );
     assert_eq!(r.json()["error"]["param"], "messages");
+    assert_eq!(env.mock.received().len(), calls);
+}
+
+#[tokio::test]
+async fn a_chat_app_gets_geminis_speech_as_message_audio_and_streamed_audio_deltas() {
+    let env = env().await;
+    let speech = |model: &str, format: &str, name: &str| {
+        json!({
+            "model": model,
+            "modalities": ["text", "audio"],
+            "audio": {"voice": "Kore", "format": format},
+            "messages": [{"role": "user", "content": format!("Hi there. {}", fixture(name))}]
+        })
+    };
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(speech(TTS, "wav", "recorded-speech")),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    let sent = sent_to_google(
+        &env,
+        "/v1beta/models/gemini-3.1-flash-tts-preview:generateContent",
+    );
+    assert_eq!(
+        sent["generationConfig"]["responseModalities"],
+        json!(["AUDIO"])
+    );
+    assert_eq!(
+        sent["generationConfig"]["speechConfig"]["voiceConfig"]["prebuiltVoiceConfig"]["voiceName"],
+        "Kore"
+    );
+    assert_eq!(
+        sent["generationConfig"]["responseFormat"]["audio"]["mimeType"],
+        "AUDIO_WAV"
+    );
+    let audio = r.json()["choices"][0]["message"]["audio"].clone();
+    assert!(
+        audio["data"].as_str().unwrap().starts_with("UklGR"),
+        "{audio}"
+    );
+    assert_eq!(audio["id"], "audio_kErwarW3Odu8kdUP4ty7mAw");
+
+    let mut streamed = speech(TTS, "pcm16", "recorded-stream-speech");
+    streamed["stream"] = json!(true);
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(streamed),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    let sent = env.mock.last().unwrap();
+    assert_eq!(
+        sent.path,
+        "/v1beta/models/gemini-3.1-flash-tts-preview:streamGenerateContent"
+    );
+    let text = r.text();
+    assert_eq!(text.matches(r#""audio":{"data":"#).count(), 16, "{text}");
+    assert!(text.ends_with("data: [DONE]\n\n"), "{text}");
+
+    let calls = env.mock.received().len();
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(speech(FLASH, "wav", "recorded-speech")),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    assert_eq!(
+        r.json()["error"]["message"],
+        "The model `gemini-3.5-flash` does not produce audio."
+    );
+    assert_eq!(r.json()["error"]["param"], "modalities");
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(
+            speech(TTS, "wav", "recorded-speech")
+                .as_object()
+                .map(|o| {
+                    let mut o = o.clone();
+                    o["audio"]["voice"] = json!("marin");
+                    serde_json::Value::Object(o)
+                })
+                .unwrap(),
+        ),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    assert_eq!(r.json()["error"]["param"], "audio.voice");
     assert_eq!(env.mock.received().len(), calls);
 }
 

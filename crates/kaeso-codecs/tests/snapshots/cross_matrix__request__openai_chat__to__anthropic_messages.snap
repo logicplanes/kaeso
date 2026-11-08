@@ -4,14 +4,19 @@ expression: outcomes
 ---
 {
   "all-params-sdk": {
-    "message": "`audio` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "message": "`function_call` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
     "param": null,
-    "unsupported": "audio"
+    "unsupported": "function_call"
+  },
+  "audio-history": {
+    "message": "`file id` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Provider file ids (here `audio_6acbb3d760248191b0570b008a8ccc16`) only work with the provider that issued them. Send the file inline (base64 or URL) instead.",
+    "param": "messages[1].blocks[0]",
+    "unsupported": "file id"
   },
   "audio-output": {
-    "message": "`modalities` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
-    "param": null,
-    "unsupported": "modalities"
+    "message": "`audio output` is not supported by Anthropic Messages. Anthropic Messages replies hold text only; send the request to a model of a format that writes it.",
+    "param": "modalities",
+    "unsupported": "audio output"
   },
   "content-array-all-roles": {
     "message": "`refusal block` is not supported by Anthropic Messages. Anthropic has no refusal content block. Remove the refusal from the conversation history or replace it with text.",
@@ -422,9 +427,9 @@ expression: outcomes
     "path": "/v1/messages"
   },
   "input-audio": {
-    "message": "`modalities` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
-    "param": null,
-    "unsupported": "modalities"
+    "message": "`audio block` is not supported by Anthropic Messages. Anthropic has no audio content block; send a transcript of the audio as text instead.",
+    "param": "messages[0].blocks[1]",
+    "unsupported": "audio block"
   },
   "input-audio-mp3": {
     "message": "`audio block` is not supported by Anthropic Messages. Anthropic has no audio content block; send a transcript of the audio as text instead.",
@@ -601,9 +606,9 @@ expression: outcomes
     "unsupported": "enable_thinking"
   },
   "providers/alibaba/audio-fields": {
-    "message": "`modalities` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
     "param": null,
-    "unsupported": "modalities"
+    "unsupported": "enable_thinking"
   },
   "providers/alibaba/basic": {
     "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
@@ -2139,9 +2144,25 @@ expression: outcomes
     "unsupported": "metadata"
   },
   "providers/cohere/modalities-field": {
-    "message": "`modalities` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
-    "param": null,
-    "unsupported": "modalities"
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Hello",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "command-a-03-2025"
+    },
+    "path": "/v1/messages"
   },
   "providers/cohere/parallel-tool-calls-field": {
     "body": {
@@ -3038,9 +3059,9 @@ expression: outcomes
     "unsupported": "refusal block"
   },
   "providers/mistral/audio-field": {
-    "message": "`audio` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
-    "param": null,
-    "unsupported": "audio"
+    "message": "`audio output settings` is not supported by Anthropic Messages. Anthropic Messages replies hold text only; remove the audio settings.",
+    "param": "audio.voice",
+    "unsupported": "audio output settings"
   },
   "providers/mistral/function-call-field": {
     "message": "`function_call` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
@@ -3117,9 +3138,25 @@ expression: outcomes
     "path": "/v1/messages"
   },
   "providers/mistral/modalities-field": {
-    "message": "`modalities` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
-    "param": null,
-    "unsupported": "modalities"
+    "body": {
+      "max_tokens": 10,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Say hello.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "mistral-small-latest"
+    },
+    "path": "/v1/messages"
   },
   "providers/mistral/model-not-found": {
     "body": {
@@ -5207,6 +5244,11 @@ expression: outcomes
     "message": "`seed` is not supported by Anthropic Messages. Remove `seed` or route the request to an OpenAI model.",
     "param": "seed",
     "unsupported": "seed"
+  },
+  "stream-audio-output": {
+    "message": "`audio output` is not supported by Anthropic Messages. Anthropic Messages replies hold text only; send the request to a model of a format that writes it.",
+    "param": "modalities",
+    "unsupported": "audio output"
   },
   "stream-doc": {
     "body": {

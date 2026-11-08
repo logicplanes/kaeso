@@ -137,6 +137,8 @@ impl ImageBlock {
 pub struct AudioBlock {
     pub source: Source,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub transcript: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub cache: Option<CacheHint>,
     #[serde(default, skip_serializing_if = "Extras::is_empty")]
     pub extras: Extras,
@@ -146,6 +148,7 @@ impl AudioBlock {
     pub fn new(source: Source) -> Self {
         AudioBlock {
             source,
+            transcript: None,
             cache: None,
             extras: Extras::default(),
         }

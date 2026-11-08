@@ -1,5 +1,6 @@
 use kaeso_kpp::{
-    DialectId, GenerateRequest, ModelInfo, ReasoningEffort, ReasoningMode, Request, ToolChoice,
+    DialectId, GenerateRequest, Modality, ModelInfo, ReasoningEffort, ReasoningMode, Request,
+    ToolChoice,
 };
 
 use kaeso_codecs::cross::reasoning_map;
@@ -35,6 +36,7 @@ fn app_param(ingress: DialectId, field: &'static str) -> &'static str {
         ("format", _) => "response_format",
         ("messages", R) => "input",
         ("messages", G) => "contents",
+        ("modalities", G) => "generationConfig.responseModalities",
         ("reasoning", A) => "thinking",
         ("user", A) => "metadata.user_id",
         ("reasoning", R) => "reasoning",
@@ -452,19 +454,39 @@ fn check_generation(
             format!("The model `{name}` is an embeddings model; it cannot generate text."),
         ));
     }
-    if eff
-        .fields
-        .output_modalities
-        .as_ref()
-        .is_some_and(|o| !o.iter().any(|m| m == "text"))
-    {
+    let caps = g.required_capabilities();
+    let produces = |m: &str| {
+        eff.fields
+            .output_modalities
+            .as_ref()
+            .is_none_or(|o| o.iter().any(|x| x == m))
+    };
+    // Chat Completions asks for audio as `["text", "audio"]`, its text being the transcript, which
+    // a speech model writes without producing text of its own.
+    let wants_text = g.output_modalities.is_empty()
+        || (g.output_modalities.contains(&Modality::Text) && !caps.audio_output);
+    if wants_text && !produces("text") {
         return Err(refuse(
             "text output",
             Some("model"),
             format!("The model `{name}` does not produce text."),
         ));
     }
-    let caps = g.required_capabilities();
+    let modalities = Some(app_param(ingress, "modalities"));
+    if caps.audio_output && !produces("audio") {
+        return Err(refuse(
+            "audio output",
+            modalities,
+            format!("The model `{name}` does not produce audio."),
+        ));
+    }
+    if caps.image_output && !produces("image") {
+        return Err(refuse(
+            "image output",
+            modalities,
+            format!("The model `{name}` does not produce images."),
+        ));
+    }
     let messages = Some(app_param(ingress, "messages"));
     if caps.images && !eff.accepts("image") {
         return Err(refuse(

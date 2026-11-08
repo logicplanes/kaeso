@@ -19,7 +19,7 @@ order: 9
 ## 表格的读法
 
 - **KPP**：线路值映射到的类型化字段。
-- **字段**：原样保存在 `Extras::fields` 中，绑定到 `gemini`（或 `gemini_embeddings`）。其他方言会以 `Unsupported` 拒绝它们（[Extras](cross-format.md#extras)）。嵌套对象使用带点的键路径，例如 `generationConfig.responseModalities`。
+- **字段**：原样保存在 `Extras::fields` 中，绑定到 `gemini`（或 `gemini_embeddings`）。其他方言会以 `Unsupported` 拒绝它们（[Extras](cross-format.md#extras)）。嵌套对象使用带点的键路径，例如 `generationConfig.imageConfig`。
 - **形式标记**：`Extras::form` 中编解码器私有的表现形式标记，其他方言会忽略。`verbatim` 指 `wire::Ext` 的通用机制（`null`、`false` 和 `[]` 的写法）。
 - **原样**：完整保存在 `RawItem` 或 `RawUsage` 中。
 - **自有**数据带有 extras 或来源 `gemini`；**外来**数据来自其他方言。
@@ -62,7 +62,10 @@ Schema `GenerateContentRequest`。
 | 只有 `responseMimeType: application/json` | `output = JsonObject` | |
 | 其他任何 `responseMimeType`，以及没有 `application/json` 的 schema | 字段 `generationConfig.*` | |
 | `generationConfig.thinkingConfig` | `reasoning` | 见[思考](#思考)。 |
-| `generationConfig.responseModalities`、`.speechConfig`、`.imageConfig`、`.mediaResolution`、`.responseLogprobs`、`.logprobs`、`.audioTranscriptionConfig`、`.translationConfig`、`.enableAffectiveDialog`、`.enableEnhancedCivicAnswers`、`.responseFormat` | 字段 `generationConfig.*` | |
+| `generationConfig.imageConfig`、`.mediaResolution`、`.responseLogprobs`、`.logprobs`、`.audioTranscriptionConfig`、`.translationConfig`、`.enableAffectiveDialog`、`.enableEnhancedCivicAnswers`、`.responseFormat` | 字段 `generationConfig.*` | |
+| `generationConfig.responseModalities` | `output_modalities` | `TEXT`、`IMAGE`、`AUDIO` ↔ `Text`、`Image`、`Audio`；其他值按原样；`[]`：形式标记 `modalities_empty`。来自其他方言：要求音频时为 `["AUDIO"]`，因为 Chat 应用的 `["text", "audio"]` 表示带转写稿的音频，而 Gemini 的语音模型只接受完全一致的 `["AUDIO"]`。 |
+| `generationConfig.speechConfig.voiceConfig.prebuiltVoiceConfig.voiceName` 或 `.voiceConfig.voice` | `audio_output.voice` | 形式标记 `voice` 记录写法；`languageCode`、`multiSpeakerVoiceConfig` 和其他键：`audio_output` 的 extras，跨方言时被拒绝。来自其他方言：必须是语音生成指南列出的预置声音（Zephyr、Puck、Charon、Kore 等 30 个），否则为 `Unsupported`。 |
+| 只有 `audio.mimeType` 为 `AUDIO_WAV`、`AUDIO_MP3` 或 `AUDIO_L16`（24 kHz）的 `generationConfig.responseFormat` | `audio_output.format` `Wav`、`Mp3`、`Pcm16` | 其他任何 `responseFormat`，例如 `AUDIO_MULAW` 或图像格式：字段 `generationConfig.responseFormat`。来自其他方言：`flac`、`opus` 和 `aac` 为 `Unsupported`；网关不做转码。 |
 | `safetySettings`、`cachedContent`、`labels`、`serviceTier`、`store`、`continuationToken` | 字段 | |
 | `model`（在请求体中） | 形式标记 `model` | 模型由路径决定。 |
 
@@ -112,6 +115,7 @@ Schema `Part`。一个 part 恰好带有 `text`、`inlineData`、`fileData`、`f
 - **严格工具。** 带 `strict: true` 的函数工具在自动 `tool_choice` 下发送 `mode: VALIDATED`，按 schema 校验调用。
 - **托管网页搜索**会被[省略](cross-format.md#省略的工具)。
 - **缓存提示**会被丢弃：Gemini 会隐式缓存。
+- 其他方言的**音频回复**以带媒体类型的 `inlineData` 到达 Gemini 应用；转写稿在那里没有位置，会被省略。
 - **`user`** 会被丢弃：Gemini 没有终端用户字段。
 
 ### 来自 google-genai 的请求
@@ -190,6 +194,7 @@ Schema `CountTokensRequest` 和 `CountTokensResponse`。
 
 `streamGenerateContent?alt=sse` 把每个 chunk 作为完整的 `GenerateContentResponse` 放在一行 `data:` 中发送。函数调用整体到达：文档中没有流式的函数调用参数。
 
+- **音频。** 只包含 `inlineData` 音频的 part（语音模型以这种方式流式发送 16 位 PCM 片段，见 `streams/recorded-stream-speech.sse`）会开始一个音频块，之后同一媒体类型的此类 part 以 `Audio` 增量延续它；其他方言按顺序收到这些片段。
 - **块。** 文本 part 延续当前的文本块，思考 part 延续当前的推理块。函数调用是一个完整的工具调用块：开始、一个参数增量、结束。思考 part 上的签名是其块中的 `Opaque` 增量；其他 part 上的签名是它之前一个只有签名的推理块。其他 part 是未知块。
 - **用量与结束。** 每个 chunk 都带 `usageMetadata`；带 `finishReason` 的那个在最后一个块结束后变为 `ResponseDelta`。没有 `finishReason` 就结束的流以错误结束。
 - **同方言回放。** 每个 chunk 的第一个事件带有形式标记 `chunk`：去掉 part、结束原因和最终用量之后的 chunk。编码器把它们放回去，因此每个 chunk 都按收到的原样输出。

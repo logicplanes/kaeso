@@ -166,9 +166,9 @@ expression: outcomes
     "unsupported": "generationConfig.mediaResolution"
   },
   "image-output": {
-    "message": "`generationConfig.responseModalities` comes from a Gemini API request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "message": "`generationConfig.imageConfig` comes from a Gemini API request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
     "param": null,
-    "unsupported": "generationConfig.responseModalities"
+    "unsupported": "generationConfig.imageConfig"
   },
   "max-tokens": {
     "message": "reasoning effort `minimal` is not supported by Anthropic Messages. Anthropic effort levels are low, medium, high, xhigh and max.",
@@ -236,6 +236,16 @@ expression: outcomes
       ]
     },
     "path": "/v1/messages"
+  },
+  "speech": {
+    "message": "`audio output` is not supported by Anthropic Messages. Anthropic Messages replies hold text only; send the request to a model of a format that writes it.",
+    "param": "generationConfig.responseModalities",
+    "unsupported": "audio output"
+  },
+  "stream-speech": {
+    "message": "`audio output` is not supported by Anthropic Messages. Anthropic Messages replies hold text only; send the request to a model of a format that writes it.",
+    "param": "generationConfig.responseModalities",
+    "unsupported": "audio output"
   },
   "stream-text": {
     "message": "reasoning effort `minimal` is not supported by Anthropic Messages. Anthropic effort levels are low, medium, high, xhigh and max.",

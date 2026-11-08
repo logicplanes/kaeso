@@ -19,7 +19,7 @@ Schlagen Sie hier jedes Feld der Gemini API nach: wohin es in KPP gehört und wo
 ## Lesart der Tabellen
 
 - **KPP**: das typisierte Feld, auf das der Wire-Wert abgebildet wird.
-- **Felder**: roh in `Extras::fields` aufbewahrt, gebunden an `gemini` (oder `gemini_embeddings`). Andere Dialekte lehnen sie mit `Unsupported` ab ([Extras](cross-format.md#extras)). Verschachtelte Objekte nutzen Schlüsselpfade mit Punkt, etwa `generationConfig.responseModalities`.
+- **Felder**: roh in `Extras::fields` aufbewahrt, gebunden an `gemini` (oder `gemini_embeddings`). Andere Dialekte lehnen sie mit `Unsupported` ab ([Extras](cross-format.md#extras)). Verschachtelte Objekte nutzen Schlüsselpfade mit Punkt, etwa `generationConfig.imageConfig`.
 - **Form**: eine Codec-eigene Darstellungsmarkierung in `Extras::form`, die andere Dialekte ignorieren. `verbatim` meint den allgemeinen Mechanismus von `wire::Ext` (Schreibweisen `null`, `false` und `[]`).
 - **roh**: ganz in einem `RawItem` oder `RawUsage` aufbewahrt.
 - **Eigene** Daten haben Extras oder einen Ursprung `gemini`; **fremde** Daten kommen aus einem anderen Dialekt.
@@ -62,7 +62,10 @@ Schema `GenerateContentRequest`.
 | `responseMimeType: application/json` allein | `output = JsonObject` | |
 | Jeder andere `responseMimeType` und ein Schema ohne `application/json` | Felder `generationConfig.*` | |
 | `generationConfig.thinkingConfig` | `reasoning` | Siehe [Thinking](#thinking). |
-| `generationConfig.responseModalities`, `.speechConfig`, `.imageConfig`, `.mediaResolution`, `.responseLogprobs`, `.logprobs`, `.audioTranscriptionConfig`, `.translationConfig`, `.enableAffectiveDialog`, `.enableEnhancedCivicAnswers`, `.responseFormat` | Felder `generationConfig.*` | |
+| `generationConfig.imageConfig`, `.mediaResolution`, `.responseLogprobs`, `.logprobs`, `.audioTranscriptionConfig`, `.translationConfig`, `.enableAffectiveDialog`, `.enableEnhancedCivicAnswers`, `.responseFormat` | Felder `generationConfig.*` | |
+| `generationConfig.responseModalities` | `output_modalities` | `TEXT`, `IMAGE`, `AUDIO` ↔ `Text`, `Image`, `Audio`; andere Werte wie geschrieben; `[]`: Form `modalities_empty`. Aus anderen Dialekten: `["AUDIO"]`, wenn sie Audio verlangen, weil `["text", "audio"]` einer Chat-App Audio mit Transkript bedeutet und Geminis Sprachmodelle nur ein genaues `["AUDIO"]` beantworten. |
+| `generationConfig.speechConfig.voiceConfig.prebuiltVoiceConfig.voiceName` oder `.voiceConfig.voice` | `audio_output.voice` | Form `voice` nennt die Schreibweise; `languageCode`, `multiSpeakerVoiceConfig` und andere Schlüssel: Extras von `audio_output`, über Dialekte hinweg abgelehnt. Aus anderen Dialekten: eine vorgefertigte Stimme aus dem Sprach-Leitfaden (Zephyr, Puck, Charon, Kore und 26 weitere), sonst `Unsupported`. |
+| `generationConfig.responseFormat` nur mit `audio.mimeType` `AUDIO_WAV`, `AUDIO_MP3` oder `AUDIO_L16` (bei 24 kHz) | `audio_output.format` `Wav`, `Mp3`, `Pcm16` | Jedes andere `responseFormat`, etwa `AUDIO_MULAW` oder ein Bildformat: Feld `generationConfig.responseFormat`. Aus anderen Dialekten: `flac`, `opus` und `aac` sind `Unsupported`; nichts wird umkodiert. |
 | `safetySettings`, `cachedContent`, `labels`, `serviceTier`, `store`, `continuationToken` | Felder | |
 | `model` (in einem Body) | Form `model` | Der Pfad entscheidet über das Modell. |
 
@@ -112,6 +115,7 @@ Schema `Part`. Ein Part trägt genau eines von `text`, `inlineData`, `fileData`,
 - **Strikte Tools.** Ein Function-Tool mit `strict: true` und automatischem `tool_choice` sendet `mode: VALIDATED`, das Aufrufe gegen ihre Schemas prüft.
 - **Gehostete Websuche** wird [weggelassen](cross-format.md#weggelassene-tools).
 - **Cache-Hinweise** entfallen: Gemini cacht implizit.
+- **Audioantworten** anderer Dialekte erreichen Gemini-Apps als `inlineData` mit ihrem Medientyp; ein Transkript hat dort keinen Platz und wird weggelassen.
 - **`user`** entfällt: Gemini hat kein Feld für Endnutzer.
 
 ### Anfragen von google-genai
@@ -190,6 +194,7 @@ Eine Zählung aus einem anderen Dialekt mit Systemprompt oder Tools geht als `ge
 
 `streamGenerateContent?alt=sse` sendet jeden Chunk als ganze `GenerateContentResponse` in einer `data:`-Zeile. Funktionsaufrufe kommen ganz an: Die Dokumentation kennt keine gestreamten Argumente.
 
+- **Audio.** Ein Part, der nur `inlineData`-Audio enthält, wie Sprachmodelle 16-Bit-PCM-Stücke streamen (`streams/recorded-stream-speech.sse`), öffnet einen Audioblock, und die nächsten solchen Parts desselben Medientyps setzen ihn als `Audio`-Deltas fort; andere Dialekte bekommen die Stücke der Reihe nach.
 - **Blöcke.** Text-Parts setzen den offenen Textblock fort und Thought-Parts den offenen Reasoning-Block. Ein Funktionsaufruf ist ein ganzer Tool-Call-Block: Start, ein Argument-Delta, Stopp. Eine Signatur an einem Thought-Part ist ein `Opaque`-Delta in seinem Block; an einem anderen Part ist sie ein Reasoning-Block nur mit Signatur davor. Andere Parts sind unbekannte Blöcke.
 - **Nutzung und Ende.** Jeder Chunk trägt `usageMetadata`; der mit `finishReason` wird zu einem `ResponseDelta` nach dem Stopp des letzten Blocks. Ein Stream, der ohne `finishReason` endet, endet mit einem Fehler.
 - **Zurückspielen im selben Dialekt.** Das erste Event jedes Chunks trägt die Form-Markierung `chunk`: den Chunk ohne seine Parts, seinen Finish-Grund und seine letzte Nutzung. Der Encoder setzt sie wieder ein, sodass jeder Chunk wie empfangen herauskommt.

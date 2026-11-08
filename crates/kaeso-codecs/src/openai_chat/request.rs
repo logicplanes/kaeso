@@ -1,7 +1,8 @@
 use kaeso_kpp::{
-    Block, Extras, FunctionTool, GenerateRequest, JsonSchemaSpec, KppError, Message, Origin,
-    OutputSpec, RawItem, RawJson, ReasoningBlock, ReasoningConfig, ReasoningEffort, Request,
-    RequestKind, Role, StreamMode, ToolChoice, ToolDef, ToolResultBlock,
+    AudioFormat, AudioOutput, Block, Extras, FunctionTool, GenerateRequest, JsonSchemaSpec,
+    KppError, Message, Modality, Origin, OutputSpec, RawItem, RawJson, ReasoningBlock,
+    ReasoningConfig, ReasoningEffort, Request, RequestKind, Role, StreamMode, ToolChoice, ToolDef,
+    ToolResultBlock,
 };
 use serde_json::Value;
 use serde_json::value::RawValue;
@@ -11,8 +12,8 @@ use super::convert::{
     PartContext, add_nested, decode_part, decode_tool_call, extras_of, form_str, parse_ext, to_raw,
 };
 use super::wire::{
-    AssistantMessage, ChatRequest, FunctionToolWire, InstructionMessage, NamedToolChoice,
-    ResponseFormat, ToolMessage, UserMessage, role_tag,
+    AssistantMessage, AudioParam, ChatRequest, FunctionToolWire, InstructionMessage,
+    NamedToolChoice, ResponseFormat, ToolMessage, UserMessage, role_tag,
 };
 use crate::codec::{HeaderList, is_forwarded_header};
 use crate::limits::{Form, Scope};
@@ -28,6 +29,7 @@ pub(crate) const FORM_USER: &str = "user";
 pub(crate) const FORM_RESPONSE_FORMAT_TEXT: &str = "response_format_text";
 pub(crate) const FORM_SCHEMA_ABSENT: &str = "schema_absent";
 pub(crate) const FORM_MESSAGE: &str = "message";
+pub(crate) const FORM_MODALITIES_EMPTY: &str = "modalities_empty";
 pub(crate) const FORM_ROLE: &str = "role";
 pub(crate) const FORM_CONTENT: &str = "content";
 pub(crate) const FUNCTION_ROLE: &str = "function";
@@ -107,6 +109,8 @@ fn describe(body: &[u8], err: &serde_json::Error) -> KppError {
         ("tools", list, "an array of tools"),
         ("tool_choice", choice, "a string or an object"),
         ("response_format", object, "an object"),
+        ("modalities", list, "an array of strings"),
+        ("audio", object, "an object"),
     ];
     let invalid = |text: String| {
         KppError::invalid_request(format!(
@@ -225,6 +229,17 @@ fn decode_generate(wire: Ext<ChatRequest>, origin: &Origin) -> Result<GenerateRe
     }
 
     decode_stream(&mut req, w.stream, w.stream_options)?;
+    if let Some(modalities) = w.modalities {
+        if modalities.is_empty() {
+            req.extras
+                .form
+                .insert(FORM_MODALITIES_EMPTY.to_owned(), Value::Bool(true));
+        }
+        req.output_modalities = modalities.iter().map(|m| Modality::from_wire(m)).collect();
+    }
+    if let Some(audio) = w.audio {
+        req.audio_output = Some(decode_audio_param(audio, origin)?);
+    }
 
     if let Some(effort) = w.reasoning_effort {
         let mut reasoning = ReasoningConfig::default();
@@ -246,6 +261,30 @@ fn decode_generate(wire: Ext<ChatRequest>, origin: &Origin) -> Result<GenerateRe
 
     decode_messages(&mut req, &w.messages, origin)?;
     Ok(req)
+}
+
+// `voice` is a built-in voice's name or a custom voice `{"id": …}` (`VoiceIdsOrCustomVoice`);
+// a custom voice exists only at OpenAI, so it stays an extra.
+fn decode_audio_param(audio: Ext<AudioParam>, origin: &Origin) -> Result<AudioOutput, KppError> {
+    let Ext {
+        known,
+        mut extra,
+        verbatim,
+        ..
+    } = audio;
+    let voice = match known.voice {
+        Some(raw) => match raw.parse::<String>() {
+            Ok(name) => Some(name),
+            Err(_) => {
+                extra.insert("voice".to_owned(), raw);
+                None
+            }
+        },
+        None => None,
+    };
+    let mut out = AudioOutput::new(voice, known.format.as_deref().map(AudioFormat::from_wire));
+    out.extras = extras_of(origin, extra, verbatim);
+    Ok(out)
 }
 
 fn decode_stream(
@@ -625,6 +664,21 @@ pub(crate) fn block_extras_mut(block: &mut Block) -> Option<&mut Extras> {
     }
 }
 
+// An earlier audio reply, by the id OpenAI keeps it under (`ChatCompletionRequestAssistantMessage
+// .audio`); the id works only at OpenAI, as a file id does.
+fn replayed_audio(extras: &mut Extras, origin: &Origin) -> Option<kaeso_kpp::AudioBlock> {
+    let raw = extras.fields.get(AUDIO)?;
+    let mut fields: indexmap::IndexMap<String, RawJson> = raw.parse().ok()?;
+    let id = fields.shift_remove("id")?.parse::<String>().ok()?;
+    extras.fields.shift_remove(AUDIO);
+    let mut block = kaeso_kpp::AudioBlock::new(kaeso_kpp::Source::file_id(origin.clone(), id));
+    block.extras = Extras::new(origin.clone());
+    block.extras.fields = fields;
+    Some(block)
+}
+
+pub(crate) const AUDIO: &str = "audio";
+
 fn decode_assistant(raw: &RawJson, origin: &Origin) -> Result<Message, KppError> {
     let msg: Ext<AssistantMessage> = parse_ext(raw.as_raw(), "assistant message", false)?;
     let Ext {
@@ -667,6 +721,9 @@ fn decode_assistant(raw: &RawJson, origin: &Origin) -> Result<Message, KppError>
         let mut block = kaeso_kpp::RefusalBlock::new(refusal);
         block.extras = Extras::new(origin.clone());
         blocks.push(Block::Refusal(block));
+    }
+    if let Some(audio) = replayed_audio(&mut extras, origin) {
+        blocks.push(Block::Audio(audio));
     }
     if !known.annotations.is_empty() {
         let citations = known

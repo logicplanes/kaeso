@@ -96,6 +96,7 @@ Der Fehler nennt das Feld, nie eine Parser-Position, und setzt `param`: `` The r
 - unbekannte Reasoning-Modi, benannt nach ihrem Wire-Wert;
 - Textdokumente, `title`/`context`/`citations` von Dokumenten und Text-Bildquellen;
 - Audio- und Videoblöcke, weil `InputContent` nur `input_text`, `input_image` und `input_file` kennt (`audio block`, `video block`); OpenRouters `input_audio`- und `input_video`-Teile, die OpenAI nicht hat, bleiben `Block::Unknown`;
+- Ausgabemodalitäten außer Text und Audioeinstellungen (`audio output`, `image output`, `audio output settings`): `CreateResponse` hat weder `modalities` noch einen `audio`-Parameter, und sein `OutputMessageContent` enthält nur Text und Verweigerungen. Bilder von Gemini werden in einer Responses-Antwort weggelassen statt als `image_generation_call` gezeigt, der zum Tool `image_generation` gehört;
 - alles, was `cross::check_foreign` ablehnt (fremde Extras, unbekannte Blöcke, Tools und Tool-Auswahlen, fremde Datei-IDs, fremde Zitate; siehe [Anfragen](cross-format.md#anfragen)).
 
 Reasoning-Blöcke, die sich nicht zurückspielen lassen, werden verworfen ([Reasoning](reasoning.md)), ebenso Cache-Hinweise aus anderen Dialekten ([Cache-Hinweise](cross-format.md#cache-hinweise)). Auch `ToolResult::is_error` wird verworfen: Es ist ein Hinweis, und der Inhalt beschreibt den Fehler ([Tool-Fehler](cross-format.md#tool-fehler)).

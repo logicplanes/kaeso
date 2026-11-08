@@ -50,8 +50,10 @@ nav: OpenAI Chat
 | `safety_identifier` | `user`（类型化） | KPP `user` 是用于滥用监测的最终用户 ID，这正是 `safety_identifier` 的含义。 |
 | `user`（已弃用） | 没有 `safety_identifier` 时为类型化的 `user`（形式标记 `user`）；否则为 extra `user (sent alongside safety_identifier)`，发回时写作 `user` | 来自其他方言的 KPP `user` 以 `safety_identifier` 发送。配置中没有最终用户字段的服务商两者都收不到（[服务商配置](openai-chat-providers.md#服务商配置)）。 |
 | `stream` | `stream`（类型化） | `false`：形式标记 `stream_false`。 |
+| `modalities` | `output_modalities`（类型化） | `[]`：形式标记 `modalities_empty`。来自其他方言：要求音频时为 `["text", "audio"]`，因为这时 Chat 的文本就是音频的转写稿（`ResponseModalities`），否则为 `["text"]`；图像或其他模态为 `Unsupported`。 |
+| `audio.voice`、`audio.format` | `audio_output.voice`、`.format`（类型化） | 自定义声音对象（`{"id": "voice_…"}`）和其他键：`audio_output` 的 extras。来自其他方言：声音必须属于 `VoiceIdsShared` 和描述中的内置声音（`alloy`、`ash`、`ballad`、`coral`、`echo`、`fable`、`nova`、`onyx`、`sage`、`shimmer`、`verse`、`marin`、`cedar`），音频输出必须带声音；没有格式时 Kaeso 请求 `wav`，流式请求时请求 `pcm16`，回复解码器据此得到媒体类型。 |
 | `stream_options.include_usage` | `StreamMode::On { include_usage }`（类型化） | 没有 `stream_options`：形式标记 `stream_options: "absent"`；没有 `include_usage`：形式标记 `"no_include_usage"`；其他键（`include_obfuscation`）为 extras `stream_options.<key>`；`stream` 关闭时：整个对象记为形式标记 `stream_options_off`。来自其他方言的请求总是要求 `include_usage: true`。网关需要用量，因此会在每个流式请求上设置 `include_usage: true`，并在 `EncodeCtx` 中保留应用自己的请求；随后应用一侧的流编码器会对没有请求用量的应用隐藏用量 chunk。 |
-| `audio`、`functions` 和 `function_call`（已弃用，顶层）、`logit_bias`、`logprobs`、`metadata`、`modalities`、`moderation`、`prediction`、`prompt_cache_key`、`prompt_cache_options`、`prompt_cache_retention`、`service_tier`、`store`、`top_logprobs`、`verbosity`、`web_search_options` | extras | KPP 中没有对应项；跨方言时被拒绝（[Extras](cross-format.md#extras)、[采样参数](cross-format.md#采样参数)），但 `prompt_cache_key` 在 [Extras 允许列表](cross-format.md#extras)中：OpenAI Responses 会收到它，其他格式会丢弃它；`prompt_cache_options` 和 `prompt_cache_retention` 则用于设置 Anthropic 保留缓存的时长（[缓存提示](cross-format.md#缓存提示)）。`null` 值记为形式标记。例如发往 Anthropic 时，`functions` 以 `` `functions` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format. `` 失败。 |
+| `functions` 和 `function_call`（已弃用，顶层）、`logit_bias`、`logprobs`、`metadata`、`moderation`、`prediction`、`prompt_cache_key`、`prompt_cache_options`、`prompt_cache_retention`、`service_tier`、`store`、`top_logprobs`、`verbosity`、`web_search_options` | extras | KPP 中没有对应项；跨方言时被拒绝（[Extras](cross-format.md#extras)、[采样参数](cross-format.md#采样参数)），但 `prompt_cache_key` 在 [Extras 允许列表](cross-format.md#extras)中：OpenAI Responses 会收到它，其他格式会丢弃它；`prompt_cache_options` 和 `prompt_cache_retention` 则用于设置 Anthropic 保留缓存的时长（[缓存提示](cross-format.md#缓存提示)）。`null` 值记为形式标记。例如发往 Anthropic 时，`functions` 以 `` `functions` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format. `` 失败。 |
 | 未知键 | extras | 以 `header:` 开头或包含 `.` 的键会被拒绝（[Kaeso 无法承载的键](#kaeso-无法承载的键)）。 |
 | 请求头 `openai-beta` | extras `header:openai-beta` | 只在请求发往 Chat 时转发；在 [Extras 允许列表](cross-format.md#extras)中，因此其他方言会丢弃它。 |
 
@@ -62,7 +64,7 @@ nav: OpenAI Chat
 | 开头的 `system` 和 `developer` 消息 | `GenerateRequest.system` 中的块 | 每条消息的第一个块带有形式标记 `message: {role, content}`，用来保留消息边界、角色以及字符串或数组写法；消息的 `name` 和未知键是该块上的 extras `message.<key>`。第一个部分为未知类型的开头消息仍是一条 `Role::System` 消息，并结束开头的这一段。来自其他方言时：一条 `system` 消息。 |
 | 后续的 `system` 和 `developer` 消息 | `Message { role: System }`（[系统消息](cross-format.md#系统消息)） | `developer`：形式标记 `role: "developer"`。 |
 | `user` | `Message { role: User }` | `name` 和未知键：消息的 extras。 |
-| `assistant` | `Message { role: Assistant }`：先是内容部分，然后是 `refusal`，最后是 `tool_calls` | 没有 `content`：形式标记 `content: "absent"`；`null`：verbatim；`name`、`audio`、`function_call`：extras。`annotations` 不在请求 schema 中，但 SDK 会随每个回复把它发回：`[]` 按 verbatim 保留（形式标记），使对话可以转到另一个服务商；非空值成为第一个文本块的 `TextBlock.citations`，绑定到 Chat（没有文本时：extras `annotations`），其他方言会拒绝它（`citations`），Chat 则以 `annotations` 发回。来自其他方言时，文本块进入 `content`，第一个拒绝进入 `refusal`，工具调用进入 `tool_calls`，因为 Chat 无法将它们交错排列；推理会被丢弃（[推理](reasoning.md)）；没有留下任何 Chat 能显示的内容的轮次（例如只有推理）以 `content: ""` 发送，这样对话保留其轮次，也满足 Chat 关于没有 `tool_calls` 的助手消息必须有内容的规则。 |
+| `assistant` | `Message { role: Assistant }`：先是内容部分，然后是 `refusal`，最后是 `tool_calls` | 没有 `content`：形式标记 `content: "absent"`；`null`：verbatim；`name`、`function_call`：extras；`audio: {id}` 是 OpenAI 保存的一次较早的音频回复，会成为文本之后带 `Source::FileId` 的 `Block::Audio`，只能用于 OpenAI（[文件](cross-format.md#文件)）。`annotations` 不在请求 schema 中，但 SDK 会随每个回复把它发回：`[]` 按 verbatim 保留（形式标记），使对话可以转到另一个服务商；非空值成为第一个文本块的 `TextBlock.citations`，绑定到 Chat（没有文本时：extras `annotations`），其他方言会拒绝它（`citations`），Chat 则以 `annotations` 发回。来自其他方言时，文本块进入 `content`，第一个拒绝进入 `refusal`，工具调用进入 `tool_calls`，因为 Chat 无法将它们交错排列；推理会被丢弃（[推理](reasoning.md)）；没有留下任何 Chat 能显示的内容的轮次（例如只有推理）以 `content: ""` 发送，这样对话保留其轮次，也满足 Chat 关于没有 `tool_calls` 的助手消息必须有内容的规则。 |
 | 助手 `refusal` | `Block::Refusal` | |
 | 助手 `function_call`（已弃用） | 消息的 extras `function_call` | `null` 按 verbatim 保留。按收到时的样子写回；其他方言会拒绝它（`messages[i].function_call`）。 |
 | 助手的 `reasoning_content`、`reasoning`（字符串）和 `reasoning_details`（OpenRouter 的 `reasoning.text`、`reasoning.summary`、`reasoning.encrypted` 条目列表） | 只要其中任一字段存在，就在内容之前生成 `Block::Reasoning`，取第一个可读字段的文本，没有则不含文本（`reasoning_details`：`text` 作为文本，`summary` 作为摘要），三者按原样保存在形式标记 `replayed` 中 | 应用会发回 Chat 提供商流式发给它们的推理（Grok CLI、Qwen Code、opencode）。Chat 提供商按原样收回这些字段，`thinking_parts()` 除外（[Chat 提供商](openai-chat-providers.md)）；其他方言丢弃可读推理（[推理](reasoning.md)）。无论其值如何，请求都不会因它们被拒绝；`null` 按原样保留。 |
@@ -101,6 +103,8 @@ nav: OpenAI Chat
 - 文本文档、文档 URL，以及文档的 `title`、`context` 和 `citations`；
 - 图像文件 ID，以及系统消息和助手消息中的图像、文档、音频和视频；工具结果中的图像和文档会移到其后的用户消息中（[工具结果中的媒体](cross-format.md#工具结果中的媒体)）；
 - 不是 base64 的音频、媒体类型没有对应 `input_audio.format` 的音频（`` audio media type `…` ``），以及视频，除非配置接受 `video_url` 部分；
+- 助手消息中除 OpenAI 音频 ID 以外的音频，除非该块带有转写稿，这时转写稿作为消息的文本发送；
+- 图像或其他输出模态、没有声音的音频输出、OpenAI 未列出的声音，以及没有音频输出时的音频设置；
 - 助手消息之外的拒绝和引用；
 - 其他方言的引用（通过 `check_foreign`）；
 - `top_k`（[采样参数](cross-format.md#采样参数)）；
@@ -159,7 +163,8 @@ OpenAI Responses 的 `custom_tool_call` 和 `local_shell_call` 项及其输出�
 | `message.annotations` | `TextBlock.citations`（原始，绑定到 Chat） | 没有内容时：extras `choice.message.annotations`。其他方言的引用会被省略（[回复](cross-format.md#回复)）。 |
 | `message.refusal` | `Block::Refusal` | |
 | `message.tool_calls` | `Block::ToolCall` 或 `Block::Unknown` | 与请求中相同。 |
-| `message.audio`（`id`、`data`、`expires_at`、`transcript`）、`message.function_call`、未知键 | extras `choice.message.<key>` | 音频对象连同 `transcript` 和 `expires_at` 完整保留。 |
+| `message.audio` | 文本之后的 `Block::Audio`：base64 `data`，媒体类型取自请求的 `audio.format`（`wav` `audio/wav`、`mp3` `audio/mpeg`、`flac`、`opus`、`aac`、`pcm16` `audio/l16; rate=24000; channels=1`），`transcript`（类型化），`id`、`expires_at` 和其他键作为块的 extras | 来自其他方言：第一个音频块，Gemini 的 16 位 PCM 片段会拼接起来；`id` 为 `audio_<回复 ID>`，`expires_at` 为回复的 `created`，因为没有为后续轮次保存任何内容；没有转写稿时 `transcript` 为 `""`。 |
+| `message.function_call`、未知键 | extras `choice.message.<key>` | |
 | 推理、其他方言的未知块 | 无 | 在 Chat 回复中省略（[回复](cross-format.md#回复)）。网关会为下一轮保存可回放的推理，以它之前对应的工具调用为键（[由网关保存的推理](reasoning.md#由网关保存的推理)，`kaeso_codecs::continuity`）。 |
 
 来自其他方言的回复按 OpenAI 的方式写出空值：`content: null`、`refusal: null`、`annotations: []` 和 `logprobs: null`。
@@ -201,7 +206,8 @@ KPP 字段遵循[用量](cross-format.md#用量)中的约定。
 | `finish_reason` 之前的 chunk 上的 `usage` | 暂存，形式标记 `chunk.u` | 运行中的用量：基于 vLLM 的提供商在 `stream_options.continuous_usage_stats` 下会在每个 chunk 上发送。KPP 只在最后一个块结束后报告用量，因此解码器保留最新的一份。结束 chunk 或其后的 chunk 上的用量会取代它；否则解码器在 `ResponseStop` 之前把它作为单独的 `ResponseDelta { usage }` 发出，即在 `[DONE]` 时，或者在流于结束 chunk 之后没有 `[DONE]` 就结束时。此时结束 chunk 自身的 `ResponseDelta` 只带停止原因。形式标记 `chunk.u` 保存每个 chunk 的对象，因此请求了用量的 Chat 应用会原样收到每个 chunk；未请求用量的应用收不到用量，只含用量的 chunk 也不会发给它。fixture 是 `fixtures/openai_chat/streams/usage-every-chunk.sse`。 |
 | `usage: null`、`logprobs: null`、`finish_reason: null`、`content: null`、`refusal: null` | 形式标记 `chunk.kv`、`cv`、`dv` | |
 | `choices[0].logprobs`、选项中的未知键 | 该 chunk 第一个事件上的 extras `choice.<key>` | |
-| `delta.audio`、`delta.function_call`、delta 中的未知键 | extras `delta.<key>` | 第一个之后完全没有类型化内容的 chunk 是一个 `Extra`（`{"event": null, "data": <chunk>}`）。 |
+| `delta.audio` | 一次 `BlockStart(Audio)`（其 `id` 在开始事件的 extras 中），然后是 `BlockDelta(Audio { data, transcript })` | `expires_at` 和其他键：delta 的 extras。来自其他方言：先发送 `{"id": "audio_<回复 ID>"}`，然后每个片段一个 chunk。 |
+| `delta.function_call`、delta 中的未知键 | extras `delta.<key>` | 第一个之后完全没有类型化内容的 chunk 是一个 `Extra`（`{"event": null, "data": <chunk>}`）。 |
 | `obfuscation` | 形式标记 `chunk.obf` | 事件来自其他方言时不发送给应用。 |
 | `moderation`、chunk 中的未知键 | 该 chunk 第一个事件上的 extras | |
 | `data: [DONE]` | `ResponseStop`（在仍打开的块的 `BlockStop` 之后） | 在 `finish_reason` 之后结束但没有 `[DONE]` 的流：带形式标记 `no_done` 的 `ResponseStop`；更早结束的流，无论有没有 `[DONE]`：`Error`，因为回复被截断了。带有 SSE 字段的 `[DONE]` 帧是一个 `Extra`，流随后按没有 `[DONE]` 的流结束。 |

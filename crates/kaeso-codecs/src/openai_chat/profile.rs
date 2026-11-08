@@ -471,6 +471,8 @@ pub(crate) fn sends_known(w: &ChatRequest, key: &str) -> bool {
         "safety_identifier" => w.safety_identifier.is_some(),
         "stream" => w.stream.is_some(),
         "stream_options" => w.stream_options.is_some(),
+        "modalities" => w.modalities.is_some(),
+        "audio" => w.audio.is_some(),
         _ => false,
     }
 }
