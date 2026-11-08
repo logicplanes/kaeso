@@ -155,6 +155,14 @@ const MARKED_PROVIDERS = {
   minimax: "MiniMax",
   google: "Google AI Studio",
   "gemini-agent-platform": "Gemini Enterprise Agent Platform",
+  vllm: "vLLM",
+  ollama: "Ollama",
+  "lm-studio": "LM Studio",
+  "llama-cpp": "llama.cpp",
+  tgi: "Text Generation Inference",
+  nim: "NVIDIA NIM",
+  "docker-model-runner": "Docker Model Runner",
+  xinference: "Xinference",
 };
 const PARAMS: Record<string, number> = { m: 2, l: 2, h: 1, v: 1, c: 6, s: 4, q: 4, t: 2, a: 7, z: 0 };
 
@@ -256,7 +264,7 @@ describe("provider marks", () => {
     });
   });
 
-  it("has a mark for every built-in provider and for nothing else", () => {
+  it("has a mark for every built-in provider, for the server software that publishes one, and for nothing else", () => {
     expect(Object.keys(PROVIDER_MARKS).sort()).toEqual(Object.keys(MARKED_PROVIDERS).sort());
   });
 
