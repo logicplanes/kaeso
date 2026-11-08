@@ -149,7 +149,7 @@ impl Node {
                     Some(Node::Obj(
                         entries
                             .into_iter()
-                            .map(|(k, v)| (k, Node::raw_value(v)))
+                            .map(|(k, v)| (k.into_owned(), Node::raw_value(v)))
                             .collect(),
                     ))
                 } else if r.get().trim_start().starts_with('[') {

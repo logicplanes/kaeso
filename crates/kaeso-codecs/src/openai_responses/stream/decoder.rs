@@ -347,7 +347,7 @@ impl Decoder {
             return;
         };
         let mut start = ResponseStart::new(w.id, w.model);
-        match w.usage.as_deref().map(|u| decode_usage(u, &self.origin)) {
+        match w.usage.map(|u| decode_usage(u, &self.origin)) {
             Some(Err(e)) => {
                 self.fail(out, e);
                 return;
@@ -679,7 +679,7 @@ impl Decoder {
                         .and_then(|d| d.reason.as_deref()),
                     has_calls,
                 );
-                let usage = match w.usage.as_deref().map(|u| decode_usage(u, &self.origin)) {
+                let usage = match w.usage.map(|u| decode_usage(u, &self.origin)) {
                     Some(Err(e)) => return Action::Broken(e.message),
                     usage => usage.and_then(Result::ok),
                 };

@@ -55,6 +55,23 @@ impl Overrides {
         out
     }
 
+    // `diff` for an object whose entries the caller has already read with `entries_of`.
+    pub(crate) fn diff_entries<'a>(
+        canon: &Node,
+        actual: &'a RawValue,
+        entries: Option<Entries<'a>>,
+        managed: &[&str],
+    ) -> Overrides {
+        let mut out = Overrides::default();
+        let mut path = Vec::new();
+        let keys = Keys {
+            managed,
+            recurse: &[],
+        };
+        diff_children_of(Some(canon), actual, entries, &mut path, &keys, &mut out);
+        out
+    }
+
     pub(crate) fn record(self, extras: &mut Extras, scope: &str) {
         let full = |p: &str| -> String {
             match (scope.is_empty(), p.is_empty()) {
@@ -143,17 +160,17 @@ struct Keys<'a> {
     recurse: &'a [&'a str],
 }
 
-fn diff_at(
+fn diff_at<'a>(
     canon: Option<&Node>,
-    actual: &RawValue,
-    path: &mut Vec<String>,
+    actual: &'a RawValue,
+    path: &mut Vec<Cow<'a, str>>,
     keys: &Keys<'_>,
     out: &mut Overrides,
 ) {
     let managed = keys.managed;
     let text = actual.get().trim_start();
     if path.len() == 1
-        && path.first().is_some_and(|k| managed.contains(&k.as_str()))
+        && path.first().is_some_and(|k| managed.contains(&k.as_ref()))
         && text.starts_with('[')
         && matches!(canon, Some(Node::Arr(_)))
     {
@@ -166,10 +183,28 @@ fn diff_at(
     diff_whole(canon, actual, path, out);
 }
 
-fn diff_children(
+pub(crate) type Entries<'a> = Vec<(Cow<'a, str>, &'a RawValue)>;
+
+// Whether `diff` compares this object key by key rather than as one value.
+pub(crate) fn by_key(entries: &[(Cow<'_, str>, &RawValue)]) -> bool {
+    entries.iter().all(|(k, _)| plain_key(k))
+}
+
+fn diff_children<'a>(
     canon: Option<&Node>,
-    actual: &RawValue,
-    path: &mut Vec<String>,
+    actual: &'a RawValue,
+    path: &mut Vec<Cow<'a, str>>,
+    keys: &Keys<'_>,
+    out: &mut Overrides,
+) {
+    diff_children_of(canon, actual, entries_of(actual), path, keys, out);
+}
+
+fn diff_children_of<'a>(
+    canon: Option<&Node>,
+    actual: &'a RawValue,
+    entries: Option<Entries<'a>>,
+    path: &mut Vec<Cow<'a, str>>,
     keys: &Keys<'_>,
     out: &mut Overrides,
 ) {
@@ -180,16 +215,16 @@ fn diff_children(
         None => Some(&empty),
         Some(n) => matches!(n.as_ref(), Node::Obj(_)).then_some(n.as_ref()),
     };
-    if let (Some(Node::Obj(centries)), Some(aentries)) = (canon_obj, entries_of(actual)) {
+    if let (Some(Node::Obj(centries)), Some(aentries)) = (canon_obj, entries) {
         let simple_keys = aentries.iter().all(|(k, _)| plain_key(k))
             && centries.iter().all(|(k, _)| !k.contains('.'));
         if simple_keys {
             let before = out.set.len() + out.unset.len();
             for (k, v) in &aentries {
-                let child = centries.get(k.as_str());
+                let child = centries.get(k.as_ref());
                 path.push(k.clone());
                 let recurse = v.get().trim_start().starts_with('{')
-                    && keys.recurse.contains(&k.as_str())
+                    && keys.recurse.contains(&k.as_ref())
                     && !(child.is_none() && typed_object(v));
                 if child.is_none() && !recurse {
                     out.set.push((path.join("."), RawJson::from(*v), None));
@@ -198,10 +233,10 @@ fn diff_children(
                 }
                 path.pop();
             }
-            let present: HashSet<&str> = aentries.iter().map(|(k, _)| k.as_str()).collect();
+            let present = Present::of(&aentries);
             for (ck, cv) in centries {
-                if !present.contains(ck.as_str()) {
-                    path.push(ck.clone());
+                if !present.has(ck) {
+                    path.push(Cow::Owned(ck.clone()));
                     out.unset
                         .push((path.join("."), cv.to_value().unwrap_or(Value::Null)));
                     path.pop();
@@ -219,13 +254,37 @@ fn diff_children(
         && aitems.len() == citems.len()
     {
         for (i, (c, a)) in citems.iter().zip(aitems).enumerate() {
-            path.push(i.to_string());
+            path.push(Cow::Owned(i.to_string()));
             diff_at(Some(c), a, path, keys, out);
             path.pop();
         }
         return;
     }
     diff_whole(canon, actual, path, out);
+}
+
+// The keys an object holds, looked up by a scan while there are few of them, as there are in
+// almost every object a provider sends.
+enum Present<'a> {
+    Few(&'a [(Cow<'a, str>, &'a RawValue)]),
+    Many(HashSet<&'a str>),
+}
+
+impl<'a> Present<'a> {
+    fn of(entries: &'a [(Cow<'a, str>, &'a RawValue)]) -> Present<'a> {
+        if entries.len() <= 16 {
+            Present::Few(entries)
+        } else {
+            Present::Many(entries.iter().map(|(k, _)| k.as_ref()).collect())
+        }
+    }
+
+    fn has(&self, key: &str) -> bool {
+        match self {
+            Present::Few(entries) => entries.iter().any(|(k, _)| k == key),
+            Present::Many(keys) => keys.contains(key),
+        }
+    }
 }
 
 // The text of a string leaf, borrowed where it has no escapes: the long leaves of an input item
@@ -252,7 +311,7 @@ fn same_string(canon: &Node, actual: &RawValue) -> bool {
     leaf_str(actual.get()).is_some_and(|a| a == canon)
 }
 
-fn diff_whole(canon: Option<&Node>, actual: &RawValue, path: &[String], out: &mut Overrides) {
+fn diff_whole(canon: Option<&Node>, actual: &RawValue, path: &[Cow<'_, str>], out: &mut Overrides) {
     if canon.is_some_and(|c| same_string(c, actual)) {
         return;
     }
@@ -323,9 +382,13 @@ pub(crate) fn is_form(path: &str, value: &Value, canon_has: bool) -> bool {
     if last == "type" {
         return canon_has || (path == "type" && value == "message");
     }
-    EXPLICIT_DEFAULTS
-        .iter()
-        .any(|(k, v)| *k == last && serde_json::from_str::<Value>(v).is_ok_and(|d| d == *value))
+    static DEFAULTS: std::sync::LazyLock<Vec<(&str, Value)>> = std::sync::LazyLock::new(|| {
+        EXPLICIT_DEFAULTS
+            .iter()
+            .filter_map(|(k, v)| serde_json::from_str(v).ok().map(|d| (*k, d)))
+            .collect()
+    });
+    DEFAULTS.iter().any(|(k, d)| *k == last && d == value)
 }
 
 pub(crate) fn apply(

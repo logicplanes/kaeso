@@ -160,7 +160,7 @@ pub(super) struct TextOnly {
 }
 
 #[derive(Debug, Deserialize)]
-pub(super) struct ResponseObject {
+pub(super) struct ResponseObject<'a> {
     pub id: String,
     #[serde(default)]
     pub model: String,
@@ -170,10 +170,10 @@ pub(super) struct ResponseObject {
     pub error: Option<ResponseError>,
     #[serde(default)]
     pub incomplete_details: Option<IncompleteDetails>,
-    #[serde(default)]
-    pub output: Option<Vec<Box<RawValue>>>,
-    #[serde(default)]
-    pub usage: Option<Box<RawValue>>,
+    #[serde(default, borrow)]
+    pub output: Option<Vec<&'a RawValue>>,
+    #[serde(default, borrow)]
+    pub usage: Option<&'a RawValue>,
 }
 
 #[derive(Debug, Deserialize)]
