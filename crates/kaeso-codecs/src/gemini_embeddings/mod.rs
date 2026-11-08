@@ -547,10 +547,11 @@ fn encode_response(reply: &Reply, ctx: &EncodeCtx) -> Result<Vec<u8>, KppError> 
         ));
     };
     let own = r.extras.is_from(D);
-    let single = if own {
-        r.extras.form_str(D, FORM_ACTION) == Some(SINGLE)
-    } else {
-        matches!(ctx.request.as_deref(), Some(Request::Embed(q)) if q.extras.form_str(D, FORM_ACTION) == Some(SINGLE))
+    let single = match ctx.request.as_deref() {
+        Some(Request::Embed(q)) if q.extras.is_from(D) => {
+            q.extras.form_str(D, FORM_ACTION) == Some(SINGLE)
+        }
+        _ => own && r.extras.form_str(D, FORM_ACTION) == Some(SINGLE),
     };
     let vectors = r
         .data

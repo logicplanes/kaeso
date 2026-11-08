@@ -3,11 +3,19 @@ from __future__ import annotations
 import anthropic
 import openai
 import pytest
+from google import genai
+from google.genai import errors, types
 
 from conftest import expected
 
 SCENARIO_KINDS = ("error",)
-SCENARIO_SOURCES = ("anthropic_messages", "openai_chat", "openai_responses", "openai_embeddings")
+SCENARIO_SOURCES = (
+    "anthropic_messages",
+    "openai_chat",
+    "openai_responses",
+    "openai_embeddings",
+    "gemini",
+)
 MESSAGES = [{"role": "user", "content": "hi"}]
 
 ANTHROPIC_STATUS = {
@@ -15,6 +23,12 @@ ANTHROPIC_STATUS = {
     "content_filtered": {400}, "authentication": {401}, "billing": {402},
     "permission_denied": {403}, "not_found": {404}, "request_too_large": {413},
     "rate_limited": {429}, "provider_error": {500}, "timeout": {504}, "overloaded": {529},
+}
+GEMINI_STATUS = {
+    "invalid_request": {400}, "context_too_long": {400}, "unsupported": {400},
+    "content_filtered": {400}, "authentication": {400, 401}, "billing": {429},
+    "permission_denied": {403}, "not_found": {404}, "request_too_large": {413},
+    "rate_limited": {429}, "provider_error": {500}, "timeout": {504}, "overloaded": {503},
 }
 OPENAI_STATUS = {
     "invalid_request": {400, 409, 422}, "context_too_long": {400}, "unsupported": {400},
@@ -55,3 +69,15 @@ def test_openai_endpoints(base_url, scenario, endpoint):
     assert isinstance(info.value.body, dict) and "message" in info.value.body, info.value.body
     if want["status"] == 429 and want.get("retry_after"):
         assert info.value.response.headers.get("retry-after"), "retry-after lost"
+
+
+def test_gemini_endpoint(base_url, scenario):
+    want = expected(base_url, scenario)
+    c = genai.Client(api_key="test", http_options=types.HttpOptions(base_url=base_url, api_version="v1beta"))
+    with pytest.raises(errors.APIError) as info:
+        c.models.generate_content(model=f"{scenario['source']}:{scenario['name']}", contents="hi")
+    allowed = set(GEMINI_STATUS[want["error_kind"]])
+    if scenario["source"] == "gemini":
+        allowed.add(want["status"])
+    assert info.value.code in allowed, want
+    assert info.value.message, info.value

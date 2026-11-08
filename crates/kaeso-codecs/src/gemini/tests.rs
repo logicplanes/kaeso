@@ -670,7 +670,7 @@ fn streams_from_other_formats_become_complete_gemini_streams() {
         StreamEvent::ResponseStop(ResponseStop::new()),
     ];
     let out = String::from_utf8(encode_stream(&events)).unwrap();
-    assert!(out.starts_with(": keepalive\n\n"), "{out}");
+    assert!(out.starts_with("\ndata: "), "{out}");
     let back = decode_stream(out.as_bytes(), 0);
     assert!(back.iter().any(|e| matches!(e, StreamEvent::BlockDelta(d) if d.delta == Delta::Text("Hi".into()))));
     assert!(back.iter().any(|e| matches!(e, StreamEvent::BlockDelta(d) if d.delta == Delta::ToolArguments("{\"a\":1}".into()))));
@@ -678,7 +678,7 @@ fn streams_from_other_formats_become_complete_gemini_streams() {
     assert!(matches!(back.last(), Some(StreamEvent::ResponseStop(_))));
     assert!(!out.contains("hidden"));
     let mut enc = Gemini::stream_encoder(&EncodeCtx::new(RequestKind::Generate, StreamMode::on(true)));
-    assert_eq!(enc.keepalive(), b": keepalive\n\n");
+    assert_eq!(enc.keepalive(), b"\n");
     let err = enc.encode(&StreamEvent::Error(kaeso_kpp::KppError::new(ErrorKind::Overloaded, "Busy."))).unwrap();
     let text = String::from_utf8(err).unwrap();
     assert!(text.starts_with("data: {\"error\""), "{text}");

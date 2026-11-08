@@ -146,6 +146,18 @@ pub(crate) fn decode_error_value(
     e
 }
 
+// A status another format's provider chose, such as Anthropic's 529, means nothing to a
+// Gemini app; its error kind decides the Google code instead.
+fn code_for(err: &KppError) -> u16 {
+    let google = err.origin.as_ref().is_none_or(|o| {
+        matches!(o.dialect, DialectId::Gemini | DialectId::GeminiEmbeddings)
+    });
+    match err.status {
+        Some(status) if google => status,
+        _ => default_code(&err.kind),
+    }
+}
+
 pub(crate) fn error_body(err: &KppError, dialect: DialectId) -> Value {
     if let (Some(origin), Some(raw)) = (&err.origin, &err.raw)
         && origin.is(dialect)
@@ -153,7 +165,7 @@ pub(crate) fn error_body(err: &KppError, dialect: DialectId) -> Value {
     {
         return raw.clone();
     }
-    let code = err.status.unwrap_or_else(|| default_code(&err.kind));
+    let code = code_for(err);
     let mut error = json!({
         "code": code,
         "message": err.message,
@@ -169,10 +181,11 @@ pub(crate) fn error_body(err: &KppError, dialect: DialectId) -> Value {
 
 pub(crate) fn encode_error(err: &KppError, dialect: DialectId) -> EncodedError {
     let body = error_body(err, dialect);
-    let code = err
-        .status
-        .or_else(|| body["error"]["code"].as_u64().and_then(|c| u16::try_from(c).ok()))
-        .unwrap_or_else(|| default_code(&err.kind));
+    let code = body["error"]["code"]
+        .as_u64()
+        .and_then(|c| u16::try_from(c).ok())
+        .filter(|_| err.origin.as_ref().is_some_and(|o| o.is(dialect)))
+        .unwrap_or_else(|| code_for(err));
     let mut headers = HeaderList::new().with("content-type", "application/json");
     if let Some(retry) = err.retry_after {
         push_retry_headers(&mut headers, retry, false);

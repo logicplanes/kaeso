@@ -14,7 +14,7 @@ use super::response::{encode_usage, finish_reason, id_seed, provider_error, stop
 use super::wire::{Raw, ResponseW};
 use crate::codec::{EgressCtx, EncodeCtx, HeaderList, StreamDecoder, StreamEncoder};
 use crate::cross::{ReplyPolicy, reasoning_reply_policy, reply_policy};
-use crate::keepalive::{COMMENT_FRAME, Pacer};
+use crate::keepalive::Pacer;
 use crate::sse::{SseEvent, SseItem, SseParser, comment_extra, frame_extra, framing, set_framing};
 use crate::wire::Ext;
 
@@ -22,6 +22,11 @@ use crate::wire::Ext;
 /// its finish reason and its final usage, which the events carry.
 pub(crate) const CHUNK: &str = "chunk";
 const SAME_PART: &str = "same_part";
+
+// The google-genai SDK reads every line that doesn't start with `data: ` as part of a JSON
+// error body (`_api_client.py`, `_iter_response_stream`), so an SSE comment would break it; it
+// skips blank lines, and a blank line with no data before it dispatches no event (WHATWG).
+pub(crate) const KEEPALIVE_FRAME: &[u8] = b"\n";
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum Open {
@@ -716,7 +721,7 @@ impl StreamEncoder for Encoder {
             return Ok(out);
         }
         self.event(event, &mut out)?;
-        self.pacer.pace(event, D, &mut out, COMMENT_FRAME);
+        self.pacer.pace(event, D, &mut out, KEEPALIVE_FRAME);
         Ok(out)
     }
 
@@ -730,7 +735,10 @@ impl StreamEncoder for Encoder {
     }
 
     fn keepalive(&mut self) -> Vec<u8> {
+        if self.done {
+            return Vec::new();
+        }
         self.pacer.reset();
-        COMMENT_FRAME.to_vec()
+        KEEPALIVE_FRAME.to_vec()
     }
 }
