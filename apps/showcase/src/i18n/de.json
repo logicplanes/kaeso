@@ -597,7 +597,6 @@
   "The label above the control (`vertical`) or beside it (`horizontal`).": "Die Beschriftung über dem Steuerelement (`vertical`) oder daneben (`horizontal`).",
   "The label and its keys together: “Go to request logs G then L”.": "Die Beschriftung mit ihren Tasten zusammen: „Zu den Anfrageprotokollen G dann L“.",
   "The label; the whole row becomes the target.": "Die Beschriftung; die ganze Zeile wird zur Klickfläche.",
-  "The language of the code, for highlighting.": "Die Sprache des Codes, für die Hervorhebung.",
   "The line's color (`var(--k-viz-1)` by default). Pass `seriesColor(id)` to match the series elsewhere.": "Die Farbe der Linie (standardmäßig `var(--k-viz-1)`). `seriesColor(id)` übergeben, damit sie zur Serie an anderer Stelle passt.",
   "The link's relationship, as on an `a` element.": "Die Beziehung des Links, wie bei einem `a`-Element.",
   "The link's text.": "Der Text des Links.",
@@ -940,7 +939,6 @@
   "The old version.": "Die alte Fassung.",
   "Unchanged lines kept around each change before the rest folds (3 by default).": "Unveränderte Zeilen, die um jede Änderung sichtbar bleiben, bevor der Rest einklappt (standardmäßig 3).",
   "Hide the copy circle, which copies the diff with + and - markers.": "Blendet den Kopierkreis aus, der die Änderungen mit den Zeichen + und - kopiert.",
-  "The language of both versions, for highlighting (`text` by default).": "Die Sprache beider Fassungen, für die Hervorhebung (standardmäßig `text`).",
   "Shows the old and the new line numbers.": "Zeigt die alten und die neuen Zeilennummern.",
   "A name in the title bar, beside the count of added and removed lines.": "Ein Name in der Titelleiste, neben der Zahl hinzugefügter und entfernter Zeilen.",
   "Long lines wrap instead of scrolling sideways, keeping their indent: values in a narrow column such as a sheet.": "Lange Zeilen brechen um, statt seitlich zu scrollen, und behalten ihren Einzug: Werte in einer schmalen Spalte wie einem Sheet.",
@@ -1001,7 +999,6 @@
   "The data is loading: the chart keeps its height and is marked busy; data already on screen dims and breathes, and with none yet the plot is a skeleton.": "Die Daten werden geladen: Das Diagramm behält seine Höhe und ist als beschäftigt markiert; schon sichtbare Daten werden blasser und atmen, ohne Daten ist die Fläche ein Skelett.",
   "Marks the `first` or `last` category as covering only part of its span: its bars are drawn faint with a dashed edge, like a partial line, and its tooltip says \"partial\". `ongoing` marks the last one as still counting, such as today, and says \"so far\".": "Markiert die erste (`first`) oder letzte (`last`) Kategorie als nur teilweise abgedeckt: Ihre Balken sind blass mit gestricheltem Rand, wie eine Teillinie, und ihr Tooltip sagt „teilweise“. `ongoing` markiert die letzte als noch laufend, etwa heute, und sagt „bisher“.",
   "The bars' series, each with an `id`, a `label`, one value per category and an optional `color`. Colors otherwise come from the series order by `id`; one series takes series 1. Negative values grow down from the zero line. With two or more, the legend shows and hides them.": "Die Reihen der Balken, jede mit `id`, `label`, einem Wert pro Kategorie und optionaler `color`. Sonst kommen die Farben aus der Reihenfolge nach `id`; eine einzelne Reihe erhält Reihe 1. Negative Werte wachsen von der Nulllinie nach unten. Ab zwei Reihen blendet die Legende sie ein und aus.",
-  "Highlighted code on a well in Kaeso's monochrome theme: copy in the header or on hover, tabs, line numbers, collapse.": "Hervorgehobener Code auf einer Fläche im einfarbigen Kaeso-Theme: Kopieren in der Kopfzeile oder beim Darüberfahren, Tabs, Zeilennummern, Einklappen.",
   "Inline code: Geist Mono 13 on a soft fill, radius 6 in running text.": "Inline-Code: Geist Mono 13 auf einer zarten Füllung, im Fließtext mit Radius 6.",
   "`text` for long code in running text, so it breaks with the sentence instead of jumping to its own line as one box; `cell` for the same in a table cell. The default box wraps inside itself when it is wider than its line.": "`text` für langen Code im Fließtext, damit er mit dem Satz umbricht, statt als ein Kasten in eine eigene Zeile zu springen; `cell` für dasselbe in einer Tabellenzelle. Der Standardkasten bricht in sich um, wenn er breiter als seine Zeile ist.",
   "`auto` (default) and `rounded` keep radius 6, so code in a sentence never mixes shapes; pass `pill` for one word standing alone, such as a model name in a table cell.": "`auto` (Standard) und `rounded` behalten Radius 6, damit Code in einem Satz nie Formen mischt; `pill` für ein einzelnes, alleinstehendes Wort übergeben, etwa einen Modellnamen in einer Tabellenzelle.",
@@ -1161,5 +1158,9 @@
   "One name per value, such as each day; with them the sparkline can be inspected by pointer or arrow keys, with a crosshair and a tooltip.": "Ein Name pro Wert, etwa jeder Tag; damit lässt sich die Sparkline per Zeiger oder Pfeiltasten untersuchen, mit Fadenkreuz und Tooltip.",
   "What the values are, named in the tooltip.": "Was die Werte sind, im Tooltip genannt.",
   "The artwork on the right, 16:9 at 320px: a `ReleaseArt` with `flush`, so the whole cover shows.": "Die Grafik rechts, 16:9 bei 320px: ein `ReleaseArt` mit `flush`, damit das ganze Cover zu sehen ist.",
-  "The level of the cells' titles: 3 below a section's heading (the default), 2 when the page's title is the only heading above.": "Die Ebene der Zellentitel: 3 unter der Überschrift eines Abschnitts (Standard), 2, wenn darüber nur der Seitentitel steht."
+  "The level of the cells' titles: 3 below a section's heading (the default), 2 when the page's title is the only heading above.": "Die Ebene der Zellentitel: 3 unter der Überschrift eines Abschnitts (Standard), 2, wenn darüber nur der Seitentitel steht.",
+  "Highlighted code on a well in Kaeso's syntax palette, in every common language: copy in the header or on hover, tabs, line numbers, collapse.": "Hervorgehobener Code auf einer Fläche in der Syntaxpalette von Kaeso, in jeder gängigen Sprache: Kopieren in der Kopfzeile oder beim Darüberfahren, Tabs, Zeilennummern, Einklappen.",
+  "The language to highlight (`ts` by default), or `text` to show the code plain. `resolveCodeLang` turns a Markdown fence name such as `py` or `sh` into one.": "Die Sprache für die Hervorhebung (standardmäßig `ts`) oder `text`, um den Code ohne Hervorhebung zu zeigen. `resolveCodeLang` macht aus dem Namen eines Markdown-Codeblocks wie `py` oder `sh` eine Sprache.",
+  "The language of both versions to highlight (`text` by default). `resolveCodeLang` turns a fence name such as `py` or `sh` into one.": "Die Sprache beider Fassungen für die Hervorhebung (standardmäßig `text`). `resolveCodeLang` macht aus einem Codeblock-Namen wie `py` oder `sh` eine Sprache.",
+  "Languages": "Sprachen"
 }

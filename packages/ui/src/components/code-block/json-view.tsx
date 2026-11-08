@@ -45,11 +45,10 @@ function Mark({ text, query }: { text: string; query?: string | undefined }) {
 }
 
 function Scalar({ v, query }: { v: Json; query?: string | undefined }) {
-  if (v === null) return <span className="font-semibold text-fg">null</span>;
-  if (typeof v === "boolean") return <span className="font-semibold text-fg">{String(v)}</span>;
-  if (typeof v === "number") return <span className="text-warning-text tabular">{v}</span>;
+  if (v === null || typeof v === "boolean") return <span className="text-code-constant">{String(v)}</span>;
+  if (typeof v === "number") return <span className="text-code-constant tabular">{v}</span>;
   return (
-    <span className="text-info-text wrap-anywhere">
+    <span className="text-code-string wrap-anywhere">
       "<Mark text={String(v)} query={query} />"
     </span>
   );
@@ -130,8 +129,8 @@ function Node({
     name === undefined ? null : typeof name === "number" ? (
       <span className="text-fg-tertiary tabular">{name}: </span>
     ) : (
-      <span className="text-fg">
-        "<Mark text={name} query={query} />"<span className="text-fg-tertiary">: </span>
+      <span className="text-code-property">
+        "<Mark text={name} query={query} />"<span className="text-code-punctuation">: </span>
       </span>
     );
   const comma = last ? "" : ",";

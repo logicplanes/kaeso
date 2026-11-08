@@ -22,6 +22,15 @@ describe("JsonView", () => {
     expect(screen.getByRole("button", { name: "1 item" })).toBeInTheDocument();
   });
 
+  it("colours keys, strings and constants like a highlighted JSON code block", () => {
+    render(<JsonView value={body} defaultDepth={1} />);
+    expect(screen.getByText('"gpt-5"')).toHaveClass("text-code-string");
+    expect(screen.getByText("true")).toHaveClass("text-code-constant");
+    expect(screen.getByText("0.2")).toHaveClass("text-code-constant");
+    expect(screen.getByText("null")).toHaveClass("text-code-constant");
+    expect(screen.getByText('"model"', { exact: false }).closest(".text-code-property")).toHaveTextContent('"model":');
+  });
+
   it("expands and collapses a branch, and counts keys", async () => {
     render(<JsonView value={{ usage: { input: 12, output: 40 } }} defaultDepth={0} surface="plain" />);
     await userEvent.click(screen.getByRole("button", { name: "1 key" }));

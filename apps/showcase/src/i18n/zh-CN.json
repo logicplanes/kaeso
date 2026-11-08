@@ -597,7 +597,6 @@
   "The label above the control (`vertical`) or beside it (`horizontal`).": "标签位于控件上方（`vertical`）或旁边（`horizontal`）。",
   "The label and its keys together: “Go to request logs G then L”.": "标签和按键合在一起：“前往请求日志 G 然后 L”。",
   "The label; the whole row becomes the target.": "标签；整行都可点击。",
-  "The language of the code, for highlighting.": "代码的语言，用于语法高亮。",
   "The line's color (`var(--k-viz-1)` by default). Pass `seriesColor(id)` to match the series elsewhere.": "线条的颜色（默认 `var(--k-viz-1)`）。传入 `seriesColor(id)` 可与其他位置的系列颜色一致。",
   "The link's relationship, as on an `a` element.": "链接关系，与 `a` 元素相同。",
   "The link's text.": "链接的文字。",
@@ -940,7 +939,6 @@
   "The old version.": "旧版本。",
   "Unchanged lines kept around each change before the rest folds (3 by default).": "每处更改前后保留的未更改行数，其余部分折叠（默认 3 行）。",
   "Hide the copy circle, which copies the diff with + and - markers.": "隐藏复制按钮；该按钮会连同 + 和 - 标记一起复制差异。",
-  "The language of both versions, for highlighting (`text` by default).": "两个版本的语言，用于语法高亮（默认 `text`）。",
   "Shows the old and the new line numbers.": "显示旧行号和新行号。",
   "A name in the title bar, beside the count of added and removed lines.": "标题栏中的名称，显示在新增和删除行数的旁边。",
   "Long lines wrap instead of scrolling sideways, keeping their indent: values in a narrow column such as a sheet.": "长行自动换行而不横向滚动，并保留缩进：适用于面板等窄栏中的值。",
@@ -1001,7 +999,6 @@
   "The data is loading: the chart keeps its height and is marked busy; data already on screen dims and breathes, and with none yet the plot is a skeleton.": "数据加载中：图表保持高度并标记为忙碌；已显示的数据变淡并轻微闪动，尚无数据时绘图区显示骨架。",
   "Marks the `first` or `last` category as covering only part of its span: its bars are drawn faint with a dashed edge, like a partial line, and its tooltip says \"partial\". `ongoing` marks the last one as still counting, such as today, and says \"so far\".": "将第一个（`first`）或最后一个（`last`）类别标记为只覆盖部分区间：其柱形以浅色和虚线边缘绘制，与部分折线一致，提示框标注“部分”。`ongoing` 将最后一个标记为仍在统计（例如今天），并标注“截至目前”。",
   "The bars' series, each with an `id`, a `label`, one value per category and an optional `color`. Colors otherwise come from the series order by `id`; one series takes series 1. Negative values grow down from the zero line. With two or more, the legend shows and hides them.": "柱形的系列，每个包含 `id`、`label`、每个类别一个数值和可选的 `color`。否则颜色按 `id` 由系列顺序决定；只有一个系列时使用系列 1。负值从零线向下延伸。有两个或更多系列时，图例可显示或隐藏它们。",
-  "Highlighted code on a well in Kaeso's monochrome theme: copy in the header or on hover, tabs, line numbers, collapse.": "以 Kaeso 单色主题在底板上高亮显示的代码：在标题栏或悬停时复制，标签页、行号、折叠。",
   "Inline code: Geist Mono 13 on a soft fill, radius 6 in running text.": "行内代码：浅色填充上的 Geist Mono 13，在正文中使用 6 像素圆角。",
   "`text` for long code in running text, so it breaks with the sentence instead of jumping to its own line as one box; `cell` for the same in a table cell. The default box wraps inside itself when it is wider than its line.": "`text` 用于正文中的长代码，使其随句子换行，而不是作为一个整体跳到新的一行；`cell` 用于表格单元格中的同类情况。默认的整体框在宽于所在行时会在框内换行。",
   "`auto` (default) and `rounded` keep radius 6, so code in a sentence never mixes shapes; pass `pill` for one word standing alone, such as a model name in a table cell.": "`auto`（默认）和 `rounded` 保持 6 像素圆角，使句中的代码不会混用形状；单独出现的一个词（如表格单元格中的模型名）可传入 `pill`。",
@@ -1161,5 +1158,9 @@
   "One name per value, such as each day; with them the sparkline can be inspected by pointer or arrow keys, with a crosshair and a tooltip.": "每个值一个名称，例如每一天；有了它们，就可以用指针或方向键查看微型折线图，并显示十字线和提示。",
   "What the values are, named in the tooltip.": "这些值是什么，在提示中注明。",
   "The artwork on the right, 16:9 at 320px: a `ReleaseArt` with `flush`, so the whole cover shows.": "右侧的插图，宽 320px、比例 16:9：使用带 `flush` 的 `ReleaseArt`，以完整显示封面。",
-  "The level of the cells' titles: 3 below a section's heading (the default), 2 when the page's title is the only heading above.": "单元格标题的级别：位于某个区块标题下方时为 3（默认），上方只有页面标题时为 2。"
+  "The level of the cells' titles: 3 below a section's heading (the default), 2 when the page's title is the only heading above.": "单元格标题的级别：位于某个区块标题下方时为 3（默认），上方只有页面标题时为 2。",
+  "Highlighted code on a well in Kaeso's syntax palette, in every common language: copy in the header or on hover, tabs, line numbers, collapse.": "以 Kaeso 语法配色在底板上高亮显示的代码，支持所有常用语言：在标题栏或悬停时复制，标签页、行号、折叠。",
+  "The language to highlight (`ts` by default), or `text` to show the code plain. `resolveCodeLang` turns a Markdown fence name such as `py` or `sh` into one.": "要高亮的语言（默认 `ts`），或用 `text` 原样显示代码。`resolveCodeLang` 可将 `py`、`sh` 等 Markdown 代码块名称转换为对应语言。",
+  "The language of both versions to highlight (`text` by default). `resolveCodeLang` turns a fence name such as `py` or `sh` into one.": "两个版本要高亮的语言（默认 `text`）。`resolveCodeLang` 可将 `py`、`sh` 等代码块名称转换为对应语言。",
+  "Languages": "语言"
 }

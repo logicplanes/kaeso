@@ -36,6 +36,12 @@ const md = [
       [code(`--k-${k}-tint`), s.tint.light, s.tint.dark],
     ]),
   ),
+  "## Code",
+  "",
+  ...table(
+    ["Variable", "Light", "Dark"],
+    Object.entries(t.code).map(([k, m]) => [code(`--k-code-${k}`), m.light, m.dark]),
+  ),
   "## Data",
   "",
   ...table(

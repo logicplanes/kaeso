@@ -52,8 +52,9 @@ describe("CodeBlock", () => {
     expect(container.querySelector(".bg-fill-2")).not.toBeNull();
     expect(screen.getByText('const key = "sk-kso";')).toBeInTheDocument();
     await highlighted();
-    expect(screen.getByText('"sk-kso"')).toHaveClass("text-info-text");
-    expect(screen.getByText("const")).toHaveClass("font-semibold");
+    expect(screen.getByText('"sk-kso"')).toHaveClass("text-code-string");
+    expect(screen.getByText("const")).toHaveClass("text-code-keyword");
+    expect(screen.getByText("key")).not.toHaveAttribute("class");
     expect(container.querySelector("[style]")).toBeNull();
   });
 
@@ -194,16 +195,47 @@ describe("CodeBlock", () => {
     expect(copy.closest(".opacity-0")).toBeNull();
   });
 
-  it("sizes line numbers by the largest one and keeps tertiary text legible on highlighted lines", async () => {
+  it("sizes line numbers by the largest one and keeps a highlighted line's number and comment legible", async () => {
     const code = Array.from({ length: 1002 }, (_, i) => `// line ${i + 1}`).join("\n");
     const { container } = render(<CodeBlock code={code} lang="ts" lineNumbers highlightLines={[2]} collapseAfter={4} />);
     await highlighted();
     const numbers = [...container.querySelectorAll("code > span > span:first-child")];
     expect(numbers[0]).toHaveClass("w-32", "text-fg-tertiary");
     expect(numbers[1]).toHaveClass("w-32", "text-fg-secondary");
-    expect(container.querySelector("code > span:nth-child(2) .text-fg-tertiary")).toBeNull();
+    expect(container.querySelector("code > span:nth-child(2) .text-code-comment")).toHaveTextContent("// line 2");
     expect(container.querySelector("pre")).toHaveClass("scroll-fade-y");
     expect(screen.getByRole("button", { name: "Show all 1002 lines" })).toHaveClass("tap-target");
+  });
+
+  it("highlights every language it is given, and shows an unknown one plain", async () => {
+    const { container, rerender } = render(<CodeBlock code={"fn main() {}"} lang="rust" copy={false} />);
+    await highlighted();
+    expect(screen.getByText("fn")).toHaveClass("text-code-keyword");
+    expect(screen.getByText("main")).toHaveClass("text-code-function");
+    rerender(<CodeBlock code={"kaeso.example.com {\n  reverse_proxy gateway:8080\n}"} lang={"caddyfile" as never} copy={false} />);
+    await highlighted();
+    expect(container.querySelector("[class*=text-code-]")).toBeNull();
+    expect(container.querySelector("code")).toHaveTextContent("reverse_proxy gateway:8080");
+  });
+
+  it("shows Windows line endings as lines, copies them as plain newlines, and keeps tabs", async () => {
+    const user = userEvent.setup();
+    const writeText = vi.fn(() => Promise.resolve());
+    Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText } });
+    const { container } = render(<CodeBlock code={"package main\r\n\r\nfunc main() {\r\n\treturn\r\n}\r\n"} lang="go" />);
+    await highlighted();
+    const rows = [...container.querySelectorAll("code > span")].map((r) => r.textContent);
+    expect(rows).toEqual(["package main", " ", "func main() {", "\treturn", "}"]);
+    expect(screen.getByText("func")).toHaveClass("text-code-keyword");
+    await user.click(screen.getByRole("button", { name: "Copy code" }));
+    expect(writeText).toHaveBeenCalledWith("package main\n\nfunc main() {\n\treturn\n}");
+  });
+
+  it("shows nothing but an empty line for empty code", async () => {
+    const { container } = render(<CodeBlock code="" lang="ts" copy={false} />);
+    await highlighted();
+    expect(container.querySelectorAll("code > span")).toHaveLength(1);
+    expect(container.querySelector("code")?.textContent).toBe(" ");
   });
 
   it("names its code after a long title, which ends in an ellipsis with the whole title on hover", () => {

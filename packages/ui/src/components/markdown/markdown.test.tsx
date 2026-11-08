@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { Markdown, markdownCodeLang, safeHref } from "./markdown.js";
+import { Markdown, safeHref } from "./markdown.js";
 
 const md = (text: string, props: Partial<Parameters<typeof Markdown>[0]> = {}) => render(<Markdown text={text} {...props} />).container;
 
@@ -149,12 +149,13 @@ describe("safeHref", () => {
   });
 });
 
-describe("markdownCodeLang", () => {
-  it("maps fence names to the highlighter's languages", () => {
-    expect(markdownCodeLang("TypeScript")).toBe("ts");
-    expect(markdownCodeLang("sh title=run")).toBe("bash");
-    expect(markdownCodeLang("rust")).toBe("text");
-    expect(markdownCodeLang(undefined)).toBe("text");
+describe("Markdown blocks", () => {
+  it("highlights a fence by its short name and leaves an unknown one plain", async () => {
+    const c = md("```py title=ask.py\ndef ask(prompt):\n    return prompt\n```\n\n```caddyfile\nkaeso.example.com {\n}\n```");
+    await waitFor(() => expect(screen.getByText("def")).toHaveClass("text-code-keyword"));
+    expect(screen.getByText("ask")).toHaveClass("text-code-function");
+    expect(c.querySelectorAll("[role=group]")[1]?.querySelector("[class*=text-code-]")).toBeNull();
+    expect(c.textContent).toContain("kaeso.example.com {");
   });
 
   it("gives each heading level its own step, numbers from the widest number, and lets inline code break with the sentence", () => {

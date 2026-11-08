@@ -3,13 +3,13 @@ import type { ComponentDocs } from "../../component-docs.js";
 export const docs = {
   CodeBlock: {
     description:
-      "Highlighted code on a well: Kaeso's monochrome theme, copy in the header with a title or tabs and on hover without, tabs, line numbers, collapse with a fade at the cut. Long lines scroll sideways inside 16px of padding at both ends, and the code fades out at an edge with more to scroll to.",
+      "Highlighted code on a well in Kaeso's syntax palette, in every common language, each loaded the first time a block shows it: copy in the header with a title or tabs and on hover without, tabs, line numbers, collapse with a fade at the cut. Long lines scroll sideways inside 16px of padding at both ends, and the code fades out at an edge with more to scroll to.",
     props: {
       code: "The code to show.",
       collapseAfter: "Collapse beyond this many lines (24 by default; 0 never collapses).",
       copy: "Hide the copy circle.",
       highlightLines: "1-based line numbers to highlight.",
-      lang: "The language of the code, for highlighting.",
+      lang: "The language to highlight (`ts` by default), or `text` to show the code plain. `resolveCodeLang` turns a Markdown fence name such as `py` or `sh` into one.",
       lineNumbers: "Shows line numbers.",
       surface: "On a filled well (`well`) or on the panel itself (`plain`).",
       onTabChange: "Called with the label of the tab a person chooses, to remember it.",
@@ -27,7 +27,7 @@ export const docs = {
       before: "The old version.",
       context: "Unchanged lines kept around each change before the rest folds (3 by default).",
       copy: "Hide the copy circle, which copies the diff with + and - markers.",
-      lang: "The language of both versions, for highlighting (`text` by default).",
+      lang: "The language of both versions to highlight (`text` by default). `resolveCodeLang` turns a fence name such as `py` or `sh` into one.",
       lineNumbers: "Shows the old and the new line numbers.",
       surface: "On a filled well (`well`) or on the panel itself (`plain`).",
       title: "A name in the title bar, beside the count of added and removed lines.",

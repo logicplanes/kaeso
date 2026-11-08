@@ -1,51 +1,163 @@
-const TONES = {
-  text: { color: "var(--k-text)", className: "" },
-  quiet: { color: "var(--k-text-tertiary)", className: "text-fg-tertiary" },
-  secondary: { color: "var(--k-text-secondary)", className: "text-fg-secondary" },
-  string: { color: "var(--k-info-text)", className: "text-info-text" },
-  constant: { color: "var(--k-warning-text)", className: "text-warning-text" },
-} as const;
+import { TONES } from "./tones.js";
 
-const ITALIC = 1;
-const BOLD = 2;
-
-export function codeTokenClass(color: string | undefined, fontStyle: number | undefined): string {
-  const style = fontStyle ?? 0;
-  return [
-    Object.values(TONES).find((tone) => tone.color === color?.toLowerCase())?.className ?? "",
-    style & ITALIC ? "italic" : "",
-    style & BOLD ? "font-semibold" : "",
-  ]
-    .filter(Boolean)
-    .join(" ");
-}
-
+/**
+ * Kaeso's Shiki theme. Every colour is a `var(--k-code-…)` token, so light and dark switch through CSS without highlighting again.
+ * A deeper scope wins over the scope around it, which is how keys, interpolations and variables inside strings get their own colour.
+ */
 export const kaesoShikiTheme = {
   name: "kaeso",
   type: "light" as const,
   colors: { "editor.background": "transparent", "editor.foreground": TONES.text.color },
   settings: [
     { settings: { foreground: TONES.text.color, background: "transparent" } },
-    { scope: ["comment", "punctuation.definition.comment"], settings: { foreground: TONES.quiet.color, fontStyle: "italic" } },
     {
-      scope: ["string", "string.quoted", "string.template", "punctuation.definition.string", "markup.inline.raw"],
+      scope: ["punctuation", "meta.brace", "keyword.operator", "storage.type.function.arrow", "keyword.other.http"],
+      settings: { foreground: TONES.punctuation.color },
+    },
+    {
+      scope: [
+        "keyword",
+        "storage",
+        "keyword.operator.new",
+        "keyword.operator.expression",
+        "keyword.operator.logical.python",
+        "keyword.operator.word",
+        "keyword.operator.wordlike",
+        "keyword.operator.sizeof",
+        "keyword.control.http",
+        "variable.language",
+        "punctuation.definition.template-expression",
+        "punctuation.section.embedded",
+        "punctuation.section.interpolation",
+        "punctuation.definition.interpolation",
+        "meta.fstring.python constant.character.format.placeholder",
+        "entity.name.type.hcl",
+        "meta.diff.range",
+        "meta.diff.header.git",
+      ],
+      settings: { foreground: TONES.keyword.color },
+    },
+    {
+      scope: [
+        "string",
+        "punctuation.definition.string",
+        "storage.type.string.python",
+        "markup.inline.raw",
+        "markup.fenced_code.block",
+        "property.value.dotenv",
+      ],
       settings: { foreground: TONES.string.color },
     },
-    { scope: ["constant.numeric"], settings: { foreground: TONES.constant.color } },
-    { scope: ["constant.language.boolean", "constant.language.null", "constant.language"], settings: { foreground: TONES.text.color, fontStyle: "bold" } },
+    { scope: ["constant", "support.constant", "keyword.other.unit", "storage.type.number.python"], settings: { foreground: TONES.constant.color } },
     {
-      scope: ["keyword", "storage", "storage.type", "storage.modifier", "keyword.control", "keyword.operator.new", "variable.language"],
-      settings: { foreground: TONES.text.color, fontStyle: "bold" },
+      scope: [
+        "entity.name.function",
+        "support.function",
+        "variable.function",
+        "entity.name.command",
+        "meta.function-call.generic",
+        "string.other.link.title",
+        "string.other.link.description",
+      ],
+      settings: { foreground: TONES.function.color },
     },
     {
-      scope: ["punctuation", "meta.brace", "punctuation.separator", "punctuation.terminator", "keyword.operator", "meta.tag punctuation"],
-      settings: { foreground: TONES.quiet.color },
+      scope: ["markup.heading", "markup.heading entity.name.section", "markup.heading punctuation.definition.heading"],
+      settings: { foreground: TONES.function.color, fontStyle: "bold" },
     },
-    { scope: ["entity.name.function", "support.function", "entity.name.tag", "support.class.component"], settings: { foreground: TONES.text.color } },
     {
-      scope: ["support.type.property-name", "meta.object-literal.key", "entity.other.attribute-name", "variable.other.property"],
+      scope: [
+        "entity.name.type",
+        "entity.name.class",
+        "entity.name.namespace",
+        "entity.other.inherited-class",
+        "entity.name.section",
+        "support.type",
+        "support.class",
+        "storage.type.primitive",
+        "storage.type.built-in",
+        "storage.type.java",
+        "storage.type.generic.java",
+        "storage.type.string.go",
+        "storage.type.numeric.go",
+        "storage.type.boolean.go",
+        "storage.type.byte.go",
+        "storage.type.error.go",
+        "storage.type.rune.go",
+        "storage.type.uintptr.go",
+        "storage.modifier.package.java",
+        "storage.modifier.import.java",
+        "keyword.other.type.php",
+        "variable.fragment.graphql",
+      ],
+      settings: { foreground: TONES.type.color },
+    },
+    {
+      scope: [
+        "support.type.property-name",
+        "meta.object-literal.key",
+        "entity.name.tag.yaml",
+        "variable.key.dotenv",
+        "variable.other.key.toml",
+        "keyword.other.definition.ini",
+        "entity.name.tag.http",
+        "entity.name.variable.field",
+        "variable.other.member",
+        "variable.declaration.hcl variable.other.readwrite",
+      ],
+      settings: { foreground: TONES.property.color },
+    },
+    { scope: ["entity.name.tag", "support.class.component"], settings: { foreground: TONES.tag.color } },
+    {
+      scope: [
+        "entity.other.attribute-name",
+        "storage.type.annotation",
+        "meta.preprocessor",
+        "keyword.control.directive",
+        "punctuation.definition.directive",
+        "meta.attribute.rust",
+      ],
+      settings: { foreground: TONES.attribute.color },
+    },
+    {
+      scope: [
+        "variable.other.normal.shell",
+        "variable.other.positional.shell",
+        "variable.parameter.positional.shell",
+        "variable.other.special.shell",
+        "variable.other.bracket.shell",
+        "variable.other.assignment.shell",
+        "punctuation.definition.variable",
+        "variable.other.php",
+        "variable.other.readwrite.instance",
+        "variable.other.readwrite.class",
+        "variable.other.readwrite.global",
+        "variable.other.readwrite.powershell",
+        "variable.other.makefile",
+        "variable.other.nginx",
+        "variable.scss",
+        "variable.css",
+        "variable.argument.css",
+        "meta.variables.graphql variable.parameter.graphql",
+        "meta.arguments.graphql variable.graphql",
+      ],
+      settings: { foreground: TONES.variable.color },
+    },
+    { scope: ["comment", "punctuation.definition.comment", "markup.quote"], settings: { foreground: TONES.comment.color, fontStyle: "italic" } },
+    {
+      scope: ["markup.inserted", "meta.diff.header.to-file", "punctuation.definition.inserted", "punctuation.definition.to-file"],
+      settings: { foreground: TONES.inserted.color },
+    },
+    {
+      scope: ["markup.deleted", "meta.diff.header.from-file", "punctuation.definition.deleted", "punctuation.definition.from-file"],
+      settings: { foreground: TONES.deleted.color },
+    },
+    { scope: ["markup.underline.link"], settings: { foreground: TONES.string.color } },
+    { scope: ["markup.bold"], settings: { fontStyle: "bold" } },
+    { scope: ["markup.italic"], settings: { fontStyle: "italic" } },
+    {
+      scope: ["meta.template.expression", "meta.embedded", "meta.interpolation", "variable.parameter", "string.unquoted.argument.shell"],
       settings: { foreground: TONES.text.color },
     },
-    { scope: ["entity.name.type", "support.type", "entity.other.inherited-class"], settings: { foreground: TONES.secondary.color } },
   ],
 };

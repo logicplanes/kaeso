@@ -30,8 +30,18 @@ describe("DiffView", () => {
 
   it("highlights the syntax of both versions", async () => {
     const { container } = render(<DiffView before={before} after={after} lang="json" />);
-    await waitFor(() => expect(container.querySelector('[data-diff="added"] .text-info-text')).not.toBeNull());
-    expect(container.querySelector('[data-diff="removed"] [data-diff-change] .text-info-text')).toHaveTextContent("Sub Experiment");
+    await waitFor(() => expect(container.querySelector('[data-diff="added"] .text-code-string')).not.toBeNull());
+    expect(container.querySelector('[data-diff="removed"] [data-diff-change] .text-code-string')).toHaveTextContent("Sub Experiment");
+    expect(container.querySelector('[data-diff="added"] .text-code-property')).toHaveTextContent("name");
+  });
+
+  it("shows a comment inside a changed word in the text colour, so it reads on the word's fill", async () => {
+    const { container } = render(<DiffView before={"// route to openai\nconst a = 1;"} after={"// route to anthropic\nconst a = 1;"} lang="ts" />);
+    await waitFor(() => expect(container.querySelector('[data-diff="added"] .text-code-comment')).not.toBeNull());
+    const changed = container.querySelector('[data-diff="added"] [data-diff-change] span');
+    expect(changed).toHaveTextContent("anthropic");
+    expect(changed).toHaveClass("text-fg", "italic");
+    expect(changed).not.toHaveClass("text-code-comment");
   });
 
   it("folds unchanged lines and shows them on request", async () => {

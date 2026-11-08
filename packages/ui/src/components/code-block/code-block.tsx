@@ -74,7 +74,7 @@ export const CodeBlock = forwardRef<HTMLDivElement, CodeBlockProps>(function Cod
   };
   const t = useUiText();
   const current = tabs?.[tab] ?? { label: "", code, lang };
-  const text = current.code.replace(/\n$/, "");
+  const text = current.code.replace(/\r\n?/g, "\n").replace(/\n$/, "");
   const lines = useMemo(() => text.split("\n"), [text]);
   const [highlighted, setHighlighted] = useState<{ text: string; lang: CodeLang; tokens: CodeToken[][] | null } | null>(null);
   const [expanded, setExpanded] = useState(false);
@@ -129,7 +129,7 @@ export const CodeBlock = forwardRef<HTMLDivElement, CodeBlockProps>(function Cod
               <span className={cn("min-w-0", wrap === true && "pl-16 -indent-16", wrap === "phone" && "max-sm:pl-16 max-sm:-indent-16")}>
                 {tokenLines?.[i]?.length
                   ? dropIndent(tokenLines[i], wrap ? (INDENT.exec(line)?.[0].length ?? 0) : 0).map((token, j) => (
-                      <span key={j} className={(lit ? token.className.replace("text-fg-tertiary", "text-fg-secondary") : token.className) || undefined}>
+                      <span key={j} className={token.className || undefined}>
                         {token.content}
                       </span>
                     ))

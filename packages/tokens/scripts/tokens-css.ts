@@ -27,6 +27,8 @@ ${dark.join("\n")}
     --k-line-subtle: var(--k-line-strong);
     --k-text-secondary: var(--k-text);
     --k-text-tertiary: var(--k-text);
+    --k-code-comment: var(--k-text);
+    --k-code-punctuation: var(--k-text);
   }
 }
 `;
