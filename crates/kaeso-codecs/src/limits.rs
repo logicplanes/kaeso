@@ -73,6 +73,23 @@ enum Node {
 }
 
 impl Node {
+    // The form when it doesn't depend on the value, so the walk needs no copy of it to look at.
+    fn fixed_form(self) -> Option<Form> {
+        match self {
+            Node::Item(DialectId::AnthropicMessages) => Some(Form::Nests(Scope::Anthropic(0))),
+            _ => None,
+        }
+    }
+
+    // The form `form` gives, from a leading `type`; a later repeated `type` makes the walk
+    // start over the way `form` reads it.
+    fn leading_form(self, raw: &RawValue) -> Option<Form> {
+        let Node::Block(Some(Scope::Anthropic(depth))) = self else {
+            return None;
+        };
+        crate::anthropic_messages::block_form_of(crate::wire::leading_type(raw)?, depth)
+    }
+
     fn form(self, raw: &RawValue) -> Form {
         match self {
             Node::Item(DialectId::OpenAiChat) => crate::openai_chat::message_form(raw),
@@ -96,11 +113,12 @@ enum Over {
     Inputs,
 }
 
-#[derive(Default)]
+#[derive(Clone, Default)]
 struct Tally {
     shape: RequestShape,
     in_message: usize,
     over: Option<Over>,
+    second_type: bool,
 }
 
 impl Tally {
@@ -176,6 +194,7 @@ struct Walk<'t> {
     tally: &'t mut Tally,
     kept: bool,
     nests: Option<Scope>,
+    one_type: bool,
 }
 
 impl Walk<'_> {
@@ -185,6 +204,7 @@ impl Walk<'_> {
             tally: &mut *self.tally,
             kept: self.kept,
             nests: None,
+            one_type: false,
         }
     }
 
@@ -294,7 +314,15 @@ impl<'de> Visitor<'de> for Walk<'_> {
             self.tally.count(Over::Blocks)?;
         }
         let typed_object = !self.kept && matches!(self.node, Node::Item(_) | Node::Block(_));
+        let mut types = 0usize;
         while let Some(Key(key)) = map.next_key::<Key<'de>>()? {
+            if self.one_type && key == "type" {
+                types += 1;
+                if types > 1 {
+                    self.tally.second_type = true;
+                    return Err(serde::de::Error::custom("a repeated type"));
+                }
+            }
             match child(self.node, &key) {
                 Some(_) if typed_object && key == "content" && self.nests.is_some() => {
                     let node = Node::Content(self.nests);
@@ -326,7 +354,35 @@ impl<'de> DeserializeSeed<'de> for Element<'_> {
     type Value = ();
 
     fn deserialize<D: serde::Deserializer<'de>>(self, d: D) -> Result<(), D::Error> {
+        if let Some(Form::Nests(scope)) = self.node.fixed_form() {
+            return Walk {
+                node: self.node,
+                tally: self.tally,
+                kept: false,
+                nests: Some(scope),
+                one_type: false,
+            }
+            .deserialize(d);
+        }
         let raw = <&'de RawValue as serde::Deserialize<'de>>::deserialize(d)?;
+        if let Some(form @ (Form::Typed | Form::Nests(_))) = self.node.leading_form(raw) {
+            let before = self.tally.clone();
+            let walked = Walk {
+                node: self.node,
+                tally: &mut *self.tally,
+                kept: false,
+                nests: match form {
+                    Form::Nests(scope) => Some(scope),
+                    _ => None,
+                },
+                one_type: true,
+            }
+            .walk_raw(raw);
+            if !self.tally.second_type {
+                return walked;
+            }
+            *self.tally = before;
+        }
         let (kept, nests) = match self.node.form(raw) {
             Form::Raw => {
                 self.tally.shape.bytes += whitespace_outside_strings(raw.get().as_bytes());
@@ -340,6 +396,7 @@ impl<'de> DeserializeSeed<'de> for Element<'_> {
             tally: self.tally,
             kept,
             nests,
+            one_type: false,
         }
         .walk_raw(raw)
     }
@@ -361,6 +418,7 @@ impl<'de> DeserializeSeed<'de> for Kept<'_> {
             tally: self.tally,
             kept: true,
             nests: None,
+            one_type: false,
         }
         .walk_raw(raw)
     }
@@ -385,6 +443,11 @@ impl<'de> DeserializeSeed<'de> for Opaque<'_> {
 }
 
 fn whitespace_outside_strings(json: &[u8]) -> usize {
+    // A raw value starts at its first byte: only an object or an array has whitespace outside
+    // strings, and a string, the bulk of most requests, needs no scan.
+    if !matches!(json.first(), Some(b'{' | b'[')) {
+        return 0;
+    }
     let mut whitespace = 0usize;
     let mut in_string = false;
     let mut escaped = false;
@@ -513,6 +576,7 @@ pub fn request_shape(dialect: DialectId, body: &[u8]) -> Result<RequestShape, Kp
         tally: &mut tally,
         kept: false,
         nests: None,
+        one_type: false,
     }
     .deserialize(&mut de);
     match (walked, tally.over) {
@@ -526,23 +590,18 @@ pub fn request_shape(dialect: DialectId, body: &[u8]) -> Result<RequestShape, Kp
 fn significant_bytes(body: &[u8], depth_limit: usize) -> Option<usize> {
     let mut depth = 0usize;
     let mut bytes = 0usize;
-    let mut in_string = false;
-    let mut escaped = false;
-    for &byte in body {
-        if in_string || !byte.is_ascii_whitespace() {
-            bytes += 1;
-        }
-        if in_string {
-            match byte {
-                _ if escaped => escaped = false,
-                b'\\' => escaped = true,
-                b'"' => in_string = false,
-                _ => {}
-            }
+    let mut i = 0usize;
+    while let Some(&byte) = body.get(i) {
+        if byte == b'"' {
+            let end = string_end(body, i + 1);
+            bytes += end - i;
+            i = end;
             continue;
         }
+        if !byte.is_ascii_whitespace() {
+            bytes += 1;
+        }
         match byte {
-            b'"' => in_string = true,
             b'{' | b'[' => {
                 depth += 1;
                 if depth > depth_limit {
@@ -552,6 +611,129 @@ fn significant_bytes(body: &[u8], depth_limit: usize) -> Option<usize> {
             b'}' | b']' => depth = depth.saturating_sub(1),
             _ => {}
         }
+        i += 1;
     }
     Some(bytes)
+}
+
+// Just past the quote that closes a string whose content starts at `from`, or the end of the
+// body for one that never closes; every byte in between counts, an escaped quote included.
+fn string_end(body: &[u8], mut from: usize) -> usize {
+    loop {
+        let rest = body.get(from..).unwrap_or_default();
+        from += quote_or_backslash(rest);
+        match body.get(from) {
+            Some(b'"') => return from + 1,
+            Some(_) => from += 2,
+            None => return body.len(),
+        }
+        if from >= body.len() {
+            return body.len();
+        }
+    }
+}
+
+// The index of the first `"` or `\` in `bytes`, or its length, eight bytes at a time: strings,
+// most of a request's bytes, hold neither for long stretches.
+fn quote_or_backslash(bytes: &[u8]) -> usize {
+    const ONES: u64 = 0x0101_0101_0101_0101;
+    const HIGH: u64 = 0x8080_8080_8080_8080;
+    let quotes = ONES * u64::from(b'"');
+    let backslashes = ONES * u64::from(b'\\');
+    let (words, rest) = bytes.as_chunks::<8>();
+    for (i, eight) in words.iter().enumerate() {
+        let word = u64::from_le_bytes(*eight);
+        let (q, b) = (word ^ quotes, word ^ backslashes);
+        let found = ((q.wrapping_sub(ONES) & !q) | (b.wrapping_sub(ONES) & !b)) & HIGH;
+        if found != 0 {
+            return i * 8 + (found.trailing_zeros() / 8) as usize;
+        }
+    }
+    words.len() * 8
+        + rest
+            .iter()
+            .position(|&c| c == b'"' || c == b'\\')
+            .unwrap_or(rest.len())
+}
+
+#[cfg(test)]
+mod tests {
+    use proptest::prelude::*;
+
+    use super::*;
+
+    fn byte_by_byte(body: &[u8], depth_limit: usize) -> Option<usize> {
+        let mut depth = 0usize;
+        let mut bytes = 0usize;
+        let mut in_string = false;
+        let mut escaped = false;
+        for &byte in body {
+            if in_string || !byte.is_ascii_whitespace() {
+                bytes += 1;
+            }
+            if in_string {
+                match byte {
+                    _ if escaped => escaped = false,
+                    b'\\' => escaped = true,
+                    b'"' => in_string = false,
+                    _ => {}
+                }
+                continue;
+            }
+            match byte {
+                b'"' => in_string = true,
+                b'{' | b'[' => {
+                    depth += 1;
+                    if depth > depth_limit {
+                        return None;
+                    }
+                }
+                b'}' | b']' => depth = depth.saturating_sub(1),
+                _ => {}
+            }
+        }
+        Some(bytes)
+    }
+
+    fn jsonish() -> impl Strategy<Value = Vec<u8>> {
+        let byte = prop_oneof![
+            Just(b'"'),
+            Just(b'\\'),
+            Just(b'{'),
+            Just(b'}'),
+            Just(b'['),
+            Just(b']'),
+            Just(b' '),
+            Just(b'\n'),
+            Just(b'a'),
+            any::<u8>(),
+        ];
+        proptest::collection::vec(byte, 0..200)
+    }
+
+    proptest! {
+        #[test]
+        fn significant_bytes_count_as_a_byte_by_byte_scan_does(body in jsonish(), limit in 0usize..6) {
+            prop_assert_eq!(significant_bytes(&body, limit), byte_by_byte(&body, limit));
+        }
+    }
+
+    #[test]
+    fn strings_longer_than_a_word_and_escapes_at_every_offset_count_alike() {
+        for pad in 0..20 {
+            let filler = "x".repeat(pad);
+            for body in [
+                format!(r#"{{"a": "{filler}\"{filler}", "b" : [ 1 ] }}"#),
+                format!(r#"["{filler}\\", "{filler}"]"#),
+                format!(r#""{filler}\"#),
+                format!(r#""{filler}"#),
+            ] {
+                assert_eq!(
+                    significant_bytes(body.as_bytes(), 3),
+                    byte_by_byte(body.as_bytes(), 3),
+                    "{body}"
+                );
+            }
+        }
+    }
 }

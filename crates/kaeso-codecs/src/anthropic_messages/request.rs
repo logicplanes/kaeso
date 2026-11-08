@@ -37,6 +37,12 @@ fn invalid_body(detail: impl std::fmt::Display) -> KppError {
 }
 
 fn parse_body(body: &[u8]) -> Result<Ext<RequestW>, KppError> {
+    if let Some(w) = std::str::from_utf8(body)
+        .ok()
+        .and_then(|text| Ext::from_text(text).ok())
+    {
+        return Ok(w);
+    }
     let raw: &serde_json::value::RawValue =
         serde_json::from_slice(body).map_err(|_| invalid_body("the body is not valid JSON"))?;
     Ext::from_raw(raw).map_err(|e| {
