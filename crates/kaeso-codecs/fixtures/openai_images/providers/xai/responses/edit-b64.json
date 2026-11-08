@@ -1,0 +1,19 @@
+{
+  "data": [
+    {
+      "b64_json": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==",
+      "mime_type": "image/png"
+    }
+  ],
+  "usage": {
+    "cost_in_usd_ticks": 5000000000,
+    "input_tokens": 1301,
+    "input_tokens_details": {
+      "cached_tokens": 0,
+      "image_tokens": 1289,
+      "text_tokens": 12
+    },
+    "output_tokens": 0,
+    "total_tokens": 1301
+  }
+}

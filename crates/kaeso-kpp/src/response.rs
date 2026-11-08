@@ -4,6 +4,7 @@ use serde_json::Value;
 use crate::block::Block;
 use crate::dialect::Origin;
 use crate::extras::Extras;
+use crate::image::ImageResponse;
 use crate::request::RequestKind;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -13,6 +14,7 @@ pub enum Reply {
     Generate(Response),
     CountTokens(CountTokensResponse),
     Embed(EmbedResponse),
+    Image(ImageResponse),
 }
 
 impl Reply {
@@ -21,6 +23,7 @@ impl Reply {
             Reply::Generate(_) => RequestKind::Generate,
             Reply::CountTokens(_) => RequestKind::CountTokens,
             Reply::Embed(_) => RequestKind::Embed,
+            Reply::Image(_) => RequestKind::Image,
         }
     }
 }
@@ -76,6 +79,15 @@ pub struct Usage {
     pub output_tokens: u64,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub reasoning_tokens: Option<u64>,
+    /// The image tokens among `input_tokens`, for providers that count them apart.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub input_image_tokens: Option<u64>,
+    /// The image tokens among `cache_read_tokens`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cache_read_image_tokens: Option<u64>,
+    /// The image tokens among `output_tokens`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub output_image_tokens: Option<u64>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub raw: Option<RawUsage>,
 }

@@ -1,0 +1,16 @@
+{
+  "model": "gpt-image-2.5-sunburst",
+  "prompt": "A lighthouse at dusk, watercolor",
+  "n": 2,
+  "size": "1536x864",
+  "quality": "xhigh",
+  "output_format": "webp",
+  "output_compression": 80,
+  "background": "opaque",
+  "moderation": "low",
+  "stream": true,
+  "partial_images": 2,
+  "complexity": "medium",
+  "safety_identifier": "user-7f3a",
+  "user": "legacy-user-7f3a"
+}

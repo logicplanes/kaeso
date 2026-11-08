@@ -3,15 +3,22 @@ use kaeso_codecs::openai_responses::ResponsesProfile;
 use kaeso_codecs::sse::{SseError, SseItem, SseParser, write_item};
 use kaeso_codecs::{EgressCtx, EncodeCtx, HeaderList, dispatch};
 use kaeso_kpp::{
-    CountTokensResponse, DialectId, EmbedResponse, ModelList, Reply, Request, RequestKind,
-    Response, StreamEvent, StreamMode,
+    CountTokensResponse, DialectId, EmbedResponse, ImageOperation, ImageResponse, ModelList, Reply,
+    Request, RequestKind, Response, StreamEvent, StreamMode,
 };
 use kaeso_mcp::{Message, RequestHeaders, headers, names};
 
-const KINDS: [RequestKind; 3] = [
+const KINDS: [RequestKind; 4] = [
     RequestKind::Generate,
     RequestKind::CountTokens,
     RequestKind::Embed,
+    RequestKind::Image,
+];
+
+const IMAGE_OPERATIONS: [ImageOperation; 3] = [
+    ImageOperation::Generate,
+    ImageOperation::Edit,
+    ImageOperation::Variation,
 ];
 
 const LIVE: StreamMode = StreamMode::on(true);
@@ -39,6 +46,18 @@ pub fn decoders(dialect: DialectId, data: &[u8]) {
     {
         if let Ok(req) = dispatch::decode_gemini_request("models/m", action, data, &headers) {
             request(dialect, &req);
+        }
+    }
+    if dialect == DialectId::OpenAiImages {
+        let upload = headers
+            .clone()
+            .with("content-type", "multipart/form-data; boundary=b");
+        for operation in IMAGE_OPERATIONS {
+            for h in [&headers, &upload] {
+                if let Ok(req) = dispatch::decode_image_request(operation, data, h) {
+                    request(dialect, &req);
+                }
+            }
         }
     }
     for kind in KINDS {
@@ -133,6 +152,7 @@ fn empty_reply(req: &Request) -> Reply {
     match req.kind() {
         RequestKind::Embed => Reply::Embed(EmbedResponse::new(req.model(), Vec::new())),
         RequestKind::CountTokens => Reply::CountTokens(CountTokensResponse::new(0)),
+        RequestKind::Image => Reply::Image(ImageResponse::new(req.model(), Vec::new())),
         _ => Reply::Generate(Response::new("resp_fuzz", req.model(), Vec::new())),
     }
 }

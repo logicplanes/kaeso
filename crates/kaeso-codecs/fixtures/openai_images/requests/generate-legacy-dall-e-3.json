@@ -1,0 +1,8 @@
+{
+  "model": "dall-e-3",
+  "prompt": "A cute baby sea otter",
+  "quality": "hd",
+  "style": "vivid",
+  "response_format": "url",
+  "size": "1792x1024"
+}

@@ -1,0 +1,11 @@
+{
+  "model": "gpt-image-1.5",
+  "prompt": "Add a watercolor effect to this image",
+  "images": [
+    {
+      "image_url": "https://example.com/source-image.png"
+    }
+  ],
+  "size": "1024x1024",
+  "quality": "high"
+}

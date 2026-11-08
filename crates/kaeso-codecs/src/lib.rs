@@ -11,6 +11,7 @@ mod keepalive;
 pub mod limits;
 mod media;
 mod models;
+pub mod multipart;
 mod openai_models;
 pub mod sse;
 mod struct_fields;
@@ -25,8 +26,10 @@ mod wire;
 pub mod anthropic_messages;
 pub mod gemini;
 pub mod gemini_embeddings;
+pub mod minimax_images;
 pub mod openai_chat;
 pub mod openai_embeddings;
+pub mod openai_images;
 pub mod openai_responses;
 
 #[cfg(test)]

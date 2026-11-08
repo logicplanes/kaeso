@@ -1,0 +1,18 @@
+{
+  "created": 1762588800,
+  "data": [
+    {
+      "b64_json": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==",
+      "media_type": "image/png"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 15,
+    "completion_tokens": 1290,
+    "total_tokens": 1305,
+    "cost": 0.039,
+    "completion_tokens_details": {
+      "image_tokens": 1290
+    }
+  }
+}

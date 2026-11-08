@@ -1,0 +1,19 @@
+{
+  "data": [
+    {
+      "url": "https://imgen.x.ai/xai-imgen/xai-tmp-imgen-1.jpeg",
+      "mime_type": "image/jpeg"
+    }
+  ],
+  "usage": {
+    "cost_in_usd_ticks": 4000000000,
+    "input_tokens": 12,
+    "input_tokens_details": {
+      "cached_tokens": 0,
+      "image_tokens": 0,
+      "text_tokens": 12
+    },
+    "output_tokens": 0,
+    "total_tokens": 12
+  }
+}

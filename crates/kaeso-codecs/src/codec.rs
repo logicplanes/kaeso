@@ -3,6 +3,7 @@ use std::sync::Arc;
 use crate::anthropic_messages::MessagesProfile;
 use crate::gemini::GeminiProfile;
 use crate::openai_chat::ChatProfile;
+use crate::openai_images::ImagesProfile;
 use crate::openai_responses::ResponsesProfile;
 use indexmap::IndexMap;
 use kaeso_kpp::{
@@ -163,6 +164,8 @@ pub struct EgressCtx {
     pub messages_profile: MessagesProfile,
     /// Where a Gemini-format provider serves its models; Google AI Studio by default.
     pub gemini_profile: GeminiProfile,
+    /// How a provider that speaks a form of OpenAI's Images API takes image requests.
+    pub images_profile: ImagesProfile,
     pub left_out: Vec<String>,
     pub adapted: Vec<String>,
     /// The prompt-cache breakpoints (`cache_control`) an encoded generation request
@@ -206,6 +209,7 @@ impl EgressCtx {
             responses_profile: ResponsesProfile::OPENAI,
             messages_profile: MessagesProfile::ANTHROPIC,
             gemini_profile: GeminiProfile::GOOGLE_AI_STUDIO,
+            images_profile: ImagesProfile::OPENAI,
             left_out: Vec::new(),
             adapted: Vec::new(),
             cache_breakpoints: None,
@@ -261,6 +265,13 @@ impl EgressCtx {
     #[must_use]
     pub fn with_gemini_profile(mut self, profile: GeminiProfile) -> Self {
         self.gemini_profile = profile;
+        self
+    }
+
+    /// Sends image requests in the form `profile` describes.
+    #[must_use]
+    pub fn with_images_profile(mut self, profile: ImagesProfile) -> Self {
+        self.images_profile = profile;
         self
     }
 
@@ -409,6 +420,7 @@ pub const FORWARDED_HEADERS: &[(DialectId, &str)] = &[
     (DialectId::OpenAiChat, "openai-beta"),
     (DialectId::OpenAiResponses, "openai-beta"),
     (DialectId::OpenAiEmbeddings, "openai-beta"),
+    (DialectId::OpenAiImages, "openai-beta"),
 ];
 
 pub fn is_forwarded_header(dialect: DialectId, name: &str) -> bool {

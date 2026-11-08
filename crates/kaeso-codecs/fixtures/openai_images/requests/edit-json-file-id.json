@@ -1,0 +1,14 @@
+{
+  "model": "gpt-image-1.5",
+  "prompt": "Replace the background with a snowy mountain scene",
+  "images": [
+    {
+      "file_id": "file-abc123"
+    }
+  ],
+  "mask": {
+    "file_id": "file-mask123"
+  },
+  "output_format": "png",
+  "output_compression": 100
+}

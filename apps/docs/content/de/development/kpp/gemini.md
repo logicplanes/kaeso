@@ -9,6 +9,7 @@ Schlagen Sie hier jedes Feld der Gemini API nach: wohin es in KPP gehört und wo
 - **Codecs:** `kaeso_codecs::gemini::Gemini` (`crates/kaeso-codecs/src/gemini/`) und `kaeso_codecs::gemini_embeddings::GeminiEmbeddings` (`crates/kaeso-codecs/src/gemini_embeddings/`)
 - **Endpunkte:** `POST {models}/{model}:generateContent`, `:streamGenerateContent?alt=sse`, `:countTokens`, `:embedContent` und `:batchEmbedContents` sowie die [Modell-Endpunkte](#modelle)
 - **Fixtures:** `crates/kaeso-codecs/fixtures/gemini/` und `crates/kaeso-codecs/fixtures/gemini_embeddings/`
+- **Bildanfragen:** Apps der Images API von OpenAI erreichen Bildmodelle von Gemini über diesen Codec, als Aufrufe von `generateContent` ([Bildmodelle von Gemini](openai-images.md#bildmodelle-von-gemini))
 
 **Quellen.** Die Abbildungen folgen diesen Quellen:
 

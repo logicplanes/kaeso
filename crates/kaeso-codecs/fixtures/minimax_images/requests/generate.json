@@ -1,0 +1,8 @@
+{
+  "model": "image-01",
+  "prompt": "A man in a white t-shirt, full-body, standing front view, outdoors, with the Venice Beach sign in the background, Los Angeles. Fashion photography in 90s documentary style, film grain, photorealistic.",
+  "aspect_ratio": "16:9",
+  "response_format": "url",
+  "n": 3,
+  "prompt_optimizer": true
+}

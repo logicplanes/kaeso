@@ -17,6 +17,8 @@ Jede Codec-Änderung beginnt mit einer Fixture: einem echten Anfrage-Body, einer
 | `openai_embeddings/` | OpenAI Embeddings (`/v1/embeddings`) |
 | `gemini/` | Gemini API (`{models}/{model}:generateContent`, `:streamGenerateContent`, `:countTokens`) |
 | `gemini_embeddings/` | Gemini-Embeddings (`{models}/{model}:embedContent`, `:batchEmbedContents`) |
+| `openai_images/` | OpenAI Images (`/v1/images/generations`, `/v1/images/edits`); Uploads als `requests/<name>.multipart` mit dem Content-Type in `<name>.meta.json` |
+| `minimax_images/` | Bildgenerierung von MiniMax (`/v1/image_generation`) |
 
 Jeder Dialektordner hat `requests/`, `responses/`, `streams/`, sofern der Endpunkt streamt, und `errors/`.
 

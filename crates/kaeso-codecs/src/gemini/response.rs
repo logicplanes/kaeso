@@ -116,8 +116,24 @@ pub(crate) fn decode_usage(raw: &Raw, origin: &Origin) -> Result<Usage, KppError
     );
     u.cache_read_tokens = w.cached_content_token_count;
     u.reasoning_tokens = (w.thoughts_token_count > 0).then_some(w.thoughts_token_count);
+    u.input_image_tokens = modality_tokens(&value, "promptTokensDetails", "IMAGE");
+    u.cache_read_image_tokens = modality_tokens(&value, "cacheTokensDetails", "IMAGE");
+    u.output_image_tokens = modality_tokens(&value, "candidatesTokensDetails", "IMAGE");
     u.raw = Some(RawUsage::new(origin.clone(), value));
     Ok(u)
+}
+
+// `ModalityTokenCount` lists in `UsageMetadata`, discovery revision 20261106.
+fn modality_tokens(usage: &Value, list: &str, modality: &str) -> Option<u64> {
+    let counts = usage.get(list)?.as_array()?;
+    let mut total = None;
+    for c in counts {
+        if c.get("modality").and_then(Value::as_str) == Some(modality) {
+            let n = c.get("tokenCount").and_then(Value::as_u64).unwrap_or(0);
+            total = Some(total.unwrap_or(0u64).saturating_add(n));
+        }
+    }
+    total
 }
 
 pub(crate) fn encode_usage(u: &Usage) -> Value {
@@ -179,7 +195,7 @@ pub(crate) fn decode_response(
     }
 }
 
-fn decode_generate(w: Ext<ResponseW>, origin: &Origin) -> Result<Response, KppError> {
+pub(super) fn decode_generate(w: Ext<ResponseW>, origin: &Origin) -> Result<Response, KppError> {
     let Ext {
         known: w,
         extra,

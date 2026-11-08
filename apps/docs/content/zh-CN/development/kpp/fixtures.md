@@ -17,6 +17,8 @@ order: 10
 | `openai_embeddings/` | OpenAI Embeddings（`/v1/embeddings`） |
 | `gemini/` | Gemini API（`{models}/{model}:generateContent`、`:streamGenerateContent`、`:countTokens`） |
 | `gemini_embeddings/` | Gemini 嵌入（`{models}/{model}:embedContent`、`:batchEmbedContents`） |
+| `openai_images/` | OpenAI Images（`/v1/images/generations`、`/v1/images/edits`）；上传文件为 `requests/<name>.multipart`，content type 写在 `<name>.meta.json` 中 |
+| `minimax_images/` | MiniMax 图片生成（`/v1/image_generation`） |
 
 每个方言文件夹都有 `requests/`、`responses/` 和 `errors/`，端点支持流式时还有 `streams/`。
 

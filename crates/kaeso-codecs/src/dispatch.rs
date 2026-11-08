@@ -7,8 +7,10 @@ use crate::anthropic_messages::AnthropicMessages;
 use crate::gemini::{Gemini, GeminiAction};
 use crate::gemini_embeddings::GeminiEmbeddings;
 use crate::limits::Checked;
+use crate::minimax_images::MinimaxImages;
 use crate::openai_chat::OpenAiChat;
 use crate::openai_embeddings::OpenAiEmbeddings;
+use crate::openai_images::OpenAiImages;
 use crate::openai_responses::OpenAiResponses;
 use crate::{
     Codec, EgressCtx, EncodeCtx, EncodedError, EncodedRequest, HeaderList, StreamDecoder,
@@ -24,6 +26,8 @@ macro_rules! dispatch {
             DialectId::OpenAiEmbeddings => Ok(OpenAiEmbeddings::$f($($arg),*)),
             DialectId::Gemini => Ok(Gemini::$f($($arg),*)),
             DialectId::GeminiEmbeddings => Ok(GeminiEmbeddings::$f($($arg),*)),
+            DialectId::OpenAiImages => Ok(OpenAiImages::$f($($arg),*)),
+            DialectId::MinimaxImages => Ok(MinimaxImages::$f($($arg),*)),
             other => Err(no_codec(other)),
         }
     };
@@ -60,6 +64,8 @@ pub fn decode_checked_request<B: AsRef<[u8]>>(
         DialectId::OpenAiChat => OpenAiChat::decode_checked(kind, body, headers),
         DialectId::OpenAiResponses => OpenAiResponses::decode_checked(kind, body, headers),
         DialectId::OpenAiEmbeddings => OpenAiEmbeddings::decode_checked(kind, body, headers),
+        DialectId::OpenAiImages => OpenAiImages::decode_checked(kind, body, headers),
+        DialectId::MinimaxImages => MinimaxImages::decode_request(kind, body, headers),
         other @ (DialectId::Gemini | DialectId::GeminiEmbeddings) => Err(gemini_needs_path(other)),
         other => Err(no_codec(other)),
     }
@@ -113,6 +119,27 @@ fn decode_gemini_unchecked(
         DialectId::GeminiEmbeddings => GeminiEmbeddings::decode_call(model, action, body, headers),
         _ => Gemini::decode_call(model, action, body, headers),
     }
+}
+
+/// Decodes an OpenAI Images API request for `operation`, as the path names it:
+/// `/v1/images/generations`, `/v1/images/edits` or `/v1/images/variations`. `headers` must
+/// carry the request's `content-type`, which tells an upload from a JSON body.
+pub fn decode_image_request(
+    operation: kaeso_kpp::ImageOperation,
+    body: &[u8],
+    headers: &HeaderList,
+) -> Result<Request, KppError> {
+    crate::limits::request_shape(DialectId::OpenAiImages, body)?;
+    OpenAiImages::decode_call(operation, body, headers)
+}
+
+/// Decodes an Images API body [`Checked::new`] already checked, without counting it again.
+pub fn decode_checked_image_request<B: AsRef<[u8]>>(
+    operation: kaeso_kpp::ImageOperation,
+    checked: &Checked<B>,
+    headers: &HeaderList,
+) -> Result<Request, KppError> {
+    OpenAiImages::decode_call(operation, checked.body().as_ref(), headers)
 }
 
 pub fn encode_response(

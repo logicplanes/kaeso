@@ -1,0 +1,18 @@
+{
+  "id": "03ff3cd0820949eb8a410056b5f21d38",
+  "data": {
+    "image_urls": [
+      "https://filecdn.minimax.chat/image-01/a.jpeg",
+      "https://filecdn.minimax.chat/image-01/b.jpeg",
+      "https://filecdn.minimax.chat/image-01/c.jpeg"
+    ]
+  },
+  "metadata": {
+    "failed_count": "0",
+    "success_count": "3"
+  },
+  "base_resp": {
+    "status_code": 0,
+    "status_msg": "success"
+  }
+}
