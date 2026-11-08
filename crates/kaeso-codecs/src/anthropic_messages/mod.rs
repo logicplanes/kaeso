@@ -22,7 +22,7 @@ use crate::codec::{
 };
 
 pub(crate) use blocks::{
-    ToolChange, ToolHandle, ToolReferent, block_form, tool_change, tool_reference,
+    ToolChange, ToolHandle, ToolReferent, block_form, block_form_of, tool_change, tool_reference,
 };
 pub(crate) use request::decode_tool;
 

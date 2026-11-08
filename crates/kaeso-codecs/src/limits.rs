@@ -73,6 +73,23 @@ enum Node {
 }
 
 impl Node {
+    // The form when it doesn't depend on the value, so the walk needs no copy of it to look at.
+    fn fixed_form(self) -> Option<Form> {
+        match self {
+            Node::Item(DialectId::AnthropicMessages) => Some(Form::Nests(Scope::Anthropic(0))),
+            _ => None,
+        }
+    }
+
+    // The form `form` gives, from a leading `type`; a later repeated `type` makes the walk
+    // start over the way `form` reads it.
+    fn leading_form(self, raw: &RawValue) -> Option<Form> {
+        let Node::Block(Some(Scope::Anthropic(depth))) = self else {
+            return None;
+        };
+        crate::anthropic_messages::block_form_of(crate::wire::leading_type(raw)?, depth)
+    }
+
     fn form(self, raw: &RawValue) -> Form {
         match self {
             Node::Item(DialectId::OpenAiChat) => crate::openai_chat::message_form(raw),
@@ -96,11 +113,12 @@ enum Over {
     Inputs,
 }
 
-#[derive(Default)]
+#[derive(Clone, Default)]
 struct Tally {
     shape: RequestShape,
     in_message: usize,
     over: Option<Over>,
+    second_type: bool,
 }
 
 impl Tally {
@@ -176,6 +194,7 @@ struct Walk<'t> {
     tally: &'t mut Tally,
     kept: bool,
     nests: Option<Scope>,
+    one_type: bool,
 }
 
 impl Walk<'_> {
@@ -185,6 +204,7 @@ impl Walk<'_> {
             tally: &mut *self.tally,
             kept: self.kept,
             nests: None,
+            one_type: false,
         }
     }
 
@@ -294,7 +314,15 @@ impl<'de> Visitor<'de> for Walk<'_> {
             self.tally.count(Over::Blocks)?;
         }
         let typed_object = !self.kept && matches!(self.node, Node::Item(_) | Node::Block(_));
+        let mut types = 0usize;
         while let Some(Key(key)) = map.next_key::<Key<'de>>()? {
+            if self.one_type && key == "type" {
+                types += 1;
+                if types > 1 {
+                    self.tally.second_type = true;
+                    return Err(serde::de::Error::custom("a repeated type"));
+                }
+            }
             match child(self.node, &key) {
                 Some(_) if typed_object && key == "content" && self.nests.is_some() => {
                     let node = Node::Content(self.nests);
@@ -326,7 +354,35 @@ impl<'de> DeserializeSeed<'de> for Element<'_> {
     type Value = ();
 
     fn deserialize<D: serde::Deserializer<'de>>(self, d: D) -> Result<(), D::Error> {
+        if let Some(Form::Nests(scope)) = self.node.fixed_form() {
+            return Walk {
+                node: self.node,
+                tally: self.tally,
+                kept: false,
+                nests: Some(scope),
+                one_type: false,
+            }
+            .deserialize(d);
+        }
         let raw = <&'de RawValue as serde::Deserialize<'de>>::deserialize(d)?;
+        if let Some(form @ (Form::Typed | Form::Nests(_))) = self.node.leading_form(raw) {
+            let before = self.tally.clone();
+            let walked = Walk {
+                node: self.node,
+                tally: &mut *self.tally,
+                kept: false,
+                nests: match form {
+                    Form::Nests(scope) => Some(scope),
+                    _ => None,
+                },
+                one_type: true,
+            }
+            .walk_raw(raw);
+            if !self.tally.second_type {
+                return walked;
+            }
+            *self.tally = before;
+        }
         let (kept, nests) = match self.node.form(raw) {
             Form::Raw => {
                 self.tally.shape.bytes += whitespace_outside_strings(raw.get().as_bytes());
@@ -340,6 +396,7 @@ impl<'de> DeserializeSeed<'de> for Element<'_> {
             tally: self.tally,
             kept,
             nests,
+            one_type: false,
         }
         .walk_raw(raw)
     }
@@ -361,6 +418,7 @@ impl<'de> DeserializeSeed<'de> for Kept<'_> {
             tally: self.tally,
             kept: true,
             nests: None,
+            one_type: false,
         }
         .walk_raw(raw)
     }
@@ -385,6 +443,11 @@ impl<'de> DeserializeSeed<'de> for Opaque<'_> {
 }
 
 fn whitespace_outside_strings(json: &[u8]) -> usize {
+    // A raw value starts at its first byte: only an object or an array has whitespace outside
+    // strings, and a string, the bulk of most requests, needs no scan.
+    if !matches!(json.first(), Some(b'{' | b'[')) {
+        return 0;
+    }
     let mut whitespace = 0usize;
     let mut in_string = false;
     let mut escaped = false;
@@ -513,6 +576,7 @@ pub fn request_shape(dialect: DialectId, body: &[u8]) -> Result<RequestShape, Kp
         tally: &mut tally,
         kept: false,
         nests: None,
+        one_type: false,
     }
     .deserialize(&mut de);
     match (walked, tally.over) {

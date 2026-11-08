@@ -4,7 +4,7 @@ use std::fmt;
 
 use indexmap::IndexMap;
 use kaeso_kpp::{DialectId, Extras, HEADER_PREFIX, KppError, Origin, RawJson};
-use serde::de::{DeserializeOwned, Error as _, MapAccess, Visitor};
+use serde::de::{DeserializeOwned, Error as _, MapAccess, SeqAccess, Visitor};
 use serde::ser::SerializeMap;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::Value;
@@ -147,9 +147,13 @@ pub(crate) fn entries_of(raw: &RawValue) -> Option<Vec<(Cow<'_, str>, &RawValue)
 
 impl<T: DeserializeOwned + Serialize> Ext<T> {
     pub(crate) fn from_raw(raw: &RawValue) -> Result<Self, serde_json::Error> {
+        Ext::from_text(raw.get())
+    }
+
+    pub(crate) fn from_text(text: &str) -> Result<Self, serde_json::Error> {
         let declared = struct_fields::<T>();
-        let Fields(entries) = serde_json::from_str(raw.get())?;
-        let known: T = serde_json::from_str(raw.get())?;
+        let Fields(entries) = serde_json::from_str(text)?;
+        let known: T = serde_json::from_str(text)?;
         let written = written_names(&known)?;
         let mut extra = IndexMap::new();
         let mut verbatim = IndexMap::new();
@@ -174,6 +178,14 @@ impl<T: DeserializeOwned + Serialize> Ext<T> {
     }
 
     pub(crate) fn from_slice(bytes: &[u8]) -> Result<Self, serde_json::Error> {
+        // A body these parses read whole is valid JSON, so it skips the pass that only checks
+        // that; any other gets the errors that pass gives.
+        if let Some(ext) = std::str::from_utf8(bytes)
+            .ok()
+            .and_then(|text| Ext::from_text(text).ok())
+        {
+            return Ok(ext);
+        }
         let raw: &RawValue = serde_json::from_slice(bytes)?;
         Ext::from_raw(raw)
     }
@@ -345,6 +357,14 @@ pub(crate) fn spelled_number(
     serde_json::Number::from_f64(value)
 }
 
+// The `type` of an object that writes it first and plainly, as every SDK does, read without
+// parsing the rest; `None` for any other spelling, which `type_tag` then reads.
+pub(crate) fn leading_type(raw: &RawValue) -> Option<&str> {
+    let rest = raw.get().strip_prefix("{\"type\":\"")?;
+    let ty = rest.get(..rest.find('"')?)?;
+    (!ty.contains('\\')).then_some(ty)
+}
+
 pub(crate) fn type_tag(raw: &RawValue) -> Result<Option<String>, serde_json::Error> {
     #[derive(Deserialize)]
     struct Tag {
@@ -363,21 +383,65 @@ pub(crate) enum StringOr<T> {
     List(Vec<T>),
 }
 
+// Read in the one pass over the value, not captured and parsed again: message content, the
+// bulk of a request, goes through here.
 impl<'de, T: DeserializeOwned> Deserialize<'de> for StringOr<T> {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        let raw = <Box<RawValue>>::deserialize(deserializer)?;
-        let text = raw.get().trim_start();
-        if text.starts_with('"') {
-            serde_json::from_str(raw.get())
-                .map(StringOr::String)
-                .map_err(D::Error::custom)
-        } else if text.starts_with('[') {
-            serde_json::from_str(raw.get())
-                .map(StringOr::List)
-                .map_err(D::Error::custom)
-        } else {
-            Err(D::Error::custom("expected a string or an array"))
+        struct V<T>(std::marker::PhantomData<T>);
+
+        fn neither<E: serde::de::Error, X>() -> Result<X, E> {
+            Err(E::custom("expected a string or an array"))
         }
+
+        impl<'de, T: DeserializeOwned> Visitor<'de> for V<T> {
+            type Value = StringOr<T>;
+
+            fn expecting(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                f.write_str("a string or an array")
+            }
+
+            fn visit_str<E: serde::de::Error>(self, v: &str) -> Result<Self::Value, E> {
+                Ok(StringOr::String(v.to_owned()))
+            }
+
+            fn visit_string<E: serde::de::Error>(self, v: String) -> Result<Self::Value, E> {
+                Ok(StringOr::String(v))
+            }
+
+            fn visit_seq<A: SeqAccess<'de>>(self, mut seq: A) -> Result<Self::Value, A::Error> {
+                let mut list = Vec::new();
+                while let Some(item) = seq.next_element::<T>()? {
+                    list.push(item);
+                }
+                Ok(StringOr::List(list))
+            }
+
+            fn visit_bool<E: serde::de::Error>(self, _: bool) -> Result<Self::Value, E> {
+                neither()
+            }
+
+            fn visit_i64<E: serde::de::Error>(self, _: i64) -> Result<Self::Value, E> {
+                neither()
+            }
+
+            fn visit_u64<E: serde::de::Error>(self, _: u64) -> Result<Self::Value, E> {
+                neither()
+            }
+
+            fn visit_f64<E: serde::de::Error>(self, _: f64) -> Result<Self::Value, E> {
+                neither()
+            }
+
+            fn visit_unit<E: serde::de::Error>(self) -> Result<Self::Value, E> {
+                neither()
+            }
+
+            fn visit_map<A: MapAccess<'de>>(self, _: A) -> Result<Self::Value, A::Error> {
+                neither()
+            }
+        }
+
+        deserializer.deserialize_any(V(std::marker::PhantomData))
     }
 }
 

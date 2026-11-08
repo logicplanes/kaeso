@@ -512,3 +512,78 @@ fn a_checked_body_decodes_as_the_codec_decodes_it_and_is_refused_alike() {
     assert_eq!((checked.dialect(), checked.shape().items), (C, 0));
     assert_eq!(checked.into_body().len(), 27);
 }
+
+// A block's leading `type` decides its form without reading the rest, so a repeated `type`
+// must still count and refuse as reading the whole block does.
+#[test]
+fn a_repeated_type_counts_and_refuses_as_the_whole_block_reads() {
+    let cases = [
+        (
+            r#"{"model":"m","max_tokens":5,"messages":[{"role":"user","content":[{"type":"text","type":"text","text":"a"}]}]}"#,
+            (1, 1, 110),
+        ),
+        (
+            r#"{"model":"m","max_tokens":5,"messages":[{"role":"user","content":[{"type":"tool_result","tool_use_id":"t","type":"text","content":[{"type":"text","text":"x"}]}]}]}"#,
+            (1, 2, 163),
+        ),
+        (
+            r#"{"model":"m","max_tokens":5,"messages":[{"role":"user","content":[{"type":"text","text":"a","cache_control":{ "type" : "ephemeral" }},{"type":"tool_result","tool_use_id":"t","content":[{"type":"text","text":"x", "z" : [ 1, 2 ]}]}]}]}"#,
+            (1, 3, 230),
+        ),
+    ];
+    for (body, (items, blocks, bytes)) in cases {
+        let s = request_shape(A, body.as_bytes()).unwrap();
+        assert_eq!(
+            (s.items, s.blocks, s.bytes),
+            (items, blocks, bytes),
+            "{body}"
+        );
+    }
+    let (first, second) = (cases[0].0, cases[1].0);
+    for body in [first, second] {
+        let err = dispatch::decode_request(
+            A,
+            RequestKind::Generate,
+            body.as_bytes(),
+            &HeaderList::new(),
+        )
+        .unwrap_err();
+        assert_eq!(
+            err.message,
+            "The request body is not a valid Anthropic Messages request: duplicate field `type`."
+        );
+    }
+}
+
+#[test]
+fn content_that_is_neither_a_string_nor_a_list_is_named_as_before() {
+    for body in [
+        r#"{"model":"m","messages":[{"role":"user","content":7}]}"#,
+        r#"{"model":"m","messages":[{"role":"user","content":null}]}"#,
+        r#"{"model":"m","messages":[{"role":"user","content":true}]}"#,
+    ] {
+        let err = dispatch::decode_request(
+            C,
+            RequestKind::Generate,
+            body.as_bytes(),
+            &HeaderList::new(),
+        )
+        .unwrap_err();
+        assert_eq!(
+            err.message,
+            "The request contains an invalid OpenAI Chat Completions user message: expected a string or an array.",
+            "{body}"
+        );
+    }
+    let trailing = dispatch::decode_request(
+        C,
+        RequestKind::Generate,
+        br#"{"model":"m","messages":[]} trailing"#,
+        &HeaderList::new(),
+    )
+    .unwrap_err();
+    assert_eq!(
+        trailing.message,
+        "The request body is not a valid OpenAI Chat Completions request: trailing characters."
+    );
+}
