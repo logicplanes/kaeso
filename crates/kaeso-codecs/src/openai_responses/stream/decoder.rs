@@ -751,7 +751,9 @@ impl Decoder {
                 {
                     Some(f) => {
                         qi += 1;
-                        Ok(Emitted::Written(Node::raw_value(&f.data)))
+                        let written = Node::raw_value(&f.data);
+                        let sequence = written.get_i64("sequence_number");
+                        Ok(Emitted::Written(written, sequence))
                     }
                     None => Ok(Emitted::Skipped(canon)),
                 })
@@ -779,7 +781,10 @@ impl Decoder {
                         if !canon.has("sequence_number") {
                             canon.insert("sequence_number", Node::Val(Value::from(seq)));
                         }
-                        Overrides::diff(&canon, &f.data, &[]).record(&mut rec, scope);
+                        let entries = entries_of(&f.data);
+                        let sequence = sequence_of(entries.as_deref());
+                        Overrides::diff_entries(&canon, &f.data, entries, &[])
+                            .record(&mut rec, scope);
                         if f.event.as_deref() != Some(f.ty.as_str()) {
                             let key = if scope.is_empty() {
                                 EVENT_KEY.to_owned()
@@ -797,7 +802,7 @@ impl Decoder {
                             };
                             form_set_insert(&mut rec, key, sse.clone());
                         }
-                        Ok(Emitted::Written(Node::raw_value(&f.data)))
+                        Ok(Emitted::Written(Node::raw_value(&f.data), sequence))
                     }
                     _ => {
                         skips.push(scope.to_owned());
@@ -841,8 +846,25 @@ impl Decoder {
     }
 }
 
+// `sequence_number` from a frame's entries, as `Node::get_i64` reads it from the raw frame:
+// none for a frame whose entries can't be read one by one.
+fn sequence_of(entries: Option<&[(std::borrow::Cow<'_, str>, &RawValue)]>) -> Option<i64> {
+    entries?
+        .iter()
+        .find(|(k, _)| k == "sequence_number")
+        .and_then(|(_, v)| v.get().parse::<Value>().ok())
+        .and_then(|v| v.as_i64())
+}
+
 fn matches(canon: &Node, f: &Frame) -> bool {
-    if canon.get_str("type").as_deref() != Some(f.ty.as_str()) {
+    let same_type = match canon {
+        Node::Obj(entries) => match entries.get("type") {
+            Some(Node::Val(Value::String(ty))) => *ty == f.ty,
+            _ => canon.get_str("type").as_deref() == Some(f.ty.as_str()),
+        },
+        _ => canon.get_str("type").as_deref() == Some(f.ty.as_str()),
+    };
+    if !same_type {
         return false;
     }
     ["output_index", "content_index", "summary_index"]

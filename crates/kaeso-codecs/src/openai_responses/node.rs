@@ -115,7 +115,10 @@ impl Node {
 
     pub(crate) fn get_i64(&self, key: &str) -> Option<i64> {
         match self {
-            Node::Obj(entries) => entries.get(key)?.to_value().ok()?.as_i64(),
+            Node::Obj(entries) => match entries.get(key)? {
+                Node::Val(v) => v.as_i64(),
+                child => child.to_value().ok()?.as_i64(),
+            },
             Node::Raw(r) => crate::wire::field_of(r.as_raw(), key)?
                 .get()
                 .parse::<Value>()

@@ -52,7 +52,8 @@ impl Encoder {
             write_obj(out, &node)?;
             node.remove(EVENT_KEY);
             node.remove(SSE_KEY);
-            Ok(Emitted::Written(node))
+            let sequence = node.get_i64("sequence_number");
+            Ok(Emitted::Written(node, sequence))
         };
         self.engine.step(event, &mut emit)
     }
