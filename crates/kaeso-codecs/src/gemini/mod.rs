@@ -9,6 +9,8 @@ mod wire;
 
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod tests_edges;
 
 use kaeso_kpp::{
     DialectId, KppError, ModelInfo, ModelList, ModelsQuery, Reply, Request, RequestKind,

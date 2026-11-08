@@ -27,6 +27,7 @@ const FORM_ACTION: &str = "action";
 const FORM_MODELS: &str = "models";
 const FORM_CONFIG_DIMS: &str = "config_dimensions";
 const FORM_NO_USAGE: &str = "no_usage";
+const FORM_TOP_DIMS: &str = "top_dimensions";
 const SINGLE: &str = "single";
 const CONFIG: &str = "embedContentConfig";
 
@@ -201,6 +202,11 @@ fn decode_one(
         verbatim_into_form(&mut req.extras, &field(CONFIG), verbatim);
         if c.output_dimensionality.is_some() {
             seen.config_dims.push(Value::from(index));
+            if let Some(top) = dims {
+                req.extras
+                    .form
+                    .insert(format!("{FORM_TOP_DIMS}:{index}"), top.into());
+            }
             dims = c.output_dimensionality;
         }
         req.extras
@@ -385,7 +391,14 @@ fn encode_one(
         EmbedW {
             model,
             content,
-            output_dimensionality: if in_config { None } else { dims },
+            output_dimensionality: if in_config {
+                r.extras
+                    .form_value(D, &format!("{FORM_TOP_DIMS}:{index}"))
+                    .and_then(Value::as_u64)
+                    .and_then(|d| u32::try_from(d).ok())
+            } else {
+                dims
+            },
             embed_content_config: config,
         },
         extra,

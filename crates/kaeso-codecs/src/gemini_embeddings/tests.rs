@@ -282,3 +282,135 @@ fn embeddings_never_stream() {
     .unwrap();
     assert_eq!(models.models[0].id, "gemini-embedding-2");
 }
+
+fn round_trip(action: GeminiAction, body: Value) -> EmbedRequest {
+    let bytes = serde_json::to_vec(&body).unwrap();
+    let Request::Embed(r) = crate::dispatch::decode_gemini_request(
+        "gemini-embedding-2",
+        action,
+        &bytes,
+        &HeaderList::new(),
+    )
+    .unwrap() else {
+        panic!()
+    };
+    let req = Request::Embed(r.clone());
+    let enc = GeminiEmbeddings::encode_request(&req, &mut EgressCtx::new(&req)).unwrap();
+    assert_json_eq("edge", &bytes, &enc.body);
+    r
+}
+
+#[test]
+fn rare_embedding_requests_round_trip() {
+    let r = round_trip(
+        GeminiAction::EmbedContent,
+        json!({"content": {"parts": [{"text": "a"}, {"text": "b"}], "role": "user"}, "embedContentConfig": {"taskType": "CLUSTERING"}, "xKey": 1}),
+    );
+    assert!(r.extras.fields.contains_key("content"));
+    let r = round_trip(
+        GeminiAction::BatchEmbedContents,
+        json!({"requests": [
+            {"content": {"parts": [{"text": "a"}]}, "outputDimensionality": 8},
+            {"model": "models/other", "content": {"parts": [{"text": "b", "x": 1}]}, "embedContentConfig": {"outputDimensionality": 4}},
+            {"model": "models/gemini-embedding-2", "content": {"parts": [{"text": "c"}]}}
+        ], "xBatch": true}),
+    );
+    assert_eq!(r.dimensions, None);
+    assert!(
+        r.extras
+            .fields
+            .contains_key("requests[0].outputDimensionality")
+    );
+    assert!(r.extras.fields.contains_key("requests[1].content"));
+    round_trip(
+        GeminiAction::EmbedContent,
+        json!({"content": {"parts": [{"text": "a"}]}, "outputDimensionality": 8, "embedContentConfig": {"outputDimensionality": 16}}),
+    );
+    for bad in [&b"[]"[..], b"not json", br#"{"requests": 1}"#] {
+        let e = crate::dispatch::decode_gemini_request(
+            "m",
+            GeminiAction::BatchEmbedContents,
+            bad,
+            &HeaderList::new(),
+        )
+        .unwrap_err();
+        assert_eq!(e.kind, ErrorKind::InvalidRequest);
+    }
+    let e = GeminiEmbeddings::decode_call(
+        "m",
+        GeminiAction::GenerateContent,
+        b"{}",
+        &HeaderList::new(),
+    )
+    .unwrap_err();
+    assert_eq!(e.unsupported_feature(), Some("generation request"));
+}
+
+#[test]
+fn rare_embedding_replies_round_trip_or_fail_cleanly() {
+    for body in [
+        json!({"embedding": {"values": [0.5], "shape": [1]}}),
+        json!({"embeddings": [], "xKey": 1}),
+    ] {
+        let bytes = serde_json::to_vec(&body).unwrap();
+        let reply =
+            GeminiEmbeddings::decode_response(200, &HeaderList::new(), &bytes, &embed_ctx())
+                .unwrap();
+        let out = GeminiEmbeddings::encode_response(
+            &reply,
+            &EncodeCtx::new(RequestKind::Embed, StreamMode::Off),
+        )
+        .unwrap();
+        assert_json_eq("edge reply", &bytes, &out);
+    }
+    for bad in [
+        &b"not json"[..],
+        br#"{"embedding": 1}"#,
+        br#"{"embeddings": 1}"#,
+        br#"{"embedding": {"values": []}, "usageMetadata": {"promptTokenCount": "x"}}"#,
+    ] {
+        let e = GeminiEmbeddings::decode_response(200, &HeaderList::new(), bad, &embed_ctx())
+            .unwrap_err();
+        assert_eq!(e.kind, ErrorKind::ProviderError);
+    }
+    let mut foreign = EmbedResponse::new(
+        "m",
+        vec![Embedding::new(0, EmbeddingVector::Base64("AAA".into()))],
+    );
+    let e = GeminiEmbeddings::encode_response(
+        &Reply::Embed(foreign.clone()),
+        &EncodeCtx::new(RequestKind::Embed, StreamMode::Off),
+    )
+    .unwrap_err();
+    assert_eq!(e.kind, ErrorKind::ProviderError);
+    foreign.data = vec![Embedding::new(
+        0,
+        EmbeddingVector::Base64("AACAPw==".into()),
+    )];
+    let ok = GeminiEmbeddings::encode_response(
+        &Reply::Embed(foreign),
+        &EncodeCtx::new(RequestKind::Embed, StreamMode::Off),
+    );
+    assert!(ok.is_ok());
+    let q = GeminiEmbeddings::decode_models_query("pageSize=2").unwrap();
+    assert_eq!(q.limit, Some(2));
+    let list = kaeso_kpp::ModelList::new(vec![kaeso_kpp::ModelInfo::new("e")]);
+    assert!(GeminiEmbeddings::encode_models(&list).is_ok());
+    assert!(GeminiEmbeddings::encode_model(&kaeso_kpp::ModelInfo::new("e")).is_ok());
+    assert!(
+        GeminiEmbeddings::decode_model(200, &HeaderList::new(), br#"{"name": "models/e"}"#).is_ok()
+    );
+    assert_eq!(
+        GeminiEmbeddings::encode_model_request("e").path,
+        "/v1beta/models/e"
+    );
+    assert!(GeminiEmbeddings::encode_models_request(&kaeso_kpp::ModelsQuery::default()).is_ok());
+    let ctx = embed_ctx();
+    assert!(GeminiEmbeddings::encode_model_request_with("e", &ctx).is_ok());
+    assert!(
+        GeminiEmbeddings::encode_models_request_with(&kaeso_kpp::ModelsQuery::default(), &ctx)
+            .is_ok()
+    );
+    let generate = Request::Generate(kaeso_kpp::GenerateRequest::new("m"));
+    assert!(GeminiEmbeddings::check(&generate, &EgressCtx::new(&generate)).is_err());
+}
