@@ -183,6 +183,7 @@ async fn every_gateway_replica_is_stopped_before_any_new_one_starts() {
             "kaeso-updater-1"
         ]
     );
+    world.replaced().await;
     let calls = world.calls("");
     let stops: Vec<usize> = calls
         .iter()
@@ -196,7 +197,11 @@ async fn every_gateway_replica_is_stopped_before_any_new_one_starts() {
         .filter(|(_, c)| c.ends_with("containers/create"))
         .map(|(i, _)| i)
         .collect();
-    assert_eq!((stops.len(), creates.len()), (2, 3), "{calls:?}");
+    assert_eq!(
+        (stops.len(), creates.len()),
+        (2, 4),
+        "three clones, then the runner that replaces the updater: {calls:?}"
+    );
     assert!(
         stops.iter().all(|s| *s < creates[1]),
         "both old gateways stop before the first new one is created: {calls:?}"
