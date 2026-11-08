@@ -75,11 +75,17 @@ services:
 
 ## 更新器
 
-更新器是 `compose.yaml` 中的可选服务，带有自己的 Docker 套接字代理。它是 Kaeso 中唯一与 Docker 通信的部分，因此在您开启之前一直处于关闭状态。
+更新器是 `compose.yaml` 中的可选服务，带有自己的 Docker 套接字代理。它是 Kaeso 中唯一与 Docker 通信的部分。安装脚本会开启它，手动安装则在 `.env` 中开启它。
 
 ### 开启更新器
 
-更新器需要 Docker Engine 25 或更高版本。
+更新器需要 Docker Engine 25 或更高版本。除非您传入 `--no-updater`，安装脚本会开启它。要为未开启更新器的实例开启它，请在实例文件夹中再次运行安装脚本：
+
+```bash
+curl -fsSL https://kaeso.app/install.sh | sh
+```
+
+如需手动开启：
 
 1. 在实例文件夹中，为网关和更新器设置共享令牌，开启 `updater` profile（配置集），并写明实例文件夹：
 

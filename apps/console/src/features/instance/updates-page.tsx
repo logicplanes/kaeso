@@ -155,7 +155,7 @@ function manualReason(u: UpdatesView, version: string): string {
 function blocked(u: UpdatesView): string | null {
   switch (u.updater.state) {
     case "not_installed":
-      return t("instance.updates.noUpdater", "The updater isn't installed; this install updates by hand.");
+      return t("instance.updates.noUpdater", "The updater is off; turn it on to update from here.");
     case "unreachable":
       return t("instance.updates.updaterDown", "The updater doesn't answer; check that its container runs.");
     case "outdated":
@@ -164,6 +164,9 @@ function blocked(u: UpdatesView): string | null {
       return null;
   }
 }
+
+const TURN_ON_UPDATER = "curl -fsSL https://kaeso.app/install.sh | sh";
+const START_UPDATER = "docker compose up -d --wait";
 
 function Latest({ u, latest }: { u: UpdatesView; latest: ReleaseView }) {
   const download = `https://github.com/logicplanes/kaeso/releases/download/v${latest.version}`;
@@ -204,14 +207,29 @@ function Latest({ u, latest }: { u: UpdatesView; latest: ReleaseView }) {
           >
             {manualReason(u, latest.version)}
           </Banner>
+        ) : u.updater.state === "not_installed" ? (
+          <div className="flex flex-col gap-12">
+            <CodeBlock
+              title={t("instance.updates.turnOnTitle", "Turn the updater on, in the install's folder")}
+              lang="bash"
+              code={TURN_ON_UPDATER}
+              collapseAfter={0}
+            />
+            <Link href={UPDATER_DOCS} external>
+              {t("instance.updates.aboutUpdater", "How the updater works")}
+            </Link>
+          </div>
+        ) : u.updater.state === "unreachable" ? (
+          <CodeBlock
+            title={t("instance.updates.startUpdaterTitle", "Start the updater again, in the install's folder")}
+            lang="bash"
+            code={START_UPDATER}
+            collapseAfter={0}
+          />
         ) : (
-          !u.can_apply && (
-            <div className="flex flex-col gap-12">
-              <CodeBlock title={t("instance.updates.byHandTitle", "Update by hand, in the install's folder")} lang="bash" code={commands} collapseAfter={0} />
-              <Link href={UPDATER_DOCS} external>
-                {t("instance.updates.setUpUpdater", "Set up the updater")}
-              </Link>
-            </div>
+          !u.can_apply &&
+          u.updater.state === "outdated" && (
+            <CodeBlock title={t("instance.updates.byHandTitle", "Update by hand, in the install's folder")} lang="bash" code={commands} collapseAfter={0} />
           )
         )}
         {u.releases.map((r) => (

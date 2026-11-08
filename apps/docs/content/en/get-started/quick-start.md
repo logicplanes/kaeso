@@ -25,7 +25,7 @@ curl -fsSL https://kaeso.app/install.sh | sh -s -- --domain kaeso.example.com
 
 Before it installs, the installer starts Docker if it's stopped and checks that your domain has a DNS record. The first start takes a minute or two while the images download. Then the installer checks that Caddy got the domain's certificate, and explains the certificate authority's answer if it didn't. It ends by printing the setup link, and opens it in your browser when you run it on your own computer; `--no-open` keeps it closed. Until you [add your SMTP server](../self-hosting/email.md), the gateway only writes its emails to its log, so sign-in links and invitations aren't delivered. [Install by hand](../self-hosting/installation.md#install-by-hand) shows each step the installer takes.
 
-Run the installer again in the same folder to start Kaeso again; it keeps the settings and the master key. A machine runs one Kaeso, so the installer refuses a second install in another folder.
+Run the installer again in the install's folder to start Kaeso again; it keeps the settings and the master key. The installer also turns on the [updater](../self-hosting/upgrades.md#the-updater), so **Update to …** under **Instance** › **Updates** installs new releases. A machine runs one Kaeso, so the installer refuses a second install in another folder.
 
 > [!IMPORTANT]
 > Keep a copy of `kaeso/master-keys` somewhere safe, apart from your database backups. Without it, Kaeso can't decrypt the stored provider keys, and you have to enter them again.

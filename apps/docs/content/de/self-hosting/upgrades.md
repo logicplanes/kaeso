@@ -75,11 +75,17 @@ Das Gateway verwendet dann die Modelldaten, die im Release enthalten sind, die S
 
 ## Der Updater
 
-Der Updater ist ein optionaler Dienst in der `compose.yaml`, mit einem eigenen Proxy für den Docker-Socket. Er ist der einzige Teil von Kaeso, der mit Docker spricht, und deshalb aus, bis Sie ihn einschalten.
+Der Updater ist ein optionaler Dienst in der `compose.yaml`, mit einem eigenen Proxy für den Docker-Socket. Er ist der einzige Teil von Kaeso, der mit Docker spricht. Das Installationsskript schaltet ihn ein, eine Installation von Hand schaltet ihn in `.env` ein.
 
 ### Updater einschalten
 
-Der Updater braucht Docker Engine 25 oder neuer.
+Der Updater braucht Docker Engine 25 oder neuer. Das Installationsskript schaltet ihn ein, außer Sie geben `--no-updater` an. Um ihn für eine Installation ohne Updater einzuschalten, führen Sie das Skript im Ordner der Installation erneut aus:
+
+```bash
+curl -fsSL https://kaeso.app/install.sh | sh
+```
+
+So schalten Sie ihn stattdessen von Hand ein:
 
 1. Geben Sie im Ordner der Installation Gateway und Updater ein gemeinsames Token, schalten Sie das Profil `updater` ein und nennen Sie den Ordner der Installation:
 

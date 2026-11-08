@@ -61,6 +61,15 @@ def test_one_command_installs_kaeso_and_prints_the_setup_link(installed):
     assert all(re.fullmatch(r"[0-9a-f]{48}", password) for password in passwords)
     assert len(set(passwords)) == 4
 
+    assert settings["COMPOSE_PROFILES"] == "updater"
+    assert settings["KAESO_DIR"] == str(work.resolve())
+    assert re.fullmatch(r"[0-9a-f]{96}", settings["KAESO_UPDATER_TOKEN"])
+    health = subprocess.run(
+        ["docker", "compose", "-p", PROJECT, "ps", "--format", "{{.Service}} {{.Health}}", "updater", "docker-proxy"],
+        cwd=work, capture_output=True, text=True, check=True,
+    ).stdout.split("\n")
+    assert sorted(line for line in health if line) == ["docker-proxy healthy", "updater healthy"], "Update in the console works at once"
+
     assert stat.S_IMODE((work / ".env").stat().st_mode) == 0o600
     keys = (work / "master-keys").stat()
     if sys.platform == "darwin":
@@ -362,3 +371,79 @@ def test_no_open_is_an_option(tmp_path):
     with SCRIPT.open() as script:
         result = subprocess.run(["sh", "-s", "--", "--help"], stdin=script, capture_output=True, text=True)
     assert "--no-open" in result.stdout
+
+
+def updater_stubs(tmp_path: Path, engine: str = "29.0.1", rootless: bool = False) -> dict[str, str]:
+    options = "[name=seccomp,profile=builtin name=rootless name=cgroupns]" if rootless else "[name=seccomp,profile=builtin name=cgroupns]"
+    return stub(
+        tmp_path,
+        "docker",
+        f'''case "$*" in
+  "version --format {{{{.Server.Version}}}}") echo {engine} ;;
+  "info --format {{{{.SecurityOptions}}}}") echo "{options}" ;;
+  "context inspect --format {{{{.Endpoints.docker.Host}}}}") echo unix:///run/user/1000/docker.sock ;;
+esac''',
+    )
+
+
+def env_after(call: str, tmp_path: Path, env_text: str, env: dict[str, str], fresh: bool = True) -> tuple[dict[str, str], subprocess.CompletedProcess]:
+    (tmp_path / ".env").write_text(env_text)
+    (tmp_path / ".env").chmod(0o600)
+    result = run_part(f"updater=yes; fresh={'yes' if fresh else ''}; here=/srv/kaeso; {call}", tmp_path, env)
+    assert result.returncode == 0, result.stderr
+    lines = (tmp_path / ".env").read_text().splitlines()
+    return dict(line.split("=", 1) for line in lines), result
+
+
+def test_a_new_install_gets_the_updater_so_update_in_the_console_works(tmp_path):
+    settings, result = env_after("turn_on_updater", tmp_path, "KAESO_DOMAIN=localhost\n", updater_stubs(tmp_path))
+    assert re.fullmatch(r"[0-9a-f]{96}", settings["KAESO_UPDATER_TOKEN"])
+    assert settings["COMPOSE_PROFILES"] == "updater"
+    assert settings["KAESO_DIR"] == "/srv/kaeso"
+    assert "DOCKER_SOCKET" not in settings
+    assert "Turning on the updater" not in result.stdout
+
+
+def test_running_the_installer_again_turns_the_updater_on_and_says_so(tmp_path):
+    settings, result = env_after("turn_on_updater", tmp_path, "KAESO_DOMAIN=localhost\n", updater_stubs(tmp_path), fresh=False)
+    assert settings["COMPOSE_PROFILES"] == "updater"
+    assert "Turning on the updater, so Update in the console installs new releases" in result.stdout
+
+
+@pytest.mark.parametrize(
+    ("profiles", "after"),
+    [("edge", "edge,updater"), ("", "updater"), ("updater", "updater"), ("edge,updater", "edge,updater"), ("updaters", "updaters,updater")],
+)
+def test_the_updater_joins_the_profiles_already_on(profiles, after, tmp_path):
+    settings, _ = env_after("turn_on_updater", tmp_path, f"KAESO_DOMAIN=localhost\nCOMPOSE_PROFILES={profiles}\n", updater_stubs(tmp_path))
+    assert settings["COMPOSE_PROFILES"] == after
+    assert stat.S_IMODE((tmp_path / ".env").stat().st_mode) == 0o600
+
+
+def test_rootless_docker_gets_its_own_socket(tmp_path):
+    settings, _ = env_after("turn_on_updater", tmp_path, "KAESO_DOMAIN=localhost\n", updater_stubs(tmp_path, rootless=True))
+    assert settings["DOCKER_SOCKET"] == "/run/user/1000/docker.sock"
+
+
+@pytest.mark.parametrize(
+    ("env_text", "call", "engine"),
+    [
+        ("KAESO_DOMAIN=localhost\nKAESO_UPDATER_TOKEN=kept\n", "turn_on_updater", "29.0.1"),
+        ("KAESO_DOMAIN=localhost\n", "updater=no; turn_on_updater", "29.0.1"),
+        ("KAESO_DOMAIN=localhost\n", "turn_on_updater", "24.0.7"),
+    ],
+)
+def test_the_updater_is_left_as_it_is(env_text, call, engine, tmp_path):
+    settings, result = env_after(call, tmp_path, env_text, updater_stubs(tmp_path, engine=engine))
+    assert set(settings) <= {"KAESO_DOMAIN", "KAESO_UPDATER_TOKEN"}
+    assert settings.get("KAESO_UPDATER_TOKEN") in (None, "kept")
+    if engine.startswith("24"):
+        assert "The updater needs Docker Engine 25 or newer, and this is 24.0.7" in result.stderr
+
+
+def test_the_installer_run_in_an_install_uses_that_folder(tmp_path):
+    (tmp_path / "compose.yaml").write_text("services: {}\n")
+    (tmp_path / ".env").write_text("KAESO_DOMAIN=localhost\n")
+    assert run_part("is_install .", tmp_path).returncode == 0
+    (tmp_path / ".env").write_text("OTHER=1\n")
+    assert run_part("is_install .", tmp_path).returncode == 1
