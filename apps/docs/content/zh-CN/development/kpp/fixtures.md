@@ -36,7 +36,7 @@ order: 10
 往返测试、解码器测试和跨方言矩阵会连同方言自己的 fixture 一起读取每个服务商文件夹，并把其中的文件命名为 `providers/<id>/<name>`。因此，新的服务商录制会给矩阵快照添加条目；审查这些条目，并用 `INSTA_UPDATE=always cargo test -p kaeso-codecs --test cross_matrix` 接受它们。SDK 一致性测试套件只提供方言自己的 fixture；当测试以 `providers/<id>/<name>` 指定某个服务商的文件时，网关的模拟服务商会提供该文件。
 
 - `unknown-*` fixture 有意带有虚构的字段、块或事件，用于测试 `Extras` 和 `Unknown` 的处理。
-- 编解码器必须拒绝的 fixture（`stateful-*`、`n-2*`、`input-audio*`）测试的是它们的 `Unsupported` 错误，而不是往返。
+- 编解码器必须拒绝的 fixture（`stateful-*`、`n-2*`）测试的是它们的 `Unsupported` 错误，而不是往返。
 
 ## 来源记录
 

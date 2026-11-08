@@ -32,7 +32,22 @@ pub struct MessagesProfile {
     /// it, and both bodies carry the platform's `anthropic_version`
     /// ([`EgressCtx::base_path`](crate::EgressCtx::base_path)).
     pub raw_predict: bool,
+    /// The media types of the `video` content blocks the provider takes, as MiniMax does
+    /// (`{"type": "video", "source": …}`); empty for a provider without video blocks, which
+    /// refuses them. URL sources pass whatever they point to.
+    pub video_media_types: &'static [&'static str],
 }
+
+/// The video media types MiniMax takes in a `video` block's base64 source: `MediaSource`'s
+/// video formats in MiniMax's OpenAPI document
+/// (<https://platform.minimax.io/docs/api-reference/text/api/openapi-chat-anthropic.json>).
+pub const MINIMAX_VIDEO_MEDIA_TYPES: &[&str] = &[
+    "video/mp4",
+    "video/avi",
+    "video/x-msvideo",
+    "video/mov",
+    "video/x-matroska",
+];
 
 /// A sampling value a provider always uses, in thousandths, so a profile stays `Eq`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -73,6 +88,7 @@ impl MessagesProfile {
         fixed_sampling: &[],
         forced_tool_choice: true,
         raw_predict: false,
+        video_media_types: &[],
     };
 
     /// Another provider's Messages API, as Anthropic's until a setting says otherwise.
@@ -106,6 +122,14 @@ impl MessagesProfile {
     #[must_use]
     pub const fn raw_predict(mut self) -> Self {
         self.raw_predict = true;
+        self
+    }
+
+    /// The provider takes `video` content blocks of these media types
+    /// ([`MessagesProfile::video_media_types`]).
+    #[must_use]
+    pub const fn with_video(mut self, media_types: &'static [&'static str]) -> Self {
+        self.video_media_types = media_types;
         self
     }
 

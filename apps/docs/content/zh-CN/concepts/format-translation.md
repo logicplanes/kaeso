@@ -33,7 +33,7 @@ KPP（Kaeso Provider Protocol）为每种 API 格式都提供一个编解码器�
 
 ## 能够保留的内容
 
-- **对话。** 系统指令、用户和助手轮次、文本、图像和文档。Anthropic 对话中间的系统消息到达 OpenAI 时，会成为一条位置靠后的系统消息；OpenAI 对话中间的系统消息到达 Anthropic 时，会成为下一个用户轮次的文本。
+- **对话。** 系统指令、用户和助手轮次、文本、图像和文档，以及目标接受时的音频和视频（[音频和视频](../development/kpp/cross-format.md#音频和视频)）。Anthropic 对话中间的系统消息到达 OpenAI 时，会成为一条位置靠后的系统消息；OpenAI 对话中间的系统消息到达 Anthropic 时，会成为下一个用户轮次的文本。
 - **工具。** 函数工具、工具选择、并行工具调用、工具调用和工具结果。工具返回的图像和文件会出现在结果之后的用户消息中到达 Chat Completions 模型，因为它的工具消息只包含文本（[工具结果中的媒体](../development/kpp/cross-format.md#工具结果中的媒体)）。
 - **工具名称和调用 ID。** 目标不接受某个名称或 ID 时，Kaeso 会以固定方式改写它，并在回复中映射回原值。其他字符变为 `_`，名称被截短以符合长度要求，并附加原值的哈希。OpenAI 接受最多 64 个由字母、数字、`_` 和 `-` 组成的字符，Anthropic 最多 128 个。
 - **结构化输出。** JSON schema。
@@ -52,25 +52,27 @@ KPP（Kaeso Provider Protocol）为每种 API 格式都提供一个编解码器�
 - `json_object` 输出格式，以及带有描述或带有 `strict: false` 的 JSON schema
 - 历史中的拒绝回复
 - JPEG、PNG、GIF 和 WebP 以外的图像，以及 PDF 和纯文本以外的文档
+- 音频，以及 MiniMax 以外的视频
 - 推理强度 `minimal`
 
 ### 发往 OpenAI Chat Completions 的请求
 
 - `top_k` 和超过四个的停止序列
 - 文本文档、文档 URL、文档标题、上下文和引用
-- 图像文件 ID，以及用户消息之外的图像和文档
+- 图像文件 ID，以及用户消息之外的图像、文档和音频
+- base64 WAV 和 MP3 以外的音频，以及视频，文档中写明支持更多的服务商除外
 
 ### 发往 OpenAI Responses 的请求
 
 - `top_k`、`seed`、惩罚参数和停止序列
 - 文本文档、文档标题、上下文和引用
+- 音频和视频
 
 ### 发往任何服务商的请求
 
 无论哪种格式，即使格式不变，Kaeso 也会拒绝以下内容：
 
 - 多个候选结果（`n`）
-- Chat Completions 的音频输入（`input_audio`）
 - 存储状态：`store: true`、`previous_response_id`、`conversation` 和 `background`
 
 ### 跨格式的请求

@@ -749,6 +749,8 @@ const messages = (): Rule[] => [
   rule("errors.model.noText", (v) => t("errors.model.noText", "The model `{model}` does not produce text.", v)),
   rule("errors.model.noImages", (v) => t("errors.model.noImages", "The model `{model}` does not accept images.", v)),
   rule("errors.model.noPdf", (v) => t("errors.model.noPdf", "The model `{model}` does not accept PDF documents.", v)),
+  rule("errors.model.noAudio", (v) => t("errors.model.noAudio", "The model `{model}` does not accept audio.", v)),
+  rule("errors.model.noVideo", (v) => t("errors.model.noVideo", "The model `{model}` does not accept video.", v)),
   rule("errors.model.noTools", (v) => t("errors.model.noTools", "The model `{model}` does not support tool calling.", v)),
   rule(
     "errors.model.forcedTool",

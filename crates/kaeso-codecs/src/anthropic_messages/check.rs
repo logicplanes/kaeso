@@ -4,11 +4,16 @@ use kaeso_kpp::{
 };
 
 use super::common::{D, is_data_url, parse_base64_data_url, request_kind_name};
+use super::profile::MessagesProfile;
 use crate::cross::{Setting, app_field, check_foreign};
 
 const IMAGE_MEDIA_TYPES: [&str; 4] = ["image/jpeg", "image/png", "image/gif", "image/webp"];
 
-pub(crate) fn check(req: &Request, target: &Origin) -> Result<(), KppError> {
+pub(crate) fn check(
+    req: &Request,
+    target: &Origin,
+    profile: &MessagesProfile,
+) -> Result<(), KppError> {
     check_foreign(req, target)?;
     let (r, generate) = match req {
         Request::Generate(r) => (r, true),
@@ -43,11 +48,11 @@ pub(crate) fn check(req: &Request, target: &Origin) -> Result<(), KppError> {
             )
             .with_param(param));
         }
-        check_block(b, &param)?;
+        check_block(b, &param, profile)?;
     }
     for (mi, m) in r.messages.iter().enumerate() {
         for (bi, b) in m.blocks.iter().enumerate() {
-            check_block(b, &format!("messages[{mi}].blocks[{bi}]"))?;
+            check_block(b, &format!("messages[{mi}].blocks[{bi}]"), profile)?;
         }
     }
     for (i, t) in r.tools.iter().enumerate() {
@@ -195,7 +200,7 @@ pub(crate) fn check_reasoning(r: &GenerateRequest) -> Result<(), KppError> {
     }
 }
 
-fn check_block(block: &Block, param: &str) -> Result<(), KppError> {
+fn check_block(block: &Block, param: &str, profile: &MessagesProfile) -> Result<(), KppError> {
     let fail = |feature: String, hint: &str| {
         Err(KppError::unsupported_by(feature, D, hint).with_param(param))
     };
@@ -234,6 +239,41 @@ fn check_block(block: &Block, param: &str) -> Result<(), KppError> {
             ),
             _ => Ok(()),
         },
+        Block::Audio(_) => fail(
+            "audio block".into(),
+            "Anthropic has no audio content block; send a transcript of the audio as text instead.",
+        ),
+        Block::Video(_) if profile.video_media_types.is_empty() => fail(
+            "video block".into(),
+            "Anthropic has no video content block; send frames of the video as images, or route the request to a model that takes video.",
+        ),
+        Block::Video(b) => match (&b.source, base64_media_type(&b.source, &b.extras)) {
+            (_, Err(())) => fail(
+                "data URL without base64 encoding".into(),
+                "Send the video as a base64 data URL or as base64 data.",
+            ),
+            (_, Ok(Some(m))) if !profile.video_media_types.contains(&m.as_str()) => {
+                Err(KppError::unsupported(
+                    format!("video media type `{m}`"),
+                    format!(
+                        "Video media type `{m}` is not supported by {}; send {}.",
+                        profile.provider,
+                        profile.video_media_types.join(", ")
+                    ),
+                )
+                .with_param(param))
+            }
+            (Source::Url(_), _) => Ok(()),
+            (Source::Base64(_), _) => Ok(()),
+            _ => Err(KppError::unsupported(
+                "video source",
+                format!(
+                    "{} takes videos as base64 data or a URL; send the video one of those ways.",
+                    profile.provider
+                ),
+            )
+            .with_param(param)),
+        },
         Block::ToolCall(c) if !c.arguments.is_object() => fail(
             "tool call arguments that are not a JSON object".into(),
             "Anthropic `tool_use.input` must be a JSON object.",
@@ -252,7 +292,7 @@ fn check_block(block: &Block, param: &str) -> Result<(), KppError> {
                     )
                     .with_param(param));
                 }
-                check_block(b, &param)?;
+                check_block(b, &param, profile)?;
             }
             Ok(())
         }

@@ -1,0 +1,35 @@
+{
+  "candidates": [
+    {
+      "content": {
+        "parts": [
+          {
+            "text": "Hello Kazo",
+            "thoughtSignature": "EmAKXgFpFH0TMn3/KhIwgYWuqjJBXICJQGijiCCSdae9FUeQ4QGAYgO4lCxwuuwPfSWI6+I431OwrmFVa+FfO4Q3v4VacqQ+EBRPWrIdE9IB2DHLzvSJaPuuBAjue3QOsKs="
+          }
+        ],
+        "role": "model"
+      },
+      "finishReason": "STOP",
+      "index": 0
+    }
+  ],
+  "usageMetadata": {
+    "promptTokenCount": 37,
+    "candidatesTokenCount": 3,
+    "totalTokenCount": 40,
+    "promptTokensDetails": [
+      {
+        "modality": "AUDIO",
+        "tokenCount": 28
+      },
+      {
+        "modality": "TEXT",
+        "tokenCount": 9
+      }
+    ],
+    "serviceTier": "standard"
+  },
+  "modelVersion": "gemini-3.5-flash-lite",
+  "responseId": "j0rwavOZO4nfxs0Pgpqd2AM"
+}

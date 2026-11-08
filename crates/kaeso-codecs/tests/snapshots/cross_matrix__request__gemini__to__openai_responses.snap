@@ -3,6 +3,11 @@ source: crates/kaeso-codecs/tests/cross_matrix.rs
 expression: outcomes
 ---
 {
+  "audio-input": {
+    "message": "`audio block` is not supported by OpenAI Responses. Its input has no audio content part; send a transcript of the audio as text, or route the request to a Chat Completions or Gemini model.",
+    "param": "messages[0].blocks[0]",
+    "unsupported": "audio block"
+  },
   "error-invalid-argument": {
     "body": {
       "include": [
@@ -698,8 +703,18 @@ expression: outcomes
     "path": "/v1/responses"
   },
   "unknown-parts": {
-    "message": "`cachedContent` comes from a Gemini API request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
-    "param": null,
-    "unsupported": "cachedContent"
+    "message": "`audio block` is not supported by OpenAI Responses. Its input has no audio content part; send a transcript of the audio as text, or route the request to a Chat Completions or Gemini model.",
+    "param": "messages[0].blocks[1]",
+    "unsupported": "audio block"
+  },
+  "video-input": {
+    "message": "`video block` is not supported by OpenAI Responses. Its input has no video content part; send frames of the video as images, or route the request to a Gemini model.",
+    "param": "messages[0].blocks[0]",
+    "unsupported": "video block"
+  },
+  "video-youtube": {
+    "message": "`video block` is not supported by OpenAI Responses. Its input has no video content part; send frames of the video as images, or route the request to a Gemini model.",
+    "param": "messages[0].blocks[0]",
+    "unsupported": "video block"
   }
 }

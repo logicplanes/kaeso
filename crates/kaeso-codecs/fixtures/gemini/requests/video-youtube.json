@@ -1,0 +1,19 @@
+{
+  "contents": [
+    {
+      "parts": [
+        {
+          "fileData": {
+            "fileUri": "https://www.youtube.com/watch?v=UTdfxFyOQTI"
+          },
+          "videoMetadata": {
+            "fps": 0.5
+          }
+        },
+        {
+          "text": "Generate a poster image that captures the key themes of this video."
+        }
+      ]
+    }
+  ]
+}

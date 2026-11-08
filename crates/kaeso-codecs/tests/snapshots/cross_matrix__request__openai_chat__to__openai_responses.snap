@@ -360,8 +360,15 @@ expression: outcomes
     },
     "path": "/v1/responses"
   },
-  "input-audio-unsupported": {
-    "rejected_by_source": "input_audio"
+  "input-audio": {
+    "message": "`audio block` is not supported by OpenAI Responses. Its input has no audio content part; send a transcript of the audio as text, or route the request to a Chat Completions or Gemini model.",
+    "param": "messages[0].blocks[1]",
+    "unsupported": "audio block"
+  },
+  "input-audio-mp3": {
+    "message": "`audio block` is not supported by OpenAI Responses. Its input has no audio content part; send a transcript of the audio as text, or route the request to a Chat Completions or Gemini model.",
+    "param": "messages[0].blocks[0]",
+    "unsupported": "audio block"
   },
   "json-object": {
     "body": {

@@ -428,6 +428,8 @@
   "errors.model.noText": "Das Modell `{model}` erzeugt keinen Text.",
   "errors.model.noImages": "Das Modell `{model}` nimmt keine Bilder an.",
   "errors.model.noPdf": "Das Modell `{model}` nimmt keine PDF-Dokumente an.",
+  "errors.model.noAudio": "Das Modell `{model}` nimmt kein Audio an.",
+  "errors.model.noVideo": "Das Modell `{model}` nimmt kein Video an.",
   "errors.model.noTools": "Das Modell `{model}` unterstützt keine Tool-Aufrufe.",
   "errors.model.forcedTool": "Das Modell `{model}` nimmt {choice} nicht an; senden Sie `auto` und nennen Sie das Tool im Prompt.",
   "errors.model.noStructured": "Das Modell `{model}` unterstützt keine strukturierte Ausgabe (JSON-Schema).",

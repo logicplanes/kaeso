@@ -40,6 +40,14 @@ fn every_block_names_its_kind() {
             Block::Document(DocumentBlock::new(Source::text("text/plain", "notes"))),
             "document",
         ),
+        (
+            Block::audio(Source::base64("audio/wav", "UklGRg==")),
+            "audio",
+        ),
+        (
+            Block::video(Source::Url("https://example.com/clip.mp4".to_owned())),
+            "video",
+        ),
         (Block::tool_result("call_1", vec![], false), "tool_result"),
         (
             Block::Reasoning(ReasoningBlock::new(origin.clone())),

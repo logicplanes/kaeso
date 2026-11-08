@@ -13,7 +13,7 @@ order: 9
 **来源。** 这些映射遵循以下来源：
 
 - Gemini API 的发现文档 `https://generativelanguage.googleapis.com/$discovery/rest?version=v1beta`，修订版 `20261106`。下文的 schema 名称都指向它。
-- [Gemini API 文档](https://aistudio.google.com/docs)，阅读于 2026-11-08：文本生成、思考、思考签名、函数调用、结构化输出、Token 计数、嵌入、文件输入方式、模型和问题排查。
+- [Gemini API 文档](https://aistudio.google.com/docs)，阅读于 2026-11-08：文本生成、思考、思考签名、函数调用、结构化输出、Token 计数、嵌入、文件输入方式、音频理解、视频理解、模型和问题排查。
 - 官方 Python SDK `google-genai` 2.32.0，[SDK 一致性测试套件](../testing.md#sdk-一致性)用它测试编码器。
 
 ## 表格的读法
@@ -76,14 +76,14 @@ Schema `Part`。一个 part 恰好带有 `text`、`inlineData`、`fileData`、`f
 | 带 `thought: true` 的 `text` | `Block::Reasoning` | 其文本，以及作为不透明数据的 `thoughtSignature`。空的思考 part → 形式标记 `thought_part`。 |
 | 其他任何 part 上的 `thoughtSignature` | 该 part 的块之前的一个 `Block::Reasoning` | 见[思考签名](#思考签名)。 |
 | `inlineData` `image/*` | `Block::Image`，Base64 | `displayName` → 字段 `inlineData.*`。 |
+| `audio/*` / `video/*` 的 `inlineData` | `Block::Audio` / `Block::Video`，Base64 | MIME 类型按发送时的写法（`audio/mp3`、`audio/mpeg`、`video/mp4` 等）。 |
 | 其他类型的 `inlineData` | `Block::Document`，Base64 | |
 | 带 Files API URI（`files/…` 或 `https://generativelanguage.googleapis.com/v1beta/files/…`）的 `fileData` | 图像或文档，`Source::FileId` | 只能在 Gemini 使用（[文件](cross-format.md#文件)）。`mimeType` → 形式标记 `mime_type`。 |
-| 带其他 URI 的 `fileData` | 图像或文档，`Source::Url` | `mimeType` 为 `image/*` 时为图像。 |
-| `audio/*` 或 `video/*` 的 `inlineData` 或 `fileData` | `Block::Unknown`（原样） | KPP 尚无音频或视频块；跨方言时被拒绝。 |
+| 带其他 URI 的 `fileData` | 图像、音频、视频或文档，`Source::Url` | 按 `mimeType` 的 `image/*`、`audio/*` 或 `video/*` 区分。没有 `mimeType` 的 YouTube URL 是视频（`requests/video-youtube.json`）。 |
 | `functionCall` | `Block::ToolCall` | 见[函数调用](#函数调用)。 |
 | `functionResponse` | `Block::ToolResult` | 见[函数调用](#函数调用)。 |
 | `executableCode`、`codeExecutionResult`、`toolCall`、`toolResponse`、未知 part、带两个数据字段的 part | `Block::Unknown`（原样） | 该 part 保留自己的 `thoughtSignature`。跨方言时被拒绝。 |
-| `videoMetadata`、`mediaResolution`、`partMetadata`、`mediaProcessing` 以及 part 的其他键 | 块的字段 | |
+| `videoMetadata`、`mediaResolution`、`partMetadata`、`mediaProcessing` 以及 part 的其他键 | 块的字段 | 剪辑和帧率会改变模型看到的内容，因此其他方言拒绝它们；其他格式都没有这些字段。 |
 
 ### 函数调用
 
@@ -96,7 +96,7 @@ Schema `Part`。一个 part 恰好带有 `text`、`inlineData`、`fileData`、`f
 | `functionResponse.response` `{"output": "<text>"}` | 一个文本块 | 文档约定的输出写法（`FunctionResponse.response`）。 |
 | `functionResponse.response` `{"error": "<text>"}` | 一个文本块，`is_error` | 文档约定的错误写法。 |
 | `functionResponse.response`，其他任何对象 | 一个包含紧凑 JSON 的文本块 | 形式标记 `response: "json"`：Gemini 收回该对象；其他方言把 JSON 当作文本读取。 |
-| `functionResponse.parts[]` | 文本之后的图像和文档块 | 未知 part 保持原样。 |
+| `functionResponse.parts[]` | 文本之后的图像和文档块 | 音频、视频和未知 part 保持原样：函数响应只接受图像和文档。 |
 | `functionResponse.willContinue`、`.scheduling` | 字段 `functionResponse.*` | |
 
 ### 来自其他方言的请求
@@ -107,6 +107,7 @@ Schema `Part`。一个 part 恰好带有 `text`、`inlineData`、`fileData`、`f
 - 其他方言的 **ID** 作为 `functionCall.id` 和 `functionResponse.id` 发送。
 - 不是对象的**参数**会变为对象，与 Anthropic 相同（[工具调用参数](cross-format.md#工具调用参数)）。
 - **图像 URL** 按 URL 的文件扩展名得到 `fileData.mimeType`（`.png`、`.jpg`、`.jpeg`、`.webp`、`.gif`、`.heic`、`.heif`；文档另有 `.pdf`、`.txt`），这是文件输入指南的要求；没有这类扩展名的图像 URL 为 `Unsupported`。文本文档以 Base64 `inlineData` 发送。
+- **音频和视频 URL** 以同样方式得到它，依据音频和视频指南中支持的格式（`.wav`、`.mp3`、`.aiff`、`.aac`、`.ogg`、`.flac`、`.m4a`、`.opus`、`.webm`；`.mp4`、`.mpeg`、`.mpg`、`.mov`、`.avi`、`.flv`、`.webm`、`.wmv`、`.3gp`）。YouTube URL 不带 MIME 类型发送；没有已知扩展名的其他 URL 为 `Unsupported`。Base64 音频和视频以带媒体类型的 `inlineData` 发送。工具结果中的音频和视频为 `Unsupported`。
 - 以 `Unsupported` **拒绝**：Gemini 没有对应 part 的拒答块（与 Anthropic 相同）、文档的标题、上下文或引用、超过五个停止序列（`GenerationConfig.stopSequences`）、`parallel_tool_calls: false`、带描述或 `strict: false` 的输出 schema，以及 Gemini 没有对应设置的推理强度或思考模式。
 - **严格工具。** 带 `strict: true` 的函数工具在自动 `tool_choice` 下发送 `mode: VALIDATED`，按 schema 校验调用。
 - **托管网页搜索**会被[省略](cross-format.md#省略的工具)。

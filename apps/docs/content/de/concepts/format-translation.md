@@ -33,7 +33,7 @@ KPP, das Kaeso Provider Protocol, hat einen Codec für jedes API-Format: OpenAI 
 
 ## Was erhalten bleibt
 
-- **Unterhaltungen.** Systemanweisungen, Züge von Benutzer und Assistent, Text, Bilder und Dokumente. Eine Systemnachricht mitten in einer Anthropic-Unterhaltung erreicht OpenAI als spätere Systemnachricht, und eine mitten in einer OpenAI-Unterhaltung erreicht Anthropic als Text des nächsten Benutzerzugs.
+- **Unterhaltungen.** Systemanweisungen, Züge von Benutzer und Assistent, Text, Bilder und Dokumente sowie Audio und Video, wo das Ziel sie nimmt ([Audio und Video](../development/kpp/cross-format.md#audio-und-video)). Eine Systemnachricht mitten in einer Anthropic-Unterhaltung erreicht OpenAI als spätere Systemnachricht, und eine mitten in einer OpenAI-Unterhaltung erreicht Anthropic als Text des nächsten Benutzerzugs.
 - **Tools.** Funktions-Tools, Tool-Auswahl, parallele Tool-Aufrufe, Tool-Aufrufe und Tool-Ergebnisse. Bilder und Dateien, die ein Tool zurückgegeben hat, erreichen ein Chat-Completions-Modell in der Benutzernachricht nach den Ergebnissen, weil seine Tool-Nachrichten nur Text enthalten ([Medien in Tool-Ergebnissen](../development/kpp/cross-format.md#medien-in-tool-ergebnissen)).
 - **Tool-Namen und Aufruf-IDs.** Nimmt das Ziel einen Namen oder eine ID nicht an, schreibt Kaeso sie auf feste Weise um und übersetzt sie in der Antwort zurück. Andere Zeichen werden zu `_`, der Name wird passend gekürzt, und ein Hash des Originals wird angehängt. OpenAI nimmt bis zu 64 Buchstaben, Ziffern, `_` und `-` an, Anthropic bis zu 128.
 - **Strukturierte Ausgabe.** JSON-Schemas.
@@ -52,25 +52,27 @@ Wechselt eine Anfrage das Format, lehnt Kaeso Folgendes mit einem Fehler ab, der
 - das Ausgabeformat `json_object` und ein JSON-Schema mit einer Beschreibung oder mit `strict: false`
 - Verweigerungen im Verlauf
 - Bilder außer JPEG, PNG, GIF und WebP und Dokumente außer PDF und reinem Text
+- Audio, und Video außer für MiniMax
 - die Aufwandsstufe `minimal`
 
 ### Anfragen an OpenAI Chat Completions
 
 - `top_k` und mehr als vier Stoppsequenzen
 - Textdokumente, Dokument-URLs, Dokumenttitel, Kontext und Zitate
-- Bild-Datei-IDs sowie Bilder und Dokumente außerhalb von Benutzernachrichten
+- Bild-Datei-IDs sowie Bilder, Dokumente und Audio außerhalb von Benutzernachrichten
+- Audio außer base64-WAV und -MP3, und Video, außer für Anbieter, die mehr dokumentieren
 
 ### Anfragen an OpenAI Responses
 
 - `top_k`, `seed`, Penalties und Stoppsequenzen
 - Textdokumente, Dokumenttitel, Kontext und Zitate
+- Audio und Video
 
 ### Anfragen an jeden Anbieter
 
 Diese lehnt Kaeso in jedem Format ab, auch wenn das Format gleich bleibt:
 
 - mehr als eine Auswahl (`n`)
-- Audio-Eingaben von Chat Completions (`input_audio`)
 - gespeicherter Zustand: `store: true`, `previous_response_id`, `conversation` und `background`
 
 ### Anfragen über Formate hinweg

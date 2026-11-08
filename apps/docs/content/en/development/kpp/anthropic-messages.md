@@ -91,6 +91,7 @@ These apply to requests and replies alike.
 | `document` `source.type: text` (`text/plain`) | `Document { source: Text }` | |
 | `document` `source.type: content` (custom content) | `Block::Unknown` | Same dialect only. |
 | `document.title`, `.context` | `title`, `context` | `null` → verbatim. |
+| `video` `source.type: base64` or `url` (MiniMax's own block) | `Video { source: Base64 / Url }` | `cache_control` → `cache`; unknown keys as for `image`. |
 | `document.citations.enabled` | `citations` | `{enabled: false}` → form `citations: "disabled"`; `{}` → `"empty"`; `null` → verbatim. |
 | `cache_control` on any block (`CacheControlEphemeral`) | `cache = CacheHint { ttl }` | `ttl` `5m` → `FiveMinutes`, `1h` → `OneHour`, other values → `Other`; absent → `None`. A `type` other than `ephemeral` → hint `extras.fields.type`. |
 | `tool_use` (`id`, `name`, `input`, `cache_control`) | `Block::ToolCall` (`arguments` raw) | `caller` and `toolset_name` → block `extras.fields`, except `caller: {type: "direct"}`, a plain call, which is kept as verbatim so the call can go to other dialects. |
@@ -139,6 +140,7 @@ What `encode_request` writes for a KPP request that did not come from Anthropic 
 | `Role::System` | a `role: "system"` message for requests decoded from Anthropic Messages; from other dialects, text of the next user turn, after its tool results | [System messages](cross-format.md#system-messages). |
 | base64 images other than JPEG, PNG, GIF or WebP; text image sources | `Unsupported` | `Base64ImageSource`. |
 | base64 documents other than `application/pdf`; text documents other than `text/plain` | `Unsupported` | `Base64PDFSource`, `PlainTextSource`. |
+| `Block::Audio`; `Block::Video` unless the profile has `video_media_types` | `Unsupported` (`audio block`, `video block`) | The content union has neither; the message asks for a transcript or frames as images. |
 | tool call arguments from another dialect that are not an object | an object: text as `{"input": text}`, other values as `{"input": value}`, `null` as `{}`; named in `kaeso-adapted` | Anthropic refuses the whole request otherwise ([tool call arguments](cross-format.md#tool-call-arguments)). |
 | `tool_use.input` from an Anthropic app that is not an object; tool parameters that are not an object | `Unsupported` | `input` and `input_schema` are objects. |
 | `Request::CountTokens` from another dialect | `/v1/messages/count_tokens` without `max_tokens`, sampling, `metadata` and `stream` | They don't change the input count, and the endpoint rejects them. An Anthropic app's own token-counting request is sent as received. |
@@ -180,7 +182,7 @@ Replies from other dialects (`encode_response`) get `type: "message"`, `role: "a
 - **Refusals.** `Refusal` blocks become `text` blocks.
 - **Tool arguments that are not an object.** KPP keeps tool call arguments that are not valid JSON, for example cut off by an output limit, as a JSON string. Other JSON values stay as they are. `tool_use.input` must be an object, and an empty `input` would call the tool with arguments the model never wrote. So such a reply from another dialect is refused with `ProviderError` (`` The provider returned arguments for the tool call `…` that are not a JSON object, … ``). The gateway still logs the reply and its usage. In requests, such calls from other dialects become objects ([tool call arguments](cross-format.md#tool-call-arguments)).
 - **Reasoning** from other dialects becomes a `thinking` block ([reasoning blobs](reasoning.md#reasoning-blobs)). Its `thinking` holds the summaries, then the reasoning text, with a blank line between paragraphs. Its `signature` is a reasoning blob of the original block. Anthropic never sees that block: the request decoder restores the original, which only goes back to its own provider.
-- **Left out** ([replies](cross-format.md#replies)): image, document and tool result blocks, which are not part of the `Message` content union, and foreign opaque data, citations, extras and unknown blocks. Anthropic reasoning without a signature is left out too, unless it was read from Anthropic Messages: own unsigned thinking is written as received.
+- **Left out** ([replies](cross-format.md#replies)): image, document, audio, video and tool result blocks, which are not part of the `Message` content union, and foreign opaque data, citations, extras and unknown blocks. Anthropic reasoning without a signature is left out too, unless it was read from Anthropic Messages: own unsigned thinking is written as received.
 
 ## Token counts
 
@@ -257,7 +259,7 @@ Schema `ErrorResponse`. Decode errors, for requests and provider bodies alike, n
 - A too-long prompt is a 400 `invalid_request_error` like any other, so only its message tells it apart. If Anthropic changes the wording, the error decodes as `InvalidRequest`.
 - An unknown `error.type`, or a body that is not an `ErrorResponse`, gets its kind from the status. Examples of such bodies are Cloudflare's HTML 413, JSON whose `type` is not `error`, and JSON with a top-level key Kaeso cannot carry. The status and the raw body (as a string when it is not JSON) are kept, and such bodies are encoded again in Anthropic's error shape.
 - Statuses 400, 409 and 422 give `InvalidRequest`, 401 `Authentication`, 402 `Billing`, 403 `PermissionDenied` and 404 `NotFound`. Statuses 408 and 504 give `Timeout`, 413 `RequestTooLarge`, 429 `RateLimited`, and 503 and 529 `Overloaded`. Any other status gives `ProviderError`, and so do stream errors, which have none. A documented `error.type` always wins over the status.
-- A body in OpenAI's error shape, `{"error": {"message", "type"}}`, as Vercel AI Gateway and Z.ai send on `/v1/messages`, keeps its message. Its kind comes from `error.type` when that is one of Anthropic's types or one of [Z.ai's codes](#zai), else from the status, and Anthropic apps get it in Anthropic's shape (`fixtures/anthropic_messages/providers/vercel/errors/`). Such a body keeps its status only while the status gives the same kind; otherwise Anthropic apps get the kind's status, so Z.ai's 429 for an empty balance reaches them as 402 `billing_error`.
+- A body in OpenAI's error shape, `{"error": {"message", "type"}}`, as Vercel AI Gateway and Z.ai send on `/v1/messages`, keeps its message. Its kind comes from `error.type` when that is one of Anthropic's types or one of [Z.ai's codes](anthropic-messages-providers.md#zai), else from the status, and Anthropic apps get it in Anthropic's shape (`fixtures/anthropic_messages/providers/vercel/errors/`). Such a body keeps its status only while the status gives the same kind; otherwise Anthropic apps get the kind's status, so Z.ai's 429 for an empty balance reaches them as 402 `billing_error`.
 - Errors decoded from Anthropic are encoded again from `raw` with their status, so Anthropic apps see them unchanged; others are built as `{"type":"error","error":{"type","message"},"request_id":null}`.
 - `request_id` is required in `ErrorResponse`, a string or `null`. `encode_error_for_request` (`dispatch::encode_error_for_request`) writes the given id there, including into a body encoded again from `raw`, where it replaces Anthropic's id. The gateway passes the id it sends in `kaeso-request-id` and keeps Anthropic's `request-id` header in its request log. `encode_error` writes `null` into the bodies it builds.
 - Other response headers (such as `anthropic-ratelimit-*` and `request-id`) are not part of `KppError`.
@@ -335,54 +337,4 @@ Every fixture round-trips, with no exceptions: requests, token-counting requests
 
 ## Providers that use this format
 
-Providers other than Anthropic that serve Messages record into `fixtures/anthropic_messages/providers/<id>/` ([fixtures](fixtures.md)). Their extra fields follow the rules above; this section names what each one adds.
-
-Each provider in `PROVIDERS` names a `kaeso_codecs::anthropic_messages::MessagesProfile` in its `messages` field, and the gateway hands it to the encoder with `EgressCtx::with_messages_profile`, which applies it to every request, whatever format the app sent. `MessagesProfile::ANTHROPIC`, the default, sends requests as the app wrote them; `MessagesProfile::compatible(name)` is the same with the provider's name. Custom providers get `ANTHROPIC`.
-
-| Setting | What the encoder does | Why it is allowed |
-|---|---|---|
-| `refusing(fields)` | Refuses a request that sets one of these fields, by their Anthropic names: `top_k`, `stop_sequences` (named as the app wrote it, such as a Chat app's `stop`), or a top-level field of an Anthropic app, such as `container`: `` `top_k` is not supported by Example Cloud; remove it from the request. `` A field that may be left out when a request crosses formats, such as Claude Code's `context_management` that only clears thinking ([extras](cross-format.md#extras)), is left out instead and named in `kaeso-left-out`; any other value of it is refused with the hint for Claude Code. | These fields are semantic, and a provider that accepts them without acting on them would drop them silently. |
-| `sampling_fixed_at(values)` | Refuses a `temperature` or `top_p` other than the value the provider always samples at (`FixedValue`, in thousandths); the value itself goes as written. | The provider ignores the field, so only its own value is honoured. |
-| `auto_tool_choice_only()` | Refuses a `tool_choice` other than `auto`, from every format. | The provider would choose tools itself whatever the app asked for. |
-| `raw_predict()` | Sends a generation to `{base_path}/{model}:rawPredict` (`:streamRawPredict` when it streams) without `model`, and a token count to `{base_path}/count-tokens:rawPredict` with it; both bodies get `anthropic_version` `vertex-2023-10-16` unless the app sent its own. Errors in Google's shape are read as Gemini errors. | How Google's platform serves Claude ([use Claude](https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/partner-models/claude/use-claude), [count tokens](https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/partner-models/claude/count-tokens), Anthropic's SDK). Gemini Enterprise Agent Platform uses it and refuses `mcp_servers` and `container`, which [Anthropic lists](https://platform.claude.com/docs/en/build-with-claude/claude-models-on-google-cloud/google-managed) as unavailable there. |
-
-Refusals happen while the request is adapted for the target, before it is encoded, so nothing is sent and the refusal reaches the app in its own format.
-
-| Provider | Settings | Sources |
-|---|---|---|
-| MiniMax (`minimax`) | refuses `top_k`, `stop_sequences`, `mcp_servers`, `container` and `context_management`; `sampling_fixed_at([("temperature", 1), ("top_p", 0.95)])`; `auto_tool_choice_only()` | MiniMax's [Anthropic API compatibility](https://platform.minimax.io/docs/api-reference/text-anthropic-api) page, read 2026-11-08, whose table lists `temperature`, `top_p`, `top_k`, `stop_sequences`, `mcp_servers`, `context_management` and `container` as ignored, says MiniMax always uses a `temperature` of 1 and a `top_p` of 0.95, and supports only `auto` for `tool_choice` |
-
-### Vercel
-
-Sources: Vercel's [Anthropic Messages API](https://vercel.com/docs/ai-gateway/sdks-and-apis/anthropic-messages-api) and [extended thinking](https://vercel.com/docs/ai-gateway/sdks-and-apis/anthropic-messages-api/reasoning) pages, read 2026-10-29, and the live recordings in `fixtures/anthropic_messages/providers/vercel/`. A Vercel model is sent as Messages when its **Sends as** value says so; Vercel's `generation` dialect is Chat Completions.
-
-| Vercel field | KPP | Notes |
-|---|---|---|
-| `provider_metadata` on the reply | extras | Anthropic apps get it back unchanged. |
-| `thinking` blocks without `signature` | `Block::Reasoning` | Anthropic apps get them as Vercel sent them. |
-| errors in OpenAI's envelope | `KppError` | See [errors](#errors). |
-| `POST /v1/messages/count_tokens` | — | Vercel counts exactly only for Claude models and estimates the rest, so Kaeso refuses token counts for every Vercel model. |
-
-### Z.ai
-
-Sources: Z.ai's [error codes](https://docs.z.ai/api-reference/api-code), [quick start](https://docs.z.ai/devpack/quick-start) and [thinking settings](https://docs.z.ai/devpack/latest-model) pages, read 2026-11-08, and the errors recorded and probed live in `fixtures/anthropic_messages/providers/zai/`. Messages is Z.ai's `generation` dialect, at `https://api.z.ai/api/anthropic`. Z.ai documents no Anthropic reply, stream or list of fields it takes, so requests go as they would to Anthropic, nothing is refused for Z.ai, and Z.ai's own errors reach the app. Its thinking settings page names `thinking.type` `adaptive` and `output_config.effort`, which another dialect's effort level becomes.
-
-| Z.ai field | KPP | Notes |
-|---|---|---|
-| Z.ai's numeric code as `error.type`, in OpenAI's envelope (`errors/recorded-invalid-api-key`) | `KppError` kind | Z.ai answers some codes with a status that means something else in Anthropic's table, such as 429 for an empty balance. The code wins: `1113`, `1309` and `1314` → `Billing`; `1211` → `NotFound`; `1220`, `1311` and `1315` → `PermissionDenied`; `1261` → `ContextTooLong`; `1301` → `ContentFiltered`; `1305` → `Overloaded`; `1000`, `1001`, `1003` and `1005` → `Authentication`. Other codes follow the status. |
-| `{"code", "msg", "success": false}`, also with HTTP 200 (`errors/list-invalid-api-key`) | `KppError` | Z.ai's platform envelope, which answers a path it doesn't serve, `GET /v1/models` among them, before it checks the key. `decode_models` and `decode_model` read it as an error whatever the status, so a model check with a wrong key reports the refused key. |
-| `POST /v1/messages/count_tokens` | — | Not documented; Kaeso refuses token counts for Z.ai models before sending anything. |
-### MiniMax
-
-Sources: MiniMax's [Anthropic API compatibility](https://platform.minimax.io/docs/api-reference/text-anthropic-api) page and its [OpenAPI document](https://platform.minimax.io/docs/api-reference/text/api/openapi-chat-anthropic.json), read 2026-11-08, the examples from that document in `fixtures/anthropic_messages/providers/minimax/`, and one live error recorded with a made-up key. Messages is MiniMax's `generation` dialect, at `https://api.minimax.io/anthropic`, for `MiniMax-M3` and `MiniMax-M3.1-Flash`.
-
-| MiniMax field | KPP | Notes |
-|---|---|---|
-| reply `id` of 32 hex digits without `msg_`, no `stop_sequence` | `id`, form `none` | Anthropic apps get the reply as MiniMax sent it (`responses/deep-thinking`). |
-| `thinking` blocks with MiniMax's own `signature`, and `signature_delta` | `Block::Reasoning` with an opaque Anthropic signature from the origin `minimax` | MiniMax asks for the blocks back unchanged in later turns. Other formats replay them only to MiniMax ([reasoning blobs](reasoning.md#reasoning-blobs)); an Anthropic app's own replay goes as written, and Anthropic refuses MiniMax's signatures. |
-| `service_tier` on `message_start` | extras | `streams/image-url-stream`. |
-| `video` content blocks (request) | `Block::Unknown` | MiniMax's own block; it reaches MiniMax from Anthropic apps only, and other dialects refuse it. |
-| `thinking.type` `adaptive` and `output_config.effort` (request) | `reasoning` | MiniMax documents only `adaptive` and `disabled`; `MiniMax-M3.1-Flash` refuses `disabled` with 400, which reaches the app. |
-| `POST /v1/messages/count_tokens` | — | MiniMax's documented answer puts the counts under `usage` instead of at the top level, so Kaeso refuses token counts for MiniMax models before sending anything. |
-| `GET /v1/models`, `GET /v1/models/{model_id}` | `ModelList`, `ModelInfo` | Anthropic's shape (`models/list-documented`, `models/retrieve-documented`); a wrong key gets 401, so **Check availability** spots it. |
-| errors | `KppError` | Anthropic's shape with a `request_id` of MiniMax's own (`errors/recorded-invalid-api-key`). |
+MiniMax, Vercel, Z.ai and the Claude models of Gemini Enterprise Agent Platform also speak Messages; [Messages providers](anthropic-messages-providers.md) lists what each one adds.

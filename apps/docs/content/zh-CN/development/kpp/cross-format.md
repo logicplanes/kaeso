@@ -15,6 +15,7 @@ order: 2
 | 可读推理 | 丢弃；[推理数据块](reasoning.md#推理数据块)会在其来源处恢复它 | 应用有推理形态时，以该形态展示 |
 | 不透明推理 | 只回放给签发它的方言和服务商 | 包装在推理数据块中 |
 | 缓存提示 | 目标会自行缓存时丢弃 | — |
+| 音频和视频 | 目标格式和服务商接受时发送，否则为 `Unsupported`（[音频和视频](#音频和视频)） | 应用的格式无法承载时省略 |
 | 目标没有的采样设置 | `Unsupported` | — |
 | 应用格式中没有的停止原因 | — | 映射为该格式中最接近的一个 |
 | 对始终推理的模型关闭思考 | 该模型的最低推理强度等级，并在 `kaeso-adapted` 中说明（见[始终推理的模型](reasoning.md#始终推理的模型)） | — |
@@ -68,7 +69,7 @@ OpenAI Chat 已弃用的函数调用在 Chat 内部可以往返，但不会转�
 
 只有已知对模型输出没有任何影响的字段才能加入列表。每个条目都需要一行理由，以及一个展示真实客户端发送该字段的 fixture。
 
-条目带有作用范围（`cross::EXTRAS_ALLOWLIST`）：一个键只在它所在的位置被允许。作用范围包括 `request`、`message`、`tool`、`output`、`reasoning`，以及块类型 `text`、`image`、`document`、`tool_call`、`tool_result` 和 `refusal`。请求头是 `request` 范围内的键 `header:<name>`。
+条目带有作用范围（`cross::EXTRAS_ALLOWLIST`）：一个键只在它所在的位置被允许。作用范围包括 `request`、`message`、`tool`、`output`、`reasoning`，以及块类型 `text`、`image`、`document`、`audio`、`video`、`tool_call`、`tool_result` 和 `refusal`。请求头是 `request` 范围内的键 `header:<name>`。
 
 下表中的 fixture 路径都相对于 `crates/kaeso-codecs/fixtures/`。
 
@@ -271,12 +272,27 @@ Codex 运行子智能体时，智能体之间用 `agent_message` 输入 item 通
 - **对话中的其他值（发往 Anthropic 时）。** `tool_use.input` 必须是对象，只要历史中有一个不是，Anthropic 就会拒绝整个请求。因此，来自其他格式、参数为其他值的调用会变为对象：不是 JSON 的文本（例如被输出上限截断的参数）变为 `{"input": "<该文本>"}`，与[自由格式工具的输入](#codex-工具历史)相同；数组、数字或布尔值变为 `{"input": <该值>}`；`null` 变为 `{}`。模型能看到它写下的内容以及随后的工具结果。每个这样的调用都会在 `kaeso-adapted` 中以 `tool call` 加其 ID 注明，例如 `tool call call_abc`。Chat Completions 和 Responses 的提供商按原样收到参数。Anthropic 应用自己的 `tool_use` 若 `input` 不是对象，仍为 `Unsupported`。
 - **回复。** 发给 Anthropic 应用的回复中，若工具调用的参数不是对象，会被拒绝，因为应用会用模型从未写过的参数运行工具（[Anthropic 回复](anthropic-messages.md#回复)）。
 
+## 音频和视频
+
+`Block::Audio` 和 `Block::Video` 与图像一样，包含一个 `Source`、一个缓存提示和 extras。每种格式按其文档接受它们，并在发送前拒绝其余的内容：
+
+| 目标 | 音频 | 视频 |
+| --- | --- | --- |
+| Gemini | `inlineData` 或 `fileData`，媒体类型按发送时的写法 | `inlineData`、`fileData`，或不带 MIME 类型的 YouTube URL |
+| Chat Completions | 用户消息中的 `input_audio`，只接受 base64，格式取决于服务商：OpenAI 为 `wav` 和 `mp3`，OpenRouter 接受任何格式 | 在文档中写明 `video_url` 的服务商（OpenRouter、Moonshot）使用它；其他服务商为 `Unsupported` |
+| Anthropic Messages | `Unsupported`：请以文本发送转写稿 | MiniMax 使用 MiniMax 的 `video` 块；其他服务商为 `Unsupported`：请把视频帧作为图像发送 |
+| Responses | `Unsupported` | `Unsupported` |
+
+服务商的文件 ID 只能用于签发它的服务商（[文件](#文件)）。Gemini 的 `videoMetadata`（剪辑和帧率）和 `mediaResolution` 保留为所在 part 的 extras：只有 Gemini 有这些字段，而剪辑会改变模型看到的内容，因此其他格式会拒绝它们。网关不做转码：目标没有对应名称的媒体类型，例如 Chat Completions 的 `audio/webm`，为 `Unsupported`。
+
+对于目录条目的输入中没有 `audio` 或 `video` 的模型，网关也会拒绝音频和视频，与图像和 PDF 的处理相同：`` The model `gpt-4o` does not accept audio. ``
+
 ## 工具结果中的媒体
 
 Claude 的 `tool_result` 和 Responses 的 `function_call_output` 可以包含图像和文件，例如工具截取的屏幕截图，或 Claude Code 的 `Read` 与 Codex 的 `view_image` 打开的图像。Chat Completions 的 `tool` 消息只包含文本（`ChatCompletionToolMessageParam`），OpenAI 和 DeepSeek 会拒绝其中的图像。因此对于 Chat Completions 模型，Kaeso 会移动它们：
 
 - **工具消息**保留结果的文本，后接 `The rest of this result is in the next message.`
-- **结果之后的用户消息**对每个这样的结果，以 `` The rest of the result of tool call `<id>`: `` 开头，后接该结果的图像和文件，保持原有顺序。应用在结果之后发送的文本跟在它们后面。
+- **结果之后的用户消息**对每个这样的结果，以 `` The rest of the result of tool call `<id>`: `` 开头，后接该结果的图像、文件和音频，保持原有顺序。应用在结果之后发送的文本跟在它们后面。
 - **响应头。** 每个结果都会在回复的 `kaeso-adapted` 头中以 `tool result` 加调用 ID 的形式列出，例如 `tool result call_abc`。
 
 Anthropic 和 Responses 模型会在工具结果中原样收到这些媒体，Gemini 模型则在 `functionResponse.parts` 中收到（[Gemini API](gemini.md)）。夹具：`anthropic_messages/requests/tool-result-multi-turn.json`、`openai_responses/requests/function-call-output-array.json`。

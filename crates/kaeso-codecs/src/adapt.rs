@@ -384,7 +384,10 @@ fn place_system_for_chat(d: &mut Draft<'_>, target: DialectId) {
 const MEDIA_MOVED: &str = "The rest of this result is in the next message.";
 
 fn is_media(block: &Block) -> bool {
-    matches!(block, Block::Image(_) | Block::Document(_))
+    matches!(
+        block,
+        Block::Image(_) | Block::Document(_) | Block::Audio(_)
+    )
 }
 
 fn returns_media(block: &Block) -> bool {

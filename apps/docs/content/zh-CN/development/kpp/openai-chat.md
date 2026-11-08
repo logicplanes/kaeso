@@ -91,14 +91,16 @@ nav: OpenAI Chat
 | `file.file_data`（`data:` URL） | `Block::Document { source: Base64 }` | 裸 base64 被视为媒体类型 `application/pdf`（OpenAI 文件输入指南中唯一的类型），带形式标记 `bare_file_data`，写回时仍为裸值。 |
 | `file.file_id` | `Block::Document { source: FileId }`，绑定到 OpenAI 的文件存储（[文件](cross-format.md#文件)） | 同时有 `file_data` 时：extras `file.file_id`。 |
 | `file.filename` | extras `file.filename` | 这是 OpenAI 要求随内联 `file_data` 一起提供的文件名，而不是展示给模型的标题，因此从不成为 `DocumentBlock::title`。在 [Extras 允许列表](cross-format.md#extras)中。来自其他方言的内联文档会得到 `document.<subtype>`（例如 `document.pdf`），因为 OpenAI [文件输入指南](https://developers.openai.com/api/docs/guides/file-inputs)中的每个示例都随 `file_data` 发送文件名。 |
-| `input_audio` | `Unsupported`（`input_audio`） | 音频输入不属于 KPP。 |
+| `input_audio` `{data, format}`（用户） | `Block::Audio { source: Base64 }` | `wav` ↔ `audio/wav`，`mp3` ↔ `audio/mpeg`（`ChatCompletionRequestMessageContentPartAudio`）；OpenRouter 转发的 `aiff`、`aac`、`ogg`、`flac` 和 `m4a` ↔ `audio/aiff`、`audio/aac`、`audio/ogg`、`audio/flac`、`audio/m4a`。`prompt_cache_breakpoint` → `cache`。其他格式，或 Mistral 的纯 base64 字符串 → `Block::Unknown`。 |
+| `video_url.url`（用户；OpenRouter 和 Moonshot，OpenAI 没有） | `Block::Video { source: Url / Base64 }` | data URL 的处理与 `image_url` 相同。 |
 | `refusal`（助手） | `Block::Refusal` + 形式标记 `part` | |
 | 其他类型，以及用户消息之外的 `image_url` 和 `file` 部分、助手消息之外的 `refusal` 部分 | `Block::Unknown` | 仅限同一方言。 |
 
 对于来自其他方言的 KPP，`check()` 会拒绝：
 
 - 文本文档、文档 URL，以及文档的 `title`、`context` 和 `citations`；
-- 图像文件 ID，以及系统消息和助手消息中的图像和文档；工具结果中的图像和文档会移到其后的用户消息中（[工具结果中的媒体](cross-format.md#工具结果中的媒体)）；
+- 图像文件 ID，以及系统消息和助手消息中的图像、文档、音频和视频；工具结果中的图像和文档会移到其后的用户消息中（[工具结果中的媒体](cross-format.md#工具结果中的媒体)）；
+- 不是 base64 的音频、媒体类型没有对应 `input_audio.format` 的音频（`` audio media type `…` ``），以及视频，除非配置接受 `video_url` 部分；
 - 助手消息之外的拒绝和引用；
 - 其他方言的引用（通过 `check_foreign`）；
 - `top_k`（[采样参数](cross-format.md#采样参数)）；

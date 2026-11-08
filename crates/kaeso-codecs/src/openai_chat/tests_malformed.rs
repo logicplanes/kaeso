@@ -149,7 +149,12 @@ fn the_encoder_refuses_what_check_refuses() {
     for generate in cases {
         let req = Request::Generate(generate.clone());
         assert!(
-            super::check::check(&req, &kaeso_kpp::Origin::new(super::DIALECT)).is_err(),
+            super::check::check(
+                &req,
+                &kaeso_kpp::Origin::new(super::DIALECT),
+                &super::ChatProfile::OPENAI
+            )
+            .is_err(),
             "{generate:?}"
         );
         let mut ctx = EgressCtx::new(&req);

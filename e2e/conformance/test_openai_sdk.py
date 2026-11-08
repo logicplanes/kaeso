@@ -144,3 +144,16 @@ def test_input_tokens(base_url, source, name):
         model=f"{source}:{name}", input="What is the weather in Paris?"
     )
     assert got.input_tokens == want["input_tokens"]
+
+
+def test_chat_audio_parts_reach_kpp(base_url):
+    want = expected(base_url, {"source": "gemini", "name": "recorded-audio-input", "kind": "generate", "stream": False})
+    content = [
+        {"type": "input_audio", "input_audio": {"data": "SUQzBAAAAAAAI1RTU0U=", "format": "mp3"}},
+        {"type": "text", "text": "Transcribe this clip word for word."},
+    ]
+    c = client(base_url)
+    completion = c.chat.completions.create(
+        model="gemini:recorded-audio-input", messages=[{"role": "user", "content": content}]
+    )
+    assert chat_view(completion)["text"] == want["text"]

@@ -13,7 +13,7 @@ Look up any field of the Gemini API here: where it goes in KPP and the source of
 **Sources.** The mappings follow these sources:
 
 - The Gemini API discovery document, `https://generativelanguage.googleapis.com/$discovery/rest?version=v1beta`, revision `20261106`. Schema names below refer to it.
-- The [Gemini API documentation](https://aistudio.google.com/docs), read on 2026-11-08: text generation, thinking, thought signatures, function calling, structured output, token counting, embeddings, file input methods, models and troubleshooting.
+- The [Gemini API documentation](https://aistudio.google.com/docs), read on 2026-11-08: text generation, thinking, thought signatures, function calling, structured output, token counting, embeddings, file input methods, audio understanding, video understanding, models and troubleshooting.
 - The official Python SDK `google-genai` 2.32.0, which the [SDK conformance suite](../testing.md#sdk-conformance) runs against the encoders.
 
 ## How to read the tables
@@ -76,14 +76,14 @@ Schema `Part`. A part carries exactly one of `text`, `inlineData`, `fileData`, `
 | `text` with `thought: true` | `Block::Reasoning` | Its text, and its `thoughtSignature` as opaque data. An empty thought part → form `thought_part`. |
 | `thoughtSignature` on any other part | `Block::Reasoning` before the part's block | See [thought signatures](#thought-signatures). |
 | `inlineData` `image/*` | `Block::Image`, base64 | `displayName` → fields `inlineData.*`. |
+| `inlineData` `audio/*` / `video/*` | `Block::Audio` / `Block::Video`, base64 | The MIME type as sent (`audio/mp3`, `audio/mpeg`, `video/mp4`, …). |
 | `inlineData` of another type | `Block::Document`, base64 | |
 | `fileData` with a Files API URI (`files/…` or `https://generativelanguage.googleapis.com/v1beta/files/…`) | image or document, `Source::FileId` | Usable only at Gemini ([files](cross-format.md#files)). `mimeType` → form `mime_type`. |
-| `fileData` with another URI | image or document, `Source::Url` | Image when `mimeType` is `image/*`. |
-| `inlineData` or `fileData` of `audio/*` or `video/*` | `Block::Unknown` (raw) | KPP has no audio or video block yet; refused across dialects. |
+| `fileData` with another URI | image, audio, video or document, `Source::Url` | By the `image/*`, `audio/*` or `video/*` of `mimeType`. A YouTube URL without one is a video (`requests/video-youtube.json`). |
 | `functionCall` | `Block::ToolCall` | See [function calls](#function-calls). |
 | `functionResponse` | `Block::ToolResult` | See [function calls](#function-calls). |
 | `executableCode`, `codeExecutionResult`, `toolCall`, `toolResponse`, unknown parts, parts with two data fields | `Block::Unknown` (raw) | The part keeps its own `thoughtSignature`. Refused across dialects. |
-| `videoMetadata`, `mediaResolution`, `partMetadata`, `mediaProcessing` and other part keys | block fields | |
+| `videoMetadata`, `mediaResolution`, `partMetadata`, `mediaProcessing` and other part keys | block fields | Clipping and frame rate change what the model sees, so other dialects refuse them; no other format has them. |
 
 ### Function calls
 
@@ -96,7 +96,7 @@ Schema `Part`. A part carries exactly one of `text`, `inlineData`, `fileData`, `
 | `functionResponse.response` `{"output": "<text>"}` | one text block | The documented output convention (`FunctionResponse.response`). |
 | `functionResponse.response` `{"error": "<text>"}` | one text block, `is_error` | The documented error convention. |
 | `functionResponse.response`, any other object | one text block with the compact JSON | form `response: "json"`: Gemini gets the object back; other dialects read the JSON as text. |
-| `functionResponse.parts[]` | image and document blocks after the text | Unknown parts stay raw. |
+| `functionResponse.parts[]` | image and document blocks after the text | Audio, video and unknown parts stay raw: function responses take images and documents only. |
 | `functionResponse.willContinue`, `.scheduling` | fields `functionResponse.*` | |
 
 ### Requests from other dialects
@@ -107,6 +107,7 @@ Schema `Part`. A part carries exactly one of `text`, `inlineData`, `fileData`, `
 - **Ids** of other dialects are sent as `functionCall.id` and `functionResponse.id`.
 - **Arguments** that aren't an object become one, as for Anthropic ([tool call arguments](cross-format.md#tool-call-arguments)).
 - **Image URLs** get `fileData.mimeType` from the URL's extension (`.png`, `.jpg`, `.jpeg`, `.webp`, `.gif`, `.heic`, `.heif`; documents also `.pdf`, `.txt`), as the file input guide asks; an image URL without one is `Unsupported`. Text documents are sent as base64 `inlineData`.
+- **Audio and video URLs** get it the same way, from the audio and video guides' supported formats (`.wav`, `.mp3`, `.aiff`, `.aac`, `.ogg`, `.flac`, `.m4a`, `.opus`, `.webm`; `.mp4`, `.mpeg`, `.mpg`, `.mov`, `.avi`, `.flv`, `.webm`, `.wmv`, `.3gp`). A YouTube URL goes without one; another URL without a known extension is `Unsupported`. Base64 audio and video go as `inlineData` with their media type. Audio and video in a tool result are `Unsupported`.
 - **Refused** with `Unsupported`: refusal blocks, which Gemini has no part for (as for Anthropic), a document's title, context or citations, more than five stop sequences (`GenerationConfig.stopSequences`), `parallel_tool_calls: false`, an output schema with a description or `strict: false`, and an effort or thinking mode Gemini has no setting for.
 - **Strict tools.** A function tool with `strict: true` and an automatic `tool_choice` sends `mode: VALIDATED`, which checks calls against their schemas.
 - **Hosted web search** is [left out](cross-format.md#tools-left-out).

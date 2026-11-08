@@ -1,6 +1,7 @@
 use kaeso_kpp::{
     Block, CacheHint, CacheTtl, Citation, DocumentBlock, ImageBlock, KppError, Opaque, OpaqueKind,
     Origin, RawItem, RawJson, ReasoningBlock, Source, TextBlock, ToolCallBlock, ToolResultBlock,
+    VideoBlock,
 };
 use serde_json::value::RawValue;
 
@@ -119,6 +120,17 @@ fn decode_kind(raw: &RawValue, dec: Dec<'_>, kind: BlockKind) -> Result<Block, S
             b.extras = extras;
             Block::Image(b)
         }
+        BlockKind::Video => {
+            let w: Ext<ImageW> = parse(raw, "video")?;
+            let mut extras = extras_from(origin, w.extra, w.verbatim);
+            let Some(source) = decode_source(&w.known.source, origin, &mut extras, false)? else {
+                return Ok(unknown());
+            };
+            let mut b = VideoBlock::new(source);
+            b.cache = w.known.cache_control.map(|c| decode_cache(c, origin));
+            b.extras = extras;
+            Block::Video(b)
+        }
         BlockKind::Document => {
             let w: Ext<DocumentW> = parse(raw, "document")?;
             let mut extras = extras_from(origin, w.extra, w.verbatim);
@@ -224,6 +236,7 @@ fn decode_kind(raw: &RawValue, dec: Dec<'_>, kind: BlockKind) -> Result<Block, S
 enum BlockKind {
     Text,
     Image,
+    Video,
     Document,
     ToolUse,
     ToolResult,
@@ -236,6 +249,7 @@ fn block_kind(ty: Option<&str>) -> BlockKind {
     match ty {
         Some("text") => BlockKind::Text,
         Some("image") => BlockKind::Image,
+        Some("video") => BlockKind::Video,
         Some("document") => BlockKind::Document,
         Some("tool_use") => BlockKind::ToolUse,
         Some("tool_result") => BlockKind::ToolResult,
@@ -248,7 +262,7 @@ fn block_kind(ty: Option<&str>) -> BlockKind {
 // `block_form` for a known `type`, where the form needs nothing else from the block.
 pub(crate) fn block_form_of(ty: &str, depth: u8) -> Option<Form> {
     match block_kind(Some(ty)) {
-        BlockKind::Image | BlockKind::Document => None,
+        BlockKind::Image | BlockKind::Video | BlockKind::Document => None,
         BlockKind::Unknown => Some(Form::Raw),
         BlockKind::ToolResult if depth < MAX_TOOL_RESULT_DEPTH => {
             Some(Form::Nests(Scope::Anthropic(depth + 1)))
@@ -275,7 +289,7 @@ pub(crate) fn block_form(raw: &RawValue, depth: u8) -> Form {
     };
     match block_kind(ty.as_deref()) {
         BlockKind::Unknown => Form::Raw,
-        BlockKind::Image if !typed_source(false) => Form::Raw,
+        BlockKind::Image | BlockKind::Video if !typed_source(false) => Form::Raw,
         BlockKind::Document if !typed_source(true) => Form::Raw,
         BlockKind::ToolResult if depth < MAX_TOOL_RESULT_DEPTH => {
             Form::Nests(Scope::Anthropic(depth + 1))
@@ -587,7 +601,11 @@ impl BlockEncoder {
             && !own
             && matches!(
                 block,
-                Block::Image(_) | Block::Document(_) | Block::ToolResult(_)
+                Block::Image(_)
+                    | Block::Document(_)
+                    | Block::Audio(_)
+                    | Block::Video(_)
+                    | Block::ToolResult(_)
             )
         {
             return Ok(None);
@@ -621,6 +639,15 @@ impl BlockEncoder {
                 let source = self.source(&b.source, &b.extras, false)?;
                 let w = ImageW {
                     ty: "image".into(),
+                    source,
+                    cache_control: self.cache(b.cache.as_ref()),
+                };
+                to_raw(&own_ext(w, &b.extras))?
+            }
+            Block::Video(b) => {
+                let source = self.source(&b.source, &b.extras, false)?;
+                let w = ImageW {
+                    ty: "video".into(),
                     source,
                     cache_control: self.cache(b.cache.as_ref()),
                 };

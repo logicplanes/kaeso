@@ -11,6 +11,8 @@ pub enum Block {
     Text(TextBlock),
     Image(ImageBlock),
     Document(DocumentBlock),
+    Audio(AudioBlock),
+    Video(VideoBlock),
     ToolCall(ToolCallBlock),
     ToolResult(ToolResultBlock),
     Reasoning(ReasoningBlock),
@@ -37,11 +39,21 @@ impl Block {
         Block::Image(ImageBlock::new(source))
     }
 
+    pub fn audio(source: Source) -> Self {
+        Block::Audio(AudioBlock::new(source))
+    }
+
+    pub fn video(source: Source) -> Self {
+        Block::Video(VideoBlock::new(source))
+    }
+
     pub fn kind(&self) -> &'static str {
         match self {
             Block::Text(_) => "text",
             Block::Image(_) => "image",
             Block::Document(_) => "document",
+            Block::Audio(_) => "audio",
+            Block::Video(_) => "video",
             Block::ToolCall(_) => "tool_call",
             Block::ToolResult(_) => "tool_result",
             Block::Reasoning(_) => "reasoning",
@@ -55,6 +67,8 @@ impl Block {
             Block::Text(b) => Some(&b.extras),
             Block::Image(b) => Some(&b.extras),
             Block::Document(b) => Some(&b.extras),
+            Block::Audio(b) => Some(&b.extras),
+            Block::Video(b) => Some(&b.extras),
             Block::ToolCall(b) => Some(&b.extras),
             Block::ToolResult(b) => Some(&b.extras),
             Block::Reasoning(b) => Some(&b.extras),
@@ -68,6 +82,8 @@ impl Block {
             Block::Text(b) => b.cache.as_ref(),
             Block::Image(b) => b.cache.as_ref(),
             Block::Document(b) => b.cache.as_ref(),
+            Block::Audio(b) => b.cache.as_ref(),
+            Block::Video(b) => b.cache.as_ref(),
             Block::ToolCall(b) => b.cache.as_ref(),
             Block::ToolResult(b) => b.cache.as_ref(),
             Block::Reasoning(_) | Block::Refusal(_) | Block::Unknown(_) => None,
@@ -109,6 +125,46 @@ pub struct ImageBlock {
 impl ImageBlock {
     pub fn new(source: Source) -> Self {
         ImageBlock {
+            source,
+            cache: None,
+            extras: Extras::default(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[non_exhaustive]
+pub struct AudioBlock {
+    pub source: Source,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cache: Option<CacheHint>,
+    #[serde(default, skip_serializing_if = "Extras::is_empty")]
+    pub extras: Extras,
+}
+
+impl AudioBlock {
+    pub fn new(source: Source) -> Self {
+        AudioBlock {
+            source,
+            cache: None,
+            extras: Extras::default(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[non_exhaustive]
+pub struct VideoBlock {
+    pub source: Source,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cache: Option<CacheHint>,
+    #[serde(default, skip_serializing_if = "Extras::is_empty")]
+    pub extras: Extras,
+}
+
+impl VideoBlock {
+    pub fn new(source: Source) -> Self {
+        VideoBlock {
             source,
             cache: None,
             extras: Extras::default(),
@@ -426,6 +482,10 @@ mod tests {
                 RawJson::from_string("{\"type\":\"server_tool_use\"}".into()).unwrap(),
             )),
             Block::image(Source::base64("image/png", "AAAA")),
+            Block::audio(Source::base64("audio/wav", "UklGRg==")),
+            Block::video(Source::Url(
+                "https://www.youtube.com/watch?v=9hE5-98ZeCg".into(),
+            )),
         ];
         let json = serde_json::to_string(&blocks).unwrap();
         let back: Vec<Block> = serde_json::from_str(&json).unwrap();

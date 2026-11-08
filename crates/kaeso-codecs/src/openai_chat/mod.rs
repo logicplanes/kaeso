@@ -126,7 +126,7 @@ impl Codec for OpenAiChat {
 
     fn check(req: &Request, ctx: &EgressCtx) -> Result<(), KppError> {
         let req = crate::adapt::for_target(req, DIALECT, ctx)?;
-        check::check(&req, &ctx.origin(DIALECT))
+        check::check(&req, &ctx.origin(DIALECT), &ctx.chat_profile)
     }
 
     fn encode_request(req: &Request, ctx: &mut EgressCtx) -> Result<EncodedRequest, KppError> {
@@ -138,7 +138,7 @@ impl Codec for OpenAiChat {
         } = crate::adapt::for_target(req, DIALECT, ctx)?;
         ctx.left_out = left_out;
         ctx.adapted = adapted;
-        check::check(&req, &ctx.origin(DIALECT))?;
+        check::check(&req, &ctx.origin(DIALECT), &ctx.chat_profile)?;
         let Request::Generate(generate) = req.as_ref() else {
             return Err(KppError::unsupported_by(
                 kind_feature(req.kind()),

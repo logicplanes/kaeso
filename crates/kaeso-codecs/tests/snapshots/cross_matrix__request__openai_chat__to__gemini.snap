@@ -375,8 +375,38 @@ expression: outcomes
     },
     "path": "/v1beta/models/gpt-6-astra:generateContent"
   },
-  "input-audio-unsupported": {
-    "rejected_by_source": "input_audio"
+  "input-audio": {
+    "message": "`modalities` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "modalities"
+  },
+  "input-audio-mp3": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "inlineData": {
+                "data": "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",
+                "mimeType": "audio/mpeg"
+              }
+            },
+            {
+              "text": "Who is greeted in this clip?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "Answer in one short sentence."
+          }
+        ]
+      }
+    },
+    "path": "/v1beta/models/gpt-audio-mini:generateContent"
   },
   "json-object": {
     "body": {

@@ -26,7 +26,7 @@ pub(crate) use blocks::{
     ToolChange, ToolHandle, ToolReferent, block_form, block_form_of, tool_change, tool_reference,
 };
 pub(crate) use profile::apply as apply_profile;
-pub use profile::{FixedValue, MessagesProfile};
+pub use profile::{FixedValue, MINIMAX_VIDEO_MEDIA_TYPES, MessagesProfile};
 pub(crate) use request::decode_tool;
 
 pub const ANTHROPIC_VERSION: &str = "2023-06-01";
@@ -88,7 +88,7 @@ impl Codec for AnthropicMessages {
 
     fn check(req: &Request, ctx: &EgressCtx) -> Result<(), KppError> {
         let req = crate::adapt::for_target(req, Self::DIALECT, ctx)?;
-        check::check(&req, &ctx.origin(Self::DIALECT))
+        check::check(&req, &ctx.origin(Self::DIALECT), &ctx.messages_profile)
     }
 
     fn encode_request(req: &Request, ctx: &mut EgressCtx) -> Result<EncodedRequest, KppError> {
@@ -100,7 +100,7 @@ impl Codec for AnthropicMessages {
         } = crate::adapt::for_target(req, Self::DIALECT, ctx)?;
         ctx.left_out = left_out;
         ctx.adapted = adapted;
-        check::check(&req, &ctx.origin(Self::DIALECT))?;
+        check::check(&req, &ctx.origin(Self::DIALECT), &ctx.messages_profile)?;
         request::encode_request(&req, ctx)
     }
 

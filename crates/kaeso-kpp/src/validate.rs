@@ -89,12 +89,14 @@ impl GenerateRequest {
                                 Block::Text(_)
                                     | Block::Image(_)
                                     | Block::Document(_)
+                                    | Block::Audio(_)
+                                    | Block::Video(_)
                                     | Block::Unknown(_)
                             )
                         }) {
                             return Err(invalid(
                                 format!(
-                                    "A tool result may contain text, images and documents, but not a {} block.",
+                                    "A tool result may contain text, images, documents, audio and video, but not a {} block.",
                                     nested.kind()
                                 ),
                                 format!("{}.content[{ci}]", param()),
@@ -141,6 +143,8 @@ impl GenerateRequest {
         for block in self.all_blocks() {
             match block {
                 Block::Image(_) => caps.images = true,
+                Block::Audio(_) => caps.audio_input = true,
+                Block::Video(_) => caps.video_input = true,
                 Block::Document(doc) => match doc.source {
                     Source::Text(_) => caps.text_documents = true,
                     _ => caps.pdf = true,
@@ -204,6 +208,8 @@ pub struct Capabilities {
     pub images: bool,
     pub pdf: bool,
     pub text_documents: bool,
+    pub audio_input: bool,
+    pub video_input: bool,
     pub tools: bool,
     pub parallel_tools: bool,
     pub reasoning: bool,
@@ -419,6 +425,26 @@ mod tests {
         assert!(caps.images && caps.pdf && caps.cache_hints && caps.parallel_tools);
         assert!(caps.reasoning && caps.json_object && caps.streaming);
         assert!(!caps.json_schema && !caps.text_documents);
+    }
+
+    #[test]
+    fn audio_and_video_need_their_own_capabilities_also_in_tool_results() {
+        let mut req = tool_turns();
+        req.messages[0]
+            .blocks
+            .push(Block::audio(Source::base64("audio/mpeg", "SUQz")));
+        let caps = req.required_capabilities();
+        assert!(caps.audio_input && !caps.video_input && !caps.images);
+
+        req.messages[2].blocks = vec![Block::tool_result(
+            "c1",
+            vec![Block::video(Source::Url(
+                "https://example.com/clip.mp4".into(),
+            ))],
+            false,
+        )];
+        req.validate().unwrap();
+        assert!(req.required_capabilities().video_input);
     }
 
     #[test]

@@ -91,14 +91,16 @@ Other dialects refuse all of it with `Unsupported`, naming the parts as follows:
 | `file.file_data` (`data:` URL) | `Block::Document { source: Base64 }` | Bare base64 is taken as media type `application/pdf`, the only type in OpenAI's file inputs guide, with form `bare_file_data`, and is written back bare. |
 | `file.file_id` | `Block::Document { source: FileId }` bound to the OpenAI file store ([files](cross-format.md#files)) | With `file_data` too: extras `file.file_id`. |
 | `file.filename` | extras `file.filename` | The file name OpenAI requires next to inline `file_data`, not a title shown to the model, so it never becomes `DocumentBlock::title`. On the [extras allowlist](cross-format.md#extras). Inline documents from other dialects get `document.<subtype>`, such as `document.pdf`, as every example of OpenAI's [file inputs guide](https://developers.openai.com/api/docs/guides/file-inputs) sends one with `file_data`. |
-| `input_audio` | `Unsupported` (`input_audio`) | Audio input is not part of KPP. |
+| `input_audio` `{data, format}` (user) | `Block::Audio { source: Base64 }` | `wav` ↔ `audio/wav` and `mp3` ↔ `audio/mpeg` (`ChatCompletionRequestMessageContentPartAudio`); `aiff`, `aac`, `ogg`, `flac` and `m4a`, which OpenRouter passes on, ↔ `audio/aiff`, `audio/aac`, `audio/ogg`, `audio/flac`, `audio/m4a`. `prompt_cache_breakpoint` → `cache`. Another format, or Mistral's bare base64 string, → `Block::Unknown`. |
+| `video_url.url` (user; OpenRouter and Moonshot, not OpenAI) | `Block::Video { source: Url / Base64 }` | Data URLs as for `image_url`. |
 | `refusal` (assistant) | `Block::Refusal` + form `part` | |
 | other types, and `image_url` and `file` parts outside user messages, `refusal` parts outside assistant messages | `Block::Unknown` | Same dialect only. |
 
 For KPP from other dialects, `check()` refuses:
 
 - text documents, document URLs, and document `title`, `context` and `citations`;
-- image file ids, and images and documents in system and assistant messages; those in tool results move to the user message after them ([media in tool results](cross-format.md#media-in-tool-results));
+- image file ids, and images, documents, audio and video in system and assistant messages; those in tool results move to the user message after them ([media in tool results](cross-format.md#media-in-tool-results));
+- audio that is not base64, or whose media type has no `input_audio.format` (`` audio media type `…` ``), and video, unless the profile takes `video_url` parts;
 - refusals and citations outside assistant messages;
 - other dialects' citations, through `check_foreign`;
 - `top_k` ([sampling](cross-format.md#sampling));

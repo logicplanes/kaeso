@@ -33,7 +33,7 @@ KPP, the Kaeso Provider Protocol, has a codec for each API format: OpenAI Chat C
 
 ## What carries across
 
-- **Conversations.** System instructions, user and assistant turns, text, images and documents. A system message in the middle of an Anthropic conversation reaches OpenAI as a later system message, and one in the middle of an OpenAI conversation reaches Anthropic as text of the next user turn.
+- **Conversations.** System instructions, user and assistant turns, text, images and documents, and audio and video where the target takes them ([audio and video](../development/kpp/cross-format.md#audio-and-video)). A system message in the middle of an Anthropic conversation reaches OpenAI as a later system message, and one in the middle of an OpenAI conversation reaches Anthropic as text of the next user turn.
 - **Tools.** Function tools, tool choice, parallel tool calls, tool calls and tool results. Images and files a tool returned reach a Chat Completions model in the user message after the results, because its tool messages hold only text ([media in tool results](../development/kpp/cross-format.md#media-in-tool-results)).
 - **Tool names and call ids.** When the target doesn't accept a name or id, Kaeso rewrites it in a fixed way and maps it back in the reply. Other characters become `_`, the name is cut to fit, and a hash of the original is added. OpenAI accepts up to 64 letters, digits, `_` and `-`, Anthropic up to 128.
 - **Structured output.** JSON schemas.
@@ -52,25 +52,27 @@ When a request crosses formats, Kaeso refuses these with an error that names the
 - the `json_object` output format, and a JSON schema with a description or with `strict: false`
 - refusals in the history
 - images other than JPEG, PNG, GIF and WebP, and documents other than PDF and plain text
+- audio, and video except for MiniMax
 - the `minimal` effort
 
 ### Requests to OpenAI Chat Completions
 
 - `top_k` and more than four stop sequences
 - text documents, document URLs, document titles, context and citations
-- image file ids, and images and documents outside user messages
+- image file ids, and images, documents and audio outside user messages
+- audio other than base64 WAV and MP3, and video, except for providers that document more
 
 ### Requests to OpenAI Responses
 
 - `top_k`, `seed`, penalties and stop sequences
 - text documents, document titles, context and citations
+- audio and video
 
 ### Requests to any provider
 
 Kaeso refuses these in every format, even when the format stays the same:
 
 - more than one choice (`n`)
-- Chat Completions audio input (`input_audio`)
 - stored state: `store: true`, `previous_response_id`, `conversation` and `background`
 
 ### Requests across formats

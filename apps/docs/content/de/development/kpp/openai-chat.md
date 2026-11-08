@@ -91,14 +91,16 @@ Andere Dialekte lehnen all das mit `Unsupported` ab und nennen die Teile so:
 | `file.file_data` (`data:`-URL) | `Block::Document { source: Base64 }` | Reines Base64 gilt als Medientyp `application/pdf`, der einzige Typ im Leitfaden von OpenAI zu Dateieingaben, mit Form `bare_file_data`, und wird wieder ohne Kopf geschrieben. |
 | `file.file_id` | `Block::Document { source: FileId }`, gebunden an den Dateispeicher von OpenAI ([Dateien](cross-format.md#dateien)) | Zusammen mit `file_data`: Extras `file.file_id`. |
 | `file.filename` | Extras `file.filename` | Der Dateiname, den OpenAI neben eingebettetem `file_data` verlangt, kein Titel, den das Modell sieht; daher wird er nie zu `DocumentBlock::title`. Steht auf der [Extras-Allowlist](cross-format.md#extras). Eingebettete Dokumente aus anderen Dialekten bekommen `document.<subtype>`, etwa `document.pdf`, weil jedes Beispiel in OpenAIs [Leitfaden zu Datei-Eingaben](https://developers.openai.com/api/docs/guides/file-inputs) einen mit `file_data` sendet. |
-| `input_audio` | `Unsupported` (`input_audio`) | Audioeingaben sind nicht Teil von KPP. |
+| `input_audio` `{data, format}` (Benutzer) | `Block::Audio { source: Base64 }` | `wav` ↔ `audio/wav` und `mp3` ↔ `audio/mpeg` (`ChatCompletionRequestMessageContentPartAudio`); `aiff`, `aac`, `ogg`, `flac` und `m4a`, die OpenRouter weiterreicht, ↔ `audio/aiff`, `audio/aac`, `audio/ogg`, `audio/flac`, `audio/m4a`. `prompt_cache_breakpoint` → `cache`. Ein anderes Format oder Mistrals bloßer base64-String → `Block::Unknown`. |
+| `video_url.url` (Benutzer; OpenRouter und Moonshot, nicht OpenAI) | `Block::Video { source: Url / Base64 }` | Data-URLs wie bei `image_url`. |
 | `refusal` (Assistent) | `Block::Refusal` + Form `part` | |
 | andere Typen sowie `image_url`- und `file`-Teile außerhalb von Benutzernachrichten und `refusal`-Teile außerhalb von Assistentennachrichten | `Block::Unknown` | Nur im selben Dialekt. |
 
 Für KPP aus anderen Dialekten lehnt `check()` ab:
 
 - Textdokumente, Dokument-URLs sowie `title`, `context` und `citations` von Dokumenten;
-- Bild-Datei-IDs sowie Bilder und Dokumente in System- und Assistentennachrichten; solche in Tool-Ergebnissen wandern in die Benutzernachricht danach ([Medien in Tool-Ergebnissen](cross-format.md#medien-in-tool-ergebnissen));
+- Bild-Datei-IDs sowie Bilder, Dokumente, Audio und Video in System- und Assistentennachrichten; solche in Tool-Ergebnissen wandern in die Benutzernachricht danach ([Medien in Tool-Ergebnissen](cross-format.md#medien-in-tool-ergebnissen));
+- Audio, das nicht base64 ist oder dessen Medientyp kein `input_audio.format` hat (`` audio media type `…` ``), und Video, außer das Profil nimmt `video_url`-Teile;
 - Verweigerungen und Zitate außerhalb von Assistentennachrichten;
 - über `check_foreign` die Zitate anderer Dialekte;
 - `top_k` ([Sampling](cross-format.md#sampling));

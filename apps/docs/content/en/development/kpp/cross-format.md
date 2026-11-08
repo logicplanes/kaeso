@@ -15,6 +15,7 @@ An app may speak one API format while the provider speaks another. These are the
 | Readable reasoning | Dropped; the [reasoning blob](reasoning.md#reasoning-blobs) restores it at its origin | Shown in the app's reasoning shape where it has one |
 | Opaque reasoning | Replayed only to the dialect and provider that issued it | Wrapped in a reasoning blob |
 | Cache hints | Dropped where the target caches by itself | — |
+| Audio and video | Sent where the target's format and provider take them, otherwise `Unsupported` ([audio and video](#audio-and-video)) | Left out where the app's format can't carry them |
 | Sampling settings the target lacks | `Unsupported` | — |
 | Stop reasons the app's format lacks | — | The closest one it has |
 | Thinking off for a model that always reasons | The model's lowest effort level, named in `kaeso-adapted` ([models that always reason](reasoning.md#models-that-always-reason)) | — |
@@ -68,7 +69,7 @@ Extras captured from dialect A are written back only to dialect A. Another diale
 
 An entry is allowed only when the field is known to have no effect on the model's output. Every entry needs a one-line reason and the fixture that shows a real client sending it.
 
-Entries are scoped (`cross::EXTRAS_ALLOWLIST`): a key is only allowlisted where it sits. The scopes are `request`, `message`, `tool`, `output`, `reasoning`, and the block kinds `text`, `image`, `document`, `tool_call`, `tool_result` and `refusal`. Headers are request-scoped keys `header:<name>`.
+Entries are scoped (`cross::EXTRAS_ALLOWLIST`): a key is only allowlisted where it sits. The scopes are `request`, `message`, `tool`, `output`, `reasoning`, and the block kinds `text`, `image`, `document`, `audio`, `video`, `tool_call`, `tool_result` and `refusal`. Headers are request-scoped keys `header:<name>`.
 
 Fixture paths in these tables are relative to `crates/kaeso-codecs/fixtures/`.
 
@@ -271,12 +272,27 @@ A tool call's arguments are a JSON object in every format. Chat Completions and 
 - **Other values in the conversation, for Anthropic.** `tool_use.input` must be an object, and Anthropic refuses the whole request when one in its history isn't. A call from another format whose arguments are something else therefore becomes an object: text that is not JSON, such as arguments cut off by an output limit, becomes `{"input": "<the text>"}`, as a [freeform tool's input](#codex-tool-history) does; an array, a number or a boolean becomes `{"input": <the value>}`; and `null` becomes `{}`. The model sees what it wrote and the tool result that followed. Each such call is named in `kaeso-adapted` as `tool call` and its id, such as `tool call call_abc`. Chat Completions and Responses providers get the arguments as sent. An Anthropic app's own `tool_use` with an `input` that is not an object stays `Unsupported`.
 - **Replies.** A reply to an Anthropic app with a tool call whose arguments are not an object is refused, because the app would run the tool with arguments the model never wrote ([Anthropic replies](anthropic-messages.md#replies)).
 
+## Audio and video
+
+`Block::Audio` and `Block::Video` hold a `Source`, a cache hint and extras, as images do. Each format takes them as its documentation says, and refuses the rest before sending:
+
+| Target | Audio | Video |
+| --- | --- | --- |
+| Gemini | `inlineData` or `fileData`, with the media type as sent | `inlineData`, `fileData`, or a YouTube URL without a MIME type |
+| Chat Completions | `input_audio` in user messages, base64 only, in the formats the provider takes: `wav` and `mp3` for OpenAI, any for OpenRouter | `video_url` for providers that document it (OpenRouter, Moonshot); `Unsupported` elsewhere |
+| Anthropic Messages | `Unsupported`: send a transcript as text | MiniMax's `video` block for MiniMax; `Unsupported` elsewhere: send frames as images |
+| Responses | `Unsupported` | `Unsupported` |
+
+A provider file id works only with the provider that issued it ([files](#files)). Gemini's `videoMetadata` (clip and frame rate) and `mediaResolution` stay extras of their part: only Gemini has them, and clipping changes what the model sees, so other formats refuse them. No transcoding happens: a media type the target has no name for, such as `audio/webm` for Chat Completions, is `Unsupported`.
+
+The gateway also refuses audio and video for a model whose catalogue entry doesn't list `audio` or `video` among its inputs, as it does for images and PDFs: `` The model `gpt-4o` does not accept audio. ``
+
 ## Media in tool results
 
 Claude's `tool_result` and Responses' `function_call_output` can hold images and files, such as the screenshot a tool took or the image Claude Code's `Read` and Codex's `view_image` open. A Chat Completions `tool` message holds only text (`ChatCompletionToolMessageParam`), and OpenAI and DeepSeek refuse an image there. So for Chat Completions models, Kaeso moves them:
 
 - **The tool message** keeps the result's text, followed by `The rest of this result is in the next message.`
-- **The user message after the results** starts with `` The rest of the result of tool call `<id>`: `` and the result's images and files, in their order, for each such result. Text the app sent after the results follows them.
+- **The user message after the results** starts with `` The rest of the result of tool call `<id>`: `` and the result's images, files and audio, in their order, for each such result. Text the app sent after the results follows them.
 - **The header.** Each result is named in the reply's `kaeso-adapted` header as `tool result` and the call's id, such as `tool result call_abc`.
 
 Anthropic and Responses models get the media in the tool result, as sent, and Gemini models in `functionResponse.parts` ([Gemini API](gemini.md)). Fixtures: `anthropic_messages/requests/tool-result-multi-turn.json`, `openai_responses/requests/function-call-output-array.json`.

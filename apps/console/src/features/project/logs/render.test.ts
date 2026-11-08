@@ -509,6 +509,58 @@ describe("requestView, every part", () => {
   });
 });
 
+describe("requestView, audio and video", () => {
+  it("maps audio and video parts of every format", () => {
+    const chat = requestView("openai_chat", {
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "input_audio", input_audio: { data: "SUQz", format: "mp3" } },
+            { type: "input_audio", input_audio: { data: "AAAA", format: "pcm16" } },
+            { type: "video_url", video_url: { url: "https://example.com/clip.mp4" } },
+            { type: "input_audio", input_audio: "AAAA" },
+            { type: "video_url" },
+          ],
+        },
+      ],
+    });
+    expect(chat?.messages[0]?.content).toEqual([
+      { type: "audio", media_type: "audio/mpeg" },
+      { type: "audio", media_type: "pcm16" },
+      { type: "video", src: "https://example.com/clip.mp4" },
+      { type: "audio" },
+      { type: "video" },
+    ]);
+    const anthropic = requestView("anthropic_messages", {
+      messages: [{ role: "user", content: [{ type: "video", source: { type: "url", url: "https://example.com/clip.mp4" } }] }],
+    });
+    expect(anthropic?.messages[0]?.content).toEqual([{ type: "video", src: "https://example.com/clip.mp4" }]);
+    const gemini = requestView("gemini", {
+      contents: [
+        {
+          parts: [
+            { inlineData: { mimeType: "audio/mpeg", data: "SUQz" } },
+            { inlineData: { mimeType: "video/mp4", data: "AAAA" } },
+            { fileData: { fileUri: "https://www.youtube.com/watch?v=UTdfxFyOQTI" } },
+            { fileData: { mimeType: "audio/wav", fileUri: "files/abc" } },
+            { fileData: { mimeType: "video/mp4", fileUri: "files/def" } },
+            { fileData: { mimeType: "video/mp4" } },
+          ],
+        },
+      ],
+    });
+    expect(gemini?.messages[0]?.content).toEqual([
+      { type: "audio", media_type: "audio/mpeg" },
+      { type: "video", media_type: "video/mp4" },
+      { type: "video", src: "https://www.youtube.com/watch?v=UTdfxFyOQTI" },
+      { type: "audio", media_type: "audio/wav" },
+      { type: "video", src: "files/def", media_type: "video/mp4" },
+      { type: "video", media_type: "video/mp4" },
+    ]);
+  });
+});
+
 describe("replyView, every block", () => {
   it("reads tool results, refusals, images and documents", () => {
     const v = replyView({
@@ -554,8 +606,28 @@ describe("replyView, every block", () => {
     expect(v?.id).toBe("");
   });
 
+  it("reads audio with its transcript and video by URL", () => {
+    const view = replyView({
+      blocks: [
+        { audio: { source: { base64: { media_type: "audio/wav", data: "UklGRg==" } }, transcript: "Hi there." } },
+        { video: { source: { url: "https://www.youtube.com/watch?v=UTdfxFyOQTI" } } },
+        { video: { source: { base64: { media_type: "video/mp4", data: "AAAA" } } } },
+        { audio: {} },
+        { video: {} },
+      ],
+      stop: "end_turn",
+    });
+    expect(view?.blocks).toEqual([
+      { type: "audio", media_type: "audio/wav", transcript: "Hi there." },
+      { type: "video", src: "https://www.youtube.com/watch?v=UTdfxFyOQTI" },
+      { type: "video", media_type: "video/mp4" },
+      { type: "audio" },
+      { type: "video" },
+    ]);
+  });
+
   it("is null for blocks it doesn't know", () => {
-    expect(replyView({ blocks: [{ audio: {} }] })).toBeNull();
+    expect(replyView({ blocks: [{ speech: {} }] })).toBeNull();
     expect(replyView({ blocks: ["text"] })).toBeNull();
     expect(replyView({ blocks: [{}] })).toBeNull();
     expect(replyView({ blocks: [{ text: {} }] })).toBeNull();

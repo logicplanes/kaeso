@@ -36,7 +36,7 @@ Recordings from other providers that speak a dialect, such as an OpenAI-compatib
 The round-trip tests, the decoder tests and the cross-dialect matrix read every provider folder along with the dialect's own, and name its files `providers/<id>/<name>`. A new provider recording therefore adds entries to the matrix snapshots; review them and accept them with `INSTA_UPDATE=always cargo test -p kaeso-codecs --test cross_matrix`. The SDK conformance suite serves only the dialect's own fixtures; the gateway's mock provider serves a provider's file when a test names it as `providers/<id>/<name>`.
 
 - `unknown-*` fixtures carry made-up fields, blocks or events on purpose, to test `Extras` and `Unknown` handling.
-- Fixtures a codec must refuse (`stateful-*`, `n-2*`, `input-audio*`) are tested for their `Unsupported` error instead of a round trip.
+- Fixtures a codec must refuse (`stateful-*`, `n-2*`) are tested for their `Unsupported` error instead of a round trip.
 
 ## Provenance
 

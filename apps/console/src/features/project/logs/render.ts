@@ -137,6 +137,8 @@ function anthropicBlocks(content: Json): ContentBlock[] {
         const s = anthropicSource(b.source);
         return { type: "document", ...(str(b.title) ? { name: String(b.title) } : {}), ...(s.media_type ? { media_type: s.media_type } : {}) };
       }
+      case "video":
+        return { type: "video", ...anthropicSource(b.source) };
       case "tool_use":
         return { type: "tool_call", ...(str(b.id) ? { id: String(b.id) } : {}), name: str(b.name) ?? fail(), arguments: b.input };
       case "tool_result":
@@ -191,6 +193,15 @@ function chatParts(content: Json): ContentBlock[] {
         const name = isObj(p.file) ? str(p.file.filename) : undefined;
         return { type: "document", ...(name ? { name } : {}) };
       }
+      case "input_audio": {
+        const format = isObj(p.input_audio) ? str(p.input_audio.format) : undefined;
+        const media = format ? (CHAT_AUDIO[format] ?? format) : undefined;
+        return { type: "audio", ...(media ? { media_type: media } : {}) };
+      }
+      case "video_url": {
+        const url = isObj(p.video_url) ? str(p.video_url.url) : undefined;
+        return { type: "video", ...(url ? { src: url } : {}) };
+      }
       case "refusal":
         return { type: "refusal", text: str(p.refusal) ?? "" };
       default:
@@ -198,6 +209,8 @@ function chatParts(content: Json): ContentBlock[] {
     }
   });
 }
+
+const CHAT_AUDIO: Record<string, string> = { wav: "audio/wav", mp3: "audio/mpeg" };
 
 function chatRequest(body: Obj): RequestView {
   const messages = arr(body.messages).map((m): ConversationMessage => {
@@ -322,18 +335,25 @@ function geminiParts(parts: Json): ContentBlock[] {
       const media = str(p.inlineData.mimeType);
       if (media?.startsWith("image/") && str(p.inlineData.data))
         return [{ type: "image", src: `data:${media};base64,${String(p.inlineData.data)}`, media_type: media }];
+      if (media?.toLowerCase().startsWith("audio/")) return [{ type: "audio", media_type: media }];
+      if (media?.toLowerCase().startsWith("video/")) return [{ type: "video", media_type: media }];
       return [{ type: "document", ...(media ? { media_type: media } : {}) }];
     }
     if (isObj(p.fileData)) {
       const media = str(p.fileData.mimeType);
       const uri = str(p.fileData.fileUri);
       if (media?.startsWith("image/")) return [{ type: "image", ...(uri ? { src: uri } : {}), media_type: media }];
+      if (media?.toLowerCase().startsWith("audio/")) return [{ type: "audio", media_type: media }];
+      if (media?.toLowerCase().startsWith("video/") || (!media && uri && YOUTUBE.test(uri)))
+        return [{ type: "video", ...(uri ? { src: uri } : {}), ...(media ? { media_type: media } : {}) }];
       return [{ type: "document", ...(uri ? { name: uri } : {}), ...(media ? { media_type: media } : {}) }];
     }
     if (str(p.thoughtSignature) !== undefined && Object.keys(p).length === 1) return [];
     return fail();
   });
 }
+
+const YOUTUBE = /^https?:\/\/(www\.|m\.)?(youtube\.com|youtu\.be)\//i;
 
 const GEMINI_ROLES: Record<string, ConversationMessage["role"]> = { user: "user", model: "assistant" };
 
@@ -473,6 +493,14 @@ function kppBlock(b: Json, unknown: Json[]): ContentBlock | null {
     case "document": {
       const media = kppSource(x.source).media_type;
       return { type: "document", ...(str(x.title) ? { name: String(x.title) } : {}), ...(media ? { media_type: media } : {}) };
+    }
+    case "audio": {
+      const media = kppSource(x.source).media_type;
+      return { type: "audio", ...(media ? { media_type: media } : {}), ...(str(x.transcript) ? { transcript: String(x.transcript) } : {}) };
+    }
+    case "video": {
+      const s = kppSource(x.source);
+      return { type: "video", ...(s.src && !s.src.startsWith("data:") ? { src: s.src } : {}), ...(s.media_type ? { media_type: s.media_type } : {}) };
     }
     case "unknown":
       unknown.push(v);

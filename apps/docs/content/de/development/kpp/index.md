@@ -159,9 +159,10 @@ Jedes KPP-Feld ist entweder semantisch oder ein Hinweis:
 | --- | --- | --- |
 | `Text.text` | semantisch | |
 | `Text.citations` | semantisch | Roh und an den Ursprung gebunden; ein anderer Dialekt bekommt `Unsupported`. |
-| `Text.cache`, `Image.cache`, `Document.cache`, `ToolCall.cache`, `ToolResult.cache` | Hinweis | Für OpenAI weggelassen, weil OpenAI selbst cacht ([Cache-Hinweise](cross-format.md#cache-hinweise)). |
+| `Text.cache`, `Image.cache`, `Document.cache`, `Audio.cache`, `Video.cache`, `ToolCall.cache`, `ToolResult.cache` | Hinweis | Für OpenAI weggelassen, weil OpenAI selbst cacht ([Cache-Hinweise](cross-format.md#cache-hinweise)). |
 | `Image.source` | semantisch | Eine `FileId` funktioniert nur beim Anbieter, der sie ausgegeben hat ([Dateien](cross-format.md#dateien)). OpenAI Chat Completions nimmt Bilder nur als URL oder Base64. |
 | `Document.source` | semantisch | Textquellen nur für Anthropic. OpenAI Chat Completions lehnt auch URL-Quellen ab. |
+| `Audio.source`, `Video.source` | semantisch | Jedes Ziel nimmt, was seine Dokumentation nennt, oder lehnt es ab ([Audio und Video](cross-format.md#audio-und-video)). |
 | `Document.title`, `.context` | semantisch | Nur Anthropic; für OpenAI `Unsupported`. |
 | `Document.citations` | semantisch | Nur Anthropic; für OpenAI `Unsupported`, da OpenAI keine Dokumente zitieren kann. |
 | `ToolCall.*` | semantisch | IDs und Namen bleiben erhalten; lehnt ein Ziel einen Wert wegen seiner Zeichen oder seiner Länge ab, wird er deterministisch umgeschrieben und auf dem Rückweg zurückübersetzt. |
@@ -238,6 +239,7 @@ Verändert ein Pull Request die Ausgabe über Dialekte hinweg, prüfen Sie den S
 - [Formatwechsel](cross-format.md): Schlagen Sie nach, was mit Daten geschieht, die von einem API-Format in ein anderes wechseln, und warum.
 - [Reasoning über Formate hinweg](reasoning.md): Schlagen Sie nach, wie Reasoning, seine Einstellungen und seine Signaturen zwischen den Formaten wechseln.
 - [Anthropic Messages](anthropic-messages.md): Finden Sie, wohin jedes Feld des Formats Anthropic Messages in KPP gehört.
+- [Messages-Anbieter](anthropic-messages-providers.md): Sehen Sie, wie sich der Messages-Codec an jeden Anbieter anpasst, der das Format spricht.
 - [OpenAI Chat Completions](openai-chat.md): Finden Sie, wohin jedes Feld des Formats Chat Completions in KPP gehört.
 - [Chat-Completions-Anbieter](openai-chat-providers.md): Sehen Sie, wie sich der Codec an jeden Anbieter anpasst, der Chat Completions spricht.
 - [OpenAI Responses](openai-responses.md): Finden Sie, wohin jedes Feld des Formats Responses in KPP gehört.
