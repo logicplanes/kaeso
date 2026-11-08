@@ -178,8 +178,7 @@ impl<'de> serde::Deserialize<'de> for Key<'de> {
 
 fn child(node: Node, key: &str) -> Option<Node> {
     use DialectId::{
-        AnthropicMessages, Gemini, GeminiEmbeddings, OpenAiChat, OpenAiEmbeddings,
-        OpenAiResponses,
+        AnthropicMessages, Gemini, GeminiEmbeddings, OpenAiChat, OpenAiEmbeddings, OpenAiResponses,
     };
     Some(match (node, key) {
         (Node::Top(d @ Gemini), "contents") => Node::Items(d),

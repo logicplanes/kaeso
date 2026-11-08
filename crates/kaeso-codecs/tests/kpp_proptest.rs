@@ -133,7 +133,12 @@ fn round_trip(dialect: DialectId, req: &GenerateRequest) -> GenerateRequest {
         let (model, action) = kaeso_codecs::gemini::split_model_action(segment).unwrap();
         dispatch::decode_gemini_request(&model, action, &enc.body, &HeaderList::new())
     } else {
-        dispatch::decode_request(dialect, RequestKind::Generate, &enc.body, &HeaderList::new())
+        dispatch::decode_request(
+            dialect,
+            RequestKind::Generate,
+            &enc.body,
+            &HeaderList::new(),
+        )
     }
     .unwrap();
     let Request::Generate(back) = back else {

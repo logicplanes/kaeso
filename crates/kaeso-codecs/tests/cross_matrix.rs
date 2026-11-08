@@ -170,25 +170,50 @@ fn headers(dialect: DialectId, name: &str) -> HeaderList {
 
 // A Gemini request names its model and method in the path: the fixture's `.meta.json`, or
 // the path the encoder built.
-fn decode_generation(dialect: DialectId, name: &str, body: &[u8]) -> Result<Request, kaeso_kpp::KppError> {
+fn decode_generation(
+    dialect: DialectId,
+    name: &str,
+    body: &[u8],
+) -> Result<Request, kaeso_kpp::KppError> {
     if dialect != DialectId::Gemini {
-        return dispatch::decode_request(dialect, RequestKind::Generate, body, &headers(dialect, name));
+        return dispatch::decode_request(
+            dialect,
+            RequestKind::Generate,
+            body,
+            &headers(dialect, name),
+        );
     }
-    let meta: Value = std::fs::read(fixtures_dir(dialect).join("requests").join(format!("{name}.meta.json")))
-        .map(|b| serde_json::from_slice(&b).unwrap())
-        .unwrap_or(Value::Null);
+    let meta: Value = std::fs::read(
+        fixtures_dir(dialect)
+            .join("requests")
+            .join(format!("{name}.meta.json")),
+    )
+    .map(|b| serde_json::from_slice(&b).unwrap())
+    .unwrap_or(Value::Null);
     let action = meta["action"]
         .as_str()
-        .map_or(GeminiAction::GenerateContent, |a| GeminiAction::from_wire(a).unwrap());
+        .map_or(GeminiAction::GenerateContent, |a| {
+            GeminiAction::from_wire(a).unwrap()
+        });
     let model = meta["model"].as_str().unwrap_or("gemini-3.5-flash");
     dispatch::decode_gemini_request(model, action, body, &HeaderList::new())
 }
 
-fn decode_encoded(dialect: DialectId, enc: &kaeso_codecs::EncodedRequest) -> Result<Request, kaeso_kpp::KppError> {
+fn decode_encoded(
+    dialect: DialectId,
+    enc: &kaeso_codecs::EncodedRequest,
+) -> Result<Request, kaeso_kpp::KppError> {
     if dialect != DialectId::Gemini {
         return dispatch::decode_request(dialect, RequestKind::Generate, &enc.body, &enc.headers);
     }
-    let segment = enc.path.split('?').next().unwrap().rsplit('/').next().unwrap();
+    let segment = enc
+        .path
+        .split('?')
+        .next()
+        .unwrap()
+        .rsplit('/')
+        .next()
+        .unwrap();
     let (model, action) = kaeso_codecs::gemini::split_model_action(segment).unwrap();
     dispatch::decode_gemini_request(&model, action, &enc.body, &enc.headers)
 }
@@ -391,8 +416,7 @@ fn requests_cross_every_dialect() {
                     .and_then(|()| dispatch::encode_request(b, &req, &mut ctx))
                 {
                     Ok(enc) => {
-                        let back = decode_encoded(b, &enc)
-                        .unwrap_or_else(|e| {
+                        let back = decode_encoded(b, &enc).unwrap_or_else(|e| {
                             panic!("{a}->{b} {name}: target cannot decode its own output: {e}")
                         });
                         if !CHANGED_TURNS.iter().any(|(n, t, _)| n == name && *t == b) {

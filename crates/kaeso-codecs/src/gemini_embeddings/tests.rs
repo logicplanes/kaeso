@@ -1,7 +1,6 @@
 use kaeso_kpp::{
-    DialectId, EmbedEncoding, EmbedInput, EmbedRequest, EmbedResponse, Embedding,
-    EmbeddingVector, ErrorKind, Extras, Reply, Request, RequestKind, StreamEvent, StreamMode,
-    Usage,
+    DialectId, EmbedEncoding, EmbedInput, EmbedRequest, EmbedResponse, Embedding, EmbeddingVector,
+    ErrorKind, Extras, Reply, Request, RequestKind, StreamEvent, StreamMode, Usage,
 };
 use serde_json::{Value, json};
 
@@ -13,10 +12,15 @@ const DIR: &str = "gemini_embeddings";
 fn call_of(name: &str) -> (String, GeminiAction) {
     let meta = sidecar(DIR, "requests", name, "meta").unwrap_or(Value::Null);
     (
-        meta["model"].as_str().unwrap_or("gemini-embedding-2").to_owned(),
+        meta["model"]
+            .as_str()
+            .unwrap_or("gemini-embedding-2")
+            .to_owned(),
         meta["action"]
             .as_str()
-            .map_or(GeminiAction::EmbedContent, |a| GeminiAction::from_wire(a).unwrap()),
+            .map_or(GeminiAction::EmbedContent, |a| {
+                GeminiAction::from_wire(a).unwrap()
+            }),
     )
 }
 
@@ -42,7 +46,9 @@ fn every_request_fixture_round_trips_and_names_its_path() {
         let enc = GeminiEmbeddings::encode_request(&req, &mut ctx).unwrap();
         assert_eq!(
             enc.path,
-            crate::gemini::GeminiProfile::GOOGLE_AI_STUDIO.path(&model, action).unwrap(),
+            crate::gemini::GeminiProfile::GOOGLE_AI_STUDIO
+                .path(&model, action)
+                .unwrap(),
             "{name}"
         );
         assert_json_eq(&name, &body, &enc.body);
@@ -54,9 +60,11 @@ fn every_response_fixture_round_trips() {
     for (name, body) in fixtures(DIR, "responses", "json") {
         let reply = GeminiEmbeddings::decode_response(200, &HeaderList::new(), &body, &embed_ctx())
             .unwrap_or_else(|e| panic!("{name}: {e}"));
-        let out =
-            GeminiEmbeddings::encode_response(&reply, &EncodeCtx::new(RequestKind::Embed, StreamMode::Off))
-                .unwrap();
+        let out = GeminiEmbeddings::encode_response(
+            &reply,
+            &EncodeCtx::new(RequestKind::Embed, StreamMode::Off),
+        )
+        .unwrap();
         assert_json_eq(&name, &body, &out);
     }
 }
@@ -64,23 +72,55 @@ fn every_response_fixture_round_trips() {
 #[test]
 fn requests_keep_their_inputs_dimensions_and_task_types() {
     let (model, action) = call_of("batch");
-    let Request::Embed(r) = crate::dispatch::decode_gemini_request(&model, action, &fixture("requests", "batch"), &HeaderList::new()).unwrap() else {
+    let Request::Embed(r) = crate::dispatch::decode_gemini_request(
+        &model,
+        action,
+        &fixture("requests", "batch"),
+        &HeaderList::new(),
+    )
+    .unwrap() else {
         panic!()
     };
-    assert_eq!(r.input, [EmbedInput::Text("First sentence.".into()), EmbedInput::Text("Second sentence.".into())]);
+    assert_eq!(
+        r.input,
+        [
+            EmbedInput::Text("First sentence.".into()),
+            EmbedInput::Text("Second sentence.".into())
+        ]
+    );
     assert_eq!(r.dimensions, Some(8));
     assert!(r.extras.fields.is_empty(), "{:?}", r.extras.fields);
     let (model, action) = call_of("embed-task-title");
-    let Request::Embed(r) = crate::dispatch::decode_gemini_request(&model, action, &fixture("requests", "embed-task-title"), &HeaderList::new()).unwrap() else {
+    let Request::Embed(r) = crate::dispatch::decode_gemini_request(
+        &model,
+        action,
+        &fixture("requests", "embed-task-title"),
+        &HeaderList::new(),
+    )
+    .unwrap() else {
         panic!()
     };
     assert_eq!(r.model, "gemini-embedding-001");
-    assert_eq!(r.extras.fields.keys().collect::<Vec<_>>(), ["taskType", "title"]);
+    assert_eq!(
+        r.extras.fields.keys().collect::<Vec<_>>(),
+        ["taskType", "title"]
+    );
     let to_openai = Request::Embed(r);
-    let e = crate::dispatch::check(DialectId::OpenAiEmbeddings, &to_openai, &EgressCtx::new(&to_openai)).unwrap_err();
+    let e = crate::dispatch::check(
+        DialectId::OpenAiEmbeddings,
+        &to_openai,
+        &EgressCtx::new(&to_openai),
+    )
+    .unwrap_err();
     assert_eq!(e.unsupported_feature(), Some("taskType"));
     let (model, action) = call_of("embed-config");
-    let Request::Embed(r) = crate::dispatch::decode_gemini_request(&model, action, &fixture("requests", "embed-config"), &HeaderList::new()).unwrap() else {
+    let Request::Embed(r) = crate::dispatch::decode_gemini_request(
+        &model,
+        action,
+        &fixture("requests", "embed-config"),
+        &HeaderList::new(),
+    )
+    .unwrap() else {
         panic!()
     };
     assert_eq!(r.dimensions, Some(8));
@@ -99,7 +139,10 @@ fn openai_embeddings_requests_become_batches() {
     r.extras = Extras::new(DialectId::OpenAiEmbeddings);
     let req = Request::Embed(r.clone());
     let enc = GeminiEmbeddings::encode_request(&req, &mut EgressCtx::new(&req)).unwrap();
-    assert_eq!(enc.path, "/v1beta/models/gemini-embedding-2:batchEmbedContents");
+    assert_eq!(
+        enc.path,
+        "/v1beta/models/gemini-embedding-2:batchEmbedContents"
+    );
     let body: Value = serde_json::from_slice(&enc.body).unwrap();
     assert_eq!(
         body,
@@ -118,7 +161,13 @@ fn openai_embeddings_requests_become_batches() {
 
 #[test]
 fn replies_reach_apps_of_both_embeddings_formats() {
-    let reply = GeminiEmbeddings::decode_response(200, &HeaderList::new(), &fixture("responses", "recorded-batch"), &embed_ctx()).unwrap();
+    let reply = GeminiEmbeddings::decode_response(
+        200,
+        &HeaderList::new(),
+        &fixture("responses", "recorded-batch"),
+        &embed_ctx(),
+    )
+    .unwrap();
     let Reply::Embed(r) = &reply else { panic!() };
     assert_eq!(r.data.len(), 2);
     assert_eq!(r.usage.input_tokens, 6);
@@ -136,40 +185,100 @@ fn replies_reach_apps_of_both_embeddings_formats() {
 
     let mut foreign = EmbedResponse::new(
         "text-embedding-3-small",
-        vec![Embedding::new(0, EmbeddingVector::Base64("AACAPwAAAEA=".into()))],
+        vec![Embedding::new(
+            0,
+            EmbeddingVector::Base64("AACAPwAAAEA=".into()),
+        )],
     );
     foreign.usage = Usage::new(3, 0);
     let (model, action) = call_of("embed-single");
-    let single = crate::dispatch::decode_gemini_request(&model, action, &fixture("requests", "embed-single"), &HeaderList::new()).unwrap();
-    let out = GeminiEmbeddings::encode_response(&Reply::Embed(foreign.clone()), &EncodeCtx::for_request(single)).unwrap();
+    let single = crate::dispatch::decode_gemini_request(
+        &model,
+        action,
+        &fixture("requests", "embed-single"),
+        &HeaderList::new(),
+    )
+    .unwrap();
+    let out = GeminiEmbeddings::encode_response(
+        &Reply::Embed(foreign.clone()),
+        &EncodeCtx::for_request(single),
+    )
+    .unwrap();
     let v: Value = serde_json::from_slice(&out).unwrap();
-    assert_eq!(v, json!({"embedding": {"values": [1.0, 2.0]}, "usageMetadata": {"promptTokenCount": 3}}));
-    let out = GeminiEmbeddings::encode_response(&Reply::Embed(foreign), &EncodeCtx::new(RequestKind::Embed, StreamMode::Off)).unwrap();
+    assert_eq!(
+        v,
+        json!({"embedding": {"values": [1.0, 2.0]}, "usageMetadata": {"promptTokenCount": 3}})
+    );
+    let out = GeminiEmbeddings::encode_response(
+        &Reply::Embed(foreign),
+        &EncodeCtx::new(RequestKind::Embed, StreamMode::Off),
+    )
+    .unwrap();
     let v: Value = serde_json::from_slice(&out).unwrap();
     assert_eq!(v["embeddings"][0]["values"], json!([1.0, 2.0]));
     let generate = Reply::Generate(kaeso_kpp::Response::new("r", "m", vec![]));
-    assert!(GeminiEmbeddings::encode_response(&generate, &EncodeCtx::new(RequestKind::Embed, StreamMode::Off)).is_err());
-    let e = GeminiEmbeddings::decode_response(200, &HeaderList::new(), b"{}", &EgressCtx::for_kind(RequestKind::Generate, StreamMode::Off)).unwrap_err();
+    assert!(
+        GeminiEmbeddings::encode_response(
+            &generate,
+            &EncodeCtx::new(RequestKind::Embed, StreamMode::Off)
+        )
+        .is_err()
+    );
+    let e = GeminiEmbeddings::decode_response(
+        200,
+        &HeaderList::new(),
+        b"{}",
+        &EgressCtx::for_kind(RequestKind::Generate, StreamMode::Off),
+    )
+    .unwrap_err();
     assert_eq!(e.unsupported_feature(), Some("generation response"));
-    let e = GeminiEmbeddings::decode_response(429, &HeaderList::new(), br#"{"error": {"code": 429, "message": "Slow.", "status": "RESOURCE_EXHAUSTED"}}"#, &embed_ctx()).unwrap_err();
+    let e = GeminiEmbeddings::decode_response(
+        429,
+        &HeaderList::new(),
+        br#"{"error": {"code": 429, "message": "Slow.", "status": "RESOURCE_EXHAUSTED"}}"#,
+        &embed_ctx(),
+    )
+    .unwrap_err();
     assert_eq!(e.kind, ErrorKind::RateLimited);
-    assert_eq!(e.origin.as_ref().map(|o| o.dialect), Some(DialectId::GeminiEmbeddings));
+    assert_eq!(
+        e.origin.as_ref().map(|o| o.dialect),
+        Some(DialectId::GeminiEmbeddings)
+    );
 }
 
 #[test]
 fn embeddings_never_stream() {
     let mut dec = GeminiEmbeddings::stream_decoder(&embed_ctx());
-    assert!(matches!(dec.feed(b"data: {}\n\n").as_slice(), [StreamEvent::Error(_)]));
+    assert!(matches!(
+        dec.feed(b"data: {}\n\n").as_slice(),
+        [StreamEvent::Error(_)]
+    ));
     assert!(dec.finish().is_empty());
-    let mut enc = GeminiEmbeddings::stream_encoder(&EncodeCtx::new(RequestKind::Embed, StreamMode::Off));
-    assert!(enc.encode(&StreamEvent::ResponseStop(kaeso_kpp::ResponseStop::new())).is_err());
+    let mut enc =
+        GeminiEmbeddings::stream_encoder(&EncodeCtx::new(RequestKind::Embed, StreamMode::Off));
+    assert!(
+        enc.encode(&StreamEvent::ResponseStop(kaeso_kpp::ResponseStop::new()))
+            .is_err()
+    );
     assert!(enc.finish().unwrap().is_empty());
-    let e = GeminiEmbeddings::decode_request(RequestKind::Generate, b"{}", &HeaderList::new()).unwrap_err();
+    let e = GeminiEmbeddings::decode_request(RequestKind::Generate, b"{}", &HeaderList::new())
+        .unwrap_err();
     assert_eq!(e.unsupported_feature(), Some("generation request"));
-    let r = GeminiEmbeddings::decode_request(RequestKind::Embed, &fixture("requests", "batch"), &HeaderList::new()).unwrap();
+    let r = GeminiEmbeddings::decode_request(
+        RequestKind::Embed,
+        &fixture("requests", "batch"),
+        &HeaderList::new(),
+    )
+    .unwrap();
     assert_eq!(r.model(), "");
-    let out = GeminiEmbeddings::encode_error(&kaeso_kpp::KppError::new(ErrorKind::NotFound, "No model."));
+    let out =
+        GeminiEmbeddings::encode_error(&kaeso_kpp::KppError::new(ErrorKind::NotFound, "No model."));
     assert_eq!(out.status, 404);
-    let models = GeminiEmbeddings::decode_models(200, &HeaderList::new(), br#"{"models": [{"name": "models/gemini-embedding-2"}]}"#).unwrap();
+    let models = GeminiEmbeddings::decode_models(
+        200,
+        &HeaderList::new(),
+        br#"{"models": [{"name": "models/gemini-embedding-2"}]}"#,
+    )
+    .unwrap();
     assert_eq!(models.models[0].id, "gemini-embedding-2");
 }

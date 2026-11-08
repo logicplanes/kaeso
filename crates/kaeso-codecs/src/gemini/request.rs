@@ -142,7 +142,7 @@ fn decode_contents(
 ) -> Result<(), KppError> {
     let mut calls = Calls::default();
     for (i, c) in contents.into_iter().enumerate() {
-        let raw = serde_json::value::to_raw_value(&c).map_err(|e| invalid(e))?;
+        let raw = serde_json::value::to_raw_value(&c).map_err(invalid)?;
         let Ext {
             known,
             extra,
@@ -159,7 +159,10 @@ fn decode_contents(
             Some(_) => {
                 let mut m = Message::new(
                     Role::User,
-                    vec![Block::Unknown(RawItem::new(origin.clone(), RawJson::from(raw)))],
+                    vec![Block::Unknown(RawItem::new(
+                        origin.clone(),
+                        RawJson::from(raw),
+                    ))],
                 );
                 let mut e = Extras::new(origin.clone());
                 e.form.insert(FORM_CONTENT.into(), "raw".into());
@@ -252,7 +255,9 @@ fn decode_generate(
         objects.push(Value::from(GENERATION_CONFIG));
     }
     if !objects.is_empty() {
-        req.extras.form.insert(OBJECTS.into(), Value::Array(objects));
+        req.extras
+            .form
+            .insert(OBJECTS.into(), Value::Array(objects));
     }
     Ok(req)
 }
@@ -306,7 +311,7 @@ fn decode_calling(
     origin: &Origin,
     req: &mut GenerateRequest,
 ) -> Result<(), KppError> {
-    let raw = serde_json::value::to_raw_value(&fc).map_err(|e| invalid(e))?;
+    let raw = serde_json::value::to_raw_value(&fc).map_err(invalid)?;
     let Ext {
         known,
         extra,
@@ -396,7 +401,9 @@ fn decode_generation(
     let schema_field = |schema: Raw, field: &str, extras: &mut Extras| {
         let mut spec = JsonSchemaSpec::new(RawJson::from(schema));
         if field == "responseSchema" {
-            extras.form.insert(FORM_SCHEMA.into(), "responseSchema".into());
+            extras
+                .form
+                .insert(FORM_SCHEMA.into(), "responseSchema".into());
         }
         spec.extras = Extras::new(origin.clone());
         OutputSpec::JsonSchema(spec)
@@ -420,7 +427,7 @@ fn decode_generation(
             if let Some(m) = &g.response_mime_type {
                 req.extras.fields.insert(
                     format!("{GENERATION_CONFIG}.responseMimeType"),
-                    RawJson::from_serialize(m).map_err(|e| invalid(e))?,
+                    RawJson::from_serialize(m).map_err(invalid)?,
                 );
             }
             if let Some(s) = json_schema {
@@ -451,7 +458,9 @@ fn decode_generation(
         if let Some(level) = &t.thinking_level {
             let effort = level_effort(level);
             if effort.as_wire().to_ascii_uppercase() != *level {
-                c.extras.form.insert(FORM_LEVEL.into(), level.clone().into());
+                c.extras
+                    .form
+                    .insert(FORM_LEVEL.into(), level.clone().into());
             }
             c.effort = Some(effort);
         }
@@ -467,7 +476,7 @@ fn decode_generation(
                 Err(_) => {
                     c.extras.fields.insert(
                         "thinkingBudget".into(),
-                        RawJson::from_serialize(&n).map_err(|e| invalid(e))?,
+                        RawJson::from_serialize(&n).map_err(invalid)?,
                     );
                 }
             },
@@ -645,7 +654,11 @@ pub(crate) fn encode(req: &Request, ctx: &mut EgressCtx) -> Result<EncodedReques
         } else {
             Default::default()
         };
-        to_body(&Ext::with(w, extra, verbatim_from_form(&r.extras, D, "count")))?
+        to_body(&Ext::with(
+            w,
+            extra,
+            verbatim_from_form(&r.extras, D, "count"),
+        ))?
     } else {
         to_body(&encode_generate(r, ctx, &target, true)?)?
     };
@@ -758,13 +771,14 @@ fn encode_contents(
     let mut last_foreign_results = false;
     for (mi, m) in r.messages.iter().enumerate() {
         let own = m.extras.is_from(D);
-        if own && m.extras.form_str(D, FORM_CONTENT) == Some("raw") {
-            if let [Block::Unknown(item)] = m.blocks.as_slice() {
-                let content: Ext<ContentW> = Ext::from_raw(item.raw.as_raw()).map_err(ser)?;
-                out.push(content);
-                last_foreign_results = false;
-                continue;
-            }
+        if own
+            && m.extras.form_str(D, FORM_CONTENT) == Some("raw")
+            && let [Block::Unknown(item)] = m.blocks.as_slice()
+        {
+            let content: Ext<ContentW> = Ext::from_raw(item.raw.as_raw()).map_err(ser)?;
+            out.push(content);
+            last_foreign_results = false;
+            continue;
         }
         let role = match m.role {
             Role::User => "user",
@@ -912,7 +926,10 @@ fn strict_tools(r: &GenerateRequest) -> bool {
         .any(|t| matches!(t, ToolDef::Function(f) if f.strict == Some(true)))
 }
 
-fn encode_tool_config(r: &GenerateRequest, own: bool) -> Result<Option<Ext<ToolConfigW>>, KppError> {
+fn encode_tool_config(
+    r: &GenerateRequest,
+    own: bool,
+) -> Result<Option<Ext<ToolConfigW>>, KppError> {
     let marker = if own {
         r.extras.form_value(D, CALLING_CONFIG)
     } else {

@@ -128,7 +128,12 @@ pub(crate) fn decode_error_value(
     if let Some(field) = details
         .iter()
         .filter(|d| d["@type"] == BAD_REQUEST)
-        .find_map(|d| d["fieldViolations"][0]["field"].as_str())
+        .find_map(|d| {
+            d.get("fieldViolations")
+                .and_then(|v| v.get(0))
+                .and_then(|v| v.get("field"))
+                .and_then(Value::as_str)
+        })
     {
         e = e.with_param(field);
     }
@@ -149,9 +154,10 @@ pub(crate) fn decode_error_value(
 // A status another format's provider chose, such as Anthropic's 529, means nothing to a
 // Gemini app; its error kind decides the Google code instead.
 fn code_for(err: &KppError) -> u16 {
-    let google = err.origin.as_ref().is_none_or(|o| {
-        matches!(o.dialect, DialectId::Gemini | DialectId::GeminiEmbeddings)
-    });
+    let google = err
+        .origin
+        .as_ref()
+        .is_none_or(|o| matches!(o.dialect, DialectId::Gemini | DialectId::GeminiEmbeddings));
     match err.status {
         Some(status) if google => status,
         _ => default_code(&err.kind),
@@ -173,16 +179,22 @@ pub(crate) fn error_body(err: &KppError, dialect: DialectId) -> Value {
     });
     if let Some(retry) = err.retry_after
         && matches!(err.kind, ErrorKind::RateLimited | ErrorKind::Overloaded)
+        && let Some(fields) = error.as_object_mut()
     {
-        error["details"] = json!([{ "@type": RETRY_INFO, "retryDelay": format_delay(retry) }]);
+        fields.insert(
+            "details".into(),
+            json!([{ "@type": RETRY_INFO, "retryDelay": format_delay(retry) }]),
+        );
     }
     json!({ "error": error })
 }
 
 pub(crate) fn encode_error(err: &KppError, dialect: DialectId) -> EncodedError {
     let body = error_body(err, dialect);
-    let code = body["error"]["code"]
-        .as_u64()
+    let code = body
+        .get("error")
+        .and_then(|e| e.get("code"))
+        .and_then(Value::as_u64)
         .and_then(|c| u16::try_from(c).ok())
         .filter(|_| err.origin.as_ref().is_some_and(|o| o.is(dialect)))
         .unwrap_or_else(|| code_for(err));
@@ -211,10 +223,16 @@ mod tests {
     fn statuses_and_http_codes_name_the_kind() {
         let k = |s: Option<&str>, http| kind_of(s, http, &[], "");
         assert_eq!(k(Some("UNAUTHENTICATED"), 401), ErrorKind::Authentication);
-        assert_eq!(k(Some("PERMISSION_DENIED"), 403), ErrorKind::PermissionDenied);
+        assert_eq!(
+            k(Some("PERMISSION_DENIED"), 403),
+            ErrorKind::PermissionDenied
+        );
         assert_eq!(k(Some("DEADLINE_EXCEEDED"), 504), ErrorKind::Timeout);
         assert_eq!(k(Some("INTERNAL"), 500), ErrorKind::ProviderError);
-        assert_eq!(k(Some("FAILED_PRECONDITION"), 400), ErrorKind::InvalidRequest);
+        assert_eq!(
+            k(Some("FAILED_PRECONDITION"), 400),
+            ErrorKind::InvalidRequest
+        );
         for (http, kind) in [
             (400, ErrorKind::InvalidRequest),
             (401, ErrorKind::Authentication),

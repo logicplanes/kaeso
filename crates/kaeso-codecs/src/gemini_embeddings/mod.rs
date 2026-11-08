@@ -183,8 +183,12 @@ fn decode_one(
     let path_model = format!("models/{model}");
     match known.model {
         Some(m) if m == path_model => {}
-        Some(m) => seen.models.push(Value::from(vec![Value::from(index), Value::from(m)])),
-        None => seen.models.push(Value::from(vec![Value::from(index), Value::Null])),
+        Some(m) => seen
+            .models
+            .push(Value::from(vec![Value::from(index), Value::from(m)])),
+        None => seen
+            .models
+            .push(Value::from(vec![Value::from(index), Value::Null])),
     }
     let mut dims = known.output_dimensionality;
     if let Some(config) = known.embed_content_config {
@@ -310,7 +314,10 @@ fn encode_one(
             format!("{prefix}.{key}")
         }
     };
-    let content = match own.then(|| r.extras.fields.get(&field("content"))).flatten() {
+    let content = match own
+        .then(|| r.extras.fields.get(&field("content")))
+        .flatten()
+    {
         Some(raw) => raw.clone().into_inner(),
         None => serde_json::value::to_raw_value(&serde_json::json!({"parts": [{"text": text}]}))
             .map_err(ser)?,
@@ -574,7 +581,10 @@ fn encode_response(reply: &Reply, ctx: &EncodeCtx) -> Result<Vec<u8>, KppError> 
     let extra = extra_for(&r.extras, D);
     let verbatim = verbatim_from_form(&r.extras, D, "");
     if single {
-        let embedding = vectors.into_iter().next().unwrap_or_else(|| Ext::new(VectorW::default()));
+        let embedding = vectors
+            .into_iter()
+            .next()
+            .unwrap_or_else(|| Ext::new(VectorW::default()));
         to_body(&Ext::with(
             SingleRespW {
                 embedding,
@@ -633,7 +643,9 @@ impl NoStream {
         if std::mem::replace(&mut self.done, true) {
             return Vec::new();
         }
-        vec![StreamEvent::Error(no_streaming().with_origin(self.origin.clone()))]
+        vec![StreamEvent::Error(
+            no_streaming().with_origin(self.origin.clone()),
+        )]
     }
 }
 

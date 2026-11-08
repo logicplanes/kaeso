@@ -262,8 +262,11 @@ async fn serve_gemini(
     body: Bytes,
 ) -> Response {
     let Some((model, action)) = kaeso_codecs::gemini::split_model_action(&rest) else {
-        let err = KppError::new(ErrorKind::NotFound, format!("conformance: no method in `{rest}`"))
-            .with_status(404);
+        let err = KppError::new(
+            ErrorKind::NotFound,
+            format!("conformance: no method in `{rest}`"),
+        )
+        .with_status(404);
         return error_response(DialectId::Gemini, &err);
     };
     let ingress = action.dialect();
@@ -290,8 +293,11 @@ async fn list_gemini_models(RawQuery(query): RawQuery) -> Response {
 async fn retrieve_gemini_model(UrlPath(rest): UrlPath<String>) -> Response {
     let id = rest.strip_prefix("models/").unwrap_or(&rest);
     let Some(model) = catalog().into_iter().find(|m| m.id == id) else {
-        let err = KppError::new(ErrorKind::NotFound, format!("The model `{id}` does not exist."))
-            .with_status(404);
+        let err = KppError::new(
+            ErrorKind::NotFound,
+            format!("The model `{id}` does not exist."),
+        )
+        .with_status(404);
         return error_response(DialectId::Gemini, &err);
     };
     match dispatch::encode_model(DialectId::Gemini, &model) {

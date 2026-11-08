@@ -107,7 +107,10 @@ impl Decoder {
         if !typed {
             self.close(out);
             let index = self.start(
-                BlockHeader::Unknown(RawItem::new(self.origin.clone(), RawJson::from(raw.as_ref()))),
+                BlockHeader::Unknown(RawItem::new(
+                    self.origin.clone(),
+                    RawJson::from(raw.as_ref()),
+                )),
                 self.extras(),
                 out,
             );
@@ -189,7 +192,11 @@ impl Decoder {
         };
         if value.get("error").is_some() {
             let mut err = decode_error(0, &HeaderList::new(), ev.data.as_bytes());
-            err.status = value["error"]["code"].as_u64().and_then(|c| u16::try_from(c).ok());
+            err.status = value
+                .get("error")
+                .and_then(|e| e.get("code"))
+                .and_then(Value::as_u64)
+                .and_then(|c| u16::try_from(c).ok());
             self.close(out);
             out.push(StreamEvent::Error(err));
             self.failed = true;
@@ -199,7 +206,8 @@ impl Decoder {
             Ok(w) => w,
             Err(e) => {
                 out.push(StreamEvent::Error(
-                    provider_error(crate::wire::without_position(&e)).with_origin(self.origin.clone()),
+                    provider_error(crate::wire::without_position(&e))
+                        .with_origin(self.origin.clone()),
                 ));
                 self.failed = true;
                 return;
@@ -355,7 +363,9 @@ impl StreamDecoder for Decoder {
         let items = match self.parser.feed(bytes) {
             Ok(items) => items,
             Err(e) => {
-                out.push(StreamEvent::Error(KppError::from(e).with_origin(self.origin.clone())));
+                out.push(StreamEvent::Error(
+                    KppError::from(e).with_origin(self.origin.clone()),
+                ));
                 self.failed = true;
                 return out;
             }
@@ -382,7 +392,9 @@ impl StreamDecoder for Decoder {
             }
             Err(e) => {
                 self.close(&mut out);
-                out.push(StreamEvent::Error(KppError::from(e).with_origin(self.origin.clone())));
+                out.push(StreamEvent::Error(
+                    KppError::from(e).with_origin(self.origin.clone()),
+                ));
                 self.failed = true;
                 return out;
             }
@@ -494,21 +506,24 @@ impl Encoder {
                 if parts.is_empty() {
                     parts.push(json!({"text": ""}));
                 }
-                let mut candidate = json!({
-                    "content": {"parts": parts, "role": "model"},
-                    "index": 0,
-                });
+                let mut candidate = Map::new();
+                candidate.insert("content".into(), json!({"parts": parts, "role": "model"}));
+                candidate.insert("index".into(), 0.into());
                 if let Some(f) = chunk.finish {
                     self.finished = true;
-                    candidate["finishReason"] = Value::String(f);
+                    candidate.insert("finishReason".into(), Value::String(f));
                 }
-                let mut v = json!({"candidates": [candidate]});
+                let mut v = Map::new();
+                v.insert(
+                    "candidates".into(),
+                    Value::Array(vec![Value::Object(candidate)]),
+                );
                 if let Some(u) = chunk.usage {
-                    v["usageMetadata"] = u;
+                    v.insert("usageMetadata".into(), u);
                 }
-                v["modelVersion"] = Value::String(self.model.clone());
-                v["responseId"] = Value::String(self.id.clone());
-                v
+                v.insert("modelVersion".into(), Value::String(self.model.clone()));
+                v.insert("responseId".into(), Value::String(self.id.clone()));
+                Value::Object(v)
             }
         };
         let data = serde_json::to_string(&value).map_err(provider_error)?;
@@ -561,7 +576,10 @@ impl Encoder {
             self.write(out)?;
             self.chunk = Some(Chunk {
                 env: marker.get("env").cloned(),
-                had_parts: marker.get("parts").and_then(Value::as_bool).unwrap_or(false),
+                had_parts: marker
+                    .get("parts")
+                    .and_then(Value::as_bool)
+                    .unwrap_or(false),
                 sse: marker.get("sse").cloned(),
                 parts: Vec::new(),
                 finish: None,
@@ -579,11 +597,9 @@ impl Encoder {
                     BlockHeader::Reasoning(h) => {
                         if reasoning_reply_policy(h.origin.as_ref(), D) != ReplyPolicy::Keep {
                             Kind::Hidden
-                        } else if let Some(sig) = h
-                            .opaque
-                            .iter()
-                            .find(|o| o.kind == OpaqueKind::GeminiThoughtSignature && o.origin.is(D))
-                        {
+                        } else if let Some(sig) = h.opaque.iter().find(|o| {
+                            o.kind == OpaqueKind::GeminiThoughtSignature && o.origin.is(D)
+                        }) {
                             self.pending = Some(sig.data.clone());
                             Kind::Other
                         } else {
@@ -593,7 +609,12 @@ impl Encoder {
                     BlockHeader::ToolCall(h) => {
                         self.tools.insert(
                             s.index,
-                            (h.id.clone(), h.name.clone(), String::new(), s.extras.clone()),
+                            (
+                                h.id.clone(),
+                                h.name.clone(),
+                                String::new(),
+                                s.extras.clone(),
+                            ),
                         );
                         Kind::Tool
                     }
@@ -690,11 +711,9 @@ impl Encoder {
                 crate::sse::write_event(out, None, &data);
                 self.done = true;
             }
-            StreamEvent::Extra(item) => {
-                if item.origin.is(D) {
-                    self.write(out)?;
-                    crate::sse::write_frame_extra(out, item.raw.as_raw()).map_err(provider_error)?;
-                }
+            StreamEvent::Extra(item) if item.origin.is(D) => {
+                self.write(out)?;
+                crate::sse::write_frame_extra(out, item.raw.as_raw()).map_err(provider_error)?;
             }
             _ => {}
         }

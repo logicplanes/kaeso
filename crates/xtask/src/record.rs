@@ -470,9 +470,7 @@ impl Recorder<'_> {
             serde_json::from_slice::<Value>(&body)
                 .map_err(|e| Error::json(self.relative(fixture).display(), e))?;
             let (url, model, streaming) = self.gemini_url(fixture)?;
-            return self
-                .send(fixture, body, &url, &model, streaming, out)
-                .await;
+            return self.send(fixture, body, &url, &model, streaming, out).await;
         }
         let mut body = read(fixture)?;
         let payload: Value = serde_json::from_slice(&body)
@@ -816,7 +814,10 @@ mod tests {
         assert_eq!(Dialect::OpenaiChat.path(), Some("/v1/chat/completions"));
         assert_eq!(Dialect::OpenaiEmbeddings.path(), Some("/v1/embeddings"));
         assert_eq!(Dialect::Gemini.path(), None);
-        assert_eq!(args(&["gemini_embeddings", "--all"]).dialect, Dialect::GeminiEmbeddings);
+        assert_eq!(
+            args(&["gemini_embeddings", "--all"]).dialect,
+            Dialect::GeminiEmbeddings
+        );
         assert_eq!(Dialect::OpenaiEmbeddings.folder(), "openai_embeddings");
         assert_eq!(
             Dialect::OpenaiResponses.count(),
@@ -1330,10 +1331,7 @@ mod tests {
             &format!("{requests}/stream-text.meta.json"),
             r#"{"model":"gemini-3.5-flash-lite","action":"streamGenerateContent"}"#,
         );
-        dir.file(
-            &format!("{requests}/odd-action.json"),
-            r#"{"contents":[]}"#,
-        );
+        dir.file(&format!("{requests}/odd-action.json"), r#"{"contents":[]}"#);
         dir.file(
             &format!("{requests}/odd-action.meta.json"),
             r#"{"action":"predict"}"#,
@@ -1385,7 +1383,14 @@ mod tests {
         let mut out = Vec::new();
         run(
             dir.path(),
-            &args(&["gemini", "basic", "--count", "--model", "models/gemini-x", "--dry-run"]),
+            &args(&[
+                "gemini",
+                "basic",
+                "--count",
+                "--model",
+                "models/gemini-x",
+                "--dry-run",
+            ]),
             &google("https://g.example.com", None),
             &mut out,
         )
@@ -1398,7 +1403,13 @@ mod tests {
         let mut out = Vec::new();
         run(
             dir.path(),
-            &args(&["gemini_embeddings", "batch", "--model", "gemini-embedding-2", "--dry-run"]),
+            &args(&[
+                "gemini_embeddings",
+                "batch",
+                "--model",
+                "gemini-embedding-2",
+                "--dry-run",
+            ]),
             &google("https://g.example.com", None),
             &mut out,
         )
@@ -1417,7 +1428,10 @@ mod tests {
         )
         .await
         .unwrap_err();
-        assert!(odd.to_string().ends_with("`predict` is not a Gemini method Kaeso serves"));
+        assert!(
+            odd.to_string()
+                .ends_with("`predict` is not a Gemini method Kaeso serves")
+        );
         let dot = run(
             dir.path(),
             &args(&["gemini", "text-simple", "--model", "..", "--dry-run"]),
@@ -1465,7 +1479,10 @@ mod tests {
             ),
             "{request}"
         );
-        assert!(request.contains("x-goog-api-key: AIza-test\r\n"), "{request}");
+        assert!(
+            request.contains("x-goog-api-key: AIza-test\r\n"),
+            "{request}"
+        );
         assert!(!request.contains("authorization"), "{request}");
         assert!(request.ends_with(r#"{"contents":[{"parts":[{"text":"Hi"}]}]}"#));
         let streams = "crates/kaeso-codecs/fixtures/gemini/streams";

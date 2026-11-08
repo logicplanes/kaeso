@@ -168,13 +168,23 @@ fn gemini_apps_hear_blank_lines_that_their_sdk_skips() {
     let start = StreamEvent::ResponseStart(ResponseStart::new("x", "m"));
     let outputs = encode_each(g, &[start, ping.clone(), ping]);
     assert_eq!([outputs[1].clone(), outputs[2].clone()].concat(), b"\n\n");
-    let mut enc = dispatch::stream_encoder(g, &EncodeCtx::new(RequestKind::Generate, mode())).unwrap();
+    let mut enc =
+        dispatch::stream_encoder(g, &EncodeCtx::new(RequestKind::Generate, mode())).unwrap();
     assert_eq!(enc.keepalive(), b"\n");
-    assert!(parse_all(b"\n\n").unwrap().is_empty(), "a blank line is no event");
-    enc.encode(&StreamEvent::ResponseStop(ResponseStop::new())).unwrap();
+    assert!(
+        parse_all(b"\n\n").unwrap().is_empty(),
+        "a blank line is no event"
+    );
+    enc.encode(&StreamEvent::ResponseStop(ResponseStop::new()))
+        .unwrap();
     assert!(enc.keepalive().is_empty(), "after the end");
     let events = decode(g, b"\n\ndata: {\"candidates\": [{\"content\": {\"parts\": [{\"text\": \"Hi\"}]}, \"finishReason\": \"STOP\"}]}\n\n\n");
-    assert!(!events.iter().any(|e| matches!(e, StreamEvent::Extra(_) | StreamEvent::Error(_))), "{events:?}");
+    assert!(
+        !events
+            .iter()
+            .any(|e| matches!(e, StreamEvent::Extra(_) | StreamEvent::Error(_))),
+        "{events:?}"
+    );
 }
 
 #[test]

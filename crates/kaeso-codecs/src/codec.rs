@@ -70,7 +70,10 @@ pub trait Codec: sealed::Sealed {
 
     /// The request for one model at the provider `ctx` describes, such as a Gemini provider
     /// with its own models path.
-    fn encode_model_request_with(model: &str, _ctx: &EgressCtx) -> Result<EncodedRequest, KppError> {
+    fn encode_model_request_with(
+        model: &str,
+        _ctx: &EgressCtx,
+    ) -> Result<EncodedRequest, KppError> {
         Ok(Self::encode_model_request(model))
     }
 

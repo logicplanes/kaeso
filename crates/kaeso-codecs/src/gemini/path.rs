@@ -228,8 +228,11 @@ mod tests {
             "/v1beta/models/gemini-3.5-flash:generateContent"
         );
         assert_eq!(
-            p.path("models/gemini-3.5-flash", GeminiAction::StreamGenerateContent)
-                .unwrap(),
+            p.path(
+                "models/gemini-3.5-flash",
+                GeminiAction::StreamGenerateContent
+            )
+            .unwrap(),
             "/v1beta/models/gemini-3.5-flash:streamGenerateContent?alt=sse"
         );
         assert_eq!(
@@ -247,7 +250,11 @@ mod tests {
             let e = p.model_path(bad).unwrap_err();
             assert_eq!(
                 (e.kind, e.param.as_deref(), e.status),
-                (kaeso_kpp::ErrorKind::InvalidRequest, Some("model"), Some(400)),
+                (
+                    kaeso_kpp::ErrorKind::InvalidRequest,
+                    Some("model"),
+                    Some(400)
+                ),
                 "{bad}"
             );
         }

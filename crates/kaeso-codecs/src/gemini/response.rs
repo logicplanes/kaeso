@@ -101,8 +101,9 @@ pub(crate) fn finish_reason(stop: &StopReason, extras: &Extras) -> String {
 }
 
 pub(crate) fn decode_usage(raw: &Raw, origin: &Origin) -> Result<Usage, KppError> {
-    let w: UsageW = serde_json::from_str(raw.get())
-        .map_err(|e| provider_error(format!("invalid `usageMetadata`: {}", without_position(&e))))?;
+    let w: UsageW = serde_json::from_str(raw.get()).map_err(|e| {
+        provider_error(format!("invalid `usageMetadata`: {}", without_position(&e)))
+    })?;
     let value: Value = serde_json::from_str(raw.get()).map_err(provider_error)?;
     let input = w
         .prompt_token_count
@@ -110,7 +111,8 @@ pub(crate) fn decode_usage(raw: &Raw, origin: &Origin) -> Result<Usage, KppError
         .saturating_sub(w.cached_content_token_count);
     let mut u = Usage::new(
         input,
-        w.candidates_token_count.saturating_add(w.thoughts_token_count),
+        w.candidates_token_count
+            .saturating_add(w.thoughts_token_count),
     );
     u.cache_read_tokens = w.cached_content_token_count;
     u.reasoning_tokens = (w.thoughts_token_count > 0).then_some(w.thoughts_token_count);
@@ -214,7 +216,9 @@ fn decode_generate(w: Ext<ResponseW>, origin: &Origin) -> Result<Response, KppEr
                 ));
             }
             if candidates.is_empty() {
-                extras.form.insert(FORM_NO_CANDIDATES.into(), "empty".into());
+                extras
+                    .form
+                    .insert(FORM_NO_CANDIDATES.into(), "empty".into());
             }
             for c in candidates {
                 let finish = decode_candidate(c, origin, &id, &mut blocks, &mut extras)?;
@@ -306,7 +310,11 @@ pub(crate) fn encode_response(reply: &Reply, _ctx: &EncodeCtx) -> Result<Vec<u8>
             };
             let own = c.extras.is_from(D);
             let ext = if own {
-                Ext::with(w, extra_for(&c.extras, D), verbatim_from_form(&c.extras, D, ""))
+                Ext::with(
+                    w,
+                    extra_for(&c.extras, D),
+                    verbatim_from_form(&c.extras, D, ""),
+                )
             } else {
                 Ext::new(w)
             };
@@ -364,7 +372,10 @@ fn encode_generate(r: &Response) -> Result<Ext<ResponseW>, KppError> {
             };
             let mut extra = nested_extra_for(&r.extras, D, CANDIDATE);
             if !own {
-                extra.insert("index".into(), RawJson::from_string("0".into()).map_err(provider_error)?);
+                extra.insert(
+                    "index".into(),
+                    RawJson::from_string("0".into()).map_err(provider_error)?,
+                );
             }
             Some(vec![Ext::with(
                 CandidateW {

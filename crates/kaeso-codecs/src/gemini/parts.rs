@@ -117,7 +117,9 @@ fn file_block(origin: &Origin, file: Ext<FileDataW>, mut extras: Extras) -> Bloc
     add_nested_extra(&mut extras, FILE, extra);
     verbatim_into_form(&mut extras, FILE, verbatim);
     if let Some(mime) = &known.mime_type {
-        extras.form.insert(FORM_MIME.to_owned(), mime.clone().into());
+        extras
+            .form
+            .insert(FORM_MIME.to_owned(), mime.clone().into());
     }
     let image = is_image(known.mime_type.as_deref());
     source_block(file_source(origin, &known.file_uri), image, extras)
@@ -172,7 +174,10 @@ impl PartDecoder<'_> {
     }
 
     fn unknown(&self, raw: &Raw) -> Block {
-        Block::Unknown(RawItem::new(self.origin.clone(), RawJson::from(raw.as_ref())))
+        Block::Unknown(RawItem::new(
+            self.origin.clone(),
+            RawJson::from(raw.as_ref()),
+        ))
     }
 
     /// The blocks of one part: a reasoning block that carries the part's thought signature,
@@ -215,7 +220,9 @@ impl PartDecoder<'_> {
             let mut block = ReasoningBlock::new(self.origin.clone());
             let text = p.text.unwrap_or_default();
             if text.is_empty() {
-                extras.form.insert(FORM_THOUGHT_PART.to_owned(), true.into());
+                extras
+                    .form
+                    .insert(FORM_THOUGHT_PART.to_owned(), true.into());
             } else {
                 block.text.push(text);
             }
@@ -313,7 +320,9 @@ impl PartDecoder<'_> {
         let mut is_error = false;
         match known.response {
             None => {
-                extras.form.insert(FORM_RESPONSE.to_owned(), "absent".into());
+                extras
+                    .form
+                    .insert(FORM_RESPONSE.to_owned(), "absent".into());
             }
             Some(raw) => match single_text(&raw) {
                 Some(("output", text)) => content.push(Block::text(text)),
@@ -424,7 +433,11 @@ fn to_value<T: serde::Serialize>(v: &T) -> Result<Value, KppError> {
 
 fn own_ext<T>(known: T, extras: &Extras, prefix: &str) -> Ext<T> {
     if prefix.is_empty() {
-        Ext::with(known, extra_for(extras, D), verbatim_from_form(extras, D, ""))
+        Ext::with(
+            known,
+            extra_for(extras, D),
+            verbatim_from_form(extras, D, ""),
+        )
     } else {
         Ext::with(
             known,
@@ -499,12 +512,9 @@ impl<'a> PartEncoder<'a> {
                 self.parts.push(to_value(&item.raw)?);
                 Ok(())
             }
-            other => Err(KppError::unsupported_by(
-                format!("{} block", other.kind()),
-                D,
-                "",
-            )
-            .with_param(path)),
+            other => Err(
+                KppError::unsupported_by(format!("{} block", other.kind()), D, "").with_param(path),
+            ),
         }
     }
 
@@ -545,14 +555,10 @@ impl<'a> PartEncoder<'a> {
         self.push(part, extras)
     }
 
-    pub(crate) fn call(
-        &mut self,
-        c: &ToolCallBlock,
-        dummy: Option<&str>,
-    ) -> Result<(), KppError> {
+    pub(crate) fn call(&mut self, c: &ToolCallBlock, dummy: Option<&str>) -> Result<(), KppError> {
         let own = c.extras.is_from(D);
-        let omit_id = (own && c.extras.form_flag(D, FORM_NO_ID))
-            || c.id.starts_with(GENERATED_ID_PREFIX);
+        let omit_id =
+            (own && c.extras.form_flag(D, FORM_NO_ID)) || c.id.starts_with(GENERATED_ID_PREFIX);
         let args = if own && c.extras.form_flag(D, FORM_NO_ARGS) && c.arguments.get() == "{}" {
             None
         } else {
@@ -672,13 +678,15 @@ fn to_raw<T: serde::Serialize>(v: &T) -> Result<Raw, KppError> {
     serde_json::value::to_raw_value(v).map_err(ser)
 }
 
+type Media = (Option<Ext<BlobW>>, Option<Ext<FileDataW>>);
+
 fn media_fields(
     source: &Source,
     image: bool,
     extras: &Extras,
     target: &Origin,
     path: &str,
-) -> Result<(Option<Ext<BlobW>>, Option<Ext<FileDataW>>), KppError> {
+) -> Result<Media, KppError> {
     let own = extras.is_from(D);
     let kind = if image { "image" } else { "document" };
     Ok(match source {

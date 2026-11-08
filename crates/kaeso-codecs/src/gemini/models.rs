@@ -114,7 +114,11 @@ pub(crate) fn encode_models(list: &ModelList) -> Result<Vec<u8>, KppError> {
         models: list.models.iter().map(model_to).collect(),
         next_page_token,
     };
-    to_body(&Ext::with(w, extra, verbatim_from_form(&list.extras, D, "")))
+    to_body(&Ext::with(
+        w,
+        extra,
+        verbatim_from_form(&list.extras, D, ""),
+    ))
 }
 
 pub(crate) fn encode_model(model: &ModelInfo) -> Result<Vec<u8>, KppError> {
@@ -123,14 +127,19 @@ pub(crate) fn encode_model(model: &ModelInfo) -> Result<Vec<u8>, KppError> {
 
 pub(crate) fn decode_models(body: &[u8]) -> Result<ModelList, KppError> {
     let origin = Origin::new(D);
-    let w: Ext<ListW> = Ext::from_slice(body)
-        .map_err(|e| bad_listing(D, &without_position(&e)))?;
+    let w: Ext<ListW> = Ext::from_slice(body).map_err(|e| bad_listing(D, &without_position(&e)))?;
     let Ext {
         known,
         extra,
         verbatim,
     } = w;
-    let mut list = ModelList::new(known.models.into_iter().map(|m| model_from(m, &origin)).collect());
+    let mut list = ModelList::new(
+        known
+            .models
+            .into_iter()
+            .map(|m| model_from(m, &origin))
+            .collect(),
+    );
     list.extras = extras_from(&origin, extra, verbatim);
     if let Some(token) = known.next_page_token {
         list.has_more = true;
@@ -148,8 +157,14 @@ pub(crate) fn decode_model(body: &[u8]) -> Result<ModelInfo, KppError> {
     Ok(model_from(w, &Origin::new(D)))
 }
 
-pub(crate) fn retrieve_request(model: &str, profile: &GeminiProfile) -> Result<EncodedRequest, KppError> {
-    Ok(EncodedRequest::get(profile.model_path(model)?, HeaderList::new()))
+pub(crate) fn retrieve_request(
+    model: &str,
+    profile: &GeminiProfile,
+) -> Result<EncodedRequest, KppError> {
+    Ok(EncodedRequest::get(
+        profile.model_path(model)?,
+        HeaderList::new(),
+    ))
 }
 
 /// `limit` becomes `pageSize` and `after_id` the `pageToken` a listing's `nextPageToken`

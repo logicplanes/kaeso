@@ -145,8 +145,14 @@ impl Codec for Gemini {
     }
 
     fn encode_model_request(model: &str) -> EncodedRequest {
-        Self::encode_model_request_in(model, &GeminiProfile::GOOGLE_AI_STUDIO)
-            .unwrap_or_else(|_| EncodedRequest::get(GeminiProfile::GOOGLE_AI_STUDIO.list_path().to_owned(), HeaderList::new()))
+        Self::encode_model_request_in(model, &GeminiProfile::GOOGLE_AI_STUDIO).unwrap_or_else(
+            |_| {
+                EncodedRequest::get(
+                    GeminiProfile::GOOGLE_AI_STUDIO.list_path().to_owned(),
+                    HeaderList::new(),
+                )
+            },
+        )
     }
 
     fn encode_models_request(query: &ModelsQuery) -> Result<EncodedRequest, KppError> {
