@@ -92,6 +92,16 @@ pub fn prepare(
                     ),
                 ));
             }
+            if !eff.provider.dialects().contains(&eff.dialect) {
+                return Err(refuse(
+                    "embeddings",
+                    Some("model"),
+                    format!(
+                        "Kaeso calls no embeddings models on {}, so `{name}` can't create embeddings.",
+                        eff.provider.name()
+                    ),
+                ));
+            }
             Ok(Plan {
                 dialect: eff.dialect,
                 adaptive_thinking: None,

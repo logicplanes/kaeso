@@ -1,5 +1,6 @@
 #![forbid(unsafe_code)]
 
+pub mod google;
 pub mod grok;
 pub mod mcp;
 pub mod mock_provider;

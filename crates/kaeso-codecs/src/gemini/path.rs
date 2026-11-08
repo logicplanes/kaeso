@@ -25,6 +25,16 @@ impl GeminiProfile {
         role_on_every_content: false,
     };
 
+    /// Gemini Enterprise Agent Platform with an express mode API key,
+    /// `https://aiplatform.googleapis.com/v1/publishers/google/models`. The platform's
+    /// token counting reference asks for a `role` on every content, so it is always written.
+    /// With a service account, the path names the project and location
+    /// ([`with_models_path`](Self::with_models_path)).
+    pub const AGENT_PLATFORM: GeminiProfile = GeminiProfile {
+        models_path: Cow::Borrowed("/v1/publishers/google/models"),
+        role_on_every_content: true,
+    };
+
     /// The profile with another models path, such as
     /// `/v1/projects/{project}/locations/{location}/publishers/google/models`.
     #[must_use]

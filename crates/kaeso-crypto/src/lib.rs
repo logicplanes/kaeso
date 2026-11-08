@@ -5,12 +5,14 @@ mod keyring;
 mod mac;
 pub mod password;
 mod random;
+mod rs256;
 pub mod totp;
 
 pub use envelope::{Sealed, open, rewrap, seal};
 pub use keyring::{KeyRing, KeyRingError, MasterKey, generate_master_key};
 pub use mac::MacKey;
 pub use random::{random_bytes, random_token};
+pub use rs256::RsaSigner;
 pub use secrecy::{ExposeSecret, SecretBox, SecretString};
 
 #[derive(Debug, thiserror::Error)]
@@ -23,4 +25,8 @@ pub enum CryptoError {
     Malformed,
     #[error("the password could not be hashed")]
     Hash,
+    #[error("the private key is not an RSA key in PKCS #8 form")]
+    PrivateKey,
+    #[error("the private key cannot sign")]
+    Sign,
 }

@@ -398,6 +398,14 @@ impl ProviderRef {
         }
     }
 
+    pub fn route(&self, model: &str) -> Option<DialectId> {
+        self.built_in().and_then(|p| p.route(model))
+    }
+
+    pub fn dialect_for(&self, model: &str) -> DialectId {
+        self.route(model).unwrap_or_else(|| self.generation())
+    }
+
     pub fn account(&self) -> Option<AccountSignIn> {
         self.built_in().and_then(|p| p.account)
     }

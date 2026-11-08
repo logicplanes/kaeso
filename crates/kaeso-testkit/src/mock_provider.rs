@@ -42,6 +42,7 @@ pub const KEEP_RECEIVED: usize = 10_000;
 struct Shared {
     received: Mutex<VecDeque<Received>>,
     made_up: AtomicU64,
+    google_tokens: AtomicUsize,
     streams_started: AtomicUsize,
     streams_finished: AtomicUsize,
     streams_dropped: AtomicUsize,
@@ -384,6 +385,34 @@ async fn answer(ctx: Ctx, method: Method, uri: Uri, headers: HeaderMap, body: By
             body: body.clone(),
         });
     }
+    if method == Method::POST && path == GOOGLE_TOKEN_PATH {
+        return google_token(&ctx.shared, &text);
+    }
+    let platform = agent_platform_path(&path);
+    if let Some(p) = &platform {
+        let bearer = headers
+            .get("authorization")
+            .and_then(|v| v.to_str().ok())
+            .is_some_and(|v| v.starts_with(&format!("Bearer {GOOGLE_TOKEN_PREFIX}")));
+        let keyed = headers.get("x-goog-api-key").is_some_and(|v| !v.is_empty())
+            && !headers.contains_key("authorization");
+        let allowed = if p.project { bearer } else { keyed };
+        if !allowed {
+            return error_response(&ctx.fixtures.join("gemini"), "recorded-error-invalid-key");
+        }
+    }
+    let path = platform.map_or(path, |p| p.as_ai_studio);
+    let headers = if headers.contains_key("authorization") && path.starts_with(GEMINI_MODELS) {
+        let mut h = headers;
+        h.remove("authorization");
+        h.insert(
+            "x-goog-api-key",
+            axum::http::HeaderValue::from_static("mock"),
+        );
+        h
+    } else {
+        headers
+    };
     let anthropic = path.starts_with("/v1/messages")
         || (path.starts_with("/v1/models") && headers.contains_key("x-api-key"));
     let gemini = gemini_call(&path);
@@ -606,6 +635,104 @@ async fn answer(ctx: Ctx, method: Method, uri: Uri, headers: HeaderMap, body: By
 }
 
 pub const UNSERVED_PREFIX: &str = "unserved-";
+
+/// Where the mock answers Google's OAuth token endpoint; point the gateway's Google token
+/// endpoint at `{base_url}/token`.
+pub const GOOGLE_TOKEN_PATH: &str = "/token";
+
+/// How the access tokens the mock's token endpoint grants start.
+pub const GOOGLE_TOKEN_PREFIX: &str = "ya29.mock-";
+
+struct PlatformPath {
+    project: bool,
+    as_ai_studio: String,
+}
+
+// Gemini Enterprise Agent Platform serves Gemini models under
+// `/v1/publishers/google/models` with an express mode key and under
+// `/v1/projects/{project}/locations/{location}/publishers/google/models` with a token; the
+// mock answers both like AI Studio's `/v1beta/models`.
+fn agent_platform_path(path: &str) -> Option<PlatformPath> {
+    const MODELS: &str = "publishers/google/models";
+    if let Some(rest) = path
+        .strip_prefix("/v1/")
+        .and_then(|p| p.strip_prefix(MODELS))
+    {
+        return Some(PlatformPath {
+            project: false,
+            as_ai_studio: format!("{GEMINI_MODELS}{rest}"),
+        });
+    }
+    let rest = path.strip_prefix("/v1/projects/")?;
+    let mut parts = rest.splitn(4, '/');
+    let (_project, locations, _location, tail) =
+        (parts.next()?, parts.next()?, parts.next()?, parts.next()?);
+    if locations != "locations" {
+        return None;
+    }
+    let rest = tail.strip_prefix(MODELS)?;
+    Some(PlatformPath {
+        project: true,
+        as_ai_studio: format!("{GEMINI_MODELS}{rest}"),
+    })
+}
+
+fn claims_of(form: &str) -> serde_json::Value {
+    use base64::Engine as _;
+    url::form_urlencoded::parse(form.as_bytes())
+        .find(|(k, _)| k == "assertion")
+        .and_then(|(_, jwt)| {
+            let payload = jwt.split('.').nth(1)?.to_owned();
+            base64::engine::general_purpose::URL_SAFE_NO_PAD
+                .decode(payload)
+                .ok()
+        })
+        .and_then(|b| serde_json::from_slice(&b).ok())
+        .unwrap_or(serde_json::Value::Null)
+}
+
+// Grants a new token for every assertion, `ya29.mock-<n>`. The assertion's `iss` chooses
+// another answer: one containing `refused` gets Google's 400 `invalid_grant`, `unavailable`
+// a 503, and `short` a token that lasts 400 seconds.
+fn google_token(shared: &Shared, form: &str) -> Response {
+    let claims = claims_of(form);
+    let iss = claims
+        .get("iss")
+        .and_then(serde_json::Value::as_str)
+        .unwrap_or("");
+    let grant = url::form_urlencoded::parse(form.as_bytes())
+        .find(|(k, _)| k == "grant_type")
+        .map(|(_, v)| v.into_owned());
+    let (status, body) = if grant.as_deref() != Some("urn:ietf:params:oauth:grant-type:jwt-bearer")
+        || iss.contains("refused")
+    {
+        (
+            StatusCode::BAD_REQUEST,
+            serde_json::json!({"error": "invalid_grant", "error_description": "Invalid JWT Signature."}),
+        )
+    } else if iss.contains("unavailable") {
+        (
+            StatusCode::SERVICE_UNAVAILABLE,
+            serde_json::json!({"error": "internal_failure"}),
+        )
+    } else {
+        let n = shared.google_tokens.fetch_add(1, Ordering::Relaxed) + 1;
+        let lifetime = if iss.contains("short") { 400 } else { 3599 };
+        (
+            StatusCode::OK,
+            serde_json::json!({
+                "access_token": format!("{GOOGLE_TOKEN_PREFIX}{n}"),
+                "expires_in": lifetime,
+                "token_type": "Bearer"
+            }),
+        )
+    };
+    Response::builder()
+        .status(status)
+        .header("content-type", "application/json")
+        .body(Body::from(body.to_string()))
+        .unwrap_or_else(|_| StatusCode::INTERNAL_SERVER_ERROR.into_response())
+}
 
 const MODELS: &str = "/v1/models";
 

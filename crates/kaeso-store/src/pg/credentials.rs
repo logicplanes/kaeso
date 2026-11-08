@@ -21,6 +21,8 @@ pub struct CredentialRow {
     pub auth_method: String,
     pub account_label: Option<String>,
     pub auth_error: Option<String>,
+    pub project: Option<String>,
+    pub location: Option<String>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -34,6 +36,7 @@ pub struct SealedRow {
     pub auth_method: String,
     pub expires_at: Option<OffsetDateTime>,
     pub auth_error: Option<String>,
+    pub location: Option<String>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -66,6 +69,8 @@ pub struct NewCredential<'a> {
     pub auth_method: &'a str,
     pub expires_at: Option<OffsetDateTime>,
     pub account_label: Option<&'a str>,
+    pub project: Option<&'a str>,
+    pub location: Option<&'a str>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -119,8 +124,8 @@ pub async fn has_default(
 pub async fn insert(db: impl PgExecutor<'_>, c: &NewCredential<'_>) -> Result<(), StoreError> {
     sqlx::query!(
         "INSERT INTO provider_credentials (id, org_id, provider, name, ciphertext, nonce, wrapped_key, key_id, \
-         last4, created_by_kind, created_by_id, auth_method, expires_at, account_label) \
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)",
+         last4, created_by_kind, created_by_id, auth_method, expires_at, account_label, project, location) \
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)",
         c.id,
         c.org_id,
         c.provider,
@@ -134,7 +139,9 @@ pub async fn insert(db: impl PgExecutor<'_>, c: &NewCredential<'_>) -> Result<()
         c.created_by_id,
         c.auth_method,
         c.expires_at,
-        c.account_label
+        c.account_label,
+        c.project,
+        c.location
     )
     .execute(db)
     .await?;
@@ -144,7 +151,7 @@ pub async fn insert(db: impl PgExecutor<'_>, c: &NewCredential<'_>) -> Result<()
 pub async fn replace(db: impl PgExecutor<'_>, c: &NewCredential<'_>) -> Result<bool, StoreError> {
     Ok(sqlx::query!(
         "UPDATE provider_credentials SET name = $3, ciphertext = $4, nonce = $5, wrapped_key = $6, key_id = $7, last4 = $8, \
-         auth_method = $9, expires_at = $10, account_label = $11, auth_error = NULL, \
+         auth_method = $9, expires_at = $10, account_label = $11, project = $12, location = $13, auth_error = NULL, \
          revision = revision + 1, updated_at = now() WHERE org_id = $1 AND id = $2",
         c.org_id,
         c.id,
@@ -156,7 +163,9 @@ pub async fn replace(db: impl PgExecutor<'_>, c: &NewCredential<'_>) -> Result<b
         c.last4,
         c.auth_method,
         c.expires_at,
-        c.account_label
+        c.account_label,
+        c.project,
+        c.location
     )
     .execute(db)
     .await?
@@ -172,7 +181,7 @@ pub async fn refreshed(
 ) -> Result<bool, StoreError> {
     Ok(sqlx::query!(
         "UPDATE provider_credentials SET ciphertext = $2, nonce = $3, wrapped_key = $4, key_id = $5, \
-         expires_at = $6 WHERE id = $1 AND auth_method <> 'api_key' AND auth_error IS NULL",
+         expires_at = $6 WHERE id = $1 AND auth_method IN ('chatgpt', 'grok') AND auth_error IS NULL",
         id,
         sealed.ciphertext,
         sealed.nonce,
@@ -188,7 +197,7 @@ pub async fn refreshed(
 
 pub async fn sign_out(db: impl PgExecutor<'_>, id: Uuid, reason: &str) -> Result<(), StoreError> {
     sqlx::query!(
-        "UPDATE provider_credentials SET auth_error = $2 WHERE id = $1 AND auth_method <> 'api_key'",
+        "UPDATE provider_credentials SET auth_error = $2 WHERE id = $1 AND auth_method IN ('chatgpt', 'grok')",
         id,
         reason
     )
@@ -208,6 +217,25 @@ pub async fn rename(
         org_id,
         id,
         name
+    )
+    .execute(db)
+    .await?
+    .rows_affected()
+        == 1)
+}
+
+pub async fn set_location(
+    db: impl PgExecutor<'_>,
+    org_id: Uuid,
+    id: Uuid,
+    location: &str,
+) -> Result<bool, StoreError> {
+    Ok(sqlx::query!(
+        "UPDATE provider_credentials SET location = $3, revision = revision + 1, updated_at = now() \
+         WHERE org_id = $1 AND id = $2 AND auth_method = 'google_service_account'",
+        org_id,
+        id,
+        location
     )
     .execute(db)
     .await?
@@ -268,7 +296,7 @@ pub async fn get(
     Ok(sqlx::query_as!(
         CredentialRow,
         "SELECT id, org_id, provider, name, is_default, key_id, last4, created_by_kind, created_by_id, last_used_at, \
-         created_at, updated_at, auth_method, account_label, auth_error FROM provider_credentials WHERE org_id = $1 AND id = $2",
+         created_at, updated_at, auth_method, account_label, auth_error, project, location FROM provider_credentials WHERE org_id = $1 AND id = $2",
         org_id,
         id
     )
@@ -280,7 +308,7 @@ pub async fn list(db: impl PgExecutor<'_>, org_id: Uuid) -> Result<Vec<Credentia
     Ok(sqlx::query_as!(
         CredentialRow,
         "SELECT id, org_id, provider, name, is_default, key_id, last4, created_by_kind, created_by_id, last_used_at, \
-         created_at, updated_at, auth_method, account_label, auth_error FROM provider_credentials WHERE org_id = $1 \
+         created_at, updated_at, auth_method, account_label, auth_error, project, location FROM provider_credentials WHERE org_id = $1 \
          ORDER BY provider, is_default DESC, created_at DESC, id DESC",
         org_id
     )
@@ -370,7 +398,7 @@ pub async fn resolve(
     Ok(sqlx::query_as!(
         SealedRow,
         "SELECT c.id, c.ciphertext, c.nonce, c.wrapped_key, c.key_id, c.revision, c.auth_method, c.expires_at, \
-         c.auth_error FROM provider_credentials c \
+         c.auth_error, c.location FROM provider_credentials c \
          LEFT JOIN project_provider_keys a ON a.credential_id = c.id AND a.project_id = $2 \
          WHERE c.org_id = $1 AND c.provider = $3 AND (a.project_id IS NOT NULL OR c.is_default) \
          ORDER BY a.project_id IS NULL LIMIT 1",
@@ -389,7 +417,7 @@ pub async fn sealed(
 ) -> Result<Option<SealedRow>, StoreError> {
     Ok(sqlx::query_as!(
         SealedRow,
-        "SELECT id, ciphertext, nonce, wrapped_key, key_id, revision, auth_method, expires_at, auth_error \
+        "SELECT id, ciphertext, nonce, wrapped_key, key_id, revision, auth_method, expires_at, auth_error, location \
          FROM provider_credentials WHERE org_id = $1 AND id = $2",
         org_id,
         id
@@ -437,7 +465,7 @@ pub async fn touch(
 pub async fn all_sealed(db: impl PgExecutor<'_>) -> Result<Vec<SealedRow>, StoreError> {
     Ok(sqlx::query_as!(
         SealedRow,
-        "SELECT id, ciphertext, nonce, wrapped_key, key_id, revision, auth_method, expires_at, auth_error \
+        "SELECT id, ciphertext, nonce, wrapped_key, key_id, revision, auth_method, expires_at, auth_error, location \
          FROM provider_credentials"
     )
     .fetch_all(db)

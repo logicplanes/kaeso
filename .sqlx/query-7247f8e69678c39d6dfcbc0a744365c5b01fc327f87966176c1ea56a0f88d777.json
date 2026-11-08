@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, ciphertext, nonce, wrapped_key, key_id, revision, auth_method, expires_at, auth_error FROM provider_credentials",
+  "query": "SELECT id, ciphertext, nonce, wrapped_key, key_id, revision, auth_method, expires_at, auth_error, location FROM provider_credentials",
   "describe": {
     "columns": [
       {
@@ -101,6 +101,17 @@
             "name": "auth_error"
           }
         }
+      },
+      {
+        "ordinal": 9,
+        "name": "location",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "provider_credentials",
+            "name": "location"
+          }
+        }
       }
     ],
     "parameters": {
@@ -115,8 +126,9 @@
       false,
       false,
       true,
+      true,
       true
     ]
   },
-  "hash": "c8968bfcd536944d2e4afa121591db2b457f520793d8b2a6525f237c71aebc2c"
+  "hash": "7247f8e69678c39d6dfcbc0a744365c5b01fc327f87966176c1ea56a0f88d777"
 }

@@ -3,8 +3,9 @@ use std::collections::BTreeSet;
 use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
+use kaeso_core::google::{KeyProblem, ServiceAccountKey};
 use kaeso_core::id::{CredentialId, OrgId, ProjectId};
-use kaeso_core::provider::{AuthMethod, ProviderId};
+use kaeso_core::provider::{AuthMethod, ProviderId, ServiceAccountSignIn};
 use kaeso_core::providers::ProviderRef;
 use kaeso_store::pg::catalogue;
 use kaeso_store::pg::credentials::{self, AssignmentRow, CredentialRow, NewCredential};
@@ -57,11 +58,21 @@ pub struct CredentialView {
     pub last4: String,
     #[doc = "How it authenticates: `api_key`, `chatgpt` for a ChatGPT account or\n\
         `grok` for a Grok account, both signed in with OAuth, whose tokens Kaeso\n\
-        renews by itself."]
+        renews by itself, or `google_service_account` for a Google Cloud service\n\
+        account's JSON key, with which Kaeso gets access tokens by itself."]
     pub auth_method: AuthMethodView,
-    #[doc = "The signed-in account's email address; `null` for an API key."]
+    #[doc = "The signed-in account's email address, or a service account key's\n\
+        `client_email`; `null` for an API key."]
     #[schema(example = "owner@example.com")]
     pub account: Option<String>,
+    #[doc = "The Google Cloud project a service account key calls, from the key's\n\
+        `project_id`; `null` for other keys."]
+    #[schema(example = "kaeso-example")]
+    pub project: Option<String>,
+    #[doc = "The location a service account key calls, such as `global` or\n\
+        `us-central1`; `null` for other keys."]
+    #[schema(example = "global")]
+    pub location: Option<String>,
     #[doc = "Why the account can't make requests until someone signs in again:\n\
         `signed_out` when the provider ended its session, `no_api_access` when its\n\
         plan doesn't include API access; `null` while it works."]
@@ -93,6 +104,9 @@ pub enum AuthMethodView {
     ChatGpt,
     #[doc = "A Grok account, signed in with OAuth."]
     Grok,
+    #[doc = "A Google Cloud service account's JSON key, for Gemini Enterprise Agent\n\
+        Platform; Kaeso signs in with it and renews the access token by itself."]
+    GoogleServiceAccount,
 }
 
 impl From<AuthMethod> for AuthMethodView {
@@ -101,6 +115,7 @@ impl From<AuthMethod> for AuthMethodView {
             AuthMethod::ApiKey => AuthMethodView::ApiKey,
             AuthMethod::ChatGpt => AuthMethodView::ChatGpt,
             AuthMethod::Grok => AuthMethodView::Grok,
+            AuthMethod::GoogleServiceAccount => AuthMethodView::GoogleServiceAccount,
         }
     }
 }
@@ -122,6 +137,7 @@ impl CredentialView {
             AuthMethodView::ApiKey => AuthMethod::ApiKey,
             AuthMethodView::ChatGpt => AuthMethod::ChatGpt,
             AuthMethodView::Grok => AuthMethod::Grok,
+            AuthMethodView::GoogleServiceAccount => AuthMethod::GoogleServiceAccount,
         }
     }
 
@@ -145,6 +161,8 @@ impl CredentialView {
                 .unwrap_or(AuthMethod::ApiKey)
                 .into(),
             account: r.account_label.clone(),
+            project: r.project.clone(),
+            location: r.location.clone(),
             auth_error: r.auth_error.as_deref().map(|e| match e {
                 service::NO_API_ACCESS => AuthErrorView::NoApiAccess,
                 _ => AuthErrorView::SignedOut,
@@ -164,40 +182,68 @@ impl CredentialView {
 pub struct CredentialCreate {
     #[doc = "The id of a provider Kaeso calls: `openai`, `anthropic`, `deepseek`, `xai`,\n\
         `togetherai`, `groq`, `openrouter`, `mistral`, `vercel`, `cohere`,\n\
-        `ollama-cloud`, `moonshotai`, `alibaba`, `cerebras`, `zai`, `minimax`, `google`, or one\n\
-        of the organization's custom providers that takes a key."]
+        `ollama-cloud`, `moonshotai`, `alibaba`, `cerebras`, `zai`, `minimax`, `google`,\n\
+        `gemini-agent-platform`, or one of the organization's custom providers that\n\
+        takes a key."]
     #[schema(value_type = ProviderId, example = "openai")]
     pub provider: String,
     #[doc = "A name to recognise it by."]
     #[schema(example = "Production OpenAI key")]
     pub name: String,
-    #[doc = "The provider's API key. Stored encrypted and never shown again."]
+    #[doc = "The provider's API key, or with `auth_method` `google_service_account`\n\
+        the service account's whole JSON key file. Stored encrypted and never\n\
+        shown again."]
     #[schema(example = "sk-proj-…")]
     pub secret: String,
     #[doc = "Make it the default for its provider. The first key of a provider\n\
         becomes the default either way."]
     #[serde(default)]
     pub make_default: bool,
+    #[doc = "What `secret` is: `api_key` (the default) or `google_service_account`\n\
+        for a provider whose `service_account` isn't `null`."]
+    #[serde(default)]
+    pub auth_method: KeyMethod,
+    #[doc = "The location a service account key calls, one of the provider's\n\
+        `service_account.locations`; its `default_location` when absent."]
+    #[schema(example = "global")]
+    pub location: Option<String>,
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Deserialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+#[schema(description = "What a new provider key's secret is.")]
+pub enum KeyMethod {
+    #[doc = "An API key."]
+    #[default]
+    ApiKey,
+    #[doc = "A Google Cloud service account's JSON key."]
+    GoogleServiceAccount,
 }
 
 #[derive(Deserialize, ToSchema)]
 #[serde(deny_unknown_fields)]
 #[schema(description = "A replacement secret.")]
 pub struct CredentialReplace {
-    #[doc = "The new provider API key. Stored encrypted and never shown again."]
+    #[doc = "The new provider API key, or for a service account key the new JSON\n\
+        key file. Stored encrypted and never shown again."]
     #[schema(example = "sk-proj-…")]
     pub secret: String,
     #[doc = "A new name; unchanged when absent."]
     pub name: Option<String>,
+    #[doc = "For a service account key, a new location; unchanged when absent."]
+    pub location: Option<String>,
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
 #[serde(deny_unknown_fields)]
-#[schema(description = "A new name.")]
+#[schema(description = "A new name, and for a service account key a new location.")]
 pub struct CredentialRename {
     #[doc = "A name to recognise the key by."]
     #[schema(example = "Production OpenAI key")]
     pub name: String,
+    #[doc = "For a service account key, the location it calls from now on;\n\
+        unchanged when absent."]
+    pub location: Option<String>,
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
@@ -216,6 +262,8 @@ impl std::fmt::Debug for CredentialCreate {
             .field("provider", &self.provider)
             .field("name", &self.name)
             .field("make_default", &self.make_default)
+            .field("auth_method", &self.auth_method)
+            .field("location", &self.location)
             .finish_non_exhaustive()
     }
 }
@@ -224,6 +272,7 @@ impl std::fmt::Debug for CredentialReplace {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("CredentialReplace")
             .field("name", &self.name)
+            .field("location", &self.location)
             .finish_non_exhaustive()
     }
 }
@@ -334,22 +383,124 @@ pub async fn create(
         ));
     }
     let name = validate_name(&req.name)?;
-    let (secret, last4) = validate_secret(&req.secret)?;
-    let view = add(
-        &state,
-        &ctx,
-        org,
-        Added {
-            id: CredentialId::new(),
-            provider: provider.id(),
-            name: &name,
-            make_default: req.make_default,
-            secret,
-            auth: Auth::key(&last4),
-        },
-    )
-    .await?;
+    let view = match req.auth_method {
+        KeyMethod::ApiKey => {
+            if req.location.is_some() {
+                return Err(ApiError::invalid(
+                    "location",
+                    "Only a service account key calls a location; leave `location` out.",
+                ));
+            }
+            let (secret, last4) = validate_secret(&req.secret)?;
+            add(
+                &state,
+                &ctx,
+                org,
+                Added {
+                    id: CredentialId::new(),
+                    provider: provider.id(),
+                    name: &name,
+                    make_default: req.make_default,
+                    secret,
+                    auth: Auth::key(&last4),
+                },
+            )
+            .await?
+        }
+        KeyMethod::GoogleServiceAccount => {
+            let sign_in = service_account_sign_in(&provider)?;
+            let key = service_account_key(&req.secret)?;
+            let location = location(sign_in, req.location.as_deref())?;
+            let last4 = key.last4();
+            add(
+                &state,
+                &ctx,
+                org,
+                Added {
+                    id: CredentialId::new(),
+                    provider: provider.id(),
+                    name: &name,
+                    make_default: req.make_default,
+                    secret: req.secret.trim(),
+                    auth: Auth::service_account(&key, &last4, location),
+                },
+            )
+            .await?
+        }
+    };
     Ok((StatusCode::CREATED, Json(view)))
+}
+
+fn service_account_sign_in(provider: &ProviderRef) -> ApiResult<ServiceAccountSignIn> {
+    provider
+        .built_in()
+        .and_then(|p| p.service_account)
+        .ok_or_else(|| {
+            ApiError::invalid(
+                "auth_method",
+                format!(
+                    "{} takes no service account key; add an API key.",
+                    provider.name()
+                ),
+            )
+        })
+}
+
+pub(super) fn service_account_key(secret: &str) -> ApiResult<ServiceAccountKey> {
+    let key = ServiceAccountKey::parse(secret).map_err(|p| {
+        let message = match p {
+            KeyProblem::NotJson => "Paste the service account's whole JSON key file.".to_owned(),
+            KeyProblem::TooLong => {
+                "The JSON key is longer than 16 KiB; paste the file Google Cloud made.".to_owned()
+            }
+            KeyProblem::NotServiceAccount => {
+                "The JSON key isn't a service account key; its `type` must be `service_account`."
+                    .to_owned()
+            }
+            KeyProblem::Missing(field) => {
+                format!("The JSON key has no `{field}`; download a new key from Google Cloud.")
+            }
+            KeyProblem::Malformed(field) => {
+                format!(
+                    "The JSON key's `{field}` isn't valid; download a new key from Google Cloud."
+                )
+            }
+            KeyProblem::TokenUri => {
+                "The JSON key's `token_uri` must be `https://oauth2.googleapis.com/token`."
+                    .to_owned()
+            }
+            KeyProblem::Universe => {
+                "The JSON key belongs to another Google Cloud universe, which Kaeso can't call."
+                    .to_owned()
+            }
+        };
+        ApiError::invalid("secret", message)
+    })?;
+    kaeso_crypto::RsaSigner::from_pkcs8_pem(key.private_key_pem()).map_err(|_| {
+        ApiError::invalid(
+            "secret",
+            "The JSON key's `private_key` isn't an RSA key; download a new key from Google Cloud.",
+        )
+    })?;
+    Ok(key)
+}
+
+pub(super) fn location(
+    sign_in: ServiceAccountSignIn,
+    wanted: Option<&str>,
+) -> ApiResult<&'static str> {
+    let wanted = wanted.map(str::trim).unwrap_or(sign_in.default_location);
+    sign_in
+        .locations
+        .iter()
+        .copied()
+        .find(|l| *l == wanted)
+        .ok_or_else(|| {
+            ApiError::invalid(
+                "location",
+                "Kaeso doesn't call that location for this provider; choose one from the list.",
+            )
+        })
 }
 
 pub(super) struct Auth<'a> {
@@ -357,6 +508,8 @@ pub(super) struct Auth<'a> {
     pub last4: &'a str,
     pub expires_at: Option<OffsetDateTime>,
     pub account: Option<&'a str>,
+    pub project: Option<&'a str>,
+    pub location: Option<&'a str>,
 }
 
 impl<'a> Auth<'a> {
@@ -366,6 +519,19 @@ impl<'a> Auth<'a> {
             last4,
             expires_at: None,
             account: None,
+            project: None,
+            location: None,
+        }
+    }
+
+    fn service_account(key: &'a ServiceAccountKey, last4: &'a str, location: &'a str) -> Auth<'a> {
+        Auth {
+            method: AuthMethod::GoogleServiceAccount,
+            last4,
+            expires_at: None,
+            account: Some(key.client_email()),
+            project: Some(key.project_id()),
+            location: Some(location),
         }
     }
 }
@@ -407,6 +573,8 @@ pub(super) async fn add(
             auth_method: a.auth.method.as_str(),
             expires_at: a.auth.expires_at,
             account_label: a.auth.account,
+            project: a.auth.project,
+            location: a.auth.location,
         },
     )
     .await?;
@@ -496,6 +664,25 @@ pub async fn replace(
         Some(n) => validate_name(n)?,
         None => before.name.clone(),
     };
+    if before.method() == AuthMethod::GoogleServiceAccount {
+        let provider = provider_in_org(&state, org, &before.provider).await?;
+        let sign_in = service_account_sign_in(&provider)?;
+        let key = service_account_key(&req.secret)?;
+        let location = location(
+            sign_in,
+            req.location.as_deref().or(before.location.as_deref()),
+        )?;
+        let last4 = key.last4();
+        let auth = Auth::service_account(&key, &last4, location);
+        let after = rewrite(&state, &ctx, tx, &before, &name, req.secret.trim(), auth).await?;
+        return Ok(Json(after));
+    }
+    if req.location.is_some() {
+        return Err(ApiError::invalid(
+            "location",
+            "Only a service account key calls a location; leave `location` out.",
+        ));
+    }
     let (secret, last4) = validate_secret(&req.secret)?;
     let after = rewrite(&state, &ctx, tx, &before, &name, secret, Auth::key(&last4)).await?;
     Ok(Json(after))
@@ -536,6 +723,8 @@ pub(super) async fn rewrite(
             auth_method: auth.method.as_str(),
             expires_at: auth.expires_at,
             account_label: auth.account,
+            project: auth.project,
+            location: auth.location,
         },
     )
     .await?;
@@ -558,7 +747,7 @@ pub(super) async fn rewrite(
 #[utoipa::path(
     patch,
     path = "/orgs/{org}/credentials/{credential}",
-    summary = "Renames a provider key.",
+    summary = "Renames a provider key, and moves a service account key to another location.",
     tag = "orgs",
     params(("org" = OrgId, Path), ("credential" = CredentialId, Path)),
     request_body = CredentialRename,
@@ -578,6 +767,23 @@ pub async fn rename(
     if !credentials::rename(&mut *tx, org, id, &name).await? {
         return Err(ApiError::not_found("credential"));
     }
+    let moved = match req.location.as_deref() {
+        Some(wanted) if before.method() == AuthMethod::GoogleServiceAccount => {
+            let provider = provider_in_org(&state, org, &before.provider).await?;
+            let location = location(service_account_sign_in(&provider)?, Some(wanted))?;
+            Some(location).filter(|l| before.location.as_deref() != Some(*l))
+        }
+        Some(_) => {
+            return Err(ApiError::invalid(
+                "location",
+                "Only a service account key calls a location; leave `location` out.",
+            ));
+        }
+        None => None,
+    };
+    if let Some(location) = moved {
+        credentials::set_location(&mut *tx, org, id, location).await?;
+    }
     let after = view(&mut tx, org, id).await?;
     ctx.audit(Some(ctx.org()?.id()), Action::CredentialRename)
         .target("credential", before.id)
@@ -585,7 +791,15 @@ pub async fn rename(
         .after(&after)
         .write(&mut tx)
         .await?;
+    let projects = if moved.is_some() {
+        reset_availability(&mut tx, org, &before.provider).await?
+    } else {
+        Vec::new()
+    };
     tx.commit().await?;
+    if moved.is_some() {
+        forget(&state, org, projects).await;
+    }
     Ok(Json(after))
 }
 

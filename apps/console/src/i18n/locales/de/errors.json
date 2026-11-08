@@ -640,5 +640,17 @@
   "errors.notifications.scheduledOnOff": "`{kind}` wird nach Zeitplan gesendet; wählen Sie `now` oder `off`.",
   "errors.notifications.noAddress": "Ihr Konto hat keine E-Mail-Adresse.",
   "errors.notifications.testTooSoon": "Sie haben gerade eine Test-E-Mail gesendet; in {wait} erneut versuchen.",
-  "errors.notifications.testNotSent": "Die E-Mail wurde nicht gesendet; bitten Sie einen Instanz-Admin, die Mail-Einstellungen zu prüfen."
+  "errors.notifications.testNotSent": "Die E-Mail wurde nicht gesendet; bitten Sie einen Instanz-Admin, die Mail-Einstellungen zu prüfen.",
+  "errors.serviceAccount.locationOnly": "Nur ein Dienstkonto-Schlüssel ruft einen Standort auf; `location` weglassen.",
+  "errors.serviceAccount.notTaken": "{provider} nimmt keinen Dienstkonto-Schlüssel; einen API-Schlüssel hinzufügen.",
+  "errors.serviceAccount.notJson": "Die ganze JSON-Schlüsseldatei des Dienstkontos einfügen.",
+  "errors.serviceAccount.tooLong": "Der JSON-Schlüssel ist länger als 16 KiB; die Datei von Google Cloud einfügen.",
+  "errors.serviceAccount.wrongType": "Der JSON-Schlüssel ist kein Dienstkonto-Schlüssel; sein `type` muss `service_account` sein.",
+  "errors.serviceAccount.missingField": "Der JSON-Schlüssel hat kein `{field}`; einen neuen Schlüssel von Google Cloud herunterladen.",
+  "errors.serviceAccount.badField": "`{field}` des JSON-Schlüssels ist ungültig; einen neuen Schlüssel von Google Cloud herunterladen.",
+  "errors.serviceAccount.tokenUri": "`token_uri` des JSON-Schlüssels muss `https://oauth2.googleapis.com/token` sein.",
+  "errors.serviceAccount.universe": "Der JSON-Schlüssel gehört zu einem anderen Google-Cloud-Universum, das Kaeso nicht aufrufen kann.",
+  "errors.serviceAccount.notRsa": "`private_key` des JSON-Schlüssels ist kein RSA-Schlüssel; einen neuen Schlüssel von Google Cloud herunterladen.",
+  "errors.serviceAccount.location": "Kaeso ruft diesen Standort für diesen Anbieter nicht auf; einen aus der Liste wählen.",
+  "errors.noEmbeddingsAtProvider": "Kaeso ruft bei {provider} keine Embedding-Modelle auf, daher kann `{name}` keine Embeddings erstellen."
 }

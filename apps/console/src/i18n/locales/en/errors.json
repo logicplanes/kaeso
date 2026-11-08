@@ -640,5 +640,17 @@
   "errors.wait.hours": "{count, plural, one {# hour} other {# hours}}",
   "errors.wait.minutes": "{count, plural, one {# minute} other {# minutes}}",
   "errors.wait.seconds": "{count, plural, one {# second} other {# seconds}}",
-  "errors.wrongCredentials": "The email or password is wrong."
+  "errors.wrongCredentials": "The email or password is wrong.",
+  "errors.serviceAccount.locationOnly": "Only a service account key calls a location; leave `location` out.",
+  "errors.serviceAccount.notTaken": "{provider} takes no service account key; add an API key.",
+  "errors.serviceAccount.notJson": "Paste the service account's whole JSON key file.",
+  "errors.serviceAccount.tooLong": "The JSON key is longer than 16 KiB; paste the file Google Cloud made.",
+  "errors.serviceAccount.wrongType": "The JSON key isn't a service account key; its `type` must be `service_account`.",
+  "errors.serviceAccount.missingField": "The JSON key has no `{field}`; download a new key from Google Cloud.",
+  "errors.serviceAccount.badField": "The JSON key's `{field}` isn't valid; download a new key from Google Cloud.",
+  "errors.serviceAccount.tokenUri": "The JSON key's `token_uri` must be `https://oauth2.googleapis.com/token`.",
+  "errors.serviceAccount.universe": "The JSON key belongs to another Google Cloud universe, which Kaeso can't call.",
+  "errors.serviceAccount.notRsa": "The JSON key's `private_key` isn't an RSA key; download a new key from Google Cloud.",
+  "errors.serviceAccount.location": "Kaeso doesn't call that location for this provider; choose one from the list.",
+  "errors.noEmbeddingsAtProvider": "Kaeso calls no embeddings models on {provider}, so `{name}` can't create embeddings."
 }

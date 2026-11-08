@@ -554,6 +554,7 @@ pub fn accounts_at(base: &str) -> kaeso_server::services::provider_accounts::End
     kaeso_server::services::provider_accounts::Endpoints {
         chatgpt: hosts.clone(),
         grok: hosts,
+        google_token: kaeso_core::google::TOKEN_URI.to_owned(),
     }
 }
 

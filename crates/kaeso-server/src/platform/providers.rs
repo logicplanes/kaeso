@@ -53,6 +53,38 @@ pub struct ProviderView {
         `POST /orgs/{org}/credentials/oauth`; `null` when the provider takes API\n\
         keys only."]
     pub account: Option<AccountSignInView>,
+    #[doc = "A service account key people can add instead of an API key, with\n\
+        `auth_method` `google_service_account`; `null` when the provider takes\n\
+        none."]
+    pub service_account: Option<ServiceAccountView>,
+    #[doc = "Which format a model id is sent in when its catalogue entry names\n\
+        none, the first matching pattern winning; models no pattern matches go\n\
+        in the first of `dialects`. Empty for most providers."]
+    pub model_routes: Vec<ModelRouteView>,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+#[schema(description = "A pattern of model ids and the format they are sent in.")]
+pub struct ModelRouteView {
+    #[doc = "Model ids it covers; `*` stands for any characters."]
+    #[schema(example = "claude-*")]
+    pub pattern: &'static str,
+    #[doc = "The format, one of the provider's `dialects`."]
+    #[schema(example = "anthropic_messages")]
+    pub dialect: &'static str,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+#[schema(description = "How a provider takes a Google Cloud service account key.")]
+pub struct ServiceAccountView {
+    #[doc = "The provider's page for creating service accounts and their keys."]
+    pub key_page: KeyPageView,
+    #[doc = "The locations a key can call, in the provider's documented order."]
+    #[schema(example = json!(["global", "us-central1"]))]
+    pub locations: Vec<&'static str>,
+    #[doc = "The location a new key calls unless another is chosen."]
+    #[schema(example = "global")]
+    pub default_location: &'static str,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -104,6 +136,22 @@ impl ProviderView {
                 usage_url: a.usage_url,
                 experimental: a.experimental,
             }),
+            service_account: p.service_account.map(|s| ServiceAccountView {
+                key_page: KeyPageView {
+                    url: s.key_page.url,
+                    label: s.key_page.label,
+                },
+                locations: s.locations.to_vec(),
+                default_location: s.default_location,
+            }),
+            model_routes: p
+                .routes
+                .iter()
+                .map(|r| ModelRouteView {
+                    pattern: r.pattern,
+                    dialect: r.dialect.as_str(),
+                })
+                .collect(),
         }
     }
 
@@ -120,6 +168,8 @@ impl ProviderView {
             count_tokens: p.count_tokens().map(|d| d.as_str()),
             embeddings: p.embeddings().map(|d| d.as_str()),
             account: None,
+            service_account: None,
+            model_routes: Vec::new(),
         }
     }
 }

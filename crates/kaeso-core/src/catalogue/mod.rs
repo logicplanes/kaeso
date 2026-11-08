@@ -532,12 +532,14 @@ pub fn effective(
             .map(Fields::from_kpmr)
             .unwrap_or_default();
         // KPMR names OpenAI's embeddings format for every embeddings model; a provider with
-        // embeddings in another format gets them in its own.
+        // embeddings in another format gets them in its own. One that Kaeso calls without
+        // embeddings keeps KPMR's, so the model stays an embeddings model that is refused
+        // instead of being sent as a generation model.
         upstream.egress_dialect = upstream.egress_dialect.and_then(|d| {
             if provider.dialects().contains(&d) {
                 Some(d)
             } else if EMBEDDINGS.contains(&d) {
-                provider.embeddings()
+                provider.embeddings().or(Some(d))
             } else {
                 None
             }
@@ -548,7 +550,9 @@ pub fn effective(
         }
         entry.overrides.clone().over(&upstream)
     };
-    let dialect = fields.egress_dialect.unwrap_or(provider.generation());
+    let dialect = fields
+        .egress_dialect
+        .unwrap_or_else(|| provider.dialect_for(&entry.model_id));
     Some(Effective {
         id: entry.id,
         provider,

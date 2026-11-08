@@ -8306,7 +8306,7 @@
         "tags": [
           "orgs"
         ],
-        "summary": "Renames a provider key.",
+        "summary": "Renames a provider key, and moves a service account key to another location.",
         "description": "**Right:** `provider_credentials.replace` on the organization in the path; with a session, a sign-in within the last 15 minutes.",
         "operationId": "patchOrgsOrgCredentialsCredential",
         "parameters": [
@@ -22829,7 +22829,8 @@
         "enum": [
           "api_key",
           "chatgpt",
-          "grok"
+          "grok",
+          "google_service_account"
         ]
       },
       "AvailabilityState": {
@@ -23436,6 +23437,18 @@
           "secret"
         ],
         "properties": {
+          "auth_method": {
+            "$ref": "#/components/schemas/KeyMethod",
+            "description": "What `secret` is: `api_key` (the default) or `google_service_account`\nfor a provider whose `service_account` isn't `null`."
+          },
+          "location": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The location a service account key calls, one of the provider's\n`service_account.locations`; its `default_location` when absent.",
+            "example": "global"
+          },
           "make_default": {
             "type": "boolean",
             "description": "Make it the default for its provider. The first key of a provider\nbecomes the default either way."
@@ -23451,7 +23464,7 @@
           },
           "secret": {
             "type": "string",
-            "description": "The provider's API key. Stored encrypted and never shown again.",
+            "description": "The provider's API key, or with `auth_method` `google_service_account`\nthe service account's whole JSON key file. Stored encrypted and never\nshown again.",
             "example": "sk-proj-…"
           }
         },
@@ -23492,11 +23505,18 @@
       },
       "CredentialRename": {
         "type": "object",
-        "description": "A new name.",
+        "description": "A new name, and for a service account key a new location.",
         "required": [
           "name"
         ],
         "properties": {
+          "location": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "For a service account key, the location it calls from now on;\nunchanged when absent."
+          },
           "name": {
             "type": "string",
             "description": "A name to recognise the key by.",
@@ -23512,6 +23532,13 @@
           "secret"
         ],
         "properties": {
+          "location": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "For a service account key, a new location; unchanged when absent."
+          },
           "name": {
             "type": [
               "string",
@@ -23521,7 +23548,7 @@
           },
           "secret": {
             "type": "string",
-            "description": "The new provider API key. Stored encrypted and never shown again.",
+            "description": "The new provider API key, or for a service account key the new JSON\nkey file. Stored encrypted and never shown again.",
             "example": "sk-proj-…"
           }
         },
@@ -23549,7 +23576,7 @@
               "string",
               "null"
             ],
-            "description": "The signed-in account's email address; `null` for an API key.",
+            "description": "The signed-in account's email address, or a service account key's\n`client_email`; `null` for an API key.",
             "example": "owner@example.com"
           },
           "auth_error": {
@@ -23565,7 +23592,7 @@
           },
           "auth_method": {
             "$ref": "#/components/schemas/AuthMethodView",
-            "description": "How it authenticates: `api_key`, `chatgpt` for a ChatGPT account or\n`grok` for a Grok account, both signed in with OAuth, whose tokens Kaeso\nrenews by itself."
+            "description": "How it authenticates: `api_key`, `chatgpt` for a ChatGPT account or\n`grok` for a Grok account, both signed in with OAuth, whose tokens Kaeso\nrenews by itself, or `google_service_account` for a Google Cloud service\naccount's JSON key, with which Kaeso gets access tokens by itself."
           },
           "created_at": {
             "type": "string",
@@ -23602,10 +23629,26 @@
             "format": "date-time",
             "description": "Last used for a request."
           },
+          "location": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The location a service account key calls, such as `global` or\n`us-central1`; `null` for other keys.",
+            "example": "global"
+          },
           "name": {
             "type": "string",
             "description": "A name to recognise it by.",
             "example": "Production OpenAI key"
+          },
+          "project": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The Google Cloud project a service account key calls, from the key's\n`project_id`; `null` for other keys.",
+            "example": "kaeso-example"
           },
           "projects": {
             "type": "array",
@@ -25677,6 +25720,14 @@
         },
         "additionalProperties": false
       },
+      "KeyMethod": {
+        "type": "string",
+        "description": "What a new provider key's secret is.",
+        "enum": [
+          "api_key",
+          "google_service_account"
+        ]
+      },
       "KeyPageView": {
         "type": "object",
         "description": "A page on the provider's own site.",
@@ -26688,7 +26739,7 @@
                     "string",
                     "null"
                   ],
-                  "description": "The signed-in account's email address; `null` for an API key.",
+                  "description": "The signed-in account's email address, or a service account key's\n`client_email`; `null` for an API key.",
                   "example": "owner@example.com"
                 },
                 "auth_error": {
@@ -26704,7 +26755,7 @@
                 },
                 "auth_method": {
                   "$ref": "#/components/schemas/AuthMethodView",
-                  "description": "How it authenticates: `api_key`, `chatgpt` for a ChatGPT account or\n`grok` for a Grok account, both signed in with OAuth, whose tokens Kaeso\nrenews by itself."
+                  "description": "How it authenticates: `api_key`, `chatgpt` for a ChatGPT account or\n`grok` for a Grok account, both signed in with OAuth, whose tokens Kaeso\nrenews by itself, or `google_service_account` for a Google Cloud service\naccount's JSON key, with which Kaeso gets access tokens by itself."
                 },
                 "created_at": {
                   "type": "string",
@@ -26741,10 +26792,26 @@
                   "format": "date-time",
                   "description": "Last used for a request."
                 },
+                "location": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "The location a service account key calls, such as `global` or\n`us-central1`; `null` for other keys.",
+                  "example": "global"
+                },
                 "name": {
                   "type": "string",
                   "description": "A name to recognise it by.",
                   "example": "Production OpenAI key"
+                },
+                "project": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "The Google Cloud project a service account key calls, from the key's\n`project_id`; `null` for other keys.",
+                  "example": "kaeso-example"
                 },
                 "projects": {
                   "type": "array",
@@ -28957,7 +29024,8 @@
                 "name",
                 "custom",
                 "takes_key",
-                "dialects"
+                "dialects",
+                "model_routes"
               ],
               "properties": {
                 "account": {
@@ -29032,10 +29100,28 @@
                   "description": "How the provider's API keys start; `null` when they have no fixed prefix.",
                   "example": "gsk_"
                 },
+                "model_routes": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ModelRouteView"
+                  },
+                  "description": "Which format a model id is sent in when its catalogue entry names\nnone, the first matching pattern winning; models no pattern matches go\nin the first of `dialects`. Empty for most providers."
+                },
                 "name": {
                   "type": "string",
                   "description": "The name people see.",
                   "example": "Groq"
+                },
+                "service_account": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ServiceAccountView",
+                      "description": "A service account key people can add instead of an API key, with\n`auth_method` `google_service_account`; `null` when the provider takes\nnone."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
                 },
                 "takes_key": {
                   "type": "boolean",
@@ -31578,6 +31664,26 @@
           }
         }
       },
+      "ModelRouteView": {
+        "type": "object",
+        "description": "A pattern of model ids and the format they are sent in.",
+        "required": [
+          "pattern",
+          "dialect"
+        ],
+        "properties": {
+          "dialect": {
+            "type": "string",
+            "description": "The format, one of the provider's `dialects`.",
+            "example": "anthropic_messages"
+          },
+          "pattern": {
+            "type": "string",
+            "description": "Model ids it covers; `*` stands for any characters.",
+            "example": "claude-*"
+          }
+        }
+      },
       "ModelSearch": {
         "type": "object",
         "description": "The KPMR models matching a search, newest first per provider.",
@@ -33788,7 +33894,8 @@
           "name",
           "custom",
           "takes_key",
-          "dialects"
+          "dialects",
+          "model_routes"
         ],
         "properties": {
           "account": {
@@ -33863,10 +33970,28 @@
             "description": "How the provider's API keys start; `null` when they have no fixed prefix.",
             "example": "gsk_"
           },
+          "model_routes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ModelRouteView"
+            },
+            "description": "Which format a model id is sent in when its catalogue entry names\nnone, the first matching pattern winning; models no pattern matches go\nin the first of `dialects`. Empty for most providers."
+          },
           "name": {
             "type": "string",
             "description": "The name people see.",
             "example": "Groq"
+          },
+          "service_account": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ServiceAccountView",
+                "description": "A service account key people can add instead of an API key, with\n`auth_method` `google_service_account`; `null` when the provider takes\nnone."
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "takes_key": {
             "type": "boolean",
@@ -35218,55 +35343,32 @@
       },
       "ServiceAccountView": {
         "type": "object",
-        "description": "A service account.",
+        "description": "How a provider takes a Google Cloud service account key.",
         "required": [
-          "id",
-          "project_id",
-          "name",
-          "grant",
-          "created_at"
+          "key_page",
+          "locations",
+          "default_location"
         ],
         "properties": {
-          "archived_at": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "format": "date-time",
-            "description": "When archived."
-          },
-          "created_at": {
+          "default_location": {
             "type": "string",
-            "format": "date-time",
-            "description": "Created."
+            "description": "The location a new key calls unless another is chosen.",
+            "example": "global"
           },
-          "created_by": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/UserId",
-                "description": "Who created it."
-              },
-              {
-                "type": "null"
-              }
+          "key_page": {
+            "$ref": "#/components/schemas/KeyPageView",
+            "description": "The provider's page for creating service accounts and their keys."
+          },
+          "locations": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The locations a key can call, in the provider's documented order.",
+            "example": [
+              "global",
+              "us-central1"
             ]
-          },
-          "grant": {
-            "$ref": "#/components/schemas/GrantView",
-            "description": "Its project role and rights; its keys act with them."
-          },
-          "id": {
-            "$ref": "#/components/schemas/ServiceAccountId",
-            "description": "Id."
-          },
-          "name": {
-            "type": "string",
-            "description": "Name.",
-            "example": "ci-deploy"
-          },
-          "project_id": {
-            "$ref": "#/components/schemas/ProjectId",
-            "description": "The project."
           }
         }
       },
