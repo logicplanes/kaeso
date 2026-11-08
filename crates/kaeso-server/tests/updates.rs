@@ -69,6 +69,7 @@ struct GitHub {
     manual_since: Option<String>,
     art: Vec<(String, Value)>,
     stars: Option<&'static str>,
+    protocols: Vec<(String, u32)>,
 }
 
 fn etag_of(releases: &[(String, bool, bool)]) -> String {
@@ -152,6 +153,9 @@ async fn download(State(gh): State<Arc<Mutex<GitHub>>>, OriginalUri(uri): Origin
             if let Some(since) = gh.manual_since.clone() {
                 m["manual_since"] = json!(since);
             }
+            if let Some((_, protocol)) = gh.protocols.iter().find(|(p, _)| p == v) {
+                m["updater_protocol"] = json!(protocol);
+            }
             axum::Json(m).into_response()
         }
         None => StatusCode::NOT_FOUND.into_response(),
@@ -184,6 +188,7 @@ struct Updater {
     down: bool,
     docker_down: bool,
     unauthorized: u32,
+    protocol: Option<u32>,
 }
 
 fn job(id: &str, to: &str, state: &str, step: &str, reason: Option<&str>) -> Value {
@@ -211,8 +216,11 @@ async fn updater_status(State(u): State<Arc<Mutex<Updater>>>, headers: HeaderMap
     if !authorized(&mut u, &headers) {
         return StatusCode::UNAUTHORIZED.into_response();
     }
-    axum::Json(json!({ "version": "40.9.0", "protocol": 1, "docker": !u.docker_down, "job": null }))
-        .into_response()
+    let protocol = u.protocol.unwrap_or(kaeso_update::protocol::VERSION);
+    axum::Json(
+        json!({ "version": "40.9.0", "protocol": protocol, "docker": !u.docker_down, "job": null }),
+    )
+    .into_response()
 }
 
 async fn updater_start(
@@ -1260,6 +1268,63 @@ async fn many_new_releases_are_fetched_a_dozen_at_a_time() {
         &None,
         "an incomplete list is fetched again in full"
     );
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn an_updater_older_than_a_crossed_release_needs_is_outdated() {
+    let s = TestServices::start().await;
+    let (gh, url) = github(vec![
+        (RUNNING.to_owned(), false, false),
+        (next_patch(), false, false),
+        (next_minor_rc(), true, false),
+    ])
+    .await;
+    gh.lock().unwrap().protocols = vec![(next_patch(), 2)];
+    let (updater, updater_url) = updater().await;
+    updater.lock().unwrap().protocol = Some(1);
+    let app = App::start_with(
+        &s,
+        &[
+            ("KAESO_UPDATES_RELEASES_URL", url.as_str()),
+            ("KAESO_UPDATES_CHANNEL", "prerelease"),
+            ("KAESO_UPDATER_URL", updater_url.as_str()),
+            ("KAESO_UPDATER_TOKEN", token()),
+        ],
+    )
+    .await;
+    let owner = app.setup().await;
+    let r = app
+        .post("/instance/updates/check", json!({}), Some(&owner.cookie))
+        .await;
+    assert_eq!(r.body["latest"]["version"], next_minor_rc(), "{:?}", r.body);
+    assert_eq!(
+        r.body["updater"],
+        json!({ "state": "outdated", "version": "40.9.0" }),
+        "{} needs protocol 2 though the target asks for 1",
+        next_patch()
+    );
+    assert_eq!(r.body["can_apply"], false);
+    let refused = app
+        .post(
+            "/instance/updates/apply",
+            json!({ "version": next_minor_rc() }),
+            Some(&owner.cookie),
+        )
+        .await;
+    assert_eq!(refused.status, StatusCode::CONFLICT);
+    assert_eq!(
+        refused.body["error"]["message"],
+        "The updater is too old for this release; update it by hand first."
+    );
+    assert!(updater.lock().unwrap().started.is_empty());
+
+    updater.lock().unwrap().protocol = Some(kaeso_update::protocol::VERSION);
+    let r = app
+        .post("/instance/updates/check", json!({}), Some(&owner.cookie))
+        .await;
+    assert_eq!(r.body["updater"]["state"], "ready", "{:?}", r.body);
+    assert_eq!(r.body["can_apply"], true);
     s.cleanup().await;
 }
 

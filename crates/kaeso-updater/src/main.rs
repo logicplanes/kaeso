@@ -1,9 +1,15 @@
 use std::process::ExitCode;
 
+use kaeso_updater::compose_cli;
 use kaeso_updater::config::{Config, healthcheck_address};
 
 #[tokio::main]
 async fn main() -> ExitCode {
+    if std::env::args().nth(1).as_deref() == Some("compose") {
+        let args: Vec<String> = std::env::args().skip(2).collect();
+        let bin = std::path::Path::new(compose_cli::COMPOSE_BIN);
+        return ExitCode::from(compose_cli::run(bin, &args));
+    }
     if std::env::args().nth(1).as_deref() == Some("healthcheck") {
         let listen = std::env::var("KAESO_UPDATER_LISTEN").ok();
         return if kaeso_updater::healthcheck(&healthcheck_address(listen.as_deref())).await {

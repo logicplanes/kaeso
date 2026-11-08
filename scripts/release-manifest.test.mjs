@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
-import { composeChanged, latestMigrations, manifest, manualSince, pin, previousManifest, retag, sha256, sourceCommit } from "./release-manifest.mjs";
+import { latestMigrations, manifest, manualSince, pin, previousManifest, proxyChanged, sha256, sourceCommit } from "./release-manifest.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const digest = (c) => `sha256:${c.repeat(64)}`;
@@ -21,8 +21,6 @@ test("the published compose file pins every Kaeso image to its version and diges
   assert.equal(pin(compose("3.4.6"), "3.4.6", digests), pinned("3.4.6"));
   assert.throws(() => pin(compose("3.4.5"), "3.4.6", digests), /no ghcr\.io\/logicplanes\/kaeso-gateway:3\.4\.6 to pin/);
   assert.throws(() => pin(compose("3.4.6").replace(/  updater:\n.*\n/, ""), "3.4.6", digests), /kaeso-updater:3\.4\.6/);
-  assert.equal(retag(pinned("3.4.6"), "3.4.7"), compose("3.4.7"));
-  assert.equal(composeChanged(pinned("3.4.5"), compose("3.4.6"), "3.4.6"), false);
 });
 
 test("the manifest names every image by digest, the published compose file by hash and the latest migrations", () => {
@@ -34,7 +32,7 @@ test("the manifest names every image by digest, the published compose file by ha
     commit,
     manual: false,
     manual_since: null,
-    updater_protocol: 1,
+    updater_protocol: 2,
     images: {
       gateway: { name: "ghcr.io/logicplanes/kaeso-gateway", digest: digest("a") },
       console: { name: "ghcr.io/logicplanes/kaeso-console", digest: digest("b") },
@@ -45,16 +43,43 @@ test("the manifest names every image by digest, the published compose file by ha
   });
 });
 
-test("a compose file that changes beyond the image versions, or a release marked so, needs steps by hand", () => {
-  assert.equal(composeChanged(compose("3.4.5"), compose("3.4.6"), "3.4.6"), false);
-  assert.equal(composeChanged(compose("3.4.5"), compose("3.4.6", "\n  extra: {}"), "3.4.6"), true);
-  assert.equal(composeChanged(null, compose("3.4.6"), "3.4.6"), false);
-  const changed = manifest({ version: "3.4.6", commit, digests, migrations, compose: Buffer.from(compose("3.4.6", "x")), previousCompose: compose("3.4.5") });
-  assert.equal(changed.manual, true);
-  assert.equal(changed.manual_since, "3.4.6");
+test("a compose file that changes beyond the image versions installs through the updater's protocol 2", () => {
+  const changed = manifest({
+    version: "3.4.6",
+    commit,
+    digests,
+    migrations,
+    compose: Buffer.from(compose("3.4.6", "\n  extra: {}")),
+    previousCompose: compose("3.4.5"),
+  });
+  assert.equal(changed.manual, false);
+  assert.equal(changed.manual_since, null);
+  assert.equal(changed.updater_protocol, 2);
   const marked = manifest({ version: "3.4.6", commit, digests, migrations, compose: Buffer.from(compose("3.4.6")), manual: true });
   assert.equal(marked.manual, true);
-  assert.equal(retag(compose("3.4.5"), "3.5.0-rc.1"), compose("3.5.0-rc.1"));
+});
+
+test("a change to docker-proxy or its network needs steps by hand", () => {
+  const withProxy = (command, network = "    internal: true\n", logging = "json-file") =>
+    `x-logging: &logging\n  driver: ${logging}\nservices:\n  gateway:\n    image: ghcr.io/logicplanes/kaeso-gateway:3.4.6\n  docker-proxy:\n    image: wollomatic/socket-proxy:1.13.2\n    logging: *logging\n    command: [${command}]\nnetworks:\n  docker:\n${network}`;
+  const before = withProxy("-allowfrom=updater");
+  assert.equal(proxyChanged(before, withProxy("-allowfrom=updater")), false);
+  assert.equal(proxyChanged(before, before.replace("3.4.6", "3.4.7").replace("gateway:\n", "gateway:\n    read_only: true\n")), false);
+  assert.equal(proxyChanged(before, withProxy("-allowfrom=updater,updater-runner")), true);
+  assert.equal(proxyChanged(before, withProxy("-allowfrom=updater", "    internal: false\n")), true);
+  assert.equal(proxyChanged(before, withProxy("-allowfrom=updater", "    internal: true\n", "local")), true, "an anchor it uses counts");
+  assert.equal(proxyChanged(null, before), false);
+  const proxied = manifest({
+    version: "3.4.6",
+    commit,
+    digests,
+    migrations,
+    compose: Buffer.from(compose("3.4.6", "\n  docker-proxy: {}")),
+    previousCompose: compose("3.4.5"),
+  });
+  assert.equal(proxied.manual, true);
+  assert.equal(proxied.manual_since, "3.4.6");
+  assert.equal(proxied.updater_protocol, 2);
 });
 
 test("the last release with steps by hand carries on to every later release", () => {

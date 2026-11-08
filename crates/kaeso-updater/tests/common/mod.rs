@@ -36,6 +36,8 @@ pub const TO: &str = "40.2.1";
 pub const COMMIT: &str = "5388ad0b98aa3d957fea99e200259842bf746680";
 pub const UPDATER_HOST: &str = "updater0host";
 pub const JOB: &str = "upd_01k7a3f8m2xq4v9c5r6t8w0yz1";
+pub const INSTALL_DIR: &str = "/srv/kaeso";
+pub const RUNNER_LABEL: &str = "app.kaeso.updater.runner";
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Health {
@@ -64,6 +66,26 @@ pub struct Container {
     pub started: bool,
     pub restarts: u32,
     pub stop_timeout: Option<u32>,
+    pub networks: Vec<String>,
+    pub mounts: Value,
+    pub exit_code: Option<i64>,
+    pub logs: String,
+    pub cmd: Vec<String>,
+}
+
+impl Container {
+    pub fn task(&self) -> Option<&str> {
+        self.labels.get(RUNNER_LABEL)?;
+        self.labels
+            .get("app.kaeso.updater.task")
+            .map(String::as_str)
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Outcome {
+    Exit(i64, &'static str),
+    Hang,
 }
 
 pub type Hook = Box<dyn Fn() + Send>;
@@ -87,6 +109,41 @@ pub struct Daemon {
     pub fail_rename_back: bool,
     pub hang: Vec<&'static str>,
     pub stall_pull: bool,
+    pub compose_path: Option<PathBuf>,
+    pub state_path: Option<PathBuf>,
+    pub runners: HashMap<&'static str, Outcome>,
+    pub ran: Vec<(String, String)>,
+    pub replace_saw: Option<String>,
+    pub next_runner: u32,
+}
+
+pub fn runner(job: &str, task: &str, code: Option<i64>) -> Container {
+    Container {
+        id: format!("{:0<64}", format!("runner{task}")),
+        name: format!("runner-{task}"),
+        image: "sha256:new-updater".into(),
+        reference: format!(
+            "{}@{}",
+            Service::Updater.image(),
+            digest_of(Service::Updater)
+        ),
+        labels: BTreeMap::from([
+            (RUNNER_LABEL.into(), job.into()),
+            ("app.kaeso.updater.task".into(), task.into()),
+        ]),
+        env: Vec::new(),
+        running: code.is_none(),
+        health: Health::Healthy,
+        inspected: 0,
+        started: true,
+        restarts: 0,
+        stop_timeout: None,
+        networks: vec!["kaeso_docker".into()],
+        mounts: json!([]),
+        exit_code: code,
+        logs: format!("{task} said its last words\n"),
+        cmd: Vec::new(),
+    }
 }
 
 pub fn index_of(service: Service) -> Vec<u8> {
@@ -107,6 +164,20 @@ fn image_doc(id: &str, version: &str, reference: &str) -> Value {
             "Healthcheck": { "Test": ["CMD", "check"] }
         }
     })
+}
+
+fn switched(c: &Container) -> bool {
+    c.task().is_none()
+        && matches!(
+            c.labels
+                .get("com.docker.compose.service")
+                .map(String::as_str),
+            Some("gateway" | "console")
+        )
+        && c.labels
+            .get("com.docker.compose.oneoff")
+            .map(String::as_str)
+            == Some("False")
 }
 
 impl Daemon {
@@ -142,9 +213,106 @@ impl Daemon {
                 started: true,
                 restarts: 0,
                 stop_timeout: None,
+                networks: if service == Service::Updater {
+                    vec!["kaeso_updates".into(), "kaeso_docker".into(), "kaeso_egress".into()]
+                } else {
+                    vec!["kaeso_edge".into()]
+                },
+                mounts: if service == Service::Updater {
+                    json!([{ "Type": "bind", "Source": format!("{INSTALL_DIR}/compose.yaml"), "Destination": "/kaeso/compose.yaml" }])
+                } else {
+                    json!([])
+                },
+                exit_code: None,
+                logs: String::new(),
+                cmd: Vec::new(),
             });
         }
+        let mut proxy = d.container("kaeso-updater-1").unwrap().clone();
+        proxy.id = format!("{:0<64}", "proxy");
+        proxy.name = "kaeso-docker-proxy-1".into();
+        proxy.image = "sha256:proxy".into();
+        proxy.reference = "wollomatic/socket-proxy:1.13.2".into();
+        proxy
+            .labels
+            .insert("com.docker.compose.service".into(), "docker-proxy".into());
+        proxy.networks = vec!["kaeso_docker".into()];
+        proxy.mounts = json!([]);
+        d.containers.push(proxy);
         d
+    }
+
+    pub fn runners(&self) -> Vec<Container> {
+        self.containers
+            .iter()
+            .filter(|c| c.task().is_some())
+            .cloned()
+            .collect()
+    }
+
+    fn run_compose(&mut self, task: &str) -> (i64, String) {
+        let outcome = self.runners.get(task).cloned();
+        if let Some(Outcome::Exit(code, logs)) = outcome {
+            return (code, logs.to_owned());
+        }
+        let compose = self
+            .compose_path
+            .as_ref()
+            .and_then(|p| std::fs::read_to_string(p).ok())
+            .unwrap_or_default();
+        let new = compose.contains(&format!(":{TO}@"));
+        match task {
+            "stop" => {
+                for c in self.containers.iter_mut().filter(|c| switched(c)) {
+                    c.running = false;
+                }
+                (0, " Container kaeso-gateway-1 Stopped\n".into())
+            }
+            "up" => {
+                let mut failed = None;
+                for i in 0..self.containers.len() {
+                    if !switched(&self.containers[i]) {
+                        continue;
+                    }
+                    self.next_id += 1;
+                    let id = format!("{:0<64}", format!("up{}", self.next_id));
+                    let health = if new {
+                        let service =
+                            self.containers[i].labels["com.docker.compose.service"].clone();
+                        self.new_health
+                            .get(&service)
+                            .copied()
+                            .unwrap_or(Health::Healthy)
+                    } else {
+                        Health::Healthy
+                    };
+                    let c = &mut self.containers[i];
+                    let service = c.labels["com.docker.compose.service"].clone();
+                    let version = if new { "new" } else { "old" };
+                    c.id = id;
+                    c.image = format!("sha256:{version}-{service}");
+                    c.health = health;
+                    c.running = health != Health::Crash;
+                    c.started = true;
+                    c.inspected = 0;
+                    if health != Health::Healthy {
+                        failed = Some(format!("container {} is unhealthy", c.name));
+                    }
+                }
+                match failed {
+                    Some(why) => (1, format!(" Container kaeso-gateway-1 Started\n{why}\n")),
+                    None => (0, " Container kaeso-gateway-1 Healthy\n".into()),
+                }
+            }
+            "replace" => {
+                self.replace_saw = self
+                    .state_path
+                    .as_ref()
+                    .and_then(|p| std::fs::read_to_string(p).ok());
+                (0, String::new())
+            }
+            _ => (0, String::new()),
+        }
     }
 
     pub fn container(&self, name: &str) -> Option<&Container> {
@@ -196,12 +364,13 @@ impl Daemon {
                 "Healthcheck": { "Test": ["CMD", "check"] }
             },
             "HostConfig": { "RestartPolicy": { "Name": "unless-stopped" }, "ReadonlyRootfs": true },
-            "NetworkSettings": { "Networks": { "kaeso_edge": { "Aliases": [c.name, c.labels.get("com.docker.compose.service")] } } },
+            "NetworkSettings": { "Networks": c.networks.iter().map(|n| (n.clone(), json!({ "Aliases": [c.name, c.labels.get("com.docker.compose.service")] }))).collect::<serde_json::Map<String, Value>>() },
+            "Mounts": c.mounts,
             "State": {
                 "StartedAt": if c.started { "2026-10-17T10:00:00Z" } else { "0001-01-01T00:00:00Z" },
                 "Running": c.running,
                 "Restarting": false,
-                "ExitCode": if c.running { 0 } else { 1 },
+                "ExitCode": c.exit_code.unwrap_or(if c.running { 0 } else { 1 }),
                 "Health": { "Status": health }
             }
         });
@@ -250,19 +419,24 @@ async fn daemon(
         ("GET", "containers/json") => {
             let filters: Value =
                 serde_json::from_str(q.get("filters").map(String::as_str).unwrap_or("{}")).unwrap();
-            let wanted: Vec<(String, String)> = filters["label"]
+            let wanted: Vec<(String, Option<String>)> = filters["label"]
                 .as_array()
                 .unwrap()
                 .iter()
-                .map(|l| {
-                    let (k, v) = l.as_str().unwrap().split_once('=').unwrap();
-                    (k.to_owned(), v.to_owned())
+                .map(|l| match l.as_str().unwrap().split_once('=') {
+                    Some((k, v)) => (k.to_owned(), Some(v.to_owned())),
+                    None => (l.as_str().unwrap().to_owned(), None),
                 })
                 .collect();
             let list: Vec<Value> = d
                 .containers
                 .iter()
-                .filter(|c| wanted.iter().all(|(k, v)| c.labels.get(k) == Some(v)))
+                .filter(|c| {
+                    wanted.iter().all(|(k, v)| match v {
+                        Some(v) => c.labels.get(k) == Some(v),
+                        None => c.labels.contains_key(k),
+                    })
+                })
                 .map(|c| json!({ "Id": c.id, "Names": [format!("/{}", c.name)] }))
                 .collect();
             axum::Json(Value::Array(list)).into_response()
@@ -286,6 +460,40 @@ async fn daemon(
             d.images
                 .insert(id.clone(), image_doc(&id, &version, &reference));
             (StatusCode::OK, "{\"status\":\"Downloaded\"}\n").into_response()
+        }
+        ("POST", "containers/create") if !q.contains_key("name") => {
+            let spec: Value = serde_json::from_slice(&body).unwrap();
+            d.created.push(spec.clone());
+            let labels: BTreeMap<String, String> =
+                serde_json::from_value(spec["Labels"].clone()).unwrap();
+            d.next_runner += 1;
+            let n = d.next_runner;
+            let id = format!("{:0<64}", format!("runner{n}"));
+            d.containers.push(Container {
+                id: id.clone(),
+                name: format!("runner-{n}"),
+                image: "sha256:new-updater".into(),
+                reference: spec["Image"].as_str().unwrap().to_owned(),
+                labels,
+                env: serde_json::from_value(spec["Env"].clone()).unwrap(),
+                running: false,
+                health: Health::Healthy,
+                inspected: 0,
+                started: false,
+                restarts: 0,
+                stop_timeout: None,
+                networks: vec![
+                    spec["HostConfig"]["NetworkMode"]
+                        .as_str()
+                        .unwrap()
+                        .to_owned(),
+                ],
+                mounts: json!([]),
+                exit_code: None,
+                logs: String::new(),
+                cmd: serde_json::from_value(spec["Cmd"].clone()).unwrap(),
+            });
+            (StatusCode::CREATED, axum::Json(json!({ "Id": id }))).into_response()
         }
         ("POST", "containers/create") => {
             let name = q["name"].clone();
@@ -329,6 +537,11 @@ async fn daemon(
                 stop_timeout: spec["StopTimeout"]
                     .as_u64()
                     .map(|s| u32::try_from(s).unwrap()),
+                networks: vec!["kaeso_edge".into()],
+                mounts: json!([]),
+                exit_code: None,
+                logs: String::new(),
+                cmd: Vec::new(),
             });
             (StatusCode::CREATED, axum::Json(json!({ "Id": id }))).into_response()
         }
@@ -345,6 +558,38 @@ async fn daemon(
         (m, p) if p.starts_with("containers/") => {
             let rest = &p["containers/".len()..];
             let (key, action) = rest.split_once('/').unwrap_or((rest, ""));
+            if let Some(i) = d
+                .containers
+                .iter()
+                .position(|c| c.id == key && c.task().is_some())
+            {
+                match (m, action) {
+                    ("POST", "start") => {
+                        let task = d.containers[i].task().unwrap().to_owned();
+                        let job = d.containers[i].labels[RUNNER_LABEL].clone();
+                        d.ran.push((job, task.clone()));
+                        d.containers[i].started = true;
+                        if d.runners.get(task.as_str()) == Some(&Outcome::Hang) {
+                            d.containers[i].running = true;
+                        } else {
+                            let (code, logs) = d.run_compose(&task);
+                            let c = &mut d.containers[i];
+                            c.running = false;
+                            c.exit_code = Some(code);
+                            c.logs = logs;
+                        }
+                        return StatusCode::NO_CONTENT.into_response();
+                    }
+                    ("GET", "logs") => {
+                        let logs = d.containers[i].logs.clone().into_bytes();
+                        let mut framed = vec![1, 0, 0, 0];
+                        framed.extend_from_slice(&u32::try_from(logs.len()).unwrap().to_be_bytes());
+                        framed.extend_from_slice(&logs);
+                        return framed.into_response();
+                    }
+                    _ => {}
+                }
+            }
             let restart_health = d.old_health_after_restart;
             let fail_start = d.fail_new_start.clone();
             if (m, action) == ("POST", "start")
@@ -457,6 +702,17 @@ impl Releases {
         );
     }
 
+    pub fn add_changed(&mut self, version: &str, shape: &Shape<'_>) {
+        let compose = changed_compose(version);
+        self.by_version.insert(
+            version.to_owned(),
+            Release {
+                manifest: manifest_for(version, &compose, shape),
+                compose,
+            },
+        );
+    }
+
     pub fn standard() -> Releases {
         let mut releases = Releases::default();
         releases.add(TO, &Shape::default());
@@ -548,6 +804,18 @@ pub fn release_compose(version: &str) -> Vec<u8> {
     .into_bytes()
 }
 
+pub fn changed_compose(version: &str) -> Vec<u8> {
+    let mut compose = release_compose(version);
+    compose.extend_from_slice(
+        format!(
+            "  mailer:\n    image: example/mailer@sha256:{}\n",
+            "e".repeat(64)
+        )
+        .as_bytes(),
+    );
+    compose
+}
+
 pub struct Shape<'a> {
     pub manual: bool,
     pub manual_since: Option<&'a str>,
@@ -611,11 +879,13 @@ pub fn settings(dir: &std::path::Path) -> Settings {
         maintenance: MaintenanceFlag::new(dir.join("maintenance")),
         state: StateFile::new(dir.join("state")),
         hostname: UPDATER_HOST.into(),
+        install_dir: Some(INSTALL_DIR.into()),
         poll: Duration::from_millis(5),
         gateway_timeout: Duration::from_millis(400),
         console_timeout: Duration::from_millis(400),
         rollback_timeout: Duration::from_millis(400),
         docker_wait: Duration::from_millis(400),
+        compose_timeout: Duration::from_millis(400),
         stop_seconds: 0,
     }
 }
@@ -636,6 +906,20 @@ impl World {
         releases: Releases,
         verifier: Verifier,
     ) -> World {
+        let settings = settings(&dir);
+        World::configured(dir, daemon, releases, verifier, settings).await
+    }
+
+    pub async fn configured(
+        dir: PathBuf,
+        daemon: Daemon,
+        releases: Releases,
+        verifier: Verifier,
+        settings: Settings,
+    ) -> World {
+        let mut daemon = daemon;
+        daemon.compose_path = Some(dir.join("compose.yaml"));
+        daemon.state_path = Some(dir.join("state").join("job.json"));
         let daemon = Arc::new(Mutex::new(daemon));
         let releases = Arc::new(Mutex::new(releases));
         let docker_url = serve(
@@ -658,7 +942,7 @@ impl World {
         .unwrap();
         let verifier = Arc::new(verifier);
         let engine = Engine::new(
-            settings(&dir),
+            settings,
             Docker::new(&docker_url).unwrap(),
             source,
             verifier.clone(),
@@ -716,10 +1000,38 @@ impl World {
             .unwrap()
             .containers
             .iter()
+            .filter(|c| {
+                c.task().is_none()
+                    && c.labels
+                        .get("com.docker.compose.service")
+                        .map(String::as_str)
+                        != Some("docker-proxy")
+            })
             .map(|c| c.name.clone())
             .collect();
         names.sort();
         names
+    }
+
+    pub async fn replaced(&self) {
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(10);
+        while !self.ran().iter().any(|t| t == "replace") {
+            assert!(
+                tokio::time::Instant::now() < deadline,
+                "the updater did not replace itself"
+            );
+            tokio::time::sleep(Duration::from_millis(5)).await;
+        }
+    }
+
+    pub fn ran(&self) -> Vec<String> {
+        self.daemon
+            .lock()
+            .unwrap()
+            .ran
+            .iter()
+            .map(|(_, task)| task.clone())
+            .collect()
     }
 
     pub fn calls(&self, prefix: &str) -> Vec<String> {

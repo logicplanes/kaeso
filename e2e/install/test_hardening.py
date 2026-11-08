@@ -35,36 +35,48 @@ HEX = "0123456789abcdef" * 4
 ID = HEX
 DIGEST = f"sha256:{HEX}"
 KAESO = [f"ghcr.io/logicplanes/kaeso-{name}@{DIGEST}" for name in ("gateway", "console", "updater")]
+PINNED = [*KAESO, f"postgres:18.6-alpine@{DIGEST}", f"ghcr.io/logicplanes/kaeso-console:1.4.2@{DIGEST}", f"clickhouse/clickhouse-server:26.3.62.3-alpine@{DIGEST}"]
 UPDATER_CALLS = {
+    "HEAD": ["/_ping"],
     "GET": [
-        "/v1.44/version",
+        *(f"/v{version}/version" for version in ("1.44", "1.54")),
         "/v1.44/containers/json",
         f"/v1.44/containers/{ID[:12]}/json",
-        f"/v1.44/containers/{ID}/json",
+        f"/v1.54/containers/{ID}/json",
+        f"/v1.44/containers/{ID}/logs",
         f"/v1.44/images/{DIGEST}/json",
-        *(f"/v1.44/images/{image}/json" for image in KAESO),
+        *(f"/v1.54/images/{image}/json" for image in PINNED),
+        "/v1.54/networks",
+        "/v1.54/networks/kaeso_docker",
+        "/v1.54/volumes",
+        "/v1.54/volumes/kaeso_postgres",
     ],
     "POST": [
         "/v1.44/images/create",
         *(f"/v1.44/images/{image}/tag" for image in KAESO),
-        "/v1.44/containers/create",
-        *(f"/v1.44/containers/{ID}/{action}" for action in ("start", "stop", "rename")),
+        "/v1.54/containers/create",
+        *(f"/v1.54/containers/{ID}/{action}" for action in ("start", "stop", "rename")),
+        "/v1.54/networks/create",
+        "/v1.54/volumes/create",
     ],
+    "PUT": [f"/v1.54/containers/{ID}/archive"],
     "DELETE": [f"/v1.44/containers/{ID}"],
 }
 NEVER = {
     "GET": [
         "/version",
         "/v1.43/version",
+        "/v2.0/version",
         "/v1.44/info",
         "/v1.44/images/json",
         "/v1.44/containers/kaeso-postgres-1/json",
         f"/v1.44/containers/{ID[:20]}/json",
-        f"/v1.44/containers/{ID}/logs",
+        f"/v1.44/containers/{ID[:12]}/logs",
         f"/v1.44/containers/{ID}/archive",
         f"/v1.44/containers/{ID}/export",
-        f"/v1.44/images/ghcr.io/example/kaeso-gateway@{DIGEST}/json",
+        "/v1.44/images/postgres:18.6-alpine/json",
         f"/v1.44/images/{DIGEST}/get",
+        "/v1.44/volumes/kaeso_postgres/../../info",
         "/v1.44/secrets",
         "/v1.44/events",
     ],
@@ -81,16 +93,15 @@ NEVER = {
         f"/v1.44/containers/{ID}/kill",
         f"/v1.44/containers/{ID}/commit",
         "/v1.44/containers/prune",
-        "/v1.44/volumes/create",
-        "/v1.44/networks/create",
+        "/v1.44/volumes/prune",
         f"/v1.44/networks/{ID}/connect",
         "/v1.44/plugins/pull",
         "/v1.44/swarm/init",
         "/v1.44/services/create",
     ],
     "DELETE": [f"/v1.44/images/{DIGEST}", "/v1.44/volumes/kaeso_postgres", f"/v1.44/networks/{ID}", "/v1.44/containers/kaeso-postgres-1"],
-    "PUT": [f"/v1.44/containers/{ID}/archive"],
-    "HEAD": [f"/v1.44/containers/{ID}/archive"],
+    "PUT": [f"/v1.44/containers/{ID[:12]}/archive", "/v1.44/containers/kaeso-postgres-1/archive", "/v1.44/volumes/kaeso_postgres"],
+    "HEAD": [f"/v1.44/containers/{ID}/archive", "/v1.44/_ping"],
 }
 
 
@@ -103,9 +114,9 @@ def proxy_allows(command: list[str]) -> dict[str, list[re.Pattern]]:
     return allowed
 
 
-def test_the_docker_proxy_lets_the_updater_call_only_the_endpoints_it_uses():
+def test_the_docker_proxy_lets_the_updater_and_its_compose_runner_call_only_the_endpoints_they_use():
     allowed = proxy_allows(config()["services"]["docker-proxy"]["command"])
-    assert set(allowed) == {"GET", "POST", "DELETE"}
+    assert set(allowed) == {"HEAD", "GET", "POST", "PUT", "DELETE"}
     for method, paths in UPDATER_CALLS.items():
         for path in paths:
             assert any(p.fullmatch(path) for p in allowed[method]), f"{method} {path}"
@@ -116,7 +127,7 @@ def test_the_docker_proxy_lets_the_updater_call_only_the_endpoints_it_uses():
 
 def bind_mounts_from(env: dict[str, str]) -> str:
     command = config(env)["services"]["docker-proxy"]["command"]
-    assert "-allowfrom=updater" in command
+    assert "-allowfrom=updater,updater-runner" in command
     return next(flag for flag in command if flag.startswith("-allowbindmountfrom=")).split("=", 1)[1]
 
 

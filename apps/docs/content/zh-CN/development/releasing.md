@@ -101,7 +101,7 @@ GitHub 发布页先给出一句话、两到三个亮点和破坏性变更。然�
    git push origin dev:prod
    ```
 
-4. 在 `prod` 上用版本号运行 Release 工作流。如果版本需要手动步骤，在工作流的输入中勾选 **manual**，这样更新器永远不会安装它：
+4. 在 `prod` 上用版本号运行 Release 工作流。如果版本需要手动步骤，在工作流的输入中勾选 **manual**，这样更新器永远不会安装它。修改 `docker-proxy` 服务或 `docker` 网络的版本会自动标记为需要手动操作：
 
    ```bash
    gh workflow run release.yml --repo logicplanes/kaeso --ref prod \

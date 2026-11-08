@@ -32,6 +32,8 @@ pub enum ConfigError {
     Address(&'static str),
     #[error("HOSTNAME is not set; run the updater as a Compose service")]
     NoHostname,
+    #[error("KAESO_DIR must be the absolute path of the install's folder")]
+    InstallDir,
 }
 
 pub fn healthcheck_address(listen: Option<&str>) -> String {
@@ -55,6 +57,7 @@ pub struct Config {
     pub token: SecretString,
     pub docker: Url,
     pub hostname: String,
+    pub install_dir: Option<String>,
 }
 
 impl Config {
@@ -87,11 +90,22 @@ impl Config {
         .filter(|u| matches!(u.scheme(), "http" | "https"))
         .ok_or(ConfigError::Address("KAESO_UPDATER_DOCKER_HOST"))?;
         let hostname = set("HOSTNAME").ok_or(ConfigError::NoHostname)?;
+        let install_dir = match set("KAESO_DIR") {
+            Some(dir) => {
+                let dir = dir.trim().trim_end_matches('/');
+                if !dir.starts_with('/') || dir.contains(':') {
+                    return Err(ConfigError::InstallDir);
+                }
+                Some(dir.to_owned())
+            }
+            None => None,
+        };
         Ok(Config {
             listen,
             token,
             docker,
             hostname,
+            install_dir,
         })
     }
 
@@ -101,11 +115,13 @@ impl Config {
             maintenance: MaintenanceFlag::new(MAINTENANCE_DIR),
             state: StateFile::new(STATE_DIR),
             hostname: self.hostname.clone(),
+            install_dir: self.install_dir.clone(),
             poll: Duration::from_secs(2),
             gateway_timeout: Duration::from_secs(600),
             console_timeout: Duration::from_secs(120),
             rollback_timeout: Duration::from_secs(300),
             docker_wait: Duration::from_secs(120),
+            compose_timeout: Duration::from_secs(1800),
             stop_seconds: 40,
         }
     }
@@ -145,6 +161,26 @@ mod tests {
         let s = c.settings();
         assert_eq!(s.hostname, "abc123");
         assert_eq!(s.gateway_timeout, Duration::from_secs(600));
+        assert_eq!(s.install_dir, None);
+    }
+
+    #[test]
+    fn the_install_folder_must_be_an_absolute_path() {
+        let with = |dir: &str| {
+            load(&[
+                ("KAESO_UPDATER_TOKEN", token()),
+                ("HOSTNAME", "h"),
+                ("KAESO_DIR", dir),
+            ])
+        };
+        assert_eq!(
+            with("/srv/kaeso/").unwrap().install_dir.as_deref(),
+            Some("/srv/kaeso")
+        );
+        assert_eq!(with(" ").unwrap().install_dir, None);
+        for wrong in ["kaeso", "./kaeso", "/", "/srv/kaeso:/etc"] {
+            assert_eq!(with(wrong).unwrap_err(), ConfigError::InstallDir, "{wrong}");
+        }
     }
 
     #[test]

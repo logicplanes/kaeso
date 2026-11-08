@@ -24,6 +24,7 @@ const REASONS = [
   "updater_refused",
   "state_unwritable",
   "migrated",
+  "install_unknown",
 ];
 
 describe("update words", () => {
@@ -34,6 +35,7 @@ describe("update words", () => {
     expect(reasonText(null)).toBeNull();
     expect(reasonText(undefined)).toBeNull();
     expect(reasonText("cosmic_rays")).toBe("cosmic_rays");
+    expect(reasonText("install_unknown")).toBe("The updater doesn't know the install's folder; set KAESO_DIR in .env.");
   });
 
   it("names every step and every result", () => {

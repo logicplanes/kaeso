@@ -71,7 +71,7 @@ async fn an_update_starts_once_and_reports_its_progress() {
     let router = kaeso_updater::server::router(world.engine.clone(), SecretString::from(token()));
     let (status, body) = call(&router, Method::GET, "/v1/status", Some(token()), None).await;
     assert_eq!(status, StatusCode::OK);
-    assert_eq!(body["protocol"], 1);
+    assert_eq!(body["protocol"], kaeso_update::protocol::VERSION);
     assert_eq!(body["docker"], true);
     assert_eq!(body["version"], env!("CARGO_PKG_VERSION"));
     let (status, _) = call(

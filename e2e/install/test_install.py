@@ -55,6 +55,11 @@ def built(variable: str, name: str) -> str:
     return tag
 
 
+def image_id(reference: str) -> str:
+    """docker-proxy lets Compose inspect only images named by digest or id, and local builds have no digest."""
+    return subprocess.check_output(["docker", "image", "inspect", "--format", "{{.Id}}", reference], text=True).strip()
+
+
 def poll(fetch, what: str, seconds: float = 120):
     deadline = time.monotonic() + seconds
     while time.monotonic() < deadline:
@@ -71,10 +76,10 @@ def install(tmp_path_factory):
     shutil.copy(ROOT / "deploy" / "compose.yaml", work / "compose.yaml")
     shutil.copy(Path(__file__).with_name("compose.test.yaml"), work / "compose.test.yaml")
     port = free_port()
-    gateway = image("KAESO_TEST_GATEWAY_IMAGE", "gateway")
-    mock = image("KAESO_TEST_MOCK_IMAGE", "mock")
+    gateway = image_id(image("KAESO_TEST_GATEWAY_IMAGE", "gateway"))
+    mock = image_id(image("KAESO_TEST_MOCK_IMAGE", "mock"))
     console = built("KAESO_TEST_CONSOLE_IMAGE", "console")
-    updater = built("KAESO_TEST_UPDATER_IMAGE", "updater")
+    updater = image_id(built("KAESO_TEST_UPDATER_IMAGE", "updater"))
     (work / "master-keys").write_text(
         subprocess.check_output(["docker", "run", "--rm", gateway, "master-key", "generate"], text=True)
     )
@@ -92,19 +97,23 @@ def install(tmp_path_factory):
         "KAESO_TEST_PORT": str(port),
         "KAESO_TEST_GATEWAY_IMAGE": gateway,
         "KAESO_TEST_MOCK_IMAGE": mock,
-        "KAESO_TEST_CONSOLE_IMAGE": console,
+        "KAESO_TEST_CONSOLE_IMAGE": image_id(console),
         "KAESO_TEST_UPDATER_IMAGE": updater,
         "KAESO_UPDATER_TOKEN": os.urandom(32).hex(),
         "COMPOSE_PROFILES": "updater",
         "KAESO_DIR": str(work),
         "GATEWAY_REPLICAS": "2",
+        "COMPOSE_FILE": "compose.yaml:compose.test.yaml",
     }
     (work / ".env").touch(mode=0o600)
     (work / ".env").write_text("".join(f"{name}={value}\n" for name, value in env.items()))
     compose = ["docker", "compose", "-p", PROJECT, "-f", "compose.yaml", "-f", "compose.test.yaml"]
+    # .env alone configures the install, as for the updater's compose runner: a variable left in this
+    # process's environment, such as CI's image tags, would win over it and change the services' hashes.
+    without_overrides = {name: value for name, value in os.environ.items() if name not in env}
 
     def run(*args: str, check: bool = True, **kwargs) -> subprocess.CompletedProcess:
-        return subprocess.run([*compose, *args], cwd=work, check=check, text=True, **kwargs)
+        return subprocess.run([*compose, *args], cwd=work, check=check, text=True, env=without_overrides, **kwargs)
 
     url = f"http://localhost:{port}"
     try:
@@ -119,8 +128,8 @@ def install(tmp_path_factory):
         assert token not in logs, "the setup token reached the gateway's log"
         yield Install(url, token, env, run, health, work, console)
     finally:
-        subprocess.run([*compose, "logs", "--no-color"], cwd=work, stdout=open(work / "compose.log", "w"))
-        subprocess.run([*compose, "down", "-v", "--remove-orphans"], cwd=work, check=False)
+        subprocess.run([*compose, "logs", "--no-color"], cwd=work, env=without_overrides, stdout=open(work / "compose.log", "w"))
+        subprocess.run([*compose, "down", "-v", "--remove-orphans"], cwd=work, env=without_overrides, check=False)
 
 
 @pytest.fixture(scope="module")
@@ -324,6 +333,68 @@ def test_the_updater_writes_its_files_without_root(install):
     assert group == "65532"
     written = as_updater("test -w /kaeso/compose.yaml")
     assert written.returncode == 0, written.stderr
+
+
+def as_runner(install: Install, *args: str) -> subprocess.CompletedProcess:
+    work = str(install.work)
+    return subprocess.run(
+        ["docker", "run", "--rm", "--user", "0:0", "--cap-drop", "ALL", "--cap-add", "DAC_READ_SEARCH",
+         "--security-opt", "no-new-privileges:true", "--read-only", "--tmpfs", "/tmp:rw,noexec,nosuid,size=16m",
+         "--network", f"{PROJECT}_docker", "--network-alias", "updater-runner", "-v", f"{work}:{work}:ro", "-w", work,
+         "-e", "DOCKER_HOST=tcp://docker-proxy:2375", "-e", f"COMPOSE_PROJECT_NAME={PROJECT}", "-e", "HOME=/tmp",
+         install.env["KAESO_TEST_UPDATER_IMAGE"], "compose", *args],
+        capture_output=True,
+        text=True,
+        timeout=600,
+    )
+
+
+def container_ids(install: Install, service: str) -> list[str]:
+    return install.run("ps", "--all", "--quiet", service, capture_output=True).stdout.split()
+
+
+def test_the_compose_runner_applies_a_changed_compose_file_through_the_proxy(install):
+    compose = install.work / "compose.yaml"
+    original = compose.read_text()
+    marker = "    networks: [edge]\n\n  updater-init:"
+    assert marker in original
+    unchanged = ("gateway", "postgres", "clickhouse", "valkey", "caddy")
+    before = {service: container_ids(install, service) for service in unchanged}
+    try:
+        compose.write_text(original.replace(marker, "    environment:\n      KAESO_RUNNER_TEST: applied\n" + marker))
+        applied = as_runner(install, "up", "300")
+        assert applied.returncode == 0, applied.stderr
+        env = subprocess.run(
+            ["docker", "inspect", "--format", "{{json .Config.Env}}", *container_ids(install, "console")],
+            capture_output=True, text=True, check=True,
+        ).stdout
+        assert "KAESO_RUNNER_TEST=applied" in env
+        assert {service: container_ids(install, service) for service in unchanged} == before, "an unchanged service is left as it is"
+        assert as_runner(install, "replace", "120").returncode == 0
+        unknown = as_runner(install, "down")
+        assert unknown.returncode == 2, unknown.stderr
+    finally:
+        compose.write_text(original)
+        install.run("up", "-d", "--wait", "--wait-timeout", "300")
+
+
+def test_docker_proxy_refuses_the_runner_a_bind_mount_outside_the_install_folder(install):
+    body = json.dumps({"Image": "sha256:" + "0" * 64, "HostConfig": {"Binds": ["/etc:/host:ro"]}})
+    refused = subprocess.run(
+        ["docker", "run", "--rm", "--network", f"{PROJECT}_docker", "--network-alias", "updater-runner",
+         "--entrypoint", "wget", install.console, "-S", "-qO-", "-T", "5", "--header", "Content-Type: application/json",
+         "--post-data", body, "http://docker-proxy:2375/v1.44/containers/create"],
+        capture_output=True,
+        text=True,
+    )
+    assert "403 Forbidden" in refused.stderr, refused.stderr
+    version = subprocess.run(
+        ["docker", "run", "--rm", "--network", f"{PROJECT}_docker", "--network-alias", "updater-runner",
+         "--entrypoint", "wget", install.console, "-qO-", "-T", "5", "http://docker-proxy:2375/v1.44/version"],
+        capture_output=True,
+        text=True,
+    )
+    assert version.returncode == 0, "the runner's alias reaches the proxy, unlike any other container"
 
 
 def test_the_init_services_run_again_over_directories_only_their_services_can_read(install):

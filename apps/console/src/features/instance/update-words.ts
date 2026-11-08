@@ -50,7 +50,7 @@ export function reasonText(reason: string | null | undefined): string | null {
     case "updater_outdated":
       return t("instance.updates.whyOutdated", "The updater is too old for this release; update once with the installer.");
     case "compose_changed":
-      return t("instance.updates.whyCompose", "Your compose.yaml has changes of its own; update by hand.");
+      return t("instance.updates.whyCompose", "Your Compose files have changes the updater can't apply; follow the detail or update with the installer.");
     case "compose_unwritable":
       return t("instance.updates.whyUnwritable", "The updater couldn't write compose.yaml.");
     case "services_not_found":
@@ -65,6 +65,8 @@ export function reasonText(reason: string | null | undefined): string | null {
       return t("instance.updates.whyUnhealthy", "The new version didn't start.");
     case "interrupted":
       return t("instance.updates.whyInterrupted", "The update was interrupted.");
+    case "install_unknown":
+      return t("instance.updates.whyInstall", "The updater doesn't know the install's folder; set KAESO_DIR in .env.");
     case "updater_unreachable":
       return t("instance.updates.whyUnreachable", "The updater couldn't be reached.");
     case "updater_refused":

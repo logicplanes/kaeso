@@ -101,7 +101,7 @@ Der Workflow **Labels** setzt die Bereichs-Labels und `internal` bei jedem Push 
    git push origin dev:prod
    ```
 
-4. Starten Sie den Release-Workflow auf `prod` mit der Version. Setzen Sie in den Eingaben des Workflows **manual**, wenn das Release Schritte von Hand braucht, damit der Updater es nie installiert:
+4. Starten Sie den Release-Workflow auf `prod` mit der Version. Setzen Sie in den Eingaben des Workflows **manual**, wenn das Release Schritte von Hand braucht, damit der Updater es nie installiert. Eine Änderung am Dienst `docker-proxy` oder am Netz `docker` macht ein Release von selbst manuell:
 
    ```bash
    gh workflow run release.yml --repo logicplanes/kaeso --ref prod \

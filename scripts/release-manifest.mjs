@@ -2,11 +2,13 @@ import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { isDeepStrictEqual } from "node:util";
 import { pathToFileURL } from "node:url";
+import { parse } from "yaml";
 import { isVersion } from "./version.mjs";
 
 export const SCHEMA = 1;
-export const UPDATER_PROTOCOL = 1;
+export const UPDATER_PROTOCOL = 2;
 export const SERVICES = ["gateway", "console", "updater"];
 
 const IMAGE = /(ghcr\.io\/logicplanes\/kaeso-(gateway|console|updater):)([0-9A-Za-z.+-]+)(@sha256:[0-9a-f]{64})?(?![0-9A-Za-z.+_-])/g;
@@ -14,8 +16,6 @@ const DIGEST = /^sha256:[0-9a-f]{64}$/;
 const COMMIT = /^[0-9a-f]{40}$/;
 
 export const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
-
-export const retag = (text, version) => text.replace(IMAGE, (_, image) => `${image}${version}`);
 
 export function pin(text, version, digests) {
   const pinned = new Set();
@@ -30,8 +30,14 @@ export function pin(text, version, digests) {
   return out;
 }
 
-export function composeChanged(previous, current, version) {
-  return previous !== null && retag(previous, version) !== current;
+// The updater recreates services through docker-proxy, so it can't recreate the proxy or the network it listens on.
+export function proxyChanged(previous, current) {
+  if (previous === null) return false;
+  const proxy = (text) => {
+    const compose = parse(text, { merge: true }) ?? {};
+    return { service: compose.services?.["docker-proxy"] ?? null, network: compose.networks?.docker ?? null };
+  };
+  return !isDeepStrictEqual(proxy(previous), proxy(current));
 }
 
 export function latestMigrations(root) {
@@ -93,7 +99,7 @@ export function manifest({ version, commit, digests, compose, migrations, previo
   }
   const text = compose.toString("utf8");
   const published = pin(text, version, digests);
-  const needsSteps = manual || composeChanged(previousCompose, text, version);
+  const needsSteps = manual || proxyChanged(previousCompose, text);
   return {
     schema: SCHEMA,
     version,
