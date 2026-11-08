@@ -145,6 +145,16 @@ export const providerMark = {
   "gemini-agent-platform-red": mode("#fa423f", "#fa423f"),
   "gemini-agent-platform-green": mode("#12aa5b", "#14ba64"),
   "gemini-agent-platform-yellow": mode("#b59007", "#fac70b"),
+  "vllm-yellow": mode("#c68902", "#fdb515"),
+  "vllm-blue": mode("#1b98ff", "#30a2ff"),
+  "llama-cpp": mode("#ff6202", "#ff8236"),
+  tgi: mode("#b49000", "#ffd21e"),
+  nim: mode("#69a500", "#76b900"),
+  "docker-model-runner": mode("#2496ed", "#2496ed"),
+  "xinference-orange": mode("#d7801d", "#e9a85e"),
+  "xinference-pink": mode("#f52b76", "#f52b76"),
+  "xinference-violet": mode("#6a0cf5", "#7a25f6"),
+  "xinference-lilac": mode("#ab66f3", "#ab66f3"),
 } as const;
 
 export const type = {
