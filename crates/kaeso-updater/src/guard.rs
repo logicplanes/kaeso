@@ -54,6 +54,8 @@ pub enum Refused {
     HostConfig(&'static str),
     #[error("the container to replace has no HostConfig")]
     NoHostConfig,
+    #[error("the compose runner's {0} is wider than it may be")]
+    Runner(&'static str),
 }
 
 pub fn image(image: &Image) -> Result<(), Refused> {
@@ -115,6 +117,86 @@ pub fn container(name: &str, spec: &Value, replaced: &Value) -> Result<(), Refus
         }
     }
     Ok(())
+}
+
+pub fn runner(spec: &Value) -> Result<(), Refused> {
+    reference(spec)?;
+    let image = spec
+        .get("Image")
+        .and_then(Value::as_str)
+        .unwrap_or_default();
+    if !image.starts_with(&format!("{}@", Service::Updater.image())) {
+        return Err(Refused::Image(image.to_owned()));
+    }
+    let host = spec.get("HostConfig").and_then(Value::as_object);
+    let field = |name: &str| unset(host.and_then(|h| h.get(name)));
+    let text = |v: Option<&Value>| v.and_then(Value::as_str).map(str::to_owned);
+    let bind = field("Binds")
+        .and_then(Value::as_array)
+        .filter(|b| b.len() == 1)
+        .and_then(|b| text(b.first()))
+        .and_then(|b| b.strip_suffix(":ro").map(str::to_owned));
+    let same_path = bind
+        .as_deref()
+        .and_then(|b| b.split_once(':'))
+        .is_some_and(|(from, to)| {
+            from == to && from.starts_with('/') && from.len() > 1 && !to.contains(':')
+        });
+    let checks: [(&'static str, bool); 8] = [
+        ("user", text(spec.get("User")).as_deref() == Some("0:0")),
+        ("Binds", same_path),
+        (
+            "CapDrop",
+            field("CapDrop") == Some(&serde_json::json!(["ALL"])),
+        ),
+        (
+            "CapAdd",
+            field("CapAdd") == Some(&serde_json::json!(["DAC_READ_SEARCH"])),
+        ),
+        (
+            "ReadonlyRootfs",
+            field("ReadonlyRootfs") == Some(&Value::Bool(true)),
+        ),
+        (
+            "SecurityOpt",
+            field("SecurityOpt") == Some(&serde_json::json!(["no-new-privileges:true"])),
+        ),
+        (
+            "NetworkMode",
+            text(field("NetworkMode")).is_some_and(|n| {
+                !matches!(n.as_str(), "host" | "bridge" | "default" | "none")
+                    && !n.starts_with("container:")
+            }),
+        ),
+        (
+            "Memory",
+            field("Memory").is_some() && field("PidsLimit").is_some(),
+        ),
+    ];
+    if let Some((name, _)) = checks.iter().find(|(_, ok)| !ok) {
+        return Err(Refused::Runner(name));
+    }
+    let widening = [
+        "Privileged",
+        "Mounts",
+        "VolumesFrom",
+        "Devices",
+        "DeviceRequests",
+        "PidMode",
+        "IpcMode",
+        "UsernsMode",
+        "UTSMode",
+        "CgroupnsMode",
+        "PortBindings",
+        "PublishAllPorts",
+        "GroupAdd",
+        "Sysctls",
+        "Runtime",
+    ];
+    match widening.iter().find(|f| field(f).is_some()) {
+        Some(f) => Err(Refused::Runner(f)),
+        None => Ok(()),
+    }
 }
 
 #[cfg(test)]
@@ -267,6 +349,77 @@ mod tests {
             ),
             Err(Refused::NoHostConfig)
         );
+    }
+
+    fn runner_spec() -> Value {
+        json!({
+            "Image": format!("ghcr.io/logicplanes/kaeso-updater@{D}"),
+            "User": "0:0",
+            "HostConfig": {
+                "Binds": ["/srv/kaeso:/srv/kaeso:ro"],
+                "CapDrop": ["ALL"],
+                "CapAdd": ["DAC_READ_SEARCH"],
+                "SecurityOpt": ["no-new-privileges:true"],
+                "ReadonlyRootfs": true,
+                "NetworkMode": "kaeso_docker",
+                "Memory": 268_435_456,
+                "PidsLimit": 128,
+                "Privileged": false
+            }
+        })
+    }
+
+    #[test]
+    fn the_compose_runner_gets_exactly_its_narrow_settings() {
+        assert_eq!(runner(&runner_spec()), Ok(()));
+        let wider: [(&str, Value, &str); 14] = [
+            ("/User", json!("65532:65532"), "user"),
+            ("/HostConfig/Binds", json!(["/:/:ro"]), "Binds"),
+            (
+                "/HostConfig/Binds",
+                json!(["/srv/kaeso:/srv/kaeso"]),
+                "Binds",
+            ),
+            (
+                "/HostConfig/Binds",
+                json!(["/srv/kaeso:/kaeso:ro"]),
+                "Binds",
+            ),
+            (
+                "/HostConfig/Binds",
+                json!(["/srv/kaeso:/srv/kaeso:ro", "/etc:/etc:ro"]),
+                "Binds",
+            ),
+            (
+                "/HostConfig/CapAdd",
+                json!(["DAC_READ_SEARCH", "SYS_ADMIN"]),
+                "CapAdd",
+            ),
+            ("/HostConfig/CapDrop", json!([]), "CapDrop"),
+            ("/HostConfig/ReadonlyRootfs", json!(false), "ReadonlyRootfs"),
+            ("/HostConfig/SecurityOpt", json!([]), "SecurityOpt"),
+            ("/HostConfig/NetworkMode", json!("host"), "NetworkMode"),
+            ("/HostConfig/PidsLimit", json!(0), "Memory"),
+            ("/HostConfig/Privileged", json!(true), "Privileged"),
+            ("/HostConfig/PidMode", json!("host"), "PidMode"),
+            (
+                "/HostConfig/Mounts",
+                json!([{ "Type": "bind", "Source": "/", "Target": "/host" }]),
+                "Mounts",
+            ),
+        ];
+        for (pointer, value, field) in wider {
+            let mut spec = runner_spec();
+            let mut target = &mut spec;
+            for key in pointer.trim_start_matches('/').split('/') {
+                target = &mut target[key];
+            }
+            *target = value;
+            assert_eq!(runner(&spec), Err(Refused::Runner(field)), "{pointer}");
+        }
+        let mut gateway = runner_spec();
+        gateway["Image"] = json!(format!("ghcr.io/logicplanes/kaeso-gateway@{D}"));
+        assert!(matches!(runner(&gateway), Err(Refused::Image(_))));
     }
 
     #[test]

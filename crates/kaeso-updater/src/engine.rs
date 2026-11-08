@@ -11,8 +11,10 @@ use time::OffsetDateTime;
 
 use crate::clone;
 use crate::compose::{self, ComposeFile};
+use crate::compose_cli;
 use crate::docker::{Docker, Listed, PROJECT_LABEL};
-use crate::files::{MaintenanceFlag, Phase, Saved, StateFile, Switched};
+use crate::files::{Applying, MaintenanceFlag, Phase, Saved, StateFile, Switched};
+use crate::runner::{self, Place, Task};
 use crate::source::Source;
 use crate::verify::{Subject, Verify, hex};
 
@@ -22,6 +24,8 @@ const PREVIOUS_SUFFIX: &str = "-previous";
 const STEADY_POLLS: u32 = 3;
 const MAINTENANCE_TRIES: u32 = 10;
 const CLEANUP_TRIES: u32 = 3;
+const DETAIL_LINES: usize = 4;
+const NEVER_STARTED: &str = "0001-01-01";
 
 #[derive(Clone, Debug)]
 pub struct Settings {
@@ -29,11 +33,13 @@ pub struct Settings {
     pub maintenance: MaintenanceFlag,
     pub state: StateFile,
     pub hostname: String,
+    pub install_dir: Option<String>,
     pub poll: Duration,
     pub gateway_timeout: Duration,
     pub console_timeout: Duration,
     pub rollback_timeout: Duration,
     pub docker_wait: Duration,
+    pub compose_timeout: Duration,
     pub stop_seconds: u32,
 }
 
@@ -60,9 +66,26 @@ struct Target {
     new_image: Value,
 }
 
+enum Change {
+    Images,
+    Apply(Box<Manifest>),
+}
+
 struct Prepared {
     from: Version,
     targets: Vec<Target>,
+    place: Option<Place>,
+}
+
+#[derive(Debug)]
+struct Settled {
+    job: String,
+    task: String,
+    code: Option<i64>,
+}
+
+fn docker_error(e: crate::docker::DockerError) -> Failure {
+    fail(Reason::DockerUnavailable, e)
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -238,6 +261,9 @@ impl Engine {
             Ok(p) => p,
             Err(f) => return self.end(JobState::Failed, Some(f)).await,
         };
+        if let Some(place) = &prepared.place {
+            return self.apply(place, &prepared.from, &to).await;
+        }
         if let Err(e) = self.settings.maintenance.set(Step::Switching) {
             let f = fail(
                 Reason::StateUnwritable,
@@ -299,13 +325,24 @@ impl Engine {
         recovering: bool,
     ) -> Option<Failure> {
         let by_hand = format!("download the compose.yaml of {to} over the install's by hand");
-        let Some(kept) = self.settings.state.kept_compose() else {
-            return Some(fail(
+        let lost = || {
+            Some(fail(
                 Reason::ComposeUnwritable,
                 format!("{to} runs, but the updater lost its copy of compose.yaml; {by_hand}"),
-            ));
+            ))
         };
-        let prepared = compose::retag(&kept, from, to, images);
+        let Some(kept) = self.settings.state.kept_compose() else {
+            return lost();
+        };
+        let applied = self.snapshot().is_some_and(|s| s.applying.is_some());
+        let prepared = if applied {
+            match self.settings.state.next_compose() {
+                Some(next) => next,
+                None => return lost(),
+            }
+        } else {
+            compose::retag(&kept, from, to, images)
+        };
         let now = match self.settings.compose.read() {
             Ok(now) => now,
             Err(e) => {
@@ -320,7 +357,7 @@ impl Engine {
         }
         let torn =
             recovering && (now.is_empty() || prepared.starts_with(&now) || kept.starts_with(&now));
-        if compose::retag(&now, from, to, images) != prepared && !torn {
+        if (applied || compose::retag(&now, from, to, images) != prepared) && !torn {
             return Some(fail(
                 Reason::ComposeChanged,
                 format!("{to} runs, but compose.yaml changed during the update; {by_hand}"),
@@ -356,7 +393,8 @@ impl Engine {
             }
         }
         if left.is_empty() {
-            return self.end(JobState::Succeeded, warning).await;
+            self.end(JobState::Succeeded, warning).await;
+            return self.replace_rest().await;
         }
         let names = left.join(" ");
         let cleanup = format!(
@@ -458,7 +496,14 @@ impl Engine {
                 ),
             ));
         }
-        self.compose_change(&manifest, &from, to).await?;
+        let change = self.compose_change(&manifest, &from, to).await?;
+        let place = match &change {
+            Change::Images => None,
+            Change::Apply(_) => Some(
+                self.place(&project, manifest.image(Service::Updater).reference())
+                    .await?,
+            ),
+        };
         let images: Vec<Image> = PULLED.iter().map(|s| manifest.image(*s).clone()).collect();
         for image in &images {
             let index = self
@@ -497,12 +542,23 @@ impl Engine {
                 t.new_image = local.clone();
             }
         }
-        let migrates = self.migrates(&from, &manifest).await;
+        let running = match change {
+            Change::Apply(running) => Some(running),
+            Change::Images => None,
+        };
+        let migrates = self.migrates(&from, &manifest, running.as_deref()).await;
         self.update(|s| s.migrates = migrates);
-        Ok(Prepared { from, targets })
+        Ok(Prepared {
+            from,
+            targets,
+            place,
+        })
     }
 
-    async fn migrates(&self, from: &Version, to: &Manifest) -> bool {
+    async fn migrates(&self, from: &Version, to: &Manifest, known: Option<&Manifest>) -> bool {
+        if let Some(running) = known {
+            return running.migrations != to.migrations;
+        }
         match self.release(from).await {
             Ok((_, running)) => running.migrations != to.migrations,
             Err(f) => {
@@ -610,7 +666,7 @@ impl Engine {
         manifest: &Manifest,
         from: &Version,
         to: &Version,
-    ) -> Result<(), Failure> {
+    ) -> Result<Change, Failure> {
         let asset = self
             .source
             .asset(to, manifest::COMPOSE_ASSET, compose::MAX_BYTES)
@@ -628,12 +684,18 @@ impl Engine {
             .read()
             .map_err(|e| fail(Reason::ComposeUnwritable, e))?;
         let images: Vec<Image> = PULLED.iter().map(|s| manifest.image(*s).clone()).collect();
-        if compose::retag(&local, from, to, &images) != asset {
-            return Err(fail(
-                Reason::ComposeChanged,
-                "compose.yaml differs from the release's beyond the image versions",
-            ));
-        }
+        let change = if compose::retag(&local, from, to, &images) == asset {
+            Change::Images
+        } else {
+            let running = self.published(&local, from).await?;
+            self.settings.state.keep_next(&asset).map_err(|e| {
+                fail(
+                    Reason::StateUnwritable,
+                    format!("cannot keep the new compose.yaml: {e}"),
+                )
+            })?;
+            Change::Apply(Box::new(running))
+        };
         self.settings
             .compose
             .writable()
@@ -643,7 +705,40 @@ impl Engine {
                 Reason::StateUnwritable,
                 format!("cannot keep a copy of compose.yaml: {e}"),
             )
-        })
+        })?;
+        Ok(change)
+    }
+
+    // A release that changes compose.yaml replaces the whole file, so the install's must be the
+    // running release's own, as its signed manifest names it, or an edit would be lost.
+    async fn published(&self, local: &[u8], from: &Version) -> Result<Manifest, Failure> {
+        let own = "compose.yaml differs from the running release's; move your own changes to compose.override.yaml";
+        let (_, running) = self.release(from).await.map_err(|f| {
+            fail(
+                Reason::ComposeChanged,
+                format!(
+                    "the release changes compose.yaml, and the running release's can't be checked ({}); update with the installer",
+                    f.detail
+                ),
+            )
+        })?;
+        let theirs = self
+            .source
+            .asset(from, manifest::COMPOSE_ASSET, compose::MAX_BYTES)
+            .await
+            .map_err(|e| fail(Reason::ManifestUnavailable, e))?;
+        if hex(&Sha256::digest(&theirs)) != running.compose.sha256 {
+            return Err(fail(
+                Reason::ManifestInvalid,
+                "compose.yaml of the running release does not match its manifest",
+            ));
+        }
+        let pinned: Vec<Image> = PULLED.iter().map(|s| running.image(*s).clone()).collect();
+        if local == theirs.as_slice() || compose::retag(local, from, from, &pinned) == theirs {
+            Ok(running)
+        } else {
+            Err(fail(Reason::ComposeChanged, own))
+        }
     }
 
     fn set_phase(&self, name: &str, phase: Phase, new_id: Option<String>) -> Result<(), Failure> {
@@ -1017,6 +1112,443 @@ impl Engine {
         }
     }
 
+    async fn place(&self, project: &str, image: String) -> Result<Place, Failure> {
+        let unknown = |why: String| fail(Reason::InstallUnknown, why);
+        let dir = self.settings.install_dir.clone().ok_or_else(|| {
+            unknown(
+                "KAESO_DIR is not set for the updater; set it in .env to the install's folder and run `docker compose up -d --wait`".into(),
+            )
+        })?;
+        let me = self
+            .docker
+            .inspect(&self.settings.hostname)
+            .await
+            .map_err(docker_error)?;
+        let source = me
+            .get("Mounts")
+            .and_then(Value::as_array)
+            .into_iter()
+            .flatten()
+            .find(|m| {
+                m.get("Destination").and_then(Value::as_str) == Some(crate::config::COMPOSE_FILE)
+            })
+            .and_then(|m| m.get("Source").and_then(Value::as_str))
+            .map(str::to_owned)
+            .ok_or_else(|| unknown("the updater's container doesn't mount compose.yaml".into()))?;
+        if source != format!("{dir}/compose.yaml") {
+            return Err(unknown(format!(
+                "KAESO_DIR is {dir}, but the install's compose.yaml is {source}; set KAESO_DIR to its folder"
+            )));
+        }
+        let network = self.proxy_network(project, &me).await?;
+        Ok(Place {
+            image,
+            dir,
+            project: project.to_owned(),
+            network,
+        })
+    }
+
+    async fn proxy_network(&self, project: &str, me: &Value) -> Result<String, Failure> {
+        let networks = |c: &Value| -> Vec<String> {
+            c.pointer("/NetworkSettings/Networks")
+                .and_then(Value::as_object)
+                .map(|n| n.keys().cloned().collect())
+                .unwrap_or_default()
+        };
+        let mine = networks(me);
+        let proxies = self
+            .docker
+            .containers(project, "docker-proxy")
+            .await
+            .map_err(docker_error)?;
+        for proxy in proxies {
+            let shared = networks(&self.docker.inspect(&proxy.id).await.map_err(docker_error)?)
+                .into_iter()
+                .find(|n| mine.contains(n));
+            if let Some(network) = shared {
+                return Ok(network);
+            }
+        }
+        Err(fail(
+            Reason::ServicesNotFound,
+            format!("{project} has no docker-proxy on a network the updater shares"),
+        ))
+    }
+
+    async fn compose_run(&self, place: &Place, task: Task, limit: Duration) -> Result<(), Failure> {
+        let job = self.snapshot().map(|s| s.job.id).unwrap_or_default();
+        let id = self
+            .docker
+            .create_runner(&runner::spec(place, task, &job))
+            .await
+            .map_err(docker_error)?;
+        let ended = match self.docker.start(&id).await {
+            Ok(()) => self.runner_exit(&id, limit).await,
+            Err(e) => Err(e.to_string()),
+        };
+        let logs = self
+            .docker
+            .logs(&id, runner::LOG_LINES)
+            .await
+            .unwrap_or_default();
+        if let Err(e) = self.docker.remove(&id).await {
+            tracing::warn!(error = %e, "cannot remove the compose runner");
+        }
+        let reason = |code: Option<i64>| match (task, code) {
+            (Task::Pull, Some(c)) if c == i64::from(compose_cli::REFUSED) => Reason::ComposeChanged,
+            (Task::Pull, _) => Reason::PullFailed,
+            (Task::Up(_), _) => Reason::Unhealthy,
+            _ => Reason::DockerUnavailable,
+        };
+        let said = runner::last_lines(&logs, DETAIL_LINES);
+        match ended {
+            Ok(0) => Ok(()),
+            Ok(code) => Err(fail(
+                reason(Some(code)),
+                format!("`docker compose {}` failed: {said}", task.name()),
+            )),
+            Err(why) => Err(fail(
+                reason(None),
+                format!("`docker compose {}` {why}", task.name()),
+            )),
+        }
+    }
+
+    async fn runner_exit(&self, id: &str, limit: Duration) -> Result<i64, String> {
+        let deadline = tokio::time::Instant::now() + limit;
+        let polled = tokio::time::timeout_at(deadline, async {
+            loop {
+                match self.docker.inspect(id).await {
+                    Ok(c)
+                        if c.pointer("/State/Running").and_then(Value::as_bool) == Some(false) =>
+                    {
+                        return c
+                            .pointer("/State/ExitCode")
+                            .and_then(Value::as_i64)
+                            .unwrap_or(-1);
+                    }
+                    Ok(_) => {}
+                    Err(e) => tracing::debug!(error = %e, "cannot inspect the compose runner yet"),
+                }
+                tokio::time::sleep(self.settings.poll).await;
+            }
+        })
+        .await;
+        polled.map_err(|_| format!("did not finish within {} seconds", limit.as_secs()))
+    }
+
+    // A runner outlives the updater that started it: the one that replaces the updater always
+    // does, and an update's goes on through a restart, so its result decides the recovery.
+    async fn settle_runners(&self) -> Vec<Settled> {
+        let listed = match self.docker.labeled(runner::JOB_LABEL).await {
+            Ok(l) => l,
+            Err(e) => {
+                tracing::warn!(error = %e, "cannot look for compose runners");
+                return Vec::new();
+            }
+        };
+        let mut settled = Vec::new();
+        for Listed { id, .. } in listed {
+            let code = self
+                .runner_exit(&id, self.settings.compose_timeout)
+                .await
+                .ok();
+            let label = |c: &Value, key: &str| {
+                c.pointer(&format!("/Config/Labels/{key}"))
+                    .and_then(Value::as_str)
+                    .unwrap_or_default()
+                    .to_owned()
+            };
+            let (job, task) = match self.docker.inspect(&id).await {
+                Ok(c) => (label(&c, runner::JOB_LABEL), label(&c, runner::TASK_LABEL)),
+                Err(_) => (String::new(), String::new()),
+            };
+            if code != Some(0) {
+                let logs = self
+                    .docker
+                    .logs(&id, runner::LOG_LINES)
+                    .await
+                    .unwrap_or_default();
+                tracing::warn!(%task, ?code, logs = %runner::last_lines(&logs, DETAIL_LINES), "a compose runner did not succeed");
+            }
+            if let Err(e) = self.docker.remove(&id).await {
+                tracing::warn!(error = %e, "cannot remove a compose runner");
+            }
+            settled.push(Settled { job, task, code });
+        }
+        settled
+    }
+
+    async fn replace_rest(&self) {
+        let Some(saved) = self.snapshot() else {
+            return;
+        };
+        let image = saved
+            .images
+            .iter()
+            .find(|i| i.name == Service::Updater.image())
+            .map(Image::reference);
+        let (Some(project), Some(image)) = (saved.project.as_deref(), image) else {
+            return;
+        };
+        let place = match self.place(project, image).await {
+            Ok(p) => p,
+            Err(f) => {
+                return tracing::warn!(detail = %f.detail, "the updater does not replace itself");
+            }
+        };
+        let spec = runner::spec(
+            &place,
+            Task::Replace(self.settings.console_timeout),
+            &saved.job.id,
+        );
+        let started = match self.docker.create_runner(&spec).await {
+            Ok(id) => self.docker.start(&id).await,
+            Err(e) => Err(e),
+        };
+        match started {
+            Ok(()) => tracing::info!("the updater replaces itself and the rest of the release"),
+            Err(e) => tracing::warn!(error = %e, "the updater does not replace itself"),
+        }
+    }
+
+    async fn apply(&self, place: &Place, from: &Version, to: &Version) {
+        let (Some(old), Some(new)) = (
+            self.settings.state.kept_compose(),
+            self.settings.state.next_compose(),
+        ) else {
+            let f = fail(
+                Reason::StateUnwritable,
+                "the updater lost its copies of compose.yaml",
+            );
+            return self.end(JobState::Failed, Some(f)).await;
+        };
+        if let Err(f) = self.record(|s| s.applying = Some(Applying::Written)) {
+            return self.end(JobState::Failed, Some(f)).await;
+        }
+        if let Err(e) = self.settings.compose.write(&new) {
+            return self.unwrite(&old, fail(Reason::ComposeUnwritable, e)).await;
+        }
+        if let Err(f) = self
+            .compose_run(place, Task::Pull, self.settings.compose_timeout)
+            .await
+        {
+            return self.unwrite(&old, f).await;
+        }
+        if let Err(e) = self.settings.maintenance.set(Step::Switching) {
+            let f = fail(
+                Reason::StateUnwritable,
+                format!(
+                    "cannot write the maintenance flag, so Caddy would keep sending requests to the containers being replaced: {e}"
+                ),
+            );
+            return self.unwrite(&old, f).await;
+        }
+        self.step(Step::Switching);
+        if let Err(f) = self.record(|s| s.applying = Some(Applying::Stopping)) {
+            return self.apply_roll_back(place, f).await;
+        }
+        // Compose stops every gateway replica before it starts any new one, as the switch does.
+        if let Err(f) = self
+            .compose_run(place, Task::Stop, self.settings.compose_timeout)
+            .await
+        {
+            return self.apply_roll_back(place, f).await;
+        }
+        self.step(Step::Migrating);
+        if let Err(f) = self.record(|s| s.applying = Some(Applying::Starting)) {
+            return self.apply_roll_back(place, f).await;
+        }
+        let up = Task::Up(self.settings.gateway_timeout);
+        let limit = self.settings.gateway_timeout + self.settings.compose_timeout;
+        if let Err(f) = self.compose_run(place, up, limit).await {
+            return self.apply_failed(place, to, f).await;
+        }
+        self.step(Step::Online);
+        self.finish(from, to, false).await;
+    }
+
+    async fn unwrite(&self, old: &[u8], failure: Failure) {
+        match self.settings.compose.write(old) {
+            Ok(()) => self.end(JobState::Failed, Some(failure)).await,
+            Err(e) => {
+                let detail = format!(
+                    "{}; nothing was switched, but compose.yaml couldn't be put back ({e}): put compose.yaml.previous from the updater volume back before you run `docker compose up`",
+                    failure.detail
+                );
+                self.end(
+                    JobState::NeedsAttention,
+                    Some(fail(Reason::ComposeUnwritable, detail)),
+                )
+                .await;
+            }
+        }
+    }
+
+    async fn new_gateway_started(&self, saved: &Saved) -> bool {
+        let image = saved
+            .images
+            .iter()
+            .find(|i| i.name == Service::Gateway.image());
+        let (Some(project), Some(image)) = (saved.project.as_deref(), image) else {
+            return true;
+        };
+        let id = match self.docker.image(&image.reference()).await {
+            Ok(Some(doc)) => doc.get("Id").and_then(Value::as_str).map(str::to_owned),
+            _ => return true,
+        };
+        let Ok(listed) = self
+            .docker
+            .containers(project, Service::Gateway.as_str())
+            .await
+        else {
+            return true;
+        };
+        for c in listed {
+            let Ok(doc) = self.docker.inspect(&c.id).await else {
+                return true;
+            };
+            let started = doc
+                .pointer("/State/StartedAt")
+                .and_then(Value::as_str)
+                .is_some_and(|t| !t.starts_with(NEVER_STARTED));
+            if started && doc.get("Image").and_then(Value::as_str) == id.as_deref() {
+                return true;
+            }
+        }
+        false
+    }
+
+    async fn apply_failed(&self, place: &Place, to: &Version, failure: Failure) {
+        let Some(saved) = self.snapshot() else {
+            return self.end(JobState::Failed, Some(failure)).await;
+        };
+        if saved.migrates && self.new_gateway_started(&saved).await {
+            let detail = format!(
+                "{}; the new gateway may have migrated the database, so {to} stays in place: find out why with `docker compose logs gateway`, fix it and run `docker compose up -d --wait`, or restore the backup and go back to the previous release",
+                failure.detail
+            );
+            tracing::warn!("the update needs a person");
+            return self
+                .end(
+                    JobState::NeedsAttention,
+                    Some(fail(Reason::Migrated, detail)),
+                )
+                .await;
+        }
+        self.apply_roll_back(place, failure).await;
+    }
+
+    async fn apply_roll_back(&self, place: &Place, failure: Failure) {
+        self.update(|s| s.applying = Some(Applying::RollingBack));
+        let mut problems = Vec::new();
+        match self.settings.state.kept_compose() {
+            None => {
+                problems.push("the updater lost its copy of the previous compose.yaml".to_owned())
+            }
+            Some(old) => {
+                if let Err(e) = self.settings.compose.write(&old) {
+                    problems.push(e.to_string());
+                }
+            }
+        }
+        if problems.is_empty() {
+            for task in [Task::Stop, Task::Up(self.settings.rollback_timeout)] {
+                let limit = self.settings.rollback_timeout + self.settings.compose_timeout;
+                if let Err(f) = self.compose_run(place, task, limit).await {
+                    problems.push(f.detail);
+                }
+            }
+        }
+        if problems.is_empty() {
+            return self.end(JobState::RolledBack, Some(failure)).await;
+        }
+        let detail = format!(
+            "{}; rolling back failed: {}",
+            failure.detail,
+            problems.join("; ")
+        );
+        self.end(
+            JobState::RollbackFailed,
+            Some(Failure {
+                reason: failure.reason,
+                detail,
+            }),
+        )
+        .await;
+    }
+
+    async fn recover_apply(
+        &self,
+        saved: &Saved,
+        applying: Applying,
+        versions: (&Version, &Version),
+        settled: &[Settled],
+    ) {
+        let (from, to) = versions;
+        let interrupted = fail(
+            Reason::Interrupted,
+            "the updater restarted while it applied the new compose.yaml",
+        );
+        let image = saved
+            .images
+            .iter()
+            .find(|i| i.name == Service::Updater.image())
+            .map(Image::reference);
+        let place = match (saved.project.as_deref(), image) {
+            (Some(project), Some(image)) => self.place(project, image).await,
+            _ => Err(fail(
+                Reason::ServicesNotFound,
+                "the saved update names no project or updater image",
+            )),
+        };
+        let place = match place {
+            Ok(p) => p,
+            Err(f) => {
+                let detail = format!(
+                    "{}; {}: check compose.yaml and the containers, then run `docker compose up -d --wait`",
+                    interrupted.detail, f.detail
+                );
+                return self
+                    .end(JobState::NeedsAttention, Some(fail(f.reason, detail)))
+                    .await;
+            }
+        };
+        match applying {
+            Applying::Written => match self.settings.state.kept_compose() {
+                Some(old) => self.unwrite(&old, interrupted).await,
+                None => {
+                    self.apply_roll_back(&place, interrupted).await;
+                }
+            },
+            Applying::Stopping | Applying::RollingBack => {
+                self.apply_roll_back(&place, interrupted).await;
+            }
+            Applying::Starting => {
+                let came_up = settled
+                    .iter()
+                    .any(|r| r.job == saved.job.id && r.task == "up" && r.code == Some(0));
+                if came_up {
+                    self.step(Step::Online);
+                    return self.finish(from, to, true).await;
+                }
+                if !(saved.migrates && self.new_gateway_started(saved).await) {
+                    return self.apply_roll_back(&place, interrupted).await;
+                }
+                let up = Task::Up(self.settings.gateway_timeout);
+                let limit = self.settings.gateway_timeout + self.settings.compose_timeout;
+                match self.compose_run(&place, up, limit).await {
+                    Ok(()) => {
+                        self.step(Step::Online);
+                        self.finish(from, to, true).await;
+                    }
+                    Err(f) => self.apply_failed(&place, to, f).await,
+                }
+            }
+        }
+    }
+
     async fn docker_answers(&self) -> bool {
         let deadline = tokio::time::Instant::now() + self.settings.docker_wait;
         let mut last = None;
@@ -1039,12 +1571,10 @@ impl Engine {
     }
 
     pub async fn recover(&self) {
-        let Some(saved) = self.snapshot() else {
+        let Some(saved) = self.snapshot().filter(|s| s.job.state == JobState::Running) else {
+            self.settle_runners().await;
             return;
         };
-        if saved.job.state != JobState::Running {
-            return;
-        }
         tracing::warn!(
             step = saved.job.step.as_str(),
             "the updater restarted during an update"
@@ -1063,6 +1593,7 @@ impl Engine {
                 .end(state, Some(fail(Reason::DockerUnavailable, detail)))
                 .await;
         }
+        let settled = self.settle_runners().await;
         let interrupted = fail(
             Reason::Interrupted,
             "the updater restarted during the update",
@@ -1074,6 +1605,11 @@ impl Engine {
         if let (Ok(from), Ok(to)) = versions {
             if saved.job.step == Step::Online {
                 return self.finish(&from, &to, true).await;
+            }
+            if let Some(applying) = saved.applying {
+                return self
+                    .recover_apply(&saved, applying, (&from, &to), &settled)
+                    .await;
             }
             let started = self.started_gateway(&saved).await;
             if let Some(new_id) = started.as_ref().and_then(|w| w.new_id.as_deref())

@@ -43,6 +43,9 @@ pub trait Release {
     fn asks_for_steps_after(&self, _running: &Version) -> bool {
         false
     }
+    fn updater_protocol(&self) -> u32 {
+        0
+    }
     fn prerelease(&self) -> bool {
         !self.version().pre.is_empty()
     }
@@ -71,6 +74,7 @@ pub struct Plan<'a, R> {
     pub target: &'a R,
     pub newer: Vec<&'a R>,
     pub manual: Option<Manual>,
+    pub updater_protocol: u32,
 }
 
 pub fn plan<'a, R: Release>(
@@ -99,10 +103,18 @@ pub fn plan<'a, R: Release>(
     } else {
         None
     };
+    // A crossed release's protocol counts too: its compose.yaml changes stay in the target's.
+    let updater_protocol = releases
+        .iter()
+        .filter(crossed)
+        .map(Release::updater_protocol)
+        .max()
+        .unwrap_or(0);
     Some(Plan {
         target,
         newer,
         manual,
+        updater_protocol,
     })
 }
 
@@ -117,6 +129,7 @@ mod tests {
         manual: bool,
         prepared: bool,
         manual_since: Option<Version>,
+        protocol: u32,
     }
 
     impl Release for R {
@@ -132,6 +145,9 @@ mod tests {
         fn asks_for_steps_after(&self, running: &Version) -> bool {
             self.manual_since.as_ref().is_some_and(|s| s > running)
         }
+        fn updater_protocol(&self) -> u32 {
+            self.protocol
+        }
     }
 
     fn r(v: &str) -> R {
@@ -140,6 +156,7 @@ mod tests {
             manual: false,
             prepared: true,
             manual_since: None,
+            protocol: 1,
         }
     }
 
@@ -297,6 +314,23 @@ mod tests {
         let p = plan(&v("40.2.0"), Channel::Stable, &releases).unwrap();
         let newer: Vec<String> = p.newer.iter().map(|r| r.version.to_string()).collect();
         assert_eq!(newer, ["40.4.0", "40.3.0"]);
+    }
+
+    #[test]
+    fn the_plan_needs_the_newest_protocol_of_every_crossed_release() {
+        let mut middle = r("40.3.0");
+        middle.protocol = 2;
+        let mut skipped = r("40.1.0");
+        skipped.protocol = 3;
+        let releases = [skipped, r("40.2.0"), middle, r("40.4.0")];
+        let p = plan(&v("40.2.0"), Channel::Stable, &releases).unwrap();
+        assert_eq!(p.target.version, v("40.4.0"));
+        assert_eq!(
+            p.updater_protocol, 2,
+            "40.3.0's compose.yaml changes are in 40.4.0's too"
+        );
+        let p = plan(&v("40.3.0"), Channel::Stable, &releases).unwrap();
+        assert_eq!(p.updater_protocol, 1);
     }
 
     #[test]

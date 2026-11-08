@@ -44,6 +44,7 @@
     "knip": "6.44.0",
     "prettier": "3.9.10",
     "prettier-plugin-astro": "1.1.2",
-    "semver": "7.8.5"
+    "semver": "7.8.5",
+    "yaml": "2.9.1"
   }
 }

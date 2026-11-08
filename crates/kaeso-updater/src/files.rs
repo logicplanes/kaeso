@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 pub const MAINTENANCE_FILE: &str = "active";
 pub const STATE_FILE: &str = "job.json";
 pub const COMPOSE_BACKUP: &str = "compose.yaml.previous";
+pub const COMPOSE_NEXT: &str = "compose.yaml.next";
 
 fn write_atomically(dir: &Path, name: &str, bytes: &[u8]) -> std::io::Result<()> {
     let temp = dir.join(format!(".{name}.tmp"));
@@ -57,6 +58,15 @@ pub enum Phase {
     Started,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Applying {
+    Written,
+    Stopping,
+    Starting,
+    RollingBack,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Switched {
     pub service: Service,
@@ -79,6 +89,8 @@ pub struct Saved {
     pub images: Vec<Image>,
     #[serde(default = "migrates_unless_known")]
     pub migrates: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub applying: Option<Applying>,
 }
 
 fn migrates_unless_known() -> bool {
@@ -93,6 +105,7 @@ impl Saved {
             project: None,
             images: Vec::new(),
             migrates: true,
+            applying: None,
         }
     }
 }
@@ -118,6 +131,14 @@ impl StateFile {
 
     pub fn kept_compose(&self) -> Option<Vec<u8>> {
         std::fs::read(self.dir.join(COMPOSE_BACKUP)).ok()
+    }
+
+    pub fn keep_next(&self, bytes: &[u8]) -> std::io::Result<()> {
+        write_atomically(&self.dir, COMPOSE_NEXT, bytes)
+    }
+
+    pub fn next_compose(&self) -> Option<Vec<u8>> {
+        std::fs::read(self.dir.join(COMPOSE_NEXT)).ok()
     }
 
     pub fn load(&self) -> Option<Saved> {
@@ -187,12 +208,21 @@ mod tests {
                 digest: format!("sha256:{}", "a".repeat(64)),
             }],
             migrates: false,
+            applying: Some(Applying::Starting),
         };
         state.save(&saved).unwrap();
+        assert!(
+            std::fs::read_to_string(d.join(STATE_FILE))
+                .unwrap()
+                .contains("\"applying\": \"starting\"")
+        );
         assert_eq!(state.load(), Some(saved));
         assert_eq!(state.kept_compose(), None);
         state.keep_compose(b"services: {}\n").unwrap();
         assert_eq!(state.kept_compose().unwrap(), b"services: {}\n");
+        assert_eq!(state.next_compose(), None);
+        state.keep_next(b"services: { new: {} }\n").unwrap();
+        assert_eq!(state.next_compose().unwrap(), b"services: { new: {} }\n");
         let older = r#"{"job":{"id":"upd_01k7a3f8m2xq4v9c5r6t8w0yz1","from":"40.2.0","to":"40.2.1","state":"running","step":"switching","reason":null,"detail":null,"started_at":"1970-01-01T00:00:00Z","finished_at":null},"switched":[{"service":"gateway","name":"kaeso-gateway-1","old_id":"old","new_id":null}]}"#;
         std::fs::write(d.join(STATE_FILE), older).unwrap();
         let loaded = state.load().unwrap();
@@ -202,6 +232,7 @@ mod tests {
         );
         assert_eq!(loaded.switched.first().unwrap().phase, Phase::Stopping);
         assert_eq!(loaded.switched.first().unwrap().stop_seconds, None);
+        assert_eq!(loaded.applying, None);
         std::fs::write(d.join(STATE_FILE), b"{").unwrap();
         assert_eq!(state.load(), None);
         std::fs::remove_dir_all(&d).unwrap();

@@ -12,7 +12,7 @@ use kaeso_update::manifest::{Image, Service};
 use kaeso_update::protocol::{Job, JobState, Reason, Step};
 use kaeso_updater::docker::{Docker, Timeouts};
 use kaeso_updater::engine::BeginError;
-use kaeso_updater::files::{Phase, Saved, StateFile, Switched};
+use kaeso_updater::files::{Applying, Phase, Saved, StateFile, Switched};
 
 fn v(s: &str) -> Version {
     Version::parse(s).unwrap()
@@ -1156,4 +1156,379 @@ async fn recovery_stops_waiting_for_a_docker_that_hangs() {
     assert_eq!(job.state, JobState::NeedsAttention, "{job:?}");
     assert_eq!(job.reason, Some(Reason::DockerUnavailable));
     assert_eq!(world.calls("GET version").len(), 1);
+}
+
+fn changing_releases(postgres: &'static str) -> Releases {
+    let mut releases = Releases::standard();
+    releases.add_changed(
+        TO,
+        &Shape {
+            postgres,
+            ..Shape::default()
+        },
+    );
+    releases
+}
+
+async fn changing(name: &str, daemon: Daemon, postgres: &'static str) -> World {
+    World::with(
+        fresh(name),
+        daemon,
+        changing_releases(postgres),
+        Verifier::default(),
+    )
+    .await
+}
+
+fn job_of(saved: &str) -> serde_json::Value {
+    serde_json::from_str::<serde_json::Value>(saved).unwrap()["job"].clone()
+}
+
+#[tokio::test]
+async fn a_release_that_changes_compose_yaml_is_applied_by_compose_runners() {
+    let world = changing("apply", Daemon::install(), FROM_MIGRATIONS).await;
+    let job = update(&world, TO).await;
+    assert_eq!(job.state, JobState::Succeeded, "{job:?}");
+    assert_eq!(job.reason, None);
+    assert_eq!(job.step, Step::Online);
+    assert_eq!(world.compose(), changed_compose(TO));
+    world.replaced().await;
+    assert_eq!(world.ran(), ["pull", "stop", "up", "replace"]);
+    for service in ["gateway", "console"] {
+        let c = world.running(&format!("kaeso-{service}-1"));
+        assert_eq!(c.image, format!("sha256:new-{service}"));
+    }
+    assert!(!world.maintenance());
+    assert!(world.container("kaeso-gateway-1-previous").is_none());
+    let left: Vec<String> = world
+        .daemon
+        .lock()
+        .unwrap()
+        .runners()
+        .iter()
+        .filter_map(|c| c.task().map(str::to_owned))
+        .collect();
+    assert_eq!(
+        left,
+        ["replace"],
+        "every runner the update waited for is removed"
+    );
+    let saw = world.daemon.lock().unwrap().replace_saw.clone().unwrap();
+    assert_eq!(
+        job_of(&saw)["state"],
+        "succeeded",
+        "the updater replaces itself only once the end is saved"
+    );
+    let created = world.daemon.lock().unwrap().created.clone();
+    let up = created
+        .iter()
+        .find(|s| s["Labels"]["app.kaeso.updater.task"] == "up")
+        .unwrap();
+    assert_eq!(up["Cmd"], serde_json::json!(["compose", "up", "1"]));
+    assert_eq!(
+        up["Image"],
+        format!(
+            "{}@{}",
+            Service::Updater.image(),
+            digest_of(Service::Updater)
+        )
+    );
+    assert_eq!(up["User"], "0:0");
+    assert_eq!(up["WorkingDir"], INSTALL_DIR);
+    assert_eq!(up["HostConfig"]["NetworkMode"], "kaeso_docker");
+    assert_eq!(up["Labels"][RUNNER_LABEL], JOB);
+    let saved = StateFile::new(world.dir.join("state")).load().unwrap();
+    assert_eq!(saved.applying, Some(Applying::Starting));
+}
+
+#[tokio::test]
+async fn an_applied_release_whose_gateway_fails_before_migrating_is_rolled_back() {
+    let mut daemon = Daemon::install();
+    daemon
+        .new_health
+        .insert("gateway".into(), Health::Unhealthy);
+    let world = changing("apply-rollback", daemon, FROM_MIGRATIONS).await;
+    let job = update(&world, TO).await;
+    assert_eq!(job.state, JobState::RolledBack, "{job:?}");
+    assert_eq!(job.reason, Some(Reason::Unhealthy));
+    assert!(
+        job.detail
+            .as_deref()
+            .unwrap()
+            .contains("kaeso-gateway-1 is unhealthy"),
+        "{job:?}"
+    );
+    assert_eq!(world.compose(), compose_text(FROM));
+    assert_eq!(world.ran(), ["pull", "stop", "up", "stop", "up"]);
+    assert_eq!(world.running("kaeso-gateway-1").image, "sha256:old-gateway");
+    assert_eq!(world.running("kaeso-console-1").image, "sha256:old-console");
+    assert!(!world.maintenance());
+}
+
+#[tokio::test]
+async fn an_applied_release_whose_gateway_may_have_migrated_is_left_for_a_person() {
+    let mut daemon = Daemon::install();
+    daemon.new_health.insert("gateway".into(), Health::Crash);
+    let world = changing("apply-migrated", daemon, "20261101000000_next").await;
+    let job = update(&world, TO).await;
+    assert_eq!(job.state, JobState::NeedsAttention, "{job:?}");
+    assert_eq!(job.reason, Some(Reason::Migrated));
+    let detail = job.detail.unwrap();
+    assert!(detail.contains("`docker compose logs gateway`"), "{detail}");
+    assert!(detail.contains("`docker compose up -d --wait`"), "{detail}");
+    assert_eq!(
+        world.compose(),
+        changed_compose(TO),
+        "the new release stays"
+    );
+    assert_eq!(world.ran(), ["pull", "stop", "up"]);
+    assert!(!world.maintenance());
+}
+
+#[tokio::test]
+async fn a_runner_that_never_finishes_is_removed_at_its_deadline() {
+    let mut daemon = Daemon::install();
+    daemon.runners.insert("pull", Outcome::Hang);
+    let world = changing("apply-hang", daemon, FROM_MIGRATIONS).await;
+    let job = update(&world, TO).await;
+    assert_eq!(job.state, JobState::Failed, "{job:?}");
+    assert_eq!(job.reason, Some(Reason::PullFailed));
+    assert!(
+        job.detail
+            .as_deref()
+            .unwrap()
+            .contains("`docker compose pull` did not finish within"),
+        "{job:?}"
+    );
+    assert_eq!(world.compose(), compose_text(FROM));
+    assert!(world.daemon.lock().unwrap().runners().is_empty());
+    assert_eq!(world.ran(), ["pull"]);
+    assert!(!world.maintenance());
+}
+
+#[tokio::test]
+async fn an_unpinned_image_or_a_failed_pull_changes_nothing() {
+    let cases = [
+        (
+            Outcome::Exit(
+                3,
+                "the image of backup (`example/backup`) is not pinned by digest\n",
+            ),
+            Reason::ComposeChanged,
+            "is not pinned by digest",
+        ),
+        (
+            Outcome::Exit(1, "pull access denied for example/mailer\n"),
+            Reason::PullFailed,
+            "`docker compose pull` failed: pull access denied",
+        ),
+    ];
+    for (i, (outcome, reason, says)) in cases.into_iter().enumerate() {
+        let mut daemon = Daemon::install();
+        daemon.runners.insert("pull", outcome);
+        let world = changing(&format!("apply-pull-{i}"), daemon, FROM_MIGRATIONS).await;
+        let job = update(&world, TO).await;
+        assert_eq!(job.state, JobState::Failed, "{job:?}");
+        assert_eq!(job.reason, Some(reason));
+        assert!(job.detail.as_deref().unwrap().contains(says), "{job:?}");
+        assert_eq!(world.compose(), compose_text(FROM));
+        assert_eq!(world.ran(), ["pull"]);
+        assert_eq!(world.running("kaeso-gateway-1").image, "sha256:old-gateway");
+    }
+}
+
+#[tokio::test]
+async fn a_compose_file_of_its_own_is_never_replaced_by_a_release_that_changes_it() {
+    let world = changing("apply-own", Daemon::install(), FROM_MIGRATIONS).await;
+    let mut local = compose_text(FROM);
+    local.extend_from_slice(b"  extra:\n    image: example\n");
+    std::fs::write(world.dir.join("compose.yaml"), &local).unwrap();
+    let job = update(&world, TO).await;
+    assert_eq!(job.state, JobState::Failed);
+    assert_eq!(job.reason, Some(Reason::ComposeChanged));
+    assert!(job.detail.unwrap().contains("compose.override.yaml"));
+    assert_eq!(world.compose(), local);
+    assert!(world.ran().is_empty());
+    assert!(world.calls("POST images/create").is_empty());
+}
+
+#[tokio::test]
+async fn a_release_that_changes_compose_yaml_needs_the_install_folder() {
+    let world = changing("apply-folder", Daemon::install(), FROM_MIGRATIONS).await;
+    world
+        .daemon
+        .lock()
+        .unwrap()
+        .containers
+        .iter_mut()
+        .find(|c| c.name == "kaeso-updater-1")
+        .unwrap()
+        .mounts = serde_json::json!([{ "Source": "/opt/kaeso/compose.yaml", "Destination": "/kaeso/compose.yaml" }]);
+    let job = update(&world, TO).await;
+    assert_eq!(job.reason, Some(Reason::InstallUnknown), "{job:?}");
+    assert!(job.detail.unwrap().contains("/opt/kaeso/compose.yaml"));
+
+    let dir = fresh("apply-no-folder");
+    let mut settings = settings(&dir);
+    settings.install_dir = None;
+    let world = World::configured(
+        dir,
+        Daemon::install(),
+        changing_releases(FROM_MIGRATIONS),
+        Verifier::default(),
+        settings,
+    )
+    .await;
+    let job = update(&world, TO).await;
+    assert_eq!(job.state, JobState::Failed);
+    assert_eq!(job.reason, Some(Reason::InstallUnknown));
+    assert!(job.detail.unwrap().contains("KAESO_DIR is not set"));
+    assert!(world.ran().is_empty());
+    assert_eq!(world.compose(), compose_text(FROM));
+}
+
+#[tokio::test]
+async fn an_image_only_update_replaces_the_updater_once_its_end_is_saved() {
+    let world = World::new("replace", Daemon::install(), Verifier::default()).await;
+    let job = update(&world, TO).await;
+    assert_eq!(job.state, JobState::Succeeded, "{job:?}");
+    world.replaced().await;
+    assert_eq!(world.ran(), ["replace"]);
+    let saw = world.daemon.lock().unwrap().replace_saw.clone().unwrap();
+    assert_eq!(job_of(&saw)["state"], "succeeded");
+    let created = world.daemon.lock().unwrap().created.clone();
+    let replace = created.last().unwrap();
+    assert_eq!(
+        replace["Cmd"],
+        serde_json::json!(["compose", "replace", "1"])
+    );
+}
+
+#[tokio::test]
+async fn an_update_that_fails_never_replaces_the_updater() {
+    let mut daemon = Daemon::install();
+    daemon
+        .new_health
+        .insert("gateway".into(), Health::Unhealthy);
+    let world = World::new("no-replace", daemon, Verifier::default()).await;
+    let job = update(&world, TO).await;
+    assert_eq!(job.state, JobState::RolledBack, "{job:?}");
+    assert!(world.ran().is_empty());
+}
+
+fn applying(dir: &Path, step: Step, phase: Applying, migrates: bool) {
+    let state = StateFile::new(dir.join("state"));
+    state.keep_compose(&compose_text(FROM)).unwrap();
+    state.keep_next(&changed_compose(TO)).unwrap();
+    let mut saved = interrupted(step, Vec::new());
+    saved.images = release_images();
+    saved.applying = Some(phase);
+    saved.migrates = migrates;
+    state.save(&saved).unwrap();
+}
+
+async fn recovered(dir: PathBuf, daemon: Daemon) -> (World, Job) {
+    let world = World::with(dir, daemon, Releases::default(), Verifier::default()).await;
+    world.engine.recover().await;
+    let job = world.engine.last().unwrap();
+    (world, job)
+}
+
+#[tokio::test]
+async fn an_apply_interrupted_before_anything_stopped_puts_compose_yaml_back() {
+    let dir = fresh("apply-written");
+    std::fs::write(dir.join("compose.yaml"), changed_compose(TO)).unwrap();
+    applying(&dir, Step::Downloading, Applying::Written, false);
+    let (world, job) = recovered(dir, Daemon::install()).await;
+    assert_eq!(job.state, JobState::Failed, "{job:?}");
+    assert_eq!(job.reason, Some(Reason::Interrupted));
+    assert_eq!(world.compose(), compose_text(FROM));
+    assert!(world.ran().is_empty());
+}
+
+#[tokio::test]
+async fn an_apply_interrupted_while_stopping_or_rolling_back_rolls_back() {
+    for phase in [Applying::Stopping, Applying::RollingBack] {
+        let dir = fresh(&format!("apply-{phase:?}"));
+        std::fs::write(dir.join("compose.yaml"), changed_compose(TO)).unwrap();
+        applying(&dir, Step::Switching, phase, false);
+        let (world, job) = recovered(dir, Daemon::install()).await;
+        assert_eq!(job.state, JobState::RolledBack, "{phase:?}: {job:?}");
+        assert_eq!(world.compose(), compose_text(FROM));
+        assert_eq!(world.ran(), ["stop", "up"]);
+        assert_eq!(world.running("kaeso-gateway-1").image, "sha256:old-gateway");
+    }
+}
+
+#[tokio::test]
+async fn an_apply_whose_runner_finished_during_the_restart_is_finished() {
+    let dir = fresh("apply-came-up");
+    std::fs::write(dir.join("compose.yaml"), changed_compose(TO)).unwrap();
+    applying(&dir, Step::Migrating, Applying::Starting, true);
+    let mut daemon = Daemon::install();
+    daemon.containers.push(runner(JOB, "up", Some(0)));
+    let (world, job) = recovered(dir, daemon).await;
+    assert_eq!(job.state, JobState::Succeeded, "{job:?}");
+    assert_eq!(world.compose(), changed_compose(TO));
+    assert_eq!(world.ran(), ["replace"]);
+    let left = world.daemon.lock().unwrap().runners();
+    assert_eq!(left.len(), 1, "only the replacing runner is left");
+    assert_eq!(left[0].task(), Some("replace"));
+}
+
+#[tokio::test]
+async fn an_apply_interrupted_after_the_new_gateway_started_goes_forward() {
+    let dir = fresh("apply-forward");
+    std::fs::write(dir.join("compose.yaml"), changed_compose(TO)).unwrap();
+    applying(&dir, Step::Migrating, Applying::Starting, true);
+    let mut daemon = Daemon::install();
+    daemon.add_pulled_image(Service::Gateway);
+    daemon.containers.push(runner(JOB, "up", Some(1)));
+    let gateway = daemon
+        .containers
+        .iter_mut()
+        .find(|c| c.name == "kaeso-gateway-1")
+        .unwrap();
+    gateway.image = "sha256:new-gateway".into();
+    let (world, job) = recovered(dir, daemon).await;
+    assert_eq!(job.state, JobState::Succeeded, "{job:?}");
+    assert_eq!(world.ran(), ["up", "replace"]);
+    assert_eq!(world.running("kaeso-gateway-1").image, "sha256:new-gateway");
+}
+
+#[tokio::test]
+async fn an_apply_interrupted_before_the_new_gateway_started_rolls_back() {
+    let dir = fresh("apply-back");
+    std::fs::write(dir.join("compose.yaml"), changed_compose(TO)).unwrap();
+    applying(&dir, Step::Migrating, Applying::Starting, true);
+    let mut daemon = Daemon::install();
+    daemon.add_pulled_image(Service::Gateway);
+    let (world, job) = recovered(dir, daemon).await;
+    assert_eq!(job.state, JobState::RolledBack, "{job:?}");
+    assert_eq!(job.reason, Some(Reason::Interrupted));
+    assert_eq!(world.ran(), ["stop", "up"]);
+    assert_eq!(world.compose(), compose_text(FROM));
+}
+
+#[tokio::test]
+async fn leftover_runners_are_removed_at_start_once_they_end() {
+    let mut daemon = Daemon::install();
+    daemon.containers.push(runner("upd_older", "up", Some(1)));
+    daemon.containers.push(runner(JOB, "replace", Some(0)));
+    let dir = fresh("leftovers");
+    let world = World::with(dir, daemon, Releases::default(), Verifier::default()).await;
+    world.engine.recover().await;
+    assert!(world.daemon.lock().unwrap().runners().is_empty());
+    assert_eq!(world.calls("DELETE containers/runner").len(), 2);
+    assert_eq!(world.engine.last(), None);
+}
+
+#[tokio::test]
+async fn a_leftover_runner_that_keeps_running_is_removed_after_the_compose_timeout() {
+    let mut daemon = Daemon::install();
+    daemon.containers.push(runner(JOB, "replace", None));
+    let dir = fresh("leftover-running");
+    let world = World::with(dir, daemon, Releases::default(), Verifier::default()).await;
+    world.engine.recover().await;
+    assert!(world.daemon.lock().unwrap().runners().is_empty());
 }

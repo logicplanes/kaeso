@@ -261,7 +261,7 @@ pub struct UpdateJobView {
     #[doc = "The step it is on or ended on: `verifying`, `downloading`, `switching`, `migrating` or `online`."]
     #[schema(example = "verifying")]
     pub step: String,
-    #[doc = "Why it did not succeed, or what is left to do after it did, as a code: `manifest_unavailable`, `manifest_invalid`, `manual_steps`, `major`, `not_newer`, `updater_outdated`, `compose_changed`, `compose_unwritable`, `services_not_found`, `pull_failed`, `unverified`, `docker_unavailable`, `unhealthy`, `interrupted`, `updater_unreachable`, `updater_refused`, `state_unwritable` or `migrated` (the new gateway didn't start and may have migrated the database)."]
+    #[doc = "Why it did not succeed, or what is left to do after it did, as a code: `manifest_unavailable`, `manifest_invalid`, `manual_steps`, `major`, `not_newer`, `updater_outdated`, `compose_changed`, `compose_unwritable`, `services_not_found`, `pull_failed`, `unverified`, `docker_unavailable`, `unhealthy`, `interrupted`, `updater_unreachable`, `updater_refused`, `state_unwritable`, `migrated` (the new gateway didn't start and may have migrated the database) or `install_unknown` (the updater doesn't know the install's folder, `KAESO_DIR`)."]
     pub reason: Option<String>,
     #[doc = "The updater's account of what went wrong, in English."]
     pub detail: Option<String>,
@@ -350,11 +350,7 @@ async fn overview(state: &AppState) -> ApiResult<UpdatesView> {
     let settings = updates::settings(&state.pg).await?;
     let releases = service::known(updates::releases(&state.pg).await?);
     let plan = service::plan(&settings, &releases);
-    let required = plan
-        .as_ref()
-        .and_then(|p| p.target.manifest.as_ref())
-        .map(|m| m.updater_protocol);
-    let probe = service::probe(state, required).await;
+    let probe = service::probe(state, plan.as_ref().map(|p| p.updater_protocol)).await;
     let job = match updates::running_job(&state.pg).await? {
         Some(running_job) => Some(service::reconcile(state, running_job).await?),
         None => updates::latest_job(&state.pg).await?,
@@ -560,7 +556,7 @@ pub struct ApplyUpdate {
     post,
     path = "/instance/updates/apply",
     summary = "Updates the install to the newest offered release through the updater, with a recent sign-in; the console and the APIs are unavailable for about a minute.",
-    description = "The updater checks the release's signed provenance, downloads the images, switches the console and then the gateway, and waits for the gateway's migrations and health. When the new version fails it goes back to the previous one, unless the new gateway may already have migrated the database: then it leaves the new gateway in place and ends `needs_attention`. Poll `instance/updates/jobs/{update}` for the progress; when the updater doesn't confirm the start, the update stays `running` until the updater reports on it.",
+    description = "The updater checks the release's signed provenance, downloads the images, switches the console and then the gateway, or applies the release's compose.yaml with Docker Compose when it changes, and waits for the gateway's migrations and health. Once the update has succeeded, the updater replaces itself. When the new version fails it goes back to the previous one, unless the new gateway may already have migrated the database: then it leaves the new gateway in place and ends `needs_attention`. Poll `instance/updates/jobs/{update}` for the progress; when the updater doesn't confirm the start, the update stays `running` until the updater reports on it.",
     tag = "instance",
     request_body = ApplyUpdate,
     responses((status = 202, body = UpdateJobView))
@@ -591,13 +587,8 @@ pub async fn apply(
             "This release needs steps by hand; follow the upgrade guide.".into(),
         ));
     }
-    let required = plan
-        .target
-        .manifest
-        .as_ref()
-        .map_or(0, |m| m.updater_protocol);
     let status = client.status().await.map_err(updater_unavailable)?;
-    if !updater::speaks(&status, required) {
+    if !updater::speaks(&status, plan.updater_protocol) {
         return Err(ApiError::Conflict(
             "The updater is too old for this release; update it by hand first.".into(),
         ));

@@ -57,7 +57,7 @@ function manifest(version) {
     manual: !!r?.manual,
     manual_since: r?.manual ? version : null,
     migrations: { postgres: "20261017140001_updates", clickhouse: "0002_usage_rollups" },
-    updater_protocol: 1,
+    updater_protocol: 2,
     images: { gateway: image("gateway"), console: image("console"), updater: image("updater") },
     compose: { name: "compose.yaml", sha256: sha(`compose ${version}`) },
   };
@@ -116,7 +116,7 @@ createServer(async (req, res) => {
     if (scenario.updater === "down") return send(res, 503, { error: "unavailable" });
     if (req.headers.authorization !== `Bearer ${TOKEN}`) return send(res, 401, { error: "the updater token is missing or wrong" });
     const rest = path.slice("/updater".length);
-    if (rest === "/v1/status") return send(res, 200, { version: RUNNING, protocol: 1, docker: true, job: null });
+    if (rest === "/v1/status") return send(res, 200, { version: RUNNING, protocol: 2, docker: true, job: null });
     if (rest === "/v1/updates" && req.method === "POST") {
       const body = await read(req);
       const entry = { id: body.id, version: body.version, polls: 0, started: new Date().toISOString() };
