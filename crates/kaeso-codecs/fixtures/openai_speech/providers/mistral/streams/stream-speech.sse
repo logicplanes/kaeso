@@ -1,0 +1,9 @@
+event: speech.audio.delta
+data: {"type": "speech.audio.delta", "audio_data": "SUQzBAAAAAAAI1RTU0UAAAAP"}
+
+event: speech.audio.delta
+data: {"type": "speech.audio.delta", "audio_data": "AAADTGF2ZjYwLjMuMTAw"}
+
+event: speech.audio.done
+data: {"type": "speech.audio.done", "usage": {"prompt_tokens": 14, "completion_tokens": 120, "total_tokens": 134, "prompt_audio_seconds": 0}}
+

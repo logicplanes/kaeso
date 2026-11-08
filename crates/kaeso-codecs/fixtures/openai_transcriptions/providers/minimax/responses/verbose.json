@@ -1,0 +1,22 @@
+{
+  "text": "Hello everyone. Let me check the question.",
+  "duration": 12.744,
+  "n_speakers": 2,
+  "segments": [
+    {
+      "id": 0,
+      "start": 0.1,
+      "end": 1.66,
+      "speaker": "S1",
+      "text": "Hello everyone."
+    },
+    {
+      "id": 1,
+      "start": 2.0,
+      "end": 6.1,
+      "speaker": "S2",
+      "text": "Let me check the question."
+    }
+  ],
+  "trace_id": "021785229015510a2c883cf675b9804d"
+}

@@ -187,48 +187,6 @@ impl ImageInput {
     }
 }
 
-macro_rules! wire_enum {
-    ($(#[$doc:meta])* $name:ident { $($variant:ident = $wire:literal),* $(,)? }) => {
-        $(#[$doc])*
-        #[derive(Clone, Debug, PartialEq, Eq, Hash)]
-        #[non_exhaustive]
-        pub enum $name {
-            $($variant,)*
-            /// A value KPP doesn't name, as written.
-            Other(String),
-        }
-
-        impl $name {
-            pub fn from_wire(s: &str) -> Self {
-                match s {
-                    $($wire => $name::$variant,)*
-                    other => $name::Other(other.to_owned()),
-                }
-            }
-
-            pub fn as_wire(&self) -> &str {
-                match self {
-                    $($name::$variant => $wire,)*
-                    $name::Other(s) => s,
-                }
-            }
-        }
-
-        impl Serialize for $name {
-            fn serialize<S: serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
-                s.serialize_str(self.as_wire())
-            }
-        }
-
-        impl<'de> Deserialize<'de> for $name {
-            fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
-                let s = String::deserialize(d)?;
-                Ok($name::from_wire(&s))
-            }
-        }
-    };
-}
-
 wire_enum!(
     /// An image size: `auto`, or `WIDTHxHEIGHT` in pixels.
     ImageSize { Auto = "auto" }

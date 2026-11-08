@@ -20,6 +20,9 @@ pub struct GeminiProfile {
     /// compression), as the Agent Platform's `GoogleCloudAiplatformV1ImageConfig` does and
     /// AI Studio's `ImageConfig` doesn't.
     pub image_output_options: bool,
+    /// Whether `generationConfig.responseFormat` is a list of formats, as the Agent Platform's
+    /// `GoogleCloudAiplatformV1GenerationConfig` has it, rather than AI Studio's one object.
+    pub response_format_list: bool,
 }
 
 impl GeminiProfile {
@@ -28,6 +31,7 @@ impl GeminiProfile {
         models_path: Cow::Borrowed("/v1beta/models"),
         role_on_every_content: false,
         image_output_options: false,
+        response_format_list: false,
     };
 
     /// Gemini Enterprise Agent Platform with an express mode API key,
@@ -39,6 +43,7 @@ impl GeminiProfile {
         models_path: Cow::Borrowed("/v1/publishers/google/models"),
         role_on_every_content: true,
         image_output_options: true,
+        response_format_list: true,
     };
 
     /// The profile with another models path, such as

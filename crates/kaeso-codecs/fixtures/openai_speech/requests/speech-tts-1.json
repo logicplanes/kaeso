@@ -1,0 +1,6 @@
+{
+  "model": "tts-1-hd",
+  "input": "Hello there.",
+  "voice": "nova",
+  "response_format": "opus"
+}

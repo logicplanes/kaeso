@@ -1,0 +1,22 @@
+{
+  "data": {
+    "audio": "49443304000000000023",
+    "status": 2
+  },
+  "extra_info": {
+    "audio_length": 11124,
+    "audio_sample_rate": 32000,
+    "audio_size": 179926,
+    "bitrate": 128000,
+    "word_count": 163,
+    "invisible_character_ratio": 0,
+    "usage_characters": 163,
+    "audio_format": "mp3",
+    "audio_channel": 1
+  },
+  "trace_id": "01b8bf9bb7433cc75c18eee6cfa8fe21",
+  "base_resp": {
+    "status_code": 0,
+    "status_msg": "success"
+  }
+}

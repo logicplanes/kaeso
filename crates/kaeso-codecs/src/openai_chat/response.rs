@@ -499,6 +499,11 @@ fn usage_from_wire(wire: &UsageWire) -> Usage {
     usage.cache_read_tokens = cached;
     usage.cache_write_tokens = written;
     usage.reasoning_tokens = reasoning;
+    usage.input_audio_tokens = details.and_then(|d| d.audio_tokens);
+    usage.output_audio_tokens = wire
+        .completion_tokens_details
+        .as_ref()
+        .and_then(|d| d.audio_tokens);
     usage
 }
 
@@ -517,6 +522,7 @@ pub(crate) fn encode_usage(usage: &Usage) -> Value {
     let mut details = PromptTokensDetails {
         cached_tokens: Some(usage.cache_read_tokens),
         cache_write_tokens: None,
+        audio_tokens: usage.input_audio_tokens,
     };
     if usage.cache_write_tokens > 0 {
         details.cache_write_tokens = Some(usage.cache_write_tokens);
@@ -526,8 +532,11 @@ pub(crate) fn encode_usage(usage: &Usage) -> Value {
         completion_tokens: usage.output_tokens,
         total_tokens: prompt.saturating_add(usage.output_tokens),
         prompt_tokens_details: Some(details),
-        completion_tokens_details: usage.reasoning_tokens.map(|r| CompletionTokensDetails {
-            reasoning_tokens: Some(r),
+        completion_tokens_details: (usage.reasoning_tokens.is_some()
+            || usage.output_audio_tokens.is_some())
+        .then_some(CompletionTokensDetails {
+            reasoning_tokens: usage.reasoning_tokens,
+            audio_tokens: usage.output_audio_tokens,
         }),
     };
     let typed = serde_json::to_value(&wire).unwrap_or(Value::Null);

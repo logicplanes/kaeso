@@ -242,6 +242,11 @@ expression: outcomes
     "param": "generationConfig.responseModalities",
     "unsupported": "audio output"
   },
+  "speech-mp3": {
+    "message": "`audio output` is not supported by Anthropic Messages. Anthropic Messages replies hold text only; send the request to a model of a format that writes it.",
+    "param": "generationConfig.responseModalities",
+    "unsupported": "audio output"
+  },
   "stream-speech": {
     "message": "`audio output` is not supported by Anthropic Messages. Anthropic Messages replies hold text only; send the request to a model of a format that writes it.",
     "param": "generationConfig.responseModalities",
@@ -770,6 +775,11 @@ expression: outcomes
       ]
     },
     "path": "/v1/messages"
+  },
+  "transcribe-diarized": {
+    "message": "`generationConfig.audioTranscriptionConfig` comes from a Gemini API request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "generationConfig.audioTranscriptionConfig"
   },
   "unknown-parts": {
     "message": "`cachedContent` comes from a Gemini API request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",

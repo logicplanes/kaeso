@@ -85,6 +85,9 @@ sequenceDiagram
 | `gemini_embeddings` | Gemini 嵌入（`{models}/{model}:embedContent`、`:batchEmbedContents`） |
 | `openai_images` | OpenAI Images（`/v1/images/generations`、`/v1/images/edits`、`/v1/images/variations`）以及使用其某种形式的服务商（[OpenAI Images](openai-images.md)） |
 | `minimax_images` | MiniMax 图片生成（`/v1/image_generation`） |
+| `openai_speech` | OpenAI 语音（`/v1/audio/speech`）以及使用其某种形式的服务商（[OpenAI Speech](openai-speech.md)） |
+| `openai_transcriptions` | OpenAI 转写和翻译以及使用其某种形式的服务商（[OpenAI Transcriptions](openai-transcriptions.md)） |
+| `minimax_speech` | MiniMax 文本转语音（`/v1/t2a_v2`） |
 | `multipart` | 图片上传使用的有上限的 `multipart/form-data` 读取器和写入器 |
 
 | 共享模块 | 职责 |

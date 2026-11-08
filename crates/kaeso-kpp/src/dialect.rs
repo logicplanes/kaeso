@@ -22,10 +22,16 @@ pub enum DialectId {
     OpenAiImages,
     #[serde(rename = "minimax_images")]
     MinimaxImages,
+    #[serde(rename = "openai_speech")]
+    OpenAiSpeech,
+    #[serde(rename = "openai_transcriptions")]
+    OpenAiTranscriptions,
+    #[serde(rename = "minimax_speech")]
+    MinimaxSpeech,
 }
 
 impl DialectId {
-    pub const ALL: [DialectId; 8] = [
+    pub const ALL: [DialectId; 11] = [
         DialectId::AnthropicMessages,
         DialectId::OpenAiChat,
         DialectId::OpenAiResponses,
@@ -34,6 +40,9 @@ impl DialectId {
         DialectId::GeminiEmbeddings,
         DialectId::OpenAiImages,
         DialectId::MinimaxImages,
+        DialectId::OpenAiSpeech,
+        DialectId::OpenAiTranscriptions,
+        DialectId::MinimaxSpeech,
     ];
 
     pub const fn as_str(self) -> &'static str {
@@ -46,6 +55,9 @@ impl DialectId {
             DialectId::GeminiEmbeddings => "gemini_embeddings",
             DialectId::OpenAiImages => "openai_images",
             DialectId::MinimaxImages => "minimax_images",
+            DialectId::OpenAiSpeech => "openai_speech",
+            DialectId::OpenAiTranscriptions => "openai_transcriptions",
+            DialectId::MinimaxSpeech => "minimax_speech",
         }
     }
 
@@ -59,6 +71,9 @@ impl DialectId {
             DialectId::GeminiEmbeddings => "Gemini Embeddings",
             DialectId::OpenAiImages => "OpenAI Images",
             DialectId::MinimaxImages => "MiniMax Images",
+            DialectId::OpenAiSpeech => "OpenAI Speech",
+            DialectId::OpenAiTranscriptions => "OpenAI Transcriptions",
+            DialectId::MinimaxSpeech => "MiniMax Speech",
         }
     }
 }

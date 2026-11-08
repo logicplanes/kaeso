@@ -1,0 +1,30 @@
+{
+  "task": "transcribe",
+  "language": "English",
+  "duration": 50.16,
+  "text": " document that the functional specification that you started to read through that isn't just the",
+  "segments": [
+    {
+      "id": 8,
+      "seek": 3000,
+      "start": 43.92,
+      "end": 50.16,
+      "text": " document that the functional specification that you started to read through that isn't just the",
+      "tokens": [
+        51061,
+        4166,
+        300,
+        264,
+        11745,
+        31256
+      ],
+      "temperature": 0,
+      "avg_logprob": -0.097569615,
+      "compression_ratio": 1.6637554,
+      "no_speech_prob": 0.012814695
+    }
+  ],
+  "x_groq": {
+    "id": "req_unique_id"
+  }
+}

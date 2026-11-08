@@ -1,0 +1,9 @@
+{
+  "model": "gpt-4o-mini-tts",
+  "input": "Today is a wonderful day to build something people love!",
+  "instructions": "Speak in a cheerful and positive tone.",
+  "voice": "coral",
+  "response_format": "wav",
+  "speed": 1.25,
+  "stream_format": "audio"
+}

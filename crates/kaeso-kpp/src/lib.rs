@@ -1,6 +1,49 @@
 #![forbid(unsafe_code)]
 #![doc = include_str!("../README.md")]
 
+macro_rules! wire_enum {
+    ($(#[$doc:meta])* $name:ident { $($variant:ident = $wire:literal),* $(,)? }) => {
+        $(#[$doc])*
+        #[derive(Clone, Debug, PartialEq, Eq, Hash)]
+        #[non_exhaustive]
+        pub enum $name {
+            $($variant,)*
+            /// A value KPP doesn't name, as written.
+            Other(String),
+        }
+
+        impl $name {
+            pub fn from_wire(s: &str) -> Self {
+                match s {
+                    $($wire => $name::$variant,)*
+                    other => $name::Other(other.to_owned()),
+                }
+            }
+
+            pub fn as_wire(&self) -> &str {
+                match self {
+                    $($name::$variant => $wire,)*
+                    $name::Other(s) => s,
+                }
+            }
+        }
+
+        impl Serialize for $name {
+            fn serialize<S: serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+                s.serialize_str(self.as_wire())
+            }
+        }
+
+        impl<'de> Deserialize<'de> for $name {
+            fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+                let s = String::deserialize(d)?;
+                Ok($name::from_wire(&s))
+            }
+        }
+    };
+}
+
+mod audio;
 mod block;
 mod dialect;
 mod error;
@@ -13,6 +56,11 @@ mod response;
 mod stream;
 mod validate;
 
+pub use audio::{
+    AudioInput, DialogueLine, SpeechAlignment, SpeechEvent, SpeechOperation, SpeechRequest,
+    SpeechResponse, TimestampGranularity, TranscriptEvent, TranscriptFormat, TranscriptSegment,
+    TranscriptWord, TranscriptionOperation, TranscriptionRequest, TranscriptionResponse, Voice,
+};
 pub use block::{
     AudioBlock, Base64Source, Block, CacheHint, CacheTtl, Citation, DocumentBlock, FileIdSource,
     ImageBlock, Opaque, OpaqueKind, RawItem, ReasoningBlock, RefusalBlock, Source, TextBlock,

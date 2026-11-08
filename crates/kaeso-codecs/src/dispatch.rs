@@ -8,10 +8,13 @@ use crate::gemini::{Gemini, GeminiAction};
 use crate::gemini_embeddings::GeminiEmbeddings;
 use crate::limits::Checked;
 use crate::minimax_images::MinimaxImages;
+use crate::minimax_speech::MinimaxSpeech;
 use crate::openai_chat::OpenAiChat;
 use crate::openai_embeddings::OpenAiEmbeddings;
 use crate::openai_images::OpenAiImages;
 use crate::openai_responses::OpenAiResponses;
+use crate::openai_speech::OpenAiSpeech;
+use crate::openai_transcriptions::OpenAiTranscriptions;
 use crate::{
     Codec, EgressCtx, EncodeCtx, EncodedError, EncodedRequest, HeaderList, StreamDecoder,
     StreamEncoder,
@@ -28,6 +31,9 @@ macro_rules! dispatch {
             DialectId::GeminiEmbeddings => Ok(GeminiEmbeddings::$f($($arg),*)),
             DialectId::OpenAiImages => Ok(OpenAiImages::$f($($arg),*)),
             DialectId::MinimaxImages => Ok(MinimaxImages::$f($($arg),*)),
+            DialectId::OpenAiSpeech => Ok(OpenAiSpeech::$f($($arg),*)),
+            DialectId::OpenAiTranscriptions => Ok(OpenAiTranscriptions::$f($($arg),*)),
+            DialectId::MinimaxSpeech => Ok(MinimaxSpeech::$f($($arg),*)),
             other => Err(no_codec(other)),
         }
     };
@@ -66,6 +72,13 @@ pub fn decode_checked_request<B: AsRef<[u8]>>(
         DialectId::OpenAiEmbeddings => OpenAiEmbeddings::decode_checked(kind, body, headers),
         DialectId::OpenAiImages => OpenAiImages::decode_checked(kind, body, headers),
         DialectId::MinimaxImages => MinimaxImages::decode_request(kind, body, headers),
+        DialectId::OpenAiSpeech => OpenAiSpeech::decode_checked(kind, body, headers),
+        DialectId::MinimaxSpeech => MinimaxSpeech::decode_request(kind, body, headers),
+        DialectId::OpenAiTranscriptions => OpenAiTranscriptions::decode_call(
+            kaeso_kpp::TranscriptionOperation::Transcribe,
+            body,
+            headers,
+        ),
         other @ (DialectId::Gemini | DialectId::GeminiEmbeddings) => Err(gemini_needs_path(other)),
         other => Err(no_codec(other)),
     }
@@ -140,6 +153,45 @@ pub fn decode_checked_image_request<B: AsRef<[u8]>>(
     headers: &HeaderList,
 ) -> Result<Request, KppError> {
     OpenAiImages::decode_call(operation, checked.body().as_ref(), headers)
+}
+
+/// Decodes an OpenAI transcription API upload for `operation`, as the path names it:
+/// `/v1/audio/transcriptions` or `/v1/audio/translations`. `headers` must carry the request's
+/// `content-type` with its boundary.
+pub fn decode_transcription_request(
+    operation: kaeso_kpp::TranscriptionOperation,
+    body: &[u8],
+    headers: &HeaderList,
+) -> Result<Request, KppError> {
+    crate::limits::request_shape(DialectId::OpenAiTranscriptions, body)?;
+    OpenAiTranscriptions::decode_call(operation, body, headers)
+}
+
+/// Decodes a transcription upload [`Checked::new`] already checked, without counting it again.
+pub fn decode_checked_transcription_request<B: AsRef<[u8]>>(
+    operation: kaeso_kpp::TranscriptionOperation,
+    checked: &Checked<B>,
+    headers: &HeaderList,
+) -> Result<Request, KppError> {
+    OpenAiTranscriptions::decode_call(operation, checked.body().as_ref(), headers)
+}
+
+/// The `content-type` of a reply [`encode_response`] wrote for `dialect`.
+pub fn response_media_type(dialect: DialectId, reply: &Reply, ctx: &EncodeCtx) -> String {
+    dispatch!(dialect, response_media_type(reply, ctx))
+        .unwrap_or_else(|_| crate::codec::JSON_MEDIA_TYPE.to_owned())
+}
+
+/// The `content-type` of a stream the [`stream_encoder`] of `dialect` writes.
+pub fn stream_media_type(dialect: DialectId, ctx: &EncodeCtx) -> String {
+    dispatch!(dialect, stream_media_type(ctx))
+        .unwrap_or_else(|_| crate::codec::EVENT_STREAM_MEDIA_TYPE.to_owned())
+}
+
+/// Whether the provider's reply to a request encoded with `ctx` is read as it arrives, with
+/// [`stream_decoder`], rather than whole with [`decode_response`].
+pub fn reads_reply_as_stream(dialect: DialectId, ctx: &EgressCtx) -> bool {
+    dispatch!(dialect, reads_reply_as_stream(ctx)).unwrap_or(false)
 }
 
 pub fn encode_response(

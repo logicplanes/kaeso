@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 
+use crate::audio::{SpeechRequest, TranscriptionRequest};
 use crate::block::{Block, CacheHint, RawItem};
 use crate::extras::Extras;
 use crate::image::ImageRequest;
@@ -13,6 +14,8 @@ pub enum Request {
     CountTokens(GenerateRequest),
     Embed(EmbedRequest),
     Image(ImageRequest),
+    Speech(SpeechRequest),
+    Transcription(TranscriptionRequest),
 }
 
 impl Request {
@@ -22,6 +25,8 @@ impl Request {
             Request::CountTokens(_) => RequestKind::CountTokens,
             Request::Embed(_) => RequestKind::Embed,
             Request::Image(_) => RequestKind::Image,
+            Request::Speech(_) => RequestKind::Speech,
+            Request::Transcription(_) => RequestKind::Transcription,
         }
     }
 
@@ -30,6 +35,8 @@ impl Request {
             Request::Generate(r) | Request::CountTokens(r) => &r.model,
             Request::Embed(r) => &r.model,
             Request::Image(r) => &r.model,
+            Request::Speech(r) => &r.model,
+            Request::Transcription(r) => &r.model,
         }
     }
 
@@ -37,6 +44,8 @@ impl Request {
         match self {
             Request::Generate(r) => r.stream,
             Request::Image(r) => r.stream,
+            Request::Speech(r) => r.stream,
+            Request::Transcription(r) => r.stream,
             Request::CountTokens(_) | Request::Embed(_) => StreamMode::Off,
         }
     }
@@ -50,6 +59,8 @@ pub enum RequestKind {
     CountTokens,
     Embed,
     Image,
+    Speech,
+    Transcription,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]

@@ -223,6 +223,11 @@ expression: outcomes
     "param": "generationConfig.responseModalities",
     "unsupported": "audio output"
   },
+  "speech-mp3": {
+    "message": "`audio output` is not supported by OpenAI Responses. OpenAI Responses replies hold text only; send the request to a model of a format that writes it.",
+    "param": "generationConfig.responseModalities",
+    "unsupported": "audio output"
+  },
   "stream-speech": {
     "message": "`audio output` is not supported by OpenAI Responses. OpenAI Responses replies hold text only; send the request to a model of a format that writes it.",
     "param": "generationConfig.responseModalities",
@@ -711,6 +716,11 @@ expression: outcomes
       ]
     },
     "path": "/v1/responses"
+  },
+  "transcribe-diarized": {
+    "message": "`audio block` is not supported by OpenAI Responses. Its input has no audio content part; send a transcript of the audio as text, or route the request to a Chat Completions or Gemini model.",
+    "param": "messages[0].blocks[0]",
+    "unsupported": "audio block"
   },
   "unknown-parts": {
     "message": "`audio block` is not supported by OpenAI Responses. Its input has no audio content part; send a transcript of the audio as text, or route the request to a Chat Completions or Gemini model.",

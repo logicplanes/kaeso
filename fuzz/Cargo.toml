@@ -84,3 +84,24 @@ path = "fuzz_targets/mcp.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "decode_openai_speech"
+path = "fuzz_targets/decode_openai_speech.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "decode_openai_transcriptions"
+path = "fuzz_targets/decode_openai_transcriptions.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "decode_minimax_speech"
+path = "fuzz_targets/decode_minimax_speech.rs"
+test = false
+doc = false
+bench = false

@@ -1,0 +1,6 @@
+data: {"type":"transcript.text.segment","id":"seg_001","start":0.0,"end":4.7,"text":"Thanks for calling OpenAI support.","speaker":"agent"}
+
+data: {"type":"transcript.text.delta","delta":"Thanks for calling OpenAI support.","segment_id":"seg_001"}
+
+data: {"type":"transcript.text.done","text":"Thanks for calling OpenAI support.","usage":{"type":"tokens","input_tokens":40,"input_token_details":{"text_tokens":0,"audio_tokens":40},"output_tokens":9,"total_tokens":49}}
+

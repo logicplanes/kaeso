@@ -1,0 +1,20 @@
+{
+  "text": "The balance is $167,983.15.",
+  "language": "en",
+  "duration": 8.4,
+  "words": [
+    {
+      "text": "The",
+      "start": 0,
+      "end": 0.24,
+      "confidence": 0.33
+    },
+    {
+      "text": "balance",
+      "start": 0.24,
+      "end": 0.64,
+      "confidence": 0.67,
+      "speaker": 0
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+data: {"id":"20261108170000abcd","created":1794157200,"model":"glm-asr-2512","type":"transcript.text.delta","delta":"Hello"}
+
+data: {"id":"20261108170000abcd","created":1794157200,"model":"glm-asr-2512","type":"transcript.text.delta","delta":" there."}
+
+data: {"id":"20261108170000abcd","created":1794157200,"model":"glm-asr-2512","type":"transcript.text.done","delta":""}
+
+data: [DONE]
+

@@ -1,0 +1,12 @@
+event: transcription.language
+data: {"type":"transcription.language","audio_language":"en"}
+
+event: transcription.text.delta
+data: {"type":"transcription.text.delta","text":"Thanks"}
+
+event: transcription.text.delta
+data: {"type":"transcription.text.delta","text":" for calling."}
+
+event: transcription.done
+data: {"model":"voxtral-mini-transcribe-3","text":"Thanks for calling.","language":null,"segments":[],"usage":{"prompt_audio_seconds":2,"prompt_tokens":3,"total_tokens":60,"completion_tokens":5},"finish_reason":null,"type":"transcription.done"}
+

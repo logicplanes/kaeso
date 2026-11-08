@@ -1,0 +1,9 @@
+{
+  "model": "gpt-4o-mini-tts",
+  "input": "Hello there.",
+  "voice": {
+    "id": "voice_1234"
+  },
+  "response_format": "pcm",
+  "speed": 1
+}

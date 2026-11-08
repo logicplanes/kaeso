@@ -189,6 +189,8 @@ fn is_openai(origin: Option<&Origin>) -> bool {
                 | DialectId::OpenAiResponses
                 | DialectId::OpenAiEmbeddings
                 | DialectId::OpenAiImages
+                | DialectId::OpenAiSpeech
+                | DialectId::OpenAiTranscriptions
         )
     })
 }

@@ -1,0 +1,31 @@
+{
+  "text": "Hey, my knee is hurting.",
+  "logprobs": [
+    {
+      "token": "Hey",
+      "logprob": -1.0415299,
+      "bytes": [
+        72,
+        101,
+        121
+      ]
+    },
+    {
+      "token": ",",
+      "logprob": -9.805982e-05,
+      "bytes": [
+        44
+      ]
+    }
+  ],
+  "usage": {
+    "type": "tokens",
+    "input_tokens": 14,
+    "input_token_details": {
+      "text_tokens": 0,
+      "audio_tokens": 14
+    },
+    "output_tokens": 45,
+    "total_tokens": 59
+  }
+}

@@ -23,3 +23,5 @@ Written by `cargo xtask record`. Provenance: live API of Google AI Studio (`goog
 | `recorded-audio-input.json` | `gemini/requests/audio-input.json` | `gemini-3.5-flash-lite` | 2026-11-08 10:10 |
 | `recorded-video-input.json` | `gemini/requests/video-input.json` | `gemini-3.5-flash-lite` | 2026-11-08 10:10 |
 | `recorded-speech.json` | `gemini/requests/speech.json` | `gemini-3.8-flash-lite-tts` | 2026-11-08 10:10 |
+| `recorded-speech-mp3.json` | `gemini/requests/speech-mp3.json` | `gemini-3.8-flash-lite-tts` | 2026-11-08 17:51 |
+| `recorded-transcribe-diarized.json` | `gemini/requests/transcribe-diarized.json` | `gemini-3.5-transcribe` | 2026-11-08 17:52 |

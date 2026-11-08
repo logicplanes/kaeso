@@ -610,9 +610,13 @@ impl<B: AsRef<[u8]>> Checked<B> {
 /// like the dialect's request, is counted as far as it can be read, and decoding it then
 /// reports what is wrong.
 pub fn request_shape(dialect: DialectId, body: &[u8]) -> Result<RequestShape, KppError> {
-    // An image edit may be a `multipart/form-data` upload, whose bytes are no JSON to walk;
-    // its parts are counted and bounded by the multipart reader instead.
-    if dialect == DialectId::OpenAiImages && !looks_like_json(body) {
+    // An image edit or a transcription is a `multipart/form-data` upload, whose bytes are no
+    // JSON to walk; its parts are counted and bounded by the multipart reader instead.
+    let uploads = matches!(
+        dialect,
+        DialectId::OpenAiImages | DialectId::OpenAiTranscriptions
+    );
+    if uploads && !looks_like_json(body) {
         return Ok(RequestShape {
             bytes: body.len(),
             ..RequestShape::default()

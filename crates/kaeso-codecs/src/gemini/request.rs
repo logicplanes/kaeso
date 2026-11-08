@@ -786,7 +786,8 @@ fn encode_generate(
     w.contents = encode_contents(r, ctx, target)?;
     w.tools = encode_tools(r)?;
     w.tool_config = encode_tool_config(r, own)?;
-    w.generation_config = encode_generation(r, own, &present)?;
+    w.generation_config =
+        encode_generation(r, own, ctx.gemini_profile.response_format_list, &present)?;
     let (extra, verbatim) = if with_extras {
         (top_extras(r), verbatim_from_form(&r.extras, D, ""))
     } else {
@@ -1122,6 +1123,7 @@ fn encode_thinking(r: &GenerateRequest, c: &ReasoningConfig) -> Option<Ext<Think
 fn encode_generation(
     r: &GenerateRequest,
     own: bool,
+    format_list: bool,
     present: &dyn Fn(&str) -> bool,
 ) -> Result<Option<Ext<GenerationConfigW>>, KppError> {
     let s = &r.sampling;
@@ -1172,7 +1174,14 @@ fn encode_generation(
     let speech = super::speech::encode(r, own)?;
     g.response_modalities = speech.modalities;
     g.speech_config = speech.speech;
-    g.response_format = speech.format;
+    g.response_format = match speech.format {
+        Some(one) if format_list && !own => {
+            Some(serde_json::value::to_raw_value(&[one]).map_err(|e| {
+                KppError::provider(format!("Kaeso could not write `responseFormat` ({e})."))
+            })?)
+        }
+        other => other,
+    };
     let empty = g.temperature.is_none()
         && g.top_p.is_none()
         && g.top_k.is_none()

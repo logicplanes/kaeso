@@ -119,6 +119,8 @@ pub(crate) fn decode_usage(raw: &Raw, origin: &Origin) -> Result<Usage, KppError
     u.input_image_tokens = modality_tokens(&value, "promptTokensDetails", "IMAGE");
     u.cache_read_image_tokens = modality_tokens(&value, "cacheTokensDetails", "IMAGE");
     u.output_image_tokens = modality_tokens(&value, "candidatesTokensDetails", "IMAGE");
+    u.input_audio_tokens = modality_tokens(&value, "promptTokensDetails", "AUDIO");
+    u.output_audio_tokens = modality_tokens(&value, "candidatesTokensDetails", "AUDIO");
     u.raw = Some(RawUsage::new(origin.clone(), value));
     Ok(u)
 }

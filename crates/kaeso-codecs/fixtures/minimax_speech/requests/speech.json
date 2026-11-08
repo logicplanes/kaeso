@@ -1,0 +1,30 @@
+{
+  "model": "speech-2.8-hd",
+  "text": "Omg(sighs), the real danger is not that computers start thinking like people, but that people start thinking like computers. Computers can only help us with simple tasks.",
+  "stream": false,
+  "language_boost": "auto",
+  "output_format": "hex",
+  "voice_setting": {
+    "voice_id": "English_expressive_narrator",
+    "speed": 1.0,
+    "vol": 1.0,
+    "pitch": 0
+  },
+  "pronunciation_dict": {
+    "tone": [
+      "Omg/Oh my god"
+    ]
+  },
+  "audio_setting": {
+    "sample_rate": 32000,
+    "bitrate": 128000,
+    "format": "mp3",
+    "channel": 1
+  },
+  "voice_modify": {
+    "pitch": 0,
+    "intensity": 0,
+    "timbre": 0,
+    "sound_effects": "spacious_echo"
+  }
+}

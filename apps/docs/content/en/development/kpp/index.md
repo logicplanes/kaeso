@@ -85,6 +85,9 @@ Both crates are published to crates.io. Their library code may depend only on `s
 | `gemini_embeddings` | Gemini embeddings (`{models}/{model}:embedContent`, `:batchEmbedContents`) |
 | `openai_images` | OpenAI Images (`/v1/images/generations`, `/v1/images/edits`, `/v1/images/variations`) and the providers that speak a form of it ([OpenAI Images](openai-images.md)) |
 | `minimax_images` | MiniMax image generation (`/v1/image_generation`) |
+| `openai_speech` | OpenAI speech (`/v1/audio/speech`) and the providers that speak a form of it ([OpenAI Speech](openai-speech.md)) |
+| `openai_transcriptions` | OpenAI transcriptions and translations and the providers that speak a form of them ([OpenAI Transcriptions](openai-transcriptions.md)) |
+| `minimax_speech` | MiniMax text to speech (`/v1/t2a_v2`) |
 | `multipart` | The bounded `multipart/form-data` reader and writer of image uploads |
 
 | Shared module | Job |

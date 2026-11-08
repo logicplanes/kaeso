@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+use crate::audio::{SpeechResponse, TranscriptionResponse};
 use crate::block::Block;
 use crate::dialect::Origin;
 use crate::extras::Extras;
@@ -15,6 +16,8 @@ pub enum Reply {
     CountTokens(CountTokensResponse),
     Embed(EmbedResponse),
     Image(ImageResponse),
+    Speech(SpeechResponse),
+    Transcription(TranscriptionResponse),
 }
 
 impl Reply {
@@ -24,6 +27,8 @@ impl Reply {
             Reply::CountTokens(_) => RequestKind::CountTokens,
             Reply::Embed(_) => RequestKind::Embed,
             Reply::Image(_) => RequestKind::Image,
+            Reply::Speech(_) => RequestKind::Speech,
+            Reply::Transcription(_) => RequestKind::Transcription,
         }
     }
 }
@@ -88,6 +93,12 @@ pub struct Usage {
     /// The image tokens among `output_tokens`.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub output_image_tokens: Option<u64>,
+    /// The audio tokens among `input_tokens`, for providers that count them apart.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub input_audio_tokens: Option<u64>,
+    /// The audio tokens among `output_tokens`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub output_audio_tokens: Option<u64>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub raw: Option<RawUsage>,
 }
