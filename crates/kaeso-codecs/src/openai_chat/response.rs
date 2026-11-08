@@ -1,7 +1,7 @@
 use indexmap::IndexMap;
 use kaeso_kpp::{
-    Block, Citation, Extras, KppError, Origin, RawItem, RawJson, RawUsage, ReasoningBlock, Reply,
-    RequestKind, Response, StopReason, TextBlock, Usage,
+    AudioBlock, Block, Citation, Extras, KppError, Origin, RawItem, RawJson, RawUsage,
+    ReasoningBlock, Reply, RequestKind, Response, Source, StopReason, TextBlock, Usage,
 };
 use serde_json::Value;
 
@@ -93,6 +93,7 @@ pub(crate) fn decode_response(body: &[u8], ctx: &EgressCtx) -> Result<Reply, Kpp
         ..
     } = choice.message;
     let reasoning = take_reasoning_field(ctx.chat_profile.reply.reasoning_fields, &mut m_extra);
+    let audio = take_audio(&mut m_extra, ctx, &origin);
     let thinking = ctx.chat_profile.reply.reasoning == ReplyReasoning::ThinkingParts;
     if thinking
         && let Some(StringOr::List(parts)) = &message.content
@@ -173,6 +174,9 @@ pub(crate) fn decode_response(body: &[u8], ctx: &EgressCtx) -> Result<Reply, Kpp
         }
         None => {}
     }
+    if let Some(audio) = audio {
+        blocks.push(Block::Audio(audio));
+    }
     if let Some(refusal) = message.refusal {
         let mut block = kaeso_kpp::RefusalBlock::new(refusal);
         block.extras = Extras::new(origin.clone());
@@ -200,6 +204,90 @@ pub(crate) fn decode_response(body: &[u8], ctx: &EgressCtx) -> Result<Reply, Kpp
     }
     response.extras = extras;
     Ok(Reply::Generate(response))
+}
+
+const AUDIO: &str = "audio";
+const NO_MEDIA_TYPE: &str = "application/octet-stream";
+
+// `message.audio` (`ChatCompletionResponseMessage.audio`) carries no format; the request named
+// it, so the media type comes from there.
+fn take_audio(
+    extra: &mut IndexMap<String, RawJson>,
+    ctx: &EgressCtx,
+    origin: &Origin,
+) -> Option<AudioBlock> {
+    let raw = extra.get(AUDIO)?;
+    let mut fields: IndexMap<String, RawJson> = raw.parse().ok()?;
+    let data = fields.shift_remove("data")?.parse::<String>().ok()?;
+    let transcript = match fields.get("transcript").map(|t| t.parse::<String>()) {
+        Some(Ok(t)) => {
+            fields.shift_remove("transcript");
+            Some(t)
+        }
+        Some(Err(_)) => return None,
+        None => None,
+    };
+    extra.shift_remove(AUDIO);
+    let media_type = ctx
+        .audio_format
+        .as_ref()
+        .and_then(kaeso_kpp::AudioFormat::media_type)
+        .unwrap_or(NO_MEDIA_TYPE);
+    let mut block = AudioBlock::new(Source::base64(media_type, data));
+    block.transcript = transcript;
+    block.extras = Extras::new(origin.clone());
+    block.extras.fields = fields;
+    Some(block)
+}
+
+// Chat holds one audio per reply; Gemini's 16-bit PCM pieces join into it, other audio after
+// the first is left out.
+fn reply_audio(resp: &Response, created: u64) -> Result<Option<RawJson>, KppError> {
+    let audio: Vec<&AudioBlock> = resp
+        .blocks
+        .iter()
+        .filter_map(|b| match b {
+            Block::Audio(a) => Some(a),
+            _ => None,
+        })
+        .collect();
+    let Some(first) = audio.first() else {
+        return Ok(None);
+    };
+    let Source::Base64(source) = &first.source else {
+        return Ok(None);
+    };
+    let pieces: Vec<&str> = audio
+        .iter()
+        .take_while(
+            |a| matches!(&a.source, Source::Base64(s) if crate::media::is_pcm16(&s.media_type)),
+        )
+        .filter_map(|a| match &a.source {
+            Source::Base64(s) => Some(s.data.as_str()),
+            _ => None,
+        })
+        .collect();
+    let data = if pieces.len() > 1 {
+        crate::media::join_base64(pieces).unwrap_or_else(|| source.data.clone())
+    } else {
+        source.data.clone()
+    };
+    let transcript: String = audio
+        .iter()
+        .filter_map(|a| a.transcript.as_deref())
+        .collect();
+    let mut out: IndexMap<String, RawJson> = IndexMap::new();
+    if let Some(fields) = first.extras.fields_for(DIALECT) {
+        out.extend(fields.clone());
+    } else {
+        out.insert("id".to_owned(), to_raw(&format!("audio_{}", resp.id))?);
+        out.insert("expires_at".to_owned(), to_raw(&created)?);
+    }
+    out.insert("data".to_owned(), to_raw(&data)?);
+    if first.transcript.is_some() || !first.extras.is_from(DIALECT) {
+        out.insert("transcript".to_owned(), to_raw(&transcript)?);
+    }
+    Ok(Some(to_raw(&out)?))
 }
 
 pub(crate) fn encode_response(reply: &Reply, ctx: &EncodeCtx) -> Result<Vec<u8>, KppError> {
@@ -277,6 +365,9 @@ pub(crate) fn encode_response(reply: &Reply, ctx: &EncodeCtx) -> Result<Vec<u8>,
         annotations: citations,
     };
     let mut message = ext_nested(message, &resp.extras, MESSAGE);
+    if let Some(audio) = reply_audio(resp, ctx.created_at.unwrap_or(0))? {
+        message.extra.insert(AUDIO.to_owned(), audio);
+    }
     for (field, text) in reasoning {
         let text = to_raw(&text)?;
         message.extra.entry(field).or_insert(text);

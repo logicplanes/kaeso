@@ -1,6 +1,6 @@
 use kaeso_kpp::{
-    Block, DocumentBlock, GenerateRequest, ImageBlock, KppError, Origin, ReasoningEffort,
-    ReasoningMode, Request, Role, Source,
+    AudioFormat, Block, DocumentBlock, GenerateRequest, ImageBlock, KppError, Modality, Origin,
+    ReasoningEffort, ReasoningMode, Request, Role, Source,
 };
 
 use super::DIALECT;
@@ -36,7 +36,68 @@ fn unsupported(feature: &str, hint: &str, param: impl Into<String>) -> KppError 
     KppError::unsupported_by(feature, DIALECT, hint).with_param(param)
 }
 
+// Chat Completions writes text and audio (`ResponseModalities`), with a built-in voice and one
+// of six formats (`CreateChatCompletionRequest.audio`).
+fn check_output(r: &GenerateRequest) -> Result<(), KppError> {
+    if r.extras.is_from(DIALECT) {
+        return Ok(());
+    }
+    let modalities = app_field(r, Setting::Modalities, DIALECT);
+    for m in &r.output_modalities {
+        match m {
+            Modality::Text | Modality::Audio => {}
+            Modality::Image => {
+                return Err(unsupported(
+                    "image output",
+                    "It returns text and audio only; ask a Gemini image model from a Gemini app.",
+                    modalities,
+                ));
+            }
+            other => {
+                return Err(unsupported(
+                    &format!("output modality `{}`", other.as_wire()),
+                    "It returns text and audio only.",
+                    modalities,
+                ));
+            }
+        }
+    }
+    if !r.output_modalities.contains(&Modality::Audio) {
+        if r.audio_output.is_some() {
+            return Err(unsupported(
+                "audio output settings without audio output",
+                "Its audio settings go with audio replies only; ask for audio or remove them.",
+                app_field(r, Setting::Voice, DIALECT),
+            ));
+        }
+        return Ok(());
+    }
+    let voice_param = app_field(r, Setting::Voice, DIALECT);
+    let audio = r.audio_output.as_ref();
+    match audio.and_then(|a| a.voice.as_deref()) {
+        None => Err(unsupported(
+            "audio output without a voice",
+            "It needs a voice for audio replies; name one of OpenAI's voices, such as `marin`.",
+            voice_param,
+        )),
+        Some(v) if !crate::media::has_voice(crate::media::OPENAI_VOICES, v) => Err(unsupported(
+            &format!("voice `{v}`"),
+            "Its voices are alloy, ash, ballad, coral, echo, fable, nova, onyx, sage, shimmer, verse, marin and cedar.",
+            voice_param,
+        )),
+        Some(_) => match audio.and_then(|a| a.format.as_ref()) {
+            Some(AudioFormat::Other(f)) => Err(unsupported(
+                &format!("audio format `{f}`"),
+                "Its audio formats are wav, mp3, flac, opus, aac and pcm16.",
+                app_field(r, Setting::AudioFormat, DIALECT),
+            )),
+            _ => Ok(()),
+        },
+    }
+}
+
 fn check_generate(r: &GenerateRequest, profile: &ChatProfile) -> Result<(), KppError> {
+    check_output(r)?;
     if r.sampling.top_k.is_some() {
         return Err(unsupported(
             "top_k",
@@ -164,6 +225,16 @@ fn check_block(
                 return Err(misplaced("document", place, path));
             }
             check_document(doc, path)
+        }
+        Block::Audio(audio) if place == Place::Assistant => {
+            if matches!(audio.source, Source::FileId(_)) || audio.transcript.is_some() {
+                return Ok(());
+            }
+            Err(unsupported(
+                "audio in assistant messages",
+                "It replays an earlier audio reply only by OpenAI's audio id; send the reply's transcript as text instead.",
+                path,
+            ))
         }
         Block::Audio(audio) => {
             if place != Place::User {

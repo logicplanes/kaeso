@@ -99,6 +99,22 @@ const CHANGED_TURNS: &[(&str, DialectId, &str)] = &[
     ),
 ];
 
+// A reply that doesn't label its audio, as Chat Completions' `message.audio`, takes its media type
+// from the request it answers, as in the gateway.
+fn reply_ctx(dialect: DialectId, name: &str, mode: StreamMode) -> EgressCtx {
+    let mut ctx = EgressCtx::for_kind(RequestKind::Generate, mode);
+    let request = name.strip_prefix("recorded-").unwrap_or(name);
+    if let Some((_, body)) = fixtures(dialect, "requests", "json")
+        .into_iter()
+        .find(|(n, _)| n == request)
+        && let Ok(Request::Generate(g)) =
+            dispatch::decode_request(dialect, RequestKind::Generate, &body, &HeaderList::new())
+    {
+        ctx.audio_format = g.audio_output.and_then(|a| a.format);
+    }
+    ctx
+}
+
 fn fixtures_dir(dialect: DialectId) -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("fixtures")
@@ -455,7 +471,7 @@ fn responses_cross_every_dialect() {
         for b in GENERATION.into_iter().filter(|b| *b != a) {
             let mut outcomes = BTreeMap::new();
             for (name, body) in &bodies {
-                let ctx = EgressCtx::for_kind(RequestKind::Generate, StreamMode::Off);
+                let ctx = reply_ctx(a, name, StreamMode::Off);
                 let reply = match dispatch::decode_response(a, 200, &HeaderList::new(), body, &ctx)
                 {
                     Ok(r) => r,
@@ -497,7 +513,7 @@ fn streams_cross_every_dialect() {
             let mut outcomes = BTreeMap::new();
             for (name, bytes) in &streams {
                 let mode = StreamMode::on(true);
-                let ctx = EgressCtx::for_kind(RequestKind::Generate, mode);
+                let ctx = reply_ctx(a, name, mode);
                 let mut dec = dispatch::stream_decoder(a, &ctx).unwrap();
                 let mut events = dec.feed(bytes);
                 events.extend(dec.finish());

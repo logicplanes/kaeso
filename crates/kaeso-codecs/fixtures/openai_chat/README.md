@@ -20,7 +20,7 @@ The layout and the provenance marks (`doc:`, `sdk:`, `schema:`) are in [Fixtures
 
 These have no KPP equivalent. They are kept within the dialect as Extras and `Unknown` items, round-trip, and are `Unsupported` across dialects.
 
-- `requests/tools-custom-grammar.json` and `requests/audio-output.json`.
+- `requests/tools-custom-grammar.json`.
 - `requests/legacy-functions.json`: deprecated function calling over several turns (top-level `functions` and `function_call`, an assistant `function_call`, a `function` role message). Legacy calls have no call ids, so they are no KPP tool calls: the assistant `function_call` is an extra of its message and the `function` message an `Unknown` block.
 
 ## Known gaps and judgement calls

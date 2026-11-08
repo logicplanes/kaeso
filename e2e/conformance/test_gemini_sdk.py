@@ -124,3 +124,16 @@ def test_audio_and_video_parts_reach_kpp(base_url):
     got = empty_view()
     collect(parts_of(response), got)
     assert got["text"] == want["text"]
+
+
+def test_speech_reaches_a_gemini_app_from_a_chat_audio_reply(base_url):
+    c = client(base_url)
+    config = types.GenerateContentConfig(
+        response_modalities=["AUDIO"],
+        speech_config=types.SpeechConfig(
+            voice_config=types.VoiceConfig(prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name="alloy"))
+        ),
+    )
+    response = c.models.generate_content(model="openai_chat:audio-output", contents="Say hello.", config=config)
+    parts = parts_of(response)
+    assert parts[0].inline_data.data.startswith(b"RIFF")

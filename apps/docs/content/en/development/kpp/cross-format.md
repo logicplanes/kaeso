@@ -16,6 +16,7 @@ An app may speak one API format while the provider speaks another. These are the
 | Opaque reasoning | Replayed only to the dialect and provider that issued it | Wrapped in a reasoning blob |
 | Cache hints | Dropped where the target caches by itself | — |
 | Audio and video | Sent where the target's format and provider take them, otherwise `Unsupported` ([audio and video](#audio-and-video)) | Left out where the app's format can't carry them |
+| Audio and image output | Asked for where the target writes it, otherwise `Unsupported` ([audio and image replies](#audio-and-image-replies)) | Audio for Chat and Gemini apps, images for Gemini apps; left out elsewhere |
 | Sampling settings the target lacks | `Unsupported` | — |
 | Stop reasons the app's format lacks | — | The closest one it has |
 | Thinking off for a model that always reasons | The model's lowest effort level, named in `kaeso-adapted` ([models that always reason](reasoning.md#models-that-always-reason)) | — |
@@ -286,6 +287,23 @@ A tool call's arguments are a JSON object in every format. Chat Completions and 
 A provider file id works only with the provider that issued it ([files](#files)). Gemini's `videoMetadata` (clip and frame rate) and `mediaResolution` stay extras of their part: only Gemini has them, and clipping changes what the model sees, so other formats refuse them. No transcoding happens: a media type the target has no name for, such as `audio/webm` for Chat Completions, is `Unsupported`.
 
 The gateway also refuses audio and video for a model whose catalogue entry doesn't list `audio` or `video` among its inputs, as it does for images and PDFs: `` The model `gpt-4o` does not accept audio. ``
+
+## Audio and image replies
+
+`GenerateRequest::output_modalities` names what the reply should hold (`Text`, `Image`, `Audio`), and `audio_output` the voice and format of audio. An audio reply is a `Block::Audio` with base64 data, its media type and, where the format has one, a `transcript`; streams carry it as `BlockStart(Audio)` and `Audio` deltas of data and transcript text.
+
+| App's format | Asks for | Gets |
+| --- | --- | --- |
+| Chat Completions | `modalities: ["text", "audio"]` with `audio.voice` and `audio.format` | `message.audio` and `delta.audio`, from OpenAI or from a Gemini speech model |
+| Gemini | `responseModalities: ["AUDIO"]` or `["IMAGE"]` with `speechConfig` and `responseFormat` | `inlineData` audio and images, from Gemini or from an OpenAI audio model |
+| Anthropic Messages, Responses | nothing: their formats have no setting for it | text only; audio and images a provider sends unasked are left out |
+
+- **Voices** belong to their provider. A voice crosses only when the target lists it: OpenAI's built-in voices for Chat Completions, Gemini's 30 prebuilt voices for Gemini; anything else is `Unsupported` with the voice in `param`.
+- **Formats** are never transcoded. `wav`, `mp3` and `pcm16` cross between Chat Completions and Gemini (`AUDIO_WAV`, `AUDIO_MP3`, `AUDIO_L16` at 24 kHz); `flac`, `opus` and `aac` reach only OpenAI. Without a format, a Chat Completions target gets `wav`, or `pcm16` for a stream.
+- **Chat's text.** In `["text", "audio"]` the text is the audio's transcript, so Gemini gets `["AUDIO"]`, which its speech models need.
+- **Replay.** OpenAI keeps an audio reply for a while and takes it back as `audio: {id}`. That id works only there, like a file id; another target refuses it unless the audio block carries a transcript, which Chat Completions then sends as text.
+- **Images.** Gemini image models return images as parts. Only Gemini apps get them: Chat Completions and Messages have no image in a reply, and a Responses `image_generation_call` belongs to OpenAI's image tool, so a Gemini image would read as a tool call the app never made. Asking those formats for image output is `Unsupported`.
+- **Catalogue.** The gateway refuses audio output for a model whose catalogue outputs lack `audio`, and image output without `image`: `` The model `gemini-3.5-flash` does not produce audio. `` A speech model that writes no text takes Chat's `["text", "audio"]`.
 
 ## Media in tool results
 

@@ -141,6 +141,7 @@ Was `encode_request` für eine KPP-Anfrage schreibt, die nicht aus Anthropic Mes
 | base64-Bilder außer JPEG, PNG, GIF oder WebP; Bildquellen aus Text | `Unsupported` | `Base64ImageSource`. |
 | base64-Dokumente außer `application/pdf`; Textdokumente außer `text/plain` | `Unsupported` | `Base64PDFSource`, `PlainTextSource`. |
 | `Block::Audio`; `Block::Video`, wenn das Profil keine `video_media_types` hat | `Unsupported` (`audio block`, `video block`) | Die Content-Union kennt beides nicht; die Meldung bittet um ein Transkript oder um Einzelbilder. |
+| `output_modalities` außer Text; `audio_output` | `Unsupported` (`audio output`, `image output`, `audio output settings`) | Antworten enthalten nur Text ([Audio- und Bildantworten](cross-format.md#audio--und-bildantworten)). |
 | Argumente eines Tool-Aufrufs aus einem anderen Dialekt, die kein Objekt sind | ein Objekt: Text als `{"input": text}`, andere Werte als `{"input": value}`, `null` als `{}`; in `kaeso-adapted` genannt | Sonst lehnt Anthropic die ganze Anfrage ab ([Argumente von Tool-Aufrufen](cross-format.md#argumente-von-tool-aufrufen)). |
 | `tool_use.input` einer Anthropic-App, das kein Objekt ist; Tool-Parameter, die kein Objekt sind | `Unsupported` | `input` und `input_schema` sind Objekte. |
 | `Request::CountTokens` aus einem anderen Dialekt | `/v1/messages/count_tokens` ohne `max_tokens`, Sampling, `metadata` und `stream` | Sie ändern die Zahl der Eingabe-Token nicht, und der Endpunkt lehnt sie ab. Die eigene Zählanfrage einer Anthropic-App wird so gesendet, wie sie ankam. |

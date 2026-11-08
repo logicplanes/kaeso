@@ -97,8 +97,11 @@ fn audio_only_assistant_turn_round_trips() {
         ]
     }));
     let Request::Generate(r) = req else { panic!() };
-    assert!(r.messages[1].blocks.is_empty());
-    assert!(r.messages[1].extras.fields.contains_key("audio"));
+    let [Block::Audio(audio)] = r.messages[1].blocks.as_slice() else {
+        panic!("{:?}", r.messages[1])
+    };
+    assert!(matches!(&audio.source, Source::FileId(f) if f.id == "audio_abc123"));
+    assert!(!r.messages[1].extras.fields.contains_key("audio"));
 }
 
 fn stream_fixture(name: &str) -> Vec<u8> {

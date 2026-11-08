@@ -169,6 +169,35 @@ pub(crate) struct GenerationConfigW {
     pub(crate) response_json_schema: Option<Raw>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) thinking_config: Option<Ext<ThinkingConfigW>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) response_modalities: Option<Vec<String>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) speech_config: Option<Ext<SpeechConfigW>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) response_format: Option<Raw>,
+}
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct SpeechConfigW {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) voice_config: Option<Ext<VoiceConfigW>>,
+}
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct VoiceConfigW {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) prebuilt_voice_config: Option<Ext<PrebuiltVoiceW>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) voice: Option<String>,
+}
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct PrebuiltVoiceW {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) voice_name: Option<String>,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]

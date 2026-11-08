@@ -22,3 +22,4 @@ Written by `cargo xtask record`. Provenance: live API of Google AI Studio (`goog
 | `recorded-tool-result-signature.json` | `gemini/requests/tool-result-signature.json` | `gemini-3.5-flash` | 2026-11-08 03:00 |
 | `recorded-audio-input.json` | `gemini/requests/audio-input.json` | `gemini-3.5-flash-lite` | 2026-11-08 10:10 |
 | `recorded-video-input.json` | `gemini/requests/video-input.json` | `gemini-3.5-flash-lite` | 2026-11-08 10:10 |
+| `recorded-speech.json` | `gemini/requests/speech.json` | `gemini-3.8-flash-lite-tts` | 2026-11-08 10:10 |

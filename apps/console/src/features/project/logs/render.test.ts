@@ -510,6 +510,26 @@ describe("requestView, every part", () => {
 });
 
 describe("requestView, audio and video", () => {
+  it("names the output modalities and audio settings of Chat and Gemini requests", () => {
+    const chat = requestView("openai_chat", {
+      messages: [{ role: "user", content: "Say hi." }],
+      modalities: ["text", "audio"],
+      audio: { voice: "marin", format: "wav" },
+    });
+    expect(chat?.params).toEqual([
+      { label: "Output modalities", value: "text, audio" },
+      { label: "Audio output", value: "voice: marin, format: wav" },
+    ]);
+    const gemini = requestView("gemini", {
+      contents: [{ parts: [{ text: "Say hi." }] }],
+      generationConfig: { responseModalities: ["AUDIO"], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } } } },
+    });
+    expect(gemini?.params).toEqual([
+      { label: "Output modalities", value: "AUDIO" },
+      { label: "Audio output", value: "voiceConfig: (prebuiltVoiceConfig: (voiceName: Kore))" },
+    ]);
+  });
+
   it("maps audio and video parts of every format", () => {
     const chat = requestView("openai_chat", {
       messages: [

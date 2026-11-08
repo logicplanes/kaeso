@@ -142,6 +142,7 @@ Every KPP field is either semantic or a hint:
 | `sampling.frequency_penalty`, `.presence_penalty` | semantic | OpenAI Chat Completions only; `Unsupported` elsewhere ([sampling](cross-format.md#sampling)). |
 | `user` | hint | An end-user id for abuse monitoring; it never changes the output. A provider whose Chat profile has no end-user field gets none, not even a Chat app's `user` sent alongside `safety_identifier` ([provider profiles](openai-chat-providers.md#provider-profiles)). |
 | `stream` | semantic | |
+| `output_modalities`, `audio_output.voice`, `.format` | semantic | Only Chat Completions and Gemini write audio, only Gemini images; voices cross only to a target that lists them, and formats are never transcoded ([audio and image replies](cross-format.md#audio-and-image-replies)). |
 | `extras.fields` | semantic | Only written back to the origin dialect; elsewhere `Unsupported` unless on the [extras allowlist](cross-format.md#extras). |
 | `extras.form` | hint | Presentation markers; ignored by other dialects. |
 
@@ -162,6 +163,7 @@ Every KPP field is either semantic or a hint:
 | `Text.cache`, `Image.cache`, `Document.cache`, `Audio.cache`, `Video.cache`, `ToolCall.cache`, `ToolResult.cache` | hint | Dropped for OpenAI, which caches by itself ([cache hints](cross-format.md#cache-hints)). |
 | `Image.source` | semantic | A `FileId` works only with the provider that issued it ([files](cross-format.md#files)). OpenAI Chat Completions takes images only as a URL or base64. |
 | `Document.source` | semantic | Text sources only for Anthropic. OpenAI Chat Completions also refuses URL sources. |
+| `Audio.transcript` | semantic | Sent as the assistant's text where the target can't take the audio itself ([audio and image replies](cross-format.md#audio-and-image-replies)). |
 | `Audio.source`, `Video.source` | semantic | Each target takes what its documentation lists, or refuses it ([audio and video](cross-format.md#audio-and-video)). |
 | `Document.title`, `.context` | semantic | Anthropic only; `Unsupported` for OpenAI. |
 | `Document.citations` | semantic | Anthropic only; `Unsupported` for OpenAI, which cannot cite documents. |

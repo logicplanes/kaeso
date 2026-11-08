@@ -77,6 +77,95 @@ pub(crate) fn is_youtube_url(url: &str) -> bool {
     )
 }
 
+// The built-in voices of `CreateChatCompletionRequest.audio.voice` at the pinned spec commit.
+pub(crate) const OPENAI_VOICES: &[&str] = &[
+    "alloy", "ash", "ballad", "coral", "echo", "fable", "nova", "onyx", "sage", "shimmer", "verse",
+    "marin", "cedar",
+];
+
+// The 30 prebuilt voices of Gemini's speech generation guide.
+pub(crate) const GEMINI_VOICES: &[&str] = &[
+    "Zephyr",
+    "Puck",
+    "Charon",
+    "Kore",
+    "Fenrir",
+    "Leda",
+    "Orus",
+    "Aoede",
+    "Callirrhoe",
+    "Autonoe",
+    "Enceladus",
+    "Iapetus",
+    "Umbriel",
+    "Algieba",
+    "Despina",
+    "Erinome",
+    "Algenib",
+    "Rasalgethi",
+    "Laomedeia",
+    "Achernar",
+    "Alnilam",
+    "Schedar",
+    "Gacrux",
+    "Pulcherrima",
+    "Achird",
+    "Zubenelgenubi",
+    "Vindemiatrix",
+    "Sadachbia",
+    "Sadaltager",
+    "Sulafat",
+];
+
+pub(crate) fn has_voice(voices: &[&str], voice: &str) -> bool {
+    voices.iter().any(|v| v.eq_ignore_ascii_case(voice))
+}
+
+/// Whether a media type is 16-bit PCM at 24 kHz, mono, as Chat Completions' `pcm16` and
+/// Gemini's `audio/l16; rate=24000; channels=1` and `audio/L16;codec=pcm;rate=24000` are.
+pub(crate) fn is_pcm16(media_type: &str) -> bool {
+    let mut parts = media_type.split(';').map(str::trim);
+    if !parts
+        .next()
+        .is_some_and(|e| e.eq_ignore_ascii_case("audio/l16"))
+    {
+        return false;
+    }
+    let mut rate = false;
+    for p in parts {
+        let Some((k, v)) = p.split_once('=') else {
+            return false;
+        };
+        match (k.trim().to_ascii_lowercase().as_str(), v.trim()) {
+            ("rate", "24000") => rate = true,
+            ("channels", "1") | ("codec", "pcm") => {}
+            _ => return false,
+        }
+    }
+    rate
+}
+
+/// The audio of several blocks or stream deltas as one base64 string. Pieces without padding
+/// join as they are; padded pieces are decoded and encoded again, which changes no byte.
+pub(crate) fn join_base64<'a>(pieces: impl IntoIterator<Item = &'a str>) -> Option<String> {
+    use base64::Engine as _;
+    let pieces: Vec<&str> = pieces.into_iter().collect();
+    let padded = pieces
+        .iter()
+        .rev()
+        .skip(1)
+        .any(|p| p.trim_end().ends_with('='));
+    if !padded {
+        return Some(pieces.concat());
+    }
+    let engine = base64::engine::general_purpose::STANDARD;
+    let mut bytes = Vec::new();
+    for p in pieces {
+        bytes.extend(engine.decode(p.trim()).ok()?);
+    }
+    Some(engine.encode(bytes))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -102,5 +191,24 @@ mod tests {
         assert!(!is_youtube_url("https://example.com/youtube.com/x.mp4"));
         assert!(!is_youtube_url("files/abc"));
         assert!(is_video("video/mp4") && is_audio("Audio/L16; rate=24000"));
+    }
+
+    #[test]
+    fn base64_pieces_join_without_and_with_padding() {
+        assert_eq!(join_base64(["AAAA", "AQID"]).as_deref(), Some("AAAAAQID"));
+        assert_eq!(join_base64(["AA==", "AQ=="]).as_deref(), Some("AAE="));
+        assert_eq!(join_base64(["AA==", "%%"]), None);
+        assert_eq!(join_base64(["AAAA", "AQ=="]).as_deref(), Some("AAAAAQ=="));
+    }
+
+    #[test]
+    fn pcm16_is_24_khz_mono_l16_in_both_spellings() {
+        assert!(is_pcm16("audio/l16; rate=24000; channels=1"));
+        assert!(is_pcm16("audio/L16;codec=pcm;rate=24000"));
+        assert!(!is_pcm16("audio/l16; rate=16000"));
+        assert!(!is_pcm16("audio/l16"));
+        assert!(!is_pcm16("audio/l16; rate=24000; channels=2"));
+        assert!(!is_pcm16("audio/wav"));
+        assert!(has_voice(GEMINI_VOICES, "kore") && !has_voice(OPENAI_VOICES, "Kore"));
     }
 }

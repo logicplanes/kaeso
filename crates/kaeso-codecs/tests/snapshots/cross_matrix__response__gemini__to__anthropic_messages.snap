@@ -212,6 +212,23 @@ expression: outcomes
       "output_tokens": 1
     }
   },
+  "recorded-speech": {
+    "content": [],
+    "id": "kErwarW3Odu8kdUP4ty7mAw",
+    "model": "gemini-3.8-flash-lite-tts",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 4,
+      "output_tokens": 27
+    }
+  },
   "recorded-structured-json-schema": {
     "content": [
       {

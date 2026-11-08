@@ -4,14 +4,19 @@ expression: outcomes
 ---
 {
   "all-params-sdk": {
-    "message": "`audio` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "message": "`function_call` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
     "param": null,
-    "unsupported": "audio"
+    "unsupported": "function_call"
+  },
+  "audio-history": {
+    "message": "`file id` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Provider file ids (here `audio_6acbb3d760248191b0570b008a8ccc16`) only work with the provider that issued them. Send the file inline (base64 or URL) instead.",
+    "param": "messages[1].blocks[0]",
+    "unsupported": "file id"
   },
   "audio-output": {
-    "message": "`modalities` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
-    "param": null,
-    "unsupported": "modalities"
+    "message": "voice `marin` is not supported by Gemini API. Gemini's prebuilt voices are Zephyr, Puck, Charon, Kore and 26 more; name one of them.",
+    "param": "audio.voice",
+    "unsupported": "voice `marin`"
   },
   "content-array-all-roles": {
     "message": "`refusal block` is not supported by Gemini API. Gemini has no refusal part. Remove the refusal from the conversation history or replace it with text.",
@@ -376,9 +381,30 @@ expression: outcomes
     "path": "/v1beta/models/gpt-6-astra:generateContent"
   },
   "input-audio": {
-    "message": "`modalities` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
-    "param": null,
-    "unsupported": "modalities"
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Transcribe this clip."
+            },
+            {
+              "inlineData": {
+                "data": "UklGRjQAAABXQVZFZm10IBAAAAABAAEAwF0AAIC7AAACABAAZGF0YRAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                "mimeType": "audio/wav"
+              }
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "responseModalities": [
+          "TEXT"
+        ]
+      }
+    },
+    "path": "/v1beta/models/gpt-audio-mini:generateContent"
   },
   "input-audio-mp3": {
     "body": {
@@ -555,9 +581,9 @@ expression: outcomes
     "unsupported": "enable_thinking"
   },
   "providers/alibaba/audio-fields": {
-    "message": "`modalities` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
     "param": null,
-    "unsupported": "modalities"
+    "unsupported": "enable_thinking"
   },
   "providers/alibaba/basic": {
     "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
@@ -1978,9 +2004,24 @@ expression: outcomes
     "unsupported": "metadata"
   },
   "providers/cohere/modalities-field": {
-    "message": "`modalities` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
-    "param": null,
-    "unsupported": "modalities"
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Hello"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "responseModalities": [
+          "TEXT"
+        ]
+      }
+    },
+    "path": "/v1beta/models/command-a-03-2025:generateContent"
   },
   "providers/cohere/parallel-tool-calls-field": {
     "message": "`parallel_tool_calls: false` is not supported by Gemini API. Gemini can't be told to call one function at a time; remove `parallel_tool_calls`.",
@@ -2636,9 +2677,9 @@ expression: outcomes
     "unsupported": "refusal block"
   },
   "providers/mistral/audio-field": {
-    "message": "`audio` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
-    "param": null,
-    "unsupported": "audio"
+    "message": "voice `alloy` is not supported by Gemini API. Gemini's prebuilt voices are Zephyr, Puck, Charon, Kore and 26 more; name one of them.",
+    "param": "audio.voice",
+    "unsupported": "voice `alloy`"
   },
   "providers/mistral/function-call-field": {
     "message": "`function_call` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
@@ -2705,9 +2746,25 @@ expression: outcomes
     "path": "/v1beta/models/magistral-medium-latest:generateContent"
   },
   "providers/mistral/modalities-field": {
-    "message": "`modalities` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
-    "param": null,
-    "unsupported": "modalities"
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Say hello."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 10,
+        "responseModalities": [
+          "TEXT"
+        ]
+      }
+    },
+    "path": "/v1beta/models/mistral-small-latest:generateContent"
   },
   "providers/mistral/model-not-found": {
     "body": {
@@ -4574,6 +4631,11 @@ expression: outcomes
       }
     },
     "path": "/v1beta/models/gpt-4.1:generateContent"
+  },
+  "stream-audio-output": {
+    "message": "voice `marin` is not supported by Gemini API. Gemini's prebuilt voices are Zephyr, Puck, Charon, Kore and 26 more; name one of them.",
+    "param": "audio.voice",
+    "unsupported": "voice `marin`"
   },
   "stream-doc": {
     "body": {

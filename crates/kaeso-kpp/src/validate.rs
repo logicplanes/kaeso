@@ -5,8 +5,8 @@ use serde::{Deserialize, Serialize};
 use crate::block::{Block, Source};
 use crate::error::KppError;
 use crate::request::{
-    EmbedRequest, GenerateRequest, OutputSpec, ReasoningEffort, ReasoningMode, Request, Role,
-    StreamMode, ToolChoice, ToolDef,
+    EmbedRequest, GenerateRequest, Modality, OutputSpec, ReasoningEffort, ReasoningMode, Request,
+    Role, StreamMode, ToolChoice, ToolDef,
 };
 
 impl Request {
@@ -177,6 +177,8 @@ impl GenerateRequest {
                     .is_some_and(|e| *e != ReasoningEffort::None)
                 || r.budget_tokens.is_some()
         });
+        caps.audio_output = self.output_modalities.contains(&Modality::Audio);
+        caps.image_output = self.output_modalities.contains(&Modality::Image);
         caps.json_schema = matches!(self.output, OutputSpec::JsonSchema { .. });
         caps.json_object = matches!(self.output, OutputSpec::JsonObject);
         caps.streaming = matches!(self.stream, StreamMode::On { .. });
@@ -210,6 +212,8 @@ pub struct Capabilities {
     pub text_documents: bool,
     pub audio_input: bool,
     pub video_input: bool,
+    pub audio_output: bool,
+    pub image_output: bool,
     pub tools: bool,
     pub parallel_tools: bool,
     pub reasoning: bool,
@@ -445,6 +449,16 @@ mod tests {
         )];
         req.validate().unwrap();
         assert!(req.required_capabilities().video_input);
+    }
+
+    #[test]
+    fn output_modalities_need_their_capabilities() {
+        let mut req = GenerateRequest::new("m").with_message(Message::user("Say hi."));
+        req.output_modalities = vec![Modality::Text, Modality::Audio];
+        let caps = req.required_capabilities();
+        assert!(caps.audio_output && !caps.image_output);
+        req.output_modalities = vec![Modality::Image];
+        assert!(req.required_capabilities().image_output);
     }
 
     #[test]

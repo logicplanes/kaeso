@@ -747,6 +747,8 @@ const messages = (): Rule[] => [
   rule("errors.model.noTokenCount", (v) => t("errors.model.noTokenCount", "The model `{model}` cannot count tokens.", v)),
   rule("errors.model.embeddingsOnly", (v) => t("errors.model.embeddingsOnly", "The model `{model}` is an embeddings model; it cannot generate text.", v)),
   rule("errors.model.noText", (v) => t("errors.model.noText", "The model `{model}` does not produce text.", v)),
+  rule("errors.model.noAudioOutput", (v) => t("errors.model.noAudioOutput", "The model `{model}` does not produce audio.", v)),
+  rule("errors.model.noImageOutput", (v) => t("errors.model.noImageOutput", "The model `{model}` does not produce images.", v)),
   rule("errors.model.noImages", (v) => t("errors.model.noImages", "The model `{model}` does not accept images.", v)),
   rule("errors.model.noPdf", (v) => t("errors.model.noPdf", "The model `{model}` does not accept PDF documents.", v)),
   rule("errors.model.noAudio", (v) => t("errors.model.noAudio", "The model `{model}` does not accept audio.", v)),

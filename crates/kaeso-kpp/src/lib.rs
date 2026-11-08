@@ -23,17 +23,19 @@ pub use extras::{Extras, HEADER_PREFIX};
 pub use models::{ModelInfo, ModelLifecycle, ModelList, ModelsQuery};
 pub use raw::RawJson;
 pub use request::{
-    EmbedEncoding, EmbedInput, EmbedRequest, FunctionTool, GenerateRequest, JsonSchemaSpec,
-    Message, OutputSpec, ReasoningConfig, ReasoningEffort, ReasoningMode, ReasoningSummary,
-    Request, RequestKind, Role, Sampling, StreamMode, ToolChoice, ToolDef,
+    AudioFormat, AudioOutput, EmbedEncoding, EmbedInput, EmbedRequest, FunctionTool,
+    GenerateRequest, JsonSchemaSpec, Message, Modality, OutputSpec, PCM16_MEDIA_TYPE,
+    ReasoningConfig, ReasoningEffort, ReasoningMode, ReasoningSummary, Request, RequestKind, Role,
+    Sampling, StreamMode, ToolChoice, ToolDef,
 };
 pub use response::{
     CacheWriteBreakdown, CountTokensResponse, EmbedResponse, Embedding, EmbeddingVector, RawUsage,
     Reply, Response, StopReason, Usage,
 };
 pub use stream::{
-    BlockDelta, BlockHeader, BlockStart, BlockStop, Delta, ReasoningHeader, ResponseDelta,
-    ResponseStart, ResponseStop, StreamEvent, SummaryDelta, ToolCallHeader,
+    AudioDelta, AudioHeader, BlockDelta, BlockHeader, BlockStart, BlockStop, Delta,
+    ReasoningHeader, ResponseDelta, ResponseStart, ResponseStop, StreamEvent, SummaryDelta,
+    ToolCallHeader,
 };
 pub use validate::Capabilities;
 

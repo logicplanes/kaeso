@@ -1,9 +1,11 @@
 use std::collections::BTreeMap;
 
+use base64::Engine as _;
 use kaeso_codecs::dispatch;
 use kaeso_kpp::{
-    Block, BlockHeader, Delta, DialectId, Extras, KppError, RawItem, RawJson, ReasoningBlock,
-    RefusalBlock, Response, StopReason, StreamEvent, TextBlock, ToolCallBlock, Usage,
+    AudioBlock, Block, BlockHeader, Delta, DialectId, Extras, KppError, RawItem, RawJson,
+    ReasoningBlock, RefusalBlock, Response, Source, StopReason, StreamEvent, TextBlock,
+    ToolCallBlock, Usage,
 };
 
 enum Body {
@@ -16,6 +18,7 @@ enum Body {
     },
     Reasoning(ReasoningBlock, String, BTreeMap<u32, String>),
     Refusal(RefusalBlock),
+    Audio(AudioBlock, Vec<String>),
     Unknown(RawItem, Vec<RawItem>),
 }
 
@@ -85,6 +88,7 @@ impl Body {
             Body::Tool { extras, .. } => Some(extras),
             Body::Reasoning(r, _, _) => Some(&mut r.extras),
             Body::Refusal(r) => Some(&mut r.extras),
+            Body::Audio(a, _) => Some(&mut a.extras),
             Body::Unknown(..) => None,
         }
     }
@@ -105,6 +109,10 @@ impl Body {
                 Body::Reasoning(r, String::new(), BTreeMap::new())
             }
             BlockHeader::Refusal => Body::Refusal(RefusalBlock::new("")),
+            BlockHeader::Audio(h) => Body::Audio(
+                AudioBlock::new(Source::base64(h.media_type.clone(), "")),
+                Vec::new(),
+            ),
             BlockHeader::Unknown(raw) => Body::Unknown(raw.clone(), Vec::new()),
             other => Body::Unknown(kept(origin, other), Vec::new()),
         }
@@ -124,6 +132,12 @@ impl Slot {
                 .push_str(&s.text),
             (Body::Reasoning(r, _, _), Delta::Opaque(o)) => r.opaque.push(o.clone()),
             (Body::Refusal(r), Delta::Refusal(s)) => r.text.push_str(s),
+            (Body::Audio(a, pieces), Delta::Audio(piece)) => {
+                pieces.extend(piece.data.clone());
+                if let Some(t) = &piece.transcript {
+                    a.transcript.get_or_insert_with(String::new).push_str(t);
+                }
+            }
             (Body::Unknown(_, deltas), Delta::Unknown(item)) => deltas.push(item.clone()),
             (_, Delta::Unknown(item)) => self.unknown.push(item.clone()),
             (_, other) => self.unknown.push(kept(origin, other)),
@@ -245,6 +259,28 @@ impl Assembler {
     }
 }
 
+// Each streamed audio piece is base64 of its own bytes; pieces with padding inside can't be
+// joined as text, so they are joined as bytes.
+fn joined_base64(pieces: &[String]) -> String {
+    let padded = pieces
+        .iter()
+        .rev()
+        .skip(1)
+        .any(|p| p.trim_end().ends_with('='));
+    if !padded {
+        return pieces.concat();
+    }
+    let engine = base64::engine::general_purpose::STANDARD;
+    let mut bytes = Vec::new();
+    for p in pieces {
+        match engine.decode(p.trim()) {
+            Ok(b) => bytes.extend(b),
+            Err(_) => return pieces.concat(),
+        }
+    }
+    engine.encode(bytes)
+}
+
 fn unknown_with_deltas(start: RawItem, deltas: Vec<RawItem>) -> RawItem {
     if deltas.is_empty() {
         return start;
@@ -285,6 +321,12 @@ fn into_block(body: Body, origin: DialectId) -> Block {
             Block::Reasoning(r)
         }
         Body::Refusal(r) => Block::Refusal(r),
+        Body::Audio(mut a, pieces) => {
+            if let Source::Base64(source) = &a.source {
+                a.source = Source::base64(source.media_type.clone(), joined_base64(&pieces));
+            }
+            Block::Audio(a)
+        }
         Body::Unknown(start, deltas) => Block::Unknown(
             dispatch::finished_item(origin, &start, &deltas)
                 .unwrap_or_else(|| unknown_with_deltas(start, deltas)),
@@ -311,6 +353,51 @@ mod tests {
             Block::Unknown(i) => i.raw.to_value().unwrap(),
             other => panic!("{other:?} is not unknown"),
         }
+    }
+
+    #[test]
+    fn streamed_audio_becomes_one_audio_block_with_its_transcript_and_id() {
+        use kaeso_kpp::{AudioDelta, AudioHeader};
+        let chat = DialectId::OpenAiChat;
+        let mut a = Assembler::new(chat);
+        a.feed(&StreamEvent::ResponseStart(ResponseStart::new(
+            "c1",
+            "gpt-audio-mini",
+        )));
+        let mut start = BlockStart::new(0, BlockHeader::Audio(AudioHeader::new("audio/wav")));
+        start.extras =
+            Extras::new(chat).with_field("id", RawJson::from_serialize(&"audio_1").unwrap());
+        a.feed(&StreamEvent::BlockStart(start));
+        for (data, transcript) in [
+            (None, Some("Hel")),
+            (Some("AA=="), Some("lo")),
+            (Some("AQ=="), None),
+        ] {
+            a.feed(&StreamEvent::BlockDelta(BlockDelta::new(
+                0,
+                Delta::Audio(AudioDelta::new(
+                    data.map(str::to_owned),
+                    transcript.map(str::to_owned),
+                )),
+            )));
+        }
+        let mut last = BlockDelta::new(0, Delta::Audio(AudioDelta::default()));
+        last.extras =
+            Extras::new(chat).with_field("expires_at", RawJson::from_serialize(&9).unwrap());
+        a.feed(&StreamEvent::BlockDelta(last));
+        a.feed(&StreamEvent::ResponseStop(ResponseStop::new()));
+        let reply = a.finish().response.unwrap();
+        let [Block::Audio(audio)] = reply.blocks.as_slice() else {
+            panic!("{:?}", reply.blocks)
+        };
+        assert_eq!(audio.source, Source::base64("audio/wav", "AAE="));
+        assert_eq!(audio.transcript.as_deref(), Some("Hello"));
+        assert_eq!(
+            audio.extras.fields.keys().collect::<Vec<_>>(),
+            ["id", "expires_at"]
+        );
+        assert_eq!(joined_base64(&["AAAA".into(), "AQ==".into()]), "AAAAAQ==");
+        assert_eq!(joined_base64(&["AA==".into(), "%".into()]), "AA==%");
     }
 
     #[test]

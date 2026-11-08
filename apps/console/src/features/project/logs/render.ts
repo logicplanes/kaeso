@@ -105,6 +105,8 @@ const paramLabels = (): Record<string, string> => ({
   service_tier: t("logs.param.serviceTier", "Service tier"),
   store: t("logs.param.store", "Store"),
   metadata: t("logs.inspector.metadata", "Metadata"),
+  modalities: t("logs.param.modalities", "Output modalities"),
+  audio: t("logs.param.audio", "Audio output"),
 });
 
 function params(body: Obj): RequestView["params"] {
@@ -367,6 +369,8 @@ const geminiParamLabels = (): Record<string, string> => ({
   seed: t("logs.param.seed", "Seed"),
   candidateCount: t("logs.param.choices", "Choices"),
   responseMimeType: t("logs.param.responseFormat", "Response format"),
+  responseModalities: t("logs.param.modalities", "Output modalities"),
+  speechConfig: t("logs.param.audio", "Audio output"),
 });
 
 function geminiRequest(body: Obj): RequestView {

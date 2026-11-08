@@ -1,8 +1,8 @@
 use indexmap::IndexMap;
 use kaeso_kpp::{
-    BlockDelta, BlockHeader, BlockStart, BlockStop, Delta, Extras, KppError, Origin, RawItem,
-    RawJson, ReasoningHeader, ResponseDelta, ResponseStart, ResponseStop, StreamEvent,
-    ToolCallHeader, Usage,
+    AudioDelta, AudioHeader, BlockDelta, BlockHeader, BlockStart, BlockStop, Delta, Extras,
+    KppError, Origin, RawItem, RawJson, ReasoningHeader, ResponseDelta, ResponseStart,
+    ResponseStop, StreamEvent, ToolCallHeader, Usage,
 };
 use serde_json::{Map, Value};
 
@@ -157,6 +157,8 @@ pub(crate) struct ChatStreamDecoder {
     text: Option<u32>,
     refusal: Option<u32>,
     reasoning: Option<u32>,
+    audio: Option<u32>,
+    audio_media_type: String,
     thinking_parts: bool,
     reasoning_fields: &'static [&'static str],
     error_detail: &'static [&'static str],
@@ -182,6 +184,13 @@ impl ChatStreamDecoder {
             text: None,
             refusal: None,
             reasoning: None,
+            audio: None,
+            audio_media_type: ctx
+                .audio_format
+                .as_ref()
+                .and_then(kaeso_kpp::AudioFormat::media_type)
+                .unwrap_or("application/octet-stream")
+                .to_owned(),
             thinking_parts: ctx.chat_profile.reply.reasoning == ReplyReasoning::ThinkingParts,
             reasoning_fields: ctx.chat_profile.reply.reasoning_fields,
             error_detail: ctx.chat_profile.reply.error_detail,
@@ -360,6 +369,7 @@ impl ChatStreamDecoder {
             .chain(self.text)
             .chain(self.refusal)
             .chain(self.reasoning)
+            .chain(self.audio)
             .collect();
         open.sort_unstable();
         for index in open {
@@ -370,6 +380,7 @@ impl ChatStreamDecoder {
         self.text = None;
         self.refusal = None;
         self.reasoning = None;
+        self.audio = None;
         self.tools.clear();
     }
 
@@ -673,6 +684,7 @@ impl ChatStreamDecoder {
                     true
                 },
             );
+        let audio = d_extra.shift_remove("audio");
         for (key, value) in d_extra {
             fields.insert(format!("delta.{key}"), value);
         }
@@ -751,6 +763,11 @@ impl ChatStreamDecoder {
             d.extras = self.extras();
             events.push(StreamEvent::BlockDelta(d));
         }
+        if let Some(raw) = audio
+            && !self.audio_entry(&raw, events)
+        {
+            fields.insert("delta.audio".to_owned(), raw);
+        }
         for (part, place) in kept {
             self.kept_part(part, place, events);
         }
@@ -758,6 +775,58 @@ impl ChatStreamDecoder {
             self.tool_entry(entry, events)?;
         }
         Ok(finish_reason)
+    }
+
+    // `delta.audio` (`ChatCompletionStreamResponseDelta.audio`): chunks carry an id, base64
+    // data or transcript text, and the last one only `expires_at`. One audio block holds them;
+    // its id rides on the block's start, anything else on the delta of its chunk.
+    fn audio_entry(&mut self, raw: &RawJson, events: &mut Vec<StreamEvent>) -> bool {
+        let Ok(mut fields) = raw.parse::<IndexMap<String, RawJson>>() else {
+            return false;
+        };
+        let mut text = |key: &str| match fields.get(key).map(|v| v.parse::<String>()) {
+            Some(Ok(s)) => {
+                fields.shift_remove(key);
+                Some(s)
+            }
+            _ => None,
+        };
+        let id = text("id");
+        let data = text("data");
+        let transcript = text("transcript");
+        let started = self.audio.is_none();
+        let index = match self.audio {
+            Some(index) => index,
+            None => {
+                let index = self.new_block();
+                self.audio = Some(index);
+                let mut start = BlockStart::new(
+                    index,
+                    BlockHeader::Audio(AudioHeader::new(self.audio_media_type.clone())),
+                );
+                start.extras = self.extras();
+                if let Some(id) = &id
+                    && let Ok(id) = to_raw(id)
+                {
+                    start.extras.fields.insert("id".to_owned(), id);
+                }
+                events.push(StreamEvent::BlockStart(start));
+                index
+            }
+        };
+        if !started
+            && let Some(id) = &id
+            && let Ok(id) = to_raw(id)
+        {
+            fields.shift_insert(0, "id".to_owned(), id);
+        }
+        if !started || data.is_some() || transcript.is_some() || !fields.is_empty() {
+            let mut d = BlockDelta::new(index, Delta::Audio(AudioDelta::new(data, transcript)));
+            d.extras = self.extras();
+            d.extras.fields = fields;
+            events.push(StreamEvent::BlockDelta(d));
+        }
+        true
     }
 
     fn kept_part(&mut self, part: RawJson, place: &'static str, events: &mut Vec<StreamEvent>) {

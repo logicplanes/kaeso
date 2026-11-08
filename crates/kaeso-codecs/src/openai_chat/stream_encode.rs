@@ -45,6 +45,7 @@ struct Chunk {
     reasoning: Option<String>,
     refusal: Option<String>,
     tool_calls: Vec<Entry>,
+    audio: Option<Obj>,
     finish: Option<String>,
     usage: Option<Value>,
 }
@@ -148,6 +149,22 @@ impl ChatStreamEncoder {
                     chunk.tool_calls.push(entry);
                     chunk.has_choice = true;
                 }
+                BlockHeader::Audio(_) => {
+                    let audio = chunk.audio.get_or_insert_with(Obj::new);
+                    match start.extras.fields_for(DIALECT) {
+                        Some(fields) if own => audio.extend(fields.clone()),
+                        _ if own => {}
+                        _ => {
+                            let id = self
+                                .envelope
+                                .get("id")
+                                .and_then(|id| id.parse::<String>().ok())
+                                .unwrap_or_default();
+                            audio.insert("id".to_owned(), to_raw(&format!("audio_{id}"))?);
+                        }
+                    }
+                    chunk.has_choice = true;
+                }
                 BlockHeader::Unknown(item)
                     if item.origin.is(DIALECT)
                         && start.extras.form_value(DIALECT, FORM_PART).is_none() =>
@@ -168,6 +185,25 @@ impl ChatStreamEncoder {
                 }
                 Delta::Refusal(text) => {
                     chunk.refusal.get_or_insert_with(String::new).push_str(text);
+                    chunk.has_choice = true;
+                }
+                Delta::Audio(piece) => {
+                    let audio = chunk.audio.get_or_insert_with(Obj::new);
+                    if own && let Some(fields) = delta.extras.fields_for(DIALECT) {
+                        audio.extend(fields.clone());
+                    }
+                    for (key, value) in [("data", &piece.data), ("transcript", &piece.transcript)] {
+                        let Some(value) = value else { continue };
+                        let joined = match audio.get(key).and_then(|v| v.parse::<String>().ok()) {
+                            Some(earlier) if key == "data" => {
+                                crate::media::join_base64([earlier.as_str(), value.as_str()])
+                                    .unwrap_or_else(|| format!("{earlier}{value}"))
+                            }
+                            Some(earlier) => format!("{earlier}{value}"),
+                            None => value.clone(),
+                        };
+                        audio.insert(key.to_owned(), to_raw(&joined)?);
+                    }
                     chunk.has_choice = true;
                 }
                 Delta::ReasoningText(text) if own && delta.extras.is_from(DIALECT) => {
@@ -461,7 +497,9 @@ impl ChatStreamEncoder {
         let Some(extras) = event_extras(event) else {
             return;
         };
-        if !extras.is_from(DIALECT) {
+        let audio = matches!(event, StreamEvent::BlockStart(s) if matches!(s.block, BlockHeader::Audio(_)))
+            || matches!(event, StreamEvent::BlockDelta(d) if matches!(d.delta, Delta::Audio(_)));
+        if !extras.is_from(DIALECT) || audio {
             return;
         }
         let is_start = matches!(event, StreamEvent::ResponseStart(_));
@@ -486,7 +524,11 @@ fn choice<'a>(chunk: &'a Chunk, role_pending: bool) -> Result<J<'a>, KppError> {
         }
     } else if role_pending {
         delta.insert(Cow::Borrowed("role"), J::Str("assistant"));
-        if chunk.content.is_none() && chunk.refusal.is_none() && chunk.tool_calls.is_empty() {
+        if chunk.content.is_none()
+            && chunk.refusal.is_none()
+            && chunk.tool_calls.is_empty()
+            && chunk.audio.is_none()
+        {
             delta.insert(Cow::Borrowed("content"), J::Str(""));
             delta.insert(Cow::Borrowed("refusal"), J::Null);
         }
@@ -526,6 +568,9 @@ fn choice<'a>(chunk: &'a Chunk, role_pending: bool) -> Result<J<'a>, KppError> {
             })
             .collect();
         delta.insert(Cow::Borrowed("tool_calls"), J::List(entries));
+    }
+    if let Some(audio) = &chunk.audio {
+        delta.insert(Cow::Borrowed("audio"), J::Obj(audio));
     }
     let mut choice = Tree::new();
     choice.insert(Cow::Borrowed("index"), J::Zero);

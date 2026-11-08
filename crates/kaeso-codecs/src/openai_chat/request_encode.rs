@@ -1,8 +1,8 @@
 use indexmap::IndexMap;
 use kaeso_kpp::{
-    Block, Extras, GenerateRequest, KppError, Message, OutputSpec, RawJson, ReasoningBlock,
-    ReasoningEffort, ReasoningMode, Role, StreamMode, TextBlock, ToolChoice, ToolDef,
-    ToolResultBlock,
+    AudioFormat, Block, Extras, GenerateRequest, KppError, Message, Modality, OutputSpec, RawJson,
+    ReasoningBlock, ReasoningEffort, ReasoningMode, Role, Source, StreamMode, TextBlock,
+    ToolChoice, ToolDef, ToolResultBlock,
 };
 use serde_json::Value;
 
@@ -14,15 +14,15 @@ use super::convert::{
 };
 use super::profile::{ChatProfile, EndUserField, OutputLimit, ReplyReasoning, SeedField};
 use super::request::{
-    CONFLICT_KEYS, FORM_CONTENT, FORM_MAX_TOKENS, FORM_MESSAGE, FORM_N, FORM_REPLAYED,
-    FORM_RESPONSE_FORMAT_TEXT, FORM_ROLE, FORM_SCHEMA_ABSENT, FORM_STOP, FORM_STREAM_FALSE,
-    FORM_STREAM_OPTIONS, FORM_STREAM_OPTIONS_OFF, FORM_USER, FUNCTION_ROLE,
+    CONFLICT_KEYS, FORM_CONTENT, FORM_MAX_TOKENS, FORM_MESSAGE, FORM_MODALITIES_EMPTY, FORM_N,
+    FORM_REPLAYED, FORM_RESPONSE_FORMAT_TEXT, FORM_ROLE, FORM_SCHEMA_ABSENT, FORM_STOP,
+    FORM_STREAM_FALSE, FORM_STREAM_OPTIONS, FORM_STREAM_OPTIONS_OFF, FORM_USER, FUNCTION_ROLE,
     KEY_MAX_TOKENS_CONFLICT, MESSAGE_PREFIX, REPLAYED_REASONING,
 };
 use super::response::{FORM_THINKING, encode_thinking_part};
 use super::wire::{
-    AssistantMessage, ChatRequest, FunctionObject, FunctionToolWire, InstructionMessage,
-    JsonSchemaWire, ResponseFormat, StreamOptions, ToolMessage, UserMessage,
+    AssistantMessage, AudioParam, ChatRequest, FunctionObject, FunctionToolWire,
+    InstructionMessage, JsonSchemaWire, ResponseFormat, StreamOptions, ToolMessage, UserMessage,
 };
 use crate::codec::EgressCtx;
 use crate::cross::{self, reasoning_replayable};
@@ -89,6 +89,7 @@ pub(crate) fn encode_generate(
         }
     }
     encode_stream(req, own, &mut w)?;
+    encode_output(req, own, &mut w)?;
     w.reasoning_effort = req
         .reasoning
         .as_ref()
@@ -167,6 +168,9 @@ pub(crate) fn encode_generate(
     }
     if let Some(key) = cross::sibling_cache_key(&req.extras, DIALECT) {
         extra.insert(cross::OPENAI_CACHE_KEY.to_owned(), key.clone());
+    }
+    if let Some(format) = w.audio.as_ref().and_then(|a| a.known.format.as_deref()) {
+        names.ctx.audio_format = Some(AudioFormat::from_wire(format));
     }
     let mut out = Ext::with(w, extra, verbatim);
     apply_profile(&profile, seed, &req.extras, &mut out)?;
@@ -329,6 +333,44 @@ impl Names<'_> {
     fn send(&mut self, name: &str) -> String {
         safe_tool_name(name, &mut self.ctx.tool_names)
     }
+}
+
+// Chat asks for audio as `["text", "audio"]`, its text being the audio's transcript, and needs
+// a voice and a format with it (`CreateChatCompletionRequest.audio`); streams take `pcm16` only.
+fn encode_output(req: &GenerateRequest, own: bool, w: &mut ChatRequest) -> Result<(), KppError> {
+    if own {
+        if !req.output_modalities.is_empty() || req.extras.form_flag(DIALECT, FORM_MODALITIES_EMPTY)
+        {
+            w.modalities = Some(
+                req.output_modalities
+                    .iter()
+                    .map(|m| m.as_wire().to_owned())
+                    .collect(),
+            );
+        }
+    } else if req.output_modalities.contains(&Modality::Audio) {
+        w.modalities = Some(vec!["text".to_owned(), "audio".to_owned()]);
+    } else if !req.output_modalities.is_empty() {
+        w.modalities = Some(vec!["text".to_owned()]);
+    }
+    let Some(audio) = &req.audio_output else {
+        return Ok(());
+    };
+    if !own && !req.output_modalities.contains(&Modality::Audio) {
+        return Ok(());
+    }
+    let format = match (&audio.format, own) {
+        (Some(f), _) => Some(f.as_wire().to_owned()),
+        (None, true) => None,
+        (None, false) if req.stream.is_off() => Some(AudioFormat::Wav.as_wire().to_owned()),
+        (None, false) => Some(AudioFormat::Pcm16.as_wire().to_owned()),
+    };
+    let voice = match &audio.voice {
+        Some(v) => Some(to_raw(v)?),
+        None => None,
+    };
+    w.audio = Some(ext_with(AudioParam { voice, format }, &audio.extras));
+    Ok(())
 }
 
 fn encode_stream(req: &GenerateRequest, own: bool, w: &mut ChatRequest) -> Result<(), KppError> {
@@ -611,8 +653,31 @@ fn encode_assistant(message: &Message, names: &mut Names<'_>) -> Result<RawJson,
     let mut content: Vec<&Block> = Vec::new();
     let mut refusal: Option<String> = None;
     let mut tool_calls = Vec::new();
+    let mut audio = None;
+    let spoken: Vec<Block> = message
+        .blocks
+        .iter()
+        .filter_map(|b| match b {
+            Block::Audio(a) if !matches!(a.source, Source::FileId(_)) => {
+                a.transcript.clone().map(Block::text)
+            }
+            _ => None,
+        })
+        .collect();
+    let mut spoken = spoken.iter();
     for block in &message.blocks {
         match block {
+            Block::Audio(a) => match &a.source {
+                Source::FileId(f) => {
+                    let mut fields = a.extras.fields_for(DIALECT).cloned().unwrap_or_default();
+                    fields.shift_insert(0, "id".to_owned(), to_raw(&f.id)?);
+                    audio = Some(to_raw(&fields)?);
+                }
+                _ => match spoken.next() {
+                    Some(text) => content.push(text),
+                    None => return Err(block_unsupported(block, "an assistant message")),
+                },
+            },
             Block::Text(_) => content.push(block),
             Block::Refusal(r) => {
                 let part = r.extras.form_flag(DIALECT, FORM_REFUSAL_PART);
@@ -656,10 +721,16 @@ fn encode_assistant(message: &Message, names: &mut Names<'_>) -> Result<RawJson,
         ..AssistantMessage::default()
     };
     let mut wrapped = ext_with(AssistantMessage::default(), &message.extras);
+    if let Some(audio) = audio {
+        wrapped
+            .extra
+            .insert(super::request::AUDIO.to_owned(), audio);
+    }
     wire.content = match content.as_slice() {
         [] if !message.extras.is_from(DIALECT)
             && wire.tool_calls.is_empty()
-            && wire.refusal.is_none() =>
+            && wire.refusal.is_none()
+            && !wrapped.extra.contains_key(super::request::AUDIO) =>
         {
             Some(StringOr::String(String::new()))
         }

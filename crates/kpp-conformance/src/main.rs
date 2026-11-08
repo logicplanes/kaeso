@@ -325,7 +325,8 @@ fn answer(app: &App, req: kaeso_kpp::Request, ingress: DialectId, kind: RequestK
         return error_response(ingress, &err);
     }
     let ctx = EncodeCtx::for_request(req.clone()).with_created_at(CREATED_AT);
-    let egress = EgressCtx::for_kind(kind, req.stream_mode());
+    let mut egress = EgressCtx::for_kind(kind, req.stream_mode());
+    egress.audio_format = EgressCtx::new(&req).audio_format;
     if let StreamMode::On { .. } = req.stream_mode() {
         let bytes = match read(&dir.join(format!("streams/{}.sse", sc.name))) {
             Ok(b) => b,

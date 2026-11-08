@@ -41,6 +41,7 @@ KPP, the Kaeso Provider Protocol, has a codec for each API format: OpenAI Chat C
 - **The end user's id.** Anthropic's `metadata.user_id` and OpenAI's `safety_identifier`. OpenAI takes at most 128 characters and asks for a hash of the user's id, so a longer Anthropic id, such as Claude Code's, reaches it as its SHA-256 hash, which the reply's `kaeso-adapted` header names.
 - **Reasoning.** Efforts and thinking budgets convert into each other ([reasoning](#reasoning)).
 - **Streams.** Kaeso translates them event by event into the app's format.
+- **Audio replies.** Between Chat Completions and Gemini: OpenAI's audio models answer Gemini apps, and Gemini's speech models Chat apps, when the voice and format exist on both sides ([audio and image replies](../development/kpp/cross-format.md#audio-and-image-replies)).
 
 ## What Kaeso refuses
 
@@ -53,6 +54,7 @@ When a request crosses formats, Kaeso refuses these with an error that names the
 - refusals in the history
 - images other than JPEG, PNG, GIF and WebP, and documents other than PDF and plain text
 - audio, and video except for MiniMax
+- audio and image output
 - the `minimal` effort
 
 ### Requests to OpenAI Chat Completions
@@ -61,12 +63,13 @@ When a request crosses formats, Kaeso refuses these with an error that names the
 - text documents, document URLs, document titles, context and citations
 - image file ids, and images, documents and audio outside user messages
 - audio other than base64 WAV and MP3, and video, except for providers that document more
+- image output, and a voice OpenAI doesn't list
 
 ### Requests to OpenAI Responses
 
 - `top_k`, `seed`, penalties and stop sequences
 - text documents, document titles, context and citations
-- audio and video
+- audio and video, and audio and image output
 
 ### Requests to any provider
 

@@ -157,3 +157,33 @@ def test_chat_audio_parts_reach_kpp(base_url):
         model="gemini:recorded-audio-input", messages=[{"role": "user", "content": content}]
     )
     assert chat_view(completion)["text"] == want["text"]
+
+
+def test_chat_audio_replies_from_gemini_speech(base_url):
+    c = client(base_url)
+    completion = c.chat.completions.create(
+        model="gemini:recorded-speech",
+        modalities=["text", "audio"],
+        audio={"voice": "Kore", "format": "wav"},
+        messages=MESSAGES,
+    )
+    audio = completion.choices[0].message.audio
+    assert audio is not None
+    assert audio.id == "audio_kErwarW3Odu8kdUP4ty7mAw"
+    assert audio.data.startswith("UklGR")
+    assert audio.transcript == ""
+    pieces = []
+    stream = c.chat.completions.create(
+        model="gemini:recorded-stream-speech",
+        modalities=["text", "audio"],
+        audio={"voice": "Kore", "format": "pcm16"},
+        messages=MESSAGES,
+        stream=True,
+    )
+    for chunk in stream:
+        for choice in chunk.choices:
+            audio = getattr(choice.delta, "audio", None) or (choice.delta.model_extra or {}).get("audio")
+            data = audio.get("data") if isinstance(audio, dict) else getattr(audio, "data", None)
+            if data:
+                pieces.append(data)
+    assert len(pieces) == 16

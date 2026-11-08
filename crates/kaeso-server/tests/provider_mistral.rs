@@ -476,8 +476,11 @@ async fn fields_mistral_refuses_are_refused_before_anything_is_sent() {
     .await;
     assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
     assert_eq!(
-        r.json()["error"]["message"],
-        "`audio` is not supported by Mistral; remove it from the request."
+        (&r.json()["error"]["message"], &r.json()["error"]["param"]),
+        (
+            &json!("The model `mistral-small-latest` does not produce audio."),
+            &json!("modalities")
+        )
     );
 
     let r = call(

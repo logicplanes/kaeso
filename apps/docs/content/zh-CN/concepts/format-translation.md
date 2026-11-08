@@ -41,6 +41,7 @@ KPP（Kaeso Provider Protocol）为每种 API 格式都提供一个编解码器�
 - **最终用户的 ID。** Anthropic 的 `metadata.user_id` 和 OpenAI 的 `safety_identifier`。OpenAI 最多接受 128 个字符，并要求发送用户 ID 的哈希，因此更长的 Anthropic ID（例如 Claude Code 的 ID）会以 SHA-256 哈希发送给 OpenAI，回复的 `kaeso-adapted` 响应头会注明这一点。
 - **推理。** 推理强度和思考预算会相互转换（[推理](#推理)）。
 - **流。** Kaeso 会把流逐个事件转换为应用的格式。
+- **音频回复。** 在 Chat Completions 和 Gemini 之间：当双方都有对应的声音和格式时，OpenAI 的音频模型可以回答 Gemini 应用，Gemini 的语音模型可以回答 Chat 应用（[音频和图像回复](../development/kpp/cross-format.md#音频和图像回复)）。
 
 ## Kaeso 拒绝的内容
 
@@ -53,6 +54,7 @@ KPP（Kaeso Provider Protocol）为每种 API 格式都提供一个编解码器�
 - 历史中的拒绝回复
 - JPEG、PNG、GIF 和 WebP 以外的图像，以及 PDF 和纯文本以外的文档
 - 音频，以及 MiniMax 以外的视频
+- 音频和图像输出
 - 推理强度 `minimal`
 
 ### 发往 OpenAI Chat Completions 的请求
@@ -61,12 +63,13 @@ KPP（Kaeso Provider Protocol）为每种 API 格式都提供一个编解码器�
 - 文本文档、文档 URL、文档标题、上下文和引用
 - 图像文件 ID，以及用户消息之外的图像、文档和音频
 - base64 WAV 和 MP3 以外的音频，以及视频，文档中写明支持更多的服务商除外
+- 图像输出，以及 OpenAI 未列出的声音
 
 ### 发往 OpenAI Responses 的请求
 
 - `top_k`、`seed`、惩罚参数和停止序列
 - 文本文档、文档标题、上下文和引用
-- 音频和视频
+- 音频和视频，以及音频和图像输出
 
 ### 发往任何服务商的请求
 

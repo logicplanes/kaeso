@@ -6,13 +6,11 @@ use crate::wire::{Ext, StringOr};
 
 #[cfg(test)]
 pub(crate) const PASSTHROUGH_REQUEST_FIELDS: &[&str] = &[
-    "audio",
     "function_call",
     "functions",
     "logit_bias",
     "logprobs",
     "metadata",
-    "modalities",
     "moderation",
     "prediction",
     "prompt_cache_key",
@@ -89,6 +87,18 @@ pub(crate) struct ChatRequest {
     pub(crate) stream: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) stream_options: Option<Ext<StreamOptions>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) modalities: Option<Vec<String>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) audio: Option<Ext<AudioParam>>,
+}
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+pub(crate) struct AudioParam {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) voice: Option<RawJson>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) format: Option<String>,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]

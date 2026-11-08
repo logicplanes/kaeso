@@ -62,6 +62,10 @@ pub struct GenerateRequest {
     pub parallel_tool_calls: Option<bool>,
     #[serde(default, skip_serializing_if = "OutputSpec::is_text")]
     pub output: OutputSpec,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub output_modalities: Vec<Modality>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub audio_output: Option<AudioOutput>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub reasoning: Option<ReasoningConfig>,
     #[serde(default, skip_serializing_if = "Sampling::is_empty")]
@@ -231,6 +235,110 @@ impl OutputSpec {
         matches!(self, OutputSpec::Text)
     }
 }
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+#[non_exhaustive]
+pub enum Modality {
+    Text,
+    Image,
+    Audio,
+    Other(String),
+}
+
+impl Modality {
+    pub fn from_wire(s: &str) -> Self {
+        match s {
+            "text" => Modality::Text,
+            "image" => Modality::Image,
+            "audio" => Modality::Audio,
+            other => Modality::Other(other.to_owned()),
+        }
+    }
+
+    pub fn as_wire(&self) -> &str {
+        match self {
+            Modality::Text => "text",
+            Modality::Image => "image",
+            Modality::Audio => "audio",
+            Modality::Other(s) => s,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[non_exhaustive]
+pub struct AudioOutput {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub voice: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub format: Option<AudioFormat>,
+    #[serde(default, skip_serializing_if = "Extras::is_empty")]
+    pub extras: Extras,
+}
+
+impl AudioOutput {
+    pub fn new(voice: Option<String>, format: Option<AudioFormat>) -> Self {
+        AudioOutput {
+            voice,
+            format,
+            extras: Extras::default(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+#[non_exhaustive]
+pub enum AudioFormat {
+    Wav,
+    Mp3,
+    Flac,
+    Opus,
+    Aac,
+    Pcm16,
+    Other(String),
+}
+
+impl AudioFormat {
+    pub fn from_wire(s: &str) -> Self {
+        match s {
+            "wav" => AudioFormat::Wav,
+            "mp3" => AudioFormat::Mp3,
+            "flac" => AudioFormat::Flac,
+            "opus" => AudioFormat::Opus,
+            "aac" => AudioFormat::Aac,
+            "pcm16" => AudioFormat::Pcm16,
+            other => AudioFormat::Other(other.to_owned()),
+        }
+    }
+
+    pub fn as_wire(&self) -> &str {
+        match self {
+            AudioFormat::Wav => "wav",
+            AudioFormat::Mp3 => "mp3",
+            AudioFormat::Flac => "flac",
+            AudioFormat::Opus => "opus",
+            AudioFormat::Aac => "aac",
+            AudioFormat::Pcm16 => "pcm16",
+            AudioFormat::Other(s) => s,
+        }
+    }
+
+    pub fn media_type(&self) -> Option<&'static str> {
+        match self {
+            AudioFormat::Wav => Some("audio/wav"),
+            AudioFormat::Mp3 => Some("audio/mpeg"),
+            AudioFormat::Flac => Some("audio/flac"),
+            AudioFormat::Opus => Some("audio/opus"),
+            AudioFormat::Aac => Some("audio/aac"),
+            AudioFormat::Pcm16 => Some(PCM16_MEDIA_TYPE),
+            AudioFormat::Other(_) => None,
+        }
+    }
+}
+
+pub const PCM16_MEDIA_TYPE: &str = "audio/l16; rate=24000; channels=1";
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[non_exhaustive]
@@ -523,6 +631,30 @@ mod tests {
             ReasoningMode::from_wire("between_tools"),
             ReasoningMode::Other("between_tools".into())
         );
+    }
+
+    #[test]
+    fn modalities_and_audio_formats_round_trip_wire_values() {
+        for s in ["text", "image", "audio", "video"] {
+            assert_eq!(Modality::from_wire(s).as_wire(), s);
+        }
+        for s in ["wav", "mp3", "flac", "opus", "aac", "pcm16", "alaw"] {
+            assert_eq!(AudioFormat::from_wire(s).as_wire(), s);
+        }
+        assert_eq!(AudioFormat::Pcm16.media_type(), Some(PCM16_MEDIA_TYPE));
+        assert_eq!(AudioFormat::Other("alaw".into()).media_type(), None);
+        let mut req = GenerateRequest::new("m");
+        req.output_modalities = vec![Modality::Text, Modality::Audio];
+        req.audio_output = Some(AudioOutput::new(
+            Some("marin".into()),
+            Some(AudioFormat::Wav),
+        ));
+        let json = serde_json::to_string(&req).unwrap();
+        assert!(
+            json.contains(r#""output_modalities":["text","audio"],"audio_output":{"voice":"marin","format":"wav"}"#),
+            "{json}"
+        );
+        assert_eq!(serde_json::from_str::<GenerateRequest>(&json).unwrap(), req);
     }
 
     #[test]

@@ -135,9 +135,9 @@ expression: outcomes
     "unsupported": "generationConfig.mediaResolution"
   },
   "image-output": {
-    "message": "`generationConfig.responseModalities` comes from a Gemini API request and has no equivalent in OpenAI Chat Completions. Remove it, or send the request to a model served through its original format.",
+    "message": "`generationConfig.imageConfig` comes from a Gemini API request and has no equivalent in OpenAI Chat Completions. Remove it, or send the request to a model served through its original format.",
     "param": null,
-    "unsupported": "generationConfig.responseModalities"
+    "unsupported": "generationConfig.imageConfig"
   },
   "max-tokens": {
     "body": {
@@ -216,6 +216,16 @@ expression: outcomes
       ]
     },
     "path": "/v1/chat/completions"
+  },
+  "speech": {
+    "message": "voice `Kore` is not supported by OpenAI Chat Completions. Its voices are alloy, ash, ballad, coral, echo, fable, nova, onyx, sage, shimmer, verse, marin and cedar.",
+    "param": "generationConfig.speechConfig",
+    "unsupported": "voice `Kore`"
+  },
+  "stream-speech": {
+    "message": "voice `Kore` is not supported by OpenAI Chat Completions. Its voices are alloy, ash, ballad, coral, echo, fable, nova, onyx, sage, shimmer, verse, marin and cedar.",
+    "param": "generationConfig.speechConfig",
+    "unsupported": "voice `Kore`"
   },
   "stream-text": {
     "body": {

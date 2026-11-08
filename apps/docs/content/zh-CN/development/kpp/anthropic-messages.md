@@ -141,6 +141,7 @@ Schema `CreateMessageParams` 和 `CountMessageTokensParams`。
 | JPEG、PNG、GIF 或 WebP 以外的 base64 图像；文本形式的图像来源 | `Unsupported` | `Base64ImageSource`。 |
 | `application/pdf` 以外的 base64 文档；`text/plain` 以外的文本文档 | `Unsupported` | `Base64PDFSource`、`PlainTextSource`。 |
 | `Block::Audio`；配置没有 `video_media_types` 时的 `Block::Video` | `Unsupported` | 内容联合类型两者都没有。 |
+| 文本以外的 `output_modalities`；`audio_output` | `Unsupported`（`audio output`、`image output`、`audio output settings`） | 回复只含文本（[音频和图像回复](cross-format.md#音频和图像回复)）。 |
 | 来自其他方言、不是对象的工具调用参数 | 一个对象：文本为 `{"input": text}`，其他值为 `{"input": value}`，`null` 为 `{}`；在 `kaeso-adapted` 中注明 | 否则 Anthropic 会拒绝整个请求（[工具调用参数](cross-format.md#工具调用参数)）。 |
 | 来自 Anthropic 应用、不是对象的 `tool_use.input`；不是对象的工具参数定义 | `Unsupported` | `input` 和 `input_schema` 都是对象。 |
 | 来自其他方言的 `Request::CountTokens` | 不带 `max_tokens`、采样参数、`metadata` 和 `stream` 的 `/v1/messages/count_tokens` | 它们不改变输入 Token 数，而且该端点会拒绝它们。Anthropic 应用自己的 Token 计数请求按收到时的原样发送。 |

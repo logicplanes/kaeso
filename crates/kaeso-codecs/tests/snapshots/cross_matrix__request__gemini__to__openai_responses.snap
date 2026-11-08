@@ -120,9 +120,9 @@ expression: outcomes
     "unsupported": "generationConfig.mediaResolution"
   },
   "image-output": {
-    "message": "`generationConfig.responseModalities` comes from a Gemini API request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "message": "`generationConfig.imageConfig` comes from a Gemini API request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
     "param": null,
-    "unsupported": "generationConfig.responseModalities"
+    "unsupported": "generationConfig.imageConfig"
   },
   "max-tokens": {
     "body": {
@@ -217,6 +217,16 @@ expression: outcomes
       ]
     },
     "path": "/v1/responses"
+  },
+  "speech": {
+    "message": "`audio output` is not supported by OpenAI Responses. OpenAI Responses replies hold text only; send the request to a model of a format that writes it.",
+    "param": "generationConfig.responseModalities",
+    "unsupported": "audio output"
+  },
+  "stream-speech": {
+    "message": "`audio output` is not supported by OpenAI Responses. OpenAI Responses replies hold text only; send the request to a model of a format that writes it.",
+    "param": "generationConfig.responseModalities",
+    "unsupported": "audio output"
   },
   "stream-text": {
     "body": {

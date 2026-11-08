@@ -6,8 +6,8 @@ use crate::openai_chat::ChatProfile;
 use crate::openai_responses::ResponsesProfile;
 use indexmap::IndexMap;
 use kaeso_kpp::{
-    DialectId, KppError, ModelInfo, ModelList, ModelsQuery, Origin, Reply, Request, RequestKind,
-    StreamEvent, StreamMode,
+    AudioFormat, DialectId, KppError, ModelInfo, ModelList, ModelsQuery, Origin, Reply, Request,
+    RequestKind, StreamEvent, StreamMode,
 };
 
 pub trait Codec: sealed::Sealed {
@@ -176,11 +176,19 @@ pub struct EgressCtx {
     /// directory of `chat/completions` for OpenAI Chat Completions, such as
     /// `/v1/projects/{project}/locations/{location}/endpoints/openapi`.
     pub base_path: Option<String>,
+    /// The audio format the request asked for, which tells a reply decoder the media type of
+    /// audio the provider doesn't label, as Chat Completions' `message.audio`. The encoder sets
+    /// the format it chose when the app named none.
+    pub audio_format: Option<AudioFormat>,
 }
 
 impl EgressCtx {
     pub fn new(req: &Request) -> Self {
-        EgressCtx::for_kind(req.kind(), req.stream_mode())
+        let mut ctx = EgressCtx::for_kind(req.kind(), req.stream_mode());
+        if let Request::Generate(g) = req {
+            ctx.audio_format = g.audio_output.as_ref().and_then(|a| a.format.clone());
+        }
+        ctx
     }
 
     pub fn for_kind(kind: RequestKind, stream: StreamMode) -> Self {
@@ -202,6 +210,7 @@ impl EgressCtx {
             adapted: Vec::new(),
             cache_breakpoints: None,
             base_path: None,
+            audio_format: None,
         }
     }
 

@@ -1605,7 +1605,7 @@ mod tests {
             ("requests/logit-bias", "logit_bias"),
             ("providers/alibaba/requests/store-metadata-fields", "store"),
             ("providers/alibaba/requests/prediction-field", "prediction"),
-            ("providers/alibaba/requests/audio-fields", "modalities"),
+            ("providers/alibaba/requests/audio-fields", "audio"),
             (
                 "providers/alibaba/requests/web-search-options-field",
                 "web_search_options",

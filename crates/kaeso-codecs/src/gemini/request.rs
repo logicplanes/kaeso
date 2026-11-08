@@ -469,6 +469,18 @@ fn decode_generation(
     if json {
         req.extras.form.insert(FORM_MIME.into(), JSON_MIME.into());
     }
+    if let Some(rest) = super::speech::decode(
+        req,
+        origin,
+        g.response_modalities,
+        g.speech_config,
+        g.response_format,
+    ) {
+        req.extras.fields.insert(
+            format!("{GENERATION_CONFIG}.responseFormat"),
+            RawJson::from(rest),
+        );
+    }
     if let Some(tc) = g.thinking_config {
         let Ext {
             known: t,
@@ -529,6 +541,9 @@ pub(crate) fn check(req: &Request, ctx: &EgressCtx) -> Result<(), KppError> {
         return Ok(());
     }
     let generate = matches!(req, Request::Generate(_));
+    if generate {
+        super::speech::check(r)?;
+    }
     if generate && r.sampling.stop.len() > MAX_STOP {
         let field = app_field(r, Setting::StopSequences, D);
         return Err(KppError::unsupported_by(
@@ -1154,6 +1169,10 @@ fn encode_generation(
         g.response_mime_type = Some(JSON_MIME.into());
     }
     g.thinking_config = r.reasoning.as_ref().and_then(|c| encode_thinking(r, c));
+    let speech = super::speech::encode(r, own)?;
+    g.response_modalities = speech.modalities;
+    g.speech_config = speech.speech;
+    g.response_format = speech.format;
     let empty = g.temperature.is_none()
         && g.top_p.is_none()
         && g.top_k.is_none()
@@ -1164,7 +1183,10 @@ fn encode_generation(
         && g.frequency_penalty.is_none()
         && g.candidate_count.is_none()
         && g.response_mime_type.is_none()
-        && g.thinking_config.is_none();
+        && g.thinking_config.is_none()
+        && g.response_modalities.is_none()
+        && g.speech_config.is_none()
+        && g.response_format.is_none();
     if empty && !present(GENERATION_CONFIG) {
         return Ok(None);
     }
