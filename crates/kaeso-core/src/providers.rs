@@ -363,6 +363,14 @@ impl ProviderRef {
         }
     }
 
+    /// Where Kaeso sends image requests; custom providers take none.
+    pub fn images(&self) -> Option<crate::provider::ImagesEgress> {
+        match self {
+            ProviderRef::BuiltIn(p) => p.images,
+            ProviderRef::Custom(_) => None,
+        }
+    }
+
     pub fn auth(&self) -> Option<AuthStyle> {
         match self {
             ProviderRef::BuiltIn(p) => Some(p.auth),

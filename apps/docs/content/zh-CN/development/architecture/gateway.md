@@ -116,6 +116,8 @@ Platform API 请求通过会话 Cookie、具有平台访问权限的 API 密钥�
 | `egress_dialect` | `gateway.egress_dialect` | Kaeso 发送的格式：服务商的某个方言，默认为其生成方言（OpenAI 为 `openai_responses`）。类型为 `embedding` 的模型，若其服务商支持 Embeddings 格式，则以 Embeddings 发送 |
 | `cache_write_1h_price` | `pricing.cache_write_1h` | 保留一小时的缓存写入价格；缺省时，或覆盖值设置了输入价格时，为输入价格的两倍 |
 | `price_tiers` | `pricing.tiers` | 长提示词的价格：当请求的提示词（含缓存 Token）超过某一档的 `context_above` 个 Token 时，该请求的所有 Token（包括输出）均按该档价格计费。`kaeso_core::cost::prices_for_prompt` 选取提示词所超过的最高一档；该档未给出的价格沿用基础价格，其 1 小时缓存写入价格为该档输入价格的两倍，除非手动设置了该价格。覆盖值若设置了输入、输出、缓存读取或缓存写入价格而未设置档位，则会舍弃 KPMR 的档位；KPMR 中无法解析的某一档会被单独跳过 |
+| `input_image_price`、`output_image_price`、`cache_read_image_price` | `pricing.input_image`、`pricing.output_image`、`pricing.cache_read_image` | 每百万图片 Token 的价格。图片 Token 是服务商报告为图片的那部分输入、输出或缓存读取（`Usage::input_image_tokens` 等字段）；它们按这些价格计费，没有这些价格时按输入、输出或缓存读取价格计费。设置了图片输出价格时，`output_price` 是文本输出的价格。只设置 Token 价格而未设置任何图片价格的覆盖会丢弃 KPMR 的图片价格 |
+| `unit_prices` | `pricing.per_unit` | 每张图片、每百万像素、每秒、每分钟、每小时或每百万字符的价格，适用于 `size`、`quality`、`resolution` 和 `audio` 都匹配的请求。`kaeso_core::cost::media_cost` 用请求的 `MediaUnits` 乘以这些价格并加到其 Token 费用上；请求未指明的条件取所列最低价格。只设置 Token 价格而未设置按单位价格的覆盖会丢弃 KPMR 的按单位价格，无法解析的单个按单位价格会被单独跳过 |
 
 目录条目的值取自其覆盖值，否则取自 KPMR。除非 `KAESO_KPMR_SYNC` 为 `false`，`kpmr_sync` 任务每 5 分钟检查一次网关是否该再次询问 KPMR，依据是 `KAESO_KPMR_INTERVAL` 或目录的 `refresh_seconds`。它发送保存的 ETag，把 `304` 视为未变更，拒绝没有受信任密钥签名的目录，并把结果连同 ETag 存入 PostgreSQL。其他实例通过 Valkey 重新加载。启动时，存储的快照和内置快照中较新的一个生效。由服务商或字段较少的版本存储的数据，会从内置快照补齐缺少的服务商，并立即重新获取，即使 KPMR 没有变化。
 

@@ -415,5 +415,15 @@
   "models.route.drawAgain": "Neu ziehen",
   "models.route.withTimeout": "{provider} · {seconds} s",
   "models.route.secretHeaderHint": "Routen können keine Header lesen, die Zugangsdaten tragen.",
-  "models.route.headerNameHint": "Geben Sie einen Header-Namen in Kleinbuchstaben ein, etwa x-user-id."
+  "models.route.headerNameHint": "Geben Sie einen Header-Namen in Kleinbuchstaben ein, etwa x-user-id.",
+  "models.unit.image": "Bild",
+  "models.unit.megapixel": "Megapixel",
+  "models.unit.input": "Eingabe",
+  "models.unit.output": "Ausgabe",
+  "models.unitPrice": "{price} pro {unit} der {side}",
+  "models.unitPriceEstimate": "{price}, geschätzt",
+  "models.field.inputImagePrice": "Preis für Bildeingabe",
+  "models.field.outputImagePrice": "Preis für Bildausgabe",
+  "models.field.cacheReadImagePrice": "Preis für gecachte Bildeingabe",
+  "models.field.unitPrices": "Preise pro Einheit"
 }

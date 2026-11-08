@@ -371,6 +371,28 @@ function Overview({ org, project, e, keyName }: { org: string; project: string; 
               label: common.provider(),
               value: e.provider ? <ProviderBadge provider={e.provider} name={providers.name(e.provider)} withName size="sm" /> : "—",
             },
+            ...(e.media
+              ? [
+                  {
+                    label: t("logs.inspector.images", "Images"),
+                    value: (
+                      <span className="flex min-w-0 flex-col">
+                        <Text>
+                          {t("logs.inspector.imagesCount", "{input} sent · {output} made", {
+                            input: formatNumber(e.media.input),
+                            output: formatNumber(e.media.output),
+                          })}
+                        </Text>
+                        {e.media.detail && (
+                          <Text variant="small" tone="secondary">
+                            {e.media.detail}
+                          </Text>
+                        )}
+                      </span>
+                    ),
+                  },
+                ]
+              : []),
             ...(e.alias ? [{ label: t("logs.inspector.alias", "Alias"), value: <Long mono>{e.alias}</Long> }] : []),
             ...(e.fallbacks.length > 0
               ? [

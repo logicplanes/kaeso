@@ -426,6 +426,10 @@ async fn answer(ctx: Ctx, method: Method, uri: Uri, headers: HeaderMap, body: By
         "openai_responses"
     } else if path.starts_with("/v1/embeddings") {
         "openai_embeddings"
+    } else if path == "/v1/image_generation" {
+        "minimax_images"
+    } else if path.starts_with("/v1/images") || path.starts_with("/api/paas/v4/images") {
+        "openai_images"
     } else {
         "openai_chat"
     };
@@ -500,7 +504,7 @@ async fn answer(ctx: Ctx, method: Method, uri: Uri, headers: HeaderMap, body: By
         None => serde_json::from_slice::<serde_json::Value>(&body)
             .ok()
             .and_then(|v| v.get("stream").and_then(serde_json::Value::as_bool))
-            .unwrap_or(false),
+            .unwrap_or_else(|| text.contains("name=\"stream\"\r\n\r\ntrue")),
     };
     if marker(&text, "stall").is_some() && !stream {
         std::future::pending::<()>().await;
@@ -556,6 +560,8 @@ async fn answer(ctx: Ctx, method: Method, uri: Uri, headers: HeaderMap, body: By
             "anthropic_messages" => "text-simple".into(),
             "openai_responses" => "text-basic-stream".into(),
             "gemini" => "recorded-stream-text".into(),
+            "openai_images" if path.ends_with("/edits") => "edit-every-field".into(),
+            "openai_images" => "generate".into(),
             _ => "stream-include-usage".into(),
         });
         let bytes = std::fs::read(fixture_file(&dir, "streams", &name, "sse"))
@@ -621,6 +627,8 @@ async fn answer(ctx: Ctx, method: Method, uri: Uri, headers: HeaderMap, body: By
                 "anthropic_messages" => "text-simple",
                 "openai_responses" => "text-input-string",
                 "gemini" => "recorded-text-simple",
+                "openai_images" => "generate",
+                "minimax_images" => "generate-urls",
                 _ => "plain-developer-string",
             };
             fixture_file(

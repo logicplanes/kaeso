@@ -78,6 +78,8 @@
   "logs.inspector.firstByteSent": "First byte sent",
   "logs.inspector.format": "Format",
   "logs.inspector.fromProvider": "From the provider",
+  "logs.inspector.images": "Images",
+  "logs.inspector.imagesCount": "{input} sent · {output} made",
   "logs.inspector.incomplete": "Incomplete",
   "logs.inspector.inputsEmbedded": "{count, plural, one {# input embedded.} other {# inputs embedded.}}",
   "logs.inspector.keepalives": "Keepalives",

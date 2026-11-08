@@ -9,6 +9,7 @@ Every install serves two APIs on its domain. Apps call models through the model 
 ## Next steps
 
 - [Model API](model-api.md): Call models with the OpenAI, Anthropic and Google Gen AI SDKs, and look up endpoints, headers and model names.
+- [Images API](images.md): Generate and edit images with OpenAI's Images API on every provider that makes images.
 - [Errors](errors.md): Read what a failed model request returns in each format, and why it failed.
 - [Platform API](platform-api.md): Look up authentication, conventions, errors and routes for managing an install.
 - [Automate with the Platform API](automation.md): Set up a project, a model and an app's key from a script.

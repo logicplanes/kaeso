@@ -686,6 +686,7 @@ mod tests {
         generation: DialectId::OpenAiChat,
         count_tokens: None,
         embeddings: None,
+        images: None,
         dialects: &[DialectId::OpenAiChat, DialectId::AnthropicMessages],
         refused_key_messages: &[],
         context_window_messages: &[],

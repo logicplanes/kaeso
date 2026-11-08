@@ -231,5 +231,7 @@
   "logs.tools.protocol": "MCP 版本",
   "logs.tools.sizes": "请求与回答",
   "logs.tools.arguments": "参数",
-  "logs.tools.result": "回答"
+  "logs.tools.result": "回答",
+  "logs.inspector.images": "图片",
+  "logs.inspector.imagesCount": "发送 {input} 张 · 生成 {output} 张"
 }

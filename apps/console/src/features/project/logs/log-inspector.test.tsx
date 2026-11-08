@@ -200,6 +200,17 @@ describe("LogInspector", () => {
     expect(section(await sheet(), "Usage")).toHaveTextContent(text);
   });
 
+  it("counts the images an image request sent and made, with the size and quality", async () => {
+    signedIn();
+    projectData();
+    logsData({
+      rows: [logRow()],
+      entries: [logEntry({ endpoint: "images/edits", media: { unit: "image", input: 2, output: 1, detail: "1024x1024 high" } })],
+    });
+    await renderApp(projectPath("logs?log=req_0001"));
+    expect(section(await sheet(), "Route")).toHaveTextContent("Images2 sent · 1 made1024x1024 high");
+  });
+
   it("names the alias and the steps its route tried before the model that answered", async () => {
     signedIn();
     projectData();

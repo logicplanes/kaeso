@@ -363,6 +363,7 @@ pub struct ResponseCacheConfig {
 #[serde(deny_unknown_fields)]
 pub struct BodyLimitsConfig {
     pub model_api: ByteSize,
+    pub images: ByteSize,
     pub in_flight: ByteSize,
     pub platform_api: ByteSize,
     pub provider_response: ByteSize,
@@ -614,6 +615,7 @@ impl Config {
         }
         for (key, size) in [
             ("body_limits.model_api", self.body_limits.model_api),
+            ("body_limits.images", self.body_limits.images),
             ("body_limits.in_flight", self.body_limits.in_flight),
             ("body_limits.platform_api", self.body_limits.platform_api),
             (

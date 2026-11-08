@@ -62,6 +62,10 @@ pub struct LogRow {
     pub response_cache: String,
     pub alias: String,
     pub fallbacks: String,
+    pub media_unit: String,
+    pub media_input: u64,
+    pub media_output: u64,
+    pub media_detail: String,
 }
 
 #[derive(Clone, Debug, PartialEq, Row, Serialize, Deserialize)]

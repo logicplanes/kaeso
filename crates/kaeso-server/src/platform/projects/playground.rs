@@ -248,6 +248,7 @@ pub async fn responses(
         max_body,
         alias,
         gemini: None,
+        image: None,
     };
     Ok(pipeline::serve_with(state, incoming, answer).await)
 }

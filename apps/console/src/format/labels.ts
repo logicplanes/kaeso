@@ -34,6 +34,8 @@ export const DIALECTS: Record<string, string> = {
   openai_embeddings: "OpenAI Embeddings",
   gemini: "Gemini API",
   gemini_embeddings: "Gemini Embeddings",
+  openai_images: "OpenAI Images",
+  minimax_images: "MiniMax Images",
 };
 export const dialectLabel = (d: string) => DIALECTS[d] ?? d;
 

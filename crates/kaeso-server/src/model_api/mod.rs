@@ -6,6 +6,7 @@ pub mod hooks;
 pub mod in_flight;
 mod input_count;
 pub mod listing;
+mod media;
 pub mod memory;
 pub mod pipeline;
 mod stream;
@@ -18,7 +19,7 @@ use axum::response::Response;
 use axum::routing::{get, post};
 use kaeso_codecs::dispatch;
 use kaeso_core::id::RequestId;
-use kaeso_kpp::{DialectId, ErrorKind, RequestKind};
+use kaeso_kpp::{DialectId, ErrorKind, ImageOperation, RequestKind};
 
 use self::errors::{Served, error, respond};
 use self::pipeline::Incoming;
@@ -33,8 +34,24 @@ async fn serve(
     client_ip: ClientIp,
     req: Request,
 ) -> Response {
+    serve_call(state, ingress, kind, request_id, client_ip, req, None).await
+}
+
+async fn serve_call(
+    state: AppState,
+    ingress: DialectId,
+    kind: RequestKind,
+    request_id: RequestId,
+    client_ip: ClientIp,
+    req: Request,
+    image: Option<ImageOperation>,
+) -> Response {
     let (parts, body) = req.into_parts();
-    let max_body = state.config.body_limits.model_api.as_usize();
+    let max_body = if image.is_some() {
+        state.config.body_limits.images.as_usize()
+    } else {
+        state.config.body_limits.model_api.as_usize()
+    };
     pipeline::serve(
         state,
         Incoming {
@@ -50,10 +67,38 @@ async fn serve(
             max_body,
             alias: None,
             gemini: None,
+            image,
         },
     )
     .await
 }
+
+macro_rules! image_endpoint {
+    ($name:ident, $operation:expr) => {
+        async fn $name(
+            State(state): State<AppState>,
+            Extension(id): Extension<RequestId>,
+            ip: ClientIp,
+            req: Request,
+        ) -> Response {
+            let kind = RequestKind::Image;
+            serve_call(
+                state,
+                DialectId::OpenAiImages,
+                kind,
+                id,
+                ip,
+                req,
+                Some($operation),
+            )
+            .await
+        }
+    };
+}
+
+image_endpoint!(image_generations, ImageOperation::Generate);
+image_endpoint!(image_edits, ImageOperation::Edit);
+image_endpoint!(image_variations, ImageOperation::Variation);
 
 macro_rules! endpoint {
     ($name:ident, $dialect:expr, $kind:expr) => {
@@ -170,6 +215,9 @@ pub fn router() -> Router<AppState> {
         .route("/v1/responses", post(responses))
         .route("/v1/responses/input_tokens", post(responses_input_tokens))
         .route("/v1/embeddings", post(embeddings))
+        .route("/v1/images/generations", post(image_generations))
+        .route("/v1/images/edits", post(image_edits))
+        .route("/v1/images/variations", post(image_variations))
         .route("/v1/messages", post(messages))
         .route("/v1/messages/count_tokens", post(messages_count_tokens))
         .route("/v1/models", get(models_list))

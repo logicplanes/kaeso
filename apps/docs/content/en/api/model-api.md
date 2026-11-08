@@ -162,6 +162,7 @@ Any format reaches any generation model in the project's catalogue, so a Gemini 
 | `POST /v1/responses` | OpenAI Responses |
 | `POST /v1/responses/input_tokens` | OpenAI Responses, counting input tokens |
 | `POST /v1/embeddings` | OpenAI Embeddings |
+| `POST /v1/images/generations`, `POST /v1/images/edits`, `POST /v1/images/variations` | OpenAI Images ([Images API](images.md)) |
 | `POST /v1/messages` | Anthropic Messages |
 | `POST /v1/messages/count_tokens` | Anthropic Messages, counting tokens |
 | `GET /v1/models` | The models the key may call |

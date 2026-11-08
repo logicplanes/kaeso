@@ -601,12 +601,13 @@ pub struct LogFilter {
         Playground (`playground`)."]
     pub source: Option<String>,
     #[doc = "Only requests the app sent in this format: `anthropic_messages`,\n\
-        `openai_chat`, `openai_responses`, `openai_embeddings`, `gemini` or\n\
-        `gemini_embeddings`."]
+        `openai_chat`, `openai_responses`, `openai_embeddings`, `gemini`,\n\
+        `gemini_embeddings` or `openai_images`."]
     pub ingress_dialect: Option<String>,
     #[doc = "Only requests Kaeso sent to the provider in this format:\n\
         `anthropic_messages`, `openai_chat`, `openai_responses`,\n\
-        `openai_embeddings`, `gemini` or `gemini_embeddings`."]
+        `openai_embeddings`, `gemini`, `gemini_embeddings`, `openai_images` or\n\
+        `minimax_images`."]
     pub egress_dialect: Option<String>,
     #[doc = "Only requests the response cache answered (`hit`), sent on (`miss`)\n\
         or passed by (`bypass`)."]
@@ -833,6 +834,24 @@ pub struct LogView {
     #[doc = "The steps of the alias's route that failed before the one that\n\
         answered, or before the last one tried, in the order they were tried."]
     pub fallbacks: Vec<FallbackView>,
+    #[doc = "What a media request took and made, such as images; `null` for other requests."]
+    pub media: Option<MediaView>,
+}
+
+#[derive(Clone, Debug, Serialize, ToSchema)]
+#[schema(description = "The media units of a request, such as the images it sent and made.")]
+pub struct MediaView {
+    #[doc = "The unit: `image`."]
+    #[schema(example = "image")]
+    pub unit: String,
+    #[doc = "Units the app sent, such as the images of an edit."]
+    pub input: u64,
+    #[doc = "Units the provider made."]
+    pub output: u64,
+    #[doc = "The size, quality and resolution the request asked for or the provider\n\
+        reported, such as `1024x1024 high`; empty when unknown."]
+    #[schema(example = "1024x1024 high")]
+    pub detail: String,
 }
 
 #[derive(Clone, Debug, Serialize, ToSchema)]
@@ -957,6 +976,12 @@ fn view(r: &LogRow) -> LogView {
         response_cache: ResponseCacheResult::parse(&r.response_cache),
         alias: none(&r.alias),
         fallbacks: fallbacks(&r.fallbacks),
+        media: (!r.media_unit.is_empty()).then(|| MediaView {
+            unit: r.media_unit.clone(),
+            input: r.media_input,
+            output: r.media_output,
+            detail: r.media_detail.clone(),
+        }),
     }
 }
 
@@ -1095,7 +1120,7 @@ pub struct ExportParams {
     pub include_content: Option<bool>,
 }
 
-const CSV_HEADER: &str = "id,started_at,duration_ms,ttfb_ms,key_id,principal_kind,principal_id,endpoint,ingress_dialect,egress_dialect,provider,requested_model,model,stream,status,error_kind,input_tokens,output_tokens,cache_read_tokens,cache_write_tokens,reasoning_tokens,cost,user_agent,client_ip,upstream_request_id,stream_events,stream_bytes,stream_first_byte_ms,stream_keepalives,usage_estimated,source,overhead_ms,stream_processing_ms,cache_breakpoints,request_upload_ms,response_cache,alias,fallbacks\n";
+const CSV_HEADER: &str = "id,started_at,duration_ms,ttfb_ms,key_id,principal_kind,principal_id,endpoint,ingress_dialect,egress_dialect,provider,requested_model,model,stream,status,error_kind,input_tokens,output_tokens,cache_read_tokens,cache_write_tokens,reasoning_tokens,cost,user_agent,client_ip,upstream_request_id,stream_events,stream_bytes,stream_first_byte_ms,stream_keepalives,usage_estimated,source,overhead_ms,stream_processing_ms,cache_breakpoints,request_upload_ms,response_cache,alias,fallbacks,media_unit,media_input,media_output,media_detail\n";
 
 // OWASP CSV injection (https://owasp.org/www-community/attacks/CSV_Injection): quote every
 // text cell and prefix `'` to one that starts a formula or holds a separator a spreadsheet
@@ -1188,6 +1213,15 @@ fn csv_line(v: &LogView) -> String {
                 })
                 .collect::<Vec<_>>()
                 .join("; "),
+        ),
+        Text(v.media.as_ref().map(|m| m.unit.clone()).unwrap_or_default()),
+        number(v.media.as_ref().map(|m| m.input)),
+        number(v.media.as_ref().map(|m| m.output)),
+        Text(
+            v.media
+                .as_ref()
+                .map(|m| m.detail.clone())
+                .unwrap_or_default(),
         ),
     ];
     let mut line = cells

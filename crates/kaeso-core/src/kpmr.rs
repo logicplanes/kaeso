@@ -64,6 +64,51 @@ pub struct Pricing {
     pub cache_write_1h: Option<Decimal>,
     #[serde(default, deserialize_with = "tiers")]
     pub tiers: Vec<Tier>,
+    #[serde(default, deserialize_with = "price")]
+    pub input_image: Option<Decimal>,
+    #[serde(default, deserialize_with = "price")]
+    pub output_image: Option<Decimal>,
+    #[serde(default, deserialize_with = "price")]
+    pub cache_read_image: Option<Decimal>,
+    #[serde(default, deserialize_with = "unit_prices")]
+    pub per_unit: Vec<UnitPrice>,
+}
+
+/// A price per image, megapixel, second, minute, hour or million characters, for the
+/// requests whose conditions match; a condition that is `None` matches any request.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct UnitPrice {
+    pub per: String,
+    pub of: String,
+    #[serde(deserialize_with = "required_price")]
+    pub usd: Decimal,
+    #[serde(default)]
+    pub size: Option<String>,
+    #[serde(default)]
+    pub quality: Option<String>,
+    #[serde(default)]
+    pub resolution: Option<String>,
+    #[serde(default)]
+    pub audio: Option<String>,
+    #[serde(default)]
+    pub estimate: bool,
+}
+
+fn required_price<'de, D: Deserializer<'de>>(d: D) -> Result<Decimal, D::Error> {
+    price(d)?.ok_or_else(|| serde::de::Error::custom("a unit price needs `usd`"))
+}
+
+// As with tiers, one unit price this gateway cannot read must not cost it the whole model.
+fn unit_prices<'de, D: Deserializer<'de>>(d: D) -> Result<Vec<UnitPrice>, D::Error> {
+    Ok(Option::<Value>::deserialize(d)?
+        .and_then(|v| match v {
+            Value::Array(items) => Some(items),
+            _ => None,
+        })
+        .unwrap_or_default()
+        .into_iter()
+        .filter_map(|item| serde_json::from_value(item).ok())
+        .collect())
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]

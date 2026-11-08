@@ -82,6 +82,7 @@ expression: settings_reference()
 | `KAESO_RESPONSE_CACHE_MAX_ENTRY_SIZE` | `response_cache.max_entry_size` | text | `1MiB` | Largest reply the response cache keeps; a larger one is still served but not cached. |
 | `KAESO_RESPONSE_CACHE_MEMORY_SHARE` | `response_cache.memory_share` | integer | `50` | Percent of Valkey's `maxmemory` above which the response cache stops adding entries, so limit counters always have room; 1 to 90. Ignored when Valkey sets no `maxmemory`. |
 | `KAESO_BODY_LIMITS_MODEL_API` | `body_limits.model_api` | text | `32MiB` | Largest request body of the model API. |
+| `KAESO_BODY_LIMITS_IMAGES` | `body_limits.images` | text | `64MiB` | Largest request body of the image endpoints, uploads included. |
 | `KAESO_BODY_LIMITS_IN_FLIGHT` | `body_limits.in_flight` | text | `512MiB` | Memory the model API and the Playground may use at once to translate requests, estimated from each body as received and its messages, blocks and tools; a request waits up to 10s for room. |
 | `KAESO_BODY_LIMITS_PLATFORM_API` | `body_limits.platform_api` | text | `1MiB` | Largest request body of the Platform API, Playground requests included. |
 | `KAESO_BODY_LIMITS_PROVIDER_RESPONSE` | `body_limits.provider_response` | text | `128MiB` | Largest non-streaming response body Kaeso reads from a provider; a larger one fails the request with 502. |

@@ -415,5 +415,15 @@
   "models.route.drawAgain": "重新抽取",
   "models.route.withTimeout": "{provider} · {seconds} 秒",
   "models.route.secretHeaderHint": "路由无法读取携带凭据的请求头。",
-  "models.route.headerNameHint": "请输入小写的请求头名称，例如 x-user-id。"
+  "models.route.headerNameHint": "请输入小写的请求头名称，例如 x-user-id。",
+  "models.unit.image": "图片",
+  "models.unit.megapixel": "百万像素",
+  "models.unit.input": "输入",
+  "models.unit.output": "输出",
+  "models.unitPrice": "{side}每{unit} {price}",
+  "models.unitPriceEstimate": "{price}（估算）",
+  "models.field.inputImagePrice": "图片输入价格",
+  "models.field.outputImagePrice": "图片输出价格",
+  "models.field.cacheReadImagePrice": "图片缓存读取价格",
+  "models.field.unitPrices": "按单位计价"
 }
