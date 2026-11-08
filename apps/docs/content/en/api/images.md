@@ -91,11 +91,11 @@ for event in stream:
     print(event.type)
 ```
 
-Providers that don't stream images get the request whole, and Kaeso writes their reply as one `image_generation.completed` event per image, as OpenAI does with `partial_images` 0. Asking those providers for partial images answers 400 with `param` `partial_images`.
+Providers that don't stream images get the request whole. Kaeso writes their reply as one `image_generation.completed` event per image, as OpenAI does with `partial_images` 0. Asking those providers for partial images answers 400 with `param` `partial_images`.
 
 ## Providers
 
-Every built-in provider's documentation was read for image generation on 2026-11-08. Providers serve the models below in their own form; Kaeso refuses a parameter the model's provider doesn't take before anything is sent, with the parameter in `param`.
+Every built-in provider's documentation was read for image generation on 2026-11-08. Providers serve the models below in their own form. Kaeso refuses a parameter the model's provider doesn't take before anything is sent, with the parameter in `param`.
 
 | Provider | Generations | Edits | Models | Source |
 | --- | --- | --- | --- | --- |
@@ -112,11 +112,17 @@ Every built-in provider's documentation was read for image generation on 2026-11
 | Mistral | No: images only as a tool of its agents | No | — | [Image generation tool](https://docs.mistral.ai/studio/agents/agent-tools/image_generation) |
 | Anthropic, DeepSeek, Groq, Cohere, Ollama Cloud, Moonshot, Cerebras | Not offered by the provider | — | — | Each provider's API reference |
 
-Google retired Imagen, so Kaeso calls the Gemini image models only. A size reaches them only when Google's size tables list it, such as `1024x1024` (`1:1` at `1K`); send `aspect_ratio` and `resolution` for the others. SpaceX takes `aspect_ratio` and `resolution` instead of `size`. Z.ai and QwenCloud answer only with links, which expire after 30 days and 24 hours, so `response_format: "b64_json"` answers 400 there. Gemini and OpenRouter answer only with base64, so `response_format: "url"` answers 400 there. The [OpenAI Images mapping](../development/kpp/openai-images.md) lists every parameter and how each provider takes it.
+Google retired Imagen, so Kaeso calls the Gemini image models only. A size reaches them only when Google's size tables list it, such as `1024x1024` (`1:1` at `1K`). Send `aspect_ratio` and `resolution` for the others.
+
+SpaceX takes `aspect_ratio` and `resolution` instead of `size`. Z.ai and QwenCloud answer only with links, which expire after 30 days and 24 hours, so `response_format: "b64_json"` answers 400 there. Gemini and OpenRouter answer only with base64, so `response_format: "url"` answers 400 there.
+
+The [OpenAI Images mapping](../development/kpp/openai-images.md) lists every parameter and how each provider takes it.
 
 ## Costs and logs
 
-Kaeso bills image tokens at the model's image prices from KPMR when the provider reports them, as OpenAI and Google do, and the rest at its token prices. Providers that bill per image or per megapixel get their prices per unit from KPMR; when the request doesn't name the size, quality or resolution a price depends on, the lowest listed price applies, since that is the provider's default. A price KPMR marks as an estimate is shown as one on the model's sheet. Spend budgets reserve each request's dearest case before it is sent.
+Kaeso bills image tokens at the model's image prices from KPMR when the provider reports them, as OpenAI and Google do. It bills the rest at the token prices. Providers that bill per image or per megapixel get their prices per unit from KPMR.
+
+If the request leaves out the size, quality or resolution a price depends on, the lowest listed price applies. That is the provider's default. A price KPMR marks as an estimate is shown as one on the model's sheet. Spend budgets reserve each request's dearest case before it is sent.
 
 Request logs show the endpoint, such as `images/edits`, the images sent and made, and the size and quality. They never keep image bytes: an upload is logged as its fields, each image as its media type and size ([request logs](../console/request-logs.md)).
 

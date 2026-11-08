@@ -91,11 +91,11 @@ for event in stream:
     print(event.type)
 ```
 
-Anbieter, die keine Bilder streamen, bekommen die Anfrage ganz, und Kaeso schreibt ihre Antwort als ein Ereignis `image_generation.completed` pro Bild, so wie OpenAI mit `partial_images` 0. Teilbilder von diesen Anbietern zu verlangen beantwortet Kaeso mit 400 und `param` `partial_images`.
+Anbieter, die keine Bilder streamen, bekommen die Anfrage ganz. Kaeso schreibt ihre Antwort als ein Ereignis `image_generation.completed` pro Bild, so wie OpenAI mit `partial_images` 0. Teilbilder von diesen Anbietern zu verlangen beantwortet Kaeso mit 400 und `param` `partial_images`.
 
 ## Anbieter
 
-Die Dokumentation jedes eingebauten Anbieters wurde am 2026-11-08 auf Bildgenerierung gelesen. Die Anbieter bedienen die Modelle unten in ihrer eigenen Form; einen Parameter, den der Anbieter des Modells nicht nimmt, lehnt Kaeso ab, bevor etwas gesendet wird, mit dem Parameter in `param`.
+Die Dokumentation jedes eingebauten Anbieters wurde am 2026-11-08 auf Bildgenerierung gelesen. Die Anbieter bedienen die Modelle unten in ihrer eigenen Form. Einen Parameter, den der Anbieter des Modells nicht nimmt, lehnt Kaeso ab, bevor etwas gesendet wird, mit dem Parameter in `param`.
 
 | Anbieter | Generierung | Bearbeitung | Modelle | Quelle |
 | --- | --- | --- | --- | --- |
@@ -112,11 +112,17 @@ Die Dokumentation jedes eingebauten Anbieters wurde am 2026-11-08 auf Bildgeneri
 | Mistral | Nein: Bilder nur als Werkzeug seiner Agenten | Nein | — | [Image generation tool](https://docs.mistral.ai/studio/agents/agent-tools/image_generation) |
 | Anthropic, DeepSeek, Groq, Cohere, Ollama Cloud, Moonshot, Cerebras | Vom Anbieter nicht angeboten | — | — | Die API-Referenz jedes Anbieters |
 
-Google hat Imagen eingestellt, deshalb ruft Kaeso nur die Bildmodelle von Gemini auf. Eine Größe erreicht sie nur, wenn die Größentabellen von Google sie nennen, etwa `1024x1024` (`1:1` bei `1K`); senden Sie für andere `aspect_ratio` und `resolution`. SpaceX nimmt `aspect_ratio` und `resolution` statt `size`. Z.ai und QwenCloud antworten nur mit Links, die nach 30 Tagen bzw. 24 Stunden ablaufen, deshalb beantwortet Kaeso dort `response_format: "b64_json"` mit 400. Gemini und OpenRouter antworten nur mit Base64, deshalb beantwortet Kaeso dort `response_format: "url"` mit 400. Die [Abbildung von OpenAI Images](../development/kpp/openai-images.md) nennt jeden Parameter und wie jeder Anbieter ihn nimmt.
+Google hat Imagen eingestellt, deshalb ruft Kaeso nur die Bildmodelle von Gemini auf. Eine Größe erreicht sie nur, wenn die Größentabellen von Google sie nennen, etwa `1024x1024` (`1:1` bei `1K`). Senden Sie für andere `aspect_ratio` und `resolution`.
+
+SpaceX nimmt `aspect_ratio` und `resolution` statt `size`. Z.ai und QwenCloud antworten nur mit Links, die nach 30 Tagen bzw. 24 Stunden ablaufen, deshalb beantwortet Kaeso dort `response_format: "b64_json"` mit 400. Gemini und OpenRouter antworten nur mit Base64, deshalb beantwortet Kaeso dort `response_format: "url"` mit 400.
+
+Die [Abbildung von OpenAI Images](../development/kpp/openai-images.md) nennt jeden Parameter und wie jeder Anbieter ihn nimmt.
 
 ## Kosten und Logs
 
-Kaeso berechnet Bild-Token zu den Bildpreisen des Modells aus KPMR, wenn der Anbieter sie meldet, wie OpenAI und Google es tun, und den Rest zu seinen Token-Preisen. Anbieter, die pro Bild oder pro Megapixel abrechnen, bekommen ihre Preise pro Einheit aus KPMR; nennt die Anfrage die Größe, Qualität oder Auflösung nicht, von der ein Preis abhängt, gilt der niedrigste gelistete Preis, denn das ist der Standard des Anbieters. Einen Preis, den KPMR als Schätzung markiert, zeigt die Modellansicht als Schätzung. Ausgabenbudgets reservieren vor dem Senden den teuersten Fall jeder Anfrage.
+Kaeso berechnet Bild-Token zu den Bildpreisen des Modells aus KPMR, wenn der Anbieter sie meldet, wie OpenAI und Google es tun. Den Rest berechnet es zu den Token-Preisen. Anbieter, die pro Bild oder pro Megapixel abrechnen, bekommen ihre Preise pro Einheit aus KPMR.
+
+Nennt die Anfrage die Größe, Qualität oder Auflösung nicht, von der ein Preis abhängt, gilt der niedrigste gelistete Preis. Das ist der Standard des Anbieters. Einen Preis, den KPMR als Schätzung markiert, zeigt die Modellansicht als Schätzung. Ausgabenbudgets reservieren vor dem Senden den teuersten Fall jeder Anfrage.
 
 Die Anfrage-Logs zeigen den Endpunkt, etwa `images/edits`, die gesendeten und erzeugten Bilder und die Größe und Qualität. Bild-Bytes behalten sie nie: Ein Upload wird als seine Felder geloggt, jedes Bild als Medientyp und Größe ([Anfrage-Logs](../console/request-logs.md)).
 

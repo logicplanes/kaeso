@@ -37,7 +37,7 @@ Eine Bedingung hat 1 bis 10 Regeln. Jede Regel liest eine Angabe über die Anfra
 | Feld | Gilt, wenn |
 | --- | --- |
 | `header` | Ein Anfrage-Header `equals`, `not_equals` oder `contains` einen Wert, oder `present` oder `absent` ist. Namen sind kleingeschrieben, Werte werden genau verglichen und haben bis zu 200 Zeichen. Ein zweimal gesendeter Header gilt für `equals` und `contains`, wenn einer der Werte passt |
-| `format` | Das API-Format der App ist `in` oder `not_in` einer Liste: `openai_chat`, `openai_responses`, `anthropic_messages`, `openai_embeddings`, `gemini`, `gemini_embeddings`, `openai_images` |
+| `format` | Das API-Format der App ist `in` oder `not_in` einer Liste: `openai_chat`, `openai_responses`, `anthropic_messages`, `openai_embeddings`, `gemini`, `gemini_embeddings` |
 | `feature` | Die Anfrage nutzt `images`, `pdfs`, `tools`, `reasoning`, `structured_output` (ein JSON-Schema) oder `streaming`, oder nicht |
 | `input_tokens` | Die Eingabe hat `at_least` oder `below` eine Zahl von Tokens, geschätzt aus der Größe der Anfrage mit 4 Bytes je Token |
 | `key`, `member`, `service_account` | Der API-Schlüssel, das Mitglied oder das Dienstkonto, das die Anfrage sendete, ist `in` oder `not_in` einer Liste von bis zu 100 |
