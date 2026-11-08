@@ -330,7 +330,8 @@
       "embeddings": null,
       "account": null,
       "service_account": null,
-      "model_routes": []
+      "model_routes": [],
+      "server": null
     },
     {
       "id": "google",
