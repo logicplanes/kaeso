@@ -147,4 +147,17 @@ describe("ProviderPicker", () => {
     await user.type(screen.getByRole("searchbox", { name: "Search providers" }), "nothing");
     expect(screen.getByText("No providers match")).toBeInTheDocument();
   });
+
+  it("keeps the given order when told to, so a last choice such as Other stays last", () => {
+    const servers: ProviderPickerOption[] = [
+      { id: "lab-v", name: "vLLM" },
+      { id: "lab-o", name: "Ollama" },
+      { id: "lab-other", name: "Another server" },
+    ];
+    const { unmount } = render(<ProviderPicker appearance="grid" ordered providers={servers} aria-label="Server" />);
+    expect(screen.getAllByRole("radio").map((r) => r.getAttribute("aria-label") ?? r.textContent?.slice(1))).toEqual(["vLLM", "Ollama", "Another server"]);
+    unmount();
+    render(<ProviderPicker appearance="grid" providers={servers} aria-label="Server" />);
+    expect(screen.getAllByRole("radio").map((r) => r.getAttribute("aria-label") ?? r.textContent?.slice(1))).toEqual(["Another server", "Ollama", "vLLM"]);
+  });
 });

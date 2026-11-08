@@ -1,6 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { api, data } from "../client";
-import type { CustomProviderView, OfferedModel } from "../generated/types";
+import type { CustomProviderView, OfferedModel, ServerView } from "../generated/types";
 
 export const customProvidersQuery = (org: string) =>
   queryOptions({
@@ -21,4 +21,11 @@ export const offeredModelsQuery = (org: string, project: string, provider: strin
       ).data,
     staleTime: 60_000,
     retry: false,
+  });
+
+export const customProviderServersQuery = (org: string) =>
+  queryOptions({
+    queryKey: ["orgs", org, "custom-provider-servers"],
+    queryFn: async (): Promise<ServerView[]> => data(await api.GET("/platform/v1/orgs/{org}/custom-provider-servers", { params: { path: { org } } })).data,
+    staleTime: Infinity,
   });

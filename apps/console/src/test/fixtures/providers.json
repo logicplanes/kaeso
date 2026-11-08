@@ -21,7 +21,8 @@
         "experimental": false
       },
       "service_account": null,
-      "model_routes": []
+      "model_routes": [],
+      "server": null
     },
     {
       "id": "anthropic",
@@ -39,7 +40,8 @@
       "embeddings": null,
       "account": null,
       "service_account": null,
-      "model_routes": []
+      "model_routes": [],
+      "server": null
     },
     {
       "id": "deepseek",
@@ -57,7 +59,8 @@
       "embeddings": null,
       "account": null,
       "service_account": null,
-      "model_routes": []
+      "model_routes": [],
+      "server": null
     },
     {
       "id": "xai",
@@ -80,7 +83,8 @@
         "experimental": true
       },
       "service_account": null,
-      "model_routes": []
+      "model_routes": [],
+      "server": null
     },
     {
       "id": "togetherai",
@@ -98,7 +102,8 @@
       "embeddings": "openai_embeddings",
       "account": null,
       "service_account": null,
-      "model_routes": []
+      "model_routes": [],
+      "server": null
     },
     {
       "id": "groq",
@@ -116,7 +121,8 @@
       "embeddings": null,
       "account": null,
       "service_account": null,
-      "model_routes": []
+      "model_routes": [],
+      "server": null
     },
     {
       "id": "openrouter",
@@ -134,7 +140,8 @@
       "embeddings": "openai_embeddings",
       "account": null,
       "service_account": null,
-      "model_routes": []
+      "model_routes": [],
+      "server": null
     },
     {
       "id": "mistral",
@@ -152,7 +159,8 @@
       "embeddings": "openai_embeddings",
       "account": null,
       "service_account": null,
-      "model_routes": []
+      "model_routes": [],
+      "server": null
     },
     {
       "id": "vercel",
@@ -170,7 +178,8 @@
       "embeddings": "openai_embeddings",
       "account": null,
       "service_account": null,
-      "model_routes": []
+      "model_routes": [],
+      "server": null
     },
     {
       "id": "cohere",
@@ -188,7 +197,8 @@
       "embeddings": "openai_embeddings",
       "account": null,
       "service_account": null,
-      "model_routes": []
+      "model_routes": [],
+      "server": null
     },
     {
       "id": "ollama-cloud",
@@ -206,7 +216,8 @@
       "embeddings": null,
       "account": null,
       "service_account": null,
-      "model_routes": []
+      "model_routes": [],
+      "server": null
     },
     {
       "id": "moonshotai",
@@ -224,7 +235,8 @@
       "embeddings": null,
       "account": null,
       "service_account": null,
-      "model_routes": []
+      "model_routes": [],
+      "server": null
     },
     {
       "id": "alibaba",
@@ -242,7 +254,8 @@
       "embeddings": "openai_embeddings",
       "account": null,
       "service_account": null,
-      "model_routes": []
+      "model_routes": [],
+      "server": null
     },
     {
       "id": "cerebras",
@@ -260,7 +273,8 @@
       "embeddings": null,
       "account": null,
       "service_account": null,
-      "model_routes": []
+      "model_routes": [],
+      "server": null
     },
     {
       "id": "zai",
@@ -278,7 +292,8 @@
       "embeddings": null,
       "account": null,
       "service_account": null,
-      "model_routes": []
+      "model_routes": [],
+      "server": null
     },
     {
       "id": "minimax",
@@ -296,7 +311,8 @@
       "embeddings": null,
       "account": null,
       "service_account": null,
-      "model_routes": []
+      "model_routes": [],
+      "server": null
     },
     {
       "id": "google",
@@ -314,7 +330,8 @@
       "embeddings": "gemini_embeddings",
       "account": null,
       "service_account": null,
-      "model_routes": []
+      "model_routes": [],
+      "server": null
     },
     {
       "id": "gemini-agent-platform",
@@ -381,7 +398,8 @@
           "pattern": "*/*",
           "dialect": "openai_chat"
         }
-      ]
+      ],
+      "server": null
     }
   ],
   "has_more": false,

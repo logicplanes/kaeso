@@ -9,6 +9,7 @@ import { LocaleProvider } from "../../i18n/index.js";
 import { TooltipProvider } from "../tooltip/tooltip-provider.js";
 import { hoverWithMouse } from "../../../test/hover.js";
 import { lazyModulesSettled } from "../../utils/lazy-module.js";
+import { ProviderMarksProvider } from "../../utils/provider-marks.js";
 
 afterEach(() => vi.useRealTimers());
 
@@ -24,6 +25,25 @@ describe("identity parts", () => {
     expect(screen.getByText("OpenAI")).toBeInTheDocument();
     expect(screen.getByRole("img", { name: "Zenith Labs" })).toHaveTextContent(/^Z$/);
     expect(screen.getByRole("img", { name: "302.AI" })).toHaveTextContent(/^3$/);
+  });
+
+  it("draws the mark a caller or a ProviderMarksProvider names for a provider id without one", () => {
+    render(
+      <ProviderMarksProvider markOf={(id) => (id === "home-ollama" ? "ollama-cloud" : undefined)}>
+        <ProviderBadge provider="home-ollama" name="Home Ollama" />
+        <ProviderBadge provider="lab" name="Lab" mark="groq" />
+        <ProviderBadge provider="home-ollama" name="Plain" mark="kestrel" />
+        <ModelLabel provider="home-ollama" providerName="Ollama box" model="qwen3:0.6b" />
+        <ProviderBadge provider="lab-2" name="Lab two" />
+      </ProviderMarksProvider>,
+    );
+    for (const name of ["Home Ollama", "Lab", "Ollama box"]) {
+      const tile = screen.getByRole("img", { name });
+      expect(tile.querySelector("svg")).not.toBeNull();
+      expect(tile).toHaveTextContent("");
+    }
+    expect(screen.getByRole("img", { name: "Plain" })).toHaveTextContent(/^P$/);
+    expect(screen.getByRole("img", { name: "Lab two" })).toHaveTextContent(/^L$/);
   });
 
   it("falls back to the provider id without a name", () => {

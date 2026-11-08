@@ -3,6 +3,7 @@ use axum::extract::State;
 use kaeso_core::id::OrgId;
 use kaeso_core::provider::{PROVIDERS, Provider, ProviderId};
 use kaeso_core::providers::CustomProvider;
+use kaeso_core::servers::ServerKind;
 use serde::Serialize;
 use utoipa::ToSchema;
 
@@ -61,6 +62,10 @@ pub struct ProviderView {
         none, the first matching pattern winning; models no pattern matches go\n\
         in the first of `dialects`. Empty for most providers."]
     pub model_routes: Vec<ModelRouteView>,
+    #[doc = "The inference server software a custom provider runs, which also picks\n\
+        its mark; `null` for a built-in provider and for another server or a proxy."]
+    #[schema(example = json!(null))]
+    pub server: Option<ServerKind>,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -152,6 +157,7 @@ impl ProviderView {
                     dialect: r.dialect.as_str(),
                 })
                 .collect(),
+            server: None,
         }
     }
 
@@ -170,6 +176,7 @@ impl ProviderView {
             account: None,
             service_account: None,
             model_routes: Vec::new(),
+            server: p.server(),
         }
     }
 }

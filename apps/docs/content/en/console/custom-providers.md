@@ -9,14 +9,15 @@ A custom provider is a server your organization adds itself, such as a self-host
 ## Add a custom provider
 
 1. On **Providers**, open **Custom providers** and choose **Add custom provider**.
-2. Enter the server's **Base URL**, such as `https://vllm.example.com/v1`, and its **API key**. Leave the key empty for a server that takes none.
-3. Choose **Detect settings**. Kaeso asks the server how to call it ([what Kaeso detects](#what-kaeso-detects)).
-4. Check what Kaeso found: the **Name**, the **Id**, the **Base URL**, the **API format**, whether it **Also serves embeddings** or **Counts tokens**, and how it takes its **Key**. Change anything that's wrong.
-5. Choose **Add custom provider**. Kaeso checks the settings you changed with the server, then adds the provider and saves the key as its provider key.
+2. Choose what runs the server, such as **vLLM**, **Ollama** or **LM Studio** ([server software](#server-software)), or **Other server or proxy**, and choose **Continue**.
+3. Enter the server's **Base URL**, such as `https://vllm.example.com/v1`, and its **API key**. Leave the key empty for a server that takes none.
+4. Choose **Detect settings**. Kaeso asks the server how to call it ([what Kaeso detects](#what-kaeso-detects)).
+5. Check what Kaeso found: the **Name**, the **Id**, the **Base URL**, the **Server**, the **API format**, whether it **Also serves embeddings** or **Counts tokens**, and how it takes its **Key**. Change anything that's wrong.
+6. Choose **Add custom provider**. Kaeso checks the settings you changed with the server, then adds the provider and saves the key as its provider key.
 
 Without the right **Add provider keys**, Kaeso uses the key only to detect the settings; someone with the right adds it under **Provider keys** ([provider keys](provider-keys.md)). Last, add the provider's models to a project ([add its models](#add-its-models)).
 
-The **Id** starts from the server's host and follows the name until you change it. Model names start with it, such as `research-vllm/llama-3.3-70b`, and it never changes. An id is lowercase letters and digits with single hyphens between them, at most 40 characters. It can't be the id of a built-in provider, or of a provider listed in [KPMR](../concepts/kpmr.md), because Kaeso may add that provider later. Each organization has its own ids, so two organizations can both have a `research-vllm`.
+The **Id** starts from the server's host, or from its software's name for an address such as `localhost`, `10.0.0.5` or `host.docker.internal`, and follows the name until you change it. Model names start with it, such as `research-vllm/llama-3.3-70b`, and it never changes. An id is lowercase letters and digits with single hyphens between them, at most 40 characters. It can't be the id of a built-in provider, or of a provider listed in [KPMR](../concepts/kpmr.md), because Kaeso may add that provider later. Each organization has its own ids, so two organizations can both have a `research-vllm`.
 
 Kaeso appends the format's path to the base URL, such as `/v1/chat/completions`, as it does for every provider. So it drops a trailing `/v1` or a pasted endpoint, such as `/v1/chat/completions`, and adds `https://` to an address without a scheme. A path before `/v1` stays: `https://proxy.example.com/llm/v1` gets requests at `https://proxy.example.com/llm/v1/chat/completions`. A server whose API doesn't live under `/v1` can't be added yet.
 
@@ -30,6 +31,7 @@ Kaeso finds the settings with requests that cost nothing. It asks the server's m
 | API format | The listing's form and the path that answers: `/v1/chat/completions`, `/v1/responses` or `/v1/messages`. A server with Chat Completions gets it, even when it also has Responses. |
 | Also serves embeddings | Whether `/v1/embeddings` answers. |
 | Counts tokens | Whether `/v1/responses/input_tokens` or `/v1/messages/count_tokens` answers, for Responses and Messages. |
+| Server | Only for **Other server or proxy**: the owner the model listing names, such as `vllm` or `sglang`, the `server` header, such as llama.cpp's, or a GET that costs nothing to an endpoint of the software's own: `/api/version` for Ollama, `/info` for Text Generation Inference and `/version` for LocalAI. Without a match, **Other server or proxy**. |
 | Models | The ids the listing names, with the context window and output limit it gives. |
 
 A server without a model listing is found by the path that answers. When Kaeso can't reach the server, the server refuses the key, or it answers in no format Kaeso speaks, the dialog says so beside the field to fix, and nothing is added.
@@ -47,7 +49,58 @@ Kaeso picks the format it detects. When you change it, choose the format your se
 - **Also serves embeddings:** on when the server answers `POST /v1/embeddings` in OpenAI's format. Its embeddings models then serve `/v1/embeddings`.
 - **Counts tokens:** only Responses and Messages have an endpoint for token counts, `/v1/responses/input_tokens` and `/v1/messages/count_tokens`. Keep it on only when your server answers it. Otherwise Kaeso answers count requests for its models with 400: "The model `…` cannot count tokens."
 
-Kaeso speaks the plain format to a custom provider. It knows how each built-in provider differs from its format, such as fields Mistral refuses, but it can't know that of your server. A field your server doesn't take comes back as your server's own error. A field the format can't carry is refused as for any provider ([what Kaeso refuses](../concepts/format-translation.md#what-kaeso-refuses)).
+For **Other server or proxy**, Kaeso speaks the plain format. It knows how each built-in provider differs from its format, such as fields Mistral refuses, but it can't know that of your server. A field your server doesn't take comes back as your server's own error. For the software Kaeso knows, it adapts requests as it does for a built-in provider ([server software](#server-software)). A field the format can't carry is refused as for any provider ([what Kaeso refuses](../concepts/format-translation.md#what-kaeso-refuses)).
+
+## Server software
+
+Kaeso knows how the inference servers below differ from the format they speak. A custom provider that names its **Server** gets these differences on every request, and the console shows the software's mark wherever the provider appears:
+
+- `developer` messages arrive as `system` messages, because a model's chat template often knows only `system`. Qwen's templates drop a `developer` message without a word.
+- An app's output limit goes as `max_tokens`, which every one of them reads; Ollama ignores `max_completion_tokens`.
+- The end user's id stays out, and so does a Codex prompt cache key, which these servers don't use.
+- A model's thinking, in the field the software writes it to, reaches apps in every format: Claude Code sees it as thinking blocks, and Kaeso sends it back on later turns in the same field.
+- A prompt longer than the model's context reaches apps as a prompt that is too long, so Claude Code compacts the conversation and an [alias route](../concepts/alias-routes.md) can fall back to a model with a larger context. Kaeso knows the message of vLLM, SGLang, llama.cpp, LMDeploy and the servers built on them.
+
+| Server | Detected by | Listens on | Notes |
+| --- | --- | --- | --- |
+| Docker Model Runner | owner `docker` | `12434`, under `/engines` | Give the base URL with `/engines`, such as `http://host.docker.internal:12434/engines`. |
+| Jan | owner `llama.cpp`, `mlx` or `remote` | `1337` | Turn on the local API server in Jan's settings; it needs a key for any address but `127.0.0.1`. |
+| KoboldCpp | owner `koboldcpp` | `5001` | `--password` sets a key. |
+| llama.cpp | `server: llama.cpp` header, owner `llamacpp` | `9931` since v0.7.0, `8080` in llamafile | `--host 0.0.0.0` for other machines, `--api-key` for a key. Thinking is on by default. |
+| LM Studio | owner `organization_owner` | `1234` | Turn on **Serve on Local Network** for other machines, and **Require Authentication** for a key. |
+| LMDeploy | owner `lmdeploy` | `23333` | `--api-keys` sets keys, `--reasoning-parser` and `--tool-call-parser` turn on thinking and tools. |
+| LocalAI | `/version` | `8080` | `LOCALAI_API_KEY` sets a key. |
+| MLX LM | can't be | `8080` | `mlx_lm.server` serves Chat Completions only. |
+| NVIDIA NIM | can't be | `8000` | Choose it by hand. |
+| Ollama | `/api/version` | `11434` | `OLLAMA_HOST=0.0.0.0` for other machines. Ollama takes no key, so choose **No key**. Kaeso refuses `logit_bias`, which Ollama ignores. |
+| SGLang | owner `sglang` | `30000` | `--api-key` sets a key, `--reasoning-parser` and `--tool-call-parser` turn on thinking and tools. |
+| TabbyAPI | owner `tabbyAPI` | `5000` | Needs a key from `api_tokens.yml` unless `disable_auth` is set. |
+| Text Generation Inference | `/info` | `3000`, `80` in its image | Chat Completions only, without thinking. Kaeso refuses `logit_bias`, which it ignores. Hugging Face no longer develops it. |
+| vLLM | owner `vllm` | `8000` | `--api-key` sets a key, `--reasoning-parser` turns on thinking, `--enable-auto-tool-choice --tool-call-parser <parser>` turns on tools. Takes videos as `video_url`. |
+| Xinference | owner `xinference` | `9997` | Asks for a key unless `XINFERENCE_AUTH_ADVANCED=false`. |
+
+A server that can't be detected, or one behind a proxy, gets its software when you choose it in the first step or under **Edit**. Choosing other software changes how Kaeso talks to the server, never where it sends requests.
+
+### Reach a server on the gateway's machine
+
+The gateway runs in a container, where `localhost` is the container itself. A server on the same machine is at `host.docker.internal`, such as `http://host.docker.internal:11434` for Ollama, and must listen on more than the loopback address. Docker Desktop knows that name; on Linux, add it to the gateway in `compose.override.yaml`:
+
+```yaml title="compose.override.yaml"
+services:
+  gateway:
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    environment:
+      KAESO_CUSTOM_PROVIDERS_ALLOWED_NETWORKS: 172.17.0.1/32
+```
+
+The address belongs to a private network, so the install must allow it ([addresses Kaeso reaches](#addresses-kaeso-reaches)). This command prints the address `host.docker.internal` has for the gateway:
+
+```bash
+docker run --rm --add-host host.docker.internal:host-gateway alpine getent hosts host.docker.internal
+```
+
+List that address with `/32` in `KAESO_CUSTOM_PROVIDERS_ALLOWED_NETWORKS`, then apply the change with `docker compose up -d --wait`.
 
 ## What Kaeso can't know
 

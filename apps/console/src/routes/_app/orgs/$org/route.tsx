@@ -1,6 +1,7 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { providersQuery } from "~/api/queries/providers";
 import { OrgGuard } from "~/auth/guards";
+import { OrgProviderMarks } from "~/kaeso/provider-marks";
 import { writeLast } from "~/shell/last";
 import { RouteError } from "~/shell/route-error";
 
@@ -16,9 +17,12 @@ export const Route = createFileRoute("/_app/orgs/$org")({
 });
 
 function OrgLayout() {
+  const org = Route.useParams().org;
   return (
-    <OrgGuard org={Route.useParams().org}>
-      <Outlet />
+    <OrgGuard org={org}>
+      <OrgProviderMarks org={org}>
+        <Outlet />
+      </OrgProviderMarks>
     </OrgGuard>
   );
 }

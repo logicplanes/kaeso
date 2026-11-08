@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { providers } from "~/test/fixtures";
 import { credential } from "~/test/fixtures/shell";
-import { providerCatalog, providerOptions, routedDialect } from "./providers";
+import { providerCatalog, providerOptions, routedDialect, serverMark } from "./providers";
 
 const catalog = providerCatalog(providers);
 
@@ -27,6 +27,18 @@ describe("the provider catalog", () => {
     expect(catalog.dialects("vercel")).toEqual(["openai_chat", "openai_responses", "anthropic_messages", "openai_embeddings"]);
     expect(catalog.dialects("cohere")).toEqual(["openai_chat", "openai_embeddings"]);
     expect(catalog.dialects("acme")).toEqual([]);
+  });
+
+  it("names the mark of a custom provider after the software it runs, and none for a built-in one", () => {
+    const groq = providers.find((p) => p.id === "groq");
+    if (!groq) throw new Error("the fixture lists Groq");
+    const own = { ...groq, id: "home-llama", name: "Home llama", custom: true, server: "llama_cpp" as const };
+    const withOwn = providerCatalog([...providers, own]);
+    expect(withOwn.mark("home-llama")).toBe("llama-cpp");
+    expect(withOwn.mark("groq")).toBeUndefined();
+    expect(withOwn.mark("unknown")).toBeUndefined();
+    expect(serverMark("docker_model_runner")).toBe("docker-model-runner");
+    expect(serverMark(null)).toBeUndefined();
   });
 
   it("sorts by name, not by id", () => {

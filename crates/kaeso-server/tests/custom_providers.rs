@@ -183,6 +183,7 @@ async fn admins_add_change_and_delete_custom_providers_with_their_own_rights_and
             "generation": "openai_chat",
             "embeddings": "openai_embeddings",
             "count_tokens": null,
+            "server": null,
             "hides_built_in": null,
             "in_use": { "keys": 0, "models": 0, "projects": 0 },
             "created_by": created.body["created_by"],
@@ -215,6 +216,7 @@ async fn admins_add_change_and_delete_custom_providers_with_their_own_rights_and
             "name": "Acme vLLM",
             "custom": true,
             "takes_key": true,
+            "server": null,
             "hides_built_in": null,
             "key_page": null,
             "key_prefix": null,
@@ -1535,12 +1537,13 @@ async fn kaeso_detects_an_openai_compatible_server_from_its_base_url_and_key() {
         found.body,
         json!({
             "base_url": format!("http://{host}/"),
-            "name": "127.0.0.1",
-            "id": "127-0-0-1",
+            "name": "vLLM",
+            "id": "vllm",
             "auth": "bearer",
             "generation": "openai_chat",
             "embeddings": "openai_embeddings",
             "count_tokens": null,
+            "server": "vllm",
             "models": [
                 { "model_id": "BAAI/bge-m3", "context_limit": null, "output_limit": null },
                 { "model_id": "meta-llama/Llama-3.3-70B-Instruct", "context_limit": 131072, "output_limit": null },
@@ -1573,7 +1576,7 @@ async fn kaeso_detects_an_openai_compatible_server_from_its_base_url_and_key() {
     .await
     .expect_status(StatusCode::OK);
     assert_eq!(
-        again.body["id"], "127-0-0-1-2",
+        again.body["id"], "vllm-2",
         "the id the org already has is skipped"
     );
     let listed = app
@@ -1878,4 +1881,329 @@ async fn offered_models_come_with_the_limits_and_capabilities_kaeso_found_but_no
         .unwrap()
         .clone();
     assert_eq!(unknown["detected"], json!({}), "{unknown}");
+}
+
+async fn software_lab(
+    owned_by: &'static str,
+    server_header: Option<&'static str>,
+    native: Option<(&'static str, &'static str)>,
+) -> String {
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let addr = listener.local_addr().unwrap();
+    let router = axum::Router::new().fallback(move |method: Method, uri: axum::http::Uri| async move {
+        let mut headers = axum::http::HeaderMap::new();
+        headers.insert("content-type", "application/json".parse().unwrap());
+        if let Some(server) = server_header {
+            headers.insert("server", server.parse().unwrap());
+        }
+        let (status, body) = match (method, uri.path()) {
+            (Method::GET, "/v1/models") => (
+                StatusCode::OK,
+                format!(r#"{{"object":"list","data":[{{"id":"qwen3:0.6b","object":"model","created":1730000000,"owned_by":"{owned_by}"}}]}}"#),
+            ),
+            (Method::POST, "/v1/chat/completions") => (
+                StatusCode::BAD_REQUEST,
+                r#"{"error":{"message":"model is required","type":"invalid_request_error"}}"#.to_owned(),
+            ),
+            (Method::GET, path) if native.is_some_and(|(p, _)| p == path) => {
+                (StatusCode::OK, native.unwrap().1.to_owned())
+            }
+            // LM Studio answers every unknown path with 200 and an error object.
+            (Method::GET, _) => (
+                StatusCode::OK,
+                r#"{"error":"Unexpected endpoint or method."}"#.to_owned(),
+            ),
+            _ => (StatusCode::NOT_FOUND, r#"{"detail":"Not Found"}"#.to_owned()),
+        };
+        (status, headers, body)
+    });
+    tokio::spawn(async move { axum::serve(listener, router).await });
+    format!("http://127.0.0.1:{}", addr.port())
+}
+
+#[tokio::test]
+async fn kaeso_recognizes_the_server_software_from_its_listing_its_server_header_or_its_own_endpoint()
+ {
+    let s = TestServices::start().await;
+    let app = App::start_with(&s, &[LOOPBACK]).await;
+    let owner = app.setup().await;
+
+    for (owned_by, header, native, server, name, id) in [
+        ("sglang", None, None, json!("sglang"), "SGLang", "sglang"),
+        (
+            "organization_owner",
+            None,
+            None,
+            json!("lm_studio"),
+            "LM Studio",
+            "lm-studio",
+        ),
+        (
+            "docker",
+            None,
+            None,
+            json!("docker_model_runner"),
+            "Docker Model Runner",
+            "docker-model-runner",
+        ),
+        (
+            "library",
+            Some("llama.cpp"),
+            None,
+            json!("llama_cpp"),
+            "llama.cpp",
+            "llama-cpp",
+        ),
+        (
+            "library",
+            None,
+            Some(("/api/version", r#"{"version":"0.32.7"}"#)),
+            json!("ollama"),
+            "Ollama",
+            "ollama",
+        ),
+        (
+            "meta-llama/Llama-3.3-70B-Instruct",
+            None,
+            Some((
+                "/info",
+                r#"{"model_id":"meta-llama/Llama-3.3-70B-Instruct","router":"text-generation-router","version":"3.3.7"}"#,
+            )),
+            json!("tgi"),
+            "Text Generation Inference",
+            "tgi",
+        ),
+        (
+            "library",
+            Some("uvicorn"),
+            None,
+            json!(null),
+            "127.0.0.1",
+            "127-0-0-1",
+        ),
+    ] {
+        let base = software_lab(owned_by, header, native).await;
+        let found = detect(&app, &owner, json!({ "base_url": base }))
+            .await
+            .expect_status(StatusCode::OK);
+        assert_eq!(found.body["server"], server, "{owned_by} {header:?}");
+        assert_eq!(found.body["name"], name, "{owned_by} {header:?}");
+        assert_eq!(found.body["id"], id, "{owned_by} {header:?}");
+        assert_eq!(found.body["auth"], "none");
+    }
+
+    let servers = app
+        .get(
+            &format!("/orgs/{}/custom-provider-servers", owner.org_id),
+            &owner.cookie,
+        )
+        .await
+        .expect_status(StatusCode::OK);
+    let servers = servers.body["data"].as_array().unwrap().clone();
+    assert!(servers.contains(&json!({ "server": "ollama", "name": "Ollama", "port": 11434, "path": "", "detected": true })));
+    assert!(servers.contains(&json!({ "server": "docker_model_runner", "name": "Docker Model Runner", "port": 12434, "path": "/engines", "detected": true })));
+    assert!(servers.contains(&json!({ "server": "mlx_lm", "name": "MLX LM", "port": 8080, "path": "", "detected": false })));
+
+    let base = software_lab("vllm", None, None).await;
+    for (sent, kept) in [(json!(null), json!(null)), (json!("jan"), json!("jan"))] {
+        let found = detect(&app, &owner, json!({ "base_url": base, "server": sent }))
+            .await
+            .expect_status(StatusCode::OK);
+        assert_eq!(
+            found.body["server"], kept,
+            "a server sent along is kept, not detected"
+        );
+    }
+
+    add_provider(
+        &app,
+        &owner,
+        json!({ "id": "ollama", "name": "Ollama", "base_url": base, "auth": "none", "generation": "openai_chat", "server": "ollama" }),
+    )
+    .await
+    .expect_status(StatusCode::CREATED);
+    let one = app
+        .get(
+            &format!("/orgs/{}/custom-providers/ollama", owner.org_id),
+            &owner.cookie,
+        )
+        .await;
+    assert_eq!(one.body["server"], "ollama");
+    let providers = app
+        .get(&format!("/orgs/{}/providers", owner.org_id), &owner.cookie)
+        .await;
+    let listed: Vec<&Value> = providers.body["data"].as_array().unwrap().iter().collect();
+    assert!(
+        listed
+            .iter()
+            .any(|p| p["id"] == "ollama" && p["server"] == "ollama")
+    );
+    assert!(
+        listed
+            .iter()
+            .filter(|p| p["custom"] == false)
+            .all(|p| p["server"].is_null())
+    );
+
+    let changed = patch_if_match(
+        &app,
+        &format!("/orgs/{}/custom-providers/ollama", owner.org_id),
+        json!({ "server": null }),
+        &owner.cookie,
+        "\"1\"",
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    assert_eq!(changed.body["server"], Value::Null);
+    let refused = add_provider(
+        &app,
+        &owner,
+        json!({ "id": "other", "name": "Other", "base_url": base, "auth": "none", "generation": "openai_chat", "server": "vLLM" }),
+    )
+    .await;
+    assert_eq!(
+        refused.status,
+        StatusCode::BAD_REQUEST,
+        "{:?}",
+        refused.body
+    );
+}
+
+#[tokio::test]
+async fn a_local_server_hears_system_messages_and_max_tokens_and_is_spared_hints_it_cannot_use() {
+    let env = env().await;
+    let (app, owner) = (&env.app, &env.owner);
+    add_provider(
+        app,
+        owner,
+        json!({ "id": "home-ollama", "name": "Ollama", "base_url": env.mock.base_url, "auth": "bearer", "generation": "openai_chat", "server": "ollama" }),
+    )
+    .await
+    .expect_status(StatusCode::CREATED);
+    key(app, owner, "home-ollama", LAB_SECRET).await;
+    add_model(
+        app,
+        owner,
+        &env.project,
+        custom_model("home-ollama", "qwen3:0.6b", "openai_chat"),
+    )
+    .await
+    .expect_status(StatusCode::CREATED);
+
+    env.mock.clear();
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(json!({
+            "model": "home-ollama/qwen3:0.6b",
+            "messages": [
+                { "role": "developer", "content": "Answer briefly." },
+                { "role": "user", "content": "hi" },
+            ],
+            "max_completion_tokens": 200,
+            "safety_identifier": "user-1",
+        })),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    let sent = env.mock.last().unwrap().json();
+    assert_eq!(sent["messages"][0]["role"], "system");
+    assert_eq!(sent["max_tokens"], 200);
+    for gone in ["max_completion_tokens", "safety_identifier"] {
+        assert!(sent.get(gone).is_none(), "{gone}: {sent}");
+    }
+
+    env.mock.clear();
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(json!({ "model": "home-ollama/qwen3:0.6b", "messages": [{ "role": "user", "content": "hi" }], "logit_bias": { "1": 5 } })),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    assert!(error_message(&r).contains("logit_bias"), "{}", r.text());
+    assert!(env.mock.last().is_none(), "a refused request is never sent");
+}
+
+#[tokio::test]
+async fn a_local_servers_thinking_and_its_context_overflow_reach_an_anthropic_app_in_its_own_terms()
+{
+    let env = env().await;
+    let (app, owner) = (&env.app, &env.owner);
+    let thinking = http_json(
+        "200 OK",
+        r#"{"id":"chatcmpl-1","object":"chat.completion","created":1794160111,"model":"qwen3:0.6b","choices":[{"index":0,"message":{"role":"assistant","content":"4","reasoning":"Two and two make four."},"finish_reason":"stop"}],"usage":{"prompt_tokens":12,"completion_tokens":9,"total_tokens":21}}"#,
+    );
+    let overflow = http_json(
+        "400 Bad Request",
+        r#"{"error":{"message":"This model's maximum context length is 32768 tokens. However, you requested 40000 tokens in the messages.","type":"BadRequestError","param":null,"code":400}}"#,
+    );
+    for (id, server, answer) in [
+        ("home-ollama", "ollama", thinking),
+        ("home-vllm", "vllm", overflow.clone()),
+        ("home-proxy", "", overflow),
+    ] {
+        let (base, _) = serve(answer).await;
+        let mut body = json!({ "id": id, "name": id, "base_url": base, "auth": "none", "generation": "openai_chat" });
+        if !server.is_empty() {
+            body["server"] = json!(server);
+        }
+        add_provider(app, owner, body)
+            .await
+            .expect_status(StatusCode::CREATED);
+        add_model(
+            app,
+            owner,
+            &env.project,
+            custom_model(id, "qwen3:0.6b", "openai_chat"),
+        )
+        .await
+        .expect_status(StatusCode::CREATED);
+    }
+
+    let r = call(
+        &env,
+        "/v1/messages",
+        Some(&env.key),
+        true,
+        Some(messages("home-ollama/qwen3:0.6b", "2+2?")),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    let content = r.json()["content"].clone();
+    assert_eq!(content[0]["type"], "thinking", "{content}");
+    assert_eq!(content[0]["thinking"], "Two and two make four.");
+    assert_eq!(content[1], json!({ "type": "text", "text": "4" }));
+
+    let r = call(
+        &env,
+        "/v1/messages",
+        Some(&env.key),
+        true,
+        Some(messages("home-vllm/qwen3:0.6b", "hi")),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    assert!(
+        error_message(&r).starts_with("prompt is too long"),
+        "Claude Code compacts on this message: {}",
+        r.text()
+    );
+    let r = call(
+        &env,
+        "/v1/messages",
+        Some(&env.key),
+        true,
+        Some(messages("home-proxy/qwen3:0.6b", "hi")),
+    )
+    .await;
+    assert!(
+        !error_message(&r).starts_with("prompt is too long"),
+        "a server of unknown software keeps its own error: {}",
+        r.text()
+    );
 }

@@ -2,6 +2,7 @@ use std::collections::BTreeMap;
 
 use kaeso_core::provider::ProviderId;
 use kaeso_core::providers::{CustomAuth, CustomProvider, Draft};
+use kaeso_core::servers::ServerKind;
 use kaeso_kpp::DialectId;
 use sqlx::{PgConnection, PgExecutor};
 use time::OffsetDateTime;
@@ -20,6 +21,7 @@ pub struct CustomProviderRow {
     pub generation: String,
     pub embeddings: Option<String>,
     pub count_tokens: Option<String>,
+    pub server: Option<String>,
     pub created_by_kind: String,
     pub created_by_id: Option<Uuid>,
     pub created_at: OffsetDateTime,
@@ -54,6 +56,11 @@ impl CustomProviderRow {
                 .as_deref()
                 .map(|d| dialect(self, d))
                 .transpose()?,
+            server: self
+                .server
+                .as_deref()
+                .map(|s| ServerKind::parse(s).ok_or_else(|| corrupt(self, "the server")))
+                .transpose()?,
         };
         CustomProvider::new(draft).map_err(|p| corrupt(self, &format!("{p:?}")))
     }
@@ -67,6 +74,7 @@ pub struct Fields<'a> {
     pub generation: &'a str,
     pub embeddings: Option<&'a str>,
     pub count_tokens: Option<&'a str>,
+    pub server: Option<&'a str>,
 }
 
 impl<'a> Fields<'a> {
@@ -78,6 +86,7 @@ impl<'a> Fields<'a> {
             generation: p.generation().as_str(),
             embeddings: p.embeddings().map(DialectId::as_str),
             count_tokens: p.count_tokens().map(DialectId::as_str),
+            server: p.server().map(ServerKind::as_str),
         }
     }
 }
@@ -89,7 +98,7 @@ pub async fn list(
     Ok(sqlx::query_as!(
         CustomProviderRow,
         "SELECT id, org_id, provider, name, base_url, auth, generation, embeddings, count_tokens, \
-         created_by_kind, created_by_id, created_at, updated_at, revision \
+         server, created_by_kind, created_by_id, created_at, updated_at, revision \
          FROM custom_providers WHERE org_id = $1 ORDER BY provider",
         org_id
     )
@@ -104,7 +113,7 @@ pub async fn of_project(
     Ok(sqlx::query_as!(
         CustomProviderRow,
         "SELECT c.id, c.org_id, c.provider, c.name, c.base_url, c.auth, c.generation, c.embeddings, \
-         c.count_tokens, c.created_by_kind, c.created_by_id, c.created_at, c.updated_at, c.revision \
+         c.count_tokens, c.server, c.created_by_kind, c.created_by_id, c.created_at, c.updated_at, c.revision \
          FROM custom_providers c JOIN projects p ON p.org_id = c.org_id \
          WHERE p.id = $1 ORDER BY c.provider",
         project_id
@@ -121,7 +130,7 @@ pub async fn get(
     Ok(sqlx::query_as!(
         CustomProviderRow,
         "SELECT id, org_id, provider, name, base_url, auth, generation, embeddings, count_tokens, \
-         created_by_kind, created_by_id, created_at, updated_at, revision \
+         server, created_by_kind, created_by_id, created_at, updated_at, revision \
          FROM custom_providers WHERE org_id = $1 AND provider = $2",
         org_id,
         provider
@@ -138,7 +147,7 @@ pub async fn get_for_update(
     Ok(sqlx::query_as!(
         CustomProviderRow,
         "SELECT id, org_id, provider, name, base_url, auth, generation, embeddings, count_tokens, \
-         created_by_kind, created_by_id, created_at, updated_at, revision \
+         server, created_by_kind, created_by_id, created_at, updated_at, revision \
          FROM custom_providers WHERE org_id = $1 AND provider = $2 FOR UPDATE",
         org_id,
         provider
@@ -163,7 +172,8 @@ pub async fn insert(
     let f = &p.fields;
     let r = sqlx::query!(
         "INSERT INTO custom_providers (id, org_id, provider, name, base_url, auth, generation, embeddings, \
-         count_tokens, created_by_kind, created_by_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) \
+         count_tokens, server, created_by_kind, created_by_id) \
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) \
          ON CONFLICT (org_id, provider) DO NOTHING",
         p.id,
         p.org_id,
@@ -174,6 +184,7 @@ pub async fn insert(
         f.generation,
         f.embeddings,
         f.count_tokens,
+        f.server,
         p.created_by_kind,
         p.created_by_id
     )
@@ -190,7 +201,7 @@ pub async fn update(
 ) -> Result<bool, StoreError> {
     Ok(sqlx::query!(
         "UPDATE custom_providers SET name = $3, base_url = $4, auth = $5, generation = $6, embeddings = $7, \
-         count_tokens = $8, revision = revision + 1, updated_at = now() WHERE org_id = $1 AND provider = $2",
+         count_tokens = $8, server = $9, revision = revision + 1, updated_at = now() WHERE org_id = $1 AND provider = $2",
         org_id,
         provider,
         f.name,
@@ -198,7 +209,8 @@ pub async fn update(
         f.auth,
         f.generation,
         f.embeddings,
-        f.count_tokens
+        f.count_tokens,
+        f.server
     )
     .execute(db)
     .await?

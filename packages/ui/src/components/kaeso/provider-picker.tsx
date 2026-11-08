@@ -34,6 +34,7 @@ export interface ProviderPickerProps extends FieldWrapProps {
   onValueChange?: ((id: string | null) => void) | undefined;
   onChoose?: ((id: string) => void) | undefined;
   appearance?: keyof typeof KAESO_PROVIDER_PICKER_VARIANTS.appearance | undefined;
+  ordered?: boolean | undefined;
   allLabel?: string | undefined;
   placeholder?: string | undefined;
   size?: "sm" | "md" | undefined;
@@ -49,6 +50,7 @@ const SEARCH_ABOVE = 9;
 
 function ProviderTiles({
   providers,
+  ordered,
   disabled,
   value,
   onValueChange,
@@ -58,6 +60,7 @@ function ProviderTiles({
   className,
 }: {
   providers: ProviderPickerOption[];
+  ordered: boolean | undefined;
   disabled: boolean | undefined;
   value: string | null | undefined;
   onValueChange: ((id: string | null) => void) | undefined;
@@ -71,7 +74,7 @@ function ProviderTiles({
   const [query, setQuery] = useState("");
   const wanted = query.trim().toLowerCase();
   const nameOf = (p: ProviderPickerOption) => providerName(p.id, p.name);
-  const byName = (a: ProviderPickerOption, b: ProviderPickerOption) => nameOf(a).localeCompare(nameOf(b), locale, { sensitivity: "base" });
+  const byName = (a: ProviderPickerOption, b: ProviderPickerOption) => (ordered ? 0 : nameOf(a).localeCompare(nameOf(b), locale, { sensitivity: "base" }));
   const shown = providers.filter((p) => !wanted || [p.id, nameOf(p), ...(p.keywords ?? [])].some((k) => k.toLowerCase().includes(wanted)));
   const connected = shown.filter((p) => p.connected).sort(byName);
   const rest = shown.filter((p) => !p.connected).sort(byName);
@@ -147,12 +150,12 @@ function ProviderTiles({
   );
 }
 
-export function useProviderGroups(providers: ProviderPickerOption[], allLabel?: string | undefined): CommandListGroup[] {
+export function useProviderGroups(providers: ProviderPickerOption[], allLabel?: string | undefined, ordered?: boolean | undefined): CommandListGroup[] {
   const t = useUiText();
   const locale = useLocale();
   return useMemo(() => {
     const nameOf = (p: ProviderPickerOption) => providerName(p.id, p.name);
-    const byName = (a: ProviderPickerOption, b: ProviderPickerOption) => nameOf(a).localeCompare(nameOf(b), locale, { sensitivity: "base" });
+    const byName = (a: ProviderPickerOption, b: ProviderPickerOption) => (ordered ? 0 : nameOf(a).localeCompare(nameOf(b), locale, { sensitivity: "base" }));
     const item = (p: ProviderPickerOption) => ({
       value: p.id,
       label: nameOf(p),
@@ -174,7 +177,7 @@ export function useProviderGroups(providers: ProviderPickerOption[], allLabel?: 
       groups.push({ id: "other", label: t("providerPicker.other", "Other providers"), items: rest.map(item) });
     } else groups.push({ id: "providers", items: [...connected, ...rest].map(item) });
     return groups;
-  }, [providers, allLabel, t, locale]);
+  }, [providers, allLabel, ordered, t, locale]);
 }
 
 export const ProviderPicker = forwardRef<HTMLElement, ProviderPickerProps>(function ProviderPicker(props, ref) {
@@ -184,6 +187,7 @@ export const ProviderPicker = forwardRef<HTMLElement, ProviderPickerProps>(funct
     onValueChange,
     onChoose,
     appearance = "list",
+    ordered,
     allLabel,
     placeholder,
     size = "md",
@@ -207,7 +211,7 @@ export const ProviderPicker = forwardRef<HTMLElement, ProviderPickerProps>(funct
     () => (disabled && appearance === "list" ? providers.map((p) => ({ ...p, disabled: true })) : providers),
     [providers, disabled, appearance],
   );
-  const groups = useProviderGroups(offered, appearance === "select" ? allLabel : undefined);
+  const groups = useProviderGroups(offered, appearance === "select" ? allLabel : undefined, ordered);
   const listLabel = ariaLabel ?? (typeof label === "string" ? label : t("providerPicker.providers", "Providers"));
   const search = placeholder ?? t("providerPicker.search", "Search providers");
   const empty = t("providerPicker.noMatch", "No providers match");
@@ -233,6 +237,7 @@ export const ProviderPicker = forwardRef<HTMLElement, ProviderPickerProps>(funct
     const control = (
       <ProviderTiles
         providers={providers}
+        ordered={ordered}
         disabled={disabled}
         value={value}
         onValueChange={onValueChange}

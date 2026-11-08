@@ -142,6 +142,7 @@ pub fn routes(s: &Secure) -> OpenApiRouter<AppState> {
         .routes(s.route(Access::Org(R::ProvidersCustomManage), routes!(custom_providers::update)))
         .routes(s.route(Access::Org(R::ProvidersCustomManage), routes!(custom_providers::delete)))
         .routes(s.route(Access::Org(R::ProvidersCustomManage), routes!(custom_providers::detect)))
+        .routes(s.route(Access::Org(R::ProvidersCustomView), routes!(custom_providers::servers)))
         .routes(s.route(Access::Org(R::McpServersView), routes!(mcp_servers::list)))
         .routes(s.route(Access::Org(R::McpServersView), routes!(mcp_servers::get)))
         .routes(s.route(Access::Org(R::McpServersManage), routes!(mcp_servers::probe)))

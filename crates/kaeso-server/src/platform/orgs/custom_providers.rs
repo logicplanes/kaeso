@@ -6,6 +6,7 @@ use axum::http::StatusCode;
 use kaeso_core::id::OrgId;
 use kaeso_core::provider::{self, ProviderId};
 use kaeso_core::providers::{self as custom, CustomAuth, CustomProvider, Draft, Problem};
+use kaeso_core::servers::ServerKind;
 use kaeso_kpp::DialectId;
 use kaeso_store::pg::custom_providers::{self as store, CustomProviderRow, Fields, InUse};
 use secrecy::SecretString;
@@ -146,6 +147,10 @@ pub struct CustomProviderView {
     #[doc = "The format in which it counts tokens, its `generation` format;\n\
         `null` when it counts none."]
     pub count_tokens: Option<GenerationDialect>,
+    #[doc = "The inference server software it runs, which tunes how Kaeso talks to it\n\
+        and picks its mark; `null` for another server or a proxy."]
+    #[schema(example = "vllm")]
+    pub server: Option<ServerKind>,
     #[doc = "The name of the built-in provider with the same id, which a newer Kaeso\n\
         release added; inside this organization the custom provider takes its\n\
         place. `null` without one."]
@@ -185,6 +190,7 @@ fn view(row: &CustomProviderRow, in_use: InUse) -> ApiResult<CustomProviderView>
         generation: generation_view(p.generation()),
         embeddings: p.embeddings().map(|_| EmbeddingsDialect::OpenaiEmbeddings),
         count_tokens: p.count_tokens().map(generation_view),
+        server: p.server(),
         hides_built_in: provider::provider(p.id().as_str()).map(|b| b.name.to_owned()),
         in_use: in_use.into(),
         created_by: creator(&row.created_by_kind, row.created_by_id),
@@ -221,6 +227,10 @@ pub struct CustomProviderCreate {
         (`openai_responses` or `anthropic_messages` only); absent or `null` for none."]
     #[serde(default)]
     pub count_tokens: Option<GenerationDialect>,
+    #[doc = "The inference server software it runs; absent or `null` for another\n\
+        server or a proxy."]
+    #[serde(default)]
+    pub server: Option<ServerKind>,
 }
 
 fn present<'de, D: Deserializer<'de>, T: Deserialize<'de>>(
@@ -249,6 +259,11 @@ pub struct CustomProviderUpdate {
     #[serde(default, deserialize_with = "present")]
     #[schema(value_type = Option<GenerationDialect>, nullable)]
     pub count_tokens: Option<Option<GenerationDialect>>,
+    #[doc = "The inference server software it runs; `null` for another server or a\n\
+        proxy."]
+    #[serde(default, deserialize_with = "present")]
+    #[schema(value_type = Option<ServerKind>, nullable)]
+    pub server: Option<Option<ServerKind>>,
 }
 
 fn turned_off(state: &AppState) -> ApiResult<()> {
@@ -449,6 +464,7 @@ pub async fn create(
         generation: req.generation.into(),
         embeddings: req.embeddings.map(Into::into),
         count_tokens: req.count_tokens.map(Into::into),
+        server: req.server,
     })
     .map_err(problem)?;
     check_reach(&state, p.base_url()).await?;
@@ -532,6 +548,9 @@ pub async fn update(
     }
     if let Some(c) = req.count_tokens {
         draft.count_tokens = c.map(Into::into);
+    }
+    if let Some(server) = req.server {
+        draft.server = server;
     }
     let after_provider = CustomProvider::new(draft).map_err(problem)?;
     let used = store::in_use(&mut tx, org)
@@ -653,6 +672,11 @@ pub struct CustomProviderDetect {
     #[serde(default, deserialize_with = "present")]
     #[schema(value_type = Option<GenerationDialect>, nullable)]
     pub count_tokens: Option<Option<GenerationDialect>>,
+    #[doc = "The inference server software it runs, `null` for another server or a\n\
+        proxy; absent to detect it."]
+    #[serde(default, deserialize_with = "present")]
+    #[schema(value_type = Option<ServerKind>, nullable)]
+    pub server: Option<Option<ServerKind>>,
 }
 
 #[derive(Clone, Debug, Serialize, ToSchema)]
@@ -678,7 +702,8 @@ pub struct CustomProviderDetection {
     #[doc = "The base URL Kaeso reached the server at, normalized."]
     #[schema(example = "https://vllm.example.com/")]
     pub base_url: String,
-    #[doc = "A name to start from: the server's host."]
+    #[doc = "A name to start from: the server's host, or its software's name when\n\
+        the host is a bare address such as `localhost` or `10.0.0.5`."]
     #[schema(example = "vllm.example.com")]
     pub name: String,
     #[doc = "An id to start from that the organization can still take."]
@@ -692,6 +717,10 @@ pub struct CustomProviderDetection {
     pub embeddings: Option<EmbeddingsDialect>,
     #[doc = "The format the server counts tokens in; `null` when it counts none."]
     pub count_tokens: Option<GenerationDialect>,
+    #[doc = "The inference server software Kaeso recognized from its model listing,\n\
+        its `server` header or one of its own endpoints; `null` when none."]
+    #[schema(example = "vllm")]
+    pub server: Option<ServerKind>,
     #[doc = "The models the server lists, sorted by id; `null` when it has no model\n\
         listing."]
     pub models: Option<Vec<DetectedModelView>>,
@@ -710,6 +739,7 @@ fn fixed_of(req: &CustomProviderDetect) -> ApiResult<Fixed> {
         Some(Some(_)) => return Err(problem(Problem::CountTokens)),
     };
     Ok(Fixed {
+        server: req.server,
         auth: req.auth.map(Into::into),
         generation,
         embeddings: req.embeddings.map(|e| e.is_some()),
@@ -796,7 +826,19 @@ fn suggested_id(name: &str, taken: &[String]) -> String {
         .unwrap_or_else(|| "custom".to_owned())
 }
 
-fn suggested_name(url: &Url) -> String {
+// A host that names no machine of its own says less than the software it runs.
+fn bare_host(url: &Url) -> bool {
+    match url.host() {
+        Some(url::Host::Domain(d)) => !d.contains('.') || d == "host.docker.internal",
+        Some(url::Host::Ipv4(_) | url::Host::Ipv6(_)) => true,
+        None => true,
+    }
+}
+
+fn suggested_name(url: &Url, server: Option<ServerKind>) -> String {
+    if let Some(s) = server.filter(|_| bare_host(url)) {
+        return s.server().name.to_owned();
+    }
     let host = url.host_str().unwrap_or_default();
     let host = GENERIC_HOST_LABELS
         .iter()
@@ -882,16 +924,21 @@ pub async fn detect(
         .into_iter()
         .map(|r| r.provider)
         .collect();
-    let name = suggested_name(&url);
+    let name = suggested_name(&url, found.server);
+    let stem = match found.server.filter(|_| bare_host(&url)) {
+        Some(s) => s.server().suggested_id,
+        None => &name,
+    };
     let s = found.settings;
     Ok(Json(CustomProviderDetection {
         base_url: url.as_str().to_owned(),
-        id: suggested_id(&name, &taken),
+        id: suggested_id(stem, &taken),
         name,
         auth: s.auth.into(),
         generation: generation_view(s.generation),
         embeddings: s.embeddings.then_some(EmbeddingsDialect::OpenaiEmbeddings),
         count_tokens: s.count_tokens.then(|| generation_view(s.generation)),
+        server: found.server,
         models: found.models.map(|models| {
             models
                 .into_iter()
@@ -903,6 +950,54 @@ pub async fn detect(
                 .collect()
         }),
     }))
+}
+
+#[derive(Clone, Debug, Serialize, ToSchema)]
+#[schema(description = "Inference server software Kaeso knows how to talk to.")]
+pub struct ServerView {
+    #[doc = "The value a custom provider's `server` takes."]
+    #[schema(example = "ollama")]
+    pub server: ServerKind,
+    #[doc = "The software's name."]
+    #[schema(example = "Ollama")]
+    pub name: &'static str,
+    #[doc = "The port the software listens on unless told otherwise."]
+    #[schema(example = 11434)]
+    pub port: u16,
+    #[doc = "What comes between the server's address and `/v1`, such as `/engines`;\n\
+        empty for most."]
+    #[schema(example = "")]
+    pub path: &'static str,
+    #[doc = "Whether detection can tell this software from its model listing, its\n\
+        `server` header or one of its own endpoints."]
+    pub detected: bool,
+}
+
+#[utoipa::path(
+    get,
+    path = "/orgs/{org}/custom-provider-servers",
+    summary = "The inference server software a custom provider can run, such as vLLM,\n\
+    Ollama or LM Studio, by name.",
+    description = "A custom provider that names its software gets how that software differs\n\
+    from its API format, such as the field it sends thinking in, and the\n\
+    software's mark in the console.",
+    tag = "orgs",
+    params(("org" = OrgId, Path)),
+    responses((status = 200, body = List<ServerView>))
+)]
+pub async fn servers(_ctx: Ctx, Path(_org): Path<String>) -> Json<List<ServerView>> {
+    let mut all: Vec<ServerView> = kaeso_core::servers::SERVERS
+        .iter()
+        .map(|s| ServerView {
+            server: s.kind,
+            name: s.name,
+            port: s.port,
+            path: s.path,
+            detected: !s.owned_by.is_empty() || s.server_header.is_some() || s.probe.is_some(),
+        })
+        .collect();
+    all.sort_by_key(|s| s.name.to_lowercase());
+    Json(List::complete(all))
 }
 
 #[cfg(test)]
@@ -929,10 +1024,32 @@ mod tests {
 
     #[test]
     fn a_suggested_name_is_the_host_without_a_generic_first_label() {
-        let name = |u: &str| suggested_name(&Url::parse(u).unwrap());
+        let name = |u: &str| suggested_name(&Url::parse(u).unwrap(), None);
         assert_eq!(name("https://api.together.example/"), "together.example");
         assert_eq!(name("https://www.llm.example.com/x"), "llm.example.com");
         assert_eq!(name("http://localhost:11434/"), "localhost");
         assert_eq!(name("http://10.0.0.5:8000/"), "10.0.0.5");
+    }
+
+    #[test]
+    fn a_bare_address_takes_the_name_of_the_software_it_runs() {
+        let name = |u: &str, s| suggested_name(&Url::parse(u).unwrap(), Some(s));
+        assert_eq!(
+            name("http://localhost:11434/", ServerKind::Ollama),
+            "Ollama"
+        );
+        assert_eq!(name("http://10.0.0.5:8000/", ServerKind::Vllm), "vLLM");
+        assert_eq!(
+            name("http://[::1]:1234/", ServerKind::LmStudio),
+            "LM Studio"
+        );
+        assert_eq!(
+            name("http://host.docker.internal:9931/", ServerKind::LlamaCpp),
+            "llama.cpp"
+        );
+        assert_eq!(
+            name("https://vllm.research.example.com/", ServerKind::Vllm),
+            "vllm.research.example.com"
+        );
     }
 }

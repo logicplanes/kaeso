@@ -231,6 +231,8 @@ test("custom providers: one is detected from its base URL and key, added with th
   await expect(page.getByText("No custom providers yet")).toBeVisible();
   await page.getByRole("button", { name: "Add custom provider" }).first().click();
   const add = page.getByRole("dialog", { name: "Add custom provider" });
+  await add.getByRole("radio", { name: /^Other server or proxy/ }).click();
+  await add.getByRole("button", { name: "Continue" }).click();
   await add.getByRole("textbox", { name: "Base URL" }).fill("http://provider:8080/v1");
   await add.getByLabel("API key", { exact: true }).fill("lab-mock-key-000000000001");
   await add.getByRole("button", { name: "Detect settings" }).click();
@@ -239,6 +241,7 @@ test("custom providers: one is detected from its base URL and key, added with th
   await expect(add.getByRole("textbox", { name: "Base URL" })).toHaveValue("http://provider:8080/");
   await expect(add.getByRole("combobox", { name: "API format" })).toContainText("OpenAI Chat Completions");
   await expect(add.getByRole("combobox", { name: "Key" })).toContainText("Bearer token");
+  await expect(add.getByRole("combobox", { name: "Server" })).toContainText("Other server or proxy");
   await add.getByRole("textbox", { name: "Name" }).fill("Research vLLM");
   await expect(add.getByRole("textbox", { name: "Id" })).toHaveValue("research-vllm");
   await add.getByRole("button", { name: "Add custom provider" }).click();
