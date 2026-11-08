@@ -3,6 +3,7 @@ use std::fmt;
 use std::str::FromStr;
 use std::sync::LazyLock;
 
+use kaeso_codecs::anthropic_messages::{FixedValue, MessagesProfile};
 use kaeso_codecs::openai_chat::ChatProfile;
 use kaeso_codecs::openai_responses::ResponsesProfile;
 use kaeso_codecs::{ToolPatterns, ToolSchemaRoot};
@@ -192,6 +193,7 @@ pub struct Provider {
     pub end_user_limit: Option<usize>,
     pub chat: ChatProfile,
     pub responses: ResponsesProfile,
+    pub messages: MessagesProfile,
     pub account: Option<AccountSignIn>,
 }
 
@@ -221,6 +223,7 @@ pub const PROVIDERS: &[Provider] = &[
         end_user_limit: Some(128),
         chat: ChatProfile::OPENAI,
         responses: ResponsesProfile::OPENAI,
+        messages: MessagesProfile::compatible("OpenAI"),
         account: Some(AccountSignIn {
             method: AuthMethod::ChatGpt,
             product: "ChatGPT",
@@ -248,6 +251,7 @@ pub const PROVIDERS: &[Provider] = &[
         end_user_limit: None,
         chat: ChatProfile::compatible("Anthropic"),
         responses: ResponsesProfile::compatible("Anthropic"),
+        messages: MessagesProfile::ANTHROPIC,
         account: None,
     },
     Provider {
@@ -275,6 +279,7 @@ pub const PROVIDERS: &[Provider] = &[
             .tool_schema_root(ToolSchemaRoot::TypedObjectUnions)
             .tool_patterns(ToolPatterns::Compiled),
         responses: ResponsesProfile::compatible("DeepSeek"),
+        messages: MessagesProfile::compatible("DeepSeek"),
         account: None,
     },
     Provider {
@@ -305,6 +310,7 @@ pub const PROVIDERS: &[Provider] = &[
             .without_null_reasoning_content()
             .without_openai_encrypted_reasoning()
             .tool_schema_root(ToolSchemaRoot::ObjectUnions),
+        messages: MessagesProfile::compatible("SpaceX"),
         account: Some(AccountSignIn {
             method: AuthMethod::Grok,
             product: "Grok",
@@ -333,6 +339,7 @@ pub const PROVIDERS: &[Provider] = &[
         chat: ChatProfile::compatible("Together AI")
             .reasoning_fields(&["reasoning_content", "reasoning"]),
         responses: ResponsesProfile::compatible("Together AI"),
+        messages: MessagesProfile::compatible("Together AI"),
         account: None,
     },
     Provider {
@@ -361,6 +368,7 @@ pub const PROVIDERS: &[Provider] = &[
             .refusing(&["logit_bias", "logprobs", "prompt_cache_key", "top_logprobs"])
             .refusing_in_messages(&["name", "refusal"]),
         responses: ResponsesProfile::compatible("Groq"),
+        messages: MessagesProfile::compatible("Groq"),
         account: None,
     },
     Provider {
@@ -385,6 +393,7 @@ pub const PROVIDERS: &[Provider] = &[
             .reasoning_fields(&["reasoning"])
             .error_detail(&["error", "metadata", "raw"]),
         responses: ResponsesProfile::compatible("OpenRouter"),
+        messages: MessagesProfile::compatible("OpenRouter"),
         account: None,
     },
     Provider {
@@ -428,6 +437,7 @@ pub const PROVIDERS: &[Provider] = &[
             ])
             .refusing_in_messages(&["name", "refusal"]),
         responses: ResponsesProfile::compatible("Mistral"),
+        messages: MessagesProfile::compatible("Mistral"),
         account: None,
     },
     Provider {
@@ -455,6 +465,7 @@ pub const PROVIDERS: &[Provider] = &[
         end_user_limit: None,
         chat: ChatProfile::compatible("Vercel").reasoning_fields(&["reasoning"]),
         responses: ResponsesProfile::compatible("Vercel"),
+        messages: MessagesProfile::compatible("Vercel"),
         account: None,
     },
     Provider {
@@ -494,6 +505,7 @@ pub const PROVIDERS: &[Provider] = &[
                 "web_search_options",
             ]),
         responses: ResponsesProfile::compatible("Cohere"),
+        messages: MessagesProfile::compatible("Cohere"),
         account: None,
     },
     Provider {
@@ -519,6 +531,7 @@ pub const PROVIDERS: &[Provider] = &[
             .reasoning_fields(&["reasoning"])
             .refusing(&["logit_bias", "logprobs", "top_logprobs"]),
         responses: ResponsesProfile::compatible("Ollama Cloud"),
+        messages: MessagesProfile::compatible("Ollama Cloud"),
         account: None,
     },
     Provider {
@@ -554,6 +567,7 @@ pub const PROVIDERS: &[Provider] = &[
                 "web_search_options",
             ]),
         responses: ResponsesProfile::compatible("Moonshot"),
+        messages: MessagesProfile::compatible("Moonshot"),
         account: None,
     },
     Provider {
@@ -590,6 +604,7 @@ pub const PROVIDERS: &[Provider] = &[
                 "web_search_options",
             ]),
         responses: ResponsesProfile::compatible("QwenCloud"),
+        messages: MessagesProfile::compatible("QwenCloud"),
         account: None,
     },
     Provider {
@@ -620,6 +635,44 @@ pub const PROVIDERS: &[Provider] = &[
             .replay_reasoning_as_read()
             .refusing_in_messages(&["refusal"]),
         responses: ResponsesProfile::compatible("Cerebras"),
+        messages: MessagesProfile::compatible("Cerebras"),
+        account: None,
+    },
+    Provider {
+        id: "minimax",
+        name: "MiniMax",
+        key_page: KeyPage {
+            url: "https://platform.minimax.io/user-center/basic-information/interface-key",
+            label: "API Keys",
+        },
+        key_prefix: Some("sk-api-"),
+        default_base_url: "https://api.minimax.io/anthropic",
+        auth: AuthStyle::XApiKey,
+        generation: DialectId::AnthropicMessages,
+        count_tokens: None,
+        embeddings: None,
+        dialects: &[DialectId::AnthropicMessages],
+        refused_key_messages: &[],
+        context_window_messages: &[],
+        reasoning_beyond_output_limit: false,
+        end_user_limit: None,
+        chat: ChatProfile::compatible("MiniMax"),
+        responses: ResponsesProfile::compatible("MiniMax"),
+        // The fields MiniMax's compatibility table lists as ignored, and its fixed sampling
+        // (https://platform.minimax.io/docs/api-reference/text-anthropic-api).
+        messages: MessagesProfile::compatible("MiniMax")
+            .refusing(&[
+                "top_k",
+                "stop_sequences",
+                "mcp_servers",
+                "container",
+                "context_management",
+            ])
+            .sampling_fixed_at(&[
+                ("temperature", FixedValue::thousandths(1000)),
+                ("top_p", FixedValue::thousandths(950)),
+            ])
+            .auto_tool_choice_only(),
         account: None,
     },
 ];
@@ -911,7 +964,7 @@ mod tests {
         assert!(provider("gemini").is_none());
         assert_eq!(
             ids(),
-            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras"
+            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras, minimax"
         );
     }
 
@@ -1381,6 +1434,69 @@ mod tests {
     }
 
     #[test]
+    fn every_provider_names_itself_in_its_messages_profile() {
+        for p in PROVIDERS {
+            assert_eq!(p.messages.provider, p.name, "{}", p.id);
+        }
+        assert_eq!(
+            provider("anthropic").unwrap().messages,
+            MessagesProfile::ANTHROPIC
+        );
+    }
+
+    fn sent_to_minimax(request: &str) -> Result<(serde_json::Value, Vec<String>), String> {
+        let path = format!(
+            "{}/../kaeso-codecs/fixtures/anthropic_messages/{request}.json",
+            env!("CARGO_MANIFEST_DIR")
+        );
+        let req = dispatch::decode_request(
+            DialectId::AnthropicMessages,
+            RequestKind::Generate,
+            &std::fs::read(&path).unwrap(),
+            &HeaderList::new(),
+        )
+        .unwrap();
+        let mut ctx = EgressCtx::new(&req)
+            .with_provider("minimax")
+            .with_messages_profile(provider("minimax").unwrap().messages);
+        dispatch::encode_request(DialectId::AnthropicMessages, &req, &mut ctx)
+            .map(|out| (serde_json::from_slice(&out.body).unwrap(), ctx.left_out))
+            .map_err(|e| e.param.unwrap_or_default())
+    }
+
+    #[test]
+    fn minimax_refuses_what_its_compatibility_table_lists_as_ignored_and_takes_its_own_examples() {
+        for (request, param) in [
+            ("requests/sampling-stop-sequences", "temperature"),
+            ("requests/sampling-top-p", "top_p"),
+            ("requests/tool-choice-any-no-parallel", "tool_choice"),
+            (
+                "requests/context-management-clear-tool-uses",
+                "context_management",
+            ),
+        ] {
+            assert_eq!(sent_to_minimax(request).unwrap_err(), param, "{request}");
+        }
+        let (body, left_out) =
+            sent_to_minimax("requests/claude-code-mid-conversation-system").unwrap();
+        assert!(body.get("context_management").is_none(), "{body}");
+        assert_eq!(left_out, ["context_management"]);
+        for documented in [
+            "deep-thinking",
+            "tool-use-auto",
+            "image-url-adaptive",
+            "image-url-stream",
+            "video-url",
+        ] {
+            let request = format!("providers/minimax/requests/{documented}");
+            let (body, left_out) =
+                sent_to_minimax(&request).unwrap_or_else(|p| panic!("{documented}: {p}"));
+            assert!(left_out.is_empty(), "{documented}");
+            assert_eq!(body["output_config"]["effort"], "max", "{documented}");
+        }
+    }
+
+    #[test]
     fn provider_ids_are_lowercase_words_joined_by_single_hyphens() {
         for good in [
             "openai",
@@ -1482,7 +1598,8 @@ mod tests {
                 "ollama-cloud",
                 "moonshotai",
                 "alibaba",
-                "cerebras"
+                "cerebras",
+                "minimax"
             ]
         );
         assert_eq!(

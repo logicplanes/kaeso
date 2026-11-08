@@ -135,6 +135,8 @@ export const providerMark = {
   "alibaba-violet": mode("#4f21ff", "#543aff"),
   "alibaba-pink": mode("#d75bfe", "#d75bfe"),
   cerebras: mode("#f05a28", "#f05a28"),
+  "minimax-magenta": mode("#e21680", "#e21680"),
+  "minimax-orange": mode("#ff6036", "#ff633a"),
 } as const;
 
 export const type = {

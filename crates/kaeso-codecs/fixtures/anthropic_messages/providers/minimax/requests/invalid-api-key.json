@@ -1,0 +1,10 @@
+{
+  "model": "MiniMax-M3",
+  "max_tokens": 16,
+  "messages": [
+    {
+      "role": "user",
+      "content": "Say hi."
+    }
+  ]
+}

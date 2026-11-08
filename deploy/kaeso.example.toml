@@ -103,6 +103,9 @@ base_url = "https://ap-southeast-1.maas.qwencloudapi.com/compatible-mode"
 [providers.cerebras]
 base_url = "https://api.cerebras.ai"
 
+[providers.minimax]
+base_url = "https://api.minimax.io/anthropic"
+
 [custom_providers]
 enabled = true
 allowed_networks = ""

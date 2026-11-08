@@ -83,6 +83,7 @@ fn chat_request() -> GenerateRequest {
 
 mod check;
 mod malformed;
+mod profile;
 mod regressions;
 mod replies;
 mod requests;

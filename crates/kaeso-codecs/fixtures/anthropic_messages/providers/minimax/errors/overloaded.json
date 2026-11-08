@@ -1,0 +1,8 @@
+{
+  "type": "error",
+  "request_id": "req_xxxxxxxx",
+  "error": {
+    "type": "overloaded_error",
+    "message": "Upstream model overloaded; retryable."
+  }
+}

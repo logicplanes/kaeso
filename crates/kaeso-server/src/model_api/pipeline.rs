@@ -1927,7 +1927,8 @@ pub(super) fn egress_ctx(
     let mut ctx = EgressCtx::new(app_req)
         .with_provider(provider.id())
         .with_chat_profile(provider.chat())
-        .with_responses_profile(provider.responses());
+        .with_responses_profile(provider.responses())
+        .with_messages_profile(provider.messages());
     if let Some(a) = flags.adaptive_thinking {
         ctx = ctx.with_adaptive_thinking(a);
     }
@@ -1986,7 +1987,7 @@ mod tests {
     #[test]
     fn the_providers_profiles_and_plan_reach_the_egress_context() {
         let req = Request::Generate(kaeso_kpp::GenerateRequest::new("m"));
-        for id in ["openai", "xai", "mistral"] {
+        for id in ["openai", "xai", "mistral", "minimax"] {
             let p = ProviderRef::from(kaeso_core::provider::provider(id).unwrap());
             let flags = ModelFlags {
                 adaptive_thinking: Some(true),
@@ -1997,6 +1998,7 @@ mod tests {
             assert_eq!(ctx.provider.as_deref(), Some(id));
             assert_eq!(ctx.chat_profile, p.chat(), "{id}");
             assert_eq!(ctx.responses_profile, p.responses(), "{id}");
+            assert_eq!(ctx.messages_profile, p.messages(), "{id}");
             assert_eq!(
                 (ctx.adaptive_thinking, ctx.thinking_binding, ctx.reasoning),
                 (Some(true), Some(false), Some(false))

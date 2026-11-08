@@ -1,0 +1,29 @@
+{
+  "model": "MiniMax-M3.1-Flash",
+  "thinking": {
+    "type": "adaptive"
+  },
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "What does this image show?"
+        },
+        {
+          "type": "image",
+          "source": {
+            "type": "url",
+            "url": "https://filecdn.minimax.chat/public/fe9d04da-f60e-444d-a2e0-18ae743add33.jpeg"
+          }
+        }
+      ]
+    }
+  ],
+  "stream": true,
+  "max_tokens": 4096,
+  "output_config": {
+    "effort": "max"
+  }
+}

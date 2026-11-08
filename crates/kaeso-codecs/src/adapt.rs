@@ -126,6 +126,7 @@ pub(crate) fn for_target<'a>(
             history::as_function_calls(&mut draft)?;
             object_arguments(&mut draft, target)?;
             fold_later_system(&mut draft, target)?;
+            crate::anthropic_messages::apply_profile(&mut draft, &ctx.messages_profile)?;
         }
         DialectId::OpenAiChat => {
             web_search::for_chat(&mut draft)?;

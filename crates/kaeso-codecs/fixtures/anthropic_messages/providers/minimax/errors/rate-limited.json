@@ -1,0 +1,8 @@
+{
+  "type": "error",
+  "request_id": "req_xxxxxxxx",
+  "error": {
+    "type": "rate_limit_error",
+    "message": "RPM / TPM / connection-count or other rate limit triggered."
+  }
+}

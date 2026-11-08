@@ -763,6 +763,128 @@ expression: outcomes
     },
     "path": "/v1/chat/completions"
   },
+  "providers/minimax/deep-thinking": {
+    "body": {
+      "max_completion_tokens": 4096,
+      "messages": [
+        {
+          "content": "Which is bigger, 9.11 or 9.9?",
+          "role": "user"
+        }
+      ],
+      "model": "MiniMax-M3.1-Flash",
+      "reasoning_effort": "max"
+    },
+    "path": "/v1/chat/completions"
+  },
+  "providers/minimax/image-url-adaptive": {
+    "body": {
+      "max_completion_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "What does this image show?",
+              "type": "text"
+            },
+            {
+              "image_url": {
+                "url": "https://filecdn.minimax.chat/public/fe9d04da-f60e-444d-a2e0-18ae743add33.jpeg"
+              },
+              "type": "image_url"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "MiniMax-M3.1-Flash",
+      "reasoning_effort": "max"
+    },
+    "path": "/v1/chat/completions"
+  },
+  "providers/minimax/image-url-stream": {
+    "body": {
+      "max_completion_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "What does this image show?",
+              "type": "text"
+            },
+            {
+              "image_url": {
+                "url": "https://filecdn.minimax.chat/public/fe9d04da-f60e-444d-a2e0-18ae743add33.jpeg"
+              },
+              "type": "image_url"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "MiniMax-M3.1-Flash",
+      "reasoning_effort": "max",
+      "stream": true,
+      "stream_options": {
+        "include_usage": true
+      }
+    },
+    "path": "/v1/chat/completions"
+  },
+  "providers/minimax/invalid-api-key": {
+    "body": {
+      "max_completion_tokens": 16,
+      "messages": [
+        {
+          "content": "Say hi.",
+          "role": "user"
+        }
+      ],
+      "model": "MiniMax-M3"
+    },
+    "path": "/v1/chat/completions"
+  },
+  "providers/minimax/tool-use-auto": {
+    "body": {
+      "max_completion_tokens": 4096,
+      "messages": [
+        {
+          "content": "How's the weather in San Francisco?",
+          "role": "user"
+        }
+      ],
+      "model": "MiniMax-M3.1-Flash",
+      "reasoning_effort": "max",
+      "tool_choice": "auto",
+      "tools": [
+        {
+          "function": {
+            "description": "Get the current weather for a given location.",
+            "name": "get_weather",
+            "parameters": {
+              "properties": {
+                "location": {
+                  "description": "The city and state/country, e.g. San Francisco, US",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "location"
+              ],
+              "type": "object"
+            }
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/chat/completions"
+  },
+  "providers/minimax/video-url": {
+    "message": "`video content block` comes from an Anthropic Messages request and has no equivalent in OpenAI Chat Completions. Remove the block, or send the request to a model served through its original format.",
+    "param": "messages[0].blocks[1]",
+    "unsupported": "video content block"
+  },
   "providers/vercel/rate-limited": {
     "body": {
       "max_completion_tokens": 1024,

@@ -1,0 +1,32 @@
+{
+  "id": "066b133406cd8cfd88eb3b2b893a5daa",
+  "type": "message",
+  "role": "assistant",
+  "model": "MiniMax-M3.1-Flash",
+  "content": [
+    {
+      "thinking": "The user is asking about the weather in San Francisco. I have access to a get_weather tool that can provide this information. I need to format the location parameter appropriately - the example shows \"San Francisco, US\" as the format.",
+      "signature": "fa86efec7c27d4aa23eac60ba7a1f4e5f0f37a18d6ec4944fe495aebb6bd0930",
+      "type": "thinking"
+    },
+    {
+      "text": "I'll check the current weather in San Francisco for you.",
+      "type": "text"
+    },
+    {
+      "type": "tool_use",
+      "id": "call_function_9pjh8jjdebck_1",
+      "name": "get_weather",
+      "input": {
+        "location": "San Francisco, US"
+      }
+    }
+  ],
+  "usage": {
+    "input_tokens": 14,
+    "output_tokens": 91,
+    "cache_creation_input_tokens": 0,
+    "cache_read_input_tokens": 404
+  },
+  "stop_reason": "tool_use"
+}

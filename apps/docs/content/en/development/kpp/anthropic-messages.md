@@ -332,3 +332,47 @@ Decoded extras carry the origin `anthropic_messages` without a provider, because
 ## Round trips
 
 Every fixture round-trips, with no exceptions: requests, token-counting requests, replies, token-count replies, model listings, streams and errors (`tests/`, `models_tests.rs`). Every stream fixture also accumulates to its paired reply after decode and encode.
+
+## Providers that use this format
+
+Providers other than Anthropic that serve Messages record into `fixtures/anthropic_messages/providers/<id>/` ([fixtures](fixtures.md)). Their extra fields follow the rules above; this section names what each one adds.
+
+Each provider in `PROVIDERS` names a `kaeso_codecs::anthropic_messages::MessagesProfile` in its `messages` field, and the gateway hands it to the encoder with `EgressCtx::with_messages_profile`, which applies it to every request, whatever format the app sent. `MessagesProfile::ANTHROPIC`, the default, sends requests as the app wrote them; `MessagesProfile::compatible(name)` is the same with the provider's name. Custom providers get `ANTHROPIC`.
+
+| Setting | What the encoder does | Why it is allowed |
+|---|---|---|
+| `refusing(fields)` | Refuses a request that sets one of these fields, by their Anthropic names: `top_k`, `stop_sequences` (named as the app wrote it, such as a Chat app's `stop`), or a top-level field of an Anthropic app, such as `container`: `` `top_k` is not supported by Example Cloud; remove it from the request. `` A field that may be left out when a request crosses formats, such as Claude Code's `context_management` that only clears thinking ([extras](cross-format.md#extras)), is left out instead and named in `kaeso-left-out`; any other value of it is refused with the hint for Claude Code. | These fields are semantic, and a provider that accepts them without acting on them would drop them silently. |
+| `sampling_fixed_at(values)` | Refuses a `temperature` or `top_p` other than the value the provider always samples at (`FixedValue`, in thousandths); the value itself goes as written. | The provider ignores the field, so only its own value is honoured. |
+| `auto_tool_choice_only()` | Refuses a `tool_choice` other than `auto`, from every format. | The provider would choose tools itself whatever the app asked for. |
+
+Refusals happen while the request is adapted for the target, before it is encoded, so nothing is sent and the refusal reaches the app in its own format.
+
+| Provider | Settings | Sources |
+|---|---|---|
+| MiniMax (`minimax`) | refuses `top_k`, `stop_sequences`, `mcp_servers`, `container` and `context_management`; `sampling_fixed_at([("temperature", 1), ("top_p", 0.95)])`; `auto_tool_choice_only()` | MiniMax's [Anthropic API compatibility](https://platform.minimax.io/docs/api-reference/text-anthropic-api) page, read 2026-11-08, whose table lists `temperature`, `top_p`, `top_k`, `stop_sequences`, `mcp_servers`, `context_management` and `container` as ignored, says MiniMax always uses a `temperature` of 1 and a `top_p` of 0.95, and supports only `auto` for `tool_choice` |
+
+### Vercel
+
+Sources: Vercel's [Anthropic Messages API](https://vercel.com/docs/ai-gateway/sdks-and-apis/anthropic-messages-api) and [extended thinking](https://vercel.com/docs/ai-gateway/sdks-and-apis/anthropic-messages-api/reasoning) pages, read 2026-10-29, and the live recordings in `fixtures/anthropic_messages/providers/vercel/`. A Vercel model is sent as Messages when its **Sends as** value says so; Vercel's `generation` dialect is Chat Completions.
+
+| Vercel field | KPP | Notes |
+|---|---|---|
+| `provider_metadata` on the reply | extras | Anthropic apps get it back unchanged. |
+| `thinking` blocks without `signature` | `Block::Reasoning` | Anthropic apps get them as Vercel sent them. |
+| errors in OpenAI's envelope | `KppError` | See [errors](#errors). |
+| `POST /v1/messages/count_tokens` | — | Vercel counts exactly only for Claude models and estimates the rest, so Kaeso refuses token counts for every Vercel model. |
+
+### MiniMax
+
+Sources: MiniMax's [Anthropic API compatibility](https://platform.minimax.io/docs/api-reference/text-anthropic-api) page and its [OpenAPI document](https://platform.minimax.io/docs/api-reference/text/api/openapi-chat-anthropic.json), read 2026-11-08, the examples from that document in `fixtures/anthropic_messages/providers/minimax/`, and one live error recorded with a made-up key. Messages is MiniMax's `generation` dialect, at `https://api.minimax.io/anthropic`, for `MiniMax-M3` and `MiniMax-M3.1-Flash`.
+
+| MiniMax field | KPP | Notes |
+|---|---|---|
+| reply `id` of 32 hex digits without `msg_`, no `stop_sequence` | `id`, form `none` | Anthropic apps get the reply as MiniMax sent it (`responses/deep-thinking`). |
+| `thinking` blocks with MiniMax's own `signature`, and `signature_delta` | `Block::Reasoning` with an opaque Anthropic signature from the origin `minimax` | MiniMax asks for the blocks back unchanged in later turns. Other formats replay them only to MiniMax ([reasoning blobs](reasoning.md#reasoning-blobs)); an Anthropic app's own replay goes as written, and Anthropic refuses MiniMax's signatures. |
+| `service_tier` on `message_start` | extras | `streams/image-url-stream`. |
+| `video` content blocks (request) | `Block::Unknown` | MiniMax's own block; it reaches MiniMax from Anthropic apps only, and other dialects refuse it. |
+| `thinking.type` `adaptive` and `output_config.effort` (request) | `reasoning` | MiniMax documents only `adaptive` and `disabled`; `MiniMax-M3.1-Flash` refuses `disabled` with 400, which reaches the app. |
+| `POST /v1/messages/count_tokens` | — | MiniMax's documented answer puts the counts under `usage` instead of at the top level, so Kaeso refuses token counts for MiniMax models before sending anything. |
+| `GET /v1/models`, `GET /v1/models/{model_id}` | `ModelList`, `ModelInfo` | Anthropic's shape (`models/list-documented`, `models/retrieve-documented`); a wrong key gets 401, so **Check availability** spots it. |
+| errors | `KppError` | Anthropic's shape with a `request_id` of MiniMax's own (`errors/recorded-invalid-api-key`). |

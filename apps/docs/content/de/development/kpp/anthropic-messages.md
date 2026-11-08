@@ -332,3 +332,47 @@ Dekodierte Extras tragen den Ursprung `anthropic_messages` ohne Anbieter, weil d
 ## Round Trips
 
 Jede Fixture übersteht den Round Trip, ohne Ausnahme: Anfragen, Zählanfragen, Antworten, Zählantworten, Modelllisten, Streams und Fehler (`tests/`, `models_tests.rs`). Jede Stream-Fixture ergibt nach Dekodieren und Kodieren aufsummiert auch ihre zugehörige Antwort.
+
+## Anbieter mit diesem Format
+
+Andere Anbieter als Anthropic, die Messages bereitstellen, zeichnen in `fixtures/anthropic_messages/providers/<id>/` auf ([Fixtures](fixtures.md)). Ihre zusätzlichen Felder folgen den Regeln oben; dieser Abschnitt nennt, was jeder Anbieter hinzufügt.
+
+Jeder Anbieter in `PROVIDERS` nennt in seinem Feld `messages` ein `kaeso_codecs::anthropic_messages::MessagesProfile`, und das Gateway übergibt es dem Encoder mit `EgressCtx::with_messages_profile`, der es auf jede Anfrage anwendet, gleich in welchem Format die App sie gesendet hat. `MessagesProfile::ANTHROPIC`, der Standard, sendet Anfragen so, wie die App sie geschrieben hat; `MessagesProfile::compatible(name)` ist dasselbe mit dem Namen des Anbieters. Eigene Anbieter erhalten `ANTHROPIC`.
+
+| Einstellung | Was der Encoder tut | Warum das erlaubt ist |
+|---|---|---|
+| `refusing(fields)` | Lehnt eine Anfrage ab, die eines dieser Felder setzt, mit ihren Namen bei Anthropic: `top_k`, `stop_sequences` (so benannt, wie die App es geschrieben hat, etwa `stop` einer Chat-App) oder ein Feld einer Anthropic-App auf oberster Ebene, etwa `container`: `` `top_k` is not supported by Example Cloud; remove it from the request. `` Ein Feld, das beim Wechsel des Formats ausgelassen werden darf, etwa Claude Codes `context_management`, das nur Thinking löscht ([Extras](cross-format.md#extras)), wird stattdessen ausgelassen und in `kaeso-left-out` genannt; jeder andere Wert davon wird mit dem Hinweis für Claude Code abgelehnt. | Diese Felder sind semantisch, und ein Anbieter, der sie annimmt, ohne etwas damit zu tun, würde sie stillschweigend verwerfen. |
+| `sampling_fixed_at(values)` | Lehnt eine `temperature` oder ein `top_p` ab, das vom Wert abweicht, mit dem der Anbieter immer sampelt (`FixedValue`, in Tausendsteln); dieser Wert selbst geht so, wie er geschrieben ist. | Der Anbieter ignoriert das Feld, daher wird nur sein eigener Wert eingehalten. |
+| `auto_tool_choice_only()` | Lehnt ein `tool_choice` außer `auto` ab, aus jedem Format. | Der Anbieter würde Tools selbst wählen, gleich worum die App gebeten hat. |
+
+Ablehnungen geschehen, während die Anfrage für das Ziel angepasst wird, vor dem Kodieren; daher wird nichts gesendet, und die Ablehnung erreicht die App in ihrem eigenen Format.
+
+| Anbieter | Einstellungen | Quellen |
+|---|---|---|
+| MiniMax (`minimax`) | lehnt `top_k`, `stop_sequences`, `mcp_servers`, `container` und `context_management` ab; `sampling_fixed_at([("temperature", 1), ("top_p", 0.95)])`; `auto_tool_choice_only()` | MiniMax' Seite zur [Anthropic-API-Kompatibilität](https://platform.minimax.io/docs/api-reference/text-anthropic-api), gelesen am 2026-11-08, deren Tabelle `temperature`, `top_p`, `top_k`, `stop_sequences`, `mcp_servers`, `context_management` und `container` als ignoriert führt, sagt, dass MiniMax immer eine `temperature` von 1 und ein `top_p` von 0.95 verwendet, und für `tool_choice` nur `auto` unterstützt |
+
+### Vercel
+
+Quellen: Vercels Seiten zur [Anthropic Messages API](https://vercel.com/docs/ai-gateway/sdks-and-apis/anthropic-messages-api) und zum [Extended Thinking](https://vercel.com/docs/ai-gateway/sdks-and-apis/anthropic-messages-api/reasoning), gelesen am 2026-10-29, und die Live-Aufzeichnungen in `fixtures/anthropic_messages/providers/vercel/`. Ein Vercel-Modell wird als Messages gesendet, wenn sein Wert **Sendet als** das sagt; Vercels `generation`-Dialekt ist Chat Completions.
+
+| Vercel-Feld | KPP | Hinweise |
+|---|---|---|
+| `provider_metadata` in der Antwort | Extras | Anthropic-Apps erhalten es unverändert zurück. |
+| `thinking`-Blöcke ohne `signature` | `Block::Reasoning` | Anthropic-Apps erhalten sie so, wie Vercel sie gesendet hat. |
+| Fehler in OpenAIs Hülle | `KppError` | Siehe [Fehler](#fehler). |
+| `POST /v1/messages/count_tokens` | — | Vercel zählt nur für Claude-Modelle genau und schätzt den Rest, daher lehnt Kaeso Token-Zählungen für jedes Vercel-Modell ab. |
+
+### MiniMax
+
+Quellen: MiniMax' Seite zur [Anthropic-API-Kompatibilität](https://platform.minimax.io/docs/api-reference/text-anthropic-api) und sein [OpenAPI-Dokument](https://platform.minimax.io/docs/api-reference/text/api/openapi-chat-anthropic.json), gelesen am 2026-11-08, die Beispiele aus diesem Dokument in `fixtures/anthropic_messages/providers/minimax/` und ein live mit einem erfundenen Schlüssel aufgezeichneter Fehler. Messages ist MiniMax' `generation`-Dialekt, unter `https://api.minimax.io/anthropic`, für `MiniMax-M3` und `MiniMax-M3.1-Flash`.
+
+| MiniMax-Feld | KPP | Hinweise |
+|---|---|---|
+| Antwort-`id` aus 32 Hex-Ziffern ohne `msg_`, kein `stop_sequence` | `id`, Form `none` | Anthropic-Apps erhalten die Antwort so, wie MiniMax sie gesendet hat (`responses/deep-thinking`). |
+| `thinking`-Blöcke mit MiniMax' eigener `signature`, und `signature_delta` | `Block::Reasoning` mit einer opaken Anthropic-Signatur vom Ursprung `minimax` | MiniMax bittet, die Blöcke in späteren Runden unverändert zurückzusenden. Andere Formate senden sie nur an MiniMax zurück ([Reasoning-Blobs](reasoning.md#reasoning-blobs)); die eigene Wiedergabe einer Anthropic-App geht so, wie sie geschrieben ist, und Anthropic lehnt MiniMax' Signaturen ab. |
+| `service_tier` in `message_start` | Extras | `streams/image-url-stream`. |
+| `video`-Inhaltsblöcke (Anfrage) | `Block::Unknown` | MiniMax' eigener Block; er erreicht MiniMax nur aus Anthropic-Apps, und andere Dialekte lehnen ihn ab. |
+| `thinking.type` `adaptive` und `output_config.effort` (Anfrage) | `reasoning` | MiniMax dokumentiert nur `adaptive` und `disabled`; `MiniMax-M3.1-Flash` lehnt `disabled` mit 400 ab, das die App erreicht. |
+| `POST /v1/messages/count_tokens` | — | MiniMax' dokumentierte Antwort legt die Zahlen unter `usage` statt auf die oberste Ebene, daher lehnt Kaeso Token-Zählungen für MiniMax-Modelle ab, bevor etwas gesendet wird. |
+| `GET /v1/models`, `GET /v1/models/{model_id}` | `ModelList`, `ModelInfo` | Anthropics Form (`models/list-documented`, `models/retrieve-documented`); ein falscher Schlüssel erhält 401, daher erkennt **Verfügbarkeit prüfen** ihn. |
+| Fehler | `KppError` | Anthropics Form mit einer eigenen `request_id` von MiniMax (`errors/recorded-invalid-api-key`). |

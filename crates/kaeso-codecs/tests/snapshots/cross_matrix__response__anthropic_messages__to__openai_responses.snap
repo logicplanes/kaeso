@@ -669,6 +669,318 @@ expression: outcomes
     },
     "user": null
   },
+  "providers/minimax/deep-thinking": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "066b367ba949a58a9d6829b4bf8cbcd4",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "MiniMax-M3.1-Flash",
+    "object": "response",
+    "output": [
+      {
+        "encrypted_content": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6ImFudGhyb3BpY19tZXNzYWdlcyJ9LCJ0ZXh0IjpbIlRoZSB1c2VyIGlzIGFza2luZyB3aGljaCBpcyBiaWdnZXIsIDkuMTEgb3IgOS45LlxuXG45LjExIHZzIDkuOVxuXG45LjkgaXMgZ3JlYXRlciB0aGFuIDkuMTEuXG5cblRvIGNvbXBhcmU6IDkuMTEgPSA5LjExIGFuZCA5LjkgPSA5LjkwXG5cbjkuOTAgPiA5LjExLCBzbyA5LjkgaXMgYmlnZ2VyLiJdLCJvcGFxdWUiOlt7Im9yaWdpbiI6eyJkaWFsZWN0IjoiYW50aHJvcGljX21lc3NhZ2VzIn0sImtpbmQiOiJhbnRocm9waWNfdGhpbmtpbmdfc2lnbmF0dXJlIiwiZGF0YSI6IjZkMDMxNWM4MThmOTY2NGZmMTg1ZGFiYWEyMmNkODlmMmJmMjhhM2E1MjEyMjA5NWJjZTIzZDkwNTQ3MWVjNWYifV19",
+        "id": "rs_kaeso_066b367ba949a58a9d6829b4bf8cbcd4_0",
+        "summary": [
+          {
+            "text": "The user is asking which is bigger, 9.11 or 9.9.\n\n9.11 vs 9.9\n\n9.9 is greater than 9.11.\n\nTo compare: 9.11 = 9.11 and 9.9 = 9.90\n\n9.90 > 9.11, so 9.9 is bigger.",
+            "type": "summary_text"
+          }
+        ],
+        "type": "reasoning"
+      },
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "**9.9 is bigger than 9.11.**\n\nTo compare decimals, it helps to write them with the same number of decimal places:\n- 9.11 = 9.11\n- 9.9 = 9.90\n\nSince 9.90 > 9.11, **9.9 is larger**.",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_066b367ba949a58a9d6829b4bf8cbcd4_1",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 172,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 159
+      },
+      "output_tokens": 149,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 321
+    },
+    "user": null
+  },
+  "providers/minimax/image-url-adaptive": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "066a3730f92943410551c4b4978ddad1",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "MiniMax-M3.1-Flash",
+    "object": "response",
+    "output": [
+      {
+        "encrypted_content": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6ImFudGhyb3BpY19tZXNzYWdlcyJ9LCJ0ZXh0IjpbIlRoZSB1c2VyIGlzIGFza2luZyB3aGF0IHRoZSBpbWFnZSBzaG93cy4gSSBjYW4gZGVzY3JpYmUgdGhpcyBpbWFnZSBvZiBhIHlvdW5nIGNoaWxkLiJdLCJvcGFxdWUiOlt7Im9yaWdpbiI6eyJkaWFsZWN0IjoiYW50aHJvcGljX21lc3NhZ2VzIn0sImtpbmQiOiJhbnRocm9waWNfdGhpbmtpbmdfc2lnbmF0dXJlIiwiZGF0YSI6ImRiOGVjYWUxZTVhNjNjYWJlYmQ2OWQyNjI1OTgzNDk5YmI0OThiZmQzMjlkZGU1YzNjZWRlNzZmMTI4OTYzMzYifV19",
+        "id": "rs_kaeso_066a3730f92943410551c4b4978ddad1_0",
+        "summary": [
+          {
+            "text": "The user is asking what the image shows. I can describe this image of a young child.",
+            "type": "summary_text"
+          }
+        ],
+        "type": "reasoning"
+      },
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "This image shows a young girl, probably around 4-5 years old, photographed in a close-up portrait style. She has:\n\n- **Wavy, tousled light brown hair** with bangs that fall across her forehead, with some strands appearing slightly messy or windblown\n- **Large, expressive hazel-green eyes** that are looking directly at the camera\n- **A soft, subtle smile** giving her a warm, gentle expression\n- **Fair skin** with rosy cheeks, illuminated by warm, soft lighting\n\nShe's wearing what appears to be a **cream or off-white dress** with delicate lace or ruffled detailing around the neckline and shoulders.\n\nThe photograph has a **professional portrait quality**, with a softly blurred, neutral grayish-beige background and warm directional lighting that creates a classic, painterly aesthetic. The composition and styling suggest this could be a formal portrait or an AI-generated image with a vintage/realistic photographic style.",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_066a3730f92943410551c4b4978ddad1_1",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 1366,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 157
+      },
+      "output_tokens": 214,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 1580
+    },
+    "user": null
+  },
+  "providers/minimax/tool-use-auto": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "066b133406cd8cfd88eb3b2b893a5daa",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "MiniMax-M3.1-Flash",
+    "object": "response",
+    "output": [
+      {
+        "encrypted_content": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6ImFudGhyb3BpY19tZXNzYWdlcyJ9LCJ0ZXh0IjpbIlRoZSB1c2VyIGlzIGFza2luZyBhYm91dCB0aGUgd2VhdGhlciBpbiBTYW4gRnJhbmNpc2NvLiBJIGhhdmUgYWNjZXNzIHRvIGEgZ2V0X3dlYXRoZXIgdG9vbCB0aGF0IGNhbiBwcm92aWRlIHRoaXMgaW5mb3JtYXRpb24uIEkgbmVlZCB0byBmb3JtYXQgdGhlIGxvY2F0aW9uIHBhcmFtZXRlciBhcHByb3ByaWF0ZWx5IC0gdGhlIGV4YW1wbGUgc2hvd3MgXCJTYW4gRnJhbmNpc2NvLCBVU1wiIGFzIHRoZSBmb3JtYXQuIl0sIm9wYXF1ZSI6W3sib3JpZ2luIjp7ImRpYWxlY3QiOiJhbnRocm9waWNfbWVzc2FnZXMifSwia2luZCI6ImFudGhyb3BpY190aGlua2luZ19zaWduYXR1cmUiLCJkYXRhIjoiZmE4NmVmZWM3YzI3ZDRhYTIzZWFjNjBiYTdhMWY0ZTVmMGYzN2ExOGQ2ZWM0OTQ0ZmU0OTVhZWJiNmJkMDkzMCJ9XX0",
+        "id": "rs_kaeso_066b133406cd8cfd88eb3b2b893a5daa_0",
+        "summary": [
+          {
+            "text": "The user is asking about the weather in San Francisco. I have access to a get_weather tool that can provide this information. I need to format the location parameter appropriately - the example shows \"San Francisco, US\" as the format.",
+            "type": "summary_text"
+          }
+        ],
+        "type": "reasoning"
+      },
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "I'll check the current weather in San Francisco for you.",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_066b133406cd8cfd88eb3b2b893a5daa_1",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      },
+      {
+        "arguments": "{\n        \"location\": \"San Francisco, US\"\n      }",
+        "call_id": "call_function_9pjh8jjdebck_1",
+        "id": "fc_kaeso_066b133406cd8cfd88eb3b2b893a5daa_2",
+        "name": "get_weather",
+        "status": "completed",
+        "type": "function_call"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 418,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 404
+      },
+      "output_tokens": 91,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 509
+    },
+    "user": null
+  },
+  "providers/minimax/video-url": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "066b458956dd2902de31eae19cf15c6e",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "MiniMax-M3.1-Flash",
+    "object": "response",
+    "output": [
+      {
+        "encrypted_content": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6ImFudGhyb3BpY19tZXNzYWdlcyJ9LCJ0ZXh0IjpbIlRoZSB1c2VyIHdhbnRzIHRvIGtub3cgd2hhdCBpcyBoYXBwZW5pbmcgaW4gdGhlIHZpZGVvLlxuXG4xLiAgKipBbmFseXplIHRoZSB2aWRlbzoqKlxuICAgICogICBUaGUgdmlkZW8gaXMgYSBtZW1lL2VkaXRlZCBjbGlwLlxuICAgICogICBJdCBzdGFydHMgd2l0aCBhIGNhdCAoc3BlY2lmaWNhbGx5IGEgQmVuZ2FsIGNhdCwgbG9va3MgbGlrZSBhIFNhdmFubmFoIGNhdCBvciBzaW1pbGFyIGJyZWVkKSB3YWxraW5nIG9uIGEgZGl2aW5nIGJvYXJkIGF0IHRoZSBPbHltcGljcyAoTG9uZG9uIDIwMTIpLlxuICAgICogICBUaGUgY2F0IGlzIGVkaXRlZCBpbnRvIHRoZSBzY2VuZSwgcmVwbGFjaW5nIGEgaHVtYW4gZGl2ZXIuXG4gICAgKiAgIFRoZSBjYXQgd2Fsa3MgdG8gdGhlIGVuZCBvZiB0aGUgYm9hcmQuXG4gICAgKiAgIFRoZSBjYXQgdGhlbiBqdW1wcyBvZmYgdGhlIGRpdmluZyBib2FyZCBpbnRvIHRoZSBwb29sLlxuICAgICogICBUaGUgcGVvcGxlIGluIHRoZSBiYWNrZ3JvdW5kIGFyZSByZWFsLCByZWFjdGluZyAob3IgcmF0aGVyLCBqdXN0IHNpdHRpbmcgdGhlcmUsIGFzIGl0J3MgYSBzdGF0aWMgY3Jvd2QgaW1hZ2Ugb3IgdmVyeSBzbG93IG1vdmVtZW50KS5cbiAgICAqICAgVGhlIHRleHQgXCJNSU5JTUFYIHwgSGFpbHVvIEFJXCIgaXMgdmlzaWJsZSwgaW5kaWNhdGluZyBpdCdzIGFuIEFJLWdlbmVyYXRlZCB2aWRlby5cblxuMi4gICoqRGVzY3JpYmUgdGhlIGFjdGlvbjoqKlxuICAgICogICBBIGNhdCB3YWxrcyBvbiBhIGRpdmluZyBib2FyZC5cbiAgICAqICAgVGhlIGNhdCBqdW1wcyBvZmYgdGhlIGRpdmluZyBib2FyZC5cbiAgICAqICAgVGhlIHNldHRpbmcgaXMgYW4gT2x5bXBpYy1zaXplZCBwb29sLlxuXG4zLiAgKipTeW50aGVzaXplIHRoZSBkZXNjcmlwdGlvbjoqKlxuICAgICogICBTdGFydCB3aXRoIHRoZSBtYWluIHN1YmplY3Q6IGEgY2F0LlxuICAgICogICBEZXNjcmliZSB0aGUgbG9jYXRpb246IGEgZGl2aW5nIGJvYXJkIGF0IGEgc3dpbW1pbmcgcG9vbC5cbiAgICAqICAgRGVzY3JpYmUgdGhlIGFjdGlvbjogd2Fsa2luZywgdGhlbiBqdW1waW5nIG9mZi5cbiAgICAqICAgQ29tYmluZSBpbnRvIGEgY29uY2lzZSBzZW50ZW5jZTogXCJBIGNhdCBpcyBzZWVuIHdhbGtpbmcgb24gYSBkaXZpbmcgYm9hcmQgYW5kIHRoZW4ganVtcGluZyBvZmYgaW50byBhIHN3aW1taW5nIHBvb2wuXCJcblxuNC4gICoqUmV2aWV3IGFnYWluc3QgdGhlIHZpZGVvOioqXG4gICAgKiAgIERvZXMgdGhlIHZpZGVvIHNob3cgYSBjYXQ_IFllcy5cbiAgICAqICAgRG9lcyBpdCBzaG93IGEgZGl2aW5nIGJvYXJkPyBZZXMuXG4gICAgKiAgIERvZXMgdGhlIGNhdCBqdW1wIG9mZj8gWWVzLlxuICAgICogICBJcyB0aGVyZSBhIHN3aW1taW5nIHBvb2wgYmVsb3c_IFllcy5cbiAgICAqICAgVGhlIGRlc2NyaXB0aW9uIGlzIGFjY3VyYXRlIGFuZCBjb3ZlcnMgdGhlIGtleSBldmVudHMgaW4gdGhlIHNob3J0IGNsaXAuXG5cbjUuICAqKkZpbmFsIE91dHB1dCBHZW5lcmF0aW9uOioqIFByZXNlbnQgdGhlIHN5bnRoZXNpemVkIGRlc2NyaXB0aW9uIGNsZWFybHkuIl0sIm9wYXF1ZSI6W3sib3JpZ2luIjp7ImRpYWxlY3QiOiJhbnRocm9waWNfbWVzc2FnZXMifSwia2luZCI6ImFudGhyb3BpY190aGlua2luZ19zaWduYXR1cmUiLCJkYXRhIjoiNDg0OWUwZDU5NmUyNWYwMzUwNGRiYjRlZWU3MzE2ZmM0ODcxNGRjODZiOTNjOWI3ZGQ2M2FkZWY3ZjRhYTliMiJ9XX0",
+        "id": "rs_kaeso_066b458956dd2902de31eae19cf15c6e_0",
+        "summary": [
+          {
+            "text": "The user wants to know what is happening in the video.\n\n1.  **Analyze the video:**\n    *   The video is a meme/edited clip.\n    *   It starts with a cat (specifically a Bengal cat, looks like a Savannah cat or similar breed) walking on a diving board at the Olympics (London 2012).\n    *   The cat is edited into the scene, replacing a human diver.\n    *   The cat walks to the end of the board.\n    *   The cat then jumps off the diving board into the pool.\n    *   The people in the background are real, reacting (or rather, just sitting there, as it's a static crowd image or very slow movement).\n    *   The text \"MINIMAX | Hailuo AI\" is visible, indicating it's an AI-generated video.\n\n2.  **Describe the action:**\n    *   A cat walks on a diving board.\n    *   The cat jumps off the diving board.\n    *   The setting is an Olympic-sized pool.\n\n3.  **Synthesize the description:**\n    *   Start with the main subject: a cat.\n    *   Describe the location: a diving board at a swimming pool.\n    *   Describe the action: walking, then jumping off.\n    *   Combine into a concise sentence: \"A cat is seen walking on a diving board and then jumping off into a swimming pool.\"\n\n4.  **Review against the video:**\n    *   Does the video show a cat? Yes.\n    *   Does it show a diving board? Yes.\n    *   Does the cat jump off? Yes.\n    *   Is there a swimming pool below? Yes.\n    *   The description is accurate and covers the key events in the short clip.\n\n5.  **Final Output Generation:** Present the synthesized description clearly.",
+            "type": "summary_text"
+          }
+        ],
+        "type": "reasoning"
+      },
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "A cat is seen walking on a diving board and then jumping off into a swimming pool.",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_066b458956dd2902de31eae19cf15c6e_1",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 2245,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 1896
+      },
+      "output_tokens": 393,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 2638
+    },
+    "user": null
+  },
   "providers/vercel/recorded-text": {
     "background": false,
     "completed_at": 1760000000,

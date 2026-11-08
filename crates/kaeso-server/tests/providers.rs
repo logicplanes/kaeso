@@ -100,6 +100,12 @@ async fn every_member_reads_each_provider_with_its_name_key_page_and_formats() {
     assert_eq!(cerebras["count_tokens"], Value::Null);
     assert_eq!(cerebras["embeddings"], Value::Null);
     assert_eq!(cerebras["key_prefix"], "csk-");
+    let minimax = listed.iter().find(|p| p["id"] == "minimax").unwrap();
+    assert_eq!(minimax["name"], "MiniMax");
+    assert_eq!(minimax["dialects"], json!(["anthropic_messages"]));
+    assert_eq!(minimax["count_tokens"], Value::Null);
+    assert_eq!(minimax["embeddings"], Value::Null);
+    assert_eq!(minimax["key_prefix"], "sk-api-");
 
     let anonymous = app
         .call(Method::GET, &format!("/orgs/{org}/providers"), None, None)

@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use crate::anthropic_messages::MessagesProfile;
 use crate::openai_chat::ChatProfile;
 use crate::openai_responses::ResponsesProfile;
 use indexmap::IndexMap;
@@ -141,6 +142,7 @@ pub struct EgressCtx {
     pub tool_namespaces: Option<bool>,
     pub chat_profile: ChatProfile,
     pub responses_profile: ResponsesProfile,
+    pub messages_profile: MessagesProfile,
     pub left_out: Vec<String>,
     pub adapted: Vec<String>,
     /// The prompt-cache breakpoints (`cache_control`) an encoded generation request
@@ -167,6 +169,7 @@ impl EgressCtx {
             tool_namespaces: None,
             chat_profile: ChatProfile::OPENAI,
             responses_profile: ResponsesProfile::OPENAI,
+            messages_profile: MessagesProfile::ANTHROPIC,
             left_out: Vec::new(),
             adapted: Vec::new(),
             cache_breakpoints: None,
@@ -213,6 +216,12 @@ impl EgressCtx {
     #[must_use]
     pub fn with_responses_profile(mut self, profile: ResponsesProfile) -> Self {
         self.responses_profile = profile;
+        self
+    }
+
+    #[must_use]
+    pub fn with_messages_profile(mut self, profile: MessagesProfile) -> Self {
+        self.messages_profile = profile;
         self
     }
 
