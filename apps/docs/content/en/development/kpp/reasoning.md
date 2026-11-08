@@ -5,7 +5,7 @@ description: How the codecs carry reasoning, its settings and its signatures bet
 order: 3
 ---
 
-Anthropic signs its thinking blocks and OpenAI encrypts its reasoning items. Opaque reasoning (signatures, encrypted content, item ids) is only ever replayed to the dialect and provider that issued it.
+Anthropic signs its thinking blocks, OpenAI encrypts its reasoning items, and Gemini puts thought signatures on the parts of its replies. Opaque reasoning (signatures, encrypted content, item ids) is only ever replayed to the dialect and provider that issued it.
 
 ## Which reasoning is replayed
 
@@ -25,6 +25,10 @@ Reasoning settings convert between an effort and a token budget:
 | A budget alone | Anthropic | `enabled` thinking with that budget |
 | An Anthropic budget | OpenAI | An effort from the table below |
 | Anthropic `thinking: {type: "disabled"}` | OpenAI | Effort `none` |
+| Effort `minimal` to `high` | Gemini | `thinkingLevel` with that level; `xhigh` and `max` become `HIGH` |
+| A budget alone | Gemini | `thinkingBudget` with that budget, which Gemini 3 maps to the nearest level |
+| Effort `none`, or thinking off | Gemini | `thinkingBudget: 0` |
+| Adaptive thinking without an effort | Gemini | `thinkingBudget: -1`, dynamic thinking |
 
 Both OpenAI dialects document `none` as the lowest value of their shared `ReasoningEffort` enum, so disabled Anthropic thinking has an equivalent, except for a model that always reasons ([models that always reason](#models-that-always-reason)). The effort `minimal` has no row and stays `Unsupported` for Anthropic.
 
@@ -83,6 +87,8 @@ The gateway also tells the encoders whether the target model reasons (`EgressCtx
 - a summary without an effort, mode or budget (OpenAI `reasoning: {summary: "auto"}`) turns Anthropic thinking on at the model's default depth. That is adaptive thinking without an effort, or the `medium` budget, OpenAI's default effort;
 - Anthropic `adaptive` thinking without an effort counts as reasoning for OpenAI Responses: it asks for `include: ["reasoning.encrypted_content"]` and, as above, a summary.
 
+Gemini returns thoughts only with `includeThoughts: true`, which a request from another dialect gets with a reasoning summary, or with Anthropic thinking whose `display` isn't `omitted` ([Gemini API](gemini.md#thinking)).
+
 Requests without reasoning settings, the effort `none`, and models that don't reason or aren't known never get reasoning switched on. OpenAI Chat apps, whose format shows no reasoning, ask for no summaries.
 
 Providers that serve Chat Completions return readable reasoning in a field of their own, such as DeepSeek's `reasoning_content` or Groq's `reasoning`, without being asked for a summary. Their chat profile names the field (`reasoning_fields`, [provider profiles](openai-chat-providers.md#provider-profiles)), so the reasoning becomes a KPP reasoning block: Anthropic Messages apps get it as a `thinking` block and Responses apps as a reasoning item with a summary, each with the original block in a [reasoning blob](#reasoning-blobs).
@@ -119,6 +125,8 @@ For OpenAI Responses and Anthropic Messages apps, KPP wraps the whole reasoning 
 | OpenAI Responses | A reasoning item with an `rs_kaeso_…` id and the thinking as one summary text, streamed as `response.reasoning_summary_*` events | `encrypted_content` |
 | Anthropic Messages | A `thinking` block with the summaries and reasoning text as thinking, paragraphs separated by a blank line | `signature`, streamed as one `signature_delta` when the block stops |
 
+Gemini apps get no blob: the `google-genai` SDK reads `thoughtSignature` as base64, and the prefix isn't base64. Their reasoning is left out as for OpenAI Chat apps.
+
 Both request decoders recognise a blob wherever it sits (`continuity::unwrap_reasoning`) and restore the original block with its origin. The encoders then replay it to its own dialect and provider like any other reasoning.
 
 - **Always sent.** The blob is sent whether or not the app asked for `include: ["reasoning.encrypted_content"]`, and whatever its `store` setting. Kaeso stores nothing, and the SDK agent loops send output items and content blocks back as received. Those loops include openai-agents' `to_input_list()`, Codex, Claude Code and the Anthropic tool runner.
@@ -132,7 +140,7 @@ Requests from other dialects ask OpenAI Responses for `include: ["reasoning.encr
 
 Chat Completions has no field for reasoning, and KPP does not invent one. The reply leaves the reasoning out and the gateway keeps it, keyed by the tool calls it came before. Tool call ids are unique, issued by the provider and sent back by every Chat client, so they key the reasoning without changing the app's format.
 
-1. After a reply, `continuity::reasoning_for_tool_calls` (a complete reply) or a `continuity::ReasoningCollector` (a stream) returns one `CarriedReasoning` per tool call that replayable reasoning came before: Anthropic signed or redacted thinking, or OpenAI encrypted reasoning. Reasoning after the last tool call is not kept.
+1. After a reply, `continuity::reasoning_for_tool_calls` (a complete reply) or a `continuity::ReasoningCollector` (a stream) returns one `CarriedReasoning` per tool call that replayable reasoning came before: Anthropic signed or redacted thinking, OpenAI encrypted reasoning, or a Gemini thought signature. Reasoning after the last tool call is not kept.
 2. The gateway stores the entries in Valkey, encrypted under the master key and readable only with the API key that made the request, for `KAESO_CONTINUITY_REASONING_TTL` (an hour by default).
 3. On the app's next request, after decoding and before `check` and encoding, `continuity::tool_calls_missing_reasoning` lists the tool call ids to look up. `continuity::restore_reasoning` then puts what was found back into the assistant turns. Reasoning for a turn's first tool call goes at the start of the turn, and reasoning for a later call right after the call before it. Reasoning is restored only into an app's turn with exactly the tool calls of the reply it came from (`CarriedReasoning::turn_calls`), because Anthropic binds thinking to the turn that produced it; an app that merged two replies into one turn gets them without. Turns that already hold reasoning are left alone.
 

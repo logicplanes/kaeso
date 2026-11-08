@@ -2,7 +2,7 @@
 title: Fixtures and recordings
 nav: Fixtures
 description: The real payloads the codecs are tested against, and how to record new ones from the providers.
-order: 9
+order: 10
 ---
 
 Every codec change starts with a fixture: a real request body, reply, stream or error, in `crates/kaeso-codecs/fixtures`. Every fixture round-trips through its own codec, and the cross-dialect matrix runs every generation fixture through every other dialect. The [SDK conformance suite](../testing.md#sdk-conformance) serves the fixtures to the official SDKs, the gateway's mock provider answers with them, and the fuzz targets start from them.
@@ -15,6 +15,8 @@ Every codec change starts with a fixture: a real request body, reply, stream or 
 | `openai_chat/` | OpenAI Chat Completions (`/v1/chat/completions`) |
 | `openai_responses/` | OpenAI Responses (`/v1/responses`, `/v1/responses/input_tokens`) |
 | `openai_embeddings/` | OpenAI Embeddings (`/v1/embeddings`) |
+| `gemini/` | Gemini API (`{models}/{model}:generateContent`, `:streamGenerateContent`, `:countTokens`) |
+| `gemini_embeddings/` | Gemini embeddings (`{models}/{model}:embedContent`, `:batchEmbedContents`) |
 
 Each dialect folder has `requests/`, `responses/`, `streams/` where the endpoint streams, and `errors/`.
 
@@ -22,11 +24,12 @@ Each dialect folder has `requests/`, `responses/`, `streams/` where the endpoint
 | --- | --- |
 | `requests/<name>.json` | The exact request body |
 | `requests/<name>.headers.json` | Allowlisted forwarded headers sent with that request |
+| `requests/<name>.meta.json` | Gemini only: the `model` and the method (`action`, such as `streamGenerateContent`) the path of that request names, where they aren't `--model` and `generateContent` (`embedContent` for embeddings) |
 | `responses/<name>.json` | The exact 200 body |
 | `streams/<name>.sse` | The exact SSE bytes |
 | `errors/<name>.json` and `errors/<name>.meta.json` | An error body, and `{"status": …, "headers": {…}}`. When the codec answers apps with another body, such as the OpenAI error shape for SpaceX's string `error`, `"encoded"` holds that body and the round trip compares against it |
 
-Some endpoints have subfolders of their own: `count_tokens/` for Anthropic and `input_tokens/` for OpenAI Responses, inside `requests/` and `responses/`, and `models/` for model listings (`anthropic_messages/models/`, and `openai_chat/models/`, which all three OpenAI codecs use).
+Some endpoints have subfolders of their own: `count_tokens/` for Anthropic and Gemini and `input_tokens/` for OpenAI Responses, inside `requests/` and `responses/`, and `models/` for model listings (`anthropic_messages/models/`, `gemini/models/`, and `openai_chat/models/`, which all three OpenAI codecs use).
 
 Recordings from other providers that speak a dialect, such as an OpenAI-compatible API, go into `<dialect>/providers/<id>/`, named by the provider's id in `crates/kaeso-core/src/provider.rs`. That folder has the same `requests/`, `responses/`, `streams/` and `errors/` subfolders, each only where the provider has files. `requests/` holds requests that only this provider accepts; every name in it must differ from the dialect's own request fixtures.
 
@@ -77,6 +80,14 @@ cargo xtask record openai_chat --all --dry-run
 cargo xtask record openai_responses --count --all
 ```
 
+Gemini fixtures record from Google AI Studio with the key in `GEMINI_API_KEY`. A Gemini request names its model in the path, so pass `--model` or put the model in the fixture's `.meta.json`:
+
+```bash
+export GEMINI_API_KEY=…
+cargo xtask record gemini --model gemini-3.5-flash text-simple stream-text
+cargo xtask record gemini_embeddings --model gemini-embedding-2 batch
+```
+
 Any other provider in `crates/kaeso-core/src/provider.rs` records the same way with `--provider`, usually with `--model` because the request fixtures name OpenAI and Anthropic models:
 
 ```bash
@@ -89,17 +100,17 @@ cargo xtask record openai_chat --provider <id> --model <model> \
 
 | Option | What it does |
 | --- | --- |
-| `<dialect>` | `anthropic_messages`, `openai_chat`, `openai_responses` or `openai_embeddings` |
+| `<dialect>` | `anthropic_messages`, `openai_chat`, `openai_responses`, `openai_embeddings`, `gemini` or `gemini_embeddings` |
 | `<names>` | Request fixtures to send, without `.json` |
 | `--all` | Every request fixture of the dialect except `stateful-*`, `unknown-*`, `n-2*` and `input-audio*`, which a provider would refuse or which carry made-up fields |
-| `--count` | The token-count endpoint and its fixtures in `requests/count_tokens/` or `requests/input_tokens/`; `anthropic_messages` and `openai_responses` only, and only for a provider whose `count_tokens` is that dialect |
+| `--count` | The token-count endpoint and its fixtures in `requests/count_tokens/` or `requests/input_tokens/`; `anthropic_messages`, `openai_responses` and `gemini` only, and only for a provider whose `count_tokens` is that dialect |
 | `--dry-run` | Prints what would be sent and sends nothing |
-| `--provider <id>` | The provider to record from, by its id; it must list the dialect in its `dialects`. `anthropic` for `anthropic_messages` and `openai` for the others by default |
-| `--model <id>` | Sends this model instead of the one each request fixture names, and records it in `RECORDED.md` |
+| `--provider <id>` | The provider to record from, by its id; it must list the dialect in its `dialects`. `anthropic` for `anthropic_messages`, `google` (Google AI Studio, the only source of `gemini` and `gemini_embeddings`) and `openai` for the others by default |
+| `--model <id>` | Sends this model instead of the one each request fixture names, and records it in `RECORDED.md`; for Gemini it wins over the model in `.meta.json` |
 
 - It reads `requests/<name>.json`, and for another provider also `providers/<id>/requests/<name>.json`, and, when it exists, `<name>.headers.json`, whose allowlisted headers (`anthropic-beta`, `anthropic-version`, `openai-beta`) are sent along. Anthropic requests carry `anthropic-version: 2023-06-01` unless that file names another version.
-- It writes a 2xx reply to `responses/recorded-<name>.json`, or to `responses/count_tokens/` or `responses/input_tokens/` with `--count`. A request with `"stream": true` gets `streams/recorded-<name>.sse`, the raw bytes as received. An error gets `errors/recorded-<name>.json` (`.txt` when the body isn't JSON) and `recorded-<name>.meta.json` with the status and any `retry-after`. Each recording adds a row with the model and the UTC time to `RECORDED.md` in that folder. `openai` and `anthropic` record into the dialect's folders, every other provider into `providers/<id>/`. JSON bodies are indented by two spaces and keep the provider's key order.
-- The key comes from `<ID>_API_KEY`, the provider's id in capitals with underscores for hyphens: `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, and `FIREWORKS_AI_API_KEY` for a provider `fireworks-ai`. `<ID>_BASE_URL` replaces the provider's default base URL, which is the one the gateway uses. The key goes into the provider's auth header: `authorization: Bearer` or `x-api-key`.
+- It writes a 2xx reply to `responses/recorded-<name>.json`, or to `responses/count_tokens/` or `responses/input_tokens/` with `--count`. A request with `"stream": true`, or a Gemini request for `streamGenerateContent`, gets `streams/recorded-<name>.sse`, the raw bytes as received. An error gets `errors/recorded-<name>.json` (`.txt` when the body isn't JSON) and `recorded-<name>.meta.json` with the status and any `retry-after`. Each recording adds a row with the model and the UTC time to `RECORDED.md` in that folder. `openai`, `anthropic` and `google` record into the dialect's folders, every other provider into `providers/<id>/`. JSON bodies are indented by two spaces and keep the provider's key order.
+- The key comes from `<ID>_API_KEY`, the provider's id in capitals with underscores for hyphens: `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, and `FIREWORKS_AI_API_KEY` for a provider `fireworks-ai`. `<ID>_BASE_URL` replaces the provider's default base URL, which is the one the gateway uses. The key goes into the provider's auth header: `authorization: Bearer`, `x-api-key`, or `x-goog-api-key` for Google AI Studio, whose key and base URL come from `GEMINI_API_KEY` and `GEMINI_BASE_URL`.
 - API keys are read from the environment and never written, and request headers are never stored.
 - Before anything is written, it removes the query string from every URL that carries a cloud signing credential: AWS Signature Version 4, Google Cloud signed URLs and Azure shared access signatures. A web search can return such presigned links. Everything else stays byte for byte.
 

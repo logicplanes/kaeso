@@ -190,8 +190,10 @@ sequenceDiagram
 | `POST /v1/responses/input_tokens` | `openai_responses` | `responses.input_tokens.count` |
 | `POST /v1/embeddings` | `openai_embeddings` | `embeddings.create` |
 | `GET /v1/models`、`GET /v1/models/{id}` | 带 `anthropic-version` 请求头时为 `anthropic_messages`，否则为 `openai_chat` | `models.list`、`models.retrieve` |
+| `POST /v1beta/models/{model}:{method}` | `gemini`；`embedContent` 和 `batchEmbedContents` 为 `gemini_embeddings` | `models.generate_content`、`models.generate_content_stream`、`models.count_tokens`、`models.embed_content`（`google-genai`） |
+| `GET /v1beta/models`、`GET /v1beta/models/{id}` | `gemini` | `models.list`、`models.get`（`google-genai`） |
 
-每个生成类方言的每个响应和流式 [fixture](kpp/fixtures.md) 都会通过每个生成类端点，包括流式和非流式。测试把 SDK 解析出的内容与 KPP 解码出的内容（`GET /_expected`）比较，因此丢失文本、工具参数或可读推理的转换都会失败。测试还检查结构化输出仍是有效的 JSON，每个错误 fixture 都会以正确的状态码引发 SDK 的 `APIStatusError`（`e2e/conformance/test_errors.py`）。
+每个生成类方言的每个响应和流式 [fixture](kpp/fixtures.md) 都会通过每个生成类端点，包括流式和非流式。测试把 SDK 解析出的内容与 KPP 解码出的内容（`GET /_expected`）比较，因此丢失文本、工具参数或可读推理的转换都会失败。测试还检查结构化输出仍是有效的 JSON，每个错误 fixture 都会以正确的状态码引发 SDK 的错误（`e2e/conformance/test_errors.py`）：OpenAI 和 Anthropic SDK 中为 `APIStatusError`，`google-genai` 中为 `APIError`。
 
 模型列表的分页和过滤必须符合 SDK 的预期（`e2e/conformance/test_models.py`）。`GET /_scenarios` 列出服务器提供的每个场景。
 

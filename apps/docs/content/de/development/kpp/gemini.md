@@ -1,0 +1,253 @@
+---
+title: Gemini API
+description: Wie jedes Feld der Gemini API auf KPP abgebildet wird und zurück, für Generierung, Token-Zählung, Embeddings und Modelllisten.
+order: 9
+---
+
+Schlagen Sie hier jedes Feld der Gemini API nach: wohin es in KPP gehört und woher seine Abbildung stammt. Prüfen Sie es, bevor Sie ändern, wie der Codec das Feld liest oder schreibt.
+
+- **Codecs:** `kaeso_codecs::gemini::Gemini` (`crates/kaeso-codecs/src/gemini/`) und `kaeso_codecs::gemini_embeddings::GeminiEmbeddings` (`crates/kaeso-codecs/src/gemini_embeddings/`)
+- **Endpunkte:** `POST {models}/{model}:generateContent`, `:streamGenerateContent?alt=sse`, `:countTokens`, `:embedContent` und `:batchEmbedContents` sowie die [Modell-Endpunkte](#modelle)
+- **Fixtures:** `crates/kaeso-codecs/fixtures/gemini/` und `crates/kaeso-codecs/fixtures/gemini_embeddings/`
+
+**Quellen.** Die Abbildungen folgen diesen Quellen:
+
+- Das Discovery-Dokument der Gemini API, `https://generativelanguage.googleapis.com/$discovery/rest?version=v1beta`, Revision `20261106`. Die Schemanamen unten beziehen sich darauf.
+- Die [Dokumentation der Gemini API](https://aistudio.google.com/docs), gelesen am 2026-11-08: Textgenerierung, Thinking, Thought Signatures, Function Calling, strukturierte Ausgabe, Token-Zählung, Embeddings, Dateieingabe, Modelle und Fehlerbehebung.
+- Das offizielle Python-SDK `google-genai` 2.32.0, das die [SDK-Konformitätssuite](../testing.md#sdk-konformität) gegen die Encoder laufen lässt.
+
+## Lesart der Tabellen
+
+- **KPP**: das typisierte Feld, auf das der Wire-Wert abgebildet wird.
+- **Felder**: roh in `Extras::fields` aufbewahrt, gebunden an `gemini` (oder `gemini_embeddings`). Andere Dialekte lehnen sie mit `Unsupported` ab ([Extras](cross-format.md#extras)). Verschachtelte Objekte nutzen Schlüsselpfade mit Punkt, etwa `generationConfig.responseModalities`.
+- **Form**: eine Codec-eigene Darstellungsmarkierung in `Extras::form`, die andere Dialekte ignorieren. `verbatim` meint den allgemeinen Mechanismus von `wire::Ext` (Schreibweisen `null`, `false` und `[]`).
+- **roh**: ganz in einem `RawItem` oder `RawUsage` aufbewahrt.
+- **Eigene** Daten haben Extras oder einen Ursprung `gemini`; **fremde** Daten kommen aus einem anderen Dialekt.
+
+## Pfade
+
+Eine Gemini-Anfrage nennt ihr Modell und ihre Methode im Pfad. Der Codec baut den Pfad daher aus der Anfrage und dekodiert eine Anfrage mit beidem.
+
+| Teil | Regel |
+|---|---|
+| Modellpfad | `GeminiProfile::models_path` in `EgressCtx::gemini_profile`. `GeminiProfile::GOOGLE_AI_STUDIO` ist `/v1beta/models`; `with_models_path` setzt einen anderen pro Anfrage, etwa `/v1/projects/{project}/locations/{location}/publishers/google/models`. |
+| Modell | Ein prozentkodiertes Pfadsegment, `:` eingeschlossen. Ein führendes `models/` ist der Ressourcenname desselben Modells und wird entfernt; `tunedModels/<id>` adressiert ein feinabgestimmtes Modell neben dem Modellpfad. `.` und `..` sind `InvalidRequest`, wie beim [Abrufen eines Modells](codec-design.md#modelllisten). |
+| Methode | `GeminiAction`: `generateContent` und `streamGenerateContent` (`RequestKind::Generate`, Streaming entscheidet die Methode), `countTokens` (`CountTokens`), `embedContent` und `batchEmbedContents` (`Embed`, der Dialekt `gemini_embeddings`). `streamGenerateContent` hängt `?alt=sse` an. |
+| Dekodieren | `dispatch::decode_gemini_request(model, action, body, headers)` oder `decode_checked_gemini_request` für einen Body, den `limits::Checked` gezählt hat. `gemini::split_model_action` teilt ein Segment wie `gemini-3.5-flash:streamGenerateContent`. `dispatch::decode_request` ohne Pfad dekodiert einen Generierungs-Body mit leerem Modell. |
+| Rolle an jedem Content | `GeminiProfile::role_on_every_content`: Ein Content, den eine App ohne `role` sendet, bekommt `user`. Bei Google AI Studio aus. |
+
+## Anfragen
+
+Schema `GenerateContentRequest`.
+
+| Wire-Feld | KPP | Anmerkungen |
+|---|---|---|
+| `contents[]` (`Content`) | `messages[]` | Eine Nachricht pro Content; aufeinanderfolgende Contents derselben Rolle bleiben wie geschrieben. Unbekannte Schlüssel → Felder der Nachricht. |
+| `contents[].role` `user` / `model` | `Role::User` / `Role::Assistant` | Fehlt → `Role::User`, Form `role: "absent"`. Jede andere Rolle → eine Nutzernachricht, die den ganzen Content als einen unbekannten Block hält und über Dialekte hinweg als `` `<role>` message `` abgelehnt wird ([Anfragen](cross-format.md#anfragen)). Gemini beantwortete einen Content mit der Rolle `assistant` (`requests/role-assistant.json`). |
+| `systemInstruction` | `system` | Seine Parts als Blöcke; `role` → Form `systemInstruction.role`; unbekannte Schlüssel → Felder `systemInstruction.*`. Die Systemanweisung hält nur Text, daher ist ein fremder Systemblock ohne Text `Unsupported`. |
+| `tools[]` nur mit `functionDeclarations` | `tools[]` als `ToolDef::Function` | Der Index des Tools jeder Deklaration → Form `group`, damit eine Kodierung im selben Dialekt die Gruppierung behält. Fremde Tools kommen in ein Tool. |
+| `tools[]` mit einem anderen Schlüssel (`googleSearch`, `urlContext`, `codeExecution`, `googleMaps`, `fileSearch`, `computerUse`, `mcpServers`, `googleSearchRetrieval`) oder mit leeren `functionDeclarations` | `ToolDef::Unknown` (roh) | Über Dialekte hinweg abgelehnt. |
+| `functionDeclarations[].name`, `.description` | `name`, `description` | |
+| `functionDeclarations[].parametersJsonSchema` | `parameters` | Volles JSON Schema. Fremde Tools bekommen immer `parametersJsonSchema`, sodass nichts an die OpenAPI-Teilmenge verloren geht. |
+| `functionDeclarations[].parameters` (OpenAPI-`Schema`) | `parameters` | Form `schema: "parameters"`, sodass Gemini es in `parameters` zurückbekommt. Andere Dialekte bekommen es wie geschrieben als JSON Schema; ein Anbieter, der übliche Typnamen verlangt, lehnt großgeschriebene wie `OBJECT` ab. Mit `parametersJsonSchema` daneben → Feld `parameters`. |
+| `functionDeclarations[].response`, `.responseJsonSchema`, `.behavior` | Felder des Tools | |
+| `toolConfig.functionCallingConfig` `mode: AUTO` / `NONE` / `ANY` | `tool_choice` `Auto` / `None` / `Required` | |
+| `mode: ANY` mit einem Eintrag in `allowedFunctionNames` | `ToolChoice::Tool(name)` | |
+| `mode: VALIDATED`, `ANY` mit mehreren Namen, jede andere Kombination | `ToolChoice::Unknown` (roh) | Über Dialekte hinweg abgelehnt. |
+| `toolConfig.retrievalConfig`, `.includeServerSideToolInvocations` | Felder `toolConfig.*` | |
+| `generationConfig.temperature`, `.topP`, `.topK`, `.maxOutputTokens`, `.stopSequences`, `.seed`, `.presencePenalty`, `.frequencyPenalty` | `sampling.*` | Zahlen behalten ihre Schreibweise im Dialekt (Form `integers`). |
+| `generationConfig.candidateCount` | Form `candidate_count` | Über 1 → `Unsupported` beim Dekodieren, wie `n` bei Chat ([Sampling](cross-format.md#sampling)). |
+| `responseMimeType: application/json` mit `responseJsonSchema` | `output = JsonSchema` | |
+| `responseMimeType: application/json` mit `responseSchema` | `output = JsonSchema` | Form `schema: "responseSchema"`; andere Dialekte bekommen das OpenAPI-Schema wie geschrieben. |
+| `responseMimeType: application/json` allein | `output = JsonObject` | |
+| Jeder andere `responseMimeType` und ein Schema ohne `application/json` | Felder `generationConfig.*` | |
+| `generationConfig.thinkingConfig` | `reasoning` | Siehe [Thinking](#thinking). |
+| `generationConfig.responseModalities`, `.speechConfig`, `.imageConfig`, `.mediaResolution`, `.responseLogprobs`, `.logprobs`, `.audioTranscriptionConfig`, `.translationConfig`, `.enableAffectiveDialog`, `.enableEnhancedCivicAnswers`, `.responseFormat` | Felder `generationConfig.*` | |
+| `safetySettings`, `cachedContent`, `labels`, `serviceTier`, `store`, `continuationToken` | Felder | |
+| `model` (in einem Body) | Form `model` | Der Pfad entscheidet über das Modell. |
+
+### Parts
+
+Schema `Part`. Ein Part trägt genau eines von `text`, `inlineData`, `fileData`, `functionCall` und `functionResponse`; jeder andere Part bleibt ganz erhalten.
+
+| Wire-Part | KPP | Anmerkungen |
+|---|---|---|
+| `text` | `Block::Text` | `thought: false` → Form `thought`. |
+| `text` mit `thought: true` | `Block::Reasoning` | Sein Text und seine `thoughtSignature` als opake Daten. Ein leerer Thought-Part → Form `thought_part`. |
+| `thoughtSignature` an jedem anderen Part | `Block::Reasoning` vor dem Block des Parts | Siehe [Thought Signatures](#thought-signatures). |
+| `inlineData` `image/*` | `Block::Image`, Base64 | `displayName` → Felder `inlineData.*`. |
+| `inlineData` eines anderen Typs | `Block::Document`, Base64 | |
+| `fileData` mit einer URI der Files API (`files/…` oder `https://generativelanguage.googleapis.com/v1beta/files/…`) | Bild oder Dokument, `Source::FileId` | Nur bei Gemini nutzbar ([Dateien](cross-format.md#dateien)). `mimeType` → Form `mime_type`. |
+| `fileData` mit einer anderen URI | Bild oder Dokument, `Source::Url` | Ein Bild, wenn `mimeType` `image/*` ist. |
+| `inlineData` oder `fileData` von `audio/*` oder `video/*` | `Block::Unknown` (roh) | KPP hat noch keinen Audio- oder Video-Block; über Dialekte hinweg abgelehnt. |
+| `functionCall` | `Block::ToolCall` | Siehe [Funktionsaufrufe](#funktionsaufrufe). |
+| `functionResponse` | `Block::ToolResult` | Siehe [Funktionsaufrufe](#funktionsaufrufe). |
+| `executableCode`, `codeExecutionResult`, `toolCall`, `toolResponse`, unbekannte Parts, Parts mit zwei Datenfeldern | `Block::Unknown` (roh) | Der Part behält seine eigene `thoughtSignature`. Über Dialekte hinweg abgelehnt. |
+| `videoMetadata`, `mediaResolution`, `partMetadata`, `mediaProcessing` und andere Schlüssel eines Parts | Felder des Blocks | |
+
+### Funktionsaufrufe
+
+| Wire-Feld | KPP | Anmerkungen |
+|---|---|---|
+| `functionCall.id` | `ToolCall.id` | Fehlt → `kaeso_fc_<seed>_<n>`, Form `no_id`. Der Seed ist die `responseId` der Antwort, in einer Anfrage der Index von Content und Part. IDs mit diesem Präfix fallen für Gemini wieder weg. |
+| `functionCall.name`, `.args` | `name`, `arguments` (roh) | `args` fehlt → `{}`, Form `no_args`. |
+| `functionResponse.id` | `ToolResult.call_id` | Fehlt → der früheste offene Aufruf mit demselben Namen, Form `no_id`. |
+| `functionResponse.name` | — | Aus dem Aufruf abgeleitet; ein anderer Name → Form `name`. |
+| `functionResponse.response` `{"output": "<text>"}` | ein Textblock | Die dokumentierte Konvention für Ausgaben (`FunctionResponse.response`). |
+| `functionResponse.response` `{"error": "<text>"}` | ein Textblock, `is_error` | Die dokumentierte Konvention für Fehler. |
+| `functionResponse.response`, jedes andere Objekt | ein Textblock mit dem kompakten JSON | Form `response: "json"`: Gemini bekommt das Objekt zurück; andere Dialekte lesen das JSON als Text. |
+| `functionResponse.parts[]` | Bild- und Dokumentblöcke nach dem Text | Unbekannte Parts bleiben roh. |
+| `functionResponse.willContinue`, `.scheduling` | Felder `functionResponse.*` | |
+
+### Anfragen aus anderen Dialekten
+
+- **Systemnachrichten** nach der ersten Runde werden Teil der nächsten Nutzer-Runde, wie bei [Anthropic](cross-format.md#systemnachrichten); führende werden Teil von `systemInstruction`.
+- **Tool-Ergebnisse** aufeinanderfolgender Nutzernachrichten, wie Chat Completions sie sendet, kommen in einen Content. So werden parallele Aufrufe als `FC1, FC2, FR1, FR2` beantwortet; die Anleitung zu Thought Signatures beantwortet verschachtelte Aufrufe und Ergebnisse mit einem 400.
+- **Function Responses** nehmen ihren Namen vom Aufruf mit ihrer ID. Ein Ergebnis, dessen Aufruf nicht in der Anfrage steht, ist `InvalidRequest`. Text wird zu `{"output": …}` und ein Fehler zu `{"error": …}`, ihre Textblöcke aneinandergefügt; Bilder und Dokumente kommen in `functionResponse.parts`, die Gemini-3-Modelle annehmen.
+- **IDs** anderer Dialekte werden als `functionCall.id` und `functionResponse.id` gesendet.
+- **Argumente**, die kein Objekt sind, werden zu einem, wie bei Anthropic ([Argumente von Tool-Aufrufen](cross-format.md#argumente-von-tool-aufrufen)).
+- **Bild-URLs** bekommen `fileData.mimeType` aus der Dateiendung der URL (`.png`, `.jpg`, `.jpeg`, `.webp`, `.gif`, `.heic`, `.heif`; Dokumente auch `.pdf`, `.txt`), wie es die Anleitung zur Dateieingabe verlangt; eine Bild-URL ohne solche Endung ist `Unsupported`. Textdokumente werden als Base64-`inlineData` gesendet.
+- **Abgelehnt** mit `Unsupported`: Refusal-Blöcke, für die Gemini keinen Part hat (wie bei Anthropic), Titel, Kontext oder Zitate eines Dokuments, mehr als fünf Stoppsequenzen (`GenerationConfig.stopSequences`), `parallel_tool_calls: false`, ein Ausgabeschema mit Beschreibung oder `strict: false` sowie ein Aufwand oder Thinking-Modus, für den Gemini keine Einstellung hat.
+- **Strikte Tools.** Ein Function-Tool mit `strict: true` und automatischem `tool_choice` sendet `mode: VALIDATED`, das Aufrufe gegen ihre Schemas prüft.
+- **Gehostete Websuche** wird [weggelassen](cross-format.md#weggelassene-tools).
+- **Cache-Hinweise** entfallen: Gemini cacht implizit.
+- **`user`** entfällt: Gemini hat kein Feld für Endnutzer.
+
+### Thinking
+
+| Wire-Feld | KPP | Anmerkungen |
+|---|---|---|
+| `thinkingLevel` `MINIMAL` / `LOW` / `MEDIUM` / `HIGH` | `reasoning.effort` | Andere Schreibweisen → Form `level`; unbekannte Werte → `ReasoningEffort::Other`. |
+| `thinkingBudget: 0` | `reasoning.mode = Disabled` | |
+| `thinkingBudget: -1` | `reasoning.mode = Adaptive` | Dynamisches Thinking. |
+| `thinkingBudget` über 0 | `mode = Enabled`, `budget_tokens` | Andere negative Werte → Reasoning-Feld `thinkingBudget`. |
+| `includeThoughts: true` | `reasoning.summary = Auto` | `false` → Form `include_thoughts`. |
+
+Aus anderen Dialekten werden die Aufwände `minimal`, `low`, `medium` und `high` zu `thinkingLevel`, `xhigh` und `max` zu `HIGH`. Ein Budget wird zu `thinkingBudget`, das Gemini 3 auf die nächstliegende Stufe abbildet. Der Aufwand `none` und ausgeschaltetes Thinking werden zu `thinkingBudget: 0`, adaptives oder eingeschaltetes Thinking ohne beides zu `-1`. `includeThoughts: true` geht mit, wenn die App eine Reasoning-Zusammenfassung verlangt hat oder Anthropic-Thinking, das nicht `omitted` ist. [Reasoning](reasoning.md#aufwand-und-budget) hat die Regeln.
+
+### Thought Signatures
+
+Gemini signiert sein Thinking und setzt die Signatur auf einen Part: auf einen Funktionsaufruf, auf Text, auf ein Bild oder am Ende eines Streams auf einen leeren Text-Part ([Thought Signatures](https://aistudio.google.com/docs/thought-signatures)).
+
+- **Dekodieren.** Eine `thoughtSignature` wird zu `Opaque { kind: GeminiThoughtSignature }`. An einem Part mit `thought: true` bleibt sie im Reasoning-Block dieses Parts; an jedem anderen bekannten Part wird sie zu einem eigenen Reasoning-Block mit dem Ursprung `gemini`, ohne Text und nur mit der Signatur, direkt vor dem Block des Parts.
+- **Kodieren.** Ein solcher Block nur mit Signatur setzt seine Signatur auf den nächsten Part, den Kaeso schreibt, oder auf einen leeren Text-Part, wenn keiner folgt. Signaturen gehen nur an Gemini; Reasoning anderer Dialekte entfällt ([Reasoning](reasoning.md)).
+- **Über Apps hinweg.** Apps von Anthropic und Responses bekommen den Block in einem [Reasoning-Blob](reasoning.md#reasoning-blobs). Apps von Chat Completions bekommen nichts, und das Gateway bewahrt die Signatur pro Tool-Aufruf über `continuity::reasoning_for_tool_calls` und `ReasoningCollector` auf, wie es Anthropic-Signaturen aufbewahrt ([vom Gateway aufbewahrtes Reasoning](reasoning.md#vom-gateway-aufbewahrtes-reasoning)).
+- **Platzhalter-Signatur.** Ein fremder Funktionsaufruf, der der erste Aufruf eines Model-Contents in der aktuellen Runde ist, also nach dem letzten Nutzer-Content mit mehr als Function Responses, bekommt die dokumentierte `"skip_thought_signature_validator"`, wenn ihm keine Signatur vorausgeht. `EgressCtx::adapted` nennt sie als `thought signature of tool call <id>`. Geminis eigene Aufrufe werden wie empfangen gesendet.
+
+## Antworten
+
+Schema `GenerateContentResponse`.
+
+| Wire-Feld | KPP | Anmerkungen |
+|---|---|---|
+| `responseId` | `id` | Fehlt → Form `no_response_id`. |
+| `modelVersion` | `model` | Fehlt → Form `no_model_version`. |
+| `candidates[0].content.parts` | `blocks` | Wie in Anfragen. Bild-Parts werden zu `Block::Image`. |
+| Mehr als ein Candidate | `Unsupported` | |
+| `candidates[0].finishReason` | `stop` | Siehe [Finish-Gründe](#finish-gründe). |
+| Andere Schlüssel von `candidates[0]` (`index`, `finishMessage`, `safetyRatings`, `citationMetadata`, `groundingMetadata`, `urlContextMetadata`, `avgLogprobs`, `logprobsResult`, `tokenCount`) | Felder `candidate.*` | `citationMetadata` indiziert den ganzen Text des Candidates, was KPP-Zitate, die an einen Block gebunden sind, nicht ausdrücken können. |
+| `candidates[0].content.role` | — | Ein anderer oder kein Wert → Form `no_role`. |
+| Keine `candidates` | keine Blöcke, `stop = ContentFilter` | Form `no_candidates`; `promptFeedback` bleibt ein Feld. |
+| `usageMetadata` | `usage` | Siehe [Nutzung](#nutzung). |
+| `promptFeedback`, `modelStatus` und andere Schlüssel | Felder | |
+
+Antworten an Gemini-Apps aus anderen Dialekten bekommen `role: "model"`, `index: 0` sowie ID und Modell der Antwort. Reasoning anderer Dialekte entfällt wie bei Apps von Chat Completions ([Antworten](cross-format.md#antworten)): Ein Thought-Part kann keinen [Reasoning-Blob](reasoning.md#reasoning-blobs) tragen, weil das SDK `google-genai` `thoughtSignature` als Base64 liest.
+
+### Finish-Gründe
+
+| `finishReason` | KPP | Zurück zu Gemini |
+|---|---|---|
+| `STOP` | `EndTurn`, oder `ToolUse`, wenn die Antwort Funktionen aufruft | `STOP`, auch für `StopSequence` |
+| `MAX_TOKENS` | `MaxTokens` | `MAX_TOKENS` |
+| `SAFETY`, `BLOCKLIST`, `PROHIBITED_CONTENT`, `SPII`, `RECITATION`, `IMAGE_SAFETY`, `IMAGE_PROHIBITED_CONTENT`, `IMAGE_RECITATION` | `ContentFilter`, der Wert in Form `finish` | `SAFETY` für `ContentFilter` und `Refusal` |
+| Jeder andere Wert, etwa `MALFORMED_FUNCTION_CALL` | `Other(value)` | der Wert, wenn das Discovery-Dokument ihn führt, sonst `OTHER` |
+
+### Nutzung
+
+`promptTokenCount` enthält die gecachten Prompt-Token und die der Tool-Nutzung. Daher gilt `input_tokens = promptTokenCount + toolUsePromptTokenCount − cachedContentTokenCount`, `cache_read_tokens = cachedContentTokenCount`, `output_tokens = candidatesTokenCount + thoughtsTokenCount` und `reasoning_tokens = thoughtsTokenCount` ([Nutzung](cross-format.md#nutzung)). `Usage::raw` bewahrt das ganze `usageMetadata` auf. Die Nutzung anderer Dialekte wird als `promptTokenCount`, `candidatesTokenCount` und `totalTokenCount` geschrieben, dazu `cachedContentTokenCount` und `thoughtsTokenCount`, wenn sie nicht 0 sind.
+
+## Token-Zählung
+
+Schemas `CountTokensRequest` und `CountTokensResponse`.
+
+| Wire-Feld | KPP | Anmerkungen |
+|---|---|---|
+| `contents` | `messages` | |
+| `generateContentRequest` | die ganze Anfrage | Form `count: "wrapped"`; sein `model` → Form `model`. Beides zu senden ist `InvalidRequest`. |
+| `totalTokens` | `input_tokens` | |
+| `cachedContentTokenCount`, `promptTokensDetails`, `cacheTokensDetails` | Felder | |
+
+Eine Zählung aus einem anderen Dialekt mit Systemprompt oder Tools geht als `generateContentRequest` mit `model: "models/<id>"` und ohne `generationConfig`, sonst als `contents`.
+
+## Streams
+
+`streamGenerateContent?alt=sse` sendet jeden Chunk als ganze `GenerateContentResponse` in einer `data:`-Zeile. Funktionsaufrufe kommen ganz an: Die Dokumentation kennt keine gestreamten Argumente.
+
+- **Blöcke.** Text-Parts setzen den offenen Textblock fort und Thought-Parts den offenen Reasoning-Block. Ein Funktionsaufruf ist ein ganzer Tool-Call-Block: Start, ein Argument-Delta, Stopp. Eine Signatur an einem Thought-Part ist ein `Opaque`-Delta in seinem Block; an einem anderen Part ist sie ein Reasoning-Block nur mit Signatur davor. Andere Parts sind unbekannte Blöcke.
+- **Nutzung und Ende.** Jeder Chunk trägt `usageMetadata`; der mit `finishReason` wird zu einem `ResponseDelta` nach dem Stopp des letzten Blocks. Ein Stream, der ohne `finishReason` endet, endet mit einem Fehler.
+- **Zurückspielen im selben Dialekt.** Das erste Event jedes Chunks trägt die Form-Markierung `chunk`: den Chunk ohne seine Parts, seinen Finish-Grund und seine letzte Nutzung. Der Encoder setzt sie wieder ein, sodass jeder Chunk wie empfangen herauskommt.
+- **Andere Dialekte** bekommen einen Chunk pro Text-Delta, einen pro Funktionsaufruf und einen letzten Chunk mit leerem Text-Part, `finishReason` und `usageMetadata`.
+- **Fehler.** Eine `data:`-Zeile mit einem `error`-Objekt ist ein Fehler-Event; der Encoder schreibt Fehler genauso.
+- **Keepalives.** Eine Leerzeile ([Keepalives](cross-format.md#keepalives)). Das SDK `google-genai` liest jede Zeile, die nicht mit `data: ` beginnt, als JSON, ein Kommentar würde es also brechen.
+- Kommentare, benannte Events und Frames, die keine JSON-Objekte sind, gehen als `Extra` durch.
+
+## Fehler
+
+Der Fehler-Body von Google `{"error": {"code", "message", "status", "details"}}` ([Fehlerbehebung](https://aistudio.google.com/docs/troubleshooting)).
+
+| `status` | KPP | Anmerkungen |
+|---|---|---|
+| `INVALID_ARGUMENT` | `InvalidRequest` | `Authentication`, wenn `details[].reason` `API_KEY_INVALID` ist (`errors/recorded-error-invalid-key.json`), `ContextTooLong`, wenn die Meldung sagt, dass die Eingabe die Höchstzahl an Token überschreitet. |
+| `FAILED_PRECONDITION`, `OUT_OF_RANGE` | `InvalidRequest` | Etwa Bildgenerierung, die im Land des Schlüssels nicht verfügbar ist. |
+| `UNAUTHENTICATED` | `Authentication` | |
+| `PERMISSION_DENIED` | `PermissionDenied` | |
+| `NOT_FOUND` | `NotFound` | |
+| `RESOURCE_EXHAUSTED` | `RateLimited` | `RetryInfo.retryDelay`, etwa `"23s"`, → `retry_after`. |
+| `UNAVAILABLE` | `Overloaded` | |
+| `DEADLINE_EXCEEDED` | `Timeout` | |
+| `INTERNAL` und die anderen Codes | `ProviderError` | |
+| Kein `status` | nach HTTP-Status | |
+
+`BadRequest.fieldViolations[0].field` → `param`. Ein Gemini-Fehler erreicht Gemini-Apps wie empfangen. Fehler anderer Dialekte werden mit dem Code und Status ihrer Art geschrieben, ein 429 oder 503 mit `RetryInfo` und `retry-after`: `RateLimited` und `Billing` 429 `RESOURCE_EXHAUSTED`, `Overloaded` 503 `UNAVAILABLE`, `Authentication` 401 `UNAUTHENTICATED`.
+
+## Embeddings
+
+Der Codec `gemini_embeddings`. Schemas `EmbedContentRequest`, `BatchEmbedContentsRequest`, `EmbedContentResponse` und `BatchEmbedContentsResponse`.
+
+| Wire-Feld | KPP | Anmerkungen |
+|---|---|---|
+| `content` mit einem Text-Part | ein `EmbedInput::Text` | Jeder andere Content → Feld `content` (oder `requests[i].content`) und eine leere Eingabe, über Dialekte hinweg abgelehnt. |
+| `requests[]` | je eine Eingabe | |
+| `outputDimensionality`, `embedContentConfig.outputDimensionality` | `dimensions` | Wenn sich die Anfragen eines Batches unterscheiden → Felder `requests[i].outputDimensionality`. `embedContentConfig` → Form `config_dimensions`. |
+| `taskType`, `title`, andere Schlüssel von `embedContentConfig` | Felder | |
+| `model` im Body | — | `models/<Modell des Pfads>` wird abgeleitet; eine andere Schreibweise → Form `models`. |
+| `embedding.values`, `embeddings[].values` | `data[].vector` (Float) | `shape` → Felder des Embeddings. |
+| `usageMetadata.promptTokenCount` | `usage.input_tokens` | `gemini-embedding-2` und `gemini-embedding-001` melden es; `Usage::raw` bewahrt es auf. |
+
+Eine Anfrage von OpenAI Embeddings geht als `batchEmbedContents` mit `model: "models/<id>"` und `outputDimensionality` an jeder Anfrage; Eingaben aus Token-IDs sind `Unsupported`. Eine Antwort geht in der Form der Methode der App zurück, `embedding` für `embedContent` und `embeddings` für `batchEmbedContents`; Base64-Vektoren eines anderen Dialekts werden zu Floats. Embeddings streamen nie.
+
+## Modelle
+
+`GET {models}` und `GET {models}/{model}` (Schemas `ListModelsResponse` und `Model`).
+
+| Wire-Feld | KPP | Anmerkungen |
+|---|---|---|
+| `name` `models/<id>` | `id` | Ohne Präfix → Form `bare_name`. |
+| `displayName` | `display_name` | |
+| `inputTokenLimit`, `outputTokenLimit` | `context_window`, `max_output_tokens` | |
+| `version`, `baseModelId`, `description`, `supportedGenerationMethods`, `thinking`, `temperature`, `maxTemperature`, `topP`, `topK` und andere Schlüssel | Felder | |
+| `nextPageToken` | `has_more`, Feld `nextPageToken` | |
+| Query `pageSize` | `limit` | |
+| Query `pageToken` | `after_id` | Eine Gemini-App behandelt das Token als opak, daher nutzen Kaesos eigene Listen die letzte ID der vorigen Seite als Token. |
+
+`dispatch::encode_models_request_with` und `encode_model_request_with` nutzen den Modellpfad aus `EgressCtx::gemini_profile`. Eine Listenanfrage sendet `limit` als `pageSize` und `after_id` als `pageToken`; `before_id`, ein Lebenszyklus-Filter und andere Query-Parameter sind `Unsupported`.
+
+## Round Trips
+
+Jede Fixture wird dekodiert und zu einem gleichen JSON-Wert kodiert: Anfragen mit ihrem Pfad, Antworten, Token-Zählungen, Embeddings, Modelllisten und Fehler. Jede Stream-Fixture ergibt bei jeder Stückelung dieselben Events und wird Chunk für Chunk zurückgespielt. Aufzeichnungen haben keine Ausnahmen.
+
+## Nächste Schritte
+
+- [Formatwechsel](cross-format.md): Schlagen Sie nach, was mit Daten geschieht, die von einem API-Format in ein anderes wechseln, und warum.
+- [Reasoning über Formate hinweg](reasoning.md): Sehen Sie, wie Thinking-Stufen, Budgets und Thought Signatures Formate wechseln.
+- [Fixtures und Aufzeichnungen](fixtures.md): Zeichnen Sie Gemini-Fixtures mit `cargo xtask record gemini` auf.

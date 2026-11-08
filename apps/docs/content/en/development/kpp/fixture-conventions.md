@@ -2,7 +2,7 @@
 title: Fixture conventions
 nav: Fixture conventions
 description: The rules every constructed fixture follows, so that the codec tests can compare it exactly.
-order: 10
+order: 11
 ---
 
 Fixtures that aren't live recordings follow these rules, so that the tests can compare them exactly:

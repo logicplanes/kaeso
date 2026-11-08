@@ -2,7 +2,7 @@
 title: Fixture-Konventionen
 nav: Fixture-Konventionen
 description: Die Regeln, denen jede konstruierte Fixture folgt, damit die Codec-Tests sie exakt vergleichen können.
-order: 10
+order: 11
 ---
 
 Fixtures, die keine Live-Aufzeichnungen sind, folgen diesen Regeln, damit die Tests sie exakt vergleichen können:

@@ -34,7 +34,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [decode_anthropic_messages, decode_gemini, decode_gemini_embeddings, decode_openai_chat, decode_openai_embeddings, decode_openai_responses, mcp, sse]
+        target:
+          [decode_anthropic_messages, decode_gemini, decode_gemini_embeddings, decode_openai_chat, decode_openai_embeddings, decode_openai_responses, mcp, sse]
     env:
       FUZZ_TARGET: ${{ matrix.target }}
       SECONDS_PER_TARGET: ${{ inputs.seconds || 600 }}

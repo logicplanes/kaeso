@@ -5,7 +5,7 @@ description: Wie die Codecs Reasoning, seine Einstellungen und seine Signaturen 
 order: 3
 ---
 
-Anthropic signiert seine Thinking-Blöcke, und OpenAI verschlüsselt seine Reasoning-Items. Opakes Reasoning (Signaturen, verschlüsselter Inhalt, Item-IDs) wird immer nur an den Dialekt und den Anbieter zurückgespielt, die es ausgegeben haben.
+Anthropic signiert seine Thinking-Blöcke, OpenAI verschlüsselt seine Reasoning-Items, und Gemini setzt Thought Signatures auf die Parts seiner Antworten. Opakes Reasoning (Signaturen, verschlüsselter Inhalt, Item-IDs) wird immer nur an den Dialekt und den Anbieter zurückgespielt, die es ausgegeben haben.
 
 ## Welches Reasoning zurückgespielt wird
 
@@ -25,6 +25,10 @@ Reasoning-Einstellungen werden zwischen einer Aufwandsstufe und einem Token-Budg
 | Nur ein Budget | Anthropic | `enabled`-Thinking mit diesem Budget |
 | Ein Anthropic-Budget | OpenAI | Ein Aufwand aus der Tabelle unten |
 | Anthropic `thinking: {type: "disabled"}` | OpenAI | Aufwand `none` |
+| Aufwand `minimal` bis `high` | Gemini | `thinkingLevel` mit dieser Stufe; `xhigh` und `max` werden zu `HIGH` |
+| Nur ein Budget | Gemini | `thinkingBudget` mit diesem Budget, das Gemini 3 auf die nächstliegende Stufe abbildet |
+| Aufwand `none` oder Thinking aus | Gemini | `thinkingBudget: 0` |
+| Adaptives Thinking ohne Aufwand | Gemini | `thinkingBudget: -1`, dynamisches Thinking |
 
 Beide OpenAI-Dialekte dokumentieren `none` als niedrigsten Wert ihres gemeinsamen Enums `ReasoningEffort`, daher hat abgeschaltetes Thinking von Anthropic eine Entsprechung, außer bei einem Modell, das immer Reasoning nutzt ([Modelle, die immer Reasoning nutzen](#modelle-die-immer-reasoning-nutzen)). Die Aufwandsstufe `minimal` hat keine Zeile und bleibt für Anthropic `Unsupported`.
 
@@ -83,6 +87,8 @@ Das Gateway teilt den Encodern außerdem mit, ob das Zielmodell Reasoning beherr
 - schaltet eine Zusammenfassung ohne Aufwand, Modus oder Budget (OpenAI `reasoning: {summary: "auto"}`) das Thinking von Anthropic in der Standardtiefe des Modells ein. Das ist adaptives Thinking ohne Aufwand oder das Budget für `medium`, den Standardaufwand von OpenAI;
 - zählt Anthropic-Thinking `adaptive` ohne Aufwand für OpenAI Responses als Reasoning: Es fordert `include: ["reasoning.encrypted_content"]` an und, wie oben, eine Zusammenfassung.
 
+Gemini liefert Thoughts nur mit `includeThoughts: true`. Eine Anfrage aus einem anderen Dialekt bekommt es mit einer Reasoning-Zusammenfassung oder mit Anthropic-Thinking, dessen `display` nicht `omitted` ist ([Gemini API](gemini.md#thinking)).
+
 Anfragen ohne Reasoning-Einstellungen, der Aufwand `none` und Modelle, die kein Reasoning beherrschen oder unbekannt sind, bekommen nie Reasoning eingeschaltet. Apps von OpenAI Chat, deren Format kein Reasoning zeigt, fordern keine Zusammenfassungen an.
 
 Anbieter, die Chat Completions bereitstellen, liefern lesbares Reasoning in einem eigenen Feld, etwa DeepSeeks `reasoning_content` oder Groqs `reasoning`, ohne dass eine Zusammenfassung angefordert wird. Ihr Chat-Profil nennt das Feld (`reasoning_fields`, [Anbieterprofile](openai-chat-providers.md#anbieterprofile)), sodass das Reasoning zu einem KPP-Reasoning-Block wird: Apps von Anthropic Messages erhalten es als `thinking`-Block und Apps von Responses als Reasoning-Item mit Zusammenfassung, jeweils mit dem ursprünglichen Block in einem [Reasoning-Blob](#reasoning-blobs).
@@ -119,6 +125,8 @@ Für Apps von OpenAI Responses und Anthropic Messages verpackt KPP den ganzen Re
 | OpenAI Responses | Ein Reasoning-Item mit einer ID `rs_kaeso_…` und dem Thinking als einem einzigen Zusammenfassungstext, gestreamt als `response.reasoning_summary_*`-Events | `encrypted_content` |
 | Anthropic Messages | Einen `thinking`-Block mit den Zusammenfassungen und dem Reasoning-Text als Thinking, Absätze durch eine Leerzeile getrennt | `signature`, gestreamt als ein einziges `signature_delta`, wenn der Block stoppt |
 
+Gemini-Apps bekommen keinen Blob: Das SDK `google-genai` liest `thoughtSignature` als Base64, und das Präfix ist kein Base64. Ihr Reasoning fällt weg wie bei Apps von OpenAI Chat.
+
 Beide Anfrage-Decoder erkennen einen Blob, wo immer er steht (`continuity::unwrap_reasoning`), und stellen den Originalblock mit seinem Ursprung wieder her. Die Encoder spielen ihn dann wie jedes andere Reasoning an seinen eigenen Dialekt und Anbieter zurück.
 
 - **Immer gesendet.** Der Blob wird gesendet, ob die App `include: ["reasoning.encrypted_content"]` angefordert hat oder nicht, und unabhängig von ihrer Einstellung für `store`. Kaeso speichert nichts, und die Agent-Schleifen der SDKs senden Ausgabe-Items und Content-Blöcke so zurück, wie sie ankamen. Zu diesen Schleifen gehören `to_input_list()` von openai-agents, Codex, Claude Code und der Tool Runner von Anthropic.
@@ -132,7 +140,7 @@ Anfragen aus anderen Dialekten fordern bei OpenAI Responses `include: ["reasonin
 
 Chat Completions hat kein Feld für Reasoning, und KPP erfindet keines. Die Antwort lässt das Reasoning weg, und das Gateway bewahrt es auf, mit den Tool-Aufrufen als Schlüssel, denen es vorausging. Tool-Aufruf-IDs sind eindeutig, werden vom Anbieter vergeben und von jedem Chat-Client zurückgesendet, daher eignen sie sich als Schlüssel für das Reasoning, ohne das Format der App zu ändern.
 
-1. Nach einer Antwort liefern `continuity::reasoning_for_tool_calls` (bei einer vollständigen Antwort) oder ein `continuity::ReasoningCollector` (bei einem Stream) ein `CarriedReasoning` pro Tool-Aufruf, dem zurückspielbares Reasoning vorausging: signiertes oder redigiertes Thinking von Anthropic, verschlüsseltes Reasoning von OpenAI. Reasoning nach dem letzten Tool-Aufruf wird nicht aufbewahrt.
+1. Nach einer Antwort liefern `continuity::reasoning_for_tool_calls` (bei einer vollständigen Antwort) oder ein `continuity::ReasoningCollector` (bei einem Stream) ein `CarriedReasoning` pro Tool-Aufruf, dem zurückspielbares Reasoning vorausging: signiertes oder redigiertes Thinking von Anthropic, verschlüsseltes Reasoning von OpenAI oder eine Thought Signature von Gemini. Reasoning nach dem letzten Tool-Aufruf wird nicht aufbewahrt.
 2. Das Gateway speichert die Einträge in Valkey, verschlüsselt mit dem Hauptschlüssel und nur mit dem API-Schlüssel lesbar, der die Anfrage gestellt hat, für `KAESO_CONTINUITY_REASONING_TTL` (standardmäßig eine Stunde).
 3. Bei der nächsten Anfrage der App, nach dem Dekodieren und vor `check` und dem Kodieren, listet `continuity::tool_calls_missing_reasoning` die nachzuschlagenden Tool-Aufruf-IDs auf. `continuity::restore_reasoning` setzt das Gefundene dann wieder in die Assistentenrunden ein. Reasoning für den ersten Tool-Aufruf einer Runde kommt an den Anfang der Runde, Reasoning für einen späteren Aufruf direkt hinter den vorherigen Aufruf. Reasoning wird nur in eine Runde der App zurückgesetzt, die genau die Tool-Aufrufe der Antwort enthält, aus der es stammt (`CarriedReasoning::turn_calls`), denn Anthropic bindet Denken an die Runde, die es erzeugt hat; eine App, die zwei Antworten zu einer Runde zusammengefasst hat, erhält sie ohne. Runden, die bereits Reasoning enthalten, bleiben unverändert.
 
