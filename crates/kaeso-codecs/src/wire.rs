@@ -151,6 +151,17 @@ impl<T: DeserializeOwned + Serialize> Ext<T> {
     }
 
     pub(crate) fn from_text(text: &str) -> Result<Self, serde_json::Error> {
+        match one_pass::read::<T>(text) {
+            Some((known, extra)) => Ok(Ext {
+                known,
+                extra,
+                verbatim: IndexMap::new(),
+            }),
+            None => Ext::two_passes(text),
+        }
+    }
+
+    fn two_passes(text: &str) -> Result<Self, serde_json::Error> {
         let declared = struct_fields::<T>();
         let Fields(entries) = serde_json::from_str(text)?;
         let known: T = serde_json::from_str(text)?;
@@ -188,6 +199,224 @@ impl<T: DeserializeOwned + Serialize> Ext<T> {
         }
         let raw: &RawValue = serde_json::from_slice(bytes)?;
         Ext::from_raw(raw)
+    }
+}
+
+// Reads an object into `T` and its undeclared entries in one pass over it. Anything that pass
+// can't settle the way `two_passes` would, such as a repeated key, a declared value `T` doesn't
+// write back, a name that can't be carried or any error, gives `None`, and `two_passes` decides.
+mod one_pass {
+    use std::borrow::Cow;
+
+    use indexmap::IndexMap;
+    use kaeso_kpp::RawJson;
+    use serde::de::value::CowStrDeserializer;
+    use serde::de::{DeserializeOwned, DeserializeSeed, MapAccess, Visitor};
+    use serde::{Deserializer, Serialize};
+    use serde_json::value::RawValue;
+
+    use super::{Key, carriable, struct_fields, written_names};
+
+    type Seen<'de> = Vec<(Cow<'de, str>, Option<&'de RawValue>)>;
+
+    pub(super) fn read<T: DeserializeOwned + Serialize>(
+        text: &str,
+    ) -> Option<(T, IndexMap<String, RawJson>)> {
+        let declared = struct_fields::<T>();
+        let mut seen = Seen::new();
+        let mut de = serde_json::Deserializer::from_str(text);
+        let known = T::deserialize(Spy {
+            inner: &mut de,
+            declared,
+            seen: &mut seen,
+        })
+        .ok()?;
+        de.end().ok()?;
+        let written = written_names(&known).ok()?;
+        let mut extra = IndexMap::new();
+        for (key, raw) in seen {
+            if declared.contains(&key.as_ref()) {
+                if !written.contains(&key.as_ref()) {
+                    return None;
+                }
+            } else if !carriable(&key) {
+                return None;
+            } else {
+                extra.insert(key.into_owned(), RawJson::from(raw?));
+            }
+        }
+        Some((known, extra))
+    }
+
+    #[derive(Debug)]
+    struct Unsettled;
+
+    impl std::fmt::Display for Unsettled {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            f.write_str("unsettled")
+        }
+    }
+
+    impl std::error::Error for Unsettled {}
+
+    impl serde::de::Error for Unsettled {
+        fn custom<M: std::fmt::Display>(_: M) -> Self {
+            Unsettled
+        }
+    }
+
+    fn unsettled<E>(_: E) -> Unsettled {
+        Unsettled
+    }
+
+    struct Spy<'a, 's, 'de> {
+        inner: &'a mut serde_json::Deserializer<serde_json::de::StrRead<'de>>,
+        declared: &'static [&'static str],
+        seen: &'s mut Seen<'de>,
+    }
+
+    impl<'de> Deserializer<'de> for Spy<'_, '_, 'de> {
+        type Error = Unsettled;
+
+        fn deserialize_any<V: Visitor<'de>>(self, _: V) -> Result<V::Value, Unsettled> {
+            Err(Unsettled)
+        }
+
+        fn deserialize_struct<V: Visitor<'de>>(
+            self,
+            _: &'static str,
+            _: &'static [&'static str],
+            visitor: V,
+        ) -> Result<V::Value, Unsettled> {
+            self.deserialize_map(visitor)
+        }
+
+        fn deserialize_map<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Unsettled> {
+            let Spy {
+                inner,
+                declared,
+                seen,
+            } = self;
+            inner
+                .deserialize_map(Wrap {
+                    visitor,
+                    declared,
+                    seen,
+                })
+                .map_err(unsettled)
+        }
+
+        serde::forward_to_deserialize_any! {
+            bool i8 i16 i32 i64 i128 u8 u16 u32 u64 u128 f32 f64 char str string bytes
+            byte_buf option unit unit_struct newtype_struct seq tuple tuple_struct enum
+            identifier ignored_any
+        }
+    }
+
+    struct Wrap<'s, 'de, V> {
+        visitor: V,
+        declared: &'static [&'static str],
+        seen: &'s mut Seen<'de>,
+    }
+
+    impl<'de, V: Visitor<'de>> Visitor<'de> for Wrap<'_, 'de, V> {
+        type Value = V::Value;
+
+        fn expecting(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            f.write_str("a JSON object")
+        }
+
+        fn visit_map<A: MapAccess<'de>>(self, map: A) -> Result<Self::Value, A::Error> {
+            self.visitor
+                .visit_map(Entries {
+                    map,
+                    declared: self.declared,
+                    seen: self.seen,
+                })
+                .map_err(serde::de::Error::custom)
+        }
+    }
+
+    struct Entries<'s, 'de, A> {
+        map: A,
+        declared: &'static [&'static str],
+        seen: &'s mut Seen<'de>,
+    }
+
+    impl<'de, A: MapAccess<'de>> MapAccess<'de> for Entries<'_, 'de, A> {
+        type Error = Unsettled;
+
+        fn next_key_seed<K: DeserializeSeed<'de>>(
+            &mut self,
+            seed: K,
+        ) -> Result<Option<K::Value>, Unsettled> {
+            let Some(Key(key)) = self.map.next_key::<Key<'de>>().map_err(unsettled)? else {
+                return Ok(None);
+            };
+            if self.seen.iter().any(|(k, _)| *k == key) {
+                return Err(Unsettled);
+            }
+            self.seen.push((key.clone(), None));
+            seed.deserialize(CowStrDeserializer::<Unsettled>::new(key))
+                .map(Some)
+        }
+
+        fn next_value_seed<S: DeserializeSeed<'de>>(
+            &mut self,
+            seed: S,
+        ) -> Result<S::Value, Unsettled> {
+            let Some((key, raw)) = self.seen.last_mut() else {
+                return Err(Unsettled);
+            };
+            if self.declared.contains(&key.as_ref()) {
+                return self.map.next_value_seed(seed).map_err(unsettled);
+            }
+            let value: &'de RawValue = self.map.next_value().map_err(unsettled)?;
+            *raw = Some(value);
+            seed.deserialize(value).map_err(unsettled)
+        }
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+
+        #[derive(Debug, Serialize, serde::Deserialize)]
+        struct Block {
+            #[serde(rename = "type")]
+            ty: String,
+            #[serde(default, skip_serializing_if = "Option::is_none")]
+            text: Option<String>,
+            #[serde(default, skip_serializing_if = "Option::is_none")]
+            raw: Option<Box<RawValue>>,
+        }
+
+        #[test]
+        fn one_pass_reads_what_two_passes_read_or_leaves_it_to_them() {
+            let (known, extra) =
+                read::<Block>(r#"{"type":"text","z":{"a": 1},"text":"hi","raw":[1, 2],"y":null}"#)
+                    .unwrap();
+            assert_eq!(known.ty, "text");
+            assert_eq!(known.raw.as_ref().unwrap().get(), "[1, 2]");
+            assert_eq!(
+                extra
+                    .iter()
+                    .map(|(k, v)| (k.as_str(), v.get()))
+                    .collect::<Vec<_>>(),
+                [("z", r#"{"a": 1}"#), ("y", "null")]
+            );
+            for unsettled in [
+                r#"{"type":"text","type":"text"}"#,
+                r#"{"type":"text","z":1,"z":2}"#,
+                r#"{"type":"text","text":null}"#,
+                r#"{"type":"text","a.b":1}"#,
+                r#"{"type":5}"#,
+                r#"["text"]"#,
+                r#"{"type":"text"} x"#,
+            ] {
+                assert!(read::<Block>(unsettled).is_none(), "{unsettled}");
+            }
+        }
     }
 }
 

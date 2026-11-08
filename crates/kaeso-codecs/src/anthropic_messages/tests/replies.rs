@@ -295,6 +295,12 @@ fn every_error_fixture_round_trips_with_status_and_retry_after() {
         assert!(err.origin.as_ref().unwrap().is(A));
         let expected = match (meta["kind"].as_str(), status) {
             (Some("billing"), _) => K::Billing,
+            (Some("authentication"), _) => K::Authentication,
+            (Some("permission_denied"), _) => K::PermissionDenied,
+            (Some("not_found"), _) => K::NotFound,
+            (Some("context_too_long"), _) => K::ContextTooLong,
+            (Some("content_filtered"), _) => K::ContentFiltered,
+            (Some("overloaded"), _) => K::Overloaded,
             (Some(other), _) => panic!("{name}: unexpected kind {other}"),
             (None, 400) => K::InvalidRequest,
             (None, 401) => K::Authentication,
@@ -311,7 +317,11 @@ fn every_error_fixture_round_trips_with_status_and_retry_after() {
         assert_eq!(err.kind, expected, "{name}");
         assert!(!err.message.is_empty());
         let enc = AnthropicMessages::encode_error(&err);
-        assert_eq!(enc.status, status, "{name}");
+        let encoded_status = meta
+            .get("encoded_status")
+            .and_then(Value::as_u64)
+            .map_or(status, |s| u16::try_from(s).unwrap());
+        assert_eq!(enc.status, encoded_status, "{name}");
         assert_json_eq(&name, &encoded_error(&meta, &body), &enc.body);
         assert_eq!(
             enc.headers.get("retry-after"),

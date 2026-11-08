@@ -353,6 +353,22 @@ fn a_cohere_listing_decodes_and_refuses_a_wrong_key_in_cohere_words() {
 }
 
 #[test]
+fn a_zai_listing_refuses_a_wrong_key_in_its_platform_envelope_with_http_200() {
+    let body = fixtures("anthropic_messages", "errors", "json")
+        .into_iter()
+        .find(|(n, _)| n == "providers/zai/list-invalid-api-key")
+        .unwrap()
+        .1;
+    let e = dispatch::decode_models(A, 200, &h(), &body).unwrap_err();
+    assert_eq!(
+        (e.kind, e.message.as_str(), e.status),
+        (ErrorKind::Authentication, "身份验证失败。", Some(200))
+    );
+    let e = dispatch::decode_model(A, 200, &h(), &body).unwrap_err();
+    assert_eq!(e.kind, ErrorKind::Authentication);
+}
+
+#[test]
 fn anthropic_fields_map_to_kpp() {
     let l = list(A, &fixture("anthropic_messages", "list"));
     assert!(!l.has_more);

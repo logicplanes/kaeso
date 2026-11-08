@@ -210,26 +210,62 @@ impl Docker {
                 self.quick(),
             )
             .await?;
-        let list = Self::json("containers", &out)?;
-        Ok(list
-            .as_array()
-            .map(|a| {
-                a.iter()
-                    .filter_map(|c| {
-                        let id = c.get("Id").and_then(Value::as_str)?.to_owned();
-                        let name = c
-                            .get("Names")
-                            .and_then(Value::as_array)
-                            .and_then(|n| n.first())
-                            .and_then(Value::as_str)
-                            .unwrap_or_default()
-                            .trim_start_matches('/')
-                            .to_owned();
-                        Some(Listed { id, name })
-                    })
-                    .collect()
-            })
-            .unwrap_or_default())
+        Ok(listed(&Self::json("containers", &out)?))
+    }
+
+    pub async fn labeled(&self, label: &str) -> Result<Vec<Listed>, DockerError> {
+        let filters = json!({ "label": [label] }).to_string();
+        let path = format!("containers/json?all=true&filters={}", encode(&filters));
+        let out = self
+            .answered(
+                Method::GET,
+                "list containers",
+                &path,
+                None,
+                &[],
+                self.quick(),
+            )
+            .await?;
+        Ok(listed(&Self::json("containers", &out)?))
+    }
+
+    pub async fn logs(&self, id: &str, tail: u32) -> Result<String, DockerError> {
+        let out = self
+            .answered(
+                Method::GET,
+                "read a container's logs",
+                &format!(
+                    "containers/{}/logs?stdout=true&stderr=true&tail={tail}",
+                    encode(id)
+                ),
+                None,
+                &[],
+                self.quick(),
+            )
+            .await?;
+        Ok(demultiplex(&out))
+    }
+
+    pub async fn create_runner(&self, spec: &Value) -> Result<String, DockerError> {
+        crate::guard::runner(spec).map_err(|why| DockerError::Forbidden {
+            what: "create the compose runner".into(),
+            why,
+        })?;
+        let out = self
+            .answered(
+                Method::POST,
+                "create a container",
+                "containers/create",
+                Some(spec),
+                &[],
+                self.slow(),
+            )
+            .await?;
+        Self::json("created container", &out)?
+            .get("Id")
+            .and_then(Value::as_str)
+            .map(str::to_owned)
+            .ok_or_else(|| DockerError::Parse("created container".into()))
     }
 
     pub async fn inspect(&self, id: &str) -> Result<Value, DockerError> {
@@ -390,6 +426,44 @@ impl Docker {
     }
 }
 
+fn listed(list: &Value) -> Vec<Listed> {
+    list.as_array()
+        .map(|a| {
+            a.iter()
+                .filter_map(|c| {
+                    let id = c.get("Id").and_then(Value::as_str)?.to_owned();
+                    let name = c
+                        .get("Names")
+                        .and_then(Value::as_array)
+                        .and_then(|n| n.first())
+                        .and_then(Value::as_str)
+                        .unwrap_or_default()
+                        .trim_start_matches('/')
+                        .to_owned();
+                    Some(Listed { id, name })
+                })
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+// Without a TTY, Docker frames each chunk of a log with an 8-byte header: the stream, three zero
+// bytes and the length, big-endian (https://docs.docker.com/reference/api/engine/version/v1.44/#tag/Container/operation/ContainerAttach).
+fn demultiplex(body: &[u8]) -> String {
+    let mut text = Vec::with_capacity(body.len());
+    let mut rest = body;
+    while let Some((&[stream, 0, 0, 0, a, b, c, d], after)) = rest.split_first_chunk::<8>()
+        && matches!(stream, 0..=2)
+    {
+        let len = u32::from_be_bytes([a, b, c, d]) as usize;
+        let (frame, next) = after.split_at(len.min(after.len()));
+        text.extend_from_slice(frame);
+        rest = next;
+    }
+    text.extend_from_slice(rest);
+    String::from_utf8_lossy(&text).into_owned()
+}
+
 fn refused(what: &str, status: StatusCode, body: &[u8]) -> DockerError {
     let message = serde_json::from_slice::<Value>(body)
         .ok()
@@ -473,6 +547,21 @@ mod tests {
                 |mut rx| async move { rx.recv().await.map(|b| (Ok(b), rx)) },
             );
         (tx, Box::pin(stream))
+    }
+
+    #[test]
+    fn logs_are_read_from_docker_frames_and_as_they_are_without_them() {
+        let mut framed = vec![1, 0, 0, 0, 0, 0, 0, 6];
+        framed.extend_from_slice(b"pulled");
+        framed.extend_from_slice(&[2, 0, 0, 0, 0, 0, 0, 7]);
+        framed.extend_from_slice(b"\nfailed");
+        assert_eq!(demultiplex(&framed), "pulled\nfailed");
+        assert_eq!(demultiplex(b"plain text\n"), "plain text\n");
+        assert_eq!(
+            demultiplex(&[1, 0, 0, 0, 0, 0, 0, 9, b'c', b'u', b't']),
+            "cut"
+        );
+        assert_eq!(demultiplex(b""), "");
     }
 
     #[tokio::test(start_paused = true)]

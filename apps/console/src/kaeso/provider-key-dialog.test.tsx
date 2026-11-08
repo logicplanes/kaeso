@@ -347,6 +347,28 @@ describe("ProviderKeyDialog", () => {
     ]);
   });
 
+  it("adds a Z.ai key, which has no fixed prefix, with Z.ai's key list as its key hint", async () => {
+    on("POST", CREDENTIALS, credential({ provider: "zai", name: "Z.ai prod", is_default: true }));
+    const { user, dialog } = await open();
+
+    await choose(user, dialog, "Z.ai");
+
+    expect(await within(dialog).findByRole("heading", { name: "Paste your Z.ai API key" })).toBeVisible();
+    const link = within(dialog).getByRole("link", { name: "z.ai (opens in a new tab)" });
+    expect(link).toHaveAttribute("href", "https://z.ai/manage-apikey/apikey-list");
+    expect((link.closest("p") as HTMLElement).textContent?.replace(/⁠? \(opens in a new tab\)/, "")).toBe("Create one at z.ai under API Keys.");
+    const secret = within(dialog).getByLabelText("Z.ai API key");
+    expect(secret).not.toHaveAttribute("placeholder");
+    await user.type(secret, "0123456789abcdef0123456789abcdef.AbCdEfGhIjKlMnOp");
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "Z.ai prod");
+    await user.click(within(dialog).getByRole("button", { name: "Add key" }));
+
+    expect(await notifications().findByText("Z.ai prod is the Z.ai default")).toBeInTheDocument();
+    expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([
+      { provider: "zai", name: "Z.ai prod", secret: "0123456789abcdef0123456789abcdef.AbCdEfGhIjKlMnOp", make_default: false },
+    ]);
+  });
+
   it("adds a Cohere key, which has no fixed prefix, with Cohere's dashboard as its key hint", async () => {
     on("POST", CREDENTIALS, credential({ provider: "cohere", name: "Cohere prod", is_default: true }));
     const { user, dialog } = await open();

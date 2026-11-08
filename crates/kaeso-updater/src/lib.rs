@@ -2,11 +2,13 @@
 
 pub mod clone;
 pub mod compose;
+pub mod compose_cli;
 pub mod config;
 pub mod docker;
 pub mod engine;
 pub mod files;
 pub mod guard;
+pub mod runner;
 pub mod server;
 pub mod source;
 pub mod verify;

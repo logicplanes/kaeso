@@ -266,6 +266,110 @@ fn openai_shaped_errors_from_anthropic_compatible_servers_keep_their_message() {
 }
 
 #[test]
+fn zai_codes_choose_the_kind_where_its_status_would_mislead_apps() {
+    let zai = |status: u16, code: &str| {
+        let body = json!({"error": {"message": "From Z.ai.", "type": code}});
+        let e = AnthropicMessages::decode_error(
+            status,
+            &HeaderList::new(),
+            &serde_json::to_vec(&body).unwrap(),
+        );
+        let enc = AnthropicMessages::encode_error(&e);
+        let sent: Value = serde_json::from_slice(&enc.body).unwrap();
+        (
+            e.kind,
+            enc.status,
+            sent["error"]["type"].as_str().unwrap().to_owned(),
+        )
+    };
+    assert_eq!(
+        zai(429, "1113"),
+        (ErrorKind::Billing, 402, "billing_error".into())
+    );
+    assert_eq!(
+        zai(429, "1305"),
+        (ErrorKind::Overloaded, 529, "overloaded_error".into())
+    );
+    assert_eq!(
+        zai(429, "1311"),
+        (ErrorKind::PermissionDenied, 403, "permission_error".into())
+    );
+    assert_eq!(
+        zai(400, "1211"),
+        (ErrorKind::NotFound, 404, "not_found_error".into())
+    );
+    assert_eq!(
+        zai(400, "1261"),
+        (
+            ErrorKind::ContextTooLong,
+            400,
+            "invalid_request_error".into()
+        )
+    );
+    assert_eq!(
+        zai(400, "1301"),
+        (
+            ErrorKind::ContentFiltered,
+            400,
+            "invalid_request_error".into()
+        )
+    );
+    assert_eq!(
+        zai(401, "1000"),
+        (
+            ErrorKind::Authentication,
+            401,
+            "authentication_error".into()
+        )
+    );
+    assert_eq!(
+        zai(429, "1302"),
+        (ErrorKind::RateLimited, 429, "rate_limit_error".into())
+    );
+    assert_eq!(
+        zai(429, "1310"),
+        (ErrorKind::RateLimited, 429, "rate_limit_error".into())
+    );
+    assert_eq!(
+        zai(400, "1214"),
+        (
+            ErrorKind::InvalidRequest,
+            400,
+            "invalid_request_error".into()
+        )
+    );
+}
+
+#[test]
+fn a_zai_platform_envelope_is_an_error_whatever_its_status() {
+    let body = br#"{"code":1000,"msg":"Authentication Failed","success":false}"#;
+    let e = AnthropicMessages::decode_error(200, &HeaderList::new(), body);
+    assert_eq!(
+        (e.kind, e.message.as_str()),
+        (ErrorKind::Authentication, "Authentication Failed")
+    );
+    let e = AnthropicMessages::decode_error(
+        200,
+        &HeaderList::new(),
+        br#"{"code":"9999","msg":"Something else.","success":false}"#,
+    );
+    assert_eq!(
+        (e.kind, e.message.as_str()),
+        (ErrorKind::ProviderError, "Something else.")
+    );
+    let e = AnthropicMessages::decode_error(
+        500,
+        &HeaderList::new(),
+        br#"{"msg":"Kept apart.","success":true}"#,
+    );
+    assert!(
+        e.message.contains("not an Anthropic error"),
+        "{}",
+        e.message
+    );
+}
+
+#[test]
 fn odd_error_bodies_are_classified_by_status() {
     let html = b"<html><body>413 Request Entity Too Large</body></html>";
     let e = AnthropicMessages::decode_error(413, &HeaderList::new(), html);

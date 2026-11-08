@@ -639,6 +639,29 @@ pub const PROVIDERS: &[Provider] = &[
         account: None,
     },
     Provider {
+        id: "zai",
+        name: "Z.ai",
+        key_page: KeyPage {
+            url: "https://z.ai/manage-apikey/apikey-list",
+            label: "API Keys",
+        },
+        key_prefix: None,
+        default_base_url: "https://api.z.ai/api/anthropic",
+        auth: AuthStyle::XApiKey,
+        generation: DialectId::AnthropicMessages,
+        count_tokens: None,
+        embeddings: None,
+        dialects: &[DialectId::AnthropicMessages],
+        refused_key_messages: &[],
+        context_window_messages: &[],
+        reasoning_beyond_output_limit: false,
+        end_user_limit: None,
+        chat: ChatProfile::compatible("Z.ai"),
+        responses: ResponsesProfile::compatible("Z.ai"),
+        messages: MessagesProfile::compatible("Z.ai"),
+        account: None,
+    },
+    Provider {
         id: "minimax",
         name: "MiniMax",
         key_page: KeyPage {
@@ -964,8 +987,24 @@ mod tests {
         assert!(provider("gemini").is_none());
         assert_eq!(
             ids(),
-            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras, minimax"
+            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras, zai, minimax"
         );
+    }
+
+    #[test]
+    fn zai_takes_its_key_as_x_api_key_on_its_anthropic_endpoint_and_counts_no_tokens() {
+        let zai = provider("zai").unwrap();
+        assert_eq!(
+            (zai.auth, zai.generation, zai.dialects),
+            (
+                AuthStyle::XApiKey,
+                DialectId::AnthropicMessages,
+                &[DialectId::AnthropicMessages][..]
+            )
+        );
+        assert_eq!(zai.default_base_url, "https://api.z.ai/api/anthropic");
+        assert_eq!((zai.count_tokens, zai.embeddings), (None, None));
+        assert_eq!(zai.key_prefix, None);
     }
 
     #[test]
@@ -1599,6 +1638,7 @@ mod tests {
                 "moonshotai",
                 "alibaba",
                 "cerebras",
+                "zai",
                 "minimax"
             ]
         );

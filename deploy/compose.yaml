@@ -156,6 +156,7 @@ services:
     logging: *logging
     environment:
       KAESO_UPDATER_TOKEN: ${KAESO_UPDATER_TOKEN:-}
+      KAESO_DIR: ${KAESO_DIR:-}
     volumes:
       - ./compose.yaml:/kaeso/compose.yaml
       - maintenance:/maintenance
@@ -181,13 +182,17 @@ services:
     command:
       - -loglevel=WARN
       - -listenip=0.0.0.0
-      - -allowfrom=updater
+      # updater-runner is the short-lived container through which the updater runs Docker Compose.
+      - -allowfrom=updater,updater-runner
       - -allowhealthcheck
       - -watchdoginterval=600
       - -stoponwatchdog
-      - -allowGET=/v1\.44/(version|containers/json|containers/([0-9a-f]{12}|[0-9a-f]{64})/json|images/(sha256:[0-9a-f]{64}|ghcr\.io/logicplanes/kaeso-(gateway|console|updater)@sha256:[0-9a-f]{64})/json)
-      - -allowPOST=/v1\.44/(images/create|images/ghcr\.io/logicplanes/kaeso-(gateway|console|updater)@sha256:[0-9a-f]{64}/tag|containers/create|containers/[0-9a-f]{64}/(start|stop|rename))
-      - -allowDELETE=/v1\.44/containers/[0-9a-f]{64}
+      # Any API version from 1.44 on: the compose runner uses the one Docker agrees on, as `docker compose` does, so the labels it writes match.
+      - -allowHEAD=/_ping
+      - -allowGET=/v1\.(4[4-9]|[5-9][0-9])/(version|containers/json|containers/([0-9a-f]{12}|[0-9a-f]{64})/json|containers/[0-9a-f]{64}/logs|images/(sha256:[0-9a-f]{64}|[a-z0-9][a-z0-9._/-]*(:[A-Za-z0-9_][A-Za-z0-9_.-]*)?@sha256:[0-9a-f]{64})/json|(networks|volumes)(/[A-Za-z0-9][A-Za-z0-9_.-]*)?)
+      - -allowPOST=/v1\.(4[4-9]|[5-9][0-9])/(images/create|images/ghcr\.io/logicplanes/kaeso-(gateway|console|updater)@sha256:[0-9a-f]{64}/tag|containers/create|containers/[0-9a-f]{64}/(start|stop|rename)|(networks|volumes)/create)
+      - -allowPUT=/v1\.(4[4-9]|[5-9][0-9])/containers/[0-9a-f]{64}/archive
+      - -allowDELETE=/v1\.(4[4-9]|[5-9][0-9])/containers/[0-9a-f]{64}
       # Not a path on purpose: socket-proxy refuses to start on it, while an empty value would allow every bind mount.
       - -allowbindmountfrom=${KAESO_DIR:-set KAESO_DIR in .env}
     volumes:

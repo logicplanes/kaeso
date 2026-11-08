@@ -2842,7 +2842,7 @@
           "instance"
         ],
         "summary": "Updates the install to the newest offered release through the updater, with a recent sign-in; the console and the APIs are unavailable for about a minute.",
-        "description": "The updater checks the release's signed provenance, downloads the images, switches the console and then the gateway, and waits for the gateway's migrations and health. When the new version fails it goes back to the previous one, unless the new gateway may already have migrated the database: then it leaves the new gateway in place and ends `needs_attention`. Poll `instance/updates/jobs/{update}` for the progress; when the updater doesn't confirm the start, the update stays `running` until the updater reports on it.\n\n**Right:** `instance.updates.apply`. Instance admins hold every instance right with a console session that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins; an agent of an instance admin needs it granted.",
+        "description": "The updater checks the release's signed provenance, downloads the images, switches the console and then the gateway, or applies the release's compose.yaml with Docker Compose when it changes, and waits for the gateway's migrations and health. Once the update has succeeded, the updater replaces itself. When the new version fails it goes back to the previous one, unless the new gateway may already have migrated the database: then it leaves the new gateway in place and ends `needs_attention`. Poll `instance/updates/jobs/{update}` for the progress; when the updater doesn't confirm the start, the update stays `running` until the updater reports on it.\n\n**Right:** `instance.updates.apply`. Instance admins hold every instance right with a console session that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins; an agent of an instance admin needs it granted.",
         "operationId": "postInstanceUpdatesApply",
         "requestBody": {
           "content": {
@@ -23447,7 +23447,7 @@
           },
           "provider": {
             "$ref": "#/components/schemas/ProviderId",
-            "description": "The id of a provider Kaeso calls: `openai`, `anthropic`, `deepseek`, `xai`,\n`togetherai`, `groq`, `openrouter`, `mistral`, `vercel`, `cohere`,\n`ollama-cloud`, `moonshotai`, `alibaba`, `cerebras`, `minimax`, or one of the\norganization's custom providers that takes a key."
+            "description": "The id of a provider Kaeso calls: `openai`, `anthropic`, `deepseek`, `xai`,\n`togetherai`, `groq`, `openrouter`, `mistral`, `vercel`, `cohere`,\n`ollama-cloud`, `moonshotai`, `alibaba`, `cerebras`, `zai`, `minimax`, or one of the\norganization's custom providers that takes a key."
           },
           "secret": {
             "type": "string",
@@ -29589,7 +29589,7 @@
                     "string",
                     "null"
                   ],
-                  "description": "Why it did not succeed, or what is left to do after it did, as a code: `manifest_unavailable`, `manifest_invalid`, `manual_steps`, `major`, `not_newer`, `updater_outdated`, `compose_changed`, `compose_unwritable`, `services_not_found`, `pull_failed`, `unverified`, `docker_unavailable`, `unhealthy`, `interrupted`, `updater_unreachable`, `updater_refused`, `state_unwritable` or `migrated` (the new gateway didn't start and may have migrated the database)."
+                  "description": "Why it did not succeed, or what is left to do after it did, as a code: `manifest_unavailable`, `manifest_invalid`, `manual_steps`, `major`, `not_newer`, `updater_outdated`, `compose_changed`, `compose_unwritable`, `services_not_found`, `pull_failed`, `unverified`, `docker_unavailable`, `unhealthy`, `interrupted`, `updater_unreachable`, `updater_refused`, `state_unwritable`, `migrated` (the new gateway didn't start and may have migrated the database) or `install_unknown` (the updater doesn't know the install's folder, `KAESO_DIR`)."
                 },
                 "started_at": {
                   "type": "string",
@@ -37163,7 +37163,7 @@
               "string",
               "null"
             ],
-            "description": "Why it did not succeed, or what is left to do after it did, as a code: `manifest_unavailable`, `manifest_invalid`, `manual_steps`, `major`, `not_newer`, `updater_outdated`, `compose_changed`, `compose_unwritable`, `services_not_found`, `pull_failed`, `unverified`, `docker_unavailable`, `unhealthy`, `interrupted`, `updater_unreachable`, `updater_refused`, `state_unwritable` or `migrated` (the new gateway didn't start and may have migrated the database)."
+            "description": "Why it did not succeed, or what is left to do after it did, as a code: `manifest_unavailable`, `manifest_invalid`, `manual_steps`, `major`, `not_newer`, `updater_outdated`, `compose_changed`, `compose_unwritable`, `services_not_found`, `pull_failed`, `unverified`, `docker_unavailable`, `unhealthy`, `interrupted`, `updater_unreachable`, `updater_refused`, `state_unwritable`, `migrated` (the new gateway didn't start and may have migrated the database) or `install_unknown` (the updater doesn't know the install's folder, `KAESO_DIR`)."
           },
           "started_at": {
             "type": "string",

@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 
-pub const VERSION: u32 = 1;
+pub const VERSION: u32 = 2;
 pub const TOKEN_MIN_LEN: usize = 32;
 
 macro_rules! names {
@@ -64,6 +64,7 @@ names!(Reason {
     UpdaterRefused => "updater_refused",
     StateUnwritable => "state_unwritable",
     Migrated => "migrated",
+    InstallUnknown => "install_unknown",
 });
 
 impl JobState {

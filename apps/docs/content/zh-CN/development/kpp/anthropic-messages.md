@@ -257,7 +257,7 @@ Schema `ErrorResponse`。解码错误（无论是请求还是服务商的响应�
 - 提示过长与其他错误一样是 400 `invalid_request_error`，只有消息能区分它。如果 Anthropic 改变措辞，该错误会被解码为 `InvalidRequest`。
 - 未知的 `error.type`，或不是 `ErrorResponse` 的响应体，按状态码确定类型。这类响应体的例子有 Cloudflare 的 HTML 413、`type` 不是 `error` 的 JSON，以及顶层带有 Kaeso 无法承载的键的 JSON。状态码和原始响应体（不是 JSON 时以字符串保存）都会保留，这类响应体会以 Anthropic 的错误结构重新编码。
 - 状态码 400、409 和 422 为 `InvalidRequest`，401 为 `Authentication`，402 为 `Billing`，403 为 `PermissionDenied`，404 为 `NotFound`。状态码 408 和 504 为 `Timeout`，413 为 `RequestTooLarge`，429 为 `RateLimited`，503 和 529 为 `Overloaded`。其他任何状态码以及没有状态码的流错误为 `ProviderError`。文档中的 `error.type` 总是优先于状态码。
-- OpenAI 错误结构的响应体 `{"error": {"message", "type"}}`（Vercel AI Gateway 在 `/v1/messages` 上发送的就是这种）会保留其消息。若 `error.type` 是 Anthropic 的类型之一，类别由它决定，否则由状态码决定；Anthropic 应用收到的是 Anthropic 结构的错误（`fixtures/anthropic_messages/providers/vercel/errors/`）。
+- OpenAI 错误结构的响应体 `{"error": {"message", "type"}}`（Vercel AI Gateway 和 Z.ai 在 `/v1/messages` 上发送的就是这种）会保留其消息。若 `error.type` 是 Anthropic 的类型之一或 [Z.ai 的错误码](#zai)之一，类别由它决定，否则由状态码决定；Anthropic 应用收到的是 Anthropic 结构的错误（`fixtures/anthropic_messages/providers/vercel/errors/`）。这样的响应体只有在状态码得出相同类别时才保留其状态码；否则 Anthropic 应用收到该类别的状态码，因此 Z.ai 因余额不足返回的 429 以 402 `billing_error` 送达。
 - 从 Anthropic 解码的错误会以其状态码从 `raw` 重新编码，因此 Anthropic 应用看到的错误不变；其他错误则构建为 `{"type":"error","error":{"type","message"},"request_id":null}`。
 - `request_id` 在 `ErrorResponse` 中是必需字段，值为字符串或 `null`。`encode_error_for_request`（`dispatch::encode_error_for_request`）在其中写入给定的 ID，也写入从 `raw` 重新编码的响应体，替换 Anthropic 的 ID。网关传入它在 `kaeso-request-id` 中发送的 ID，并在请求日志中保留 Anthropic 的 `request-id` 响应头。`encode_error` 在它构建的响应体中写入 `null`。
 - 其他响应头（例如 `anthropic-ratelimit-*` 和 `request-id`）不属于 `KppError`。
@@ -362,6 +362,15 @@ Schema `ErrorResponse`。解码错误（无论是请求还是服务商的响应�
 | OpenAI 封装中的错误 | `KppError` | 见[错误](#错误)。 |
 | `POST /v1/messages/count_tokens` | — | Vercel 只对 Claude 模型精确计数，其余为估算，因此 Kaeso 拒绝所有 Vercel 模型的 Token 计数。 |
 
+### Z.ai
+
+来源：Z.ai 的[错误码](https://docs.z.ai/api-reference/api-code)、[快速开始](https://docs.z.ai/devpack/quick-start)和[思考设置](https://docs.z.ai/devpack/latest-model)页面（2026-11-08 阅读），以及 `fixtures/anthropic_messages/providers/zai/` 中实时录制和探测的错误。Messages 是 Z.ai 的 `generation` 方言，地址为 `https://api.z.ai/api/anthropic`。Z.ai 没有说明 Anthropic 回复、流或它接受的字段列表，因此请求按发给 Anthropic 的方式发送，Kaeso 不为 Z.ai 拒绝任何字段，Z.ai 自己的错误会送达应用。它的思考设置页面列出了 `thinking.type` `adaptive` 和 `output_config.effort`，其他方言的推理强度会转换为它们。
+
+| Z.ai 字段 | KPP | 说明 |
+|---|---|---|
+| OpenAI 封装中作为 `error.type` 的 Z.ai 数字错误码（`errors/recorded-invalid-api-key`） | `KppError` 类别 | Z.ai 对某些错误码使用的状态码在 Anthropic 的表中含义不同，例如余额不足时返回 429。以错误码为准：`1113`、`1309` 和 `1314` → `Billing`；`1211` → `NotFound`；`1220`、`1311` 和 `1315` → `PermissionDenied`；`1261` → `ContextTooLong`；`1301` → `ContentFiltered`；`1305` → `Overloaded`；`1000`、`1001`、`1003` 和 `1005` → `Authentication`。其他错误码按状态码处理。 |
+| `{"code", "msg", "success": false}`，也可能带 HTTP 200（`errors/list-invalid-api-key`） | `KppError` | Z.ai 的平台封装，它在检查密钥之前用它回应自己不提供的路径，其中包括 `GET /v1/models`。`decode_models` 和 `decode_model` 无论状态码如何都把它读作错误，因此用错误的密钥检查模型时会报告密钥被拒绝。 |
+| `POST /v1/messages/count_tokens` | — | 没有相关说明；Kaeso 在发送任何内容之前拒绝 Z.ai 模型的 Token 计数。 |
 ### MiniMax
 
 来源：MiniMax 的 [Anthropic API 兼容性](https://platform.minimax.io/docs/api-reference/text-anthropic-api)页面及其 [OpenAPI 文档](https://platform.minimax.io/docs/api-reference/text/api/openapi-chat-anthropic.json)（2026-11-08 阅读）、`fixtures/anthropic_messages/providers/minimax/` 中取自该文档的示例，以及用一个虚构密钥实时录制的一个错误。Messages 是 MiniMax 的 `generation` 方言，地址为 `https://api.minimax.io/anthropic`，用于 `MiniMax-M3` 和 `MiniMax-M3.1-Flash`。

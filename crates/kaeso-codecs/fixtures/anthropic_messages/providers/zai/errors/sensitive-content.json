@@ -1,0 +1,6 @@
+{
+  "error": {
+    "message": "System detected potentially unsafe or sensitive content in input or generation. Please avoid using prompts that may generate sensitive content. Thank you for your cooperation.",
+    "type": "1301"
+  }
+}

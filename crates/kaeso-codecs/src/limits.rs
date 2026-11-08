@@ -590,23 +590,18 @@ pub fn request_shape(dialect: DialectId, body: &[u8]) -> Result<RequestShape, Kp
 fn significant_bytes(body: &[u8], depth_limit: usize) -> Option<usize> {
     let mut depth = 0usize;
     let mut bytes = 0usize;
-    let mut in_string = false;
-    let mut escaped = false;
-    for &byte in body {
-        if in_string || !byte.is_ascii_whitespace() {
-            bytes += 1;
-        }
-        if in_string {
-            match byte {
-                _ if escaped => escaped = false,
-                b'\\' => escaped = true,
-                b'"' => in_string = false,
-                _ => {}
-            }
+    let mut i = 0usize;
+    while let Some(&byte) = body.get(i) {
+        if byte == b'"' {
+            let end = string_end(body, i + 1);
+            bytes += end - i;
+            i = end;
             continue;
         }
+        if !byte.is_ascii_whitespace() {
+            bytes += 1;
+        }
         match byte {
-            b'"' => in_string = true,
             b'{' | b'[' => {
                 depth += 1;
                 if depth > depth_limit {
@@ -616,6 +611,129 @@ fn significant_bytes(body: &[u8], depth_limit: usize) -> Option<usize> {
             b'}' | b']' => depth = depth.saturating_sub(1),
             _ => {}
         }
+        i += 1;
     }
     Some(bytes)
+}
+
+// Just past the quote that closes a string whose content starts at `from`, or the end of the
+// body for one that never closes; every byte in between counts, an escaped quote included.
+fn string_end(body: &[u8], mut from: usize) -> usize {
+    loop {
+        let rest = body.get(from..).unwrap_or_default();
+        from += quote_or_backslash(rest);
+        match body.get(from) {
+            Some(b'"') => return from + 1,
+            Some(_) => from += 2,
+            None => return body.len(),
+        }
+        if from >= body.len() {
+            return body.len();
+        }
+    }
+}
+
+// The index of the first `"` or `\` in `bytes`, or its length, eight bytes at a time: strings,
+// most of a request's bytes, hold neither for long stretches.
+fn quote_or_backslash(bytes: &[u8]) -> usize {
+    const ONES: u64 = 0x0101_0101_0101_0101;
+    const HIGH: u64 = 0x8080_8080_8080_8080;
+    let quotes = ONES * u64::from(b'"');
+    let backslashes = ONES * u64::from(b'\\');
+    let (words, rest) = bytes.as_chunks::<8>();
+    for (i, eight) in words.iter().enumerate() {
+        let word = u64::from_le_bytes(*eight);
+        let (q, b) = (word ^ quotes, word ^ backslashes);
+        let found = ((q.wrapping_sub(ONES) & !q) | (b.wrapping_sub(ONES) & !b)) & HIGH;
+        if found != 0 {
+            return i * 8 + (found.trailing_zeros() / 8) as usize;
+        }
+    }
+    words.len() * 8
+        + rest
+            .iter()
+            .position(|&c| c == b'"' || c == b'\\')
+            .unwrap_or(rest.len())
+}
+
+#[cfg(test)]
+mod tests {
+    use proptest::prelude::*;
+
+    use super::*;
+
+    fn byte_by_byte(body: &[u8], depth_limit: usize) -> Option<usize> {
+        let mut depth = 0usize;
+        let mut bytes = 0usize;
+        let mut in_string = false;
+        let mut escaped = false;
+        for &byte in body {
+            if in_string || !byte.is_ascii_whitespace() {
+                bytes += 1;
+            }
+            if in_string {
+                match byte {
+                    _ if escaped => escaped = false,
+                    b'\\' => escaped = true,
+                    b'"' => in_string = false,
+                    _ => {}
+                }
+                continue;
+            }
+            match byte {
+                b'"' => in_string = true,
+                b'{' | b'[' => {
+                    depth += 1;
+                    if depth > depth_limit {
+                        return None;
+                    }
+                }
+                b'}' | b']' => depth = depth.saturating_sub(1),
+                _ => {}
+            }
+        }
+        Some(bytes)
+    }
+
+    fn jsonish() -> impl Strategy<Value = Vec<u8>> {
+        let byte = prop_oneof![
+            Just(b'"'),
+            Just(b'\\'),
+            Just(b'{'),
+            Just(b'}'),
+            Just(b'['),
+            Just(b']'),
+            Just(b' '),
+            Just(b'\n'),
+            Just(b'a'),
+            any::<u8>(),
+        ];
+        proptest::collection::vec(byte, 0..200)
+    }
+
+    proptest! {
+        #[test]
+        fn significant_bytes_count_as_a_byte_by_byte_scan_does(body in jsonish(), limit in 0usize..6) {
+            prop_assert_eq!(significant_bytes(&body, limit), byte_by_byte(&body, limit));
+        }
+    }
+
+    #[test]
+    fn strings_longer_than_a_word_and_escapes_at_every_offset_count_alike() {
+        for pad in 0..20 {
+            let filler = "x".repeat(pad);
+            for body in [
+                format!(r#"{{"a": "{filler}\"{filler}", "b" : [ 1 ] }}"#),
+                format!(r#"["{filler}\\", "{filler}"]"#),
+                format!(r#""{filler}\"#),
+                format!(r#""{filler}"#),
+            ] {
+                assert_eq!(
+                    significant_bytes(body.as_bytes(), 3),
+                    byte_by_byte(body.as_bytes(), 3),
+                    "{body}"
+                );
+            }
+        }
+    }
 }

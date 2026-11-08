@@ -111,6 +111,10 @@ impl Release for Known {
             .as_ref()
             .is_some_and(|m| m.asks_for_steps_after(running))
     }
+
+    fn updater_protocol(&self) -> u32 {
+        self.manifest.as_ref().map_or(0, |m| m.updater_protocol)
+    }
 }
 
 pub fn known(rows: Vec<ReleaseRow>) -> Vec<Known> {
@@ -939,13 +943,8 @@ pub async fn auto_update(state: &AppState) -> Result<Auto, StoreError> {
     let Some(client) = updater::of(state) else {
         return Ok(Auto::UpdaterNotReady);
     };
-    let required = plan
-        .target
-        .manifest
-        .as_ref()
-        .map_or(0, |m| m.updater_protocol);
     match client.status().await {
-        Ok(status) if updater::speaks(&status, required) && status.docker => {}
+        Ok(status) if updater::speaks(&status, plan.updater_protocol) && status.docker => {}
         _ => return Ok(Auto::UpdaterNotReady),
     }
     let from = running().to_string();

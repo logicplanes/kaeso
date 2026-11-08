@@ -1053,6 +1053,20 @@ expression: outcomes
     },
     "path": "/v1/responses"
   },
+  "providers/zai/invalid-api-key": {
+    "body": {
+      "input": [
+        {
+          "content": "Say hi.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 16,
+      "model": "glm-4.6",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
   "refusal": {
     "body": {
       "input": [

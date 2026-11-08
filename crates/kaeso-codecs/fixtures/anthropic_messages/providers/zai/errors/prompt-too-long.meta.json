@@ -1,0 +1,12 @@
+{
+  "status": 400,
+  "kind": "context_too_long",
+  "encoded": {
+    "type": "error",
+    "error": {
+      "type": "invalid_request_error",
+      "message": "prompt is too long: Prompt too long"
+    },
+    "request_id": null
+  }
+}

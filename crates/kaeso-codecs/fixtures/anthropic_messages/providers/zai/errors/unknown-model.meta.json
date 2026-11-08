@@ -1,0 +1,13 @@
+{
+  "status": 400,
+  "kind": "not_found",
+  "encoded_status": 404,
+  "encoded": {
+    "type": "error",
+    "error": {
+      "type": "not_found_error",
+      "message": "Unknown Model, please check the model code."
+    },
+    "request_id": null
+  }
+}

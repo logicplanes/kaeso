@@ -128,20 +128,26 @@ secrets:
 Der Updater installiert ein Release, wenn alles hier zutrifft. Sonst zeigt die Konsole seine Release-Notizen und den Befehl des Installationsskripts, der darauf aktualisiert.
 
 - Es ist keine neue Hauptversion. Eine Migration, die einen Schritt von Hand braucht, führt immer zu einer neuen Hauptversion.
-- Kein Release auf dem Weg verlangt Schritte von Hand. Das tut ein Release, wenn seine `compose.yaml` sich über die Image-Versionen hinaus ändert oder wenn die Maintainer es so kennzeichnen.
+- Kein Release auf dem Weg verlangt Schritte von Hand. Das tut ein Release, wenn es `docker-proxy` oder dessen Netzwerk ändert oder wenn die Maintainer es so kennzeichnen.
 - Es bringt `release.json` mit, das signierte Manifest, das der Updater liest.
+- Der Updater ist neu genug dafür. Ist er es nicht, aktualisiert ihn der Befehl des Installationsskripts einmal.
+
+Die meisten Releases ändern in der `compose.yaml` nur die Image-Versionen. Ein Release, das mehr ändert, etwa eine neue Einstellung oder einen neuen Dienst, wird genauso eingespielt, wenn zwei weitere Dinge zutreffen:
+
+- Die `compose.yaml` der Installation ist die des laufenden Release. Halten Sie Ihre Änderungen in der `compose.override.yaml`.
+- Jedes Image in der `compose.override.yaml` ist per Digest festgelegt, etwa `postgres:18.6-alpine@sha256:…`.
 
 ### Aus der Konsole aktualisieren
 
 Wählen Sie **Auf … aktualisieren** und bestätigen Sie. Die Konsole verfolgt das Update Schritt für Schritt, und es dauert etwa eine Minute:
 
 1. **Signaturen des Release prüfen.** Der Updater prüft, dass das Release und jedes Image vom Release-Workflow von Kaeso gebaut wurden. Scheitert eine Prüfung, wird nichts eingespielt, und Kaeso läuft weiter.
-2. **Images herunterladen.** Er lädt die neuen Images von Gateway, Konsole und Updater.
-3. **Auf die neue Version umstellen.** Er ersetzt erst die Konsole, dann das Gateway durch Container aus den neuen Images, mit denselben Einstellungen. Währenddessen antwortet Caddy an ihrer Stelle ([Während Kaeso aktualisiert wird](#während-kaeso-aktualisiert-wird)).
+2. **Images herunterladen.** Er lädt die neuen Images von Gateway, Konsole und Updater. Ändert das Release die `compose.yaml`, schreibt er die neue Datei, behält die alte und lässt Docker Compose die übrigen Images des Release laden.
+3. **Auf die neue Version umstellen.** Er ersetzt erst die Konsole, dann das Gateway durch Container aus den neuen Images, mit denselben Einstellungen. Ändert das Release die `compose.yaml`, stoppt stattdessen Docker Compose beide und startet dann jeden Dienst der neuen Datei. Währenddessen antwortet Caddy an ihrer Stelle ([Während Kaeso aktualisiert wird](#während-kaeso-aktualisiert-wird)).
 4. **Datenbank migrieren.** Das neue Gateway migriert beim Start die Datenbanken. Der Updater gibt ihm bis zu 10 Minuten, um gesund zu werden.
 5. **Wieder erreichbar.** Der Updater schreibt die neuen Versionen in die `compose.yaml`, sodass ein späteres `docker compose up -d --wait` dieselben Images startet.
 
-Der Updater ersetzt weder sich selbst noch Caddy, während er läuft. Das nächste `docker compose up -d --wait` im Ordner der Installation startet ihre neuen Versionen. Es läuft immer nur ein Update, und das Audit-Log der Instanz hält jedes fest.
+Ist das Update gelungen, ersetzt der Updater sich selbst sowie Caddy und jeden weiteren Dienst, der ein Image von Kaeso nutzt. Der neue Updater meldet, wie das Update ausgegangen ist. Es läuft immer nur ein Update, und das Audit-Log der Instanz hält jedes fest.
 
 [Updates](../development/architecture/updates.md) erklärt, wie der Updater ein Release prüft und Container umstellt.
 
@@ -187,24 +193,26 @@ Der Verlauf der Seite zeigt, wie jedes Update ausgegangen ist:
 | **Zurücksetzen fehlgeschlagen** | Die neue Version startete nicht, die vorherige auch nicht. |
 | **Prüfung nötig** | Jemand muss nachsehen. Die Details sagen, was passiert ist und was zu tun ist. |
 
-Der Updater setzt selbst zurück, wann immer das sicher geht. Das geht nicht, wenn das neue Gateway scheitert, nachdem es die Datenbanken womöglich migriert hat, denn das vorherige Gateway kann nicht mit ihnen laufen. Dann endet das Update mit **Prüfung nötig**, das neue Gateway und die neue Konsole bleiben, und die vorherigen bleiben angehalten als `kaeso-gateway-1-previous` und `kaeso-console-1-previous`. Wählen Sie einen Weg:
+Der Updater setzt selbst zurück, wann immer das sicher geht, und legt die vorherige `compose.yaml` zurück, wenn das Release sie geändert hat. Zurücksetzen geht nicht, wenn das neue Gateway scheitert, nachdem es die Datenbanken womöglich migriert hat, denn das vorherige Gateway kann nicht mit ihnen laufen. Dann endet das Update mit **Prüfung nötig**, und das neue Gateway und die neue Konsole bleiben. Die vorherigen bleiben angehalten als `kaeso-gateway-1-previous` und `kaeso-console-1-previous`, oder, bei einem Release, das die `compose.yaml` geändert hat, bleibt die neue Datei. Wählen Sie einen Weg:
 
 - Finden Sie mit `docker compose logs gateway` heraus, warum das neue Gateway nicht startet, beheben Sie es und laden Sie die `compose.yaml` des neuen Releases, wie unter [von Hand aktualisieren](#von-hand-aktualisieren).
 - Oder stellen Sie das Backup wieder her und führen Sie die alte Version aus, wie unter [Downgrade](#downgrade) beschrieben.
 
-Entfernen Sie danach beide `…-previous`-Container mit `docker rm`. Solange einer existiert, startet der Updater kein weiteres Update.
+Entfernen Sie danach jeden `…-previous`-Container mit `docker rm`. Solange einer existiert, startet der Updater kein weiteres Update.
 
 ### Was der Updater darf
 
 Der Updater kommt root auf dem Server gleich. Er kann Container anlegen, und `docker-proxy`, der als root läuft, um den Docker-Socket zu erreichen, prüft bei jedem Aufruf nur Methode und Pfad und woher Bind-Mounts kommen. Wer den Updater oder den Proxy kontrolliert, kontrolliert den Server. Der Updater ist so gebaut, dass diese Befugnis möglichst begrenzt bleibt:
 
 - Er antwortet nur dem Gateway, in einem internen Netzwerk und nur mit dem gemeinsamen Token. Das Gateway übergibt ihm eine Versionsnummer und sonst nichts.
-- Er erreicht Docker nur über `docker-proxy`, der nur die Aufrufe durchlässt, die ein Update braucht. Bind-Mounts erlaubt er nur aus `KAESO_DIR`, dem Ordner der Installation; ändern Sie `KAESO_DIR` also, wenn Sie den Ordner verschieben.
-- Er ersetzt nur die Gateway- und Konsolen-Container seines eigenen Compose-Projekts, mit Images, die er geprüft hat. Bei [mehreren Gateways](scaling.md) stoppt er alle, bevor er die neuen startet, damit kein altes Gateway gegen eine Datenbank läuft, die das neue gerade migriert.
-- Er legt keinen Container an, dessen Rechte, Capabilities, Geräte, Namespaces, Netzwerk, Mounts, Ports, Namensauflösung, Gruppen oder Limits von denen des ersetzten abweichen. Er lädt nur die Images von Kaeso, per Digest.
-- Er ändert in der `compose.yaml` nur die Image-Versionen und Digests und lässt eine Datei unangetastet, die von der des Releases abweicht.
+- Er erreicht Docker nur über `docker-proxy`, der nur die Aufrufe durchlässt, die ein Update und Docker Compose brauchen. Bind-Mounts erlaubt er nur aus `KAESO_DIR`, dem Ordner der Installation; ändern Sie `KAESO_DIR` also, wenn Sie den Ordner verschieben.
+- Bei einem Release, das nur Images ändert, ersetzt er nur die Gateway- und Konsolen-Container seines eigenen Compose-Projekts, mit Images, die er geprüft hat. Er legt keinen Container an, dessen Rechte, Capabilities, Geräte, Namespaces, Netzwerk, Mounts, Ports, Namensauflösung, Gruppen oder Limits von denen des ersetzten abweichen.
+- Bei einem Release, das die `compose.yaml` ändert, führt er Docker Compose in einem kurzlebigen Container aus dem geprüften Updater-Image des Release aus. Dieser Container läuft als root mit einer einzigen Capability, dem Lesen jeder Datei, die `.env` und `compose.override.yaml` brauchen. Er hat ein schreibgeschütztes Dateisystem, den Ordner der Installation schreibgeschützt eingebunden und erreicht nichts außer `docker-proxy`. Docker Compose tut dann, was `docker compose up -d --wait` täte: Es legt die Dienste der Installation an, legt sie neu an und entfernt sie, legt ihre Netzwerke und Volumes an und kopiert Konfigurationsdateien in Container.
+- Er schreibt nur eine `compose.yaml`, deren Hash die signierte `release.json` des Release nennt, und nur über eine Datei, die die des laufenden Release ist oder nur in den Image-Versionen von ihr abweicht.
+- Bei [mehreren Gateways](scaling.md) stoppen alle, bevor ein neues startet, damit kein altes Gateway gegen eine Datenbank läuft, die das neue gerade migriert.
+- Er ersetzt sich selbst nur nach einem gelungenen Update und legt `docker-proxy` nie neu an: Ein Release, das ihn ändert, verlangt Schritte von Hand.
 
-Der Proxy kann nicht prüfen, was ein neuer Container verlangt, etwa Rechte oder Geräte des Hosts. Außerdem lässt er den Updater die Einstellungen jedes Containers lesen, auch die Datenbankpasswörter in ihrer Umgebung. Diese Prüfungen liegen allein im Updater. Ohne das Profil `updater` hat nichts in Kaeso Zugriff auf Docker.
+Der Proxy kann nicht prüfen, was ein neuer Container verlangt, etwa Rechte oder Geräte des Hosts. Außerdem lässt er den Updater die Einstellungen jedes Containers lesen, auch die Datenbankpasswörter in ihrer Umgebung. Der Updater prüft jeden Container, den er selbst anlegt, aber ein Release, das die `compose.yaml` ändert, kann jeden Teil der Konfiguration der Installation festlegen, außer Bind-Mounts außerhalb von `KAESO_DIR`. Dem vertrauen Sie, wenn Sie einem vom Release-Workflow von Kaeso signierten Release vertrauen. Ohne das Profil `updater` hat nichts in Kaeso Zugriff auf Docker.
 
 ## Während Kaeso aktualisiert wird
 

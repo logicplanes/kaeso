@@ -1,0 +1,6 @@
+{
+  "error": {
+    "message": "Insufficient balance or no resource package. Please recharge.",
+    "type": "1113"
+  }
+}

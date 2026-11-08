@@ -101,7 +101,7 @@ The **Labels** workflow sets the area labels and `internal` from the files a pul
    git push origin dev:prod
    ```
 
-4. Run the Release workflow on `prod` with the version. Tick **manual** in the workflow's inputs when the release needs steps by hand, so the updater never installs it:
+4. Run the Release workflow on `prod` with the version. Tick **manual** in the workflow's inputs when the release needs steps by hand, so the updater never installs it. A change to the `docker-proxy` service or the `docker` network makes a release manual by itself:
 
    ```bash
    gh workflow run release.yml --repo logicplanes/kaeso --ref prod \

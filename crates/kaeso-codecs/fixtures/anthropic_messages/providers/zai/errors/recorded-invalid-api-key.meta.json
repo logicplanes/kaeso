@@ -1,0 +1,11 @@
+{
+  "status": 401,
+  "encoded": {
+    "type": "error",
+    "error": {
+      "type": "authentication_error",
+      "message": "身份验证失败。"
+    },
+    "request_id": null
+  }
+}

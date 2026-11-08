@@ -1,0 +1,6 @@
+{
+  "error": {
+    "message": "Rate limit reached for requests",
+    "type": "1302"
+  }
+}

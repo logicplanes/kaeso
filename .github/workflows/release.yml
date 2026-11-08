@@ -825,10 +825,12 @@ jobs:
           ref: v${{ needs.validate.outputs.version }}
           fetch-depth: 0
           persist-credentials: false
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version-file: .node-version
           package-manager-cache: false
+      - run: pnpm install --frozen-lockfile --ignore-scripts
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         with:
           pattern: published-*
@@ -854,7 +856,7 @@ jobs:
             --compose deploy/compose.yaml --compose-out "$RUNNER_TEMP/compose/compose.yaml" \
             --migrations crates/kaeso-store/migrations --manual "$MANUAL" "${since[@]}" > "$out/release.json"
           if [[ "$(jq -r .manual "$out/release.json")" == true ]]; then
-            echo "Installs update to $VERSION by hand: it was marked so, or it changes compose.yaml beyond the image versions." >> "$GITHUB_STEP_SUMMARY"
+            echo "Installs update to $VERSION by hand: it was marked so, or it changes docker-proxy or its network." >> "$GITHUB_STEP_SUMMARY"
           fi
           cat "$out/release.json"
           grep -E 'image: ghcr\.io/logicplanes/kaeso-' "$RUNNER_TEMP/compose/compose.yaml"

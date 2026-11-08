@@ -1,0 +1,11 @@
+{
+  "status": 401,
+  "encoded": {
+    "type": "error",
+    "error": {
+      "type": "authentication_error",
+      "message": "Authentication parameter not received in Header, unable to authenticate"
+    },
+    "request_id": null
+  }
+}
