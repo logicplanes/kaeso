@@ -33215,7 +33215,7 @@
       },
       "PriceTier": {
         "type": "object",
-        "description": "The prices for a prompt longer than `context_above` tokens. An absent\nprice is the model's own price.",
+        "description": "The prices for every token of a request whose prompt is longer than\n`context_above` tokens, output included. An absent price is the model's own\nprice.",
         "required": [
           "context_above"
         ],

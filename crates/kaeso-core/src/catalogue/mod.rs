@@ -130,8 +130,9 @@ pub struct Fields {
 #[cfg_attr(
     feature = "openapi",
     schema(
-        description = "The prices for a prompt longer than `context_above` tokens. An absent\n\
-    price is the model's own price."
+        description = "The prices for every token of a request whose prompt is longer than\n\
+    `context_above` tokens, output included. An absent price is the model's own\n\
+    price."
     )
 )]
 pub struct PriceTier {

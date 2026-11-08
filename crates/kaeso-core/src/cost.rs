@@ -363,6 +363,37 @@ mod tests {
     }
 
     #[test]
+    fn every_token_of_a_long_request_pays_the_tier_not_only_those_past_the_threshold() {
+        let prices = Fields {
+            input_price: Some(dec!(1)),
+            output_price: Some(dec!(2)),
+            cache_read_price: Some(dec!(0.1)),
+            cache_write_price: Some(dec!(1.25)),
+            price_tiers: Some(vec![crate::catalogue::PriceTier {
+                context_above: 2_000_000,
+                input_price: Some(dec!(10)),
+                output_price: Some(dec!(20)),
+                cache_read_price: Some(dec!(1)),
+                cache_write_price: Some(dec!(12.5)),
+                cache_write_1h_price: None,
+            }]),
+            ..Fields::default()
+        };
+        let mut u = Usage::default();
+        u.input_tokens = 1_000_000;
+        u.cache_read_tokens = 1_000_000;
+        u.cache_write_tokens = 1;
+        u.output_tokens = 1_000_000;
+        assert_eq!(
+            cost(&u, &prices),
+            dec!(10) + dec!(1) + dec!(0.0000125) + dec!(20),
+            "2,000,001 prompt tokens: all of them and the output at the tier"
+        );
+        u.cache_write_tokens = 0;
+        assert_eq!(cost(&u, &prices), dec!(1) + dec!(0.1) + dec!(2));
+    }
+
+    #[test]
     fn the_prompt_length_counts_cached_and_written_tokens_as_well() {
         let prices = tiered();
         let mut u = Usage::default();
