@@ -369,6 +369,30 @@ describe("ProviderKeyDialog", () => {
     ]);
   });
 
+  it("adds a Google AI Studio key, which has no fixed prefix, with AI Studio's key page as its key hint", async () => {
+    on("POST", CREDENTIALS, credential({ provider: "google", name: "AI Studio prod", is_default: true }));
+    const { user, dialog } = await open();
+
+    await choose(user, dialog, "Google AI Studio");
+
+    expect(await within(dialog).findByRole("heading", { name: "Paste your Google AI Studio API key" })).toBeVisible();
+    const link = within(dialog).getByRole("link", { name: "aistudio.google.com (opens in a new tab)" });
+    expect(link).toHaveAttribute("href", "https://aistudio.google.com/apikey");
+    expect((link.closest("p") as HTMLElement).textContent?.replace(/\u2060? \(opens in a new tab\)/, "")).toBe(
+      "Create one at aistudio.google.com under API keys.",
+    );
+    const secret = within(dialog).getByLabelText("Google AI Studio API key");
+    expect(secret).not.toHaveAttribute("placeholder");
+    await user.type(secret, "AIzaSyAbCdEf0123456789AbCdEf0123456789");
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "AI Studio prod");
+    await user.click(within(dialog).getByRole("button", { name: "Add key" }));
+
+    expect(await notifications().findByText("AI Studio prod is the Google AI Studio default")).toBeInTheDocument();
+    expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([
+      { provider: "google", name: "AI Studio prod", secret: "AIzaSyAbCdEf0123456789AbCdEf0123456789", make_default: false },
+    ]);
+  });
+
   it("adds a Cohere key, which has no fixed prefix, with Cohere's dashboard as its key hint", async () => {
     on("POST", CREDENTIALS, credential({ provider: "cohere", name: "Cohere prod", is_default: true }));
     const { user, dialog } = await open();

@@ -278,8 +278,10 @@ function ModelCell({ row, message, provider }: { row: LogView; message: LogMessa
   );
 }
 
+const EMBEDDINGS_DIALECTS: readonly string[] = ["openai_embeddings", "gemini_embeddings"];
+
 export const isEmbedding = (row: Pick<LogView, "ingress_dialect" | "egress_dialect">) =>
-  row.ingress_dialect === "openai_embeddings" || row.egress_dialect === "openai_embeddings";
+  EMBEDDINGS_DIALECTS.includes(row.ingress_dialect) || (row.egress_dialect !== null && EMBEDDINGS_DIALECTS.includes(row.egress_dialect));
 
 export const cachedShare = (u: LogView["usage"]): number | null => {
   const input = inputTokens(u);

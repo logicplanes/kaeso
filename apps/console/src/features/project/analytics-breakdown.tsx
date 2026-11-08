@@ -195,6 +195,8 @@ const SHORT_DIALECTS: Record<string, string> = {
   openai_chat: "Chat",
   openai_responses: "Responses",
   openai_embeddings: "Embeddings",
+  gemini: "Gemini",
+  gemini_embeddings: "Gemini Embeddings",
 };
 const shortDialectLabel = (d: string) => SHORT_DIALECTS[d] ?? d;
 

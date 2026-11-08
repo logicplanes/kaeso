@@ -567,7 +567,7 @@ function ReplyTab({ e, Conversation }: { e: LogEntryView; Conversation: Conversa
   const [raw, setRaw] = useState(false);
   if (!e.content) return <NotLogged />;
   const reply = e.content.reply as unknown;
-  if (e.ingress_dialect === "openai_embeddings" || e.egress_dialect === "openai_embeddings") {
+  if (isEmbedding(e)) {
     return (
       <div className="mt-24">
         <Empty

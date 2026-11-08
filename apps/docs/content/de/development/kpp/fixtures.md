@@ -80,10 +80,10 @@ cargo xtask record openai_chat --all --dry-run
 cargo xtask record openai_responses --count --all
 ```
 
-Gemini-Fixtures werden bei Google AI Studio mit dem Schlüssel aus `GEMINI_API_KEY` aufgezeichnet. Eine Gemini-Anfrage nennt ihr Modell im Pfad, also übergeben Sie `--model` oder tragen das Modell in die `.meta.json` der Fixture ein:
+Gemini-Fixtures werden bei Google AI Studio, dem Anbieter `google`, mit dem Schlüssel aus `GOOGLE_API_KEY` aufgezeichnet. Eine Gemini-Anfrage nennt ihr Modell im Pfad, also übergeben Sie `--model` oder tragen das Modell in die `.meta.json` der Fixture ein:
 
 ```bash
-export GEMINI_API_KEY=…
+export GOOGLE_API_KEY=…
 cargo xtask record gemini --model gemini-3.5-flash text-simple stream-text
 cargo xtask record gemini_embeddings --model gemini-embedding-2 batch
 ```
@@ -110,7 +110,7 @@ cargo xtask record openai_chat --provider <id> --model <model> \
 
 - Es liest `requests/<name>.json`, für einen anderen Anbieter auch `providers/<id>/requests/<name>.json`, und, falls vorhanden, `<name>.headers.json`, dessen Header von der Allowlist (`anthropic-beta`, `anthropic-version`, `openai-beta`) mitgesendet werden. Anthropic-Anfragen tragen `anthropic-version: 2023-06-01`, außer diese Datei nennt eine andere Version.
 - Es schreibt eine 2xx-Antwort nach `responses/recorded-<name>.json`, mit `--count` nach `responses/count_tokens/` oder `responses/input_tokens/`. Eine Anfrage mit `"stream": true` oder eine Gemini-Anfrage an `streamGenerateContent` ergibt `streams/recorded-<name>.sse`, die rohen Bytes, wie empfangen. Ein Fehler ergibt `errors/recorded-<name>.json` (`.txt`, wenn der Body kein JSON ist) und `recorded-<name>.meta.json` mit dem Status und einem etwaigen `retry-after`. Jede Aufzeichnung fügt in `RECORDED.md` dieses Ordners eine Zeile mit dem Modell und der UTC-Zeit hinzu. `openai`, `anthropic` und `google` zeichnen in die Ordner des Dialekts auf, jeder andere Anbieter nach `providers/<id>/`. JSON-Bodies werden mit zwei Leerzeichen eingerückt und behalten die Schlüsselreihenfolge des Anbieters.
-- Der Schlüssel kommt aus `<ID>_API_KEY`, der ID des Anbieters in Großbuchstaben mit Unterstrichen statt Bindestrichen: `OPENAI_API_KEY`, `ANTHROPIC_API_KEY` und `FIREWORKS_AI_API_KEY` für einen Anbieter `fireworks-ai`. `<ID>_BASE_URL` ersetzt die Standard-Basis-URL des Anbieters, die auch das Gateway verwendet. Der Schlüssel kommt in den Auth-Header des Anbieters: `authorization: Bearer`, `x-api-key` oder `x-goog-api-key` für Google AI Studio, dessen Schlüssel und Basis-URL aus `GEMINI_API_KEY` und `GEMINI_BASE_URL` kommen.
+- Der Schlüssel kommt aus `<ID>_API_KEY`, der ID des Anbieters in Großbuchstaben mit Unterstrichen statt Bindestrichen: `OPENAI_API_KEY`, `ANTHROPIC_API_KEY` und `FIREWORKS_AI_API_KEY` für einen Anbieter `fireworks-ai`. `<ID>_BASE_URL` ersetzt die Standard-Basis-URL des Anbieters, die auch das Gateway verwendet. Der Schlüssel kommt in den Auth-Header des Anbieters: `authorization: Bearer`, `x-api-key` oder `x-goog-api-key` für Google AI Studio.
 - API-Schlüssel werden aus der Umgebung gelesen und nie geschrieben, und Anfrage-Header werden nie gespeichert.
 - Bevor etwas geschrieben wird, entfernt es den Query-String jeder URL, die Zugangsdaten einer Cloud-Signatur trägt: AWS Signature Version 4, signierte URLs von Google Cloud und Shared Access Signatures von Azure. Solche vorsignierten Links kann eine Websuche liefern. Alles andere bleibt Byte für Byte erhalten.
 

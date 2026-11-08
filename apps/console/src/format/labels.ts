@@ -32,6 +32,8 @@ export const DIALECTS: Record<string, string> = {
   openai_chat: "OpenAI Chat Completions",
   openai_responses: "OpenAI Responses",
   openai_embeddings: "OpenAI Embeddings",
+  gemini: "Gemini API",
+  gemini_embeddings: "Gemini Embeddings",
 };
 export const dialectLabel = (d: string) => DIALECTS[d] ?? d;
 

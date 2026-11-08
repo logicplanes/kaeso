@@ -21,7 +21,7 @@ Rules for the Rust workspace: the gateway, the updater and KPP. The root [`AGENT
 | `kaeso-kpp`       | KPP's types, `validate()` and `required_capabilities()`. No codec logic, no I/O. Published on crates.io.                                                                                  |
 | `kaeso-codecs`    | One sans-IO codec per dialect, plus `dispatch`, `cross`, `continuity`, `keepalive`, `sse` and `testing`; the fixtures in `crates/kaeso-codecs/fixtures`. Published on crates.io.          |
 | `kpp-conformance` | The server the SDK conformance suite in `e2e/conformance` runs against. Never published.                                                                                                  |
-| `xtask`           | `cargo xtask kpmr` refreshes the KPMR snapshot; `cargo xtask record` records live responses from any provider in `PROVIDERS`, and Gemini from Google AI Studio, with keys from the environment. Never runs in CI. |
+| `xtask`           | `cargo xtask kpmr` refreshes the KPMR snapshot; `cargo xtask record` records live responses from any provider in `PROVIDERS` with keys from the environment. Never runs in CI. |
 
 The request path, the crates and every design decision are in [gateway architecture](https://docs.kaeso.app/development/architecture/gateway) and [KPP internals](https://docs.kaeso.app/development/kpp).
 

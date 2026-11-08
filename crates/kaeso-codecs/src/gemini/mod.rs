@@ -1,5 +1,5 @@
 mod error;
-mod models;
+pub(crate) mod models;
 mod parts;
 mod path;
 mod request;

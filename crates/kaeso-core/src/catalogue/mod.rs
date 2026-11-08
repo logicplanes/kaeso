@@ -497,7 +497,7 @@ pub struct Effective {
 
 impl Effective {
     pub fn is_embeddings(&self) -> bool {
-        self.dialect == DialectId::OpenAiEmbeddings
+        EMBEDDINGS.contains(&self.dialect)
     }
 
     pub fn accepts(&self, modality: &str) -> bool {
@@ -515,6 +515,8 @@ impl Effective {
     }
 }
 
+const EMBEDDINGS: [DialectId; 2] = [DialectId::OpenAiEmbeddings, DialectId::GeminiEmbeddings];
+
 pub fn effective(
     entry: &Entry,
     snapshot: &kpmr::Catalogue,
@@ -529,9 +531,17 @@ pub fn effective(
             .or(entry.last_known.as_ref())
             .map(Fields::from_kpmr)
             .unwrap_or_default();
-        upstream.egress_dialect = upstream
-            .egress_dialect
-            .filter(|d| provider.dialects().contains(d));
+        // KPMR names OpenAI's embeddings format for every embeddings model; a provider with
+        // embeddings in another format gets them in its own.
+        upstream.egress_dialect = upstream.egress_dialect.and_then(|d| {
+            if provider.dialects().contains(&d) {
+                Some(d)
+            } else if EMBEDDINGS.contains(&d) {
+                provider.embeddings()
+            } else {
+                None
+            }
+        });
         // A negotiated input price keeps its one-hour write at twice that price, not KPMR's list price.
         if entry.overrides.input_price.is_some() {
             upstream.cache_write_1h_price = None;

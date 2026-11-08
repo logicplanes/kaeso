@@ -242,6 +242,14 @@ An OpenAI Embeddings request goes as `batchEmbedContents` with `model: "models/<
 
 `dispatch::encode_models_request_with` and `encode_model_request_with` use the models path of `EgressCtx::gemini_profile`. A listing request sends `limit` as `pageSize` and `after_id` as `pageToken`; `before_id`, a lifecycle filter and other query parameters are `Unsupported`.
 
+`dispatch::next_models_query(dialect, query, page)` gives the query for the page after a decoded one, or `None` after the last: for Gemini the `nextPageToken` the page gave, for the other dialects the page's last id. The gateway pages through Google's listing with it when a model check needs the whole list.
+
+## Providers that use this format
+
+| Provider | Profile | Key |
+|---|---|---|
+| Google AI Studio (`google`) | `GeminiProfile::GOOGLE_AI_STUDIO`, which the gateway hands to the encoder with `EgressCtx::with_gemini_profile` for every request, model check and listing | `x-goog-api-key` (`AuthStyle::XGoogApiKey`), never in the URL |
+
 ## Round trips
 
 Every fixture decodes and encodes to an equal JSON value: requests with their path, replies, token counts, embeddings, model listings and errors. Every stream fixture decodes to the same events under every chunking and replays chunk for chunk. Recordings have no exceptions.

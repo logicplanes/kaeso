@@ -4,6 +4,7 @@ use std::str::FromStr;
 use std::sync::LazyLock;
 
 use kaeso_codecs::anthropic_messages::{FixedValue, MessagesProfile};
+use kaeso_codecs::gemini::GeminiProfile;
 use kaeso_codecs::openai_chat::ChatProfile;
 use kaeso_codecs::openai_responses::ResponsesProfile;
 use kaeso_codecs::{ToolPatterns, ToolSchemaRoot};
@@ -132,6 +133,24 @@ impl utoipa::ToSchema for ProviderId {}
 pub enum AuthStyle {
     Bearer,
     XApiKey,
+    XGoogApiKey,
+}
+
+impl AuthStyle {
+    pub const fn header_name(self) -> &'static str {
+        match self {
+            AuthStyle::Bearer => "authorization",
+            AuthStyle::XApiKey => "x-api-key",
+            AuthStyle::XGoogApiKey => "x-goog-api-key",
+        }
+    }
+
+    pub fn header_value(self, key: &str) -> String {
+        match self {
+            AuthStyle::Bearer => format!("Bearer {key}"),
+            AuthStyle::XApiKey | AuthStyle::XGoogApiKey => key.to_owned(),
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -175,7 +194,7 @@ pub struct AccountSignIn {
     pub experimental: bool,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Provider {
     pub id: &'static str,
     pub name: &'static str,
@@ -194,6 +213,7 @@ pub struct Provider {
     pub chat: ChatProfile,
     pub responses: ResponsesProfile,
     pub messages: MessagesProfile,
+    pub gemini: GeminiProfile,
     pub account: Option<AccountSignIn>,
 }
 
@@ -224,6 +244,7 @@ pub const PROVIDERS: &[Provider] = &[
         chat: ChatProfile::OPENAI,
         responses: ResponsesProfile::OPENAI,
         messages: MessagesProfile::compatible("OpenAI"),
+        gemini: GeminiProfile::GOOGLE_AI_STUDIO,
         account: Some(AccountSignIn {
             method: AuthMethod::ChatGpt,
             product: "ChatGPT",
@@ -252,6 +273,7 @@ pub const PROVIDERS: &[Provider] = &[
         chat: ChatProfile::compatible("Anthropic"),
         responses: ResponsesProfile::compatible("Anthropic"),
         messages: MessagesProfile::ANTHROPIC,
+        gemini: GeminiProfile::GOOGLE_AI_STUDIO,
         account: None,
     },
     Provider {
@@ -280,6 +302,7 @@ pub const PROVIDERS: &[Provider] = &[
             .tool_patterns(ToolPatterns::Compiled),
         responses: ResponsesProfile::compatible("DeepSeek"),
         messages: MessagesProfile::compatible("DeepSeek"),
+        gemini: GeminiProfile::GOOGLE_AI_STUDIO,
         account: None,
     },
     Provider {
@@ -311,6 +334,7 @@ pub const PROVIDERS: &[Provider] = &[
             .without_openai_encrypted_reasoning()
             .tool_schema_root(ToolSchemaRoot::ObjectUnions),
         messages: MessagesProfile::compatible("SpaceX"),
+        gemini: GeminiProfile::GOOGLE_AI_STUDIO,
         account: Some(AccountSignIn {
             method: AuthMethod::Grok,
             product: "Grok",
@@ -340,6 +364,7 @@ pub const PROVIDERS: &[Provider] = &[
             .reasoning_fields(&["reasoning_content", "reasoning"]),
         responses: ResponsesProfile::compatible("Together AI"),
         messages: MessagesProfile::compatible("Together AI"),
+        gemini: GeminiProfile::GOOGLE_AI_STUDIO,
         account: None,
     },
     Provider {
@@ -369,6 +394,7 @@ pub const PROVIDERS: &[Provider] = &[
             .refusing_in_messages(&["name", "refusal"]),
         responses: ResponsesProfile::compatible("Groq"),
         messages: MessagesProfile::compatible("Groq"),
+        gemini: GeminiProfile::GOOGLE_AI_STUDIO,
         account: None,
     },
     Provider {
@@ -394,6 +420,7 @@ pub const PROVIDERS: &[Provider] = &[
             .error_detail(&["error", "metadata", "raw"]),
         responses: ResponsesProfile::compatible("OpenRouter"),
         messages: MessagesProfile::compatible("OpenRouter"),
+        gemini: GeminiProfile::GOOGLE_AI_STUDIO,
         account: None,
     },
     Provider {
@@ -438,6 +465,7 @@ pub const PROVIDERS: &[Provider] = &[
             .refusing_in_messages(&["name", "refusal"]),
         responses: ResponsesProfile::compatible("Mistral"),
         messages: MessagesProfile::compatible("Mistral"),
+        gemini: GeminiProfile::GOOGLE_AI_STUDIO,
         account: None,
     },
     Provider {
@@ -466,6 +494,7 @@ pub const PROVIDERS: &[Provider] = &[
         chat: ChatProfile::compatible("Vercel").reasoning_fields(&["reasoning"]),
         responses: ResponsesProfile::compatible("Vercel"),
         messages: MessagesProfile::compatible("Vercel"),
+        gemini: GeminiProfile::GOOGLE_AI_STUDIO,
         account: None,
     },
     Provider {
@@ -506,6 +535,7 @@ pub const PROVIDERS: &[Provider] = &[
             ]),
         responses: ResponsesProfile::compatible("Cohere"),
         messages: MessagesProfile::compatible("Cohere"),
+        gemini: GeminiProfile::GOOGLE_AI_STUDIO,
         account: None,
     },
     Provider {
@@ -532,6 +562,7 @@ pub const PROVIDERS: &[Provider] = &[
             .refusing(&["logit_bias", "logprobs", "top_logprobs"]),
         responses: ResponsesProfile::compatible("Ollama Cloud"),
         messages: MessagesProfile::compatible("Ollama Cloud"),
+        gemini: GeminiProfile::GOOGLE_AI_STUDIO,
         account: None,
     },
     Provider {
@@ -568,6 +599,7 @@ pub const PROVIDERS: &[Provider] = &[
             ]),
         responses: ResponsesProfile::compatible("Moonshot"),
         messages: MessagesProfile::compatible("Moonshot"),
+        gemini: GeminiProfile::GOOGLE_AI_STUDIO,
         account: None,
     },
     Provider {
@@ -605,6 +637,7 @@ pub const PROVIDERS: &[Provider] = &[
             ]),
         responses: ResponsesProfile::compatible("QwenCloud"),
         messages: MessagesProfile::compatible("QwenCloud"),
+        gemini: GeminiProfile::GOOGLE_AI_STUDIO,
         account: None,
     },
     Provider {
@@ -636,6 +669,7 @@ pub const PROVIDERS: &[Provider] = &[
             .refusing_in_messages(&["refusal"]),
         responses: ResponsesProfile::compatible("Cerebras"),
         messages: MessagesProfile::compatible("Cerebras"),
+        gemini: GeminiProfile::GOOGLE_AI_STUDIO,
         account: None,
     },
     Provider {
@@ -659,6 +693,7 @@ pub const PROVIDERS: &[Provider] = &[
         chat: ChatProfile::compatible("Z.ai"),
         responses: ResponsesProfile::compatible("Z.ai"),
         messages: MessagesProfile::compatible("Z.ai"),
+        gemini: GeminiProfile::GOOGLE_AI_STUDIO,
         account: None,
     },
     Provider {
@@ -696,6 +731,32 @@ pub const PROVIDERS: &[Provider] = &[
                 ("top_p", FixedValue::thousandths(950)),
             ])
             .auto_tool_choice_only(),
+        gemini: GeminiProfile::GOOGLE_AI_STUDIO,
+        account: None,
+    },
+    Provider {
+        id: "google",
+        name: "Google AI Studio",
+        key_page: KeyPage {
+            url: "https://aistudio.google.com/apikey",
+            label: "API keys",
+        },
+        // AI Studio issues keys starting `AIza` and keys starting `AQ.`, so no one prefix fits.
+        key_prefix: None,
+        default_base_url: "https://generativelanguage.googleapis.com",
+        auth: AuthStyle::XGoogApiKey,
+        generation: DialectId::Gemini,
+        count_tokens: Some(DialectId::Gemini),
+        embeddings: Some(DialectId::GeminiEmbeddings),
+        dialects: &[DialectId::Gemini, DialectId::GeminiEmbeddings],
+        refused_key_messages: &[],
+        context_window_messages: &[],
+        reasoning_beyond_output_limit: false,
+        end_user_limit: None,
+        chat: ChatProfile::compatible("Google AI Studio"),
+        responses: ResponsesProfile::compatible("Google AI Studio"),
+        messages: MessagesProfile::compatible("Google AI Studio"),
+        gemini: GeminiProfile::GOOGLE_AI_STUDIO,
         account: None,
     },
 ];
@@ -987,7 +1048,7 @@ mod tests {
         assert!(provider("gemini").is_none());
         assert_eq!(
             ids(),
-            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras, zai, minimax"
+            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras, zai, minimax, google"
         );
     }
 
@@ -1005,6 +1066,53 @@ mod tests {
         assert_eq!(zai.default_base_url, "https://api.z.ai/api/anthropic");
         assert_eq!((zai.count_tokens, zai.embeddings), (None, None));
         assert_eq!(zai.key_prefix, None);
+    }
+
+    #[test]
+    fn google_takes_its_key_as_x_goog_api_key_and_speaks_gemini_for_generation_counts_and_embeddings()
+     {
+        let google = provider("google").unwrap();
+        assert_eq!(
+            (google.name, google.auth, google.generation, google.dialects),
+            (
+                "Google AI Studio",
+                AuthStyle::XGoogApiKey,
+                DialectId::Gemini,
+                &[DialectId::Gemini, DialectId::GeminiEmbeddings][..]
+            )
+        );
+        assert_eq!(
+            (google.count_tokens, google.embeddings),
+            (Some(DialectId::Gemini), Some(DialectId::GeminiEmbeddings))
+        );
+        assert_eq!(
+            google.default_base_url,
+            "https://generativelanguage.googleapis.com"
+        );
+        assert_eq!(google.key_page.url, "https://aistudio.google.com/apikey");
+        assert_eq!(google.key_prefix, None);
+        assert_eq!(google.gemini, GeminiProfile::GOOGLE_AI_STUDIO);
+        for key in ["AIzaSyA0bCdEf1234567", "AQ.Xq0TestAbCdEf1234"] {
+            let redacted = crate::secret::redact_tokens(&format!("API key {key} not valid."));
+            assert!(!redacted.contains(&key[4..]), "{redacted}");
+        }
+    }
+
+    #[test]
+    fn each_auth_style_names_its_header_and_carries_the_key() {
+        assert_eq!(
+            [
+                AuthStyle::Bearer,
+                AuthStyle::XApiKey,
+                AuthStyle::XGoogApiKey
+            ]
+            .map(|s| (s.header_name(), s.header_value("k-1"))),
+            [
+                ("authorization", "Bearer k-1".to_owned()),
+                ("x-api-key", "k-1".to_owned()),
+                ("x-goog-api-key", "k-1".to_owned()),
+            ]
+        );
     }
 
     #[test]
@@ -1639,7 +1747,8 @@ mod tests {
                 "alibaba",
                 "cerebras",
                 "zai",
-                "minimax"
+                "minimax",
+                "google"
             ]
         );
         assert_eq!(
