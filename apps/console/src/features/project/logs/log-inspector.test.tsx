@@ -234,6 +234,29 @@ describe("LogInspector", () => {
     expect(section(await sheet(), "Route")).toHaveTextContent("of audio sent");
   });
 
+  it("shows the length of speech and sound a provider made", async () => {
+    signedIn();
+    projectData();
+    logsData({
+      rows: [logRow()],
+      entries: [logEntry({ endpoint: "audio/speech", media: { unit: "character", input: 42, output: 2500, detail: "mp3" } })],
+    });
+    await renderApp(projectPath("logs?log=req_0001"));
+    expect(section(await sheet(), "Route")).toHaveTextContent(/Speech42 characters · .+ made/);
+  });
+
+  it("shows the length of a made sound without characters", async () => {
+    signedIn();
+    projectData();
+    logsData({
+      rows: [logRow()],
+      entries: [logEntry({ endpoint: "sound-generation", media: { unit: "millisecond", input: 0, output: 5000, detail: "mp3" } })],
+    });
+    await renderApp(projectPath("logs?log=req_0001"));
+    expect(section(await sheet(), "Route")).toHaveTextContent(/Audio.+ mademp3/);
+    expect(section(await sheet(), "Route")).not.toHaveTextContent("of audio sent");
+  });
+
   it("names the alias and the steps its route tried before the model that answered", async () => {
     signedIn();
     projectData();
