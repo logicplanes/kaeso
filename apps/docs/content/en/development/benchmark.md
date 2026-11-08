@@ -68,7 +68,7 @@ Each scenario starts with a fresh gateway:
 
 | Scenario | What happens |
 | --- | --- |
-| Baseline | The clients send non-streamed requests as fast as the gateway answers them |
+| Baseline | The clients send non-streamed requests as fast as the gateway answers them, then the same requests to the mock provider alone |
 | Concurrent streams | The clients open each stream count, read every chunk, and close. The same streams also run against the mock provider alone, without Kaeso |
 | Cancellation | A share of the streams disconnects at a point between a fifth and four fifths of the stream. Their mock streams never end on their own, so each disconnect has a provider request to close. The others read to the end |
 | Slow clients | A share of the clients reads the first chunk and then stops, on a small receive buffer, while the mock writes a 4 KiB text delta every millisecond without end. They use a second project that logs no content, so the gateway's memory shows what it buffers for them, not the reply it keeps for the log. The others read normally |
@@ -82,6 +82,7 @@ Every time comes as percentiles over all requests or chunks of a run:
 | --- | --- |
 | Requests/s | Non-streamed requests the gateway answered per second, the mock's time included |
 | Overhead | Kaeso's own time before it called the provider, from the `kaeso` entry of the [`server-timing` header](../api/model-api.md#response-headers). It starts when the request reaches Kaeso's handler and leaves out the time the client took to send the body |
+| Added latency | A percentile of the client's time for a non-streamed request through Kaeso, minus the same percentile for the same requests over as many connections to the mock alone. It is what calling a provider through Kaeso adds, the extra connection included |
 | Latency | The client's time for a whole non-streamed request |
 | Gateway CPU per request | The CPU time, user and system, the gateway process used during the baseline divided by its requests, its background work included. It is what each request costs the machine that runs Kaeso, without the clients and the mock |
 | Added time to first byte | The client's time to the first chunk minus the provider's time to answer, the `upstream` entry of `server-timing`. It holds the overhead, Kaeso's work on the first chunk and the extra connection |
