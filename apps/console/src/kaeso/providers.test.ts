@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { providers } from "~/test/fixtures";
 import { credential } from "~/test/fixtures/shell";
-import { providerCatalog, providerOptions } from "./providers";
+import { providerCatalog, providerOptions, routedDialect } from "./providers";
 
 const catalog = providerCatalog(providers);
 
@@ -41,5 +41,28 @@ describe("the provider catalog", () => {
     expect(providerOptions(catalog, keys, ["acme"])).toEqual([{ id: "acme", name: "acme", connected: true, hint: "1 key" }]);
     expect(providerOptions(catalog, keys, ["groq"])).toEqual([{ id: "groq", name: "Groq" }]);
     expect(providerOptions(providerCatalog([]), [])).toEqual([]);
+  });
+});
+
+describe("routedDialect", () => {
+  const platform = providers.find((p) => p.id === "gemini-agent-platform");
+
+  it("sends a model id in the format of the provider's first matching pattern", () => {
+    expect(routedDialect(platform, "claude-opus-5-5@default")).toBe("anthropic_messages");
+    expect(routedDialect(platform, "meta/llama-4-maverick-17b-128e-instruct-maas")).toBe("openai_chat");
+    expect(routedDialect(platform, "gemini-3.5-flash")).toBeUndefined();
+    expect(
+      routedDialect(
+        providers.find((p) => p.id === "openai"),
+        "claude-x",
+      ),
+    ).toBeUndefined();
+    expect(routedDialect(undefined, "claude-x")).toBeUndefined();
+    const only = (pattern: string) => (platform ? { ...platform, model_routes: [{ pattern, dialect: "openai_chat" }] } : undefined);
+    expect(routedDialect(only("exact"), "exact")).toBe("openai_chat");
+    expect(routedDialect(only("exact"), "exactly")).toBeUndefined();
+    expect(routedDialect(only("a*b*c"), "aXbYc")).toBe("openai_chat");
+    expect(routedDialect(only("a*b*c"), "aXcYd")).toBeUndefined();
+    expect(routedDialect(only("ab*ba"), "aba")).toBeUndefined();
   });
 });

@@ -33,6 +33,11 @@ pub const ANTHROPIC_VERSION: &str = "2023-06-01";
 
 pub const MESSAGES_PATH: &str = "/v1/messages";
 
+/// The `anthropic_version` that a [`MessagesProfile::raw_predict`] request carries in its
+/// body, the value the platform documents for the Messages API Kaeso speaks
+/// (`anthropic-version` `2023-06-01`).
+pub const RAW_PREDICT_VERSION: &str = "vertex-2023-10-16";
+
 pub const COUNT_TOKENS_PATH: &str = "/v1/messages/count_tokens";
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]

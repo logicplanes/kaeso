@@ -169,6 +169,13 @@ pub struct EgressCtx {
     /// carries, set by encoders whose providers cache only what a request marks
     /// (Anthropic Messages); `None` for the other dialects.
     pub cache_breakpoints: Option<usize>,
+    /// Where a provider that names the project and location in its paths serves the
+    /// dialect, instead of its usual `/v1/…` path: the publisher's models for Anthropic
+    /// Messages with [`MessagesProfile::raw_predict`], such as
+    /// `/v1/projects/{project}/locations/{location}/publishers/anthropic/models`, or the
+    /// directory of `chat/completions` for OpenAI Chat Completions, such as
+    /// `/v1/projects/{project}/locations/{location}/endpoints/openapi`.
+    pub base_path: Option<String>,
 }
 
 impl EgressCtx {
@@ -194,6 +201,7 @@ impl EgressCtx {
             left_out: Vec::new(),
             adapted: Vec::new(),
             cache_breakpoints: None,
+            base_path: None,
         }
     }
 
@@ -250,6 +258,15 @@ impl EgressCtx {
     #[must_use]
     pub fn with_messages_profile(mut self, profile: MessagesProfile) -> Self {
         self.messages_profile = profile;
+        self
+    }
+
+    /// Sends the dialect's requests under `path` instead of its usual `/v1/…` path
+    /// ([`EgressCtx::base_path`]); a trailing slash is ignored.
+    #[must_use]
+    pub fn with_base_path(mut self, path: impl Into<String>) -> Self {
+        let path: String = path.into();
+        self.base_path = Some(path.trim_end_matches('/').to_owned());
         self
     }
 

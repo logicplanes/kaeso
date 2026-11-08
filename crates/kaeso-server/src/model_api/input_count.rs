@@ -76,7 +76,7 @@ impl InputCounter {
         let req = Request::CountTokens(sent);
         let mut ctx = super::pipeline::egress_ctx(&app_req, &self.provider, self.flags);
         if let Some(p) = &self.platform {
-            ctx = ctx.with_gemini_profile(p.gemini.clone());
+            ctx = p.apply(ctx);
         }
         let encoded = dispatch::encode_request(self.dialect, &req, &mut ctx)?;
         let base = match &self.platform {

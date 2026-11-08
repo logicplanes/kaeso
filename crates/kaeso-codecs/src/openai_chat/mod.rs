@@ -157,11 +157,11 @@ impl Codec for OpenAiChat {
                 }
             }
         }
-        Ok(EncodedRequest::post_json(
-            CHAT_COMPLETIONS_PATH,
-            headers,
-            body,
-        ))
+        let path = match &ctx.base_path {
+            Some(base) => format!("{base}/chat/completions"),
+            None => CHAT_COMPLETIONS_PATH.to_owned(),
+        };
+        Ok(EncodedRequest::post_json(path, headers, body))
     }
 
     fn decode_response(

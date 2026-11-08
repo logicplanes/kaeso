@@ -53,7 +53,7 @@ order: 5
 | 输入、输出 | 输入：文本、图片、PDF、音频和视频。输出：文本、图片、音频和嵌入 |
 | 上下文、输出上限 | 模型的 Token 限制 |
 | 输入、输出、缓存读取、缓存写入和 1 小时缓存写入价格 | 每百万 Token 的美元价格。用量和预算按请求发生时的价格计算。缓存写入价格是 5 分钟的价格。写入 Anthropic 1 小时缓存按 1 小时缓存写入价格计费，KPMR 在服务商有公开说明时设置该价格，例如 Anthropic 模型为输入价格的两倍。没有该价格，或者您覆盖了输入价格时，按输入价格的两倍计费 |
-| 发送格式 | Kaeso 调用该模型所用的 API 格式：Anthropic Messages、OpenAI Chat Completions、OpenAI Responses 或 OpenAI Embeddings |
+| 发送格式 | Kaeso 调用该模型所用的 API 格式：Anthropic Messages、OpenAI Chat Completions、OpenAI Responses、OpenAI Embeddings、Gemini API 或 Gemini Embeddings。对于 Gemini Enterprise Agent Platform，新的自定义模型以其所属系列的格式开始（[支持的服务商](../concepts/supported-providers.md#补充说明)） |
 | 工具调用、推理、结构化输出 | 模型支持的能力 |
 | 温度 | 模型是否接受 `temperature` |
 | 强制工具选择 | 模型是否接受将 `tool_choice` 设为 `required`、`any` 或指定工具。对于不支持的模型，Kaeso 会在调用服务商之前拒绝此类请求 |

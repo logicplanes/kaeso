@@ -344,6 +344,7 @@ Schema `ErrorResponse`。解码错误（无论是请求还是服务商的响应�
 | `refusing(fields)` | 拒绝设置了这些字段之一的请求，字段使用 Anthropic 中的名称：`top_k`、`stop_sequences`（按应用的写法命名，例如 Chat 应用的 `stop`），或 Anthropic 应用的某个顶层字段，例如 `container`：`` `top_k` is not supported by Example Cloud; remove it from the request. `` 在跨格式时可以省略的字段，例如 Claude Code 只清除思考内容的 `context_management`（[extras](cross-format.md#extras)），会被省略并在 `kaeso-left-out` 中注明；它的其他取值会被拒绝，并附上针对 Claude Code 的提示。 | 这些字段是语义字段，接受却不处理它们的服务商会悄悄丢弃它们。 |
 | `sampling_fixed_at(values)` | 拒绝与服务商始终使用的采样值（`FixedValue`，以千分之一为单位）不同的 `temperature` 或 `top_p`；该值本身按原样发送。 | 服务商忽略该字段，因此只有它自己的值会被遵守。 |
 | `auto_tool_choice_only()` | 拒绝任何格式中不为 `auto` 的 `tool_choice`。 | 无论应用要求什么，服务商都会自己选择工具。 |
+| `raw_predict()` | 将生成请求发送到 `{base_path}/{model}:rawPredict`（流式时为 `:streamRawPredict`），不含 `model`；将 Token 计数发送到 `{base_path}/count-tokens:rawPredict`，保留 `model`；两者都带上 `anthropic_version` `vertex-2023-10-16`，除非应用自己发送了。Google 格式的错误按 Gemini 错误读取。 | Google 平台提供 Claude 的方式（[使用 Claude](https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/partner-models/claude/use-claude)、[计算 Token](https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/partner-models/claude/count-tokens)、Anthropic 的 SDK）。Gemini Enterprise Agent Platform 使用它，并拒绝 [Anthropic 列为](https://platform.claude.com/docs/en/build-with-claude/claude-models-on-google-cloud/google-managed)不可用的 `mcp_servers` 和 `container`。 |
 
 拒绝发生在为目标调整请求时、编码之前，因此不会发送任何内容，拒绝以应用自己的格式送达。
 

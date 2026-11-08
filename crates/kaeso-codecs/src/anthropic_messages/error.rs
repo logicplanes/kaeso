@@ -78,6 +78,14 @@ fn wire_for_kind(kind: &ErrorKind) -> (u16, &'static str) {
 }
 
 pub(crate) fn decode_error(status: u16, headers: &HeaderList, body: &[u8]) -> KppError {
+    if crate::gemini::is_google_error(body) {
+        return crate::gemini::decode_error_value(
+            status,
+            headers,
+            body,
+            kaeso_kpp::DialectId::Gemini,
+        );
+    }
     let mut err = decode_body(body, Some(status));
     err.status = Some(status);
     err.retry_after = parse_retry_after(headers);

@@ -1911,3 +1911,46 @@ fn agent_platform_models_speak_gemini_and_its_embeddings_models_are_refused() {
             .contains("embeddings model")
     );
 }
+
+#[test]
+fn agent_platform_models_go_in_the_format_of_their_family_and_count_where_it_counts() {
+    let claude = eff(&entry("gemini-agent-platform", "claude-opus-4-5@20251101"));
+    assert_eq!(claude.dialect, DialectId::AnthropicMessages);
+    let llama = eff(&entry(
+        "gemini-agent-platform",
+        "meta/llama-4-maverick-17b-128e-instruct-maas",
+    ));
+    assert_eq!(llama.dialect, DialectId::OpenAiChat);
+    assert_eq!(
+        eff(&entry("gemini-agent-platform", "gemini-3.5-flash")).dialect,
+        DialectId::Gemini
+    );
+    let p = &claude.provider;
+    assert_eq!(
+        p.count_tokens_for(DialectId::AnthropicMessages),
+        Some(DialectId::AnthropicMessages)
+    );
+    assert_eq!(p.count_tokens_for(DialectId::OpenAiChat), None);
+    assert_eq!(
+        p.count_tokens_for(DialectId::Gemini),
+        Some(DialectId::Gemini)
+    );
+    let mut count = Request::CountTokens(GenerateRequest::new("meta/llama"));
+    assert!(prepare(&mut count, DialectId::AnthropicMessages, &llama).is_err());
+    let mut count = Request::CountTokens(GenerateRequest::new("claude-opus-4-5@20251101"));
+    assert_eq!(
+        prepare(&mut count, DialectId::AnthropicMessages, &claude)
+            .unwrap()
+            .dialect,
+        DialectId::AnthropicMessages
+    );
+    let mut sent_as = entry("gemini-agent-platform", "claude-opus-4-5@20251101");
+    sent_as.overrides.egress_dialect = Some(DialectId::OpenAiChat);
+    assert_eq!(eff(&sent_as).dialect, DialectId::OpenAiChat);
+    let openai = eff(&entry("openai", "gpt-4o"));
+    assert_eq!(
+        openai.provider.count_tokens_for(DialectId::OpenAiChat),
+        Some(DialectId::OpenAiResponses),
+        "a provider without routes counts in its one format"
+    );
+}

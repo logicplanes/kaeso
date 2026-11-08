@@ -1,8 +1,9 @@
+use kaeso_codecs::EgressCtx;
 use kaeso_codecs::gemini::GeminiProfile;
 use kaeso_core::google::{self, AGENT_PLATFORM, EXPRESS_MODELS_PATH};
 use kaeso_core::provider::{AuthMethod, AuthStyle};
 use kaeso_core::providers::ProviderRef;
-use kaeso_kpp::{ErrorKind, KppError};
+use kaeso_kpp::{DialectId, ErrorKind, KppError};
 use secrecy::SecretString;
 use url::Url;
 
@@ -17,6 +18,26 @@ pub struct Egress {
     pub auth: AuthStyle,
     pub secret: SecretString,
     pub gemini: GeminiProfile,
+    pub base_path: Option<String>,
+}
+
+impl Egress {
+    pub fn apply(&self, ctx: EgressCtx) -> EgressCtx {
+        let ctx = ctx.with_gemini_profile(self.gemini.clone());
+        match &self.base_path {
+            Some(path) => ctx.with_base_path(path.clone()),
+            None => ctx,
+        }
+    }
+}
+
+// Mistral serves its models on the platform through `rawPredict` in Mistral's own format, a
+// path Kaeso doesn't build yet
+// (https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/partner-models/mistral).
+const UNSERVED: &[&str] = &["mistral-", "codestral-"];
+
+fn refused(message: String) -> EgressError {
+    EgressError::Refused(error(ErrorKind::InvalidRequest, 400, message).with_param("model"))
 }
 
 impl std::fmt::Debug for Egress {
@@ -33,13 +54,11 @@ pub fn is_agent_platform(provider: &ProviderRef) -> bool {
 
 const KEY_REFUSED: &str = "The provider refused this project's provider key. Ask an organization admin to check it under Providers.";
 
-// A base URL the operator set (such as a Private Service Connect endpoint) serves every
-// location as it is; otherwise each location has its own host (the platform's
-// "Deployments and endpoints" page).
 #[derive(Debug)]
 pub enum EgressError {
     Token(TokenError),
     Setup(KppError),
+    Refused(KppError),
 }
 
 impl EgressError {
@@ -61,11 +80,14 @@ impl EgressError {
     pub fn into_kpp(self) -> KppError {
         match self {
             EgressError::Token(e) => token_error(&e),
-            EgressError::Setup(e) => e,
+            EgressError::Setup(e) | EgressError::Refused(e) => e,
         }
     }
 }
 
+// A base URL the operator set (such as a Private Service Connect endpoint) serves every
+// location as it is; otherwise each location has its own host (the platform's
+// "Deployments and endpoints" page).
 fn base(state: &AppState, provider: &ProviderRef, location: &str) -> Result<Url, EgressError> {
     let configured = crate::model_api::pipeline::base_url(state, provider);
     let default = provider.built_in().map(|p| p.default_base_url);
@@ -85,38 +107,59 @@ pub async fn egress(
     state: &AppState,
     provider: &ProviderRef,
     credential: &Resolved,
+    dialect: DialectId,
+    model: &str,
 ) -> Result<Option<Egress>, EgressError> {
     if !is_agent_platform(provider) || credential.is_keyless() {
         return Ok(None);
     }
+    if UNSERVED.iter().any(|prefix| model.starts_with(prefix)) {
+        return Err(refused(format!(
+            "Kaeso doesn't call Mistral models on {}; use the Mistral provider for `{model}`.",
+            provider.name()
+        )));
+    }
     let gemini = provider.gemini().with_role_on_every_content(true);
-    match (credential.method, credential.google.as_deref()) {
-        (AuthMethod::GoogleServiceAccount, Some(account)) => {
-            let project = account.key.project_id();
-            let location = account.location.as_str();
-            let token = google_auth::access_token(
-                state,
-                credential.id.uuid(),
-                credential.revision,
-                account,
-            )
-            .await
-            .map_err(EgressError::Token)?;
-            Ok(Some(Egress {
-                base: base(state, provider, location)?,
-                auth: AuthStyle::Bearer,
-                secret: token,
-                gemini: gemini
-                    .with_models_path(google::publisher_path(project, location, "google")),
-            }))
+    let Some(account) = credential
+        .google
+        .as_deref()
+        .filter(|_| credential.method == AuthMethod::GoogleServiceAccount)
+    else {
+        // Express mode serves only Google's Gemini models
+        // (https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/start/express-mode/overview).
+        if dialect != DialectId::Gemini {
+            return Err(refused(format!(
+                "`{model}` needs a service account key; express mode API keys reach Gemini models only."
+            )));
         }
-        _ => Ok(Some(Egress {
+        return Ok(Some(Egress {
             base: base(state, provider, google::GLOBAL)?,
             auth: AuthStyle::XGoogApiKey,
             secret: credential.secret.clone(),
             gemini: gemini.with_models_path(EXPRESS_MODELS_PATH),
-        })),
-    }
+            base_path: None,
+        }));
+    };
+    let project = account.key.project_id();
+    let location = account.location.as_str();
+    let base_path = match dialect {
+        DialectId::AnthropicMessages => {
+            Some(google::publisher_path(project, location, "anthropic"))
+        }
+        DialectId::OpenAiChat => Some(google::openapi_path(project, location)),
+        _ => None,
+    };
+    let token =
+        google_auth::access_token(state, credential.id.uuid(), credential.revision, account)
+            .await
+            .map_err(EgressError::Token)?;
+    Ok(Some(Egress {
+        base: base(state, provider, location)?,
+        auth: AuthStyle::Bearer,
+        secret: token,
+        gemini: gemini.with_models_path(google::publisher_path(project, location, "google")),
+        base_path,
+    }))
 }
 
 pub fn token_error(e: &TokenError) -> KppError {
@@ -161,15 +204,19 @@ pub async fn probe(
     eff: &kaeso_core::catalogue::Effective,
 ) -> crate::services::availability::Probe {
     use crate::services::availability::Probe;
-    use kaeso_codecs::{EgressCtx, dispatch};
+    use kaeso_codecs::dispatch;
     use kaeso_kpp::{GenerateRequest, Message, Request};
 
-    let Some(dialect) = eff.provider.count_tokens().filter(|d| *d == eff.dialect) else {
+    let Some(dialect) = eff
+        .provider
+        .count_tokens_for(eff.dialect)
+        .filter(|d| *d == eff.dialect)
+    else {
         return Probe::Inconclusive(KppError::provider(
             "the provider counts no tokens for this model's format",
         ));
     };
-    let egress = match egress(state, &eff.provider, credential).await {
+    let egress = match egress(state, &eff.provider, credential, dialect, &eff.model_id).await {
         Ok(Some(e)) => e,
         Ok(None) => return Probe::Inconclusive(KppError::provider("not an agent platform key")),
         Err(e) if e.refuses_key() => {
@@ -182,9 +229,11 @@ pub async fn probe(
     let mut asked = GenerateRequest::new(eff.model_id.clone());
     asked.messages.push(Message::user("hi"));
     let req = Request::CountTokens(asked);
-    let mut ctx = EgressCtx::new(&req)
-        .with_provider(eff.provider.id())
-        .with_gemini_profile(egress.gemini.clone());
+    let mut ctx = egress.apply(
+        EgressCtx::new(&req)
+            .with_provider(eff.provider.id())
+            .with_messages_profile(eff.provider.messages()),
+    );
     let encoded = match dispatch::encode_request(dialect, &req, &mut ctx) {
         Ok(e) => e,
         Err(e) => return Probe::Failed(e),

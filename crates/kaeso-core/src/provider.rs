@@ -201,6 +201,7 @@ impl AuthMethod {
 pub struct ModelRoute {
     pub pattern: &'static str,
     pub dialect: DialectId,
+    pub counts_tokens: bool,
 }
 
 impl ModelRoute {
@@ -898,17 +899,55 @@ pub const PROVIDERS: &[Provider] = &[
         generation: DialectId::Gemini,
         count_tokens: Some(DialectId::Gemini),
         embeddings: None,
-        dialects: &[DialectId::Gemini],
+        dialects: &[
+            DialectId::Gemini,
+            DialectId::AnthropicMessages,
+            DialectId::OpenAiChat,
+        ],
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
         end_user_limit: None,
-        chat: ChatProfile::compatible("Gemini Enterprise Agent Platform"),
+        // The models-as-a-service endpoint ignores fields it doesn't list
+        // (https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/migrate/openai/overview).
+        chat: ChatProfile::compatible("Gemini Enterprise Agent Platform")
+            .max_tokens()
+            .system_role()
+            .without_end_user()
+            .reasoning_fields(&["reasoning_content"])
+            .refusing(&[
+                "audio",
+                "logit_bias",
+                "logprobs",
+                "metadata",
+                "parallel_tool_calls",
+                "prediction",
+                "prompt_cache_key",
+                "service_tier",
+                "store",
+                "top_logprobs",
+                "verbosity",
+            ]),
         responses: ResponsesProfile::compatible("Gemini Enterprise Agent Platform"),
-        messages: MessagesProfile::compatible("Gemini Enterprise Agent Platform"),
+        // The Claude features Anthropic lists as unavailable on the platform
+        // (https://platform.claude.com/docs/en/build-with-claude/claude-models-on-google-cloud/google-managed).
+        messages: MessagesProfile::compatible("Gemini Enterprise Agent Platform")
+            .refusing(&["mcp_servers", "container"])
+            .raw_predict(),
         gemini: GeminiProfile::AGENT_PLATFORM,
         account: None,
-        routes: &[],
+        routes: &[
+            ModelRoute {
+                pattern: "claude-*",
+                dialect: DialectId::AnthropicMessages,
+                counts_tokens: true,
+            },
+            ModelRoute {
+                pattern: "*/*",
+                dialect: DialectId::OpenAiChat,
+                counts_tokens: false,
+            },
+        ],
         service_account: Some(ServiceAccountSignIn {
             key_page: KeyPage {
                 url: "https://console.cloud.google.com/iam-admin/serviceaccounts",
@@ -1891,6 +1930,14 @@ mod tests {
                 None
             )
         );
+        assert_eq!(
+            p.route("claude-opus-5-5@default"),
+            Some(DialectId::AnthropicMessages)
+        );
+        assert_eq!(p.route("xai/grok-4.7"), Some(DialectId::OpenAiChat));
+        assert_eq!(p.route("gemini-3.5-flash"), None);
+        assert!(p.messages.raw_predict);
+        assert!(p.routes.iter().all(|r| p.dialects.contains(&r.dialect)));
         assert_eq!(p.default_base_url, "https://aiplatform.googleapis.com");
         assert!(p.gemini.role_on_every_content);
         let sa = p.service_account.unwrap();
@@ -1919,6 +1966,7 @@ mod tests {
         let r = |pattern| ModelRoute {
             pattern,
             dialect: DialectId::AnthropicMessages,
+            counts_tokens: true,
         };
         assert!(r("claude-*").matches("claude-opus-5-5@default"));
         assert!(!r("claude-*").matches("xclaude-opus"));

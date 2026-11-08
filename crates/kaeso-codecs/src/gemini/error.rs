@@ -92,6 +92,18 @@ pub(crate) fn decode_error(status: u16, headers: &HeaderList, body: &[u8]) -> Kp
     decode_error_value(status, headers, body, DialectId::Gemini)
 }
 
+// Google's error shape (https://google.aip.dev/193): `{"error": {"code": 404, "message": "…",
+// "status": "NOT_FOUND"}}`, which Gemini Enterprise Agent Platform answers in front of the
+// partner models it serves in their own formats.
+pub(crate) fn is_google_error(body: &[u8]) -> bool {
+    let Ok(value) = serde_json::from_slice::<Value>(body) else {
+        return false;
+    };
+    value.get("error").is_some_and(|e| {
+        e.get("status").is_some_and(Value::is_string) && e.get("code").is_some_and(Value::is_u64)
+    })
+}
+
 pub(crate) fn decode_error_value(
     status: u16,
     headers: &HeaderList,

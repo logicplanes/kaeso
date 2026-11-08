@@ -327,7 +327,7 @@
         "label": "Settings → API keys"
       },
       "key_prefix": null,
-      "dialects": ["gemini"],
+      "dialects": ["gemini", "anthropic_messages", "openai_chat"],
       "count_tokens": "gemini",
       "embeddings": null,
       "account": null,
@@ -372,7 +372,16 @@
         ],
         "default_location": "global"
       },
-      "model_routes": []
+      "model_routes": [
+        {
+          "pattern": "claude-*",
+          "dialect": "anthropic_messages"
+        },
+        {
+          "pattern": "*/*",
+          "dialect": "openai_chat"
+        }
+      ]
     }
   ],
   "has_more": false,
