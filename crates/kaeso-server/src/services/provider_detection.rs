@@ -121,12 +121,29 @@ pub fn counting_path(dialect: DialectId) -> Option<&'static str> {
 // https://openrouter.ai/docs/api-reference/list-available-models
 const CONTEXT_EXTRAS: [&str; 2] = ["max_model_len", "context_length"];
 
+// llama.cpp and TabbyAPI name the context window they serve `meta.n_ctx`, Docker Model Runner
+// `dmr.context_window`.
+// https://github.com/ggml-org/llama.cpp/blob/7d7f028753/tools/server/server-context.cpp#L5628
+// https://github.com/theroyallab/tabbyAPI/blob/8f92fac5d9/endpoints/core/types/model.py#L40
+// https://github.com/docker/model-runner/blob/5f44daac42/pkg/inference/models/api.go#L70
+const NESTED_CONTEXT_EXTRAS: [(&str, &str); 2] = [("meta", "n_ctx"), ("dmr", "context_window")];
+
 pub fn context_limit(m: &ModelInfo) -> Option<u64> {
-    m.context_window.or_else(|| {
-        CONTEXT_EXTRAS
-            .iter()
-            .find_map(|name| m.extras.fields.get(*name)?.get().parse().ok())
-    })
+    m.context_window
+        .or_else(|| {
+            CONTEXT_EXTRAS
+                .iter()
+                .find_map(|name| m.extras.fields.get(*name)?.get().parse().ok())
+        })
+        .or_else(|| {
+            NESTED_CONTEXT_EXTRAS.iter().find_map(|(outer, inner)| {
+                let raw = m.extras.fields.get(*outer)?;
+                serde_json::from_str::<serde_json::Value>(raw.get())
+                    .ok()?
+                    .get(*inner)?
+                    .as_u64()
+            })
+        })
 }
 
 fn detected(models: Vec<ModelInfo>) -> Vec<DetectedModel> {
@@ -543,6 +560,33 @@ mod tests {
         for status in [302, 429, 500, 502] {
             assert_eq!(Route::of(status), Route::Unclear, "{status}");
         }
+    }
+
+    #[test]
+    fn a_listing_names_the_context_window_flat_or_nested_as_its_server_writes_it() {
+        let model = |json: &str| -> ModelInfo {
+            dispatch::decode_models(
+                DialectId::OpenAiChat,
+                200,
+                &HeaderList::default(),
+                &Bytes::from(format!(r#"{{"object":"list","data":[{json}]}}"#)),
+            )
+            .unwrap()
+            .models
+            .remove(0)
+        };
+        let llama_cpp = model(
+            r#"{"id":"ggml-org/Qwen3-0.6B-GGUF","object":"model","owned_by":"llamacpp","meta":{"n_ctx":40960,"n_ctx_train":40960}}"#,
+        );
+        assert_eq!(context_limit(&llama_cpp), Some(40960));
+        let docker = model(
+            r#"{"id":"ai/smollm2","object":"model","owned_by":"docker","dmr":{"context_window":8192}}"#,
+        );
+        assert_eq!(context_limit(&docker), Some(8192));
+        let vllm = model(r#"{"id":"m","object":"model","owned_by":"vllm","max_model_len":131072}"#);
+        assert_eq!(context_limit(&vllm), Some(131072));
+        let none = model(r#"{"id":"m","object":"model","owned_by":"library","meta":"text"}"#);
+        assert_eq!(context_limit(&none), None);
     }
 
     #[test]

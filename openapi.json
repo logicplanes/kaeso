@@ -32348,7 +32348,7 @@
           },
           "detected": {
             "$ref": "#/components/schemas/Fields",
-            "description": "Values to start its entry from: the limits the listing gives, and the\ninputs, outputs, limits and capabilities of the model KPMR lists\nunder the same name. Never prices."
+            "description": "Values to start its entry from: the limits the listing gives, and the\ninputs, outputs, limits and capabilities of the model KPMR lists\nunder the same name. Prices only for a provider that names its inference\nserver software, at 0."
           },
           "model_id": {
             "type": "string",
