@@ -37,7 +37,7 @@ A condition has 1 to 10 rules. Each rule reads one fact about the request:
 | Field | Holds when |
 | --- | --- |
 | `header` | A request header `equals`, `not_equals` or `contains` a value, or is `present` or `absent`. Names are lowercase, values are compared exactly and have up to 200 characters. A header sent twice holds for `equals` and `contains` when either value does |
-| `format` | The app's API format is `in` or `not_in` a list: `openai_chat`, `openai_responses`, `anthropic_messages`, `openai_embeddings`, `gemini`, `gemini_embeddings`, `openai_images` |
+| `format` | The app's API format is `in` or `not_in` a list: `openai_chat`, `openai_responses`, `anthropic_messages`, `openai_embeddings`, `gemini`, `gemini_embeddings` |
 | `feature` | The request uses, or doesn't use, `images`, `pdfs`, `tools`, `reasoning`, `structured_output` (a JSON schema) or `streaming` |
 | `input_tokens` | The input is `at_least` or `below` a number of tokens, estimated from the request's size at 4 bytes a token |
 | `key`, `member`, `service_account` | The API key, the member or the service account that sent the request is `in` or `not_in` a list of up to 100 |

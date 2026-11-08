@@ -91,11 +91,11 @@ for event in stream:
     print(event.type)
 ```
 
-不支持图片流式的服务商会收到完整请求，Kaeso 把它们的回复写成每张图片一个 `image_generation.completed` 事件，与 OpenAI 在 `partial_images` 为 0 时的做法相同。向这类服务商请求部分图片会得到 400，`param` 为 `partial_images`。
+不支持图片流式的服务商会收到完整请求。Kaeso 把它们的回复写成每张图片一个 `image_generation.completed` 事件，与 OpenAI 在 `partial_images` 为 0 时的做法相同。向这类服务商请求部分图片会得到 400，`param` 为 `partial_images`。
 
 ## 服务商
 
-2026-11-08 查阅了每个内置服务商关于图片生成的文档。服务商以各自的形式提供下列模型；对模型所属服务商不接受的参数，Kaeso 会在发送任何内容之前拒绝，并在 `param` 中写明该参数。
+2026-11-08 查阅了每个内置服务商关于图片生成的文档。服务商以各自的形式提供下列模型。对模型所属服务商不接受的参数，Kaeso 会在发送任何内容之前拒绝，并在 `param` 中写明该参数。
 
 | 服务商 | 生成 | 编辑 | 模型 | 来源 |
 | --- | --- | --- | --- | --- |
@@ -112,11 +112,17 @@ for event in stream:
 | Mistral | 不支持：图片只作为其智能体的工具提供 | 不支持 | — | [Image generation tool](https://docs.mistral.ai/studio/agents/agent-tools/image_generation) |
 | Anthropic、DeepSeek、Groq、Cohere、Ollama Cloud、Moonshot、Cerebras | 服务商不提供 | — | — | 各服务商的 API 参考 |
 
-Google 已停用 Imagen，因此 Kaeso 只调用 Gemini 图片模型。只有 Google 尺寸表中列出的尺寸才能传给它们，例如 `1024x1024`（`1K` 下的 `1:1`）；其他尺寸请发送 `aspect_ratio` 和 `resolution`。SpaceX 用 `aspect_ratio` 和 `resolution` 代替 `size`。Z.ai 和 QwenCloud 只返回链接，分别在 30 天和 24 小时后过期，因此在它们那里 `response_format: "b64_json"` 会得到 400。Gemini 和 OpenRouter 只返回 base64，因此在它们那里 `response_format: "url"` 会得到 400。[OpenAI Images 映射](../development/kpp/openai-images.md)列出了每个参数以及各服务商如何接收它。
+Google 已停用 Imagen，因此 Kaeso 只调用 Gemini 图片模型。只有 Google 尺寸表中列出的尺寸才能传给它们，例如 `1024x1024`（`1K` 下的 `1:1`）。其他尺寸请发送 `aspect_ratio` 和 `resolution`。
+
+SpaceX 用 `aspect_ratio` 和 `resolution` 代替 `size`。Z.ai 和 QwenCloud 只返回链接，分别在 30 天和 24 小时后过期，因此在它们那里 `response_format: "b64_json"` 会得到 400。Gemini 和 OpenRouter 只返回 base64，因此在它们那里 `response_format: "url"` 会得到 400。
+
+[OpenAI Images 映射](../development/kpp/openai-images.md)列出了每个参数以及各服务商如何接收它。
 
 ## 费用和日志
 
-当服务商报告图片 Token 时（如 OpenAI 和 Google），Kaeso 按 KPMR 中模型的图片价格计费，其余部分按 Token 价格计费。按图片或按百万像素计费的服务商使用 KPMR 中的按单位价格；当请求没有指明价格所依据的尺寸、质量或分辨率时，按所列最低价格计费，因为那是服务商的默认档。KPMR 标记为估算的价格在模型详情中显示为估算。支出预算会在发送前为每个请求预留最贵的情况。
+当服务商报告图片 Token 时（如 OpenAI 和 Google），Kaeso 按 KPMR 中模型的图片价格计费。其余部分按 Token 价格计费。按图片或按百万像素计费的服务商使用 KPMR 中的按单位价格。
+
+当请求没有指明价格所依据的尺寸、质量或分辨率时，按所列最低价格计费。那是服务商的默认档。KPMR 标记为估算的价格在模型详情中显示为估算。支出预算会在发送前为每个请求预留最贵的情况。
 
 请求日志显示端点（例如 `images/edits`）、发送和生成的图片数量，以及尺寸和质量。日志从不保存图片字节：上传内容只记录其字段，每张图片只记录媒体类型和大小（[请求日志](../console/request-logs.md)）。
 
