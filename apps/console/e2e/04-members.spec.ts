@@ -55,7 +55,7 @@ test("an invited person accepts and joins the organization and the project they 
 
 test("a member's rights are customized and their models limited; removed, then added back", async ({ page }) => {
   await signInToProject(page);
-  await page.getByRole("link", { name: "Members" }).click();
+  await page.getByRole("navigation", { name: "Console" }).getByRole("link", { name: "Members" }).click();
   await expect(page).toHaveTitle(/^Members · /);
   await row(page, "Members", DEVELOPER.name).click();
   const sheet = page.getByRole("dialog", { name: DEVELOPER.name });
