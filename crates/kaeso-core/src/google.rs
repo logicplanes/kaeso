@@ -40,6 +40,10 @@ pub fn host(location: &str) -> String {
     }
 }
 
+pub fn openapi_path(project: &str, location: &str) -> String {
+    format!("/v1/projects/{project}/locations/{location}/endpoints/openapi")
+}
+
 pub fn publisher_path(project: &str, location: &str, publisher: &str) -> String {
     format!("/v1/projects/{project}/locations/{location}/publishers/{publisher}/models")
 }

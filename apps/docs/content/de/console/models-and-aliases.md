@@ -53,7 +53,7 @@ Das Sheet eines Modells zeigt unter **Verwendete Werte** jeden Wert mit seiner H
 | Eingaben, Ausgaben | Eingaben: Text, Bilder, PDF, Audio und Video. Ausgaben: Text, Bilder, Audio und Embeddings |
 | Kontext, Ausgabelimit | Die Token-Limits des Modells |
 | Eingabe-, Ausgabe-, Cache-Lese-, Cache-Schreib- und Ein-Stunden-Cache-Schreibpreis | US-Dollar je Million Token. Nutzung und Budgets rechnen mit den Preisen, die zum Zeitpunkt der Anfrage gelten. Der Cache-Schreibpreis ist der für fünf Minuten. Schreibzugriffe in Anthropics Ein-Stunden-Cache kosten den Ein-Stunden-Cache-Schreibpreis, den KPMR setzt, wo der Anbieter einen dokumentiert, etwa das Doppelte des Eingabepreises bei Anthropics Modellen. Ohne ihn, oder wenn Sie den Eingabepreis anpassen, kosten sie das Doppelte des Eingabepreises |
-| Sendet als | Das API-Format, mit dem Kaeso das Modell aufruft: Anthropic Messages, OpenAI Chat Completions, OpenAI Responses oder OpenAI Embeddings |
+| Sendet als | Das API-Format, mit dem Kaeso das Modell aufruft: Anthropic Messages, OpenAI Chat Completions, OpenAI Responses, OpenAI Embeddings, Gemini API oder Gemini Embeddings. Bei Gemini Enterprise Agent Platform beginnt ein neues eigenes Modell mit dem Format seiner Familie ([unterstützte Anbieter](../concepts/supported-providers.md#hinweise)) |
 | Tool-Aufrufe, Reasoning, strukturierte Ausgabe | Was das Modell unterstützt |
 | Temperatur | Ob das Modell `temperature` annimmt |
 | Erzwungene Tool-Wahl | Ob das Modell `tool_choice` mit `required`, `any` oder einem benannten Tool annimmt. Für ein Modell ohne diese Fähigkeit lehnt Kaeso solche Anfragen ab, bevor es den Anbieter aufruft |

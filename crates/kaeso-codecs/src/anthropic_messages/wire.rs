@@ -15,6 +15,7 @@ pub(crate) fn is_none_or_empty<T>(v: &Option<Vec<T>>) -> bool {
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub(crate) struct RequestW {
+    #[serde(skip_serializing_if = "String::is_empty")]
     pub(crate) model: String,
     pub(crate) messages: Vec<Ext<MessageW>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]

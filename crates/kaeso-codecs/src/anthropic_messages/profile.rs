@@ -25,6 +25,13 @@ pub struct MessagesProfile {
     /// Whether `tool_choice` may force a tool or forbid tools; otherwise only `auto` is sent,
     /// and any other choice is refused.
     pub forced_tool_choice: bool,
+    /// Whether the provider serves the Messages API as Google's `rawPredict`, as Gemini
+    /// Enterprise Agent Platform does for Claude models: a generation goes to
+    /// `{base_path}/{model}:rawPredict` (`:streamRawPredict` when it streams) without
+    /// `model` in the body, a token count to `{base_path}/count-tokens:rawPredict` with
+    /// it, and both bodies carry the platform's `anthropic_version`
+    /// ([`EgressCtx::base_path`](crate::EgressCtx::base_path)).
+    pub raw_predict: bool,
 }
 
 /// A sampling value a provider always uses, in thousandths, so a profile stays `Eq`.
@@ -65,6 +72,7 @@ impl MessagesProfile {
         refused_fields: &[],
         fixed_sampling: &[],
         forced_tool_choice: true,
+        raw_predict: false,
     };
 
     /// Another provider's Messages API, as Anthropic's until a setting says otherwise.
@@ -90,6 +98,14 @@ impl MessagesProfile {
         values: &'static [(&'static str, FixedValue)],
     ) -> Self {
         self.fixed_sampling = values;
+        self
+    }
+
+    /// The provider serves the Messages API as Google's `rawPredict`
+    /// ([`MessagesProfile::raw_predict`]).
+    #[must_use]
+    pub const fn raw_predict(mut self) -> Self {
+        self.raw_predict = true;
         self
     }
 

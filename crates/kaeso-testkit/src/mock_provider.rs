@@ -651,7 +651,10 @@ struct PlatformPath {
 // Gemini Enterprise Agent Platform serves Gemini models under
 // `/v1/publishers/google/models` with an express mode key and under
 // `/v1/projects/{project}/locations/{location}/publishers/google/models` with a token; the
-// mock answers both like AI Studio's `/v1beta/models`.
+// mock answers both like AI Studio's `/v1beta/models`. With a token it also serves Claude at
+// `…/publishers/anthropic/models/{model}:rawPredict` (`:streamRawPredict`,
+// `count-tokens:rawPredict`) and other models at `…/endpoints/openapi/chat/completions`,
+// which the mock answers like Anthropic's and OpenAI's own paths.
 fn agent_platform_path(path: &str) -> Option<PlatformPath> {
     const MODELS: &str = "publishers/google/models";
     if let Some(rest) = path
@@ -669,6 +672,23 @@ fn agent_platform_path(path: &str) -> Option<PlatformPath> {
         (parts.next()?, parts.next()?, parts.next()?, parts.next()?);
     if locations != "locations" {
         return None;
+    }
+    if tail == "endpoints/openapi/chat/completions" {
+        return Some(PlatformPath {
+            project: true,
+            as_ai_studio: "/v1/chat/completions".to_owned(),
+        });
+    }
+    if let Some(call) = tail.strip_prefix("publishers/anthropic/models/") {
+        let as_anthropic = match call.rsplit_once(':')? {
+            ("count-tokens", "rawPredict") => "/v1/messages/count_tokens",
+            (_, "rawPredict" | "streamRawPredict") => "/v1/messages",
+            _ => return None,
+        };
+        return Some(PlatformPath {
+            project: true,
+            as_ai_studio: as_anthropic.to_owned(),
+        });
     }
     let rest = tail.strip_prefix(MODELS)?;
     Some(PlatformPath {

@@ -30,6 +30,23 @@ export function providerCatalog(list: readonly ProviderView[]): Providers {
   };
 }
 
+const globMatches = (pattern: string, id: string): boolean => {
+  const [first = "", ...rest] = pattern.split("*");
+  if (!id.startsWith(first)) return false;
+  if (rest.length === 0) return id === first;
+  const last = rest.pop() ?? "";
+  let at = first.length;
+  for (const part of rest) {
+    const found = id.indexOf(part, at);
+    if (found < 0) return false;
+    at = found + part.length;
+  }
+  return id.length - last.length >= at && id.endsWith(last);
+};
+
+export const routedDialect = (provider: ProviderView | undefined, modelId: string): string | undefined =>
+  provider?.model_routes.find((r) => globMatches(r.pattern, modelId))?.dialect;
+
 export const keyTitle = (k: CredentialView, providers: Providers) =>
   t("kaeso.providerKey.title", "{provider} · {name}", { provider: providers.name(k.provider), name: k.name });
 

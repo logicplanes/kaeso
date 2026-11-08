@@ -24,7 +24,7 @@ use crate::codec::{
 
 pub use path::{GeminiAction, GeminiProfile, split_model_action};
 
-pub(crate) use error::{decode_error_value, encode_error as encode_google_error};
+pub(crate) use error::{decode_error_value, encode_error as encode_google_error, is_google_error};
 
 const D: DialectId = DialectId::Gemini;
 

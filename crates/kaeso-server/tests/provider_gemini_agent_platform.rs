@@ -652,3 +652,364 @@ async fn the_key_its_assertion_and_its_tokens_never_reach_the_log_the_api_or_the
         }
     }
 }
+
+const CLAUDE: &str = "claude-opus-4-5@20251101";
+const LLAMA: &str = "meta/llama-4-maverick-17b-128e-instruct-maas";
+
+async fn env_with_partners(key: Option<&ServiceAccountKey>) -> Env {
+    let env = env().await;
+    let org = env.owner.org_id.clone();
+    for model in [CLAUDE, LLAMA, "mistral-medium-3"] {
+        let r = env
+            .app
+            .post(
+                &format!("/orgs/{org}/projects/{}/models", env.project),
+                json!({ "provider": PROVIDER, "model_id": model }),
+                Some(&env.owner.cookie),
+            )
+            .await;
+        assert_eq!(r.status, StatusCode::CREATED, "{model}: {:?}", r.body);
+    }
+    match key {
+        Some(key) => {
+            add_service_account(&env, key, Some("global")).await;
+        }
+        None => {
+            add_express(&env).await;
+        }
+    }
+    env
+}
+
+fn sent(env: &Env) -> Received {
+    model_calls(env).pop().unwrap()
+}
+
+#[tokio::test]
+async fn claude_models_go_through_raw_predict_from_every_app_format() {
+    let key = ServiceAccountKey::new(EMAIL, PROJECT);
+    let env = env_with_partners(Some(&key)).await;
+    let models = "/v1/projects/kaeso-example/locations/global/publishers/anthropic/models";
+
+    let mut body = messages(CLAUDE, &format!("Hello {}", fixture("text-simple")));
+    body["system"] = json!("Be brief.");
+    let r = call(&env, "/v1/messages", Some(&env.key), true, Some(body)).await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(r.header("kaeso-model"), Some(CLAUDE));
+    let call_ = sent(&env);
+    assert_eq!(
+        call_.path,
+        format!("{models}/claude-opus-4-5@20251101:rawPredict")
+    );
+    assert_eq!(call_.header("authorization"), Some("Bearer ya29.mock-1"));
+    assert_eq!(call_.header("x-api-key"), None);
+    let wire = call_.json();
+    assert!(wire.get("model").is_none(), "{wire}");
+    assert_eq!(wire["anthropic_version"], "vertex-2023-10-16");
+    assert_eq!(wire["system"], "Be brief.");
+    assert_eq!(r.json()["type"], "message");
+
+    let mut stream = messages(CLAUDE, "Count");
+    stream["stream"] = json!(true);
+    let r = call(&env, "/v1/messages", Some(&env.key), true, Some(stream)).await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(
+        sent(&env).path,
+        format!("{models}/claude-opus-4-5@20251101:streamRawPredict")
+    );
+    assert!(r.text().contains("event: message_stop"));
+
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(chat(CLAUDE, "Hello")),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(
+        sent(&env).path,
+        format!("{models}/claude-opus-4-5@20251101:rawPredict")
+    );
+    assert!(r.json()["choices"][0]["message"]["content"].is_string());
+
+    let r = call(
+        &env,
+        "/v1/responses",
+        Some(&env.key),
+        false,
+        Some(json!({ "model": CLAUDE, "input": "Hello", "max_output_tokens": 64 })),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert!(sent(&env).path.ends_with(":rawPredict"));
+
+    let r = call(
+        &env,
+        "/v1/messages/count_tokens",
+        Some(&env.key),
+        true,
+        Some(json!({ "model": CLAUDE, "messages": [{ "role": "user", "content": "Hi" }] })),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    let call_ = sent(&env);
+    assert_eq!(call_.path, format!("{models}/count-tokens:rawPredict"));
+    assert_eq!(call_.json()["model"], CLAUDE);
+    assert_eq!(call_.json()["anthropic_version"], "vertex-2023-10-16");
+    assert!(r.json()["input_tokens"].is_u64());
+    assert_eq!(token_requests(&env).len(), 1);
+}
+
+#[tokio::test]
+async fn partner_models_go_to_the_openai_compatible_endpoint_and_count_no_tokens() {
+    let key = ServiceAccountKey::new(EMAIL, PROJECT);
+    let env = env_with_partners(Some(&key)).await;
+    let endpoint = "/v1/projects/kaeso-example/locations/global/endpoints/openapi/chat/completions";
+
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(chat(LLAMA, "Hello")),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    let call_ = sent(&env);
+    assert_eq!(call_.path, endpoint);
+    assert_eq!(call_.header("authorization"), Some("Bearer ya29.mock-1"));
+    assert_eq!(call_.json()["model"], LLAMA);
+
+    let r = call(
+        &env,
+        "/v1/messages",
+        Some(&env.key),
+        true,
+        Some(messages(LLAMA, "Hello")),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    let wire = sent(&env).json();
+    assert_eq!(wire["model"], LLAMA);
+    assert!(wire["max_tokens"].is_u64(), "{wire}");
+    assert_eq!(r.json()["type"], "message");
+
+    let mut refused = chat(LLAMA, "Hello");
+    refused["logit_bias"] = json!({ "1": 2 });
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(refused),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    assert!(
+        r.json()["error"]["message"]
+            .as_str()
+            .unwrap()
+            .contains("logit_bias")
+    );
+
+    let calls = model_calls(&env).len();
+    let r = call(
+        &env,
+        "/v1/messages/count_tokens",
+        Some(&env.key),
+        true,
+        Some(json!({ "model": LLAMA, "messages": [{ "role": "user", "content": "Hi" }] })),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    assert_eq!(model_calls(&env).len(), calls, "refused before sending");
+}
+
+#[tokio::test]
+async fn express_keys_reach_only_gemini_models_and_mistral_models_are_refused() {
+    let env = env_with_partners(None).await;
+    for (model, app) in [(CLAUDE, "/v1/messages"), (LLAMA, "/v1/chat/completions")] {
+        let anthropic = app == "/v1/messages";
+        let body = if anthropic {
+            messages(model, "Hi")
+        } else {
+            chat(model, "Hi")
+        };
+        let r = call(&env, app, Some(&env.key), anthropic, Some(body)).await;
+        assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+        let message = r.json()["error"]["message"].clone();
+        assert_eq!(
+            message,
+            format!(
+                "`{model}` needs a service account key; express mode API keys reach Gemini models only."
+            )
+        );
+    }
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(chat("mistral-medium-3", "Hi")),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    assert_eq!(
+        r.json()["error"]["message"],
+        "Kaeso doesn't call Mistral models on Gemini Enterprise Agent Platform; use the Mistral provider for `mistral-medium-3`."
+    );
+    assert!(model_calls(&env).is_empty());
+    assert!(token_requests(&env).is_empty());
+}
+
+#[tokio::test]
+async fn errors_in_googles_and_anthropics_shape_reach_each_app_in_its_own_format() {
+    let key = ServiceAccountKey::new(EMAIL, PROJECT);
+    let env = env_with_partners(Some(&key)).await;
+    let google = "[mock:error=../../gemini/errors/recorded-error-invalid-argument]";
+    let r = call(
+        &env,
+        "/v1/messages",
+        Some(&env.key),
+        true,
+        Some(messages(CLAUDE, google)),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    assert_eq!(r.json()["type"], "error");
+    assert_eq!(r.json()["error"]["type"], "invalid_request_error");
+    assert!(
+        r.json()["error"]["message"]
+            .as_str()
+            .unwrap()
+            .starts_with("Invalid value")
+    );
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(chat(CLAUDE, google)),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    assert!(r.json()["error"].get("status").is_none(), "{}", r.text());
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(chat(LLAMA, google)),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+
+    let r = call(
+        &env,
+        "/v1/messages",
+        Some(&env.key),
+        true,
+        Some(messages(CLAUDE, "[mock:error=overloaded]")),
+    )
+    .await;
+    assert_eq!(r.status.as_u16(), 529, "{}", r.text());
+    assert_eq!(r.json()["error"]["type"], "overloaded_error");
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(chat(CLAUDE, "[mock:error=overloaded]")),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::SERVICE_UNAVAILABLE, "{}", r.text());
+}
+
+#[tokio::test]
+async fn custom_models_route_like_the_catalogues_and_check_availability_counts_claude_tokens() {
+    let key = ServiceAccountKey::new(EMAIL, PROJECT);
+    let env = env_with_partners(Some(&key)).await;
+    let base = format!("/orgs/{}/projects/{}", env.owner.org_id, env.project);
+    let fields = json!({
+        "input_modalities": ["text"], "output_modalities": ["text"],
+        "context_limit": 1000, "output_limit": 100,
+        "input_price": "1", "output_price": "1"
+    });
+    let mut dialects = Vec::new();
+    for model in [
+        "claude-new-9@default",
+        "acme/new-model-maas",
+        "gemini-9-pro",
+    ] {
+        let r = env
+            .app
+            .post(
+                &format!("{base}/models"),
+                json!({ "provider": PROVIDER, "model_id": model, "custom": true, "overrides": fields }),
+                Some(&env.owner.cookie),
+            )
+            .await;
+        dialects.push((model, r.status, r.body["egress_dialect"].clone()));
+    }
+    assert_eq!(
+        dialects[0],
+        (
+            "claude-new-9@default",
+            StatusCode::CREATED,
+            json!("anthropic_messages")
+        )
+    );
+    assert_eq!(
+        dialects[1],
+        (
+            "acme/new-model-maas",
+            StatusCode::CREATED,
+            json!("openai_chat")
+        )
+    );
+    assert_eq!(
+        dialects[2].1,
+        StatusCode::BAD_REQUEST,
+        "a model no route knows needs its format"
+    );
+
+    let r = env
+        .app
+        .post(
+            &format!("{base}/models/check"),
+            json!({}),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    let state = |model: &str| {
+        r.body["models"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|m| m["provider"] == PROVIDER && m["model_id"] == model)
+            .map(|m| m["availability"].clone())
+            .unwrap()
+    };
+    assert_eq!(state(CLAUDE), "available", "{:?}", r.body);
+    let checked: Vec<String> = model_calls(&env).iter().map(|c| c.path.clone()).collect();
+    assert!(
+        checked
+            .iter()
+            .any(|p| p.ends_with("/publishers/anthropic/models/count-tokens:rawPredict")),
+        "{checked:?}"
+    );
+    assert!(
+        !checked.iter().any(|p| p.ends_with("/chat/completions")),
+        "a check never generates: {checked:?}"
+    );
+    let failed = r.body["failed"].as_array().unwrap();
+    assert!(
+        failed
+            .iter()
+            .any(|f| f["model_id"] == LLAMA && f["reason"] == "inconclusive"),
+        "{failed:?}"
+    );
+}

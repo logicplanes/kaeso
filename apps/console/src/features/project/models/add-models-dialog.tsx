@@ -27,7 +27,7 @@ import { currentModelsQuery, modelPreviewQuery, modelSearchQuery } from "~/api/q
 import { projectCatalogue } from "~/api/queries/invalidation";
 import { offeredModelsQuery } from "~/api/queries/custom-providers";
 import { useApiMutation } from "~/auth/mutation";
-import { useOrgProviderKeys, useProviderOptions, useProviders } from "~/kaeso/providers";
+import { routedDialect, useOrgProviderKeys, useProviderOptions, useProviders } from "~/kaeso/providers";
 import { orgPath } from "~/shell/pages";
 import { recall, remember } from "~/shell/session-memory";
 import { monthLabel } from "~/format/period";
@@ -155,7 +155,9 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
     const modelId = custom.modelId.trim();
     if (!modelId || custom.checked) return;
     const preview = await queryClient.fetchQuery(modelPreviewQuery(org, project, provider, modelId)).catch(() => null);
-    setCustom({ modelId, preview, checked: true, draft: preview ? draftFrom(previewFields(preview)) : custom.draft });
+    const routed = routedDialect(catalog.get(provider), modelId);
+    const draft = preview ? draftFrom(previewFields(preview)) : routed ? { ...custom.draft, egress_dialect: routed } : custom.draft;
+    setCustom({ modelId, preview, checked: true, draft });
   };
 
   const ids = [...selected];

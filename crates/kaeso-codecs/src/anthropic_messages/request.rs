@@ -16,7 +16,7 @@ use super::wire::{
     JsonFormatW, MessageW, MetadataW, OutputConfigW, Raw, RequestW, ThinkingConfigW, ToolChoiceW,
     ToolW,
 };
-use super::{ANTHROPIC_VERSION, COUNT_TOKENS_PATH, MESSAGES_PATH};
+use super::{ANTHROPIC_VERSION, COUNT_TOKENS_PATH, MESSAGES_PATH, RAW_PREDICT_VERSION};
 use crate::codec::{EgressCtx, EncodedRequest, HeaderList, is_forwarded_header};
 use crate::cross::{self, reasoning_map, reasoning_replayable};
 use crate::wire::without_position;
@@ -597,7 +597,25 @@ pub(crate) fn encode_request(
         }
     }
 
-    let body = to_body(&own_ext(w, &r.extras))?;
+    let raw_predict = ctx.messages_profile.raw_predict;
+    let generation = matches!(req, Request::Generate(_));
+    let path = if raw_predict {
+        raw_predict_path(ctx, &w.model, generation, w.stream == Some(true))?
+    } else {
+        path.to_owned()
+    };
+    let mut ext = own_ext(w, &r.extras);
+    if raw_predict {
+        if generation {
+            ext.known.model.clear();
+        }
+        if !ext.extra.contains_key("anthropic_version") {
+            let version = RawJson::from_string(format!("\"{RAW_PREDICT_VERSION}\""))
+                .map_err(|e| KppError::provider(e.to_string()))?;
+            ext.extra.insert("anthropic_version".to_owned(), version);
+        }
+    }
+    let body = to_body(&ext)?;
     if matches!(req, Request::Generate(_)) {
         let automatic = own
             && r.extras
@@ -617,6 +635,44 @@ pub(crate) fn encode_request(
         request_headers(&r.extras, betas),
         body,
     ))
+}
+
+// The platform serves Claude at `…/publishers/anthropic/models/{model}:rawPredict` and
+// `:streamRawPredict`, and counts tokens at `…/models/count-tokens:rawPredict` with the model in
+// the body (https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/partner-models/claude/count-tokens).
+fn raw_predict_path(
+    ctx: &EgressCtx,
+    model: &str,
+    generation: bool,
+    stream: bool,
+) -> Result<String, KppError> {
+    let base = ctx.base_path.as_deref().ok_or_else(|| {
+        KppError::provider("this provider's Messages API needs the publisher's models path")
+    })?;
+    if !generation {
+        return Ok(format!("{base}/count-tokens:rawPredict"));
+    }
+    if model.is_empty() || matches!(model, "." | "..") {
+        return Err(KppError::invalid_request(format!(
+            "The model id `{model}` can't be part of a URL; use the model's real id."
+        ))
+        .with_param("model")
+        .with_status(400));
+    }
+    let mut path = format!("{base}/");
+    for b in model.bytes() {
+        if b.is_ascii_alphanumeric() || matches!(b, b'-' | b'.' | b'_' | b'~' | b'@') {
+            path.push(char::from(b));
+        } else {
+            path.push_str(&format!("%{b:02X}"));
+        }
+    }
+    path.push_str(if stream {
+        ":streamRawPredict"
+    } else {
+        ":rawPredict"
+    });
+    Ok(path)
 }
 
 fn cross_format_breakpoint(r: &GenerateRequest) -> Option<CacheHint> {

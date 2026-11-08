@@ -402,6 +402,18 @@ impl ProviderRef {
         self.built_in().and_then(|p| p.route(model))
     }
 
+    // A provider with routes counts tokens in a routed format only where its route says so;
+    // the others count in their one format whatever a model is sent as.
+    pub fn count_tokens_for(&self, dialect: DialectId) -> Option<DialectId> {
+        match self
+            .built_in()
+            .and_then(|p| p.routes.iter().find(|r| r.dialect == dialect))
+        {
+            Some(route) => route.counts_tokens.then_some(dialect),
+            None => self.count_tokens(),
+        }
+    }
+
     pub fn dialect_for(&self, model: &str) -> DialectId {
         self.route(model).unwrap_or_else(|| self.generation())
     }

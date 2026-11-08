@@ -337,6 +337,21 @@ describe("AddModelsDialog", () => {
     expect((await screen.findAllByRole("option")).map((o) => o.textContent)).toEqual(["OpenAI Chat Completions", "OpenAI Embeddings"]);
   });
 
+  it("sends a custom model in the format its provider's routes name for its id", async () => {
+    setUp();
+    on("GET", "orgs/:org/projects/:project/models/preview", apiError(404, "not_found", "The model is not in KPMR."));
+    const { user, dialog } = await open();
+
+    await pickProvider(user, dialog, "Gemini Enterprise Agent Platform");
+    await user.click(await within(dialog).findByRole("button", { name: "Add a custom model" }));
+    const custom = await screen.findByRole("dialog", { name: /Add a custom model/ });
+    await user.type(within(custom).getByRole("textbox", { name: "Model id" }), "claude-new-9@default{Enter}");
+    expect(await within(custom).findByRole("combobox", { name: "Sends as" })).toHaveTextContent("Anthropic Messages");
+    await user.clear(within(custom).getByRole("textbox", { name: "Model id" }));
+    await user.type(within(custom).getByRole("textbox", { name: "Model id" }), "acme/new-model-maas{Enter}");
+    await waitFor(() => expect(within(custom).getByRole("combobox", { name: "Sends as" })).toHaveTextContent("OpenAI Chat Completions"));
+  });
+
   it("treats a custom model as unlisted when KPMR can't be asked", async () => {
     setUp();
     on("GET", "orgs/:org/projects/:project/models/preview", apiError(400, "invalid_request", "That provider is unknown."));

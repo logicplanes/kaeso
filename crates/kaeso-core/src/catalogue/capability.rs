@@ -137,7 +137,7 @@ pub fn prepare(
             })
         }
         Request::CountTokens(g) => {
-            let Some(dialect) = eff.provider.count_tokens() else {
+            let Some(dialect) = eff.provider.count_tokens_for(eff.dialect) else {
                 return Err(refuse(
                     "token counting",
                     Some("model"),

@@ -8,6 +8,14 @@ use crate::openai_responses::error::{kind_for, wire_for_kind};
 use crate::wire::{Ext, Short};
 
 pub(crate) fn decode_error(status: u16, headers: &HeaderList, body: &[u8]) -> KppError {
+    if crate::gemini::is_google_error(body) {
+        return crate::gemini::decode_error_value(
+            status,
+            headers,
+            body,
+            kaeso_kpp::DialectId::Gemini,
+        );
+    }
     let mut err = decode_body(Some(status), body);
     if let Some(retry) = parse_retry_after(headers) {
         err = err.with_retry_after(retry);

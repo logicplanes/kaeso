@@ -1036,31 +1036,41 @@ async fn attempt(
         continuity::restore(state, key_id, g).await;
     }
 
-    let platform =
-        match crate::services::agent_platform::egress(state, &eff.provider, &credential).await {
-            Ok(p) => p,
-            Err(e) => {
-                let Some((status, reason)) = e.refusal() else {
-                    return Err(fail(Stage::Credential)(e.into_kpp()));
-                };
-                let message = format!("Google refused the service account key: {reason}");
-                Box::pin(crate::services::notifications::system::key_refused(
-                    state,
-                    caller.org_id,
-                    credential.id.uuid(),
-                    crate::services::notifications::system::Refusal {
-                        status,
-                        message: &message,
-                        billing: false,
-                    },
-                ))
-                .await;
-                return Err(fail(Stage::KeyRefused)(e.into_kpp()));
-            }
-        };
+    let platform = match crate::services::agent_platform::egress(
+        state,
+        &eff.provider,
+        &credential,
+        plan.dialect,
+        &eff.model_id,
+    )
+    .await
+    {
+        Ok(p) => p,
+        Err(crate::services::agent_platform::EgressError::Refused(e)) => {
+            return Err(fail(Stage::Capability)(e));
+        }
+        Err(e) => {
+            let Some((status, reason)) = e.refusal() else {
+                return Err(fail(Stage::Credential)(e.into_kpp()));
+            };
+            let message = format!("Google refused the service account key: {reason}");
+            Box::pin(crate::services::notifications::system::key_refused(
+                state,
+                caller.org_id,
+                credential.id.uuid(),
+                crate::services::notifications::system::Refusal {
+                    status,
+                    message: &message,
+                    billing: false,
+                },
+            ))
+            .await;
+            return Err(fail(Stage::KeyRefused)(e.into_kpp()));
+        }
+    };
     let mut ectx = egress_ctx(&app_req, &eff.provider, ModelFlags::of(&plan));
     if let Some(p) = &platform {
-        ectx = ectx.with_gemini_profile(p.gemini.clone());
+        ectx = p.apply(ectx);
     }
     let dialect = plan.dialect;
     let (req, mut ectx, encoded) = off_thread(request_bytes, move || {
@@ -2000,7 +2010,7 @@ fn counted_at_provider(
     provider: &ProviderRef,
     dialect: DialectId,
 ) -> bool {
-    account.is_none() && provider.count_tokens() == Some(dialect)
+    account.is_none() && provider.count_tokens_for(dialect) == Some(dialect)
 }
 
 #[cfg(test)]
