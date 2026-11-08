@@ -40,7 +40,9 @@ pub fn enabled(state: &AppState) -> bool {
 }
 
 pub fn applies(state: &AppState, ingress: DialectId, egress: DialectId) -> bool {
-    enabled(state) && ingress == DialectId::OpenAiChat && egress != DialectId::OpenAiChat
+    enabled(state)
+        && matches!(ingress, DialectId::OpenAiChat | DialectId::Gemini)
+        && egress != ingress
 }
 
 pub struct StreamCarry {

@@ -1,6 +1,7 @@
 mod accounts;
 pub mod auth;
 pub mod errors;
+pub mod gemini;
 pub mod hooks;
 pub mod in_flight;
 mod input_count;
@@ -48,6 +49,7 @@ async fn serve(
             stream_only: false,
             max_body,
             alias: None,
+            gemini: None,
         },
     )
     .await
@@ -127,18 +129,34 @@ async fn not_found(headers: HeaderMap, OriginalUri(uri): OriginalUri, _body: Bod
     )
 }
 
+async fn models_post(
+    OriginalUri(uri): OriginalUri,
+    method: Method,
+    headers: HeaderMap,
+) -> Response {
+    let raw = uri.path().strip_prefix("/v1/models/").unwrap_or("");
+    gemini::on_v1(raw).unwrap_or_else(|| not_allowed(&method, &headers, uri.path()))
+}
+
 async fn method_not_allowed(
     method: Method,
     headers: HeaderMap,
     OriginalUri(uri): OriginalUri,
     _body: Body,
 ) -> Response {
+    if gemini::is_gemini_path(uri.path()) {
+        return gemini::method_not_allowed(uri.path(), &method);
+    }
+    not_allowed(&method, &headers, uri.path())
+}
+
+fn not_allowed(method: &Method, headers: &HeaderMap, path: &str) -> Response {
     let mut resp = respond(
-        header_dialect(&headers),
+        header_dialect(headers),
         &error(
             ErrorKind::InvalidRequest,
             405,
-            format!("`{}` does not accept `{method}` requests.", uri.path()),
+            format!("`{path}` does not accept `{method}` requests."),
         ),
         &Served::default(),
     );
@@ -155,8 +173,9 @@ pub fn router() -> Router<AppState> {
         .route("/v1/messages", post(messages))
         .route("/v1/messages/count_tokens", post(messages_count_tokens))
         .route("/v1/models", get(models_list))
-        .route("/v1/models/{*id}", get(models_get))
+        .route("/v1/models/{*id}", get(models_get).post(models_post))
         .route("/v1", axum::routing::any(not_found))
         .route("/v1/{*rest}", axum::routing::any(not_found))
+        .merge(gemini::router())
         .method_not_allowed_fallback(method_not_allowed)
 }

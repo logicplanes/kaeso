@@ -160,6 +160,44 @@ fn openai_embeddings_requests_become_batches() {
 }
 
 #[test]
+fn google_genais_user_role_on_each_text_reaches_openai_embeddings_and_gemini_as_written() {
+    let body = json!({"requests": [
+        {"model": "models/text-embedding-3-small", "content": {"parts": [{"text": "refund policy"}], "role": "user"}},
+        {"model": "models/text-embedding-3-small", "content": {"parts": [{"text": "shipping times"}], "role": "user"}}
+    ]});
+    let req = crate::dispatch::decode_gemini_request(
+        "text-embedding-3-small",
+        GeminiAction::BatchEmbedContents,
+        &serde_json::to_vec(&body).unwrap(),
+        &HeaderList::new(),
+    )
+    .unwrap();
+    let mut ctx = EgressCtx::new(&req);
+    let openai =
+        crate::dispatch::encode_request(DialectId::OpenAiEmbeddings, &req, &mut ctx).unwrap();
+    let sent: Value = serde_json::from_slice(&openai.body).unwrap();
+    assert_eq!(sent["input"], json!(["refund policy", "shipping times"]));
+    let back = GeminiEmbeddings::encode_request(&req, &mut EgressCtx::new(&req)).unwrap();
+    assert_eq!(serde_json::from_slice::<Value>(&back.body).unwrap(), body);
+
+    let other = json!({"content": {"parts": [{"text": "a"}], "role": "model"}});
+    let req = crate::dispatch::decode_gemini_request(
+        "text-embedding-3-small",
+        GeminiAction::EmbedContent,
+        &serde_json::to_vec(&other).unwrap(),
+        &HeaderList::new(),
+    )
+    .unwrap();
+    let e = crate::dispatch::encode_request(
+        DialectId::OpenAiEmbeddings,
+        &req,
+        &mut EgressCtx::new(&req),
+    )
+    .unwrap_err();
+    assert_eq!(e.unsupported_feature(), Some("content"), "{e:?}");
+}
+
+#[test]
 fn replies_reach_apps_of_both_embeddings_formats() {
     let reply = GeminiEmbeddings::decode_response(
         200,

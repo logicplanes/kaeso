@@ -164,6 +164,9 @@ def test_the_edge_answers_every_api_in_its_format_while_the_gateway_is_away(edge
             an.messages.create(model="claude-haiku-4-5", max_tokens=10, messages=[{"role": "user", "content": "Hello"}])
         assert raised.value.status_code == 529
         assert raised.value.body["error"] == {"type": "overloaded_error", "message": UNREACHABLE}
+        gemini = httpx.post(f"{url}/v1beta/models/gemini-3.5-flash:generateContent", json={}, timeout=10)
+        assert gemini.status_code == 503
+        assert gemini.json() == {"error": {"code": 503, "message": UNREACHABLE, "status": "UNAVAILABLE"}}
         page = httpx.get(f"{url}/", timeout=10)
         assert page.status_code == 200, "the console stays up while the gateway is away"
     finally:

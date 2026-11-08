@@ -33,7 +33,7 @@ Eine Gemini-Anfrage nennt ihr Modell und ihre Methode im Pfad. Der Codec baut de
 | Modellpfad | `GeminiProfile::models_path` in `EgressCtx::gemini_profile`. `GeminiProfile::GOOGLE_AI_STUDIO` ist `/v1beta/models`; `with_models_path` setzt einen anderen pro Anfrage, etwa `/v1/projects/{project}/locations/{location}/publishers/google/models`. |
 | Modell | Ein prozentkodiertes Pfadsegment, `:` eingeschlossen. Ein führendes `models/` ist der Ressourcenname desselben Modells und wird entfernt; `tunedModels/<id>` adressiert ein feinabgestimmtes Modell neben dem Modellpfad. `.` und `..` sind `InvalidRequest`, wie beim [Abrufen eines Modells](codec-design.md#modelllisten). |
 | Methode | `GeminiAction`: `generateContent` und `streamGenerateContent` (`RequestKind::Generate`, Streaming entscheidet die Methode), `countTokens` (`CountTokens`), `embedContent` und `batchEmbedContents` (`Embed`, der Dialekt `gemini_embeddings`). `streamGenerateContent` hängt `?alt=sse` an. |
-| Dekodieren | `dispatch::decode_gemini_request(model, action, body, headers)` oder `decode_checked_gemini_request` für einen Body, den `limits::Checked` gezählt hat. `gemini::split_model_action` teilt ein Segment wie `gemini-3.5-flash:streamGenerateContent`. `dispatch::decode_request` ohne Pfad dekodiert einen Generierungs-Body mit leerem Modell. |
+| Dekodieren | `dispatch::decode_gemini_request(model, action, body, headers)` oder `decode_checked_gemini_request` für einen Body, den `limits::Checked` gezählt hat. `gemini::split_model_action` teilt ein Segment wie `gemini-3.5-flash:streamGenerateContent`. `dispatch::decode_request` ohne Pfad dekodiert einen Generierungs-Body mit leerem Modell. Das Gateway bedient Gemini-Apps unter `/v1beta/models/{model}:{method}` mit beiden (`crates/kaeso-server/src/model_api/gemini.rs`). |
 | Rolle an jedem Content | `GeminiProfile::role_on_every_content`: Ein Content, den eine App ohne `role` sendet, bekommt `user`. Bei Google AI Studio aus. |
 
 ## Anfragen
@@ -112,6 +112,12 @@ Schema `Part`. Ein Part trägt genau eines von `text`, `inlineData`, `fileData`,
 - **Gehostete Websuche** wird [weggelassen](cross-format.md#weggelassene-tools).
 - **Cache-Hinweise** entfallen: Gemini cacht implizit.
 - **`user`** entfällt: Gemini hat kein Feld für Endnutzer.
+
+### Anfragen von google-genai
+
+`google-genai` 2.32.0 schreibt einige Schlüssel in Snake Case, und die API nimmt sie an, weil Proto-JSON den ursprünglichen Namen jedes Felds akzeptiert: `mime_type` und `file_uri` in `inlineData` und `fileData`, `include_thoughts`, `thinking_budget` und `thinking_level` in `thinkingConfig` sowie `parameters_json_schema` und `response_json_schema` in `functionDeclarations`. `gemini::sdk` liest sie unter ihren Namen in Camel Case und setzt die Form `sdk_names`. Eine Anfrage, die an Gemini geht, bekommt sie so zurück, wie die App sie geschrieben hat.
+
+Das SDK sendet `topK` außerdem als Gleitkommazahl, etwa `20.0`. KPP liest eine ganzzahlige Gleitkommazahl als ganze Zahl, mit Form `top_k_float`, und schreibt sie für Gemini wieder als Gleitkommazahl; ein Bruch ist `InvalidRequest`. Die Fixture `requests/sdk-tools-snake-case.json` stammt von `google-genai` 2.32.0.
 
 ### Thinking
 
@@ -217,6 +223,7 @@ Der Codec `gemini_embeddings`. Schemas `EmbedContentRequest`, `BatchEmbedContent
 | Wire-Feld | KPP | Anmerkungen |
 |---|---|---|
 | `content` mit einem Text-Part | ein `EmbedInput::Text` | Jeder andere Content → Feld `content` (oder `requests[i].content`) und eine leere Eingabe, über Dialekte hinweg abgelehnt. |
+| `content.role` `user` | Form `user_role:<i>` | `google-genai` sendet sie an jedem Content (`requests/sdk-batch-user-role.json`). Gemini bekommt sie zurück; andere Dialekte bekommen die Eingabe ohne sie. Jede andere Rolle lässt den Content roh, über Dialekte hinweg abgelehnt. |
 | `requests[]` | je eine Eingabe | |
 | `outputDimensionality`, `embedContentConfig.outputDimensionality` | `dimensions` | Wenn sich die Anfragen eines Batches unterscheiden → Felder `requests[i].outputDimensionality`. `embedContentConfig` → Form `config_dimensions`. |
 | `taskType`, `title`, andere Schlüssel von `embedContentConfig` | Felder | |

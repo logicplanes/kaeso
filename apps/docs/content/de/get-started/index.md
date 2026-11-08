@@ -9,5 +9,5 @@ Diese Seiten führen Sie von einem leeren Server zu Apps und Coding-Tools, die M
 ## Nächste Schritte
 
 - [Schnellstart](quick-start.md): Installieren Sie Kaeso mit Docker Compose, verbinden Sie einen Anbieter, und senden Sie Ihre erste Anfrage.
-- [Modelle aufrufen](calling-models.md): Rufen Sie Modelle aus Ihrer App mit den SDKs von OpenAI und Anthropic oder mit curl auf.
+- [Modelle aufrufen](calling-models.md): Rufen Sie Modelle aus Ihrer App mit den SDKs von OpenAI, Anthropic und Google Gen AI oder mit curl auf.
 - [Coding-Tools](coding-tools.md): Richten Sie Claude Code, Codex und andere Coding-Tools auf Ihre Installation aus.

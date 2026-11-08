@@ -32,7 +32,7 @@ Once the stack is complete and the certificate is issued, run the `SetupLink` ou
 `deploy/aws/managed.yaml` creates:
 
 - a VPC with two public and two private subnets and one NAT gateway;
-- an Application Load Balancer with your ACM certificate, HTTP redirected to HTTPS, path rules that send `/v1/*`, `/platform/*`, `/mcp`, `/mcp/*`, `/oauth/*` and `/.well-known/oauth-*` to the gateway and everything else to the console, and an idle timeout of 300 seconds for long streams;
+- an Application Load Balancer with your ACM certificate, HTTP redirected to HTTPS, path rules that send `/v1/*`, `/v1beta/*`, `/platform/*`, `/mcp`, `/mcp/*`, `/oauth/*` and `/.well-known/oauth-*` to the gateway and everything else to the console, and an idle timeout of 300 seconds for long streams;
 - an ECS cluster with a gateway service (2 vCPUs and 4 GB by default, 2 tasks) and a console service, on Fargate with Graviton, in the private subnets;
 - RDS PostgreSQL 18 and ElastiCache Valkey with `noeviction`, TLS and an AUTH token, reachable only from the gateway;
 - Secrets Manager secrets for the master keys, the database password, the Valkey token, the SMTP password and the ClickHouse URL;

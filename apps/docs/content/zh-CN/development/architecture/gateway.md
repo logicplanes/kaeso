@@ -4,7 +4,7 @@ description: 请求路径、各个 crate、配置，以及网关的 Rust 代码�
 order: 1
 ---
 
-网关是一个实例中唯一的服务器，由 `crates/` 中的 Rust 工作区构建成一个可执行文件 `kaeso`。应用用 OpenAI 和 Anthropic 的官方 SDK 调用它，控制台和脚本则通过 Platform API 管理它。[请求流程](../../concepts/request-flow.md)从外部描述一个请求；本页描述内部。
+网关是一个实例中唯一的服务器，由 `crates/` 中的 Rust 工作区构建成一个可执行文件 `kaeso`。应用用 OpenAI 和 Anthropic 的官方 SDK 或 Google 的 Gen AI SDK 调用它，控制台和脚本则通过 Platform API 管理它。[请求流程](../../concepts/request-flow.md)从外部描述一个请求；本页描述内部。
 
 ## 请求路径
 
@@ -37,7 +37,7 @@ Platform API 请求通过会话 Cookie、具有平台访问权限的 API 密钥�
 
 | 代码 | 位置 |
 | --- | --- |
-| 模型 API（`/v1`） | `crates/kaeso-server/src/model_api` |
+| 模型 API（`/v1`，以及 `model_api/gemini.rs` 中 Gemini 格式的 `/v1beta`） | `crates/kaeso-server/src/model_api` |
 | Platform API（`/platform/v1`） | `crates/kaeso-server/src/platform` |
 | MCP 服务器及其 OAuth 登录（`/mcp`、`/oauth`） | `crates/kaeso-server/src/mcp` |
 | 两者共用的服务 | `crates/kaeso-server/src/services` |
@@ -47,7 +47,7 @@ Platform API 请求通过会话 Cookie、具有平台访问权限的 API 密钥�
 | Crate | 职责 |
 | --- | --- |
 | `kaeso` | 可执行文件：命令行（`serve`、`migrate`、`master-key`、`user`、`sso`、`instance`、`setup-link`、`healthcheck`、`openapi`）、启动和关闭。唯一允许使用 `anyhow` 的 crate |
-| `kaeso-server` | `/v1`、`/platform/v1`、`/mcp`、健康检查和指标的路由，包括提取器、错误映射、OpenAPI 文档、CSRF 检查、请求 ID 和请求体大小限制。还包括两个 API 背后的服务、配置、后台任务和遥测 |
+| `kaeso-server` | `/v1`、`/v1beta`、`/platform/v1`、`/mcp`、健康检查和指标的路由，包括提取器、错误映射、OpenAPI 文档、CSRF 检查、请求 ID 和请求体大小限制。还包括两个 API 背后的服务、配置、后台任务和遥测 |
 | `kaeso-core` | 不含 I/O 的领域规则：ID、权限和角色、密钥格式、模型解析、目录、能力、限额、费用和流式回复组装器。`data/` 保存每个版本附带的模型数据 |
 | `kaeso-store` | 通过 sqlx 访问的 PostgreSQL、ClickHouse、Valkey 连接（一条用于限额检查和计数器，两条用于缓存条目和保留的推理内容）及缓存失效机制，以及两个数据库的迁移 |
 | `kaeso-upstream` | 与服务商之间的传输：HTTP 客户端、认证请求头、基础 URL、超时、流式请求体和取消 |
@@ -68,7 +68,7 @@ Platform API 请求通过会话 Cookie、具有平台访问权限的 API 密钥�
 
 每次修改网关都要遵循这些规则，其中大多数由 lint 和测试强制执行。
 
-1. **线路格式只存在于 KPP 中。** 网关从不手动解析或构建 OpenAI 或 Anthropic 的 JSON，这些都由 `kaeso_codecs::dispatch` 完成。网关自己的 JSON 只有 Platform API 及其错误信封。
+1. **线路格式只存在于 KPP 中。** 网关从不手动解析或构建 OpenAI、Anthropic 或 Gemini 的 JSON，这些都由 `kaeso_codecs::dispatch` 完成。网关自己的 JSON 只有 Platform API 及其错误信封。
 2. **不做透传。** 每个模型请求都会解码为 KPP 再重新编码，即使应用和服务商使用同一种格式。
 3. **不重试；只在路由指明时回退。** 对服务商的调用失败就是失败，并以应用的格式返回，除非别名的路由在这种失败时回退（[别名路由](../../concepts/alias-routes.md)）。
 4. **绝不悄悄丢弃数据。** KPP 拒绝的内容（`Unsupported`）会在任何内容到达服务商之前，以应用自己的格式作为错误返回。`KppError` 从不被捕获后忽略。

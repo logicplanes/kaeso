@@ -10,12 +10,15 @@ import anthropic
 import httpx
 import openai
 import pytest
+from google import genai
+from google.genai import types
 
 ROOT = Path(__file__).resolve().parents[2]
 BIN = Path(os.environ.get("CARGO_TARGET_DIR", ROOT / "target")) / "debug"
 LOGS = ROOT / "target" / "e2e"
 OPENAI_SECRET = "sk-test-openai-e2e-credential"
 ANTHROPIC_SECRET = "sk-ant-test-e2e-credential"
+GOOGLE_SECRET = "AIzaSyTestGoogleE2eCredential00000000"
 SETUP_LINK = re.compile(r"#token=(\S+)")
 
 
@@ -92,6 +95,7 @@ def gateway():
         KAESO_LOG_FORMAT="json",
         KAESO_PROVIDERS_OPENAI_BASE_URL=mock_url,
         KAESO_PROVIDERS_ANTHROPIC_BASE_URL=mock_url,
+        KAESO_PROVIDERS_GOOGLE_BASE_URL=mock_url,
         KAESO_STREAMS_KEEPALIVE_INTERVAL="1s",
     )
     log_path = LOGS / "gateway.log"
@@ -127,7 +131,7 @@ class Install:
         self.org = session["memberships"][0]["org_id"]
         self.project = self.post(f"/platform/v1/orgs/{self.org}/projects", {"name": "E2E"})["id"]
         self.base = f"/platform/v1/orgs/{self.org}/projects/{self.project}"
-        for provider, secret in (("openai", OPENAI_SECRET), ("anthropic", ANTHROPIC_SECRET)):
+        for provider, secret in (("openai", OPENAI_SECRET), ("anthropic", ANTHROPIC_SECRET), ("google", GOOGLE_SECRET)):
             self.post(
                 f"/platform/v1/orgs/{self.org}/credentials",
                 {"provider": provider, "name": provider, "secret": secret},
@@ -140,6 +144,8 @@ class Install:
             ("openai", "gpt-5-mini", None),
             ("openai", "text-embedding-3-small", None),
             ("openai", "gpt-4o-mini", {"timeout_seconds": 2}),
+            ("google", "gemini-3.5-flash", None),
+            ("google", "gemini-embedding-2", None),
         ):
             body = {"provider": provider, "model_id": model}
             if overrides:
@@ -179,6 +185,14 @@ def oa(install: Install) -> openai.OpenAI:
 @pytest.fixture
 def an(install: Install) -> anthropic.Anthropic:
     return anthropic.Anthropic(base_url=install.url, api_key=install.key, max_retries=0)
+
+
+@pytest.fixture
+def gg(install: Install) -> genai.Client:
+    return genai.Client(
+        api_key=install.key,
+        http_options=types.HttpOptions(base_url=install.url, retry_options=types.HttpRetryOptions(attempts=1)),
+    )
 
 
 class Mock:

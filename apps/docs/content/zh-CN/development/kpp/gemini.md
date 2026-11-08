@@ -33,7 +33,7 @@ Gemini 请求在路径中写明模型和方法，因此编解码器根据请求�
 | 模型路径 | `EgressCtx::gemini_profile` 上的 `GeminiProfile::models_path`。`GeminiProfile::GOOGLE_AI_STUDIO` 为 `/v1beta/models`；`with_models_path` 可为每个请求设置其他路径，例如 `/v1/projects/{project}/locations/{location}/publishers/google/models`。 |
 | 模型 | 一个经过百分号编码的路径段，`:` 也会编码。开头的 `models/` 是同一模型的资源名，会被去掉；`tunedModels/<id>` 指向模型路径旁边的微调模型。`.` 和 `..` 为 `InvalidRequest`，与[获取模型](codec-design.md#模型列表)相同。 |
 | 方法 | `GeminiAction`：`generateContent` 和 `streamGenerateContent`（`RequestKind::Generate`，是否流式由方法决定）、`countTokens`（`CountTokens`）、`embedContent` 和 `batchEmbedContents`（`Embed`，即方言 `gemini_embeddings`）。`streamGenerateContent` 会加上 `?alt=sse`。 |
-| 解码 | `dispatch::decode_gemini_request(model, action, body, headers)`；对 `limits::Checked` 已计数的请求体使用 `decode_checked_gemini_request`。`gemini::split_model_action` 拆分 `gemini-3.5-flash:streamGenerateContent` 这样的路径段。不带路径的 `dispatch::decode_request` 会以空模型解码生成请求体。 |
+| 解码 | `dispatch::decode_gemini_request(model, action, body, headers)`；对 `limits::Checked` 已计数的请求体使用 `decode_checked_gemini_request`。`gemini::split_model_action` 拆分 `gemini-3.5-flash:streamGenerateContent` 这样的路径段。不带路径的 `dispatch::decode_request` 会以空模型解码生成请求体。网关用这两者在 `/v1beta/models/{model}:{method}` 上为 Gemini 应用提供服务（`crates/kaeso-server/src/model_api/gemini.rs`）。 |
 | 每个 content 都带角色 | `GeminiProfile::role_on_every_content`：应用发送的不带 `role` 的 content 会得到 `user`。Google AI Studio 下关闭。 |
 
 ## 请求
@@ -112,6 +112,12 @@ Schema `Part`。一个 part 恰好带有 `text`、`inlineData`、`fileData`、`f
 - **托管网页搜索**会被[省略](cross-format.md#省略的工具)。
 - **缓存提示**会被丢弃：Gemini 会隐式缓存。
 - **`user`** 会被丢弃：Gemini 没有终端用户字段。
+
+### 来自 google-genai 的请求
+
+`google-genai` 2.32.0 会以 snake case 写出部分键，API 也接受它们，因为 proto JSON 接受每个字段的原始名称：`inlineData` 和 `fileData` 中的 `mime_type` 和 `file_uri`，`thinkingConfig` 中的 `include_thoughts`、`thinking_budget` 和 `thinking_level`，以及 `functionDeclarations` 中的 `parameters_json_schema` 和 `response_json_schema`。`gemini::sdk` 以 camel case 名称读取它们，并设置形式标记 `sdk_names`。发往 Gemini 的请求会按应用的写法把它们写回。
+
+该 SDK 还会以浮点数发送 `topK`，例如 `20.0`。KPP 把整数值的浮点数读作整数，带形式标记 `top_k_float`，发往 Gemini 时再写回浮点数；带小数部分的值为 `InvalidRequest`。fixture `requests/sdk-tools-snake-case.json` 来自 `google-genai` 2.32.0。
 
 ### 思考
 
@@ -217,6 +223,7 @@ Google 的错误体 `{"error": {"code", "message", "status", "details"}}`（[问
 | 线路字段 | KPP | 说明 |
 |---|---|---|
 | 只有一个文本 part 的 `content` | 一个 `EmbedInput::Text` | 其他任何 content → 字段 `content`（或 `requests[i].content`）和一个空输入，跨方言时被拒绝。 |
+| `content.role` `user` | 形式标记 `user_role:<i>` | `google-genai` 会在每个 content 上发送它（`requests/sdk-batch-user-role.json`）。Gemini 会收到它；其他方言收到不带它的输入。其他任何角色都会让 content 保持原样，跨方言时被拒绝。 |
 | `requests[]` | 每项一个输入 | |
 | `outputDimensionality`、`embedContentConfig.outputDimensionality` | `dimensions` | 批量中的请求各不相同时 → 字段 `requests[i].outputDimensionality`。`embedContentConfig` → 形式标记 `config_dimensions`。 |
 | `taskType`、`title`、`embedContentConfig` 的其他键 | 字段 | |

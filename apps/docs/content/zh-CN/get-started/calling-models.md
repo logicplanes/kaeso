@@ -1,10 +1,10 @@
 ---
 title: 调用模型
-description: 使用 OpenAI 或 Anthropic SDK，或者用 curl，调用项目中的任意模型。
+description: 使用 OpenAI、Anthropic 或 Google Gen AI SDK，或者用 curl，调用项目中的任意模型。
 order: 2
 ---
 
-把官方 OpenAI 或 Anthropic SDK 指向您的实例，并提供一个 Kaeso API 密钥。任何 SDK 都能调用项目中的任意聊天模型，无论由哪个[服务商](../concepts/providers.md)提供，因此 OpenAI SDK 也能调用 Claude。
+把官方 OpenAI 或 Anthropic SDK，或者 Google 的 Gen AI SDK，指向您的实例，并提供一个 Kaeso API 密钥。任何 SDK 都能调用项目中的任意聊天模型，无论由哪个[服务商](../concepts/providers.md)提供，因此 OpenAI SDK 也能调用 Claude。
 
 ```bash tab="curl"
 curl https://kaeso.example.com/v1/responses \
@@ -101,7 +101,100 @@ for (const block of message.content) {
 }
 ```
 
-每个端点都接受放在任一请求头中的密钥，所以只发送 `Authorization: Bearer` 的工具也能使用。
+每个端点都接受放在 `Authorization: Bearer`、`x-api-key` 或 `x-goog-api-key` 中的密钥，所以只发送 `Authorization: Bearer` 的工具也能使用。
+
+## 使用 Google Gen AI SDK
+
+把基础 URL 设为 `https://kaeso.example.com`，不带版本：`google-genai` 会自行加上 `/v1beta`。它以 `x-goog-api-key` 发送密钥：
+
+```bash tab="curl"
+curl https://kaeso.example.com/v1beta/models/claude-haiku-4-5:generateContent \
+  -H "x-goog-api-key: $KAESO_API_KEY" \
+  -H "content-type: application/json" \
+  -d '{
+    "contents": [
+      {"role": "user", "parts": [{"text": "Write a haiku about gateways."}]}
+    ]
+  }'
+```
+
+```python tab="Python"
+import os
+from google import genai
+
+client = genai.Client(
+    api_key=os.environ["KAESO_API_KEY"],
+    http_options={"base_url": "https://kaeso.example.com"},
+)
+
+response = client.models.generate_content(
+    model="claude-haiku-4-5",
+    contents="Write a haiku about gateways.",
+)
+print(response.text)
+```
+
+```ts tab="TypeScript"
+import { GoogleGenAI } from "@google/genai";
+
+const ai = new GoogleGenAI({
+  apiKey: process.env.KAESO_API_KEY,
+  httpOptions: { baseUrl: "https://kaeso.example.com" },
+});
+
+const response = await ai.models.generateContent({
+  model: "claude-haiku-4-5",
+  contents: "Write a haiku about gateways.",
+});
+console.log(response.text);
+```
+
+保留 SDK 的默认 API 版本 `v1beta`，因为 Kaeso 只在 `/v1beta` 下提供 Gemini API。要流式接收回复，调用 `generate_content_stream`。SDK 会用 `alt=sse` 请求服务器发送事件，这是 Kaeso 发给 Gemini 应用的唯一一种流：
+
+```bash tab="curl"
+curl -N "https://kaeso.example.com/v1beta/models/claude-haiku-4-5:streamGenerateContent?alt=sse" \
+  -H "x-goog-api-key: $KAESO_API_KEY" \
+  -H "content-type: application/json" \
+  -d '{
+    "contents": [
+      {"role": "user", "parts": [{"text": "Write a haiku about gateways."}]}
+    ]
+  }'
+```
+
+```python tab="Python"
+import os
+from google import genai
+
+client = genai.Client(
+    api_key=os.environ["KAESO_API_KEY"],
+    http_options={"base_url": "https://kaeso.example.com"},
+)
+
+stream = client.models.generate_content_stream(
+    model="claude-haiku-4-5",
+    contents="Write a haiku about gateways.",
+)
+for chunk in stream:
+    print(chunk.text or "", end="")
+```
+
+```ts tab="TypeScript"
+import { GoogleGenAI } from "@google/genai";
+
+const ai = new GoogleGenAI({
+  apiKey: process.env.KAESO_API_KEY,
+  httpOptions: { baseUrl: "https://kaeso.example.com" },
+});
+
+const stream = await ai.models.generateContentStream({
+  model: "claude-haiku-4-5",
+  contents: "Write a haiku about gateways.",
+});
+for await (const chunk of stream) {
+  process.stdout.write(chunk.text ?? "");
+}
+```
 
 ## 流式接收回复
 

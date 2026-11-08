@@ -23,7 +23,7 @@ flowchart TD
   encode -- Messages --> provider
 ```
 
-KPP, das Kaeso Provider Protocol, hat einen Codec für jedes API-Format: OpenAI Chat Completions, Responses und Embeddings sowie Anthropic Messages. Die Antwort nimmt denselben Weg zurück, bei einem Stream Event für Event. Embeddings gehen nur an Embeddings-Modelle, die nur manche [Anbieter](supported-providers.md) haben. Die [Modell-API](../api/model-api.md) listet die Endpunkte jedes Formats.
+KPP, das Kaeso Provider Protocol, hat einen Codec für jedes API-Format: OpenAI Chat Completions, Responses und Embeddings, Anthropic Messages sowie Gemini mit seinen Embeddings. Die Antwort nimmt denselben Weg zurück, bei einem Stream Event für Event. Embeddings gehen nur an Embeddings-Modelle, die nur manche [Anbieter](supported-providers.md) haben. Die [Modell-API](../api/model-api.md) listet die Endpunkte jedes Formats.
 
 ## Drei Regeln
 
@@ -82,7 +82,7 @@ Diese lehnt Kaeso in jedem Format ab, auch wenn das Format gleich bleibt:
 
 ### Token-Zählung
 
-`/v1/messages/count_tokens` und `/v1/responses/input_tokens` fragen den Anbieter des Modells nach der Zahl. Hat der Anbieter keinen Endpunkt zum Zählen von Token, lehnt Kaeso die Anfrage mit 400 ab, und die Meldung sagt, dass das Modell keine Token zählen kann. Kaeso schätzt die Zahl nicht, denn eine Schätzung trifft nie genau die Zahl des Anbieters.
+`/v1/messages/count_tokens`, `/v1/responses/input_tokens` und `:countTokens` von Gemini fragen den Anbieter des Modells nach der Zahl. Hat der Anbieter keinen Endpunkt zum Zählen von Token, lehnt Kaeso die Anfrage mit 400 ab, und die Meldung sagt, dass das Modell keine Token zählen kann. Kaeso schätzt die Zahl nicht, denn eine Schätzung trifft nie genau die Zahl des Anbieters.
 
 ## Prompt-Caching
 
@@ -139,10 +139,14 @@ Chat Completions hat kein Feld für Reasoning. Bedient Claude oder ein OpenAI-Mo
 
 Die Metrik `kaeso_reasoning_continuity_total` zählt behaltenes, wiederhergestelltes, fehlendes und nicht verfügbares Reasoning ([Zustand und Metriken](../self-hosting/monitoring.md)).
 
+### Gemini-Apps
+
+Eine Gemini-App erhält kein Reasoning von einem anderen Anbieter, weil ein Thought-Part es nicht tragen kann: `google-genai` liest `thoughtSignature` als Base64. Bedient Claude oder ein OpenAI-Modell über Responses eine Gemini-App, behält das Gateway das Reasoning vor jedem Tool-Aufruf anhand der ID des Aufrufs und fügt es wieder ein, wie bei Chat Completions. Bedient ein Gemini-Modell eine Gemini-App, erreichen seine Thought Signatures die App und kommen so zurück, wie Gemini sie geschrieben hat.
+
 ### Lesbares Reasoning
 
 Was eine App vom Reasoning sieht, folgt dem, was sie in ihrem eigenen Format anfordert:
 
 - Eine Responses-App, die `reasoning.summary` setzt, erhält das Denken von Claude als Reasoning-Zusammenfassungen, gestreamt als `response.reasoning_summary_text.delta`-Events. Das Gateway fordert von Claude zusammengefasstes Denken an, das Claude Opus 4.7 und später sonst verbergen.
 - Eine Anthropic-App mit eingeschaltetem Denken erhält die Reasoning-Zusammenfassungen eines OpenAI-Modells als Denk-Text. Das Gateway fordert sie bei OpenAI an, es sei denn, die App hat `thinking.display` auf `omitted` gesetzt. OpenAI kann Zusammenfassungen für Organisationen verweigern, die es nicht verifiziert hat, und Kaeso gibt seinen Fehler weiter.
-- Eine Chat-Completions-App sieht kein Reasoning.
+- Eine Chat-Completions-App sieht kein Reasoning, eine Gemini-App keines von einem anderen Anbieter.

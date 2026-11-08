@@ -90,7 +90,7 @@ Kaeso uses the provider key assigned to the project for the model's provider, or
 
 ## Sending to the provider
 
-KPP checks the request against the provider's format and encodes it. Kaeso refuses what that format can't express before anything reaches the provider ([format translation](format-translation.md)). For a Chat Completions app served through another format, Kaeso first puts back the reasoning kept from earlier turns ([reasoning between turns](format-translation.md#reasoning-between-turns)).
+KPP checks the request against the provider's format and encodes it. Kaeso refuses what that format can't express before anything reaches the provider ([format translation](format-translation.md)). For a Chat Completions or Gemini app served through another format, Kaeso first puts back the reasoning kept from earlier turns ([reasoning between turns](format-translation.md#reasoning-between-turns)).
 
 Kaeso calls each provider in its own API format, such as Messages for Anthropic and Chat Completions for Groq. [Supported providers](supported-providers.md) lists the formats of every provider.
 

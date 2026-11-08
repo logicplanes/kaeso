@@ -4,7 +4,7 @@ description: Die Endpunkte, die Apps aufrufen, wie sie sich authentifizieren und
 order: 1
 ---
 
-Apps rufen die Modell-API mit den offiziellen SDKs von OpenAI und Anthropic auf: Richten Sie das SDK auf Ihre Installation aus, und übergeben Sie einen Kaeso-API-Schlüssel. Kaeso übersetzt jede Anfrage in das Format des Anbieters des Modells und die Antwort zurück, Streams eingeschlossen.
+Apps rufen die Modell-API mit den offiziellen SDKs von OpenAI und Anthropic oder mit Googles Gen AI SDK auf: Richten Sie das SDK auf Ihre Installation aus, und übergeben Sie einen Kaeso-API-Schlüssel. Kaeso übersetzt jede Anfrage in das Format des Anbieters des Modells und die Antwort zurück, Streams eingeschlossen.
 
 Mit dem OpenAI SDK beantwortet Claude diese Chat-Completions-Anfrage:
 
@@ -102,12 +102,57 @@ for (const block of message.content) {
 }
 ```
 
+Mit Googles Gen AI SDK (`google-genai`) dieselbe Anfrage im Gemini-Format:
+
+```bash tab="curl"
+curl https://kaeso.example.com/v1beta/models/claude-haiku-4-5:generateContent \
+  -H "x-goog-api-key: $KAESO_API_KEY" \
+  -H "content-type: application/json" \
+  -d '{
+    "contents": [
+      {"role": "user", "parts": [{"text": "Write a haiku about gateways."}]}
+    ]
+  }'
+```
+
+```python tab="Python"
+import os
+from google import genai
+
+client = genai.Client(
+    api_key=os.environ["KAESO_API_KEY"],
+    http_options={"base_url": "https://kaeso.example.com"},
+)
+
+response = client.models.generate_content(
+    model="claude-haiku-4-5",
+    contents="Write a haiku about gateways.",
+)
+print(response.text)
+```
+
+```ts tab="TypeScript"
+import { GoogleGenAI } from "@google/genai";
+
+const ai = new GoogleGenAI({
+  apiKey: process.env.KAESO_API_KEY,
+  httpOptions: { baseUrl: "https://kaeso.example.com" },
+});
+
+const response = await ai.models.generateContent({
+  model: "claude-haiku-4-5",
+  contents: "Write a haiku about gateways.",
+});
+console.log(response.text);
+```
+
 | SDK | Basis-URL | Sendet den Schlüssel als |
 | --- | --- | --- |
 | OpenAI | `https://kaeso.example.com/v1` | `Authorization: Bearer` |
 | Anthropic | `https://kaeso.example.com` | `Authorization: Bearer` |
+| Google Gen AI (`google-genai`) | `https://kaeso.example.com` | `x-goog-api-key` |
 
-Jedes Format erreicht jedes Generierungsmodell im Katalog des Projekts. [Modelle aufrufen](../get-started/calling-models.md) zeigt Streaming und mehr von beiden SDKs.
+Jedes Format erreicht jedes Generierungsmodell im Katalog des Projekts, eine Gemini-App also Claude und eine OpenAI-App ein Gemini-Modell. [Modelle aufrufen](../get-started/calling-models.md) zeigt Streaming und mehr von jedem SDK.
 
 ## Endpunkte
 
@@ -121,32 +166,44 @@ Jedes Format erreicht jedes Generierungsmodell im Katalog des Projekts. [Modelle
 | `POST /v1/messages/count_tokens` | Anthropic Messages, Token zählen |
 | `GET /v1/models` | Die Modelle, die der Schlüssel aufrufen darf |
 | `GET /v1/models/{model}` | Eines davon |
+| `POST /v1beta/models/{model}:generateContent` | Gemini |
+| `POST /v1beta/models/{model}:streamGenerateContent?alt=sse` | Gemini, gestreamt |
+| `POST /v1beta/models/{model}:countTokens` | Gemini, Token zählen |
+| `POST /v1beta/models/{model}:embedContent` | Gemini-Embeddings |
+| `POST /v1beta/models/{model}:batchEmbedContents` | Gemini-Embeddings, mehrere Eingaben |
+| `GET /v1beta/models` | Die Modelle, die der Schlüssel aufrufen darf, im Gemini-Format |
+| `GET /v1beta/models/{model}` | Eines davon, im Gemini-Format |
 
-`/v1/embeddings` bedient nur Embeddings-Modelle, die nur manche [Anbieter](../concepts/supported-providers.md) anbieten, und Embeddings-Modelle bedienen keinen anderen Endpunkt. Kaeso antwortet mit 400 auf eine Anfrage, die beides mischt.
+In einem `/v1beta`-Pfad ist `{model}` ein beliebiger [Modellname](#modellnamen), etwa `claude-haiku-4-5`.
+
+`/v1/embeddings`, `:embedContent` und `:batchEmbedContents` bedienen nur Embeddings-Modelle, die nur manche [Anbieter](../concepts/supported-providers.md) anbieten, und Embeddings-Modelle bedienen keinen anderen Endpunkt. Kaeso antwortet mit 400 auf eine Anfrage, die beides mischt.
 
 Jeder andere Pfad unter `/v1` erhält 404, ein bekannter Pfad mit der falschen Methode 405. Beide Fehler kommen im Anthropic-Format, wenn die Anfrage einen `anthropic-version`-Header hat, sonst im OpenAI-Format.
 
+Unter `/v1beta` kommt jeder Fehler im Gemini-Format. Andere Methoden wie `batchGenerateContent` und andere Pfade wie Dateien oder Cached Contents erhalten 404. Ein bekannter Pfad mit der falschen Methode erhält 405. Ein Aufruf nimmt nur die Query-Parameter `key` und `alt` an, jeder andere erhält 400. Ein Gemini-Aufruf unter `/v1`, wie ihn `google-genai` mit `api_version="v1"` sendet, erhält 404 mit einer Meldung, die auf `/v1beta` verweist.
+
 ### Modelle auflisten
 
-`GET /v1/models` wählt sein Format ebenso über den Header `anthropic-version`. Die Liste enthält die Katalogmodelle, die der Schlüssel aufrufen darf, danach die Aliasse des Projekts, die auf sie zeigen. Jedes Modell steht mit seiner eigenen ID in der Liste, oder als `provider/model`, wenn seine eigene ID nicht zu ihm führt, etwa weil ein anderer Anbieter dieselbe ID anbietet ([Modellnamen](#modellnamen)). Ein Modell, das der Anbieter dem Anbieter-Schlüssel des Projekts nicht bereitstellt, fehlt ([Verfügbarkeit](../console/models-and-aliases.md#verfügbarkeit)).
+`GET /v1/models` wählt sein Format ebenso über den Header `anthropic-version`. `GET /v1beta/models` antwortet immer im Gemini-Format und nennt jedes Modell `models/<name>`. Die Liste enthält die Katalogmodelle, die der Schlüssel aufrufen darf, danach die Aliasse des Projekts, die auf sie zeigen. Jedes Modell steht mit seiner eigenen ID in der Liste, oder als `provider/model`, wenn seine eigene ID nicht zu ihm führt, etwa weil ein anderer Anbieter dieselbe ID anbietet ([Modellnamen](#modellnamen)). Ein Modell, das der Anbieter dem Anbieter-Schlüssel des Projekts nicht bereitstellt, fehlt ([Verfügbarkeit](../console/models-and-aliases.md#verfügbarkeit)).
 
-| | OpenAI-Format | Anthropic-Format |
-| --- | --- | --- |
-| Paginierung | Keine; eine Antwort enthält alle Modelle | `limit` (1 bis 1000, Standard 20), `after_id` oder `before_id` |
-| Veraltete Modelle | Nicht gekennzeichnet | `lifecycle: "deprecated"`, wie KPMR sie kennzeichnet |
+| | OpenAI-Format | Anthropic-Format | Gemini-Format |
+| --- | --- | --- | --- |
+| Paginierung | Keine; eine Antwort enthält alle Modelle | `limit` (1 bis 1000, Standard 20), `after_id` oder `before_id` | `pageSize` (Standard 50) und `pageToken` mit dem `nextPageToken` der vorigen Seite |
+| Veraltete Modelle | Nicht gekennzeichnet | `lifecycle: "deprecated"`, wie KPMR sie kennzeichnet | Nicht gekennzeichnet |
 
-`GET /v1/models/{model}` nimmt jeden [Modellnamen](#modellnamen). Die Antwort ist 404, wenn das Modell nicht im Katalog ist, der Schlüssel es nicht verwenden darf oder der Anbieter es nicht bereitstellt.
+`GET /v1/models/{model}` und `GET /v1beta/models/{model}` nehmen jeden [Modellnamen](#modellnamen). Die Antwort ist 404, wenn das Modell nicht im Katalog ist, der Schlüssel es nicht verwenden darf oder der Anbieter es nicht bereitstellt.
 
 ## Schlüssel
 
-Senden Sie einen API-Schlüssel mit Inferenzzugriff in einem der beiden Header, an jedem Endpunkt:
+Senden Sie einen API-Schlüssel mit Inferenzzugriff in einem dieser Header, an jedem Endpunkt:
 
 ```text
 Authorization: Bearer sk-kso-…
 x-api-key: sk-kso-…
+x-goog-api-key: sk-kso-…
 ```
 
-Sendet eine Anfrage beide, gilt `x-api-key`. Der Schlüssel bestimmt das Projekt. Er handelt mit den Rechten und dem Modellzugriff seines Mitglieds oder Dienstkontos, das dafür das Recht `api.request` braucht.
+Sendet eine Anfrage mehrere, gilt `x-api-key`, dann `x-goog-api-key`, dann `Authorization`. Unter `/v1beta` kann der Schlüssel auch in der Query stehen, als `?key=sk-kso-…`, wie in Googles REST-Beispielen. Kaeso nutzt ihn nur, wenn kein Header einen Schlüssel trägt, und der Schlüssel aus der Query erreicht nie die Protokolle oder den Anbieter. Der Schlüssel bestimmt das Projekt. Er handelt mit den Rechten und dem Modellzugriff seines Mitglieds oder Dienstkontos, das dafür das Recht `api.request` braucht.
 
 Schlüssel nur mit Plattformzugriff und Plattform-Schlüssel der Organisation (`sk-kso-org-…`) lehnt Kaeso mit 403 ab: Sie rufen nie Modelle auf. [API-Schlüssel](../console/api-keys.md) erklärt, wie Sie Schlüssel erstellen und begrenzen.
 
@@ -166,13 +223,15 @@ Kaeso antwortet mit 404 für ein Modell außerhalb des Katalogs und für eines, 
 
 Fordern Sie einen Stream so an, wie es das Format vorsieht, mit `"stream": true`. Die Antwort ist ein Server-Sent-Events-Stream im Format der App.
 
-- **Keepalives.** Nach 15 Sekunden ohne Ausgabe schreibt Kaeso ein Keepalive, das die SDKs ignorieren: einen SSE-Kommentar in den OpenAI-Formaten, ein `ping`-Event im Anthropic-Format. `KAESO_STREAMS_KEEPALIVE_INTERVAL` ändert das Intervall oder schaltet Keepalives ab ([Streams an Apps](../self-hosting/configuration.md#streams-an-apps)).
+Eine Gemini-App ruft stattdessen `:streamGenerateContent?alt=sse` auf, wie es `google-genai` tut. Kaeso streamt Gemini-Antworten nur als Server-Sent Events, daher erhält ein Stream ohne `alt=sse` 400.
+
+- **Keepalives.** Nach 15 Sekunden ohne Ausgabe schreibt Kaeso ein Keepalive, das die SDKs ignorieren: einen SSE-Kommentar in den OpenAI-Formaten, ein `ping`-Event im Anthropic-Format und eine Leerzeile im Gemini-Format, weil `google-genai` jede andere Zeile als JSON liest. `KAESO_STREAMS_KEEPALIVE_INTERVAL` ändert das Intervall oder schaltet Keepalives ab ([Streams an Apps](../self-hosting/configuration.md#streams-an-apps)).
 - **Fehler.** Ein begonnener Stream kann seinen Status nicht mehr ändern. Scheitert der Anbieter oder beendet er den Stream vor dem Ende der Antwort, endet der Stream mit einem Fehler-Event im Format der App.
 - **Abbrüche.** Trennt die App die Verbindung vor dem letzten Event des Streams, stoppt Kaeso die Anfrage beim Anbieter sofort und berechnet, was verbraucht wurde. Ein Stream, dessen letztes Event die App erreicht hat, gilt als abgeschlossen, auch wenn die App die Verbindung direkt danach trennt.
 
 ## Reasoning über Tool-Aufrufe hinweg
 
-Chat Completions hat kein Feld für das Reasoning eines Modells. Ruft eine Chat-Completions-App ein Modell auf, das über ein anderes Format bedient wird, behält Kaeso das Reasoning des Modells vor jedem Tool-Aufruf. In der nächsten Runde der App fügt Kaeso das Reasoning wieder ein ([Formatübersetzung](../concepts/format-translation.md#chat-completions)).
+Chat Completions hat kein Feld für das Reasoning eines Modells, und das Gemini-Format keines für das Reasoning eines anderen Anbieters. Ruft eine Chat-Completions- oder Gemini-App ein Modell auf, das über ein anderes Format bedient wird, behält Kaeso das Reasoning des Modells vor jedem Tool-Aufruf. In der nächsten Runde der App fügt Kaeso das Reasoning wieder ein ([Formatübersetzung](../concepts/format-translation.md#chat-completions)). Ruft eine Gemini-App ein Gemini-Modell auf, gehen Geminis eigene Thought Signatures unverändert hin und zurück.
 
 ## Antwort-Cache
 
@@ -194,15 +253,15 @@ Ein Projekt kann eine wiederholte, gleiche Anfrage aus einer gespeicherten Antwo
 
 ## Aufrufe aus dem Browser
 
-Ein Browser erlaubt einer Webseite den Aufruf eines anderen Origins nur, wenn dieser mit CORS-Headern antwortet. Kaeso sendet keine, bis `KAESO_CORS_ALLOWED_ORIGINS` die Origins Ihrer Web-Apps auflistet, etwa `https://app.example.com,http://localhost:5173` ([Browser-Apps](../self-hosting/configuration.md#browser-apps)). Dann gelten diese Regeln, nur auf `/v1`:
+Ein Browser erlaubt einer Webseite den Aufruf eines anderen Origins nur, wenn dieser mit CORS-Headern antwortet. Kaeso sendet keine, bis `KAESO_CORS_ALLOWED_ORIGINS` die Origins Ihrer Web-Apps auflistet, etwa `https://app.example.com,http://localhost:5173` ([Browser-Apps](../self-hosting/configuration.md#browser-apps)). Dann gelten diese Regeln, nur auf `/v1` und `/v1beta`:
 
 - **Exakte Origins.** Schema, Host und Port müssen übereinstimmen: `https://app.example.com` lässt weder `http://app.example.com` noch `https://www.app.example.com` zu. Kaeso lehnt `*` beim Start ab, weil damit jede Website Anfragen mit den Schlüsseln ihrer Besucher senden könnte.
-- **Preflights.** Eine `OPTIONS`-Anfrage mit `Origin` und `Access-Control-Request-Method` von einem gelisteten Origin erhält ohne Schlüssel 204. Die Antwort trägt `Access-Control-Allow-Origin` mit diesem Origin, `Access-Control-Allow-Methods: GET, POST` und `Access-Control-Max-Age: 7200`. `Access-Control-Allow-Headers` nennt diejenigen angefragten Header, die die offiziellen SDKs senden: `authorization`, `x-api-key`, `content-type`, `accept`, `user-agent`, `anthropic-version`, `anthropic-beta`, `anthropic-dangerous-direct-browser-access`, `openai-organization`, `openai-project`, `openai-beta`, `idempotency-key` und `x-stainless-…`. Ein Preflight ist keine Modellanfrage: Er wird weder protokolliert noch berechnet noch auf Limits angerechnet.
+- **Preflights.** Eine `OPTIONS`-Anfrage mit `Origin` und `Access-Control-Request-Method` von einem gelisteten Origin erhält ohne Schlüssel 204. Die Antwort trägt `Access-Control-Allow-Origin` mit diesem Origin, `Access-Control-Allow-Methods: GET, POST` und `Access-Control-Max-Age: 7200`. `Access-Control-Allow-Headers` nennt diejenigen angefragten Header, die die offiziellen SDKs senden: `authorization`, `x-api-key`, `content-type`, `accept`, `user-agent`, `anthropic-version`, `anthropic-beta`, `anthropic-dangerous-direct-browser-access`, `openai-organization`, `openai-project`, `openai-beta`, `idempotency-key`, `x-goog-api-key`, `x-goog-api-client` und `x-stainless-…`. Ein Preflight ist keine Modellanfrage: Er wird weder protokolliert noch berechnet noch auf Limits angerechnet.
 - **Antworten.** Jede Antwort an einen gelisteten Origin, auch eine Fehlerantwort, trägt `Access-Control-Allow-Origin` mit diesem Origin und `Access-Control-Expose-Headers: kaeso-request-id, kaeso-provider, kaeso-model, kaeso-left-out, kaeso-adapted, kaeso-route, kaeso-cache, age, retry-after, retry-after-ms`, damit die App diese Header lesen kann.
-- **Andere Origins** erhalten keine CORS-Header, also blockiert der Browser den Aufruf, und ihre Preflights erhalten ein leeres 204. Jede Antwort auf `/v1` trägt `Vary: Origin`, damit Caches die Antworten auseinanderhalten.
+- **Andere Origins** erhalten keine CORS-Header, also blockiert der Browser den Aufruf, und ihre Preflights erhalten ein leeres 204. Jede Antwort auf `/v1` und `/v1beta` trägt `Vary: Origin`, damit Caches die Antworten auseinanderhalten.
 - **Keine Cookies.** Kaeso sendet nie `Access-Control-Allow-Credentials`, da Schlüssel in Headern übertragen werden. Die Platform API, die Health-Checks und die Metriken beantworten nie Cross-Origin-Anfragen.
 
-Beide SDKs laufen im Browser nur, wenn die App `dangerouslyAllowBrowser: true` übergibt.
+Die SDKs von OpenAI und Anthropic laufen im Browser nur, wenn die App `dangerouslyAllowBrowser: true` übergibt.
 
 > [!WARNING]
 > Wer eine Seite nutzt, kann den Schlüssel darin lesen. Geben Sie einer Browser-App einen eigenen Schlüssel nur mit Inferenzzugriff, kurzer Laufzeit, nur den nötigen Modellen und engen Limits. Oder lassen Sie Ihr eigenes Backend kurzlebige Schlüssel ausgeben ([API-Schlüssel](../console/api-keys.md)).

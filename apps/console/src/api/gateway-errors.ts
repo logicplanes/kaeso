@@ -752,7 +752,25 @@ const messages = (): Rule[] => [
       v,
     ),
   ),
-  rule("errors.modelApi.sendKey", () => t("errors.modelApi.sendKey", "Send a Kaeso API key as `Authorization: Bearer <key>` or `x-api-key: <key>`.")),
+  rule("errors.modelApi.sendKey", () =>
+    t("errors.modelApi.sendKey", "Send a Kaeso API key as `Authorization: Bearer <key>`, `x-api-key` or `x-goog-api-key`."),
+  ),
+  rule("errors.modelApi.geminiParameter", (v) =>
+    t("errors.modelApi.geminiParameter", "Kaeso doesn't take the query parameter `{name}` on Gemini calls; remove it.", v),
+  ),
+  rule("errors.modelApi.geminiMethod", (v) => t("errors.modelApi.geminiMethod", "Kaeso doesn't serve the Gemini method `{method}`.", v)),
+  rule("errors.modelApi.geminiNameMethod", () =>
+    t("errors.modelApi.geminiNameMethod", "Name a model and a method, such as `gemini-3.5-flash:generateContent`."),
+  ),
+  rule("errors.modelApi.geminiAltValue", (v) =>
+    t("errors.modelApi.geminiAltValue", "Kaeso streams Gemini replies as server-sent events only, not as `alt={value}`; send `alt=sse`.", v),
+  ),
+  rule("errors.modelApi.geminiAltMissing", () =>
+    t("errors.modelApi.geminiAltMissing", "Kaeso streams Gemini replies as server-sent events only; add `alt=sse` to the URL."),
+  ),
+  rule("errors.modelApi.geminiOnV1", () =>
+    t("errors.modelApi.geminiOnV1", "Kaeso serves the Gemini API under `/v1beta`; set the SDK's API version to `v1beta`."),
+  ),
   rule("errors.modelApi.keysUnavailable", () => t("errors.modelApi.keysUnavailable", "Kaeso cannot check API keys right now. Try again shortly.")),
   rule("errors.modelApi.platformKey", () =>
     t("errors.modelApi.platformKey", "Org platform keys manage Kaeso through the Platform API and cannot call models. Use a project API key."),

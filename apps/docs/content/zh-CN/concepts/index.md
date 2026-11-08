@@ -27,9 +27,9 @@ order: 2
 | 别名 | 项目为其目录中的模型起的名称，例如 `fast`，其路由可以回退到其他模型（[别名路由](alias-routes.md)） |
 | 限额 | 针对项目、成员或密钥的请求速率或 Token 速率，或 Token 预算或支出预算。硬性预算会拒绝请求，软性预算只发出提醒（[限额和预算](../console/limits-and-budgets.md)） |
 | 请求日志 | 一个模型请求的记录：状态、Token、费用、耗时，以及在保留时的内容（[请求日志](../console/request-logs.md)） |
-| API 格式 | 请求及其回复的形式：OpenAI Chat Completions、Responses 或 Embeddings，或 Anthropic Messages |
+| API 格式 | 请求及其回复的形式：OpenAI Chat Completions、Responses 或 Embeddings，Anthropic Messages，或 Gemini |
 | KPP | Kaeso Provider Protocol，一种统一格式：网关把每种 API 格式转换为它，再从它转换回去（[格式转换](format-translation.md)） |
-| 模型 API、Platform API | 实例的两个 API。应用在 `/v1` 上调用模型，控制台和脚本在 `/platform/v1` 上管理实例（[API](../api/index.md)） |
+| 模型 API、Platform API | 实例的两个 API。应用在 `/v1` 和 `/v1beta` 上调用模型，控制台和脚本在 `/platform/v1` 上管理实例（[API](../api/index.md)） |
 | MCP 服务器、MCP 门户 | MCP 服务器提供工具，例如在 X 上发帖。每个项目都在 `/mcp/<项目 ID>` 有一个 MCP 门户，把其服务器的工具提供给 claude.ai 等客户端（[MCP 门户](mcp-portal.md)） |
 
 ## 下一步

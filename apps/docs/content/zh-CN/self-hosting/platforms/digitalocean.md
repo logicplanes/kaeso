@@ -15,7 +15,7 @@ order: 3
 | `kaeso-postgres` | 开发用数据库，PostgreSQL 18 | DigitalOcean 提供 | 512 MB |
 | `kaeso-valkey` | 托管 Valkey 数据库 | DigitalOcean 提供，需先创建 | 自选 |
 
-应用的边缘终止 TLS 并按路径转发：`/v1`、`/platform`、`/mcp`、`/oauth` 和 `/.well-known` 到达网关，其他所有路径到达控制台，因此这里不运行 `kaeso-edge`。网关只信任来自私有网络（边缘所在）的 `X-Forwarded-For`，并把指标保留在回环地址上。托管 Valkey 使用 DigitalOcean 自有机构签发的证书进行 TLS 通信，规范把它作为 `KAESO_VALKEY_CA` 交给网关（[配置](../configuration.md#设置)）。
+应用的边缘终止 TLS 并按路径转发：`/v1`、`/v1beta`、`/platform`、`/mcp`、`/oauth` 和 `/.well-known` 到达网关，其他所有路径到达控制台，因此这里不运行 `kaeso-edge`。网关只信任来自私有网络（边缘所在）的 `X-Forwarded-For`，并把指标保留在回环地址上。托管 Valkey 使用 DigitalOcean 自有机构签发的证书进行 TLS 通信，规范把它作为 `KAESO_VALKEY_CA` 交给网关（[配置](../configuration.md#设置)）。
 
 **Deploy to DO** 按钮只部署一个服务加一个开发用数据库，而 Kaeso 需要两个服务和一个 Valkey，因此改用 `doctl` 创建。
 

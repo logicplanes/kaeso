@@ -173,6 +173,86 @@ The error body carries the request's id in `request_id`, also when the error com
 
 `Retry-After` gives the wait in whole seconds, rounded up.
 
+## Gemini format
+
+The same request with the Google Gen AI SDK:
+
+```bash tab="curl"
+curl -i https://kaeso.example.com/v1beta/models/gpt-9:generateContent \
+  -H "x-goog-api-key: $KAESO_API_KEY" \
+  -H "content-type: application/json" \
+  -d '{
+    "contents": [
+      {"role": "user", "parts": [{"text": "Write a haiku about gateways."}]}
+    ]
+  }'
+```
+
+```python tab="Python"
+import os
+from google import genai
+from google.genai import errors
+
+client = genai.Client(
+    api_key=os.environ["KAESO_API_KEY"],
+    http_options={"base_url": "https://kaeso.example.com"},
+)
+
+try:
+    client.models.generate_content(
+        model="gpt-9",
+        contents="Write a haiku about gateways.",
+    )
+except errors.APIError as error:
+    print(error.code, error.response.headers["kaeso-request-id"])
+    print(error.message)
+```
+
+```ts tab="TypeScript"
+import { ApiError, GoogleGenAI } from "@google/genai";
+
+const ai = new GoogleGenAI({
+  apiKey: process.env.KAESO_API_KEY,
+  httpOptions: { baseUrl: "https://kaeso.example.com" },
+});
+
+try {
+  await ai.models.generateContent({
+    model: "gpt-9",
+    contents: "Write a haiku about gateways.",
+  });
+} catch (error) {
+  if (!(error instanceof ApiError)) throw error;
+  console.log(error.status, error.message);
+}
+```
+
+The error body follows Google's shape. It has no field for the request's id, so read it from the `kaeso-request-id` header:
+
+```json
+{
+  "error": {
+    "code": 404,
+    "message": "The model `gpt-9` does not exist or this key may not use it.",
+    "status": "NOT_FOUND"
+  }
+}
+```
+
+| Status | `error.status` |
+| --- | --- |
+| 400 | `INVALID_ARGUMENT` |
+| 401 | `UNAUTHENTICATED` |
+| 403 | `PERMISSION_DENIED` |
+| 404 | `NOT_FOUND` |
+| 405, 413 | `INVALID_ARGUMENT` |
+| 429 | `RESOURCE_EXHAUSTED` |
+| 500, 502 | `INTERNAL` |
+| 503 | `UNAVAILABLE`, or `INTERNAL` when Kaeso can't load its own data or is restarting |
+| 504 | `DEADLINE_EXCEEDED` |
+
+`Retry-After` gives the wait in whole seconds, rounded up. A 429 or 503 with a known wait also names it in `details`, as a `RetryInfo` with `retryDelay`, such as `"23s"`.
+
 ## Causes
 
 The message names the cause and what to do. These are the causes behind each status:
@@ -202,7 +282,7 @@ The message names the cause and what to do. These are the causes behind each sta
 | 502 | A custom provider is at an address the install doesn't allow, or answered in a form its format can't read. |
 | 502 | The provider refused the project's provider key, or refused it for billing or quota reasons. |
 | 503 | Kaeso can't load the catalogue, the keys, the provider keys or the limits, or it is restarting. The OpenAI formats answer these with 500. |
-| 503 | The provider is overloaded, in the OpenAI formats. |
+| 503 | The provider is overloaded, in the OpenAI and Gemini formats. |
 | 504 | The provider didn't answer in time. |
 | 529 | The provider is overloaded, in the Anthropic format. |
 
@@ -219,8 +299,8 @@ Otherwise Kaeso writes the error in your app's format and keeps its meaning:
 | Refuses the provider key | 502, in every format |
 | Rate-limits the request | 429 |
 | Refuses for billing or quota reasons | 502, in every format |
-| Is overloaded | 529 in the Anthropic format, 503 in the OpenAI formats |
-| Fails with another server error | Its own 5xx status |
+| Is overloaded | 529 in the Anthropic format, 503 in the OpenAI and Gemini formats |
+| Fails with another server error | Its own 5xx status. A Gemini app gets 500, or 504 for a timeout |
 
 A refused provider key is the install's problem, not your app's. The provider's 401, 402 or 403 would make an SDK report a wrong Kaeso key. The provider's message can also hold a fragment of the provider key or the provider's organization id.
 

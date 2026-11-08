@@ -158,8 +158,8 @@ pub struct UsageRow {
     pub reasoning_tokens: u64,
     #[doc = "The share of the input read from the cache, from 0 to 1: cache reads\n\
         over uncached input, cache reads and cache writes together; `null` for\n\
-        a group without input and for routes to or from `openai_embeddings`,\n\
-        which never cache."]
+        a group without input and for routes to or from `openai_embeddings` or\n\
+        `gemini_embeddings`, which never cache."]
     pub cache_hit_rate: Option<f64>,
     #[doc = "Cost in USD; `null` without the right to see costs."]
     #[schema(value_type = Option<String>)]
@@ -217,8 +217,13 @@ fn public_key(ids: Ids, key: String) -> String {
 }
 
 fn embedding_route(group: GroupBy, key: &str) -> bool {
-    let embeddings = DialectId::OpenAiEmbeddings.as_str();
-    group == GroupBy::Route && key.split(':').take(2).any(|format| format == embeddings)
+    let embeddings =
+        [DialectId::OpenAiEmbeddings, DialectId::GeminiEmbeddings].map(DialectId::as_str);
+    group == GroupBy::Route
+        && key
+            .split(':')
+            .take(2)
+            .any(|format| embeddings.contains(&format))
 }
 
 fn cache_hit_rate(group: GroupBy, r: &UsageGroup) -> Option<f64> {

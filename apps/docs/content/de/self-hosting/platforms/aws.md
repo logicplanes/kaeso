@@ -32,7 +32,7 @@ Sobald der Stack fertig und das Zertifikat ausgestellt ist, führen Sie die Ausg
 `deploy/aws/managed.yaml` legt an:
 
 - eine VPC mit zwei öffentlichen und zwei privaten Subnetzen und einem NAT-Gateway;
-- einen Application Load Balancer mit Ihrem ACM-Zertifikat, HTTP auf HTTPS umgeleitet, Pfadregeln, die `/v1/*`, `/platform/*`, `/mcp`, `/mcp/*`, `/oauth/*` und `/.well-known/oauth-*` an das Gateway und alles andere an die Konsole senden, und einem Leerlauf-Timeout von 300 Sekunden für lange Streams;
+- einen Application Load Balancer mit Ihrem ACM-Zertifikat, HTTP auf HTTPS umgeleitet, Pfadregeln, die `/v1/*`, `/v1beta/*`, `/platform/*`, `/mcp`, `/mcp/*`, `/oauth/*` und `/.well-known/oauth-*` an das Gateway und alles andere an die Konsole senden, und einem Leerlauf-Timeout von 300 Sekunden für lange Streams;
 - einen ECS-Cluster mit einem Gateway-Dienst (standardmäßig 2 vCPUs und 4 GB, 2 Tasks) und einem Konsolen-Dienst, auf Fargate mit Graviton, in den privaten Subnetzen;
 - RDS PostgreSQL 18 und ElastiCache Valkey mit `noeviction`, TLS und einem AUTH-Token, nur vom Gateway erreichbar;
 - Secrets-Manager-Geheimnisse für die Hauptschlüssel, das Datenbankpasswort, das Valkey-Token, das SMTP-Passwort und die ClickHouse-URL;

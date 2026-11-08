@@ -35,7 +35,7 @@ Once the instance is up and the certificate is issued, run the `setup_link` outp
 - Cloud SQL for PostgreSQL 17 with a private address only, and Memorystore for Valkey with `noeviction`, reachable only over the VPC;
 - Secret Manager secrets for the master keys, the PostgreSQL URL, the SMTP password and the ClickHouse URL, read by the gateway's service account;
 - Cloud Run services for the gateway (2 CPUs and 4 GB by default, at least one instance kept warm, a request timeout of an hour) and the console, reachable only through the load balancer;
-- a global external Application Load Balancer with a managed certificate, HTTP redirected to HTTPS, and path rules that send `/v1/*`, `/platform/*`, `/mcp`, `/mcp/*`, `/oauth/*` and `/.well-known/oauth-*` to the gateway and everything else to the console, with a backend timeout of an hour for long streams;
+- a global external Application Load Balancer with a managed certificate, HTTP redirected to HTTPS, and path rules that send `/v1/*`, `/v1beta/*`, `/platform/*`, `/mcp`, `/mcp/*`, `/oauth/*` and `/.well-known/oauth-*` to the gateway and everything else to the console, with a backend timeout of an hour for long streams;
 - an optional Cloud DNS record.
 
 ```bash

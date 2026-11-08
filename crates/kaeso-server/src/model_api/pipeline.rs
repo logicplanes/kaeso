@@ -8,6 +8,7 @@ use axum::response::Response;
 use bytes::Bytes;
 use futures::StreamExt;
 use kaeso_codecs::continuity::reasoning_for_tool_calls;
+use kaeso_codecs::gemini::GeminiAction;
 use kaeso_codecs::{EgressCtx, EncodeCtx, HeaderList, dispatch};
 use kaeso_core::catalogue::Entry;
 use kaeso_core::catalogue::resolve::{Access, Alias, ResolveError, Resolved};
@@ -62,6 +63,13 @@ pub struct Incoming {
     pub stream_only: bool,
     pub max_body: usize,
     pub alias: Option<Alias>,
+    pub gemini: Option<GeminiCall>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct GeminiCall {
+    pub model: String,
+    pub action: GeminiAction,
 }
 
 pub(super) struct Recording {
@@ -238,6 +246,7 @@ fn blank_outcome(request_id: RequestId) -> Outcome {
         response_cache: None,
         alias: None,
         fallbacks: Vec::new(),
+        gemini: None,
     }
 }
 
@@ -306,6 +315,7 @@ pub async fn serve_with(
     let mut outcome = blank_outcome(inc.request_id);
     outcome.ingress = inc.ingress;
     outcome.kind = inc.kind;
+    outcome.gemini = inc.gemini.as_ref().map(|c| c.action);
     outcome.source = inc.source;
     outcome.caller.clone_from(&inc.caller);
     outcome.started_at = now;
@@ -619,6 +629,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         stream_only,
         max_body,
         alias,
+        gemini,
         ..
     } = inc;
     let caller = match caller {
@@ -702,8 +713,11 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
             .map_err(|_| Failure::new(translating_busy(), Stage::Limits))?,
     );
     let listed = header_list(&headers);
-    let req = off_thread(request_bytes, move || {
-        dispatch::decode_checked_request(kind, &checked, &listed)
+    let req = off_thread(request_bytes, move || match gemini {
+        Some(call) => {
+            dispatch::decode_checked_gemini_request(&call.model, call.action, &checked, &listed)
+        }
+        None => dispatch::decode_checked_request(kind, &checked, &listed),
     })
     .await
     .and_then(|r| r)

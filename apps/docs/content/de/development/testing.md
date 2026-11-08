@@ -152,7 +152,7 @@ Drei weitere Tests wachen über Texte. `crates/kaeso-server/tests/error_copy.rs`
 
 ## End-to-End-Tests
 
-Die Suites in `e2e/` führen die offiziellen Python-SDKs von OpenAI, Anthropic und MCP, festgelegt in `e2e/requirements.txt`, gegen die Encoder von KPP, das Gateway, sein MCP-Portal und eine frische Installation aus. Richten Sie ihre virtuelle Umgebung einmalig ein:
+Die Suites in `e2e/` führen die offiziellen Python-SDKs von OpenAI, Anthropic, Google Gen AI und MCP, festgelegt in `e2e/requirements.txt`, gegen die Encoder von KPP, das Gateway, sein MCP-Portal und eine frische Installation aus. Richten Sie ihre virtuelle Umgebung einmalig ein:
 
 ```bash
 python3 -m venv e2e/.venv
@@ -203,7 +203,7 @@ Modelllisten müssen so blättern und filtern, wie die SDKs es erwarten (`e2e/co
 e2e/.venv/bin/pytest -q e2e/sdk
 ```
 
-Diese Suite führt die SDKs gegen das Gateway aus, auf den Datenbanken der Entwicklung. Sie baut das Gateway und `kaeso-testkit`, startet den Mock-Anbieter und das Gateway und richtet Benutzer, Projekte, Anbieter-Schlüssel, Modelle und API-Schlüssel über die Platform API ein. Die Tests decken Streaming, Keepalives, Tools, Bilder, PDFs, Reasoning, beide Richtungen zwischen Anbietern, das Zählen von Token, Embeddings, Modelllisten, jede Fehlerklasse, Limits, Wiederholungen der SDKs und Verbindungsabbrüche ab.
+Diese Suite führt die SDKs gegen das Gateway aus, auf den Datenbanken der Entwicklung. Sie baut das Gateway und `kaeso-testkit`, startet den Mock-Anbieter und das Gateway und richtet Benutzer, Projekte, Anbieter-Schlüssel, Modelle und API-Schlüssel über die Platform API ein. Die Tests decken Streaming, Keepalives, Tools, Bilder, PDFs, Reasoning, beide Richtungen zwischen Anbietern, das Zählen von Token, Embeddings, Modelllisten, jede Fehlerklasse, Limits, Wiederholungen der SDKs und Verbindungsabbrüche ab. `e2e/sdk/test_google_genai_sdk.py` führt `google-genai` gegen `/v1beta` aus: Generierung und Streams bei jedem Anbieter, Tool-Schleifen mit Geminis Thought Signatures und mit dem Denken von Claude, Token-Zählung, Embeddings, Modelllisten und Geminis Fehlerform.
 
 Der Mock-Anbieter (`crates/kaeso-testkit/src/mock_provider.rs`) wählt seine Antwort anhand von Markierungen in der Anfrage:
 

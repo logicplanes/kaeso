@@ -310,6 +310,19 @@ async fn embedding_routes_have_no_cache_hit_rate() {
     )
     .await;
     assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    let gemini_app = axum::http::Request::builder()
+        .uri("/v1beta/models/text-embedding-3-small:embedContent")
+        .method("POST")
+        .header("x-goog-api-key", &env.key)
+        .header("content-type", "application/json")
+        .body(axum::body::Body::from(
+            json!({ "content": { "parts": [{ "text": "hello" }] } }).to_string(),
+        ))
+        .unwrap();
+    let answered = tower::ServiceExt::oneshot(env.app.router.clone(), gemini_app)
+        .await
+        .unwrap();
+    assert_eq!(answered.status(), StatusCode::OK);
     env.app.state.in_flight.settled().await;
     kaeso_server::services::usage::flush(&env.app.state)
         .await
@@ -323,10 +336,23 @@ async fn embedding_routes_have_no_cache_hit_rate() {
         )
         .await;
     assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
-    let row = &r.body["data"][0];
-    assert_eq!(row["key"], "openai_embeddings:openai_embeddings:openai");
-    assert!(row["input_tokens"].as_u64().unwrap() > 0, "{row}");
-    assert_eq!(row["cache_hit_rate"], Value::Null, "{row}");
+    let rows = r.body["data"].as_array().unwrap();
+    let mut keys: Vec<&str> = rows
+        .iter()
+        .map(|row| row["key"].as_str().unwrap())
+        .collect();
+    keys.sort_unstable();
+    assert_eq!(
+        keys,
+        [
+            "gemini_embeddings:openai_embeddings:openai",
+            "openai_embeddings:openai_embeddings:openai"
+        ]
+    );
+    for row in rows {
+        assert!(row["input_tokens"].as_u64().unwrap() > 0, "{row}");
+        assert_eq!(row["cache_hit_rate"], Value::Null, "{row}");
+    }
 }
 
 async fn rollup_day(env: &Env, day: &str, requests: i64) {

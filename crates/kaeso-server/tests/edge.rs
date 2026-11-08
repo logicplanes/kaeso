@@ -65,7 +65,7 @@ fn messages(caddyfile: &str) -> Vec<String> {
 fn the_edge_answers_each_api_in_the_gateways_own_error_format() {
     let caddyfile = config("caddyfile");
     let bodies = responses(&caddyfile);
-    assert_eq!(bodies.len(), 3, "{bodies:?}");
+    assert_eq!(bodies.len(), 4, "{bodies:?}");
     let texts = messages(&caddyfile);
     assert_eq!(texts.len(), 2, "{texts:?}");
     for message in &texts {
@@ -91,7 +91,8 @@ fn the_edge_answers_each_api_in_the_gateways_own_error_format() {
         );
         for (dialect, (body, status)) in [
             (DialectId::AnthropicMessages, &filled[1]),
-            (DialectId::OpenAiChat, &filled[2]),
+            (DialectId::Gemini, &filled[2]),
+            (DialectId::OpenAiChat, &filled[3]),
         ] {
             let encoded = dispatch::encode_error(
                 dialect,

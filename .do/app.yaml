@@ -77,6 +77,12 @@ ingress:
         preserve_path_prefix: true
     - match:
         path:
+          prefix: /v1beta
+      component:
+        name: kaeso-gateway
+        preserve_path_prefix: true
+    - match:
+        path:
           prefix: /platform
       component:
         name: kaeso-gateway

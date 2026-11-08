@@ -370,6 +370,17 @@ Resources:
             Values: ["/.well-known/oauth-*"]
       Actions:
         - { Type: forward, TargetGroupArn: !Ref GatewayTargets }
+  GeminiApiRule:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      ListenerArn: !Ref HttpsListener
+      Priority: 12
+      Conditions:
+        - Field: path-pattern
+          PathPatternConfig:
+            Values: ["/v1beta/*"]
+      Actions:
+        - { Type: forward, TargetGroupArn: !Ref GatewayTargets }
 
   Cluster:
     Type: AWS::ECS::Cluster

@@ -90,7 +90,7 @@ Kaeso nutzt den Anbieter-Schlüssel, der dem Projekt für den Anbieter des Model
 
 ## Senden an den Anbieter
 
-KPP prüft die Anfrage am Format des Anbieters und codiert sie. Was dieses Format nicht ausdrücken kann, lehnt Kaeso ab, bevor etwas den Anbieter erreicht ([Formatübersetzung](format-translation.md)). Für eine Chat-Completions-App, die über ein anderes Format bedient wird, fügt Kaeso zuerst das Reasoning aus früheren Zügen wieder ein ([Reasoning zwischen Zügen](format-translation.md#reasoning-zwischen-zügen)).
+KPP prüft die Anfrage am Format des Anbieters und codiert sie. Was dieses Format nicht ausdrücken kann, lehnt Kaeso ab, bevor etwas den Anbieter erreicht ([Formatübersetzung](format-translation.md)). Für eine Chat-Completions- oder Gemini-App, die über ein anderes Format bedient wird, fügt Kaeso zuerst das Reasoning aus früheren Zügen wieder ein ([Reasoning zwischen Zügen](format-translation.md#reasoning-zwischen-zügen)).
 
 Kaeso ruft jeden Anbieter in seinem eigenen API-Format auf, etwa Anthropic mit Messages und Groq mit Chat Completions. [Unterstützte Anbieter](supported-providers.md) listet die Formate jedes Anbieters.
 

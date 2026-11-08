@@ -27,6 +27,7 @@ A `<name>.meta.json` names the model or the method of a request when the round-t
 | `error-invalid-argument.json` | an unknown `thinkingLevel` | schema: ThinkingConfig (discovery v1beta revision 20261106) |
 | `error-invalid-key.json` | sent with a made-up key | schema: GenerateContentRequest (discovery v1beta revision 20261106) |
 | `error-unknown-model.json` | a model that doesn't exist | schema: GenerateContentRequest (discovery v1beta revision 20261106) |
+| `sdk-tools-snake-case.json` | a function declaration and `thinkingLevel` as google-genai 2.32.0 writes them: `parameters_json_schema` and `thinking_level` in snake case | sdk: google-genai 2.32.0, `models.generate_content` with a `FunctionDeclaration(parameters_json_schema=…)` and `ThinkingConfig(thinking_level=LOW)` |
 | `unknown-parts.json` | audio and video parts, `executableCode`, `codeExecutionResult`, `partMetadata`, `videoMetadata`, a Files API URI, `googleSearch` and `codeExecution` tools, `cachedContent`, `labels`; MADE-UP part `xFuturePart` and field `xFutureField` | schema: Part, Tool (discovery v1beta revision 20261106); invented on purpose (unknown-* rule) |
 | `count_tokens/contents.json` | `countTokens` with `contents` | schema: CountTokensRequest (discovery v1beta revision 20261106) |
 | `count_tokens/generate-content-request.json` | `countTokens` with `generateContentRequest`, a system instruction and tools | schema: CountTokensRequest (discovery v1beta revision 20261106) |

@@ -4,6 +4,7 @@ mod parts;
 mod path;
 mod request;
 mod response;
+mod sdk;
 pub(crate) mod stream;
 mod wire;
 

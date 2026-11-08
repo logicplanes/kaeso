@@ -138,7 +138,7 @@ Gemini 应用收不到推理数据块：`google-genai` SDK 把 `thoughtSignature
 
 ### 由网关保存的推理
 
-Chat Completions 没有推理字段，KPP 也不会凭空创造一个。回复中省略推理，由网关保存它，并以推理之后的工具调用作为键。工具调用 ID 是唯一的，由服务商签发，每个 Chat 客户端都会将其发回，因此可以在不改变应用格式的情况下作为推理的键。
+Chat Completions 没有推理字段，KPP 也不会凭空创造一个。回复中省略推理，由网关保存它，并以推理之后的工具调用作为键。工具调用 ID 是唯一的，由服务商签发，每个 Chat 客户端都会将其发回，因此可以在不改变应用格式的情况下作为推理的键。对于模型使用另一种格式的 Gemini 应用，网关也这样做（`kaeso_server::services::continuity::applies`），因为 Gemini 的思考 part 无法承载[推理数据块](#推理数据块)。
 
 1. 回复之后，`continuity::reasoning_for_tool_calls`（完整回复）或 `continuity::ReasoningCollector`（流）为每个前面有可回放推理的工具调用返回一个 `CarriedReasoning`：Anthropic 的签名思考或 `redacted_thinking`、OpenAI 的加密推理，或 Gemini 的思考签名。最后一个工具调用之后的推理不会保存。
 2. 网关把这些条目存入 Valkey，用主密钥加密，只有发出该请求的 API 密钥才能读取，保存时长为 `KAESO_CONTINUITY_REASONING_TTL`（默认一小时）。

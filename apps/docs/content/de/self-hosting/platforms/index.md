@@ -39,7 +39,7 @@ AWS und Google Cloud sind kein Ein-Klick-Weg: Sie wählen Region, Domain und ihr
 
 ## Was jeder Weg beibehält
 
-- **Ein Ursprung.** Konsole und APIs antworten auf einer Domain. `/v1/*`, `/platform/*`, `/mcp`, `/mcp/*`, `/oauth/*` und `/.well-known/oauth-*` erreichen das Gateway; jeder andere Pfad erreicht die Konsole. Auf Render und Railway übernimmt das `kaeso-edge`, ein zweiter Befehl im Konsolen-Image; auf DigitalOcean die Ingress-Regeln der App; auf AWS und Google Cloud die Pfadregeln des Load Balancers.
+- **Ein Ursprung.** Konsole und APIs antworten auf einer Domain. `/v1/*`, `/v1beta/*`, `/platform/*`, `/mcp`, `/mcp/*`, `/oauth/*` und `/.well-known/oauth-*` erreichen das Gateway; jeder andere Pfad erreicht die Konsole. Auf Render und Railway übernimmt das `kaeso-edge`, ein zweiter Befehl im Konsolen-Image; auf DigitalOcean die Ingress-Regeln der App; auf AWS und Google Cloud die Pfadregeln des Load Balancers.
 - **Streams bleiben ungepuffert.** Der Edge leitet jeden Chunk sofort weiter, und das Leerlauf-Timeout eines Load Balancers ist länger als das Keepalive-Intervall des Gateways ([lange Streams](../domains-and-tls.md#lange-streams)).
 - **Die Client-Adresse wird nur dem Proxy der Plattform geglaubt.** Der Edge nimmt `X-Forwarded-For` nur aus dem privaten Netz der Plattform an und sendet dem Gateway eine Adresse; das Gateway vertraut allein dem Edge ([`KAESO_TRUSTED_PROXIES`](../configuration.md#einstellungen)).
 - **Health-Checks** nutzen `/healthz` für den Prozess und `/readyz` für PostgreSQL, Valkey und ClickHouse ([Zustand und Metriken](../monitoring.md)). Der Metrik-Port ist nie öffentlich.

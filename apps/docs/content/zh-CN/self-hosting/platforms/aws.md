@@ -32,7 +32,7 @@ aws cloudformation deploy --stack-name kaeso --template-file deploy/aws/quick-se
 `deploy/aws/managed.yaml` 创建：
 
 - 一个 VPC，含两个公有子网、两个私有子网和一个 NAT 网关；
-- 一个 Application Load Balancer，使用您的 ACM 证书，HTTP 重定向到 HTTPS，路径规则把 `/v1/*`、`/platform/*`、`/mcp`、`/mcp/*`、`/oauth/*` 和 `/.well-known/oauth-*` 发往网关、其余发往控制台，空闲超时为 300 秒以支持长时间的流；
+- 一个 Application Load Balancer，使用您的 ACM 证书，HTTP 重定向到 HTTPS，路径规则把 `/v1/*`、`/v1beta/*`、`/platform/*`、`/mcp`、`/mcp/*`、`/oauth/*` 和 `/.well-known/oauth-*` 发往网关、其余发往控制台，空闲超时为 300 秒以支持长时间的流；
 - 一个 ECS 集群，含网关服务（默认 2 vCPU、4 GB，2 个任务）和控制台服务，运行在私有子网中的 Graviton Fargate 上；
 - RDS PostgreSQL 18 和 ElastiCache Valkey（`noeviction`、TLS 和 AUTH 令牌），只有网关可访问；
 - Secrets Manager 机密：主密钥、数据库密码、Valkey 令牌、SMTP 密码和 ClickHouse URL；

@@ -93,6 +93,102 @@ describe("requestView", () => {
   it("counts embedding inputs", () => {
     expect(embeddingsView("openai_embeddings", { input: ["refund policy", "shipping times"] })).toEqual({ inputs: 2 });
     expect(embeddingsView("openai_embeddings", { input: "one" })).toEqual({ inputs: 1 });
+    expect(embeddingsView("gemini_embeddings", { requests: [{ content: { parts: [{ text: "a" }] } }, { content: { parts: [{ text: "b" }] } }] })).toEqual({
+      inputs: 2,
+    });
+    expect(embeddingsView("gemini_embeddings", { content: { parts: [{ text: "one" }] } })).toEqual({ inputs: 1 });
+  });
+
+  it("maps a Gemini request with its system instruction, signed tool call, function response, tools and settings", () => {
+    const view = requestView("gemini", {
+      systemInstruction: { parts: [{ text: "Answer briefly." }] },
+      contents: [
+        { role: "user", parts: [{ text: "Weather in Paris?" }, { inlineData: { mimeType: "image/png", data: "AAAA" } }] },
+        {
+          role: "model",
+          parts: [
+            { text: "Checking.", thought: true },
+            { functionCall: { id: "call_1", name: "get_weather", args: { city: "Paris" } }, thoughtSignature: "c2ln" },
+          ],
+        },
+        { role: "user", parts: [{ functionResponse: { id: "call_1", name: "get_weather", response: { output: "18 °C" } } }] },
+        { role: "model", parts: [{ text: "18 °C." }, { thoughtSignature: "c2ln" }] },
+      ],
+      tools: [{ functionDeclarations: [{ name: "get_weather", description: "Weather now.", parametersJsonSchema: { type: "object" } }] }, { googleSearch: {} }],
+      generationConfig: { maxOutputTokens: 256, thinkingConfig: { thinkingLevel: "LOW" } },
+    });
+    expect(view?.messages).toEqual([
+      { role: "system", content: [{ type: "text", text: "Answer briefly." }] },
+      {
+        role: "user",
+        content: [
+          { type: "text", text: "Weather in Paris?" },
+          { type: "image", src: "data:image/png;base64,AAAA", media_type: "image/png" },
+        ],
+      },
+      {
+        role: "assistant",
+        content: [
+          { type: "reasoning", text: "Checking." },
+          { type: "tool_call", id: "call_1", name: "get_weather", arguments: { city: "Paris" } },
+        ],
+      },
+      { role: "tool", content: [{ type: "tool_result", tool_call_id: "call_1", content: '{"output":"18 °C"}' }] },
+      { role: "assistant", content: [{ type: "text", text: "18 °C." }] },
+    ]);
+    expect(view?.tools).toEqual([{ name: "get_weather", description: "Weather now.", schema: { type: "object" } }, { name: "googleSearch" }]);
+    expect(view?.params).toEqual([
+      { label: "Max output tokens", value: "256" },
+      { label: "Thinking", value: "thinkingLevel: LOW" },
+    ]);
+    expect(
+      requestView("gemini", {
+        contents: [
+          {
+            parts: [
+              { inlineData: { mimeType: "application/pdf", data: "JVBE" } },
+              { inlineData: { data: "AAAA" } },
+              { fileData: { mimeType: "image/jpeg", fileUri: "https://example.com/a.jpg" } },
+              { fileData: { mimeType: "image/png" } },
+              { fileData: { mimeType: "application/pdf", fileUri: "files/abc" } },
+              { fileData: {} },
+            ],
+          },
+          { role: "model", parts: [{ functionCall: { name: "now" } }] },
+          { role: "user", parts: [{ functionResponse: { name: "now" } }] },
+        ],
+      })?.messages,
+    ).toEqual([
+      {
+        role: "user",
+        content: [
+          { type: "document", media_type: "application/pdf" },
+          { type: "document" },
+          { type: "image", src: "https://example.com/a.jpg", media_type: "image/jpeg" },
+          { type: "image", media_type: "image/png" },
+          { type: "document", name: "files/abc", media_type: "application/pdf" },
+          { type: "document" },
+        ],
+      },
+      { role: "assistant", content: [{ type: "tool_call", name: "now", arguments: {} }] },
+      { role: "tool", content: [{ type: "tool_result", content: "{}" }] },
+    ]);
+    expect(requestView("gemini", { contents: [{ role: "model", parts: [{ functionCall: { args: {} } }] }] })).toBeNull();
+    expect(requestView("gemini", { contents: ["text"] })).toBeNull();
+    expect(requestView("gemini", { contents: [{ parts: ["text"] }] })).toBeNull();
+    expect(requestView("gemini", { tools: ["x"] })).toBeNull();
+    expect(requestView("gemini", { tools: [{}] })).toBeNull();
+    expect(requestView("gemini", { tools: [{ functionDeclarations: [{ name: "g", parameters: { type: "OBJECT" } }] }] })?.tools).toEqual([
+      { name: "g", schema: { type: "OBJECT" } },
+    ]);
+    expect(requestView("gemini", { tools: [{ functionDeclarations: ["x"] }] })).toBeNull();
+    expect(requestView("gemini", { tools: [{ functionDeclarations: [{ name: "f" }] }], toolConfig: { functionCallingConfig: { mode: "ANY" } } })).toEqual({
+      messages: [],
+      tools: [{ name: "f" }],
+      params: [{ label: "Tool choice", value: "functionCallingConfig: (mode: ANY)" }],
+    });
+    expect(requestView("gemini", { contents: [{ role: "model", parts: [{ executableCode: { code: "1" } }] }] })).toBeNull();
+    expect(requestView("gemini", { contents: [{ role: "function", parts: [{ text: "x" }] }] })).toBeNull();
   });
 });
 

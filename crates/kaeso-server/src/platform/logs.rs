@@ -601,11 +601,12 @@ pub struct LogFilter {
         Playground (`playground`)."]
     pub source: Option<String>,
     #[doc = "Only requests the app sent in this format: `anthropic_messages`,\n\
-        `openai_chat`, `openai_responses` or `openai_embeddings`."]
+        `openai_chat`, `openai_responses`, `openai_embeddings`, `gemini` or\n\
+        `gemini_embeddings`."]
     pub ingress_dialect: Option<String>,
     #[doc = "Only requests Kaeso sent to the provider in this format:\n\
-        `anthropic_messages`, `openai_chat`, `openai_responses` or\n\
-        `openai_embeddings`."]
+        `anthropic_messages`, `openai_chat`, `openai_responses`,\n\
+        `openai_embeddings`, `gemini` or `gemini_embeddings`."]
     pub egress_dialect: Option<String>,
     #[doc = "Only requests the response cache answered (`hit`), sent on (`miss`)\n\
         or passed by (`bypass`)."]
@@ -764,7 +765,8 @@ pub struct LogView {
     pub principal_kind: String,
     #[doc = "The user or service account."]
     pub principal_id: String,
-    #[doc = "The endpoint, e.g. `chat/completions`."]
+    #[doc = "The endpoint, e.g. `chat/completions`, or the Gemini method on the model,\n\
+        e.g. `models:generateContent`."]
     pub endpoint: String,
     #[doc = "The app's dialect."]
     pub ingress_dialect: String,

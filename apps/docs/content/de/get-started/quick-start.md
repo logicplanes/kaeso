@@ -127,7 +127,7 @@ Haben Sie ein anderes Modell hinzugefügt, verwenden Sie dessen ID. Die Antwort 
 
 ## Nächste Schritte
 
-- [Modelle aufrufen](calling-models.md): Nutzen Sie auch das Anthropic SDK, streamen Sie Antworten, und finden Sie eine Anfrage in den Protokollen.
+- [Modelle aufrufen](calling-models.md): Nutzen Sie auch das Anthropic oder Google Gen AI SDK, streamen Sie Antworten, und finden Sie eine Anfrage in den Protokollen.
 - [Coding-Tools](coding-tools.md): Richten Sie Claude Code oder Codex auf Ihre Installation aus.
 - [Die Konsole verwenden](../console/index.md): Laden Sie Personen ein, und legen Sie Limits und Budgets fest.
 - [Selbst hosten](../self-hosting/index.md): Planen Sie Anmeldung, Backups, Upgrades und Monitoring.

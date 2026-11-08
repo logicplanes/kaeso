@@ -1129,3 +1129,50 @@ fn count_tokens_requests_from_other_formats_wrap_what_needs_it() {
     assert!(Gemini::check(&embed, &EgressCtx::new(&embed)).is_err());
     assert!(Gemini::encode_request(&embed, &mut EgressCtx::new(&embed)).is_err());
 }
+
+#[test]
+fn google_genais_snake_case_keys_and_float_top_k_reach_every_format_and_gemini_as_written() {
+    let body = fixture("requests", "sdk-tools-snake-case");
+    let req = decode_fixture("requests", "sdk-tools-snake-case", &body);
+    let Request::Generate(g) = &req else { panic!() };
+    let tool = match &g.tools[0] {
+        kaeso_kpp::ToolDef::Function(f) => f,
+        other => panic!("{other:?}"),
+    };
+    assert_eq!(
+        serde_json::from_str::<Value>(tool.parameters.as_ref().unwrap().get()).unwrap()["required"],
+        json!(["location"])
+    );
+    assert_eq!(
+        g.reasoning.as_ref().unwrap().effort,
+        Some(kaeso_kpp::ReasoningEffort::Low)
+    );
+    for target in [DialectId::OpenAiChat, DialectId::OpenAiResponses] {
+        let mut ctx = EgressCtx::new(&req);
+        crate::dispatch::encode_request(target, &req, &mut ctx)
+            .unwrap_or_else(|e| panic!("{target}: {e}"));
+    }
+
+    let float_k =
+        json!({"contents": [{"parts": [{"text": "hi"}]}], "generationConfig": {"topK": 20.0}});
+    let bytes = serde_json::to_vec(&float_k).unwrap();
+    let req = crate::dispatch::decode_gemini_request(
+        MODEL,
+        GeminiAction::GenerateContent,
+        &bytes,
+        &HeaderList::new(),
+    )
+    .unwrap();
+    let Request::Generate(g) = &req else { panic!() };
+    assert_eq!(g.sampling.top_k, Some(20));
+    let enc = Gemini::encode_request(&req, &mut EgressCtx::new(&req)).unwrap();
+    assert_json_eq("float topK", &bytes, &enc.body);
+    let e = crate::dispatch::decode_gemini_request(
+        MODEL,
+        GeminiAction::GenerateContent,
+        br#"{"contents": [], "generationConfig": {"topK": 2.5}}"#,
+        &HeaderList::new(),
+    )
+    .unwrap_err();
+    assert_eq!(e.param.as_deref(), Some("generationConfig.topK"));
+}

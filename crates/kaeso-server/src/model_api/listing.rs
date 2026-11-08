@@ -102,7 +102,19 @@ pub async fn list(
     query: &str,
 ) -> Response {
     let dialect = dispatch::models_dialect(&header_list(headers));
-    match list_inner(state, headers, client, query, dialect).await {
+    let default_limit = (dialect == DialectId::AnthropicMessages).then_some(20);
+    list_as(state, headers, client, query, dialect, default_limit).await
+}
+
+pub async fn list_as(
+    state: &AppState,
+    headers: &HeaderMap,
+    client: Option<IpAddr>,
+    query: &str,
+    dialect: DialectId,
+    default_limit: Option<u32>,
+) -> Response {
+    match list_inner(state, headers, client, query, dialect, default_limit).await {
         Ok(body) => json(body),
         Err(e) => respond(dialect, &e, &Served::default()),
     }
@@ -114,10 +126,10 @@ async fn list_inner(
     client: Option<IpAddr>,
     query: &str,
     dialect: DialectId,
+    default_limit: Option<u32>,
 ) -> Result<Vec<u8>, KppError> {
     let all = visible(state, headers, client).await?;
     let query = dispatch::decode_models_query(dialect, query)?;
-    let default_limit = (dialect == DialectId::AnthropicMessages).then_some(20);
     let page = ModelList::page(&all, &query, default_limit)?;
     dispatch::encode_models(dialect, &page)
 }
@@ -129,6 +141,16 @@ pub async fn get(
     id: &str,
 ) -> Response {
     let dialect = dispatch::models_dialect(&header_list(headers));
+    get_as(state, headers, client, id, dialect).await
+}
+
+pub async fn get_as(
+    state: &AppState,
+    headers: &HeaderMap,
+    client: Option<IpAddr>,
+    id: &str,
+    dialect: DialectId,
+) -> Response {
     match get_inner(state, headers, client, id).await {
         Ok(info) => match dispatch::encode_model(dialect, &info) {
             Ok(body) => json(body),
