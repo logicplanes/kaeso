@@ -50,6 +50,111 @@ expression: outcomes
     },
     "path": "/v1/messages"
   },
+  "history-without-ids": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "What is the weather in Paris and in London?",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "content": [
+            {
+              "id": "kaeso_fc_1_0_0",
+              "input": {
+                "location": "Paris"
+              },
+              "name": "get_weather",
+              "type": "tool_use"
+            },
+            {
+              "id": "kaeso_fc_1_1_0",
+              "input": {
+                "location": "London"
+              },
+              "name": "get_weather",
+              "type": "tool_use"
+            }
+          ],
+          "role": "assistant"
+        },
+        {
+          "content": [
+            {
+              "content": [
+                {
+                  "text": "18 degrees Celsius and sunny",
+                  "type": "text"
+                }
+              ],
+              "tool_use_id": "kaeso_fc_1_0_0",
+              "type": "tool_result"
+            },
+            {
+              "content": [
+                {
+                  "text": "{\"temperature\":12,\"unit\":\"celsius\"}",
+                  "type": "text"
+                }
+              ],
+              "tool_use_id": "kaeso_fc_1_1_0",
+              "type": "tool_result"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "content": [
+            {
+              "text": "Paris is sunny at 18 °C; London is 12 °C.",
+              "type": "text"
+            }
+          ],
+          "role": "assistant"
+        },
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "And tomorrow?",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gemini-3.5-flash",
+      "tools": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "description": "Gets the current weather for a city.",
+          "input_schema": {
+            "properties": {
+              "location": {
+                "type": "STRING"
+              }
+            },
+            "required": [
+              "location"
+            ],
+            "type": "OBJECT"
+          },
+          "name": "get_weather"
+        }
+      ]
+    },
+    "path": "/v1/messages"
+  },
   "image-input": {
     "message": "`generationConfig.mediaResolution` comes from a Gemini API request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
     "param": null,
@@ -346,6 +451,11 @@ expression: outcomes
     },
     "path": "/v1/messages"
   },
+  "tool-result-media": {
+    "message": "`messages[2].blocks[0].content[1].inlineData.displayName` comes from a Gemini API request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": "messages[2].blocks[0].content[1]",
+    "unsupported": "messages[2].blocks[0].content[1].inlineData.displayName"
+  },
   "tool-result-signature": {
     "body": {
       "max_tokens": 4096,
@@ -598,5 +708,10 @@ expression: outcomes
       ]
     },
     "path": "/v1/messages"
+  },
+  "unknown-parts": {
+    "message": "`cachedContent` comes from a Gemini API request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "cachedContent"
   }
 }

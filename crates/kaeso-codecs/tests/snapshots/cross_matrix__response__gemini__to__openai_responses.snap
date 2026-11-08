@@ -3,6 +3,129 @@ source: crates/kaeso-codecs/tests/cross_matrix.rs
 expression: outcomes
 ---
 {
+  "image-output": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "aGVsbG8tZnJvbS1rYWVzbw",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "gemini-3.1-flash-image",
+    "object": "response",
+    "output": [
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "Here is a tiny red circle.",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_aGVsbG8tZnJvbS1rYWVzbw_0",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      },
+      {
+        "encrypted_content": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6ImdlbWluaSJ9LCJvcGFxdWUiOlt7Im9yaWdpbiI6eyJkaWFsZWN0IjoiZ2VtaW5pIn0sImtpbmQiOiJnZW1pbmlfdGhvdWdodF9zaWduYXR1cmUiLCJkYXRhIjoiRWpRS01nRnBGSDBUYldGa1pTMTFjQzF6YVdkdVlYUjFjbVV0Wm05eUxXRXRZMjl1YzNSeWRXTjBaV1F0Wm1sNGRIVnlaUT09In1dfQ",
+        "id": "rs_kaeso_aGVsbG8tZnJvbS1rYWVzbw_1",
+        "summary": [],
+        "type": "reasoning"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 17,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 1296,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 1313
+    },
+    "user": null
+  },
+  "prompt-blocked": {
+    "background": false,
+    "completed_at": null,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "YmxvY2tlZC1wcm9tcHQtZml4dHVyZQ",
+    "incomplete_details": {
+      "reason": "content_filter"
+    },
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "gemini-3.6-flash",
+    "object": "response",
+    "output": [],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "incomplete",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 12,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 0,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 12
+    },
+    "user": null
+  },
   "recorded-image-input": {
     "background": false,
     "completed_at": 1760000000,
@@ -1172,6 +1295,71 @@ expression: outcomes
         "reasoning_tokens": 47
       },
       "total_tokens": 131
+    },
+    "user": null
+  },
+  "unknown-parts": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "dW5rbm93bi1wYXJ0cy1maXh0dXJl",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "gemini-3.6-flash",
+    "object": "response",
+    "output": [
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "The result is 2.",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_dW5rbm93bi1wYXJ0cy1maXh0dXJl_0",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 45,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 30
+      },
+      "output_tokens": 15,
+      "output_tokens_details": {
+        "reasoning_tokens": 3
+      },
+      "total_tokens": 60
     },
     "user": null
   }

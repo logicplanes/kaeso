@@ -1,0 +1,59 @@
+{
+  "candidates": [
+    {
+      "content": {
+        "parts": [
+          {
+            "executableCode": {
+              "language": "PYTHON",
+              "code": "print(1 + 1)"
+            }
+          },
+          {
+            "codeExecutionResult": {
+              "outcome": "OUTCOME_OK",
+              "output": "2\n"
+            }
+          },
+          {
+            "text": "The result is 2.",
+            "xFutureKey": "x"
+          }
+        ],
+        "role": "model"
+      },
+      "finishReason": "MALFORMED_FUNCTION_CALL",
+      "finishMessage": "Malformed function call.",
+      "index": 0,
+      "safetyRatings": [
+        {
+          "category": "HARM_CATEGORY_HARASSMENT",
+          "probability": "NEGLIGIBLE"
+        }
+      ],
+      "citationMetadata": {
+        "citationSources": [
+          {
+            "startIndex": 0,
+            "endIndex": 16,
+            "uri": "https://example.com/source"
+          }
+        ]
+      }
+    }
+  ],
+  "usageMetadata": {
+    "promptTokenCount": 40,
+    "cachedContentTokenCount": 30,
+    "toolUsePromptTokenCount": 5,
+    "candidatesTokenCount": 12,
+    "thoughtsTokenCount": 3,
+    "totalTokenCount": 60
+  },
+  "modelVersion": "gemini-3.6-flash",
+  "responseId": "dW5rbm93bi1wYXJ0cy1maXh0dXJl",
+  "modelStatus": {
+    "modelStage": "STABLE"
+  },
+  "xFutureField": 1
+}

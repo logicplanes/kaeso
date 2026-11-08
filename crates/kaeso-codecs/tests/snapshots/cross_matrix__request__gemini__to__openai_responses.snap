@@ -48,6 +48,67 @@ expression: outcomes
     },
     "path": "/v1/responses"
   },
+  "history-without-ids": {
+    "body": {
+      "input": [
+        {
+          "content": "What is the weather in Paris and in London?",
+          "role": "user"
+        },
+        {
+          "arguments": "{\n              \"location\": \"Paris\"\n            }",
+          "call_id": "kaeso_fc_1_0_0",
+          "name": "get_weather",
+          "type": "function_call"
+        },
+        {
+          "arguments": "{\n              \"location\": \"London\"\n            }",
+          "call_id": "kaeso_fc_1_1_0",
+          "name": "get_weather",
+          "type": "function_call"
+        },
+        {
+          "call_id": "kaeso_fc_1_0_0",
+          "output": "18 degrees Celsius and sunny",
+          "type": "function_call_output"
+        },
+        {
+          "call_id": "kaeso_fc_1_1_0",
+          "output": "{\"temperature\":12,\"unit\":\"celsius\"}",
+          "type": "function_call_output"
+        },
+        {
+          "content": "Paris is sunny at 18 °C; London is 12 °C.",
+          "role": "assistant"
+        },
+        {
+          "content": "And tomorrow?",
+          "role": "user"
+        }
+      ],
+      "model": "gemini-3.5-flash",
+      "store": false,
+      "tools": [
+        {
+          "description": "Gets the current weather for a city.",
+          "name": "get_weather",
+          "parameters": {
+            "properties": {
+              "location": {
+                "type": "STRING"
+              }
+            },
+            "required": [
+              "location"
+            ],
+            "type": "OBJECT"
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
+  },
   "image-input": {
     "message": "`generationConfig.mediaResolution` comes from a Gemini API request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
     "param": null,
@@ -400,6 +461,11 @@ expression: outcomes
     },
     "path": "/v1/responses"
   },
+  "tool-result-media": {
+    "message": "`messages[2].blocks[0].content[1].inlineData.displayName` comes from a Gemini API request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": "messages[2].blocks[0].content[1]",
+    "unsupported": "messages[2].blocks[0].content[1].inlineData.displayName"
+  },
   "tool-result-signature": {
     "body": {
       "input": [
@@ -593,5 +659,10 @@ expression: outcomes
       ]
     },
     "path": "/v1/responses"
+  },
+  "unknown-parts": {
+    "message": "`cachedContent` comes from a Gemini API request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "cachedContent"
   }
 }

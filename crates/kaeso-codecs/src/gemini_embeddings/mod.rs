@@ -301,7 +301,6 @@ fn encode_one(
     index: usize,
     prefix: &str,
     text: &str,
-    batch: bool,
 ) -> Result<Ext<EmbedW>, KppError> {
     let own = r.extras.is_from(D);
     let field = |key: &str| {
@@ -328,7 +327,6 @@ fn encode_one(
     let model = match recorded_model {
         Some(Value::String(m)) => Some(m),
         Some(_) => None,
-        None if own && !batch => None,
         None => Some(format!(
             "models/{}",
             r.model.strip_prefix("models/").unwrap_or(&r.model)
@@ -404,13 +402,13 @@ fn encode_request(req: &Request, ctx: &mut EgressCtx) -> Result<EncodedRequest, 
         })
         .collect();
     let (action, body) = if single {
-        let one = encode_one(r, 0, "", texts.first().copied().unwrap_or_default(), false)?;
+        let one = encode_one(r, 0, "", texts.first().copied().unwrap_or_default())?;
         (GeminiAction::EmbedContent, to_body(&one)?)
     } else {
         let requests = texts
             .iter()
             .enumerate()
-            .map(|(i, t)| encode_one(r, i, &format!("requests[{i}]"), t, true))
+            .map(|(i, t)| encode_one(r, i, &format!("requests[{i}]"), t))
             .collect::<Result<Vec<_>, _>>()?;
         let extra = if own {
             r.extras

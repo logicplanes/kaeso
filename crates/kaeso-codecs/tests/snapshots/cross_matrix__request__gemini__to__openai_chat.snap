@@ -32,6 +32,78 @@ expression: outcomes
     },
     "path": "/v1/chat/completions"
   },
+  "history-without-ids": {
+    "body": {
+      "messages": [
+        {
+          "content": "What is the weather in Paris and in London?",
+          "role": "user"
+        },
+        {
+          "content": null,
+          "role": "assistant",
+          "tool_calls": [
+            {
+              "function": {
+                "arguments": "{\n              \"location\": \"Paris\"\n            }",
+                "name": "get_weather"
+              },
+              "id": "kaeso_fc_1_0_0",
+              "type": "function"
+            },
+            {
+              "function": {
+                "arguments": "{\n              \"location\": \"London\"\n            }",
+                "name": "get_weather"
+              },
+              "id": "kaeso_fc_1_1_0",
+              "type": "function"
+            }
+          ]
+        },
+        {
+          "content": "18 degrees Celsius and sunny",
+          "role": "tool",
+          "tool_call_id": "kaeso_fc_1_0_0"
+        },
+        {
+          "content": "{\"temperature\":12,\"unit\":\"celsius\"}",
+          "role": "tool",
+          "tool_call_id": "kaeso_fc_1_1_0"
+        },
+        {
+          "content": "Paris is sunny at 18 °C; London is 12 °C.",
+          "role": "assistant"
+        },
+        {
+          "content": "And tomorrow?",
+          "role": "user"
+        }
+      ],
+      "model": "gemini-3.5-flash",
+      "tools": [
+        {
+          "function": {
+            "description": "Gets the current weather for a city.",
+            "name": "get_weather",
+            "parameters": {
+              "properties": {
+                "location": {
+                  "type": "STRING"
+                }
+              },
+              "required": [
+                "location"
+              ],
+              "type": "OBJECT"
+            }
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/chat/completions"
+  },
   "image-input": {
     "message": "`generationConfig.mediaResolution` comes from a Gemini API request and has no equivalent in OpenAI Chat Completions. Remove it, or send the request to a model served through its original format.",
     "param": null,
@@ -347,6 +419,11 @@ expression: outcomes
     },
     "path": "/v1/chat/completions"
   },
+  "tool-result-media": {
+    "message": "`messages[2].blocks[2].inlineData.displayName` comes from a Gemini API request and has no equivalent in OpenAI Chat Completions. Remove it, or send the request to a model served through its original format.",
+    "param": "messages[2].blocks[2]",
+    "unsupported": "messages[2].blocks[2].inlineData.displayName"
+  },
   "tool-result-signature": {
     "body": {
       "messages": [
@@ -552,5 +629,10 @@ expression: outcomes
       ]
     },
     "path": "/v1/chat/completions"
+  },
+  "unknown-parts": {
+    "message": "`cachedContent` comes from a Gemini API request and has no equivalent in OpenAI Chat Completions. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "cachedContent"
   }
 }

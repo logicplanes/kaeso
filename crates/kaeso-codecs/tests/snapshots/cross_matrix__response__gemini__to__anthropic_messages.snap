@@ -3,6 +3,50 @@ source: crates/kaeso-codecs/tests/cross_matrix.rs
 expression: outcomes
 ---
 {
+  "image-output": {
+    "content": [
+      {
+        "text": "Here is a tiny red circle.",
+        "type": "text"
+      },
+      {
+        "signature": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6ImdlbWluaSJ9LCJvcGFxdWUiOlt7Im9yaWdpbiI6eyJkaWFsZWN0IjoiZ2VtaW5pIn0sImtpbmQiOiJnZW1pbmlfdGhvdWdodF9zaWduYXR1cmUiLCJkYXRhIjoiRWpRS01nRnBGSDBUYldGa1pTMTFjQzF6YVdkdVlYUjFjbVV0Wm05eUxXRXRZMjl1YzNSeWRXTjBaV1F0Wm1sNGRIVnlaUT09In1dfQ",
+        "thinking": "",
+        "type": "thinking"
+      }
+    ],
+    "id": "aGVsbG8tZnJvbS1rYWVzbw",
+    "model": "gemini-3.1-flash-image",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 17,
+      "output_tokens": 1296
+    }
+  },
+  "prompt-blocked": {
+    "content": [],
+    "id": "YmxvY2tlZC1wcm9tcHQtZml4dHVyZQ",
+    "model": "gemini-3.6-flash",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "refusal",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 12,
+      "output_tokens": 0
+    }
+  },
   "recorded-image-input": {
     "content": [
       {
@@ -502,6 +546,31 @@ expression: outcomes
       "output_tokens": 63,
       "output_tokens_details": {
         "thinking_tokens": 47
+      }
+    }
+  },
+  "unknown-parts": {
+    "content": [
+      {
+        "text": "The result is 2.",
+        "type": "text"
+      }
+    ],
+    "id": "dW5rbm93bi1wYXJ0cy1maXh0dXJl",
+    "model": "gemini-3.6-flash",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 30,
+      "input_tokens": 15,
+      "output_tokens": 15,
+      "output_tokens_details": {
+        "thinking_tokens": 3
       }
     }
   }

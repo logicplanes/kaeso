@@ -1,0 +1,79 @@
+{
+  "contents": [
+    {
+      "role": "user",
+      "parts": [
+        {
+          "text": "Transcribe the clip, then run the code.",
+          "partMetadata": {
+            "source": "kaeso-test"
+          }
+        },
+        {
+          "inlineData": {
+            "mimeType": "audio/wav",
+            "data": "UklGRjQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YRAAAAAAAAAAAAAAAAAAAAAAAAAA"
+          }
+        },
+        {
+          "fileData": {
+            "mimeType": "video/mp4",
+            "fileUri": "https://generativelanguage.googleapis.com/v1beta/files/abc123"
+          },
+          "videoMetadata": {
+            "startOffset": "1s",
+            "endOffset": "2s"
+          }
+        },
+        {
+          "fileData": {
+            "mimeType": "application/pdf",
+            "fileUri": "files/def456"
+          }
+        },
+        {
+          "xFuturePart": {
+            "value": 1
+          }
+        }
+      ]
+    },
+    {
+      "role": "model",
+      "parts": [
+        {
+          "executableCode": {
+            "language": "PYTHON",
+            "code": "print(1 + 1)"
+          }
+        },
+        {
+          "codeExecutionResult": {
+            "outcome": "OUTCOME_OK",
+            "output": "2\n"
+          }
+        }
+      ]
+    },
+    {
+      "parts": [
+        {
+          "text": "Thanks."
+        }
+      ]
+    }
+  ],
+  "tools": [
+    {
+      "googleSearch": {}
+    },
+    {
+      "codeExecution": {}
+    }
+  ],
+  "cachedContent": "cachedContents/example-cache",
+  "labels": {
+    "team": "kaeso"
+  },
+  "xFutureField": true
+}

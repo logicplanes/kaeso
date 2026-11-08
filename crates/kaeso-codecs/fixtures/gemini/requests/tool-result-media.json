@@ -1,0 +1,73 @@
+{
+  "contents": [
+    {
+      "role": "user",
+      "parts": [
+        {
+          "text": "Show me the instrument I ordered last month."
+        }
+      ]
+    },
+    {
+      "role": "model",
+      "parts": [
+        {
+          "functionCall": {
+            "id": "call_7310",
+            "name": "get_image",
+            "args": {
+              "item_name": "instrument"
+            }
+          },
+          "thoughtSignature": "skip_thought_signature_validator"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "parts": [
+        {
+          "functionResponse": {
+            "id": "call_7310",
+            "name": "get_image",
+            "response": {
+              "image_ref": {
+                "$ref": "instrument.png"
+              }
+            },
+            "parts": [
+              {
+                "inlineData": {
+                  "displayName": "instrument.png",
+                  "mimeType": "image/png",
+                  "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "tools": [
+    {
+      "functionDeclarations": [
+        {
+          "name": "get_image",
+          "description": "Retrieves the image file reference for a specific order item.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "item_name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "item_name"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

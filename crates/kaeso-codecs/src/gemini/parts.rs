@@ -323,7 +323,7 @@ impl PartDecoder<'_> {
                 }
                 _ => {
                     extras.form.insert(FORM_RESPONSE.to_owned(), "json".into());
-                    content.push(Block::text(raw.get()));
+                    content.push(Block::text(compact(raw.get())));
                 }
             },
         }
@@ -361,6 +361,24 @@ impl PartDecoder<'_> {
             _ => self.unknown(raw),
         }
     }
+}
+
+// The JSON without the whitespace between its tokens, its keys and numbers as written.
+fn compact(json: &str) -> String {
+    let mut out = String::with_capacity(json.len());
+    let mut in_string = false;
+    let mut escaped = false;
+    for c in json.chars() {
+        match c {
+            _ if escaped => escaped = false,
+            '\\' if in_string => escaped = true,
+            '"' => in_string = !in_string,
+            _ if !in_string && c.is_ascii_whitespace() => continue,
+            _ => {}
+        }
+        out.push(c);
+    }
+    out
 }
 
 // `{"output": "<text>"}` and `{"error": "<text>"}`, the shapes `FunctionResponse.response`

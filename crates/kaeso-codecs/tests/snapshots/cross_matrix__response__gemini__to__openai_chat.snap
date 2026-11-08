@@ -3,6 +3,60 @@ source: crates/kaeso-codecs/tests/cross_matrix.rs
 expression: outcomes
 ---
 {
+  "image-output": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "Here is a tiny red circle.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "aGVsbG8tZnJvbS1rYWVzbw",
+    "model": "gemini-3.1-flash-image",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 1296,
+      "prompt_tokens": 17,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 1313
+    }
+  },
+  "prompt-blocked": {
+    "choices": [
+      {
+        "finish_reason": "content_filter",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": null,
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "YmxvY2tlZC1wcm9tcHQtZml4dHVyZQ",
+    "model": "gemini-3.6-flash",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 0,
+      "prompt_tokens": 12,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 12
+    }
+  },
   "recorded-image-input": {
     "choices": [
       {
@@ -501,6 +555,36 @@ expression: outcomes
         "cached_tokens": 0
       },
       "total_tokens": 131
+    }
+  },
+  "unknown-parts": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "The result is 2.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "dW5rbm93bi1wYXJ0cy1maXh0dXJl",
+    "model": "gemini-3.6-flash",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 15,
+      "completion_tokens_details": {
+        "reasoning_tokens": 3
+      },
+      "prompt_tokens": 45,
+      "prompt_tokens_details": {
+        "cached_tokens": 30
+      },
+      "total_tokens": 60
     }
   }
 }
