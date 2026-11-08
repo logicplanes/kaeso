@@ -143,6 +143,7 @@ pub(crate) fn table(r: &Report<'_>) -> String {
                 "Connections",
                 "Requests/s",
                 "Overhead p50 / p99 / p99.9",
+                "Added latency p50 / p99",
                 "Latency p50 / p99",
                 "Gateway CPU per request",
                 "Failed",
@@ -160,6 +161,9 @@ pub(crate) fn table(r: &Report<'_>) -> String {
                     ms(b.overhead_ms.p99),
                     ms(b.overhead_ms.p999)
                 ),
+                b.added_latency_ms
+                    .as_ref()
+                    .map_or_else(|| "n/a".to_owned(), pair),
                 percentiles(&b.latency_ms),
                 us(b.gateway_cpu_us_per_request),
                 b.failed.to_string(),

@@ -277,6 +277,14 @@ impl Bench<'_> {
         )
         .await;
         b.gateway_cpu_us_per_request = cpu_per_request(cpu_before, pid, b.requests);
+        let direct = baseline::run(
+            self.install.mock_addr,
+            &self.target(true).bearer,
+            p.baseline_concurrency,
+            Until::Count(p.baseline_requests),
+        )
+        .await;
+        b.added_latency_ms = Some(Pair::added(&b.latency_ms, &direct.latency_ms));
         self.check(
             "baseline",
             "every request succeeded",

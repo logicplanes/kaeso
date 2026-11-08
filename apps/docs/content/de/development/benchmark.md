@@ -68,7 +68,7 @@ Jedes Szenario beginnt mit einem frischen Gateway:
 
 | Szenario | Was passiert |
 | --- | --- |
-| Baseline | Die Clients senden nicht gestreamte Anfragen, so schnell das Gateway sie beantwortet |
+| Baseline | Die Clients senden nicht gestreamte Anfragen, so schnell das Gateway sie beantwortet, danach dieselben Anfragen direkt an den Mock |
 | Gleichzeitige Streams | Die Clients öffnen jede Anzahl Streams, lesen jeden Chunk und schließen. Dieselben Streams laufen auch gegen den Mock-Anbieter allein, ohne Kaeso |
 | Abbrüche | Ein Anteil der Streams trennt die Verbindung an einer Stelle zwischen einem Fünftel und vier Fünfteln des Streams. Ihre Mock-Streams enden nie von selbst, sodass jeder Abbruch eine Anfrage beim Anbieter zu schließen hat. Die anderen lesen bis zum Ende |
 | Langsame Clients | Ein Anteil der Clients liest den ersten Chunk und hört dann auf, mit einem kleinen Empfangspuffer, während der Mock ohne Ende jede Millisekunde ein Text-Delta von 4 KiB schreibt. Sie nutzen ein zweites Projekt, das keine Inhalte protokolliert, sodass der Speicher des Gateways zeigt, was es für sie puffert, und nicht die Antwort, die es für das Protokoll behält. Die anderen lesen normal |
@@ -82,6 +82,7 @@ Jede Zeit erscheint als Perzentile über alle Anfragen oder Chunks eines Laufs:
 | --- | --- |
 | Requests/s | Nicht gestreamte Anfragen, die das Gateway pro Sekunde beantwortet hat, die Zeit des Mocks eingeschlossen |
 | Overhead | Die eigene Zeit von Kaeso, bevor es den Anbieter aufrief, aus dem Eintrag `kaeso` des [Headers `server-timing`](../api/model-api.md#antwort-header). Sie beginnt, wenn die Anfrage den Handler von Kaeso erreicht, und lässt die Zeit aus, die der Client zum Senden des Bodys brauchte |
+| Added latency | Ein Perzentil der Zeit des Clients für eine nicht gestreamte Anfrage über Kaeso, minus dasselbe Perzentil für dieselben Anfragen über ebenso viele Verbindungen direkt an den Mock. Das fügt der Aufruf eines Anbieters über Kaeso hinzu, die zusätzliche Verbindung eingeschlossen |
 | Latency | Die Zeit des Clients für eine ganze nicht gestreamte Anfrage |
 | Gateway CPU per request | Die CPU-Zeit, User und System, die der Gateway-Prozess während der Baseline verbraucht hat, geteilt durch ihre Anfragen, seine Hintergrundarbeit eingeschlossen. Das kostet jede Anfrage den Rechner, auf dem Kaeso läuft, ohne die Clients und den Mock |
 | Added time to first byte | Die Zeit des Clients bis zum ersten Chunk minus die Zeit des Anbieters bis zur Antwort, den Eintrag `upstream` von `server-timing`. Sie enthält den Overhead, die Arbeit von Kaeso am ersten Chunk und die zusätzliche Verbindung |
