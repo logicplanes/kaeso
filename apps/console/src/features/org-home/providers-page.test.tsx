@@ -267,6 +267,51 @@ describe("organization providers", () => {
     expect(requests("POST", "orgs/:org/credentials/:credential/default").map((r) => r.params.credential)).toEqual(["cred_staging"]);
   });
 
+  it("shows a service account key's email, project and location, replaces it and moves it to another location", async () => {
+    signedIn();
+    const sa = credential({
+      id: "cred_sa",
+      provider: "gemini-agent-platform",
+      name: "Agent Platform",
+      auth_method: "google_service_account",
+      account: "kaeso@kaeso-example.iam.gserviceaccount.com",
+      project: "kaeso-example",
+      location: "global",
+      last4: "cafe",
+    });
+    keys([production, sa]);
+    on("PATCH", "orgs/:org/credentials/:credential", ({ body }: { body: { name: string; location?: string } }) => ({
+      ...sa,
+      name: body.name,
+      location: body.location ?? sa.location,
+    }));
+    const { user } = await renderApp(PATH);
+
+    const key = await row("Agent Platform");
+    expect(key).toHaveTextContent("…cafe");
+    expect(key).toHaveTextContent("kaeso@kaeso-example.iam.gserviceaccount.com");
+    expect(key).toHaveTextContent("kaeso-example");
+    expect(key).toHaveTextContent("global");
+    await user.click(await screen.findByRole("button", { name: "Actions for Gemini Enterprise Agent Platform · Agent Platform" }));
+    const menu = await screen.findByRole("menu");
+    expect(
+      within(menu)
+        .getAllByRole("menuitem")
+        .map((i) => i.textContent),
+    ).toEqual(["Assign to projects", "Replace", "Edit", "Delete"]);
+    await user.click(within(menu).getByRole("menuitem", { name: "Edit" }));
+    const dialog = await screen.findByRole("dialog", { name: "Edit Gemini Enterprise Agent Platform · Agent Platform" });
+    await user.hover(within(dialog).getByRole("button", { name: "Save" }));
+    expect(await screen.findByText("Change the name or the location first")).toBeInTheDocument();
+    await user.click(within(dialog).getByRole("combobox", { name: "Location" }));
+    await user.click(await screen.findByRole("option", { name: "europe-west1" }));
+    await user.click(within(dialog).getByRole("button", { name: "Save" }));
+    expect(await notifications().findByText("Agent Platform now calls europe-west1")).toBeInTheDocument();
+    expect(requests("PATCH", "orgs/:org/credentials/:credential").map((r) => [r.params.credential, r.body])).toEqual([
+      ["cred_sa", { name: "Agent Platform", location: "europe-west1" }],
+    ]);
+  });
+
   it("renames a key with the trimmed name", async () => {
     signedIn();
     keys([production, staging]);

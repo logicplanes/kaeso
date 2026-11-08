@@ -23460,7 +23460,7 @@
           },
           "provider": {
             "$ref": "#/components/schemas/ProviderId",
-            "description": "The id of a provider Kaeso calls: `openai`, `anthropic`, `deepseek`, `xai`,\n`togetherai`, `groq`, `openrouter`, `mistral`, `vercel`, `cohere`,\n`ollama-cloud`, `moonshotai`, `alibaba`, `cerebras`, `zai`, `minimax`, `google`, or one\nof the organization's custom providers that takes a key."
+            "description": "The id of a provider Kaeso calls: `openai`, `anthropic`, `deepseek`, `xai`,\n`togetherai`, `groq`, `openrouter`, `mistral`, `vercel`, `cohere`,\n`ollama-cloud`, `moonshotai`, `alibaba`, `cerebras`, `zai`, `minimax`, `google`,\n`gemini-agent-platform`, or one of the organization's custom providers that\ntakes a key."
           },
           "secret": {
             "type": "string",
@@ -29115,7 +29115,7 @@
                 "service_account": {
                   "oneOf": [
                     {
-                      "$ref": "#/components/schemas/ServiceAccountView",
+                      "$ref": "#/components/schemas/ServiceAccountSignInView",
                       "description": "A service account key people can add instead of an API key, with\n`auth_method` `google_service_account`; `null` when the provider takes\nnone."
                     },
                     {
@@ -33985,7 +33985,7 @@
           "service_account": {
             "oneOf": [
               {
-                "$ref": "#/components/schemas/ServiceAccountView",
+                "$ref": "#/components/schemas/ServiceAccountSignInView",
                 "description": "A service account key people can add instead of an API key, with\n`auth_method` `google_service_account`; `null` when the provider takes\nnone."
               },
               {
@@ -35341,7 +35341,7 @@
         ],
         "pattern": "^svc_[0-9a-hjkmnp-tv-z]{26}$"
       },
-      "ServiceAccountView": {
+      "ServiceAccountSignInView": {
         "type": "object",
         "description": "How a provider takes a Google Cloud service account key.",
         "required": [
@@ -35369,6 +35369,60 @@
               "global",
               "us-central1"
             ]
+          }
+        }
+      },
+      "ServiceAccountView": {
+        "type": "object",
+        "description": "A service account.",
+        "required": [
+          "id",
+          "project_id",
+          "name",
+          "grant",
+          "created_at"
+        ],
+        "properties": {
+          "archived_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When archived."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Created."
+          },
+          "created_by": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/UserId",
+                "description": "Who created it."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "grant": {
+            "$ref": "#/components/schemas/GrantView",
+            "description": "Its project role and rights; its keys act with them."
+          },
+          "id": {
+            "$ref": "#/components/schemas/ServiceAccountId",
+            "description": "Id."
+          },
+          "name": {
+            "type": "string",
+            "description": "Name.",
+            "example": "ci-deploy"
+          },
+          "project_id": {
+            "$ref": "#/components/schemas/ProjectId",
+            "description": "The project."
           }
         }
       },

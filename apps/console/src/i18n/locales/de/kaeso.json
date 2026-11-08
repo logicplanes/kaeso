@@ -385,5 +385,21 @@
   "kaeso.toolAccess.ownerCount": "{count, plural, one {Jedes Tool, das sein Inhaber nutzen darf: # Tool.} other {Jedes Tool, das sein Inhaber nutzen darf: # Tools.}}",
   "kaeso.toolAccess.projectCount": "{count, plural, one {Jedes Tool, das das Projekt anbietet: # Tool.} other {Jedes Tool, das das Projekt anbietet: # Tools.}}",
   "kaeso.toolAccess.edit": "Tools bearbeiten",
-  "kaeso.createKey.chooseApi": "Wählen Sie mindestens eine API"
+  "kaeso.createKey.chooseApi": "Wählen Sie mindestens eine API",
+  "kaeso.providerKey.location": "Standort",
+  "kaeso.providerKey.locationHint": "Wo Google die Anfragen ausführt; global bietet die meisten Modelle.",
+  "kaeso.providerKey.serviceAccountNew": "Den neuen JSON-Schlüssel hinzufügen",
+  "kaeso.providerKey.serviceAccountTitle": "Dienstkonto-Schlüssel hinzufügen",
+  "kaeso.providerKey.serviceAccountWhere": "Einen JSON-Schlüssel auf {site} unter {page} erstellen.",
+  "kaeso.providerKey.serviceAccountMethodTitle": "API-Schlüssel oder Dienstkonto-Schlüssel hinzufügen?",
+  "kaeso.providerKey.serviceAccount": "Dienstkonto-Schlüssel",
+  "kaeso.providerKey.serviceAccountHint": "Erreicht jedes Modell, das {provider} dem Projekt des Schlüssels anbietet.",
+  "kaeso.providerKey.expressKey": "API-Schlüssel für den Express-Modus",
+  "kaeso.providerKey.expressKeyHint": "Erreicht nur Gemini-Modelle.",
+  "kaeso.providerKey.serviceAccountBlocked": "Den JSON-Schlüssel einfügen oder auswählen",
+  "kaeso.providerKey.serviceAccountNotJson": "Die ganze JSON-Schlüsseldatei einfügen",
+  "kaeso.providerKey.serviceAccountKey": "JSON-Schlüssel",
+  "kaeso.providerKey.serviceAccountPlaceholder": "Den Inhalt der Schlüsseldatei einfügen",
+  "kaeso.providerKey.serviceAccountTooLarge": "Diese Datei ist zu groß für einen JSON-Schlüssel.",
+  "kaeso.providerKey.serviceAccountChoose": "Datei auswählen"
 }

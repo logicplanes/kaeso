@@ -311,5 +311,10 @@
   "orgHome.mcp.problem.notMcp": "Die Antwort des Servers ist kein MCP; prüfen Sie die Adresse.",
   "orgHome.mcp.problem.headerRefused": "Der Server lehnte den Header ab; prüfen Sie Namen und Wert.",
   "orgHome.mcp.problem.signIn": "Der Server verlangt eine OAuth-Anmeldung, die Kaeso nicht kann; nutzen Sie einen geheimen Header.",
-  "orgHome.mcp.serverVersion": "{name} {version}"
+  "orgHome.mcp.serverVersion": "{name} {version}",
+  "orgHome.project": "Projekt",
+  "orgHome.location": "Standort",
+  "orgHome.keyMoved": "{name} ruft jetzt {location} auf",
+  "orgHome.changeFirst": "Zuerst den Namen oder den Standort ändern",
+  "orgHome.editKey": "{title} bearbeiten"
 }

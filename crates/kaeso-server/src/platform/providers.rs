@@ -56,7 +56,7 @@ pub struct ProviderView {
     #[doc = "A service account key people can add instead of an API key, with\n\
         `auth_method` `google_service_account`; `null` when the provider takes\n\
         none."]
-    pub service_account: Option<ServiceAccountView>,
+    pub service_account: Option<ServiceAccountSignInView>,
     #[doc = "Which format a model id is sent in when its catalogue entry names\n\
         none, the first matching pattern winning; models no pattern matches go\n\
         in the first of `dialects`. Empty for most providers."]
@@ -76,7 +76,7 @@ pub struct ModelRouteView {
 
 #[derive(Debug, Serialize, ToSchema)]
 #[schema(description = "How a provider takes a Google Cloud service account key.")]
-pub struct ServiceAccountView {
+pub struct ServiceAccountSignInView {
     #[doc = "The provider's page for creating service accounts and their keys."]
     pub key_page: KeyPageView,
     #[doc = "The locations a key can call, in the provider's documented order."]
@@ -136,7 +136,7 @@ impl ProviderView {
                 usage_url: a.usage_url,
                 experimental: a.experimental,
             }),
-            service_account: p.service_account.map(|s| ServiceAccountView {
+            service_account: p.service_account.map(|s| ServiceAccountSignInView {
                 key_page: KeyPageView {
                     url: s.key_page.url,
                     label: s.key_page.label,
