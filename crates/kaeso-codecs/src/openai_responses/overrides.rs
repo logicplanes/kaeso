@@ -391,8 +391,8 @@ pub(crate) fn is_form(path: &str, value: &Value, canon_has: bool) -> bool {
     DEFAULTS.iter().any(|(k, d)| *k == last && d == value)
 }
 
-pub(crate) fn apply(
-    extras: &Extras,
+pub(crate) fn apply<'e>(
+    extras: &'e Extras,
     dialect: DialectId,
     scope: &str,
     exclude: &[&str],
@@ -401,40 +401,37 @@ pub(crate) fn apply(
     if !extras.is_from(dialect) {
         return;
     }
-    let select = |key: &str| -> Option<String> {
+    let select = |key: &'e str| -> Option<&'e str> {
         if scope.is_empty() {
             let first = key.split('.').next().unwrap_or(key);
             if first.starts_with('@') || exclude.contains(&first) {
                 return None;
             }
-            Some(key.to_owned())
+            Some(key)
         } else if key == scope {
-            Some(String::new())
+            Some("")
         } else {
-            key.strip_prefix(scope)
-                .and_then(|r| r.strip_prefix('.'))
-                .map(str::to_owned)
+            key.strip_prefix(scope).and_then(|r| r.strip_prefix('.'))
         }
     };
     let canon = match extras.form.get(CANON) {
         Some(Value::Object(m)) => Some(m),
         _ => None,
     };
-    let segs_of = |rel: &str| -> Vec<String> {
+    let segs_of = |rel: &'e str| -> Vec<&'e str> {
         if rel.is_empty() {
             Vec::new()
         } else {
-            rel.split('.').map(str::to_owned).collect()
+            rel.split('.').collect()
         }
     };
-    let fresh = |node: &Node, key: &str, segs: &[String]| -> bool {
+    let fresh = |node: &Node, key: &str, segs: &[&str]| -> bool {
         // Decoding records no path deeper than MAX_DEPTH, and the Node walks recurse once
         // per segment: a deeper key, only ever built by hand, would overflow the stack.
         if segs.len() > MAX_DEPTH {
             return false;
         }
-        let refs: Vec<&str> = segs.iter().map(String::as_str).collect();
-        let now = node.value_at(&refs);
+        let now = node.value_at(segs);
         match (canon.and_then(|m| m.get(key)), now) {
             (None, None) => true,
             (Some(then), Some(now)) => values_equal(then, &now),
@@ -449,37 +446,33 @@ pub(crate) fn apply(
         Some(Value::Object(map)) => map.iter().collect(),
         _ => Vec::new(),
     };
-    let change = |key: &str| {
+    let change = |key: &'e str| {
         select(key)
-            .map(|rel| segs_of(&rel))
+            .map(segs_of)
             .filter(|segs| fresh(node, key, segs))
     };
     // Every record is checked against the node as the canonical form built it, before any is
     // applied, so the checks need no copy of the node.
-    let unset: Vec<Vec<String>> = unset.into_iter().filter_map(change).collect();
-    let fields: Vec<(Vec<String>, &RawJson)> = extras
+    let unset: Vec<Vec<&str>> = unset.into_iter().filter_map(change).collect();
+    let fields: Vec<(Vec<&str>, &RawJson)> = extras
         .fields
         .iter()
         .filter(|(key, _)| !key.starts_with(HEADER_PREFIX))
         .filter_map(|(key, raw)| change(key).map(|segs| (segs, raw)))
         .collect();
-    let set: Vec<(Vec<String>, &Value)> = set
+    let set: Vec<(Vec<&str>, &Value)> = set
         .into_iter()
         .filter_map(|(key, value)| change(key).map(|segs| (segs, value)))
         .collect();
     for segs in &unset {
-        node.unset_path(&refs(segs));
+        node.unset_path(segs);
     }
     for (segs, raw) in fields {
-        node.set_path(&refs(&segs), Node::raw(raw));
+        node.set_path(&segs, Node::raw(raw));
     }
     for (segs, value) in set {
-        node.set_path(&refs(&segs), Node::Val(value.clone()));
+        node.set_path(&segs, Node::Val(value.clone()));
     }
-}
-
-fn refs(segs: &[String]) -> Vec<&str> {
-    segs.iter().map(String::as_str).collect()
 }
 
 #[cfg(test)]
