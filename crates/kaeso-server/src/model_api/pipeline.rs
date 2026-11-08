@@ -334,8 +334,7 @@ pub async fn serve_with(
         let failure = Failure::new(shutting_down(), Stage::Shutdown);
         let mut resp = answer(&failure);
         rec.time(&mut resp);
-        rec.fail_as(SHUT_DOWN, &failure.err, resp.status().as_u16())
-            .await;
+        Box::pin(rec.fail_as(SHUT_DOWN, &failure.err, resp.status().as_u16())).await;
         return resp;
     };
     match done {
@@ -355,7 +354,7 @@ pub async fn serve_with(
                     .insert(response_cache::HEADER, v.header());
             }
             rec.time(&mut resp);
-            rec.fail(failure.logged(), resp.status().as_u16()).await;
+            Box::pin(rec.fail(failure.logged(), resp.status().as_u16())).await;
             resp
         }
     }
@@ -773,7 +772,9 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
                 ));
             }
             let app_req = Arc::new(req.clone());
-            attempt(state, rec, &sh, entry, app_req, req, None).await
+            // Boxed so every future around a request holds a pointer, not the attempt's own
+            // state: the request's futures are moved whole each time one is wrapped.
+            Box::pin(attempt(state, rec, &sh, entry, app_req, req, None)).await
         }
         Resolved::Alias(alias) => {
             rec.outcome().alias = Some(alias.name.clone());
@@ -1182,7 +1183,11 @@ async fn attempt(
         at: state.clock.now(),
     };
     if success && entry.is_unavailable() {
-        availability::record(state, &learnt(Availability::Available)).await;
+        Box::pin(availability::record(
+            state,
+            &learnt(Availability::Available),
+        ))
+        .await;
     }
     if success {
         crate::services::notifications::system::key_answered(credential.id.uuid());
@@ -1311,10 +1316,14 @@ async fn attempt(
                 if err.kind == ErrorKind::NotFound
                     && !credential.is_keyless()
                     && let Probe::Unserved =
-                        state.availability.probe(state, &credential, &eff).await
+                        Box::pin(state.availability.probe(state, &credential, &eff)).await
                 {
                     tracing::info!(provider, model = %eff.model_id, upstream = %err.message, "the provider does not serve a catalogue model to the project's key");
-                    availability::record(state, &learnt(Availability::Unavailable)).await;
+                    Box::pin(availability::record(
+                        state,
+                        &learnt(Availability::Unavailable),
+                    ))
+                    .await;
                     return Err(fail(Stage::Unserved(eff.model_id.clone()))(unserved(&eff)));
                 }
                 if let Some(refused) =
@@ -1324,7 +1333,7 @@ async fn attempt(
                     let said = redacted(err);
                     tracing::warn!(provider, status, kind = said.kind.as_str(), upstream = %said.message, "the provider refused the project's provider key");
                     if !credential.is_keyless() {
-                        crate::services::notifications::system::key_refused(
+                        Box::pin(crate::services::notifications::system::key_refused(
                             state,
                             caller.org_id,
                             credential.id.uuid(),
@@ -1333,7 +1342,7 @@ async fn attempt(
                                 message: &said.message,
                                 billing: said.kind == ErrorKind::Billing,
                             },
-                        )
+                        ))
                         .await;
                     }
                     let mut failure = fail(Stage::KeyRefused)(refused);
@@ -1581,7 +1590,7 @@ async fn route(
         }
         rec.outcome().fallbacks.clone_from(&failed);
         let began = Instant::now();
-        let tried = attempt(
+        let tried = Box::pin(attempt(
             state,
             rec,
             sh,
@@ -1589,7 +1598,7 @@ async fn route(
             Arc::clone(&app_req),
             (*app_req).clone(),
             step.timeout_seconds,
-        )
+        ))
         .await;
         let took = u64::try_from(began.elapsed().as_millis()).unwrap_or(u64::MAX);
         let mut failure = match tried {
@@ -1883,7 +1892,7 @@ async fn record_usage(rec: &mut Recording, reply: &Reply, counter: InputCounter)
         tally.feed_blocks(&r.blocks);
     }
     let input = if usage.total_input_tokens() == 0 {
-        Some(counter.count().await.tokens())
+        Some(Box::pin(counter.count()).await.tokens())
     } else {
         None
     };
