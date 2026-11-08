@@ -233,7 +233,7 @@ where
         if let Some(h) = self.held(key, seen).await {
             return Ok(Some(h.value));
         }
-        self.load_once(key, seen, load).await
+        Box::pin(self.load_once(key, seen, load)).await
     }
 
     pub async fn get_or_refresh<E, F, Fut>(&self, key: &str, load: F) -> Result<Option<Arc<V>>, E>
@@ -247,7 +247,7 @@ where
             self.refresh_if_due(key, seen, &h, load).await;
             return Ok(Some(h.value));
         }
-        self.load_once(key, seen, load).await
+        Box::pin(self.load_once(key, seen, load)).await
     }
 
     // Like `cached`, for a caller that loads a missing entry its own way but keeps a hot one fresh.
@@ -283,6 +283,7 @@ where
         }
     }
 
+    // Boxed at its callers: a hit, the hot path, then carries none of a load's state in its future.
     async fn load_once<E, F, Fut>(
         &self,
         key: &str,
