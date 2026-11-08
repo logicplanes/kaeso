@@ -1827,7 +1827,7 @@ async fn detection_checks_the_settings_it_is_given_and_says_what_to_fix() {
 }
 
 #[tokio::test]
-async fn offered_models_come_with_the_limits_and_capabilities_kaeso_found_but_no_prices() {
+async fn offered_models_come_with_the_limits_and_capabilities_kaeso_found_and_prices_only_for_server_software() {
     let env = env().await;
     let (host, _) = lab(Shape::OpenAi, Takes::Bearer, &["/v1/chat/completions"]).await;
     provider(
@@ -1881,6 +1881,33 @@ async fn offered_models_come_with_the_limits_and_capabilities_kaeso_found_but_no
         .unwrap()
         .clone();
     assert_eq!(unknown["detected"], json!({}), "{unknown}");
+
+    patch_if_match(
+        &env.app,
+        &format!("/orgs/{}/custom-providers/lab", env.owner.org_id),
+        json!({ "server": "vllm" }),
+        &env.owner.cookie,
+        "\"1\"",
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    let r = env
+        .app
+        .get(
+            &format!(
+                "/orgs/{}/projects/{}/models/offered?provider=lab",
+                env.owner.org_id, env.project
+            ),
+            &env.owner.cookie,
+        )
+        .await
+        .expect_status(StatusCode::OK);
+    for m in r.body["data"].as_array().unwrap() {
+        let detected = &m["detected"];
+        assert_eq!(detected["input_price"], "0", "{m}");
+        assert_eq!(detected["output_price"], "0", "{m}");
+        assert!(detected.get("cache_read_price").is_none(), "{m}");
+    }
 }
 
 async fn software_lab(

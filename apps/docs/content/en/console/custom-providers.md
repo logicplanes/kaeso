@@ -106,8 +106,8 @@ List that address with `/32` in `KAESO_CUSTOM_PROVIDERS_ALLOWED_NETWORKS`, then 
 
 KPMR knows nothing about your server, and a model listing names few of a model's values. When you add a model, Kaeso fills in what it can find, and you give the rest:
 
-- **Prices.** Input and output prices, and cache prices if the server reports cached tokens. Kaeso never fills them in, because a price in KPMR is another provider's. It charges every request at these prices and holds budgets to them ([limits and budgets](limits-and-budgets.md)). Set `0` for a server you don't pay per token.
-- **Limits.** The context window and the output limit, from the model listing or else from the model of the same name in KPMR. Kaeso uses them for budgets and to fill in the output limit that Messages requires.
+- **Prices.** Input and output prices, and cache prices if the server reports cached tokens. For a provider that names its [server software](#server-software), they start at `0`, because the software charges nothing per token; set your own to charge budgets for the hardware. Otherwise Kaeso never fills them in, because a price in KPMR is another provider's. It charges every request at these prices and holds budgets to them ([limits and budgets](limits-and-budgets.md)). Set `0` for a server you don't pay per token.
+- **Limits.** The context window and the output limit, from the model listing or else from the model of the same name in KPMR. The listing gives the context window as vLLM, SGLang and TabbyAPI write it (`max_model_len`), as llama.cpp does (`meta.n_ctx`, the context the server runs with) and as Docker Model Runner does (`dmr.context_window`). Kaeso uses them for budgets and to fill in the output limit that Messages requires.
 - **Capabilities.** Inputs, outputs, tool calling, reasoning, structured output, temperature and effort levels, from the model of the same name in KPMR. Kaeso refuses a request that needs a capability the model doesn't have before it calls your server.
 
 These values stay as you set them. Nothing updates them later.
@@ -116,7 +116,7 @@ These values stay as you set them. Nothing updates them later.
 
 On a project's **Models** page, choose **Add models**. Custom providers are in the provider list next to the built-in ones. Choose yours, and the dialog asks the server's model listing, `GET /v1/models`, with the project's key. It lists the ids the server names that the catalogue doesn't have yet.
 
-Choose an id, or **Type a model id**, then check the model's values. Kaeso fills in the limits the listing gives, and the values of the model KPMR lists under the same name, ignoring case and an owner before the `/`: `meta-llama/Llama-3.3-70B-Instruct` takes those of `meta-llama/llama-3.3-70b-instruct`. You always enter the prices. When the listing fails, the dialog says why and you type the id. Adding models needs the right **Manage models** in the project ([models and aliases](models-and-aliases.md)).
+Choose an id, or **Type a model id**, then check the model's values. Kaeso fills in the limits the listing gives, and the values of the model KPMR lists under the same name, ignoring case and an owner before the `/`: `meta-llama/Llama-3.3-70B-Instruct` takes those of `meta-llama/llama-3.3-70b-instruct`. You enter the prices, which start at `0` for a provider that names its server software. When the listing fails, the dialog says why and you type the id. Adding models needs the right **Manage models** in the project ([models and aliases](models-and-aliases.md)).
 
 Apps then call the model by its name, with the provider's id in front:
 

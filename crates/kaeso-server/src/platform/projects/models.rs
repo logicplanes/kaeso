@@ -470,8 +470,14 @@ pub async fn preview(
 
 // A custom server's prices are its operator's own, so the same model's price in
 // KPMR would charge budgets at someone else's rate; what KPMR knows about how Kaeso
-// calls a provider's model says nothing about another server.
-fn detected_fields(snapshot: &kaeso_core::kpmr::Catalogue, m: &ModelInfo) -> Fields {
+// calls a provider's model says nothing about another server. Inference server software
+// such as vLLM or Ollama charges nothing per token, so its models start at 0.
+fn detected_fields(
+    snapshot: &kaeso_core::kpmr::Catalogue,
+    m: &ModelInfo,
+    self_hosted: bool,
+) -> Fields {
+    let free = self_hosted.then_some(rust_decimal::Decimal::ZERO);
     let known = snapshot
         .same_model(&m.id)
         .map(Fields::from_kpmr)
@@ -479,8 +485,8 @@ fn detected_fields(snapshot: &kaeso_core::kpmr::Catalogue, m: &ModelInfo) -> Fie
     Fields {
         context_limit: provider_detection::context_limit(m).or(known.context_limit),
         output_limit: m.max_output_tokens.or(known.output_limit),
-        input_price: None,
-        output_price: None,
+        input_price: free,
+        output_price: free,
         cache_read_price: None,
         cache_write_price: None,
         cache_write_1h_price: None,
@@ -513,7 +519,8 @@ pub struct OfferedModel {
     pub catalogue_model_id: Option<CatalogueModelId>,
     #[doc = "Values to start its entry from: the limits the listing gives, and the\n\
         inputs, outputs, limits and capabilities of the model KPMR lists\n\
-        under the same name. Never prices."]
+        under the same name. Prices only for a provider that names its inference\n\
+        server software, at 0."]
     pub detected: Fields,
 }
 
@@ -612,7 +619,7 @@ pub async fn offered(
                     .iter()
                     .find(|r| r.provider == id && r.model_id == m.id)
                     .map(|r| CatalogueModelId::from_uuid(r.id)),
-                detected: detected_fields(&loaded.snapshot, &m),
+                detected: detected_fields(&loaded.snapshot, &m, custom.server().is_some()),
                 model_id: m.id,
             })
             .collect(),
