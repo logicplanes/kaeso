@@ -167,6 +167,13 @@ fn diff_at<'a>(
     keys: &Keys<'_>,
     out: &mut Overrides,
 ) {
+    // The same bytes parse to the same values at every depth, so walking them records nothing:
+    // a schema or item carried raw from the app is compared once, not field by field.
+    if let Some(Node::Raw(r)) = canon
+        && r.get() == actual.get()
+    {
+        return;
+    }
     let managed = keys.managed;
     let text = actual.get().trim_start();
     if path.len() == 1
