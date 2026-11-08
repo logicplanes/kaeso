@@ -1827,7 +1827,8 @@ async fn detection_checks_the_settings_it_is_given_and_says_what_to_fix() {
 }
 
 #[tokio::test]
-async fn offered_models_come_with_the_limits_and_capabilities_kaeso_found_and_prices_only_for_server_software() {
+async fn offered_models_come_with_the_limits_and_capabilities_kaeso_found_and_prices_only_for_server_software()
+ {
     let env = env().await;
     let (host, _) = lab(Shape::OpenAi, Takes::Bearer, &["/v1/chat/completions"]).await;
     provider(
