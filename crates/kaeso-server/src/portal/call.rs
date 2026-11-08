@@ -99,7 +99,7 @@ fn log(
 ) {
     let ms = |d: Duration| u32::try_from(d.as_millis()).unwrap_or(u32::MAX);
     let row = ToolCallRow {
-        id: Uuid::now_v7(),
+        id: kaeso_core::id::new_v7(),
         org_id: l.caller.org,
         project_id: l.caller.project,
         server_id: l.server,

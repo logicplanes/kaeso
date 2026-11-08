@@ -44,6 +44,16 @@ pub fn decode_base32(s: &str) -> Result<u128, IdError> {
     Ok(value)
 }
 
+// A v7 counter per thread instead of uuid's one process-wide lock, which every request queued on:
+// ids stay unique through the counter's random seed and random bits, and ordered by the
+// millisecond, all that anything sorts them by.
+pub fn new_v7() -> Uuid {
+    thread_local! {
+        static CONTEXT: uuid::ContextV7 = const { uuid::ContextV7::new() };
+    }
+    CONTEXT.with(|context| Uuid::new_v7(uuid::Timestamp::now(context)))
+}
+
 pub trait PublicId: Copy + Sized {
     const PREFIX: &'static str;
     fn uuid(&self) -> Uuid;
@@ -58,7 +68,7 @@ macro_rules! public_id {
 
         impl $name {
             pub fn new() -> Self {
-                $name(Uuid::now_v7())
+                $name(new_v7())
             }
 
             pub const fn from_uuid(uuid: Uuid) -> Self {
@@ -177,6 +187,27 @@ mod tests {
         assert!(s.starts_with("org_"));
         assert_eq!(s.len(), 4 + ENCODED_LEN);
         assert_eq!(s.parse::<OrgId>().unwrap(), id);
+    }
+
+    #[test]
+    fn ids_from_many_threads_are_unique_version_7_and_ordered_within_a_thread() {
+        let threads: Vec<_> = (0..8)
+            .map(|_| {
+                std::thread::spawn(|| {
+                    let ids: Vec<Uuid> = (0..5_000).map(|_| RequestId::new().uuid()).collect();
+                    assert!(ids.windows(2).all(|w| w[0] < w[1]));
+                    ids
+                })
+            })
+            .collect();
+        let mut all = std::collections::HashSet::new();
+        for t in threads {
+            for id in t.join().unwrap() {
+                assert_eq!(id.get_version_num(), 7);
+                assert!(all.insert(id));
+            }
+        }
+        assert_eq!(all.len(), 40_000);
     }
 
     #[test]
