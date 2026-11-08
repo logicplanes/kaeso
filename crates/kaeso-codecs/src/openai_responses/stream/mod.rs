@@ -35,7 +35,8 @@ pub(super) type Emit<'a> = dyn FnMut(&str, Node, i64) -> Result<Emitted, KppErro
 // The node goes to the emitter and comes back, so it is not copied for every event: `Written`
 // carries the event as written, `Skipped` the canonical node unchanged.
 pub(super) enum Emitted {
-    Written(Node),
+    // The frame as written, with its `sequence_number` as `Node::get_i64` reads it.
+    Written(Node, Option<i64>),
     Skipped(Node),
 }
 
@@ -190,8 +191,8 @@ impl Engine {
 
     fn emit(&mut self, em: &mut Emit<'_>, scope: &str, node: Node) -> Result<Node, KppError> {
         match em(scope, node, self.seq)? {
-            Emitted::Written(out) => {
-                self.saw_sequence(out.get_i64("sequence_number"));
+            Emitted::Written(out, sequence) => {
+                self.saw_sequence(sequence);
                 Ok(out)
             }
             Emitted::Skipped(node) => Ok(node),
