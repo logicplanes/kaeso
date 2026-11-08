@@ -130,14 +130,14 @@ impl Codec for AnthropicMessages {
         headers: &HeaderList,
         body: &[u8],
     ) -> Result<ModelList, KppError> {
-        if !(200..300).contains(&status) {
+        if !(200..300).contains(&status) || error::is_failure_envelope(body) {
             return Err(Self::decode_error(status, headers, body));
         }
         models::decode_models(body)
     }
 
     fn decode_model(status: u16, headers: &HeaderList, body: &[u8]) -> Result<ModelInfo, KppError> {
-        if !(200..300).contains(&status) {
+        if !(200..300).contains(&status) || error::is_failure_envelope(body) {
             return Err(Self::decode_error(status, headers, body));
         }
         models::decode_model(body)

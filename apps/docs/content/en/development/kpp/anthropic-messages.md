@@ -257,7 +257,7 @@ Schema `ErrorResponse`. Decode errors, for requests and provider bodies alike, n
 - A too-long prompt is a 400 `invalid_request_error` like any other, so only its message tells it apart. If Anthropic changes the wording, the error decodes as `InvalidRequest`.
 - An unknown `error.type`, or a body that is not an `ErrorResponse`, gets its kind from the status. Examples of such bodies are Cloudflare's HTML 413, JSON whose `type` is not `error`, and JSON with a top-level key Kaeso cannot carry. The status and the raw body (as a string when it is not JSON) are kept, and such bodies are encoded again in Anthropic's error shape.
 - Statuses 400, 409 and 422 give `InvalidRequest`, 401 `Authentication`, 402 `Billing`, 403 `PermissionDenied` and 404 `NotFound`. Statuses 408 and 504 give `Timeout`, 413 `RequestTooLarge`, 429 `RateLimited`, and 503 and 529 `Overloaded`. Any other status gives `ProviderError`, and so do stream errors, which have none. A documented `error.type` always wins over the status.
-- A body in OpenAI's error shape, `{"error": {"message", "type"}}`, as Vercel AI Gateway sends on `/v1/messages`, keeps its message. Its kind comes from `error.type` when that is one of Anthropic's types, else from the status, and Anthropic apps get it in Anthropic's shape (`fixtures/anthropic_messages/providers/vercel/errors/`).
+- A body in OpenAI's error shape, `{"error": {"message", "type"}}`, as Vercel AI Gateway and Z.ai send on `/v1/messages`, keeps its message. Its kind comes from `error.type` when that is one of Anthropic's types or one of [Z.ai's codes](#zai), else from the status, and Anthropic apps get it in Anthropic's shape (`fixtures/anthropic_messages/providers/vercel/errors/`). Such a body keeps its status only while the status gives the same kind; otherwise Anthropic apps get the kind's status, so Z.ai's 429 for an empty balance reaches them as 402 `billing_error`.
 - Errors decoded from Anthropic are encoded again from `raw` with their status, so Anthropic apps see them unchanged; others are built as `{"type":"error","error":{"type","message"},"request_id":null}`.
 - `request_id` is required in `ErrorResponse`, a string or `null`. `encode_error_for_request` (`dispatch::encode_error_for_request`) writes the given id there, including into a body encoded again from `raw`, where it replaces Anthropic's id. The gateway passes the id it sends in `kaeso-request-id` and keeps Anthropic's `request-id` header in its request log. `encode_error` writes `null` into the bodies it builds.
 - Other response headers (such as `anthropic-ratelimit-*` and `request-id`) are not part of `KppError`.
@@ -332,3 +332,28 @@ Decoded extras carry the origin `anthropic_messages` without a provider, because
 ## Round trips
 
 Every fixture round-trips, with no exceptions: requests, token-counting requests, replies, token-count replies, model listings, streams and errors (`tests/`, `models_tests.rs`). Every stream fixture also accumulates to its paired reply after decode and encode.
+
+## Providers that use this format
+
+Providers other than Anthropic that serve Messages record into `fixtures/anthropic_messages/providers/<id>/` ([fixtures](fixtures.md)). Their extra fields follow the rules above; this section names what each one adds.
+
+### Vercel
+
+Sources: Vercel's [Anthropic Messages API](https://vercel.com/docs/ai-gateway/sdks-and-apis/anthropic-messages-api) and [extended thinking](https://vercel.com/docs/ai-gateway/sdks-and-apis/anthropic-messages-api/reasoning) pages, read 2026-10-29, and the live recordings in `fixtures/anthropic_messages/providers/vercel/`. A Vercel model is sent as Messages when its **Sends as** value says so; Vercel's `generation` dialect is Chat Completions.
+
+| Vercel field | KPP | Notes |
+|---|---|---|
+| `provider_metadata` on the reply | extras | Anthropic apps get it back unchanged. |
+| `thinking` blocks without `signature` | `Block::Reasoning` | Anthropic apps get them as Vercel sent them. |
+| errors in OpenAI's envelope | `KppError` | See [errors](#errors). |
+| `POST /v1/messages/count_tokens` | — | Vercel counts exactly only for Claude models and estimates the rest, so Kaeso refuses token counts for every Vercel model. |
+
+### Z.ai
+
+Sources: Z.ai's [error codes](https://docs.z.ai/api-reference/api-code), [quick start](https://docs.z.ai/devpack/quick-start) and [thinking settings](https://docs.z.ai/devpack/latest-model) pages, read 2026-11-08, and the errors recorded and probed live in `fixtures/anthropic_messages/providers/zai/`. Messages is Z.ai's `generation` dialect, at `https://api.z.ai/api/anthropic`. Z.ai documents no Anthropic reply, stream or list of fields it takes, so requests go as they would to Anthropic, nothing is refused for Z.ai, and Z.ai's own errors reach the app. Its thinking settings page names `thinking.type` `adaptive` and `output_config.effort`, which another dialect's effort level becomes.
+
+| Z.ai field | KPP | Notes |
+|---|---|---|
+| Z.ai's numeric code as `error.type`, in OpenAI's envelope (`errors/recorded-invalid-api-key`) | `KppError` kind | Z.ai answers some codes with a status that means something else in Anthropic's table, such as 429 for an empty balance. The code wins: `1113`, `1309` and `1314` → `Billing`; `1211` → `NotFound`; `1220`, `1311` and `1315` → `PermissionDenied`; `1261` → `ContextTooLong`; `1301` → `ContentFiltered`; `1305` → `Overloaded`; `1000`, `1001`, `1003` and `1005` → `Authentication`. Other codes follow the status. |
+| `{"code", "msg", "success": false}`, also with HTTP 200 (`errors/list-invalid-api-key`) | `KppError` | Z.ai's platform envelope, which answers a path it doesn't serve, `GET /v1/models` among them, before it checks the key. `decode_models` and `decode_model` read it as an error whatever the status, so a model check with a wrong key reports the refused key. |
+| `POST /v1/messages/count_tokens` | — | Not documented; Kaeso refuses token counts for Z.ai models before sending anything. |

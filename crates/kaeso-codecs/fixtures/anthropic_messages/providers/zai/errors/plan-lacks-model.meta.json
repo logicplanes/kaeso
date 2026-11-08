@@ -1,0 +1,13 @@
+{
+  "status": 429,
+  "kind": "permission_denied",
+  "encoded_status": 403,
+  "encoded": {
+    "type": "error",
+    "error": {
+      "type": "permission_error",
+      "message": "Your current subscription plan does not yet include access to glm-5.3"
+    },
+    "request_id": null
+  }
+}

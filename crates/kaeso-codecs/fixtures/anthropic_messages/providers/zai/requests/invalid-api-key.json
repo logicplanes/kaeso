@@ -1,0 +1,10 @@
+{
+  "model": "glm-4.6",
+  "max_tokens": 16,
+  "messages": [
+    {
+      "role": "user",
+      "content": "Say hi."
+    }
+  ]
+}
