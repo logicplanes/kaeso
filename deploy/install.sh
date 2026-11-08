@@ -435,7 +435,7 @@ sha256() {
   fi
 }
 
-# Semantic versioning: a release is newer than its own pre-releases, so 0.6.0 is newer than 0.6.0-rc.8.
+# Semantic versioning: a release is newer than its own pre-releases, so 1.0.0 is newer than 1.0.0-rc.2.
 newer() {
   awk -v a="$1" -v b="$2" '
     function cmp(x, y,   xc, yc, xp, yp, xa, ya, nx, ny, i) {

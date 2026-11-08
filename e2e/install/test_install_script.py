@@ -452,14 +452,14 @@ def test_the_installer_run_in_an_install_uses_that_folder(tmp_path):
 @pytest.mark.parametrize(
     ("a", "b", "is_newer"),
     [
-        ("0.6.0", "0.6.0-rc.8", True),
-        ("0.6.0-rc.8", "0.6.0", False),
-        ("0.6.0-rc.10", "0.6.0-rc.9", True),
-        ("0.6.1", "0.6.0", True),
-        ("1.0.0", "0.99.99", True),
-        ("0.6.0", "0.6.0", False),
-        ("0.5.6", "0.6.0-rc.1", False),
-        ("0.6.0-rc.1", "0.6.0-beta.2", True),
+        ("40.6.0", "40.6.0-rc.8", True),
+        ("40.6.0-rc.8", "40.6.0", False),
+        ("40.6.0-rc.10", "40.6.0-rc.9", True),
+        ("40.6.1", "40.6.0", True),
+        ("41.0.0", "40.99.99", True),
+        ("40.6.0", "40.6.0", False),
+        ("40.5.6", "40.6.0-rc.1", False),
+        ("40.6.0-rc.1", "40.6.0-beta.2", True),
     ],
 )
 def test_versions_compare_as_semantic_versioning_says(a, b, is_newer, tmp_path):
@@ -499,59 +499,59 @@ def an_install(tmp_path: Path, version: str) -> Path:
 
 
 def test_update_installs_the_newest_stable_release_after_checking_its_hash(tmp_path):
-    install = an_install(tmp_path, "0.6.0-rc.8")
+    install = an_install(tmp_path, "40.6.0-rc.8")
     inode = (install / "compose.yaml").stat().st_ino
-    release_dir(tmp_path, "0.6.0", compose_of("0.6.0"), latest=True)
+    release_dir(tmp_path, "40.6.0", compose_of("40.6.0"), latest=True)
     result = update_in(tmp_path)
     assert result.returncode == 0, result.stderr
-    assert "Updating Kaeso in" in result.stdout and "from 0.6.0-rc.8 to 0.6.0" in result.stdout
-    assert "updated=0.6.0-rc.8" in result.stdout
-    assert (install / "compose.yaml").read_text() == compose_of("0.6.0")
-    assert (install / "compose.yaml.previous").read_text() == compose_of("0.6.0-rc.8")
+    assert "Updating Kaeso in" in result.stdout and "from 40.6.0-rc.8 to 40.6.0" in result.stdout
+    assert "updated=40.6.0-rc.8" in result.stdout
+    assert (install / "compose.yaml").read_text() == compose_of("40.6.0")
+    assert (install / "compose.yaml.previous").read_text() == compose_of("40.6.0-rc.8")
     assert (install / "compose.yaml").stat().st_ino == inode, "written in place, so the updater's mount still sees it"
     assert stat.S_IMODE((install / "compose.yaml").stat().st_mode) == 0o660
     assert sorted(p.name for p in install.iterdir()) == ["compose.yaml", "compose.yaml.previous"]
 
 
 def test_update_installs_the_release_version_names(tmp_path):
-    install = an_install(tmp_path, "0.6.0-rc.8")
-    release_dir(tmp_path, "0.6.0-rc.9", compose_of("0.6.0-rc.9"))
-    result = update_in(tmp_path, "0.6.0-rc.9")
+    install = an_install(tmp_path, "40.6.0-rc.8")
+    release_dir(tmp_path, "40.6.0-rc.9", compose_of("40.6.0-rc.9"))
+    result = update_in(tmp_path, "40.6.0-rc.9")
     assert result.returncode == 0, result.stderr
-    assert (install / "compose.yaml").read_text() == compose_of("0.6.0-rc.9")
+    assert (install / "compose.yaml").read_text() == compose_of("40.6.0-rc.9")
 
 
 def test_update_refuses_a_compose_file_that_does_not_match_the_manifest(tmp_path):
-    install = an_install(tmp_path, "0.6.0-rc.8")
-    release_dir(tmp_path, "0.6.0", compose_of("0.6.0"), digest="b" * 64, latest=True)
+    install = an_install(tmp_path, "40.6.0-rc.8")
+    release_dir(tmp_path, "40.6.0", compose_of("40.6.0"), digest="b" * 64, latest=True)
     result = update_in(tmp_path)
     assert result.returncode == 1
     assert "doesn't match its release's manifest, so the install stays as it is" in result.stderr
-    assert (install / "compose.yaml").read_text() == compose_of("0.6.0-rc.8")
+    assert (install / "compose.yaml").read_text() == compose_of("40.6.0-rc.8")
     assert sorted(p.name for p in install.iterdir()) == ["compose.yaml"]
 
 
 def test_update_never_goes_back_to_an_older_release(tmp_path):
-    install = an_install(tmp_path, "0.6.0-rc.8")
-    release_dir(tmp_path, "0.5.6", compose_of("0.5.6"), latest=True)
+    install = an_install(tmp_path, "40.6.0-rc.8")
+    release_dir(tmp_path, "40.5.6", compose_of("40.5.6"), latest=True)
     result = update_in(tmp_path)
     assert result.returncode == 1
-    assert "Kaeso 0.6.0-rc.8 runs here, which is newer than 0.5.6" in result.stderr
-    assert (install / "compose.yaml").read_text() == compose_of("0.6.0-rc.8")
+    assert "Kaeso 40.6.0-rc.8 runs here, which is newer than 40.5.6" in result.stderr
+    assert (install / "compose.yaml").read_text() == compose_of("40.6.0-rc.8")
 
 
 def test_update_to_the_running_release_just_starts_it(tmp_path):
-    install = an_install(tmp_path, "0.6.0")
-    release_dir(tmp_path, "0.6.0", compose_of("0.6.0"), latest=True)
+    install = an_install(tmp_path, "40.6.0")
+    release_dir(tmp_path, "40.6.0", compose_of("40.6.0"), latest=True)
     result = update_in(tmp_path)
     assert result.returncode == 0, result.stderr
-    assert "Kaeso 0.6.0 is installed in" in result.stdout
+    assert "Kaeso 40.6.0 is installed in" in result.stdout
     assert "updated=\n" in result.stdout
     assert sorted(p.name for p in install.iterdir()) == ["compose.yaml"]
 
 
 def test_update_that_cannot_download_changes_nothing(tmp_path):
-    install = an_install(tmp_path, "0.6.0-rc.8")
+    install = an_install(tmp_path, "40.6.0-rc.8")
     (tmp_path / "releases").mkdir()
     result = update_in(tmp_path, "9.9.9")
     assert result.returncode == 1
