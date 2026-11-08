@@ -40,10 +40,13 @@ jobs:
             decode_gemini,
             decode_gemini_embeddings,
             decode_minimax_images,
+            decode_minimax_speech,
             decode_openai_chat,
             decode_openai_embeddings,
             decode_openai_images,
             decode_openai_responses,
+            decode_openai_speech,
+            decode_openai_transcriptions,
             mcp,
             sse,
           ]
@@ -58,7 +61,7 @@ jobs:
         run: |
           set -euo pipefail
           listed="$(sed -n 's/^name = "\(.*\)"$/\1/p' fuzz/Cargo.toml | grep -vx kpp-fuzz | sort | paste -sd ' ' -)"
-          if [[ "$listed" != "decode_anthropic_messages decode_gemini decode_gemini_embeddings decode_minimax_images decode_openai_chat decode_openai_embeddings decode_openai_images decode_openai_responses mcp sse" ]]; then
+          if [[ "$listed" != "decode_anthropic_messages decode_gemini decode_gemini_embeddings decode_minimax_images decode_minimax_speech decode_openai_chat decode_openai_embeddings decode_openai_images decode_openai_responses decode_openai_speech decode_openai_transcriptions mcp sse" ]]; then
             echo "::error::fuzz/Cargo.toml has the targets $listed; list each one in the matrix of .github/workflows/fuzz.yml."
             exit 1
           fi

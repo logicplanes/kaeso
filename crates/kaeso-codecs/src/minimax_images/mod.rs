@@ -237,6 +237,17 @@ fn not_images(kind: RequestKind) -> KppError {
 }
 
 fn decode_error(status: u16, headers: &HeaderList, body: &[u8]) -> KppError {
+    base_resp_error(D, status, headers, body)
+}
+
+/// A MiniMax error: a failing `base_resp`, which MiniMax may send with HTTP 200, or else an
+/// OpenAI-style error body.
+pub(crate) fn base_resp_error(
+    dialect: DialectId,
+    status: u16,
+    headers: &HeaderList,
+    body: &[u8],
+) -> KppError {
     let value: Option<Value> = serde_json::from_slice(body).ok();
     let base = value
         .as_ref()
@@ -252,7 +263,7 @@ fn decode_error(status: u16, headers: &HeaderList, body: &[u8]) -> KppError {
             KppError::new(kind_of(b.status_code), message)
         }
         _ => {
-            return crate::openai_responses::error::decode(D, status, headers, body);
+            return crate::openai_responses::error::decode(dialect, status, headers, body);
         }
     };
     if (400..600).contains(&status) {
@@ -261,7 +272,7 @@ fn decode_error(status: u16, headers: &HeaderList, body: &[u8]) -> KppError {
     if let Some(v) = value {
         err = err.with_raw(v);
     }
-    err.with_origin(Origin::new(D))
+    err.with_origin(Origin::new(dialect))
 }
 
 fn decode_response(
@@ -358,7 +369,8 @@ fn encode_response(reply: &Reply) -> Result<Vec<u8>, KppError> {
     to_body(&out)
 }
 
-fn encode_error(err: &KppError) -> EncodedError {
+/// An error in MiniMax's `base_resp` form.
+pub(crate) fn encode_error(err: &KppError) -> EncodedError {
     let code = match err.kind {
         ErrorKind::RateLimited => 1002,
         ErrorKind::Authentication => 1004,

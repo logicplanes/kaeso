@@ -12,6 +12,7 @@ use kaeso_codecs::{EgressCtx, EncodeCtx, HeaderList, dispatch};
 use kaeso_kpp::{
     Block, Delta, DialectId, EmbeddingVector, ErrorKind, ImageOperation, KppError, ModelInfo,
     ModelLifecycle, ModelList, Reply, RequestKind, Source, StreamEvent, StreamMode,
+    TranscriptFormat, TranscriptionOperation,
 };
 use serde_json::{Value, json};
 
@@ -84,6 +85,15 @@ async fn main() -> std::io::Result<()> {
         .route(
             "/v1/images/variations",
             post(|s, h, b| serve_images(s, h, b, ImageOperation::Variation)),
+        )
+        .route("/v1/audio/speech", post(serve_speech))
+        .route(
+            "/v1/audio/transcriptions",
+            post(|s, h, b| serve_transcription(s, h, b, TranscriptionOperation::Transcribe)),
+        )
+        .route(
+            "/v1/audio/translations",
+            post(|s, h, b| serve_transcription(s, h, b, TranscriptionOperation::Translate)),
         )
         .route("/v1beta/models", get(list_gemini_models))
         .route(
@@ -277,6 +287,183 @@ async fn serve_images(
     match dispatch::decode_image_request(operation, &body, &headers_in(&headers)) {
         Ok(req) => answer(&app, req, ingress, RequestKind::Image),
         Err(e) => error_response(ingress, &e.with_status(400)),
+    }
+}
+
+// A fixture of `source`, where `providers/<id>/<name>` names a provider's own folder.
+fn fixture_path(dir: &Path, folder: &str, name: &str, ext: &str) -> PathBuf {
+    match name
+        .strip_prefix("providers/")
+        .and_then(|r| r.split_once('/'))
+    {
+        Some((id, rest)) => dir.join(format!("providers/{id}/{folder}/{rest}.{ext}")),
+        None => dir.join(format!("{folder}/{name}.{ext}")),
+    }
+}
+
+// A speech scenario's reply is `responses/<name>.mp3` (its content type in
+// `<name>.mp3.meta.json`) or, for an events request, `streams/<name>.sse`.
+async fn serve_speech(State(app): State<App>, headers: HeaderMap, body: Bytes) -> Response {
+    let ingress = DialectId::OpenAiSpeech;
+    let req = match dispatch::decode_request(
+        ingress,
+        RequestKind::Speech,
+        &body,
+        &headers_in(&headers),
+    ) {
+        Ok(r) => r,
+        Err(e) => return error_response(ingress, &e.with_status(400)),
+    };
+    let sc = match scenario(req.model()) {
+        Ok(s) => s,
+        Err(e) => return error_response(ingress, &e.with_status(400)),
+    };
+    let dir = app.fixtures.join(sc.source.as_str());
+    if let Some(name) = sc.name.strip_prefix("errors/") {
+        return match error_fixture(&dir, name) {
+            Ok((status, h, b)) => {
+                error_response(ingress, &dispatch::decode_error(sc.source, status, &h, &b))
+            }
+            Err(e) => error_response(ingress, &e),
+        };
+    }
+    let ctx = EncodeCtx::for_request(req.clone());
+    let mut egress = EgressCtx::new(&req);
+    egress.stream = StreamMode::on(true);
+    let events = match read(&fixture_path(&dir, "streams", &sc.name, "sse")) {
+        Ok(bytes) => decode_stream(sc.source, &egress, &bytes),
+        Err(_) => {
+            egress.stream = StreamMode::Off;
+            let audio = read(&fixture_path(&dir, "responses", &sc.name, "mp3"));
+            audio.and_then(|bytes| {
+                let mut decoder = dispatch::stream_decoder(sc.source, &egress)?;
+                let mut events = decoder.feed(&bytes);
+                events.extend(decoder.finish());
+                Ok(events)
+            })
+        }
+    };
+    let events = match events {
+        Ok(ev) => ev,
+        Err(e) => return error_response(ingress, &e),
+    };
+    let mut encoder = match dispatch::stream_encoder(ingress, &ctx) {
+        Ok(enc) => enc,
+        Err(e) => return error_response(ingress, &e),
+    };
+    let mut out = Vec::new();
+    for ev in &events {
+        match encoder.encode(ev) {
+            Ok(b) => out.extend(b),
+            Err(e) => return error_response(ingress, &e),
+        }
+    }
+    let media = dispatch::stream_media_type(ingress, &ctx);
+    respond(200, &HeaderList::new().with("content-type", media), out)
+}
+
+// A transcription scenario's reply is `responses/<name>.json`, `.txt`, `.srt` or `.vtt`; a
+// streamed request's is `streams/<name>.sse`.
+async fn serve_transcription(
+    State(app): State<App>,
+    headers: HeaderMap,
+    body: Bytes,
+    operation: TranscriptionOperation,
+) -> Response {
+    let ingress = DialectId::OpenAiTranscriptions;
+    let req = match dispatch::decode_transcription_request(operation, &body, &headers_in(&headers))
+    {
+        Ok(r) => r,
+        Err(e) => return error_response(ingress, &e.with_status(400)),
+    };
+    let sc = match scenario(req.model()) {
+        Ok(s) => s,
+        Err(e) => return error_response(ingress, &e.with_status(400)),
+    };
+    let dir = app.fixtures.join(sc.source.as_str());
+    if let Some(name) = sc.name.strip_prefix("errors/") {
+        return match error_fixture(&dir, name) {
+            Ok((status, h, b)) => {
+                error_response(ingress, &dispatch::decode_error(sc.source, status, &h, &b))
+            }
+            Err(e) => error_response(ingress, &e),
+        };
+    }
+    let ctx = EncodeCtx::for_request(req.clone());
+    let mut egress = EgressCtx::new(&req);
+    if !req.stream_mode().is_off() {
+        let events = read(&fixture_path(&dir, "streams", &sc.name, "sse"))
+            .and_then(|bytes| decode_stream(sc.source, &egress, &bytes));
+        let events = match events {
+            Ok(ev) => ev,
+            Err(e) => return error_response(ingress, &e),
+        };
+        let mut encoder = match dispatch::stream_encoder(ingress, &ctx) {
+            Ok(enc) => enc,
+            Err(e) => return error_response(ingress, &e),
+        };
+        let mut out = Vec::new();
+        for ev in &events {
+            match encoder.encode(ev) {
+                Ok(b) => out.extend(b),
+                Err(e) => return error_response(ingress, &e),
+            }
+        }
+        return respond(
+            200,
+            &HeaderList::new().with("content-type", "text/event-stream"),
+            out,
+        );
+    }
+    let mut forms = vec![
+        ("json", None),
+        ("txt", Some(TranscriptFormat::Text)),
+        ("srt", Some(TranscriptFormat::Srt)),
+        ("vtt", Some(TranscriptFormat::Vtt)),
+    ];
+    let asked = match &req {
+        kaeso_kpp::Request::Transcription(t) => t.format_or_default(),
+        _ => TranscriptFormat::Json,
+    };
+    forms.sort_by_key(|(_, f)| f.as_ref() != Some(&asked));
+    let found = forms.into_iter().find_map(|(ext, f)| {
+        Some((
+            read(&fixture_path(&dir, "responses", &sc.name, ext)).ok()?,
+            f,
+        ))
+    });
+    let Some((bytes, format)) = found else {
+        let err = KppError::new(
+            ErrorKind::NotFound,
+            format!("conformance: no transcript {}", sc.name),
+        )
+        .with_status(404);
+        return error_response(ingress, &err);
+    };
+    egress.transcript_format = Some(match format {
+        Some(f) => f,
+        None if sc
+            .name
+            .rsplit('/')
+            .next()
+            .is_some_and(|n| n.starts_with("verbose")) =>
+        {
+            TranscriptFormat::VerboseJson
+        }
+        None if sc.name.starts_with("diarized") => TranscriptFormat::DiarizedJson,
+        None => TranscriptFormat::Json,
+    });
+    let reply = match dispatch::decode_response(sc.source, 200, &HeaderList::new(), &bytes, &egress)
+    {
+        Ok(r) => r,
+        Err(e) => return error_response(ingress, &e),
+    };
+    match dispatch::encode_response(ingress, &reply, &ctx) {
+        Ok(b) => {
+            let media = dispatch::response_media_type(ingress, &reply, &ctx);
+            respond(200, &HeaderList::new().with("content-type", media), b)
+        }
+        Err(e) => error_response(ingress, &e),
     }
 }
 

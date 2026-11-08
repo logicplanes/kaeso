@@ -8,11 +8,13 @@ use kaeso_kpp::{
 };
 use kaeso_mcp::{Message, RequestHeaders, headers, names};
 
-const KINDS: [RequestKind; 4] = [
+const KINDS: [RequestKind; 6] = [
     RequestKind::Generate,
     RequestKind::CountTokens,
     RequestKind::Embed,
     RequestKind::Image,
+    RequestKind::Speech,
+    RequestKind::Transcription,
 ];
 
 const IMAGE_OPERATIONS: [ImageOperation; 3] = [
@@ -57,6 +59,19 @@ pub fn decoders(dialect: DialectId, data: &[u8]) {
                 if let Ok(req) = dispatch::decode_image_request(operation, data, h) {
                     request(dialect, &req);
                 }
+            }
+        }
+    }
+    let upload = headers
+        .clone()
+        .with("content-type", "multipart/form-data; boundary=b");
+    if dialect == DialectId::OpenAiTranscriptions {
+        for operation in [
+            kaeso_kpp::TranscriptionOperation::Transcribe,
+            kaeso_kpp::TranscriptionOperation::Translate,
+        ] {
+            if let Ok(req) = dispatch::decode_transcription_request(operation, data, &upload) {
+                request(dialect, &req);
             }
         }
     }

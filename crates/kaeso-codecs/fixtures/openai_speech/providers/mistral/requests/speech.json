@@ -1,0 +1,6 @@
+{
+  "model": "voxtral-mini-tts-3-0",
+  "input": "Your order shipped this morning and should arrive on Thursday.",
+  "voice_id": "gb_jane_neutral",
+  "response_format": "mp3"
+}

@@ -85,6 +85,9 @@ Beide Crates sind auf crates.io veröffentlicht. Ihr Bibliothekscode darf nur vo
 | `gemini_embeddings` | Gemini-Embeddings (`{models}/{model}:embedContent`, `:batchEmbedContents`) |
 | `openai_images` | OpenAI Images (`/v1/images/generations`, `/v1/images/edits`, `/v1/images/variations`) und die Anbieter, die eine Form davon sprechen ([OpenAI Images](openai-images.md)) |
 | `minimax_images` | Bildgenerierung von MiniMax (`/v1/image_generation`) |
+| `openai_speech` | Speech von OpenAI (`/v1/audio/speech`) und die Anbieter, die eine Form davon sprechen ([OpenAI Speech](openai-speech.md)) |
+| `openai_transcriptions` | Transkriptionen und Übersetzungen von OpenAI und die Anbieter, die eine Form davon sprechen ([OpenAI Transcriptions](openai-transcriptions.md)) |
+| `minimax_speech` | Text to Speech von MiniMax (`/v1/t2a_v2`) |
 | `multipart` | Der begrenzte Leser und Schreiber für `multipart/form-data` von Bild-Uploads |
 
 | Gemeinsames Modul | Aufgabe |

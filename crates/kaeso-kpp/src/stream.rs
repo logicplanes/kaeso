@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 
+use crate::audio::{SpeechEvent, TranscriptEvent};
 use crate::block::{Citation, Opaque, RawItem};
 use crate::error::KppError;
 use crate::extras::Extras;
@@ -20,6 +21,10 @@ pub enum StreamEvent {
     Extra(RawItem),
     /// A partial or finished image of a streamed image reply.
     Image(ImageEvent),
+    /// A piece of streamed audio, or its end.
+    Speech(SpeechEvent),
+    /// A piece of a streamed transcript, a finished segment, or the end.
+    Transcript(TranscriptEvent),
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]

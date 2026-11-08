@@ -7,6 +7,7 @@ mod request_encode;
 mod response;
 mod stream;
 mod stream_encode;
+mod transcription;
 mod wire;
 
 #[cfg(test)]
@@ -125,11 +126,17 @@ impl Codec for OpenAiChat {
     }
 
     fn check(req: &Request, ctx: &EgressCtx) -> Result<(), KppError> {
+        if let Request::Transcription(r) = req {
+            return transcription::check(r);
+        }
         let req = crate::adapt::for_target(req, DIALECT, ctx)?;
         check::check(&req, &ctx.origin(DIALECT), &ctx.chat_profile)
     }
 
     fn encode_request(req: &Request, ctx: &mut EgressCtx) -> Result<EncodedRequest, KppError> {
+        if let Request::Transcription(r) = req {
+            return transcription::encode(r, ctx);
+        }
         let crate::adapt::Adapted {
             req,
             left_out,
@@ -180,6 +187,9 @@ impl Codec for OpenAiChat {
         let probe = std::str::from_utf8(body).map(error::probe);
         if probe.is_ok_and(|p| p.error && !p.choices) {
             return Err(error::with_detail(error::decode_body(None, body), detail));
+        }
+        if ctx.kind == kaeso_kpp::RequestKind::Transcription {
+            return transcription::decode(body, &ctx.origin(DIALECT));
         }
         response::decode_response(body, ctx)
     }

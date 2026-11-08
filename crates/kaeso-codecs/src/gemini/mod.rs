@@ -1,3 +1,4 @@
+mod audio;
 mod error;
 mod images;
 pub(crate) mod models;
@@ -12,6 +13,8 @@ mod wire;
 
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod tests_audio;
 #[cfg(test)]
 mod tests_edges;
 #[cfg(test)]
@@ -87,16 +90,22 @@ impl Codec for Gemini {
     }
 
     fn check(req: &Request, ctx: &EgressCtx) -> Result<(), KppError> {
-        if let Request::Image(r) = req {
-            return images::check(r, ctx.gemini_profile.image_output_options);
+        match req {
+            Request::Image(r) => return images::check(r, ctx.gemini_profile.image_output_options),
+            Request::Speech(r) => return audio::check_speech(r),
+            Request::Transcription(r) => return audio::check_transcription(r),
+            _ => {}
         }
         let req = crate::adapt::for_target(req, D, ctx)?;
         request::check(&req, ctx)
     }
 
     fn encode_request(req: &Request, ctx: &mut EgressCtx) -> Result<EncodedRequest, KppError> {
-        if let Request::Image(r) = req {
-            return images::encode(r, ctx);
+        match req {
+            Request::Image(r) => return images::encode(r, ctx),
+            Request::Speech(r) => return audio::encode_speech(r, ctx),
+            Request::Transcription(r) => return audio::encode_transcription(r, ctx),
+            _ => {}
         }
         let crate::adapt::Adapted {
             req,
@@ -116,13 +125,23 @@ impl Codec for Gemini {
         body: &[u8],
         ctx: &EgressCtx,
     ) -> Result<Reply, KppError> {
-        if ctx.kind == RequestKind::Image && (200..300).contains(&status) {
-            return images::decode(body, &ctx.origin(D));
+        if (200..300).contains(&status) {
+            match ctx.kind {
+                RequestKind::Image => return images::decode(body, &ctx.origin(D)),
+                RequestKind::Speech => return audio::decode_speech(body, &ctx.origin(D)),
+                RequestKind::Transcription => {
+                    return audio::decode_transcription(body, &ctx.origin(D));
+                }
+                _ => {}
+            }
         }
         response::decode_response(status, headers, body, ctx)
     }
 
     fn stream_decoder(ctx: &EgressCtx) -> Box<dyn StreamDecoder> {
+        if ctx.kind == RequestKind::Speech {
+            return Box::new(audio::SpeechStream::new(ctx));
+        }
         Box::new(stream::Decoder::new(ctx))
     }
 

@@ -15,6 +15,8 @@ impl Request {
             Request::Generate(r) | Request::CountTokens(r) => r.validate(),
             Request::Embed(r) => r.validate(),
             Request::Image(r) => r.validate(),
+            Request::Speech(r) => r.validate(),
+            Request::Transcription(r) => r.validate(),
         }
     }
 }

@@ -1,0 +1,26 @@
+{
+  "model": "voxtral-mini-transcribe-3",
+  "text": "Thanks for calling Northwind Support. This is Daniel.",
+  "language": null,
+  "segments": [
+    {
+      "type": "transcription_segment",
+      "text": "Thanks for calling Northwind Support.",
+      "start": 0.0,
+      "end": 1.6,
+      "speaker_id": null
+    }
+  ],
+  "usage": {
+    "prompt_audio_seconds": 34,
+    "prompt_tokens": 3,
+    "total_tokens": 879,
+    "completion_tokens": 126,
+    "prompt_tokens_details": {
+      "cached_tokens": 1,
+      "audio_tokens": 750
+    },
+    "service_tier": "standard"
+  },
+  "finish_reason": null
+}

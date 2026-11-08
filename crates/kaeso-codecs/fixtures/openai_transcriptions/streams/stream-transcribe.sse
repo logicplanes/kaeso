@@ -1,0 +1,14 @@
+data: {"type":"transcript.text.delta","delta":"I","logprobs":[{"token":"I","logprob":-7.588794e-05,"bytes":[73]}]}
+
+data: {"type":"transcript.text.delta","delta":" see","logprobs":[{"token":" see","logprob":-7.588794e-05,"bytes":[32,115,101,101]}]}
+
+data: {"type":"transcript.text.delta","delta":" skies","logprobs":[{"token":" skies","logprob":-7.588794e-05,"bytes":[32,115,107,105,101,115]}]}
+
+data: {"type":"transcript.text.delta","delta":" of","logprobs":[{"token":" of","logprob":-7.588794e-05,"bytes":[32,111,102]}]}
+
+data: {"type":"transcript.text.delta","delta":" blue","logprobs":[{"token":" blue","logprob":-7.588794e-05,"bytes":[32,98,108,117,101]}]}
+
+data: {"type":"transcript.text.delta","delta":".","logprobs":[{"token":".","logprob":-7.588794e-05,"bytes":[46]}]}
+
+data: {"type":"transcript.text.done","text":"I see skies of blue.","usage":{"input_tokens":14,"input_token_details":{"text_tokens":0,"audio_tokens":14},"output_tokens":45,"total_tokens":59}}
+

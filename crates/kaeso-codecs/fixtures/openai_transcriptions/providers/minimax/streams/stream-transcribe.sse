@@ -1,0 +1,6 @@
+data: {"index":0,"delta":"Hello","finish":false}
+
+data: {"index":1,"delta":" everyone","finish":false}
+
+data: {"index":2,"delta":"","finish":true,"duration":26.325}
+

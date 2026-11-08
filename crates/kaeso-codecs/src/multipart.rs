@@ -1,5 +1,7 @@
 //! `multipart/form-data` bodies (RFC 7578): a bounded reader and a writer, without I/O.
 
+use serde_json::{Map, Value};
+
 /// How much one form may hold; a body over any limit is refused as a whole.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[non_exhaustive]
@@ -373,6 +375,86 @@ fn boundary_for(fields: &[FormField<'_>]) -> String {
             return candidate;
         }
         n = n.wrapping_add(1);
+    }
+}
+
+// Multipart names nest with brackets, as OpenAI's SDKs write `svg[model]` and
+// `svg[reasoning][effort]`; JSON bodies carry the same fields as objects.
+pub(crate) fn insert_nested(
+    out: &mut Map<String, Value>,
+    name: &str,
+    value: &str,
+    integers: &[&str],
+) -> Result<(), String> {
+    let (head, rest) = match name.find('[') {
+        Some(i) => name.split_at(i),
+        None => (name, ""),
+    };
+    let mut keys = Vec::new();
+    let mut tail = rest;
+    while let Some(after) = tail.strip_prefix('[') {
+        let end = after
+            .find(']')
+            .ok_or_else(|| format!("the field name `{name}` is not closed"))?;
+        let (key, more) = after.split_at(end);
+        keys.push(key);
+        tail = more.get(1..).unwrap_or_default();
+    }
+    if !tail.is_empty() || head.is_empty() {
+        return Err(format!("the field name `{name}` cannot be read"));
+    }
+    let leaf = if keys.is_empty() && integers.contains(&head) {
+        value
+            .trim()
+            .parse::<u64>()
+            .map(Value::from)
+            .unwrap_or_else(|_| Value::String(value.to_owned()))
+    } else {
+        Value::String(value.to_owned())
+    };
+    let mut slot = out.entry(head.to_owned()).or_insert(Value::Null);
+    for key in keys {
+        if key.is_empty() {
+            if !slot.is_array() {
+                *slot = Value::Array(Vec::new());
+            }
+            let Value::Array(items) = slot else {
+                return Err(format!("the field name `{name}` cannot be read"));
+            };
+            items.push(Value::Null);
+            slot = items
+                .last_mut()
+                .ok_or_else(|| format!("the field name `{name}` cannot be read"))?;
+        } else {
+            if !slot.is_object() {
+                *slot = Value::Object(Map::new());
+            }
+            let Value::Object(map) = slot else {
+                return Err(format!("the field name `{name}` cannot be read"));
+            };
+            slot = map.entry(key.to_owned()).or_insert(Value::Null);
+        }
+    }
+    *slot = leaf;
+    Ok(())
+}
+
+/// The form fields of a JSON value, nested names in brackets as OpenAI's SDKs write them.
+pub(crate) fn flatten(key: &str, value: &Value, out: &mut Vec<(String, String)>) {
+    match value {
+        Value::Object(map) => {
+            for (k, v) in map {
+                flatten(&format!("{key}[{k}]"), v, out);
+            }
+        }
+        Value::Array(items) => {
+            for v in items {
+                flatten(&format!("{key}[]"), v, out);
+            }
+        }
+        Value::String(s) => out.push((key.to_owned(), s.clone())),
+        Value::Null => {}
+        other => out.push((key.to_owned(), other.to_string())),
     }
 }
 

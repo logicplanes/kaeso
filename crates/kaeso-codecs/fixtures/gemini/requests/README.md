@@ -24,6 +24,8 @@ A `<name>.meta.json` names the model or the method of a request when the round-t
 | `video-input.json` | a 1-second 32×32 red MP4 (ffmpeg) as `inlineData` with `videoMetadata.fps`, `mediaResolution: MEDIA_RESOLUTION_LOW`, for `gemini-3.5-flash-lite` | doc: video understanding, inline video and custom frame rate; recorded |
 | `video-youtube.json` | a YouTube URL in `fileData` without a MIME type, with `videoMetadata.fps` | doc: video understanding, YouTube URLs (the REST example, without its `responseModalities`, its keys in camel case as the discovery document names them) |
 | `speech.json` | `responseModalities: [AUDIO]` and a prebuilt voice (`Kore`) for `gemini-3.8-flash-lite-tts`; the reply is WAV | doc: speech generation; recorded |
+| `speech-mp3.json` | speech as `AUDIO_MP3` in `responseFormat.audio`; the reply is `audio/mp3; rate=44100; channels=1` | schema: AudioResponseFormat (discovery v1beta revision 20261106); recorded |
+| `transcribe-diarized.json` | a 1-second MP3 for `gemini-3.5-transcribe` with `audioTranscriptionConfig` `diarization` and `wordTimestamp` | doc: audio transcription (generateContent); schema: AudioTranscriptionConfig; recorded |
 | `stream-speech.json` | the same as `streamGenerateContent`; the stream is 16-bit PCM pieces of `audio/l16; rate=24000; channels=1` | doc: speech generation, audio output formats; recorded |
 | `image-output.json` | `responseModalities: [TEXT, IMAGE]` for `gemini-3.1-flash-image` | doc: image generation |
 | `max-tokens.json` | `maxOutputTokens: 16` | schema: GenerationConfig (discovery v1beta revision 20261106) |

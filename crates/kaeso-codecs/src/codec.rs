@@ -5,10 +5,12 @@ use crate::gemini::GeminiProfile;
 use crate::openai_chat::ChatProfile;
 use crate::openai_images::ImagesProfile;
 use crate::openai_responses::ResponsesProfile;
+use crate::openai_speech::SpeechProfile;
+use crate::openai_transcriptions::TranscriptionsProfile;
 use indexmap::IndexMap;
 use kaeso_kpp::{
     AudioFormat, DialectId, KppError, ModelInfo, ModelList, ModelsQuery, Origin, Reply, Request,
-    RequestKind, StreamEvent, StreamMode,
+    RequestKind, StreamEvent, StreamMode, TranscriptFormat,
 };
 
 pub trait Codec: sealed::Sealed {
@@ -23,6 +25,22 @@ pub trait Codec: sealed::Sealed {
     fn encode_response(reply: &Reply, ctx: &EncodeCtx) -> Result<Vec<u8>, KppError>;
 
     fn stream_encoder(ctx: &EncodeCtx) -> Box<dyn StreamEncoder>;
+
+    /// The `content-type` of a reply [`encode_response`](Self::encode_response) wrote, such as
+    /// an audio type for speech or `text/plain` for a subtitle transcript.
+    fn response_media_type(_reply: &Reply, ctx: &EncodeCtx) -> String {
+        if ctx.stream.is_off() {
+            JSON_MEDIA_TYPE.to_owned()
+        } else {
+            EVENT_STREAM_MEDIA_TYPE.to_owned()
+        }
+    }
+
+    /// The `content-type` of a stream the [`stream_encoder`](Self::stream_encoder) writes:
+    /// server-sent events, or the audio itself for speech asked for without events.
+    fn stream_media_type(_ctx: &EncodeCtx) -> String {
+        EVENT_STREAM_MEDIA_TYPE.to_owned()
+    }
 
     fn encode_error(err: &KppError) -> EncodedError;
 
@@ -42,6 +60,13 @@ pub trait Codec: sealed::Sealed {
     ) -> Result<Reply, KppError>;
 
     fn stream_decoder(ctx: &EgressCtx) -> Box<dyn StreamDecoder>;
+
+    /// Whether the provider's reply is read as it arrives, with the
+    /// [`stream_decoder`](Self::stream_decoder): for a stream, and for audio a provider sends
+    /// as it makes it.
+    fn reads_reply_as_stream(ctx: &EgressCtx) -> bool {
+        !ctx.stream.is_off()
+    }
 
     fn decode_error(status: u16, headers: &HeaderList, body: &[u8]) -> KppError;
 
@@ -86,6 +111,11 @@ pub trait Codec: sealed::Sealed {
         Self::encode_models_request(query)
     }
 }
+
+/// The `content-type` of a JSON reply.
+pub const JSON_MEDIA_TYPE: &str = "application/json";
+/// The `content-type` of a stream of server-sent events.
+pub const EVENT_STREAM_MEDIA_TYPE: &str = "text/event-stream; charset=utf-8";
 
 pub(crate) mod sealed {
     pub trait Sealed {}
@@ -166,6 +196,10 @@ pub struct EgressCtx {
     pub gemini_profile: GeminiProfile,
     /// How a provider that speaks a form of OpenAI's Images API takes image requests.
     pub images_profile: ImagesProfile,
+    /// How a provider that speaks a form of OpenAI's speech API takes speech requests.
+    pub speech_profile: SpeechProfile,
+    /// How a provider that speaks a form of OpenAI's transcription API takes transcriptions.
+    pub transcriptions_profile: TranscriptionsProfile,
     pub left_out: Vec<String>,
     pub adapted: Vec<String>,
     /// The prompt-cache breakpoints (`cache_control`) an encoded generation request
@@ -183,13 +217,20 @@ pub struct EgressCtx {
     /// audio the provider doesn't label, as Chat Completions' `message.audio`. The encoder sets
     /// the format it chose when the app named none.
     pub audio_format: Option<AudioFormat>,
+    /// The transcript form the provider was asked for, which tells the reply decoder how to
+    /// read a plain-text body. The encoder sets it.
+    pub transcript_format: Option<TranscriptFormat>,
 }
 
 impl EgressCtx {
     pub fn new(req: &Request) -> Self {
         let mut ctx = EgressCtx::for_kind(req.kind(), req.stream_mode());
-        if let Request::Generate(g) = req {
-            ctx.audio_format = g.audio_output.as_ref().and_then(|a| a.format.clone());
+        match req {
+            Request::Generate(g) => {
+                ctx.audio_format = g.audio_output.as_ref().and_then(|a| a.format.clone());
+            }
+            Request::Speech(s) => ctx.audio_format.clone_from(&s.format),
+            _ => {}
         }
         ctx
     }
@@ -210,11 +251,14 @@ impl EgressCtx {
             messages_profile: MessagesProfile::ANTHROPIC,
             gemini_profile: GeminiProfile::GOOGLE_AI_STUDIO,
             images_profile: ImagesProfile::OPENAI,
+            speech_profile: SpeechProfile::OPENAI,
+            transcriptions_profile: TranscriptionsProfile::OPENAI,
             left_out: Vec::new(),
             adapted: Vec::new(),
             cache_breakpoints: None,
             base_path: None,
             audio_format: None,
+            transcript_format: None,
         }
     }
 
@@ -272,6 +316,20 @@ impl EgressCtx {
     #[must_use]
     pub fn with_images_profile(mut self, profile: ImagesProfile) -> Self {
         self.images_profile = profile;
+        self
+    }
+
+    /// Sends speech requests in the form `profile` describes.
+    #[must_use]
+    pub fn with_speech_profile(mut self, profile: SpeechProfile) -> Self {
+        self.speech_profile = profile;
+        self
+    }
+
+    /// Sends transcription requests in the form `profile` describes.
+    #[must_use]
+    pub fn with_transcriptions_profile(mut self, profile: TranscriptionsProfile) -> Self {
+        self.transcriptions_profile = profile;
         self
     }
 
@@ -421,6 +479,8 @@ pub const FORWARDED_HEADERS: &[(DialectId, &str)] = &[
     (DialectId::OpenAiResponses, "openai-beta"),
     (DialectId::OpenAiEmbeddings, "openai-beta"),
     (DialectId::OpenAiImages, "openai-beta"),
+    (DialectId::OpenAiSpeech, "openai-beta"),
+    (DialectId::OpenAiTranscriptions, "openai-beta"),
 ];
 
 pub fn is_forwarded_header(dialect: DialectId, name: &str) -> bool {

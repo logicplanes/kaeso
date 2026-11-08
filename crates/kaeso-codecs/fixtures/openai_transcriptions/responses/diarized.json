@@ -1,0 +1,35 @@
+{
+  "task": "transcribe",
+  "duration": 27.4,
+  "text": "Agent: Thanks for calling OpenAI support.\nA: Hi, I'm trying to enable diarization.\nAgent: Happy to walk you through the steps.",
+  "segments": [
+    {
+      "type": "transcript.text.segment",
+      "id": "seg_001",
+      "start": 0.0,
+      "end": 4.7,
+      "text": "Thanks for calling OpenAI support.",
+      "speaker": "agent"
+    },
+    {
+      "type": "transcript.text.segment",
+      "id": "seg_002",
+      "start": 4.7,
+      "end": 11.8,
+      "text": "Hi, I'm trying to enable diarization.",
+      "speaker": "A"
+    },
+    {
+      "type": "transcript.text.segment",
+      "id": "seg_003",
+      "start": 12.1,
+      "end": 18.5,
+      "text": "Happy to walk you through the steps.",
+      "speaker": "agent"
+    }
+  ],
+  "usage": {
+    "type": "duration",
+    "seconds": 27
+  }
+}

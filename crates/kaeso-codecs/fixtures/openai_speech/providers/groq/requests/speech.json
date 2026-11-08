@@ -1,0 +1,6 @@
+{
+  "model": "canopylabs/orpheus-v1-english",
+  "input": "Welcome to Orpheus text-to-speech. [cheerful] This is an example of high-quality English audio generation with vocal directions support.",
+  "voice": "austin",
+  "response_format": "wav"
+}

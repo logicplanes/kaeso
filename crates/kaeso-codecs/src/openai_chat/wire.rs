@@ -347,12 +347,16 @@ pub(crate) struct PromptTokensDetails {
     pub(crate) cached_tokens: Option<u64>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) cache_write_tokens: Option<u64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) audio_tokens: Option<u64>,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub(crate) struct CompletionTokensDetails {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) reasoning_tokens: Option<u64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) audio_tokens: Option<u64>,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
