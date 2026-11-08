@@ -15,11 +15,11 @@ use super::wire::{
 use crate::codec::EgressCtx;
 use crate::cross::{ReplyPolicy, reasoning_replayable, reasoning_reply_policy};
 use crate::limits::{Form, Scope};
-use crate::wire::without_position;
 use crate::wire::{
     Ext, StringOr, add_nested_extra, extra_for, extras_from, type_tag, verbatim_from_form,
     verbatim_into_form,
 };
+use crate::wire::{leading_type, without_position};
 use serde_json::Value;
 
 pub(crate) const CONTENT_FORM: &str = "content";
@@ -72,10 +72,28 @@ impl<'a> Dec<'a> {
 }
 
 pub(crate) fn decode_block(raw: &RawValue, dec: Dec<'_>) -> Result<Block, String> {
+    let leading = leading_type(raw).map(|t| block_kind(Some(t))).filter(|k| {
+        matches!(
+            k,
+            BlockKind::Text | BlockKind::ToolUse | BlockKind::ToolResult | BlockKind::Thinking
+        )
+    });
+    let Some(kind) = leading else {
+        let ty = type_tag(raw).map_err(|e| without_position(&e))?;
+        return decode_kind(raw, dec, block_kind(ty.as_deref()));
+    };
+    // These kinds parse the whole block, which fails on any repeated key; a repeated `type`
+    // then reports what `type_tag` says, as it did before the leading one was trusted.
+    decode_kind(raw, dec, kind).map_err(|e| match type_tag(raw) {
+        Err(t) => without_position(&t),
+        Ok(_) => e,
+    })
+}
+
+fn decode_kind(raw: &RawValue, dec: Dec<'_>, kind: BlockKind) -> Result<Block, String> {
     let origin = dec.origin;
     let unknown = || Block::Unknown(RawItem::new(origin.clone(), RawJson::from(raw)));
-    let ty = type_tag(raw).map_err(|e| without_position(&e))?;
-    let block = match block_kind(ty.as_deref()) {
+    let block = match kind {
         BlockKind::Text => {
             let w: Ext<TextW> = parse(raw, "text")?;
             let mut b = TextBlock::new(w.known.text);
@@ -224,6 +242,18 @@ fn block_kind(ty: Option<&str>) -> BlockKind {
         Some("thinking") => BlockKind::Thinking,
         Some("redacted_thinking") => BlockKind::RedactedThinking,
         _ => BlockKind::Unknown,
+    }
+}
+
+// `block_form` for a known `type`, where the form needs nothing else from the block.
+pub(crate) fn block_form_of(ty: &str, depth: u8) -> Option<Form> {
+    match block_kind(Some(ty)) {
+        BlockKind::Image | BlockKind::Document => None,
+        BlockKind::Unknown => Some(Form::Raw),
+        BlockKind::ToolResult if depth < MAX_TOOL_RESULT_DEPTH => {
+            Some(Form::Nests(Scope::Anthropic(depth + 1)))
+        }
+        _ => Some(Form::Typed),
     }
 }
 
