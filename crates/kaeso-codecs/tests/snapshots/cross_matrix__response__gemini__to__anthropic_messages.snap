@@ -1,0 +1,508 @@
+---
+source: crates/kaeso-codecs/tests/cross_matrix.rs
+expression: outcomes
+---
+{
+  "recorded-image-input": {
+    "content": [
+      {
+        "signature": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6ImdlbWluaSJ9LCJvcGFxdWUiOlt7Im9yaWdpbiI6eyJkaWFsZWN0IjoiZ2VtaW5pIn0sImtpbmQiOiJnZW1pbmlfdGhvdWdodF9zaWduYXR1cmUiLCJkYXRhIjoiRW1rS1p3RnBGSDBUTzMrM0FQRWh1VmFWUEhIdXBkU3N4ZGxvbkhDVGNWa0V4NEJjYlViSFp0V1I4elN0OXdLUy9velFhVVptaVRabHAwTVY5dGk4Z2J0SEZ3Z2VGL25lZnVTd1NGNE1kaklDRDRpeXA3K0tLQVpqU1VzdU9tUHhLVitLWXdwUDcyRGZPT3c9In1dfQ",
+        "thinking": "",
+        "type": "thinking"
+      },
+      {
+        "text": "Red",
+        "type": "text"
+      }
+    ],
+    "id": "juTvauOpD53_vdIPwYmE2Q0",
+    "model": "gemini-3.6-flash",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 268,
+      "output_tokens": 1
+    }
+  },
+  "recorded-max-tokens": {
+    "content": [
+      {
+        "signature": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6ImdlbWluaSJ9LCJvcGFxdWUiOlt7Im9yaWdpbiI6eyJkaWFsZWN0IjoiZ2VtaW5pIn0sImtpbmQiOiJnZW1pbmlfdGhvdWdodF9zaWduYXR1cmUiLCJkYXRhIjoiRW1rS1p3RnBGSDBUSWNFdG5qY0NvYWV0RHovREFROW1kZmhKNElPOUJWU1ordHM5WkpDZFU0bWtrK2RIbVlSY0hCV0FOSHVvWWt6dTZrSkpoby92TVpUbFVvRTVFcnJQemEvdEhrMXBzNHRJcitac0Q5SkVITUczV0ZHNFpkcHJDdWpvd2dueWhoWDRMMlE9In1dfQ",
+        "thinking": "",
+        "type": "thinking"
+      },
+      {
+        "text": "**I. The Primeval Hymn**\n\nBefore the",
+        "type": "text"
+      }
+    ],
+    "id": "l-TvaufCJdnrkdUPqvjB8A4",
+    "model": "gemini-3.6-flash",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "max_tokens",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 9,
+      "output_tokens": 12
+    }
+  },
+  "recorded-multi-turn": {
+    "content": [
+      {
+        "signature": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6ImdlbWluaSJ9LCJvcGFxdWUiOlt7Im9yaWdpbiI6eyJkaWFsZWN0IjoiZ2VtaW5pIn0sImtpbmQiOiJnZW1pbmlfdGhvdWdodF9zaWduYXR1cmUiLCJkYXRhIjoiRW1rS1p3RnBGSDBUendGWi9rOUtjY2RyVThUZkdKTVRLZ1ZTQnhsU2pzVUFWRDUrTUZGNkxMME1sNHBnbUNsRjRQb0lqMUcwcHppaEhVRmNUQURUY0kzNkwzN0xxUHZzc1NkZE9RMlNjWm9GcFNNSGR3VDBORzlXQXdhRFRSclRpdThzaVBoemtFWVZhbmc9In1dfQ",
+        "thinking": "",
+        "type": "thinking"
+      },
+      {
+        "text": "Your name is Ada.",
+        "type": "text"
+      }
+    ],
+    "id": "NuTvaumyCYOwvdIP-6uVkQM",
+    "model": "gemini-3.6-flash",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 29,
+      "output_tokens": 5
+    }
+  },
+  "recorded-role-assistant": {
+    "content": [
+      {
+        "signature": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6ImdlbWluaSJ9LCJvcGFxdWUiOlt7Im9yaWdpbiI6eyJkaWFsZWN0IjoiZ2VtaW5pIn0sImtpbmQiOiJnZW1pbmlfdGhvdWdodF9zaWduYXR1cmUiLCJkYXRhIjoiRXZZREN2TURBV2tVZlJONmpNaDBaU3ZPcThnWGRSREthSkFLajE4aDVaUlBYU24ycW1XeXdiMmU5eFpydlhKa3REeE42OVFOMXl5T3hTMVIwUkQ1cFhnY3NaWnJXcUhkam1TZ0E0U1BwTExUZzI3QXEra2VncTRFQ2RmVTRjd0tTbEw3NDA3cy9reXR3eFE0N3ZhQkZqUmhpME52Zk9aOHJNZjhKRFNoaklRNUF5SjJzamhuNlFVbmI5THNiS2ZCY2lRV3ZDU3dyR1NCTUpyTDBPRGx4MGJMWGFzZUpCaUV6QnJjZnlNM0NTVVFaSDBtSGtTM284ZExZeDQxaDZwaXNpcTlTajNWUEJXMmhkNGhIaldsWXFrMk54N1Z6ZWFWTFNtZi9GZERzZWh5dGgzL1hEQzZON1hWMVZnc2tEYWZKQ1NGWU1mK05hMlF4Z3dOYlErVDBuWEdSVzU0Nkg3MWQ0UjQ1TlVvS1NpZjRoWE92bGthVEpHSVlVdVcrWXJnaWdXN2VpQS9iWkZqeFFYODlwZGczaWFZUWJKQzB6cVJINlNRM2VNTWFKOTkxb3RUdUpZNVpFdkw4NnlRRGFZbi9RMHRib1BmVjZ0d3FkbkxBT1U0QXVVdWhDakZaaWQvZVh5dks3YnNmM05iMUtKR2RHdGMvc0ZucGJqejRaMGJWYzhYODFVd2wwM2ZsNzBSN0NWUXIwWkNiV2hac2NERVVSb3VucDhMemRiOHBlemZ5aTFJZHl6cXYzamJGZFVEOHI0SFRJWXlvT1hRMzBOanAxRXhLZ3pabTE0R0lIWjh4ODF0TWlwMUxyV3BZL0NoclJKbnh6YnhOYVQ4MW9MVnN5ckJ5NW9TOUpwZWRIcGFBazNmZllQeVVONmhkTkNrMFE9PSJ9XX0",
+        "thinking": "",
+        "type": "thinking"
+      },
+      {
+        "text": "Hello! How can I help you today?",
+        "type": "text"
+      }
+    ],
+    "id": "xuTvaqChBoyBxs0Pw5y-8A4",
+    "model": "gemini-3.6-flash",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 4,
+      "output_tokens": 119,
+      "output_tokens_details": {
+        "thinking_tokens": 110
+      }
+    }
+  },
+  "recorded-safety-settings": {
+    "content": [
+      {
+        "signature": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6ImdlbWluaSJ9LCJvcGFxdWUiOlt7Im9yaWdpbiI6eyJkaWFsZWN0IjoiZ2VtaW5pIn0sImtpbmQiOiJnZW1pbmlfdGhvdWdodF9zaWduYXR1cmUiLCJkYXRhIjoiRW1rS1p3RnBGSDBUMU1scUpFNkxKN3RjZ3B2eG9USXBYZGlrSDkxaGlDK1BNWGl6SVMxVkg0MXhWcEMxNnNyMDRrVTU3U3hHTnp2NUxpdFNJWlNUMC94RldoUXNoRHNLWUVxVGVzeGtHSHFVaFp3bE12S3N3clRqaHk3anczTHowWDhKNlhrb0djS0FPTzQ9In1dfQ",
+        "thinking": "",
+        "type": "thinking"
+      },
+      {
+        "text": "Apple",
+        "type": "text"
+      }
+    ],
+    "id": "oOTvap_kIr74nsEP-8TagQ8",
+    "model": "gemini-3.6-flash",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 5,
+      "output_tokens": 1
+    }
+  },
+  "recorded-structured-json-schema": {
+    "content": [
+      {
+        "signature": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6ImdlbWluaSJ9LCJvcGFxdWUiOlt7Im9yaWdpbiI6eyJkaWFsZWN0IjoiZ2VtaW5pIn0sImtpbmQiOiJnZW1pbmlfdGhvdWdodF9zaWduYXR1cmUiLCJkYXRhIjoiRW1rS1p3RnBGSDBUWVk2bkRHemhQOUh0alhwWlpET1JhdExFOXhYK0pPMStDT2xremZzQTVESkJOMTlmTzZieDJWb1c2b3hXNE5lU29EcVBkaDlRdlpwNUlXdmRRZElZd1V0dlJGYW1wb09kWWNZckZ5NVQrQ2kxSE9WUzA0eldoaDBab3U3dEVBYVYwWkE9In1dfQ",
+        "thinking": "",
+        "type": "thinking"
+      },
+      {
+        "text": "{\"name\":\"Classic Peanut Butter Cookies\",\"ingredients\":[\"Peanut butter\",\"Sugar\",\"Egg\"]}",
+        "type": "text"
+      }
+    ],
+    "id": "e-Tvavy5N8a0kdUPn5O58Q0",
+    "model": "gemini-3.6-flash",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 13,
+      "output_tokens": 18
+    }
+  },
+  "recorded-structured-response-schema": {
+    "content": [
+      {
+        "signature": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6ImdlbWluaSJ9LCJvcGFxdWUiOlt7Im9yaWdpbiI6eyJkaWFsZWN0IjoiZ2VtaW5pIn0sImtpbmQiOiJnZW1pbmlfdGhvdWdodF9zaWduYXR1cmUiLCJkYXRhIjoiRW1rS1p3RnBGSDBUMlk5MGlVaCtNdktneUdHek9rVjZKcFZmQWhERUJSUFVoL3habmFZU1VVZUtEK05TN2Y5VzNxZzVrUDJsMDIyOW1iT3Vja3VNbkQ3ckxDYkdrcUZjaXZocjRwNGZnM0FYeERiOEFENjMwMXM5NDlZeXBmYWFFK2NFOEtBOWNHcTB0ak09In1dfQ",
+        "thinking": "",
+        "type": "thinking"
+      },
+      {
+        "text": "[\n  {\n    \"color\": \"red\"\n  },\n  {\n    \"color\": \"blue\"\n  }\n]",
+        "type": "text"
+      }
+    ],
+    "id": "heTvaqaxBK7ZvdIPjK7F4AI",
+    "model": "gemini-3.6-flash",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 6,
+      "output_tokens": 31
+    }
+  },
+  "recorded-system-instruction": {
+    "content": [
+      {
+        "signature": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6ImdlbWluaSJ9LCJvcGFxdWUiOlt7Im9yaWdpbiI6eyJkaWFsZWN0IjoiZ2VtaW5pIn0sImtpbmQiOiJnZW1pbmlfdGhvdWdodF9zaWduYXR1cmUiLCJkYXRhIjoiRXJBRENxMERBV2tVZlJPTEVPTFArOEYwZWU1YUV6RlhCcmErZUo2REtYVWtDRHQyZzhkMDRlMThoci9EK3V0K1Z5UnJpdHpiQm5WSmtHT25oOVFscWtEaGs4cW0vdlVJbytvdW1zdFZuWDJVTy91SDd5Ny9sQlp3Z3JNNEtYRUlvMzh0TllQLzRFa0duSVBZQkFNSGZadEFUdmZqOWdQSjlJcUk4N0JyUVUxM2hDQU1ObS8zcS82Z3UvdVFFdStvMU9WL0hqa1RiOXVZWFJDYVVVU1o3a0FSSGpJZTdOWGJad3FwUkZCNkxYaWIweEIwNXplQWNmQVRVSk13MUVNTFFHNUZIeDZMdm9qR3RQM2J5YzhkclFTQ21YT0xreTRGbjR4ZjNRSWpYVWd2WjY3bEVGMUxpUGYvWE1IMFpJWS9oUENzUFNZVWdiWHBrSFlNQ3ROWVN0cXVRM2JkWkZ4QkVQN1hKY0JWRUM3TDY2L0tRcXRJc1FuY0ZzdnJlWXRDelBXUU50T1hCTzBLZ0RiT2lDTTcwWkZWK1RRNEgxQ3RHL1Fva2FpWlYweXRxMVVVdERHeVk5NTVqT0RRYllUUWhTTkxieTJGekFKeVFvckpmaGMrTWRqRm9zWlc3UnhwZTFhRVhDNk9YU1F3blNCdEVyR1JwUlplcmVJdjRqaGN1Tk9EL0FwdUlMRFJvb2ZWM2RPYi9YbkdoQ2srOTNDeENmdlFjYTgyV2JRU3ZacjJ0RG5DMFB0Z016d2Fma2Z3VVh4SSJ9XX0",
+        "thinking": "",
+        "type": "thinking"
+      },
+      {
+        "text": "The capital of France is Paris.",
+        "type": "text"
+      }
+    ],
+    "id": "LOTvauTeO57qkdUPpYSBkAw",
+    "model": "gemini-3.6-flash",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 19,
+      "output_tokens": 91,
+      "output_tokens_details": {
+        "thinking_tokens": 84
+      }
+    }
+  },
+  "recorded-text-simple": {
+    "content": [
+      {
+        "signature": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6ImdlbWluaSJ9LCJvcGFxdWUiOlt7Im9yaWdpbiI6eyJkaWFsZWN0IjoiZ2VtaW5pIn0sImtpbmQiOiJnZW1pbmlfdGhvdWdodF9zaWduYXR1cmUiLCJkYXRhIjoiRXNNTENzQUxBV2tVZlJOVWg5TVYzRWtycCtrc1ZvTUpYeHNwcVBmUjQrdzZYelhHU1BFZTZHOXhWd2VTMmRvenEyRFNzdU9KOEdrZ3J1VE1ISDh3QytEZWE0VzlFVWNHdWg2ZHp2K24xQVNZcktIaFhsdUpQRzU0VkJMYWtVWVNrV3JsaW9nZEZmMnUzTkRjMzJKTmlSR25QYjVReTBBem14U3BUUVg2bW10M1l0QktaU2dQaEozOUU2SmUzSU13cE0rM2E4Nk4vR2lXU0VaVGhmUnN4UTA2NW1Hd3VoSEZOanFvRUZ1ZE1mT1VVY2NXNVY3NHpvVlA1cm9Zek9jZUxMbXZKcnFnd0Jhc0RqT2ZPbWVJaVhrWWpFMkJYQWp0cTVPTnN5S0hUQWpiRThwRDBWU3ZvS3VkSUR3WU1lYXlpSXdCSi9MaVlrbHJZdXEzOG1ZcWpFcU5HQWFGWkFuOGxnWDdRU0dSMFRWWXJzU29LZncwZ0p3Q2h6VWdOUkVFTEhWSXRlSkgwZU0yWFhOMnIxQm8wdFlUeGxBS3hnWTRmZXUwNTF5NDhhd21vaC9ieUVZN2k0ZWdKZlV2SzYwTWtHMmV1TEttUjJ3VU1YU0ZnMlBTYXUwdEUrRFlMK3pKSjhsZHNRZzQ0cnNSbkZqYjRVOVhmdCtINXp5eXZhRUczLzZybk91NTBKc0Y3WmROSWJvWDRNQ3FIZjhUVEZKM3BrZk92VUNLazNna0R4Q2lkb2g2d1g3UzZZZktGbXBCRHBNaVBCU0UyY2ZBRlRNKzZES0tySytzeUFXWW82NWd0blA4b1hlWGwxYVJLZ0w4ak8yZE5GVG82dHJObEZrQjQ4YStZbUhUYmJaYjdycHdrR1EyOGNjbFJpVkVPZ2pXVWZKaW5QRmQ0bUFXK3R6Zk1xMUFudStXUGlXektzaXJoamNKTVBKOFYvN0lYQnVzZ3BsODJRMnNMMEF5bmMyeTM5SlFXNG1tSGtad3BibDArUTg1dFZWejhVTEJqZkdiUmxFQVB4Y0pJbFQvb3JCQm10WVNkOUxKNWVzbWM3Zkw4LzRtUUZwWGEwdjYvUGhOSFhmZEMyb1ZQdzQxMElNV2ZDbHl6NDNxZmtBTXZ5aHlYenJubk9JQVlEUTV2aGpVQjZUbTRxUjU5U0E0QmNIU0J0T2xuUys5SmpEYUtMb3gwN2ZVelZWQVI3a1l6eEE1bEx3Z2RUNkNnQ1JqdkZLWXdNUy9oTU5wY20rR2ZVMlFPU0JlcjhhSzE3dFRtWWt4VEFhZm1QSUtjMHI3aW9vek5GdXVkS1Zvcis4clBZU0NHbWVRMVI2eUM4K0NPTS83VHFQb1ZnMDl0cjFSZFJaVXF5ZmdHV3g5bHNSRWxCcitqTGU2N2NiaUI5U1JxbmZNSUpwZndkblFiS2tVUmpqZUEzMGpyQ1U2MGNWWEU3STJ2RFROV2FqUUwyVjgrcDIvdmN3VjRsZ3Q2eWFVTytXUWtIbkhlM3pWQUJ0c2dMdm9OYjdEMDZhS0gzTW5Rc09uZGJ0bmRPZHlTVVBYOGFySnJMVkMyNjZ3MHNvRk1kVWJuVE1hTHl1Y0ZHZC9XTzBReUE0ak03aGtDN09zSHFmUUk0WmVoZFdYQ3RGeE5qZlBLY1d3UDdnb0NwVmE4cGRrdFlpY2hhcE1NMEs2SElYck8rSUQ1QkhPMzJsaGVQWG9VWUliZTc2YlpTOElQd3NWeHlUOVE5Q01JKzNNQ056bzFqdDhGa3A1cE1WZ0FnMk4zck14eVBkK2RzZXlHMG5xTmV2VkVpdGgvNTczckZqRWQvbERObWo0RjFYd3owZkk1WWQxcmxQVmlLUG5kS3pjK2ErcHQwK2JCRmNVRXhrWld1RGhXR0grbkluREJxR1FGRlh0OHRNdlE2eURoOWxQdkhCeFRLN0MvQzgvR3B6djFFVjg4WllqalZJL1FMbDlrekNXRWxJRk9QUGFVYkhqOW9uajcxb0NhQWVQaW1BbFVDT2VMa1RtbE5QMXE3T3c3QWtia3o4RVhsU3pBQTNXeVJYZkNhdEg0YUxmSTJ5SXBRUFV0dDJDZFkraUFkcFBaeXZZd21VNkU3V1Q2SWc2ZEhldEZhd3lYRUNiS09iMGJiZG1rWU1KdG5KT1VvSlRLUzNIeTZQWlNtNEVkRlZvNDR2VWNuSjI3UlNRNlZXRk5hMEloRmhRV3hTWUJYenJSYXJWVk9BWHV6czlNQnhWOXBpZXMreWtJN1NNcXQrM0pTMld6SVdYK0prZzAzaW9VR3VGdmV5cmlIT0V3aFBPVGgrMEJIa3FxeUVEWWxKK1RPblQvV2RHaHhYaGJ0a0tCS3FKN1p2cnUxekVsbUlWZVlKQTRuMzhYRmQ5ZTlsRVN6VEZxRVBHbVlEamxHa2FPOC9DYWgzWlo1RUJlSktCYnU4NmRDbnl5K09QY1lCYStoZ3F4V080YnQrWWdxVG9KSWExN21ZbEJGUUtDWnpqeHdMdFJTcnZSQ1oza25ycXNzR3ZObng3SWUzTzIxQWIxcjV2czkrTVVpYzVPOTh1eWVobmlJcDJTbUk1SWxoUTVXNnJXSTRMeDRJckxtWVkxRDYzaVZyV2VXaEY0VjQzcW9FPSJ9XX0",
+        "thinking": "",
+        "type": "thinking"
+      },
+      {
+        "text": "Hello, how are you today?",
+        "type": "text"
+      }
+    ],
+    "id": "G-Tvaq3CIPjsxN8P5sOSeQ",
+    "model": "gemini-3.6-flash",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 7,
+      "output_tokens": 482,
+      "output_tokens_details": {
+        "thinking_tokens": 475
+      }
+    }
+  },
+  "recorded-thinking-budget": {
+    "content": [
+      {
+        "signature": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6ImdlbWluaSJ9LCJ0ZXh0IjpbIioqTXkgQW5hbHlzaXMgb2YgXCJTdHJhd2JlcnJ5XCIqKlxuXG5Pa2F5LCBsZXQncyBicmVhayB0aGlzIGRvd24uIFRoZSBwcm9tcHQgYXNrcyBtZSB0byBmaW5kIHRoZSBudW1iZXIgb2YgXCJyXCJzIGluIFwic3RyYXdiZXJyeS5cIiBUaGlzIGlzIHByZXR0eSBzdHJhaWdodGZvcndhcmQsIGJ1dCBJIG5lZWQgdG8gYmUgcHJlY2lzZS4gTXkgdGhvdWdodCBwcm9jZXNzIHdpbGwgYmUgYSBtZXRob2RpY2FsIGNvdW50LiBGaXJzdCwgSSBuZWVkIHRvIHZpc3VhbGl6ZSB0aGUgd29yZCBpdHNlbGYuXG5cbjEuICBJIG1lbnRhbGx5IHNlcGFyYXRlIHRoZSBsZXR0ZXJzOiBzIC0gdCAtIHIgLSBhIC0gdyAtIGIgLSBlIC0gciAtIHIgLSB5LlxuMi4gIE5vdywgSSdsbCBzeXN0ZW1hdGljYWxseSBzY2FuIHRocm91Z2ggZWFjaCBsZXR0ZXIsIGlkZW50aWZ5aW5nIGVhY2ggaW5zdGFuY2Ugb2YgXCJyXCIuIEkgc2VlIG9uZSBhdCBpbmRleCAyLCBhbm90aGVyIGF0IGluZGV4IDcsIGFuZCBhIGZpbmFsIG9uZSBhdCBpbmRleCA4LlxuMy4gIEkgY291bnQgdGhlIGlkZW50aWZpZWQgXCJyXCJzLiBUaGVyZSdzIG9uZSwgdHdvLCB0aHJlZS5cblxuVGhlcmVmb3JlLCB0aGUgZmluYWwgYW5zd2VyIGlzIHRoYXQgdGhlcmUgYXJlIDMgXCJyXCJzIGluIHRoZSB3b3JkIFwic3RyYXdiZXJyeS5cIiBTaW1wbGUgZW5vdWdoLCBvbnRvIHRoZSBuZXh0IG9uZS5cblxuXG4iXX0",
+        "thinking": "**My Analysis of \"Strawberry\"**\n\nOkay, let's break this down. The prompt asks me to find the number of \"r\"s in \"strawberry.\" This is pretty straightforward, but I need to be precise. My thought process will be a methodical count. First, I need to visualize the word itself.\n\n1.  I mentally separate the letters: s - t - r - a - w - b - e - r - r - y.\n2.  Now, I'll systematically scan through each letter, identifying each instance of \"r\". I see one at index 2, another at index 7, and a final one at index 8.\n3.  I count the identified \"r\"s. There's one, two, three.\n\nTherefore, the final answer is that there are 3 \"r\"s in the word \"strawberry.\" Simple enough, onto the next one.\n\n\n",
+        "type": "thinking"
+      },
+      {
+        "signature": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6ImdlbWluaSJ9LCJvcGFxdWUiOlt7Im9yaWdpbiI6eyJkaWFsZWN0IjoiZ2VtaW5pIn0sImtpbmQiOiJnZW1pbmlfdGhvdWdodF9zaWduYXR1cmUiLCJkYXRhIjoiRW9nRUNvVUVBV2tVZlJQUEdNLzFXeFFCdER0cHN0WStkenQvc3NXcFVoNHl1M21yYXJTYVFycHZjVEJXQUZTSWp0bnRiUENTZXpYc1RqS0dJRERQRVhScjJHVXN5SjlyejVaNU1JcmMybmZnSG53azV3NXBOQnhOeXRuNFFJbkF2SVd5TDVNcTM5VDZ4YUZJaEFhaXcxY3ZydDRhM0NYZ1RNeTlXKzF3NEVmVm9XK1hBZWJzdWdrUExxN0NUa3F0bjYvbSszSHJrbU85ZmhaVk5pQzA5WmNaNWpxbXZZMkVKcmlFMEtqZUZ6aDB6SzdBS3lnYXBWcjduaTRoQ296cDRjckxvSFB1ZEFLZ1hhbGxFOFBXSlFCR29HMWNITU9xa052akxBbVJqcE9vOUgzdmdFNDZNYlhiRFZ5YW52K25rYTlIVFBoNmc2ZGdvait4cU52SDVabjA5UWR5Q2RkV2laZkZULzFCTFo1WDZsT1Z1TkxVN3lDUlo4ZHd0WDkwNm1nV2FNU3R1enBTRHd6U0doeW5yc01sYjRiSnAzV0JIcHhwaXpYM2hkNktCQ3R0a2pXcGZYelhZYmd5RmVlUG1xQmVFT015c0ltRFRSaklYNlo4UWJrZ1FPaFRBZ2N4bmppT2l1QzVoT2xGVkJnWTYxQmlJUUZySFl0aDBMR0t6cXBpN1B1VldYMnRNc3c0RnY1WlU3dVVFSm1WbW9RSG1TcUlvM1ZmZkxMSjhaNExFUncvVmNJVklQTUFZcUNsZE4xZjBaa3NWVENiWTN1YnViYnRXYklBNW9ic2Y5SThkeGV3NkpGYXpRdVpLQ1pwd2FFblhRMnRqK3BqTXBZK0pML0Q2dlh2azVZcFd0RXBQcUo0Tk02Ym9nQm9uYnFLNFREMFlPdzdaRjFCRGlnVldOeFFaWkJIREE9PSJ9XX0",
+        "thinking": "",
+        "type": "thinking"
+      },
+      {
+        "text": "There are **3** letters \"r\" in the word strawberry.\n\nst**r**awbe**rr**y",
+        "type": "text"
+      }
+    ],
+    "id": "S-Tvas6uEvn7xs0Pw62_WQ",
+    "model": "gemini-3.6-flash",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 11,
+      "output_tokens": 184,
+      "output_tokens_details": {
+        "thinking_tokens": 159
+      }
+    }
+  },
+  "recorded-thinking-include-thoughts": {
+    "content": [
+      {
+        "signature": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6ImdlbWluaSJ9LCJ0ZXh0IjpbIioqTXkgQW5hbHlzaXMgb2YgdGhlIFByaW1lIE51bWJlciBRdWVzdGlvbioqXG5cbk9rYXksIGxldCdzIGJyZWFrIHRoaXMgZG93bi4gRmlyc3QsIEkgc2VlIHRoZSB0YXJnZXQgbnVtYmVyOiAzOTEuIFRoZSBwcm9tcHQgd2FudHMgdG8ga25vdyBpZiBpdCdzIHByaW1lIGFuZCB0byBhbnN3ZXIgd2l0aCBhIFwieWVzXCIgb3IgXCJub1wiIGZvbGxvd2VkIGJ5ICpvbmUqIHNlbnRlbmNlIGV4cGxhaW5pbmcgd2h5LiBUaGF0J3Mgc3RyYWlnaHRmb3J3YXJkIGVub3VnaC4gTm8gYW1iaWd1aXR5IHRoZXJlLlxuXG5Ob3csIHRvIGRldGVybWluZSBpZiAzOTEgaXMgcHJpbWUuIFRpbWUgdG8gZG8gdGhlIG1hdGguIEkgbmVlZCB0byBjaGVjayBmb3IgZGl2aXNpYmlsaXR5LiBTcXVhcmUgcm9vdCBvZiAzOTEgaXMgcm91Z2hseSAxOS43Nywgc28gSSBuZWVkIHRvIGNoZWNrIHByaW1lcyB1cCB0byAxOS4gSSdsbCBnbyB0aHJvdWdoIHRoZSB1c3VhbCBzdXNwZWN0czogMiwgMywgNSwgNywgMTEsIDEzLCAxNywgYW5kIDE5LlxuXG5JdCdzIG9kZCwgc28gbm8gZGl2aXNpb24gYnkgMi4gU3VtIG9mIGRpZ2l0cyBpcyAxMywgc28gbm90IGRpdmlzaWJsZSBieSAzLiBEb2Vzbid0IGVuZCBpbiBhIDAgb3IgNSwgc28gbm90IGRpdmlzaWJsZSBieSA1LiBMZXQncyBzdGFydCB0aGUgZGl2aXNpb25zOiAzOTEgZGl2aWRlZCBieSA3IGRvZXNuJ3Qgd29yay4gU2FtZSBmb3IgMTEgYW5kIDEzLiBIbW0uLi4gT2ghIDM5MSBkaXZpZGVkIGJ5IDE3IGdpdmVzIG1lIDIzISBUaGF0J3MgaXQsIDE3IG11bHRpcGxpZWQgYnkgMjMgaXMgMzkxLCBzbyAzOTEgaXMgY29tcG9zaXRlLCBub3QgcHJpbWUuXG5cbk9rYXksIHRpbWUgdG8gY3JhZnQgdGhlIHJlc3BvbnNlLiBUaGUgYW5zd2VyIGlzIFwiTm8uXCIgVGhlIGV4cGxhbmF0aW9uIG5lZWRzIHRvIGJlIGNvbmNpc2UgYW5kIGFjY3VyYXRlLCBhbmQgZm9sbG93IHRoZSBvbmUtc2VudGVuY2UgY29uc3RyYWludC4gSSBjYW4gc2F5LCBcIk5vLCAzOTEgaXMgbm90IGEgcHJpbWUgbnVtYmVyIGJlY2F1c2UgaXQgaXMgZGl2aXNpYmxlIGJ5IDE3IGFuZCAyMyAoMTcgw5cgMjMgPSAzOTEpLlwiIEFsdGVybmF0aXZlbHksIFwiTm8sIDM5MSBpcyBub3QgYSBwcmltZSBudW1iZXIgYmVjYXVzZSBpdCBpcyBhIGNvbXBvc2l0ZSBudW1iZXIgZGl2aXNpYmxlIGJ5IDE3IGFuZCAyMy5cIiBUaGF0IHdvcmtzIHBlcmZlY3RseTsgaXQncyBjb25jaXNlLCBhY2N1cmF0ZSwgYW5kIHNhdGlzZmllcyB0aGUgcHJvbXB0J3MgcmVxdWlyZW1lbnRzLiBEb25lLlxuXG5cbiJdfQ",
+        "thinking": "**My Analysis of the Prime Number Question**\n\nOkay, let's break this down. First, I see the target number: 391. The prompt wants to know if it's prime and to answer with a \"yes\" or \"no\" followed by *one* sentence explaining why. That's straightforward enough. No ambiguity there.\n\nNow, to determine if 391 is prime. Time to do the math. I need to check for divisibility. Square root of 391 is roughly 19.77, so I need to check primes up to 19. I'll go through the usual suspects: 2, 3, 5, 7, 11, 13, 17, and 19.\n\nIt's odd, so no division by 2. Sum of digits is 13, so not divisible by 3. Doesn't end in a 0 or 5, so not divisible by 5. Let's start the divisions: 391 divided by 7 doesn't work. Same for 11 and 13. Hmm... Oh! 391 divided by 17 gives me 23! That's it, 17 multiplied by 23 is 391, so 391 is composite, not prime.\n\nOkay, time to craft the response. The answer is \"No.\" The explanation needs to be concise and accurate, and follow the one-sentence constraint. I can say, \"No, 391 is not a prime number because it is divisible by 17 and 23 (17 × 23 = 391).\" Alternatively, \"No, 391 is not a prime number because it is a composite number divisible by 17 and 23.\" That works perfectly; it's concise, accurate, and satisfies the prompt's requirements. Done.\n\n\n",
+        "type": "thinking"
+      },
+      {
+        "signature": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6ImdlbWluaSJ9LCJvcGFxdWUiOlt7Im9yaWdpbiI6eyJkaWFsZWN0IjoiZ2VtaW5pIn0sImtpbmQiOiJnZW1pbmlfdGhvdWdodF9zaWduYXR1cmUiLCJkYXRhIjoiRXBjSkNwUUpBV2tVZlJPcXYxamRiQjByc3JCVFNndUhpaUtQbno0QTdWeU1NbjlMS3h5K0kwTEYxMndWbjAra1dvdk84OVEyUTBuM0VtQnN6ZW4yVmFCUWQxY0pvMGZsK2l6S1FCNjB1d2hrZkFWUDRBRGJndUtlVUNidjhTNWxGYUxJNGEzdjJpQ2dBMlRUMWtJdzdmSU5LOUtsNmhFdGNiMjRkTkg5OTlMK1pMTGRrckw3aEtvSjI5WHBwWVc5bGRGcFJqd2NPWDhnRG1hZlJRY0w2VU5URnNNaDRlQjJYaVJJOWRLRkpTTUVtcjdsN2l2SmhLdXkxQW9TN2RoV05lNldnSW9aUkN5RlhNOUxuUFZVUFZ0UGtadWF1aGJmZEVmQkhlWmRwN29BTGgrVDgybkhQSFVEc3ZUakVSK0tQNC9ZTU11cUVoUk1iT0YxT0REb3hoN004RG0zOEFGMEdFZ1NCUlIxS2lNVitqZUJ2QXdBQ2Yvb2Z2d1ozbzJIVTQ3R2d4R0tObHR6OWpucVJDVlBYUnZrZjl5RFZKTUM3KzdjK2pwVy9QcndIZGNpQkg2WEFXUGFadzNCaWEvZklFVXZ6aFJHS3l4dHViMDB6RlhlYThQTFovRXhuRlI4bXgyUTd0UlRpZ1pweFlsUERhbmd3VTZyMksrR251OVlOMktydk5QK3FrR051SFBQR1NHaXdiK0hGVUc1QVY2WjlVdFVKZ3RvMUZRUFhRQVRzaXJ0N2c0amh4YW4rU2E2Z2FTRDhIakoyanhMMys5S2NuNUlTTGtWRjRiOElJdmFCaE0xNmVFR290VHFSdHBKQlRMK0lLc3Q3aURUbWlldStOZWk3d25POWlycmFUL0dIT2xSMEMzZEdSeHdEQXNNK3JGd1JBN1lVUC95d25mN2QvN0g3T0xPMitxWUlScG14b29haXhjT3VNaUtsMktKeFk0K3FIZUo5Tm9WREtzb0QxOFV1MjB0UnVpY2hzQWFZT3VCVmFHaFd0czJFa2dUMjBUbEQycExUOWM3NXFodzFwaHRhMlZzQXYyZnJLNFFuUVluWlF4ZDRKZWJIWVlyR2JNaE13RXRNRisxa2xtdWdIcE8xeTZMVGNMdmNCNWh0NnNlRThvcFIwOStCOEpoUWV6RVhxL1VqVkg3Y3RKV3VwK2NmNzhuYWMxbW91dUEyUm9GVlN3M0MwanAxZHZyejBLUE5sQzE3THE0dEt6QUpHYU5vblNEeGtwRG4xN05jempXd1BYTE0vSld0dStHcjFVZTBWRXg0QmZ0YjNPWUM0dzJIQWljRFJtdzhTSC9GSjZoMXRNUnpkZ3VmR3Q3YjY0Mm1MOWM0R0E0eU1OWDdMSmlTLzN5RDkyU3dOb0ZDRXFaWUNBN3prSGpPRFlsTkc4Y3luT2FNais3K2lEcjB6bGxJaUVEdU5WOTV5Y1NRcEl5TWpMbk9EMkNMbEhtRnFQRjlRVm81eWZiWE5aZkdXOVhicHBIK3BzbGhMUUpON3k3VS81SmNzSTh0bmtNTitYSXlvd1Jhdkw0OFRTV0FGU1l1cFZKVGlhQ1IwRVNabVY1MTlld0ljdWlYYWo4NnRJZ1VHRCtKWFlkV05ZdGxSZldwQ2Z0VDhDVjlqcUY2Ry9DQUUvNWt1WGRZUHVWd1UvR0JkRHExQVZNTlM3TnVzM0hrci9kajlxcitEQWQreXJXOEpiazFiWEZaQS9qM0RQOGNvd1Bncnh2cGd2dDIzamg4bVpCQ2V0dlk5Y21IS3M2UmNLcTdpUTl2aEEycWlsZVNvcjZ6NlZYdVdlRGJibGNFbFVxSWYwblQ4Y0RxbEVMdm5WL21DZVA0cVRCR2F4ZGZjTWQ3NEttMVZjbnlETStjV3I1T0dkaTJubEYvQ3lGZVlpVDhuVXhCSG1qOHhISkRyWXg0ck1kaGF0dGV5b2pzNitrdkhkWWVvQUVNSHoyMU5BYjd1MnJXN3B2VjdxQXM3dkhFMG9Bd2hLTlFZVnRtcTRTdkc2a1MvNFAzQ2tzbGMvTElibkgrcEFvYUZXU2l1NHN2OVZNNmFDVmFRN2Y2ZVI2d2IrcEtUQkRVTGs9In1dfQ",
+        "thinking": "",
+        "type": "thinking"
+      },
+      {
+        "text": "No, 391 is not a prime number because it is a composite number divisible by 17 and 23 ($17 \\times 23 = 391$).",
+        "type": "text"
+      }
+    ],
+    "id": "P-TvapKAB8uJxs0Pr_aU0AI",
+    "model": "gemini-3.6-flash",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 22,
+      "output_tokens": 470,
+      "output_tokens_details": {
+        "thinking_tokens": 430
+      }
+    }
+  },
+  "recorded-tool-result-dummy-signature": {
+    "content": [
+      {
+        "signature": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6ImdlbWluaSJ9LCJvcGFxdWUiOlt7Im9yaWdpbiI6eyJkaWFsZWN0IjoiZ2VtaW5pIn0sImtpbmQiOiJnZW1pbmlfdGhvdWdodF9zaWduYXR1cmUiLCJkYXRhIjoiRW9NQ0NvQUNBV2tVZlJPZG9kN3MwaklQcUJsaSs0L1ZvY1NKRkdnSWhEN2hRUXp3ajlTV1VUUm9DUUxZcUd4aFZrVnVSRXVxSVZaQk9ocVBwV0xOZDV4UysrVU9HWHZQNEU0SUh2N0ZIMDllK3htaXZHTUVJYmp5ajJrQSt6TktvVU5hQURQTFNwU0JQc3NVcDhFcTVTZm5XNVBrL0w3elZld3B0R25iczNURHhzNzJNRk9PZGpZNTkvSlpmMWFFT3k2UUFDZjhmekJnNXUxTE9yeFY4UllZVXIxQ2JSeXpWMjB2Y0FDRHUrZ3VYbFZFZUZVd1F4emxJWVdUbVBYQytjY0dpQ3hQOHBoeEVKWkN1dVk2ZEdCWHo1a1U2MHkrb3JJZURhMmVKQ2dFbVRLOXB2eW85WExPQVFjVWRHV0IyN3lLQVJ6Z1Y1d0J6eG45WjdJR2x3c1hrb0huVnc9PSJ9XX0",
+        "thinking": "",
+        "type": "thinking"
+      },
+      {
+        "text": "The weather in Paris right now is 18°C and sunny.",
+        "type": "text"
+      }
+    ],
+    "id": "cuTvatK7LeCG7M8P2oSWkAw",
+    "model": "gemini-3.6-flash",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 103,
+      "output_tokens": 47,
+      "output_tokens_details": {
+        "thinking_tokens": 32
+      }
+    }
+  },
+  "recorded-tool-result-signature": {
+    "content": [
+      {
+        "signature": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6ImdlbWluaSJ9LCJ0ZXh0IjpbIk9rYXksIGhlcmUncyBteSBzdW1tYXJ5LCB0YWlsb3JlZCBhcyBpZiBJLCBhbiBleHBlcnQsIGFtIHByb2Nlc3NpbmcgdGhpczpcblxuKipXZWF0aGVyIERhdGEgQ29tcGlsYXRpb24gYW5kIFByZXNlbnRhdGlvbioqXG5cbkFscmlnaHQsIHRoZSBkYXRhJ3MgaW4uIEJvdGggQVBJIGNhbGxzIGZvciBQYXJpcyBhbmQgTG9uZG9uIGhhdmUgc3VjY2Vzc2Z1bGx5IHJldHVybmVkIHdlYXRoZXIgaW5mb3JtYXRpb24uIFBhcmlzIGlzIHJlcG9ydGluZyBhIHBsZWFzYW50IDE4IGRlZ3JlZXMgQ2Vsc2l1cyB3aXRoIHN1bm55IGNvbmRpdGlvbnMg4oCTIHBlcmZlY3QuIExvbmRvbiwgb24gdGhlIG90aGVyIGhhbmQsIGlzIHNpZ25pZmljYW50bHkgY29vbGVyIGF0IDEyIGRlZ3JlZXMgQ2Vsc2l1cyBhbmQgaXMgY2xvdWR5LlxuXG5Ob3csIHRoZSB0YXNrIGlzIHRvIHN5bnRoZXNpemUgdGhpcyByYXcgZGF0YSBpbnRvIGEgY2xlYXIgYW5kIGNvbmNpc2UgcmVzcG9uc2UgZm9yIHRoZSB1c2VyLiBJIG5lZWQgdG8gcHJlc2VudCB0aGUgaW5mb3JtYXRpb24gaW4gYSB3YXkgdGhhdCdzIGJvdGggZWFzaWx5IHVuZGVyc3RhbmRhYmxlIGFuZCBhbGxvd3MgZm9yIHF1aWNrIGNvbXBhcmlzb24gYmV0d2VlbiB0aGUgdHdvIGNpdGllcy4gVGhlIGdvYWwgaXMgY2xhcml0eSBhbmQgZWZmaWNpZW5jeSBpbiBpbmZvcm1hdGlvbiBkZWxpdmVyeS4gSSdsbCBuZWVkIHRvIHN0cnVjdHVyZSB0aGUgcmVzcG9uc2UgY2FyZWZ1bGx5LCBlbnN1cmluZyBhY2N1cmFjeSBhbmQgYXZvaWRpbmcgYW55IGFtYmlndWl0eS5cblxuXG4iXX0",
+        "thinking": "Okay, here's my summary, tailored as if I, an expert, am processing this:\n\n**Weather Data Compilation and Presentation**\n\nAlright, the data's in. Both API calls for Paris and London have successfully returned weather information. Paris is reporting a pleasant 18 degrees Celsius with sunny conditions – perfect. London, on the other hand, is significantly cooler at 12 degrees Celsius and is cloudy.\n\nNow, the task is to synthesize this raw data into a clear and concise response for the user. I need to present the information in a way that's both easily understandable and allows for quick comparison between the two cities. The goal is clarity and efficiency in information delivery. I'll need to structure the response carefully, ensuring accuracy and avoiding any ambiguity.\n\n\n",
+        "type": "thinking"
+      },
+      {
+        "signature": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6ImdlbWluaSJ9LCJvcGFxdWUiOlt7Im9yaWdpbiI6eyJkaWFsZWN0IjoiZ2VtaW5pIn0sImtpbmQiOiJnZW1pbmlfdGhvdWdodF9zaWduYXR1cmUiLCJkYXRhIjoiRXJzQ0NyZ0NBV2tVZlJNWld5QWQvamZJMGNhSzE4R1lNbDY2aUsxamFoTi9ScGZuQU1sdWZwZ2lvNXZCS0RSM29mdmU4SExZdWdEZHdYdVlWS2NOL2ZFclJVZzQzTHVsUVJSQTJObE5kanRYTVg0c0VxZ3FCUW1XaDF3NlR4OFhpZ2lMUnVJQnFtT21oQzYzUU1uWkNSWmd2Q2dRUmQ4K3V2L3duaDhlc1FoNUYva2FGVk1jYUROTzd6TE55dDBHeVdNcXh6YWx5Qy9QUGdGMjQrZmNORjJBRTQ5OW5qQXprc2V5alFYRldEUGwyRDhNbHVTTW9VSmRoRmtWTVRycFMrVEh5b0d3RGxpLzFCbFFSNW5FUG4wdjEzTUVTeENveUxUT0FsZ2Z3dmtTeVo3VWtVV1JsTFRIVS90bjYvOE9SMlgzTDJqQzcycnpCSW0vY0ZsQ0cwNmlweWpqMlo2QUw4d2JrWGdLc2pkY1RSb0pwL0w1OHYrV2xqNXB5Ymd1T2xIcTdkbW5jOXNlalM0anN5ME43MjRQUzZ0aGtyRVUzSHlQVzVBMiJ9XX0",
+        "thinking": "",
+        "type": "thinking"
+      },
+      {
+        "text": "The current weather is:\n* **Paris:** 18°C and sunny\n* **London:** 12°C and cloudy",
+        "type": "text"
+      }
+    ],
+    "id": "sOXvasbrCJym3boPksi7uAw",
+    "model": "gemini-3.6-flash",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 397,
+      "output_tokens": 73,
+      "output_tokens_details": {
+        "thinking_tokens": 44
+      }
+    }
+  },
+  "recorded-tools-forced": {
+    "content": [
+      {
+        "signature": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6ImdlbWluaSJ9LCJvcGFxdWUiOlt7Im9yaWdpbiI6eyJkaWFsZWN0IjoiZ2VtaW5pIn0sImtpbmQiOiJnZW1pbmlfdGhvdWdodF9zaWduYXR1cmUiLCJkYXRhIjoiRXBnRENwVURBV2tVZlJQY2kvdTkrNWtQNlJFVEF6My9IZVRyRVZCNWpvR2JxZmU4c1Z5WmQ3Z0hqN0R4bFlVbmJiaGRBc2JKWTUrNUdCQjFxT3lURjBpQXhnd2wvN21ya3FQMW1JNXI4aUhBZ0xXVGxLMVQ1NC9OTjNVOXl3MkN0Z1FXM2VPYTIyeUdGbmozOXE1VlpYZkZiaTE1emtjN0ljRkpnSXpJaThBQU9SbEJMMS9RWEREUXhzK0RKam0vL1R4T29ORWdZM3lGVU5FaFQvelFGQXVMVm1JUGoyVERJdkRJTzUvWUNEa3V0NGsvY3FWanV2akVPdUttcjVoUVM4M3QvcGJKOGRyemEwVDRCcmRRL0lUcTI2dWVrVVgvb3ZjVGVQaXdOMEtXOCtnMmdieVcxaEhxVGYxSkhsdjhUQmZPRUxFZCtBelVZSU04NkdTa0l0cWxWWUFycVJtMXJXaWZjaTU1bmUvcDBvODFtalF2RnZIeUo4V1NycVhjdDVZNDNjUTkyQkU2aG1nOWk1OW03WXg1K05qRDNkNUViSlk1aEtCdWxWU1lpS3FJNjJQMFQ2b2FjV1FZQktQMm5UdVdFYmpSTmJ3elAweWJRZ2U0anhQaVZFTWZIZ1lVSUlGSGFwOGRnUG5TcXF1eWNidC8wZ3ZtbEJWdENHQStFMElmc0VocVdYNVhmUFlZTmhHRFlkUUNTcGtCOExHTys0a0cifV19",
+        "thinking": "",
+        "type": "thinking"
+      },
+      {
+        "id": "call_3940307145401823907",
+        "input": {
+          "location": "Tokyo"
+        },
+        "name": "get_weather",
+        "type": "tool_use"
+      }
+    ],
+    "id": "aeTvatTXG9LZkdUPs5a2sAw",
+    "model": "gemini-3.6-flash",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "tool_use",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 122,
+      "output_tokens": 92,
+      "output_tokens_details": {
+        "thinking_tokens": 76
+      }
+    }
+  },
+  "recorded-tools-parallel": {
+    "content": [
+      {
+        "signature": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6ImdlbWluaSJ9LCJ0ZXh0IjpbIioqV2VhdGhlciBDaGVjayBmb3IgUGFyaXMgYW5kIExvbmRvbioqXG5cbk9rYXksIHNvIEkgbmVlZCB0byBnZXQgdGhlIHdlYXRoZXIgZm9yIGJvdGggUGFyaXMgYW5kIExvbmRvbi4gVGhlIGBkZWZhdWx0X2FwaTpnZXRfd2VhdGhlcmAgdG9vbCBzZWVtcyBwZXJmZWN0LCBpdCB0YWtlcyBhIGxvY2F0aW9uIHN0cmluZywgd2hpY2ggaXMgc3RyYWlnaHRmb3J3YXJkLiBUaGUgQVBJIGFsc28gaGFzIGFuIG9wdGlvbmFsIHVuaXQgcGFyYW1ldGVyLCBidXQgSSdsbCBhc3N1bWUgdGhlIGRlZmF1bHQgaXMgZmluZSBmb3Igbm93LlxuXG5UaGUgcXVlc3Rpb24gaXMsIGNhbiBJIGNhbGwgdGhlIHRvb2wgdHdpY2UgaW4gYSBzaW5nbGUgZ28_IFRoZSB0b29sLWNhbGxpbmcgZm9ybWF0IHNlZW1zIHRvIGFsbG93IGZvciBtdWx0aXBsZSBjYWxscyB3aXRoaW4gdGhlIHNhbWUgdHVybi4gVGhhdCdzIGlkZWFsLCBJIGNhbiBjaGVjayBib3RoIGxvY2F0aW9ucyBlZmZpY2llbnRseS5cblxuUmlnaHQsIGxldCdzIGdlbmVyYXRlIHRob3NlIGNhbGxzIHRoZW4sIG9uZSBmb3IgXCJQYXJpc1wiIGFuZCBvbmUgZm9yIFwiTG9uZG9uXCIuIFBhcmFsbGVsIGNhbGxzIGFyZSBwcmVmZXJhYmxlIGlmIHBvc3NpYmxlLlxuXG5cbiJdfQ",
+        "thinking": "**Weather Check for Paris and London**\n\nOkay, so I need to get the weather for both Paris and London. The `default_api:get_weather` tool seems perfect, it takes a location string, which is straightforward. The API also has an optional unit parameter, but I'll assume the default is fine for now.\n\nThe question is, can I call the tool twice in a single go? The tool-calling format seems to allow for multiple calls within the same turn. That's ideal, I can check both locations efficiently.\n\nRight, let's generate those calls then, one for \"Paris\" and one for \"London\". Parallel calls are preferable if possible.\n\n\n",
+        "type": "thinking"
+      },
+      {
+        "signature": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6ImdlbWluaSJ9LCJvcGFxdWUiOlt7Im9yaWdpbiI6eyJkaWFsZWN0IjoiZ2VtaW5pIn0sImtpbmQiOiJnZW1pbmlfdGhvdWdodF9zaWduYXR1cmUiLCJkYXRhIjoiRXVJREN0OERBV2tVZlJPQXZ6b1Q2MnNIUTBPNmwxRkwwZVF4T0pxQnVHcnBNbllMWW1CYWJFSDJ5MmVLZVJUbS9hZWdEbVBSeU50cE5jMGpOVVRDc0ZTM3RNZkN0OUFTT295SkcxaE90bjJ2amtwMWZNKzBkNnVmQ1c5SHZDUUQzUDlRd3VUTXBqeit1M01JQmxKaVBsREFIcXNPUG5qaWlJQUdaQUpNWHQzQmRYeHFzamtQbDNIUVpPaEJoMDlsQWtuQXJNTmV6U3NNeUZvL2JVNU50MUhJZUN5eG9WK1ZhUTI5VVRXeUJCSktDdjVTKy9ZVEIwUTY4eG9BankyQll5WTZZcHE3N0VveEk4VmgyTEdzUVdmRktxWWtISDNuTUhrcDJURkNrR0tiRElDa05BcE0vc2p0dDk1UmNtQ2ZTNndqK2E5U09nM3RPNTBPczU5MjZBajRYTmt5S0M1bjE4NDk2d0czV25SSUtMazhINzVBaStXdDhHSUFjSncyVWgwUUtNbFdCTDJqd2E2ZmhZMXZMVGg2ZlZHcXc4NTRMMEJaaktFNnZjZkdwQW50dGpFa05kTGh4OUg3dmdkS1o2WDdzTjlzblo5UTA4K3BMbjZQQ3JFaHFMWHc1VGtQV2lOYXF2SmhIVlQxYTBGR1IrRWpRcGVSR3B2My9yNWlQeE9qbmdYeEtVRzNoMDM0WFNtUk9uTmExVWhaMHNLdVkyT0RVVXNBV1VJaFR1a0VzUnVjZnNmQXg0Rm85eTF4Ni9UOHlBVXUwRnM3ZU5sZ2tvZDVRRC9WSXBBN0dqSHVZRSt2UVNrU0c3aGZrUmZDRUZMS3RiUk1iNE53MVJvaTdUT1g5U009In1dfQ",
+        "thinking": "",
+        "type": "thinking"
+      },
+      {
+        "id": "call_17824526487901149391",
+        "input": {
+          "location": "Paris"
+        },
+        "name": "get_weather",
+        "type": "tool_use"
+      },
+      {
+        "id": "call_17824526487901150536",
+        "input": {
+          "location": "London"
+        },
+        "name": "get_weather",
+        "type": "tool_use"
+      }
+    ],
+    "id": "XuTvauaSOOea28oP0syUoQE",
+    "model": "gemini-3.6-flash",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "tool_use",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 97,
+      "output_tokens": 121,
+      "output_tokens_details": {
+        "thinking_tokens": 89
+      }
+    }
+  },
+  "recorded-tools-single": {
+    "content": [
+      {
+        "signature": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6ImdlbWluaSJ9LCJvcGFxdWUiOlt7Im9yaWdpbiI6eyJkaWFsZWN0IjoiZ2VtaW5pIn0sImtpbmQiOiJnZW1pbmlfdGhvdWdodF9zaWduYXR1cmUiLCJkYXRhIjoiRXA0Q0Nwc0NBV2tVZlJQN0FML2ZMTmlBbU5FMFkwb1EyQXFqdXlWZHdTK084OG85ZXZ4TVl4NjBYQlFoNW5nVUxtYVlOOHdrTUs0UkJuZ3FBeEhGQ3lTbVBzT0FOWjdUYXhmdnVzaHltZk5GNlJTNzBhM2FpTWdtaWIyZzlkaUc0ZzZjZWJ4dVZLU25sK01JNmNuNUhaUnhDRnE2SjVTZWExS0w3TGsrVHM2dDA5eGdIbFZ2NjlHRU9LKzlGY29TOExNeTZsdjhNRFBBUFk4RHVuMzNTYWYzaUU1eURCL28wMkdSbVoxa05VN1NZM3VNOGVMdHp4SDJQQUtDaVkyNGRzaVc4UHRGMEI2K3YxRTJ1ZUVwV2gyNjIwSkxLTE5GUUZ1SG44anNoK04wQmZsYTFnUlV3dmxZUS9wVTVUVzdyTVY4L0s1N1YyR2ZuUmFSbzlNT0VsVFRGMzJiZmpiVnJJTEhyeTRvNFlRNmhCSE5nTm1rRlVlSGZGWFcvdG9ETEE9PSJ9XX0",
+        "thinking": "",
+        "type": "thinking"
+      },
+      {
+        "id": "call_18261916837581647102",
+        "input": {
+          "location": "Paris"
+        },
+        "name": "get_weather",
+        "type": "tool_use"
+      }
+    ],
+    "id": "VeTvavqgNciLvdIPpqKRkQ4",
+    "model": "gemini-3.6-flash",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "tool_use",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 68,
+      "output_tokens": 63,
+      "output_tokens_details": {
+        "thinking_tokens": 47
+      }
+    }
+  }
+}

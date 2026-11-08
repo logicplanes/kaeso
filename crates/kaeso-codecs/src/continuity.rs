@@ -100,6 +100,7 @@ fn replayable(block: &ReasoningBlock) -> bool {
                 OpaqueKind::AnthropicThinkingSignature
                     | OpaqueKind::AnthropicRedactedThinking
                     | OpaqueKind::OpenAiEncryptedReasoning
+                    | OpaqueKind::GeminiThoughtSignature
             )
     })
 }

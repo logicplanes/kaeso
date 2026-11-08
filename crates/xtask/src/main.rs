@@ -38,7 +38,7 @@ enum Command {
     },
     #[command(
         about = "Record real provider responses for the request fixtures of one dialect",
-        after_help = "--provider names a provider in crates/kaeso-core/src/provider.rs that speaks the dialect. Its key comes from <ID>_API_KEY, the id in capitals with underscores for hyphens (OPENAI_API_KEY, FIREWORKS_AI_API_KEY), and is never written; <ID>_BASE_URL overrides its default base URL. openai and anthropic record into the dialect's folders, every other provider into <dialect>/providers/<id>/. Review every recorded file before committing it."
+        after_help = "--provider names a provider in crates/kaeso-core/src/provider.rs that speaks the dialect; gemini and gemini_embeddings record from Google AI Studio with GEMINI_API_KEY, and their model comes from --model or the fixture's <name>.meta.json. Its key comes from <ID>_API_KEY, the id in capitals with underscores for hyphens (OPENAI_API_KEY, FIREWORKS_AI_API_KEY), and is never written; <ID>_BASE_URL overrides its default base URL. openai and anthropic record into the dialect's folders, every other provider into <dialect>/providers/<id>/. Review every recorded file before committing it."
     )]
     Record(record::Args),
 }
@@ -61,9 +61,9 @@ async fn main() -> ExitCode {
             }
             Err(e) => Err(e),
         },
-        Command::Record(args) => match args.provider() {
-            Ok(provider) => {
-                let endpoint = record::Endpoint::from_env(provider);
+        Command::Record(args) => match args.service() {
+            Ok(service) => {
+                let endpoint = record::Endpoint::from_env(service);
                 record::run(&root, &args, &endpoint, &mut out).await
             }
             Err(e) => Err(e),

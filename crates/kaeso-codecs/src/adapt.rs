@@ -140,6 +140,13 @@ pub(crate) fn for_target<'a>(
             media_after_tool_results(&mut draft);
             parallel_permission_left_out(&mut draft, &ctx.chat_profile);
         }
+        DialectId::Gemini => {
+            web_search::for_gemini(&mut draft)?;
+            history::agent_messages(&mut draft, "Gemini")?;
+            history::as_function_calls(&mut draft)?;
+            object_arguments(&mut draft, target)?;
+            fold_later_system(&mut draft, target)?;
+        }
         DialectId::OpenAiResponses => {
             web_search::for_responses(&mut draft, profile)?;
             if profile.reasoning_replay == ReasoningReplay::WithoutNullContent {

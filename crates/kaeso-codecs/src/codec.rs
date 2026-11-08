@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use crate::anthropic_messages::MessagesProfile;
+use crate::gemini::GeminiProfile;
 use crate::openai_chat::ChatProfile;
 use crate::openai_responses::ResponsesProfile;
 use indexmap::IndexMap;
@@ -66,6 +67,20 @@ pub trait Codec: sealed::Sealed {
     fn encode_model_request(model: &str) -> EncodedRequest;
 
     fn encode_models_request(query: &ModelsQuery) -> Result<EncodedRequest, KppError>;
+
+    /// The request for one model at the provider `ctx` describes, such as a Gemini provider
+    /// with its own models path.
+    fn encode_model_request_with(model: &str, _ctx: &EgressCtx) -> Result<EncodedRequest, KppError> {
+        Ok(Self::encode_model_request(model))
+    }
+
+    /// The listing request for the provider `ctx` describes.
+    fn encode_models_request_with(
+        query: &ModelsQuery,
+        _ctx: &EgressCtx,
+    ) -> Result<EncodedRequest, KppError> {
+        Self::encode_models_request(query)
+    }
 }
 
 pub(crate) mod sealed {
@@ -143,6 +158,8 @@ pub struct EgressCtx {
     pub chat_profile: ChatProfile,
     pub responses_profile: ResponsesProfile,
     pub messages_profile: MessagesProfile,
+    /// Where a Gemini-format provider serves its models; Google AI Studio by default.
+    pub gemini_profile: GeminiProfile,
     pub left_out: Vec<String>,
     pub adapted: Vec<String>,
     /// The prompt-cache breakpoints (`cache_control`) an encoded generation request
@@ -170,6 +187,7 @@ impl EgressCtx {
             chat_profile: ChatProfile::OPENAI,
             responses_profile: ResponsesProfile::OPENAI,
             messages_profile: MessagesProfile::ANTHROPIC,
+            gemini_profile: GeminiProfile::GOOGLE_AI_STUDIO,
             left_out: Vec::new(),
             adapted: Vec::new(),
             cache_breakpoints: None,
@@ -216,6 +234,13 @@ impl EgressCtx {
     #[must_use]
     pub fn with_responses_profile(mut self, profile: ResponsesProfile) -> Self {
         self.responses_profile = profile;
+        self
+    }
+
+    /// Sends Gemini requests to the models path and with the wire switches of `profile`.
+    #[must_use]
+    pub fn with_gemini_profile(mut self, profile: GeminiProfile) -> Self {
+        self.gemini_profile = profile;
         self
     }
 

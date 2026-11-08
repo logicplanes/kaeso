@@ -1,0 +1,4913 @@
+---
+source: crates/kaeso-codecs/tests/cross_matrix.rs
+expression: outcomes
+---
+{
+  "all-params-sdk": {
+    "message": "`audio` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "audio"
+  },
+  "audio-output": {
+    "message": "`modalities` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "modalities"
+  },
+  "content-array-all-roles": {
+    "message": "`refusal block` is not supported by Gemini API. Gemini has no refusal part. Remove the refusal from the conversation history or replace it with text.",
+    "param": "messages[1].blocks[0]",
+    "unsupported": "refusal block"
+  },
+  "explicit-nulls": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Say hi."
+            }
+          ],
+          "role": "user"
+        }
+      ]
+    },
+    "path": "/v1beta/models/gpt-5.5:generateContent"
+  },
+  "file-pdf-data": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "inlineData": {
+                "data": "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCAyMDAgMjAwXSAvQ29udGVudHMgNCAwIFIgL1Jlc291cmNlcyA8PCAvRm9udCA8PCAvRjEgNSAwIFIgPj4gPj4gPj4KZW5kb2JqCjQgMCBvYmoKPDwgL0xlbmd0aCA0MCA+PgpzdHJlYW0KQlQgL0YxIDI0IFRmIDQwIDEwMCBUZCAoSGVsbG8gUERGKSBUaiBFVAplbmRzdHJlYW0KZW5kb2JqCjUgMCBvYmoKPDwgL1R5cGUgL0ZvbnQgL1N1YnR5cGUgL1R5cGUxIC9CYXNlRm9udCAvSGVsdmV0aWNhID4+CmVuZG9iagp4cmVmCjAgNgowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMDkgMDAwMDAgbiAKMDAwMDAwMDA1OCAwMDAwMCBuIAowMDAwMDAwMTE1IDAwMDAwIG4gCjAwMDAwMDAyNDEgMDAwMDAgbiAKMDAwMDAwMDMzMSAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDYgL1Jvb3QgMSAwIFIgPj4Kc3RhcnR4cmVmCjQwMQolJUVPRgo=",
+                "mimeType": "application/pdf"
+              }
+            },
+            {
+              "text": "What does this document say?"
+            }
+          ],
+          "role": "user"
+        }
+      ]
+    },
+    "path": "/v1beta/models/gpt-5.5:generateContent"
+  },
+  "file-pdf-file-id": {
+    "message": "`file id` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Provider file ids (here `file-6F2ksmvXxt4VdoqmHRw6kL`) only work with the provider that issued them. Send the file inline (base64 or URL) instead.",
+    "param": "messages[0].blocks[0]",
+    "unsupported": "file id"
+  },
+  "functions-tool-choice-auto-doc": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What is the weather like in Boston today?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "toolConfig": {
+        "functionCallingConfig": {
+          "mode": "AUTO"
+        }
+      },
+      "tools": [
+        {
+          "functionDeclarations": [
+            {
+              "description": "Get the current weather in a given location",
+              "name": "get_current_weather",
+              "parametersJsonSchema": {
+                "properties": {
+                  "location": {
+                    "description": "The city and state, e.g. San Francisco, CA",
+                    "type": "string"
+                  },
+                  "unit": {
+                    "enum": [
+                      "celsius",
+                      "fahrenheit"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "location"
+                ],
+                "type": "object"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "path": "/v1beta/models/gpt-6-astra:generateContent"
+  },
+  "grok-cli-model-id": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "<user_query>\nRun echo ok\n</user_query>"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "parts": [
+            {
+              "text": ""
+            },
+            {
+              "functionCall": {
+                "args": {
+                  "command": "echo ok",
+                  "description": "Print ok."
+                },
+                "id": "call_kaeso_1",
+                "name": "run_terminal_command"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        {
+          "parts": [
+            {
+              "functionResponse": {
+                "id": "call_kaeso_1",
+                "name": "run_terminal_command",
+                "response": {
+                  "output": "ok\n"
+                }
+              }
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "parts": [
+            {
+              "text": "ok"
+            }
+          ],
+          "role": "model"
+        },
+        {
+          "parts": [
+            {
+              "text": "<user_query>\nsay ok\n</user_query>"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "You are Grok released by xAI. You are an autonomous agent that completes software engineering tasks."
+          }
+        ]
+      },
+      "tools": [
+        {
+          "functionDeclarations": [
+            {
+              "description": "Run a bash command and return its output.",
+              "name": "run_terminal_command",
+              "parametersJsonSchema": {
+                "$schema": "http://json-schema.org/draft-07/schema#",
+                "properties": {
+                  "block_until_ms": {
+                    "description": "How long to wait for the command, in milliseconds, before moving it to the background. The default is 30000 (30 seconds). The maximum is 36000000. 0 starts the command in the background immediately. The wait includes shell startup.",
+                    "format": "uint64",
+                    "minimum": 0,
+                    "type": [
+                      "integer",
+                      "null"
+                    ]
+                  },
+                  "command": {
+                    "description": "The bash command to run.",
+                    "type": "string"
+                  },
+                  "description": {
+                    "description": "One short sentence that says what this command does and why you run it.",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "command",
+                  "description"
+                ],
+                "type": "object"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "path": "/v1beta/models/claude-haiku-5-5:streamGenerateContent?alt=sse"
+  },
+  "grok-cli-reasoning-content": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "<user_query>\nRun echo ok\n</user_query>"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "parts": [
+            {
+              "text": ""
+            },
+            {
+              "functionCall": {
+                "args": {
+                  "command": "echo ok",
+                  "description": "Print ok."
+                },
+                "id": "call_kaeso_1",
+                "name": "run_terminal_command"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        {
+          "parts": [
+            {
+              "functionResponse": {
+                "id": "call_kaeso_1",
+                "name": "run_terminal_command",
+                "response": {
+                  "output": "exit: 0\nok\n"
+                }
+              }
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "parts": [
+            {
+              "text": "ok"
+            }
+          ],
+          "role": "model"
+        },
+        {
+          "parts": [
+            {
+              "text": "<user_query>\nsay ok\n</user_query>"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "You are Grok released by xAI. You are an autonomous agent that completes software engineering tasks."
+          }
+        ]
+      },
+      "tools": [
+        {
+          "functionDeclarations": [
+            {
+              "description": "Run a bash command and return its output.",
+              "name": "run_terminal_command",
+              "parametersJsonSchema": {
+                "$schema": "http://json-schema.org/draft-07/schema#",
+                "properties": {
+                  "command": {
+                    "description": "The bash command to run.",
+                    "type": "string"
+                  },
+                  "description": {
+                    "description": "One short sentence that says what this command does and why you run it.",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "command",
+                  "description"
+                ],
+                "type": "object"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "path": "/v1beta/models/mistral-large-4:streamGenerateContent?alt=sse"
+  },
+  "identifiers-metadata-store": {
+    "message": "`metadata` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "metadata"
+  },
+  "image-base64-detail": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Compare these three images."
+            },
+            {
+              "inlineData": {
+                "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+                "mimeType": "image/png"
+              }
+            },
+            {
+              "fileData": {
+                "fileUri": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Gfp-wisconsin-madison-the-nature-boardwalk.jpg/2560px-Gfp-wisconsin-madison-the-nature-boardwalk.jpg",
+                "mimeType": "image/jpeg"
+              }
+            },
+            {
+              "inlineData": {
+                "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+                "mimeType": "image/png"
+              }
+            }
+          ],
+          "role": "user"
+        }
+      ]
+    },
+    "path": "/v1beta/models/gpt-5.5:generateContent"
+  },
+  "image-url-doc": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What is in this image?"
+            },
+            {
+              "fileData": {
+                "fileUri": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Gfp-wisconsin-madison-the-nature-boardwalk.jpg/2560px-Gfp-wisconsin-madison-the-nature-boardwalk.jpg",
+                "mimeType": "image/jpeg"
+              }
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 300
+      }
+    },
+    "path": "/v1beta/models/gpt-6-astra:generateContent"
+  },
+  "input-audio-unsupported": {
+    "rejected_by_source": "input_audio"
+  },
+  "json-object": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What is the capital of France?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "responseMimeType": "application/json"
+      },
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "Reply in JSON with the keys \"answer\" and \"confidence\"."
+          }
+        ]
+      }
+    },
+    "path": "/v1beta/models/gpt-4.1-mini:generateContent"
+  },
+  "json-schema": {
+    "message": "`output schema description` is not supported by Gemini API. Gemini structured output takes a schema only. Move the description into the prompt or the schema's own `description`.",
+    "param": "response_format",
+    "unsupported": "output schema description"
+  },
+  "legacy-functions": {
+    "message": "`functions` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "functions"
+  },
+  "logit-bias": {
+    "message": "`logit_bias` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "logit_bias"
+  },
+  "logprobs-top-logprobs-doc": {
+    "message": "`logprobs` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "logprobs"
+  },
+  "max-completion-tokens-legacy-null": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Write a haiku about the sea."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 10
+      }
+    },
+    "path": "/v1beta/models/gpt-4.1:generateContent"
+  },
+  "max-tokens-length": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Write a haiku about the sea, then explain it line by line."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 16
+      }
+    },
+    "path": "/v1beta/models/gpt-4.1:generateContent"
+  },
+  "max-tokens-null": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Write a haiku about the sea."
+            }
+          ],
+          "role": "user"
+        }
+      ]
+    },
+    "path": "/v1beta/models/gpt-4.1:generateContent"
+  },
+  "moderation": {
+    "message": "`moderation` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "moderation"
+  },
+  "n-2": {
+    "rejected_by_source": "n"
+  },
+  "plain-developer-string": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Hello!"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "You are a helpful assistant."
+          }
+        ]
+      }
+    },
+    "path": "/v1beta/models/gpt-6-astra:generateContent"
+  },
+  "prediction-doc": {
+    "message": "`prediction` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "prediction"
+  },
+  "prompt-cache-breakpoint": {
+    "message": "`prompt_cache_options` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "prompt_cache_options"
+  },
+  "providers/alibaba/allowed-tools": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/assistant-prefill": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/audio-fields": {
+    "message": "`modalities` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "modalities"
+  },
+  "providers/alibaba/basic": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/developer-role": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/embeddings-model": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Hi"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 10
+      }
+    },
+    "path": "/v1beta/models/text-embedding-v4:generateContent"
+  },
+  "providers/alibaba/enable-thinking": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/free-tier-exhausted": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Hi"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 10
+      }
+    },
+    "path": "/v1beta/models/qwen-plus:generateContent"
+  },
+  "providers/alibaba/functions-field": {
+    "message": "`functions` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "functions"
+  },
+  "providers/alibaba/image": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/image-too-small": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/invalid-api-key": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Hi"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 10
+      }
+    },
+    "path": "/v1beta/models/qwen3.7-flash:generateContent"
+  },
+  "providers/alibaba/logit-bias-field": {
+    "message": "`logit_bias` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "logit_bias"
+  },
+  "providers/alibaba/logprobs": {
+    "message": "`logprobs` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "logprobs"
+  },
+  "providers/alibaba/max-completion-tokens-thinking": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/max-tokens-beyond-reasoning": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/output-limit": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/prediction-field": {
+    "message": "`prediction` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "prediction"
+  },
+  "providers/alibaba/reasoning-effort": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/reasoning-effort-alone": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What is 17 times 23? Answer with the number."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 2000,
+        "thinkingConfig": {
+          "thinkingLevel": "HIGH"
+        }
+      }
+    },
+    "path": "/v1beta/models/qwen-flash:generateContent"
+  },
+  "providers/alibaba/reasoning-effort-max": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/reasoning-sent-back": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/sampling": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/store-metadata-fields": {
+    "message": "`store` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "store"
+  },
+  "providers/alibaba/stream": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/stream-only-model": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What is 17 times 23? Answer with the number."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 300
+      }
+    },
+    "path": "/v1beta/models/qwq-plus-2025-03-05:generateContent"
+  },
+  "providers/alibaba/structured-output": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/thinking": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/thinking-budget-kimi": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/thinking-budget-over-limit": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/thinking-budget-zero": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/thinking-only-model-off": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/thinking-stream": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/thinking-tools": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/tool-result": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/tools": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/tools-named": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/tools-required": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/tools-stream": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/unknown-model": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Hi"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 10
+      }
+    },
+    "path": "/v1beta/models/kaeso-example-no-such-model:generateContent"
+  },
+  "providers/alibaba/user-hints": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/web-search-options-field": {
+    "message": "`web_search_options` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "web_search_options"
+  },
+  "providers/cerebras/assistant-refusal": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Hi"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "parts": [
+            {
+              "text": "Hello!"
+            }
+          ],
+          "role": "model"
+        },
+        {
+          "parts": [
+            {
+              "text": "Say bye."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 200,
+        "thinkingConfig": {
+          "thinkingLevel": "LOW"
+        }
+      }
+    },
+    "path": "/v1beta/models/gpt-oss-120b:generateContent"
+  },
+  "providers/cerebras/basic": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What is the capital of France?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 300,
+        "thinkingConfig": {
+          "thinkingLevel": "LOW"
+        }
+      },
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "Answer in one short sentence."
+          }
+        ]
+      }
+    },
+    "path": "/v1beta/models/gpt-oss-120b:generateContent"
+  },
+  "providers/cerebras/developer-role-qwen": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What is the capital of France?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 100,
+        "thinkingConfig": {
+          "thinkingBudget": 0
+        }
+      },
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "Answer in one short sentence."
+          }
+        ]
+      }
+    },
+    "path": "/v1beta/models/qwen-3.8-27b:generateContent"
+  },
+  "providers/cerebras/image": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What colour is this image? Answer with one word."
+            },
+            {
+              "inlineData": {
+                "data": "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAAKklEQVR4nGO4IyJCU8QwasGoBaMWjFowasGoBaMWjFowasGoBaMWDBULAJ3LED3QqzauAAAAAElFTkSuQmCC",
+                "mimeType": "image/png"
+              }
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 20,
+        "thinkingConfig": {
+          "thinkingBudget": 0
+        }
+      }
+    },
+    "path": "/v1beta/models/qwen-3.8-27b:generateContent"
+  },
+  "providers/cerebras/image-gpt-oss": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What colour is this image? Answer with one word."
+            },
+            {
+              "inlineData": {
+                "data": "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAAKklEQVR4nGO4IyJCU8QwasGoBaMWjFowasGoBaMWjFowasGoBaMWDBULAJ3LED3QqzauAAAAAElFTkSuQmCC",
+                "mimeType": "image/png"
+              }
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 100,
+        "thinkingConfig": {
+          "thinkingLevel": "LOW"
+        }
+      }
+    },
+    "path": "/v1beta/models/gpt-oss-120b:generateContent"
+  },
+  "providers/cerebras/image-url": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What is in this image?"
+            },
+            {
+              "fileData": {
+                "fileUri": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Gfp-wisconsin-madison-the-nature-boardwalk.jpg/320px-Gfp-wisconsin-madison-the-nature-boardwalk.jpg",
+                "mimeType": "image/jpeg"
+              }
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 50,
+        "thinkingConfig": {
+          "thinkingBudget": 0
+        }
+      }
+    },
+    "path": "/v1beta/models/qwen-3.8-27b:generateContent"
+  },
+  "providers/cerebras/invalid-api-key": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Say hello in two words."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 100,
+        "thinkingConfig": {
+          "thinkingLevel": "LOW"
+        }
+      }
+    },
+    "path": "/v1beta/models/gpt-oss-120b:generateContent"
+  },
+  "providers/cerebras/logit-bias-honoured": {
+    "message": "`logit_bias` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "logit_bias"
+  },
+  "providers/cerebras/logprobs": {
+    "message": "`logprobs` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "logprobs"
+  },
+  "providers/cerebras/max-completion-tokens-reasoning": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Explain why the sky is blue."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 20,
+        "thinkingConfig": {
+          "thinkingLevel": "MEDIUM"
+        }
+      }
+    },
+    "path": "/v1beta/models/gpt-oss-120b:generateContent"
+  },
+  "providers/cerebras/metadata-field": {
+    "message": "`metadata` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "metadata"
+  },
+  "providers/cerebras/n-above-one": {
+    "rejected_by_source": "n"
+  },
+  "providers/cerebras/prefill": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Name three colours as a numbered list."
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "parts": [
+            {
+              "text": "1. Red\n2."
+            }
+          ],
+          "role": "model"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 300,
+        "thinkingConfig": {
+          "thinkingLevel": "LOW"
+        }
+      }
+    },
+    "path": "/v1beta/models/gpt-oss-120b:generateContent"
+  },
+  "providers/cerebras/rate-limited": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Say hello in two words."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "thinkingConfig": {
+          "thinkingLevel": "LOW"
+        }
+      }
+    },
+    "path": "/v1beta/models/gpt-oss-120b:generateContent"
+  },
+  "providers/cerebras/reasoning": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What is 17 times 23? Answer with the number."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1500
+      }
+    },
+    "path": "/v1beta/models/qwen-3.8-27b:generateContent"
+  },
+  "providers/cerebras/reasoning-content-sent-back": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Pick a number from 1 to 10."
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "parts": [
+            {
+              "text": "7"
+            }
+          ],
+          "role": "model"
+        },
+        {
+          "parts": [
+            {
+              "text": "Why that one? Answer in one sentence."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 300,
+        "thinkingConfig": {
+          "thinkingLevel": "LOW"
+        }
+      }
+    },
+    "path": "/v1beta/models/gpt-oss-120b:generateContent"
+  },
+  "providers/cerebras/reasoning-effort-minimal": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What is the capital of France?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 100,
+        "thinkingConfig": {
+          "thinkingLevel": "MINIMAL"
+        }
+      }
+    },
+    "path": "/v1beta/models/gpt-oss-120b:generateContent"
+  },
+  "providers/cerebras/reasoning-effort-none": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What is 17 times 23? Answer with the number."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 100,
+        "thinkingConfig": {
+          "thinkingBudget": 0
+        }
+      }
+    },
+    "path": "/v1beta/models/qwen-3.8-27b:generateContent"
+  },
+  "providers/cerebras/reasoning-effort-none-gpt-oss": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What is the capital of France?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 100,
+        "thinkingConfig": {
+          "thinkingBudget": 0
+        }
+      }
+    },
+    "path": "/v1beta/models/gpt-oss-120b:generateContent"
+  },
+  "providers/cerebras/reasoning-format-hidden": {
+    "message": "`reasoning_format` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "reasoning_format"
+  },
+  "providers/cerebras/reasoning-format-raw": {
+    "message": "`reasoning_format` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "reasoning_format"
+  },
+  "providers/cerebras/reasoning-sent-back": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Pick a number from 1 to 10."
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "parts": [
+            {
+              "text": "7"
+            }
+          ],
+          "role": "model"
+        },
+        {
+          "parts": [
+            {
+              "text": "Why that one? Answer in one sentence."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 300,
+        "thinkingConfig": {
+          "thinkingLevel": "LOW"
+        }
+      }
+    },
+    "path": "/v1beta/models/gpt-oss-120b:generateContent"
+  },
+  "providers/cerebras/safety-identifier-field": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Say hello in two words."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 100,
+        "thinkingConfig": {
+          "thinkingLevel": "LOW"
+        }
+      }
+    },
+    "path": "/v1beta/models/gpt-oss-120b:generateContent"
+  },
+  "providers/cerebras/sampling": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Count from 1 to 10, separated by spaces."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "frequencyPenalty": 0.1,
+        "maxOutputTokens": 300,
+        "presencePenalty": 0.1,
+        "seed": 42,
+        "stopSequences": [
+          "7"
+        ],
+        "temperature": 0.2,
+        "thinkingConfig": {
+          "thinkingLevel": "LOW"
+        },
+        "topP": 0.9
+      }
+    },
+    "path": "/v1beta/models/gpt-oss-120b:generateContent"
+  },
+  "providers/cerebras/store-field": {
+    "message": "`store` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "store"
+  },
+  "providers/cerebras/stream": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Hello!"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 300,
+        "thinkingConfig": {
+          "thinkingLevel": "LOW"
+        }
+      },
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "You are a helpful assistant."
+          }
+        ]
+      }
+    },
+    "path": "/v1beta/models/gpt-oss-120b:streamGenerateContent?alt=sse"
+  },
+  "providers/cerebras/stream-json-object": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Give a JSON object with one key, a, set to 1."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 300,
+        "responseMimeType": "application/json",
+        "thinkingConfig": {
+          "thinkingLevel": "LOW"
+        }
+      }
+    },
+    "path": "/v1beta/models/gpt-oss-120b:streamGenerateContent?alt=sse"
+  },
+  "providers/cerebras/stream-reasoning": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What is 17 times 23? Answer with the number."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1500
+      }
+    },
+    "path": "/v1beta/models/qwen-3.8-27b:streamGenerateContent?alt=sse"
+  },
+  "providers/cerebras/stream-tools": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What's the weather in Paris right now? Use Celsius."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 400,
+        "thinkingConfig": {
+          "thinkingLevel": "LOW"
+        }
+      },
+      "tools": [
+        {
+          "functionDeclarations": [
+            {
+              "description": "Get the current weather for a city.",
+              "name": "get_weather",
+              "parametersJsonSchema": {
+                "additionalProperties": false,
+                "properties": {
+                  "city": {
+                    "description": "City name, such as Paris",
+                    "type": "string"
+                  },
+                  "unit": {
+                    "enum": [
+                      "celsius",
+                      "fahrenheit"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "city"
+                ],
+                "type": "object"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "path": "/v1beta/models/gpt-oss-120b:streamGenerateContent?alt=sse"
+  },
+  "providers/cerebras/stream-usage": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Hello!"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 100,
+        "thinkingConfig": {
+          "thinkingBudget": 0
+        }
+      },
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "You are a helpful assistant."
+          }
+        ]
+      }
+    },
+    "path": "/v1beta/models/qwen-3.8-27b:streamGenerateContent?alt=sse"
+  },
+  "providers/cerebras/structured-output": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Alice and Bob are going to a science fair on 2026-10-16."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 600,
+        "responseJsonSchema": {
+          "additionalProperties": false,
+          "properties": {
+            "date": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "participants": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "name",
+            "date",
+            "participants"
+          ],
+          "type": "object"
+        },
+        "responseMimeType": "application/json",
+        "thinkingConfig": {
+          "thinkingLevel": "LOW"
+        }
+      },
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "Extract the event information."
+          }
+        ]
+      }
+    },
+    "path": "/v1beta/models/gpt-oss-120b:generateContent"
+  },
+  "providers/cerebras/system-mid-conversation": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Pick a colour."
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "parts": [
+            {
+              "text": "Blue."
+            }
+          ],
+          "role": "model"
+        },
+        {
+          "parts": [
+            {
+              "text": "From now on, answer in French."
+            },
+            {
+              "text": "Pick another one."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 200,
+        "thinkingConfig": {
+          "thinkingLevel": "LOW"
+        }
+      },
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "Answer in one short sentence."
+          }
+        ]
+      }
+    },
+    "path": "/v1beta/models/gpt-oss-120b:generateContent"
+  },
+  "providers/cerebras/system-mid-conversation-qwen": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Pick a colour."
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "parts": [
+            {
+              "text": "Blue."
+            }
+          ],
+          "role": "model"
+        },
+        {
+          "parts": [
+            {
+              "text": "From now on, answer in French."
+            },
+            {
+              "text": "Pick another one."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 200,
+        "thinkingConfig": {
+          "thinkingBudget": 0
+        }
+      },
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "Answer in one short sentence."
+          }
+        ]
+      }
+    },
+    "path": "/v1beta/models/qwen-3.8-27b:generateContent"
+  },
+  "providers/cerebras/tool-without-parameters": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What time is it? Use the tool."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 300,
+        "thinkingConfig": {
+          "thinkingLevel": "LOW"
+        }
+      },
+      "tools": [
+        {
+          "functionDeclarations": [
+            {
+              "description": "Get the current time.",
+              "name": "get_time"
+            }
+          ]
+        }
+      ]
+    },
+    "path": "/v1beta/models/gpt-oss-120b:generateContent"
+  },
+  "providers/cerebras/tools": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What's the weather in Paris right now? Use Celsius."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 400,
+        "thinkingConfig": {
+          "thinkingLevel": "LOW"
+        }
+      },
+      "tools": [
+        {
+          "functionDeclarations": [
+            {
+              "description": "Get the current weather for a city.",
+              "name": "get_weather",
+              "parametersJsonSchema": {
+                "additionalProperties": false,
+                "properties": {
+                  "city": {
+                    "description": "City name, such as Paris",
+                    "type": "string"
+                  },
+                  "unit": {
+                    "enum": [
+                      "celsius",
+                      "fahrenheit"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "city"
+                ],
+                "type": "object"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "path": "/v1beta/models/gpt-oss-120b:generateContent"
+  },
+  "providers/cerebras/tools-with-response-format": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What's the weather in Paris right now?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 300,
+        "responseMimeType": "application/json",
+        "thinkingConfig": {
+          "thinkingLevel": "LOW"
+        }
+      },
+      "tools": [
+        {
+          "functionDeclarations": [
+            {
+              "description": "Get the current weather for a city.",
+              "name": "get_weather",
+              "parametersJsonSchema": {
+                "additionalProperties": false,
+                "properties": {
+                  "city": {
+                    "description": "City name, such as Paris",
+                    "type": "string"
+                  },
+                  "unit": {
+                    "enum": [
+                      "celsius",
+                      "fahrenheit"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "city"
+                ],
+                "type": "object"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "path": "/v1beta/models/gpt-oss-120b:generateContent"
+  },
+  "providers/cerebras/unknown-model": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Say hello in two words."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 100
+      }
+    },
+    "path": "/v1beta/models/no-such-model:generateContent"
+  },
+  "providers/cerebras/user-hints": {
+    "message": "`service_tier` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "service_tier"
+  },
+  "providers/cerebras/verbosity-field": {
+    "message": "`verbosity` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "verbosity"
+  },
+  "providers/cohere/assistant-prefill": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Count from 1 to 5, separated by commas."
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "parts": [
+            {
+              "text": "1, 2,"
+            }
+          ],
+          "role": "model"
+        }
+      ]
+    },
+    "path": "/v1beta/models/command-a-03-2025:generateContent"
+  },
+  "providers/cohere/basic": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What is the capital of France?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 64
+      },
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "You are a helpful assistant. Answer in one short sentence."
+          }
+        ]
+      }
+    },
+    "path": "/v1beta/models/command-a-03-2025:generateContent"
+  },
+  "providers/cohere/developer-role": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What is the capital of France?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 64
+      },
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "Answer in one short sentence."
+          }
+        ]
+      }
+    },
+    "path": "/v1beta/models/command-a-03-2025:generateContent"
+  },
+  "providers/cohere/file-part": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Summarise the file."
+            },
+            {
+              "inlineData": {
+                "data": "JVBERi0xLjQK",
+                "mimeType": "application/pdf"
+              }
+            }
+          ],
+          "role": "user"
+        }
+      ]
+    },
+    "path": "/v1beta/models/command-a-03-2025:generateContent"
+  },
+  "providers/cohere/functions-field": {
+    "message": "`functions` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "functions"
+  },
+  "providers/cohere/image": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What colour is this image? Answer in one word."
+            },
+            {
+              "inlineData": {
+                "data": "iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAEklEQVR4nGP4z8CAFWEXHbQSACj/P8Fu7N9hAAAAAElFTkSuQmCC",
+                "mimeType": "image/png"
+              }
+            }
+          ],
+          "role": "user"
+        }
+      ]
+    },
+    "path": "/v1beta/models/command-a-vision-07-2025:generateContent"
+  },
+  "providers/cohere/image-on-text-model": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What colour is this image?"
+            },
+            {
+              "inlineData": {
+                "data": "iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAEklEQVR4nGP4z8CAFWEXHbQSACj/P8Fu7N9hAAAAAElFTkSuQmCC",
+                "mimeType": "image/png"
+              }
+            }
+          ],
+          "role": "user"
+        }
+      ]
+    },
+    "path": "/v1beta/models/command-a-03-2025:generateContent"
+  },
+  "providers/cohere/invalid-api-key": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Hello"
+            }
+          ],
+          "role": "user"
+        }
+      ]
+    },
+    "path": "/v1beta/models/command-a-03-2025:generateContent"
+  },
+  "providers/cohere/logit-bias-field": {
+    "message": "`logit_bias` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "logit_bias"
+  },
+  "providers/cohere/max-tokens-over-limit": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Hello"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 9999999
+      }
+    },
+    "path": "/v1beta/models/command-a-03-2025:generateContent"
+  },
+  "providers/cohere/metadata-field": {
+    "message": "`metadata` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "metadata"
+  },
+  "providers/cohere/modalities-field": {
+    "message": "`modalities` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "modalities"
+  },
+  "providers/cohere/parallel-tool-calls-field": {
+    "message": "`parallel_tool_calls: false` is not supported by Gemini API. Gemini can't be told to call one function at a time; remove `parallel_tool_calls`.",
+    "param": "parallel_tool_calls",
+    "unsupported": "`parallel_tool_calls: false`"
+  },
+  "providers/cohere/penalties-together": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Hello"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "frequencyPenalty": 0.5,
+        "presencePenalty": 0.5
+      }
+    },
+    "path": "/v1beta/models/command-a-03-2025:generateContent"
+  },
+  "providers/cohere/prediction-field": {
+    "message": "`prediction` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "prediction"
+  },
+  "providers/cohere/reasoning": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What is 17 times 23? Answer with the number."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 2048,
+        "thinkingConfig": {
+          "thinkingLevel": "HIGH"
+        }
+      }
+    },
+    "path": "/v1beta/models/command-a-reasoning-08-2025:generateContent"
+  },
+  "providers/cohere/reasoning-effort-medium": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Hello"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "thinkingConfig": {
+          "thinkingLevel": "MEDIUM"
+        }
+      }
+    },
+    "path": "/v1beta/models/command-a-reasoning-08-2025:generateContent"
+  },
+  "providers/cohere/reasoning-off": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What is 2 plus 3? Answer with the number."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "thinkingConfig": {
+          "thinkingBudget": 0
+        }
+      }
+    },
+    "path": "/v1beta/models/command-a-reasoning-08-2025:generateContent"
+  },
+  "providers/cohere/reasoning-stream": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What is 2 plus 3? Answer with the number."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1024,
+        "thinkingConfig": {
+          "thinkingLevel": "HIGH"
+        }
+      }
+    },
+    "path": "/v1beta/models/command-a-reasoning-08-2025:streamGenerateContent?alt=sse"
+  },
+  "providers/cohere/sampling": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Count from 1 to 9, separated by commas."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "frequencyPenalty": 0.2,
+        "seed": 7,
+        "stopSequences": [
+          "6"
+        ],
+        "temperature": 0.3,
+        "topP": 0.9
+      }
+    },
+    "path": "/v1beta/models/command-a-03-2025:generateContent"
+  },
+  "providers/cohere/service-tier-field": {
+    "message": "`service_tier` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "service_tier"
+  },
+  "providers/cohere/stop-string": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Count from 1 to 9, separated by commas."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "stopSequences": [
+          "6"
+        ]
+      }
+    },
+    "path": "/v1beta/models/command-a-03-2025:generateContent"
+  },
+  "providers/cohere/store-field": {
+    "message": "`store` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "store"
+  },
+  "providers/cohere/stream": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What is the capital of France?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 64
+      },
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "You are a helpful assistant. Answer in one short sentence."
+          }
+        ]
+      }
+    },
+    "path": "/v1beta/models/command-a-03-2025:streamGenerateContent?alt=sse"
+  },
+  "providers/cohere/stream-no-options": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What is the capital of France?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 64
+      },
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "You are a helpful assistant. Answer in one short sentence."
+          }
+        ]
+      }
+    },
+    "path": "/v1beta/models/command-a-03-2025:streamGenerateContent?alt=sse"
+  },
+  "providers/cohere/structured-output": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Name one city and its country."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "responseJsonSchema": {
+          "additionalProperties": false,
+          "properties": {
+            "city": {
+              "type": "string"
+            },
+            "country": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "city",
+            "country"
+          ],
+          "type": "object"
+        },
+        "responseMimeType": "application/json"
+      }
+    },
+    "path": "/v1beta/models/command-a-03-2025:generateContent"
+  },
+  "providers/cohere/tool-result": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What is the weather in Paris right now?"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "parts": [
+            {
+              "functionCall": {
+                "args": {
+                  "city": "Paris"
+                },
+                "id": "get_weather_0example",
+                "name": "get_weather"
+              },
+              "thoughtSignature": "skip_thought_signature_validator"
+            }
+          ],
+          "role": "model"
+        },
+        {
+          "parts": [
+            {
+              "functionResponse": {
+                "id": "get_weather_0example",
+                "name": "get_weather",
+                "response": {
+                  "output": "18 °C and sunny"
+                }
+              }
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "tools": [
+        {
+          "functionDeclarations": [
+            {
+              "description": "Get the current weather for a city.",
+              "name": "get_weather",
+              "parametersJsonSchema": {
+                "properties": {
+                  "city": {
+                    "description": "The city name.",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "city"
+                ],
+                "type": "object"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "path": "/v1beta/models/command-a-03-2025:generateContent"
+  },
+  "providers/cohere/tools": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What is the weather in Paris right now?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "toolConfig": {
+        "functionCallingConfig": {
+          "mode": "AUTO"
+        }
+      },
+      "tools": [
+        {
+          "functionDeclarations": [
+            {
+              "description": "Get the current weather for a city.",
+              "name": "get_weather",
+              "parametersJsonSchema": {
+                "properties": {
+                  "city": {
+                    "description": "The city name.",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "city"
+                ],
+                "type": "object"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "path": "/v1beta/models/command-a-03-2025:generateContent"
+  },
+  "providers/cohere/tools-required": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What is the weather in Paris right now?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "toolConfig": {
+        "functionCallingConfig": {
+          "mode": "ANY"
+        }
+      },
+      "tools": [
+        {
+          "functionDeclarations": [
+            {
+              "description": "Get the current weather for a city.",
+              "name": "get_weather",
+              "parametersJsonSchema": {
+                "properties": {
+                  "city": {
+                    "description": "The city name.",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "city"
+                ],
+                "type": "object"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "path": "/v1beta/models/command-a-03-2025:generateContent"
+  },
+  "providers/cohere/tools-stream": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What is the weather in Paris right now?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "tools": [
+        {
+          "functionDeclarations": [
+            {
+              "description": "Get the current weather for a city.",
+              "name": "get_weather",
+              "parametersJsonSchema": {
+                "properties": {
+                  "city": {
+                    "description": "The city name.",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "city"
+                ],
+                "type": "object"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "path": "/v1beta/models/command-a-03-2025:streamGenerateContent?alt=sse"
+  },
+  "providers/cohere/top-logprobs-field": {
+    "message": "`logprobs` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "logprobs"
+  },
+  "providers/cohere/unknown-model": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Hello"
+            }
+          ],
+          "role": "user"
+        }
+      ]
+    },
+    "path": "/v1beta/models/kaeso-example-no-such-model:generateContent"
+  },
+  "providers/cohere/web-search-options-field": {
+    "message": "`web_search_options` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "web_search_options"
+  },
+  "providers/deepseek/authentication-fails": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Hello!"
+            }
+          ],
+          "role": "user"
+        }
+      ]
+    },
+    "path": "/v1beta/models/deepseek-flash:generateContent"
+  },
+  "providers/deepseek/json-object-system": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/deepseek/max-completion-tokens-limit": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Count from one to forty in English words, separated by commas."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 20
+      }
+    },
+    "path": "/v1beta/models/deepseek-flash:generateContent"
+  },
+  "providers/deepseek/missing-model": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Hello!"
+            }
+          ],
+          "role": "user"
+        }
+      ]
+    },
+    "path": "/v1beta/models/deepseek-nonexistent:generateContent"
+  },
+  "providers/deepseek/pro-tool-turn-without-reasoning-content": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/deepseek/prompt-cache-hit": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/deepseek/reasoning-content-sent-back": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/deepseek/thinking-reasoning-content": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/deepseek/thinking-stream": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/deepseek/thinking-tool-choice-required": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/deepseek/thinking-tools-auto": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/deepseek/thinking-tools-stream": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/deepseek/tool-turn-without-reasoning-content": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/groq/include-reasoning-false": {
+    "message": "`include_reasoning` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "include_reasoning"
+  },
+  "providers/groq/model-not-found": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Hello!"
+            }
+          ],
+          "role": "user"
+        }
+      ]
+    },
+    "path": "/v1beta/models/llama-3.3-70b-versatile:generateContent"
+  },
+  "providers/groq/n-above-one": {
+    "rejected_by_source": "n"
+  },
+  "providers/groq/reasoning-format-hidden": {
+    "message": "`reasoning_format` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "reasoning_format"
+  },
+  "providers/groq/reasoning-format-parsed": {
+    "message": "`reasoning_format` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "reasoning_format"
+  },
+  "providers/groq/reasoning-format-raw": {
+    "message": "`reasoning_format` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "reasoning_format"
+  },
+  "providers/groq/reasoning-format-with-include-reasoning": {
+    "message": "`reasoning_format` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "reasoning_format"
+  },
+  "providers/groq/stream-reasoning-parsed": {
+    "message": "`reasoning_format` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "reasoning_format"
+  },
+  "providers/groq/stream-tools-system-role": {
+    "message": "`parallel_tool_calls: false` is not supported by Gemini API. Gemini can't be told to call one function at a time; remove `parallel_tool_calls`.",
+    "param": "parallel_tool_calls",
+    "unsupported": "`parallel_tool_calls: false`"
+  },
+  "providers/groq/tools-system-role": {
+    "message": "`parallel_tool_calls: false` is not supported by Gemini API. Gemini can't be told to call one function at a time; remove `parallel_tool_calls`.",
+    "param": "parallel_tool_calls",
+    "unsupported": "`parallel_tool_calls: false`"
+  },
+  "providers/mistral/assistant-prefill": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Name a colour."
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "parts": [
+            {
+              "text": "The colour is"
+            }
+          ],
+          "role": "model"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 30
+      }
+    },
+    "path": "/v1beta/models/mistral-small-latest:generateContent"
+  },
+  "providers/mistral/assistant-prefix": {
+    "message": "`messages[1].prefix` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": "messages[1]",
+    "unsupported": "messages[1].prefix"
+  },
+  "providers/mistral/assistant-refusal-field": {
+    "message": "`refusal block` is not supported by Gemini API. Gemini has no refusal part. Remove the refusal from the conversation history or replace it with text.",
+    "param": "messages[1].blocks[0]",
+    "unsupported": "refusal block"
+  },
+  "providers/mistral/audio-field": {
+    "message": "`audio` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "audio"
+  },
+  "providers/mistral/function-call-field": {
+    "message": "`function_call` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "function_call"
+  },
+  "providers/mistral/functions-field": {
+    "message": "`functions` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "functions"
+  },
+  "providers/mistral/greedy-sampling": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "say ok"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "temperature": 0.0
+      }
+    },
+    "path": "/v1beta/models/mistral-large-4:generateContent"
+  },
+  "providers/mistral/invalid-api-key": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Say hello."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 10
+      }
+    },
+    "path": "/v1beta/models/mistral-small-latest:generateContent"
+  },
+  "providers/mistral/magistral-medium": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Is 91 a prime number? Answer in one sentence."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1500
+      }
+    },
+    "path": "/v1beta/models/magistral-medium-latest:generateContent"
+  },
+  "providers/mistral/modalities-field": {
+    "message": "`modalities` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "modalities"
+  },
+  "providers/mistral/model-not-found": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Say hello."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 10
+      }
+    },
+    "path": "/v1beta/models/mistral-tiny-nonexistent:generateContent"
+  },
+  "providers/mistral/moderation-field": {
+    "message": "`moderation` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "moderation"
+  },
+  "providers/mistral/prompt-cache-options-field": {
+    "message": "`prompt_cache_options` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "prompt_cache_options"
+  },
+  "providers/mistral/prompt-cache-retention-field": {
+    "message": "`prompt_cache_retention` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "prompt_cache_retention"
+  },
+  "providers/mistral/prompt-mode-reasoning": {
+    "message": "`prompt_mode` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "prompt_mode"
+  },
+  "providers/mistral/reasoning-effort-high": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Is 91 a prime number? Answer in one sentence."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1500,
+        "thinkingConfig": {
+          "thinkingLevel": "HIGH"
+        }
+      }
+    },
+    "path": "/v1beta/models/mistral-small-latest:generateContent"
+  },
+  "providers/mistral/reasoning-effort-high-stream": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Is 91 a prime number? Answer in one sentence."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1500,
+        "thinkingConfig": {
+          "thinkingLevel": "HIGH"
+        }
+      }
+    },
+    "path": "/v1beta/models/mistral-small-latest:streamGenerateContent?alt=sse"
+  },
+  "providers/mistral/reasoning-then-tool-call": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What is the weather in Lisbon right now?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 200,
+        "thinkingConfig": {
+          "thinkingLevel": "HIGH"
+        }
+      },
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "You are a concise travel assistant. Use the tools for live data."
+          }
+        ]
+      },
+      "tools": [
+        {
+          "functionDeclarations": [
+            {
+              "description": "Current weather for a city.",
+              "name": "get_weather",
+              "parametersJsonSchema": {
+                "properties": {
+                  "city": {
+                    "description": "City name, such as Lisbon",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "city"
+                ],
+                "type": "object"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "path": "/v1beta/models/mistral-small-latest:streamGenerateContent?alt=sse"
+  },
+  "providers/mistral/safe-prompt-random-seed": {
+    "message": "`safe_prompt` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "safe_prompt"
+  },
+  "providers/mistral/safety-identifier-field": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Say hello."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 10
+      }
+    },
+    "path": "/v1beta/models/mistral-small-latest:generateContent"
+  },
+  "providers/mistral/store-field": {
+    "message": "`store` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "store"
+  },
+  "providers/mistral/stream-no-options": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Say hello."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 10
+      }
+    },
+    "path": "/v1beta/models/mistral-small-latest:streamGenerateContent?alt=sse"
+  },
+  "providers/mistral/stream-tool-call": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What is the weather in Lisbon right now?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 200
+      },
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "You are a concise travel assistant. Use the tools for live data."
+          }
+        ]
+      },
+      "tools": [
+        {
+          "functionDeclarations": [
+            {
+              "description": "Current weather for a city.",
+              "name": "get_weather",
+              "parametersJsonSchema": {
+                "properties": {
+                  "city": {
+                    "description": "City name, such as Lisbon",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "city"
+                ],
+                "type": "object"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "path": "/v1beta/models/mistral-small-latest:streamGenerateContent?alt=sse"
+  },
+  "providers/mistral/system-tool-choice-any": {
+    "message": "tool_choice `any` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Use `auto`, `none`, `required` or a single named tool instead.",
+    "param": "tool_choice",
+    "unsupported": "tool_choice `any`"
+  },
+  "providers/mistral/tool-result-named": {
+    "message": "`messages[2].blocks[0].name` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": "messages[2].blocks[0]",
+    "unsupported": "messages[2].blocks[0].name"
+  },
+  "providers/mistral/user-field": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Say hello."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 10
+      }
+    },
+    "path": "/v1beta/models/mistral-small-latest:generateContent"
+  },
+  "providers/mistral/verbosity-field": {
+    "message": "`verbosity` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "verbosity"
+  },
+  "providers/mistral/web-search-options-field": {
+    "message": "`web_search_options` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "web_search_options"
+  },
+  "providers/moonshotai/developer-role": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/moonshotai/image": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/moonshotai/invalid-api-key": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/moonshotai/json-object-system": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/moonshotai/logit-bias-refused": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/moonshotai/logprobs": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/moonshotai/max-completion-tokens-honoured": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/moonshotai/max-tokens-honoured": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/moonshotai/parallel-tool-calls-false": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/moonshotai/partial": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/moonshotai/prefill-without-partial": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/moonshotai/rate-limited": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/moonshotai/reasoning": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Is 1001 a prime number? Answer in one sentence."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 800
+      }
+    },
+    "path": "/v1beta/models/kimi-k2.6:generateContent"
+  },
+  "providers/moonshotai/reasoning-effort-low": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Is 1001 a prime number? Answer in one sentence."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 800,
+        "thinkingConfig": {
+          "thinkingLevel": "LOW"
+        }
+      }
+    },
+    "path": "/v1beta/models/kimi-k3:generateContent"
+  },
+  "providers/moonshotai/reasoning-effort-none": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Is 1001 a prime number? Answer in one sentence."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 100,
+        "thinkingConfig": {
+          "thinkingBudget": 0
+        }
+      }
+    },
+    "path": "/v1beta/models/kimi-k3:generateContent"
+  },
+  "providers/moonshotai/reasoning-stream": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What is 7 times 8? Answer with the number only."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 400
+      }
+    },
+    "path": "/v1beta/models/kimi-k2.6:streamGenerateContent?alt=sse"
+  },
+  "providers/moonshotai/reasoning-tools": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What is the weather in Paris?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 400
+      },
+      "tools": [
+        {
+          "functionDeclarations": [
+            {
+              "description": "Get the current weather for a city",
+              "name": "get_weather",
+              "parametersJsonSchema": {
+                "properties": {
+                  "city": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "city"
+                ],
+                "type": "object"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "path": "/v1beta/models/kimi-k2.6:generateContent"
+  },
+  "providers/moonshotai/reasoning-tools-stream": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What is the weather in Paris?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 400
+      },
+      "tools": [
+        {
+          "functionDeclarations": [
+            {
+              "description": "Get the current weather for a city",
+              "name": "get_weather",
+              "parametersJsonSchema": {
+                "properties": {
+                  "city": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "city"
+                ],
+                "type": "object"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "path": "/v1beta/models/kimi-k2.6:streamGenerateContent?alt=sse"
+  },
+  "providers/moonshotai/stream-thinking-off": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/moonshotai/system-name-stop": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/moonshotai/temperature": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Say hi."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 10,
+        "temperature": 0.5
+      }
+    },
+    "path": "/v1beta/models/kimi-k2.6:generateContent"
+  },
+  "providers/moonshotai/thinking-disabled": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/moonshotai/tool-choice-required-thinking": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Tell me a joke."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 100
+      },
+      "toolConfig": {
+        "functionCallingConfig": {
+          "mode": "ANY"
+        }
+      },
+      "tools": [
+        {
+          "functionDeclarations": [
+            {
+              "description": "Get the current weather for a city",
+              "name": "get_weather",
+              "parametersJsonSchema": {
+                "properties": {
+                  "city": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "city"
+                ],
+                "type": "object"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "path": "/v1beta/models/kimi-k2.6:generateContent"
+  },
+  "providers/moonshotai/tool-result": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What is the weather in Paris?"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "parts": [
+            {
+              "text": ""
+            },
+            {
+              "functionCall": {
+                "args": {
+                  "city": "Paris"
+                },
+                "id": "get_weather_0_2fdaa899",
+                "name": "get_weather"
+              },
+              "thoughtSignature": "skip_thought_signature_validator"
+            }
+          ],
+          "role": "model"
+        },
+        {
+          "parts": [
+            {
+              "functionResponse": {
+                "id": "get_weather_0_2fdaa899",
+                "name": "get_weather",
+                "response": {
+                  "output": "18 °C and sunny"
+                }
+              }
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 400
+      },
+      "tools": [
+        {
+          "functionDeclarations": [
+            {
+              "description": "Get the current weather for a city",
+              "name": "get_weather",
+              "parametersJsonSchema": {
+                "properties": {
+                  "city": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "city"
+                ],
+                "type": "object"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "path": "/v1beta/models/kimi-k2.6:generateContent"
+  },
+  "providers/moonshotai/top-p": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/moonshotai/unknown-model": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Say hi."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 10
+      }
+    },
+    "path": "/v1beta/models/kimi-no-such-model:generateContent"
+  },
+  "providers/ollama-cloud/image": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What colour is this image? Answer with one word."
+            },
+            {
+              "inlineData": {
+                "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==",
+                "mimeType": "image/png"
+              }
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 10
+      }
+    },
+    "path": "/v1beta/models/gemma4%3A31b:generateContent"
+  },
+  "providers/ollama-cloud/max-completion-tokens-ignored": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Count from 1 to 40, separated by commas."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 20
+      }
+    },
+    "path": "/v1beta/models/gemma4%3A31b:generateContent"
+  },
+  "providers/ollama-cloud/max-tokens-honoured": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Count from 1 to 40, separated by commas."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 20
+      }
+    },
+    "path": "/v1beta/models/gemma4%3A31b:generateContent"
+  },
+  "providers/ollama-cloud/model-outside-plan": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Hi"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 10
+      }
+    },
+    "path": "/v1beta/models/kimi-k2.6:generateContent"
+  },
+  "providers/ollama-cloud/reasoning-effort": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Is 1001 a prime number? Answer in one sentence."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 400,
+        "thinkingConfig": {
+          "thinkingLevel": "LOW"
+        }
+      }
+    },
+    "path": "/v1beta/models/gpt-oss%3A20b:generateContent"
+  },
+  "providers/ollama-cloud/reasoning-object": {
+    "message": "`reasoning` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "reasoning"
+  },
+  "providers/ollama-cloud/reasoning-sent-back": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Pick a number from 1 to 10."
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "parts": [
+            {
+              "text": "7"
+            }
+          ],
+          "role": "model"
+        },
+        {
+          "parts": [
+            {
+              "text": "Now double it."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 400,
+        "thinkingConfig": {
+          "thinkingLevel": "LOW"
+        }
+      }
+    },
+    "path": "/v1beta/models/gpt-oss%3A20b:generateContent"
+  },
+  "providers/ollama-cloud/reasoning-stream": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Name one prime number above 100."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 400,
+        "thinkingConfig": {
+          "thinkingLevel": "LOW"
+        }
+      }
+    },
+    "path": "/v1beta/models/gpt-oss%3A20b:streamGenerateContent?alt=sse"
+  },
+  "providers/ollama-cloud/reasoning-tools": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What is the weather in Paris?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 400,
+        "thinkingConfig": {
+          "thinkingLevel": "LOW"
+        }
+      },
+      "tools": [
+        {
+          "functionDeclarations": [
+            {
+              "description": "Get the current weather for a city",
+              "name": "get_weather",
+              "parametersJsonSchema": {
+                "properties": {
+                  "city": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "city"
+                ],
+                "type": "object"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "path": "/v1beta/models/gpt-oss%3A20b:generateContent"
+  },
+  "providers/ollama-cloud/reasoning-tools-stream": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What is the weather in Paris?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 400,
+        "thinkingConfig": {
+          "thinkingLevel": "LOW"
+        }
+      },
+      "tools": [
+        {
+          "functionDeclarations": [
+            {
+              "description": "Get the current weather for a city",
+              "name": "get_weather",
+              "parametersJsonSchema": {
+                "properties": {
+                  "city": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "city"
+                ],
+                "type": "object"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "path": "/v1beta/models/gpt-oss%3A20b:streamGenerateContent?alt=sse"
+  },
+  "providers/ollama-cloud/tool-result": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What is the weather in Paris?"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "parts": [
+            {
+              "text": ""
+            },
+            {
+              "functionCall": {
+                "args": {
+                  "city": "Paris"
+                },
+                "id": "call_paris",
+                "name": "get_weather"
+              },
+              "thoughtSignature": "skip_thought_signature_validator"
+            }
+          ],
+          "role": "model"
+        },
+        {
+          "parts": [
+            {
+              "functionResponse": {
+                "id": "call_paris",
+                "name": "get_weather",
+                "response": {
+                  "output": "18 °C and sunny"
+                }
+              }
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 100
+      },
+      "tools": [
+        {
+          "functionDeclarations": [
+            {
+              "description": "Get the current weather for a city",
+              "name": "get_weather",
+              "parametersJsonSchema": {
+                "properties": {
+                  "city": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "city"
+                ],
+                "type": "object"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "path": "/v1beta/models/gemma4%3A31b:generateContent"
+  },
+  "providers/ollama-cloud/unknown-model": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Hi"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 10
+      }
+    },
+    "path": "/v1beta/models/no-such-model%3A1b:generateContent"
+  },
+  "providers/openrouter/free-basic": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What is the capital of France?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 256
+      },
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "You are a helpful assistant. Answer in one short sentence."
+          }
+        ]
+      }
+    },
+    "path": "/v1beta/models/google%2Fgemma-4-31b-it%3Afree:generateContent"
+  },
+  "providers/openrouter/free-reasoning": {
+    "message": "`reasoning` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "reasoning"
+  },
+  "providers/openrouter/free-reasoning-stream": {
+    "message": "`reasoning` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "reasoning"
+  },
+  "providers/openrouter/free-stream": {
+    "message": "`reasoning` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "reasoning"
+  },
+  "providers/openrouter/free-stream-rate-limited": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Count from one to five in words, separated by commas."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 256
+      }
+    },
+    "path": "/v1beta/models/liquid%2Flfm-2.5-2.6b%3Afree:streamGenerateContent?alt=sse"
+  },
+  "providers/openrouter/free-tools": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What's the weather in Paris right now? Use Celsius."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "You are a concise travel assistant. Use the tools for live data."
+          }
+        ]
+      },
+      "toolConfig": {
+        "functionCallingConfig": {
+          "mode": "AUTO"
+        }
+      },
+      "tools": [
+        {
+          "functionDeclarations": [
+            {
+              "description": "Get the current weather for a location.",
+              "name": "get_weather",
+              "parametersJsonSchema": {
+                "properties": {
+                  "location": {
+                    "description": "City and country, e.g. Paris, France",
+                    "type": "string"
+                  },
+                  "unit": {
+                    "enum": [
+                      "celsius",
+                      "fahrenheit"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "location",
+                  "unit"
+                ],
+                "type": "object"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "path": "/v1beta/models/google%2Fgemma-4-31b-it%3Afree:generateContent"
+  },
+  "providers/openrouter/invalid-messages": {
+    "body": {},
+    "path": "/v1beta/models/google%2Fgemma-4-31b-it%3Afree:generateContent"
+  },
+  "providers/openrouter/keepalive-stream": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Say hi."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 200
+      }
+    },
+    "path": "/v1beta/models/nvidia%2Fnemotron-3-ultra-550b-a55b%3Afree:streamGenerateContent?alt=sse"
+  },
+  "providers/openrouter/routing-fields": {
+    "message": "`models` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "models"
+  },
+  "providers/openrouter/unknown-model": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Hello!"
+            }
+          ],
+          "role": "user"
+        }
+      ]
+    },
+    "path": "/v1beta/models/kaeso-example%2Fno-such-model%3Afree:generateContent"
+  },
+  "providers/togetherai/context-length-error": {
+    "message": "`context_length_exceeded_behavior` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "context_length_exceeded_behavior"
+  },
+  "providers/togetherai/non-serverless-model": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Name one planet."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 300
+      }
+    },
+    "path": "/v1beta/models/meta-llama%2FMeta-Llama-3.1-8B-Instruct-Turbo:generateContent"
+  },
+  "providers/togetherai/reasoning-reply": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Name one planet."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 60
+      }
+    },
+    "path": "/v1beta/models/Qwen%2FQwen3.5-9B:generateContent"
+  },
+  "providers/togetherai/reasoning-stream": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Name one planet."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 60
+      }
+    },
+    "path": "/v1beta/models/Qwen%2FQwen3.5-9B:streamGenerateContent?alt=sse"
+  },
+  "providers/togetherai/safety-model": {
+    "message": "`safety_model` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "safety_model"
+  },
+  "providers/togetherai/sampling-extras": {
+    "message": "`top_k` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "top_k"
+  },
+  "providers/togetherai/stream-usage-short": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Name one planet."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 300
+      }
+    },
+    "path": "/v1beta/models/deepseek-ai%2FDeepSeek-V4-Flash-0731:streamGenerateContent?alt=sse"
+  },
+  "providers/togetherai/tool-call-auto": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What's the weather in Paris right now? Use Celsius."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 400
+      },
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "Use the tools for live data."
+          }
+        ]
+      },
+      "toolConfig": {
+        "functionCallingConfig": {
+          "mode": "AUTO"
+        }
+      },
+      "tools": [
+        {
+          "functionDeclarations": [
+            {
+              "description": "Get the current weather for a location.",
+              "name": "get_weather",
+              "parametersJsonSchema": {
+                "properties": {
+                  "location": {
+                    "description": "City and country, e.g. Paris, France",
+                    "type": "string"
+                  },
+                  "unit": {
+                    "enum": [
+                      "celsius",
+                      "fahrenheit"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "location",
+                  "unit"
+                ],
+                "type": "object"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "path": "/v1beta/models/deepseek-ai%2FDeepSeek-V4-Flash-0731:generateContent"
+  },
+  "providers/vercel/basic": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What is the capital of France?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 64
+      },
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "You are a helpful assistant. Answer in one short sentence."
+          }
+        ]
+      }
+    },
+    "path": "/v1beta/models/mistral%2Fmistral-nemo:generateContent"
+  },
+  "providers/vercel/gateway-options": {
+    "message": "`models` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "models"
+  },
+  "providers/vercel/invalid-api-key": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Say hi."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 16
+      }
+    },
+    "path": "/v1beta/models/nvidia%2Fnemotron-3.5-lightning-free:generateContent"
+  },
+  "providers/vercel/invalid-messages": {
+    "body": {
+      "generationConfig": {
+        "maxOutputTokens": 16
+      }
+    },
+    "path": "/v1beta/models/nvidia%2Fnemotron-3.5-lightning-free:generateContent"
+  },
+  "providers/vercel/reasoning": {
+    "message": "`reasoning` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "reasoning"
+  },
+  "providers/vercel/reasoning-stream": {
+    "message": "`reasoning` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "reasoning"
+  },
+  "providers/vercel/restricted-model": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Say hi."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 16
+      }
+    },
+    "path": "/v1beta/models/anthropic%2Fclaude-haiku-4.5:generateContent"
+  },
+  "providers/vercel/stream": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Count from one to five in words, separated by commas."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 64
+      }
+    },
+    "path": "/v1beta/models/mistral%2Fmistral-nemo:streamGenerateContent?alt=sse"
+  },
+  "providers/vercel/tools": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What's the weather in Paris right now? Use Celsius."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1024
+      },
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "You are a concise travel assistant. Use the tools for live data."
+          }
+        ]
+      },
+      "toolConfig": {
+        "functionCallingConfig": {
+          "mode": "AUTO"
+        }
+      },
+      "tools": [
+        {
+          "functionDeclarations": [
+            {
+              "description": "Get the current weather for a location.",
+              "name": "get_weather",
+              "parametersJsonSchema": {
+                "properties": {
+                  "location": {
+                    "description": "City and country, e.g. Paris, France",
+                    "type": "string"
+                  },
+                  "unit": {
+                    "enum": [
+                      "celsius",
+                      "fahrenheit"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "location",
+                  "unit"
+                ],
+                "type": "object"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "path": "/v1beta/models/nvidia%2Fnemotron-3.5-lightning-free:generateContent"
+  },
+  "providers/vercel/tools-stream": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What's the weather in Paris right now? Use Celsius."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1024
+      },
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "You are a concise travel assistant. Use the tools for live data."
+          }
+        ]
+      },
+      "toolConfig": {
+        "functionCallingConfig": {
+          "mode": "AUTO"
+        }
+      },
+      "tools": [
+        {
+          "functionDeclarations": [
+            {
+              "description": "Get the current weather for a location.",
+              "name": "get_weather",
+              "parametersJsonSchema": {
+                "properties": {
+                  "location": {
+                    "description": "City and country, e.g. Paris, France",
+                    "type": "string"
+                  },
+                  "unit": {
+                    "enum": [
+                      "celsius",
+                      "fahrenheit"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "location",
+                  "unit"
+                ],
+                "type": "object"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "path": "/v1beta/models/nvidia%2Fnemotron-3.5-lightning-free:streamGenerateContent?alt=sse"
+  },
+  "providers/vercel/unknown-model": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Say hi."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 16
+      }
+    },
+    "path": "/v1beta/models/kaeso-example%2Fno-such-model:generateContent"
+  },
+  "providers/xai/live-search-deprecated": {
+    "message": "`search_parameters` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "search_parameters"
+  },
+  "providers/xai/max-completion-tokens-reasoning": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Is 391 a prime number? Answer in one sentence."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 20
+      }
+    },
+    "path": "/v1beta/models/grok-4.3:generateContent"
+  },
+  "providers/xai/presence-penalty-reasoning-model": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Say hi."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "presencePenalty": 0.5
+      }
+    },
+    "path": "/v1beta/models/grok-4.3:generateContent"
+  },
+  "providers/xai/reasoning-content": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What is 17 * 24? Answer with the number only."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "thinkingConfig": {
+          "thinkingLevel": "LOW"
+        }
+      }
+    },
+    "path": "/v1beta/models/grok-4.3:generateContent"
+  },
+  "providers/xai/reasoning-content-stream": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What is 17 * 24? Answer with the number only."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "thinkingConfig": {
+          "thinkingLevel": "LOW"
+        }
+      }
+    },
+    "path": "/v1beta/models/grok-4.3:streamGenerateContent?alt=sse"
+  },
+  "qwen-code-tool-loop": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Create proof.txt containing OK with a tool, read it back, and reply with its contents."
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "parts": [
+            {
+              "functionCall": {
+                "args": {
+                  "content": "OK",
+                  "file_path": "/home/user/project/proof.txt",
+                  "record_as_artifact": false
+                },
+                "id": "toolu_01L2nFMSBTMgp3v3ZF3Y1t1E",
+                "name": "write_file"
+              },
+              "thoughtSignature": "skip_thought_signature_validator"
+            }
+          ],
+          "role": "model"
+        },
+        {
+          "parts": [
+            {
+              "functionResponse": {
+                "id": "toolu_01L2nFMSBTMgp3v3ZF3Y1t1E",
+                "name": "write_file",
+                "response": {
+                  "output": "Successfully created and wrote to new file: /home/user/project/proof.txt."
+                }
+              }
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "parts": [
+            {
+              "functionCall": {
+                "args": {
+                  "file_path": "/home/user/project/proof.txt"
+                },
+                "id": "toolu_01RVmKP3fRAvjjbjhPBio6BY",
+                "name": "read_file"
+              },
+              "thoughtSignature": "skip_thought_signature_validator"
+            }
+          ],
+          "role": "model"
+        },
+        {
+          "parts": [
+            {
+              "functionResponse": {
+                "id": "toolu_01RVmKP3fRAvjjbjhPBio6BY",
+                "name": "read_file",
+                "response": {
+                  "output": "OK"
+                }
+              }
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 64000
+      },
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "You are Qwen Code, a non-interactive CLI agent developed by Alibaba Group, specializing in software engineering tasks."
+          }
+        ]
+      },
+      "tools": [
+        {
+          "functionDeclarations": [
+            {
+              "description": "Reads and returns the content of a specified file. The file_path argument MUST be an absolute path. Always construct it by combining the project root with the file's relative path (e.g. project root '/path/to/project/' + relative 'foo/bar.txt' = '/path/to/project/foo/bar.txt'). If the user provides a relative path, resolve it against the project root first. If the file is large, the content will be truncated. For text files, the tool's response will clearly indicate if truncation has occurred and will provide details on how to read more of the file using the 'offset' and 'limit' parameters. Handles text, images (PNG, JPG, GIF, WEBP, SVG, BMP), PDF files, and Jupyter notebooks (.ipynb). For text files, it can read specific line ranges. For PDF files, use the 'pages' parameter to extract specific page ranges as text (e.g. '1-5'). Large PDFs cannot be read all at once when the model does not support native PDF input; retry with narrower page ranges if the tool reports a PDF is too large. With a configured vision bridge, failed PDF text extraction or an irreducibly large single page may be transcribed automatically, at most four pages per call; this transcription is lossy and marked as untrusted. Jupyter notebooks return structured cell content with outputs.",
+              "name": "read_file",
+              "parametersJsonSchema": {
+                "properties": {
+                  "file_path": {
+                    "description": "The absolute path to the file to read (e.g., '/home/user/project/file.txt'). Relative paths are not supported. You must provide an absolute path.",
+                    "type": "string"
+                  },
+                  "limit": {
+                    "description": "Optional: For text files, maximum number of lines to read. Use with 'offset' to paginate through large files. If omitted, reads the entire file (if feasible, up to a default limit). Omit or set to null for Jupyter notebooks (.ipynb); null is treated as omitted.",
+                    "type": [
+                      "integer",
+                      "null"
+                    ]
+                  },
+                  "offset": {
+                    "description": "Optional: For text files, the 0-based line number to start reading from. Requires 'limit' to be set. Use for paginating through large files. Omit or set to null for Jupyter notebooks (.ipynb); null is treated as omitted.",
+                    "type": [
+                      "integer",
+                      "null"
+                    ]
+                  },
+                  "pages": {
+                    "description": "Optional: For PDF files, the page range to extract as text (e.g., '1-5', '3', '10-20'). Pages are 1-indexed. Max 20 pages per request. Open-ended ranges like '3-' are not supported. Use this for large PDFs or when the model does not support native PDF input. Omit or set to null for Jupyter notebooks (.ipynb); null is treated as omitted.",
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                },
+                "required": [
+                  "file_path"
+                ],
+                "type": "object"
+              }
+            },
+            {
+              "description": "Writes content to a specified file in the local filesystem. A request to create or generate a file does not establish that the target path is new. Unless the target's absence or current text contents have already been established in this session, you MUST use the read_file tool first; if the file does not exist, then create it. With prior-read enforcement enabled, blind overwrites are rejected. The file_path argument MUST be an absolute path. Always construct it by combining the project root with the file's relative path (e.g. project root '/path/to/project/' + relative 'foo/bar.txt' = '/path/to/project/foo/bar.txt'). If the user provides a relative path, resolve it against the project root first.",
+              "name": "write_file",
+              "parametersJsonSchema": {
+                "properties": {
+                  "content": {
+                    "description": "The content to write to the file.",
+                    "type": "string"
+                  },
+                  "file_path": {
+                    "description": "The absolute path to the file to write to (e.g., '/home/user/project/file.txt'). Relative paths are not supported.",
+                    "type": "string"
+                  },
+                  "record_as_artifact": {
+                    "description": "Set false to skip creating a session artifact. An artifact the session already has for this path is still refreshed. Defaults to true for artifact-like extensions.",
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "file_path",
+                  "content"
+                ],
+                "type": "object"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "path": "/v1beta/models/claude-sonnet-5-5:streamGenerateContent?alt=sse"
+  },
+  "reasoning-cached-usage": {
+    "message": "`verbosity` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "verbosity"
+  },
+  "refusal": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Give me step-by-step instructions to pick my neighbour's front door lock while they are away."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "responseJsonSchema": {
+          "additionalProperties": false,
+          "properties": {
+            "steps": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "steps"
+          ],
+          "type": "object"
+        },
+        "responseMimeType": "application/json",
+        "thinkingConfig": {
+          "thinkingLevel": "LOW"
+        }
+      }
+    },
+    "path": "/v1beta/models/gpt-5.4-mini:generateContent"
+  },
+  "response-format-text": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Name three primary colors."
+            }
+          ],
+          "role": "user"
+        }
+      ]
+    },
+    "path": "/v1beta/models/gpt-5.5:generateContent"
+  },
+  "stop-array": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Count from 1 to 10 separated by commas."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "stopSequences": [
+          "7",
+          "\n\n",
+          "</end>"
+        ],
+        "topP": 0.5
+      }
+    },
+    "path": "/v1beta/models/gpt-4.1-mini:generateContent"
+  },
+  "stop-string-seed-penalties": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "List fruits, one per line, ending with END."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "frequencyPenalty": 0.5,
+        "maxOutputTokens": 200,
+        "presencePenalty": -0.25,
+        "seed": 42,
+        "stopSequences": [
+          "END"
+        ],
+        "temperature": 0.2
+      }
+    },
+    "path": "/v1beta/models/gpt-4.1:generateContent"
+  },
+  "stream-doc": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Hello!"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "You are a helpful assistant."
+          }
+        ]
+      }
+    },
+    "path": "/v1beta/models/gpt-6-astra:streamGenerateContent?alt=sse"
+  },
+  "stream-include-usage": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Hello!"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "thinkingConfig": {
+          "thinkingBudget": 0
+        }
+      },
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "You are a helpful assistant."
+          }
+        ]
+      }
+    },
+    "path": "/v1beta/models/gpt-5.5:streamGenerateContent?alt=sse"
+  },
+  "system-name-multiturn": {
+    "message": "`system[0].message.name` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": "system[0]",
+    "unsupported": "system[0].message.name"
+  },
+  "tool-choice-allowed-tools": {
+    "message": "tool_choice `allowed_tools` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Use `auto`, `none`, `required` or a single named tool instead.",
+    "param": "tool_choice",
+    "unsupported": "tool_choice `allowed_tools`"
+  },
+  "tool-choice-function": {
+    "message": "`parallel_tool_calls: false` is not supported by Gemini API. Gemini can't be told to call one function at a time; remove `parallel_tool_calls`.",
+    "param": "parallel_tool_calls",
+    "unsupported": "`parallel_tool_calls: false`"
+  },
+  "tool-choice-none": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Is it raining in Lisbon?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "toolConfig": {
+        "functionCallingConfig": {
+          "mode": "NONE"
+        }
+      },
+      "tools": [
+        {
+          "functionDeclarations": [
+            {
+              "description": "Get the current weather for a location.",
+              "name": "get_weather",
+              "parametersJsonSchema": {
+                "additionalProperties": false,
+                "properties": {
+                  "location": {
+                    "description": "City and country, e.g. Paris, France",
+                    "type": "string"
+                  },
+                  "unit": {
+                    "enum": [
+                      "celsius",
+                      "fahrenheit",
+                      null
+                    ],
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                },
+                "required": [
+                  "location",
+                  "unit"
+                ],
+                "type": "object"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "path": "/v1beta/models/gpt-5.6-terra:generateContent"
+  },
+  "tools-custom-grammar": {
+    "message": "`custom tool` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Only function tools can be sent to another API format. Remove the tool, or send the request to a model served through its original format.",
+    "param": "tools[0]",
+    "unsupported": "custom tool"
+  },
+  "tools-parallel": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "I land in Tokyo tonight. What's the weather in Paris, and what time is it in Tokyo?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "thinkingConfig": {
+          "thinkingBudget": 0
+        }
+      },
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "You are a concise travel assistant. Use the tools for live data."
+          }
+        ]
+      },
+      "toolConfig": {
+        "functionCallingConfig": {
+          "mode": "VALIDATED"
+        }
+      },
+      "tools": [
+        {
+          "functionDeclarations": [
+            {
+              "description": "Get the current weather for a location.",
+              "name": "get_weather",
+              "parametersJsonSchema": {
+                "additionalProperties": false,
+                "properties": {
+                  "location": {
+                    "description": "City and country, e.g. Paris, France",
+                    "type": "string"
+                  },
+                  "unit": {
+                    "enum": [
+                      "celsius",
+                      "fahrenheit",
+                      null
+                    ],
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                },
+                "required": [
+                  "location",
+                  "unit"
+                ],
+                "type": "object"
+              }
+            },
+            {
+              "description": "Get the current local time for an IANA time zone.",
+              "name": "get_local_time",
+              "parametersJsonSchema": {
+                "additionalProperties": false,
+                "properties": {
+                  "timezone": {
+                    "description": "IANA time zone, e.g. Asia/Tokyo",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "timezone"
+                ],
+                "type": "object"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "path": "/v1beta/models/gpt-5.6-terra:generateContent"
+  },
+  "tools-results-parallel-error": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "I land in Tokyo tonight. What's the weather in Paris, and what time is it in Tokyo?"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "parts": [
+            {
+              "functionCall": {
+                "args": {
+                  "location": "Paris, France",
+                  "unit": null
+                },
+                "id": "call_kfCAiUZI9KHN37p4VH3N0E2a",
+                "name": "get_weather"
+              },
+              "thoughtSignature": "skip_thought_signature_validator"
+            },
+            {
+              "functionCall": {
+                "args": {
+                  "timezone": "Asia/Tokyo"
+                },
+                "id": "call_kfNMlUq01JIft0lr9lKKbGMM",
+                "name": "get_local_time"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        {
+          "parts": [
+            {
+              "functionResponse": {
+                "id": "call_kfCAiUZI9KHN37p4VH3N0E2a",
+                "name": "get_weather",
+                "response": {
+                  "output": "{\"temperature\":18,\"unit\":\"celsius\",\"conditions\":\"cloudy\"}"
+                }
+              }
+            },
+            {
+              "functionResponse": {
+                "id": "call_kfNMlUq01JIft0lr9lKKbGMM",
+                "name": "get_local_time",
+                "response": {
+                  "output": "Error: time service unavailable (HTTP 503). Try again later."
+                }
+              }
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "thinkingConfig": {
+          "thinkingBudget": 0
+        }
+      },
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "You are a concise travel assistant. Use the tools for live data."
+          }
+        ]
+      },
+      "toolConfig": {
+        "functionCallingConfig": {
+          "mode": "VALIDATED"
+        }
+      },
+      "tools": [
+        {
+          "functionDeclarations": [
+            {
+              "description": "Get the current weather for a location.",
+              "name": "get_weather",
+              "parametersJsonSchema": {
+                "additionalProperties": false,
+                "properties": {
+                  "location": {
+                    "description": "City and country, e.g. Paris, France",
+                    "type": "string"
+                  },
+                  "unit": {
+                    "enum": [
+                      "celsius",
+                      "fahrenheit",
+                      null
+                    ],
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                },
+                "required": [
+                  "location",
+                  "unit"
+                ],
+                "type": "object"
+              }
+            },
+            {
+              "description": "Get the current local time for an IANA time zone.",
+              "name": "get_local_time",
+              "parametersJsonSchema": {
+                "additionalProperties": false,
+                "properties": {
+                  "timezone": {
+                    "description": "IANA time zone, e.g. Asia/Tokyo",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "timezone"
+                ],
+                "type": "object"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "path": "/v1beta/models/gpt-5.6-terra:generateContent"
+  },
+  "tools-single": {
+    "message": "`parallel_tool_calls: false` is not supported by Gemini API. Gemini can't be told to call one function at a time; remove `parallel_tool_calls`.",
+    "param": "parallel_tool_calls",
+    "unsupported": "`parallel_tool_calls: false`"
+  },
+  "unknown-choice-and-schema": {
+    "message": "tool_choice `x_future_choice` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Use `auto`, `none`, `required` or a single named tool instead.",
+    "param": "tool_choice",
+    "unsupported": "tool_choice `x_future_choice`"
+  },
+  "unknown-edge-shapes": {
+    "message": "`response_format` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "response_format"
+  },
+  "unknown-top-level-field": {
+    "message": "`x_future_field` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "x_future_field"
+  },
+  "web-search": {
+    "message": "`web_search_options` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "web_search_options"
+  }
+}

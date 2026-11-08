@@ -22,6 +22,8 @@ mod web_search;
 mod wire;
 
 pub mod anthropic_messages;
+pub mod gemini;
+pub mod gemini_embeddings;
 pub mod openai_chat;
 pub mod openai_embeddings;
 pub mod openai_responses;

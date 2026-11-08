@@ -10,6 +10,7 @@ use serde_json::value::RawValue;
 use time::OffsetDateTime;
 use time::macros::format_description;
 
+use kaeso_codecs::gemini::{GeminiAction, GeminiProfile};
 use kaeso_codecs::{
     anthropic_messages, is_forwarded_header, openai_chat, openai_embeddings, openai_responses,
 };
@@ -32,6 +33,8 @@ pub(crate) enum Dialect {
     OpenaiChat,
     OpenaiResponses,
     OpenaiEmbeddings,
+    Gemini,
+    GeminiEmbeddings,
 }
 
 impl Dialect {
@@ -41,6 +44,8 @@ impl Dialect {
             Self::OpenaiChat => DialectId::OpenAiChat,
             Self::OpenaiResponses => DialectId::OpenAiResponses,
             Self::OpenaiEmbeddings => DialectId::OpenAiEmbeddings,
+            Self::Gemini => DialectId::Gemini,
+            Self::GeminiEmbeddings => DialectId::GeminiEmbeddings,
         }
     }
 
@@ -52,20 +57,25 @@ impl Dialect {
         self == Self::AnthropicMessages
     }
 
+    fn is_gemini(self) -> bool {
+        matches!(self, Self::Gemini | Self::GeminiEmbeddings)
+    }
+
     fn default_provider(self) -> &'static str {
-        if self.is_anthropic() {
-            "anthropic"
-        } else {
-            "openai"
+        match self {
+            Self::AnthropicMessages => "anthropic",
+            Self::Gemini | Self::GeminiEmbeddings => GOOGLE.id,
+            Self::OpenaiChat | Self::OpenaiResponses | Self::OpenaiEmbeddings => "openai",
         }
     }
 
-    fn path(self) -> &'static str {
+    fn path(self) -> Option<&'static str> {
         match self {
-            Self::AnthropicMessages => anthropic_messages::MESSAGES_PATH,
-            Self::OpenaiChat => openai_chat::CHAT_COMPLETIONS_PATH,
-            Self::OpenaiResponses => openai_responses::RESPONSES_PATH,
-            Self::OpenaiEmbeddings => openai_embeddings::EMBEDDINGS_PATH,
+            Self::AnthropicMessages => Some(anthropic_messages::MESSAGES_PATH),
+            Self::OpenaiChat => Some(openai_chat::CHAT_COMPLETIONS_PATH),
+            Self::OpenaiResponses => Some(openai_responses::RESPONSES_PATH),
+            Self::OpenaiEmbeddings => Some(openai_embeddings::EMBEDDINGS_PATH),
+            Self::Gemini | Self::GeminiEmbeddings => None,
         }
     }
 
@@ -75,7 +85,94 @@ impl Dialect {
                 Some((anthropic_messages::COUNT_TOKENS_PATH, "count_tokens"))
             }
             Self::OpenaiResponses => Some((openai_responses::INPUT_TOKENS_PATH, "input_tokens")),
-            Self::OpenaiChat | Self::OpenaiEmbeddings => None,
+            Self::Gemini => Some(("", "count_tokens")),
+            Self::OpenaiChat | Self::OpenaiEmbeddings | Self::GeminiEmbeddings => None,
+        }
+    }
+
+    fn default_action(self, count: bool) -> GeminiAction {
+        match (self, count) {
+            (_, true) => GeminiAction::CountTokens,
+            (Self::GeminiEmbeddings, false) => GeminiAction::EmbedContent,
+            _ => GeminiAction::GenerateContent,
+        }
+    }
+}
+
+// Google AI Studio is not a provider of the gateway yet; recording its Gemini fixtures needs
+// only its address, its key and its auth header.
+pub(crate) struct Google {
+    id: &'static str,
+    name: &'static str,
+    key_segment: &'static str,
+    default_base_url: &'static str,
+    dialects: &'static [DialectId],
+}
+
+pub(crate) const GOOGLE: Google = Google {
+    id: "google",
+    name: "Google AI Studio",
+    key_segment: "GEMINI",
+    default_base_url: "https://generativelanguage.googleapis.com",
+    dialects: &[DialectId::Gemini, DialectId::GeminiEmbeddings],
+};
+
+#[derive(Clone, Copy)]
+pub(crate) enum Service {
+    Provider(&'static Provider),
+    Google(&'static Google),
+}
+
+impl Service {
+    fn id(self) -> &'static str {
+        match self {
+            Self::Provider(p) => p.id,
+            Self::Google(g) => g.id,
+        }
+    }
+
+    fn name(self) -> &'static str {
+        match self {
+            Self::Provider(p) => p.name,
+            Self::Google(g) => g.name,
+        }
+    }
+
+    fn dialects(self) -> &'static [DialectId] {
+        match self {
+            Self::Provider(p) => p.dialects,
+            Self::Google(g) => g.dialects,
+        }
+    }
+
+    fn count_tokens(self) -> Option<DialectId> {
+        match self {
+            Self::Provider(p) => p.count_tokens,
+            Self::Google(_) => Some(DialectId::Gemini),
+        }
+    }
+
+    fn env_segment(self) -> String {
+        match self {
+            Self::Provider(p) => p.provider_id().env_segment(),
+            Self::Google(g) => g.key_segment.to_owned(),
+        }
+    }
+
+    fn default_base_url(self) -> &'static str {
+        match self {
+            Self::Provider(p) => p.default_base_url,
+            Self::Google(g) => g.default_base_url,
+        }
+    }
+
+    fn auth_header(self, key: &str) -> (String, String) {
+        match self {
+            Self::Provider(p) => match p.auth {
+                AuthStyle::Bearer => ("authorization".to_owned(), format!("Bearer {key}")),
+                AuthStyle::XApiKey => ("x-api-key".to_owned(), key.to_owned()),
+            },
+            Self::Google(_) => ("x-goog-api-key".to_owned(), key.to_owned()),
         }
     }
 }
@@ -106,38 +203,47 @@ pub(crate) struct Args {
 }
 
 impl Args {
-    pub(crate) fn provider(&self) -> Result<&'static Provider, Error> {
+    pub(crate) fn service(&self) -> Result<Service, Error> {
+        if self.dialect.is_gemini() {
+            return match self.provider.as_deref() {
+                None => Ok(Service::Google(&GOOGLE)),
+                Some(id) if id == GOOGLE.id => Ok(Service::Google(&GOOGLE)),
+                Some(id) => Err(Error::Invalid(format!(
+                    "{} records from Google AI Studio only, not from `{id}`; leave out --provider",
+                    self.dialect.id()
+                ))),
+            };
+        }
         let id = self
             .provider
             .as_deref()
             .unwrap_or(self.dialect.default_provider());
-        lookup(id).map_err(|e| Error::Invalid(e.to_string()))
+        lookup(id)
+            .map(Service::Provider)
+            .map_err(|e| Error::Invalid(e.to_string()))
     }
 }
 
 pub(crate) struct Endpoint {
-    provider: &'static Provider,
+    service: Service,
     base_url: String,
     key_variable: String,
     key: Option<String>,
 }
 
 impl Endpoint {
-    pub(crate) fn from_env(provider: &'static Provider) -> Self {
-        Self::from_variables(provider, |name| std::env::var(name).ok())
+    pub(crate) fn from_env(service: Service) -> Self {
+        Self::from_variables(service, |name| std::env::var(name).ok())
     }
 
-    fn from_variables(
-        provider: &'static Provider,
-        variable: impl Fn(&str) -> Option<String>,
-    ) -> Self {
-        let segment = provider.provider_id().env_segment();
+    fn from_variables(service: Service, variable: impl Fn(&str) -> Option<String>) -> Self {
+        let segment = service.env_segment();
         let key_variable = format!("{segment}_API_KEY");
         Self {
-            provider,
+            service,
             base_url: variable(&format!("{segment}_BASE_URL"))
                 .filter(|u| !u.is_empty())
-                .unwrap_or_else(|| provider.default_base_url.to_owned()),
+                .unwrap_or_else(|| service.default_base_url().to_owned()),
             key: variable(&key_variable).filter(|k| !k.is_empty()),
             key_variable,
         }
@@ -149,8 +255,9 @@ struct Recorder<'a> {
     fixtures: PathBuf,
     target: PathBuf,
     dialect: Dialect,
-    provider: &'static Provider,
+    service: Service,
     count: Option<(&'static str, &'static str)>,
+    base_url: String,
     url: String,
     model: Option<&'a str>,
     key: Option<&'a str>,
@@ -163,22 +270,22 @@ pub(crate) async fn run(
     endpoint: &Endpoint,
     out: &mut impl Write,
 ) -> Result<(), Error> {
-    let provider = endpoint.provider;
+    let service = endpoint.service;
     let dialect = args.dialect.id();
-    if !provider.dialects.contains(&dialect) {
-        let spoken: Vec<&str> = provider.dialects.iter().map(|d| d.as_str()).collect();
+    if !service.dialects().contains(&dialect) {
+        let spoken: Vec<&str> = service.dialects().iter().map(|d| d.as_str()).collect();
         return Err(Error::Invalid(format!(
             "{} does not speak {dialect}; it speaks {}",
-            provider.id,
+            service.id(),
             spoken.join(", ")
         )));
     }
     let count = match (args.count, args.dialect.count()) {
         (false, _) => None,
-        (true, Some(_)) if provider.count_tokens != Some(dialect) => {
+        (true, Some(_)) if service.count_tokens() != Some(dialect) => {
             return Err(Error::Invalid(format!(
                 "{} has no token-count endpoint for {dialect}; record without --count",
-                provider.id
+                service.id()
             )));
         }
         (true, Some(count)) => Some(count),
@@ -196,10 +303,10 @@ pub(crate) async fn run(
     }
     let fixtures = root.join(FIXTURES);
     let canonical = fixtures.join(args.dialect.folder());
-    let target = if provider.id == args.dialect.default_provider() {
+    let target = if service.id() == args.dialect.default_provider() {
         canonical.clone()
     } else {
-        canonical.join(PROVIDERS_FOLDER).join(provider.id)
+        canonical.join(PROVIDERS_FOLDER).join(service.id())
     };
     let mut available = requests_in(&canonical, count)?;
     if target != canonical {
@@ -214,12 +321,16 @@ pub(crate) async fn run(
         fixtures,
         target,
         dialect: args.dialect,
-        provider,
+        service,
         count,
+        base_url: endpoint.base_url.trim_end_matches('/').to_owned(),
         url: format!(
             "{}{}",
             endpoint.base_url.trim_end_matches('/'),
-            count.map_or(args.dialect.path(), |(path, _)| path)
+            count
+                .map(|(path, _)| path)
+                .or(args.dialect.path())
+                .unwrap_or_default()
         ),
         model: args.model.as_deref(),
         key: endpoint.key.as_deref().filter(|_| !args.dry_run),
@@ -314,7 +425,55 @@ impl Recorder<'_> {
         path.strip_prefix(self.root).unwrap_or(path)
     }
 
+    // A Gemini request names its model and method in the path, not the body: they come from
+    // `--model` or the fixture's `<name>.meta.json` (`{"model": …, "action": …}`).
+    fn gemini_url(&self, fixture: &Path) -> Result<(String, String, bool), Error> {
+        let sidecar = fixture.with_file_name(format!("{}.meta.json", stem(fixture)));
+        let meta: Value = if sidecar.exists() {
+            serde_json::from_slice(&read(&sidecar)?)
+                .map_err(|e| Error::json(self.relative(&sidecar).display(), e))?
+        } else {
+            Value::Null
+        };
+        let model = self
+            .model
+            .map(str::to_owned)
+            .or_else(|| meta.get("model").and_then(Value::as_str).map(str::to_owned))
+            .ok_or_else(|| {
+                Error::Invalid(format!(
+                    "{} names no model; pass --model",
+                    self.relative(fixture).display()
+                ))
+            })?;
+        let action = match meta.get("action").and_then(Value::as_str) {
+            Some(name) => GeminiAction::from_wire(name).ok_or_else(|| {
+                Error::Invalid(format!(
+                    "{}: `{name}` is not a Gemini method Kaeso serves",
+                    self.relative(&sidecar).display()
+                ))
+            })?,
+            None => self.dialect.default_action(self.count.is_some()),
+        };
+        let path = GeminiProfile::GOOGLE_AI_STUDIO
+            .path(&model, action)
+            .map_err(|e| Error::Invalid(e.message))?;
+        Ok((
+            format!("{}{path}", self.base_url),
+            model,
+            action == GeminiAction::StreamGenerateContent,
+        ))
+    }
+
     async fn record(&self, fixture: &Path, out: &mut impl Write) -> Result<(), Error> {
+        if self.dialect.is_gemini() {
+            let body = read(fixture)?;
+            serde_json::from_slice::<Value>(&body)
+                .map_err(|e| Error::json(self.relative(fixture).display(), e))?;
+            let (url, model, streaming) = self.gemini_url(fixture)?;
+            return self
+                .send(fixture, body, &url, &model, streaming, out)
+                .await;
+        }
         let mut body = read(fixture)?;
         let payload: Value = serde_json::from_slice(&body)
             .map_err(|e| Error::json(self.relative(fixture).display(), e))?;
@@ -329,12 +488,27 @@ impl Recorder<'_> {
             (None, None) => "?".to_owned(),
         };
         let streaming = payload.get("stream").is_some_and(truthy);
+        self.send(fixture, body, &self.url, &model, streaming, out)
+            .await
+    }
+
+    async fn send(
+        &self,
+        fixture: &Path,
+        body: Vec<u8>,
+        url: &str,
+        model: &str,
+        streaming: bool,
+        out: &mut impl Write,
+    ) -> Result<(), Error> {
         writeln!(
             out,
-            "{} -> POST {}{}{}",
+            "{} -> POST {url}{}{}",
             self.relative(fixture).display(),
-            self.url,
-            self.model.map(|m| format!(" as {m}")).unwrap_or_default(),
+            self.model
+                .filter(|_| !self.dialect.is_gemini())
+                .map(|m| format!(" as {m}"))
+                .unwrap_or_default(),
             if streaming { " (stream)" } else { "" }
         )?;
         let Some(key) = self.key else {
@@ -342,7 +516,7 @@ impl Recorder<'_> {
         };
         let response = self
             .client
-            .post(&self.url)
+            .post(url)
             .headers(self.headers(fixture, key)?)
             .body(body)
             .send()
@@ -391,19 +565,14 @@ impl Recorder<'_> {
             write(&file, text)?;
             (folder, file)
         };
-        self.provenance(&folder, &file, fixture, &model)?;
+        self.provenance(&folder, &file, fixture, model)?;
         writeln!(out, "  wrote {}", self.relative(&file).display())?;
         Ok(())
     }
 
     fn headers(&self, fixture: &Path, key: &str) -> Result<HeaderMap, Error> {
         let mut headers = vec![("content-type".to_owned(), "application/json".to_owned())];
-        match self.provider.auth {
-            AuthStyle::Bearer => {
-                headers.push(("authorization".to_owned(), format!("Bearer {key}")))
-            }
-            AuthStyle::XApiKey => headers.push(("x-api-key".to_owned(), key.to_owned())),
-        }
+        headers.push(self.service.auth_header(key));
         if self.dialect.is_anthropic() {
             headers.push((
                 "anthropic-version".to_owned(),
@@ -451,7 +620,8 @@ impl Recorder<'_> {
         } else {
             format!(
                 "# Recorded fixtures\n\nWritten by `cargo xtask record`. Provenance: live API of {} (`{}`).\n\n| File | Request fixture | Model | Recorded (UTC) |\n|---|---|---|---|\n",
-                self.provider.name, self.provider.id
+                self.service.name(),
+                self.service.id()
             )
         };
         let when = OffsetDateTime::now_utc()
@@ -617,9 +787,18 @@ mod tests {
 
     fn endpoint(provider: &'static Provider, base_url: &str, key: Option<&str>) -> Endpoint {
         Endpoint {
-            provider,
+            service: Service::Provider(provider),
             base_url: base_url.to_owned(),
             key_variable: format!("{}_API_KEY", provider.provider_id().env_segment()),
+            key: key.map(str::to_owned),
+        }
+    }
+
+    fn google(base_url: &str, key: Option<&str>) -> Endpoint {
+        Endpoint {
+            service: Service::Google(&GOOGLE),
+            base_url: base_url.to_owned(),
+            key_variable: "GEMINI_API_KEY".to_owned(),
             key: key.map(str::to_owned),
         }
     }
@@ -634,8 +813,10 @@ mod tests {
             args(&["openai_responses", "--all"]).dialect,
             Dialect::OpenaiResponses
         );
-        assert_eq!(Dialect::OpenaiChat.path(), "/v1/chat/completions");
-        assert_eq!(Dialect::OpenaiEmbeddings.path(), "/v1/embeddings");
+        assert_eq!(Dialect::OpenaiChat.path(), Some("/v1/chat/completions"));
+        assert_eq!(Dialect::OpenaiEmbeddings.path(), Some("/v1/embeddings"));
+        assert_eq!(Dialect::Gemini.path(), None);
+        assert_eq!(args(&["gemini_embeddings", "--all"]).dialect, Dialect::GeminiEmbeddings);
         assert_eq!(Dialect::OpenaiEmbeddings.folder(), "openai_embeddings");
         assert_eq!(
             Dialect::OpenaiResponses.count(),
@@ -646,10 +827,21 @@ mod tests {
 
     #[test]
     fn the_provider_comes_from_the_registry_and_defaults_to_the_dialect_owner() {
-        let id = |line: &[&str]| args(line).provider().map(|p| p.id);
+        let id = |line: &[&str]| args(line).service().map(Service::id);
         assert_eq!(id(&["anthropic_messages", "--all"]).unwrap(), "anthropic");
         assert_eq!(id(&["openai_chat", "--all"]).unwrap(), "openai");
         assert_eq!(id(&["openai_embeddings", "--all"]).unwrap(), "openai");
+        assert_eq!(id(&["gemini", "--all"]).unwrap(), "google");
+        assert_eq!(
+            id(&["gemini_embeddings", "--provider", "google", "--all"]).unwrap(),
+            "google"
+        );
+        assert_eq!(
+            id(&["gemini", "--provider", "openai", "--all"])
+                .unwrap_err()
+                .to_string(),
+            "gemini records from Google AI Studio only, not from `openai`; leave out --provider"
+        );
         assert_eq!(
             id(&["openai_chat", "--provider", "anthropic", "--all"]).unwrap(),
             "anthropic"
@@ -682,7 +874,7 @@ mod tests {
             }
         };
         let set = Endpoint::from_variables(
-            &EXAMPLE,
+            Service::Provider(&EXAMPLE),
             variables(&[
                 ("EXAMPLE_CLOUD_API_KEY", "sk-test"),
                 ("EXAMPLE_CLOUD_BASE_URL", "http://127.0.0.1:9"),
@@ -693,7 +885,7 @@ mod tests {
         assert_eq!(set.key.as_deref(), Some("sk-test"));
         assert_eq!(set.base_url, "http://127.0.0.1:9");
         let unset = Endpoint::from_variables(
-            &EXAMPLE,
+            Service::Provider(&EXAMPLE),
             variables(&[
                 ("EXAMPLE_CLOUD_API_KEY", ""),
                 ("EXAMPLE_CLOUD_BASE_URL", ""),
@@ -701,15 +893,32 @@ mod tests {
         );
         assert_eq!(unset.key, None);
         assert_eq!(unset.base_url, "https://api.example.com/compat");
-        let openai = Endpoint::from_variables(known("openai"), variables(&[]));
+        let openai = Endpoint::from_variables(Service::Provider(known("openai")), variables(&[]));
         assert_eq!(
             (openai.key_variable.as_str(), openai.base_url.as_str()),
             ("OPENAI_API_KEY", "https://api.openai.com")
         );
-        let anthropic = Endpoint::from_variables(known("anthropic"), variables(&[]));
+        let anthropic =
+            Endpoint::from_variables(Service::Provider(known("anthropic")), variables(&[]));
         assert_eq!(
             (anthropic.key_variable.as_str(), anthropic.base_url.as_str()),
             ("ANTHROPIC_API_KEY", "https://api.anthropic.com")
+        );
+        let google = Endpoint::from_variables(
+            Service::Google(&GOOGLE),
+            variables(&[("GEMINI_API_KEY", "AIza-test")]),
+        );
+        assert_eq!(
+            (
+                google.key_variable.as_str(),
+                google.base_url.as_str(),
+                google.key.as_deref()
+            ),
+            (
+                "GEMINI_API_KEY",
+                "https://generativelanguage.googleapis.com",
+                Some("AIza-test")
+            )
         );
     }
 
@@ -1104,5 +1313,173 @@ mod tests {
         )
         .await;
         assert!(matches!(result, Err(Error::Json { .. })));
+    }
+
+    fn gemini_repository() -> TempDir {
+        let dir = TempDir::new();
+        let requests = "crates/kaeso-codecs/fixtures/gemini/requests";
+        dir.file(
+            &format!("{requests}/text-simple.json"),
+            r#"{"contents":[{"role":"user","parts":[{"text":"Hi"}]}]}"#,
+        );
+        dir.file(
+            &format!("{requests}/stream-text.json"),
+            r#"{"contents":[{"parts":[{"text":"Hi"}]}]}"#,
+        );
+        dir.file(
+            &format!("{requests}/stream-text.meta.json"),
+            r#"{"model":"gemini-3.5-flash-lite","action":"streamGenerateContent"}"#,
+        );
+        dir.file(
+            &format!("{requests}/odd-action.json"),
+            r#"{"contents":[]}"#,
+        );
+        dir.file(
+            &format!("{requests}/odd-action.meta.json"),
+            r#"{"action":"predict"}"#,
+        );
+        dir.file(
+            &format!("{requests}/count_tokens/basic.json"),
+            r#"{"contents":[]}"#,
+        );
+        dir.file(
+            "crates/kaeso-codecs/fixtures/gemini_embeddings/requests/batch.json",
+            r#"{"requests":[]}"#,
+        );
+        dir.file(
+            "crates/kaeso-codecs/fixtures/gemini_embeddings/requests/batch.meta.json",
+            r#"{"action":"batchEmbedContents"}"#,
+        );
+        dir
+    }
+
+    #[tokio::test]
+    async fn gemini_paths_come_from_the_model_and_the_fixture_method() {
+        let dir = gemini_repository();
+        let mut out = Vec::new();
+        run(
+            dir.path(),
+            &args(&["gemini", "stream-text", "--dry-run"]),
+            &google("https://g.example.com/", None),
+            &mut out,
+        )
+        .await
+        .unwrap();
+        assert_eq!(
+            String::from_utf8(out).unwrap(),
+            "crates/kaeso-codecs/fixtures/gemini/requests/stream-text.json -> POST https://g.example.com/v1beta/models/gemini-3.5-flash-lite:streamGenerateContent?alt=sse (stream)\n"
+        );
+        let mut out = Vec::new();
+        let missing = run(
+            dir.path(),
+            &args(&["gemini", "text-simple", "--dry-run"]),
+            &google("https://g.example.com", None),
+            &mut out,
+        )
+        .await
+        .unwrap_err();
+        assert_eq!(
+            missing.to_string(),
+            "crates/kaeso-codecs/fixtures/gemini/requests/text-simple.json names no model; pass --model"
+        );
+        let mut out = Vec::new();
+        run(
+            dir.path(),
+            &args(&["gemini", "basic", "--count", "--model", "models/gemini-x", "--dry-run"]),
+            &google("https://g.example.com", None),
+            &mut out,
+        )
+        .await
+        .unwrap();
+        assert_eq!(
+            String::from_utf8(out).unwrap(),
+            "crates/kaeso-codecs/fixtures/gemini/requests/count_tokens/basic.json -> POST https://g.example.com/v1beta/models/gemini-x:countTokens\n"
+        );
+        let mut out = Vec::new();
+        run(
+            dir.path(),
+            &args(&["gemini_embeddings", "batch", "--model", "gemini-embedding-2", "--dry-run"]),
+            &google("https://g.example.com", None),
+            &mut out,
+        )
+        .await
+        .unwrap();
+        assert!(
+            String::from_utf8(out)
+                .unwrap()
+                .ends_with("/v1beta/models/gemini-embedding-2:batchEmbedContents\n")
+        );
+        let odd = run(
+            dir.path(),
+            &args(&["gemini", "odd-action", "--model", "m", "--dry-run"]),
+            &google("https://g.example.com", None),
+            &mut Vec::new(),
+        )
+        .await
+        .unwrap_err();
+        assert!(odd.to_string().ends_with("`predict` is not a Gemini method Kaeso serves"));
+        let dot = run(
+            dir.path(),
+            &args(&["gemini", "text-simple", "--model", "..", "--dry-run"]),
+            &google("https://g.example.com", None),
+            &mut Vec::new(),
+        )
+        .await
+        .unwrap_err();
+        assert!(dot.to_string().contains("can't be part of a URL"), "{dot}");
+        let no_count = run(
+            dir.path(),
+            &args(&["gemini_embeddings", "batch", "--count", "--dry-run"]),
+            &google("https://g.example.com", None),
+            &mut Vec::new(),
+        )
+        .await
+        .unwrap_err();
+        assert_eq!(
+            no_count.to_string(),
+            "gemini_embeddings has no token-count endpoint"
+        );
+    }
+
+    #[tokio::test]
+    async fn gemini_streams_are_recorded_with_the_google_key_header() {
+        let dir = gemini_repository();
+        let served = serve_once(Reply {
+            status: 200,
+            headers: vec![("content-type", "text/event-stream")],
+            body: b"data: {\"candidates\": []}\r\n\r\n".to_vec(),
+        })
+        .await;
+        run(
+            dir.path(),
+            &args(&["gemini", "stream-text"]),
+            &google(&served.url, Some("AIza-test")),
+            &mut Vec::new(),
+        )
+        .await
+        .unwrap();
+        let request = served.request.await.unwrap();
+        assert!(
+            request.starts_with(
+                "POST /v1beta/models/gemini-3.5-flash-lite:streamGenerateContent?alt=sse HTTP/1.1\r\n"
+            ),
+            "{request}"
+        );
+        assert!(request.contains("x-goog-api-key: AIza-test\r\n"), "{request}");
+        assert!(!request.contains("authorization"), "{request}");
+        assert!(request.ends_with(r#"{"contents":[{"parts":[{"text":"Hi"}]}]}"#));
+        let streams = "crates/kaeso-codecs/fixtures/gemini/streams";
+        assert_eq!(
+            dir.read(&format!("{streams}/recorded-stream-text.sse")),
+            "data: {\"candidates\": []}\r\n\r\n"
+        );
+        let index = dir.read(&format!("{streams}/RECORDED.md"));
+        assert!(
+            index.contains("Provenance: live API of Google AI Studio (`google`).\n"),
+            "{index}"
+        );
+        assert!(index.contains(
+            "| `recorded-stream-text.sse` | `gemini/requests/stream-text.json` | `gemini-3.5-flash-lite` | "
+        ));
     }
 }

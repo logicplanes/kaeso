@@ -1,0 +1,506 @@
+---
+source: crates/kaeso-codecs/tests/cross_matrix.rs
+expression: outcomes
+---
+{
+  "recorded-image-input": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "Red",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "juTvauOpD53_vdIPwYmE2Q0",
+    "model": "gemini-3.6-flash",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 1,
+      "prompt_tokens": 268,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 269
+    }
+  },
+  "recorded-max-tokens": {
+    "choices": [
+      {
+        "finish_reason": "length",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "**I. The Primeval Hymn**\n\nBefore the",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "l-TvaufCJdnrkdUPqvjB8A4",
+    "model": "gemini-3.6-flash",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 12,
+      "prompt_tokens": 9,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 21
+    }
+  },
+  "recorded-multi-turn": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "Your name is Ada.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "NuTvaumyCYOwvdIP-6uVkQM",
+    "model": "gemini-3.6-flash",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 5,
+      "prompt_tokens": 29,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 34
+    }
+  },
+  "recorded-role-assistant": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "Hello! How can I help you today?",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "xuTvaqChBoyBxs0Pw5y-8A4",
+    "model": "gemini-3.6-flash",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 119,
+      "completion_tokens_details": {
+        "reasoning_tokens": 110
+      },
+      "prompt_tokens": 4,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 123
+    }
+  },
+  "recorded-safety-settings": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "Apple",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "oOTvap_kIr74nsEP-8TagQ8",
+    "model": "gemini-3.6-flash",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 1,
+      "prompt_tokens": 5,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 6
+    }
+  },
+  "recorded-structured-json-schema": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "{\"name\":\"Classic Peanut Butter Cookies\",\"ingredients\":[\"Peanut butter\",\"Sugar\",\"Egg\"]}",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "e-Tvavy5N8a0kdUPn5O58Q0",
+    "model": "gemini-3.6-flash",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 18,
+      "prompt_tokens": 13,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 31
+    }
+  },
+  "recorded-structured-response-schema": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "[\n  {\n    \"color\": \"red\"\n  },\n  {\n    \"color\": \"blue\"\n  }\n]",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "heTvaqaxBK7ZvdIPjK7F4AI",
+    "model": "gemini-3.6-flash",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 31,
+      "prompt_tokens": 6,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 37
+    }
+  },
+  "recorded-system-instruction": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "The capital of France is Paris.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "LOTvauTeO57qkdUPpYSBkAw",
+    "model": "gemini-3.6-flash",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 91,
+      "completion_tokens_details": {
+        "reasoning_tokens": 84
+      },
+      "prompt_tokens": 19,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 110
+    }
+  },
+  "recorded-text-simple": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "Hello, how are you today?",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "G-Tvaq3CIPjsxN8P5sOSeQ",
+    "model": "gemini-3.6-flash",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 482,
+      "completion_tokens_details": {
+        "reasoning_tokens": 475
+      },
+      "prompt_tokens": 7,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 489
+    }
+  },
+  "recorded-thinking-budget": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "There are **3** letters \"r\" in the word strawberry.\n\nst**r**awbe**rr**y",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "S-Tvas6uEvn7xs0Pw62_WQ",
+    "model": "gemini-3.6-flash",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 184,
+      "completion_tokens_details": {
+        "reasoning_tokens": 159
+      },
+      "prompt_tokens": 11,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 195
+    }
+  },
+  "recorded-thinking-include-thoughts": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "No, 391 is not a prime number because it is a composite number divisible by 17 and 23 ($17 \\times 23 = 391$).",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "P-TvapKAB8uJxs0Pr_aU0AI",
+    "model": "gemini-3.6-flash",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 470,
+      "completion_tokens_details": {
+        "reasoning_tokens": 430
+      },
+      "prompt_tokens": 22,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 492
+    }
+  },
+  "recorded-tool-result-dummy-signature": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "The weather in Paris right now is 18°C and sunny.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "cuTvatK7LeCG7M8P2oSWkAw",
+    "model": "gemini-3.6-flash",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 47,
+      "completion_tokens_details": {
+        "reasoning_tokens": 32
+      },
+      "prompt_tokens": 103,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 150
+    }
+  },
+  "recorded-tool-result-signature": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "The current weather is:\n* **Paris:** 18°C and sunny\n* **London:** 12°C and cloudy",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "sOXvasbrCJym3boPksi7uAw",
+    "model": "gemini-3.6-flash",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 73,
+      "completion_tokens_details": {
+        "reasoning_tokens": 44
+      },
+      "prompt_tokens": 397,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 470
+    }
+  },
+  "recorded-tools-forced": {
+    "choices": [
+      {
+        "finish_reason": "tool_calls",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": null,
+          "refusal": null,
+          "role": "assistant",
+          "tool_calls": [
+            {
+              "function": {
+                "arguments": "{\n                \"location\": \"Tokyo\"\n              }",
+                "name": "get_weather"
+              },
+              "id": "call_3940307145401823907",
+              "type": "function"
+            }
+          ]
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "aeTvatTXG9LZkdUPs5a2sAw",
+    "model": "gemini-3.6-flash",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 92,
+      "completion_tokens_details": {
+        "reasoning_tokens": 76
+      },
+      "prompt_tokens": 122,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 214
+    }
+  },
+  "recorded-tools-parallel": {
+    "choices": [
+      {
+        "finish_reason": "tool_calls",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": null,
+          "refusal": null,
+          "role": "assistant",
+          "tool_calls": [
+            {
+              "function": {
+                "arguments": "{\n                \"location\": \"Paris\"\n              }",
+                "name": "get_weather"
+              },
+              "id": "call_17824526487901149391",
+              "type": "function"
+            },
+            {
+              "function": {
+                "arguments": "{\n                \"location\": \"London\"\n              }",
+                "name": "get_weather"
+              },
+              "id": "call_17824526487901150536",
+              "type": "function"
+            }
+          ]
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "XuTvauaSOOea28oP0syUoQE",
+    "model": "gemini-3.6-flash",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 121,
+      "completion_tokens_details": {
+        "reasoning_tokens": 89
+      },
+      "prompt_tokens": 97,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 218
+    }
+  },
+  "recorded-tools-single": {
+    "choices": [
+      {
+        "finish_reason": "tool_calls",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": null,
+          "refusal": null,
+          "role": "assistant",
+          "tool_calls": [
+            {
+              "function": {
+                "arguments": "{\n                \"location\": \"Paris\"\n              }",
+                "name": "get_weather"
+              },
+              "id": "call_18261916837581647102",
+              "type": "function"
+            }
+          ]
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "VeTvavqgNciLvdIPpqKRkQ4",
+    "model": "gemini-3.6-flash",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 63,
+      "completion_tokens_details": {
+        "reasoning_tokens": 47
+      },
+      "prompt_tokens": 68,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 131
+    }
+  }
+}

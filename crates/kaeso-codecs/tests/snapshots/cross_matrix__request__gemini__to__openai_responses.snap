@@ -1,0 +1,597 @@
+---
+source: crates/kaeso-codecs/tests/cross_matrix.rs
+expression: outcomes
+---
+{
+  "error-invalid-argument": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "Hi",
+          "role": "user"
+        }
+      ],
+      "model": "gemini-3.5-flash",
+      "reasoning": {
+        "effort": "ultra"
+      },
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "error-invalid-key": {
+    "body": {
+      "input": [
+        {
+          "content": "Hi",
+          "role": "user"
+        }
+      ],
+      "model": "gemini-3.5-flash",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "error-unknown-model": {
+    "body": {
+      "input": [
+        {
+          "content": "Hi",
+          "role": "user"
+        }
+      ],
+      "model": "gemini-0.0-nonexistent",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "image-input": {
+    "message": "`generationConfig.mediaResolution` comes from a Gemini API request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "generationConfig.mediaResolution"
+  },
+  "image-output": {
+    "message": "`generationConfig.responseModalities` comes from a Gemini API request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "generationConfig.responseModalities"
+  },
+  "max-tokens": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "Write a long poem about the sea.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 16,
+      "model": "gemini-3.5-flash",
+      "reasoning": {
+        "effort": "minimal"
+      },
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "multi-turn": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "My name is Ada. Remember it.",
+          "role": "user"
+        },
+        {
+          "content": "Nice to meet you, Ada. I will remember your name.",
+          "role": "assistant"
+        },
+        {
+          "content": "What is my name?",
+          "role": "user"
+        }
+      ],
+      "model": "gemini-3.5-flash",
+      "reasoning": {
+        "effort": "minimal"
+      },
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "role-assistant": {
+    "message": "`assistant` message comes from a Gemini API request and has no equivalent in OpenAI Responses. Remove the message, or send the request to a model served through its original format.",
+    "param": "messages[0].blocks[0]",
+    "unsupported": "`assistant` message"
+  },
+  "safety-settings": {
+    "message": "`safetySettings` comes from a Gemini API request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "safetySettings"
+  },
+  "stream-text": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "Count from one to ten in words, one per line.",
+          "role": "user"
+        }
+      ],
+      "model": "gemini-3.5-flash",
+      "reasoning": {
+        "effort": "minimal"
+      },
+      "store": false,
+      "stream": true
+    },
+    "path": "/v1/responses"
+  },
+  "stream-thinking": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "What is 17 times 23? Think it through, then give the number.",
+          "role": "user"
+        }
+      ],
+      "model": "gemini-3.5-flash",
+      "reasoning": {
+        "effort": "low",
+        "summary": "auto"
+      },
+      "store": false,
+      "stream": true
+    },
+    "path": "/v1/responses"
+  },
+  "stream-thinking-high": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "What is 17 times 23? Think it through step by step, then give the number.",
+          "role": "user"
+        }
+      ],
+      "model": "gemini-3.5-flash",
+      "reasoning": {
+        "effort": "high",
+        "summary": "auto"
+      },
+      "store": false,
+      "stream": true
+    },
+    "path": "/v1/responses"
+  },
+  "stream-tools": {
+    "body": {
+      "input": [
+        {
+          "content": "Check the weather in Paris and in London, both at once.",
+          "role": "user"
+        }
+      ],
+      "model": "gemini-3.5-flash",
+      "store": false,
+      "stream": true,
+      "tools": [
+        {
+          "description": "Gets the current weather for a city.",
+          "name": "get_weather",
+          "parameters": {
+            "properties": {
+              "location": {
+                "description": "The city name, such as Paris",
+                "type": "string"
+              }
+            },
+            "required": [
+              "location"
+            ],
+            "type": "object"
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
+  },
+  "structured-json-schema": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "Give me a cookie recipe name and its three main ingredients.",
+          "role": "user"
+        }
+      ],
+      "model": "gemini-3.5-flash",
+      "reasoning": {
+        "effort": "minimal"
+      },
+      "store": false,
+      "text": {
+        "format": {
+          "name": "response",
+          "schema": {
+            "additionalProperties": false,
+            "properties": {
+              "ingredients": {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 3,
+                "minItems": 3,
+                "type": "array"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "ingredients"
+            ],
+            "type": "object"
+          },
+          "type": "json_schema"
+        }
+      }
+    },
+    "path": "/v1/responses"
+  },
+  "structured-response-schema": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "List two primary colors.",
+          "role": "user"
+        }
+      ],
+      "model": "gemini-3.5-flash",
+      "reasoning": {
+        "effort": "minimal"
+      },
+      "store": false,
+      "text": {
+        "format": {
+          "name": "response",
+          "schema": {
+            "items": {
+              "properties": {
+                "color": {
+                  "type": "STRING"
+                }
+              },
+              "propertyOrdering": [
+                "color"
+              ],
+              "required": [
+                "color"
+              ],
+              "type": "OBJECT"
+            },
+            "type": "ARRAY"
+          },
+          "type": "json_schema"
+        }
+      }
+    },
+    "path": "/v1/responses"
+  },
+  "system-instruction": {
+    "message": "`top_k` is not supported by OpenAI Responses. OpenAI models do not support top-k sampling. Remove `top_k` or route the request to an Anthropic model.",
+    "param": "top_k",
+    "unsupported": "top_k"
+  },
+  "text-simple": {
+    "body": {
+      "input": [
+        {
+          "content": "Say hello in five words.",
+          "role": "user"
+        }
+      ],
+      "model": "gemini-3.5-flash",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "thinking-budget": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "How many letters r are in the word strawberry?",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 2048,
+      "model": "gemini-3.5-flash",
+      "reasoning": {
+        "effort": "low",
+        "summary": "auto"
+      },
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "thinking-include-thoughts": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "Is 391 a prime number? Answer yes or no and give the reason in one sentence.",
+          "role": "user"
+        }
+      ],
+      "model": "gemini-3.5-flash",
+      "reasoning": {
+        "effort": "low",
+        "summary": "auto"
+      },
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "tool-result-dummy-signature": {
+    "body": {
+      "input": [
+        {
+          "content": "What is the weather like in Paris right now?",
+          "role": "user"
+        },
+        {
+          "arguments": "{\n              \"location\": \"Paris\"\n            }",
+          "call_id": "toolu_01A09q90qw90lq917835lq9",
+          "name": "get_weather",
+          "type": "function_call"
+        },
+        {
+          "call_id": "toolu_01A09q90qw90lq917835lq9",
+          "output": "18 degrees Celsius and sunny",
+          "type": "function_call_output"
+        }
+      ],
+      "model": "gemini-3.5-flash",
+      "store": false,
+      "tools": [
+        {
+          "description": "Gets the current weather for a city.",
+          "name": "get_weather",
+          "parameters": {
+            "properties": {
+              "location": {
+                "description": "The city name, such as Paris",
+                "type": "string"
+              }
+            },
+            "required": [
+              "location"
+            ],
+            "type": "object"
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
+  },
+  "tool-result-signature": {
+    "body": {
+      "input": [
+        {
+          "content": "Check the weather in Paris and in London, both at once.",
+          "role": "user"
+        },
+        {
+          "arguments": "{\n              \"location\": \"Paris\"\n            }",
+          "call_id": "call_17824526487901149391",
+          "name": "get_weather",
+          "type": "function_call"
+        },
+        {
+          "arguments": "{\n              \"location\": \"London\"\n            }",
+          "call_id": "call_17824526487901150536",
+          "name": "get_weather",
+          "type": "function_call"
+        },
+        {
+          "call_id": "call_17824526487901149391",
+          "output": "18 degrees Celsius and sunny",
+          "type": "function_call_output"
+        },
+        {
+          "call_id": "call_17824526487901150536",
+          "output": "12 degrees Celsius and cloudy",
+          "type": "function_call_output"
+        }
+      ],
+      "model": "gemini-3.5-flash",
+      "reasoning": {
+        "summary": "auto"
+      },
+      "store": false,
+      "tools": [
+        {
+          "description": "Gets the current weather for a city.",
+          "name": "get_weather",
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "location": {
+                "description": "The city name, such as Paris",
+                "type": "string"
+              },
+              "unit": {
+                "enum": [
+                  "celsius",
+                  "fahrenheit"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "location"
+            ],
+            "type": "object"
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
+  },
+  "tools-forced": {
+    "body": {
+      "input": [
+        {
+          "content": "Look up the weather in Tokyo.",
+          "role": "user"
+        }
+      ],
+      "model": "gemini-3.5-flash",
+      "store": false,
+      "tool_choice": {
+        "name": "get_weather",
+        "type": "function"
+      },
+      "tools": [
+        {
+          "description": "Gets the current weather for a city.",
+          "name": "get_weather",
+          "parameters": {
+            "properties": {
+              "location": {
+                "description": "The city name, such as Paris",
+                "type": "string"
+              }
+            },
+            "required": [
+              "location"
+            ],
+            "type": "object"
+          },
+          "type": "function"
+        },
+        {
+          "description": "Gets the local time in a city.",
+          "name": "get_time",
+          "parameters": {
+            "properties": {
+              "location": {
+                "description": "The city name, such as Paris",
+                "type": "string"
+              }
+            },
+            "required": [
+              "location"
+            ],
+            "type": "object"
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
+  },
+  "tools-parallel": {
+    "body": {
+      "input": [
+        {
+          "content": "Check the weather in Paris and in London, both at once.",
+          "role": "user"
+        }
+      ],
+      "model": "gemini-3.5-flash",
+      "reasoning": {
+        "summary": "auto"
+      },
+      "store": false,
+      "tools": [
+        {
+          "description": "Gets the current weather for a city.",
+          "name": "get_weather",
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "location": {
+                "description": "The city name, such as Paris",
+                "type": "string"
+              },
+              "unit": {
+                "enum": [
+                  "celsius",
+                  "fahrenheit"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "location"
+            ],
+            "type": "object"
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
+  },
+  "tools-single": {
+    "body": {
+      "input": [
+        {
+          "content": "What is the weather like in Paris right now?",
+          "role": "user"
+        }
+      ],
+      "model": "gemini-3.5-flash",
+      "store": false,
+      "tool_choice": "auto",
+      "tools": [
+        {
+          "description": "Gets the current weather for a city.",
+          "name": "get_weather",
+          "parameters": {
+            "properties": {
+              "location": {
+                "description": "The city name, such as Paris",
+                "type": "string"
+              }
+            },
+            "required": [
+              "location"
+            ],
+            "type": "object"
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
+  }
+}

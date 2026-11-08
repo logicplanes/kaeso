@@ -1,0 +1,31 @@
+{
+  "candidates": [
+    {
+      "content": {
+        "parts": [
+          {
+            "text": "**I. The Primeval Hymn**\n\nBefore the",
+            "thoughtSignature": "EmkKZwFpFH0TIcEtnjcCoaetDz/DAQ9mdfhJ4IO9BVSZ+ts9ZJCdU4mkk+dHmYRcHBWANHuoYkzu6kJJho/vMZTlUoE5ErrPza/tHk1ps4tIr+ZsD9JEHMG3WFG4ZdprCujowgnyhhX4L2Q="
+          }
+        ],
+        "role": "model"
+      },
+      "finishReason": "MAX_TOKENS",
+      "index": 0
+    }
+  ],
+  "usageMetadata": {
+    "promptTokenCount": 9,
+    "candidatesTokenCount": 12,
+    "totalTokenCount": 21,
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 9
+      }
+    ],
+    "serviceTier": "standard"
+  },
+  "modelVersion": "gemini-3.6-flash",
+  "responseId": "l-TvaufCJdnrkdUPqvjB8A4"
+}

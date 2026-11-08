@@ -1,0 +1,32 @@
+{
+  "candidates": [
+    {
+      "content": {
+        "parts": [
+          {
+            "text": "Hello! How can I help you today?",
+            "thoughtSignature": "EvYDCvMDAWkUfRN6jMh0ZSvOq8gXdRDKaJAKj18h5ZRPXSn2qmWywb2e9xZrvXJktDxN69QN1yyOxS1R0RD5pXgcsZZrWqHdjmSgA4SPpLLTg27Aq+kegq4ECdfU4cwKSlL7407s/kytwxQ47vaBFjRhi0NvfOZ8rMf8JDShjIQ5AyJ2sjhn6QUnb9LsbKfBciQWvCSwrGSBMJrL0ODlx0bLXaseJBiEzBrcfyM3CSUQZH0mHkS3o8dLYx41h6pisiq9Sj3VPBW2hd4hHjWlYqk2Nx7VzeaVLSmf/FdDsehyth3/XDC6N7XV1VgskDafJCSFYMf+Na2QxgwNbQ+T0nXGRW546H71d4R45NUoKSif4hXOvlkaTJGIYUuW+YrgigW7eiA/bZFjxQX89pdg3iaYQbJC0zqRH6SQ3eMMaJ991otTuJY5ZEvL86yQDaYn/Q0tboPfV6twqdnLAOU4AuUuhCjFZid/eXyvK7bsf3Nb1KJGdGtc/sFnpbjz4Z0bVc8X81Uwl03fl70R7CVQr0ZCbWhZscDEURounp8Lzdb8pezfyi1Idyzqv3jbFdUD8r4HTIYyoOXQ30Njp1ExKgzZm14GIHZ8x81tMip1LrWpY/ChrRJnxzbxNaT81oLVsyrBy5oS9JpedHpaAk3ffYPyUN6hdNCk0Q=="
+          }
+        ],
+        "role": "model"
+      },
+      "finishReason": "STOP",
+      "index": 0
+    }
+  ],
+  "usageMetadata": {
+    "promptTokenCount": 4,
+    "candidatesTokenCount": 9,
+    "totalTokenCount": 123,
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 4
+      }
+    ],
+    "thoughtsTokenCount": 110,
+    "serviceTier": "standard"
+  },
+  "modelVersion": "gemini-3.6-flash",
+  "responseId": "xuTvaqChBoyBxs0Pw5y-8A4"
+}

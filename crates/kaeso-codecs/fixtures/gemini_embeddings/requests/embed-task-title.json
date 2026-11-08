@@ -1,0 +1,12 @@
+{
+  "content": {
+    "parts": [
+      {
+        "text": "Paris is the capital of France."
+      }
+    ]
+  },
+  "taskType": "RETRIEVAL_DOCUMENT",
+  "title": "France",
+  "outputDimensionality": 8
+}

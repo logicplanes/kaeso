@@ -1,0 +1,1166 @@
+---
+source: crates/kaeso-codecs/tests/cross_matrix.rs
+expression: outcomes
+---
+{
+  "failed": {
+    "rejected_by_source": "An error occurred while processing your request. You can retry your request, or contact us through our help center at help.openai.com if the error persists. Please include the request ID req_bf10eaf02b4ca9756d8cbfc05a244acb in your message."
+  },
+  "file-input-base64-file-id": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "hello.pdf is a one-page document that contains only the words \"Hello PDF\". The second document is a quarterly sales report showing revenue growth of 12% over the previous quarter."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-5.5-2026-04-23",
+    "responseId": "resp_0efefb63ea816998006acb51b460fb81909aa1bfd4cb4e482f",
+    "usageMetadata": {
+      "candidatesTokenCount": 46,
+      "promptTokenCount": 2215,
+      "thoughtsTokenCount": 52,
+      "totalTokenCount": 2313
+    }
+  },
+  "file-input-url": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "The file seems to contain excerpts from a letter to the shareholders of Berkshire Hathaway Inc., likely written by Warren Buffett. It covers several topics:\n\n1. **Communication Philosophy**: Buffett emphasizes the importance of transparency and candidness in reporting mistakes and successes to shareholders.\n\n2. **Mistakes and Learnings**: The letter acknowledges past mistakes in business assessments and management hires, highlighting the importance of correcting errors promptly.\n\n3. **CEO Succession**: Mention of Greg Abel stepping in as the new CEO and continuing the tradition of honest communication.\n\n4. **Pete Liegl Story**: A detailed account of acquiring Forest River and the relationship with its founder, highlighting trust and effective business decisions.\n\n5. **2024 Performance**: Overview of business performance, particularly in insurance and investment activities, with a focus on GEICO's improvement.\n\n6. **Tax Contributions**: Discussion of significant tax payments to the U.S. Treasury, credited to shareholders' reinvestments.\n\n7. **Investment Strategy**: A breakdown of Berkshire’s investments in both controlled subsidiaries and marketable equities, along with a focus on long-term holding strategies.\n\n8. **American Capitalism**: Reflections on America’s economic development and Berkshire’s role within it.\n\n9. **Property-Casualty Insurance**: Insights into the P/C insurance business model and its challenges and benefits.\n\n10. **Japanese Investments**: Information about Berkshire’s investments in Japanese companies and future plans.\n\n11. **Annual Meeting**: Details about the upcoming annual gathering in Omaha, including schedule changes and new book releases.\n\n12. **Personal Anecdotes**: Light-hearted stories about family and interactions, conveying Buffett's personable approach.\n\n13. **Financial Performance Data**: Tables comparing Berkshire’s annual performance to the S&P 500, showing impressive long-term gains.\n\nOverall, the letter reinforces Berkshire Hathaway's commitment to transparency, investment in both its businesses and the wider economy, and emphasizes strong leadership and prudent financial management."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-6-astra",
+    "responseId": "resp_686eef60237881a2bd1180bb8b13de430e34c516d176ff86",
+    "usageMetadata": {
+      "candidatesTokenCount": 398,
+      "promptTokenCount": 8438,
+      "totalTokenCount": 8836
+    }
+  },
+  "image-base64-file-id": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "The first image is a single pixel and shows no recognizable subject. The second image is a photo of a gray tabby cat sitting on a windowsill. The third image shows two dice rendered with a semi-transparent background."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-5.5-2026-04-23",
+    "responseId": "resp_0007746be9048db6006acb516f7b3581942faab9ae7713707c",
+    "usageMetadata": {
+      "candidatesTokenCount": 48,
+      "promptTokenCount": 1387,
+      "thoughtsTokenCount": 166,
+      "totalTokenCount": 1601
+    }
+  },
+  "image-url": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "The image depicts a scenic landscape with a wooden boardwalk or pathway leading through lush, green grass under a blue sky with some clouds. The setting suggests a peaceful natural area, possibly a park or nature reserve. There are trees and shrubs in the background."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-6-astra",
+    "responseId": "resp_67ccd3a9da748190baa7f1570fe91ac604becb25c45c1d41",
+    "usageMetadata": {
+      "candidatesTokenCount": 52,
+      "promptTokenCount": 328,
+      "totalTokenCount": 380
+    }
+  },
+  "json-object-mode": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "{\n  \"city\": \"Paris\",\n  \"country\": \"France\"\n}"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-4.1-2025-04-14",
+    "responseId": "resp_0a99caf81f824eba006acb699055e381a2da7a8c61a2e6bd2c",
+    "usageMetadata": {
+      "candidatesTokenCount": 17,
+      "promptTokenCount": 26,
+      "totalTokenCount": 43
+    }
+  },
+  "max-output-tokens-incomplete": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "The printing press, invented by Johannes Gutenberg around 1440, revolutionized the"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "MAX_TOKENS",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-4.1-2025-04-14",
+    "responseId": "resp_0effd1ac380390cd006acb712ee1078193b5d06e53c0a24158",
+    "usageMetadata": {
+      "candidatesTokenCount": 16,
+      "promptTokenCount": 17,
+      "totalTokenCount": 33
+    }
+  },
+  "multi-turn-roles": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Not really: the Atlantic off Lisbon is about 15 °C in March, so only brief, brave dips."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-5.5-2026-04-23",
+    "responseId": "resp_0a15f07ef0b26171006acb565dc15b819044c994fdbf18b02a",
+    "usageMetadata": {
+      "candidatesTokenCount": 23,
+      "promptTokenCount": 164,
+      "thoughtsTokenCount": 64,
+      "totalTokenCount": 251
+    }
+  },
+  "providers/vercel/recorded-gpt-reasoning-encrypted": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "No; it’s divisible by 7 (91 = 7 × 13)."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "openai/gpt-5-nano",
+    "responseId": "gen_01M64HK5PMQX693A7PFNPFMG6P",
+    "usageMetadata": {
+      "candidatesTokenCount": 67,
+      "promptTokenCount": 22,
+      "totalTokenCount": 89
+    }
+  },
+  "providers/vercel/recorded-text": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Paris"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "mistral/mistral-nemo",
+    "responseId": "gen_01M64HKBDYQ2XAK45YVXCG4M81",
+    "usageMetadata": {
+      "candidatesTokenCount": 2,
+      "promptTokenCount": 17,
+      "totalTokenCount": 19
+    }
+  },
+  "providers/vercel/recorded-tools": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "functionCall": {
+                "args": {
+                  "location": "Paris, France",
+                  "unit": "celsius"
+                },
+                "id": "call-29285c97-87ea-4c1c-a7cf-bcf25ee771ec",
+                "name": "get_weather"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "nvidia/nemotron-3.5-lightning-free",
+    "responseId": "gen_01M64HKCMD3NR5YGRXH484DPH5",
+    "usageMetadata": {
+      "candidatesTokenCount": 39,
+      "promptTokenCount": 348,
+      "thoughtsTokenCount": 20,
+      "totalTokenCount": 407
+    }
+  },
+  "providers/xai/recorded-codex-gpt-history": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "OK"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "grok-4.7",
+    "responseId": "bcedf421-5a21-95c5-9114-ab74edb142ed",
+    "usageMetadata": {
+      "cachedContentTokenCount": 1152,
+      "candidatesTokenCount": 1,
+      "promptTokenCount": 2827,
+      "thoughtsTokenCount": 37,
+      "totalTokenCount": 2865
+    }
+  },
+  "providers/xai/recorded-codex-turn-one": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "ok"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "grok-4.7",
+    "responseId": "459fb048-f905-99e6-b720-f28b6be8c10f",
+    "usageMetadata": {
+      "cachedContentTokenCount": 1152,
+      "candidatesTokenCount": 1,
+      "promptTokenCount": 2546,
+      "thoughtsTokenCount": 81,
+      "totalTokenCount": 2628
+    }
+  },
+  "providers/xai/recorded-codex-turn-two": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "4817"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "grok-4.7",
+    "responseId": "58449c27-8145-9c57-b82a-9aa088052aa5",
+    "usageMetadata": {
+      "cachedContentTokenCount": 2432,
+      "candidatesTokenCount": 2,
+      "promptTokenCount": 2642,
+      "thoughtsTokenCount": 43,
+      "totalTokenCount": 2687
+    }
+  },
+  "providers/xai/recorded-presence-penalty-ignored": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Hi! 😊"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "grok-4.3",
+    "responseId": "94fd764f-fa88-9392-b8ee-bd267db1d75a",
+    "usageMetadata": {
+      "cachedContentTokenCount": 128,
+      "candidatesTokenCount": 4,
+      "promptTokenCount": 195,
+      "thoughtsTokenCount": 128,
+      "totalTokenCount": 327
+    }
+  },
+  "providers/xai/recorded-reasoning-effort-high": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "If a woodchuck could chuck wood, it would chuck as much wood as a woodchuck could chuck—if a woodchuck could chuck wood. \n\n(Realistically, groundhogs don't chuck wood at all, so the answer is zero.)"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "grok-4.3",
+    "responseId": "e22bb510-28c1-94a0-a300-baccc57d26b5",
+    "usageMetadata": {
+      "candidatesTokenCount": 51,
+      "promptTokenCount": 196,
+      "thoughtsTokenCount": 448,
+      "totalTokenCount": 695
+    }
+  },
+  "providers/xai/recorded-text-input-string": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Once upon a time, in a shimmering meadow under the silver moon, a gentle unicorn named Luna pranced through fields of glowing flowers. She collected starlight in her horn to light the way for sleepy fireflies returning home. As the night grew quiet, Luna curled up on a cloud of soft moss and drifted into peaceful dreams."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "grok-4.3",
+    "responseId": "6bf1a8b4-c2be-9d5a-9bc6-59c591bba072",
+    "usageMetadata": {
+      "cachedContentTokenCount": 128,
+      "candidatesTokenCount": 66,
+      "promptTokenCount": 203,
+      "thoughtsTokenCount": 238,
+      "totalTokenCount": 507
+    }
+  },
+  "providers/xai/recorded-tools-function": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "functionCall": {
+                "args": {
+                  "location": "Boston, MA",
+                  "unit": "fahrenheit"
+                },
+                "id": "call-c39f2f60-a874-4891-805c-6b84a702fb9c-0",
+                "name": "get_current_weather"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "grok-4.3",
+    "responseId": "29365b27-6656-91c2-8295-5b1f17a57883",
+    "usageMetadata": {
+      "cachedContentTokenCount": 128,
+      "candidatesTokenCount": 18,
+      "promptTokenCount": 320,
+      "thoughtsTokenCount": 182,
+      "totalTokenCount": 520
+    }
+  },
+  "providers/xai/recorded-tools-parallel": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "functionCall": {
+                "args": {
+                  "city": "Paris",
+                  "unit": "celsius"
+                },
+                "id": "call-d82aac74-51da-4a34-9f01-441131452d11-0",
+                "name": "get_weather"
+              }
+            },
+            {
+              "functionCall": {
+                "args": {
+                  "city": "Tokyo",
+                  "unit": "celsius"
+                },
+                "id": "call-d82aac74-51da-4a34-9f01-441131452d11-1",
+                "name": "get_weather"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "grok-4.3",
+    "responseId": "078df29c-62b4-9f74-9aec-24ae2cb25924",
+    "usageMetadata": {
+      "cachedContentTokenCount": 128,
+      "candidatesTokenCount": 29,
+      "promptTokenCount": 410,
+      "thoughtsTokenCount": 144,
+      "totalTokenCount": 583
+    }
+  },
+  "providers/xai/recorded-web-search": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "**The official opening hours of the Lisbon Oceanarium (Oceanário de Lisboa), according to its official website (oceanario.pt), are as follows:**[[1]](https://oceanario.pt/en/)\n\n- **Daily (standard hours)**: 10:00 AM – 8:00 PM (last entry at 7:00 PM).[[2]](https://oceanario.pt/en/plan-your-visit/)\n- **24 and 31 December**: 10:00 AM – 7:00 PM (last entry at 6:00 PM).\n- **25 December and 1 January**: 11:00 AM – 8:00 PM (last entry at 7:00 PM).\n\nThese details are available on the official English-language site at [https://oceanario.pt/en/](https://oceanario.pt/en/) (under “Plan your visit” or the homepage) and equivalent pages in other languages. Hours can vary slightly by season or special events, so it’s best to check the official site directly before visiting for the most up-to-date information.[[1]](https://oceanario.pt/en/)\n\nThe official Portuguese site is at [https://oceanario.pt/](https://oceanario.pt/)."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "grok-4.3",
+    "responseId": "9948e2d4-ba76-9f93-acf5-5a1e076788ff",
+    "usageMetadata": {
+      "cachedContentTokenCount": 2048,
+      "candidatesTokenCount": 289,
+      "promptTokenCount": 11196,
+      "thoughtsTokenCount": 255,
+      "totalTokenCount": 11740
+    }
+  },
+  "reasoning-effort-high": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "The classic tongue twister..."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-6-astra",
+    "responseId": "resp_67ccd7eca01881908ff0b5146584e408072912b2993db808",
+    "usageMetadata": {
+      "candidatesTokenCount": 203,
+      "promptTokenCount": 81,
+      "thoughtsTokenCount": 832,
+      "totalTokenCount": 1116
+    }
+  },
+  "reasoning-encrypted": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Yes, bring an umbrella: Paris has an 80% chance of rain today with temperatures around 14 °C."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-5.5-2026-04-23",
+    "responseId": "resp_0db479fca4114c50006acb66d23eb98190c29d430d0790fb60",
+    "usageMetadata": {
+      "cachedContentTokenCount": 768,
+      "candidatesTokenCount": 49,
+      "promptTokenCount": 912,
+      "thoughtsTokenCount": 192,
+      "totalTokenCount": 1153
+    }
+  },
+  "recorded-file-input-url": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "This is **Warren Buffett’s 2024 annual letter to Berkshire Hathaway shareholders**, dated **February 22, 2025**. The 15-page file contains the letter plus two pages comparing Berkshire’s stock performance with the S&P 500—not the full annual report.\n\n### What’s inside\n\n- **2024 financial results:** Berkshire reported **$47.4 billion in operating earnings**, up from **$37.4 billion in 2023**, driven largely by stronger insurance results and investment income. Nevertheless, 53% of its 189 operating businesses reported lower earnings.\n- **Investment strategy:** Buffett explains Berkshire’s preference for owning good businesses over holding cash, despite its large cash position. Its marketable equity holdings ended the year at **$272 billion**, down from $354 billion.\n- **Insurance operations:** A discussion of GEICO’s improvement, catastrophe risks, disciplined pricing, and Berkshire’s **$171 billion in insurance “float”**—money held before claims are paid.\n- **Japanese investments:** Berkshire’s stakes in **ITOCHU, Marubeni, Mitsubishi, Mitsui, and Sumitomo** cost $13.8 billion and were worth **$23.5 billion** at year-end. Buffett expects these to remain long-term holdings.\n- **Management and succession:** Reflections on admitting and correcting mistakes, selecting managers, and **Greg Abel’s expected succession as CEO**.\n- **A tribute to Pete Liegl:** The story of Berkshire’s acquisition of Forest River and its founder’s contributions.\n- **Taxes and reinvestment:** Buffett reports **$26.8 billion in U.S. federal income-tax payments** for 2024 and discusses how retained earnings and compounding helped build Berkshire.\n- **Annual meeting information:** Plans for the **May 3, 2025 gathering in Omaha**, including the Q&A schedule and shareholder shopping events.\n\n### Performance tables at the end\n\n| Measure | Berkshire | S&P 500, including dividends |\n|---|---:|---:|\n| 2024 return | 25.5% | 25.0% |\n| Compounded annual gain, 1965–2024 | 19.9% | 10.4% |\n\n**Overall:** It combines a business update with Buffett’s lessons on long-term investing, honest management, risk, and reinvesting profits."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-6-astra",
+    "responseId": "resp_0b6eda942bd25154006acbb3dbf33887d1845901b653897565",
+    "usageMetadata": {
+      "candidatesTokenCount": 486,
+      "promptTokenCount": 11542,
+      "totalTokenCount": 12028
+    }
+  },
+  "recorded-function-call-output-array": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "The chart **“Weekly signups”** has been plotted.\n\nTrend: signups generally increased over the period, rising from **3 → 5**, dipping slightly to **4**, then jumping to **8**. Overall, the trend is **upward**."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-5.5-2026-04-23",
+    "responseId": "resp_01f0d3ff832da1a2006acbb3e631d88190a3c03bc1050a0a18",
+    "usageMetadata": {
+      "candidatesTokenCount": 58,
+      "promptTokenCount": 156,
+      "totalTokenCount": 214
+    }
+  },
+  "recorded-json-object-mode": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "{\n  \"city\": \"Paris\",\n  \"country\": \"France\"\n}"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-4.1-2025-04-14",
+    "responseId": "resp_05a5286721ef2aa5006acbb3ebc12c87d19a80d34780deefc6",
+    "usageMetadata": {
+      "candidatesTokenCount": 17,
+      "promptTokenCount": 22,
+      "totalTokenCount": 39
+    }
+  },
+  "recorded-max-output-tokens-incomplete": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Certainly! Here is a **detailed history of the printing press**, tracing its"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "MAX_TOKENS",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-4.1-2025-04-14",
+    "responseId": "resp_07145f6a6801ac3c006acbb3ef1e8887d1893f921a83026009",
+    "usageMetadata": {
+      "candidatesTokenCount": 16,
+      "promptTokenCount": 16,
+      "totalTokenCount": 32
+    }
+  },
+  "recorded-multi-turn-roles": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Usually no—the Atlantic near Lisbon is around 15–16°C in March, which feels quite cold for swimming. A wetsuit is recommended if you plan to surf or spend much time in the water."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-5.5-2026-04-23",
+    "responseId": "resp_02b7dd8dae68d16e006acbb3f0a3148190ad5ac33242a66d98",
+    "usageMetadata": {
+      "candidatesTokenCount": 47,
+      "promptTokenCount": 118,
+      "thoughtsTokenCount": 37,
+      "totalTokenCount": 202
+    }
+  },
+  "recorded-reasoning-effort-high": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "A woodchuck would chuck as much wood as a woodchuck could chuck, if a woodchuck could chuck wood! 🪵"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-6-astra",
+    "responseId": "resp_026cfb60ed863a01006acbb3f36c8087d1a6030409e218c09c",
+    "usageMetadata": {
+      "candidatesTokenCount": 35,
+      "promptTokenCount": 16,
+      "thoughtsTokenCount": 52,
+      "totalTokenCount": 103
+    }
+  },
+  "recorded-sampling-and-ids": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Paris"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-4.1-2025-04-14",
+    "responseId": "resp_01a4329af5a833e1016acbb41e9d3887d182a327663cb1244d",
+    "usageMetadata": {
+      "candidatesTokenCount": 2,
+      "promptTokenCount": 19,
+      "totalTokenCount": 21
+    }
+  },
+  "recorded-structured-output-json-schema": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "{\"name\":\"science fair\",\"date\":\"Friday\",\"participants\":[\"Alice\",\"Bob\"]}"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-5.5-2026-04-23",
+    "responseId": "resp_0f013f71713eb783006acbb41f6a9487d1b97b25bc1287fd49",
+    "usageMetadata": {
+      "candidatesTokenCount": 27,
+      "promptTokenCount": 77,
+      "thoughtsTokenCount": 28,
+      "totalTokenCount": 132
+    }
+  },
+  "recorded-text-input-string": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "A little unicorn named Luna followed a trail of glowing fireflies to a meadow where the flowers hummed lullabies. She curled beneath a willow tree, tucked her silver hooves into the soft grass, and wished every creature in the forest sweet dreams. As the moon wrapped the meadow in gentle light, Luna closed her eyes and dreamed of dancing among the stars."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-6-astra",
+    "responseId": "resp_07f95bbe5483eed2006acbb422d8cc87d1ad002a1065c5d9ae",
+    "usageMetadata": {
+      "candidatesTokenCount": 78,
+      "promptTokenCount": 17,
+      "thoughtsTokenCount": 13,
+      "totalTokenCount": 108
+    }
+  },
+  "recorded-tool-choice-allowed-tools": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "functionCall": {
+                "args": {
+                  "city": "Oslo",
+                  "unit": "celsius"
+                },
+                "id": "call_WEMfKAvtjJj6qGZSiZ6Aqaqs",
+                "name": "get_weather"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-5.5-2026-04-23",
+    "responseId": "resp_05133bdef2bdf91f006acbb427710087d1ba6d97601e35011c",
+    "usageMetadata": {
+      "candidatesTokenCount": 24,
+      "promptTokenCount": 4627,
+      "totalTokenCount": 4651
+    }
+  },
+  "recorded-tool-choice-none": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Hi"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-5.5-2026-04-23",
+    "responseId": "resp_035fcc6380ddfdd9006acbb428ead487d18cb9006686eb8b16",
+    "usageMetadata": {
+      "candidatesTokenCount": 5,
+      "promptTokenCount": 73,
+      "totalTokenCount": 78
+    }
+  },
+  "recorded-tool-result-error": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "I couldn’t find weather data for “Atlantis” — no weather station was found for that location. If you meant a real place with a similar name, tell me the city/country and I can check again."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-5.5-2026-04-23",
+    "responseId": "resp_08fb149d49a358a9006acbb429fec881909ef71d270603a548",
+    "usageMetadata": {
+      "candidatesTokenCount": 48,
+      "promptTokenCount": 125,
+      "totalTokenCount": 173
+    }
+  },
+  "recorded-tools-function": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "functionCall": {
+                "args": {
+                  "location": "Boston, MA",
+                  "unit": "fahrenheit"
+                },
+                "id": "call_wdEvTxRQoNKByBADWmlV9V9W",
+                "name": "get_current_weather"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-6-astra",
+    "responseId": "resp_0670e38760b32901006acbb42c122487d1a87bb2191281014d",
+    "usageMetadata": {
+      "candidatesTokenCount": 26,
+      "promptTokenCount": 80,
+      "totalTokenCount": 106
+    }
+  },
+  "recorded-tools-parallel": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "functionCall": {
+                "args": {
+                  "city": "Paris",
+                  "unit": "celsius"
+                },
+                "id": "call_peWI0zFuctZgf1VZUhn6yqGb",
+                "name": "get_weather"
+              }
+            },
+            {
+              "functionCall": {
+                "args": {
+                  "city": "Tokyo",
+                  "unit": "celsius"
+                },
+                "id": "call_SBNzcERC8STz8ZRqkfh9xetf",
+                "name": "get_weather"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-5.5-2026-04-23",
+    "responseId": "resp_0b1ef656b6db58a8006acbb42ff59887d18e177f69e1660be5",
+    "usageMetadata": {
+      "candidatesTokenCount": 58,
+      "promptTokenCount": 119,
+      "totalTokenCount": 177
+    }
+  },
+  "recorded-web-search": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "According to the **official Oceanário de Lisboa site**, the Lisbon Oceanarium is open:\n\n- **Daily:** **10:00 AM – 8:00 PM**\n- **Last entry:** **7:00 PM**\n- **24 and 31 December:** **10:00 AM – 7:00 PM**; last entry **6:00 PM**\n- **25 December and 1 January:** **11:00 AM – 8:00 PM**; last entry **7:00 PM** ([oceanario.pt](https://oceanario.pt/en/?utm_source=openai))"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-5.5-2026-04-23",
+    "responseId": "resp_0ab39bd8f52ec563006acbb435d3a087d1aea84fe88ecc91e4",
+    "usageMetadata": {
+      "cachedContentTokenCount": 3712,
+      "candidatesTokenCount": 122,
+      "promptTokenCount": 8351,
+      "thoughtsTokenCount": 46,
+      "totalTokenCount": 8519
+    }
+  },
+  "refusal": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "I'm sorry, but I can't help with creating phishing emails."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-5.5-2026-04-23",
+    "responseId": "resp_069573900de991fb006acb7607465781a2efed98d8aa4e11a5",
+    "usageMetadata": {
+      "candidatesTokenCount": 14,
+      "promptTokenCount": 71,
+      "thoughtsTokenCount": 38,
+      "totalTokenCount": 123
+    }
+  },
+  "sampling-and-ids": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Paris."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-4.1-2025-04-14",
+    "responseId": "resp_0cf08dd747ce803c006acb6fc39dd581a24f15975d75c78306",
+    "usageMetadata": {
+      "candidatesTokenCount": 2,
+      "promptTokenCount": 21,
+      "totalTokenCount": 23
+    }
+  },
+  "structured-output-json-schema": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "{\"name\":\"Science Fair\",\"date\":\"Friday\",\"participants\":[\"Alice\",\"Bob\"]}"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-5.5-2026-04-23",
+    "responseId": "resp_0bdb7f67f78d8b4b006acb685311aa81a25ce033401d6e81ad",
+    "usageMetadata": {
+      "candidatesTokenCount": 22,
+      "promptTokenCount": 78,
+      "thoughtsTokenCount": 24,
+      "totalTokenCount": 124
+    }
+  },
+  "text-input-string": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "In a peaceful grove beneath a silver moon, a unicorn named Lumina discovered a hidden pool that reflected the stars. As she dipped her horn into the water, the pool began to shimmer, revealing a pathway to a magical realm of endless night skies. Filled with wonder, Lumina whispered a wish for all who dream to find their own hidden magic, and as she glanced back, her hoofprints sparkled like stardust."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-6-astra",
+    "responseId": "resp_67ccd2bed1ec8190b14f964abc0542670bb6a6b452d3795b",
+    "usageMetadata": {
+      "candidatesTokenCount": 87,
+      "promptTokenCount": 36,
+      "totalTokenCount": 123
+    }
+  },
+  "tool-result-error": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "I couldn't find any weather data for Atlantis. It isn't a real city, so there's no weather station to ask. Is there another place you'd like the forecast for?"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-5.5-2026-04-23",
+    "responseId": "resp_0725216c59454ac2006acb6212ee8481901217df6b349c0411",
+    "usageMetadata": {
+      "candidatesTokenCount": 43,
+      "promptTokenCount": 176,
+      "thoughtsTokenCount": 28,
+      "totalTokenCount": 247
+    }
+  },
+  "tools-function": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "functionCall": {
+                "args": {
+                  "location": "Boston, MA",
+                  "unit": "celsius"
+                },
+                "id": "call_unLAR8MvFNptuiZK6K6HCy5k",
+                "name": "get_current_weather"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-6-astra",
+    "responseId": "resp_67ca09c5efe0819096d0511c92b8c890096610f474011cc0",
+    "usageMetadata": {
+      "candidatesTokenCount": 23,
+      "promptTokenCount": 291,
+      "totalTokenCount": 314
+    }
+  },
+  "tools-parallel": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "functionCall": {
+                "args": {
+                  "city": "Paris",
+                  "unit": "celsius"
+                },
+                "id": "call_ZhPaNDVL6V7jzIneVoHYEMoQ",
+                "name": "get_weather"
+              }
+            },
+            {
+              "functionCall": {
+                "args": {
+                  "city": "Tokyo",
+                  "unit": "celsius"
+                },
+                "id": "call_pwCM918E1HFqBn52cfr654wv",
+                "name": "get_weather"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-5.5-2026-04-23",
+    "responseId": "resp_00636e4c8fc87d8c006acb59d707e68193d289d5d3e535bb23",
+    "usageMetadata": {
+      "candidatesTokenCount": 44,
+      "promptTokenCount": 142,
+      "thoughtsTokenCount": 64,
+      "totalTokenCount": 250
+    }
+  },
+  "unknown-output-item": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Hello! How can I help you today?"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-5.5-2026-04-23",
+    "responseId": "resp_05a05f5f82977baf006acb7f8a3e7b8194916fd6ab0a37d004",
+    "usageMetadata": {
+      "candidatesTokenCount": 11,
+      "promptTokenCount": 8,
+      "totalTokenCount": 19
+    }
+  },
+  "web-search": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "The Lisbon Oceanarium is open every day from 10:00 to 19:00, with last entry at 18:00. ([oceanario.pt](https://www.oceanario.pt/en/plan-your-visit/opening-hours?utm_source=openai))"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-5.5-2026-04-23",
+    "responseId": "resp_0d9d96706c3569bb006acb6c7dfc578190a5c4b1441a09cf00",
+    "usageMetadata": {
+      "cachedContentTokenCount": 4864,
+      "candidatesTokenCount": 156,
+      "promptTokenCount": 8125,
+      "thoughtsTokenCount": 256,
+      "totalTokenCount": 8537
+    }
+  }
+}

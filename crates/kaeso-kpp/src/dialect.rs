@@ -14,14 +14,20 @@ pub enum DialectId {
     OpenAiResponses,
     #[serde(rename = "openai_embeddings")]
     OpenAiEmbeddings,
+    #[serde(rename = "gemini")]
+    Gemini,
+    #[serde(rename = "gemini_embeddings")]
+    GeminiEmbeddings,
 }
 
 impl DialectId {
-    pub const ALL: [DialectId; 4] = [
+    pub const ALL: [DialectId; 6] = [
         DialectId::AnthropicMessages,
         DialectId::OpenAiChat,
         DialectId::OpenAiResponses,
         DialectId::OpenAiEmbeddings,
+        DialectId::Gemini,
+        DialectId::GeminiEmbeddings,
     ];
 
     pub const fn as_str(self) -> &'static str {
@@ -30,6 +36,8 @@ impl DialectId {
             DialectId::OpenAiChat => "openai_chat",
             DialectId::OpenAiResponses => "openai_responses",
             DialectId::OpenAiEmbeddings => "openai_embeddings",
+            DialectId::Gemini => "gemini",
+            DialectId::GeminiEmbeddings => "gemini_embeddings",
         }
     }
 
@@ -39,6 +47,8 @@ impl DialectId {
             DialectId::OpenAiChat => "OpenAI Chat Completions",
             DialectId::OpenAiResponses => "OpenAI Responses",
             DialectId::OpenAiEmbeddings => "OpenAI Embeddings",
+            DialectId::Gemini => "Gemini API",
+            DialectId::GeminiEmbeddings => "Gemini Embeddings",
         }
     }
 }

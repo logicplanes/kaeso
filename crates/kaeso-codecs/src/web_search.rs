@@ -15,6 +15,7 @@ use crate::wire::type_tag;
 const RESPONSES: DialectId = DialectId::OpenAiResponses;
 const ANTHROPIC: DialectId = DialectId::AnthropicMessages;
 const CHAT: DialectId = DialectId::OpenAiChat;
+const GEMINI: DialectId = DialectId::Gemini;
 
 const TOOL: &str = "web_search";
 const SEARCH_CALL: &str = "web_search_call";
@@ -483,6 +484,14 @@ pub(crate) fn for_chat(d: &mut Draft<'_>) -> Result<(), KppError> {
     map_searches(d, RESPONSES, CHAT, |_, _, _| Ok(Mapped::LeftOut))?;
     without_search_calls(d, |_| true);
     anthropic_searches(d, CHAT, |_, _| Ok(Mapped::LeftOut))?;
+    without_claudes_searches(d, true);
+    Ok(())
+}
+
+pub(crate) fn for_gemini(d: &mut Draft<'_>) -> Result<(), KppError> {
+    map_searches(d, RESPONSES, GEMINI, |_, _, _| Ok(Mapped::LeftOut))?;
+    without_search_calls(d, |_| true);
+    anthropic_searches(d, GEMINI, |_, _| Ok(Mapped::LeftOut))?;
     without_claudes_searches(d, true);
     Ok(())
 }

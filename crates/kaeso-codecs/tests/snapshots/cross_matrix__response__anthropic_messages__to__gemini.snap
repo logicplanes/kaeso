@@ -1,0 +1,1693 @@
+---
+source: crates/kaeso-codecs/tests/cross_matrix.rs
+expression: outcomes
+---
+{
+  "cache-prewarm": {
+    "candidates": [
+      {
+        "content": {
+          "role": "model"
+        },
+        "finishReason": "MAX_TOKENS",
+        "index": 0
+      }
+    ],
+    "modelVersion": "claude-opus-5-5",
+    "responseId": "msg_01XFDUDYJgAACzvnptvVoYEL",
+    "usageMetadata": {
+      "candidatesTokenCount": 0,
+      "promptTokenCount": 5128,
+      "totalTokenCount": 5128
+    }
+  },
+  "document-custom-content": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "The document reports "
+            },
+            {
+              "text": "important findings"
+            },
+            {
+              "text": " and notes that "
+            },
+            {
+              "text": "more work is needed on sample size"
+            },
+            {
+              "text": "."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "claude-opus-5-5",
+    "responseId": "msg_01Dbxix1RwY8NwAuNVqQ1SpD",
+    "usageMetadata": {
+      "candidatesTokenCount": 61,
+      "promptTokenCount": 702,
+      "totalTokenCount": 763
+    }
+  },
+  "document-pdf-base64": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "The document states that "
+            },
+            {
+              "text": "water is essential for life"
+            },
+            {
+              "text": "."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "claude-opus-5-5",
+    "responseId": "msg_01MtEiSpQTeozH75gPX5Eryg",
+    "usageMetadata": {
+      "candidatesTokenCount": 29,
+      "promptTokenCount": 1612,
+      "totalTokenCount": 1641
+    }
+  },
+  "document-text-citations": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "According to the document, "
+            },
+            {
+              "text": "the grass is green"
+            },
+            {
+              "text": " and "
+            },
+            {
+              "text": "the sky is blue"
+            },
+            {
+              "text": "."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "claude-opus-5-5",
+    "responseId": "msg_01MaZhpqocJmCfW7pvfTgNgr",
+    "usageMetadata": {
+      "candidatesTokenCount": 54,
+      "promptTokenCount": 610,
+      "totalTokenCount": 664
+    }
+  },
+  "image-base64": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "The image is a single pixel: a 1x1 PNG filled with one solid color, so there is no discernible subject or detail to describe."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "claude-sonnet-4-6",
+    "responseId": "msg_01xFtoF48bF2gZGSxCPwLKHc",
+    "usageMetadata": {
+      "candidatesTokenCount": 33,
+      "promptTokenCount": 21,
+      "totalTokenCount": 54
+    }
+  },
+  "max-tokens": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Quantum physics is the branch of physics that"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "MAX_TOKENS",
+        "index": 0
+      }
+    ],
+    "modelVersion": "claude-opus-5-5",
+    "responseId": "msg_01koAWVrcMpDRdGy5XQ4ASmV",
+    "usageMetadata": {
+      "candidatesTokenCount": 10,
+      "promptTokenCount": 11,
+      "totalTokenCount": 21
+    }
+  },
+  "metadata-service-tier": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Write the subject line in the imperative mood and keep it under about 50 characters, e.g. \"Fix race in cache eviction\"."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "claude-opus-5-5",
+    "responseId": "msg_016tDAXmM6K8jLaizKWBSEzQ",
+    "usageMetadata": {
+      "candidatesTokenCount": 30,
+      "promptTokenCount": 19,
+      "totalTokenCount": 49
+    }
+  },
+  "multi-turn-array-content": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "The capital of New Zealand is Wellington."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "claude-haiku-4-5-20251001",
+    "responseId": "msg_01BJmFwA1boMTnMr4duGaMUg",
+    "usageMetadata": {
+      "candidatesTokenCount": 11,
+      "promptTokenCount": 41,
+      "totalTokenCount": 52
+    }
+  },
+  "pause-turn": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Let me look up this year's laureates."
+            },
+            {
+              "text": "The first result is the prize overview page; I'll search for the announcement itself."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "OTHER",
+        "index": 0
+      }
+    ],
+    "modelVersion": "claude-opus-5-5",
+    "responseId": "msg_011RuYjfcpCtqxm3vucSQBPC",
+    "usageMetadata": {
+      "candidatesTokenCount": 118,
+      "promptTokenCount": 5212,
+      "totalTokenCount": 5330
+    }
+  },
+  "providers/vercel/recorded-text": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Paris"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "mistral/mistral-nemo",
+    "responseId": "gen_01M64HGCXHNDXAG6G04YXCMKQY",
+    "usageMetadata": {
+      "candidatesTokenCount": 2,
+      "promptTokenCount": 23,
+      "totalTokenCount": 25
+    }
+  },
+  "providers/vercel/recorded-thinking": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "No. It is divisible by 7 and 13."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "nvidia/nemotron-3.5-lightning-free",
+    "responseId": "gen_01M64HGFRNVRHG1YXKX8NFSP1B",
+    "usageMetadata": {
+      "candidatesTokenCount": 489,
+      "promptTokenCount": 33,
+      "totalTokenCount": 522
+    }
+  },
+  "providers/vercel/recorded-tools": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "functionCall": {
+                "args": {
+                  "location": "Paris, France",
+                  "unit": "celsius"
+                },
+                "id": "call-5315343c-1294-488f-88f8-5e76164d77ad",
+                "name": "get_weather"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "nvidia/nemotron-3.5-lightning-free",
+    "responseId": "gen_01M64HKDK2V30WXAJMZ05FSN4C",
+    "usageMetadata": {
+      "candidatesTokenCount": 93,
+      "promptTokenCount": 348,
+      "totalTokenCount": 441
+    }
+  },
+  "recorded-cache-prewarm": {
+    "candidates": [
+      {
+        "content": {
+          "role": "model"
+        },
+        "finishReason": "MAX_TOKENS",
+        "index": 0
+      }
+    ],
+    "modelVersion": "claude-opus-5-5",
+    "responseId": "msg_011CfvjcMrJu3iJkhDdv9pi5",
+    "usageMetadata": {
+      "candidatesTokenCount": 0,
+      "promptTokenCount": 35,
+      "totalTokenCount": 35
+    }
+  },
+  "recorded-document-custom-content": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "This document is very brief and has only two statements. It says that "
+            },
+            {
+              "text": "these are important findings"
+            },
+            {
+              "text": ", but it also notes a limitation: "
+            },
+            {
+              "text": "further work is needed on sample size."
+            },
+            {
+              "text": "\n\nIn short, the document presents its findings as significant but says the sample size should be investigated further. It doesn't say what the findings are, what was studied, or how big the current sample is, so a more detailed summary isn't possible from this text alone."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "claude-opus-5-5",
+    "responseId": "msg_011CfvjcS3aK3AHnUexZPv61",
+    "usageMetadata": {
+      "candidatesTokenCount": 154,
+      "promptTokenCount": 862,
+      "thoughtsTokenCount": 15,
+      "totalTokenCount": 1031
+    }
+  },
+  "recorded-document-pdf-base64": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "The document makes a single statement about water: "
+            },
+            {
+              "text": "Water is essential for life."
+            },
+            {
+              "text": "\n\nThat is the only content in these notes, which appear to be a week 1 lecture handout. There are no further details, such as *why* water is essential or what role it plays in living organisms. If you have more pages or notes from the lecture, I'm happy to help with those too."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "claude-opus-5-5",
+    "responseId": "msg_011Cfvjcf69gg1YfNaazwQc1",
+    "usageMetadata": {
+      "candidatesTokenCount": 120,
+      "promptTokenCount": 2422,
+      "thoughtsTokenCount": 20,
+      "totalTokenCount": 2562
+    }
+  },
+  "recorded-document-pdf-url": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "# Key Findings: Claude 3.5 Haiku and Upgraded Claude 3.5 Sonnet Model Card Addendum\n\n## Overview\nThe addendum introduces two models: an **upgraded Claude 3.5 Sonnet** (knowledge cutoff April 2024) and the new **Claude 3.5 Haiku** (knowledge cutoff July 2024).\n\n## 1. New Capability: Computer Use\nThe upgraded Sonnet can interpret screenshots and generate GUI"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "MAX_TOKENS",
+        "index": 0
+      }
+    ],
+    "modelVersion": "claude-opus-5-5",
+    "responseId": "msg_011CfvjcrFNTFbXeMGYyjMkX",
+    "usageMetadata": {
+      "candidatesTokenCount": 167,
+      "promptTokenCount": 36570,
+      "thoughtsTokenCount": 857,
+      "totalTokenCount": 37594
+    }
+  },
+  "recorded-document-text-citations": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "According to the document, "
+            },
+            {
+              "text": "the grass is green"
+            },
+            {
+              "text": " and "
+            },
+            {
+              "text": "the sky is blue"
+            },
+            {
+              "text": "."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "claude-opus-5-5",
+    "responseId": "msg_011CfvjdigiihgTeHSKS63Cg",
+    "usageMetadata": {
+      "candidatesTokenCount": 58,
+      "promptTokenCount": 864,
+      "totalTokenCount": 922
+    }
+  },
+  "recorded-explicit-nulls": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Based on the document, the meeting is at **3pm**."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "claude-sonnet-4-6",
+    "responseId": "msg_011Cfvjdpetn2ikP5ZDse8Qv",
+    "usageMetadata": {
+      "candidatesTokenCount": 16,
+      "promptTokenCount": 56,
+      "totalTokenCount": 72
+    }
+  },
+  "recorded-image-base64": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "The image appears to be almost entirely **black** or very dark, with possibly a tiny hint of a dark **purple/blue** tone in a small area.\n\nThere is essentially **no discernible content** visible — it looks like a blank, dark, or heavily underexposed image."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "claude-sonnet-4-6",
+    "responseId": "msg_011CfvjdxD5QcQcYUMvWFNvH",
+    "usageMetadata": {
+      "candidatesTokenCount": 64,
+      "promptTokenCount": 17,
+      "totalTokenCount": 81
+    }
+  },
+  "recorded-max-tokens": {
+    "candidates": [
+      {
+        "content": {
+          "role": "model"
+        },
+        "finishReason": "MAX_TOKENS",
+        "index": 0
+      }
+    ],
+    "modelVersion": "claude-opus-5-5",
+    "responseId": "msg_011CfvjeFLxQGqMVktedfz5T",
+    "usageMetadata": {
+      "candidatesTokenCount": 0,
+      "promptTokenCount": 16,
+      "thoughtsTokenCount": 10,
+      "totalTokenCount": 26
+    }
+  },
+  "recorded-metadata-service-tier": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "**Write the subject line as an imperative command that completes the sentence \"If applied, this commit will...\"**\n\nFor example:\n- ✅ `Fix race condition in session cleanup`\n- ❌ `Fixed some bugs` or `Changes to session stuff`\n\nThis keeps messages consistent with Git's own conventions (like \"Merge branch...\"), forces you to state *what* the commit does, and makes the history read like a clear list of actions when scanning `git log`."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "claude-opus-5-5",
+    "responseId": "msg_011CfvjeQ64W6y3dwGfDWQq9",
+    "usageMetadata": {
+      "candidatesTokenCount": 150,
+      "promptTokenCount": 24,
+      "thoughtsTokenCount": 17,
+      "totalTokenCount": 191
+    }
+  },
+  "recorded-multi-turn-array-content": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "The capital of New Zealand is Wellington."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "claude-haiku-4-5-20251001",
+    "responseId": "msg_011CfvjecVS1uAfhuopq3H2N",
+    "usageMetadata": {
+      "candidatesTokenCount": 11,
+      "promptTokenCount": 41,
+      "totalTokenCount": 52
+    }
+  },
+  "recorded-refusal": {
+    "candidates": [
+      {
+        "content": {
+          "role": "model"
+        },
+        "finishReason": "SAFETY",
+        "index": 0
+      }
+    ],
+    "modelVersion": "claude-fable-5",
+    "responseId": "msg_011Cfvjem5NtYWMkuSfBEZXU",
+    "usageMetadata": {
+      "candidatesTokenCount": 0,
+      "promptTokenCount": 84,
+      "totalTokenCount": 84
+    }
+  },
+  "recorded-sampling-stop-sequences": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "One, Two, Three, Four, Five. "
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "claude-sonnet-4-6",
+    "responseId": "msg_011Cfvjf15FDCbh5svioLLaK",
+    "usageMetadata": {
+      "candidatesTokenCount": 11,
+      "promptTokenCount": 19,
+      "totalTokenCount": 30
+    }
+  },
+  "recorded-sampling-top-p": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "# Grey Cat Name Suggestions\n\nHere are a few options depending on the cat's personality:\n\n- **Smokey** - Classic and fits the color perfectly\n- **Shadow** - Great if your cat is mysterious or sneaky\n- **Ash** or **Asher** - Simple and elegant\n- **Storm** - For a more dramatic personality\n- **Pepper** - Works well for darker grey cats\n- **Slate** - Sophisticated and unique\n- **Luna** - If you prefer something softer and more mystical\n\nDo any of these appeal to you, or would you like suggestions in a different style?"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "claude-haiku-4-5-20251001",
+    "responseId": "msg_011Cfvjf5c6Qm3R2MLDAPepK",
+    "usageMetadata": {
+      "candidatesTokenCount": 137,
+      "promptTokenCount": 16,
+      "totalTokenCount": 153
+    }
+  },
+  "recorded-service-tier-standard-only": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Pong! 👋\n\nWhat can I help you with?"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "claude-haiku-4-5-20251001",
+    "responseId": "msg_011CfvjfECX3kHvVFNCxDbbc",
+    "usageMetadata": {
+      "candidatesTokenCount": 18,
+      "promptTokenCount": 9,
+      "totalTokenCount": 27
+    }
+  },
+  "recorded-structured-output-json-schema": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "{\"name\":\"John Smith\",\"email\":\"john@example.com\",\"plan_interest\":\"Enterprise\",\"demo_requested\":true}"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "claude-opus-5-5",
+    "responseId": "msg_011CfvjfJDNmpMDXjJ1iHzfd",
+    "usageMetadata": {
+      "candidatesTokenCount": 42,
+      "promptTokenCount": 332,
+      "totalTokenCount": 374
+    }
+  },
+  "recorded-system-blocks-cache-ttl": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Under **Clause 2 (Termination)**, either party can terminate the agreement by giving **90 days' written notice**.\n\nThe contract doesn't say:\n- how the written notice has to be delivered (for example, by email, courier or registered mail)\n- whether the 90 days start when the notice is sent or when it's received\n- whether a party needs a reason, or \"cause,\" to terminate. Clause 2 doesn't require one, so it appears either party can end the agreement without giving a reason.\n\nClause 1 sets the agreement to run for 24 months from the Effective Date. The contract doesn't say how Clause 2 interacts with that term, such as whether a party can terminate early during those 24 months. The wording \"either party may terminate\" suggests it can, but the contract doesn't state this outright."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "claude-opus-5-5",
+    "responseId": "msg_011CfvjfVE9ySjFrkwcbpewj",
+    "usageMetadata": {
+      "candidatesTokenCount": 253,
+      "promptTokenCount": 593,
+      "thoughtsTokenCount": 14,
+      "totalTokenCount": 860
+    }
+  },
+  "recorded-system-string-multi-turn": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "You said you work on machine learning."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "claude-sonnet-4-6",
+    "responseId": "msg_011CfvjfiaaFHts4o9b8xcJ2",
+    "usageMetadata": {
+      "candidatesTokenCount": 11,
+      "promptTokenCount": 61,
+      "totalTokenCount": 72
+    }
+  },
+  "recorded-text-simple": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Hello! Nice to meet you. How can I help you today?"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "claude-opus-5-5",
+    "responseId": "msg_011Cfvjfnp5YeTJaWgPCvJ1S",
+    "usageMetadata": {
+      "candidatesTokenCount": 21,
+      "promptTokenCount": 15,
+      "totalTokenCount": 36
+    }
+  },
+  "recorded-thinking-adaptive-effort": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "The greatest common divisor of 1071 and 462 is **21**.\n\nUsing the Euclidean algorithm:\n\n- 1071 = 2 × 462 + 147\n- 462 = 3 × 147 + 21\n- 147 = 7 × 21 + 0\n\nThe last nonzero remainder is 21."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "claude-opus-5-5",
+    "responseId": "msg_011CfvjfsNAiztELaa8xu1tC",
+    "usageMetadata": {
+      "candidatesTokenCount": 101,
+      "promptTokenCount": 27,
+      "thoughtsTokenCount": 43,
+      "totalTokenCount": 171
+    }
+  },
+  "recorded-thinking-between-tools": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "I'll check the current weather in Dublin for you."
+            },
+            {
+              "functionCall": {
+                "args": {
+                  "location": "Dublin, Ireland",
+                  "unit": "celsius"
+                },
+                "id": "toolu_01BLWnb5NzuGUbnWJYRky3U1",
+                "name": "get_weather"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "claude-sonnet-5-5",
+    "responseId": "msg_011Cfvjg4SvSoq8j3JwURDnG",
+    "usageMetadata": {
+      "candidatesTokenCount": 97,
+      "promptTokenCount": 466,
+      "totalTokenCount": 563
+    }
+  },
+  "recorded-thinking-disabled": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "The city council approved a 7-2 vote on Tuesday to expand the downtown bike lane network by 12 miles over the next three years."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "claude-sonnet-5",
+    "responseId": "msg_011CfvjgCVcQg3CHZLQkNVQC",
+    "usageMetadata": {
+      "candidatesTokenCount": 45,
+      "promptTokenCount": 58,
+      "totalTokenCount": 103
+    }
+  },
+  "recorded-thinking-enabled-budget": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "## Yes — There Are Infinitely Many Primes ≡ 3 (mod 4)\n\nThis is a classical result, provable with an argument similar to Euclid's proof of infinite primes.\n\n---\n\n### Proof by Contradiction\n\n**Assume** there are only finitely many such primes: $p_1, p_2, \\ldots, p_k$, all satisfying $p_i \\equiv 3 \\pmod{4}$.\n\n**Construct** the number:\n$$N = 4p_1 p_2 \\cdots p_k - 1$$\n\nNote that $N \\equiv 3 \\pmod 4$, and $N$ is odd (so 2 is not a factor).\n\n**Key observation:** The product of numbers each $\\equiv 1 \\pmod{4}$ is itself $\\equiv 1 \\pmod{4}$.\n\nSince $N \\equiv 3 \\pmod{4}$, **at least one** prime factor $q$ of $N$ must satisfy $q \\equiv 3 \\pmod{4}$.\n\n**But:** $q$ cannot be any $p_i$, because:\n$$p_i \\mid 4p_1\\cdots p_k \\quad \\text{and} \\quad p_i \\mid N \\implies p_i \\mid 1 \\quad \\text{(impossible)}$$\n\nThis **contradicts** our assumption that the list was complete. $\\square$\n\n---\n\n### Examples of such primes:\n$$3, 7, 11, 19, 23, 31, 43, 47, 59, 67, \\ldots$$\n\nThis result also follows as a special case of **Dirichlet's theorem**, which guarantees infinitely many primes in any arithmetic progression $a + nd$ where $\\gcd(a, d) = 1$ — here $a=3,\\ d=4$."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "claude-sonnet-4-6",
+    "responseId": "msg_011CfvjgR4tvemLvtmGDn8Wd",
+    "usageMetadata": {
+      "candidatesTokenCount": 460,
+      "promptTokenCount": 55,
+      "thoughtsTokenCount": 512,
+      "totalTokenCount": 1027
+    }
+  },
+  "recorded-thinking-redacted": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "To help determine if it's a good day to see the northern lights, let me first check the current weather in Reykjavik!"
+            },
+            {
+              "functionCall": {
+                "args": {
+                  "location": "Reykjavik, Iceland"
+                },
+                "id": "toolu_01TBRejuaYu94Z9EKo4UJ6GP",
+                "name": "get_weather"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "claude-sonnet-4-6",
+    "responseId": "msg_011CfvjhcgBhAwtq9MuWqne5",
+    "usageMetadata": {
+      "candidatesTokenCount": 92,
+      "promptTokenCount": 665,
+      "thoughtsTokenCount": 63,
+      "totalTokenCount": 820
+    }
+  },
+  "recorded-tool-choice-any-no-parallel": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "functionCall": {
+                "args": {
+                  "location": "Berlin, Germany"
+                },
+                "id": "toolu_015c1bivAkb8RH7obaanPdQM",
+                "name": "get_weather"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "claude-sonnet-4-6",
+    "responseId": "msg_011CfvjhqCzr8TP6tfnos36G",
+    "usageMetadata": {
+      "candidatesTokenCount": 31,
+      "promptTokenCount": 799,
+      "totalTokenCount": 830
+    }
+  },
+  "recorded-tool-choice-auto-no-parallel": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "I'll check the weather in both Seattle and Portland at the same time for you!"
+            },
+            {
+              "functionCall": {
+                "args": {
+                  "location": "Seattle, WA"
+                },
+                "id": "toolu_01RVXiR8rGA7LJgHzsLnszji",
+                "name": "get_weather"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "claude-sonnet-4-6",
+    "responseId": "msg_011CfvjhuopsQgHGkYJPUHP9",
+    "usageMetadata": {
+      "candidatesTokenCount": 65,
+      "promptTokenCount": 420,
+      "totalTokenCount": 485
+    }
+  },
+  "recorded-tool-choice-none": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Based on my training knowledge, Oslo, Norway typically experiences cool autumn weather in October. Average temperatures are roughly:\n\n- **Daytime highs:** around **8–10°C (46–50°F)**\n- **Nighttime lows:** around **2–4°C (36–39°F)**\n\nOctober in Oslo is generally chilly, often rainy, and can occasionally see the first light snowfall toward the end of the month. It's advisable to wear warm layers if visiting during that time.\n\nWould you like me to check the **current weather** in Oslo using real-time data?"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "claude-sonnet-4-6",
+    "responseId": "msg_011Cfvji2W9KA2oWEQx2cjKM",
+    "usageMetadata": {
+      "candidatesTokenCount": 134,
+      "promptTokenCount": 633,
+      "totalTokenCount": 767
+    }
+  },
+  "recorded-tool-choice-tool": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "functionCall": {
+                "args": {
+                  "location": "Lisbon, Portugal"
+                },
+                "id": "toolu_016r1YrY8SC1LGuVmbDHHK4m",
+                "name": "get_weather"
+              }
+            },
+            {
+              "functionCall": {
+                "args": {
+                  "timezone": "Europe/Lisbon"
+                },
+                "id": "toolu_01Ugg843qoqABjJUNYFER2PR",
+                "name": "get_time"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "claude-sonnet-4-6",
+    "responseId": "msg_011CfvjiJQNE6TEWg6P7vrNj",
+    "usageMetadata": {
+      "candidatesTokenCount": 77,
+      "promptTokenCount": 804,
+      "totalTokenCount": 881
+    }
+  },
+  "recorded-tool-result-multi-turn": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Here's the summary:\n\n**Paris 🇫🇷**\n- 🌧️ 18°C, light rain\n- 🕐 Local time unavailable (service error)\n\n**Tokyo 🇯🇵**\n- ☀️ 24°C, clear skies\n- 🕐 10:14 PM (Oct 11, 2026)"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "claude-sonnet-4-6",
+    "responseId": "msg_011CfvjiRAAi8j5YgxJ1zgRm",
+    "usageMetadata": {
+      "candidatesTokenCount": 96,
+      "promptTokenCount": 1113,
+      "totalTokenCount": 1209
+    }
+  },
+  "recorded-tools-parallel": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "I'll fetch the weather and local time for both Paris and Tokyo simultaneously!"
+            },
+            {
+              "functionCall": {
+                "args": {
+                  "location": "Paris, France"
+                },
+                "id": "toolu_01Vc2E4ZwGgokZ5A1Jdk61LS",
+                "name": "get_weather"
+              }
+            },
+            {
+              "functionCall": {
+                "args": {
+                  "location": "Tokyo, Japan"
+                },
+                "id": "toolu_01U78ahksJCEinV7yXB7GKDf",
+                "name": "get_weather"
+              }
+            },
+            {
+              "functionCall": {
+                "args": {
+                  "timezone": "Europe/Paris"
+                },
+                "id": "toolu_017uz8WdQWtvBtgY6GXy7Ctz",
+                "name": "get_time"
+              }
+            },
+            {
+              "functionCall": {
+                "args": {
+                  "timezone": "Asia/Tokyo"
+                },
+                "id": "toolu_01TH3Z8k5ADaqn63qu7Y2hRx",
+                "name": "get_time"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "claude-sonnet-4-6",
+    "responseId": "msg_011Cfvjiaq5WaKomkmqvovUE",
+    "usageMetadata": {
+      "candidatesTokenCount": 185,
+      "promptTokenCount": 712,
+      "totalTokenCount": 897
+    }
+  },
+  "recorded-tools-single": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Let me check the current weather in San Francisco for you!"
+            },
+            {
+              "functionCall": {
+                "args": {
+                  "location": "San Francisco, CA"
+                },
+                "id": "toolu_01TP6KtR2XVvvFndB91WEbEc",
+                "name": "get_weather"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "claude-sonnet-4-6",
+    "responseId": "msg_011CfvjimXXMJjKjjVqEDtki",
+    "usageMetadata": {
+      "candidatesTokenCount": 69,
+      "promptTokenCount": 628,
+      "totalTokenCount": 697
+    }
+  },
+  "recorded-web-search-server-tool": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Claude Shannon was born on **April 30, 1916**, in Petoskey, Michigan. He grew up in nearby Gaylord, Michigan. He is known as the \"father of information theory\" because of his 1948 paper \"A Mathematical Theory of Communication.\" He died on February 24, 2001."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "claude-opus-5-5",
+    "responseId": "msg_011CfvjivMLhEotiQb2NJz7h",
+    "usageMetadata": {
+      "candidatesTokenCount": 100,
+      "promptTokenCount": 2745,
+      "thoughtsTokenCount": 31,
+      "totalTokenCount": 2876
+    }
+  },
+  "refusal": {
+    "candidates": [
+      {
+        "content": {
+          "role": "model"
+        },
+        "finishReason": "SAFETY",
+        "index": 0
+      }
+    ],
+    "modelVersion": "claude-fable-5",
+    "responseId": "msg_01yXeiEz9uQcJSQC8zxB9kMH",
+    "usageMetadata": {
+      "candidatesTokenCount": 0,
+      "promptTokenCount": 412,
+      "totalTokenCount": 412
+    }
+  },
+  "sampling-stop-sequences": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "One, two, three, four, five.\n\n"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "claude-sonnet-4-6",
+    "responseId": "msg_01NHM3nouWadf2xEdWEBHNqU",
+    "usageMetadata": {
+      "candidatesTokenCount": 14,
+      "promptTokenCount": 22,
+      "totalTokenCount": 36
+    }
+  },
+  "structured-output-json-schema": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "{\"name\":\"John Smith\",\"email\":\"john@example.com\",\"plan_interest\":\"Enterprise\",\"demo_requested\":true}"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "claude-opus-5-5",
+    "responseId": "msg_01iViD1grjm4P8u6vkhoNaDR",
+    "usageMetadata": {
+      "candidatesTokenCount": 31,
+      "promptTokenCount": 212,
+      "totalTokenCount": 243
+    }
+  },
+  "system-blocks-cache-ttl": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Under clause 2 (Termination), either party must give 90 days' written notice to terminate the agreement."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "claude-opus-5-5",
+    "responseId": "msg_01roDLFwPZ7mBmV5xXNNQKMW",
+    "usageMetadata": {
+      "candidatesTokenCount": 27,
+      "promptTokenCount": 6297,
+      "totalTokenCount": 6324
+    }
+  },
+  "system-string-multi-turn": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "You said you work on machine learning."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "claude-sonnet-4-6",
+    "responseId": "msg_019X21FyGADQztnWgK29HTmP",
+    "usageMetadata": {
+      "candidatesTokenCount": 11,
+      "promptTokenCount": 52,
+      "totalTokenCount": 63
+    }
+  },
+  "text-simple": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Hello! It's nice to meet you. How can I help you today?"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "claude-opus-5-5",
+    "responseId": "msg_01YPYNJ43PX3m1nxqjPEjfaw",
+    "usageMetadata": {
+      "candidatesTokenCount": 18,
+      "promptTokenCount": 10,
+      "totalTokenCount": 28
+    }
+  },
+  "thinking-adaptive-effort": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "The greatest common divisor of 1071 and 462 is **21**."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "claude-opus-5-5",
+    "responseId": "msg_01J1HvtbRvKNYVT1pvbdT8XV",
+    "usageMetadata": {
+      "candidatesTokenCount": 43,
+      "promptTokenCount": 26,
+      "thoughtsTokenCount": 171,
+      "totalTokenCount": 240
+    }
+  },
+  "thinking-adaptive-interleaved-tools": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "functionCall": {
+                "args": {
+                  "timezone": "Asia/Tokyo"
+                },
+                "id": "toolu_011Dne1APNuqxuo9C4qyyihS",
+                "name": "get_time"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "claude-opus-5-5",
+    "responseId": "msg_01bzhnsPw1PaZ5gA4hRi8PdK",
+    "usageMetadata": {
+      "candidatesTokenCount": 52,
+      "promptTokenCount": 1034,
+      "thoughtsTokenCount": 88,
+      "totalTokenCount": 1174
+    }
+  },
+  "thinking-disabled": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "The city council approved, 7-2, a three-year plan to add 12 miles of downtown bike lanes."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "claude-sonnet-5",
+    "responseId": "msg_01Va6mof8Ucr75Zq8PvVjk7c",
+    "usageMetadata": {
+      "candidatesTokenCount": 25,
+      "promptTokenCount": 48,
+      "totalTokenCount": 73
+    }
+  },
+  "thinking-display-omitted": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "27 × 453 = 12,231."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "claude-opus-5-5",
+    "responseId": "msg_01P4SzwkefVSnGbZwKSjDTJY",
+    "usageMetadata": {
+      "candidatesTokenCount": 17,
+      "promptTokenCount": 17,
+      "thoughtsTokenCount": 79,
+      "totalTokenCount": 113
+    }
+  },
+  "thinking-dropped-block": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "proof.txt contains OK."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "claude-sonnet-5-5",
+    "responseId": "msg_01Kd7DropBlockBindingWx9Q",
+    "usageMetadata": {
+      "candidatesTokenCount": 17,
+      "promptTokenCount": 412,
+      "thoughtsTokenCount": 41,
+      "totalTokenCount": 470
+    }
+  },
+  "thinking-enabled-budget": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Yes. Assume there are only finitely many such primes p1, ..., pk and set N = 4·p1·…·pk − 1. N ≡ 3 (mod 4), so at least one prime factor q of N is ≡ 3 (mod 4), because products of primes ≡ 1 (mod 4) are ≡ 1 (mod 4). But q cannot equal any pi, since each pi leaves remainder −1 when dividing N. This contradiction shows there are infinitely many primes p with p mod 4 = 3."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "claude-sonnet-4-6",
+    "responseId": "msg_01gWpepASbE5pFasXfFjGPVf",
+    "usageMetadata": {
+      "candidatesTokenCount": 325,
+      "promptTokenCount": 51,
+      "thoughtsTokenCount": 287,
+      "totalTokenCount": 663
+    }
+  },
+  "thinking-interleaved-tools": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "functionCall": {
+                "args": {
+                  "timezone": "Europe/Paris"
+                },
+                "id": "toolu_01afnDK4mGFJyw1zWvMT248V",
+                "name": "get_time"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "claude-sonnet-4-6",
+    "responseId": "msg_013uYDVcQfWZchN4HvY8V1RM",
+    "usageMetadata": {
+      "candidatesTokenCount": 69,
+      "promptTokenCount": 912,
+      "thoughtsTokenCount": 49,
+      "totalTokenCount": 1030
+    }
+  },
+  "thinking-redacted": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "functionCall": {
+                "args": {
+                  "location": "Reykjavik, Iceland",
+                  "unit": "celsius"
+                },
+                "id": "toolu_01fgLiquLjMGZKmcjSKWM1vg",
+                "name": "get_weather"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "claude-sonnet-4-6",
+    "responseId": "msg_01ZYJXVVjfNgLCKjtMKPUDV1",
+    "usageMetadata": {
+      "candidatesTokenCount": 73,
+      "promptTokenCount": 689,
+      "thoughtsTokenCount": 181,
+      "totalTokenCount": 943
+    }
+  },
+  "tool-choice-tool": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "functionCall": {
+                "args": {
+                  "location": "Lisbon, Portugal"
+                },
+                "id": "toolu_01MwfbnjSw6affPfGTrTjhbJ",
+                "name": "get_weather"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "claude-sonnet-4-6",
+    "responseId": "msg_01yxUmuZMiWnEHiT3DdtWvSA",
+    "usageMetadata": {
+      "candidatesTokenCount": 41,
+      "promptTokenCount": 655,
+      "totalTokenCount": 696
+    }
+  },
+  "tool-result-multi-turn": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Paris: 18°C with light rain (I couldn't get the local time; the time service returned an error). Tokyo: 24°C and clear, and it's 22:14 local time."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "claude-sonnet-4-6",
+    "responseId": "msg_01NE63JEDrNwXrF2wmKNVhmW",
+    "usageMetadata": {
+      "candidatesTokenCount": 52,
+      "promptTokenCount": 1288,
+      "totalTokenCount": 1340
+    }
+  },
+  "tools-parallel": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "I'll look up the weather and local time for both cities."
+            },
+            {
+              "functionCall": {
+                "args": {
+                  "location": "Paris, France",
+                  "unit": "celsius"
+                },
+                "id": "toolu_01Ej1YyQ2oLMuN4cPxedXTyn",
+                "name": "get_weather"
+              }
+            },
+            {
+              "functionCall": {
+                "args": {
+                  "location": "Tokyo, Japan",
+                  "unit": "celsius"
+                },
+                "id": "toolu_01i9erRrqtgtQAjVyyvcAdnH",
+                "name": "get_weather"
+              }
+            },
+            {
+              "functionCall": {
+                "args": {
+                  "timezone": "Europe/Paris"
+                },
+                "id": "toolu_01krb5XZirSQZiYWNMB6VT9o",
+                "name": "get_time"
+              }
+            },
+            {
+              "functionCall": {
+                "args": {
+                  "timezone": "Asia/Tokyo"
+                },
+                "id": "toolu_01tbdagxGypaxguXw1B6gfCo",
+                "name": "get_time"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "claude-sonnet-4-6",
+    "responseId": "msg_01Huvcb6LuCJCdd2Zff7wdbn",
+    "usageMetadata": {
+      "candidatesTokenCount": 231,
+      "promptTokenCount": 742,
+      "totalTokenCount": 973
+    }
+  },
+  "tools-single": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "I'll check the current weather in San Francisco for you."
+            },
+            {
+              "functionCall": {
+                "args": {
+                  "location": "San Francisco, CA",
+                  "unit": "fahrenheit"
+                },
+                "id": "toolu_01VLLqZ1bfs3WXvVeYqZPtE7",
+                "name": "get_weather"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "claude-sonnet-4-6",
+    "responseId": "msg_01aZVoMeJ4jfgoELtozyLhH2",
+    "usageMetadata": {
+      "candidatesTokenCount": 87,
+      "promptTokenCount": 578,
+      "totalTokenCount": 665
+    }
+  },
+  "unknown-fields": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Hello! How can I help?"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "claude-opus-5-5",
+    "responseId": "msg_01nJmcPUKwCP7MRz57RqJYq4",
+    "usageMetadata": {
+      "candidatesTokenCount": 15,
+      "promptTokenCount": 12,
+      "totalTokenCount": 27
+    }
+  },
+  "web-search-server-tool": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "I'll search for when Claude Shannon was born."
+            },
+            {
+              "text": "Based on the search results, "
+            },
+            {
+              "text": "Claude Shannon was born on April 30, 1916, in Petoskey, Michigan"
+            },
+            {
+              "text": "."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "claude-opus-5-5",
+    "responseId": "msg_01R2R14PadDFvMb1xgawpzvm",
+    "usageMetadata": {
+      "candidatesTokenCount": 931,
+      "promptTokenCount": 6039,
+      "totalTokenCount": 6970
+    }
+  }
+}

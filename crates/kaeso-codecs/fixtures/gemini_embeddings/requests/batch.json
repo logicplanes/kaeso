@@ -1,0 +1,26 @@
+{
+  "requests": [
+    {
+      "model": "models/gemini-embedding-2",
+      "content": {
+        "parts": [
+          {
+            "text": "First sentence."
+          }
+        ]
+      },
+      "outputDimensionality": 8
+    },
+    {
+      "model": "models/gemini-embedding-2",
+      "content": {
+        "parts": [
+          {
+            "text": "Second sentence."
+          }
+        ]
+      },
+      "outputDimensionality": 8
+    }
+  ]
+}

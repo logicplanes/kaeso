@@ -1,0 +1,39 @@
+{
+  "contents": [
+    {
+      "role": "user",
+      "parts": [
+        {
+          "text": "Give me a cookie recipe name and its three main ingredients."
+        }
+      ]
+    }
+  ],
+  "generationConfig": {
+    "responseMimeType": "application/json",
+    "responseJsonSchema": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "ingredients": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 3,
+          "maxItems": 3
+        }
+      },
+      "required": [
+        "name",
+        "ingredients"
+      ],
+      "additionalProperties": false
+    },
+    "thinkingConfig": {
+      "thinkingLevel": "MINIMAL"
+    }
+  }
+}

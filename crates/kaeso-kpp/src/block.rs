@@ -352,6 +352,8 @@ pub enum OpaqueKind {
     OpenAiEncryptedReasoning,
     #[serde(rename = "openai_reasoning_item_id")]
     OpenAiReasoningItemId,
+    #[serde(rename = "gemini_thought_signature")]
+    GeminiThoughtSignature,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
@@ -470,6 +472,10 @@ mod tests {
             (
                 OpaqueKind::OpenAiReasoningItemId,
                 "openai_reasoning_item_id",
+            ),
+            (
+                OpaqueKind::GeminiThoughtSignature,
+                "gemini_thought_signature",
             ),
         ];
         for (kind, name) in kinds {

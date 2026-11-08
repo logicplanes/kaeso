@@ -3,16 +3,18 @@
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
+use kaeso_codecs::gemini::GeminiAction;
 use kaeso_codecs::{EgressCtx, EncodeCtx, HeaderList, dispatch};
 use kaeso_kpp::{
     Block, Delta, DialectId, Reply, Request, RequestKind, Role, StreamEvent, StreamMode,
 };
 use serde_json::{Value, json};
 
-const GENERATION: [DialectId; 3] = [
+const GENERATION: [DialectId; 4] = [
     DialectId::AnthropicMessages,
     DialectId::OpenAiChat,
     DialectId::OpenAiResponses,
+    DialectId::Gemini,
 ];
 
 const PROVIDERS: &str = "providers";
@@ -58,6 +60,26 @@ const CHANGED_TURNS: &[(&str, DialectId, &str)] = &[
     (
         "providers/xai/codex-multi-agent-root",
         DialectId::OpenAiChat,
+        "agent messages become messages",
+    ),
+    (
+        "codex-model-switch",
+        DialectId::Gemini,
+        "custom and local shell calls become tool calls",
+    ),
+    (
+        "providers/xai/codex-gpt-history",
+        DialectId::Gemini,
+        "custom and local shell calls become tool calls",
+    ),
+    (
+        "providers/xai/codex-multi-agent",
+        DialectId::Gemini,
+        "agent messages become messages",
+    ),
+    (
+        "providers/xai/codex-multi-agent-root",
+        DialectId::Gemini,
         "agent messages become messages",
     ),
     (
@@ -146,6 +168,31 @@ fn headers(dialect: DialectId, name: &str) -> HeaderList {
     }
 }
 
+// A Gemini request names its model and method in the path: the fixture's `.meta.json`, or
+// the path the encoder built.
+fn decode_generation(dialect: DialectId, name: &str, body: &[u8]) -> Result<Request, kaeso_kpp::KppError> {
+    if dialect != DialectId::Gemini {
+        return dispatch::decode_request(dialect, RequestKind::Generate, body, &headers(dialect, name));
+    }
+    let meta: Value = std::fs::read(fixtures_dir(dialect).join("requests").join(format!("{name}.meta.json")))
+        .map(|b| serde_json::from_slice(&b).unwrap())
+        .unwrap_or(Value::Null);
+    let action = meta["action"]
+        .as_str()
+        .map_or(GeminiAction::GenerateContent, |a| GeminiAction::from_wire(a).unwrap());
+    let model = meta["model"].as_str().unwrap_or("gemini-3.5-flash");
+    dispatch::decode_gemini_request(model, action, body, &HeaderList::new())
+}
+
+fn decode_encoded(dialect: DialectId, enc: &kaeso_codecs::EncodedRequest) -> Result<Request, kaeso_kpp::KppError> {
+    if dialect != DialectId::Gemini {
+        return dispatch::decode_request(dialect, RequestKind::Generate, &enc.body, &enc.headers);
+    }
+    let segment = enc.path.split('?').next().unwrap().rsplit('/').next().unwrap();
+    let (model, action) = kaeso_codecs::gemini::split_model_action(segment).unwrap();
+    dispatch::decode_gemini_request(&model, action, &enc.body, &enc.headers)
+}
+
 fn called(call: &kaeso_kpp::ToolCallBlock) -> String {
     let namespace = call
         .extras
@@ -161,11 +208,17 @@ fn called(call: &kaeso_kpp::ToolCallBlock) -> String {
 // The cross-format rule for Anthropic: a system or developer message of another format
 // joins the next user turn, after its tool results, or the last user turn.
 fn as_anthropic_reads(req: &Request) -> Request {
+    as_folded_for(req, DialectId::AnthropicMessages)
+}
+
+// Gemini takes system text only in `systemInstruction`, so later system messages of every
+// other format join the next user turn as they do for Anthropic.
+fn as_folded_for(req: &Request, target: DialectId) -> Request {
     let mut req = req.clone();
     let Request::Generate(r) = &mut req else {
         return req;
     };
-    if r.extras.is_from(DialectId::AnthropicMessages) {
+    if r.extras.is_from(target) {
         return req;
     }
     let mut held = Vec::new();
@@ -320,12 +373,7 @@ fn requests_cross_every_dialect() {
         for b in GENERATION.into_iter().filter(|b| *b != a) {
             let mut outcomes = BTreeMap::new();
             for (name, body) in &reqs {
-                let mut req = match dispatch::decode_request(
-                    a,
-                    RequestKind::Generate,
-                    body,
-                    &headers(a, name),
-                ) {
+                let mut req = match decode_generation(a, name, body) {
                     Ok(r) => r,
                     Err(e) => {
                         outcomes.insert(name.clone(), json!({"rejected_by_source": e.unsupported_feature().unwrap_or("invalid")}));
@@ -343,22 +391,17 @@ fn requests_cross_every_dialect() {
                     .and_then(|()| dispatch::encode_request(b, &req, &mut ctx))
                 {
                     Ok(enc) => {
-                        let back = dispatch::decode_request(
-                            b,
-                            RequestKind::Generate,
-                            &enc.body,
-                            &enc.headers,
-                        )
+                        let back = decode_encoded(b, &enc)
                         .unwrap_or_else(|e| {
                             panic!("{a}->{b} {name}: target cannot decode its own output: {e}")
                         });
                         if !CHANGED_TURNS.iter().any(|(n, t, _)| n == name && *t == b) {
                             assert_eq!(
                                 request_meaning(&back)["turns"],
-                                request_meaning(&if b == DialectId::AnthropicMessages {
-                                    as_anthropic_reads(&req)
-                                } else {
-                                    req.clone()
+                                request_meaning(&match b {
+                                    DialectId::AnthropicMessages => as_anthropic_reads(&req),
+                                    DialectId::Gemini => as_folded_for(&req, b),
+                                    _ => req.clone(),
                                 })["turns"],
                                 "{a}->{b} {name}: conversation meaning changed",
                             );

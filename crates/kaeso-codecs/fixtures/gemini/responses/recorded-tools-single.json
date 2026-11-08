@@ -1,0 +1,39 @@
+{
+  "candidates": [
+    {
+      "content": {
+        "parts": [
+          {
+            "functionCall": {
+              "name": "get_weather",
+              "args": {
+                "location": "Paris"
+              },
+              "id": "call_18261916837581647102"
+            },
+            "thoughtSignature": "Ep4CCpsCAWkUfRP7AL/fLNiAmNE0Y0oQ2AqjuyVdwS+O88o9evxMYx60XBQh5ngULmaYN8wkMK4RBngqAxHFCySmPsOANZ7TaxfvushymfNF6RS70a3aiMgmib2g9diG4g6cebxuVKSnl+MI6cn5HZRxCFq6J5Sea1KL7Lk+Ts6t09xgHlVv69GEOK+9FcoS8LMy6lv8MDPAPY8Dun33Saf3iE5yDB/o02GRmZ1kNU7SY3uM8eLtzxH2PAKCiY24dsiW8PtF0B6+v1E2ueEpWh2620JLKLNFQFuHn8jsh+N0Bfla1gRUwvlYQ/pU5TW7rMV8/K57V2GfnRaRo9MOElTTF32bfjbVrILHry4o4YQ6hBHNgNmkFUeHfFXW/toDLA=="
+          }
+        ],
+        "role": "model"
+      },
+      "finishReason": "STOP",
+      "index": 0,
+      "finishMessage": "Model generated function call(s)."
+    }
+  ],
+  "usageMetadata": {
+    "promptTokenCount": 68,
+    "candidatesTokenCount": 16,
+    "totalTokenCount": 131,
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 68
+      }
+    ],
+    "thoughtsTokenCount": 47,
+    "serviceTier": "standard"
+  },
+  "modelVersion": "gemini-3.6-flash",
+  "responseId": "VeTvavqgNciLvdIPpqKRkQ4"
+}
