@@ -211,6 +211,139 @@ fn the_one_hour_write_price_follows_an_override_then_an_overridden_input_price_t
     assert_eq!(one_hour("absent", Fields::default()), None);
 }
 
+fn tiered_feed() -> kpmr::Catalogue {
+    let feed = catalogue(
+        r#"{"openai":{"id":"openai","models":{
+        "astra":{"id":"astra","pricing":{"unit":"usd_per_million_tokens","input":"10","output":"50","cache_read":"1","cache_write":"12.5",
+            "tiers":[{"context_above":272000,"input":"20","output":"75","cache_read":"2","cache_write":"25"}]}}
+    }}}"#,
+    );
+    kpmr::parse(&feed, &crate::provider::known_ids())
+        .unwrap()
+        .catalogue
+}
+
+fn astra_tier() -> PriceTier {
+    PriceTier {
+        context_above: 272_000,
+        input_price: Some(dec!(20)),
+        output_price: Some(dec!(75)),
+        cache_read_price: Some(dec!(2)),
+        cache_write_price: Some(dec!(25)),
+        cache_write_1h_price: None,
+    }
+}
+
+#[test]
+fn kpmrs_long_context_prices_stay_until_an_override_sets_a_price_without_them() {
+    let snap = tiered_feed();
+    let tiers = |overrides: Fields| {
+        let mut e = entry("openai", "astra");
+        e.overrides = overrides;
+        effective(&e, &snap, &OrgProviders::default())
+            .unwrap()
+            .fields
+            .price_tiers
+    };
+    assert_eq!(tiers(Fields::default()), Some(vec![astra_tier()]));
+    assert_eq!(
+        tiers(Fields {
+            display_name: Some("Astra".into()),
+            context_limit: Some(400_000),
+            ..Fields::default()
+        }),
+        Some(vec![astra_tier()]),
+        "fields other than prices keep them"
+    );
+    for overrides in [
+        Fields {
+            input_price: Some(dec!(8)),
+            ..Fields::default()
+        },
+        Fields {
+            output_price: Some(dec!(40)),
+            ..Fields::default()
+        },
+        Fields {
+            cache_read_price: Some(dec!(0.5)),
+            ..Fields::default()
+        },
+        Fields {
+            cache_write_price: Some(dec!(10)),
+            ..Fields::default()
+        },
+    ] {
+        assert_eq!(tiers(overrides.clone()), None, "{overrides:?}");
+    }
+    let own = vec![PriceTier {
+        context_above: 128_000,
+        input_price: Some(dec!(9)),
+        ..PriceTier::default()
+    }];
+    assert_eq!(
+        tiers(Fields {
+            input_price: Some(dec!(8)),
+            price_tiers: Some(own.clone()),
+            ..Fields::default()
+        }),
+        Some(own),
+        "tiers set with the prices are kept"
+    );
+    assert_eq!(
+        tiers(Fields {
+            price_tiers: Some(Vec::new()),
+            ..Fields::default()
+        }),
+        Some(Vec::new()),
+        "an empty list turns KPMR's tiers off"
+    );
+    let one_hour = tiers(Fields {
+        cache_write_1h_price: Some(dec!(30)),
+        ..Fields::default()
+    });
+    assert_eq!(
+        one_hour,
+        Some(vec![PriceTier {
+            cache_write_1h_price: Some(dec!(30)),
+            ..astra_tier()
+        }]),
+        "a one-hour price set by hand holds for long prompts too"
+    );
+    assert_eq!(
+        preview("openai", "astra", &snap).unwrap().price_tiers,
+        Some(vec![astra_tier()])
+    );
+}
+
+#[test]
+fn a_custom_providers_model_has_only_the_tiers_set_by_hand() {
+    let org = OrgProviders::new(vec![custom_provider("openai", DialectId::OpenAiChat)]);
+    let mut e = entry("openai", "astra");
+    e.custom = true;
+    e.overrides = Fields {
+        input_price: Some(dec!(1)),
+        output_price: Some(dec!(2)),
+        ..Fields::default()
+    };
+    let fields = |e: &Entry| effective(e, &tiered_feed(), &org).unwrap().fields;
+    assert_eq!(fields(&e).price_tiers, None, "KPMR's tiers never reach it");
+    e.overrides.price_tiers = Some(vec![PriceTier {
+        context_above: 32_000,
+        input_price: Some(dec!(3)),
+        ..PriceTier::default()
+    }]);
+    e.overrides.cache_write_1h_price = Some(dec!(2.5));
+    assert_eq!(
+        fields(&e).price_tiers,
+        Some(vec![PriceTier {
+            context_above: 32_000,
+            input_price: Some(dec!(3)),
+            cache_write_1h_price: Some(dec!(2.5)),
+            ..PriceTier::default()
+        }])
+    );
+}
+
 #[test]
 fn delisted_models_keep_their_last_known_values() {
     let snap = snapshot();
@@ -289,6 +422,77 @@ fn patches_set_and_remove_overrides() {
         );
     }
     assert_eq!(serde_json::to_value(&f).unwrap()["output_price"], "2.5");
+}
+
+#[test]
+fn long_context_prices_are_set_by_hand_and_checked() {
+    let openai = &ProviderRef::BuiltIn(provider::provider("openai").unwrap());
+    let mut f = Fields::default();
+    let patch = serde_json::json!({ "price_tiers": [
+        { "context_above": 128000, "input_price": "4", "output_price": 16 },
+        { "context_above": 256000, "input_price": "6", "cache_write_1h_price": null }
+    ]});
+    f.patch(patch.as_object().unwrap()).unwrap();
+    assert_eq!(f.validate(openai), Ok(()));
+    assert_eq!(f.set_names(), ["price_tiers"]);
+    let tiers = f.price_tiers.clone().unwrap();
+    assert_eq!(tiers[0].output_price, Some(dec!(16)));
+    assert_eq!(tiers[1].input_price, Some(dec!(6)));
+    assert_eq!(
+        serde_json::to_value(&f).unwrap()["price_tiers"],
+        serde_json::json!([
+            { "context_above": 128000, "input_price": "4", "output_price": "16" },
+            { "context_above": 256000, "input_price": "6" }
+        ])
+    );
+    for wrong in [
+        serde_json::json!({ "price_tiers": [{ "input_price": "4" }] }),
+        serde_json::json!({ "price_tiers": [{ "context_above": 1, "input": "4" }] }),
+        serde_json::json!({ "price_tiers": [{ "context_above": 1, "input_price": 0.5 }] }),
+        serde_json::json!({ "price_tiers": { "context_above": 1 } }),
+    ] {
+        let error = f.patch(wrong.as_object().unwrap()).unwrap_err();
+        assert_eq!(error.field, "price_tiers", "{wrong}");
+        assert_eq!(
+            error.message,
+            "`price_tiers` has a value of the wrong type or form."
+        );
+    }
+    let tier = |context_above: u64, input: Decimal| PriceTier {
+        context_above,
+        input_price: Some(input),
+        ..PriceTier::default()
+    };
+    let check = |tiers: Vec<PriceTier>| {
+        Fields {
+            price_tiers: Some(tiers),
+            ..Fields::default()
+        }
+        .validate(openai)
+    };
+    let order = "`price_tiers` takes up to 16 tiers, their `context_above` positive and rising.";
+    for refused in [
+        vec![tier(256_000, dec!(6)), tier(128_000, dec!(4))],
+        vec![tier(128_000, dec!(4)), tier(128_000, dec!(6))],
+        vec![tier(0, dec!(4))],
+        (1..=17).map(|n| tier(n * 1000, dec!(1))).collect(),
+    ] {
+        let error = check(refused).unwrap_err();
+        assert_eq!(
+            (error.field.as_str(), error.message.as_str()),
+            ("price_tiers", order)
+        );
+    }
+    assert_eq!(
+        check((1..=16).map(|n| tier(n * 1000, dec!(1))).collect()),
+        Ok(())
+    );
+    assert_eq!(check(Vec::new()), Ok(()));
+    let error = check(vec![tier(1000, dec!(0.0000000001))]).unwrap_err();
+    assert_eq!(
+        error.message,
+        "`price_tiers` must be 0 to 1,000,000 USD per million tokens, at most 9 decimals."
+    );
 }
 
 #[test]

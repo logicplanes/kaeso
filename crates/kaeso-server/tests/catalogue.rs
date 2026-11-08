@@ -634,6 +634,10 @@ async fn syncs_audit_price_changes_and_keep_delisted_models() {
         json!("1.5");
     common::kpmr::model(&mut data, "anthropic", "claude-sonnet-4-5")["pricing"]["input"] =
         json!("4");
+    let tiers = json!([{ "context_above": 200000, "input": "2", "output": null }]);
+    common::kpmr::model(&mut data, "anthropic", "claude-haiku-4-5")["pricing"]["tiers"] =
+        tiers.clone();
+    common::kpmr::model(&mut data, "anthropic", "claude-sonnet-4-5")["pricing"]["tiers"] = tiers;
     data["providers"]["openai"]["models"]
         .as_object_mut()
         .unwrap()
@@ -661,6 +665,10 @@ async fn syncs_audit_price_changes_and_keep_delisted_models() {
         .await;
     assert_eq!(h.body["effective"]["input_price"], "1.5");
     assert_eq!(h.body["effective"]["cache_write_1h_price"], "2");
+    assert_eq!(
+        h.body["effective"]["price_tiers"],
+        json!([{ "context_above": 200000, "input_price": "2" }])
+    );
     let g = app
         .get(
             &format!("{b}/models/{}", gpt["id"].as_str().unwrap()),
@@ -700,6 +708,11 @@ async fn syncs_audit_price_changes_and_keep_delisted_models() {
     assert_eq!(events[0]["target_id"], haiku["id"]);
     assert_eq!(events[0]["before"]["input_price"], "1");
     assert_eq!(events[0]["after"]["input_price"], "1.5");
+    assert_eq!(events[0]["before"]["price_tiers"], Value::Null);
+    assert_eq!(
+        events[0]["after"]["price_tiers"][0]["context_above"],
+        200000
+    );
     let f = app
         .get(
             &format!("{b}/models/{}", fixed["id"].as_str().unwrap()),
@@ -709,6 +722,11 @@ async fn syncs_audit_price_changes_and_keep_delisted_models() {
     assert_eq!(
         f.body["effective"]["input_price"], "3",
         "overrides win over KPMR"
+    );
+    assert_eq!(
+        f.body["effective"]["price_tiers"],
+        Value::Null,
+        "prices set by hand drop KPMR's long-context prices"
     );
 
     let mut seen = false;
@@ -1015,6 +1033,56 @@ async fn an_upgrade_that_adds_a_provider_completes_newer_stored_data_and_syncs_i
         .unwrap();
     assert_eq!(app.state.kpmr.current().source, url);
     assert_eq!(mistral_models(&app), built_in);
+}
+
+#[tokio::test]
+async fn long_context_prices_an_older_build_did_not_store_are_no_price_change() {
+    let s = TestServices::start().await;
+    let stored = common::kpmr::built_in();
+    let mut served_doc = stored.clone();
+    common::kpmr::model(&mut served_doc, "anthropic", "claude-haiku-4-5")["pricing"]["tiers"] =
+        json!([{ "context_above": 100000, "input": "2", "output": "10" }]);
+    let served = common::kpmr::Served::new(served_doc.to_string());
+    let url = common::kpmr::serve(served.clone()).await;
+    let app = App::start_with(
+        &s,
+        &[
+            ("KAESO_KPMR_URL", url.as_str()),
+            ("KAESO_KPMR_SYNC", "true"),
+            ("KAESO_KPMR_INTERVAL", "24h"),
+        ],
+    )
+    .await;
+    let now = after_the_built_in_snapshot(time::Duration::DAY);
+    app.clock.set(now);
+    store_as_an_older_build(&app, &stored.to_string(), &url, now - time::Duration::HOUR).await;
+    kaeso_server::services::kpmr::init(&app.state)
+        .await
+        .unwrap();
+
+    assert_eq!(
+        run_sync_job(&app).await,
+        "applied: 0 price changes, 0 delisted, 0 listed again"
+    );
+    let haiku = app
+        .state
+        .kpmr
+        .current()
+        .snapshot
+        .model("anthropic", "claude-haiku-4-5")
+        .unwrap()
+        .clone();
+    assert_eq!(haiku.pricing.unwrap().tiers[0].context_above, 100_000);
+
+    common::kpmr::model(&mut served_doc, "anthropic", "claude-haiku-4-5")["pricing"]["tiers"][0]
+        ["input"] = json!("2.5");
+    served.lock().unwrap().body = served_doc.to_string();
+    app.clock.advance(time::Duration::DAY);
+    assert_eq!(
+        run_sync_job(&app).await,
+        "applied: 1 price changes, 0 delisted, 0 listed again",
+        "a change to them afterwards is one"
+    );
 }
 
 #[tokio::test]

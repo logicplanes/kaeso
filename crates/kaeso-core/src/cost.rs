@@ -27,6 +27,31 @@ pub fn one_hour_cache_write_price(prices: &Fields) -> Option<Decimal> {
     })
 }
 
+pub fn prices_for_prompt(prices: &Fields, prompt_tokens: u64) -> Fields {
+    let tier = prices
+        .price_tiers
+        .iter()
+        .flatten()
+        .filter(|t| prompt_tokens > t.context_above)
+        .max_by_key(|t| t.context_above);
+    let Some(tier) = tier else {
+        return prices.clone();
+    };
+    Fields {
+        input_price: tier.input_price.or(prices.input_price),
+        output_price: tier.output_price.or(prices.output_price),
+        cache_read_price: tier.cache_read_price.or(prices.cache_read_price),
+        cache_write_price: tier.cache_write_price.or(prices.cache_write_price),
+        cache_write_1h_price: tier.cache_write_1h_price.or(if tier.input_price.is_some() {
+            None
+        } else {
+            prices.cache_write_1h_price
+        }),
+        price_tiers: None,
+        ..prices.clone()
+    }
+}
+
 pub fn unpriced_model(
     prices: &Fields,
     set_by_hand: &Fields,
@@ -50,6 +75,7 @@ pub fn unpriced_model(
 }
 
 pub fn cost(usage: &Usage, prices: &Fields) -> Decimal {
+    let prices = &prices_for_prompt(prices, usage.total_input_tokens());
     let one_hour = usage
         .cache_write_breakdown
         .as_ref()
@@ -250,5 +276,143 @@ mod tests {
             ..Fields::default()
         };
         assert_eq!(one_hour_cache_write_price(&unpriced_input), None);
+    }
+
+    fn tiered() -> Fields {
+        Fields {
+            input_price: Some(dec!(10)),
+            output_price: Some(dec!(50)),
+            cache_read_price: Some(dec!(1)),
+            cache_write_price: Some(dec!(12.5)),
+            cache_write_1h_price: Some(dec!(20)),
+            price_tiers: Some(vec![
+                crate::catalogue::PriceTier {
+                    context_above: 272_000,
+                    input_price: Some(dec!(20)),
+                    output_price: Some(dec!(75)),
+                    cache_read_price: None,
+                    cache_write_price: Some(dec!(25)),
+                    cache_write_1h_price: None,
+                },
+                crate::catalogue::PriceTier {
+                    context_above: 512_000,
+                    output_price: Some(dec!(90)),
+                    ..crate::catalogue::PriceTier::default()
+                },
+            ]),
+            ..Fields::default()
+        }
+    }
+
+    #[test]
+    fn a_prompt_longer_than_a_tier_pays_that_tiers_prices() {
+        let prices = tiered();
+        let at = prices_for_prompt(&prices, 272_000);
+        assert_eq!(
+            at, prices,
+            "a prompt of exactly 272,000 tokens is not above it"
+        );
+        let below = prices_for_prompt(&prices, 1_000);
+        assert_eq!(
+            (below.input_price, below.output_price),
+            (Some(dec!(10)), Some(dec!(50)))
+        );
+        let above = prices_for_prompt(&prices, 272_001);
+        assert_eq!(above.input_price, Some(dec!(20)));
+        assert_eq!(above.output_price, Some(dec!(75)));
+        assert_eq!(
+            above.cache_read_price,
+            Some(dec!(1)),
+            "a null price is the base price"
+        );
+        assert_eq!(above.cache_write_price, Some(dec!(25)));
+        assert_eq!(
+            one_hour_cache_write_price(&above),
+            Some(dec!(40)),
+            "twice the tier's input price, not the base list price"
+        );
+        let highest = prices_for_prompt(&prices, 600_000);
+        assert_eq!(
+            highest.output_price,
+            Some(dec!(90)),
+            "the highest tier exceeded"
+        );
+        assert_eq!(
+            highest.input_price,
+            Some(dec!(10)),
+            "its null input is the base price"
+        );
+        assert_eq!(
+            one_hour_cache_write_price(&highest),
+            Some(dec!(20)),
+            "without a tier input price the base one-hour price holds"
+        );
+        let mut by_hand = prices.clone();
+        if let Some(tiers) = by_hand.price_tiers.as_mut() {
+            tiers[0].cache_write_1h_price = Some(dec!(30));
+        }
+        assert_eq!(
+            one_hour_cache_write_price(&prices_for_prompt(&by_hand, 300_000)),
+            Some(dec!(30))
+        );
+        let untiered = Fields {
+            price_tiers: None,
+            ..prices.clone()
+        };
+        assert_eq!(prices_for_prompt(&untiered, 10_000_000), untiered);
+    }
+
+    #[test]
+    fn every_token_of_a_long_request_pays_the_tier_not_only_those_past_the_threshold() {
+        let prices = Fields {
+            input_price: Some(dec!(1)),
+            output_price: Some(dec!(2)),
+            cache_read_price: Some(dec!(0.1)),
+            cache_write_price: Some(dec!(1.25)),
+            price_tiers: Some(vec![crate::catalogue::PriceTier {
+                context_above: 2_000_000,
+                input_price: Some(dec!(10)),
+                output_price: Some(dec!(20)),
+                cache_read_price: Some(dec!(1)),
+                cache_write_price: Some(dec!(12.5)),
+                cache_write_1h_price: None,
+            }]),
+            ..Fields::default()
+        };
+        let mut u = Usage::default();
+        u.input_tokens = 1_000_000;
+        u.cache_read_tokens = 1_000_000;
+        u.cache_write_tokens = 1;
+        u.output_tokens = 1_000_000;
+        assert_eq!(
+            cost(&u, &prices),
+            dec!(10) + dec!(1) + dec!(0.0000125) + dec!(20),
+            "2,000,001 prompt tokens: all of them and the output at the tier"
+        );
+        u.cache_write_tokens = 0;
+        assert_eq!(cost(&u, &prices), dec!(1) + dec!(0.1) + dec!(2));
+    }
+
+    #[test]
+    fn the_prompt_length_counts_cached_and_written_tokens_as_well() {
+        let prices = tiered();
+        let mut u = Usage::default();
+        u.input_tokens = 100_000;
+        u.cache_read_tokens = 100_000;
+        u.cache_write_tokens = 72_000;
+        u.output_tokens = 1_000_000;
+        assert_eq!(cost(&u, &prices), dec!(52), "272,000 tokens: base prices");
+        u.cache_write_tokens = 72_001;
+        assert_eq!(
+            cost(&u, &prices),
+            dec!(78.900025),
+            "272,001 tokens: the tier"
+        );
+        u.cache_write_breakdown = Some(kaeso_kpp::CacheWriteBreakdown::new(1, 72_000));
+        assert_eq!(
+            cost(&u, &prices),
+            dec!(79.980025),
+            "one-hour writes at twice 20"
+        );
     }
 }

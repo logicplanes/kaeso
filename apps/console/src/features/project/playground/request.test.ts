@@ -20,6 +20,7 @@ const model = (patch: Partial<PlaygroundModel> = {}): PlaygroundModel => ({
   output_price: "4.5",
   cache_read_price: "0.075",
   cache_write_price: null,
+  price_tiers: [],
   provider_key: true,
   ...patch,
 });
@@ -60,6 +61,24 @@ describe("replyCost", () => {
 
   it("prices the usage at the catalogue's prices, cached input at the cache-read price", () => {
     expect(replyCost(usage, model())).toBe("0.002115");
+  });
+
+  it("prices a prompt longer than a tier at that tier's prices, a missing one at the model's own", () => {
+    const tiered = model({
+      price_tiers: [
+        { context_above: 1000, input_price: "1.5", output_price: "9" },
+        { context_above: 100_000, input_price: "3" },
+      ],
+    });
+    expect(replyCost(usage, tiered)).toBe("0.004215");
+    expect(replyCost({ ...usage, input_tokens: 1000, cached_tokens: 0 }, tiered)).toBe("0.002100");
+    expect(replyCost({ ...usage, input_tokens: 100_001, cached_tokens: 0, output_tokens: 0 }, tiered)).toBe("0.300003");
+    const bare = { input_price: "1", output_price: "2", cache_read_price: null, cache_write_price: null };
+    expect(replyCost(usage, bare)).toBe("0.001800");
+    const cacheless = { ...bare, price_tiers: [{ context_above: 1000, output_price: "4" }] };
+    expect(replyCost({ ...usage, cache_write_tokens: 100 }, cacheless)).toBe("0.002400");
+    expect(replyCost(usage, { ...cacheless, input_price: null })).toBeNull();
+    expect(replyCost(usage, { ...cacheless, output_price: null, price_tiers: [{ context_above: 1000 }] })).toBeNull();
   });
 
   it("prefers the gateway's cost, and has none without prices", () => {

@@ -62,6 +62,37 @@ pub struct Pricing {
     pub cache_write: Option<Decimal>,
     #[serde(default, deserialize_with = "price")]
     pub cache_write_1h: Option<Decimal>,
+    #[serde(default, deserialize_with = "tiers")]
+    pub tiers: Vec<Tier>,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Tier {
+    pub context_above: u64,
+    #[serde(default, deserialize_with = "price")]
+    pub input: Option<Decimal>,
+    #[serde(default, deserialize_with = "price")]
+    pub output: Option<Decimal>,
+    #[serde(default, deserialize_with = "price")]
+    pub cache_read: Option<Decimal>,
+    #[serde(default, deserialize_with = "price")]
+    pub cache_write: Option<Decimal>,
+}
+
+// One tier this gateway cannot read must not make it skip the model and its base prices.
+fn tiers<'de, D: Deserializer<'de>>(d: D) -> Result<Vec<Tier>, D::Error> {
+    let mut tiers: Vec<Tier> = Option::<Value>::deserialize(d)?
+        .and_then(|v| match v {
+            Value::Array(items) => Some(items),
+            _ => None,
+        })
+        .unwrap_or_default()
+        .into_iter()
+        .filter_map(|item| serde_json::from_value(item).ok())
+        .collect();
+    tiers.sort_by_key(|t| t.context_above);
+    tiers.dedup_by_key(|t| t.context_above);
+    Ok(tiers)
 }
 
 impl Pricing {
@@ -231,7 +262,8 @@ struct ProviderDoc<'a> {
 
 fn readable(model: &Model) -> bool {
     model.pricing.as_ref().is_none_or(|p| {
-        p.unit.as_deref() == Some(PRICE_UNIT) || p.prices().iter().all(Option::is_none)
+        p.unit.as_deref() == Some(PRICE_UNIT)
+            || (p.prices().iter().all(Option::is_none) && p.tiers.is_empty())
     })
 }
 
@@ -590,6 +622,65 @@ mod tests {
         assert!(serde_json::from_str::<Pricing>(r#"{"input": "-1"}"#).is_err());
         assert!(serde_json::from_str::<Pricing>(r#"{"input": "1e25"}"#).is_err());
         assert!(serde_json::from_str::<Pricing>(r#"{"input": "1000000"}"#).is_ok());
+    }
+
+    #[test]
+    fn long_context_tiers_are_read_and_a_bad_tier_is_skipped_alone() {
+        let doc = catalogue(
+            r#"{"openai": {"models": {
+            "tiered": {"id": "tiered", "pricing": {"unit": "usd_per_million_tokens", "input": "10", "output": "50",
+                "tiers": [
+                    {"context_above": 512000, "input": "30", "output": null, "future": 1},
+                    {"context_above": "lots", "input": "1"},
+                    {"context_above": 272000, "input": "20", "output": "75", "cache_read": "2", "cache_write": "25"},
+                    {"context_above": 400000, "input": 0.5},
+                    {"input": "40"}
+                ]}},
+            "older": {"id": "older", "pricing": {"unit": "usd_per_million_tokens", "input": "1", "output": "2"}},
+            "empty": {"id": "empty", "pricing": {"unit": "usd_per_million_tokens", "input": "1", "tiers": []}},
+            "odd": {"id": "odd", "pricing": {"unit": "usd_per_million_tokens", "input": "1", "tiers": {"context_above": 1}}},
+            "unitless": {"id": "unitless", "pricing": {"tiers": [{"context_above": 1, "input": "1"}]}}
+            }}}"#,
+        );
+        let parsed = parse(&doc, &known_ids()).unwrap();
+        assert_eq!(parsed.skipped, ["openai/unitless"]);
+        let tiers = |id: &str| {
+            parsed
+                .catalogue
+                .model("openai", id)
+                .unwrap()
+                .pricing
+                .clone()
+                .unwrap()
+                .tiers
+        };
+        assert_eq!(
+            tiers("tiered"),
+            [
+                Tier {
+                    context_above: 272_000,
+                    input: Some(dec!(20)),
+                    output: Some(dec!(75)),
+                    cache_read: Some(dec!(2)),
+                    cache_write: Some(dec!(25)),
+                },
+                Tier {
+                    context_above: 512_000,
+                    input: Some(dec!(30)),
+                    ..Tier::default()
+                },
+            ]
+        );
+        assert!(tiers("older").is_empty());
+        assert!(tiers("empty").is_empty());
+        assert!(tiers("odd").is_empty());
+        let stored = serde_json::to_value(&parsed.catalogue).unwrap();
+        assert_eq!(
+            stored["providers"]["openai"]["models"]["tiered"]["pricing"]["tiers"][0]["input"],
+            "20"
+        );
+        let back: Catalogue = serde_json::from_value(stored).unwrap();
+        assert_eq!(back, parsed.catalogue);
     }
 
     #[derive(Debug, Deserialize)]

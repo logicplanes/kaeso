@@ -105,6 +105,61 @@ async fn an_alias_request_is_logged_with_the_steps_it_tried_first() {
 }
 
 #[tokio::test]
+async fn a_prompt_longer_than_a_price_tier_is_billed_at_its_prices() {
+    let env = env(&[]).await;
+    let models = env
+        .app
+        .get(&format!("{}/models", base(&env)), &env.owner.cookie)
+        .await;
+    let haiku = models.body["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|m| m["model_id"] == "claude-haiku-4-5")
+        .unwrap()["id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let tiers = |context_above: u64| {
+        json!({ "overrides": { "price_tiers": [
+            { "context_above": context_above, "input_price": "2", "output_price": "10" }
+        ] } })
+    };
+    let entry = format!("{}/models/{haiku}", base(&env));
+    for (context_above, cost) in [(10, "0.0001"), (9, "0.0002")] {
+        let r = env
+            .app
+            .call(
+                Method::PATCH,
+                &entry,
+                Some(tiers(context_above)),
+                Some(&env.owner.cookie),
+            )
+            .await;
+        assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+        assert_eq!(
+            r.body["effective"]["price_tiers"][0]["input_price"], "2",
+            "{:?}",
+            r.body
+        );
+        let answer = call(
+            &env,
+            "/v1/messages",
+            Some(&env.key),
+            false,
+            Some(messages("claude-haiku-4-5", "Hello")),
+        )
+        .await;
+        assert_eq!(answer.status, StatusCode::OK, "{}", answer.text());
+        flush(&env).await;
+        let entry = &logs(&env, "").await["data"][0];
+        assert_eq!(entry["usage"]["input_tokens"], 10, "{entry}");
+        assert_eq!(entry["cost"], cost, "above {context_above} tokens: {entry}");
+        env.app.clock.advance(time::Duration::seconds(1));
+    }
+}
+
+#[tokio::test]
 async fn requests_are_logged_with_metadata_and_content() {
     let env = env(&[]).await;
     let r = call(

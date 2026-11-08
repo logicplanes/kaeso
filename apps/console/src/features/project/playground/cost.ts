@@ -18,12 +18,23 @@ function decimal(value: bigint): string {
   return `${whole}.${(micro % 1_000_000n).toString().padStart(6, "0")}`;
 }
 
-export function replyCost(
-  usage: ResponseUsage,
-  prices: Pick<PlaygroundModel, "input_price" | "output_price" | "cache_read_price" | "cache_write_price"> | null,
-): string | null {
+type Prices = Pick<PlaygroundModel, "input_price" | "output_price" | "cache_read_price" | "cache_write_price"> & Partial<Pick<PlaygroundModel, "price_tiers">>;
+
+function pricesFor(prices: Prices, prompt: number): Prices {
+  const tier = (prices.price_tiers ?? []).filter((t) => prompt > t.context_above).sort((a, b) => b.context_above - a.context_above)[0];
+  if (!tier) return prices;
+  return {
+    input_price: tier.input_price ?? prices.input_price ?? null,
+    output_price: tier.output_price ?? prices.output_price ?? null,
+    cache_read_price: tier.cache_read_price ?? prices.cache_read_price ?? null,
+    cache_write_price: tier.cache_write_price ?? prices.cache_write_price ?? null,
+  };
+}
+
+export function replyCost(usage: ResponseUsage, model: Prices | null): string | null {
   if (usage.cost !== undefined && units(usage.cost) !== null) return usage.cost;
-  if (!prices) return null;
+  if (!model) return null;
+  const prices = pricesFor(model, usage.input_tokens);
   const input = units(prices.input_price);
   const output = units(prices.output_price);
   if (input === null || output === null) return null;

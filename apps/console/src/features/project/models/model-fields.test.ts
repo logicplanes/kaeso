@@ -1,6 +1,6 @@
 import { setFormatLocale } from "@logicplanes/kaeso-ui/format";
 import { afterEach, describe, expect, it } from "vitest";
-import { contextLabel } from "./model-fields";
+import { contextLabel, tierLabels } from "./model-fields";
 
 const limits = [8192, 128_000, 200_000, 1_048_576, 2_000_000];
 
@@ -24,5 +24,23 @@ describe("contextLabel", () => {
     expect(contextLabel(null)).toBe("—");
     expect(contextLabel(undefined)).toBe("—");
     expect(contextLabel(0)).toBe("—");
+  });
+});
+
+describe("tierLabels", () => {
+  afterEach(() => setFormatLocale("en"));
+
+  it("names each tier by the prompt length it starts above, with its input and output prices", () => {
+    const f = {
+      input_price: "10",
+      output_price: "50",
+      price_tiers: [
+        { context_above: 272_000, input_price: "20", output_price: "75" },
+        { context_above: 1_048_576, output_price: "0.625" },
+      ],
+    };
+    expect(tierLabels(f)).toEqual(["Above 272K: $20.00 / $75.00", "Above 1M: $10.00 / $0.625"]);
+    expect(tierLabels({ price_tiers: [{ context_above: 32_000 }] })).toEqual(["Above 32K: — / —"]);
+    expect(tierLabels({})).toEqual([]);
   });
 });

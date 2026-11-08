@@ -498,6 +498,9 @@ pub struct PlaygroundModel {
     #[doc = "USD per million cache-write tokens."]
     #[schema(value_type = Option<String>)]
     pub cache_write_price: Option<String>,
+    #[doc = "Prices for long prompts, lowest threshold first; the highest tier a\n\
+        prompt exceeds replaces the base prices."]
+    pub price_tiers: Vec<kaeso_core::catalogue::PriceTier>,
     #[doc = "Whether the project has a provider key for its provider (assigned to\n\
         the project, or the org's default); without one, requests fail."]
     pub provider_key: bool,
@@ -515,8 +518,10 @@ pub struct PlaygroundModel {
     model access, with what the Playground shows and offers (reasoning,\n\
     efforts, temperature, prices). A reply's cost is `(input − cached) ×\n\
     input_price + cached × cache_read_price + output × output_price`, per\n\
-    million tokens, as the request log charges it (Anthropic cache writes,\n\
-    which Responses usage does not show, are in the log's cost only).",
+    million tokens, at the prices of the highest of `price_tiers` whose\n\
+    `context_above` the input exceeds, as the request log charges it\n\
+    (Anthropic cache writes, which Responses usage does not show, are in the\n\
+    log's cost only).",
     tag = "projects",
     params(("org" = OrgId, Path), ("project" = ProjectId, Path)),
     responses((status = 200, body = List<PlaygroundModel>))
@@ -588,6 +593,7 @@ pub async fn models(
             output_price: price(f.output_price),
             cache_read_price: price(f.cache_read_price),
             cache_write_price: price(f.cache_write_price),
+            price_tiers: f.price_tiers.clone().unwrap_or_default(),
             provider_key,
             availability: entry.availability.into(),
         });

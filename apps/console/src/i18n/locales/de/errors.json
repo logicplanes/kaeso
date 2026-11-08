@@ -280,6 +280,7 @@
   "errors.playgroundListConsoleOnly": "Der Playground braucht eine Konsolensitzung; Apps listen Modelle mit einem Schlüssel über `/v1` auf.",
   "errors.playgroundUnreadable": "Das Gateway hat eine Antwort gesendet, die der Playground nicht lesen kann. Bitte erneut versuchen.",
   "errors.priceRange": "`{name}` muss 0 bis 1.000.000 USD pro Million Token betragen, höchstens 9 Nachkommastellen.",
+  "errors.priceTiers": "`price_tiers` nimmt bis zu 16 Stufen, ihr `context_above` positiv und steigend.",
   "errors.projectArchived": "Das Projekt ist archiviert und lässt sich nicht ändern.",
   "errors.projectArchivedCalls": "Das Projekt ist archiviert; seine Modelle lassen sich nicht aufrufen.",
   "errors.projectArchivedKeys": "Das Projekt ist archiviert; seine Schlüssel lassen sich nicht ändern.",

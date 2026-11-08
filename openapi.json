@@ -17624,7 +17624,7 @@
           "projects"
         ],
         "summary": "The models the signed-in member can call in the Playground.",
-        "description": "The project's catalogue without embeddings models, narrowed by the member's\nmodel access, with what the Playground shows and offers (reasoning,\nefforts, temperature, prices). A reply's cost is `(input − cached) ×\ninput_price + cached × cache_read_price + output × output_price`, per\nmillion tokens, as the request log charges it (Anthropic cache writes,\nwhich Responses usage does not show, are in the log's cost only).\n\n**Right:** `playground.use` on the project in the path.",
+        "description": "The project's catalogue without embeddings models, narrowed by the member's\nmodel access, with what the Playground shows and offers (reasoning,\nefforts, temperature, prices). A reply's cost is `(input − cached) ×\ninput_price + cached × cache_read_price + output × output_price`, per\nmillion tokens, at the prices of the highest of `price_tiers` whose\n`context_above` the input exceeds, as the request log charges it\n(Anthropic cache writes, which Responses usage does not show, are in the\nlog's cost only).\n\n**Right:** `playground.use` on the project in the path.",
         "operationId": "getOrgsOrgProjectsProjectPlaygroundModels",
         "parameters": [
           {
@@ -24480,6 +24480,16 @@
             "description": "USD per million output tokens.",
             "example": "15.00"
           },
+          "price_tiers": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/PriceTier"
+            },
+            "description": "Prices for long prompts, by prompt length in tokens, lowest threshold first;\nthe highest tier a prompt exceeds replaces the base prices."
+          },
           "reasoning": {
             "type": [
               "boolean",
@@ -24665,6 +24675,16 @@
               }
             ],
             "description": "USD per million output tokens."
+          },
+          "price_tiers": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/PriceTier"
+            },
+            "description": "Prices for long prompts, by prompt length in tokens, lowest threshold first;\nthe highest tier a prompt exceeds replaces the base prices."
           },
           "reasoning": {
             "type": [
@@ -28437,6 +28457,7 @@
                 "efforts",
                 "temperature",
                 "input_modalities",
+                "price_tiers",
                 "provider_key",
                 "availability"
               ],
@@ -28531,6 +28552,13 @@
                   ],
                   "description": "USD per million output tokens (reasoning included).",
                   "example": "15"
+                },
+                "price_tiers": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PriceTier"
+                  },
+                  "description": "Prices for long prompts, lowest threshold first; the highest tier a\nprompt exceeds replaces the base prices."
                 },
                 "provider": {
                   "type": "string",
@@ -32724,6 +32752,7 @@
           "efforts",
           "temperature",
           "input_modalities",
+          "price_tiers",
           "provider_key",
           "availability"
         ],
@@ -32818,6 +32847,13 @@
             ],
             "description": "USD per million output tokens (reasoning included).",
             "example": "15"
+          },
+          "price_tiers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PriceTier"
+            },
+            "description": "Prices for long prompts, lowest threshold first; the highest tier a\nprompt exceeds replaces the base prices."
           },
           "provider": {
             "type": "string",
@@ -33176,6 +33212,60 @@
             "description": "The provider."
           }
         }
+      },
+      "PriceTier": {
+        "type": "object",
+        "description": "The prices for every token of a request whose prompt is longer than\n`context_above` tokens, output included. An absent price is the model's own\nprice.",
+        "required": [
+          "context_above"
+        ],
+        "properties": {
+          "cache_read_price": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "USD per million cache-read tokens."
+          },
+          "cache_write_1h_price": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "USD per million cache-write tokens kept for an hour; absent means twice\nthis tier's input price, or the model's own one-hour price when the tier has\nno input price."
+          },
+          "cache_write_price": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "USD per million cache-write tokens."
+          },
+          "context_above": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The prompt length in tokens, cached tokens included, above which these\nprices apply.",
+            "example": 272000,
+            "minimum": 0
+          },
+          "input_price": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "USD per million input tokens.",
+            "example": "20.00"
+          },
+          "output_price": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "USD per million output tokens.",
+            "example": "75.00"
+          }
+        },
+        "additionalProperties": false
       },
       "ProfileUpdate": {
         "type": "object",

@@ -491,6 +491,7 @@
   "errors.playgroundListConsoleOnly": "The Playground needs a console session; apps list models with a key on `/v1`.",
   "errors.playgroundUnreadable": "The gateway sent an answer the playground can't read. Try again.",
   "errors.priceRange": "`{name}` must be 0 to 1,000,000 USD per million tokens, at most 9 decimals.",
+  "errors.priceTiers": "`price_tiers` takes up to 16 tiers, their `context_above` positive and rising.",
   "errors.projectArchived": "The project is archived and cannot be changed.",
   "errors.projectArchivedCalls": "The project is archived; its models cannot be called.",
   "errors.projectArchivedKeys": "The project is archived; its keys cannot change.",

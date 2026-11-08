@@ -14,7 +14,7 @@ import { useProviders } from "~/kaeso/providers";
 import { fullDayLabel } from "~/format/period";
 import { usePartyName } from "../keys/party";
 import { availabilityLabel, unavailableHint } from "./availability";
-import { capabilities, fieldRows, type FieldKind } from "./model-fields";
+import { capabilities, fieldRows, tierLabels, type FieldKind } from "./model-fields";
 import { ModelForm, changedFields, draftFrom, draftProblem, modalityLabel, type FieldDraft } from "./model-form";
 import { modelName } from "~/format/models";
 import { useRememberRecent } from "~/shell/recent";
@@ -180,13 +180,24 @@ function ModelBody({ org, project, modelId, onClose }: { org: string; project: s
           items={fieldRows().map((row) => {
             const overridden = m.overrides[row.key] !== null && m.overrides[row.key] !== undefined;
             const value = shown[row.key];
+            const tiers = row.kind === "tiers" ? tierLabels(shown) : [];
             return {
               label: row.label,
               value: (
                 <span className="flex min-w-0 items-center gap-8">
-                  <Text tone={overridden ? "default" : "secondary"} truncate>
-                    {show(row.kind, row.key, value)}
-                  </Text>
+                  {tiers.length ? (
+                    <span className="flex min-w-0 flex-col">
+                      {tiers.map((label) => (
+                        <Text key={label} tone={overridden ? "default" : "secondary"} truncate>
+                          {label}
+                        </Text>
+                      ))}
+                    </span>
+                  ) : (
+                    <Text tone={overridden ? "default" : "secondary"} truncate>
+                      {show(row.kind, row.key, value)}
+                    </Text>
+                  )}
                   <Text variant="caption" tone="tertiary">
                     {sourceOf(m, overridden, row.key, value)}
                   </Text>

@@ -244,12 +244,15 @@ async fn apply_locked(
     hash: &[u8],
     etag: Option<&str>,
 ) -> Result<ApplyOutcome, StoreError> {
-    let old = match catalogue::snapshot(&state.pg).await? {
-        Some(row) => serde_json::from_value::<Catalogue>(row.data).unwrap_or_else(|e| {
-            tracing::warn!(error = %e, "the stored KPMR data does not parse; this update audits no price changes");
-            Catalogue::default()
-        }),
-        None => Catalogue::default(),
+    let (old, old_complete) = match catalogue::snapshot(&state.pg).await? {
+        Some(row) => (
+            serde_json::from_value::<Catalogue>(row.data).unwrap_or_else(|e| {
+                tracing::warn!(error = %e, "the stored KPMR data does not parse; this update audits no price changes");
+                Catalogue::default()
+            }),
+            in_this_format(row.format.as_deref()),
+        ),
+        None => (Catalogue::default(), true),
     };
     let now = state.clock.now();
     let mut applied = Applied::default();
@@ -260,10 +263,13 @@ async fn apply_locked(
             let Some(before) = old.model(pid, mid) else {
                 continue;
             };
-            let (b, a) = (
-                prices(&Fields::from_kpmr(before)),
-                prices(&Fields::from_kpmr(model)),
-            );
+            let mut before = Fields::from_kpmr(before);
+            let after = Fields::from_kpmr(model);
+            // An older build stored no long-context prices, so finding them now is no price change.
+            if !old_complete && before.price_tiers.is_none() {
+                before.price_tiers.clone_from(&after.price_tiers);
+            }
+            let (b, a) = (prices(&before), prices(&after));
             if b == a {
                 continue;
             }
@@ -281,8 +287,8 @@ async fn apply_locked(
             .await?;
             for entry in catalogue::of_model(&mut *tx, pid, mid).await? {
                 let Ok(e) = entry.entry() else { continue };
-                let was = e.overrides.clone().over(&Fields::from_kpmr(before));
-                let is = e.overrides.clone().over(&Fields::from_kpmr(model));
+                let was = e.overrides.clone().over_kpmr(before.clone());
+                let is = e.overrides.clone().over_kpmr(after.clone());
                 if prices(&was) != prices(&is) {
                     audit(
                         &mut tx,
@@ -367,6 +373,7 @@ fn prices(f: &Fields) -> Option<serde_json::Value> {
         "cache_read_price": f.cache_read_price,
         "cache_write_price": f.cache_write_price,
         "cache_write_1h_price": f.cache_write_1h_price,
+        "price_tiers": f.price_tiers,
     }))
 }
 
