@@ -65,4 +65,27 @@ describe("unitPriceLabels", () => {
     expect(dialectPill("openai_images")).toBe("images");
     expect(dialectPill("minimax_images")).toBe("images");
   });
+
+  it("names audio units, the sound condition and a minimum", () => {
+    const f = {
+      unit_prices: [
+        { per: "million_characters", of: "input", usd: "15" },
+        { per: "hour", of: "input", usd: "0.111", minimum_seconds: 10 },
+        { per: "minute", of: "output", usd: "0.12" },
+        { per: "second", of: "output", usd: "0.05", resolution: "720p", audio: true },
+        { per: "second", of: "output", usd: "0.025", audio: false },
+        { per: "frame", of: "output", usd: "1" },
+      ],
+    };
+    expect(unitPriceLabels(f)).toEqual([
+      "$15.00 per million characters of input",
+      "$0.11 per hour of input (at least 10 s)",
+      "$0.12 per minute of output",
+      "$0.05 per second of output (720p, with sound)",
+      "$0.03 per second of output (without sound)",
+      "$1.00 per frame of output",
+    ]);
+    expect(dialectPill("openai_speech")).toBe("speech");
+    expect(dialectPill("openai_transcriptions")).toBe("transcriptions");
+  });
 });

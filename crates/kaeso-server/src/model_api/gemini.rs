@@ -149,6 +149,7 @@ async fn call(
             alias: None,
             gemini: Some(call),
             image: None,
+            transcription: None,
         },
     )
     .await

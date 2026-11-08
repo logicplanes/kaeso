@@ -19,7 +19,7 @@ use axum::response::Response;
 use axum::routing::{get, post};
 use kaeso_codecs::dispatch;
 use kaeso_core::id::RequestId;
-use kaeso_kpp::{DialectId, ErrorKind, ImageOperation, RequestKind};
+use kaeso_kpp::{DialectId, ErrorKind, ImageOperation, RequestKind, TranscriptionOperation};
 
 use self::errors::{Served, error, respond};
 use self::pipeline::Incoming;
@@ -34,7 +34,24 @@ async fn serve(
     client_ip: ClientIp,
     req: Request,
 ) -> Response {
-    serve_call(state, ingress, kind, request_id, client_ip, req, None).await
+    serve_call(
+        state,
+        ingress,
+        kind,
+        request_id,
+        client_ip,
+        req,
+        Media::None,
+    )
+    .await
+}
+
+/// The operation a media endpoint's path names.
+#[derive(Clone, Copy)]
+enum Media {
+    None,
+    Image(ImageOperation),
+    Transcription(TranscriptionOperation),
 }
 
 async fn serve_call(
@@ -44,13 +61,14 @@ async fn serve_call(
     request_id: RequestId,
     client_ip: ClientIp,
     req: Request,
-    image: Option<ImageOperation>,
+    media: Media,
 ) -> Response {
     let (parts, body) = req.into_parts();
-    let max_body = if image.is_some() {
-        state.config.body_limits.images.as_usize()
-    } else {
-        state.config.body_limits.model_api.as_usize()
+    let limits = &state.config.body_limits;
+    let (max_body, image, transcription) = match media {
+        Media::Image(op) => (limits.images.as_usize(), Some(op), None),
+        Media::Transcription(op) => (limits.audio.as_usize(), None, Some(op)),
+        Media::None => (limits.model_api.as_usize(), None, None),
     };
     pipeline::serve(
         state,
@@ -68,6 +86,7 @@ async fn serve_call(
             alias: None,
             gemini: None,
             image,
+            transcription,
         },
     )
     .await
@@ -89,12 +108,37 @@ macro_rules! image_endpoint {
                 id,
                 ip,
                 req,
-                Some($operation),
+                Media::Image($operation),
             )
             .await
         }
     };
 }
+
+macro_rules! transcription_endpoint {
+    ($name:ident, $operation:expr) => {
+        async fn $name(
+            State(state): State<AppState>,
+            Extension(id): Extension<RequestId>,
+            ip: ClientIp,
+            req: Request,
+        ) -> Response {
+            serve_call(
+                state,
+                DialectId::OpenAiTranscriptions,
+                RequestKind::Transcription,
+                id,
+                ip,
+                req,
+                Media::Transcription($operation),
+            )
+            .await
+        }
+    };
+}
+
+transcription_endpoint!(audio_transcriptions, TranscriptionOperation::Transcribe);
+transcription_endpoint!(audio_translations, TranscriptionOperation::Translate);
 
 image_endpoint!(image_generations, ImageOperation::Generate);
 image_endpoint!(image_edits, ImageOperation::Edit);
@@ -125,6 +169,7 @@ endpoint!(
     RequestKind::CountTokens
 );
 endpoint!(embeddings, DialectId::OpenAiEmbeddings, RequestKind::Embed);
+endpoint!(audio_speech, DialectId::OpenAiSpeech, RequestKind::Speech);
 endpoint!(
     messages,
     DialectId::AnthropicMessages,
@@ -218,6 +263,9 @@ pub fn router() -> Router<AppState> {
         .route("/v1/images/generations", post(image_generations))
         .route("/v1/images/edits", post(image_edits))
         .route("/v1/images/variations", post(image_variations))
+        .route("/v1/audio/speech", post(audio_speech))
+        .route("/v1/audio/transcriptions", post(audio_transcriptions))
+        .route("/v1/audio/translations", post(audio_translations))
         .route("/v1/messages", post(messages))
         .route("/v1/messages/count_tokens", post(messages_count_tokens))
         .route("/v1/models", get(models_list))

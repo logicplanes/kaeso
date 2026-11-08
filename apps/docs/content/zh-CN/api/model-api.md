@@ -163,6 +163,8 @@ console.log(response.text);
 | `POST /v1/responses/input_tokens` | OpenAI Responses，统计输入 Token |
 | `POST /v1/embeddings` | OpenAI Embeddings |
 | `POST /v1/images/generations`、`POST /v1/images/edits`、`POST /v1/images/variations` | OpenAI Images（[图片 API](images.md)） |
+| `POST /v1/audio/speech` | OpenAI Speech（[音频 API](audio.md)） |
+| `POST /v1/audio/transcriptions`、`POST /v1/audio/translations` | OpenAI Transcriptions（[音频 API](audio.md)） |
 | `POST /v1/messages` | Anthropic Messages |
 | `POST /v1/messages/count_tokens` | Anthropic Messages，统计 Token |
 | `GET /v1/models` | 该密钥可调用的模型 |

@@ -434,12 +434,15 @@ impl From<Cached> for LogSettings {
     }
 }
 
-pub fn endpoint(
-    ingress: DialectId,
-    kind: RequestKind,
-    gemini: Option<GeminiAction>,
-    image: Option<kaeso_kpp::ImageOperation>,
-) -> &'static str {
+pub fn endpoint(o: &Outcome) -> &'static str {
+    let (ingress, kind, gemini, image, transcription) =
+        (o.ingress, o.kind, o.gemini, o.image, o.transcription);
+    if let Some(operation) = transcription {
+        return match operation {
+            kaeso_kpp::TranscriptionOperation::Translate => "audio/translations",
+            _ => "audio/transcriptions",
+        };
+    }
     if let Some(operation) = image {
         return match operation {
             kaeso_kpp::ImageOperation::Edit => "images/edits",
@@ -462,12 +465,13 @@ pub fn endpoint(
         (DialectId::OpenAiResponses, RequestKind::CountTokens) => "responses/input_tokens",
         (DialectId::OpenAiResponses, _) => "responses",
         (DialectId::OpenAiEmbeddings, _) => "embeddings",
+        (DialectId::OpenAiSpeech, _) => "audio/speech",
         _ => "chat/completions",
     }
 }
 
 fn media_detail(m: &kaeso_core::cost::MediaUnits) -> String {
-    [&m.size, &m.quality, &m.resolution]
+    [&m.size, &m.quality, &m.resolution, &m.format]
         .into_iter()
         .flatten()
         .map(String::as_str)
@@ -556,7 +560,7 @@ pub async fn record(state: &AppState, o: &Outcome) {
         finished_at: o.started_at + o.duration,
         duration_ms: ms(o.duration),
         ttfb_ms: o.ttfb.map(ms),
-        endpoint: endpoint(o.ingress, o.kind, o.gemini, o.image).into(),
+        endpoint: endpoint(o).into(),
         ingress_dialect: o.ingress.as_str().into(),
         egress_dialect: o.egress.map(|d| d.as_str().to_owned()).unwrap_or_default(),
         provider: o
@@ -610,10 +614,10 @@ pub async fn record(state: &AppState, o: &Outcome) {
         media_unit: o
             .media
             .as_ref()
-            .map(|_| "image".to_owned())
+            .map(|m| m.logged().0.to_owned())
             .unwrap_or_default(),
-        media_input: o.media.as_ref().map_or(0, |m| m.input_images),
-        media_output: o.media.as_ref().map_or(0, |m| m.output_images),
+        media_input: o.media.as_ref().map_or(0, |m| m.logged().1),
+        media_output: o.media.as_ref().map_or(0, |m| m.logged().2),
         media_detail: o.media.as_ref().map(media_detail).unwrap_or_default(),
     };
     let content = content.then(|| ContentRow {

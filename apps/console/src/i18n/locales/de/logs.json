@@ -233,5 +233,11 @@
   "logs.tools.arguments": "Argumente",
   "logs.tools.result": "Antwort",
   "logs.inspector.images": "Bilder",
-  "logs.inspector.imagesCount": "{input} gesendet · {output} erzeugt"
+  "logs.inspector.imagesCount": "{input} gesendet · {output} erzeugt",
+  "logs.inspector.speech": "Sprache",
+  "logs.inspector.audio": "Audio",
+  "logs.inspector.characters": "{count} Zeichen",
+  "logs.inspector.charactersMade": "{characters} · {duration} erstellt",
+  "logs.inspector.audioMade": "{duration} erstellt",
+  "logs.inspector.audioSent": "{duration} Audio gesendet"
 }

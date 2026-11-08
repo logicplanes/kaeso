@@ -362,8 +362,10 @@ impl WorstCase {
         prices: &Fields,
         provider: &crate::providers::ProviderRef,
     ) -> WorstCase {
-        if let kaeso_kpp::Request::Image(r) = request {
-            return WorstCase::of_images(r, prices);
+        match request {
+            kaeso_kpp::Request::Image(r) => return WorstCase::of_images(r, prices),
+            kaeso_kpp::Request::Speech(r) => return WorstCase::of_speech(r, prices),
+            _ => {}
         }
         let context = prices.context_limit;
         let within = |n: u64| context.map_or(n, |c| n.min(c));
@@ -454,6 +456,47 @@ impl WorstCase {
             .into_iter()
             .flatten()
             .max();
+        priced.output_price = output_price;
+        let cost = crate::cost::cost_with_media(&usage, &priced, Some(&units));
+        WorstCase {
+            tokens: i64::try_from(crate::cost::total_tokens(&usage)).unwrap_or(i64::MAX),
+            nano_usd: crate::cost::nano_usd(cost),
+            bounded: output.is_some(),
+        }
+    }
+
+    // Every character at the dearest price per character, the text's tokens at the input
+    // price, and audio tokens up to the model's output limit; without one, token-priced audio
+    // has no bound. A sound effect or music asked for by length is priced by that length.
+    fn of_speech(r: &kaeso_kpp::SpeechRequest, prices: &Fields) -> WorstCase {
+        let characters = r.characters();
+        let input = crate::estimate::tokens_of_bytes(characters);
+        let units = crate::cost::MediaUnits {
+            characters,
+            output_ms: r.duration.map_or(0, crate::assembler::seconds_to_ms),
+            ..crate::cost::MediaUnits::default()
+        };
+        let output_price = prices.output_audio_price.or(prices.output_price);
+        let output = match (prices.output_limit, output_price) {
+            (_, None) => Some(0),
+            (limit, Some(_)) => limit,
+        };
+        let usage = kaeso_kpp::Usage::new(input, output.unwrap_or(0));
+        let dearest = prices.unit_prices.as_ref().map(|list| {
+            let mut top: Vec<crate::catalogue::UnitPrice> = Vec::new();
+            for p in list {
+                match top.iter_mut().find(|t| t.per == p.per && t.of == p.of) {
+                    Some(t) if t.usd < p.usd => t.usd = p.usd,
+                    Some(_) => {}
+                    None => top.push(p.clone()),
+                }
+            }
+            top
+        });
+        let mut priced = Fields {
+            unit_prices: dearest,
+            ..prices.clone()
+        };
         priced.output_price = output_price;
         let cost = crate::cost::cost_with_media(&usage, &priced, Some(&units));
         WorstCase {

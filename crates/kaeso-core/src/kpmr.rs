@@ -70,6 +70,10 @@ pub struct Pricing {
     pub output_image: Option<Decimal>,
     #[serde(default, deserialize_with = "price")]
     pub cache_read_image: Option<Decimal>,
+    #[serde(default, deserialize_with = "price")]
+    pub input_audio: Option<Decimal>,
+    #[serde(default, deserialize_with = "price")]
+    pub output_audio: Option<Decimal>,
     #[serde(default, deserialize_with = "unit_prices")]
     pub per_unit: Vec<UnitPrice>,
 }
@@ -89,7 +93,9 @@ pub struct UnitPrice {
     #[serde(default)]
     pub resolution: Option<String>,
     #[serde(default)]
-    pub audio: Option<String>,
+    pub audio: Option<bool>,
+    #[serde(default)]
+    pub minimum_seconds: Option<u64>,
     #[serde(default)]
     pub estimate: bool,
 }

@@ -159,7 +159,10 @@ pub struct Outcome {
     pub fallbacks: Vec<FellBack>,
     pub gemini: Option<kaeso_codecs::gemini::GeminiAction>,
     pub image: Option<kaeso_kpp::ImageOperation>,
+    pub transcription: Option<kaeso_kpp::TranscriptionOperation>,
     pub media: Option<kaeso_core::cost::MediaUnits>,
+    /// The media type of a whole reply that isn't JSON, such as speech's audio.
+    pub content_type: Option<String>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]

@@ -425,5 +425,14 @@
   "models.field.inputImagePrice": "Preis für Bildeingabe",
   "models.field.outputImagePrice": "Preis für Bildausgabe",
   "models.field.cacheReadImagePrice": "Preis für gecachte Bildeingabe",
-  "models.field.unitPrices": "Preise pro Einheit"
+  "models.field.unitPrices": "Preise pro Einheit",
+  "models.unit.second": "Sekunde",
+  "models.unit.minute": "Minute",
+  "models.unit.hour": "Stunde",
+  "models.unit.millionCharacters": "Million Zeichen",
+  "models.unit.withSound": "mit Ton",
+  "models.unit.withoutSound": "ohne Ton",
+  "models.unit.minimumSeconds": "mindestens {seconds} s",
+  "models.field.inputAudioPrice": "Preis für Audioeingabe",
+  "models.field.outputAudioPrice": "Preis für Audioausgabe"
 }

@@ -233,5 +233,11 @@
   "logs.tools.arguments": "参数",
   "logs.tools.result": "回答",
   "logs.inspector.images": "图片",
-  "logs.inspector.imagesCount": "发送 {input} 张 · 生成 {output} 张"
+  "logs.inspector.imagesCount": "发送 {input} 张 · 生成 {output} 张",
+  "logs.inspector.speech": "语音",
+  "logs.inspector.audio": "音频",
+  "logs.inspector.characters": "{count} 个字符",
+  "logs.inspector.charactersMade": "{characters} · 生成 {duration}",
+  "logs.inspector.audioMade": "生成 {duration}",
+  "logs.inspector.audioSent": "发送 {duration} 音频"
 }

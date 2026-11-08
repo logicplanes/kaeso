@@ -14999,7 +14999,7 @@
           {
             "name": "ingress_dialect",
             "in": "query",
-            "description": "Only requests the app sent in this format: `anthropic_messages`,\n`openai_chat`, `openai_responses`, `openai_embeddings`, `gemini`,\n`gemini_embeddings` or `openai_images`.",
+            "description": "Only requests the app sent in this format: `anthropic_messages`,\n`openai_chat`, `openai_responses`, `openai_embeddings`, `gemini`,\n`gemini_embeddings`, `openai_images`, `openai_speech` or\n`openai_transcriptions`.",
             "required": false,
             "schema": {
               "type": "string"
@@ -15008,7 +15008,7 @@
           {
             "name": "egress_dialect",
             "in": "query",
-            "description": "Only requests Kaeso sent to the provider in this format:\n`anthropic_messages`, `openai_chat`, `openai_responses`,\n`openai_embeddings`, `gemini`, `gemini_embeddings`, `openai_images` or\n`minimax_images`.",
+            "description": "Only requests Kaeso sent to the provider in this format:\n`anthropic_messages`, `openai_chat`, `openai_responses`,\n`openai_embeddings`, `gemini`, `gemini_embeddings`, `openai_images`,\n`minimax_images`, `openai_speech`, `openai_transcriptions` or\n`minimax_speech`.",
             "required": false,
             "schema": {
               "type": "string"
@@ -15240,7 +15240,7 @@
           {
             "name": "ingress_dialect",
             "in": "query",
-            "description": "Only requests the app sent in this format: `anthropic_messages`,\n`openai_chat`, `openai_responses`, `openai_embeddings`, `gemini`,\n`gemini_embeddings` or `openai_images`.",
+            "description": "Only requests the app sent in this format: `anthropic_messages`,\n`openai_chat`, `openai_responses`, `openai_embeddings`, `gemini`,\n`gemini_embeddings`, `openai_images`, `openai_speech` or\n`openai_transcriptions`.",
             "required": false,
             "schema": {
               "type": "string"
@@ -15249,7 +15249,7 @@
           {
             "name": "egress_dialect",
             "in": "query",
-            "description": "Only requests Kaeso sent to the provider in this format:\n`anthropic_messages`, `openai_chat`, `openai_responses`,\n`openai_embeddings`, `gemini`, `gemini_embeddings`, `openai_images` or\n`minimax_images`.",
+            "description": "Only requests Kaeso sent to the provider in this format:\n`anthropic_messages`, `openai_chat`, `openai_responses`,\n`openai_embeddings`, `gemini`, `gemini_embeddings`, `openai_images`,\n`minimax_images`, `openai_speech`, `openai_transcriptions` or\n`minimax_speech`.",
             "required": false,
             "schema": {
               "type": "string"
@@ -24564,6 +24564,14 @@
             ],
             "description": "Whether it accepts a forced tool choice (`tool_choice` `required`, `any`, `tool`\nor a named function); absent means it does."
           },
+          "input_audio_price": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "USD per million audio input tokens; absent means the input price.",
+            "example": "2.50"
+          },
           "input_image_price": {
             "type": [
               "string",
@@ -24589,6 +24597,14 @@
             ],
             "description": "USD per million input tokens.",
             "example": "3.00"
+          },
+          "output_audio_price": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "USD per million audio output tokens; absent means the output price.",
+            "example": "12.00"
           },
           "output_image_price": {
             "type": [
@@ -24694,7 +24710,7 @@
             "items": {
               "$ref": "#/components/schemas/UnitPrice"
             },
-            "description": "Prices per image or megapixel, for models a provider bills by unit; they add\nto the token prices."
+            "description": "Prices per image, megapixel, second, minute, hour or million characters, for\nmodels a provider bills by unit; they add to the token prices."
           }
         },
         "additionalProperties": false
@@ -24787,6 +24803,14 @@
             ],
             "description": "Whether it accepts a forced tool choice (`tool_choice` `required`, `any`, `tool`\nor a named function); absent means it does."
           },
+          "input_audio_price": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "USD per million audio input tokens; absent means the input price.",
+            "example": "2.50"
+          },
           "input_image_price": {
             "type": [
               "string",
@@ -24815,6 +24839,14 @@
               }
             ],
             "description": "USD per million input tokens."
+          },
+          "output_audio_price": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "USD per million audio output tokens; absent means the output price.",
+            "example": "12.00"
           },
           "output_image_price": {
             "type": [
@@ -24923,7 +24955,7 @@
             "items": {
               "$ref": "#/components/schemas/UnitPrice"
             },
-            "description": "Prices per image or megapixel, for models a provider bills by unit; they add\nto the token prices."
+            "description": "Prices per image, megapixel, second, minute, hour or million characters, for\nmodels a provider bills by unit; they add to the token prices."
           }
         },
         "additionalProperties": false
@@ -31588,24 +31620,24 @@
         "properties": {
           "detail": {
             "type": "string",
-            "description": "The size, quality and resolution the request asked for or the provider\nreported, such as `1024x1024 high`; empty when unknown.",
+            "description": "The size, quality and resolution the request asked for or the provider\nreported, such as `1024x1024 high`, or the audio format or transcript form, such as\n`mp3` or `verbose_json`; empty when unknown.",
             "example": "1024x1024 high"
           },
           "input": {
             "type": "integer",
             "format": "int64",
-            "description": "Units the app sent, such as the images of an edit.",
+            "description": "Units the app sent, such as the images of an edit, the characters to speak or\nthe length of the audio to transcribe.",
             "minimum": 0
           },
           "output": {
             "type": "integer",
             "format": "int64",
-            "description": "Units the provider made.",
+            "description": "Units the provider made, such as images or the length of a sound.",
             "minimum": 0
           },
           "unit": {
             "type": "string",
-            "description": "The unit: `image`.",
+            "description": "The unit: `image`, `character` (text to speak) or `millisecond` (audio).",
             "example": "image"
           }
         }
@@ -37666,14 +37698,23 @@
         "properties": {
           "audio": {
             "type": [
-              "string",
+              "boolean",
               "null"
             ],
-            "description": "The audio kind it applies to."
+            "description": "Whether it applies to made video with sound (`true`) or without (`false`)."
           },
           "estimate": {
             "type": "boolean",
             "description": "Whether the provider publishes the price only as an estimate."
+          },
+          "minimum_seconds": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "The fewest seconds a request is billed for, for prices per second, minute or\nhour.",
+            "minimum": 0
           },
           "of": {
             "type": "string",

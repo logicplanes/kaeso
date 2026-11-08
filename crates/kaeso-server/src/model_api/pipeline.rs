@@ -23,6 +23,7 @@ use kaeso_core::provider::AuthMethod;
 use kaeso_core::providers::ProviderRef;
 use kaeso_kpp::{
     DialectId, ErrorKind, ImageOperation, KppError, Reply, Request, RequestKind, StreamMode,
+    TranscriptionOperation,
 };
 use kaeso_store::pg::catalogue::{Answer, ProjectModels};
 use kaeso_upstream::{Call, Outgoing, ResponseBody, Timeouts, UpstreamError};
@@ -67,6 +68,7 @@ pub struct Incoming {
     pub alias: Option<Alias>,
     pub gemini: Option<GeminiCall>,
     pub image: Option<ImageOperation>,
+    pub transcription: Option<TranscriptionOperation>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -251,7 +253,9 @@ fn blank_outcome(request_id: RequestId) -> Outcome {
         fallbacks: Vec::new(),
         gemini: None,
         image: None,
+        transcription: None,
         media: None,
+        content_type: None,
     }
 }
 
@@ -322,6 +326,7 @@ pub async fn serve_with(
     outcome.kind = inc.kind;
     outcome.gemini = inc.gemini.as_ref().map(|c| c.action);
     outcome.image = inc.image;
+    outcome.transcription = inc.transcription;
     outcome.source = inc.source;
     outcome.caller.clone_from(&inc.caller);
     outcome.started_at = now;
@@ -637,6 +642,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         alias,
         gemini,
         image,
+        transcription,
         ..
     } = inc;
     let caller = match caller {
@@ -688,7 +694,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
     if keep_content {
         let o = rec.outcome();
         o.content_kept = true;
-        if image.is_none() {
+        if image.is_none() && transcription.is_none() {
             o.request_body = Some(body.clone());
         }
     }
@@ -722,25 +728,45 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
             .map_err(|_| Failure::new(translating_busy(), Stage::Limits))?,
     );
     let listed = header_list(&headers);
-    let req = off_thread(request_bytes, move || match (gemini, image) {
-        (Some(call), _) => {
-            dispatch::decode_checked_gemini_request(&call.model, call.action, &checked, &listed)
+    let req = off_thread(request_bytes, move || {
+        match (gemini, image, transcription) {
+            (Some(call), _, _) => {
+                dispatch::decode_checked_gemini_request(&call.model, call.action, &checked, &listed)
+            }
+            (None, Some(operation), _) => {
+                dispatch::decode_checked_image_request(operation, &checked, &listed)
+            }
+            (None, None, Some(operation)) => {
+                dispatch::decode_checked_transcription_request(operation, &checked, &listed)
+            }
+            (None, None, None) => dispatch::decode_checked_request(kind, &checked, &listed),
         }
-        (None, Some(operation)) => {
-            dispatch::decode_checked_image_request(operation, &checked, &listed)
-        }
-        (None, None) => dispatch::decode_checked_request(kind, &checked, &listed),
     })
     .await
     .and_then(|r| r)
     .map_err(at(Stage::Request))?;
     req.validate().map_err(at(Stage::Request))?;
-    if let Request::Image(r) = &req {
+    match &req {
         // Request logs keep no media: an upload is logged as its fields, each image as its size.
-        if keep_content {
-            rec.outcome().request_body = Some(super::media::logged_request(r));
+        Request::Image(r) => {
+            if keep_content {
+                rec.outcome().request_body = Some(super::media::logged_request(r));
+            }
+            rec.outcome().media = Some(super::media::units_of_request(r));
         }
-        rec.outcome().media = Some(super::media::units_of_request(r));
+        Request::Transcription(r) => {
+            if keep_content {
+                rec.outcome().request_body = Some(super::media::logged_transcription(r));
+            }
+            rec.outcome().media = Some(super::media::units_of_transcription(r));
+        }
+        Request::Speech(r) => {
+            if keep_content && r.audio.is_some() {
+                rec.outcome().request_body = Some(super::media::logged_speech(r));
+            }
+            rec.outcome().media = Some(super::media::units_of_speech(r));
+        }
+        _ => {}
     }
     let stream = !req.stream_mode().is_off();
     rec.outcome().stream = stream;
@@ -942,6 +968,8 @@ async fn attempt(
         Request::Generate(g) | Request::CountTokens(g) => g.model.clone_from(&eff.model_id),
         Request::Embed(e) => e.model.clone_from(&eff.model_id),
         Request::Image(i) => i.model.clone_from(&eff.model_id),
+        Request::Speech(r) => r.model.clone_from(&eff.model_id),
+        Request::Transcription(r) => r.model.clone_from(&eff.model_id),
         _ => {}
     }
     if let Request::Generate(g) = &mut req
@@ -1089,7 +1117,7 @@ async fn attempt(
         }
     };
     let mut ectx = egress_ctx(&app_req, &eff.provider, ModelFlags::of(&plan));
-    let images = eff.provider.images().filter(|_| kind == RequestKind::Image);
+    let media = super::media::egress_of(&eff.provider, kind);
     if let Some(p) = &platform {
         ectx = p.apply(ectx);
     }
@@ -1198,7 +1226,7 @@ async fn attempt(
         })?,
     };
     let rooted;
-    let base = match images {
+    let base = match media {
         Some(i) if i.from_root => {
             rooted = super::media::host_root(base);
             &rooted
@@ -1218,7 +1246,7 @@ async fn attempt(
     };
     let sending = state.upstream.send(Call {
         base_url: base,
-        auth: match (&platform, images.and_then(|i| i.auth)) {
+        auth: match (&platform, media.and_then(|i| i.auth)) {
             (Some(p), _) => Some(p.auth),
             (None, Some(auth)) => Some(auth),
             (None, None) => eff.provider.auth(),
@@ -1228,7 +1256,8 @@ async fn attempt(
         request: Outgoing::from(encoded),
         stream: match kind {
             RequestKind::Generate => stream || chatgpt.is_some(),
-            RequestKind::Image => !ectx.stream.is_off(),
+            RequestKind::Image | RequestKind::Transcription => !ectx.stream.is_off(),
+            RequestKind::Speech => dispatch::reads_reply_as_stream(plan.dialect, &ectx),
             _ => false,
         },
         timeouts,
@@ -1352,12 +1381,15 @@ async fn attempt(
                 account,
                 taken: taken.clone(),
             };
+            let media_type = dispatch::stream_media_type(ingress, &encode_ctx);
             state.in_flight.spawn(stream::pump(parts, tx, task_rec));
             let mut resp = Response::new(stream::body(rx, taken));
             let h = resp.headers_mut();
             h.insert(
                 header::CONTENT_TYPE,
-                HeaderValue::from_static("text/event-stream; charset=utf-8"),
+                HeaderValue::from_str(&media_type).unwrap_or_else(|_| {
+                    HeaderValue::from_static("text/event-stream; charset=utf-8")
+                }),
             );
             h.insert(header::CACHE_CONTROL, HeaderValue::from_static("no-cache"));
             h.insert("x-accel-buffering", HeaderValue::from_static("no"));
@@ -1443,21 +1475,27 @@ async fn attempt(
             let headers = resp.headers;
             let decoded_by = eff.provider.clone();
             let model_id = eff.model_id.clone();
-            let (reply, out) = off_thread(bytes.len(), move || {
+            let (reply, out, media_type) = off_thread(bytes.len(), move || {
                 let mut reply = decode_reply(dialect, status, &headers, &bytes, &ectx)
                     .map_err(|e| unreadable(e, &decoded_by, dialect))?;
                 // Gemini's embeddings replies and most image replies name no model.
                 match &mut reply {
                     Reply::Embed(e) if e.model.is_empty() => e.model = model_id,
                     Reply::Image(i) if i.model.is_empty() => i.model = model_id,
+                    Reply::Speech(r) if r.model.is_empty() => r.model = model_id,
+                    Reply::Transcription(r) if r.model.is_empty() => r.model = model_id,
                     _ => {}
                 }
                 let out = dispatch::encode_response(ingress, &reply, &encode_ctx);
-                Ok::<_, KppError>((reply, out))
+                let media_type = dispatch::response_media_type(ingress, &reply, &encode_ctx);
+                Ok::<_, KppError>((reply, out, media_type))
             })
             .await
             .and_then(|r| r)
             .map_err(fail(Stage::Reply))?;
+            if matches!(kind, RequestKind::Speech | RequestKind::Transcription) {
+                rec.outcome().content_type = Some(media_type);
+            }
             reply_with(state, rec, reply, out, counter, carry, &served)
                 .await
                 .map_err(fail(Stage::Reply))
@@ -1838,6 +1876,9 @@ async fn answer_with(
         continuity::keep(state, key_id, &reasoning_for_tool_calls(&r.blocks)).await;
     }
     let reply_kind = reply.kind();
+    // Speech is audio and a transcript may be plain text or events: the app's codec names the
+    // media type of what it wrote.
+    let media_type = rec.outcome().content_type.take();
     if let Reply::Generate(r) = reply {
         rec.outcome().reply = Some(r);
     }
@@ -1845,7 +1886,12 @@ async fn answer_with(
     let events = matches!(reply_kind, RequestKind::Image) && rec.outcome().stream;
     let mut resp = Response::new(Body::from(out));
     let h = resp.headers_mut();
-    if events {
+    if let Some(media_type) = media_type.and_then(|m| HeaderValue::from_str(&m).ok()) {
+        h.insert(header::CONTENT_TYPE, media_type);
+        if rec.outcome().stream {
+            h.insert(header::CACHE_CONTROL, HeaderValue::from_static("no-cache"));
+        }
+    } else if events {
         h.insert(
             header::CONTENT_TYPE,
             HeaderValue::from_static("text/event-stream; charset=utf-8"),
@@ -1986,6 +2032,25 @@ async fn record_usage(rec: &mut Recording, reply: &Reply, counter: InputCounter)
     let (usage, model) = match reply {
         Reply::Generate(r) => (&r.usage, &r.model),
         Reply::Embed(e) => (&e.usage, &e.model),
+        // Speech and transcripts are billed by characters, duration or the tokens reported.
+        Reply::Speech(r) => {
+            let o = rec.outcome();
+            o.usage = Some(r.usage.clone());
+            o.response_model = Some(r.model.clone());
+            if let Some(media) = o.media.as_mut() {
+                super::media::add_speech(media, r);
+            }
+            return;
+        }
+        Reply::Transcription(r) => {
+            let o = rec.outcome();
+            o.usage = Some(r.usage.clone());
+            o.response_model = Some(r.model.clone());
+            if let Some(media) = o.media.as_mut() {
+                super::media::add_transcript(media, r);
+            }
+            return;
+        }
         // Providers that bill per image report no tokens, so there is nothing to estimate.
         Reply::Image(i) => {
             let o = rec.outcome();
@@ -2049,6 +2114,12 @@ pub(super) fn egress_ctx(
         .with_gemini_profile(provider.gemini());
     if let Some(images) = provider.images() {
         ctx = ctx.with_images_profile(images.profile);
+    }
+    if let Some(speech) = provider.speech() {
+        ctx = ctx.with_speech_profile(speech.profile);
+    }
+    if let Some(transcriptions) = provider.transcriptions() {
+        ctx = ctx.with_transcriptions_profile(transcriptions.profile);
     }
     if let Some(a) = flags.adaptive_thinking {
         ctx = ctx.with_adaptive_thinking(a);

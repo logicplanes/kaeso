@@ -41,6 +41,8 @@ pub struct Assembler {
     error: Option<KppError>,
     blocks: bool,
     images: u64,
+    audio_bytes: u64,
+    audio_ms: Option<u64>,
 }
 
 impl std::fmt::Debug for Assembler {
@@ -60,6 +62,10 @@ pub struct Assembled {
     pub error: Option<KppError>,
     /// The finished images of a streamed image reply, whose usage is the response's.
     pub images: u64,
+    /// The bytes of streamed audio.
+    pub audio_bytes: u64,
+    /// The length of the transcribed audio, in milliseconds, when the transcript's end says.
+    pub audio_ms: Option<u64>,
 }
 
 fn kept(origin: DialectId, value: &impl serde::Serialize) -> RawItem {
@@ -164,6 +170,8 @@ impl Assembler {
             error: None,
             blocks: true,
             images: 0,
+            audio_bytes: 0,
+            audio_ms: None,
         }
     }
 
@@ -241,6 +249,28 @@ impl Assembler {
                     }
                 }
             }
+            // Speech and transcript streams end with an event of their own that carries the usage.
+            StreamEvent::Speech(e) => {
+                self.started = true;
+                let data = e.audio.as_deref().unwrap_or_default().trim_end_matches('=');
+                self.audio_bytes = self
+                    .audio_bytes
+                    .saturating_add((data.len() as u64).saturating_mul(3) / 4);
+                if let Some(u) = &e.usage {
+                    self.usage = Some(u.clone());
+                }
+                if e.done {
+                    self.complete = true;
+                }
+            }
+            StreamEvent::Transcript(e) => {
+                self.started = true;
+                if let Some(done) = &e.done {
+                    self.complete = true;
+                    self.usage = Some(done.usage.clone());
+                    self.audio_ms = done.audio_seconds().map(seconds_to_ms);
+                }
+            }
             StreamEvent::Extra(item) => self.unplaced.push(item.clone()),
             other if self.blocks => self.unplaced.push(kept(self.origin, other)),
             _ => {}
@@ -271,7 +301,18 @@ impl Assembler {
             complete: self.complete,
             error: self.error,
             images: self.images,
+            audio_bytes: self.audio_bytes,
+            audio_ms: self.audio_ms,
         }
+    }
+}
+
+/// Seconds of audio as whole milliseconds, rounded up; negative or unknown lengths count as none.
+pub fn seconds_to_ms(seconds: f64) -> u64 {
+    if seconds.is_finite() && seconds > 0.0 {
+        (seconds * 1000.0).ceil().min(u64::MAX as f64) as u64
+    } else {
+        0
     }
 }
 

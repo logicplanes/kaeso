@@ -1,6 +1,11 @@
 use bytes::Bytes;
 use kaeso_core::cost::MediaUnits;
-use kaeso_kpp::{ImageRequest, ImageResponse, ImageSize, Source};
+use kaeso_core::provider::AuthStyle;
+use kaeso_core::providers::ProviderRef;
+use kaeso_kpp::{
+    AudioInput, ImageRequest, ImageResponse, ImageSize, RequestKind, Source, SpeechRequest,
+    SpeechResponse, TranscriptionRequest, TranscriptionResponse,
+};
 use url::Url;
 
 /// The request as the log keeps it: every field, each image replaced by its media type and
@@ -16,6 +21,88 @@ pub(super) fn logged_request(r: &ImageRequest) -> Bytes {
     Bytes::from(serde_json::to_vec(&kept).unwrap_or_default())
 }
 
+fn without_bytes(input: &mut AudioInput) {
+    if let Source::Base64(b) = &input.source {
+        let bytes = b.data.len() / 4 * 3;
+        input.source = Source::text(b.media_type.clone(), format!("{bytes} bytes, not logged"));
+    }
+}
+
+/// A transcription as the log keeps it: every field, the audio replaced by its media type and
+/// size.
+pub(super) fn logged_transcription(r: &TranscriptionRequest) -> Bytes {
+    let mut kept = r.clone();
+    without_bytes(&mut kept.audio);
+    Bytes::from(serde_json::to_vec(&kept).unwrap_or_default())
+}
+
+/// A request for audio made from audio, as the log keeps it: the source audio replaced by its
+/// media type and size.
+pub(super) fn logged_speech(r: &SpeechRequest) -> Bytes {
+    let mut kept = r.clone();
+    if let Some(audio) = kept.audio.as_mut() {
+        without_bytes(audio);
+    }
+    Bytes::from(serde_json::to_vec(&kept).unwrap_or_default())
+}
+
+/// The characters a request asks to speak, and the length it asks a sound or music to last.
+pub(super) fn units_of_speech(r: &SpeechRequest) -> MediaUnits {
+    MediaUnits {
+        characters: r.characters(),
+        output_ms: r.duration.map_or(0, kaeso_core::assembler::seconds_to_ms),
+        format: r.format.as_ref().map(|f| f.as_wire().to_owned()),
+        ..MediaUnits::default()
+    }
+}
+
+/// A transcription's units: the audio's length is known only from the reply.
+pub(super) fn units_of_transcription(r: &TranscriptionRequest) -> MediaUnits {
+    MediaUnits {
+        format: Some(r.format_or_default().as_wire().to_owned()),
+        ..MediaUnits::default()
+    }
+}
+
+/// The characters the provider says it billed, when it says.
+pub(super) fn add_speech(units: &mut MediaUnits, reply: &SpeechResponse) {
+    if let Some(c) = reply.characters {
+        units.characters = c;
+    }
+}
+
+/// The length of the transcribed audio, which providers bill by the minute or hour.
+pub(super) fn add_transcript(units: &mut MediaUnits, reply: &TranscriptionResponse) {
+    if let Some(seconds) = reply.audio_seconds() {
+        units.input_ms = kaeso_core::assembler::seconds_to_ms(seconds);
+    }
+}
+
+/// Where a media request goes at its provider: from the root of the host, and with which auth.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(super) struct MediaEgress {
+    pub(super) from_root: bool,
+    pub(super) auth: Option<AuthStyle>,
+}
+
+pub(super) fn egress_of(provider: &ProviderRef, kind: RequestKind) -> Option<MediaEgress> {
+    match kind {
+        RequestKind::Image => provider.images().map(|e| MediaEgress {
+            from_root: e.from_root,
+            auth: e.auth,
+        }),
+        RequestKind::Speech => provider.speech().map(|e| MediaEgress {
+            from_root: e.from_root,
+            auth: e.auth,
+        }),
+        RequestKind::Transcription => provider.transcriptions().map(|e| MediaEgress {
+            from_root: e.from_root,
+            auth: e.auth,
+        }),
+        _ => None,
+    }
+}
+
 pub(super) fn units_of_request(r: &ImageRequest) -> MediaUnits {
     MediaUnits {
         input_images: r.images.len() as u64,
@@ -24,6 +111,7 @@ pub(super) fn units_of_request(r: &ImageRequest) -> MediaUnits {
         size: r.size.as_ref().map(|s| s.as_wire().to_owned()),
         quality: r.quality.as_ref().map(|q| q.as_wire().to_owned()),
         resolution: r.resolution.clone(),
+        ..MediaUnits::default()
     }
 }
 

@@ -163,6 +163,8 @@ Jedes Format erreicht jedes Generierungsmodell im Katalog des Projekts, eine Gem
 | `POST /v1/responses/input_tokens` | OpenAI Responses, Eingabe-Token zählen |
 | `POST /v1/embeddings` | OpenAI Embeddings |
 | `POST /v1/images/generations`, `POST /v1/images/edits`, `POST /v1/images/variations` | OpenAI Images ([Bilder-API](images.md)) |
+| `POST /v1/audio/speech` | OpenAI Speech ([Audio-API](audio.md)) |
+| `POST /v1/audio/transcriptions`, `POST /v1/audio/translations` | OpenAI Transcriptions ([Audio-API](audio.md)) |
 | `POST /v1/messages` | Anthropic Messages |
 | `POST /v1/messages/count_tokens` | Anthropic Messages, Token zählen |
 | `GET /v1/models` | Die Modelle, die der Schlüssel aufrufen darf |

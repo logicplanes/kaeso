@@ -384,6 +384,22 @@ impl ProviderRef {
         }
     }
 
+    /// Where Kaeso sends speech requests; custom providers take none.
+    pub fn speech(&self) -> Option<crate::provider::SpeechEgress> {
+        match self {
+            ProviderRef::BuiltIn(p) => p.speech,
+            ProviderRef::Custom(_) => None,
+        }
+    }
+
+    /// Where Kaeso sends transcription requests; custom providers take none.
+    pub fn transcriptions(&self) -> Option<crate::provider::TranscriptionsEgress> {
+        match self {
+            ProviderRef::BuiltIn(p) => p.transcriptions,
+            ProviderRef::Custom(_) => None,
+        }
+    }
+
     pub fn auth(&self) -> Option<AuthStyle> {
         match self {
             ProviderRef::BuiltIn(p) => Some(p.auth),
