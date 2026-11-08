@@ -207,7 +207,7 @@ flowchart TD
 - 它只在内部网络上响应网关，而且必须带有共享令牌。网关只向它传递一个版本号。
 - 它只能通过 `docker-proxy` 访问 Docker，代理只放行更新和 Docker Compose 所需的调用。代理只允许来自 `KAESO_DIR`（即实例文件夹）的绑定挂载，因此移动该文件夹时请修改 `KAESO_DIR`。
 - 对于只修改镜像的版本，它只替换自己 Compose 项目中的网关和控制台容器，使用的是它验证过的镜像。如果新容器的特权、capabilities、设备、命名空间、网络、挂载、端口、名称解析、用户组或资源限制与被替换的容器不同，它会拒绝创建。
-- 对于修改了 `compose.yaml` 的版本，它在一个短暂存在的容器中运行 Docker Compose，该容器来自该版本已验证的更新器镜像。这个容器以 root 运行，只有一项 capability，即读取任何文件，这是读取 `.env` 和 `compose.override.yaml` 所需的。它的文件系统只读，实例文件夹以只读方式挂载，除了 `docker-proxy` 什么也访问不到。随后 Docker Compose 会做 `docker compose up -d` 会做的事：创建、重建和删除实例的服务，创建它们的网络和卷，并把配置文件复制进容器。
+- 对于修改了 `compose.yaml` 的版本，它在一个短暂存在的容器中运行 Docker Compose，该容器来自该版本已验证的更新器镜像。这个容器以 root 运行，只有一项 capability，即读取任何文件，这是读取 `.env` 和 `compose.override.yaml` 所需的。它的文件系统只读，实例文件夹以只读方式挂载，除了 `docker-proxy` 什么也访问不到。随后 Docker Compose 会做 `docker compose up -d --wait` 会做的事：创建、重建和删除实例的服务，创建它们的网络和卷，并把配置文件复制进容器。
 - 它只写入哈希值由该版本已签名的 `release.json` 指明的 `compose.yaml`，而且只覆盖当前运行版本自带的文件，或只在镜像版本上与其不同的文件。
 - 在[多个网关](scaling.md)的情况下，所有网关都会先停止，然后才启动新的，这样不会有旧网关在新网关迁移数据库时继续运行。
 - 它只在更新成功后替换自己，而且从不重建 `docker-proxy`：修改它的版本需要手动步骤。

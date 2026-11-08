@@ -130,7 +130,7 @@ Beim Start wartet der Updater bis zu zwei Minuten auf Docker. Dann wartet er, bi
 Docker Compose kann nicht im Container des Updaters laufen: Den Updater neu anzulegen, würde es beenden. Für ein Release, das die `compose.yaml` ändert, und um sich selbst zu ersetzen, legt der Updater über den Proxy einen Container an, der `kaeso-updater compose <task>` aus dem geprüften Updater-Image des Releases ausführt (`runner.rs`). Das Image enthält ein festgelegtes, statisches Docker-Compose-Programm.
 
 - Er läuft als `0:0` ohne jede Capability außer `DAC_READ_SEARCH`, damit er `.env` und `compose.override.yaml` des installierenden Benutzers liest, mit `no-new-privileges`, schreibgeschütztem Root-Dateisystem, 256 MiB und 128 Prozessen.
-- Er bindet `KAESO_DIR` schreibgeschützt unter demselben Pfad ein und arbeitet dort, damit relative Pfade in der `compose.yaml` die Host-Pfade ergeben, die der Proxy prüft. Der Updater startet keinen, wenn `KAESO_DIR` nicht gesetzt ist oder nicht der Ordner ist, aus dem seine eigene `compose.yaml` kommt (`install_unknown`).
+- Er bindet `KAESO_DIR` schreibgeschützt unter demselben Pfad ein und arbeitet dort, damit relative Pfade in der `compose.yaml` die Host-Pfade ergeben, die der Proxy prüft. Wie `docker compose` in diesem Ordner liest er die `.env`, aber keine Variable, die nur Ihre Shell exportiert. Der Updater startet keinen, wenn `KAESO_DIR` nicht gesetzt ist oder nicht der Ordner ist, aus dem seine eigene `compose.yaml` kommt (`install_unknown`).
 - Er tritt nur dem Netz `docker` bei, mit dem Alias `updater-runner`, den `-allowfrom` des Proxys nennt, und erreicht Docker unter `tcp://docker-proxy:2375`. Er legt keine API-Version fest, damit Compose sich auf dieselbe einigt wie ein von Hand ausgeführtes `docker compose`, und die Image-Labels, die es schreibt, übereinstimmen.
 - `guard.rs` lehnt alle anderen Einstellungen für ihn ab, und ein Label nennt sein Update.
 
@@ -143,7 +143,7 @@ Der Updater fragt den Runner ab, bis er endet, behält die letzten Zeilen seines
 | `up` | `up --detach --wait --wait-timeout 600` | Dieselben wie bei `pull` |
 | `replace` | `up --detach --no-deps --wait` | Jeder Dienst mit einem Image von Kaeso außer Gateway und Konsole, etwa der Updater und Caddy |
 
-`replace` lässt Gateway und Konsole aus, weil sie schon laufen: Ein Update, das sie ausgetauscht hat, hat ihre Container selbst angelegt, mit dem alten Konfigurations-Hash in ihren Labels, sodass ein späteres `docker compose up -d` im Ordner der Installation sie einmal neu anlegt.
+`replace` lässt Gateway und Konsole aus, weil sie schon laufen: Ein Update, das sie ausgetauscht hat, hat ihre Container selbst angelegt, mit dem alten Konfigurations-Hash in ihren Labels, sodass ein späteres `docker compose up -d --wait` im Ordner der Installation sie einmal neu anlegt. Auch Container, die eine andere Version von Docker Compose angelegt hat, können einen anderen Konfigurations-Hash tragen, sodass das erste `up` Dienste neu anlegen kann, deren Definition sich nicht geändert hat.
 
 Der Updater erreicht Docker nur unter `http://docker-proxy:2375/`, dessen Allow-List in `compose.yaml` jeden Pfad nennt, den er und der Runner nutzen, für jede API-Version ab 1.44:
 

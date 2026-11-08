@@ -130,7 +130,7 @@ On start, the updater waits up to two minutes for Docker. It then waits for ever
 Docker Compose can't run in the updater's own container: recreating the updater would end it. For a release that changes `compose.yaml`, and to replace itself, the updater creates a container through the proxy that runs `kaeso-updater compose <task>` from the release's verified updater image (`runner.rs`). The image carries a pinned, static Docker Compose binary.
 
 - It runs as `0:0` with every capability dropped but `DAC_READ_SEARCH`, so it reads the installing user's `.env` and `compose.override.yaml`, with `no-new-privileges`, a read-only root file system, 256 MiB and 128 processes.
-- It mounts `KAESO_DIR` read-only at the same path and works there, so relative paths in `compose.yaml` resolve to the host paths the proxy checks. The updater refuses to start one when `KAESO_DIR` isn't set or isn't the folder its own `compose.yaml` comes from (`install_unknown`).
+- It mounts `KAESO_DIR` read-only at the same path and works there, so relative paths in `compose.yaml` resolve to the host paths the proxy checks. Like `docker compose` in that folder, it reads `.env`, but no variable exported only in your shell. The updater refuses to start one when `KAESO_DIR` isn't set or isn't the folder its own `compose.yaml` comes from (`install_unknown`).
 - It joins only the `docker` network, with the alias `updater-runner` that the proxy's `-allowfrom` names, and reaches Docker at `tcp://docker-proxy:2375`. It sets no API version, so Compose agrees on the same one as `docker compose` run by hand, and the image labels it writes match.
 - `guard.rs` refuses any other settings for it, and a label names its update.
 
@@ -143,7 +143,7 @@ The updater polls the runner until it exits, keeps the last lines of its log as 
 | `up` | `up --detach --wait --wait-timeout 600` | The same as `pull` |
 | `replace` | `up --detach --no-deps --wait` | Every service with one of Kaeso's images but the gateway and console, such as the updater and Caddy |
 
-`replace` leaves the gateway and console out because they run already: an update that switched them created their containers itself, with the old configuration hash in their labels, so a later `docker compose up -d` in the install's folder recreates them once.
+`replace` leaves the gateway and console out because they run already: an update that switched them created their containers itself, with the old configuration hash in their labels, so a later `docker compose up -d --wait` in the install's folder recreates them once. Containers that another version of Docker Compose created can carry a different configuration hash too, so the first `up` may recreate services whose definition didn't change.
 
 The updater reaches Docker only at `http://docker-proxy:2375/`, whose allow-list in `compose.yaml` names every path it and the runner use, for any API version from 1.44 on:
 

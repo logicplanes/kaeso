@@ -108,9 +108,12 @@ def install(tmp_path_factory):
     (work / ".env").touch(mode=0o600)
     (work / ".env").write_text("".join(f"{name}={value}\n" for name, value in env.items()))
     compose = ["docker", "compose", "-p", PROJECT, "-f", "compose.yaml", "-f", "compose.test.yaml"]
+    # .env alone configures the install, as for the updater's compose runner: a variable left in this
+    # process's environment, such as CI's image tags, would win over it and change the services' hashes.
+    without_overrides = {name: value for name, value in os.environ.items() if name not in env}
 
     def run(*args: str, check: bool = True, **kwargs) -> subprocess.CompletedProcess:
-        return subprocess.run([*compose, *args], cwd=work, check=check, text=True, **kwargs)
+        return subprocess.run([*compose, *args], cwd=work, check=check, text=True, env=without_overrides, **kwargs)
 
     url = f"http://localhost:{port}"
     try:
@@ -125,8 +128,8 @@ def install(tmp_path_factory):
         assert token not in logs, "the setup token reached the gateway's log"
         yield Install(url, token, env, run, health, work, console)
     finally:
-        subprocess.run([*compose, "logs", "--no-color"], cwd=work, stdout=open(work / "compose.log", "w"))
-        subprocess.run([*compose, "down", "-v", "--remove-orphans"], cwd=work, check=False)
+        subprocess.run([*compose, "logs", "--no-color"], cwd=work, env=without_overrides, stdout=open(work / "compose.log", "w"))
+        subprocess.run([*compose, "down", "-v", "--remove-orphans"], cwd=work, env=without_overrides, check=False)
 
 
 @pytest.fixture(scope="module")
@@ -355,7 +358,8 @@ def test_the_compose_runner_applies_a_changed_compose_file_through_the_proxy(ins
     original = compose.read_text()
     marker = "    networks: [edge]\n\n  updater-init:"
     assert marker in original
-    gateways = container_ids(install, "gateway")
+    unchanged = ("gateway", "postgres", "clickhouse", "valkey", "caddy")
+    before = {service: container_ids(install, service) for service in unchanged}
     try:
         compose.write_text(original.replace(marker, "    environment:\n      KAESO_RUNNER_TEST: applied\n" + marker))
         applied = as_runner(install, "up", "300")
@@ -365,7 +369,7 @@ def test_the_compose_runner_applies_a_changed_compose_file_through_the_proxy(ins
             capture_output=True, text=True, check=True,
         ).stdout
         assert "KAESO_RUNNER_TEST=applied" in env
-        assert container_ids(install, "gateway") == gateways, "an unchanged service is left as it is"
+        assert {service: container_ids(install, service) for service in unchanged} == before, "an unchanged service is left as it is"
         assert as_runner(install, "replace", "120").returncode == 0
         unknown = as_runner(install, "down")
         assert unknown.returncode == 2, unknown.stderr

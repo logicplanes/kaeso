@@ -130,7 +130,7 @@ Release 工作流构建 `kaeso-gateway`、`kaeso-console` 和 `kaeso-updater`，
 Docker Compose 不能在更新器自己的容器中运行：重建更新器会终止它。对于修改了 `compose.yaml` 的版本，以及替换自身时，更新器通过代理创建一个容器，用该版本已验证的更新器镜像运行 `kaeso-updater compose <task>`（`runner.rs`）。该镜像带有一个固定版本的静态 Docker Compose 程序。
 
 - 它以 `0:0` 运行，除 `DAC_READ_SEARCH` 外放弃所有 capability，以便读取安装用户的 `.env` 和 `compose.override.yaml`；它带有 `no-new-privileges`、只读根文件系统、256 MiB 内存和 128 个进程的限制。
-- 它以只读方式把 `KAESO_DIR` 挂载到相同路径并在那里工作，这样 `compose.yaml` 中的相对路径会解析为代理检查的宿主机路径。如果没有设置 `KAESO_DIR`，或者它不是更新器自己的 `compose.yaml` 所在的文件夹，更新器就不会启动运行器（`install_unknown`）。
+- 它以只读方式把 `KAESO_DIR` 挂载到相同路径并在那里工作，这样 `compose.yaml` 中的相对路径会解析为代理检查的宿主机路径。它像在该文件夹中运行的 `docker compose` 一样读取 `.env`，但读不到只在您的 shell 中导出的变量。如果没有设置 `KAESO_DIR`，或者它不是更新器自己的 `compose.yaml` 所在的文件夹，更新器就不会启动运行器（`install_unknown`）。
 - 它只加入 `docker` 网络，使用代理的 `-allowfrom` 中列出的别名 `updater-runner`，并通过 `tcp://docker-proxy:2375` 访问 Docker。它不指定 API 版本，因此 Compose 会协商出与手动运行 `docker compose` 时相同的版本，写入的镜像标签也会一致。
 - `guard.rs` 拒绝为它设置任何其他参数，并用一个标签指明它所属的更新。
 
@@ -143,7 +143,7 @@ Docker Compose 不能在更新器自己的容器中运行：重建更新器会�
 | `up` | `up --detach --wait --wait-timeout 600` | 与 `pull` 相同 |
 | `replace` | `up --detach --no-deps --wait` | 除网关和控制台外每个使用 Kaeso 镜像的服务，例如更新器和 Caddy |
 
-`replace` 不包含网关和控制台，因为它们已经在运行：切换它们的更新是自己创建的容器，标签中仍是旧的配置哈希，所以之后在实例文件夹中运行 `docker compose up -d` 时会把它们重建一次。
+`replace` 不包含网关和控制台，因为它们已经在运行：切换它们的更新是自己创建的容器，标签中仍是旧的配置哈希，所以之后在实例文件夹中运行 `docker compose up -d --wait` 时会把它们重建一次。由其他版本的 Docker Compose 创建的容器也可能带有不同的配置哈希，因此第一次 `up` 可能会重建定义没有变化的服务。
 
 更新器只通过 `http://docker-proxy:2375/` 访问 Docker，`compose.yaml` 中的允许列表列出了它和运行器用到的每个路径，适用于 1.44 及以上的任何 API 版本：
 
