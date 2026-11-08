@@ -20,7 +20,7 @@ provider "google" {
 locals {
   gateway_image = "ghcr.io/logicplanes/kaeso-gateway:0.6.0-rc.8"
   console_image = "ghcr.io/logicplanes/kaeso-console:0.6.0-rc.8"
-  api_paths     = ["/v1/*", "/platform/*", "/mcp", "/mcp/*", "/oauth/*", "/.well-known/oauth-*"]
+  api_paths     = ["/v1/*", "/v1beta/*", "/platform/*", "/mcp", "/mcp/*", "/oauth/*", "/.well-known/oauth-*"]
   # Cloud Run's own front end and Google's load balancer proxies sit between the client and the gateway.
   trusted_proxies = "169.254.0.0/16,130.211.0.0/22,35.191.0.0/16,fe80::/10,127.0.0.0/8,::1/128"
 }

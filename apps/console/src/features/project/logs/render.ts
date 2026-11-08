@@ -297,12 +297,98 @@ function responsesRequest(body: Obj): RequestView {
   return { messages, tools, params: params(body) };
 }
 
+function geminiParts(parts: Json): ContentBlock[] {
+  return arr(parts).flatMap((p): ContentBlock[] => {
+    if (!isObj(p)) return fail();
+    if (str(p.text) !== undefined) return [p.thought === true ? reasoning(String(p.text), false) : { type: "text", text: String(p.text) }];
+    if (isObj(p.functionCall))
+      return [
+        {
+          type: "tool_call",
+          ...(str(p.functionCall.id) ? { id: String(p.functionCall.id) } : {}),
+          name: str(p.functionCall.name) ?? fail(),
+          arguments: p.functionCall.args ?? {},
+        },
+      ];
+    if (isObj(p.functionResponse))
+      return [
+        {
+          type: "tool_result",
+          ...(str(p.functionResponse.id) ? { tool_call_id: String(p.functionResponse.id) } : {}),
+          content: show(p.functionResponse.response ?? {}),
+        },
+      ];
+    if (isObj(p.inlineData)) {
+      const media = str(p.inlineData.mimeType);
+      if (media?.startsWith("image/") && str(p.inlineData.data))
+        return [{ type: "image", src: `data:${media};base64,${String(p.inlineData.data)}`, media_type: media }];
+      return [{ type: "document", ...(media ? { media_type: media } : {}) }];
+    }
+    if (isObj(p.fileData)) {
+      const media = str(p.fileData.mimeType);
+      const uri = str(p.fileData.fileUri);
+      if (media?.startsWith("image/")) return [{ type: "image", ...(uri ? { src: uri } : {}), media_type: media }];
+      return [{ type: "document", ...(uri ? { name: uri } : {}), ...(media ? { media_type: media } : {}) }];
+    }
+    if (str(p.thoughtSignature) !== undefined && Object.keys(p).length === 1) return [];
+    return fail();
+  });
+}
+
+const GEMINI_ROLES: Record<string, ConversationMessage["role"]> = { user: "user", model: "assistant" };
+
+const geminiParamLabels = (): Record<string, string> => ({
+  maxOutputTokens: t("logs.param.maxOutputTokens", "Max output tokens"),
+  temperature: t("logs.param.temperature", "Temperature"),
+  topP: t("logs.param.topP", "Top p"),
+  topK: t("logs.param.topK", "Top k"),
+  stopSequences: t("logs.param.stopSequences", "Stop sequences"),
+  thinkingConfig: t("logs.param.thinking", "Thinking"),
+  seed: t("logs.param.seed", "Seed"),
+  candidateCount: t("logs.param.choices", "Choices"),
+  responseMimeType: t("logs.param.responseFormat", "Response format"),
+});
+
+function geminiRequest(body: Obj): RequestView {
+  const messages: ConversationMessage[] = [];
+  if (isObj(body.systemInstruction)) messages.push({ role: "system", content: geminiParts(body.systemInstruction.parts) });
+  for (const c of arr(body.contents)) {
+    if (!isObj(c)) fail();
+    const content = c as Obj;
+    const r = GEMINI_ROLES[str(content.role) ?? "user"] ?? fail();
+    const blocks = geminiParts(content.parts);
+    const results = blocks.length > 0 && blocks.every((b) => b.type === "tool_result");
+    messages.push({ role: results ? "tool" : r, content: blocks });
+  }
+  const tools = arr(body.tools).flatMap((t): ToolInfo[] => {
+    if (!isObj(t)) return fail();
+    const declared = arr(t.functionDeclarations);
+    if (declared.length === 0) return [{ name: Object.keys(t)[0] ?? fail() }];
+    return declared.map((d): ToolInfo => {
+      if (!isObj(d)) return fail();
+      const schema = d.parametersJsonSchema ?? d.parameters;
+      return {
+        name: str(d.name) ?? fail(),
+        ...(str(d.description) ? { description: String(d.description) } : {}),
+        ...(schema ? { schema } : {}),
+      };
+    });
+  });
+  const config = isObj(body.generationConfig) ? body.generationConfig : {};
+  const shown = Object.entries(geminiParamLabels())
+    .filter(([k]) => config[k] !== undefined && config[k] !== null)
+    .map(([k, label]) => ({ label, value: param(config[k]) }));
+  if (isObj(body.toolConfig)) shown.push({ label: t("logs.param.toolChoice", "Tool choice"), value: param(body.toolConfig) });
+  return { messages, tools, params: shown };
+}
+
 export function requestView(dialect: string, body: Json): RequestView | null {
   if (!isObj(body)) return null;
   try {
     if (dialect === "anthropic_messages") return anthropicRequest(body);
     if (dialect === "openai_chat") return chatRequest(body);
     if (dialect === "openai_responses") return responsesRequest(body);
+    if (dialect === "gemini") return geminiRequest(body);
     return null;
   } catch (e) {
     if (e instanceof Unmapped) return null;
@@ -311,6 +397,7 @@ export function requestView(dialect: string, body: Json): RequestView | null {
 }
 
 export function embeddingsView(dialect: string, body: Json): EmbeddingsView | null {
+  if (dialect === "gemini_embeddings" && isObj(body)) return { inputs: Array.isArray(body.requests) ? body.requests.length : 1 };
   if (dialect !== "openai_embeddings" || !isObj(body)) return null;
   const input = body.input;
   if (typeof input === "string") return { inputs: 1 };

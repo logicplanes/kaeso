@@ -11,8 +11,10 @@ use crate::auth::keys::{self, KeyCaller, LookupError};
 use crate::state::AppState;
 
 pub fn presented(headers: &HeaderMap) -> Option<&str> {
-    if let Some(v) = headers.get("x-api-key").and_then(|v| v.to_str().ok()) {
-        return Some(v.trim());
+    for name in ["x-api-key", "x-goog-api-key"] {
+        if let Some(v) = headers.get(name).and_then(|v| v.to_str().ok()) {
+            return Some(v.trim());
+        }
     }
     headers
         .get("authorization")
@@ -30,7 +32,7 @@ pub async fn authenticate(
         return Err(error(
             ErrorKind::Authentication,
             401,
-            "Send a Kaeso API key as `Authorization: Bearer <key>` or `x-api-key: <key>`.",
+            "Send a Kaeso API key as `Authorization: Bearer <key>`, `x-api-key` or `x-goog-api-key`.",
         ));
     };
     let found = match keys::authenticate(state, secret, client).await {

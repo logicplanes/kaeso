@@ -28,6 +28,8 @@ const FORM_MODELS: &str = "models";
 const FORM_CONFIG_DIMS: &str = "config_dimensions";
 const FORM_NO_USAGE: &str = "no_usage";
 const FORM_TOP_DIMS: &str = "top_dimensions";
+const FORM_USER_ROLE: &str = "user_role";
+const USER: &str = "user";
 const SINGLE: &str = "single";
 const CONFIG: &str = "embedContentConfig";
 
@@ -68,6 +70,9 @@ struct BatchW {
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 struct ContentW {
     parts: Vec<Ext<TextPartW>>,
+    // google-genai sends every content with `role: "user"`, which means nothing to an embedding.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    role: Option<String>,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
@@ -131,13 +136,19 @@ fn parse<T: serde::de::DeserializeOwned + Serialize>(body: &[u8]) -> Result<Ext<
     Ext::from_raw(raw).map_err(|e| invalid(without_position(&e)))
 }
 
-fn text_of(content: &RawValue) -> Option<String> {
+/// The content's one text, and whether it named the role `user`.
+fn text_of(content: &RawValue) -> Option<(String, bool)> {
     let c: Ext<ContentW> = Ext::from_raw(content).ok()?;
     if !c.extra.is_empty() || !c.verbatim.is_empty() {
         return None;
     }
+    let user = match c.known.role.as_deref() {
+        None => false,
+        Some(USER) => true,
+        Some(_) => return None,
+    };
     match c.known.parts.as_slice() {
-        [p] if p.extra.is_empty() && p.verbatim.is_empty() => Some(p.known.text.clone()),
+        [p] if p.extra.is_empty() && p.verbatim.is_empty() => Some((p.known.text.clone(), user)),
         _ => None,
     }
 }
@@ -173,7 +184,14 @@ fn decode_one(
     }
     verbatim_into_form(&mut req.extras, prefix, verbatim);
     match text_of(&known.content) {
-        Some(text) => req.input.push(EmbedInput::Text(text)),
+        Some((text, user)) => {
+            if user {
+                req.extras
+                    .form
+                    .insert(format!("{FORM_USER_ROLE}:{index}"), true.into());
+            }
+            req.input.push(EmbedInput::Text(text));
+        }
         None => {
             req.extras
                 .fields
@@ -325,6 +343,12 @@ fn encode_one(
         .flatten()
     {
         Some(raw) => raw.clone().into_inner(),
+        None if own && r.extras.form_flag(D, &format!("{FORM_USER_ROLE}:{index}")) => {
+            serde_json::value::to_raw_value(
+                &serde_json::json!({"parts": [{"text": text}], "role": USER}),
+            )
+            .map_err(ser)?
+        }
         None => serde_json::value::to_raw_value(&serde_json::json!({"parts": [{"text": text}]}))
             .map_err(ser)?,
     };

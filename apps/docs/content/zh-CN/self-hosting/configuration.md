@@ -98,7 +98,7 @@ Docker 会在每个服务的日志达到 10 MB 时轮转，并保留五个文件
 
 | 变量<br>TOML 键 | 类型 | 默认值 | 作用 |
 | --- | --- | --- | --- |
-| `KAESO_CORS_ALLOWED_ORIGINS`<br>`cors.allowed_origins` | 文本 | — | 以逗号分隔的 Web 应用的源，这些应用可以从浏览器调用模型 API，例如 `https://app.example.com,http://localhost:5173`。只有它们获得 CORS 响应头，且仅限 `/v1`；设为 `*` 时网关不会启动。 |
+| `KAESO_CORS_ALLOWED_ORIGINS`<br>`cors.allowed_origins` | 文本 | — | 以逗号分隔的 Web 应用的源，这些应用可以从浏览器调用模型 API，例如 `https://app.example.com,http://localhost:5173`。只有它们获得 CORS 响应头，且仅限 `/v1` 和 `/v1beta`；设为 `*` 时网关不会启动。 |
 
 没有这项设置时，Kaeso 不发送任何 CORS 响应头。[模型 API](../api/model-api.md) 介绍了浏览器应用如何调用 Kaeso。
 
@@ -239,7 +239,7 @@ MCP 服务器的地址由组织管理员选择，因此网关会像对待自定�
 
 | 变量<br>TOML 键 | 类型 | 默认值 | 作用 |
 | --- | --- | --- | --- |
-| `KAESO_CONTINUITY_REASONING_TTL`<br>`continuity.reasoning_ttl` | 文本 | `1h` | 当 OpenAI Chat Completions 应用调用的模型使用另一种格式时，网关保留该模型在工具调用前的推理内容的时间。`0s` 关闭此功能；否则为 1m 到 24h。 |
+| `KAESO_CONTINUITY_REASONING_TTL`<br>`continuity.reasoning_ttl` | 文本 | `1h` | 当 OpenAI Chat Completions 应用或 Gemini 应用调用的模型使用另一种格式时，网关保留该模型在工具调用前的推理内容的时间。`0s` 关闭此功能；否则为 1m 到 24h。 |
 
 [格式转换](../concepts/format-translation.md#chat-completions)说明了网关如何保存这段推理。
 

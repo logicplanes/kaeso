@@ -159,6 +159,39 @@ expression: outcomes
     "param": null,
     "unsupported": "safetySettings"
   },
+  "sdk-tools-snake-case": {
+    "body": {
+      "messages": [
+        {
+          "content": "Weather in Paris?",
+          "role": "user"
+        }
+      ],
+      "model": "gemini-3.5-flash",
+      "reasoning_effort": "low",
+      "tools": [
+        {
+          "function": {
+            "description": "Weather for a place",
+            "name": "get_weather",
+            "parameters": {
+              "properties": {
+                "location": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "location"
+              ],
+              "type": "object"
+            }
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/chat/completions"
+  },
   "stream-text": {
     "body": {
       "messages": [

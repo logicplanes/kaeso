@@ -316,7 +316,7 @@ configs:
       		root /srv/maintenance
       		try_files /active
       	}
-      	@api path /v1/* /platform/* /mcp /mcp/* /oauth/* /.well-known/oauth-authorization-server /.well-known/oauth-protected-resource /.well-known/oauth-protected-resource/*
+      	@api path /v1/* /v1beta/* /platform/* /mcp /mcp/* /oauth/* /.well-known/oauth-authorization-server /.well-known/oauth-protected-resource /.well-known/oauth-protected-resource/*
       	route {
       		handle /kaeso-maintenance.json {
       			header Cache-Control "no-store"
@@ -359,6 +359,7 @@ configs:
       		vars @updating message "Kaeso is being updated; try again in a minute."
       		@platform path /platform/* /mcp /mcp/* /oauth/* /.well-known/oauth-*
       		@anthropic expression path('/v1/messages', '/v1/messages/*') || (header({'Anthropic-Version': '*'}) && !path('/v1/chat/completions', '/v1/responses', '/v1/responses/*', '/v1/embeddings'))
+      		@gemini path /v1beta /v1beta/*
       		@openai path /v1 /v1/*
       		handle @platform {
       			header Content-Type "application/json"
@@ -367,6 +368,10 @@ configs:
       		handle @anthropic {
       			header Content-Type "application/json"
       			respond `{"type":"error","error":{"type":"overloaded_error","message":"{vars.message}"},"request_id":null}` 529
+      		}
+      		handle @gemini {
+      			header Content-Type "application/json"
+      			respond `{"error":{"code":503,"message":"{vars.message}","status":"UNAVAILABLE"}}` 503
       		}
       		handle @openai {
       			header Content-Type "application/json"

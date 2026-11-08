@@ -1,10 +1,10 @@
 ---
 title: Modelle aufrufen
-description: Jedes Modell Ihres Projekts mit dem OpenAI oder Anthropic SDK oder mit curl aufrufen.
+description: Jedes Modell Ihres Projekts mit dem OpenAI, Anthropic oder Google Gen AI SDK oder mit curl aufrufen.
 order: 2
 ---
 
-Richten Sie das offizielle OpenAI oder Anthropic SDK auf Ihre Installation, und geben Sie ihm einen API-Schlüssel von Kaeso. Jedes SDK kann jedes Chat-Modell Ihres Projekts aufrufen, gleich welcher [Anbieter](../concepts/providers.md) es bedient, das OpenAI SDK also auch Claude.
+Richten Sie das offizielle OpenAI oder Anthropic SDK oder Googles Gen AI SDK auf Ihre Installation, und geben Sie ihm einen API-Schlüssel von Kaeso. Jedes SDK kann jedes Chat-Modell Ihres Projekts aufrufen, gleich welcher [Anbieter](../concepts/providers.md) es bedient, das OpenAI SDK also auch Claude.
 
 ```bash tab="curl"
 curl https://kaeso.example.com/v1/responses \
@@ -101,7 +101,100 @@ for (const block of message.content) {
 }
 ```
 
-Jeder Endpunkt nimmt den Schlüssel in beiden Headern an. Ein Tool, das nur `Authorization: Bearer` sendet, funktioniert hier also auch.
+Jeder Endpunkt nimmt den Schlüssel in `Authorization: Bearer`, `x-api-key` oder `x-goog-api-key` an. Ein Tool, das nur `Authorization: Bearer` sendet, funktioniert hier also auch.
+
+## Google Gen AI SDK verwenden
+
+Setzen Sie die Basis-URL auf `https://kaeso.example.com`, ohne Version: `google-genai` hängt `/v1beta` selbst an. Es sendet den Schlüssel als `x-goog-api-key`:
+
+```bash tab="curl"
+curl https://kaeso.example.com/v1beta/models/claude-haiku-4-5:generateContent \
+  -H "x-goog-api-key: $KAESO_API_KEY" \
+  -H "content-type: application/json" \
+  -d '{
+    "contents": [
+      {"role": "user", "parts": [{"text": "Write a haiku about gateways."}]}
+    ]
+  }'
+```
+
+```python tab="Python"
+import os
+from google import genai
+
+client = genai.Client(
+    api_key=os.environ["KAESO_API_KEY"],
+    http_options={"base_url": "https://kaeso.example.com"},
+)
+
+response = client.models.generate_content(
+    model="claude-haiku-4-5",
+    contents="Write a haiku about gateways.",
+)
+print(response.text)
+```
+
+```ts tab="TypeScript"
+import { GoogleGenAI } from "@google/genai";
+
+const ai = new GoogleGenAI({
+  apiKey: process.env.KAESO_API_KEY,
+  httpOptions: { baseUrl: "https://kaeso.example.com" },
+});
+
+const response = await ai.models.generateContent({
+  model: "claude-haiku-4-5",
+  contents: "Write a haiku about gateways.",
+});
+console.log(response.text);
+```
+
+Behalten Sie die Standard-API-Version des SDK bei, `v1beta`, denn Kaeso bedient die Gemini API nur unter `/v1beta`. Zum Streamen rufen Sie `generate_content_stream` auf. Das SDK fordert mit `alt=sse` Server-Sent Events an, die einzige Art von Stream, die Kaeso an Gemini-Apps sendet:
+
+```bash tab="curl"
+curl -N "https://kaeso.example.com/v1beta/models/claude-haiku-4-5:streamGenerateContent?alt=sse" \
+  -H "x-goog-api-key: $KAESO_API_KEY" \
+  -H "content-type: application/json" \
+  -d '{
+    "contents": [
+      {"role": "user", "parts": [{"text": "Write a haiku about gateways."}]}
+    ]
+  }'
+```
+
+```python tab="Python"
+import os
+from google import genai
+
+client = genai.Client(
+    api_key=os.environ["KAESO_API_KEY"],
+    http_options={"base_url": "https://kaeso.example.com"},
+)
+
+stream = client.models.generate_content_stream(
+    model="claude-haiku-4-5",
+    contents="Write a haiku about gateways.",
+)
+for chunk in stream:
+    print(chunk.text or "", end="")
+```
+
+```ts tab="TypeScript"
+import { GoogleGenAI } from "@google/genai";
+
+const ai = new GoogleGenAI({
+  apiKey: process.env.KAESO_API_KEY,
+  httpOptions: { baseUrl: "https://kaeso.example.com" },
+});
+
+const stream = await ai.models.generateContentStream({
+  model: "claude-haiku-4-5",
+  contents: "Write a haiku about gateways.",
+});
+for await (const chunk of stream) {
+  process.stdout.write(chunk.text ?? "");
+}
+```
 
 ## Antworten streamen
 

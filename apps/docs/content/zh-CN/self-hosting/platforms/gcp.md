@@ -35,7 +35,7 @@ tofu apply -var project=my-project -var domain=kaeso.example.com -var 'ssh_sourc
 - 仅有私有地址的 Cloud SQL for PostgreSQL 17，以及 `noeviction` 的 Memorystore for Valkey，只能通过 VPC 访问；
 - Secret Manager 机密：主密钥、PostgreSQL URL、SMTP 密码和 ClickHouse URL，由网关的服务账号读取；
 - 网关（默认 2 CPU、4 GB，至少保持一个实例预热，请求超时一小时）和控制台的 Cloud Run 服务，只能通过负载均衡器访问；
-- 一个全局外部 Application Load Balancer，带托管证书，HTTP 重定向到 HTTPS，路径规则把 `/v1/*`、`/platform/*`、`/mcp`、`/mcp/*`、`/oauth/*` 和 `/.well-known/oauth-*` 发往网关、其余发往控制台，后端超时一小时以支持长时间的流；
+- 一个全局外部 Application Load Balancer，带托管证书，HTTP 重定向到 HTTPS，路径规则把 `/v1/*`、`/v1beta/*`、`/platform/*`、`/mcp`、`/mcp/*`、`/oauth/*` 和 `/.well-known/oauth-*` 发往网关、其余发往控制台，后端超时一小时以支持长时间的流；
 - 可选的 Cloud DNS 记录。
 
 ```bash

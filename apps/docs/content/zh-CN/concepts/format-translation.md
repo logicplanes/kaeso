@@ -23,7 +23,7 @@ flowchart TD
   encode -- Messages --> provider
 ```
 
-KPP（Kaeso Provider Protocol）为每种 API 格式都提供一个编解码器：OpenAI Chat Completions、Responses 和 Embeddings，以及 Anthropic Messages。回复沿同一条路返回，流式回复则逐个事件处理。嵌入请求只会发往嵌入模型，而只有部分[服务商](supported-providers.md)提供嵌入模型。[模型 API](../api/model-api.md) 列出了每种格式的端点。
+KPP（Kaeso Provider Protocol）为每种 API 格式都提供一个编解码器：OpenAI Chat Completions、Responses 和 Embeddings，Anthropic Messages，以及 Gemini 及其嵌入。回复沿同一条路返回，流式回复则逐个事件处理。嵌入请求只会发往嵌入模型，而只有部分[服务商](supported-providers.md)提供嵌入模型。[模型 API](../api/model-api.md) 列出了每种格式的端点。
 
 ## 三条规则
 
@@ -82,7 +82,7 @@ KPP（Kaeso Provider Protocol）为每种 API 格式都提供一个编解码器�
 
 ### Token 计数
 
-`/v1/messages/count_tokens` 和 `/v1/responses/input_tokens` 会向模型的服务商请求计数。如果服务商没有计数 Token 的端点，Kaeso 会以 400 拒绝请求，并在消息中说明该模型无法计数 Token。Kaeso 不会估算计数，因为估算值永远无法与服务商自己的结果一致。
+`/v1/messages/count_tokens`、`/v1/responses/input_tokens` 和 Gemini 的 `:countTokens` 会向模型的服务商请求计数。如果服务商没有计数 Token 的端点，Kaeso 会以 400 拒绝请求，并在消息中说明该模型无法计数 Token。Kaeso 不会估算计数，因为估算值永远无法与服务商自己的结果一致。
 
 ## 提示词缓存
 
@@ -139,10 +139,14 @@ Chat Completions 没有推理字段。当 Claude，或经由 Responses 的 OpenA
 
 指标 `kaeso_reasoning_continuity_total` 统计已保存、已还原、缺失和不可用的推理（[健康状态和指标](../self-hosting/monitoring.md)）。
 
+### Gemini 应用
+
+Gemini 应用收不到其他服务商的推理，因为思考 part 无法承载它：`google-genai` 会把 `thoughtSignature` 当作 base64 读取。当 Claude，或经由 Responses 的 OpenAI 模型，为 Gemini 应用提供服务时，网关会按工具调用的 ID 保存每次工具调用之前的推理，并像对 Chat Completions 一样把它放回。当 Gemini 模型为 Gemini 应用提供服务时，它的思考签名会按 Gemini 写出的原样到达应用并返回。
+
 ### 可读的推理
 
 应用能看到哪些推理内容，取决于它在自身格式中请求了什么：
 
 - 设置了 `reasoning.summary` 的 Responses 应用会以推理摘要的形式收到 Claude 的思考，并以 `response.reasoning_summary_text.delta` 事件流式传输。网关会向 Claude 请求摘要形式的思考，否则 Claude Opus 4.7 及更高版本会隐藏它。
 - 开启了思考的 Anthropic 应用会以思考文本的形式收到 OpenAI 模型的推理摘要。除非应用把 `thinking.display` 设为 `omitted`，网关都会向 OpenAI 请求这些摘要。OpenAI 可能拒绝向未经其验证的组织提供摘要，Kaeso 会把它的错误原样传回。
-- Chat Completions 应用看不到推理内容。
+- Chat Completions 应用看不到推理内容，Gemini 应用看不到其他服务商的推理内容。

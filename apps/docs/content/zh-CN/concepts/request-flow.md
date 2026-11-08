@@ -90,7 +90,7 @@ Kaeso 使用项目为该模型的服务商指定的服务商密钥，没有时�
 
 ## 发送给服务商
 
-KPP 按服务商的格式检查请求并编码。该格式无法表达的内容，Kaeso 会在任何内容到达服务商之前拒绝（[格式转换](format-translation.md)）。对于通过其他格式提供服务的 Chat Completions 应用，Kaeso 会先放回之前轮次中保存的推理内容（[轮次之间的推理](format-translation.md#轮次之间的推理)）。
+KPP 按服务商的格式检查请求并编码。该格式无法表达的内容，Kaeso 会在任何内容到达服务商之前拒绝（[格式转换](format-translation.md)）。对于通过其他格式提供服务的 Chat Completions 应用或 Gemini 应用，Kaeso 会先放回之前轮次中保存的推理内容（[轮次之间的推理](format-translation.md#轮次之间的推理)）。
 
 Kaeso 以每个服务商自己的 API 格式调用它，例如 Anthropic 用 Messages，Groq 用 Chat Completions。各服务商的格式见[支持的服务商](supported-providers.md)。
 

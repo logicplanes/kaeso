@@ -15,7 +15,7 @@ order: 3
 | `kaeso-postgres` | Dev database, PostgreSQL 18 | DigitalOcean's | 512 MB |
 | `kaeso-valkey` | Managed Valkey database | DigitalOcean's, created first | Your choice |
 
-The app's edge terminates TLS and routes by path: `/v1`, `/platform`, `/mcp`, `/oauth` and `/.well-known` reach the gateway, every other path the console, so no `kaeso-edge` runs here. The gateway trusts `X-Forwarded-For` from the private network, where the edge sits, and keeps its metrics on its loopback address. Managed Valkey speaks TLS with a certificate of DigitalOcean's own authority, which the spec hands to the gateway as `KAESO_VALKEY_CA` ([configuration](../configuration.md#settings)).
+The app's edge terminates TLS and routes by path: `/v1`, `/v1beta`, `/platform`, `/mcp`, `/oauth` and `/.well-known` reach the gateway, every other path the console, so no `kaeso-edge` runs here. The gateway trusts `X-Forwarded-For` from the private network, where the edge sits, and keeps its metrics on its loopback address. Managed Valkey speaks TLS with a certificate of DigitalOcean's own authority, which the spec hands to the gateway as `KAESO_VALKEY_CA` ([configuration](../configuration.md#settings)).
 
 The **Deploy to DO** button deploys one service with a dev database and nothing else, so Kaeso, which needs two services and a Valkey, is created with `doctl` instead.
 

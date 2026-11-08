@@ -152,7 +152,7 @@ cargo install cargo-deny cargo-llvm-cov cargo-nextest sqlx-cli --locked
 
 ## 端到端测试
 
-`e2e/` 中的套件用 `e2e/requirements.txt` 中固定版本的 OpenAI、Anthropic 和 MCP 官方 Python SDK，测试 KPP 的编码器、网关、其 MCP 门户和全新实例。先设置一次它们的虚拟环境：
+`e2e/` 中的套件用 `e2e/requirements.txt` 中固定版本的 OpenAI、Anthropic、Google Gen AI 和 MCP 官方 Python SDK，测试 KPP 的编码器、网关、其 MCP 门户和全新实例。先设置一次它们的虚拟环境：
 
 ```bash
 python3 -m venv e2e/.venv
@@ -203,7 +203,7 @@ sequenceDiagram
 e2e/.venv/bin/pytest -q e2e/sdk
 ```
 
-该套件在开发数据库上用 SDK 测试网关。它会构建网关和 `kaeso-testkit`，启动模拟服务商和网关，并通过 Platform API 设置用户、项目、服务商密钥、模型和 API 密钥。测试覆盖流式传输、保活、工具、图片、PDF、推理、跨服务商的双向转换、Token 计数、嵌入、模型列表、每类错误、限额、SDK 重试和断开连接。
+该套件在开发数据库上用 SDK 测试网关。它会构建网关和 `kaeso-testkit`，启动模拟服务商和网关，并通过 Platform API 设置用户、项目、服务商密钥、模型和 API 密钥。测试覆盖流式传输、保活、工具、图片、PDF、推理、跨服务商的双向转换、Token 计数、嵌入、模型列表、每类错误、限额、SDK 重试和断开连接。`e2e/sdk/test_google_genai_sdk.py` 用 `google-genai` 测试 `/v1beta`：在每个服务商上的生成和流式回复、带 Gemini 思考签名和带 Claude 思考的工具循环、Token 计数、嵌入、模型列表，以及 Gemini 的错误形式。
 
 模拟服务商（`crates/kaeso-testkit/src/mock_provider.rs`）根据请求中的标记选择回复：
 

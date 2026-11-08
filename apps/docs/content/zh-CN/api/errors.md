@@ -173,6 +173,86 @@ try {
 
 `Retry-After` 以整秒给出等待时间，向上取整。
 
+## Gemini 格式
+
+用 Google Gen AI SDK 发送同一个请求：
+
+```bash tab="curl"
+curl -i https://kaeso.example.com/v1beta/models/gpt-9:generateContent \
+  -H "x-goog-api-key: $KAESO_API_KEY" \
+  -H "content-type: application/json" \
+  -d '{
+    "contents": [
+      {"role": "user", "parts": [{"text": "Write a haiku about gateways."}]}
+    ]
+  }'
+```
+
+```python tab="Python"
+import os
+from google import genai
+from google.genai import errors
+
+client = genai.Client(
+    api_key=os.environ["KAESO_API_KEY"],
+    http_options={"base_url": "https://kaeso.example.com"},
+)
+
+try:
+    client.models.generate_content(
+        model="gpt-9",
+        contents="Write a haiku about gateways.",
+    )
+except errors.APIError as error:
+    print(error.code, error.response.headers["kaeso-request-id"])
+    print(error.message)
+```
+
+```ts tab="TypeScript"
+import { ApiError, GoogleGenAI } from "@google/genai";
+
+const ai = new GoogleGenAI({
+  apiKey: process.env.KAESO_API_KEY,
+  httpOptions: { baseUrl: "https://kaeso.example.com" },
+});
+
+try {
+  await ai.models.generateContent({
+    model: "gpt-9",
+    contents: "Write a haiku about gateways.",
+  });
+} catch (error) {
+  if (!(error instanceof ApiError)) throw error;
+  console.log(error.status, error.message);
+}
+```
+
+错误正文采用 Google 的形式。它没有存放请求 ID 的字段，请从 `kaeso-request-id` 响应头读取：
+
+```json
+{
+  "error": {
+    "code": 404,
+    "message": "The model `gpt-9` does not exist or this key may not use it.",
+    "status": "NOT_FOUND"
+  }
+}
+```
+
+| 状态码 | `error.status` |
+| --- | --- |
+| 400 | `INVALID_ARGUMENT` |
+| 401 | `UNAUTHENTICATED` |
+| 403 | `PERMISSION_DENIED` |
+| 404 | `NOT_FOUND` |
+| 405, 413 | `INVALID_ARGUMENT` |
+| 429 | `RESOURCE_EXHAUSTED` |
+| 500, 502 | `INTERNAL` |
+| 503 | `UNAVAILABLE`；Kaeso 无法加载自身数据或正在重启时为 `INTERNAL` |
+| 504 | `DEADLINE_EXCEEDED` |
+
+`Retry-After` 以整秒给出等待时间，向上取整。等待时间已知的 429 或 503 还会在 `details` 中以带 `retryDelay` 的 `RetryInfo` 给出它，例如 `"23s"`。
+
 ## 原因
 
 消息会说明原因以及该怎么做。各状态码背后的原因如下：
@@ -202,7 +282,7 @@ try {
 | 502 | 自定义服务商位于实例不允许的地址，或其回复的形式无法按其格式读取。 |
 | 502 | 服务商拒绝了项目的服务商密钥，或因计费或配额原因拒绝了它。 |
 | 503 | Kaeso 无法加载目录、密钥、服务商密钥或限额，或正在重启。OpenAI 格式对这些情况返回 500。 |
-| 503 | 服务商过载，适用于 OpenAI 格式。 |
+| 503 | 服务商过载，适用于 OpenAI 格式和 Gemini 格式。 |
 | 504 | 服务商未及时响应。 |
 | 529 | 服务商过载，适用于 Anthropic 格式。 |
 
@@ -219,8 +299,8 @@ try {
 | 拒绝服务商密钥 | 502，所有格式均如此 |
 | 因速率限制拒绝请求 | 429 |
 | 因计费或配额原因拒绝 | 502，所有格式均如此 |
-| 过载 | Anthropic 格式为 529，OpenAI 格式为 503 |
-| 返回其他服务器错误 | 其自身的 5xx 状态码 |
+| 过载 | Anthropic 格式为 529，OpenAI 格式和 Gemini 格式为 503 |
+| 返回其他服务器错误 | 其自身的 5xx 状态码。Gemini 应用收到 500，超时则为 504 |
 
 被拒绝的服务商密钥是安装的问题，而不是应用的问题。服务商的 401、402 或 403 会让 SDK 报告 Kaeso 密钥错误。服务商的消息还可能包含服务商密钥的片段或服务商的组织 ID。
 

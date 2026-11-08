@@ -1,0 +1,18 @@
+{
+  "requests": [
+    {
+      "content": {
+        "parts": [
+          {
+            "text": "refund policy"
+          },
+          {
+            "text": "shipping times"
+          }
+        ],
+        "role": "user"
+      },
+      "model": "models/gemini-embedding-2"
+    }
+  ]
+}

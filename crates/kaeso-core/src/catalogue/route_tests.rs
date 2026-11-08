@@ -314,6 +314,16 @@ fn conditions_branch_on_headers_formats_features_tokens_and_callers() {
     assert_eq!(took(&anthropic, &w), id(2));
     w.format = AppFormat::AnthropicMessages;
     assert_eq!(took(&anthropic, &w), id(1));
+    let gemini =
+        with(json!({ "field": "format", "op": "in", "value": ["gemini", "gemini_embeddings"] }));
+    assert_eq!(took(&gemini, &w), id(2));
+    w.format = AppFormat::of(kaeso_kpp::DialectId::Gemini).unwrap();
+    assert_eq!(took(&gemini, &w), id(1));
+    assert_eq!(
+        AppFormat::of(kaeso_kpp::DialectId::GeminiEmbeddings),
+        Some(AppFormat::GeminiEmbeddings)
+    );
+    w.format = AppFormat::AnthropicMessages;
 
     let images = with(json!({ "field": "feature", "op": "used", "value": "images" }));
     let no_tools = with(json!({ "field": "feature", "op": "not_used", "value": "tools" }));

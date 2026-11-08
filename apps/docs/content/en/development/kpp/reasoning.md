@@ -138,7 +138,7 @@ Requests from other dialects ask OpenAI Responses for `include: ["reasoning.encr
 
 ### Reasoning kept by the gateway
 
-Chat Completions has no field for reasoning, and KPP does not invent one. The reply leaves the reasoning out and the gateway keeps it, keyed by the tool calls it came before. Tool call ids are unique, issued by the provider and sent back by every Chat client, so they key the reasoning without changing the app's format.
+Chat Completions has no field for reasoning, and KPP does not invent one. The reply leaves the reasoning out and the gateway keeps it, keyed by the tool calls it came before. Tool call ids are unique, issued by the provider and sent back by every Chat client, so they key the reasoning without changing the app's format. The gateway does the same for Gemini apps whose model speaks another format (`kaeso_server::services::continuity::applies`), because a Gemini thought part can't carry a [reasoning blob](#reasoning-blobs).
 
 1. After a reply, `continuity::reasoning_for_tool_calls` (a complete reply) or a `continuity::ReasoningCollector` (a stream) returns one `CarriedReasoning` per tool call that replayable reasoning came before: Anthropic signed or redacted thinking, OpenAI encrypted reasoning, or a Gemini thought signature. Reasoning after the last tool call is not kept.
 2. The gateway stores the entries in Valkey, encrypted under the master key and readable only with the API key that made the request, for `KAESO_CONTINUITY_REASONING_TTL` (an hour by default).

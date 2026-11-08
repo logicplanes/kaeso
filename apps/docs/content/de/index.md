@@ -49,7 +49,7 @@ Diese Dokumentation beschreibt Kaeso {{version}}.
 
 ## Was Kaeso Ihnen bietet
 
-- **Eine API für alle Anbieter.** Kaeso bedient OpenAI Chat Completions, Responses und Embeddings sowie Anthropic Messages. Jedes Chat-Format kann jedes Chat-Modell in Ihrem Katalog aufrufen, gleich welcher [Anbieter](concepts/providers.md) es bedient; ein OpenAI SDK spricht also auch mit Claude.
+- **Eine API für alle Anbieter.** Kaeso bedient OpenAI Chat Completions, Responses und Embeddings, Anthropic Messages sowie die Gemini API. Jedes Chat-Format kann jedes Chat-Modell in Ihrem Katalog aufrufen, gleich welcher [Anbieter](concepts/providers.md) es bedient; ein OpenAI SDK spricht also auch mit Claude.
 - **Anbieter-Schlüssel, die bei Ihnen bleiben.** Apps erhalten Kaeso-API-Schlüssel (`sk-kso-…`), die Sie begrenzen, befristen und deaktivieren können. Ihre Anbieter-Schlüssel sind mit einem Hauptschlüssel verschlüsselt, den nur Ihre Installation kennt.
 - **Organisationen und Projekte.** Mitglieder, Rollen, Rechte und Dienstkonten sowie ein Modellkatalog mit Aliassen in jedem Projekt.
 - **Limits und Budgets.** Anfrage- und Token-Raten sowie Token- und Ausgabenbudgets für ein Projekt, ein Mitglied oder einen einzelnen Schlüssel.
@@ -79,7 +79,7 @@ flowchart TD
 
 | Teil | Was es ist |
 | --- | --- |
-| Gateway | Der Server, den Ihre Apps aufrufen. Er stellt die Modell-API unter `/v1` und die Platform API unter `/platform/v1` bereit. Seine Daten und die Nutzung speichert er in PostgreSQL, Anfrageprotokolle in ClickHouse, das eine Installation ausschalten kann, und Zähler in Valkey. |
+| Gateway | Der Server, den Ihre Apps aufrufen. Er stellt die Modell-API unter `/v1` und `/v1beta` und die Platform API unter `/platform/v1` bereit. Seine Daten und die Nutzung speichert er in PostgreSQL, Anfrageprotokolle in ClickHouse, das eine Installation ausschalten kann, und Zähler in Valkey. |
 | Konsole | Die Weboberfläche, unter der Domain des Gateways ausgeliefert. Sie nutzt nur die Platform API; ein Skript kann also alles, was die Konsole kann. |
 | KPP | Das Kaeso Provider Protocol: ein kanonisches Format für Modellanfragen, mit einem Codec, der jedes API-Format in beide Richtungen übersetzt. |
 
@@ -90,7 +90,7 @@ Kaeso steht unter der MIT-Lizenz. Gateway, KPP, Konsole, UI-Bibliothek und diese
 ## Nächste Schritte
 
 - [Schnellstart](get-started/quick-start.md): Installieren Sie Kaeso auf einem Server, und senden Sie Ihre erste Anfrage.
-- [Modelle aufrufen](get-started/calling-models.md): Rufen Sie Modelle aus Ihrem Code mit den SDKs von OpenAI und Anthropic auf.
+- [Modelle aufrufen](get-started/calling-models.md): Rufen Sie Modelle aus Ihrem Code mit den SDKs von OpenAI, Anthropic und Google Gen AI auf.
 - [Coding-Tools](get-started/coding-tools.md): Richten Sie Claude Code oder Codex auf Ihre Installation aus.
 - [Konzepte](concepts/index.md): Erfahren Sie, wie Kaeso Anbieter, Anfragen, Formate und Rechte behandelt.
 - [Die Konsole verwenden](console/index.md): Finden Sie sich in der Konsole zurecht.

@@ -4,6 +4,7 @@ use std::sync::{Mutex, MutexGuard, PoisonError};
 use std::time::Duration;
 
 use futures::future::BoxFuture;
+use kaeso_codecs::gemini::GeminiAction;
 use kaeso_core::id::RequestId;
 use kaeso_kpp::{DialectId, RequestKind, Response};
 use kaeso_store::StoreError;
@@ -433,7 +434,20 @@ impl From<Cached> for LogSettings {
     }
 }
 
-pub fn endpoint(ingress: DialectId, kind: RequestKind) -> &'static str {
+pub fn endpoint(
+    ingress: DialectId,
+    kind: RequestKind,
+    gemini: Option<GeminiAction>,
+) -> &'static str {
+    if let Some(action) = gemini {
+        return match action {
+            GeminiAction::StreamGenerateContent => "models:streamGenerateContent",
+            GeminiAction::CountTokens => "models:countTokens",
+            GeminiAction::EmbedContent => "models:embedContent",
+            GeminiAction::BatchEmbedContents => "models:batchEmbedContents",
+            _ => "models:generateContent",
+        };
+    }
     match (ingress, kind) {
         (DialectId::AnthropicMessages, RequestKind::CountTokens) => "messages/count_tokens",
         (DialectId::AnthropicMessages, _) => "messages",
@@ -525,7 +539,7 @@ pub async fn record(state: &AppState, o: &Outcome) {
         finished_at: o.started_at + o.duration,
         duration_ms: ms(o.duration),
         ttfb_ms: o.ttfb.map(ms),
-        endpoint: endpoint(o.ingress, o.kind).into(),
+        endpoint: endpoint(o.ingress, o.kind, o.gemini).into(),
         ingress_dialect: o.ingress.as_str().into(),
         egress_dialect: o.egress.map(|d| d.as_str().to_owned()).unwrap_or_default(),
         provider: o

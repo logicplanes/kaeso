@@ -450,6 +450,10 @@ def test_the_edge_answers_every_api_in_its_format_while_kaeso_is_away(install, o
             assert raised.value.status_code == 529
             assert raised.value.body["error"] == {"type": "overloaded_error", "message": message}
 
+            gemini = httpx.post(f"{url}/v1beta/models/gemini-3.5-flash:generateContent", json={}, timeout=10)
+            assert gemini.status_code == 503
+            assert gemini.json() == {"error": {"code": 503, "message": message, "status": "UNAVAILABLE"}}
+
             page = httpx.get(f"{url}/settings/instance/updates", headers={"accept": "text/html"}, timeout=10)
             assert page.status_code == 503
             assert page.headers["content-type"].startswith("text/html")

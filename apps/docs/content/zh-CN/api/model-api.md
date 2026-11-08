@@ -4,7 +4,7 @@ description: 应用调用的端点、身份验证方式以及模型的指定方�
 order: 1
 ---
 
-应用用 OpenAI 和 Anthropic 的官方 SDK 调用模型 API：把 SDK 指向您的实例，并传入一个 Kaeso API 密钥。Kaeso 会把每个请求转换为模型所属服务商的格式，再把回复转换回来，流式回复也不例外。
+应用用 OpenAI 和 Anthropic 的官方 SDK 或 Google 的 Gen AI SDK 调用模型 API：把 SDK 指向您的实例，并传入一个 Kaeso API 密钥。Kaeso 会把每个请求转换为模型所属服务商的格式，再把回复转换回来，流式回复也不例外。
 
 使用 OpenAI SDK 时，下面这个 Chat Completions 请求由 Claude 回答：
 
@@ -102,12 +102,57 @@ for (const block of message.content) {
 }
 ```
 
+使用 Google 的 Gen AI SDK（`google-genai`）时，以 Gemini 格式发送同一个请求：
+
+```bash tab="curl"
+curl https://kaeso.example.com/v1beta/models/claude-haiku-4-5:generateContent \
+  -H "x-goog-api-key: $KAESO_API_KEY" \
+  -H "content-type: application/json" \
+  -d '{
+    "contents": [
+      {"role": "user", "parts": [{"text": "Write a haiku about gateways."}]}
+    ]
+  }'
+```
+
+```python tab="Python"
+import os
+from google import genai
+
+client = genai.Client(
+    api_key=os.environ["KAESO_API_KEY"],
+    http_options={"base_url": "https://kaeso.example.com"},
+)
+
+response = client.models.generate_content(
+    model="claude-haiku-4-5",
+    contents="Write a haiku about gateways.",
+)
+print(response.text)
+```
+
+```ts tab="TypeScript"
+import { GoogleGenAI } from "@google/genai";
+
+const ai = new GoogleGenAI({
+  apiKey: process.env.KAESO_API_KEY,
+  httpOptions: { baseUrl: "https://kaeso.example.com" },
+});
+
+const response = await ai.models.generateContent({
+  model: "claude-haiku-4-5",
+  contents: "Write a haiku about gateways.",
+});
+console.log(response.text);
+```
+
 | SDK | 基础 URL | 密钥的发送方式 |
 | --- | --- | --- |
 | OpenAI | `https://kaeso.example.com/v1` | `Authorization: Bearer` |
 | Anthropic | `https://kaeso.example.com` | `Authorization: Bearer` |
+| Google Gen AI（`google-genai`） | `https://kaeso.example.com` | `x-goog-api-key` |
 
-任何格式都能调用项目目录中的任何生成模型。[调用模型](../get-started/calling-models.md)展示了流式传输以及两种 SDK 的更多用法。
+任何格式都能调用项目目录中的任何生成模型，因此 Gemini 应用可以调用 Claude，OpenAI 应用也可以调用 Gemini 模型。[调用模型](../get-started/calling-models.md)展示了流式传输以及每种 SDK 的更多用法。
 
 ## 端点
 
@@ -121,21 +166,32 @@ for (const block of message.content) {
 | `POST /v1/messages/count_tokens` | Anthropic Messages，统计 Token |
 | `GET /v1/models` | 该密钥可调用的模型 |
 | `GET /v1/models/{model}` | 其中某一个模型 |
+| `POST /v1beta/models/{model}:generateContent` | Gemini |
+| `POST /v1beta/models/{model}:streamGenerateContent?alt=sse` | Gemini，流式 |
+| `POST /v1beta/models/{model}:countTokens` | Gemini，统计 Token |
+| `POST /v1beta/models/{model}:embedContent` | Gemini 嵌入 |
+| `POST /v1beta/models/{model}:batchEmbedContents` | Gemini 嵌入，多个输入 |
+| `GET /v1beta/models` | 该密钥可调用的模型，采用 Gemini 格式 |
+| `GET /v1beta/models/{model}` | 其中某一个模型，采用 Gemini 格式 |
 
-`/v1/embeddings` 只服务嵌入模型，这类模型只有部分[服务商](../concepts/supported-providers.md)提供；嵌入模型也不服务其他端点。混用两者的请求，Kaeso 返回 400。
+在 `/v1beta` 路径中，`{model}` 可以是任何[模型名称](#模型名称)，例如 `claude-haiku-4-5`。
+
+`/v1/embeddings`、`:embedContent` 和 `:batchEmbedContents` 只服务嵌入模型，这类模型只有部分[服务商](../concepts/supported-providers.md)提供；嵌入模型也不服务其他端点。混用两者的请求，Kaeso 返回 400。
 
 `/v1` 下的其他路径返回 404，已知路径使用了错误的方法则返回 405。请求带有 `anthropic-version` 请求头时，这两种错误采用 Anthropic 格式，否则采用 OpenAI 格式。
 
+在 `/v1beta` 下，所有错误都采用 Gemini 格式。其他方法（例如 `batchGenerateContent`）和其他路径（例如文件或缓存内容）返回 404。已知路径使用了错误的方法则返回 405。调用只接受查询参数 `key` 和 `alt`，其他参数返回 400。`/v1` 下的 Gemini 调用（`google-genai` 设置 `api_version="v1"` 时会这样调用）返回 404，消息会指向 `/v1beta`。
+
 ### 列出模型
 
-`GET /v1/models` 同样根据 `anthropic-version` 请求头选择格式。列表先列出该密钥可调用的目录模型，再列出项目中指向这些模型的别名。每个模型以其自身的 ID 列出；如果其自身的 ID 不能指向它（例如另一个服务商提供同一 ID），则以 `provider/model` 列出（[模型名称](#模型名称)）。服务商不向项目的服务商密钥提供的模型不会列出（[可用性](../console/models-and-aliases.md#可用性)）。
+`GET /v1/models` 同样根据 `anthropic-version` 请求头选择格式。`GET /v1beta/models` 始终采用 Gemini 格式，并把每个模型命名为 `models/<name>`。列表先列出该密钥可调用的目录模型，再列出项目中指向这些模型的别名。每个模型以其自身的 ID 列出；如果其自身的 ID 不能指向它（例如另一个服务商提供同一 ID），则以 `provider/model` 列出（[模型名称](#模型名称)）。服务商不向项目的服务商密钥提供的模型不会列出（[可用性](../console/models-and-aliases.md#可用性)）。
 
-| | OpenAI 格式 | Anthropic 格式 |
-| --- | --- | --- |
-| 分页 | 无，一次响应包含所有模型 | `limit`（1 到 1000，默认 20）、`after_id` 或 `before_id` |
-| 已弃用的模型 | 不标注 | 按 KPMR 的标注带有 `lifecycle: "deprecated"` |
+| | OpenAI 格式 | Anthropic 格式 | Gemini 格式 |
+| --- | --- | --- | --- |
+| 分页 | 无，一次响应包含所有模型 | `limit`（1 到 1000，默认 20）、`after_id` 或 `before_id` | `pageSize`（默认 50），以及值为上一页 `nextPageToken` 的 `pageToken` |
+| 已弃用的模型 | 不标注 | 按 KPMR 的标注带有 `lifecycle: "deprecated"` | 不标注 |
 
-`GET /v1/models/{model}` 接受任何[模型名称](#模型名称)。模型不在目录中、密钥无权使用或服务商不提供该模型时，返回 404。
+`GET /v1/models/{model}` 和 `GET /v1beta/models/{model}` 接受任何[模型名称](#模型名称)。模型不在目录中、密钥无权使用或服务商不提供该模型时，返回 404。
 
 ## 密钥
 
@@ -144,9 +200,10 @@ for (const block of message.content) {
 ```text
 Authorization: Bearer sk-kso-…
 x-api-key: sk-kso-…
+x-goog-api-key: sk-kso-…
 ```
 
-请求同时发送两者时，以 `x-api-key` 为准。密钥决定所属项目。它以其成员或服务账号的权限和模型访问范围行事，该成员或服务账号需要 `api.request` 权限。
+请求发送了多个时，优先使用 `x-api-key`，其次是 `x-goog-api-key`，最后是 `Authorization`。在 `/v1beta` 下，密钥也可以像 Google 的 REST 示例那样放在查询参数中，即 `?key=sk-kso-…`。只有在没有请求头携带密钥时，Kaeso 才使用它，而且查询参数中的密钥绝不会进入日志，也不会发给服务商。密钥决定所属项目。它以其成员或服务账号的权限和模型访问范围行事，该成员或服务账号需要 `api.request` 权限。
 
 仅具有平台访问权限的密钥和组织平台密钥（`sk-kso-org-…`），Kaeso 以 403 拒绝：它们从不调用模型。如何创建和限制密钥，见 [API 密钥](../console/api-keys.md)。
 
@@ -166,13 +223,15 @@ x-api-key: sk-kso-…
 
 按格式的约定请求流式回复，即 `"stream": true`。回复是采用应用所用格式的 SSE（服务器发送事件）流。
 
-- **保活。** 15 秒内没有输出时，Kaeso 会写入一条 SDK 会忽略的保活消息：OpenAI 格式为 SSE 注释，Anthropic 格式为 `ping` 事件。`KAESO_STREAMS_KEEPALIVE_INTERVAL` 可更改间隔或关闭保活（[发往应用的流](../self-hosting/configuration.md#发往应用的流)）。
+Gemini 应用则像 `google-genai` 那样调用 `:streamGenerateContent?alt=sse`。Kaeso 只以服务器发送事件的形式流式传输 Gemini 回复，因此不带 `alt=sse` 的流式请求返回 400。
+
+- **保活。** 15 秒内没有输出时，Kaeso 会写入一条 SDK 会忽略的保活消息：OpenAI 格式为 SSE 注释，Anthropic 格式为 `ping` 事件，Gemini 格式为一个空行，因为 `google-genai` 会把其他每一行都当作 JSON 读取。`KAESO_STREAMS_KEEPALIVE_INTERVAL` 可更改间隔或关闭保活（[发往应用的流](../self-hosting/configuration.md#发往应用的流)）。
 - **失败。** 流一旦开始就无法再更改状态码。服务商出错，或在回复完成前结束流时，流会以采用应用所用格式的错误事件结束。
 - **断开。** 应用在流的最后一个事件之前断开连接时，Kaeso 会立即停止向服务商发出的请求，并按已用量计费。最后一个事件已到达应用的流视为已完成，即使应用随即断开连接也是如此。
 
 ## 跨工具调用的推理
 
-Chat Completions 没有存放模型推理内容的字段。Chat Completions 应用调用通过其他格式提供服务的模型时，Kaeso 会保存模型在每次工具调用之前的推理内容。在应用的下一轮请求中，Kaeso 会将这些推理内容加回（[格式转换](../concepts/format-translation.md#chat-completions)）。
+Chat Completions 没有存放模型推理内容的字段，Gemini 格式也没有存放其他服务商推理内容的字段。Chat Completions 或 Gemini 应用调用通过其他格式提供服务的模型时，Kaeso 会保存模型在每次工具调用之前的推理内容。在应用的下一轮请求中，Kaeso 会将这些推理内容加回（[格式转换](../concepts/format-translation.md#chat-completions)）。Gemini 应用调用 Gemini 模型时，Gemini 自己的思考签名原样往返。
 
 ## 响应缓存
 
@@ -194,15 +253,15 @@ Chat Completions 没有存放模型推理内容的字段。Chat Completions 应�
 
 ## 从浏览器调用
 
-只有当另一个源以 CORS 响应头应答时，浏览器才允许网页调用它。在 `KAESO_CORS_ALLOWED_ORIGINS` 列出您的 Web 应用的源（例如 `https://app.example.com,http://localhost:5173`）之前，Kaeso 不发送任何 CORS 响应头（[浏览器应用](../self-hosting/configuration.md#浏览器应用)）。列出之后，以下规则仅适用于 `/v1`：
+只有当另一个源以 CORS 响应头应答时，浏览器才允许网页调用它。在 `KAESO_CORS_ALLOWED_ORIGINS` 列出您的 Web 应用的源（例如 `https://app.example.com,http://localhost:5173`）之前，Kaeso 不发送任何 CORS 响应头（[浏览器应用](../self-hosting/configuration.md#浏览器应用)）。列出之后，以下规则仅适用于 `/v1` 和 `/v1beta`：
 
 - **精确匹配源。** 协议、主机和端口都必须一致：`https://app.example.com` 既不放行 `http://app.example.com`，也不放行 `https://www.app.example.com`。Kaeso 会在启动时拒绝 `*`，因为它会让任何网站都能用访问者持有的密钥发送请求。
-- **预检请求。** 来自已列出源、带有 `Origin` 和 `Access-Control-Request-Method` 的 `OPTIONS` 请求无需密钥即返回 204。响应带有值为该源的 `Access-Control-Allow-Origin`、`Access-Control-Allow-Methods: GET, POST` 和 `Access-Control-Max-Age: 7200`。`Access-Control-Allow-Headers` 列出所请求的请求头里官方 SDK 会发送的那些：`authorization`、`x-api-key`、`content-type`、`accept`、`user-agent`、`anthropic-version`、`anthropic-beta`、`anthropic-dangerous-direct-browser-access`、`openai-organization`、`openai-project`、`openai-beta`、`idempotency-key` 和 `x-stainless-…`。预检请求不是模型请求：不记录日志、不计费，也不计入限额。
+- **预检请求。** 来自已列出源、带有 `Origin` 和 `Access-Control-Request-Method` 的 `OPTIONS` 请求无需密钥即返回 204。响应带有值为该源的 `Access-Control-Allow-Origin`、`Access-Control-Allow-Methods: GET, POST` 和 `Access-Control-Max-Age: 7200`。`Access-Control-Allow-Headers` 列出所请求的请求头里官方 SDK 会发送的那些：`authorization`、`x-api-key`、`content-type`、`accept`、`user-agent`、`anthropic-version`、`anthropic-beta`、`anthropic-dangerous-direct-browser-access`、`openai-organization`、`openai-project`、`openai-beta`、`idempotency-key`、`x-goog-api-key`、`x-goog-api-client` 和 `x-stainless-…`。预检请求不是模型请求：不记录日志、不计费，也不计入限额。
 - **响应。** 发往已列出源的每个响应（包括错误响应）都带有值为该源的 `Access-Control-Allow-Origin`，以及 `Access-Control-Expose-Headers: kaeso-request-id, kaeso-provider, kaeso-model, kaeso-left-out, kaeso-adapted, kaeso-route, kaeso-cache, age, retry-after, retry-after-ms`，以便应用读取这些响应头。
-- **其他源**得不到 CORS 响应头，因此浏览器会拦截调用，它们的预检请求得到空的 204。`/v1` 上的每个响应都带有 `Vary: Origin`，以便缓存区分这些响应。
+- **其他源**得不到 CORS 响应头，因此浏览器会拦截调用，它们的预检请求得到空的 204。`/v1` 和 `/v1beta` 上的每个响应都带有 `Vary: Origin`，以便缓存区分这些响应。
 - **不使用 Cookie。** 由于密钥通过请求头传递，Kaeso 从不发送 `Access-Control-Allow-Credentials`。Platform API、健康检查和指标从不响应跨源请求。
 
-两种 SDK 都只有在应用传入 `dangerouslyAllowBrowser: true` 时才会在浏览器中运行。
+OpenAI 和 Anthropic 的 SDK 都只有在应用传入 `dangerouslyAllowBrowser: true` 时才会在浏览器中运行。
 
 > [!WARNING]
 > 使用页面的每个人都能读取页面中的密钥。请为浏览器应用单独创建密钥：仅具有模型调用权限、有效期短、只开放所需模型、限额从严。或者由您自己的后端发放短期密钥（[API 密钥](../console/api-keys.md)）。

@@ -14932,7 +14932,7 @@
           {
             "name": "ingress_dialect",
             "in": "query",
-            "description": "Only requests the app sent in this format: `anthropic_messages`,\n`openai_chat`, `openai_responses` or `openai_embeddings`.",
+            "description": "Only requests the app sent in this format: `anthropic_messages`,\n`openai_chat`, `openai_responses`, `openai_embeddings`, `gemini` or\n`gemini_embeddings`.",
             "required": false,
             "schema": {
               "type": "string"
@@ -14941,7 +14941,7 @@
           {
             "name": "egress_dialect",
             "in": "query",
-            "description": "Only requests Kaeso sent to the provider in this format:\n`anthropic_messages`, `openai_chat`, `openai_responses` or\n`openai_embeddings`.",
+            "description": "Only requests Kaeso sent to the provider in this format:\n`anthropic_messages`, `openai_chat`, `openai_responses`,\n`openai_embeddings`, `gemini` or `gemini_embeddings`.",
             "required": false,
             "schema": {
               "type": "string"
@@ -15173,7 +15173,7 @@
           {
             "name": "ingress_dialect",
             "in": "query",
-            "description": "Only requests the app sent in this format: `anthropic_messages`,\n`openai_chat`, `openai_responses` or `openai_embeddings`.",
+            "description": "Only requests the app sent in this format: `anthropic_messages`,\n`openai_chat`, `openai_responses`, `openai_embeddings`, `gemini` or\n`gemini_embeddings`.",
             "required": false,
             "schema": {
               "type": "string"
@@ -15182,7 +15182,7 @@
           {
             "name": "egress_dialect",
             "in": "query",
-            "description": "Only requests Kaeso sent to the provider in this format:\n`anthropic_messages`, `openai_chat`, `openai_responses` or\n`openai_embeddings`.",
+            "description": "Only requests Kaeso sent to the provider in this format:\n`anthropic_messages`, `openai_chat`, `openai_responses`,\n`openai_embeddings`, `gemini` or `gemini_embeddings`.",
             "required": false,
             "schema": {
               "type": "string"
@@ -27591,7 +27591,7 @@
                 },
                 "endpoint": {
                   "type": "string",
-                  "description": "The endpoint, e.g. `chat/completions`."
+                  "description": "The endpoint, e.g. `chat/completions`, or the Gemini method on the model,\ne.g. `models:generateContent`."
                 },
                 "error_kind": {
                   "type": [
@@ -29671,7 +29671,7 @@
                     "null"
                   ],
                   "format": "double",
-                  "description": "The share of the input read from the cache, from 0 to 1: cache reads\nover uncached input, cache reads and cache writes together; `null` for\na group without input and for routes to or from `openai_embeddings`,\nwhich never cache."
+                  "description": "The share of the input read from the cache, from 0 to 1: cache reads\nover uncached input, cache reads and cache writes together; `null` for\na group without input and for routes to or from `openai_embeddings` or\n`gemini_embeddings`, which never cache."
                 },
                 "cache_read_tokens": {
                   "type": "integer",
@@ -29932,7 +29932,7 @@
           },
           "endpoint": {
             "type": "string",
-            "description": "The endpoint, e.g. `chat/completions`."
+            "description": "The endpoint, e.g. `chat/completions`, or the Gemini method on the model,\ne.g. `models:generateContent`."
           },
           "error_kind": {
             "type": [
@@ -34462,7 +34462,9 @@
           "openai_chat",
           "openai_responses",
           "anthropic_messages",
-          "openai_embeddings"
+          "openai_embeddings",
+          "gemini",
+          "gemini_embeddings"
         ]
       },
       "RouteFormatRule": {
@@ -37491,7 +37493,7 @@
               "null"
             ],
             "format": "double",
-            "description": "The share of the input read from the cache, from 0 to 1: cache reads\nover uncached input, cache reads and cache writes together; `null` for\na group without input and for routes to or from `openai_embeddings`,\nwhich never cache."
+            "description": "The share of the input read from the cache, from 0 to 1: cache reads\nover uncached input, cache reads and cache writes together; `null` for\na group without input and for routes to or from `openai_embeddings` or\n`gemini_embeddings`, which never cache."
           },
           "cache_read_tokens": {
             "type": "integer",

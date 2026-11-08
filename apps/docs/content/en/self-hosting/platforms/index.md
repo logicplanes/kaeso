@@ -39,7 +39,7 @@ AWS and Google Cloud are not one click: you choose a region, a domain and its ce
 
 ## What every path keeps
 
-- **One origin.** The console and the APIs answer on one domain. `/v1/*`, `/platform/*`, `/mcp`, `/mcp/*`, `/oauth/*` and `/.well-known/oauth-*` reach the gateway; every other path reaches the console. On Render and Railway, `kaeso-edge`, a second command in the console image, does this; on DigitalOcean, the app's ingress rules; on AWS and Google Cloud, the load balancer's path rules.
+- **One origin.** The console and the APIs answer on one domain. `/v1/*`, `/v1beta/*`, `/platform/*`, `/mcp`, `/mcp/*`, `/oauth/*` and `/.well-known/oauth-*` reach the gateway; every other path reaches the console. On Render and Railway, `kaeso-edge`, a second command in the console image, does this; on DigitalOcean, the app's ingress rules; on AWS and Google Cloud, the load balancer's path rules.
 - **Streams stay unbuffered.** The edge flushes every chunk, and a load balancer's idle timeout is longer than the gateway's keepalive interval ([long streams](../domains-and-tls.md#long-streams)).
 - **The client address is believed only from the platform's proxy.** The edge takes `X-Forwarded-For` only from the platform's private network and sends the gateway one address; the gateway trusts the edge alone ([`KAESO_TRUSTED_PROXIES`](../configuration.md#settings)).
 - **Health checks** use `/healthz` for the process and `/readyz` for PostgreSQL, Valkey and ClickHouse ([health and metrics](../monitoring.md)). The metrics port is never public.

@@ -98,7 +98,7 @@ Auf einer Loopback-Adresse mit `http`, etwa `http://localhost:8080`, kommt das S
 
 | Variable<br>TOML-Schlüssel | Typ | Standard | Was sie bewirkt |
 | --- | --- | --- | --- |
-| `KAESO_CORS_ALLOWED_ORIGINS`<br>`cors.allowed_origins` | Text | — | Kommagetrennte Origins von Web-Apps, die die Modell-API aus dem Browser aufrufen dürfen, etwa `https://app.example.com,http://localhost:5173`. Nur diese erhalten CORS-Header, nur unter `/v1`, und mit `*` startet das Gateway nicht. |
+| `KAESO_CORS_ALLOWED_ORIGINS`<br>`cors.allowed_origins` | Text | — | Kommagetrennte Origins von Web-Apps, die die Modell-API aus dem Browser aufrufen dürfen, etwa `https://app.example.com,http://localhost:5173`. Nur diese erhalten CORS-Header, nur unter `/v1` und `/v1beta`, und mit `*` startet das Gateway nicht. |
 
 Ohne diese Einstellung sendet Kaeso keine CORS-Header. Die [Modell-API](../api/model-api.md) erklärt, wie eine Browser-App Kaeso aufruft.
 
@@ -239,7 +239,7 @@ Das Gateway folgt außerdem keinen Weiterleitungen eines eigenen Anbieters und r
 
 | Variable<br>TOML-Schlüssel | Typ | Standard | Was sie bewirkt |
 | --- | --- | --- | --- |
-| `KAESO_CONTINUITY_REASONING_TTL`<br>`continuity.reasoning_ttl` | Text | `1h` | Wie lange das Gateway das Reasoning eines Modells vor einem Tool-Aufruf aufbewahrt, für eine OpenAI-Chat-Completions-App, deren Modell ein anderes Format spricht. `0s` schaltet es ab; sonst 1m bis 24h. |
+| `KAESO_CONTINUITY_REASONING_TTL`<br>`continuity.reasoning_ttl` | Text | `1h` | Wie lange das Gateway das Reasoning eines Modells vor einem Tool-Aufruf aufbewahrt, für eine OpenAI-Chat-Completions- oder Gemini-App, deren Modell ein anderes Format spricht. `0s` schaltet es ab; sonst 1m bis 24h. |
 
 [Formatübersetzung](../concepts/format-translation.md#chat-completions) erklärt, wie das Gateway es aufbewahrt.
 

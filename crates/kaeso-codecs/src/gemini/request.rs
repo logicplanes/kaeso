@@ -36,6 +36,8 @@ const FORM_INCLUDE: &str = "include_thoughts";
 const FORM_CANDIDATES: &str = "candidate_count";
 const FORM_STOP: &str = "stop";
 const FORM_MIME: &str = "response_mime_type";
+const FORM_SDK_NAMES: &str = "sdk_names";
+const FORM_TOP_K_FLOAT: &str = "top_k_float";
 const JSON_MIME: &str = "application/json";
 /// Gemini takes at most five stop sequences (`GenerationConfig.stopSequences`).
 const MAX_STOP: usize = 5;
@@ -85,6 +87,21 @@ pub(crate) fn decode(
 ) -> Result<Request, KppError> {
     let origin = Origin::new(D);
     let model = model.strip_prefix("models/").unwrap_or(model);
+    let (body, sdk_names) = super::sdk::to_camel(body);
+    let mut req = decode_action(model, action, &body, &origin)?;
+    if sdk_names && let Request::Generate(r) | Request::CountTokens(r) = &mut req {
+        r.extras.form.insert(FORM_SDK_NAMES.into(), true.into());
+    }
+    Ok(req)
+}
+
+fn decode_action(
+    model: &str,
+    action: GeminiAction,
+    body: &[u8],
+    origin: &Origin,
+) -> Result<Request, KppError> {
+    let origin = origin.clone();
     match action {
         GeminiAction::GenerateContent | GeminiAction::StreamGenerateContent => {
             let w = parse::<RequestW>(body)?;
@@ -389,7 +406,12 @@ fn decode_generation(
         .frequency_penalty
         .as_ref()
         .and_then(serde_json::Number::as_f64);
-    s.top_k = g.top_k;
+    if let Some(k) = &g.top_k {
+        s.top_k = Some(whole_top_k(k)?);
+        if k.is_f64() {
+            req.extras.form.insert(FORM_TOP_K_FLOAT.into(), true.into());
+        }
+    }
     s.max_output_tokens = g.max_output_tokens;
     s.seed = g.seed;
     if let Some(stop) = g.stop_sequences {
@@ -662,11 +684,31 @@ pub(crate) fn encode(req: &Request, ctx: &mut EgressCtx) -> Result<EncodedReques
     } else {
         to_body(&encode_generate(r, ctx, &target, true)?)?
     };
+    let body = if r.extras.is_from(D) && r.extras.form_flag(D, FORM_SDK_NAMES) {
+        super::sdk::to_snake(body)
+    } else {
+        body
+    };
     Ok(EncodedRequest::post_json(
         path,
         HeaderList::new().with("content-type", "application/json"),
         body,
     ))
+}
+
+// google-genai types `topK` as a float and sends `20.0`; the API takes a whole number.
+fn whole_top_k(k: &serde_json::Number) -> Result<u32, KppError> {
+    k.as_u64()
+        .or_else(|| {
+            k.as_f64()
+                .filter(|f| f.fract() == 0.0 && *f >= 0.0)
+                .map(|f| f as u64)
+        })
+        .and_then(|k| u32::try_from(k).ok())
+        .ok_or_else(|| {
+            invalid(format!("`topK` must be a whole number, not `{k}`"))
+                .with_param("generationConfig.topK")
+        })
 }
 
 fn model_id(model: &str) -> &str {
@@ -1072,7 +1114,13 @@ fn encode_generation(
     let mut g = GenerationConfigW {
         temperature: number(s.temperature, "temperature"),
         top_p: number(s.top_p, "topP"),
-        top_k: s.top_k,
+        top_k: s.top_k.and_then(|k| {
+            if own && r.extras.form_flag(D, FORM_TOP_K_FLOAT) {
+                serde_json::Number::from_f64(f64::from(k))
+            } else {
+                Some(k.into())
+            }
+        }),
         max_output_tokens: s.max_output_tokens,
         stop_sequences: if s.stop.is_empty() && r.extras.form_str(D, FORM_STOP) != Some("empty") {
             None

@@ -1,0 +1,38 @@
+{
+  "contents": [
+    {
+      "parts": [
+        {
+          "text": "Weather in Paris?"
+        }
+      ],
+      "role": "user"
+    }
+  ],
+  "tools": [
+    {
+      "functionDeclarations": [
+        {
+          "description": "Weather for a place",
+          "name": "get_weather",
+          "parameters_json_schema": {
+            "type": "object",
+            "properties": {
+              "location": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "location"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "generationConfig": {
+    "thinkingConfig": {
+      "thinking_level": "LOW"
+    }
+  }
+}

@@ -49,7 +49,7 @@ This documentation describes Kaeso {{version}}.
 
 ## What Kaeso gives you
 
-- **One API for every provider.** Kaeso serves OpenAI Chat Completions, Responses and Embeddings, and Anthropic Messages. Each chat format can call every chat model in your catalogue, whichever [provider](concepts/providers.md) serves it, so an OpenAI SDK can talk to Claude.
+- **One API for every provider.** Kaeso serves OpenAI Chat Completions, Responses and Embeddings, Anthropic Messages, and the Gemini API. Each chat format can call every chat model in your catalogue, whichever [provider](concepts/providers.md) serves it, so an OpenAI SDK can talk to Claude.
 - **Provider keys that stay with you.** Apps get Kaeso API keys (`sk-kso-…`) that you can limit, expire and disable. Your provider keys are encrypted under a master key that only your install holds.
 - **Organizations and projects.** Members, roles, rights and service accounts, and a model catalogue with aliases in each project.
 - **Limits and budgets.** Request and token rates, and token and spend budgets, for a project, a member or a single key.
@@ -79,7 +79,7 @@ flowchart TD
 
 | Part | What it is |
 | --- | --- |
-| Gateway | The server your apps call. It serves the model API under `/v1` and the Platform API under `/platform/v1`. It keeps its data and usage in PostgreSQL, request logs in ClickHouse, which an install can turn off, and counters in Valkey. |
+| Gateway | The server your apps call. It serves the model API under `/v1` and `/v1beta` and the Platform API under `/platform/v1`. It keeps its data and usage in PostgreSQL, request logs in ClickHouse, which an install can turn off, and counters in Valkey. |
 | Console | The web interface, served on the gateway's domain. It uses only the Platform API, so a script can do anything the console does. |
 | KPP | The Kaeso Provider Protocol: one canonical format for model requests, with a codec that translates each API format to and from it. |
 
@@ -90,7 +90,7 @@ Kaeso is MIT licensed. The gateway, KPP, the console, the UI library and this do
 ## Next steps
 
 - [Quick start](get-started/quick-start.md): Install Kaeso on a server and send your first request.
-- [Calling models](get-started/calling-models.md): Call models from your code with the OpenAI and Anthropic SDKs.
+- [Calling models](get-started/calling-models.md): Call models from your code with the OpenAI, Anthropic and Google Gen AI SDKs.
 - [Coding tools](get-started/coding-tools.md): Point Claude Code or Codex at your install.
 - [Concepts](concepts/index.md): Learn how Kaeso handles providers, requests, formats and rights.
 - [Using the console](console/index.md): Find your way around the console.

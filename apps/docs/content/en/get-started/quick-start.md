@@ -127,7 +127,7 @@ If you added another model, use its id instead. The reply holds the model's haik
 
 ## Next steps
 
-- [Calling models](calling-models.md): Use the Anthropic SDK too, stream replies and find a request in the logs.
+- [Calling models](calling-models.md): Use the Anthropic or Google Gen AI SDK too, stream replies and find a request in the logs.
 - [Coding tools](coding-tools.md): Point Claude Code or Codex at your install.
 - [Using the console](../console/index.md): Invite people, and set limits and budgets.
 - [Self-hosting](../self-hosting/index.md): Plan sign-in, backups, upgrades and monitoring.

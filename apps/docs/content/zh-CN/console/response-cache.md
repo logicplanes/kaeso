@@ -72,7 +72,7 @@ Kaeso 比较的是转换后将发送给服务商的请求，因此来自 OpenAI 
 
 - **在项目内共享。** 项目的所有密钥和成员共享其条目。其他项目和其他组织永远无法读取它们。
 - **每个请求一个回复。** 命中时返回模型第一次给出的回复，即使 `temperature` 会让新的调用给出不同回答。
-- **会缓存。** 发往 `/v1/chat/completions`、`/v1/responses`、`/v1/messages` 和 `/v1/embeddings` 的成功非流式请求。
+- **会缓存。** 发往 `/v1/chat/completions`、`/v1/responses`、`/v1/messages` 和 `/v1/embeddings`，以及 Gemini 的 `:generateContent`、`:embedContent` 和 `:batchEmbedContents` 的成功非流式请求。
 - **不会缓存。** 流式请求、Token 计数、错误，以及超过实例允许大小的回复（除非运维人员更改，否则为 1 MiB）。
 
 ## 控制单个请求

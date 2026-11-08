@@ -33,7 +33,7 @@ A Gemini request names its model and its method in the path, so the codec builds
 | Models path | `GeminiProfile::models_path` on `EgressCtx::gemini_profile`. `GeminiProfile::GOOGLE_AI_STUDIO` is `/v1beta/models`; `with_models_path` sets another per request, such as `/v1/projects/{project}/locations/{location}/publishers/google/models`. |
 | Model | One percent-encoded path segment, `:` included. A leading `models/` is the same model's resource name and is removed; `tunedModels/<id>` addresses a tuned model next to the models path. `.` and `..` are `InvalidRequest`, as for [model retrieval](codec-design.md#model-listings). |
 | Method | `GeminiAction`: `generateContent` and `streamGenerateContent` (`RequestKind::Generate`, streaming decided by the method), `countTokens` (`CountTokens`), `embedContent` and `batchEmbedContents` (`Embed`, the `gemini_embeddings` dialect). `streamGenerateContent` adds `?alt=sse`. |
-| Decoding | `dispatch::decode_gemini_request(model, action, body, headers)`, or `decode_checked_gemini_request` for a body `limits::Checked` counted. `gemini::split_model_action` splits a segment such as `gemini-3.5-flash:streamGenerateContent`. `dispatch::decode_request` without a path decodes a generation body with an empty model. |
+| Decoding | `dispatch::decode_gemini_request(model, action, body, headers)`, or `decode_checked_gemini_request` for a body `limits::Checked` counted. `gemini::split_model_action` splits a segment such as `gemini-3.5-flash:streamGenerateContent`. `dispatch::decode_request` without a path decodes a generation body with an empty model. The gateway serves Gemini apps at `/v1beta/models/{model}:{method}` with both (`crates/kaeso-server/src/model_api/gemini.rs`). |
 | Role on every content | `GeminiProfile::role_on_every_content`: a content an app sent without a `role` gets `user`. Off for Google AI Studio. |
 
 ## Requests
@@ -112,6 +112,12 @@ Schema `Part`. A part carries exactly one of `text`, `inlineData`, `fileData`, `
 - **Hosted web search** is [left out](cross-format.md#tools-left-out).
 - **Cache hints** are dropped: Gemini caches implicitly.
 - **`user`** is dropped: Gemini has no end-user field.
+
+### Requests from google-genai
+
+`google-genai` 2.32.0 spells some keys in snake case, and the API takes them because proto JSON accepts every field's original name: `mime_type` and `file_uri` in `inlineData` and `fileData`, `include_thoughts`, `thinking_budget` and `thinking_level` in `thinkingConfig`, and `parameters_json_schema` and `response_json_schema` in `functionDeclarations`. `gemini::sdk` reads them under their camel-case names and sets the form marker `sdk_names`. A request that goes to Gemini gets them back as the app spelled them.
+
+The SDK also sends `topK` as a float, such as `20.0`. KPP reads a whole float as a whole number, with form `top_k_float`, and writes it back as a float for Gemini; a fraction is `InvalidRequest`. The fixture `requests/sdk-tools-snake-case.json` comes from `google-genai` 2.32.0.
 
 ### Thinking
 
@@ -217,6 +223,7 @@ The `gemini_embeddings` codec. Schemas `EmbedContentRequest`, `BatchEmbedContent
 | Wire field | KPP | Notes |
 |---|---|---|
 | `content` with one text part | one `EmbedInput::Text` | Any other content → field `content` (or `requests[i].content`) and an empty input, refused across dialects. |
+| `content.role` `user` | form `user_role:<i>` | `google-genai` sends it on every content (`requests/sdk-batch-user-role.json`). Gemini gets it back; other dialects get the input without it. Any other role keeps the content raw, refused across dialects. |
 | `requests[]` | one input each | |
 | `outputDimensionality`, `embedContentConfig.outputDimensionality` | `dimensions` | When the requests of a batch differ → fields `requests[i].outputDimensionality`. `embedContentConfig` → form `config_dimensions`. |
 | `taskType`, `title`, other `embedContentConfig` keys | fields | |

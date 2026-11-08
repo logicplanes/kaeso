@@ -185,6 +185,53 @@ expression: outcomes
     "param": null,
     "unsupported": "safetySettings"
   },
+  "sdk-tools-snake-case": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Weather in Paris?",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gemini-3.5-flash",
+      "output_config": {
+        "effort": "low"
+      },
+      "thinking": {
+        "type": "adaptive"
+      },
+      "tools": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "description": "Weather for a place",
+          "input_schema": {
+            "properties": {
+              "location": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "location"
+            ],
+            "type": "object"
+          },
+          "name": "get_weather"
+        }
+      ]
+    },
+    "path": "/v1/messages"
+  },
   "stream-text": {
     "message": "reasoning effort `minimal` is not supported by Anthropic Messages. Anthropic effort levels are low, medium, high, xhigh and max.",
     "param": "generationConfig.thinkingConfig.thinkingLevel",

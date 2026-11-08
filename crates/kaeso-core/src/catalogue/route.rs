@@ -239,6 +239,8 @@ pub enum AppFormat {
     OpenaiResponses,
     AnthropicMessages,
     OpenaiEmbeddings,
+    Gemini,
+    GeminiEmbeddings,
 }
 
 impl AppFormat {
@@ -248,6 +250,8 @@ impl AppFormat {
             DialectId::OpenAiResponses => Some(AppFormat::OpenaiResponses),
             DialectId::AnthropicMessages => Some(AppFormat::AnthropicMessages),
             DialectId::OpenAiEmbeddings => Some(AppFormat::OpenaiEmbeddings),
+            DialectId::Gemini => Some(AppFormat::Gemini),
+            DialectId::GeminiEmbeddings => Some(AppFormat::GeminiEmbeddings),
             _ => None,
         }
     }

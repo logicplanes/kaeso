@@ -72,7 +72,7 @@ Kaeso compares the request it would send to the provider after translating it, s
 
 - **Shared within the project.** Every key and member of the project shares its entries. No other project, and no other organization, ever reads them.
 - **One reply per request.** A hit returns the reply the model gave the first time, even when `temperature` would make a new call answer differently.
-- **Cached.** Successful non-streamed requests to `/v1/chat/completions`, `/v1/responses`, `/v1/messages` and `/v1/embeddings`.
+- **Cached.** Successful non-streamed requests to `/v1/chat/completions`, `/v1/responses`, `/v1/messages` and `/v1/embeddings`, and Gemini's `:generateContent`, `:embedContent` and `:batchEmbedContents`.
 - **Not cached.** Streamed requests, token counts, errors, and replies larger than the install allows (1 MiB unless the operator changed it).
 
 ## Control a single request

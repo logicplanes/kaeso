@@ -15,7 +15,7 @@ order: 3
 | `kaeso-postgres` | Dev-Datenbank, PostgreSQL 18 | DigitalOceans | 512 MB |
 | `kaeso-valkey` | Verwaltete Valkey-Datenbank | DigitalOceans, vorher angelegt | Ihre Wahl |
 
-Der Edge der App beendet TLS und leitet nach Pfad weiter: `/v1`, `/platform`, `/mcp`, `/oauth` und `/.well-known` erreichen das Gateway, jeder andere Pfad die Konsole, hier läuft also kein `kaeso-edge`. Das Gateway vertraut `X-Forwarded-For` aus dem privaten Netz, in dem der Edge sitzt, und hält seine Metriken auf seiner Loopback-Adresse. Die verwaltete Valkey spricht TLS mit einem Zertifikat von DigitalOceans eigener Stelle, das die Spec dem Gateway als `KAESO_VALKEY_CA` übergibt ([Konfiguration](../configuration.md#einstellungen)).
+Der Edge der App beendet TLS und leitet nach Pfad weiter: `/v1`, `/v1beta`, `/platform`, `/mcp`, `/oauth` und `/.well-known` erreichen das Gateway, jeder andere Pfad die Konsole, hier läuft also kein `kaeso-edge`. Das Gateway vertraut `X-Forwarded-For` aus dem privaten Netz, in dem der Edge sitzt, und hält seine Metriken auf seiner Loopback-Adresse. Die verwaltete Valkey spricht TLS mit einem Zertifikat von DigitalOceans eigener Stelle, das die Spec dem Gateway als `KAESO_VALKEY_CA` übergibt ([Konfiguration](../configuration.md#einstellungen)).
 
 Der Button **Deploy to DO** rollt einen Dienst mit einer Dev-Datenbank aus und sonst nichts; Kaeso, das zwei Dienste und eine Valkey braucht, wird deshalb mit `doctl` angelegt.
 

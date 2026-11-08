@@ -27,6 +27,8 @@ pub const ALLOWED_HEADERS: &[&str] = &[
     "openai-project",
     "user-agent",
     "x-api-key",
+    "x-goog-api-client",
+    "x-goog-api-key",
 ];
 
 pub const STAINLESS_PREFIX: &str = "x-stainless-";
@@ -105,7 +107,7 @@ impl AllowedOrigins {
 }
 
 pub fn in_scope(path: &str) -> bool {
-    path == "/v1" || path.starts_with("/v1/")
+    path == "/v1" || path.starts_with("/v1/") || path == "/v1beta" || path.starts_with("/v1beta/")
 }
 
 pub fn allowed_header(name: &str) -> bool {
@@ -331,12 +333,20 @@ mod tests {
 
     #[test]
     fn the_model_api_is_the_only_scope() {
-        for path in ["/v1", "/v1/", "/v1/chat/completions", "/v1/models/gpt-4o"] {
+        for path in [
+            "/v1",
+            "/v1/",
+            "/v1/chat/completions",
+            "/v1/models/gpt-4o",
+            "/v1beta",
+            "/v1beta/models/gemini-3.5-flash:generateContent",
+        ] {
             assert!(in_scope(path), "{path}");
         }
         for path in [
             "/",
             "/v10",
+            "/v1betax/models",
             "/v1x/models",
             "/platform/v1",
             "/platform/v1/me",
@@ -363,6 +373,8 @@ mod tests {
             "openai-project",
             "openai-beta",
             "idempotency-key",
+            "x-goog-api-key",
+            "x-goog-api-client",
             "x-stainless-arch",
             "x-stainless-retry-count",
             "x-stainless-helper-method",

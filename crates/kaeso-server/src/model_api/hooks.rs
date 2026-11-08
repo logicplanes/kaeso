@@ -157,6 +157,7 @@ pub struct Outcome {
     pub response_cache: Option<crate::services::response_cache::Verdict>,
     pub alias: Option<String>,
     pub fallbacks: Vec<FellBack>,
+    pub gemini: Option<kaeso_codecs::gemini::GeminiAction>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]

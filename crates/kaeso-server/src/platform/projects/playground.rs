@@ -247,6 +247,7 @@ pub async fn responses(
         stream_only: true,
         max_body,
         alias,
+        gemini: None,
     };
     Ok(pipeline::serve_with(state, incoming, answer).await)
 }

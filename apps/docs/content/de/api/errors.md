@@ -173,6 +173,86 @@ Der Fehler-Body trägt die ID der Anfrage in `request_id`, auch wenn der Fehler 
 
 `Retry-After` nennt die Wartezeit in ganzen Sekunden, aufgerundet.
 
+## Gemini-Format
+
+Dieselbe Anfrage mit dem Google Gen AI SDK:
+
+```bash tab="curl"
+curl -i https://kaeso.example.com/v1beta/models/gpt-9:generateContent \
+  -H "x-goog-api-key: $KAESO_API_KEY" \
+  -H "content-type: application/json" \
+  -d '{
+    "contents": [
+      {"role": "user", "parts": [{"text": "Write a haiku about gateways."}]}
+    ]
+  }'
+```
+
+```python tab="Python"
+import os
+from google import genai
+from google.genai import errors
+
+client = genai.Client(
+    api_key=os.environ["KAESO_API_KEY"],
+    http_options={"base_url": "https://kaeso.example.com"},
+)
+
+try:
+    client.models.generate_content(
+        model="gpt-9",
+        contents="Write a haiku about gateways.",
+    )
+except errors.APIError as error:
+    print(error.code, error.response.headers["kaeso-request-id"])
+    print(error.message)
+```
+
+```ts tab="TypeScript"
+import { ApiError, GoogleGenAI } from "@google/genai";
+
+const ai = new GoogleGenAI({
+  apiKey: process.env.KAESO_API_KEY,
+  httpOptions: { baseUrl: "https://kaeso.example.com" },
+});
+
+try {
+  await ai.models.generateContent({
+    model: "gpt-9",
+    contents: "Write a haiku about gateways.",
+  });
+} catch (error) {
+  if (!(error instanceof ApiError)) throw error;
+  console.log(error.status, error.message);
+}
+```
+
+Der Fehler-Body folgt Googles Form. Er hat kein Feld für die ID der Anfrage. Lesen Sie sie deshalb aus dem Header `kaeso-request-id`:
+
+```json
+{
+  "error": {
+    "code": 404,
+    "message": "The model `gpt-9` does not exist or this key may not use it.",
+    "status": "NOT_FOUND"
+  }
+}
+```
+
+| Status | `error.status` |
+| --- | --- |
+| 400 | `INVALID_ARGUMENT` |
+| 401 | `UNAUTHENTICATED` |
+| 403 | `PERMISSION_DENIED` |
+| 404 | `NOT_FOUND` |
+| 405, 413 | `INVALID_ARGUMENT` |
+| 429 | `RESOURCE_EXHAUSTED` |
+| 500, 502 | `INTERNAL` |
+| 503 | `UNAVAILABLE`, oder `INTERNAL`, wenn Kaeso seine eigenen Daten nicht laden kann oder neu startet |
+| 504 | `DEADLINE_EXCEEDED` |
+
+`Retry-After` nennt die Wartezeit in ganzen Sekunden, aufgerundet. Bei 429 oder 503 mit bekannter Wartezeit steht sie auch in `details`, als `RetryInfo` mit `retryDelay`, etwa `"23s"`.
+
 ## Ursachen
 
 Die Meldung nennt die Ursache und was zu tun ist. Diese Ursachen stehen hinter jedem Status:
@@ -202,7 +282,7 @@ Die Meldung nennt die Ursache und was zu tun ist. Diese Ursachen stehen hinter j
 | 502 | Ein eigener Anbieter liegt an einer Adresse, die die Installation nicht erlaubt, oder hat in einer Form geantwortet, die sein Format nicht lesen kann. |
 | 502 | Der Anbieter hat den Anbieter-Schlüssel des Projekts abgelehnt, oder aus Abrechnungs- oder Kontingentgründen abgelehnt. |
 | 503 | Kaeso kann den Katalog, die Schlüssel, die Anbieter-Schlüssel oder die Limits nicht laden, oder Kaeso startet gerade neu. Die OpenAI-Formate antworten darauf mit 500. |
-| 503 | Der Anbieter ist überlastet, in den OpenAI-Formaten. |
+| 503 | Der Anbieter ist überlastet, in den OpenAI-Formaten und im Gemini-Format. |
 | 504 | Der Anbieter hat nicht rechtzeitig geantwortet. |
 | 529 | Der Anbieter ist überlastet, im Anthropic-Format. |
 
@@ -219,8 +299,8 @@ Andernfalls schreibt Kaeso den Fehler im Format Ihrer App und behält seine Bede
 | Lehnt den Anbieter-Schlüssel ab | 502, in jedem Format |
 | Lehnt die Anfrage wegen seines Ratenlimits ab | 429 |
 | Lehnt aus Abrechnungs- oder Kontingentgründen ab | 502, in jedem Format |
-| Ist überlastet | 529 im Anthropic-Format, 503 in den OpenAI-Formaten |
-| Scheitert mit einem anderen Serverfehler | Seinen eigenen 5xx-Status |
+| Ist überlastet | 529 im Anthropic-Format, 503 in den OpenAI-Formaten und im Gemini-Format |
+| Scheitert mit einem anderen Serverfehler | Seinen eigenen 5xx-Status. Eine Gemini-App erhält 500, bei einer Zeitüberschreitung 504 |
 
 Ein abgelehnter Anbieter-Schlüssel ist ein Problem der Installation, nicht Ihrer App. Das 401, 402 oder 403 des Anbieters ließe ein SDK einen falschen Kaeso-Schlüssel melden. Die Meldung des Anbieters kann außerdem einen Teil des Anbieter-Schlüssels oder die Organisations-ID beim Anbieter enthalten.
 

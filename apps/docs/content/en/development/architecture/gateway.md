@@ -4,7 +4,7 @@ description: The request path, the crates, the configuration and the rules the g
 order: 1
 ---
 
-The gateway is the one server of an install, built from the Rust workspace in `crates/` into one binary, `kaeso`. Apps call it with the official OpenAI and Anthropic SDKs, and the console and scripts manage it through the Platform API. [Request flow](../../concepts/request-flow.md) describes a request from the outside; this page describes the inside.
+The gateway is the one server of an install, built from the Rust workspace in `crates/` into one binary, `kaeso`. Apps call it with the official OpenAI and Anthropic SDKs or Google's Gen AI SDK, and the console and scripts manage it through the Platform API. [Request flow](../../concepts/request-flow.md) describes a request from the outside; this page describes the inside.
 
 ## The request path
 
@@ -37,7 +37,7 @@ A Platform API request authenticates with a session cookie, an API key with plat
 
 | Code | Where |
 | --- | --- |
-| The model API (`/v1`) | `crates/kaeso-server/src/model_api` |
+| The model API (`/v1`, and `/v1beta` for the Gemini format in `model_api/gemini.rs`) | `crates/kaeso-server/src/model_api` |
 | The Platform API (`/platform/v1`) | `crates/kaeso-server/src/platform` |
 | The MCP server and its OAuth sign-in (`/mcp`, `/oauth`) | `crates/kaeso-server/src/mcp` |
 | The services both use | `crates/kaeso-server/src/services` |
@@ -47,7 +47,7 @@ A Platform API request authenticates with a session cookie, an API key with plat
 | Crate | Job |
 | --- | --- |
 | `kaeso` | The binary: its command line (`serve`, `migrate`, `master-key`, `user`, `sso`, `instance`, `setup-link`, `healthcheck`, `openapi`), startup and shutdown. The only crate that may use `anyhow` |
-| `kaeso-server` | The routers for `/v1`, `/platform/v1`, `/mcp`, health and metrics, with extractors, error mapping, the OpenAPI document, CSRF checks, request ids and body limits. Also the services behind both APIs, the configuration, background jobs and telemetry |
+| `kaeso-server` | The routers for `/v1`, `/v1beta`, `/platform/v1`, `/mcp`, health and metrics, with extractors, error mapping, the OpenAPI document, CSRF checks, request ids and body limits. Also the services behind both APIs, the configuration, background jobs and telemetry |
 | `kaeso-core` | Domain rules without I/O: ids, rights and roles, the key format, model resolution, the catalogue, capabilities, limits, costs and the stream reply assembler. `data/` holds the model data each release ships |
 | `kaeso-store` | PostgreSQL through sqlx, ClickHouse, the Valkey connections (one for limit checks and counters, two for cache entries and kept reasoning) with the cache invalidation, and the migrations of both databases |
 | `kaeso-upstream` | Provider transport: HTTP clients, auth headers, base URLs, timeouts, streaming bodies and cancellation |
@@ -68,7 +68,7 @@ Every crate takes its version, edition and lints from the root `Cargo.toml`. Onl
 
 Every change to the gateway follows these rules, and lints and tests enforce most of them.
 
-1. **Wire formats live only in KPP.** The gateway never parses or builds OpenAI or Anthropic JSON by hand; `kaeso_codecs::dispatch` does. The gateway's own JSON is the Platform API and its error envelope.
+1. **Wire formats live only in KPP.** The gateway never parses or builds OpenAI, Anthropic or Gemini JSON by hand; `kaeso_codecs::dispatch` does. The gateway's own JSON is the Platform API and its error envelope.
 2. **No passthrough.** Every model request is decoded to KPP and encoded again, even when the app and the provider speak the same format.
 3. **No retries; fallbacks only where a route names them.** A failed provider call fails, in the app's format, unless an alias's route falls back on that failure ([alias routes](../../concepts/alias-routes.md)).
 4. **Never drop data silently.** What KPP refuses (`Unsupported`) goes back to the app as an error in its own format, before anything reaches a provider. A `KppError` is never caught and ignored.

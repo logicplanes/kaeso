@@ -461,6 +461,121 @@ fn a_chat_app_keeps_openai_reasoning_through_the_gateway() {
     assert_eq!(items[at + 1]["type"], "function_call", "{next}");
 }
 
+fn gemini_next_request(
+    reply: &Value,
+    kept: &[kaeso_codecs::continuity::CarriedReasoning],
+    target: DialectId,
+) -> Value {
+    use kaeso_codecs::continuity::{restore_reasoning, tool_calls_missing_reasoning};
+    use kaeso_codecs::gemini::GeminiAction;
+    let model = reply["candidates"][0]["content"].clone();
+    let responses: Vec<Value> = model["parts"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter_map(|p| p.get("functionCall"))
+        .map(|c| json!({"functionResponse": {"id": c["id"], "name": c["name"], "response": {"output": "sunny"}}}))
+        .collect();
+    let body = json!({
+        "contents": [
+            {"role": "user", "parts": [{"text": "Weather?"}]},
+            model,
+            {"role": "user", "parts": responses}
+        ],
+        "tools": [{"functionDeclarations": [{"name": "get_weather", "parametersJsonSchema": {"type": "object"}}]}],
+        "generationConfig": {"maxOutputTokens": 4096, "thinkingConfig": {"thinkingLevel": "MEDIUM"}}
+    });
+    let mut req = dispatch::decode_gemini_request(
+        "gpt-5.5",
+        GeminiAction::GenerateContent,
+        &serde_json::to_vec(&body).unwrap(),
+        &HeaderList::new(),
+    )
+    .unwrap();
+    let Request::Generate(r) = &mut req else {
+        panic!()
+    };
+    let missing = tool_calls_missing_reasoning(r);
+    let found: Vec<_> = kept
+        .iter()
+        .filter(|k| missing.contains(&k.tool_call_id))
+        .cloned()
+        .collect();
+    assert!(restore_reasoning(r, &found) > 0, "nothing restored");
+    let mut ctx = EgressCtx::new(&req).with_provider(provider(target));
+    dispatch::check(target, &req, &ctx).unwrap();
+    let enc = dispatch::encode_request(target, &req, &mut ctx).unwrap();
+    serde_json::from_slice(&enc.body).unwrap()
+}
+
+#[test]
+fn a_gemini_app_keeps_openai_reasoning_through_the_gateway() {
+    use kaeso_codecs::continuity::reasoning_for_tool_calls;
+    let mut response: Value =
+        serde_json::from_slice(&fixture(R, "responses", "reasoning-encrypted.json")).unwrap();
+    let reasoning = response["output"][0].clone();
+    response["output"] = json!([reasoning, {"id": "fc_1", "type": "function_call",
+        "status": "completed", "call_id": "call_1", "name": "get_weather",
+        "arguments": "{\"city\":\"Paris\"}"}]);
+    let body = serde_json::to_vec(&response).unwrap();
+    let ctx = EgressCtx::for_kind(RequestKind::Generate, StreamMode::Off).with_provider("openai");
+    let reply = dispatch::decode_response(R, 200, &HeaderList::new(), &body, &ctx).unwrap();
+    let kaeso_kpp::Reply::Generate(resp) = &reply else {
+        panic!()
+    };
+    let kept = reasoning_for_tool_calls(&resp.blocks);
+    assert_eq!(kept.len(), 1);
+    let enc = EncodeCtx::new(RequestKind::Generate, StreamMode::Off).with_created_at(1);
+    let gemini: Value = serde_json::from_slice(
+        &dispatch::encode_response(DialectId::Gemini, &reply, &enc).unwrap(),
+    )
+    .unwrap();
+    assert!(
+        !gemini.to_string().contains("encrypted"),
+        "a Gemini app gets no blob: {gemini}"
+    );
+    let call = &gemini["candidates"][0]["content"]["parts"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find_map(|p| p.get("functionCall"))
+        .unwrap();
+    assert_eq!(call["id"], "call_1");
+    let next = gemini_next_request(&gemini, &kept, R);
+    let items = next["input"].as_array().unwrap();
+    let at = items.iter().position(|i| i["type"] == "reasoning").unwrap();
+    for key in ["id", "summary", "encrypted_content"] {
+        assert_eq!(items[at][key], reasoning[key], "{key}: {next}");
+    }
+    assert_eq!(items[at + 1]["type"], "function_call", "{next}");
+    assert_eq!(items[at + 1]["call_id"], "call_1", "{next}");
+}
+
+#[test]
+fn a_gemini_app_keeps_claude_thinking_through_the_gateway() {
+    use kaeso_codecs::continuity::reasoning_for_tool_calls;
+    let original = fixture(A, "responses", "thinking-interleaved-tools.json");
+    let ctx =
+        EgressCtx::for_kind(RequestKind::Generate, StreamMode::Off).with_provider("anthropic");
+    let reply = dispatch::decode_response(A, 200, &HeaderList::new(), &original, &ctx).unwrap();
+    let kaeso_kpp::Reply::Generate(resp) = &reply else {
+        panic!()
+    };
+    let kept = reasoning_for_tool_calls(&resp.blocks);
+    assert_eq!(kept.len(), 1);
+    let enc = EncodeCtx::new(RequestKind::Generate, StreamMode::Off).with_created_at(1);
+    let gemini: Value = serde_json::from_slice(
+        &dispatch::encode_response(DialectId::Gemini, &reply, &enc).unwrap(),
+    )
+    .unwrap();
+    assert!(!gemini.to_string().contains("EqEvMLy0"), "{gemini}");
+    let next = gemini_next_request(&gemini, &kept, A);
+    let want = anthropic_reasoning(&original);
+    let content = next["messages"][1]["content"].as_array().unwrap();
+    assert_eq!(content[..want.len()], want[..], "{next}");
+    assert_eq!(content.last().unwrap()["type"], "tool_use", "{next}");
+}
+
 const BINDING_BETA: &str = "thinking-binding-controls-2026-08-01";
 
 fn drop_block() -> Value {

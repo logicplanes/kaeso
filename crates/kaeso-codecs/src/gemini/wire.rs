@@ -148,7 +148,7 @@ pub(crate) struct GenerationConfigW {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) top_p: Option<serde_json::Number>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub(crate) top_k: Option<u32>,
+    pub(crate) top_k: Option<serde_json::Number>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) max_output_tokens: Option<u32>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
