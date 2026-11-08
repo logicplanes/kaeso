@@ -13,6 +13,7 @@
   <p>
     <a href="https://github.com/logicplanes/kaeso/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/logicplanes/kaeso/actions/workflows/ci.yml/badge.svg?branch=dev"></a>
     <a href="https://scorecard.dev/viewer/?uri=github.com/logicplanes/kaeso"><img alt="OpenSSF Scorecard" src="https://api.scorecard.dev/projects/github.com/logicplanes/kaeso/badge"></a>
+    <a href="https://www.bestpractices.dev/projects/15818"><img alt="OpenSSF Best Practices" src="https://www.bestpractices.dev/projects/15818/badge"></a>
     <a href="LICENSE"><img alt="License: MIT" src=".github/assets/badges/license.svg"></a>
   </p>
   <p>
