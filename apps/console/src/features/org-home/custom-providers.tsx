@@ -43,6 +43,7 @@ import { useNeedsRight } from "~/auth/needs-right";
 import { useOrgRights } from "~/auth/session";
 import { docsPage } from "~/format/docs";
 import { dialectLabel } from "~/format/labels";
+import { serverMark } from "~/kaeso/providers";
 import { toast } from "~/shell/toast";
 import { locale, t } from "~/i18n";
 
@@ -66,7 +67,7 @@ function serverOptions(servers: readonly ServerView[]) {
       textValue: s.name,
       label: (
         <span className="flex min-w-0 items-center gap-8">
-          <ProviderBadge provider={s.server} name={s.name} size="sm" />
+          <ProviderBadge provider={`custom:${s.server}`} mark={serverMark(s.server)} name={s.name} size="sm" />
           <span className="min-w-0 truncate">{s.name}</span>
         </span>
       ),
@@ -173,7 +174,7 @@ export function CustomProvidersTab({ org, adding, onAddingChange }: { org: strin
         (p: CustomProviderView) => p,
         (p: CustomProviderView) => (
           <span className="flex min-w-0 items-center gap-8 sm:gap-12">
-            <ProviderBadge provider={`custom:${p.id}`} name={p.name} mark={p.server} size="lg" />
+            <ProviderBadge provider={`custom:${p.id}`} name={p.name} mark={serverMark(p.server)} size="lg" />
             <span className="flex min-w-0 flex-col">
               <span className="flex min-w-0 items-center gap-8">
                 <Text weight="medium" truncate>
@@ -595,15 +596,15 @@ export function AddCustomProviderDialog({ org, onClose }: { org: string; onClose
               ordered
               aria-label={t("orgHome.custom.softwareTitle", "What runs the server?")}
               providers={[
-                ...servers.map((s) => ({ id: s.server, name: s.name })),
+                ...servers.map((s) => ({ id: serverMark(s.server) ?? s.server, name: s.name })),
                 {
                   id: OTHER,
                   name: t("orgHome.custom.otherServer", "Other server or proxy"),
                   hint: t("orgHome.custom.otherServerHint", "Kaeso detects the software"),
                 },
               ]}
-              value={software}
-              onValueChange={setSoftware}
+              value={software === OTHER ? OTHER : (serverMark(software) ?? null)}
+              onValueChange={(id) => setSoftware(servers.find((s) => serverMark(s.server) === id)?.server ?? id)}
               autoFocus
             />
           ),

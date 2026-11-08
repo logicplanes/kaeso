@@ -8,6 +8,9 @@ import { providersQuery } from "~/api/queries/providers";
 import { useOrgRights } from "~/auth/session";
 import { t } from "~/i18n";
 
+// A mark is named like a provider id, so a server such as `llama_cpp` draws the mark `llama-cpp`.
+export const serverMark = (server: string | null | undefined): string | undefined => server?.replaceAll("_", "-");
+
 export interface Providers {
   readonly list: readonly ProviderView[];
   get(id: string): ProviderView | undefined;
@@ -25,7 +28,7 @@ export function providerCatalog(list: readonly ProviderView[]): Providers {
     list,
     get: (id) => byId.get(id),
     name,
-    mark: (id) => byId.get(id)?.server ?? undefined,
+    mark: (id) => serverMark(byId.get(id)?.server),
     product: (id) => byId.get(id)?.account?.product ?? name(id),
     dialects: (id) => byId.get(id)?.dialects ?? [],
     byName: (a, b) => name(a).localeCompare(name(b)),
