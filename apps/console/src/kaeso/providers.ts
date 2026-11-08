@@ -34,7 +34,7 @@ const globMatches = (pattern: string, id: string): boolean => {
   const [first = "", ...rest] = pattern.split("*");
   if (!id.startsWith(first)) return false;
   if (rest.length === 0) return id === first;
-  const last = rest.pop() ?? "";
+  const last = rest.pop() as string;
   let at = first.length;
   for (const part of rest) {
     const found = id.indexOf(part, at);

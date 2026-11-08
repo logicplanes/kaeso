@@ -58,5 +58,11 @@ describe("routedDialect", () => {
       ),
     ).toBeUndefined();
     expect(routedDialect(undefined, "claude-x")).toBeUndefined();
+    const only = (pattern: string) => (platform ? { ...platform, model_routes: [{ pattern, dialect: "openai_chat" }] } : undefined);
+    expect(routedDialect(only("exact"), "exact")).toBe("openai_chat");
+    expect(routedDialect(only("exact"), "exactly")).toBeUndefined();
+    expect(routedDialect(only("a*b*c"), "aXbYc")).toBe("openai_chat");
+    expect(routedDialect(only("a*b*c"), "aXcYd")).toBeUndefined();
+    expect(routedDialect(only("ab*ba"), "aba")).toBeUndefined();
   });
 });
