@@ -37,14 +37,20 @@ type BatchKey = (
 
 // Rows a flush took stay counted until PostgreSQL has them: a limit counter rebuilt while the
 // write is under way would otherwise miss them for the rest of its period.
+const SHARDS: usize = 16;
+
+type Open = HashMap<BatchKey, UsageRow>;
+
+// Requests add to the shard of their thread, so finishing ones never wait on each other. A
+// flush and `pending` hold `rows` across every shard: a limit never sees a flush half done.
 #[derive(Debug, Default)]
 pub struct Batch {
+    open: [Mutex<Open>; SHARDS],
     rows: Mutex<Rows>,
 }
 
 #[derive(Debug, Default)]
 struct Rows {
-    open: HashMap<BatchKey, UsageRow>,
     flushing: HashMap<u64, Vec<UsageRow>>,
     next: u64,
 }
@@ -69,27 +75,42 @@ fn key_of(row: &UsageRow) -> BatchKey {
     )
 }
 
-fn add_to(open: &mut HashMap<BatchKey, UsageRow>, row: UsageRow) {
-    match open.get_mut(&key_of(&row)) {
-        Some(r) => merge(r, &row),
-        None => {
-            open.insert(key_of(&row), row);
+fn add_keyed(open: &mut Open, key: BatchKey, row: UsageRow) {
+    match open.entry(key) {
+        std::collections::hash_map::Entry::Occupied(mut e) => merge(e.get_mut(), &row),
+        std::collections::hash_map::Entry::Vacant(e) => {
+            e.insert(row);
         }
     }
 }
 
+fn lock<T>(m: &Mutex<T>) -> std::sync::MutexGuard<'_, T> {
+    m.lock().unwrap_or_else(PoisonError::into_inner)
+}
+
 impl Batch {
-    fn lock(&self) -> std::sync::MutexGuard<'_, Rows> {
-        self.rows.lock().unwrap_or_else(PoisonError::into_inner)
+    fn shard(&self) -> &Mutex<Open> {
+        let [first, ..] = &self.open;
+        self.open
+            .get(crate::shard::of_this_thread(SHARDS))
+            .unwrap_or(first)
     }
 
     pub fn add(&self, row: UsageRow) {
-        add_to(&mut self.lock().open, row);
+        let key = key_of(&row);
+        add_keyed(&mut lock(self.shard()), key, row);
     }
 
     pub fn take(&self) -> Taken {
-        let mut state = self.lock();
-        let mut rows: Vec<UsageRow> = state.open.drain().map(|(_, r)| r).collect();
+        let mut state = lock(&self.rows);
+        let mut merged = Open::new();
+        for shard in &self.open {
+            let drained: Vec<(BatchKey, UsageRow)> = lock(shard).drain().collect();
+            for (key, row) in drained {
+                add_keyed(&mut merged, key, row);
+            }
+        }
+        let mut rows: Vec<UsageRow> = merged.into_values().collect();
         rows.sort_by(|a, b| unique_key(a).cmp(&unique_key(b)));
         let id = state.next;
         state.next = state.next.wrapping_add(1);
@@ -98,14 +119,16 @@ impl Batch {
     }
 
     pub fn written(&self, id: u64) {
-        self.lock().flushing.remove(&id);
+        lock(&self.rows).flushing.remove(&id);
     }
 
     pub fn restore(&self, id: u64, rows: Vec<UsageRow>) {
-        let mut state = self.lock();
+        let mut state = lock(&self.rows);
         state.flushing.remove(&id);
+        let mut open = lock(self.shard());
         for r in rows {
-            add_to(&mut state.open, r);
+            let key = key_of(&r);
+            add_keyed(&mut open, key, r);
         }
     }
 
@@ -116,10 +139,10 @@ impl Batch {
         model: Option<Uuid>,
         since: Option<Date>,
     ) -> (i64, Decimal, i64) {
-        let state = self.lock();
-        state
-            .open
-            .values()
+        let state = lock(&self.rows);
+        let open: Vec<std::sync::MutexGuard<'_, Open>> = self.open.iter().map(lock).collect();
+        open.iter()
+            .flat_map(|o| o.values())
             .chain(state.flushing.values().flatten())
             .filter(|r| r.project_id == project)
             .filter(|r| match subject {
@@ -197,7 +220,7 @@ fn never_fits(e: &StoreError) -> bool {
 // Tool calls are counted in memory per day, project and server, so a warm call writes nothing;
 // the same flush as model usage writes them.
 #[derive(Debug, Default)]
-pub struct ToolBatch(std::sync::Mutex<HashMap<ToolKey, (i64, i64)>>);
+pub struct ToolBatch([Mutex<HashMap<ToolKey, (i64, i64)>>; SHARDS]);
 
 type ToolKey = (time::Date, Uuid, Uuid, Uuid);
 
@@ -211,21 +234,29 @@ impl ToolBatch {
         failed: bool,
     ) {
         let day = at.to_offset(time::UtcOffset::UTC).date();
-        let mut open = self
+        let [first, ..] = &self.0;
+        let shard = self
             .0
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
+            .get(crate::shard::of_this_thread(SHARDS))
+            .unwrap_or(first);
+        let mut open = lock(shard);
         let counts = open.entry((day, org, project, server)).or_default();
         counts.0 += 1;
         counts.1 += i64::from(failed);
     }
 
     fn take(&self) -> Vec<store_usage::ToolUsageRow> {
-        let mut open = self
-            .0
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        open.drain()
+        let mut merged: HashMap<ToolKey, (i64, i64)> = HashMap::new();
+        for shard in &self.0 {
+            let drained: Vec<(ToolKey, (i64, i64))> = lock(shard).drain().collect();
+            for (key, (calls, errors)) in drained {
+                let counts = merged.entry(key).or_default();
+                counts.0 += calls;
+                counts.1 += errors;
+            }
+        }
+        merged
+            .into_iter()
             .map(|((day, org_id, project_id, server_id), (calls, errors))| {
                 store_usage::ToolUsageRow {
                     day,
@@ -240,10 +271,8 @@ impl ToolBatch {
     }
 
     fn restore(&self, rows: Vec<store_usage::ToolUsageRow>) {
-        let mut open = self
-            .0
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let [first, ..] = &self.0;
+        let mut open = lock(first);
         for r in rows {
             let counts = open
                 .entry((r.day, r.org_id, r.project_id, r.server_id))
@@ -710,6 +739,71 @@ mod tests {
                 (2, 1, "b".into(), 1)
             ]
         );
+    }
+
+    #[test]
+    fn rows_added_on_many_threads_merge_into_one_row_per_route() {
+        let batch = std::sync::Arc::new(Batch::default());
+        let threads: Vec<_> = (0..8)
+            .map(|t| {
+                let batch = batch.clone();
+                std::thread::spawn(move || {
+                    for _ in 0..100 {
+                        batch.add(row(1, 1, "a"));
+                        batch.add(row(2, 1, if t % 2 == 0 { "b" } else { "c" }));
+                    }
+                })
+            })
+            .collect();
+        for t in threads {
+            t.join().unwrap();
+        }
+        let project = Uuid::from_u128(1);
+        assert_eq!(
+            batch.pending(project, Subject::Project(project), None, None),
+            (1600, Decimal::ZERO, 800)
+        );
+        let taken: Vec<(u128, String, i64)> = batch
+            .take()
+            .rows
+            .into_iter()
+            .map(|r| (r.project_id.as_u128(), r.model_id, r.requests))
+            .collect();
+        assert_eq!(
+            taken,
+            [
+                (1, "a".into(), 800),
+                (2, "b".into(), 400),
+                (2, "c".into(), 400)
+            ]
+        );
+    }
+
+    #[test]
+    fn tool_calls_on_many_threads_are_counted_once_each() {
+        let batch = std::sync::Arc::new(ToolBatch::default());
+        let at = time::macros::datetime!(2026-10-16 12:00 UTC);
+        let (org, project, server) = (Uuid::from_u128(1), Uuid::from_u128(2), Uuid::from_u128(3));
+        let threads: Vec<_> = (0..8)
+            .map(|t| {
+                let batch = batch.clone();
+                std::thread::spawn(move || {
+                    for i in 0..50 {
+                        batch.add(at, org, project, server, (t + i) % 5 == 0);
+                    }
+                })
+            })
+            .collect();
+        for t in threads {
+            t.join().unwrap();
+        }
+        let rows = batch.take();
+        assert_eq!(rows.len(), 1);
+        assert_eq!((rows[0].calls, rows[0].errors), (400, 80));
+        batch.restore(rows);
+        let again = batch.take();
+        assert_eq!((again[0].calls, again[0].errors), (400, 80));
+        assert!(batch.take().is_empty());
     }
 
     #[test]
