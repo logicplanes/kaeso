@@ -447,6 +447,23 @@ describe("ProviderKeyDialog", () => {
     ]);
   });
 
+  it("chooses the service account's key file from the button and refuses a file too large to be one", async () => {
+    const { user, dialog } = await open();
+
+    await choose(user, dialog, "Gemini Enterprise Agent Platform");
+    await user.click(await within(dialog).findByRole("radio", { name: /^Express mode API key/ }));
+    await user.click(within(dialog).getByRole("radio", { name: /^Service account key/ }));
+    await user.click(within(dialog).getByRole("button", { name: "Continue" }));
+    const file = (await within(dialog).findByText("Choose file")).closest("div")?.querySelector('input[type="file"]') as HTMLInputElement;
+    const click = vi.spyOn(file, "click");
+    await user.click(within(dialog).getByRole("button", { name: "Choose file" }));
+    expect(click).toHaveBeenCalled();
+    fireEvent.change(file, { target: { files: [] } });
+    await user.upload(file, new File(["x".repeat(16 * 1024 + 1)], "large.json", { type: "application/json" }));
+    expect(await notifications().findByText("That file is too large to be a JSON key.")).toBeInTheDocument();
+    expect(within(dialog).getByLabelText("JSON key")).toHaveValue("");
+  });
+
   it("adds a Gemini Enterprise Agent Platform express mode key without a location", async () => {
     on("POST", CREDENTIALS, credential({ provider: "gemini-agent-platform", name: "Express", is_default: true }));
     const { user, dialog } = await open();

@@ -53,9 +53,7 @@ export interface ProvidersSearch {
 export const SEARCH_ABOVE = 8;
 
 const searchWords = (key: CredentialView, catalog: Providers) =>
-  [catalog.name(key.provider), key.provider, key.name, key.account ?? "", key.project ?? "", ...key.projects.map((p) => p.name)].map((w) =>
-    w.toLocaleLowerCase(),
-  );
+  [catalog.name(key.provider), key.provider, key.name, key.account ?? "", ...key.projects.map((p) => p.name)].map((w) => w.toLocaleLowerCase());
 
 function rowsOf(keys: CredentialView[], catalog: Providers): Row[] {
   const byProvider = new Map<string, CredentialView[]>();
@@ -513,14 +511,14 @@ function RenameKeyDialog({ org, credential, onClose }: { org: string; credential
       data(
         await api.PATCH("/platform/v1/orgs/{org}/credentials/{credential}", {
           params: { path: { org, credential: credential.id } },
-          body: moved && location ? { name: trimmed, location } : { name: trimmed },
+          body: moved ? { name: trimmed, location: String(location) } : { name: trimmed },
         }),
       ),
     invalidates: [["orgs", org, "credentials"]],
     onSuccess: (k) => {
       toast(
         moved
-          ? t("orgHome.keyMoved", "{name} now calls {location}", { name: k.name, location: k.location ?? "" })
+          ? t("orgHome.keyMoved", "{name} now calls {location}", { name: k.name, location: String(k.location) })
           : t("orgHome.keyRenamed", "Renamed to {name}", { name: k.name }),
       );
       onClose();
@@ -570,7 +568,7 @@ function RenameKeyDialog({ org, credential, onClose }: { org: string; credential
             label={t("kaeso.providerKey.location", "Location")}
             description={t("kaeso.providerKey.locationHint", "Where Google runs the requests; global serves the most models.")}
             value={location}
-            onValueChange={(v) => typeof v === "string" && setLocation(v)}
+            onValueChange={(v) => setLocation(v as string)}
             options={locations.map((l) => ({ value: l, label: l }))}
           />
         )}

@@ -532,7 +532,7 @@ export function ProviderKeyDialog({
     content: <ProviderChoice choices={choices} value={provider} onChoose={choose} />,
   };
   const signInStep = pastes ? accountStep : deviceStep;
-  const secretStep = withServiceAccount && serviceAccountStep ? serviceAccountStep : keyStep;
+  const secretStep = serviceAccountStep && withServiceAccount ? serviceAccountStep : keyStep;
   const steps: DialogStep[] = replace
     ? [signingIn ? signInStep : secretStep]
     : [

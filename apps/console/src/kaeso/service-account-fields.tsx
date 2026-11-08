@@ -69,7 +69,7 @@ export function ServiceAccountFields({
         label={t("kaeso.providerKey.location", "Location")}
         description={t("kaeso.providerKey.locationHint", "Where Google runs the requests; global serves the most models.")}
         value={location}
-        onValueChange={(v) => typeof v === "string" && onLocation(v)}
+        onValueChange={(v) => onLocation(v as string)}
         options={locations.map((l) => ({ value: l, label: l }))}
       />
       {name !== null && (
