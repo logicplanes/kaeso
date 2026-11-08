@@ -82,7 +82,7 @@ function withCustom(list: CustomProviderView[]) {
 }
 
 async function pickSoftware(user: Awaited<ReturnType<typeof renderApp>>["user"], dialog: HTMLElement, name = "Other server or proxy") {
-  await user.click(await within(dialog).findByRole("radio", { name: new RegExp(name.replace(/[.]/g, "\\.")) }));
+  await user.click(await within(dialog).findByRole("radio", { name: (accessible) => accessible.startsWith(name) }));
   await user.click(within(dialog).getByRole("button", { name: "Continue" }));
 }
 
