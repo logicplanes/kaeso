@@ -290,10 +290,14 @@ fn merge(root: &Map<String, Value>) -> Result<Merged, Fault> {
     }
     let summary = (variants.len() > 1).then(|| doc.summary(&variants, &schema));
     let schema = Value::Object(schema);
-    if let Some(moved) = local_refs(&schema)
-        .into_iter()
-        .find(|r| !same_target(&original, &schema, r))
-    {
+    let mut checked: Vec<&str> = Vec::new();
+    if let Some(moved) = local_refs(&schema).into_iter().find(|r| {
+        if checked.contains(r) {
+            return false;
+        }
+        checked.push(r);
+        !same_target(&original, &schema, r)
+    }) {
         return Err(Fault::Moved(moved.to_owned()));
     }
     Ok(Merged { schema, summary })
