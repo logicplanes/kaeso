@@ -159,9 +159,10 @@ Every KPP field is either semantic or a hint:
 | --- | --- | --- |
 | `Text.text` | semantic | |
 | `Text.citations` | semantic | Raw and origin-bound; another dialect gets `Unsupported`. |
-| `Text.cache`, `Image.cache`, `Document.cache`, `ToolCall.cache`, `ToolResult.cache` | hint | Dropped for OpenAI, which caches by itself ([cache hints](cross-format.md#cache-hints)). |
+| `Text.cache`, `Image.cache`, `Document.cache`, `Audio.cache`, `Video.cache`, `ToolCall.cache`, `ToolResult.cache` | hint | Dropped for OpenAI, which caches by itself ([cache hints](cross-format.md#cache-hints)). |
 | `Image.source` | semantic | A `FileId` works only with the provider that issued it ([files](cross-format.md#files)). OpenAI Chat Completions takes images only as a URL or base64. |
 | `Document.source` | semantic | Text sources only for Anthropic. OpenAI Chat Completions also refuses URL sources. |
+| `Audio.source`, `Video.source` | semantic | Each target takes what its documentation lists, or refuses it ([audio and video](cross-format.md#audio-and-video)). |
 | `Document.title`, `.context` | semantic | Anthropic only; `Unsupported` for OpenAI. |
 | `Document.citations` | semantic | Anthropic only; `Unsupported` for OpenAI, which cannot cite documents. |
 | `ToolCall.*` | semantic | Ids and names are kept; a target that rejects one, for its characters or its length, gets a deterministic rewrite, reversed on the way back. |
@@ -238,6 +239,7 @@ When a change alters cross-dialect output, review the snapshot diff: run `INSTA_
 - [Crossing formats](cross-format.md): Look up what happens to data that moves from one API format to another, and why.
 - [Reasoning across formats](reasoning.md): Look up how reasoning, its settings and its signatures move between the formats.
 - [Anthropic Messages](anthropic-messages.md): Find where every field of the Anthropic Messages format goes in KPP.
+- [Messages providers](anthropic-messages-providers.md): See how the Messages codec adapts to each provider that speaks the format.
 - [OpenAI Chat Completions](openai-chat.md): Find where every field of the Chat Completions format goes in KPP.
 - [Chat Completions providers](openai-chat-providers.md): See how the codec adapts to each provider that speaks Chat Completions.
 - [OpenAI Responses](openai-responses.md): Find where every field of the Responses format goes in KPP.

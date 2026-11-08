@@ -972,9 +972,32 @@ expression: outcomes
     "path": "/v1beta/models/MiniMax-M3.1-Flash:generateContent"
   },
   "providers/minimax/video-url": {
-    "message": "`video content block` comes from an Anthropic Messages request and has no equivalent in Gemini API. Remove the block, or send the request to a model served through its original format.",
-    "param": "messages[0].blocks[1]",
-    "unsupported": "video content block"
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What is happening in this video?"
+            },
+            {
+              "fileData": {
+                "fileUri": "https://filecdn.minimax.chat/public/ee8c1648-21f1-41b7-8397-65022d22ffe5.mp4",
+                "mimeType": "video/mp4"
+              }
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 4096,
+        "thinkingConfig": {
+          "includeThoughts": true,
+          "thinkingLevel": "HIGH"
+        }
+      }
+    },
+    "path": "/v1beta/models/MiniMax-M3.1-Flash:generateContent"
   },
   "providers/vercel/rate-limited": {
     "body": {

@@ -3,7 +3,7 @@ use std::fmt;
 use std::str::FromStr;
 use std::sync::LazyLock;
 
-use kaeso_codecs::anthropic_messages::{FixedValue, MessagesProfile};
+use kaeso_codecs::anthropic_messages::{FixedValue, MINIMAX_VIDEO_MEDIA_TYPES, MessagesProfile};
 use kaeso_codecs::gemini::GeminiProfile;
 use kaeso_codecs::openai_chat::ChatProfile;
 use kaeso_codecs::openai_responses::ResponsesProfile;
@@ -519,7 +519,11 @@ pub const PROVIDERS: &[Provider] = &[
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
         end_user_limit: None,
+        // OpenRouter's audio and video guides: Chat Completions takes "any format string the
+        // provider supports" in `input_audio.format`, and videos as `video_url` parts.
         chat: ChatProfile::compatible("OpenRouter")
+            .any_audio_format()
+            .with_video_url()
             .reasoning_fields(&["reasoning"])
             .error_detail(&["error", "metadata", "raw"]),
         responses: ResponsesProfile::compatible("OpenRouter"),
@@ -697,7 +701,10 @@ pub const PROVIDERS: &[Provider] = &[
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
         end_user_limit: None,
+        // Kimi's vision guide sends videos as `video_url` parts
+        // (https://platform.moonshot.ai/docs/guide/use-kimi-vision-model).
         chat: ChatProfile::compatible("Moonshot")
+            .with_video_url()
             .system_role()
             .partial_prefill()
             .reasoning_fields(&["reasoning_content"])
@@ -852,7 +859,8 @@ pub const PROVIDERS: &[Provider] = &[
                 ("temperature", FixedValue::thousandths(1000)),
                 ("top_p", FixedValue::thousandths(950)),
             ])
-            .auto_tool_choice_only(),
+            .auto_tool_choice_only()
+            .with_video(MINIMAX_VIDEO_MEDIA_TYPES),
         gemini: GeminiProfile::GOOGLE_AI_STUDIO,
         account: None,
         routes: &[],

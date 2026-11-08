@@ -1,7 +1,7 @@
 use indexmap::IndexMap;
 use kaeso_kpp::{
-    Block, CacheHint, DocumentBlock, Extras, ImageBlock, KppError, Origin, RawItem, RawJson,
-    RefusalBlock, Source, TextBlock, ToolCallBlock,
+    AudioBlock, Block, CacheHint, DocumentBlock, Extras, ImageBlock, KppError, Origin, RawItem,
+    RawJson, RefusalBlock, Source, TextBlock, ToolCallBlock, VideoBlock,
 };
 use serde::Serialize;
 use serde::de::DeserializeOwned;
@@ -10,8 +10,8 @@ use serde_json::value::RawValue;
 
 use super::DIALECT;
 use super::wire::{
-    CacheBreakpoint, FilePart, FileRef, FunctionCall, ImagePart, ImageUrl, RefusalPart, TextPart,
-    ToolCall,
+    AudioPart, CacheBreakpoint, FilePart, FileRef, FunctionCall, ImagePart, ImageUrl, InputAudio,
+    RefusalPart, TextPart, ToolCall, VideoPart,
 };
 use crate::limits::Form;
 use crate::wire::{
@@ -214,10 +214,8 @@ pub(crate) fn decode_part(
         }
         PartKind::Image => decode_image_part(raw, origin),
         PartKind::File => decode_file_part(raw, origin),
-        PartKind::Audio => Err(KppError::unsupported(
-            "input_audio",
-            "Audio input (`input_audio` content parts) is not supported by Kaeso. Send the audio transcript as text instead.",
-        )),
+        PartKind::Audio => decode_audio_part(raw, origin),
+        PartKind::Video => decode_video_part(raw, origin),
         PartKind::Unknown => Ok(Block::Unknown(RawItem::new(origin.clone(), raw.clone()))),
     }
 }
@@ -229,6 +227,7 @@ pub(crate) enum PartKind {
     Image,
     File,
     Audio,
+    Video,
     Unknown,
 }
 
@@ -238,7 +237,8 @@ pub(crate) fn part_kind(ty: Option<&str>, ctx: PartContext) -> PartKind {
         (Some("refusal"), PartContext::Assistant) => PartKind::Refusal,
         (Some("image_url"), PartContext::User) => PartKind::Image,
         (Some("file"), PartContext::User) => PartKind::File,
-        (Some("input_audio"), _) => PartKind::Audio,
+        (Some("input_audio"), PartContext::User) => PartKind::Audio,
+        (Some("video_url"), PartContext::User) => PartKind::Video,
         _ => PartKind::Unknown,
     }
 }
@@ -294,6 +294,70 @@ fn decode_image_part(raw: &RawJson, origin: &Origin) -> Result<Block, KppError> 
     add_nested(&mut block.extras, "image_url", url_extra, url_verbatim);
     mark_header(&mut block.extras, header.as_deref());
     Ok(Block::Image(block))
+}
+
+// Mistral also takes the base64 string itself as `input_audio`, and OpenRouter any format
+// its providers take; a part whose format names no media type round-trips as written.
+fn decode_audio_part(raw: &RawJson, origin: &Origin) -> Result<Block, KppError> {
+    let unknown = || Ok(Block::Unknown(RawItem::new(origin.clone(), raw.clone())));
+    let Ok(part) = parse_ext::<AudioPart>(raw.as_raw(), "input_audio part", false) else {
+        return unknown();
+    };
+    let Ext {
+        known,
+        extra,
+        verbatim,
+        ..
+    } = part;
+    let Ext {
+        known: audio,
+        extra: audio_extra,
+        verbatim: audio_verbatim,
+        ..
+    } = known.input_audio;
+    let Some(media_type) = crate::media::audio_media_type(&audio.format) else {
+        return unknown();
+    };
+    let mut block = AudioBlock::new(Source::base64(media_type, audio.data));
+    block.cache = known
+        .prompt_cache_breakpoint
+        .map(|bp| decode_breakpoint(bp, origin));
+    block.extras = extras_of(origin, extra, verbatim);
+    add_nested(
+        &mut block.extras,
+        "input_audio",
+        audio_extra,
+        audio_verbatim,
+    );
+    Ok(Block::Audio(block))
+}
+
+// OpenRouter's and Moonshot's `video_url` part, which OpenAI's API doesn't have.
+fn decode_video_part(raw: &RawJson, origin: &Origin) -> Result<Block, KppError> {
+    let part: Ext<VideoPart> = parse_ext(raw.as_raw(), "video_url part", false)?;
+    let Ext {
+        known,
+        extra,
+        verbatim,
+        ..
+    } = part;
+    let Ext {
+        known: video_url,
+        extra: url_extra,
+        verbatim: url_verbatim,
+        ..
+    } = known.video_url;
+    let parsed = parse_data_url(&video_url.url);
+    let header = parsed.as_ref().and_then(|d| d.header.map(str::to_owned));
+    let source = match parsed {
+        Some(d) => Source::base64(d.media_type, d.data),
+        None => Source::Url(video_url.url.clone()),
+    };
+    let mut block = VideoBlock::new(source);
+    block.extras = extras_of(origin, extra, verbatim);
+    add_nested(&mut block.extras, "video_url", url_extra, url_verbatim);
+    mark_header(&mut block.extras, header.as_deref());
+    Ok(Block::Video(block))
 }
 
 fn decode_file_part(raw: &RawJson, origin: &Origin) -> Result<Block, KppError> {
@@ -380,6 +444,45 @@ pub(crate) fn encode_image_part(block: &ImageBlock) -> Result<RawJson, KppError>
         ty: "image_url".to_owned(),
         image_url: ext_nested(ImageUrl { url }, &block.extras, "image_url"),
         prompt_cache_breakpoint: encode_breakpoint(block.cache.as_ref()),
+    };
+    to_raw(&ext_with(part, &block.extras))
+}
+
+pub(crate) fn encode_audio_part(block: &AudioBlock) -> Result<RawJson, KppError> {
+    let Source::Base64(b) = &block.source else {
+        return Err(source_unsupported("audio", &block.source));
+    };
+    let Some(format) = crate::media::chat_audio_format(&b.media_type) else {
+        return Err(KppError::unsupported_by(
+            format!("audio media type `{}`", b.media_type),
+            DIALECT,
+            "Its `input_audio.format` has no value for this media type; send WAV or MP3 audio.",
+        ));
+    };
+    let part = AudioPart {
+        ty: "input_audio".to_owned(),
+        input_audio: ext_nested(
+            InputAudio {
+                data: b.data.clone(),
+                format: format.to_owned(),
+            },
+            &block.extras,
+            "input_audio",
+        ),
+        prompt_cache_breakpoint: encode_breakpoint(block.cache.as_ref()),
+    };
+    to_raw(&ext_with(part, &block.extras))
+}
+
+pub(crate) fn encode_video_part(block: &VideoBlock) -> Result<RawJson, KppError> {
+    let url = match &block.source {
+        Source::Url(url) => url.clone(),
+        Source::Base64(b) => data_url_for(&block.extras, &b.media_type, &b.data),
+        other => return Err(source_unsupported("video", other)),
+    };
+    let part = VideoPart {
+        ty: "video_url".to_owned(),
+        video_url: ext_nested(ImageUrl { url }, &block.extras, "video_url"),
     };
     to_raw(&ext_with(part, &block.extras))
 }

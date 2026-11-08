@@ -4,11 +4,12 @@ use kaeso_kpp::{
 };
 
 use super::DIALECT;
+use super::profile::ChatProfile;
 use crate::cross::{self, Setting, app_field};
 
 const MAX_STOP: usize = 4;
 
-pub(crate) fn check(req: &Request, target: &Origin) -> Result<(), KppError> {
+pub(crate) fn check(req: &Request, target: &Origin, profile: &ChatProfile) -> Result<(), KppError> {
     let r = match req {
         Request::Generate(r) => r,
         Request::CountTokens(_) => {
@@ -27,7 +28,7 @@ pub(crate) fn check(req: &Request, target: &Origin) -> Result<(), KppError> {
         }
     };
     cross::check_foreign(req, target)?;
-    check_generate(r)?;
+    check_generate(r, profile)?;
     r.validate()
 }
 
@@ -35,7 +36,7 @@ fn unsupported(feature: &str, hint: &str, param: impl Into<String>) -> KppError 
     KppError::unsupported_by(feature, DIALECT, hint).with_param(param)
 }
 
-fn check_generate(r: &GenerateRequest) -> Result<(), KppError> {
+fn check_generate(r: &GenerateRequest, profile: &ChatProfile) -> Result<(), KppError> {
     if r.sampling.top_k.is_some() {
         return Err(unsupported(
             "top_k",
@@ -89,7 +90,7 @@ fn check_generate(r: &GenerateRequest) -> Result<(), KppError> {
         }
     }
     for (i, block) in r.system.iter().enumerate() {
-        check_block(block, Place::Instruction, &format!("system[{i}]"))?;
+        check_block(block, Place::Instruction, &format!("system[{i}]"), profile)?;
     }
     for (mi, message) in r.messages.iter().enumerate() {
         let place = match message.role {
@@ -98,7 +99,12 @@ fn check_generate(r: &GenerateRequest) -> Result<(), KppError> {
             _ => Place::Instruction,
         };
         for (bi, block) in message.blocks.iter().enumerate() {
-            check_block(block, place, &format!("messages[{mi}].blocks[{bi}]"))?;
+            check_block(
+                block,
+                place,
+                &format!("messages[{mi}].blocks[{bi}]"),
+                profile,
+            )?;
         }
     }
     Ok(())
@@ -129,7 +135,12 @@ fn misplaced(kind: &str, place: Place, path: &str) -> KppError {
     )
 }
 
-fn check_block(block: &Block, place: Place, path: &str) -> Result<(), KppError> {
+fn check_block(
+    block: &Block,
+    place: Place,
+    path: &str,
+    profile: &ChatProfile,
+) -> Result<(), KppError> {
     match block {
         Block::Text(t) => {
             let own = place == Place::Assistant && t.citations.iter().all(|c| c.origin.is(DIALECT));
@@ -154,6 +165,37 @@ fn check_block(block: &Block, place: Place, path: &str) -> Result<(), KppError> 
             }
             check_document(doc, path)
         }
+        Block::Audio(audio) => {
+            if place != Place::User {
+                return Err(misplaced("audio", place, path));
+            }
+            match &audio.source {
+                Source::Base64(_) => Ok(()),
+                _ => Err(unsupported(
+                    "audio source",
+                    "Its `input_audio` takes base64 data only; send the audio as base64.",
+                    path,
+                )),
+            }
+        }
+        Block::Video(_) if !profile.request.video_url => Err(unsupported(
+            "video block",
+            "It has no video content part; send frames of the video as images, or route the request to a model that takes video.",
+            path,
+        )),
+        Block::Video(video) => {
+            if place != Place::User {
+                return Err(misplaced("video", place, path));
+            }
+            match &video.source {
+                Source::Url(_) | Source::Base64(_) => Ok(()),
+                _ => Err(unsupported(
+                    "video source",
+                    "Its `video_url` takes a URL or base64 data; send the video one of those ways.",
+                    path,
+                )),
+            }
+        }
         Block::Refusal(_) => {
             if place != Place::Assistant {
                 return Err(misplaced("refusal", place, path));
@@ -162,7 +204,12 @@ fn check_block(block: &Block, place: Place, path: &str) -> Result<(), KppError> 
         }
         Block::ToolResult(result) => {
             for (i, nested) in result.content.iter().enumerate() {
-                check_block(nested, Place::Instruction, &format!("{path}.content[{i}]"))?;
+                check_block(
+                    nested,
+                    Place::Instruction,
+                    &format!("{path}.content[{i}]"),
+                    profile,
+                )?;
             }
             Ok(())
         }

@@ -3,6 +3,31 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import Conversation from "./conversation";
 
 describe("Conversation", () => {
+  it("names audio and video inputs and links video from the web", () => {
+    render(
+      <Conversation
+        messages={[
+          {
+            role: "user",
+            content: [
+              { type: "audio", media_type: "audio/mpeg" },
+              { type: "video", src: "https://www.youtube.com/watch?v=UTdfxFyOQTI" },
+              { type: "video", media_type: "video/mp4" },
+              { type: "video" },
+            ],
+          },
+          { role: "assistant", content: [{ type: "audio", transcript: "Hi there." }] },
+        ]}
+      />,
+    );
+    expect(screen.getByText("Audio audio/mpeg")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Video from www\.youtube\.com/ })).toHaveAttribute("href", "https://www.youtube.com/watch?v=UTdfxFyOQTI");
+    expect(screen.getByText("Video video/mp4")).toBeInTheDocument();
+    expect(screen.getByText("Video")).toBeInTheDocument();
+    expect(screen.getByText("Audio")).toBeInTheDocument();
+    expect(screen.getByText("Hi there.")).toBeInTheDocument();
+  });
+
   it("draws message text as Markdown and keeps JSON tool results as sent", () => {
     const { container } = render(
       <Conversation

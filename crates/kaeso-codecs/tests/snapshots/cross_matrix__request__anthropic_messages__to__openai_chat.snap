@@ -881,9 +881,9 @@ expression: outcomes
     "path": "/v1/chat/completions"
   },
   "providers/minimax/video-url": {
-    "message": "`video content block` comes from an Anthropic Messages request and has no equivalent in OpenAI Chat Completions. Remove the block, or send the request to a model served through its original format.",
+    "message": "`video block` is not supported by OpenAI Chat Completions. It has no video content part; send frames of the video as images, or route the request to a model that takes video.",
     "param": "messages[0].blocks[1]",
-    "unsupported": "video content block"
+    "unsupported": "video block"
   },
   "providers/vercel/rate-limited": {
     "body": {

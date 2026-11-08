@@ -20,6 +20,9 @@ A `<name>.meta.json` names the model or the method of a request when the round-t
 | `structured-json-schema.json` | `responseMimeType: application/json` with `responseJsonSchema` | doc: structured output |
 | `structured-response-schema.json` | `responseSchema` (OpenAPI subset) with `propertyOrdering` | doc: structured output |
 | `image-input.json` | an 8×8 PNG as `inlineData`, `mediaResolution` | doc: image understanding |
+| `audio-input.json` | a 1-second spoken clip ("Hello Kaeso", made with macOS `say` and encoded with ffmpeg) as MP3 `inlineData` with `audio/mpeg`, for `gemini-3.5-flash-lite` | doc: audio understanding, inline audio; recorded |
+| `video-input.json` | a 1-second 32×32 red MP4 (ffmpeg) as `inlineData` with `videoMetadata.fps`, `mediaResolution: MEDIA_RESOLUTION_LOW`, for `gemini-3.5-flash-lite` | doc: video understanding, inline video and custom frame rate; recorded |
+| `video-youtube.json` | a YouTube URL in `fileData` without a MIME type, with `videoMetadata.fps` | doc: video understanding, YouTube URLs (the REST example, without its `responseModalities`, its keys in camel case as the discovery document names them) |
 | `image-output.json` | `responseModalities: [TEXT, IMAGE]` for `gemini-3.1-flash-image` | doc: image generation |
 | `max-tokens.json` | `maxOutputTokens: 16` | schema: GenerationConfig (discovery v1beta revision 20261106) |
 | `safety-settings.json` | `safetySettings`, `serviceTier` | schema: SafetySetting (discovery v1beta revision 20261106) |

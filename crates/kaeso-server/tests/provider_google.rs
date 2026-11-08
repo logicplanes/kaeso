@@ -10,6 +10,7 @@ const SECRET: &str = "AIzaSyTestGoogleCredential000000000000";
 const FLASH: &str = "gemini-3.5-flash";
 const OLD_FLASH: &str = "gemini-2.5-flash";
 const EMBEDDING: &str = "gemini-embedding-2";
+const IMAGE_MODEL: &str = "gemini-3.1-flash-image";
 
 fn fixture(name: &str) -> String {
     format!("[mock:fixture={name}]")
@@ -31,7 +32,7 @@ async fn env() -> Env {
         )
         .await;
     assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
-    for model in [FLASH, OLD_FLASH, EMBEDDING] {
+    for model in [FLASH, OLD_FLASH, EMBEDDING, IMAGE_MODEL] {
         let r = env
             .app
             .post(
@@ -86,6 +87,49 @@ async fn a_chat_app_reaches_google_with_its_key_in_the_header_and_the_model_in_t
     );
     assert_eq!(reply["usage"]["prompt_tokens"], 7);
     assert_eq!(reply["usage"]["completion_tokens"], 482);
+}
+
+#[tokio::test]
+async fn a_chat_apps_audio_reaches_gemini_inline_and_a_model_without_audio_input_refuses_it() {
+    let env = env().await;
+    let audio = |model: &str| {
+        json!({"model": model, "messages": [{"role": "user", "content": [
+            {"type": "input_audio", "input_audio": {"data": "SUQzBAAAAAAAI1RTU0U=", "format": "mp3"}},
+            {"type": "text", "text": format!("Transcribe this clip. {}", fixture("recorded-audio-input"))}
+        ]}]})
+    };
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(audio(FLASH)),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    let sent = sent_to_google(&env, "/v1beta/models/gemini-3.5-flash:generateContent");
+    assert_eq!(
+        sent["contents"][0]["parts"][0],
+        json!({"inlineData": {"mimeType": "audio/mpeg", "data": "SUQzBAAAAAAAI1RTU0U="}})
+    );
+    assert_eq!(r.json()["choices"][0]["message"]["content"], "Hello Kazo");
+
+    let calls = env.mock.received().len();
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(audio(IMAGE_MODEL)),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    assert_eq!(
+        r.json()["error"]["message"],
+        "The model `gemini-3.1-flash-image` does not accept audio."
+    );
+    assert_eq!(r.json()["error"]["param"], "messages");
+    assert_eq!(env.mock.received().len(), calls);
 }
 
 #[tokio::test]

@@ -302,8 +302,9 @@ fn check_refuses_content_anthropic_cannot_carry() {
 fn check_accepts_every_request_fixture_except_documented_ones() {
     for (name, body) in fixtures(DIALECT, "requests", "json") {
         let req = decode(RequestKind::Generate, &body);
-        AnthropicMessages::check(&req, &EgressCtx::new(&req))
-            .unwrap_or_else(|e| panic!("{name}: {e}"));
+        let ctx = EgressCtx::new(&req)
+            .with_messages_profile(crate::test_support::messages_profile_for(&name));
+        AnthropicMessages::check(&req, &ctx).unwrap_or_else(|e| panic!("{name}: {e}"));
     }
 }
 

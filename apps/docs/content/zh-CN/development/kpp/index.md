@@ -159,9 +159,10 @@ KPP 的值和错误都按值返回。`KppError` 和部分枚举变体较大，�
 | --- | --- | --- |
 | `Text.text` | 语义 | |
 | `Text.citations` | 语义 | 保持原始数据并绑定来源；发往其他方言时返回 `Unsupported`。 |
-| `Text.cache`、`Image.cache`、`Document.cache`、`ToolCall.cache`、`ToolResult.cache` | 提示 | 发往 OpenAI 时丢弃，因为 OpenAI 会自行缓存（[缓存提示](cross-format.md#缓存提示)）。 |
+| `Text.cache`、`Image.cache`、`Document.cache`、`Audio.cache`、`Video.cache`、`ToolCall.cache`、`ToolResult.cache` | 提示 | 发往 OpenAI 时丢弃，因为 OpenAI 会自行缓存（[缓存提示](cross-format.md#缓存提示)）。 |
 | `Image.source` | 语义 | `FileId` 只能用于签发它的服务商（[文件](cross-format.md#文件)）。OpenAI Chat Completions 只接受 URL 或 base64 形式的图片。 |
 | `Document.source` | 语义 | 文本来源仅限 Anthropic。OpenAI Chat Completions 也不接受 URL 来源。 |
+| `Audio.source`、`Video.source` | 语义 | 每个目标接受其文档列出的内容，否则拒绝（[音频和视频](cross-format.md#音频和视频)）。 |
 | `Document.title`、`.context` | 语义 | 仅限 Anthropic；发往 OpenAI 时返回 `Unsupported`。 |
 | `Document.citations` | 语义 | 仅限 Anthropic；OpenAI 无法引用文档，返回 `Unsupported`。 |
 | `ToolCall.*` | 语义 | ID 和名称保持不变；目标因字符或长度不接受时，会以固定方式改写，并在返回时还原。 |
@@ -238,6 +239,7 @@ OpenAI Responses 把不同的写法记录为形式覆盖项，只在值未改变
 - [跨格式转换](cross-format.md)：查阅数据从一种 API 格式转到另一种格式时会发生什么，以及原因。
 - [跨格式的推理](reasoning.md)：查阅推理内容、推理设置及其签名如何在各格式之间转换。
 - [Anthropic Messages](anthropic-messages.md)：查找 Anthropic Messages 格式的每个字段在 KPP 中的位置。
+- [Messages 服务商](anthropic-messages-providers.md)：查看 Messages 编解码器如何适配使用该格式的每个服务商。
 - [OpenAI Chat Completions](openai-chat.md)：查找 Chat Completions 格式的每个字段在 KPP 中的位置。
 - [Chat Completions 服务商](openai-chat-providers.md)：了解编解码器如何适配使用 Chat Completions 的每个服务商。
 - [OpenAI Responses](openai-responses.md)：查找 Responses 格式的每个字段在 KPP 中的位置。

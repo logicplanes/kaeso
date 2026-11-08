@@ -57,6 +57,33 @@ expression: outcomes
       "total_tokens": 12
     }
   },
+  "recorded-audio-input": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "Hello Kazo",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "j0rwavOZO4nfxs0Pgpqd2AM",
+    "model": "gemini-3.5-flash-lite",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 3,
+      "prompt_tokens": 37,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 40
+    }
+  },
   "recorded-image-input": {
     "choices": [
       {
@@ -555,6 +582,33 @@ expression: outcomes
         "cached_tokens": 0
       },
       "total_tokens": 131
+    }
+  },
+  "recorded-video-input": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "Red",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "k0rwatj1Kcqq3boPkL_SyQk",
+    "model": "gemini-3.5-flash-lite",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 1,
+      "prompt_tokens": 76,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 77
     }
   },
   "unknown-parts": {

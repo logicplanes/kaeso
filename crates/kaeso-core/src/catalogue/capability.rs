@@ -24,7 +24,7 @@ fn refuse(capability: &'static str, param: Option<&'static str>, message: String
 }
 
 fn app_param(ingress: DialectId, field: &'static str) -> &'static str {
-    use DialectId::{AnthropicMessages as A, OpenAiResponses as R};
+    use DialectId::{AnthropicMessages as A, Gemini as G, OpenAiResponses as R};
     match (field, ingress) {
         ("budget", _) => "thinking.budget_tokens",
         ("effort", A) => "output_config.effort",
@@ -34,6 +34,7 @@ fn app_param(ingress: DialectId, field: &'static str) -> &'static str {
         ("format", R) => "text.format",
         ("format", _) => "response_format",
         ("messages", R) => "input",
+        ("messages", G) => "contents",
         ("reasoning", A) => "thinking",
         ("user", A) => "metadata.user_id",
         ("reasoning", R) => "reasoning",
@@ -477,6 +478,20 @@ fn check_generation(
             "pdf input",
             messages,
             format!("The model `{name}` does not accept PDF documents."),
+        ));
+    }
+    if caps.audio_input && !eff.accepts("audio") {
+        return Err(refuse(
+            "audio input",
+            messages,
+            format!("The model `{name}` does not accept audio."),
+        ));
+    }
+    if caps.video_input && !eff.accepts("video") {
+        return Err(refuse(
+            "video input",
+            messages,
+            format!("The model `{name}` does not accept video."),
         ));
     }
     if caps.tools && eff.fields.tool_call != Some(true) {

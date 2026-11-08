@@ -107,3 +107,20 @@ def test_models_page_with_tokens(base_url):
     with pytest.raises(errors.APIError) as info:
         c.models.get(model="no-such-model")
     assert info.value.code == 404
+
+
+def test_audio_and_video_parts_reach_kpp(base_url):
+    want = expected(base_url, {"source": "gemini", "name": "recorded-video-input", "kind": "generate", "stream": False})
+    contents = [
+        types.Part.from_bytes(data=b"ID3\x04\x00", mime_type="audio/mpeg"),
+        types.Part(
+            file_data=types.FileData(file_uri="https://www.youtube.com/watch?v=UTdfxFyOQTI"),
+            video_metadata=types.VideoMetadata(fps=0.5),
+        ),
+        "What color fills this video? Answer in one word.",
+    ]
+    c = client(base_url)
+    response = c.models.generate_content(model="gemini:recorded-video-input", contents=contents)
+    got = empty_view()
+    collect(parts_of(response), got)
+    assert got["text"] == want["text"]

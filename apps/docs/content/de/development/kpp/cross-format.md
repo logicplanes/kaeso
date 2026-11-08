@@ -15,6 +15,7 @@ Eine App kann ein API-Format sprechen, während der Anbieter ein anderes spricht
 | Lesbares Reasoning | Weggelassen; der [Reasoning-Blob](reasoning.md#reasoning-blobs) stellt es beim Ursprung wieder her | In der Reasoning-Form der App gezeigt, wo sie eine hat |
 | Opakes Reasoning | Nur an den Dialekt und Anbieter zurückgespielt, die es ausgegeben haben | In einen Reasoning-Blob verpackt |
 | Cache-Hinweise | Weggelassen, wo das Ziel selbst cacht | — |
+| Audio und Video | Gesendet, wo Format und Anbieter des Ziels sie nehmen, sonst `Unsupported` ([Audio und Video](#audio-und-video)) | Weggelassen, wo das Format der App sie nicht tragen kann |
 | Sampling-Einstellungen, die das Ziel nicht hat | `Unsupported` | — |
 | Stoppgründe, die das Format der App nicht hat | — | Der nächstliegende, den es hat |
 | Abgeschaltetes Thinking für ein Modell, das immer Reasoning nutzt | Die niedrigste Aufwandsstufe des Modells, genannt in `kaeso-adapted` ([Modelle, die immer Reasoning nutzen](reasoning.md#modelle-die-immer-reasoning-nutzen)) | — |
@@ -68,7 +69,7 @@ Extras aus Dialekt A werden nur in Dialekt A zurückgeschrieben. `check()` eines
 
 Ein Eintrag ist nur erlaubt, wenn bekannt ist, dass das Feld keinen Einfluss auf die Ausgabe des Modells hat. Jeder Eintrag braucht eine Begründung in einer Zeile und die Fixture, die zeigt, dass ein echter Client das Feld sendet.
 
-Einträge haben einen Geltungsbereich (`cross::EXTRAS_ALLOWLIST`): Ein Schlüssel ist nur dort erlaubt, wo er steht. Die Geltungsbereiche sind `request`, `message`, `tool`, `output`, `reasoning` und die Blockarten `text`, `image`, `document`, `tool_call`, `tool_result` und `refusal`. Header sind Schlüssel `header:<name>` im Bereich `request`.
+Einträge haben einen Geltungsbereich (`cross::EXTRAS_ALLOWLIST`): Ein Schlüssel ist nur dort erlaubt, wo er steht. Die Geltungsbereiche sind `request`, `message`, `tool`, `output`, `reasoning` und die Blockarten `text`, `image`, `document`, `audio`, `video`, `tool_call`, `tool_result` und `refusal`. Header sind Schlüssel `header:<name>` im Bereich `request`.
 
 Die Fixture-Pfade in diesen Tabellen sind relativ zu `crates/kaeso-codecs/fixtures/`.
 
@@ -271,12 +272,27 @@ Die Argumente eines Tool-Aufrufs sind in jedem Format ein JSON-Objekt. Chat Comp
 - **Andere Werte im Gespräch, für Anthropic.** `tool_use.input` muss ein Objekt sein, und Anthropic lehnt die ganze Anfrage ab, wenn eines im Verlauf keines ist. Ein Aufruf aus einem anderen Format, dessen Argumente etwas anderes sind, wird deshalb zu einem Objekt: Text, der kein JSON ist, etwa von einem Ausgabelimit abgeschnittene Argumente, wird zu `{"input": "<der Text>"}`, wie die [Eingabe eines Freiform-Tools](#tool-verlauf-von-codex); ein Array, eine Zahl oder ein Wahrheitswert wird zu `{"input": <der Wert>}`; und `null` wird zu `{}`. Das Modell sieht, was es geschrieben hat, und das Tool-Ergebnis danach. Jeder solche Aufruf wird in `kaeso-adapted` als `tool call` mit seiner ID genannt, etwa `tool call call_abc`. Anbieter von Chat Completions und Responses bekommen die Argumente wie gesendet. Ein eigenes `tool_use` einer Anthropic-App mit einem `input`, das kein Objekt ist, bleibt `Unsupported`.
 - **Antworten.** Eine Antwort an eine Anthropic-App mit einem Tool-Aufruf, dessen Argumente kein Objekt sind, wird abgelehnt, weil die App das Tool mit Argumenten ausführen würde, die das Modell nie geschrieben hat ([Antworten bei Anthropic](anthropic-messages.md#antworten)).
 
+## Audio und Video
+
+`Block::Audio` und `Block::Video` halten eine `Source`, einen Cache-Hinweis und Extras, wie Bilder. Jedes Format nimmt sie so, wie seine Dokumentation es beschreibt, und lehnt den Rest vor dem Senden ab:
+
+| Ziel | Audio | Video |
+| --- | --- | --- |
+| Gemini | `inlineData` oder `fileData`, mit dem Medientyp wie gesendet | `inlineData`, `fileData` oder eine YouTube-URL ohne MIME-Typ |
+| Chat Completions | `input_audio` in Benutzernachrichten, nur base64, in den Formaten des Anbieters: `wav` und `mp3` für OpenAI, jedes für OpenRouter | `video_url` für Anbieter, die es dokumentieren (OpenRouter, Moonshot); sonst `Unsupported` |
+| Anthropic Messages | `Unsupported`: Senden Sie ein Transkript als Text | MiniMax' `video`-Block für MiniMax; sonst `Unsupported`: Senden Sie Einzelbilder als Bilder |
+| Responses | `Unsupported` | `Unsupported` |
+
+Eine Datei-ID eines Anbieters funktioniert nur bei dem Anbieter, der sie ausgestellt hat ([Dateien](#dateien)). Geminis `videoMetadata` (Ausschnitt und Bildrate) und `mediaResolution` bleiben Extras ihres Parts: Nur Gemini hat sie, und ein Ausschnitt ändert, was das Modell sieht, darum lehnen andere Formate sie ab. Nichts wird umkodiert: Ein Medientyp, für den das Ziel keinen Namen hat, etwa `audio/webm` für Chat Completions, ist `Unsupported`.
+
+Das Gateway lehnt Audio und Video auch für ein Modell ab, dessen Katalogeintrag `audio` oder `video` nicht unter seinen Eingaben führt, wie bei Bildern und PDFs: `` The model `gpt-4o` does not accept audio. ``
+
 ## Medien in Tool-Ergebnissen
 
 Claudes `tool_result` und das `function_call_output` von Responses können Bilder und Dateien enthalten, etwa den Screenshot eines Tools oder das Bild, das `Read` von Claude Code oder `view_image` von Codex öffnet. Eine `tool`-Nachricht von Chat Completions enthält nur Text (`ChatCompletionToolMessageParam`), und OpenAI und DeepSeek lehnen dort ein Bild ab. Für Chat-Completions-Modelle verschiebt Kaeso sie daher:
 
 - **Die Tool-Nachricht** behält den Text des Ergebnisses, gefolgt von `The rest of this result is in the next message.`
-- **Die Benutzernachricht nach den Ergebnissen** beginnt für jedes solche Ergebnis mit `` The rest of the result of tool call `<id>`: `` und den Bildern und Dateien des Ergebnisses in ihrer Reihenfolge. Text, den die App nach den Ergebnissen gesendet hat, folgt danach.
+- **Die Benutzernachricht nach den Ergebnissen** beginnt für jedes solche Ergebnis mit `` The rest of the result of tool call `<id>`: `` und den Bildern, Dateien und Audioinhalten des Ergebnisses in ihrer Reihenfolge. Text, den die App nach den Ergebnissen gesendet hat, folgt danach.
 - **Der Header.** Jedes Ergebnis wird im Header `kaeso-adapted` der Antwort als `tool result` mit der ID des Aufrufs genannt, etwa `tool result call_abc`.
 
 Anthropic- und Responses-Modelle bekommen die Medien unverändert im Tool-Ergebnis, Gemini-Modelle in `functionResponse.parts` ([Gemini API](gemini.md)). Fixtures: `anthropic_messages/requests/tool-result-multi-turn.json`, `openai_responses/requests/function-call-output-array.json`.

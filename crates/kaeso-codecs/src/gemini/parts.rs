@@ -1,7 +1,8 @@
 use base64::Engine as _;
 use kaeso_kpp::{
-    Block, DocumentBlock, Extras, ImageBlock, KppError, Opaque, OpaqueKind, Origin, RawItem,
-    RawJson, ReasoningBlock, Source, TextBlock, ToolCallBlock, ToolResultBlock,
+    AudioBlock, Block, DocumentBlock, Extras, ImageBlock, KppError, Opaque, OpaqueKind, Origin,
+    RawItem, RawJson, ReasoningBlock, Source, TextBlock, ToolCallBlock, ToolResultBlock,
+    VideoBlock,
 };
 use serde_json::Value;
 
@@ -67,25 +68,71 @@ fn thought_signature(block: &ReasoningBlock) -> Option<&str> {
         .map(|o| o.data.as_str())
 }
 
-fn is_media_without_block(mime: &str) -> bool {
-    let lower = mime.to_ascii_lowercase();
-    lower.starts_with("audio/") || lower.starts_with("video/")
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum Media {
+    Image,
+    Document,
+    Audio,
+    Video,
 }
 
-fn source_block(source: Source, image: bool, extras: Extras) -> Block {
-    if image {
-        let mut b = ImageBlock::new(source);
-        b.extras = extras;
-        Block::Image(b)
-    } else {
-        let mut b = DocumentBlock::new(source);
-        b.extras = extras;
-        Block::Document(b)
+impl Media {
+    fn of(mime: Option<&str>) -> Media {
+        match mime {
+            Some(m) if m.to_ascii_lowercase().starts_with("image/") => Media::Image,
+            Some(m) if crate::media::is_audio(m) => Media::Audio,
+            Some(m) if crate::media::is_video(m) => Media::Video,
+            _ => Media::Document,
+        }
+    }
+
+    fn name(self) -> &'static str {
+        match self {
+            Media::Image => "image",
+            Media::Document => "document",
+            Media::Audio => "audio",
+            Media::Video => "video",
+        }
+    }
+
+    fn of_file(mime: Option<&str>, uri: &str) -> Media {
+        if mime.is_none() && crate::media::is_youtube_url(uri) {
+            Media::Video
+        } else {
+            Media::of(mime)
+        }
     }
 }
 
-fn is_image(mime: Option<&str>) -> bool {
-    mime.is_some_and(|m| m.to_ascii_lowercase().starts_with("image/"))
+// Function responses take images and documents only ("Multimodal function responses",
+// function calling guide); audio and video parts there stay raw.
+fn is_media_without_block(mime: &str) -> bool {
+    crate::media::is_audio(mime) || crate::media::is_video(mime)
+}
+
+fn source_block(source: Source, media: Media, extras: Extras) -> Block {
+    match media {
+        Media::Image => {
+            let mut b = ImageBlock::new(source);
+            b.extras = extras;
+            Block::Image(b)
+        }
+        Media::Document => {
+            let mut b = DocumentBlock::new(source);
+            b.extras = extras;
+            Block::Document(b)
+        }
+        Media::Audio => {
+            let mut b = AudioBlock::new(source);
+            b.extras = extras;
+            Block::Audio(b)
+        }
+        Media::Video => {
+            let mut b = VideoBlock::new(source);
+            b.extras = extras;
+            Block::Video(b)
+        }
+    }
 }
 
 fn file_source(origin: &Origin, uri: &str) -> Source {
@@ -104,8 +151,8 @@ fn blob_block(blob: Ext<BlobW>, mut extras: Extras) -> Block {
     } = blob;
     add_nested_extra(&mut extras, INLINE, extra);
     verbatim_into_form(&mut extras, INLINE, verbatim);
-    let image = is_image(Some(&known.mime_type));
-    source_block(Source::base64(known.mime_type, known.data), image, extras)
+    let media = Media::of(Some(&known.mime_type));
+    source_block(Source::base64(known.mime_type, known.data), media, extras)
 }
 
 fn file_block(origin: &Origin, file: Ext<FileDataW>, mut extras: Extras) -> Block {
@@ -121,8 +168,8 @@ fn file_block(origin: &Origin, file: Ext<FileDataW>, mut extras: Extras) -> Bloc
             .form
             .insert(FORM_MIME.to_owned(), mime.clone().into());
     }
-    let image = is_image(known.mime_type.as_deref());
-    source_block(file_source(origin, &known.file_uri), image, extras)
+    let media = Media::of_file(known.mime_type.as_deref(), &known.file_uri);
+    source_block(file_source(origin, &known.file_uri), media, extras)
 }
 
 /// Function calls of the conversation so far, so a response without an `id` finds the call
@@ -202,16 +249,8 @@ impl PartDecoder<'_> {
         .into_iter()
         .filter(|d| *d)
         .count();
-        let audio_video = p
-            .inline_data
-            .as_ref()
-            .is_some_and(|b| is_media_without_block(&b.mime_type))
-            || p.file_data
-                .as_ref()
-                .and_then(|f| f.mime_type.as_deref())
-                .is_some_and(is_media_without_block);
         let thought = p.thought == Some(true);
-        if data != 1 || audio_video || (thought && p.text.is_none()) {
+        if data != 1 || (thought && p.text.is_none()) {
             out.push(self.unknown(raw));
             return Ok(());
         }
@@ -499,8 +538,10 @@ impl<'a> PartEncoder<'a> {
                 &r.extras,
             ),
             Block::Reasoning(r) => self.reasoning(r),
-            Block::Image(b) => self.media(&b.source, true, &b.extras, path),
-            Block::Document(b) => self.media(&b.source, false, &b.extras, path),
+            Block::Image(b) => self.media(&b.source, Media::Image, &b.extras, path),
+            Block::Document(b) => self.media(&b.source, Media::Document, &b.extras, path),
+            Block::Audio(b) => self.media(&b.source, Media::Audio, &b.extras, path),
+            Block::Video(b) => self.media(&b.source, Media::Video, &b.extras, path),
             Block::ToolCall(c) => self.call(c, None),
             Block::ToolResult(r) => self.result(r, None, path),
             Block::Unknown(item) if self.reply && !item.origin.is(D) => Ok(()),
@@ -547,11 +588,11 @@ impl<'a> PartEncoder<'a> {
     fn media(
         &mut self,
         source: &Source,
-        image: bool,
+        media: Media,
         extras: &Extras,
         path: &str,
     ) -> Result<(), KppError> {
-        let part = media_part(source, image, extras, self.target, path)?;
+        let part = media_part(source, media, extras, self.target, path)?;
         self.push(part, extras)
     }
 
@@ -615,14 +656,14 @@ impl<'a> PartEncoder<'a> {
                 Block::Text(t) => texts.push(t.text.as_str()),
                 Block::Image(img) => parts.push(media_response_part(
                     &img.source,
-                    true,
+                    Media::Image,
                     &img.extras,
                     self.target,
                     &at,
                 )?),
                 Block::Document(doc) => parts.push(media_response_part(
                     &doc.source,
-                    false,
+                    Media::Document,
                     &doc.extras,
                     self.target,
                     &at,
@@ -678,17 +719,17 @@ fn to_raw<T: serde::Serialize>(v: &T) -> Result<Raw, KppError> {
     serde_json::value::to_raw_value(v).map_err(ser)
 }
 
-type Media = (Option<Ext<BlobW>>, Option<Ext<FileDataW>>);
+type MediaFields = (Option<Ext<BlobW>>, Option<Ext<FileDataW>>);
 
 fn media_fields(
     source: &Source,
-    image: bool,
+    media: Media,
     extras: &Extras,
     target: &Origin,
     path: &str,
-) -> Result<Media, KppError> {
+) -> Result<MediaFields, KppError> {
     let own = extras.is_from(D);
-    let kind = if image { "image" } else { "document" };
+    let kind = media.name();
     Ok(match source {
         Source::Base64(b) => (
             Some(own_ext(
@@ -737,14 +778,31 @@ fn media_fields(
                 let mime = if own {
                     extras.form_str(D, FORM_MIME).map(str::to_owned)
                 } else {
-                    match (mime_of_url(url), image) {
+                    match (mime_of_url(url, media), media) {
                         (Some(m), _) => Some(m.to_owned()),
-                        (None, false) => None,
-                        (None, true) => {
+                        (None, Media::Document) => None,
+                        (None, Media::Video) if crate::media::is_youtube_url(url) => None,
+                        (None, Media::Image) => {
                             return Err(KppError::unsupported_by(
                                 "image URL without a known file extension",
                                 D,
                                 "Gemini needs an image URL's MIME type, which Kaeso reads from its extension (`.png`, `.jpg`, `.webp`, `.gif`, `.heic`); send the image as base64 instead.",
+                            )
+                            .with_param(path));
+                        }
+                        (None, Media::Audio) => {
+                            return Err(KppError::unsupported_by(
+                                "audio URL without a known file extension",
+                                D,
+                                "Gemini needs an audio URL's MIME type, which Kaeso reads from its extension (`.wav`, `.mp3`, `.aac`, `.ogg`, `.flac`); send the audio as base64 instead.",
+                            )
+                            .with_param(path));
+                        }
+                        (None, Media::Video) => {
+                            return Err(KppError::unsupported_by(
+                                "video URL without a known file extension",
+                                D,
+                                "Gemini needs a video URL's MIME type, which Kaeso reads from its extension (`.mp4`, `.mov`, `.webm`, `.mpeg`); send the video as base64 or a YouTube URL instead.",
                             )
                             .with_param(path));
                         }
@@ -794,10 +852,39 @@ fn media_fields(
 
 /// The MIME type of a URL's file extension, for the types Gemini reads from `fileData`
 /// ("File input methods", external URLs: "Always provide the correct MIME type").
-fn mime_of_url(url: &str) -> Option<&'static str> {
+/// Audio and video follow the audio and video understanding guides' "Supported formats".
+fn mime_of_url(url: &str, media: Media) -> Option<&'static str> {
     let path = url.split(['?', '#']).next().unwrap_or(url);
     let name = path.rsplit('/').next().unwrap_or(path);
     let ext = name.rsplit_once('.')?.1.to_ascii_lowercase();
+    if media == Media::Audio {
+        return Some(match ext.as_str() {
+            "wav" => "audio/wav",
+            "mp3" => "audio/mp3",
+            "aiff" => "audio/aiff",
+            "aac" => "audio/aac",
+            "ogg" => "audio/ogg",
+            "flac" => "audio/flac",
+            "m4a" => "audio/m4a",
+            "opus" => "audio/opus",
+            "webm" => "audio/webm",
+            _ => return None,
+        });
+    }
+    if media == Media::Video {
+        return Some(match ext.as_str() {
+            "mp4" => "video/mp4",
+            "mpeg" => "video/mpeg",
+            "mpg" => "video/mpg",
+            "mov" => "video/mov",
+            "avi" => "video/avi",
+            "flv" => "video/x-flv",
+            "webm" => "video/webm",
+            "wmv" => "video/wmv",
+            "3gp" | "3gpp" => "video/3gpp",
+            _ => return None,
+        });
+    }
     Some(match ext.as_str() {
         "png" => "image/png",
         "jpg" | "jpeg" => "image/jpeg",
@@ -813,12 +900,12 @@ fn mime_of_url(url: &str) -> Option<&'static str> {
 
 fn media_part(
     source: &Source,
-    image: bool,
+    media: Media,
     extras: &Extras,
     target: &Origin,
     path: &str,
 ) -> Result<PartW, KppError> {
-    let (inline_data, file_data) = media_fields(source, image, extras, target, path)?;
+    let (inline_data, file_data) = media_fields(source, media, extras, target, path)?;
     Ok(PartW {
         inline_data,
         file_data,
@@ -830,12 +917,12 @@ fn media_part(
 // responses", function calling guide); the API refuses other MIME types with a 400.
 fn media_response_part(
     source: &Source,
-    image: bool,
+    media: Media,
     extras: &Extras,
     target: &Origin,
     path: &str,
 ) -> Result<Raw, KppError> {
-    let (inline_data, file_data) = media_fields(source, image, extras, target, path)?;
+    let (inline_data, file_data) = media_fields(source, media, extras, target, path)?;
     let part = own_ext(
         ResponsePartW {
             inline_data,

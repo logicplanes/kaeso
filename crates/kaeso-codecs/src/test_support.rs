@@ -3,10 +3,21 @@ use std::path::{Path, PathBuf};
 use kaeso_kpp::{RequestKind, StreamMode};
 
 use crate::EgressCtx;
+use crate::anthropic_messages::{MINIMAX_VIDEO_MEDIA_TYPES, MessagesProfile};
 use crate::testing::{json_bytes_diff, sse_diff};
 
 pub(crate) fn egress() -> EgressCtx {
     EgressCtx::for_kind(RequestKind::Generate, StreamMode::Off)
+}
+
+/// The Messages profile a provider's own fixtures are checked with, for the providers whose
+/// fixtures hold what Anthropic refuses.
+pub(crate) fn messages_profile_for(name: &str) -> MessagesProfile {
+    if name.starts_with("providers/minimax/") {
+        MessagesProfile::compatible("MiniMax").with_video(MINIMAX_VIDEO_MEDIA_TYPES)
+    } else {
+        MessagesProfile::ANTHROPIC
+    }
 }
 
 pub(crate) fn fixtures_dir() -> PathBuf {

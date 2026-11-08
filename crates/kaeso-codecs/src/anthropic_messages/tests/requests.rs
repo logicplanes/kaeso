@@ -6,7 +6,9 @@ fn round_trip_requests(folder: &str, kind: RequestKind, path: &str) -> usize {
         let headers = headers_for(folder, &name);
         let req = AnthropicMessages::decode_request(kind, &body, &headers)
             .unwrap_or_else(|e| panic!("{name}: decode failed: {e}"));
-        let mut ctx = EgressCtx::new(&req).with_provider("anthropic");
+        let mut ctx = EgressCtx::new(&req)
+            .with_provider("anthropic")
+            .with_messages_profile(crate::test_support::messages_profile_for(&name));
         let enc = AnthropicMessages::encode_request(&req, &mut ctx)
             .unwrap_or_else(|e| panic!("{name}: encode failed: {e}"));
         assert_json_eq(&name, &body, &enc.body);

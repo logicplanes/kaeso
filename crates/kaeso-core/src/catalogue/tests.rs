@@ -672,6 +672,33 @@ fn capabilities_are_checked_before_sending() {
     assert!(prepare(&mut e, DialectId::OpenAiEmbeddings, &gpt4o).is_err());
 }
 
+#[test]
+fn audio_and_video_need_a_model_that_takes_them() {
+    let gpt4o = eff(&entry("openai", "gpt-4o"));
+    let gemini = eff(&entry("google", "gemini-3.5-flash"));
+    let minimax = eff(&entry("minimax", "MiniMax-M3"));
+    let audio = user(vec![Block::audio(Source::base64("audio/wav", "UklGRg=="))]);
+    let video = user(vec![Block::video(Source::Url(
+        "https://www.youtube.com/watch?v=UTdfxFyOQTI".into(),
+    ))]);
+    let err = check(audio.clone(), DialectId::OpenAiChat, &gpt4o).unwrap_err();
+    assert_eq!(err, "The model `gpt-4o` does not accept audio.");
+    assert!(check(audio.clone(), DialectId::OpenAiChat, &gemini).is_ok());
+    assert_eq!(
+        check(audio, DialectId::Gemini, &minimax).unwrap_err(),
+        "The model `MiniMax-M3` does not accept audio."
+    );
+    assert_eq!(
+        check(video.clone(), DialectId::Gemini, &gpt4o).unwrap_err(),
+        "The model `gpt-4o` does not accept video."
+    );
+    assert!(check(video.clone(), DialectId::Gemini, &minimax).is_ok());
+    let mut req = Request::Generate(video);
+    let refused = prepare(&mut req, DialectId::Gemini, &gpt4o).unwrap_err();
+    assert_eq!(refused.capability, "video input");
+    assert_eq!(refused.param, Some("contents"));
+}
+
 fn effort_of(req: &Request) -> Option<&ReasoningEffort> {
     match req {
         Request::Generate(g) => g.reasoning.as_ref().and_then(|r| r.effort.as_ref()),

@@ -723,6 +723,16 @@ fn check_block(block: &Block, path: &str) -> Result<(), KppError> {
             "Send the image as base64, a URL or a file id.",
         )
         .with_param(path)),
+        Block::Audio(_) => Err(unsupported(
+            "audio block",
+            "Its input has no audio content part; send a transcript of the audio as text, or route the request to a Chat Completions or Gemini model.",
+        )
+        .with_param(path)),
+        Block::Video(_) => Err(unsupported(
+            "video block",
+            "Its input has no video content part; send frames of the video as images, or route the request to a Gemini model.",
+        )
+        .with_param(path)),
         _ => Ok(()),
     }
 }

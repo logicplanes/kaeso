@@ -9,6 +9,7 @@ pub mod dispatch;
 mod inline_tools;
 mod keepalive;
 pub mod limits;
+mod media;
 mod models;
 mod openai_models;
 pub mod sse;

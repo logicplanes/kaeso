@@ -27,6 +27,8 @@ export type ContentBlock =
   | { type: "reasoning"; text: string; redacted?: boolean | undefined }
   | { type: "image"; src?: string | undefined; alt?: string | undefined; media_type?: string | undefined }
   | { type: "document"; name?: string | undefined; media_type?: string | undefined }
+  | { type: "audio"; media_type?: string | undefined; transcript?: string | undefined }
+  | { type: "video"; src?: string | undefined; media_type?: string | undefined }
   | { type: "refusal"; text: string };
 
 export interface ConversationMessage {
@@ -164,6 +166,29 @@ function Blocks({ blocks, markdown }: { blocks: ContentBlock[]; markdown: boolea
                 <span className="min-w-0 wrap-break-word">{b.name ?? t("conversationView.document", "Document")}</span>
               </span>
             );
+          case "audio":
+            return (
+              <div key={i} className="flex flex-col gap-8">
+                <span className="inline-flex w-max max-w-full items-center gap-8 text-small text-fg-secondary">
+                  {t("conversationView.audio", "Audio")}
+                  {b.media_type && <span className="mono text-fg-tertiary">{b.media_type}</span>}
+                </span>
+                {b.transcript && <Prose text={b.transcript} markdown={false} />}
+              </div>
+            );
+          case "video": {
+            const href = b.src ? webHref(b.src) : null;
+            return href ? (
+              <Link key={i} href={href} external rel="noopener noreferrer nofollow" className="w-max max-w-full wrap-anywhere">
+                {t("conversationView.videoFrom", "Video from {host}", { host: new URL(href).host })}
+              </Link>
+            ) : (
+              <span key={i} className="inline-flex w-max max-w-full items-center gap-8 text-small text-fg-secondary">
+                {t("conversationView.video", "Video")}
+                {b.media_type && <span className="mono text-fg-tertiary">{b.media_type}</span>}
+              </span>
+            );
+          }
           case "refusal":
             return (
               <Banner key={i} tone="warning" title={t("conversationView.refused", "The model refused.")}>

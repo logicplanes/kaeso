@@ -3,6 +3,29 @@ import { act, render, screen } from "@testing-library/react";
 import { ConversationView } from "./conversation.js";
 
 describe("ConversationView", () => {
+  it("names audio and video, shows a transcript and links video from the web", () => {
+    render(
+      <ConversationView
+        messages={[
+          {
+            role: "user",
+            content: [
+              { type: "audio", media_type: "audio/mpeg" },
+              { type: "video", src: "https://www.youtube.com/watch?v=UTdfxFyOQTI" },
+              { type: "video", media_type: "video/mp4" },
+            ],
+          },
+          { role: "assistant", content: [{ type: "audio", transcript: "Hi there." }] },
+        ]}
+      />,
+    );
+    expect(screen.getByText("audio/mpeg")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Video from www\.youtube\.com/ })).toHaveAttribute("href", "https://www.youtube.com/watch?v=UTdfxFyOQTI");
+    expect(screen.getByText("video/mp4")).toBeInTheDocument();
+    expect(screen.getAllByText("Audio")).toHaveLength(2);
+    expect(screen.getByText("Hi there.")).toBeInTheDocument();
+  });
+
   it("keeps text plain by default", () => {
     const { container } = render(<ConversationView messages={[{ role: "user", content: "Use **bold** <b>here</b>" }]} />);
     expect(container.querySelector("strong, b")).toBeNull();

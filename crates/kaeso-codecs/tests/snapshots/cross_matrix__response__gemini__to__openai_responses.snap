@@ -126,6 +126,77 @@ expression: outcomes
     },
     "user": null
   },
+  "recorded-audio-input": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "j0rwavOZO4nfxs0Pgpqd2AM",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "gemini-3.5-flash-lite",
+    "object": "response",
+    "output": [
+      {
+        "encrypted_content": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6ImdlbWluaSJ9LCJvcGFxdWUiOlt7Im9yaWdpbiI6eyJkaWFsZWN0IjoiZ2VtaW5pIn0sImtpbmQiOiJnZW1pbmlfdGhvdWdodF9zaWduYXR1cmUiLCJkYXRhIjoiRW1BS1hnRnBGSDBUTW4zL0toSXdnWVd1cWpKQlhJQ0pRR2lqaUNDU2RhZTlGVWVRNFFHQVlnTzRsQ3h3dXV3UGZTV0k2K0k0MzFPd3JtRlZhK0ZmTzRRM3Y0VmFjcVErRUJSUFdySWRFOUlCMkRITHp2U0phUHV1QkFqdWUzUU9zS3M9In1dfQ",
+        "id": "rs_kaeso_j0rwavOZO4nfxs0Pgpqd2AM_0",
+        "summary": [],
+        "type": "reasoning"
+      },
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "Hello Kazo",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_j0rwavOZO4nfxs0Pgpqd2AM_1",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 37,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 3,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 40
+    },
+    "user": null
+  },
   "recorded-image-input": {
     "background": false,
     "completed_at": 1760000000,
@@ -1295,6 +1366,77 @@ expression: outcomes
         "reasoning_tokens": 47
       },
       "total_tokens": 131
+    },
+    "user": null
+  },
+  "recorded-video-input": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "k0rwatj1Kcqq3boPkL_SyQk",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "gemini-3.5-flash-lite",
+    "object": "response",
+    "output": [
+      {
+        "encrypted_content": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6ImdlbWluaSJ9LCJvcGFxdWUiOlt7Im9yaWdpbiI6eyJkaWFsZWN0IjoiZ2VtaW5pIn0sImtpbmQiOiJnZW1pbmlfdGhvdWdodF9zaWduYXR1cmUiLCJkYXRhIjoiRW1BS1hnRnBGSDBUUE84UnkvWDJ1cDFSc250dkh4RDhCbmh5Znd5WGJPcVVKSldRS3hlTUhJRTl5a2hyQmdkdTlmU3pXdzBBdi9XbEpqRVB6ODdXWVBPSmR3dU5WVWI0UGdCOVNhdWlnWk1RWkVZYXdXWjJNUktzMkFCV1Rnck90Rk09In1dfQ",
+        "id": "rs_kaeso_k0rwatj1Kcqq3boPkLSyQk_0",
+        "summary": [],
+        "type": "reasoning"
+      },
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "Red",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_k0rwatj1Kcqq3boPkLSyQk_1",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 76,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 1,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 77
     },
     "user": null
   },

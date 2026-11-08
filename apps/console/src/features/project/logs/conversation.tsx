@@ -47,6 +47,21 @@ function ImageInput({ src, alt, mediaType }: { src: string | undefined; alt: str
   );
 }
 
+function VideoInput({ src, mediaType }: { src: string | undefined; mediaType: string | undefined }) {
+  const href = src ? webHref(src) : null;
+  if (href)
+    return (
+      <Link href={href} external target="_blank" rel="noopener noreferrer nofollow" className="w-max max-w-full wrap-anywhere">
+        {t("logs.conversation.videoFrom", "Video from {host}", { host: new URL(href).host })}
+      </Link>
+    );
+  return (
+    <Tag size="sm" className="w-max">
+      {mediaType ? t("logs.conversation.videoType", "Video {type}", { type: mediaType }) : t("logs.conversation.video", "Video")}
+    </Tag>
+  );
+}
+
 function Blocks({ blocks }: { blocks: ContentBlock[] }) {
   return (
     <div className="flex min-w-0 flex-col gap-12">
@@ -133,6 +148,17 @@ function Blocks({ blocks }: { blocks: ContentBlock[] }) {
                 {b.name ?? t("logs.conversation.document", "Document")}
               </Tag>
             );
+          case "audio":
+            return (
+              <div key={i} className="flex flex-col gap-8">
+                <Tag size="sm" className="w-max">
+                  {b.media_type ? t("logs.conversation.audioType", "Audio {type}", { type: b.media_type }) : t("logs.conversation.audio", "Audio")}
+                </Tag>
+                {b.transcript && <Markdown text={b.transcript} className="mx-12" />}
+              </div>
+            );
+          case "video":
+            return <VideoInput key={i} src={b.src} mediaType={b.media_type} />;
           case "refusal":
             return (
               <Banner key={i} tone="warning" title={t("logs.conversation.refused", "The model refused.")}>

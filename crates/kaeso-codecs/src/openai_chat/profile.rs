@@ -38,6 +38,11 @@ pub struct RequestProfile {
     pub tool_parameters: bool,
     pub refused_fields: &'static [&'static str],
     pub refused_message_fields: &'static [&'static str],
+    /// The `input_audio.format` values the provider takes, or `None` for any value.
+    pub input_audio_formats: Option<&'static [&'static str]>,
+    /// Whether the provider takes videos as `video_url` content parts, which OpenAI's API
+    /// doesn't have; otherwise video blocks are refused.
+    pub video_url: bool,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -98,6 +103,8 @@ impl RequestProfile {
         tool_parameters: false,
         refused_fields: &[],
         refused_message_fields: &[],
+        input_audio_formats: Some(&["wav", "mp3"]),
+        video_url: false,
     };
 }
 
@@ -257,6 +264,21 @@ impl ChatProfile {
         self
     }
 
+    /// The provider takes any `input_audio.format` that names a media type, as OpenRouter
+    /// passes the format on to the model's own provider.
+    #[must_use]
+    pub const fn any_audio_format(mut self) -> Self {
+        self.request.input_audio_formats = None;
+        self
+    }
+
+    /// The provider takes `video_url` content parts ([`RequestProfile::video_url`]).
+    #[must_use]
+    pub const fn with_video_url(mut self) -> Self {
+        self.request.video_url = true;
+        self
+    }
+
     #[must_use]
     pub const fn refusing_in_messages(mut self, fields: &'static [&'static str]) -> Self {
         self.request.refused_message_fields = fields;
@@ -294,6 +316,7 @@ impl ChatProfile {
         if !rules.assistant_prefill {
             self.refuse_prefill(req)?;
         }
+        self.refuse_audio_formats(req)?;
         if let Some(field) = rules
             .refused_fields
             .iter()
@@ -325,6 +348,36 @@ impl ChatProfile {
                 .find(|k| rules.refused_message_fields.contains(&k.as_str()))
             {
                 return Err(self.refused(field, &format!("messages[{index}].{field}")));
+            }
+        }
+        Ok(())
+    }
+
+    fn refuse_audio_formats(&self, req: &GenerateRequest) -> Result<(), KppError> {
+        let Some(formats) = self.request.input_audio_formats else {
+            return Ok(());
+        };
+        for (i, message) in req.messages.iter().enumerate() {
+            for (j, block) in message.blocks.iter().enumerate() {
+                let Block::Audio(audio) = block else { continue };
+                let Some(format) = audio
+                    .source
+                    .media_type()
+                    .and_then(crate::media::chat_audio_format)
+                else {
+                    continue;
+                };
+                if !formats.contains(&format) {
+                    return Err(KppError::unsupported(
+                        format!("audio format `{format}`"),
+                        format!(
+                            "{} takes `input_audio` in the formats {}; send the audio in one of them.",
+                            self.provider,
+                            formats.join(", ")
+                        ),
+                    )
+                    .with_param(format!("messages[{i}].blocks[{j}]")));
+                }
             }
         }
         Ok(())

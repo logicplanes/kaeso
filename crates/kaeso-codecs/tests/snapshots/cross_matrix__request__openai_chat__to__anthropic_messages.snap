@@ -421,8 +421,15 @@ expression: outcomes
     },
     "path": "/v1/messages"
   },
-  "input-audio-unsupported": {
-    "rejected_by_source": "input_audio"
+  "input-audio": {
+    "message": "`modalities` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "modalities"
+  },
+  "input-audio-mp3": {
+    "message": "`audio block` is not supported by Anthropic Messages. Anthropic has no audio content block; send a transcript of the audio as text instead.",
+    "param": "messages[0].blocks[0]",
+    "unsupported": "audio block"
   },
   "json-object": {
     "message": "`json_object output` is not supported by Anthropic Messages. Anthropic has no JSON mode without a schema. Send a JSON schema (structured outputs) instead.",

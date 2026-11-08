@@ -36,7 +36,7 @@ Aufzeichnungen anderer Anbieter, die einen Dialekt sprechen, etwa einer OpenAI-k
 Die Round-Trip-Tests, die Decoder-Tests und die Cross-Dialekt-Matrix lesen jeden Anbieterordner zusammen mit den Fixtures des Dialekts und benennen seine Dateien `providers/<id>/<name>`. Eine neue Aufzeichnung eines Anbieters ergänzt deshalb die Snapshots der Matrix; prüfen Sie sie und übernehmen Sie sie mit `INSTA_UPDATE=always cargo test -p kaeso-codecs --test cross_matrix`. Die SDK-Konformität liefert nur die Fixtures des Dialekts selbst aus; der Mock-Anbieter des Gateways liefert die Datei eines Anbieters aus, wenn ein Test sie als `providers/<id>/<name>` nennt.
 
 - `unknown-*`-Fixtures tragen absichtlich erfundene Felder, Blöcke oder Events, um die Behandlung von `Extras` und `Unknown` zu testen.
-- Fixtures, die ein Codec ablehnen muss (`stateful-*`, `n-2*`, `input-audio*`), werden statt auf einen Round Trip auf ihren `Unsupported`-Fehler getestet.
+- Fixtures, die ein Codec ablehnen muss (`stateful-*`, `n-2*`), werden statt auf einen Round Trip auf ihren `Unsupported`-Fehler getestet.
 
 ## Herkunft
 

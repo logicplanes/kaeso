@@ -8,8 +8,9 @@ use serde_json::Value;
 
 use super::DIALECT;
 use super::convert::{
-    FORM_REFUSAL_PART, encode_file_part, encode_image_part, encode_refusal_part, encode_text_part,
-    encode_tool_call, ext_nested, ext_with, is_tool_call_item, nested_keys, safe_tool_name, to_raw,
+    FORM_REFUSAL_PART, encode_audio_part, encode_file_part, encode_image_part, encode_refusal_part,
+    encode_text_part, encode_tool_call, encode_video_part, ext_nested, ext_with, is_tool_call_item,
+    nested_keys, safe_tool_name, to_raw,
 };
 use super::profile::{ChatProfile, EndUserField, OutputLimit, ReplyReasoning, SeedField};
 use super::request::{
@@ -578,6 +579,8 @@ fn encode_user(message: &Message, out: &mut Vec<RawJson>) -> Result<(), KppError
                     Block::Text(t) => encode_text_part(t)?,
                     Block::Image(i) => encode_image_part(i)?,
                     Block::Document(d) => encode_file_part(d)?,
+                    Block::Audio(a) => encode_audio_part(a)?,
+                    Block::Video(v) => encode_video_part(v)?,
                     Block::Unknown(item) if item.origin.is(DIALECT) => item.raw.clone(),
                     other => return Err(block_unsupported(other, "a user message")),
                 });

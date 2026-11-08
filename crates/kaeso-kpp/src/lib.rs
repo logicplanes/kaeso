@@ -13,9 +13,9 @@ mod stream;
 mod validate;
 
 pub use block::{
-    Base64Source, Block, CacheHint, CacheTtl, Citation, DocumentBlock, FileIdSource, ImageBlock,
-    Opaque, OpaqueKind, RawItem, ReasoningBlock, RefusalBlock, Source, TextBlock, TextSource,
-    ToolCallBlock, ToolResultBlock,
+    AudioBlock, Base64Source, Block, CacheHint, CacheTtl, Citation, DocumentBlock, FileIdSource,
+    ImageBlock, Opaque, OpaqueKind, RawItem, ReasoningBlock, RefusalBlock, Source, TextBlock,
+    TextSource, ToolCallBlock, ToolResultBlock, VideoBlock,
 };
 pub use dialect::{DialectId, Origin, UnknownDialect};
 pub use error::{ErrorKind, KppError};

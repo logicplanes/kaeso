@@ -47,6 +47,33 @@ expression: outcomes
       "output_tokens": 0
     }
   },
+  "recorded-audio-input": {
+    "content": [
+      {
+        "signature": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6ImdlbWluaSJ9LCJvcGFxdWUiOlt7Im9yaWdpbiI6eyJkaWFsZWN0IjoiZ2VtaW5pIn0sImtpbmQiOiJnZW1pbmlfdGhvdWdodF9zaWduYXR1cmUiLCJkYXRhIjoiRW1BS1hnRnBGSDBUTW4zL0toSXdnWVd1cWpKQlhJQ0pRR2lqaUNDU2RhZTlGVWVRNFFHQVlnTzRsQ3h3dXV3UGZTV0k2K0k0MzFPd3JtRlZhK0ZmTzRRM3Y0VmFjcVErRUJSUFdySWRFOUlCMkRITHp2U0phUHV1QkFqdWUzUU9zS3M9In1dfQ",
+        "thinking": "",
+        "type": "thinking"
+      },
+      {
+        "text": "Hello Kazo",
+        "type": "text"
+      }
+    ],
+    "id": "j0rwavOZO4nfxs0Pgpqd2AM",
+    "model": "gemini-3.5-flash-lite",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 37,
+      "output_tokens": 3
+    }
+  },
   "recorded-image-input": {
     "content": [
       {
@@ -547,6 +574,33 @@ expression: outcomes
       "output_tokens_details": {
         "thinking_tokens": 47
       }
+    }
+  },
+  "recorded-video-input": {
+    "content": [
+      {
+        "signature": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6ImdlbWluaSJ9LCJvcGFxdWUiOlt7Im9yaWdpbiI6eyJkaWFsZWN0IjoiZ2VtaW5pIn0sImtpbmQiOiJnZW1pbmlfdGhvdWdodF9zaWduYXR1cmUiLCJkYXRhIjoiRW1BS1hnRnBGSDBUUE84UnkvWDJ1cDFSc250dkh4RDhCbmh5Znd5WGJPcVVKSldRS3hlTUhJRTl5a2hyQmdkdTlmU3pXdzBBdi9XbEpqRVB6ODdXWVBPSmR3dU5WVWI0UGdCOVNhdWlnWk1RWkVZYXdXWjJNUktzMkFCV1Rnck90Rk09In1dfQ",
+        "thinking": "",
+        "type": "thinking"
+      },
+      {
+        "text": "Red",
+        "type": "text"
+      }
+    ],
+    "id": "k0rwatj1Kcqq3boPkL_SyQk",
+    "model": "gemini-3.5-flash-lite",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 76,
+      "output_tokens": 1
     }
   },
   "unknown-parts": {

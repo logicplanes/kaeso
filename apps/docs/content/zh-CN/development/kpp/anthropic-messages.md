@@ -91,6 +91,7 @@ Schema `CreateMessageParams` 和 `CountMessageTokensParams`。
 | `document` `source.type: text`（`text/plain`） | `Document { source: Text }` | |
 | `document` `source.type: content`（自定义内容） | `Block::Unknown` | 仅限同一方言。 |
 | `document.title`、`.context` | `title`、`context` | `null` → verbatim。 |
+| `video`（MiniMax 自己的块）`source.type: base64` 或 `url` | `Video { source: Base64 / Url }` | |
 | `document.citations.enabled` | `citations` | `{enabled: false}` → 形式标记 `citations: "disabled"`；`{}` → `"empty"`；`null` → verbatim。 |
 | 任意块上的 `cache_control`（`CacheControlEphemeral`） | `cache = CacheHint { ttl }` | `ttl` `5m` → `FiveMinutes`，`1h` → `OneHour`，其他值 → `Other`；缺失 → `None`。`ephemeral` 以外的 `type` → 提示的 `extras.fields.type`。 |
 | `tool_use`（`id`、`name`、`input`、`cache_control`） | `Block::ToolCall`（`arguments` 为原始数据） | `caller` 和 `toolset_name` → 块的 `extras.fields`；但 `caller: {type: "direct"}` 表示普通调用，按 verbatim 保留，使该调用可以发往其他方言。 |
@@ -139,6 +140,7 @@ Schema `CreateMessageParams` 和 `CountMessageTokensParams`。
 | `Role::System` | 对从 Anthropic Messages 解码的请求，写为 `role: "system"` 消息；来自其他方言时，作为下一个用户轮次的文本，排在其工具结果之后 | [系统消息](cross-format.md#系统消息)。 |
 | JPEG、PNG、GIF 或 WebP 以外的 base64 图像；文本形式的图像来源 | `Unsupported` | `Base64ImageSource`。 |
 | `application/pdf` 以外的 base64 文档；`text/plain` 以外的文本文档 | `Unsupported` | `Base64PDFSource`、`PlainTextSource`。 |
+| `Block::Audio`；配置没有 `video_media_types` 时的 `Block::Video` | `Unsupported` | 内容联合类型两者都没有。 |
 | 来自其他方言、不是对象的工具调用参数 | 一个对象：文本为 `{"input": text}`，其他值为 `{"input": value}`，`null` 为 `{}`；在 `kaeso-adapted` 中注明 | 否则 Anthropic 会拒绝整个请求（[工具调用参数](cross-format.md#工具调用参数)）。 |
 | 来自 Anthropic 应用、不是对象的 `tool_use.input`；不是对象的工具参数定义 | `Unsupported` | `input` 和 `input_schema` 都是对象。 |
 | 来自其他方言的 `Request::CountTokens` | 不带 `max_tokens`、采样参数、`metadata` 和 `stream` 的 `/v1/messages/count_tokens` | 它们不改变输入 Token 数，而且该端点会拒绝它们。Anthropic 应用自己的 Token 计数请求按收到时的原样发送。 |
@@ -180,7 +182,7 @@ Schema `Message`。
 - **拒绝回复。** `Refusal` 块变为 `text` 块。
 - **不是对象的工具参数。** 对于不是有效 JSON 的工具调用参数（例如被输出上限截断），KPP 会将其保存为 JSON 字符串。其他 JSON 值保持原样。`tool_use.input` 必须是对象，而空的 `input` 会用模型从未写过的参数调用工具。因此，来自其他方言的这类回复会以 `ProviderError` 拒绝（`` The provider returned arguments for the tool call `…` that are not a JSON object, … ``）。网关仍会记录该回复及其用量。在请求中，来自其他方言的此类调用会变为对象（[工具调用参数](cross-format.md#工具调用参数)）。
 - **推理**：来自其他方言的推理会变为 `thinking` 块（[推理数据块](reasoning.md#推理数据块)）。其 `thinking` 先是摘要，然后是推理文本，段落之间以空行分隔。其 `signature` 是原始块的推理数据块。Anthropic 永远不会看到这个块：请求解码器会恢复原始块，而原始块只会发回它自己的服务商。
-- **省略的内容**（[回复](cross-format.md#回复)）：图像、文档和工具结果块，它们不属于 `Message` 的内容联合类型；以及外来的不透明数据、引用、extras 和未知块。没有签名的 Anthropic 推理也会被省略，除非它是从 Anthropic Messages 读取的：自有的未签名思考按收到时的原样写出。
+- **省略的内容**（[回复](cross-format.md#回复)）：图像、文档、音频、视频和工具结果块，它们不属于 `Message` 的内容联合类型；以及外来的不透明数据、引用、extras 和未知块。没有签名的 Anthropic 推理也会被省略，除非它是从 Anthropic Messages 读取的：自有的未签名思考按收到时的原样写出。
 
 ## Token 计数
 
@@ -257,7 +259,7 @@ Schema `ErrorResponse`。解码错误（无论是请求还是服务商的响应�
 - 提示过长与其他错误一样是 400 `invalid_request_error`，只有消息能区分它。如果 Anthropic 改变措辞，该错误会被解码为 `InvalidRequest`。
 - 未知的 `error.type`，或不是 `ErrorResponse` 的响应体，按状态码确定类型。这类响应体的例子有 Cloudflare 的 HTML 413、`type` 不是 `error` 的 JSON，以及顶层带有 Kaeso 无法承载的键的 JSON。状态码和原始响应体（不是 JSON 时以字符串保存）都会保留，这类响应体会以 Anthropic 的错误结构重新编码。
 - 状态码 400、409 和 422 为 `InvalidRequest`，401 为 `Authentication`，402 为 `Billing`，403 为 `PermissionDenied`，404 为 `NotFound`。状态码 408 和 504 为 `Timeout`，413 为 `RequestTooLarge`，429 为 `RateLimited`，503 和 529 为 `Overloaded`。其他任何状态码以及没有状态码的流错误为 `ProviderError`。文档中的 `error.type` 总是优先于状态码。
-- OpenAI 错误结构的响应体 `{"error": {"message", "type"}}`（Vercel AI Gateway 和 Z.ai 在 `/v1/messages` 上发送的就是这种）会保留其消息。若 `error.type` 是 Anthropic 的类型之一或 [Z.ai 的错误码](#zai)之一，类别由它决定，否则由状态码决定；Anthropic 应用收到的是 Anthropic 结构的错误（`fixtures/anthropic_messages/providers/vercel/errors/`）。这样的响应体只有在状态码得出相同类别时才保留其状态码；否则 Anthropic 应用收到该类别的状态码，因此 Z.ai 因余额不足返回的 429 以 402 `billing_error` 送达。
+- OpenAI 错误结构的响应体 `{"error": {"message", "type"}}`（Vercel AI Gateway 和 Z.ai 在 `/v1/messages` 上发送的就是这种）会保留其消息。若 `error.type` 是 Anthropic 的类型之一或 [Z.ai 的错误码](anthropic-messages-providers.md#zai)之一，类别由它决定，否则由状态码决定；Anthropic 应用收到的是 Anthropic 结构的错误（`fixtures/anthropic_messages/providers/vercel/errors/`）。这样的响应体只有在状态码得出相同类别时才保留其状态码；否则 Anthropic 应用收到该类别的状态码，因此 Z.ai 因余额不足返回的 429 以 402 `billing_error` 送达。
 - 从 Anthropic 解码的错误会以其状态码从 `raw` 重新编码，因此 Anthropic 应用看到的错误不变；其他错误则构建为 `{"type":"error","error":{"type","message"},"request_id":null}`。
 - `request_id` 在 `ErrorResponse` 中是必需字段，值为字符串或 `null`。`encode_error_for_request`（`dispatch::encode_error_for_request`）在其中写入给定的 ID，也写入从 `raw` 重新编码的响应体，替换 Anthropic 的 ID。网关传入它在 `kaeso-request-id` 中发送的 ID，并在请求日志中保留 Anthropic 的 `request-id` 响应头。`encode_error` 在它构建的响应体中写入 `null`。
 - 其他响应头（例如 `anthropic-ratelimit-*` 和 `request-id`）不属于 `KppError`。
@@ -335,54 +337,4 @@ Schema `ErrorResponse`。解码错误（无论是请求还是服务商的响应�
 
 ## 使用此格式的服务商
 
-提供 Messages 的其他服务商（Anthropic 以外）会录制到 `fixtures/anthropic_messages/providers/<id>/`（[fixture](fixtures.md)）。它们的额外字段遵循上述规则；本节列出每个服务商增加的内容。
-
-`PROVIDERS` 中的每个服务商都在其 `messages` 字段中指定一个 `kaeso_codecs::anthropic_messages::MessagesProfile`，网关通过 `EgressCtx::with_messages_profile` 把它交给编码器，编码器将它应用于每个请求，无论应用发送的是哪种格式。默认的 `MessagesProfile::ANTHROPIC` 按应用原样发送请求；`MessagesProfile::compatible(name)` 与之相同，只是带上服务商的名称。自定义服务商使用 `ANTHROPIC`。
-
-| 设置 | 编码器的行为 | 为什么允许 |
-|---|---|---|
-| `refusing(fields)` | 拒绝设置了这些字段之一的请求，字段使用 Anthropic 中的名称：`top_k`、`stop_sequences`（按应用的写法命名，例如 Chat 应用的 `stop`），或 Anthropic 应用的某个顶层字段，例如 `container`：`` `top_k` is not supported by Example Cloud; remove it from the request. `` 在跨格式时可以省略的字段，例如 Claude Code 只清除思考内容的 `context_management`（[extras](cross-format.md#extras)），会被省略并在 `kaeso-left-out` 中注明；它的其他取值会被拒绝，并附上针对 Claude Code 的提示。 | 这些字段是语义字段，接受却不处理它们的服务商会悄悄丢弃它们。 |
-| `sampling_fixed_at(values)` | 拒绝与服务商始终使用的采样值（`FixedValue`，以千分之一为单位）不同的 `temperature` 或 `top_p`；该值本身按原样发送。 | 服务商忽略该字段，因此只有它自己的值会被遵守。 |
-| `auto_tool_choice_only()` | 拒绝任何格式中不为 `auto` 的 `tool_choice`。 | 无论应用要求什么，服务商都会自己选择工具。 |
-| `raw_predict()` | 将生成请求发送到 `{base_path}/{model}:rawPredict`（流式时为 `:streamRawPredict`），不含 `model`；将 Token 计数发送到 `{base_path}/count-tokens:rawPredict`，保留 `model`；两者都带上 `anthropic_version` `vertex-2023-10-16`，除非应用自己发送了。Google 格式的错误按 Gemini 错误读取。 | Google 平台提供 Claude 的方式（[使用 Claude](https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/partner-models/claude/use-claude)、[计算 Token](https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/partner-models/claude/count-tokens)、Anthropic 的 SDK）。Gemini Enterprise Agent Platform 使用它，并拒绝 [Anthropic 列为](https://platform.claude.com/docs/en/build-with-claude/claude-models-on-google-cloud/google-managed)不可用的 `mcp_servers` 和 `container`。 |
-
-拒绝发生在为目标调整请求时、编码之前，因此不会发送任何内容，拒绝以应用自己的格式送达。
-
-| 服务商 | 设置 | 来源 |
-|---|---|---|
-| MiniMax（`minimax`） | 拒绝 `top_k`、`stop_sequences`、`mcp_servers`、`container` 和 `context_management`；`sampling_fixed_at([("temperature", 1), ("top_p", 0.95)])`；`auto_tool_choice_only()` | MiniMax 的 [Anthropic API 兼容性](https://platform.minimax.io/docs/api-reference/text-anthropic-api)页面（2026-11-08 阅读），其表格将 `temperature`、`top_p`、`top_k`、`stop_sequences`、`mcp_servers`、`context_management` 和 `container` 列为被忽略，说明 MiniMax 始终使用 1 的 `temperature` 和 0.95 的 `top_p`，并且 `tool_choice` 只支持 `auto` |
-
-### Vercel
-
-来源：Vercel 的 [Anthropic Messages API](https://vercel.com/docs/ai-gateway/sdks-and-apis/anthropic-messages-api) 和 [extended thinking](https://vercel.com/docs/ai-gateway/sdks-and-apis/anthropic-messages-api/reasoning) 页面（2026-10-29 阅读），以及 `fixtures/anthropic_messages/providers/vercel/` 中的实时录制。当 Vercel 模型的**发送格式**为 Messages 时，它以 Messages 发送；Vercel 的 `generation` 方言是 Chat Completions。
-
-| Vercel 字段 | KPP | 说明 |
-|---|---|---|
-| 回复中的 `provider_metadata` | extras | Anthropic 应用原样收到。 |
-| 没有 `signature` 的 `thinking` 块 | `Block::Reasoning` | Anthropic 应用按 Vercel 发送的样子收到。 |
-| OpenAI 封装中的错误 | `KppError` | 见[错误](#错误)。 |
-| `POST /v1/messages/count_tokens` | — | Vercel 只对 Claude 模型精确计数，其余为估算，因此 Kaeso 拒绝所有 Vercel 模型的 Token 计数。 |
-
-### Z.ai
-
-来源：Z.ai 的[错误码](https://docs.z.ai/api-reference/api-code)、[快速开始](https://docs.z.ai/devpack/quick-start)和[思考设置](https://docs.z.ai/devpack/latest-model)页面（2026-11-08 阅读），以及 `fixtures/anthropic_messages/providers/zai/` 中实时录制和探测的错误。Messages 是 Z.ai 的 `generation` 方言，地址为 `https://api.z.ai/api/anthropic`。Z.ai 没有说明 Anthropic 回复、流或它接受的字段列表，因此请求按发给 Anthropic 的方式发送，Kaeso 不为 Z.ai 拒绝任何字段，Z.ai 自己的错误会送达应用。它的思考设置页面列出了 `thinking.type` `adaptive` 和 `output_config.effort`，其他方言的推理强度会转换为它们。
-
-| Z.ai 字段 | KPP | 说明 |
-|---|---|---|
-| OpenAI 封装中作为 `error.type` 的 Z.ai 数字错误码（`errors/recorded-invalid-api-key`） | `KppError` 类别 | Z.ai 对某些错误码使用的状态码在 Anthropic 的表中含义不同，例如余额不足时返回 429。以错误码为准：`1113`、`1309` 和 `1314` → `Billing`；`1211` → `NotFound`；`1220`、`1311` 和 `1315` → `PermissionDenied`；`1261` → `ContextTooLong`；`1301` → `ContentFiltered`；`1305` → `Overloaded`；`1000`、`1001`、`1003` 和 `1005` → `Authentication`。其他错误码按状态码处理。 |
-| `{"code", "msg", "success": false}`，也可能带 HTTP 200（`errors/list-invalid-api-key`） | `KppError` | Z.ai 的平台封装，它在检查密钥之前用它回应自己不提供的路径，其中包括 `GET /v1/models`。`decode_models` 和 `decode_model` 无论状态码如何都把它读作错误，因此用错误的密钥检查模型时会报告密钥被拒绝。 |
-| `POST /v1/messages/count_tokens` | — | 没有相关说明；Kaeso 在发送任何内容之前拒绝 Z.ai 模型的 Token 计数。 |
-### MiniMax
-
-来源：MiniMax 的 [Anthropic API 兼容性](https://platform.minimax.io/docs/api-reference/text-anthropic-api)页面及其 [OpenAPI 文档](https://platform.minimax.io/docs/api-reference/text/api/openapi-chat-anthropic.json)（2026-11-08 阅读）、`fixtures/anthropic_messages/providers/minimax/` 中取自该文档的示例，以及用一个虚构密钥实时录制的一个错误。Messages 是 MiniMax 的 `generation` 方言，地址为 `https://api.minimax.io/anthropic`，用于 `MiniMax-M3` 和 `MiniMax-M3.1-Flash`。
-
-| MiniMax 字段 | KPP | 说明 |
-|---|---|---|
-| 由 32 位十六进制数字组成、没有 `msg_` 的回复 `id`，没有 `stop_sequence` | `id`，form `none` | Anthropic 应用按 MiniMax 发送的样子收到回复（`responses/deep-thinking`）。 |
-| 带有 MiniMax 自己的 `signature` 的 `thinking` 块，以及 `signature_delta` | 带有来源为 `minimax` 的不透明 Anthropic 签名的 `Block::Reasoning` | MiniMax 要求在之后的轮次中原样发回这些块。其他格式只把它们回放给 MiniMax（[推理数据块](reasoning.md#推理数据块)）；Anthropic 应用自己的回放按原样发送，Anthropic 会拒绝 MiniMax 的签名。 |
-| `message_start` 中的 `service_tier` | extras | `streams/image-url-stream`。 |
-| `video` 内容块（请求） | `Block::Unknown` | MiniMax 自己的块；只有 Anthropic 应用的请求会把它送到 MiniMax，其他方言会拒绝它。 |
-| `thinking.type` `adaptive` 和 `output_config.effort`（请求） | `reasoning` | MiniMax 只说明了 `adaptive` 和 `disabled`；`MiniMax-M3.1-Flash` 以 400 拒绝 `disabled`，该错误会送达应用。 |
-| `POST /v1/messages/count_tokens` | — | MiniMax 文档中的响应把计数放在 `usage` 下而不是顶层，因此 Kaeso 在发送任何内容之前拒绝 MiniMax 模型的 Token 计数。 |
-| `GET /v1/models`、`GET /v1/models/{model_id}` | `ModelList`、`ModelInfo` | Anthropic 的结构（`models/list-documented`、`models/retrieve-documented`）；错误的密钥会得到 401，因此**检查可用性**能发现它。 |
-| 错误 | `KppError` | Anthropic 的结构，带有 MiniMax 自己的 `request_id`（`errors/recorded-invalid-api-key`）。 |
+MiniMax、Vercel、Z.ai 以及 Gemini Enterprise Agent Platform 的 Claude 模型也使用 Messages；[Messages 服务商](anthropic-messages-providers.md) 列出每个服务商增加的内容。

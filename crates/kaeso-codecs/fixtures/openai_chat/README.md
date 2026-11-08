@@ -14,7 +14,6 @@ The layout and the provenance marks (`doc:`, `sdk:`, `schema:`) are in [Fixtures
 
 ## Fixtures the codec must reject (`Unsupported`)
 
-- `requests/input-audio-unsupported.json`: an `input_audio` content part (audio input is not part of KPP).
 - `requests/n-2.json` and `responses/n-2.json`: `n > 1`, refused as `Unsupported`.
 
 ## Fixtures that only round-trip within this dialect

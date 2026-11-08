@@ -605,6 +605,14 @@ fn check_block(block: &Block, target: &Origin, path: &str) -> Result<(), KppErro
             check_source(&b.source, target, path)?;
             check_extras(&b.extras, dialect, path, "document")
         }
+        Block::Audio(b) => {
+            check_source(&b.source, target, path)?;
+            check_extras(&b.extras, dialect, path, "audio")
+        }
+        Block::Video(b) => {
+            check_source(&b.source, target, path)?;
+            check_extras(&b.extras, dialect, path, "video")
+        }
         Block::ToolResult(r) => {
             check_extras(&r.extras, dialect, path, "tool_result")?;
             for (i, b) in r.content.iter().enumerate() {

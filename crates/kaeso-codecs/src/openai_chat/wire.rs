@@ -168,6 +168,28 @@ pub(crate) struct ImageUrl {
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
+pub(crate) struct VideoPart {
+    #[serde(rename = "type")]
+    pub(crate) ty: String,
+    pub(crate) video_url: Ext<ImageUrl>,
+}
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+pub(crate) struct AudioPart {
+    #[serde(rename = "type")]
+    pub(crate) ty: String,
+    pub(crate) input_audio: Ext<InputAudio>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) prompt_cache_breakpoint: Option<Ext<CacheBreakpoint>>,
+}
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+pub(crate) struct InputAudio {
+    pub(crate) data: String,
+    pub(crate) format: String,
+}
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub(crate) struct FilePart {
     #[serde(rename = "type")]
     pub(crate) ty: String,
