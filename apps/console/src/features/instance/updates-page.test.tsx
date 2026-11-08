@@ -258,8 +258,10 @@ describe("instance updates page", () => {
     );
     history();
     await renderApp(PATH);
-    expect(await screen.findByText("Update by hand")).toBeInTheDocument();
-    expect(screen.getByText("Kaeso 41.0.0 is a new major version: update by hand with the upgrade guide.")).toBeInTheDocument();
+    expect(await screen.findByText("Update with the installer")).toBeInTheDocument();
+    expect(screen.getByText("Kaeso 41.0.0 is a new major version: read the upgrade guide, then update with the installer.")).toBeInTheDocument();
+    expect(screen.getByText("Then update, in the install's folder")).toBeInTheDocument();
+    expect(document.body.textContent).toContain("curl -fsSL https://kaeso.app/install.sh | sh -s -- --update --version 41.0.0");
     expect(screen.getByRole("link", { name: /Open the upgrade guide/ })).toHaveAttribute("href", "https://docs.kaeso.app/self-hosting/upgrades");
     expect(screen.getByText("Major version")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Update to/ })).not.toBeInTheDocument();
@@ -270,7 +272,9 @@ describe("instance updates page", () => {
     on("GET", "instance/updates", available({ manual: "manual_steps", can_apply: false }));
     history();
     await renderApp(PATH);
-    expect(await screen.findByText("A release on the way asks for steps by hand: follow the upgrade guide.")).toBeInTheDocument();
+    expect(
+      await screen.findByText("A release on the way asks for steps of its own: follow the upgrade guide, then update with the installer."),
+    ).toBeInTheDocument();
   });
 
   it("names releases without a manifest", async () => {
@@ -278,7 +282,7 @@ describe("instance updates page", () => {
     on("GET", "instance/updates", available({ manual: "not_prepared", can_apply: false, releases: [release({ notes: " ", prerelease: true })] }));
     history();
     await renderApp(PATH);
-    expect(await screen.findByText("This release can't be applied from here: update by hand with the upgrade guide.")).toBeInTheDocument();
+    expect(await screen.findByText("This release can't be applied from here: update with the installer.")).toBeInTheDocument();
     expect(screen.getByText("This release has no notes.")).toBeInTheDocument();
     expect(screen.getByText("Pre-release")).toBeInTheDocument();
   });
@@ -382,33 +386,16 @@ describe("instance updates page", () => {
     expect(screen.queryByText("Updater")).not.toBeInTheDocument();
   });
 
-  it("shows the commands to update by hand once when the updater is too old for the release", async () => {
+  it("shows the one installer command that updates once when the updater is too old for the release", async () => {
     signedIn();
     on("GET", "instance/updates", available({ can_apply: false, updater: { state: "outdated", version: "40.4.0" } }));
     history();
     await renderApp(PATH);
-    expect(await screen.findByText("This release needs a newer updater; update by hand once.")).toBeInTheDocument();
+    expect(await screen.findByText("This release needs a newer updater; update once with the installer.")).toBeInTheDocument();
     expect(screen.getByText("40.4.3 available")).toBeInTheDocument();
-    const commands = screen.getByText(/releases\/download\/v40\.4\.3\/compose\.yaml/).closest("pre")?.textContent ?? "";
-    const steps = [
-      "set -euo pipefail",
-      'dir="$(mktemp -d)"',
-      'curl -fsSL -o "$dir/compose.yaml" https://github.com/logicplanes/kaeso/releases/download/v40.4.3/compose.yaml',
-      'curl -fsSL -o "$dir/release.json" https://github.com/logicplanes/kaeso/releases/download/v40.4.3/release.json',
-      'gh attestation verify "$dir/release.json" --repo logicplanes/kaeso',
-      "sha256sum -c -",
-      `jq -e '.version == "40.4.3"' "$dir/release.json"`,
-      'mv "$dir/compose.yaml" "$dir/release.json" .',
-      "docker compose pull",
-      "docker compose up -d --wait",
-    ];
-    const at = steps.map((step) => commands.indexOf(step));
-    expect(
-      at.every((i) => i >= 0),
-      JSON.stringify(at),
-    ).toBe(true);
-    expect([...at].sort((a, b) => a - b)).toEqual(at);
-    expect(commands).not.toMatch(/curl -fsSLO|> compose\.yaml/);
+    expect(screen.getByText("Update once with the installer, in the install's folder")).toBeInTheDocument();
+    expect(document.body.textContent).toContain("curl -fsSL https://kaeso.app/install.sh | sh -s -- --update --version 40.4.3");
+    expect(screen.queryByText(/releases\/download/)).not.toBeInTheDocument();
   });
 
   it("needs the updater before updates can install automatically", async () => {

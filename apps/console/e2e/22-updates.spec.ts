@@ -95,7 +95,8 @@ test("major release: the upgrade guide instead of a button", async ({ page }) =>
   const { versions } = await scenario({ releases: "major" });
   await openUpdates(page);
   await lookNow(page);
-  await expect(page.getByText(`Kaeso ${versions.major} is a new major version: update by hand with the upgrade guide.`)).toBeVisible();
+  await expect(page.getByText(`Kaeso ${versions.major} is a new major version: read the upgrade guide, then update with the installer.`)).toBeVisible();
+  await expect(page.getByText(`curl -fsSL https://kaeso.app/install.sh | sh -s -- --update --version ${versions.major}`)).toBeVisible();
   await expect(page.getByRole("link", { name: /Open the upgrade guide/ })).toBeVisible();
   await expect(page.getByRole("button", { name: /^Update to / })).toHaveCount(0);
 });
@@ -104,7 +105,7 @@ test("manual steps: a release that asks for them is never installed by the updat
   await scenario({ releases: "manual" });
   await openUpdates(page);
   await lookNow(page);
-  await expect(page.getByText("A release on the way asks for steps by hand: follow the upgrade guide.")).toBeVisible();
+  await expect(page.getByText("A release on the way asks for steps of its own: follow the upgrade guide, then update with the installer.")).toBeVisible();
 });
 
 test("updater away: how to start it again, and no commands to update by hand", async ({ page }) => {

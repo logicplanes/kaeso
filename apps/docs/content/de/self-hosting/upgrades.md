@@ -10,7 +10,13 @@ Jedes Release gibt allen Teilen von Kaeso eine Versionsnummer und folgt Semantic
 
 1. Lesen Sie die Release-Notizen auf Schritte, die etwas von Ihnen verlangen. Sie stehen auf der [Release-Seite](https://github.com/logicplanes/kaeso/releases) und unter **Instanz** › **Updates**.
 2. [Sichern](backups.md) Sie PostgreSQL, und ClickHouse, solange es Anfrageprotokolle speichert, damit Sie bei Bedarf [zurückgehen](#downgrade) können.
-3. Setzen Sie im Ordner der Installation `version` auf das Release, auf das Sie aktualisieren, und laden, prüfen und starten Sie es dann. Die Befehle laden `compose.yaml` und `release.json` in einen temporären Ordner und prüfen sie, mit der angemeldeten [GitHub CLI](https://cli.github.com) und `jq`:
+3. Führen Sie im Ordner der Installation das Installationsskript mit `--update` und dem Release aus, auf das Sie aktualisieren. Es lädt `compose.yaml` und `release.json` dieses Releases und ersetzt die `compose.yaml` der Installation nur, wenn ihr Hash dem entspricht, den `release.json` nennt. Es behält die alte Datei als `compose.yaml.previous`, geht nie auf ein älteres Release zurück und lädt und startet dann die Images. Ohne `--version` installiert es das neueste stabile Release.
+
+```bash
+curl -fsSL https://kaeso.app/install.sh | sh -s -- --update --version {{version}}
+```
+
+4. Um zusätzlich die Signatur des Release-Workflows von Kaeso selbst zu prüfen, nutzen Sie statt des Installationsskripts diese Befehle. Setzen Sie `version` auf das Release, auf das Sie aktualisieren, und laden, prüfen und starten Sie es dann. Die Befehle laden `compose.yaml` und `release.json` in einen temporären Ordner und prüfen sie, mit der angemeldeten [GitHub CLI](https://cli.github.com) und `jq`:
    - die Signatur des Release-Workflows von Kaeso auf `release.json`;
    - den Hash der `compose.yaml`, den `release.json` nennt, und damit den Digest jedes Kaeso-Images;
    - die Version, die `release.json` nennt.
@@ -42,7 +48,7 @@ Die Befehle halten beim ersten an, der scheitert, und lassen die Installation, w
 
 Das Gateway migriert die Datenbanken beim Start. Migrationen laufen nur vorwärts und der Reihe nach, sodass Sie Versionen überspringen können.
 
-Wenn der Updater ein Release nicht installieren kann, zeigt die Konsole diese Befehle mit der genauen Version.
+Wenn der Updater ein Release nicht installieren kann, zeigt die Konsole den Befehl des Installationsskripts mit der genauen Version.
 
 ## Neue Releases
 
@@ -119,7 +125,7 @@ secrets:
 
 ### Welche Releases der Updater installiert
 
-Der Updater installiert ein Release, wenn alles hier zutrifft. Sonst zeigt die Konsole seine Release-Notizen und die Befehle für das Update von Hand.
+Der Updater installiert ein Release, wenn alles hier zutrifft. Sonst zeigt die Konsole seine Release-Notizen und den Befehl des Installationsskripts, der darauf aktualisiert.
 
 - Es ist keine neue Hauptversion. Eine Migration, die einen Schritt von Hand braucht, führt immer zu einer neuen Hauptversion.
 - Kein Release auf dem Weg verlangt Schritte von Hand. Das tut ein Release, wenn seine `compose.yaml` sich über die Image-Versionen hinaus ändert oder wenn die Maintainer es so kennzeichnen.
