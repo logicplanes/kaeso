@@ -66,6 +66,7 @@ models.dev 涵盖数百家服务商，始终是 KPMR 的基础。但网关需要
 
 - **每个键都存在。**未知的值为 `null`，因此 Kaeso 能区分“未知”和“否”。
 - **价格是精确的十进制字符串**，单位为每百万 Token 的美元，从不使用浮点数。`cache_write_1h` 是保留一小时的缓存写入价格，在服务商有公开说明时提供。
+- **`pricing.tiers`** 列出模型的长上下文价格，`context_above` 最小的一档在前，没有则为空。当提示词超过 `context_above` 个 Token 时适用该档价格；值为 `null` 的价格沿用基础价格。
 - **`gateway.egress_dialect`** 指明 Kaeso 调用该模型所用的 API 格式（当它不是服务商的默认格式时）。
 - **`origin`** 说明模型来自 models.dev 还是由 KPMR 新增，**`corrected`** 列出 KPMR 设置的字段。
 - **未知的键会被忽略。**格式 1 中新增的字段不会影响旧版网关；会影响旧版网关的变更将成为格式 2。

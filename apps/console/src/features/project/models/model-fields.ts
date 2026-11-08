@@ -34,6 +34,17 @@ export function priceLabel(f: Fields): string {
   return `${short(f.input_price)} / ${short(f.output_price)}`;
 }
 
+export function tierLabels(f: Fields): string[] {
+  const price = (v: string | null | undefined) => (v ? formatPrice(v) : "—");
+  return (f.price_tiers ?? []).map((tier) =>
+    t("models.priceTier", "Above {context}: {input} / {output}", {
+      context: formatContext(tier.context_above),
+      input: price(tier.input_price ?? f.input_price),
+      output: price(tier.output_price ?? f.output_price),
+    }),
+  );
+}
+
 export function overriddenFields(m: CatalogueModelView): string[] {
   return Object.entries(m.overrides)
     .filter(([, v]) => v !== null && v !== undefined)
@@ -53,7 +64,7 @@ export function dialectPill(d: string): string {
   );
 }
 
-export type FieldKind = "text" | "number" | "price" | "bool" | "list" | "dialect" | "date";
+export type FieldKind = "text" | "number" | "price" | "tiers" | "bool" | "list" | "dialect" | "date";
 
 export function fieldRows(): { key: keyof Fields; label: string; kind: FieldKind }[] {
   return [
@@ -67,6 +78,7 @@ export function fieldRows(): { key: keyof Fields; label: string; kind: FieldKind
     { key: "cache_read_price", label: t("models.field.cacheReadPrice", "Cache read price"), kind: "price" },
     { key: "cache_write_price", label: t("models.field.cacheWritePrice", "Cache write price"), kind: "price" },
     { key: "cache_write_1h_price", label: t("models.field.cacheWrite1hPrice", "1-hour cache write price"), kind: "price" },
+    { key: "price_tiers", label: t("models.field.priceTiers", "Long-context prices"), kind: "tiers" },
     { key: "egress_dialect", label: t("models.field.sendsAs", "Sends as"), kind: "dialect" },
     { key: "tool_call", label: t("models.cap.tools", "Tool calling"), kind: "bool" },
     { key: "reasoning", label: t("models.cap.reasoning", "Reasoning"), kind: "bool" },

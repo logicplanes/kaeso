@@ -574,6 +574,7 @@ const messages = (): Rule[] => [
   rule("errors.displayNameLength", () => t("errors.displayNameLength", "The display name must be 1 to 200 characters.")),
   rule("errors.modalityNeeded", (v) => t("errors.modalityNeeded", "`{name}` must list at least one modality.", v)),
   rule("errors.priceRange", (v) => t("errors.priceRange", "`{name}` must be 0 to 1,000,000 USD per million tokens, at most 9 decimals.", v)),
+  rule("errors.priceTiers", () => t("errors.priceTiers", "`price_tiers` takes up to 16 tiers, their `context_above` positive and rising.")),
   rule("errors.notDialect", (v) => t("errors.notDialect", "`{dialect}` is not a dialect of {provider}; use one of {dialects}.", v)),
   rule("errors.adaptiveThinking", () => t("errors.adaptiveThinking", "Adaptive thinking applies only to Anthropic models.")),
   rule("errors.thinkingBinding", () => t("errors.thinkingBinding", "Thinking binding applies only to Anthropic models.")),

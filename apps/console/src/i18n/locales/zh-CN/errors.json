@@ -280,6 +280,7 @@
   "errors.playgroundListConsoleOnly": "试验场需要控制台会话；应用请使用密钥通过 `/v1` 列出模型。",
   "errors.playgroundUnreadable": "网关返回了试验场无法读取的响应，请重试。",
   "errors.priceRange": "`{name}` 必须为每百万 Token 0 到 1,000,000 USD，最多 9 位小数。",
+  "errors.priceTiers": "`price_tiers` 最多 16 档，各档的 `context_above` 须为正数且逐档递增。",
   "errors.projectArchived": "该项目已归档，无法更改。",
   "errors.projectArchivedCalls": "该项目已归档，无法调用其模型。",
   "errors.projectArchivedKeys": "该项目已归档，其密钥无法更改。",

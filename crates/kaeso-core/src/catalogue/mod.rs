@@ -93,6 +93,10 @@ pub struct Fields {
     )]
     #[cfg_attr(feature = "openapi", schema(value_type = Option<String>))]
     pub cache_write_1h_price: Option<Decimal>,
+    #[doc = "Prices for long prompts, by prompt length in tokens, lowest threshold first;\n\
+        the highest tier a prompt exceeds replaces the base prices."]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub price_tiers: Option<Vec<PriceTier>>,
     #[doc = "The kpp dialect Kaeso sends: `anthropic_messages`, `openai_responses`,\n\
         `openai_chat` or `openai_embeddings`."]
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -120,6 +124,90 @@ pub struct Fields {
     pub release_date: Option<String>,
 }
 
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
+#[serde(deny_unknown_fields)]
+#[cfg_attr(
+    feature = "openapi",
+    schema(
+        description = "The prices for a prompt longer than `context_above` tokens. An absent\n\
+    price is the model's own price."
+    )
+)]
+pub struct PriceTier {
+    #[doc = "The prompt length in tokens, cached tokens included, above which these\n\
+        prices apply."]
+    #[cfg_attr(feature = "openapi", schema(example = 272000))]
+    pub context_above: u64,
+    #[doc = "USD per million input tokens."]
+    #[serde(
+        default,
+        deserialize_with = "price",
+        skip_serializing_if = "Option::is_none"
+    )]
+    #[cfg_attr(feature = "openapi", schema(value_type = Option<String>, example = "20.00"))]
+    pub input_price: Option<Decimal>,
+    #[doc = "USD per million output tokens."]
+    #[serde(
+        default,
+        deserialize_with = "price",
+        skip_serializing_if = "Option::is_none"
+    )]
+    #[cfg_attr(feature = "openapi", schema(value_type = Option<String>, example = "75.00"))]
+    pub output_price: Option<Decimal>,
+    #[doc = "USD per million cache-read tokens."]
+    #[serde(
+        default,
+        deserialize_with = "price",
+        skip_serializing_if = "Option::is_none"
+    )]
+    #[cfg_attr(feature = "openapi", schema(value_type = Option<String>))]
+    pub cache_read_price: Option<Decimal>,
+    #[doc = "USD per million cache-write tokens."]
+    #[serde(
+        default,
+        deserialize_with = "price",
+        skip_serializing_if = "Option::is_none"
+    )]
+    #[cfg_attr(feature = "openapi", schema(value_type = Option<String>))]
+    pub cache_write_price: Option<Decimal>,
+    #[doc = "USD per million cache-write tokens kept for an hour; absent means twice\n\
+        this tier's input price, or the model's own one-hour price when the tier has\n\
+        no input price."]
+    #[serde(
+        default,
+        deserialize_with = "price",
+        skip_serializing_if = "Option::is_none"
+    )]
+    #[cfg_attr(feature = "openapi", schema(value_type = Option<String>))]
+    pub cache_write_1h_price: Option<Decimal>,
+}
+
+impl PriceTier {
+    fn from_kpmr(t: &kpmr::Tier) -> PriceTier {
+        PriceTier {
+            context_above: t.context_above,
+            input_price: t.input,
+            output_price: t.output,
+            cache_read_price: t.cache_read,
+            cache_write_price: t.cache_write,
+            cache_write_1h_price: None,
+        }
+    }
+
+    fn prices(&self) -> [Option<Decimal>; 5] {
+        [
+            self.input_price,
+            self.output_price,
+            self.cache_read_price,
+            self.cache_write_price,
+            self.cache_write_1h_price,
+        ]
+    }
+}
+
+const MAX_PRICE_TIERS: usize = 16;
+
 fn is_valid_field(name: &str, value: &serde_json::Value) -> bool {
     let single = serde_json::Map::from_iter([(name.to_owned(), value.clone())]);
     serde_json::from_value::<Fields>(serde_json::Value::Object(single)).is_ok()
@@ -142,6 +230,7 @@ macro_rules! each_field {
             cache_read_price,
             cache_write_price,
             cache_write_1h_price,
+            price_tiers,
             egress_dialect,
             adaptive_thinking,
             thinking_binding,
@@ -168,6 +257,7 @@ pub const FIELD_NAMES: &[&str] = &[
     "cache_read_price",
     "cache_write_price",
     "cache_write_1h_price",
+    "price_tiers",
     "egress_dialect",
     "adaptive_thinking",
     "thinking_binding",
@@ -186,6 +276,35 @@ impl Fields {
             };
         }
         each_field!(merge)
+    }
+
+    #[must_use]
+    pub fn over_kpmr(self, mut kpmr: Fields) -> Fields {
+        // A negotiated input price keeps its one-hour write at twice that price, not KPMR's list price.
+        if self.input_price.is_some() {
+            kpmr.cache_write_1h_price = None;
+        }
+        // KPMR's long-context prices would replace negotiated prices once a prompt is long.
+        let sets_a_price = [
+            self.input_price,
+            self.output_price,
+            self.cache_read_price,
+            self.cache_write_price,
+        ]
+        .iter()
+        .any(Option::is_some);
+        if sets_a_price && self.price_tiers.is_none() {
+            kpmr.price_tiers = None;
+        }
+        // A one-hour price set by hand holds for long prompts too, where KPMR's tiers name none.
+        let one_hour_by_hand = self.cache_write_1h_price;
+        let mut merged = self.over(&kpmr);
+        if let (Some(price), Some(tiers)) = (one_hour_by_hand, merged.price_tiers.as_mut()) {
+            for tier in tiers {
+                tier.cache_write_1h_price.get_or_insert(price);
+            }
+        }
+        merged
     }
 
     pub fn is_empty(&self) -> bool {
@@ -223,6 +342,8 @@ impl Fields {
             cache_read_price: pricing.cache_read,
             cache_write_price: pricing.cache_write,
             cache_write_1h_price: pricing.cache_write_1h,
+            price_tiers: (!pricing.tiers.is_empty())
+                .then(|| pricing.tiers.iter().map(PriceTier::from_kpmr).collect()),
             egress_dialect:
                 m.egress_dialect()
                     .or((m.kind.as_deref() == Some("embedding"))
@@ -310,13 +431,21 @@ impl Fields {
             }
         }
         let max_price = Decimal::from(1_000_000u32);
+        let tiers = self.price_tiers.as_deref().unwrap_or_default();
+        let tier_prices = tiers
+            .iter()
+            .flat_map(PriceTier::prices)
+            .map(|p| ("price_tiers", p));
         for (name, v) in [
             ("input_price", self.input_price),
             ("output_price", self.output_price),
             ("cache_read_price", self.cache_read_price),
             ("cache_write_price", self.cache_write_price),
             ("cache_write_1h_price", self.cache_write_1h_price),
-        ] {
+        ]
+        .into_iter()
+        .chain(tier_prices)
+        {
             if v.is_some_and(|p| p.is_sign_negative() || p > max_price || p.scale() > 9) {
                 return Err(FieldError::new(
                     name,
@@ -325,6 +454,19 @@ impl Fields {
                     ),
                 ));
             }
+        }
+        let rising = tiers
+            .iter()
+            .zip(tiers.iter().skip(1))
+            .all(|(a, b)| a.context_above < b.context_above);
+        if tiers.len() > MAX_PRICE_TIERS
+            || !rising
+            || tiers.first().is_some_and(|t| t.context_above == 0)
+        {
+            return Err(FieldError::new(
+                "price_tiers",
+                "`price_tiers` takes up to 16 tiers, their `context_above` positive and rising.",
+            ));
         }
         if let Some(d) = self.egress_dialect
             && !provider.dialects().contains(&d)
@@ -524,7 +666,7 @@ pub fn effective(
 ) -> Option<Effective> {
     let provider = providers.get(&entry.provider)?;
     let fields = if provider.custom().is_some() {
-        entry.overrides.clone()
+        entry.overrides.clone().over_kpmr(Fields::default())
     } else {
         let mut upstream = snapshot
             .model(&entry.provider, &entry.model_id)
@@ -544,11 +686,7 @@ pub fn effective(
                 None
             }
         });
-        // A negotiated input price keeps its one-hour write at twice that price, not KPMR's list price.
-        if entry.overrides.input_price.is_some() {
-            upstream.cache_write_1h_price = None;
-        }
-        entry.overrides.clone().over(&upstream)
+        entry.overrides.clone().over_kpmr(upstream)
     };
     let dialect = fields
         .egress_dialect

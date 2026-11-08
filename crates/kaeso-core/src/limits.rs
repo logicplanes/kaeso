@@ -366,6 +366,7 @@ impl WorstCase {
         let within = |n: u64| context.map_or(n, |c| n.min(c));
         let bytes = u64::try_from(body_bytes).unwrap_or(u64::MAX);
         let input = within(crate::estimate::tokens_of_bytes(bytes));
+        let prices = &crate::cost::prices_for_prompt(prices, input);
         let limit_holds =
             !(provider.reasoning_beyond_output_limit() && prices.reasoning == Some(true));
         let output = match request {
@@ -585,6 +586,21 @@ mod tests {
             1000 * 7000,
             "the catalogue's one-hour price"
         );
+    }
+
+    #[test]
+    fn a_long_request_reserves_at_its_long_context_prices() {
+        let mut prices = priced("1", "5");
+        prices.price_tiers = Some(vec![crate::catalogue::PriceTier {
+            context_above: 999,
+            input_price: Some(dec!(2)),
+            output_price: Some(dec!(10)),
+            ..crate::catalogue::PriceTier::default()
+        }]);
+        let short = WorstCase::of(&generate(Some(1000)), 3996, &prices, openai());
+        assert_eq!(short.nano_usd, 999 * 1000 + 1000 * 5000);
+        let long = WorstCase::of(&generate(Some(1000)), 4000, &prices, openai());
+        assert_eq!(long.nano_usd, 1000 * 2000 + 1000 * 10_000);
     }
 
     #[test]

@@ -46,12 +46,48 @@ describe("ModelSheet", () => {
     expect(s).toHaveTextContent("Added15 Oct 2026 by Ada Okafor (you)");
     expect(s).toHaveTextContent("Display nameSonnetoverrideReset to KPMR");
     expect(s).toHaveTextContent("Input price$2.50 / M tokensoverrideReset to KPMR");
-    expect(s).toHaveTextContent("Cache write price—1-hour cache write price—Sends as");
+    expect(s).toHaveTextContent("Cache write price—1-hour cache write price—Long-context prices—Sends as");
     expect(s).toHaveTextContent("Sends asAnthropic MessagesKaeso");
     expect(s).toHaveTextContent("Structured outputNoKPMR");
     expect(s).toHaveTextContent("Effortslow, highKPMR");
     expect(s).toHaveTextContent("Timeout120 sKPMR");
     expect(s).toHaveTextContent("Released29 Sep 2025KPMR");
+  });
+
+  it("shows KPMR's long-context prices, a price a tier leaves out at the model's own", async () => {
+    const tiered = catalogueModel({
+      effective: {
+        ...catalogueModel().effective,
+        price_tiers: [
+          { context_above: 200_000, input_price: "6", output_price: "22.5" },
+          { context_above: 500_000, input_price: "12" },
+        ],
+      },
+    });
+    setUp([
+      tiered,
+      catalogueModel({
+        id: "cm_flat",
+        overrides: { input_price: "2", price_tiers: [] },
+        effective: { ...catalogueModel().effective, input_price: "2", price_tiers: [] },
+      }),
+      catalogueModel({
+        id: "cm_own",
+        overrides: { price_tiers: [{ context_above: 128_000, input_price: "4", output_price: "20" }] },
+        effective: { ...catalogueModel().effective, price_tiers: [{ context_above: 128_000, input_price: "4", output_price: "20" }] },
+      }),
+    ]);
+    const { router } = await renderApp(projectPath("models?model=cm_sonnet"));
+
+    const s = await sheet("Claude Sonnet 4.5");
+    await within(s).findByText("Values in use");
+    expect(s).toHaveTextContent("Long-context pricesAbove 200K: $6.00 / $22.50Above 500K: $12.00 / $15.00KPMRSends as");
+    await router.navigate({ to: projectPath("models"), search: { model: "cm_flat" } });
+    const flat = await sheet("Claude Sonnet 4.5");
+    await waitFor(() => expect(flat).toHaveTextContent("Long-context prices—overrideReset to KPMR"));
+    await router.navigate({ to: projectPath("models"), search: { model: "cm_own" } });
+    const own = await sheet("Claude Sonnet 4.5");
+    await waitFor(() => expect(own).toHaveTextContent("Long-context pricesAbove 128K: $4.00 / $20.00overrideReset to KPMR"));
   });
 
   it("marks a model KPMR no longer lists", async () => {

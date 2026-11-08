@@ -484,6 +484,7 @@ fn detected_fields(snapshot: &kaeso_core::kpmr::Catalogue, m: &ModelInfo) -> Fie
         cache_read_price: None,
         cache_write_price: None,
         cache_write_1h_price: None,
+        price_tiers: None,
         egress_dialect: known
             .egress_dialect
             .filter(|d| *d == kaeso_kpp::DialectId::OpenAiEmbeddings),
