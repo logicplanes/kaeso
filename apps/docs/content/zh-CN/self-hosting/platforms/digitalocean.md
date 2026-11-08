@@ -1,10 +1,10 @@
 ---
 title: DigitalOcean
-description: 用 Deploy to DO 按钮或应用规范在 DigitalOcean App Platform 上部署 Kaeso。
+description: 用 Deploy to DigitalOcean 按钮或应用规范在 DigitalOcean App Platform 上部署 Kaeso。
 order: 3
 ---
 
-仓库中的两份 [App Platform 应用规范](https://docs.digitalocean.com/products/app-platform/reference/app-spec/)把网关和控制台作为两个服务运行在应用的边缘之后，全部固定为同一版本。**Deploy to DO** 按钮读取 `.do/deploy.template.yaml`，它在应用内运行 Valkey。`.do/app.yaml` 改用托管 Valkey 数据库，需要用 `doctl` 创建。
+仓库中的两份 [App Platform 应用规范](https://docs.digitalocean.com/products/app-platform/reference/app-spec/)把网关和控制台作为两个服务运行在应用的边缘之后，全部固定为同一版本。**Deploy to DigitalOcean** 按钮读取 `.do/deploy.template.yaml`，它在应用内运行 Valkey。`.do/app.yaml` 改用托管 Valkey 数据库，需要用 `doctl` 创建。
 
 ## 规范创建的内容
 
@@ -41,7 +41,7 @@ order: 3
    docker run --rm ghcr.io/logicplanes/kaeso-gateway:{{version}} master-key generate
    ```
 
-2. 打开 [Deploy to DO](https://cloud.digitalocean.com/apps/new?repo=https://github.com/logicplanes/kaeso/tree/prod&refcode=881255e24b11)。App Platform 从 `prod` 分支读取规范，该分支是最新版本。
+2. 打开 [Deploy to DigitalOcean](https://cloud.digitalocean.com/apps/new?repo=https://github.com/logicplanes/kaeso/tree/prod&refcode=881255e24b11)。App Platform 从 `prod` 分支读取规范，该分支是最新版本。
 3. 在 `kaeso-gateway` 的环境变量中填入[这些值](#需要填写的值)，也可以另选区域。
 4. 创建应用，等待首次部署上线。
 5. 网关会把一次性设置链接发到 `KAESO_SETUP_EMAIL`；打开它创建第一个用户（[首次启动](../how-it-works.md#首次启动)）。
@@ -92,7 +92,7 @@ doctl apps update $APP_ID --spec app.yaml --wait
 
 ## 依据
 
-两份规范的结构、镜像、ingress、健康检查、环境变量、内部端口和数据库字段，以及可绑定的 `${APP_URL}`、`${…DATABASE_URL}` 和 `${…CA_CERT}`，都遵循 2026 年 11 月 7 日阅读的应用规范参考以及环境变量、容器镜像和数据库页面。按钮的模板遵循 2026 年 11 月 9 日阅读的 DigitalOcean Deploy to DO 按钮页面。同一天，App Platform 的校验和提案 API 接受了按钮的规范。两个镜像已在本地 Docker 中按路径转发的边缘布局测试（[已验证的内容](index.md#已验证的内容)）。两份规范都尚未从空账户部署到 App Platform。请先在一次性项目中部署，并检查设置邮件和一次超过一分钟的流式回复，因为边缘与网关之间使用 HTTP/1.1。还要检查请求日志中的客户端地址以及一次更新。
+两份规范的结构、镜像、ingress、健康检查、环境变量、内部端口和数据库字段，以及可绑定的 `${APP_URL}`、`${…DATABASE_URL}` 和 `${…CA_CERT}`，都遵循 2026 年 11 月 7 日阅读的应用规范参考以及环境变量、容器镜像和数据库页面。按钮的模板遵循 2026 年 11 月 9 日阅读的 DigitalOcean Deploy to DigitalOcean 按钮页面。同一天，App Platform 的校验和提案 API 接受了按钮的规范。两个镜像已在本地 Docker 中按路径转发的边缘布局测试（[已验证的内容](index.md#已验证的内容)）。两份规范都尚未从空账户部署到 App Platform。请先在一次性项目中部署，并检查设置邮件和一次超过一分钟的流式回复，因为边缘与网关之间使用 HTTP/1.1。还要检查请求日志中的客户端地址以及一次更新。
 
 ## 下一步
 

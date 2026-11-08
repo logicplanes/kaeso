@@ -1,10 +1,10 @@
 ---
 title: DigitalOcean
-description: Rollen Sie Kaeso mit dem Button Deploy to DO oder aus der App-Spec auf DigitalOcean App Platform aus.
+description: Rollen Sie Kaeso mit dem Button Deploy to DigitalOcean oder aus der App-Spec auf DigitalOcean App Platform aus.
 order: 3
 ---
 
-Zwei [App-Specs für App Platform](https://docs.digitalocean.com/products/app-platform/reference/app-spec/) im Repository betreiben Gateway und Konsole als zwei Dienste hinter dem Edge der App, auf ein Release festgelegt. `.do/deploy.template.yaml` liest der Button **Deploy to DO**: Sie betreibt Valkey in der App. `.do/app.yaml` nutzt stattdessen eine verwaltete Valkey-Datenbank, und Sie legen sie mit `doctl` an.
+Zwei [App-Specs für App Platform](https://docs.digitalocean.com/products/app-platform/reference/app-spec/) im Repository betreiben Gateway und Konsole als zwei Dienste hinter dem Edge der App, auf ein Release festgelegt. `.do/deploy.template.yaml` liest der Button **Deploy to DigitalOcean**: Sie betreibt Valkey in der App. `.do/app.yaml` nutzt stattdessen eine verwaltete Valkey-Datenbank, und Sie legen sie mit `doctl` an.
 
 ## Was die Specs anlegen
 
@@ -41,7 +41,7 @@ Beide Specs lassen diese Werte leer:
    docker run --rm ghcr.io/logicplanes/kaeso-gateway:{{version}} master-key generate
    ```
 
-2. Öffnen Sie [Deploy to DO](https://cloud.digitalocean.com/apps/new?repo=https://github.com/logicplanes/kaeso/tree/prod&refcode=881255e24b11). App Platform liest die Spec aus dem Branch `prod`, der das neueste Release enthält.
+2. Öffnen Sie [Deploy to DigitalOcean](https://cloud.digitalocean.com/apps/new?repo=https://github.com/logicplanes/kaeso/tree/prod&refcode=881255e24b11). App Platform liest die Spec aus dem Branch `prod`, der das neueste Release enthält.
 3. Tragen Sie in den Umgebungsvariablen von `kaeso-gateway` die [Werte](#einzutragende-werte) ein, und wählen Sie bei Bedarf eine andere Region.
 4. Legen Sie die App an und warten Sie, bis ihr erstes Deployment live ist.
 5. Das Gateway schickt den einmaligen Einrichtungslink an `KAESO_SETUP_EMAIL`; öffnen Sie ihn, um den ersten Benutzer anzulegen ([der erste Start](../how-it-works.md#der-erste-start)).
@@ -92,7 +92,7 @@ Zum Zurückrollen wählen Sie **Rollback** neben einem früheren Deployment im T
 
 ## Worauf das beruht
 
-Form der Specs, die Felder für Image, Ingress, Health-Check, Umgebung, interne Ports und Datenbanken sowie die bindbaren `${APP_URL}`, `${…DATABASE_URL}` und `${…CA_CERT}` folgen der App-Spec-Referenz und den Seiten zu Umgebungsvariablen, Container-Images und Datenbanken, gelesen am 7. November 2026. Die Vorlage des Buttons folgt DigitalOceans Seite zum Button Deploy to DO, gelesen am 9. November 2026. An diesem Tag hat die Validierungs- und Proposal-API von App Platform die Spec des Buttons angenommen. Die beiden Images wurden hinter einem pfadweiterleitenden Edge lokal mit Docker getestet ([was geprüft wurde](index.md#was-geprüft-wurde)). Keine der beiden Specs wurde bisher von einem leeren Konto aus auf App Platform ausgerollt. Tun Sie das zuerst in einem Wegwerf-Projekt und prüfen Sie die Einrichtungs-E-Mail und eine gestreamte Antwort, die länger als eine Minute dauert, da der Edge HTTP/1.1 mit dem Gateway spricht. Prüfen Sie auch die Client-Adresse in einem Anfrageprotokoll und ein Update.
+Form der Specs, die Felder für Image, Ingress, Health-Check, Umgebung, interne Ports und Datenbanken sowie die bindbaren `${APP_URL}`, `${…DATABASE_URL}` und `${…CA_CERT}` folgen der App-Spec-Referenz und den Seiten zu Umgebungsvariablen, Container-Images und Datenbanken, gelesen am 7. November 2026. Die Vorlage des Buttons folgt DigitalOceans Seite zum Button Deploy to DigitalOcean, gelesen am 9. November 2026. An diesem Tag hat die Validierungs- und Proposal-API von App Platform die Spec des Buttons angenommen. Die beiden Images wurden hinter einem pfadweiterleitenden Edge lokal mit Docker getestet ([was geprüft wurde](index.md#was-geprüft-wurde)). Keine der beiden Specs wurde bisher von einem leeren Konto aus auf App Platform ausgerollt. Tun Sie das zuerst in einem Wegwerf-Projekt und prüfen Sie die Einrichtungs-E-Mail und eine gestreamte Antwort, die länger als eine Minute dauert, da der Edge HTTP/1.1 mit dem Gateway spricht. Prüfen Sie auch die Client-Adresse in einem Anfrageprotokoll und ein Update.
 
 ## Nächste Schritte
 

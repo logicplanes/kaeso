@@ -1,10 +1,10 @@
 ---
 title: DigitalOcean
-description: Deploy Kaeso on DigitalOcean App Platform with the Deploy to DO button or from the app spec.
+description: Deploy Kaeso on DigitalOcean App Platform with the Deploy to DigitalOcean button or from the app spec.
 order: 3
 ---
 
-Two [App Platform app specs](https://docs.digitalocean.com/products/app-platform/reference/app-spec/) in the repository run the gateway and the console as two services behind the app's edge, pinned to one release. `.do/deploy.template.yaml` is what the **Deploy to DO** button reads: it runs Valkey inside the app. `.do/app.yaml` uses a managed Valkey database instead, and you create it with `doctl`.
+Two [App Platform app specs](https://docs.digitalocean.com/products/app-platform/reference/app-spec/) in the repository run the gateway and the console as two services behind the app's edge, pinned to one release. `.do/deploy.template.yaml` is what the **Deploy to DigitalOcean** button reads: it runs Valkey inside the app. `.do/app.yaml` uses a managed Valkey database instead, and you create it with `doctl`.
 
 ## What the specs create
 
@@ -41,7 +41,7 @@ Both specs leave these values empty:
    docker run --rm ghcr.io/logicplanes/kaeso-gateway:{{version}} master-key generate
    ```
 
-2. Open [Deploy to DO](https://cloud.digitalocean.com/apps/new?repo=https://github.com/logicplanes/kaeso/tree/prod&refcode=881255e24b11). App Platform reads the spec from the branch `prod`, which holds the latest release.
+2. Open [Deploy to DigitalOcean](https://cloud.digitalocean.com/apps/new?repo=https://github.com/logicplanes/kaeso/tree/prod&refcode=881255e24b11). App Platform reads the spec from the branch `prod`, which holds the latest release.
 3. In the environment variables of `kaeso-gateway`, fill in the [values](#values-to-fill), and choose another region if you like.
 4. Create the app and wait until its first deployment is live.
 5. The gateway emails the one-time setup link to `KAESO_SETUP_EMAIL`; open it to create the first user ([the first start](../how-it-works.md#the-first-start)).
@@ -92,7 +92,7 @@ To roll back, choose **Rollback** beside an earlier deployment on the app's **Ac
 
 ## What this is based on
 
-The specs' shape, the image, ingress, health check, env, internal port and database fields and the bindable `${APP_URL}`, `${…DATABASE_URL}` and `${…CA_CERT}` follow the app spec reference and the environment variable, container image and database pages, read on 2026-11-07. The button's template follows DigitalOcean's page on the Deploy to DO button, read on 2026-11-09. On that day, App Platform's validation and proposal API accepted the button's spec. The two images were tested behind a path-routing edge locally with Docker ([what was validated](index.md#what-was-validated)). Neither spec has yet been deployed on App Platform from an empty account. Do that in a disposable project first, and check the setup email and a streamed completion that outlasts a minute, since the edge speaks HTTP/1.1 to the gateway. Also check the client address in a request log, and an update.
+The specs' shape, the image, ingress, health check, env, internal port and database fields and the bindable `${APP_URL}`, `${…DATABASE_URL}` and `${…CA_CERT}` follow the app spec reference and the environment variable, container image and database pages, read on 2026-11-07. The button's template follows DigitalOcean's page on the Deploy to DigitalOcean button, read on 2026-11-09. On that day, App Platform's validation and proposal API accepted the button's spec. The two images were tested behind a path-routing edge locally with Docker ([what was validated](index.md#what-was-validated)). Neither spec has yet been deployed on App Platform from an empty account. Do that in a disposable project first, and check the setup email and a streamed completion that outlasts a minute, since the edge speaks HTTP/1.1 to the gateway. Also check the client address in a request log, and an update.
 
 ## Next steps
 
