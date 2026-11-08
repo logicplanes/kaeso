@@ -86,6 +86,7 @@ export function dialectPill(d: string): string {
       openai_speech: "speech",
       minimax_speech: "speech",
       openai_transcriptions: "transcriptions",
+      elevenlabs: "elevenlabs",
     }[d] ?? d
   );
 }

@@ -14,8 +14,8 @@ Schlagen Sie hier jedes Feld der Speech API von OpenAI nach: wohin es in KPP geh
 
 ## Entscheidungen
 
-- **Eine KPP-Anfrage für erzeugtes Audio.** `Request::Speech(SpeechRequest)` mit `SpeechOperation` `Speech`, `Dialogue`, `SoundEffect`, `Music` oder `VoiceChange`, `Reply::Speech(SpeechResponse)` mit dem Audio base64-kodiert und seinem Medientyp, und `StreamEvent::Speech(SpeechEvent)` für Audiostücke und das Ende mit seiner Nutzung. Die Speech API von OpenAI erzeugt nur `Speech`; die anderen Operationen sind für Anbieter, die sie anbieten.
-- **Stimmen sind Namen oder IDs.** `Voice::Named` für eine Stimme, die ein Anbieter benennt, `Voice::Id` für eine Stimme per ID (`{"id": …}` von OpenAI). Ein Name geht nur an einen Anbieter, der ihn listet.
+- **Eine KPP-Anfrage für erzeugtes Audio.** `Request::Speech(SpeechRequest)` mit `SpeechOperation` `Speech`, `Dialogue`, `SoundEffect`, `Music` oder `VoiceChange`, `Reply::Speech(SpeechResponse)` mit dem Audio base64-kodiert und seinem Medientyp, und `StreamEvent::Speech(SpeechEvent)` für Audiostücke und das Ende mit seiner Nutzung. Dialog, Soundeffekte, Musik und der Voice Changer kommen von [ElevenLabs](elevenlabs.md); die Speech API von OpenAI erzeugt nur `Speech`.
+- **Stimmen sind Namen oder IDs.** `Voice::Named` für eine Stimme, die ein Anbieter benennt, `Voice::Id` für eine Stimme per ID (`{"id": …}` von OpenAI, eine Stimmen-ID von ElevenLabs). Ein Name geht nur an einen Anbieter, der ihn listet.
 - **Audio fließt, während es entsteht.** Eine Antwort in rohem Audio wird mit dem Stream-Decoder gelesen, ob die App streamt oder nicht (`Codec::reads_reply_as_stream`), damit die ersten Bytes der App nicht auf die letzten warten. `Codec::response_media_type` und `stream_media_type` nennen, was der Codec geschrieben hat: den Medientyp des Audios oder `text/event-stream` für Ereignisse.
 - **Keine Umwandlung.** Ein Format, eine Stimme oder eine Abtastrate, die der Anbieter nicht hat, ist `Unsupported`, bevor etwas gesendet wird.
 

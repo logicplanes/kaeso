@@ -136,6 +136,7 @@
   "errors.domainTaken": "The domain {domain} is verified by another organization.",
   "errors.edgeUnreachable": "Kaeso can't be reached right now; try again in a minute.",
   "errors.edgeUpdating": "Kaeso is being updated; try again in a minute.",
+  "errors.elevenLabsUnserved": "Kaeso does not serve `{path}`; manage voices, dubbing and your account at ElevenLabs.",
   "errors.emailCancelLinkInvalid": "This link is invalid, used or expired; the change may already be done.",
   "errors.emailNotSent": "The email was not sent; check the mail settings and the gateway log.",
   "errors.emptyAnswer": "The gateway sent an empty answer. Try again.",

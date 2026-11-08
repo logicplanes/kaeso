@@ -4,6 +4,7 @@ use kaeso_kpp::{
 };
 
 use crate::anthropic_messages::AnthropicMessages;
+use crate::elevenlabs::{ElevenLabs, ElevenLabsCall};
 use crate::gemini::{Gemini, GeminiAction};
 use crate::gemini_embeddings::GeminiEmbeddings;
 use crate::limits::Checked;
@@ -34,6 +35,7 @@ macro_rules! dispatch {
             DialectId::OpenAiSpeech => Ok(OpenAiSpeech::$f($($arg),*)),
             DialectId::OpenAiTranscriptions => Ok(OpenAiTranscriptions::$f($($arg),*)),
             DialectId::MinimaxSpeech => Ok(MinimaxSpeech::$f($($arg),*)),
+            DialectId::ElevenLabs => Ok(ElevenLabs::$f($($arg),*)),
             other => Err(no_codec(other)),
         }
     };
@@ -74,6 +76,7 @@ pub fn decode_checked_request<B: AsRef<[u8]>>(
         DialectId::MinimaxImages => MinimaxImages::decode_request(kind, body, headers),
         DialectId::OpenAiSpeech => OpenAiSpeech::decode_checked(kind, body, headers),
         DialectId::MinimaxSpeech => MinimaxSpeech::decode_request(kind, body, headers),
+        DialectId::ElevenLabs => ElevenLabs::decode_request(kind, body, headers),
         DialectId::OpenAiTranscriptions => OpenAiTranscriptions::decode_call(
             kaeso_kpp::TranscriptionOperation::Transcribe,
             body,
@@ -174,6 +177,26 @@ pub fn decode_checked_transcription_request<B: AsRef<[u8]>>(
     headers: &HeaderList,
 ) -> Result<Request, KppError> {
     OpenAiTranscriptions::decode_call(operation, checked.body().as_ref(), headers)
+}
+
+/// Decodes an ElevenLabs-format request for the call its path names
+/// ([`ElevenLabsCall::from_path`]). `headers` must carry an upload's `content-type`.
+pub fn decode_elevenlabs_request(
+    call: &ElevenLabsCall,
+    body: &[u8],
+    headers: &HeaderList,
+) -> Result<Request, KppError> {
+    crate::limits::request_shape(DialectId::ElevenLabs, body)?;
+    ElevenLabs::decode_call(call, body, headers)
+}
+
+/// Decodes an ElevenLabs body [`Checked::new`] already checked, without counting it again.
+pub fn decode_checked_elevenlabs_request<B: AsRef<[u8]>>(
+    call: &ElevenLabsCall,
+    checked: &Checked<B>,
+    headers: &HeaderList,
+) -> Result<Request, KppError> {
+    ElevenLabs::decode_call(call, checked.body().as_ref(), headers)
 }
 
 /// The `content-type` of a reply [`encode_response`] wrote for `dialect`.
@@ -302,6 +325,8 @@ pub fn reports_item_progress(dialect: DialectId, frame: &RawItem) -> bool {
 pub fn models_dialect(headers: &HeaderList) -> DialectId {
     if headers.get("anthropic-version").is_some() {
         DialectId::AnthropicMessages
+    } else if headers.get("xi-api-key").is_some() {
+        DialectId::ElevenLabs
     } else {
         DialectId::OpenAiChat
     }

@@ -87,5 +87,6 @@ describe("unitPriceLabels", () => {
     ]);
     expect(dialectPill("openai_speech")).toBe("speech");
     expect(dialectPill("openai_transcriptions")).toBe("transcriptions");
+    expect(dialectPill("elevenlabs")).toBe("elevenlabs");
   });
 });

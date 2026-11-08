@@ -36,12 +36,23 @@ def test_transcriptions_and_translations(oa, mock):
     assert mock.last()["path"] == "/v1/audio/translations"
 
 
+def test_elevenlabs_models_serve_openai_apps(oa, mock):
+    with oa.audio.speech.with_streaming_response.create(
+        model="eleven_flash_v2_5", voice="hpp4J3VqNfWAUOO0d1Us", input="Hi.", response_format="pcm"
+    ) as r:
+        assert r.headers["content-type"] == "audio/pcm"
+        assert len(r.read()) > 0
+    assert mock.last()["path"] == "/v1/text-to-speech/hpp4J3VqNfWAUOO0d1Us/stream"
+    t = oa.audio.transcriptions.create(model="scribe_v2", file=("a.mp3", MP3, "audio/mpeg"), response_format="verbose_json")
+    assert t.text == "Hello, Kizo" and len(t.words) == 2
+
+
 def test_refusals_reach_the_app_before_anything_is_sent(oa, mock):
     mock.reset()
     with pytest.raises(openai.BadRequestError) as e:
         oa.audio.speech.create(model="claude-haiku-4-5", voice="alloy", input="Hi")
     assert "speech" in e.value.message
     with pytest.raises(openai.BadRequestError) as e:
-        oa.audio.speech.create(model="gpt-4o-mini-tts", voice="Kore", input="Hi")
+        oa.audio.speech.create(model="eleven_flash_v2_5", voice="alloy", input="Hi")
     assert e.value.body["param"] == "voice"
     assert mock.received() == []

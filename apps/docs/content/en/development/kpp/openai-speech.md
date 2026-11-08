@@ -14,8 +14,8 @@ Look up any field of OpenAI's speech API here: where it goes in KPP, which provi
 
 ## Decisions
 
-- **One KPP request for generated audio.** `Request::Speech(SpeechRequest)` with `SpeechOperation` `Speech`, `Dialogue`, `SoundEffect`, `Music` or `VoiceChange`, `Reply::Speech(SpeechResponse)` with the audio base64-encoded and its media type, and `StreamEvent::Speech(SpeechEvent)` for pieces of audio and the end with its usage. OpenAI's speech API makes only `Speech`; the other operations are for providers that offer them.
-- **Voices are names or ids.** `Voice::Named` for a voice a provider names, `Voice::Id` for a voice by id (OpenAI's `{"id": …}`). A name crosses only to a provider that lists it.
+- **One KPP request for generated audio.** `Request::Speech(SpeechRequest)` with `SpeechOperation` `Speech`, `Dialogue`, `SoundEffect`, `Music` or `VoiceChange`, `Reply::Speech(SpeechResponse)` with the audio base64-encoded and its media type, and `StreamEvent::Speech(SpeechEvent)` for pieces of audio and the end with its usage. Dialogue, sound effects, music and the voice changer come from [ElevenLabs](elevenlabs.md); OpenAI's speech API makes only `Speech`.
+- **Voices are names or ids.** `Voice::Named` for a voice a provider names, `Voice::Id` for a voice by id (OpenAI's `{"id": …}`, an ElevenLabs voice id). A name crosses only to a provider that lists it.
 - **Audio flows as it is made.** A reply in raw audio is read with the stream decoder whether or not the app streams (`Codec::reads_reply_as_stream`), so the app's first bytes don't wait for the last. `Codec::response_media_type` and `stream_media_type` name what the codec wrote: the audio's media type, or `text/event-stream` for events.
 - **No conversion.** A format, a voice or a sample rate the provider lacks is `Unsupported` before anything is sent.
 

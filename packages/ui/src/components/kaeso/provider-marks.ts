@@ -215,6 +215,10 @@ export const PROVIDER_MARKS: Record<string, ProviderMark> = {
       },
     ],
   },
+  elevenlabs: {
+    d: "M14.466 0h4.932v24h-4.932zM4.603 0h4.932v24H4.603z",
+    color: "text-mark-elevenlabs",
+  },
   "gemini-agent-platform": {
     parts: [
       {

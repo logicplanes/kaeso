@@ -22,6 +22,7 @@ Jede Codec-Änderung beginnt mit einer Fixture: einem echten Anfrage-Body, einer
 | `openai_speech/` | Speech von OpenAI (`/v1/audio/speech`); die Audioantwort als `responses/<name>.mp3` mit ihrem Content-Type in `<name>.mp3.meta.json` |
 | `openai_transcriptions/` | Transkriptionen und Übersetzungen von OpenAI (`/v1/audio/transcriptions`, `/v1/audio/translations`); Uploads als `requests/<name>.multipart`, Textformen als `.txt`, `.srt` und `.vtt` |
 | `minimax_speech/` | Text to Speech von MiniMax (`/v1/t2a_v2`) |
+| `elevenlabs/` | ElevenLabs; Pfad und Query jeder Anfrage in `<name>.meta.json`, Audioantworten als `.mp3` und `.pcm`, der Stream mit Zeitmarken als `.ndjson` |
 
 Jeder Dialektordner hat `requests/`, `responses/`, `streams/`, sofern der Endpunkt streamt, und `errors/`.
 

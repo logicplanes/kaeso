@@ -206,7 +206,7 @@ sequenceDiagram
 e2e/.venv/bin/pytest -q e2e/sdk
 ```
 
-该套件在开发数据库上用 SDK 测试网关。它会构建网关和 `kaeso-testkit`，启动模拟服务商和网关，并通过 Platform API 设置用户、项目、服务商密钥、模型和 API 密钥。测试覆盖流式传输、保活、工具、图片、PDF、推理、跨服务商的双向转换、Token 计数、嵌入、模型列表、每类错误、限额、SDK 重试和断开连接。`e2e/sdk/test_google_genai_sdk.py` 用 `google-genai` 测试 `/v1beta`：在每个服务商上的生成和流式回复、带 Gemini 思考签名和带 Claude 思考的工具循环、Token 计数、嵌入、模型列表，以及 Gemini 的错误形式。`e2e/sdk/test_audio.py` 在 OpenAI 模型上运行 OpenAI SDK 的语音、转写和翻译调用。
+该套件在开发数据库上用 SDK 测试网关。它会构建网关和 `kaeso-testkit`，启动模拟服务商和网关，并通过 Platform API 设置用户、项目、服务商密钥、模型和 API 密钥。测试覆盖流式传输、保活、工具、图片、PDF、推理、跨服务商的双向转换、Token 计数、嵌入、模型列表、每类错误、限额、SDK 重试和断开连接。`e2e/sdk/test_google_genai_sdk.py` 用 `google-genai` 测试 `/v1beta`：在每个服务商上的生成和流式回复、带 Gemini 思考签名和带 Claude 思考的工具循环、Token 计数、嵌入、模型列表，以及 Gemini 的错误形式。`e2e/sdk/test_audio.py` 在 OpenAI 和 ElevenLabs 模型上运行 OpenAI SDK 的语音、转写和翻译调用；`e2e/sdk/test_elevenlabs.py` 用官方 `elevenlabs` SDK 测试 Kaeso：普通、流式和带时间戳的文本转语音、语音转文本、音效、对话、模型和声音列表，以及一个被拒绝的管理调用。
 
 模拟服务商（`crates/kaeso-testkit/src/mock_provider.rs`）根据请求中的标记选择回复：
 

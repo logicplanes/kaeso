@@ -195,6 +195,7 @@ The first three settings only seed a new install. After that, instance admins ch
 | `KAESO_PROVIDERS_CEREBRAS_BASE_URL`<br>`providers.cerebras.base_url` | text | `https://api.cerebras.ai` | Base URL of the Cerebras API. |
 | `KAESO_PROVIDERS_ZAI_BASE_URL`<br>`providers.zai.base_url` | text | `https://api.z.ai/api/anthropic` | Base URL of the Z.ai API. |
 | `KAESO_PROVIDERS_MINIMAX_BASE_URL`<br>`providers.minimax.base_url` | text | `https://api.minimax.io/anthropic` | Base URL of the MiniMax API. |
+| `KAESO_PROVIDERS_ELEVENLABS_BASE_URL`<br>`providers.elevenlabs.base_url` | text | `https://api.elevenlabs.io` | Base URL of the ElevenLabs API. |
 | `KAESO_PROVIDERS_GOOGLE_BASE_URL`<br>`providers.google.base_url` | text | `https://generativelanguage.googleapis.com` | Base URL of the Google AI Studio API. |
 | `KAESO_PROVIDERS_GEMINI_AGENT_PLATFORM_BASE_URL`<br>`providers.gemini-agent-platform.base_url` | text | `https://aiplatform.googleapis.com` | Base URL of the Gemini Enterprise Agent Platform API. |
 | `KAESO_UPSTREAM_CONNECT_TIMEOUT`<br>`upstream.connect_timeout` | text | `10s` | Time to connect to a provider, TCP and TLS; at most 24h. |

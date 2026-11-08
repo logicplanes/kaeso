@@ -492,6 +492,9 @@ const messages = (): Rule[] => [
     t("errors.noEmbeddingsAtProvider", "Kaeso calls no embeddings models on {provider}, so `{name}` can't create embeddings.", v),
   ),
   rule("errors.noImagesAtProvider", (v) => t("errors.noImagesAtProvider", "{provider} offers no image API Kaeso can call, so `{name}` can't make images.", v)),
+  rule("errors.elevenLabsUnserved", (v) =>
+    t("errors.elevenLabsUnserved", "Kaeso does not serve `{path}`; manage voices, dubbing and your account at ElevenLabs.", v),
+  ),
   rule("errors.noSpeechAtProvider", (v) => t("errors.noSpeechAtProvider", "{provider} offers no speech API Kaeso can call, so `{name}` can't speak.", v)),
   rule("errors.noTranscriptionAtProvider", (v) =>
     t("errors.noTranscriptionAtProvider", "{provider} offers no transcription API Kaeso can call, so `{name}` can't transcribe.", v),

@@ -88,6 +88,7 @@ Both crates are published to crates.io. Their library code may depend only on `s
 | `openai_speech` | OpenAI speech (`/v1/audio/speech`) and the providers that speak a form of it ([OpenAI Speech](openai-speech.md)) |
 | `openai_transcriptions` | OpenAI transcriptions and translations and the providers that speak a form of them ([OpenAI Transcriptions](openai-transcriptions.md)) |
 | `minimax_speech` | MiniMax text to speech (`/v1/t2a_v2`) |
+| `elevenlabs` | ElevenLabs' generation, transcription and listing endpoints ([ElevenLabs](elevenlabs.md)) |
 | `multipart` | The bounded `multipart/form-data` reader and writer of image uploads |
 
 | Shared module | Job |

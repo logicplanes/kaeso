@@ -615,6 +615,7 @@ mod tests {
             AuthStyle::Bearer,
             AuthStyle::XApiKey,
             AuthStyle::XGoogApiKey,
+            AuthStyle::XiApiKey,
         ] {
             let name = style.header_name();
             let req = secret_header(

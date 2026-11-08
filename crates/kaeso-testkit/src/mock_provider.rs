@@ -444,7 +444,9 @@ async fn answer(ctx: Ctx, method: Method, uri: Uri, headers: HeaderMap, body: By
         headers.get("x-goog-api-key").is_some_and(|v| !v.is_empty())
             && !headers.contains_key("authorization")
     } else {
-        bearer || anthropic && headers.get("x-api-key").is_some_and(|v| !v.is_empty())
+        bearer
+            || anthropic && headers.get("x-api-key").is_some_and(|v| !v.is_empty())
+            || headers.get("xi-api-key").is_some_and(|v| !v.is_empty())
     };
     if !authed && dialect.starts_with("gemini") {
         return error_response(&ctx.fixtures.join("gemini"), key_refused(dialect));
@@ -487,6 +489,9 @@ async fn answer(ctx: Ctx, method: Method, uri: Uri, headers: HeaderMap, body: By
         && let Some(resp) = audio(&ctx.fixtures, &path, &text)
     {
         return resp;
+    }
+    if method == Method::GET && (path == "/v1/voices" || path == "/v2/voices") {
+        return json_file(&ctx.fixtures.join("elevenlabs/voices/recorded-search.json"));
     }
     let asked = match &gemini {
         Some((model, _)) => Some(model.clone()),
@@ -677,7 +682,37 @@ fn audio(fixtures: &Path, path: &str, text: &str) -> Option<Response> {
     let transcripts = fixtures.join("openai_transcriptions");
     let json = |dir: &Path, name: &str| Some(json_file(&dir.join(format!("{name}.json"))));
     let events = |file: PathBuf| Some(bytes_file(&file, "text/event-stream"));
+    let elevenlabs = fixtures.join("elevenlabs/responses");
+    let el_audio = |name: &str, ctype: &str| {
+        let mut r = bytes_file(&elevenlabs.join(name), ctype);
+        r.headers_mut()
+            .insert("character-cost", axum::http::HeaderValue::from_static("2"));
+        Some(r)
+    };
+    if path.starts_with("/v1/text-to-speech/") || path.starts_with("/v1/text-to-dialogue") {
+        return if path.ends_with("/stream/with-timestamps") {
+            Some(bytes_file(
+                &fixtures.join("elevenlabs/streams/recorded-speech-stream-with-timestamps.ndjson"),
+                "application/json",
+            ))
+        } else if path.ends_with("/with-timestamps") {
+            json(&elevenlabs, "recorded-speech-with-timestamps")
+        } else if path.ends_with("/stream") {
+            el_audio("recorded-speech-stream.pcm", "audio/pcm")
+        } else {
+            el_audio("recorded-speech.mp3", "audio/mpeg")
+        };
+    }
+    if path.starts_with("/v1/voice-changer/") {
+        return el_audio("recorded-voice-change.mp3", "audio/mpeg");
+    }
     match path {
+        "/v1/sound-generation" => el_audio("recorded-sound.mp3", "audio/mpeg"),
+        "/v1/music" | "/v1/music/stream" => Some(error_response(
+            &fixtures.join("elevenlabs"),
+            "recorded-music-free-tier-402",
+        )),
+        "/v1/speech-to-text" => json(&elevenlabs, "recorded-transcribe"),
         "/v1/t2a_v2" => json(&fixtures.join("minimax_speech/responses"), "speech"),
         "/v4/ai/speech-model" => json(&speech.join("providers/vercel/responses"), "speech"),
         "/v1/audio/speech" | "/v1/tts" => {

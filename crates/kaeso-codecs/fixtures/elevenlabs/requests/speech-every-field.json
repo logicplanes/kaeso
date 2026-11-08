@@ -1,0 +1,15 @@
+{
+  "text": "Hello there.",
+  "model_id": "eleven_multilingual_v2",
+  "language_code": "en",
+  "voice_settings": {
+    "stability": 0.5,
+    "similarity_boost": 0.75,
+    "style": 0.0,
+    "use_speaker_boost": true,
+    "speed": 1.1
+  },
+  "seed": 42,
+  "previous_text": "Well.",
+  "apply_text_normalization": "auto"
+}

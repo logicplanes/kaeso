@@ -195,6 +195,7 @@ Die ersten drei Einstellungen legen nur die Anfangswerte einer neuen Installatio
 | `KAESO_PROVIDERS_CEREBRAS_BASE_URL`<br>`providers.cerebras.base_url` | Text | `https://api.cerebras.ai` | Basis-URL der Cerebras-API. |
 | `KAESO_PROVIDERS_ZAI_BASE_URL`<br>`providers.zai.base_url` | Text | `https://api.z.ai/api/anthropic` | Basis-URL der Z.ai-API. |
 | `KAESO_PROVIDERS_MINIMAX_BASE_URL`<br>`providers.minimax.base_url` | Text | `https://api.minimax.io/anthropic` | Basis-URL der MiniMax-API. |
+| `KAESO_PROVIDERS_ELEVENLABS_BASE_URL`<br>`providers.elevenlabs.base_url` | Text | `https://api.elevenlabs.io` | Basis-URL der ElevenLabs-API. |
 | `KAESO_PROVIDERS_GOOGLE_BASE_URL`<br>`providers.google.base_url` | Text | `https://generativelanguage.googleapis.com` | Basis-URL der Google-AI-Studio-API. |
 | `KAESO_PROVIDERS_GEMINI_AGENT_PLATFORM_BASE_URL`<br>`providers.gemini-agent-platform.base_url` | Text | `https://aiplatform.googleapis.com` | Basis-URL der Gemini-Enterprise-Agent-Platform-API. |
 | `KAESO_UPSTREAM_CONNECT_TIMEOUT`<br>`upstream.connect_timeout` | Text | `10s` | Zeit für den Verbindungsaufbau zu einem Anbieter, TCP und TLS; höchstens 24h. |

@@ -57,15 +57,15 @@ console.log(transcript.text);
 
 ## 语音
 
-- **声音。** 只有服务商列出的声音才会传过去：OpenAI 的声音传给 OpenAI，Gemini 的 30 个预置声音传给 Google 模型，SpaceX 的声音 ID 传给 SpaceX。声音取决于模型的服务商（Groq、Together AI、Mistral、OpenRouter、MiniMax）按原样接收名称。
+- **声音。** 只有服务商列出的声音才会传过去：OpenAI 的声音传给 OpenAI，Gemini 的 30 个预置声音传给 Google 模型，SpaceX 的声音 ID 传给 SpaceX。声音取决于模型的服务商（Groq、Together AI、Mistral、OpenRouter、MiniMax）按原样接收名称。ElevenLabs 按 ID 接收声音，即其 `GET /v1/voices` 列出的 ID：把 ID 作为 `voice` 发送，或发送 `{"id": "…"}`；`alloy` 这样的名称会被拒绝，因为 Kaeso 不猜测它对应 ElevenLabs 的哪个声音。
 - **格式**从不转换。服务商没有的格式会在发送任何内容之前被拒绝，`param` 中为 `response_format`。应用未指定格式时，OpenAI 返回 mp3，因此 Kaeso 向每个服务商都明确请求 mp3。
 - **流式。** 音频按服务商发送的样子传给应用。请求 `stream_format: "sse"` 时，Kaeso 为任何服务商写出 `speech.audio.delta` 事件；一次性发送完整音频的服务商会得到一个增量和结束事件。OpenAI 只在事件中报告用量，因此 Kaeso 向 OpenAI 请求事件，再为需要音频的应用还原成音频；`tts-1` 和 `tts-1-hd` 没有事件，按字符计费。
 - **设置**：服务商不支持的设置，例如 Gemini 的 `instructions` 或 Together AI 的 `speed`，会被拒绝，`param` 中给出该字段。
 
 ## 转写和翻译
 
-- **各种形式。** 服务商不支持应用要求的形式时，Kaeso 向它请求带时间的片段，自己写出字幕或片段：Groq 由 `verbose_json` 生成 `srt` 和 `vtt`，Mistral 由其片段生成，Gemini 和 SpaceX 由其带时间的词生成。任何服务商的时间信息都无法生成的形式，例如没有说话人的 `diarized_json`，会被拒绝。
-- **链接。** 应用的上传内容以上传形式发送。应用在 `url` 或 `file_url` 中发送的链接，会以链接形式发给接受链接的服务商（Groq 和 SpaceX 的 `url`、Together AI 的 `file`、Mistral 的 `file_url`、OpenRouter 的 `source_url`）；OpenAI 不接受链接。
+- **各种形式。** 服务商不支持应用要求的形式时，Kaeso 向它请求带时间的片段，自己写出字幕或片段：Groq 由 `verbose_json` 生成 `srt` 和 `vtt`，Mistral 由其片段生成，Gemini 和 SpaceX 由其带时间的词生成，ElevenLabs 由其词生成。任何服务商的时间信息都无法生成的形式，例如没有说话人的 `diarized_json`，会被拒绝。
+- **链接。** 应用的上传内容以上传形式发送。应用在 `url` 或 `file_url` 中发送的链接，或 ElevenLabs 应用在 `source_url` 中发送的链接，会以链接形式发给接受链接的服务商（Groq 和 SpaceX 的 `url`、Together AI 的 `file`、Mistral 的 `file_url`、OpenRouter 和 ElevenLabs 的 `source_url`）；OpenAI 不接受链接。
 - **流式。** OpenAI、Mistral、Z.ai 和 MiniMax 以流式返回转写稿；Kaeso 把它们写成 `transcript.text.delta` 和 `transcript.text.done`。其他服务商一次性返回，应用会得到一个增量和结束事件。
 - **翻译**只发给有翻译端点的服务商：OpenAI 和 Groq。
 
@@ -83,6 +83,7 @@ console.log(transcript.text);
 | Vercel | `/v4/ai/speech-model`，mp3 | `/v4/ai/transcription-model` | [text to speech](https://vercel.com/docs/ai-gateway/modalities/text-to-speech)、[speech to text](https://vercel.com/docs/ai-gateway/modalities/speech-to-text) |
 | SpaceX | `/v1/tts` | `/v1/stt`：`grok-voice-transcribe-2.0` | [voice](https://docs.x.ai/developers/rest-api-reference/inference/voice) |
 | MiniMax | `/v1/t2a_v2`：`speech-2.8-*`、`speech-2.6-*`、`speech-02-*` | `/v1/speech_to_text`：`asr-1.0` | [T2A](https://platform.minimax.io/docs/api-reference/speech-t2a-http)、[speech to text](https://platform.minimax.io/docs/api-reference/speech-to-text) |
+| ElevenLabs | 文本转语音：`eleven_v4`、`eleven_v3`、`eleven_multilingual_v2`、`eleven_flash_v2_5` 等 | 语音转文本：`scribe_v2`、`scribe_v2_medical` | [ElevenLabs API](elevenlabs.md) |
 | Z.ai | 不提供 | `/api/paas/v4/audio/transcriptions`：`glm-asr-2512` | [GLM-ASR](https://docs.z.ai/guides/audio/glm-asr-2512) |
 | QwenCloud | 暂不支持：其语音模型只在 QwenCloud 自己的 API 上响应 | 通过 `chat/completions` 调用 `qwen3-asr-flash` | [Qwen-ASR](https://www.alibabacloud.com/help/en/model-studio/qwen-asr-api-reference) |
 | Cohere | 不提供 | `/v2/audio/transcriptions`：`cohere-transcribe-03-2026`，必须提供 `language` | [transcribe](https://docs.cohere.com/v2/docs/transcribe) |
@@ -92,5 +93,5 @@ console.log(transcript.text);
 
 ## 费用和日志
 
-- **费用。** 语音按字符计费（`tts-1`、Groq、Together AI、Mistral、MiniMax），或按 Token 以模型的音频输出价格计费（`gpt-4o-mini-tts`、Gemini）。转写稿按音频的分钟或小时计费（Whisper、Voxtral，Groq 最少按 10 秒计费），或按 Token 以音频输入价格计费。价格来自 KPMR 的按单位价格和音频 Token 价格；MiniMax 会报告其计费的字符数，Kaeso 采用这些数字。
+- **费用。** 语音按字符计费（`tts-1`、Groq、Together AI、Mistral、MiniMax、ElevenLabs），或按 Token 以模型的音频输出价格计费（`gpt-4o-mini-tts`、Gemini）。转写稿按音频的分钟或小时计费（Whisper、Scribe、Voxtral，Groq 最少按 10 秒计费），或按 Token 以音频输入价格计费。价格来自 KPMR 的按单位价格和音频 Token 价格；MiniMax 和 ElevenLabs 会报告其计费的字符数，Kaeso 采用这些数字。
 - **日志。** [请求日志](../console/request-logs.md)显示端点、语音的字符数或所转写音频的时长，以及格式。音频从不记录：上传内容只记录其字段，音频只记录媒体类型和大小。

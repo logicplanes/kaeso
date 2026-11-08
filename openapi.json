@@ -14999,7 +14999,7 @@
           {
             "name": "ingress_dialect",
             "in": "query",
-            "description": "Only requests the app sent in this format: `anthropic_messages`,\n`openai_chat`, `openai_responses`, `openai_embeddings`, `gemini`,\n`gemini_embeddings`, `openai_images`, `openai_speech` or\n`openai_transcriptions`.",
+            "description": "Only requests the app sent in this format: `anthropic_messages`,\n`openai_chat`, `openai_responses`, `openai_embeddings`, `gemini`,\n`gemini_embeddings`, `openai_images`, `openai_speech`, `openai_transcriptions` or\n`elevenlabs`.",
             "required": false,
             "schema": {
               "type": "string"
@@ -15008,7 +15008,7 @@
           {
             "name": "egress_dialect",
             "in": "query",
-            "description": "Only requests Kaeso sent to the provider in this format:\n`anthropic_messages`, `openai_chat`, `openai_responses`,\n`openai_embeddings`, `gemini`, `gemini_embeddings`, `openai_images`,\n`minimax_images`, `openai_speech`, `openai_transcriptions` or\n`minimax_speech`.",
+            "description": "Only requests Kaeso sent to the provider in this format:\n`anthropic_messages`, `openai_chat`, `openai_responses`,\n`openai_embeddings`, `gemini`, `gemini_embeddings`, `openai_images`,\n`minimax_images`, `openai_speech`, `openai_transcriptions`, `minimax_speech` or\n`elevenlabs`.",
             "required": false,
             "schema": {
               "type": "string"
@@ -15240,7 +15240,7 @@
           {
             "name": "ingress_dialect",
             "in": "query",
-            "description": "Only requests the app sent in this format: `anthropic_messages`,\n`openai_chat`, `openai_responses`, `openai_embeddings`, `gemini`,\n`gemini_embeddings`, `openai_images`, `openai_speech` or\n`openai_transcriptions`.",
+            "description": "Only requests the app sent in this format: `anthropic_messages`,\n`openai_chat`, `openai_responses`, `openai_embeddings`, `gemini`,\n`gemini_embeddings`, `openai_images`, `openai_speech`, `openai_transcriptions` or\n`elevenlabs`.",
             "required": false,
             "schema": {
               "type": "string"
@@ -15249,7 +15249,7 @@
           {
             "name": "egress_dialect",
             "in": "query",
-            "description": "Only requests Kaeso sent to the provider in this format:\n`anthropic_messages`, `openai_chat`, `openai_responses`,\n`openai_embeddings`, `gemini`, `gemini_embeddings`, `openai_images`,\n`minimax_images`, `openai_speech`, `openai_transcriptions` or\n`minimax_speech`.",
+            "description": "Only requests Kaeso sent to the provider in this format:\n`anthropic_messages`, `openai_chat`, `openai_responses`,\n`openai_embeddings`, `gemini`, `gemini_embeddings`, `openai_images`,\n`minimax_images`, `openai_speech`, `openai_transcriptions`, `minimax_speech` or\n`elevenlabs`.",
             "required": false,
             "schema": {
               "type": "string"
@@ -23527,7 +23527,7 @@
           },
           "provider": {
             "$ref": "#/components/schemas/ProviderId",
-            "description": "The id of a provider Kaeso calls: `openai`, `anthropic`, `deepseek`, `xai`,\n`togetherai`, `groq`, `openrouter`, `mistral`, `vercel`, `cohere`,\n`ollama-cloud`, `moonshotai`, `alibaba`, `cerebras`, `zai`, `minimax`, `google`,\n`gemini-agent-platform`, or one of the organization's custom providers that\ntakes a key."
+            "description": "The id of a provider Kaeso calls: `openai`, `anthropic`, `deepseek`, `xai`,\n`togetherai`, `groq`, `openrouter`, `mistral`, `vercel`, `cohere`,\n`ollama-cloud`, `moonshotai`, `alibaba`, `cerebras`, `zai`, `minimax`, `elevenlabs`,\n`google`, `gemini-agent-platform`, or one of the organization's custom providers\nthat takes a key."
           },
           "secret": {
             "type": "string",

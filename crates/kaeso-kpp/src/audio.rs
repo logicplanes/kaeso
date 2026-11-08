@@ -44,7 +44,7 @@ impl SpeechOperation {
 pub enum Voice {
     /// A voice the provider names, such as OpenAI's `alloy` or Gemini's `Kore`.
     Named(String),
-    /// A voice by its id at the provider, such as a custom voice.
+    /// A voice by its id at the provider, such as a custom voice or an ElevenLabs voice id.
     Id(String),
 }
 

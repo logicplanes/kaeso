@@ -220,6 +220,9 @@ pub struct EgressCtx {
     /// The transcript form the provider was asked for, which tells the reply decoder how to
     /// read a plain-text body. The encoder sets it.
     pub transcript_format: Option<TranscriptFormat>,
+    /// Whether the speech reply is JSON with the audio inside, read whole, as ElevenLabs'
+    /// `with-timestamps` replies are. The encoder sets it.
+    pub speech_reply_json: bool,
 }
 
 impl EgressCtx {
@@ -259,6 +262,7 @@ impl EgressCtx {
             base_path: None,
             audio_format: None,
             transcript_format: None,
+            speech_reply_json: false,
         }
     }
 
