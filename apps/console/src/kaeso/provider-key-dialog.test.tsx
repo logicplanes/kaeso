@@ -394,7 +394,11 @@ describe("ProviderKeyDialog", () => {
   });
 
   it("adds a Gemini Enterprise Agent Platform service account key from its JSON file with a location", async () => {
-    const json = JSON.stringify({ type: "service_account", project_id: "kaeso-example", private_key: "-----BEGIN PRIVATE KEY-----\nAAAA\n-----END PRIVATE KEY-----\n" });
+    const json = JSON.stringify({
+      type: "service_account",
+      project_id: "kaeso-example",
+      private_key: "-----BEGIN PRIVATE KEY-----\nAAAA\n-----END PRIVATE KEY-----\n",
+    });
     on(
       "POST",
       CREDENTIALS,

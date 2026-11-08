@@ -25,6 +25,19 @@ order: 3
 
 除删除外，每项操作还需要近期登录。
 
+## 添加 Google Cloud 服务账号密钥
+
+对于 Gemini Enterprise Agent Platform，服务商密钥可以是快速模式 API 密钥，也可以是 Google Cloud 服务账号的 JSON 密钥。快速模式密钥只能调用快速模式列出的 Gemini 模型。服务账号密钥可以调用平台向其项目提供的所有模型。
+
+1. 在 Google Cloud 控制台的 **IAM & Admin → Service accounts** 下，在要为请求付费的项目中创建服务账号。为它授予 **Agent Platform User**（`roles/aiplatform.user`）角色，这是能调用模型的最小角色（[访问控制](https://docs.cloud.google.com/gemini-enterprise-agent-platform/machine-learning/general/access-control)）。
+2. 打开该服务账号，依次选择 **Keys → Add key → Create new key → JSON**。Google 会下载密钥文件。2024 年 5 月以后创建的组织默认用策略 `iam.disableServiceAccountKeyCreation` 禁止创建密钥；组织策略管理员可以为该项目放开（[创建和删除服务账号密钥](https://docs.cloud.google.com/iam/docs/keys-create-delete)）。
+3. 在 Kaeso 的**服务商**页面选择**添加服务商密钥**，然后选择 **Gemini Enterprise Agent Platform**，再选择**服务账号密钥**。
+4. 粘贴密钥文件的内容或选择该文件，选择一个**位置**，并为密钥命名。`global` 提供的模型最多；如果请求必须留在某个区域，请选择该区域，或选择 `us` 或 `eu`。
+
+Kaeso 会检查该文件是否为 `token_uri` 为 `https://oauth2.googleapis.com/token` 的服务账号密钥，否则拒绝。它像其他密钥一样加密保存整个文件，之后不再显示；列表显示服务账号的电子邮件地址、所属项目、位置以及密钥 ID 的末四位。每个请求中，Kaeso 用该密钥签署令牌请求，在 Google 换取有效期一小时的访问令牌，并在内存中保留该令牌，直到过期前五分钟。Google 拒绝该密钥时，应用会收到服务商密钥被拒绝的错误。
+
+要调用其他位置，请在密钥菜单中选择**编辑**。要为同一个服务账号使用新的密钥文件，请选择**替换**。Kaeso 保存密钥后，请删除你下载的文件。
+
 ## 使用 ChatGPT 账户登录
 
 对于 OpenAI，服务商密钥也可以是一个 ChatGPT 账户。其请求随后使用该账户的 ChatGPT 套餐，而不是 OpenAI API 账户，并受套餐限额约束。
@@ -77,10 +90,10 @@ Grok 账户像 xAI API 密钥一样处理请求，使用该账户的令牌发送
 
 | 操作 | 作用 |
 | --- | --- |
-| 替换 | 为同一个密钥换上新的密钥值，例如在服务商处轮换之后 |
+| 替换 | 为同一个密钥换上新的密钥值，例如在服务商处轮换之后；服务账号密钥则换上新的 JSON 密钥文件 |
 | 重新登录 | 用于账户：重新登录同一个账户，例如在其显示**已退出登录**或**无 API 访问权限**之后，并结束其之前在 OpenAI 或 xAI 的会话 |
 | 管理用量 | 用于 ChatGPT 账户：打开 ChatGPT 的用量设置，账户所有者可在其中查看和限制 Kaeso 的用量 |
-| 重命名 | 更改控制台中显示的名称 |
+| 重命名 | 更改控制台中显示的名称。服务账号密钥的这一项为**编辑**，还可以更改位置 |
 | 删除 | 移除密钥。其项目改回使用默认密钥。对于账户，Kaeso 还会结束其在 OpenAI 或 xAI 的会话 |
 
 当服务商结束了账户的会话时，例如其所有者在 ChatGPT 中断开了 Kaeso，该账户会显示**已退出登录**。当 xAI 拒绝 Grok 账户的套餐时，该账户会显示**无 API 访问权限**。这两种情况下，账户的请求都会失败，直到拥有**更改服务商密钥**权限的人选择**重新登录**。

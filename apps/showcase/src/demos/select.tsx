@@ -138,9 +138,9 @@ export function States() {
               options={[
                 { value: "openai", label: "OpenAI" },
                 { value: "anthropic", label: "Anthropic" },
-                { value: "vertex", label: "Google Vertex AI" },
+                { value: "gemini-agent-platform", label: "Gemini Enterprise Agent Platform" },
               ]}
-              defaultValue={["vertex", "openai", "anthropic"]}
+              defaultValue={["gemini-agent-platform", "openai", "anthropic"]}
               fullWidth
             />
           </div>

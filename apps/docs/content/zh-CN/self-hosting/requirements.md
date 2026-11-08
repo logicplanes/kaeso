@@ -38,6 +38,7 @@ Kaeso 运行在一台装有 Docker 的 Linux 服务器上。请按需要记录�
 | --- | --- | --- |
 | 入站 | TCP 端口 80 和 443，以及用于 HTTP/3 的 UDP 端口 443 | 证书和 HTTPS |
 | 出站 | 您使用的每个服务商的主机（[支持的服务商](../concepts/supported-providers.md)），或您为其设置的基础 URL（[服务商设置](configuration.md#服务商设置)） | 您使用的服务商 |
+| 出站 | `oauth2.googleapis.com` | Gemini Enterprise Agent Platform 服务账号密钥的访问令牌 |
 | 出站 | `kpmr.kaeso.app` | 来自 [KPMR](../concepts/kpmr.md) 的模型数据，大约每小时检查一次 |
 | 出站 | `update.kaeso.app` | 检查 Kaeso 新版本，每 5 分钟一次 |
 | 出站 | `acme-v02.api.letsencrypt.org`、`acme.zerossl.com` | Caddy 获取和续期证书 |

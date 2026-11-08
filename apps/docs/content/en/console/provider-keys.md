@@ -25,6 +25,19 @@ Each action on provider keys needs its own right:
 
 Every action except deleting also needs a recent sign-in.
 
+## Add a Google Cloud service account key
+
+For Gemini Enterprise Agent Platform, a provider key is either an express mode API key or a Google Cloud service account's JSON key. An express mode key reaches only the Gemini models that express mode lists. A service account key reaches every model the platform serves to its project.
+
+1. In the Google Cloud console, under **IAM & Admin → Service accounts**, create a service account in the project that should pay for the requests. Give it the role **Agent Platform User** (`roles/aiplatform.user`), the least role that calls models ([access control](https://docs.cloud.google.com/gemini-enterprise-agent-platform/machine-learning/general/access-control)).
+2. Open the service account, then **Keys → Add key → Create new key → JSON**. Google downloads the key file. Organizations created since May 2024 block key creation by default with the policy `iam.disableServiceAccountKeyCreation`; an organization policy administrator can allow it for the project ([create and delete service account keys](https://docs.cloud.google.com/iam/docs/keys-create-delete)).
+3. In Kaeso, on **Providers**, choose **Add provider key**, then **Gemini Enterprise Agent Platform**, then **Service account key**.
+4. Paste the key file's contents or choose the file, choose a **Location** and give the key a name. `global` serves the most models; choose a region or `us` or `eu` when the requests must stay there.
+
+Kaeso checks that the file is a service account key whose `token_uri` is `https://oauth2.googleapis.com/token`, and refuses it otherwise. It stores the whole file encrypted like any other key and never shows it again; the list shows the service account's email address, its project, the location and the last four characters of the key's id. For each request, Kaeso signs a token request with the key, trades it at Google for an access token that lasts an hour, and keeps the token in memory until five minutes before it expires. When Google refuses the key, apps get a refused provider key.
+
+To call another location, choose **Edit** in the key's menu. To use a new key file for the same service account, choose **Replace**. Delete the file you downloaded once Kaeso has the key.
+
 ## Sign in with a ChatGPT account
 
 For OpenAI, a provider key can also be a ChatGPT account. Its requests then use the account's ChatGPT plan instead of an OpenAI API account, within the plan's limits.
@@ -77,10 +90,10 @@ The list shows each key's name, its last four characters, the projects that use 
 
 | Action | What it does |
 | --- | --- |
-| Replace | Takes a new secret for the same key, for example after you rotated it at the provider |
+| Replace | Takes a new secret for the same key, for example after you rotated it at the provider; for a service account key, a new JSON key file |
 | Sign in again | For an account: signs the same account in again, for example after it shows **Signed out** or **No API access**, and ends its previous session at OpenAI or xAI |
 | Manage usage | For a ChatGPT account: opens ChatGPT's usage settings, where its owner reviews and limits what Kaeso uses |
-| Rename | Changes the name the console shows |
+| Rename | Changes the name the console shows. For a service account key it's **Edit**, which also changes the location |
 | Delete | Removes the key. Its projects use the default again. For an account, Kaeso also ends its session at OpenAI or xAI |
 
 An account shows **Signed out** when the provider has ended its session, for example after its owner disconnected Kaeso in ChatGPT. A Grok account shows **No API access** when xAI refuses its plan. In both cases, its requests fail until someone with **Change provider keys** chooses **Sign in again**.

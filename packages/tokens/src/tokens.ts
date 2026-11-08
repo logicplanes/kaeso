@@ -141,6 +141,10 @@ export const providerMark = {
   "google-blue": mode("#3186ff", "#3186ff"),
   "google-yellow": mode("#bd8d03", "#fbbc04"),
   "google-red": mode("#fc413d", "#fc413d"),
+  "gemini-agent-platform-blue": mode("#3285ff", "#3285ff"),
+  "gemini-agent-platform-red": mode("#fa423f", "#fa423f"),
+  "gemini-agent-platform-green": mode("#12aa5b", "#14ba64"),
+  "gemini-agent-platform-yellow": mode("#b59007", "#fac70b"),
 } as const;
 
 export const type = {

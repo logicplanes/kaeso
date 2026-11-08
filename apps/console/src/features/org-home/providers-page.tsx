@@ -53,7 +53,9 @@ export interface ProvidersSearch {
 export const SEARCH_ABOVE = 8;
 
 const searchWords = (key: CredentialView, catalog: Providers) =>
-  [catalog.name(key.provider), key.provider, key.name, key.account ?? "", key.project ?? "", ...key.projects.map((p) => p.name)].map((w) => w.toLocaleLowerCase());
+  [catalog.name(key.provider), key.provider, key.name, key.account ?? "", key.project ?? "", ...key.projects.map((p) => p.name)].map((w) =>
+    w.toLocaleLowerCase(),
+  );
 
 function rowsOf(keys: CredentialView[], catalog: Providers): Row[] {
   const byProvider = new Map<string, CredentialView[]>();
@@ -247,9 +249,7 @@ export function OrgProvidersPage({ org, search = {} }: { org: string; search?: P
               ? { id: "stage", label: t("orgHome.stage", "Stage"), value: t("orgHome.experimental", "Experimental") }
               : null,
             r.key.account && signsIn(r.key) ? { id: "account", label: t("orgHome.account", "Account"), value: r.key.account } : null,
-            r.key.account && !signsIn(r.key)
-              ? { id: "service-account", label: t("orgHome.serviceAccount", "Service account"), value: r.key.account }
-              : null,
+            r.key.account && !signsIn(r.key) ? { id: "service-account", label: t("orgHome.serviceAccount", "Service account"), value: r.key.account } : null,
             r.key.project ? { id: "project", label: t("orgHome.project", "Project"), value: r.key.project } : null,
             r.key.location ? { id: "location", label: t("orgHome.location", "Location"), value: r.key.location } : null,
             hidden.includes("projects") ? { id: "projects", label: t("common.projects", "Projects"), value: assignment(r.key) } : null,
@@ -518,7 +518,11 @@ function RenameKeyDialog({ org, credential, onClose }: { org: string; credential
       ),
     invalidates: [["orgs", org, "credentials"]],
     onSuccess: (k) => {
-      toast(moved ? t("orgHome.keyMoved", "{name} now calls {location}", { name: k.name, location: k.location ?? "" }) : t("orgHome.keyRenamed", "Renamed to {name}", { name: k.name }));
+      toast(
+        moved
+          ? t("orgHome.keyMoved", "{name} now calls {location}", { name: k.name, location: k.location ?? "" })
+          : t("orgHome.keyRenamed", "Renamed to {name}", { name: k.name }),
+      );
       onClose();
     },
   });

@@ -196,6 +196,7 @@ Die ersten drei Einstellungen legen nur die Anfangswerte einer neuen Installatio
 | `KAESO_PROVIDERS_ZAI_BASE_URL`<br>`providers.zai.base_url` | Text | `https://api.z.ai/api/anthropic` | Basis-URL der Z.ai-API. |
 | `KAESO_PROVIDERS_MINIMAX_BASE_URL`<br>`providers.minimax.base_url` | Text | `https://api.minimax.io/anthropic` | Basis-URL der MiniMax-API. |
 | `KAESO_PROVIDERS_GOOGLE_BASE_URL`<br>`providers.google.base_url` | Text | `https://generativelanguage.googleapis.com` | Basis-URL der Google-AI-Studio-API. |
+| `KAESO_PROVIDERS_GEMINI_AGENT_PLATFORM_BASE_URL`<br>`providers.gemini-agent-platform.base_url` | Text | `https://aiplatform.googleapis.com` | Basis-URL der Gemini-Enterprise-Agent-Platform-API. |
 | `KAESO_UPSTREAM_CONNECT_TIMEOUT`<br>`upstream.connect_timeout` | Text | `10s` | Zeit für den Verbindungsaufbau zu einem Anbieter, TCP und TLS; höchstens 24h. |
 | `KAESO_UPSTREAM_REQUEST_TIMEOUT`<br>`upstream.request_timeout` | Text | `600s` | Gesamtzeit einer Anbieter-Anfrage ohne Streaming; höchstens 24h. |
 | `KAESO_UPSTREAM_FIRST_BYTE_TIMEOUT`<br>`upstream.first_byte_timeout` | Text | `60s` | Streaming: Zeit bis zum ersten Byte des Anbieters; höchstens 24h. |
@@ -297,7 +298,7 @@ In der Konsole können Instanz-Admins das Anlegen von Konten und Organisationen 
 
 ## Anbietereinstellungen
 
-Jeder Anbieter hat eigene Einstellungen, benannt nach seiner ID: den TOML-Schlüssel `providers.<id>.<field>` und die Variable `KAESO_PROVIDERS_<ID>_<FIELD>`, mit der ID in Großbuchstaben und jedem `-` als `_`. Jeder Anbieter, den Kaeso aufruft, hat ein Feld, `base_url` ([Aufrufe an Anbieter](#aufrufe-an-anbieter)).
+Jeder Anbieter hat eigene Einstellungen, benannt nach seiner ID: den TOML-Schlüssel `providers.<id>.<field>` und die Variable `KAESO_PROVIDERS_<ID>_<FIELD>`, mit der ID in Großbuchstaben und jedem `-` als `_`. Jeder Anbieter, den Kaeso aufruft, hat ein Feld, `base_url` ([Aufrufe an Anbieter](#aufrufe-an-anbieter)). Bei Gemini Enterprise Agent Platform ruft die Voreinstellung den Standort jedes Dienstkonto-Schlüssels an dessen eigenem Host auf; jede andere Basis-URL, etwa ein Private-Service-Connect-Endpunkt, bedient jeden Standort so, wie sie ist.
 
 Eine Anbieter-ID besteht aus Kleinbuchstaben und Ziffern mit einzelnen Bindestrichen dazwischen. Eine Anbieter-Variable oder -Tabelle mit einer anderen ID, oder mit der ID eines Anbieters, den Kaeso nicht aufruft, hält das Gateway beim Start an. Die Meldung nennt sie und listet die Anbieter auf.
 

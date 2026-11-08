@@ -25,6 +25,19 @@ Jede Aktion an Anbieter-Schlüsseln braucht ihr eigenes Recht:
 
 Jede Aktion außer dem Löschen erfordert zusätzlich eine kürzliche Anmeldung.
 
+## Dienstkonto-Schlüssel von Google Cloud hinzufügen
+
+Für Gemini Enterprise Agent Platform ist ein Anbieter-Schlüssel entweder ein API-Schlüssel für den Express-Modus oder der JSON-Schlüssel eines Dienstkontos von Google Cloud. Ein Schlüssel für den Express-Modus erreicht nur die Gemini-Modelle, die der Express-Modus führt. Ein Dienstkonto-Schlüssel erreicht jedes Modell, das die Plattform seinem Projekt anbietet.
+
+1. Legen Sie in der Google Cloud Console unter **IAM & Admin → Service accounts** ein Dienstkonto im Projekt an, das die Anfragen bezahlen soll. Geben Sie ihm die Rolle **Agent Platform User** (`roles/aiplatform.user`), die kleinste Rolle, die Modelle aufruft ([Zugriffssteuerung](https://docs.cloud.google.com/gemini-enterprise-agent-platform/machine-learning/general/access-control)).
+2. Öffnen Sie das Dienstkonto, dann **Keys → Add key → Create new key → JSON**. Google lädt die Schlüsseldatei herunter. Organisationen, die seit Mai 2024 angelegt wurden, sperren das Anlegen von Schlüsseln standardmäßig mit der Richtlinie `iam.disableServiceAccountKeyCreation`; ein Administrator für Organisationsrichtlinien kann es für das Projekt erlauben ([Dienstkonto-Schlüssel anlegen und löschen](https://docs.cloud.google.com/iam/docs/keys-create-delete)).
+3. Wählen Sie in Kaeso unter **Anbieter** **Anbieter-Schlüssel hinzufügen**, dann **Gemini Enterprise Agent Platform** und dann **Dienstkonto-Schlüssel**.
+4. Fügen Sie den Inhalt der Schlüsseldatei ein oder wählen Sie die Datei, wählen Sie einen **Standort** und geben Sie dem Schlüssel einen Namen. `global` bietet die meisten Modelle; wählen Sie eine Region oder `us` oder `eu`, wenn die Anfragen dort bleiben müssen.
+
+Kaeso prüft, dass die Datei ein Dienstkonto-Schlüssel ist, dessen `token_uri` `https://oauth2.googleapis.com/token` ist, und lehnt sie sonst ab. Es speichert die ganze Datei verschlüsselt wie jeden anderen Schlüssel und zeigt sie nie wieder; die Liste zeigt die E-Mail-Adresse des Dienstkontos, sein Projekt, den Standort und die letzten vier Zeichen der Schlüssel-ID. Für jede Anfrage signiert Kaeso mit dem Schlüssel eine Token-Anfrage, tauscht sie bei Google gegen ein Zugriffstoken, das eine Stunde gilt, und behält das Token bis fünf Minuten vor seinem Ablauf im Speicher. Lehnt Google den Schlüssel ab, erhalten Apps einen abgelehnten Anbieter-Schlüssel.
+
+Um einen anderen Standort aufzurufen, wählen Sie im Menü des Schlüssels **Bearbeiten**. Um eine neue Schlüsseldatei desselben Dienstkontos zu verwenden, wählen Sie **Ersetzen**. Löschen Sie die heruntergeladene Datei, sobald Kaeso den Schlüssel hat.
+
 ## Mit einem ChatGPT-Konto anmelden
 
 Für OpenAI kann ein Anbieter-Schlüssel auch ein ChatGPT-Konto sein. Seine Anfragen nutzen dann das ChatGPT-Abo des Kontos statt eines OpenAI-API-Kontos, im Rahmen der Limits des Abos.
@@ -77,10 +90,10 @@ Die Liste zeigt zu jedem Schlüssel seinen Namen, die letzten vier Zeichen, die 
 
 | Aktion | Wirkung |
 | --- | --- |
-| Ersetzen | Nimmt ein neues Secret für denselben Schlüssel an, etwa nachdem Sie ihn beim Anbieter rotiert haben |
+| Ersetzen | Nimmt ein neues Secret für denselben Schlüssel an, etwa nachdem Sie ihn beim Anbieter rotiert haben; bei einem Dienstkonto-Schlüssel eine neue JSON-Schlüsseldatei |
 | Erneut anmelden | Für ein Konto: meldet dasselbe Konto erneut an, etwa nachdem es **Abgemeldet** oder **Kein API-Zugang** zeigt, und beendet seine vorherige Sitzung bei OpenAI oder xAI |
 | Nutzung verwalten | Für ein ChatGPT-Konto: öffnet die Nutzungseinstellungen von ChatGPT, in denen sein Inhaber prüft und begrenzt, was Kaeso nutzt |
-| Umbenennen | Ändert den Namen, den die Konsole zeigt |
+| Umbenennen | Ändert den Namen, den die Konsole zeigt. Bei einem Dienstkonto-Schlüssel heißt es **Bearbeiten** und ändert auch den Standort |
 | Löschen | Entfernt den Schlüssel. Seine Projekte nutzen wieder den Standard. Bei einem Konto beendet Kaeso außerdem seine Sitzung bei OpenAI oder xAI |
 
 Ein Konto zeigt **Abgemeldet**, wenn der Anbieter seine Sitzung beendet hat, etwa nachdem sein Inhaber Kaeso in ChatGPT getrennt hat. Ein Grok-Konto zeigt **Kein API-Zugang**, wenn xAI sein Abo ablehnt. In beiden Fällen schlagen seine Anfragen fehl, bis jemand mit **Anbieter-Schlüssel ändern** **Erneut anmelden** wählt.

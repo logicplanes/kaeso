@@ -34,7 +34,7 @@ Gemini 请求在路径中写明模型和方法，因此编解码器根据请求�
 | 模型 | 一个经过百分号编码的路径段，`:` 也会编码。开头的 `models/` 是同一模型的资源名，会被去掉；`tunedModels/<id>` 指向模型路径旁边的微调模型。`.` 和 `..` 为 `InvalidRequest`，与[获取模型](codec-design.md#模型列表)相同。 |
 | 方法 | `GeminiAction`：`generateContent` 和 `streamGenerateContent`（`RequestKind::Generate`，是否流式由方法决定）、`countTokens`（`CountTokens`）、`embedContent` 和 `batchEmbedContents`（`Embed`，即方言 `gemini_embeddings`）。`streamGenerateContent` 会加上 `?alt=sse`。 |
 | 解码 | `dispatch::decode_gemini_request(model, action, body, headers)`；对 `limits::Checked` 已计数的请求体使用 `decode_checked_gemini_request`。`gemini::split_model_action` 拆分 `gemini-3.5-flash:streamGenerateContent` 这样的路径段。不带路径的 `dispatch::decode_request` 会以空模型解码生成请求体。网关用这两者在 `/v1beta/models/{model}:{method}` 上为 Gemini 应用提供服务（`crates/kaeso-server/src/model_api/gemini.rs`）。 |
-| 每个 content 都带角色 | `GeminiProfile::role_on_every_content`：应用发送的不带 `role` 的 content 会得到 `user`。Google AI Studio 下关闭。 |
+| 每个 content 都带角色 | `GeminiProfile::role_on_every_content`：应用发送的不带 `role` 的 content 会得到 `user`。Google AI Studio 下关闭，Gemini Enterprise Agent Platform 下开启。 |
 
 ## 请求
 
@@ -256,6 +256,7 @@ OpenAI Embeddings 请求以 `batchEmbedContents` 发送，每个请求带 `model
 | 服务商 | Profile | 密钥 |
 |---|---|---|
 | Google AI Studio（`google`） | `GeminiProfile::GOOGLE_AI_STUDIO`，网关在每个请求、模型检查和列表中通过 `EgressCtx::with_gemini_profile` 把它交给编码器 | `x-goog-api-key`（`AuthStyle::XGoogApiKey`），从不放在 URL 中 |
+| Gemini Enterprise Agent Platform（`gemini-agent-platform`） | `GeminiProfile::AGENT_PLATFORM`：快速模式密钥使用 `/v1/publishers/google/models`；服务账号密钥则在每个请求中根据密钥的 `project_id` 和凭据的位置使用 `with_models_path("/v1/projects/{project}/locations/{location}/publishers/google/models")`（[REST 参考](https://docs.cloud.google.com/gemini-enterprise-agent-platform/reference/rest)）。`role_on_every_content` 为开启，因为 [Token 计数参考](https://docs.cloud.google.com/gemini-enterprise-agent-platform/reference/models/count-tokens)要求即使单轮请求也指定角色，而 discovery 文档称其为可选 | 快速模式密钥作为 `x-goog-api-key`；服务账号密钥的访问令牌作为 `Authorization: Bearer` |
 
 ## 往返
 

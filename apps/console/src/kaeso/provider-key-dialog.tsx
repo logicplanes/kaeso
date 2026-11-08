@@ -16,14 +16,7 @@ import {
 } from "@logicplanes/kaeso-ui";
 import { api, data } from "~/api/client";
 import { isApiError } from "~/api/errors";
-import type {
-  AccountAttempt,
-  AccountPending,
-  AccountSignInView,
-  CredentialView,
-  ProviderView,
-  ServiceAccountSignInView,
-} from "~/api/generated/types";
+import type { AccountAttempt, AccountPending, AccountSignInView, CredentialView, ProviderView, ServiceAccountSignInView } from "~/api/generated/types";
 import { useApiMutation } from "~/auth/mutation";
 import { t } from "~/i18n";
 import { tRich } from "~/i18n/rich";
@@ -98,11 +91,7 @@ export function ProviderKeyDialog({
   const [secret, setSecret] = useState("");
   const [makeDefault, setMakeDefault] = useState(false);
   const [method, setMethod] = useState<Method>(
-    replace?.auth_method === "google_service_account"
-      ? "service_account"
-      : replace && replace.auth_method !== "api_key"
-        ? "account"
-        : "api_key",
+    replace?.auth_method === "google_service_account" ? "service_account" : replace && replace.auth_method !== "api_key" ? "account" : "api_key",
   );
   const [location, setLocation] = useState<string | null>(replace?.location ?? null);
   const [attempt, setAttempt] = useState<AccountAttempt | null>(null);
@@ -321,9 +310,7 @@ export function ProviderKeyDialog({
             <ProviderBadge provider={provider} name={label} size="lg" />
           </span>
         )}
-        {replace
-          ? t("kaeso.providerKey.serviceAccountNew", "Add the new JSON key")
-          : t("kaeso.providerKey.serviceAccountTitle", "Add a service account key")}
+        {replace ? t("kaeso.providerKey.serviceAccountNew", "Add the new JSON key") : t("kaeso.providerKey.serviceAccountTitle", "Add a service account key")}
       </span>
     ),
     description: tRich("kaeso.providerKey.serviceAccountWhere", "Create a JSON key at {site} under {page}.", {

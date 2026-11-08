@@ -196,6 +196,7 @@ The first three settings only seed a new install. After that, instance admins ch
 | `KAESO_PROVIDERS_ZAI_BASE_URL`<br>`providers.zai.base_url` | text | `https://api.z.ai/api/anthropic` | Base URL of the Z.ai API. |
 | `KAESO_PROVIDERS_MINIMAX_BASE_URL`<br>`providers.minimax.base_url` | text | `https://api.minimax.io/anthropic` | Base URL of the MiniMax API. |
 | `KAESO_PROVIDERS_GOOGLE_BASE_URL`<br>`providers.google.base_url` | text | `https://generativelanguage.googleapis.com` | Base URL of the Google AI Studio API. |
+| `KAESO_PROVIDERS_GEMINI_AGENT_PLATFORM_BASE_URL`<br>`providers.gemini-agent-platform.base_url` | text | `https://aiplatform.googleapis.com` | Base URL of the Gemini Enterprise Agent Platform API. |
 | `KAESO_UPSTREAM_CONNECT_TIMEOUT`<br>`upstream.connect_timeout` | text | `10s` | Time to connect to a provider, TCP and TLS; at most 24h. |
 | `KAESO_UPSTREAM_REQUEST_TIMEOUT`<br>`upstream.request_timeout` | text | `600s` | Total time of a provider request that doesn't stream; at most 24h. |
 | `KAESO_UPSTREAM_FIRST_BYTE_TIMEOUT`<br>`upstream.first_byte_timeout` | text | `60s` | Streaming: time to the provider's first byte; at most 24h. |
@@ -297,7 +298,7 @@ In the console, instance admins can also allow account and organization creation
 
 ## Provider settings
 
-Each provider has its own settings, named after its id: the TOML key `providers.<id>.<field>` and the variable `KAESO_PROVIDERS_<ID>_<FIELD>`, with the id in upper case and each `-` as `_`. Every provider Kaeso calls has one field, `base_url` ([provider calls](#provider-calls)).
+Each provider has its own settings, named after its id: the TOML key `providers.<id>.<field>` and the variable `KAESO_PROVIDERS_<ID>_<FIELD>`, with the id in upper case and each `-` as `_`. Every provider Kaeso calls has one field, `base_url` ([provider calls](#provider-calls)). For Gemini Enterprise Agent Platform, the default calls each service account key's location at its own host; any other base URL, such as a Private Service Connect endpoint, serves every location as it is.
 
 A provider id is lowercase letters and digits with single hyphens between them. A provider variable or table with any other id, or with the id of a provider Kaeso doesn't call, stops the gateway at startup. The message names it and lists the providers.
 

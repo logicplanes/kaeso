@@ -11,11 +11,7 @@
         "label": "API keys"
       },
       "key_prefix": "sk-",
-      "dialects": [
-        "openai_responses",
-        "openai_chat",
-        "openai_embeddings"
-      ],
+      "dialects": ["openai_responses", "openai_chat", "openai_embeddings"],
       "count_tokens": "openai_responses",
       "embeddings": "openai_embeddings",
       "account": {
@@ -38,9 +34,7 @@
         "label": "Settings → API keys"
       },
       "key_prefix": "sk-ant-",
-      "dialects": [
-        "anthropic_messages"
-      ],
+      "dialects": ["anthropic_messages"],
       "count_tokens": "anthropic_messages",
       "embeddings": null,
       "account": null,
@@ -58,9 +52,7 @@
         "label": "API keys"
       },
       "key_prefix": "sk-",
-      "dialects": [
-        "openai_chat"
-      ],
+      "dialects": ["openai_chat"],
       "count_tokens": null,
       "embeddings": null,
       "account": null,
@@ -78,10 +70,7 @@
         "label": "API Keys"
       },
       "key_prefix": "xai-",
-      "dialects": [
-        "openai_responses",
-        "openai_chat"
-      ],
+      "dialects": ["openai_responses", "openai_chat"],
       "count_tokens": null,
       "embeddings": null,
       "account": {
@@ -104,10 +93,7 @@
         "label": "API Keys"
       },
       "key_prefix": "tgp_v1_",
-      "dialects": [
-        "openai_chat",
-        "openai_embeddings"
-      ],
+      "dialects": ["openai_chat", "openai_embeddings"],
       "count_tokens": null,
       "embeddings": "openai_embeddings",
       "account": null,
@@ -125,9 +111,7 @@
         "label": "API Keys"
       },
       "key_prefix": "gsk_",
-      "dialects": [
-        "openai_chat"
-      ],
+      "dialects": ["openai_chat"],
       "count_tokens": null,
       "embeddings": null,
       "account": null,
@@ -145,10 +129,7 @@
         "label": "API Keys"
       },
       "key_prefix": "sk-or-v1-",
-      "dialects": [
-        "openai_chat",
-        "openai_embeddings"
-      ],
+      "dialects": ["openai_chat", "openai_embeddings"],
       "count_tokens": null,
       "embeddings": "openai_embeddings",
       "account": null,
@@ -166,10 +147,7 @@
         "label": "API keys"
       },
       "key_prefix": null,
-      "dialects": [
-        "openai_chat",
-        "openai_embeddings"
-      ],
+      "dialects": ["openai_chat", "openai_embeddings"],
       "count_tokens": null,
       "embeddings": "openai_embeddings",
       "account": null,
@@ -187,12 +165,7 @@
         "label": "AI Gateway → API Keys"
       },
       "key_prefix": "vck_",
-      "dialects": [
-        "openai_chat",
-        "openai_responses",
-        "anthropic_messages",
-        "openai_embeddings"
-      ],
+      "dialects": ["openai_chat", "openai_responses", "anthropic_messages", "openai_embeddings"],
       "count_tokens": null,
       "embeddings": "openai_embeddings",
       "account": null,
@@ -210,10 +183,7 @@
         "url": "https://dashboard.cohere.com/api-keys"
       },
       "key_prefix": null,
-      "dialects": [
-        "openai_chat",
-        "openai_embeddings"
-      ],
+      "dialects": ["openai_chat", "openai_embeddings"],
       "count_tokens": null,
       "embeddings": "openai_embeddings",
       "account": null,
@@ -231,9 +201,7 @@
         "label": "Settings → Keys"
       },
       "key_prefix": null,
-      "dialects": [
-        "openai_chat"
-      ],
+      "dialects": ["openai_chat"],
       "count_tokens": null,
       "embeddings": null,
       "account": null,
@@ -251,9 +219,7 @@
         "label": "API Keys"
       },
       "key_prefix": "sk-",
-      "dialects": [
-        "openai_chat"
-      ],
+      "dialects": ["openai_chat"],
       "count_tokens": null,
       "embeddings": null,
       "account": null,
@@ -271,10 +237,7 @@
         "label": "API keys"
       },
       "key_prefix": "sk-",
-      "dialects": [
-        "openai_chat",
-        "openai_embeddings"
-      ],
+      "dialects": ["openai_chat", "openai_embeddings"],
       "count_tokens": null,
       "embeddings": "openai_embeddings",
       "account": null,
@@ -292,9 +255,7 @@
         "label": "API Keys"
       },
       "key_prefix": "csk-",
-      "dialects": [
-        "openai_chat"
-      ],
+      "dialects": ["openai_chat"],
       "count_tokens": null,
       "embeddings": null,
       "account": null,
@@ -312,9 +273,7 @@
         "label": "API Keys"
       },
       "key_prefix": null,
-      "dialects": [
-        "anthropic_messages"
-      ],
+      "dialects": ["anthropic_messages"],
       "count_tokens": null,
       "embeddings": null,
       "account": null,
@@ -332,9 +291,7 @@
         "label": "API Keys"
       },
       "key_prefix": "sk-api-",
-      "dialects": [
-        "anthropic_messages"
-      ],
+      "dialects": ["anthropic_messages"],
       "count_tokens": null,
       "embeddings": null,
       "account": null,
@@ -352,10 +309,7 @@
         "label": "API keys"
       },
       "key_prefix": null,
-      "dialects": [
-        "gemini",
-        "gemini_embeddings"
-      ],
+      "dialects": ["gemini", "gemini_embeddings"],
       "count_tokens": "gemini",
       "embeddings": "gemini_embeddings",
       "account": null,
@@ -373,9 +327,7 @@
         "label": "Settings → API keys"
       },
       "key_prefix": null,
-      "dialects": [
-        "gemini"
-      ],
+      "dialects": ["gemini"],
       "count_tokens": "gemini",
       "embeddings": null,
       "account": null,
