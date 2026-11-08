@@ -67,17 +67,22 @@ impl std::fmt::Debug for Buffer {
 type Shard<'a> = MutexGuard<'a, VecDeque<Entry>>;
 
 fn oldest(shards: &mut [Shard<'_>]) -> Option<Entry> {
+    let mut queues: Vec<&mut VecDeque<Entry>> = shards.iter_mut().map(|q| &mut **q).collect();
+    oldest_of(&mut queues)
+}
+
+fn oldest_of<Q: std::borrow::BorrowMut<VecDeque<Entry>>>(queues: &mut [Q]) -> Option<Entry> {
     let mut first: Option<(u64, usize)> = None;
-    for (i, q) in shards.iter().enumerate() {
-        if let Some(e) = q.front()
+    for (i, q) in queues.iter().enumerate() {
+        if let Some(e) = q.borrow().front()
             && first.is_none_or(|(seq, _)| e.seq < seq)
         {
             first = Some((e.seq, i));
         }
     }
     first
-        .and_then(|(_, i)| shards.get_mut(i))
-        .and_then(|q| q.pop_front())
+        .and_then(|(_, i)| queues.get_mut(i))
+        .and_then(|q| q.borrow_mut().pop_front())
 }
 
 impl Buffer {
@@ -134,14 +139,30 @@ impl Buffer {
             .set(self.bytes.load(Ordering::Relaxed) as f64);
     }
 
+    // Each shard's queue is swapped out under its lock, and the oldest rows across them are merged
+    // with no lock held: a request that finishes meanwhile never waits for the merge.
     fn take(&self, max: usize) -> Vec<Entry> {
-        let mut shards = self.lock_all();
-        let mut batch = Vec::with_capacity(max.min(self.len()));
+        let mut queues: Vec<VecDeque<Entry>> = self
+            .shards
+            .iter()
+            .map(|q| std::mem::take(&mut *q.lock().unwrap_or_else(PoisonError::into_inner)))
+            .collect();
+        let held: usize = queues.iter().map(VecDeque::len).sum();
+        let mut batch = Vec::with_capacity(max.min(held));
         while batch.len() < max {
-            let Some(e) = oldest(&mut shards) else { break };
+            let Some(e) = oldest_of(&mut queues) else {
+                break;
+            };
             batch.push(e);
         }
-        drop(shards);
+        for (q, mut rest) in self.shards.iter().zip(queues) {
+            if rest.is_empty() {
+                continue;
+            }
+            let mut q = q.lock().unwrap_or_else(PoisonError::into_inner);
+            rest.append(&mut q);
+            *q = rest;
+        }
         for e in &batch {
             self.uncounted(e);
         }
@@ -750,6 +771,35 @@ mod tests {
             seqs(&buffer.take(usize::MAX)),
             (51..=100).collect::<Vec<_>>()
         );
+        assert!(buffer.is_empty());
+    }
+
+    #[test]
+    fn a_partial_take_leaves_the_newer_rows_in_order_for_the_next() {
+        let buffer = std::sync::Arc::new(Buffer::default());
+        let threads: Vec<_> = (0..8)
+            .map(|_| {
+                let buffer = buffer.clone();
+                std::thread::spawn(move || {
+                    for _ in 0..50 {
+                        buffer.push(row(10), u64::MAX, usize::MAX);
+                    }
+                })
+            })
+            .collect();
+        for t in threads {
+            t.join().unwrap();
+        }
+        let mut taken = Vec::new();
+        loop {
+            let batch = buffer.take(37);
+            if batch.is_empty() {
+                break;
+            }
+            assert!(batch.len() <= 37);
+            taken.extend(seqs(&batch));
+        }
+        assert_eq!(taken, (0..400).collect::<Vec<_>>());
         assert!(buffer.is_empty());
     }
 
