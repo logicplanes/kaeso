@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use kaeso_codecs::anthropic_messages::MessagesProfile;
+use kaeso_codecs::gemini::GeminiProfile;
 use kaeso_codecs::openai_chat::ChatProfile;
 use kaeso_codecs::openai_responses::ResponsesProfile;
 use kaeso_kpp::DialectId;
@@ -387,6 +388,13 @@ impl ProviderRef {
         match self {
             ProviderRef::BuiltIn(p) => p.messages,
             ProviderRef::Custom(_) => MessagesProfile::ANTHROPIC,
+        }
+    }
+
+    pub fn gemini(&self) -> GeminiProfile {
+        match self {
+            ProviderRef::BuiltIn(p) => p.gemini.clone(),
+            ProviderRef::Custom(_) => GeminiProfile::GOOGLE_AI_STUDIO,
         }
     }
 

@@ -41,7 +41,16 @@ export function overriddenFields(m: CatalogueModelView): string[] {
 }
 
 export function dialectPill(d: string): string {
-  return { openai_responses: "responses", openai_chat: "chat", anthropic_messages: "messages", openai_embeddings: "embeddings" }[d] ?? d;
+  return (
+    {
+      openai_responses: "responses",
+      openai_chat: "chat",
+      anthropic_messages: "messages",
+      openai_embeddings: "embeddings",
+      gemini: "gemini",
+      gemini_embeddings: "embeddings",
+    }[d] ?? d
+  );
 }
 
 export type FieldKind = "text" | "number" | "price" | "bool" | "list" | "dialect" | "date";

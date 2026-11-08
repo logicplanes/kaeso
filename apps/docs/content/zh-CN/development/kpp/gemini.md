@@ -242,6 +242,14 @@ OpenAI Embeddings 请求以 `batchEmbedContents` 发送，每个请求带 `model
 
 `dispatch::encode_models_request_with` 和 `encode_model_request_with` 使用 `EgressCtx::gemini_profile` 的模型路径。列表请求把 `limit` 作为 `pageSize`、`after_id` 作为 `pageToken` 发送；`before_id`、生命周期过滤和其他查询参数为 `Unsupported`。
 
+`dispatch::next_models_query(dialect, query, page)` 给出已解码页面之后那一页的查询，最后一页之后为 `None`：Gemini 使用该页给出的 `nextPageToken`，其他方言使用该页的最后一个 ID。模型检查需要完整列表时，网关用它逐页读取 Google 的模型列表。
+
+## 使用此格式的服务商
+
+| 服务商 | Profile | 密钥 |
+|---|---|---|
+| Google AI Studio（`google`） | `GeminiProfile::GOOGLE_AI_STUDIO`，网关在每个请求、模型检查和列表中通过 `EgressCtx::with_gemini_profile` 把它交给编码器 | `x-goog-api-key`（`AuthStyle::XGoogApiKey`），从不放在 URL 中 |
+
 ## 往返
 
 每个 fixture 解码再编码后都得到相同的 JSON 值：带路径的请求、回复、Token 计数、嵌入、模型列表和错误。每个流式 fixture 在任意分块方式下都解码出相同的事件，并逐个 chunk 回放。录制的 fixture 没有例外。

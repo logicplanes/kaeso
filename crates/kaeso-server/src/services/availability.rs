@@ -4,10 +4,12 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
 use bytes::Bytes;
-use kaeso_codecs::{EncodedRequest, HeaderList, dispatch};
+use kaeso_codecs::{EgressCtx, EncodedRequest, HeaderList, dispatch};
 use kaeso_core::catalogue::{Effective, Entry};
 use kaeso_core::providers::ProviderRef;
-use kaeso_kpp::{DialectId, ErrorKind, KppError, ModelInfo, ModelList, ModelsQuery};
+use kaeso_kpp::{
+    DialectId, ErrorKind, KppError, ModelInfo, ModelList, ModelsQuery, RequestKind, StreamMode,
+};
 use kaeso_store::StoreError;
 use kaeso_store::pg::catalogue::{self, Answer, Recorded};
 use kaeso_store::pg::credentials::KeyInUse;
@@ -207,8 +209,12 @@ impl Asked<'_> {
         Ok((resp.status, resp.headers, body))
     }
 
+    fn ctx(&self) -> EgressCtx {
+        models_ctx(self.provider)
+    }
+
     async fn page(&self, query: &ModelsQuery) -> Result<ModelList, KppError> {
-        let request = dispatch::encode_models_request(self.dialect(), query)?;
+        let request = dispatch::encode_models_request_with(self.dialect(), query, &self.ctx())?;
         let (status, headers, body) = self.send(request).await?;
         let mut page = dispatch::decode_models(self.dialect(), status, &headers, &body)
             .map_err(|e| without_key_fragments(declared_key_refusal(self.provider, e)))?;
@@ -223,15 +229,14 @@ impl Asked<'_> {
         let mut query = ModelsQuery::default();
         for _ in 0..MAX_LISTING_PAGES {
             let page = self.page(&query).await?;
-            let last = page.models.last().map(|m| m.id.clone());
+            let next = dispatch::next_models_query(self.dialect(), &query, &page);
+            let more = page.has_more;
             models.extend(page.models);
-            if !page.has_more {
-                return Ok(Some(models));
+            match next {
+                Some(next) => query = next,
+                None if more => return Ok(None),
+                None => return Ok(Some(models)),
             }
-            if last.is_none() || last == query.after_id {
-                return Ok(None);
-            }
-            query.after_id = last;
         }
         Ok(None)
     }
@@ -264,6 +269,12 @@ fn listed(model: &ModelInfo) -> bool {
         .fields
         .get("visibility")
         .is_some_and(|v| v.get() == r#""list""#)
+}
+
+fn models_ctx(provider: &ProviderRef) -> EgressCtx {
+    EgressCtx::for_kind(RequestKind::Generate, StreamMode::Off)
+        .with_provider(provider.id())
+        .with_gemini_profile(provider.gemini())
 }
 
 pub async fn probe(
@@ -300,7 +311,11 @@ pub async fn probe(
             )),
         };
     }
-    let request = match dispatch::encode_model_request(eff.dialect, &eff.model_id) {
+    let request = match dispatch::encode_model_request_with(
+        eff.dialect,
+        &eff.model_id,
+        &models_ctx(&eff.provider),
+    ) {
         Ok(r) => r,
         Err(e) => return Probe::Failed(e),
     };

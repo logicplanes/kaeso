@@ -9,7 +9,7 @@ Kaeso 内置了以下服务商，按名称排列。如何使用服务商以及�
 ## 各列说明
 
 - **服务商。** 控制台显示的名称，后跟 ID。ID 用于在模型名称（如 `groq/llama-3.3-70b-versatile`）和[设置](../self-hosting/configuration.md#服务商设置)中指定服务商。
-- **格式。** Kaeso 调用该服务商所用的 API 格式。模型使用第一种格式，除非其**发送格式**指定了另一种（[模型的参数](../console/models-and-aliases.md#更改模型的参数)）。**Embeddings** 表示该服务商提供嵌入模型，可用于 `/v1/embeddings`。**Token 计数**表示它可以为 `/v1/messages/count_tokens` 和 `/v1/responses/input_tokens` 计算 Token 数。
+- **格式。** Kaeso 调用该服务商所用的 API 格式。模型使用第一种格式，除非其**发送格式**指定了另一种（[模型的参数](../console/models-and-aliases.md#更改模型的参数)）。**Embeddings** 和 **Gemini Embeddings** 表示该服务商提供嵌入模型，可用于 `/v1/embeddings`。**Token 计数**表示它可以为 `/v1/messages/count_tokens` 和 `/v1/responses/input_tokens` 计算 Token 数。
 - **主机。** 服务商默认基础 URL 的主机，实例必须能够访问它。如果您[设置了基础 URL](../self-hosting/configuration.md#服务商设置)，则以该地址为准。
 - **密钥。** 在哪里创建密钥，以及密钥的开头（[服务商密钥](../console/provider-keys.md)）。
 
@@ -21,6 +21,7 @@ Kaeso 内置了以下服务商，按名称排列。如何使用服务商以及�
 | Cerebras `cerebras` | Chat Completions | `api.cerebras.ai` | [cloud.cerebras.ai](https://cloud.cerebras.ai)，`csk-` |
 | Cohere `cohere` | Chat Completions、Embeddings | `api.cohere.ai` | [dashboard.cohere.com](https://dashboard.cohere.com/api-keys)，无固定前缀 |
 | DeepSeek `deepseek` | Chat Completions | `api.deepseek.com` | [platform.deepseek.com](https://platform.deepseek.com/api_keys)，`sk-` |
+| Google AI Studio `google` | Gemini API、Gemini Embeddings、Token 计数 | `generativelanguage.googleapis.com` | [aistudio.google.com](https://aistudio.google.com/apikey)，无固定前缀 |
 | Groq `groq` | Chat Completions | `api.groq.com` | [console.groq.com](https://console.groq.com/keys)，`gsk_` |
 | MiniMax `minimax` | Messages | `api.minimax.io` | [platform.minimax.io](https://platform.minimax.io/user-center/basic-information/interface-key)，`sk-api-` |
 | Mistral `mistral` | Chat Completions、Embeddings | `api.mistral.ai` | [console.mistral.ai](https://console.mistral.ai/api-keys)，无固定前缀 |
@@ -41,6 +42,7 @@ Kaeso 内置了以下服务商，按名称排列。如何使用服务商以及�
 - **Cerebras。** 即 Cerebras Inference，提供 `gpt-oss-120b`、`qwen-3.8-27b` 等模型。`developer` 消息会作为 `system` 消息发送给它，终端用户的 ID 以 `user` 发送，Claude Code 或 Codex 在第一轮之后发送的系统消息的文本并入下一个用户轮次，没有参数的函数带上空的参数 schema。Grok CLI 发回的 `reasoning_content` 以 `reasoning` 到达它。它拒绝以 assistant 消息结尾的对话，因为 Cerebras 会重新回答，也拒绝 assistant 消息上的 `refusal`。Cerebras 对任何它不认识的字段（例如 `store`）返回 400，并且只接受 data URI 形式的图像。模型的思考内容可到达任何格式的应用；`gpt-oss-120b` 在 `reasoning_effort` 为 `low`、`medium` 或 `high` 时思考，`qwen-3.8-27b` 还接受 `none`，其他强度由 Kaeso 拒绝。
 - **Cohere。** 即 Cohere 的 [Compatibility API](https://docs.cohere.com/docs/compatibility-api)，它只覆盖 Cohere 自身 API 的一部分：无法通过它使用文档、引用和重排序。Cohere 拒绝部分字段，例如 `logit_bias` 和 `parallel_tool_calls: false`；单个 `stop` 字符串会以列表形式发送给它。它的推理模型只支持 `reasoning_effort` 为 `none` 或 `high`。它的 Embed 模型（例如 `embed-v4.0`）不在 KPMR 中：请将其添加为以 Embeddings 发送的自定义模型，并填写价格。
 - **DeepSeek。** `developer` 消息会作为 `system` 消息发送给它。
+- **Google AI Studio。** 即 Google AI Studio 的 Gemini API，提供 `gemini-3.5-flash`、`gemini-3.1-pro-preview` 等 Gemini 模型、Gemma 模型，以及嵌入模型 `gemini-embedding-2` 和 `gemini-embedding-001`。Kaeso 以 Gemini 自己的格式调用它，密钥放在 `x-goog-api-key` 中，因此各种格式的应用都能访问它，Gemini 的思维签名在工具调用之间也得以保留。Gemini 3 模型按 KPMR 为其列出的推理强度级别思考，以 `thinkingLevel` 发送。Gemini 2.5 模型没有列出级别：Anthropic 应用的 `budget_tokens` 以 `thinkingBudget` 发送，其他应用的推理强度则被省略，并在 `kaeso-left-out` 中注明。托管网页搜索会被省略，因为 Gemini 的 `googleSearch` 不接受它的任何设置。AI Studio 的密钥以 `AIza` 或 `AQ.` 开头。免费层级的密钥每个模型每天只有很少的配额；超出后 Google 返回 429，应用会收到速率限制错误。**检查可用性**能识别错误的密钥。Google Cloud 的 Gemini API Vertex AI 不属于此服务商。
 - **Groq。** `developer` 消息会作为 `system` 消息发送给它；它拒绝部分字段，例如 `logit_bias`。
 - **MiniMax。** 即 MiniMax 的 Anthropic 兼容 API，提供 `MiniMax-M3` 和 `MiniMax-M3.1-Flash`，这是 MiniMax 在该接口上提供的仅有的模型；它的 M2 模型已下线。Kaeso 以 Messages 格式调用它，密钥放在 `x-api-key` 中，因此各种格式的应用都能访问它。Kaeso 拒绝 MiniMax 接受却不作处理的内容：`top_k`、`stop_sequences`（Chat 应用的 `stop`）、`mcp_servers`、`container`、不为 1 的 `temperature`、不为 0.95 的 `top_p`，以及不为 `auto` 的 `tool_choice`。Claude Code 只清除思考内容的 `context_management` 会被省略，并在 `kaeso-left-out` 中注明。图片可以通过 URL 或 base64 发送，文档由 MiniMax 自己拒绝。`MiniMax-M3.1-Flash` 始终思考，并拒绝关闭思考。MiniMax 自己为思考块签名，因此 Anthropic 应用应只把含有这些思考块的对话发给 MiniMax 模型；Anthropic 会拒绝它们的签名。Kaeso 拒绝 Token 计数，因为 MiniMax 返回的格式与 Anthropic 不同。在中国大陆，请将 MiniMax 的[基础 URL](../self-hosting/configuration.md#服务商设置)设为 `https://api.minimax.cn/anthropic`，并使用 platform.minimax.cn 的密钥。
 - **Mistral。** `developer` 消息会作为 `system` 消息发送给它，部分字段以它自己的名称发送，例如 `seed` 改为 `random_seed`；它拒绝其他一些字段（例如 `logit_bias`），也拒绝以助手消息结尾的对话。
@@ -55,4 +57,4 @@ Kaeso 内置了以下服务商，按名称排列。如何使用服务商以及�
 
 ## 商标
 
-所有商标和标志均归其各自所有者所有。Kaeso 与这些服务商均无关联，也未获得其认可或赞助。控制台显示服务商的标志，仅用于标明密钥、模型或请求所属的服务商。Anthropic、Cerebras、Cohere、Groq、Z.ai、MiniMax 以及 QwenCloud 的所有者 Alibaba Cloud 在其条款中限制使用其标志；Kaeso 仅出于此目的显示它们的标志，保留所有者的形状和颜色，只在颜色需要在 Kaeso 的浅色和深色背景上保持可见时才做必要的调整。Mistral 的品牌页面要求不要给其图标重新着色或加框；Kaeso 以 Mistral 自己的颜色显示该图标，放在与其他标志相同的中性底块上。[NOTICE.md](https://github.com/logicplanes/kaeso/blob/dev/NOTICE.md#trademarks) 列出了每个标志的来源。
+所有商标和标志均归其各自所有者所有。Kaeso 与这些服务商均无关联，也未获得其认可或赞助。控制台显示服务商的标志，仅用于标明密钥、模型或请求所属的服务商。Anthropic、Cerebras、Cohere、Google、Groq、Z.ai、MiniMax 以及 QwenCloud 的所有者 Alibaba Cloud 在其条款中限制使用其标志；Kaeso 仅出于此目的显示它们的标志，保留所有者的形状和颜色，只在颜色需要在 Kaeso 的浅色和深色背景上保持可见时才做必要的调整。Mistral 的品牌页面要求不要给其图标重新着色或加框；Kaeso 以 Mistral 自己的颜色显示该图标，放在与其他标志相同的中性底块上。[NOTICE.md](https://github.com/logicplanes/kaeso/blob/dev/NOTICE.md#trademarks) 列出了每个标志的来源。

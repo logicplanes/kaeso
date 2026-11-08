@@ -258,6 +258,31 @@ pub fn decode_model(
     dispatch!(dialect, decode_model(status, headers, body))?
 }
 
+/// The query for the page after `page` of a listing asked with `query`, or `None` when `page`
+/// was the last or names no page after it. A Gemini listing names its next page with an opaque
+/// `nextPageToken`; the other dialects continue after the last id of the page.
+pub fn next_models_query(
+    dialect: DialectId,
+    query: &ModelsQuery,
+    page: &ModelList,
+) -> Option<ModelsQuery> {
+    if !page.has_more {
+        return None;
+    }
+    let cursor = match dialect {
+        DialectId::Gemini | DialectId::GeminiEmbeddings => {
+            crate::gemini::models::next_page_token(page)
+        }
+        _ => page.models.last().map(|m| m.id.clone()),
+    }?;
+    if query.after_id.as_deref() == Some(cursor.as_str()) {
+        return None;
+    }
+    let mut next = query.clone();
+    next.after_id = Some(cursor);
+    Some(next)
+}
+
 fn path_segment(model: &str) -> Result<(), KppError> {
     // A URL parser removes a `.` or `..` path segment even when it is percent-encoded
     // (WHATWG URL, "single-dot" and "double-dot" segments), so no encoding keeps them.
@@ -342,5 +367,48 @@ mod tests {
         assert_eq!(models_dialect(&HeaderList::new()), DialectId::OpenAiChat);
         let beta_only = HeaderList::new().with("anthropic-beta", "x");
         assert_eq!(models_dialect(&beta_only), DialectId::OpenAiChat);
+    }
+
+    #[test]
+    fn the_next_page_follows_the_gemini_token_or_else_the_last_id() {
+        let fixture = |name: &str| {
+            std::fs::read(format!(
+                "{}/fixtures/gemini/models/{name}.json",
+                env!("CARGO_MANIFEST_DIR")
+            ))
+            .unwrap()
+        };
+        let mut query = ModelsQuery::default();
+        query.limit = Some(5);
+        for d in [DialectId::Gemini, DialectId::GeminiEmbeddings] {
+            let page = decode_models(
+                d,
+                200,
+                &HeaderList::new(),
+                &fixture("recorded-list-page-size-5"),
+            )
+            .unwrap();
+            let next = next_models_query(d, &query, &page).unwrap();
+            assert_eq!(
+                next.after_id.as_deref(),
+                Some("Chltb2RlbHMvZ2VtbWEtNC0yNmItYTRiLWl0")
+            );
+            assert_eq!(next.limit, Some(5));
+            assert_eq!(next_models_query(d, &next, &page), None);
+            let path = encode_models_request(d, &next).unwrap().path;
+            assert_eq!(
+                path,
+                "/v1beta/models?pageSize=5&pageToken=Chltb2RlbHMvZ2VtbWEtNC0yNmItYTRiLWl0"
+            );
+        }
+        let mut page = ModelList::new(vec![ModelInfo::new("a"), ModelInfo::new("b")]);
+        assert_eq!(
+            next_models_query(DialectId::OpenAiChat, &query, &page),
+            None
+        );
+        page.has_more = true;
+        let next = next_models_query(DialectId::AnthropicMessages, &query, &page).unwrap();
+        assert_eq!(next.after_id.as_deref(), Some("b"));
+        assert_eq!(next_models_query(DialectId::Gemini, &query, &page), None);
     }
 }

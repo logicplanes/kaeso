@@ -1215,7 +1215,7 @@ fn a_provider_without_token_counting_refuses_count_requests_and_still_generates(
     let mut e = eff(&entry("openai", "gpt-4o"));
     e.provider = ProviderRef::BuiltIn(Box::leak(Box::new(provider::Provider {
         count_tokens: None,
-        ..*e.provider.built_in().unwrap()
+        ..e.provider.built_in().unwrap().clone()
     })));
     for ingress in [
         DialectId::AnthropicMessages,
@@ -1823,4 +1823,68 @@ fn minimax_models_speak_anthropic_messages_with_kpmrs_prices_and_limits() {
         (flash.fields.input_price, flash.fields.output_price),
         (Some(dec!(0.15)), Some(dec!(0.6)))
     );
+}
+
+#[test]
+fn google_models_speak_gemini_with_kpmrs_prices_and_their_embeddings_embed() {
+    use DialectId::{AnthropicMessages as A, OpenAiResponses as R};
+    let flash = eff(&entry("google", "gemini-3.5-flash-lite"));
+    assert_eq!(flash.dialect, DialectId::Gemini);
+    assert_eq!(
+        flash.provider.gemini(),
+        kaeso_codecs::gemini::GeminiProfile::GOOGLE_AI_STUDIO
+    );
+    assert!(!flash.is_embeddings());
+    assert_eq!(
+        (
+            flash.fields.input_price,
+            flash.fields.output_price,
+            flash.fields.cache_read_price
+        ),
+        (Some(dec!(0.3)), Some(dec!(2.5)), Some(dec!(0.03)))
+    );
+    assert_eq!(
+        (flash.fields.context_limit, flash.fields.output_limit),
+        (Some(1_048_576), Some(65_536))
+    );
+    let pro = eff(&entry("google", "gemini-3.1-pro-preview"));
+    assert_eq!(
+        (pro.fields.input_price, pro.fields.output_price),
+        (Some(dec!(2)), Some(dec!(12)))
+    );
+    for model in ["gemini-embedding-2", "gemini-embedding-001"] {
+        let embed = eff(&entry("google", model));
+        assert_eq!(embed.dialect, DialectId::GeminiEmbeddings, "{model}");
+        assert!(embed.is_embeddings(), "{model}");
+    }
+    assert_eq!(
+        eff(&entry("google", "gemini-embedding-2"))
+            .fields
+            .input_price,
+        Some(dec!(0.2))
+    );
+
+    assert_eq!(
+        effort_levels(&flash, A),
+        ["minimal", "low", "medium", "high"]
+    );
+    kept("low", R, &flash);
+    assert_eq!(
+        nearest("minimal", R, &pro),
+        (
+            Some(ReasoningEffort::Low),
+            vec!["reasoning.effort".to_owned()]
+        )
+    );
+    assert_eq!(nearest("xhigh", A, &flash).0, Some(ReasoningEffort::High));
+    let budgeted = eff(&entry("google", "gemini-2.5-flash"));
+    assert_eq!(effort_left_out("high", R, &budgeted), ["reasoning.effort"]);
+    for model in [&budgeted, &flash] {
+        let sent = check(with_budget(2_048, ReasoningMode::Enabled), A, model).unwrap();
+        let Request::Generate(g) = sent else {
+            unreachable!()
+        };
+        let r = g.reasoning.unwrap();
+        assert_eq!((r.budget_tokens, r.effort), (Some(2_048), None));
+    }
 }

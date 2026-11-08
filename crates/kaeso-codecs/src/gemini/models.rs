@@ -151,6 +151,15 @@ pub(crate) fn decode_models(body: &[u8]) -> Result<ModelList, KppError> {
     Ok(list)
 }
 
+/// The `nextPageToken` a decoded Gemini listing gave, `None` on its last page.
+pub(crate) fn next_page_token(list: &ModelList) -> Option<String> {
+    list.extras
+        .is_from(D)
+        .then(|| list.extras.fields.get(NEXT_PAGE_TOKEN))
+        .flatten()
+        .and_then(|t| t.parse::<String>().ok())
+}
+
 pub(crate) fn decode_model(body: &[u8]) -> Result<ModelInfo, KppError> {
     let w: Ext<ModelW> =
         Ext::from_slice(body).map_err(|e| bad_listing(D, &without_position(&e)))?;

@@ -242,6 +242,14 @@ Eine Anfrage von OpenAI Embeddings geht als `batchEmbedContents` mit `model: "mo
 
 `dispatch::encode_models_request_with` und `encode_model_request_with` nutzen den Modellpfad aus `EgressCtx::gemini_profile`. Eine Listenanfrage sendet `limit` als `pageSize` und `after_id` als `pageToken`; `before_id`, ein Lebenszyklus-Filter und andere Query-Parameter sind `Unsupported`.
 
+`dispatch::next_models_query(dialect, query, page)` liefert die Anfrage für die Seite nach einer dekodierten, oder `None` nach der letzten: bei Gemini das `nextPageToken` der Seite, bei den anderen Dialekten die letzte ID der Seite. Damit blättert das Gateway durch Googles Liste, wenn eine Modellprüfung die ganze Liste braucht.
+
+## Anbieter, die dieses Format nutzen
+
+| Anbieter | Profil | Schlüssel |
+|---|---|---|
+| Google AI Studio (`google`) | `GeminiProfile::GOOGLE_AI_STUDIO`, das das Gateway dem Encoder mit `EgressCtx::with_gemini_profile` für jede Anfrage, Modellprüfung und Liste übergibt | `x-goog-api-key` (`AuthStyle::XGoogApiKey`), nie in der URL |
+
 ## Round Trips
 
 Jede Fixture wird dekodiert und zu einem gleichen JSON-Wert kodiert: Anfragen mit ihrem Pfad, Antworten, Token-Zählungen, Embeddings, Modelllisten und Fehler. Jede Stream-Fixture ergibt bei jeder Stückelung dieselben Events und wird Chunk für Chunk zurückgespielt. Aufzeichnungen haben keine Ausnahmen.

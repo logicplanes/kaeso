@@ -420,19 +420,13 @@ impl Upstream {
         for (name, value) in call.request.headers.iter() {
             builder = builder.header(name, value);
         }
-        builder = match call.auth {
-            Some(AuthStyle::Bearer) => secret_header(
+        if let Some(style) = call.auth {
+            builder = secret_header(
                 builder,
-                "authorization",
-                format!("Bearer {}", call.credential.expose_secret()),
-            ),
-            Some(AuthStyle::XApiKey) => secret_header(
-                builder,
-                "x-api-key",
-                call.credential.expose_secret().to_owned(),
-            ),
-            None => builder,
-        };
+                style.header_name(),
+                style.header_value(call.credential.expose_secret()),
+            );
+        }
         let builder = builder.body(call.request.body);
         if call.stream {
             let resp = tokio::time::timeout(call.timeouts.first_byte, builder.send())
@@ -617,10 +611,19 @@ mod tests {
     #[test]
     fn credentials_are_marked_sensitive() {
         let client = reqwest::Client::new();
-        for (name, value) in [("authorization", "Bearer sk-x"), ("x-api-key", "sk-ant-x")] {
-            let req = secret_header(client.get("http://127.0.0.1:9/"), name, value.into())
-                .build()
-                .unwrap_or_else(|_| unreachable!());
+        for style in [
+            AuthStyle::Bearer,
+            AuthStyle::XApiKey,
+            AuthStyle::XGoogApiKey,
+        ] {
+            let name = style.header_name();
+            let req = secret_header(
+                client.get("http://127.0.0.1:9/"),
+                name,
+                style.header_value("sk-x"),
+            )
+            .build()
+            .unwrap_or_else(|_| unreachable!());
             let sent = req.headers().get(name).unwrap_or_else(|| unreachable!());
             assert!(sent.is_sensitive());
             assert!(!format!("{:?}", req.headers()).contains("sk-"));

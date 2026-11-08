@@ -80,10 +80,10 @@ cargo xtask record openai_chat --all --dry-run
 cargo xtask record openai_responses --count --all
 ```
 
-Gemini fixture 从 Google AI Studio 录制，密钥来自 `GEMINI_API_KEY`。Gemini 请求在路径中写明模型，因此请传入 `--model`，或把模型写进 fixture 的 `.meta.json`：
+Gemini fixture 从 Google AI Studio（服务商 `google`）录制，密钥来自 `GOOGLE_API_KEY`。Gemini 请求在路径中写明模型，因此请传入 `--model`，或把模型写进 fixture 的 `.meta.json`：
 
 ```bash
-export GEMINI_API_KEY=…
+export GOOGLE_API_KEY=…
 cargo xtask record gemini --model gemini-3.5-flash text-simple stream-text
 cargo xtask record gemini_embeddings --model gemini-embedding-2 batch
 ```
@@ -110,7 +110,7 @@ cargo xtask record openai_chat --provider <id> --model <model> \
 
 - 它读取 `requests/<name>.json`（对其他服务商还会读取 `providers/<id>/requests/<name>.json`），以及存在时的 `<name>.headers.json`，后者中在允许列表内的请求头（`anthropic-beta`、`anthropic-version`、`openai-beta`）会一并发送。Anthropic 请求带有 `anthropic-version: 2023-06-01`，除非该文件指定了其他版本。
 - 对 2xx 回复，它写入 `responses/recorded-<name>.json`（使用 `--count` 时位于 `responses/count_tokens/` 或 `responses/input_tokens/`）；请求带有 `"stream": true`，或 Gemini 请求调用 `streamGenerateContent` 时，写入 `streams/recorded-<name>.sse`（收到的原始字节）；出错时，写入 `errors/recorded-<name>.json`（响应体不是 JSON 时为 `.txt`）和 `recorded-<name>.meta.json`（状态码以及可能存在的 `retry-after`）。随后它会在该文件夹的 `RECORDED.md` 中添加一行，记录模型和 UTC 时间。`openai`、`anthropic` 和 `google` 录制到方言自己的文件夹中，其他每个服务商录制到 `providers/<id>/` 中。JSON 响应体以两个空格缩进，并保留服务商的键顺序。
-- 密钥来自 `<ID>_API_KEY`，即服务商 ID 的大写形式，连字符换成下划线：`OPENAI_API_KEY`、`ANTHROPIC_API_KEY`，服务商 `fireworks-ai` 则为 `FIREWORKS_AI_API_KEY`。`<ID>_BASE_URL` 替换服务商的默认基础 URL，即网关使用的那个。密钥放在该服务商的认证请求头中：`authorization: Bearer`、`x-api-key`，或 Google AI Studio 的 `x-goog-api-key`，后者的密钥和基础 URL 来自 `GEMINI_API_KEY` 和 `GEMINI_BASE_URL`。
+- 密钥来自 `<ID>_API_KEY`，即服务商 ID 的大写形式，连字符换成下划线：`OPENAI_API_KEY`、`ANTHROPIC_API_KEY`，服务商 `fireworks-ai` 则为 `FIREWORKS_AI_API_KEY`。`<ID>_BASE_URL` 替换服务商的默认基础 URL，即网关使用的那个。密钥放在该服务商的认证请求头中：`authorization: Bearer`、`x-api-key`，或 Google AI Studio 的 `x-goog-api-key`。
 - API 密钥从环境中读取，从不写入文件；请求头也从不保存。
 - 写入之前，它会从所有携带云签名凭据的 URL 中删除查询字符串（AWS Signature Version 4、Google Cloud 签名 URL、Azure 共享访问签名）。网页搜索可能返回这类预签名链接。其余内容逐字节保持不变。
 

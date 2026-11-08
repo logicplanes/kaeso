@@ -14,7 +14,7 @@ use kaeso_codecs::gemini::{GeminiAction, GeminiProfile};
 use kaeso_codecs::{
     anthropic_messages, is_forwarded_header, openai_chat, openai_embeddings, openai_responses,
 };
-use kaeso_core::provider::{AuthStyle, Provider, lookup};
+use kaeso_core::provider::{Provider, lookup};
 use kaeso_kpp::DialectId;
 
 use crate::error::{Error, read, read_text, write};
@@ -64,7 +64,7 @@ impl Dialect {
     fn default_provider(self) -> &'static str {
         match self {
             Self::AnthropicMessages => "anthropic",
-            Self::Gemini | Self::GeminiEmbeddings => GOOGLE.id,
+            Self::Gemini | Self::GeminiEmbeddings => "google",
             Self::OpenaiChat | Self::OpenaiResponses | Self::OpenaiEmbeddings => "openai",
         }
     }
@@ -99,82 +99,13 @@ impl Dialect {
     }
 }
 
-// Google AI Studio is not a provider of the gateway yet; recording its Gemini fixtures needs
-// only its address, its key and its auth header.
-pub(crate) struct Google {
-    id: &'static str,
-    name: &'static str,
-    key_segment: &'static str,
-    default_base_url: &'static str,
-    dialects: &'static [DialectId],
-}
+pub(crate) type Service = &'static Provider;
 
-pub(crate) const GOOGLE: Google = Google {
-    id: "google",
-    name: "Google AI Studio",
-    key_segment: "GEMINI",
-    default_base_url: "https://generativelanguage.googleapis.com",
-    dialects: &[DialectId::Gemini, DialectId::GeminiEmbeddings],
-};
-
-#[derive(Clone, Copy)]
-pub(crate) enum Service {
-    Provider(&'static Provider),
-    Google(&'static Google),
-}
-
-impl Service {
-    fn id(self) -> &'static str {
-        match self {
-            Self::Provider(p) => p.id,
-            Self::Google(g) => g.id,
-        }
-    }
-
-    fn name(self) -> &'static str {
-        match self {
-            Self::Provider(p) => p.name,
-            Self::Google(g) => g.name,
-        }
-    }
-
-    fn dialects(self) -> &'static [DialectId] {
-        match self {
-            Self::Provider(p) => p.dialects,
-            Self::Google(g) => g.dialects,
-        }
-    }
-
-    fn count_tokens(self) -> Option<DialectId> {
-        match self {
-            Self::Provider(p) => p.count_tokens,
-            Self::Google(_) => Some(DialectId::Gemini),
-        }
-    }
-
-    fn env_segment(self) -> String {
-        match self {
-            Self::Provider(p) => p.provider_id().env_segment(),
-            Self::Google(g) => g.key_segment.to_owned(),
-        }
-    }
-
-    fn default_base_url(self) -> &'static str {
-        match self {
-            Self::Provider(p) => p.default_base_url,
-            Self::Google(g) => g.default_base_url,
-        }
-    }
-
-    fn auth_header(self, key: &str) -> (String, String) {
-        match self {
-            Self::Provider(p) => match p.auth {
-                AuthStyle::Bearer => ("authorization".to_owned(), format!("Bearer {key}")),
-                AuthStyle::XApiKey => ("x-api-key".to_owned(), key.to_owned()),
-            },
-            Self::Google(_) => ("x-goog-api-key".to_owned(), key.to_owned()),
-        }
-    }
+fn auth_header(service: Service, key: &str) -> (String, String) {
+    (
+        service.auth.header_name().to_owned(),
+        service.auth.header_value(key),
+    )
 }
 
 #[derive(clap::Args)]
@@ -204,23 +135,11 @@ pub(crate) struct Args {
 
 impl Args {
     pub(crate) fn service(&self) -> Result<Service, Error> {
-        if self.dialect.is_gemini() {
-            return match self.provider.as_deref() {
-                None => Ok(Service::Google(&GOOGLE)),
-                Some(id) if id == GOOGLE.id => Ok(Service::Google(&GOOGLE)),
-                Some(id) => Err(Error::Invalid(format!(
-                    "{} records from Google AI Studio only, not from `{id}`; leave out --provider",
-                    self.dialect.id()
-                ))),
-            };
-        }
         let id = self
             .provider
             .as_deref()
             .unwrap_or(self.dialect.default_provider());
-        lookup(id)
-            .map(Service::Provider)
-            .map_err(|e| Error::Invalid(e.to_string()))
+        lookup(id).map_err(|e| Error::Invalid(e.to_string()))
     }
 }
 
@@ -237,13 +156,13 @@ impl Endpoint {
     }
 
     fn from_variables(service: Service, variable: impl Fn(&str) -> Option<String>) -> Self {
-        let segment = service.env_segment();
+        let segment = service.provider_id().env_segment();
         let key_variable = format!("{segment}_API_KEY");
         Self {
             service,
             base_url: variable(&format!("{segment}_BASE_URL"))
                 .filter(|u| !u.is_empty())
-                .unwrap_or_else(|| service.default_base_url().to_owned()),
+                .unwrap_or_else(|| service.default_base_url.to_owned()),
             key: variable(&key_variable).filter(|k| !k.is_empty()),
             key_variable,
         }
@@ -272,20 +191,20 @@ pub(crate) async fn run(
 ) -> Result<(), Error> {
     let service = endpoint.service;
     let dialect = args.dialect.id();
-    if !service.dialects().contains(&dialect) {
-        let spoken: Vec<&str> = service.dialects().iter().map(|d| d.as_str()).collect();
+    if !service.dialects.contains(&dialect) {
+        let spoken: Vec<&str> = service.dialects.iter().map(|d| d.as_str()).collect();
         return Err(Error::Invalid(format!(
             "{} does not speak {dialect}; it speaks {}",
-            service.id(),
+            service.id,
             spoken.join(", ")
         )));
     }
     let count = match (args.count, args.dialect.count()) {
         (false, _) => None,
-        (true, Some(_)) if service.count_tokens() != Some(dialect) => {
+        (true, Some(_)) if service.count_tokens != Some(dialect) => {
             return Err(Error::Invalid(format!(
                 "{} has no token-count endpoint for {dialect}; record without --count",
-                service.id()
+                service.id
             )));
         }
         (true, Some(count)) => Some(count),
@@ -303,10 +222,10 @@ pub(crate) async fn run(
     }
     let fixtures = root.join(FIXTURES);
     let canonical = fixtures.join(args.dialect.folder());
-    let target = if service.id() == args.dialect.default_provider() {
+    let target = if service.id == args.dialect.default_provider() {
         canonical.clone()
     } else {
-        canonical.join(PROVIDERS_FOLDER).join(service.id())
+        canonical.join(PROVIDERS_FOLDER).join(service.id)
     };
     let mut available = requests_in(&canonical, count)?;
     if target != canonical {
@@ -570,7 +489,7 @@ impl Recorder<'_> {
 
     fn headers(&self, fixture: &Path, key: &str) -> Result<HeaderMap, Error> {
         let mut headers = vec![("content-type".to_owned(), "application/json".to_owned())];
-        headers.push(self.service.auth_header(key));
+        headers.push(auth_header(self.service, key));
         if self.dialect.is_anthropic() {
             headers.push((
                 "anthropic-version".to_owned(),
@@ -618,8 +537,7 @@ impl Recorder<'_> {
         } else {
             format!(
                 "# Recorded fixtures\n\nWritten by `cargo xtask record`. Provenance: live API of {} (`{}`).\n\n| File | Request fixture | Model | Recorded (UTC) |\n|---|---|---|---|\n",
-                self.service.name(),
-                self.service.id()
+                self.service.name, self.service.id
             )
         };
         let when = OffsetDateTime::now_utc()
@@ -711,7 +629,7 @@ mod tests {
     use kaeso_codecs::anthropic_messages::MessagesProfile;
     use kaeso_codecs::openai_chat::ChatProfile;
     use kaeso_codecs::openai_responses::ResponsesProfile;
-    use kaeso_core::provider::KeyPage;
+    use kaeso_core::provider::{AuthStyle, KeyPage};
 
     #[derive(Parser)]
     struct Cli {
@@ -776,6 +694,7 @@ mod tests {
         chat: ChatProfile::compatible("Example Cloud"),
         responses: ResponsesProfile::compatible("Example Cloud"),
         messages: MessagesProfile::compatible("Example Cloud"),
+        gemini: GeminiProfile::GOOGLE_AI_STUDIO,
         account: None,
     };
 
@@ -785,7 +704,7 @@ mod tests {
 
     fn endpoint(provider: &'static Provider, base_url: &str, key: Option<&str>) -> Endpoint {
         Endpoint {
-            service: Service::Provider(provider),
+            service: provider,
             base_url: base_url.to_owned(),
             key_variable: format!("{}_API_KEY", provider.provider_id().env_segment()),
             key: key.map(str::to_owned),
@@ -794,9 +713,9 @@ mod tests {
 
     fn google(base_url: &str, key: Option<&str>) -> Endpoint {
         Endpoint {
-            service: Service::Google(&GOOGLE),
+            service: known("google"),
             base_url: base_url.to_owned(),
-            key_variable: "GEMINI_API_KEY".to_owned(),
+            key_variable: "GOOGLE_API_KEY".to_owned(),
             key: key.map(str::to_owned),
         }
     }
@@ -828,7 +747,7 @@ mod tests {
 
     #[test]
     fn the_provider_comes_from_the_registry_and_defaults_to_the_dialect_owner() {
-        let id = |line: &[&str]| args(line).service().map(Service::id);
+        let id = |line: &[&str]| args(line).service().map(|p| p.id);
         assert_eq!(id(&["anthropic_messages", "--all"]).unwrap(), "anthropic");
         assert_eq!(id(&["openai_chat", "--all"]).unwrap(), "openai");
         assert_eq!(id(&["openai_embeddings", "--all"]).unwrap(), "openai");
@@ -836,12 +755,6 @@ mod tests {
         assert_eq!(
             id(&["gemini_embeddings", "--provider", "google", "--all"]).unwrap(),
             "google"
-        );
-        assert_eq!(
-            id(&["gemini", "--provider", "openai", "--all"])
-                .unwrap_err()
-                .to_string(),
-            "gemini records from Google AI Studio only, not from `openai`; leave out --provider"
         );
         assert_eq!(
             id(&["openai_chat", "--provider", "anthropic", "--all"]).unwrap(),
@@ -875,7 +788,7 @@ mod tests {
             }
         };
         let set = Endpoint::from_variables(
-            Service::Provider(&EXAMPLE),
+            &EXAMPLE,
             variables(&[
                 ("EXAMPLE_CLOUD_API_KEY", "sk-test"),
                 ("EXAMPLE_CLOUD_BASE_URL", "http://127.0.0.1:9"),
@@ -886,7 +799,7 @@ mod tests {
         assert_eq!(set.key.as_deref(), Some("sk-test"));
         assert_eq!(set.base_url, "http://127.0.0.1:9");
         let unset = Endpoint::from_variables(
-            Service::Provider(&EXAMPLE),
+            &EXAMPLE,
             variables(&[
                 ("EXAMPLE_CLOUD_API_KEY", ""),
                 ("EXAMPLE_CLOUD_BASE_URL", ""),
@@ -894,20 +807,19 @@ mod tests {
         );
         assert_eq!(unset.key, None);
         assert_eq!(unset.base_url, "https://api.example.com/compat");
-        let openai = Endpoint::from_variables(Service::Provider(known("openai")), variables(&[]));
+        let openai = Endpoint::from_variables(known("openai"), variables(&[]));
         assert_eq!(
             (openai.key_variable.as_str(), openai.base_url.as_str()),
             ("OPENAI_API_KEY", "https://api.openai.com")
         );
-        let anthropic =
-            Endpoint::from_variables(Service::Provider(known("anthropic")), variables(&[]));
+        let anthropic = Endpoint::from_variables(known("anthropic"), variables(&[]));
         assert_eq!(
             (anthropic.key_variable.as_str(), anthropic.base_url.as_str()),
             ("ANTHROPIC_API_KEY", "https://api.anthropic.com")
         );
         let google = Endpoint::from_variables(
-            Service::Google(&GOOGLE),
-            variables(&[("GEMINI_API_KEY", "AIza-test")]),
+            known("google"),
+            variables(&[("GOOGLE_API_KEY", "AIza-test")]),
         );
         assert_eq!(
             (
@@ -916,7 +828,7 @@ mod tests {
                 google.key.as_deref()
             ),
             (
-                "GEMINI_API_KEY",
+                "GOOGLE_API_KEY",
                 "https://generativelanguage.googleapis.com",
                 Some("AIza-test")
             )

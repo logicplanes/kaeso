@@ -265,6 +265,22 @@
       "count_tokens": null,
       "embeddings": null,
       "account": null
+    },
+    {
+      "id": "google",
+      "name": "Google AI Studio",
+      "custom": false,
+      "takes_key": true,
+      "hides_built_in": null,
+      "key_page": {
+        "url": "https://aistudio.google.com/apikey",
+        "label": "API keys"
+      },
+      "key_prefix": null,
+      "dialects": ["gemini", "gemini_embeddings"],
+      "count_tokens": "gemini",
+      "embeddings": "gemini_embeddings",
+      "account": null
     }
   ],
   "has_more": false,

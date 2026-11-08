@@ -11,6 +11,7 @@ use axum::body::{Body, Bytes};
 use axum::extract::State;
 use axum::http::{HeaderMap, Method, StatusCode, Uri};
 use axum::response::{IntoResponse, Response};
+use kaeso_codecs::gemini::{GeminiAction, split_model_action};
 use tokio::sync::watch;
 
 #[derive(Clone, Debug)]
@@ -385,7 +386,12 @@ async fn answer(ctx: Ctx, method: Method, uri: Uri, headers: HeaderMap, body: By
     }
     let anthropic = path.starts_with("/v1/messages")
         || (path.starts_with("/v1/models") && headers.contains_key("x-api-key"));
-    let dialect = if anthropic {
+    let gemini = gemini_call(&path);
+    let dialect = if let Some((_, action)) = &gemini {
+        action.dialect().as_str()
+    } else if path.starts_with(GEMINI_MODELS) {
+        "gemini"
+    } else if anthropic {
         "anthropic_messages"
     } else if path.starts_with("/v1/responses") {
         "openai_responses"
@@ -401,12 +407,21 @@ async fn answer(ctx: Ctx, method: Method, uri: Uri, headers: HeaderMap, body: By
         .is_some_and(|v| v.starts_with("Bearer ") && v.len() > 7);
     // Anthropic takes `x-api-key`; Anthropic-compatible servers such as Vercel AI Gateway
     // also take a Bearer token.
-    let authed = bearer || anthropic && headers.get("x-api-key").is_some_and(|v| !v.is_empty());
+    let authed = if dialect.starts_with("gemini") {
+        headers.get("x-goog-api-key").is_some_and(|v| !v.is_empty())
+            && !headers.contains_key("authorization")
+    } else {
+        bearer || anthropic && headers.get("x-api-key").is_some_and(|v| !v.is_empty())
+    };
+    if !authed && dialect.starts_with("gemini") {
+        return error_response(&ctx.fixtures.join("gemini"), key_refused(dialect));
+    }
     if !authed {
         return error_response(&dir, key_refused(dialect));
     }
     let key = key_text(&headers);
-    let asks_models = method == Method::GET && path.starts_with(MODELS);
+    let asks_models =
+        method == Method::GET && (path.starts_with(MODELS) || path.starts_with(GEMINI_MODELS));
     let hold =
         marker(&text, "gate").or_else(|| asks_models.then(|| marker(&key, "gate")).flatten());
     if let Some(name) = hold {
@@ -415,12 +430,18 @@ async fn answer(ctx: Ctx, method: Method, uri: Uri, headers: HeaderMap, body: By
     if asks_models && answers_route_not_found(marker(&key, "models"), &path) {
         return route_not_found();
     }
-    if asks_models && path == MODELS && marker(&key, "models") == Some("list-refuses-key") {
+    if asks_models
+        && (path == MODELS || path == GEMINI_MODELS)
+        && marker(&key, "models") == Some("list-refuses-key")
+    {
         return error_response(&dir, key_refused(dialect));
     }
     if is_unserved(&path, &body) {
         let (dir, name) = match dialect {
             "anthropic_messages" => (dir.clone(), "not-found"),
+            "gemini" | "gemini_embeddings" => {
+                (ctx.fixtures.join("gemini"), "recorded-error-unknown-model")
+            }
             "openai_responses" => (dir.clone(), "model-not-found-404"),
             _ => (ctx.fixtures.join("openai_chat"), "model-not-found"),
         };
@@ -429,25 +450,34 @@ async fn answer(ctx: Ctx, method: Method, uri: Uri, headers: HeaderMap, body: By
     if let Some(name) = marker(&text, "error") {
         return error_response(&dir, name);
     }
-    let asked = serde_json::from_slice::<serde_json::Value>(&body)
-        .ok()
-        .and_then(|v| {
-            v.get("model")
-                .and_then(serde_json::Value::as_str)
-                .map(str::to_owned)
-        });
+    let asked = match &gemini {
+        Some((model, _)) => Some(model.clone()),
+        None => serde_json::from_slice::<serde_json::Value>(&body)
+            .ok()
+            .and_then(|v| {
+                v.get("model")
+                    .and_then(serde_json::Value::as_str)
+                    .map(str::to_owned)
+            }),
+    };
     if let Some(name) = asked.as_deref().and_then(|m| failure_for(&text, m)) {
         if name == "stall" {
             std::future::pending::<()>().await;
         }
         return error_response(&dir, name);
     }
-    let stream = serde_json::from_slice::<serde_json::Value>(&body)
-        .ok()
-        .and_then(|v| v.get("stream").and_then(serde_json::Value::as_bool))
-        .unwrap_or(false);
+    let stream = match &gemini {
+        Some((_, action)) => *action == GeminiAction::StreamGenerateContent,
+        None => serde_json::from_slice::<serde_json::Value>(&body)
+            .ok()
+            .and_then(|v| v.get("stream").and_then(serde_json::Value::as_bool))
+            .unwrap_or(false),
+    };
     if marker(&text, "stall").is_some() && !stream {
         std::future::pending::<()>().await;
+    }
+    if method == Method::GET && dialect == "gemini" {
+        return gemini_models(&dir.join("models"), &path, uri.query());
     }
     if method == Method::GET {
         let endless = marker(&key, "models") == Some("endless");
@@ -463,7 +493,9 @@ async fn answer(ctx: Ctx, method: Method, uri: Uri, headers: HeaderMap, body: By
         };
         return json_file(&models.join(file));
     }
-    let counting = path.ends_with("/count_tokens") || path.ends_with("/input_tokens");
+    let counting = path.ends_with("/count_tokens")
+        || path.ends_with("/input_tokens")
+        || path.ends_with(":countTokens");
     let tag = marker(&text, "tag").map(str::to_owned);
     if !counting
         && dialect != "openai_embeddings"
@@ -494,6 +526,7 @@ async fn answer(ctx: Ctx, method: Method, uri: Uri, headers: HeaderMap, body: By
         let name = fixture.unwrap_or_else(|| match dialect {
             "anthropic_messages" => "text-simple".into(),
             "openai_responses" => "text-basic-stream".into(),
+            "gemini" => "recorded-stream-text".into(),
             _ => "stream-include-usage".into(),
         });
         let bytes = std::fs::read(fixture_file(&dir, "streams", &name, "sse"))
@@ -523,6 +556,24 @@ async fn answer(ctx: Ctx, method: Method, uri: Uri, headers: HeaderMap, body: By
             fixture.as_deref(),
             "string-input",
         ),
+        ("gemini", _) if counting => counting_fixture(
+            &dir.join("responses/count_tokens"),
+            fixture.as_deref(),
+            "recorded-contents",
+        ),
+        ("gemini_embeddings", _) => {
+            let default = if gemini.is_some_and(|(_, a)| a == GeminiAction::BatchEmbedContents) {
+                "recorded-batch"
+            } else {
+                "recorded-embed-single"
+            };
+            fixture_file(
+                &dir,
+                "responses",
+                fixture.as_deref().unwrap_or(default),
+                "json",
+            )
+        }
         ("openai_embeddings", _) => {
             let default = if text.contains("\"encoding_format\":\"base64\"") {
                 "base64-encoding"
@@ -540,6 +591,7 @@ async fn answer(ctx: Ctx, method: Method, uri: Uri, headers: HeaderMap, body: By
             let default = match dialect {
                 "anthropic_messages" => "text-simple",
                 "openai_responses" => "text-input-string",
+                "gemini" => "recorded-text-simple",
                 _ => "plain-developer-string",
             };
             fixture_file(
@@ -557,8 +609,47 @@ pub const UNSERVED_PREFIX: &str = "unserved-";
 
 const MODELS: &str = "/v1/models";
 
+const GEMINI_MODELS: &str = "/v1beta/models";
+
+// Three pages: the first, then the recorded next page, then that page again without a
+// `nextPageToken`, for the token the second page gave.
+fn gemini_models(dir: &Path, path: &str, query: Option<&str>) -> Response {
+    if path != GEMINI_MODELS {
+        return json_file(&dir.join("recorded-get-gemini-3.5-flash.json"));
+    }
+    let token = query
+        .into_iter()
+        .flat_map(|q| q.split('&'))
+        .find_map(|pair| pair.strip_prefix("pageToken="));
+    let Some(token) = token else {
+        return json_file(&dir.join("recorded-list-page-size-5.json"));
+    };
+    let next = dir.join("recorded-list-next-page.json");
+    let mut page: serde_json::Value = std::fs::read(&next)
+        .ok()
+        .and_then(|b| serde_json::from_slice(&b).ok())
+        .unwrap_or_else(|| panic!("mock: no fixture {}", next.display()));
+    if page
+        .get("nextPageToken")
+        .and_then(serde_json::Value::as_str)
+        == Some(token)
+        && let Some(map) = page.as_object_mut()
+    {
+        map.remove("nextPageToken");
+    }
+    Response::builder()
+        .status(StatusCode::OK)
+        .header("content-type", "application/json")
+        .body(Body::from(page.to_string()))
+        .unwrap_or_else(|_| StatusCode::INTERNAL_SERVER_ERROR.into_response())
+}
+
+fn gemini_call(path: &str) -> Option<(String, GeminiAction)> {
+    split_model_action(path.strip_prefix(GEMINI_MODELS)?.strip_prefix('/')?)
+}
+
 fn key_text(headers: &HeaderMap) -> String {
-    ["x-api-key", "authorization"]
+    ["x-api-key", "x-goog-api-key", "authorization"]
         .into_iter()
         .filter_map(|name| headers.get(name).and_then(|v| v.to_str().ok()))
         .collect::<Vec<_>>()
@@ -576,6 +667,7 @@ fn answers_route_not_found(models: Option<&str>, path: &str) -> bool {
 fn key_refused(dialect: &str) -> &'static str {
     match dialect {
         "anthropic_messages" => "authentication",
+        "gemini" | "gemini_embeddings" => "recorded-error-invalid-key",
         "openai_chat" => "invalid-api-key",
         _ => "invalid-api-key-401",
     }
@@ -592,7 +684,8 @@ fn route_not_found() -> Response {
 fn is_unserved(path: &str, body: &[u8]) -> bool {
     let named = path
         .strip_prefix("/v1/models/")
-        .map(str::to_owned)
+        .or_else(|| path.strip_prefix("/v1beta/models/"))
+        .map(|rest| rest.split(':').next().unwrap_or(rest).to_owned())
         .or_else(|| {
             serde_json::from_slice::<serde_json::Value>(body)
                 .ok()?

@@ -1353,9 +1353,16 @@ async fn attempt(
             }
             let headers = resp.headers;
             let decoded_by = eff.provider.clone();
+            let model_id = eff.model_id.clone();
             let (reply, out) = off_thread(bytes.len(), move || {
-                let reply = decode_reply(dialect, status, &headers, &bytes, &ectx)
+                let mut reply = decode_reply(dialect, status, &headers, &bytes, &ectx)
                     .map_err(|e| unreadable(e, &decoded_by, dialect))?;
+                // Gemini's embeddings replies name no model.
+                if let Reply::Embed(e) = &mut reply
+                    && e.model.is_empty()
+                {
+                    e.model = model_id;
+                }
                 let out = dispatch::encode_response(ingress, &reply, &encode_ctx);
                 Ok::<_, KppError>((reply, out))
             })
@@ -1928,7 +1935,8 @@ pub(super) fn egress_ctx(
         .with_provider(provider.id())
         .with_chat_profile(provider.chat())
         .with_responses_profile(provider.responses())
-        .with_messages_profile(provider.messages());
+        .with_messages_profile(provider.messages())
+        .with_gemini_profile(provider.gemini());
     if let Some(a) = flags.adaptive_thinking {
         ctx = ctx.with_adaptive_thinking(a);
     }
@@ -1987,7 +1995,7 @@ mod tests {
     #[test]
     fn the_providers_profiles_and_plan_reach_the_egress_context() {
         let req = Request::Generate(kaeso_kpp::GenerateRequest::new("m"));
-        for id in ["openai", "xai", "mistral", "minimax"] {
+        for id in ["openai", "xai", "mistral", "minimax", "google"] {
             let p = ProviderRef::from(kaeso_core::provider::provider(id).unwrap());
             let flags = ModelFlags {
                 adaptive_thinking: Some(true),
@@ -1999,6 +2007,7 @@ mod tests {
             assert_eq!(ctx.chat_profile, p.chat(), "{id}");
             assert_eq!(ctx.responses_profile, p.responses(), "{id}");
             assert_eq!(ctx.messages_profile, p.messages(), "{id}");
+            assert_eq!(ctx.gemini_profile, p.gemini(), "{id}");
             assert_eq!(
                 (ctx.adaptive_thinking, ctx.thinking_binding, ctx.reasoning),
                 (Some(true), Some(false), Some(false))

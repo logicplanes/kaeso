@@ -116,6 +116,16 @@ async fn every_member_reads_each_provider_with_its_name_key_page_and_formats() {
     assert_eq!(minimax["count_tokens"], Value::Null);
     assert_eq!(minimax["embeddings"], Value::Null);
     assert_eq!(minimax["key_prefix"], "sk-api-");
+    let google = listed.iter().find(|p| p["id"] == "google").unwrap();
+    assert_eq!(google["name"], "Google AI Studio");
+    assert_eq!(google["dialects"], json!(["gemini", "gemini_embeddings"]));
+    assert_eq!(google["count_tokens"], "gemini");
+    assert_eq!(google["embeddings"], "gemini_embeddings");
+    assert_eq!(google["key_prefix"], Value::Null);
+    assert_eq!(
+        google["key_page"],
+        json!({ "url": "https://aistudio.google.com/apikey", "label": "API keys" })
+    );
 
     let anonymous = app
         .call(Method::GET, &format!("/orgs/{org}/providers"), None, None)

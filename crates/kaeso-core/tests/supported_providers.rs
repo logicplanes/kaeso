@@ -45,7 +45,10 @@ fn page(language: &Language) -> (String, String) {
 
 fn format_name(dialect: DialectId) -> &'static str {
     let name = dialect.display_name();
-    name.split_once(' ').map_or(name, |(_, format)| format)
+    ["OpenAI ", "Anthropic "]
+        .into_iter()
+        .find_map(|maker| name.strip_prefix(maker))
+        .unwrap_or(name)
 }
 
 fn host(base_url: &str) -> &str {

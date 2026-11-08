@@ -39,6 +39,7 @@ export const providers = [
   { id: "cerebras", name: "Cerebras" },
   { id: "zai", name: "Z.ai" },
   { id: "minimax", name: "MiniMax" },
+  { id: "google", name: "Google AI Studio" },
 ];
 export const providerNames: Record<string, string> = Object.fromEntries(providers.map((p) => [p.id, p.name]));
 
