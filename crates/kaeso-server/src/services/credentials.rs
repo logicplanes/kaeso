@@ -26,6 +26,7 @@ pub struct Resolved {
     pub secret: SecretString,
     pub method: AuthMethod,
     pub account: Option<Account>,
+    pub google: Option<std::sync::Arc<crate::services::google_auth::ServiceAccount>>,
     keyless: bool,
     last_touched: AtomicI64,
 }
@@ -67,6 +68,7 @@ impl Resolved {
             secret: SecretString::from(String::new()),
             method: AuthMethod::ApiKey,
             account: None,
+            google: None,
             keyless: true,
             last_touched: AtomicI64::new(0),
         }
@@ -319,7 +321,7 @@ async fn cached(
             else {
                 return Ok::<_, ResolveError>(None);
             };
-            Ok(Some(open(&st.keyring, &row)?))
+            Ok(Some(open(&st.keyring, org.uuid(), &row)?))
         })
         .await?;
     found.ok_or_else(|| ResolveError::Missing {
@@ -345,8 +347,13 @@ pub fn tokens(keyring: &kaeso_crypto::KeyRing, row: &SealedRow) -> Result<Tokens
     Tokens::parse(&plain(keyring, row)?).ok_or(CryptoError::Malformed)
 }
 
-fn open(keyring: &kaeso_crypto::KeyRing, row: &SealedRow) -> Result<Resolved, CryptoError> {
+fn open(
+    keyring: &kaeso_crypto::KeyRing,
+    org: Uuid,
+    row: &SealedRow,
+) -> Result<Resolved, CryptoError> {
     let method = AuthMethod::parse(&row.auth_method).ok_or(CryptoError::Malformed)?;
+    let mut google = None;
     let (secret, account) = if method.is_account() {
         let tokens = tokens(keyring, row)?;
         let account = Account {
@@ -355,6 +362,17 @@ fn open(keyring: &kaeso_crypto::KeyRing, row: &SealedRow) -> Result<Resolved, Cr
             stopped: Stopped::read(row.auth_error.as_deref()),
         };
         (tokens.access_token, Some(account))
+    } else if method == AuthMethod::GoogleServiceAccount {
+        let json = SecretString::from(plain(keyring, row)?);
+        let location = row.location.clone().ok_or(CryptoError::Malformed)?;
+        let opened = crate::services::google_auth::ServiceAccount::open(
+            secrecy::ExposeSecret::expose_secret(&json),
+            org,
+            location,
+        )
+        .ok_or(CryptoError::Malformed)?;
+        google = Some(std::sync::Arc::new(opened));
+        (String::new(), None)
     } else {
         (plain(keyring, row)?, None)
     };
@@ -364,6 +382,7 @@ fn open(keyring: &kaeso_crypto::KeyRing, row: &SealedRow) -> Result<Resolved, Cr
         secret: SecretString::from(secret),
         method,
         account,
+        google,
         keyless: false,
         last_touched: AtomicI64::new(0),
     })
@@ -391,6 +410,7 @@ fn touch(state: &AppState, resolved: &Resolved) {
 }
 
 pub async fn forget_org(state: &AppState, org: Uuid) {
+    state.google_tokens.forget_org(org);
     state
         .caches
         .credentials
@@ -415,6 +435,7 @@ mod tests {
             auth_method: "chatgpt".into(),
             expires_at,
             auth_error: auth_error.map(str::to_owned),
+            location: None,
         }
     }
 

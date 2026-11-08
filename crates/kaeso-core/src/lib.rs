@@ -10,6 +10,7 @@ pub mod decimal;
 pub mod decimal_input;
 pub mod email;
 pub mod estimate;
+pub mod google;
 pub mod id;
 pub mod keys;
 pub mod kpmr;

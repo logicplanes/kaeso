@@ -61,6 +61,8 @@ function listed(p: CustomProviderView): ProviderView {
     count_tokens: p.count_tokens ?? null,
     embeddings: p.embeddings ?? null,
     account: null,
+    service_account: null,
+    model_routes: [],
   };
 }
 

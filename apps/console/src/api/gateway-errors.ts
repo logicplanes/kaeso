@@ -461,6 +461,36 @@ const messages = (): Rule[] => [
     t("errors.customProvider.countTokens", "`count_tokens` must be `null` or the `generation` format, which must count tokens."),
   ),
   rule("errors.customProvider.keysFirst", () => t("errors.customProvider.keysFirst", "Delete the provider's keys before switching it to no key.")),
+  rule("errors.serviceAccount.locationOnly", () =>
+    t("errors.serviceAccount.locationOnly", "Only a service account key calls a location; leave `location` out."),
+  ),
+  rule("errors.serviceAccount.notTaken", (v) => t("errors.serviceAccount.notTaken", "{provider} takes no service account key; add an API key.", v)),
+  rule("errors.serviceAccount.notJson", () => t("errors.serviceAccount.notJson", "Paste the service account's whole JSON key file.")),
+  rule("errors.serviceAccount.tooLong", () => t("errors.serviceAccount.tooLong", "The JSON key is longer than 16 KiB; paste the file Google Cloud made.")),
+  rule("errors.serviceAccount.wrongType", () =>
+    t("errors.serviceAccount.wrongType", "The JSON key isn't a service account key; its `type` must be `service_account`."),
+  ),
+  rule("errors.serviceAccount.missingField", (v) =>
+    t("errors.serviceAccount.missingField", "The JSON key has no `{field}`; download a new key from Google Cloud.", v),
+  ),
+  rule("errors.serviceAccount.badField", (v) =>
+    t("errors.serviceAccount.badField", "The JSON key's `{field}` isn't valid; download a new key from Google Cloud.", v),
+  ),
+  rule("errors.serviceAccount.tokenUri", () =>
+    t("errors.serviceAccount.tokenUri", "The JSON key's `token_uri` must be `https://oauth2.googleapis.com/token`."),
+  ),
+  rule("errors.serviceAccount.universe", () =>
+    t("errors.serviceAccount.universe", "The JSON key belongs to another Google Cloud universe, which Kaeso can't call."),
+  ),
+  rule("errors.serviceAccount.notRsa", () =>
+    t("errors.serviceAccount.notRsa", "The JSON key's `private_key` isn't an RSA key; download a new key from Google Cloud."),
+  ),
+  rule("errors.serviceAccount.location", () =>
+    t("errors.serviceAccount.location", "Kaeso doesn't call that location for this provider; choose one from the list."),
+  ),
+  rule("errors.noEmbeddingsAtProvider", (v) =>
+    t("errors.noEmbeddingsAtProvider", "Kaeso calls no embeddings models on {provider}, so `{name}` can't create embeddings.", v),
+  ),
   rule("errors.customProvider.takesNoKey", (v) =>
     t("errors.customProvider.takesNoKey", "The custom provider `{provider}` takes no key; Kaeso calls it without one.", v),
   ),

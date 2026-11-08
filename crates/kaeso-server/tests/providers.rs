@@ -55,6 +55,8 @@ async fn every_member_reads_each_provider_with_its_name_key_page_and_formats() {
             "count_tokens": null,
             "embeddings": null,
             "account": null,
+            "service_account": null,
+            "model_routes": [],
         })
     );
     let mistral = listed.iter().find(|p| p["id"] == "mistral").unwrap();

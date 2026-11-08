@@ -16,17 +16,18 @@ import {
 } from "@logicplanes/kaeso-ui";
 import { api, data } from "~/api/client";
 import { isApiError } from "~/api/errors";
-import type { AccountAttempt, AccountPending, AccountSignInView, CredentialView, ProviderView } from "~/api/generated/types";
+import type { AccountAttempt, AccountPending, AccountSignInView, CredentialView, ProviderView, ServiceAccountSignInView } from "~/api/generated/types";
 import { useApiMutation } from "~/auth/mutation";
 import { t } from "~/i18n";
 import { tRich } from "~/i18n/rich";
 import { toast } from "~/shell/toast";
 import { openBlankTab } from "./blank-tab";
 import { DeviceCode, type DeviceState } from "./device-sign-in";
+import { ServiceAccountFields, serviceAccountBlocked } from "./service-account-fields";
 import { keyTitle, providerOptions, useProviders } from "./providers";
 
 type DialogStep = ComponentProps<typeof StepDialog>["steps"][number];
-type Method = "api_key" | "account";
+type Method = "api_key" | "account" | "service_account";
 type Begin = { tab: Window | null; inputs: number };
 
 function keyHelp(provider: ProviderView | undefined): ReactNode {
@@ -89,7 +90,10 @@ export function ProviderKeyDialog({
   const [name, setName] = useState("");
   const [secret, setSecret] = useState("");
   const [makeDefault, setMakeDefault] = useState(false);
-  const [method, setMethod] = useState<Method>(replace && replace.auth_method !== "api_key" ? "account" : "api_key");
+  const [method, setMethod] = useState<Method>(
+    replace?.auth_method === "google_service_account" ? "service_account" : replace && replace.auth_method !== "api_key" ? "account" : "api_key",
+  );
+  const [location, setLocation] = useState<string | null>(replace?.location ?? null);
   const [attempt, setAttempt] = useState<AccountAttempt | null>(null);
   const [blocked, setBlocked] = useState(false);
   const [callback, setCallback] = useState("");
@@ -108,7 +112,10 @@ export function ProviderKeyDialog({
   const label = provider ? providers.name(provider) : "";
   const known = provider ? providers.get(provider) : undefined;
   const account: AccountSignInView | null = known?.account ?? null;
+  const serviceAccount: ServiceAccountSignInView | null = known?.service_account ?? null;
   const signingIn = method === "account" && account !== null;
+  const withServiceAccount = method === "service_account" && serviceAccount !== null;
+  const chosenLocation = location ?? serviceAccount?.default_location ?? "";
   const device = attempt?.device ?? null;
   const left = attempt ? deadline - now : 0;
   const current = provider ? keys.find((k) => k.provider === provider && k.is_default) : undefined;
@@ -221,13 +228,22 @@ export function ProviderKeyDialog({
         return data(
           await api.POST("/platform/v1/orgs/{org}/credentials/{credential}/replace", {
             params: { path: { org, credential: replace.id } },
-            body: { secret: secret.trim() },
+            body: withServiceAccount ? { secret: secret.trim(), location: chosenLocation } : { secret: secret.trim() },
           }),
         );
       return data(
         await api.POST("/platform/v1/orgs/{org}/credentials", {
           params: { path: { org } },
-          body: { provider: chosen, name: name.trim(), secret: secret.trim(), make_default: makeDefault },
+          body: withServiceAccount
+            ? {
+                provider: chosen,
+                name: name.trim(),
+                secret: secret.trim(),
+                make_default: makeDefault,
+                auth_method: "google_service_account",
+                location: chosenLocation,
+              }
+            : { provider: chosen, name: name.trim(), secret: secret.trim(), make_default: makeDefault },
         }),
       );
     },
@@ -283,6 +299,42 @@ export function ProviderKeyDialog({
           />
         )}
       </div>
+    ),
+  };
+  const serviceAccountStep: DialogStep | null = serviceAccount && {
+    id: "service-account",
+    title: (
+      <span className="flex items-center gap-10">
+        {provider && (
+          <span aria-hidden className="flex">
+            <ProviderBadge provider={provider} name={label} size="lg" />
+          </span>
+        )}
+        {replace ? t("kaeso.providerKey.serviceAccountNew", "Add the new JSON key") : t("kaeso.providerKey.serviceAccountTitle", "Add a service account key")}
+      </span>
+    ),
+    description: tRich("kaeso.providerKey.serviceAccountWhere", "Create a JSON key at {site} under {page}.", {
+      site: (
+        <Link href={serviceAccount.key_page.url} external>
+          {new URL(serviceAccount.key_page.url).host}
+        </Link>
+      ),
+      page: serviceAccount.key_page.label,
+    }),
+    blockedReason: serviceAccountBlocked(secret) ?? (!replace && !name.trim() ? t("kaeso.providerKey.nameBlocked", "Give the key a name") : undefined),
+    content: (
+      <ServiceAccountFields
+        secret={secret}
+        onSecret={setSecret}
+        locations={serviceAccount.locations}
+        location={chosenLocation}
+        onLocation={setLocation}
+        name={replace ? null : name}
+        onName={(v) => {
+          setName(v);
+          forgetAttempt();
+        }}
+      />
     ),
   };
   const product = account?.product ?? "";
@@ -375,6 +427,32 @@ export function ProviderKeyDialog({
       </div>
     ),
   };
+  const serviceAccountMethodStep: DialogStep = {
+    id: "method",
+    title: t("kaeso.providerKey.serviceAccountMethodTitle", "Add an API key or a service account key?"),
+    content: (
+      <RadioGroup
+        variant="cards"
+        aria-label={t("kaeso.providerKey.method", "Sign-in method")}
+        value={method}
+        onValueChange={(v) => {
+          setMethod(v === "service_account" ? "service_account" : "api_key");
+          setSecret("");
+        }}
+      >
+        <Radio
+          value="service_account"
+          label={t("kaeso.providerKey.serviceAccount", "Service account key")}
+          description={t("kaeso.providerKey.serviceAccountHint", "Reaches every model {provider} serves to the key's project.", { provider: label })}
+        />
+        <Radio
+          value="api_key"
+          label={t("kaeso.providerKey.expressKey", "Express mode API key")}
+          description={t("kaeso.providerKey.expressKeyHint", "Reaches Gemini models only.")}
+        />
+      </RadioGroup>
+    ),
+  };
   const methodStep: DialogStep = {
     id: "method",
     title: t("kaeso.providerKey.methodTitle", "Add an API key or sign in with {product}?", { product }),
@@ -443,7 +521,8 @@ export function ProviderKeyDialog({
     : [];
   const choose = (p: string) => {
     setProvider(p);
-    setMethod("api_key");
+    setMethod(providers.get(p)?.service_account ? "service_account" : "api_key");
+    setLocation(null);
     forgetAttempt();
   };
   const providerStep: DialogStep = {
@@ -453,14 +532,21 @@ export function ProviderKeyDialog({
     content: <ProviderChoice choices={choices} value={provider} onChoose={choose} />,
   };
   const signInStep = pastes ? accountStep : deviceStep;
+  const secretStep = serviceAccountStep && withServiceAccount ? serviceAccountStep : keyStep;
   const steps: DialogStep[] = replace
-    ? [signingIn ? signInStep : keyStep]
-    : [providerStep, ...(account ? [methodStep] : []), ...(signingIn ? [...defaultStep, signInStep] : [keyStep, ...defaultStep])];
+    ? [signingIn ? signInStep : secretStep]
+    : [
+        providerStep,
+        ...(account ? [methodStep] : serviceAccount ? [serviceAccountMethodStep] : []),
+        ...(signingIn ? [...defaultStep, signInStep] : [secretStep, ...defaultStep]),
+      ];
   const ready = signingIn
     ? pastes
       ? !!attempt && !!callback.trim() && (replace || name.trim())
       : waiting && (replace || name.trim())
-    : secret.trim() && !/\s/.test(secret.trim()) && (replace || name.trim());
+    : withServiceAccount
+      ? !serviceAccountBlocked(secret) && (replace || name.trim())
+      : secret.trim() && !/\s/.test(secret.trim()) && (replace || name.trim());
 
   return (
     <StepDialog

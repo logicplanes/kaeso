@@ -224,12 +224,14 @@ async fn provider_key(
     let zone_name = kaeso_store::pg::instance::time_zone(&state.pg).await?;
     let zone = crate::time_zone::or_utc(&zone_name);
     let now = state.clock.now();
+    let signed_in = kaeso_core::provider::AuthMethod::parse(&row.auth_method)
+        .is_some_and(kaeso_core::provider::AuthMethod::is_account);
     let key = Credential {
         organization: &place,
         provider: &provider,
         name: &row.name,
-        last4: row.account_label.is_none().then_some(row.last4.as_str()),
-        account: row.account_label.as_deref(),
+        last4: (!signed_in).then_some(row.last4.as_str()),
+        account: row.account_label.as_deref().filter(|_| signed_in),
         default: row.is_default,
         projects: &projects,
         last_used: row.last_used_at.map(|at| local(at, &zone)),

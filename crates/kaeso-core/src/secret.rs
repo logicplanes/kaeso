@@ -11,7 +11,7 @@ pub fn hashes_equal(a: &[u8], b: &[u8]) -> bool {
 
 const TOKEN_PREFIXES: &[&str] = &[
     "sk-", "sk_", "org-", "proj_", "proj-", "key-", "xai-", "gsk_", "nvapi-", "AIza", "tgp_v1_",
-    "vck_", "cohere_", "ak-", "csk-", "AQ.",
+    "vck_", "cohere_", "ak-", "csk-", "AQ.", "ya29.",
 ];
 
 const ACCOUNT_LABELS: &[&str] = &[

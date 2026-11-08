@@ -1084,10 +1084,7 @@ fn vercel_models_speak_chat_completions_and_the_ones_kpmr_marks_as_embeddings_em
         .dialect
     };
     assert_eq!(dialect("openai", "y-embed"), DialectId::OpenAiEmbeddings);
-    assert_eq!(
-        dialect("anthropic", "x-embed"),
-        DialectId::AnthropicMessages
-    );
+    assert_eq!(dialect("anthropic", "x-embed"), DialectId::OpenAiEmbeddings);
 }
 
 #[test]
@@ -1887,4 +1884,30 @@ fn google_models_speak_gemini_with_kpmrs_prices_and_their_embeddings_embed() {
         let r = g.reasoning.unwrap();
         assert_eq!((r.budget_tokens, r.effort), (Some(2_048), None));
     }
+}
+
+#[test]
+fn agent_platform_models_speak_gemini_and_its_embeddings_models_are_refused() {
+    let flash = eff(&entry("gemini-agent-platform", "gemini-3.5-flash"));
+    assert_eq!(flash.dialect, DialectId::Gemini);
+    assert!(!flash.is_embeddings());
+    assert!(flash.fields.input_price.is_some());
+    let embed = eff(&entry("gemini-agent-platform", "gemini-embedding-001"));
+    assert!(embed.is_embeddings());
+    let mut req = Request::Embed(EmbedRequest::new(
+        "gemini-embedding-001",
+        vec![EmbedInput::Text("x".into())],
+    ));
+    let refused = prepare(&mut req, DialectId::OpenAiEmbeddings, &embed).unwrap_err();
+    assert_eq!(
+        refused.message,
+        "Kaeso calls no embeddings models on Gemini Enterprise Agent Platform, so `gemini-embedding-001` can't create embeddings."
+    );
+    let mut generate = Request::Generate(GenerateRequest::new("gemini-embedding-001"));
+    assert!(
+        prepare(&mut generate, DialectId::OpenAiChat, &embed)
+            .unwrap_err()
+            .message
+            .contains("embeddings model")
+    );
 }

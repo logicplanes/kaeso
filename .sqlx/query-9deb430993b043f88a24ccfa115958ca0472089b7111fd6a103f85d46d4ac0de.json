@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE provider_credentials SET auth_error = $2 WHERE id = $1 AND auth_method IN ('chatgpt', 'grok')",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "9deb430993b043f88a24ccfa115958ca0472089b7111fd6a103f85d46d4ac0de"
+}

@@ -34,7 +34,7 @@ A Gemini request names its model and its method in the path, so the codec builds
 | Model | One percent-encoded path segment, `:` included. A leading `models/` is the same model's resource name and is removed; `tunedModels/<id>` addresses a tuned model next to the models path. `.` and `..` are `InvalidRequest`, as for [model retrieval](codec-design.md#model-listings). |
 | Method | `GeminiAction`: `generateContent` and `streamGenerateContent` (`RequestKind::Generate`, streaming decided by the method), `countTokens` (`CountTokens`), `embedContent` and `batchEmbedContents` (`Embed`, the `gemini_embeddings` dialect). `streamGenerateContent` adds `?alt=sse`. |
 | Decoding | `dispatch::decode_gemini_request(model, action, body, headers)`, or `decode_checked_gemini_request` for a body `limits::Checked` counted. `gemini::split_model_action` splits a segment such as `gemini-3.5-flash:streamGenerateContent`. `dispatch::decode_request` without a path decodes a generation body with an empty model. The gateway serves Gemini apps at `/v1beta/models/{model}:{method}` with both (`crates/kaeso-server/src/model_api/gemini.rs`). |
-| Role on every content | `GeminiProfile::role_on_every_content`: a content an app sent without a `role` gets `user`. Off for Google AI Studio. |
+| Role on every content | `GeminiProfile::role_on_every_content`: a content an app sent without a `role` gets `user`. Off for Google AI Studio, on for Gemini Enterprise Agent Platform. |
 
 ## Requests
 
@@ -256,6 +256,7 @@ An OpenAI Embeddings request goes as `batchEmbedContents` with `model: "models/<
 | Provider | Profile | Key |
 |---|---|---|
 | Google AI Studio (`google`) | `GeminiProfile::GOOGLE_AI_STUDIO`, which the gateway hands to the encoder with `EgressCtx::with_gemini_profile` for every request, model check and listing | `x-goog-api-key` (`AuthStyle::XGoogApiKey`), never in the URL |
+| Gemini Enterprise Agent Platform (`gemini-agent-platform`) | `GeminiProfile::AGENT_PLATFORM`: `/v1/publishers/google/models` for an express mode key, and for a service account key `with_models_path("/v1/projects/{project}/locations/{location}/publishers/google/models")` per request, from the key's `project_id` and the credential's location ([REST reference](https://docs.cloud.google.com/gemini-enterprise-agent-platform/reference/rest)). `role_on_every_content` is on, because the [token counting reference](https://docs.cloud.google.com/gemini-enterprise-agent-platform/reference/models/count-tokens) asks for a role even in single-turn requests, while the discovery document calls it optional | An express mode key as `x-goog-api-key`; a service account key's access token as `Authorization: Bearer` |
 
 ## Round trips
 

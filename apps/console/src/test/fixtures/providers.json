@@ -19,7 +19,9 @@
         "product": "ChatGPT",
         "usage_url": "https://chatgpt.com/settings/usage",
         "experimental": false
-      }
+      },
+      "service_account": null,
+      "model_routes": []
     },
     {
       "id": "anthropic",
@@ -35,7 +37,9 @@
       "dialects": ["anthropic_messages"],
       "count_tokens": "anthropic_messages",
       "embeddings": null,
-      "account": null
+      "account": null,
+      "service_account": null,
+      "model_routes": []
     },
     {
       "id": "deepseek",
@@ -51,7 +55,9 @@
       "dialects": ["openai_chat"],
       "count_tokens": null,
       "embeddings": null,
-      "account": null
+      "account": null,
+      "service_account": null,
+      "model_routes": []
     },
     {
       "id": "xai",
@@ -72,7 +78,9 @@
         "product": "Grok",
         "usage_url": null,
         "experimental": true
-      }
+      },
+      "service_account": null,
+      "model_routes": []
     },
     {
       "id": "togetherai",
@@ -88,7 +96,9 @@
       "dialects": ["openai_chat", "openai_embeddings"],
       "count_tokens": null,
       "embeddings": "openai_embeddings",
-      "account": null
+      "account": null,
+      "service_account": null,
+      "model_routes": []
     },
     {
       "id": "groq",
@@ -104,7 +114,9 @@
       "dialects": ["openai_chat"],
       "count_tokens": null,
       "embeddings": null,
-      "account": null
+      "account": null,
+      "service_account": null,
+      "model_routes": []
     },
     {
       "id": "openrouter",
@@ -120,7 +132,9 @@
       "dialects": ["openai_chat", "openai_embeddings"],
       "count_tokens": null,
       "embeddings": "openai_embeddings",
-      "account": null
+      "account": null,
+      "service_account": null,
+      "model_routes": []
     },
     {
       "id": "mistral",
@@ -136,7 +150,9 @@
       "dialects": ["openai_chat", "openai_embeddings"],
       "count_tokens": null,
       "embeddings": "openai_embeddings",
-      "account": null
+      "account": null,
+      "service_account": null,
+      "model_routes": []
     },
     {
       "id": "vercel",
@@ -152,7 +168,9 @@
       "dialects": ["openai_chat", "openai_responses", "anthropic_messages", "openai_embeddings"],
       "count_tokens": null,
       "embeddings": "openai_embeddings",
-      "account": null
+      "account": null,
+      "service_account": null,
+      "model_routes": []
     },
     {
       "id": "cohere",
@@ -168,7 +186,9 @@
       "dialects": ["openai_chat", "openai_embeddings"],
       "count_tokens": null,
       "embeddings": "openai_embeddings",
-      "account": null
+      "account": null,
+      "service_account": null,
+      "model_routes": []
     },
     {
       "id": "ollama-cloud",
@@ -184,7 +204,9 @@
       "dialects": ["openai_chat"],
       "count_tokens": null,
       "embeddings": null,
-      "account": null
+      "account": null,
+      "service_account": null,
+      "model_routes": []
     },
     {
       "id": "moonshotai",
@@ -200,7 +222,9 @@
       "dialects": ["openai_chat"],
       "count_tokens": null,
       "embeddings": null,
-      "account": null
+      "account": null,
+      "service_account": null,
+      "model_routes": []
     },
     {
       "id": "alibaba",
@@ -216,7 +240,9 @@
       "dialects": ["openai_chat", "openai_embeddings"],
       "count_tokens": null,
       "embeddings": "openai_embeddings",
-      "account": null
+      "account": null,
+      "service_account": null,
+      "model_routes": []
     },
     {
       "id": "cerebras",
@@ -232,7 +258,9 @@
       "dialects": ["openai_chat"],
       "count_tokens": null,
       "embeddings": null,
-      "account": null
+      "account": null,
+      "service_account": null,
+      "model_routes": []
     },
     {
       "id": "zai",
@@ -248,7 +276,9 @@
       "dialects": ["anthropic_messages"],
       "count_tokens": null,
       "embeddings": null,
-      "account": null
+      "account": null,
+      "service_account": null,
+      "model_routes": []
     },
     {
       "id": "minimax",
@@ -264,7 +294,9 @@
       "dialects": ["anthropic_messages"],
       "count_tokens": null,
       "embeddings": null,
-      "account": null
+      "account": null,
+      "service_account": null,
+      "model_routes": []
     },
     {
       "id": "google",
@@ -280,7 +312,67 @@
       "dialects": ["gemini", "gemini_embeddings"],
       "count_tokens": "gemini",
       "embeddings": "gemini_embeddings",
-      "account": null
+      "account": null,
+      "service_account": null,
+      "model_routes": []
+    },
+    {
+      "id": "gemini-agent-platform",
+      "name": "Gemini Enterprise Agent Platform",
+      "custom": false,
+      "takes_key": true,
+      "hides_built_in": null,
+      "key_page": {
+        "url": "https://console.cloud.google.com/agent-platform/studio/settings/api-keys",
+        "label": "Settings → API keys"
+      },
+      "key_prefix": null,
+      "dialects": ["gemini"],
+      "count_tokens": "gemini",
+      "embeddings": null,
+      "account": null,
+      "service_account": {
+        "key_page": {
+          "url": "https://console.cloud.google.com/iam-admin/serviceaccounts",
+          "label": "IAM & Admin → Service accounts"
+        },
+        "locations": [
+          "global",
+          "us",
+          "eu",
+          "us-central1",
+          "us-east1",
+          "us-east4",
+          "us-east5",
+          "us-south1",
+          "us-west1",
+          "us-west4",
+          "northamerica-northeast1",
+          "southamerica-east1",
+          "europe-central2",
+          "europe-north1",
+          "europe-southwest1",
+          "europe-west1",
+          "europe-west2",
+          "europe-west3",
+          "europe-west4",
+          "europe-west6",
+          "europe-west8",
+          "europe-west9",
+          "asia-east1",
+          "asia-east2",
+          "asia-northeast1",
+          "asia-northeast3",
+          "asia-south1",
+          "asia-southeast1",
+          "australia-southeast1",
+          "me-central1",
+          "me-central2",
+          "me-west1"
+        ],
+        "default_location": "global"
+      },
+      "model_routes": []
     }
   ],
   "has_more": false,

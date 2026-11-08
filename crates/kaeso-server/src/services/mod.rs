@@ -1,5 +1,6 @@
 pub mod accounts;
 pub mod admin_sso;
+pub mod agent_platform;
 pub mod agents;
 pub mod availability;
 pub mod catalogue;
@@ -8,6 +9,7 @@ pub mod cooldowns;
 pub mod credentials;
 pub mod custom_providers;
 pub mod dns;
+pub mod google_auth;
 pub mod invites;
 pub mod keys;
 pub mod kpmr;

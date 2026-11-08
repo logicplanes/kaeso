@@ -18,6 +18,7 @@ pub(super) struct InputCounter {
     pub(super) provider: ProviderRef,
     pub(super) dialect: DialectId,
     pub(super) asked: Option<(Arc<Request>, Request)>,
+    pub(super) platform: Option<crate::services::agent_platform::Egress>,
     pub(super) flags: super::pipeline::ModelFlags,
     pub(super) timeouts: Timeouts,
     pub(super) sent_bytes: usize,
@@ -74,18 +75,30 @@ impl InputCounter {
         let app_req = Request::CountTokens(app);
         let req = Request::CountTokens(sent);
         let mut ctx = super::pipeline::egress_ctx(&app_req, &self.provider, self.flags);
+        if let Some(p) = &self.platform {
+            ctx = ctx.with_gemini_profile(p.gemini.clone());
+        }
         let encoded = dispatch::encode_request(self.dialect, &req, &mut ctx)?;
-        let base = base_url(&self.state, &self.provider).ok_or_else(|| {
-            KppError::provider(format!("no base URL for `{}`", self.provider.id()))
-        })?;
+        let base = match &self.platform {
+            Some(p) => &p.base,
+            None => base_url(&self.state, &self.provider).ok_or_else(|| {
+                KppError::provider(format!("no base URL for `{}`", self.provider.id()))
+            })?,
+        };
         let resp = self
             .state
             .upstream
             .send(Call {
                 base_url: base,
-                auth: self.provider.auth(),
+                auth: self
+                    .platform
+                    .as_ref()
+                    .map_or_else(|| self.provider.auth(), |p| Some(p.auth)),
                 guarded: self.provider.custom().is_some(),
-                credential: &self.credential.secret,
+                credential: self
+                    .platform
+                    .as_ref()
+                    .map_or(&self.credential.secret, |p| &p.secret),
                 request: encoded.into(),
                 stream: false,
                 timeouts: Timeouts {

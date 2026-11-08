@@ -1036,7 +1036,32 @@ async fn attempt(
         continuity::restore(state, key_id, g).await;
     }
 
+    let platform =
+        match crate::services::agent_platform::egress(state, &eff.provider, &credential).await {
+            Ok(p) => p,
+            Err(e) => {
+                let Some((status, reason)) = e.refusal() else {
+                    return Err(fail(Stage::Credential)(e.into_kpp()));
+                };
+                let message = format!("Google refused the service account key: {reason}");
+                Box::pin(crate::services::notifications::system::key_refused(
+                    state,
+                    caller.org_id,
+                    credential.id.uuid(),
+                    crate::services::notifications::system::Refusal {
+                        status,
+                        message: &message,
+                        billing: false,
+                    },
+                ))
+                .await;
+                return Err(fail(Stage::KeyRefused)(e.into_kpp()));
+            }
+        };
     let mut ectx = egress_ctx(&app_req, &eff.provider, ModelFlags::of(&plan));
+    if let Some(p) = &platform {
+        ectx = ectx.with_gemini_profile(p.gemini.clone());
+    }
     let dialect = plan.dialect;
     let (req, mut ectx, encoded) = off_thread(request_bytes, move || {
         let encoded = dispatch::encode_request(dialect, &req, &mut ectx);
@@ -1129,9 +1154,11 @@ async fn attempt(
         ),
         None => None,
     };
-    let base = match &account_base {
-        Some(base) => base,
-        None => base_url(state, &eff.provider).ok_or_else(|| {
+    let base = match (&account_base, &platform) {
+        (Some(base), _) | (None, Some(crate::services::agent_platform::Egress { base, .. })) => {
+            base
+        }
+        (None, None) => base_url(state, &eff.provider).ok_or_else(|| {
             fail(Stage::Setup)(error(
                 ErrorKind::ProviderError,
                 500,
@@ -1152,9 +1179,11 @@ async fn attempt(
     };
     let sending = state.upstream.send(Call {
         base_url: base,
-        auth: eff.provider.auth(),
+        auth: platform
+            .as_ref()
+            .map_or_else(|| eff.provider.auth(), |p| Some(p.auth)),
         guarded: eff.provider.custom().is_some(),
-        credential: &credential.secret,
+        credential: platform.as_ref().map_or(&credential.secret, |p| &p.secret),
         request: Outgoing::from(encoded),
         stream: (stream || chatgpt.is_some()) && kind == RequestKind::Generate,
         timeouts,
@@ -1213,6 +1242,7 @@ async fn attempt(
         provider: eff.provider.clone(),
         dialect: plan.dialect,
         asked: sent_req.map(|req| (app_req, req)),
+        platform: platform.clone(),
         flags: ModelFlags::of(&plan),
         timeouts,
         sent_bytes,

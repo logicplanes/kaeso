@@ -308,7 +308,7 @@ async fn begin(
 ) -> ApiResult<Json<AccountAttempt>> {
     match sign_in.method {
         AuthMethod::Grok => begin_device(state, ctx, user, sign_in, wanted).await,
-        AuthMethod::ChatGpt | AuthMethod::ApiKey => {
+        AuthMethod::ChatGpt | AuthMethod::ApiKey | AuthMethod::GoogleServiceAccount => {
             begin_callback(state, ctx, user, sign_in, wanted).await
         }
     }
@@ -966,6 +966,8 @@ async fn save_new(
                 last4: "",
                 expires_at: Some(signed.expires_at),
                 account: Some(&signed.account),
+                project: None,
+                location: None,
             },
         },
     )
@@ -1100,6 +1102,8 @@ async fn save_again(
             last4: "",
             expires_at: Some(signed.expires_at),
             account: Some(&signed.account),
+            project: None,
+            location: None,
         },
     )
     .await?;

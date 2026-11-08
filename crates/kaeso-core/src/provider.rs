@@ -164,26 +164,78 @@ pub enum AuthMethod {
     ApiKey,
     ChatGpt,
     Grok,
+    GoogleServiceAccount,
 }
 
 impl AuthMethod {
+    pub const ALL: [AuthMethod; 4] = [
+        AuthMethod::ApiKey,
+        AuthMethod::ChatGpt,
+        AuthMethod::Grok,
+        AuthMethod::GoogleServiceAccount,
+    ];
+
     pub const fn as_str(self) -> &'static str {
         match self {
             AuthMethod::ApiKey => "api_key",
             AuthMethod::ChatGpt => "chatgpt",
             AuthMethod::Grok => "grok",
+            AuthMethod::GoogleServiceAccount => "google_service_account",
         }
     }
 
     pub fn parse(s: &str) -> Option<AuthMethod> {
-        [AuthMethod::ApiKey, AuthMethod::ChatGpt, AuthMethod::Grok]
-            .into_iter()
-            .find(|m| m.as_str() == s)
+        AuthMethod::ALL.into_iter().find(|m| m.as_str() == s)
     }
 
     pub const fn is_account(self) -> bool {
-        !matches!(self, AuthMethod::ApiKey)
+        matches!(self, AuthMethod::ChatGpt | AuthMethod::Grok)
     }
+
+    pub const fn is_secret_key(self) -> bool {
+        matches!(self, AuthMethod::ApiKey | AuthMethod::GoogleServiceAccount)
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct ModelRoute {
+    pub pattern: &'static str,
+    pub dialect: DialectId,
+}
+
+impl ModelRoute {
+    pub fn matches(&self, model: &str) -> bool {
+        glob(self.pattern, model)
+    }
+}
+
+// `*` stands for any run of characters, every other character for itself.
+fn glob(pattern: &str, text: &str) -> bool {
+    let mut parts = pattern.split('*');
+    let Some(first) = parts.next() else {
+        return text.is_empty();
+    };
+    let Some(mut rest) = text.strip_prefix(first) else {
+        return false;
+    };
+    let mut parts: Vec<&str> = parts.collect();
+    let Some(last) = parts.pop() else {
+        return rest.is_empty();
+    };
+    for part in parts {
+        match rest.find(part) {
+            Some(at) => rest = rest.get(at + part.len()..).unwrap_or(""),
+            None => return false,
+        }
+    }
+    rest.ends_with(last)
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct ServiceAccountSignIn {
+    pub key_page: KeyPage,
+    pub locations: &'static [&'static str],
+    pub default_location: &'static str,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -215,7 +267,46 @@ pub struct Provider {
     pub messages: MessagesProfile,
     pub gemini: GeminiProfile,
     pub account: Option<AccountSignIn>,
+    pub routes: &'static [ModelRoute],
+    pub service_account: Option<ServiceAccountSignIn>,
 }
+
+// The locations that serve Gemini or Claude models, from the tables of
+// https://docs.cloud.google.com/gemini-enterprise-agent-platform/resources/locations (2026-11-07).
+const AGENT_PLATFORM_LOCATIONS: &[&str] = &[
+    "global",
+    "us",
+    "eu",
+    "us-central1",
+    "us-east1",
+    "us-east4",
+    "us-east5",
+    "us-south1",
+    "us-west1",
+    "us-west4",
+    "northamerica-northeast1",
+    "southamerica-east1",
+    "europe-central2",
+    "europe-north1",
+    "europe-southwest1",
+    "europe-west1",
+    "europe-west2",
+    "europe-west3",
+    "europe-west4",
+    "europe-west6",
+    "europe-west8",
+    "europe-west9",
+    "asia-east1",
+    "asia-east2",
+    "asia-northeast1",
+    "asia-northeast3",
+    "asia-south1",
+    "asia-southeast1",
+    "australia-southeast1",
+    "me-central1",
+    "me-central2",
+    "me-west1",
+];
 
 pub const PROVIDERS: &[Provider] = &[
     Provider {
@@ -245,6 +336,8 @@ pub const PROVIDERS: &[Provider] = &[
         responses: ResponsesProfile::OPENAI,
         messages: MessagesProfile::compatible("OpenAI"),
         gemini: GeminiProfile::GOOGLE_AI_STUDIO,
+        routes: &[],
+        service_account: None,
         account: Some(AccountSignIn {
             method: AuthMethod::ChatGpt,
             product: "ChatGPT",
@@ -275,6 +368,8 @@ pub const PROVIDERS: &[Provider] = &[
         messages: MessagesProfile::ANTHROPIC,
         gemini: GeminiProfile::GOOGLE_AI_STUDIO,
         account: None,
+        routes: &[],
+        service_account: None,
     },
     Provider {
         id: "deepseek",
@@ -304,6 +399,8 @@ pub const PROVIDERS: &[Provider] = &[
         messages: MessagesProfile::compatible("DeepSeek"),
         gemini: GeminiProfile::GOOGLE_AI_STUDIO,
         account: None,
+        routes: &[],
+        service_account: None,
     },
     Provider {
         id: "xai",
@@ -335,6 +432,8 @@ pub const PROVIDERS: &[Provider] = &[
             .tool_schema_root(ToolSchemaRoot::ObjectUnions),
         messages: MessagesProfile::compatible("SpaceX"),
         gemini: GeminiProfile::GOOGLE_AI_STUDIO,
+        routes: &[],
+        service_account: None,
         account: Some(AccountSignIn {
             method: AuthMethod::Grok,
             product: "Grok",
@@ -366,6 +465,8 @@ pub const PROVIDERS: &[Provider] = &[
         messages: MessagesProfile::compatible("Together AI"),
         gemini: GeminiProfile::GOOGLE_AI_STUDIO,
         account: None,
+        routes: &[],
+        service_account: None,
     },
     Provider {
         id: "groq",
@@ -396,6 +497,8 @@ pub const PROVIDERS: &[Provider] = &[
         messages: MessagesProfile::compatible("Groq"),
         gemini: GeminiProfile::GOOGLE_AI_STUDIO,
         account: None,
+        routes: &[],
+        service_account: None,
     },
     Provider {
         id: "openrouter",
@@ -422,6 +525,8 @@ pub const PROVIDERS: &[Provider] = &[
         messages: MessagesProfile::compatible("OpenRouter"),
         gemini: GeminiProfile::GOOGLE_AI_STUDIO,
         account: None,
+        routes: &[],
+        service_account: None,
     },
     Provider {
         id: "mistral",
@@ -467,6 +572,8 @@ pub const PROVIDERS: &[Provider] = &[
         messages: MessagesProfile::compatible("Mistral"),
         gemini: GeminiProfile::GOOGLE_AI_STUDIO,
         account: None,
+        routes: &[],
+        service_account: None,
     },
     Provider {
         id: "vercel",
@@ -496,6 +603,8 @@ pub const PROVIDERS: &[Provider] = &[
         messages: MessagesProfile::compatible("Vercel"),
         gemini: GeminiProfile::GOOGLE_AI_STUDIO,
         account: None,
+        routes: &[],
+        service_account: None,
     },
     Provider {
         id: "cohere",
@@ -537,6 +646,8 @@ pub const PROVIDERS: &[Provider] = &[
         messages: MessagesProfile::compatible("Cohere"),
         gemini: GeminiProfile::GOOGLE_AI_STUDIO,
         account: None,
+        routes: &[],
+        service_account: None,
     },
     Provider {
         id: "ollama-cloud",
@@ -564,6 +675,8 @@ pub const PROVIDERS: &[Provider] = &[
         messages: MessagesProfile::compatible("Ollama Cloud"),
         gemini: GeminiProfile::GOOGLE_AI_STUDIO,
         account: None,
+        routes: &[],
+        service_account: None,
     },
     Provider {
         id: "moonshotai",
@@ -601,6 +714,8 @@ pub const PROVIDERS: &[Provider] = &[
         messages: MessagesProfile::compatible("Moonshot"),
         gemini: GeminiProfile::GOOGLE_AI_STUDIO,
         account: None,
+        routes: &[],
+        service_account: None,
     },
     Provider {
         id: "alibaba",
@@ -639,6 +754,8 @@ pub const PROVIDERS: &[Provider] = &[
         messages: MessagesProfile::compatible("QwenCloud"),
         gemini: GeminiProfile::GOOGLE_AI_STUDIO,
         account: None,
+        routes: &[],
+        service_account: None,
     },
     Provider {
         id: "cerebras",
@@ -671,6 +788,8 @@ pub const PROVIDERS: &[Provider] = &[
         messages: MessagesProfile::compatible("Cerebras"),
         gemini: GeminiProfile::GOOGLE_AI_STUDIO,
         account: None,
+        routes: &[],
+        service_account: None,
     },
     Provider {
         id: "zai",
@@ -695,6 +814,8 @@ pub const PROVIDERS: &[Provider] = &[
         messages: MessagesProfile::compatible("Z.ai"),
         gemini: GeminiProfile::GOOGLE_AI_STUDIO,
         account: None,
+        routes: &[],
+        service_account: None,
     },
     Provider {
         id: "minimax",
@@ -733,6 +854,8 @@ pub const PROVIDERS: &[Provider] = &[
             .auto_tool_choice_only(),
         gemini: GeminiProfile::GOOGLE_AI_STUDIO,
         account: None,
+        routes: &[],
+        service_account: None,
     },
     Provider {
         id: "google",
@@ -758,6 +881,42 @@ pub const PROVIDERS: &[Provider] = &[
         messages: MessagesProfile::compatible("Google AI Studio"),
         gemini: GeminiProfile::GOOGLE_AI_STUDIO,
         account: None,
+        routes: &[],
+        service_account: None,
+    },
+    Provider {
+        id: "gemini-agent-platform",
+        name: "Gemini Enterprise Agent Platform",
+        // Express mode API keys; a service account key is the other way in.
+        key_page: KeyPage {
+            url: "https://console.cloud.google.com/agent-platform/studio/settings/api-keys",
+            label: "Settings → API keys",
+        },
+        key_prefix: None,
+        default_base_url: "https://aiplatform.googleapis.com",
+        auth: AuthStyle::XGoogApiKey,
+        generation: DialectId::Gemini,
+        count_tokens: Some(DialectId::Gemini),
+        embeddings: None,
+        dialects: &[DialectId::Gemini],
+        refused_key_messages: &[],
+        context_window_messages: &[],
+        reasoning_beyond_output_limit: false,
+        end_user_limit: None,
+        chat: ChatProfile::compatible("Gemini Enterprise Agent Platform"),
+        responses: ResponsesProfile::compatible("Gemini Enterprise Agent Platform"),
+        messages: MessagesProfile::compatible("Gemini Enterprise Agent Platform"),
+        gemini: GeminiProfile::AGENT_PLATFORM,
+        account: None,
+        routes: &[],
+        service_account: Some(ServiceAccountSignIn {
+            key_page: KeyPage {
+                url: "https://console.cloud.google.com/iam-admin/serviceaccounts",
+                label: "IAM & Admin → Service accounts",
+            },
+            locations: AGENT_PLATFORM_LOCATIONS,
+            default_location: "global",
+        }),
     },
 ];
 
@@ -811,6 +970,13 @@ impl Provider {
         self.context_window_messages
             .iter()
             .any(|overflow| message.contains(overflow))
+    }
+
+    pub fn route(&self, model: &str) -> Option<DialectId> {
+        self.routes
+            .iter()
+            .find(|r| r.matches(model))
+            .map(|r| r.dialect)
     }
 }
 
@@ -1048,7 +1214,7 @@ mod tests {
         assert!(provider("gemini").is_none());
         assert_eq!(
             ids(),
-            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras, zai, minimax, google"
+            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras, zai, minimax, google, gemini-agent-platform"
         );
     }
 
@@ -1713,6 +1879,59 @@ mod tests {
     }
 
     #[test]
+    fn gemini_enterprise_agent_platform_takes_express_keys_and_service_account_keys() {
+        let p = provider("gemini-agent-platform").unwrap();
+        assert_eq!(p.name, "Gemini Enterprise Agent Platform");
+        assert_eq!(
+            (p.auth, p.generation, p.count_tokens, p.embeddings),
+            (
+                AuthStyle::XGoogApiKey,
+                DialectId::Gemini,
+                Some(DialectId::Gemini),
+                None
+            )
+        );
+        assert_eq!(p.default_base_url, "https://aiplatform.googleapis.com");
+        assert!(p.gemini.role_on_every_content);
+        let sa = p.service_account.unwrap();
+        assert_eq!(sa.default_location, "global");
+        assert!(sa.locations.iter().all(|l| crate::google::is_location(l)));
+        for l in [
+            "global",
+            "us",
+            "eu",
+            "us-east5",
+            "europe-west1",
+            "asia-southeast1",
+        ] {
+            assert!(sa.locations.contains(&l), "{l}");
+        }
+        assert!(
+            PROVIDERS
+                .iter()
+                .filter(|p| p.id != "gemini-agent-platform")
+                .all(|p| p.service_account.is_none())
+        );
+    }
+
+    #[test]
+    fn route_patterns_match_like_globs() {
+        let r = |pattern| ModelRoute {
+            pattern,
+            dialect: DialectId::AnthropicMessages,
+        };
+        assert!(r("claude-*").matches("claude-opus-5-5@default"));
+        assert!(!r("claude-*").matches("xclaude-opus"));
+        assert!(r("*/*").matches("meta/llama-4-maverick-17b-128e-instruct-maas"));
+        assert!(!r("*/*").matches("gemini-3.5-flash"));
+        assert!(r("gemini-embedding-*").matches("gemini-embedding-2"));
+        assert!(r("exact").matches("exact"));
+        assert!(!r("exact").matches("exactly"));
+        assert!(r("a*b*c").matches("aXbYc"));
+        assert!(!r("a*b*c").matches("aXcYb"));
+    }
+
+    #[test]
     fn lookup_tells_malformed_from_unknown_ids() {
         assert_eq!(lookup("anthropic").unwrap().name, "Anthropic");
         assert_eq!(
@@ -1748,7 +1967,8 @@ mod tests {
                 "cerebras",
                 "zai",
                 "minimax",
-                "google"
+                "google",
+                "gemini-agent-platform"
             ]
         );
         assert_eq!(

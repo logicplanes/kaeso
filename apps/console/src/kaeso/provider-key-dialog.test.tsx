@@ -393,6 +393,122 @@ describe("ProviderKeyDialog", () => {
     ]);
   });
 
+  it("adds a Gemini Enterprise Agent Platform service account key from its JSON file with a location", async () => {
+    const json = JSON.stringify({
+      type: "service_account",
+      project_id: "kaeso-example",
+      private_key: "-----BEGIN PRIVATE KEY-----\nAAAA\n-----END PRIVATE KEY-----\n",
+    });
+    on(
+      "POST",
+      CREDENTIALS,
+      credential({
+        provider: "gemini-agent-platform",
+        name: "Agent Platform",
+        auth_method: "google_service_account",
+        account: "kaeso@kaeso-example.iam.gserviceaccount.com",
+        project: "kaeso-example",
+        location: "us-east5",
+      }),
+    );
+    const { user, dialog } = await open();
+
+    await choose(user, dialog, "Gemini Enterprise Agent Platform");
+    expect(await within(dialog).findByRole("heading", { name: "Add an API key or a service account key?" })).toBeVisible();
+    expect(within(dialog).getByRole("radio", { name: /^Service account key/ })).toBeChecked();
+    expect(within(dialog).getByRole("radio", { name: /^Express mode API key/ })).toHaveAccessibleDescription("Reaches Gemini models only.");
+    await user.click(within(dialog).getByRole("button", { name: "Continue" }));
+
+    expect(await within(dialog).findByRole("heading", { name: "Add a service account key" })).toBeVisible();
+    const link = within(dialog).getByRole("link", { name: "console.cloud.google.com (opens in a new tab)" });
+    expect(link).toHaveAttribute("href", "https://console.cloud.google.com/iam-admin/serviceaccounts");
+    expect((link.closest("p") as HTMLElement).textContent?.replace(/\u2060? \(opens in a new tab\)/, "")).toBe(
+      "Create a JSON key at console.cloud.google.com under IAM & Admin → Service accounts.",
+    );
+    await hoverReason(user, within(dialog).getByRole("button", { name: "Add key" }), "Paste or choose the JSON key");
+    const file = dialog.querySelector('input[type="file"]') as HTMLInputElement;
+    await user.upload(file, new File([json], "kaeso-example-0123.json", { type: "application/json" }));
+    await waitFor(() => expect(within(dialog).getByLabelText("JSON key")).toHaveValue(json));
+    await user.click(within(dialog).getByRole("combobox", { name: "Location" }));
+    await user.click(await screen.findByRole("option", { name: "us-east5" }));
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "Agent Platform");
+    await user.click(within(dialog).getByRole("button", { name: "Add key" }));
+
+    expect(await notifications().findByText("Agent Platform is the Gemini Enterprise Agent Platform default")).toBeInTheDocument();
+    expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([
+      {
+        provider: "gemini-agent-platform",
+        name: "Agent Platform",
+        secret: json,
+        make_default: false,
+        auth_method: "google_service_account",
+        location: "us-east5",
+      },
+    ]);
+  });
+
+  it("chooses the service account's key file from the button and refuses a file too large to be one", async () => {
+    const { user, dialog } = await open();
+
+    await choose(user, dialog, "Gemini Enterprise Agent Platform");
+    await user.click(await within(dialog).findByRole("radio", { name: /^Express mode API key/ }));
+    await user.click(within(dialog).getByRole("radio", { name: /^Service account key/ }));
+    await user.click(within(dialog).getByRole("button", { name: "Continue" }));
+    const file = (await within(dialog).findByText("Choose file")).closest("div")?.querySelector('input[type="file"]') as HTMLInputElement;
+    const click = vi.spyOn(file, "click");
+    await user.click(within(dialog).getByRole("button", { name: "Choose file" }));
+    expect(click).toHaveBeenCalled();
+    fireEvent.change(file, { target: { files: [] } });
+    await user.upload(file, new File(["x".repeat(16 * 1024 + 1)], "large.json", { type: "application/json" }));
+    expect(await notifications().findByText("That file is too large to be a JSON key.")).toBeInTheDocument();
+    expect(within(dialog).getByLabelText("JSON key")).toHaveValue("");
+  });
+
+  it("adds a Gemini Enterprise Agent Platform express mode key without a location", async () => {
+    on("POST", CREDENTIALS, credential({ provider: "gemini-agent-platform", name: "Express", is_default: true }));
+    const { user, dialog } = await open();
+
+    await choose(user, dialog, "Gemini Enterprise Agent Platform");
+    await user.click(await within(dialog).findByRole("radio", { name: /^Express mode API key/ }));
+    await user.click(within(dialog).getByRole("button", { name: "Continue" }));
+    expect(await within(dialog).findByRole("heading", { name: "Paste your Gemini Enterprise Agent Platform API key" })).toBeVisible();
+    expect(within(dialog).queryByRole("combobox", { name: "Location" })).not.toBeInTheDocument();
+    await user.type(within(dialog).getByLabelText("Gemini Enterprise Agent Platform API key"), "AQ.Ab0123456789AbCdEf");
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "Express");
+    await user.click(within(dialog).getByRole("button", { name: "Add key" }));
+
+    await notifications().findByText("Express is the Gemini Enterprise Agent Platform default");
+    expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([
+      { provider: "gemini-agent-platform", name: "Express", secret: "AQ.Ab0123456789AbCdEf", make_default: false },
+    ]);
+  });
+
+  it("replaces a service account key with a new JSON key and keeps its location", async () => {
+    const key = credential({
+      id: "cred_sa",
+      provider: "gemini-agent-platform",
+      name: "Agent Platform",
+      auth_method: "google_service_account",
+      account: "kaeso@kaeso-example.iam.gserviceaccount.com",
+      project: "kaeso-example",
+      location: "eu",
+      last4: "cafe",
+    });
+    on("POST", `${CREDENTIALS}/:credential/replace`, key);
+    const { user, dialog } = await open({ keys: [key], replace: key });
+
+    expect(within(dialog).getByRole("heading", { name: "Add the new JSON key" })).toBeInTheDocument();
+    expect(within(dialog).queryByRole("textbox", { name: "Name" })).not.toBeInTheDocument();
+    await hoverReason(user, within(dialog).getByRole("button", { name: "Replace key" }), "Paste or choose the JSON key");
+    fireEvent.change(within(dialog).getByLabelText("JSON key"), { target: { value: "not json" } });
+    await hoverReason(user, within(dialog).getByRole("button", { name: "Replace key" }), "Paste the whole JSON key file");
+    fireEvent.change(within(dialog).getByLabelText("JSON key"), { target: { value: '{"type":"service_account"}' } });
+    await user.click(within(dialog).getByRole("button", { name: "Replace key" }));
+
+    await notifications().findByText("Gemini Enterprise Agent Platform · Agent Platform replaced");
+    expect(requests("POST", `${CREDENTIALS}/:credential/replace`).map((r) => r.body)).toEqual([{ secret: '{"type":"service_account"}', location: "eu" }]);
+  });
+
   it("adds a Cohere key, which has no fixed prefix, with Cohere's dashboard as its key hint", async () => {
     on("POST", CREDENTIALS, credential({ provider: "cohere", name: "Cohere prod", is_default: true }));
     const { user, dialog } = await open();

@@ -34,7 +34,7 @@ Eine Gemini-Anfrage nennt ihr Modell und ihre Methode im Pfad. Der Codec baut de
 | Modell | Ein prozentkodiertes Pfadsegment, `:` eingeschlossen. Ein führendes `models/` ist der Ressourcenname desselben Modells und wird entfernt; `tunedModels/<id>` adressiert ein feinabgestimmtes Modell neben dem Modellpfad. `.` und `..` sind `InvalidRequest`, wie beim [Abrufen eines Modells](codec-design.md#modelllisten). |
 | Methode | `GeminiAction`: `generateContent` und `streamGenerateContent` (`RequestKind::Generate`, Streaming entscheidet die Methode), `countTokens` (`CountTokens`), `embedContent` und `batchEmbedContents` (`Embed`, der Dialekt `gemini_embeddings`). `streamGenerateContent` hängt `?alt=sse` an. |
 | Dekodieren | `dispatch::decode_gemini_request(model, action, body, headers)` oder `decode_checked_gemini_request` für einen Body, den `limits::Checked` gezählt hat. `gemini::split_model_action` teilt ein Segment wie `gemini-3.5-flash:streamGenerateContent`. `dispatch::decode_request` ohne Pfad dekodiert einen Generierungs-Body mit leerem Modell. Das Gateway bedient Gemini-Apps unter `/v1beta/models/{model}:{method}` mit beiden (`crates/kaeso-server/src/model_api/gemini.rs`). |
-| Rolle an jedem Content | `GeminiProfile::role_on_every_content`: Ein Content, den eine App ohne `role` sendet, bekommt `user`. Bei Google AI Studio aus. |
+| Rolle an jedem Content | `GeminiProfile::role_on_every_content`: Ein Content, den eine App ohne `role` sendet, bekommt `user`. Bei Google AI Studio aus, bei Gemini Enterprise Agent Platform an. |
 
 ## Anfragen
 
@@ -256,6 +256,7 @@ Eine Anfrage von OpenAI Embeddings geht als `batchEmbedContents` mit `model: "mo
 | Anbieter | Profil | Schlüssel |
 |---|---|---|
 | Google AI Studio (`google`) | `GeminiProfile::GOOGLE_AI_STUDIO`, das das Gateway dem Encoder mit `EgressCtx::with_gemini_profile` für jede Anfrage, Modellprüfung und Liste übergibt | `x-goog-api-key` (`AuthStyle::XGoogApiKey`), nie in der URL |
+| Gemini Enterprise Agent Platform (`gemini-agent-platform`) | `GeminiProfile::AGENT_PLATFORM`: `/v1/publishers/google/models` für einen Schlüssel des Express-Modus und für einen Dienstkonto-Schlüssel pro Anfrage `with_models_path("/v1/projects/{project}/locations/{location}/publishers/google/models")`, aus dem `project_id` des Schlüssels und dem Standort des Zugangs ([REST-Referenz](https://docs.cloud.google.com/gemini-enterprise-agent-platform/reference/rest)). `role_on_every_content` ist an, weil die [Referenz zur Token-Zählung](https://docs.cloud.google.com/gemini-enterprise-agent-platform/reference/models/count-tokens) auch in Anfragen mit einer Runde eine Rolle verlangt, während das Discovery-Dokument sie optional nennt | Ein Schlüssel des Express-Modus als `x-goog-api-key`; das Zugriffstoken eines Dienstkonto-Schlüssels als `Authorization: Bearer` |
 
 ## Round Trips
 

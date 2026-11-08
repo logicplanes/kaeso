@@ -696,6 +696,8 @@ mod tests {
         messages: MessagesProfile::compatible("Example Cloud"),
         gemini: GeminiProfile::GOOGLE_AI_STUDIO,
         account: None,
+        routes: &[],
+        service_account: None,
     };
 
     fn known(id: &str) -> &'static Provider {

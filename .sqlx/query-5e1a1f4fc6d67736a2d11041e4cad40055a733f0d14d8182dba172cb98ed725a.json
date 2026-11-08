@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, org_id, provider, name, is_default, key_id, last4, created_by_kind, created_by_id, last_used_at, created_at, updated_at, auth_method, account_label, auth_error FROM provider_credentials WHERE org_id = $1 AND id = $2",
+  "query": "SELECT id, org_id, provider, name, is_default, key_id, last4, created_by_kind, created_by_id, last_used_at, created_at, updated_at, auth_method, account_label, auth_error, project, location FROM provider_credentials WHERE org_id = $1 ORDER BY provider, is_default DESC, created_at DESC, id DESC",
   "describe": {
     "columns": [
       {
@@ -167,11 +167,32 @@
             "name": "auth_error"
           }
         }
+      },
+      {
+        "ordinal": 15,
+        "name": "project",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "provider_credentials",
+            "name": "project"
+          }
+        }
+      },
+      {
+        "ordinal": 16,
+        "name": "location",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "provider_credentials",
+            "name": "location"
+          }
+        }
       }
     ],
     "parameters": {
       "Left": [
-        "Uuid",
         "Uuid"
       ]
     },
@@ -190,8 +211,10 @@
       false,
       false,
       true,
+      true,
+      true,
       true
     ]
   },
-  "hash": "4764cf7e9b8d8f1e2b6902dd0cb5a0a9a284b6f852a07dfbd5e116887db80dc6"
+  "hash": "5e1a1f4fc6d67736a2d11041e4cad40055a733f0d14d8182dba172cb98ed725a"
 }

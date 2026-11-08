@@ -112,6 +112,9 @@ base_url = "https://api.minimax.io/anthropic"
 [providers.google]
 base_url = "https://generativelanguage.googleapis.com"
 
+[providers.gemini-agent-platform]
+base_url = "https://aiplatform.googleapis.com"
+
 [custom_providers]
 enabled = true
 allowed_networks = ""

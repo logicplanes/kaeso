@@ -455,7 +455,7 @@ pub async fn preview(
     Ok(Json(Preview {
         egress_dialect: fields
             .egress_dialect
-            .unwrap_or(prov.generation())
+            .unwrap_or_else(|| prov.dialect_for(&p.model))
             .as_str()
             .to_owned(),
         catalogue_model_id: rows
@@ -688,7 +688,10 @@ pub async fn create(
         }
         _ => {}
     }
-    let overrides = overrides_from(req.overrides.as_ref(), Fields::default())?;
+    let mut overrides = overrides_from(req.overrides.as_ref(), Fields::default())?;
+    if req.custom && overrides.egress_dialect.is_none() {
+        overrides.egress_dialect = prov.route(&req.model_id);
+    }
     check_fields(&overrides, &prov, req.custom)?;
     let mut tx = state.pg.begin().await?;
     let row = insert_entry(&ctx, &mut tx, &prov, &req.model_id, &overrides, req.custom)

@@ -640,5 +640,17 @@
   "errors.notifications.scheduledOnOff": "`{kind}` 按计划发送；请选择 `now` 或 `off`。",
   "errors.notifications.noAddress": "您的账户没有邮箱地址。",
   "errors.notifications.testTooSoon": "您刚刚发送过测试邮件，请 {wait}后重试。",
-  "errors.notifications.testNotSent": "邮件未发送；请让实例管理员检查邮件设置。"
+  "errors.notifications.testNotSent": "邮件未发送；请让实例管理员检查邮件设置。",
+  "errors.serviceAccount.locationOnly": "只有服务账号密钥会调用某个位置；请去掉 `location`。",
+  "errors.serviceAccount.notTaken": "{provider} 不接受服务账号密钥；请添加 API 密钥。",
+  "errors.serviceAccount.notJson": "请粘贴服务账号的完整 JSON 密钥文件。",
+  "errors.serviceAccount.tooLong": "JSON 密钥超过 16 KiB；请粘贴 Google Cloud 生成的文件。",
+  "errors.serviceAccount.wrongType": "该 JSON 密钥不是服务账号密钥；其 `type` 必须为 `service_account`。",
+  "errors.serviceAccount.missingField": "该 JSON 密钥没有 `{field}`；请从 Google Cloud 下载新密钥。",
+  "errors.serviceAccount.badField": "该 JSON 密钥的 `{field}` 无效；请从 Google Cloud 下载新密钥。",
+  "errors.serviceAccount.tokenUri": "该 JSON 密钥的 `token_uri` 必须为 `https://oauth2.googleapis.com/token`。",
+  "errors.serviceAccount.universe": "该 JSON 密钥属于另一个 Google Cloud 域，Kaeso 无法调用。",
+  "errors.serviceAccount.notRsa": "该 JSON 密钥的 `private_key` 不是 RSA 密钥；请从 Google Cloud 下载新密钥。",
+  "errors.serviceAccount.location": "Kaeso 不会为此服务商调用该位置；请从列表中选择。",
+  "errors.noEmbeddingsAtProvider": "Kaeso 不调用 {provider} 上的嵌入模型，因此 `{name}` 无法生成嵌入。"
 }

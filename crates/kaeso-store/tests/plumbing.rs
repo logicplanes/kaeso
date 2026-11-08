@@ -423,6 +423,8 @@ async fn an_account_credential_refreshes_in_place_until_it_is_signed_out() {
         auth_method,
         expires_at,
         account_label,
+        project: None,
+        location: None,
     };
     let account = uuid::Uuid::now_v7();
     credentials::insert(
@@ -445,6 +447,81 @@ async fn an_account_credential_refreshes_in_place_until_it_is_signed_out() {
     assert!(
         credentials::insert(&s.pg, &expiring_key).await.is_err(),
         "an API key never expires"
+    );
+    let email = "kaeso@kaeso-example.iam.gserviceaccount.com";
+    let service_account = |id, project, location, expires_at| NewCredential {
+        provider: "gemini-agent-platform",
+        project,
+        location,
+        ..new(id, "google_service_account", expires_at, Some(email))
+    };
+    let sa = uuid::Uuid::now_v7();
+    credentials::insert(
+        &s.pg,
+        &service_account(sa, Some("kaeso-example"), Some("us-east5"), None),
+    )
+    .await
+    .unwrap();
+    for (project, location, expires_at, why) in [
+        (
+            None,
+            Some("global"),
+            None,
+            "a service account key names its project",
+        ),
+        (
+            Some("kaeso-example"),
+            None,
+            None,
+            "a service account key names its location",
+        ),
+        (
+            Some("kaeso-example"),
+            Some("global"),
+            Some(now),
+            "a service account key stores no expiry of its own",
+        ),
+        (
+            Some("Not A Project"),
+            Some("global"),
+            None,
+            "projects follow Google's rule",
+        ),
+        (
+            Some("kaeso-example"),
+            Some("us-central1.example.com"),
+            None,
+            "locations follow the platform's rule",
+        ),
+    ] {
+        assert!(
+            credentials::insert(
+                &s.pg,
+                &service_account(uuid::Uuid::now_v7(), project, location, expires_at)
+            )
+            .await
+            .is_err(),
+            "{why}"
+        );
+    }
+    let row = credentials::sealed(&s.pg, org, sa).await.unwrap().unwrap();
+    assert_eq!(row.location.as_deref(), Some("us-east5"));
+    assert!(
+        credentials::set_location(&s.pg, org, sa, "eu")
+            .await
+            .unwrap()
+    );
+    let moved = credentials::sealed(&s.pg, org, sa).await.unwrap().unwrap();
+    assert_eq!(
+        (moved.location.as_deref(), moved.revision),
+        (Some("eu"), row.revision + 1),
+        "a new location is a new revision, so its token is fetched again"
+    );
+    assert!(
+        !credentials::set_location(&s.pg, org, account, "eu")
+            .await
+            .unwrap(),
+        "only a service account key has a location"
     );
 
     let later = now + time::Duration::hours(1);
@@ -492,8 +569,14 @@ async fn an_account_credential_refreshes_in_place_until_it_is_signed_out() {
         "a signed-out account takes no refreshed tokens"
     );
     let listed = credentials::list(&s.pg, org).await.unwrap();
-    assert_eq!(listed[0].account_label.as_deref(), Some("ada@example.com"));
-    assert_eq!(listed[0].auth_method, "chatgpt");
+    let plan = listed.iter().find(|c| c.id == account).unwrap();
+    assert_eq!(plan.account_label.as_deref(), Some("ada@example.com"));
+    assert_eq!(plan.auth_method, "chatgpt");
+    let key = listed.iter().find(|c| c.id == sa).unwrap();
+    assert_eq!(
+        (key.project.as_deref(), key.location.as_deref()),
+        (Some("kaeso-example"), Some("eu"))
+    );
 
     let again = new(account, "chatgpt", Some(later), Some("ada@example.com"));
     assert!(credentials::replace(&s.pg, &again).await.unwrap());
@@ -621,6 +704,8 @@ async fn a_grok_account_can_lose_its_api_access() {
         auth_method,
         expires_at: Some(now),
         account_label: Some("ada@example.com"),
+        project: None,
+        location: None,
     };
     let grok = uuid::Uuid::now_v7();
     credentials::insert(&s.pg, &new(grok, "grok"))

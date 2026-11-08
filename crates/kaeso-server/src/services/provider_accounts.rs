@@ -64,6 +64,7 @@ impl Hosts {
 pub struct Endpoints {
     pub chatgpt: Hosts,
     pub grok: Hosts,
+    pub google_token: String,
 }
 
 impl Default for Endpoints {
@@ -77,6 +78,7 @@ impl Default for Endpoints {
                 auth: "https://auth.x.ai".into(),
                 api: "https://api.x.ai".into(),
             },
+            google_token: kaeso_core::google::TOKEN_URI.to_owned(),
         }
     }
 }
@@ -86,7 +88,7 @@ impl Endpoints {
         match method {
             AuthMethod::ChatGpt => Some(&self.chatgpt),
             AuthMethod::Grok => Some(&self.grok),
-            AuthMethod::ApiKey => None,
+            AuthMethod::ApiKey | AuthMethod::GoogleServiceAccount => None,
         }
     }
 }
@@ -94,21 +96,21 @@ impl Endpoints {
 const fn token_path(method: AuthMethod) -> &'static str {
     match method {
         AuthMethod::Grok => "/oauth2/token",
-        AuthMethod::ChatGpt | AuthMethod::ApiKey => "/api/accounts/oauth/token",
+        _ => "/api/accounts/oauth/token",
     }
 }
 
 const fn revoke_path(method: AuthMethod) -> &'static str {
     match method {
         AuthMethod::Grok => "/oauth2/revoke",
-        AuthMethod::ChatGpt | AuthMethod::ApiKey => "/api/accounts/oauth/revoke",
+        _ => "/api/accounts/oauth/revoke",
     }
 }
 
 pub const fn renew_before(method: AuthMethod) -> time::Duration {
     match method {
         AuthMethod::Grok => time::Duration::minutes(2),
-        AuthMethod::ChatGpt | AuthMethod::ApiKey => time::Duration::minutes(5),
+        _ => time::Duration::minutes(5),
     }
 }
 

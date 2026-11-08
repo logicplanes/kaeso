@@ -283,6 +283,9 @@ pub async fn probe(
     eff: &Effective,
     listings: &Listings,
 ) -> Probe {
+    if crate::services::agent_platform::is_agent_platform(&eff.provider) {
+        return crate::services::agent_platform::probe(state, credential, eff).await;
+    }
     let asked = Asked {
         state,
         credential,

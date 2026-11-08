@@ -385,5 +385,21 @@
   "kaeso.toolAccess.ownerCount": "{count, plural, other {其所有者可用的所有工具：# 个工具。}}",
   "kaeso.toolAccess.projectCount": "{count, plural, other {项目提供的所有工具：# 个工具。}}",
   "kaeso.toolAccess.edit": "编辑工具",
-  "kaeso.createKey.chooseApi": "至少选择一个 API"
+  "kaeso.createKey.chooseApi": "至少选择一个 API",
+  "kaeso.providerKey.location": "位置",
+  "kaeso.providerKey.locationHint": "Google 运行请求的位置；global 提供的模型最多。",
+  "kaeso.providerKey.serviceAccountNew": "添加新的 JSON 密钥",
+  "kaeso.providerKey.serviceAccountTitle": "添加服务账号密钥",
+  "kaeso.providerKey.serviceAccountWhere": "在 {site} 的 {page} 下创建 JSON 密钥。",
+  "kaeso.providerKey.serviceAccountMethodTitle": "添加 API 密钥还是服务账号密钥？",
+  "kaeso.providerKey.serviceAccount": "服务账号密钥",
+  "kaeso.providerKey.serviceAccountHint": "可调用 {provider} 向该密钥所属项目提供的所有模型。",
+  "kaeso.providerKey.expressKey": "快速模式 API 密钥",
+  "kaeso.providerKey.expressKeyHint": "只能调用 Gemini 模型。",
+  "kaeso.providerKey.serviceAccountBlocked": "请粘贴或选择 JSON 密钥",
+  "kaeso.providerKey.serviceAccountNotJson": "请粘贴完整的 JSON 密钥文件",
+  "kaeso.providerKey.serviceAccountKey": "JSON 密钥",
+  "kaeso.providerKey.serviceAccountPlaceholder": "粘贴密钥文件的内容",
+  "kaeso.providerKey.serviceAccountTooLarge": "该文件过大，不可能是 JSON 密钥。",
+  "kaeso.providerKey.serviceAccountChoose": "选择文件"
 }

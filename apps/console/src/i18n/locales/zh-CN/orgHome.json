@@ -311,5 +311,10 @@
   "orgHome.mcp.problem.notMcp": "服务器的响应不是 MCP；请检查地址。",
   "orgHome.mcp.problem.headerRefused": "服务器拒绝了该请求头；请检查名称和值。",
   "orgHome.mcp.problem.signIn": "服务器要求 Kaeso 无法完成的 OAuth 登录；请改用密钥请求头。",
-  "orgHome.mcp.serverVersion": "{name} {version}"
+  "orgHome.mcp.serverVersion": "{name} {version}",
+  "orgHome.project": "项目",
+  "orgHome.location": "位置",
+  "orgHome.keyMoved": "{name} 现在调用 {location}",
+  "orgHome.changeFirst": "请先更改名称或位置",
+  "orgHome.editKey": "编辑 {title}"
 }

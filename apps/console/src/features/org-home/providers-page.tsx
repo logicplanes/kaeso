@@ -18,6 +18,7 @@ import {
   Menu,
   Tabs,
   ProviderBadge,
+  Select,
   Text,
   Tooltip,
   VisuallyHidden,
@@ -82,6 +83,8 @@ function withProjectNames(k: CredentialView, text: ReactElement) {
 
 const KEY_WIDTH = 240;
 const ACCOUNT_KEY_WIDTH = 456;
+
+const signsIn = (k: CredentialView) => k.auth_method === "chatgpt" || k.auth_method === "grok";
 
 const lastUsed = (k: CredentialView) => (k.last_used_at ? formatRelative(k.last_used_at) : t("common.never", "Never"));
 
@@ -157,7 +160,7 @@ export function OrgProvidersPage({ org, search = {} }: { org: string; search?: P
   const setDefault = makeDefault.mutate;
   const columns = useMemo(() => {
     const menu = (k: CredentialView) => {
-      const signIn = k.auth_method === "api_key" ? undefined : providers.get(k.provider)?.account;
+      const signIn = signsIn(k) ? providers.get(k.provider)?.account : undefined;
       const usage = signIn?.usage_url;
       if (!canChange && !canDelete && !usage) return null;
       return (
@@ -182,7 +185,7 @@ export function OrgProvidersPage({ org, search = {} }: { org: string; search?: P
               </Menu.Item>
             )}
             {canChange &&
-              (k.auth_method === "api_key" ? (
+              (!signsIn(k) ? (
                 <Menu.Item icon={icons.providerKey} onClick={() => setReplacing(k)}>
                   {t("orgHome.replace", "Replace")}
                 </Menu.Item>
@@ -198,7 +201,7 @@ export function OrgProvidersPage({ org, search = {} }: { org: string; search?: P
             )}
             {canChange && (
               <Menu.Item icon={icons.edit} onClick={() => setRenaming(k)}>
-                {t("common.rename", "Rename")}
+                {k.location ? t("common.edit", "Edit") : t("common.rename", "Rename")}
               </Menu.Item>
             )}
             {canDelete && (
@@ -240,10 +243,13 @@ export function OrgProvidersPage({ org, search = {} }: { org: string; search?: P
           const defaultBelow = r.key.is_default && hidden.includes("projects");
           const under = [
             defaultBelow ? { id: "default", label: null, value: t("orgHome.default", "Default") } : null,
-            r.key.account && providers.get(r.provider)?.account?.experimental
+            signsIn(r.key) && providers.get(r.provider)?.account?.experimental
               ? { id: "stage", label: t("orgHome.stage", "Stage"), value: t("orgHome.experimental", "Experimental") }
               : null,
-            r.key.account ? { id: "account", label: t("orgHome.account", "Account"), value: r.key.account } : null,
+            r.key.account && signsIn(r.key) ? { id: "account", label: t("orgHome.account", "Account"), value: r.key.account } : null,
+            r.key.account && !signsIn(r.key) ? { id: "service-account", label: t("orgHome.serviceAccount", "Service account"), value: r.key.account } : null,
+            r.key.project ? { id: "project", label: t("orgHome.project", "Project"), value: r.key.project } : null,
+            r.key.location ? { id: "location", label: t("orgHome.location", "Location"), value: r.key.location } : null,
             hidden.includes("projects") ? { id: "projects", label: t("common.projects", "Projects"), value: assignment(r.key) } : null,
             hidden.includes("used") ? { id: "used", label: t("common.lastUsed", "Last used"), value: lastUsed(r.key) } : null,
             hidden.includes("added") ? { id: "added", label: t("orgHome.added", "Added"), value: addedBy(r.key) } : null,
@@ -252,7 +258,7 @@ export function OrgProvidersPage({ org, search = {} }: { org: string; search?: P
             <span className="flex min-w-0 flex-col">
               <span className="flex min-w-0 items-center gap-8">
                 <Text truncate>{r.key.name}</Text>
-                {r.key.account ? (
+                {signsIn(r.key) ? (
                   <Badge tone="outline" className="hidden sm:inline-flex">
                     {providers.product(r.provider)}
                   </Badge>
@@ -496,25 +502,34 @@ function DeleteKeyDialog({
 function RenameKeyDialog({ org, credential, onClose }: { org: string; credential: CredentialView; onClose: () => void }) {
   const providers = useProviders(org);
   const [name, setName] = useState(credential.name);
+  const [location, setLocation] = useState(credential.location);
+  const locations = providers.get(credential.provider)?.service_account?.locations ?? [];
   const trimmed = name.trim();
+  const moved = location !== credential.location;
   const rename = useApiMutation({
     mutationFn: async () =>
       data(
         await api.PATCH("/platform/v1/orgs/{org}/credentials/{credential}", {
           params: { path: { org, credential: credential.id } },
-          body: { name: trimmed },
+          body: moved ? { name: trimmed, location: String(location) } : { name: trimmed },
         }),
       ),
     invalidates: [["orgs", org, "credentials"]],
     onSuccess: (k) => {
-      toast(t("orgHome.keyRenamed", "Renamed to {name}", { name: k.name }));
+      toast(
+        moved
+          ? t("orgHome.keyMoved", "{name} now calls {location}", { name: k.name, location: String(k.location) })
+          : t("orgHome.keyRenamed", "Renamed to {name}", { name: k.name }),
+      );
       onClose();
     },
   });
   const blocked = !trimmed
     ? t("orgHome.keyNameNeeded", "Give the key a name")
-    : trimmed === credential.name
-      ? t("orgHome.changeNameFirst", "Change the name first")
+    : trimmed === credential.name && !moved
+      ? location
+        ? t("orgHome.changeFirst", "Change the name or the location first")
+        : t("orgHome.changeNameFirst", "Change the name first")
       : undefined;
   return (
     <Dialog
@@ -522,7 +537,11 @@ function RenameKeyDialog({ org, credential, onClose }: { org: string; credential
       open
       onOpenChange={(o) => !o && onClose()}
       size="sm"
-      title={t("orgHome.renameKey", "Rename {title}", { title: keyTitle(credential, providers) })}
+      title={
+        location
+          ? t("orgHome.editKey", "Edit {title}", { title: keyTitle(credential, providers) })
+          : t("orgHome.renameKey", "Rename {title}", { title: keyTitle(credential, providers) })
+      }
       onSubmit={() => !blocked && rename.mutate()}
       footer={
         <>
@@ -536,12 +555,24 @@ function RenameKeyDialog({ org, credential, onClose }: { org: string; credential
             loading={rename.isPending}
             onClick={() => rename.mutate()}
           >
-            {t("common.rename", "Rename")}
+            {location ? t("common.save", "Save") : t("common.rename", "Rename")}
           </Button>
         </>
       }
     >
-      <Input label={t("common.name", "Name")} value={name} onChange={(e) => setName(e.target.value)} maxLength={100} autoFocus />
+      <div className="flex flex-col gap-12">
+        <Input label={t("common.name", "Name")} value={name} onChange={(e) => setName(e.target.value)} maxLength={100} autoFocus />
+        {location && (
+          <Select
+            fullWidth
+            label={t("kaeso.providerKey.location", "Location")}
+            description={t("kaeso.providerKey.locationHint", "Where Google runs the requests; global serves the most models.")}
+            value={location}
+            onValueChange={(v) => setLocation(v as string)}
+            options={locations.map((l) => ({ value: l, label: l }))}
+          />
+        )}
+      </div>
     </Dialog>
   );
 }

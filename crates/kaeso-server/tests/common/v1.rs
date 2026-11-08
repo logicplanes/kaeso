@@ -90,11 +90,25 @@ pub async fn env_hooked(
     extra: Option<&[(&str, &str)]>,
 ) -> Env {
     let sink = capture.clone().map(|c| c as Arc<dyn Sink>);
-    env_with(capture, limits, sink, extra).await
+    env_with(capture, limits, sink, extra, false).await
 }
 
 pub async fn env_sunk(sink: Arc<dyn Sink>, extra: Option<&[(&str, &str)]>) -> Env {
-    env_with(None, None, Some(sink), extra).await
+    env_with(None, None, Some(sink), extra, false).await
+}
+
+// Google's token endpoint answered by the mock provider, which the token exchange reaches as an
+// allowed private network.
+pub async fn env_with_google_token(capture: Option<Arc<Capture>>) -> Env {
+    let sink = capture.clone().map(|c| c as Arc<dyn Sink>);
+    env_with(
+        capture,
+        None,
+        sink,
+        Some(&[("KAESO_CUSTOM_PROVIDERS_ALLOWED_NETWORKS", "127.0.0.0/8")]),
+        true,
+    )
+    .await
 }
 
 async fn env_with(
@@ -102,9 +116,19 @@ async fn env_with(
     limits: Option<Arc<dyn Limits>>,
     sink: Option<Arc<dyn Sink>>,
     extra: Option<&[(&str, &str)]>,
+    google_token_at_mock: bool,
 ) -> Env {
     let s = TestServices::start().await;
     let mock = MockProvider::start().await;
+    let accounts =
+        google_token_at_mock.then(|| kaeso_server::services::provider_accounts::Endpoints {
+            google_token: format!(
+                "{}{}",
+                mock.base_url,
+                kaeso_testkit::mock_provider::GOOGLE_TOKEN_PATH
+            ),
+            ..Default::default()
+        });
     let names: Vec<String> = PROVIDERS
         .iter()
         .map(|p| format!("KAESO_PROVIDERS_{}_BASE_URL", p.provider_id().env_segment()))
@@ -114,7 +138,7 @@ async fn env_with(
         .map(|name| (name.as_str(), mock.base_url.as_str()))
         .collect();
     settings.extend_from_slice(extra.unwrap_or(&[]));
-    let app = App::start_hooked(&s, &settings, limits, sink).await;
+    let app = App::start_full(&s, &settings, limits, sink, accounts).await;
     let extra: Vec<(String, String)> = settings
         .iter()
         .map(|(k, v)| ((*k).to_owned(), (*v).to_owned()))
