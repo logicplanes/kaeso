@@ -45,6 +45,17 @@ export function tierLabels(f: Fields): string[] {
   );
 }
 
+export function unitPriceLabels(f: Fields): string[] {
+  return (f.unit_prices ?? []).map((u) => {
+    const unit = u.per === "image" ? t("models.unit.image", "image") : u.per === "megapixel" ? t("models.unit.megapixel", "megapixel") : u.per;
+    const side = u.of === "input" ? t("models.unit.input", "input") : t("models.unit.output", "output");
+    const conditions = [u.size, u.quality, u.resolution, u.audio].filter((c): c is string => !!c);
+    const label = t("models.unitPrice", "{price} per {unit} of {side}", { price: formatUSD(u.usd), unit, side });
+    const shown = conditions.length ? `${label} (${conditions.join(t("models.listSeparator", ", "))})` : label;
+    return u.estimate ? t("models.unitPriceEstimate", "{price}, estimated", { price: shown }) : shown;
+  });
+}
+
 export function overriddenFields(m: CatalogueModelView): string[] {
   return Object.entries(m.overrides)
     .filter(([, v]) => v !== null && v !== undefined)
@@ -60,11 +71,13 @@ export function dialectPill(d: string): string {
       openai_embeddings: "embeddings",
       gemini: "gemini",
       gemini_embeddings: "embeddings",
+      openai_images: "images",
+      minimax_images: "images",
     }[d] ?? d
   );
 }
 
-export type FieldKind = "text" | "number" | "price" | "tiers" | "bool" | "list" | "dialect" | "date";
+export type FieldKind = "text" | "number" | "price" | "tiers" | "units" | "bool" | "list" | "dialect" | "date";
 
 export function fieldRows(): { key: keyof Fields; label: string; kind: FieldKind }[] {
   return [
@@ -79,6 +92,10 @@ export function fieldRows(): { key: keyof Fields; label: string; kind: FieldKind
     { key: "cache_write_price", label: t("models.field.cacheWritePrice", "Cache write price"), kind: "price" },
     { key: "cache_write_1h_price", label: t("models.field.cacheWrite1hPrice", "1-hour cache write price"), kind: "price" },
     { key: "price_tiers", label: t("models.field.priceTiers", "Long-context prices"), kind: "tiers" },
+    { key: "input_image_price", label: t("models.field.inputImagePrice", "Image input price"), kind: "price" },
+    { key: "output_image_price", label: t("models.field.outputImagePrice", "Image output price"), kind: "price" },
+    { key: "cache_read_image_price", label: t("models.field.cacheReadImagePrice", "Image cache read price"), kind: "price" },
+    { key: "unit_prices", label: t("models.field.unitPrices", "Prices per unit"), kind: "units" },
     { key: "egress_dialect", label: t("models.field.sendsAs", "Sends as"), kind: "dialect" },
     { key: "tool_call", label: t("models.cap.tools", "Tool calling"), kind: "bool" },
     { key: "reasoning", label: t("models.cap.reasoning", "Reasoning"), kind: "bool" },

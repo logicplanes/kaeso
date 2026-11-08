@@ -158,6 +158,8 @@ pub struct Outcome {
     pub alias: Option<String>,
     pub fallbacks: Vec<FellBack>,
     pub gemini: Option<kaeso_codecs::gemini::GeminiAction>,
+    pub image: Option<kaeso_kpp::ImageOperation>,
+    pub media: Option<kaeso_core::cost::MediaUnits>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]

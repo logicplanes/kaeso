@@ -40,6 +40,7 @@ pub struct Assembler {
     complete: bool,
     error: Option<KppError>,
     blocks: bool,
+    images: u64,
 }
 
 impl std::fmt::Debug for Assembler {
@@ -57,6 +58,8 @@ pub struct Assembled {
     pub response: Option<Response>,
     pub complete: bool,
     pub error: Option<KppError>,
+    /// The finished images of a streamed image reply, whose usage is the response's.
+    pub images: u64,
 }
 
 fn kept(origin: DialectId, value: &impl serde::Serialize) -> RawItem {
@@ -160,6 +163,7 @@ impl Assembler {
             complete: false,
             error: None,
             blocks: true,
+            images: 0,
         }
     }
 
@@ -226,6 +230,17 @@ impl Assembler {
                 merge(&mut self.extras, &s.extras);
             }
             StreamEvent::Error(e) => self.error = Some(e.clone()),
+            // An image stream has no start or stop event: it is whole once an image is finished.
+            StreamEvent::Image(i) => {
+                self.started = true;
+                if i.partial.is_none() {
+                    self.images += 1;
+                    self.complete = true;
+                    if let Some(u) = &i.usage {
+                        self.usage = Some(u.clone());
+                    }
+                }
+            }
             StreamEvent::Extra(item) => self.unplaced.push(item.clone()),
             other if self.blocks => self.unplaced.push(kept(self.origin, other)),
             _ => {}
@@ -255,6 +270,7 @@ impl Assembler {
             response,
             complete: self.complete,
             error: self.error,
+            images: self.images,
         }
     }
 }

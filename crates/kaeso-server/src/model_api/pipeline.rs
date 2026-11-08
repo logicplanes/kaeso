@@ -21,7 +21,9 @@ use kaeso_core::id::{
 use kaeso_core::limits::WorstCase;
 use kaeso_core::provider::AuthMethod;
 use kaeso_core::providers::ProviderRef;
-use kaeso_kpp::{DialectId, ErrorKind, KppError, Reply, Request, RequestKind, StreamMode};
+use kaeso_kpp::{
+    DialectId, ErrorKind, ImageOperation, KppError, Reply, Request, RequestKind, StreamMode,
+};
 use kaeso_store::pg::catalogue::{Answer, ProjectModels};
 use kaeso_upstream::{Call, Outgoing, ResponseBody, Timeouts, UpstreamError};
 use time::OffsetDateTime;
@@ -64,6 +66,7 @@ pub struct Incoming {
     pub max_body: usize,
     pub alias: Option<Alias>,
     pub gemini: Option<GeminiCall>,
+    pub image: Option<ImageOperation>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -247,6 +250,8 @@ fn blank_outcome(request_id: RequestId) -> Outcome {
         alias: None,
         fallbacks: Vec::new(),
         gemini: None,
+        image: None,
+        media: None,
     }
 }
 
@@ -316,6 +321,7 @@ pub async fn serve_with(
     outcome.ingress = inc.ingress;
     outcome.kind = inc.kind;
     outcome.gemini = inc.gemini.as_ref().map(|c| c.action);
+    outcome.image = inc.image;
     outcome.source = inc.source;
     outcome.caller.clone_from(&inc.caller);
     outcome.started_at = now;
@@ -630,6 +636,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         max_body,
         alias,
         gemini,
+        image,
         ..
     } = inc;
     let caller = match caller {
@@ -681,7 +688,9 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
     if keep_content {
         let o = rec.outcome();
         o.content_kept = true;
-        o.request_body = Some(body.clone());
+        if image.is_none() {
+            o.request_body = Some(body.clone());
+        }
     }
     let request_bytes = body.len();
     let checked = off_thread(request_bytes, move || {
@@ -713,16 +722,26 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
             .map_err(|_| Failure::new(translating_busy(), Stage::Limits))?,
     );
     let listed = header_list(&headers);
-    let req = off_thread(request_bytes, move || match gemini {
-        Some(call) => {
+    let req = off_thread(request_bytes, move || match (gemini, image) {
+        (Some(call), _) => {
             dispatch::decode_checked_gemini_request(&call.model, call.action, &checked, &listed)
         }
-        None => dispatch::decode_checked_request(kind, &checked, &listed),
+        (None, Some(operation)) => {
+            dispatch::decode_checked_image_request(operation, &checked, &listed)
+        }
+        (None, None) => dispatch::decode_checked_request(kind, &checked, &listed),
     })
     .await
     .and_then(|r| r)
     .map_err(at(Stage::Request))?;
     req.validate().map_err(at(Stage::Request))?;
+    if let Request::Image(r) = &req {
+        // Request logs keep no media: an upload is logged as its fields, each image as its size.
+        if keep_content {
+            rec.outcome().request_body = Some(super::media::logged_request(r));
+        }
+        rec.outcome().media = Some(super::media::units_of_request(r));
+    }
     let stream = !req.stream_mode().is_off();
     rec.outcome().stream = stream;
     rec.outcome().requested_model = Some(req.model().to_owned());
@@ -922,6 +941,7 @@ async fn attempt(
     match &mut req {
         Request::Generate(g) | Request::CountTokens(g) => g.model.clone_from(&eff.model_id),
         Request::Embed(e) => e.model.clone_from(&eff.model_id),
+        Request::Image(i) => i.model.clone_from(&eff.model_id),
         _ => {}
     }
     if let Request::Generate(g) = &mut req
@@ -1069,6 +1089,7 @@ async fn attempt(
         }
     };
     let mut ectx = egress_ctx(&app_req, &eff.provider, ModelFlags::of(&plan));
+    let images = eff.provider.images().filter(|_| kind == RequestKind::Image);
     if let Some(p) = &platform {
         ectx = p.apply(ectx);
     }
@@ -1176,6 +1197,14 @@ async fn attempt(
             ))
         })?,
     };
+    let rooted;
+    let base = match images {
+        Some(i) if i.from_root => {
+            rooted = super::media::host_root(base);
+            &rooted
+        }
+        _ => base,
+    };
     let provider = eff.provider.metric_label();
     rec.sent_input = Some(estimate::tokens_of_bytes(sent));
     let sent_at = Instant::now();
@@ -1189,13 +1218,19 @@ async fn attempt(
     };
     let sending = state.upstream.send(Call {
         base_url: base,
-        auth: platform
-            .as_ref()
-            .map_or_else(|| eff.provider.auth(), |p| Some(p.auth)),
+        auth: match (&platform, images.and_then(|i| i.auth)) {
+            (Some(p), _) => Some(p.auth),
+            (None, Some(auth)) => Some(auth),
+            (None, None) => eff.provider.auth(),
+        },
         guarded: eff.provider.custom().is_some(),
         credential: platform.as_ref().map_or(&credential.secret, |p| &p.secret),
         request: Outgoing::from(encoded),
-        stream: (stream || chatgpt.is_some()) && kind == RequestKind::Generate,
+        stream: match kind {
+            RequestKind::Generate => stream || chatgpt.is_some(),
+            RequestKind::Image => !ectx.stream.is_off(),
+            _ => false,
+        },
         timeouts,
         max_body: state.config.body_limits.provider_response.as_usize(),
     });
@@ -1411,11 +1446,11 @@ async fn attempt(
             let (reply, out) = off_thread(bytes.len(), move || {
                 let mut reply = decode_reply(dialect, status, &headers, &bytes, &ectx)
                     .map_err(|e| unreadable(e, &decoded_by, dialect))?;
-                // Gemini's embeddings replies name no model.
-                if let Reply::Embed(e) = &mut reply
-                    && e.model.is_empty()
-                {
-                    e.model = model_id;
+                // Gemini's embeddings replies and most image replies name no model.
+                match &mut reply {
+                    Reply::Embed(e) if e.model.is_empty() => e.model = model_id,
+                    Reply::Image(i) if i.model.is_empty() => i.model = model_id,
+                    _ => {}
                 }
                 let out = dispatch::encode_response(ingress, &reply, &encode_ctx);
                 Ok::<_, KppError>((reply, out))
@@ -1802,15 +1837,26 @@ async fn answer_with(
     {
         continuity::keep(state, key_id, &reasoning_for_tool_calls(&r.blocks)).await;
     }
+    let reply_kind = reply.kind();
     if let Reply::Generate(r) = reply {
         rec.outcome().reply = Some(r);
     }
+    // An image stream the provider answered whole is written as its finished events.
+    let events = matches!(reply_kind, RequestKind::Image) && rec.outcome().stream;
     let mut resp = Response::new(Body::from(out));
     let h = resp.headers_mut();
-    h.insert(
-        header::CONTENT_TYPE,
-        HeaderValue::from_static("application/json"),
-    );
+    if events {
+        h.insert(
+            header::CONTENT_TYPE,
+            HeaderValue::from_static("text/event-stream; charset=utf-8"),
+        );
+        h.insert(header::CACHE_CONTROL, HeaderValue::from_static("no-cache"));
+    } else {
+        h.insert(
+            header::CONTENT_TYPE,
+            HeaderValue::from_static("application/json"),
+        );
+    }
     if let Some(v) = rec.outcome().response_cache {
         h.insert(response_cache::HEADER, v.header());
     }
@@ -1940,6 +1986,16 @@ async fn record_usage(rec: &mut Recording, reply: &Reply, counter: InputCounter)
     let (usage, model) = match reply {
         Reply::Generate(r) => (&r.usage, &r.model),
         Reply::Embed(e) => (&e.usage, &e.model),
+        // Providers that bill per image report no tokens, so there is nothing to estimate.
+        Reply::Image(i) => {
+            let o = rec.outcome();
+            o.usage = Some(i.usage.clone());
+            o.response_model = Some(i.model.clone());
+            if let Some(media) = o.media.as_mut() {
+                super::media::add_reply(media, i);
+            }
+            return;
+        }
         _ => return,
     };
     let o = rec.outcome();
@@ -1991,6 +2047,9 @@ pub(super) fn egress_ctx(
         .with_responses_profile(provider.responses())
         .with_messages_profile(provider.messages())
         .with_gemini_profile(provider.gemini());
+    if let Some(images) = provider.images() {
+        ctx = ctx.with_images_profile(images.profile);
+    }
     if let Some(a) = flags.adaptive_thinking {
         ctx = ctx.with_adaptive_thinking(a);
     }

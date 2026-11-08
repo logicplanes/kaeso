@@ -97,6 +97,35 @@ pub struct Fields {
         the highest tier a prompt exceeds replaces the base prices."]
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub price_tiers: Option<Vec<PriceTier>>,
+    #[doc = "USD per million image input tokens; absent means the input price."]
+    #[serde(
+        default,
+        deserialize_with = "price",
+        skip_serializing_if = "Option::is_none"
+    )]
+    #[cfg_attr(feature = "openapi", schema(value_type = Option<String>, example = "8.00"))]
+    pub input_image_price: Option<Decimal>,
+    #[doc = "USD per million image output tokens; when set, `output_price` is the price\n\
+        of text output only."]
+    #[serde(
+        default,
+        deserialize_with = "price",
+        skip_serializing_if = "Option::is_none"
+    )]
+    #[cfg_attr(feature = "openapi", schema(value_type = Option<String>, example = "30.00"))]
+    pub output_image_price: Option<Decimal>,
+    #[doc = "USD per million cached image input tokens; absent means the cache-read price."]
+    #[serde(
+        default,
+        deserialize_with = "price",
+        skip_serializing_if = "Option::is_none"
+    )]
+    #[cfg_attr(feature = "openapi", schema(value_type = Option<String>))]
+    pub cache_read_image_price: Option<Decimal>,
+    #[doc = "Prices per image or megapixel, for models a provider bills by unit; they add\n\
+        to the token prices."]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub unit_prices: Option<Vec<UnitPrice>>,
     #[doc = "The kpp dialect Kaeso sends: `anthropic_messages`, `openai_responses`,\n\
         `openai_chat` or `openai_embeddings`."]
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -184,6 +213,76 @@ pub struct PriceTier {
     pub cache_write_1h_price: Option<Decimal>,
 }
 
+/// The units a price can be per, as KPMR names them.
+pub const UNITS: &[&str] = &[
+    "image",
+    "megapixel",
+    "second",
+    "minute",
+    "hour",
+    "million_characters",
+];
+
+const MAX_UNIT_PRICES: usize = 32;
+
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
+#[serde(deny_unknown_fields)]
+#[cfg_attr(
+    feature = "openapi",
+    schema(
+        description = "A price per unit of a request's input or output, for requests that match\n\
+    every condition; an absent condition matches any request."
+    )
+)]
+pub struct UnitPrice {
+    #[doc = "The unit: `image`, `megapixel`, `second`, `minute`, `hour` or\n\
+        `million_characters`."]
+    #[cfg_attr(feature = "openapi", schema(example = "image"))]
+    pub per: String,
+    #[doc = "Whether the unit is of the input or the output: `input` or `output`."]
+    #[cfg_attr(feature = "openapi", schema(example = "output"))]
+    pub of: String,
+    #[doc = "USD per unit."]
+    #[serde(deserialize_with = "required_price")]
+    #[cfg_attr(feature = "openapi", schema(value_type = String, example = "0.04"))]
+    pub usd: Decimal,
+    #[doc = "The image size it applies to, such as `1024x1024`."]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub size: Option<String>,
+    #[doc = "The quality it applies to, such as `high`."]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub quality: Option<String>,
+    #[doc = "The resolution it applies to, such as `1K`."]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub resolution: Option<String>,
+    #[doc = "The audio kind it applies to."]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub audio: Option<String>,
+    #[doc = "Whether the provider publishes the price only as an estimate."]
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub estimate: bool,
+}
+
+fn required_price<'de, D: serde::Deserializer<'de>>(d: D) -> Result<Decimal, D::Error> {
+    price(d)?.ok_or_else(|| serde::de::Error::custom("a unit price needs `usd`"))
+}
+
+impl UnitPrice {
+    fn from_kpmr(u: &kpmr::UnitPrice) -> UnitPrice {
+        UnitPrice {
+            per: u.per.clone(),
+            of: u.of.clone(),
+            usd: u.usd,
+            size: u.size.clone(),
+            quality: u.quality.clone(),
+            resolution: u.resolution.clone(),
+            audio: u.audio.clone(),
+            estimate: u.estimate,
+        }
+    }
+}
+
 impl PriceTier {
     fn from_kpmr(t: &kpmr::Tier) -> PriceTier {
         PriceTier {
@@ -232,6 +331,10 @@ macro_rules! each_field {
             cache_write_price,
             cache_write_1h_price,
             price_tiers,
+            input_image_price,
+            output_image_price,
+            cache_read_image_price,
+            unit_prices,
             egress_dialect,
             adaptive_thinking,
             thinking_binding,
@@ -259,6 +362,10 @@ pub const FIELD_NAMES: &[&str] = &[
     "cache_write_price",
     "cache_write_1h_price",
     "price_tiers",
+    "input_image_price",
+    "output_image_price",
+    "cache_read_image_price",
+    "unit_prices",
     "egress_dialect",
     "adaptive_thinking",
     "thinking_binding",
@@ -296,6 +403,21 @@ impl Fields {
         .any(Option::is_some);
         if sets_a_price && self.price_tiers.is_none() {
             kpmr.price_tiers = None;
+        }
+        // The same holds for KPMR's image-token and unit prices: a negotiated price is the
+        // price of the whole request unless the media prices are negotiated too.
+        if sets_a_price {
+            if self.input_image_price.is_none()
+                && self.output_image_price.is_none()
+                && self.cache_read_image_price.is_none()
+            {
+                kpmr.input_image_price = None;
+                kpmr.output_image_price = None;
+                kpmr.cache_read_image_price = None;
+            }
+            if self.unit_prices.is_none() {
+                kpmr.unit_prices = None;
+            }
         }
         // A one-hour price set by hand holds for long prompts too, where KPMR's tiers name none.
         let one_hour_by_hand = self.cache_write_1h_price;
@@ -345,6 +467,11 @@ impl Fields {
             cache_write_1h_price: pricing.cache_write_1h,
             price_tiers: (!pricing.tiers.is_empty())
                 .then(|| pricing.tiers.iter().map(PriceTier::from_kpmr).collect()),
+            input_image_price: pricing.input_image,
+            output_image_price: pricing.output_image,
+            cache_read_image_price: pricing.cache_read_image,
+            unit_prices: (!pricing.per_unit.is_empty())
+                .then(|| pricing.per_unit.iter().map(UnitPrice::from_kpmr).collect()),
             egress_dialect:
                 m.egress_dialect()
                     .or((m.kind.as_deref() == Some("embedding"))
@@ -443,6 +570,9 @@ impl Fields {
             ("cache_read_price", self.cache_read_price),
             ("cache_write_price", self.cache_write_price),
             ("cache_write_1h_price", self.cache_write_1h_price),
+            ("input_image_price", self.input_image_price),
+            ("output_image_price", self.output_image_price),
+            ("cache_read_image_price", self.cache_read_image_price),
         ]
         .into_iter()
         .chain(tier_prices)
@@ -467,6 +597,20 @@ impl Fields {
             return Err(FieldError::new(
                 "price_tiers",
                 "`price_tiers` takes up to 16 tiers, their `context_above` positive and rising.",
+            ));
+        }
+        let units = self.unit_prices.as_deref().unwrap_or_default();
+        let unit_ok = |u: &UnitPrice| {
+            UNITS.contains(&u.per.as_str())
+                && matches!(u.of.as_str(), "input" | "output")
+                && !u.usd.is_sign_negative()
+                && u.usd <= max_price
+                && u.usd.scale() <= 9
+        };
+        if units.len() > MAX_UNIT_PRICES || !units.iter().all(unit_ok) {
+            return Err(FieldError::new(
+                "unit_prices",
+                "`unit_prices` takes up to 32 prices of 0 to 1,000,000 USD per known unit.",
             ));
         }
         if let Some(d) = self.egress_dialect
@@ -524,6 +668,31 @@ impl Fields {
     }
 
     pub fn validate_custom(&self) -> Result<(), FieldError> {
+        // An image model has no context or output limit and no generation dialect: it needs its
+        // modalities and a price, per image or for its output.
+        let images_only = self
+            .output_modalities
+            .as_ref()
+            .is_some_and(|o| o.iter().any(|m| m == "image") && !o.iter().any(|m| m == "text"));
+        if images_only {
+            let unpriced = self.unit_prices.is_none()
+                && self.output_price.is_none()
+                && self.output_image_price.is_none();
+            if self.input_modalities.is_none() || unpriced {
+                let missing: Vec<&str> = [
+                    ("input_modalities", self.input_modalities.is_none()),
+                    ("unit_prices", unpriced),
+                ]
+                .into_iter()
+                .filter_map(|(n, m)| m.then_some(n))
+                .collect();
+                return Err(FieldError::new(
+                    missing.first().copied().unwrap_or("unit_prices"),
+                    format!("A custom model needs {}.", missing.join(", ")),
+                ));
+            }
+            return Ok(());
+        }
         let missing: Vec<&str> = [
             ("input_modalities", self.input_modalities.is_none()),
             ("output_modalities", self.output_modalities.is_none()),

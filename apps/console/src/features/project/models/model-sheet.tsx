@@ -14,7 +14,7 @@ import { useProviders } from "~/kaeso/providers";
 import { fullDayLabel } from "~/format/period";
 import { usePartyName } from "../keys/party";
 import { availabilityLabel, unavailableHint } from "./availability";
-import { capabilities, fieldRows, tierLabels, type FieldKind } from "./model-fields";
+import { capabilities, fieldRows, tierLabels, unitPriceLabels, type FieldKind } from "./model-fields";
 import { ModelForm, changedFields, draftFrom, draftProblem, modalityLabel, type FieldDraft } from "./model-form";
 import { modelName } from "~/format/models";
 import { useRememberRecent } from "~/shell/recent";
@@ -180,7 +180,7 @@ function ModelBody({ org, project, modelId, onClose }: { org: string; project: s
           items={fieldRows().map((row) => {
             const overridden = m.overrides[row.key] !== null && m.overrides[row.key] !== undefined;
             const value = shown[row.key];
-            const tiers = row.kind === "tiers" ? tierLabels(shown) : [];
+            const tiers = row.kind === "tiers" ? tierLabels(shown) : row.kind === "units" ? unitPriceLabels(shown) : [];
             return {
               label: row.label,
               value: (

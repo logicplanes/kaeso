@@ -362,6 +362,9 @@ impl WorstCase {
         prices: &Fields,
         provider: &crate::providers::ProviderRef,
     ) -> WorstCase {
+        if let kaeso_kpp::Request::Image(r) = request {
+            return WorstCase::of_images(r, prices);
+        }
         let context = prices.context_limit;
         let within = |n: u64| context.map_or(n, |c| n.min(c));
         let bytes = u64::try_from(body_bytes).unwrap_or(u64::MAX);
@@ -399,6 +402,63 @@ impl WorstCase {
         WorstCase {
             tokens: i64::try_from(total).unwrap_or(i64::MAX),
             nano_usd: crate::cost::nano_usd(crate::cost::cost(&usage, &priced)),
+            bounded: output.is_some(),
+        }
+    }
+
+    // The prompt's tokens at the dearest input price, every image at its dearest unit price,
+    // and output tokens up to the model's output limit; without one, token-priced output has
+    // no bound.
+    fn of_images(r: &kaeso_kpp::ImageRequest, prices: &Fields) -> WorstCase {
+        let count = u64::from(r.count.unwrap_or(1).max(1));
+        let prompt = r.prompt.as_deref().map_or(0, str::len);
+        let input = crate::estimate::tokens_of_bytes(u64::try_from(prompt).unwrap_or(u64::MAX));
+        let units = crate::cost::MediaUnits {
+            input_images: r.images.len() as u64,
+            output_images: count,
+            output_pixels: r
+                .size
+                .as_ref()
+                .and_then(kaeso_kpp::ImageSize::dimensions)
+                .and_then(|(w, h)| u64::from(w).checked_mul(u64::from(h))),
+            ..crate::cost::MediaUnits::default()
+        };
+        let dearest = prices.unit_prices.as_ref().map(|list| {
+            let mut top: Vec<crate::catalogue::UnitPrice> = Vec::new();
+            for p in list {
+                match top.iter_mut().find(|t| t.per == p.per && t.of == p.of) {
+                    Some(t) if t.usd < p.usd => t.usd = p.usd,
+                    Some(_) => {}
+                    None => top.push(crate::catalogue::UnitPrice {
+                        size: None,
+                        quality: None,
+                        resolution: None,
+                        audio: None,
+                        ..p.clone()
+                    }),
+                }
+            }
+            top
+        });
+        let output_price = prices.output_image_price.or(prices.output_price);
+        let output = match (prices.output_limit, output_price) {
+            (_, None) => Some(0),
+            (limit, Some(_)) => limit.map(|l| l.saturating_mul(count)),
+        };
+        let usage = kaeso_kpp::Usage::new(input, output.unwrap_or(0));
+        let mut priced = Fields {
+            unit_prices: dearest,
+            ..prices.clone()
+        };
+        priced.input_price = [prices.input_price, prices.input_image_price]
+            .into_iter()
+            .flatten()
+            .max();
+        priced.output_price = output_price;
+        let cost = crate::cost::cost_with_media(&usage, &priced, Some(&units));
+        WorstCase {
+            tokens: i64::try_from(crate::cost::total_tokens(&usage)).unwrap_or(i64::MAX),
+            nano_usd: crate::cost::nano_usd(cost),
             bounded: output.is_some(),
         }
     }
@@ -560,6 +620,57 @@ mod tests {
         let mut g = kaeso_kpp::GenerateRequest::new("m");
         g.sampling.max_output_tokens = max_output;
         kaeso_kpp::Request::Generate(g)
+    }
+
+    #[test]
+    fn an_image_request_reserves_every_image_at_its_dearest_price() {
+        use kaeso_kpp::{ImageInput, ImageOperation, ImageRequest, Request, Source};
+        let unit = |of: &str, usd: Decimal, quality: Option<&str>| crate::catalogue::UnitPrice {
+            per: "image".into(),
+            of: of.into(),
+            usd,
+            quality: quality.map(str::to_owned),
+            ..crate::catalogue::UnitPrice::default()
+        };
+        let per_image = Fields {
+            unit_prices: Some(vec![
+                unit("output", dec!(0.04), Some("low")),
+                unit("output", dec!(0.08), Some("medium")),
+                unit("input", dec!(0.01), None),
+            ]),
+            ..Fields::default()
+        };
+        let mut edit = ImageRequest::new("m", ImageOperation::Edit)
+            .with_prompt("hat")
+            .with_image(ImageInput::new(Source::base64("image/png", "AA==")));
+        edit.count = Some(3);
+        let worst = WorstCase::of(
+            &Request::Image(edit.clone()),
+            5_000_000,
+            &per_image,
+            openai(),
+        );
+        assert_eq!(worst.nano_usd, 250_000_000);
+        assert!(worst.bounded);
+        let tokens = Fields {
+            input_price: Some(dec!(5)),
+            input_image_price: Some(dec!(8)),
+            output_image_price: Some(dec!(30)),
+            output_limit: Some(10_000),
+            ..Fields::default()
+        };
+        let worst = WorstCase::of(&Request::Image(edit.clone()), 5_000_000, &tokens, openai());
+        assert_eq!(worst.nano_usd, 900_000_000 + 8_000);
+        let unbounded = WorstCase::of(
+            &Request::Image(edit),
+            5_000_000,
+            &Fields {
+                output_limit: None,
+                ..tokens
+            },
+            openai(),
+        );
+        assert!(!unbounded.bounded);
     }
 
     #[test]

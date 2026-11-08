@@ -657,5 +657,7 @@
   "errors.serviceAccount.universe": "该 JSON 密钥属于另一个 Google Cloud 域，Kaeso 无法调用。",
   "errors.serviceAccount.notRsa": "该 JSON 密钥的 `private_key` 不是 RSA 密钥；请从 Google Cloud 下载新密钥。",
   "errors.serviceAccount.location": "Kaeso 不会为此服务商调用该位置；请从列表中选择。",
-  "errors.noEmbeddingsAtProvider": "Kaeso 不调用 {provider} 上的嵌入模型，因此 `{name}` 无法生成嵌入。"
+  "errors.noEmbeddingsAtProvider": "Kaeso 不调用 {provider} 上的嵌入模型，因此 `{name}` 无法生成嵌入。",
+  "errors.noImagesAtProvider": "{provider} 没有 Kaeso 可调用的图片 API，因此 `{name}` 无法生成图片。",
+  "errors.unitPrices": "`unit_prices` 最多 32 个价格，每个为每种已知单位 0 到 1,000,000 美元。"
 }

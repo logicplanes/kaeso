@@ -2219,3 +2219,220 @@ fn agent_platform_models_go_in_the_format_of_their_family_and_count_where_it_cou
         "a provider without routes counts in its one format"
     );
 }
+
+fn image_feed() -> kpmr::Catalogue {
+    let json = catalogue(
+        r#"{"xai":{"id":"xai","models":{"grok-imagine-image-2.0":{"id":"grok-imagine-image-2.0","kind":"image","modalities":{"input":["text","image"],"output":["image"]},"pricing":{"unit":"usd_per_million_tokens","input_image":"8","output_image":"30","cache_read_image":"2","per_unit":[{"per":"image","of":"output","usd":"0.04","size":null,"quality":"low","resolution":"1K","audio":null,"estimate":false},{"per":"image","of":"input","usd":"0.01","estimate":true},{"per":"furlong","of":"output","usd":"1"},{"per":"image","of":"output"}]}}}}}"#,
+    );
+    kpmr::parse(&json, &crate::provider::known_ids())
+        .unwrap()
+        .catalogue
+}
+
+#[test]
+fn kpmrs_media_prices_reach_the_catalogue_until_a_price_is_negotiated() {
+    let snap = image_feed();
+    let fields = |overrides: Fields| {
+        let mut e = entry("xai", "grok-imagine-image-2.0");
+        e.overrides = overrides;
+        effective(&e, &snap, &OrgProviders::default())
+            .unwrap()
+            .fields
+    };
+    let listed = fields(Fields::default());
+    assert_eq!(listed.input_image_price, Some(dec!(8)));
+    assert_eq!(listed.output_image_price, Some(dec!(30)));
+    assert_eq!(listed.cache_read_image_price, Some(dec!(2)));
+    let units = listed.unit_prices.unwrap();
+    assert_eq!(
+        units.len(),
+        3,
+        "a unit price without `usd` is skipped, the rest kept"
+    );
+    assert_eq!(units[0].resolution.as_deref(), Some("1K"));
+    assert!(units[1].estimate);
+    let negotiated = fields(Fields {
+        output_price: Some(dec!(1)),
+        ..Fields::default()
+    });
+    assert_eq!(negotiated.output_image_price, None);
+    assert_eq!(negotiated.unit_prices, None);
+    let both = fields(Fields {
+        output_price: Some(dec!(1)),
+        output_image_price: Some(dec!(20)),
+        unit_prices: Some(vec![]),
+        ..Fields::default()
+    });
+    assert_eq!(both.output_image_price, Some(dec!(20)));
+    assert_eq!(
+        both.input_image_price,
+        Some(dec!(8)),
+        "one image price by hand keeps the others"
+    );
+    assert_eq!(both.unit_prices, Some(vec![]));
+}
+
+#[test]
+fn media_prices_set_by_hand_are_checked() {
+    let openai = ProviderRef::from(provider::provider("openai").unwrap());
+    let unit = |per: &str, of: &str, usd: Decimal| UnitPrice {
+        per: per.into(),
+        of: of.into(),
+        usd,
+        ..UnitPrice::default()
+    };
+    let ok = Fields {
+        input_image_price: Some(dec!(8)),
+        unit_prices: Some(vec![
+            unit("image", "output", dec!(0.04)),
+            unit("megapixel", "output", dec!(0.08)),
+        ]),
+        ..Fields::default()
+    };
+    ok.validate(&openai).unwrap();
+    for (fields, param) in [
+        (
+            Fields {
+                output_image_price: Some(dec!(1000001)),
+                ..Fields::default()
+            },
+            "output_image_price",
+        ),
+        (
+            Fields {
+                unit_prices: Some(vec![unit("frame", "output", dec!(1))]),
+                ..Fields::default()
+            },
+            "unit_prices",
+        ),
+        (
+            Fields {
+                unit_prices: Some(vec![unit("image", "both", dec!(1))]),
+                ..Fields::default()
+            },
+            "unit_prices",
+        ),
+        (
+            Fields {
+                unit_prices: Some(vec![unit("image", "output", dec!(0.0000000001))]),
+                ..Fields::default()
+            },
+            "unit_prices",
+        ),
+        (
+            Fields {
+                unit_prices: Some(vec![unit("image", "output", dec!(1)); 33]),
+                ..Fields::default()
+            },
+            "unit_prices",
+        ),
+    ] {
+        assert_eq!(fields.validate(&openai).unwrap_err().field, param);
+    }
+    let mut patched = Fields::default();
+    patched
+        .patch(
+            &serde_json::from_str(
+                r#"{"unit_prices":[{"per":"image","of":"output","usd":"0.02","quality":"high"}]}"#,
+            )
+            .unwrap(),
+        )
+        .unwrap();
+    assert_eq!(
+        patched.unit_prices.unwrap()[0].quality.as_deref(),
+        Some("high")
+    );
+    let wrong = Fields::default().clone().patch(
+        &serde_json::from_str(r#"{"unit_prices":[{"per":"image","of":"output"}]}"#).unwrap(),
+    );
+    assert!(wrong.is_err());
+}
+
+#[test]
+fn image_requests_go_to_the_providers_image_api_and_need_an_image_model() {
+    use kaeso_kpp::{ImageInput, ImageOperation, ImageRequest, Source};
+    let draw =
+        || Request::Image(ImageRequest::new("m", ImageOperation::Generate).with_prompt("A fox"));
+    let mut req = draw();
+    let image = eff(&entry("openai", "gpt-image-2"));
+    assert_eq!(
+        prepare(&mut req, DialectId::OpenAiImages, &image)
+            .unwrap()
+            .dialect,
+        DialectId::OpenAiImages
+    );
+    let gemini = eff(&entry("google", "gemini-3.1-flash-image"));
+    assert_eq!(
+        prepare(&mut draw(), DialectId::OpenAiImages, &gemini)
+            .unwrap()
+            .dialect,
+        DialectId::Gemini
+    );
+    let flash = eff(&entry("google", "gemini-3.5-flash"));
+    let refused = prepare(&mut draw(), DialectId::OpenAiImages, &flash).unwrap_err();
+    assert_eq!(
+        refused.message,
+        "The model `gemini-3.5-flash` does not produce images."
+    );
+    let claude = eff(&entry("anthropic", "claude-haiku-4-5"));
+    let refused = prepare(&mut draw(), DialectId::OpenAiImages, &claude).unwrap_err();
+    assert_eq!(
+        (refused.capability, refused.param),
+        ("images", Some("model"))
+    );
+    let mut text_only = eff(&entry("openai", "gpt-image-2"));
+    text_only.fields.input_modalities = Some(vec!["text".into()]);
+    let mut edit = Request::Image(
+        ImageRequest::new("m", ImageOperation::Edit)
+            .with_prompt("hat")
+            .with_image(ImageInput::new(Source::base64("image/png", "AA=="))),
+    );
+    assert_eq!(
+        prepare(&mut edit, DialectId::OpenAiImages, &text_only)
+            .unwrap_err()
+            .param,
+        Some("image")
+    );
+}
+
+#[test]
+fn a_custom_image_model_needs_its_modalities_and_a_price() {
+    let image = |input: Option<Vec<String>>, unit: bool| Fields {
+        input_modalities: input,
+        output_modalities: Some(vec!["image".into()]),
+        unit_prices: unit.then(|| {
+            vec![UnitPrice {
+                per: "image".into(),
+                of: "output".into(),
+                usd: dec!(0.02),
+                ..UnitPrice::default()
+            }]
+        }),
+        ..Fields::default()
+    };
+    image(Some(vec!["text".into()]), true)
+        .validate_custom()
+        .unwrap();
+    let e = image(Some(vec!["text".into()]), false)
+        .validate_custom()
+        .unwrap_err();
+    assert_eq!(
+        (e.field.as_str(), e.message.as_str()),
+        ("unit_prices", "A custom model needs unit_prices.")
+    );
+    let e = image(None, false).validate_custom().unwrap_err();
+    assert_eq!(
+        e.message,
+        "A custom model needs input_modalities, unit_prices."
+    );
+    let priced = Fields {
+        output_image_price: Some(dec!(30)),
+        ..image(Some(vec!["text".into()]), false)
+    };
+    priced.validate_custom().unwrap();
+    let text = Fields {
+        output_modalities: Some(vec!["text".into(), "image".into()]),
+        ..image(Some(vec!["text".into()]), true)
+    };
+    assert_eq!(text.validate_custom().unwrap_err().field, "context_limit");
+}

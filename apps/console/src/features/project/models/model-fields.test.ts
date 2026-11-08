@@ -1,6 +1,6 @@
 import { setFormatLocale } from "@logicplanes/kaeso-ui/format";
 import { afterEach, describe, expect, it } from "vitest";
-import { contextLabel, tierLabels } from "./model-fields";
+import { contextLabel, dialectPill, tierLabels, unitPriceLabels } from "./model-fields";
 
 const limits = [8192, 128_000, 200_000, 1_048_576, 2_000_000];
 
@@ -42,5 +42,27 @@ describe("tierLabels", () => {
     expect(tierLabels(f)).toEqual(["Above 272K: $20.00 / $75.00", "Above 1M: $10.00 / $0.625"]);
     expect(tierLabels({ price_tiers: [{ context_above: 32_000 }] })).toEqual(["Above 32K: — / —"]);
     expect(tierLabels({})).toEqual([]);
+  });
+});
+
+describe("unitPriceLabels", () => {
+  it("names each unit price with its unit, side and conditions, and says when it is an estimate", () => {
+    const f = {
+      unit_prices: [
+        { per: "image", of: "output", usd: "0.04", quality: "low", resolution: "1K" },
+        { per: "image", of: "input", usd: "0.01" },
+        { per: "megapixel", of: "output", usd: "0.08", estimate: true },
+        { per: "second", of: "output", usd: "0.5" },
+      ],
+    };
+    expect(unitPriceLabels(f)).toEqual([
+      "$0.04 per image of output (low, 1K)",
+      "$0.01 per image of input",
+      "$0.08 per megapixel of output, estimated",
+      "$0.50 per second of output",
+    ]);
+    expect(unitPriceLabels({})).toEqual([]);
+    expect(dialectPill("openai_images")).toBe("images");
+    expect(dialectPill("minimax_images")).toBe("images");
   });
 });

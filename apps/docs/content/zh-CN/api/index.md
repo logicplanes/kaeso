@@ -9,6 +9,7 @@ order: 4
 ## 下一步
 
 - [模型 API](model-api.md)：用 OpenAI、Anthropic 和 Google Gen AI 的 SDK 调用模型，并查阅端点、请求头和模型名称。
+- [图片 API](images.md)：使用 OpenAI 的 Images API，在所有能生成图片的服务商上生成和编辑图片。
 - [错误](errors.md)：了解模型请求失败时在各格式下返回的内容及失败原因。
 - [Platform API](platform-api.md)：查阅管理实例所需的身份验证、约定、错误和路由。
 - [用 Platform API 实现自动化](automation.md)：通过脚本设置项目、模型和应用的密钥。

@@ -148,6 +148,7 @@ async fn call(
             max_body,
             alias: None,
             gemini: Some(call),
+            image: None,
         },
     )
     .await

@@ -792,6 +792,10 @@ fn row(org: Uuid, project: Uuid, at: OffsetDateTime, i: u64) -> (LogRow, Content
             response_cache: "hit".into(),
             alias: String::new(),
             fallbacks: String::new(),
+            media_unit: String::new(),
+            media_input: 0,
+            media_output: 0,
+            media_detail: String::new(),
         },
         ContentRow {
             request_id: id,
@@ -890,7 +894,7 @@ async fn exports_stream_large_ranges_in_both_formats() {
     assert!(text.starts_with("id,started_at,"));
     assert!(
         text.lines().next().unwrap().ends_with(
-            ",source,overhead_ms,stream_processing_ms,cache_breakpoints,request_upload_ms,response_cache,alias,fallbacks"
+            ",source,overhead_ms,stream_processing_ms,cache_breakpoints,request_upload_ms,response_cache,alias,fallbacks,media_unit,media_input,media_output,media_detail"
         ),
         "{text}"
     );
@@ -898,7 +902,7 @@ async fn exports_stream_large_ranges_in_both_formats() {
     assert!(
         text.lines()
             .skip(1)
-            .all(|l| l.ends_with(",\"api\",1,,2,40,\"hit\",\"\",\"\"")),
+            .all(|l| l.ends_with(",\"api\",1,,2,40,\"hit\",\"\",\"\",\"\",,,\"\"")),
         "the overhead, the breakpoints, the upload and the response cache are exported, and a stream's processing time is empty for other requests"
     );
     assert!(text.contains("\"ua, with comma\""), "CSV fields are quoted");

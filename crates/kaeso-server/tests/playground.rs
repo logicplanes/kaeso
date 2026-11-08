@@ -1106,7 +1106,7 @@ async fn playground_requests_are_charged_and_logged_as_the_members() {
     let mut lines = csv.lines();
     assert!(
         lines.next().unwrap().ends_with(
-            ",usage_estimated,source,overhead_ms,stream_processing_ms,cache_breakpoints,request_upload_ms,response_cache,alias,fallbacks"
+            ",usage_estimated,source,overhead_ms,stream_processing_ms,cache_breakpoints,request_upload_ms,response_cache,alias,fallbacks,media_unit,media_input,media_output,media_detail"
         )
     );
     let row = lines.next().unwrap();
@@ -1119,6 +1119,10 @@ async fn playground_requests_are_charged_and_logged_as_the_members() {
         cache,
         alias,
         fallbacks,
+        media_unit,
+        media_input,
+        media_output,
+        media_detail,
     ] = rest.split(',').collect::<Vec<_>>()[..]
     else {
         panic!("{row}");
@@ -1128,6 +1132,11 @@ async fn playground_requests_are_charged_and_logged_as_the_members() {
         (alias, fallbacks),
         ("\"\"", "\"\""),
         "the request named a model: {row}"
+    );
+    assert_eq!(
+        (media_unit, media_input, media_output, media_detail),
+        ("\"\"", "", "", "\"\""),
+        "a text request has no media units: {row}"
     );
     assert!(
         [overhead, processing, upload]

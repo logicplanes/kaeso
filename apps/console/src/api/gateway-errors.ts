@@ -491,6 +491,8 @@ const messages = (): Rule[] => [
   rule("errors.noEmbeddingsAtProvider", (v) =>
     t("errors.noEmbeddingsAtProvider", "Kaeso calls no embeddings models on {provider}, so `{name}` can't create embeddings.", v),
   ),
+  rule("errors.noImagesAtProvider", (v) => t("errors.noImagesAtProvider", "{provider} offers no image API Kaeso can call, so `{name}` can't make images.", v)),
+  rule("errors.unitPrices", () => t("errors.unitPrices", "`unit_prices` takes up to 32 prices of 0 to 1,000,000 USD per known unit.")),
   rule("errors.customProvider.takesNoKey", (v) =>
     t("errors.customProvider.takesNoKey", "The custom provider `{provider}` takes no key; Kaeso calls it without one.", v),
   ),

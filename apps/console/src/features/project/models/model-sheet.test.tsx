@@ -46,12 +46,34 @@ describe("ModelSheet", () => {
     expect(s).toHaveTextContent("Added15 Oct 2026 by Ada Okafor (you)");
     expect(s).toHaveTextContent("Display nameSonnetoverrideReset to KPMR");
     expect(s).toHaveTextContent("Input price$2.50 / M tokensoverrideReset to KPMR");
-    expect(s).toHaveTextContent("Cache write price—1-hour cache write price—Long-context prices—Sends as");
+    expect(s).toHaveTextContent(
+      "Cache write price—1-hour cache write price—Long-context prices—Image input price—Image output price—Image cache read price—Prices per unit—Sends as",
+    );
     expect(s).toHaveTextContent("Sends asAnthropic MessagesKaeso");
     expect(s).toHaveTextContent("Structured outputNoKPMR");
     expect(s).toHaveTextContent("Effortslow, highKPMR");
     expect(s).toHaveTextContent("Timeout120 sKPMR");
     expect(s).toHaveTextContent("Released29 Sep 2025KPMR");
+  });
+
+  it("shows an image model's image token prices and its prices per unit, estimates marked", async () => {
+    setUp([
+      catalogueModel({
+        effective: {
+          ...catalogueModel().effective,
+          output_image_price: "30",
+          unit_prices: [
+            { per: "image", of: "output", usd: "0.04", quality: "low" },
+            { per: "megapixel", of: "output", usd: "0.08", estimate: true },
+          ],
+        },
+      }),
+    ]);
+    await renderApp(projectPath("models?model=cm_sonnet"));
+    const s = await sheet("Claude Sonnet 4.5");
+    await within(s).findByText("Values in use");
+    expect(s).toHaveTextContent("Image output price$30.00 / M tokensKPMR");
+    expect(s).toHaveTextContent("Prices per unit$0.04 per image of output (low)$0.08 per megapixel of output, estimatedKPMR");
   });
 
   it("shows KPMR's long-context prices, a price a tier leaves out at the model's own", async () => {
@@ -81,7 +103,7 @@ describe("ModelSheet", () => {
 
     const s = await sheet("Claude Sonnet 4.5");
     await within(s).findByText("Values in use");
-    expect(s).toHaveTextContent("Long-context pricesAbove 200K: $6.00 / $22.50Above 500K: $12.00 / $15.00KPMRSends as");
+    expect(s).toHaveTextContent("Long-context pricesAbove 200K: $6.00 / $22.50Above 500K: $12.00 / $15.00KPMRImage input price");
     await router.navigate({ to: projectPath("models"), search: { model: "cm_flat" } });
     const flat = await sheet("Claude Sonnet 4.5");
     await waitFor(() => expect(flat).toHaveTextContent("Long-context prices—overrideReset to KPMR"));

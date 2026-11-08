@@ -14932,7 +14932,7 @@
           {
             "name": "ingress_dialect",
             "in": "query",
-            "description": "Only requests the app sent in this format: `anthropic_messages`,\n`openai_chat`, `openai_responses`, `openai_embeddings`, `gemini` or\n`gemini_embeddings`.",
+            "description": "Only requests the app sent in this format: `anthropic_messages`,\n`openai_chat`, `openai_responses`, `openai_embeddings`, `gemini`,\n`gemini_embeddings` or `openai_images`.",
             "required": false,
             "schema": {
               "type": "string"
@@ -14941,7 +14941,7 @@
           {
             "name": "egress_dialect",
             "in": "query",
-            "description": "Only requests Kaeso sent to the provider in this format:\n`anthropic_messages`, `openai_chat`, `openai_responses`,\n`openai_embeddings`, `gemini` or `gemini_embeddings`.",
+            "description": "Only requests Kaeso sent to the provider in this format:\n`anthropic_messages`, `openai_chat`, `openai_responses`,\n`openai_embeddings`, `gemini`, `gemini_embeddings`, `openai_images` or\n`minimax_images`.",
             "required": false,
             "schema": {
               "type": "string"
@@ -15173,7 +15173,7 @@
           {
             "name": "ingress_dialect",
             "in": "query",
-            "description": "Only requests the app sent in this format: `anthropic_messages`,\n`openai_chat`, `openai_responses`, `openai_embeddings`, `gemini` or\n`gemini_embeddings`.",
+            "description": "Only requests the app sent in this format: `anthropic_messages`,\n`openai_chat`, `openai_responses`, `openai_embeddings`, `gemini`,\n`gemini_embeddings` or `openai_images`.",
             "required": false,
             "schema": {
               "type": "string"
@@ -15182,7 +15182,7 @@
           {
             "name": "egress_dialect",
             "in": "query",
-            "description": "Only requests Kaeso sent to the provider in this format:\n`anthropic_messages`, `openai_chat`, `openai_responses`,\n`openai_embeddings`, `gemini` or `gemini_embeddings`.",
+            "description": "Only requests Kaeso sent to the provider in this format:\n`anthropic_messages`, `openai_chat`, `openai_responses`,\n`openai_embeddings`, `gemini`, `gemini_embeddings`, `openai_images` or\n`minimax_images`.",
             "required": false,
             "schema": {
               "type": "string"
@@ -24373,6 +24373,13 @@
             ],
             "description": "Anthropic models: whether adaptive thinking is accepted."
           },
+          "cache_read_image_price": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "USD per million cached image input tokens; absent means the cache-read price."
+          },
           "cache_read_price": {
             "type": [
               "string",
@@ -24435,6 +24442,14 @@
             ],
             "description": "Whether it accepts a forced tool choice (`tool_choice` `required`, `any`, `tool`\nor a named function); absent means it does."
           },
+          "input_image_price": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "USD per million image input tokens; absent means the input price.",
+            "example": "8.00"
+          },
           "input_modalities": {
             "type": [
               "array",
@@ -24452,6 +24467,14 @@
             ],
             "description": "USD per million input tokens.",
             "example": "3.00"
+          },
+          "output_image_price": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "USD per million image output tokens; when set, `output_price` is the price\nof text output only.",
+            "example": "30.00"
           },
           "output_limit": {
             "type": [
@@ -24540,6 +24563,16 @@
               "null"
             ],
             "description": "Whether it calls tools."
+          },
+          "unit_prices": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/UnitPrice"
+            },
+            "description": "Prices per image or megapixel, for models a provider bills by unit; they add\nto the token prices."
           }
         },
         "additionalProperties": false
@@ -24554,6 +24587,13 @@
               "null"
             ],
             "description": "Anthropic models: whether adaptive thinking is accepted."
+          },
+          "cache_read_image_price": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "USD per million cached image input tokens; absent means the cache-read price."
           },
           "cache_read_price": {
             "oneOf": [
@@ -24625,6 +24665,14 @@
             ],
             "description": "Whether it accepts a forced tool choice (`tool_choice` `required`, `any`, `tool`\nor a named function); absent means it does."
           },
+          "input_image_price": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "USD per million image input tokens; absent means the input price.",
+            "example": "8.00"
+          },
           "input_modalities": {
             "type": [
               "array",
@@ -24645,6 +24693,14 @@
               }
             ],
             "description": "USD per million input tokens."
+          },
+          "output_image_price": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "USD per million image output tokens; when set, `output_price` is the price\nof text output only.",
+            "example": "30.00"
           },
           "output_limit": {
             "type": [
@@ -24736,6 +24792,16 @@
               "null"
             ],
             "description": "Whether it calls tools."
+          },
+          "unit_prices": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/UnitPrice"
+            },
+            "description": "Prices per image or megapixel, for models a provider bills by unit; they add\nto the token prices."
           }
         },
         "additionalProperties": false
@@ -27724,6 +27790,17 @@
                     }
                   ]
                 },
+                "media": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/MediaView",
+                      "description": "What a media request took and made, such as images; `null` for other requests."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
                 "model": {
                   "type": "string",
                   "description": "The provider model called."
@@ -30092,6 +30169,17 @@
               }
             ]
           },
+          "media": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/MediaView",
+                "description": "What a media request took and made, such as images; `null` for other requests."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "model": {
             "type": "string",
             "description": "The provider model called."
@@ -31280,6 +31368,40 @@
           }
         ],
         "description": "The signed-in user's account."
+      },
+      "MediaView": {
+        "type": "object",
+        "description": "The media units of a request, such as the images it sent and made.",
+        "required": [
+          "unit",
+          "input",
+          "output",
+          "detail"
+        ],
+        "properties": {
+          "detail": {
+            "type": "string",
+            "description": "The size, quality and resolution the request asked for or the provider\nreported, such as `1024x1024 high`; empty when unknown.",
+            "example": "1024x1024 high"
+          },
+          "input": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Units the app sent, such as the images of an edit.",
+            "minimum": 0
+          },
+          "output": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Units the provider made.",
+            "minimum": 0
+          },
+          "unit": {
+            "type": "string",
+            "description": "The unit: `image`.",
+            "example": "image"
+          }
+        }
       },
       "MemberRights": {
         "type": "object",
@@ -37252,6 +37374,65 @@
                 "type": "null"
               }
             ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "UnitPrice": {
+        "type": "object",
+        "description": "A price per unit of a request's input or output, for requests that match\nevery condition; an absent condition matches any request.",
+        "required": [
+          "per",
+          "of",
+          "usd"
+        ],
+        "properties": {
+          "audio": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The audio kind it applies to."
+          },
+          "estimate": {
+            "type": "boolean",
+            "description": "Whether the provider publishes the price only as an estimate."
+          },
+          "of": {
+            "type": "string",
+            "description": "Whether the unit is of the input or the output: `input` or `output`.",
+            "example": "output"
+          },
+          "per": {
+            "type": "string",
+            "description": "The unit: `image`, `megapixel`, `second`, `minute`, `hour` or\n`million_characters`.",
+            "example": "image"
+          },
+          "quality": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The quality it applies to, such as `high`."
+          },
+          "resolution": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The resolution it applies to, such as `1K`."
+          },
+          "size": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The image size it applies to, such as `1024x1024`."
+          },
+          "usd": {
+            "type": "string",
+            "description": "USD per unit.",
+            "example": "0.04"
           }
         },
         "additionalProperties": false

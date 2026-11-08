@@ -146,6 +146,8 @@ class Install:
             ("openai", "gpt-4o-mini", {"timeout_seconds": 2}),
             ("google", "gemini-3.5-flash", None),
             ("google", "gemini-embedding-2", None),
+            ("openai", "gpt-image-2", None),
+            ("google", "gemini-3.1-flash-image", None),
         ):
             body = {"provider": provider, "model_id": model}
             if overrides:

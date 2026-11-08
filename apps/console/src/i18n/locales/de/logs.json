@@ -231,5 +231,7 @@
   "logs.tools.protocol": "MCP-Version",
   "logs.tools.sizes": "Anfrage und Antwort",
   "logs.tools.arguments": "Argumente",
-  "logs.tools.result": "Antwort"
+  "logs.tools.result": "Antwort",
+  "logs.inspector.images": "Bilder",
+  "logs.inspector.imagesCount": "{input} gesendet · {output} erzeugt"
 }

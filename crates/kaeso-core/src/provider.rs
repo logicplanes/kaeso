@@ -6,6 +6,7 @@ use std::sync::LazyLock;
 use kaeso_codecs::anthropic_messages::{FixedValue, MINIMAX_VIDEO_MEDIA_TYPES, MessagesProfile};
 use kaeso_codecs::gemini::GeminiProfile;
 use kaeso_codecs::openai_chat::ChatProfile;
+use kaeso_codecs::openai_images::ImagesProfile;
 use kaeso_codecs::openai_responses::ResponsesProfile;
 use kaeso_codecs::{ToolPatterns, ToolSchemaRoot};
 use kaeso_kpp::DialectId;
@@ -197,6 +198,38 @@ impl AuthMethod {
     }
 }
 
+/// Where and how Kaeso sends image requests to a provider.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct ImagesEgress {
+    pub dialect: DialectId,
+    pub profile: ImagesProfile,
+    /// The dialect's paths start at the root of the host, not under the base URL's path, as
+    /// Z.ai and MiniMax serve their image APIs beside the Anthropic-format path Kaeso uses.
+    pub from_root: bool,
+    /// The auth header the image API takes when it differs from the provider's.
+    pub auth: Option<AuthStyle>,
+}
+
+impl ImagesEgress {
+    const fn openai(profile: ImagesProfile) -> Option<ImagesEgress> {
+        Some(ImagesEgress {
+            dialect: DialectId::OpenAiImages,
+            profile,
+            from_root: false,
+            auth: None,
+        })
+    }
+
+    const fn gemini() -> Option<ImagesEgress> {
+        Some(ImagesEgress {
+            dialect: DialectId::Gemini,
+            profile: ImagesProfile::OPENAI,
+            from_root: false,
+            auth: None,
+        })
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct ModelRoute {
     pub pattern: &'static str,
@@ -258,6 +291,7 @@ pub struct Provider {
     pub generation: DialectId,
     pub count_tokens: Option<DialectId>,
     pub embeddings: Option<DialectId>,
+    pub images: Option<ImagesEgress>,
     pub dialects: &'static [DialectId],
     pub refused_key_messages: &'static [&'static str],
     pub context_window_messages: &'static [&'static str],
@@ -323,6 +357,7 @@ pub const PROVIDERS: &[Provider] = &[
         generation: DialectId::OpenAiResponses,
         count_tokens: Some(DialectId::OpenAiResponses),
         embeddings: Some(DialectId::OpenAiEmbeddings),
+        images: ImagesEgress::openai(ImagesProfile::OPENAI),
         dialects: &[
             DialectId::OpenAiResponses,
             DialectId::OpenAiChat,
@@ -359,6 +394,7 @@ pub const PROVIDERS: &[Provider] = &[
         generation: DialectId::AnthropicMessages,
         count_tokens: Some(DialectId::AnthropicMessages),
         embeddings: None,
+        images: None,
         dialects: &[DialectId::AnthropicMessages],
         refused_key_messages: &[],
         context_window_messages: &[],
@@ -385,6 +421,7 @@ pub const PROVIDERS: &[Provider] = &[
         generation: DialectId::OpenAiChat,
         count_tokens: None,
         embeddings: None,
+        images: None,
         dialects: &[DialectId::OpenAiChat],
         refused_key_messages: &[],
         context_window_messages: &[],
@@ -416,6 +453,7 @@ pub const PROVIDERS: &[Provider] = &[
         generation: DialectId::OpenAiResponses,
         count_tokens: None,
         embeddings: None,
+        images: ImagesEgress::openai(ImagesProfile::XAI),
         dialects: &[DialectId::OpenAiResponses, DialectId::OpenAiChat],
         refused_key_messages: &["Incorrect API key provided"],
         context_window_messages: &[],
@@ -455,6 +493,7 @@ pub const PROVIDERS: &[Provider] = &[
         generation: DialectId::OpenAiChat,
         count_tokens: None,
         embeddings: Some(DialectId::OpenAiEmbeddings),
+        images: ImagesEgress::openai(ImagesProfile::TOGETHER),
         dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
         refused_key_messages: &[],
         context_window_messages: &[],
@@ -482,6 +521,7 @@ pub const PROVIDERS: &[Provider] = &[
         generation: DialectId::OpenAiChat,
         count_tokens: None,
         embeddings: None,
+        images: None,
         dialects: &[DialectId::OpenAiChat],
         refused_key_messages: &[],
         context_window_messages: &[],
@@ -514,6 +554,7 @@ pub const PROVIDERS: &[Provider] = &[
         generation: DialectId::OpenAiChat,
         count_tokens: None,
         embeddings: Some(DialectId::OpenAiEmbeddings),
+        images: ImagesEgress::openai(ImagesProfile::OPENROUTER),
         dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
         refused_key_messages: &[],
         context_window_messages: &[],
@@ -546,6 +587,7 @@ pub const PROVIDERS: &[Provider] = &[
         generation: DialectId::OpenAiChat,
         count_tokens: None,
         embeddings: Some(DialectId::OpenAiEmbeddings),
+        images: None,
         dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
         refused_key_messages: &[],
         context_window_messages: &["too large for model with"],
@@ -593,6 +635,7 @@ pub const PROVIDERS: &[Provider] = &[
         generation: DialectId::OpenAiChat,
         count_tokens: None,
         embeddings: Some(DialectId::OpenAiEmbeddings),
+        images: ImagesEgress::openai(ImagesProfile::VERCEL),
         dialects: &[
             DialectId::OpenAiChat,
             DialectId::OpenAiResponses,
@@ -624,6 +667,7 @@ pub const PROVIDERS: &[Provider] = &[
         generation: DialectId::OpenAiChat,
         count_tokens: None,
         embeddings: Some(DialectId::OpenAiEmbeddings),
+        images: None,
         dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
         refused_key_messages: &[],
         context_window_messages: &[],
@@ -667,6 +711,7 @@ pub const PROVIDERS: &[Provider] = &[
         generation: DialectId::OpenAiChat,
         count_tokens: None,
         embeddings: None,
+        images: None,
         dialects: &[DialectId::OpenAiChat],
         refused_key_messages: &[],
         context_window_messages: &[],
@@ -696,6 +741,7 @@ pub const PROVIDERS: &[Provider] = &[
         generation: DialectId::OpenAiChat,
         count_tokens: None,
         embeddings: None,
+        images: None,
         dialects: &[DialectId::OpenAiChat],
         refused_key_messages: &[],
         context_window_messages: &[],
@@ -738,6 +784,7 @@ pub const PROVIDERS: &[Provider] = &[
         generation: DialectId::OpenAiChat,
         count_tokens: None,
         embeddings: Some(DialectId::OpenAiEmbeddings),
+        images: ImagesEgress::openai(ImagesProfile::QWENCLOUD),
         dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
         refused_key_messages: &[],
         context_window_messages: &[],
@@ -778,6 +825,7 @@ pub const PROVIDERS: &[Provider] = &[
         generation: DialectId::OpenAiChat,
         count_tokens: None,
         embeddings: None,
+        images: None,
         dialects: &[DialectId::OpenAiChat],
         refused_key_messages: &[],
         context_window_messages: &[],
@@ -812,6 +860,12 @@ pub const PROVIDERS: &[Provider] = &[
         generation: DialectId::AnthropicMessages,
         count_tokens: None,
         embeddings: None,
+        images: Some(ImagesEgress {
+            dialect: DialectId::OpenAiImages,
+            profile: ImagesProfile::ZAI,
+            from_root: true,
+            auth: Some(AuthStyle::Bearer),
+        }),
         dialects: &[DialectId::AnthropicMessages],
         refused_key_messages: &[],
         context_window_messages: &[],
@@ -838,6 +892,12 @@ pub const PROVIDERS: &[Provider] = &[
         generation: DialectId::AnthropicMessages,
         count_tokens: None,
         embeddings: None,
+        images: Some(ImagesEgress {
+            dialect: DialectId::MinimaxImages,
+            profile: ImagesProfile::OPENAI,
+            from_root: true,
+            auth: Some(AuthStyle::Bearer),
+        }),
         dialects: &[DialectId::AnthropicMessages],
         refused_key_messages: &[],
         context_window_messages: &[],
@@ -880,6 +940,7 @@ pub const PROVIDERS: &[Provider] = &[
         generation: DialectId::Gemini,
         count_tokens: Some(DialectId::Gemini),
         embeddings: Some(DialectId::GeminiEmbeddings),
+        images: ImagesEgress::gemini(),
         dialects: &[DialectId::Gemini, DialectId::GeminiEmbeddings],
         refused_key_messages: &[],
         context_window_messages: &[],
@@ -907,6 +968,7 @@ pub const PROVIDERS: &[Provider] = &[
         generation: DialectId::Gemini,
         count_tokens: Some(DialectId::Gemini),
         embeddings: None,
+        images: ImagesEgress::gemini(),
         dialects: &[
             DialectId::Gemini,
             DialectId::AnthropicMessages,

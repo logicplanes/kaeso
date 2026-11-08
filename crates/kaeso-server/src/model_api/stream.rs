@@ -10,7 +10,7 @@ use kaeso_codecs::{StreamDecoder, StreamEncoder};
 use kaeso_core::assembler::Assembler;
 use kaeso_core::estimate::{self, Tally};
 use kaeso_core::provider::AccountSignIn;
-use kaeso_kpp::{DialectId, KppError, Reply, StopReason, StreamEvent};
+use kaeso_kpp::{DialectId, KppError, Reply, RequestKind, StopReason, StreamEvent};
 use tokio::sync::mpsc::error::TrySendError;
 use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::time::{Instant, sleep_until};
@@ -580,7 +580,10 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
         })
     };
     app.progress.bytes += tail.len() as u64;
-    let estimate = !tally.has_final_usage()
+    let images = rec.outcome().kind == RequestKind::Image;
+    // Image streams report usage on the finished image, or bill per image without tokens.
+    let estimate = !images
+        && !tally.has_final_usage()
         && (assembled.complete || gone || (broken.is_some() && assembled.response.is_some()));
     let ended = app.arrived.elapsed();
     {
@@ -589,7 +592,10 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
             o.usage = Some(r.usage.clone());
             o.response_model = Some(r.model.clone());
         }
-        o.reply = assembled.response;
+        if let Some(media) = o.media.as_mut() {
+            super::media::add_streamed(media, assembled.images);
+        }
+        o.reply = if images { None } else { assembled.response };
         o.stream_progress = Some(app.progress);
         o.stream_processing = Some(processing.0);
     }

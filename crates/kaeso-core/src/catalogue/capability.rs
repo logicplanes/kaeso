@@ -162,6 +162,50 @@ pub fn prepare(
                 adapted,
             })
         }
+        Request::Image(r) => {
+            let Some(images) = eff.provider.images() else {
+                return Err(refuse(
+                    "images",
+                    Some("model"),
+                    format!(
+                        "{} offers no image API Kaeso can call, so `{name}` can't make images.",
+                        eff.provider.name()
+                    ),
+                ));
+            };
+            let produces = eff
+                .fields
+                .output_modalities
+                .as_ref()
+                .is_none_or(|o| o.iter().any(|x| x == "image"));
+            if !produces {
+                return Err(refuse(
+                    "image output",
+                    Some("model"),
+                    format!("The model `{name}` does not produce images."),
+                ));
+            }
+            let accepts = eff
+                .fields
+                .input_modalities
+                .as_ref()
+                .is_none_or(|i| i.iter().any(|x| x == "image"));
+            if r.required_capabilities().images && !accepts {
+                return Err(refuse(
+                    "image input",
+                    Some("image"),
+                    format!("The model `{name}` does not accept images."),
+                ));
+            }
+            Ok(Plan {
+                dialect: images.dialect,
+                adaptive_thinking: None,
+                thinking_binding: None,
+                reasoning: None,
+                left_out: Vec::new(),
+                adapted: Vec::new(),
+            })
+        }
         _ => Err(refuse(
             "endpoint",
             None,

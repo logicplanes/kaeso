@@ -438,7 +438,15 @@ pub fn endpoint(
     ingress: DialectId,
     kind: RequestKind,
     gemini: Option<GeminiAction>,
+    image: Option<kaeso_kpp::ImageOperation>,
 ) -> &'static str {
+    if let Some(operation) = image {
+        return match operation {
+            kaeso_kpp::ImageOperation::Edit => "images/edits",
+            kaeso_kpp::ImageOperation::Variation => "images/variations",
+            _ => "images/generations",
+        };
+    }
     if let Some(action) = gemini {
         return match action {
             GeminiAction::StreamGenerateContent => "models:streamGenerateContent",
@@ -456,6 +464,15 @@ pub fn endpoint(
         (DialectId::OpenAiEmbeddings, _) => "embeddings",
         _ => "chat/completions",
     }
+}
+
+fn media_detail(m: &kaeso_core::cost::MediaUnits) -> String {
+    [&m.size, &m.quality, &m.resolution]
+        .into_iter()
+        .flatten()
+        .map(String::as_str)
+        .collect::<Vec<_>>()
+        .join(" ")
 }
 
 fn logged_cost(cost: Decimal, request_id: RequestId) -> i128 {
@@ -539,7 +556,7 @@ pub async fn record(state: &AppState, o: &Outcome) {
         finished_at: o.started_at + o.duration,
         duration_ms: ms(o.duration),
         ttfb_ms: o.ttfb.map(ms),
-        endpoint: endpoint(o.ingress, o.kind, o.gemini).into(),
+        endpoint: endpoint(o.ingress, o.kind, o.gemini, o.image).into(),
         ingress_dialect: o.ingress.as_str().into(),
         egress_dialect: o.egress.map(|d| d.as_str().to_owned()).unwrap_or_default(),
         provider: o
@@ -590,6 +607,14 @@ pub async fn record(state: &AppState, o: &Outcome) {
         } else {
             serde_json::to_string(&o.fallbacks).unwrap_or_default()
         },
+        media_unit: o
+            .media
+            .as_ref()
+            .map(|_| "image".to_owned())
+            .unwrap_or_default(),
+        media_input: o.media.as_ref().map_or(0, |m| m.input_images),
+        media_output: o.media.as_ref().map_or(0, |m| m.output_images),
+        media_detail: o.media.as_ref().map(media_detail).unwrap_or_default(),
     };
     let content = content.then(|| ContentRow {
         request_id: log.request_id,

@@ -2,7 +2,7 @@ use kaeso_kpp::{RequestKind, Usage};
 use rust_decimal::Decimal;
 use rust_decimal::prelude::ToPrimitive;
 
-use crate::catalogue::Fields;
+use crate::catalogue::{Fields, UnitPrice};
 
 mod unpriced;
 
@@ -63,9 +63,14 @@ pub fn unpriced_model(
     };
     let input = priced(prices.input_price, set_by_hand.input_price);
     let output = priced(prices.output_price, set_by_hand.output_price);
+    let by_unit = set_by_hand.unit_prices.is_some()
+        || prices.unit_prices.as_ref().is_some_and(|u| !u.is_empty());
     let known = match kind {
         RequestKind::Generate => input && output,
         RequestKind::Embed => input,
+        RequestKind::Image => {
+            by_unit || output || prices.output_image_price.is_some_and(|p| p > Decimal::ZERO)
+        }
         _ => true,
     };
     (!known).then(|| Unpriced {
@@ -80,10 +85,32 @@ pub fn cost(usage: &Usage, prices: &Fields) -> Decimal {
         .cache_write_breakdown
         .as_ref()
         .map_or(0, |b| b.ephemeral_1h.min(usage.cache_write_tokens));
+    // Image tokens are a share of each count, billed at the image price when the model has one.
+    let image_in = usage
+        .input_image_tokens
+        .unwrap_or(0)
+        .min(usage.input_tokens);
+    let image_out = usage
+        .output_image_tokens
+        .unwrap_or(0)
+        .min(usage.output_tokens);
+    let image_cached = usage
+        .cache_read_image_tokens
+        .unwrap_or(0)
+        .min(usage.cache_read_tokens);
     let total = [
-        (usage.input_tokens, prices.input_price),
-        (usage.output_tokens, prices.output_price),
-        (usage.cache_read_tokens, prices.cache_read_price),
+        (usage.input_tokens - image_in, prices.input_price),
+        (image_in, prices.input_image_price.or(prices.input_price)),
+        (usage.output_tokens - image_out, prices.output_price),
+        (image_out, prices.output_image_price.or(prices.output_price)),
+        (
+            usage.cache_read_tokens - image_cached,
+            prices.cache_read_price,
+        ),
+        (
+            image_cached,
+            prices.cache_read_image_price.or(prices.cache_read_price),
+        ),
         (
             usage.cache_write_tokens.saturating_sub(one_hour),
             prices.cache_write_price,
@@ -98,6 +125,127 @@ pub fn cost(usage: &Usage, prices: &Fields) -> Decimal {
     })
     .unwrap_or(Decimal::MAX);
     (total / MILLION).normalize()
+}
+
+/// What a media request took and produced, for the prices per unit.
+#[derive(Clone, Debug, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub struct MediaUnits {
+    pub input_images: u64,
+    pub output_images: u64,
+    /// The pixels of one output image, when its size is known.
+    pub output_pixels: Option<u64>,
+    pub size: Option<String>,
+    pub quality: Option<String>,
+    pub resolution: Option<String>,
+}
+
+impl MediaUnits {
+    fn count(&self, per: &str, of: &str) -> Option<Decimal> {
+        match (per, of) {
+            ("image", "input") => Some(Decimal::from(self.input_images)),
+            ("image", "output") => Some(Decimal::from(self.output_images)),
+            ("megapixel", "output") => {
+                let pixels = self.output_pixels?.checked_mul(self.output_images)?;
+                Some(Decimal::from(pixels) / MILLION)
+            }
+            _ => None,
+        }
+    }
+
+    fn condition(&self, name: &str) -> Option<&str> {
+        match name {
+            "size" => self.size.as_deref(),
+            "quality" => self.quality.as_deref(),
+            "resolution" => self.resolution.as_deref(),
+            _ => None,
+        }
+    }
+}
+
+enum Fit {
+    Exact(usize),
+    Unknown,
+    No,
+}
+
+fn fit(price: &UnitPrice, units: &MediaUnits) -> Fit {
+    let mut named = 0;
+    let mut unknown = false;
+    for (name, wanted) in [
+        ("size", &price.size),
+        ("quality", &price.quality),
+        ("resolution", &price.resolution),
+        ("audio", &price.audio),
+    ] {
+        let Some(wanted) = wanted else { continue };
+        match units.condition(name) {
+            Some(have) if have.eq_ignore_ascii_case(wanted) => named += 1,
+            Some(_) => return Fit::No,
+            None if name == "audio" => return Fit::No,
+            None => unknown = true,
+        }
+    }
+    if unknown {
+        Fit::Unknown
+    } else {
+        Fit::Exact(named)
+    }
+}
+
+/// The price per unit KPMR or an override lists for one kind of unit: the one whose
+/// conditions match the request most closely. When the request names no value for a
+/// condition, the lowest listed price applies, since a provider's default is its lowest tier.
+pub fn unit_price<'a>(
+    prices: &'a [UnitPrice],
+    units: &MediaUnits,
+    per: &str,
+    of: &str,
+) -> Option<&'a UnitPrice> {
+    let candidates = prices.iter().filter(|p| p.per == per && p.of == of);
+    let mut exact: Option<(usize, &UnitPrice)> = None;
+    let mut unknown: Option<&UnitPrice> = None;
+    for p in candidates {
+        match fit(p, units) {
+            Fit::Exact(n) if exact.is_none_or(|(m, _)| n > m) => exact = Some((n, p)),
+            Fit::Unknown if unknown.is_none_or(|u| p.usd < u.usd) => unknown = Some(p),
+            _ => {}
+        }
+    }
+    exact.map(|(_, p)| p).or(unknown)
+}
+
+/// The cost of a media request's units at the model's prices per unit.
+pub fn media_cost(units: &MediaUnits, prices: &Fields) -> Decimal {
+    let Some(list) = prices.unit_prices.as_deref() else {
+        return Decimal::ZERO;
+    };
+    let mut total = Decimal::ZERO;
+    for per in crate::catalogue::UNITS {
+        for of in ["input", "output"] {
+            let (Some(count), Some(price)) =
+                (units.count(per, of), unit_price(list, units, per, of))
+            else {
+                continue;
+            };
+            total = count
+                .checked_mul(price.usd)
+                .and_then(|c| total.checked_add(c))
+                .unwrap_or(Decimal::MAX);
+        }
+    }
+    total.normalize()
+}
+
+/// The cost of a request: its tokens, and its media units when it has any.
+pub fn cost_with_media(usage: &Usage, prices: &Fields, media: Option<&MediaUnits>) -> Decimal {
+    let tokens = cost(usage, prices);
+    match media {
+        Some(units) => tokens
+            .checked_add(media_cost(units, prices))
+            .unwrap_or(Decimal::MAX)
+            .normalize(),
+        None => tokens,
+    }
 }
 
 pub fn nano_usd(cost: Decimal) -> i64 {
@@ -413,6 +561,129 @@ mod tests {
             cost(&u, &prices),
             dec!(79.980025),
             "one-hour writes at twice 20"
+        );
+    }
+
+    fn unit(per: &str, of: &str, usd: Decimal) -> UnitPrice {
+        UnitPrice {
+            per: per.into(),
+            of: of.into(),
+            usd,
+            ..UnitPrice::default()
+        }
+    }
+
+    #[test]
+    fn image_tokens_are_billed_at_image_prices_and_fall_back_to_token_prices() {
+        let prices = Fields {
+            input_price: Some(dec!(5)),
+            output_price: Some(dec!(10)),
+            cache_read_price: Some(dec!(1.25)),
+            input_image_price: Some(dec!(8)),
+            output_image_price: Some(dec!(30)),
+            cache_read_image_price: Some(dec!(2)),
+            ..Fields::default()
+        };
+        let mut usage = Usage::new(1_000_000, 1_000_000);
+        usage.cache_read_tokens = 1_000_000;
+        usage.input_image_tokens = Some(400_000);
+        usage.output_image_tokens = Some(1_000_000);
+        usage.cache_read_image_tokens = Some(500_000);
+        // 0.6 * 5 + 0.4 * 8 + 1 * 30 + 0.5 * 1.25 + 0.5 * 2
+        assert_eq!(cost(&usage, &prices), dec!(37.825));
+        let plain = Fields {
+            input_image_price: None,
+            output_image_price: None,
+            cache_read_image_price: None,
+            ..prices
+        };
+        assert_eq!(cost(&usage, &plain), dec!(16.25));
+        usage.output_image_tokens = Some(5_000_000);
+        assert_eq!(cost(&usage, &plain), dec!(16.25));
+    }
+
+    #[test]
+    fn unit_prices_match_the_closest_conditions_and_add_to_tokens() {
+        let mut low = unit("image", "output", dec!(0.04));
+        low.resolution = Some("1K".into());
+        low.quality = Some("low".into());
+        let mut medium = unit("image", "output", dec!(0.05));
+        medium.resolution = Some("1K".into());
+        medium.quality = Some("medium".into());
+        let mut two_k = unit("image", "output", dec!(0.08));
+        two_k.resolution = Some("2K".into());
+        let input = unit("image", "input", dec!(0.01));
+        let prices = Fields {
+            unit_prices: Some(vec![low, medium, two_k, input]),
+            ..Fields::default()
+        };
+        let mut units = MediaUnits {
+            input_images: 2,
+            output_images: 3,
+            quality: Some("Medium".into()),
+            resolution: Some("1k".into()),
+            ..MediaUnits::default()
+        };
+        assert_eq!(media_cost(&units, &prices), dec!(0.17));
+        units.resolution = Some("2K".into());
+        units.quality = None;
+        assert_eq!(media_cost(&units, &prices), dec!(0.26));
+        units.resolution = None;
+        assert_eq!(media_cost(&units, &prices), dec!(0.14));
+        units.resolution = Some("4K".into());
+        assert_eq!(media_cost(&units, &prices), dec!(0.02));
+        let usage = Usage::new(10, 0);
+        let both = Fields {
+            input_price: Some(dec!(1)),
+            ..prices.clone()
+        };
+        assert_eq!(cost_with_media(&usage, &both, Some(&units)), dec!(0.02001));
+        assert_eq!(cost_with_media(&usage, &both, None), dec!(0.00001));
+    }
+
+    #[test]
+    fn megapixel_prices_use_the_output_size() {
+        let prices = Fields {
+            unit_prices: Some(vec![unit("megapixel", "output", dec!(0.04))]),
+            ..Fields::default()
+        };
+        let units = MediaUnits {
+            output_images: 2,
+            output_pixels: Some(1024 * 1024),
+            ..MediaUnits::default()
+        };
+        assert_eq!(media_cost(&units, &prices), dec!(0.08388608));
+        let unsized_units = MediaUnits {
+            output_images: 2,
+            ..MediaUnits::default()
+        };
+        assert_eq!(media_cost(&unsized_units, &prices), Decimal::ZERO);
+        let mut audio = unit("image", "output", dec!(1));
+        audio.audio = Some("speech".into());
+        let audio_only = Fields {
+            unit_prices: Some(vec![audio]),
+            ..Fields::default()
+        };
+        assert_eq!(media_cost(&units, &audio_only), Decimal::ZERO);
+        assert_eq!(media_cost(&units, &Fields::default()), Decimal::ZERO);
+    }
+
+    #[test]
+    fn image_models_are_priced_by_unit_or_by_output_tokens() {
+        let none = Fields::default();
+        let units = Fields {
+            unit_prices: Some(vec![unit("image", "output", dec!(0.02))]),
+            ..Fields::default()
+        };
+        let tokens = Fields {
+            output_image_price: Some(dec!(30)),
+            ..Fields::default()
+        };
+        assert!(unpriced_model(&none, &none, RequestKind::Image, "m").is_some());
+        assert_eq!(unpriced_model(&units, &none, RequestKind::Image, "m"), None);
+        assert_eq!(
+            unpriced_model(&tokens, &none, RequestKind::Image, "m"),
+            None
         );
     }
 }
