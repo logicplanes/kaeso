@@ -43,6 +43,14 @@ pub enum EgressError {
 }
 
 impl EgressError {
+    pub fn refusal(&self) -> Option<(u16, &str)> {
+        match self {
+            EgressError::Token(TokenError::Refused { status, reason }) => Some((*status, reason)),
+            EgressError::Token(TokenError::Sign) => Some((400, "unsigned")),
+            _ => None,
+        }
+    }
+
     pub fn refuses_key(&self) -> bool {
         matches!(
             self,

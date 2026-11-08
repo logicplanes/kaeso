@@ -447,6 +447,23 @@ async fn a_refused_or_unavailable_token_endpoint_reaches_apps_as_a_provider_erro
     .await;
     assert_eq!(r.status, StatusCode::BAD_GATEWAY, "{}", r.text());
     assert_eq!(r.json()["type"], "error");
+    assert_eq!(ask(&env, "Hello").await.status, StatusCode::BAD_GATEWAY);
+    env.app.state.in_flight.settled().await;
+    env.app.state.mailer.flush().await;
+    let mails: Vec<_> = env
+        .app
+        .mail
+        .to("owner@example.com")
+        .into_iter()
+        .filter(|m| m.kind.as_str() == "provider_keys")
+        .collect();
+    assert_eq!(mails.len(), 1, "three refusals in a row need attention");
+    for line in [
+        "Key: service account (…cafe)\n",
+        "Provider's answer: HTTP 400: Google refused the service account key: invalid_grant\n",
+    ] {
+        assert!(mails[0].text.contains(line), "{line}\n{}", mails[0].text);
+    }
 
     let env = self::env().await;
     let down = ServiceAccountKey::new("unavailable@kaeso-example.iam.gserviceaccount.com", PROJECT);

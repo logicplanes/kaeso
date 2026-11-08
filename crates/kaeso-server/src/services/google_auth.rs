@@ -83,8 +83,8 @@ impl ServiceAccount {
 
 #[derive(Debug, thiserror::Error)]
 pub enum TokenError {
-    #[error("Google refused the service account key ({status})")]
-    Refused { status: u16 },
+    #[error("Google refused the service account key ({status} {reason})")]
+    Refused { status: u16, reason: String },
     #[error("Google's token endpoint answered {status}")]
     Unavailable { status: u16 },
     #[error("cannot reach Google's token endpoint")]
@@ -235,12 +235,13 @@ async fn exchange(
         }
         status @ (429 | 500..=599) => Err(TokenError::Unavailable { status }),
         status => {
+            let reason = refusal_reason(&body);
             tracing::warn!(
                 status,
-                reason = %refusal_reason(&body),
+                reason = %reason,
                 "Google refused a service account key's assertion"
             );
-            Err(TokenError::Refused { status })
+            Err(TokenError::Refused { status, reason })
         }
     }
 }
