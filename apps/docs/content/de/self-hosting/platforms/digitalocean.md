@@ -41,7 +41,7 @@ Beide Specs lassen diese Werte leer:
    docker run --rm ghcr.io/logicplanes/kaeso-gateway:{{version}} master-key generate
    ```
 
-2. Öffnen Sie [Deploy to DO](https://cloud.digitalocean.com/apps/new?repo=https://github.com/logicplanes/kaeso/tree/prod). App Platform liest die Spec aus dem Branch `prod`, der das neueste Release enthält.
+2. Öffnen Sie [Deploy to DO](https://cloud.digitalocean.com/apps/new?repo=https://github.com/logicplanes/kaeso/tree/prod&refcode=881255e24b11). App Platform liest die Spec aus dem Branch `prod`, der das neueste Release enthält.
 3. Tragen Sie in den Umgebungsvariablen von `kaeso-gateway` die [Werte](#einzutragende-werte) ein, und wählen Sie bei Bedarf eine andere Region.
 4. Legen Sie die App an und warten Sie, bis ihr erstes Deployment live ist.
 5. Das Gateway schickt den einmaligen Einrichtungslink an `KAESO_SETUP_EMAIL`; öffnen Sie ihn, um den ersten Benutzer anzulegen ([der erste Start](../how-it-works.md#der-erste-start)).

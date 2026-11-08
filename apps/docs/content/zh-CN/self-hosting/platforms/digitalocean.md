@@ -41,7 +41,7 @@ order: 3
    docker run --rm ghcr.io/logicplanes/kaeso-gateway:{{version}} master-key generate
    ```
 
-2. 打开 [Deploy to DO](https://cloud.digitalocean.com/apps/new?repo=https://github.com/logicplanes/kaeso/tree/prod)。App Platform 从 `prod` 分支读取规范，该分支是最新版本。
+2. 打开 [Deploy to DO](https://cloud.digitalocean.com/apps/new?repo=https://github.com/logicplanes/kaeso/tree/prod&refcode=881255e24b11)。App Platform 从 `prod` 分支读取规范，该分支是最新版本。
 3. 在 `kaeso-gateway` 的环境变量中填入[这些值](#需要填写的值)，也可以另选区域。
 4. 创建应用，等待首次部署上线。
 5. 网关会把一次性设置链接发到 `KAESO_SETUP_EMAIL`；打开它创建第一个用户（[首次启动](../how-it-works.md#首次启动)）。

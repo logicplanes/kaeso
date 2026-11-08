@@ -155,7 +155,7 @@ def test_render_keeps_secrets_out_of_the_blueprint_and_counters_out_of_eviction(
 def test_platform_launch_links_use_the_published_templates():
     readme = (ROOT / "README.md").read_text()
     assert "https://render.com/deploy?repo=https://github.com/logicplanes/kaeso/tree/prod" in readme
-    assert "https://cloud.digitalocean.com/apps/new?repo=https://github.com/logicplanes/kaeso/tree/prod" in readme
+    assert "https://cloud.digitalocean.com/apps/new?repo=https://github.com/logicplanes/kaeso/tree/prod&refcode=881255e24b11" in readme
     assert "kaeso-cloudformation.s3.amazonaws.com%2Flatest%2Fquick-server.yaml" in readme
     assert "cloudshell_workspace=deploy/gcp/quick-server" in readme
     assert "KAESO_EDGE_CLIENT_IP_HEADERS" in (ROOT / "deploy/console/edge.Caddyfile").read_text()
