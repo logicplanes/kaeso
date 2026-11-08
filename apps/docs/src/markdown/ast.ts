@@ -1,4 +1,6 @@
-export type CodeLang = "ts" | "tsx" | "js" | "json" | "bash" | "python" | "yaml" | "diff" | "text";
+import type { CodeLang } from "@logicplanes/kaeso-ui/code-block";
+
+export type { CodeLang };
 
 export type CalloutKind = "note" | "tip" | "important" | "warning" | "caution";
 

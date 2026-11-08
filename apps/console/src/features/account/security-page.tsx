@@ -421,7 +421,7 @@ function TwoFactorDialog({
         }
       >
         <div className="flex flex-col gap-16">
-          <CodeBlock code={text} title={t("account.recoveryCodes", "Recovery codes")} collapseAfter={0} />
+          <CodeBlock code={text} lang="text" title={t("account.recoveryCodes", "Recovery codes")} collapseAfter={0} />
           <div className="flex gap-8">
             <Button size="sm" onClick={download}>
               {t("account.downloadTxt", "Download .txt")}

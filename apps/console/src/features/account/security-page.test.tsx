@@ -174,6 +174,7 @@ describe("turning on two-factor authentication", () => {
     expect(requests("POST", "me/totp")).toHaveLength(1);
     expect(within(codes).getByRole("group", { name: "Recovery codes code" })).toHaveTextContent(/aaaa-bbbb\s*cccc-dddd/);
     await user.click(within(codes).getByRole("button", { name: "Download .txt" }));
+    expect(within(codes).getByRole("group", { name: "Recovery codes code" }).querySelector("[class*=text-code-]")).toBeNull();
     expect(click).toHaveBeenCalledTimes(1);
     expect(createObjectURL).toHaveBeenCalledTimes(1);
     expect(revokeObjectURL).toHaveBeenCalledWith("blob:codes");

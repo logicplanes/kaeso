@@ -5,4 +5,4 @@ export type { JsonViewProps } from "./json-view.js";
 export { DiffView, KAESO_DIFF_VIEW_DEFAULT_VARIANTS, KAESO_DIFF_VIEW_VARIANTS } from "./diff-view.js";
 export type { DiffViewProps } from "./diff-view.js";
 export { kaesoShikiTheme } from "./kaeso-theme.js";
-export { highlight, CODE_LANGS, type CodeLang } from "./highlighter.js";
+export { highlight, resolveCodeLang, CODE_LANGS, type CodeLang } from "./highlighter.js";

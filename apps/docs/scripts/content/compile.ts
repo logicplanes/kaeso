@@ -1,5 +1,6 @@
 import { Lexer, Tokenizer, type Token, type Tokens } from "marked";
-import type { Block, CalloutKind, CodeLang, Inline, LinkCard, ListItem, TocEntry } from "../../src/markdown/ast.ts";
+import { resolveCodeLang, type CodeLang } from "@logicplanes/kaeso-ui/code-block";
+import type { Block, CalloutKind, Inline, LinkCard, ListItem, TocEntry } from "../../src/markdown/ast.ts";
 import { DIAGRAM_LANG, DIAGRAM_ROLES, diagramText } from "./diagram.ts";
 import { Slugger } from "./slug.ts";
 
@@ -70,32 +71,6 @@ export function lex(body: string, options: { offset?: number } = {}): Lexed {
   return { tokens, headings, ...(h1 !== undefined ? { h1 } : {}), source: body, offset: options.offset ?? 0 };
 }
 
-const LANGS: Record<string, CodeLang> = {
-  ts: "ts",
-  typescript: "ts",
-  tsx: "tsx",
-  jsx: "tsx",
-  js: "js",
-  javascript: "js",
-  mjs: "js",
-  cjs: "js",
-  json: "json",
-  jsonc: "json",
-  json5: "json",
-  bash: "bash",
-  sh: "bash",
-  shell: "bash",
-  zsh: "bash",
-  console: "bash",
-  shellsession: "bash",
-  python: "python",
-  py: "python",
-  yaml: "yaml",
-  yml: "yaml",
-  diff: "diff",
-  patch: "diff",
-};
-
 const DRAWING = /[\u2190-\u21ff\u2500-\u257f\u25b2-\u25c5]/u;
 const isDiagram = (info: string | undefined) => (info ?? "").trim().split(/\s+/)[0]?.toLowerCase() === DIAGRAM_LANG;
 
@@ -118,7 +93,7 @@ export function fenceInfo(info: string | undefined): { lang: CodeLang; title?: s
       .split(/\s+/)
       .slice(1)
       .includes("wrap");
-  return { lang: LANGS[name] ?? "text", ...(title ? { title } : {}), ...(tab ? { tab } : {}), ...(wrap ? { wrap: true as const } : {}) };
+  return { lang: resolveCodeLang(name), ...(title ? { title } : {}), ...(tab ? { tab } : {}), ...(wrap ? { wrap: true as const } : {}) };
 }
 
 export function safeExternal(href: string): string | null {

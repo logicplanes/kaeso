@@ -26,6 +26,7 @@ for (const [kind, d] of Object.entries(t.diff)) {
   both(`diff-${kind}`, d.line);
   both(`diff-${kind}-word`, d.word);
 }
+for (const [role, m] of Object.entries(t.code)) both(`code-${role}`, m);
 both("danger-fill", t.dangerFill);
 both("on-danger", t.onDanger);
 both("viz-1-soft", t.vizSoft);
@@ -130,6 +131,7 @@ for (const kind of Object.keys(t.diff)) {
   colorRoles[`diff-${kind}`] = `diff-${kind}`;
   colorRoles[`diff-${kind}-word`] = `diff-${kind}-word`;
 }
+for (const role of Object.keys(t.code)) colorRoles[`code-${role}`] = `code-${role}`;
 for (const id of Object.keys(t.providerMark)) colorRoles[`mark-${id}`] = `mark-${id}`;
 t.viz.forEach((_, i) => {
   colorRoles[`viz-${i + 1}`] = `viz-${i + 1}`;
@@ -204,6 +206,7 @@ writeFileSync(
     {
       neutral: resolve(t.neutral),
       semantic: t.semantic,
+      code: resolve(t.code),
       dangerFill: t.dangerFill,
       viz: t.viz,
       providerMark: resolve(t.providerMark),

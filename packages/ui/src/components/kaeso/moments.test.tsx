@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import { SecretReveal, sdkSnippets } from "./moments.js";
 
 const SECRET = "sk-kso-test-0123456789abcdef";
@@ -12,6 +12,12 @@ describe("SecretReveal", () => {
     expect(screen.getByText("KAESO_BASE_URL=https://kaeso.example.com/v1")).toBeInTheDocument();
     expect(screen.getByText(`KAESO_API_KEY=${SECRET}`)).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "Python" })).toBeInTheDocument();
+  });
+
+  it("highlights the .env file's names apart from their values", async () => {
+    render(<SecretReveal secret={SECRET} baseUrl="https://kaeso.example.com" />);
+    await waitFor(() => expect(screen.getByText("KAESO_API_KEY")).toHaveClass("text-code-property"));
+    expect(screen.getByText(SECRET, { selector: "code span span" })).toHaveClass("text-code-string");
   });
 
   it("warns that the key is shown once before the button that copies it", () => {

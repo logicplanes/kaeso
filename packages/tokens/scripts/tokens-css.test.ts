@@ -73,10 +73,12 @@ describe("tokens.css", () => {
     }
   });
 
-  it.each(roots)("raises tertiary text to full contrast in light and dark with %s", (_, root) => {
+  it.each(roots)("raises tertiary text, code comments and punctuation to full contrast in light and dark with %s", (_, root) => {
     for (const dark of [false, true]) {
       expect(resolve("--k-text-tertiary", root, { dark, contrast: true })).toBe("var(--k-text)");
       expect(resolve("--k-line-subtle", root, { dark, contrast: true })).toBe("var(--k-line-strong)");
+      expect(resolve("--k-code-comment", root, { dark, contrast: true })).toBe("var(--k-text)");
+      expect(resolve("--k-code-punctuation", root, { dark, contrast: true })).toBe("var(--k-text)");
       expect(resolve("--k-text", root, { dark, contrast: true })).toBe(showsDark(root, dark) ? "#eeeeee" : "#111111");
     }
   });

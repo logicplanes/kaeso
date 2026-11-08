@@ -254,9 +254,12 @@ describe("fenceInfo and safeExternal", () => {
   it("maps languages to the highlighted ones, the rest to text", () => {
     expect(fenceInfo("sh")).toEqual({ lang: "bash" });
     expect(fenceInfo("TypeScript title='a.ts'")).toEqual({ lang: "ts", title: "a.ts" });
-    expect(fenceInfo("toml")).toEqual({ lang: "text" });
+    expect(fenceInfo("toml")).toEqual({ lang: "toml" });
+    expect(fenceInfo("rust")).toEqual({ lang: "rust" });
+    expect(fenceInfo("console")).toEqual({ lang: "shellsession" });
+    expect(fenceInfo("caddyfile")).toEqual({ lang: "text" });
     expect(fenceInfo(undefined)).toEqual({ lang: "text" });
-    expect(fenceInfo("markdown")).toEqual({ lang: "text", wrap: true });
+    expect(fenceInfo("markdown")).toEqual({ lang: "markdown", wrap: true });
     expect(fenceInfo("text title=policy")).toEqual({ lang: "text", title: "policy", wrap: true });
     expect(fenceInfo("json wrap")).toEqual({ lang: "json", wrap: true });
     expect(fenceInfo('json title="wrap it"')).toEqual({ lang: "json", title: "wrap it" });

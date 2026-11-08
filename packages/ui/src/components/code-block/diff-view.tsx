@@ -7,6 +7,7 @@ import { useUiText } from "../../i18n/context.js";
 import { useScrollFadeX } from "../../hooks/use-scroll-fade.js";
 import { Text } from "../text/text.js";
 import { highlight, type CodeLang, type CodeToken } from "./highlighter.js";
+import { codeToneClass } from "./tones.js";
 import { INDENT } from "./indent.js";
 import { numberWidth } from "./numbers.js";
 import { diffLines, diffStats, foldUnchanged, largestLineNumber, unifiedDiff, type DiffKind, type DiffLine } from "./diff.js";
@@ -87,7 +88,7 @@ function Code({ parts, kind }: { parts: Segment[]; kind: DiffKind }) {
     <>
       {groups.map((group, g) => {
         const spans = group.map((p, k) => (
-          <span key={k} className={(group[0]?.changed ? p.className.replace(/text-fg-(tertiary|secondary)/, "text-fg") : p.className) || undefined}>
+          <span key={k} className={(group[0]?.changed ? p.className.replace(codeToneClass("comment"), "text-fg") : p.className) || undefined}>
             {p.text}
           </span>
         ));

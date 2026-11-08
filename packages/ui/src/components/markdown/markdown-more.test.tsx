@@ -1,26 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { Markdown, lexMarkdown, markdownCodeLang, previewMarkdown } from "./markdown.js";
+import { Markdown, lexMarkdown, previewMarkdown } from "./markdown.js";
 
 describe("markdown helpers", () => {
-  it("maps fence names to the highlighter's languages", () => {
-    const cases: [string | undefined, string][] = [
-      ["TypeScript", "ts"],
-      ["jsx", "tsx"],
-      ["mjs", "js"],
-      ["jsonc", "json"],
-      ["zsh", "bash"],
-      ["py", "python"],
-      ["yml", "yaml"],
-      ["patch", "diff"],
-      ["ruby", "text"],
-      [undefined, "text"],
-      ["ts title=app.ts", "ts"],
-    ];
-    for (const [lang, want] of cases) expect(markdownCodeLang(lang)).toBe(want);
-  });
-
   it("cuts a preview at a paragraph, a line or a word", () => {
     expect(previewMarkdown("short", 10)).toBe("short");
     expect(previewMarkdown("First paragraph here.\n\nSecond paragraph that runs long.", 30)).toBe("First paragraph here.");

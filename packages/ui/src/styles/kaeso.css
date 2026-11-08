@@ -826,6 +826,7 @@
   font-family: var(--k-font-mono);
   font-feature-settings: normal;
   font-variant-ligatures: none;
+  tab-size: 4;
 }
 @utility scrollbar-quiet {
   scrollbar-width: thin;

@@ -58,6 +58,22 @@ export const diff = {
   removed: { line: mode("#fef2f2", "#2a0d0e"), word: mode("#fbcbcb", "#5a1a1c") },
 } as const;
 
+export const code = {
+  keyword: mode("#6d28d9", "#c4b5fd"),
+  string: mode("#166534", "#86efac"),
+  constant: mode("#9a3412", "#fdba74"),
+  comment: mode("#696969", "#999999"),
+  function: mode("#1d4ed8", "#93c5fd"),
+  type: mode("#155e75", "#67e8f9"),
+  property: mode("#a3157a", "#f9a8d4"),
+  tag: mode("#a3157a", "#f9a8d4"),
+  attribute: mode("#854d0e", "#fcd34d"),
+  variable: mode("#a3157a", "#f9a8d4"),
+  punctuation: mode("#595959", "#b3b3b3"),
+  inserted: mode("#166534", "#4ade80"),
+  deleted: mode("#991b1b", "#fca5a5"),
+} as const;
+
 export const dangerFill = mode("#dc2626", "#dc2626");
 export const onDanger = mode("#ffffff", "#ffffff");
 

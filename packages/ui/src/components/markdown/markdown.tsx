@@ -8,7 +8,7 @@ import { Icon } from "../icon/icon.js";
 import { Button } from "../button/button.js";
 import { Code } from "../code/code.js";
 import { CodeBlock } from "../code-block/code-block.js";
-import type { CodeLang } from "../code-block/highlighter.js";
+import { resolveCodeLang } from "../code-block/highlighter.js";
 import { Link } from "../link/link.js";
 import { Separator } from "../separator/separator.js";
 import { Table } from "../table/table.js";
@@ -80,44 +80,6 @@ export function previewMarkdown(text: string, limit: number): string {
   }
   const space = text.lastIndexOf(" ", limit);
   return `${text.slice(0, space > limit / 2 ? space : limit).trimEnd()}…`;
-}
-
-export function markdownCodeLang(lang: string | undefined): CodeLang {
-  const name = (lang ?? "").trim().split(/\s/)[0]?.toLowerCase() ?? "";
-  switch (name) {
-    case "ts":
-    case "typescript":
-      return "ts";
-    case "tsx":
-    case "jsx":
-      return "tsx";
-    case "js":
-    case "javascript":
-    case "mjs":
-    case "cjs":
-      return "js";
-    case "json":
-    case "jsonc":
-    case "json5":
-      return "json";
-    case "bash":
-    case "sh":
-    case "shell":
-    case "zsh":
-    case "console":
-      return "bash";
-    case "python":
-    case "py":
-      return "python";
-    case "yaml":
-    case "yml":
-      return "yaml";
-    case "diff":
-    case "patch":
-      return "diff";
-    default:
-      return "text";
-  }
 }
 
 function ExternalLink({ href, title, children }: { href: string; title?: string | null | undefined; children: ReactNode }) {
@@ -282,7 +244,7 @@ function block(t: Token, ctx: Ctx, tight: boolean): ReactNode {
     case "code":
       return (
         <>
-          <CodeBlock code={(t as Tokens.Code).text} lang={markdownCodeLang((t as Tokens.Code).lang)} wrap={ctx.wrap} />
+          <CodeBlock code={(t as Tokens.Code).text} lang={resolveCodeLang((t as Tokens.Code).lang)} wrap={ctx.wrap} />
         </>
       );
     case "blockquote":

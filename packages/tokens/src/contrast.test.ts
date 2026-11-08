@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dangerFill, diff, neutral, providerMark, semantic, shadow, viz } from "./tokens.js";
+import { code, dangerFill, diff, neutral, providerMark, semantic, shadow, viz } from "./tokens.js";
 
 type Rgb = readonly [number, number, number];
 type Mode = "light" | "dark";
@@ -112,6 +112,26 @@ describe.each(MODES)("contrast in %s mode", (mode) => {
     }
     for (const fg of code) expect(ratio(fg, word[mode]), `${fg} on ${kind} words`).toBeGreaterThanOrEqual(4.5);
     expect(ratio(word[mode], line[mode]), `${kind} words stand out from their line`).toBeGreaterThanOrEqual(1.25);
+  });
+
+  it.each(Object.keys(code) as (keyof typeof code)[])("code colour %s is readable on every surface a code block sits on and on diff lines", (role) => {
+    const fg = code[role][mode];
+    for (const bg of ["bg-panel", "bg-raised", "fill-1", "fill-2"] as const) {
+      expect(ratio(fg, neutral[bg][mode]), `${role} on ${bg}`).toBeGreaterThanOrEqual(4.5);
+    }
+    for (const kind of ["added", "removed"] as const) {
+      expect(ratio(fg, diff[kind].line[mode]), `${role} on the ${kind} line`).toBeGreaterThanOrEqual(4.5);
+      // DiffView shows a comment inside a changed word in the text colour, so only the other roles must read on the word's fill.
+      if (role !== "comment") expect(ratio(fg, diff[kind].word[mode]), `${role} on ${kind} words`).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
+  it("gives every kind of code its own colour and keeps comments and punctuation quieter than code", () => {
+    const hues = (["keyword", "string", "constant", "function", "type", "property", "attribute"] as const).map((role) => code[role][mode]);
+    expect(new Set(hues).size).toBe(hues.length);
+    for (const quiet of ["comment", "punctuation"] as const) {
+      expect(ratio(code[quiet][mode], neutral["fill-1"][mode])).toBeLessThan(ratio(neutral.text[mode], neutral["fill-1"][mode]));
+    }
   });
 
   it("white reads on the danger fill", () => {
