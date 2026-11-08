@@ -592,6 +592,7 @@ export function AddCustomProviderDialog({ org, onClose }: { org: string; onClose
           content: (
             <ProviderPicker
               appearance="grid"
+              ordered
               aria-label={t("orgHome.custom.softwareTitle", "What runs the server?")}
               providers={[
                 ...servers.map((s) => ({ id: s.server, name: s.name })),
