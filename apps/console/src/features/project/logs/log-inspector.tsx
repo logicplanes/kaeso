@@ -24,7 +24,7 @@ import {
   Tooltip,
   UsageBreakdown,
 } from "@logicplanes/kaeso-ui";
-import { formatBytes, formatDate, formatNumber, formatPercent } from "@logicplanes/kaeso-ui/format";
+import { formatBytes, formatDate, formatDuration, formatNumber, formatPercent } from "@logicplanes/kaeso-ui/format";
 import { isApiError } from "~/api/errors";
 import type { LogEntryView } from "~/api/generated/types";
 import { logEntryQuery } from "~/api/queries/logs";
@@ -374,15 +374,10 @@ function Overview({ org, project, e, keyName }: { org: string; project: string; 
             ...(e.media
               ? [
                   {
-                    label: t("logs.inspector.images", "Images"),
+                    label: mediaLabel(e.media.unit),
                     value: (
                       <span className="flex min-w-0 flex-col">
-                        <Text>
-                          {t("logs.inspector.imagesCount", "{input} sent · {output} made", {
-                            input: formatNumber(e.media.input),
-                            output: formatNumber(e.media.output),
-                          })}
-                        </Text>
+                        <Text>{mediaCount(e.media)}</Text>
                         {e.media.detail && (
                           <Text variant="small" tone="secondary">
                             {e.media.detail}
@@ -695,4 +690,23 @@ function responseCacheLabel(result: NonNullable<LogEntryView["response_cache"]>)
     case "bypass":
       return t("logs.inspector.responseCacheBypass", "Not cacheable, or skipped by the app");
   }
+}
+
+function mediaLabel(unit: string): string {
+  if (unit === "character") return t("logs.inspector.speech", "Speech");
+  if (unit === "millisecond") return t("logs.inspector.audio", "Audio");
+  return t("logs.inspector.images", "Images");
+}
+
+function mediaCount(m: { unit: string; input: number; output: number }): string {
+  if (m.unit === "character") {
+    const characters = t("logs.inspector.characters", "{count} characters", { count: formatNumber(m.input) });
+    return m.output ? t("logs.inspector.charactersMade", "{characters} · {duration} made", { characters, duration: formatDuration(m.output) }) : characters;
+  }
+  if (m.unit === "millisecond") {
+    return m.output
+      ? t("logs.inspector.audioMade", "{duration} made", { duration: formatDuration(m.output) })
+      : t("logs.inspector.audioSent", "{duration} of audio sent", { duration: formatDuration(m.input) });
+  }
+  return t("logs.inspector.imagesCount", "{input} sent · {output} made", { input: formatNumber(m.input), output: formatNumber(m.output) });
 }

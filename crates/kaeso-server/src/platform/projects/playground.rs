@@ -249,6 +249,7 @@ pub async fn responses(
         alias,
         gemini: None,
         image: None,
+        transcription: None,
     };
     Ok(pipeline::serve_with(state, incoming, answer).await)
 }

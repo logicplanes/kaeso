@@ -659,5 +659,7 @@
   "errors.serviceAccount.location": "Kaeso ruft diesen Standort für diesen Anbieter nicht auf; einen aus der Liste wählen.",
   "errors.noEmbeddingsAtProvider": "Kaeso ruft bei {provider} keine Embedding-Modelle auf, daher kann `{name}` keine Embeddings erstellen.",
   "errors.noImagesAtProvider": "{provider} bietet keine Bild-API, die Kaeso aufrufen kann, daher kann `{name}` keine Bilder erstellen.",
+  "errors.noSpeechAtProvider": "{provider} bietet keine Sprach-API, die Kaeso aufrufen kann, daher kann `{name}` nicht sprechen.",
+  "errors.noTranscriptionAtProvider": "{provider} bietet keine Transkriptions-API, die Kaeso aufrufen kann, daher kann `{name}` nicht transkribieren.",
   "errors.unitPrices": "`unit_prices` nimmt bis zu 32 Preise von 0 bis 1.000.000 USD pro bekannter Einheit."
 }

@@ -1,5 +1,5 @@
 import type { Capability } from "@logicplanes/kaeso-ui";
-import { formatContext, formatPrice, formatUSD } from "@logicplanes/kaeso-ui/format";
+import { formatContext, formatNumber, formatPrice, formatUSD } from "@logicplanes/kaeso-ui/format";
 import type { CatalogueModelView, Fields } from "~/api/generated/types";
 import { t } from "~/i18n";
 
@@ -47,9 +47,19 @@ export function tierLabels(f: Fields): string[] {
 
 export function unitPriceLabels(f: Fields): string[] {
   return (f.unit_prices ?? []).map((u) => {
-    const unit = u.per === "image" ? t("models.unit.image", "image") : u.per === "megapixel" ? t("models.unit.megapixel", "megapixel") : u.per;
+    const units: Record<string, () => string> = {
+      image: () => t("models.unit.image", "image"),
+      megapixel: () => t("models.unit.megapixel", "megapixel"),
+      second: () => t("models.unit.second", "second"),
+      minute: () => t("models.unit.minute", "minute"),
+      hour: () => t("models.unit.hour", "hour"),
+      million_characters: () => t("models.unit.millionCharacters", "million characters"),
+    };
+    const unit = units[u.per]?.() ?? u.per;
     const side = u.of === "input" ? t("models.unit.input", "input") : t("models.unit.output", "output");
-    const conditions = [u.size, u.quality, u.resolution, u.audio].filter((c): c is string => !!c);
+    const sound = u.audio === true ? t("models.unit.withSound", "with sound") : u.audio === false ? t("models.unit.withoutSound", "without sound") : undefined;
+    const minimum = u.minimum_seconds ? t("models.unit.minimumSeconds", "at least {seconds} s", { seconds: formatNumber(u.minimum_seconds) }) : undefined;
+    const conditions = [u.size, u.quality, u.resolution, sound, minimum].filter((c): c is string => !!c);
     const label = t("models.unitPrice", "{price} per {unit} of {side}", { price: formatUSD(u.usd), unit, side });
     const shown = conditions.length ? `${label} (${conditions.join(t("models.listSeparator", ", "))})` : label;
     return u.estimate ? t("models.unitPriceEstimate", "{price}, estimated", { price: shown }) : shown;
@@ -73,6 +83,9 @@ export function dialectPill(d: string): string {
       gemini_embeddings: "embeddings",
       openai_images: "images",
       minimax_images: "images",
+      openai_speech: "speech",
+      minimax_speech: "speech",
+      openai_transcriptions: "transcriptions",
     }[d] ?? d
   );
 }
@@ -95,6 +108,8 @@ export function fieldRows(): { key: keyof Fields; label: string; kind: FieldKind
     { key: "input_image_price", label: t("models.field.inputImagePrice", "Image input price"), kind: "price" },
     { key: "output_image_price", label: t("models.field.outputImagePrice", "Image output price"), kind: "price" },
     { key: "cache_read_image_price", label: t("models.field.cacheReadImagePrice", "Image cache read price"), kind: "price" },
+    { key: "input_audio_price", label: t("models.field.inputAudioPrice", "Audio input price"), kind: "price" },
+    { key: "output_audio_price", label: t("models.field.outputAudioPrice", "Audio output price"), kind: "price" },
     { key: "unit_prices", label: t("models.field.unitPrices", "Prices per unit"), kind: "units" },
     { key: "egress_dialect", label: t("models.field.sendsAs", "Sends as"), kind: "dialect" },
     { key: "tool_call", label: t("models.cap.tools", "Tool calling"), kind: "bool" },

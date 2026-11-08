@@ -206,7 +206,7 @@ Model listings must page and filter as the SDKs expect (`e2e/conformance/test_mo
 e2e/.venv/bin/pytest -q e2e/sdk
 ```
 
-This suite runs the SDKs against the gateway, on the development databases. It builds the gateway and `kaeso-testkit`, starts the mock provider and the gateway, and sets up users, projects, provider keys, models and API keys through the Platform API. The tests cover streaming, keepalives, tools, images, PDFs, reasoning, both directions across providers, token counting, embeddings, model listings, every error class, limits, SDK retries and disconnects. `e2e/sdk/test_google_genai_sdk.py` runs `google-genai` against `/v1beta`: generation and streams on every provider, tool loops with Gemini's thought signatures and with Claude's thinking, token counts, embeddings, model listings and Gemini's error shape.
+This suite runs the SDKs against the gateway, on the development databases. It builds the gateway and `kaeso-testkit`, starts the mock provider and the gateway, and sets up users, projects, provider keys, models and API keys through the Platform API. The tests cover streaming, keepalives, tools, images, PDFs, reasoning, both directions across providers, token counting, embeddings, model listings, every error class, limits, SDK retries and disconnects. `e2e/sdk/test_google_genai_sdk.py` runs `google-genai` against `/v1beta`: generation and streams on every provider, tool loops with Gemini's thought signatures and with Claude's thinking, token counts, embeddings, model listings and Gemini's error shape. `e2e/sdk/test_audio.py` runs the OpenAI SDK's speech, transcription and translation calls, on OpenAI models.
 
 The mock provider (`crates/kaeso-testkit/src/mock_provider.rs`) chooses its reply from markers in the request:
 

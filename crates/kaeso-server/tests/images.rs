@@ -131,7 +131,7 @@ async fn an_openai_app_generates_images_with_a_gpt_image_model_and_is_billed_for
     assert_eq!(sent.json()["quality"], "high");
     let o = outcome(&env).await;
     assert_eq!(
-        kaeso_server::services::logs::endpoint(o.ingress, o.kind, o.gemini, o.image),
+        kaeso_server::services::logs::endpoint(&o),
         "images/generations"
     );
     let media = o.media.clone().unwrap();
@@ -182,10 +182,7 @@ async fn an_upload_with_a_mask_reaches_openai_as_an_upload_and_is_logged_without
             .all(|p| p.body == PNG)
     );
     let o = outcome(&env).await;
-    assert_eq!(
-        kaeso_server::services::logs::endpoint(o.ingress, o.kind, o.gemini, o.image),
-        "images/edits"
-    );
+    assert_eq!(kaeso_server::services::logs::endpoint(&o), "images/edits");
     assert_eq!(o.media.as_ref().unwrap().input_images, 2);
     if let Some(logged) = &o.request_body {
         let text = String::from_utf8_lossy(logged);

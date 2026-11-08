@@ -149,6 +149,7 @@ memory_share = 50
 [body_limits]
 model_api = "32MiB"
 images = "64MiB"
+audio = "26MiB"
 in_flight = "512MiB"
 platform_api = "1MiB"
 provider_response = "128MiB"

@@ -659,5 +659,7 @@
   "errors.serviceAccount.location": "Kaeso 不会为此服务商调用该位置；请从列表中选择。",
   "errors.noEmbeddingsAtProvider": "Kaeso 不调用 {provider} 上的嵌入模型，因此 `{name}` 无法生成嵌入。",
   "errors.noImagesAtProvider": "{provider} 没有 Kaeso 可调用的图片 API，因此 `{name}` 无法生成图片。",
+  "errors.noSpeechAtProvider": "{provider} 没有 Kaeso 可调用的语音合成 API，因此 `{name}` 无法生成语音。",
+  "errors.noTranscriptionAtProvider": "{provider} 没有 Kaeso 可调用的转写 API，因此 `{name}` 无法转写音频。",
   "errors.unitPrices": "`unit_prices` 最多 32 个价格，每个为每种已知单位 0 到 1,000,000 美元。"
 }

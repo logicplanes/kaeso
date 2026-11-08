@@ -47,7 +47,7 @@ describe("ModelSheet", () => {
     expect(s).toHaveTextContent("Display nameSonnetoverrideReset to KPMR");
     expect(s).toHaveTextContent("Input price$2.50 / M tokensoverrideReset to KPMR");
     expect(s).toHaveTextContent(
-      "Cache write price—1-hour cache write price—Long-context prices—Image input price—Image output price—Image cache read price—Prices per unit—Sends as",
+      "Cache write price—1-hour cache write price—Long-context prices—Image input price—Image output price—Image cache read price—Audio input price—Audio output price—Prices per unit—Sends as",
     );
     expect(s).toHaveTextContent("Sends asAnthropic MessagesKaeso");
     expect(s).toHaveTextContent("Structured outputNoKPMR");

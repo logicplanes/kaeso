@@ -122,8 +122,24 @@ pub struct Fields {
     )]
     #[cfg_attr(feature = "openapi", schema(value_type = Option<String>))]
     pub cache_read_image_price: Option<Decimal>,
-    #[doc = "Prices per image or megapixel, for models a provider bills by unit; they add\n\
-        to the token prices."]
+    #[doc = "USD per million audio input tokens; absent means the input price."]
+    #[serde(
+        default,
+        deserialize_with = "price",
+        skip_serializing_if = "Option::is_none"
+    )]
+    #[cfg_attr(feature = "openapi", schema(value_type = Option<String>, example = "2.50"))]
+    pub input_audio_price: Option<Decimal>,
+    #[doc = "USD per million audio output tokens; absent means the output price."]
+    #[serde(
+        default,
+        deserialize_with = "price",
+        skip_serializing_if = "Option::is_none"
+    )]
+    #[cfg_attr(feature = "openapi", schema(value_type = Option<String>, example = "12.00"))]
+    pub output_audio_price: Option<Decimal>,
+    #[doc = "Prices per image, megapixel, second, minute, hour or million characters, for\n\
+        models a provider bills by unit; they add to the token prices."]
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub unit_prices: Option<Vec<UnitPrice>>,
     #[doc = "The kpp dialect Kaeso sends: `anthropic_messages`, `openai_responses`,\n\
@@ -256,9 +272,13 @@ pub struct UnitPrice {
     #[doc = "The resolution it applies to, such as `1K`."]
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub resolution: Option<String>,
-    #[doc = "The audio kind it applies to."]
+    #[doc = "Whether it applies to made video with sound (`true`) or without (`false`)."]
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub audio: Option<String>,
+    pub audio: Option<bool>,
+    #[doc = "The fewest seconds a request is billed for, for prices per second, minute or\n\
+        hour."]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub minimum_seconds: Option<u64>,
     #[doc = "Whether the provider publishes the price only as an estimate."]
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub estimate: bool,
@@ -277,7 +297,8 @@ impl UnitPrice {
             size: u.size.clone(),
             quality: u.quality.clone(),
             resolution: u.resolution.clone(),
-            audio: u.audio.clone(),
+            audio: u.audio,
+            minimum_seconds: u.minimum_seconds,
             estimate: u.estimate,
         }
     }
@@ -334,6 +355,8 @@ macro_rules! each_field {
             input_image_price,
             output_image_price,
             cache_read_image_price,
+            input_audio_price,
+            output_audio_price,
             unit_prices,
             egress_dialect,
             adaptive_thinking,
@@ -365,6 +388,8 @@ pub const FIELD_NAMES: &[&str] = &[
     "input_image_price",
     "output_image_price",
     "cache_read_image_price",
+    "input_audio_price",
+    "output_audio_price",
     "unit_prices",
     "egress_dialect",
     "adaptive_thinking",
@@ -414,6 +439,10 @@ impl Fields {
                 kpmr.input_image_price = None;
                 kpmr.output_image_price = None;
                 kpmr.cache_read_image_price = None;
+            }
+            if self.input_audio_price.is_none() && self.output_audio_price.is_none() {
+                kpmr.input_audio_price = None;
+                kpmr.output_audio_price = None;
             }
             if self.unit_prices.is_none() {
                 kpmr.unit_prices = None;
@@ -470,6 +499,8 @@ impl Fields {
             input_image_price: pricing.input_image,
             output_image_price: pricing.output_image,
             cache_read_image_price: pricing.cache_read_image,
+            input_audio_price: pricing.input_audio,
+            output_audio_price: pricing.output_audio,
             unit_prices: (!pricing.per_unit.is_empty())
                 .then(|| pricing.per_unit.iter().map(UnitPrice::from_kpmr).collect()),
             egress_dialect:
@@ -573,6 +604,8 @@ impl Fields {
             ("input_image_price", self.input_image_price),
             ("output_image_price", self.output_image_price),
             ("cache_read_image_price", self.cache_read_image_price),
+            ("input_audio_price", self.input_audio_price),
+            ("output_audio_price", self.output_audio_price),
         ]
         .into_iter()
         .chain(tier_prices)

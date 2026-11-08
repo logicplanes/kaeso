@@ -425,5 +425,14 @@
   "models.field.inputImagePrice": "图片输入价格",
   "models.field.outputImagePrice": "图片输出价格",
   "models.field.cacheReadImagePrice": "图片缓存读取价格",
-  "models.field.unitPrices": "按单位计价"
+  "models.field.unitPrices": "按单位计价",
+  "models.unit.second": "秒",
+  "models.unit.minute": "分钟",
+  "models.unit.hour": "小时",
+  "models.unit.millionCharacters": "百万字符",
+  "models.unit.withSound": "有声",
+  "models.unit.withoutSound": "无声",
+  "models.unit.minimumSeconds": "至少 {seconds} 秒",
+  "models.field.inputAudioPrice": "音频输入价格",
+  "models.field.outputAudioPrice": "音频输出价格"
 }

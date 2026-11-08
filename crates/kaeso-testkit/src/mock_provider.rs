@@ -483,6 +483,11 @@ async fn answer(ctx: Ctx, method: Method, uri: Uri, headers: HeaderMap, body: By
     if let Some(name) = marker(&text, "error") {
         return error_response(&dir, name);
     }
+    if method == Method::POST
+        && let Some(resp) = audio(&ctx.fixtures, &path, &text)
+    {
+        return resp;
+    }
     let asked = match &gemini {
         Some((model, _)) => Some(model.clone()),
         None => serde_json::from_slice::<serde_json::Value>(&body)
@@ -626,6 +631,12 @@ async fn answer(ctx: Ctx, method: Method, uri: Uri, headers: HeaderMap, body: By
             let default = match dialect {
                 "anthropic_messages" => "text-simple",
                 "openai_responses" => "text-input-string",
+                "gemini" if text.contains("\"responseModalities\":[\"AUDIO\"]") => {
+                    "recorded-speech-mp3"
+                }
+                "gemini" if text.contains("\"audioTranscriptionConfig\"") => {
+                    "recorded-transcribe-diarized"
+                }
                 "gemini" => "recorded-text-simple",
                 "openai_images" => "generate",
                 "minimax_images" => "generate-urls",
@@ -640,6 +651,83 @@ async fn answer(ctx: Ctx, method: Method, uri: Uri, headers: HeaderMap, body: By
         }
     };
     json_file(&file)
+}
+
+fn bytes_file(path: &Path, content_type: &str) -> Response {
+    let bytes =
+        std::fs::read(path).unwrap_or_else(|e| panic!("mock: cannot read {}: {e}", path.display()));
+    Response::builder()
+        .status(StatusCode::OK)
+        .header("content-type", content_type)
+        .body(Body::from(bytes))
+        .unwrap_or_else(|_| StatusCode::INTERNAL_SERVER_ERROR.into_response())
+}
+
+fn form_value<'a>(form: &'a str, name: &str) -> Option<&'a str> {
+    let head = format!("name=\"{name}\"\r\n\r\n");
+    let start = form.find(&head)? + head.len();
+    let rest = form.get(start..)?;
+    rest.get(..rest.find("\r\n")?)
+}
+
+// Speech and transcription paths of every provider form Kaeso speaks, answered from the
+// `openai_speech`, `openai_transcriptions` and `minimax_speech` fixtures.
+fn audio(fixtures: &Path, path: &str, text: &str) -> Option<Response> {
+    let speech = fixtures.join("openai_speech");
+    let transcripts = fixtures.join("openai_transcriptions");
+    let json = |dir: &Path, name: &str| Some(json_file(&dir.join(format!("{name}.json"))));
+    let events = |file: PathBuf| Some(bytes_file(&file, "text/event-stream"));
+    match path {
+        "/v1/t2a_v2" => json(&fixtures.join("minimax_speech/responses"), "speech"),
+        "/v4/ai/speech-model" => json(&speech.join("providers/vercel/responses"), "speech"),
+        "/v1/audio/speech" | "/v1/tts" => {
+            let mistral = text.contains("\"voice_id\"") && !path.ends_with("/tts");
+            if mistral && text.contains("\"stream\":true") {
+                events(speech.join("providers/mistral/streams/stream-speech.sse"))
+            } else if mistral {
+                json(&speech.join("providers/mistral/responses"), "speech")
+            } else if text.contains("\"stream_format\":\"sse\"") {
+                events(speech.join("streams/stream-speech.sse"))
+            } else {
+                Some(bytes_file(
+                    &speech.join("responses/speech.mp3"),
+                    "audio/mpeg",
+                ))
+            }
+        }
+        "/v4/ai/transcription-model" => {
+            json(&transcripts.join("providers/vercel/responses"), "json")
+        }
+        "/v1/stt" => json(&transcripts.join("providers/xai/responses"), "json"),
+        "/v2/audio/transcriptions" => json(&transcripts.join("providers/cohere/responses"), "json"),
+        "/api/paas/v4/audio/transcriptions" => {
+            json(&transcripts.join("providers/zai/responses"), "json")
+        }
+        "/v1/speech_to_text" => json(&transcripts.join("providers/minimax/responses"), "json"),
+        "/v1/audio/transcriptions" | "/v1/audio/translations" => {
+            if form_value(text, "stream") == Some("true") {
+                return events(transcripts.join("streams/stream-transcribe.sse"));
+            }
+            let plain = |name: &str| {
+                Some(bytes_file(
+                    &transcripts.join(format!("responses/{name}")),
+                    "text/plain",
+                ))
+            };
+            match form_value(text, "response_format") {
+                Some("text") => plain("text.txt"),
+                Some("srt") => plain("subtitles.srt"),
+                Some("vtt") => plain("subtitles.vtt"),
+                Some("verbose_json") => json(&transcripts.join("responses"), "verbose-segments"),
+                Some("diarized_json") => json(&transcripts.join("responses"), "diarized"),
+                _ if path.ends_with("/translations") => {
+                    json(&transcripts.join("responses"), "translation")
+                }
+                _ => json(&transcripts.join("responses"), "json"),
+            }
+        }
+        _ => None,
+    }
 }
 
 pub const UNSERVED_PREFIX: &str = "unserved-";

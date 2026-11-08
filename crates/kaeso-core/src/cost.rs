@@ -71,6 +71,12 @@ pub fn unpriced_model(
         RequestKind::Image => {
             by_unit || output || prices.output_image_price.is_some_and(|p| p > Decimal::ZERO)
         }
+        RequestKind::Speech => {
+            by_unit || output || prices.output_audio_price.is_some_and(|p| p > Decimal::ZERO)
+        }
+        RequestKind::Transcription => {
+            by_unit || input || prices.input_audio_price.is_some_and(|p| p > Decimal::ZERO)
+        }
         _ => true,
     };
     (!known).then(|| Unpriced {
@@ -98,11 +104,25 @@ pub fn cost(usage: &Usage, prices: &Fields) -> Decimal {
         .cache_read_image_tokens
         .unwrap_or(0)
         .min(usage.cache_read_tokens);
+    // Audio tokens are a share of each count too, billed at the audio price when there is one.
+    let audio_in = usage
+        .input_audio_tokens
+        .unwrap_or(0)
+        .min(usage.input_tokens - image_in);
+    let audio_out = usage
+        .output_audio_tokens
+        .unwrap_or(0)
+        .min(usage.output_tokens - image_out);
     let total = [
-        (usage.input_tokens - image_in, prices.input_price),
+        (usage.input_tokens - image_in - audio_in, prices.input_price),
         (image_in, prices.input_image_price.or(prices.input_price)),
-        (usage.output_tokens - image_out, prices.output_price),
+        (audio_in, prices.input_audio_price.or(prices.input_price)),
+        (
+            usage.output_tokens - image_out - audio_out,
+            prices.output_price,
+        ),
         (image_out, prices.output_image_price.or(prices.output_price)),
+        (audio_out, prices.output_audio_price.or(prices.output_price)),
         (
             usage.cache_read_tokens - image_cached,
             prices.cache_read_price,
@@ -137,10 +157,34 @@ pub struct MediaUnits {
     pub size: Option<String>,
     pub quality: Option<String>,
     pub resolution: Option<String>,
+    /// The characters of text a request asked to speak.
+    #[serde(default)]
+    pub characters: u64,
+    /// The length of the audio a request sent, in milliseconds.
+    #[serde(default)]
+    pub input_ms: u64,
+    /// The length of the audio or video a request made, in milliseconds.
+    #[serde(default)]
+    pub output_ms: u64,
+    /// Whether made video has sound, for prices that depend on it.
+    #[serde(default)]
+    pub audio: Option<bool>,
+    /// The audio format or transcript form, as the request names it, for the request log.
+    #[serde(default)]
+    pub format: Option<String>,
 }
+
+const MS_PER_SECOND: Decimal = Decimal::from_parts(1_000, 0, 0, false, 0);
+const MS_PER_MINUTE: Decimal = Decimal::from_parts(60_000, 0, 0, false, 0);
+const MS_PER_HOUR: Decimal = Decimal::from_parts(3_600_000, 0, 0, false, 0);
 
 impl MediaUnits {
     fn count(&self, per: &str, of: &str) -> Option<Decimal> {
+        let ms = match of {
+            "input" => self.input_ms,
+            _ => self.output_ms,
+        };
+        let duration = |per_unit: Decimal| (ms > 0).then(|| Decimal::from(ms) / per_unit);
         match (per, of) {
             ("image", "input") => Some(Decimal::from(self.input_images)),
             ("image", "output") => Some(Decimal::from(self.output_images)),
@@ -148,6 +192,12 @@ impl MediaUnits {
                 let pixels = self.output_pixels?.checked_mul(self.output_images)?;
                 Some(Decimal::from(pixels) / MILLION)
             }
+            ("million_characters", "input") if self.characters > 0 => {
+                Some(Decimal::from(self.characters) / MILLION)
+            }
+            ("second", _) => duration(MS_PER_SECOND),
+            ("minute", _) => duration(MS_PER_MINUTE),
+            ("hour", _) => duration(MS_PER_HOUR),
             _ => None,
         }
     }
@@ -158,6 +208,18 @@ impl MediaUnits {
             "quality" => self.quality.as_deref(),
             "resolution" => self.resolution.as_deref(),
             _ => None,
+        }
+    }
+
+    /// The unit the request log names these units by, with what went in and what came out:
+    /// images, characters of speech, or milliseconds of audio.
+    pub fn logged(&self) -> (&'static str, u64, u64) {
+        if self.input_images > 0 || self.output_images > 0 || self.size.is_some() {
+            ("image", self.input_images, self.output_images)
+        } else if self.characters > 0 {
+            ("character", self.characters, self.output_ms)
+        } else {
+            ("millisecond", self.input_ms, self.output_ms)
         }
     }
 }
@@ -175,14 +237,18 @@ fn fit(price: &UnitPrice, units: &MediaUnits) -> Fit {
         ("size", &price.size),
         ("quality", &price.quality),
         ("resolution", &price.resolution),
-        ("audio", &price.audio),
     ] {
         let Some(wanted) = wanted else { continue };
         match units.condition(name) {
             Some(have) if have.eq_ignore_ascii_case(wanted) => named += 1,
             Some(_) => return Fit::No,
-            None if name == "audio" => return Fit::No,
             None => unknown = true,
+        }
+    }
+    if let Some(wanted) = price.audio {
+        match units.audio {
+            Some(have) if have == wanted => named += 1,
+            _ => return Fit::No,
         }
     }
     if unknown {
@@ -226,6 +292,19 @@ pub fn media_cost(units: &MediaUnits, prices: &Fields) -> Decimal {
                 (units.count(per, of), unit_price(list, units, per, of))
             else {
                 continue;
+            };
+            // Groq bills at least 10 seconds of audio a request, whatever its length.
+            let count = match (price.minimum_seconds, *per) {
+                (Some(min), "second" | "minute" | "hour") => {
+                    let per_unit = match *per {
+                        "second" => MS_PER_SECOND,
+                        "minute" => MS_PER_MINUTE,
+                        _ => MS_PER_HOUR,
+                    };
+                    let least = Decimal::from(min) * MS_PER_SECOND / per_unit;
+                    count.max(least)
+                }
+                _ => count,
             };
             total = count
                 .checked_mul(price.usd)
@@ -659,13 +738,116 @@ mod tests {
         };
         assert_eq!(media_cost(&unsized_units, &prices), Decimal::ZERO);
         let mut audio = unit("image", "output", dec!(1));
-        audio.audio = Some("speech".into());
+        audio.audio = Some(true);
         let audio_only = Fields {
             unit_prices: Some(vec![audio]),
             ..Fields::default()
         };
         assert_eq!(media_cost(&units, &audio_only), Decimal::ZERO);
         assert_eq!(media_cost(&units, &Fields::default()), Decimal::ZERO);
+    }
+
+    #[test]
+    fn audio_tokens_are_billed_at_audio_prices_and_fall_back_to_token_prices() {
+        let prices = Fields {
+            input_price: Some(dec!(0.6)),
+            output_price: Some(dec!(2)),
+            output_audio_price: Some(dec!(12)),
+            input_audio_price: Some(dec!(1)),
+            ..Fields::default()
+        };
+        let mut usage = Usage::new(1_000_000, 2_000_000);
+        usage.output_audio_tokens = Some(1_000_000);
+        usage.input_audio_tokens = Some(500_000);
+        assert_eq!(cost(&usage, &prices), dec!(14.8));
+        let plain = Fields {
+            input_audio_price: None,
+            output_audio_price: None,
+            ..prices
+        };
+        assert_eq!(cost(&usage, &plain), dec!(4.6));
+    }
+
+    #[test]
+    fn characters_and_audio_lengths_are_billed_per_unit_with_a_minimum() {
+        let speech = Fields {
+            unit_prices: Some(vec![unit("million_characters", "input", dec!(15))]),
+            ..Fields::default()
+        };
+        let units = MediaUnits {
+            characters: 12,
+            ..MediaUnits::default()
+        };
+        assert_eq!(media_cost(&units, &speech), dec!(0.00018));
+        assert_eq!(units.logged(), ("character", 12, 0));
+        let mut hourly = unit("hour", "input", dec!(0.111));
+        hourly.minimum_seconds = Some(10);
+        let groq = Fields {
+            unit_prices: Some(vec![hourly]),
+            ..Fields::default()
+        };
+        let short = MediaUnits {
+            input_ms: 3_000,
+            ..MediaUnits::default()
+        };
+        assert_eq!(
+            media_cost(&short, &groq),
+            dec!(0.111) * dec!(10) / dec!(3600)
+        );
+        let long = MediaUnits {
+            input_ms: 7_200_000,
+            ..MediaUnits::default()
+        };
+        assert_eq!(media_cost(&long, &groq), dec!(0.222));
+        assert_eq!(long.logged(), ("millisecond", 7_200_000, 0));
+        let per_minute = Fields {
+            unit_prices: Some(vec![unit("minute", "output", dec!(0.12))]),
+            ..Fields::default()
+        };
+        let sound = MediaUnits {
+            output_ms: 30_000,
+            ..MediaUnits::default()
+        };
+        assert_eq!(media_cost(&sound, &per_minute), dec!(0.06));
+        assert_eq!(media_cost(&MediaUnits::default(), &groq), Decimal::ZERO);
+        let mut with_sound = unit("second", "output", dec!(0.05));
+        with_sound.audio = Some(true);
+        let mut silent = unit("second", "output", dec!(0.025));
+        silent.audio = Some(false);
+        let video = Fields {
+            unit_prices: Some(vec![with_sound, silent]),
+            ..Fields::default()
+        };
+        let clip = |audio| MediaUnits {
+            output_ms: 4_000,
+            audio,
+            ..MediaUnits::default()
+        };
+        assert_eq!(media_cost(&clip(Some(false)), &video), dec!(0.1));
+        assert_eq!(media_cost(&clip(Some(true)), &video), dec!(0.2));
+    }
+
+    #[test]
+    fn speech_and_transcription_models_are_priced_by_unit_or_audio_tokens() {
+        let none = Fields::default();
+        let audio_out = Fields {
+            output_audio_price: Some(dec!(12)),
+            ..Fields::default()
+        };
+        assert!(unpriced_model(&none, &none, RequestKind::Speech, "m").is_some());
+        assert_eq!(
+            unpriced_model(&audio_out, &none, RequestKind::Speech, "m"),
+            None
+        );
+        let audio_in = Fields {
+            input_audio_price: Some(dec!(2.5)),
+            ..Fields::default()
+        };
+        assert!(unpriced_model(&none, &none, RequestKind::Transcription, "m").is_some());
+        assert_eq!(
+            unpriced_model(&audio_in, &none, RequestKind::Transcription, "m"),
+            None
+        );
     }
 
     #[test]

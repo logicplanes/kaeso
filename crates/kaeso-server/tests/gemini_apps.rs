@@ -103,7 +103,7 @@ async fn a_gemini_app_reaches_claude_with_its_key_in_the_header_or_the_query() {
     let logged = outcomes.last().unwrap();
     assert_eq!(logged.ingress, kaeso_kpp::DialectId::Gemini);
     assert_eq!(
-        kaeso_server::services::logs::endpoint(logged.ingress, logged.kind, logged.gemini, None),
+        kaeso_server::services::logs::endpoint(logged),
         "models:generateContent"
     );
     assert_eq!(logged.requested_model.as_deref(), Some("claude-haiku-4-5"));
@@ -295,7 +295,7 @@ async fn a_gemini_app_counts_tokens_and_embeds_on_other_providers() {
     let outcomes = env.outcomes().await;
     let endpoints: Vec<&str> = outcomes
         .iter()
-        .map(|o| kaeso_server::services::logs::endpoint(o.ingress, o.kind, o.gemini, None))
+        .map(kaeso_server::services::logs::endpoint)
         .collect();
     assert!(endpoints.contains(&"models:countTokens"), "{endpoints:?}");
     assert!(

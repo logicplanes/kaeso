@@ -206,11 +206,83 @@ pub fn prepare(
                 adapted: Vec::new(),
             })
         }
+        Request::Speech(r) => {
+            let Some(speech) = eff.provider.speech() else {
+                return Err(refuse(
+                    "speech",
+                    Some("model"),
+                    format!(
+                        "{} offers no speech API Kaeso can call, so `{name}` can't speak.",
+                        eff.provider.name()
+                    ),
+                ));
+            };
+            if !produces(eff, "audio") {
+                return Err(refuse(
+                    "audio output",
+                    Some("model"),
+                    format!("The model `{name}` does not produce audio."),
+                ));
+            }
+            if r.required_capabilities().audio_input && !eff.accepts("audio") {
+                return Err(refuse(
+                    "audio input",
+                    Some("audio"),
+                    format!("The model `{name}` does not accept audio."),
+                ));
+            }
+            Ok(media_plan(speech.dialect))
+        }
+        Request::Transcription(_) => {
+            let Some(transcriptions) = eff.provider.transcriptions() else {
+                return Err(refuse(
+                    "transcription",
+                    Some("model"),
+                    format!(
+                        "{} offers no transcription API Kaeso can call, so `{name}` can't transcribe.",
+                        eff.provider.name()
+                    ),
+                ));
+            };
+            if !eff.accepts("audio") {
+                return Err(refuse(
+                    "audio input",
+                    Some("file"),
+                    format!("The model `{name}` does not accept audio."),
+                ));
+            }
+            if !produces(eff, "text") {
+                return Err(refuse(
+                    "text output",
+                    Some("model"),
+                    format!("The model `{name}` does not produce text."),
+                ));
+            }
+            Ok(media_plan(transcriptions.dialect))
+        }
         _ => Err(refuse(
             "endpoint",
             None,
             format!("The model `{name}` cannot serve this endpoint."),
         )),
+    }
+}
+
+fn produces(eff: &Effective, modality: &str) -> bool {
+    eff.fields
+        .output_modalities
+        .as_ref()
+        .is_none_or(|o| o.iter().any(|x| x == modality))
+}
+
+fn media_plan(dialect: DialectId) -> Plan {
+    Plan {
+        dialect,
+        adaptive_thinking: None,
+        thinking_binding: None,
+        reasoning: None,
+        left_out: Vec::new(),
+        adapted: Vec::new(),
     }
 }
 

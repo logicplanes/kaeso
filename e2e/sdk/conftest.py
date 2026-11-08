@@ -148,6 +148,9 @@ class Install:
             ("google", "gemini-embedding-2", None),
             ("openai", "gpt-image-2", None),
             ("google", "gemini-3.1-flash-image", None),
+            ("openai", "gpt-4o-mini-tts", None),
+            ("openai", "whisper-1", None),
+            ("openai", "gpt-4o-transcribe", None),
         ):
             body = {"provider": provider, "model_id": model}
             if overrides:

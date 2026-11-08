@@ -580,9 +580,13 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
         })
     };
     app.progress.bytes += tail.len() as u64;
-    let images = rec.outcome().kind == RequestKind::Image;
-    // Image streams report usage on the finished image, or bill per image without tokens.
-    let estimate = !images
+    let kind = rec.outcome().kind;
+    // Image, speech and transcript streams report usage on their last event, or bill by unit.
+    let media = matches!(
+        kind,
+        RequestKind::Image | RequestKind::Speech | RequestKind::Transcription
+    );
+    let estimate = !media
         && !tally.has_final_usage()
         && (assembled.complete || gone || (broken.is_some() && assembled.response.is_some()));
     let ended = app.arrived.elapsed();
@@ -592,10 +596,21 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
             o.usage = Some(r.usage.clone());
             o.response_model = Some(r.model.clone());
         }
-        if let Some(media) = o.media.as_mut() {
-            super::media::add_streamed(media, assembled.images);
+        if let Some(units) = o.media.as_mut() {
+            match kind {
+                RequestKind::Image => super::media::add_streamed(units, assembled.images),
+                RequestKind::Transcription => {
+                    if let Some(ms) = assembled.audio_ms {
+                        units.input_ms = ms;
+                    }
+                }
+                _ => {}
+            }
         }
-        o.reply = if images { None } else { assembled.response };
+        if let Some(r) = o.response_model.as_mut().filter(|m| m.is_empty()) {
+            r.clone_from(&o.requested_model.clone().unwrap_or_default());
+        }
+        o.reply = if media { None } else { assembled.response };
         o.stream_progress = Some(app.progress);
         o.stream_processing = Some(processing.0);
     }
