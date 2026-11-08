@@ -152,6 +152,7 @@ const MARKED_PROVIDERS = {
   alibaba: "QwenCloud",
   cerebras: "Cerebras",
   zai: "Z.ai",
+  minimax: "MiniMax",
 };
 const PARAMS: Record<string, number> = { m: 2, l: 2, h: 1, v: 1, c: 6, s: 4, q: 4, t: 2, a: 7, z: 0 };
 

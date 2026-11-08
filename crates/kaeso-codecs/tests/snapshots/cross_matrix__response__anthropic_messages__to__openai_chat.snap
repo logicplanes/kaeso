@@ -247,6 +247,124 @@ expression: outcomes
       "total_tokens": 5330
     }
   },
+  "providers/minimax/deep-thinking": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "**9.9 is bigger than 9.11.**\n\nTo compare decimals, it helps to write them with the same number of decimal places:\n- 9.11 = 9.11\n- 9.9 = 9.90\n\nSince 9.90 > 9.11, **9.9 is larger**.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "066b367ba949a58a9d6829b4bf8cbcd4",
+    "model": "MiniMax-M3.1-Flash",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 149,
+      "prompt_tokens": 172,
+      "prompt_tokens_details": {
+        "cached_tokens": 159
+      },
+      "total_tokens": 321
+    }
+  },
+  "providers/minimax/image-url-adaptive": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "This image shows a young girl, probably around 4-5 years old, photographed in a close-up portrait style. She has:\n\n- **Wavy, tousled light brown hair** with bangs that fall across her forehead, with some strands appearing slightly messy or windblown\n- **Large, expressive hazel-green eyes** that are looking directly at the camera\n- **A soft, subtle smile** giving her a warm, gentle expression\n- **Fair skin** with rosy cheeks, illuminated by warm, soft lighting\n\nShe's wearing what appears to be a **cream or off-white dress** with delicate lace or ruffled detailing around the neckline and shoulders.\n\nThe photograph has a **professional portrait quality**, with a softly blurred, neutral grayish-beige background and warm directional lighting that creates a classic, painterly aesthetic. The composition and styling suggest this could be a formal portrait or an AI-generated image with a vintage/realistic photographic style.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "066a3730f92943410551c4b4978ddad1",
+    "model": "MiniMax-M3.1-Flash",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 214,
+      "prompt_tokens": 1366,
+      "prompt_tokens_details": {
+        "cached_tokens": 157
+      },
+      "total_tokens": 1580
+    }
+  },
+  "providers/minimax/tool-use-auto": {
+    "choices": [
+      {
+        "finish_reason": "tool_calls",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "I'll check the current weather in San Francisco for you.",
+          "refusal": null,
+          "role": "assistant",
+          "tool_calls": [
+            {
+              "function": {
+                "arguments": "{\n        \"location\": \"San Francisco, US\"\n      }",
+                "name": "get_weather"
+              },
+              "id": "call_function_9pjh8jjdebck_1",
+              "type": "function"
+            }
+          ]
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "066b133406cd8cfd88eb3b2b893a5daa",
+    "model": "MiniMax-M3.1-Flash",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 91,
+      "prompt_tokens": 418,
+      "prompt_tokens_details": {
+        "cached_tokens": 404
+      },
+      "total_tokens": 509
+    }
+  },
+  "providers/minimax/video-url": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "A cat is seen walking on a diving board and then jumping off into a swimming pool.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "066b458956dd2902de31eae19cf15c6e",
+    "model": "MiniMax-M3.1-Flash",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 393,
+      "prompt_tokens": 2245,
+      "prompt_tokens_details": {
+        "cached_tokens": 1896
+      },
+      "total_tokens": 2638
+    }
+  },
   "providers/vercel/recorded-text": {
     "choices": [
       {

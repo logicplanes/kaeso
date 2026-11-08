@@ -22,6 +22,7 @@ Kaeso 内置了以下服务商，按名称排列。如何使用服务商以及�
 | Cohere `cohere` | Chat Completions、Embeddings | `api.cohere.ai` | [dashboard.cohere.com](https://dashboard.cohere.com/api-keys)，无固定前缀 |
 | DeepSeek `deepseek` | Chat Completions | `api.deepseek.com` | [platform.deepseek.com](https://platform.deepseek.com/api_keys)，`sk-` |
 | Groq `groq` | Chat Completions | `api.groq.com` | [console.groq.com](https://console.groq.com/keys)，`gsk_` |
+| MiniMax `minimax` | Messages | `api.minimax.io` | [platform.minimax.io](https://platform.minimax.io/user-center/basic-information/interface-key)，`sk-api-` |
 | Mistral `mistral` | Chat Completions、Embeddings | `api.mistral.ai` | [console.mistral.ai](https://console.mistral.ai/api-keys)，无固定前缀 |
 | Moonshot `moonshotai` | Chat Completions | `api.moonshot.ai` | [platform.kimi.ai](https://platform.kimi.ai/console/api-keys)，`sk-` |
 | Ollama Cloud `ollama-cloud` | Chat Completions | `ollama.com` | [ollama.com](https://ollama.com/settings/keys)，无固定前缀 |
@@ -41,6 +42,7 @@ Kaeso 内置了以下服务商，按名称排列。如何使用服务商以及�
 - **Cohere。** 即 Cohere 的 [Compatibility API](https://docs.cohere.com/docs/compatibility-api)，它只覆盖 Cohere 自身 API 的一部分：无法通过它使用文档、引用和重排序。Cohere 拒绝部分字段，例如 `logit_bias` 和 `parallel_tool_calls: false`；单个 `stop` 字符串会以列表形式发送给它。它的推理模型只支持 `reasoning_effort` 为 `none` 或 `high`。它的 Embed 模型（例如 `embed-v4.0`）不在 KPMR 中：请将其添加为以 Embeddings 发送的自定义模型，并填写价格。
 - **DeepSeek。** `developer` 消息会作为 `system` 消息发送给它。
 - **Groq。** `developer` 消息会作为 `system` 消息发送给它；它拒绝部分字段，例如 `logit_bias`。
+- **MiniMax。** 即 MiniMax 的 Anthropic 兼容 API，提供 `MiniMax-M3` 和 `MiniMax-M3.1-Flash`，这是 MiniMax 在该接口上提供的仅有的模型；它的 M2 模型已下线。Kaeso 以 Messages 格式调用它，密钥放在 `x-api-key` 中，因此各种格式的应用都能访问它。Kaeso 拒绝 MiniMax 接受却不作处理的内容：`top_k`、`stop_sequences`（Chat 应用的 `stop`）、`mcp_servers`、`container`、不为 1 的 `temperature`、不为 0.95 的 `top_p`，以及不为 `auto` 的 `tool_choice`。Claude Code 只清除思考内容的 `context_management` 会被省略，并在 `kaeso-left-out` 中注明。图片可以通过 URL 或 base64 发送，文档由 MiniMax 自己拒绝。`MiniMax-M3.1-Flash` 始终思考，并拒绝关闭思考。MiniMax 自己为思考块签名，因此 Anthropic 应用应只把含有这些思考块的对话发给 MiniMax 模型；Anthropic 会拒绝它们的签名。Kaeso 拒绝 Token 计数，因为 MiniMax 返回的格式与 Anthropic 不同。在中国大陆，请将 MiniMax 的[基础 URL](../self-hosting/configuration.md#服务商设置)设为 `https://api.minimax.cn/anthropic`，并使用 platform.minimax.cn 的密钥。
 - **Mistral。** `developer` 消息会作为 `system` 消息发送给它，部分字段以它自己的名称发送，例如 `seed` 改为 `random_seed`；它拒绝其他一些字段（例如 `logit_bias`），也拒绝以助手消息结尾的对话。
 - **Moonshot。** 即 Kimi API，提供 Moonshot 的 Kimi 模型，例如 `kimi-k3` 和 `kimi-k2.6`。`developer` 消息会作为 `system` 消息发送给它；应用预填的助手消息会带上 Moonshot 的 `partial: true` 发送，使回复接着该消息续写。它拒绝部分字段，例如 `parallel_tool_calls: false` 和 `store`，因为 Moonshot 接受这些字段却不作处理。Kimi 模型的采样参数是固定的：Kaeso 在发送前拒绝 1 以外的 `temperature`，`top_p`、`n` 和惩罚参数的其他值则由 Moonshot 拒绝。模型的推理内容会以各种格式送达应用。K3 模型的 `reasoning_effort` 为 `low`、`high` 或 `max`，Kaeso 拒绝其他级别；`kimi-k2.6` 在 `none` 时不思考，`kimi-k2.7-code` 始终思考。Kimi 模型在思考时拒绝 `tool_choice: "required"`。
 - **Ollama Cloud。** 由 Ollama 在自己的服务器上运行的模型，例如 `gpt-oss:120b`。模型 ID 保留 Ollama 在冒号后的标签。每个应用的输出上限都以 `max_tokens` 发送给它，因为 Ollama 会忽略 `max_completion_tokens`；它拒绝 `logprobs`、`top_logprobs` 和 `logit_bias`，因为 Ollama 接受这些字段却不作处理。模型的推理内容会以各种格式送达应用。Ollama 的免费套餐只包含部分模型：对其他模型，Ollama 返回 402，应用会将其作为被拒绝的服务商密钥收到。Ollama 列出模型时不检查密钥，因此**检查可用性**无法发现错误的密钥；使用该密钥的第一个请求会报告密钥被拒绝。本地 Ollama 服务器不需要密钥；请将其添加为使用 Chat Completions 的[自定义服务商](../console/custom-providers.md)。
@@ -53,4 +55,4 @@ Kaeso 内置了以下服务商，按名称排列。如何使用服务商以及�
 
 ## 商标
 
-所有商标和标志均归其各自所有者所有。Kaeso 与这些服务商均无关联，也未获得其认可或赞助。控制台显示服务商的标志，仅用于标明密钥、模型或请求所属的服务商。Anthropic、Cerebras、Cohere、Groq、Z.ai 以及 QwenCloud 的所有者 Alibaba Cloud 在其条款中限制使用其标志；Kaeso 仅出于此目的显示它们的标志，保留所有者的形状和颜色，只在颜色需要在 Kaeso 的浅色和深色背景上保持可见时才做必要的调整。Mistral 的品牌页面要求不要给其图标重新着色或加框；Kaeso 以 Mistral 自己的颜色显示该图标，放在与其他标志相同的中性底块上。[NOTICE.md](https://github.com/logicplanes/kaeso/blob/dev/NOTICE.md#trademarks) 列出了每个标志的来源。
+所有商标和标志均归其各自所有者所有。Kaeso 与这些服务商均无关联，也未获得其认可或赞助。控制台显示服务商的标志，仅用于标明密钥、模型或请求所属的服务商。Anthropic、Cerebras、Cohere、Groq、Z.ai、MiniMax 以及 QwenCloud 的所有者 Alibaba Cloud 在其条款中限制使用其标志；Kaeso 仅出于此目的显示它们的标志，保留所有者的形状和颜色，只在颜色需要在 Kaeso 的浅色和深色背景上保持可见时才做必要的调整。Mistral 的品牌页面要求不要给其图标重新着色或加框；Kaeso 以 Mistral 自己的颜色显示该图标，放在与其他标志相同的中性底块上。[NOTICE.md](https://github.com/logicplanes/kaeso/blob/dev/NOTICE.md#trademarks) 列出了每个标志的来源。

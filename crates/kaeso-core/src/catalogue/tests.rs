@@ -1800,3 +1800,27 @@ fn zai_models_speak_anthropic_messages_with_kpmrs_prices_and_limits() {
             .is_some_and(|m| m.iter().any(|m| m == "image"))
     );
 }
+
+#[test]
+fn minimax_models_speak_anthropic_messages_with_kpmrs_prices_and_limits() {
+    let m3 = eff(&entry("minimax", "MiniMax-M3"));
+    assert_eq!(m3.dialect, DialectId::AnthropicMessages);
+    assert_eq!(m3.provider.messages().provider, "MiniMax");
+    assert_eq!(
+        (
+            m3.fields.input_price,
+            m3.fields.output_price,
+            m3.fields.cache_read_price
+        ),
+        (Some(dec!(0.3)), Some(dec!(1.2)), Some(dec!(0.06)))
+    );
+    assert_eq!(
+        (m3.fields.context_limit, m3.fields.output_limit),
+        (Some(1_000_000), Some(524_288))
+    );
+    let flash = eff(&entry("minimax", "MiniMax-M3.1-Flash"));
+    assert_eq!(
+        (flash.fields.input_price, flash.fields.output_price),
+        (Some(dec!(0.15)), Some(dec!(0.6)))
+    );
+}

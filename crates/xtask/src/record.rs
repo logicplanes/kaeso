@@ -540,6 +540,7 @@ mod tests {
 
     use super::*;
     use crate::testing::{Reply, TempDir, serve_once};
+    use kaeso_codecs::anthropic_messages::MessagesProfile;
     use kaeso_codecs::openai_chat::ChatProfile;
     use kaeso_codecs::openai_responses::ResponsesProfile;
     use kaeso_core::provider::KeyPage;
@@ -606,6 +607,7 @@ mod tests {
         end_user_limit: None,
         chat: ChatProfile::compatible("Example Cloud"),
         responses: ResponsesProfile::compatible("Example Cloud"),
+        messages: MessagesProfile::compatible("Example Cloud"),
         account: None,
     };
 

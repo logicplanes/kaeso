@@ -1,0 +1,16 @@
+{
+  "model": "MiniMax-M3.1-Flash",
+  "thinking": {
+    "type": "adaptive"
+  },
+  "messages": [
+    {
+      "role": "user",
+      "content": "Which is bigger, 9.11 or 9.9?"
+    }
+  ],
+  "max_tokens": 4096,
+  "output_config": {
+    "effort": "max"
+  }
+}

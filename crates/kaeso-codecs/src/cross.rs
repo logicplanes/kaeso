@@ -377,7 +377,7 @@ fn repeats_effort(value: &RawJson, effort: Option<&str>) -> bool {
     })
 }
 
-fn claude_code_hint(origin: DialectId, scope: &str, key: &str) -> Option<&'static str> {
+pub(crate) fn claude_code_hint(origin: DialectId, scope: &str, key: &str) -> Option<&'static str> {
     let pre_release = match (origin, scope) {
         (DialectId::AnthropicMessages, "request") => {
             key == "context_management" || key == "output_config.task_budget"

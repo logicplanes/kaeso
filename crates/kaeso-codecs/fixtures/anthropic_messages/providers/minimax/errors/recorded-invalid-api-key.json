@@ -1,0 +1,8 @@
+{
+  "type": "error",
+  "error": {
+    "type": "authentication_error",
+    "message": "login fail: Please carry the API secret key in the 'X-Api-Key' field of the request header"
+  },
+  "request_id": "073f0ca516007430907dd14262d97cbf"
+}

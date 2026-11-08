@@ -249,6 +249,22 @@
       "count_tokens": null,
       "embeddings": null,
       "account": null
+    },
+    {
+      "id": "minimax",
+      "name": "MiniMax",
+      "custom": false,
+      "takes_key": true,
+      "hides_built_in": null,
+      "key_page": {
+        "url": "https://platform.minimax.io/user-center/basic-information/interface-key",
+        "label": "API Keys"
+      },
+      "key_prefix": "sk-api-",
+      "dialects": ["anthropic_messages"],
+      "count_tokens": null,
+      "embeddings": null,
+      "account": null
     }
   ],
   "has_more": false,

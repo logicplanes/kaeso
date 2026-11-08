@@ -105,6 +105,8 @@ base_url = "https://api.cerebras.ai"
 
 [providers.zai]
 base_url = "https://api.z.ai/api/anthropic"
+[providers.minimax]
+base_url = "https://api.minimax.io/anthropic"
 
 [custom_providers]
 enabled = true

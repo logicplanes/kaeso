@@ -10,6 +10,7 @@ const providers: ProviderPickerOption[] = [
   { id: "cohere", name: "Cohere" },
   { id: "deepseek", name: "DeepSeek" },
   { id: "groq", name: "Groq" },
+  { id: "minimax", name: "MiniMax" },
   { id: "mistral", name: "Mistral" },
   { id: "moonshotai", name: "Moonshot" },
   { id: "ollama-cloud", name: "Ollama Cloud" },

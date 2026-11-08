@@ -227,6 +227,26 @@ describe("ProviderKeyDialog", () => {
     expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([{ provider: "cerebras", name: "Cerebras prod", secret: "csk-123", make_default: false }]);
   });
 
+  it("adds a MiniMax key with MiniMax's key page as its key hint", async () => {
+    on("POST", CREDENTIALS, credential({ provider: "minimax", name: "MiniMax prod", is_default: true }));
+    const { user, dialog } = await open();
+
+    await choose(user, dialog, "MiniMax");
+
+    expect(await within(dialog).findByRole("heading", { name: "Paste your MiniMax API key" })).toBeVisible();
+    expectKeyHint(dialog, "platform.minimax.io", "https://platform.minimax.io/user-center/basic-information/interface-key", "API Keys", "sk-api-");
+    const secret = within(dialog).getByLabelText("MiniMax API key");
+    expect(secret).toHaveAttribute("placeholder", "sk-api-…");
+    await user.type(secret, "sk-api-123");
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "MiniMax prod");
+    await user.click(within(dialog).getByRole("button", { name: "Add key" }));
+
+    expect(await notifications().findByText("MiniMax prod is the MiniMax default")).toBeInTheDocument();
+    expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([
+      { provider: "minimax", name: "MiniMax prod", secret: "sk-api-123", make_default: false },
+    ]);
+  });
+
   it("adds an OpenRouter key with OpenRouter's own key hint", async () => {
     on("POST", CREDENTIALS, credential({ provider: "openrouter", name: "OpenRouter prod", is_default: true }));
     const { user, dialog } = await open();

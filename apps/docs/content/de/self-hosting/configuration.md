@@ -194,6 +194,7 @@ Die ersten drei Einstellungen legen nur die Anfangswerte einer neuen Installatio
 | `KAESO_PROVIDERS_ALIBABA_BASE_URL`<br>`providers.alibaba.base_url` | Text | `https://ap-southeast-1.maas.qwencloudapi.com/compatible-mode` | Basis-URL der QwenCloud-API. |
 | `KAESO_PROVIDERS_CEREBRAS_BASE_URL`<br>`providers.cerebras.base_url` | Text | `https://api.cerebras.ai` | Basis-URL der Cerebras-API. |
 | `KAESO_PROVIDERS_ZAI_BASE_URL`<br>`providers.zai.base_url` | Text | `https://api.z.ai/api/anthropic` | Basis-URL der Z.ai-API. |
+| `KAESO_PROVIDERS_MINIMAX_BASE_URL`<br>`providers.minimax.base_url` | Text | `https://api.minimax.io/anthropic` | Basis-URL der MiniMax-API. |
 | `KAESO_UPSTREAM_CONNECT_TIMEOUT`<br>`upstream.connect_timeout` | Text | `10s` | Zeit für den Verbindungsaufbau zu einem Anbieter, TCP und TLS; höchstens 24h. |
 | `KAESO_UPSTREAM_REQUEST_TIMEOUT`<br>`upstream.request_timeout` | Text | `600s` | Gesamtzeit einer Anbieter-Anfrage ohne Streaming; höchstens 24h. |
 | `KAESO_UPSTREAM_FIRST_BYTE_TIMEOUT`<br>`upstream.first_byte_timeout` | Text | `60s` | Streaming: Zeit bis zum ersten Byte des Anbieters; höchstens 24h. |

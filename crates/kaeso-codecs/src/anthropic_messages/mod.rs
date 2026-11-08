@@ -3,6 +3,7 @@ mod check;
 mod common;
 mod error;
 mod models;
+mod profile;
 mod request;
 mod response;
 mod stream;
@@ -24,6 +25,8 @@ use crate::codec::{
 pub(crate) use blocks::{
     ToolChange, ToolHandle, ToolReferent, block_form, block_form_of, tool_change, tool_reference,
 };
+pub(crate) use profile::apply as apply_profile;
+pub use profile::{FixedValue, MessagesProfile};
 pub(crate) use request::decode_tool;
 
 pub const ANTHROPIC_VERSION: &str = "2023-06-01";
