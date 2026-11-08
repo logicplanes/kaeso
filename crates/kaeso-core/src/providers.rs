@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 use url::Url;
 
 use crate::provider::{self, AccountSignIn, AuthStyle, Provider, ProviderId};
+use crate::servers::ServerKind;
 
 pub const GENERATION_DIALECTS: [DialectId; 3] = [
     DialectId::OpenAiChat,
@@ -89,6 +90,7 @@ pub struct Draft {
     pub generation: DialectId,
     pub embeddings: Option<DialectId>,
     pub count_tokens: Option<DialectId>,
+    pub server: Option<ServerKind>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -102,6 +104,7 @@ pub struct CustomProvider {
     generation: DialectId,
     embeddings: Option<DialectId>,
     count_tokens: Option<DialectId>,
+    server: Option<ServerKind>,
     dialects: Vec<DialectId>,
 }
 
@@ -141,6 +144,7 @@ impl CustomProvider {
             generation: d.generation,
             embeddings: d.embeddings,
             count_tokens: d.count_tokens,
+            server: d.server,
             dialects,
         })
     }
@@ -181,6 +185,10 @@ impl CustomProvider {
         &self.dialects
     }
 
+    pub fn server(&self) -> Option<ServerKind> {
+        self.server
+    }
+
     pub fn draft(&self) -> Draft {
         Draft {
             uuid: self.uuid,
@@ -191,6 +199,7 @@ impl CustomProvider {
             generation: self.generation,
             embeddings: self.embeddings,
             count_tokens: self.count_tokens,
+            server: self.server,
         }
     }
 }
@@ -212,7 +221,7 @@ impl From<CustomProvider> for Draft {
 impl Serialize for Draft {
     fn serialize<S: serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
         use serde::ser::SerializeStruct;
-        let mut out = s.serialize_struct("CustomProvider", 8)?;
+        let mut out = s.serialize_struct("CustomProvider", 9)?;
         out.serialize_field("uuid", &self.uuid)?;
         out.serialize_field("id", &self.id)?;
         out.serialize_field("name", &self.name)?;
@@ -221,6 +230,7 @@ impl Serialize for Draft {
         out.serialize_field("generation", &self.generation)?;
         out.serialize_field("embeddings", &self.embeddings)?;
         out.serialize_field("count_tokens", &self.count_tokens)?;
+        out.serialize_field("server", &self.server)?;
         out.end()
     }
 }
@@ -238,6 +248,8 @@ impl<'de> Deserialize<'de> for Draft {
             generation: DialectId,
             embeddings: Option<DialectId>,
             count_tokens: Option<DialectId>,
+            #[serde(default)]
+            server: Option<ServerKind>,
         }
         let s = Stored::deserialize(d)?;
         Ok(Draft {
@@ -249,6 +261,7 @@ impl<'de> Deserialize<'de> for Draft {
             generation: s.generation,
             embeddings: s.embeddings,
             count_tokens: s.count_tokens,
+            server: s.server,
         })
     }
 }
@@ -381,21 +394,30 @@ impl ProviderRef {
     pub fn chat(&self) -> ChatProfile {
         match self {
             ProviderRef::BuiltIn(p) => p.chat,
-            ProviderRef::Custom(_) => ChatProfile::OPENAI.without_verbosity(),
+            ProviderRef::Custom(c) => match c.server {
+                Some(s) => s.server().chat,
+                None => ChatProfile::OPENAI.without_verbosity(),
+            },
         }
     }
 
     pub fn responses(&self) -> ResponsesProfile {
         match self {
             ProviderRef::BuiltIn(p) => p.responses,
-            ProviderRef::Custom(_) => ResponsesProfile::compatible("OpenAI"),
+            ProviderRef::Custom(c) => match c.server {
+                Some(s) => s.server().responses,
+                None => ResponsesProfile::compatible("OpenAI"),
+            },
         }
     }
 
     pub fn messages(&self) -> MessagesProfile {
         match self {
             ProviderRef::BuiltIn(p) => p.messages,
-            ProviderRef::Custom(_) => MessagesProfile::ANTHROPIC,
+            ProviderRef::Custom(c) => match c.server {
+                Some(s) => s.server().messages,
+                None => MessagesProfile::ANTHROPIC,
+            },
         }
     }
 
@@ -435,7 +457,15 @@ impl ProviderRef {
     }
 
     pub fn exceeds_context(&self, message: &str) -> bool {
-        self.built_in().is_some_and(|p| p.exceeds_context(message))
+        match self {
+            ProviderRef::BuiltIn(p) => p.exceeds_context(message),
+            ProviderRef::Custom(c) => c.server.is_some_and(|s| {
+                s.server()
+                    .context_window_messages
+                    .iter()
+                    .any(|overflow| message.contains(overflow))
+            }),
+        }
     }
 
     pub fn end_user_limit(&self) -> Option<usize> {
@@ -542,6 +572,7 @@ mod tests {
             generation: DialectId::OpenAiChat,
             embeddings: None,
             count_tokens: None,
+            server: None,
         }
     }
 

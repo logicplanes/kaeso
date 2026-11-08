@@ -34,6 +34,7 @@ const WITHOUT_REF = new Map([
   ["src/theme/theme-provider.tsx#ThemeProvider", "a context provider around its children"],
   ["src/i18n/provider.tsx#LocaleProvider", "a context provider around its children"],
   ["src/utils/link-provider.tsx#LinkProvider", "a context provider around its children"],
+  ["src/utils/provider-marks.tsx#ProviderMarksProvider", "a context provider around its children"],
   ["src/utils/inset.tsx#InsetContent", "a context provider around its children"],
   ["src/utils/inset.tsx#GutterContent", "a context provider around its children"],
   ["src/utils/inset.tsx#RaisedContent", "a context provider around its children"],

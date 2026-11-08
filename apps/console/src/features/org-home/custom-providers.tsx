@@ -13,6 +13,7 @@ import {
   Input,
   Menu,
   ProviderBadge,
+  ProviderPicker,
   Select,
   StepDialog,
   Switch,
@@ -32,8 +33,10 @@ import type {
   CustomProviderView,
   EmbeddingsDialect,
   GenerationDialect,
+  ServerKind,
+  ServerView,
 } from "~/api/generated/types";
-import { customProvidersQuery } from "~/api/queries/custom-providers";
+import { customProviderServersQuery, customProvidersQuery } from "~/api/queries/custom-providers";
 import { modelCatalogues } from "~/api/queries/invalidation";
 import { useApiMutation } from "~/auth/mutation";
 import { useNeedsRight } from "~/auth/needs-right";
@@ -46,6 +49,31 @@ import { locale, t } from "~/i18n";
 const GENERATIONS: GenerationDialect[] = ["openai_chat", "openai_responses", "anthropic_messages"];
 const COUNTING = new Set<GenerationDialect>(["openai_responses", "anthropic_messages"]);
 const AUTHS: CustomAuthView[] = ["bearer", "x_api_key", "none"];
+const OTHER = "other";
+
+function useServers(org: string): ServerView[] {
+  return useQuery(customProviderServersQuery(org)).data ?? [];
+}
+
+function serverName(servers: readonly ServerView[], server: ServerKind | null | undefined): string | undefined {
+  return servers.find((s) => s.server === server)?.name;
+}
+
+function serverOptions(servers: readonly ServerView[]) {
+  return [
+    ...servers.map((s) => ({
+      value: s.server as string,
+      textValue: s.name,
+      label: (
+        <span className="flex min-w-0 items-center gap-8">
+          <ProviderBadge provider={s.server} name={s.name} size="sm" />
+          <span className="min-w-0 truncate">{s.name}</span>
+        </span>
+      ),
+    })),
+    { value: OTHER, textValue: t("orgHome.custom.otherServer", "Other server or proxy"), label: t("orgHome.custom.otherServer", "Other server or proxy") },
+  ];
+}
 
 function authLabel(auth: CustomAuthView): string {
   switch (auth) {
@@ -101,6 +129,7 @@ export function CustomProvidersTab({ org, adding, onAddingChange }: { org: strin
   const needs = useNeedsRight(org);
   const canManage = rights.has("providers.custom.manage");
   const list = useQuery(customProvidersQuery(org));
+  const servers = useServers(org);
   const [editing, setEditing] = useState<CustomProviderView | null>(null);
   const [deleting, setDeleting] = useState<CustomProviderView | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -144,7 +173,7 @@ export function CustomProvidersTab({ org, adding, onAddingChange }: { org: strin
         (p: CustomProviderView) => p,
         (p: CustomProviderView) => (
           <span className="flex min-w-0 items-center gap-8 sm:gap-12">
-            <ProviderBadge provider={`custom:${p.id}`} name={p.name} size="lg" />
+            <ProviderBadge provider={`custom:${p.id}`} name={p.name} mark={p.server} size="lg" />
             <span className="flex min-w-0 flex-col">
               <span className="flex min-w-0 items-center gap-8">
                 <Text weight="medium" truncate>
@@ -162,6 +191,12 @@ export function CustomProvidersTab({ org, adding, onAddingChange }: { org: strin
               </span>
               <Text variant="small" tone="secondary" truncate>
                 <Code>{p.id}</Code>
+                {serverName(servers, p.server) && (
+                  <span>
+                    {t("orgHome.partSeparator", " · ")}
+                    {serverName(servers, p.server)}
+                  </span>
+                )}
                 {folded(p).map((part) => (
                   <span key={part.id}>
                     {t("orgHome.partSeparator", " · ")}
@@ -208,7 +243,7 @@ export function CustomProvidersTab({ org, adding, onAddingChange }: { org: strin
         { align: "end" },
       ),
     ].map((c) => ({ ...c, enableSorting: false }));
-  }, [canManage, hidden]);
+  }, [canManage, hidden, servers]);
 
   return (
     <>
@@ -303,6 +338,7 @@ interface Draft {
   generation: GenerationDialect;
   embeddings: boolean;
   count_tokens: boolean;
+  server: ServerKind | null;
 }
 
 function draftOf(p: CustomProviderView | CustomProviderDetection, idTouched: boolean): Draft {
@@ -315,6 +351,7 @@ function draftOf(p: CustomProviderView | CustomProviderDetection, idTouched: boo
     generation: p.generation,
     embeddings: !!p.embeddings,
     count_tokens: !!p.count_tokens,
+    server: p.server ?? null,
   };
 }
 
@@ -328,19 +365,21 @@ function draftProblem(d: Draft): string | undefined {
 function settingsOf(d: Draft) {
   const embeddings: EmbeddingsDialect | null = d.embeddings ? "openai_embeddings" : null;
   const count_tokens: GenerationDialect | null = d.count_tokens && COUNTING.has(d.generation) ? d.generation : null;
-  return { base_url: d.base_url.trim(), auth: d.auth, generation: d.generation, embeddings, count_tokens };
+  return { base_url: d.base_url.trim(), auth: d.auth, generation: d.generation, embeddings, count_tokens, server: d.server };
 }
 
 function SettingsFields({
   draft,
   set,
   error,
+  servers,
   editing,
   autoFocus,
 }: {
   draft: Draft;
   set: (patch: Partial<Draft>) => void;
   error: ApiError | null;
+  servers: readonly ServerView[];
   editing?: CustomProviderView | undefined;
   autoFocus?: boolean | undefined;
 }) {
@@ -379,6 +418,15 @@ function SettingsFields({
         placeholder={t("orgHome.custom.baseUrlPlaceholder", "https://llm.example.com")}
         maxLength={2048}
         inputMode="url"
+      />
+      <Select
+        label={t("orgHome.custom.server", "Server")}
+        description={t("orgHome.custom.serverSelectHint", "Kaeso talks to it the way this software expects.")}
+        fullWidth
+        value={draft.server ?? OTHER}
+        onValueChange={(v) => set({ server: v === OTHER ? null : (v as ServerKind) })}
+        options={serverOptions(servers)}
+        error={fieldError(error, "server")}
       />
       <Select
         label={t("orgHome.custom.format", "API format")}
@@ -423,6 +471,12 @@ function SettingsFields({
   );
 }
 
+function placeholderFor(servers: readonly ServerView[], software: string | null): string {
+  const chosen = servers.find((s) => s.server === software);
+  if (!chosen) return t("orgHome.custom.serverUrlPlaceholder", "https://llm.example.com/v1");
+  return t("orgHome.custom.localUrlPlaceholder", "http://host.docker.internal:{port}{path}", { port: String(chosen.port), path: chosen.path });
+}
+
 const SHOWN_MODELS = 4;
 
 function modelsFound(found: CustomProviderDetection): string {
@@ -444,6 +498,7 @@ const NOTHING_FOUND: CustomProviderDetection = {
   generation: "openai_chat",
   embeddings: null,
   count_tokens: null,
+  server: null,
   models: null,
 };
 
@@ -461,6 +516,8 @@ function changedFrom(found: CustomProviderDetection, d: Draft): boolean {
 export function AddCustomProviderDialog({ org, onClose }: { org: string; onClose: () => void }) {
   const rights = useOrgRights(org);
   const savesKey = rights.has("provider_credentials.create");
+  const servers = useServers(org);
+  const [software, setSoftware] = useState<string | null>(null);
   const [server, setServer] = useState({ base_url: "", key: "" });
   const [found, setFound] = useState<CustomProviderDetection>(NOTHING_FOUND);
   const [draft, setDraft] = useState<Draft>(() => draftOf(NOTHING_FOUND, false));
@@ -505,7 +562,11 @@ export function AddCustomProviderDialog({ org, onClose }: { org: string; onClose
   };
   const runDetection = async () => {
     try {
-      const d = await detection.mutateAsync({ base_url: server.base_url.trim(), key: server.key.trim() || null });
+      const d = await detection.mutateAsync({
+        base_url: server.base_url.trim(),
+        key: server.key.trim() || null,
+        ...(software && software !== OTHER ? { server: software as ServerKind } : {}),
+      });
       setFound(d);
       setDraft(draftOf(d, false));
       return true;
@@ -524,6 +585,29 @@ export function AddCustomProviderDialog({ org, onClose }: { org: string; onClose
       onSubmit={() => !draftProblem(draft) && save.mutate()}
       steps={[
         {
+          id: "software",
+          title: t("orgHome.custom.softwareTitle", "What runs the server?"),
+          description: t("orgHome.custom.softwareHint", "Kaeso talks to each server software the way it expects; pick Other for a proxy."),
+          blockedReason: software ? undefined : t("orgHome.custom.softwareNeeded", "Choose what runs the server"),
+          content: (
+            <ProviderPicker
+              appearance="grid"
+              aria-label={t("orgHome.custom.softwareTitle", "What runs the server?")}
+              providers={[
+                ...servers.map((s) => ({ id: s.server, name: s.name })),
+                {
+                  id: OTHER,
+                  name: t("orgHome.custom.otherServer", "Other server or proxy"),
+                  hint: t("orgHome.custom.otherServerHint", "Kaeso detects the software"),
+                },
+              ]}
+              value={software}
+              onValueChange={setSoftware}
+              autoFocus
+            />
+          ),
+        },
+        {
           id: "server",
           title: t("orgHome.custom.serverTitle", "Where is the server?"),
           description: t("orgHome.custom.serverHint", "Kaeso asks it for its format, key style and models; nothing is saved yet."),
@@ -538,7 +622,7 @@ export function AddCustomProviderDialog({ org, onClose }: { org: string; onClose
                 value={server.base_url}
                 onChange={(e) => changeServer({ base_url: e.target.value })}
                 error={fieldError(detection.error, "base_url")}
-                placeholder={t("orgHome.custom.serverUrlPlaceholder", "https://llm.example.com/v1")}
+                placeholder={placeholderFor(servers, software)}
                 maxLength={2048}
                 inputMode="url"
                 autoFocus
@@ -567,7 +651,7 @@ export function AddCustomProviderDialog({ org, onClose }: { org: string; onClose
           content: (
             <div className="flex flex-col gap-20">
               <Banner tone="info">{modelsFound(found)}</Banner>
-              <SettingsFields draft={draft} set={set} error={save.error} />
+              <SettingsFields draft={draft} set={set} error={save.error} servers={servers} />
             </div>
           ),
         },
@@ -577,6 +661,7 @@ export function AddCustomProviderDialog({ org, onClose }: { org: string; onClose
 }
 
 export function CustomProviderDialog({ org, editing, onClose }: { org: string; editing: CustomProviderView; onClose: () => void }) {
+  const servers = useServers(org);
   const [draft, setDraft] = useState<Draft>(() => draftOf(editing, true));
   const set = (patch: Partial<Draft>) => {
     setDraft((d) => ({ ...d, ...patch }));
@@ -584,11 +669,11 @@ export function CustomProviderDialog({ org, editing, onClose }: { org: string; e
   };
   const save = useApiMutation({
     mutationFn: async () => {
-      const { base_url, auth, generation, embeddings, count_tokens } = settingsOf(draft);
+      const { base_url, auth, generation, embeddings, count_tokens, server } = settingsOf(draft);
       return data(
         await api.PATCH("/platform/v1/orgs/{org}/custom-providers/{provider}", {
           params: { path: { org, provider: editing.id }, header: { "If-Match": `"${editing.revision}"` } },
-          body: { name: draft.name.trim(), base_url, auth, generation, embeddings, count_tokens },
+          body: { name: draft.name.trim(), base_url, auth, generation, embeddings, count_tokens, server },
         }),
       );
     },
@@ -620,7 +705,7 @@ export function CustomProviderDialog({ org, editing, onClose }: { org: string; e
         </>
       }
     >
-      <SettingsFields draft={draft} set={set} error={save.error} editing={editing} autoFocus />
+      <SettingsFields draft={draft} set={set} error={save.error} servers={servers} editing={editing} autoFocus />
     </Dialog>
   );
 }

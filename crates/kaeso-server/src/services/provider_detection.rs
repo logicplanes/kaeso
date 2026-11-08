@@ -7,6 +7,7 @@ use kaeso_codecs::openai_embeddings::EMBEDDINGS_PATH;
 use kaeso_codecs::openai_responses::{INPUT_TOKENS_PATH, RESPONSES_PATH};
 use kaeso_codecs::{HeaderList, dispatch};
 use kaeso_core::providers::CustomAuth;
+use kaeso_core::servers::{self, ServerKind};
 use kaeso_kpp::{DialectId, ModelInfo, ModelsQuery};
 use kaeso_upstream::{Call, Outgoing, ResponseBody, Timeouts, UpstreamError};
 use secrecy::SecretString;
@@ -29,6 +30,7 @@ pub struct Settings {
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct Fixed {
+    pub server: Option<Option<ServerKind>>,
     pub auth: Option<CustomAuth>,
     pub generation: Option<DialectId>,
     pub embeddings: Option<bool>,
@@ -45,6 +47,7 @@ pub struct DetectedModel {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Detected {
     pub settings: Settings,
+    pub server: Option<ServerKind>,
     pub models: Option<Vec<DetectedModel>>,
 }
 
@@ -203,11 +206,25 @@ impl Prober<'_> {
         self.send(auth, Outgoing::from(request)).await
     }
 
-    async fn listing(&self, auth: CustomAuth) -> Result<Listing, Failure> {
+    async fn listing(&self, auth: CustomAuth) -> Result<(Listing, Option<String>), Failure> {
         let mut query = ModelsQuery::default();
         let (status, headers, body) = self
             .page(auth, DialectId::AnthropicMessages, &query)
             .await?;
+        let server = headers.get("server").map(str::to_owned);
+        self.listed(auth, &mut query, status, &headers, &body)
+            .await
+            .map(|listing| (listing, server))
+    }
+
+    async fn listed(
+        &self,
+        auth: CustomAuth,
+        query: &mut ModelsQuery,
+        status: u16,
+        headers: &HeaderList,
+        body: &Bytes,
+    ) -> Result<Listing, Failure> {
         match Route::of(status) {
             Route::Refused => return Ok(Listing::Refused),
             Route::Missing => return Ok(Listing::Missing),
@@ -215,7 +232,7 @@ impl Prober<'_> {
             _ => {}
         }
         if let Ok(first) =
-            dispatch::decode_models(DialectId::AnthropicMessages, status, &headers, &body)
+            dispatch::decode_models(DialectId::AnthropicMessages, status, headers, body)
             && !first.models.is_empty()
         {
             let mut models = Vec::new();
@@ -227,18 +244,53 @@ impl Prober<'_> {
                     break;
                 }
                 query.after_id = last;
-                let (status, headers, body) = self
-                    .page(auth, DialectId::AnthropicMessages, &query)
-                    .await?;
+                let (status, headers, body) =
+                    self.page(auth, DialectId::AnthropicMessages, query).await?;
                 page =
                     dispatch::decode_models(DialectId::AnthropicMessages, status, &headers, &body)
                         .map_err(|_| Failure::Unreadable)?;
             }
             return Ok(Listing::Anthropic(models));
         }
-        dispatch::decode_models(DialectId::OpenAiChat, status, &headers, &body)
+        dispatch::decode_models(DialectId::OpenAiChat, status, headers, body)
             .map(|list| Listing::OpenAi(list.models))
             .map_err(|_| Failure::Unreadable)
+    }
+
+    async fn software(
+        &self,
+        auth: CustomAuth,
+        listing: &Listing,
+        header: Option<&str>,
+    ) -> Option<ServerKind> {
+        let owners = match listing {
+            Listing::Anthropic(m) | Listing::OpenAi(m) => m.as_slice(),
+            Listing::Missing | Listing::Refused => &[],
+        }
+        .iter()
+        .filter_map(|m| m.owned_by.as_deref());
+        if let Some(kind) = servers::recognize(owners, header) {
+            return Some(kind);
+        }
+        for (kind, probe) in servers::probes() {
+            let asked = self
+                .send(
+                    auth,
+                    Outgoing {
+                        method: "GET",
+                        path: probe.path.to_owned(),
+                        headers: HeaderList::default(),
+                        body: Bytes::new(),
+                    },
+                )
+                .await;
+            if let Ok((200, _, body)) = asked
+                && probe.answer.matches(&body)
+            {
+                return Some(kind);
+            }
+        }
+        None
     }
 
     async fn route(&self, auth: CustomAuth, path: &str) -> Result<Route, Failure> {
@@ -370,14 +422,14 @@ async fn settings(
     let mut listed = None;
     for &auth in &auths {
         match prober.listing(auth).await? {
-            Listing::Refused => {}
-            listing => {
-                listed = Some((auth, listing));
+            (Listing::Refused, _) => {}
+            (listing, header) => {
+                listed = Some((auth, listing, header));
                 break;
             }
         }
     }
-    let Some((mut auth, listing)) = listed else {
+    let Some((mut auth, listing, header)) = listed else {
         return Err(refusal);
     };
     if fixed.auth.is_none()
@@ -385,11 +437,16 @@ async fn settings(
         && matches!(listing, Listing::Anthropic(_))
         && matches!(
             prober.listing(CustomAuth::XApiKey).await,
-            Ok(Listing::Anthropic(_))
+            Ok((Listing::Anthropic(_), _))
         )
     {
         auth = CustomAuth::XApiKey;
     }
+
+    let server = match fixed.server {
+        Some(server) => server,
+        None => prober.software(auth, &listing, header.as_deref()).await,
+    };
 
     let (mut auth, generation, models) = match listing {
         Listing::Missing => match fixed.generation {
@@ -463,6 +520,7 @@ async fn settings(
             embeddings,
             count_tokens,
         },
+        server,
         models,
     })
 }

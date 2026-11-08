@@ -81,8 +81,9 @@ export const docs = {
   },
   ProviderBadge: {
     description:
-      "A provider's mark on a quiet tile, in the provider's own colours for the theme, or the text colour for a mark its owner draws in black and white; for a provider without a mark, the first letter of its name.",
+      "A provider's mark on a quiet tile, in the provider's own colours for the theme, or the text colour for a mark its owner draws in black and white; for a provider without a mark, the first letter of its name. A `ProviderMarksProvider` around an app names the mark of providers whose id isn't one, such as custom providers that run vLLM or Ollama.",
     props: {
+      mark: "The mark to show instead of the provider id's own or the one `ProviderMarksProvider` names, such as `vllm`.",
       name: "The provider's name from the gateway's provider list: the badge's accessible name, the text `withName` writes and the source of the letter; the id without it.",
       provider: "The provider id, such as `openai` or `anthropic`.",
       size: "The badge's size.",

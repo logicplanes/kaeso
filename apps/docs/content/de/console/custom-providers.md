@@ -9,14 +9,15 @@ Ein eigener Anbieter ist ein Server, den Ihre Organisation selbst hinzufügt, et
 ## Eigenen Anbieter hinzufügen
 
 1. Öffnen Sie unter **Anbieter** den Reiter **Eigene Anbieter** und wählen Sie **Eigenen Anbieter hinzufügen**.
-2. Geben Sie die **Basis-URL** des Servers ein, etwa `https://vllm.example.com/v1`, und seinen **API-Schlüssel**. Lassen Sie den Schlüssel leer für einen Server, der keinen nimmt.
-3. Wählen Sie **Einstellungen erkennen**. Kaeso fragt den Server, wie es ihn aufruft ([was Kaeso erkennt](#was-kaeso-erkennt)).
-4. Prüfen Sie, was Kaeso gefunden hat: den **Name**, die **ID**, die **Basis-URL**, das **API-Format**, ob er **Liefert auch Embeddings** oder **Zählt Tokens** und wie er seinen **Schlüssel** nimmt. Ändern Sie, was nicht stimmt.
-5. Wählen Sie **Eigenen Anbieter hinzufügen**. Kaeso prüft die geänderten Einstellungen mit dem Server, fügt dann den Anbieter hinzu und speichert den Schlüssel als seinen Anbieter-Schlüssel.
+2. Wählen Sie, was auf dem Server läuft, etwa **vLLM**, **Ollama** oder **LM Studio** ([Server-Software](#server-software)), oder **Anderer Server oder Proxy**, und wählen Sie **Weiter**.
+3. Geben Sie die **Basis-URL** des Servers ein, etwa `https://vllm.example.com/v1`, und seinen **API-Schlüssel**. Lassen Sie den Schlüssel leer für einen Server, der keinen nimmt.
+4. Wählen Sie **Einstellungen erkennen**. Kaeso fragt den Server, wie es ihn aufruft ([was Kaeso erkennt](#was-kaeso-erkennt)).
+5. Prüfen Sie, was Kaeso gefunden hat: den **Name**, die **ID**, die **Basis-URL**, den **Server**, das **API-Format**, ob er **Liefert auch Embeddings** oder **Zählt Tokens** und wie er seinen **Schlüssel** nimmt. Ändern Sie, was nicht stimmt.
+6. Wählen Sie **Eigenen Anbieter hinzufügen**. Kaeso prüft die geänderten Einstellungen mit dem Server, fügt dann den Anbieter hinzu und speichert den Schlüssel als seinen Anbieter-Schlüssel.
 
 Ohne das Recht **Anbieter-Schlüssel hinzufügen** nutzt Kaeso den Schlüssel nur, um die Einstellungen zu erkennen; jemand mit dem Recht fügt ihn unter **Anbieter-Schlüssel** hinzu ([Anbieter-Schlüssel](provider-keys.md)). Zuletzt fügen Sie die Modelle des Anbieters einem Projekt hinzu ([seine Modelle hinzufügen](#seine-modelle-hinzufügen)).
 
-Die **ID** beginnt mit dem Host des Servers und folgt dem Namen, bis Sie sie ändern. Modellnamen beginnen mit ihr, etwa `research-vllm/llama-3.3-70b`, und sie ändert sich nie. Eine ID besteht aus Kleinbuchstaben und Ziffern mit einzelnen Bindestrichen dazwischen, höchstens 40 Zeichen. Sie darf nicht die ID eines eingebauten Anbieters sein und auch nicht die eines Anbieters in [KPMR](../concepts/kpmr.md), denn Kaeso könnte diesen Anbieter später aufnehmen. Jede Organisation hat ihre eigenen IDs, zwei Organisationen können also beide ein `research-vllm` haben.
+Die **ID** beginnt mit dem Host des Servers, bei einer Adresse wie `localhost`, `10.0.0.5` oder `host.docker.internal` mit dem Namen seiner Software, und folgt dem Namen, bis Sie sie ändern. Modellnamen beginnen mit ihr, etwa `research-vllm/llama-3.3-70b`, und sie ändert sich nie. Eine ID besteht aus Kleinbuchstaben und Ziffern mit einzelnen Bindestrichen dazwischen, höchstens 40 Zeichen. Sie darf nicht die ID eines eingebauten Anbieters sein und auch nicht die eines Anbieters in [KPMR](../concepts/kpmr.md), denn Kaeso könnte diesen Anbieter später aufnehmen. Jede Organisation hat ihre eigenen IDs, zwei Organisationen können also beide ein `research-vllm` haben.
 
 Kaeso hängt den Pfad des Formats an die Basis-URL an, etwa `/v1/chat/completions`, wie bei jedem Anbieter. Deshalb entfernt es ein abschließendes `/v1` oder einen eingefügten Endpunkt, etwa `/v1/chat/completions`, und ergänzt `https://` bei einer Adresse ohne Schema. Ein Pfad vor `/v1` bleibt: `https://proxy.example.com/llm/v1` erhält Anfragen unter `https://proxy.example.com/llm/v1/chat/completions`. Ein Server, dessen API nicht unter `/v1` liegt, lässt sich noch nicht hinzufügen.
 
@@ -30,6 +31,7 @@ Kaeso findet die Einstellungen mit Anfragen, die nichts kosten. Es fragt die Mod
 | API-Format | Die Form der Liste und der Pfad, der antwortet: `/v1/chat/completions`, `/v1/responses` oder `/v1/messages`. Ein Server mit Chat Completions erhält es, auch wenn er auch Responses hat. |
 | Liefert auch Embeddings | Ob `/v1/embeddings` antwortet. |
 | Zählt Tokens | Ob `/v1/responses/input_tokens` oder `/v1/messages/count_tokens` antwortet, für Responses und Messages. |
+| Server | Nur bei **Anderer Server oder Proxy**: der Besitzer, den die Modellliste nennt, etwa `vllm` oder `sglang`, der `server`-Header, etwa der von llama.cpp, oder ein kostenloses GET an einen Endpunkt der Software selbst: `/api/version` bei Ollama, `/info` bei Text Generation Inference und `/version` bei LocalAI. Ohne Treffer **Anderer Server oder Proxy**. |
 | Modelle | Die IDs, die die Liste nennt, mit dem Kontextfenster und dem Ausgabelimit, die sie angibt. |
 
 Einen Server ohne Modellliste findet Kaeso über den Pfad, der antwortet. Erreicht Kaeso den Server nicht, lehnt er den Schlüssel ab oder antwortet er in keinem Format, das Kaeso spricht, sagt der Dialog das neben dem Feld, das Sie korrigieren, und nichts wird hinzugefügt.
@@ -47,7 +49,58 @@ Kaeso wählt das Format, das es erkennt. Wenn Sie es ändern, wählen Sie das Fo
 - **Liefert auch Embeddings:** an, wenn der Server `POST /v1/embeddings` im Format von OpenAI beantwortet. Seine Embedding-Modelle bedienen dann `/v1/embeddings`.
 - **Zählt Tokens:** Nur Responses und Messages haben einen Endpunkt für Token-Zählungen, `/v1/responses/input_tokens` und `/v1/messages/count_tokens`. Lassen Sie es nur an, wenn Ihr Server ihn beantwortet. Sonst beantwortet Kaeso Zählanfragen für seine Modelle mit 400: „The model `…` cannot count tokens.“
 
-Kaeso spricht mit einem eigenen Anbieter das reine Format. Es weiß, wie jeder eingebaute Anbieter von seinem Format abweicht, etwa welche Felder Mistral ablehnt, aber das kann es von Ihrem Server nicht wissen. Ein Feld, das Ihr Server nicht annimmt, kommt als Fehler Ihres Servers zurück. Ein Feld, das das Format nicht tragen kann, lehnt Kaeso ab wie bei jedem Anbieter ([was Kaeso ablehnt](../concepts/format-translation.md#was-kaeso-ablehnt)).
+Bei **Anderer Server oder Proxy** spricht Kaeso das reine Format. Es weiß, wie jeder eingebaute Anbieter von seinem Format abweicht, etwa welche Felder Mistral ablehnt, aber das kann es von Ihrem Server nicht wissen. Ein Feld, das Ihr Server nicht annimmt, kommt als Fehler Ihres Servers zurück. Bei Software, die Kaeso kennt, passt es Anfragen an wie bei einem eingebauten Anbieter ([Server-Software](#server-software)). Ein Feld, das das Format nicht tragen kann, lehnt Kaeso ab wie bei jedem Anbieter ([was Kaeso ablehnt](../concepts/format-translation.md#was-kaeso-ablehnt)).
+
+## Server-Software
+
+Kaeso weiß, wie die Inferenz-Server unten von dem Format abweichen, das sie sprechen. Ein eigener Anbieter, der seinen **Server** nennt, erhält diese Anpassungen bei jeder Anfrage, und die Konsole zeigt das Zeichen der Software überall, wo der Anbieter erscheint:
+
+- `developer`-Nachrichten kommen als `system`-Nachrichten an, denn die Chat-Vorlage eines Modells kennt oft nur `system`. Die Vorlagen von Qwen verwerfen eine `developer`-Nachricht kommentarlos.
+- Das Ausgabelimit einer App geht als `max_tokens`, das jeder von ihnen liest; Ollama ignoriert `max_completion_tokens`.
+- Die ID des Endnutzers bleibt draußen, ebenso ein Prompt-Cache-Schlüssel von Codex, den diese Server nicht nutzen.
+- Das Reasoning eines Modells, in dem Feld, in das die Software es schreibt, erreicht Apps in jedem Format: Claude Code sieht es als Thinking-Blöcke, und Kaeso schickt es in späteren Runden im selben Feld zurück.
+- Ein Prompt, der länger ist als der Kontext des Modells, erreicht Apps als zu langer Prompt, sodass Claude Code das Gespräch komprimiert und eine [Alias-Route](../concepts/alias-routes.md) auf ein Modell mit größerem Kontext ausweichen kann. Kaeso kennt die Meldung von vLLM, SGLang, llama.cpp, LMDeploy und den Servern, die auf ihnen aufbauen.
+
+| Server | Erkannt an | Lauscht auf | Hinweise |
+| --- | --- | --- | --- |
+| Docker Model Runner | Besitzer `docker` | `12434`, unter `/engines` | Geben Sie die Basis-URL mit `/engines` an, etwa `http://host.docker.internal:12434/engines`. |
+| Jan | Besitzer `llama.cpp`, `mlx` oder `remote` | `1337` | Schalten Sie den lokalen API-Server in den Einstellungen von Jan ein; für jede Adresse außer `127.0.0.1` braucht er einen Schlüssel. |
+| KoboldCpp | Besitzer `koboldcpp` | `5001` | `--password` setzt einen Schlüssel. |
+| llama.cpp | Header `server: llama.cpp`, Besitzer `llamacpp` | `9931` seit v0.7.0, `8080` in llamafile | `--host 0.0.0.0` für andere Rechner, `--api-key` für einen Schlüssel. Reasoning ist standardmäßig an. |
+| LM Studio | Besitzer `organization_owner` | `1234` | Schalten Sie **Serve on Local Network** für andere Rechner ein und **Require Authentication** für einen Schlüssel. |
+| LMDeploy | Besitzer `lmdeploy` | `23333` | `--api-keys` setzt Schlüssel, `--reasoning-parser` und `--tool-call-parser` schalten Reasoning und Tools ein. |
+| LocalAI | `/version` | `8080` | `LOCALAI_API_KEY` setzt einen Schlüssel. |
+| MLX LM | nicht erkennbar | `8080` | `mlx_lm.server` bietet nur Chat Completions. |
+| NVIDIA NIM | nicht erkennbar | `8000` | Wählen Sie es von Hand. |
+| Ollama | `/api/version` | `11434` | `OLLAMA_HOST=0.0.0.0` für andere Rechner. Ollama nimmt keinen Schlüssel, wählen Sie also **Kein Schlüssel**. Kaeso lehnt `logit_bias` ab, das Ollama ignoriert. |
+| SGLang | Besitzer `sglang` | `30000` | `--api-key` setzt einen Schlüssel, `--reasoning-parser` und `--tool-call-parser` schalten Reasoning und Tools ein. |
+| TabbyAPI | Besitzer `tabbyAPI` | `5000` | Braucht einen Schlüssel aus `api_tokens.yml`, außer `disable_auth` ist gesetzt. |
+| Text Generation Inference | `/info` | `3000`, `80` in seinem Image | Nur Chat Completions, ohne Reasoning. Kaeso lehnt `logit_bias` ab, das es ignoriert. Hugging Face entwickelt es nicht mehr weiter. |
+| vLLM | Besitzer `vllm` | `8000` | `--api-key` setzt einen Schlüssel, `--reasoning-parser` schaltet Reasoning ein, `--enable-auto-tool-choice --tool-call-parser <parser>` schaltet Tools ein. Nimmt Videos als `video_url`. |
+| Xinference | Besitzer `xinference` | `9997` | Verlangt einen Schlüssel, außer `XINFERENCE_AUTH_ADVANCED=false`. |
+
+Ein Server, der sich nicht erkennen lässt, oder einer hinter einem Proxy erhält seine Software, wenn Sie sie im ersten Schritt oder unter **Bearbeiten** wählen. Andere Software ändert, wie Kaeso mit dem Server spricht, nie, wohin es Anfragen sendet.
+
+### Einen Server auf dem Rechner des Gateways erreichen
+
+Das Gateway läuft in einem Container, in dem `localhost` der Container selbst ist. Ein Server auf demselben Rechner ist unter `host.docker.internal` erreichbar, etwa `http://host.docker.internal:11434` für Ollama, und muss auf mehr als der Loopback-Adresse lauschen. Docker Desktop kennt diesen Namen; unter Linux fügen Sie ihn dem Gateway in `compose.override.yaml` hinzu:
+
+```yaml title="compose.override.yaml"
+services:
+  gateway:
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    environment:
+      KAESO_CUSTOM_PROVIDERS_ALLOWED_NETWORKS: 172.17.0.1/32
+```
+
+Die Adresse gehört zu einem privaten Netz, also muss die Installation sie erlauben ([Adressen, die Kaeso erreicht](#adressen-die-kaeso-erreicht)). Dieser Befehl gibt die Adresse aus, die `host.docker.internal` für das Gateway hat:
+
+```bash
+docker run --rm --add-host host.docker.internal:host-gateway alpine getent hosts host.docker.internal
+```
+
+Tragen Sie diese Adresse mit `/32` in `KAESO_CUSTOM_PROVIDERS_ALLOWED_NETWORKS` ein und übernehmen Sie die Änderung mit `docker compose up -d --wait`.
 
 ## Was Kaeso nicht wissen kann
 

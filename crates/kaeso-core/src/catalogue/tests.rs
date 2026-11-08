@@ -1839,6 +1839,7 @@ fn custom_provider(id: &str, generation: DialectId) -> crate::providers::CustomP
         generation,
         embeddings: None,
         count_tokens: None,
+        server: None,
     })
     .unwrap()
 }

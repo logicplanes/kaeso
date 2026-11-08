@@ -1,6 +1,6 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import type { CustomProviderDetection, CustomProviderView, ProviderView } from "~/api/generated/types";
+import type { CustomProviderDetection, CustomProviderView, ProviderView, ServerView } from "~/api/generated/types";
 import { ADMIN_ORG_RIGHTS, ORG, providers, signedIn, withRights } from "~/test/fixtures";
 import { fill, hoverReason, notifications } from "~/test/fixtures/org";
 import { catalogueModel, modelsApi, projectData, projectPath } from "~/test/fixtures/project";
@@ -12,6 +12,11 @@ const PATH = `/orgs/${ORG}/providers?tab=custom`;
 const LIST = "orgs/:org/custom-providers";
 const ONE = "orgs/:org/custom-providers/:provider";
 const DETECT = "orgs/:org/custom-provider-detection";
+const SERVERS: ServerView[] = [
+  { server: "llama_cpp", name: "llama.cpp", port: 9931, path: "", detected: true },
+  { server: "ollama", name: "Ollama", port: 11434, path: "", detected: true },
+  { server: "vllm", name: "vLLM", port: 8000, path: "", detected: true },
+];
 const KEYS = "orgs/:org/credentials";
 const LAB_KEY = "lab-test-key-0000000001";
 
@@ -24,6 +29,7 @@ function detected(overrides: Partial<CustomProviderDetection> = {}): CustomProvi
     generation: "anthropic_messages",
     embeddings: null,
     count_tokens: "anthropic_messages",
+    server: null,
     models: [{ model_id: "lab-sonnet", context_limit: 200000, output_limit: 64000 }],
     ...overrides,
   };
@@ -38,6 +44,7 @@ function customProvider(overrides: Partial<CustomProviderView> = {}): CustomProv
     generation: "openai_chat",
     embeddings: null,
     count_tokens: null,
+    server: null,
     hides_built_in: null,
     in_use: { keys: 1, models: 3, projects: 2 },
     created_by: { kind: "user", id: "usr_ada" },
@@ -63,6 +70,7 @@ function listed(p: CustomProviderView): ProviderView {
     account: null,
     service_account: null,
     model_routes: [],
+    server: p.server ?? null,
   };
 }
 
@@ -70,6 +78,12 @@ function withCustom(list: CustomProviderView[]) {
   on("GET", LIST, page(list));
   on("GET", "orgs/:org/providers", page([...providers, ...list.map(listed)]));
   on("GET", "orgs/:org/credentials", { data: [] });
+  on("GET", "orgs/:org/custom-provider-servers", page(SERVERS));
+}
+
+async function pickSoftware(user: Awaited<ReturnType<typeof renderApp>>["user"], dialog: HTMLElement, name = "Other server or proxy") {
+  await user.click(await within(dialog).findByRole("radio", { name: new RegExp(name.replace(/[.]/g, "\\.")) }));
+  await user.click(within(dialog).getByRole("button", { name: "Continue" }));
 }
 
 const table = () => screen.findByRole("table", { name: "Custom providers" });
@@ -94,6 +108,63 @@ describe("custom providers", () => {
     expect(await screen.findByText("No provider keys yet")).toBeInTheDocument();
   });
 
+  it("adds a local server by its software: suggests its address, sends the choice along and shows the software in the list", async () => {
+    signedIn();
+    withCustom([]);
+    on(
+      "POST",
+      DETECT,
+      detected({
+        base_url: "http://host.docker.internal:11434/",
+        name: "Ollama",
+        id: "ollama",
+        auth: "none",
+        generation: "openai_chat",
+        count_tokens: null,
+        server: "ollama",
+      }),
+    );
+    on("POST", LIST, customProvider({ id: "ollama", name: "Ollama", base_url: "http://host.docker.internal:11434/", auth: "none", server: "ollama" }));
+    const { user } = await renderApp(PATH);
+
+    await user.click(await screen.findByRole("button", { name: "Add custom provider" }));
+    const dialog = await screen.findByRole("dialog", { name: "Add custom provider" });
+    expect(await within(dialog).findByRole("radio", { name: /vLLM/ })).toBeInTheDocument();
+    await hoverReason(user, within(dialog).getByRole("button", { name: "Continue" }), "Choose what runs the server");
+    await pickSoftware(user, dialog, "Ollama");
+    const url = within(dialog).getByRole("textbox", { name: "Base URL" });
+    expect(url).toHaveAttribute("placeholder", "http://host.docker.internal:11434");
+    await fill(user, url, "http://host.docker.internal:11434");
+    await user.click(within(dialog).getByRole("button", { name: "Detect settings" }));
+
+    expect(await within(dialog).findByRole("combobox", { name: "Server" })).toHaveTextContent("Ollama");
+    expect(within(dialog).getByRole("textbox", { name: "Id" })).toHaveValue("ollama");
+    await user.click(within(dialog).getByRole("button", { name: "Add custom provider" }));
+
+    expect(await notifications().findByText("Ollama added")).toBeInTheDocument();
+    expect(requests("POST", DETECT)[0]?.body).toEqual({ base_url: "http://host.docker.internal:11434", key: null, server: "ollama" });
+    expect(requests("POST", LIST)[0]?.body).toMatchObject({ id: "ollama", auth: "none", server: "ollama" });
+  });
+
+  it("shows a provider's server software next to its id and lets an edit change it", async () => {
+    signedIn();
+    withCustom([customProvider({ server: "vllm" })]);
+    on("PATCH", ONE, customProvider({ server: null }));
+    const { user } = await renderApp(PATH);
+
+    const row = (await within(await table()).findByText("Research vLLM")).closest('[role="row"]') as HTMLElement;
+    await waitFor(() => expect(row).toHaveTextContent("research-vllm · vLLM"));
+    await user.click(within(row).getByRole("button", { name: "Actions for Research vLLM" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Edit" }));
+    const dialog = await screen.findByRole("dialog", { name: "Edit Research vLLM" });
+    const server = within(dialog).getByRole("combobox", { name: "Server" });
+    expect(server).toHaveTextContent("vLLM");
+    await user.click(server);
+    await user.click(await screen.findByRole("option", { name: "Other server or proxy" }));
+    await user.click(within(dialog).getByRole("button", { name: "Save" }));
+    await waitFor(() => expect(requests("PATCH", ONE)[0]?.body).toMatchObject({ server: null }));
+  });
+
   it("detects a server's settings from its base URL and key, then adds it with its key", async () => {
     signedIn();
     withCustom([]);
@@ -104,7 +175,8 @@ describe("custom providers", () => {
 
     await user.click(await screen.findByRole("button", { name: "Add custom provider" }));
     const dialog = await screen.findByRole("dialog", { name: "Add custom provider" });
-    expect(dialog).toHaveAccessibleDescription("Step 1 of 2");
+    await pickSoftware(user, dialog);
+    expect(dialog).toHaveAccessibleDescription("Step 2 of 3");
     await hoverReason(user, within(dialog).getByRole("button", { name: "Detect settings" }), "Give the server's base URL");
     await fill(user, within(dialog).getByRole("textbox", { name: "Base URL" }), "https://gpus.example.com/v1");
     expect(within(dialog).getByLabelText("API key")).toHaveAccessibleDescription(/saved as the provider's key/);
@@ -132,6 +204,7 @@ describe("custom providers", () => {
         generation: "anthropic_messages",
         embeddings: null,
         count_tokens: "anthropic_messages",
+        server: null,
       },
     ]);
     expect(requests("POST", KEYS).map((r) => r.body)).toEqual([{ provider: "gpus-example-com", name: "gpus.example.com", secret: LAB_KEY }]);
@@ -153,6 +226,7 @@ describe("custom providers", () => {
 
     await user.click(await screen.findByRole("button", { name: "Add custom provider" }));
     const dialog = await screen.findByRole("dialog", { name: "Add custom provider" });
+    await pickSoftware(user, dialog);
     await fill(user, within(dialog).getByRole("textbox", { name: "Base URL" }), "gpus.example.com");
     await fill(user, within(dialog).getByLabelText("API key"), LAB_KEY);
     await user.keyboard("{Enter}");
@@ -172,6 +246,7 @@ describe("custom providers", () => {
       generation: "openai_responses",
       embeddings: "openai_embeddings",
       count_tokens: null,
+      server: null,
     });
 
     await user.click(format);
@@ -194,6 +269,7 @@ describe("custom providers", () => {
 
     await user.click(await screen.findByRole("button", { name: "Add custom provider" }));
     const dialog = await screen.findByRole("dialog", { name: "Add custom provider" });
+    await pickSoftware(user, dialog);
     await fill(user, within(dialog).getByRole("textbox", { name: "Base URL" }), "https://gpus.example.com");
     await fill(user, within(dialog).getByLabelText("API key"), LAB_KEY);
     await user.click(within(dialog).getByRole("button", { name: "Detect settings" }));
@@ -214,6 +290,7 @@ describe("custom providers", () => {
       generation: "anthropic_messages",
       embeddings: null,
       count_tokens: null,
+      server: null,
     });
     expect(requests("POST", LIST)[0]?.body).toMatchObject({ base_url: "https://gpus-2.example.com/", count_tokens: null });
   });
@@ -226,12 +303,13 @@ describe("custom providers", () => {
 
     await user.click(await screen.findByRole("button", { name: "Add custom provider" }));
     const dialog = await screen.findByRole("dialog", { name: "Add custom provider" });
+    await pickSoftware(user, dialog);
     await fill(user, within(dialog).getByRole("textbox", { name: "Base URL" }), "http://169.254.169.254");
     await user.click(within(dialog).getByRole("button", { name: "Detect settings" }));
 
     const url = within(dialog).getByRole("textbox", { name: "Base URL" });
     await waitFor(() => expect(url).toHaveAccessibleDescription(/points to an address this install does not allow/));
-    expect(dialog).toHaveAccessibleDescription("Step 1 of 2");
+    expect(dialog).toHaveAccessibleDescription("Step 2 of 3");
     await user.type(url, "1");
     await waitFor(() => expect(url).not.toHaveAccessibleDescription(/points to an address/));
     expect(requests("POST", LIST)).toEqual([]);
@@ -258,6 +336,7 @@ describe("custom providers", () => {
 
     await user.click(await screen.findByRole("button", { name: "Add custom provider" }));
     const dialog = await screen.findByRole("dialog", { name: "Add custom provider" });
+    await pickSoftware(user, dialog);
     await fill(user, within(dialog).getByRole("textbox", { name: "Base URL" }), "http://10.0.0.8:1234");
     await user.click(within(dialog).getByRole("button", { name: "Detect settings" }));
     expect(await within(dialog).findByText("The server lists no models yet.")).toBeInTheDocument();
@@ -300,6 +379,7 @@ describe("custom providers", () => {
 
     await user.click(await screen.findByRole("button", { name: "Add custom provider" }));
     const dialog = await screen.findByRole("dialog", { name: "Add custom provider" });
+    await pickSoftware(user, dialog);
     expect(within(dialog).getByLabelText("API key")).toHaveAccessibleDescription(/used only to detect settings/);
     await fill(user, within(dialog).getByRole("textbox", { name: "Base URL" }), "https://gpus.example.com");
     await fill(user, within(dialog).getByLabelText("API key"), LAB_KEY);
@@ -319,6 +399,7 @@ describe("custom providers", () => {
 
     await user.click(await screen.findByRole("button", { name: "Add custom provider" }));
     const dialog = await screen.findByRole("dialog", { name: "Add custom provider" });
+    await pickSoftware(user, dialog);
     await fill(user, within(dialog).getByRole("textbox", { name: "Base URL" }), "https://gpus.example.com");
     await fill(user, within(dialog).getByLabelText("API key"), LAB_KEY);
     await user.click(within(dialog).getByRole("button", { name: "Detect settings" }));
@@ -354,6 +435,7 @@ describe("custom providers", () => {
       generation: "openai_chat",
       embeddings: "openai_embeddings",
       count_tokens: null,
+      server: null,
     });
   });
 

@@ -37,6 +37,7 @@ async fn add_provider(pg: &sqlx::PgPool, org: Uuid, base_url: &str) -> bool {
                 generation: "openai_chat",
                 embeddings: None,
                 count_tokens: None,
+                server: None,
             },
             created_by_kind: "system",
             created_by_id: None,

@@ -8902,6 +8902,73 @@
         "x-kaeso-access": "right:providers.custom.manage"
       }
     },
+    "/platform/v1/orgs/{org}/custom-provider-servers": {
+      "get": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "The inference server software a custom provider can run, such as vLLM,\nOllama or LM Studio, by name.",
+        "description": "A custom provider that names its software gets how that software differs\nfrom its API format, such as the field it sends thinking in, and the\nsoftware's mark in the console.\n\n**Right:** `providers.custom.view` on the organization in the path.",
+        "operationId": "getOrgsOrgCustomProviderServers",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/List_ServerView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:providers.custom.view"
+      }
+    },
     "/platform/v1/orgs/{org}/custom-providers": {
       "get": {
         "tags": [
@@ -23732,6 +23799,17 @@
             "type": "string",
             "description": "The name people see, 1 to 100 characters.",
             "example": "Local vLLM"
+          },
+          "server": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ServerKind",
+                "description": "The inference server software it runs; absent or `null` for another\nserver or a proxy."
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "additionalProperties": false
@@ -23798,6 +23876,17 @@
               "null"
             ],
             "description": "The key the server takes; absent or `null` for a server that takes none.\nKaeso sends it only to this server and stores it nowhere."
+          },
+          "server": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ServerKind",
+                "description": "The inference server software it runs, `null` for another server or a\nproxy; absent to detect it."
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "additionalProperties": false
@@ -23864,8 +23953,19 @@
           },
           "name": {
             "type": "string",
-            "description": "A name to start from: the server's host.",
+            "description": "A name to start from: the server's host, or its software's name when\nthe host is a bare address such as `localhost` or `10.0.0.5`.",
             "example": "vllm.example.com"
+          },
+          "server": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ServerKind",
+                "description": "The inference server software Kaeso recognized from its model listing,\nits `server` header or one of its own endpoints; `null` when none."
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         }
       },
@@ -23930,6 +24030,17 @@
               "null"
             ],
             "description": "A new name."
+          },
+          "server": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ServerKind",
+                "description": "The inference server software it runs; `null` for another server or a\nproxy."
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "additionalProperties": false
@@ -24046,6 +24157,17 @@
             "format": "int64",
             "description": "Goes up with every change. Send it as `If-Match: \"<revision>\"` to change\nor delete the provider only if nothing changed it since.",
             "example": 1
+          },
+          "server": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ServerKind",
+                "description": "The inference server software it runs, which tunes how Kaeso talks to it\nand picks its mark; `null` for another server or a proxy."
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "updated_at": {
             "type": "string",
@@ -27030,6 +27152,17 @@
                   "description": "Goes up with every change. Send it as `If-Match: \"<revision>\"` to change\nor delete the provider only if nothing changed it since.",
                   "example": 1
                 },
+                "server": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ServerKind",
+                      "description": "The inference server software it runs, which tunes how Kaeso talks to it\nand picks its mark; `null` for another server or a proxy."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
                 "updated_at": {
                   "type": "string",
                   "format": "date-time",
@@ -29217,6 +29350,17 @@
                   "description": "The name people see.",
                   "example": "Groq"
                 },
+                "server": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ServerKind",
+                      "description": "The inference server software a custom provider runs, which also picks\nits mark; `null` for a built-in provider and for another server or a proxy."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
                 "service_account": {
                   "oneOf": [
                     {
@@ -29332,6 +29476,69 @@
                   ],
                   "format": "date-time",
                   "description": "When a custom role last changed; `null` for built-in roles."
+                }
+              }
+            },
+            "description": "The items."
+          },
+          "has_more": {
+            "type": "boolean",
+            "description": "Whether more items follow."
+          },
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Pass as `after` to get the next page; `null` on the last page."
+          }
+        }
+      },
+      "List_ServerView": {
+        "type": "object",
+        "description": "A page of results.",
+        "required": [
+          "data",
+          "has_more"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "Inference server software Kaeso knows how to talk to.",
+              "required": [
+                "server",
+                "name",
+                "port",
+                "path",
+                "detected"
+              ],
+              "properties": {
+                "detected": {
+                  "type": "boolean",
+                  "description": "Whether detection can tell this software from its model listing, its\n`server` header or one of its own endpoints."
+                },
+                "name": {
+                  "type": "string",
+                  "description": "The software's name.",
+                  "example": "Ollama"
+                },
+                "path": {
+                  "type": "string",
+                  "description": "What comes between the server's address and `/v1`, such as `/engines`;\nempty for most.",
+                  "example": ""
+                },
+                "port": {
+                  "type": "integer",
+                  "format": "int32",
+                  "description": "The port the software listens on unless told otherwise.",
+                  "example": 11434,
+                  "minimum": 0
+                },
+                "server": {
+                  "$ref": "#/components/schemas/ServerKind",
+                  "description": "The value a custom provider's `server` takes."
                 }
               }
             },
@@ -34194,6 +34401,17 @@
             "description": "The name people see.",
             "example": "Groq"
           },
+          "server": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ServerKind",
+                "description": "The inference server software a custom provider runs, which also picks\nits mark; `null` for a built-in provider and for another server or a proxy."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "service_account": {
             "oneOf": [
               {
@@ -35543,6 +35761,65 @@
           "sso_redirect_url": {
             "type": "string",
             "description": "Where an identity provider must send users back: the redirect URL\nto register in its OpenID Connect app, also before a connection exists."
+          }
+        }
+      },
+      "ServerKind": {
+        "type": "string",
+        "description": "The inference server software a custom provider runs.",
+        "enum": [
+          "vllm",
+          "sglang",
+          "ollama",
+          "lm_studio",
+          "llama_cpp",
+          "localai",
+          "tgi",
+          "lmdeploy",
+          "nim",
+          "docker_model_runner",
+          "koboldcpp",
+          "tabbyapi",
+          "xinference",
+          "mlx_lm",
+          "jan"
+        ]
+      },
+      "ServerView": {
+        "type": "object",
+        "description": "Inference server software Kaeso knows how to talk to.",
+        "required": [
+          "server",
+          "name",
+          "port",
+          "path",
+          "detected"
+        ],
+        "properties": {
+          "detected": {
+            "type": "boolean",
+            "description": "Whether detection can tell this software from its model listing, its\n`server` header or one of its own endpoints."
+          },
+          "name": {
+            "type": "string",
+            "description": "The software's name.",
+            "example": "Ollama"
+          },
+          "path": {
+            "type": "string",
+            "description": "What comes between the server's address and `/v1`, such as `/engines`;\nempty for most.",
+            "example": ""
+          },
+          "port": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The port the software listens on unless told otherwise.",
+            "example": 11434,
+            "minimum": 0
+          },
+          "server": {
+            "$ref": "#/components/schemas/ServerKind",
+            "description": "The value a custom provider's `server` takes."
           }
         }
       },

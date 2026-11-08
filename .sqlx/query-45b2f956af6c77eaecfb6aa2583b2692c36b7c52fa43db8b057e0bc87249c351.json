@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, org_id, provider, name, base_url, auth, generation, embeddings, count_tokens, created_by_kind, created_by_id, created_at, updated_at, revision FROM custom_providers WHERE org_id = $1 AND provider = $2 FOR UPDATE",
+  "query": "SELECT c.id, c.org_id, c.provider, c.name, c.base_url, c.auth, c.generation, c.embeddings, c.count_tokens, c.server, c.created_by_kind, c.created_by_id, c.created_at, c.updated_at, c.revision FROM custom_providers c JOIN projects p ON p.org_id = c.org_id WHERE p.id = $1 ORDER BY c.provider",
   "describe": {
     "columns": [
       {
@@ -104,6 +104,17 @@
       },
       {
         "ordinal": 9,
+        "name": "server",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "custom_providers",
+            "name": "server"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
         "name": "created_by_kind",
         "type_info": "Text",
         "origin": {
@@ -114,7 +125,7 @@
         }
       },
       {
-        "ordinal": 10,
+        "ordinal": 11,
         "name": "created_by_id",
         "type_info": "Uuid",
         "origin": {
@@ -125,7 +136,7 @@
         }
       },
       {
-        "ordinal": 11,
+        "ordinal": 12,
         "name": "created_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -136,7 +147,7 @@
         }
       },
       {
-        "ordinal": 12,
+        "ordinal": 13,
         "name": "updated_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -147,7 +158,7 @@
         }
       },
       {
-        "ordinal": 13,
+        "ordinal": 14,
         "name": "revision",
         "type_info": "Int8",
         "origin": {
@@ -160,8 +171,7 @@
     ],
     "parameters": {
       "Left": [
-        "Uuid",
-        "Text"
+        "Uuid"
       ]
     },
     "nullable": [
@@ -174,6 +184,7 @@
       false,
       true,
       true,
+      true,
       false,
       true,
       false,
@@ -181,5 +192,5 @@
       false
     ]
   },
-  "hash": "b598abae7b70ca5c2185d5e8a1f78efb86b45e7050fff938af91a7fe893d0cbc"
+  "hash": "45b2f956af6c77eaecfb6aa2583b2692c36b7c52fa43db8b057e0bc87249c351"
 }

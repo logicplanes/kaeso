@@ -6,6 +6,7 @@ import { Tooltip } from "../tooltip/tooltip.js";
 import { Badge } from "../badge/badge.js";
 import { CopyButton } from "../copy-button/copy-button.js";
 import { PROVIDER_MARKS, type ProviderMark } from "./provider-marks.js";
+import { useProviderMarkOf } from "../../utils/provider-marks.js";
 import { formatNumber } from "../../format/index.js";
 import { useUiText, type UiText } from "../../i18n/context.js";
 
@@ -58,12 +59,14 @@ export const ProviderBadge = forwardRef<
   {
     provider: string;
     name?: string | undefined;
+    mark?: string | null | undefined;
     size?: keyof typeof KAESO_IDENTITY_VARIANTS.provider | undefined;
     withName?: boolean | undefined;
     className?: string | undefined;
   }
->(function ProviderBadge({ provider, name, size = "md", withName, className }, ref) {
-  const mark = PROVIDER_MARKS[provider];
+>(function ProviderBadge({ provider, name, mark: chosen, size = "md", withName, className }, ref) {
+  const markOf = useProviderMarkOf();
+  const mark = PROVIDER_MARKS[chosen ?? markOf(provider) ?? provider];
   const label = providerName(provider, name);
   const tile = (
     <span

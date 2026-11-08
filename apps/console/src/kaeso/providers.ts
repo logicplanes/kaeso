@@ -12,6 +12,7 @@ export interface Providers {
   readonly list: readonly ProviderView[];
   get(id: string): ProviderView | undefined;
   name(id: string): string;
+  mark(id: string): string | undefined;
   product(id: string): string;
   dialects(id: string): readonly string[];
   byName(a: string, b: string): number;
@@ -24,6 +25,7 @@ export function providerCatalog(list: readonly ProviderView[]): Providers {
     list,
     get: (id) => byId.get(id),
     name,
+    mark: (id) => byId.get(id)?.server ?? undefined,
     product: (id) => byId.get(id)?.account?.product ?? name(id),
     dialects: (id) => byId.get(id)?.dialects ?? [],
     byName: (a, b) => name(a).localeCompare(name(b)),
