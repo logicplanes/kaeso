@@ -31,35 +31,25 @@ git clone https://github.com/logicplanes/kaeso
 cd kaeso
 ```
 
-## Install the dependencies
+## Set it up
 
-Install the console, the docs, the showcase and the libraries in `packages/`:
-
-```bash
-pnpm install
-```
-
-Cargo fetches the Rust crates on the first build.
-
-## Start the development stack
-
-Build the gateway from your checkout and start it with its databases and mock services:
+One command checks what the repository needs, installs the dependencies, builds the UI library, starts the development stack and fills it with sample data:
 
 ```bash
-pnpm stack:up
+pnpm bootstrap
 ```
 
-The first build compiles the gateway and takes several minutes; later builds reuse Docker's cache. Once every service is healthy, the command prints a setup link, `http://localhost:3000/setup#token=…`.
+It stops before it changes anything when a prerequisite is missing or too old, when Docker doesn't answer, or when another program holds a port the stack needs. It then says how to fix that, such as `corepack enable` or the variable that moves the port. Run it again at any time: an install that is set up keeps its data.
 
-## Add sample data
+The first run builds the gateway from your checkout, which takes several minutes; later runs reuse Docker's cache. The sample data is the organization Northwind Labs with five projects, six members, ten keys, models, aliases and limits. A few thousand support emails and Slack questions go through the gateway, which the mock provider answers with written replies. Then come 70 days of request history: each app and person with its own models, clients and hours, content where the project keeps it, response cache hits, fallbacks while a provider is overloaded and a limit reached during a sale.
 
-Set the install up through the Platform API and fill it with sample data:
+| Option | What it does |
+| --- | --- |
+| `--check` | Only checks the prerequisites, the free disk and the ports |
+| `--all` | Also installs the browsers, the Cargo tools and the Python packages the [full test suites](testing.md) need |
+| `--no-seed` | Starts the stack without sample data; open the setup link it prints to set Kaeso up by hand |
 
-```bash
-pnpm seed
-```
-
-You get the organization Northwind Labs with five projects, six members, ten keys, models, aliases and limits. It sends a few thousand support emails and Slack questions through the gateway, which the mock provider answers with written replies, then adds 70 days of request history: each app and person with its own models, clients and hours, content where the project keeps it, response cache hits, fallbacks while a provider is overloaded and a limit reached during a sale. With `KAESO_SEED_WHOLE_DAYS=1` the history ends with yesterday instead of ten minutes ago, for a demo that moves its dates forward. To set the install up by hand instead, skip this step and open the setup link.
+With `KAESO_SEED_WHOLE_DAYS=1`, the history ends with yesterday instead of ten minutes ago, for a demo that moves its dates forward. `pnpm stack:up` and `pnpm seed` run the stack and the sample data on their own ([development stack](stack.md)).
 
 ## Open the console
 
