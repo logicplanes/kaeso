@@ -192,6 +192,7 @@ sequenceDiagram
 | `GET /v1/models`, `GET /v1/models/{id}` | `anthropic_messages` with an `anthropic-version` header, otherwise `openai_chat` | `models.list`, `models.retrieve` |
 | `POST /v1beta/models/{model}:{method}` | `gemini`, or `gemini_embeddings` for `embedContent` and `batchEmbedContents` | `models.generate_content`, `models.generate_content_stream`, `models.count_tokens`, `models.embed_content` (`google-genai`) |
 | `GET /v1beta/models`, `GET /v1beta/models/{id}` | `gemini` | `models.list`, `models.get` (`google-genai`) |
+| `POST /v1/images/generations`, `/v1/images/edits`, `/v1/images/variations` | `openai_images` | `images.generate` (also streamed), `images.edit` with uploads, `images.create_variation` |
 
 Every response and stream [fixture](kpp/fixtures.md) of every generation dialect goes through every generation endpoint, streamed and not. The tests compare what the SDK parsed with what KPP decoded (`GET /_expected`), so a translation that loses text, tool arguments or readable reasoning fails. They also check that structured output stays valid JSON and that every error fixture raises the SDK's error with the right status (`e2e/conformance/test_errors.py`): `APIStatusError` in the OpenAI and Anthropic SDKs, `APIError` in `google-genai`.
 

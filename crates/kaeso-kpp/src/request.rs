@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::block::{Block, CacheHint, RawItem};
 use crate::extras::Extras;
+use crate::image::ImageRequest;
 use crate::raw::RawJson;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -11,6 +12,7 @@ pub enum Request {
     Generate(GenerateRequest),
     CountTokens(GenerateRequest),
     Embed(EmbedRequest),
+    Image(ImageRequest),
 }
 
 impl Request {
@@ -19,6 +21,7 @@ impl Request {
             Request::Generate(_) => RequestKind::Generate,
             Request::CountTokens(_) => RequestKind::CountTokens,
             Request::Embed(_) => RequestKind::Embed,
+            Request::Image(_) => RequestKind::Image,
         }
     }
 
@@ -26,12 +29,14 @@ impl Request {
         match self {
             Request::Generate(r) | Request::CountTokens(r) => &r.model,
             Request::Embed(r) => &r.model,
+            Request::Image(r) => &r.model,
         }
     }
 
     pub fn stream_mode(&self) -> StreamMode {
         match self {
             Request::Generate(r) => r.stream,
+            Request::Image(r) => r.stream,
             Request::CountTokens(_) | Request::Embed(_) => StreamMode::Off,
         }
     }
@@ -44,6 +49,7 @@ pub enum RequestKind {
     Generate,
     CountTokens,
     Embed,
+    Image,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]

@@ -14,6 +14,7 @@ impl Request {
         match self {
             Request::Generate(r) | Request::CountTokens(r) => r.validate(),
             Request::Embed(r) => r.validate(),
+            Request::Image(r) => r.validate(),
         }
     }
 }

@@ -1,0 +1,16 @@
+{
+  "id": "03ff3cd0820949eb8a410056b5f21d39",
+  "data": {
+    "image_base64": [
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg=="
+    ]
+  },
+  "metadata": {
+    "failed_count": "0",
+    "success_count": "1"
+  },
+  "base_resp": {
+    "status_code": 0,
+    "status_msg": "success"
+  }
+}

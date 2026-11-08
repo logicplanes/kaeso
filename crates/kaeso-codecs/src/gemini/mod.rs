@@ -1,4 +1,5 @@
 mod error;
+mod images;
 pub(crate) mod models;
 mod parts;
 mod path;
@@ -13,6 +14,8 @@ mod wire;
 mod tests;
 #[cfg(test)]
 mod tests_edges;
+#[cfg(test)]
+mod tests_images;
 
 use kaeso_kpp::{
     DialectId, KppError, ModelInfo, ModelList, ModelsQuery, Reply, Request, RequestKind,
@@ -84,11 +87,17 @@ impl Codec for Gemini {
     }
 
     fn check(req: &Request, ctx: &EgressCtx) -> Result<(), KppError> {
+        if let Request::Image(r) = req {
+            return images::check(r, ctx.gemini_profile.image_output_options);
+        }
         let req = crate::adapt::for_target(req, D, ctx)?;
         request::check(&req, ctx)
     }
 
     fn encode_request(req: &Request, ctx: &mut EgressCtx) -> Result<EncodedRequest, KppError> {
+        if let Request::Image(r) = req {
+            return images::encode(r, ctx);
+        }
         let crate::adapt::Adapted {
             req,
             left_out,
@@ -107,6 +116,9 @@ impl Codec for Gemini {
         body: &[u8],
         ctx: &EgressCtx,
     ) -> Result<Reply, KppError> {
+        if ctx.kind == RequestKind::Image && (200..300).contains(&status) {
+            return images::decode(body, &ctx.origin(D));
+        }
         response::decode_response(status, headers, body, ctx)
     }
 

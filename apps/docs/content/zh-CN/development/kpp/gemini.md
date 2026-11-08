@@ -9,6 +9,7 @@ order: 9
 - **编解码器：**`kaeso_codecs::gemini::Gemini`（`crates/kaeso-codecs/src/gemini/`）和 `kaeso_codecs::gemini_embeddings::GeminiEmbeddings`（`crates/kaeso-codecs/src/gemini_embeddings/`）
 - **端点：**`POST {models}/{model}:generateContent`、`:streamGenerateContent?alt=sse`、`:countTokens`、`:embedContent` 和 `:batchEmbedContents`，以及[模型端点](#模型)
 - **Fixture：**`crates/kaeso-codecs/fixtures/gemini/` 和 `crates/kaeso-codecs/fixtures/gemini_embeddings/`
+- **图片请求：**使用 OpenAI Images API 的应用通过这个编解码器以 `generateContent` 调用访问 Gemini 图片模型（[Gemini 图片模型](openai-images.md#gemini-图片模型)）
 
 **来源。** 这些映射遵循以下来源：
 

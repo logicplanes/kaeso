@@ -65,6 +65,20 @@ doc = false
 bench = false
 
 [[bin]]
+name = "decode_minimax_images"
+path = "fuzz_targets/decode_minimax_images.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "decode_openai_images"
+path = "fuzz_targets/decode_openai_images.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
 name = "mcp"
 path = "fuzz_targets/mcp.rs"
 test = false

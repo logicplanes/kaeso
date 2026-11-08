@@ -610,6 +610,14 @@ impl<B: AsRef<[u8]>> Checked<B> {
 /// like the dialect's request, is counted as far as it can be read, and decoding it then
 /// reports what is wrong.
 pub fn request_shape(dialect: DialectId, body: &[u8]) -> Result<RequestShape, KppError> {
+    // An image edit may be a `multipart/form-data` upload, whose bytes are no JSON to walk;
+    // its parts are counted and bounded by the multipart reader instead.
+    if dialect == DialectId::OpenAiImages && !looks_like_json(body) {
+        return Ok(RequestShape {
+            bytes: body.len(),
+            ..RequestShape::default()
+        });
+    }
     let Some(bytes) = significant_bytes(body, MAX_DEPTH) else {
         return Err(KppError::invalid_request(format!(
             "The body nests more than {MAX_DEPTH} levels deep; Kaeso takes at most {MAX_DEPTH}."
@@ -631,6 +639,12 @@ pub fn request_shape(dialect: DialectId, body: &[u8]) -> Result<RequestShape, Kp
         (Err(_), Some(over)) => Err(refusal(dialect, over)),
         _ => Ok(tally.shape),
     }
+}
+
+fn looks_like_json(body: &[u8]) -> bool {
+    body.iter()
+        .find(|b| !b.is_ascii_whitespace())
+        .is_some_and(|b| *b == b'{')
 }
 
 // serde_json skips ignored and raw values without its recursion limit, so the codecs'

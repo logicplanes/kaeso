@@ -185,7 +185,10 @@ fn is_openai(origin: Option<&Origin>) -> bool {
     origin.is_some_and(|o| {
         matches!(
             o.dialect,
-            DialectId::OpenAiChat | DialectId::OpenAiResponses | DialectId::OpenAiEmbeddings
+            DialectId::OpenAiChat
+                | DialectId::OpenAiResponses
+                | DialectId::OpenAiEmbeddings
+                | DialectId::OpenAiImages
         )
     })
 }

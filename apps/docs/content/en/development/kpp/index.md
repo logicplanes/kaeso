@@ -83,6 +83,9 @@ Both crates are published to crates.io. Their library code may depend only on `s
 | `openai_models` | The OpenAI Models API, shared by the three OpenAI codecs |
 | `gemini` | The Gemini API (`{models}/{model}:generateContent`, `:streamGenerateContent`, `:countTokens`, and the model listing) |
 | `gemini_embeddings` | Gemini embeddings (`{models}/{model}:embedContent`, `:batchEmbedContents`) |
+| `openai_images` | OpenAI Images (`/v1/images/generations`, `/v1/images/edits`, `/v1/images/variations`) and the providers that speak a form of it ([OpenAI Images](openai-images.md)) |
+| `minimax_images` | MiniMax image generation (`/v1/image_generation`) |
+| `multipart` | The bounded `multipart/form-data` reader and writer of image uploads |
 
 | Shared module | Job |
 | --- | --- |

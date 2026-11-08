@@ -10,8 +10,8 @@ use axum::response::Response;
 use axum::routing::{get, post};
 use kaeso_codecs::{EgressCtx, EncodeCtx, HeaderList, dispatch};
 use kaeso_kpp::{
-    Block, Delta, DialectId, EmbeddingVector, ErrorKind, KppError, ModelInfo, ModelLifecycle,
-    ModelList, Reply, RequestKind, StreamEvent, StreamMode,
+    Block, Delta, DialectId, EmbeddingVector, ErrorKind, ImageOperation, KppError, ModelInfo,
+    ModelLifecycle, ModelList, Reply, RequestKind, Source, StreamEvent, StreamMode,
 };
 use serde_json::{Value, json};
 
@@ -72,6 +72,18 @@ async fn main() -> std::io::Result<()> {
         .route(
             "/v1/embeddings",
             post(|s, h, b| serve(s, h, b, DialectId::OpenAiEmbeddings, RequestKind::Embed)),
+        )
+        .route(
+            "/v1/images/generations",
+            post(|s, h, b| serve_images(s, h, b, ImageOperation::Generate)),
+        )
+        .route(
+            "/v1/images/edits",
+            post(|s, h, b| serve_images(s, h, b, ImageOperation::Edit)),
+        )
+        .route(
+            "/v1/images/variations",
+            post(|s, h, b| serve_images(s, h, b, ImageOperation::Variation)),
         )
         .route("/v1beta/models", get(list_gemini_models))
         .route(
@@ -255,6 +267,19 @@ async fn serve(
     answer(&app, req, ingress, kind)
 }
 
+async fn serve_images(
+    State(app): State<App>,
+    headers: HeaderMap,
+    body: Bytes,
+    operation: ImageOperation,
+) -> Response {
+    let ingress = DialectId::OpenAiImages;
+    match dispatch::decode_image_request(operation, &body, &headers_in(&headers)) {
+        Ok(req) => answer(&app, req, ingress, RequestKind::Image),
+        Err(e) => error_response(ingress, &e.with_status(400)),
+    }
+}
+
 async fn serve_gemini(
     State(app): State<App>,
     UrlPath(rest): UrlPath<String>,
@@ -433,6 +458,7 @@ async fn expected(State(app): State<App>, Query(q): Query<ExpectedQuery>) -> Res
     let kind = match q.kind.as_deref() {
         Some("count_tokens") => RequestKind::CountTokens,
         Some("embed") => RequestKind::Embed,
+        Some("image") => RequestKind::Image,
         _ => RequestKind::Generate,
     };
     let dir = app.fixtures.join(source.as_str());
@@ -503,6 +529,12 @@ fn summarize_reply(reply: &Reply) -> Value {
                 _ => 0,
             }),
         }),
+        Reply::Image(r) => json!({
+            "count": r.images.len(),
+            "links": r.images.iter().filter(|i| matches!(i.source, Source::Url(_))).count(),
+            "input_tokens": r.usage.total_input_tokens(),
+            "output_tokens": r.usage.output_tokens,
+        }),
         _ => json!({}),
     }
 }
@@ -522,6 +554,7 @@ fn summarize_stream(events: &[StreamEvent]) -> Value {
     let mut tools: BTreeMap<u32, (String, String)> = BTreeMap::new();
     let mut reasoning: BTreeMap<u32, (BTreeMap<u32, String>, String)> = BTreeMap::new();
     let mut error = None;
+    let (mut images, mut partial_images) = (0u32, 0u32);
     for ev in events {
         match ev {
             StreamEvent::BlockStart(s) => match &s.block {
@@ -557,6 +590,8 @@ fn summarize_stream(events: &[StreamEvent]) -> Value {
                 _ => {}
             },
             StreamEvent::Error(e) => error = Some(e.message.clone()),
+            StreamEvent::Image(i) if i.partial.is_some() => partial_images += 1,
+            StreamEvent::Image(_) => images += 1,
             _ => {}
         }
     }
@@ -569,7 +604,7 @@ fn summarize_stream(events: &[StreamEvent]) -> Value {
         .map(|(summaries, text)| readable(summaries.values().chain(std::iter::once(&text))))
         .filter(|r| !r.is_empty())
         .collect();
-    json!({"text": text, "refusal": refusal, "tool_calls": tools, "reasoning": reasoning, "stream_error": error})
+    json!({"text": text, "refusal": refusal, "tool_calls": tools, "reasoning": reasoning, "stream_error": error, "images": images, "partial_images": partial_images})
 }
 
 fn streamed_arguments(text: String) -> Value {
@@ -617,10 +652,11 @@ async fn scenarios(State(app): State<App>) -> Response {
                     source,
                     DialectId::OpenAiEmbeddings | DialectId::GeminiEmbeddings
                 );
-                let kind = if embeddings && kind == "generate" {
-                    "embed"
-                } else {
-                    kind
+                let images = matches!(source, DialectId::OpenAiImages | DialectId::MinimaxImages);
+                let kind = match kind {
+                    "generate" if embeddings => "embed",
+                    "generate" if images => "image",
+                    other => other,
                 };
                 out.push(json!({"source": source.as_str(), "name": full, "kind": kind, "stream": stream}));
             }

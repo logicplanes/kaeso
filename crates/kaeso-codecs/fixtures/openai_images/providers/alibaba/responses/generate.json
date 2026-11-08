@@ -1,0 +1,15 @@
+{
+  "created": 1778912345,
+  "data": [
+    {
+      "url": "https://dashscope-result-sgp.oss-ap-southeast-1.aliyuncs.com/1d/ab/20261108/qwen-image.png"
+    }
+  ],
+  "usage": {
+    "output_width": 1024,
+    "output_height": 1024,
+    "input_image_count": 0,
+    "output_image_count": 1,
+    "output_image_type": "qima_output_1k"
+  }
+}

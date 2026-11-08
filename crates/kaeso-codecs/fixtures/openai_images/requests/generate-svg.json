@@ -1,0 +1,12 @@
+{
+  "model": "gpt-image-2.6-sunburst",
+  "prompt": "A flat logo of a fox",
+  "output_format": "svg",
+  "n": 1,
+  "svg": {
+    "model": "gpt-6-astra",
+    "reasoning": {
+      "effort": "low"
+    }
+  }
+}

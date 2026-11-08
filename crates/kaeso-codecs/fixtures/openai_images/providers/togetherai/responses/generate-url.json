@@ -1,0 +1,12 @@
+{
+  "id": "oFuwv7Y-2kFHot-99170ebf9e84e0cf-SJC",
+  "model": "black-forest-labs/FLUX.2-pro",
+  "object": "list",
+  "data": [
+    {
+      "index": 0,
+      "type": "url",
+      "url": "https://api.together.ai/shrt/DwlaBdSakNRFlBxN"
+    }
+  ]
+}

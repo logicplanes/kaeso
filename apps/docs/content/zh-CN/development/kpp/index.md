@@ -83,6 +83,9 @@ sequenceDiagram
 | `openai_models` | OpenAI Models API，由三个 OpenAI 编解码器共用 |
 | `gemini` | Gemini API（`{models}/{model}:generateContent`、`:streamGenerateContent`、`:countTokens` 以及模型列表） |
 | `gemini_embeddings` | Gemini 嵌入（`{models}/{model}:embedContent`、`:batchEmbedContents`） |
+| `openai_images` | OpenAI Images（`/v1/images/generations`、`/v1/images/edits`、`/v1/images/variations`）以及使用其某种形式的服务商（[OpenAI Images](openai-images.md)） |
+| `minimax_images` | MiniMax 图片生成（`/v1/image_generation`） |
+| `multipart` | 图片上传使用的有上限的 `multipart/form-data` 读取器和写入器 |
 
 | 共享模块 | 职责 |
 | --- | --- |

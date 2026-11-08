@@ -1,0 +1,25 @@
+{
+  "created": 1762588800,
+  "data": [
+    {
+      "b64_json": "PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA4IDgiPjxyZWN0IHdpZHRoPSI4IiBoZWlnaHQ9IjgiIGZpbGw9IiNmNjAiLz48L3N2Zz4="
+    }
+  ],
+  "output_format": "svg",
+  "usage": {
+    "input_tokens": 30,
+    "total_tokens": 1150,
+    "output_tokens": 1120,
+    "input_tokens_details": {
+      "text_tokens": 30,
+      "image_tokens": 0
+    }
+  },
+  "svg_usage": {
+    "model": "gpt-6-astra",
+    "input_tokens": 1200,
+    "output_tokens": 340,
+    "total_tokens": 1540,
+    "reasoning_tokens": 120
+  }
+}

@@ -17,6 +17,8 @@ Every codec change starts with a fixture: a real request body, reply, stream or 
 | `openai_embeddings/` | OpenAI Embeddings (`/v1/embeddings`) |
 | `gemini/` | Gemini API (`{models}/{model}:generateContent`, `:streamGenerateContent`, `:countTokens`) |
 | `gemini_embeddings/` | Gemini embeddings (`{models}/{model}:embedContent`, `:batchEmbedContents`) |
+| `openai_images/` | OpenAI Images (`/v1/images/generations`, `/v1/images/edits`); uploads as `requests/<name>.multipart` with the content type in `<name>.meta.json` |
+| `minimax_images/` | MiniMax image generation (`/v1/image_generation`) |
 
 Each dialect folder has `requests/`, `responses/`, `streams/` where the endpoint streams, and `errors/`.
 

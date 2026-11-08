@@ -83,6 +83,9 @@ Beide Crates sind auf crates.io veröffentlicht. Ihr Bibliothekscode darf nur vo
 | `openai_models` | Die OpenAI Models API, die sich die drei OpenAI-Codecs teilen |
 | `gemini` | Die Gemini API (`{models}/{model}:generateContent`, `:streamGenerateContent`, `:countTokens` und die Modellliste) |
 | `gemini_embeddings` | Gemini-Embeddings (`{models}/{model}:embedContent`, `:batchEmbedContents`) |
+| `openai_images` | OpenAI Images (`/v1/images/generations`, `/v1/images/edits`, `/v1/images/variations`) und die Anbieter, die eine Form davon sprechen ([OpenAI Images](openai-images.md)) |
+| `minimax_images` | Bildgenerierung von MiniMax (`/v1/image_generation`) |
+| `multipart` | Der begrenzte Leser und Schreiber für `multipart/form-data` von Bild-Uploads |
 
 | Gemeinsames Modul | Aufgabe |
 | --- | --- |

@@ -212,3 +212,43 @@ mod tests {
         assert!(has_voice(GEMINI_VOICES, "kore") && !has_voice(OPENAI_VOICES, "Kore"));
     }
 }
+
+/// The media type of base64 image bytes, from their first bytes, for providers that send
+/// images without naming the format.
+pub(crate) fn sniff_image(data: &str) -> Option<&'static str> {
+    use base64::Engine as _;
+    let head = data.get(..16).unwrap_or(data);
+    let bytes = base64::engine::general_purpose::STANDARD_NO_PAD
+        .decode(head.trim_end_matches('='))
+        .ok()?;
+    let starts = |magic: &[u8]| bytes.starts_with(magic);
+    Some(if starts(&[0x89, b'P', b'N', b'G']) {
+        "image/png"
+    } else if starts(&[0xFF, 0xD8, 0xFF]) {
+        "image/jpeg"
+    } else if starts(b"GIF8") {
+        "image/gif"
+    } else if starts(b"RIFF") && bytes.get(8..12) == Some(b"WEBP") {
+        "image/webp"
+    } else {
+        return None;
+    })
+}
+
+#[cfg(test)]
+mod sniff_tests {
+    use super::sniff_image;
+
+    #[test]
+    fn image_formats_are_told_by_their_first_bytes() {
+        assert_eq!(
+            sniff_image("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJ"),
+            Some("image/png")
+        );
+        assert_eq!(sniff_image("/9j/4AAQSkZJRgABAQ"), Some("image/jpeg"));
+        assert_eq!(sniff_image("R0lGODlhAQABAIAAAA"), Some("image/gif"));
+        assert_eq!(sniff_image("UklGRiQAAABXRUJQVlA4"), Some("image/webp"));
+        assert_eq!(sniff_image("AAAA"), None);
+        assert_eq!(sniff_image("!!"), None);
+    }
+}

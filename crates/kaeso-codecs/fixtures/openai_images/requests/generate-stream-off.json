@@ -1,0 +1,6 @@
+{
+  "model": "gpt-image-2",
+  "prompt": "A red fox",
+  "quality": "low",
+  "stream": false
+}

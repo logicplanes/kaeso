@@ -83,6 +83,7 @@ def pytest_generate_tests(metafunc):
             "generate": [("responses", False), ("streams", True)],
             "count_tokens": [("responses/count_tokens", False), ("responses/input_tokens", False)],
             "embed": [("responses", False)],
+            "image": [("responses", False), ("streams", True)],
             "error": [("errors", False)],
         }
         for kind in wanted:

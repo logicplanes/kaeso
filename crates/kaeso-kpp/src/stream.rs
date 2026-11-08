@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use crate::block::{Citation, Opaque, RawItem};
 use crate::error::KppError;
 use crate::extras::Extras;
+use crate::image::ImageEvent;
 use crate::response::{StopReason, Usage};
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -17,6 +18,8 @@ pub enum StreamEvent {
     ResponseStop(ResponseStop),
     Error(KppError),
     Extra(RawItem),
+    /// A partial or finished image of a streamed image reply.
+    Image(ImageEvent),
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]

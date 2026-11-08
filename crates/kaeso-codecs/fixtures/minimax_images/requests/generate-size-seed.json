@@ -1,0 +1,9 @@
+{
+  "model": "image-01",
+  "prompt": "A lighthouse at dusk",
+  "width": 1024,
+  "height": 768,
+  "response_format": "base64",
+  "seed": 42,
+  "n": 1
+}

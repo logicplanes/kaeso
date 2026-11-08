@@ -16,6 +16,10 @@ pub struct GeminiProfile {
     /// Whether every content of a request must name its `role`; a content that the app sent
     /// without one gets `user`.
     pub role_on_every_content: bool,
+    /// Whether `imageConfig` takes `imageOutputOptions` (the image's media type and
+    /// compression), as the Agent Platform's `GoogleCloudAiplatformV1ImageConfig` does and
+    /// AI Studio's `ImageConfig` doesn't.
+    pub image_output_options: bool,
 }
 
 impl GeminiProfile {
@@ -23,6 +27,7 @@ impl GeminiProfile {
     pub const GOOGLE_AI_STUDIO: GeminiProfile = GeminiProfile {
         models_path: Cow::Borrowed("/v1beta/models"),
         role_on_every_content: false,
+        image_output_options: false,
     };
 
     /// Gemini Enterprise Agent Platform with an express mode API key,
@@ -33,6 +38,7 @@ impl GeminiProfile {
     pub const AGENT_PLATFORM: GeminiProfile = GeminiProfile {
         models_path: Cow::Borrowed("/v1/publishers/google/models"),
         role_on_every_content: true,
+        image_output_options: true,
     };
 
     /// The profile with another models path, such as
