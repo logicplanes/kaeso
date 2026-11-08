@@ -1,14 +1,9 @@
-ARG TARGETARCH
 # Docker Compose v5.6.1, Apache-2.0, run by the updater's compose runner; checksums from the release's checksums.txt.
-FROM scratch AS compose-amd64
-ADD --checksum=sha256:47737f4236e6d3ccea7291995203f8f018058783b4c3a9469119811a0b5db8c0 --chmod=0555 \
-    https://github.com/docker/compose/releases/download/v5.6.1/docker-compose-linux-x86_64 /docker-compose
-
-FROM scratch AS compose-arm64
-ADD --checksum=sha256:42cfa75f51ad0ccf290bad37899e0038a8c10a0069e85233ecc1d53e3ff1347d --chmod=0555 \
-    https://github.com/docker/compose/releases/download/v5.6.1/docker-compose-linux-aarch64 /docker-compose
-
-FROM compose-${TARGETARCH} AS compose
+FROM scratch AS compose-download
+ADD --checksum=sha256:47737f4236e6d3ccea7291995203f8f018058783b4c3a9469119811a0b5db8c0 \
+    https://github.com/docker/compose/releases/download/v5.6.1/docker-compose-linux-x86_64 /amd64/docker-compose
+ADD --checksum=sha256:42cfa75f51ad0ccf290bad37899e0038a8c10a0069e85233ecc1d53e3ff1347d \
+    https://github.com/docker/compose/releases/download/v5.6.1/docker-compose-linux-aarch64 /arm64/docker-compose
 ADD --checksum=sha256:58d1e17ffe5109a7ae296caafcadfdbe6a7d176f0bc4ab01e12a689b0499d8bd \
     https://raw.githubusercontent.com/docker/compose/v5.6.1/LICENSE /licenses/docker-compose/LICENSE
 ADD --checksum=sha256:b7dca0a6b01fa7365e4892877a6321179ee343d72ee87a96cfc222141b99a1e6 \
@@ -19,6 +14,14 @@ RUN cargo install cargo-chef --version 0.1.78 --locked \
  && rm -rf /usr/local/cargo/registry
 WORKDIR /src
 ENV SQLX_OFFLINE=true
+
+# Picks the binary for the target architecture here rather than with a stage named by a variable,
+# so every FROM names a pinned image or a stage.
+FROM chef AS compose
+ARG TARGETARCH
+COPY --from=compose-download / /download/
+RUN install -D -m 0555 "/download/${TARGETARCH}/docker-compose" /out/docker-compose \
+ && cp -R /download/licenses /out/licenses
 
 FROM chef AS plan
 COPY . .
@@ -43,8 +46,8 @@ LABEL org.opencontainers.image.title="Kaeso updater" \
       org.opencontainers.image.documentation="https://docs.kaeso.app" \
       org.opencontainers.image.licenses="MIT AND Apache-2.0"
 COPY --from=build --chmod=0555 /kaeso-updater /usr/local/bin/kaeso-updater
-COPY --from=compose /docker-compose /usr/local/bin/docker-compose
-COPY --from=compose /licenses/ /usr/share/doc/
+COPY --from=compose /out/docker-compose /usr/local/bin/docker-compose
+COPY --from=compose /out/licenses/ /usr/share/doc/
 COPY --from=build --chown=65532:65532 --chmod=0755 /dirs/ /
 USER nonroot:nonroot
 EXPOSE 8081
