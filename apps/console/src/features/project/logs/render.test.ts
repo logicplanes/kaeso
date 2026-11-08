@@ -141,6 +141,52 @@ describe("requestView", () => {
       { label: "Max output tokens", value: "256" },
       { label: "Thinking", value: "thinkingLevel: LOW" },
     ]);
+    expect(
+      requestView("gemini", {
+        contents: [
+          {
+            parts: [
+              { inlineData: { mimeType: "application/pdf", data: "JVBE" } },
+              { inlineData: { data: "AAAA" } },
+              { fileData: { mimeType: "image/jpeg", fileUri: "https://example.com/a.jpg" } },
+              { fileData: { mimeType: "image/png" } },
+              { fileData: { mimeType: "application/pdf", fileUri: "files/abc" } },
+              { fileData: {} },
+            ],
+          },
+          { role: "model", parts: [{ functionCall: { name: "now" } }] },
+          { role: "user", parts: [{ functionResponse: { name: "now" } }] },
+        ],
+      })?.messages,
+    ).toEqual([
+      {
+        role: "user",
+        content: [
+          { type: "document", media_type: "application/pdf" },
+          { type: "document" },
+          { type: "image", src: "https://example.com/a.jpg", media_type: "image/jpeg" },
+          { type: "image", media_type: "image/png" },
+          { type: "document", name: "files/abc", media_type: "application/pdf" },
+          { type: "document" },
+        ],
+      },
+      { role: "assistant", content: [{ type: "tool_call", name: "now", arguments: {} }] },
+      { role: "tool", content: [{ type: "tool_result", content: "{}" }] },
+    ]);
+    expect(requestView("gemini", { contents: [{ role: "model", parts: [{ functionCall: { args: {} } }] }] })).toBeNull();
+    expect(requestView("gemini", { contents: ["text"] })).toBeNull();
+    expect(requestView("gemini", { contents: [{ parts: ["text"] }] })).toBeNull();
+    expect(requestView("gemini", { tools: ["x"] })).toBeNull();
+    expect(requestView("gemini", { tools: [{}] })).toBeNull();
+    expect(requestView("gemini", { tools: [{ functionDeclarations: [{ name: "g", parameters: { type: "OBJECT" } }] }] })?.tools).toEqual([
+      { name: "g", schema: { type: "OBJECT" } },
+    ]);
+    expect(requestView("gemini", { tools: [{ functionDeclarations: ["x"] }] })).toBeNull();
+    expect(requestView("gemini", { tools: [{ functionDeclarations: [{ name: "f" }] }], toolConfig: { functionCallingConfig: { mode: "ANY" } } })).toEqual({
+      messages: [],
+      tools: [{ name: "f" }],
+      params: [{ label: "Tool choice", value: "functionCallingConfig: (mode: ANY)" }],
+    });
     expect(requestView("gemini", { contents: [{ role: "model", parts: [{ executableCode: { code: "1" } }] }] })).toBeNull();
     expect(requestView("gemini", { contents: [{ role: "function", parts: [{ text: "x" }] }] })).toBeNull();
   });
