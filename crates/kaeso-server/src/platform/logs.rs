@@ -602,14 +602,14 @@ pub struct LogFilter {
     pub source: Option<String>,
     #[doc = "Only requests the app sent in this format: `anthropic_messages`,\n\
         `openai_chat`, `openai_responses`, `openai_embeddings`, `gemini`,\n\
-        `gemini_embeddings`, `openai_images`, `openai_speech` or\n\
-        `openai_transcriptions`."]
+        `gemini_embeddings`, `openai_images`, `openai_speech`, `openai_transcriptions` or\n\
+        `elevenlabs`."]
     pub ingress_dialect: Option<String>,
     #[doc = "Only requests Kaeso sent to the provider in this format:\n\
         `anthropic_messages`, `openai_chat`, `openai_responses`,\n\
         `openai_embeddings`, `gemini`, `gemini_embeddings`, `openai_images`,\n\
-        `minimax_images`, `openai_speech`, `openai_transcriptions` or\n\
-        `minimax_speech`."]
+        `minimax_images`, `openai_speech`, `openai_transcriptions`, `minimax_speech` or\n\
+        `elevenlabs`."]
     pub egress_dialect: Option<String>,
     #[doc = "Only requests the response cache answered (`hit`), sent on (`miss`)\n\
         or passed by (`bypass`)."]

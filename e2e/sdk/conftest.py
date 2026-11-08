@@ -10,6 +10,7 @@ import anthropic
 import httpx
 import openai
 import pytest
+from elevenlabs import ElevenLabs
 from google import genai
 from google.genai import types
 
@@ -19,6 +20,7 @@ LOGS = ROOT / "target" / "e2e"
 OPENAI_SECRET = "sk-test-openai-e2e-credential"
 ANTHROPIC_SECRET = "sk-ant-test-e2e-credential"
 GOOGLE_SECRET = "AIzaSyTestGoogleE2eCredential00000000"
+ELEVENLABS_SECRET = "sk_test-elevenlabs-e2e-credential-0000000"
 SETUP_LINK = re.compile(r"#token=(\S+)")
 
 
@@ -96,6 +98,7 @@ def gateway():
         KAESO_PROVIDERS_OPENAI_BASE_URL=mock_url,
         KAESO_PROVIDERS_ANTHROPIC_BASE_URL=mock_url,
         KAESO_PROVIDERS_GOOGLE_BASE_URL=mock_url,
+        KAESO_PROVIDERS_ELEVENLABS_BASE_URL=mock_url,
         KAESO_STREAMS_KEEPALIVE_INTERVAL="1s",
     )
     log_path = LOGS / "gateway.log"
@@ -131,7 +134,12 @@ class Install:
         self.org = session["memberships"][0]["org_id"]
         self.project = self.post(f"/platform/v1/orgs/{self.org}/projects", {"name": "E2E"})["id"]
         self.base = f"/platform/v1/orgs/{self.org}/projects/{self.project}"
-        for provider, secret in (("openai", OPENAI_SECRET), ("anthropic", ANTHROPIC_SECRET), ("google", GOOGLE_SECRET)):
+        for provider, secret in (
+            ("openai", OPENAI_SECRET),
+            ("anthropic", ANTHROPIC_SECRET),
+            ("google", GOOGLE_SECRET),
+            ("elevenlabs", ELEVENLABS_SECRET),
+        ):
             self.post(
                 f"/platform/v1/orgs/{self.org}/credentials",
                 {"provider": provider, "name": provider, "secret": secret},
@@ -151,6 +159,9 @@ class Install:
             ("openai", "gpt-4o-mini-tts", None),
             ("openai", "whisper-1", None),
             ("openai", "gpt-4o-transcribe", None),
+            ("elevenlabs", "eleven_flash_v2_5", None),
+            ("elevenlabs", "eleven_text_to_sound_v2", None),
+            ("elevenlabs", "scribe_v2", None),
         ):
             body = {"provider": provider, "model_id": model}
             if overrides:
@@ -185,6 +196,11 @@ def install(gateway: Gateway) -> Install:
 @pytest.fixture
 def oa(install: Install) -> openai.OpenAI:
     return openai.OpenAI(base_url=f"{install.url}/v1", api_key=install.key, max_retries=0)
+
+
+@pytest.fixture
+def el(install: Install) -> ElevenLabs:
+    return ElevenLabs(base_url=install.url, api_key=install.key)
 
 
 @pytest.fixture

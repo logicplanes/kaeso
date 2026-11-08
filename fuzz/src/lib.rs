@@ -17,6 +17,17 @@ const KINDS: [RequestKind; 6] = [
     RequestKind::Transcription,
 ];
 
+const ELEVENLABS_PATHS: [&str; 8] = [
+    "/v1/text-to-speech/v1",
+    "/v1/text-to-speech/v1/stream/with-timestamps",
+    "/v1/text-to-dialogue/with-timestamps",
+    "/v1/sound-generation",
+    "/v1/music/stream",
+    "/v1/voice-changer/v1",
+    "/v1/speech-to-text",
+    "/v1/text-to-speech/v1/with-timestamps",
+];
+
 const IMAGE_OPERATIONS: [ImageOperation; 3] = [
     ImageOperation::Generate,
     ImageOperation::Edit,
@@ -72,6 +83,24 @@ pub fn decoders(dialect: DialectId, data: &[u8]) {
         ] {
             if let Ok(req) = dispatch::decode_transcription_request(operation, data, &upload) {
                 request(dialect, &req);
+            }
+        }
+    }
+    if dialect == DialectId::ElevenLabs {
+        for path in ELEVENLABS_PATHS {
+            let query = if salt.is_multiple_of(2) {
+                "output_format=pcm_24000"
+            } else {
+                ""
+            };
+            let Some(call) = kaeso_codecs::elevenlabs::ElevenLabsCall::from_path(path, query)
+            else {
+                continue;
+            };
+            for h in [&headers, &upload] {
+                if let Ok(req) = dispatch::decode_elevenlabs_request(&call, data, h) {
+                    request(dialect, &req);
+                }
             }
         }
     }

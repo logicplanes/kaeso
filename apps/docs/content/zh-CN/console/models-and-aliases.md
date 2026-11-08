@@ -56,7 +56,7 @@ order: 5
 | 长上下文价格 | KPMR 为长提示词列出的价格，例如输入和输出的 **超过 272K：$20.00 / $75.00**。当请求的提示词（含缓存 Token）超过该 Token 数时，该请求的所有 Token（包括输出）均按这些价格计费，用量和预算均如此。某一档未给出的价格沿用模型自身的价格。覆盖输入、输出、缓存读取或缓存写入价格会关闭 KPMR 的长上下文价格，使您的价格对所有提示词都适用 |
 | 音频输入价格和音频输出价格 | KPMR 列出的音频 Token 价格，例如转写模型的音频输入价格。 |
 | 图片输入、图片输出和图片缓存读取价格；按单位价格 | KPMR 列出的图片 Token 价格以及每张图片、每百万像素、每字符、每秒、每分钟或每小时的价格，例如 **输出每图片 $0.04（low, 1K）**。服务商报告的图片 Token 按图片价格计费，图片按单位价格计费，用量和预算都是如此；服务商仅作为估算发布的价格会标明。覆盖 Token 价格而不包含这些价格时，会关闭 KPMR 的这些价格。输出为图片而非文本的自定义图片模型需要其输入、输出，以及按单位价格或输出价格 |
-| 发送格式 | Kaeso 调用该模型所用的 API 格式：Anthropic Messages、OpenAI Chat Completions、OpenAI Responses、OpenAI Embeddings、Gemini API 或 Gemini Embeddings。对于 Gemini Enterprise Agent Platform，新的自定义模型以其所属系列的格式开始（[支持的服务商](../concepts/supported-providers.md#补充说明)） |
+| 发送格式 | Kaeso 调用该模型所用的 API 格式：Anthropic Messages、OpenAI Chat Completions、OpenAI Responses、OpenAI Embeddings、Gemini API、Gemini Embeddings 或 ElevenLabs。对于 Gemini Enterprise Agent Platform，新的自定义模型以其所属系列的格式开始（[支持的服务商](../concepts/supported-providers.md#补充说明)） |
 | 工具调用、推理、结构化输出 | 模型支持的能力 |
 | 温度 | 模型是否接受 `temperature` |
 | 强制工具选择 | 模型是否接受将 `tool_choice` 设为 `required`、`any` 或指定工具。对于不支持的模型，Kaeso 会在调用服务商之前拒绝此类请求 |

@@ -1,0 +1,217 @@
+{
+  "voices": [
+    {
+      "voice_id": "hpp4J3VqNfWAUOO0d1Us",
+      "name": "Bella - Professional, Bright, Warm",
+      "samples": null,
+      "category": "premade",
+      "fine_tuning": null,
+      "labels": {
+        "age": "middle_aged",
+        "accent": "american",
+        "use_case": "informative_educational",
+        "descriptive": "professional",
+        "language": "en",
+        "gender": "female"
+      },
+      "description": "This voice is warm, bright, and professional, characterized by a Standard American accent and a polished, narrative quality. It features a medium-high pitch with crisp diction and a deliberate, rhythmic pace that makes it highly intelligible and engaging for long-form listening.",
+      "preview_url": "https://storage.googleapis.com/eleven-public-prod/premade/voices/hpp4J3VqNfWAUOO0d1Us/dab0f5ba-3aa4-48a8-9fad-f138fea1126d.mp3",
+      "available_for_tiers": [],
+      "settings": null,
+      "sharing": null,
+      "high_quality_base_model_ids": [
+        "eleven_turbo_v2_5",
+        "eleven_flash_v2_5",
+        "eleven_turbo_v2",
+        "eleven_flash_v2",
+        "eleven_multilingual_v2"
+      ],
+      "verified_languages": [
+        {
+          "language": "en",
+          "model_id": "eleven_turbo_v2_5",
+          "accent": "american",
+          "locale": "en-US",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/premade/voices/hpp4J3VqNfWAUOO0d1Us/dab0f5ba-3aa4-48a8-9fad-f138fea1126d.mp3"
+        },
+        {
+          "language": "en",
+          "model_id": "eleven_v2_5_flash",
+          "accent": "american",
+          "locale": "en-US",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/premade/voices/hpp4J3VqNfWAUOO0d1Us/dab0f5ba-3aa4-48a8-9fad-f138fea1126d.mp3"
+        },
+        {
+          "language": "en",
+          "model_id": "eleven_flash_v2_5",
+          "accent": "american",
+          "locale": "en-US",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/premade/voices/hpp4J3VqNfWAUOO0d1Us/dab0f5ba-3aa4-48a8-9fad-f138fea1126d.mp3"
+        },
+        {
+          "language": "en",
+          "model_id": "eleven_turbo_v2",
+          "accent": "american",
+          "locale": "en-US",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/premade/voices/hpp4J3VqNfWAUOO0d1Us/dab0f5ba-3aa4-48a8-9fad-f138fea1126d.mp3"
+        },
+        {
+          "language": "en",
+          "model_id": "eleven_v2_flash",
+          "accent": "american",
+          "locale": "en-US",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/premade/voices/hpp4J3VqNfWAUOO0d1Us/dab0f5ba-3aa4-48a8-9fad-f138fea1126d.mp3"
+        },
+        {
+          "language": "en",
+          "model_id": "eleven_flash_v2",
+          "accent": "american",
+          "locale": "en-US",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/premade/voices/hpp4J3VqNfWAUOO0d1Us/dab0f5ba-3aa4-48a8-9fad-f138fea1126d.mp3"
+        },
+        {
+          "language": "en",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "american",
+          "locale": "en-US",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/premade/voices/hpp4J3VqNfWAUOO0d1Us/dab0f5ba-3aa4-48a8-9fad-f138fea1126d.mp3"
+        }
+      ],
+      "collection_ids": [],
+      "safety_control": null,
+      "voice_verification": null,
+      "permission_on_resource": null,
+      "is_owner": false,
+      "is_legacy": false,
+      "is_mixed": false,
+      "favorited_at_unix": null,
+      "created_at_unix": 1768922505,
+      "is_bookmarked": null,
+      "recording_quality": null,
+      "labelling_status": null,
+      "recording_quality_reason": null
+    },
+    {
+      "voice_id": "CwhRBWXzGAHq8TQ4Fs17",
+      "name": "Roger - Laid-Back, Casual, Resonant",
+      "samples": null,
+      "category": "premade",
+      "fine_tuning": null,
+      "labels": {
+        "age": "middle_aged",
+        "accent": "american",
+        "use_case": "conversational",
+        "descriptive": "classy",
+        "language": "en",
+        "gender": "male"
+      },
+      "description": "Easy going and perfect for casual conversations.",
+      "preview_url": "https://storage.googleapis.com/eleven-public-prod/premade/voices/CwhRBWXzGAHq8TQ4Fs17/58ee3ff5-f6f2-4628-93b8-e38eb31806b0.mp3",
+      "available_for_tiers": [],
+      "settings": null,
+      "sharing": null,
+      "high_quality_base_model_ids": [
+        "eleven_turbo_v2",
+        "eleven_flash_v2",
+        "eleven_turbo_v2_5",
+        "eleven_multilingual_v2",
+        "eleven_flash_v2_5"
+      ],
+      "verified_languages": [
+        {
+          "language": "en",
+          "model_id": "eleven_v2_flash",
+          "accent": "american",
+          "locale": "en-US",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/premade/voices/CwhRBWXzGAHq8TQ4Fs17/58ee3ff5-f6f2-4628-93b8-e38eb31806b0.mp3"
+        },
+        {
+          "language": "en",
+          "model_id": "eleven_flash_v2",
+          "accent": "american",
+          "locale": "en-US",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/premade/voices/CwhRBWXzGAHq8TQ4Fs17/58ee3ff5-f6f2-4628-93b8-e38eb31806b0.mp3"
+        },
+        {
+          "language": "en",
+          "model_id": "eleven_turbo_v2_5",
+          "accent": "american",
+          "locale": "en-US",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/premade/voices/CwhRBWXzGAHq8TQ4Fs17/58ee3ff5-f6f2-4628-93b8-e38eb31806b0.mp3"
+        },
+        {
+          "language": "en",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "american",
+          "locale": "en-US",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/premade/voices/CwhRBWXzGAHq8TQ4Fs17/58ee3ff5-f6f2-4628-93b8-e38eb31806b0.mp3"
+        },
+        {
+          "language": "en",
+          "model_id": "eleven_v2_5_flash",
+          "accent": "american",
+          "locale": "en-US",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/premade/voices/CwhRBWXzGAHq8TQ4Fs17/58ee3ff5-f6f2-4628-93b8-e38eb31806b0.mp3"
+        },
+        {
+          "language": "en",
+          "model_id": "eleven_flash_v2_5",
+          "accent": "american",
+          "locale": "en-US",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/premade/voices/CwhRBWXzGAHq8TQ4Fs17/58ee3ff5-f6f2-4628-93b8-e38eb31806b0.mp3"
+        },
+        {
+          "language": "en",
+          "model_id": "eleven_turbo_v2",
+          "accent": "american",
+          "locale": "en-US",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/premade/voices/CwhRBWXzGAHq8TQ4Fs17/58ee3ff5-f6f2-4628-93b8-e38eb31806b0.mp3"
+        },
+        {
+          "language": "fr",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "standard",
+          "locale": "fr-FR",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/premade/voices/CwhRBWXzGAHq8TQ4Fs17/042d9b70-5927-4630-985e-e95107b74ec2.mp3"
+        },
+        {
+          "language": "de",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "standard",
+          "locale": "de-DE",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/premade/voices/CwhRBWXzGAHq8TQ4Fs17/fa6a7658-18a9-4634-a96f-95dc3c47629d.mp3"
+        },
+        {
+          "language": "nl",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "standard",
+          "locale": "nl-NL",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/premade/voices/CwhRBWXzGAHq8TQ4Fs17/12a2ba8b-4fb3-44b6-9bc7-da0afd076fc9.mp3"
+        },
+        {
+          "language": "es",
+          "model_id": "eleven_multilingual_v2",
+          "accent": "standard",
+          "locale": "es-ES",
+          "preview_url": "https://storage.googleapis.com/eleven-public-prod/premade/voices/CwhRBWXzGAHq8TQ4Fs17/f172f037-5e23-44ea-a08e-56ddb6447d5b.mp3"
+        }
+      ],
+      "collection_ids": [],
+      "safety_control": null,
+      "voice_verification": null,
+      "permission_on_resource": null,
+      "is_owner": false,
+      "is_legacy": false,
+      "is_mixed": false,
+      "favorited_at_unix": null,
+      "created_at_unix": null,
+      "is_bookmarked": null,
+      "recording_quality": null,
+      "labelling_status": null,
+      "recording_quality_reason": null
+    }
+  ],
+  "has_more": true,
+  "total_count": 22,
+  "next_page_token": null
+}

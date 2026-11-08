@@ -69,6 +69,7 @@ pub struct Incoming {
     pub gemini: Option<GeminiCall>,
     pub image: Option<ImageOperation>,
     pub transcription: Option<TranscriptionOperation>,
+    pub elevenlabs: Option<kaeso_codecs::elevenlabs::ElevenLabsCall>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -254,6 +255,7 @@ fn blank_outcome(request_id: RequestId) -> Outcome {
         gemini: None,
         image: None,
         transcription: None,
+        elevenlabs: None,
         media: None,
         content_type: None,
     }
@@ -327,6 +329,7 @@ pub async fn serve_with(
     outcome.gemini = inc.gemini.as_ref().map(|c| c.action);
     outcome.image = inc.image;
     outcome.transcription = inc.transcription;
+    outcome.elevenlabs = inc.elevenlabs.as_ref().map(|c| c.operation);
     outcome.source = inc.source;
     outcome.caller.clone_from(&inc.caller);
     outcome.started_at = now;
@@ -643,6 +646,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         gemini,
         image,
         transcription,
+        elevenlabs,
         ..
     } = inc;
     let caller = match caller {
@@ -694,7 +698,11 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
     if keep_content {
         let o = rec.outcome();
         o.content_kept = true;
-        if image.is_none() && transcription.is_none() {
+        let uploads = transcription.is_some()
+            || elevenlabs
+                .as_ref()
+                .is_some_and(|c| c.kind() == RequestKind::Transcription);
+        if image.is_none() && !uploads {
             o.request_body = Some(body.clone());
         }
     }
@@ -730,6 +738,10 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
     let listed = header_list(&headers);
     let req = off_thread(request_bytes, move || {
         match (gemini, image, transcription) {
+            _ if elevenlabs.is_some() => match &elevenlabs {
+                Some(call) => dispatch::decode_checked_elevenlabs_request(call, &checked, &listed),
+                None => dispatch::decode_checked_request(kind, &checked, &listed),
+            },
             (Some(call), _, _) => {
                 dispatch::decode_checked_gemini_request(&call.model, call.action, &checked, &listed)
             }
@@ -1286,6 +1298,13 @@ async fn attempt(
         .get("request-id")
         .or_else(|| resp.headers.get("x-request-id"))
         .map(str::to_owned);
+    if plan.dialect == DialectId::ElevenLabs
+        && let Some(billed) = kaeso_codecs::elevenlabs::billed_characters(&resp.headers)
+        && let Some(media) = rec.outcome().media.as_mut()
+        && kind == RequestKind::Speech
+    {
+        media.characters = billed;
+    }
     let encode_ctx = EncodeCtx::for_request(Arc::clone(&app_req))
         .with_created_at(u64::try_from(rec.outcome().started_at.unix_timestamp()).unwrap_or(0));
     let status = resp.status;

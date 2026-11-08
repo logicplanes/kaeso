@@ -14,8 +14,8 @@ order: 8
 
 ## 决定
 
-- **生成的音频共用一个 KPP 请求。**`Request::Speech(SpeechRequest)`，`SpeechOperation` 为 `Speech`、`Dialogue`、`SoundEffect`、`Music` 或 `VoiceChange`；`Reply::Speech(SpeechResponse)` 包含 base64 编码的音频及其媒体类型；`StreamEvent::Speech(SpeechEvent)` 表示音频片段以及带用量的结束事件。OpenAI 的语音 API 只生成 `Speech`；其他操作供提供这些功能的服务商使用。
-- **声音是名称或 ID。**`Voice::Named` 表示服务商命名的声音，`Voice::Id` 表示按 ID 指定的声音（OpenAI 的 `{"id": …}`）。名称只会传给列出它的服务商。
+- **生成的音频共用一个 KPP 请求。**`Request::Speech(SpeechRequest)`，`SpeechOperation` 为 `Speech`、`Dialogue`、`SoundEffect`、`Music` 或 `VoiceChange`；`Reply::Speech(SpeechResponse)` 包含 base64 编码的音频及其媒体类型；`StreamEvent::Speech(SpeechEvent)` 表示音频片段以及带用量的结束事件。对话、音效、音乐和变声来自 [ElevenLabs](elevenlabs.md)；OpenAI 的语音 API 只生成 `Speech`。
+- **声音是名称或 ID。**`Voice::Named` 表示服务商命名的声音，`Voice::Id` 表示按 ID 指定的声音（OpenAI 的 `{"id": …}`、ElevenLabs 的声音 ID）。名称只会传给列出它的服务商。
 - **音频边生成边传输。**无论应用是否使用流式，原始音频的回复都用流解码器读取（`Codec::reads_reply_as_stream`），这样应用的第一批字节不必等待最后一批。`Codec::response_media_type` 和 `stream_media_type` 说明编解码器写出的内容：音频的媒体类型，或事件的 `text/event-stream`。
 - **不做转换。**服务商没有的格式、声音或采样率会在发送任何内容之前得到 `Unsupported`。
 

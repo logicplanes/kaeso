@@ -250,6 +250,7 @@ pub async fn responses(
         gemini: None,
         image: None,
         transcription: None,
+        elevenlabs: None,
     };
     Ok(pipeline::serve_with(state, incoming, answer).await)
 }

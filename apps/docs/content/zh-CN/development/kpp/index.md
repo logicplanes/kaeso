@@ -88,6 +88,7 @@ sequenceDiagram
 | `openai_speech` | OpenAI 语音（`/v1/audio/speech`）以及使用其某种形式的服务商（[OpenAI Speech](openai-speech.md)） |
 | `openai_transcriptions` | OpenAI 转写和翻译以及使用其某种形式的服务商（[OpenAI Transcriptions](openai-transcriptions.md)） |
 | `minimax_speech` | MiniMax 文本转语音（`/v1/t2a_v2`） |
+| `elevenlabs` | ElevenLabs 的生成、转写和列表端点（[ElevenLabs](elevenlabs.md)） |
 | `multipart` | 图片上传使用的有上限的 `multipart/form-data` 读取器和写入器 |
 
 | 共享模块 | 职责 |

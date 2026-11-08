@@ -392,6 +392,10 @@ docstring-parser==0.18.0 \
     --hash=sha256:292510982205c12b1248696f44959db3cdd1740237a968ea1e2e7a900eeb2015 \
     --hash=sha256:b3fcbed555c47d8479be0796ef7e19c2670d428d72e96da63f3a40122860374b
     # via anthropic
+elevenlabs==2.77.0 \
+    --hash=sha256:0ce354075318ddfe271a872adad94753ce75690a9dc7583f83b85aec047aa0a2 \
+    --hash=sha256:5b53d79ffd71665958f26b214ef3ae0d9a1d01462f1507c1ff9b4ab6529d6102
+    # via -r e2e/requirements.in
 google-auth==2.62.1 \
     --hash=sha256:015399a5abde39033c69404cc1c079e6d4c2de2993e164c9f4eac6e5376ad72b \
     --hash=sha256:3c8e1ce2553784ae17fd220e6f88df3281d86ab98019278f436d06dffab17a9e
@@ -420,6 +424,7 @@ httpx==0.28.1 \
     --hash=sha256:d909fcccc110f8c7faf814ca82a9a4d816bc5a6dbfea25d6591d6985b8ba59ad
     # via
     #   -r e2e/requirements.in
+    #   elevenlabs
     #   google-genai
 httpx2==2.16.0 \
     --hash=sha256:0d54c98128e8f2ff7fbbde0fca8c359e5f032edeaaaac443cdb7f31f685bcd7f \
@@ -634,6 +639,7 @@ pydantic==2.14.1 \
     --hash=sha256:94f478203dd03404682a1ada216965651dd74b1d2d5ffd62e00e0837caab5c26
     # via
     #   anthropic
+    #   elevenlabs
     #   google-genai
     #   mcp
     #   mcp-types
@@ -776,7 +782,9 @@ pydantic-core==2.50.1 \
     --hash=sha256:f5187624823423e1d1b82b1072ac41dc837389e18d3d0572cc19bbee46cd550a \
     --hash=sha256:f77ac30b19221cd9bd3fcfa3d4614eff93140d0572ab730cded17b64adca05f3 \
     --hash=sha256:fe90228920fd8ff2be62622b6bb8a2b11acd65046d50c6b130614b5879605a20
-    # via pydantic
+    # via
+    #   elevenlabs
+    #   pydantic
 pygments==2.21.0 \
     --hash=sha256:2363c69b61c4a97c838da3b130dcd6468f4848992b21a82f2a63ec34377137d9 \
     --hash=sha256:610ca751c9bc2492b38eb9a38a7fbc93edbbb2d7182edaf34e66ae493dee5c8c
@@ -1035,6 +1043,7 @@ requests==2.34.2 \
     --hash=sha256:2a0d60c172f83ac6ab31e4554906c0f3b3588d37b5cb939b1c061f4907e278e0 \
     --hash=sha256:f288924cae4e29463698d6d60bc6a4da69c89185ad1e0bcc4104f584e960b9ed
     # via
+    #   elevenlabs
     #   google-auth
     #   google-genai
 rpds-py==2026.9.1 \
@@ -1207,6 +1216,7 @@ typing-extensions==4.16.0 \
     #   anthropic
     #   anyio
     #   cfn-lint
+    #   elevenlabs
     #   google-genai
     #   mcp
     #   mcp-types
@@ -1339,4 +1349,6 @@ websockets==16.1.1 \
     --hash=sha256:fb9a0a6dc3d1b3986cb88091b6899f0396651e0f74e2c9766ab8d6ffc3842e29 \
     --hash=sha256:fce6c48559c86d1ac3632ccb1bebc7d5442fbe79bd9bb0e40379ee54be2a4051 \
     --hash=sha256:fd46fff7eb62c24804d234f0051c7a8ea81285ad63e0337d3dcf33ca82aee58a
-    # via google-genai
+    # via
+    #   elevenlabs
+    #   google-genai

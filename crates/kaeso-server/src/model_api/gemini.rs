@@ -150,6 +150,7 @@ async fn call(
             gemini: Some(call),
             image: None,
             transcription: None,
+            elevenlabs: None,
         },
     )
     .await

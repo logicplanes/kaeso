@@ -88,6 +88,7 @@ Beide Crates sind auf crates.io veröffentlicht. Ihr Bibliothekscode darf nur vo
 | `openai_speech` | Speech von OpenAI (`/v1/audio/speech`) und die Anbieter, die eine Form davon sprechen ([OpenAI Speech](openai-speech.md)) |
 | `openai_transcriptions` | Transkriptionen und Übersetzungen von OpenAI und die Anbieter, die eine Form davon sprechen ([OpenAI Transcriptions](openai-transcriptions.md)) |
 | `minimax_speech` | Text to Speech von MiniMax (`/v1/t2a_v2`) |
+| `elevenlabs` | Die Endpunkte von ElevenLabs zum Erzeugen, Transkribieren und Auflisten ([ElevenLabs](elevenlabs.md)) |
 | `multipart` | Der begrenzte Leser und Schreiber für `multipart/form-data` von Bild-Uploads |
 
 | Gemeinsames Modul | Aufgabe |

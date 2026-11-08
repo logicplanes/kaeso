@@ -24,6 +24,7 @@ mod web_search;
 mod wire;
 
 pub mod anthropic_messages;
+pub mod elevenlabs;
 pub mod gemini;
 pub mod gemini_embeddings;
 pub mod minimax_images;

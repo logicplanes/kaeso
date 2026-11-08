@@ -173,6 +173,7 @@ const MARKED_PROVIDERS = {
   cerebras: "Cerebras",
   zai: "Z.ai",
   minimax: "MiniMax",
+  elevenlabs: "ElevenLabs",
   google: "Google AI Studio",
   "gemini-agent-platform": "Gemini Enterprise Agent Platform",
   vllm: "vLLM",

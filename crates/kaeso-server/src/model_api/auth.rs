@@ -11,7 +11,7 @@ use crate::auth::keys::{self, KeyCaller, LookupError};
 use crate::state::AppState;
 
 pub fn presented(headers: &HeaderMap) -> Option<&str> {
-    for name in ["x-api-key", "x-goog-api-key"] {
+    for name in ["x-api-key", "x-goog-api-key", "xi-api-key"] {
         if let Some(v) = headers.get(name).and_then(|v| v.to_str().ok()) {
             return Some(v.trim());
         }

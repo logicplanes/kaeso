@@ -18,6 +18,7 @@ use crate::codec::{
 };
 
 pub use profile::{LanguageField, TimestampsField, TranscriptionBody, TranscriptionsProfile};
+pub(crate) use request::default_name;
 pub use request::{MAX_AUDIO_BYTES, MAX_FORM_PARTS};
 
 const DIALECT: DialectId = DialectId::OpenAiTranscriptions;

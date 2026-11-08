@@ -137,6 +137,8 @@ pub enum AuthStyle {
     Bearer,
     XApiKey,
     XGoogApiKey,
+    /// ElevenLabs' `xi-api-key` header.
+    XiApiKey,
 }
 
 impl AuthStyle {
@@ -145,13 +147,14 @@ impl AuthStyle {
             AuthStyle::Bearer => "authorization",
             AuthStyle::XApiKey => "x-api-key",
             AuthStyle::XGoogApiKey => "x-goog-api-key",
+            AuthStyle::XiApiKey => "xi-api-key",
         }
     }
 
     pub fn header_value(self, key: &str) -> String {
         match self {
             AuthStyle::Bearer => format!("Bearer {key}"),
-            AuthStyle::XApiKey | AuthStyle::XGoogApiKey => key.to_owned(),
+            AuthStyle::XApiKey | AuthStyle::XGoogApiKey | AuthStyle::XiApiKey => key.to_owned(),
         }
     }
 }
@@ -1049,6 +1052,47 @@ pub const PROVIDERS: &[Provider] = &[
         service_account: None,
     },
     Provider {
+        id: "elevenlabs",
+        name: "ElevenLabs",
+        key_page: KeyPage {
+            url: "https://elevenlabs.io/app/settings/api-keys",
+            label: "API Keys",
+        },
+        key_prefix: Some("sk_"),
+        default_base_url: "https://api.elevenlabs.io",
+        auth: AuthStyle::XiApiKey,
+        // ElevenLabs makes and transcribes audio; it writes no text, so a generation request
+        // never reaches it past the catalogue's checks.
+        generation: DialectId::ElevenLabs,
+        count_tokens: None,
+        embeddings: None,
+        images: None,
+        speech: Some(SpeechEgress {
+            dialect: DialectId::ElevenLabs,
+            profile: SpeechProfile::OPENAI,
+            from_root: false,
+            auth: None,
+        }),
+        transcriptions: Some(TranscriptionsEgress {
+            dialect: DialectId::ElevenLabs,
+            profile: TranscriptionsProfile::OPENAI,
+            from_root: false,
+            auth: None,
+        }),
+        dialects: &[DialectId::ElevenLabs],
+        refused_key_messages: &[],
+        context_window_messages: &[],
+        reasoning_beyond_output_limit: false,
+        end_user_limit: None,
+        chat: ChatProfile::compatible("ElevenLabs"),
+        responses: ResponsesProfile::compatible("ElevenLabs"),
+        messages: MessagesProfile::compatible("ElevenLabs"),
+        gemini: GeminiProfile::GOOGLE_AI_STUDIO,
+        account: None,
+        routes: &[],
+        service_account: None,
+    },
+    Provider {
         id: "google",
         name: "Google AI Studio",
         key_page: KeyPage {
@@ -1449,7 +1493,7 @@ mod tests {
         assert!(provider("gemini").is_none());
         assert_eq!(
             ids(),
-            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras, zai, minimax, google, gemini-agent-platform"
+            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras, zai, minimax, elevenlabs, google, gemini-agent-platform"
         );
     }
 
@@ -2211,6 +2255,7 @@ mod tests {
                 "cerebras",
                 "zai",
                 "minimax",
+                "elevenlabs",
                 "google",
                 "gemini-agent-platform"
             ]

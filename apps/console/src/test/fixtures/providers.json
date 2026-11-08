@@ -315,6 +315,25 @@
       "server": null
     },
     {
+      "id": "elevenlabs",
+      "name": "ElevenLabs",
+      "custom": false,
+      "takes_key": true,
+      "hides_built_in": null,
+      "key_page": {
+        "url": "https://elevenlabs.io/app/settings/api-keys",
+        "label": "API Keys"
+      },
+      "key_prefix": "sk_",
+      "dialects": ["elevenlabs"],
+      "count_tokens": null,
+      "embeddings": null,
+      "account": null,
+      "service_account": null,
+      "model_routes": [],
+      "server": null
+    },
+    {
       "id": "google",
       "name": "Google AI Studio",
       "custom": false,

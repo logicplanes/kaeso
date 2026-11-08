@@ -22,6 +22,7 @@ order: 10
 | `openai_speech/` | OpenAI 语音（`/v1/audio/speech`）；音频回复为 `responses/<name>.mp3`，content type 写在 `<name>.mp3.meta.json` 中 |
 | `openai_transcriptions/` | OpenAI 转写和翻译（`/v1/audio/transcriptions`、`/v1/audio/translations`）；上传文件为 `requests/<name>.multipart`，文本形式为 `.txt`、`.srt` 和 `.vtt` |
 | `minimax_speech/` | MiniMax 文本转语音（`/v1/t2a_v2`） |
+| `elevenlabs/` | ElevenLabs；每个请求的路径和查询写在 `<name>.meta.json` 中，音频回复为 `.mp3` 和 `.pcm`，带时间戳的流为 `.ndjson` |
 
 每个方言文件夹都有 `requests/`、`responses/` 和 `errors/`，端点支持流式时还有 `streams/`。
 

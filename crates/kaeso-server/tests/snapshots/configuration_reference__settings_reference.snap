@@ -62,6 +62,7 @@ expression: settings_reference()
 | `KAESO_PROVIDERS_CEREBRAS_BASE_URL` | `providers.cerebras.base_url` | text | `https://api.cerebras.ai` | Base URL of the Cerebras API. |
 | `KAESO_PROVIDERS_ZAI_BASE_URL` | `providers.zai.base_url` | text | `https://api.z.ai/api/anthropic` | Base URL of the Z.ai API. |
 | `KAESO_PROVIDERS_MINIMAX_BASE_URL` | `providers.minimax.base_url` | text | `https://api.minimax.io/anthropic` | Base URL of the MiniMax API. |
+| `KAESO_PROVIDERS_ELEVENLABS_BASE_URL` | `providers.elevenlabs.base_url` | text | `https://api.elevenlabs.io` | Base URL of the ElevenLabs API. |
 | `KAESO_PROVIDERS_GOOGLE_BASE_URL` | `providers.google.base_url` | text | `https://generativelanguage.googleapis.com` | Base URL of the Google AI Studio API. |
 | `KAESO_PROVIDERS_GEMINI_AGENT_PLATFORM_BASE_URL` | `providers.gemini-agent-platform.base_url` | text | `https://aiplatform.googleapis.com` | Base URL of the Gemini Enterprise Agent Platform API. |
 | `KAESO_CUSTOM_PROVIDERS_ENABLED` | `custom_providers.enabled` | bool | `true` | Let organization admins add their own providers, such as a self-hosted vLLM or an internal proxy, on an API format Kaeso speaks. Off refuses requests to the ones they added. |

@@ -105,3 +105,10 @@ path = "fuzz_targets/decode_minimax_speech.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "decode_elevenlabs"
+path = "fuzz_targets/decode_elevenlabs.rs"
+test = false
+doc = false
+bench = false

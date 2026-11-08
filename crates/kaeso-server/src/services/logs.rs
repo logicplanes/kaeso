@@ -437,6 +437,17 @@ impl From<Cached> for LogSettings {
 pub fn endpoint(o: &Outcome) -> &'static str {
     let (ingress, kind, gemini, image, transcription) =
         (o.ingress, o.kind, o.gemini, o.image, o.transcription);
+    if let Some(operation) = o.elevenlabs {
+        use kaeso_codecs::elevenlabs::ElevenLabsOperation as Op;
+        return match operation {
+            Op::TextToDialogue => "text-to-dialogue",
+            Op::SoundGeneration => "sound-generation",
+            Op::Music => "music",
+            Op::VoiceChanger => "voice-changer",
+            Op::SpeechToText => "speech-to-text",
+            _ => "text-to-speech",
+        };
+    }
     if let Some(operation) = transcription {
         return match operation {
             kaeso_kpp::TranscriptionOperation::Translate => "audio/translations",

@@ -11,6 +11,7 @@ Jede Installation stellt auf ihrer Domain zwei APIs bereit. Apps rufen Modelle �
 - [Modell-API](model-api.md): Modelle mit den SDKs von OpenAI, Anthropic und Google Gen AI aufrufen und Endpunkte, Header und Modellnamen nachschlagen.
 - [Bilder-API](images.md): Bilder mit der Images API von OpenAI bei jedem Anbieter erzeugen und bearbeiten, der Bilder macht.
 - [Audio-API](audio.md): Sprache erzeugen und Audio transkribieren oder übersetzen, mit der Audio-API von OpenAI bei jedem Anbieter, der sie anbietet.
+- [ElevenLabs-API](elevenlabs.md): Sprache, Klänge, Musik und Transkription von ElevenLabs mit den offiziellen SDKs von ElevenLabs aufrufen.
 - [Fehler](errors.md): Nachlesen, was eine fehlgeschlagene Modellanfrage in jedem Format zurückgibt und warum sie fehlschlug.
 - [Platform API](platform-api.md): Authentifizierung, Konventionen, Fehler und Routen zum Verwalten einer Installation nachschlagen.
 - [Mit der Platform API automatisieren](automation.md): Ein Projekt, ein Modell und den Schlüssel einer App per Skript einrichten.

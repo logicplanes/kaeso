@@ -418,7 +418,15 @@ pub(crate) fn body(
             }
             m.insert("text".to_owned(), r.text.clone().into());
             if verbose && !r.words.is_empty() {
-                let words: Vec<Value> = r.words.iter().map(wire_word).collect();
+                // ElevenLabs lists spacing and sound events among its words; they aren't words.
+                let spoken = |w: &&TranscriptWord| {
+                    w.extras
+                        .fields
+                        .get("type")
+                        .and_then(|t| t.to_value().ok())
+                        .is_none_or(|t| t == "word")
+                };
+                let words: Vec<Value> = r.words.iter().filter(spoken).map(wire_word).collect();
                 m.insert("words".to_owned(), words.into());
             }
             if (verbose || diarized) && (!r.segments.is_empty() || diarized) {

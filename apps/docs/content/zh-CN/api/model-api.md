@@ -165,6 +165,7 @@ console.log(response.text);
 | `POST /v1/images/generations`、`POST /v1/images/edits`、`POST /v1/images/variations` | OpenAI Images（[图片 API](images.md)） |
 | `POST /v1/audio/speech` | OpenAI Speech（[音频 API](audio.md)） |
 | `POST /v1/audio/transcriptions`、`POST /v1/audio/translations` | OpenAI Transcriptions（[音频 API](audio.md)） |
+| `POST /v1/text-to-speech/{voice_id}`、`/v1/text-to-dialogue`、`/v1/sound-generation`、`/v1/music`、`/v1/voice-changer/{voice_id}`、`/v1/speech-to-text`、`GET /v1/voices`、`/v2/voices` | ElevenLabs（[ElevenLabs API](elevenlabs.md)） |
 | `POST /v1/messages` | Anthropic Messages |
 | `POST /v1/messages/count_tokens` | Anthropic Messages，统计 Token |
 | `GET /v1/models` | 该密钥可调用的模型 |

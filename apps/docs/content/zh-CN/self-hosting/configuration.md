@@ -195,6 +195,7 @@ Docker 会在每个服务的日志达到 10 MB 时轮转，并保留五个文件
 | `KAESO_PROVIDERS_CEREBRAS_BASE_URL`<br>`providers.cerebras.base_url` | 文本 | `https://api.cerebras.ai` | Cerebras API 的基础 URL。 |
 | `KAESO_PROVIDERS_ZAI_BASE_URL`<br>`providers.zai.base_url` | 文本 | `https://api.z.ai/api/anthropic` | Z.ai API 的基础 URL。 |
 | `KAESO_PROVIDERS_MINIMAX_BASE_URL`<br>`providers.minimax.base_url` | 文本 | `https://api.minimax.io/anthropic` | MiniMax API 的基础 URL。 |
+| `KAESO_PROVIDERS_ELEVENLABS_BASE_URL`<br>`providers.elevenlabs.base_url` | 文本 | `https://api.elevenlabs.io` | ElevenLabs API 的基础 URL。 |
 | `KAESO_PROVIDERS_GOOGLE_BASE_URL`<br>`providers.google.base_url` | 文本 | `https://generativelanguage.googleapis.com` | Google AI Studio API 的基础 URL。 |
 | `KAESO_PROVIDERS_GEMINI_AGENT_PLATFORM_BASE_URL`<br>`providers.gemini-agent-platform.base_url` | 文本 | `https://aiplatform.googleapis.com` | Gemini Enterprise Agent Platform API 的基础 URL。 |
 | `KAESO_UPSTREAM_CONNECT_TIMEOUT`<br>`upstream.connect_timeout` | 文本 | `10s` | 连接服务商的时间，含 TCP 和 TLS；最多 24h。 |

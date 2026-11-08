@@ -137,6 +137,7 @@ export const providerMark = {
   cerebras: mode("#f05a28", "#f05a28"),
   "minimax-magenta": mode("#e21680", "#e21680"),
   "minimax-orange": mode("#ff6036", "#ff633a"),
+  elevenlabs: mode("#000000", "#ffffff"),
   "google-green": mode("#00ab55", "#00b95c"),
   "google-blue": mode("#3186ff", "#3186ff"),
   "google-yellow": mode("#bd8d03", "#fbbc04"),

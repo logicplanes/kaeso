@@ -109,6 +109,9 @@ base_url = "https://api.z.ai/api/anthropic"
 [providers.minimax]
 base_url = "https://api.minimax.io/anthropic"
 
+[providers.elevenlabs]
+base_url = "https://api.elevenlabs.io"
+
 [providers.google]
 base_url = "https://generativelanguage.googleapis.com"
 

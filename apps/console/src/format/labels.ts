@@ -39,6 +39,7 @@ export const DIALECTS: Record<string, string> = {
   openai_speech: "OpenAI Speech",
   openai_transcriptions: "OpenAI Transcriptions",
   minimax_speech: "MiniMax Speech",
+  elevenlabs: "ElevenLabs",
 };
 export const dialectLabel = (d: string) => DIALECTS[d] ?? d;
 

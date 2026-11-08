@@ -14,6 +14,8 @@ const GOOGLE_SECRET: &str = "AIzaSyTestGoogleAudioCredential0000000000";
 const GROQ_SECRET: &str = "gsk_test-groq-audio-credential-000000000000";
 const MISTRAL_SECRET: &str = "mistral-test-audio-credential-00000000";
 const MINIMAX_SECRET: &str = "sk-api-test-minimax-audio-0000000000000000";
+const ELEVENLABS_SECRET: &str = "sk_test-elevenlabs-audio-00000000000000000";
+const VOICE: &str = "hpp4J3VqNfWAUOO0d1Us";
 
 async fn env() -> Env {
     let capture = std::sync::Arc::new(common::v1::Capture::default());
@@ -24,6 +26,7 @@ async fn env() -> Env {
         ("groq", GROQ_SECRET),
         ("mistral", MISTRAL_SECRET),
         ("minimax", MINIMAX_SECRET),
+        ("elevenlabs", ELEVENLABS_SECRET),
     ] {
         let r = env
             .app
@@ -46,6 +49,10 @@ async fn env() -> Env {
         ("mistral", "voxtral-mini-tts-3-0"),
         ("minimax", "speech-2.8-hd"),
         ("anthropic", "claude-haiku-4-5"),
+        ("elevenlabs", "eleven_flash_v2_5"),
+        ("elevenlabs", "eleven_v3"),
+        ("elevenlabs", "eleven_text_to_sound_v2"),
+        ("elevenlabs", "scribe_v2"),
     ] {
         let r = env
             .app
@@ -393,4 +400,185 @@ async fn what_a_model_or_provider_cannot_do_is_refused_before_anything_is_sent()
     .await;
     assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
     assert_eq!(env.mock.received().len(), before);
+}
+
+async fn elevenlabs(env: &Env, path: &str, body: Option<Value>) -> Answer {
+    let req = Request::builder()
+        .uri(path)
+        .method(if body.is_some() { "POST" } else { "GET" })
+        .header("xi-api-key", env.key.clone())
+        .header("content-type", "application/json")
+        .body(Body::from(body.map(|b| b.to_string()).unwrap_or_default()))
+        .unwrap();
+    let resp = env.app.router.clone().oneshot(req).await.unwrap();
+    let status = resp.status();
+    let headers = resp.headers().clone();
+    let body = resp
+        .into_body()
+        .collect()
+        .await
+        .unwrap()
+        .to_bytes()
+        .to_vec();
+    Answer {
+        status,
+        headers,
+        body,
+    }
+}
+
+#[tokio::test]
+async fn an_elevenlabs_app_speaks_through_kaeso_with_its_own_paths_and_is_billed_per_character() {
+    let env = env().await;
+    let r = elevenlabs(
+        &env,
+        &format!("/v1/text-to-speech/{VOICE}?output_format=mp3_44100_128"),
+        Some(json!({"text": "Hi.", "model_id": "eleven_flash_v2_5"})),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(r.headers["content-type"], "audio/mpeg");
+    assert_eq!(r.body, fixture("elevenlabs/responses/recorded-speech.mp3"));
+    let sent = env.mock.last().unwrap();
+    assert_eq!(sent.path, format!("/v1/text-to-speech/{VOICE}"));
+    assert_eq!(sent.query.as_deref(), Some("output_format=mp3_44100_128"));
+    assert_eq!(sent.header("xi-api-key"), Some(ELEVENLABS_SECRET));
+    let o = outcome(&env).await;
+    assert_eq!(endpoint(&o), "text-to-speech");
+    assert_eq!(
+        o.media.as_ref().unwrap().characters,
+        2,
+        "ElevenLabs' `character-cost`"
+    );
+    let (_, cost) = kaeso_server::services::usage::costed(&o);
+    assert_eq!(cost, "0.00008".parse::<rust_decimal::Decimal>().unwrap());
+
+    let r = elevenlabs(
+        &env,
+        &format!("/v1/text-to-speech/{VOICE}/with-timestamps"),
+        Some(json!({"text": "Hi.", "model_id": "eleven_flash_v2_5"})),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(r.json()["alignment"]["characters"], json!(["H", "i", "."]));
+
+    let r = elevenlabs(
+        &env,
+        &format!("/v1/text-to-speech/{VOICE}/stream/with-timestamps"),
+        Some(json!({"text": "Hi.", "model_id": "eleven_flash_v2_5"})),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(
+        r.text()
+            .lines()
+            .filter(|l| l.contains("audio_base64"))
+            .count(),
+        2
+    );
+
+    let r = elevenlabs(
+        &env,
+        "/v1/sound-generation",
+        Some(json!({"text": "A short click.", "duration_seconds": 0.5})),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    let o = outcome(&env).await;
+    assert_eq!(endpoint(&o), "sound-generation");
+    assert_eq!(o.media.unwrap().output_ms, 500);
+
+    let r = elevenlabs(
+        &env,
+        "/v1/text-to-dialogue",
+        Some(json!({"inputs": [{"text": "Hi.", "voice_id": VOICE}]})),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+
+    let r = elevenlabs(&env, "/v1/models", None).await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert!(
+        r.json()
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|m| m["model_id"] == "eleven_flash_v2_5")
+    );
+
+    let r = elevenlabs(&env, "/v2/voices?page_size=3", None).await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(r.json()["voices"][0]["voice_id"], VOICE);
+    assert_eq!(
+        env.mock.last().unwrap().header("xi-api-key"),
+        Some(ELEVENLABS_SECRET)
+    );
+}
+
+#[tokio::test]
+async fn management_calls_and_unknown_voices_are_refused_in_elevenlabs_shape() {
+    let env = env().await;
+    let before = env.mock.received().len();
+    for path in ["/v1/dubbing", "/v1/user/subscription", "/v1/voices/add"] {
+        let r = elevenlabs(&env, path, Some(json!({}))).await;
+        assert!(r.status.is_client_error(), "{path}: {}", r.text());
+        assert!(
+            r.json()["detail"]["message"].is_string(),
+            "{path}: {}",
+            r.text()
+        );
+    }
+    let r = elevenlabs(&env, "/v2/history", None).await;
+    assert_eq!(r.status, StatusCode::NOT_FOUND);
+    assert!(
+        r.json()["detail"]["message"]
+            .as_str()
+            .unwrap()
+            .contains("ElevenLabs")
+    );
+    let r = elevenlabs(
+        &env,
+        "/v1/text-to-speech/x",
+        Some(json!({"text": "Hi.", "model_id": "claude-haiku-4-5"})),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    assert!(r.json()["detail"]["message"].is_string());
+    let r = speak(
+        &env,
+        json!({"model": "eleven_flash_v2_5", "input": "Hi", "voice": "alloy"}),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    assert_eq!(r.json()["error"]["param"], "voice");
+    assert_eq!(env.mock.received().len(), before);
+}
+
+#[tokio::test]
+async fn an_openai_app_reaches_elevenlabs_by_voice_id_and_scribe_by_upload() {
+    let env = env().await;
+    let r = speak(&env, json!({"model": "eleven_flash_v2_5", "input": "Hi.", "voice": VOICE, "response_format": "pcm"})).await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(r.headers["content-type"], "audio/pcm");
+    let sent = env.mock.last().unwrap();
+    assert_eq!(sent.path, format!("/v1/text-to-speech/{VOICE}/stream"));
+    assert_eq!(sent.query.as_deref(), Some("output_format=pcm_24000"));
+    assert_eq!(
+        r.body,
+        fixture("elevenlabs/responses/recorded-speech-stream.pcm")
+    );
+
+    let r = upload(
+        &env,
+        "/v1/audio/transcriptions",
+        &[("model", "scribe_v2"), ("response_format", "verbose_json")],
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    let body = r.json();
+    assert_eq!(body["text"], "Hello, Kizo");
+    assert_eq!(body["words"].as_array().unwrap().len(), 2);
+    assert_eq!(env.mock.last().unwrap().path, "/v1/speech-to-text");
+    let o = outcome(&env).await;
+    assert!(o.media.unwrap().input_ms > 0);
 }

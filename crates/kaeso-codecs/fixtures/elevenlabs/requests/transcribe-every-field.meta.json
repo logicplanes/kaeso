@@ -1,0 +1,5 @@
+{
+  "path": "/v1/speech-to-text",
+  "query": "enable_logging=false",
+  "content_type": "multipart/form-data; boundary=----kaesofixture"
+}

@@ -22,6 +22,7 @@ Every codec change starts with a fixture: a real request body, reply, stream or 
 | `openai_speech/` | OpenAI speech (`/v1/audio/speech`); the audio reply as `responses/<name>.mp3` with its content type in `<name>.mp3.meta.json` |
 | `openai_transcriptions/` | OpenAI transcriptions and translations (`/v1/audio/transcriptions`, `/v1/audio/translations`); uploads as `requests/<name>.multipart`, text forms as `.txt`, `.srt` and `.vtt` |
 | `minimax_speech/` | MiniMax text to speech (`/v1/t2a_v2`) |
+| `elevenlabs/` | ElevenLabs; each request's path and query in `<name>.meta.json`, audio replies as `.mp3` and `.pcm`, the timestamped stream as `.ndjson` |
 
 Each dialect folder has `requests/`, `responses/`, `streams/` where the endpoint streams, and `errors/`.
 
