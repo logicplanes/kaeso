@@ -68,7 +68,7 @@ def expected(url: str, s: dict):
     return fetch_json(f"{url}/_expected?{query}")
 
 
-GENERATION = ("anthropic_messages", "openai_chat", "openai_responses")
+GENERATION = ("anthropic_messages", "openai_chat", "openai_responses", "gemini")
 
 
 def pytest_generate_tests(metafunc):

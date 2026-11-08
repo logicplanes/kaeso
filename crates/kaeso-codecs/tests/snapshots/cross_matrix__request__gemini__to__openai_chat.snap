@@ -1,0 +1,638 @@
+---
+source: crates/kaeso-codecs/tests/cross_matrix.rs
+expression: outcomes
+---
+{
+  "error-invalid-argument": {
+    "message": "`reasoning.effort` is not supported by OpenAI Chat Completions. It does not know the effort `ultra`; use none, minimal, low, medium, high, xhigh or max.",
+    "param": "generationConfig.thinkingConfig.thinkingLevel",
+    "unsupported": "reasoning.effort"
+  },
+  "error-invalid-key": {
+    "body": {
+      "messages": [
+        {
+          "content": "Hi",
+          "role": "user"
+        }
+      ],
+      "model": "gemini-3.5-flash"
+    },
+    "path": "/v1/chat/completions"
+  },
+  "error-unknown-model": {
+    "body": {
+      "messages": [
+        {
+          "content": "Hi",
+          "role": "user"
+        }
+      ],
+      "model": "gemini-0.0-nonexistent"
+    },
+    "path": "/v1/chat/completions"
+  },
+  "history-without-ids": {
+    "body": {
+      "messages": [
+        {
+          "content": "What is the weather in Paris and in London?",
+          "role": "user"
+        },
+        {
+          "content": null,
+          "role": "assistant",
+          "tool_calls": [
+            {
+              "function": {
+                "arguments": "{\n              \"location\": \"Paris\"\n            }",
+                "name": "get_weather"
+              },
+              "id": "kaeso_fc_1_0_0",
+              "type": "function"
+            },
+            {
+              "function": {
+                "arguments": "{\n              \"location\": \"London\"\n            }",
+                "name": "get_weather"
+              },
+              "id": "kaeso_fc_1_1_0",
+              "type": "function"
+            }
+          ]
+        },
+        {
+          "content": "18 degrees Celsius and sunny",
+          "role": "tool",
+          "tool_call_id": "kaeso_fc_1_0_0"
+        },
+        {
+          "content": "{\"temperature\":12,\"unit\":\"celsius\"}",
+          "role": "tool",
+          "tool_call_id": "kaeso_fc_1_1_0"
+        },
+        {
+          "content": "Paris is sunny at 18 °C; London is 12 °C.",
+          "role": "assistant"
+        },
+        {
+          "content": "And tomorrow?",
+          "role": "user"
+        }
+      ],
+      "model": "gemini-3.5-flash",
+      "tools": [
+        {
+          "function": {
+            "description": "Gets the current weather for a city.",
+            "name": "get_weather",
+            "parameters": {
+              "properties": {
+                "location": {
+                  "type": "STRING"
+                }
+              },
+              "required": [
+                "location"
+              ],
+              "type": "OBJECT"
+            }
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/chat/completions"
+  },
+  "image-input": {
+    "message": "`generationConfig.mediaResolution` comes from a Gemini API request and has no equivalent in OpenAI Chat Completions. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "generationConfig.mediaResolution"
+  },
+  "image-output": {
+    "message": "`generationConfig.responseModalities` comes from a Gemini API request and has no equivalent in OpenAI Chat Completions. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "generationConfig.responseModalities"
+  },
+  "max-tokens": {
+    "body": {
+      "max_completion_tokens": 16,
+      "messages": [
+        {
+          "content": "Write a long poem about the sea.",
+          "role": "user"
+        }
+      ],
+      "model": "gemini-3.5-flash",
+      "reasoning_effort": "minimal"
+    },
+    "path": "/v1/chat/completions"
+  },
+  "multi-turn": {
+    "body": {
+      "messages": [
+        {
+          "content": "My name is Ada. Remember it.",
+          "role": "user"
+        },
+        {
+          "content": "Nice to meet you, Ada. I will remember your name.",
+          "role": "assistant"
+        },
+        {
+          "content": "What is my name?",
+          "role": "user"
+        }
+      ],
+      "model": "gemini-3.5-flash",
+      "reasoning_effort": "minimal"
+    },
+    "path": "/v1/chat/completions"
+  },
+  "role-assistant": {
+    "message": "`assistant` message comes from a Gemini API request and has no equivalent in OpenAI Chat Completions. Remove the message, or send the request to a model served through its original format.",
+    "param": "messages[0].blocks[0]",
+    "unsupported": "`assistant` message"
+  },
+  "safety-settings": {
+    "message": "`safetySettings` comes from a Gemini API request and has no equivalent in OpenAI Chat Completions. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "safetySettings"
+  },
+  "stream-text": {
+    "body": {
+      "messages": [
+        {
+          "content": "Count from one to ten in words, one per line.",
+          "role": "user"
+        }
+      ],
+      "model": "gemini-3.5-flash",
+      "reasoning_effort": "minimal",
+      "stream": true,
+      "stream_options": {
+        "include_usage": true
+      }
+    },
+    "path": "/v1/chat/completions"
+  },
+  "stream-thinking": {
+    "body": {
+      "messages": [
+        {
+          "content": "What is 17 times 23? Think it through, then give the number.",
+          "role": "user"
+        }
+      ],
+      "model": "gemini-3.5-flash",
+      "reasoning_effort": "low",
+      "stream": true,
+      "stream_options": {
+        "include_usage": true
+      }
+    },
+    "path": "/v1/chat/completions"
+  },
+  "stream-thinking-high": {
+    "body": {
+      "messages": [
+        {
+          "content": "What is 17 times 23? Think it through step by step, then give the number.",
+          "role": "user"
+        }
+      ],
+      "model": "gemini-3.5-flash",
+      "reasoning_effort": "high",
+      "stream": true,
+      "stream_options": {
+        "include_usage": true
+      }
+    },
+    "path": "/v1/chat/completions"
+  },
+  "stream-tools": {
+    "body": {
+      "messages": [
+        {
+          "content": "Check the weather in Paris and in London, both at once.",
+          "role": "user"
+        }
+      ],
+      "model": "gemini-3.5-flash",
+      "stream": true,
+      "stream_options": {
+        "include_usage": true
+      },
+      "tools": [
+        {
+          "function": {
+            "description": "Gets the current weather for a city.",
+            "name": "get_weather",
+            "parameters": {
+              "properties": {
+                "location": {
+                  "description": "The city name, such as Paris",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "location"
+              ],
+              "type": "object"
+            }
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/chat/completions"
+  },
+  "structured-json-schema": {
+    "body": {
+      "messages": [
+        {
+          "content": "Give me a cookie recipe name and its three main ingredients.",
+          "role": "user"
+        }
+      ],
+      "model": "gemini-3.5-flash",
+      "reasoning_effort": "minimal",
+      "response_format": {
+        "json_schema": {
+          "name": "response",
+          "schema": {
+            "additionalProperties": false,
+            "properties": {
+              "ingredients": {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 3,
+                "minItems": 3,
+                "type": "array"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "ingredients"
+            ],
+            "type": "object"
+          }
+        },
+        "type": "json_schema"
+      }
+    },
+    "path": "/v1/chat/completions"
+  },
+  "structured-response-schema": {
+    "body": {
+      "messages": [
+        {
+          "content": "List two primary colors.",
+          "role": "user"
+        }
+      ],
+      "model": "gemini-3.5-flash",
+      "reasoning_effort": "minimal",
+      "response_format": {
+        "json_schema": {
+          "name": "response",
+          "schema": {
+            "items": {
+              "properties": {
+                "color": {
+                  "type": "STRING"
+                }
+              },
+              "propertyOrdering": [
+                "color"
+              ],
+              "required": [
+                "color"
+              ],
+              "type": "OBJECT"
+            },
+            "type": "ARRAY"
+          }
+        },
+        "type": "json_schema"
+      }
+    },
+    "path": "/v1/chat/completions"
+  },
+  "system-instruction": {
+    "message": "`top_k` is not supported by OpenAI Chat Completions. Remove `top_k`, or route the request to an Anthropic model.",
+    "param": "top_k",
+    "unsupported": "top_k"
+  },
+  "text-simple": {
+    "body": {
+      "messages": [
+        {
+          "content": "Say hello in five words.",
+          "role": "user"
+        }
+      ],
+      "model": "gemini-3.5-flash"
+    },
+    "path": "/v1/chat/completions"
+  },
+  "thinking-budget": {
+    "body": {
+      "max_completion_tokens": 2048,
+      "messages": [
+        {
+          "content": "How many letters r are in the word strawberry?",
+          "role": "user"
+        }
+      ],
+      "model": "gemini-3.5-flash",
+      "reasoning_effort": "low"
+    },
+    "path": "/v1/chat/completions"
+  },
+  "thinking-include-thoughts": {
+    "body": {
+      "messages": [
+        {
+          "content": "Is 391 a prime number? Answer yes or no and give the reason in one sentence.",
+          "role": "user"
+        }
+      ],
+      "model": "gemini-3.5-flash",
+      "reasoning_effort": "low"
+    },
+    "path": "/v1/chat/completions"
+  },
+  "tool-result-dummy-signature": {
+    "body": {
+      "messages": [
+        {
+          "content": "What is the weather like in Paris right now?",
+          "role": "user"
+        },
+        {
+          "content": null,
+          "role": "assistant",
+          "tool_calls": [
+            {
+              "function": {
+                "arguments": "{\n              \"location\": \"Paris\"\n            }",
+                "name": "get_weather"
+              },
+              "id": "toolu_01A09q90qw90lq917835lq9",
+              "type": "function"
+            }
+          ]
+        },
+        {
+          "content": "18 degrees Celsius and sunny",
+          "role": "tool",
+          "tool_call_id": "toolu_01A09q90qw90lq917835lq9"
+        }
+      ],
+      "model": "gemini-3.5-flash",
+      "tools": [
+        {
+          "function": {
+            "description": "Gets the current weather for a city.",
+            "name": "get_weather",
+            "parameters": {
+              "properties": {
+                "location": {
+                  "description": "The city name, such as Paris",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "location"
+              ],
+              "type": "object"
+            }
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/chat/completions"
+  },
+  "tool-result-media": {
+    "message": "`messages[2].blocks[2].inlineData.displayName` comes from a Gemini API request and has no equivalent in OpenAI Chat Completions. Remove it, or send the request to a model served through its original format.",
+    "param": "messages[2].blocks[2]",
+    "unsupported": "messages[2].blocks[2].inlineData.displayName"
+  },
+  "tool-result-signature": {
+    "body": {
+      "messages": [
+        {
+          "content": "Check the weather in Paris and in London, both at once.",
+          "role": "user"
+        },
+        {
+          "content": null,
+          "role": "assistant",
+          "tool_calls": [
+            {
+              "function": {
+                "arguments": "{\n              \"location\": \"Paris\"\n            }",
+                "name": "get_weather"
+              },
+              "id": "call_17824526487901149391",
+              "type": "function"
+            },
+            {
+              "function": {
+                "arguments": "{\n              \"location\": \"London\"\n            }",
+                "name": "get_weather"
+              },
+              "id": "call_17824526487901150536",
+              "type": "function"
+            }
+          ]
+        },
+        {
+          "content": "18 degrees Celsius and sunny",
+          "role": "tool",
+          "tool_call_id": "call_17824526487901149391"
+        },
+        {
+          "content": "12 degrees Celsius and cloudy",
+          "role": "tool",
+          "tool_call_id": "call_17824526487901150536"
+        }
+      ],
+      "model": "gemini-3.5-flash",
+      "tools": [
+        {
+          "function": {
+            "description": "Gets the current weather for a city.",
+            "name": "get_weather",
+            "parameters": {
+              "additionalProperties": false,
+              "properties": {
+                "location": {
+                  "description": "The city name, such as Paris",
+                  "type": "string"
+                },
+                "unit": {
+                  "enum": [
+                    "celsius",
+                    "fahrenheit"
+                  ],
+                  "type": "string"
+                }
+              },
+              "required": [
+                "location"
+              ],
+              "type": "object"
+            }
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/chat/completions"
+  },
+  "tools-forced": {
+    "body": {
+      "messages": [
+        {
+          "content": "Look up the weather in Tokyo.",
+          "role": "user"
+        }
+      ],
+      "model": "gemini-3.5-flash",
+      "tool_choice": {
+        "function": {
+          "name": "get_weather"
+        },
+        "type": "function"
+      },
+      "tools": [
+        {
+          "function": {
+            "description": "Gets the current weather for a city.",
+            "name": "get_weather",
+            "parameters": {
+              "properties": {
+                "location": {
+                  "description": "The city name, such as Paris",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "location"
+              ],
+              "type": "object"
+            }
+          },
+          "type": "function"
+        },
+        {
+          "function": {
+            "description": "Gets the local time in a city.",
+            "name": "get_time",
+            "parameters": {
+              "properties": {
+                "location": {
+                  "description": "The city name, such as Paris",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "location"
+              ],
+              "type": "object"
+            }
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/chat/completions"
+  },
+  "tools-parallel": {
+    "body": {
+      "messages": [
+        {
+          "content": "Check the weather in Paris and in London, both at once.",
+          "role": "user"
+        }
+      ],
+      "model": "gemini-3.5-flash",
+      "tools": [
+        {
+          "function": {
+            "description": "Gets the current weather for a city.",
+            "name": "get_weather",
+            "parameters": {
+              "additionalProperties": false,
+              "properties": {
+                "location": {
+                  "description": "The city name, such as Paris",
+                  "type": "string"
+                },
+                "unit": {
+                  "enum": [
+                    "celsius",
+                    "fahrenheit"
+                  ],
+                  "type": "string"
+                }
+              },
+              "required": [
+                "location"
+              ],
+              "type": "object"
+            }
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/chat/completions"
+  },
+  "tools-single": {
+    "body": {
+      "messages": [
+        {
+          "content": "What is the weather like in Paris right now?",
+          "role": "user"
+        }
+      ],
+      "model": "gemini-3.5-flash",
+      "tool_choice": "auto",
+      "tools": [
+        {
+          "function": {
+            "description": "Gets the current weather for a city.",
+            "name": "get_weather",
+            "parameters": {
+              "properties": {
+                "location": {
+                  "description": "The city name, such as Paris",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "location"
+              ],
+              "type": "object"
+            }
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/chat/completions"
+  },
+  "unknown-parts": {
+    "message": "`cachedContent` comes from a Gemini API request and has no equivalent in OpenAI Chat Completions. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "cachedContent"
+  }
+}

@@ -159,6 +159,35 @@ fn every_encoder_gives_the_gateway_a_keepalive_frame_until_the_stream_ends() {
 }
 
 #[test]
+fn gemini_apps_hear_blank_lines_that_their_sdk_skips() {
+    let g = DialectId::Gemini;
+    let ping = StreamEvent::Extra(RawItem::new(
+        A,
+        RawJson::from_string(r#"{"event":"ping","data":{"type":"ping"}}"#.into()).unwrap(),
+    ));
+    let start = StreamEvent::ResponseStart(ResponseStart::new("x", "m"));
+    let outputs = encode_each(g, &[start, ping.clone(), ping]);
+    assert_eq!([outputs[1].clone(), outputs[2].clone()].concat(), b"\n\n");
+    let mut enc =
+        dispatch::stream_encoder(g, &EncodeCtx::new(RequestKind::Generate, mode())).unwrap();
+    assert_eq!(enc.keepalive(), b"\n");
+    assert!(
+        parse_all(b"\n\n").unwrap().is_empty(),
+        "a blank line is no event"
+    );
+    enc.encode(&StreamEvent::ResponseStop(ResponseStop::new()))
+        .unwrap();
+    assert!(enc.keepalive().is_empty(), "after the end");
+    let events = decode(g, b"\n\ndata: {\"candidates\": [{\"content\": {\"parts\": [{\"text\": \"Hi\"}]}, \"finishReason\": \"STOP\"}]}\n\n\n");
+    assert!(
+        !events
+            .iter()
+            .any(|e| matches!(e, StreamEvent::Extra(_) | StreamEvent::Error(_))),
+        "{events:?}"
+    );
+}
+
+#[test]
 fn claude_thinking_streams_to_a_responses_app_as_reasoning_summary_text() {
     let events = decode(A, &fixture(A, "thinking-long-tool-loop"));
     let outputs = encode_each(R, &events);

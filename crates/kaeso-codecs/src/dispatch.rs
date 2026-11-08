@@ -4,6 +4,8 @@ use kaeso_kpp::{
 };
 
 use crate::anthropic_messages::AnthropicMessages;
+use crate::gemini::{Gemini, GeminiAction};
+use crate::gemini_embeddings::GeminiEmbeddings;
 use crate::limits::Checked;
 use crate::openai_chat::OpenAiChat;
 use crate::openai_embeddings::OpenAiEmbeddings;
@@ -20,6 +22,8 @@ macro_rules! dispatch {
             DialectId::OpenAiChat => Ok(OpenAiChat::$f($($arg),*)),
             DialectId::OpenAiResponses => Ok(OpenAiResponses::$f($($arg),*)),
             DialectId::OpenAiEmbeddings => Ok(OpenAiEmbeddings::$f($($arg),*)),
+            DialectId::Gemini => Ok(Gemini::$f($($arg),*)),
+            DialectId::GeminiEmbeddings => Ok(GeminiEmbeddings::$f($($arg),*)),
             other => Err(no_codec(other)),
         }
     };
@@ -56,7 +60,58 @@ pub fn decode_checked_request<B: AsRef<[u8]>>(
         DialectId::OpenAiChat => OpenAiChat::decode_checked(kind, body, headers),
         DialectId::OpenAiResponses => OpenAiResponses::decode_checked(kind, body, headers),
         DialectId::OpenAiEmbeddings => OpenAiEmbeddings::decode_checked(kind, body, headers),
+        other @ (DialectId::Gemini | DialectId::GeminiEmbeddings) => Err(gemini_needs_path(other)),
         other => Err(no_codec(other)),
+    }
+}
+
+fn gemini_needs_path(dialect: DialectId) -> KppError {
+    KppError::invalid_request(format!(
+        "A {} request names its model and method in the path; decode it with `decode_gemini_request`.",
+        dialect.display_name()
+    ))
+}
+
+/// Decodes a Gemini request for `action` on `model`, as the path
+/// `/v1beta/models/{model}:{action}` names them ([`crate::gemini::split_model_action`]).
+/// The action decides the dialect: embeddings methods go to the Gemini embeddings codec.
+pub fn decode_gemini_request(
+    model: &str,
+    action: GeminiAction,
+    body: &[u8],
+    headers: &HeaderList,
+) -> Result<Request, KppError> {
+    crate::limits::request_shape(action.dialect(), body)?;
+    decode_gemini_unchecked(model, action, body, headers)
+}
+
+/// Decodes a Gemini request body [`Checked::new`] already checked, without counting it again.
+pub fn decode_checked_gemini_request<B: AsRef<[u8]>>(
+    model: &str,
+    action: GeminiAction,
+    checked: &Checked<B>,
+    headers: &HeaderList,
+) -> Result<Request, KppError> {
+    if checked.dialect() != action.dialect() {
+        return Err(KppError::invalid_request(format!(
+            "The body was checked as {}, but `{}` is a {} method.",
+            checked.dialect().display_name(),
+            action.as_str(),
+            action.dialect().display_name()
+        )));
+    }
+    decode_gemini_unchecked(model, action, checked.body().as_ref(), headers)
+}
+
+fn decode_gemini_unchecked(
+    model: &str,
+    action: GeminiAction,
+    body: &[u8],
+    headers: &HeaderList,
+) -> Result<Request, KppError> {
+    match action.dialect() {
+        DialectId::GeminiEmbeddings => GeminiEmbeddings::decode_call(model, action, body, headers),
+        _ => Gemini::decode_call(model, action, body, headers),
     }
 }
 
@@ -203,7 +258,7 @@ pub fn decode_model(
     dispatch!(dialect, decode_model(status, headers, body))?
 }
 
-pub fn encode_model_request(dialect: DialectId, model: &str) -> Result<EncodedRequest, KppError> {
+fn path_segment(model: &str) -> Result<(), KppError> {
     // A URL parser removes a `.` or `..` path segment even when it is percent-encoded
     // (WHATWG URL, "single-dot" and "double-dot" segments), so no encoding keeps them.
     if matches!(model, "." | "..") {
@@ -213,6 +268,11 @@ pub fn encode_model_request(dialect: DialectId, model: &str) -> Result<EncodedRe
         .with_param("model")
         .with_status(400));
     }
+    Ok(())
+}
+
+pub fn encode_model_request(dialect: DialectId, model: &str) -> Result<EncodedRequest, KppError> {
+    path_segment(model)?;
     dispatch!(dialect, encode_model_request(model))
 }
 
@@ -221,6 +281,26 @@ pub fn encode_models_request(
     query: &ModelsQuery,
 ) -> Result<EncodedRequest, KppError> {
     dispatch!(dialect, encode_models_request(query))?
+}
+
+/// [`encode_model_request`] for the provider `ctx` describes, such as a Gemini provider with
+/// its own models path ([`EgressCtx::with_gemini_profile`]).
+pub fn encode_model_request_with(
+    dialect: DialectId,
+    model: &str,
+    ctx: &EgressCtx,
+) -> Result<EncodedRequest, KppError> {
+    path_segment(model)?;
+    dispatch!(dialect, encode_model_request_with(model, ctx))?
+}
+
+/// [`encode_models_request`] for the provider `ctx` describes.
+pub fn encode_models_request_with(
+    dialect: DialectId,
+    query: &ModelsQuery,
+    ctx: &EgressCtx,
+) -> Result<EncodedRequest, KppError> {
+    dispatch!(dialect, encode_models_request_with(query, ctx))?
 }
 
 #[cfg(test)]

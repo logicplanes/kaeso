@@ -81,6 +81,8 @@ Beide Crates sind auf crates.io veröffentlicht. Ihr Bibliothekscode darf nur vo
 | `openai_responses` | OpenAI Responses (`/v1/responses`, `/v1/responses/input_tokens`) |
 | `openai_embeddings` | OpenAI Embeddings (`/v1/embeddings`) |
 | `openai_models` | Die OpenAI Models API, die sich die drei OpenAI-Codecs teilen |
+| `gemini` | Die Gemini API (`{models}/{model}:generateContent`, `:streamGenerateContent`, `:countTokens` und die Modellliste) |
+| `gemini_embeddings` | Gemini-Embeddings (`{models}/{model}:embedContent`, `:batchEmbedContents`) |
 
 | Gemeinsames Modul | Aufgabe |
 | --- | --- |
@@ -189,14 +191,14 @@ Jedes KPP-Feld ist entweder semantisch oder ein Hinweis:
 
 ### Antworten und Stream-Events
 
-Antworten und Stream-Events fließen von einem Anbieter zu einer App. Sie haben keine Hinweise. Ein Feld, das der Dialekt der App nicht ausdrücken kann, ist entweder ableitbar, etwa ein Stoppgrund, der auf die nächstliegende Entsprechung abgebildet wird, oder es wird für das Zurückspielen im selben Dialekt in den Extras mitgeführt. Die Mapping-Seite jedes Dialekts listet diese Abbildungen auf: [Anthropic Messages](anthropic-messages.md), [OpenAI Chat Completions](openai-chat.md), [OpenAI Responses](openai-responses.md) und [OpenAI Embeddings](openai-embeddings.md).
+Antworten und Stream-Events fließen von einem Anbieter zu einer App. Sie haben keine Hinweise. Ein Feld, das der Dialekt der App nicht ausdrücken kann, ist entweder ableitbar, etwa ein Stoppgrund, der auf die nächstliegende Entsprechung abgebildet wird, oder es wird für das Zurückspielen im selben Dialekt in den Extras mitgeführt. Die Mapping-Seite jedes Dialekts listet diese Abbildungen auf: [Anthropic Messages](anthropic-messages.md), [OpenAI Chat Completions](openai-chat.md), [OpenAI Responses](openai-responses.md), [OpenAI Embeddings](openai-embeddings.md) und die [Gemini API](gemini.md).
 
 Reasoning erreicht eine App eines anderen Dialekts, wo deren Format es tragen kann, und zwar so verpackt, dass es zurückkommen kann ([Reasoning-Blobs](reasoning.md#reasoning-blobs), `cross::reasoning_reply_policy`). Unbekannte Blöcke erreichen nur Apps ihres eigenen Dialekts. Alles andere bleibt für die App unsichtbar ([Antworten](cross-format.md#antworten), `cross::reply_policy`), in Streams ersetzt durch [Keepalive](cross-format.md#keepalives)-Frames. Das Gateway protokolliert die vollständige KPP-Antwort.
 
 ## Codec ändern
 
 1. Legen Sie die echte Payload in `crates/kaeso-codecs/fixtures/<dialect>/` ab, mit einer Herkunftszeile in der `README.md` dieses Ordners ([Fixtures](fixtures.md)).
-2. Nennen Sie die Quelle jeder Abbildung auf der Mapping-Seite des Dialekts. Die Quellen sind die [OpenAPI-Spezifikation von OpenAI](https://github.com/openai/openai-openapi), die auf der Seite [Anthropic Messages](anthropic-messages.md) genannte OpenAPI-Spezifikation von Anthropic, die Typen der offiziellen SDKs ([openai-python](https://github.com/openai/openai-python), [anthropic-sdk-python](https://github.com/anthropics/anthropic-sdk-python)) und die Dokumentation der Anbieter. Wo sie mehrdeutig sind, wählen Sie `Unsupported` und eröffnen ein Issue.
+2. Nennen Sie die Quelle jeder Abbildung auf der Mapping-Seite des Dialekts. Die Quellen sind die [OpenAPI-Spezifikation von OpenAI](https://github.com/openai/openai-openapi), die auf der Seite [Anthropic Messages](anthropic-messages.md) genannte OpenAPI-Spezifikation von Anthropic, das auf der Seite [Gemini API](gemini.md) genannte Discovery-Dokument der Gemini API, die Typen der offiziellen SDKs ([openai-python](https://github.com/openai/openai-python), [anthropic-sdk-python](https://github.com/anthropics/anthropic-sdk-python), [google-genai](https://github.com/googleapis/python-genai)) und die Dokumentation der Anbieter. Wo sie mehrdeutig sind, wählen Sie `Unsupported` und eröffnen ein Issue.
 3. Schreiben Sie einen fehlschlagenden Test, dann den Code. Jedes Wire-Feld wird auf ein typisiertes KPP-Feld, einen an den Ursprung gebundenen `Extras`-Eintrag, ein `Unknown`-Item oder einen `Unsupported`-Fehler abgebildet.
 4. Aktualisieren Sie die Mapping-Seite des Dialekts in allen drei Sprachen, im selben Pull Request.
 
@@ -217,7 +219,7 @@ Schreiben Sie Fehlermeldungen für die Person, die Kaeso aufgerufen hat: Nennen 
 | `crates/kaeso-codecs/tests/responses_on_anthropic.rs` | Apps für OpenAI Responses auf Anthropic-Modellen und Anthropic-Apps auf OpenAI-Modellen: Reasoning-Anfragen, Thinking-Streams in der Event-Reihenfolge von OpenAI und Tool-Schleifen. |
 | `crates/kaeso-codecs/tests/nesting.rs` | Anthropic-Blöcke `tool_result`, die tiefer als das Limit verschachtelt sind, werden in Anfragen, Antworten und Streams abgelehnt, und eine Verschachtelung bis zum Limit lässt sich weiterhin dekodieren. |
 | `crates/kaeso-codecs/tests/unknown_frames.rs` | Unbekannte SSE-Frames überstehen in jedem streamenden Dialekt einen Round Trip im selben Dialekt, mit ihrer JSON-Schreibweise, Strings in Anführungszeichen, SSE-Feldern und Kommentaren; Anthropic- und Chat-Streams behalten auch Frames, deren Daten reiner Text sind. |
-| `e2e/conformance`, bedient von `crates/kpp-conformance` | Die offiziellen Python-SDKs von OpenAI und Anthropic parsen alles, was die Encoder erzeugen ([Tests](../testing.md#sdk-konformität)). |
+| `e2e/conformance`, bedient von `crates/kpp-conformance` | Die offiziellen Python-SDKs von OpenAI, Anthropic und Google Gen AI parsen alles, was die Encoder erzeugen ([Tests](../testing.md#sdk-konformität)). |
 | `fuzz/` | Jeder Decoder nimmt beliebige Bytes an, ohne einen Panic auszulösen, und der SSE-Parser liefert bei jeder Chunk-Aufteilung dieselben Items ([Fuzzing](../testing.md#fuzzing)). |
 
 `kaeso_codecs::testing` vergleicht JSON strukturell: Die Reihenfolge der Schlüssel spielt nie eine Rolle, und Zahlen werden exakt so verglichen, wie `serde_json` sie liest, daher unterscheiden sich `1` und `1.0`, während `1e0` und `1.0` dieselbe Zahl sind.
@@ -240,5 +242,6 @@ Verändert ein Pull Request die Ausgabe über Dialekte hinweg, prüfen Sie den S
 - [Chat-Completions-Anbieter](openai-chat-providers.md): Sehen Sie, wie sich der Codec an jeden Anbieter anpasst, der Chat Completions spricht.
 - [OpenAI Responses](openai-responses.md): Finden Sie, wohin jedes Feld des Formats Responses in KPP gehört.
 - [OpenAI Embeddings](openai-embeddings.md): Finden Sie, wohin jedes Feld des Formats Embeddings in KPP gehört.
+- [Gemini API](gemini.md): Finden Sie, wohin jedes Feld der Gemini API in KPP gehört, Embeddings eingeschlossen.
 - [Fixtures und Aufzeichnungen](fixtures.md): Legen Sie die echten Payloads an, gegen die die Codecs getestet werden, und zeichnen Sie neue auf.
 - [Fixture-Konventionen](fixture-conventions.md): Schlagen Sie die Regeln nach, denen jede konstruierte Fixture folgt.

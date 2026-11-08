@@ -1,0 +1,31 @@
+{
+  "candidates": [
+    {
+      "content": {
+        "parts": [
+          {
+            "text": "Your name is Ada.",
+            "thoughtSignature": "EmkKZwFpFH0TzwFZ/k9KccdrU8TfGJMTKgVSBxlSjsUAVD5+MFF6LL0Ml4pgmClF4PoIj1G0pzihHUFcTADTcI36L37LqPvssSddOQ2ScZoFpSMHdwT0NG9WAwaDTRrTiu8siPhzkEYVang="
+          }
+        ],
+        "role": "model"
+      },
+      "finishReason": "STOP",
+      "index": 0
+    }
+  ],
+  "usageMetadata": {
+    "promptTokenCount": 29,
+    "candidatesTokenCount": 5,
+    "totalTokenCount": 34,
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 29
+      }
+    ],
+    "serviceTier": "standard"
+  },
+  "modelVersion": "gemini-3.6-flash",
+  "responseId": "NuTvaumyCYOwvdIP-6uVkQM"
+}

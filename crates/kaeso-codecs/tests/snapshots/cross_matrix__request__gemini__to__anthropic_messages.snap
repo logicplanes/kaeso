@@ -1,0 +1,717 @@
+---
+source: crates/kaeso-codecs/tests/cross_matrix.rs
+expression: outcomes
+---
+{
+  "error-invalid-argument": {
+    "message": "reasoning effort `ultra` is not supported by Anthropic Messages. Anthropic effort levels are low, medium, high, xhigh and max.",
+    "param": "generationConfig.thinkingConfig.thinkingLevel",
+    "unsupported": "reasoning effort `ultra`"
+  },
+  "error-invalid-key": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Hi",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gemini-3.5-flash"
+    },
+    "path": "/v1/messages"
+  },
+  "error-unknown-model": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Hi",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gemini-0.0-nonexistent"
+    },
+    "path": "/v1/messages"
+  },
+  "history-without-ids": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "What is the weather in Paris and in London?",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "content": [
+            {
+              "id": "kaeso_fc_1_0_0",
+              "input": {
+                "location": "Paris"
+              },
+              "name": "get_weather",
+              "type": "tool_use"
+            },
+            {
+              "id": "kaeso_fc_1_1_0",
+              "input": {
+                "location": "London"
+              },
+              "name": "get_weather",
+              "type": "tool_use"
+            }
+          ],
+          "role": "assistant"
+        },
+        {
+          "content": [
+            {
+              "content": [
+                {
+                  "text": "18 degrees Celsius and sunny",
+                  "type": "text"
+                }
+              ],
+              "tool_use_id": "kaeso_fc_1_0_0",
+              "type": "tool_result"
+            },
+            {
+              "content": [
+                {
+                  "text": "{\"temperature\":12,\"unit\":\"celsius\"}",
+                  "type": "text"
+                }
+              ],
+              "tool_use_id": "kaeso_fc_1_1_0",
+              "type": "tool_result"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "content": [
+            {
+              "text": "Paris is sunny at 18 °C; London is 12 °C.",
+              "type": "text"
+            }
+          ],
+          "role": "assistant"
+        },
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "And tomorrow?",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gemini-3.5-flash",
+      "tools": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "description": "Gets the current weather for a city.",
+          "input_schema": {
+            "properties": {
+              "location": {
+                "type": "STRING"
+              }
+            },
+            "required": [
+              "location"
+            ],
+            "type": "OBJECT"
+          },
+          "name": "get_weather"
+        }
+      ]
+    },
+    "path": "/v1/messages"
+  },
+  "image-input": {
+    "message": "`generationConfig.mediaResolution` comes from a Gemini API request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "generationConfig.mediaResolution"
+  },
+  "image-output": {
+    "message": "`generationConfig.responseModalities` comes from a Gemini API request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "generationConfig.responseModalities"
+  },
+  "max-tokens": {
+    "message": "reasoning effort `minimal` is not supported by Anthropic Messages. Anthropic effort levels are low, medium, high, xhigh and max.",
+    "param": "generationConfig.thinkingConfig.thinkingLevel",
+    "unsupported": "reasoning effort `minimal`"
+  },
+  "multi-turn": {
+    "message": "reasoning effort `minimal` is not supported by Anthropic Messages. Anthropic effort levels are low, medium, high, xhigh and max.",
+    "param": "generationConfig.thinkingConfig.thinkingLevel",
+    "unsupported": "reasoning effort `minimal`"
+  },
+  "role-assistant": {
+    "message": "`assistant` message comes from a Gemini API request and has no equivalent in Anthropic Messages. Remove the message, or send the request to a model served through its original format.",
+    "param": "messages[0].blocks[0]",
+    "unsupported": "`assistant` message"
+  },
+  "safety-settings": {
+    "message": "`safetySettings` comes from a Gemini API request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "safetySettings"
+  },
+  "stream-text": {
+    "message": "reasoning effort `minimal` is not supported by Anthropic Messages. Anthropic effort levels are low, medium, high, xhigh and max.",
+    "param": "generationConfig.thinkingConfig.thinkingLevel",
+    "unsupported": "reasoning effort `minimal`"
+  },
+  "stream-thinking": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "What is 17 times 23? Think it through, then give the number.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gemini-3.5-flash",
+      "output_config": {
+        "effort": "low"
+      },
+      "stream": true,
+      "thinking": {
+        "display": "summarized",
+        "type": "adaptive"
+      }
+    },
+    "path": "/v1/messages"
+  },
+  "stream-thinking-high": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "What is 17 times 23? Think it through step by step, then give the number.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gemini-3.5-flash",
+      "output_config": {
+        "effort": "high"
+      },
+      "stream": true,
+      "thinking": {
+        "display": "summarized",
+        "type": "adaptive"
+      }
+    },
+    "path": "/v1/messages"
+  },
+  "stream-tools": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Check the weather in Paris and in London, both at once.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gemini-3.5-flash",
+      "stream": true,
+      "tools": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "description": "Gets the current weather for a city.",
+          "input_schema": {
+            "properties": {
+              "location": {
+                "description": "The city name, such as Paris",
+                "type": "string"
+              }
+            },
+            "required": [
+              "location"
+            ],
+            "type": "object"
+          },
+          "name": "get_weather"
+        }
+      ]
+    },
+    "path": "/v1/messages"
+  },
+  "structured-json-schema": {
+    "message": "reasoning effort `minimal` is not supported by Anthropic Messages. Anthropic effort levels are low, medium, high, xhigh and max.",
+    "param": "generationConfig.thinkingConfig.thinkingLevel",
+    "unsupported": "reasoning effort `minimal`"
+  },
+  "structured-response-schema": {
+    "message": "reasoning effort `minimal` is not supported by Anthropic Messages. Anthropic effort levels are low, medium, high, xhigh and max.",
+    "param": "generationConfig.thinkingConfig.thinkingLevel",
+    "unsupported": "reasoning effort `minimal`"
+  },
+  "system-instruction": {
+    "message": "`seed` is not supported by Anthropic Messages. Remove `seed` or route the request to an OpenAI model.",
+    "param": "seed",
+    "unsupported": "seed"
+  },
+  "text-simple": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Say hello in five words.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gemini-3.5-flash"
+    },
+    "path": "/v1/messages"
+  },
+  "thinking-budget": {
+    "body": {
+      "max_tokens": 2048,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "How many letters r are in the word strawberry?",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gemini-3.5-flash",
+      "thinking": {
+        "budget_tokens": 1024,
+        "display": "summarized",
+        "type": "enabled"
+      }
+    },
+    "path": "/v1/messages"
+  },
+  "thinking-include-thoughts": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Is 391 a prime number? Answer yes or no and give the reason in one sentence.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gemini-3.5-flash",
+      "output_config": {
+        "effort": "low"
+      },
+      "thinking": {
+        "display": "summarized",
+        "type": "adaptive"
+      }
+    },
+    "path": "/v1/messages"
+  },
+  "tool-result-dummy-signature": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "What is the weather like in Paris right now?",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "content": [
+            {
+              "id": "toolu_01A09q90qw90lq917835lq9",
+              "input": {
+                "location": "Paris"
+              },
+              "name": "get_weather",
+              "type": "tool_use"
+            }
+          ],
+          "role": "assistant"
+        },
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "content": [
+                {
+                  "text": "18 degrees Celsius and sunny",
+                  "type": "text"
+                }
+              ],
+              "tool_use_id": "toolu_01A09q90qw90lq917835lq9",
+              "type": "tool_result"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gemini-3.5-flash",
+      "tools": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "description": "Gets the current weather for a city.",
+          "input_schema": {
+            "properties": {
+              "location": {
+                "description": "The city name, such as Paris",
+                "type": "string"
+              }
+            },
+            "required": [
+              "location"
+            ],
+            "type": "object"
+          },
+          "name": "get_weather"
+        }
+      ]
+    },
+    "path": "/v1/messages"
+  },
+  "tool-result-media": {
+    "message": "`messages[2].blocks[0].content[1].inlineData.displayName` comes from a Gemini API request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": "messages[2].blocks[0].content[1]",
+    "unsupported": "messages[2].blocks[0].content[1].inlineData.displayName"
+  },
+  "tool-result-signature": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "Check the weather in Paris and in London, both at once.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "content": [
+            {
+              "id": "call_17824526487901149391",
+              "input": {
+                "location": "Paris"
+              },
+              "name": "get_weather",
+              "type": "tool_use"
+            },
+            {
+              "id": "call_17824526487901150536",
+              "input": {
+                "location": "London"
+              },
+              "name": "get_weather",
+              "type": "tool_use"
+            }
+          ],
+          "role": "assistant"
+        },
+        {
+          "content": [
+            {
+              "content": [
+                {
+                  "text": "18 degrees Celsius and sunny",
+                  "type": "text"
+                }
+              ],
+              "tool_use_id": "call_17824526487901149391",
+              "type": "tool_result"
+            },
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "content": [
+                {
+                  "text": "12 degrees Celsius and cloudy",
+                  "type": "text"
+                }
+              ],
+              "tool_use_id": "call_17824526487901150536",
+              "type": "tool_result"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gemini-3.5-flash",
+      "tools": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "description": "Gets the current weather for a city.",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "location": {
+                "description": "The city name, such as Paris",
+                "type": "string"
+              },
+              "unit": {
+                "enum": [
+                  "celsius",
+                  "fahrenheit"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "location"
+            ],
+            "type": "object"
+          },
+          "name": "get_weather"
+        }
+      ]
+    },
+    "path": "/v1/messages"
+  },
+  "tools-forced": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Look up the weather in Tokyo.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gemini-3.5-flash",
+      "tool_choice": {
+        "name": "get_weather",
+        "type": "tool"
+      },
+      "tools": [
+        {
+          "description": "Gets the current weather for a city.",
+          "input_schema": {
+            "properties": {
+              "location": {
+                "description": "The city name, such as Paris",
+                "type": "string"
+              }
+            },
+            "required": [
+              "location"
+            ],
+            "type": "object"
+          },
+          "name": "get_weather"
+        },
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "description": "Gets the local time in a city.",
+          "input_schema": {
+            "properties": {
+              "location": {
+                "description": "The city name, such as Paris",
+                "type": "string"
+              }
+            },
+            "required": [
+              "location"
+            ],
+            "type": "object"
+          },
+          "name": "get_time"
+        }
+      ]
+    },
+    "path": "/v1/messages"
+  },
+  "tools-parallel": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Check the weather in Paris and in London, both at once.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gemini-3.5-flash",
+      "tools": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "description": "Gets the current weather for a city.",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "location": {
+                "description": "The city name, such as Paris",
+                "type": "string"
+              },
+              "unit": {
+                "enum": [
+                  "celsius",
+                  "fahrenheit"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "location"
+            ],
+            "type": "object"
+          },
+          "name": "get_weather"
+        }
+      ]
+    },
+    "path": "/v1/messages"
+  },
+  "tools-single": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "What is the weather like in Paris right now?",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gemini-3.5-flash",
+      "tool_choice": {
+        "type": "auto"
+      },
+      "tools": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "description": "Gets the current weather for a city.",
+          "input_schema": {
+            "properties": {
+              "location": {
+                "description": "The city name, such as Paris",
+                "type": "string"
+              }
+            },
+            "required": [
+              "location"
+            ],
+            "type": "object"
+          },
+          "name": "get_weather"
+        }
+      ]
+    },
+    "path": "/v1/messages"
+  },
+  "unknown-parts": {
+    "message": "`cachedContent` comes from a Gemini API request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "cachedContent"
+  }
+}

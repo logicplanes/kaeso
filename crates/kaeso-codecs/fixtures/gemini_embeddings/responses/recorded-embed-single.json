@@ -1,0 +1,23 @@
+{
+  "embedding": {
+    "values": [
+      0.1361956,
+      -0.005871546,
+      -0.1758842,
+      -0.71740115,
+      0.041634463,
+      0.51386684,
+      -0.053637706,
+      0.40883622
+    ]
+  },
+  "usageMetadata": {
+    "promptTokenCount": 10,
+    "promptTokenDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 10
+      }
+    ]
+  }
+}

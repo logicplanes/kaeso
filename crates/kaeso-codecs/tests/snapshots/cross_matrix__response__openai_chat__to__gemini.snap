@@ -1,0 +1,4353 @@
+---
+source: crates/kaeso-codecs/tests/cross_matrix.rs
+expression: outcomes
+---
+{
+  "audio-output": {
+    "candidates": [
+      {
+        "content": {
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-audio-mini-2025-12-15",
+    "responseId": "chatcmpl-8Wo4aPi29WHbgP7meI6IHyHz5wXGi",
+    "usageMetadata": {
+      "candidatesTokenCount": 31,
+      "promptTokenCount": 14,
+      "totalTokenCount": 45
+    }
+  },
+  "content-filter": {
+    "candidates": [
+      {
+        "content": {
+          "role": "model"
+        },
+        "finishReason": "SAFETY",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-4.1-2025-04-14",
+    "responseId": "chatcmpl-RQkIVUcqZKQvJuW7qFQeJPYex2mZS",
+    "usageMetadata": {
+      "candidatesTokenCount": 0,
+      "promptTokenCount": 27,
+      "totalTokenCount": 27
+    }
+  },
+  "functions-tool-choice-auto-doc": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "functionCall": {
+                "args": {
+                  "location": "Boston, MA"
+                },
+                "id": "call_abc123",
+                "name": "get_current_weather"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-6-astra",
+    "responseId": "chatcmpl-abc123",
+    "usageMetadata": {
+      "candidatesTokenCount": 17,
+      "promptTokenCount": 82,
+      "totalTokenCount": 99
+    }
+  },
+  "image-url-doc": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "The image shows a wooden boardwalk path running through a lush green field or meadow. The sky is bright blue with some scattered clouds, giving the scene a serene and peaceful atmosphere. Trees and shrubs are visible in the background."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-6-astra",
+    "responseId": "chatcmpl-B9MHDbslfkBeAs8l4bebGdFOJ6PeG",
+    "usageMetadata": {
+      "candidatesTokenCount": 46,
+      "promptTokenCount": 1117,
+      "totalTokenCount": 1163
+    }
+  },
+  "json-object": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "{\"answer\":\"Paris\",\"confidence\":0.99}"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-4.1-mini-2025-04-14",
+    "responseId": "chatcmpl-72ER9Myq9oAqGHz1ZhPaNDVL6V7jz",
+    "usageMetadata": {
+      "candidatesTokenCount": 12,
+      "promptTokenCount": 34,
+      "totalTokenCount": 46
+    }
+  },
+  "json-schema": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "{\"name\":\"Science fair\",\"date\":\"2026-10-16\",\"participants\":[\"Alice\",\"Bob\"]}"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-5.4-mini-2026-03-17",
+    "responseId": "chatcmpl-qBn52cfr654wvjIUfy0FTbhIFrGar",
+    "usageMetadata": {
+      "candidatesTokenCount": 23,
+      "promptTokenCount": 93,
+      "thoughtsTokenCount": 64,
+      "totalTokenCount": 180
+    }
+  },
+  "logprobs-top-logprobs-doc": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Hello! How can I assist you today?"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-6-sol",
+    "responseId": "chatcmpl-123",
+    "usageMetadata": {
+      "candidatesTokenCount": 9,
+      "promptTokenCount": 9,
+      "totalTokenCount": 18
+    }
+  },
+  "max-tokens-length": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Waves fold into foam,\nsalt wind carries gull voices—\nthe tide keeps its"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "MAX_TOKENS",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-4.1-2025-04-14",
+    "responseId": "chatcmpl-k3OWACJDBqosDis4JggiLrIdclVLp",
+    "usageMetadata": {
+      "candidatesTokenCount": 16,
+      "promptTokenCount": 21,
+      "totalTokenCount": 37
+    }
+  },
+  "moderation": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Above the village of Brindle slept Ember, a dragon who guarded the valley from storms. Each spring the children brought her honey cakes, and each winter she warmed their chimneys."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-5.5-2026-04-23",
+    "responseId": "chatcmpl-sGYjwW3KrMtm1hprMAFYLdf3GciR8",
+    "usageMetadata": {
+      "candidatesTokenCount": 41,
+      "promptTokenCount": 22,
+      "totalTokenCount": 63
+    }
+  },
+  "n-2": {
+    "rejected_by_source": "`n` is not supported by OpenAI Chat Completions. The provider returned several choices, but Kaeso carries exactly one; do not request `n` > 1."
+  },
+  "plain-developer-string": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Hello! How can I assist you today?"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-6-astra",
+    "responseId": "chatcmpl-B9MBs8CjcvOU2jLn4n570S5qMJKcT",
+    "usageMetadata": {
+      "candidatesTokenCount": 10,
+      "promptTokenCount": 19,
+      "totalTokenCount": 29
+    }
+  },
+  "prediction-doc": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "class User {\n  firstName = \"\";\n  lastName = \"\";\n  email = \"\";\n}\n\nexport default User;\n"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-4.1-2025-04-14",
+    "responseId": "chatcmpl-FwFvrdcwEcSaT3WQwn8QMH2iE6bao",
+    "usageMetadata": {
+      "candidatesTokenCount": 24,
+      "promptTokenCount": 59,
+      "totalTokenCount": 83
+    }
+  },
+  "providers/alibaba/recorded-assistant-prefill": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "4, 5, 6,"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "qwen3.7-flash",
+    "responseId": "chatcmpl-a12dbc1b-4812-9d04-961a-a23b7a915340",
+    "usageMetadata": {
+      "candidatesTokenCount": 8,
+      "promptTokenCount": 42,
+      "totalTokenCount": 50
+    }
+  },
+  "providers/alibaba/recorded-audio-fields": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Hi! How can I help you today?"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "qwen3.7-flash",
+    "responseId": "chatcmpl-87be1982-d583-91a8-8910-56fddc8da783",
+    "usageMetadata": {
+      "candidatesTokenCount": 9,
+      "promptTokenCount": 15,
+      "totalTokenCount": 24
+    }
+  },
+  "providers/alibaba/recorded-basic": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "No, 1001 is not a prime number because it is divisible by 7, 11, and 13."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "qwen3.7-flash",
+    "responseId": "chatcmpl-56272ea0-9790-9c9e-b10c-07399149c081",
+    "usageMetadata": {
+      "candidatesTokenCount": 29,
+      "promptTokenCount": 34,
+      "totalTokenCount": 63
+    }
+  },
+  "providers/alibaba/recorded-enable-thinking": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "391"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "qwen-flash",
+    "responseId": "chatcmpl-7638443b-1dfb-9d81-a90d-648e30689c46",
+    "usageMetadata": {
+      "candidatesTokenCount": 8,
+      "promptTokenCount": 23,
+      "thoughtsTokenCount": 100,
+      "totalTokenCount": 131
+    }
+  },
+  "providers/alibaba/recorded-functions-field": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": ""
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "OTHER",
+        "index": 0
+      }
+    ],
+    "modelVersion": "qwen3.7-flash",
+    "responseId": "chatcmpl-5b8f5b5d-989b-99bc-89ef-3fa8cf073e98",
+    "usageMetadata": {
+      "candidatesTokenCount": 25,
+      "promptTokenCount": 278,
+      "totalTokenCount": 303
+    }
+  },
+  "providers/alibaba/recorded-image": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Red"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "qwen3-vl-plus",
+    "responseId": "chatcmpl-30d7b818-db00-99b9-9890-02b4d4f60501",
+    "usageMetadata": {
+      "candidatesTokenCount": 2,
+      "promptTokenCount": 85,
+      "totalTokenCount": 87
+    }
+  },
+  "providers/alibaba/recorded-logit-bias-field": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "1 2 3 4 "
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "MAX_TOKENS",
+        "index": 0
+      }
+    ],
+    "modelVersion": "qwen3.7-flash",
+    "responseId": "chatcmpl-48c4aae9-d842-9e13-91f0-e152e6b2ab52",
+    "usageMetadata": {
+      "candidatesTokenCount": 8,
+      "promptTokenCount": 25,
+      "totalTokenCount": 33
+    }
+  },
+  "providers/alibaba/recorded-logprobs": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "1 2"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "MAX_TOKENS",
+        "index": 0
+      }
+    ],
+    "modelVersion": "qwen3.7-flash",
+    "responseId": "chatcmpl-3101c9ee-0467-95ba-9fdb-3e2864f9634b",
+    "usageMetadata": {
+      "candidatesTokenCount": 3,
+      "promptTokenCount": 25,
+      "totalTokenCount": 28
+    }
+  },
+  "providers/alibaba/recorded-max-completion-tokens-thinking": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": ""
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "MAX_TOKENS",
+        "index": 0
+      }
+    ],
+    "modelVersion": "qwen3.7-flash",
+    "responseId": "chatcmpl-18c24d44-3cd0-9989-9cc3-c8ca75a6de05",
+    "usageMetadata": {
+      "candidatesTokenCount": 0,
+      "promptTokenCount": 31,
+      "thoughtsTokenCount": 300,
+      "totalTokenCount": 331
+    }
+  },
+  "providers/alibaba/recorded-max-tokens-beyond-reasoning": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "To calculate $17 \\times 23$, we can use the standard multiplication method or break it down using the distributive property.\n\n### Method 1: Breaking it down (Distributive Property)\n\nWe can split $23"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "MAX_TOKENS",
+        "index": 0
+      }
+    ],
+    "modelVersion": "qwen3.7-flash",
+    "responseId": "chatcmpl-4efa4018-d641-9515-baa5-a181927067f1",
+    "usageMetadata": {
+      "candidatesTokenCount": 53,
+      "promptTokenCount": 20,
+      "thoughtsTokenCount": 400,
+      "totalTokenCount": 473
+    }
+  },
+  "providers/alibaba/recorded-output-limit": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "1 2 3 4 5 "
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "MAX_TOKENS",
+        "index": 0
+      }
+    ],
+    "modelVersion": "qwen3.7-flash",
+    "responseId": "chatcmpl-4f861874-92d3-9001-8a9b-7324736afee3",
+    "usageMetadata": {
+      "candidatesTokenCount": 10,
+      "promptTokenCount": 25,
+      "totalTokenCount": 35
+    }
+  },
+  "providers/alibaba/recorded-prediction-field": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Hi! How can I help you today?"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "qwen3.7-flash",
+    "responseId": "chatcmpl-0a61c2df-864d-97bd-b42e-15c7b44d2c0e",
+    "usageMetadata": {
+      "candidatesTokenCount": 9,
+      "promptTokenCount": 15,
+      "totalTokenCount": 24
+    }
+  },
+  "providers/alibaba/recorded-reasoning-effort": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "391"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "qwen3.8-flash",
+    "responseId": "chatcmpl-efcf5616-3f55-9fa1-b418-fe46f5ebc3d6",
+    "usageMetadata": {
+      "candidatesTokenCount": 6,
+      "promptTokenCount": 64,
+      "thoughtsTokenCount": 56,
+      "totalTokenCount": 126
+    }
+  },
+  "providers/alibaba/recorded-reasoning-effort-alone": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "391"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "qwen-flash",
+    "responseId": "chatcmpl-d1752067-8567-998b-9453-a7706d3ba6ac",
+    "usageMetadata": {
+      "candidatesTokenCount": 3,
+      "promptTokenCount": 23,
+      "totalTokenCount": 26
+    }
+  },
+  "providers/alibaba/recorded-reasoning-sent-back": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "14"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "qwen3.7-flash",
+    "responseId": "chatcmpl-35f4872f-25f6-9932-9b8f-b7bc7fc59103",
+    "usageMetadata": {
+      "candidatesTokenCount": 5,
+      "promptTokenCount": 41,
+      "thoughtsTokenCount": 100,
+      "totalTokenCount": 146
+    }
+  },
+  "providers/alibaba/recorded-sampling": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "1 2 3 4 "
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "qwen3.7-flash",
+    "responseId": "chatcmpl-27c91587-03f1-9aff-80bb-14c3c7d27207",
+    "usageMetadata": {
+      "candidatesTokenCount": 9,
+      "promptTokenCount": 25,
+      "totalTokenCount": 34
+    }
+  },
+  "providers/alibaba/recorded-store-metadata-fields": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Hi! How can I help you today?"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "qwen3.7-flash",
+    "responseId": "chatcmpl-36cc1169-3bd4-97e6-8665-810396fde423",
+    "usageMetadata": {
+      "candidatesTokenCount": 9,
+      "promptTokenCount": 15,
+      "totalTokenCount": 24
+    }
+  },
+  "providers/alibaba/recorded-structured-output": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "{\n  \"fruit_name\": \"Banana\",\n  \"hex_colour\": \"#FFE135\"\n}"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "qwen3.7-flash",
+    "responseId": "chatcmpl-0b620b02-6fb4-987a-9605-4c5089045530",
+    "usageMetadata": {
+      "candidatesTokenCount": 25,
+      "promptTokenCount": 22,
+      "totalTokenCount": 47
+    }
+  },
+  "providers/alibaba/recorded-thinking": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "391"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "qwen3.7-flash",
+    "responseId": "chatcmpl-fee50b82-e44e-903c-8071-e64878260ec3",
+    "usageMetadata": {
+      "candidatesTokenCount": 6,
+      "promptTokenCount": 25,
+      "thoughtsTokenCount": 200,
+      "totalTokenCount": 231
+    }
+  },
+  "providers/alibaba/recorded-thinking-tools": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": ""
+            },
+            {
+              "functionCall": {
+                "args": {
+                  "city": "Paris"
+                },
+                "id": "call_8a161da797f84eed83651e6e",
+                "name": "get_weather"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "qwen3.7-flash",
+    "responseId": "chatcmpl-f8939946-511e-9855-b00d-83cb0a837837",
+    "usageMetadata": {
+      "candidatesTokenCount": 28,
+      "promptTokenCount": 284,
+      "thoughtsTokenCount": 110,
+      "totalTokenCount": 422
+    }
+  },
+  "providers/alibaba/recorded-tool-result": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "The weather in Paris right now is 18 °C and sunny."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "qwen3.7-flash",
+    "responseId": "chatcmpl-1e8c0590-143f-90c6-9e5e-48f7e83a1858",
+    "usageMetadata": {
+      "candidatesTokenCount": 15,
+      "promptTokenCount": 337,
+      "totalTokenCount": 352
+    }
+  },
+  "providers/alibaba/recorded-tools": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": ""
+            },
+            {
+              "functionCall": {
+                "args": {
+                  "city": "Paris"
+                },
+                "id": "call_0edfa4b3cefa4ba18230660e",
+                "name": "get_weather"
+              }
+            },
+            {
+              "functionCall": {
+                "args": {
+                  "city": "Paris"
+                },
+                "id": "call_52ffcaad3d984b43b440c0a7",
+                "name": "get_time"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "qwen3.7-flash",
+    "responseId": "chatcmpl-d56d7b72-269f-939c-9360-543d8c454ef0",
+    "usageMetadata": {
+      "candidatesTokenCount": 51,
+      "promptTokenCount": 356,
+      "totalTokenCount": 407
+    }
+  },
+  "providers/alibaba/recorded-tools-named": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": ""
+            },
+            {
+              "functionCall": {
+                "args": {
+                  "city": "Paris"
+                },
+                "id": "call_6023bbd3aada4b97bec6d787",
+                "name": "get_time"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "qwen3.7-flash",
+    "responseId": "chatcmpl-35436293-dd0f-90b0-b015-066281f208fd",
+    "usageMetadata": {
+      "candidatesTokenCount": 19,
+      "promptTokenCount": 358,
+      "totalTokenCount": 377
+    }
+  },
+  "providers/alibaba/recorded-tools-required": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": ""
+            },
+            {
+              "functionCall": {
+                "args": {
+                  "city": "New York"
+                },
+                "id": "call_70c7bd135ff24ad5b3ef8e83",
+                "name": "get_weather"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "qwen3.7-flash",
+    "responseId": "chatcmpl-45232917-6ed1-9729-8677-0270e1625d41",
+    "usageMetadata": {
+      "candidatesTokenCount": 23,
+      "promptTokenCount": 354,
+      "totalTokenCount": 377
+    }
+  },
+  "providers/alibaba/recorded-user-hints": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Hi! How can I help you today?"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "qwen3.7-flash",
+    "responseId": "chatcmpl-6f568a97-1bef-98cc-9116-276f812958f0",
+    "usageMetadata": {
+      "candidatesTokenCount": 9,
+      "promptTokenCount": 15,
+      "totalTokenCount": 24
+    }
+  },
+  "providers/alibaba/recorded-web-search-options-field": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "The newest Qwen model is Qwen2.5, which represents the latest generation of large language models developed by Alibaba Group's Tongyi Lab."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "qwen3.7-flash",
+    "responseId": "chatcmpl-f2566d55-a9b8-9bfd-aff4-e96438a3c86c",
+    "usageMetadata": {
+      "candidatesTokenCount": 30,
+      "promptTokenCount": 23,
+      "totalTokenCount": 53
+    }
+  },
+  "providers/cerebras/recorded-basic": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Paris is the capital of France."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-oss-120b",
+    "responseId": "chatcmpl-a51fa45b-7e9e-454e-8038-01cc78abc657",
+    "usageMetadata": {
+      "candidatesTokenCount": 17,
+      "promptTokenCount": 87,
+      "thoughtsTokenCount": 5,
+      "totalTokenCount": 109
+    }
+  },
+  "providers/cerebras/recorded-image": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": " red"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "qwen-3.8-27b",
+    "responseId": "chatcmpl-8e1ca3d6-d06c-41a9-bfe8-4c19a65b2ead",
+    "usageMetadata": {
+      "candidatesTokenCount": 2,
+      "promptTokenCount": 89,
+      "totalTokenCount": 91
+    }
+  },
+  "providers/cerebras/recorded-logit-bias-honoured": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Apple. </s>"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-oss-120b",
+    "responseId": "chatcmpl-7cfae345-fb7f-4d2e-9316-6f77fc4ce020",
+    "usageMetadata": {
+      "candidatesTokenCount": 15,
+      "promptTokenCount": 71,
+      "thoughtsTokenCount": 3,
+      "totalTokenCount": 89
+    }
+  },
+  "providers/cerebras/recorded-logprobs": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Hello there."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-oss-120b",
+    "responseId": "chatcmpl-0dc84096-9ab8-435e-ab13-c88b1962b698",
+    "usageMetadata": {
+      "candidatesTokenCount": 13,
+      "promptTokenCount": 73,
+      "thoughtsTokenCount": 15,
+      "totalTokenCount": 101
+    }
+  },
+  "providers/cerebras/recorded-max-completion-tokens-reasoning": {
+    "candidates": [
+      {
+        "content": {
+          "role": "model"
+        },
+        "finishReason": "MAX_TOKENS",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-oss-120b",
+    "responseId": "chatcmpl-08a16a7e-c7b2-4e94-a102-b5a5b55fec6c",
+    "usageMetadata": {
+      "candidatesTokenCount": 3,
+      "promptTokenCount": 74,
+      "thoughtsTokenCount": 17,
+      "totalTokenCount": 94
+    }
+  },
+  "providers/cerebras/recorded-prefill": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "1. Red  \n2. Blue  \n3. Green"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-oss-120b",
+    "responseId": "chatcmpl-31157dd1-4c6b-4503-8714-7b26e9bd25b0",
+    "usageMetadata": {
+      "candidatesTokenCount": 21,
+      "promptTokenCount": 87,
+      "thoughtsTokenCount": 16,
+      "totalTokenCount": 124
+    }
+  },
+  "providers/cerebras/recorded-reasoning": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "\n\n391"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "qwen-3.8-27b",
+    "responseId": "chatcmpl-266374e7-5dbd-49c3-9001-fb06e4d60fc6",
+    "usageMetadata": {
+      "candidatesTokenCount": 5,
+      "promptTokenCount": 67,
+      "thoughtsTokenCount": 46,
+      "totalTokenCount": 118
+    }
+  },
+  "providers/cerebras/recorded-reasoning-effort-none": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "391"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "qwen-3.8-27b",
+    "responseId": "chatcmpl-3c6cedcb-6c3e-4189-8653-f9c2bd82b2d4",
+    "usageMetadata": {
+      "candidatesTokenCount": 4,
+      "promptTokenCount": 27,
+      "totalTokenCount": 31
+    }
+  },
+  "providers/cerebras/recorded-reasoning-format-hidden": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "2 + 2 = 4."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-oss-120b",
+    "responseId": "chatcmpl-a0e4957b-fcdd-421b-8f67-1ba8f90e321f",
+    "usageMetadata": {
+      "candidatesTokenCount": 20,
+      "promptTokenCount": 74,
+      "thoughtsTokenCount": 6,
+      "totalTokenCount": 100
+    }
+  },
+  "providers/cerebras/recorded-reasoning-format-raw": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "The user is asking a simple arithmetic question: 2+2. The answer is 4.\n</think>\n\n4"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "qwen-3.8-27b",
+    "responseId": "chatcmpl-af2759bd-947d-4c2b-b79d-c28fc4874425",
+    "usageMetadata": {
+      "candidatesTokenCount": 3,
+      "promptTokenCount": 47,
+      "thoughtsTokenCount": 22,
+      "totalTokenCount": 72
+    }
+  },
+  "providers/cerebras/recorded-reasoning-sent-back": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Because 7 is often considered lucky, memorable, and it falls right in the middle of the range, making it a balanced choice."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-oss-120b",
+    "responseId": "chatcmpl-b90a1860-9b61-4ba1-a5e7-e379a7d1feaa",
+    "usageMetadata": {
+      "candidatesTokenCount": 37,
+      "promptTokenCount": 97,
+      "thoughtsTokenCount": 7,
+      "totalTokenCount": 141
+    }
+  },
+  "providers/cerebras/recorded-sampling": {
+    "candidates": [
+      {
+        "content": {
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-oss-120b",
+    "responseId": "chatcmpl-165ccf97-c15b-47d4-a88f-a50ec70fb5ae",
+    "usageMetadata": {
+      "candidatesTokenCount": 3,
+      "promptTokenCount": 79,
+      "thoughtsTokenCount": 17,
+      "totalTokenCount": 99
+    }
+  },
+  "providers/cerebras/recorded-structured-output": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "{\"name\":\"science fair\",\"date\":\"2026-10-16\",\"participants\":[\"Alice\",\"Bob\"]}"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-oss-120b",
+    "responseId": "chatcmpl-c5fe3464-db59-4659-9b98-95e9684dc488",
+    "usageMetadata": {
+      "candidatesTokenCount": 32,
+      "promptTokenCount": 243,
+      "thoughtsTokenCount": 27,
+      "totalTokenCount": 302
+    }
+  },
+  "providers/cerebras/recorded-system-mid-conversation": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Rouge."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-oss-120b",
+    "responseId": "chatcmpl-8a847cf6-444b-4162-9286-ec5db69c4175",
+    "usageMetadata": {
+      "candidatesTokenCount": 13,
+      "promptTokenCount": 115,
+      "thoughtsTokenCount": 10,
+      "totalTokenCount": 138
+    }
+  },
+  "providers/cerebras/recorded-tools": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "functionCall": {
+                "args": {
+                  "city": "Paris",
+                  "unit": "celsius"
+                },
+                "id": "4e80d65a6",
+                "name": "get_weather"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-oss-120b",
+    "responseId": "chatcmpl-aa806c9c-512c-4489-90da-8fecf3aae7f7",
+    "usageMetadata": {
+      "candidatesTokenCount": 29,
+      "promptTokenCount": 150,
+      "thoughtsTokenCount": 7,
+      "totalTokenCount": 186
+    }
+  },
+  "providers/cerebras/recorded-user-hints": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Hello there!"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-oss-120b",
+    "responseId": "chatcmpl-29e4eb35-4fc1-451b-ab8b-6fc3ae619027",
+    "usageMetadata": {
+      "candidatesTokenCount": 13,
+      "promptTokenCount": 73,
+      "thoughtsTokenCount": 8,
+      "totalTokenCount": 94
+    }
+  },
+  "providers/cohere/recorded-assistant-prefill": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "3, 4, 5"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "command-a-03-2025",
+    "responseId": "981e54f8-1c3b-4fb7-8a5c-66fcef3b6850",
+    "usageMetadata": {
+      "candidatesTokenCount": 7,
+      "promptTokenCount": 18,
+      "totalTokenCount": 25
+    }
+  },
+  "providers/cohere/recorded-basic": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "The capital of France is Paris."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "command-a-03-2025",
+    "responseId": "c890e04c-9060-4dbc-afb5-ca49e449e9b2",
+    "usageMetadata": {
+      "candidatesTokenCount": 7,
+      "promptTokenCount": 19,
+      "totalTokenCount": 26
+    }
+  },
+  "providers/cohere/recorded-developer-role": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "The capital of France is Paris."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "command-a-03-2025",
+    "responseId": "5c502a3f-a533-43bb-aab6-482377a5a4ec",
+    "usageMetadata": {
+      "candidatesTokenCount": 7,
+      "promptTokenCount": 13,
+      "totalTokenCount": 20
+    }
+  },
+  "providers/cohere/recorded-functions-field": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "I'm unable to provide real-time information, including current weather conditions in Paris or any other location. My knowledge is based on data available up to October 2023, and I don't have access to live updates.\n\nTo find out the current weather in Paris, I recommend checking a reliable weather website or using a weather application on your device. These sources will provide you with the most up-to-date and accurate information about the weather conditions in Paris.\n\nIf you have any other questions or need information about Paris that doesn't require real-time data, feel free to ask!"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "command-a-03-2025",
+    "responseId": "e3cf601b-7d89-40a0-a471-55fb26e37c43",
+    "usageMetadata": {
+      "candidatesTokenCount": 124,
+      "promptTokenCount": 9,
+      "totalTokenCount": 133
+    }
+  },
+  "providers/cohere/recorded-image": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Red"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "command-a-vision-07-2025",
+    "responseId": "3c6e3420-ac73-4d6c-879f-be45344d22fa",
+    "usageMetadata": {
+      "candidatesTokenCount": 1,
+      "promptTokenCount": 270,
+      "totalTokenCount": 271
+    }
+  },
+  "providers/cohere/recorded-reasoning": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "To find the product of \\(17\\) and \\(23\\), follow these easy-to-understand steps:\n\n1. **Multiply the units digits:**\n   \\[\n   7 \\times 3 = 21\n   \\]\n   - Write down the **1** and carry over the **2**.\n\n2. **Multiply the tens digit of the first number by the units digit of the second number, and add the carried-over value:**\n   \\[\n   1 \\times 3 + 2 = 3 + 2 = 5\n   \\]\n   - Write down the **5**.\n\n3. **Multiply the units digit of the first number by the tens digit of the second number:**\n   \\[\n   7 \\times 2 = 14\n   \\]\n   - Write down the **4** and carry over the **1**.\n\n4. **Multiply the tens digits of both numbers, and add the carried-over value:**\n   \\[\n   1 \\times 2 + 1 = 2 + 1 = 3\n   \\]\n   - Write down the **3**.\n\n5. **Combine all the written-down digits to get the final product:**\n   \\[\n   391\n   \\]\n\n\\(\\boxed{391}\\)"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "command-a-reasoning-08-2025",
+    "responseId": "cb642247-ebe9-43ab-a7da-5c24542420ca",
+    "usageMetadata": {
+      "candidatesTokenCount": 261,
+      "promptTokenCount": 15,
+      "thoughtsTokenCount": 200,
+      "totalTokenCount": 476
+    }
+  },
+  "providers/cohere/recorded-reasoning-off": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "5"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "command-a-reasoning-08-2025",
+    "responseId": "e39ab270-a579-4afa-bcc5-e8a4729882fe",
+    "usageMetadata": {
+      "candidatesTokenCount": 1,
+      "promptTokenCount": 13,
+      "totalTokenCount": 14
+    }
+  },
+  "providers/cohere/recorded-sampling": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "To count from 1 to 9, we can follow these steps:\n\n1. Start by identifying the first step first the first step: 1.\n2. Add 1 to the current count.\n3. If the current count is less than 9, add the difference to the差值 to the current count.\n4. If the current count is greater than 9, subtract the difference from the current count.\n5. Repeat steps 2-4 until the count reaches 9.\n\nLet's go through the process step-by-step:\n\n1. **Initial Count:** 1\n2. **Step 2:** Add 1 to theinitial count. New count: 1 + 1 = 2.\n3. **Check Condition:** Is thenew count (2) less than 9? \n   - Yes: The count is2 is is isis greater than 9, so subtract thedifference (2 - 1 = 1. New count: 2 - 1 = 1.\n   - No: Thenew count is2 isless than 9, so continue**Repeat:** Go back toto step 2.\n\n4. **Final Count:** After repeating thesteps 5, thefinal count is 9.\n\nFollowing this process:\n\n1. Start with count 1.\n2. Add 1: New count = 2.\n3. Check if 2 < 9: \n   - Yes: Subtract 1 from 2, add the difference to the count. New count: 2 - 1 = 1.\n   - No: The count is already 9, so no change is needed. New count remains 9.\n\n4. Subtract 1 from the new count, add the difference to the count. New count: 1 - 1 = 0.\n   - No: The count is already 0, so no change is needed. New count remains 0.\n\n**Final Count:** After following the steps, the final count is 9.\n\nThe answer is **9**."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "command-a-03-2025",
+    "responseId": "b4d2fefe-e693-42ba-9197-19a503dd4772",
+    "usageMetadata": {
+      "candidatesTokenCount": 439,
+      "promptTokenCount": 12,
+      "totalTokenCount": 451
+    }
+  },
+  "providers/cohere/recorded-structured-output": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "{\"city\": \"Tokyo\", \"country\": \"Japan\"}"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "command-a-03-2025",
+    "responseId": "d4327d23-71db-4829-aa00-bbfa5216f0b8",
+    "usageMetadata": {
+      "candidatesTokenCount": 12,
+      "promptTokenCount": 7,
+      "totalTokenCount": 19
+    }
+  },
+  "providers/cohere/recorded-tool-result": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "The weather in Paris is currently 18 °C and sunny."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "command-a-03-2025",
+    "responseId": "4a056db8-148a-4f13-9495-c10bed01d106",
+    "usageMetadata": {
+      "candidatesTokenCount": 14,
+      "promptTokenCount": 53,
+      "totalTokenCount": 67
+    }
+  },
+  "providers/cohere/recorded-tools": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "functionCall": {
+                "args": {
+                  "city": "Paris"
+                },
+                "id": "get_weather_xsavt6yr6px5",
+                "name": "get_weather"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "command-a-03-2025",
+    "responseId": "085a2816-3c8b-4a6c-a2db-6e6e5d7510cf",
+    "usageMetadata": {
+      "candidatesTokenCount": 24,
+      "promptTokenCount": 44,
+      "totalTokenCount": 68
+    }
+  },
+  "providers/cohere/recorded-tools-required": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "functionCall": {
+                "args": {
+                  "city": "Paris"
+                },
+                "id": "get_weather_g9b2jsp96nqm",
+                "name": "get_weather"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "command-a-03-2025",
+    "responseId": "60e7c761-e139-44cd-8751-6d546c26e02e",
+    "usageMetadata": {
+      "candidatesTokenCount": 22,
+      "promptTokenCount": 44,
+      "totalTokenCount": 66
+    }
+  },
+  "providers/cohere/recorded-web-search-options-field": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "I'm unable to search the web in real-time, so I can't provide you with the most up-to-date information on yesterday's football match in Madrid. However, I can suggest a few ways for you to find this information:\n\n1. **Check sports websites**: Websites like ESPN, BBC Sport, or Marca often have live updates and match reports.\n2. **Use a search engine**: Try searching for \"football match results Madrid [date]\" on Google or another search engine.\n3. **Check social media**: Twitter, Facebook, or Instagram accounts of the teams or sports journalists might have posted updates.\n\nIf you provide me with the date and the teams involved, I might be able to give you some general information or historical context about the match.\n\nPlease note that my knowledge cutoff is until October 2023, so I might not have the most recent information."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "command-a-03-2025",
+    "responseId": "14e1d7dc-f066-40ee-96fc-6ed03f2a33d4",
+    "usageMetadata": {
+      "candidatesTokenCount": 186,
+      "promptTokenCount": 13,
+      "totalTokenCount": 199
+    }
+  },
+  "providers/deepseek/recorded-json-object-system": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "{\"answer\": \"The capital of France is Paris.\", \"confidence\": 1.0}"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "deepseek-flash",
+    "responseId": "4a2059b8-58b4-4e4a-904f-9246e4b4572d",
+    "usageMetadata": {
+      "candidatesTokenCount": 19,
+      "promptTokenCount": 47,
+      "totalTokenCount": 66
+    }
+  },
+  "providers/deepseek/recorded-logprobs-top-logprobs-doc": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Hello! How can I help you today?"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "deepseek-flash",
+    "responseId": "2da350ca-5d24-40eb-8371-e7df3b6f96ae",
+    "usageMetadata": {
+      "candidatesTokenCount": 9,
+      "promptTokenCount": 6,
+      "totalTokenCount": 15
+    }
+  },
+  "providers/deepseek/recorded-max-completion-tokens-limit": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "one, two, three, four, five, six, seven, eight, nine, ten, eleven, twelve, thirteen, fourteen, fifteen, sixteen, seventeen, eighteen, nineteen, twenty, twenty-one, twenty-two, twenty-three, twenty-four, twenty-five, twenty-six, twenty-seven, twenty-eight, twenty-nine, thirty, thirty-one, thirty-two, thirty-three, thirty-four, thirty-five, thirty-six, thirty-seven, thirty-eight, thirty-nine, forty"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "deepseek-flash",
+    "responseId": "034e445a-6bbd-47d9-b88a-027624bdfa21",
+    "usageMetadata": {
+      "candidatesTokenCount": 98,
+      "promptTokenCount": 43,
+      "thoughtsTokenCount": 35,
+      "totalTokenCount": 176
+    }
+  },
+  "providers/deepseek/recorded-pro-tool-turn-without-reasoning-content": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "The current weather in Paris is **14°C** with **light rain**."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "deepseek-v4-pro",
+    "responseId": "15901d83-f37f-4be8-a4ad-7b686e0dc794",
+    "usageMetadata": {
+      "candidatesTokenCount": 17,
+      "promptTokenCount": 423,
+      "totalTokenCount": 440
+    }
+  },
+  "providers/deepseek/recorded-prompt-cache-hit": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "No — partial months are not refunded. You can cancel online at any time before your renewal date, and there’s no cancellation fee, but the current month’s charge isn’t prorated or returned (Policy 2, Policy 3, Policy 4).\n\nAlso note: if you have a device on an instalment plan, those payments continue after cancellation until the device is paid off (Policy 9)."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "deepseek-flash",
+    "responseId": "30e154ae-2feb-4ee9-bc9d-4bcd6b69bc7d",
+    "usageMetadata": {
+      "cachedContentTokenCount": 128,
+      "candidatesTokenCount": 87,
+      "promptTokenCount": 282,
+      "totalTokenCount": 369
+    }
+  },
+  "providers/deepseek/recorded-reasoning-content-sent-back": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "400"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "deepseek-flash",
+    "responseId": "75b4381d-fa69-474c-b21d-66f449915aae",
+    "usageMetadata": {
+      "candidatesTokenCount": 2,
+      "promptTokenCount": 62,
+      "thoughtsTokenCount": 18,
+      "totalTokenCount": 82
+    }
+  },
+  "providers/deepseek/recorded-stop-array": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "1, 2, 3, 4, 5, 6, "
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "deepseek-flash",
+    "responseId": "eecb47b4-c080-4903-b927-4d6d891d5519",
+    "usageMetadata": {
+      "candidatesTokenCount": 20,
+      "promptTokenCount": 41,
+      "thoughtsTokenCount": 53,
+      "totalTokenCount": 114
+    }
+  },
+  "providers/deepseek/recorded-thinking-reasoning-content": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "391"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "deepseek-flash",
+    "responseId": "f4046fd9-e586-4279-ac2d-b84eebbc5f37",
+    "usageMetadata": {
+      "candidatesTokenCount": 2,
+      "promptTokenCount": 44,
+      "thoughtsTokenCount": 18,
+      "totalTokenCount": 64
+    }
+  },
+  "providers/deepseek/recorded-thinking-tools-auto": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": ""
+            },
+            {
+              "functionCall": {
+                "args": {
+                  "location": "Paris, France",
+                  "unit": "celsius"
+                },
+                "id": "call_00_XWCK6iIwTQiMlGGS8D6O4965",
+                "name": "get_weather"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "deepseek-flash",
+    "responseId": "2a676b20-042f-4778-94b3-8eeebdaef0ea",
+    "usageMetadata": {
+      "candidatesTokenCount": 58,
+      "promptTokenCount": 339,
+      "thoughtsTokenCount": 10,
+      "totalTokenCount": 407
+    }
+  },
+  "providers/deepseek/recorded-tool-turn-without-reasoning-content": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "It's currently **14 °C** in Paris with **light rain** — you might want an umbrella if you're heading out. ☔"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "deepseek-flash",
+    "responseId": "01196219-0832-4870-a63d-cb61ba063bb5",
+    "usageMetadata": {
+      "cachedContentTokenCount": 256,
+      "candidatesTokenCount": 30,
+      "promptTokenCount": 432,
+      "totalTokenCount": 462
+    }
+  },
+  "providers/groq/recorded-include-reasoning-false": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Yes, 17 is a prime number."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "openai/gpt-oss-20b",
+    "responseId": "chatcmpl-8136daa1-82d4-40fa-a64e-26b7b5ae55b3",
+    "usageMetadata": {
+      "candidatesTokenCount": 18,
+      "promptTokenCount": 83,
+      "thoughtsTokenCount": 9,
+      "totalTokenCount": 110
+    }
+  },
+  "providers/groq/recorded-json-schema": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "{\"date\":\"2026-10-16\",\"name\":\"science fair\",\"participants\":[\"Alice\",\"Bob\"]}"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "openai/gpt-oss-20b",
+    "responseId": "chatcmpl-4ff67b7e-f3c2-4902-91d1-408c0c4d89bf",
+    "usageMetadata": {
+      "candidatesTokenCount": 35,
+      "promptTokenCount": 174,
+      "thoughtsTokenCount": 11,
+      "totalTokenCount": 220
+    }
+  },
+  "providers/groq/recorded-plain-developer-string": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Hello! 👋 How can I assist you today?"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "openai/gpt-oss-20b",
+    "responseId": "chatcmpl-fcd59ef0-9dfd-429e-a929-a61891b4cdeb",
+    "usageMetadata": {
+      "candidatesTokenCount": 20,
+      "promptTokenCount": 82,
+      "thoughtsTokenCount": 19,
+      "totalTokenCount": 121
+    }
+  },
+  "providers/groq/recorded-reasoning-format-hidden": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Yes, 17 is a prime number because it is only divisible by 1 and itself."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "qwen/qwen3.8-27b",
+    "responseId": "chatcmpl-2b36d10f-800d-4199-8ef3-2599edb10334",
+    "usageMetadata": {
+      "candidatesTokenCount": 23,
+      "promptTokenCount": 53,
+      "thoughtsTokenCount": 39,
+      "totalTokenCount": 115
+    }
+  },
+  "providers/groq/recorded-reasoning-format-parsed": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Yes, 17 is a prime number because it has only two divisors: 1 and itself."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "qwen/qwen3.8-27b",
+    "responseId": "chatcmpl-8a475ec4-2917-4370-b98d-205e79d2cd07",
+    "usageMetadata": {
+      "candidatesTokenCount": 25,
+      "promptTokenCount": 53,
+      "thoughtsTokenCount": 39,
+      "totalTokenCount": 117
+    }
+  },
+  "providers/groq/recorded-reasoning-format-raw": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "\n<think>\nYes, 17 is a prime number. I need to answer in one sentence.\n</think>\n\nYes, 17 is a prime number because it is only divisible by 1 and itself."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "qwen/qwen3.8-27b",
+    "responseId": "chatcmpl-b62b8553-e23d-415c-976c-6ce3525f6ee4",
+    "usageMetadata": {
+      "candidatesTokenCount": 42,
+      "promptTokenCount": 53,
+      "totalTokenCount": 95
+    }
+  },
+  "providers/groq/recorded-tools-system-role": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "functionCall": {
+                "args": {
+                  "location": "Paris, France",
+                  "unit": "celsius"
+                },
+                "id": "fc_64cfb53a-eb82-4cd9-b9c8-18177c53d0c2",
+                "name": "get_weather"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "openai/gpt-oss-20b",
+    "responseId": "chatcmpl-17055776-9bcc-4256-8699-2f1abc20df34",
+    "usageMetadata": {
+      "candidatesTokenCount": 30,
+      "promptTokenCount": 180,
+      "thoughtsTokenCount": 7,
+      "totalTokenCount": 217
+    }
+  },
+  "providers/mistral/recorded-assistant-prefix": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "The colour is **cerulean**."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "mistral-small-latest",
+    "responseId": "0eca016673b94106980cb573ae599c73",
+    "usageMetadata": {
+      "candidatesTokenCount": 9,
+      "promptTokenCount": 22,
+      "totalTokenCount": 31
+    }
+  },
+  "providers/mistral/recorded-audio-field": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Hello! 😊 How can I assist you"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "MAX_TOKENS",
+        "index": 0
+      }
+    ],
+    "modelVersion": "mistral-small-latest",
+    "responseId": "a5bfce19c23f4a5aae42d778a8b811bb",
+    "usageMetadata": {
+      "candidatesTokenCount": 10,
+      "promptTokenCount": 18,
+      "totalTokenCount": 28
+    }
+  },
+  "providers/mistral/recorded-magistral-medium": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "No, 91 is not a prime number because it can be divided by 7 and 13 (7 × 13 = 91)."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "magistral-medium-latest",
+    "responseId": "6e1bf00fa656433e959b54ea574dfd8a",
+    "usageMetadata": {
+      "candidatesTokenCount": 34,
+      "promptTokenCount": 28,
+      "totalTokenCount": 62
+    }
+  },
+  "providers/mistral/recorded-max-tokens-length": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "**Haiku:**\n*Waves crash on the shore—*\n*white foam"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "MAX_TOKENS",
+        "index": 0
+      }
+    ],
+    "modelVersion": "mistral-small-latest",
+    "responseId": "d39b725efad54dc78629373a5d771c2a",
+    "usageMetadata": {
+      "candidatesTokenCount": 16,
+      "promptTokenCount": 30,
+      "totalTokenCount": 46
+    }
+  },
+  "providers/mistral/recorded-modalities-field": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Hello! 😊 How can I assist you"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "MAX_TOKENS",
+        "index": 0
+      }
+    ],
+    "modelVersion": "mistral-small-latest",
+    "responseId": "8c983da2fd814d91b78475e7f78d38d6",
+    "usageMetadata": {
+      "candidatesTokenCount": 10,
+      "promptTokenCount": 18,
+      "totalTokenCount": 28
+    }
+  },
+  "providers/mistral/recorded-prediction-doc": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "class User {\n  firstName = \"\";\n  lastName = \"\";\n  email = \"\";\n}\n\nexport default User;"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "mistral-small-latest",
+    "responseId": "ff22a05025b945ccacd340389360ea93",
+    "usageMetadata": {
+      "candidatesTokenCount": 23,
+      "promptTokenCount": 57,
+      "totalTokenCount": 80
+    }
+  },
+  "providers/mistral/recorded-reasoning-effort-high": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "No, 91 is not a prime number because it can be divided evenly by 7 and 13."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "mistral-small-latest",
+    "responseId": "959b974d28584d54ab2752b2704ebf93",
+    "usageMetadata": {
+      "candidatesTokenCount": 27,
+      "promptTokenCount": 28,
+      "thoughtsTokenCount": 176,
+      "totalTokenCount": 231
+    }
+  },
+  "providers/mistral/recorded-safe-prompt-random-seed": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "The French flag, known as the \"Tricolore,\" consists of three vertical stripes. One"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "MAX_TOKENS",
+        "index": 0
+      }
+    ],
+    "modelVersion": "mistral-small-latest",
+    "responseId": "5835f2c75f0444939882188be17dd3a2",
+    "usageMetadata": {
+      "candidatesTokenCount": 20,
+      "promptTokenCount": 11,
+      "totalTokenCount": 31
+    }
+  },
+  "providers/mistral/recorded-system-tool-choice-any": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": ""
+            },
+            {
+              "functionCall": {
+                "args": {
+                  "city": "Lisbon"
+                },
+                "id": "yVjSUoKG6",
+                "name": "get_weather"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "mistral-small-latest",
+    "responseId": "70c1666cb00d4791ba3e37dfbd3f3f0d",
+    "usageMetadata": {
+      "cachedContentTokenCount": 80,
+      "candidatesTokenCount": 14,
+      "promptTokenCount": 111,
+      "totalTokenCount": 125
+    }
+  },
+  "providers/mistral/recorded-tool-choice-function": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "I'll check the current weather in Lisbon for you."
+            },
+            {
+              "functionCall": {
+                "args": {
+                  "location": "Lisbon, Portugal",
+                  "unit": "celsius"
+                },
+                "id": "KY38vNOHV",
+                "name": "get_weather"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "mistral-small-latest",
+    "responseId": "b630266f78264550bfa075233b29e799",
+    "usageMetadata": {
+      "candidatesTokenCount": 34,
+      "promptTokenCount": 132,
+      "totalTokenCount": 166
+    }
+  },
+  "providers/mistral/recorded-tool-choice-none": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "I can't provide real-time weather updates, but you can check the current weather in Lisbon by using a weather app or website like [Weather.com](https://weather.com) or [AccuWeather](https://www.accuweather.com)."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "mistral-small-latest",
+    "responseId": "5707c3d945054a55b19bf2b2c3415c0c",
+    "usageMetadata": {
+      "candidatesTokenCount": 51,
+      "promptTokenCount": 22,
+      "totalTokenCount": 73
+    }
+  },
+  "providers/mistral/recorded-tool-result-named": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "The current weather in Lisbon is **21°C** with **clear skies**. Enjoy your day!"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "mistral-small-latest",
+    "responseId": "2e2c5eceef9547338d02f8e34d2a077c",
+    "usageMetadata": {
+      "candidatesTokenCount": 21,
+      "promptTokenCount": 134,
+      "totalTokenCount": 155
+    }
+  },
+  "providers/moonshotai/recorded-image": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Black"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "kimi-k2.6",
+    "responseId": "chatcmpl-6ae4cd14c68f6a6d58fddc5f",
+    "usageMetadata": {
+      "candidatesTokenCount": 3,
+      "promptTokenCount": 23,
+      "thoughtsTokenCount": 1,
+      "totalTokenCount": 27
+    }
+  },
+  "providers/moonshotai/recorded-json-object-system": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "{\"colour\": \"blue\"}"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "kimi-k2.6",
+    "responseId": "chatcmpl-6ae4cce7e155c19942ffb4a7",
+    "usageMetadata": {
+      "candidatesTokenCount": 8,
+      "promptTokenCount": 27,
+      "thoughtsTokenCount": 1,
+      "totalTokenCount": 36
+    }
+  },
+  "providers/moonshotai/recorded-logprobs": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Blue"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "kimi-k2.6",
+    "responseId": "chatcmpl-6ae4cc9c2c59c3916352113b",
+    "usageMetadata": {
+      "candidatesTokenCount": 3,
+      "promptTokenCount": 16,
+      "thoughtsTokenCount": 1,
+      "totalTokenCount": 20
+    }
+  },
+  "providers/moonshotai/recorded-max-completion-tokens-honoured": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "1, 2, 3,"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "MAX_TOKENS",
+        "index": 0
+      }
+    ],
+    "modelVersion": "kimi-k2.6",
+    "responseId": "chatcmpl-6ae4cc864d8aa3e96f6b9fc3",
+    "usageMetadata": {
+      "cachedContentTokenCount": 19,
+      "candidatesTokenCount": 9,
+      "promptTokenCount": 19,
+      "thoughtsTokenCount": 1,
+      "totalTokenCount": 29
+    }
+  },
+  "providers/moonshotai/recorded-max-tokens-honoured": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "1, 2, 3,"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "MAX_TOKENS",
+        "index": 0
+      }
+    ],
+    "modelVersion": "kimi-k2.6",
+    "responseId": "chatcmpl-6ae4cc5e56286f4b69dbff05",
+    "usageMetadata": {
+      "candidatesTokenCount": 9,
+      "promptTokenCount": 19,
+      "thoughtsTokenCount": 1,
+      "totalTokenCount": 29
+    }
+  },
+  "providers/moonshotai/recorded-parallel-tool-calls-false": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": ""
+            },
+            {
+              "functionCall": {
+                "args": {
+                  "city": "Paris"
+                },
+                "id": "get_weather_0_f6e0e747",
+                "name": "get_weather"
+              }
+            },
+            {
+              "functionCall": {
+                "args": {
+                  "city": "Rome"
+                },
+                "id": "get_weather_1_6cb64aba",
+                "name": "get_weather"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "kimi-k2.6",
+    "responseId": "chatcmpl-6ae4cd2e22b979ecd05adc6c",
+    "usageMetadata": {
+      "candidatesTokenCount": 34,
+      "promptTokenCount": 59,
+      "thoughtsTokenCount": 1,
+      "totalTokenCount": 94
+    }
+  },
+  "providers/moonshotai/recorded-partial": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": " Blue\n3. Green"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "kimi-k2.6",
+    "responseId": "chatcmpl-6ae4ccbada6373467f9ed9f2",
+    "usageMetadata": {
+      "candidatesTokenCount": 6,
+      "promptTokenCount": 23,
+      "totalTokenCount": 29
+    }
+  },
+  "providers/moonshotai/recorded-prefill-without-partial": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "1. Red\n2. Blue\n3. Green"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "kimi-k2.6",
+    "responseId": "chatcmpl-6ae4ccd1790ba935d13d1231",
+    "usageMetadata": {
+      "candidatesTokenCount": 13,
+      "promptTokenCount": 27,
+      "thoughtsTokenCount": 1,
+      "totalTokenCount": 41
+    }
+  },
+  "providers/moonshotai/recorded-reasoning": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "1001 is not a prime number because it can be factored as $7 \\times 11 \\times 13$."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "kimi-k2.6",
+    "responseId": "chatcmpl-6ae4cba7739a2b6d9ed3ffe0",
+    "usageMetadata": {
+      "candidatesTokenCount": 27,
+      "promptTokenCount": 20,
+      "thoughtsTokenCount": 185,
+      "totalTokenCount": 232
+    }
+  },
+  "providers/moonshotai/recorded-reasoning-effort-low": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "No, 1001 is not prime — it equals 7 × 11 × 13."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "kimi-k3",
+    "responseId": "chatcmpl-2f2e0042495dc7c2d60ccd471",
+    "usageMetadata": {
+      "candidatesTokenCount": 33,
+      "promptTokenCount": 99,
+      "thoughtsTokenCount": 22,
+      "totalTokenCount": 154
+    }
+  },
+  "providers/moonshotai/recorded-reasoning-effort-none": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "No, 1001 is not a prime number because it can be factored as 7 × 11 × 13."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "kimi-k3",
+    "responseId": "chatcmpl-2f2e0260fb6fd3381dfa68b77",
+    "usageMetadata": {
+      "candidatesTokenCount": 33,
+      "promptTokenCount": 31,
+      "totalTokenCount": 64
+    }
+  },
+  "providers/moonshotai/recorded-reasoning-tools": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": ""
+            },
+            {
+              "functionCall": {
+                "args": {
+                  "city": "Paris"
+                },
+                "id": "get_weather_0_2fdaa899",
+                "name": "get_weather"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "kimi-k2.6",
+    "responseId": "chatcmpl-6ae4cc2d81c3fb4bf2773d31",
+    "usageMetadata": {
+      "candidatesTokenCount": 18,
+      "promptTokenCount": 56,
+      "thoughtsTokenCount": 49,
+      "totalTokenCount": 123
+    }
+  },
+  "providers/moonshotai/recorded-system-name-stop": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "1, 2, 3, 4, "
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "kimi-k2.6",
+    "responseId": "chatcmpl-6ae4ccfd32565dea50bf0c70",
+    "usageMetadata": {
+      "candidatesTokenCount": 14,
+      "promptTokenCount": 27,
+      "thoughtsTokenCount": 1,
+      "totalTokenCount": 42
+    }
+  },
+  "providers/moonshotai/recorded-thinking-disabled": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Earth"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "kimi-k2.6",
+    "responseId": "chatcmpl-6ae4cb9118419721e267ec43",
+    "usageMetadata": {
+      "candidatesTokenCount": 3,
+      "promptTokenCount": 20,
+      "thoughtsTokenCount": 1,
+      "totalTokenCount": 24
+    }
+  },
+  "providers/moonshotai/recorded-tool-result": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "The current weather in Paris is **18 °C and sunny**."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "kimi-k2.6",
+    "responseId": "chatcmpl-6ae4cde023f0163c1179c792",
+    "usageMetadata": {
+      "candidatesTokenCount": 15,
+      "promptTokenCount": 146,
+      "thoughtsTokenCount": 25,
+      "totalTokenCount": 186
+    }
+  },
+  "providers/ollama-cloud/recorded-image": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Red"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gemma4:31b",
+    "responseId": "chatcmpl-557",
+    "usageMetadata": {
+      "candidatesTokenCount": 2,
+      "promptTokenCount": 287,
+      "totalTokenCount": 289
+    }
+  },
+  "providers/ollama-cloud/recorded-max-completion-tokens-ignored": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gemma4:31b",
+    "responseId": "chatcmpl-694",
+    "usageMetadata": {
+      "candidatesTokenCount": 150,
+      "promptTokenCount": 26,
+      "totalTokenCount": 176
+    }
+  },
+  "providers/ollama-cloud/recorded-max-tokens-honoured": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "1, 2, 3, 4, 5, 6, 7,"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "MAX_TOKENS",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gemma4:31b",
+    "responseId": "chatcmpl-788",
+    "usageMetadata": {
+      "candidatesTokenCount": 20,
+      "promptTokenCount": 26,
+      "totalTokenCount": 46
+    }
+  },
+  "providers/ollama-cloud/recorded-max-tokens-length": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Blue waves kiss the sand,\nEndless depths of salt and mist,\n"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "MAX_TOKENS",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gemma4:31b",
+    "responseId": "chatcmpl-885",
+    "usageMetadata": {
+      "candidatesTokenCount": 16,
+      "promptTokenCount": 28,
+      "totalTokenCount": 44
+    }
+  },
+  "providers/ollama-cloud/recorded-plain-developer-string": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Hello! How can I help you today?"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gemma4:31b",
+    "responseId": "chatcmpl-209",
+    "usageMetadata": {
+      "candidatesTokenCount": 10,
+      "promptTokenCount": 26,
+      "totalTokenCount": 36
+    }
+  },
+  "providers/ollama-cloud/recorded-reasoning-effort": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "No, 1001 is not a prime number because it can be factored as 7 × 11 × 13."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-oss:20b",
+    "responseId": "chatcmpl-613",
+    "usageMetadata": {
+      "cachedContentTokenCount": 64,
+      "candidatesTokenCount": 42,
+      "promptTokenCount": 80,
+      "totalTokenCount": 122
+    }
+  },
+  "providers/ollama-cloud/recorded-reasoning-object": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "101"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-oss:20b",
+    "responseId": "chatcmpl-960",
+    "usageMetadata": {
+      "cachedContentTokenCount": 64,
+      "candidatesTokenCount": 16,
+      "promptTokenCount": 75,
+      "totalTokenCount": 91
+    }
+  },
+  "providers/ollama-cloud/recorded-reasoning-sent-back": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "14"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-oss:20b",
+    "responseId": "chatcmpl-262",
+    "usageMetadata": {
+      "cachedContentTokenCount": 64,
+      "candidatesTokenCount": 15,
+      "promptTokenCount": 92,
+      "totalTokenCount": 107
+    }
+  },
+  "providers/ollama-cloud/recorded-reasoning-tools": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": ""
+            },
+            {
+              "functionCall": {
+                "args": {
+                  "city": "Paris"
+                },
+                "id": "call_p4wpxak3",
+                "name": "get_weather"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-oss:20b",
+    "responseId": "chatcmpl-497",
+    "usageMetadata": {
+      "cachedContentTokenCount": 128,
+      "candidatesTokenCount": 30,
+      "promptTokenCount": 129,
+      "totalTokenCount": 159
+    }
+  },
+  "providers/ollama-cloud/recorded-stop-string-seed-penalties": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Apple\nBanana\nCherry\nDate\nElderberry\nFig\nGrape\nHoneydew\nKiwi\nLemon\nMango\nNectarine\nOrange\nPapaya\nQuince\nRaspberry\nStrawberry\nTangerine\nUgli fruit\nWatermelon\n"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gemma4:31b",
+    "responseId": "chatcmpl-282",
+    "usageMetadata": {
+      "candidatesTokenCount": 57,
+      "promptTokenCount": 24,
+      "totalTokenCount": 81
+    }
+  },
+  "providers/ollama-cloud/recorded-system-name-multiturn": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Boil them for 9 to 12 minutes. For a classic hard-boiled egg, 11 minutes is usually perfect!"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gemma4:31b",
+    "responseId": "chatcmpl-887",
+    "usageMetadata": {
+      "candidatesTokenCount": 29,
+      "promptTokenCount": 80,
+      "totalTokenCount": 109
+    }
+  },
+  "providers/ollama-cloud/recorded-tool-result": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "The current weather in Paris is 18°C and sunny."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gemma4:31b",
+    "responseId": "chatcmpl-27",
+    "usageMetadata": {
+      "candidatesTokenCount": 19,
+      "promptTokenCount": 98,
+      "totalTokenCount": 117
+    }
+  },
+  "providers/ollama-cloud/recorded-tools-parallel": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": ""
+            },
+            {
+              "functionCall": {
+                "args": {
+                  "location": "Paris, France",
+                  "unit": "celsius"
+                },
+                "id": "call_dunvhu1f",
+                "name": "get_weather"
+              }
+            },
+            {
+              "functionCall": {
+                "args": {
+                  "timezone": "Asia/Tokyo"
+                },
+                "id": "call_qrsgo35q",
+                "name": "get_local_time"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gemma4:31b",
+    "responseId": "chatcmpl-454",
+    "usageMetadata": {
+      "candidatesTokenCount": 42,
+      "promptTokenCount": 199,
+      "totalTokenCount": 241
+    }
+  },
+  "providers/ollama-cloud/recorded-tools-single": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": ""
+            },
+            {
+              "functionCall": {
+                "args": {
+                  "location": "Paris, France",
+                  "unit": "Celsius"
+                },
+                "id": "call_u5a4vdpz",
+                "name": "get_weather"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gemma4:31b",
+    "responseId": "chatcmpl-909",
+    "usageMetadata": {
+      "cachedContentTokenCount": 96,
+      "candidatesTokenCount": 23,
+      "promptTokenCount": 123,
+      "totalTokenCount": 146
+    }
+  },
+  "providers/openrouter/recorded-free-basic": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "The capital of France is Paris."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "liquid/lfm-2.5-2.6b:free",
+    "responseId": "gen-1792370384-hK3FcgoGLAo8OPNdHkO8",
+    "usageMetadata": {
+      "candidatesTokenCount": 9,
+      "promptTokenCount": 34,
+      "thoughtsTokenCount": 53,
+      "totalTokenCount": 96
+    }
+  },
+  "providers/openrouter/recorded-free-reasoning": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "No, because 91 = 7 × 13."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "nvidia/nemotron-3.5-lightning:free",
+    "responseId": "gen-1792370346-mJG1Ww0FHKsjXCU4VP0F",
+    "usageMetadata": {
+      "candidatesTokenCount": 16,
+      "promptTokenCount": 33,
+      "thoughtsTokenCount": 418,
+      "totalTokenCount": 467
+    }
+  },
+  "providers/openrouter/recorded-free-tools": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "functionCall": {
+                "args": {
+                  "location": "Paris, France",
+                  "unit": "celsius"
+                },
+                "id": "call-018a495d-02ee-4d66-9d91-f74ddbca70cb",
+                "name": "get_weather"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "nvidia/nemotron-3.5-lightning:free",
+    "responseId": "gen-1792370368-7fvvGcl3ZsR3zBhdgoCI",
+    "usageMetadata": {
+      "candidatesTokenCount": 39,
+      "promptTokenCount": 348,
+      "thoughtsTokenCount": 16,
+      "totalTokenCount": 403
+    }
+  },
+  "providers/togetherai/recorded-json-schema": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "{  \"name\": \"Alice and Bob are going to a science fair on 2026-10-16.\", \"date\": \"2026-10-16\", \"participants\": [\"Alice\", \"Bob\"] }"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "deepseek-ai/DeepSeek-V4-Flash-0731",
+    "responseId": "0fe3f371-aws_ec1",
+    "usageMetadata": {
+      "candidatesTokenCount": 47,
+      "promptTokenCount": 22,
+      "totalTokenCount": 69
+    }
+  },
+  "providers/togetherai/recorded-reasoning-reply": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": ""
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "MAX_TOKENS",
+        "index": 0
+      }
+    ],
+    "modelVersion": "Qwen/Qwen3.5-9B",
+    "responseId": "p5ndpX6-3pDw3Z-a4cbbaa92dc664b2",
+    "usageMetadata": {
+      "candidatesTokenCount": 60,
+      "promptTokenCount": 14,
+      "totalTokenCount": 74
+    }
+  },
+  "providers/togetherai/recorded-safety-model": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Jupiter"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "deepseek-ai/DeepSeek-V4-Flash-0731",
+    "responseId": "d60012fe-aws_ec1",
+    "usageMetadata": {
+      "candidatesTokenCount": 4,
+      "promptTokenCount": 8,
+      "thoughtsTokenCount": 190,
+      "totalTokenCount": 202
+    }
+  },
+  "providers/togetherai/recorded-sampling-extras": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Earth."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "deepseek-ai/DeepSeek-V4-Flash-0731",
+    "responseId": "56f82fc9-aws_ec1",
+    "usageMetadata": {
+      "candidatesTokenCount": 4,
+      "promptTokenCount": 14,
+      "thoughtsTokenCount": 51,
+      "totalTokenCount": 69
+    }
+  },
+  "providers/togetherai/recorded-stop-string-seed-penalties": {
+    "candidates": [
+      {
+        "content": {
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "deepseek-ai/DeepSeek-V4-Flash-0731",
+    "responseId": "482f4b03-aws_ec1",
+    "usageMetadata": {
+      "candidatesTokenCount": 0,
+      "promptTokenCount": 15,
+      "thoughtsTokenCount": 17,
+      "totalTokenCount": 32
+    }
+  },
+  "providers/togetherai/recorded-tool-call-auto": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "functionCall": {
+                "args": {
+                  "location": "Paris, France",
+                  "unit": "celsius"
+                },
+                "id": "call_01a1519aa64e7700b3e9eccc",
+                "name": "get_weather"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "deepseek-ai/DeepSeek-V4-Flash-0731",
+    "responseId": "d695273f-aws_ec1",
+    "usageMetadata": {
+      "candidatesTokenCount": 65,
+      "promptTokenCount": 336,
+      "thoughtsTokenCount": 19,
+      "totalTokenCount": 420
+    }
+  },
+  "providers/togetherai/recorded-tools-parallel": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "I'll get both of those for you."
+            },
+            {
+              "functionCall": {
+                "args": {
+                  "location": "Paris, France",
+                  "unit": "celsius"
+                },
+                "id": "call_01a1519ac48d7780a12d174f",
+                "name": "get_weather"
+              }
+            },
+            {
+              "functionCall": {
+                "args": {
+                  "timezone": "Asia/Tokyo"
+                },
+                "id": "call_01a1519ac48d7780a12d1758",
+                "name": "get_local_time"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "deepseek-ai/DeepSeek-V4-Flash-0731",
+    "responseId": "6c9d7be6-aws_ec1",
+    "usageMetadata": {
+      "candidatesTokenCount": 107,
+      "promptTokenCount": 445,
+      "totalTokenCount": 552
+    }
+  },
+  "providers/vercel/recorded-basic": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Paris is the capital of France."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "mistral/mistral-nemo",
+    "responseId": "gen_01M64HFNGE7BR3KY97Y0QT33N2",
+    "usageMetadata": {
+      "candidatesTokenCount": 8,
+      "promptTokenCount": 23,
+      "totalTokenCount": 31
+    }
+  },
+  "providers/vercel/recorded-gateway-options": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "\"Hello\" in French translates to \"Bonjour\"."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "mistral/mistral-nemo",
+    "responseId": "gen_01M64HFPDJZ4VTJY3XKAP132MR",
+    "usageMetadata": {
+      "candidatesTokenCount": 12,
+      "promptTokenCount": 9,
+      "totalTokenCount": 21
+    }
+  },
+  "providers/vercel/recorded-reasoning": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "no, because 91 = 7 × 13."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "nvidia/nemotron-3.5-lightning-free",
+    "responseId": "gen_01M64HFS9C2XC1NJMYRM7PXXRF",
+    "usageMetadata": {
+      "candidatesTokenCount": 16,
+      "promptTokenCount": 33,
+      "thoughtsTokenCount": 499,
+      "totalTokenCount": 548
+    }
+  },
+  "providers/vercel/recorded-tools": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "functionCall": {
+                "args": {
+                  "location": "Paris, France",
+                  "unit": "celsius"
+                },
+                "id": "call-4eae9857-3f6d-4503-abc6-e85a8c535f41",
+                "name": "get_weather"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "nvidia/nemotron-3.5-lightning-free",
+    "responseId": "gen_01M64HFYZT354PP1X51YE4CECP",
+    "usageMetadata": {
+      "candidatesTokenCount": 39,
+      "promptTokenCount": 348,
+      "thoughtsTokenCount": 33,
+      "totalTokenCount": 420
+    }
+  },
+  "providers/xai/recorded-json-schema": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "{\n  \"name\": \"science fair\",\n  \"date\": \"2026-10-16\",\n  \"participants\": [\"Alice\", \"Bob\"]\n}"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "grok-4.3",
+    "responseId": "93c7eef6-8cff-9dfa-9b2d-d8b59bf44807",
+    "usageMetadata": {
+      "cachedContentTokenCount": 128,
+      "candidatesTokenCount": 32,
+      "promptTokenCount": 292,
+      "thoughtsTokenCount": 301,
+      "totalTokenCount": 625
+    }
+  },
+  "providers/xai/recorded-max-completion-tokens-reasoning": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "No, 391 is not a prime number as it equals 17 × 23."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "grok-4.3",
+    "responseId": "afd8f39e-9421-96f9-9120-66865135a28b",
+    "usageMetadata": {
+      "cachedContentTokenCount": 128,
+      "candidatesTokenCount": 18,
+      "promptTokenCount": 204,
+      "thoughtsTokenCount": 271,
+      "totalTokenCount": 493
+    }
+  },
+  "providers/xai/recorded-plain-developer-string": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Hello! 👋 Nice to see you! How's it going?"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "grok-4.20-0309-non-reasoning",
+    "responseId": "e34069c1-b99d-9b5c-9bd0-31ba872ac79a",
+    "usageMetadata": {
+      "cachedContentTokenCount": 128,
+      "candidatesTokenCount": 14,
+      "promptTokenCount": 195,
+      "totalTokenCount": 209
+    }
+  },
+  "providers/xai/recorded-reasoning-content": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "408"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "grok-4.3",
+    "responseId": "7d66a40f-51d4-93df-81a4-2399cb277169",
+    "usageMetadata": {
+      "cachedContentTokenCount": 128,
+      "candidatesTokenCount": 1,
+      "promptTokenCount": 206,
+      "thoughtsTokenCount": 178,
+      "totalTokenCount": 385
+    }
+  },
+  "providers/xai/recorded-tools-parallel": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": ""
+            },
+            {
+              "functionCall": {
+                "args": {
+                  "location": "Paris, France",
+                  "unit": "celsius"
+                },
+                "id": "call-f1673ef5-ebac-43b0-a80a-ebf4abb818ad-0",
+                "name": "get_weather"
+              }
+            },
+            {
+              "functionCall": {
+                "args": {
+                  "timezone": "Asia/Tokyo"
+                },
+                "id": "call-f1673ef5-ebac-43b0-a80a-ebf4abb818ad-1",
+                "name": "get_local_time"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "grok-4.3",
+    "responseId": "7b4647dd-256f-96ec-bae7-2f264ac87131",
+    "usageMetadata": {
+      "cachedContentTokenCount": 128,
+      "candidatesTokenCount": 29,
+      "promptTokenCount": 422,
+      "totalTokenCount": 451
+    }
+  },
+  "providers/xai/recorded-tools-single": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": ""
+            },
+            {
+              "functionCall": {
+                "args": {
+                  "location": "Paris, France",
+                  "unit": "celsius"
+                },
+                "id": "call-79d7bafb-a82b-471d-a790-994e159ffa2d-0",
+                "name": "get_weather"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "grok-4.3",
+    "responseId": "a590f19d-ffce-94c0-a90c-1d5c897dd3cd",
+    "usageMetadata": {
+      "cachedContentTokenCount": 128,
+      "candidatesTokenCount": 17,
+      "promptTokenCount": 349,
+      "totalTokenCount": 366
+    }
+  },
+  "reasoning-cached-usage": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "No. Cancelling stops the next renewal, but partial months aren't refunded, so you keep service until your current period ends."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-6.1-sol",
+    "responseId": "chatcmpl-DhR19ZbIX4TIvYjP2WG8cq1cQUKhp",
+    "usageMetadata": {
+      "cachedContentTokenCount": 1920,
+      "candidatesTokenCount": 34,
+      "promptTokenCount": 2048,
+      "thoughtsTokenCount": 1152,
+      "totalTokenCount": 3234
+    }
+  },
+  "recorded-audio-output": {
+    "candidates": [
+      {
+        "content": {
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-audio-mini-2025-12-15",
+    "responseId": "chatcmpl-EXqLOEzLcFXsv2In3n9JEXqMIgLuR",
+    "usageMetadata": {
+      "candidatesTokenCount": 99,
+      "promptTokenCount": 10,
+      "totalTokenCount": 109
+    }
+  },
+  "recorded-file-pdf-data": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "The document says: **“Hello PDF”** on page 1."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-5.5-2026-04-23",
+    "responseId": "chatcmpl-EXqLRE28oaAk5lCMzOPFXxWj8QC0d",
+    "usageMetadata": {
+      "candidatesTokenCount": 24,
+      "promptTokenCount": 231,
+      "thoughtsTokenCount": 32,
+      "totalTokenCount": 287
+    }
+  },
+  "recorded-identifiers-metadata-store": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Welcome to the community — we’re excited to have you here!  \nJump in, introduce yourself, and make yourself at home."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-5.5-2026-04-23",
+    "responseId": "chatcmpl-EXqLVExZts88TeMjf9Hh37AeQqfbl",
+    "usageMetadata": {
+      "candidatesTokenCount": 29,
+      "promptTokenCount": 16,
+      "totalTokenCount": 45
+    }
+  },
+  "recorded-json-object": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "{\n  \"answer\": \"The capital of France is Paris.\",\n  \"confidence\": 1.0\n}"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-4.1-mini-2025-04-14",
+    "responseId": "chatcmpl-EXqLXYKoKc71rWH6KX5UirWORlA57",
+    "usageMetadata": {
+      "candidatesTokenCount": 23,
+      "promptTokenCount": 31,
+      "totalTokenCount": 54
+    }
+  },
+  "recorded-json-schema": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "{\"name\":\"science fair\",\"date\":\"2026-10-16\",\"participants\":[\"Alice\",\"Bob\"]}"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-5.4-mini-2026-03-17",
+    "responseId": "chatcmpl-EXqLYSTa0CS5bKqiB0058iIv8EeN9",
+    "usageMetadata": {
+      "candidatesTokenCount": 35,
+      "promptTokenCount": 91,
+      "thoughtsTokenCount": 5,
+      "totalTokenCount": 131
+    }
+  },
+  "recorded-legacy-functions": {
+    "candidates": [
+      {
+        "content": {
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-4.1-2025-04-14",
+    "responseId": "chatcmpl-EXqLZwbLmymH8Dgp0XxUc3KHC8xAj",
+    "usageMetadata": {
+      "candidatesTokenCount": 6,
+      "promptTokenCount": 95,
+      "totalTokenCount": 101
+    }
+  },
+  "recorded-logit-bias": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": " stra"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "MAX_TOKENS",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-4.1-mini-2025-04-14",
+    "responseId": "chatcmpl-EXqLa1O5jvuIQSjVwv2JH05vc1dxj",
+    "usageMetadata": {
+      "candidatesTokenCount": 1,
+      "promptTokenCount": 16,
+      "totalTokenCount": 17
+    }
+  },
+  "recorded-logprobs-top-logprobs-doc": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Hello! How can I help?"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-6-sol",
+    "responseId": "chatcmpl-EXqLbDeap3upPsg7Z620Wpt88ffAJ",
+    "usageMetadata": {
+      "candidatesTokenCount": 10,
+      "promptTokenCount": 8,
+      "totalTokenCount": 18
+    }
+  },
+  "recorded-max-tokens-length": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "**Haiku:**\n\nEndless blue whispers  \nWaves cradle the salt-k"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "MAX_TOKENS",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-4.1-2025-04-14",
+    "responseId": "chatcmpl-EXqLclMWD4kZYATlYVdfvysRKlI6K",
+    "usageMetadata": {
+      "candidatesTokenCount": 16,
+      "promptTokenCount": 22,
+      "totalTokenCount": 38
+    }
+  },
+  "recorded-moderation": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Every morning, the villagers of Brindlewick woke to the sound of wings.\n\nNot birds’ wings—though there were plenty of sparrows in the thatched roofs—but the deep, rolling thunder of Aroth circling above the valley.\n\nAroth was a dragon the color of storm clouds, with horns like polished ivory and eyes as gold as candle flame. He lived on the cliff overlooking the village, curled around an old bell tower that no one had used in a hundred years.\n\nLong ago, strangers had come to Brindlewick with swords and torches, hoping to steal its harvest and cattle. Aroth had descended from the sky, breathed a wall of blue fire between the raiders and the village, and sent them running into the hills.\n\nSince then, he had guarded Brindlewick.\n\nAt first, the villagers were terrified of him. They left sheep at the edge of the woods and bolted their doors whenever his shadow passed over their windows. But Aroth never ate the sheep. He only nudged them back toward their pens with his snout.\n\nIn time, the villagers learned his ways.\n\nHe liked warm bread, especially with honey. He sneezed when children tossed pepper flowers into the air. And every winter, he curled around the village square and kept the snow from burying the cottages.\n\nOne evening, a young girl named Mira climbed the cliff with a basket under her arm. Inside was a loaf of honey bread, still steaming.\n\nAroth opened one golden eye. “Is there trouble?”\n\n“No,” Mira said, setting the basket before him. “I just thought guardians might get hungry.”\n\nThe dragon blinked. Then, very carefully, he lowered his great head until it rested beside her.\n\n“Guardians do,” he rumbled.\n\nFrom that day on, Brindlewick no longer spoke of the dragon on the cliff as a monster, or even as a protector.\n\nThey called him neighbor.\n\nAnd every morning, when Aroth’s wings thundered over the valley, the villagers looked up, smiled, and waved."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-5.5-2026-04-23",
+    "responseId": "chatcmpl-EXqLcMq3SIqaCcO85x6kFVFVYbtMN",
+    "usageMetadata": {
+      "candidatesTokenCount": 429,
+      "promptTokenCount": 17,
+      "thoughtsTokenCount": 8,
+      "totalTokenCount": 454
+    }
+  },
+  "recorded-plain-developer-string": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Hello! How can I help you today?"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-6-astra",
+    "responseId": "chatcmpl-EXqLltFSiimN5uzFddt5U7aSCOqWu",
+    "usageMetadata": {
+      "candidatesTokenCount": 12,
+      "promptTokenCount": 18,
+      "totalTokenCount": 30
+    }
+  },
+  "recorded-prediction-doc": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "class User {\n  firstName = \"\";\n  lastName = \"\";\n  email = \"\";\n}\n\nexport default User;"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-4.1-2025-04-14",
+    "responseId": "chatcmpl-EXqLmvhnzm5j6FKky7h0wtclda5Wb",
+    "usageMetadata": {
+      "candidatesTokenCount": 24,
+      "promptTokenCount": 53,
+      "totalTokenCount": 77
+    }
+  },
+  "recorded-prompt-cache-breakpoint": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "No. Your roaming add-on expires when your plan ends. Policy: roaming add-ons expire with the plan."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-5.6-sol",
+    "responseId": "chatcmpl-EXqLngYsUU5opyHoUXexnrTIJgtFq",
+    "usageMetadata": {
+      "candidatesTokenCount": 25,
+      "promptTokenCount": 83,
+      "totalTokenCount": 108
+    }
+  },
+  "recorded-reasoning-cached-usage": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "No. Northwind Mobile’s policy says partial months are not refunded, so you won’t get money back for the remaining days. There’s no cancellation fee."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-6.1-sol",
+    "responseId": "chatcmpl-EXqLpd5OIcHUAu1mKterbGL4TuvrD",
+    "usageMetadata": {
+      "candidatesTokenCount": 35,
+      "promptTokenCount": 90,
+      "totalTokenCount": 125
+    }
+  },
+  "recorded-refusal": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "{\"steps\":[\"I can’t help with picking a neighbor’s lock or breaking into someone else’s home.\",\"If you’re locked out of your own place, contact a licensed locksmith, your landlord/property manager, or a trusted person with a spare key.\",\"If there’s an urgent safety issue involving a child, pet, or suspected emergency inside the home, call emergency services right away.\",\"If you need lawful access for a legitimate reason, ask for the neighbor’s permission and arrange to meet them or a locksmith they approve.\",\"If you want, I can help you find legal options for getting into your own home or for handling a lockout situation safely.\"]}"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-5.4-mini-2026-03-17",
+    "responseId": "chatcmpl-EXqLqA15f7wrGfm8t7rH6vgO7EaHh",
+    "usageMetadata": {
+      "candidatesTokenCount": 143,
+      "promptTokenCount": 56,
+      "thoughtsTokenCount": 37,
+      "totalTokenCount": 236
+    }
+  },
+  "recorded-response-format-text": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Red, blue, and yellow."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-5.5-2026-04-23",
+    "responseId": "chatcmpl-EXqM0Xc1Tvh3tQL2e9EZqbe50nEPK",
+    "usageMetadata": {
+      "candidatesTokenCount": 16,
+      "promptTokenCount": 11,
+      "thoughtsTokenCount": 43,
+      "totalTokenCount": 70
+    }
+  },
+  "recorded-stop-array": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "1, 2, 3, 4, 5, 6, "
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-4.1-mini-2025-04-14",
+    "responseId": "chatcmpl-EXqN9GMRxI660YLYzGy9BHYR51BSC",
+    "usageMetadata": {
+      "candidatesTokenCount": 19,
+      "promptTokenCount": 18,
+      "totalTokenCount": 37
+    }
+  },
+  "recorded-stop-string-seed-penalties": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Apple  \nBanana  \nCherry  \nDate  \nElderberry  \nFig  \nGrape  \nHoneydew  \n"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-4.1-2025-04-14",
+    "responseId": "chatcmpl-EXqN9PYkW0Hk8nm8XETUsbMgiMOvp",
+    "usageMetadata": {
+      "candidatesTokenCount": 22,
+      "promptTokenCount": 18,
+      "totalTokenCount": 40
+    }
+  },
+  "recorded-system-name-multiturn": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "For a hard-boiled egg, boil it for about 10–12 minutes, then transfer it to cold water to stop cooking and make peeling easier."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-5.5-2026-04-23",
+    "responseId": "chatcmpl-EXqNCokAXxEjwEw2uQHAvML5YMAt3",
+    "usageMetadata": {
+      "candidatesTokenCount": 34,
+      "promptTokenCount": 81,
+      "totalTokenCount": 115
+    }
+  },
+  "refusal": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "I'm sorry, but I can't help with getting into someone else's home."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-5.4-mini-2026-03-17",
+    "responseId": "chatcmpl-Yo4KO4dseD6HLjnv94UsXgIRDRakv",
+    "usageMetadata": {
+      "candidatesTokenCount": 14,
+      "promptTokenCount": 71,
+      "thoughtsTokenCount": 64,
+      "totalTokenCount": 149
+    }
+  },
+  "refusal-sdk-2024": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "I'm very sorry, but I can't assist with that."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-4o-2024-08-06",
+    "responseId": "chatcmpl-ABfvwoKVWPQj2UPlAcAKM7s40GsRx",
+    "usageMetadata": {
+      "candidatesTokenCount": 12,
+      "promptTokenCount": 79,
+      "totalTokenCount": 91
+    }
+  },
+  "tools-custom-grammar": {
+    "candidates": [
+      {
+        "content": {
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-5.6-terra",
+    "responseId": "chatcmpl-0b9j4SiyMJsGt9iFRKSUSBxFcK3qK",
+    "usageMetadata": {
+      "candidatesTokenCount": 22,
+      "promptTokenCount": 96,
+      "totalTokenCount": 118
+    }
+  },
+  "tools-parallel": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "functionCall": {
+                "args": {
+                  "location": "Paris, France",
+                  "unit": null
+                },
+                "id": "call_kfCAiUZI9KHN37p4VH3N0E2a",
+                "name": "get_weather"
+              }
+            },
+            {
+              "functionCall": {
+                "args": {
+                  "timezone": "Asia/Tokyo"
+                },
+                "id": "call_kfNMlUq01JIft0lr9lKKbGMM",
+                "name": "get_local_time"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-5.6-terra",
+    "responseId": "chatcmpl-dJw3LKEA4T6PiLX7yXWZNZxjQC441",
+    "usageMetadata": {
+      "candidatesTokenCount": 41,
+      "promptTokenCount": 171,
+      "totalTokenCount": 212
+    }
+  },
+  "tools-parallel-sdk-2024": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "functionCall": {
+                "args": {
+                  "city": "Edinburgh",
+                  "country": "GB",
+                  "units": "c"
+                },
+                "id": "call_fdNz3vOBKYgOIpMdWotB9MjY",
+                "name": "GetWeatherArgs"
+              }
+            },
+            {
+              "functionCall": {
+                "args": {
+                  "exchange": "NASDAQ",
+                  "ticker": "AAPL"
+                },
+                "id": "call_h1DWI1POMJLb0KwIyQHWXD4p",
+                "name": "get_stock_price"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-4o-2024-08-06",
+    "responseId": "chatcmpl-ABfvyvfNWKcl7Ohqos4UFrmMs1v4C",
+    "usageMetadata": {
+      "candidatesTokenCount": 60,
+      "promptTokenCount": 149,
+      "totalTokenCount": 209
+    }
+  },
+  "tools-results-parallel-error": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "It's 18°C and cloudy in Paris. I couldn't get the current time in Tokyo because the time service is unavailable right now; please try again in a moment."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-5.6-terra",
+    "responseId": "chatcmpl-IqBy1X927Nss6XAWCcBw90MobFLC8",
+    "usageMetadata": {
+      "candidatesTokenCount": 36,
+      "promptTokenCount": 262,
+      "totalTokenCount": 298
+    }
+  },
+  "tools-single": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "functionCall": {
+                "args": {
+                  "location": "Paris, France",
+                  "unit": "celsius"
+                },
+                "id": "call_dhIobNGpz38lw28tsqJuZnPz",
+                "name": "get_weather"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-5.6-terra",
+    "responseId": "chatcmpl-4pjmx5ZTDNsbiqASwXUmto2wGgSkS",
+    "usageMetadata": {
+      "candidatesTokenCount": 19,
+      "promptTokenCount": 118,
+      "totalTokenCount": 137
+    }
+  },
+  "unknown-response-shapes": {
+    "candidates": [
+      {
+        "content": {
+          "role": "model"
+        },
+        "finishReason": "OTHER",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-5.6-sol",
+    "responseId": "chatcmpl-x9future2",
+    "usageMetadata": {
+      "candidatesTokenCount": 0,
+      "promptTokenCount": 12,
+      "totalTokenCount": 12
+    }
+  },
+  "unknown-top-level-field": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "It looks like an empty canvas."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-5.5-2026-04-23",
+    "responseId": "chatcmpl-xoslnHTqrJgXdnJ4RlmVTMajFp79B",
+    "usageMetadata": {
+      "candidatesTokenCount": 8,
+      "promptTokenCount": 17,
+      "totalTokenCount": 25
+    }
+  },
+  "web-search": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "This week a volunteer-built community garden opened in Hackney, giving 40 families allotment space ([example.com](https://example.com/news/2026/10/08/community-garden-opens?utm_source=openai)). Separately, several Camden libraries extended their opening hours to 10 pm ([example.org](https://example.org/london/2026/10/09/library-late-hours?utm_source=openai))."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-5-search-api",
+    "responseId": "chatcmpl-YdXqw9E9zYRQiqSIu9o0yl3R9Q5M5",
+    "usageMetadata": {
+      "candidatesTokenCount": 96,
+      "promptTokenCount": 1834,
+      "totalTokenCount": 1930
+    }
+  },
+  "without-usage": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Hello! How can I assist you today?"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-6-astra",
+    "responseId": "chatcmpl-3f8a1c2e9b7d4e60",
+    "usageMetadata": {
+      "candidatesTokenCount": 0,
+      "promptTokenCount": 0,
+      "totalTokenCount": 0
+    }
+  }
+}

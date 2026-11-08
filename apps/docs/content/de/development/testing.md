@@ -190,8 +190,10 @@ sequenceDiagram
 | `POST /v1/responses/input_tokens` | `openai_responses` | `responses.input_tokens.count` |
 | `POST /v1/embeddings` | `openai_embeddings` | `embeddings.create` |
 | `GET /v1/models`, `GET /v1/models/{id}` | `anthropic_messages` mit einem Header `anthropic-version`, sonst `openai_chat` | `models.list`, `models.retrieve` |
+| `POST /v1beta/models/{model}:{method}` | `gemini`, oder `gemini_embeddings` für `embedContent` und `batchEmbedContents` | `models.generate_content`, `models.generate_content_stream`, `models.count_tokens`, `models.embed_content` (`google-genai`) |
+| `GET /v1beta/models`, `GET /v1beta/models/{id}` | `gemini` | `models.list`, `models.get` (`google-genai`) |
 
-Jede Antwort- und Stream-[Fixture](kpp/fixtures.md) jedes Generierungsdialekts läuft durch jeden Generierungsendpunkt, gestreamt und nicht gestreamt. Die Tests vergleichen, was das SDK geparst hat, mit dem, was KPP dekodiert hat (`GET /_expected`), sodass eine Übersetzung fehlschlägt, die Text, Tool-Argumente oder lesbares Reasoning verliert. Die Tests prüfen außerdem, dass strukturierte Ausgabe gültiges JSON bleibt und dass jede Fehler-Fixture den `APIStatusError` des SDKs mit dem richtigen Status auslöst (`e2e/conformance/test_errors.py`).
+Jede Antwort- und Stream-[Fixture](kpp/fixtures.md) jedes Generierungsdialekts läuft durch jeden Generierungsendpunkt, gestreamt und nicht gestreamt. Die Tests vergleichen, was das SDK geparst hat, mit dem, was KPP dekodiert hat (`GET /_expected`), sodass eine Übersetzung fehlschlägt, die Text, Tool-Argumente oder lesbares Reasoning verliert. Die Tests prüfen außerdem, dass strukturierte Ausgabe gültiges JSON bleibt und dass jede Fehler-Fixture den Fehler des SDKs mit dem richtigen Status auslöst (`e2e/conformance/test_errors.py`): `APIStatusError` in den SDKs von OpenAI und Anthropic, `APIError` in `google-genai`.
 
 Modelllisten müssen so blättern und filtern, wie die SDKs es erwarten (`e2e/conformance/test_models.py`). `GET /_scenarios` listet jedes Szenario auf, das der Server anbietet.
 

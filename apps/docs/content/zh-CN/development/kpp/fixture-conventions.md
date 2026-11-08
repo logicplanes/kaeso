@@ -2,7 +2,7 @@
 title: Fixture 约定
 nav: Fixture 约定
 description: 每个构造的 fixture 都遵循的规则，以便编解码器测试能精确比较它。
-order: 10
+order: 11
 ---
 
 非实时录制的 fixture 遵循以下规则，以便测试能精确比较它们：

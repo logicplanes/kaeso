@@ -1,0 +1,36 @@
+{
+  "candidates": [
+    {
+      "content": {
+        "parts": [
+          {
+            "text": "Okay, here's my summary, tailored as if I, an expert, am processing this:\n\n**Weather Data Compilation and Presentation**\n\nAlright, the data's in. Both API calls for Paris and London have successfully returned weather information. Paris is reporting a pleasant 18 degrees Celsius with sunny conditions – perfect. London, on the other hand, is significantly cooler at 12 degrees Celsius and is cloudy.\n\nNow, the task is to synthesize this raw data into a clear and concise response for the user. I need to present the information in a way that's both easily understandable and allows for quick comparison between the two cities. The goal is clarity and efficiency in information delivery. I'll need to structure the response carefully, ensuring accuracy and avoiding any ambiguity.\n\n\n",
+            "thought": true
+          },
+          {
+            "text": "The current weather is:\n* **Paris:** 18°C and sunny\n* **London:** 12°C and cloudy",
+            "thoughtSignature": "ErsCCrgCAWkUfRMZWyAd/jfI0caK18GYMl66iK1jahN/RpfnAMlufpgio5vBKDR3ofve8HLYugDdwXuYVKcN/fErRUg43LulQRRA2NlNdjtXMX4sEqgqBQmWh1w6Tx8XigiLRuIBqmOmhC63QMnZCRZgvCgQRd8+uv/wnh8esQh5F/kaFVMcaDNO7zLNyt0GyWMqxzalyC/PPgF24+fcNF2AE499njAzkseyjQXFWDPl2D8MluSMoUJdhFkVMTrpS+THyoGwDli/1BlQR5nEPn0v13MESxCoyLTOAlgfwvkSyZ7UkUWRlLTHU/tn6/8OR2X3L2jC72rzBIm/cFlCG06ipyjj2Z6AL8wbkXgKsjdcTRoJp/L58v+Wlj5pybguOlHq7dmnc9sejS4jsy0N724PS6thkrEU3HyPW5A2"
+          }
+        ],
+        "role": "model"
+      },
+      "finishReason": "STOP",
+      "index": 0
+    }
+  ],
+  "usageMetadata": {
+    "promptTokenCount": 397,
+    "candidatesTokenCount": 29,
+    "totalTokenCount": 470,
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 397
+      }
+    ],
+    "thoughtsTokenCount": 44,
+    "serviceTier": "standard"
+  },
+  "modelVersion": "gemini-3.6-flash",
+  "responseId": "sOXvasbrCJym3boPksi7uAw"
+}

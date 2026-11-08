@@ -1,0 +1,10 @@
+{
+  "content": {
+    "parts": [
+      {
+        "text": "The quick brown fox jumps over the lazy dog."
+      }
+    ]
+  },
+  "outputDimensionality": 8
+}

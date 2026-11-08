@@ -223,6 +223,10 @@ Anthropic 的网页搜索工具走相反的方向：Claude Code 的 `WebSearch` 
 | `web_search_20250305` | `anthropic_messages` | `openai_chat` | 总是：Chat Completions 没有托管搜索 |
 | `web_search_20260209` | `anthropic_messages` | `openai_chat` | 总是：Chat Completions 没有托管搜索 |
 | `web_search_20260318` | `anthropic_messages` | `openai_chat` | 总是：Chat Completions 没有托管搜索 |
+| `web_search` | `openai_responses` | `gemini` | 总是：Gemini 的 `googleSearch` 工具不接受搜索的任何设置，并以 grounding 元数据而非搜索调用作答 |
+| `web_search_20250305` | `anthropic_messages` | `gemini` | 总是：同上 |
+| `web_search_20260209` | `anthropic_messages` | `gemini` | 总是：同上 |
+| `web_search_20260318` | `anthropic_messages` | `gemini` | 总是：同上 |
 
 要求使用被省略工具的 `tool_choice`（直接指定或在 `allowed_tools` 中）为 `Unsupported`。所有工具都被省略时，`tool_choice: "auto"` 或 `"none"` 以及 `parallel_tool_calls` 也随之省略，并在 `kaeso-left-out` 中注明，因为服务商在没有工具时会拒绝它们。`tool_choice: "required"` 或指定某个工具为 `Unsupported`，因为已没有可调用的工具。只有 OpenAI 的 Responses API 接受应用在没有工具的请求中发送的 `tool_choice`，例如 Codex 的辅助调用；对其他所有提供商，`auto` 和 `none` 同样省略，强制使用某个工具则为 `invalid_request`。
 
@@ -275,7 +279,7 @@ Claude 的 `tool_result` 和 Responses 的 `function_call_output` 可以包含�
 - **结果之后的用户消息**对每个这样的结果，以 `` The rest of the result of tool call `<id>`: `` 开头，后接该结果的图像和文件，保持原有顺序。应用在结果之后发送的文本跟在它们后面。
 - **响应头。** 每个结果都会在回复的 `kaeso-adapted` 头中以 `tool result` 加调用 ID 的形式列出，例如 `tool result call_abc`。
 
-Anthropic 和 Responses 模型会在工具结果中原样收到这些媒体。夹具：`anthropic_messages/requests/tool-result-multi-turn.json`、`openai_responses/requests/function-call-output-array.json`。
+Anthropic 和 Responses 模型会在工具结果中原样收到这些媒体，Gemini 模型则在 `functionResponse.parts` 中收到（[Gemini API](gemini.md)）。夹具：`anthropic_messages/requests/tool-result-multi-turn.json`、`openai_responses/requests/function-call-output-array.json`。
 
 ## 用量
 
@@ -287,6 +291,7 @@ Anthropic 和 Responses 模型会在工具结果中原样收到这些媒体。�
 
 - **发往 Anthropic，来自 Anthropic Messages：** 原样发送，由 API 判断它们的位置是否合适、哪些模型支持它们。Claude Code 在每个请求中都会发送这类消息。
 - **发往 Anthropic，来自其他方言：** 文本并入下一个用户轮次，排在其工具结果之后；后面没有用户轮次时，并入最后一个用户轮次。线程切换模型（`<model_switch>`）或模式（`<collaboration_mode>`）时，Codex 会发送这类消息。Anthropic 只接受紧跟在用户轮次之后、紧接在助手轮次之前的系统消息，而且不是每个模型都支持（[对话中间的系统消息](https://platform.claude.com/docs/en/build-with-claude/mid-conversation-system-messages)）。OpenAI 应用则可以把它们放在任何位置，通常放在它们引出的轮次之前。消息的字段与任何消息的字段经过同样的检查。开头的消息（位于任何用户或助手消息之前）并入系统提示词；其中大多数已由解码器作为系统提示词。若其后是最后一条助手消息（Anthropic 会把它当作预填充继续），文本则并入最后一个用户轮次。
+- **发往 Gemini，来自其他任何方言：** 与来自其他方言、发往 Anthropic 时相同，因为 Gemini 只在 `systemInstruction` 中接受系统文本。Anthropic Messages 自己的系统消息也会并入下一个用户轮次。
 - **发往 OpenAI：** 成为位置靠后的 `system` 或 `developer` 消息。发往 Chat Completions 时，位于助手消息的工具调用与其结果之间的此类消息（包括位于两个结果之间的）会移到最后一个结果之后，因为 Mistral 拒绝那里的系统消息（`Unexpected role 'tool' after role 'system'`）。对于配置设置了 `leading_system_only()` 的 Chat Completions 服务商（例如 Cerebras），这些消息的文本改为并入下一个用户轮次，与 Anthropic 相同，因为那里 Qwen 的聊天模板拒绝第一轮之后的系统消息（[服务商配置](openai-chat-providers.md#服务商配置)）。
 
 ## 保活消息
@@ -297,6 +302,7 @@ Anthropic 和 Responses 模型会在工具结果中原样收到这些媒体。�
 | --- | --- | --- |
 | OpenAI Chat Completions 和 Responses | SSE 注释 `: keepalive` 加一个空行 | 在 SSE 规范中，以冒号开头的行是注释，OpenAI SDK 的解析器会跳过它们 |
 | Anthropic Messages | `event: ping` 加 `data: {"type": "ping"}`，与 Anthropic 发送的完全一致 | Anthropic SDK 会跳过 ping 事件 |
+| Gemini API | 一个空行 | `google-genai` SDK 会跳过空行，但把其他所有不以 `data: ` 开头的行当作 JSON 读取，因此注释会让它出错；前面没有数据的空行不会派发事件 |
 
 保活帧以两种方式到达线路：
 
@@ -312,6 +318,7 @@ OpenAI Chat 编码器还会在响应一开始就发送它的角色 chunk，而�
 - 输出格式 `json_object` 在 Anthropic 中没有对应项，为 `Unsupported`。
 - Anthropic 的输出格式只有一个 schema：schema 的 `name` 会被丢弃，而 `description` 或 `strict: false` 为 `Unsupported`。
 - 从 Anthropic 发往 OpenAI 的 schema 会得到名称 `response`，因为 OpenAI 要求必须有名称。
+- Gemini 以 `responseJsonSchema` 接收 schema，以单独的 `responseMimeType: "application/json"` 接收 `json_object`；与 Anthropic 一样，schema 的 `name` 会被丢弃，`description` 或 `strict: false` 为 `Unsupported`。
 
 ## 采样参数
 
@@ -322,6 +329,7 @@ OpenAI Chat 编码器还会在响应一开始就发送它的角色 chunk，而�
 | Anthropic | `seed`、频率惩罚和存在惩罚，以及超出 Anthropic 取值范围 0 到 1 的 `temperature` |
 | OpenAI Chat Completions | `top_k`，以及超过四个的停止序列 |
 | OpenAI Responses | `top_k`、`seed`、各项惩罚和停止序列，Responses 没有这些参数；以及低于 16 个 Token 的输出上限，即 `CreateResponse` 的最小值 |
+| Gemini API | 超过五个停止序列（`GenerationConfig.stopSequences`） |
 
 数字在同一方言内保持原来的写法：只要值未改变，`temperature: 1` 回来时仍是 `1`，`1.0` 仍是 `1.0`。跨方言时使用目标自己的写法，因此来自 Chat 的 `temperature: 1` 到达 Anthropic 时是 `1.0`。
 
@@ -363,7 +371,7 @@ KPP 没有 `n`：`n` 大于 1 的 Chat 请求在解码时就会被拒绝，与�
 
 ## 文件
 
-服务商文件 ID（`file-…`）只能在该服务商的文件存储中使用。两种 OpenAI 生成方言共用同一个文件存储，因此 `cross::check_foreign` 接受目标的 `Origin`，即其方言和服务商。跨到另一服务商的文件 ID 为 `Unsupported`。
+服务商文件 ID（`file-…`）只能在该服务商的文件存储中使用。两种 OpenAI 生成方言共用同一个文件存储，两种 Gemini 方言也是如此，因此 `cross::check_foreign` 接受目标的 `Origin`，即其方言和服务商。跨到另一服务商的文件 ID 为 `Unsupported`。
 
 ## Anthropic 版本
 

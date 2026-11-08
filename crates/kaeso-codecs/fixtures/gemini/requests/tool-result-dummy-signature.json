@@ -1,0 +1,63 @@
+{
+  "contents": [
+    {
+      "role": "user",
+      "parts": [
+        {
+          "text": "What is the weather like in Paris right now?"
+        }
+      ]
+    },
+    {
+      "role": "model",
+      "parts": [
+        {
+          "functionCall": {
+            "id": "toolu_01A09q90qw90lq917835lq9",
+            "name": "get_weather",
+            "args": {
+              "location": "Paris"
+            }
+          },
+          "thoughtSignature": "skip_thought_signature_validator"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "parts": [
+        {
+          "functionResponse": {
+            "id": "toolu_01A09q90qw90lq917835lq9",
+            "name": "get_weather",
+            "response": {
+              "output": "18 degrees Celsius and sunny"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "tools": [
+    {
+      "functionDeclarations": [
+        {
+          "name": "get_weather",
+          "description": "Gets the current weather for a city.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "location": {
+                "type": "string",
+                "description": "The city name, such as Paris"
+              }
+            },
+            "required": [
+              "location"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

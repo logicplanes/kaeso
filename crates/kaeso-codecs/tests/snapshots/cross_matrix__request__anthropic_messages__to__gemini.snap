@@ -1,0 +1,2382 @@
+---
+source: crates/kaeso-codecs/tests/cross_matrix.rs
+expression: outcomes
+---
+{
+  "cache-prewarm": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "warmup"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 0
+      },
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "You are an expert software engineer with deep knowledge of distributed systems..."
+          }
+        ]
+      }
+    },
+    "path": "/v1beta/models/claude-opus-5-5:generateContent"
+  },
+  "claude-code-inline-tools": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "<system-reminder>\nToday's date is 2026-11-07.\n</system-reminder>\n"
+            },
+            {
+              "text": "Write the release notes into a doc, then check the S3 bucket with the AWS script."
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "parts": [
+            {
+              "functionCall": {
+                "args": {
+                  "file_path": "/home/user/project/CHANGELOG.md"
+                },
+                "id": "toolu_0127nwtMC8EpLtB9tqss7psa",
+                "name": "Read"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        {
+          "parts": [
+            {
+              "functionResponse": {
+                "id": "toolu_0127nwtMC8EpLtB9tqss7psa",
+                "name": "Read",
+                "response": {
+                  "output": "# Changelog\n\n## 1.4.0\n\n- Scaling page with the rc.7 benchmark."
+                }
+              }
+            },
+            {
+              "text": "Today's date is 2026-11-07."
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "parts": [
+            {
+              "functionCall": {
+                "args": {
+                  "batch": [],
+                  "container": {
+                    "create": {
+                      "name": "Release notes 1.4.0"
+                    },
+                    "kind": "project"
+                  }
+                },
+                "id": "toolu_01F5jfKeGzEgwTcm6JheL7SD",
+                "name": "mcp__claude_ai_Claude_Docs__batch"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        {
+          "parts": [
+            {
+              "functionResponse": {
+                "id": "toolu_01F5jfKeGzEgwTcm6JheL7SD",
+                "name": "mcp__claude_ai_Claude_Docs__batch",
+                "response": {
+                  "output": "Created doc \"Release notes 1.4.0\"."
+                }
+              }
+            },
+            {
+              "text": "Only you see that command's output — the user's terminal shows at most a few lines of it. If the user needs to read any of it, put it in your reply."
+            },
+            {
+              "text": "Only you see that command's output — the user's terminal shows at most a few lines of it. If the user needs to read any of it, put it in your reply."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 32000,
+        "thinkingConfig": {
+          "includeThoughts": true,
+          "thinkingLevel": "HIGH"
+        }
+      },
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "x-anthropic-billing-header: cc_version=2.1.319.600; cc_entrypoint=cli;"
+          },
+          {
+            "text": "You are Claude Code, Anthropic's official CLI for Claude."
+          },
+          {
+            "text": "\nYou are an agent working with the user toward their goals, using your own judgment along the way.\n"
+          }
+        ]
+      },
+      "tools": [
+        {
+          "functionDeclarations": [
+            {
+              "description": "Reads a file from the local filesystem.",
+              "name": "Read",
+              "parametersJsonSchema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "additionalProperties": false,
+                "properties": {
+                  "file_path": {
+                    "description": "The absolute path to the file to read",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "file_path"
+                ],
+                "type": "object"
+              }
+            },
+            {
+              "description": "Fetches full schema definitions for deferred tools so they can be called.",
+              "name": "ToolSearch",
+              "parametersJsonSchema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "additionalProperties": false,
+                "properties": {
+                  "max_results": {
+                    "default": 5,
+                    "description": "Maximum number of results to return (default: 5)",
+                    "type": "number"
+                  },
+                  "query": {
+                    "description": "Query to find deferred tools. Use \"select:<tool_name>\" for direct selection, or keywords to search.",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "query",
+                  "max_results"
+                ],
+                "type": "object"
+              }
+            },
+            {
+              "description": "The Artifact tool renders an HTML file as an Artifact: a web page hosted on claude.ai that is private by default. Claude",
+              "name": "Artifact",
+              "parametersJsonSchema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "additionalProperties": false,
+                "properties": {
+                  "file_path": {
+                    "description": "publish: the local page Kaeso publishes.",
+                    "type": "string"
+                  },
+                  "file_paths": {
+                    "description": "publish with `asset: true` only: several local files in place of `file_path`, up to 25 in one call.",
+                    "items": {
+                      "maxLength": 1024,
+                      "minLength": 1,
+                      "pattern": "^[^\\0]*$",
+                      "type": "string"
+                    },
+                    "maxItems": 25,
+                    "minItems": 1,
+                    "type": "array"
+                  }
+                },
+                "type": "object"
+              }
+            },
+            {
+              "description": "Execute Python code in sandboxed environment with AWS API access via `call_boto3`. No network except `call_boto3`.",
+              "name": "mcp__aws-mcp__aws___run_script",
+              "parametersJsonSchema": {
+                "additionalProperties": false,
+                "properties": {
+                  "code": {
+                    "description": "Python code to execute",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "code"
+                ],
+                "type": "object"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "path": "/v1beta/models/deepseek-flash:streamGenerateContent?alt=sse"
+  },
+  "claude-code-mid-conversation-system": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "<system-reminder>\nToday's date is 2026-10-12.\n</system-reminder>\n"
+            },
+            {
+              "text": "say hi"
+            },
+            {
+              "text": "# Environment\nYou have been invoked in the following environment: \n - Primary working directory: /tmp/work\n - Platform: darwin"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 128000,
+        "thinkingConfig": {
+          "thinkingLevel": "MEDIUM"
+        }
+      },
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "x-anthropic-billing-header: cc_version=2.1.296.cf4; cc_entrypoint=claude-desktop"
+          },
+          {
+            "text": "You are a Claude agent, built on Anthropic's Claude Agent SDK."
+          }
+        ]
+      },
+      "tools": [
+        {
+          "functionDeclarations": [
+            {
+              "description": "Reads a file from the local filesystem.",
+              "name": "Read",
+              "parametersJsonSchema": {
+                "additionalProperties": false,
+                "properties": {
+                  "file_path": {
+                    "description": "The absolute path to the file to read",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "file_path"
+                ],
+                "type": "object"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "path": "/v1beta/models/claude-opus-5-5:streamGenerateContent?alt=sse"
+  },
+  "claude-code-tool-search": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Load the WebFetch tool with ToolSearch, then fetch https://example.com with it and tell me the page's title in one line."
+            },
+            {
+              "text": "# Environment\nPrimary working directory: /home/user/project\n\nThe following deferred tools are now available via ToolSearch:\nWebFetch\nWebSearch"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 128000,
+        "thinkingConfig": {
+          "thinkingLevel": "MEDIUM"
+        }
+      },
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "x-anthropic-billing-header: cc_version=2.1.310.8c4; cc_entrypoint=sdk-cli;"
+          },
+          {
+            "text": "You are a Claude agent, built on Anthropic's Claude Agent SDK."
+          },
+          {
+            "text": "You are an agent working with the user toward their goals."
+          }
+        ]
+      },
+      "tools": [
+        {
+          "functionDeclarations": [
+            {
+              "description": "Reads a file from the local filesystem.",
+              "name": "Read",
+              "parametersJsonSchema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "additionalProperties": false,
+                "properties": {
+                  "file_path": {
+                    "description": "The absolute path to the file to read",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "file_path"
+                ],
+                "type": "object"
+              }
+            },
+            {
+              "description": "Fetches full schema definitions for deferred tools so they can be called.",
+              "name": "ToolSearch",
+              "parametersJsonSchema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "additionalProperties": false,
+                "properties": {
+                  "max_results": {
+                    "default": 5,
+                    "description": "Maximum number of results to return (default: 5)",
+                    "type": "number"
+                  },
+                  "query": {
+                    "description": "Query to find deferred tools. Use \"select:<tool_name>\" for direct selection, or keywords to search.",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "query",
+                  "max_results"
+                ],
+                "type": "object"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "path": "/v1beta/models/claude-sonnet-5-5:streamGenerateContent?alt=sse"
+  },
+  "claude-code-tool-search-loaded": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Load the WebFetch tool with ToolSearch, then fetch https://example.com with it and tell me the page's title in one line."
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "parts": [
+            {
+              "functionCall": {
+                "args": {
+                  "max_results": 1,
+                  "query": "select:WebFetch"
+                },
+                "id": "toolu_0199pumA6DiQ6ow67Ujnv8bf",
+                "name": "ToolSearch"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        {
+          "parts": [
+            {
+              "functionResponse": {
+                "id": "toolu_0199pumA6DiQ6ow67Ujnv8bf",
+                "name": "ToolSearch",
+                "response": {
+                  "output": "WebFetch"
+                }
+              }
+            },
+            {
+              "text": "# Environment\nPrimary working directory: /home/user/project\n\nThe following deferred tools are now available via ToolSearch:\nWebFetch\nWebSearch"
+            },
+            {
+              "text": "Tool loaded."
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "parts": [
+            {
+              "functionCall": {
+                "args": {
+                  "prompt": "What is the page's title?",
+                  "url": "https://example.com"
+                },
+                "id": "toolu_01BWErusvWjXNyWi91GMgoJn",
+                "name": "WebFetch"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        {
+          "parts": [
+            {
+              "functionResponse": {
+                "id": "toolu_01BWErusvWjXNyWi91GMgoJn",
+                "name": "WebFetch",
+                "response": {
+                  "output": "The page's title is \"Example Domain.\""
+                }
+              }
+            },
+            {
+              "text": "<total_tokens>14983472 tokens left</total_tokens>"
+            },
+            {
+              "text": "<total_tokens>14982930 tokens left</total_tokens>"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 128000,
+        "thinkingConfig": {
+          "thinkingLevel": "MEDIUM"
+        }
+      },
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "x-anthropic-billing-header: cc_version=2.1.310.8c4; cc_entrypoint=sdk-cli;"
+          },
+          {
+            "text": "You are a Claude agent, built on Anthropic's Claude Agent SDK."
+          },
+          {
+            "text": "You are an agent working with the user toward their goals."
+          }
+        ]
+      },
+      "tools": [
+        {
+          "functionDeclarations": [
+            {
+              "description": "Reads a file from the local filesystem.",
+              "name": "Read",
+              "parametersJsonSchema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "additionalProperties": false,
+                "properties": {
+                  "file_path": {
+                    "description": "The absolute path to the file to read",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "file_path"
+                ],
+                "type": "object"
+              }
+            },
+            {
+              "description": "Fetches full schema definitions for deferred tools so they can be called.",
+              "name": "ToolSearch",
+              "parametersJsonSchema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "additionalProperties": false,
+                "properties": {
+                  "max_results": {
+                    "default": 5,
+                    "description": "Maximum number of results to return (default: 5)",
+                    "type": "number"
+                  },
+                  "query": {
+                    "description": "Query to find deferred tools. Use \"select:<tool_name>\" for direct selection, or keywords to search.",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "query",
+                  "max_results"
+                ],
+                "type": "object"
+              }
+            },
+            {
+              "description": "Fetches a URL, converts the page to markdown, and answers `prompt` against it using a small fast model.",
+              "name": "WebFetch",
+              "parametersJsonSchema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "additionalProperties": false,
+                "properties": {
+                  "offset": {
+                    "description": "Character position in the page text to start reading from. Use it to read on through a page too long for one call, with the value the previous result gave.",
+                    "maximum": 9007199254740991,
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  "prompt": {
+                    "description": "The prompt to run on the fetched content",
+                    "type": "string"
+                  },
+                  "url": {
+                    "description": "The URL to fetch content from",
+                    "format": "uri",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "url",
+                  "prompt"
+                ],
+                "type": "object"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "path": "/v1beta/models/claude-sonnet-5-5:streamGenerateContent?alt=sse"
+  },
+  "claude-code-web-search": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Perform a web search for the query: Announcing Rust release stable latest version"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 128000,
+        "thinkingConfig": {
+          "thinkingLevel": "MEDIUM"
+        }
+      },
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "x-anthropic-billing-header: cc_version=2.1.310.b1c; cc_entrypoint=sdk-cli;"
+          },
+          {
+            "text": "You are a Claude agent, built on Anthropic's Claude Agent SDK."
+          },
+          {
+            "text": "You run a web search for another Claude model, which is waiting on the result and can search again. Search once, then reply with a brief summary of the results."
+          }
+        ]
+      }
+    },
+    "path": "/v1beta/models/claude-sonnet-5-5:streamGenerateContent?alt=sse"
+  },
+  "context-management-clear-tool-uses": {
+    "message": "`context_management` comes from an Anthropic Messages request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format. From Claude Code, set `CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1` to stop sending it.",
+    "param": null,
+    "unsupported": "context_management"
+  },
+  "document-custom-content": {
+    "message": "`document content block` comes from an Anthropic Messages request and has no equivalent in Gemini API. Remove the block, or send the request to a model served through its original format.",
+    "param": "messages[0].blocks[0]",
+    "unsupported": "document content block"
+  },
+  "document-file-and-text": {
+    "message": "`file id` comes from an Anthropic Messages request and has no equivalent in Gemini API. Provider file ids (here `file_011CPMxVD3fHLUhvTqtsQA5w`) only work with the provider that issued them. Send the file inline (base64 or URL) instead.",
+    "param": "messages[0].blocks[0]",
+    "unsupported": "file id"
+  },
+  "document-pdf-base64": {
+    "message": "`document title, context or citations` is not supported by Gemini API. Gemini takes a document's content only.",
+    "param": "messages[0].blocks[0]",
+    "unsupported": "document title, context or citations"
+  },
+  "document-pdf-url": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "fileData": {
+                "fileUri": "https://assets.anthropic.com/m/1cd9d098ac3e6467/original/Claude-3-Model-Card-October-Addendum.pdf",
+                "mimeType": "application/pdf"
+              }
+            },
+            {
+              "text": "What are the key findings in this document?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1024
+      }
+    },
+    "path": "/v1beta/models/claude-opus-5-5:generateContent"
+  },
+  "document-text-citations": {
+    "message": "`document title, context or citations` is not supported by Gemini API. Gemini takes a document's content only.",
+    "param": "messages[0].blocks[0]",
+    "unsupported": "document title, context or citations"
+  },
+  "explicit-nulls": {
+    "message": "`inference_geo` comes from an Anthropic Messages request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "inference_geo"
+  },
+  "image-base64": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "inlineData": {
+                "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+                "mimeType": "image/png"
+              }
+            },
+            {
+              "text": "Describe this image."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1024
+      }
+    },
+    "path": "/v1beta/models/claude-sonnet-4-6:generateContent"
+  },
+  "image-url-and-file": {
+    "message": "`file id` comes from an Anthropic Messages request and has no equivalent in Gemini API. Provider file ids (here `file_011CNha8iCJcU1wXNR6q4V8w`) only work with the provider that issued them. Send the file inline (base64 or URL) instead.",
+    "param": "messages[0].blocks[1]",
+    "unsupported": "file id"
+  },
+  "max-tokens": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Explain quantum physics"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 10
+      }
+    },
+    "path": "/v1beta/models/claude-opus-5-5:generateContent"
+  },
+  "metadata-service-tier": {
+    "message": "`service_tier` comes from an Anthropic Messages request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "service_tier"
+  },
+  "mid-conversation-system-tool-results": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Run the test suite and fix any failures."
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "parts": [
+            {
+              "functionCall": {
+                "args": {},
+                "id": "toolu_01",
+                "name": "run_tests"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        {
+          "parts": [
+            {
+              "functionResponse": {
+                "id": "toolu_01",
+                "name": "run_tests",
+                "response": {
+                  "output": "12 passed, 0 failed"
+                }
+              }
+            },
+            {
+              "text": "The user sent the following message while you were working: also update the changelog before you finish."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1024
+      },
+      "tools": [
+        {
+          "functionDeclarations": [
+            {
+              "description": "Run the project's test suite.",
+              "name": "run_tests",
+              "parametersJsonSchema": {
+                "properties": {},
+                "type": "object"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "path": "/v1beta/models/claude-opus-5-5:generateContent"
+  },
+  "multi-turn-array-content": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What's the capital of Australia?"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "parts": [
+            {
+              "text": "The capital of Australia is Canberra."
+            }
+          ],
+          "role": "model"
+        },
+        {
+          "parts": [
+            {
+              "text": "And of New Zealand?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 512
+      },
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "Answer in one short sentence."
+          }
+        ]
+      }
+    },
+    "path": "/v1beta/models/claude-haiku-4-5:generateContent"
+  },
+  "pause-turn-continuation": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Who won the 2026 Nobel Prize in Physics?"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "parts": [
+            {
+              "text": "Let me look up this year's laureates."
+            },
+            {
+              "text": "The first result is the prize overview page; I'll search for the announcement itself."
+            }
+          ],
+          "role": "model"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 4096
+      }
+    },
+    "path": "/v1beta/models/claude-opus-5-5:generateContent"
+  },
+  "providers/minimax/deep-thinking": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Which is bigger, 9.11 or 9.9?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 4096,
+        "thinkingConfig": {
+          "includeThoughts": true,
+          "thinkingLevel": "HIGH"
+        }
+      }
+    },
+    "path": "/v1beta/models/MiniMax-M3.1-Flash:generateContent"
+  },
+  "providers/minimax/image-url-adaptive": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What does this image show?"
+            },
+            {
+              "fileData": {
+                "fileUri": "https://filecdn.minimax.chat/public/fe9d04da-f60e-444d-a2e0-18ae743add33.jpeg",
+                "mimeType": "image/jpeg"
+              }
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 4096,
+        "thinkingConfig": {
+          "includeThoughts": true,
+          "thinkingLevel": "HIGH"
+        }
+      }
+    },
+    "path": "/v1beta/models/MiniMax-M3.1-Flash:generateContent"
+  },
+  "providers/minimax/image-url-stream": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What does this image show?"
+            },
+            {
+              "fileData": {
+                "fileUri": "https://filecdn.minimax.chat/public/fe9d04da-f60e-444d-a2e0-18ae743add33.jpeg",
+                "mimeType": "image/jpeg"
+              }
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 4096,
+        "thinkingConfig": {
+          "includeThoughts": true,
+          "thinkingLevel": "HIGH"
+        }
+      }
+    },
+    "path": "/v1beta/models/MiniMax-M3.1-Flash:streamGenerateContent?alt=sse"
+  },
+  "providers/minimax/invalid-api-key": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Say hi."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 16
+      }
+    },
+    "path": "/v1beta/models/MiniMax-M3:generateContent"
+  },
+  "providers/minimax/tool-use-auto": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "How's the weather in San Francisco?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 4096,
+        "thinkingConfig": {
+          "thinkingLevel": "HIGH"
+        }
+      },
+      "toolConfig": {
+        "functionCallingConfig": {
+          "mode": "AUTO"
+        }
+      },
+      "tools": [
+        {
+          "functionDeclarations": [
+            {
+              "description": "Get the current weather for a given location.",
+              "name": "get_weather",
+              "parametersJsonSchema": {
+                "properties": {
+                  "location": {
+                    "description": "The city and state/country, e.g. San Francisco, US",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "location"
+                ],
+                "type": "object"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "path": "/v1beta/models/MiniMax-M3.1-Flash:generateContent"
+  },
+  "providers/minimax/video-url": {
+    "message": "`video content block` comes from an Anthropic Messages request and has no equivalent in Gemini API. Remove the block, or send the request to a model served through its original format.",
+    "param": "messages[0].blocks[1]",
+    "unsupported": "video content block"
+  },
+  "providers/vercel/rate-limited": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What's the weather in Paris right now? Use Celsius."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1024
+      },
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "You are a concise travel assistant. Use the tools for live data."
+          }
+        ]
+      },
+      "toolConfig": {
+        "functionCallingConfig": {
+          "mode": "AUTO"
+        }
+      },
+      "tools": [
+        {
+          "functionDeclarations": [
+            {
+              "description": "Get the current weather for a location.",
+              "name": "get_weather",
+              "parametersJsonSchema": {
+                "properties": {
+                  "location": {
+                    "description": "City and country, e.g. Paris, France",
+                    "type": "string"
+                  },
+                  "unit": {
+                    "enum": [
+                      "celsius",
+                      "fahrenheit"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "location",
+                  "unit"
+                ],
+                "type": "object"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "path": "/v1beta/models/nvidia%2Fnemotron-3.5-lightning-free:generateContent"
+  },
+  "providers/vercel/restricted-model": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Say hi."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 16
+      }
+    },
+    "path": "/v1beta/models/anthropic%2Fclaude-haiku-4.5:generateContent"
+  },
+  "providers/vercel/text": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What is the capital of France?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 64
+      },
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "You are a helpful assistant. Answer in one short sentence."
+          }
+        ]
+      }
+    },
+    "path": "/v1beta/models/mistral%2Fmistral-nemo:generateContent"
+  },
+  "providers/vercel/text-stream": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Count from one to five in words, separated by commas."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 64
+      }
+    },
+    "path": "/v1beta/models/mistral%2Fmistral-nemo:streamGenerateContent?alt=sse"
+  },
+  "providers/vercel/thinking": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Is 91 a prime number? Answer yes or no with one short reason."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1024
+      }
+    },
+    "path": "/v1beta/models/nvidia%2Fnemotron-3.5-lightning-free:generateContent"
+  },
+  "providers/vercel/thinking-stream": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Is 91 a prime number? Answer yes or no with one short reason."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1024
+      }
+    },
+    "path": "/v1beta/models/nvidia%2Fnemotron-3.5-lightning-free:streamGenerateContent?alt=sse"
+  },
+  "providers/vercel/tools": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What's the weather in Paris right now? Use Celsius."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1024
+      },
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "You are a concise travel assistant. Use the tools for live data."
+          }
+        ]
+      },
+      "toolConfig": {
+        "functionCallingConfig": {
+          "mode": "AUTO"
+        }
+      },
+      "tools": [
+        {
+          "functionDeclarations": [
+            {
+              "description": "Get the current weather for a location.",
+              "name": "get_weather",
+              "parametersJsonSchema": {
+                "properties": {
+                  "location": {
+                    "description": "City and country, e.g. Paris, France",
+                    "type": "string"
+                  },
+                  "unit": {
+                    "enum": [
+                      "celsius",
+                      "fahrenheit"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "location",
+                  "unit"
+                ],
+                "type": "object"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "path": "/v1beta/models/nvidia%2Fnemotron-3.5-lightning-free:generateContent"
+  },
+  "providers/vercel/unknown-model": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Say hi."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 16
+      }
+    },
+    "path": "/v1beta/models/kaeso-example%2Fno-such-model:generateContent"
+  },
+  "providers/zai/invalid-api-key": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Say hi."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 16
+      }
+    },
+    "path": "/v1beta/models/glm-4.6:generateContent"
+  },
+  "refusal": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Write a working exploit for an unpatched remote code execution bug in a popular VPN appliance."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1024
+      }
+    },
+    "path": "/v1beta/models/claude-fable-5:generateContent"
+  },
+  "sampling-stop-sequences": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Count from one to five in words, then write END."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1024,
+        "stopSequences": [
+          "END",
+          "STOP"
+        ],
+        "temperature": 0.2,
+        "topK": 40
+      }
+    },
+    "path": "/v1beta/models/claude-sonnet-4-6:generateContent"
+  },
+  "sampling-top-p": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Suggest a name for a grey cat."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 256,
+        "topP": 0.9
+      }
+    },
+    "path": "/v1beta/models/claude-haiku-4-5:generateContent"
+  },
+  "service-tier-standard-only": {
+    "message": "`service_tier` comes from an Anthropic Messages request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "service_tier"
+  },
+  "structured-output-json-schema": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Extract the key information from this email: John Smith (john@example.com) is interested in our Enterprise plan and wants to schedule a demo for next Tuesday at 2pm."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1024,
+        "responseJsonSchema": {
+          "additionalProperties": false,
+          "properties": {
+            "demo_requested": {
+              "type": "boolean"
+            },
+            "email": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "plan_interest": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "name",
+            "email",
+            "plan_interest",
+            "demo_requested"
+          ],
+          "type": "object"
+        },
+        "responseMimeType": "application/json"
+      }
+    },
+    "path": "/v1beta/models/claude-opus-5-5:generateContent"
+  },
+  "system-blocks-cache-ttl": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "<contract>\n1. Term. This agreement runs for 24 months from the Effective Date.\n2. Termination. Either party may terminate with 90 days written notice.\n</contract>"
+            },
+            {
+              "text": "How much notice is needed to terminate?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1024
+      },
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "You are an AI assistant tasked with analyzing legal contracts. Answer only from the contract text the user provides, cite clause numbers, and say clearly when the contract is silent on a question."
+          },
+          {
+            "text": "Today's date is 2026-10-11."
+          }
+        ]
+      },
+      "tools": [
+        {
+          "functionDeclarations": [
+            {
+              "description": "Get the current weather in a given location",
+              "name": "get_weather",
+              "parametersJsonSchema": {
+                "properties": {
+                  "location": {
+                    "description": "The city and state, e.g. San Francisco, CA",
+                    "type": "string"
+                  },
+                  "unit": {
+                    "description": "The unit of temperature, either 'celsius' or 'fahrenheit'",
+                    "enum": [
+                      "celsius",
+                      "fahrenheit"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "location"
+                ],
+                "type": "object"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "path": "/v1beta/models/claude-opus-5-5:generateContent"
+  },
+  "system-string-multi-turn": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "My name is Alex. I work on machine learning."
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "parts": [
+            {
+              "text": "Nice to meet you, Alex! How can I help with your ML work today?"
+            }
+          ],
+          "role": "model"
+        },
+        {
+          "parts": [
+            {
+              "text": "What did I say I work on?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1024
+      },
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "You are a helpful assistant that remembers our conversation."
+          }
+        ]
+      }
+    },
+    "path": "/v1beta/models/claude-sonnet-4-6:generateContent"
+  },
+  "task-budget": {
+    "message": "`output_config.task_budget` comes from an Anthropic Messages request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format. From Claude Code, set `CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1` to stop sending it.",
+    "param": null,
+    "unsupported": "output_config.task_budget"
+  },
+  "text-simple": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Hello, Claude"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1024
+      }
+    },
+    "path": "/v1beta/models/claude-opus-5-5:generateContent"
+  },
+  "thinking-adaptive-effort": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What is the greatest common divisor of 1071 and 462?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 16000,
+        "thinkingConfig": {
+          "includeThoughts": true,
+          "thinkingLevel": "HIGH"
+        }
+      }
+    },
+    "path": "/v1beta/models/claude-opus-5-5:generateContent"
+  },
+  "thinking-adaptive-interleaved-tools": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Is it a good time to visit the Kyoto gardens right now?"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "parts": [
+            {
+              "functionCall": {
+                "args": {
+                  "location": "Kyoto, Japan",
+                  "unit": "celsius"
+                },
+                "id": "toolu_01tWyTh1o2A8GeyHZLg1UQp9",
+                "name": "get_weather"
+              },
+              "thoughtSignature": "skip_thought_signature_validator"
+            }
+          ],
+          "role": "model"
+        },
+        {
+          "parts": [
+            {
+              "functionResponse": {
+                "id": "toolu_01tWyTh1o2A8GeyHZLg1UQp9",
+                "name": "get_weather",
+                "response": {
+                  "output": "16°C, overcast"
+                }
+              }
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 16000,
+        "thinkingConfig": {
+          "includeThoughts": true,
+          "thinkingBudget": -1
+        }
+      },
+      "tools": [
+        {
+          "functionDeclarations": [
+            {
+              "description": "Get the current weather in a given location",
+              "name": "get_weather",
+              "parametersJsonSchema": {
+                "properties": {
+                  "location": {
+                    "description": "The city and state, e.g. San Francisco, CA",
+                    "type": "string"
+                  },
+                  "unit": {
+                    "description": "The unit of temperature, either 'celsius' or 'fahrenheit'",
+                    "enum": [
+                      "celsius",
+                      "fahrenheit"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "location"
+                ],
+                "type": "object"
+              }
+            },
+            {
+              "description": "Get the current time in a given time zone",
+              "name": "get_time",
+              "parametersJsonSchema": {
+                "properties": {
+                  "timezone": {
+                    "description": "The IANA time zone name, e.g. America/Los_Angeles",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "timezone"
+                ],
+                "type": "object"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "path": "/v1beta/models/claude-opus-5-5:generateContent"
+  },
+  "thinking-between-tools": {
+    "message": "thinking mode `between_tools` is not supported by Gemini API. Gemini turns thinking on with a level or a budget, and off with a budget of 0.",
+    "param": "thinking",
+    "unsupported": "thinking mode `between_tools`"
+  },
+  "thinking-disabled": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Summarize this article in one sentence: The city council voted 7-2 on Tuesday to extend the downtown bike lane network by 12 miles over the next three years."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 4096,
+        "thinkingConfig": {
+          "thinkingBudget": 0
+        }
+      }
+    },
+    "path": "/v1beta/models/claude-sonnet-5:generateContent"
+  },
+  "thinking-display-omitted": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What is 27 * 453?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 8000,
+        "thinkingConfig": {
+          "thinkingBudget": -1
+        }
+      }
+    },
+    "path": "/v1beta/models/claude-opus-5-5:streamGenerateContent?alt=sse"
+  },
+  "thinking-enabled-budget": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Are there an infinite number of prime numbers such that n mod 4 == 3?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 16000,
+        "thinkingConfig": {
+          "includeThoughts": true,
+          "thinkingBudget": 10000
+        }
+      }
+    },
+    "path": "/v1beta/models/claude-sonnet-4-6:generateContent"
+  },
+  "thinking-interleaved-tools": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Is it a good moment for a picnic in Paris right now?"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "parts": [
+            {
+              "functionCall": {
+                "args": {
+                  "location": "Paris, France",
+                  "unit": "celsius"
+                },
+                "id": "toolu_0185pxKQFKCEanHJc7r4Ecyk",
+                "name": "get_weather"
+              },
+              "thoughtSignature": "skip_thought_signature_validator"
+            }
+          ],
+          "role": "model"
+        },
+        {
+          "parts": [
+            {
+              "functionResponse": {
+                "id": "toolu_0185pxKQFKCEanHJc7r4Ecyk",
+                "name": "get_weather",
+                "response": {
+                  "output": "21°C, sunny"
+                }
+              }
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 16000,
+        "thinkingConfig": {
+          "includeThoughts": true,
+          "thinkingBudget": 20000
+        }
+      },
+      "tools": [
+        {
+          "functionDeclarations": [
+            {
+              "description": "Get the current weather in a given location",
+              "name": "get_weather",
+              "parametersJsonSchema": {
+                "properties": {
+                  "location": {
+                    "description": "The city and state, e.g. San Francisco, CA",
+                    "type": "string"
+                  },
+                  "unit": {
+                    "description": "The unit of temperature, either 'celsius' or 'fahrenheit'",
+                    "enum": [
+                      "celsius",
+                      "fahrenheit"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "location"
+                ],
+                "type": "object"
+              }
+            },
+            {
+              "description": "Get the current time in a given time zone",
+              "name": "get_time",
+              "parametersJsonSchema": {
+                "properties": {
+                  "timezone": {
+                    "description": "The IANA time zone name, e.g. America/Los_Angeles",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "timezone"
+                ],
+                "type": "object"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "path": "/v1beta/models/claude-sonnet-4-6:generateContent"
+  },
+  "thinking-redacted": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Is it a good day to see the northern lights in Reykjavik?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 16000,
+        "thinkingConfig": {
+          "includeThoughts": true,
+          "thinkingBudget": 8000
+        }
+      },
+      "tools": [
+        {
+          "functionDeclarations": [
+            {
+              "description": "Get the current weather in a given location",
+              "name": "get_weather",
+              "parametersJsonSchema": {
+                "properties": {
+                  "location": {
+                    "description": "The city and state, e.g. San Francisco, CA",
+                    "type": "string"
+                  },
+                  "unit": {
+                    "description": "The unit of temperature, either 'celsius' or 'fahrenheit'",
+                    "enum": [
+                      "celsius",
+                      "fahrenheit"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "location"
+                ],
+                "type": "object"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "path": "/v1beta/models/claude-sonnet-4-6:generateContent"
+  },
+  "thinking-redacted-replay": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Is it a good day to see the northern lights in Reykjavik?"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "parts": [
+            {
+              "functionCall": {
+                "args": {
+                  "location": "Reykjavik, Iceland",
+                  "unit": "celsius"
+                },
+                "id": "toolu_01fgLiquLjMGZKmcjSKWM1vg",
+                "name": "get_weather"
+              },
+              "thoughtSignature": "skip_thought_signature_validator"
+            }
+          ],
+          "role": "model"
+        },
+        {
+          "parts": [
+            {
+              "functionResponse": {
+                "id": "toolu_01fgLiquLjMGZKmcjSKWM1vg",
+                "name": "get_weather",
+                "response": {
+                  "output": "-2°C, clear skies, wind 8 km/h"
+                }
+              }
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 16000,
+        "thinkingConfig": {
+          "includeThoughts": true,
+          "thinkingBudget": 8000
+        }
+      },
+      "tools": [
+        {
+          "functionDeclarations": [
+            {
+              "description": "Get the current weather in a given location",
+              "name": "get_weather",
+              "parametersJsonSchema": {
+                "properties": {
+                  "location": {
+                    "description": "The city and state, e.g. San Francisco, CA",
+                    "type": "string"
+                  },
+                  "unit": {
+                    "description": "The unit of temperature, either 'celsius' or 'fahrenheit'",
+                    "enum": [
+                      "celsius",
+                      "fahrenheit"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "location"
+                ],
+                "type": "object"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "path": "/v1beta/models/claude-sonnet-4-6:generateContent"
+  },
+  "tool-choice-any-no-parallel": {
+    "message": "`parallel_tool_calls: false` is not supported by Gemini API. Gemini can't be told to call one function at a time; remove `parallel_tool_calls`.",
+    "param": "parallel_tool_calls",
+    "unsupported": "`parallel_tool_calls: false`"
+  },
+  "tool-choice-auto-no-parallel": {
+    "message": "`parallel_tool_calls: false` is not supported by Gemini API. Gemini can't be told to call one function at a time; remove `parallel_tool_calls`.",
+    "param": "parallel_tool_calls",
+    "unsupported": "`parallel_tool_calls: false`"
+  },
+  "tool-choice-none": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Without calling any tools: what is a typical October temperature in Oslo?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1024
+      },
+      "toolConfig": {
+        "functionCallingConfig": {
+          "mode": "NONE"
+        }
+      },
+      "tools": [
+        {
+          "functionDeclarations": [
+            {
+              "description": "Get the current weather in a given location",
+              "name": "get_weather",
+              "parametersJsonSchema": {
+                "properties": {
+                  "location": {
+                    "description": "The city and state, e.g. San Francisco, CA",
+                    "type": "string"
+                  },
+                  "unit": {
+                    "description": "The unit of temperature, either 'celsius' or 'fahrenheit'",
+                    "enum": [
+                      "celsius",
+                      "fahrenheit"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "location"
+                ],
+                "type": "object"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "path": "/v1beta/models/claude-sonnet-4-6:generateContent"
+  },
+  "tool-choice-tool": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "I'm flying to Lisbon tomorrow."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1024
+      },
+      "toolConfig": {
+        "functionCallingConfig": {
+          "allowedFunctionNames": [
+            "get_weather"
+          ],
+          "mode": "ANY"
+        }
+      },
+      "tools": [
+        {
+          "functionDeclarations": [
+            {
+              "description": "Get the current weather in a given location",
+              "name": "get_weather",
+              "parametersJsonSchema": {
+                "properties": {
+                  "location": {
+                    "description": "The city and state, e.g. San Francisco, CA",
+                    "type": "string"
+                  },
+                  "unit": {
+                    "description": "The unit of temperature, either 'celsius' or 'fahrenheit'",
+                    "enum": [
+                      "celsius",
+                      "fahrenheit"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "location"
+                ],
+                "type": "object"
+              }
+            },
+            {
+              "description": "Get the current time in a given time zone",
+              "name": "get_time",
+              "parametersJsonSchema": {
+                "properties": {
+                  "timezone": {
+                    "description": "The IANA time zone name, e.g. America/Los_Angeles",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "timezone"
+                ],
+                "type": "object"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "path": "/v1beta/models/claude-sonnet-4-6:generateContent"
+  },
+  "tool-result-multi-turn": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What's the weather and the local time in Paris and in Tokyo?"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "parts": [
+            {
+              "text": "I'll look up the weather and local time for both cities."
+            },
+            {
+              "functionCall": {
+                "args": {
+                  "location": "Paris, France",
+                  "unit": "celsius"
+                },
+                "id": "toolu_01Ej1YyQ2oLMuN4cPxedXTyn",
+                "name": "get_weather"
+              }
+            },
+            {
+              "functionCall": {
+                "args": {
+                  "location": "Tokyo, Japan",
+                  "unit": "celsius"
+                },
+                "id": "toolu_01i9erRrqtgtQAjVyyvcAdnH",
+                "name": "get_weather"
+              }
+            },
+            {
+              "functionCall": {
+                "args": {
+                  "timezone": "Europe/Paris"
+                },
+                "id": "toolu_01krb5XZirSQZiYWNMB6VT9o",
+                "name": "get_time"
+              }
+            },
+            {
+              "functionCall": {
+                "args": {
+                  "timezone": "Asia/Tokyo"
+                },
+                "id": "toolu_01tbdagxGypaxguXw1B6gfCo",
+                "name": "get_time"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        {
+          "parts": [
+            {
+              "functionResponse": {
+                "id": "toolu_01Ej1YyQ2oLMuN4cPxedXTyn",
+                "name": "get_weather",
+                "response": {
+                  "output": "18°C, light rain"
+                }
+              }
+            },
+            {
+              "functionResponse": {
+                "id": "toolu_01i9erRrqtgtQAjVyyvcAdnH",
+                "name": "get_weather",
+                "parts": [
+                  {
+                    "inlineData": {
+                      "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+                      "mimeType": "image/png"
+                    }
+                  }
+                ],
+                "response": {
+                  "output": "24°C, clear skies. Radar image attached."
+                }
+              }
+            },
+            {
+              "functionResponse": {
+                "id": "toolu_01krb5XZirSQZiYWNMB6VT9o",
+                "name": "get_time",
+                "response": {
+                  "error": "ConnectionError: the time service is not available (HTTP 503)"
+                }
+              }
+            },
+            {
+              "functionResponse": {
+                "id": "toolu_01tbdagxGypaxguXw1B6gfCo",
+                "name": "get_time",
+                "response": {
+                  "output": "2026-10-11T22:14:05+09:00"
+                }
+              }
+            },
+            {
+              "text": "Keep the answer short."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1024
+      },
+      "tools": [
+        {
+          "functionDeclarations": [
+            {
+              "description": "Get the current weather in a given location",
+              "name": "get_weather",
+              "parametersJsonSchema": {
+                "properties": {
+                  "location": {
+                    "description": "The city and state, e.g. San Francisco, CA",
+                    "type": "string"
+                  },
+                  "unit": {
+                    "description": "The unit of temperature, either 'celsius' or 'fahrenheit'",
+                    "enum": [
+                      "celsius",
+                      "fahrenheit"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "location"
+                ],
+                "type": "object"
+              }
+            },
+            {
+              "description": "Get the current time in a given time zone",
+              "name": "get_time",
+              "parametersJsonSchema": {
+                "properties": {
+                  "timezone": {
+                    "description": "The IANA time zone name, e.g. America/Los_Angeles",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "timezone"
+                ],
+                "type": "object"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "path": "/v1beta/models/claude-sonnet-4-6:generateContent"
+  },
+  "tool-search-deferred-tools": {
+    "message": "`advisor_20260301 tool` comes from an Anthropic Messages request and has no equivalent in Gemini API. Input tag 'advisor_20260301' found using 'type' is not a function tool, and only function tools can be sent to another API format. Remove the tool, or send the request to a model served through its original format.",
+    "param": "tools[2]",
+    "unsupported": "advisor_20260301 tool"
+  },
+  "tools-parallel": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What's the weather and the local time in Paris and in Tokyo?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1024
+      },
+      "tools": [
+        {
+          "functionDeclarations": [
+            {
+              "description": "Get the current weather in a given location",
+              "name": "get_weather",
+              "parametersJsonSchema": {
+                "properties": {
+                  "location": {
+                    "description": "The city and state, e.g. San Francisco, CA",
+                    "type": "string"
+                  },
+                  "unit": {
+                    "description": "The unit of temperature, either 'celsius' or 'fahrenheit'",
+                    "enum": [
+                      "celsius",
+                      "fahrenheit"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "location"
+                ],
+                "type": "object"
+              }
+            },
+            {
+              "description": "Get the current time in a given time zone",
+              "name": "get_time",
+              "parametersJsonSchema": {
+                "properties": {
+                  "timezone": {
+                    "description": "The IANA time zone name, e.g. America/Los_Angeles",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "timezone"
+                ],
+                "type": "object"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "path": "/v1beta/models/claude-sonnet-4-6:generateContent"
+  },
+  "tools-single": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What is the weather like in San Francisco?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1024
+      },
+      "toolConfig": {
+        "functionCallingConfig": {
+          "mode": "AUTO"
+        }
+      },
+      "tools": [
+        {
+          "functionDeclarations": [
+            {
+              "description": "Get the current weather in a given location",
+              "name": "get_weather",
+              "parametersJsonSchema": {
+                "properties": {
+                  "location": {
+                    "description": "The city and state, e.g. San Francisco, CA",
+                    "type": "string"
+                  },
+                  "unit": {
+                    "description": "The unit of temperature, either 'celsius' or 'fahrenheit'",
+                    "enum": [
+                      "celsius",
+                      "fahrenheit"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "location"
+                ],
+                "type": "object"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "path": "/v1beta/models/claude-sonnet-4-6:generateContent"
+  },
+  "unknown-choice-and-format": {
+    "message": "`output_config.format` comes from an Anthropic Messages request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "output_config.format"
+  },
+  "unknown-fields": {
+    "message": "`x_future_field` comes from an Anthropic Messages request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "x_future_field"
+  },
+  "unknown-tool-choice-without-name": {
+    "message": "tool_choice `tool` comes from an Anthropic Messages request and has no equivalent in Gemini API. Use `auto`, `none`, `required` or a single named tool instead.",
+    "param": "tool_choice",
+    "unsupported": "tool_choice `tool`"
+  },
+  "web-search-result-replay": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "When was Claude Shannon born?"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "parts": [
+            {
+              "text": "I'll search for when Claude Shannon was born."
+            },
+            {
+              "text": "Based on the search results, "
+            },
+            {
+              "text": "Claude Shannon was born on April 30, 1916, in Petoskey, Michigan"
+            },
+            {
+              "text": "."
+            }
+          ],
+          "role": "model"
+        },
+        {
+          "parts": [
+            {
+              "text": "And where did he study?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1024
+      }
+    },
+    "path": "/v1beta/models/claude-opus-5-5:generateContent"
+  },
+  "web-search-server-tool": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "When was Claude Shannon born?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1024
+      }
+    },
+    "path": "/v1beta/models/claude-opus-5-5:generateContent"
+  }
+}

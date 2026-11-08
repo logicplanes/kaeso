@@ -44,6 +44,20 @@ doc = false
 bench = false
 
 [[bin]]
+name = "decode_gemini"
+path = "fuzz_targets/decode_gemini.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "decode_gemini_embeddings"
+path = "fuzz_targets/decode_gemini_embeddings.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
 name = "decode_openai_embeddings"
 path = "fuzz_targets/decode_openai_embeddings.rs"
 test = false

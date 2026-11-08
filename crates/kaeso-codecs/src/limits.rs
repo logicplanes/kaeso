@@ -67,8 +67,12 @@ enum Node {
     Content(Option<Scope>),
     Block(Option<Scope>),
     Tools,
+    ToolSets,
+    ToolSet,
     Inputs,
     Input,
+    EmbedRequests,
+    EmbedRequest,
     Token,
 }
 
@@ -173,8 +177,20 @@ impl<'de> serde::Deserialize<'de> for Key<'de> {
 }
 
 fn child(node: Node, key: &str) -> Option<Node> {
-    use DialectId::{AnthropicMessages, OpenAiChat, OpenAiEmbeddings, OpenAiResponses};
+    use DialectId::{
+        AnthropicMessages, Gemini, GeminiEmbeddings, OpenAiChat, OpenAiEmbeddings, OpenAiResponses,
+    };
     Some(match (node, key) {
+        (Node::Top(d @ Gemini), "contents") => Node::Items(d),
+        (Node::Top(d @ Gemini), "systemInstruction") => Node::Item(d),
+        (Node::Top(d @ Gemini), "generateContentRequest") => Node::Top(d),
+        (Node::Top(Gemini), "tools") => Node::ToolSets,
+        (Node::ToolSet, "functionDeclarations") => Node::Tools,
+        (Node::Item(Gemini | GeminiEmbeddings), "parts") => Node::Content(None),
+        (Node::Top(GeminiEmbeddings), "requests") => Node::EmbedRequests,
+        (Node::Top(GeminiEmbeddings) | Node::EmbedRequest, "content") => {
+            Node::Item(GeminiEmbeddings)
+        }
         (Node::Top(d @ OpenAiResponses), "input") => Node::Items(d),
         (Node::Top(OpenAiEmbeddings), "input") => Node::Inputs,
         (Node::Top(d @ (AnthropicMessages | OpenAiChat)), "messages") => Node::Items(d),
@@ -280,11 +296,18 @@ impl<'de> Visitor<'de> for Walk<'_> {
             Node::Content(scope) => (Some(Over::Blocks), Some(Node::Block(scope))),
             Node::Tools => (Some(Over::Tools), None),
             Node::Inputs => (None, Some(Node::Input)),
+            Node::ToolSets => (None, Some(Node::ToolSet)),
+            Node::EmbedRequests => (Some(Over::Inputs), Some(Node::EmbedRequest)),
             Node::Input => {
                 self.tally.count(Over::Inputs)?;
                 (None, Some(Node::Token))
             }
-            Node::Top(_) | Node::Item(_) | Node::Block(_) | Node::Token => (None, None),
+            Node::Top(_)
+            | Node::Item(_)
+            | Node::Block(_)
+            | Node::Token
+            | Node::ToolSet
+            | Node::EmbedRequest => (None, None),
         };
         loop {
             if matches!(self.node, Node::Items(_)) {
@@ -322,6 +345,12 @@ impl<'de> Visitor<'de> for Walk<'_> {
                     self.tally.second_type = true;
                     return Err(serde::de::Error::custom("a repeated type"));
                 }
+            }
+            if self.node == Node::ToolSet && key != "functionDeclarations" {
+                self.tally.count(Over::Tools)?;
+            }
+            if self.node == Node::Top(DialectId::GeminiEmbeddings) && key == "content" {
+                self.tally.count(Over::Inputs)?;
             }
             match child(self.node, &key) {
                 Some(_) if typed_object && key == "content" && self.nests.is_some() => {
@@ -465,7 +494,26 @@ fn whitespace_outside_strings(json: &[u8]) -> usize {
 
 fn refusal(dialect: DialectId, over: Over) -> KppError {
     let responses = dialect == DialectId::OpenAiResponses;
+    let gemini = matches!(dialect, DialectId::Gemini | DialectId::GeminiEmbeddings);
     let (message, param) = match over {
+        Over::Items if gemini => (
+            format!(
+                "`contents` holds more than {MAX_MESSAGES} contents; Kaeso takes at most {MAX_MESSAGES}."
+            ),
+            "contents",
+        ),
+        Over::Blocks if gemini => (
+            format!(
+                "A content holds more than {MAX_BLOCKS_PER_MESSAGE} parts; Kaeso takes at most {MAX_BLOCKS_PER_MESSAGE}."
+            ),
+            "contents",
+        ),
+        Over::Inputs if gemini => (
+            format!(
+                "`requests` holds more than {MAX_EMBEDDING_INPUTS} requests; Kaeso takes at most {MAX_EMBEDDING_INPUTS}."
+            ),
+            "requests",
+        ),
         Over::Items if responses => (
             format!(
                 "`input` holds more than {MAX_MESSAGES} items; Kaeso takes at most {MAX_MESSAGES}."

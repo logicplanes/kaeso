@@ -1,0 +1,52 @@
+{
+  "candidates": [
+    {
+      "content": {
+        "parts": [
+          {
+            "text": "**Weather Check for Paris and London**\n\nOkay, so I need to get the weather for both Paris and London. The `default_api:get_weather` tool seems perfect, it takes a location string, which is straightforward. The API also has an optional unit parameter, but I'll assume the default is fine for now.\n\nThe question is, can I call the tool twice in a single go? The tool-calling format seems to allow for multiple calls within the same turn. That's ideal, I can check both locations efficiently.\n\nRight, let's generate those calls then, one for \"Paris\" and one for \"London\". Parallel calls are preferable if possible.\n\n\n",
+            "thought": true
+          },
+          {
+            "functionCall": {
+              "name": "get_weather",
+              "args": {
+                "location": "Paris"
+              },
+              "id": "call_17824526487901149391"
+            },
+            "thoughtSignature": "EuIDCt8DAWkUfROAvzoT62sHQ0O6l1FL0eQxOJqBuGrpMnYLYmBabEH2y2eKeRTm/aegDmPRyNtpNc0jNUTCsFS3tMfCt9ASOoyJG1hOtn2vjkp1fM+0d6ufCW9HvCQD3P9QwuTMpjz+u3MIBlJiPlDAHqsOPnjiiIAGZAJMXt3BdXxqsjkPl3HQZOhBh09lAknArMNezSsMyFo/bU5Nt1HIeCyxoV+VaQ29UTWyBBJKCv5S+/YTB0Q68xoAjy2BYyY6Ypq77EoxI8Vh2LGsQWfFKqYkHH3nMHkp2TFCkGKbDICkNApM/sjtt95RcmCfS6wj+a9SOg3tO50Os5926Aj4XNkyKC5n18496wG3WnRIKLk8H75Ai+Wt8GIAcJw2Uh0QKMlWBL2jwa6fhY1vLTh6fVGqw854L0BZjKE6vcfGpAnttjEkNdLhx9H7vgdKZ6X7sN9snZ9Q08+pLn6PCrEhqLXw5TkPWiNaqvJhHVT1a0FGR+EjQpeRGpv3/r5iPxOjngXxKUG3h034XSmROnNa1UhZ0sKuY2ODUUsAWUIhTukEsRucfsfAx4Fo9y1x6/T8yAUu0Fs7eNlgkod5QD/VIpA7GjHuYE+vQSkSG7hfkRfCEFLKtbRMb4Nw1Roi7TOX9SM="
+          },
+          {
+            "functionCall": {
+              "name": "get_weather",
+              "args": {
+                "location": "London"
+              },
+              "id": "call_17824526487901150536"
+            }
+          }
+        ],
+        "role": "model"
+      },
+      "finishReason": "STOP",
+      "index": 0,
+      "finishMessage": "Model generated function call(s)."
+    }
+  ],
+  "usageMetadata": {
+    "promptTokenCount": 97,
+    "candidatesTokenCount": 32,
+    "totalTokenCount": 218,
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 97
+      }
+    ],
+    "thoughtsTokenCount": 89,
+    "serviceTier": "standard"
+  },
+  "modelVersion": "gemini-3.6-flash",
+  "responseId": "XuTvauaSOOea28oP0syUoQE"
+}

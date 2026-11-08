@@ -1,4 +1,6 @@
 use kaeso_codecs::anthropic_messages::AnthropicMessages;
+use kaeso_codecs::gemini::Gemini;
+use kaeso_codecs::gemini_embeddings::GeminiEmbeddings;
 use kaeso_codecs::openai_chat::OpenAiChat;
 use kaeso_codecs::openai_embeddings::OpenAiEmbeddings;
 use kaeso_codecs::openai_responses::OpenAiResponses;
@@ -8,11 +10,13 @@ use kaeso_kpp::{
     Request, RequestKind, Role, Source, StreamMode,
 };
 
-const DIALECTS: [DialectId; 4] = [
+const DIALECTS: [DialectId; 6] = [
     DialectId::AnthropicMessages,
     DialectId::OpenAiChat,
     DialectId::OpenAiResponses,
     DialectId::OpenAiEmbeddings,
+    DialectId::Gemini,
+    DialectId::GeminiEmbeddings,
 ];
 
 #[test]
@@ -157,6 +161,8 @@ fn every_codec_type_has_the_same_traits() {
             dialect::<OpenAiChat>(),
             dialect::<OpenAiResponses>(),
             dialect::<OpenAiEmbeddings>(),
+            dialect::<Gemini>(),
+            dialect::<GeminiEmbeddings>(),
         ],
         DIALECTS
     );

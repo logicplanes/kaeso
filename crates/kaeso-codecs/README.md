@@ -8,6 +8,8 @@ Sans-IO codecs between [KPP](https://crates.io/crates/kaeso-kpp) and the wire fo
 | OpenAI Chat Completions | yes | yes | no | yes |
 | OpenAI Responses | yes | yes | yes | yes |
 | OpenAI Embeddings | yes | no | no | yes |
+| Gemini API | yes | yes | yes | yes |
+| Gemini Embeddings | yes | no | no | yes |
 
 What a dialect cannot do is refused with an `Unsupported` error.
 

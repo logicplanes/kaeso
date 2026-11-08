@@ -1,0 +1,14 @@
+{
+  "model": "models/gemini-embedding-2",
+  "content": {
+    "parts": [
+      {
+        "text": "What is the capital of France?"
+      }
+    ]
+  },
+  "embedContentConfig": {
+    "taskType": "RETRIEVAL_QUERY",
+    "outputDimensionality": 8
+  }
+}

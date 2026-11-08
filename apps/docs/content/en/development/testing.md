@@ -190,8 +190,10 @@ sequenceDiagram
 | `POST /v1/responses/input_tokens` | `openai_responses` | `responses.input_tokens.count` |
 | `POST /v1/embeddings` | `openai_embeddings` | `embeddings.create` |
 | `GET /v1/models`, `GET /v1/models/{id}` | `anthropic_messages` with an `anthropic-version` header, otherwise `openai_chat` | `models.list`, `models.retrieve` |
+| `POST /v1beta/models/{model}:{method}` | `gemini`, or `gemini_embeddings` for `embedContent` and `batchEmbedContents` | `models.generate_content`, `models.generate_content_stream`, `models.count_tokens`, `models.embed_content` (`google-genai`) |
+| `GET /v1beta/models`, `GET /v1beta/models/{id}` | `gemini` | `models.list`, `models.get` (`google-genai`) |
 
-Every response and stream [fixture](kpp/fixtures.md) of every generation dialect goes through every generation endpoint, streamed and not. The tests compare what the SDK parsed with what KPP decoded (`GET /_expected`), so a translation that loses text, tool arguments or readable reasoning fails. They also check that structured output stays valid JSON and that every error fixture raises the SDK's `APIStatusError` with the right status (`e2e/conformance/test_errors.py`).
+Every response and stream [fixture](kpp/fixtures.md) of every generation dialect goes through every generation endpoint, streamed and not. The tests compare what the SDK parsed with what KPP decoded (`GET /_expected`), so a translation that loses text, tool arguments or readable reasoning fails. They also check that structured output stays valid JSON and that every error fixture raises the SDK's error with the right status (`e2e/conformance/test_errors.py`): `APIStatusError` in the OpenAI and Anthropic SDKs, `APIError` in `google-genai`.
 
 Model listings must page and filter as the SDKs expect (`e2e/conformance/test_models.py`). `GET /_scenarios` lists every scenario the server offers.
 

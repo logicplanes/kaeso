@@ -1,0 +1,32 @@
+{
+  "candidates": [
+    {
+      "content": {
+        "parts": [
+          {
+            "text": "The capital of France is Paris.",
+            "thoughtSignature": "ErADCq0DAWkUfROLEOLP+8F0ee5aEzFXBra+eJ6DKXUkCDt2g8d04e18hr/D+ut+VyRritzbBnVJkGOnh9QlqkDhk8qm/vUIo+oumstVnX2UO/uH7y7/lBZwgrM4KXEIo38tNYP/4EkGnIPYBAMHfZtATvfj9gPJ9IqI87BrQU13hCAMNm/3q/6gu/uQEu+o1OV/HjkTb9uYXRCaUUSZ7kARHjIe7NXbZwqpRFB6LXib0xB05zeAcfATUJMw1EMLQG5FHx6LvojGtP3byc8drQSCmXOLky4Fn4xf3QIjXUgvZ67lEF1LiPf/XMH0ZIY/hPCsPSYUgbXpkHYMCtNYStquQ3bdZFxBEP7XJcBVEC7L66/KQqtIsQncFsvreYtCzPWQNtOXBO0KgDbOiCM70ZFV+TQ4H1CtG/QokaiZV0ytq1UUtDGyY955jODQbYTQhSNLby2FzAJyQorJfhc+MdjFosZW7Rxpe1aEXC6OXSQwnSBtErGRpRZereIv4jhcuNOD/ApuILDRoofV3dOb/XnGhCk+93CxCfvQca82WbQSvZr2tDnC0PtgMzwafkfwUXxI"
+          }
+        ],
+        "role": "model"
+      },
+      "finishReason": "STOP",
+      "index": 0
+    }
+  ],
+  "usageMetadata": {
+    "promptTokenCount": 19,
+    "candidatesTokenCount": 7,
+    "totalTokenCount": 110,
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 19
+      }
+    ],
+    "thoughtsTokenCount": 84,
+    "serviceTier": "standard"
+  },
+  "modelVersion": "gemini-3.6-flash",
+  "responseId": "LOTvauTeO57qkdUPpYSBkAw"
+}

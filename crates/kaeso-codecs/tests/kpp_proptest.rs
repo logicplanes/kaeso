@@ -7,10 +7,11 @@ use kaeso_kpp::{
 };
 use proptest::prelude::*;
 
-const GENERATION: [DialectId; 3] = [
+const GENERATION: [DialectId; 4] = [
     DialectId::AnthropicMessages,
     DialectId::OpenAiChat,
     DialectId::OpenAiResponses,
+    DialectId::Gemini,
 ];
 
 fn text() -> impl Strategy<Value = String> {
@@ -127,12 +128,18 @@ fn round_trip(dialect: DialectId, req: &GenerateRequest) -> GenerateRequest {
         .unwrap_or_else(|e| panic!("{dialect}: {e}"));
     let mut ctx = EgressCtx::new(&request);
     let enc = dispatch::encode_request(dialect, &request, &mut ctx).unwrap();
-    let back = dispatch::decode_request(
-        dialect,
-        RequestKind::Generate,
-        &enc.body,
-        &HeaderList::new(),
-    )
+    let back = if dialect == DialectId::Gemini {
+        let segment = enc.path.rsplit('/').next().unwrap();
+        let (model, action) = kaeso_codecs::gemini::split_model_action(segment).unwrap();
+        dispatch::decode_gemini_request(&model, action, &enc.body, &HeaderList::new())
+    } else {
+        dispatch::decode_request(
+            dialect,
+            RequestKind::Generate,
+            &enc.body,
+            &HeaderList::new(),
+        )
+    }
     .unwrap();
     let Request::Generate(back) = back else {
         panic!("kind changed")

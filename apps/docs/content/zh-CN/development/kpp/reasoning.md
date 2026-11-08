@@ -5,7 +5,7 @@ description: 编解码器如何在各 API 格式之间传递推理内容、推�
 order: 3
 ---
 
-Anthropic 对其思考块签名，OpenAI 对其推理 item 加密。不透明的推理（签名、加密内容、item ID）只会回放给签发它的方言和服务商。
+Anthropic 对其思考块签名，OpenAI 对其推理 item 加密，Gemini 则在其回复的 part 上附加思考签名（thought signature）。不透明的推理（签名、加密内容、item ID）只会回放给签发它的方言和服务商。
 
 ## 哪些推理会被回放
 
@@ -25,6 +25,10 @@ Anthropic 对其思考块签名，OpenAI 对其推理 item 加密。不透明的
 | 只有预算 | Anthropic | 采用该预算的 `enabled` 思考 |
 | Anthropic 预算 | OpenAI | 取自下表的推理强度 |
 | Anthropic `thinking: {type: "disabled"}` | OpenAI | 推理强度 `none` |
+| 推理强度 `minimal` 到 `high` | Gemini | 对应级别的 `thinkingLevel`；`xhigh` 和 `max` 变为 `HIGH` |
+| 只有预算 | Gemini | 对应预算的 `thinkingBudget`，Gemini 3 会把它映射到最接近的级别 |
+| 推理强度 `none`，或关闭思考 | Gemini | `thinkingBudget: 0` |
+| 没有推理强度的自适应思考 | Gemini | `thinkingBudget: -1`，即动态思考 |
 
 两种 OpenAI 方言都把 `none` 记为它们共用的 `ReasoningEffort` 枚举中的最低值，因此禁用的 Anthropic 思考有对应的值，始终推理的模型除外（见[始终推理的模型](#始终推理的模型)）。推理强度 `minimal` 在表中没有对应的行，对 Anthropic 仍为 `Unsupported`。
 
@@ -83,6 +87,8 @@ OpenAI 只有在请求设置了 `reasoning.summary` 时才返回可读推理，�
 - 没有推理强度、模式或预算的摘要（OpenAI 的 `reasoning: {summary: "auto"}`）会以模型的默认深度开启 Anthropic 思考。也就是不带推理强度的自适应思考，或者 `medium` 对应的预算，即 OpenAI 的默认推理强度；
 - 没有推理强度的 Anthropic `adaptive` 思考对 OpenAI Responses 而言算作推理：它会请求 `include: ["reasoning.encrypted_content"]`，并像上面那样请求摘要。
 
+Gemini 只在 `includeThoughts: true` 时返回思考内容。来自其他方言的请求在带有推理摘要，或带有 `display` 不为 `omitted` 的 Anthropic 思考时会得到它（[Gemini API](gemini.md#思考)）。
+
 没有推理设置的请求、推理强度 `none`，以及不推理或未知的模型，都不会被开启推理。OpenAI Chat 应用的格式不显示推理，因此不会请求摘要。
 
 提供 Chat Completions 的服务商会在自己的字段中返回可读推理，例如 DeepSeek 的 `reasoning_content` 或 Groq 的 `reasoning`，无需请求摘要。它们的 Chat 配置会指明该字段（`reasoning_fields`，[服务商配置](openai-chat-providers.md#服务商配置)），因此推理会成为 KPP 推理块：Anthropic Messages 应用以 `thinking` 块得到它，Responses 应用以带摘要的推理项得到它，原始块都保存在[推理数据块](#推理数据块)中。
@@ -119,6 +125,8 @@ Anthropic 应用自己的设置按收到时的样子发送。
 | OpenAI Responses | 一个 ID 为 `rs_kaeso_…` 的推理 item，思考内容作为一段摘要文本，流中以 `response.reasoning_summary_*` 事件发送 | `encrypted_content` |
 | Anthropic Messages | 一个 `thinking` 块，其中摘要和推理文本作为思考内容，段落之间以空行分隔 | `signature`，在块结束时以一个 `signature_delta` 流式发送 |
 
+Gemini 应用收不到推理数据块：`google-genai` SDK 把 `thoughtSignature` 当作 Base64 读取，而前缀不是 Base64。它们的推理会像 OpenAI Chat 应用一样被省略。
+
 两个请求解码器都能在任何位置识别推理数据块（`continuity::unwrap_reasoning`），并恢复原始块及其来源。随后编码器会像对待其他推理一样，把它回放给它自己的方言和服务商。
 
 - **总是发送。** 无论应用是否请求了 `include: ["reasoning.encrypted_content"]`，也无论其 `store` 设置如何，推理数据块都会发送。Kaeso 不存储任何内容，而 SDK 的 agent 循环会把输出 item 和内容块原样发回。这些循环包括 openai-agents 的 `to_input_list()`、Codex、Claude Code 和 Anthropic tool runner。
@@ -132,7 +140,7 @@ Anthropic 应用自己的设置按收到时的样子发送。
 
 Chat Completions 没有推理字段，KPP 也不会凭空创造一个。回复中省略推理，由网关保存它，并以推理之后的工具调用作为键。工具调用 ID 是唯一的，由服务商签发，每个 Chat 客户端都会将其发回，因此可以在不改变应用格式的情况下作为推理的键。
 
-1. 回复之后，`continuity::reasoning_for_tool_calls`（完整回复）或 `continuity::ReasoningCollector`（流）为每个前面有可回放推理的工具调用返回一个 `CarriedReasoning`：Anthropic 的签名思考或 `redacted_thinking`，或 OpenAI 的加密推理。最后一个工具调用之后的推理不会保存。
+1. 回复之后，`continuity::reasoning_for_tool_calls`（完整回复）或 `continuity::ReasoningCollector`（流）为每个前面有可回放推理的工具调用返回一个 `CarriedReasoning`：Anthropic 的签名思考或 `redacted_thinking`、OpenAI 的加密推理，或 Gemini 的思考签名。最后一个工具调用之后的推理不会保存。
 2. 网关把这些条目存入 Valkey，用主密钥加密，只有发出该请求的 API 密钥才能读取，保存时长为 `KAESO_CONTINUITY_REASONING_TTL`（默认一小时）。
 3. 在应用的下一个请求中，解码之后、`check` 和编码之前，`continuity::tool_calls_missing_reasoning` 列出需要查找的工具调用 ID，`continuity::restore_reasoning` 把找到的内容放回助手轮次：轮次中第一个工具调用的推理放在轮次开头，后续调用的推理紧跟在前一个调用之后。推理只会恢复到与其来源回复的工具调用完全相同的应用轮次中（`CarriedReasoning::turn_calls`），因为 Anthropic 把思考绑定到产生它的轮次；把两个回复合并为一个轮次的应用不会得到这些推理。已经含有推理的轮次保持不变。
 

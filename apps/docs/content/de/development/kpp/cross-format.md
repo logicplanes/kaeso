@@ -223,6 +223,10 @@ Diese Tools werden aus einer Anfrage weggelassen statt abgelehnt (`cross::TOOLS_
 | `web_search_20250305` | `anthropic_messages` | `openai_chat` | immer: Chat Completions hat keine gehostete Suche |
 | `web_search_20260209` | `anthropic_messages` | `openai_chat` | immer: Chat Completions hat keine gehostete Suche |
 | `web_search_20260318` | `anthropic_messages` | `openai_chat` | immer: Chat Completions hat keine gehostete Suche |
+| `web_search` | `openai_responses` | `gemini` | immer: das Tool `googleSearch` von Gemini nimmt keine der Einstellungen der Suche und antwortet mit Grounding-Metadaten statt mit Suchaufrufen |
+| `web_search_20250305` | `anthropic_messages` | `gemini` | immer: wie oben |
+| `web_search_20260209` | `anthropic_messages` | `gemini` | immer: wie oben |
+| `web_search_20260318` | `anthropic_messages` | `gemini` | immer: wie oben |
 
 Eine `tool_choice`, die ein weggelassenes Tool verlangt, selbst oder in `allowed_tools`, ist `Unsupported`. Wird jedes Tool weggelassen, entfallen auch `tool_choice: "auto"` oder `"none"` und `parallel_tool_calls` und werden in `kaeso-left-out` genannt, weil Anbieter sie ohne Tools ablehnen. `tool_choice: "required"` oder ein benanntes Tool ist `Unsupported`, da kein Tool zum Aufrufen bliebe. Nur die Responses-API von OpenAI nimmt eine `tool_choice` in einer Anfrage an, die die App ohne Tools gesendet hat, etwa einen Hilfsaufruf von Codex; für jeden anderen Anbieter entfallen `auto` und `none` ebenso, und ein erzwungenes Tool ist ein `invalid_request`.
 
@@ -275,7 +279,7 @@ Claudes `tool_result` und das `function_call_output` von Responses können Bilde
 - **Die Benutzernachricht nach den Ergebnissen** beginnt für jedes solche Ergebnis mit `` The rest of the result of tool call `<id>`: `` und den Bildern und Dateien des Ergebnisses in ihrer Reihenfolge. Text, den die App nach den Ergebnissen gesendet hat, folgt danach.
 - **Der Header.** Jedes Ergebnis wird im Header `kaeso-adapted` der Antwort als `tool result` mit der ID des Aufrufs genannt, etwa `tool result call_abc`.
 
-Anthropic- und Responses-Modelle bekommen die Medien unverändert im Tool-Ergebnis. Fixtures: `anthropic_messages/requests/tool-result-multi-turn.json`, `openai_responses/requests/function-call-output-array.json`.
+Anthropic- und Responses-Modelle bekommen die Medien unverändert im Tool-Ergebnis, Gemini-Modelle in `functionResponse.parts` ([Gemini API](gemini.md)). Fixtures: `anthropic_messages/requests/tool-result-multi-turn.json`, `openai_responses/requests/function-call-output-array.json`.
 
 ## Nutzung
 
@@ -287,6 +291,7 @@ Eine Systemnachricht nach dem Beginn einer Unterhaltung bleibt als `Role::System
 
 - **An Anthropic, aus Anthropic Messages:** unverändert gesendet; die API beurteilt ihre Position und welche Modelle sie unterstützen. Claude Code sendet solche Nachrichten bei jeder Anfrage.
 - **An Anthropic, aus anderen Dialekten:** Der Text wird Teil der nächsten Benutzerrunde, nach ihren Tool-Ergebnissen, oder der letzten Benutzerrunde, wenn keine folgt. Codex sendet solche Nachrichten, wenn ein Thread das Modell (`<model_switch>`) oder den Modus (`<collaboration_mode>`) wechselt. Anthropic nimmt eine Systemnachricht nur direkt nach einer Benutzerrunde und direkt vor einer Assistentenrunde an, und nicht bei jedem Modell ([Systemnachrichten mitten in der Unterhaltung](https://platform.claude.com/docs/en/build-with-claude/mid-conversation-system-messages)). OpenAI-Apps setzen sie dagegen an beliebige Stellen, meist vor die Runde, die sie einleiten. Die Felder der Nachricht durchlaufen dieselbe Prüfung wie die jeder anderen Nachricht. Führende, vor jeder Benutzer- oder Assistentennachricht, werden Teil des System-Prompts; die meisten machen schon die Decoder dazu. Vor einer letzten Assistentennachricht, die Anthropic als Prefill fortsetzt, wird der Text stattdessen Teil der letzten Benutzerrunde.
+- **An Gemini, aus jedem anderen Dialekt:** wie an Anthropic aus anderen Dialekten, weil Gemini Systemtext nur in `systemInstruction` annimmt. Auch die eigenen Systemnachrichten von Anthropic Messages werden Teil der nächsten Nutzer-Runde.
 - **An OpenAI:** spätere `system`- oder `developer`-Nachrichten. Bei Chat Completions rückt eine solche Nachricht zwischen den Tool-Aufrufen einer Assistentennachricht und ihren Ergebnissen, auch eine zwischen zwei der Ergebnisse, hinter das letzte Ergebnis, weil Mistral dort eine Systemnachricht ablehnt (`Unexpected role 'tool' after role 'system'`). Ein Chat-Completions-Anbieter, dessen Profil `leading_system_only()` setzt, etwa Cerebras, erhält ihren Text stattdessen in der nächsten Benutzerrunde, wie Anthropic, weil Qwens Chat-Template dort eine Systemnachricht nach der ersten Runde ablehnt ([Anbieterprofile](openai-chat-providers.md#anbieterprofile)).
 
 ## Keepalives
@@ -297,6 +302,7 @@ Ein Anbieter kann minutenlang streamen, ohne etwas zu erzeugen, das das Format d
 | --- | --- | --- |
 | OpenAI Chat Completions und Responses | Der SSE-Kommentar `: keepalive` und eine Leerzeile | Zeilen, die mit einem Doppelpunkt beginnen, sind in der SSE-Spezifikation Kommentare, und die Parser der OpenAI-SDKs überspringen sie |
 | Anthropic Messages | `event: ping` mit `data: {"type": "ping"}`, genau wie Anthropic es sendet | Die Anthropic-SDKs überspringen Ping-Events |
+| Gemini API | Eine Leerzeile | Das SDK `google-genai` überspringt Leerzeilen, liest aber jede andere Zeile, die nicht mit `data: ` beginnt, als JSON, sodass ein Kommentar es brechen würde; eine Leerzeile ohne Daten davor löst kein Event aus |
 
 Frames gelangen auf zwei Wegen auf die Leitung:
 
@@ -312,6 +318,7 @@ Strukturierte Ausgabe an Anthropic nutzt die nativen Structured Outputs von Anth
 - Das Ausgabeformat `json_object` hat bei Anthropic keine Entsprechung und ist `Unsupported`.
 - Das Ausgabeformat von Anthropic ist nur ein Schema: Der `name` eines Schemas wird weggelassen, während eine `description` oder `strict: false` `Unsupported` ist.
 - Schemas, die von Anthropic an OpenAI gehen, bekommen den Namen `response`, weil OpenAI einen verlangt.
+- Gemini bekommt ein Schema als `responseJsonSchema` und `json_object` als `responseMimeType: "application/json"` allein; wie bei Anthropic entfällt der `name` eines Schemas, und eine `description` oder `strict: false` ist `Unsupported`.
 
 ## Sampling
 
@@ -322,6 +329,7 @@ Sampling-Einstellungen, die ein Ziel nicht einhalten kann, sind `Unsupported` un
 | Anthropic | `seed`, Frequency- und Presence-Penalties und eine `temperature` außerhalb von 0 bis 1, dem Bereich bei Anthropic |
 | OpenAI Chat Completions | `top_k` und mehr als vier Stoppsequenzen |
 | OpenAI Responses | `top_k`, `seed`, die Penalties und Stoppsequenzen, die es bei Responses nicht gibt, und ein Ausgabelimit unter 16 Token, dem Minimum von `CreateResponse` |
+| Gemini API | Mehr als fünf Stoppsequenzen (`GenerationConfig.stopSequences`) |
 
 Zahlen behalten ihre Schreibweise innerhalb eines Dialekts: `temperature: 1` kommt als `1` zurück und `1.0` als `1.0`, solange der Wert unverändert ist. Über Dialekte hinweg gilt die eigene Schreibweise des Ziels, daher erreicht `temperature: 1` aus Chat Anthropic als `1.0`.
 
@@ -363,7 +371,7 @@ Cache-Hinweise sind Hinweise, aber ein Ziel, das nur auf Anfrage cacht, wird tro
 
 ## Dateien
 
-Eine Datei-ID eines Anbieters (`file-…`) ist nur im Dateispeicher dieses Anbieters nutzbar. Die beiden OpenAI-Dialekte für Generierung teilen sich einen solchen Speicher, daher nimmt `cross::check_foreign` den `Origin` des Ziels entgegen, also seinen Dialekt und Anbieter. Datei-IDs, die zu einem anderen Anbieter wechseln, sind `Unsupported`.
+Eine Datei-ID eines Anbieters (`file-…`) ist nur im Dateispeicher dieses Anbieters nutzbar. Die beiden OpenAI-Dialekte für Generierung teilen sich einen solchen Speicher, ebenso die beiden Gemini-Dialekte, daher nimmt `cross::check_foreign` den `Origin` des Ziels entgegen, also seinen Dialekt und Anbieter. Datei-IDs, die zu einem anderen Anbieter wechseln, sind `Unsupported`.
 
 ## Die Anthropic-Version
 

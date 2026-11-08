@@ -1,0 +1,31 @@
+{
+  "candidates": [
+    {
+      "content": {
+        "parts": [
+          {
+            "text": "{\"name\":\"Classic Peanut Butter Cookies\",\"ingredients\":[\"Peanut butter\",\"Sugar\",\"Egg\"]}",
+            "thoughtSignature": "EmkKZwFpFH0TYY6nDGzhP9HtjXpZZDORatLE9xX+JO1+COlkzfsA5DJBN19fO6bx2VoW6oxW4NeSoDqPdh9QvZp5IWvdQdIYwUtvRFampoOdYcYrFy5T+Ci1HOVS04zWhh0Zou7tEAaV0ZA="
+          }
+        ],
+        "role": "model"
+      },
+      "finishReason": "STOP",
+      "index": 0
+    }
+  ],
+  "usageMetadata": {
+    "promptTokenCount": 13,
+    "candidatesTokenCount": 18,
+    "totalTokenCount": 31,
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 13
+      }
+    ],
+    "serviceTier": "standard"
+  },
+  "modelVersion": "gemini-3.6-flash",
+  "responseId": "e-Tvavy5N8a0kdUPn5O58Q0"
+}

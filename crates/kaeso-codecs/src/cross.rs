@@ -89,6 +89,30 @@ pub const TOOLS_LEFT_OUT: &[(DialectId, &str, DialectId, LeftOutWhen)] = &[
     (
         DialectId::OpenAiResponses,
         "web_search",
+        DialectId::Gemini,
+        LeftOutWhen::Always,
+    ),
+    (
+        DialectId::AnthropicMessages,
+        "web_search_20250305",
+        DialectId::Gemini,
+        LeftOutWhen::Always,
+    ),
+    (
+        DialectId::AnthropicMessages,
+        "web_search_20260209",
+        DialectId::Gemini,
+        LeftOutWhen::Always,
+    ),
+    (
+        DialectId::AnthropicMessages,
+        "web_search_20260318",
+        DialectId::Gemini,
+        LeftOutWhen::Always,
+    ),
+    (
+        DialectId::OpenAiResponses,
+        "web_search",
         DialectId::AnthropicMessages,
         LeftOutWhen::CachedOnly,
     ),
@@ -393,6 +417,7 @@ pub(crate) fn claude_code_hint(origin: DialectId, scope: &str, key: &str) -> Opt
 fn file_store(dialect: DialectId) -> &'static str {
     match dialect {
         DialectId::AnthropicMessages => "anthropic",
+        DialectId::Gemini | DialectId::GeminiEmbeddings => "google",
         _ => "openai",
     }
 }
@@ -430,9 +455,14 @@ pub(crate) enum Setting {
 }
 
 pub(crate) fn app_field(r: &GenerateRequest, setting: Setting, target: DialectId) -> &'static str {
-    use DialectId::{AnthropicMessages as A, OpenAiChat as C};
+    use DialectId::{AnthropicMessages as A, Gemini as G, OpenAiChat as C};
     let app = r.extras.origin.as_ref().map_or(target, |o| o.dialect);
     match (setting, app) {
+        (Setting::OutputLimit, G) => "generationConfig.maxOutputTokens",
+        (Setting::StopSequences, G) => "generationConfig.stopSequences",
+        (Setting::OutputFormat, G) => "generationConfig.responseJsonSchema",
+        (Setting::Reasoning, G) => "generationConfig.thinkingConfig",
+        (Setting::ReasoningEffort, G) => "generationConfig.thinkingConfig.thinkingLevel",
         (Setting::OutputLimit, A) => "max_tokens",
         (Setting::OutputLimit, C) => crate::openai_chat::output_limit_field(r),
         (Setting::OutputLimit, _) => "max_output_tokens",
@@ -707,7 +737,7 @@ pub fn reply_opaque_visible(opaque: &Opaque, target: DialectId) -> bool {
             ) | (
                 DialectId::OpenAiResponses,
                 OpaqueKind::OpenAiEncryptedReasoning | OpaqueKind::OpenAiReasoningItemId
-            )
+            ) | (DialectId::Gemini, OpaqueKind::GeminiThoughtSignature)
         )
 }
 
@@ -723,9 +753,14 @@ pub(crate) fn foreign(
     } else {
         format!("`{feature}`")
     };
+    let source = origin.dialect.display_name();
+    let article = if source.starts_with(['A', 'E', 'I', 'O', 'U']) {
+        "an"
+    } else {
+        "a"
+    };
     let message = format!(
-        "{named} comes from an {} request and has no equivalent in {}. {hint}",
-        origin.dialect.display_name(),
+        "{named} comes from {article} {source} request and has no equivalent in {}. {hint}",
         target.display_name(),
     );
     let err = KppError::unsupported(feature, message);

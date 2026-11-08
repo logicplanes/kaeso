@@ -49,10 +49,11 @@ fn assert_kept(dialect: DialectId, sse: &str) {
     );
 }
 
-const STREAMING: [DialectId; 3] = [
+const STREAMING: [DialectId; 4] = [
     DialectId::AnthropicMessages,
     DialectId::OpenAiChat,
     DialectId::OpenAiResponses,
+    DialectId::Gemini,
 ];
 
 #[test]
@@ -74,7 +75,11 @@ fn unknown_frames_keep_json_framing_and_comments() {
 
 #[test]
 fn unknown_frames_with_text_keep_it_unquoted() {
-    for dialect in [DialectId::AnthropicMessages, DialectId::OpenAiChat] {
+    for dialect in [
+        DialectId::AnthropicMessages,
+        DialectId::OpenAiChat,
+        DialectId::Gemini,
+    ] {
         assert_kept(dialect, "event: custom\ndata: abc\ndata: def\n\n");
     }
 }

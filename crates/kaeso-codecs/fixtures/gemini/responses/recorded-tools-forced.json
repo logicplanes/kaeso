@@ -1,0 +1,39 @@
+{
+  "candidates": [
+    {
+      "content": {
+        "parts": [
+          {
+            "functionCall": {
+              "name": "get_weather",
+              "args": {
+                "location": "Tokyo"
+              },
+              "id": "call_3940307145401823907"
+            },
+            "thoughtSignature": "EpgDCpUDAWkUfRPci/u9+5kP6RETAz3/HeTrEVB5joGbqfe8sVyZd7gHj7DxlYUnbbhdAsbJY5+5GBB1qOyTF0iAxgwl/7mrkqP1mI5r8iHAgLWTlK1T54/NN3U9yw2CtgQW3eOa22yGFnj39q5VZXfFbi15zkc7IcFJgIzIi8AAORlBL1/QXDDQxs+DJjm//TxOoNEgY3yFUNEhT/zQFAuLVmIPj2TDIvDIO5/YCDkut4k/cqVjuvjEOuKmr5hQS83t/pbJ8drza0T4BrdQ/ITq26uekUX/ovcTePiwN0KW8+g2gbyW1hHqTf1JHlv8TBfOELEd+AzUYIM86GSkItqlVYArqRm1rWifci55ne/p0o81mjQvFvHyJ8WSrqXct5Y43cQ92BE6hmg9i59m7Yx5+NjD3d5EbJY5hKBulVSYiKqI62P0T6oacWQYBKP2nTuWEbjRNbwzP0ybQge4jxPiVEMfHgYUIIFHap8dgPnSqquycbt/0gvmlBVtCGA+E0IfsEhqWX5XfPYYNhGDYdQCSpkB8LGO+4kG"
+          }
+        ],
+        "role": "model"
+      },
+      "finishReason": "STOP",
+      "index": 0,
+      "finishMessage": "Model generated function call(s)."
+    }
+  ],
+  "usageMetadata": {
+    "promptTokenCount": 122,
+    "candidatesTokenCount": 16,
+    "totalTokenCount": 214,
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 122
+      }
+    ],
+    "thoughtsTokenCount": 76,
+    "serviceTier": "standard"
+  },
+  "modelVersion": "gemini-3.6-flash",
+  "responseId": "aeTvatTXG9LZkdUPs5a2sAw"
+}

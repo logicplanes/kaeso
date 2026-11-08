@@ -2,7 +2,7 @@
 title: Fixture 与录制
 nav: Fixture
 description: 编解码器测试所用的真实载荷，以及如何从服务商录制新的载荷。
-order: 9
+order: 10
 ---
 
 每项编解码器变更都从一个测试样本（fixture）开始：一个真实的请求体、回复、流或错误，位于 `crates/kaeso-codecs/fixtures`。每个 fixture 都会经过自己的编解码器做往返测试，跨方言矩阵把每个生成类 fixture 送入其他每个方言。[SDK 一致性](../testing.md#sdk-一致性)测试套件把它们提供给官方 SDK，网关的模拟服务商用它们作答，模糊测试目标也以它们为起点。
@@ -15,6 +15,8 @@ order: 9
 | `openai_chat/` | OpenAI Chat Completions（`/v1/chat/completions`） |
 | `openai_responses/` | OpenAI Responses（`/v1/responses`、`/v1/responses/input_tokens`） |
 | `openai_embeddings/` | OpenAI Embeddings（`/v1/embeddings`） |
+| `gemini/` | Gemini API（`{models}/{model}:generateContent`、`:streamGenerateContent`、`:countTokens`） |
+| `gemini_embeddings/` | Gemini 嵌入（`{models}/{model}:embedContent`、`:batchEmbedContents`） |
 
 每个方言文件夹都有 `requests/`、`responses/` 和 `errors/`，端点支持流式时还有 `streams/`。
 
@@ -22,11 +24,12 @@ order: 9
 | --- | --- |
 | `requests/<name>.json` | 原样的请求体 |
 | `requests/<name>.headers.json` | 随该请求发送、在允许列表中的转发请求头 |
+| `requests/<name>.meta.json` | 仅限 Gemini：该请求的路径所写的 `model` 和方法（`action`，例如 `streamGenerateContent`），在它们不是 `--model` 和 `generateContent`（嵌入为 `embedContent`）时使用 |
 | `responses/<name>.json` | 原样的 200 响应体 |
 | `streams/<name>.sse` | 原样的 SSE 字节 |
 | `errors/<name>.json` 和 `errors/<name>.meta.json` | 错误响应体，以及 `{"status": …, "headers": {…}}`。当编解码器以另一种响应体回复应用时（例如把 SpaceX 的字符串 `error` 改为 OpenAI 错误格式），`"encoded"` 保存该响应体，往返测试与它比较 |
 
-部分端点有自己的子文件夹：Anthropic 的 `count_tokens/` 和 OpenAI Responses 的 `input_tokens/`，分别位于 `requests/` 和 `responses/` 中；以及用于模型列表的 `models/`（`anthropic_messages/models/`，以及三个 OpenAI 编解码器共用的 `openai_chat/models/`）。
+部分端点有自己的子文件夹：Anthropic 和 Gemini 的 `count_tokens/` 以及 OpenAI Responses 的 `input_tokens/`，分别位于 `requests/` 和 `responses/` 中；以及用于模型列表的 `models/`（`anthropic_messages/models/`、`gemini/models/`，以及三个 OpenAI 编解码器共用的 `openai_chat/models/`）。
 
 其他使用某个方言的服务商（例如兼容 OpenAI 的 API）的录制内容放在 `<dialect>/providers/<id>/` 中，以该服务商在 `crates/kaeso-core/src/provider.rs` 中的 ID 命名。该文件夹有同样的 `requests/`、`responses/`、`streams/` 和 `errors/` 子文件夹，只在服务商有对应文件时才创建。`requests/` 存放只有该服务商接受的请求；其中每个名称都必须与该方言自己的请求 fixture 不同。
 
@@ -77,6 +80,14 @@ cargo xtask record openai_chat --all --dry-run
 cargo xtask record openai_responses --count --all
 ```
 
+Gemini fixture 从 Google AI Studio 录制，密钥来自 `GEMINI_API_KEY`。Gemini 请求在路径中写明模型，因此请传入 `--model`，或把模型写进 fixture 的 `.meta.json`：
+
+```bash
+export GEMINI_API_KEY=…
+cargo xtask record gemini --model gemini-3.5-flash text-simple stream-text
+cargo xtask record gemini_embeddings --model gemini-embedding-2 batch
+```
+
 `crates/kaeso-core/src/provider.rs` 中的其他任何服务商都以同样的方式用 `--provider` 录制，通常还要加上 `--model`，因为请求 fixture 中写的是 OpenAI 和 Anthropic 的模型：
 
 ```bash
@@ -89,17 +100,17 @@ cargo xtask record openai_chat --provider <id> --model <model> \
 
 | 选项 | 作用 |
 | --- | --- |
-| `<dialect>` | `anthropic_messages`、`openai_chat`、`openai_responses` 或 `openai_embeddings` |
+| `<dialect>` | `anthropic_messages`、`openai_chat`、`openai_responses`、`openai_embeddings`、`gemini` 或 `gemini_embeddings` |
 | `<names>` | 要发送的请求 fixture，不带 `.json` |
 | `--all` | 该方言的所有请求 fixture，但不包括 `stateful-*`、`unknown-*`、`n-2*` 和 `input-audio*`：服务商会拒绝它们，或者它们带有虚构的字段 |
-| `--count` | Token 计数端点及其位于 `requests/count_tokens/` 或 `requests/input_tokens/` 的 fixture；仅限 `anthropic_messages` 和 `openai_responses`，并且仅限 `count_tokens` 为该方言的服务商 |
+| `--count` | Token 计数端点及其位于 `requests/count_tokens/` 或 `requests/input_tokens/` 的 fixture；仅限 `anthropic_messages`、`openai_responses` 和 `gemini`，并且仅限 `count_tokens` 为该方言的服务商 |
 | `--dry-run` | 打印将要发送的内容，不实际发送 |
-| `--provider <id>` | 要录制的服务商，按其 ID 指定；它的 `dialects` 中必须列有该方言。默认情况下，`anthropic_messages` 为 `anthropic`，其他方言为 `openai` |
-| `--model <id>` | 发送此模型，而不是各请求 fixture 中写的模型，并把它记录到 `RECORDED.md` 中 |
+| `--provider <id>` | 要录制的服务商，按其 ID 指定；它的 `dialects` 中必须列有该方言。默认情况下，`anthropic_messages` 为 `anthropic`，`gemini` 和 `gemini_embeddings` 为 `google`（Google AI Studio，它们唯一的来源），其他方言为 `openai` |
+| `--model <id>` | 发送此模型，而不是各请求 fixture 中写的模型，并把它记录到 `RECORDED.md` 中；对 Gemini，它优先于 `.meta.json` 中的模型 |
 
 - 它读取 `requests/<name>.json`（对其他服务商还会读取 `providers/<id>/requests/<name>.json`），以及存在时的 `<name>.headers.json`，后者中在允许列表内的请求头（`anthropic-beta`、`anthropic-version`、`openai-beta`）会一并发送。Anthropic 请求带有 `anthropic-version: 2023-06-01`，除非该文件指定了其他版本。
-- 对 2xx 回复，它写入 `responses/recorded-<name>.json`（使用 `--count` 时位于 `responses/count_tokens/` 或 `responses/input_tokens/`）；请求带有 `"stream": true` 时，写入 `streams/recorded-<name>.sse`（收到的原始字节）；出错时，写入 `errors/recorded-<name>.json`（响应体不是 JSON 时为 `.txt`）和 `recorded-<name>.meta.json`（状态码以及可能存在的 `retry-after`）。随后它会在该文件夹的 `RECORDED.md` 中添加一行，记录模型和 UTC 时间。`openai` 和 `anthropic` 录制到方言自己的文件夹中，其他每个服务商录制到 `providers/<id>/` 中。JSON 响应体以两个空格缩进，并保留服务商的键顺序。
-- 密钥来自 `<ID>_API_KEY`，即服务商 ID 的大写形式，连字符换成下划线：`OPENAI_API_KEY`、`ANTHROPIC_API_KEY`，服务商 `fireworks-ai` 则为 `FIREWORKS_AI_API_KEY`。`<ID>_BASE_URL` 替换服务商的默认基础 URL，即网关使用的那个。密钥放在该服务商的认证请求头中：`authorization: Bearer` 或 `x-api-key`。
+- 对 2xx 回复，它写入 `responses/recorded-<name>.json`（使用 `--count` 时位于 `responses/count_tokens/` 或 `responses/input_tokens/`）；请求带有 `"stream": true`，或 Gemini 请求调用 `streamGenerateContent` 时，写入 `streams/recorded-<name>.sse`（收到的原始字节）；出错时，写入 `errors/recorded-<name>.json`（响应体不是 JSON 时为 `.txt`）和 `recorded-<name>.meta.json`（状态码以及可能存在的 `retry-after`）。随后它会在该文件夹的 `RECORDED.md` 中添加一行，记录模型和 UTC 时间。`openai`、`anthropic` 和 `google` 录制到方言自己的文件夹中，其他每个服务商录制到 `providers/<id>/` 中。JSON 响应体以两个空格缩进，并保留服务商的键顺序。
+- 密钥来自 `<ID>_API_KEY`，即服务商 ID 的大写形式，连字符换成下划线：`OPENAI_API_KEY`、`ANTHROPIC_API_KEY`，服务商 `fireworks-ai` 则为 `FIREWORKS_AI_API_KEY`。`<ID>_BASE_URL` 替换服务商的默认基础 URL，即网关使用的那个。密钥放在该服务商的认证请求头中：`authorization: Bearer`、`x-api-key`，或 Google AI Studio 的 `x-goog-api-key`，后者的密钥和基础 URL 来自 `GEMINI_API_KEY` 和 `GEMINI_BASE_URL`。
 - API 密钥从环境中读取，从不写入文件；请求头也从不保存。
 - 写入之前，它会从所有携带云签名凭据的 URL 中删除查询字符串（AWS Signature Version 4、Google Cloud 签名 URL、Azure 共享访问签名）。网页搜索可能返回这类预签名链接。其余内容逐字节保持不变。
 

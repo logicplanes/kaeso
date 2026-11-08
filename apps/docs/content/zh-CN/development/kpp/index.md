@@ -81,6 +81,8 @@ sequenceDiagram
 | `openai_responses` | OpenAI Responses（`/v1/responses`、`/v1/responses/input_tokens`） |
 | `openai_embeddings` | OpenAI Embeddings（`/v1/embeddings`） |
 | `openai_models` | OpenAI Models API，由三个 OpenAI 编解码器共用 |
+| `gemini` | Gemini API（`{models}/{model}:generateContent`、`:streamGenerateContent`、`:countTokens` 以及模型列表） |
+| `gemini_embeddings` | Gemini 嵌入（`{models}/{model}:embedContent`、`:batchEmbedContents`） |
 
 | 共享模块 | 职责 |
 | --- | --- |
@@ -189,14 +191,14 @@ KPP 的值和错误都按值返回。`KppError` 和部分枚举变体较大，�
 
 ### 回复与流事件
 
-回复和流事件从一个服务商流向一个应用。其中没有提示字段。应用的方言无法表达的字段，要么可以推导出来，例如把停止原因映射到最接近的对应值，要么放在 Extras 中，以便在同一方言内回放。每个方言的映射页面都列出了这些映射：[Anthropic Messages](anthropic-messages.md)、[OpenAI Chat Completions](openai-chat.md)、[OpenAI Responses](openai-responses.md) 和 [OpenAI Embeddings](openai-embeddings.md)。
+回复和流事件从一个服务商流向一个应用。其中没有提示字段。应用的方言无法表达的字段，要么可以推导出来，例如把停止原因映射到最接近的对应值，要么放在 Extras 中，以便在同一方言内回放。每个方言的映射页面都列出了这些映射：[Anthropic Messages](anthropic-messages.md)、[OpenAI Chat Completions](openai-chat.md)、[OpenAI Responses](openai-responses.md)、[OpenAI Embeddings](openai-embeddings.md) 和 [Gemini API](gemini.md)。
 
 在应用的格式能够承载时，推理会到达其他方言的应用，并经过包装，以便之后能够原样返回（[推理数据块](reasoning.md#推理数据块)，`cross::reasoning_reply_policy`）。未知块只会到达其自身方言的应用。其余内容都不会出现在应用中（[回复](cross-format.md#回复)，`cross::reply_policy`），流中则以[保活消息](cross-format.md#保活消息)帧代替。网关会记录完整的 KPP 回复。
 
 ## 修改编解码器
 
 1. 把真实载荷加入 `crates/kaeso-codecs/fixtures/<dialect>/`，并在该目录的 `README.md` 中添加一行来源记录（[Fixture 与录制](fixtures.md)）。
-2. 在该方言的映射页面中注明每个映射的来源。来源包括 [OpenAI OpenAPI 规范](https://github.com/openai/openai-openapi)、[Anthropic Messages](anthropic-messages.md) 页面中注明的 Anthropic OpenAPI 规范、官方 SDK 的类型（[openai-python](https://github.com/openai/openai-python)、[anthropic-sdk-python](https://github.com/anthropics/anthropic-sdk-python)），以及服务商文档。来源含糊时，选择 `Unsupported` 并提交一个 issue。
+2. 在该方言的映射页面中注明每个映射的来源。来源包括 [OpenAI OpenAPI 规范](https://github.com/openai/openai-openapi)、[Anthropic Messages](anthropic-messages.md) 页面中注明的 Anthropic OpenAPI 规范、[Gemini API](gemini.md) 页面中注明的 Gemini API 发现文档、官方 SDK 的类型（[openai-python](https://github.com/openai/openai-python)、[anthropic-sdk-python](https://github.com/anthropics/anthropic-sdk-python)、[google-genai](https://github.com/googleapis/python-genai)），以及服务商文档。来源含糊时，选择 `Unsupported` 并提交一个 issue。
 3. 先写失败的测试，再写代码。每个线路字段都映射到类型化的 KPP 字段、绑定来源的 `Extras` 条目、`Unknown` 项或 `Unsupported` 错误。
 4. 在同一个拉取请求中，用三种语言更新该方言的映射页面。
 
@@ -217,7 +219,7 @@ KPP 的值和错误都按值返回。`KppError` 和部分枚举变体较大，�
 | `crates/kaeso-codecs/tests/responses_on_anthropic.rs` | 使用 Anthropic 模型的 OpenAI Responses 应用，以及使用 OpenAI 模型的 Anthropic 应用：推理请求、按 OpenAI 事件顺序输出的思考流，以及工具循环。 |
 | `crates/kaeso-codecs/tests/nesting.rs` | 嵌套层数超过上限的 Anthropic `tool_result` 块在请求、回复和流中都会被拒绝，而不超过上限的嵌套仍能正常解码。 |
 | `crates/kaeso-codecs/tests/unknown_frames.rs` | 在每种支持流式传输的方言中，未知的 SSE 帧都能在同一方言内往返而保持原样，包括其 JSON 写法、带引号的字符串、SSE 字段和注释；Anthropic 和 Chat 的流还会保留数据为纯文本的帧。 |
-| `e2e/conformance`，由 `crates/kpp-conformance` 提供服务 | 官方的 OpenAI 和 Anthropic Python SDK 能解析编码器产生的所有内容（[测试](../testing.md#sdk-一致性)）。 |
+| `e2e/conformance`，由 `crates/kpp-conformance` 提供服务 | 官方的 OpenAI、Anthropic 和 Google Gen AI Python SDK 能解析编码器产生的所有内容（[测试](../testing.md#sdk-一致性)）。 |
 | `fuzz/` | 每个解码器都能接受任意字节而不 panic，SSE 解析器在任何 chunk 切分下都产生相同的项（[模糊测试](../testing.md#模糊测试)）。 |
 
 `kaeso_codecs::testing` 按结构比较 JSON：键的顺序无关紧要，数字按 `serde_json` 读到的结果精确比较，因此 `1` 和 `1.0` 不同，而 `1e0` 和 `1.0` 是同一个数。
@@ -240,5 +242,6 @@ OpenAI Responses 把不同的写法记录为形式覆盖项，只在值未改变
 - [Chat Completions 服务商](openai-chat-providers.md)：了解编解码器如何适配使用 Chat Completions 的每个服务商。
 - [OpenAI Responses](openai-responses.md)：查找 Responses 格式的每个字段在 KPP 中的位置。
 - [OpenAI Embeddings](openai-embeddings.md)：查找 Embeddings 格式的每个字段在 KPP 中的位置。
+- [Gemini API](gemini.md)：查找 Gemini API 的每个字段在 KPP 中的位置，包括嵌入。
 - [Fixture 与录制](fixtures.md)：添加编解码器测试所用的真实载荷，并录制新的载荷。
 - [Fixture 约定](fixture-conventions.md)：查阅每个构造的 fixture 都遵循的规则。

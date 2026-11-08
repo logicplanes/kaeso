@@ -1,0 +1,35 @@
+{
+  "contents": [
+    {
+      "role": "user",
+      "parts": [
+        {
+          "text": "List two primary colors."
+        }
+      ]
+    }
+  ],
+  "generationConfig": {
+    "responseMimeType": "application/json",
+    "responseSchema": {
+      "type": "ARRAY",
+      "items": {
+        "type": "OBJECT",
+        "properties": {
+          "color": {
+            "type": "STRING"
+          }
+        },
+        "required": [
+          "color"
+        ],
+        "propertyOrdering": [
+          "color"
+        ]
+      }
+    },
+    "thinkingConfig": {
+      "thinkingLevel": "MINIMAL"
+    }
+  }
+}

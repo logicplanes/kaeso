@@ -1,3 +1,4 @@
+use kaeso_codecs::gemini::GeminiAction;
 use kaeso_codecs::openai_responses::ResponsesProfile;
 use kaeso_codecs::sse::{SseError, SseItem, SseParser, write_item};
 use kaeso_codecs::{EgressCtx, EncodeCtx, HeaderList, dispatch};
@@ -32,6 +33,14 @@ fn chunk_size(data: &[u8]) -> usize {
 pub fn decoders(dialect: DialectId, data: &[u8]) {
     let salt = salt(data);
     let headers = HeaderList::new().with("retry-after", "3");
+    for action in GeminiAction::ALL
+        .into_iter()
+        .filter(|a| a.dialect() == dialect)
+    {
+        if let Ok(req) = dispatch::decode_gemini_request("models/m", action, data, &headers) {
+            request(dialect, &req);
+        }
+    }
     for kind in KINDS {
         if let Ok(req) = dispatch::decode_request(dialect, kind, data, &headers) {
             request(dialect, &req);

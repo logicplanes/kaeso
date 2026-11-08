@@ -73,6 +73,11 @@ async fn main() -> std::io::Result<()> {
             "/v1/embeddings",
             post(|s, h, b| serve(s, h, b, DialectId::OpenAiEmbeddings, RequestKind::Embed)),
         )
+        .route("/v1beta/models", get(list_gemini_models))
+        .route(
+            "/v1beta/models/{*rest}",
+            post(serve_gemini).get(retrieve_gemini_model),
+        )
         .route("/v1/models", get(list_models))
         .route("/v1/models/{id}", get(retrieve_model))
         .route("/_scenarios", get(scenarios))
@@ -247,6 +252,65 @@ async fn serve(
         Ok(r) => r,
         Err(e) => return error_response(ingress, &e.with_status(400)),
     };
+    answer(&app, req, ingress, kind)
+}
+
+async fn serve_gemini(
+    State(app): State<App>,
+    UrlPath(rest): UrlPath<String>,
+    headers: HeaderMap,
+    body: Bytes,
+) -> Response {
+    let Some((model, action)) = kaeso_codecs::gemini::split_model_action(&rest) else {
+        let err = KppError::new(
+            ErrorKind::NotFound,
+            format!("conformance: no method in `{rest}`"),
+        )
+        .with_status(404);
+        return error_response(DialectId::Gemini, &err);
+    };
+    let ingress = action.dialect();
+    match dispatch::decode_gemini_request(&model, action, &body, &headers_in(&headers)) {
+        Ok(req) => answer(&app, req, ingress, action.kind()),
+        Err(e) => error_response(ingress, &e.with_status(400)),
+    }
+}
+
+async fn list_gemini_models(RawQuery(query): RawQuery) -> Response {
+    let dialect = DialectId::Gemini;
+    let page = dispatch::decode_models_query(dialect, query.as_deref().unwrap_or(""))
+        .and_then(|q| ModelList::page(&catalog(), &q, None));
+    match page.and_then(|p| dispatch::encode_models(dialect, &p)) {
+        Ok(b) => respond(
+            200,
+            &HeaderList::new().with("content-type", "application/json"),
+            b,
+        ),
+        Err(e) => error_response(dialect, &e.with_status(400)),
+    }
+}
+
+async fn retrieve_gemini_model(UrlPath(rest): UrlPath<String>) -> Response {
+    let id = rest.strip_prefix("models/").unwrap_or(&rest);
+    let Some(model) = catalog().into_iter().find(|m| m.id == id) else {
+        let err = KppError::new(
+            ErrorKind::NotFound,
+            format!("The model `{id}` does not exist."),
+        )
+        .with_status(404);
+        return error_response(DialectId::Gemini, &err);
+    };
+    match dispatch::encode_model(DialectId::Gemini, &model) {
+        Ok(b) => respond(
+            200,
+            &HeaderList::new().with("content-type", "application/json"),
+            b,
+        ),
+        Err(e) => error_response(DialectId::Gemini, &e),
+    }
+}
+
+fn answer(app: &App, req: kaeso_kpp::Request, ingress: DialectId, kind: RequestKind) -> Response {
     let sc = match scenario(req.model()) {
         Ok(s) => s,
         Err(e) => return error_response(ingress, &e.with_status(400)),
@@ -548,7 +612,11 @@ async fn scenarios(State(app): State<App>) -> Response {
                     (_, Some(sub)) => format!("{sub}{name}"),
                     _ => name.clone(),
                 };
-                let kind = if source == DialectId::OpenAiEmbeddings && kind == "generate" {
+                let embeddings = matches!(
+                    source,
+                    DialectId::OpenAiEmbeddings | DialectId::GeminiEmbeddings
+                );
+                let kind = if embeddings && kind == "generate" {
                     "embed"
                 } else {
                     kind
