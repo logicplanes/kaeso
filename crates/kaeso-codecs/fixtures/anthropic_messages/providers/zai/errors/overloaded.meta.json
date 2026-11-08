@@ -1,0 +1,13 @@
+{
+  "status": 429,
+  "kind": "overloaded",
+  "encoded_status": 529,
+  "encoded": {
+    "type": "error",
+    "error": {
+      "type": "overloaded_error",
+      "message": "The service may be temporarily overloaded, please try again later"
+    },
+    "request_id": null
+  }
+}

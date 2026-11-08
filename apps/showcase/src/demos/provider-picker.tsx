@@ -17,6 +17,7 @@ const providers: ProviderPickerOption[] = [
   { id: "togetherai", name: "Together AI" },
   { id: "vercel", name: "Vercel" },
   { id: "xai", name: "SpaceX" },
+  { id: "zai", name: "Z.ai" },
 ];
 
 export const meta = {

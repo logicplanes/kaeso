@@ -31,6 +31,7 @@ Kaeso 内置了以下服务商，按名称排列。如何使用服务商以及�
 | SpaceX `xai` | Responses、Chat Completions | `api.x.ai` | [console.x.ai](https://console.x.ai/team/default/api-keys)，`xai-` |
 | Together AI `togetherai` | Chat Completions、Embeddings | `api.together.ai` | [api.together.ai](https://api.together.ai/settings/projects/~current/api-keys)，`tgp_v1_` |
 | Vercel `vercel` | Chat Completions、Responses、Messages、Embeddings | `ai-gateway.vercel.sh` | [vercel.com](https://vercel.com/d?to=%2F%5Bteam%5D%2F%7E%2Fai-gateway%2Fapi-keys)，`vck_` |
+| Z.ai `zai` | Messages | `api.z.ai` | [z.ai](https://z.ai/manage-apikey/apikey-list)，无固定前缀 |
 
 ## 补充说明
 
@@ -48,7 +49,8 @@ Kaeso 内置了以下服务商，按名称排列。如何使用服务商以及�
 - **QwenCloud。** 阿里巴巴在中国内地以外的模型平台，前身为阿里云百炼国际站（Model Studio），此处为其新加坡地域，提供 `qwen3.7-flash` 等通义千问模型，以及 `kimi-k3` 等其他厂商的模型。密钥只能在创建它的地域使用。对于中国（北京）地域（KPMR 中为 `alibaba-cn`），请将 QwenCloud 的[基础 URL](../self-hosting/configuration.md#服务商设置) 设为 `https://dashscope.aliyuncs.com/compatible-mode`，并使用该地域的密钥；一个实例只能连接一个地域。`developer` 消息会以 `system` 消息发送给它；QwenCloud 接受但不处理的字段（例如 `logit_bias` 和 `web_search_options`）会被拒绝。应用的思考请求以 `enable_thinking` 发送给模型，Anthropic 应用的 `budget_tokens` 以 `thinking_budget` 发送，推理强度只发送给列出了强度级别的模型，例如 `qwen3.8-max`。Chat 应用的 `max_tokens` 只限制回答，不限制思考；`max_completion_tokens` 同时限制两者。有些模型只能思考，会拒绝关闭思考，`qwq-plus` 只回答流式请求：应用会收到 QwenCloud 的 400。它的嵌入模型（例如 `text-embedding-v4`）不在 KPMR 中：请将其添加为以 Embeddings 发送的自定义模型，并填写价格。
 - **SpaceX。** 即 xAI 的 API，提供 Grok 等模型。作为实验性选项，服务商密钥也可以是套餐包含 API 访问权限的 Grok 账户（[使用 Grok 账户登录](../console/provider-keys.md#使用-grok-账户登录)）。
 - **Vercel。** 即 Vercel AI Gateway，另一个网关，其自身的路由和回退在 Kaeso 之后运行。模型 ID 包含模型开发者，例如 `openai/gpt-5-nano`。请以 `vercel/openai/gpt-5-nano` 的形式调用，这样请求不会发往该开发者自己的服务商（[请求如何指定模型](../console/models-and-aliases.md#请求如何指定模型)）。模型的**发送格式**可以选择 Vercel 同样提供的 Responses 或 Messages；通过 Messages，Vercel 会把 Anthropic 的 `cache_control` 传给 Claude 模型。Kaeso 按目录中的价格记录费用，而不是按 Vercel 在 `usage.cost` 中报告的费用，后者不含 Vercel 自己的附加费。Vercel 只为 Claude 模型精确计数 Token，对其余模型只做估算，因此 Kaeso 拒绝为任何 Vercel 模型计数 Token。Vercel 回答模型信息时不检查密钥，因此**检查可用性**无法发现错误的密钥；使用该密钥的第一个请求会报告密钥被拒绝。免费套餐的 Vercel 账户无法调用 Claude 等付费模型：Vercel 返回 403，应用会将其视为服务商密钥被拒绝，请求日志中保留 Vercel 给出的原因。
+- **Z.ai。** 即 Z.ai 的 Anthropic 兼容 API，提供 `glm-5.3`、`glm-4.6` 等 GLM 模型。Kaeso 以 Messages 格式调用它，密钥放在 `x-api-key` 中，因此各种格式的应用都能访问它，Anthropic 应用的请求按应用原样发送。Z.ai 没有说明它接受哪些 Anthropic 字段，因此 Kaeso 会全部发送，是否拒绝由 Z.ai 决定；重复的提示词由 Z.ai 自动缓存。Z.ai 发送自己的错误码：余额不足（`1113`）以被拒绝的服务商密钥送达应用，而不是速率限制；服务过载（`1305`）以过载送达；提示词过长（`1261`）也以提示词过长送达，这样 Claude Code 会压缩对话。Kaeso 拒绝 Token 计数，因为 Z.ai 没有提供相关说明。**检查可用性**能发现错误的密钥；Z.ai 没有说明模型列表，因此能否发现 Z.ai 不提供的模型尚未验证。Z.ai 按密钥类型对每次调用计费，并且只允许在其列出的编程工具中使用 GLM Coding Plan 密钥，因此请使用标准 API 密钥。在中国大陆，请将 Z.ai 的[基础 URL](../self-hosting/configuration.md#服务商设置)设为 `https://open.bigmodel.cn/api/anthropic`，并使用 bigmodel.cn 的密钥。
 
 ## 商标
 
-所有商标和标志均归其各自所有者所有。Kaeso 与这些服务商均无关联，也未获得其认可或赞助。控制台显示服务商的标志，仅用于标明密钥、模型或请求所属的服务商。Anthropic、Cerebras、Cohere、Groq 以及 QwenCloud 的所有者 Alibaba Cloud 在其条款中限制使用其标志；Kaeso 仅出于此目的显示它们的标志，保留所有者的形状和颜色，只在颜色需要在 Kaeso 的浅色和深色背景上保持可见时才做必要的调整。Mistral 的品牌页面要求不要给其图标重新着色或加框；Kaeso 以 Mistral 自己的颜色显示该图标，放在与其他标志相同的中性底块上。[NOTICE.md](https://github.com/logicplanes/kaeso/blob/dev/NOTICE.md#trademarks) 列出了每个标志的来源。
+所有商标和标志均归其各自所有者所有。Kaeso 与这些服务商均无关联，也未获得其认可或赞助。控制台显示服务商的标志，仅用于标明密钥、模型或请求所属的服务商。Anthropic、Cerebras、Cohere、Groq、Z.ai 以及 QwenCloud 的所有者 Alibaba Cloud 在其条款中限制使用其标志；Kaeso 仅出于此目的显示它们的标志，保留所有者的形状和颜色，只在颜色需要在 Kaeso 的浅色和深色背景上保持可见时才做必要的调整。Mistral 的品牌页面要求不要给其图标重新着色或加框；Kaeso 以 Mistral 自己的颜色显示该图标，放在与其他标志相同的中性底块上。[NOTICE.md](https://github.com/logicplanes/kaeso/blob/dev/NOTICE.md#trademarks) 列出了每个标志的来源。

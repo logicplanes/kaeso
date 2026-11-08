@@ -1773,3 +1773,30 @@ fn thinking_off_becomes_the_lowest_effort_of_a_model_that_always_reasons() {
     );
     kept("high", C, &gpt_oss);
 }
+
+#[test]
+fn zai_models_speak_anthropic_messages_with_kpmrs_prices_and_limits() {
+    let glm = eff(&entry("zai", "glm-5.3"));
+    assert_eq!(glm.dialect, DialectId::AnthropicMessages);
+    assert_eq!(glm.provider.name(), "Z.ai");
+    assert_eq!(
+        (
+            glm.fields.input_price,
+            glm.fields.output_price,
+            glm.fields.cache_read_price
+        ),
+        (Some(dec!(1.4)), Some(dec!(4.4)), Some(dec!(0.26)))
+    );
+    assert_eq!(
+        (glm.fields.context_limit, glm.fields.output_limit),
+        (Some(1_000_000), Some(131_072))
+    );
+    let flash = eff(&entry("zai", "glm-5.3-flash"));
+    assert!(
+        flash
+            .fields
+            .input_modalities
+            .as_ref()
+            .is_some_and(|m| m.iter().any(|m| m == "image"))
+    );
+}

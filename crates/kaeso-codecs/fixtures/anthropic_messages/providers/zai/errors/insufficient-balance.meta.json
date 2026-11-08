@@ -1,0 +1,13 @@
+{
+  "status": 429,
+  "kind": "billing",
+  "encoded_status": 402,
+  "encoded": {
+    "type": "error",
+    "error": {
+      "type": "billing_error",
+      "message": "Insufficient balance or no resource package. Please recharge."
+    },
+    "request_id": null
+  }
+}

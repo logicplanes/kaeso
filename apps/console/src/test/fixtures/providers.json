@@ -233,6 +233,22 @@
       "count_tokens": null,
       "embeddings": null,
       "account": null
+    },
+    {
+      "id": "zai",
+      "name": "Z.ai",
+      "custom": false,
+      "takes_key": true,
+      "hides_built_in": null,
+      "key_page": {
+        "url": "https://z.ai/manage-apikey/apikey-list",
+        "label": "API Keys"
+      },
+      "key_prefix": null,
+      "dialects": ["anthropic_messages"],
+      "count_tokens": null,
+      "embeddings": null,
+      "account": null
     }
   ],
   "has_more": false,

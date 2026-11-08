@@ -100,6 +100,16 @@ async fn every_member_reads_each_provider_with_its_name_key_page_and_formats() {
     assert_eq!(cerebras["count_tokens"], Value::Null);
     assert_eq!(cerebras["embeddings"], Value::Null);
     assert_eq!(cerebras["key_prefix"], "csk-");
+    let zai = listed.iter().find(|p| p["id"] == "zai").unwrap();
+    assert_eq!(zai["name"], "Z.ai");
+    assert_eq!(zai["dialects"], json!(["anthropic_messages"]));
+    assert_eq!(zai["count_tokens"], Value::Null);
+    assert_eq!(zai["embeddings"], Value::Null);
+    assert_eq!(zai["key_prefix"], Value::Null);
+    assert_eq!(
+        zai["key_page"],
+        json!({ "url": "https://z.ai/manage-apikey/apikey-list", "label": "API Keys" })
+    );
 
     let anonymous = app
         .call(Method::GET, &format!("/orgs/{org}/providers"), None, None)

@@ -947,6 +947,19 @@ expression: outcomes
     },
     "path": "/v1/chat/completions"
   },
+  "providers/zai/invalid-api-key": {
+    "body": {
+      "max_completion_tokens": 16,
+      "messages": [
+        {
+          "content": "Say hi.",
+          "role": "user"
+        }
+      ],
+      "model": "glm-4.6"
+    },
+    "path": "/v1/chat/completions"
+  },
   "refusal": {
     "body": {
       "max_completion_tokens": 1024,

@@ -1,0 +1,11 @@
+{
+  "status": 429,
+  "encoded": {
+    "type": "error",
+    "error": {
+      "type": "rate_limit_error",
+      "message": "Rate limit reached for requests"
+    },
+    "request_id": null
+  }
+}

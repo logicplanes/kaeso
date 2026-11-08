@@ -22,6 +22,22 @@ fn kind_for_type(ty: &str) -> Option<ErrorKind> {
     })
 }
 
+// Z.ai's Anthropic endpoint writes its own numeric codes as `error.type`, and answers some of
+// them with a status Anthropic uses for something else, such as 429 for an empty balance
+// (https://docs.z.ai/api-reference/api-code).
+fn kind_for_zai_code(code: &str) -> Option<ErrorKind> {
+    Some(match code {
+        "1000" | "1001" | "1003" | "1005" => ErrorKind::Authentication,
+        "1113" | "1309" | "1314" => ErrorKind::Billing,
+        "1211" => ErrorKind::NotFound,
+        "1220" | "1311" | "1315" => ErrorKind::PermissionDenied,
+        "1261" => ErrorKind::ContextTooLong,
+        "1301" => ErrorKind::ContentFiltered,
+        "1305" => ErrorKind::Overloaded,
+        _ => return None,
+    })
+}
+
 fn kind_for_status(status: u16) -> ErrorKind {
     match status {
         400 | 409 | 422 => ErrorKind::InvalidRequest,
@@ -102,8 +118,11 @@ fn decode_body(body: &[u8], status: Option<u16>) -> KppError {
             err
         }
         None => {
-            if let Some((ty, message)) = openai_shaped(raw.as_ref()) {
-                let kind = kind_for_type(ty)
+            if let Some((ty, message)) =
+                openai_shaped(raw.as_ref()).or_else(|| failed(raw.as_ref()))
+            {
+                let kind = kind_for_type(&ty)
+                    .or_else(|| kind_for_zai_code(&ty))
                     .unwrap_or_else(|| status.map_or(ErrorKind::ProviderError, kind_for_status));
                 let mut err = KppError::new(kind, message.to_owned()).with_origin(origin);
                 err.raw = raw;
@@ -129,15 +148,36 @@ fn decode_body(body: &[u8], status: Option<u16>) -> KppError {
 }
 
 // An Anthropic-compatible server that answers with OpenAI's error shape, `{"error": {"message",
-// "type"}}`, as Vercel AI Gateway does on `/v1/messages`: its type and message.
-fn openai_shaped(raw: Option<&Value>) -> Option<(&str, &str)> {
+// "type"}}`, as Vercel AI Gateway and Z.ai do on `/v1/messages`: its type and message.
+fn openai_shaped(raw: Option<&Value>) -> Option<(String, &str)> {
     let error = raw?.get("error")?;
     let message = error.get("message")?.as_str().filter(|m| !m.is_empty())?;
     let ty = error
         .get("type")
         .and_then(Value::as_str)
         .unwrap_or_default();
-    Some((ty, message))
+    Some((ty.to_owned(), message))
+}
+
+// Z.ai answers a path it doesn't serve, `/v1/models` among them, with HTTP 200 and its platform's
+// envelope, `{"code": 1000, "msg": "…", "success": false}`, before it checks the key.
+fn failed(raw: Option<&Value>) -> Option<(String, &str)> {
+    let raw = raw?;
+    if raw.get("success").and_then(Value::as_bool) != Some(false) {
+        return None;
+    }
+    let message = raw.get("msg")?.as_str().filter(|m| !m.is_empty())?;
+    let code = match raw.get("code") {
+        Some(Value::Number(n)) => n.to_string(),
+        Some(Value::String(s)) => s.clone(),
+        _ => String::new(),
+    };
+    Some((code, message))
+}
+
+pub(crate) fn is_failure_envelope(body: &[u8]) -> bool {
+    let raw: Option<Value> = serde_json::from_slice(body).ok();
+    failed(raw.as_ref()).is_some()
 }
 
 fn own_body(err: &KppError) -> Option<&serde_json::Map<String, Value>> {
@@ -195,8 +235,16 @@ fn stream_value(err: &KppError) -> Value {
 pub(crate) fn encode_error(err: &KppError, request_id: Option<&str>) -> EncodedError {
     let (status, _) = wire_for_kind(&err.kind);
     let own = err.origin.as_ref().is_some_and(|o| o.is(D));
+    // A body in another shape keeps its status only when the status says what the kind says:
+    // Z.ai answers an empty balance with 429, which apps would retry as a rate limit.
     let status = match err.status {
-        Some(s) if own && (400..=599).contains(&s) => s,
+        Some(s)
+            if own
+                && (400..=599).contains(&s)
+                && (own_body(err).is_some() || kind_for_status(s) == err.kind) =>
+        {
+            s
+        }
         Some(s) if err.kind == ErrorKind::ProviderError && (500..=599).contains(&s) => s,
         _ => status,
     };

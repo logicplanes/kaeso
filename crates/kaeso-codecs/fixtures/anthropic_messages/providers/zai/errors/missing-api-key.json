@@ -1,0 +1,6 @@
+{
+  "error": {
+    "message": "Authentication parameter not received in Header, unable to authenticate",
+    "type": "1001"
+  }
+}
