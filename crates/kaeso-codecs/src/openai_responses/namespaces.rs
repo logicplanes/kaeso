@@ -50,7 +50,7 @@ fn flatten_tool(item: &RawItem, path: &str, target: DialectId) -> Result<Vec<Too
     let unknown = entries_of(item.raw.as_raw())
         .unwrap_or_default()
         .into_iter()
-        .find(|(k, _)| !matches!(k.as_str(), "type" | "name" | "description" | "tools"));
+        .find(|(k, _)| !matches!(k.as_ref(), "type" | "name" | "description" | "tools"));
     if let Some((key, _)) = unknown {
         return Err(refuse(format!("{path}.{key}"), &format!("{path}.{key}")));
     }

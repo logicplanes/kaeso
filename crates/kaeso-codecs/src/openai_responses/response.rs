@@ -8,7 +8,7 @@ use serde_json::value::RawValue;
 use super::DIALECT;
 use super::namespaces::Namespaces;
 use super::node::{Node, entries_of};
-use super::overrides::{Overrides, apply};
+use super::overrides::{Overrides, apply, by_key};
 use super::parts::{
     TextKind, arguments_text, carried_summaries, decode_function_call, decode_part,
     decode_reasoning, encode_part, generated_id, reasoning_item, reasoning_node,
@@ -229,7 +229,7 @@ pub(super) fn response_object(
         .with("usage", usage)
 }
 
-pub(super) fn failed_error(w: &wire::ResponseObject, raw: Value, origin: &Origin) -> KppError {
+pub(super) fn failed_error(w: &wire::ResponseObject<'_>, raw: Value, origin: &Origin) -> KppError {
     let code = w.error.as_ref().and_then(|e| e.code.clone());
     let message = w
         .error
@@ -310,9 +310,8 @@ pub(super) fn decode_object(raw: &RawValue, origin: &Origin) -> Result<Response,
         return Err(Decoded::Failed(failed_error(&w, value, origin)));
     }
     let items = w.output.as_deref().unwrap_or_default();
-    let has_calls = items
-        .iter()
-        .any(|i| type_tag(i).ok().flatten().as_deref() == Some("function_call"));
+    let types: Vec<Option<String>> = items.iter().map(|i| type_tag(i).ok().flatten()).collect();
+    let has_calls = types.iter().any(|t| t.as_deref() == Some("function_call"));
     let stop = stop_for(
         w.status.as_deref(),
         w.incomplete_details
@@ -323,9 +322,8 @@ pub(super) fn decode_object(raw: &RawValue, origin: &Origin) -> Result<Response,
     let mut extras = Extras::new(origin.clone()).with_form(NATIVE, true.into());
     let mut blocks = Vec::new();
     let mut ranges = Vec::new();
-    for (i, item) in items.iter().enumerate() {
+    for (i, (item, ty)) in items.iter().zip(&types).enumerate() {
         let index = u32::try_from(i).unwrap_or(u32::MAX);
-        let ty = type_tag(item).ok().flatten();
         let decoded = match ty.as_deref() {
             Some("message") => decode_message(item, origin, &w.id, index, &stop).map(|(bs, ov)| {
                 ranges.push(Value::from(vec![blocks.len(), bs.len()]));
@@ -355,7 +353,7 @@ pub(super) fn decode_object(raw: &RawValue, origin: &Origin) -> Result<Response,
             .insert(MESSAGES.to_owned(), Value::Array(ranges));
         extras.form.insert(BLOCKS.to_owned(), blocks.len().into());
     }
-    let usage = match w.usage.as_deref() {
+    let usage = match w.usage {
         Some(u) => decode_usage(u, origin).map_err(Decoded::Failed)?,
         None => Usage::default(),
     };
@@ -363,8 +361,24 @@ pub(super) fn decode_object(raw: &RawValue, origin: &Origin) -> Result<Response,
     resp.stop = stop;
     resp.usage = usage;
     resp.extras = extras;
-    let canon = canonical(&resp, None, &Namespaces::default());
-    Overrides::diff(&canon, raw, &["output"]).record(&mut resp.extras, "");
+    let fields = entries_of(raw);
+    // The diff leaves an `output` array to the items' own records, so their canonical form
+    // matters only where the response's fields can't be read one by one or `output` isn't one.
+    let canon = if fields.as_deref().is_some_and(by_key) && w.output.is_some() {
+        let (status, incomplete) = status_for(&resp.stop);
+        response_object(
+            &resp.id,
+            &resp.model,
+            status,
+            incomplete,
+            Node::Arr(Vec::new()),
+            usage_node(&resp.usage),
+            None,
+        )
+    } else {
+        canonical(&resp, None, &Namespaces::default())
+    };
+    Overrides::diff_entries(&canon, raw, fields, &["output"]).record(&mut resp.extras, "");
     Ok(resp)
 }
 
@@ -397,7 +411,10 @@ fn decode_message(
         message_status(stop),
         Vec::new(),
     );
-    Some((blocks, Overrides::diff(&canon, raw, &["content"])))
+    Some((
+        blocks,
+        Overrides::diff_entries(&canon, raw, Some(entries), &["content"]),
+    ))
 }
 
 fn is_message_part(b: &Block) -> bool {

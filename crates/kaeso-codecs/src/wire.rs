@@ -137,17 +137,12 @@ pub(crate) fn field_of<'a>(raw: &'a RawValue, key: &str) -> Option<&'a RawValue>
     fields.into_iter().find(|(k, _)| k == key).map(|(_, v)| v)
 }
 
-pub(crate) fn entries_of(raw: &RawValue) -> Option<Vec<(String, &RawValue)>> {
+pub(crate) fn entries_of(raw: &RawValue) -> Option<Vec<(Cow<'_, str>, &RawValue)>> {
     if !raw.get().starts_with('{') {
         return None;
     }
     let Fields(fields) = serde_json::from_str(raw.get()).ok()?;
-    Some(
-        fields
-            .into_iter()
-            .map(|(k, v)| (k.into_owned(), v))
-            .collect(),
-    )
+    Some(fields)
 }
 
 impl<T: DeserializeOwned + Serialize> Ext<T> {
