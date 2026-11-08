@@ -238,6 +238,111 @@ expression: outcomes
       "totalTokenCount": 5330
     }
   },
+  "providers/minimax/deep-thinking": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "**9.9 is bigger than 9.11.**\n\nTo compare decimals, it helps to write them with the same number of decimal places:\n- 9.11 = 9.11\n- 9.9 = 9.90\n\nSince 9.90 > 9.11, **9.9 is larger**."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "MiniMax-M3.1-Flash",
+    "responseId": "066b367ba949a58a9d6829b4bf8cbcd4",
+    "usageMetadata": {
+      "cachedContentTokenCount": 159,
+      "candidatesTokenCount": 149,
+      "promptTokenCount": 172,
+      "totalTokenCount": 321
+    }
+  },
+  "providers/minimax/image-url-adaptive": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "This image shows a young girl, probably around 4-5 years old, photographed in a close-up portrait style. She has:\n\n- **Wavy, tousled light brown hair** with bangs that fall across her forehead, with some strands appearing slightly messy or windblown\n- **Large, expressive hazel-green eyes** that are looking directly at the camera\n- **A soft, subtle smile** giving her a warm, gentle expression\n- **Fair skin** with rosy cheeks, illuminated by warm, soft lighting\n\nShe's wearing what appears to be a **cream or off-white dress** with delicate lace or ruffled detailing around the neckline and shoulders.\n\nThe photograph has a **professional portrait quality**, with a softly blurred, neutral grayish-beige background and warm directional lighting that creates a classic, painterly aesthetic. The composition and styling suggest this could be a formal portrait or an AI-generated image with a vintage/realistic photographic style."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "MiniMax-M3.1-Flash",
+    "responseId": "066a3730f92943410551c4b4978ddad1",
+    "usageMetadata": {
+      "cachedContentTokenCount": 157,
+      "candidatesTokenCount": 214,
+      "promptTokenCount": 1366,
+      "totalTokenCount": 1580
+    }
+  },
+  "providers/minimax/tool-use-auto": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "I'll check the current weather in San Francisco for you."
+            },
+            {
+              "functionCall": {
+                "args": {
+                  "location": "San Francisco, US"
+                },
+                "id": "call_function_9pjh8jjdebck_1",
+                "name": "get_weather"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "MiniMax-M3.1-Flash",
+    "responseId": "066b133406cd8cfd88eb3b2b893a5daa",
+    "usageMetadata": {
+      "cachedContentTokenCount": 404,
+      "candidatesTokenCount": 91,
+      "promptTokenCount": 418,
+      "totalTokenCount": 509
+    }
+  },
+  "providers/minimax/video-url": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "A cat is seen walking on a diving board and then jumping off into a swimming pool."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "MiniMax-M3.1-Flash",
+    "responseId": "066b458956dd2902de31eae19cf15c6e",
+    "usageMetadata": {
+      "cachedContentTokenCount": 1896,
+      "candidatesTokenCount": 393,
+      "promptTokenCount": 2245,
+      "totalTokenCount": 2638
+    }
+  },
   "providers/vercel/recorded-text": {
     "candidates": [
       {

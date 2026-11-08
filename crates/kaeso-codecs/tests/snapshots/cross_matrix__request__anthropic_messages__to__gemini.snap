@@ -827,6 +827,155 @@ expression: outcomes
     },
     "path": "/v1beta/models/claude-opus-5-5:generateContent"
   },
+  "providers/minimax/deep-thinking": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Which is bigger, 9.11 or 9.9?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 4096,
+        "thinkingConfig": {
+          "includeThoughts": true,
+          "thinkingLevel": "HIGH"
+        }
+      }
+    },
+    "path": "/v1beta/models/MiniMax-M3.1-Flash:generateContent"
+  },
+  "providers/minimax/image-url-adaptive": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What does this image show?"
+            },
+            {
+              "fileData": {
+                "fileUri": "https://filecdn.minimax.chat/public/fe9d04da-f60e-444d-a2e0-18ae743add33.jpeg",
+                "mimeType": "image/jpeg"
+              }
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 4096,
+        "thinkingConfig": {
+          "includeThoughts": true,
+          "thinkingLevel": "HIGH"
+        }
+      }
+    },
+    "path": "/v1beta/models/MiniMax-M3.1-Flash:generateContent"
+  },
+  "providers/minimax/image-url-stream": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What does this image show?"
+            },
+            {
+              "fileData": {
+                "fileUri": "https://filecdn.minimax.chat/public/fe9d04da-f60e-444d-a2e0-18ae743add33.jpeg",
+                "mimeType": "image/jpeg"
+              }
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 4096,
+        "thinkingConfig": {
+          "includeThoughts": true,
+          "thinkingLevel": "HIGH"
+        }
+      }
+    },
+    "path": "/v1beta/models/MiniMax-M3.1-Flash:streamGenerateContent?alt=sse"
+  },
+  "providers/minimax/invalid-api-key": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Say hi."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 16
+      }
+    },
+    "path": "/v1beta/models/MiniMax-M3:generateContent"
+  },
+  "providers/minimax/tool-use-auto": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "How's the weather in San Francisco?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 4096,
+        "thinkingConfig": {
+          "thinkingLevel": "HIGH"
+        }
+      },
+      "toolConfig": {
+        "functionCallingConfig": {
+          "mode": "AUTO"
+        }
+      },
+      "tools": [
+        {
+          "functionDeclarations": [
+            {
+              "description": "Get the current weather for a given location.",
+              "name": "get_weather",
+              "parametersJsonSchema": {
+                "properties": {
+                  "location": {
+                    "description": "The city and state/country, e.g. San Francisco, US",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "location"
+                ],
+                "type": "object"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "path": "/v1beta/models/MiniMax-M3.1-Flash:generateContent"
+  },
+  "providers/minimax/video-url": {
+    "message": "`video content block` comes from an Anthropic Messages request and has no equivalent in Gemini API. Remove the block, or send the request to a model served through its original format.",
+    "param": "messages[0].blocks[1]",
+    "unsupported": "video content block"
+  },
   "providers/vercel/rate-limited": {
     "body": {
       "contents": [
@@ -1061,6 +1210,24 @@ expression: outcomes
       }
     },
     "path": "/v1beta/models/kaeso-example%2Fno-such-model:generateContent"
+  },
+  "providers/zai/invalid-api-key": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Say hi."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 16
+      }
+    },
+    "path": "/v1beta/models/glm-4.6:generateContent"
   },
   "refusal": {
     "body": {
