@@ -113,9 +113,51 @@ pub(crate) fn rss_bytes(pid: u32) -> Option<u64> {
     Some(kib * 1024)
 }
 
+// The CPU time, user and system, the process has used so far, all its threads included.
+pub(crate) fn cpu_seconds(pid: u32) -> Option<f64> {
+    if let Ok(stat) = std::fs::read_to_string(format!("/proc/{pid}/stat")) {
+        return proc_stat_seconds(&stat);
+    }
+    ps_time_seconds(&output("ps", &["-o", "time=", "-p", &pid.to_string()])?)
+}
+
+// Fields 14 and 15 of /proc/<pid>/stat count clock ticks, which Linux reports in USER_HZ, a
+// fixed 100 per second on every architecture (proc(5)).
+fn proc_stat_seconds(stat: &str) -> Option<f64> {
+    let (_, after_name) = stat.rsplit_once(')')?;
+    let mut fields = after_name.split_whitespace().skip(11);
+    let user: u64 = fields.next()?.parse().ok()?;
+    let system: u64 = fields.next()?.parse().ok()?;
+    Some((user + system) as f64 / 100.0)
+}
+
+// `ps -o time=`: `[[dd-]hh:]mm:ss[.cc]`.
+fn ps_time_seconds(time: &str) -> Option<f64> {
+    let (days, clock) = match time.trim().split_once('-') {
+        Some((d, rest)) => (d.parse::<f64>().ok()?, rest),
+        None => (0.0, time.trim()),
+    };
+    let mut seconds = 0.0;
+    for part in clock.split(':') {
+        seconds = seconds * 60.0 + part.parse::<f64>().ok()?;
+    }
+    Some(days * 86_400.0 + seconds)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn cpu_time_reads_in_both_formats_and_for_this_process() {
+        assert_eq!(ps_time_seconds("0:01.25"), Some(1.25));
+        assert_eq!(ps_time_seconds("01:02:03"), Some(3723.0));
+        assert_eq!(ps_time_seconds("1-00:00:01"), Some(86_401.0));
+        assert_eq!(ps_time_seconds("soon"), None);
+        let stat = "42 (kaeso bench) S 1 42 42 0 -1 4194304 1 0 0 0 250 50 0 0 20 0 9 0 1 1 1";
+        assert_eq!(proc_stat_seconds(stat), Some(3.0));
+        assert!(cpu_seconds(std::process::id()).is_some());
+    }
 
     #[test]
     fn the_machine_and_this_process_are_described() {

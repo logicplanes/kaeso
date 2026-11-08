@@ -26,7 +26,17 @@ fn ms(v: Option<f64>) -> String {
         None => "n/a".to_owned(),
         Some(v) if v.abs() >= 100.0 => format!("{v:.0} ms"),
         Some(v) if v.abs() >= 10.0 => format!("{v:.1} ms"),
-        Some(v) => format!("{v:.2} ms"),
+        Some(v) if v.abs() >= 1.0 => format!("{v:.2} ms"),
+        Some(v) => us(Some(v * 1000.0)),
+    }
+}
+
+fn us(v: Option<f64>) -> String {
+    match v {
+        None => "n/a".to_owned(),
+        Some(v) if v.abs() >= 1000.0 => ms(Some(v / 1000.0)),
+        Some(v) if v.abs() >= 10.0 => format!("{v:.0} µs"),
+        Some(v) => format!("{v:.1} µs"),
     }
 }
 
@@ -134,6 +144,7 @@ pub(crate) fn table(r: &Report<'_>) -> String {
                 "Requests/s",
                 "Overhead p50 / p99 / p99.9",
                 "Latency p50 / p99",
+                "Gateway CPU per request",
                 "Failed",
             ],
         );
@@ -150,6 +161,7 @@ pub(crate) fn table(r: &Report<'_>) -> String {
                     ms(b.overhead_ms.p999)
                 ),
                 percentiles(&b.latency_ms),
+                us(b.gateway_cpu_us_per_request),
                 b.failed.to_string(),
             ],
         );
@@ -164,6 +176,7 @@ pub(crate) fn table(r: &Report<'_>) -> String {
                 "Calls/s",
                 "Added latency p50 / p99 / p99.9",
                 "MCP server p50 / p99",
+                "Gateway CPU per call",
                 "Failed",
             ],
         );
@@ -180,6 +193,7 @@ pub(crate) fn table(r: &Report<'_>) -> String {
                     ms(b.overhead_ms.p999)
                 ),
                 percentiles(&b.upstream_ms),
+                us(b.gateway_cpu_us_per_request),
                 b.failed.to_string(),
             ],
         );
@@ -335,11 +349,17 @@ mod tests {
 
     #[test]
     fn durations_and_sizes_read_at_a_glance() {
-        assert_eq!(ms(Some(0.4123)), "0.41 ms");
+        assert_eq!(ms(Some(0.4123)), "412 µs");
+        assert_eq!(ms(Some(0.0191)), "19 µs");
+        assert_eq!(ms(Some(0.0042)), "4.2 µs");
+        assert_eq!(ms(Some(1.234)), "1.23 ms");
         assert_eq!(ms(Some(12.34)), "12.3 ms");
         assert_eq!(ms(Some(1234.4)), "1234 ms");
-        assert_eq!(ms(Some(-0.5)), "-0.50 ms");
+        assert_eq!(ms(Some(-0.5)), "-500 µs");
         assert_eq!(ms(None), "n/a");
+        assert_eq!(us(Some(37.26)), "37 µs");
+        assert_eq!(us(Some(2500.0)), "2.50 ms");
+        assert_eq!(us(None), "n/a");
         assert_eq!(bytes(Some(2048.0)), "2.0 KiB");
         assert_eq!(bytes(Some(3.5 * 1024.0 * 1024.0)), "3.5 MiB");
         assert_eq!(bytes(Some(24.0 * 1024.0 * 1024.0 * 1024.0)), "24.0 GiB");
