@@ -50,6 +50,11 @@
           - deploy/*.dockerignore
           - deploy/console/**
           - deploy/aws/**
+          - deploy/azure/**
+          - deploy/caprover/**
+          - deploy/coolify/**
+          - deploy/dokploy/**
+          - deploy/fly/**
           - deploy/gcp/**
           - deploy/gcp/**/.terraform.lock.hcl
           - render.yaml

@@ -1,7 +1,7 @@
 ---
 title: AWS
 description: Run Kaeso on AWS: one EC2 server with the Compose package, or ECS Fargate with an Application Load Balancer, RDS and ElastiCache.
-order: 4
+order: 5
 ---
 
 `deploy/aws/` in the repository holds two CloudFormation templates. The quick server is the Compose package on one instance, as on your own server. The managed stack is Kaeso on ECS Fargate with AWS data stores, for installs that outgrow one machine.
