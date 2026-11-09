@@ -4,6 +4,7 @@ use kaeso_kpp::{
 };
 
 use crate::anthropic_messages::AnthropicMessages;
+use crate::dashscope::DashScope;
 use crate::elevenlabs::{ElevenLabs, ElevenLabsCall};
 use crate::gemini::{Gemini, GeminiAction};
 use crate::gemini_embeddings::GeminiEmbeddings;
@@ -46,6 +47,7 @@ macro_rules! dispatch {
             DialectId::OpenAiVideos => Ok(OpenAiVideos::$f($($arg),*)),
             DialectId::XaiVideos => Ok(XaiVideos::$f($($arg),*)),
             DialectId::GeminiInteractions => Ok(GeminiInteractions::$f($($arg),*)),
+            DialectId::DashScope => Ok(DashScope::$f($($arg),*)),
             DialectId::Veo => Ok(Veo::$f($($arg),*)),
             DialectId::OpenRouterVideos => Ok(OpenRouterVideos::$f($($arg),*)),
             DialectId::MinimaxVideos => Ok(MinimaxVideos::$f($($arg),*)),
@@ -94,6 +96,7 @@ pub fn decode_checked_request<B: AsRef<[u8]>>(
         DialectId::OpenAiVideos => OpenAiVideos::decode_checked(kind, body, headers),
         DialectId::XaiVideos => XaiVideos::decode_request(kind, body, headers),
         DialectId::GeminiInteractions => GeminiInteractions::decode_request(kind, body, headers),
+        DialectId::DashScope => DashScope::decode_request(kind, body, headers),
         DialectId::Veo => Veo::decode_request(kind, body, headers),
         DialectId::OpenRouterVideos => OpenRouterVideos::decode_request(kind, body, headers),
         DialectId::MinimaxVideos => MinimaxVideos::decode_request(kind, body, headers),

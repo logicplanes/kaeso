@@ -1,0 +1,19 @@
+{
+  "model": "wan3.0-video",
+  "input": {
+    "prompt": "Image1 walks across a rooftop under moonlight.",
+    "media": [
+      {
+        "type": "reference_image",
+        "url": "https://help-static-aliyun-doc.aliyuncs.com/assets/img/en-US/1166661571/p944793.png"
+      }
+    ]
+  },
+  "parameters": {
+    "resolution": "720P",
+    "ratio": "16:9",
+    "duration": 8,
+    "audio": false,
+    "seed": 42
+  }
+}

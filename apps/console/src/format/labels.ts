@@ -47,6 +47,7 @@ export const DIALECTS: Record<string, string> = {
   openrouter_videos: "OpenRouter Videos",
   veo: "Veo",
   gemini_interactions: "Gemini Interactions",
+  dashscope: "DashScope",
 };
 export const dialectLabel = (d: string) => DIALECTS[d] ?? d;
 

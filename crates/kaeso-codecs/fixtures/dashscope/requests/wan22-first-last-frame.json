@@ -1,0 +1,12 @@
+{
+  "model": "wan2.2-kf2v-flash",
+  "input": {
+    "prompt": "Realistic style. A curious black kitten looks up at the sky.",
+    "first_frame_url": "https://wanx.alicdn.com/material/20250318/first_frame.png",
+    "last_frame_url": "https://wanx.alicdn.com/material/20250318/last_frame.png"
+  },
+  "parameters": {
+    "resolution": "480P",
+    "prompt_extend": true
+  }
+}

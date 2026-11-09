@@ -110,7 +110,7 @@ Die Dokumentation jedes eingebauten Anbieters wurde am 2026-11-09 auf Videoerzeu
 | ElevenLabs | `veo-3.1-generate-001`, `veo-3.1-fast-generate-001`, `bytedance-seedance-v2` und seine Varianten | Erstes Bild, hochgeladen | Nein | [OpenAPI-Dokument](https://api.elevenlabs.io/openapi.json) |
 | OpenAI | Nein: OpenAI hat Sora am 24. September 2026 abgeschaltet, deshalb antwortet ein Modell `sora-*` mit 400 | — | — | [Abkündigungen](https://platform.openai.com/docs/deprecations) |
 | Vercel | Nein: Vercel dokumentiert Video nur über sein AI SDK, nicht über HTTP | — | — | [Videoerzeugung](https://vercel.com/docs/ai-gateway/modalities/video-generation) |
-| QwenCloud | Nein: Seine Videomodelle nehmen die eigene API von DashScope | — | — | [Videoerzeugung](https://docs.qwencloud.com/api-reference/video-generation/wan-text-to-video/create-task) |
+| QwenCloud | Text zu Video und Bild zu Video mit Wan, etwa `wan3.0-video`, `wan2.7-t2v` und `wan2.6-i2v-flash` | Erstes Bild, hochgeladen oder verlinkt, bei Bild-zu-Video-Modellen und Wan 3.0 | Nein | [Videoerzeugung](https://docs.qwencloud.com/api-reference/video-generation/wan-text-to-video/create-task) |
 | Anthropic, DeepSeek, Groq, Mistral, Cohere, Ollama Cloud, Moonshot, Cerebras | Vom Anbieter nicht angeboten | — | — | Die API-Referenz jedes Anbieters |
 
 Ein Projekt führt ein Modell für Video, wenn KPMR oder sein eigener Eintrag sagt, dass das Modell Video macht. Veo auf Gemini Enterprise Agent Platform braucht einen Dienstkontoschlüssel: Der Express-Modus listet keine Veo-Modelle, deshalb lehnt Kaeso einen Express-Schlüssel für sie ab. Gemini Omni auf der Agent Platform ruft Kaeso nicht auf, weil die Plattform es nur an ihrem globalen Standort anbietet.

@@ -44,10 +44,12 @@ pub enum DialectId {
     Veo,
     #[serde(rename = "gemini_interactions")]
     GeminiInteractions,
+    #[serde(rename = "dashscope")]
+    DashScope,
 }
 
 impl DialectId {
-    pub const ALL: [DialectId; 19] = [
+    pub const ALL: [DialectId; 20] = [
         DialectId::AnthropicMessages,
         DialectId::OpenAiChat,
         DialectId::OpenAiResponses,
@@ -67,6 +69,7 @@ impl DialectId {
         DialectId::OpenRouterVideos,
         DialectId::Veo,
         DialectId::GeminiInteractions,
+        DialectId::DashScope,
     ];
 
     pub const fn as_str(self) -> &'static str {
@@ -90,6 +93,7 @@ impl DialectId {
             DialectId::OpenRouterVideos => "openrouter_videos",
             DialectId::Veo => "veo",
             DialectId::GeminiInteractions => "gemini_interactions",
+            DialectId::DashScope => "dashscope",
         }
     }
 
@@ -114,6 +118,7 @@ impl DialectId {
             DialectId::OpenRouterVideos => "OpenRouter Videos",
             DialectId::Veo => "Veo",
             DialectId::GeminiInteractions => "Gemini Interactions",
+            DialectId::DashScope => "DashScope",
         }
     }
 }

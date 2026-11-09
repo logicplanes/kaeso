@@ -96,6 +96,7 @@ sequenceDiagram
 | `openrouter_videos` | OpenRouter 的视频生成 API（[OpenRouter Videos](openrouter-videos.md)） |
 | `veo` | Gemini Enterprise Agent Platform 上 Veo 的长时间运行操作（[Veo](veo.md)） |
 | `gemini_interactions` | Google AI Studio Interactions API 上 Gemini Omni 的视频任务（[Gemini Interactions](gemini-interactions.md)） |
+| `dashscope` | QwenCloud 上 DashScope 的 Wan 模型视频合成（[DashScope](dashscope.md)） |
 | `multipart` | 图片、音频和视频上传使用的有上限的 `multipart/form-data` 读取器和写入器 |
 
 | 共享模块 | 职责 |

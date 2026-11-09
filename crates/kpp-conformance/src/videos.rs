@@ -30,6 +30,7 @@ pub(crate) const SOURCES: &[(DialectId, &str)] = &[
     (DialectId::Veo, ""),
     (DialectId::GeminiInteractions, ""),
     (DialectId::ElevenLabs, "video/"),
+    (DialectId::DashScope, ""),
 ];
 
 fn ctx(name: &str) -> EgressCtx {
