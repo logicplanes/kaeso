@@ -687,5 +687,6 @@
   "errors.videoFileWithheld": "{provider} 没有交出视频文件；请稍后重试。",
   "errors.resultLinkRefused": "{provider} 返回了一个 Kaeso 不会获取的链接。",
   "errors.resultFileWithheld": "{provider} 没有交出生成的文件；请稍后重试。",
-  "errors.videoWrongReply": "服务商对视频任务返回了另一种回复。"
+  "errors.videoWrongReply": "服务商对视频任务返回了另一种回复。",
+  "errors.modelApi.permissionRefused": "服务商不允许用此项目的服务商密钥发出此请求，例如因为模型、套餐或地区。请组织管理员在“服务商”中检查。"
 }

@@ -687,5 +687,6 @@
   "errors.videoFileWithheld": "{provider} hat die Datei des Videos nicht übergeben; versuchen Sie es gleich noch einmal.",
   "errors.resultLinkRefused": "{provider} hat mit einem Link geantwortet, den Kaeso nicht abruft.",
   "errors.resultFileWithheld": "{provider} hat die erzeugte Datei nicht übergeben; versuchen Sie es gleich noch einmal.",
-  "errors.videoWrongReply": "Der Anbieter hat auf einen Videojob mit einer anderen Art von Antwort geantwortet."
+  "errors.videoWrongReply": "Der Anbieter hat auf einen Videojob mit einer anderen Art von Antwort geantwortet.",
+  "errors.modelApi.permissionRefused": "Der Anbieter erlaubt diese Anfrage mit dem Anbieter-Schlüssel dieses Projekts nicht, etwa für dieses Modell, diesen Tarif oder diese Region. Einen Admin der Organisation bitten, ihn unter Anbieter zu prüfen."
 }
