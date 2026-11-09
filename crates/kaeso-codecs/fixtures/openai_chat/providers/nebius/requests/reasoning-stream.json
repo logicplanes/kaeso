@@ -1,0 +1,14 @@
+{
+  "model": "zai-org/GLM-5.3",
+  "messages": [
+    {
+      "role": "user",
+      "content": "What is 17 times 23?"
+    }
+  ],
+  "max_completion_tokens": 512,
+  "stream": true,
+  "stream_options": {
+    "include_usage": true
+  }
+}

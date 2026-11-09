@@ -138,6 +138,14 @@ async fn every_member_reads_each_provider_with_its_name_key_page_and_formats() {
     assert_eq!(fireworks["count_tokens"], Value::Null);
     assert_eq!(fireworks["embeddings"], "openai_embeddings");
     assert_eq!(fireworks["key_prefix"], "fw_");
+    let nebius = listed.iter().find(|p| p["id"] == "nebius").unwrap();
+    assert_eq!(nebius["name"], "Nebius Token Factory");
+    assert_eq!(
+        nebius["dialects"],
+        json!(["openai_chat", "openai_embeddings"])
+    );
+    assert_eq!(nebius["embeddings"], "openai_embeddings");
+    assert_eq!(nebius["key_prefix"], Value::Null);
 
     let anonymous = app
         .call(Method::GET, &format!("/orgs/{org}/providers"), None, None)

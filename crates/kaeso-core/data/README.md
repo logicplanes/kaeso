@@ -11,8 +11,8 @@ A snapshot of the catalogue of [KPMR](https://kpmr.kaeso.app), the Kaeso Provide
 | Source | `https://kpmr.kaeso.app/v1/catalogue` |
 | Revision | `2026-11-09T17:26:42Z-599ef5c7ccdb` |
 | Generated | 2026-11-09T17:26:42Z |
-| Content | the providers Kaeso calls (`alibaba`, `anthropic`, `cerebras`, `cohere`, `deepseek`, `elevenlabs`, `fireworks-ai`, `gemini-agent-platform`, `google`, `groq`, `minimax`, `mistral`, `moonshotai`, `ollama-cloud`, `openai`, `openrouter`, `togetherai`, `vercel`, `xai`, `zai`); 1465 models |
-| SHA-256 | `6120f0efa3b682bb81c81cc2eaacc2d57d89cd99f948828ad93878a436334a7c` |
+| Content | the providers Kaeso calls (`alibaba`, `anthropic`, `cerebras`, `cohere`, `deepseek`, `elevenlabs`, `fireworks-ai`, `gemini-agent-platform`, `google`, `groq`, `minimax`, `mistral`, `moonshotai`, `nebius`, `ollama-cloud`, `openai`, `openrouter`, `togetherai`, `vercel`, `xai`, `zai`); 1484 models |
+| SHA-256 | `7327e52daf73a513b9e662e1d3ed4cf40f57379cf377431806cb39ec5de66777` |
 | License | MIT, © models.dev contributors (see [NOTICE.md](https://github.com/logicplanes/kaeso/blob/dev/NOTICE.md)) |
 
 To refresh it for a release, download the catalogue and check its signature against the built-in key:

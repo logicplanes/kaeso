@@ -1,0 +1,21 @@
+{
+  "model": "nvidia/Nemotron-3.5-Super-VL",
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "Describe this clip in one sentence."
+        },
+        {
+          "type": "video_url",
+          "video_url": {
+            "url": "https://example.com/clip.mp4"
+          }
+        }
+      ]
+    }
+  ],
+  "max_completion_tokens": 256
+}

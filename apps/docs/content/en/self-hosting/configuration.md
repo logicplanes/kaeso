@@ -199,6 +199,7 @@ The first three settings only seed a new install. After that, instance admins ch
 | `KAESO_PROVIDERS_GOOGLE_BASE_URL`<br>`providers.google.base_url` | text | `https://generativelanguage.googleapis.com` | Base URL of the Google AI Studio API. |
 | `KAESO_PROVIDERS_GEMINI_AGENT_PLATFORM_BASE_URL`<br>`providers.gemini-agent-platform.base_url` | text | `https://aiplatform.googleapis.com` | Base URL of the Gemini Enterprise Agent Platform API. |
 | `KAESO_PROVIDERS_FIREWORKS_AI_BASE_URL`<br>`providers.fireworks-ai.base_url` | text | `https://api.fireworks.ai/inference` | Base URL of the Fireworks AI API. |
+| `KAESO_PROVIDERS_NEBIUS_BASE_URL`<br>`providers.nebius.base_url` | text | `https://api.tokenfactory.nebius.com` | Base URL of the Nebius Token Factory API. |
 | `KAESO_UPSTREAM_CONNECT_TIMEOUT`<br>`upstream.connect_timeout` | text | `10s` | Time to connect to a provider, TCP and TLS; at most 24h. |
 | `KAESO_UPSTREAM_REQUEST_TIMEOUT`<br>`upstream.request_timeout` | text | `600s` | Total time of a provider request that doesn't stream; at most 24h. |
 | `KAESO_UPSTREAM_FIRST_BYTE_TIMEOUT`<br>`upstream.first_byte_timeout` | text | `60s` | Streaming: time to the provider's first byte; at most 24h. |

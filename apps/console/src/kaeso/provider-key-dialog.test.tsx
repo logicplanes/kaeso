@@ -389,6 +389,30 @@ describe("ProviderKeyDialog", () => {
     ]);
   });
 
+  it("adds a Nebius Token Factory key, which has no fixed prefix, with its project's key page as its key hint", async () => {
+    on("POST", CREDENTIALS, credential({ provider: "nebius", name: "Nebius prod", is_default: true }));
+    const { user, dialog } = await open();
+
+    await choose(user, dialog, "Nebius Token Factory");
+
+    expect(await within(dialog).findByRole("heading", { name: "Paste your Nebius Token Factory API key" })).toBeVisible();
+    const link = within(dialog).getByRole("link", { name: "tokenfactory.nebius.com (opens in a new tab)" });
+    expect(link).toHaveAttribute("href", "https://tokenfactory.nebius.com/project/api-keys");
+    expect((link.closest("p") as HTMLElement).textContent?.replace(/⁠? \(opens in a new tab\)/, "")).toBe(
+      "Create one at tokenfactory.nebius.com under API keys.",
+    );
+    const secret = within(dialog).getByLabelText("Nebius Token Factory API key");
+    expect(secret).not.toHaveAttribute("placeholder");
+    await user.type(secret, "nebius-key-0123");
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "Nebius prod");
+    await user.click(within(dialog).getByRole("button", { name: "Add key" }));
+
+    expect(await notifications().findByText("Nebius prod is the Nebius Token Factory default")).toBeInTheDocument();
+    expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([
+      { provider: "nebius", name: "Nebius prod", secret: "nebius-key-0123", make_default: false },
+    ]);
+  });
+
   it("adds a Google AI Studio key, which has no fixed prefix, with AI Studio's key page as its key hint", async () => {
     on("POST", CREDENTIALS, credential({ provider: "google", name: "AI Studio prod", is_default: true }));
     const { user, dialog } = await open();

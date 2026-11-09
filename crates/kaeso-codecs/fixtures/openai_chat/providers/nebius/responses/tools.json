@@ -1,0 +1,40 @@
+{
+  "id": "chatcmpl-2c4e6a8b0d1f4a3c5e7b9d0f1a2c3e4d",
+  "object": "chat.completion",
+  "created": 1794225660,
+  "model": "moonshotai/Kimi-K3",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": null,
+        "reasoning_content": "I should call get_weather with city Paris.",
+        "tool_calls": [
+          {
+            "id": "functions.get_weather:0",
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "arguments": "{\"city\": \"Paris\"}"
+            }
+          }
+        ]
+      },
+      "logprobs": null,
+      "finish_reason": "tool_calls"
+    }
+  ],
+  "usage": {
+    "completion_tokens": 31,
+    "prompt_tokens": 96,
+    "total_tokens": 127,
+    "prompt_tokens_details": {
+      "cached_tokens": 64
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 11
+    }
+  },
+  "service_tier": "default"
+}

@@ -1,0 +1,31 @@
+{
+  "id": "chatcmpl-7f3e9a1c2b4d4e6f8a0b1c2d3e4f5a6b",
+  "object": "chat.completion",
+  "created": 1794225600,
+  "model": "zai-org/GLM-5.3",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "The capital of France is Paris.",
+        "reasoning_content": "The user asks for the capital of France. It is Paris.",
+        "tool_calls": []
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "completion_tokens": 27,
+    "prompt_tokens": 24,
+    "total_tokens": 51,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 18
+    }
+  },
+  "service_tier": "default"
+}

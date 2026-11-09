@@ -1473,6 +1473,42 @@ pub const PROVIDERS: &[Provider] = &[
         routes: &[],
         service_account: None,
     },
+    Provider {
+        id: "nebius",
+        name: "Nebius Token Factory",
+        key_page: KeyPage {
+            url: "https://tokenfactory.nebius.com/project/api-keys",
+            label: "API keys",
+        },
+        key_prefix: None,
+        default_base_url: "https://api.tokenfactory.nebius.com",
+        auth: AuthStyle::Bearer,
+        generation: DialectId::OpenAiChat,
+        count_tokens: None,
+        embeddings: Some(DialectId::OpenAiEmbeddings),
+        images: &[],
+        speech: &[],
+        transcriptions: &[],
+        videos: &[],
+        dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
+        refused_key_messages: &[],
+        context_window_messages: &[],
+        reasoning_beyond_output_limit: false,
+        end_user_limit: None,
+        // Nebius' OpenAPI document lists no `developer` role and no `safety_identifier`, and
+        // takes `video_url` parts (https://api.tokenfactory.nebius.com/openapi.json).
+        chat: ChatProfile::compatible("Nebius Token Factory")
+            .system_role()
+            .end_user_as_user()
+            .with_video_url()
+            .reasoning_fields(&["reasoning_content", "reasoning"]),
+        responses: ResponsesProfile::compatible("Nebius Token Factory"),
+        messages: MessagesProfile::compatible("Nebius Token Factory"),
+        gemini: GeminiProfile::GOOGLE_AI_STUDIO,
+        account: None,
+        routes: &[],
+        service_account: None,
+    },
 ];
 
 const _: () = {
@@ -1769,7 +1805,7 @@ mod tests {
         assert!(provider("gemini").is_none());
         assert_eq!(
             ids(),
-            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras, zai, minimax, elevenlabs, google, gemini-agent-platform, fireworks-ai"
+            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras, zai, minimax, elevenlabs, google, gemini-agent-platform, fireworks-ai, nebius"
         );
     }
 
@@ -2586,7 +2622,8 @@ mod tests {
                 "elevenlabs",
                 "google",
                 "gemini-agent-platform",
-                "fireworks-ai"
+                "fireworks-ai",
+                "nebius"
             ]
         );
         assert_eq!(

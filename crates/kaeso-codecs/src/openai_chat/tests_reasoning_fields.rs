@@ -34,6 +34,11 @@ const PROFILES: &[(&str, ChatProfile)] = &[
         ChatProfile::compatible("Moonshot").reasoning_fields(&["reasoning_content"]),
     ),
     (
+        "nebius",
+        ChatProfile::compatible("Nebius Token Factory")
+            .reasoning_fields(&["reasoning_content", "reasoning"]),
+    ),
+    (
         "ollama-cloud",
         ChatProfile::compatible("Ollama Cloud").reasoning_fields(&["reasoning"]),
     ),
