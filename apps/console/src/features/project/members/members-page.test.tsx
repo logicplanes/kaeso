@@ -249,7 +249,8 @@ describe("MemberSheet", () => {
     for (const source of ["Developer", "Project role", "Auditor · organization", "Org role", "View all projects", "Added", "Owner", "Role"])
       expect(rights).toHaveTextContent(source);
     await user.click(within(sheet).getByRole("button", { name: /Every right/ }));
-    expect(within(sheet).getAllByRole("group", { name: "Grace Hopper's rights in this project" })).toHaveLength(2);
+    const [, every] = within(sheet).getAllByRole("group", { name: "Grace Hopper's rights in this project" });
+    expect(every).toHaveClass("-mx-12");
   });
 
   it("changes the member's role and can discard the change", async () => {
