@@ -134,7 +134,7 @@ const ROWS: &[Row] = &[
     s("response_cache.memory_share", "KAESO_RESPONSE_CACHE_MEMORY_SHARE", Integer, Some("50"), false, "Percent of Valkey's `maxmemory` above which the response cache stops adding entries, so limit counters always have room; 1 to 90. Ignored when Valkey sets no `maxmemory`."),
     s("body_limits.model_api", "KAESO_BODY_LIMITS_MODEL_API", Text, Some("32MiB"), false, "Largest request body of the model API."),
     s("body_limits.images", "KAESO_BODY_LIMITS_IMAGES", Text, Some("64MiB"), false, "Largest request body of the image endpoints, uploads included."),
-    s("body_limits.audio", "KAESO_BODY_LIMITS_AUDIO", Text, Some("26MiB"), false, "Largest request body of the transcription and translation endpoints, the upload included."),
+    s("body_limits.audio", "KAESO_BODY_LIMITS_AUDIO", Text, Some("26MiB"), false, "Largest request body of the transcription and translation endpoints and of every upload to the ElevenLabs endpoints, the upload included."),
     s("body_limits.in_flight", "KAESO_BODY_LIMITS_IN_FLIGHT", Text, Some("512MiB"), false, "Memory the model API and the Playground may use at once to translate requests, estimated from each body as received and its messages, blocks and tools; a request waits up to 10s for room."),
     s("body_limits.platform_api", "KAESO_BODY_LIMITS_PLATFORM_API", Text, Some("1MiB"), false, "Largest request body of the Platform API, Playground requests included."),
     s("body_limits.provider_response", "KAESO_BODY_LIMITS_PROVIDER_RESPONSE", Text, Some("128MiB"), false, "Largest non-streaming response body Kaeso reads from a provider; a larger one fails the request with 502."),
