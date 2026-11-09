@@ -193,7 +193,7 @@ impl Drop for Recording {
     }
 }
 
-fn over_limit(error: &(dyn std::error::Error + 'static)) -> bool {
+pub(crate) fn over_limit(error: &(dyn std::error::Error + 'static)) -> bool {
     let mut cause = Some(error);
     while let Some(e) = cause {
         if e.is::<http_body_util::LengthLimitError>() {

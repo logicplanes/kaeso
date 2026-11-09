@@ -91,6 +91,10 @@ import {
   Redo02Icon,
   UnfoldMoreIcon,
   LaptopIcon,
+  Attachment01Icon,
+  File01Icon,
+  AudioWave01Icon,
+  Mic01Icon,
 } from "@hugeicons/core-free-icons";
 
 export const icons = {
@@ -139,6 +143,8 @@ export const icons = {
   delete: Delete02Icon,
   download: Download01Icon,
   upload: Upload01Icon,
+  attach: Attachment01Icon,
+  record: Mic01Icon,
   refresh: Refresh01Icon,
   retry: ArrowReloadHorizontalIcon,
   send: ArrowUp02Icon,
@@ -190,6 +196,8 @@ export const icons = {
   themeSystem: ComputerIcon,
   language: Globe02Icon,
   legal: SectionIcon,
+  file: File01Icon,
+  audio: AudioWave01Icon,
 } as const;
 
 export type IconName = keyof typeof icons;

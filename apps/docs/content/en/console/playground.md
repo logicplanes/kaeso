@@ -11,8 +11,8 @@ The Playground is a conversation, so it lists the models that take and answer te
 ## Compare models
 
 1. Choose a model for the first column, and choose **Add column** for each further one. Search by name, id or provider, or narrow the list to one provider; models are grouped by provider, and the ones you chose recently come first. You can't choose a model whose provider has no key for this project, or one marked [Unavailable](models-and-aliases.md) because the provider doesn't serve it to the project's key.
-2. Send a prompt to every model.
-3. Read the replies. Each shows the time to the first token, the total time, the tokens and the cost. A reply that failed shows the reason in its column, and one the model cut off says why, such as **Stopped at the output limit**. **Retry** sends that turn again.
+2. Send a prompt to every model. When every chosen model reads images or PDFs, the attach button adds them, named for what the models take, such as **Attach images**; dropping or pasting them into the prompt box works too. They go to the models with the prompt and again with every later turn.
+3. Read the replies. A column follows a reply as it arrives until you scroll up, and follows again when you scroll back to its end. Each reply shows the time to the first token, the total time, the tokens and the cost. A reply that failed shows the reason in its column, and one the model cut off says why, such as **Stopped at the output limit**. **Retry** sends that turn again.
 
 **Clear** empties every column's conversation; **Undo** in the notice brings it back.
 

@@ -72,6 +72,37 @@ pub struct PlaygroundRequest {
 
 const ROUTE_TEST: [&str; 3] = ["route", "alias", "headers"];
 
+const TRANSLATING_BUSY: &str = "Kaeso is busy translating other requests; try again shortly.";
+
+// What an upload of this size holds while it is read and taken apart: the body, and the copy
+// a route test makes of it.
+fn upload_share(body: &axum::body::Body, max_body: usize) -> u64 {
+    use axum::body::HttpBody as _;
+    let hint = body.size_hint();
+    let expected = hint.exact().or(hint.upper()).unwrap_or(hint.lower());
+    expected
+        .min(u64::try_from(max_body).unwrap_or(u64::MAX))
+        .saturating_mul(2)
+}
+
+/// A body that couldn't be read: too large, too slow, or cut off by the app.
+pub(super) fn body_error(e: &axum::Error, too_large: &str) -> ApiError {
+    if crate::http::body_timeout::timed_out(e) {
+        ApiError::bad_request("The request body did not arrive in time; send it again.")
+    } else if pipeline::over_limit(e) {
+        ApiError::TooLarge(too_large.to_owned())
+    } else {
+        ApiError::bad_request("The request body broke off before it was complete; send it again.")
+    }
+}
+
+fn names_a_route_test(bytes: &[u8]) -> bool {
+    ROUTE_TEST.iter().any(|f| {
+        let quoted = format!("\"{f}\"");
+        bytes.windows(quoted.len()).any(|w| w == quoted.as_bytes())
+    })
+}
+
 #[derive(Debug, Default, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct RouteTest {
@@ -97,6 +128,9 @@ fn split(bytes: Bytes) -> ApiResult<Split> {
         model: None,
         test: RouteTest::default(),
     };
+    if !names_a_route_test(&bytes) {
+        return Ok(untouched(bytes));
+    }
     let Ok(fields) = serde_json::from_slice::<BTreeMap<String, &RawValue>>(&bytes) else {
         return Ok(untouched(bytes));
     };
@@ -198,11 +232,23 @@ pub async fn responses(
             "The project is archived; its models cannot be called.".into(),
         ));
     }
-    let max_body = state.config.body_limits.platform_api.as_usize();
-    let bytes = axum::body::to_bytes(body, max_body)
+    let max_body = state.config.body_limits.model_api.as_usize();
+    // The body is read and taken apart here, before the pipeline takes its own share of the
+    // translation memory, so it holds a share for itself while it does.
+    let share = state
+        .translating
+        .hold(session.user_id, upload_share(&body, max_body))
         .await
-        .map_err(|_| ApiError::TooLarge("The conversation is larger than Kaeso accepts.".into()))?;
-    let Split { body, model, test } = split(bytes)?;
+        .map_err(|_| ApiError::Unavailable(TRANSLATING_BUSY.into()))?;
+    let bytes = crate::http::body::read(body, max_body)
+        .await
+        .map_err(|e| body_error(&e, "The conversation is larger than Kaeso accepts."))?;
+    let Split { body, model, test } = pipeline::off_thread(bytes.len(), move || split(bytes))
+        .await
+        .map_err(|e| {
+            ApiError::internal(format!("a playground request did not split: {}", e.message))
+        })??;
+    drop(share);
     let mut headers = HeaderMap::new();
     if let Some(ua) = ctx
         .user_agent
@@ -512,6 +558,10 @@ pub struct PlaygroundModel {
         last check or request found; the Playground offers an `unavailable`\n\
         model only greyed out."]
     pub availability: crate::platform::projects::models::AvailabilityState,
+    #[doc = "The largest Playground request Kaeso takes for it, in bytes, attachments\n\
+        included as sent."]
+    #[schema(example = 33554432)]
+    pub max_request_bytes: u64,
 }
 
 // The Playground is a conversation: a model must take text and answer with text. Media models
@@ -609,6 +659,7 @@ pub async fn models(
             price_tiers: f.price_tiers.clone().unwrap_or_default(),
             provider_key,
             availability: entry.availability.into(),
+            max_request_bytes: state.config.body_limits.model_api.0,
         });
     }
     Ok(axum::Json(List::complete(out)))

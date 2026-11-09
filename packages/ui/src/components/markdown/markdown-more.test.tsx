@@ -1,7 +1,39 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { Markdown, lexMarkdown, previewMarkdown } from "./markdown.js";
+import { Markdown, extendMarkdown, lexMarkdown, previewMarkdown } from "./markdown.js";
+
+const REPLY = [
+  "# Checking the gateway\n\nKaeso answered **two** of three requests; the third timed out.\n",
+  "Setext heading\n==============\n\n1. Open the request log\n2. Filter by `status:5xx`\n\n3. Compare the providers\n10. Retry the last one\n",
+  "- one\n- two\n  - nested *item*\n\n- loose item\n\n  with a second paragraph\n\n- [x] done\n- [ ] open\n",
+  "> A quote that goes on\nlazily on the next line\n\n| Model | Latency |\n|:------|--------:|\n| claude | 812 ms |\n| gpt | 640 ms |\n\n",
+  "```ts\nconst reply = await kaeso.responses.create({ model });\n```\n\nText after the fence.\n\n    indented code\n\n---\n\nA last paragraph with a [link](https://kaeso.app)  \nand a break.\n",
+].join("\n");
+
+describe("extendMarkdown", () => {
+  it("gives the tokens a whole lex gives at every length a stream can reach", () => {
+    for (const step of [1, 3, 7, 29]) {
+      let before: { text: string; tokens: ReturnType<typeof lexMarkdown> } | null = null;
+      for (let end = step; end < REPLY.length + step; end += step) {
+        const text = REPLY.slice(0, end);
+        const tokens = extendMarkdown(before, text);
+        expect([...tokens], `${step}: ${JSON.stringify(text.slice(-40))}`).toEqual([...lexMarkdown(text, { cache: false })]);
+        before = { text, tokens };
+      }
+    }
+  });
+
+  it("keeps the blocks that can't change and lexes a text that isn't an extension whole", () => {
+    const text = "One paragraph.\n\nTwo paragraph.\n\nThree";
+    const first = lexMarkdown(text, { cache: false });
+    const grown = extendMarkdown({ text, tokens: first }, `${text} grows`);
+    expect(grown[0]).toBe(first[0]);
+    expect([...grown]).toEqual([...lexMarkdown(`${text} grows`, { cache: false })]);
+    expect(extendMarkdown({ text: "Old text", tokens: lexMarkdown("Old text") }, "New text")).toEqual(lexMarkdown("New text", { cache: false }));
+    expect(extendMarkdown(null, "a\r\nb")).toEqual(lexMarkdown("a\r\nb", { cache: false }));
+  });
+});
 
 describe("markdown helpers", () => {
   it("cuts a preview at a paragraph, a line or a word", () => {

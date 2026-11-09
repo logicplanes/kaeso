@@ -7,6 +7,7 @@ import { newResponse } from "./responses";
 const model = (patch: Partial<PlaygroundModel> = {}): PlaygroundModel => ({
   id: "model_1",
   availability: "available",
+  max_request_bytes: 33_554_432,
   aliases: [],
   input_modalities: ["text"],
   model: "gpt-5.4-mini",

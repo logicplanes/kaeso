@@ -28943,7 +28943,8 @@
                 "input_modalities",
                 "price_tiers",
                 "provider_key",
-                "availability"
+                "availability",
+                "max_request_bytes"
               ],
               "properties": {
                 "aliases": {
@@ -29010,6 +29011,13 @@
                   ],
                   "description": "USD per million uncached input tokens.",
                   "example": "3"
+                },
+                "max_request_bytes": {
+                  "type": "integer",
+                  "format": "int64",
+                  "description": "The largest Playground request Kaeso takes for it, in bytes, attachments\nincluded as sent.",
+                  "example": 33554432,
+                  "minimum": 0
                 },
                 "model": {
                   "type": "string",
@@ -33400,7 +33408,8 @@
           "input_modalities",
           "price_tiers",
           "provider_key",
-          "availability"
+          "availability",
+          "max_request_bytes"
         ],
         "properties": {
           "aliases": {
@@ -33467,6 +33476,13 @@
             ],
             "description": "USD per million uncached input tokens.",
             "example": "3"
+          },
+          "max_request_bytes": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The largest Playground request Kaeso takes for it, in bytes, attachments\nincluded as sent.",
+            "example": 33554432,
+            "minimum": 0
           },
           "model": {
             "type": "string",

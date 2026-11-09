@@ -11,8 +11,8 @@ Der Playground ist ein Gespräch, deshalb listet er die Modelle, die Text nehmen
 ## Modelle vergleichen
 
 1. Wählen Sie ein Modell für die erste Spalte und mit **Spalte hinzufügen** jede weitere. Suchen Sie nach Name, ID oder Anbieter, oder beschränken Sie die Liste auf einen Anbieter; die Modelle sind nach Anbieter gruppiert, und die zuletzt gewählten stehen oben. Ein Modell, dessen Anbieter keinen Schlüssel für dieses Projekt hat, können Sie nicht wählen, ebenso wenig eines, das als [Nicht verfügbar](models-and-aliases.md) markiert ist, weil der Anbieter es dem Schlüssel des Projekts nicht anbietet.
-2. Senden Sie einen Prompt an alle Modelle.
-3. Lesen Sie die Antworten. Jede zeigt die Zeit bis zum ersten Token, die Gesamtzeit, die Token und die Kosten. Eine fehlgeschlagene Antwort zeigt den Grund in ihrer Spalte, und eine, die das Modell abgebrochen hat, sagt warum, etwa **Am Ausgabelimit gestoppt**. **Erneut versuchen** sendet diesen Schritt noch einmal.
+2. Senden Sie einen Prompt an alle Modelle. Wenn jedes gewählte Modell Bilder oder PDFs liest, fügt die Schaltfläche zum Anhängen sie hinzu, benannt nach dem, was die Modelle annehmen, etwa **Bilder anhängen**; Sie können sie auch in das Prompt-Feld ziehen oder einfügen. Sie gehen mit dem Prompt an die Modelle und mit jedem späteren Schritt erneut.
+3. Lesen Sie die Antworten. Eine Spalte folgt einer Antwort, während sie eintrifft, bis Sie nach oben scrollen, und folgt wieder, wenn Sie zurück an ihr Ende scrollen. Jede Antwort zeigt die Zeit bis zum ersten Token, die Gesamtzeit, die Token und die Kosten. Eine fehlgeschlagene Antwort zeigt den Grund in ihrer Spalte, und eine, die das Modell abgebrochen hat, sagt warum, etwa **Am Ausgabelimit gestoppt**. **Erneut versuchen** sendet diesen Schritt noch einmal.
 
 **Leeren** leert das Gespräch jeder Spalte; **Rückgängig** in der Meldung holt es zurück.
 

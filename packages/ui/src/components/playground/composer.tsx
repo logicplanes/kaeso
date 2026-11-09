@@ -1,9 +1,23 @@
-import { forwardRef, useCallback, useId, useLayoutEffect, useRef, useSyncExternalStore, type FormEvent, type KeyboardEvent, type ReactNode } from "react";
+import {
+  forwardRef,
+  useCallback,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type ClipboardEvent,
+  type DragEvent,
+  type FormEvent,
+  type KeyboardEvent,
+  type ReactNode,
+} from "react";
 import { useUiText } from "../../i18n/context.js";
 import { cn } from "../../utils/cn.js";
 import { useControllable } from "../../utils/use-controllable.js";
 import { icons } from "../../icons/vocabulary.js";
 import { Button } from "../button/button.js";
+import { Attachments, type Attachment } from "./attachments.js";
 
 export const KAESO_COMPOSER_VARIANTS = {
   size: {
@@ -46,9 +60,17 @@ export interface ComposerProps {
   stopLabel?: string | undefined;
   autoFocus?: boolean | undefined;
   name?: string | undefined;
+  attachments?: readonly Attachment[] | undefined;
+  onAttach?: ((files: File[]) => void) | undefined;
+  onRemoveAttachment?: ((id: string) => void) | undefined;
+  accept?: string | undefined;
+  attachLabel?: string | undefined;
   "data-force"?: string | undefined;
   className?: string | undefined;
 }
+
+const files = (list: FileList | null | undefined): File[] => (list ? Array.from(list) : []);
+const carriesFiles = (e: DragEvent) => Array.from(e.dataTransfer?.types ?? []).includes("Files");
 
 export const Composer = forwardRef<HTMLTextAreaElement, ComposerProps>(function Composer(
   {
@@ -71,6 +93,11 @@ export const Composer = forwardRef<HTMLTextAreaElement, ComposerProps>(function 
     stopLabel: stopLabelProp,
     autoFocus,
     name,
+    attachments = [],
+    onAttach,
+    onRemoveAttachment,
+    accept,
+    attachLabel: attachLabelProp,
     "data-force": force,
     className,
   },
@@ -81,7 +108,11 @@ export const Composer = forwardRef<HTMLTextAreaElement, ComposerProps>(function 
   const ariaLabel = ariaLabelProp ?? t("composer.prompt", "Prompt");
   const submitLabel = submitLabelProp ?? t("composer.send", "Send");
   const stopLabel = stopLabelProp ?? t("composer.stop", "Stop");
+  const attachLabel = attachLabelProp ?? t("composer.attach", "Attach files");
   const [text, setText] = useControllable(value, defaultValue, onValueChange);
+  const picker = useRef<HTMLInputElement | null>(null);
+  const [dropping, setDropping] = useState(false);
+  const attaching = !!onAttach && !disabled;
   const waitHint = useId();
 
   const box = useRef<HTMLTextAreaElement | null>(null);
@@ -101,7 +132,7 @@ export const Composer = forwardRef<HTMLTextAreaElement, ComposerProps>(function 
   }, [maxRows, minRows, fade]);
   useLayoutEffect(grow, [grow, text]);
 
-  const empty = text.trim() === "";
+  const empty = text.trim() === "" && attachments.length === 0;
   const canSend = !disabled && !streaming && !loading && !empty;
   const send = () => {
     if (!canSend) return;
@@ -122,6 +153,34 @@ export const Composer = forwardRef<HTMLTextAreaElement, ComposerProps>(function 
     e.preventDefault();
     send();
   };
+  const onPaste = (e: ClipboardEvent<HTMLTextAreaElement>) => {
+    const pasted = files(e.clipboardData?.files);
+    if (!attaching || pasted.length === 0) return;
+    if (!e.clipboardData.getData("text/plain")) e.preventDefault();
+    onAttach?.(pasted);
+  };
+  const drop = attaching
+    ? {
+        onDragEnter: (e: DragEvent<HTMLFormElement>) => {
+          if (carriesFiles(e)) setDropping(true);
+        },
+        onDragOver: (e: DragEvent<HTMLFormElement>) => {
+          if (!carriesFiles(e)) return;
+          e.preventDefault();
+          e.dataTransfer.dropEffect = "copy";
+        },
+        onDragLeave: (e: DragEvent<HTMLFormElement>) => {
+          if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDropping(false);
+        },
+        onDrop: (e: DragEvent<HTMLFormElement>) => {
+          setDropping(false);
+          const dropped = files(e.dataTransfer?.files);
+          if (dropped.length === 0) return;
+          e.preventDefault();
+          onAttach?.(dropped);
+        },
+      }
+    : {};
 
   return (
     <form
@@ -133,8 +192,10 @@ export const Composer = forwardRef<HTMLTextAreaElement, ComposerProps>(function 
         e.preventDefault();
         box.current?.focus();
       }}
+      {...drop}
       {...(force ? { "data-force": force } : {})}
       {...(disabled ? { "data-disabled": "" } : {})}
+      {...(dropping && attaching ? { "data-drop": "" } : {})}
       className={cn(
         "flex min-w-0 cursor-text flex-col material-composer transition-control",
         KAESO_COMPOSER_VARIANTS.size[size].classes,
@@ -142,6 +203,7 @@ export const Composer = forwardRef<HTMLTextAreaElement, ComposerProps>(function 
         className,
       )}
     >
+      {attachments.length > 0 && <Attachments items={attachments} onRemove={disabled ? undefined : onRemoveAttachment} className="px-8 pt-8" />}
       <textarea
         ref={(el) => {
           box.current = el;
@@ -152,6 +214,7 @@ export const Composer = forwardRef<HTMLTextAreaElement, ComposerProps>(function 
         value={text}
         onChange={(e) => setText(e.target.value)}
         onKeyDown={onKeyDown}
+        onPaste={onPaste}
         onScroll={fade}
         disabled={disabled}
         placeholder={placeholder}
@@ -167,7 +230,35 @@ export const Composer = forwardRef<HTMLTextAreaElement, ComposerProps>(function 
         {t("composer.stopToSend", "A response is arriving; stop it to send this prompt.")}
       </span>
       <div className="flex min-w-0 items-center gap-8 p-8 pt-4 controls-on-fill">
-        <div className="flex min-w-0 flex-1 items-center gap-4">{actions}</div>
+        <div className="flex min-w-0 flex-1 items-center gap-4">
+          {onAttach && (
+            <>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                icon={icons.attach}
+                aria-label={attachLabel}
+                disabled={disabled}
+                onClick={() => picker.current?.click()}
+              />
+              <input
+                ref={picker}
+                type="file"
+                multiple
+                hidden
+                tabIndex={-1}
+                {...(accept ? { accept } : {})}
+                onChange={(e) => {
+                  const picked = files(e.currentTarget.files);
+                  e.currentTarget.value = "";
+                  if (picked.length) onAttach?.(picked);
+                }}
+              />
+            </>
+          )}
+          {actions}
+        </div>
         {streaming ? (
           <Button type="button" size="sm" variant="secondary" icon={icons.stop} aria-label={stopLabel} onClick={() => onStop?.()} disabled={disabled} />
         ) : (

@@ -1,3 +1,4 @@
+import { userContent, type TurnFile } from "./attachments";
 import type { ResponseViewProps } from "@logicplanes/kaeso-ui/playground";
 import { t } from "~/i18n";
 
@@ -76,6 +77,17 @@ const joined = (parts: Record<string, string>) =>
     .filter((p) => p !== "")
     .join("\n\n");
 
+// Deltas arrive for the newest part almost always; appending to the text so far keeps a long
+// reply's cost per delta constant instead of joining every part again.
+function append(parts: Record<string, string>, text: string, key: string, delta: string): { parts: Record<string, string>; text: string } {
+  const before = parts[key];
+  const next = { ...parts, [key]: (before ?? "") + delta };
+  const keys = Object.keys(parts);
+  if (before !== undefined && keys[keys.length - 1] !== key) return { parts: next, text: joined(next) };
+  if (!delta) return { parts: next, text };
+  return { parts: next, text: text + (!before && text !== "" ? "\n\n" : "") + delta };
+}
+
 function errorMessage(data: Json): string {
   const nested = obj(data.error);
   const message = str(nested?.message) || str(data.message);
@@ -99,8 +111,8 @@ export function applyEvent(state: ResponseState, event: string, data: Json, now:
       const delta = str(data.delta);
       if (!delta) return state;
       const key = `${str(data.item_id) || num(data.output_index)}:${num(data.content_index)}`;
-      const parts = { ...state.parts, [key]: (state.parts[key] ?? "") + delta };
-      return { ...state, status: "streaming", parts, text: joined(parts), firstTokenAt: first, firstTextAt: state.firstTextAt ?? now };
+      const { parts, text } = append(state.parts, state.text, key, delta);
+      return { ...state, status: "streaming", parts, text, firstTokenAt: first, firstTextAt: state.firstTextAt ?? now };
     }
     case "response.reasoning_summary_part.added":
     case "response.reasoning_summary_text.delta":
@@ -108,8 +120,8 @@ export function applyEvent(state: ResponseState, event: string, data: Json, now:
       const delta = str(data.delta);
       const index = type === "response.reasoning_text.delta" ? `t${num(data.content_index)}` : `s${num(data.summary_index)}`;
       const key = `${str(data.item_id) || num(data.output_index)}:${index}`;
-      const thoughts = { ...state.thoughts, [key]: (state.thoughts[key] ?? "") + delta };
-      return { ...state, status: "streaming", reasoned: true, thoughts, reasoning: joined(thoughts), ...(delta ? { firstTokenAt: first } : {}) };
+      const { parts: thoughts, text: reasoning } = append(state.thoughts, state.reasoning, key, delta);
+      return { ...state, status: "streaming", reasoned: true, thoughts, reasoning, ...(delta ? { firstTokenAt: first } : {}) };
     }
     case "response.output_item.done": {
       const item = obj(data.item);
@@ -149,11 +161,12 @@ export function endResponse(state: ResponseState, status: "stopped" | "failed", 
   return { ...state, status, endedAt: now, error: error ?? null, requestId: requestId ?? null, output: state.output.filter(Boolean) };
 }
 
-export type InputItem = { role: "user" | "assistant"; content: string } | OutputItem;
+export type InputItem = { role: "user"; content: ReturnType<typeof userContent> } | { role: "assistant"; content: string } | OutputItem;
 
 export interface Turn {
   id: string;
   prompt: string;
+  files?: TurnFile[] | undefined;
   response: ResponseState;
 }
 
@@ -167,11 +180,11 @@ function messageText(item: OutputItem): string {
 
 export function historyItems(turns: readonly Turn[]): InputItem[] {
   const items: InputItem[] = [];
-  for (const { prompt, response: r } of turns) {
+  for (const { prompt, files, response: r } of turns) {
     if (isLive(r)) continue;
     const finished = r.status === "completed" || r.status === "incomplete";
     if (!finished && !r.text) continue;
-    items.push({ role: "user", content: prompt });
+    items.push({ role: "user", content: userContent(prompt, files) });
     if (finished && r.output.length) {
       for (const item of r.output) {
         if (item.type === "reasoning" && typeof item.encrypted_content === "string") items.push(item);
