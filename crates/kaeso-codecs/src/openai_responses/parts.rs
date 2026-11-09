@@ -1,7 +1,7 @@
 use kaeso_kpp::{
-    Base64Source, Block, CacheHint, Citation, DocumentBlock, Extras, ImageBlock, Opaque,
-    OpaqueKind, Origin, RawItem, RawJson, ReasoningBlock, RefusalBlock, Source, TextBlock,
-    ToolCallBlock, ToolResultBlock,
+    Block, CacheHint, Citation, DocumentBlock, Extras, ImageBlock, KppError, Opaque, OpaqueKind,
+    Origin, RawItem, RawJson, ReasoningBlock, RefusalBlock, Source, TextBlock, ToolCallBlock,
+    ToolResultBlock,
 };
 use serde_json::value::RawValue;
 
@@ -24,13 +24,11 @@ pub(super) enum TextKind {
     Output,
 }
 
-pub(super) fn parse_data_url(url: &str) -> Option<(String, String)> {
+// A data URL with parameters, or with data that isn't base64, stays as written: a link, or a
+// part kept raw.
+pub(super) fn parse_data_url(url: &str) -> Option<Result<Source, KppError>> {
     let parsed = crate::wire::parse_data_url(url).filter(|d| d.header.is_none())?;
-    Some((parsed.media_type.to_owned(), parsed.data.to_owned()))
-}
-
-pub(super) fn data_url(source: &Base64Source) -> String {
-    format!("data:{};base64,{}", source.media_type, source.data)
+    Some(Source::base64(parsed.media_type, parsed.data))
 }
 
 fn default_filename(media_type: &str) -> String {
@@ -115,7 +113,7 @@ fn image_part(b: &ImageBlock) -> Option<Node> {
     let node = Node::obj().with("type", Node::str("input_image"));
     let node = match &b.source {
         Source::Url(u) => node.with("image_url", Node::str(u)),
-        Source::Base64(s) => node.with("image_url", Node::str(data_url(s))),
+        Source::Base64(s) => node.with("image_url", Node::str(s.data_url())),
         Source::FileId(f) => node.with("file_id", Node::str(&f.id)),
         _ => return None,
     };
@@ -128,7 +126,7 @@ fn file_part(b: &DocumentBlock) -> Option<Node> {
         Source::Url(u) => node.with("file_url", Node::str(u)),
         Source::Base64(s) => node
             .with("filename", Node::str(default_filename(&s.media_type)))
-            .with("file_data", Node::str(data_url(s))),
+            .with("file_data", Node::str(s.data_url())),
         Source::FileId(f) => node.with("file_id", Node::str(&f.id)),
         _ => return None,
     };
@@ -193,7 +191,7 @@ pub(super) fn decode_part(raw: &RawValue, kind: TextKind, origin: &Origin) -> Bl
             .and_then(|p| {
                 let source = match (p.image_url, p.file_id) {
                     (Some(url), None) => match parse_data_url(&url) {
-                        Some((mt, data)) => Source::base64(mt, data),
+                        Some(source) => source.ok()?,
                         None => Source::Url(url),
                     },
                     (None, Some(id)) => Source::file_id(origin.clone(), id),
@@ -207,10 +205,7 @@ pub(super) fn decode_part(raw: &RawValue, kind: TextKind, origin: &Origin) -> Bl
             .ok()
             .and_then(|p| {
                 let source = match (p.file_data, p.file_url, p.file_id) {
-                    (Some(data), None, None) => {
-                        let (mt, data) = parse_data_url(&data)?;
-                        Source::base64(mt, data)
-                    }
+                    (Some(data), None, None) => parse_data_url(&data)?.ok()?,
                     (None, Some(url), None) => Source::Url(url),
                     (None, None, Some(id)) => Source::file_id(origin.clone(), id),
                     _ => return None,
@@ -553,8 +548,9 @@ mod tests {
     fn data_urls() {
         assert_eq!(
             parse_data_url("data:image/png;base64,AAAA"),
-            Some(("image/png".into(), "AAAA".into()))
+            Some(Ok(Source::bytes("image/png", vec![0u8; 3])))
         );
+        assert!(parse_data_url("data:image/png;base64,%%").is_some_and(|r| r.is_err()));
         assert_eq!(parse_data_url("data:image/png;charset=x;base64,AA"), None);
         assert_eq!(parse_data_url("https://x"), None);
         assert_eq!(parse_data_url("data:text/plain,hi"), None);

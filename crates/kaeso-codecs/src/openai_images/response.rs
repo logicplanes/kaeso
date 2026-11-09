@@ -95,7 +95,8 @@ fn image_of(
         .find_map(|k| item.extra.get(*k)?.parse::<String>().ok())
         .unwrap_or_else(|| fallback.to_owned());
     let source = match (&item.b64_json, &item.url) {
-        (Some(data), _) => Source::base64(media_type, data.clone()),
+        (Some(data), _) => Source::base64(media_type, data)
+            .map_err(|_| bad("an image's `b64_json` is not valid base64"))?,
         (None, Some(url)) => Source::Url(url.clone()),
         (None, None) => return Err(bad("an image has neither `b64_json` nor `url`")),
     };
@@ -247,7 +248,7 @@ fn wire_image(image: &GeneratedImage) -> Value {
     let mut item = Map::new();
     match &image.source {
         Source::Base64(b) => {
-            item.insert("b64_json".to_owned(), b.data.clone().into());
+            item.insert("b64_json".to_owned(), b.to_base64().into());
         }
         Source::Url(u) => {
             item.insert("url".to_owned(), u.clone().into());

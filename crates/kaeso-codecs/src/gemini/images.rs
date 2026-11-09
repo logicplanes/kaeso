@@ -215,7 +215,7 @@ pub(super) fn encode(r: &ImageRequest, ctx: &mut EgressCtx) -> Result<EncodedReq
     let mut parts = vec![json!({ "text": r.prompt.clone().unwrap_or_default() })];
     for image in &r.images {
         if let Source::Base64(b) = &image.source {
-            parts.push(json!({"inlineData": {"mimeType": b.media_type, "data": b.data}}));
+            parts.push(json!({"inlineData": {"mimeType": b.media_type, "data": b.base64()}}));
         }
     }
     let mut image_config = Map::new();

@@ -1,6 +1,9 @@
+use bytes::Bytes;
 use serde::{Deserialize, Serialize};
 
+use crate::b64::Base64Text;
 use crate::dialect::{DialectId, Origin};
+use crate::error::KppError;
 use crate::extras::Extras;
 use crate::raw::RawJson;
 
@@ -327,11 +330,15 @@ pub enum Source {
 }
 
 impl Source {
-    pub fn base64(media_type: impl Into<String>, data: impl Into<String>) -> Self {
-        Source::Base64(Base64Source {
-            media_type: media_type.into(),
-            data: data.into(),
-        })
+    /// Media given as base64 text, decoded once. Padding is optional; text that is not standard
+    /// base64 is an `InvalidRequest`.
+    pub fn base64(media_type: impl Into<String>, data: impl AsRef<[u8]>) -> Result<Self, KppError> {
+        Base64Source::from_base64(media_type, data).map(Source::Base64)
+    }
+
+    /// Media given as its bytes. Cloning the source shares them.
+    pub fn bytes(media_type: impl Into<String>, data: impl Into<Bytes>) -> Self {
+        Source::Base64(Base64Source::new(media_type, data))
     }
 
     pub fn text(media_type: impl Into<String>, data: impl Into<String>) -> Self {
@@ -357,11 +364,76 @@ impl Source {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+/// Inline media: its bytes, held once and decoded, and their media type.
+///
+/// The bytes are a [`Bytes`] buffer, so cloning a request shares them instead of copying, and a
+/// codec that read them from an upload can slice them out of the request body. KPP's JSON form
+/// writes them as standard base64: `{"base64": {"media_type": "image/png", "data": "iVBOR…"}}`.
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[non_exhaustive]
 pub struct Base64Source {
     pub media_type: String,
-    pub data: String,
+    #[serde(with = "crate::b64")]
+    pub data: Bytes,
+}
+
+impl Base64Source {
+    pub fn new(media_type: impl Into<String>, data: impl Into<Bytes>) -> Self {
+        Base64Source {
+            media_type: media_type.into(),
+            data: data.into(),
+        }
+    }
+
+    /// Decodes base64 text; padding is optional.
+    pub fn from_base64(
+        media_type: impl Into<String>,
+        text: impl AsRef<[u8]>,
+    ) -> Result<Self, KppError> {
+        let data = crate::b64::decode(text.as_ref())
+            .map_err(|_| KppError::invalid_request("The media data is not valid base64."))?;
+        Ok(Base64Source::new(media_type, data))
+    }
+
+    /// The bytes as standard, padded base64, to format or serialize without building the text.
+    pub fn base64(&self) -> Base64Text<'_> {
+        Base64Text(&self.data)
+    }
+
+    /// The bytes as standard, padded base64 text.
+    pub fn to_base64(&self) -> String {
+        let mut out = String::new();
+        self.push_base64(&mut out);
+        out
+    }
+
+    /// Appends the bytes as standard, padded base64 to `out`, such as after a data URL's header.
+    pub fn push_base64(&self, out: &mut String) {
+        crate::b64::push(&self.data, out);
+    }
+
+    /// A `data:` URL of the bytes: `data:<media type>;base64,<data>`.
+    pub fn data_url(&self) -> String {
+        self.data_url_with(&format!("data:{};base64", self.media_type))
+    }
+
+    /// A `data:` URL of the bytes after `header`, the part before the comma as an app wrote it.
+    pub fn data_url_with(&self, header: &str) -> String {
+        let mut out = String::with_capacity(header.len() + 1 + self.base64().len());
+        out.push_str(header);
+        out.push(',');
+        self.push_base64(&mut out);
+        out
+    }
+}
+
+impl std::fmt::Debug for Base64Source {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Base64Source")
+            .field("media_type", &self.media_type)
+            .field("data", &format_args!("{} bytes", self.data.len()))
+            .finish()
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -484,8 +556,8 @@ mod tests {
                 DialectId::AnthropicMessages,
                 RawJson::from_string("{\"type\":\"server_tool_use\"}".into()).unwrap(),
             )),
-            Block::image(Source::base64("image/png", "AAAA")),
-            Block::audio(Source::base64("audio/wav", "UklGRg==")),
+            Block::image(Source::base64("image/png", "AAAA").unwrap()),
+            Block::audio(Source::base64("audio/wav", "UklGRg==").unwrap()),
             Block::video(Source::Url(
                 "https://www.youtube.com/watch?v=9hE5-98ZeCg".into(),
             )),

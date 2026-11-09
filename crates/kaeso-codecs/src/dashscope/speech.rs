@@ -353,7 +353,9 @@ pub(super) fn decode_response(body: &[u8], ctx: &EgressCtx) -> Result<Reply, Kpp
     let source = match (url, audio.peek("data").and_then(Value::as_str)) {
         (Some(url), _) => Source::Url(url),
         (None, Some(data)) if !data.is_empty() => {
-            let s = Source::base64(media_type(ctx.audio_format.as_ref()), data);
+            let s = Source::base64(media_type(ctx.audio_format.as_ref()), data).map_err(|_| {
+                KppError::provider("QwenCloud sent audio that is not valid base64.")
+            })?;
             audio.take("data");
             s
         }
@@ -383,7 +385,7 @@ pub(super) fn encode_response(r: &SpeechResponse) -> Result<Vec<u8>, KppError> {
             audio.insert("url".into(), u.clone().into());
         }
         Source::Base64(b) => {
-            audio.insert("data".into(), b.data.clone().into());
+            audio.insert("data".into(), b.to_base64().into());
         }
         _ => {
             return Err(KppError::provider(

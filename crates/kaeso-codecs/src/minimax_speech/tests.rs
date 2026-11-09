@@ -1,4 +1,3 @@
-use base64::Engine as _;
 use kaeso_kpp::{
     AudioFormat, ErrorKind, Reply, Request, RequestKind, Source, SpeechEvent, SpeechResponse,
     StreamEvent, Voice,
@@ -89,12 +88,7 @@ fn the_hex_reply_becomes_audio_with_its_characters_and_round_trips() {
         panic!()
     };
     assert_eq!(b.media_type, "audio/mpeg");
-    assert_eq!(
-        base64::engine::general_purpose::STANDARD
-            .decode(&b.data)
-            .unwrap(),
-        [0x49, 0x44, 0x33, 4, 0, 0, 0, 0, 0, 0x23]
-    );
+    assert_eq!(b.data.to_vec(), [0x49, 0x44, 0x33, 4, 0, 0, 0, 0, 0, 0x23]);
     let out =
         MinimaxSpeech::encode_response(&reply, &EncodeCtx::for_request(Request::Speech(r.clone())))
             .unwrap();
@@ -157,11 +151,9 @@ fn each_audio_format_gets_its_media_type_and_odd_audio_is_refused() {
     }
     let odd = br#"{"data":{"audio":"494"}}"#;
     assert!(MinimaxSpeech::decode_response(200, &HeaderList::new(), odd, &ctx).is_err());
-    let mut url = SpeechResponse::new("m", Source::Url("https://example.com/a.mp3".into()));
+    let url = SpeechResponse::new("m", Source::Url("https://example.com/a.mp3".into()));
     let app = EncodeCtx::for_request(Request::Speech(r.clone()));
     assert!(MinimaxSpeech::encode_response(&Reply::Speech(url.clone()), &app).is_err());
-    url.audio = Source::base64("audio/mpeg", "not base64!");
-    assert!(MinimaxSpeech::encode_response(&Reply::Speech(url), &app).is_err());
     let mut whole = MinimaxSpeech::stream_encoder(&app);
     let err = whole
         .encode(&StreamEvent::Speech(SpeechEvent::audio("AA")))
@@ -184,10 +176,9 @@ fn streams_operations_and_base_paths_follow_t2a() {
     let mut sfx = plain.clone();
     sfx.operation = SpeechOperation::SoundEffect;
     let mut dialogue = plain;
-    dialogue.audio = Some(kaeso_kpp::AudioInput::new(Source::base64(
-        "audio/mpeg",
-        "SUQz",
-    )));
+    dialogue.audio = Some(kaeso_kpp::AudioInput::new(
+        Source::base64("audio/mpeg", "SUQz").unwrap(),
+    ));
     for bad in [sfx, dialogue] {
         let req = Request::Speech(bad);
         let err = MinimaxSpeech::check(&req, &EgressCtx::new(&req)).unwrap_err();

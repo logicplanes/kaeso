@@ -1,5 +1,6 @@
 //! `multipart/form-data` bodies (RFC 7578): a bounded reader and a writer, without I/O.
 
+use bytes::Bytes;
 use serde_json::{Map, Value};
 
 /// How much one form may hold; a body over any limit is refused as a whole.
@@ -257,6 +258,37 @@ fn find(haystack: &[u8], needle: &[u8]) -> Option<usize> {
     None
 }
 
+/// A request body that uploaded files are taken from: shared when the caller holds it as
+/// [`Bytes`], so each file is a slice of it, and copied file by file otherwise.
+#[derive(Clone, Copy, Debug)]
+pub(crate) enum Upload<'a> {
+    Shared(&'a Bytes),
+    Borrowed(&'a [u8]),
+}
+
+impl<'a> Upload<'a> {
+    pub(crate) fn bytes(self) -> &'a [u8] {
+        match self {
+            Upload::Shared(b) => b,
+            Upload::Borrowed(b) => b,
+        }
+    }
+
+    /// `part`, a slice of the body, as its own buffer.
+    pub(crate) fn share(self, part: &[u8]) -> Bytes {
+        let Upload::Shared(body) = self else {
+            return Bytes::copy_from_slice(part);
+        };
+        let start = (part.as_ptr() as usize).checked_sub(body.as_ptr() as usize);
+        match start {
+            Some(start) if start.saturating_add(part.len()) <= body.len() => {
+                body.slice(start..start + part.len())
+            }
+            _ => Bytes::copy_from_slice(part),
+        }
+    }
+}
+
 /// Writes a `multipart/form-data` body part by part.
 #[derive(Clone, Debug)]
 pub struct FormWriter {
@@ -278,9 +310,22 @@ impl FormWriter {
     /// A body of `fields` with a boundary that occurs in none of them.
     pub fn write(fields: &[FormField<'_>]) -> FormWriter {
         let boundary = boundary_for(fields);
+        // The body is allocated once at its final size: growing it while a large file is
+        // copied in would hold the file twice, and reserve twice its size, while it moves.
+        let size = fields
+            .iter()
+            .map(|f| match f {
+                FormField::Text(n, v) => FIELD_FRAMING + 3 * n.len() + v.len(),
+                FormField::File(n, f, t, bytes) => {
+                    FIELD_FRAMING + 3 * (n.len() + f.len()) + t.len() + bytes.len()
+                }
+            })
+            .fold(boundary.len() + 6, |sum, n| {
+                sum.saturating_add(n).saturating_add(boundary.len())
+            });
         let mut w = FormWriter {
             boundary,
-            body: Vec::new(),
+            body: Vec::with_capacity(size),
         };
         for field in fields {
             w.field(*field);
@@ -325,6 +370,10 @@ impl FormWriter {
         b.extend_from_slice(b"\r\n");
     }
 }
+
+// `--`, the `Content-Disposition` and `Content-Type` lines and the CRLFs around one field,
+// without the boundary and the names.
+const FIELD_FRAMING: usize = 128;
 
 // RFC 7578 section 4.2: browsers percent-encode `"`, CR and LF in field and file names.
 fn quoted(s: &str) -> String {

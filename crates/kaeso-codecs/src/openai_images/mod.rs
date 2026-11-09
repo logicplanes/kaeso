@@ -41,7 +41,19 @@ impl OpenAiImages {
         body: &[u8],
         headers: &HeaderList,
     ) -> Result<Request, KppError> {
+        request::decode(operation, crate::multipart::Upload::Borrowed(body), headers)
+    }
+
+    pub(crate) fn decode_upload(
+        operation: ImageOperation,
+        body: crate::multipart::Upload<'_>,
+        headers: &HeaderList,
+    ) -> Result<Request, KppError> {
         request::decode(operation, body, headers)
+    }
+
+    pub(crate) fn guess_operation(body: &[u8], headers: &HeaderList) -> ImageOperation {
+        request::guess_operation(body, headers)
     }
 
     pub(crate) fn decode_checked(
@@ -49,7 +61,11 @@ impl OpenAiImages {
         body: &[u8],
         headers: &HeaderList,
     ) -> Result<Request, KppError> {
-        request::decode(request::guess_operation(body, headers), body, headers)
+        request::decode(
+            request::guess_operation(body, headers),
+            crate::multipart::Upload::Borrowed(body),
+            headers,
+        )
     }
 }
 

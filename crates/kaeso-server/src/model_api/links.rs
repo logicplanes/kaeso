@@ -1,4 +1,3 @@
-use base64::Engine as _;
 use bytes::Bytes;
 use kaeso_core::provider::fetchable;
 use kaeso_core::providers::ProviderRef;
@@ -90,7 +89,7 @@ impl Fetch {
                         let media_type = media_type
                             .filter(|t| t.starts_with("image/"))
                             .unwrap_or_else(|| "image/png".to_owned());
-                        image.source = Source::base64(media_type, encode(&bytes));
+                        image.source = Source::bytes(media_type, bytes);
                     }
                 }
             }
@@ -106,7 +105,7 @@ impl Fetch {
                         .map(str::to_owned)
                         .or(media_type.filter(|t| t.starts_with("audio/")))
                         .unwrap_or_else(|| "application/octet-stream".to_owned());
-                    r.audio = Source::base64(media_type, encode(&bytes));
+                    r.audio = Source::bytes(media_type, bytes);
                 }
             }
             _ => {}
@@ -222,10 +221,6 @@ impl Fetch {
     }
 }
 
-fn encode(bytes: &[u8]) -> String {
-    base64::engine::general_purpose::STANDARD.encode(bytes)
-}
-
 #[cfg(test)]
 mod tests {
     use kaeso_kpp::{GeneratedImage, ImageOperation, ImageRequest, ImageResponse, SpeechResponse};
@@ -276,7 +271,7 @@ mod tests {
             "m",
             vec![
                 GeneratedImage::new(Source::Url("https://a".into())),
-                GeneratedImage::new(Source::base64("image/webp", "AAAA")),
+                GeneratedImage::new(Source::base64("image/webp", "AAAA").unwrap()),
                 GeneratedImage::new(Source::Url("https://b".into())),
             ],
         ));
@@ -291,9 +286,9 @@ mod tests {
         assert_eq!(
             sources,
             vec![
-                Source::base64("image/jpeg", "aW1n"),
-                Source::base64("image/webp", "AAAA"),
-                Source::base64("image/png", "aW1n"),
+                Source::base64("image/jpeg", "aW1n").unwrap(),
+                Source::base64("image/webp", "AAAA").unwrap(),
+                Source::base64("image/png", "aW1n").unwrap(),
             ]
         );
 
@@ -307,7 +302,7 @@ mod tests {
         .await
         .unwrap();
         let Reply::Speech(s) = &speech else { panic!() };
-        assert_eq!(s.audio, Source::base64("audio/wav", "UklGRg=="));
+        assert_eq!(s.audio, Source::base64("audio/wav", "UklGRg==").unwrap());
 
         let failed = f
             .resolve_with(None, &mut reply_with_link(), |_| async {

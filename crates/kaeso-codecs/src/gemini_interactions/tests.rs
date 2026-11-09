@@ -36,7 +36,7 @@ fn every_fixture_round_trips() {
     let done = by("completed");
     assert_eq!(done.status, VideoStatus::Completed);
     assert!(
-        matches!(&done.output(VideoVariant::Video).unwrap().source, Source::Base64(b) if b.data == "AAAAIGZ0eXBpc29t")
+        matches!(&done.output(VideoVariant::Video).unwrap().source, Source::Base64(b) if b.to_base64() == "AAAAIGZ0eXBpc29t")
     );
     let usage = done.usage.unwrap();
     assert_eq!(
@@ -80,7 +80,7 @@ fn apps_requests_go_out_in_the_background_with_the_video_format() {
     let frames = VideoRequest::new("gemini-omni-1.2-flash", VideoOperation::Generate)
         .with_prompt("p")
         .with_image(VideoImage::new(
-            Source::base64("image/png", "AAAA"),
+            Source::base64("image/png", "AAAA").unwrap(),
             VideoImageRole::FirstFrame,
         ));
     let body: Value = serde_json::from_slice(&encode(&frames).unwrap().body).unwrap();

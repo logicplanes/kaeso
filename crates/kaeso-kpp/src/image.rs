@@ -465,7 +465,7 @@ mod tests {
             param(&ImageRequest::new("m", ImageOperation::Generate)),
             "prompt"
         );
-        let png = || ImageInput::new(Source::base64("image/png", "AA=="));
+        let png = || ImageInput::new(Source::base64("image/png", "AA==").unwrap());
         assert_eq!(param(&ok.clone().with_image(png())), "image");
         let edit = ImageRequest::new("m", ImageOperation::Edit).with_prompt("hat");
         assert_eq!(param(&edit), "image");

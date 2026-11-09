@@ -923,7 +923,7 @@ fn images_files_and_cache_breakpoints_are_typed() {
         panic!()
     };
     assert!(
-        matches!(&doc.source, Source::Base64(b) if b.media_type == "application/pdf" && b.data.starts_with("JVBERi"))
+        matches!(&doc.source, Source::Base64(b) if b.media_type == "application/pdf" && b.data.starts_with(b"%PDF"))
     );
     assert_eq!(doc.extras.fields["file.filename"].get(), "\"hello.pdf\"");
 

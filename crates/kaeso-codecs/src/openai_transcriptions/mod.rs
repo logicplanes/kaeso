@@ -46,6 +46,14 @@ impl OpenAiTranscriptions {
         body: &[u8],
         headers: &HeaderList,
     ) -> Result<Request, KppError> {
+        request::decode(operation, crate::multipart::Upload::Borrowed(body), headers)
+    }
+
+    pub(crate) fn decode_upload(
+        operation: TranscriptionOperation,
+        body: crate::multipart::Upload<'_>,
+        headers: &HeaderList,
+    ) -> Result<Request, KppError> {
         request::decode(operation, body, headers)
     }
 }
@@ -60,7 +68,11 @@ impl Codec for OpenAiTranscriptions {
         headers: &HeaderList,
     ) -> Result<Request, KppError> {
         crate::limits::request_shape(DIALECT, body)?;
-        request::decode(TranscriptionOperation::Transcribe, body, headers)
+        request::decode(
+            TranscriptionOperation::Transcribe,
+            crate::multipart::Upload::Borrowed(body),
+            headers,
+        )
     }
 
     fn encode_response(reply: &Reply, ctx: &EncodeCtx) -> Result<Vec<u8>, KppError> {

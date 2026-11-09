@@ -188,6 +188,14 @@ pub(crate) struct DataSourceW {
     pub(crate) data: String,
 }
 
+#[derive(Clone, Copy, Debug, Serialize)]
+pub(crate) struct BytesSourceW<'a> {
+    #[serde(rename = "type")]
+    pub(crate) ty: &'static str,
+    pub(crate) media_type: &'a str,
+    pub(crate) data: kaeso_kpp::Base64Text<'a>,
+}
+
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub(crate) struct UrlSourceW {
     #[serde(rename = "type")]

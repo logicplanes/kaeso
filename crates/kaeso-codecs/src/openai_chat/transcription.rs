@@ -67,7 +67,7 @@ pub(super) fn encode(
     ctx.stream = StreamMode::Off;
     ctx.transcript_format = Some(r.format_or_default());
     let data = match &r.audio.source {
-        Source::Base64(b) => format!("data:{};base64,{}", b.media_type, b.data),
+        Source::Base64(b) => b.data_url(),
         Source::Url(u) => u.clone(),
         _ => String::new(),
     };
@@ -142,7 +142,7 @@ mod tests {
         let mut r = TranscriptionRequest::new(
             "qwen3-asr-flash",
             TranscriptionOperation::Transcribe,
-            AudioInput::new(Source::base64("audio/mpeg", "SUQz")),
+            AudioInput::new(Source::base64("audio/mpeg", "SUQz").unwrap()),
         );
         r.language = Some("zh".into());
         r

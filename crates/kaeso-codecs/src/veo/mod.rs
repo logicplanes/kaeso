@@ -50,10 +50,11 @@ fn image_of(v: Value, role: VideoImageRole) -> Result<VideoImage, KppError> {
     };
     let mut f = Fields::from_map(map, D, "request");
     let source = match (f.str("bytesBase64Encoded")?, f.str("gcsUri")?) {
-        (Some(data), None) => Source::base64(
+        (Some(data), None) => crate::media::from_base64(
             f.str("mimeType")?.unwrap_or_else(|| "image/png".into()),
             data,
-        ),
+            "bytesBase64Encoded",
+        )?,
         (None, Some(uri)) => Source::Url(uri),
         _ => {
             return Err(KppError::invalid_request(
@@ -71,7 +72,7 @@ fn image_value(image: &VideoImage) -> Value {
     let mut out = Map::new();
     match &image.source {
         Source::Base64(b) => {
-            out.insert("bytesBase64Encoded".into(), b.data.clone().into());
+            out.insert("bytesBase64Encoded".into(), b.to_base64().into());
             out.insert("mimeType".into(), b.media_type.clone().into());
         }
         Source::Url(u) => {
@@ -343,7 +344,9 @@ fn decode_operation(body: &[u8], ctx: &EgressCtx) -> Result<VideoJob, KppError> 
             let mut v = Fields::from_map(map, D, "reply");
             let media_type = v.str("mimeType")?.unwrap_or_else(|| "video/mp4".into());
             let source = match (v.str("bytesBase64Encoded")?, v.str("gcsUri")?) {
-                (Some(data), _) => Source::base64(media_type.clone(), data),
+                (Some(data), _) => Source::base64(media_type.clone(), data).map_err(|_| {
+                    KppError::provider("The provider sent a video that is not valid base64.")
+                })?,
                 (None, Some(uri)) => Source::Url(uri),
                 (None, None) => continue,
             };
@@ -414,7 +417,7 @@ pub(crate) fn encode_operation(job: &VideoJob) -> Value {
                 let mut v = Map::new();
                 match &o.source {
                     Source::Base64(b) => {
-                        v.insert("bytesBase64Encoded".into(), b.data.clone().into());
+                        v.insert("bytesBase64Encoded".into(), b.to_base64().into());
                     }
                     Source::Url(u) => {
                         v.insert("gcsUri".into(), u.clone().into());

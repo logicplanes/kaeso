@@ -286,17 +286,16 @@ pub(crate) fn provider_object(body: &[u8], dialect: DialectId) -> Result<Fields,
 pub(crate) fn image_link(image: &VideoImage) -> Option<String> {
     match &image.source {
         Source::Url(u) => Some(u.clone()),
-        Source::Base64(b) => Some(format!("data:{};base64,{}", b.media_type, b.data)),
+        Source::Base64(b) => Some(b.data_url()),
         _ => None,
     }
 }
 
-/// A link a provider sent, kept as a URL, or as inline bytes when it is a data URL.
+/// A link a provider sent, kept as a URL, or as inline bytes when it is a data URL of base64.
 pub(crate) fn link_source(url: String) -> Source {
-    match crate::wire::parse_data_url(&url) {
-        Some(d) => Source::base64(d.media_type, d.data),
-        None => Source::Url(url),
-    }
+    crate::wire::parse_data_url(&url)
+        .and_then(|d| Source::base64(d.media_type, d.data).ok())
+        .unwrap_or(Source::Url(url))
 }
 
 /// Only first frames, last frames and references Kaeso knows: anything else in `images` is

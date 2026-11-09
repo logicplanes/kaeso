@@ -63,7 +63,7 @@ fn verbose_ctx() -> EgressCtx {
     let mut r = TranscriptionRequest::new(
         "whisper-1",
         TranscriptionOperation::Transcribe,
-        AudioInput::new(Source::base64("audio/mpeg", "SUQz")),
+        AudioInput::new(Source::base64("audio/mpeg", "SUQz").unwrap()),
     );
     r.format = Some(TranscriptFormat::VerboseJson);
     r.stream = StreamMode::on(true);
@@ -205,7 +205,7 @@ fn broken_transcript_streams_end_with_one_error_and_keep_unknown_events() {
     let req = Request::Transcription(TranscriptionRequest::new(
         "whisper-1",
         TranscriptionOperation::Transcribe,
-        AudioInput::new(Source::base64("audio/mpeg", "SUQz")),
+        AudioInput::new(Source::base64("audio/mpeg", "SUQz").unwrap()),
     ));
     let mut enc = OpenAiTranscriptions::stream_encoder(&EncodeCtx::for_request(req));
     let error = enc

@@ -56,10 +56,11 @@ fn frame(v: Value, role: VideoImageRole) -> Result<VideoImage, KppError> {
     };
     let mut f = Fields::from_map(map, D, "request");
     let source = match f.str("type")?.as_deref() {
-        Some("inline_base64") => Source::base64(
+        Some("inline_base64") => crate::media::from_base64(
             f.str("mime_type")?.unwrap_or_default(),
             f.str("content_base64")?.unwrap_or_default(),
-        ),
+            "content_base64",
+        )?,
         Some("asset") => Source::file_id(Origin::new(D), f.str("asset_id")?.unwrap_or_default()),
         _ => {
             return Err(KppError::unsupported_by(
@@ -80,7 +81,7 @@ fn frame_value(image: &VideoImage) -> Value {
     match &image.source {
         Source::Base64(b) => {
             out.insert("type".into(), "inline_base64".into());
-            out.insert("content_base64".into(), b.data.clone().into());
+            out.insert("content_base64".into(), b.to_base64().into());
             out.insert("mime_type".into(), b.media_type.clone().into());
         }
         Source::FileId(f) => {
@@ -389,7 +390,7 @@ mod tests {
         res.resolution = Some("1080p".into());
         assert_eq!(param(&res), "resolution");
         let refs = base.clone().with_image(VideoImage::new(
-            Source::base64("image/png", "AAAA"),
+            Source::base64("image/png", "AAAA").unwrap(),
             VideoImageRole::Reference,
         ));
         assert_eq!(param(&refs), "input_reference");

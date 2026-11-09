@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use std::fmt;
 
 use indexmap::IndexMap;
-use kaeso_kpp::{DialectId, Extras, HEADER_PREFIX, KppError, Origin, RawJson};
+use kaeso_kpp::{DialectId, Extras, HEADER_PREFIX, KppError, Origin, RawJson, Source};
 use serde::de::{DeserializeOwned, Error as _, MapAccess, SeqAccess, Visitor};
 use serde::ser::SerializeMap;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
@@ -813,6 +813,49 @@ impl fmt::Display for Short<'_> {
             end -= 1;
         }
         write!(f, "{}…", self.0.get(..end).unwrap_or_default())
+    }
+}
+
+/// A wire field of base64 media: the text as an app or provider wrote it when decoding, or
+/// inline bytes written as base64 straight into the output when encoding.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) enum B64 {
+    Text(String),
+    Bytes(bytes::Bytes),
+}
+
+impl Default for B64 {
+    fn default() -> Self {
+        B64::Text(String::new())
+    }
+}
+
+impl B64 {
+    /// The media these bytes are, decoded; text that isn't base64 is refused naming `param`.
+    pub(crate) fn into_source(
+        self,
+        media_type: impl Into<String>,
+        param: &str,
+    ) -> Result<Source, KppError> {
+        match self {
+            B64::Text(t) => crate::media::from_base64(media_type, t, param),
+            B64::Bytes(b) => Ok(Source::bytes(media_type, b)),
+        }
+    }
+}
+
+impl serde::Serialize for B64 {
+    fn serialize<S: serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        match self {
+            B64::Text(t) => s.serialize_str(t),
+            B64::Bytes(b) => kaeso_kpp::Base64Text::new(b).serialize(s),
+        }
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for B64 {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        String::deserialize(d).map(B64::Text)
     }
 }
 

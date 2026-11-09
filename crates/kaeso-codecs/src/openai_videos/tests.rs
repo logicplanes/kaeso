@@ -95,7 +95,7 @@ fn the_sdks_seconds_as_a_number_and_unknown_fields_survive() {
     let body = br#"{"model":"m","prompt":"p","seconds":8,"input_reference":{"image_url":"data:image/png;base64,AAAA","detail":"high"},"extra":true}"#;
     let r = decode(body, &HeaderList::new());
     assert_eq!(r.seconds, Some(8));
-    assert!(matches!(&r.images[0].source, Source::Base64(b) if b.data == "AAAA"));
+    assert!(matches!(&r.images[0].source, Source::Base64(b) if b.to_base64() == "AAAA"));
     assert!(r.extras.fields.contains_key("extra"));
     let enc = encode(VideosProfile::OPENAI, &r).unwrap();
     assert_json_eq("numbers", body, &enc.body);
@@ -398,7 +398,7 @@ fn providers_refuse_what_they_lack_before_sending() {
     assert_eq!(refusal(VideosProfile::OPENAI, &seed), "seed");
     let upload = base.clone().with_image(
         VideoImage::new(
-            Source::base64("image/png", "AAAA"),
+            Source::base64("image/png", "AAAA").unwrap(),
             VideoImageRole::FirstFrame,
         )
         .with_filename("a.png"),

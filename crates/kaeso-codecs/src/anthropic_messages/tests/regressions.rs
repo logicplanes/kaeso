@@ -19,11 +19,10 @@ fn inputs_are_left_out_of_replies() {
         "id",
         "m",
         vec![
-            Block::image(Source::base64("image/png", "AAAA")),
-            Block::Document(DocumentBlock::new(Source::base64(
-                "application/pdf",
-                "JVBE",
-            ))),
+            Block::image(Source::base64("image/png", "AAAA").unwrap()),
+            Block::Document(DocumentBlock::new(
+                Source::base64("application/pdf", "JVBE").unwrap(),
+            )),
             Block::tool_result("c", vec![Block::text("x")], false),
             Block::text("kept"),
         ],
@@ -864,7 +863,7 @@ fn count_tokens_skips_output_and_reasoning_refusals() {
     let mut r = chat_request();
     r.messages[0]
         .blocks
-        .push(Block::image(Source::base64("image/bmp", "AA")));
+        .push(Block::image(Source::base64("image/bmp", "AA").unwrap()));
     assert!(
         AnthropicMessages::check(&Request::CountTokens(r), &crate::test_support::egress()).is_err()
     );

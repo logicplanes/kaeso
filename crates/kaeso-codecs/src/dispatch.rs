@@ -9,7 +9,7 @@ use crate::elevenlabs::{ElevenLabs, ElevenLabsCall};
 use crate::gemini::{Gemini, GeminiAction};
 use crate::gemini_embeddings::GeminiEmbeddings;
 use crate::gemini_interactions::GeminiInteractions;
-use crate::limits::Checked;
+use crate::limits::{Checked, RequestBody, upload_of};
 use crate::minimax_images::MinimaxImages;
 use crate::minimax_speech::MinimaxSpeech;
 use crate::minimax_videos::MinimaxVideos;
@@ -77,18 +77,23 @@ pub fn decode_request(
 }
 
 /// Decodes a request body [`Checked::new`] already checked, without counting it again.
-pub fn decode_checked_request<B: AsRef<[u8]>>(
+pub fn decode_checked_request<B: RequestBody>(
     kind: RequestKind,
     checked: &Checked<B>,
     headers: &HeaderList,
 ) -> Result<Request, KppError> {
+    let upload = upload_of(checked.body());
     let body = checked.body().as_ref();
     match checked.dialect() {
         DialectId::AnthropicMessages => AnthropicMessages::decode_checked(kind, body, headers),
         DialectId::OpenAiChat => OpenAiChat::decode_checked(kind, body, headers),
         DialectId::OpenAiResponses => OpenAiResponses::decode_checked(kind, body, headers),
         DialectId::OpenAiEmbeddings => OpenAiEmbeddings::decode_checked(kind, body, headers),
-        DialectId::OpenAiImages => OpenAiImages::decode_checked(kind, body, headers),
+        DialectId::OpenAiImages => OpenAiImages::decode_upload(
+            OpenAiImages::guess_operation(body, headers),
+            upload,
+            headers,
+        ),
         DialectId::MinimaxImages => MinimaxImages::decode_request(kind, body, headers),
         DialectId::OpenAiSpeech => OpenAiSpeech::decode_checked(kind, body, headers),
         DialectId::MinimaxSpeech => MinimaxSpeech::decode_request(kind, body, headers),
@@ -101,9 +106,9 @@ pub fn decode_checked_request<B: AsRef<[u8]>>(
         DialectId::OpenRouterVideos => OpenRouterVideos::decode_request(kind, body, headers),
         DialectId::MinimaxVideos => MinimaxVideos::decode_request(kind, body, headers),
         DialectId::ZaiVideos => ZaiVideos::decode_request(kind, body, headers),
-        DialectId::OpenAiTranscriptions => OpenAiTranscriptions::decode_call(
+        DialectId::OpenAiTranscriptions => OpenAiTranscriptions::decode_upload(
             kaeso_kpp::TranscriptionOperation::Transcribe,
-            body,
+            upload,
             headers,
         ),
         other @ (DialectId::Gemini | DialectId::GeminiEmbeddings) => Err(gemini_needs_path(other)),
@@ -174,12 +179,12 @@ pub fn decode_image_request(
 }
 
 /// Decodes an Images API body [`Checked::new`] already checked, without counting it again.
-pub fn decode_checked_image_request<B: AsRef<[u8]>>(
+pub fn decode_checked_image_request<B: RequestBody>(
     operation: kaeso_kpp::ImageOperation,
     checked: &Checked<B>,
     headers: &HeaderList,
 ) -> Result<Request, KppError> {
-    OpenAiImages::decode_call(operation, checked.body().as_ref(), headers)
+    OpenAiImages::decode_upload(operation, upload_of(checked.body()), headers)
 }
 
 /// Decodes an OpenAI transcription API upload for `operation`, as the path names it:
@@ -195,12 +200,12 @@ pub fn decode_transcription_request(
 }
 
 /// Decodes a transcription upload [`Checked::new`] already checked, without counting it again.
-pub fn decode_checked_transcription_request<B: AsRef<[u8]>>(
+pub fn decode_checked_transcription_request<B: RequestBody>(
     operation: kaeso_kpp::TranscriptionOperation,
     checked: &Checked<B>,
     headers: &HeaderList,
 ) -> Result<Request, KppError> {
-    OpenAiTranscriptions::decode_call(operation, checked.body().as_ref(), headers)
+    OpenAiTranscriptions::decode_upload(operation, upload_of(checked.body()), headers)
 }
 
 /// Decodes an ElevenLabs-format request for the call its path names
@@ -215,12 +220,12 @@ pub fn decode_elevenlabs_request(
 }
 
 /// Decodes an ElevenLabs body [`Checked::new`] already checked, without counting it again.
-pub fn decode_checked_elevenlabs_request<B: AsRef<[u8]>>(
+pub fn decode_checked_elevenlabs_request<B: RequestBody>(
     call: &ElevenLabsCall,
     checked: &Checked<B>,
     headers: &HeaderList,
 ) -> Result<Request, KppError> {
-    ElevenLabs::decode_call(call, checked.body().as_ref(), headers)
+    ElevenLabs::decode_upload(call, upload_of(checked.body()), headers)
 }
 
 /// The `content-type` of a reply [`encode_response`] wrote for `dialect`.

@@ -129,7 +129,7 @@ fn the_model_picks_the_family_and_its_body() {
             VideoImageRole::FirstFrame,
         ))
         .with_image(VideoImage::new(
-            Source::base64("image/png", "iVBORw0KGgo="),
+            Source::base64("image/png", "iVBORw0KGgo=").unwrap(),
             VideoImageRole::LastFrame,
         ));
     let body = sent(&r);
@@ -185,7 +185,7 @@ fn qwencloud_refuses_what_a_model_lacks_before_sending() {
         ));
     assert_eq!(param(&kf), "input_reference");
     let s = kf.clone().with_image(VideoImage::new(
-        Source::base64("image/png", "iVBORw0KGgo="),
+        Source::base64("image/png", "iVBORw0KGgo=").unwrap(),
         VideoImageRole::LastFrame,
     ));
     assert_eq!(param(&s), "input_reference");

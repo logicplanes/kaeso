@@ -1,6 +1,7 @@
 use std::borrow::Cow;
 use std::fmt;
 
+use bytes::Bytes;
 use kaeso_kpp::{DialectId, KppError};
 use serde::de::{DeserializeSeed, IgnoredAny, MapAccess, SeqAccess, Visitor};
 use serde_json::value::RawValue;
@@ -546,6 +547,36 @@ fn refusal(dialect: DialectId, over: Over) -> KppError {
     KppError::invalid_request(message)
         .with_param(param)
         .with_status(400)
+}
+
+/// A request body a decoder reads. A body held as [`Bytes`] lends uploaded files to the decoded
+/// request as slices of itself, so a file is never copied; any other body has its files copied
+/// out. Implemented for [`Bytes`], `Vec<u8>` and `&[u8]`.
+pub trait RequestBody: AsRef<[u8]> + crate::codec::sealed::Sealed {
+    #[doc(hidden)]
+    fn shared(&self) -> Option<&Bytes> {
+        None
+    }
+}
+
+impl crate::codec::sealed::Sealed for Bytes {}
+impl RequestBody for Bytes {
+    fn shared(&self) -> Option<&Bytes> {
+        Some(self)
+    }
+}
+
+impl crate::codec::sealed::Sealed for Vec<u8> {}
+impl RequestBody for Vec<u8> {}
+
+impl crate::codec::sealed::Sealed for &[u8] {}
+impl RequestBody for &[u8] {}
+
+pub(crate) fn upload_of<B: RequestBody>(body: &B) -> crate::multipart::Upload<'_> {
+    match body.shared() {
+        Some(b) => crate::multipart::Upload::Shared(b),
+        None => crate::multipart::Upload::Borrowed(body.as_ref()),
+    }
 }
 
 /// A request body that passed [`request_shape`]'s checks for one dialect, kept with its

@@ -304,10 +304,16 @@ fn decode_response(
         .flatten()
         .map(|u| GeneratedImage::new(Source::Url(u.clone())))
         .collect();
-    images.extend(data.image_base64.iter().flatten().map(|b| {
-        let media = crate::media::sniff_image(b).unwrap_or("application/octet-stream");
-        GeneratedImage::new(Source::base64(media, b.clone()))
-    }));
+    for b in data.image_base64.iter().flatten() {
+        let mut source = Source::base64("application/octet-stream", b)
+            .map_err(|_| KppError::provider("MiniMax sent an image that is not valid base64."))?;
+        if let Source::Base64(s) = &mut source
+            && let Some(media) = crate::media::sniff_image(&s.data)
+        {
+            media.clone_into(&mut s.media_type);
+        }
+        images.push(GeneratedImage::new(source));
+    }
     let mut resp = ImageResponse::new(String::new(), images);
     let mut extras = extras_from(&origin, extra, verbatim);
     if let Some(b) = &w.base_resp
@@ -335,11 +341,11 @@ fn encode_response(reply: &Reply) -> Result<Vec<u8>, KppError> {
             _ => None,
         })
         .collect();
-    let b64: Vec<&str> = r
+    let b64: Vec<kaeso_kpp::Base64Text<'_>> = r
         .images
         .iter()
         .filter_map(|i| match &i.source {
-            Source::Base64(b) => Some(b.data.as_str()),
+            Source::Base64(b) => Some(b.base64()),
             _ => None,
         })
         .collect();

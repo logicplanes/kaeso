@@ -30,7 +30,7 @@ fn other_reply(d: DialectId) -> Reply {
     if d == DialectId::OpenAiTranscriptions {
         Reply::Speech(SpeechResponse::new(
             "m",
-            Source::base64("audio/mpeg", "SUQz"),
+            Source::base64("audio/mpeg", "SUQz").unwrap(),
         ))
     } else {
         Reply::Transcription(TranscriptionResponse::new("m", "Hi"))
@@ -135,7 +135,7 @@ fn decoding_through_dispatch_checks_the_shape_first() {
     let ctx = EncodeCtx::for_request(Request::Speech(speak.clone()));
     let wav = Reply::Speech(SpeechResponse::new(
         "m",
-        Source::base64("audio/wav", "UklG"),
+        Source::base64("audio/wav", "UklG").unwrap(),
     ));
     assert_eq!(
         dispatch::stream_media_type(DialectId::OpenAiSpeech, &ctx),
@@ -181,5 +181,73 @@ fn broken_audio_streams_end_with_one_error() {
             1,
             "{d}: {events:?}"
         );
+    }
+}
+
+#[test]
+fn uploads_in_a_shared_body_are_slices_of_it_and_other_bodies_are_copied() {
+    let boundary = "kaeso";
+    let form = |file: &str| {
+        format!(
+            "--{boundary}\r\ncontent-disposition: form-data; name=\"model\"\r\n\r\nm\r\n\
+             --{boundary}\r\ncontent-disposition: form-data; name=\"{file}\"; filename=\"a.png\"\r\n\
+             content-type: image/png\r\n\r\n\x7fPNG\r\n--{boundary}--\r\n"
+        )
+        .into_bytes()
+    };
+    let headers = HeaderList::new().with(
+        "content-type",
+        format!("multipart/form-data; boundary={boundary}"),
+    );
+    let inside = |data: &bytes::Bytes, body: &[u8]| {
+        let start = body.as_ptr() as usize;
+        (start..start + body.len()).contains(&(data.as_ptr() as usize))
+    };
+    let audio = |req: Request| match req {
+        Request::Transcription(r) => match r.audio.source {
+            Source::Base64(b) => b.data,
+            other => panic!("{other:?}"),
+        },
+        other => panic!("{other:?}"),
+    };
+    let image = |req: Request| match req {
+        Request::Image(r) => match &r.images[0].source {
+            Source::Base64(b) => b.data.clone(),
+            other => panic!("{other:?}"),
+        },
+        other => panic!("{other:?}"),
+    };
+
+    let body = bytes::Bytes::from(form("file"));
+    let checked =
+        crate::limits::Checked::new(DialectId::OpenAiTranscriptions, body.clone()).unwrap();
+    let shared = audio(
+        dispatch::decode_checked_transcription_request(
+            kaeso_kpp::TranscriptionOperation::Transcribe,
+            &checked,
+            &headers,
+        )
+        .unwrap(),
+    );
+    assert_eq!(&shared[..], b"\x7fPNG");
+    assert!(inside(&shared, &body), "a slice of the request body");
+
+    let owned = form("file");
+    let checked =
+        crate::limits::Checked::new(DialectId::OpenAiTranscriptions, owned.clone()).unwrap();
+    let copied = audio(
+        dispatch::decode_checked_request(RequestKind::Transcription, &checked, &headers).unwrap(),
+    );
+    assert_eq!(&copied[..], b"\x7fPNG");
+    assert!(!inside(&copied, checked.body()));
+
+    let body = bytes::Bytes::from(form("image"));
+    let checked = crate::limits::Checked::new(DialectId::OpenAiImages, body.clone()).unwrap();
+    for req in [
+        dispatch::decode_checked_image_request(kaeso_kpp::ImageOperation::Edit, &checked, &headers)
+            .unwrap(),
+        dispatch::decode_checked_request(RequestKind::Image, &checked, &headers).unwrap(),
+    ] {
+        assert!(inside(&image(req), &body));
     }
 }

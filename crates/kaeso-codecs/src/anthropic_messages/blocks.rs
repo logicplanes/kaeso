@@ -9,9 +9,9 @@ use super::common::{
     D, Rewrites, empty_object, is_data_url, nested_ext, parse_base64_data_url, scoped, to_raw,
 };
 use super::wire::{
-    CacheControlW, CitationsConfigW, DataSourceW, DocumentW, FileSourceW, ImageW, Raw,
-    RedactedThinkingW, TextW, ThinkingW, ToolChangeW, ToolHandleW, ToolReferenceW, ToolResultW,
-    ToolUseW, UrlSourceW,
+    BytesSourceW, CacheControlW, CitationsConfigW, DataSourceW, DocumentW, FileSourceW, ImageW,
+    Raw, RedactedThinkingW, TextW, ThinkingW, ToolChangeW, ToolHandleW, ToolReferenceW,
+    ToolResultW, ToolUseW, UrlSourceW,
 };
 use crate::codec::EgressCtx;
 use crate::cross::{ReplyPolicy, reasoning_replayable, reasoning_reply_policy};
@@ -418,11 +418,9 @@ fn decode_source(
     let (source, extra, verbatim) = match kind {
         SourceKind::Base64 => {
             let w: Ext<DataSourceW> = Ext::from_raw(raw).map_err(err)?;
-            (
-                Source::base64(w.known.media_type, w.known.data),
-                w.extra,
-                w.verbatim,
-            )
+            let source = Source::base64(w.known.media_type, w.known.data)
+                .map_err(|_| "`source.data` is not valid base64".to_owned())?;
+            (source, w.extra, w.verbatim)
         }
         SourceKind::Text => {
             let w: Ext<DataSourceW> = Ext::from_raw(raw).map_err(err)?;
@@ -792,10 +790,10 @@ impl BlockEncoder {
     ) -> Result<Raw, KppError> {
         let raw = match source {
             Source::Base64(s) => to_raw(&nested_ext(
-                DataSourceW {
-                    ty: "base64".into(),
-                    media_type: s.media_type.clone(),
-                    data: s.data.clone(),
+                BytesSourceW {
+                    ty: "base64",
+                    media_type: &s.media_type,
+                    data: s.base64(),
                 },
                 extras,
                 "source",

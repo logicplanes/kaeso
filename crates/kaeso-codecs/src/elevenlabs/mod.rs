@@ -145,6 +145,14 @@ impl ElevenLabs {
         body: &[u8],
         headers: &HeaderList,
     ) -> Result<Request, KppError> {
+        request::decode(call, crate::multipart::Upload::Borrowed(body), headers)
+    }
+
+    pub(crate) fn decode_upload(
+        call: &ElevenLabsCall,
+        body: crate::multipart::Upload<'_>,
+        headers: &HeaderList,
+    ) -> Result<Request, KppError> {
         request::decode(call, body, headers)
     }
 }
@@ -174,7 +182,7 @@ impl Codec for ElevenLabs {
             timestamps: false,
             query: String::new(),
         };
-        request::decode(&call, body, headers)
+        request::decode(&call, crate::multipart::Upload::Borrowed(body), headers)
     }
 
     fn encode_response(reply: &Reply, ctx: &EncodeCtx) -> Result<Vec<u8>, KppError> {

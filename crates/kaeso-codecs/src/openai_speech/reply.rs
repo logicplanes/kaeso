@@ -46,7 +46,11 @@ pub(super) fn decode(
         events.extend(decoder.finish());
         return assemble(&events, &media_type(headers, ctx), &ctx.origin(DIALECT));
     }
-    let data = match ctx.speech_profile.reply {
+    let media = match ctx.speech_profile.reply {
+        SpeechReply::Bytes => media_type(headers, ctx),
+        _ => media_type_of(ctx.audio_format.as_ref()).to_owned(),
+    };
+    let source = match ctx.speech_profile.reply {
         SpeechReply::JsonBase64(key) => {
             let value: Value = serde_json::from_slice(body).map_err(|e| {
                 KppError::provider(format!(
@@ -57,18 +61,18 @@ pub(super) fn decode(
             value
                 .get(key)
                 .and_then(Value::as_str)
-                .map(str::to_owned)
                 .ok_or_else(|| {
                     KppError::provider(format!("The provider's speech reply has no `{key}`."))
+                })
+                .and_then(|data| {
+                    Source::base64(media, data).map_err(|_| {
+                        KppError::provider("The provider sent audio that is not valid base64.")
+                    })
                 })?
         }
-        _ => B64.encode(body),
+        _ => Source::bytes(media, bytes::Bytes::copy_from_slice(body)),
     };
-    let media = match ctx.speech_profile.reply {
-        SpeechReply::Bytes => media_type(headers, ctx),
-        _ => media_type_of(ctx.audio_format.as_ref()).to_owned(),
-    };
-    let resp = SpeechResponse::new(String::new(), Source::base64(media, data));
+    let resp = SpeechResponse::new(String::new(), source);
     Ok(Reply::Speech(resp))
 }
 
@@ -105,7 +109,7 @@ pub(crate) fn assemble(
             _ => {}
         }
     }
-    let mut resp = SpeechResponse::new(String::new(), Source::base64(media, B64.encode(bytes)));
+    let mut resp = SpeechResponse::new(String::new(), Source::bytes(media, bytes));
     resp.usage = usage;
     Ok(Reply::Speech(resp))
 }
@@ -302,8 +306,11 @@ pub(super) fn encode(reply: &Reply, ctx: &EncodeCtx) -> Result<Vec<u8>, KppError
             "The provider answered with a link to the audio, which this endpoint cannot return.",
         ));
     };
-    let mut enc = Encoder::new(wants_events(ctx));
-    let mut out = enc.encode(&StreamEvent::Speech(SpeechEvent::audio(b.data.clone())))?;
+    if !wants_events(ctx) {
+        return Ok(b.data.to_vec());
+    }
+    let mut enc = Encoder::new(true);
+    let mut out = enc.encode(&StreamEvent::Speech(SpeechEvent::audio(b.to_base64())))?;
     let mut done = SpeechEvent::done(Some(r.usage.clone()));
     done.extras.clone_from(&r.extras);
     out.extend(enc.encode(&StreamEvent::Speech(done))?);

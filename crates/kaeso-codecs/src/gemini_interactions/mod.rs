@@ -54,10 +54,11 @@ fn image_item(map: Map<String, Value>) -> Result<VideoImage, KppError> {
     let mut f = Fields::from_map(map, D, "request");
     f.str("type")?;
     let source = match (f.str("data")?, f.str("uri")?) {
-        (Some(data), None) => Source::base64(
+        (Some(data), None) => crate::media::from_base64(
             f.str("mime_type")?.unwrap_or_else(|| "image/png".into()),
             data,
-        ),
+            "data",
+        )?,
         (None, Some(uri)) => Source::Url(uri),
         _ => {
             return Err(
@@ -316,7 +317,7 @@ fn image_value(image: &VideoImage) -> Value {
     out.insert("type".into(), "image".into());
     match &image.source {
         Source::Base64(b) => {
-            out.insert("data".into(), b.data.clone().into());
+            out.insert("data".into(), b.to_base64().into());
             out.insert("mime_type".into(), b.media_type.clone().into());
         }
         Source::Url(u) => {
@@ -433,7 +434,10 @@ fn outputs_of(steps: &Value) -> Vec<VideoOutput> {
                 item.get("data").and_then(Value::as_str),
                 item.get("uri").and_then(Value::as_str),
             ) {
-                (Some(data), _) => Source::base64(media_type, data),
+                (Some(data), _) => match Source::base64(media_type, data) {
+                    Ok(source) => source,
+                    Err(_) => continue,
+                },
                 (None, Some(uri)) => Source::Url(uri.to_owned()),
                 _ => continue,
             };

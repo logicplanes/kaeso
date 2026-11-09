@@ -206,9 +206,9 @@ fn data_urls_with_parameters_are_base64_and_keep_their_spelling() {
     assert_eq!(
         sources,
         [
-            Source::base64("image/png", "AAAA"),
-            Source::base64("image/png", "BBBB"),
-            Source::base64("application/pdf", "JVBE")
+            Source::base64("image/png", "AAAA").unwrap(),
+            Source::base64("image/png", "BBBB").unwrap(),
+            Source::base64("application/pdf", "JVBE").unwrap()
         ]
     );
 }

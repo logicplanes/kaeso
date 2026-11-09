@@ -24,6 +24,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "bytes"
+version = "1.12.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fc652a48c352aef3ea3aed32080501cf3ef6ed5da78602a020c991775b0aff04"
+
+[[package]]
 name = "cc"
 version = "1.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -147,6 +153,7 @@ name = "kaeso-codecs"
 version = "0.6.0-rc.8"
 dependencies = [
  "base64",
+ "bytes",
  "indexmap",
  "kaeso-kpp",
  "serde",
@@ -158,6 +165,8 @@ dependencies = [
 name = "kaeso-kpp"
 version = "0.6.0-rc.8"
 dependencies = [
+ "base64",
+ "bytes",
  "indexmap",
  "serde",
  "serde_json",

@@ -200,7 +200,7 @@ pub(super) fn encode_request(
     ctx.stream = StreamMode::Off;
     ctx.transcript_format = Some(r.format_or_default());
     let data = match &r.audio.source {
-        Source::Base64(b) => format!("data:{};base64,{}", b.media_type, b.data),
+        Source::Base64(b) => b.data_url(),
         Source::Url(u) => u.clone(),
         _ => String::new(),
     };

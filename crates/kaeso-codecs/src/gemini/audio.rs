@@ -184,9 +184,8 @@ pub(super) fn decode_speech(body: &[u8], origin: &Origin) -> Result<Reply, KppEr
     let Some(first) = audio.first() else {
         return Err(without("audio", &reply, origin));
     };
-    let data = crate::media::join_base64(audio.iter().map(|b| b.data.as_str()))
-        .unwrap_or_else(|| first.data.clone());
-    let mut resp = SpeechResponse::new(reply.model, Source::base64(first.media_type.clone(), data));
+    let data = crate::media::join_bytes(audio.iter().map(|b| &b.data));
+    let mut resp = SpeechResponse::new(reply.model, Source::bytes(first.media_type.clone(), data));
     resp.usage = reply.usage;
     Ok(Reply::Speech(resp))
 }
@@ -326,7 +325,7 @@ pub(super) fn encode_transcription(
     let mut generation = Map::new();
     generation.insert("audioTranscriptionConfig".into(), Value::Object(config));
     let body = json!({
-        "contents": [{"role": "user", "parts": [{"inlineData": {"mimeType": b.media_type, "data": b.data}}]}],
+        "contents": [{"role": "user", "parts": [{"inlineData": {"mimeType": b.media_type, "data": b.base64()}}]}],
         "generationConfig": generation,
     });
     Ok(EncodedRequest::post_json(

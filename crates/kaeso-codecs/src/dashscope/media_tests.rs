@@ -151,8 +151,9 @@ fn models_pick_their_family() {
 #[test]
 fn openai_image_requests_become_dashscope_messages() {
     let mut r = edit("qwen-image-2.1-turbo", 1);
-    r.images
-        .push(ImageInput::new(Source::base64("image/png", "AAAA")));
+    r.images.push(ImageInput::new(
+        Source::base64("image/png", "AAAA").unwrap(),
+    ));
     r.size = Some(ImageSize::pixels(1024, 768));
     r.count = Some(2);
     r.seed = Some(7);
@@ -270,10 +271,9 @@ fn image_replies_need_an_image_and_read_errors() {
     assert_eq!(err.message, "num_images_per_prompt must be 1");
     let mut reply = kaeso_kpp::ImageResponse::new(
         "m",
-        vec![kaeso_kpp::GeneratedImage::new(Source::base64(
-            "image/png",
-            "AAAA",
-        ))],
+        vec![kaeso_kpp::GeneratedImage::new(
+            Source::base64("image/png", "AAAA").unwrap(),
+        )],
     );
     reply.images[0].revised_prompt = Some("p".into());
     let written: Value = serde_json::from_slice(
@@ -562,7 +562,7 @@ fn transcription_fixtures_round_trip_and_read_the_billed_seconds() {
 fn openai_transcriptions_name_their_format_and_refuse_timing() {
     let mut r = transcription(
         "qwen-audio-3.1-asr-flash",
-        Source::base64("audio/mpeg", "AAAA"),
+        Source::base64("audio/mpeg", "AAAA").unwrap(),
     );
     r.prompt = Some("Kaeso".into());
     r.language = Some("de".into());
@@ -582,7 +582,7 @@ fn openai_transcriptions_name_their_format_and_refuse_timing() {
     );
     let mut named = transcription(
         "qwen-audio-3.0-asr-flash",
-        Source::base64("application/octet-stream", "AAAA"),
+        Source::base64("application/octet-stream", "AAAA").unwrap(),
     );
     named.audio.filename = Some("clip.WAV".into());
     let req = Request::Transcription(named);

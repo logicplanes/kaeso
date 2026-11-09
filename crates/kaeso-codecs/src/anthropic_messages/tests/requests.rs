@@ -516,7 +516,7 @@ fn foreign_documents_and_images_map_to_anthropic_sources() {
     r.messages[0].blocks.push(Block::Document(doc));
     r.messages[0]
         .blocks
-        .push(Block::image(Source::base64("image/png", "AAAA")));
+        .push(Block::image(Source::base64("image/png", "AAAA").unwrap()));
     let body = encode_value(r);
     assert_eq!(
         body["messages"][0]["content"][1],

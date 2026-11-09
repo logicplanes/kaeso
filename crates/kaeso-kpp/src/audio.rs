@@ -105,13 +105,10 @@ impl AudioInput {
         self
     }
 
-    /// The size of inline bytes, from their base64 length; `None` for a link or a file id.
+    /// The size of inline bytes; `None` for a link or a file id.
     pub fn byte_len(&self) -> Option<u64> {
         match &self.source {
-            Source::Base64(b) => {
-                let data = b.data.trim_end_matches('=');
-                Some((data.len() as u64).saturating_mul(3) / 4)
-            }
+            Source::Base64(b) => Some(b.data.len() as u64),
             _ => None,
         }
     }
@@ -634,7 +631,7 @@ mod tests {
     use super::*;
 
     fn wav() -> AudioInput {
-        AudioInput::new(Source::base64("audio/wav", "UklGRg==")).with_filename("a.wav")
+        AudioInput::new(Source::base64("audio/wav", "UklGRg==").unwrap()).with_filename("a.wav")
     }
 
     #[test]
@@ -751,7 +748,7 @@ mod tests {
         assert!(serde_json::to_string(&seg).unwrap().contains("\"segment\""));
         let done = TranscriptEvent::done(TranscriptionResponse::new("m", "Hi"));
         assert_eq!(done.done.unwrap().text, "Hi");
-        let r = SpeechResponse::new("m", Source::base64("audio/mpeg", "AA=="));
+        let r = SpeechResponse::new("m", Source::base64("audio/mpeg", "AA==").unwrap());
         let back: SpeechResponse =
             serde_json::from_str(&serde_json::to_string(&r).unwrap()).unwrap();
         assert_eq!(back, r);

@@ -999,7 +999,7 @@ mod tests {
             check(r, C).unwrap_err().unsupported_feature(),
             Some("messages[0].cache_control")
         );
-        let mut file = DocumentBlock::new(Source::base64("application/pdf", "JVBERi0="));
+        let mut file = DocumentBlock::new(Source::base64("application/pdf", "JVBERi0=").unwrap());
         file.extras = Extras::new(R).with_field("detail", raw("\"high\""));
         let r = GenerateRequest::new("m")
             .with_message(Message::new(Role::User, vec![Block::Document(file)]));

@@ -2593,6 +2593,7 @@ name = "kaeso-codecs"
 version = "0.6.0-rc.8"
 dependencies = [
  "base64 0.23.1",
+ "bytes",
  "indexmap 2.14.2",
  "insta",
  "kaeso-kpp",
@@ -2607,6 +2608,7 @@ name = "kaeso-core"
 version = "0.6.0-rc.8"
 dependencies = [
  "base64 0.23.1",
+ "bytes",
  "ed25519-dalek 3.0.0",
  "idna",
  "insta",
@@ -2650,6 +2652,8 @@ dependencies = [
 name = "kaeso-kpp"
 version = "0.6.0-rc.8"
 dependencies = [
+ "base64 0.23.1",
+ "bytes",
  "indexmap 2.14.2",
  "serde",
  "serde_json",

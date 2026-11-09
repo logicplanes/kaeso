@@ -1,7 +1,7 @@
 use indexmap::IndexMap;
 use kaeso_kpp::{
-    AudioBlock, Block, CacheHint, DocumentBlock, Extras, ImageBlock, KppError, Origin, RawItem,
-    RawJson, RefusalBlock, Source, TextBlock, ToolCallBlock, VideoBlock,
+    AudioBlock, Base64Source, Block, CacheHint, DocumentBlock, Extras, ImageBlock, KppError,
+    Origin, RawItem, RawJson, RefusalBlock, Source, TextBlock, ToolCallBlock, VideoBlock,
 };
 use serde::Serialize;
 use serde::de::DeserializeOwned;
@@ -14,6 +14,7 @@ use super::wire::{
     RefusalPart, TextPart, ToolCall, VideoPart,
 };
 use crate::limits::Form;
+use crate::media::from_base64;
 use crate::wire::{
     Ext, add_nested_extra, extra_for, extras_from, nested_extra_for, parse_data_url, type_tag,
     verbatim_from_form, verbatim_into_form, without_position,
@@ -122,14 +123,14 @@ pub(crate) fn form_str(value: &str) -> Value {
 
 pub(crate) const FORM_DATA_URL: &str = "data_url";
 
-pub(crate) fn data_url_for(extras: &Extras, media_type: &str, data: &str) -> String {
+pub(crate) fn data_url_for(extras: &Extras, source: &Base64Source) -> String {
     if let Some(header) = extras.form_str(DIALECT, FORM_DATA_URL) {
         let probe = format!("{header},");
-        if parse_data_url(&probe).is_some_and(|d| d.media_type == media_type) {
-            return format!("{header},{data}");
+        if parse_data_url(&probe).is_some_and(|d| d.media_type == source.media_type) {
+            return source.data_url_with(header);
         }
     }
-    data_url(media_type, data)
+    source.data_url()
 }
 
 fn mark_header(extras: &mut Extras, header: Option<&str>) {
@@ -138,10 +139,6 @@ fn mark_header(extras: &mut Extras, header: Option<&str>) {
             .form
             .insert(FORM_DATA_URL.to_owned(), form_str(header));
     }
-}
-
-pub(crate) fn data_url(media_type: &str, data: &str) -> String {
-    format!("data:{media_type};base64,{data}")
 }
 
 pub(crate) fn decode_breakpoint(bp: Ext<CacheBreakpoint>, origin: &Origin) -> CacheHint {
@@ -283,7 +280,7 @@ fn decode_image_part(raw: &RawJson, origin: &Origin) -> Result<Block, KppError> 
     let parsed = parse_data_url(&image_url.url);
     let header = parsed.as_ref().and_then(|d| d.header.map(str::to_owned));
     let source = match parsed {
-        Some(d) => Source::base64(d.media_type, d.data),
+        Some(d) => from_base64(d.media_type, d.data, "image_url.url")?,
         None => Source::Url(image_url.url.clone()),
     };
     let mut block = ImageBlock::new(source);
@@ -318,7 +315,7 @@ fn decode_audio_part(raw: &RawJson, origin: &Origin) -> Result<Block, KppError> 
     let Some(media_type) = crate::media::audio_media_type(&audio.format) else {
         return unknown();
     };
-    let mut block = AudioBlock::new(Source::base64(media_type, audio.data));
+    let mut block = AudioBlock::new(from_base64(media_type, audio.data, "input_audio.data")?);
     block.cache = known
         .prompt_cache_breakpoint
         .map(|bp| decode_breakpoint(bp, origin));
@@ -350,7 +347,7 @@ fn decode_video_part(raw: &RawJson, origin: &Origin) -> Result<Block, KppError> 
     let parsed = parse_data_url(&video_url.url);
     let header = parsed.as_ref().and_then(|d| d.header.map(str::to_owned));
     let source = match parsed {
-        Some(d) => Source::base64(d.media_type, d.data),
+        Some(d) => from_base64(d.media_type, d.data, "video_url.url")?,
         None => Source::Url(video_url.url.clone()),
     };
     let mut block = VideoBlock::new(source);
@@ -384,11 +381,11 @@ fn decode_file_part(raw: &RawJson, origin: &Origin) -> Result<Block, KppError> {
             match parse_data_url(&file_data) {
                 Some(d) => {
                     header = d.header.map(str::to_owned);
-                    Source::base64(d.media_type, d.data)
+                    from_base64(d.media_type, d.data, "file.file_data")?
                 }
                 None => {
                     bare = true;
-                    Source::base64("application/pdf", file_data)
+                    from_base64("application/pdf", &file_data, "file.file_data")?
                 }
             }
         }
@@ -435,7 +432,7 @@ pub(crate) fn encode_refusal_part(block: &RefusalBlock) -> Result<RawJson, KppEr
 pub(crate) fn encode_image_part(block: &ImageBlock) -> Result<RawJson, KppError> {
     let url = match &block.source {
         Source::Url(url) => url.clone(),
-        Source::Base64(b) => data_url_for(&block.extras, &b.media_type, &b.data),
+        Source::Base64(b) => data_url_for(&block.extras, b),
         other => {
             return Err(source_unsupported("image", other));
         }
@@ -463,7 +460,7 @@ pub(crate) fn encode_audio_part(block: &AudioBlock) -> Result<RawJson, KppError>
         ty: "input_audio".to_owned(),
         input_audio: ext_nested(
             InputAudio {
-                data: b.data.clone(),
+                data: b.to_base64(),
                 format: format.to_owned(),
             },
             &block.extras,
@@ -477,7 +474,7 @@ pub(crate) fn encode_audio_part(block: &AudioBlock) -> Result<RawJson, KppError>
 pub(crate) fn encode_video_part(block: &VideoBlock) -> Result<RawJson, KppError> {
     let url = match &block.source {
         Source::Url(url) => url.clone(),
-        Source::Base64(b) => data_url_for(&block.extras, &b.media_type, &b.data),
+        Source::Base64(b) => data_url_for(&block.extras, b),
         other => return Err(source_unsupported("video", other)),
     };
     let part = VideoPart {
@@ -497,9 +494,9 @@ pub(crate) fn encode_file_part(block: &DocumentBlock) -> Result<RawJson, KppErro
             }
             let bare = block.extras.form_flag(DIALECT, FORM_BARE_FILE_DATA);
             file.file_data = Some(if bare {
-                b.data.clone()
+                b.to_base64()
             } else {
-                data_url_for(&block.extras, &b.media_type, &b.data)
+                data_url_for(&block.extras, b)
             });
         }
         Source::FileId(f) => file.file_id = Some(f.id.clone()),
@@ -698,10 +695,6 @@ mod tests {
         assert_eq!(parse_data_url("https://example.com/a.png"), None);
         assert_eq!(parse_data_url("data:;base64,AAAA"), None);
         assert_eq!(parse_data_url("data:text/plain,hello"), None);
-        assert_eq!(
-            data_url("application/pdf", "JVBE"),
-            "data:application/pdf;base64,JVBE"
-        );
     }
 
     #[test]

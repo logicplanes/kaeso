@@ -44,6 +44,7 @@ macro_rules! wire_enum {
 }
 
 mod audio;
+mod b64;
 mod block;
 mod dialect;
 mod error;
@@ -62,6 +63,7 @@ pub use audio::{
     SpeechResponse, TimestampGranularity, TranscriptEvent, TranscriptFormat, TranscriptSegment,
     TranscriptWord, TranscriptionOperation, TranscriptionRequest, TranscriptionResponse, Voice,
 };
+pub use b64::Base64Text;
 pub use block::{
     AudioBlock, Base64Source, Block, CacheHint, CacheTtl, Citation, DocumentBlock, FileIdSource,
     ImageBlock, Opaque, OpaqueKind, RawItem, ReasoningBlock, RefusalBlock, Source, TextBlock,
@@ -97,5 +99,6 @@ pub use video::{
     VideoOperation, VideoOutput, VideoRequest, VideoStatus, VideoVariant,
 };
 
+pub use bytes;
 pub use indexmap;
 pub use serde_json;

@@ -55,7 +55,7 @@ fn generate(prompt: &str) -> ImageRequest {
 }
 
 fn png() -> ImageInput {
-    ImageInput::new(Source::base64("image/png", PNG)).with_filename("fox.png")
+    ImageInput::new(Source::base64("image/png", PNG).unwrap()).with_filename("fox.png")
 }
 
 fn refusal(profile: ImagesProfile, req: &ImageRequest) -> (String, String) {
@@ -333,10 +333,9 @@ fn replies_carry_images_usage_and_media_types() {
 fn a_reply_from_another_format_gets_usage_in_openai_s_shape() {
     let mut r = ImageResponse::new(
         "gemini-3.1-flash-image",
-        vec![kaeso_kpp::GeneratedImage::new(Source::base64(
-            "image/png",
-            PNG,
-        ))],
+        vec![kaeso_kpp::GeneratedImage::new(
+            Source::base64("image/png", PNG).unwrap(),
+        )],
     );
     let mut usage = Usage::new(12, 1120);
     usage.output_image_tokens = Some(1120);
@@ -434,7 +433,7 @@ fn events_from_another_format_say_every_required_field() {
     let mut enc =
         OpenAiImages::stream_encoder(&stream_ctx(ImageOperation::Generate).with_created_at(9));
     let event = ImageEvent::finished(
-        kaeso_kpp::GeneratedImage::new(Source::base64("image/jpeg", "AA==")),
+        kaeso_kpp::GeneratedImage::new(Source::base64("image/jpeg", "AA==").unwrap()),
         Some(Usage::new(1, 2)),
     );
     let out = enc.encode(&StreamEvent::Image(event)).unwrap();
@@ -463,8 +462,8 @@ fn a_whole_reply_asked_for_as_a_stream_becomes_finished_events() {
     let mut r = ImageResponse::new(
         "m",
         vec![
-            kaeso_kpp::GeneratedImage::new(Source::base64("image/png", PNG)),
-            kaeso_kpp::GeneratedImage::new(Source::base64("image/png", PNG)),
+            kaeso_kpp::GeneratedImage::new(Source::base64("image/png", PNG).unwrap()),
+            kaeso_kpp::GeneratedImage::new(Source::base64("image/png", PNG).unwrap()),
         ],
     );
     r.usage = Usage::new(3, 4);
@@ -795,7 +794,7 @@ fn uploads_get_a_file_name_from_their_media_type() {
         "image/avif",
     ] {
         r.images
-            .push(ImageInput::new(Source::base64(media, "AA==")));
+            .push(ImageInput::new(Source::base64(media, "AA==").unwrap()));
     }
     r.extras = kaeso_kpp::Extras::new(DialectId::OpenAiImages).with_field(
         "n_tags",
@@ -822,14 +821,9 @@ fn uploads_get_a_file_name_from_their_media_type() {
         .filter_map(|p| p.text())
         .collect();
     assert_eq!(tags, ["1", "true"]);
-    r.images
-        .push(ImageInput::new(Source::base64("image/png", "not base64!")));
     assert_eq!(
-        encode(ImagesProfile::OPENAI, &r)
-            .unwrap_err()
-            .param
-            .as_deref(),
-        Some("image")
+        Source::base64("image/png", "not base64!").unwrap_err().kind,
+        kaeso_kpp::ErrorKind::InvalidRequest
     );
 }
 

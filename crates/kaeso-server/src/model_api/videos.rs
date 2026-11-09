@@ -9,7 +9,6 @@ use axum::body::Body;
 use axum::extract::{Extension, OriginalUri, Request, State};
 use axum::http::{HeaderMap, HeaderValue, StatusCode, header};
 use axum::response::Response;
-use base64::Engine as _;
 use bytes::Bytes;
 use futures::StreamExt;
 use kaeso_codecs::{EgressCtx, EncodedRequest, HeaderList, dispatch, openai_videos};
@@ -103,7 +102,7 @@ pub(super) fn logged_request(r: &VideoRequest) -> Bytes {
     let mut kept = r.clone();
     for image in &mut kept.images {
         if let Source::Base64(b) = &image.source {
-            let bytes = b.data.len() / 4 * 3;
+            let bytes = b.data.len();
             image.source = Source::text(b.media_type.clone(), format!("{bytes} bytes, not logged"));
         }
     }
@@ -1036,21 +1035,15 @@ async fn fetch_content(
 }
 
 /// A file the provider sent inside its answer, as Veo and Gemini Omni do.
-fn inline(data: &str, media_type: String, range: Option<&str>) -> Result<Response, KppError> {
-    let bytes = base64::engine::general_purpose::STANDARD
-        .decode(data)
-        .map_err(|_| KppError::provider("The provider sent a video Kaeso cannot read."))?;
+fn inline(bytes: &Bytes, media_type: String, range: Option<&str>) -> Result<Response, KppError> {
     let total = bytes.len();
     let (status, body, content_range) = match range.and_then(|r| byte_range(r, total)) {
-        Some((start, end)) => (
+        Some((start, end)) if end < total => (
             StatusCode::PARTIAL_CONTENT,
-            bytes
-                .get(start..=end)
-                .map(<[u8]>::to_vec)
-                .unwrap_or_default(),
+            bytes.slice(start..=end),
             Some(format!("bytes {start}-{end}/{total}")),
         ),
-        None => (StatusCode::OK, bytes, None),
+        _ => (StatusCode::OK, bytes.clone(), None),
     };
     let mut resp = Response::new(Body::from(body));
     *resp.status_mut() = status;
@@ -1244,7 +1237,7 @@ mod tests {
         let mut r = VideoRequest::new("m", kaeso_kpp::VideoOperation::Generate)
             .with_prompt("fox")
             .with_image(kaeso_kpp::VideoImage::new(
-                Source::base64("image/png", "AAAAAAAA"),
+                Source::base64("image/png", "AAAAAAAA").unwrap(),
                 kaeso_kpp::VideoImageRole::FirstFrame,
             ));
         r.seconds = Some(8);

@@ -620,16 +620,17 @@ fn features_come_from_what_the_request_uses() {
     let plain = Request::Generate(user(vec![Block::text("hi")]));
     assert!(features_of(&plain).is_empty());
     let image = Request::Generate(
-        user(vec![Block::image(Source::base64("image/png", "AAAA"))])
-            .with_tool(ToolDef::Function(FunctionTool::new("f", None))),
+        user(vec![Block::image(
+            Source::base64("image/png", "AAAA").unwrap(),
+        )])
+        .with_tool(ToolDef::Function(FunctionTool::new("f", None))),
     );
     assert_eq!(
         features_of(&image),
         BTreeSet::from([Feature::Images, Feature::Tools])
     );
-    let counted = Request::CountTokens(user(vec![Block::image(Source::base64(
-        "image/png",
-        "AAAA",
-    ))]));
+    let counted = Request::CountTokens(user(vec![Block::image(
+        Source::base64("image/png", "AAAA").unwrap(),
+    )]));
     assert_eq!(features_of(&counted), BTreeSet::from([Feature::Images]));
 }
