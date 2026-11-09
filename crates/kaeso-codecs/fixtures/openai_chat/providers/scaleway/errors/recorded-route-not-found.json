@@ -1,0 +1,8 @@
+{
+  "error": {
+    "code": 404,
+    "message": "route '/v1/messages' not found",
+    "type": "route_not_found",
+    "param": ""
+  }
+}

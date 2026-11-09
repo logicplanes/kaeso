@@ -193,6 +193,7 @@ const MARKED_PROVIDERS = {
   "fireworks-ai": "Fireworks AI",
   nebius: "Nebius Token Factory",
   sambanova: "SambaNova",
+  scaleway: "Scaleway",
   vllm: "vLLM",
   ollama: "Ollama",
   "lm-studio": "LM Studio",

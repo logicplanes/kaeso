@@ -1,0 +1,10 @@
+{
+  "model": "gpt-oss-120b",
+  "messages": [
+    {
+      "role": "user",
+      "content": "hi"
+    }
+  ],
+  "max_tokens": 1
+}

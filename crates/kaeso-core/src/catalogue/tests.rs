@@ -2579,3 +2579,21 @@ fn sambanova_models_speak_chat_completions_and_count_tokens_in_messages() {
         Some(messages.dialect)
     );
 }
+
+#[test]
+fn scaleway_models_speak_chat_completions_and_whisper_is_priced_by_the_minute() {
+    let gpt_oss = eff(&entry("scaleway", "gpt-oss-120b"));
+    assert_eq!(gpt_oss.dialect, DialectId::OpenAiChat);
+    assert_eq!(gpt_oss.provider.chat().provider, "Scaleway");
+    assert_eq!(
+        effort_levels(&gpt_oss, DialectId::OpenAiChat),
+        ["low", "medium", "high"]
+    );
+    let embed = eff(&entry("scaleway", "bge-multilingual-gemma2"));
+    assert_eq!(embed.dialect, DialectId::OpenAiEmbeddings);
+    let catalogue = snapshot();
+    let whisper = catalogue.model("scaleway", "whisper-large-v3").unwrap();
+    let per_unit = &whisper.pricing.as_ref().unwrap().per_unit;
+    assert_eq!(per_unit.len(), 1);
+    assert_eq!(per_unit[0].usd, dec!(0.0033645));
+}

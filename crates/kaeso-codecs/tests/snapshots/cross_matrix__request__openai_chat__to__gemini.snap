@@ -4396,6 +4396,118 @@ expression: outcomes
     "param": null,
     "unsupported": "chat_template_kwargs"
   },
+  "providers/scaleway/input-audio": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Transcribe this audio"
+            },
+            {
+              "inlineData": {
+                "data": "UklGRiwAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQgAAAAAAAAAAAAAAA==",
+                "mimeType": "audio/wav"
+              }
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 2048,
+        "temperature": 0.2,
+        "topP": 0.95
+      }
+    },
+    "path": "/v1beta/models/voxtral-small-24b-2507:generateContent"
+  },
+  "providers/scaleway/invalid-api-key": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "hi"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1
+      }
+    },
+    "path": "/v1beta/models/gpt-oss-120b:generateContent"
+  },
+  "providers/scaleway/missing-api-key": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "hi"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1
+      }
+    },
+    "path": "/v1beta/models/gpt-oss-120b:generateContent"
+  },
+  "providers/scaleway/reasoning": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Describe a futuristic city with advanced technology and green energy solutions."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 512,
+        "temperature": 0.2,
+        "thinkingConfig": {
+          "thinkingLevel": "MEDIUM"
+        },
+        "topP": 0.7
+      }
+    },
+    "path": "/v1beta/models/gpt-oss-120b:generateContent"
+  },
+  "providers/scaleway/reasoning-stream": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Hello!"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "thinkingConfig": {
+          "thinkingLevel": "MEDIUM"
+        }
+      },
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "You are a helpful assistant."
+          }
+        ]
+      }
+    },
+    "path": "/v1beta/models/qwen3.5-397b-a17b:streamGenerateContent?alt=sse"
+  },
   "providers/togetherai/context-length-error": {
     "message": "`context_length_exceeded_behavior` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
     "param": null,

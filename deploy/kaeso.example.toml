@@ -127,6 +127,9 @@ base_url = "https://api.tokenfactory.nebius.com"
 [providers.sambanova]
 base_url = "https://api.sambanova.ai"
 
+[providers.scaleway]
+base_url = "https://api.scaleway.ai"
+
 [custom_providers]
 enabled = true
 allowed_networks = ""

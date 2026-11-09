@@ -1547,6 +1547,44 @@ pub const PROVIDERS: &[Provider] = &[
         routes: &[],
         service_account: None,
     },
+    Provider {
+        id: "scaleway",
+        name: "Scaleway",
+        key_page: KeyPage {
+            url: "https://console.scaleway.com/iam/api-keys",
+            label: "IAM → API keys",
+        },
+        key_prefix: None,
+        default_base_url: "https://api.scaleway.ai",
+        auth: AuthStyle::Bearer,
+        generation: DialectId::OpenAiChat,
+        count_tokens: None,
+        embeddings: Some(DialectId::OpenAiEmbeddings),
+        images: &[],
+        speech: &[],
+        transcriptions: &[TranscriptionsEgress::openai(
+            TranscriptionsProfile::SCALEWAY,
+        )],
+        videos: &[],
+        dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
+        refused_key_messages: &[],
+        context_window_messages: &[],
+        reasoning_beyond_output_limit: false,
+        end_user_limit: None,
+        // Scaleway's reference lists no `developer` role and no end-user field, and its reasoning
+        // guide shows `reasoning_content` in replies and `reasoning` in stream deltas
+        // (https://www.scaleway.com/en/docs/generative-apis/how-to/query-reasoning-models/).
+        chat: ChatProfile::compatible("Scaleway")
+            .system_role()
+            .without_end_user()
+            .reasoning_fields(&["reasoning_content", "reasoning"]),
+        responses: ResponsesProfile::compatible("Scaleway"),
+        messages: MessagesProfile::compatible("Scaleway"),
+        gemini: GeminiProfile::GOOGLE_AI_STUDIO,
+        account: None,
+        routes: &[],
+        service_account: None,
+    },
 ];
 
 const _: () = {
@@ -1843,7 +1881,7 @@ mod tests {
         assert!(provider("gemini").is_none());
         assert_eq!(
             ids(),
-            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras, zai, minimax, elevenlabs, google, gemini-agent-platform, fireworks-ai, nebius, sambanova"
+            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras, zai, minimax, elevenlabs, google, gemini-agent-platform, fireworks-ai, nebius, sambanova, scaleway"
         );
     }
 
@@ -2662,7 +2700,8 @@ mod tests {
                 "gemini-agent-platform",
                 "fireworks-ai",
                 "nebius",
-                "sambanova"
+                "sambanova",
+                "scaleway"
             ]
         );
         assert_eq!(

@@ -33,6 +33,10 @@ const FOREIGN_ERROR_BODIES: &[(&str, ErrorKind)] = &[
         ErrorKind::Authentication,
     ),
     (
+        "providers/scaleway/legacy-model-error-doc",
+        ErrorKind::InvalidRequest,
+    ),
+    (
         "providers/mistral/recorded-assistant-prefill",
         ErrorKind::InvalidRequest,
     ),

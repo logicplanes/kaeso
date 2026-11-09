@@ -51,6 +51,10 @@ const PROFILES: &[(&str, ChatProfile)] = &[
         ChatProfile::compatible("SambaNova").reasoning_fields(&["reasoning"]),
     ),
     (
+        "scaleway",
+        ChatProfile::compatible("Scaleway").reasoning_fields(&["reasoning_content", "reasoning"]),
+    ),
+    (
         "togetherai",
         ChatProfile::compatible("Together AI")
             .reasoning_fields(&["reasoning_content", "reasoning"]),

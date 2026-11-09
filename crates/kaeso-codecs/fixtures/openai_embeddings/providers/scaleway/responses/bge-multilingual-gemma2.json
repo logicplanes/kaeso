@@ -1,0 +1,27 @@
+{
+  "id": "embd-0d3c1b2a-4e5f-4a6b-8c7d-9e0f1a2b3c4d",
+  "object": "list",
+  "created": 1794225600,
+  "model": "bge-multilingual-gemma2",
+  "data": [
+    {
+      "object": "embedding",
+      "embedding": [
+        -0.30661285,
+        -0.2986328,
+        0.17412665,
+        -0.59663844,
+        -0.03729366,
+        -0.58679825,
+        0.28635907,
+        0.05277313
+      ],
+      "index": 0
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 11,
+    "total_tokens": 11,
+    "completion_tokens": 0
+  }
+}

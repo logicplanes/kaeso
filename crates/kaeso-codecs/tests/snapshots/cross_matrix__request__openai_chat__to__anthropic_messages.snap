@@ -4992,6 +4992,117 @@ expression: outcomes
     "param": null,
     "unsupported": "chat_template_kwargs"
   },
+  "providers/scaleway/input-audio": {
+    "message": "`audio block` is not supported by Anthropic Messages. Anthropic has no audio content block; send a transcript of the audio as text instead.",
+    "param": "messages[0].blocks[1]",
+    "unsupported": "audio block"
+  },
+  "providers/scaleway/invalid-api-key": {
+    "body": {
+      "max_tokens": 1,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "hi",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-oss-120b"
+    },
+    "path": "/v1/messages"
+  },
+  "providers/scaleway/missing-api-key": {
+    "body": {
+      "max_tokens": 1,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "hi",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-oss-120b"
+    },
+    "path": "/v1/messages"
+  },
+  "providers/scaleway/reasoning": {
+    "body": {
+      "max_tokens": 512,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Describe a futuristic city with advanced technology and green energy solutions.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-oss-120b",
+      "output_config": {
+        "effort": "medium"
+      },
+      "thinking": {
+        "type": "adaptive"
+      }
+    },
+    "path": "/v1/messages"
+  },
+  "providers/scaleway/reasoning-stream": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Hello!",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "qwen3.5-397b-a17b",
+      "output_config": {
+        "effort": "medium"
+      },
+      "stream": true,
+      "system": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "text": "You are a helpful assistant.",
+          "type": "text"
+        }
+      ],
+      "thinking": {
+        "type": "adaptive"
+      }
+    },
+    "path": "/v1/messages"
+  },
   "providers/togetherai/context-length-error": {
     "message": "`context_length_exceeded_behavior` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
     "param": null,

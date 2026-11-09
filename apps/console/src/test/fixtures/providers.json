@@ -476,6 +476,25 @@
       "service_account": null,
       "model_routes": [],
       "server": null
+    },
+    {
+      "id": "scaleway",
+      "name": "Scaleway",
+      "custom": false,
+      "takes_key": true,
+      "hides_built_in": null,
+      "key_page": {
+        "url": "https://console.scaleway.com/iam/api-keys",
+        "label": "IAM → API keys"
+      },
+      "key_prefix": null,
+      "dialects": ["openai_chat", "openai_embeddings"],
+      "count_tokens": null,
+      "embeddings": "openai_embeddings",
+      "account": null,
+      "service_account": null,
+      "model_routes": [],
+      "server": null
     }
   ],
   "has_more": false,

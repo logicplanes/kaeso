@@ -1,0 +1,23 @@
+{
+  "id": "chatcmpl-5e2b8f0c-7a41-4d93-b6e1-3c9f0a2d4b17",
+  "object": "chat.completion",
+  "created": 1794225600,
+  "model": "gpt-oss-120b",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "**City of Luminara – A Blueprint for the Future** rises from a reclaimed river delta, powered by sun, wind and tide.",
+        "reasoning_content": "The user wants a description of a futuristic city with advanced tech and green energy solutions. Should be creative, vivid, detailed. No disallowed content. Provide description.",
+        "tool_calls": []
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 81,
+    "total_tokens": 158,
+    "completion_tokens": 77
+  }
+}

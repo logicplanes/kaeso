@@ -1,0 +1,8 @@
+{
+  "error": {
+    "code": 403,
+    "message": "insufficient permissions to access the resource",
+    "type": "forbidden",
+    "param": ""
+  }
+}

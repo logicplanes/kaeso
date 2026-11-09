@@ -65,6 +65,7 @@ Kaeso 用 `Codec::response_media_type` 以应用要求的形式写出转写稿�
 | `COHERE` | 位于主机根路径下的 `/v2/audio/transcriptions`；必须提供 `language`；只返回文本 | [transcribe](https://docs.cohere.com/v2/docs/transcribe) |
 | `MINIMAX` | 位于主机根路径下的 `/v1/speech_to_text`，`Authorization: Bearer`；`json`、`verbose_json`、`srt`、`vtt`；语言放在 `language` 请求头中；`timestamp_level` 为 `sentence` 或 `word`；`{index, delta, finish, duration}` 事件 | [speech to text](https://platform.minimax.io/docs/api-reference/speech-to-text) |
 | `VERCEL` | `/v4/ai/transcription-model`；带 base64 `audio` 和 `mediaType` 的 JSON，模型放在 `ai-model-id` 中；回复带 `durationInSeconds` | [speech to text](https://vercel.com/docs/ai-gateway/modalities/speech-to-text) |
+| `SCALEWAY` | OpenAI 的路径和形式；仅 `json`，带类型为 `duration` 的 `usage`；没有时间戳，没有翻译 | [Generative APIs reference](https://www.scaleway.com/en/developers/api/generative-apis/)（`CreateAudioTranscriptionResponse`） |
 
 ## Gemini 转写
 

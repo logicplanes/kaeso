@@ -1,0 +1,8 @@
+{
+  "error": {
+    "code": 401,
+    "message": "missing 'Authorization' header",
+    "type": "unauthorized",
+    "param": ""
+  }
+}

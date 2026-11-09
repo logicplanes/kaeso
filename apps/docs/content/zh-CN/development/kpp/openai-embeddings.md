@@ -105,3 +105,7 @@ order: 8
 ### Nebius Token Factory
 
 来源：Nebius 的 [create embeddings](https://docs.tokenfactory.nebius.com/api-reference/inference/create-embeddings) 参考（2026-11-09 阅读），以及据此构建的 `fixtures/openai_embeddings/providers/nebius/`，其中的错误是在没有有效密钥的情况下实时返回的。Nebius 的嵌入模型是 `Qwen/Qwen3-Embedding-8B`。它接受 `encoding_format` 和 `dimensions`，每个回复都带有 `service_tier`，保留在 extras 中。
+
+### Scaleway
+
+来源：Scaleway 的 [Generative APIs reference](https://www.scaleway.com/en/developers/api/generative-apis/)（`CreateEmbeddingResponse`，2026-11-09 阅读），以及据此构建的 `fixtures/openai_embeddings/providers/scaleway/`，其中的错误是在没有有效密钥的情况下实时返回的。无服务器模型为 `bge-multilingual-gemma2` 和 `qwen3-embedding-8b`。回复中额外的 `id`、`created` 和 `usage.completion_tokens: 0` 保留在 extras 中。`dimensions` 只接受模型的最大尺寸，其他值由 Scaleway 自行响应。

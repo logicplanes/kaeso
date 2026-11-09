@@ -154,6 +154,16 @@ async fn every_member_reads_each_provider_with_its_name_key_page_and_formats() {
     );
     assert_eq!(sambanova["count_tokens"], "anthropic_messages");
     assert_eq!(sambanova["embeddings"], Value::Null);
+    let scaleway = listed.iter().find(|p| p["id"] == "scaleway").unwrap();
+    assert_eq!(scaleway["name"], "Scaleway");
+    assert_eq!(
+        scaleway["dialects"],
+        json!(["openai_chat", "openai_embeddings"])
+    );
+    assert_eq!(
+        scaleway["key_page"],
+        json!({ "url": "https://console.scaleway.com/iam/api-keys", "label": "IAM → API keys" })
+    );
 
     let anonymous = app
         .call(Method::GET, &format!("/orgs/{org}/providers"), None, None)

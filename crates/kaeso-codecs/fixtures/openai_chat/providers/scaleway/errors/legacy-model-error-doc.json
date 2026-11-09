@@ -1,0 +1,7 @@
+{
+  "object": "error",
+  "message": "The model `llama-3.3-70b-instruct` does not support `response_format` `json_schema`.",
+  "type": "BadRequestError",
+  "param": null,
+  "code": 400
+}
