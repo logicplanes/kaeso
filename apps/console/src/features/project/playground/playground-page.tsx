@@ -15,7 +15,7 @@ import { MAX_COLUMNS, parseModels, validatePlaygroundSearch, type PlaygroundSear
 import Thread from "./thread";
 import { isLive } from "./responses";
 import { useThreads, type Thread as ThreadState } from "./use-threads";
-import { t } from "~/i18n";
+import { locale, t } from "~/i18n";
 import { common } from "~/i18n/common";
 import { readStored, writeStored } from "~/storage";
 import { PLAYGROUND_CONVERSATION, playgroundDraftKey } from "~/auth/user-data";
@@ -204,7 +204,7 @@ export function PlaygroundPage({ org, project, search }: { org: string; project:
     if (ready && window.matchMedia("(pointer: fine)").matches) composer.current?.focus();
   }, [ready]);
   const rules = fileRules(chosen);
-  const attach = async (picked: File[]) => {
+  const attach = async (picked: File[], label?: string) => {
     const sent = Math.max(0, ...threads.map((x) => sizeOf(x.turns.flatMap((turn) => turn.files ?? []))));
     let used = sent + sizeOf(files);
     const added: TurnFile[] = [];
@@ -226,7 +226,7 @@ export function PlaygroundPage({ org, project, search }: { org: string; project:
         continue;
       }
       used += data.length;
-      added.push({ id: fileId(), name: file.name, type: file.type, data });
+      added.push({ id: fileId(), name: label ?? file.name, type: file.type, data, ...(label ? { filename: file.name } : {}) });
     }
     if (added.length) setFiles((now) => [...now, ...added]);
     if (refused.length === 1) toast.error(refused[0]);
@@ -235,7 +235,13 @@ export function PlaygroundPage({ org, project, search }: { org: string; project:
   const panel = panelOptions(chosen);
   const modes = new Set(chosen.map((m) => m.mode));
   const recorder = useRecorder(
-    (file) => void attach([file]),
+    (file) =>
+      void attach(
+        [file],
+        t("playground.recordingName", "Recording {time}", {
+          time: new Date().toLocaleTimeString(locale(), { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+        }),
+      ),
     () => toast.error(t("playground.microphoneRefused", "The microphone isn't available; allow it in the browser.")),
   );
   const recordable = modes.has("transcription") && canRecord();

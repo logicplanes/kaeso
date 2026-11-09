@@ -88,10 +88,20 @@ function images(ctx: MediaContext, m: PlaygroundModel, prompt: string, files: re
     const reply = await json(answer.blob);
     const format = str(reply.output_format) || "png";
     const data = Array.isArray(reply.data) ? reply.data.map(obj) : [];
+    // The gateway sends a Playground reply's images inline; a link would load from the provider's
+    // host, which the console's pages never do.
     const media = data.flatMap((d, i) => {
       const b64 = str(d?.b64_json);
-      const src = b64 ? `data:image/${format};base64,${b64}` : str(d?.url);
-      return src ? [{ src, name: `image-${i + 1}.${format}`, alt: str(d?.revised_prompt) || prompt }] : [];
+      return b64
+        ? [
+            {
+              src: `data:image/${format};base64,${b64}`,
+              name: `image-${i + 1}.${format}`,
+              label: t("playground.media.image", "Image {index}", { index: i + 1 }),
+              alt: str(d?.revised_prompt) || prompt,
+            },
+          ]
+        : [];
     });
     return done(start, answer, ctx.now(), { media, usage: tokensOf(reply) });
   };
@@ -105,7 +115,7 @@ function extensionOf(type: string): string {
 function audio(ctx: MediaContext, m: PlaygroundModel, prompt: string, p: PlaygroundParameters): MediaRun {
   return async (signal, _report, start) => {
     const voice = p.voice && (m.voices.length === 0 || m.voices.includes(p.voice)) ? p.voice : m.voices[0];
-    const seconds = p.durationSeconds;
+    const seconds = m.durations ? p.durationSeconds : undefined;
     const [route, body] =
       m.mode === "speech"
         ? (["speech", { model: m.model, input: prompt, response_format: "mp3", ...(voice ? { voice } : {}) }] as const)
@@ -113,8 +123,15 @@ function audio(ctx: MediaContext, m: PlaygroundModel, prompt: string, p: Playgro
           ? (["music", { model_id: m.model, prompt, ...(seconds ? { music_length_ms: Math.round(seconds * 1000) } : {}) }] as const)
           : (["soundEffects", { model_id: m.model, text: prompt, ...(seconds ? { duration_seconds: seconds } : {}) }] as const);
     const answer = await postMedia(ctx.org, ctx.project, route, body, signal);
-    const name = `${m.mode === "speech" ? "speech" : m.mode === "music" ? "music" : "sound"}.${extensionOf(answer.blob.type)}`;
-    return done(start, answer, ctx.now(), { media: [{ src: URL.createObjectURL(answer.blob), name }] });
+    const [file, label] =
+      m.mode === "speech"
+        ? ["speech", t("playground.media.speech", "Speech")]
+        : m.mode === "music"
+          ? ["music", t("playground.media.music", "Music")]
+          : ["sound", t("playground.media.sound", "Sound effect")];
+    return done(start, answer, ctx.now(), {
+      media: [{ src: URL.createObjectURL(answer.blob), name: `${file}.${extensionOf(answer.blob.type)}`, label }],
+    });
   };
 }
 
@@ -137,13 +154,18 @@ function video(ctx: MediaContext, m: PlaygroundModel, prompt: string): MediaRun 
     const id = str(job.id);
     let state: ResponseState = { ...start, status: "streaming", progress: null, requestId: answer.requestId };
     let delay = videoPolling.first;
+    let charge: Pick<MediaAnswer, "cost" | "costKnown"> | null = null;
     try {
       for (;;) {
         const status = str(job.status);
         const progress = typeof job.progress === "number" ? job.progress : null;
         state = { ...state, progress };
         if (status === "completed")
-          return done(state, null, ctx.now(), { media: [{ src: videoContent(ctx.org, ctx.project, id), name: `${id}.mp4` }], progress: 100 });
+          return done(state, null, ctx.now(), {
+            ...(charge ?? {}),
+            media: [{ src: videoContent(ctx.org, ctx.project, id), name: `${id}.mp4`, label: t("playground.media.video", "Video") }],
+            progress: 100,
+          });
         if (status === "failed")
           return {
             ...state,
@@ -154,7 +176,9 @@ function video(ctx: MediaContext, m: PlaygroundModel, prompt: string): MediaRun 
         report(state);
         await wait(delay, signal);
         delay = Math.min(videoPolling.longest, delay * videoPolling.factor);
-        job = obj(await getVideo(ctx.org, ctx.project, id, signal)) ?? {};
+        const polled = await getVideo(ctx.org, ctx.project, id, signal);
+        job = obj(polled.job) ?? {};
+        charge = polled.charge;
       }
     } catch (e) {
       if (signal.aborted && id) void deleteVideo(ctx.org, ctx.project, id).catch(() => undefined);

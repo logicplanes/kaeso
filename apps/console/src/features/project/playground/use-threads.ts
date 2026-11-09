@@ -33,6 +33,11 @@ export interface Send {
   media?: MediaRun | undefined;
 }
 
+// Audio a turn made plays from a blob: link that holds its bytes until it is revoked.
+function release(turns: readonly Turn[]) {
+  for (const turn of turns) for (const item of turn.response.media ?? []) if (item.src.startsWith("blob:")) URL.revokeObjectURL(item.src);
+}
+
 const settled = (threads: Thread[], now: number): Thread[] =>
   threads.map((t) => ({ ...t, turns: t.turns.map((x) => (isLive(x.response) ? { ...x, response: endResponse(x.response, "stopped", now) } : x)) }));
 
@@ -54,6 +59,7 @@ export function useThreads(
   const mounted = useRef(true);
   const latest = useRef(threads);
   const leave = useRef(onLeave);
+  const cleared = useRef<Turn[]>([]);
   useEffect(() => {
     latest.current = threads;
     leave.current = onLeave;
@@ -82,6 +88,7 @@ export function useThreads(
     return () => {
       mounted.current = false;
       leave.current?.(settled(latest.current, performance.now()));
+      release(cleared.current);
       for (const c of open.values()) c.abort();
       open.clear();
       if (frame.current !== null) cancelAnimationFrame(frame.current);
@@ -193,6 +200,8 @@ export function useThreads(
         turn: { id: id("turn"), mode: s.mode, prompt, ...(s.files.length ? { files: s.files } : {}), response: newResponse(now) } satisfies Turn,
       }));
       for (const t of turns) live.current.set(t.turn.id, t.turn.response);
+      release(cleared.current);
+      cleared.current = [];
       setThreads((ts) => ts.map((t, i) => ({ ...t, turns: [...t.turns, ...turns.filter((x) => x.column === i).map((x) => x.turn)] })));
       for (const t of turns) start(t.turn, t);
     },
@@ -212,6 +221,7 @@ export function useThreads(
         response: newResponse(performance.now()),
       };
       live.current.set(turn.id, turn.response);
+      release([last]);
       setThreads((ts) => ts.map((t) => (t.key === thread.key ? { ...t, turns: [...t.turns.slice(0, -1), turn] } : t)));
       start(turn, again);
     },
@@ -228,23 +238,28 @@ export function useThreads(
 
   const remove = (column: number) => {
     threads[column]?.turns.forEach((x) => controllers.current.get(x.id)?.abort());
+    release(threads[column]?.turns ?? []);
     setThreads((ts) => ts.filter((_, i) => i !== column));
   };
 
   const clear = (): Thread[] => {
     stop();
     const before = settled(threads, performance.now());
+    release(cleared.current);
+    cleared.current = before.flatMap((t) => t.turns);
     setThreads((ts) => ts.map((t) => ({ ...t, turns: [] })));
     return before;
   };
 
-  const restore = (before: Thread[]) =>
+  const restore = (before: Thread[]) => {
+    cleared.current = [];
     setThreads((ts) =>
       ts.map((t) => {
         const kept = before.find((b) => b.key === t.key);
         return kept && t.turns.length === 0 ? kept : t;
       }),
     );
+  };
 
   const busy = threads.some((t) => t.turns.some((x) => isLive(x.response)));
   return { threads, busy, send, retry, stop, cancel, add, remove, clear, restore };

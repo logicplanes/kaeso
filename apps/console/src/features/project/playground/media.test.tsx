@@ -31,8 +31,17 @@ const sound = playgroundModel({
   model_id: "eleven_text_to_sound_v2",
   display_name: "Eleven sound effects",
   mode: "sound_effects",
+  durations: true,
 });
-const music = playgroundModel({ id: "cm_music", provider: "elevenlabs", model: "music_v1", model_id: "music_v1", display_name: "Eleven Music", mode: "music" });
+const music = playgroundModel({
+  id: "cm_music",
+  provider: "elevenlabs",
+  model: "music_v1",
+  model_id: "music_v1",
+  display_name: "Eleven Music",
+  mode: "music",
+  durations: true,
+});
 const whisper = playgroundModel({
   id: "cm_stt",
   model: "whisper-1",
@@ -88,7 +97,7 @@ describe("Playground media", () => {
     await send(user, "A loading dock at dawn");
     const answer = await screen.findByRole("article", { name: "GPT Image 2 response" });
     await waitFor(() => expect(within(answer).getAllByRole("img")).toHaveLength(2));
-    expect(within(answer).getByRole("link", { name: "Download image-1.png" })).toHaveAttribute("download", "image-1.png");
+    expect(within(answer).getByRole("link", { name: "Download Image 1" })).toHaveAttribute("download", "image-1.png");
     expect(within(answer).getByText("$0.0421")).toBeInTheDocument();
     expect(requests("POST", route("images/generations"))[0]?.body).toEqual({ model: "gpt-image-2", prompt: "A loading dock at dawn", n: 2, size: "1536x1024" });
   });
@@ -124,7 +133,7 @@ describe("Playground media", () => {
     await user.keyboard("{Escape}");
     await send(user, "A ship's horn in the fog");
     const spoken = await screen.findByRole("article", { name: "TTS 1 response" });
-    expect(await within(spoken).findByRole("link", { name: "Download speech.mp3" })).toHaveAttribute("href", "blob:kaeso/audio");
+    expect(await within(spoken).findByRole("link", { name: "Download Speech" })).toHaveAttribute("href", "blob:kaeso/audio");
     expect(spoken.querySelector("audio")).toHaveAttribute("src", "blob:kaeso/audio");
     expect(requests("POST", route("audio/speech"))[0]?.body).toEqual({
       model: "tts-1",
@@ -139,6 +148,46 @@ describe("Playground media", () => {
       duration_seconds: 4,
     });
     expect(requests("POST", route("music"))[0]?.body).toEqual({ model_id: "music_v1", prompt: "A ship's horn in the fog", music_length_ms: 4000 });
+
+    const revoke = vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => undefined);
+    await waitFor(() => expect(within(spoken).getByRole("button", { name: "Retry" })).toBeInTheDocument());
+    await user.click(within(spoken).getByRole("button", { name: "Retry" }));
+    await waitFor(() => expect(revoke).toHaveBeenCalledWith("blob:kaeso/audio"));
+    revoke.mockClear();
+    await waitFor(() => expect(screen.getAllByRole("button", { name: "Retry" })).toHaveLength(3));
+    await user.click(screen.getByRole("button", { name: "Clear" }));
+    expect(revoke).not.toHaveBeenCalled();
+    await send(user, "Rain on a tin roof");
+    await waitFor(() => expect(revoke).toHaveBeenCalledTimes(3));
+    revoke.mockRestore();
+  });
+
+  it("leaves out an image the provider only linked to and a length the model doesn't take", async () => {
+    signedIn();
+    const qwen = playgroundModel({
+      id: "cm_q",
+      provider: "alibaba",
+      model: "qwen-audio-3.1-tts-next",
+      model_id: "qwen-audio-3.1-tts-next",
+      display_name: "Qwen Audio TTS Next",
+      mode: "sound_effects",
+    });
+    on("GET", MODELS, page([image, qwen]));
+    on("POST", route("images/generations"), () => json({ data: [{ url: "https://cdn.example.com/a.png" }] }));
+    on("POST", route("sound-effects"), () => audioReply());
+    const { user } = await open("openai/gpt-image-2,alibaba/qwen-audio-3.1-tts-next");
+    await user.click(await screen.findByRole("button", { name: "Parameters" }));
+    const panel = await screen.findByRole("dialog", { name: "Parameters" });
+    expect(within(panel).queryByRole("spinbutton", { name: "Length in seconds" })).not.toBeInTheDocument();
+    await user.click(within(panel).getByRole("combobox", { name: "Image quality" }));
+    expect(await screen.findByRole("option", { name: "High" })).toBeInTheDocument();
+    await user.keyboard("{Escape}");
+    await user.keyboard("{Escape}");
+    await send(user, "Rain");
+    const answer = await screen.findByRole("article", { name: "GPT Image 2 response" });
+    expect(await within(answer).findByText("The model returned nothing to show")).toBeInTheDocument();
+    expect(answer.querySelector("img")).toBeNull();
+    await waitFor(() => expect(requests("POST", route("sound-effects"))[0]?.body).toEqual({ model_id: "qwen-audio-3.1-tts-next", text: "Rain" }));
   });
 
   it("transcribes or translates attached audio, and says when there is none", async () => {
@@ -173,7 +222,10 @@ describe("Playground media", () => {
     on("POST", route("videos"), () => json({ id: "video_1", object: "video", status: "queued", progress: 0 }));
     on("GET", route("videos/:video"), ({ params }: ApiRequest) =>
       params.video === "video_1"
-        ? json({ id: "video_1", status: ++polls < 2 ? "in_progress" : "completed", progress: polls < 2 ? 40 : 100 })
+        ? json(
+            { id: "video_1", status: ++polls < 2 ? "in_progress" : "completed", progress: polls < 2 ? 40 : 100 },
+            polls < 2 ? {} : { headers: { "kaeso-cost": "0.5" } },
+          )
         : json({ id: params.video, status: "in_progress", progress: 10 }),
     );
     on("DELETE", route("videos/:video"), ({ params }: ApiRequest) => json({ id: params.video, object: "video.deleted", deleted: true }));
@@ -183,7 +235,8 @@ describe("Playground media", () => {
     await waitFor(() =>
       expect(answer.querySelector("video")).toHaveAttribute("src", `/platform/v1/orgs/${ORG}/projects/${PROJECT}/playground/videos/video_1/content`),
     );
-    expect(within(answer).getByRole("link", { name: "Download video_1.mp4" })).toBeInTheDocument();
+    expect(within(answer).getByRole("link", { name: "Download Video" })).toHaveAttribute("download", "video_1.mp4");
+    expect(within(answer).getByText("$0.50")).toBeInTheDocument();
 
     on("POST", route("videos"), () => json({ id: "video_2", status: "queued", progress: 0 }));
     videoPolling.first = 60_000;
@@ -254,7 +307,7 @@ describe("Playground media", () => {
     expect(stopRecording).toHaveAttribute("aria-pressed", "true");
     await user.click(stopRecording);
     const waiting = await screen.findByRole("list", { name: "Attachments" });
-    expect(within(waiting).getByText(/^recording-\d{6}\.webm$/)).toBeInTheDocument();
+    expect(within(waiting).getByText(/^Recording /)).toBeInTheDocument();
     expect(stop).toHaveBeenCalled();
 
     getUserMedia.mockRejectedValueOnce(new Error("denied"));

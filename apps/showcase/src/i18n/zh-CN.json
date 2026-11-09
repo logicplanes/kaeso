@@ -374,7 +374,6 @@
   "The file types the Attach button offers, as an `accept` attribute (`image/*,application/pdf`).": "附件按钮提供的文件类型，写作 `accept` 属性（`image/*,application/pdf`）。",
   "The files sent with a prompt: images as thumbnails, other files by name, each with a remove button while it waits.": "随提示词发送的文件：图片显示为缩略图，其他文件显示名称，等待发送时各带一个移除按钮。",
   "The files: an id, the name, the media type and, for an image, a `blob:` or `data:` URL to draw it from.": "这些文件：ID、名称、媒体类型，图片还需一个用来绘制它的 `blob:` 或 `data:` URL。",
-  "The files: where to show or play each from (`blob:`, `data:` or a same-origin link) and the name it downloads under.": "这些文件：每个文件从何处显示或播放（`blob:`、`data:` 或同源链接），以及下载时使用的名称。",
   "The job's progress and Cancel while it runs, then the video.": "任务运行时显示进度和取消，完成后显示视频。",
   "The list's accessible name (\"Attachments\" by default).": "列表的无障碍名称（默认为“附件”）。",
   "The parameters, such as temperature and effort, image size and voice.": "参数，例如温度和推理强度、图片尺寸和声音。",
@@ -1200,5 +1199,6 @@
   "The language to highlight (`ts` by default), or `text` to show the code plain. `resolveCodeLang` turns a Markdown fence name such as `py` or `sh` into one.": "要高亮的语言（默认 `ts`），或用 `text` 原样显示代码。`resolveCodeLang` 可将 `py`、`sh` 等 Markdown 代码块名称转换为对应语言。",
   "The language of both versions to highlight (`text` by default). `resolveCodeLang` turns a fence name such as `py` or `sh` into one.": "两个版本要高亮的语言（默认 `text`）。`resolveCodeLang` 可将 `py`、`sh` 等代码块名称转换为对应语言。",
   "Languages": "语言",
-  "Server software, with an icon for any other": "服务器软件，其他软件显示一个图标"
+  "Server software, with an icon for any other": "服务器软件，其他软件显示一个图标",
+  "The files: where to show or play each from (`blob:`, `data:` or a same-origin link), the file name it downloads under, and a label in the reader's language that Download and screen readers say.": "这些文件：每个文件从何处显示或播放（`blob:`、`data:` 或同源链接）、下载时使用的文件名，以及下载按钮和屏幕阅读器读出的、使用读者语言的标签。"
 }

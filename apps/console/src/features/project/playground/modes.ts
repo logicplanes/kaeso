@@ -71,7 +71,7 @@ export function panelOptions(chosen: readonly PlaygroundModel[]): PanelOptions {
     reasoning: efforts,
     ...(image ? { image } : {}),
     voices,
-    duration: chosen.some((m) => m.mode === "sound_effects" || m.mode === "music"),
+    duration: chosen.some((m) => (m.mode === "sound_effects" || m.mode === "music") && m.durations),
     translate: chosen.some((m) => m.mode === "transcription" && m.translations),
   };
 }

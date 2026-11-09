@@ -129,7 +129,7 @@ describe("ParameterPanel for media models", () => {
     await pick("Image size", "Portrait, 1024 × 1536");
     await pick("Images per prompt", "4");
     expect(screen.queryByRole("option", { name: "5" })).toBeNull();
-    await pick("Image quality", "high");
+    await pick("Image quality", "High");
     await pick("Voice", "nova");
     await userEvent.type(screen.getByRole("spinbutton", { name: "Length in seconds" }), "12");
     await userEvent.click(screen.getByRole("radio", { name: "In English" }));

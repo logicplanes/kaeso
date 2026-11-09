@@ -49,11 +49,19 @@ export async function postMedia(
   };
 }
 
-type Video = (path: string, init: object) => Promise<{ data?: unknown }>;
+type Video = (path: string, init: object) => Promise<{ data?: unknown; response: Response }>;
 
-export async function getVideo(org: string, project: string, video: string, signal: AbortSignal): Promise<unknown> {
+export interface VideoAnswer {
+  job: unknown;
+  /** What the job was charged once it ended, as `MediaAnswer` says it. */
+  charge: Pick<MediaAnswer, "cost" | "costKnown"> | null;
+}
+
+export async function getVideo(org: string, project: string, video: string, signal: AbortSignal): Promise<VideoAnswer> {
   const get = api.GET as unknown as Video;
-  return (await get(`${BASE}/videos/{video}`, { params: { path: { org, project, video } }, signal })).data;
+  const { data, response } = await get(`${BASE}/videos/{video}`, { params: { path: { org, project, video } }, signal });
+  const cost = response.headers.get("kaeso-cost");
+  return { job: data, charge: cost === null ? null : { cost: cost === "unknown" ? null : cost, costKnown: cost !== "unknown" } };
 }
 
 export async function deleteVideo(org: string, project: string, video: string): Promise<void> {

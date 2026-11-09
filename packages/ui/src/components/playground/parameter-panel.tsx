@@ -46,6 +46,25 @@ export interface ImageParameterOptions {
 }
 
 const IMAGE_SIZES = ["1024x1024", "1536x1024", "1024x1536"] as const;
+
+function qualityLabel(t: UiText, quality: string): string {
+  switch (quality) {
+    case "auto":
+      return t("parameterPanel.qualityAuto", "Automatic");
+    case "low":
+      return t("parameterPanel.qualityLow", "Low");
+    case "medium":
+      return t("parameterPanel.qualityMedium", "Medium");
+    case "high":
+      return t("parameterPanel.qualityHigh", "High");
+    case "standard":
+      return t("parameterPanel.qualityStandard", "Standard");
+    case "hd":
+      return t("parameterPanel.qualityHd", "HD");
+    default:
+      return quality;
+  }
+}
 const MAX_IMAGES_SHOWN = 4;
 
 function efforts(t: UiText): { value: ReasoningEffort; label: string }[] {
@@ -304,7 +323,7 @@ const PanelBody = forwardRef<HTMLDivElement, PanelBodyProps>(function PanelBody(
           fullWidth
           disabled={disabled}
           value={value.imageQuality ?? "default"}
-          options={[{ value: "default", label: modelDefault }, ...image.qualities.map((q) => ({ value: q, label: q }))]}
+          options={[{ value: "default", label: modelDefault }, ...image.qualities.map((q) => ({ value: q, label: qualityLabel(t, q) }))]}
           onValueChange={(v: string) => set({ imageQuality: v === "default" ? undefined : v })}
         />
       )}

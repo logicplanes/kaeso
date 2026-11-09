@@ -18,10 +18,13 @@ export const KAESO_MEDIA_RESPONSE_DEFAULT_VARIANTS = { kind: "image" } as const;
 export type MediaKind = keyof typeof KAESO_MEDIA_RESPONSE_VARIANTS.kind;
 export type MediaStatus = "pending" | "running" | "done" | "stopped" | "error";
 
-/** One file a model made: where to play or show it from, and the name it downloads under. */
+/** One file a model made: where to play or show it from, the name it downloads under, and what people read. */
 export interface MediaItem {
   src: string;
+  /** The file name it downloads under, such as `image-1.png`. */
   name: string;
+  /** What screen readers and Download say, in the reader's language, such as "Image 1"; the file name when absent. */
+  label?: string | undefined;
   /** What it shows, for an image: read by screen readers. */
   alt?: string | undefined;
 }
@@ -58,9 +61,9 @@ function Images({ items, expected, waiting, t }: { items: readonly MediaItem[]; 
           <li key={item?.src ?? i} className={cn(FRAME, "aspect-square", !item && WAITING)}>
             {item && (
               <>
-                <img src={item.src} alt={item.alt ?? item.name} decoding="async" className="size-full object-contain" />
+                <img src={item.src} alt={item.alt ?? item.label ?? item.name} decoding="async" className="size-full object-contain" />
                 <span className="absolute right-8 bottom-8">
-                  <Download item={item} label={t("mediaResponse.download", "Download {name}", { name: item.name })} />
+                  <Download item={item} label={t("mediaResponse.download", "Download {name}", { name: item.label ?? item.name })} />
                 </span>
               </>
             )}
@@ -120,7 +123,7 @@ export const MediaResponse = forwardRef<HTMLElement, MediaResponseProps>(functio
             size="sm"
             variant="quiet"
             icon={icons.download}
-            aria-label={t("mediaResponse.download", "Download {name}", { name: saveVideo.name })}
+            aria-label={t("mediaResponse.download", "Download {name}", { name: saveVideo.label ?? saveVideo.name })}
             href={saveVideo.src}
             download={saveVideo.name}
           />
@@ -148,8 +151,8 @@ export const MediaResponse = forwardRef<HTMLElement, MediaResponseProps>(functio
           <div aria-hidden className={cn("h-56 rounded-pill bg-fill-1", WAITING)} />
         ) : item ? (
           <div className="flex h-56 min-w-0 items-center gap-8">
-            <audio controls preload="metadata" src={item.src} aria-label={item.name} className="h-40 min-w-0 flex-1" />
-            <Download item={item} label={t("mediaResponse.download", "Download {name}", { name: item.name })} />
+            <audio controls preload="metadata" src={item.src} aria-label={item.label ?? item.name} className="h-40 min-w-0 flex-1" />
+            <Download item={item} label={t("mediaResponse.download", "Download {name}", { name: item.label ?? item.name })} />
           </div>
         ) : null)}
       {kind === "video" &&
@@ -177,7 +180,7 @@ export const MediaResponse = forwardRef<HTMLElement, MediaResponseProps>(functio
                 )}
               </>
             ) : (
-              item && <video controls playsInline preload="metadata" src={item.src} aria-label={item.name} className="size-full object-contain" />
+              item && <video controls playsInline preload="metadata" src={item.src} aria-label={item.label ?? item.name} className="size-full object-contain" />
             )}
           </div>
         ) : null)}

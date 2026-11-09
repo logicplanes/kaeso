@@ -3,9 +3,12 @@ import type { Attachment } from "@logicplanes/kaeso-ui/playground";
 
 export interface TurnFile {
   id: string;
+  /** What people read, such as a recording's translated name. */
   name: string;
   type: string;
   data: string;
+  /** The file name the upload carries, when it differs from `name`. */
+  filename?: string | undefined;
 }
 
 // The image types every provider's vision input takes: OpenAI, Anthropic and Gemini all read these.
@@ -76,7 +79,7 @@ export function readFile(file: File): Promise<string> {
 export function fileOf(file: TurnFile): File {
   const [head = "", body = ""] = file.data.split(",", 2);
   const bytes = Uint8Array.from(atob(body), (c) => c.charCodeAt(0));
-  return new File([bytes], file.name, { type: /^data:([^;,]+)/.exec(head)?.[1] ?? file.type });
+  return new File([bytes], file.filename ?? file.name, { type: /^data:([^;,]+)/.exec(head)?.[1] ?? file.type });
 }
 
 let next = 0;

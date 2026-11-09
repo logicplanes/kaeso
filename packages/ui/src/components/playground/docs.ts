@@ -68,7 +68,8 @@ export const docs = {
       error: 'Why it failed, shown under "No response" with status "error".',
       expected: "How many images to hold room for while they are made.",
       footer: "Under the response, after Retry: its metrics.",
-      items: "The files: where to show or play each from (`blob:`, `data:` or a same-origin link) and the name it downloads under.",
+      items:
+        "The files: where to show or play each from (`blob:`, `data:` or a same-origin link), the file name it downloads under, and a label in the reader's language that Download and screen readers say.",
       kind: "What the model makes: images, audio or a video.",
       onCancel: "Cancels a running video job: a Cancel button under its progress.",
       onRetry: "Sends the turn again: a Retry button after a stop or a failure, and a quiet Retry circle under a finished response.",
