@@ -32,6 +32,41 @@ describe("applyEvent", () => {
     expect(r.output).toEqual([reasoningItem, message]);
   });
 
+  it("joins parts in their order when a delta arrives for an earlier one, and skips empty parts", () => {
+    const delta = (item: string, text: string, content = 0) =>
+      ["response.output_text.delta", { item_id: item, content_index: content, delta: text }] as [string, Record<string, unknown>];
+    const r = run([
+      delta("a", "First "),
+      delta("b", "Second"),
+      delta("a", "part."),
+      ["response.reasoning_summary_part.added", { item_id: "rs", summary_index: 0 }],
+      ["response.reasoning_summary_part.added", { item_id: "rs", summary_index: 1 }],
+      ["response.reasoning_summary_text.delta", { item_id: "rs", summary_index: 1, delta: "Only this." }],
+      delta("b", " grows"),
+      delta("a", "", 1),
+    ]);
+    expect(r.text).toBe("First part.\n\nSecond grows");
+    expect(r.reasoning).toBe("Only this.");
+  });
+
+  it("keeps the files of a turn in the history it sends again", () => {
+    const done = run([
+      ["response.output_text.delta", { item_id: "m", delta: "A dock." }],
+      ["response.completed", { response: {} }],
+    ]);
+    const files = [{ id: "f1", name: "dock.png", type: "image/png", data: "data:image/png;base64,AA==" }];
+    expect(historyItems([{ id: "t1", prompt: "What is this?", files, response: done }])).toEqual([
+      {
+        role: "user",
+        content: [
+          { type: "input_text", text: "What is this?" },
+          { type: "input_image", image_url: "data:image/png;base64,AA==" },
+        ],
+      },
+      { role: "assistant", content: "A dock." },
+    ]);
+  });
+
   it("marks a model that reasoned without showing it", () => {
     const r = run([["response.output_item.added", { item: { type: "reasoning" } }]]);
     expect(r).toMatchObject({ status: "streaming", reasoned: true, reasoning: "", firstTokenAt: null });

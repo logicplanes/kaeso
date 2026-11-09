@@ -198,7 +198,7 @@ pub async fn responses(
             "The project is archived; its models cannot be called.".into(),
         ));
     }
-    let max_body = state.config.body_limits.platform_api.as_usize();
+    let max_body = state.config.body_limits.model_api.as_usize();
     let bytes = axum::body::to_bytes(body, max_body)
         .await
         .map_err(|_| ApiError::TooLarge("The conversation is larger than Kaeso accepts.".into()))?;
@@ -512,6 +512,10 @@ pub struct PlaygroundModel {
         last check or request found; the Playground offers an `unavailable`\n\
         model only greyed out."]
     pub availability: crate::platform::projects::models::AvailabilityState,
+    #[doc = "The largest Playground request Kaeso takes for it, in bytes, attachments\n\
+        included as sent."]
+    #[schema(example = 33554432)]
+    pub max_request_bytes: u64,
 }
 
 // The Playground is a conversation: a model must take text and answer with text. Media models
@@ -609,6 +613,7 @@ pub async fn models(
             price_tiers: f.price_tiers.clone().unwrap_or_default(),
             provider_key,
             availability: entry.availability.into(),
+            max_request_bytes: state.config.body_limits.model_api.0,
         });
     }
     Ok(axum::Json(List::complete(out)))

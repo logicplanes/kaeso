@@ -7,6 +7,7 @@ import { Markdown } from "../markdown/markdown.js";
 import { Reasoning } from "./reasoning.js";
 import { useTruncated } from "../../hooks/use-truncated.js";
 import { useUiText, type UiText } from "../../i18n/context.js";
+import { Attachments, type Attachment } from "./attachments.js";
 
 export const KAESO_RESPONSE_VIEW_VARIANTS = {
   status: {
@@ -94,14 +95,20 @@ export const ResponseView = forwardRef<HTMLElement, ResponseViewProps>(function 
       {retryLabel}
     </Button>
   ) : null;
+  const copyLabel = t("responseView.copy", "Copy response");
+  const hasFooter = footer !== undefined && footer !== null;
   const tools =
     status === "done" && (hasText || onRetry) ? (
       <>
-        {hasText && <CopyButton value={text} size="sm" variant="quiet" label={t("responseView.copy", "Copy response")} />}
+        {hasText && <CopyButton value={text} size="sm" variant="quiet" label={copyLabel} />}
         {onRetry && <Button size="sm" variant="quiet" icon={icons.retry} aria-label={retryLabel} onClick={onRetry} />}
       </>
+    ) : active && hasFooter ? (
+      <span aria-hidden data-tools-reserved="" className="invisible flex items-center gap-x-4">
+        <Button size="sm" variant="quiet" icon={icons.copy} aria-label={copyLabel} tabIndex={-1} />
+        <Button size="sm" variant="quiet" icon={icons.retry} aria-label={retryLabel} tabIndex={-1} />
+      </span>
     ) : null;
-  const hasFooter = footer !== undefined && footer !== null;
   return (
     <article
       ref={ref}
@@ -168,6 +175,7 @@ ResponseView.displayName = "ResponseView";
 
 export interface UserMessageProps {
   children: ReactNode;
+  attachments?: readonly Attachment[] | undefined;
   maxLines?: 0 | 2 | 3 | 4 | 6 | undefined;
   "aria-label"?: string | undefined;
   className?: string | undefined;
@@ -176,7 +184,7 @@ export interface UserMessageProps {
 const CLAMP = { 2: "line-clamp-2", 3: "line-clamp-3", 4: "line-clamp-4", 6: "line-clamp-6" } as const;
 
 export const UserMessage = forwardRef<HTMLDivElement, UserMessageProps>(function UserMessage(
-  { children, maxLines = 4, "aria-label": ariaLabelProp, className },
+  { children, attachments = [], maxLines = 4, "aria-label": ariaLabelProp, className },
   ref,
 ) {
   const t = useUiText();
@@ -187,18 +195,22 @@ export const UserMessage = forwardRef<HTMLDivElement, UserMessageProps>(function
   const body = useId();
   const text = useRef<HTMLParagraphElement | null>(null);
   const clamped = useTruncated(text, maxLines > 0 && !all);
+  const hasText = children !== "" && children !== null && children !== undefined && children !== false;
   return (
     <div ref={ref} role="group" aria-label={ariaLabel} className={cn("flex min-w-0 flex-col items-end gap-2", className)}>
-      <p
-        id={body}
-        ref={text}
-        className={cn(
-          "max-w-prose min-w-0 rounded-frame bg-fill-1 px-16 py-10 text-body-lg whitespace-pre-wrap wrap-break-word text-fg",
-          maxLines !== 0 && !all && CLAMP[maxLines],
-        )}
-      >
-        {children}
-      </p>
+      <Attachments items={attachments} align="end" className={hasText ? "mb-6" : undefined} />
+      {hasText && (
+        <p
+          id={body}
+          ref={text}
+          className={cn(
+            "max-w-prose min-w-0 rounded-frame bg-fill-1 px-16 py-10 text-body-lg whitespace-pre-wrap wrap-break-word text-fg",
+            maxLines !== 0 && !all && CLAMP[maxLines],
+          )}
+        >
+          {children}
+        </p>
+      )}
       {(clamped || all) && (
         <Button size="sm" variant="quiet" aria-expanded={all} aria-controls={body} reserveLabels={[showAll, showLess]} onClick={() => setAll((a) => !a)}>
           {all ? showLess : showAll}

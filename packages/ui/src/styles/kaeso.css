@@ -462,7 +462,9 @@
     box-shadow: var(--k-shadow-composer-hover);
   }
   &:has(textarea:focus-visible),
-  &[data-force~="focus"] {
+  &[data-force~="focus"],
+  &[data-drop],
+  &[data-force~="drop"] {
     box-shadow:
       inset 0 0 0 1px var(--k-text),
       0 0 0 3px color-mix(in srgb, var(--k-text) 10%, transparent);

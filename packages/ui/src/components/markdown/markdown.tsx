@@ -1,4 +1,4 @@
-import { forwardRef, memo, useMemo, useState, type ReactNode } from "react";
+import { forwardRef, memo, useMemo, useRef, useState, type ReactNode } from "react";
 import { Lexer, Tokenizer, type Token, type Tokens } from "marked";
 import { cn } from "../../utils/cn.js";
 import { safeHref } from "../../utils/safe-href.js";
@@ -70,6 +70,27 @@ export function lexMarkdown(text: string, options: { cache?: boolean | undefined
   if (cache.size >= 64) cache.delete(cache.keys().next().value ?? "");
   cache.set(text, tokens);
   return tokens;
+}
+
+// A later line can still change the last block (a setext underline, a table's delimiter row) and
+// join the one before it across a blank line (the next item of a list), so both are lexed again.
+const RELEXED = 2;
+
+/**
+ * Tokens for `text` that grows from `before`: the blocks that can no longer change are kept and
+ * only the end is lexed again, so a streaming reply costs the length of its last blocks per
+ * update instead of its whole length. Any other change lexes the text whole.
+ */
+export function extendMarkdown(before: { text: string; tokens: Token[] } | null, text: string): Token[] {
+  if (!before || !text.startsWith(before.text) || text.includes("\r")) return lexer().lex(text);
+  const { tokens } = before;
+  let keep = tokens.length;
+  for (let found = 0; keep > 0 && found < RELEXED;) if (tokens[--keep]?.type !== "space") found++;
+  if (keep === 0) return lexer().lex(text);
+  const kept = tokens.slice(0, keep);
+  const prefix = kept.map((t) => t.raw).join("");
+  if (!before.text.startsWith(prefix)) return lexer().lex(text);
+  return [...kept, ...lexer().lex(text.slice(prefix.length))];
 }
 
 export function previewMarkdown(text: string, limit: number): string {
@@ -325,8 +346,10 @@ export const Markdown = forwardRef<HTMLDivElement, MarkdownProps>(function Markd
   const t = useUiText();
   const long = !streaming && collapseAfter > 0 && text.length > collapseAfter;
   const shown = long && !all ? previewMarkdown(text, Math.round(collapseAfter * 0.66)) : text;
+  const streamed = useRef<{ text: string; tokens: Token[] } | null>(null);
   const tokens = useMemo(() => {
-    const out = lexMarkdown(shown, { cache: !streaming });
+    const out = streaming ? extendMarkdown(streamed.current, shown) : lexMarkdown(shown);
+    streamed.current = streaming ? { text: shown, tokens: out } : null;
     let end = out.length;
     if (shown !== text) while (end > 1 && ["space", "heading", "hr"].includes(out[end - 1]?.type ?? "")) end--;
     return out.slice(0, end);
