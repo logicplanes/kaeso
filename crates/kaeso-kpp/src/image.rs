@@ -296,6 +296,10 @@ pub struct ImageSettings {
     pub format: Option<ImageFormat>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub background: Option<ImageBackground>,
+    /// The resolution tier the provider made and bills the images at, such as `1K` or `2K`,
+    /// when it reports one.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub resolution: Option<String>,
 }
 
 impl ImageSettings {

@@ -228,6 +228,17 @@ fn check(req: &Request) -> Result<(), KppError> {
             "send either frames or reference images.",
         ));
     }
+    // The first Omni preview starts from a prompt or reference images only, not from frames
+    // (https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/video/generate-videos-from-text).
+    if frames && r.model.starts_with("gemini-omni-flash-preview") {
+        return Err(refused(
+            D,
+            PROVIDER,
+            "a first or last frame on `gemini-omni-flash-preview`",
+            "input_reference",
+            "use `gemini-omni-1.2-flash`, or send the image as a reference.",
+        ));
+    }
     if r.operation == VideoOperation::Remix {
         check_roles(r, D, PROVIDER, &[VideoImageRole::Reference])?;
         if r.remix_of.is_none() {

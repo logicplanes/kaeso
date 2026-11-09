@@ -1,0 +1,29 @@
+{
+  "request_id": "f767d108-7d50-908b-a6d9-xxxxxx",
+  "output": {
+    "task_id": "7d4ac4b2-2e1a-4c84-8c6d-xxxxxx",
+    "task_status": "SUCCEEDED",
+    "submit_time": "2026-11-09 10:12:31.105",
+    "scheduled_time": "2026-11-09 10:12:31.142",
+    "end_time": "2026-11-09 10:12:39.611",
+    "results": [
+      {
+        "orig_prompt": "A flower shop with exquisite windows, a beautiful wooden door, and flowers on display",
+        "actual_prompt": "A flower shop with exquisite carved windows and a polished wooden door, its window display full of fresh flowers in soft morning light",
+        "url": "https://dashscope-result-sgp.oss-ap-southeast-1.aliyuncs.com/1.png?Expires=xxx"
+      },
+      {
+        "code": "DataInspectionFailed",
+        "message": "Output data may contain inappropriate content."
+      }
+    ],
+    "task_metrics": {
+      "TOTAL": 2,
+      "SUCCEEDED": 1,
+      "FAILED": 1
+    }
+  },
+  "usage": {
+    "image_count": 1
+  }
+}

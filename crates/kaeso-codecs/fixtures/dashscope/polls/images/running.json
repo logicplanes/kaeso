@@ -1,0 +1,14 @@
+{
+  "request_id": "e5d70b02-ebd3-98ce-9fe8-xxxxxx",
+  "output": {
+    "task_id": "7d4ac4b2-2e1a-4c84-8c6d-xxxxxx",
+    "task_status": "RUNNING",
+    "submit_time": "2026-11-09 10:12:31.105",
+    "scheduled_time": "2026-11-09 10:12:31.142",
+    "task_metrics": {
+      "TOTAL": 1,
+      "SUCCEEDED": 0,
+      "FAILED": 0
+    }
+  }
+}

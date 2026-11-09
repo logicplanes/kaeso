@@ -54,7 +54,7 @@ Bilder gehen als Links oder Data-URLs, außer erstem und letztem Bild bei Wan 2.
 
 ## Bilder
 
-`dashscope::images::image_family` liest den Modellnamen: `qwen-image-*` (Qwen-Image 2.x und 3.0), `wan2.7-image*`, `wan2.6-image*` und `z-image*`. Andere Namen, etwa das ältere `wan2.6-t2i`, werden mit `param` `model` abgelehnt. Bilder und Prompt sind eine Nachricht des Nutzers, die Bilder zuerst.
+`dashscope::images::image_family` liest den Modellnamen: `qwen-image-*` (Qwen-Image 2.x und 3.0), `wan2.7-image*`, `wan2.6-image*`, `z-image*`, `wan2.6-t2i*` und die älteren Text-zu-Bild-Modelle `wan*-t2i*`. Andere Namen werden mit `param` `model` abgelehnt. Bilder und Prompt sind eine Nachricht des Nutzers, die Bilder zuerst; die älteren Text-zu-Bild-Modelle nehmen stattdessen `input.prompt`.
 
 | KPP | Qwen-Image | Wan 2.7 Image | Wan 2.6 Image | Z-Image |
 | --- | --- | --- | --- | --- |
@@ -72,6 +72,7 @@ Bilder gehen als Links oder Data-URLs, außer erstem und letztem Bild bei Wan 2.
 - **Erweiterungen gehen mit.** `prompt_extend`, `prompt_extend_mode`, `enable_thinking` und `watermark` einer App im Format von OpenAI gehen nach `parameters`, so wie der OpenAI-kompatible Modus von QwenCloud sie dokumentiert. Jedes andere fremde Feld wird abgelehnt.
 - **Standardmäßig kein Wasserzeichen.** Jedes dieser Modelle lässt das Wasserzeichen weg, solange `watermark` nicht `true` ist; Kaeso sendet deshalb nichts.
 - **Ganze Antworten.** Die Bilder kommen in einer Antwort; eine gestreamte Anfrage bekommt sie als fertige Events.
+- **Text-zu-Bild-Tasks.** Die Text-zu-Bild-Modelle bis Wan 2.5 (`wan2.5-t2i-preview`, `wan2.2-t2i-*`, `wan2.1-t2i-*`) antworten nur als Tasks: Die Anfrage geht an `/api/v1/services/aigc/text2image/image-synthesis` mit `X-DashScope-Async: enable`, der Prompt in `input.prompt` und der negative Prompt in `input.negative_prompt`. `dispatch::pending_task` nennt den Task, solange er läuft, und das Gateway fragt `GET /api/v1/tasks/{task_id}`, bis er endet. `wan2.6-t2i` antwortet in derselben Anfrage. Beide nehmen nur einen Prompt, `n` bis 4 (`1`, wenn eine App es weglässt) und eine `size` in Pixeln.
 
 | Antwort von DashScope | KPP |
 | --- | --- |
@@ -80,6 +81,9 @@ Bilder gehen als Links oder Data-URLs, außer erstem und letztem Bild bei Wan 2.
 | `usage.output_width` und `output_height`, `width` und `height` oder `size` | `settings.size` |
 | `usage.input_tokens`, `output_tokens` | `usage`, das ganze `usage` bleibt erhalten |
 | `request_id`, `output.finished`, `output.rewrite_status` und die übrigen Felder der Choices | Extras |
+| `output.results[].url` eines Tasks | die Bilder, in ihrer Reihenfolge; ein Ergebnis mit `code` und `message` ist allein gescheitert und ergibt kein Bild |
+| `output.results[].actual_prompt` | `revised_prompt` jedes Bildes |
+| `output.task_status` `FAILED` mit `output.code` und `output.message` | ein Fehler nach seinem Code |
 
 ## Sprachausgabe
 

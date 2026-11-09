@@ -1,9 +1,14 @@
 //! Images on DashScope's synchronous multimodal generation API
 //! (<https://docs.qwencloud.com/api-reference/image-generation/qwen-text-to-image>,
 //! `…/qwen-image-editing`, `…/wan27-image-gen-edit/synchronous`,
-//! `…/wan26-image-gen-edit/synchronous` and `…/z-image`, read 2026-11-09): one user message
-//! with the images and the prompt, `parameters` beside it, and the images back as links valid
-//! for 24 hours.
+//! `…/wan26-image-gen-edit/synchronous`, `…/wan-text-to-image-v2/synchronous` and `…/z-image`,
+//! read 2026-11-09): one user message with the images and the prompt, `parameters` beside it,
+//! and the images back as links valid for 24 hours.
+//!
+//! Wan 2.5 and earlier text-to-image models answer only as tasks
+//! (`…/wan-text-to-image-v2/create-task` and `…/query-result`): the request takes `input.prompt`
+//! and `X-DashScope-Async: enable`, the reply names a task, and the task's result lists the
+//! images in `output.results`. [`pending_task`] tells a caller which task to wait for.
 
 use kaeso_kpp::{
     DialectId, Extras, GeneratedImage, ImageDelivery, ImageInput, ImageOperation, ImageRequest,
@@ -20,6 +25,9 @@ use crate::video_jobs::{Fields, body, provider_object, put, put_extras, refused}
 /// generation, Qwen3-TTS and Qwen-Audio-ASR share it.
 pub const GENERATION_PATH: &str = "/api/v1/services/aigc/multimodal-generation/generation";
 
+/// The path of DashScope's text-to-image tasks, from the root of the host.
+pub const TEXT2IMAGE_PATH: &str = "/api/v1/services/aigc/text2image/image-synthesis";
+
 // The resolution tiers Wan takes in `size` instead of pixels (the Wan 2.7 and 2.6 references).
 const TIERS: &[&str] = &["1K", "2K", "4K"];
 
@@ -33,7 +41,10 @@ const CARRIED: &[&str] = &[
 ];
 
 const CHOICES: &str = "choices";
+const RESULTS: &str = "results";
 const TEXT_FIRST: &str = "text_first";
+// The task form's `input.prompt`, kept so a native request is written back as it came.
+const PROMPT_FORM: &str = "prompt_form";
 
 /// How a QwenCloud image model takes a request on DashScope.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -48,12 +59,21 @@ pub enum ImageFamily {
     Wan26,
     /// Z-Image: one image from a prompt.
     ZImage,
+    /// Wan 2.6 text-to-image (`wan2.6-t2i`): one to four images from a prompt, synchronously.
+    WanT2i,
+    /// Wan 2.5 and earlier text-to-image, such as `wan2.2-t2i-flash`: one to four images from a
+    /// prompt, made as a task.
+    WanT2iTask,
 }
 
 /// The family of a QwenCloud image model, or `None` for one Kaeso doesn't send to DashScope.
 pub fn image_family(model: &str) -> Option<ImageFamily> {
     let m = model.to_ascii_lowercase();
-    if m.starts_with("qwen-image-") {
+    if m.starts_with("wan2.6-t2i") {
+        Some(ImageFamily::WanT2i)
+    } else if m.starts_with("wan") && m.contains("-t2i") {
+        Some(ImageFamily::WanT2iTask)
+    } else if m.starts_with("qwen-image-") {
         Some(ImageFamily::QwenImage)
     } else if m.starts_with("wan2.7-image") {
         Some(ImageFamily::Wan27)
@@ -86,60 +106,66 @@ pub(super) fn decode_request(body: &[u8]) -> Result<Request, KppError> {
         ImageOperation::Generate,
     );
     if let Some(mut input) = f.object("input")? {
-        let messages = input.array("messages")?.unwrap_or_default();
-        let [Value::Object(message)] = messages.as_slice() else {
-            return Err(KppError::invalid_request(
-                "`input.messages` holds exactly one user message.",
-            )
-            .with_param("messages"));
-        };
-        let mut m = Fields::from_map(message.clone(), D, "request");
-        if m.str("role")?.as_deref() != Some("user") {
-            return Err(
-                KppError::invalid_request("The message's `role` is `user`.").with_param("messages")
-            );
-        }
-        for (i, item) in m
-            .array("content")?
-            .unwrap_or_default()
-            .into_iter()
-            .enumerate()
-        {
-            match item {
-                Value::Object(part) if part.len() == 1 && part.contains_key("image") => {
-                    let link = part
-                        .get("image")
-                        .and_then(Value::as_str)
-                        .unwrap_or_default();
-                    r.images
-                        .push(ImageInput::new(crate::video_jobs::link_source(
-                            link.to_owned(),
-                        )));
-                }
-                Value::Object(part) if part.len() == 1 && part.contains_key("text") => {
-                    if r.prompt.is_some() {
-                        return Err(KppError::invalid_request(
-                            "The message holds one `text` part only.",
+        if let Some(prompt) = input.str("prompt")? {
+            r.prompt = Some(prompt);
+            r.negative_prompt = input.str("negative_prompt")?;
+            extras.form.insert(PROMPT_FORM.into(), Value::Bool(true));
+            input.rest_into(&mut extras, "input");
+        } else {
+            let messages = input.array("messages")?.unwrap_or_default();
+            let [Value::Object(message)] = messages.as_slice() else {
+                return Err(KppError::invalid_request(
+                    "`input.messages` holds exactly one user message.",
+                )
+                .with_param("messages"));
+            };
+            let mut m = Fields::from_map(message.clone(), D, "request");
+            if m.str("role")?.as_deref() != Some("user") {
+                return Err(KppError::invalid_request("The message's `role` is `user`.")
+                    .with_param("messages"));
+            }
+            for (i, item) in m
+                .array("content")?
+                .unwrap_or_default()
+                .into_iter()
+                .enumerate()
+            {
+                match item {
+                    Value::Object(part) if part.len() == 1 && part.contains_key("image") => {
+                        let link = part
+                            .get("image")
+                            .and_then(Value::as_str)
+                            .unwrap_or_default();
+                        r.images
+                            .push(ImageInput::new(crate::video_jobs::link_source(
+                                link.to_owned(),
+                            )));
+                    }
+                    Value::Object(part) if part.len() == 1 && part.contains_key("text") => {
+                        if r.prompt.is_some() {
+                            return Err(KppError::invalid_request(
+                                "The message holds one `text` part only.",
+                            )
+                            .with_param("content"));
+                        }
+                        if i == 0 {
+                            extras.form.insert(TEXT_FIRST.into(), Value::Bool(true));
+                        }
+                        r.prompt = part.get("text").and_then(Value::as_str).map(str::to_owned);
+                    }
+                    _ => {
+                        return Err(KppError::unsupported_by(
+                            "content other than images and one prompt",
+                            D,
+                            "Kaeso maps an image request's images and its prompt only.",
                         )
                         .with_param("content"));
                     }
-                    if i == 0 {
-                        extras.form.insert(TEXT_FIRST.into(), Value::Bool(true));
-                    }
-                    r.prompt = part.get("text").and_then(Value::as_str).map(str::to_owned);
-                }
-                _ => {
-                    return Err(KppError::unsupported_by(
-                        "content other than images and one prompt",
-                        D,
-                        "Kaeso maps an image request's images and its prompt only.",
-                    )
-                    .with_param("content"));
                 }
             }
+            m.rest_into(&mut extras, "input.message");
+            input.rest_into(&mut extras, "input");
         }
-        m.rest_into(&mut extras, "input.message");
-        input.rest_into(&mut extras, "input");
     }
     if r.images.is_empty() {
         extras.form.shift_remove(TEXT_FIRST);
@@ -153,7 +179,9 @@ pub(super) fn decode_request(body: &[u8]) -> Result<Request, KppError> {
             Some(s) => r.size = Some(pixels(&s)?),
             None => {}
         }
-        r.negative_prompt = p.str("negative_prompt")?;
+        if let Some(n) = p.str("negative_prompt")? {
+            r.negative_prompt = Some(n);
+        }
         r.seed = p.i64("seed")?;
         p.rest_into(&mut extras, "parameters");
     }
@@ -212,7 +240,7 @@ pub(super) fn check(r: &ImageRequest) -> Result<ImageFamily, KppError> {
         return Err(KppError::unsupported_by(
             format!("the model `{}`", r.model),
             D,
-            "Kaeso sends Qwen-Image, Wan 2.7 Image, Wan 2.6 Image and Z-Image models to DashScope.",
+            "Kaeso sends Qwen-Image, Wan Image, Wan text-to-image and Z-Image models to DashScope.",
         )
         .with_param("model"));
     };
@@ -352,6 +380,25 @@ pub(super) fn check(r: &ImageRequest) -> Result<ImageFamily, KppError> {
                 return Err(no("`n` above 4", "n", "ask for fewer images."));
             }
         }
+        ImageFamily::WanT2i | ImageFamily::WanT2iTask => {
+            if edits {
+                return Err(no(
+                    "images to edit on Wan text-to-image",
+                    "image",
+                    "send a prompt to `/v1/images/generations`, or use `wan2.7-image`.",
+                ));
+            }
+            if r.count.is_some_and(|n| n > 4) {
+                return Err(no("`n` above 4", "n", "ask for fewer images."));
+            }
+            if tier.is_some() {
+                return Err(no(
+                    "resolution tiers on Wan text-to-image",
+                    "resolution",
+                    "send `size` in pixels.",
+                ));
+            }
+        }
         ImageFamily::ZImage => {
             if edits {
                 return Err(no(
@@ -410,21 +457,30 @@ pub(super) fn encode_request(
     } else {
         content.push(Value::Object(text));
     }
-    let mut message = Map::new();
-    message.insert("role".into(), "user".into());
-    message.insert("content".into(), Value::Array(content));
-    put_extras(&mut message, &r.extras, D, "input.message");
+    let task = fam == ImageFamily::WanT2iTask;
     let mut input = Map::new();
-    input.insert(
-        "messages".into(),
-        Value::Array(vec![Value::Object(message)]),
-    );
+    if task {
+        input.insert("prompt".into(), r.prompt.clone().unwrap_or_default().into());
+        put(&mut input, "negative_prompt", r.negative_prompt.clone());
+    } else {
+        let mut message = Map::new();
+        message.insert("role".into(), "user".into());
+        message.insert("content".into(), Value::Array(content));
+        put_extras(&mut message, &r.extras, D, "input.message");
+        input.insert(
+            "messages".into(),
+            Value::Array(vec![Value::Object(message)]),
+        );
+    }
     put_extras(&mut input, &r.extras, D, "input");
     let mut params = Map::new();
     let count = match (fam, r.count) {
         (ImageFamily::ZImage, _) => None,
-        // Wan 2.6 makes four images when `n` is left out, not the one an OpenAI app expects.
-        (ImageFamily::Wan26, None) if !own => Some(1),
+        // Wan 2.6 and Wan text-to-image make four images when `n` is left out, not the one an
+        // OpenAI app expects.
+        (ImageFamily::Wan26 | ImageFamily::WanT2i | ImageFamily::WanT2iTask, None) if !own => {
+            Some(1)
+        }
         (_, n) => n,
     };
     put(&mut params, "n", count);
@@ -435,7 +491,9 @@ pub(super) fn encode_request(
         (None, None) => None,
     };
     put(&mut params, "size", size);
-    put(&mut params, "negative_prompt", r.negative_prompt.clone());
+    if !task {
+        put(&mut params, "negative_prompt", r.negative_prompt.clone());
+    }
     put(&mut params, "seed", r.seed);
     for (key, value) in carried {
         params.insert(key, value);
@@ -449,11 +507,43 @@ pub(super) fn encode_request(
     }
     put_extras(&mut out, &r.extras, D, "");
     let headers = HeaderList::new().with("content-type", crate::codec::JSON_MEDIA_TYPE);
+    if task {
+        return Ok(EncodedRequest::post_json(
+            TEXT2IMAGE_PATH,
+            headers.with("x-dashscope-async", "enable"),
+            body(&out)?,
+        ));
+    }
     Ok(EncodedRequest::post_json(
         GENERATION_PATH,
         headers,
         body(&out)?,
     ))
+}
+
+/// Whether the request asks QwenCloud to rewrite its prompt (`prompt_extend: true`), from an
+/// OpenAI-format app's extra field or DashScope's own `parameters`.
+pub fn extends_prompt(r: &ImageRequest) -> bool {
+    ["prompt_extend", "parameters.prompt_extend"]
+        .iter()
+        .filter_map(|k| r.extras.fields.get(*k))
+        .any(|v| v.to_value().ok() == Some(Value::Bool(true)))
+}
+
+/// The task a reply names while its images are still being made, from DashScope's answer to
+/// a text-to-image task or to `GET /api/v1/tasks/{task_id}`.
+pub fn pending_task(body: &[u8]) -> Option<String> {
+    let v: Value = serde_json::from_slice(body).ok()?;
+    let output = v.get("output")?;
+    let status = output.get("task_status")?.as_str()?;
+    if !matches!(status, "PENDING" | "RUNNING") {
+        return None;
+    }
+    output
+        .get("task_id")?
+        .as_str()
+        .filter(|id| !id.is_empty())
+        .map(str::to_owned)
 }
 
 fn number(v: &Map<String, Value>, key: &str) -> Option<u64> {
@@ -472,6 +562,57 @@ fn size_of(usage: &Map<String, Value>) -> Option<ImageSize> {
     }
     let (w, h) = usage.get("size")?.as_str()?.split_once('*')?;
     Some(ImageSize::pixels(w.parse().ok()?, h.parse().ok()?))
+}
+
+// A task that ended without its images, or that is still running when its result is read.
+fn failed_task(status: &str, output: &Fields) -> KppError {
+    let text = |k: &str| match output.peek(k) {
+        Some(Value::String(s)) if !s.is_empty() => Some(s.clone()),
+        _ => None,
+    };
+    match (status, text("code")) {
+        ("FAILED", Some(code)) => {
+            let mut err = serde_json::Map::new();
+            err.insert("code".into(), code.into());
+            if let Some(m) = text("message") {
+                err.insert("message".into(), m.into());
+            }
+            super::decode_error(
+                400,
+                &HeaderList::new(),
+                &serde_json::to_vec(&err).unwrap_or_default(),
+            )
+        }
+        ("PENDING" | "RUNNING", _) => KppError::provider(
+            "QwenCloud's image task had not finished when Kaeso read it; try again.",
+        ),
+        _ => KppError::provider(format!(
+            "QwenCloud's image task ended as `{status}` without an image."
+        )),
+    }
+}
+
+// Each finished image's link in a task's `results` becomes its index among the reply's
+// images; results that failed alone keep their code and message and make no image.
+fn task_skeleton(results: &mut Value, images: &mut Vec<GeneratedImage>) {
+    let Some(list) = results.as_array_mut() else {
+        return;
+    };
+    for item in list {
+        let Some(part) = item.as_object_mut() else {
+            continue;
+        };
+        let Some(Value::String(link)) = part.get("url") else {
+            continue;
+        };
+        let mut image = GeneratedImage::new(Source::Url(link.clone()));
+        image.revised_prompt = part
+            .get("actual_prompt")
+            .and_then(Value::as_str)
+            .map(str::to_owned);
+        images.push(image);
+        part.insert("url".into(), Value::from(images.len() - 1));
+    }
 }
 
 // Each image link in `choices` becomes its index among the reply's images, so the reply's
@@ -514,15 +655,28 @@ pub(super) fn decode_response(body: &[u8], ctx: &EgressCtx) -> Result<Reply, Kpp
     let mut output = f.object("output")?.ok_or_else(|| {
         KppError::provider("QwenCloud answered an image request without its `output`.")
     })?;
-    let mut choices = output.take(CHOICES).unwrap_or(Value::Array(Vec::new()));
+    if let Some(Value::String(status)) = output.peek("task_status")
+        && !matches!(status.as_str(), "SUCCEEDED")
+    {
+        return Err(failed_task(status, &output));
+    }
     let mut images = Vec::new();
-    skeleton(&mut choices, &mut images);
+    match output.take(RESULTS) {
+        Some(mut results) => {
+            task_skeleton(&mut results, &mut images);
+            extras.form.insert(RESULTS.into(), results);
+        }
+        None => {
+            let mut choices = output.take(CHOICES).unwrap_or(Value::Array(Vec::new()));
+            skeleton(&mut choices, &mut images);
+            extras.form.insert(CHOICES.into(), choices);
+        }
+    }
     if images.is_empty() {
         return Err(KppError::provider(
             "QwenCloud answered an image request without an image.",
         ));
     }
-    extras.form.insert(CHOICES.into(), choices);
     output.rest_into(&mut extras, "output");
     let mut resp = ImageResponse::new(String::new(), images);
     if let Some(Value::Object(usage)) = f.take("usage") {
@@ -566,6 +720,12 @@ fn fill(value: &mut Value, images: &[GeneratedImage]) {
 
 pub(super) fn encode_response(r: &ImageResponse) -> Result<Vec<u8>, KppError> {
     let mut output = Map::new();
+    if let Some(skeleton) = r.extras.form_value(D, RESULTS) {
+        let mut results = skeleton.clone();
+        fill_results(&mut results, &r.images);
+        output.insert(RESULTS.into(), results);
+        return finish_response(r, output);
+    }
     let choices = match r.extras.form_value(D, CHOICES) {
         Some(skeleton) => {
             let mut choices = skeleton.clone();
@@ -594,6 +754,24 @@ pub(super) fn encode_response(r: &ImageResponse) -> Result<Vec<u8>, KppError> {
         }
     };
     output.insert(CHOICES.into(), choices);
+    finish_response(r, output)
+}
+
+fn fill_results(results: &mut Value, images: &[GeneratedImage]) {
+    for item in results.as_array_mut().into_iter().flatten() {
+        if let Some(part) = item.as_object_mut()
+            && let Some(Value::Number(n)) = part.get("url")
+            && let Some(image) = n
+                .as_u64()
+                .and_then(|i| usize::try_from(i).ok())
+                .and_then(|i| images.get(i))
+        {
+            part.insert("url".into(), link_of(image));
+        }
+    }
+}
+
+fn finish_response(r: &ImageResponse, mut output: Map<String, Value>) -> Result<Vec<u8>, KppError> {
     put_extras(&mut output, &r.extras, D, "output");
     let mut out = Map::new();
     out.insert("output".into(), Value::Object(output));

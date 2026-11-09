@@ -54,7 +54,7 @@ order: 8
 
 ## 图片
 
-`dashscope::images::image_family` 读取模型名称：`qwen-image-*`（Qwen-Image 2.x 和 3.0）、`wan2.7-image*`、`wan2.6-image*` 和 `z-image*`。其他名称，例如较旧的 `wan2.6-t2i`，会被拒绝，`param` 为 `model`。图片和提示词放在同一条用户消息里，图片在前。
+`dashscope::images::image_family` 读取模型名称：`qwen-image-*`（Qwen-Image 2.x 和 3.0）、`wan2.7-image*`、`wan2.6-image*`、`z-image*`、`wan2.6-t2i*` 以及较旧的 `wan*-t2i*` 文生图模型。其他名称会被拒绝，`param` 为 `model`。图片和提示词放在同一条用户消息里，图片在前；较旧的文生图模型改用 `input.prompt`。
 
 | KPP | Qwen-Image | Wan 2.7 Image | Wan 2.6 Image | Z-Image |
 | --- | --- | --- | --- | --- |
@@ -72,6 +72,7 @@ order: 8
 - **扩展字段会转过去。**OpenAI 格式应用中的 `prompt_extend`、`prompt_extend_mode`、`enable_thinking` 和 `watermark` 会放进 `parameters`，与 QwenCloud 的 OpenAI 兼容模式文档一致。其他外来字段都会被拒绝。
 - **默认无水印。**这些模型在 `watermark` 不为 `true` 时都不加水印，因此 Kaeso 不发送该字段。
 - **完整回复。**图片在一个回复中返回；流式请求会以完成事件的形式收到它们。
+- **文生图任务。**Wan 2.5 及更早的文生图模型（`wan2.5-t2i-preview`、`wan2.2-t2i-*`、`wan2.1-t2i-*`）只以任务方式应答：请求带 `X-DashScope-Async: enable` 发往 `/api/v1/services/aigc/text2image/image-synthesis`，提示词在 `input.prompt`，反向提示词在 `input.negative_prompt`。任务运行期间由 `dispatch::pending_task` 给出任务，网关一直询问 `GET /api/v1/tasks/{task_id}`，直到任务结束。`wan2.6-t2i` 在同一个请求中应答。两者都只接收提示词、最多 4 的 `n`（应用省略时为 `1`）和以像素表示的 `size`。
 
 | DashScope 回复 | KPP |
 | --- | --- |
@@ -80,6 +81,9 @@ order: 8
 | `usage.output_width` 和 `output_height`、`width` 和 `height` 或 `size` | `settings.size` |
 | `usage.input_tokens`、`output_tokens` | `usage`，完整的 `usage` 会保留 |
 | `request_id`、`output.finished`、`output.rewrite_status` 及 choices 的其他字段 | extras |
+| 任务的 `output.results[].url` | 图片，按顺序；带 `code` 和 `message` 的结果单独失败，不生成图片 |
+| `output.results[].actual_prompt` | 每张图片的 `revised_prompt` |
+| `output.task_status` 为 `FAILED`，带 `output.code` 和 `output.message` | 按其代码给出的错误 |
 
 ## 语音合成
 

@@ -54,7 +54,7 @@ Images go as links or data URLs, except Wan 2.2 and 2.1 first and last frames, w
 
 ## Images
 
-`dashscope::images::image_family` reads the model name: `qwen-image-*` (Qwen-Image 2.x and 3.0), `wan2.7-image*`, `wan2.6-image*` and `z-image*`. Other names, such as the older `wan2.6-t2i`, are refused with `param` `model`. The images and the prompt are one user message, images first.
+`dashscope::images::image_family` reads the model name: `qwen-image-*` (Qwen-Image 2.x and 3.0), `wan2.7-image*`, `wan2.6-image*`, `z-image*`, `wan2.6-t2i*` and the older `wan*-t2i*` text-to-image models. Other names are refused with `param` `model`. The images and the prompt are one user message, images first; the older text-to-image models take `input.prompt` instead.
 
 | KPP | Qwen-Image | Wan 2.7 Image | Wan 2.6 Image | Z-Image |
 | --- | --- | --- | --- | --- |
@@ -72,6 +72,7 @@ Images go as links or data URLs, except Wan 2.2 and 2.1 first and last frames, w
 - **Extensions carry over.** `prompt_extend`, `prompt_extend_mode`, `enable_thinking` and `watermark` from an OpenAI-format app go to `parameters`, as QwenCloud's OpenAI-compatible mode documents them. Every other foreign field is refused.
 - **No watermark by default.** Every one of these models leaves the watermark off unless `watermark` is `true`, so Kaeso sends nothing.
 - **Whole replies.** The images come in one reply; a streamed request gets them as finished events.
+- **Text-to-image tasks.** Wan 2.5 and earlier text-to-image models (`wan2.5-t2i-preview`, `wan2.2-t2i-*`, `wan2.1-t2i-*`) answer only as tasks: the request goes to `/api/v1/services/aigc/text2image/image-synthesis` with `X-DashScope-Async: enable`, the prompt in `input.prompt` and the negative prompt in `input.negative_prompt`. `dispatch::pending_task` names the task while it runs, and the gateway asks `GET /api/v1/tasks/{task_id}` until it ends. `wan2.6-t2i` answers in the same request. Both take a prompt only, `n` up to 4 (`1` when an app leaves it out) and a pixel `size`.
 
 | DashScope reply | KPP |
 | --- | --- |
@@ -80,6 +81,9 @@ Images go as links or data URLs, except Wan 2.2 and 2.1 first and last frames, w
 | `usage.output_width` and `output_height`, `width` and `height`, or `size` | `settings.size` |
 | `usage.input_tokens`, `output_tokens` | `usage`, with the whole `usage` kept |
 | `request_id`, `output.finished`, `output.rewrite_status` and the choices' other fields | extras |
+| `output.results[].url` of a task | the images, in order; a result with `code` and `message` failed alone and makes no image |
+| `output.results[].actual_prompt` | each image's `revised_prompt` |
+| `output.task_status` `FAILED`, with `output.code` and `output.message` | an error by its code |
 
 ## Speech
 

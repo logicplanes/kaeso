@@ -314,6 +314,11 @@ fn replies_carry_images_usage_and_media_types() {
     assert!(r.images[0].revised_prompt.is_some());
     let r = reply("providers/togetherai/generate-url");
     assert_eq!(r.model, "black-forest-labs/FLUX.2-pro");
+    assert_eq!(r.settings.resolution, None);
+    let r = reply("providers/alibaba/generate");
+    assert_eq!(r.settings.resolution.as_deref(), Some("1K"));
+    let r = reply("providers/alibaba/generate-2k");
+    assert_eq!(r.settings.resolution.as_deref(), Some("2K"));
     let err = OpenAiImages::decode_response(
         200,
         &HeaderList::new(),

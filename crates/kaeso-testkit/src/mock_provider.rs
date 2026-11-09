@@ -403,6 +403,10 @@ async fn answer(ctx: Ctx, method: Method, uri: Uri, headers: HeaderMap, body: By
         }
     }
     let path = platform.map_or(path, |p| p.as_ai_studio);
+    if method == Method::GET && path == format!("/api/v1/tasks/{DASHSCOPE_IMAGE_TASK}") {
+        return dashscope_json(&ctx.fixtures, "polls/images/succeeded.json")
+            .unwrap_or_else(|| StatusCode::INTERNAL_SERVER_ERROR.into_response());
+    }
     if let Some(resp) = crate::mock_videos::answer(
         &ctx.shared.video_polls,
         &ctx.fixtures,
@@ -700,21 +704,33 @@ pub const DASHSCOPE_LINK: &str = "https://files.example.com/dashscope/result.png
 // QwenCloud's DashScope API: images, Qwen3-TTS and Qwen-Audio-ASR share one path, told apart
 // by the model; Qwen-Audio-TTS streams from its own. Links in replies point away from
 // QwenCloud's result hosts, so a test never reaches them.
+/// The task the mock's Wan text-to-image tasks are started as.
+pub const DASHSCOPE_IMAGE_TASK: &str = "7d4ac4b2-2e1a-4c84-8c6d-xxxxxx";
+
+fn dashscope_json(fixtures: &Path, rel: &str) -> Option<Response> {
+    let bytes = std::fs::read(fixtures.join("dashscope").join(rel)).ok()?;
+    let mut v: serde_json::Value = serde_json::from_slice(&bytes).ok()?;
+    point_links_at(&mut v, DASHSCOPE_LINK);
+    Response::builder()
+        .header("content-type", "application/json")
+        .body(axum::body::Body::from(serde_json::to_vec(&v).ok()?))
+        .ok()
+}
+
 fn dashscope(fixtures: &Path, path: &str, text: &str, headers: &HeaderMap) -> Option<Response> {
     let dir = fixtures.join("dashscope");
     let sse = headers
         .get("x-dashscope-sse")
         .is_some_and(|v| v.as_bytes() == b"enable");
-    let local = |rel: &str| {
-        let bytes = std::fs::read(dir.join(rel)).ok()?;
-        let mut v: serde_json::Value = serde_json::from_slice(&bytes).ok()?;
-        point_links_at(&mut v, DASHSCOPE_LINK);
-        Response::builder()
-            .header("content-type", "application/json")
-            .body(axum::body::Body::from(serde_json::to_vec(&v).ok()?))
-            .ok()
-    };
+    let local = |rel: &str| dashscope_json(fixtures, rel);
     match path {
+        "/api/v1/services/aigc/text2image/image-synthesis"
+            if headers
+                .get("x-dashscope-async")
+                .is_some_and(|v| v.as_bytes() == b"enable") =>
+        {
+            local("polls/images/started.json")
+        }
         "/api/v1/services/audio/tts/SpeechSynthesizer" => Some(bytes_file(
             &dir.join("streams/speech/qwen-audio-tts.sse"),
             "text/event-stream",
@@ -733,6 +749,8 @@ fn dashscope(fixtures: &Path, path: &str, text: &str, headers: &HeaderMap) -> Op
                 local("responses/images/z-image.json")
             } else if text.contains("\"wan2.7") {
                 local("responses/images/wan27.json")
+            } else if text.contains("\"wan2.6-t2i") {
+                local("responses/images/wan26-t2i.json")
             } else if text.contains("\"image\"") {
                 local("responses/images/qwen-image-edit.json")
             } else {

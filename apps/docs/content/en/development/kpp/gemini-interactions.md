@@ -32,7 +32,7 @@ Look up how a video job reaches Gemini Omni on Google AI Studio and Gemini Enter
 | `size`, or `resolution` and `aspect_ratio` | `response_format.resolution` (`360p`, `720p`, `1080p`, `4k`), `response_format.aspect_ratio` (`16:9`, `9:16`) |
 | a remix's `remix_of` | `previous_interaction_id` |
 
-Omni takes no seed, negative prompt or count, and no frames together with references.
+Omni takes no seed, negative prompt or count, and no frames together with references. The first preview, `gemini-omni-flash-preview`, starts from no first or last frame either; it takes reference images.
 
 ## Reply
 

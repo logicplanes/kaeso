@@ -1,0 +1,22 @@
+{
+  "model": "wan2.6-t2i",
+  "input": {
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "text": "A flower shop with exquisite windows, a beautiful wooden door, and flowers on display"
+          }
+        ]
+      }
+    ]
+  },
+  "parameters": {
+    "prompt_extend": true,
+    "watermark": false,
+    "n": 1,
+    "negative_prompt": "",
+    "size": "1280*1280"
+  }
+}

@@ -1065,6 +1065,15 @@ async fn attempt(
         _ => {}
     }
     let fetch = super::links::Fetch::of(&mut req, &eff.provider, &eff.model_id);
+    if let Request::Image(r) = &req
+        && let Some(units) = rec.outcome().media.as_mut()
+    {
+        units.extended_prompt = eff
+            .provider
+            .images(&eff.model_id)
+            .is_some_and(|e| e.extended_prompt_doubles)
+            && kaeso_codecs::dashscope::images::extends_prompt(r);
+    }
     if let Some(source) = sh.video.and_then(|v| v.remix.as_ref()) {
         source
             .check_provider(eff.provider.id())
@@ -1336,15 +1345,17 @@ async fn attempt(
         count_upstream_error(transport_kind(&e), provider);
         fail(Stage::Upstream)(upstream_error(&e))
     };
+    let auth = match (&platform, media.and_then(|i| i.auth)) {
+        (Some(p), _) => Some(p.auth),
+        (None, Some(auth)) => Some(auth),
+        (None, None) => eff.provider.auth(),
+    };
+    let secret = platform.as_ref().map_or(&credential.secret, |p| &p.secret);
     let sending = state.upstream.send(Call {
         base_url: base,
-        auth: match (&platform, media.and_then(|i| i.auth)) {
-            (Some(p), _) => Some(p.auth),
-            (None, Some(auth)) => Some(auth),
-            (None, None) => eff.provider.auth(),
-        },
+        auth,
         guard: guard_for(&eff.provider),
-        credential: platform.as_ref().map_or(&credential.secret, |p| &p.secret),
+        credential: secret,
         request: Outgoing::from(encoded),
         stream: match kind {
             RequestKind::Generate => stream || chatgpt.is_some(),
@@ -1572,7 +1583,23 @@ async fn attempt(
                 }
                 return Err(fail(Stage::Provider)(err));
             }
-            let headers = resp.headers;
+            let (status, headers, bytes) = match dispatch::pending_task(dialect, kind, &bytes) {
+                Some(task) => {
+                    let asked = super::media::Asked {
+                        base,
+                        auth,
+                        guard: guard_for(&eff.provider),
+                        credential: secret,
+                        timeouts,
+                        max_body: state.config.body_limits.provider_response.as_usize(),
+                    };
+                    super::media::wait_for_task(state, &asked, dialect, &ectx, &task, deadline)
+                        .await
+                        .map_err(|e| without_key_fragments(redacted(e)))
+                        .map_err(fail(Stage::Provider))?
+                }
+                None => (status, resp.headers, bytes),
+            };
             if kind == RequestKind::Video {
                 let reply = decode_reply(dialect, status, &headers, &bytes, &ectx)
                     .map_err(|e| unreadable(e, &eff.provider, dialect))

@@ -593,7 +593,7 @@ pub(crate) fn encode_job(job: &VideoJob) -> Value {
 }
 
 /// DashScope's error body, `{"request_id", "code", "message"}`, by its status and code.
-fn decode_error(status: u16, headers: &HeaderList, body: &[u8]) -> KppError {
+pub(super) fn decode_error(status: u16, headers: &HeaderList, body: &[u8]) -> KppError {
     let value: Option<Value> = serde_json::from_slice(body).ok();
     let field = |k: &str| {
         value

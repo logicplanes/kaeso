@@ -488,6 +488,33 @@ pub fn encode_video_poll(
     dispatch!(dialect, encode_video_poll(job, model, ctx))?
 }
 
+/// The task an image reply names while its images are still being made, for providers that
+/// make images as tasks, such as QwenCloud's older Wan text-to-image models. The caller asks
+/// [`encode_task_poll`] until the task's answer names none, then decodes that answer.
+pub fn pending_task(dialect: DialectId, kind: RequestKind, body: &[u8]) -> Option<String> {
+    match (dialect, kind) {
+        (DialectId::DashScope, RequestKind::Image) => crate::dashscope::images::pending_task(body),
+        _ => None,
+    }
+}
+
+/// The request that asks how the task [`pending_task`] named stands.
+pub fn encode_task_poll(
+    dialect: DialectId,
+    task: &str,
+    ctx: &EgressCtx,
+) -> Result<EncodedRequest, KppError> {
+    one_segment(task, "task_id")?;
+    match dialect {
+        DialectId::DashScope => dispatch!(dialect, encode_video_poll(task, "", ctx))?,
+        other => Err(KppError::unsupported_by(
+            "tasks",
+            other,
+            "this provider answers in the same request.",
+        )),
+    }
+}
+
 /// Reads the provider's answer to [`encode_video_poll`].
 pub fn decode_video_poll(
     dialect: DialectId,
