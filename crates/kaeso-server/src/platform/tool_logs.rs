@@ -419,7 +419,7 @@ pub async fn export(
     }
     if content && !scope.rights.contains(ProjectRight::LogsContentView) {
         return Err(ApiError::PermissionDenied(
-            "Exporting arguments and results needs the right `logs.content.view`.".into(),
+            "Exporting content needs the right `logs.content.view`.".into(),
         ));
     }
     let filter = f.filter()?;
