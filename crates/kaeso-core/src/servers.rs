@@ -3,6 +3,8 @@ use kaeso_codecs::openai_chat::ChatProfile;
 use kaeso_codecs::openai_responses::ResponsesProfile;
 use serde::{Deserialize, Serialize};
 
+use crate::providers::MediaApi;
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 #[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 #[serde(rename_all = "snake_case")]
@@ -88,6 +90,9 @@ pub struct Server {
     pub responses: ResponsesProfile,
     pub messages: MessagesProfile,
     pub context_window_messages: &'static [&'static str],
+    /// OpenAI's media APIs the server software documents, which a new custom provider for it
+    /// serves unless its admin says otherwise.
+    pub media: &'static [MediaApi],
 }
 
 // Every server here renders the conversation through the model's chat template, which knows
@@ -126,6 +131,9 @@ const VLLM: Server = Server {
     responses: ResponsesProfile::compatible("vLLM"),
     messages: MessagesProfile::compatible("vLLM"),
     context_window_messages: VLLM_CONTEXT,
+    // https://docs.vllm.ai/en/latest/serving/openai_compatible_server.html, its Transcriptions
+    // and Translations APIs, read 2026-11-09.
+    media: &[MediaApi::Transcriptions],
 };
 
 const SGLANG: Server = Server {
@@ -142,6 +150,7 @@ const SGLANG: Server = Server {
     messages: MessagesProfile::compatible("SGLang"),
     // https://github.com/sgl-project/sglang/blob/4003bf1077/python/sglang/srt/managers/tokenizer_manager.py#L1437
     context_window_messages: &["exceeds the model's maximum context length"],
+    media: &[],
 };
 
 const OLLAMA: Server = Server {
@@ -165,6 +174,7 @@ const OLLAMA: Server = Server {
     responses: ResponsesProfile::compatible("Ollama"),
     messages: MessagesProfile::compatible("Ollama"),
     context_window_messages: &[],
+    media: &[],
 };
 
 const LM_STUDIO: Server = Server {
@@ -183,6 +193,7 @@ const LM_STUDIO: Server = Server {
     responses: ResponsesProfile::compatible("LM Studio"),
     messages: MessagesProfile::compatible("LM Studio"),
     context_window_messages: &[],
+    media: &[],
 };
 
 const LLAMA_CPP: Server = Server {
@@ -198,6 +209,7 @@ const LLAMA_CPP: Server = Server {
     responses: ResponsesProfile::compatible("llama.cpp"),
     messages: MessagesProfile::compatible("llama.cpp"),
     context_window_messages: LLAMA_CPP_CONTEXT,
+    media: &[],
 };
 
 const LOCALAI: Server = Server {
@@ -216,6 +228,9 @@ const LOCALAI: Server = Server {
     responses: ResponsesProfile::compatible("LocalAI"),
     messages: MessagesProfile::compatible("LocalAI"),
     context_window_messages: &[],
+    // https://localai.io/docs/features/image-generation/, `…/text-to-audio/` and
+    // `…/audio-to-text/`, read 2026-11-09.
+    media: &[MediaApi::Images, MediaApi::Speech, MediaApi::Transcriptions],
 };
 
 const TGI: Server = Server {
@@ -237,6 +252,7 @@ const TGI: Server = Server {
     responses: ResponsesProfile::compatible("Text Generation Inference"),
     messages: MessagesProfile::compatible("Text Generation Inference"),
     context_window_messages: &[],
+    media: &[],
 };
 
 const LMDEPLOY: Server = Server {
@@ -253,6 +269,7 @@ const LMDEPLOY: Server = Server {
     messages: MessagesProfile::compatible("LMDeploy"),
     // https://github.com/InternLM/lmdeploy/blob/a0102d4796/lmdeploy/serve/core/exceptions.py#L41
     context_window_messages: &["exceeds the model context length"],
+    media: &[],
 };
 
 const NIM: Server = Server {
@@ -268,6 +285,7 @@ const NIM: Server = Server {
     responses: ResponsesProfile::compatible("NVIDIA NIM"),
     messages: MessagesProfile::compatible("NVIDIA NIM"),
     context_window_messages: VLLM_CONTEXT,
+    media: &[],
 };
 
 const DOCKER_MODEL_RUNNER: Server = Server {
@@ -288,6 +306,7 @@ const DOCKER_MODEL_RUNNER: Server = Server {
         "maximum context length is",
         "longer than the maximum model length",
     ],
+    media: &[],
 };
 
 const KOBOLDCPP: Server = Server {
@@ -303,6 +322,7 @@ const KOBOLDCPP: Server = Server {
     responses: ResponsesProfile::compatible("KoboldCpp"),
     messages: MessagesProfile::compatible("KoboldCpp"),
     context_window_messages: &[],
+    media: &[],
 };
 
 const TABBYAPI: Server = Server {
@@ -318,6 +338,7 @@ const TABBYAPI: Server = Server {
     responses: ResponsesProfile::compatible("TabbyAPI"),
     messages: MessagesProfile::compatible("TabbyAPI"),
     context_window_messages: &[],
+    media: &[],
 };
 
 const XINFERENCE: Server = Server {
@@ -333,6 +354,9 @@ const XINFERENCE: Server = Server {
     responses: ResponsesProfile::compatible("Xinference"),
     messages: MessagesProfile::compatible("Xinference"),
     context_window_messages: &[],
+    // https://inference.readthedocs.io/en/latest/models/model_abilities/image.html and
+    // `…/audio.html`, read 2026-11-09.
+    media: &[MediaApi::Images, MediaApi::Speech, MediaApi::Transcriptions],
 };
 
 const MLX_LM: Server = Server {
@@ -348,6 +372,7 @@ const MLX_LM: Server = Server {
     responses: ResponsesProfile::compatible("MLX LM"),
     messages: MessagesProfile::compatible("MLX LM"),
     context_window_messages: &[],
+    media: &[],
 };
 
 const JAN: Server = Server {
@@ -365,6 +390,7 @@ const JAN: Server = Server {
     responses: ResponsesProfile::compatible("Jan"),
     messages: MessagesProfile::compatible("Jan"),
     context_window_messages: LLAMA_CPP_CONTEXT,
+    media: &[],
 };
 
 pub const SERVERS: &[Server] = &[

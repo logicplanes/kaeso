@@ -942,6 +942,9 @@ const messages = (): Rule[] => [
   rule("errors.modelApi.customTurnedOff", (v) =>
     t("errors.modelApi.customTurnedOff", "Custom providers are turned off on this install, so `{provider}` cannot be called.", v),
   ),
+  rule("errors.modelApi.customNoMediaApi", (v) =>
+    t("errors.modelApi.customNoMediaApi", "The custom provider `{provider}` has no {api} turned on; an org admin turns it on under Providers.", v),
+  ),
   rule("errors.modelApi.credentialSealed", () =>
     t("errors.modelApi.credentialSealed", "Kaeso cannot decrypt the provider credential. The operator must check the configured master keys."),
   ),

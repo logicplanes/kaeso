@@ -51,6 +51,19 @@ Kaeso wählt das Format, das es erkennt. Wenn Sie es ändern, wählen Sie das Fo
 
 Bei **Anderer Server oder Proxy** spricht Kaeso das reine Format. Es weiß, wie jeder eingebaute Anbieter von seinem Format abweicht, etwa welche Felder Mistral ablehnt, aber das kann es von Ihrem Server nicht wissen. Ein Feld, das Ihr Server nicht annimmt, kommt als Fehler Ihres Servers zurück. Bei Software, die Kaeso kennt, passt es Anfragen an wie bei einem eingebauten Anbieter ([Server-Software](#server-software)). Ein Feld, das das Format nicht tragen kann, lehnt Kaeso ab wie bei jedem Anbieter ([was Kaeso ablehnt](../concepts/format-translation.md#was-kaeso-ablehnt)).
 
+## Medien-APIs
+
+Ein eigener Anbieter kann unter seiner Basis-URL auch die Medien-APIs von OpenAI bedienen. Schalten Sie jede ein, die Ihr Server beantwortet; Kaeso sendet die Anfragen dieser API für die Modelle des Anbieters dann dorthin, im Format von OpenAI:
+
+| Schalter | Ihr Server beantwortet | Apps rufen auf |
+| --- | --- | --- |
+| **Bedient Bilder** | `POST /v1/images/generations` und `/v1/images/edits` | die [Images API](../api/images.md) |
+| **Bedient Sprache** | `POST /v1/audio/speech` | Sprache der [Audio API](../api/audio.md) |
+| **Bedient Transkriptionen** | `POST /v1/audio/transcriptions` und `/v1/audio/translations` | Transkriptionen und Übersetzungen der Audio API |
+| **Bedient Videos** | die Videos API von OpenAI unter `/v1/videos` | die [Videos API](../api/videos.md) |
+
+Ein neuer Anbieter für Server-Software, die Kaeso kennt, beginnt mit den APIs, die diese Software dokumentiert: LocalAI mit Bildern, Sprache und Transkriptionen, Xinference mit Bildern, Sprache und Transkriptionen und vLLM mit Transkriptionen. Die Erkennung probiert sie nie aus, weil eine Testanfrage ein Bild oder einen Ton erzeugen würde. Ist eine API aus, lehnt Kaeso die Modelle des Anbieters dafür mit 400 ab und sagt, dass ein Admin sie einschaltet. Ein Medienmodell eines eigenen Anbieters braucht seine Modalitäten und einen Preis pro Einheit, etwa pro Bild oder pro Minute Audio ([seine Modelle hinzufügen](#seine-modelle-hinzufügen)).
+
 ## Server-Software
 
 Kaeso weiß, wie die Inferenz-Server unten von dem Format abweichen, das sie sprechen. Ein eigener Anbieter, der seinen **Server** nennt, erhält diese Anpassungen bei jeder Anfrage, und die Konsole zeigt das Zeichen der Software überall, wo der Anbieter erscheint:

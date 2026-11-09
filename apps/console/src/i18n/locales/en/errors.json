@@ -325,6 +325,7 @@
   "errors.modelApi.customAddressRefused": "The custom provider `{provider}` is at an address this install does not allow; ask its operator.",
   "errors.modelApi.customAsksForKey": "The custom provider `{provider}` asks for a key; an organization admin sets how it signs in under Providers.",
   "errors.modelApi.customKeyRefused": "The custom provider `{provider}` refused this project's key; ask an organization admin to check it under Providers.",
+  "errors.modelApi.customNoMediaApi": "The custom provider `{provider}` has no {api} turned on; an org admin turns it on under Providers.",
   "errors.modelApi.customTurnedOff": "Custom providers are turned off on this install, so `{provider}` cannot be called.",
   "errors.modelApi.customUnreachable": "Kaeso cannot reach the custom provider `{provider}`; check its base URL.",
   "errors.modelApi.customUnreadable": "The custom provider `{provider}` answered in a form `{dialect}` cannot read; check its API format.",

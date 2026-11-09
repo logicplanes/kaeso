@@ -1840,6 +1840,7 @@ fn custom_provider(id: &str, generation: DialectId) -> crate::providers::CustomP
         embeddings: None,
         count_tokens: None,
         server: None,
+        media: Vec::new(),
     })
     .unwrap()
 }
@@ -2436,4 +2437,42 @@ fn a_custom_image_model_needs_its_modalities_and_a_price() {
         ..image(Some(vec!["text".into()]), true)
     };
     assert_eq!(text.validate_custom().unwrap_err().field, "context_limit");
+}
+
+#[test]
+fn custom_speech_and_transcription_models_need_their_modalities_and_a_price() {
+    let model = |input: &str, output: &str, unit: Option<&str>| Fields {
+        input_modalities: Some(vec![input.into()]),
+        output_modalities: Some(vec![output.into()]),
+        unit_prices: unit.map(|per| {
+            vec![UnitPrice {
+                per: per.into(),
+                of: "input".into(),
+                usd: dec!(0.006),
+                ..UnitPrice::default()
+            }]
+        }),
+        ..Fields::default()
+    };
+    model("text", "audio", Some("million_characters"))
+        .validate_custom()
+        .unwrap();
+    model("audio", "text", Some("minute"))
+        .validate_custom()
+        .unwrap();
+    assert_eq!(
+        model("audio", "text", None)
+            .validate_custom()
+            .unwrap_err()
+            .field,
+        "unit_prices"
+    );
+    let chat_with_audio = Fields {
+        input_modalities: Some(vec!["text".into(), "audio".into()]),
+        ..model("audio", "text", Some("minute"))
+    };
+    assert_eq!(
+        chat_with_audio.validate_custom().unwrap_err().field,
+        "context_limit"
+    );
 }

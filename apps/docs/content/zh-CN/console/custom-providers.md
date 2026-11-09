@@ -51,6 +51,19 @@ Kaeso 会选择它检测到的格式。如需修改，请选择您的服务器�
 
 对于**其他服务器或代理**，Kaeso 使用原样的格式通信。它知道每个内置服务商与其格式的差异，例如 Mistral 拒绝哪些字段，但无法得知您的服务器的差异。您的服务器不接受的字段，会以您的服务器自己的错误返回。对于 Kaeso 了解的软件，它会像对内置服务商一样调整请求（[服务器软件](#服务器软件)）。格式无法承载的字段，Kaeso 会像对任何服务商一样拒绝（[Kaeso 拒绝的内容](../concepts/format-translation.md#kaeso-拒绝的内容)）。
 
+## 媒体 API
+
+自定义服务商还可以在其基础 URL 上提供 OpenAI 的媒体 API。打开服务器会应答的每一项；之后 Kaeso 会把该 API 中发给这个服务商模型的请求，以 OpenAI 自己的格式发到那里：
+
+| 开关 | 你的服务器应答 | 应用调用 |
+| --- | --- | --- |
+| **提供图片** | `POST /v1/images/generations` 和 `/v1/images/edits` | [Images API](../api/images.md) |
+| **提供语音** | `POST /v1/audio/speech` | [Audio API](../api/audio.md) 的语音 |
+| **提供转写** | `POST /v1/audio/transcriptions` 和 `/v1/audio/translations` | Audio API 的转写和翻译 |
+| **提供视频** | `/v1/videos` 下 OpenAI 的 Videos API | [Videos API](../api/videos.md) |
+
+为 Kaeso 认识的服务器软件新建服务商时，会默认打开该软件文档所列的 API：LocalAI 为图片、语音和转写，Xinference 为图片、语音和转写，vLLM 为转写。检测从不尝试这些 API，因为一次测试请求就会生成图片或声音。某个 API 关闭时，Kaeso 会以 400 拒绝该服务商的模型用于此 API，并说明需由管理员打开。自定义服务商的媒体模型需要填写其模态和按单位计的价格，例如按图片或按每分钟音频（[添加其模型](#添加其模型)）。
+
 ## 服务器软件
 
 Kaeso 知道下列推理服务器与其所用格式之间的差异。指定了**服务器**的自定义服务商会在每个请求中得到这些调整，控制台也会在该服务商出现的所有位置显示该软件的标志：

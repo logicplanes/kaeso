@@ -5,7 +5,7 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use kaeso_core::id::OrgId;
 use kaeso_core::provider::{self, ProviderId};
-use kaeso_core::providers::{self as custom, CustomAuth, CustomProvider, Draft, Problem};
+use kaeso_core::providers::{self as custom, CustomAuth, CustomProvider, Draft, MediaApi, Problem};
 use kaeso_core::servers::ServerKind;
 use kaeso_kpp::DialectId;
 use kaeso_store::pg::custom_providers::{self as store, CustomProviderRow, Fields, InUse};
@@ -151,6 +151,10 @@ pub struct CustomProviderView {
         and picks its mark; `null` for another server or a proxy."]
     #[schema(example = "vllm")]
     pub server: Option<ServerKind>,
+    #[doc = "OpenAI's media APIs it serves at its base URL, which reach its catalogue\n\
+        models: `images`, `speech`, `transcriptions` (with translations) and `videos`."]
+    #[schema(example = json!(["transcriptions"]))]
+    pub media: Vec<MediaApi>,
     #[doc = "The name of the built-in provider with the same id, which a newer Kaeso\n\
         release added; inside this organization the custom provider takes its\n\
         place. `null` without one."]
@@ -191,6 +195,7 @@ fn view(row: &CustomProviderRow, in_use: InUse) -> ApiResult<CustomProviderView>
         embeddings: p.embeddings().map(|_| EmbeddingsDialect::OpenaiEmbeddings),
         count_tokens: p.count_tokens().map(generation_view),
         server: p.server(),
+        media: p.media().to_vec(),
         hides_built_in: provider::provider(p.id().as_str()).map(|b| b.name.to_owned()),
         in_use: in_use.into(),
         created_by: creator(&row.created_by_kind, row.created_by_id),
@@ -231,6 +236,10 @@ pub struct CustomProviderCreate {
         server or a proxy."]
     #[serde(default)]
     pub server: Option<ServerKind>,
+    #[doc = "OpenAI's media APIs it serves at its base URL; absent for the ones its\n\
+        `server` documents, none without one."]
+    #[serde(default)]
+    pub media: Option<Vec<MediaApi>>,
 }
 
 fn present<'de, D: Deserializer<'de>, T: Deserialize<'de>>(
@@ -264,6 +273,8 @@ pub struct CustomProviderUpdate {
     #[serde(default, deserialize_with = "present")]
     #[schema(value_type = Option<ServerKind>, nullable)]
     pub server: Option<Option<ServerKind>>,
+    #[doc = "OpenAI's media APIs it serves at its base URL; `[]` for none."]
+    pub media: Option<Vec<MediaApi>>,
 }
 
 fn turned_off(state: &AppState) -> ApiResult<()> {
@@ -465,6 +476,10 @@ pub async fn create(
         embeddings: req.embeddings.map(Into::into),
         count_tokens: req.count_tokens.map(Into::into),
         server: req.server,
+        media: req.media.unwrap_or_else(|| {
+            req.server
+                .map_or_else(Vec::new, |s| s.server().media.to_vec())
+        }),
     })
     .map_err(problem)?;
     check_reach(&state, p.base_url()).await?;
@@ -551,6 +566,9 @@ pub async fn update(
     }
     if let Some(server) = req.server {
         draft.server = server;
+    }
+    if let Some(media) = req.media {
+        draft.media = media;
     }
     let after_provider = CustomProvider::new(draft).map_err(problem)?;
     let used = store::in_use(&mut tx, org)
@@ -721,6 +739,10 @@ pub struct CustomProviderDetection {
         its `server` header or one of its own endpoints; `null` when none."]
     #[schema(example = "vllm")]
     pub server: Option<ServerKind>,
+    #[doc = "OpenAI's media APIs its server software documents; none for another server\n\
+        or a proxy."]
+    #[schema(example = json!(["transcriptions"]))]
+    pub media: Vec<MediaApi>,
     #[doc = "The models the server lists, sorted by id; `null` when it has no model\n\
         listing."]
     pub models: Option<Vec<DetectedModelView>>,
@@ -939,6 +961,9 @@ pub async fn detect(
         embeddings: s.embeddings.then_some(EmbeddingsDialect::OpenaiEmbeddings),
         count_tokens: s.count_tokens.then(|| generation_view(s.generation)),
         server: found.server,
+        media: found
+            .server
+            .map_or_else(Vec::new, |k| k.server().media.to_vec()),
         models: found.models.map(|models| {
             models
                 .into_iter()
@@ -971,6 +996,10 @@ pub struct ServerView {
     #[doc = "Whether detection can tell this software from its model listing, its\n\
         `server` header or one of its own endpoints."]
     pub detected: bool,
+    #[doc = "OpenAI's media APIs the software documents, which a new custom provider\n\
+        for it serves unless set otherwise."]
+    #[schema(example = json!(["transcriptions"]))]
+    pub media: &'static [MediaApi],
 }
 
 #[utoipa::path(
@@ -994,6 +1023,7 @@ pub async fn servers(_ctx: Ctx, Path(_org): Path<String>) -> Json<List<ServerVie
             port: s.port,
             path: s.path,
             detected: !s.owned_by.is_empty() || s.server_header.is_some() || s.probe.is_some(),
+            media: s.media,
         })
         .collect();
     all.sort_by_key(|s| s.name.to_lowercase());

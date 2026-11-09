@@ -642,9 +642,19 @@ async fn reach(asking: &Asking<'_>, row: &VideoRow) -> Result<Reached, KppError>
         pipeline::admit_follow_up(state, asking.key, row.catalogue_model_id).await?;
     }
     let dialect: DialectId = row.dialect.parse().map_err(|_| unavailable())?;
-    let provider = kaeso_core::provider::provider(&row.provider)
-        .map(ProviderRef::from)
-        .ok_or_else(unavailable)?;
+    let provider = match kaeso_core::provider::provider(&row.provider) {
+        Some(p) => ProviderRef::from(p),
+        None => super::listing::project_models(
+            state,
+            row.project_id,
+            row.api_key_id,
+            row.service_account_id,
+        )
+        .await?
+        .providers
+        .get(&row.provider)
+        .ok_or_else(unavailable)?,
+    };
     let egress = provider.videos(&row.upstream_model).ok_or_else(|| {
         error(
             ErrorKind::ProviderError,

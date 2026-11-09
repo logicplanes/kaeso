@@ -66,6 +66,47 @@ impl CustomAuth {
     }
 }
 
+/// One of OpenAI's media APIs a custom provider's server serves at its base URL.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
+#[serde(rename_all = "snake_case")]
+#[cfg_attr(
+    feature = "openapi",
+    schema(description = "One of OpenAI's media APIs a custom provider serves.")
+)]
+pub enum MediaApi {
+    #[doc = "The Images API, `POST /v1/images/generations` and `/v1/images/edits`."]
+    Images,
+    #[doc = "Speech, `POST /v1/audio/speech`."]
+    Speech,
+    #[doc = "Transcriptions and translations, `POST /v1/audio/transcriptions` and `/v1/audio/translations`."]
+    Transcriptions,
+    #[doc = "The Videos API, `/v1/videos`."]
+    Videos,
+}
+
+impl MediaApi {
+    pub const ALL: [MediaApi; 4] = [
+        MediaApi::Images,
+        MediaApi::Speech,
+        MediaApi::Transcriptions,
+        MediaApi::Videos,
+    ];
+
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            MediaApi::Images => "images",
+            MediaApi::Speech => "speech",
+            MediaApi::Transcriptions => "transcriptions",
+            MediaApi::Videos => "videos",
+        }
+    }
+
+    pub fn parse(s: &str) -> Option<MediaApi> {
+        MediaApi::ALL.into_iter().find(|m| m.as_str() == s)
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Problem {
     IdTooLong,
@@ -91,6 +132,7 @@ pub struct Draft {
     pub embeddings: Option<DialectId>,
     pub count_tokens: Option<DialectId>,
     pub server: Option<ServerKind>,
+    pub media: Vec<MediaApi>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -105,6 +147,7 @@ pub struct CustomProvider {
     embeddings: Option<DialectId>,
     count_tokens: Option<DialectId>,
     server: Option<ServerKind>,
+    media: Vec<MediaApi>,
     dialects: Vec<DialectId>,
 }
 
@@ -135,6 +178,9 @@ impl CustomProvider {
             return Err(Problem::CountTokens);
         }
         let dialects = std::iter::once(d.generation).chain(d.embeddings).collect();
+        let mut media = d.media;
+        media.sort_unstable();
+        media.dedup();
         Ok(CustomProvider {
             uuid: d.uuid,
             id: d.id,
@@ -145,6 +191,7 @@ impl CustomProvider {
             embeddings: d.embeddings,
             count_tokens: d.count_tokens,
             server: d.server,
+            media,
             dialects,
         })
     }
@@ -189,6 +236,15 @@ impl CustomProvider {
         self.server
     }
 
+    /// OpenAI's media APIs the provider serves, in a fixed order.
+    pub fn media(&self) -> &[MediaApi] {
+        &self.media
+    }
+
+    pub fn serves(&self, api: MediaApi) -> bool {
+        self.media.contains(&api)
+    }
+
     pub fn draft(&self) -> Draft {
         Draft {
             uuid: self.uuid,
@@ -200,6 +256,7 @@ impl CustomProvider {
             embeddings: self.embeddings,
             count_tokens: self.count_tokens,
             server: self.server,
+            media: self.media.clone(),
         }
     }
 }
@@ -221,7 +278,7 @@ impl From<CustomProvider> for Draft {
 impl Serialize for Draft {
     fn serialize<S: serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
         use serde::ser::SerializeStruct;
-        let mut out = s.serialize_struct("CustomProvider", 9)?;
+        let mut out = s.serialize_struct("CustomProvider", 10)?;
         out.serialize_field("uuid", &self.uuid)?;
         out.serialize_field("id", &self.id)?;
         out.serialize_field("name", &self.name)?;
@@ -231,6 +288,7 @@ impl Serialize for Draft {
         out.serialize_field("embeddings", &self.embeddings)?;
         out.serialize_field("count_tokens", &self.count_tokens)?;
         out.serialize_field("server", &self.server)?;
+        out.serialize_field("media", &self.media)?;
         out.end()
     }
 }
@@ -250,6 +308,8 @@ impl<'de> Deserialize<'de> for Draft {
             count_tokens: Option<DialectId>,
             #[serde(default)]
             server: Option<ServerKind>,
+            #[serde(default)]
+            media: Vec<MediaApi>,
         }
         let s = Stored::deserialize(d)?;
         Ok(Draft {
@@ -262,6 +322,7 @@ impl<'de> Deserialize<'de> for Draft {
             embeddings: s.embeddings,
             count_tokens: s.count_tokens,
             server: s.server,
+            media: s.media,
         })
     }
 }
@@ -376,41 +437,52 @@ impl ProviderRef {
         }
     }
 
-    /// Where Kaeso sends image requests for `model`; custom providers take none.
+    /// Where Kaeso sends image requests for `model`; a custom provider, where it serves them.
     pub fn images(&self, model: &str) -> Option<crate::provider::ImagesEgress> {
         match self {
             ProviderRef::BuiltIn(p) => p.images.iter().copied().find(|e| e.serves(model)),
-            ProviderRef::Custom(_) => None,
+            ProviderRef::Custom(c) => c
+                .serves(MediaApi::Images)
+                .then_some(crate::provider::ImagesEgress::OPENAI_COMPATIBLE),
         }
     }
 
-    /// Where Kaeso sends speech requests for `model`; custom providers take none.
+    /// Where Kaeso sends speech requests for `model`; a custom provider, where it serves them.
     pub fn speech(&self, model: &str) -> Option<crate::provider::SpeechEgress> {
         match self {
             ProviderRef::BuiltIn(p) => p.speech.iter().copied().find(|e| e.serves(model)),
-            ProviderRef::Custom(_) => None,
+            ProviderRef::Custom(c) => c
+                .serves(MediaApi::Speech)
+                .then_some(crate::provider::SpeechEgress::OPENAI_COMPATIBLE),
         }
     }
 
-    /// Where Kaeso sends transcriptions for `model`; custom providers take none.
+    /// Where Kaeso sends transcriptions for `model`; a custom provider, where it serves them.
     pub fn transcriptions(&self, model: &str) -> Option<crate::provider::TranscriptionsEgress> {
         match self {
             ProviderRef::BuiltIn(p) => p.transcriptions.iter().copied().find(|e| e.serves(model)),
-            ProviderRef::Custom(_) => None,
+            ProviderRef::Custom(c) => c
+                .serves(MediaApi::Transcriptions)
+                .then_some(crate::provider::TranscriptionsEgress::OPENAI_COMPATIBLE),
         }
     }
 
-    /// Where Kaeso sends video jobs for `model`; custom providers take none.
+    /// Where Kaeso sends video jobs for `model`; a custom provider, where it serves them.
     pub fn videos(&self, model: &str) -> Option<crate::provider::VideosEgress> {
         match self {
             ProviderRef::BuiltIn(p) => p.videos.iter().copied().find(|v| v.serves(model)),
-            ProviderRef::Custom(_) => None,
+            ProviderRef::Custom(c) => c
+                .serves(MediaApi::Videos)
+                .then_some(crate::provider::VideosEgress::OPENAI_COMPATIBLE),
         }
     }
 
     /// Whether the provider serves video jobs for any model.
     pub fn has_videos(&self) -> bool {
-        matches!(self, ProviderRef::BuiltIn(p) if !p.videos.is_empty())
+        match self {
+            ProviderRef::BuiltIn(p) => !p.videos.is_empty(),
+            ProviderRef::Custom(c) => c.serves(MediaApi::Videos),
+        }
     }
 
     pub fn auth(&self) -> Option<AuthStyle> {
@@ -602,6 +674,7 @@ mod tests {
             embeddings: None,
             count_tokens: None,
             server: None,
+            media: Vec::new(),
         }
     }
 

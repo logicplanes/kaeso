@@ -228,6 +228,9 @@ pub struct ImagesEgress {
 }
 
 impl ImagesEgress {
+    /// OpenAI's Images API with OpenAI's own profile, as a custom provider's server serves it.
+    pub const OPENAI_COMPATIBLE: ImagesEgress = ImagesEgress::ANY;
+
     const ANY: ImagesEgress = ImagesEgress {
         dialect: DialectId::OpenAiImages,
         profile: ImagesProfile::OPENAI,
@@ -303,6 +306,9 @@ pub struct SpeechEgress {
 }
 
 impl SpeechEgress {
+    /// OpenAI's speech API with OpenAI's own profile, as a custom provider's server serves it.
+    pub const OPENAI_COMPATIBLE: SpeechEgress = SpeechEgress::ANY;
+
     const ANY: SpeechEgress = SpeechEgress {
         dialect: DialectId::OpenAiSpeech,
         profile: SpeechProfile::OPENAI,
@@ -354,6 +360,10 @@ pub struct TranscriptionsEgress {
 }
 
 impl TranscriptionsEgress {
+    /// OpenAI's transcriptions API with OpenAI's own profile, as a custom provider's server
+    /// serves it.
+    pub const OPENAI_COMPATIBLE: TranscriptionsEgress = TranscriptionsEgress::ANY;
+
     const ANY: TranscriptionsEgress = TranscriptionsEgress {
         dialect: DialectId::OpenAiTranscriptions,
         profile: TranscriptionsProfile::OPENAI,
@@ -409,6 +419,9 @@ pub struct VideosEgress {
 }
 
 impl VideosEgress {
+    /// OpenAI's Videos API with OpenAI's own profile, as a custom provider's server serves it.
+    pub const OPENAI_COMPATIBLE: VideosEgress = VideosEgress::of(DialectId::OpenAiVideos);
+
     const fn of(dialect: DialectId) -> VideosEgress {
         VideosEgress {
             dialect,
