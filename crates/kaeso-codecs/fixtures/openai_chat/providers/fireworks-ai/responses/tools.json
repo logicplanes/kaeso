@@ -1,0 +1,38 @@
+{
+  "id": "3d9e7a10-2b4c-4f6d-8e1a-7c5b9d3f2a64",
+  "object": "chat.completion",
+  "created": 1794225660,
+  "model": "accounts/fireworks/models/kimi-k3",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": null,
+        "reasoning_content": "The user asks for the weather in Paris. I should call get_weather with city Paris.",
+        "tool_calls": [
+          {
+            "id": "call_0aB1cD2eF3gH4iJ5kL6mN7oP",
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "arguments": "{\"city\": \"Paris\"}"
+            }
+          }
+        ]
+      },
+      "finish_reason": "tool_calls"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 96,
+    "total_tokens": 135,
+    "completion_tokens": 39,
+    "prompt_tokens_details": {
+      "cached_tokens": 64
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 19
+    }
+  }
+}

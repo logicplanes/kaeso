@@ -1886,6 +1886,110 @@ expression: outcomes
       }
     }
   },
+  "providers/fireworks-ai/fireworks-fields": {
+    "content": [
+      {
+        "text": "Red, yellow and blue.",
+        "type": "text"
+      }
+    ],
+    "id": "5a7c9e1f-3b5d-4f7a-8c2e-4d6f8a0b2c35",
+    "model": "accounts/fireworks/models/glm-5p3-flash",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 14,
+      "output_tokens": 7,
+      "output_tokens_details": {
+        "thinking_tokens": 0
+      }
+    }
+  },
+  "providers/fireworks-ai/reasoning": {
+    "content": [
+      {
+        "text": "The capital of France is Paris.",
+        "type": "text"
+      }
+    ],
+    "id": "0c6b1f2e-8d3a-4c57-9a1e-5f7d2b8c4e01",
+    "model": "accounts/fireworks/models/glm-5p3-flash",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 24,
+      "output_tokens": 27,
+      "output_tokens_details": {
+        "thinking_tokens": 18
+      }
+    }
+  },
+  "providers/fireworks-ai/reasoning-content-sent-back": {
+    "content": [
+      {
+        "text": "It is 18 °C and cloudy in Paris.",
+        "type": "text"
+      }
+    ],
+    "id": "8f2a4c6e-1b3d-4e5f-9a7b-2c4d6e8f0a13",
+    "model": "accounts/fireworks/models/kimi-k3",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 128,
+      "input_tokens": 20,
+      "output_tokens": 24,
+      "output_tokens_details": {
+        "thinking_tokens": 9
+      }
+    }
+  },
+  "providers/fireworks-ai/tools": {
+    "content": [
+      {
+        "id": "call_0aB1cD2eF3gH4iJ5kL6mN7oP",
+        "input": {
+          "city": "Paris"
+        },
+        "name": "get_weather",
+        "type": "tool_use"
+      }
+    ],
+    "id": "3d9e7a10-2b4c-4f6d-8e1a-7c5b9d3f2a64",
+    "model": "accounts/fireworks/models/kimi-k3",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "tool_use",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 64,
+      "input_tokens": 32,
+      "output_tokens": 39,
+      "output_tokens_details": {
+        "thinking_tokens": 19
+      }
+    }
+  },
   "providers/groq/recorded-include-reasoning-false": {
     "content": [
       {

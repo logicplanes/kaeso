@@ -1434,6 +1434,45 @@ pub const PROVIDERS: &[Provider] = &[
             default_location: "global",
         }),
     },
+    Provider {
+        id: "fireworks-ai",
+        name: "Fireworks AI",
+        key_page: KeyPage {
+            url: "https://app.fireworks.ai/settings/users/api-keys",
+            label: "Settings → API Keys",
+        },
+        key_prefix: Some("fw_"),
+        default_base_url: "https://api.fireworks.ai/inference",
+        auth: AuthStyle::Bearer,
+        generation: DialectId::OpenAiChat,
+        count_tokens: None,
+        embeddings: Some(DialectId::OpenAiEmbeddings),
+        images: &[],
+        speech: &[],
+        transcriptions: &[],
+        videos: &[],
+        dialects: &[
+            DialectId::OpenAiChat,
+            DialectId::AnthropicMessages,
+            DialectId::OpenAiEmbeddings,
+        ],
+        refused_key_messages: &[],
+        context_window_messages: &[],
+        reasoning_beyond_output_limit: false,
+        end_user_limit: None,
+        // Fireworks' chat schema has no `safety_identifier`, only `user`, and takes `video_url`
+        // parts for its video models (https://docs.fireworks.ai/guides/video-audio-inputs).
+        chat: ChatProfile::compatible("Fireworks AI")
+            .end_user_as_user()
+            .with_video_url()
+            .reasoning_fields(&["reasoning_content"]),
+        responses: ResponsesProfile::compatible("Fireworks AI"),
+        messages: MessagesProfile::compatible("Fireworks AI"),
+        gemini: GeminiProfile::GOOGLE_AI_STUDIO,
+        account: None,
+        routes: &[],
+        service_account: None,
+    },
 ];
 
 const _: () = {
@@ -1730,7 +1769,7 @@ mod tests {
         assert!(provider("gemini").is_none());
         assert_eq!(
             ids(),
-            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras, zai, minimax, elevenlabs, google, gemini-agent-platform"
+            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras, zai, minimax, elevenlabs, google, gemini-agent-platform, fireworks-ai"
         );
     }
 
@@ -2546,7 +2585,8 @@ mod tests {
                 "minimax",
                 "elevenlabs",
                 "google",
-                "gemini-agent-platform"
+                "gemini-agent-platform",
+                "fireworks-ai"
             ]
         );
         assert_eq!(

@@ -1,0 +1,14 @@
+{
+  "model": "accounts/fireworks/models/kimi-k3",
+  "max_tokens": 1024,
+  "system": "Answer in one short sentence.",
+  "messages": [
+    {
+      "role": "user",
+      "content": "What is the capital of France?"
+    }
+  ],
+  "output_config": {
+    "effort": "low"
+  }
+}

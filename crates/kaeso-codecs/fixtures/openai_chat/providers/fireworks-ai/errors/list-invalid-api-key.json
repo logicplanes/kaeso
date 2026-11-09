@@ -1,0 +1,9 @@
+{
+  "error": {
+    "message": "The API key you provided is invalid.",
+    "param": null,
+    "code": "UNAUTHORIZED",
+    "type": "error"
+  },
+  "request_id": "00000000-0000-0000-0000-000000000000"
+}

@@ -1,0 +1,18 @@
+{
+  "model": "accounts/fireworks/models/glm-5p3-flash",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Name three primary colours."
+    }
+  ],
+  "max_tokens": 128,
+  "top_k": 40,
+  "min_p": 0.05,
+  "repetition_penalty": 1.1,
+  "context_length_exceeded_behavior": "error",
+  "prompt_cache_key": "conversation-0001",
+  "reasoning_history": "interleaved",
+  "perf_metrics_in_response": true,
+  "reasoning_effort": "none"
+}

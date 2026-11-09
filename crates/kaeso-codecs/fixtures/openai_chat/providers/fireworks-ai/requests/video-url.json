@@ -1,0 +1,21 @@
+{
+  "model": "accounts/fireworks/models/glm-5p3-flash",
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "Describe this clip in one sentence."
+        },
+        {
+          "type": "video_url",
+          "video_url": {
+            "url": "https://example.com/clip.mp4"
+          }
+        }
+      ]
+    }
+  ],
+  "max_completion_tokens": 256
+}

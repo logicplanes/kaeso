@@ -19,6 +19,9 @@ pub(super) const REJECTED_REQUESTS: &[(&str, &str)] = &[
     ("providers/groq/n-above-one", "n"),
 ];
 
+// Requests only their provider's profile sends, which `tests_profile` round-trips under it.
+const PROFILE_ONLY_REQUESTS: &[&str] = &["providers/fireworks-ai/video-url"];
+
 const REJECTED_RESPONSES: &[(&str, &str)] = &[("n-2", "n")];
 
 const FOREIGN_ERROR_BODIES: &[(&str, ErrorKind)] = &[
@@ -172,7 +175,9 @@ pub(super) fn encode_reply(resp: &Response) -> Value {
 #[test]
 fn every_request_fixture_round_trips() {
     for (name, body) in fixtures(D, "requests", "json") {
-        if REJECTED_REQUESTS.iter().any(|(n, _)| *n == name) {
+        if REJECTED_REQUESTS.iter().any(|(n, _)| *n == name)
+            || PROFILE_ONLY_REQUESTS.contains(&name.as_str())
+        {
             continue;
         }
         let req = decode(&body).unwrap_or_else(|e| panic!("{name}: {e:?}"));

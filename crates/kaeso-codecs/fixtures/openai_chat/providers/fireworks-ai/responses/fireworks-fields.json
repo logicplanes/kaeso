@@ -1,0 +1,33 @@
+{
+  "id": "5a7c9e1f-3b5d-4f7a-8c2e-4d6f8a0b2c35",
+  "object": "chat.completion",
+  "created": 1794225780,
+  "model": "accounts/fireworks/models/glm-5p3-flash",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "Red, yellow and blue."
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 14,
+    "total_tokens": 21,
+    "completion_tokens": 7,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0
+    }
+  },
+  "perf_metrics": {
+    "prompt-tokens": 14,
+    "cached-prompt-tokens": 0,
+    "server-time-to-first-token": 0.081,
+    "server-processing-time": 0.112
+  }
+}

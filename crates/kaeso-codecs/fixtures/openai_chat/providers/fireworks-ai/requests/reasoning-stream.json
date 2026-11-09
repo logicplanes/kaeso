@@ -1,0 +1,12 @@
+{
+  "model": "accounts/fireworks/models/glm-5p3-flash",
+  "messages": [
+    {
+      "role": "user",
+      "content": "What is 17 times 23?"
+    }
+  ],
+  "max_completion_tokens": 512,
+  "reasoning_effort": "medium",
+  "stream": true
+}

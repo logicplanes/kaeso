@@ -9,6 +9,7 @@ const providers: ProviderPickerOption[] = [
   { id: "cerebras", name: "Cerebras" },
   { id: "cohere", name: "Cohere" },
   { id: "deepseek", name: "DeepSeek" },
+  { id: "fireworks-ai", name: "Fireworks AI" },
   { id: "gemini-agent-platform", name: "Gemini Enterprise Agent Platform" },
   { id: "google", name: "Google AI Studio" },
   { id: "groq", name: "Groq" },

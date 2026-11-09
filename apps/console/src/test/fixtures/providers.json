@@ -419,6 +419,25 @@
         }
       ],
       "server": null
+    },
+    {
+      "id": "fireworks-ai",
+      "name": "Fireworks AI",
+      "custom": false,
+      "takes_key": true,
+      "hides_built_in": null,
+      "key_page": {
+        "url": "https://app.fireworks.ai/settings/users/api-keys",
+        "label": "Settings → API Keys"
+      },
+      "key_prefix": "fw_",
+      "dialects": ["openai_chat", "anthropic_messages", "openai_embeddings"],
+      "count_tokens": null,
+      "embeddings": "openai_embeddings",
+      "account": null,
+      "service_account": null,
+      "model_routes": [],
+      "server": null
     }
   ],
   "has_more": false,

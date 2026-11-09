@@ -1,0 +1,6 @@
+{
+  "model": "nomic-ai/nomic-embed-text-v1.5",
+  "input": "search_query: Who routes model requests?",
+  "dimensions": 8,
+  "normalize": true
+}

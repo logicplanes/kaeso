@@ -738,6 +738,51 @@ expression: outcomes
     },
     "path": "/v1/responses"
   },
+  "providers/fireworks-ai/invalid-api-key": {
+    "message": "`max_tokens 1` is not supported by OpenAI Responses. OpenAI Responses needs an output limit of at least 16 tokens; raise it or route the request to another model.",
+    "param": "max_tokens",
+    "unsupported": "max_tokens 1"
+  },
+  "providers/fireworks-ai/text-stream": {
+    "body": {
+      "input": [
+        {
+          "content": "Say hello in Spanish. Reply in one word.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 256,
+      "model": "accounts/fireworks/models/kimi-k3",
+      "reasoning": {
+        "effort": "none"
+      },
+      "store": false,
+      "stream": true
+    },
+    "path": "/v1/responses"
+  },
+  "providers/fireworks-ai/thinking-effort": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "What is the capital of France?",
+          "role": "user"
+        }
+      ],
+      "instructions": "Answer in one short sentence.",
+      "max_output_tokens": 1024,
+      "model": "accounts/fireworks/models/kimi-k3",
+      "reasoning": {
+        "effort": "low",
+        "summary": "auto"
+      },
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
   "providers/minimax/deep-thinking": {
     "body": {
       "include": [

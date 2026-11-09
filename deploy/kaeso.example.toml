@@ -118,6 +118,9 @@ base_url = "https://generativelanguage.googleapis.com"
 [providers.gemini-agent-platform]
 base_url = "https://aiplatform.googleapis.com"
 
+[providers.fireworks-ai]
+base_url = "https://api.fireworks.ai/inference"
+
 [custom_providers]
 enabled = true
 allowed_networks = ""

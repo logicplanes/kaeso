@@ -2483,3 +2483,39 @@ fn custom_speech_and_transcription_models_need_their_modalities_and_a_price() {
         "context_limit"
     );
 }
+
+#[test]
+fn fireworks_models_speak_chat_completions_with_kpmrs_prices_and_its_embeddings_embed() {
+    let flash = eff(&entry(
+        "fireworks-ai",
+        "accounts/fireworks/models/glm-5p3-flash",
+    ));
+    assert_eq!(flash.dialect, DialectId::OpenAiChat);
+    assert_eq!(flash.provider.chat().provider, "Fireworks AI");
+    assert_eq!(
+        (
+            flash.fields.input_price,
+            flash.fields.output_price,
+            flash.fields.cache_read_price
+        ),
+        (Some(dec!(0.15)), Some(dec!(0.5)), Some(dec!(0.03)))
+    );
+    assert_eq!(
+        effort_levels(&flash, DialectId::OpenAiChat),
+        ["low", "high", "max"]
+    );
+    let embed = eff(&entry(
+        "fireworks-ai",
+        "accounts/fireworks/models/qwen3-embedding-8b",
+    ));
+    assert_eq!(embed.dialect, DialectId::OpenAiEmbeddings);
+    assert_eq!(embed.fields.input_price, Some(dec!(0.1)));
+    let nomic = eff(&entry("fireworks-ai", "nomic-ai/nomic-embed-text-v1.5"));
+    assert_eq!(
+        (nomic.dialect, nomic.fields.input_price),
+        (DialectId::OpenAiEmbeddings, Some(dec!(0.008)))
+    );
+    let mut sent_as = entry("fireworks-ai", "accounts/fireworks/models/kimi-k3");
+    sent_as.overrides.egress_dialect = Some(DialectId::AnthropicMessages);
+    assert_eq!(eff(&sent_as).dialect, DialectId::AnthropicMessages);
+}

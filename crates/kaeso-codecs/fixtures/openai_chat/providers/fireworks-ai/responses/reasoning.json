@@ -1,0 +1,28 @@
+{
+  "id": "0c6b1f2e-8d3a-4c57-9a1e-5f7d2b8c4e01",
+  "object": "chat.completion",
+  "created": 1794225600,
+  "model": "accounts/fireworks/models/glm-5p3-flash",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "The capital of France is Paris.",
+        "reasoning_content": "The user asks for the capital of France. It is Paris."
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 24,
+    "total_tokens": 51,
+    "completion_tokens": 27,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 18
+    }
+  }
+}

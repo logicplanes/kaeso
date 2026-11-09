@@ -22,6 +22,10 @@ const PROFILES: &[(&str, ChatProfile)] = &[
         ChatProfile::compatible("DeepSeek").reasoning_fields(&["reasoning_content"]),
     ),
     (
+        "fireworks-ai",
+        ChatProfile::compatible("Fireworks AI").reasoning_fields(&["reasoning_content"]),
+    ),
+    (
         "groq",
         ChatProfile::compatible("Groq").reasoning_fields(&["reasoning"]),
     ),

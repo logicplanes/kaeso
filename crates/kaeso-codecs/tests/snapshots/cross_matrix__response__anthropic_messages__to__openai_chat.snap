@@ -247,6 +247,33 @@ expression: outcomes
       "total_tokens": 5330
     }
   },
+  "providers/fireworks-ai/thinking-effort": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "The capital of France is Paris.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "msg_01XFDUDYJgAACzvnptvVoYEL",
+    "model": "accounts/fireworks/models/kimi-k3",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 27,
+      "prompt_tokens": 22,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 49
+    }
+  },
   "providers/minimax/deep-thinking": {
     "choices": [
       {
