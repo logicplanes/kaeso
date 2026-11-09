@@ -132,6 +132,13 @@ The updater installs a release when all of these hold. Otherwise, the console sh
 - It carries `release.json`, the signed manifest the updater reads.
 - The updater is new enough for it. When it isn't, the installer's command updates it once.
 
+> [!NOTE]
+> Installs from before {{version}} whose console asks for the installer have an updater too old for newer releases. Run the installer once in the install's folder; after that, **Update to …** in the console works:
+
+```bash
+curl -fsSL https://kaeso.app/install.sh | sh -s -- --update --version {{version}}
+```
+
 Most releases change only the image versions in `compose.yaml`. A release that changes more, such as a new setting or service, installs the same way when two more things hold:
 
 - The install's `compose.yaml` is the running release's own. Keep your changes in `compose.override.yaml`.
@@ -222,7 +229,7 @@ While the updater switches versions, or whenever the gateway or the console does
 | --- | --- |
 | A console page | 503 with a page in the browser's language that says what is happening, checks every 5 seconds and returns when Kaeso is back |
 | `/platform/v1/*`, `/mcp`, `/mcp/*`, `/oauth/*` and `/.well-known/oauth-*` | 503 with the Platform API's error, type `unavailable` |
-| `/v1/messages`, and other `/v1/*` with an `anthropic-version` header, except `/v1/chat/completions`, `/v1/responses` and `/v1/embeddings` | 529 with Anthropic's `overloaded_error` |
+| `/v1/messages`, and other `/v1/*` with an `anthropic-version` header, except `/v1/chat/completions`, `/v1/responses`, `/v1/responses/*` and `/v1/embeddings` | 529 with Anthropic's `overloaded_error` |
 | `/v1beta` and `/v1beta/*` | 503 with Gemini's `UNAVAILABLE` error |
 | Other `/v1/*` | 503 with OpenAI's `service_unavailable_error` |
 

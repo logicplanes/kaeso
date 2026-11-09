@@ -49,6 +49,7 @@ Die Installation braucht eine Domain, deren DNS-Eintrag auf den Server zeigt, un
 | Ausgehend | Ihr SMTP-Server | Anmeldelinks, Einladungen, Warnungen und Sicherheitshinweise ([E-Mail](email.md)) |
 | Ausgehend | Die Identitätsanbieter Ihrer Organisationen | Single Sign-on, wenn eine Organisation einen verbindet ([Anmeldung](sign-in.md)) |
 | Ausgehend | Die Basis-URLs der eigenen Anbieter Ihrer Organisationen | Ihre Anfragen, direkt und nie über einen Proxy ([Eigene Anbieter](configuration.md#eigene-anbieter)) |
+| Ausgehend | Die Adressen der MCP-Server, die Ihre Organisationen hinzufügen, über HTTPS | Ihre Tools, samt Anmelde- und Metadatenanfragen; ein privates Netzwerk nur, wenn `mcp_servers.allowed_networks` es nennt ([MCP-Server](configuration.md#mcp-server)) |
 
 Ohne Internetzugang arbeitet Kaeso mit den Modelldaten, die im Release enthalten sind, und Sie aktualisieren von Hand. Schalten Sie die ausgehenden Abfragen ab, wie [Installationen ohne Internetzugang](upgrades.md#installationen-ohne-internetzugang) zeigt.
 

@@ -149,7 +149,7 @@ console.log(response.text);
 | SDK | Base URL | Sends the key as |
 | --- | --- | --- |
 | OpenAI | `https://kaeso.example.com/v1` | `Authorization: Bearer` |
-| Anthropic | `https://kaeso.example.com` | `Authorization: Bearer` |
+| Anthropic | `https://kaeso.example.com` | `x-api-key` |
 | Google Gen AI (`google-genai`) | `https://kaeso.example.com` | `x-goog-api-key` |
 
 Any format reaches any generation model in the project's catalogue, so a Gemini app can call Claude and an OpenAI app a Gemini model. [Calling models](../get-started/calling-models.md) shows streaming and more of each SDK.

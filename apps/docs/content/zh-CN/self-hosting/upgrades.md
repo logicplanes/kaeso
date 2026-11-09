@@ -132,6 +132,13 @@ secrets:
 - 它带有 `release.json`，即更新器读取的已签名清单。
 - 更新器足够新。如果不够新，安装脚本的命令会把它更新一次。
 
+> [!NOTE]
+> 早于 {{version}} 且控制台提示使用安装脚本的实例，其更新器对较新的版本来说太旧。请在实例文件夹中运行一次安装脚本，之后控制台中的**更新到 …** 即可使用：
+
+```bash
+curl -fsSL https://kaeso.app/install.sh | sh -s -- --update --version {{version}}
+```
+
 大多数版本只修改 `compose.yaml` 中的镜像版本。修改更多内容的版本，例如新增设置或服务，在另外两个条件也满足时同样可以这样安装：
 
 - 实例的 `compose.yaml` 就是当前运行版本自带的文件。请把自己的修改放在 `compose.override.yaml` 中。
@@ -222,7 +229,7 @@ flowchart TD
 | --- | --- |
 | 控制台页面 | 503，并显示一个使用浏览器语言的页面，说明正在发生什么，每 5 秒检查一次，Kaeso 恢复后自动返回 |
 | `/platform/v1/*`、`/mcp`、`/mcp/*`、`/oauth/*` 和 `/.well-known/oauth-*` | 503，带有 Platform API 的错误，类型为 `unavailable` |
-| `/v1/messages`，以及带 `anthropic-version` 请求头的其他 `/v1/*`，但 `/v1/chat/completions`、`/v1/responses` 和 `/v1/embeddings` 除外 | 529，带有 Anthropic 的 `overloaded_error` |
+| `/v1/messages`，以及带 `anthropic-version` 请求头的其他 `/v1/*`，但 `/v1/chat/completions`、`/v1/responses`、`/v1/responses/*` 和 `/v1/embeddings` 除外 | 529，带有 Anthropic 的 `overloaded_error` |
 | `/v1beta` 和 `/v1beta/*` | 503，带有 Gemini 的 `UNAVAILABLE` 错误 |
 | 其他 `/v1/*` | 503，带有 OpenAI 的 `service_unavailable_error` |
 

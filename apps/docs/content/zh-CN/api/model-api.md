@@ -149,7 +149,7 @@ console.log(response.text);
 | SDK | 基础 URL | 密钥的发送方式 |
 | --- | --- | --- |
 | OpenAI | `https://kaeso.example.com/v1` | `Authorization: Bearer` |
-| Anthropic | `https://kaeso.example.com` | `Authorization: Bearer` |
+| Anthropic | `https://kaeso.example.com` | `x-api-key` |
 | Google Gen AI（`google-genai`） | `https://kaeso.example.com` | `x-goog-api-key` |
 
 任何格式都能调用项目目录中的任何生成模型，因此 Gemini 应用可以调用 Claude，OpenAI 应用也可以调用 Gemini 模型。[调用模型](../get-started/calling-models.md)展示了流式传输以及每种 SDK 的更多用法。

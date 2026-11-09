@@ -129,14 +129,16 @@ Apply the change with `docker compose up -d --wait`. Compose recreates only the 
 
 ## Run a public demo
 
-A demo lets people look around a real console without installing Kaeso. Fill an install with an organization, projects and usage, then name one of its users as the demo user:
+A demo lets people look around a real console without installing Kaeso. Fill an install with an organization, projects and usage, then name one of its users as the demo user in `compose.override.yaml`:
 
-```bash
-echo "KAESO_AUTH_DEMO_USER=owner@example.com" >> .env
-docker compose up -d --wait
+```yaml title="compose.override.yaml"
+services:
+  gateway:
+    environment:
+      KAESO_AUTH_DEMO_USER: owner@example.com
 ```
 
-The sign-in page then offers **Explore the demo**, which signs every visitor in as that user. Once signed in, every page of the console says it's a read-only demo with sample data and links to this guide. Each visitor sees only their own session under **Account** › **Sessions**, never another visitor's address or browser. The install refuses every change with a message that it's a read-only demo, and the model API and MCP are off, so nothing can be sent through it. Remove the setting to make the install usable again.
+Apply it with `docker compose up -d --wait`. The sign-in page then offers **Explore the demo**, which signs every visitor in as that user. Once signed in, every page of the console says it's a read-only demo with sample data and links to this guide. Each visitor sees only their own session under **Account** › **Sessions**, never another visitor's address or browser. The install refuses every change with a message that it's a read-only demo, and the model API and MCP are off, so nothing can be sent through it. Remove the setting to make the install usable again.
 
 ## Choose how to keep request logs
 
