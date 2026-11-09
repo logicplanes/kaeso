@@ -59,7 +59,7 @@ Den Anfang schreibt das Modell zusammen mit dem Abschnitt; ohne Modell hat das R
 Jede Zeile der Notizen, vom Modell oder aus einem Titel, besteht diese Prüfungen:
 
 - Keine Adressen: keine URLs, E-Mail-Adressen oder IP-Adressen.
-- Keine Hostnamen außer `kaeso.app` und seinen Subdomains, `github.com/logicplanes/kaeso` und Kaesos Images unter `ghcr.io/logicplanes`. `crates.io` und `models.dev` dürfen ohne Pfad vorkommen. Ein Name, der auf eine gängige Top-Level-Domain wie `.com` oder `.example` endet, zählt als Hostname, auch in Code-Spans.
+- Keine Hostnamen außer `kaeso.app` und seinen Subdomains, `github.com/logicplanes/kaeso` und Kaesos Images unter `ghcr.io/logicplanes`. `crates.io` darf ohne Pfad vorkommen. Ein Name, der auf eine gängige Top-Level-Domain wie `.com` oder `.example` endet, zählt als Hostname, auch in Code-Spans.
 - Keine Image-Referenzen außerhalb von `ghcr.io/logicplanes/`. Ein Name zählt als Image, wenn er mit einer Registry beginnt, etwa `docker.io/example/kaeso-gateway:1.4.0`, einen Digest hat, etwa `example/kaeso-gateway@sha256:…`, oder auf `FROM` oder `image:` folgt. Eine Modell-ID wie `google/gemma-4-31b-it:free` ist erlaubt.
 - Keine Shell-Pipelines wie `| sh` oder `curl … | jq` und keine Download-Befehle wie `curl -fsSL` oder `wget`.
 - Keine Befehle, die etwas laden, installieren oder ausführen: `docker run`, `docker pull`, `npx`, `pnpm dlx`, `npm install`, `npm i` oder `pip install`.

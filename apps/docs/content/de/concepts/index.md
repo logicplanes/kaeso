@@ -23,7 +23,7 @@ Diese Seiten erklären, wie Kaeso arbeitet, damit Sie wissen, was Sie erwartet, 
 | Anbieter-Schlüssel | Der Schlüssel der Organisation für einen Modellanbieter wie OpenAI oder Anthropic, mit dem Kaeso den Anbieter aufruft. Apps sehen ihn nie ([Anbieter-Schlüssel](../console/provider-keys.md)) |
 | Hauptschlüssel | Der eigene Schlüssel der Installation, der die gespeicherten Secrets verschlüsselt, etwa Anbieter-Schlüssel ([Backups und Hauptschlüssel](../self-hosting/backups.md)) |
 | Katalog | Die Modelle, die ein Projekt aufrufen darf, mit ihren Preisen, Limits und Fähigkeiten. Sie kommen aus [KPMR](kpmr.md), und ein Projekt kann eigene Modelle hinzufügen oder Felder überschreiben ([Modelle und Aliasse](../console/models-and-aliases.md)) |
-| KPMR | Die Kaeso Provider & Model Registry, die jede Installation mit Modelldaten versorgt, gebaut aus models.dev und von Logicplanes geprüft ([KPMR](kpmr.md)) |
+| KPMR | Die Kaeso Provider & Model Registry, die jede Installation mit von Logicplanes geprüften Modelldaten versorgt ([KPMR](kpmr.md)) |
 | Alias | Ein eigener Name eines Projekts für ein Modell seines Katalogs, etwa `fast`, mit einer Route, die auf andere Modelle ausweichen kann ([Alias-Routen](alias-routes.md)) |
 | Limit | Eine Anfrage- oder Token-Rate oder ein Token- oder Ausgabenbudget, für ein Projekt, ein Mitglied oder einen Schlüssel. Ein hartes Budget lehnt Anfragen ab, ein weiches warnt nur ([Limits und Budgets](../console/limits-and-budgets.md)) |
 | Anfrageprotokoll | Der Eintrag zu einer Modellanfrage: Status, Token, Kosten, Zeiten und, wo aufbewahrt, ihr Inhalt ([Anfrageprotokolle](../console/request-logs.md)) |

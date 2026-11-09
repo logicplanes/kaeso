@@ -642,7 +642,7 @@ test("notes that name another host, pipe into a shell or download something fall
     "Issues go to github.com/logicplanes/kaeso, and the images to `ghcr.io/logicplanes/kaeso-gateway`.",
     "`compose.yaml`, `release.json`, `settings.rs`, `CHANGELOG.md` and Node.js keep `updates.mode` as it is.",
     "Examples run in curl, Python or TypeScript, e.g. against a pipe.",
-    "Prices come from models.dev, and the crates are on crates.io.",
+    "Prices come from KPMR, and the crates are on crates.io.",
     "The console image is `ghcr.io/logicplanes/kaeso-console:1.4.0`, and `KAESO_TRUSTED_PROXIES` names the proxy.",
     "Settings take effect at 10:30, and `kaeso_codecs::dispatch` decodes every request.",
     "OpenRouter prices `google/gemma-4-31b-it:free` and `meta-llama/llama-3.3-70b-instruct:free` again.",

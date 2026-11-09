@@ -9,8 +9,8 @@ order: 5
 ```mermaid
 flowchart TD
   accTitle: 模型数据的来源
-  accDescr: KPMR 基于 models.dev 和经过审核的注册表构建目录。网关获取该目录，并将其用于每个项目的模型。
-  modelsdev[models.dev]:::outside --> kpmr[kpmr.kaeso.app 上的 KPMR]:::outside
+  accDescr: KPMR 基于服务商的文档和价目表构建目录，并在其注册表中审核。网关获取该目录，并将其用于每个项目的模型。
+  sources[服务商的文档和价目表]:::outside --> kpmr[kpmr.kaeso.app 上的 KPMR]:::outside
   registry[经过审核的注册表]:::outside --> kpmr
   kpmr -- 已签名的目录 --> gateway[网关]:::accent
   gateway --> catalogue[项目目录]
@@ -18,17 +18,17 @@ flowchart TD
 
 ## KPMR 是什么
 
-KPMR 是 Logicplanes 在 [kpmr.kaeso.app](https://kpmr.kaeso.app) 运行的服务。它每十分钟获取一次 [models.dev](https://models.dev)（开放的、MIT 许可的模型数据库），应用自己经过审核的注册表，并把结果作为一个文档提供，即 **KPMR 目录**。该网站还展示每个服务商和模型、变更记录以及每个值的来源。
+KPMR 是 Logicplanes 在 [kpmr.kaeso.app](https://kpmr.kaeso.app) 运行的服务。它收集服务商公布的模型信息，在自己的注册表中审核，并把结果作为一个文档提供，即 **KPMR 目录**。该网站还展示每个服务商和模型、变更记录以及每个值的来源。
 
 ## Kaeso 为何有自己的注册表
 
-models.dev 涵盖数百家服务商，始终是 KPMR 的基础。但网关需要的不只是一份列表：它按这些价格计算预算，并拒绝模型无法处理的请求。KPMR 补充了 Kaeso 需要的内容：
+网关需要的不只是一份模型列表：它按这些价格计算预算，并拒绝模型无法处理的请求。KPMR 补充了 Kaeso 需要的内容：
 
 - **更正和覆盖。**错误的价格、限制或能力会先在 KPMR 中更正，更正会在每个实例下次检查时到达。
-- **新增和移除。**KPMR 可以加入 models.dev 尚未收录的模型或服务商，也可以略去不应提供的模型。
+- **新增和移除。**模型或服务商一发布，KPMR 就会加入；Kaeso 不应提供的则略去。
 - **网关所需的信息。**Claude 模型是否接受自适应思考或强制工具选择、接受哪些推理强度级别、1 小时缓存写入价格，以及 Kaeso 以哪种 API 格式调用模型。
 
-注册表的每个条目都注明来源，例如服务商的文档或录制的真实请求，您可以在 kpmr.kaeso.app 上该模型的页面中查看。KPMR 设置了值的地方，以 KPMR 为准；其余均为 models.dev 的原始值。
+注册表的每个条目都注明来源，例如服务商的文档或录制的真实请求，您可以在 kpmr.kaeso.app 上该模型的页面中查看。
 
 ## 目录
 
@@ -54,9 +54,7 @@ models.dev 涵盖数百家服务商，始终是 KPMR 的基础。但网关需要
           "pricing": { "unit": "usd_per_million_tokens", "input": "5", "output": "25", "cache_read": "0.5", "cache_write": "6.25", "cache_write_1h": "10" },
           "capabilities": { "tool_call": true, "forced_tool_choice": false, "structured_output": true, "temperature": false },
           "reasoning": { "efforts": ["low", "medium", "high", "xhigh", "max"], "adaptive_thinking": true, "thinking_binding": true },
-          "gateway": { "egress_dialect": null },
-          "origin": "models_dev",
-          "corrected": ["capabilities.forced_tool_choice", "reasoning.adaptive_thinking", "reasoning.thinking_binding"]
+          "gateway": { "egress_dialect": null }
         }
       }
     }
@@ -68,7 +66,6 @@ models.dev 涵盖数百家服务商，始终是 KPMR 的基础。但网关需要
 - **价格是精确的十进制字符串**，单位为每百万 Token 的美元，从不使用浮点数。`cache_write_1h` 是保留一小时的缓存写入价格，在服务商有公开说明时提供。
 - **`pricing.tiers`** 列出模型的长上下文价格，`context_above` 最小的一档在前，没有则为空。当请求的提示词超过 `context_above` 个 Token 时，该请求的所有 Token 均按该档价格计费；值为 `null` 的价格沿用基础价格。
 - **`gateway.egress_dialect`** 指明 Kaeso 调用该模型所用的 API 格式（当它不是服务商的默认格式时）。
-- **`origin`** 说明模型来自 models.dev 还是由 KPMR 新增，**`corrected`** 列出 KPMR 设置的字段。
 - **未知的键会被忽略。**格式 1 中新增的字段不会影响旧版网关；会影响旧版网关的变更将成为格式 2。
 
 ## 网关如何获取目录

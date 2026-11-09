@@ -237,10 +237,6 @@ pub struct Model {
     pub reasoning: Option<Reasoning>,
     #[serde(default)]
     pub gateway: Option<Gateway>,
-    #[serde(default)]
-    pub origin: Option<String>,
-    #[serde(default)]
-    pub corrected: Vec<String>,
 }
 
 impl Model {

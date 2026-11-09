@@ -23,7 +23,7 @@ order: 2
 | 服务商密钥 | 组织用于某个模型服务商（如 OpenAI 或 Anthropic）的密钥，Kaeso 用它调用服务商。应用永远看不到它（[服务商密钥](../console/provider-keys.md)） |
 | 主密钥 | 实例自己的密钥，用于加密它存储的机密信息，例如服务商密钥（[备份和主密钥](../self-hosting/backups.md)） |
 | 目录 | 项目可以调用的模型及其价格、限制和能力。它们来自 [KPMR](kpmr.md)，项目也可以添加自定义模型或覆盖字段（[模型和别名](../console/models-and-aliases.md)） |
-| KPMR | Kaeso Provider & Model Registry，为每个实例提供模型数据，这些数据基于 models.dev 构建并由 Logicplanes 审核（[KPMR](kpmr.md)） |
+| KPMR | Kaeso Provider & Model Registry，为每个实例提供经 Logicplanes 审核的模型数据（[KPMR](kpmr.md)） |
 | 别名 | 项目为其目录中的模型起的名称，例如 `fast`，其路由可以回退到其他模型（[别名路由](alias-routes.md)） |
 | 限额 | 针对项目、成员或密钥的请求速率或 Token 速率，或 Token 预算或支出预算。硬性预算会拒绝请求，软性预算只发出提醒（[限额和预算](../console/limits-and-budgets.md)） |
 | 请求日志 | 一个模型请求的记录：状态、Token、费用、耗时，以及在保留时的内容（[请求日志](../console/request-logs.md)） |

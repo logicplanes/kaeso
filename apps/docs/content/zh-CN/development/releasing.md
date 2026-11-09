@@ -59,7 +59,7 @@ GitHub 发布页先给出一句话、两到三个亮点和破坏性变更。然�
 说明中的每一行，无论来自模型还是标题，都要通过这些检查：
 
 - 不含地址：没有 URL、电子邮件地址或 IP 地址。
-- 除 `kaeso.app` 及其子域名、`github.com/logicplanes/kaeso` 和 `ghcr.io/logicplanes` 上的 Kaeso 镜像外，不含主机名。`crates.io` 和 `models.dev` 可以不带路径出现。以常见顶级域名（例如 `.com` 或 `.example`）结尾的名称算作主机名，在代码片段中也一样。
+- 除 `kaeso.app` 及其子域名、`github.com/logicplanes/kaeso` 和 `ghcr.io/logicplanes` 上的 Kaeso 镜像外，不含主机名。`crates.io` 可以不带路径出现。以常见顶级域名（例如 `.com` 或 `.example`）结尾的名称算作主机名，在代码片段中也一样。
 - 不含 `ghcr.io/logicplanes/` 以外的镜像引用。以镜像仓库开头的名称（例如 `docker.io/example/kaeso-gateway:1.4.0`）、带摘要的名称（例如 `example/kaeso-gateway@sha256:…`）以及跟在 `FROM` 或 `image:` 后面的名称都算作镜像。`google/gemma-4-31b-it:free` 这样的模型 ID 是可以的。
 - 不含 `| sh` 或 `curl … | jq` 这样的 shell 管道，也不含 `curl -fsSL` 或 `wget` 这样的下载命令。
 - 不含拉取、安装或运行某个东西的命令：`docker run`、`docker pull`、`npx`、`pnpm dlx`、`npm install`、`npm i` 或 `pip install`。

@@ -97,10 +97,10 @@ describe("audit actions", () => {
     const actions = Object.values(AUDIT_ACTIONS).flat();
     expect(options).toHaveLength(kinds.length + actions.length + 3);
     expect(options.slice(-4)).toEqual([
-      { value: "models_dev.", label: "models.dev: every action", description: "models_dev.*" },
-      { value: "models_dev.sync", label: "models.dev synced", description: "models_dev.sync" },
-      { value: "models_dev.price_change", label: "Price changed on models.dev", description: "models_dev.price_change" },
-      { value: "models_dev.model_delisted", label: "Model taken off models.dev", description: "models_dev.model_delisted" },
+      { value: "models_dev.", label: "Model data before KPMR: every action", description: "models_dev.*" },
+      { value: "models_dev.sync", label: "Model data synced", description: "models_dev.sync" },
+      { value: "models_dev.price_change", label: "Price changed in the model data", description: "models_dev.price_change" },
+      { value: "models_dev.model_delisted", label: "Model no longer in the model data", description: "models_dev.model_delisted" },
     ]);
     expect(options.filter((o) => o.value.endsWith(".")).map((o) => o.value)).toEqual(kinds.map((k) => `${k}.`));
     for (const kind of options.filter((o) => o.value.endsWith("."))) expect(kind.label, kind.value).not.toMatch(/^[a-z_]+: /);
@@ -136,9 +136,9 @@ describe("target names in snapshots", () => {
 describe("target kinds", () => {
   it("are named in English and German, and an unknown kind stays as written", async () => {
     expect([targetKindLabel("role"), targetKindLabel("update")]).toEqual(["Role", "Update"]);
-    expect(auditActionLabel("models_dev.price_change")).toBe("Price changed on models.dev");
-    expect(auditActionLabel("models_dev.model_delisted")).toBe("Model taken off models.dev");
-    expect(auditActionLabel("models_dev.sync")).toBe("models.dev synced");
+    expect(auditActionLabel("models_dev.price_change")).toBe("Price changed in the model data");
+    expect(auditActionLabel("models_dev.model_delisted")).toBe("Model no longer in the model data");
+    expect(auditActionLabel("models_dev.sync")).toBe("Model data synced");
     const kinds = ["user", "org", "invite", "project", "service_account", "limit", "credential", "catalogue_model", "alias", "platform_key", "key"];
     expect(kinds.map(targetKindLabel)).toEqual([
       "User",
