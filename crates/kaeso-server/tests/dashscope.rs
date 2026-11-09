@@ -362,13 +362,7 @@ async fn an_elevenlabs_sound_effect_reaches_qwen_audio_tts_next_as_a_described_s
         .app
         .post(
             &format!("/orgs/{}/projects/{}/models", env.owner.org_id, env.project),
-            json!({
-                "provider": "alibaba", "model_id": "qwen-audio-3.1-tts-next", "custom": true,
-                "overrides": {
-                    "input_modalities": ["text", "audio"], "output_modalities": ["audio"],
-                    "input_price": "0.93", "output_price": "1.87"
-                }
-            }),
+            json!({ "provider": "alibaba", "model_id": "qwen-audio-3.1-tts-next" }),
             Some(&env.owner.cookie),
         )
         .await;
