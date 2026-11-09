@@ -279,7 +279,7 @@ The **Fuzz** workflow runs every target for 10 minutes each night, and for 30 se
 
 ## Continuous integration
 
-The CI workflow, `.github/workflows/ci.yml`, runs on every pull request, on every push to `dev` and `prod`, and inside the Release workflow. On a pull request, its first job decides which areas changed, and the jobs of unchanged areas are skipped. Everywhere else, every job runs.
+The CI workflow, `.github/workflows/ci.yml`, runs on every pull request, on every push to `dev` and `prod`, and inside the Release workflow. On a pull request, its first job decides which areas changed, and the jobs of unchanged areas are skipped. The console's, the docs site's and the showcase's own suites (their unit tests and end-to-end tests, and the images and install test for the console) run only when that app, `packages/` or the workspace's Node.js setup changed, so a change to a docs page doesn't run the console's. Everywhere else, every job runs.
 
 The one required check is **CI**. It passes when **Changes** and **Comments** passed and every other job passed or was skipped. A pull request into `dev` can't be merged until it is green ([get it merged](contributing.md#get-it-merged)).
 

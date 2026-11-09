@@ -38,6 +38,9 @@ jobs:
       kpp: ${{ steps.filter.outcome != 'success' || steps.filter.outputs.kpp == 'true' || steps.filter.outputs.workflows == 'true' }}
       fuzz: ${{ steps.filter.outcome != 'success' || steps.filter.outputs.fuzz == 'true' || steps.filter.outputs.workflows == 'true' }}
       node: ${{ steps.filter.outcome != 'success' || steps.filter.outputs.node == 'true' || steps.filter.outputs.workflows == 'true' }}
+      console: ${{ steps.filter.outcome != 'success' || steps.filter.outputs.console == 'true' || steps.filter.outputs.workflows == 'true' }}
+      docs: ${{ steps.filter.outcome != 'success' || steps.filter.outputs.docs == 'true' || steps.filter.outputs.workflows == 'true' }}
+      showcase: ${{ steps.filter.outcome != 'success' || steps.filter.outputs.showcase == 'true' || steps.filter.outputs.workflows == 'true' }}
       deploy: ${{ steps.filter.outcome != 'success' || steps.filter.outputs.deploy == 'true' || steps.filter.outputs.workflows == 'true' }}
       repository: ${{ steps.filter.outcome != 'success' || steps.filter.outputs.repository == 'true' || steps.filter.outputs.workflows == 'true' }}
       workflows: ${{ steps.filter.outcome != 'success' || steps.filter.outputs.workflows == 'true' }}
@@ -94,6 +97,32 @@ jobs:
               - plugins/**
               - .claude-plugin/**
               - .cursor-plugin/**
+            # The console's, the docs site's and the showcase's own suites run only when they or what they build on changed.
+            console:
+              - package.json
+              - pnpm-lock.yaml
+              - pnpm-workspace.yaml
+              - .node-version
+              - tsconfig.base.json
+              - packages/**
+              - openapi.json
+              - apps/console/**
+            docs:
+              - package.json
+              - pnpm-lock.yaml
+              - pnpm-workspace.yaml
+              - .node-version
+              - tsconfig.base.json
+              - packages/**
+              - apps/docs/**
+            showcase:
+              - package.json
+              - pnpm-lock.yaml
+              - pnpm-workspace.yaml
+              - .node-version
+              - tsconfig.base.json
+              - packages/**
+              - apps/showcase/**
             deploy:
               - deploy/**
               - e2e/install/**
@@ -112,6 +141,9 @@ jobs:
           RUST: ${{ steps.filter.outcome != 'success' || steps.filter.outputs.rust == 'true' }}
           KPP: ${{ steps.filter.outcome != 'success' || steps.filter.outputs.kpp == 'true' }}
           NODE: ${{ steps.filter.outcome != 'success' || steps.filter.outputs.node == 'true' }}
+          CONSOLE: ${{ steps.filter.outcome != 'success' || steps.filter.outputs.console == 'true' }}
+          DOCS: ${{ steps.filter.outcome != 'success' || steps.filter.outputs.docs == 'true' }}
+          SHOWCASE: ${{ steps.filter.outcome != 'success' || steps.filter.outputs.showcase == 'true' }}
           DEPLOY: ${{ steps.filter.outcome != 'success' || steps.filter.outputs.deploy == 'true' }}
           REPOSITORY: ${{ steps.filter.outcome != 'success' || steps.filter.outputs.repository == 'true' }}
           WORKFLOWS: ${{ steps.filter.outcome != 'success' || steps.filter.outputs.workflows == 'true' }}
@@ -122,6 +154,9 @@ jobs:
             echo "| Rust | $RUST |"
             echo "| KPP | $KPP |"
             echo "| TypeScript | $NODE |"
+            echo "| Console | $CONSOLE |"
+            echo "| Docs site | $DOCS |"
+            echo "| Showcase | $SHOWCASE |"
             echo "| Deployment | $DEPLOY |"
             echo "| Repository | $REPOSITORY |"
             echo "| Workflows | $WORKFLOWS |"
@@ -586,7 +621,7 @@ jobs:
   image-gateway:
     name: Images (gateway)
     needs: changes
-    if: needs.changes.outputs.rust == 'true' || needs.changes.outputs.node == 'true' || needs.changes.outputs.deploy == 'true'
+    if: needs.changes.outputs.rust == 'true' || needs.changes.outputs.console == 'true' || needs.changes.outputs.deploy == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
@@ -624,7 +659,7 @@ jobs:
   image-mock:
     name: Images (mock provider)
     needs: changes
-    if: needs.changes.outputs.rust == 'true' || needs.changes.outputs.node == 'true' || needs.changes.outputs.deploy == 'true'
+    if: needs.changes.outputs.rust == 'true' || needs.changes.outputs.console == 'true' || needs.changes.outputs.deploy == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
@@ -658,7 +693,7 @@ jobs:
   image-updater:
     name: Images (updater)
     needs: changes
-    if: needs.changes.outputs.rust == 'true' || needs.changes.outputs.node == 'true' || needs.changes.outputs.deploy == 'true'
+    if: needs.changes.outputs.rust == 'true' || needs.changes.outputs.console == 'true' || needs.changes.outputs.deploy == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
@@ -695,7 +730,7 @@ jobs:
   image-console:
     name: Images (console)
     needs: changes
-    if: needs.changes.outputs.rust == 'true' || needs.changes.outputs.node == 'true' || needs.changes.outputs.deploy == 'true'
+    if: needs.changes.outputs.rust == 'true' || needs.changes.outputs.console == 'true' || needs.changes.outputs.deploy == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
@@ -740,7 +775,7 @@ jobs:
   install:
     name: Install test
     needs: [changes, image-gateway, image-mock, image-updater, image-console]
-    if: needs.changes.outputs.rust == 'true' || needs.changes.outputs.node == 'true' || needs.changes.outputs.deploy == 'true'
+    if: needs.changes.outputs.rust == 'true' || needs.changes.outputs.console == 'true' || needs.changes.outputs.deploy == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
@@ -915,7 +950,7 @@ jobs:
   node-test-console:
     name: TypeScript test (console ${{ matrix.shard }}/6)
     needs: [changes, libraries]
-    if: needs.changes.outputs.node == 'true'
+    if: needs.changes.outputs.console == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     strategy:
@@ -952,7 +987,7 @@ jobs:
   node-coverage-console:
     name: TypeScript test (console coverage)
     needs: [changes, node-test-console]
-    if: needs.changes.outputs.node == 'true'
+    if: needs.changes.outputs.console == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -1023,7 +1058,7 @@ jobs:
   e2e-console:
     name: End-to-end console (${{ matrix.part }}/5)
     needs: [changes, libraries, image-gateway]
-    if: needs.changes.outputs.rust == 'true' || needs.changes.outputs.node == 'true' || needs.changes.outputs.deploy == 'true'
+    if: needs.changes.outputs.rust == 'true' || needs.changes.outputs.console == 'true' || needs.changes.outputs.deploy == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     strategy:
@@ -1143,7 +1178,7 @@ jobs:
   e2e-docs:
     name: End-to-end docs
     needs: [changes, libraries]
-    if: needs.changes.outputs.node == 'true'
+    if: needs.changes.outputs.docs == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -1182,7 +1217,7 @@ jobs:
   e2e-showcase:
     name: End-to-end showcase (${{ matrix.project }} ${{ matrix.shard }}/${{ matrix.shards }})
     needs: [changes, libraries, node-build]
-    if: needs.changes.outputs.node == 'true'
+    if: needs.changes.outputs.showcase == 'true'
     runs-on: ubuntu-24.04
     # Installing WebKit system packages from the runner's Ubuntu mirror alone has taken over 20 minutes.
     timeout-minutes: 45
