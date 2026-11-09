@@ -2,7 +2,7 @@ import { useNeedsRight } from "~/auth/needs-right";
 import { useState } from "react";
 import { DialogScope, KeyValue, Radio, RadioGroup, StepDialog } from "@logicplanes/kaeso-ui";
 import type { LogFilters, ToolCallFilters } from "~/api/queries/logs";
-import { startExport } from "~/shell/export-job";
+import { startExport, type ExportTitle } from "~/shell/export-job";
 import { t } from "~/i18n";
 import { common } from "~/i18n/common";
 import {
@@ -81,7 +81,7 @@ interface StepsProps extends DialogProps {
   applied: { label: string; value: string }[];
   jsonlHint: string;
   contentHint: string;
-  progress: (size: string | undefined) => string;
+  progress: ExportTitle;
   done: string;
   request: (format: ExportFormat) => ReturnType<typeof exportRequest>;
 }
