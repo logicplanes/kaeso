@@ -243,12 +243,16 @@ An effective right lists its sources:
 
 ## Playground
 
-The console's [Playground](../console/playground.md) sends requests to the project's models as the signed-in member. Its two `playground/` routes need a session and the project right `playground.use`. They answer keys with 403, since apps call models on `/v1`. Calling one of the project's tools from it needs `playground.use` and `tools.use`, and a person behind the request: a session, an agent or a member's key.
+The console's [Playground](../console/playground.md) sends requests to the project's models as the signed-in member. Its `playground/` routes need a session and the project right `playground.use`. They answer keys with 403, since apps call models on `/v1`. Calling one of the project's tools from it needs `playground.use` and `tools.use`, and a person behind the request: a session, an agent or a member's key.
 
 | Route | Does |
 | --- | --- |
-| `GET orgs/{org}/projects/{project}/playground/models` | Lists the models the member can call: the catalogue without embeddings models, narrowed by the member's model access. Each has its name, aliases, reasoning efforts, limits and prices, whether it takes `temperature` and whether the project has a provider key for it. |
+| `GET orgs/{org}/projects/{project}/playground/models` | Lists the models the member can call: the catalogue without embeddings, reranking and realtime models, narrowed by the member's model access. Each has its `mode` (`text`, `image`, `speech`, `sound_effects`, `music`, `transcription` or `video`), its name, aliases, reasoning efforts, limits and prices, whether it takes `temperature`, whether the project has a provider key for it, the largest request it takes in `max_request_bytes`, and for its mode the image options, `voices` or `translations`. |
 | `POST orgs/{org}/projects/{project}/playground/responses` | Takes an OpenAI Responses request with `"stream": true` and answers with the event stream that `/v1/responses` sends, keepalive comments included. |
+| `POST orgs/{org}/projects/{project}/playground/images/generations`, `…/images/edits` | Take the bodies of [`/v1/images/generations` and `/v1/images/edits`](images.md) and answer as they do. |
+| `POST orgs/{org}/projects/{project}/playground/audio/speech`, `…/audio/transcriptions`, `…/audio/translations` | Take the bodies of the [Audio API](audio.md) and answer as it does. |
+| `POST orgs/{org}/projects/{project}/playground/sound-effects`, `…/music` | Take the bodies of ElevenLabs' [`/v1/sound-generation` and `/v1/music`](elevenlabs.md) and answer with the audio. |
+| `POST orgs/{org}/projects/{project}/playground/videos`; `GET`, `DELETE …/videos/{video}`; `GET …/videos/{video}/content` | Start a video job as [`/v1/videos`](videos.md) does, follow it, cancel or delete it, and stream its file. A member sees only the videos they started in the Playground. |
 | `POST orgs/{org}/projects/{project}/tools/{tool}/call` | Calls one of the project's tools with `arguments` through the project's portal, as the caller. The tool must be on and approved, the caller's tool access and the tool call rates apply, and the call is logged with the source `playground`. Answers with the tool's `result`, or `error` when the call was refused. |
 
 The request takes `model`, `input` (a string or input items), `instructions`, `temperature`, `top_p`, `max_output_tokens`, `reasoning.effort`, `reasoning.summary`, `tools` and `stream`, which must be `true`. `tools` holds Responses `function` tools the model may call, and the Playground runs a call only when asked. `headers` sends up to 20 headers as an app would, for a route's conditions and splits, none that carry credentials. `route` tries a route instead of resolving `model`, which then names its alias, and `alias` names the saved alias that `route` edits. With a [session](automation.md#use-a-session-instead):
@@ -270,6 +274,7 @@ A Playground request is a model request like any other, made by the member witho
 
 - **Same path.** The model resolves in the project's catalogue, aliases and `provider/model` included, and must be within the member's model access. Kaeso uses the project's provider key, and closing the stream cancels the provider's request.
 - **Limits.** The member's and the project's rates and budgets apply. Key limits don't, as there is no key.
+- **Cost.** A media reply that isn't streamed carries a `kaeso-cost` header: the amount its log entry will charge, or `unknown` when the model has no price for what it made.
 - **Usage and logs.** Kaeso charges the request to the project as the member's, and usage by `key` shows it as `playground`. Its log entry has the source `playground` and holds its content when the project logs content. `logs` and `logs/export` filter with `source=api` or `source=playground`.
 
 Errors before the stream starts are Platform API errors:

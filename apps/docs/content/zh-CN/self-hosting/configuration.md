@@ -260,8 +260,8 @@ MCP 服务器的地址由组织管理员选择，因此网关会像对待自定�
 | 变量<br>TOML 键 | 类型 | 默认值 | 作用 |
 | --- | --- | --- | --- |
 | `KAESO_BODY_LIMITS_MODEL_API`<br>`body_limits.model_api` | 文本 | `32MiB` | 模型 API 和 Playground 聊天请求的请求体上限。它与 Anthropic 32 MB 的请求上限一致，可容纳带图片和文档的长智能体对话；如需降低每个请求占用的内存，请调低此值。 |
-| `KAESO_BODY_LIMITS_IMAGES`<br>`body_limits.images` | 文本 | `64MiB` | 图片端点的最大请求体，包括上传文件。OpenAI 一次编辑最多接受 16 张、每张 50 MB 的图片；如需大文件上传可调高此值，但要考虑每个请求占用的内存，因为上传内容在翻译期间会保留在内存中。 |
-| `KAESO_BODY_LIMITS_AUDIO`<br>`body_limits.audio` | 文本 | `26MiB` | 转写和翻译端点以及发往 ElevenLabs 端点的每次上传（例如语音转文本和变声）的最大请求体，包括上传文件。OpenAI 接受最大 25 MB 的音频文件；如服务商接受更大的文件（例如 Groq 付费层的 100 MB），可调高此值，但要注意上传内容在翻译期间会保留在内存中。 |
+| `KAESO_BODY_LIMITS_IMAGES`<br>`body_limits.images` | 文本 | `64MiB` | 图片端点和 Playground 图片请求的最大请求体，包括上传文件。OpenAI 一次编辑最多接受 16 张、每张 50 MB 的图片；如需大文件上传可调高此值，但要考虑每个请求占用的内存，因为上传内容在翻译期间会保留在内存中。 |
+| `KAESO_BODY_LIMITS_AUDIO`<br>`body_limits.audio` | 文本 | `26MiB` | 转写和翻译端点、Playground 的转写以及发往 ElevenLabs 端点的每次上传（例如语音转文本和变声）的最大请求体，包括上传文件。OpenAI 接受最大 25 MB 的音频文件；如服务商接受更大的文件（例如 Groq 付费层的 100 MB），可调高此值，但要注意上传内容在翻译期间会保留在内存中。 |
 | `KAESO_BODY_LIMITS_IN_FLIGHT`<br>`body_limits.in_flight` | 文本 | `512MiB` | 模型 API 和 Playground 同时翻译请求时可使用的内存，根据收到的每个请求体及其消息、内容块和工具估算。请求在解码和编码期间占用其估算值，之后直到结束只保留仍在使用的部分：解码后的请求及其消息、内容块、工具和 Token ID，在仍可能请服务商统计其输入 Token 期间再保留一份副本，在服务商响应之前发送给它的请求体，以及在记录内容时的原始请求体。一个密钥最多占用四分之一，更大的请求占用这四分之一。10 秒内仍无空间的请求会得到 503 和 `Retry-After: 10`，Anthropic 格式下为 529。 |
 | `KAESO_BODY_LIMITS_PLATFORM_API`<br>`body_limits.platform_api` | 文本 | `1MiB` | Platform API 请求体的上限；Playground 的模型请求采用模型 API 的上限。 |
 | `KAESO_BODY_LIMITS_PROVIDER_RESPONSE`<br>`body_limits.provider_response` | 文本 | `128MiB` | 网关从服务商读取的非流式响应体的上限。超出时请求以 502 失败。 |

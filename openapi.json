@@ -17856,13 +17856,508 @@
         "x-kaeso-access": "right:project.view"
       }
     },
+    "/platform/v1/orgs/{org}/projects/{project}/playground/audio/speech": {
+      "post": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "Speaks text in the Playground as the signed-in member.",
+        "description": "An OpenAI `audio/speech` request to one of the project's speech models, as the\nsigned-in member: the reply is the audio. Charged to the project and logged with the\nsource `playground`; needs a console session.\n\n**Right:** `playground.use` on the project in the path.",
+        "operationId": "postOrgsOrgProjectsProjectPlaygroundAudioSpeech",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The model API's reply, as an app gets it, with the `kaeso-cost` header."
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "description": "The body is larger than Kaeso takes for this model (`request_too_large`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "502": {
+            "description": "The provider failed or refused the provider key (`provider_error`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:playground.use"
+      }
+    },
+    "/platform/v1/orgs/{org}/projects/{project}/playground/audio/transcriptions": {
+      "post": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "Transcribes audio in the Playground as the signed-in member.",
+        "description": "An OpenAI `audio/transcriptions` upload to one of the project's transcription models,\nas the signed-in member, up to `KAESO_BODY_LIMITS_AUDIO`. Charged to the project and\nlogged with the source `playground`; needs a console session.\n\n**Right:** `playground.use` on the project in the path.",
+        "operationId": "postOrgsOrgProjectsProjectPlaygroundAudioTranscriptions",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The model API's reply, as an app gets it, with the `kaeso-cost` header."
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "description": "The body is larger than Kaeso takes for this model (`request_too_large`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "502": {
+            "description": "The provider failed or refused the provider key (`provider_error`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:playground.use"
+      }
+    },
+    "/platform/v1/orgs/{org}/projects/{project}/playground/audio/translations": {
+      "post": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "Translates audio into English text in the Playground as the signed-in member.",
+        "description": "An OpenAI `audio/translations` upload to one of the project's transcription models\nthat translate, as the signed-in member, up to `KAESO_BODY_LIMITS_AUDIO`. Charged to the\nproject and logged with the source `playground`; needs a console session.\n\n**Right:** `playground.use` on the project in the path.",
+        "operationId": "postOrgsOrgProjectsProjectPlaygroundAudioTranslations",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The model API's reply, as an app gets it, with the `kaeso-cost` header."
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "description": "The body is larger than Kaeso takes for this model (`request_too_large`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "502": {
+            "description": "The provider failed or refused the provider key (`provider_error`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:playground.use"
+      }
+    },
+    "/platform/v1/orgs/{org}/projects/{project}/playground/images/edits": {
+      "post": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "Edits images in the Playground as the signed-in member.",
+        "description": "An OpenAI `images/edits` upload (`multipart/form-data` with `image[]`) to one of the\nproject's image models, as the signed-in member, up to `KAESO_BODY_LIMITS_IMAGES`.\nCharged to the project and logged with the source `playground`; needs a console session.\n\n**Right:** `playground.use` on the project in the path.",
+        "operationId": "postOrgsOrgProjectsProjectPlaygroundImagesEdits",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The model API's reply, as an app gets it, with the `kaeso-cost` header."
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "description": "The body is larger than Kaeso takes for this model (`request_too_large`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "502": {
+            "description": "The provider failed or refused the provider key (`provider_error`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:playground.use"
+      }
+    },
+    "/platform/v1/orgs/{org}/projects/{project}/playground/images/generations": {
+      "post": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "Makes images in the Playground as the signed-in member.",
+        "description": "An OpenAI `images/generations` request to one of the project's image models, as\nthe signed-in member: the reply is OpenAI's, with the images as `b64_json` or `url`.\nCharged to the project and logged with the source `playground`; needs a console session.\n\n**Right:** `playground.use` on the project in the path.",
+        "operationId": "postOrgsOrgProjectsProjectPlaygroundImagesGenerations",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The model API's reply, as an app gets it, with the `kaeso-cost` header."
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "description": "The body is larger than Kaeso takes for this model (`request_too_large`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "502": {
+            "description": "The provider failed or refused the provider key (`provider_error`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:playground.use"
+      }
+    },
     "/platform/v1/orgs/{org}/projects/{project}/playground/models": {
       "get": {
         "tags": [
           "projects"
         ],
         "summary": "The models the signed-in member can call in the Playground.",
-        "description": "The project's catalogue without embeddings models and without the image,\nspeech, transcription and video models that take or make no text, narrowed by the member's\nmodel access, with what the Playground shows and offers (reasoning,\nefforts, temperature, prices). A reply's cost is `(input − cached) ×\ninput_price + cached × cache_read_price + output × output_price`, per\nmillion tokens, at the prices of the highest of `price_tiers` whose\n`context_above` the input exceeds, as the request log charges it\n(Anthropic cache writes, which Responses usage does not show, are in the\nlog's cost only).\n\n**Right:** `playground.use` on the project in the path.",
+        "description": "The project's catalogue without embeddings, reranking and realtime models,\nnarrowed by the member's model access, with each model's `mode` (text, image, speech,\nsound effects, music, transcription or video) and what the Playground shows and offers\nfor it (reasoning, efforts, temperature, voices, image options, prices). A reply's cost is `(input − cached) ×\ninput_price + cached × cache_read_price + output × output_price`, per\nmillion tokens, at the prices of the highest of `price_tiers` whose\n`context_above` the input exceeds, as the request log charges it\n(Anthropic cache writes, which Responses usage does not show, are in the\nlog's cost only).\n\n**Right:** `playground.use` on the project in the path.",
         "operationId": "getOrgsOrgProjectsProjectPlaygroundModels",
         "parameters": [
           {
@@ -17912,6 +18407,105 @@
           },
           "500": {
             "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:playground.use"
+      }
+    },
+    "/platform/v1/orgs/{org}/projects/{project}/playground/music": {
+      "post": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "Makes music in the Playground as the signed-in member.",
+        "description": "An ElevenLabs `music` request (`prompt`, `music_length_ms`, `model_id`) to one of the\nproject's music models, as the signed-in member: the reply is the audio. Charged to the\nproject and logged with the source `playground`; needs a console session.\n\n**Right:** `playground.use` on the project in the path.",
+        "operationId": "postOrgsOrgProjectsProjectPlaygroundMusic",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The model API's reply, as an app gets it, with the `kaeso-cost` header."
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "description": "The body is larger than Kaeso takes for this model (`request_too_large`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "502": {
+            "description": "The provider failed or refused the provider key (`provider_error`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
           },
           "503": {
             "$ref": "#/components/responses/Unavailable"
@@ -18031,6 +18625,507 @@
                 }
               }
             }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:playground.use"
+      }
+    },
+    "/platform/v1/orgs/{org}/projects/{project}/playground/sound-effects": {
+      "post": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "Makes a sound effect in the Playground as the signed-in member.",
+        "description": "An ElevenLabs `sound-generation` request (`text`, `duration_seconds`, `model_id`) to\none of the project's sound effect models, as the signed-in member: the reply is the audio.\nCharged to the project and logged with the source `playground`; needs a console session.\n\n**Right:** `playground.use` on the project in the path.",
+        "operationId": "postOrgsOrgProjectsProjectPlaygroundSoundEffects",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The model API's reply, as an app gets it, with the `kaeso-cost` header."
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "description": "The body is larger than Kaeso takes for this model (`request_too_large`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "502": {
+            "description": "The provider failed or refused the provider key (`provider_error`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:playground.use"
+      }
+    },
+    "/platform/v1/orgs/{org}/projects/{project}/playground/videos": {
+      "post": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "Starts a video in the Playground as the signed-in member.",
+        "description": "An OpenAI `videos` request to one of the project's video models, as the signed-in\nmember: the reply is the job, to follow with `GET …/playground/videos/{video}`. The job is\ncharged to the project when it ends and logged with the source `playground`; needs a\nconsole session.\n\n**Right:** `playground.use` on the project in the path.",
+        "operationId": "postOrgsOrgProjectsProjectPlaygroundVideos",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The model API's reply, as an app gets it, with the `kaeso-cost` header."
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "description": "The body is larger than Kaeso takes for this model (`request_too_large`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "502": {
+            "description": "The provider failed or refused the provider key (`provider_error`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:playground.use"
+      }
+    },
+    "/platform/v1/orgs/{org}/projects/{project}/playground/videos/{video}": {
+      "get": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "A video the signed-in member started in the Playground.",
+        "description": "The job, as OpenAI's Videos API shows it, after asking its provider how it\nstands. Only videos the member started in the Playground; needs a console session.\n\n**Right:** `playground.use` on the project in the path.",
+        "operationId": "getOrgsOrgProjectsProjectPlaygroundVideosVideo",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          },
+          {
+            "name": "video",
+            "in": "path",
+            "description": "The video's id, as `video_create` answered it.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The job.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "No video of the member's in this project has this id (`not_found`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:playground.use"
+      },
+      "delete": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "Cancels or deletes a video the signed-in member started in the Playground.",
+        "description": "Deletes the job at its provider where the provider can, which cancels one\nstill running there, and forgets it. Needs a console session.\n\n**Right:** `playground.use` on the project in the path.",
+        "operationId": "deleteOrgsOrgProjectsProjectPlaygroundVideosVideo",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          },
+          {
+            "name": "video",
+            "in": "path",
+            "description": "The video's id.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The deleted job's id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "No video of the member's in this project has this id (`not_found`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:playground.use"
+      }
+    },
+    "/platform/v1/orgs/{org}/projects/{project}/playground/videos/{video}/content": {
+      "get": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "The file of a video the signed-in member made in the Playground.",
+        "description": "The completed video's file, streamed from its provider with `Range` passed\nthrough; `variant` (`video`, `thumbnail`, `spritesheet`) as in OpenAI's Videos API.\nNeeds a console session.\n\n**Right:** `playground.use` on the project in the path.",
+        "operationId": "getOrgsOrgProjectsProjectPlaygroundVideosVideoContent",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          },
+          {
+            "name": "video",
+            "in": "path",
+            "description": "The video's id.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "variant",
+            "in": "query",
+            "description": "`video` (the default), `thumbnail` or `spritesheet`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The file.",
+            "content": {
+              "video/mp4": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "format": "int32",
+                    "minimum": 0
+                  }
+                }
+              }
+            }
+          },
+          "206": {
+            "description": "The range asked for.",
+            "content": {
+              "video/mp4": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "format": "int32",
+                    "minimum": 0
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "No video of the member's in this project has this id (`not_found`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
         },
         "security": [
@@ -28944,7 +30039,10 @@
                 "price_tiers",
                 "provider_key",
                 "availability",
-                "max_request_bytes"
+                "max_request_bytes",
+                "mode",
+                "voices",
+                "translations"
               ],
               "properties": {
                 "aliases": {
@@ -28997,6 +30095,17 @@
                   "$ref": "#/components/schemas/CatalogueModelId",
                   "description": "The catalogue entry."
                 },
+                "image": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/PlaygroundImageOptions",
+                      "description": "For an image model: whether it edits, how many images it makes at once, its\nqualities and whether it takes a size."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
                 "input_modalities": {
                   "type": "array",
                   "items": {
@@ -29015,9 +30124,13 @@
                 "max_request_bytes": {
                   "type": "integer",
                   "format": "int64",
-                  "description": "The largest Playground request Kaeso takes for it, in bytes, attachments\nincluded as sent.",
+                  "description": "The largest Playground request Kaeso takes for it, in bytes, attachments\nand uploads included as sent.",
                   "example": 33554432,
                   "minimum": 0
+                },
+                "mode": {
+                  "$ref": "#/components/schemas/PlaygroundMode",
+                  "description": "What it makes, and so how the Playground tries it."
                 },
                 "model": {
                   "type": "string",
@@ -29068,6 +30181,17 @@
                 "temperature": {
                   "type": "boolean",
                   "description": "Whether it accepts `temperature`."
+                },
+                "translations": {
+                  "type": "boolean",
+                  "description": "For a transcription model: whether it also translates audio into English."
+                },
+                "voices": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "For a speech model: the voices its provider documents; empty when any voice\nname or id is sent as written."
                 }
               }
             },
@@ -33392,6 +34516,60 @@
           }
         }
       },
+      "PlaygroundImageOptions": {
+        "type": "object",
+        "description": "What an image model takes in the Playground.",
+        "required": [
+          "edits",
+          "max_count",
+          "qualities",
+          "size"
+        ],
+        "properties": {
+          "edits": {
+            "type": "boolean",
+            "description": "Whether it edits uploaded images (`images/edits`)."
+          },
+          "max_count": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The most images one request may ask for; 1 when it makes one at a time.",
+            "minimum": 0
+          },
+          "qualities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The `quality` values it takes; empty when it takes none."
+          },
+          "size": {
+            "$ref": "#/components/schemas/PlaygroundImageSize",
+            "description": "Whether it takes a pixel size."
+          }
+        }
+      },
+      "PlaygroundImageSize": {
+        "type": "string",
+        "description": "How the Playground sizes images for this model.",
+        "enum": [
+          "pixels",
+          "none"
+        ]
+      },
+      "PlaygroundMode": {
+        "type": "string",
+        "description": "What a model makes in the Playground, and so the form its column takes.",
+        "enum": [
+          "text",
+          "image",
+          "speech",
+          "sound_effects",
+          "music",
+          "transcription",
+          "video"
+        ]
+      },
       "PlaygroundModel": {
         "type": "object",
         "description": "A model the member can call in the Playground.",
@@ -33409,7 +34587,10 @@
           "price_tiers",
           "provider_key",
           "availability",
-          "max_request_bytes"
+          "max_request_bytes",
+          "mode",
+          "voices",
+          "translations"
         ],
         "properties": {
           "aliases": {
@@ -33462,6 +34643,17 @@
             "$ref": "#/components/schemas/CatalogueModelId",
             "description": "The catalogue entry."
           },
+          "image": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PlaygroundImageOptions",
+                "description": "For an image model: whether it edits, how many images it makes at once, its\nqualities and whether it takes a size."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "input_modalities": {
             "type": "array",
             "items": {
@@ -33480,9 +34672,13 @@
           "max_request_bytes": {
             "type": "integer",
             "format": "int64",
-            "description": "The largest Playground request Kaeso takes for it, in bytes, attachments\nincluded as sent.",
+            "description": "The largest Playground request Kaeso takes for it, in bytes, attachments\nand uploads included as sent.",
             "example": 33554432,
             "minimum": 0
+          },
+          "mode": {
+            "$ref": "#/components/schemas/PlaygroundMode",
+            "description": "What it makes, and so how the Playground tries it."
           },
           "model": {
             "type": "string",
@@ -33533,6 +34729,17 @@
           "temperature": {
             "type": "boolean",
             "description": "Whether it accepts `temperature`."
+          },
+          "translations": {
+            "type": "boolean",
+            "description": "For a transcription model: whether it also translates audio into English."
+          },
+          "voices": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "For a speech model: the voices its provider documents; empty when any voice\nname or id is sent as written."
           }
         }
       },

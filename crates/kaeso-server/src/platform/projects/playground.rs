@@ -14,6 +14,7 @@ use serde_json::value::RawValue;
 use utoipa::ToSchema;
 
 use super::aliases::{TestHeader, check_route};
+use super::playground_media::{PlaygroundImageOptions, PlaygroundMode, mode_of, options};
 
 use crate::model_api::errors::stamp;
 use crate::model_api::hooks::{Caller as ModelCaller, Source};
@@ -299,13 +300,26 @@ pub async fn responses(
         elevenlabs: None,
         video: None,
     };
-    Ok(pipeline::serve_with(state, incoming, answer).await)
+    Ok(pipeline::serve_with(state, incoming, answer_with(&CHAT)).await)
 }
 
-fn answer(f: &Failure) -> Response {
-    let mut resp = refusal(f).into_response();
-    stamp(&mut resp, &f.served);
-    resp
+/// What a refused Playground request says about its own body.
+pub(super) struct Ask {
+    pub too_large: &'static str,
+    pub unreadable: &'static str,
+}
+
+const CHAT: Ask = Ask {
+    too_large: "The conversation is larger than Kaeso accepts.",
+    unreadable: "The request is not a Responses request Kaeso can read.",
+};
+
+pub(super) fn answer_with(ask: &'static Ask) -> impl Fn(&Failure) -> Response {
+    move |f| {
+        let mut resp = refusal(f, ask).into_response();
+        stamp(&mut resp, &f.served);
+        resp
+    }
 }
 
 fn own(message: &str, fallback: &str) -> String {
@@ -351,18 +365,14 @@ fn provider_error(status: StatusCode, message: &str, e: &KppError) -> ApiError {
     }
 }
 
-fn refusal(f: &Failure) -> ApiError {
+fn refusal(f: &Failure, ask: &Ask) -> ApiError {
     let e = &f.err;
     match &f.stage {
-        Stage::Request if e.kind == ErrorKind::RequestTooLarge => ApiError::TooLarge(own(
-            &e.message,
-            "The conversation is larger than Kaeso accepts.",
-        )),
+        Stage::Request if e.kind == ErrorKind::RequestTooLarge => {
+            ApiError::TooLarge(own(&e.message, ask.too_large))
+        }
         Stage::Request => ApiError::InvalidRequest {
-            message: own(
-                &e.message,
-                "The request is not a Responses request Kaeso can read.",
-            ),
+            message: own(&e.message, ask.unreadable),
             param: e.param.clone(),
         },
         Stage::Catalogue => ApiError::Unavailable(
@@ -559,27 +569,29 @@ pub struct PlaygroundModel {
         model only greyed out."]
     pub availability: crate::platform::projects::models::AvailabilityState,
     #[doc = "The largest Playground request Kaeso takes for it, in bytes, attachments\n\
-        included as sent."]
+        and uploads included as sent."]
     #[schema(example = 33554432)]
     pub max_request_bytes: u64,
-}
-
-// The Playground is a conversation: a model must take text and answer with text. Media models
-// are tried through the model API, where each has its own request.
-fn chats(f: &kaeso_core::catalogue::Fields) -> bool {
-    let has =
-        |list: &Option<Vec<String>>| list.as_ref().is_none_or(|l| l.iter().any(|m| m == "text"));
-    has(&f.input_modalities) && has(&f.output_modalities)
+    #[doc = "What it makes, and so how the Playground tries it."]
+    pub mode: PlaygroundMode,
+    #[doc = "For an image model: whether it edits, how many images it makes at once, its\n\
+        qualities and whether it takes a size."]
+    pub image: Option<PlaygroundImageOptions>,
+    #[doc = "For a speech model: the voices its provider documents; empty when any voice\n\
+        name or id is sent as written."]
+    pub voices: Vec<String>,
+    #[doc = "For a transcription model: whether it also translates audio into English."]
+    pub translations: bool,
 }
 
 #[utoipa::path(
     get,
     path = "/orgs/{org}/projects/{project}/playground/models",
     summary = "The models the signed-in member can call in the Playground.",
-    description = "The project's catalogue without embeddings models and without the image,\n\
-    speech, transcription and video models that take or make no text, narrowed by the member's\n\
-    model access, with what the Playground shows and offers (reasoning,\n\
-    efforts, temperature, prices). A reply's cost is `(input − cached) ×\n\
+    description = "The project's catalogue without embeddings, reranking and realtime models,\n\
+    narrowed by the member's model access, with each model's `mode` (text, image, speech,\n\
+    sound effects, music, transcription or video) and what the Playground shows and offers\n\
+    for it (reasoning, efforts, temperature, voices, image options, prices). A reply's cost is `(input − cached) ×\n\
     input_price + cached × cache_read_price + output × output_price`, per\n\
     million tokens, at the prices of the highest of `price_tiers` whose\n\
     `context_above` the input exceeds, as the request log charges it\n\
@@ -602,6 +614,7 @@ pub async fn models(
     let project = &ctx.project()?.project;
     let models = crate::services::catalogue::project_models(&state, project.id).await?;
     let access = models.access(None, Some(session.user_id), None);
+    let snapshot = state.kpmr.current();
     let mut keys: Vec<(String, bool)> = Vec::new();
     let mut out = Vec::new();
     for entry in models
@@ -614,9 +627,15 @@ pub async fn models(
         else {
             continue;
         };
-        if eff.is_embeddings() || !chats(&eff.fields) {
+        let kind = snapshot
+            .snapshot
+            .model(&entry.provider, &entry.model_id)
+            .or(entry.last_known.as_ref())
+            .and_then(|m| m.kind.as_deref());
+        let Some(mode) = mode_of(&eff, kind) else {
             continue;
-        }
+        };
+        let options = options(&state, &eff, mode);
         let provider_key = match keys.iter().find(|(p, _)| p == eff.provider.id()) {
             Some((_, has)) => *has,
             None => {
@@ -659,7 +678,11 @@ pub async fn models(
             price_tiers: f.price_tiers.clone().unwrap_or_default(),
             provider_key,
             availability: entry.availability.into(),
-            max_request_bytes: state.config.body_limits.model_api.0,
+            max_request_bytes: options.max_request_bytes,
+            mode,
+            image: options.image,
+            voices: options.voices,
+            translations: options.translations,
         });
     }
     Ok(axum::Json(List::complete(out)))
@@ -691,6 +714,10 @@ mod tests {
         }
     }
 
+    fn refusal_chat(f: &Failure) -> ApiError {
+        refusal(f, &CHAT)
+    }
+
     fn failure(stage: Stage, err: KppError) -> Failure {
         Failure {
             err,
@@ -711,7 +738,7 @@ mod tests {
             (ErrorKind::ProviderError, 502),
         ];
         for (kind, status) in cases {
-            let e = refusal(&failure(
+            let e = refusal_chat(&failure(
                 Stage::Provider,
                 KppError::new(kind.clone(), "Provider text. With details."),
             ));
@@ -719,12 +746,12 @@ mod tests {
             assert_eq!(e.status().as_u16(), status, "{kind:?}");
             assert!(!e.to_string().contains("Provider text"), "{kind:?}");
         }
-        let e = refusal(&failure(
+        let e = refusal_chat(&failure(
             Stage::Provider,
             KppError::new(ErrorKind::ContextTooLong, "Too long. Really."),
         ));
         assert_eq!((e.kind(), e.status().as_u16()), ("invalid_request", 400));
-        let timeout = refusal(&failure(
+        let timeout = refusal_chat(&failure(
             Stage::Upstream,
             KppError::new(ErrorKind::Timeout, "x"),
         ));
@@ -733,7 +760,7 @@ mod tests {
 
     #[test]
     fn limits_keep_their_retry_and_budgets_have_none() {
-        let rate = refusal(&failure(
+        let rate = refusal_chat(&failure(
             Stage::Limits,
             KppError::new(
                 ErrorKind::RateLimited,
@@ -749,13 +776,13 @@ mod tests {
                 ..
             }
         ));
-        let unchecked = refusal(&failure(
+        let unchecked = refusal_chat(&failure(
             Stage::Limits,
             KppError::new(ErrorKind::ProviderError, "x").with_status(503),
         ));
         assert_eq!(unchecked.kind(), "unavailable");
         let said = "The member has a spend budget that can't price `web_search`; ask an admin.";
-        let unpriced = refusal(&failure(
+        let unpriced = refusal_chat(&failure(
             Stage::Limits,
             KppError::new(ErrorKind::PermissionDenied, said)
                 .with_status(403)

@@ -329,15 +329,20 @@ async fn reasoning_summaries_stream_from_a_model_that_reasons() {
     assert!(opus["input_price"].is_string(), "{opus}");
     assert!(opus["output_price"].is_string(), "{opus}");
     assert!(!opus["display_name"].as_str().unwrap().is_empty());
-    for absent in [
-        "text-embedding-3-small",
-        "gpt-image-2",
-        "whisper-1",
-        "gpt-4o-mini-tts",
+    assert!(
+        data.iter()
+            .all(|m| m["model_id"] != "text-embedding-3-small")
+    );
+    let mode = |id: &str| data.iter().find(|m| m["model_id"] == id).unwrap()["mode"].clone();
+    for (id, expected) in [
+        ("gpt-4o", "text"),
+        ("claude-opus-4-8", "text"),
+        ("gpt-image-2", "image"),
+        ("whisper-1", "transcription"),
+        ("gpt-4o-mini-tts", "speech"),
     ] {
-        assert!(data.iter().all(|m| m["model_id"] != absent), "{absent}");
+        assert_eq!(mode(id), expected, "{id}");
     }
-    assert!(data.iter().any(|m| m["model_id"] == "gpt-4o"));
 }
 
 #[tokio::test]
