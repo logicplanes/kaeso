@@ -15,9 +15,11 @@ on:
 permissions:
   contents: read
 
+# A newer push to a pull request or to dev replaces the run before it: each pull request passed CI before
+# it merged, and the Release workflow runs every job again, so only dev's latest commit needs a full run.
 concurrency:
   group: ci-${{ github.event.pull_request.number || github.ref }}-${{ github.event_name }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' || github.ref == 'refs/heads/dev' }}
 
 env:
   CARGO_TERM_COLOR: always
