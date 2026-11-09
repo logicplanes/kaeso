@@ -274,7 +274,7 @@ curl -N "$project/playground/responses" \
 
 - **相同的路径。** 模型在项目目录中解析，包括别名和 `provider/model`，且必须在成员的模型访问范围内。Kaeso 使用项目的服务商密钥，关闭流会取消发往服务商的请求。
 - **限额。** 成员和项目的速率与预算适用。密钥限额不适用，因为没有密钥。
-- **费用。** 未以流式返回的媒体响应带有 `kaeso-cost` 标头：即其日志条目将计入的金额；模型对其产出没有价格时为 `unknown`。
+- **费用。** 未以流式返回的媒体响应带有 `kaeso-cost` 标头：即其日志条目将计入的金额；模型对其产出没有价格时为 `unknown`。视频任务结束后，其 `GET` 也带有该标头，失败的任务为 `0`。
 - **用量和日志。** Kaeso 将请求计入项目，并算作该成员的用量；按 `key` 查看用量时显示为 `playground`。其日志条目的来源为 `playground`，项目记录内容时还包含请求内容。`logs` 和 `logs/export` 可用 `source=api` 或 `source=playground` 筛选。
 
 流开始之前的错误是 Platform API 错误：

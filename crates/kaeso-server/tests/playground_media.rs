@@ -345,7 +345,12 @@ async fn a_member_follows_downloads_and_cancels_their_own_videos_only() {
     .await;
     assert_eq!(early.status, StatusCode::BAD_REQUEST, "{}", early.text());
     assert_eq!(early.json()["error"]["param"], "video");
-    assert_eq!(get(id.clone()).await.json()["status"], "completed");
+    let done = get(id.clone()).await;
+    assert_eq!(done.json()["status"], "completed");
+    let cost = done
+        .header("kaeso-cost")
+        .expect("a finished job says what it was charged");
+    assert!(cost.parse::<f64>().unwrap() > 0.0, "{cost}");
     let file = send(
         &env.app,
         Method::GET,

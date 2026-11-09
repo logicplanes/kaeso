@@ -597,7 +597,9 @@ pub(super) async fn retrieve(
     let id = video_id(&uri);
     let found = async {
         let viewer = Viewer::app(&*super::auth::authenticate(&state, &headers, ip.0).await?);
-        retrieve_as(&state, &viewer, &id).await
+        retrieve_as(&state, &viewer, &id)
+            .await
+            .map(|(body, _)| body)
     }
     .await;
     answer(StatusCode::OK, found)
@@ -608,13 +610,26 @@ pub(crate) async fn retrieve_as(
     state: &AppState,
     viewer: &Viewer,
     id: &str,
-) -> Result<Vec<u8>, KppError> {
+) -> Result<(Vec<u8>, Option<String>), KppError> {
     let row = refresh(&Asking::new(state, viewer), load(state, viewer, id).await?).await?;
-    dispatch::encode_response(
+    let body = dispatch::encode_response(
         D,
         &Reply::Video(app_view(&row, None)),
         &kaeso_codecs::EncodeCtx::new(RequestKind::Video, StreamMode::Off),
-    )
+    )?;
+    Ok((body, charged(&row)))
+}
+
+/// What the job was charged once it ended: its cost, `0` for a job that failed, or `unknown`
+/// when the model has no price for what it made; `None` while it runs.
+fn charged(row: &VideoRow) -> Option<String> {
+    row.accounted_at?;
+    Some(if row.status != VideoStatus::Completed.as_str() {
+        "0".to_owned()
+    } else {
+        row.cost
+            .map_or_else(|| "unknown".to_owned(), |c| c.normalize().to_string())
+    })
 }
 
 /// `DELETE /v1/videos/{video_id}`: deletes the job at its provider where the provider can, and

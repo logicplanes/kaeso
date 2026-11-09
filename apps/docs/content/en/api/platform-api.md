@@ -274,7 +274,7 @@ A Playground request is a model request like any other, made by the member witho
 
 - **Same path.** The model resolves in the project's catalogue, aliases and `provider/model` included, and must be within the member's model access. Kaeso uses the project's provider key, and closing the stream cancels the provider's request.
 - **Limits.** The member's and the project's rates and budgets apply. Key limits don't, as there is no key.
-- **Cost.** A media reply that isn't streamed carries a `kaeso-cost` header: the amount its log entry will charge, or `unknown` when the model has no price for what it made.
+- **Cost.** A media reply that isn't streamed carries a `kaeso-cost` header: the amount its log entry will charge, or `unknown` when the model has no price for what it made. A video job's `GET` carries it once the job ended, `0` for one that failed.
 - **Usage and logs.** Kaeso charges the request to the project as the member's, and usage by `key` shows it as `playground`. Its log entry has the source `playground` and holds its content when the project logs content. `logs` and `logs/export` filter with `source=api` or `source=playground`.
 
 Errors before the stream starts are Platform API errors:

@@ -628,7 +628,8 @@ fn json(bytes: Vec<u8>) -> Response {
     path = "/orgs/{org}/projects/{project}/playground/videos/{video}",
     summary = "A video the signed-in member started in the Playground.",
     description = "The job, as OpenAI's Videos API shows it, after asking its provider how it\n\
-    stands. Only videos the member started in the Playground; needs a console session.",
+    stands, with the `kaeso-cost` header once it ended: what it was charged, `0` for a job that\n\
+    failed, or `unknown`. Only videos the member started in the Playground; needs a console session.",
     tag = "projects",
     params(("org" = OrgId, Path), ("project" = ProjectId, Path), ("video" = String, Path, description = "The video's id, as `video_create` answered it.")),
     responses(
@@ -642,10 +643,14 @@ pub async fn video_get(
     Path((_, _, video)): Path<(String, String, String)>,
 ) -> ApiResult<Response> {
     let viewer = Viewer::member(member(&ctx)?);
-    videos::retrieve_as(&state, &viewer, &video)
+    let (body, charged) = videos::retrieve_as(&state, &viewer, &video)
         .await
-        .map(json)
-        .map_err(|e| video_error(&e))
+        .map_err(|e| video_error(&e))?;
+    let mut resp = json(body);
+    if let Some(v) = charged.and_then(|c| HeaderValue::from_str(&c).ok()) {
+        resp.headers_mut().insert(pipeline::COST_HEADER, v);
+    }
+    Ok(resp)
 }
 
 #[utoipa::path(

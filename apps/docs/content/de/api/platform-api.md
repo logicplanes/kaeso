@@ -274,7 +274,7 @@ Eine Playground-Anfrage ist eine Modellanfrage wie jede andere, gestellt vom Mit
 
 - **Derselbe Weg.** Das Modell wird im Katalog des Projekts aufgelöst, Aliasse und `provider/model` eingeschlossen, und muss im Modellzugriff des Mitglieds liegen. Kaeso verwendet den Anbieter-Schlüssel des Projekts, und das Schließen des Streams bricht die Anfrage beim Anbieter ab.
 - **Limits.** Die Raten und Budgets des Mitglieds und des Projekts gelten. Schlüssel-Limits gelten nicht, da es keinen Schlüssel gibt.
-- **Kosten.** Eine Medienantwort, die nicht gestreamt wird, trägt einen Header `kaeso-cost`: den Betrag, den ihr Protokolleintrag berechnen wird, oder `unknown`, wenn das Modell keinen Preis für das hat, was es gemacht hat.
+- **Kosten.** Eine Medienantwort, die nicht gestreamt wird, trägt einen Header `kaeso-cost`: den Betrag, den ihr Protokolleintrag berechnen wird, oder `unknown`, wenn das Modell keinen Preis für das hat, was es gemacht hat. Das `GET` eines Video-Jobs trägt ihn, sobald der Job endete, `0` für einen fehlgeschlagenen.
 - **Nutzung und Protokolle.** Kaeso berechnet die Anfrage dem Projekt als die des Mitglieds, und die Nutzung nach `key` zeigt sie als `playground`. Ihr Protokolleintrag hat die Quelle `playground` und enthält ihren Inhalt, wenn das Projekt Inhalte protokolliert. `logs` und `logs/export` filtern mit `source=api` oder `source=playground`.
 
 Fehler vor dem Beginn des Streams sind Fehler der Platform API:

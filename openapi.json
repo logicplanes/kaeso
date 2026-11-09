@@ -18845,7 +18845,7 @@
           "projects"
         ],
         "summary": "A video the signed-in member started in the Playground.",
-        "description": "The job, as OpenAI's Videos API shows it, after asking its provider how it\nstands. Only videos the member started in the Playground; needs a console session.\n\n**Right:** `playground.use` on the project in the path.",
+        "description": "The job, as OpenAI's Videos API shows it, after asking its provider how it\nstands, with the `kaeso-cost` header once it ended: what it was charged, `0` for a job that\nfailed, or `unknown`. Only videos the member started in the Playground; needs a console session.\n\n**Right:** `playground.use` on the project in the path.",
         "operationId": "getOrgsOrgProjectsProjectPlaygroundVideosVideo",
         "parameters": [
           {
