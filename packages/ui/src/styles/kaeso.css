@@ -224,6 +224,13 @@
   --k-fill-control-shadow: var(--k-shadow-control-on-fill);
 }
 
+/* A control that floats on a picture: its ring alone vanishes where the picture is as light as the control. */
+@utility controls-on-picture {
+  --k-fill-control: var(--k-control-on-fill);
+  --k-fill-control-hover: var(--k-control-on-fill-hover);
+  --k-fill-control-shadow: var(--k-shadow-control-on-picture);
+}
+
 @utility material-secondary {
   background-color: var(--k-fill-control, var(--k-bg-raised));
   color: var(--k-text);

@@ -42,6 +42,7 @@ describe("Attachments", () => {
     expect(screen.getByRole("img", { name: "dock.png" })).toHaveAttribute("src", PIXEL);
     expect(screen.getByText("invoice-2026-10.pdf")).toBeInTheDocument();
     expect(screen.getByText("standup.m4a")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Remove dock.png" })).toHaveClass("controls-on-picture");
     await userEvent.click(screen.getByRole("button", { name: "Remove dock.png" }));
     await userEvent.click(screen.getByRole("button", { name: "Remove notes.txt" }));
     expect(onRemove.mock.calls).toEqual([["a1"], ["a4"]]);

@@ -60,7 +60,7 @@ export const Attachments = forwardRef<HTMLUListElement, AttachmentsProps>(functi
                     icon={icons.close}
                     aria-label={remove}
                     onClick={() => onRemove(a.id)}
-                    className="absolute top-4 right-4"
+                    className="absolute top-4 right-4 controls-on-picture"
                   />
                 )}
               </>
