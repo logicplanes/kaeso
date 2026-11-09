@@ -14,6 +14,7 @@ const XAI_SECRET: &str = "xai-test-credential-0000000000000000000000000000";
 const GOOGLE_SECRET: &str = "AIzaSyTestGoogleVideosCredential000000000";
 const ZAI_SECRET: &str = "zai-test-credential.00000000000000000000";
 const MINIMAX_SECRET: &str = "sk-api-test-minimax-videos-0000000000000000";
+const QWENCLOUD_SECRET: &str = "sk-test-qwencloud-videos-00000000000000";
 const PNG: &[u8] =
     b"\x89PNG\r\n\x1a\n\0\0\0\rIHDR\0\0\0\x01\0\0\0\x01\x08\x06\0\0\0\x1f\x15\xc4\x89";
 
@@ -31,6 +32,7 @@ async fn setup(env: &Env) {
         ("google", GOOGLE_SECRET),
         ("zai", ZAI_SECRET),
         ("minimax", MINIMAX_SECRET),
+        ("alibaba", QWENCLOUD_SECRET),
     ] {
         let r = env
             .app
@@ -48,6 +50,7 @@ async fn setup(env: &Env) {
         ("zai", "cogvideox-3"),
         ("minimax", "MiniMax-Hailuo-2.3"),
         ("minimax", "MiniMax-H3"),
+        ("alibaba", "wan2.7-t2v"),
     ] {
         let r = env
             .app
@@ -862,4 +865,61 @@ async fn veo_runs_on_the_agent_platform_with_a_service_account_and_without_a_pri
         rust_decimal::Decimal::ZERO
     );
     assert_eq!(billed[0].media.as_ref().unwrap().output_ms, 8000);
+}
+
+#[tokio::test]
+async fn a_wan_video_runs_as_a_dashscope_task_at_qwencloud() {
+    let env = env().await;
+    let r = create(
+        &env,
+        json!({ "model": "wan2.7-t2v", "prompt": "A kitten running in the moonlight", "seconds": "10", "size": "1280x720" }),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    let id = r.json()["id"].as_str().unwrap().to_owned();
+    assert_eq!(r.json()["status"], "queued");
+    let sent = env.mock.last().unwrap();
+    assert_eq!(
+        sent.path,
+        "/api/v1/services/aigc/video-generation/video-synthesis"
+    );
+    assert_eq!(sent.header("x-dashscope-async"), Some("enable"));
+    assert_eq!(
+        sent.header("authorization"),
+        Some(format!("Bearer {QWENCLOUD_SECRET}").as_str())
+    );
+    assert_eq!(
+        sent.json(),
+        json!({ "model": "wan2.7-t2v", "input": { "prompt": "A kitten running in the moonlight" }, "parameters": { "resolution": "720P", "ratio": "16:9", "duration": 10 } })
+    );
+    assert_eq!(retrieve(&env, &id).await.json()["status"], "in_progress");
+    let done = retrieve(&env, &id).await.json();
+    assert_eq!(done["status"], "completed");
+    assert!(env.mock.received().iter().any(|r| r.path
+        == "/api/v1/tasks/86ecf553-d340-4e21-af6e-a0c6a421c010"
+        || r.path.starts_with("/api/v1/tasks/0385dc79")));
+    let billed = completions(&env).await;
+    assert_eq!(billed.len(), 1);
+    let media = billed[0].media.clone().unwrap();
+    assert_eq!(
+        (
+            media.output_videos,
+            media.output_ms,
+            media.resolution.as_deref()
+        ),
+        (1, 10_000, Some("720p"))
+    );
+    assert!(kaeso_server::services::usage::costed(&billed[0]).1 > rust_decimal::Decimal::ZERO);
+    let refused = create(
+        &env,
+        json!({ "model": "wan2.7-t2v", "prompt": "A cat", "size": "1024x768" }),
+    )
+    .await;
+    assert_eq!(
+        refused.status,
+        StatusCode::BAD_REQUEST,
+        "{}",
+        refused.text()
+    );
+    assert_eq!(refused.json()["error"]["param"], "size");
 }

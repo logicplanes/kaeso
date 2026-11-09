@@ -949,7 +949,7 @@ pub const PROVIDERS: &[Provider] = &[
             from_root: false,
             auth: None,
         }),
-        videos: &[],
+        videos: &[VideosEgress::rooted(DialectId::DashScope).for_models("wan*")],
         dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
         refused_key_messages: &[],
         context_window_messages: &[],

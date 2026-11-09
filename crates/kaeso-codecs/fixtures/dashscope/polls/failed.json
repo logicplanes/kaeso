@@ -1,0 +1,9 @@
+{
+  "request_id": "e5d70b02-ebd3-98ce-9fe8-759d7d7b107d",
+  "output": {
+    "task_id": "86ecf553-d340-4e21-af6e-a0c6a421c010",
+    "task_status": "FAILED",
+    "code": "InvalidParameter",
+    "message": "The size does not match xxxxxx"
+  }
+}

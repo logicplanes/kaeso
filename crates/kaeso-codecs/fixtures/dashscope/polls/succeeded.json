@@ -1,0 +1,20 @@
+{
+  "request_id": "caa62a12-8841-41a6-8af2-xxxxxx",
+  "output": {
+    "task_id": "eff1443c-ccab-4676-aad3-xxxxxx",
+    "task_status": "SUCCEEDED",
+    "submit_time": "2025-09-29 14:18:52.331",
+    "scheduled_time": "2025-09-29 14:18:59.290",
+    "end_time": "2025-09-29 14:23:39.407",
+    "orig_prompt": "An epic and cute scene. A small, adorable cartoon kitten general, wearing exquisitely detailed golden armor and a slightly oversized helmet, stands bravely on a cliff.",
+    "video_url": "https://dashscope-result-sh.oss-accelerate.aliyuncs.com/xxx.mp4?Expires=xxx"
+  },
+  "usage": {
+    "duration": 10,
+    "input_video_duration": 0,
+    "output_video_duration": 10,
+    "video_count": 1,
+    "ratio": "16:9",
+    "SR": 720
+  }
+}

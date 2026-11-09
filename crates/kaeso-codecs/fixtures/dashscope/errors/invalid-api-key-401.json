@@ -1,0 +1,5 @@
+{
+  "request_id": "9f42xxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+  "code": "InvalidApiKey",
+  "message": "Invalid API-key provided."
+}

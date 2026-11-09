@@ -1,0 +1,5 @@
+{
+  "request_id": "7c1axxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+  "code": "Throttling.RateQuota",
+  "message": "Requests rate limit exceeded, please try again later."
+}

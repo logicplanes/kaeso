@@ -17,6 +17,7 @@ SCENARIO_SOURCES = (
     "veo",
     "gemini_interactions",
     "elevenlabs",
+    "dashscope",
 )
 
 PNG = (FIXTURES / "openai_videos" / "requests" / "create-upload.multipart").read_bytes().split(b"\r\n\r\n")[-1].split(b"\r\n--")[0]

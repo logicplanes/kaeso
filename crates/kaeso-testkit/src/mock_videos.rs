@@ -127,6 +127,20 @@ pub(crate) fn answer(
         "/v1/flows/video" if post => {
             json(read(fixtures, "elevenlabs/video/responses/started.json"))
         }
+        "/api/v1/services/aigc/video-generation/video-synthesis"
+        | "/api/v1/services/aigc/image2video/video-synthesis"
+            if post =>
+        {
+            json(read(fixtures, "dashscope/responses/started.json"))
+        }
+        _ if get && tail("/api/v1/tasks/").is_some() => staged(
+            polls,
+            fixtures,
+            path,
+            "dashscope/polls/running.json",
+            "dashscope/polls/succeeded.json",
+            &link,
+        ),
         "/v1/query/video_generation" if get => {
             let job = query.unwrap_or_default();
             staged(

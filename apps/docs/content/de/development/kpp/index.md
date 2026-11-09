@@ -96,6 +96,7 @@ Beide Crates sind auf crates.io veröffentlicht. Ihr Bibliothekscode darf nur vo
 | `openrouter_videos` | Die Videoerzeugungs-API von OpenRouter ([OpenRouter Videos](openrouter-videos.md)) |
 | `veo` | Die lang laufenden Vorgänge von Veo auf Gemini Enterprise Agent Platform ([Veo](veo.md)) |
 | `gemini_interactions` | Die Videojobs von Gemini Omni in der Interactions API von Google AI Studio ([Gemini Interactions](gemini-interactions.md)) |
+| `dashscope` | Die Videosynthese von DashScope bei QwenCloud für die Wan-Modelle ([DashScope](dashscope.md)) |
 | `multipart` | Der begrenzte Leser und Schreiber für `multipart/form-data` von Bild-, Audio- und Video-Uploads |
 
 | Gemeinsames Modul | Aufgabe |

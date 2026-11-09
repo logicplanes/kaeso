@@ -1,0 +1,21 @@
+{
+  "model": "wan2.7-i2v",
+  "input": {
+    "prompt": "A kitten runs on the grass.",
+    "media": [
+      {
+        "type": "first_frame",
+        "url": "https://wanx.alicdn.com/material/20250318/first_frame.png"
+      },
+      {
+        "type": "last_frame",
+        "url": "https://wanx.alicdn.com/material/20250318/last_frame.png"
+      }
+    ]
+  },
+  "parameters": {
+    "resolution": "720P",
+    "duration": 5,
+    "prompt_extend": false
+  }
+}

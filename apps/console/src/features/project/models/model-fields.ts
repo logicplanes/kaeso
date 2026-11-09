@@ -96,6 +96,7 @@ export function dialectPill(d: string): string {
       openrouter_videos: "videos",
       veo: "videos",
       gemini_interactions: "videos",
+      dashscope: "videos",
     }[d] ?? d
   );
 }

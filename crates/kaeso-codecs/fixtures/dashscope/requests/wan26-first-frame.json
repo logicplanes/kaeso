@@ -1,0 +1,13 @@
+{
+  "model": "wan2.6-i2v-flash",
+  "input": {
+    "prompt": "A cat running on the grass",
+    "img_url": "https://cdn.translate.alibaba.com/r/wanx-demo-1.png"
+  },
+  "parameters": {
+    "resolution": "720P",
+    "duration": 5,
+    "audio": true,
+    "prompt_extend": true
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "model": "wan2.7-t2v-2026-06-12",
+  "input": {
+    "prompt": "A kitten running in the moonlight",
+    "negative_prompt": "flower"
+  },
+  "parameters": {
+    "resolution": "720P",
+    "ratio": "16:9",
+    "duration": 10,
+    "prompt_extend": true,
+    "watermark": true
+  }
+}

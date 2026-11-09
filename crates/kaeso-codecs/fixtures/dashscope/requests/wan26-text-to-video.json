@@ -1,0 +1,16 @@
+{
+  "model": "wan2.6-t2v",
+  "input": {
+    "prompt": "A tense detective story with cinematic storytelling.",
+    "negative_prompt": "low resolution, blurry",
+    "audio_url": "https://help-static-aliyun-doc.aliyuncs.com/file-manage-files/zh-CN/20250923/hbiayh/example.mp3"
+  },
+  "parameters": {
+    "size": "1280*720",
+    "duration": 10,
+    "shot_type": "multi",
+    "prompt_extend": true,
+    "watermark": false,
+    "seed": 12345
+  }
+}

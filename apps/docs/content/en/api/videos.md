@@ -110,7 +110,7 @@ Every built-in provider's documentation was read for video generation on 2026-11
 | ElevenLabs | `veo-3.1-generate-001`, `veo-3.1-fast-generate-001`, `bytedance-seedance-v2` and its variants | First frame, uploaded | No | [OpenAPI document](https://api.elevenlabs.io/openapi.json) |
 | OpenAI | No: OpenAI shut Sora down on 24 September 2026, so a `sora-*` model answers 400 | — | — | [Deprecations](https://platform.openai.com/docs/deprecations) |
 | Vercel | No: Vercel documents video only through its AI SDK, not over HTTP | — | — | [Video generation](https://vercel.com/docs/ai-gateway/modalities/video-generation) |
-| QwenCloud | No: its video models take DashScope's own API | — | — | [Video generation](https://docs.qwencloud.com/api-reference/video-generation/wan-text-to-video/create-task) |
+| QwenCloud | Wan text to video and image to video, such as `wan3.0-video`, `wan2.7-t2v` and `wan2.6-i2v-flash` | First frame, uploaded or linked, on image to video models and Wan 3.0 | No | [Video generation](https://docs.qwencloud.com/api-reference/video-generation/wan-text-to-video/create-task) |
 | Anthropic, DeepSeek, Groq, Mistral, Cohere, Ollama Cloud, Moonshot, Cerebras | Not offered by the provider | — | — | Each provider's API reference |
 
 A project lists a model for video when KPMR or its own entry says the model makes video. Veo on Gemini Enterprise Agent Platform needs a service account key: express mode lists no Veo models, so Kaeso refuses an express mode key for them. Kaeso doesn't call Gemini Omni on the Agent Platform, which serves it only from its global location.
