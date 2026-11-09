@@ -83,6 +83,30 @@ describe("Playground attachments", () => {
     broken.mockRestore();
   });
 
+  it("counts the files already sent and the ones waiting against the size of the next message", async () => {
+    signedIn();
+    on("GET", MODELS, page([playgroundModel({ input_modalities: ["text", "image"], max_request_bytes: 64 * 1024 + 200 })]));
+    on("POST", RESPONSES, () => reply("Noted."));
+    const { user } = await renderApp(PLAYGROUND);
+    await user.type(await screen.findByRole("textbox", { name: "Prompt" }), "Hello");
+    await user.click(screen.getByRole("button", { name: "Send" }));
+    await waitFor(() => expect(sentBodies()).toHaveLength(1));
+
+    await user.upload(picker(), png("first.png", 60));
+    await screen.findByRole("list", { name: "Attachments" });
+    await user.type(screen.getByRole("textbox", { name: "Prompt" }), "What is this?");
+    await user.click(screen.getByRole("button", { name: "Send" }));
+    await waitFor(() => expect(sentBodies()).toHaveLength(2));
+    await waitFor(() => expect(screen.getAllByText("Noted.")).toHaveLength(2));
+
+    await user.upload(picker(), png("second.png", 60));
+    expect(await notifications().findByText("second.png makes the conversation too large to send.")).toBeInTheDocument();
+    await user.upload(picker(), png("small.png"));
+    expect(await screen.findByRole("img", { name: "small.png" })).toBeInTheDocument();
+    await user.upload(picker(), png("another.png", 60));
+    expect(await notifications().findByText("another.png makes the conversation too large to send.")).toBeInTheDocument();
+  });
+
   it("offers attachments only when every chosen model takes them", async () => {
     signedIn();
     on(

@@ -149,17 +149,18 @@ export function PlaygroundPage({ org, project, search }: { org: string; project:
     changePrompt("");
     setFiles([]);
   };
-  const retryLatest = useRef<(key: string) => void>(() => undefined);
+  const latest = useRef({ threads, models, parameters, retry });
   useEffect(() => {
-    retryLatest.current = (key) => {
-      const i = threads.findIndex((x) => x.key === key);
-      const m = models[i];
-      const thread = threads[i];
-      const last = thread?.turns.at(-1);
-      if (m && thread && last) retry(i, requestFor(m, thread.turns.slice(0, -1), last.prompt, parameters, last.files));
-    };
+    latest.current = { threads, models, parameters, retry };
   });
-  const retryThread = useCallback((key: string) => retryLatest.current(key), []);
+  const retryThread = useCallback((key: string) => {
+    const now = latest.current;
+    const i = now.threads.findIndex((x) => x.key === key);
+    const m = now.models[i];
+    const thread = now.threads[i];
+    const last = thread?.turns.at(-1);
+    if (m && thread && last) now.retry(i, requestFor(m, thread.turns.slice(0, -1), last.prompt, now.parameters, last.files));
+  }, []);
 
   const noModels = catalogue.isSuccess && chat.length === 0;
   usePageCreateAction(noModels ? null : { label: t("playground.addColumn", "Add column"), run: addColumn, disabledReason: full ? fullReason() : undefined });
