@@ -70,6 +70,21 @@ def test_provider_transcripts_reach_an_openai_app(base_url):
     assert [w.word for w in x.words] == ["The", "balance"]
 
 
+def test_dashscope_speech_and_transcripts_reach_an_openai_app(base_url):
+    c = client(base_url)
+    with c.audio.speech.with_streaming_response.create(
+        model="dashscope:speech/qwen-audio-tts", voice="longanhuan_v3.1", input="Hi", response_format="wav"
+    ) as response:
+        assert response.headers["content-type"] == "audio/wav"
+        assert response.read().startswith(b"RIFF")
+    with c.audio.speech.with_streaming_response.create(
+        model="dashscope:speech/qwen3-tts-pcm", voice="Cherry", input="Hi", response_format="pcm", stream_format="sse"
+    ) as response:
+        assert response.read().decode().count("speech.audio.delta") == 2
+    t = transcribe(base_url, "dashscope:transcriptions/asr")
+    assert t.text == "Hello World, this is Alibaba Speech Lab."
+
+
 def test_errors_raise_the_sdks_errors(base_url):
     import pytest
 

@@ -1,0 +1,25 @@
+{
+  "output": {
+    "sentence": {
+      "begin_time": 760,
+      "channel_id": 0,
+      "end_time": 3800,
+      "sentence_end": true,
+      "sentence_id": 1,
+      "text": "Hello World, this is Alibaba Speech Lab.",
+      "words": [
+        {"begin_time": 760, "end_time": 1040, "fixed": true, "punctuation": "", "text": "Hello"},
+        {"begin_time": 1040, "end_time": 1240, "fixed": true, "punctuation": ",", "text": " World"},
+        {"begin_time": 1360, "end_time": 1880, "fixed": true, "punctuation": "", "text": "this is"},
+        {"begin_time": 1880, "end_time": 2520, "fixed": true, "punctuation": "", "text": "Alibaba"},
+        {"begin_time": 2520, "end_time": 2840, "fixed": true, "punctuation": "", "text": "Speech"},
+        {"begin_time": 2840, "end_time": 3800, "fixed": true, "punctuation": ".", "text": "Lab"}
+      ]
+    },
+    "text": "Hello World, this is Alibaba Speech Lab."
+  },
+  "usage": {
+    "duration": 4
+  },
+  "request_id": "40e0734d-096f-9ae3-86c1-a8c013287561"
+}

@@ -88,3 +88,13 @@ def test_provider_errors_keep_openai_s_shape(base_url):
     assert info.value.code == "moderation_blocked"
     with pytest.raises(openai.BadRequestError) as info:
         c.images.generate(model="minimax_images:errors/sensitive-prompt-200", prompt="A red fox")
+
+
+def test_dashscope_image_replies_reach_an_openai_app(base_url):
+    c = client(base_url)
+    edited = c.images.generate(model="dashscope:images/qwen-image-edit", prompt="A red fox")
+    assert len(edited.data) == 2 and all(d.url for d in edited.data)
+    z = c.images.generate(model="dashscope:images/z-image", prompt="A red fox")
+    assert z.data[0].revised_prompt == "Photo of a stylish young woman..."
+    with pytest.raises(openai.BadRequestError):
+        c.images.generate(model="dashscope:errors/invalid-parameter-400", prompt="A red fox")

@@ -1,0 +1,30 @@
+{
+  "output": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "message": {
+          "role": "assistant",
+          "content": [
+            {
+              "image": "https://dashscope-result-sgp.oss-ap-southeast-1.aliyuncs.com/xxx.png?Expires=xxx"
+            },
+            {
+              "text": "Photo of a stylish young woman..."
+            }
+          ],
+          "reasoning_content": ""
+        }
+      }
+    ]
+  },
+  "usage": {
+    "width": 1024,
+    "height": 1024,
+    "image_count": 1,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "total_tokens": 0
+  },
+  "request_id": "abf1645b-b630-433a-92f6-xxxxxx"
+}

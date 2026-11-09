@@ -1,0 +1,5 @@
+{
+  "request_id": "a4d78a5f-655f-9639-8437-xxxxxx",
+  "code": "InvalidParameter",
+  "message": "num_images_per_prompt must be 1"
+}

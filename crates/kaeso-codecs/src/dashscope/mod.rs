@@ -1,10 +1,21 @@
-//! DashScope's video synthesis on QwenCloud
-//! (<https://docs.qwencloud.com/api-reference/video-generation/wan-text-to-video/create-task>):
-//! `POST /api/v1/services/aigc/video-generation/video-synthesis` (and
-//! `/api/v1/services/aigc/image2video/video-synthesis` for first and last frames on Wan 2.2 and
-//! 2.1) starts a task with `X-DashScope-Async: enable`, and `GET /api/v1/tasks/{task_id}`
-//! reports it. The body's shape depends on the Wan model family, so the model picks it.
+//! QwenCloud's own DashScope API, for what its OpenAI-compatible mode doesn't serve.
+//!
+//! - Video synthesis
+//!   (<https://docs.qwencloud.com/api-reference/video-generation/wan-text-to-video/create-task>):
+//!   `POST /api/v1/services/aigc/video-generation/video-synthesis` (and
+//!   `/api/v1/services/aigc/image2video/video-synthesis` for first and last frames on Wan 2.2
+//!   and 2.1) starts a task with `X-DashScope-Async: enable`, and `GET /api/v1/tasks/{task_id}`
+//!   reports it. The body's shape depends on the Wan model family, so the model picks it.
+//! - Images, speech and transcription: [`images`], [`speech`] and [`transcription`], answered
+//!   in the same request.
 
+pub mod images;
+pub mod speech;
+pub mod transcription;
+mod voices;
+
+#[cfg(test)]
+mod media_tests;
 #[cfg(test)]
 mod tests;
 
@@ -616,6 +627,14 @@ fn decode_error(status: u16, headers: &HeaderList, body: &[u8]) -> KppError {
     err.with_origin(Origin::new(D))
 }
 
+fn not_served(kind: RequestKind) -> KppError {
+    KppError::unsupported_by(
+        format!("{kind:?} request"),
+        D,
+        "Kaeso sends QwenCloud images, speech, transcriptions and video jobs to DashScope.",
+    )
+}
+
 impl Codec for DashScope {
     const DIALECT: DialectId = D;
 
@@ -624,15 +643,23 @@ impl Codec for DashScope {
         body: &[u8],
         _headers: &HeaderList,
     ) -> Result<Request, KppError> {
-        if kind != RequestKind::Video {
-            return Err(crate::video_jobs::not_videos(D, kind));
-        }
         crate::limits::request_shape(D, body)?;
-        decode_request(body)
+        match kind {
+            RequestKind::Video => decode_request(body),
+            RequestKind::Image => images::decode_request(body),
+            RequestKind::Speech => speech::decode_request(body),
+            RequestKind::Transcription => transcription::decode_request(body),
+            other => Err(not_served(other)),
+        }
     }
 
     fn encode_response(reply: &Reply, _ctx: &EncodeCtx) -> Result<Vec<u8>, KppError> {
-        crate::wire::to_body(&encode_job(video_reply(reply, D)?))
+        match reply {
+            Reply::Image(r) => images::encode_response(r),
+            Reply::Speech(r) => speech::encode_response(r),
+            Reply::Transcription(r) => transcription::encode_response(r),
+            other => crate::wire::to_body(&encode_job(video_reply(other, D)?)),
+        }
     }
 
     fn stream_encoder(_ctx: &EncodeCtx) -> Box<dyn StreamEncoder> {
@@ -644,11 +671,23 @@ impl Codec for DashScope {
     }
 
     fn check(req: &Request, _ctx: &EgressCtx) -> Result<(), KppError> {
-        check(req).map(|_| ())
+        match req {
+            Request::Image(r) => images::check(r).map(|_| ()),
+            Request::Speech(r) => speech::check(r).map(|_| ()),
+            Request::Transcription(r) => transcription::check(r),
+            Request::Video(_) => check(req).map(|_| ()),
+            other => Err(not_served(other.kind())),
+        }
     }
 
-    fn encode_request(req: &Request, _ctx: &mut EgressCtx) -> Result<EncodedRequest, KppError> {
-        encode_request(req)
+    fn encode_request(req: &Request, ctx: &mut EgressCtx) -> Result<EncodedRequest, KppError> {
+        match req {
+            Request::Image(r) => images::encode_request(r, ctx),
+            Request::Speech(r) => speech::encode_request(r, ctx),
+            Request::Transcription(r) => transcription::encode_request(r, ctx),
+            Request::Video(_) => encode_request(req),
+            other => Err(not_served(other.kind())),
+        }
     }
 
     fn decode_response(
@@ -660,6 +699,12 @@ impl Codec for DashScope {
         if !(200..300).contains(&status) {
             return Err(decode_error(status, headers, body));
         }
+        match ctx.kind {
+            RequestKind::Image => return images::decode_response(body, ctx),
+            RequestKind::Speech => return speech::decode_response(body, ctx),
+            RequestKind::Transcription => return transcription::decode_response(body, ctx),
+            _ => {}
+        }
         let job = decode_job(body, ctx)?;
         if job.id.is_empty() {
             return Err(KppError::provider(
@@ -670,6 +715,9 @@ impl Codec for DashScope {
     }
 
     fn stream_decoder(ctx: &EgressCtx) -> Box<dyn StreamDecoder> {
+        if ctx.kind == RequestKind::Speech {
+            return Box::new(speech::Decoder::new(ctx));
+        }
         no_stream(ctx.origin(D))
     }
 

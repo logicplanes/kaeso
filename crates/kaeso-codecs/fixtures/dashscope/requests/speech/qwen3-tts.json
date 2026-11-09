@@ -1,0 +1,8 @@
+{
+  "model": "qwen3-tts-flash",
+  "input": {
+    "text": "Today is a wonderful day to build something people love!",
+    "voice": "Cherry",
+    "language_type": "English"
+  }
+}
