@@ -37,7 +37,7 @@ Eine Anfrage an die Platform API authentifiziert sich mit einem Sitzungscookie, 
 
 | Code | Wo |
 | --- | --- |
-| Die Modell-API (`/v1`, und `/v1beta` für das Gemini-Format in `model_api/gemini.rs`) | `crates/kaeso-server/src/model_api` |
+| Die Modell-API (`/v1`, `/v1beta` für das Gemini-Format in `model_api/gemini.rs` und `/v2` für die Stimmenliste von ElevenLabs in `model_api/elevenlabs.rs`) | `crates/kaeso-server/src/model_api` |
 | Die Platform API (`/platform/v1`) | `crates/kaeso-server/src/platform` |
 | Der MCP-Server und seine OAuth-Anmeldung (`/mcp`, `/oauth`) | `crates/kaeso-server/src/mcp` |
 | Die Services, die beide nutzen | `crates/kaeso-server/src/services` |
@@ -47,7 +47,7 @@ Eine Anfrage an die Platform API authentifiziert sich mit einem Sitzungscookie, 
 | Crate | Aufgabe |
 | --- | --- |
 | `kaeso` | Das Binary: seine Befehlszeile (`serve`, `migrate`, `master-key`, `user`, `sso`, `instance`, `setup-link`, `healthcheck`, `openapi`), Start und Herunterfahren. Das einzige Crate, das `anyhow` nutzen darf |
-| `kaeso-server` | Die Router für `/v1`, `/v1beta`, `/platform/v1`, `/mcp`, Health und Metriken, mit Extraktoren, Fehlerzuordnung, dem OpenAPI-Dokument, CSRF-Prüfungen, Anfrage-IDs und Größenlimits. Außerdem die Services hinter beiden APIs, die Konfiguration, Hintergrund-Jobs und Telemetrie |
+| `kaeso-server` | Die Router für `/v1`, `/v1beta`, `/v2`, `/platform/v1`, `/mcp`, Health und Metriken, mit Extraktoren, Fehlerzuordnung, dem OpenAPI-Dokument, CSRF-Prüfungen, Anfrage-IDs und Größenlimits. Außerdem die Services hinter beiden APIs, die Konfiguration, Hintergrund-Jobs und Telemetrie |
 | `kaeso-core` | Fachregeln ohne I/O: IDs, Rechte und Rollen, das Schlüsselformat, die Modellauflösung, der Katalog, Fähigkeiten, Limits, Kosten und der Assembler für Stream-Antworten. `data/` enthält die Modelldaten, die jedes Release mitliefert |
 | `kaeso-store` | PostgreSQL über sqlx, ClickHouse, die Valkey-Verbindungen (eine für Limitprüfungen und Zähler, zwei für Cache-Einträge und aufbewahrtes Reasoning) mit der Cache-Invalidierung und die Migrationen beider Datenbanken |
 | `kaeso-upstream` | Der Transport zu den Anbietern: HTTP-Clients, Auth-Header, Basis-URLs, Timeouts, gestreamte Bodies und Abbruch |
