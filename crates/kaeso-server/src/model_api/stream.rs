@@ -1,6 +1,5 @@
-use std::convert::Infallible;
 use std::sync::Arc;
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::time::Duration;
 
 use axum::body::Body;
@@ -142,15 +141,46 @@ impl Taken {
     }
 }
 
-pub(super) fn body(rx: Receiver<Bytes>, taken: Taken) -> Body {
+// A binary reply (audio, not events) has no way to carry an error in the body, so a provider that
+// fails after its first bytes ends the response as an error instead of as a clean, short file.
+#[derive(Clone, Debug, Default)]
+pub(super) struct Aborted(Arc<AtomicBool>);
+
+impl Aborted {
+    fn set(&self) {
+        self.0.store(true, Ordering::Release);
+    }
+
+    fn is_set(&self) -> bool {
+        self.0.load(Ordering::Acquire)
+    }
+}
+
+pub(super) fn body(rx: Receiver<Bytes>, taken: Taken, aborted: Aborted) -> Body {
     Body::from_stream(futures::stream::unfold(
-        (rx, taken),
-        |(mut rx, taken)| async move {
-            let bytes = rx.recv().await?;
-            taken.add(bytes.len());
-            Some((Ok::<_, Infallible>(bytes), (rx, taken)))
+        Some((rx, taken, aborted)),
+        |state| async move {
+            let (mut rx, taken, aborted) = state?;
+            match rx.recv().await {
+                Some(bytes) => {
+                    taken.add(bytes.len());
+                    Some((Ok(bytes), Some((rx, taken, aborted))))
+                }
+                None if aborted.is_set() => Some((
+                    Err(std::io::Error::other("the provider's reply broke off")),
+                    None,
+                )),
+                None => None,
+            }
         },
     ))
+}
+
+// A binary reply's handler waits for its first bytes (`None`) before it answers, or for the error
+// that came before any, which it answers as an error in the app's format.
+pub(super) struct Binary {
+    pub(super) first: tokio::sync::oneshot::Sender<Option<KppError>>,
+    pub(super) aborted: Aborted,
 }
 
 struct ToApp {
@@ -268,6 +298,7 @@ pub(super) struct Parts {
     pub(super) keep_reply: bool,
     pub(super) account: Option<AccountSignIn>,
     pub(super) taken: Taken,
+    pub(super) binary: Option<Binary>,
 }
 
 pub(super) enum Gathered {
@@ -371,7 +402,12 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
         keep_reply,
         account,
         taken,
+        binary,
     } = parts;
+    let (mut first, aborted) = match binary {
+        Some(b) => (Some(b.first), Some(b.aborted)),
+        None => (None, None),
+    };
     let mut asm = if keep_reply {
         Assembler::new(counter.dialect)
     } else {
@@ -524,6 +560,9 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
                     break 'read;
                 }
                 last_write = Instant::now();
+                if let Some(f) = first.take() {
+                    let _ = f.send(None);
+                }
             }
             if ends {
                 last_event_at.get_or_insert(app.progress.bytes);
@@ -669,6 +708,17 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
     {
         c.keep().await;
     }
+    if let (Some(b), Some(aborted)) = (&broken, &aborted) {
+        match first.take() {
+            Some(f) => {
+                let _ = f.send(Some(b.err.clone().with_status(b.status)));
+            }
+            None => aborted.set(),
+        }
+    }
+    if let Some(f) = first.take() {
+        let _ = f.send(None);
+    }
     match broken {
         Some(b) => {
             let provider = rec.outcome().provider.unwrap_or_default();
@@ -800,7 +850,7 @@ mod tests {
         use http_body_util::BodyExt;
         let (tx, rx) = tokio::sync::mpsc::channel(4);
         let taken = Taken::default();
-        let mut body = body(rx, taken.clone());
+        let mut body = body(rx, taken.clone(), Aborted::default());
         tx.send(Bytes::from_static(b"data: one\n\n")).await.unwrap();
         tx.send(Bytes::from_static(b"data: [DONE]\n\n"))
             .await
