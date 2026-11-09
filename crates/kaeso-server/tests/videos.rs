@@ -806,7 +806,7 @@ async fn gemini_omni_runs_on_the_agent_platforms_global_interactions_with_a_serv
         .post(
             &format!("/orgs/{org}/projects/{}/models", env.project),
             json!({
-                "provider": "gemini-agent-platform", "model_id": "gemini-omni-1.2-flash", "custom": true,
+                "provider": "gemini-agent-platform", "model_id": "gemini-omni-1.2-flash",
                 "overrides": {
                     "input_modalities": ["text", "image"], "output_modalities": ["video"],
                     "context_limit": 32000, "output_limit": 32000,
