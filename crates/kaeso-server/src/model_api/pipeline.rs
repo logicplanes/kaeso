@@ -375,6 +375,10 @@ pub async fn serve_with(
             rec.outcome = None;
             resp
         }
+        Ok(Done::Refused(failure)) => {
+            rec.outcome = None;
+            answer(&failure)
+        }
         Err(failure) => {
             let mut resp = answer(&failure);
             if let Some(v) = rec.outcome().response_cache {
@@ -391,6 +395,9 @@ pub async fn serve_with(
 enum Done {
     Complete(Response, u16),
     Streaming(Response),
+    // A stream that failed before its first byte: the stream's task logged it, and the app gets
+    // the error in its own format.
+    Refused(Failure),
 }
 
 pub(super) fn header_list(headers: &HeaderMap) -> HeaderList {
@@ -1492,10 +1499,37 @@ async fn attempt(
                 keep_reply: keep_content,
                 account,
                 taken: taken.clone(),
+                binary: None,
             };
             let media_type = dispatch::stream_media_type(ingress, &encode_ctx);
+            let aborted = stream::Aborted::default();
+            // Audio has no room for an error once it has begun, so its status waits for the
+            // provider's first bytes; event streams answer at once and carry errors as events.
+            let (parts, first) = if media_type.starts_with("text/event-stream") {
+                (parts, None)
+            } else {
+                let (first, wait) = tokio::sync::oneshot::channel();
+                let binary = stream::Binary {
+                    first,
+                    aborted: aborted.clone(),
+                };
+                (
+                    stream::Parts {
+                        binary: Some(binary),
+                        ..parts
+                    },
+                    Some(wait),
+                )
+            };
             state.in_flight.spawn(stream::pump(parts, tx, task_rec));
-            let mut resp = Response::new(stream::body(rx, taken));
+            if let Some(wait) = first
+                && let Ok(Some(err)) = wait.await
+            {
+                let mut failure = Failure::new(err, Stage::Provider);
+                failure.served = served.clone();
+                return Ok(Done::Refused(failure));
+            }
+            let mut resp = Response::new(stream::body(rx, taken, aborted));
             let h = resp.headers_mut();
             h.insert(
                 header::CONTENT_TYPE,
@@ -1988,6 +2022,7 @@ impl Done {
         match self {
             Done::Complete(_, status) => *status,
             Done::Streaming(resp) => resp.status().as_u16(),
+            Done::Refused(f) => f.err.status.unwrap_or(502),
         }
     }
 
@@ -2000,6 +2035,10 @@ impl Done {
             Done::Streaming(mut resp) => {
                 stamp_route(&mut resp, walked);
                 Done::Streaming(resp)
+            }
+            Done::Refused(mut f) => {
+                f.served.route = walked.to_vec();
+                Done::Refused(f)
             }
         }
     }

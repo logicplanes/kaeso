@@ -238,6 +238,63 @@ async fn other_providers_speak_in_their_own_forms() {
 }
 
 #[tokio::test]
+async fn audio_that_breaks_off_is_an_error_not_a_clean_short_file() {
+    let env = env().await;
+    let send = |input: &str| {
+        Request::builder()
+            .uri("/v1/audio/speech")
+            .method("POST")
+            .header("authorization", format!("Bearer {}", env.key))
+            .header("content-type", "application/json")
+            .body(Body::from(
+                json!({"model": "tts-1", "voice": "alloy", "input": input}).to_string(),
+            ))
+            .unwrap()
+    };
+
+    let resp = env
+        .app
+        .router
+        .clone()
+        .oneshot(send("Hi. [mock:audio-cut=0]"))
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::BAD_GATEWAY);
+    assert!(
+        resp.headers()["content-type"]
+            .to_str()
+            .unwrap()
+            .starts_with("application/json")
+    );
+    let body = resp.into_body().collect().await.unwrap().to_bytes();
+    let error: Value = serde_json::from_slice(&body).unwrap();
+    assert!(error["error"]["message"].is_string(), "{error}");
+    let outcomes = env.outcomes().await;
+    let o = outcomes.last().unwrap();
+    assert_eq!(o.status, 502);
+    assert_eq!(
+        outcomes.iter().filter(|o| o.status == 502).count(),
+        1,
+        "logged once"
+    );
+
+    let resp = env
+        .app
+        .router
+        .clone()
+        .oneshot(send("Hi. [mock:audio-cut=4]"))
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::OK);
+    assert_eq!(resp.headers()["content-type"], "audio/mpeg");
+    assert!(
+        resp.into_body().collect().await.is_err(),
+        "the body ends in an error after the bytes that arrived"
+    );
+    assert_eq!(outcome(&env).await.status, 502);
+}
+
+#[tokio::test]
 async fn transcriptions_take_every_form_and_log_the_audio_length_without_its_bytes() {
     let env = env().await;
     let r = upload(

@@ -722,6 +722,31 @@ fn bytes_file(path: &Path, content_type: &str) -> Response {
         .unwrap_or_else(|_| StatusCode::INTERNAL_SERVER_ERROR.into_response())
 }
 
+// `[mock:audio-cut=<n>]`: 200 with the first `n` bytes of the audio, then the connection
+// breaks, as a provider that fails while it streams audio.
+fn cut_audio(path: &Path, n: usize) -> Response {
+    let bytes =
+        std::fs::read(path).unwrap_or_else(|e| panic!("mock: cannot read {}: {e}", path.display()));
+    let head = Bytes::copy_from_slice(bytes.get(..n).unwrap_or(&bytes));
+    // The break waits until the bytes before it are on the wire; breaking at once would drop
+    // them with the connection.
+    let chunks = futures::stream::unfold(Some(head), |head| async move {
+        match head {
+            Some(head) if !head.is_empty() => Some((Ok(head), Some(Bytes::new()))),
+            Some(_) => {
+                tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+                Some((Err(std::io::Error::other("cut")), None))
+            }
+            None => None,
+        }
+    });
+    Response::builder()
+        .status(StatusCode::OK)
+        .header("content-type", "audio/mpeg")
+        .body(Body::from_stream(chunks))
+        .unwrap_or_else(|_| StatusCode::INTERNAL_SERVER_ERROR.into_response())
+}
+
 fn form_value<'a>(form: &'a str, name: &str) -> Option<&'a str> {
     let head = format!("name=\"{name}\"\r\n\r\n");
     let start = form.find(&head)? + head.len();
@@ -845,6 +870,9 @@ fn audio(fixtures: &Path, path: &str, text: &str) -> Option<Response> {
         "/v1/t2a_v2" => json(&fixtures.join("minimax_speech/responses"), "speech"),
         "/v4/ai/speech-model" => json(&speech.join("providers/vercel/responses"), "speech"),
         "/v1/audio/speech" | "/v1/tts" => {
+            if let Some(n) = marker(text, "audio-cut").and_then(|n| n.parse::<usize>().ok()) {
+                return Some(cut_audio(&speech.join("responses/speech.mp3"), n));
+            }
             let mistral = text.contains("\"voice_id\"") && !path.ends_with("/tts");
             if mistral && text.contains("\"stream\":true") {
                 events(speech.join("providers/mistral/streams/stream-speech.sse"))

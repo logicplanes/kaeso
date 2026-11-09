@@ -59,7 +59,7 @@ console.log(transcript.text);
 
 - **声音。** 只有服务商列出的声音才会传过去：OpenAI 的声音传给 OpenAI，Gemini 的 30 个预置声音传给 Google 模型，SpaceX 的声音 ID 传给 SpaceX。声音取决于模型的服务商（Groq、Together AI、Mistral、OpenRouter、MiniMax）按原样接收名称。QwenCloud 接收其列表为该模型列出的声音，例如 `qwen3-tts-flash` 的 `Cherry`，或声音 ID，例如克隆声音的 ID。ElevenLabs 按 ID 接收声音，即其 `GET /v1/voices` 列出的 ID：把 ID 作为 `voice` 发送，或发送 `{"id": "…"}`；`alloy` 这样的名称会被拒绝，因为 Kaeso 不猜测它对应 ElevenLabs 的哪个声音。
 - **格式**从不转换。服务商没有的格式会在发送任何内容之前被拒绝，`param` 中为 `response_format`。应用未指定格式时，OpenAI 返回 mp3，因此 Kaeso 向每个服务商都明确请求 mp3；`qwen3-tts-flash` 只生成 wav 和 pcm，因此应用需指定其中之一。
-- **流式。** 音频按服务商发送的样子传给应用。请求 `stream_format: "sse"` 时，Kaeso 为任何服务商写出 `speech.audio.delta` 事件；一次性发送完整音频的服务商会得到一个增量和结束事件。OpenAI 只在事件中报告用量，因此 Kaeso 向 OpenAI 请求事件，再为需要音频的应用还原成音频；`tts-1` 和 `tts-1-hd` 没有事件，按字符计费。
+- **流式。** 音频按服务商发送的样子传给应用。请求 `stream_format: "sse"` 时，Kaeso 为任何服务商写出 `speech.audio.delta` 事件；一次性发送完整音频的服务商会得到一个增量和结束事件。OpenAI 只在事件中报告用量，因此 Kaeso 向 OpenAI 请求事件，再为需要音频的应用还原成音频；`tts-1` 和 `tts-1-hd` 没有事件，按字符计费。音频要等服务商的首批字节到达后才返回状态：服务商在此之前失败时，应用会收到 OpenAI 格式的错误；之后中断时，响应以错误结束，绝不会是一个看似正常结束的残缺文件。
 - **设置**：服务商不支持的设置，例如 Gemini 的 `instructions` 或 Together AI 的 `speed`，会被拒绝，`param` 中给出该字段。
 - **QwenCloud** 边生成边流式发送语音，Kaeso 总是这样请求。`qwen3-tts-flash` 的完整 wav 回复是一个链接，Kaeso 会像下载 [QwenCloud 的图片](images.md#服务商)一样下载它。它的实时模型只接受 WebSocket 连接，会被拒绝。
 
