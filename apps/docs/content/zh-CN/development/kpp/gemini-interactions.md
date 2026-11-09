@@ -1,16 +1,16 @@
 ---
 title: Gemini Interactions
-description: KPP 的视频任务如何映射到 Google AI Studio Interactions API 上的 Gemini Omni。
+description: KPP 的视频任务如何映射到 Google AI Studio 和 Gemini Enterprise Agent Platform 的 Interactions API 上的 Gemini Omni。
 order: 8
 ---
 
-在这里查阅视频任务如何到达 Google AI Studio 上的 Gemini Omni：哪个字段放在哪里、如何查询任务，以及每项映射的来源。这里只映射 Interactions API 的视频部分。
+在这里查阅视频任务如何到达 Google AI Studio 和 Gemini Enterprise Agent Platform 上的 Gemini Omni：哪个字段放在哪里、如何查询任务，以及每项映射的来源。这里只映射 Interactions API 的视频部分。
 
 - **编解码器：**`kaeso_codecs::gemini_interactions::GeminiInteractions`（`crates/kaeso-codecs/src/gemini_interactions/`）
-- **路径：**`POST /v1beta/interactions`、`GET /v1beta/interactions/{id}` 和 `DELETE /v1beta/interactions/{id}`
+- **路径：**Google AI Studio 上为 `POST /v1beta/interactions`、`GET /v1beta/interactions/{id}` 和 `DELETE /v1beta/interactions/{id}`；Agent Platform 上为 `/v1beta1/projects/{project}/locations/global/interactions` 下的 `POST` 和 `GET`
 - **Fixture：**`crates/kaeso-codecs/fixtures/gemini_interactions/`；`responses/recorded-started.json` 和 `polls/recorded-failed-quota.json` 使用免费套餐的密钥录制，其余依据参考文档构建
 
-**来源。**Google AI Studio 的 [Gemini Omni Flash](https://aistudio.google.com/docs/omni) 和[创建交互](https://aistudio.google.com/api-reference/interactions-api/create-interaction)参考文档，2026-11-09 查阅。
+**来源。**Google AI Studio 的 [Gemini Omni Flash](https://aistudio.google.com/docs/omni) 和[创建交互](https://aistudio.google.com/api-reference/interactions-api/create-interaction)参考文档，以及 Agent Platform 的[根据文本生成视频](https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/video/generate-videos-from-text)，2026-11-09 查阅。
 
 ## 决定
 
@@ -18,6 +18,7 @@ order: 8
 - **在后台运行。**每个任务都带 `background: true` 发送，它会立即返回交互的 ID；之后查询时以内联方式返回视频。
 - **任务类型跟随图片。**首帧和尾帧发送 `generation_config.video_config.task: "image_to_video"`，参考图片发送 `"reference_to_video"`；没有图片时由模型推断任务类型。
 - **remix 延续交互。**`previous_interaction_id` 用新的提示词改进先前的视频，与 Google 的有状态编辑相同。
+- **Agent Platform：全局位置、服务账号、不删除。**Omni 在那里只在 `global` 位置提供，因此无论密钥指定哪个位置，Kaeso 都发往那里。快捷模式不列出任何 Omni 模型，因此只有服务账号能调用它。其参考文档没有记录删除操作，因此 Kaeso 只会忘掉被删除的视频。Kaeso 不发送 `gcs_uri`，因此视频与 Google AI Studio 上一样以内联方式返回。
 - **Omni 总是生成声音。**`audio: false` 会被拒绝（参数 `audio`）；`audio: true` 不发送任何内容。
 
 ## 请求

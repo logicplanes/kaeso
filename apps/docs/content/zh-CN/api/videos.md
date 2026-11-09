@@ -103,6 +103,7 @@ SpaceX 通过其编辑 API 进行 remix，Gemini Omni 延续先前的交互。�
 | SpaceX | `grok-imagine-video-1.5`、`grok-imagine-video-1.5-lite`、`grok-imagine-video` | 第一帧，上传或链接 | 是 | [Videos](https://docs.x.ai/developers/rest-api-reference/inference/videos) |
 | Google AI Studio | `gemini-omni-1.2-flash`、`gemini-omni-1.1-flash` | 第一帧，上传或链接 | 是 | [Gemini Omni](https://aistudio.google.com/docs/omni) |
 | Gemini Enterprise Agent Platform | `veo-3.1-generate-001`、`veo-3.1-fast-generate-001`、`veo-3.1-lite-generate-001`，需服务账号密钥 | 第一帧，上传 | 否 | [Veo 3.1](https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/veo/3-1-generate) |
+| Gemini Enterprise Agent Platform | `gemini-omni-1.2-flash`、`gemini-omni-1.1-flash-preview`、`gemini-omni-flash-preview`，需服务账号密钥 | 第一帧，上传或 `gs://` 链接 | 是 | [根据文本生成视频](https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/video/generate-videos-from-text) |
 | MiniMax | `MiniMax-Hailuo-2.3`、`MiniMax-Hailuo-2.3-Fast`、`MiniMax-Hailuo-02`、`MiniMax-H3` 及其变体 | 第一帧，上传或链接 | 否 | [视频生成](https://platform.minimax.io/docs/api-reference/video-generation-t2v) |
 | Z.ai | `cogvideox-3` | 第一帧，上传或链接 | 否 | [生成视频](https://docs.z.ai/api-reference/video/generate-video) |
 | OpenRouter | 其视频模型，例如 `google/veo-3.1` 和 `alibaba/wan-3.0` | 第一帧，上传或链接 | 否 | [视频生成](https://openrouter.ai/docs/api/api-reference/video-generation/submit-a-video-generation-request) |
@@ -113,13 +114,13 @@ SpaceX 通过其编辑 API 进行 remix，Gemini Omni 延续先前的交互。�
 | QwenCloud | Wan 文生视频和图生视频，例如 `wan3.0-video`、`wan2.7-t2v` 和 `wan2.6-i2v-flash` | 第一帧，上传或链接，适用于图生视频模型和 Wan 3.0 | 否 | [视频生成](https://docs.qwencloud.com/api-reference/video-generation/wan-text-to-video/create-task) |
 | Anthropic、DeepSeek、Groq、Mistral、Cohere、Ollama Cloud、Moonshot、Cerebras | 服务商不提供 | — | — | 各服务商的 API 参考 |
 
-当 KPMR 或项目自己的条目表明某个模型生成视频时，项目会把它列为视频模型。Gemini Enterprise Agent Platform 上的 Veo 需要服务账号密钥：快捷模式不列出任何 Veo 模型，因此 Kaeso 会拒绝用于这些模型的快捷模式密钥。Kaeso 不调用 Agent Platform 上的 Gemini Omni，因为该平台只在其全局位置提供它。
+当 KPMR 或项目自己的条目表明某个模型生成视频时，项目会把它列为视频模型。Gemini Enterprise Agent Platform 上的 Veo 需要服务账号密钥：快捷模式不列出任何 Veo 模型，因此 Kaeso 会拒绝用于这些模型的快捷模式密钥。Agent Platform 上的 Gemini Omni 同样需要服务账号密钥，因为快捷模式不列出任何 Omni 模型；无论密钥指定哪个位置，它都发往平台的全局位置，因为 Omni 只在那里提供。
 
 [OpenAI Videos 映射](../development/kpp/openai-videos.md)及其旁边的各服务商页面列出了每个字段以及每个服务商如何接收它。
 
 ## 费用和日志
 
-启动视频不产生费用。当第一个请求看到视频完成时，Kaeso 按 KPMR 中该模型的价格计费一次：按秒或按视频计价，价格不同时按分辨率、声音和时长区分。Gemini Omni 按其 Token 计费。失败的视频不产生费用，KPMR 中没有价格的模型记录日志时不带费用。Kaeso 不使用 Together AI 的 `outputs.cost`，因为 Together 没有记录其单位。
+启动视频不产生费用。当第一个请求看到视频完成时，Kaeso 按 KPMR 中该模型的价格计费一次：按秒或按视频计价，价格不同时按分辨率、声音和时长区分。Gemini Omni 按其 Token 计费。失败的视频不产生费用，KPMR 中没有价格的模型记录日志时不带费用。Kaeso 会把 Together AI 的 `outputs.cost` 保存在任务中，但不按它计费：Together 的参考文档把它写成不带单位的整数。
 
 支出预算在视频启动前检查其最贵的情况，视频结束后才计入其费用。请求日志把启动显示为 `videos` 或 `videos/remix`，把完成的视频显示为 `videos/completed`，带有片段数、秒数和分辨率。日志从不保存视频或图片字节（[请求日志](../console/request-logs.md)）。
 

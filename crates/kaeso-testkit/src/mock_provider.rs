@@ -862,7 +862,8 @@ struct PlatformPath {
 // mock answers both like AI Studio's `/v1beta/models`. With a token it also serves Claude at
 // `…/publishers/anthropic/models/{model}:rawPredict` (`:streamRawPredict`,
 // `count-tokens:rawPredict`) and other models at `…/endpoints/openapi/chat/completions`,
-// which the mock answers like Anthropic's and OpenAI's own paths.
+// which the mock answers like Anthropic's and OpenAI's own paths. Gemini Omni's interactions,
+// at `/v1beta1/projects/{project}/locations/global/interactions`, answer like AI Studio's.
 fn agent_platform_path(path: &str) -> Option<PlatformPath> {
     const MODELS: &str = "publishers/google/models";
     if let Some(rest) = path
@@ -872,6 +873,19 @@ fn agent_platform_path(path: &str) -> Option<PlatformPath> {
         return Some(PlatformPath {
             project: false,
             as_ai_studio: format!("{GEMINI_MODELS}{rest}"),
+        });
+    }
+    if let Some(rest) = path.strip_prefix("/v1beta1/projects/") {
+        let mut parts = rest.splitn(4, '/');
+        let (_project, locations, location, tail) =
+            (parts.next()?, parts.next()?, parts.next()?, parts.next()?);
+        let rest = tail.strip_prefix("interactions")?;
+        if locations != "locations" || location != "global" {
+            return None;
+        }
+        return Some(PlatformPath {
+            project: true,
+            as_ai_studio: format!("/v1beta/interactions{rest}"),
         });
     }
     let rest = path.strip_prefix("/v1/projects/")?;

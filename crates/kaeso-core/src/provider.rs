@@ -1331,7 +1331,10 @@ pub const PROVIDERS: &[Provider] = &[
         images: &[ImagesEgress::gemini()],
         speech: &[SpeechEgress::gemini()],
         transcriptions: &[TranscriptionsEgress::gemini()],
-        videos: &[VideosEgress::of(DialectId::Veo).for_models("veo-*")],
+        videos: &[
+            VideosEgress::of(DialectId::Veo).for_models("veo-*"),
+            VideosEgress::of(DialectId::GeminiInteractions).for_models("gemini-omni-*"),
+        ],
         dialects: &[
             DialectId::Gemini,
             DialectId::AnthropicMessages,

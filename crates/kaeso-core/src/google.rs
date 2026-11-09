@@ -44,6 +44,12 @@ pub fn openapi_path(project: &str, location: &str) -> String {
     format!("/v1/projects/{project}/locations/{location}/endpoints/openapi")
 }
 
+/// The directory of the platform's Interactions API, which Gemini Omni makes video through in
+/// the global location only.
+pub fn interactions_base(project: &str) -> String {
+    format!("/v1beta1/projects/{project}/locations/{GLOBAL}")
+}
+
 pub fn publisher_path(project: &str, location: &str, publisher: &str) -> String {
     format!("/v1/projects/{project}/locations/{location}/publishers/{publisher}/models")
 }
