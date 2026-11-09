@@ -280,7 +280,7 @@ The message names the cause and what to do. These are the causes behind each sta
 | 500 | The model's provider is a custom provider, and the install turned custom providers off. |
 | 502 | Kaeso can't reach the provider, or the transfer failed. |
 | 502 | A custom provider is at an address the install doesn't allow, or answered in a form its format can't read. |
-| 502 | The provider refused the project's provider key, or refused it for billing or quota reasons. |
+| 502 | The provider refused the project's provider key, didn't allow the request with it, or refused it for billing or quota reasons. |
 | 503 | Kaeso can't load the catalogue, the keys, the provider keys or the limits, or it is restarting. The OpenAI formats answer these with 500. |
 | 503 | The provider is overloaded, in the OpenAI and Gemini formats. |
 | 504 | The provider didn't answer in time. |
@@ -297,6 +297,7 @@ Otherwise Kaeso writes the error in your app's format and keeps its meaning:
 | The provider | Your app gets |
 | --- | --- |
 | Refuses the provider key | 502, in every format |
+| Doesn't allow the request with the key, for example for a model the key's plan excludes | 502, in every format |
 | Rate-limits the request | 429 |
 | Refuses for billing or quota reasons | 502, in every format |
 | Is overloaded | 529 in the Anthropic format, 503 in the OpenAI and Gemini formats |
@@ -304,7 +305,7 @@ Otherwise Kaeso writes the error in your app's format and keeps its meaning:
 
 A refused provider key is the install's problem, not your app's. The provider's 401, 402 or 403 would make an SDK report a wrong Kaeso key. The provider's message can also hold a fragment of the provider key or the provider's organization id.
 
-Instead, your app gets a provider error with the message "The provider refused this project's provider key. Ask an organization admin to check it under Providers.", or the same with "for billing or quota reasons". An organization admin checks the key under **Providers**.
+Instead, your app gets a provider error with the message "The provider refused this project's provider key. Ask an organization admin to check it under Providers.", or the same with "for billing or quota reasons". For the provider's 403, which comes with a working key that may not make this request, the message is "The provider doesn't allow this request with this project's provider key, for example for this model, plan or region. Ask an organization admin to check it under Providers." An organization admin checks the key under **Providers**.
 
 The request log keeps the provider's own message, with anything that looks like a key, a project or an organization id replaced by `[redacted]`. Kaeso sends every request once and never retries it, on this model or another. The SDKs retry on their own where the error allows it.
 

@@ -9,6 +9,7 @@ use common::v1::{Answer, Capture, Env, call, chat, messages};
 use serde_json::{Value, json};
 
 const KEY_REFUSED: &str = "The provider refused this project's provider key. Ask an organization admin to check it under Providers.";
+const PERMISSION_REFUSED: &str = "The provider doesn't allow this request with this project's provider key, for example for this model, plan or region. Ask an organization admin to check it under Providers.";
 const ACCOUNT_REFUSED: &str = "The provider refused this project's provider key for billing or quota reasons. Ask an organization admin to check it under Providers.";
 
 #[derive(Clone, Copy)]
@@ -71,10 +72,10 @@ async fn a_refused_provider_key_is_a_provider_error_in_every_format() {
     let env = env().await;
     for (model, fixture, message) in [
         ("claude-haiku-4-5", "authentication", KEY_REFUSED),
-        ("claude-haiku-4-5", "permission", KEY_REFUSED),
+        ("claude-haiku-4-5", "permission", PERMISSION_REFUSED),
         ("claude-haiku-4-5", "billing", ACCOUNT_REFUSED),
         ("gpt-4o", "invalid-api-key-401", KEY_REFUSED),
-        ("gpt-4o", "unsupported-region-403", KEY_REFUSED),
+        ("gpt-4o", "unsupported-region-403", PERMISSION_REFUSED),
         ("gpt-4o", "insufficient-quota-429", ACCOUNT_REFUSED),
     ] {
         for app in APPS {

@@ -311,7 +311,7 @@ async fn vercel_refusals_reach_each_app_in_its_own_error_format() {
     assert_eq!(r.status, StatusCode::BAD_GATEWAY, "{}", r.text());
     assert_eq!(
         r.json()["error"]["message"],
-        "The provider refused this project's provider key. Ask an organization admin to check it under Providers."
+        "The provider doesn't allow this request with this project's provider key, for example for this model, plan or region. Ask an organization admin to check it under Providers."
     );
     let o = env.outcomes().await.pop().unwrap();
     assert!(

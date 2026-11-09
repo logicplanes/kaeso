@@ -280,7 +280,7 @@ Die Meldung nennt die Ursache und was zu tun ist. Diese Ursachen stehen hinter j
 | 500 | Der Anbieter des Modells ist ein eigener Anbieter, und die Installation hat eigene Anbieter ausgeschaltet. |
 | 502 | Kaeso erreicht den Anbieter nicht, oder die Übertragung ist fehlgeschlagen. |
 | 502 | Ein eigener Anbieter liegt an einer Adresse, die die Installation nicht erlaubt, oder hat in einer Form geantwortet, die sein Format nicht lesen kann. |
-| 502 | Der Anbieter hat den Anbieter-Schlüssel des Projekts abgelehnt, oder aus Abrechnungs- oder Kontingentgründen abgelehnt. |
+| 502 | Der Anbieter hat den Anbieter-Schlüssel des Projekts abgelehnt, die Anfrage damit nicht erlaubt, oder ihn aus Abrechnungs- oder Kontingentgründen abgelehnt. |
 | 503 | Kaeso kann den Katalog, die Schlüssel, die Anbieter-Schlüssel oder die Limits nicht laden, oder Kaeso startet gerade neu. Die OpenAI-Formate antworten darauf mit 500. |
 | 503 | Der Anbieter ist überlastet, in den OpenAI-Formaten und im Gemini-Format. |
 | 504 | Der Anbieter hat nicht rechtzeitig geantwortet. |
@@ -297,6 +297,7 @@ Andernfalls schreibt Kaeso den Fehler im Format Ihrer App und behält seine Bede
 | Der Anbieter | Ihre App erhält |
 | --- | --- |
 | Lehnt den Anbieter-Schlüssel ab | 502, in jedem Format |
+| Erlaubt die Anfrage mit dem Schlüssel nicht, etwa für ein Modell, das sein Tarif ausschließt | 502, in jedem Format |
 | Lehnt die Anfrage wegen seines Ratenlimits ab | 429 |
 | Lehnt aus Abrechnungs- oder Kontingentgründen ab | 502, in jedem Format |
 | Ist überlastet | 529 im Anthropic-Format, 503 in den OpenAI-Formaten und im Gemini-Format |
@@ -304,7 +305,7 @@ Andernfalls schreibt Kaeso den Fehler im Format Ihrer App und behält seine Bede
 
 Ein abgelehnter Anbieter-Schlüssel ist ein Problem der Installation, nicht Ihrer App. Das 401, 402 oder 403 des Anbieters ließe ein SDK einen falschen Kaeso-Schlüssel melden. Die Meldung des Anbieters kann außerdem einen Teil des Anbieter-Schlüssels oder die Organisations-ID beim Anbieter enthalten.
 
-Stattdessen erhält Ihre App einen Anbieterfehler mit der Meldung „The provider refused this project's provider key. Ask an organization admin to check it under Providers.“, oder derselben mit „for billing or quota reasons“. Ein Organisations-Admin prüft den Schlüssel unter **Anbieter**.
+Stattdessen erhält Ihre App einen Anbieterfehler mit der Meldung „The provider refused this project's provider key. Ask an organization admin to check it under Providers.“, oder derselben mit „for billing or quota reasons“. Beim 403 des Anbieters, das mit einem funktionierenden Schlüssel kommt, der diese Anfrage nicht stellen darf, lautet die Meldung „The provider doesn't allow this request with this project's provider key, for example for this model, plan or region. Ask an organization admin to check it under Providers.“ Ein Organisations-Admin prüft den Schlüssel unter **Anbieter**.
 
 Das Anfrageprotokoll behält die eigene Meldung des Anbieters, wobei alles, was wie ein Schlüssel, eine Projekt- oder Organisations-ID aussieht, durch `[redacted]` ersetzt ist. Kaeso sendet jede Anfrage einmal und wiederholt sie nie, weder an dieses noch an ein anderes Modell. Die SDKs wiederholen selbst, wo der Fehler es zulässt.
 

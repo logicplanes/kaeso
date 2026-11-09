@@ -280,7 +280,7 @@ try {
 | 500 | 模型的服务商是自定义服务商，而实例已关闭自定义服务商。 |
 | 502 | Kaeso 无法连接服务商，或传输失败。 |
 | 502 | 自定义服务商位于实例不允许的地址，或其回复的形式无法按其格式读取。 |
-| 502 | 服务商拒绝了项目的服务商密钥，或因计费或配额原因拒绝了它。 |
+| 502 | 服务商拒绝了项目的服务商密钥，不允许用它发出该请求，或因计费或配额原因拒绝了它。 |
 | 503 | Kaeso 无法加载目录、密钥、服务商密钥或限额，或正在重启。OpenAI 格式对这些情况返回 500。 |
 | 503 | 服务商过载，适用于 OpenAI 格式和 Gemini 格式。 |
 | 504 | 服务商未及时响应。 |
@@ -297,6 +297,7 @@ try {
 | 服务商 | 应用收到 |
 | --- | --- |
 | 拒绝服务商密钥 | 502，所有格式均如此 |
+| 不允许用该密钥发出请求，例如密钥套餐不包含的模型 | 502，所有格式均如此 |
 | 因速率限制拒绝请求 | 429 |
 | 因计费或配额原因拒绝 | 502，所有格式均如此 |
 | 过载 | Anthropic 格式为 529，OpenAI 格式和 Gemini 格式为 503 |
@@ -304,7 +305,7 @@ try {
 
 被拒绝的服务商密钥是安装的问题，而不是应用的问题。服务商的 401、402 或 403 会让 SDK 报告 Kaeso 密钥错误。服务商的消息还可能包含服务商密钥的片段或服务商的组织 ID。
 
-因此，应用收到的是一个服务商错误，消息为“The provider refused this project's provider key. Ask an organization admin to check it under Providers.”，或带有“for billing or quota reasons”的同一消息。组织管理员可在**服务商**下检查该密钥。
+因此，应用收到的是一个服务商错误，消息为“The provider refused this project's provider key. Ask an organization admin to check it under Providers.”，或带有“for billing or quota reasons”的同一消息。服务商返回 403 时，密钥本身可用，只是不能发出此请求，消息为“The provider doesn't allow this request with this project's provider key, for example for this model, plan or region. Ask an organization admin to check it under Providers.”组织管理员可在**服务商**下检查该密钥。
 
 请求日志会保存服务商自己的消息，其中看起来像密钥、项目 ID 或组织 ID 的内容会替换为 `[redacted]`。Kaeso 每个请求只发送一次，从不重发，无论是发给这个模型还是其他模型。SDK 会在错误允许时自行重试。
 

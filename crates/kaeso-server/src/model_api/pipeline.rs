@@ -554,11 +554,14 @@ fn unreadable(err: KppError, provider: &ProviderRef, dialect: DialectId) -> KppE
 
 const KEY_REFUSED: &str = "The provider refused this project's provider key. Ask an organization admin to check it under Providers.";
 
+const PERMISSION_REFUSED: &str = "The provider doesn't allow this request with this project's provider key, for example for this model, plan or region. Ask an organization admin to check it under Providers.";
+
 const ACCOUNT_REFUSED: &str = "The provider refused this project's provider key for billing or quota reasons. Ask an organization admin to check it under Providers.";
 
 pub(crate) fn refused_key(err: &KppError) -> Option<KppError> {
     let message = match err.kind {
-        ErrorKind::Authentication | ErrorKind::PermissionDenied => KEY_REFUSED,
+        ErrorKind::Authentication => KEY_REFUSED,
+        ErrorKind::PermissionDenied => PERMISSION_REFUSED,
         ErrorKind::Billing => ACCOUNT_REFUSED,
         _ => return None,
     };
