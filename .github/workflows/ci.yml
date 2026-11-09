@@ -767,7 +767,7 @@ jobs:
       - name: Install OpenTofu
         run: |
           set -euo pipefail
-          curl -fsSL --retry 4 --retry-all-errors -o "$RUNNER_TEMP/tofu.zip" https://github.com/opentofu/opentofu/releases/download/v1.13.9/tofu_1.13.9_linux_amd64.zip
+          curl -fsSL --retry 8 --retry-delay 15 --retry-all-errors -o "$RUNNER_TEMP/tofu.zip" https://github.com/opentofu/opentofu/releases/download/v1.13.9/tofu_1.13.9_linux_amd64.zip
           echo "bc44eb6b06446ba83bd4072114891987f590f66cca712737a7f1147c50c539ce  $RUNNER_TEMP/tofu.zip" | sha256sum --check --quiet
           sudo unzip -q -o "$RUNNER_TEMP/tofu.zip" tofu -d /usr/local/bin
           tofu version

@@ -242,9 +242,9 @@ def test_the_terraform_for_gcp_is_formatted_and_valid(folder):
     cwd = ROOT / "deploy" / "gcp" / folder
     for args in [["fmt", "-check", "-diff"], ["init", "-backend=false", "-input=false", "-no-color"], ["validate", "-no-color"]]:
         # init downloads the provider from GitHub releases, which times out now and then.
-        for attempt in range(3 if args[0] == "init" else 1):
+        for attempt in range(4 if args[0] == "init" else 1):
             if attempt:
-                time.sleep(10 * attempt)
+                time.sleep(20 * attempt)
             done = subprocess.run(["tofu", *args], cwd=cwd, capture_output=True, text=True)
             if done.returncode == 0:
                 break
