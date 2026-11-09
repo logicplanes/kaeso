@@ -843,9 +843,11 @@ async fn usage_shows_what_media_requests_made_and_how_many_had_no_known_price() 
         videos: 1,
         video_ms: 8_000,
     };
-    kaeso_store::pg::limits::add_usage(&env.app.state.pg, &[row.clone(), row])
-        .await
-        .unwrap();
+    for row in [row.clone(), row] {
+        kaeso_store::pg::limits::add_usage(&env.app.state.pg, &[row])
+            .await
+            .unwrap();
+    }
     let r = env
         .app
         .get(
