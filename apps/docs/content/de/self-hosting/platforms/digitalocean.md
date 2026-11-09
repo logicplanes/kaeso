@@ -16,7 +16,7 @@ Zwei [App-Specs für App Platform](https://docs.digitalocean.com/products/app-pl
 | `kaeso-valkey`, Button | Dienst auf Port 6379, nur für die Komponenten der App | Valkeys, das Release des Compose-Pakets | `apps-s-1vcpu-0.5gb` |
 | `kaeso-valkey`, `doctl` | Verwaltete Valkey-Datenbank | DigitalOceans, vorher angelegt | Ihre Wahl |
 
-Der Edge der App beendet TLS und leitet nach Pfad weiter: `/v1`, `/v1beta`, `/platform`, `/mcp`, `/oauth` und `/.well-known` erreichen das Gateway, jeder andere Pfad die Konsole, hier läuft also kein `kaeso-edge`. Das Gateway vertraut `X-Forwarded-For` aus dem privaten Netz, in dem der Edge sitzt, und hält seine Metriken auf seiner Loopback-Adresse.
+Der Edge der App beendet TLS und leitet nach Pfad weiter: `/v1`, `/v1beta`, `/v2`, `/platform`, `/mcp`, `/oauth` und `/.well-known` erreichen das Gateway, jeder andere Pfad die Konsole, hier läuft also kein `kaeso-edge`. Das Gateway vertraut `X-Forwarded-For` aus dem privaten Netz, in dem der Edge sitzt, und hält seine Metriken auf seiner Loopback-Adresse.
 
 Der Button legt nur Dev-Datenbanken an, und die gibt es nur für PostgreSQL. Seine Valkey ist deshalb ein Dienst in der App, der seine Daten in 256 MB hält und nie einen Schlüssel verdrängt. Sie startet bei jedem ihrer Deployments leer. Valkey hält nur Zähler und Caches: Das Gateway baut Budget-Zähler aus PostgreSQL neu auf, und Ratenfenster beginnen von vorn ([Backups und Hauptschlüssel](../backups.md)). Die verwaltete Valkey aus `.do/app.yaml` spricht TLS mit einem Zertifikat von DigitalOceans eigener Stelle, das die Spec dem Gateway als `KAESO_VALKEY_CA` übergibt ([Konfiguration](../configuration.md#einstellungen)).
 

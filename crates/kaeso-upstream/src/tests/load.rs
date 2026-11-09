@@ -167,7 +167,7 @@ async fn one(upstream: &Upstream, base: &Url, path: &str) -> Run {
         .send(Call {
             base_url: base,
             auth: Some(AuthStyle::Bearer),
-            guarded: false,
+            guard: crate::Guard::Off,
             credential: &credential,
             request: request.into(),
             stream: true,

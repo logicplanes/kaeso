@@ -19,8 +19,8 @@ const APP: &str = "https://app.example.com";
 const LOCAL: &str = "http://localhost:5173";
 const OTHER: &str = "https://other.example.com";
 const ORIGINS: &str = "https://APP.example.com/, http://localhost:5173";
-const SDK_HEADERS: &str = "authorization, content-type, x-api-key, anthropic-version, anthropic-beta, anthropic-dangerous-direct-browser-access, openai-organization, openai-project, idempotency-key, x-stainless-os, x-stainless-retry-count, cookie, x-forwarded-for";
-const REFLECTED: &str = "anthropic-beta, anthropic-dangerous-direct-browser-access, anthropic-version, authorization, content-type, idempotency-key, openai-organization, openai-project, x-api-key, x-stainless-os, x-stainless-retry-count";
+const SDK_HEADERS: &str = "authorization, content-type, x-api-key, anthropic-version, anthropic-beta, anthropic-dangerous-direct-browser-access, openai-organization, openai-project, idempotency-key, xi-api-key, x-stainless-os, x-stainless-retry-count, cookie, x-forwarded-for";
+const REFLECTED: &str = "anthropic-beta, anthropic-dangerous-direct-browser-access, anthropic-version, authorization, content-type, idempotency-key, openai-organization, openai-project, x-api-key, x-stainless-os, x-stainless-retry-count, xi-api-key";
 const EXPOSED: &str = "kaeso-request-id, kaeso-provider, kaeso-model, kaeso-left-out, kaeso-adapted, kaeso-route, kaeso-cache, age, retry-after, retry-after-ms";
 
 const ROUTES: &[(&str, &str)] = &[
@@ -32,6 +32,13 @@ const ROUTES: &[(&str, &str)] = &[
     ("/v1/messages/count_tokens", "POST"),
     ("/v1/models", "GET"),
     ("/v1/models/gpt-4o", "GET"),
+    ("/v1/images/generations", "POST"),
+    ("/v1/audio/speech", "POST"),
+    ("/v1/audio/transcriptions", "POST"),
+    ("/v1/videos", "POST"),
+    ("/v1/videos/video_0", "DELETE"),
+    ("/v1/text-to-speech/voice", "POST"),
+    ("/v2/voices", "GET"),
 ];
 
 #[derive(Debug, Default)]
@@ -167,7 +174,10 @@ async fn listed_origins_get_a_preflight_answer_on_every_model_route() {
             assert_eq!(r.status, StatusCode::NO_CONTENT, "{path}");
             assert!(r.body.is_empty(), "{path}");
             assert_eq!(r.header("access-control-allow-origin"), Some(origin));
-            assert_eq!(r.header("access-control-allow-methods"), Some("GET, POST"));
+            assert_eq!(
+                r.header("access-control-allow-methods"),
+                Some("GET, POST, DELETE")
+            );
             assert_eq!(r.header("access-control-allow-headers"), Some(REFLECTED));
             assert_eq!(r.header("access-control-max-age"), Some("7200"));
             assert_eq!(r.header("access-control-allow-credentials"), None);

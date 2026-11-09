@@ -425,7 +425,8 @@ async fn remix_source(
     id: &str,
 ) -> Result<RemixSource, KppError> {
     let key = super::auth::authenticate(state, headers, ip.0).await?;
-    let row = refresh(state, load(state, &key, id).await?).await?;
+    let asking = Asking::new(state, &key);
+    let row = refresh(&asking, load(state, &key, id).await?).await?;
     if row.status != VideoStatus::Completed.as_str() {
         return Err(error(
             ErrorKind::InvalidRequest,
@@ -439,7 +440,7 @@ async fn remix_source(
     }
     let dialect: DialectId = row.dialect.parse().map_err(|_| unavailable())?;
     let link = if dialect == DialectId::XaiVideos {
-        let up = reach(state, &row).await?;
+        let up = reach(&asking, &row).await?;
         let job = poll(state, &up, &row).await?;
         match job.output(VideoVariant::Video).map(|o| &o.source) {
             Some(Source::Url(u)) => Some(u.clone()),
@@ -523,7 +524,7 @@ pub(super) async fn retrieve(
     let id = video_id(&uri);
     let found = async {
         let key = super::auth::authenticate(&state, &headers, ip.0).await?;
-        let row = refresh(&state, load(&state, &key, &id).await?).await?;
+        let row = refresh(&Asking::new(&state, &key), load(&state, &key, &id).await?).await?;
         dispatch::encode_response(
             D,
             &Reply::Video(app_view(&row, None)),
@@ -546,7 +547,11 @@ pub(super) async fn delete(
     let deleted = async {
         let key = super::auth::authenticate(&state, &headers, ip.0).await?;
         let row = load(&state, &key, &id).await?;
-        if let Ok(up) = reach(&state, &row).await
+        let reached = match reach(&Asking::new(&state, &key), &row).await {
+            Err(e) if e.status == Some(429) => return Err(e),
+            r => r,
+        };
+        if let Ok(up) = reached
             && let Some(req) = dispatch::encode_video_delete(
                 up.dialect,
                 &row.upstream_id,
@@ -610,7 +615,32 @@ fn setup() -> KppError {
     )
 }
 
-async fn reach(state: &AppState, row: &VideoRow) -> Result<Reached, KppError> {
+/// An app's request about one of its videos. The first time it reaches the provider, it counts
+/// against the key's request rates, since it spends the provider's quota with the org's key.
+struct Asking<'a> {
+    state: &'a AppState,
+    key: &'a KeyAuth,
+    counted: std::sync::atomic::AtomicBool,
+}
+
+impl<'a> Asking<'a> {
+    fn new(state: &'a AppState, key: &'a KeyAuth) -> Self {
+        Asking {
+            state,
+            key,
+            counted: std::sync::atomic::AtomicBool::new(false),
+        }
+    }
+}
+
+async fn reach(asking: &Asking<'_>, row: &VideoRow) -> Result<Reached, KppError> {
+    let state = asking.state;
+    if !asking
+        .counted
+        .swap(true, std::sync::atomic::Ordering::Relaxed)
+    {
+        pipeline::admit_follow_up(state, asking.key, row.catalogue_model_id).await?;
+    }
     let dialect: DialectId = row.dialect.parse().map_err(|_| unavailable())?;
     let provider = kaeso_core::provider::provider(&row.provider)
         .map(ProviderRef::from)
@@ -706,7 +736,7 @@ async fn send(
         .send(Call {
             base_url: &up.base,
             auth: up.auth,
-            guarded: up.provider.custom().is_some(),
+            guard: pipeline::guard_for(&up.provider),
             credential: up.secret(),
             request: Outgoing::from(req),
             stream: false,
@@ -737,11 +767,12 @@ async fn poll(state: &AppState, up: &Reached, row: &VideoRow) -> Result<VideoJob
 
 /// The job after asking its provider, for a job that hasn't ended. Asking is best effort: when
 /// the provider can't answer, the app gets the job as Kaeso last saw it and asks again later.
-async fn refresh(state: &AppState, row: VideoRow) -> Result<VideoRow, KppError> {
+async fn refresh(asking: &Asking<'_>, row: VideoRow) -> Result<VideoRow, KppError> {
+    let state = asking.state;
     if VideoStatus::from_wire(&row.status).is_some_and(VideoStatus::is_done) {
         return Ok(row);
     }
-    let job = match reach(state, &row).await {
+    let job = match reach(asking, &row).await {
         Ok(up) => match poll(state, &up, &row).await {
             Ok(job) => job,
             Err(e) => {
@@ -749,7 +780,7 @@ async fn refresh(state: &AppState, row: VideoRow) -> Result<VideoRow, KppError> 
                 return Ok(row);
             }
         },
-        Err(e) if e.status == Some(409) => return Err(e),
+        Err(e) if matches!(e.status, Some(409 | 429)) => return Err(e),
         Err(e) => {
             tracing::warn!(provider = %row.provider, error = %e.message, "cannot reach a video job's provider");
             return Ok(row);
@@ -923,7 +954,8 @@ async fn fetch_content(
 ) -> Result<Response, KppError> {
     let key = super::auth::authenticate(state, headers, ip.0).await?;
     let variant = openai_videos::decode_content_query(query)?;
-    let row = refresh(state, load(state, &key, id).await?).await?;
+    let asking = Asking::new(state, &key);
+    let row = refresh(&asking, load(state, &key, id).await?).await?;
     if row.status != VideoStatus::Completed.as_str() {
         return Err(error(
             ErrorKind::InvalidRequest,
@@ -943,7 +975,7 @@ async fn fetch_content(
         )
         .with_param("video_id"));
     }
-    let up = reach(state, &row).await?;
+    let up = reach(&asking, &row).await?;
     let job = poll(state, &up, &row).await?;
     let Some(output) = job.output(variant) else {
         return Err(error(
@@ -1050,6 +1082,21 @@ const PASSED_HEADERS: &[header::HeaderName] = &[
     header::LAST_MODIFIED,
 ];
 
+fn same_origin(link: &Url, base: &Url) -> bool {
+    link.host_str() == base.host_str()
+        && link.port_or_known_default() == base.port_or_known_default()
+}
+
+// A link on another host is the provider's choice of address, so it never gets the reach an
+// admin opened for custom providers' own base URLs.
+fn link_guard(own_host: bool, provider: &ProviderRef) -> kaeso_upstream::Guard {
+    if own_host {
+        pipeline::guard_for(provider)
+    } else {
+        kaeso_upstream::Guard::PublicOnly
+    }
+}
+
 /// Streams a file from a link the provider named: a path at the provider when it starts with
 /// `/`, otherwise a full URL. The provider's key goes only to the provider's own host.
 async fn stream_link(
@@ -1070,8 +1117,7 @@ async fn stream_link(
         if !matches!(url.scheme(), "https" | "http") {
             return Err(unreachable());
         }
-        let own_host = url.host_str() == up.base.host_str()
-            && url.port_or_known_default() == up.base.port_or_known_default();
+        let own_host = same_origin(&url, &up.base);
         let mut origin = url.clone();
         origin.set_path("/");
         origin.set_query(None);
@@ -1089,7 +1135,7 @@ async fn stream_link(
             .send(Call {
                 base_url: &origin,
                 auth: if own_host { up.auth } else { None },
-                guarded: !own_host || up.provider.custom().is_some(),
+                guard: link_guard(own_host, &up.provider),
                 credential: if own_host { up.secret() } else { &empty },
                 request: Outgoing {
                     method: "GET",
@@ -1146,6 +1192,23 @@ async fn stream_link(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn links_on_another_host_are_fetched_from_public_addresses_only() {
+        use kaeso_upstream::Guard;
+        let base = Url::parse("https://api.x.ai/v1").unwrap();
+        let xai = ProviderRef::from(kaeso_core::provider::provider("xai").unwrap());
+        for (link, guard) in [
+            ("https://api.x.ai/v1/files/a.mp4", Guard::Off),
+            ("https://api.x.ai:443/a.mp4", Guard::Off),
+            ("https://vidgen.x.ai/a.mp4", Guard::PublicOnly),
+            ("https://api.x.ai:8443/a.mp4", Guard::PublicOnly),
+            ("http://10.0.0.7/a.mp4", Guard::PublicOnly),
+        ] {
+            let link = Url::parse(link).unwrap();
+            assert_eq!(link_guard(same_origin(&link, &base), &xai), guard, "{link}");
+        }
+    }
 
     #[test]
     fn ranges_follow_rfc_9110() {

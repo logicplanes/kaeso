@@ -372,12 +372,48 @@ pub async fn admit_tool_call(
         }
     };
     let applicable = kaeso_core::limits::applicable_to_tools(&all, project, member, key);
+    count_one(state, &applicable, at).await
+}
+
+// A request that reaches a provider outside the model pipeline, such as asking how a video job
+// stands or listing voices, spends the provider's quota with the organization's key, so it counts
+// against the request rates of its project, member and key, and of its model's limits when it
+// has one. It holds no reservation and passes unchecked when the counters can't be reached.
+pub async fn admit_follow_up(
+    state: &AppState,
+    caller: &Caller,
+    model: Option<Uuid>,
+    at: OffsetDateTime,
+) -> Result<(), Refusal> {
+    let all = match project_limits(state, caller.project_id).await {
+        Ok(l) => l,
+        Err(e) => {
+            tracing::warn!(error = %e, "limits unavailable; the request passes unchecked");
+            metrics::counter!(crate::metrics::FAIL_OPEN, "reason" => "limits").increment(1);
+            return Ok(());
+        }
+    };
+    let applicable = kaeso_core::limits::applicable_to_follow_ups(
+        &all,
+        caller.project_id,
+        member_of(caller),
+        caller.key_id,
+        model,
+    );
+    count_one(state, &applicable, at).await
+}
+
+async fn count_one(
+    state: &AppState,
+    applicable: &[&Limit],
+    at: OffsetDateTime,
+) -> Result<(), Refusal> {
     if applicable.is_empty() {
         return Ok(());
     }
     let now = at.unix_timestamp();
     let mut pipe = redis::pipe();
-    for l in &applicable {
+    for l in applicable {
         let counter = state.valkey.key(&l.counter(at));
         pipe.cmd("HINCRBY")
             .arg(&counter)
@@ -392,24 +428,20 @@ pub async fn admit_tool_call(
             .arg(&counter);
     }
     let mut conn = state.valkey.conn();
-    let windows: Vec<HashMap<String, i64>> = match tokio::time::timeout(
-        VALKEY_DEADLINE,
-        pipe.query_async(&mut conn),
-    )
-    .await
-    {
-        Ok(Ok(w)) => w,
-        Ok(Err(e)) => {
-            tracing::warn!(error = %e, "tool call counters unavailable; the call passes unchecked");
-            metrics::counter!(crate::metrics::FAIL_OPEN, "reason" => "valkey").increment(1);
-            return Ok(());
-        }
-        Err(_) => {
-            tracing::warn!("tool call counters timed out; the call passes unchecked");
-            metrics::counter!(crate::metrics::FAIL_OPEN, "reason" => "valkey").increment(1);
-            return Ok(());
-        }
-    };
+    let windows: Vec<HashMap<String, i64>> =
+        match tokio::time::timeout(VALKEY_DEADLINE, pipe.query_async(&mut conn)).await {
+            Ok(Ok(w)) => w,
+            Ok(Err(e)) => {
+                tracing::warn!(error = %e, "rate counters unavailable; the call passes unchecked");
+                metrics::counter!(crate::metrics::FAIL_OPEN, "reason" => "valkey").increment(1);
+                return Ok(());
+            }
+            Err(_) => {
+                tracing::warn!("rate counters timed out; the call passes unchecked");
+                metrics::counter!(crate::metrics::FAIL_OPEN, "reason" => "valkey").increment(1);
+                return Ok(());
+            }
+        };
     let cutoff = now - 60;
     let mut refused = None;
     let mut undo = redis::pipe();
@@ -434,11 +466,12 @@ pub async fn admit_tool_call(
                 .map(|(s, _)| *s)
                 .min()
                 .unwrap_or(now);
+            metrics::counter!(crate::metrics::LIMIT_REFUSALS, "kind" => l.kind.as_str(), "level" => l.subject.level().as_str()).increment(1);
             refused = Some(refusal(l, at, Why::Over(oldest + 60 - now)));
         }
     }
     if refused.is_some() {
-        for l in &applicable {
+        for l in applicable {
             undo.cmd("HINCRBY")
                 .arg(state.valkey.key(&l.counter(at)))
                 .arg(now)

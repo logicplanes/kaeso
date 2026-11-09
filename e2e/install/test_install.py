@@ -454,6 +454,10 @@ def test_the_edge_answers_every_api_in_its_format_while_kaeso_is_away(install, o
             assert gemini.status_code == 503
             assert gemini.json() == {"error": {"code": 503, "message": message, "status": "UNAVAILABLE"}}
 
+            voices = httpx.get(f"{url}/v2/voices", headers={"xi-api-key": "sk-kso-test"}, timeout=10)
+            assert voices.status_code == 503
+            assert voices.json()["detail"] == {"type": "service_unavailable", "code": "system_busy", "message": message, "status": "system_busy", "param": None}
+
             page = httpx.get(f"{url}/settings/instance/updates", headers={"accept": "text/html"}, timeout=10)
             assert page.status_code == 503
             assert page.headers["content-type"].startswith("text/html")

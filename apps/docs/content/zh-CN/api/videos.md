@@ -76,9 +76,11 @@ Kaeso 读取 OpenAI 的字段：`model`、`prompt`、`seconds`、`size` 和 `inp
 
 列表按 Kaeso 最后一次看到的状态显示每个视频，不询问服务商。视频属于启动它的密钥所在的项目；其他项目的密钥会得到 404，与不存在的 ID 得到的回答相同。启动视频的服务商密钥被替换后，Kaeso 无法再访问该任务，并返回 409。
 
+会询问服务商的获取、下载、删除和 remix 与任何模型请求一样计入密钥的[请求速率](../console/limits-and-budgets.md)，因为每一次都用组织的密钥消耗服务商的配额；获取已结束的任务时由 Kaeso 的记录回答，不计入。
+
 ## 下载视频
 
-Kaeso 从服务商存放文件的位置流式传输文件，不做存储，并透传 `Range`。Veo 和 Gemini Omni 在回答中直接发送文件；Kaeso 每次下载都会重新读取，上限为 `body_limits.provider_response`（默认 128 MiB）。
+Kaeso 从服务商存放文件的位置流式传输文件，不做存储，并透传 `Range`。Veo 和 Gemini Omni 在回答中直接发送文件；Kaeso 每次下载都会重新读取，上限为 `body_limits.provider_response`（默认 128 MiB）。 位于服务商自身 API 以外主机上的链接只从公网地址获取，无论 [`custom_providers.allowed_networks`](../self-hosting/configuration.md) 开放了什么，且从不携带服务商密钥。
 
 服务商只在有限时间内保存文件。对于发放短期链接的服务商，例如 MiniMax 和 ElevenLabs，Kaeso 每次下载都会获取新链接。超过任务的 `expires_at` 后，下载返回 404。只有 Z.ai 提供 `thumbnail`，没有服务商提供 `spritesheet`；请求它们会返回 404，`param` 为 `variant`。
 

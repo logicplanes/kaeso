@@ -185,7 +185,7 @@ impl Prober<'_> {
             .send(Call {
                 base_url: self.base_url,
                 auth: auth.style(),
-                guarded: true,
+                guard: kaeso_upstream::Guard::Install,
                 credential: self.key,
                 request,
                 stream: false,

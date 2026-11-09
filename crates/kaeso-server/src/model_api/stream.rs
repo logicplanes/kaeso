@@ -65,6 +65,11 @@ impl Broken {
                 status: 504,
                 err,
             },
+            UpstreamError::Path => Broken {
+                kind: err.kind.as_str().to_owned(),
+                status: 400,
+                err,
+            },
             UpstreamError::Connect(_)
             | UpstreamError::Transfer(_)
             | UpstreamError::TooLarge(_)

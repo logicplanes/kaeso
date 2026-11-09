@@ -57,9 +57,9 @@ SDK 在 `xi-api-key` 中发送密钥；Kaeso 在这里接受 Kaeso 密钥，与�
 | `POST /v1/voice-changer/{voice_id}` 和 `/stream` | `speech_to_speech.convert`、`.stream` | 由上传内容生成换成另一个声音的语音 |
 | `POST /v1/speech-to-text` | `speech_to_text.convert` | 带时间的词和说话人的转写稿 |
 | `GET /v1/models` | `models.list` | 项目的 ElevenLabs 模型，来自 Kaeso 的目录 |
-| `GET /v1/voices`、`GET /v2/voices`、`GET /v1/voices/{voice_id}` | `voices.get_all`、`voices.search`、`voices.get` | 项目所用 ElevenLabs 账户的声音，用项目的 ElevenLabs 密钥向 ElevenLabs 查询 |
+| `GET /v1/voices`、`GET /v2/voices`、`GET /v1/voices/{voice_id}` | `voices.get_all`、`voices.search`、`voices.get` | 项目所用 ElevenLabs 账户的声音，用项目的 ElevenLabs 密钥向 ElevenLabs 查询；每次列出都计入密钥的请求速率 |
 
-`output_format`、`enable_logging` 和 `optimize_streaming_latency` 按原样传给 ElevenLabs。上传的请求体受 [`body_limits.audio`](../self-hosting/configuration.md#请求体与响应体) 限制。
+`output_format`、`enable_logging` 和 `optimize_streaming_latency` 按原样传给 ElevenLabs。上传的请求体受 [`body_limits.audio`](../self-hosting/configuration.md#请求体与响应体) 限制。声音 ID 由字母和数字组成，与 ElevenLabs 列出的一致；其他任何 ID 都会在发送前以 400 拒绝。
 
 ## 其他服务商
 

@@ -390,3 +390,47 @@ fn every_error_kind_round_trips_through_elevenlabs_shape() {
         ElevenLabs::decode_error(422, &HeaderList::new(), br#"{"detail":[{"msg":"No."}]}"#);
     assert_eq!(unnamed.param, None);
 }
+
+#[test]
+fn a_voice_id_that_could_leave_its_path_segment_is_refused_before_sending() {
+    for id in [
+        "x/../../../v1/user?a=#",
+        "..",
+        "voice%2F..",
+        "voice id",
+        "",
+        "a_voice",
+        &"a".repeat(65),
+    ] {
+        for op in [SpeechOperation::Speech, SpeechOperation::VoiceChange] {
+            let mut r = SpeechRequest::new("eleven_v3", op).with_voice(Voice::Id(id.into()));
+            if op == SpeechOperation::Speech {
+                r = r.with_input("Hi");
+            } else {
+                r.audio = Some(AudioInput::new(Source::base64("audio/mpeg", "SUQz")));
+            }
+            let err = encode(&Request::Speech(r)).unwrap_err();
+            assert_eq!(err.param.as_deref(), Some("voice"), "{id}");
+        }
+    }
+}
+
+proptest::proptest! {
+    #[test]
+    fn any_voice_id_is_sent_as_one_path_segment_or_refused(id in "[A-Za-z0-9./%#?\\\\ _-]{0,24}") {
+        let req = speech_with(|r| r.voice = Some(Voice::Id(id.clone())));
+        match encode(&req) {
+            Ok((enc, _)) => {
+                proptest::prop_assert!(request::is_voice_id(&id));
+                let path = enc.path.split('?').next().unwrap_or_default();
+                let segments: Vec<&str> = path.split('/').collect();
+                proptest::prop_assert_eq!(segments.get(3).copied(), Some(id.as_str()));
+                proptest::prop_assert!(segments.len() <= 5, "{}", path);
+            }
+            Err(e) => {
+                proptest::prop_assert!(!request::is_voice_id(&id));
+                proptest::prop_assert_eq!(e.param.as_deref(), Some("voice"));
+            }
+        }
+    }
+}

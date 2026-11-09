@@ -95,7 +95,7 @@ impl InputCounter {
                     .platform
                     .as_ref()
                     .map_or_else(|| self.provider.auth(), |p| Some(p.auth)),
-                guarded: self.provider.custom().is_some(),
+                guard: super::pipeline::guard_for(&self.provider),
                 credential: self
                     .platform
                     .as_ref()

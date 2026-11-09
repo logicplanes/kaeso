@@ -381,6 +381,17 @@ Resources:
             Values: ["/v1beta/*"]
       Actions:
         - { Type: forward, TargetGroupArn: !Ref GatewayTargets }
+  ElevenLabsApiRule:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      ListenerArn: !Ref HttpsListener
+      Priority: 13
+      Conditions:
+        - Field: path-pattern
+          PathPatternConfig:
+            Values: ["/v2/*"]
+      Actions:
+        - { Type: forward, TargetGroupArn: !Ref GatewayTargets }
 
   Cluster:
     Type: AWS::ECS::Cluster

@@ -231,6 +231,7 @@ flowchart TD
 | `/platform/v1/*`、`/mcp`、`/mcp/*`、`/oauth/*` 和 `/.well-known/oauth-*` | 503，带有 Platform API 的错误，类型为 `unavailable` |
 | `/v1/messages`，以及带 `anthropic-version` 请求头的其他 `/v1/*`，但 `/v1/chat/completions`、`/v1/responses`、`/v1/responses/*` 和 `/v1/embeddings` 除外 | 529，带有 Anthropic 的 `overloaded_error` |
 | `/v1beta` 和 `/v1beta/*` | 503，带有 Gemini 的 `UNAVAILABLE` 错误 |
+| `/v2` 和 `/v2/*`，以及其他带 `xi-api-key` 请求头的请求 | 503，带有 ElevenLabs 的 `service_unavailable` 错误 |
 | 其他 `/v1/*` | 503，带有 OpenAI 的 `service_unavailable_error` |
 
 每个响应都带有 `Retry-After: 30`，OpenAI 和 Anthropic 的 SDK 重试时会遵循它。

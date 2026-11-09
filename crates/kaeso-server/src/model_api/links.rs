@@ -177,7 +177,7 @@ impl Fetch {
             .send(Call {
                 base_url: &origin,
                 auth: None,
-                guarded: true,
+                guard: kaeso_upstream::Guard::PublicOnly,
                 credential: &empty,
                 request: Outgoing {
                     method: "GET",

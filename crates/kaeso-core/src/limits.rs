@@ -327,6 +327,28 @@ pub fn applicable_to_tools(
         .collect()
 }
 
+// A request that reaches a provider outside the model pipeline counts against the request rates
+// of its project, its member and its key: those for every model, and those for its model when it
+// names one.
+pub fn applicable_to_follow_ups(
+    limits: &[Limit],
+    project: Uuid,
+    member: Option<Subject>,
+    key: Option<Uuid>,
+    model: Option<Uuid>,
+) -> Vec<&Limit> {
+    limits
+        .iter()
+        .filter(|l| {
+            l.kind == Kind::RequestRate
+                && (l.subject == Subject::Project(project)
+                    || Some(l.subject) == member
+                    || key.is_some_and(|k| l.subject == Subject::Key(k)))
+                && l.model.is_none_or(|m| Some(m) == model)
+        })
+        .collect()
+}
+
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct WorstCase {
     pub tokens: i64,
@@ -1142,5 +1164,44 @@ mod tests {
         tools.model = None;
         tools.amount = dec!(1.5);
         assert_eq!(validate(&tools).map_err(|e| e.field), Err("amount"));
+    }
+
+    #[test]
+    fn follow_ups_count_against_request_rates_for_every_model_and_their_own() {
+        let project = Uuid::from_u128(1);
+        let key = Uuid::from_u128(2);
+        let model = Uuid::from_u128(3);
+        let every = limit(
+            Subject::Key(key),
+            Kind::RequestRate,
+            Period::Minute,
+            dec!(30),
+        );
+        let mut own = every.clone();
+        own.model = Some(model);
+        let mut other = every.clone();
+        other.model = Some(Uuid::from_u128(4));
+        let tokens = limit(
+            Subject::Project(project),
+            Kind::TokenRate,
+            Period::Minute,
+            dec!(1000),
+        );
+        let tools = limit(
+            Subject::Project(project),
+            Kind::ToolCallRate,
+            Period::Minute,
+            dec!(5),
+        );
+        let all = [every.clone(), own.clone(), other, tokens, tools];
+        assert_eq!(
+            applicable_to_follow_ups(&all, project, None, Some(key), Some(model)),
+            [&every, &own]
+        );
+        assert_eq!(
+            applicable_to_follow_ups(&all, project, None, Some(key), None),
+            [&every]
+        );
+        assert!(applicable_to_follow_ups(&all, project, None, None, Some(model)).is_empty());
     }
 }

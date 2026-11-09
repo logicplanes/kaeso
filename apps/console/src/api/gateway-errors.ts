@@ -822,7 +822,7 @@ const messages = (): Rule[] => [
     ),
   ),
   rule("errors.modelApi.sendKey", () =>
-    t("errors.modelApi.sendKey", "Send a Kaeso API key as `Authorization: Bearer <key>`, `x-api-key` or `x-goog-api-key`."),
+    t("errors.modelApi.sendKey", "Send a Kaeso API key as `Authorization: Bearer <key>`, `x-api-key`, `x-goog-api-key` or `xi-api-key`."),
   ),
   rule("errors.modelApi.geminiParameter", (v) =>
     t("errors.modelApi.geminiParameter", "Kaeso doesn't take the query parameter `{name}` on Gemini calls; remove it.", v),
@@ -952,6 +952,7 @@ const messages = (): Rule[] => [
     t("errors.modelApi.accountUnrenewed", "Kaeso cannot renew the {product} account's access right now. Try again shortly.", v),
   ),
   rule("errors.modelApi.noBaseUrl", () => t("errors.modelApi.noBaseUrl", "No base URL is configured for this provider.")),
+  rule("errors.modelApi.idNotInUrl", () => t("errors.modelApi.idNotInUrl", "An id in this request can't be part of the provider's URL; use the real id.")),
   rule("errors.modelApi.streamEnded", () => t("errors.modelApi.streamEnded", "The provider's stream ended before the reply was complete.")),
   rule("errors.modelApi.streamCapped", () => t("errors.modelApi.streamCapped", "The reply reached this install's limit for a stream; Kaeso ended it.")),
   rule("errors.modelApi.noCredential", (v) =>

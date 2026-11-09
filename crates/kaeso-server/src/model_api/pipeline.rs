@@ -421,6 +421,7 @@ pub(super) fn transport_kind(e: &UpstreamError) -> &'static str {
         UpstreamError::Transfer(_) => "transfer",
         UpstreamError::TooLarge(_) => "too_large",
         UpstreamError::Refused(_) => "refused",
+        UpstreamError::Path => "path",
         UpstreamError::Client(_) | UpstreamError::Method(_) => "client",
     }
 }
@@ -452,8 +453,58 @@ pub(super) fn count_upstream_error(kind: &'static str, provider: &'static str) {
         .increment(1);
 }
 
+pub(super) fn limited(refusal: super::hooks::Refusal) -> KppError {
+    let kind = match refusal.status {
+        503 => ErrorKind::ProviderError,
+        403 => ErrorKind::PermissionDenied,
+        _ => ErrorKind::RateLimited,
+    };
+    let mut e = error(kind, refusal.status, refusal.message);
+    if let Some(r) = refusal.retry_after {
+        e = e.with_retry_after(r);
+    }
+    if let Some(p) = refusal.param {
+        e = e.with_param(p);
+    }
+    e
+}
+
+/// Counts a request that reaches the provider outside [`serve`] against the caller's request
+/// rates.
+pub(super) async fn admit_follow_up(
+    state: &AppState,
+    key: &kaeso_store::pg::keys::KeyAuth,
+    model: Option<uuid::Uuid>,
+) -> Result<(), KppError> {
+    let caller = Caller {
+        org_id: key.org_id,
+        project_id: key.project_id,
+        key_id: Some(key.id),
+        user_id: key.user_id,
+        service_account_id: key.service_account_id,
+    };
+    crate::services::limits::admit_follow_up(state, &caller, model, state.clock.now())
+        .await
+        .map_err(limited)
+}
+
+/// Custom providers reach only the networks the install opened for them; built-in providers'
+/// base URLs are the operator's own settings.
+pub(crate) fn guard_for(provider: &ProviderRef) -> kaeso_upstream::Guard {
+    if provider.custom().is_some() {
+        kaeso_upstream::Guard::Install
+    } else {
+        kaeso_upstream::Guard::Off
+    }
+}
+
 pub(crate) fn upstream_error(e: &UpstreamError) -> KppError {
     match e {
+        UpstreamError::Path => error(
+            ErrorKind::InvalidRequest,
+            400,
+            "An id in this request can't be part of the provider's URL; use the real id.",
+        ),
         UpstreamError::Timeout(what) => error(
             ErrorKind::Timeout,
             504,
@@ -1097,21 +1148,7 @@ async fn attempt(
         .limits
         .admit(state, &admission)
         .await
-        .map_err(|refusal| {
-            let kind = match refusal.status {
-                503 => ErrorKind::ProviderError,
-                403 => ErrorKind::PermissionDenied,
-                _ => ErrorKind::RateLimited,
-            };
-            let mut e = error(kind, refusal.status, refusal.message);
-            if let Some(r) = refusal.retry_after {
-                e = e.with_retry_after(r);
-            }
-            if let Some(p) = refusal.param {
-                e = e.with_param(p);
-            }
-            fail(Stage::Limits)(e)
-        })?;
+        .map_err(|refusal| fail(Stage::Limits)(limited(refusal)))?;
 
     if entry.is_unavailable()
         && !state
@@ -1306,7 +1343,7 @@ async fn attempt(
             (None, Some(auth)) => Some(auth),
             (None, None) => eff.provider.auth(),
         },
-        guarded: eff.provider.custom().is_some(),
+        guard: guard_for(&eff.provider),
         credential: platform.as_ref().map_or(&credential.secret, |p| &p.secret),
         request: Outgoing::from(encoded),
         stream: match kind {

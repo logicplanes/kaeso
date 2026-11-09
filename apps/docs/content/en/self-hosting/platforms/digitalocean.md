@@ -16,7 +16,7 @@ Two [App Platform app specs](https://docs.digitalocean.com/products/app-platform
 | `kaeso-valkey`, button | Service on port 6379, for the app's own components only | Valkey's, the release the Compose package runs | `apps-s-1vcpu-0.5gb` |
 | `kaeso-valkey`, `doctl` | Managed Valkey database | DigitalOcean's, created first | Your choice |
 
-The app's edge terminates TLS and routes by path: `/v1`, `/v1beta`, `/platform`, `/mcp`, `/oauth` and `/.well-known` reach the gateway, every other path the console, so no `kaeso-edge` runs here. The gateway trusts `X-Forwarded-For` from the private network, where the edge sits, and keeps its metrics on its loopback address.
+The app's edge terminates TLS and routes by path: `/v1`, `/v1beta`, `/v2`, `/platform`, `/mcp`, `/oauth` and `/.well-known` reach the gateway, every other path the console, so no `kaeso-edge` runs here. The gateway trusts `X-Forwarded-For` from the private network, where the edge sits, and keeps its metrics on its loopback address.
 
 The button creates dev databases only, and those exist only for PostgreSQL. Its Valkey is therefore a service in the app that keeps its data within 256 MB and never evicts a key. It starts empty at each of its deployments. Valkey holds only counters and caches: the gateway rebuilds budget counters from PostgreSQL, and rate windows start over ([backups and master keys](../backups.md)). The managed Valkey of `.do/app.yaml` speaks TLS with a certificate of DigitalOcean's own authority, which the spec hands to the gateway as `KAESO_VALKEY_CA` ([configuration](../configuration.md#settings)).
 

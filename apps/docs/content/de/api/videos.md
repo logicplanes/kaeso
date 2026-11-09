@@ -76,9 +76,11 @@ Jeder Abruf fragt den Anbieter, wie der Job steht, solange er läuft, und behäl
 
 Eine Liste zeigt jedes Video so, wie Kaeso es zuletzt gesehen hat, ohne die Anbieter zu fragen. Ein Video gehört dem Projekt, dessen Schlüssel es gestartet hat; der Schlüssel eines anderen Projekts bekommt 404, dieselbe Antwort wie für eine ID, die es nicht gibt. Wird der Anbieterschlüssel ersetzt, der ein Video gestartet hat, erreicht Kaeso den Job nicht mehr und antwortet mit 409.
 
+Abrufe, Downloads, Löschungen und Remixe, die den Anbieter fragen, zählen wie jede Modellanfrage gegen die [Anfrageraten](../console/limits-and-budgets.md) des Schlüssels, denn jede verbraucht das Kontingent des Anbieters mit dem Schlüssel der Organisation; der Abruf eines beendeten Jobs antwortet aus Kaesos Aufzeichnung und zählt nicht.
+
 ## Ein Video herunterladen
 
-Kaeso streamt die Datei von dort, wo der Anbieter sie aufbewahrt, ohne sie zu speichern, und reicht `Range` durch. Veo und Gemini Omni senden die Datei in ihrer Antwort; Kaeso liest sie für jeden Download neu, begrenzt durch `body_limits.provider_response` (standardmäßig 128 MiB).
+Kaeso streamt die Datei von dort, wo der Anbieter sie aufbewahrt, ohne sie zu speichern, und reicht `Range` durch. Veo und Gemini Omni senden die Datei in ihrer Antwort; Kaeso liest sie für jeden Download neu, begrenzt durch `body_limits.provider_response` (standardmäßig 128 MiB). Einen Link auf einem anderen Host als der API des Anbieters holt Kaeso nur von öffentlichen Adressen, ganz gleich, was [`custom_providers.allowed_networks`](../self-hosting/configuration.md) öffnet, und nie mit dem Anbieterschlüssel.
 
 Anbieter bewahren Dateien nur begrenzt auf. Wo ein Anbieter kurzlebige Links ausgibt, wie MiniMax und ElevenLabs, holt Kaeso für jeden Download einen frischen Link. Nach `expires_at` des Jobs antwortet der Download mit 404. Nur Z.ai bietet ein `thumbnail`, und kein Anbieter bietet ein `spritesheet`; die Frage danach antwortet mit 404 und `param` `variant`.
 

@@ -258,12 +258,12 @@ Chat Completions 没有存放模型推理内容的字段，Gemini 格式也没�
 
 ## 从浏览器调用
 
-只有当另一个源以 CORS 响应头应答时，浏览器才允许网页调用它。在 `KAESO_CORS_ALLOWED_ORIGINS` 列出您的 Web 应用的源（例如 `https://app.example.com,http://localhost:5173`）之前，Kaeso 不发送任何 CORS 响应头（[浏览器应用](../self-hosting/configuration.md#浏览器应用)）。列出之后，以下规则仅适用于 `/v1` 和 `/v1beta`：
+只有当另一个源以 CORS 响应头应答时，浏览器才允许网页调用它。在 `KAESO_CORS_ALLOWED_ORIGINS` 列出您的 Web 应用的源（例如 `https://app.example.com,http://localhost:5173`）之前，Kaeso 不发送任何 CORS 响应头（[浏览器应用](../self-hosting/configuration.md#浏览器应用)）。列出之后，以下规则仅适用于 `/v1`、`/v1beta` 和 `/v2`：
 
 - **精确匹配源。** 协议、主机和端口都必须一致：`https://app.example.com` 既不放行 `http://app.example.com`，也不放行 `https://www.app.example.com`。Kaeso 会在启动时拒绝 `*`，因为它会让任何网站都能用访问者持有的密钥发送请求。
-- **预检请求。** 来自已列出源、带有 `Origin` 和 `Access-Control-Request-Method` 的 `OPTIONS` 请求无需密钥即返回 204。响应带有值为该源的 `Access-Control-Allow-Origin`、`Access-Control-Allow-Methods: GET, POST` 和 `Access-Control-Max-Age: 7200`。`Access-Control-Allow-Headers` 列出所请求的请求头里官方 SDK 会发送的那些：`authorization`、`x-api-key`、`content-type`、`accept`、`user-agent`、`anthropic-version`、`anthropic-beta`、`anthropic-dangerous-direct-browser-access`、`openai-organization`、`openai-project`、`openai-beta`、`idempotency-key`、`x-goog-api-key`、`x-goog-api-client` 和 `x-stainless-…`。预检请求不是模型请求：不记录日志、不计费，也不计入限额。
+- **预检请求。** 来自已列出源、带有 `Origin` 和 `Access-Control-Request-Method` 的 `OPTIONS` 请求无需密钥即返回 204。响应带有值为该源的 `Access-Control-Allow-Origin`、`Access-Control-Allow-Methods: GET, POST, DELETE` 和 `Access-Control-Max-Age: 7200`。`Access-Control-Allow-Headers` 列出所请求的请求头里官方 SDK 会发送的那些：`authorization`、`x-api-key`、`content-type`、`accept`、`user-agent`、`anthropic-version`、`anthropic-beta`、`anthropic-dangerous-direct-browser-access`、`openai-organization`、`openai-project`、`openai-beta`、`idempotency-key`、`x-goog-api-key`、`x-goog-api-client`、`xi-api-key` 和 `x-stainless-…`。预检请求不是模型请求：不记录日志、不计费，也不计入限额。
 - **响应。** 发往已列出源的每个响应（包括错误响应）都带有值为该源的 `Access-Control-Allow-Origin`，以及 `Access-Control-Expose-Headers: kaeso-request-id, kaeso-provider, kaeso-model, kaeso-left-out, kaeso-adapted, kaeso-route, kaeso-cache, age, retry-after, retry-after-ms`，以便应用读取这些响应头。
-- **其他源**得不到 CORS 响应头，因此浏览器会拦截调用，它们的预检请求得到空的 204。`/v1` 和 `/v1beta` 上的每个响应都带有 `Vary: Origin`，以便缓存区分这些响应。
+- **其他源**得不到 CORS 响应头，因此浏览器会拦截调用，它们的预检请求得到空的 204。`/v1`、`/v1beta` 和 `/v2` 上的每个响应都带有 `Vary: Origin`，以便缓存区分这些响应。
 - **不使用 Cookie。** 由于密钥通过请求头传递，Kaeso 从不发送 `Access-Control-Allow-Credentials`。Platform API、健康检查和指标从不响应跨源请求。
 
 OpenAI 和 Anthropic 的 SDK 都只有在应用传入 `dangerouslyAllowBrowser: true` 时才会在浏览器中运行。
