@@ -415,6 +415,35 @@ fn a_voice_id_that_could_leave_its_path_segment_is_refused_before_sending() {
     }
 }
 
+#[test]
+fn a_malformed_voice_id_is_refused_when_the_request_is_read() {
+    let json = HeaderList::new().with("content-type", "application/json");
+    for path in [
+        "/v1/text-to-speech/voice%2F..",
+        "/v1/text-to-speech/a_voice/stream",
+        "/v1/voice-changer/voice%20id",
+    ] {
+        let err = ElevenLabs::decode_call(&call(path, ""), br#"{"text":"Hi"}"#, &json).unwrap_err();
+        assert_eq!(
+            (err.kind, err.param.as_deref()),
+            (ErrorKind::InvalidRequest, Some("voice_id")),
+            "{path}"
+        );
+    }
+    let dialogue = br#"{"inputs":[{"text":"Hi","voice_id":"JBFqnCBsd6RMkjVDRZzb"},{"text":"Yo","voice_id":"../x"}]}"#;
+    let err =
+        ElevenLabs::decode_call(&call("/v1/text-to-dialogue", ""), dialogue, &json).unwrap_err();
+    assert_eq!(err.param.as_deref(), Some("inputs[1].voice_id"));
+    assert!(
+        ElevenLabs::decode_call(
+            &call("/v1/text-to-speech/JBFqnCBsd6RMkjVDRZzb", ""),
+            br#"{"text":"Hi"}"#,
+            &json
+        )
+        .is_ok()
+    );
+}
+
 proptest::proptest! {
     #[test]
     fn any_voice_id_is_sent_as_one_path_segment_or_refused(id in "[A-Za-z0-9./%#?\\\\ _-]{0,24}") {

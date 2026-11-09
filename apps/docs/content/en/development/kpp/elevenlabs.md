@@ -24,11 +24,11 @@ Look up how ElevenLabs' generation, transcription, video and listing endpoints m
 
 | ElevenLabs | KPP | Class |
 | --- | --- | --- |
-| path `voice_id` | `voice: Voice::Id` | typed |
+| path `voice_id` | `voice: Voice::Id`; an id that isn't letters and digits is `InvalidRequest` with `param: voice_id`, before any credential is looked up | typed |
 | query `output_format`, such as `mp3_44100_128`, `pcm_24000`, `opus_48000_64`, `wav_16000`, `ulaw_8000` | `format`, `sample_rate`, `bitrate`; `pcm_24000` is `Pcm16`; the value as written | typed, form |
 | other query parameters | the field `query` | extras |
 | `text` (speech, sound effects), `prompt` (music) | `input` | typed |
-| `inputs[]` `{text, voice_id}` | `dialogue` lines | typed |
+| `inputs[]` `{text, voice_id}` | `dialogue` lines; a malformed `voice_id` is `InvalidRequest` with `param: inputs[i].voice_id` | typed |
 | `model_id` | `model` | typed |
 | `language_code` | `language` | typed |
 | `seed` | `seed` | typed |

@@ -129,6 +129,9 @@ pub(super) fn decode(
             .form
             .insert(FORM_OUTPUT_FORMAT.to_owned(), of.clone().into());
     }
+    if let Some(id) = call.voice_id.as_deref() {
+        checked_voice(id, "voice_id")?;
+    }
     req.voice = call.voice_id.clone().map(Voice::Id);
     req.timestamps = call.timestamps;
     if call.stream {
@@ -175,7 +178,11 @@ pub(super) fn decode(
                         .with_param(format!("inputs[{i}]")));
                 };
                 let text = take_str(&mut line, "text")?.unwrap_or_default();
-                let voice = take_str(&mut line, "voice_id")?.map(Voice::Id);
+                let voice = take_str(&mut line, "voice_id")?;
+                if let Some(id) = voice.as_deref() {
+                    checked_voice(id, &format!("inputs[{i}].voice_id"))?;
+                }
+                let voice = voice.map(Voice::Id);
                 let mut l = DialogueLine::new(text, voice);
                 if !line.is_empty() {
                     let mut e = Extras::new(Origin::new(D));
@@ -401,6 +408,18 @@ fn voice_id(voice: &Voice) -> Option<&str> {
         Voice::Named(_) if id_like => Some(s),
         _ => None,
     }
+}
+
+// Checked when the request is read, so a malformed id gets the same 400 whatever the project's
+// providers and credentials are.
+fn checked_voice(id: &str, param: &str) -> Result<(), KppError> {
+    if is_voice_id(id) {
+        return Ok(());
+    }
+    Err(KppError::invalid_request(
+        "A voice id is letters and digits, as `GET /v1/voices` lists them.",
+    )
+    .with_param(param))
 }
 
 /// Whether `id` has the shape of an ElevenLabs voice id: letters and digits, at most 64.
