@@ -1,0 +1,9 @@
+{
+  "model": "qwen-audio-3.1-tts-flash",
+  "input": {
+    "text": "你好，今天的天气真不错。",
+    "voice": "longanhuan_v3.1",
+    "format": "wav",
+    "sample_rate": 24000
+  }
+}

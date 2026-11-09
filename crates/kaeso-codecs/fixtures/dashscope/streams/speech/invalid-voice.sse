@@ -1,0 +1,5 @@
+id:1
+event:error
+:HTTP_STATUS/400
+data:{"code":"InvalidParameter","message":"[cosyvoice:]Engine error [411]: TTS speak operation failed","request_id":"xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"}
+

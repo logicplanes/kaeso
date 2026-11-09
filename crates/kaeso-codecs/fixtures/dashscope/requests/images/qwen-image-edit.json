@@ -1,0 +1,31 @@
+{
+  "model": "qwen-image-3.0-pro",
+  "input": {
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "image": "https://help-static-aliyun-doc.aliyuncs.com/file-manage-files/zh-CN/20250925/thtclx/input1.png"
+          },
+          {
+            "image": "https://help-static-aliyun-doc.aliyuncs.com/file-manage-files/zh-CN/20250925/iclsnx/input2.png"
+          },
+          {
+            "image": "https://help-static-aliyun-doc.aliyuncs.com/file-manage-files/zh-CN/20250925/gborgw/input3.png"
+          },
+          {
+            "text": "Make the girl from Image 1 wear the black dress from Image 2 and sit in the pose from Image 3."
+          }
+        ]
+      }
+    ]
+  },
+  "parameters": {
+    "n": 2,
+    "negative_prompt": " ",
+    "prompt_extend": true,
+    "watermark": false,
+    "size": "1024*1536"
+  }
+}

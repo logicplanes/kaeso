@@ -1,0 +1,21 @@
+{
+  "model": "wan2.7-image-pro",
+  "input": {
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "text": "A serene mountain lake at sunrise, with mist rising from the water, surrounded by pine trees, photorealistic"
+          }
+        ]
+      }
+    ]
+  },
+  "parameters": {
+    "n": 1,
+    "size": "2K",
+    "watermark": false,
+    "thinking_mode": true
+  }
+}

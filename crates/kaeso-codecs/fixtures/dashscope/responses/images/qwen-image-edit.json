@@ -1,0 +1,30 @@
+{
+  "output": {
+    "rewrite_status": "not_use",
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "message": {
+          "content": [
+            {
+              "image": "https://dashscope-result-sz.oss-cn-shenzhen.aliyuncs.com/xxx.png?Expires=xxx"
+            },
+            {
+              "image": "https://dashscope-result-sz.oss-cn-shenzhen.aliyuncs.com/xxx.png?Expires=xxx"
+            }
+          ],
+          "role": "assistant"
+        }
+      }
+    ]
+  },
+  "usage": {
+    "output_height": 1024,
+    "output_width": 1536,
+    "input_image_count": 1,
+    "input_image_type": "qima_input_1k",
+    "output_image_count": 2,
+    "output_image_type": "qima_output_1k"
+  },
+  "request_id": "bf37ca26-0abe-98e4-8065-xxxxxx"
+}

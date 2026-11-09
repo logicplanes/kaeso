@@ -1,0 +1,26 @@
+{
+  "model": "wan2.7-image-pro",
+  "input": {
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "image": "https://help-static-aliyun-doc.aliyuncs.com/file-manage-files/zh-CN/20251229/pjeqdf/car.webp"
+          },
+          {
+            "image": "https://help-static-aliyun-doc.aliyuncs.com/file-manage-files/zh-CN/20251229/xsunlm/paint.webp"
+          },
+          {
+            "text": "Spray the graffiti from image 2 onto the car in image 1"
+          }
+        ]
+      }
+    ]
+  },
+  "parameters": {
+    "n": 1,
+    "size": "2K",
+    "watermark": false
+  }
+}

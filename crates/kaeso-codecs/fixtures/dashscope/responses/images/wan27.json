@@ -1,0 +1,27 @@
+{
+  "output": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "message": {
+          "content": [
+            {
+              "image": "https://dashscope-result-intl.oss-cn-singapore.aliyuncs.com/xxx.png?Expires=xxx",
+              "type": "image"
+            }
+          ],
+          "role": "assistant"
+        }
+      }
+    ],
+    "finished": true
+  },
+  "usage": {
+    "image_count": 1,
+    "input_tokens": 18790,
+    "output_tokens": 2,
+    "size": "2985*1405",
+    "total_tokens": 18792
+  },
+  "request_id": "a3f4befe-cacd-49c9-8298-xxxxxx"
+}

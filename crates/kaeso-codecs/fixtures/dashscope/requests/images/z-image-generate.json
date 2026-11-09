@@ -1,0 +1,19 @@
+{
+  "model": "z-image-turbo",
+  "input": {
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "text": "A sitting orange cat with a happy expression, lively and cute, realistic and accurate"
+          }
+        ]
+      }
+    ]
+  },
+  "parameters": {
+    "prompt_extend": false,
+    "size": "1024*1024"
+  }
+}

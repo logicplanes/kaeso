@@ -1,0 +1,18 @@
+{
+  "output": {
+    "audio": {
+      "data": "",
+      "id": "audio_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+      "expires_at": 1792079569,
+      "url": "https://example.com/output.wav"
+    },
+    "finish_reason": "stop"
+  },
+  "usage": {
+    "input_tokens": 12,
+    "output_tokens": 30,
+    "total_tokens": 42,
+    "characters": 22
+  },
+  "request_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+}

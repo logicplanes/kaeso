@@ -1,0 +1,21 @@
+{
+  "model": "qwen-image-3.0-pro",
+  "input": {
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "text": "A vertical outdoor portrait photograph. A dark blue sign in the upper left bears the large white blackletter words Il Messaggero, and below it the glass display window of a newsstand is filled with newspapers and magazine covers."
+          }
+        ]
+      }
+    ]
+  },
+  "parameters": {
+    "negative_prompt": "",
+    "prompt_extend": true,
+    "watermark": false,
+    "size": "2048*2048"
+  }
+}
