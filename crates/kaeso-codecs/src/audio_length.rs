@@ -425,7 +425,7 @@ fn mp3(b: &[u8]) -> Option<f64> {
     if end >= 128 && b.get(end - 128..end - 125) == Some(b"TAG") {
         end -= 128;
     }
-    Some((end - at) as f64 * 8.0 / f64::from(first.bitrate))
+    Some(end.checked_sub(at)? as f64 * 8.0 / f64::from(first.bitrate))
 }
 
 // LAME's tag after the Xing fields states the encoder delay and padding, 12 bits each, which
@@ -692,6 +692,19 @@ mod tests {
         assert_eq!(secs(&[0xFF, 0xFB, 0x90, 0x00, 1, 2, 3]), None);
         assert_eq!(secs(&[0u8; 2048]), None);
         assert_eq!(secs(b""), None);
+    }
+
+    // Found by the `audio_length` fuzz target: a 128-byte file that starts with an ID3v1 `TAG`,
+    // so stripping the tag left less than the offset of the first frame.
+    #[test]
+    fn an_id3v1_tag_over_the_frames_gives_no_length() {
+        let crash = base64::Engine::decode(
+            &base64::engine::general_purpose::STANDARD,
+            "VEFH5TACTILn//MoxAsPmPLRDCvYPFp9TSIw5X+GxoYnLPhq9raFdH9z2HiLlAjuEABBBMASEpk/Jka3v3dtq1mus7//9G863SqycyBYBSu9//Mow5P1bWN3PXW27mnuAYp/bW9vdgArKDMqNn04jzYBM4svAAAAAAArlggKfQo=",
+        )
+        .unwrap();
+        assert_eq!(crash.len(), 128);
+        assert_eq!(secs(&crash), None);
     }
 
     #[test]
