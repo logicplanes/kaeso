@@ -434,5 +434,7 @@
   "models.unit.withoutSound": "ohne Ton",
   "models.unit.minimumSeconds": "mindestens {seconds} s",
   "models.field.inputAudioPrice": "Preis für Audioeingabe",
-  "models.field.outputAudioPrice": "Preis für Audioausgabe"
+  "models.field.outputAudioPrice": "Preis für Audioausgabe",
+  "models.unit.video": "Video",
+  "models.unit.duration": "{seconds} s lang"
 }

@@ -11,6 +11,7 @@ mod media;
 pub mod memory;
 pub mod pipeline;
 mod stream;
+pub mod videos;
 
 use axum::Router;
 use axum::body::Body;
@@ -89,6 +90,7 @@ async fn serve_call(
             image,
             transcription,
             elevenlabs: None,
+            video: None,
         },
     )
     .await
@@ -283,6 +285,23 @@ pub fn router() -> Router<AppState> {
         .route("/v1/voices/{*rest}", get(elevenlabs::voices))
         .route("/v2/voices", get(elevenlabs::voices))
         .route("/v2/{*rest}", axum::routing::any(elevenlabs::management))
+        .route("/v1/videos", post(videos::create).get(videos::list))
+        .route("/v1/videos/edits", post(videos::not_served))
+        .route("/v1/videos/extensions", post(videos::not_served))
+        .route(
+            "/v1/videos/characters",
+            axum::routing::any(videos::not_served),
+        )
+        .route(
+            "/v1/videos/characters/{*rest}",
+            axum::routing::any(videos::not_served),
+        )
+        .route(
+            "/v1/videos/{video_id}",
+            get(videos::retrieve).delete(videos::delete),
+        )
+        .route("/v1/videos/{video_id}/content", get(videos::content))
+        .route("/v1/videos/{video_id}/remix", post(videos::remix))
         .route("/v1/messages", post(messages))
         .route("/v1/messages/count_tokens", post(messages_count_tokens))
         .route("/v1/models", get(models_list))

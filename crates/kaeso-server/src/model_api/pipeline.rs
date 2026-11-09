@@ -70,6 +70,7 @@ pub struct Incoming {
     pub image: Option<ImageOperation>,
     pub transcription: Option<TranscriptionOperation>,
     pub elevenlabs: Option<kaeso_codecs::elevenlabs::ElevenLabsCall>,
+    pub video: Option<super::videos::VideoIncoming>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -213,7 +214,7 @@ fn mark_cancelled(o: &mut Outcome) {
         Some("The app closed the connection before the reply was complete.".to_owned());
 }
 
-fn blank_outcome(request_id: RequestId) -> Outcome {
+pub(super) fn blank_outcome(request_id: RequestId) -> Outcome {
     Outcome {
         request_id,
         caller: None,
@@ -257,6 +258,7 @@ fn blank_outcome(request_id: RequestId) -> Outcome {
         transcription: None,
         elevenlabs: None,
         media: None,
+        video: None,
         content_type: None,
     }
 }
@@ -330,6 +332,7 @@ pub async fn serve_with(
     outcome.image = inc.image;
     outcome.transcription = inc.transcription;
     outcome.elevenlabs = inc.elevenlabs.as_ref().map(|c| c.operation);
+    outcome.video = inc.video.as_ref().map(|v| v.call);
     outcome.source = inc.source;
     outcome.caller.clone_from(&inc.caller);
     outcome.started_at = now;
@@ -647,6 +650,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         image,
         transcription,
         elevenlabs,
+        video,
         ..
     } = inc;
     let caller = match caller {
@@ -702,7 +706,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
             || elevenlabs
                 .as_ref()
                 .is_some_and(|c| c.kind() == RequestKind::Transcription);
-        if image.is_none() && !uploads {
+        if image.is_none() && video.is_none() && !uploads {
             o.request_body = Some(body.clone());
         }
     }
@@ -736,8 +740,12 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
             .map_err(|_| Failure::new(translating_busy(), Stage::Limits))?,
     );
     let listed = header_list(&headers);
+    let remix = video.as_ref().and_then(|v| v.remix.clone());
     let req = off_thread(request_bytes, move || {
         match (gemini, image, transcription) {
+            _ if remix.is_some() => {
+                kaeso_codecs::openai_videos::decode_remix(checked.body().as_ref(), &listed)
+            }
             _ if elevenlabs.is_some() => match &elevenlabs {
                 Some(call) => dispatch::decode_checked_elevenlabs_request(call, &checked, &listed),
                 None => dispatch::decode_checked_request(kind, &checked, &listed),
@@ -757,7 +765,16 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
     .await
     .and_then(|r| r)
     .map_err(at(Stage::Request))?;
+    let mut req = req;
+    if let (Request::Video(r), Some(source)) =
+        (&mut req, video.as_ref().and_then(|v| v.remix.as_ref()))
+    {
+        source.fill(r);
+    }
     req.validate().map_err(at(Stage::Request))?;
+    if let Request::Video(r) = &req {
+        super::videos::refuse_sora(r).map_err(at(Stage::Request))?;
+    }
     match &req {
         // Request logs keep no media: an upload is logged as its fields, each image as its size.
         Request::Image(r) => {
@@ -777,6 +794,12 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
                 rec.outcome().request_body = Some(super::media::logged_speech(r));
             }
             rec.outcome().media = Some(super::media::units_of_speech(r));
+        }
+        Request::Video(r) => {
+            if keep_content {
+                rec.outcome().request_body = Some(super::videos::logged_request(r));
+            }
+            rec.outcome().media = Some(super::videos::units_of_request(r));
         }
         _ => {}
     }
@@ -806,6 +829,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
     let sh = Shared {
         ingress,
         kind,
+        video: video.as_ref(),
         headers: &headers,
         caller: &caller,
         models: &models,
@@ -858,6 +882,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
 struct Shared<'a> {
     ingress: DialectId,
     kind: RequestKind,
+    video: Option<&'a super::videos::VideoIncoming>,
     headers: &'a HeaderMap,
     caller: &'a Caller,
     models: &'a ProjectModels,
@@ -982,7 +1007,13 @@ async fn attempt(
         Request::Image(i) => i.model.clone_from(&eff.model_id),
         Request::Speech(r) => r.model.clone_from(&eff.model_id),
         Request::Transcription(r) => r.model.clone_from(&eff.model_id),
+        Request::Video(r) => r.model.clone_from(&eff.model_id),
         _ => {}
+    }
+    if let Some(source) = sh.video.and_then(|v| v.remix.as_ref()) {
+        source
+            .check_provider(eff.provider.id())
+            .map_err(fail(Stage::Capability))?;
     }
     if let Request::Generate(g) = &mut req
         && let StreamMode::On { include_usage, .. } = &mut g.stream
@@ -1129,7 +1160,10 @@ async fn attempt(
         }
     };
     let mut ectx = egress_ctx(&app_req, &eff.provider, ModelFlags::of(&plan));
-    let media = super::media::egress_of(&eff.provider, kind);
+    if let Some(videos) = eff.provider.videos(&eff.model_id) {
+        ectx = ectx.with_videos_profile(videos.profile);
+    }
+    let media = super::media::egress_of(&eff.provider, kind, &eff.model_id);
     if let Some(p) = &platform {
         ectx = p.apply(ectx);
     }
@@ -1329,6 +1363,7 @@ async fn attempt(
         crate::services::notifications::system::key_answered(credential.id.uuid());
     }
 
+    let video_req = Arc::clone(&app_req);
     let counter = InputCounter {
         state: state.clone(),
         credential: credential.clone(),
@@ -1492,6 +1527,33 @@ async fn attempt(
                 return Err(fail(Stage::Provider)(err));
             }
             let headers = resp.headers;
+            if kind == RequestKind::Video {
+                let reply = decode_reply(dialect, status, &headers, &bytes, &ectx)
+                    .map_err(|e| unreadable(e, &eff.provider, dialect))
+                    .map_err(fail(Stage::Reply))?;
+                let Reply::Video(job) = reply else {
+                    return Err(fail(Stage::Reply)(KppError::provider(
+                        "The provider answered a video job with another kind of reply.",
+                    )));
+                };
+                let started = super::videos::Started {
+                    caller,
+                    entry: entry.id,
+                    eff: &eff,
+                    credential: credential.id,
+                    dialect,
+                    app: &video_req,
+                    remix: sh.video.and_then(|v| v.remix.as_ref()),
+                };
+                let job = super::videos::register(state, rec, &started, job)
+                    .await
+                    .map_err(fail(Stage::Reply))?;
+                let reply = Reply::Video(job);
+                let out = dispatch::encode_response(ingress, &reply, &encode_ctx);
+                return reply_with(state, rec, reply, out, counter, carry, &served)
+                    .await
+                    .map_err(fail(Stage::Reply));
+            }
             let decoded_by = eff.provider.clone();
             let model_id = eff.model_id.clone();
             let (reply, out, media_type) = off_thread(bytes.len(), move || {

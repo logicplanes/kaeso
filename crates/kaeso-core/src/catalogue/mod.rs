@@ -237,6 +237,7 @@ pub const UNITS: &[&str] = &[
     "minute",
     "hour",
     "million_characters",
+    "video",
 ];
 
 const MAX_UNIT_PRICES: usize = 32;
@@ -252,8 +253,8 @@ const MAX_UNIT_PRICES: usize = 32;
     )
 )]
 pub struct UnitPrice {
-    #[doc = "The unit: `image`, `megapixel`, `second`, `minute`, `hour` or\n\
-        `million_characters`."]
+    #[doc = "The unit: `image`, `megapixel`, `second`, `minute`, `hour`,\n\
+        `million_characters` or `video`."]
     #[cfg_attr(feature = "openapi", schema(example = "image"))]
     pub per: String,
     #[doc = "Whether the unit is of the input or the output: `input` or `output`."]
@@ -279,6 +280,9 @@ pub struct UnitPrice {
         hour."]
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub minimum_seconds: Option<u64>,
+    #[doc = "The length in whole seconds of the video it applies to, for prices per video."]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub duration: Option<u32>,
     #[doc = "Whether the provider publishes the price only as an estimate."]
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub estimate: bool,
@@ -299,6 +303,7 @@ impl UnitPrice {
             resolution: u.resolution.clone(),
             audio: u.audio,
             minimum_seconds: u.minimum_seconds,
+            duration: u.duration,
             estimate: u.estimate,
         }
     }
@@ -701,6 +706,22 @@ impl Fields {
     }
 
     pub fn validate_custom(&self) -> Result<(), FieldError> {
+        // A video model has no context or output limit and no generation dialect either, and
+        // providers such as Gemini Enterprise Agent Platform publish no price for theirs: it
+        // needs its modalities, and its jobs are logged with an unknown cost until it has one.
+        let videos_only = self
+            .output_modalities
+            .as_ref()
+            .is_some_and(|o| o.iter().any(|m| m == "video") && !o.iter().any(|m| m == "text"));
+        if videos_only {
+            if self.input_modalities.is_none() {
+                return Err(FieldError::new(
+                    "input_modalities",
+                    "A custom model needs input_modalities.",
+                ));
+            }
+            return Ok(());
+        }
         // An image model has no context or output limit and no generation dialect: it needs its
         // modalities and a price, per image or for its output.
         let images_only = self

@@ -257,6 +257,28 @@ describe("LogInspector", () => {
     expect(section(await sheet(), "Route")).not.toHaveTextContent("of audio sent");
   });
 
+  it("shows the videos a job made, their length and resolution", async () => {
+    signedIn();
+    projectData();
+    logsData({
+      rows: [logRow()],
+      entries: [logEntry({ endpoint: "videos/completed", media: { unit: "video", input: 1, output: 8000, detail: "1280x720 720p" } })],
+    });
+    await renderApp(projectPath("logs?log=req_0001"));
+    expect(section(await sheet(), "Route")).toHaveTextContent(/Video1 video · .+1280x720 720p/);
+  });
+
+  it("shows the videos a request asked for before they were made", async () => {
+    signedIn();
+    projectData();
+    logsData({
+      rows: [logRow()],
+      entries: [logEntry({ endpoint: "videos", media: { unit: "video", input: 2, output: 0, detail: "" } })],
+    });
+    await renderApp(projectPath("logs?log=req_0001"));
+    expect(section(await sheet(), "Route")).toHaveTextContent("Video2 videos");
+  });
+
   it("names the alias and the steps its route tried before the model that answered", async () => {
     signedIn();
     projectData();

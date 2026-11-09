@@ -434,5 +434,7 @@
   "models.unit.withoutSound": "无声",
   "models.unit.minimumSeconds": "至少 {seconds} 秒",
   "models.field.inputAudioPrice": "音频输入价格",
-  "models.field.outputAudioPrice": "音频输出价格"
+  "models.field.outputAudioPrice": "音频输出价格",
+  "models.unit.video": "视频",
+  "models.unit.duration": "时长 {seconds} 秒"
 }

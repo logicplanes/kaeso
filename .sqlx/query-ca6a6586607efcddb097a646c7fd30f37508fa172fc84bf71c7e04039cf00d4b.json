@@ -1,0 +1,332 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT v.id, v.org_id, v.project_id, v.api_key_id, v.user_id, v.service_account_id, v.provider, v.credential_id, v.catalogue_model_id, v.model, v.upstream_model, v.dialect, v.upstream_id, v.request_id, v.params, v.prices, v.status, v.progress, v.error, v.remixed_from, v.units, v.cost, v.created_at, v.completed_at, v.expires_at, v.accounted_at FROM videos v LEFT JOIN videos a ON a.org_id = $1 AND a.project_id = $2 AND a.id = $3 WHERE v.org_id = $1 AND v.project_id = $2 AND ($3::uuid IS NULL OR ( CASE WHEN $4 THEN (v.created_at, v.id) > (a.created_at, a.id) ELSE (v.created_at, v.id) < (a.created_at, a.id) END)) ORDER BY CASE WHEN $4 THEN v.created_at END ASC, CASE WHEN $4 THEN v.id END ASC, CASE WHEN NOT $4 THEN v.created_at END DESC, CASE WHEN NOT $4 THEN v.id END DESC LIMIT $5",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "videos",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "org_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "videos",
+            "name": "org_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "project_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "videos",
+            "name": "project_id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "api_key_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "videos",
+            "name": "api_key_id"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "user_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "videos",
+            "name": "user_id"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "service_account_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "videos",
+            "name": "service_account_id"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "provider",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "videos",
+            "name": "provider"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "credential_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "videos",
+            "name": "credential_id"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "catalogue_model_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "videos",
+            "name": "catalogue_model_id"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "model",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "videos",
+            "name": "model"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "upstream_model",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "videos",
+            "name": "upstream_model"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "dialect",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "videos",
+            "name": "dialect"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "upstream_id",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "videos",
+            "name": "upstream_id"
+          }
+        }
+      },
+      {
+        "ordinal": 13,
+        "name": "request_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "videos",
+            "name": "request_id"
+          }
+        }
+      },
+      {
+        "ordinal": 14,
+        "name": "params",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "videos",
+            "name": "params"
+          }
+        }
+      },
+      {
+        "ordinal": 15,
+        "name": "prices",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "videos",
+            "name": "prices"
+          }
+        }
+      },
+      {
+        "ordinal": 16,
+        "name": "status",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "videos",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 17,
+        "name": "progress",
+        "type_info": "Int2",
+        "origin": {
+          "Table": {
+            "table": "videos",
+            "name": "progress"
+          }
+        }
+      },
+      {
+        "ordinal": 18,
+        "name": "error",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "videos",
+            "name": "error"
+          }
+        }
+      },
+      {
+        "ordinal": 19,
+        "name": "remixed_from",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "videos",
+            "name": "remixed_from"
+          }
+        }
+      },
+      {
+        "ordinal": 20,
+        "name": "units",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "videos",
+            "name": "units"
+          }
+        }
+      },
+      {
+        "ordinal": 21,
+        "name": "cost",
+        "type_info": "Numeric",
+        "origin": {
+          "Table": {
+            "table": "videos",
+            "name": "cost"
+          }
+        }
+      },
+      {
+        "ordinal": 22,
+        "name": "created_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "videos",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 23,
+        "name": "completed_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "videos",
+            "name": "completed_at"
+          }
+        }
+      },
+      {
+        "ordinal": 24,
+        "name": "expires_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "videos",
+            "name": "expires_at"
+          }
+        }
+      },
+      {
+        "ordinal": 25,
+        "name": "accounted_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "videos",
+            "name": "accounted_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Bool",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      false,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "ca6a6586607efcddb097a646c7fd30f37508fa172fc84bf71c7e04039cf00d4b"
+}

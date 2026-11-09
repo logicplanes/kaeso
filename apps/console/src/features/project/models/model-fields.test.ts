@@ -89,4 +89,16 @@ describe("unitPriceLabels", () => {
     expect(dialectPill("openai_transcriptions")).toBe("transcriptions");
     expect(dialectPill("elevenlabs")).toBe("elevenlabs");
   });
+
+  it("names prices per video by their length", () => {
+    const f = {
+      unit_prices: [
+        { per: "video", of: "output", usd: "0.28", resolution: "768p", duration: 6 },
+        { per: "video", of: "output", usd: "0.2" },
+      ],
+    };
+    expect(unitPriceLabels(f)).toEqual(["$0.28 per video of output (768p, 6 s long)", "$0.20 per video of output"]);
+    expect(dialectPill("xai_videos")).toBe("videos");
+    expect(dialectPill("veo")).toBe("videos");
+  });
 });

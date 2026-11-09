@@ -695,6 +695,7 @@ function responseCacheLabel(result: NonNullable<LogEntryView["response_cache"]>)
 function mediaLabel(unit: string): string {
   if (unit === "character") return t("logs.inspector.speech", "Speech");
   if (unit === "millisecond") return t("logs.inspector.audio", "Audio");
+  if (unit === "video") return t("logs.inspector.video", "Video");
   return t("logs.inspector.images", "Images");
 }
 
@@ -707,6 +708,10 @@ function mediaCount(m: { unit: string; input: number; output: number }): string 
     return m.output
       ? t("logs.inspector.audioMade", "{duration} made", { duration: formatDuration(m.output) })
       : t("logs.inspector.audioSent", "{duration} of audio sent", { duration: formatDuration(m.input) });
+  }
+  if (m.unit === "video") {
+    const videos = t("logs.inspector.videos", "{count, plural, one {# video} other {# videos}}", { count: m.input });
+    return m.output ? t("logs.inspector.videosMade", "{videos} · {duration}", { videos, duration: formatDuration(m.output) }) : videos;
   }
   return t("logs.inspector.imagesCount", "{input} sent · {output} made", { input: formatNumber(m.input), output: formatNumber(m.output) });
 }

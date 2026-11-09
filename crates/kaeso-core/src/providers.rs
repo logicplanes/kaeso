@@ -400,6 +400,19 @@ impl ProviderRef {
         }
     }
 
+    /// Where Kaeso sends video jobs for `model`; custom providers take none.
+    pub fn videos(&self, model: &str) -> Option<crate::provider::VideosEgress> {
+        match self {
+            ProviderRef::BuiltIn(p) => p.videos.iter().copied().find(|v| v.serves(model)),
+            ProviderRef::Custom(_) => None,
+        }
+    }
+
+    /// Whether the provider serves video jobs for any model.
+    pub fn has_videos(&self) -> bool {
+        matches!(self, ProviderRef::BuiltIn(p) if !p.videos.is_empty())
+    }
+
     pub fn auth(&self) -> Option<AuthStyle> {
         match self {
             ProviderRef::BuiltIn(p) => Some(p.auth),

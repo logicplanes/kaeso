@@ -10,6 +10,7 @@ use kaeso_codecs::openai_images::ImagesProfile;
 use kaeso_codecs::openai_responses::ResponsesProfile;
 use kaeso_codecs::openai_speech::SpeechProfile;
 use kaeso_codecs::openai_transcriptions::TranscriptionsProfile;
+use kaeso_codecs::openai_videos::VideosProfile;
 use kaeso_codecs::{ToolPatterns, ToolSchemaRoot};
 use kaeso_kpp::DialectId;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
@@ -296,6 +297,48 @@ impl TranscriptionsEgress {
     }
 }
 
+/// Where and how Kaeso sends video jobs to a provider, for the models `models` matches.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct VideosEgress {
+    pub dialect: DialectId,
+    /// How a provider that speaks a form of OpenAI's Videos API takes it.
+    pub profile: VideosProfile,
+    /// The dialect's paths start at the root of the host, as for [`ImagesEgress::from_root`].
+    pub from_root: bool,
+    /// The auth header the video API takes when it differs from the provider's.
+    pub auth: Option<AuthStyle>,
+    /// The model ids this API serves, `*` standing for any run of characters.
+    pub models: &'static str,
+}
+
+impl VideosEgress {
+    const fn of(dialect: DialectId) -> VideosEgress {
+        VideosEgress {
+            dialect,
+            profile: VideosProfile::OPENAI,
+            from_root: false,
+            auth: None,
+            models: "*",
+        }
+    }
+
+    const fn rooted(dialect: DialectId) -> VideosEgress {
+        VideosEgress {
+            from_root: true,
+            auth: Some(AuthStyle::Bearer),
+            ..VideosEgress::of(dialect)
+        }
+    }
+
+    const fn for_models(self, models: &'static str) -> VideosEgress {
+        VideosEgress { models, ..self }
+    }
+
+    pub fn serves(&self, model: &str) -> bool {
+        glob(self.models, model)
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct ModelRoute {
     pub pattern: &'static str,
@@ -360,6 +403,8 @@ pub struct Provider {
     pub images: Option<ImagesEgress>,
     pub speech: Option<SpeechEgress>,
     pub transcriptions: Option<TranscriptionsEgress>,
+    /// Where Kaeso sends video jobs, by model; empty for a provider that offers no video API.
+    pub videos: &'static [VideosEgress],
     pub dialects: &'static [DialectId],
     pub refused_key_messages: &'static [&'static str],
     pub context_window_messages: &'static [&'static str],
@@ -428,6 +473,7 @@ pub const PROVIDERS: &[Provider] = &[
         images: ImagesEgress::openai(ImagesProfile::OPENAI),
         speech: SpeechEgress::openai(SpeechProfile::OPENAI),
         transcriptions: TranscriptionsEgress::openai(TranscriptionsProfile::OPENAI),
+        videos: &[],
         dialects: &[
             DialectId::OpenAiResponses,
             DialectId::OpenAiChat,
@@ -467,6 +513,7 @@ pub const PROVIDERS: &[Provider] = &[
         images: None,
         speech: None,
         transcriptions: None,
+        videos: &[],
         dialects: &[DialectId::AnthropicMessages],
         refused_key_messages: &[],
         context_window_messages: &[],
@@ -496,6 +543,7 @@ pub const PROVIDERS: &[Provider] = &[
         images: None,
         speech: None,
         transcriptions: None,
+        videos: &[],
         dialects: &[DialectId::OpenAiChat],
         refused_key_messages: &[],
         context_window_messages: &[],
@@ -530,6 +578,7 @@ pub const PROVIDERS: &[Provider] = &[
         images: ImagesEgress::openai(ImagesProfile::XAI),
         speech: SpeechEgress::openai(SpeechProfile::XAI),
         transcriptions: TranscriptionsEgress::openai(TranscriptionsProfile::XAI),
+        videos: &[VideosEgress::of(DialectId::XaiVideos)],
         dialects: &[DialectId::OpenAiResponses, DialectId::OpenAiChat],
         refused_key_messages: &["Incorrect API key provided"],
         context_window_messages: &[],
@@ -572,6 +621,10 @@ pub const PROVIDERS: &[Provider] = &[
         images: ImagesEgress::openai(ImagesProfile::TOGETHER),
         speech: SpeechEgress::openai(SpeechProfile::TOGETHER),
         transcriptions: TranscriptionsEgress::openai(TranscriptionsProfile::TOGETHER),
+        videos: &[VideosEgress {
+            profile: VideosProfile::TOGETHER,
+            ..VideosEgress::of(DialectId::OpenAiVideos)
+        }],
         dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
         refused_key_messages: &[],
         context_window_messages: &[],
@@ -602,6 +655,7 @@ pub const PROVIDERS: &[Provider] = &[
         images: None,
         speech: SpeechEgress::openai(SpeechProfile::GROQ),
         transcriptions: TranscriptionsEgress::openai(TranscriptionsProfile::GROQ),
+        videos: &[],
         dialects: &[DialectId::OpenAiChat],
         refused_key_messages: &[],
         context_window_messages: &[],
@@ -637,6 +691,7 @@ pub const PROVIDERS: &[Provider] = &[
         images: ImagesEgress::openai(ImagesProfile::OPENROUTER),
         speech: SpeechEgress::openai(SpeechProfile::OPENROUTER),
         transcriptions: TranscriptionsEgress::openai(TranscriptionsProfile::OPENROUTER),
+        videos: &[VideosEgress::of(DialectId::OpenRouterVideos)],
         dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
         refused_key_messages: &[],
         context_window_messages: &[],
@@ -672,6 +727,7 @@ pub const PROVIDERS: &[Provider] = &[
         images: None,
         speech: SpeechEgress::openai(SpeechProfile::MISTRAL),
         transcriptions: TranscriptionsEgress::openai(TranscriptionsProfile::MISTRAL),
+        videos: &[],
         dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
         refused_key_messages: &[],
         context_window_messages: &["too large for model with"],
@@ -722,6 +778,7 @@ pub const PROVIDERS: &[Provider] = &[
         images: ImagesEgress::openai(ImagesProfile::VERCEL),
         speech: SpeechEgress::openai(SpeechProfile::VERCEL),
         transcriptions: TranscriptionsEgress::openai(TranscriptionsProfile::VERCEL),
+        videos: &[],
         dialects: &[
             DialectId::OpenAiChat,
             DialectId::OpenAiResponses,
@@ -761,6 +818,7 @@ pub const PROVIDERS: &[Provider] = &[
             from_root: true,
             auth: Some(AuthStyle::Bearer),
         }),
+        videos: &[],
         dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
         refused_key_messages: &[],
         context_window_messages: &[],
@@ -807,6 +865,7 @@ pub const PROVIDERS: &[Provider] = &[
         images: None,
         speech: None,
         transcriptions: None,
+        videos: &[],
         dialects: &[DialectId::OpenAiChat],
         refused_key_messages: &[],
         context_window_messages: &[],
@@ -839,6 +898,7 @@ pub const PROVIDERS: &[Provider] = &[
         images: None,
         speech: None,
         transcriptions: None,
+        videos: &[],
         dialects: &[DialectId::OpenAiChat],
         refused_key_messages: &[],
         context_window_messages: &[],
@@ -889,6 +949,7 @@ pub const PROVIDERS: &[Provider] = &[
             from_root: false,
             auth: None,
         }),
+        videos: &[],
         dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
         refused_key_messages: &[],
         context_window_messages: &[],
@@ -932,6 +993,7 @@ pub const PROVIDERS: &[Provider] = &[
         images: None,
         speech: None,
         transcriptions: None,
+        videos: &[],
         dialects: &[DialectId::OpenAiChat],
         refused_key_messages: &[],
         context_window_messages: &[],
@@ -979,6 +1041,7 @@ pub const PROVIDERS: &[Provider] = &[
             from_root: true,
             auth: Some(AuthStyle::Bearer),
         }),
+        videos: &[VideosEgress::rooted(DialectId::ZaiVideos)],
         dialects: &[DialectId::AnthropicMessages],
         refused_key_messages: &[],
         context_window_messages: &[],
@@ -1023,6 +1086,7 @@ pub const PROVIDERS: &[Provider] = &[
             from_root: true,
             auth: Some(AuthStyle::Bearer),
         }),
+        videos: &[VideosEgress::rooted(DialectId::MinimaxVideos)],
         dialects: &[DialectId::AnthropicMessages],
         refused_key_messages: &[],
         context_window_messages: &[],
@@ -1079,6 +1143,7 @@ pub const PROVIDERS: &[Provider] = &[
             from_root: false,
             auth: None,
         }),
+        videos: &[VideosEgress::of(DialectId::ElevenLabs)],
         dialects: &[DialectId::ElevenLabs],
         refused_key_messages: &[],
         context_window_messages: &[],
@@ -1109,6 +1174,7 @@ pub const PROVIDERS: &[Provider] = &[
         images: ImagesEgress::gemini(),
         speech: SpeechEgress::gemini(),
         transcriptions: TranscriptionsEgress::gemini(),
+        videos: &[VideosEgress::of(DialectId::GeminiInteractions).for_models("gemini-omni-*")],
         dialects: &[DialectId::Gemini, DialectId::GeminiEmbeddings],
         refused_key_messages: &[],
         context_window_messages: &[],
@@ -1139,6 +1205,7 @@ pub const PROVIDERS: &[Provider] = &[
         images: ImagesEgress::gemini(),
         speech: SpeechEgress::gemini(),
         transcriptions: TranscriptionsEgress::gemini(),
+        videos: &[VideosEgress::of(DialectId::Veo).for_models("veo-*")],
         dialects: &[
             DialectId::Gemini,
             DialectId::AnthropicMessages,

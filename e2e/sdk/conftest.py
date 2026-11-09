@@ -21,6 +21,8 @@ OPENAI_SECRET = "sk-test-openai-e2e-credential"
 ANTHROPIC_SECRET = "sk-ant-test-e2e-credential"
 GOOGLE_SECRET = "AIzaSyTestGoogleE2eCredential00000000"
 ELEVENLABS_SECRET = "sk_test-elevenlabs-e2e-credential-0000000"
+XAI_SECRET = "xai-test-e2e-credential"
+MINIMAX_SECRET = "sk-test-minimax-e2e-credential"
 SETUP_LINK = re.compile(r"#token=(\S+)")
 
 
@@ -99,6 +101,8 @@ def gateway():
         KAESO_PROVIDERS_ANTHROPIC_BASE_URL=mock_url,
         KAESO_PROVIDERS_GOOGLE_BASE_URL=mock_url,
         KAESO_PROVIDERS_ELEVENLABS_BASE_URL=mock_url,
+        KAESO_PROVIDERS_XAI_BASE_URL=mock_url,
+        KAESO_PROVIDERS_MINIMAX_BASE_URL=mock_url,
         KAESO_STREAMS_KEEPALIVE_INTERVAL="1s",
     )
     log_path = LOGS / "gateway.log"
@@ -139,6 +143,8 @@ class Install:
             ("anthropic", ANTHROPIC_SECRET),
             ("google", GOOGLE_SECRET),
             ("elevenlabs", ELEVENLABS_SECRET),
+            ("xai", XAI_SECRET),
+            ("minimax", MINIMAX_SECRET),
         ):
             self.post(
                 f"/platform/v1/orgs/{self.org}/credentials",
@@ -162,6 +168,8 @@ class Install:
             ("elevenlabs", "eleven_flash_v2_5", None),
             ("elevenlabs", "eleven_text_to_sound_v2", None),
             ("elevenlabs", "scribe_v2", None),
+            ("xai", "grok-imagine-video-1.5", None),
+            ("minimax", "MiniMax-Hailuo-2.3", None),
         ):
             body = {"provider": provider, "model_id": model}
             if overrides:

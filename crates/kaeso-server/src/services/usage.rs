@@ -357,7 +357,16 @@ async fn flush_rows(state: &AppState, taken: Taken) -> Result<usize, StoreError>
 
 pub fn costed(outcome: &Outcome) -> (Usage, Decimal) {
     let usage = outcome.usage.clone().unwrap_or_default();
-    if outcome.response_cache == Some(crate::services::response_cache::Verdict::Hit) {
+    // A video job is billed once, when it ends; the request that started it costs nothing.
+    if outcome.response_cache == Some(crate::services::response_cache::Verdict::Hit)
+        || matches!(
+            outcome.video,
+            Some(
+                crate::model_api::hooks::VideoCall::Create
+                    | crate::model_api::hooks::VideoCall::Remix
+            )
+        )
+    {
         return (usage, Decimal::ZERO);
     }
     let c = outcome.prices.as_ref().map_or(Decimal::ZERO, |p| {
@@ -373,6 +382,11 @@ impl Sink for Accounting {
     fn finish<'a>(&'a self, state: &'a AppState, outcome: Outcome) -> BoxFuture<'a, ()> {
         Box::pin(async move { account(state, &outcome).await })
     }
+}
+
+// The end of a video job adds its cost to the request that started it, not a request of its own.
+fn completes_video(outcome: &Outcome) -> bool {
+    outcome.video == Some(crate::model_api::hooks::VideoCall::Completed)
 }
 
 pub async fn account(state: &AppState, outcome: &Outcome) {
@@ -398,8 +412,8 @@ pub async fn account(state: &AppState, outcome: &Outcome) {
             .egress
             .map(|d| d.as_str().to_owned())
             .unwrap_or_default(),
-        requests: 1,
-        errors: i64::from(outcome.is_error()),
+        requests: i64::from(!completes_video(outcome)),
+        errors: i64::from(outcome.is_error() && !completes_video(outcome)),
         input_tokens: i(usage.input_tokens),
         output_tokens: i(usage.output_tokens),
         cache_read_tokens: i(usage.cache_read_tokens),

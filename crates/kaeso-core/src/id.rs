@@ -174,6 +174,7 @@ public_id!(McpConnectionId, "conn_");
 public_id!(ToolId, "tool_");
 public_id!(PortalGrantId, "grant_");
 public_id!(ToolCallId, "call_");
+public_id!(VideoId, "video_");
 
 #[cfg(test)]
 mod tests {

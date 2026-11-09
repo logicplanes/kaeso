@@ -11,6 +11,7 @@ Every install serves two APIs on its domain. Apps call models through the model 
 - [Model API](model-api.md): Call models with the OpenAI, Anthropic and Google Gen AI SDKs, and look up endpoints, headers and model names.
 - [Images API](images.md): Generate and edit images with OpenAI's Images API on every provider that makes images.
 - [Audio API](audio.md): Make speech and transcribe or translate audio with OpenAI's audio API on every provider that offers it.
+- [Videos API](videos.md): Make videos with OpenAI's Videos API on every provider that makes video.
 - [ElevenLabs API](elevenlabs.md): Call ElevenLabs speech, sound, music and transcription with the official ElevenLabs SDKs.
 - [Errors](errors.md): Read what a failed model request returns in each format, and why it failed.
 - [Platform API](platform-api.md): Look up authentication, conventions, errors and routes for managing an install.

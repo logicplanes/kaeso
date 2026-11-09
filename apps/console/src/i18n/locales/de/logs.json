@@ -239,5 +239,8 @@
   "logs.inspector.characters": "{count} Zeichen",
   "logs.inspector.charactersMade": "{characters} · {duration} erstellt",
   "logs.inspector.audioMade": "{duration} erstellt",
-  "logs.inspector.audioSent": "{duration} Audio gesendet"
+  "logs.inspector.audioSent": "{duration} Audio gesendet",
+  "logs.inspector.video": "Video",
+  "logs.inspector.videos": "{count, plural, one {# Video} other {# Videos}}",
+  "logs.inspector.videosMade": "{videos} · {duration}"
 }

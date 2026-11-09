@@ -239,5 +239,8 @@
   "logs.inspector.characters": "{count} 个字符",
   "logs.inspector.charactersMade": "{characters} · 生成 {duration}",
   "logs.inspector.audioMade": "生成 {duration}",
-  "logs.inspector.audioSent": "发送 {duration} 音频"
+  "logs.inspector.audioSent": "发送 {duration} 音频",
+  "logs.inspector.video": "视频",
+  "logs.inspector.videos": "{count, plural, other {# 个视频}}",
+  "logs.inspector.videosMade": "{videos} · {duration}"
 }

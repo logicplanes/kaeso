@@ -31626,18 +31626,18 @@
           "input": {
             "type": "integer",
             "format": "int64",
-            "description": "Units the app sent, such as the images of an edit, the characters to speak or\nthe length of the audio to transcribe.",
+            "description": "Units the app sent, such as the images of an edit, the characters to speak or\nthe length of the audio to transcribe; for `video`, the videos asked for or made.",
             "minimum": 0
           },
           "output": {
             "type": "integer",
             "format": "int64",
-            "description": "Units the provider made, such as images or the length of a sound.",
+            "description": "Units the provider made, such as images or the length of a sound or of videos.",
             "minimum": 0
           },
           "unit": {
             "type": "string",
-            "description": "The unit: `image`, `character` (text to speak) or `millisecond` (audio).",
+            "description": "The unit: `image`, `character` (text to speak), `millisecond` (audio) or `video`\n(videos made, with their milliseconds as the output).",
             "example": "image"
           }
         }
@@ -37703,6 +37703,15 @@
             ],
             "description": "Whether it applies to made video with sound (`true`) or without (`false`)."
           },
+          "duration": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "The length in whole seconds of the video it applies to, for prices per video.",
+            "minimum": 0
+          },
           "estimate": {
             "type": "boolean",
             "description": "Whether the provider publishes the price only as an estimate."
@@ -37723,7 +37732,7 @@
           },
           "per": {
             "type": "string",
-            "description": "The unit: `image`, `megapixel`, `second`, `minute`, `hour` or\n`million_characters`.",
+            "description": "The unit: `image`, `megapixel`, `second`, `minute`, `hour`,\n`million_characters` or `video`.",
             "example": "image"
           },
           "quality": {

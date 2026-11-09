@@ -251,6 +251,7 @@ pub async fn responses(
         image: None,
         transcription: None,
         elevenlabs: None,
+        video: None,
     };
     Ok(pipeline::serve_with(state, incoming, answer).await)
 }

@@ -166,6 +166,9 @@ pub struct MediaUnits {
     /// The length of the audio or video a request made, in milliseconds.
     #[serde(default)]
     pub output_ms: u64,
+    /// The videos a request made.
+    #[serde(default)]
+    pub output_videos: u64,
     /// Whether made video has sound, for prices that depend on it.
     #[serde(default)]
     pub audio: Option<bool>,
@@ -192,6 +195,9 @@ impl MediaUnits {
                 let pixels = self.output_pixels?.checked_mul(self.output_images)?;
                 Some(Decimal::from(pixels) / MILLION)
             }
+            ("video", "output") if self.output_videos > 0 => {
+                Some(Decimal::from(self.output_videos))
+            }
             ("million_characters", "input") if self.characters > 0 => {
                 Some(Decimal::from(self.characters) / MILLION)
             }
@@ -212,9 +218,11 @@ impl MediaUnits {
     }
 
     /// The unit the request log names these units by, with what went in and what came out:
-    /// images, characters of speech, or milliseconds of audio.
+    /// images, characters of speech, milliseconds of audio, or videos and their milliseconds.
     pub fn logged(&self) -> (&'static str, u64, u64) {
-        if self.input_images > 0 || self.output_images > 0 || self.size.is_some() {
+        if self.output_videos > 0 {
+            ("video", self.output_videos, self.output_ms)
+        } else if self.input_images > 0 || self.output_images > 0 || self.size.is_some() {
             ("image", self.input_images, self.output_images)
         } else if self.characters > 0 {
             ("character", self.characters, self.output_ms)
@@ -248,6 +256,13 @@ fn fit(price: &UnitPrice, units: &MediaUnits) -> Fit {
     if let Some(wanted) = price.audio {
         match units.audio {
             Some(have) if have == wanted => named += 1,
+            _ => return Fit::No,
+        }
+    }
+    if let Some(wanted) = price.duration {
+        match units.output_ms {
+            0 => unknown = true,
+            ms if ms.div_ceil(1000) == u64::from(wanted) => named += 1,
             _ => return Fit::No,
         }
     }
