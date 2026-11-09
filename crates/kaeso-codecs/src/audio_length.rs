@@ -35,7 +35,8 @@ pub fn audio_duration(bytes: &[u8]) -> Option<Duration> {
     } else {
         mp3(bytes)
     }?;
-    (seconds.is_finite() && seconds > 0.0 && seconds <= MAX_SECONDS)
+    // Under a millisecond is no audio a provider bills, and rounds to no length at all.
+    (seconds.is_finite() && seconds >= 0.001 && seconds <= MAX_SECONDS)
         .then(|| Duration::from_secs_f64(seconds))
 }
 
@@ -625,6 +626,14 @@ mod tests {
             None,
             "no Duration, as browsers' MediaRecorder writes"
         );
+
+        let tiny = ebml(&[0x44, 0x89], &1e-9f64.to_be_bytes());
+        let mut file = ebml(&[0x1A, 0x45, 0xDF, 0xA3], b"");
+        file.extend(ebml(
+            &[0x18, 0x53, 0x80, 0x67],
+            &ebml(&[0x15, 0x49, 0xA9, 0x66], &tiny),
+        ));
+        assert_eq!(secs(&file), None, "under a millisecond is no length");
     }
 
     // MPEG-1 layer III, 128 kbit/s, 44.1 kHz, stereo: 417 bytes per frame without padding.
