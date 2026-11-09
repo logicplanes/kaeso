@@ -560,6 +560,8 @@ describe("LogInspector", () => {
     const reply = await openTab(user, "Reply");
     expect(reply).toHaveTextContent("Assembled from the stream in Kaeso's own format, which also keeps what the app's format can't show.");
     expect(within(reply).getByText("End of turn")).toBeInTheDocument();
+    const note = within(reply).getByText("Assembled from the stream in Kaeso's own format, which also keeps what the app's format can't show.");
+    expect(note.parentElement).toHaveClass("items-baseline");
     expect(await within(reply).findByRole("region", { name: "Assistant" })).toHaveTextContent("Order 7 shipped yesterday.");
     expect(reply).toHaveTextContent("A block kept as it came:");
     await user.click(within(reply).getByRole("switch", { name: "Show raw" }));
