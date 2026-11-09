@@ -437,6 +437,13 @@ impl From<Cached> for LogSettings {
 pub fn endpoint(o: &Outcome) -> &'static str {
     let (ingress, kind, gemini, image, transcription) =
         (o.ingress, o.kind, o.gemini, o.image, o.transcription);
+    if let Some(call) = o.video {
+        return match call {
+            crate::model_api::hooks::VideoCall::Create => "videos",
+            crate::model_api::hooks::VideoCall::Remix => "videos/remix",
+            crate::model_api::hooks::VideoCall::Completed => "videos/completed",
+        };
+    }
     if let Some(operation) = o.elevenlabs {
         use kaeso_codecs::elevenlabs::ElevenLabsOperation as Op;
         return match operation {

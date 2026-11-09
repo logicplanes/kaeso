@@ -22,6 +22,15 @@ pub struct Caller {
     pub service_account_id: Option<Uuid>,
 }
 
+/// Which step of a video job an outcome records: the request that started it, or the job's
+/// end, when its videos are billed.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum VideoCall {
+    Create,
+    Remix,
+    Completed,
+}
+
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum Source {
     #[default]
@@ -162,6 +171,7 @@ pub struct Outcome {
     pub transcription: Option<kaeso_kpp::TranscriptionOperation>,
     pub elevenlabs: Option<kaeso_codecs::elevenlabs::ElevenLabsOperation>,
     pub media: Option<kaeso_core::cost::MediaUnits>,
+    pub video: Option<VideoCall>,
     /// The media type of a whole reply that isn't JSON, such as speech's audio.
     pub content_type: Option<String>,
 }

@@ -1,0 +1,37 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE videos SET status = $3, progress = $4, error = $5, completed_at = $6, expires_at = COALESCE($7, expires_at), units = $8, cost = $9, accounted_at = $10 WHERE org_id = $1 AND id = $2 AND accounted_at IS NULL RETURNING id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "videos",
+            "name": "id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Int2",
+        "Jsonb",
+        "Timestamptz",
+        "Timestamptz",
+        "Jsonb",
+        "Numeric",
+        "Timestamptz"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "89eabf05d6fe5b2ff12f5c59bcb808b6c5aedda4d66f71a08d6cd8dc06073389"
+}

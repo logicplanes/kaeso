@@ -689,6 +689,7 @@ mod tests {
         images: None,
         speech: None,
         transcriptions: None,
+        videos: &[],
         dialects: &[DialectId::OpenAiChat, DialectId::AnthropicMessages],
         refused_key_messages: &[],
         context_window_messages: &[],

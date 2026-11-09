@@ -70,6 +70,7 @@ pub(super) async fn generate(
             image: None,
             transcription: None,
             elevenlabs: Some(call),
+            video: None,
         },
     )
     .await

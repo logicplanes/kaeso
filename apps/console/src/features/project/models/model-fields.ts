@@ -54,12 +54,14 @@ export function unitPriceLabels(f: Fields): string[] {
       minute: () => t("models.unit.minute", "minute"),
       hour: () => t("models.unit.hour", "hour"),
       million_characters: () => t("models.unit.millionCharacters", "million characters"),
+      video: () => t("models.unit.video", "video"),
     };
     const unit = units[u.per]?.() ?? u.per;
     const side = u.of === "input" ? t("models.unit.input", "input") : t("models.unit.output", "output");
     const sound = u.audio === true ? t("models.unit.withSound", "with sound") : u.audio === false ? t("models.unit.withoutSound", "without sound") : undefined;
     const minimum = u.minimum_seconds ? t("models.unit.minimumSeconds", "at least {seconds} s", { seconds: formatNumber(u.minimum_seconds) }) : undefined;
-    const conditions = [u.size, u.quality, u.resolution, sound, minimum].filter((c): c is string => !!c);
+    const length = u.duration ? t("models.unit.duration", "{seconds} s long", { seconds: formatNumber(u.duration) }) : undefined;
+    const conditions = [u.size, u.quality, u.resolution, length, sound, minimum].filter((c): c is string => !!c);
     const label = t("models.unitPrice", "{price} per {unit} of {side}", { price: formatUSD(u.usd), unit, side });
     const shown = conditions.length ? `${label} (${conditions.join(t("models.listSeparator", ", "))})` : label;
     return u.estimate ? t("models.unitPriceEstimate", "{price}, estimated", { price: shown }) : shown;
@@ -87,6 +89,13 @@ export function dialectPill(d: string): string {
       minimax_speech: "speech",
       openai_transcriptions: "transcriptions",
       elevenlabs: "elevenlabs",
+      openai_videos: "videos",
+      xai_videos: "videos",
+      minimax_videos: "videos",
+      zai_videos: "videos",
+      openrouter_videos: "videos",
+      veo: "videos",
+      gemini_interactions: "videos",
     }[d] ?? d
   );
 }

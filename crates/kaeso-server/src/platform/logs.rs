@@ -843,13 +843,14 @@ pub struct LogView {
 #[derive(Clone, Debug, Serialize, ToSchema)]
 #[schema(description = "The media units of a request, such as the images it sent and made.")]
 pub struct MediaView {
-    #[doc = "The unit: `image`, `character` (text to speak) or `millisecond` (audio)."]
+    #[doc = "The unit: `image`, `character` (text to speak), `millisecond` (audio) or `video`\n\
+        (videos made, with their milliseconds as the output)."]
     #[schema(example = "image")]
     pub unit: String,
     #[doc = "Units the app sent, such as the images of an edit, the characters to speak or\n\
-        the length of the audio to transcribe."]
+        the length of the audio to transcribe; for `video`, the videos asked for or made."]
     pub input: u64,
-    #[doc = "Units the provider made, such as images or the length of a sound."]
+    #[doc = "Units the provider made, such as images or the length of a sound or of videos."]
     pub output: u64,
     #[doc = "The size, quality and resolution the request asked for or the provider\n\
         reported, such as `1024x1024 high`, or the audio format or transcript form, such as\n\

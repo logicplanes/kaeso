@@ -52,6 +52,7 @@ struct Shared {
     abandoned: AtomicUsize,
     gates: Mutex<HashMap<String, Arc<GateState>>>,
     gates_made: AtomicU64,
+    video_polls: crate::mock_videos::Polls,
 }
 
 impl Shared {
@@ -402,6 +403,16 @@ async fn answer(ctx: Ctx, method: Method, uri: Uri, headers: HeaderMap, body: By
         }
     }
     let path = platform.map_or(path, |p| p.as_ai_studio);
+    if let Some(resp) = crate::mock_videos::answer(
+        &ctx.shared.video_polls,
+        &ctx.fixtures,
+        &method,
+        &path,
+        uri.query(),
+        &headers,
+    ) {
+        return resp;
+    }
     let headers = if headers.contains_key("authorization") && path.starts_with(GEMINI_MODELS) {
         let mut h = headers;
         h.remove("authorization");
@@ -1211,6 +1222,7 @@ async fn control_reset(State(ctx): State<Ctx>) -> StatusCode {
         .lock()
         .unwrap_or_else(PoisonError::into_inner)
         .clear();
+    ctx.shared.video_polls.clear();
     for c in [
         &ctx.shared.streams_started,
         &ctx.shared.streams_finished,

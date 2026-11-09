@@ -365,6 +365,7 @@ impl WorstCase {
         match request {
             kaeso_kpp::Request::Image(r) => return WorstCase::of_images(r, prices),
             kaeso_kpp::Request::Speech(r) => return WorstCase::of_speech(r, prices),
+            kaeso_kpp::Request::Video(r) => return WorstCase::of_videos(r, prices),
             _ => {}
         }
         let context = prices.context_limit;
@@ -503,6 +504,57 @@ impl WorstCase {
             tokens: i64::try_from(crate::cost::total_tokens(&usage)).unwrap_or(i64::MAX),
             nano_usd: crate::cost::nano_usd(cost),
             bounded: output.is_some(),
+        }
+    }
+
+    // Every video at the dearest price per video or second of the model, whatever its
+    // resolution, sound or length, and token-priced video up to the model's output limit. A
+    // job without a length priced by the second, or by the token without a limit, has no bound.
+    fn of_videos(r: &kaeso_kpp::VideoRequest, prices: &Fields) -> WorstCase {
+        let count = u64::from(r.count.unwrap_or(1).max(1));
+        let units = crate::cost::MediaUnits {
+            output_videos: count,
+            output_ms: r.seconds.map_or(0, |s| {
+                u64::from(s).saturating_mul(1000).saturating_mul(count)
+            }),
+            ..crate::cost::MediaUnits::default()
+        };
+        let dearest = prices.unit_prices.as_ref().map(|list| {
+            let mut top: Vec<crate::catalogue::UnitPrice> = Vec::new();
+            for p in list {
+                match top.iter_mut().find(|t| t.per == p.per && t.of == p.of) {
+                    Some(t) if t.usd < p.usd => t.usd = p.usd,
+                    Some(_) => {}
+                    None => top.push(crate::catalogue::UnitPrice {
+                        size: None,
+                        quality: None,
+                        resolution: None,
+                        audio: None,
+                        duration: None,
+                        ..p.clone()
+                    }),
+                }
+            }
+            top
+        });
+        let per_time = dearest.as_ref().is_some_and(|top| {
+            top.iter()
+                .any(|p| matches!(p.per.as_str(), "second" | "minute" | "hour"))
+        });
+        let output = match (prices.output_limit, prices.output_price) {
+            (_, None) => Some(0),
+            (limit, Some(_)) => limit.map(|l| l.saturating_mul(count)),
+        };
+        let usage = kaeso_kpp::Usage::new(0, output.unwrap_or(0));
+        let priced = Fields {
+            unit_prices: dearest,
+            ..prices.clone()
+        };
+        let cost = crate::cost::cost_with_media(&usage, &priced, Some(&units));
+        WorstCase {
+            tokens: i64::try_from(crate::cost::total_tokens(&usage)).unwrap_or(i64::MAX),
+            nano_usd: crate::cost::nano_usd(cost),
+            bounded: output.is_some() && (r.seconds.is_some() || !per_time),
         }
     }
 

@@ -260,6 +260,34 @@ pub fn prepare(
             }
             Ok(media_plan(transcriptions.dialect))
         }
+        Request::Video(r) => {
+            let Some(videos) = eff.provider.videos(name) else {
+                let message = if eff.provider.has_videos() {
+                    format!("The model `{name}` does not make videos.")
+                } else {
+                    format!(
+                        "{} offers no video API Kaeso can call, so `{name}` can't make videos.",
+                        eff.provider.name()
+                    )
+                };
+                return Err(refuse("videos", Some("model"), message));
+            };
+            if !produces(eff, "video") {
+                return Err(refuse(
+                    "video output",
+                    Some("model"),
+                    format!("The model `{name}` does not make videos."),
+                ));
+            }
+            if r.required_capabilities().images && !eff.accepts("image") {
+                return Err(refuse(
+                    "image input",
+                    Some("input_reference"),
+                    format!("The model `{name}` does not accept images."),
+                ));
+            }
+            Ok(media_plan(videos.dialect))
+        }
         _ => Err(refuse(
             "endpoint",
             None,

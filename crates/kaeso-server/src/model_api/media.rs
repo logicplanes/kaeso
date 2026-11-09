@@ -85,8 +85,16 @@ pub(super) struct MediaEgress {
     pub(super) auth: Option<AuthStyle>,
 }
 
-pub(super) fn egress_of(provider: &ProviderRef, kind: RequestKind) -> Option<MediaEgress> {
+pub(super) fn egress_of(
+    provider: &ProviderRef,
+    kind: RequestKind,
+    model: &str,
+) -> Option<MediaEgress> {
     match kind {
+        RequestKind::Video => provider.videos(model).map(|e| MediaEgress {
+            from_root: e.from_root,
+            auth: e.auth,
+        }),
         RequestKind::Image => provider.images().map(|e| MediaEgress {
             from_root: e.from_root,
             auth: e.auth,

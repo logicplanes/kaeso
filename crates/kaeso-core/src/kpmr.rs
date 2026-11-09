@@ -78,7 +78,7 @@ pub struct Pricing {
     pub per_unit: Vec<UnitPrice>,
 }
 
-/// A price per image, megapixel, second, minute, hour or million characters, for the
+/// A price per image, megapixel, second, minute, hour, million characters or video, for the
 /// requests whose conditions match; a condition that is `None` matches any request.
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct UnitPrice {
@@ -96,6 +96,8 @@ pub struct UnitPrice {
     pub audio: Option<bool>,
     #[serde(default)]
     pub minimum_seconds: Option<u64>,
+    #[serde(default)]
+    pub duration: Option<u32>,
     #[serde(default)]
     pub estimate: bool,
 }

@@ -40,6 +40,13 @@ export const DIALECTS: Record<string, string> = {
   openai_transcriptions: "OpenAI Transcriptions",
   minimax_speech: "MiniMax Speech",
   elevenlabs: "ElevenLabs",
+  openai_videos: "OpenAI Videos",
+  xai_videos: "SpaceX Videos",
+  minimax_videos: "MiniMax Videos",
+  zai_videos: "Z.ai Videos",
+  openrouter_videos: "OpenRouter Videos",
+  veo: "Veo",
+  gemini_interactions: "Gemini Interactions",
 };
 export const dialectLabel = (d: string) => DIALECTS[d] ?? d;
 
