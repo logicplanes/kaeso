@@ -291,7 +291,7 @@ CI 工作流 `.github/workflows/ci.yml` 在每个拉取请求、每次推送到 
 | Rust format、Rust lint | 对工作区和 `fuzz/` 运行 `cargo fmt` 和 `cargo clippy` |
 | Test KPP | `cargo coverage-kpp` 以及 `kaeso-kpp` 和 `kaeso-codecs` 的文档测试 |
 | Minimum Rust version | 用各自的 `rust-version` 对每个 KPP crate 运行 `cargo check` 和 `cargo test` |
-| Test gateway | 在开发栈上运行 `cargo coverage-gateway` |
+| Test gateway | 在开发栈上运行 `cargo coverage-gateway`，分为四个分片，另一个作业合并它们的行覆盖率，并按该别名的阈值检查 |
 | Repository tooling | `node scripts/version.mjs check`、`cargo test -p xtask -p kpp-conformance` 和 `cargo test -p kaeso-server --test docs_paths` |
 | Query data | 先执行 PostgreSQL 迁移，再运行 `cargo sqlx prepare --workspace --check` |
 | OpenAPI document | `openapi.json` 是最新的 |

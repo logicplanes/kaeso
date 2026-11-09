@@ -291,7 +291,7 @@ The one required check is **CI**. It passes when **Changes** and **Comments** pa
 | Rust format, Rust lint | `cargo fmt` and `cargo clippy`, for the workspace and `fuzz/` |
 | Test KPP | `cargo coverage-kpp` and the doc tests of `kaeso-kpp` and `kaeso-codecs` |
 | Minimum Rust version | `cargo check` and `cargo test` of each KPP crate with its `rust-version` |
-| Test gateway | `cargo coverage-gateway`, with the development stack |
+| Test gateway | `cargo coverage-gateway`, with the development stack, in four shards whose line coverage is merged and checked against the alias's threshold in one more job |
 | Repository tooling | `node scripts/version.mjs check`, `cargo test -p xtask -p kpp-conformance` and `cargo test -p kaeso-server --test docs_paths` |
 | Query data | The PostgreSQL migrations, then `cargo sqlx prepare --workspace --check` |
 | OpenAPI document | `openapi.json` is current |

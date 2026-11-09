@@ -291,7 +291,7 @@ Die einzige erforderliche Prüfung ist **CI**. Sie besteht, wenn **Changes** und
 | Rust format, Rust lint | `cargo fmt` und `cargo clippy`, für den Workspace und `fuzz/` |
 | Test KPP | `cargo coverage-kpp` und die Doc-Tests von `kaeso-kpp` und `kaeso-codecs` |
 | Minimum Rust version | `cargo check` und `cargo test` jedes KPP-Crates mit seiner `rust-version` |
-| Test gateway | `cargo coverage-gateway`, mit dem Entwicklungs-Stack |
+| Test gateway | `cargo coverage-gateway`, mit dem Entwicklungs-Stack, in vier Shards, deren Zeilenabdeckung ein weiterer Job zusammenführt und gegen den Schwellenwert des Alias prüft |
 | Repository tooling | `node scripts/version.mjs check`, `cargo test -p xtask -p kpp-conformance` und `cargo test -p kaeso-server --test docs_paths` |
 | Query data | Die PostgreSQL-Migrationen, dann `cargo sqlx prepare --workspace --check` |
 | OpenAPI document | `openapi.json` ist aktuell |
