@@ -59,6 +59,7 @@ Agenten melden sich über `/oauth/` und `/.well-known/oauth-` an und rufen dann 
 Richten Sie den Proxy für Kaeso ein:
 
 - Schalten Sie die Pufferung von Antworten für `/v1/` und `/v1beta/` ab, damit gestreamte Antworten die Apps sofort erreichen.
+- Lassen Sie WebSocket-Upgrades auf `/v1/` durch, damit ElevenLabs-Apps [Echtzeit-Sitzungen](../api/elevenlabs.md#echtzeit-sitzungen) öffnen können.
 - Geben Sie `X-Forwarded-For` weiter, und setzen Sie `KAESO_TRUSTED_PROXIES` in `.env` auf die genaue Adresse Ihres Proxys. Nur von dort glaubt das Gateway den Header. Standardmäßig vertraut das Compose-Paket Loopback und dem Netzwerk `edge`, `EDGE_SUBNET`. Ein Proxy auf dem Server, der die Ports oben aufruft, erreicht das Gateway von der ersten Adresse von `EDGE_SUBNET` aus, standardmäßig `172.30.83.1`. Hinter einem Proxy, dem es nicht vertraut, sehen Protokolle und die [Drosselung von API-Schlüsseln](configuration.md#drosselung-von-api-schlüsseln) jeden Client als den Proxy.
 - Erreichen Personen Kaeso unter einer anderen Adresse als `https://` und `KAESO_DOMAIN`, setzen Sie `KAESO_PUBLIC_URL` in der `.env` auf diese Adresse.
 - Leiten Sie den Metrik-Port 9100 nie weiter.

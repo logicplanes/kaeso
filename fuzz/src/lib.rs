@@ -104,6 +104,30 @@ pub fn decoders(dialect: DialectId, data: &[u8]) {
                 }
             }
         }
+        if let Ok(text) = std::str::from_utf8(data) {
+            use kaeso_codecs::elevenlabs::realtime::{self, RealtimeApi};
+            for api in [
+                RealtimeApi::TextToSpeech,
+                RealtimeApi::TextToSpeechContexts,
+                RealtimeApi::TextToDialogue,
+                RealtimeApi::TextToDialogueContexts,
+                RealtimeApi::SpeechToText,
+            ] {
+                match realtime::read_client_message(api, text) {
+                    Ok(read) => {
+                        let again = realtime::read_client_message(api, &read.forwarded)
+                            .unwrap_or_else(|e| panic!("a forwarded message reads again: {e:?}"));
+                        assert_eq!(again.credential, None, "credentials never pass on");
+                        assert_eq!(again.characters, read.characters);
+                    }
+                    Err(e) => {
+                        let _ = realtime::error_message(api, &e);
+                    }
+                }
+            }
+            let _ = RealtimeApi::from_path(text);
+            let _ = realtime::bytes_per_second(text);
+        }
     }
     for kind in KINDS {
         if let Ok(req) = dispatch::decode_request(dialect, kind, data, &headers) {

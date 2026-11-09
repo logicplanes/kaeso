@@ -82,3 +82,16 @@ Bilder per Weblink, `creatify-aurora` (es braucht Audio als Eingabe) und Remixe 
 ## Listen
 
 `GET /v1/models` listet die ElevenLabs-Modelle des Projekts in der Form `ModelResponseModel` von ElevenLabs, `model_id` und `name`. Die Stimmenlisten sind die eigenen des Kontos bei ElevenLabs: `voice_listing_request` baut `GET /v1/voices`, `/v2/voices` oder `/v1/voices/{voice_id}` mit der Query der App, und `voices_reply` prüft, dass die Antwort eine Stimmenliste oder eine Stimme ist, bevor sie weitergeht.
+
+## Echtzeit-Sockets
+
+`elevenlabs::realtime` liest die Echtzeit-WebSockets von ElevenLabs ohne I/O, für den Sitzungs-Proxy des Gateways. Diese Nachrichten werden nicht übersetzt: Ein ElevenLabs-Socket erreicht nur ElevenLabs, deshalb steht kein KPP-Typ dazwischen.
+
+| Funktion | Was sie tut |
+| --- | --- |
+| `RealtimeApi::from_path`, `path` | Benennt den Socket von `/v1/text-to-speech/{voice_id}/stream-input` und `/multi-stream-input`, `/v1/text-to-dialogue/stream-input` und `/multi-stream-input` sowie `/v1/speech-to-text/realtime` und schreibt seinen Pfad bei ElevenLabs, mit der Stimme als einem geprüften Segment |
+| `read_client_message` | Nimmt `xi_api_key`, `authorization` und `single_use_token` aus der Nachricht einer App und zählt, was sie trägt: die Zeichen von `text` oder jedes `inputs[].text` oder die Bytes von `audio_base_64` und seine `sample_rate` |
+| `bytes_per_second` | Die Bytes, die eine Sekunde Audio in `pcm_*` (16 Bit) oder `ulaw_8000` belegt |
+| `error_message` | Die eigene Fehlernachricht des Sockets, `{"message_type", "error"}` bei Speech to Text und sonst `{"message", "error", "code", "param"}`, und der Close-Code: 1008 für alles, was die App beheben kann, sonst 1011 |
+
+Quellen: die [WebSocket-Referenzen](https://elevenlabs.io/docs/websockets) und der [Text-to-Dialogue-WebSocket](https://elevenlabs.io/docs/api-reference/text-to-dialogue/ttd-websocket) von ElevenLabs, gelesen am 2026-11-09, und das offizielle Python-SDK `elevenlabs` 2.77.0 (`realtime_tts.py`, `realtime/`).

@@ -257,6 +257,7 @@ pub(super) fn blank_outcome(request_id: RequestId) -> Outcome {
         image: None,
         transcription: None,
         elevenlabs: None,
+        realtime: None,
         media: None,
         video: None,
         content_type: None,
@@ -603,7 +604,7 @@ fn unreadable(err: KppError, provider: &ProviderRef, dialect: DialectId) -> KppE
     }
 }
 
-const KEY_REFUSED: &str = "The provider refused this project's provider key. Ask an organization admin to check it under Providers.";
+pub(super) const KEY_REFUSED: &str = "The provider refused this project's provider key. Ask an organization admin to check it under Providers.";
 
 const PERMISSION_REFUSED: &str = "The provider doesn't allow this request with this project's provider key, for example for this model, plan or region. Ask an organization admin to check it under Providers.";
 

@@ -168,6 +168,7 @@ class Install:
             ("elevenlabs", "eleven_flash_v2_5", None),
             ("elevenlabs", "eleven_text_to_sound_v2", None),
             ("elevenlabs", "scribe_v2", None),
+            ("elevenlabs", "scribe_v2_realtime", None),
             ("xai", "grok-imagine-video-1.5", None),
             ("minimax", "MiniMax-Hailuo-2.3", None),
         ):

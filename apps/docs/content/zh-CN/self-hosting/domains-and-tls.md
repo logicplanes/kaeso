@@ -59,6 +59,7 @@ services:
 为 Kaeso 设置代理：
 
 - 关闭 `/v1/` 和 `/v1beta/` 的响应缓冲，让流式回复实时到达应用。
+- 在 `/v1/` 上放行 WebSocket 升级，让 ElevenLabs 应用能打开[实时会话](../api/elevenlabs.md#实时会话)。
 - 传递 `X-Forwarded-For`，并在 `.env` 中把 `KAESO_TRUSTED_PROXIES` 设为代理的确切地址。网关只信任来自该地址的这个请求头。Compose 包默认信任回环地址和 `edge` 网络，即 `EDGE_SUBNET`。服务器上调用上述端口的代理会从 `EDGE_SUBNET` 的第一个地址（默认为 `172.30.83.1`）到达网关。在不受信任的代理后面，日志和 [API 密钥限流](configuration.md#api-密钥限流)会把每个客户端都看作该代理。
 - 如果用户通过 `https://` 加 `KAESO_DOMAIN` 以外的地址访问 Kaeso，请在 `.env` 中把 `KAESO_PUBLIC_URL` 设为该地址。
 - 切勿转发指标端口 9100。

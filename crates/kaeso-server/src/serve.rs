@@ -469,7 +469,8 @@ async fn serve_connection(
     });
     let mut builder = Builder::clone(&builder);
     builder.http1().timer(ConnectionTimer::default());
-    let connection = builder.serve_connection(TokioIo::new(stream), service);
+    // ElevenLabs' realtime sockets upgrade the connection (RFC 6455, section 4.2.2).
+    let connection = builder.serve_connection_with_upgrades(TokioIo::new(stream), service);
     let mut connection = std::pin::pin!(connection);
     let deadline = tokio::time::sleep(first_request_within);
     let mut deadline = std::pin::pin!(deadline);

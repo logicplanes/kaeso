@@ -23,6 +23,11 @@ serde_json.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
 url.workspace = true
+tokio-tungstenite.workspace = true
+tokio-rustls.workspace = true
+rustls.workspace = true
+rustls-pki-types.workspace = true
+rustls-platform-verifier.workspace = true
 
 [dev-dependencies]
 kaeso-testkit.workspace = true
@@ -30,8 +35,6 @@ tokio = { workspace = true, features = ["test-util"] }
 hyper.workspace = true
 hyper-util.workspace = true
 http-body-util.workspace = true
-rustls.workspace = true
-tokio-rustls.workspace = true
 rcgen.workspace = true
 
 [lints]

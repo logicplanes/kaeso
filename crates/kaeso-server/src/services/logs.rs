@@ -444,6 +444,16 @@ pub fn endpoint(o: &Outcome) -> &'static str {
             crate::model_api::hooks::VideoCall::Completed => "videos/completed",
         };
     }
+    if let Some(api) = o.realtime {
+        use kaeso_codecs::elevenlabs::realtime::RealtimeApi as Api;
+        return match api {
+            Api::TextToSpeechContexts => "text-to-speech/multi-stream-input",
+            Api::TextToDialogue => "text-to-dialogue/stream-input",
+            Api::TextToDialogueContexts => "text-to-dialogue/multi-stream-input",
+            Api::SpeechToText => "speech-to-text/realtime",
+            _ => "text-to-speech/stream-input",
+        };
+    }
     if let Some(operation) = o.elevenlabs {
         use kaeso_codecs::elevenlabs::ElevenLabsOperation as Op;
         return match operation {

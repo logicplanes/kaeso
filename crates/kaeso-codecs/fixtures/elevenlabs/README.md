@@ -27,3 +27,8 @@ ElevenLabs' API, as ElevenLabs-format apps send it and as ElevenLabs answers. Ea
 | `errors/recorded-music-free-tier-402.json` | music refused on the free tier | recorded |
 | `models/recorded-list.json` | the first two entries of `GET /v1/models` | recorded |
 | `voices/recorded-search.json` | `GET /v2/voices?page_size=3`, cut to its two premade voices with the account-bound fields emptied | recorded |
+| `realtime/text-to-speech-first.json` | the first message of `/stream-input` with a key in `xi_api_key` | spec-built: the official Python SDK's `convert_realtime` first message, with the key field the reference documents |
+| `realtime/text-to-speech-text.json` | a text message of `/stream-input` | spec-built: the SDK's `convert_realtime` text message |
+| `realtime/text-to-speech-contexts.json` | a text message of `/multi-stream-input` | spec-built: the SDK's `websocket_tts_client_message_multi` type |
+| `realtime/text-to-dialogue-inputs.json` | two dialogue lines | spec-built: the text to dialogue WebSocket reference (`inputs`, `voice_id`, `new_turn`) |
+| `realtime/speech-to-text-chunk.json` | an audio chunk of realtime speech to text | spec-built: the SDK's `RealtimeConnection.send` message, with 33 bytes of silence |

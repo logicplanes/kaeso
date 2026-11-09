@@ -5,6 +5,7 @@
 mod error;
 mod format;
 mod listing;
+pub mod realtime;
 mod reply;
 mod request;
 mod video;

@@ -82,3 +82,16 @@ ElevenLabs 通过 `POST /v1/flows/video` 使用 Veo 3.1 和 Seedance 2 模型生
 ## 列表
 
 `GET /v1/models` 以 ElevenLabs 的 `ModelResponseModel` 结构（`model_id` 和 `name`）列出项目的 ElevenLabs 模型。声音列表是该账户在 ElevenLabs 上自己的声音：`voice_listing_request` 用应用的查询构建 `GET /v1/voices`、`/v2/voices` 或 `/v1/voices/{voice_id}`，`voices_reply` 在传递之前检查回复是否为声音列表或单个声音。
+
+## 实时 Socket
+
+`elevenlabs::realtime` 在不做 I/O 的情况下读取 ElevenLabs 的实时 WebSocket，供网关的会话代理使用。这些消息不做翻译：ElevenLabs 的 Socket 只到达 ElevenLabs，因此中间没有 KPP 类型。
+
+| 函数 | 作用 |
+| --- | --- |
+| `RealtimeApi::from_path`、`path` | 识别 `/v1/text-to-speech/{voice_id}/stream-input` 和 `/multi-stream-input`、`/v1/text-to-dialogue/stream-input` 和 `/multi-stream-input` 以及 `/v1/speech-to-text/realtime` 的 Socket，并写出它在 ElevenLabs 上的路径，声音作为一个经过检查的路径段 |
+| `read_client_message` | 从应用的消息中取出 `xi_api_key`、`authorization` 和 `single_use_token`，并统计消息携带的内容：`text` 或每个 `inputs[].text` 的字符数，或 `audio_base_64` 的字节数及其 `sample_rate` |
+| `bytes_per_second` | 一秒 `pcm_*`（16 位）或 `ulaw_8000` 音频占用的字节数 |
+| `error_message` | 该 Socket 自己的错误消息：语音转文本为 `{"message_type", "error"}`，其他为 `{"message", "error", "code", "param"}`，以及关闭代码：应用可以修正的问题为 1008，其他为 1011 |
+
+来源：ElevenLabs 的 [WebSocket 参考](https://elevenlabs.io/docs/websockets)和[文本转对话 WebSocket](https://elevenlabs.io/docs/api-reference/text-to-dialogue/ttd-websocket)（2026-11-09 阅读），以及官方 `elevenlabs` Python SDK 2.77.0（`realtime_tts.py`、`realtime/`）。

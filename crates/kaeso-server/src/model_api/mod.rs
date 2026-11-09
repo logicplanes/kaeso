@@ -11,6 +11,7 @@ pub mod listing;
 mod media;
 pub mod memory;
 pub mod pipeline;
+mod realtime;
 mod stream;
 pub mod videos;
 
@@ -274,14 +275,21 @@ pub fn router() -> Router<AppState> {
         .route("/v1/audio/speech", post(audio_speech))
         .route("/v1/audio/transcriptions", post(audio_transcriptions))
         .route("/v1/audio/translations", post(audio_translations))
-        .route("/v1/text-to-speech/{*rest}", post(elevenlabs::generate))
+        .route(
+            "/v1/text-to-speech/{*rest}",
+            post(elevenlabs::generate).get(realtime::socket),
+        )
         .route("/v1/text-to-dialogue", post(elevenlabs::generate))
-        .route("/v1/text-to-dialogue/{*rest}", post(elevenlabs::generate))
+        .route(
+            "/v1/text-to-dialogue/{*rest}",
+            post(elevenlabs::generate).get(realtime::socket),
+        )
         .route("/v1/sound-generation", post(elevenlabs::generate))
         .route("/v1/music", post(elevenlabs::generate))
         .route("/v1/music/{*rest}", post(elevenlabs::generate))
         .route("/v1/voice-changer/{*rest}", post(elevenlabs::generate))
         .route("/v1/speech-to-text", post(elevenlabs::generate))
+        .route("/v1/speech-to-text/realtime", get(realtime::socket))
         .route("/v1/voices", get(elevenlabs::voices))
         .route("/v1/voices/{*rest}", get(elevenlabs::voices))
         .route("/v2/voices", get(elevenlabs::voices))

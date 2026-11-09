@@ -956,6 +956,29 @@ const messages = (): Rule[] => [
   rule("errors.modelApi.taskUnfinished", () => t("errors.modelApi.taskUnfinished", "The provider's task didn't finish in time; try again later.")),
   rule("errors.modelApi.streamEnded", () => t("errors.modelApi.streamEnded", "The provider's stream ended before the reply was complete.")),
   rule("errors.modelApi.streamCapped", () => t("errors.modelApi.streamCapped", "The reply reached this install's limit for a stream; Kaeso ended it.")),
+  rule("errors.modelApi.realtimeOpenSocket", (v) => t("errors.modelApi.realtimeOpenSocket", "Open `{path}` as a WebSocket.", v)),
+  rule("errors.modelApi.realtimeKeyInAddress", (v) =>
+    t("errors.modelApi.realtimeKeyInAddress", "Kaeso takes no `{param}` in the address; send a Kaeso API key as `xi-api-key`.", v),
+  ),
+  rule("errors.modelApi.realtimeNameModel", () => t("errors.modelApi.realtimeNameModel", "Name the model in `model_id`, so Kaeso knows its price and limits.")),
+  rule("errors.modelApi.realtimeNoAlias", () =>
+    t("errors.modelApi.realtimeNoAlias", "Aliases don't route realtime sessions; name an ElevenLabs model in `model_id`."),
+  ),
+  rule("errors.modelApi.realtimeElevenLabsOnly", (v) =>
+    t("errors.modelApi.realtimeElevenLabsOnly", "`{model}` is not an ElevenLabs model; realtime sessions reach ElevenLabs only.", v),
+  ),
+  rule("errors.modelApi.realtimeModelNoSocket", (v) =>
+    t("errors.modelApi.realtimeModelNoSocket", "`{model}` does not serve this socket; pick a model that does.", v),
+  ),
+  rule("errors.modelApi.realtimeOpenRefused", () =>
+    t("errors.modelApi.realtimeOpenRefused", "ElevenLabs refused to open the socket; check its query parameters."),
+  ),
+  rule("errors.modelApi.realtimeUnreachable", () => t("errors.modelApi.realtimeUnreachable", "Kaeso cannot reach ElevenLabs right now; try again shortly.")),
+  rule("errors.modelApi.realtimeClosed", () => t("errors.modelApi.realtimeClosed", "ElevenLabs closed the session.")),
+  rule("errors.modelApi.realtimeBroke", () => t("errors.modelApi.realtimeBroke", "The connection to ElevenLabs broke; open a new session.")),
+  rule("errors.modelApi.realtimeEndedUnclosed", () => t("errors.modelApi.realtimeEndedUnclosed", "ElevenLabs ended the session without closing it.")),
+  rule("errors.modelApi.realtimeIdle", () => t("errors.modelApi.realtimeIdle", "The session was idle too long; open a new one when you need it.")),
+  rule("errors.modelApi.realtimeHourUp", () => t("errors.modelApi.realtimeHourUp", "The session reached Kaeso's limit of one hour; open a new one.")),
   rule("errors.modelApi.noCredential", (v) =>
     t(
       "errors.modelApi.noCredential",
