@@ -811,7 +811,7 @@
   "A diagram in both themes": "Ein Diagramm in beiden Themes",
   "Wraps on phones": "Bricht auf Telefonen um",
   "Long lines wrap instead of scrolling sideways: code in a narrow column (a model's response). `phone` wraps them only below 640px, with wrapped parts indented, and scrolls from there up.": "Lange Zeilen brechen um, statt seitlich zu scrollen: Code in einer schmalen Spalte (die Antwort eines Modells). `phone` bricht sie nur unter 640px um, mit eingerückten Fortsetzungen, und scrollt darüber.",
-  "An image drawn twice, once for each theme, such as a diagram: it follows the theme setting, not only the system's, and prints the light one.": "Ein Bild in zwei Fassungen, eine pro Theme, etwa ein Diagramm: Es folgt der Theme-Einstellung, nicht nur der des Systems, und druckt die helle.",
+  "A drawing on a transparent ground made twice, once for each theme, such as a diagram: it follows the theme setting, not only the system's, prints the light one and has no outline.": "Eine Zeichnung auf transparentem Grund in zwei Fassungen, eine pro Theme, etwa ein Diagramm: Sie folgt der Theme-Einstellung, nicht nur der des Systems, druckt die helle und hat keine Kontur.",
   "The id of a longer description, such as a diagram's text alternative.": "Die ID einer längeren Beschreibung, etwa der Textalternative eines Diagramms.",
   "The image's address for the dark theme.": "Die Adresse des Bildes für das dunkle Theme.",
   "The image's address for the light theme and for print.": "Die Adresse des Bildes für das helle Theme und für den Druck.",

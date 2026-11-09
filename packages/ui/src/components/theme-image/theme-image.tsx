@@ -32,8 +32,8 @@ export const ThemeImage = forwardRef<HTMLSpanElement, ThemeImageProps>(function 
   };
   return (
     <span ref={ref} className={cn("block max-w-full", className)}>
-      <img src={light} {...shared} className={cn("h-auto max-w-full image-outline", KAESO_THEME_IMAGE_VARIANTS.theme.light.classes)} />
-      <img src={dark} {...shared} className={cn("h-auto max-w-full image-outline", KAESO_THEME_IMAGE_VARIANTS.theme.dark.classes)} />
+      <img src={light} {...shared} className={cn("h-auto max-w-full", KAESO_THEME_IMAGE_VARIANTS.theme.light.classes)} />
+      <img src={dark} {...shared} className={cn("h-auto max-w-full", KAESO_THEME_IMAGE_VARIANTS.theme.dark.classes)} />
     </span>
   );
 });

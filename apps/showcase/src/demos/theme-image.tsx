@@ -3,7 +3,8 @@ import { StateSection } from "~/lib/states";
 
 export const meta = {
   title: "ThemeImage",
-  description: "An image drawn twice, once for each theme, such as a diagram: it follows the theme setting, not only the system's, and prints the light one.",
+  description:
+    "A drawing on a transparent ground made twice, once for each theme, such as a diagram: it follows the theme setting, not only the system's, prints the light one and has no outline.",
   group: "Components",
   entry: "theme-image",
   import: "ThemeImage",
