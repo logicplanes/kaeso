@@ -26,7 +26,7 @@ export function AccessView({
     <div className="flex flex-col gap-8">
       <EffectiveAccess aria-label={label} groups={groups} sources={[...seen.values()]} />
       <Collapsible title={t("kaeso.rights.everyRight", "Every right")} hint={t("kaeso.rights.everyRightHint", "With where each comes from")}>
-        <RightsMatrix readOnly searchable aria-label={label} groups={groups} />
+        <RightsMatrix readOnly searchable aria-label={label} groups={groups} className="-mx-12" />
       </Collapsible>
     </div>
   );
