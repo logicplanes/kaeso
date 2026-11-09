@@ -134,6 +134,68 @@ async fn clickhouse_migrations_create_the_log_tables_once() {
 }
 
 #[tokio::test]
+async fn timings_logged_in_whole_milliseconds_read_as_microseconds_without_rewriting_them() {
+    let s = TestServices::start().await;
+    let ch = &s.clickhouse;
+    ch.migrate(&s.pg).await.unwrap();
+    for sql in [
+        "ALTER TABLE request_log DROP COLUMN overhead_us, DROP COLUMN stream_processing_us, DROP COLUMN request_upload_us",
+        "DELETE FROM kaeso_migrations WHERE version = 13",
+    ] {
+        ch.client().query(sql).execute().await.unwrap();
+    }
+    let (org, project) = (uuid::Uuid::now_v7(), uuid::Uuid::now_v7());
+    let ids = [uuid::Uuid::now_v7(), uuid::Uuid::now_v7()];
+    for (id, timings) in ids.iter().zip(["3, 0, 2", "0, NULL, 0"]) {
+        ch.client()
+            .query(&format!(
+                "INSERT INTO request_log (request_id, org_id, project_id, started_at, finished_at, \
+                 expires_at, overhead_ms, request_upload_ms, stream_processing_ms) \
+                 VALUES (?, ?, ?, now64(3), now64(3), now() + INTERVAL 1 DAY, {timings})"
+            ))
+            .bind(*id)
+            .bind(org)
+            .bind(project)
+            .execute()
+            .await
+            .unwrap();
+    }
+    let mutations = || async {
+        #[derive(clickhouse::Row, serde::Deserialize)]
+        struct Count {
+            n: u64,
+        }
+        ch.client()
+            .query("SELECT count() AS n FROM system.mutations WHERE database = currentDatabase() AND table = 'request_log'")
+            .fetch_one::<Count>()
+            .await
+            .unwrap()
+            .n
+    };
+    let before = mutations().await;
+    ch.migrate(&s.pg).await.unwrap();
+    assert_eq!(
+        mutations().await,
+        before,
+        "the old rows are read as they are"
+    );
+
+    let read = |id| kaeso_store::clickhouse::logs::get(ch, org, project, id);
+    let measured = read(ids[0]).await.unwrap().unwrap();
+    assert_eq!(measured.overhead_us, Some(3000));
+    assert_eq!(measured.stream_processing_us, Some(2000));
+    assert_eq!(
+        measured.request_upload_us, None,
+        "0 ms meant under a millisecond, which is unknown in microseconds"
+    );
+    let under_a_millisecond = read(ids[1]).await.unwrap().unwrap();
+    assert_eq!(under_a_millisecond.overhead_us, None);
+    assert_eq!(under_a_millisecond.request_upload_us, None);
+    assert_eq!(under_a_millisecond.stream_processing_us, None);
+    s.cleanup().await;
+}
+
+#[tokio::test]
 async fn an_abandoned_lock_holder_releases_the_lock() {
     let s = TestServices::start().await;
     let pool = kaeso_store::pg::connect(&s.pg_url, 1).unwrap();

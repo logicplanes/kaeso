@@ -538,6 +538,10 @@ fn ms(d: Duration) -> u32 {
     u32::try_from(d.as_millis()).unwrap_or(u32::MAX)
 }
 
+fn us(d: Duration) -> u32 {
+    u32::try_from(d.as_micros()).unwrap_or(u32::MAX)
+}
+
 fn reply_json(reply: &Response) -> Result<String, serde_json::Error> {
     serde_json::to_string(reply)
 }
@@ -636,12 +640,12 @@ pub async fn record(state: &AppState, o: &Outcome) {
         stream_keepalives: progress.keepalives,
         usage_estimated: o.usage_estimated,
         source: o.source.as_str().into(),
-        overhead_ms: o.overhead.map(ms),
-        stream_processing_ms: o.stream_processing.map(ms),
+        overhead_us: o.overhead.map(us),
+        stream_processing_us: o.stream_processing.map(us),
         cache_breakpoints: o
             .cache_breakpoints
             .map(|n| u16::try_from(n).unwrap_or(u16::MAX)),
-        request_upload_ms: o.upload.map(ms),
+        request_upload_us: o.upload.map(us),
         response_cache: o
             .response_cache
             .map(|v| v.as_str().to_owned())

@@ -53,10 +53,10 @@ describe("LogInspector", () => {
           error_kind: "stream_interrupted",
           error_message: "The provider closed the stream.",
           stream: true,
-          stream_progress: { events: 12, bytes: 2048, first_byte_ms: null, keepalives: 3, processing_ms: 0 },
+          stream_progress: { events: 12, bytes: 2048, first_byte_ms: null, keepalives: 3, processing_us: 180 },
           ttfb_ms: null,
-          overhead_ms: 14,
-          request_upload_ms: 0,
+          overhead_us: 14_000,
+          request_upload_us: 40,
           key_id: null,
           has_content: false,
           upstream_request_id: "",
@@ -81,9 +81,9 @@ describe("LogInspector", () => {
     expect(dialog).toHaveTextContent("120 in · 30 out · 10 reasoning");
     const timing = section(dialog, "Timing");
     expect(within(timing).queryByRole("img")).not.toBeInTheDocument();
-    expect(timing).toHaveTextContent("Request uploadUnder 1 ms");
+    expect(timing).toHaveTextContent("Request upload40 µs");
     expect(timing).toHaveTextContent("Kaeso overhead14 ms");
-    expect(timing).toHaveTextContent("Stream processingUnder 1 ms");
+    expect(timing).toHaveTextContent("Stream processing180 µs");
     const route = section(dialog, "Route");
     expect(route).toHaveTextContent("OpenAI Chat Completions → Anthropic Messages");
     expect(route).toHaveTextContent("Model, requested as fast");
@@ -418,8 +418,8 @@ describe("LogInspector", () => {
           stream: true,
           stream_progress: { events: 1, bytes: 300, first_byte_ms: 320, keepalives: 0 },
           ttfb_ms: null,
-          overhead_ms: null,
-          request_upload_ms: null,
+          overhead_us: null,
+          request_upload_us: null,
         }),
       ],
     });
@@ -448,7 +448,7 @@ describe("LogInspector", () => {
           stream: true,
           error_kind: "client_stalled",
           error_message: "The app stopped reading the stream for too long; Kaeso ended it.",
-          stream_progress: { events: 40, bytes: 9000, first_byte_ms: 300, keepalives: 0, processing_ms: 2 },
+          stream_progress: { events: 40, bytes: 9000, first_byte_ms: 300, keepalives: 0, processing_us: 2000 },
         }),
       ],
     });

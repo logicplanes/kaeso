@@ -14845,7 +14845,7 @@
           "logs"
         ],
         "summary": "The project's request log, newest first (metadata only).",
-        "description": "One entry per model request, kept for the org's metadata retention:\ntimings in milliseconds (`duration_ms`, `ttfb_ms`, `overhead_ms`), status and\n`error_kind`, tokens, cost in USD, key, member, model and route. Filters\ncombine; `from` and `to` are RFC 3339 times. To explain a spike in the usage\ntimeline, list its bucket's range with the same model or key and\n`failed=true`, or `min_duration_ms` set to the bucket's `duration_p95_ms`.\nPages hold up to 100 entries; pass `next_cursor` as `after` for the next.\n\n**Right:** `logs.metadata.view` on the project in the path.",
+        "description": "One entry per model request, kept for the org's metadata retention:\ntimings in milliseconds (`duration_ms`, `ttfb_ms`) and microseconds\n(`request_upload_us`, `overhead_us`), status and `error_kind`, tokens, cost\nin USD, key, member, model and route. Filters combine; `from` and `to` are\nRFC 3339 times. To explain a spike in the usage timeline, list its bucket's\nrange with the same model or key and `failed=true`, or `min_duration_ms` set\nto the bucket's `duration_p95_ms`. Pages hold up to 100 entries; pass\n`next_cursor` as `after` for the next.\n\n**Right:** `logs.metadata.view` on the project in the path.",
         "operationId": "getOrgsOrgProjectsProjectLogs",
         "parameters": [
           {
@@ -28041,13 +28041,13 @@
                   "type": "string",
                   "description": "The provider model called."
                 },
-                "overhead_ms": {
+                "overhead_us": {
                   "type": [
                     "integer",
                     "null"
                   ],
                   "format": "int32",
-                  "description": "Kaeso's own time before it called the provider, in milliseconds:\nthe key, decoding, the catalogue, the provider credential, limits\nand encoding, without the request upload; `null` when the request\nended before reaching the provider.",
+                  "description": "Kaeso's own time before it called the provider, in microseconds:\nthe key, decoding, the catalogue, the provider credential, limits\nand encoding, without the request upload; `null` when the request\nended before reaching the provider.",
                   "minimum": 0
                 },
                 "principal_id": {
@@ -28062,13 +28062,13 @@
                   "type": "string",
                   "description": "The provider."
                 },
-                "request_upload_ms": {
+                "request_upload_us": {
                   "type": [
                     "integer",
                     "null"
                   ],
                   "format": "int32",
-                  "description": "Time the app took to send the request body, in milliseconds, from\nwhen Kaeso began reading it until all of it had arrived; `null` when\nit wasn't recorded.",
+                  "description": "Time the app took to send the request body, in microseconds, from\nwhen Kaeso began reading it until all of it had arrived; `null` when\nit wasn't recorded.",
                   "minimum": 0
                 },
                 "requested_model": {
@@ -30527,13 +30527,13 @@
             "type": "string",
             "description": "The provider model called."
           },
-          "overhead_ms": {
+          "overhead_us": {
             "type": [
               "integer",
               "null"
             ],
             "format": "int32",
-            "description": "Kaeso's own time before it called the provider, in milliseconds:\nthe key, decoding, the catalogue, the provider credential, limits\nand encoding, without the request upload; `null` when the request\nended before reaching the provider.",
+            "description": "Kaeso's own time before it called the provider, in microseconds:\nthe key, decoding, the catalogue, the provider credential, limits\nand encoding, without the request upload; `null` when the request\nended before reaching the provider.",
             "minimum": 0
           },
           "principal_id": {
@@ -30548,13 +30548,13 @@
             "type": "string",
             "description": "The provider."
           },
-          "request_upload_ms": {
+          "request_upload_us": {
             "type": [
               "integer",
               "null"
             ],
             "format": "int32",
-            "description": "Time the app took to send the request body, in milliseconds, from\nwhen Kaeso began reading it until all of it had arrived; `null` when\nit wasn't recorded.",
+            "description": "Time the app took to send the request body, in microseconds, from\nwhen Kaeso began reading it until all of it had arrived; `null` when\nit wasn't recorded.",
             "minimum": 0
           },
           "requested_model": {
@@ -36987,13 +36987,13 @@
             "description": "Keepalives the gateway wrote because the app had seen nothing for the\nkeepalive interval.",
             "minimum": 0
           },
-          "processing_ms": {
+          "processing_us": {
             "type": [
               "integer",
               "null"
             ],
             "format": "int32",
-            "description": "Kaeso's time decoding the provider's events and encoding them for the\napp, in milliseconds, without the waits for the provider or the app;\n`null` when it wasn't recorded.",
+            "description": "Kaeso's time decoding the provider's events and encoding them for the\napp, in microseconds, without the waits for the provider or the app;\n`null` when it wasn't recorded.",
             "minimum": 0
           }
         }

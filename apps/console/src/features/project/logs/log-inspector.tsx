@@ -39,7 +39,7 @@ import { inputTokens, totalTokens } from "~/kaeso/tokens";
 import { cachedShare, isEmbedding, sentWithoutBreakpoint } from "./columns";
 import { mediaCount, mediaLabel } from "./media";
 import { embeddingsView, isKnownReplyForm, replyView, requestView } from "./render";
-import { seconds, startedLabel } from "./timing";
+import { microseconds, seconds, startedLabel } from "./timing";
 import { logMessage, useGatewayErrors } from "./messages";
 import { CodeText } from "~/kaeso/code-text";
 import { useRememberRecent } from "~/shell/recent";
@@ -205,8 +205,6 @@ function useModelName(org: string, project: string) {
 
 const known = (n: number | null | undefined): n is number => typeof n === "number" && Number.isFinite(n);
 
-const milliseconds = (ms: number) => (ms < 1 ? t("logs.inspector.underOneMs", "Under 1 ms") : seconds(ms));
-
 const STATUS_OF_KIND: Record<string, readonly number[]> = {
   invalid_request: [400],
   authentication: [401],
@@ -262,9 +260,9 @@ function Overview({ org, project, e, keyName }: { org: string; project: string; 
   ];
   const answer = Math.max(0, u.output_tokens - u.reasoning_tokens);
   const timing = [
-    ...(known(e.request_upload_ms) ? [{ label: t("logs.inspector.requestUpload", "Request upload"), value: milliseconds(e.request_upload_ms) }] : []),
-    ...(known(e.overhead_ms) ? [{ label: t("logs.inspector.overhead", "Kaeso overhead"), value: milliseconds(e.overhead_ms) }] : []),
-    ...(sp && known(sp.processing_ms) ? [{ label: t("logs.inspector.streamProcessing", "Stream processing"), value: milliseconds(sp.processing_ms) }] : []),
+    ...(known(e.request_upload_us) ? [{ label: t("logs.inspector.requestUpload", "Request upload"), value: microseconds(e.request_upload_us) }] : []),
+    ...(known(e.overhead_us) ? [{ label: t("logs.inspector.overhead", "Kaeso overhead"), value: microseconds(e.overhead_us) }] : []),
+    ...(sp && known(sp.processing_us) ? [{ label: t("logs.inspector.streamProcessing", "Stream processing"), value: microseconds(sp.processing_us) }] : []),
   ];
   return (
     <div className="mt-24 flex flex-col gap-32">

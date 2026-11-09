@@ -122,6 +122,7 @@ export const SAME_AS_ENGLISH = new Set([
   "kaeso.audit.jsonLines",
   "kaeso.createKey.limit",
   "kaeso.createKey.limitNumber",
+  "logs.inspector.microseconds",
   "logs.param.topK",
   "logs.param.topP",
   "orgHome.mcp.headerValuePlaceholder",

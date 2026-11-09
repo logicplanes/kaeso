@@ -200,14 +200,14 @@ async fn requests_are_logged_with_metadata_and_content() {
     assert_eq!(ok["usage"]["output_tokens"], 18);
     assert_eq!(ok["cost"], "0.0001");
     assert_eq!(ok["has_content"], true);
-    assert!(ok["overhead_ms"].is_u64(), "{ok}");
-    assert!(ok["request_upload_ms"].is_u64(), "{ok}");
+    assert!(ok["overhead_us"].is_u64(), "{ok}");
+    assert!(ok["request_upload_us"].is_u64(), "{ok}");
     assert!(
         ok["response_cache"].is_null(),
         "the cache is off by default: {ok}"
     );
     assert!(
-        data[0]["overhead_ms"].is_u64(),
+        data[0]["overhead_us"].is_u64(),
         "failures after the provider call keep it"
     );
     assert!(ok.get("content").is_none(), "lists carry metadata only");
@@ -717,9 +717,9 @@ async fn disconnects_charge_limits_with_the_logged_estimate() {
         tokio::time::sleep(Duration::from_millis(10)).await;
     }
     assert_eq!(entry["error_kind"], "client_disconnected", "{entry}");
-    assert!(entry["overhead_ms"].is_u64(), "{entry}");
+    assert!(entry["overhead_us"].is_u64(), "{entry}");
     assert!(
-        entry["stream_progress"]["processing_ms"].is_u64(),
+        entry["stream_progress"]["processing_us"].is_u64(),
         "{entry}"
     );
     let usage = &entry["usage"];
@@ -741,6 +741,92 @@ async fn disconnects_charge_limits_with_the_logged_estimate() {
         .get(&format!("{}/limits/{limit}", base(&env)), &env.owner.cookie)
         .await;
     assert_eq!(l.body["used"], total.to_string(), "{:?}", l.body);
+}
+
+#[tokio::test]
+async fn kaesos_times_under_a_millisecond_are_logged_in_microseconds() {
+    let env = common::v1::env(Some(std::sync::Arc::default()), Some(&[])).await;
+    env.app
+        .state
+        .clickhouse
+        .as_ref()
+        .unwrap()
+        .migrate(&env.app.state.pg)
+        .await
+        .unwrap();
+    let mut body = messages("claude-haiku-4-5", "Hello");
+    body["stream"] = json!(true);
+    let r = call(&env, "/v1/messages", Some(&env.key), true, Some(body)).await;
+    assert_eq!(r.status, StatusCode::OK);
+    let mut outcome = env
+        .capture
+        .recorded(r.header("kaeso-request-id").unwrap())
+        .await;
+    outcome.upload = Some(Duration::from_micros(40));
+    outcome.overhead = Some(Duration::from_micros(180));
+    outcome.stream_processing = Some(Duration::from_micros(7));
+    kaeso_server::services::logs::record(&env.app.state, &outcome).await;
+    flush(&env).await;
+
+    let entry = &logs(&env, "").await["data"][0];
+    assert_eq!(entry["request_upload_us"], 40, "{entry}");
+    assert_eq!(entry["overhead_us"], 180, "{entry}");
+    assert_eq!(entry["stream_progress"]["processing_us"], 7, "{entry}");
+}
+
+#[tokio::test]
+async fn timings_logged_in_whole_milliseconds_read_as_microseconds() {
+    let env = env(&[]).await;
+    let org: kaeso_core::id::OrgId = env.owner.org_id.parse().unwrap();
+    let project: kaeso_core::id::ProjectId = env.project.parse().unwrap();
+    let now = env.app.clock.now().replace_nanosecond(0).unwrap();
+    let millis = |t: OffsetDateTime| i64::try_from(t.unix_timestamp_nanos() / 1_000_000).unwrap();
+    let clickhouse = env.app.state.clickhouse.as_ref().unwrap();
+    for (at, overhead, upload, processing) in [
+        (now - time::Duration::minutes(2), "3", "0", "2"),
+        (now - time::Duration::minutes(1), "0", "NULL", "0"),
+    ] {
+        clickhouse
+            .client()
+            .query(&format!(
+                "INSERT INTO request_log (request_id, org_id, project_id, principal_kind, started_at, \
+                 finished_at, expires_at, stream, overhead_ms, request_upload_ms, stream_processing_ms) \
+                 VALUES (?, ?, ?, 'user', fromUnixTimestamp64Milli(?), fromUnixTimestamp64Milli(?), \
+                 now() + INTERVAL 90 DAY, true, {overhead}, {upload}, {processing})"
+            ))
+            .bind(Uuid::now_v7())
+            .bind(org.uuid())
+            .bind(project.uuid())
+            .bind(millis(at))
+            .bind(millis(at))
+            .execute()
+            .await
+            .unwrap();
+    }
+
+    let data = logs(&env, "").await["data"].clone();
+    let (under_a_millisecond, measured) = (&data[0], &data[1]);
+    assert_eq!(measured["overhead_us"], 3000, "{measured}");
+    assert_eq!(
+        measured["stream_progress"]["processing_us"], 2000,
+        "{measured}"
+    );
+    assert!(
+        measured["request_upload_us"].is_null(),
+        "a time under a millisecond was logged as 0 and is unknown in microseconds: {measured}"
+    );
+    assert!(
+        under_a_millisecond["overhead_us"].is_null(),
+        "{under_a_millisecond}"
+    );
+    assert!(
+        under_a_millisecond["request_upload_us"].is_null(),
+        "{under_a_millisecond}"
+    );
+    assert!(
+        under_a_millisecond["stream_progress"]["processing_us"].is_null(),
+        "{under_a_millisecond}"
+    );
 }
 
 fn row(org: Uuid, project: Uuid, at: OffsetDateTime, i: u64) -> (LogRow, ContentRow) {
@@ -785,10 +871,10 @@ fn row(org: Uuid, project: Uuid, at: OffsetDateTime, i: u64) -> (LogRow, Content
             stream_keepalives: 0,
             usage_estimated: false,
             source: "api".into(),
-            overhead_ms: Some(1),
-            stream_processing_ms: None,
+            overhead_us: Some(180),
+            stream_processing_us: None,
             cache_breakpoints: Some(2),
-            request_upload_ms: Some(40),
+            request_upload_us: Some(40),
             response_cache: "hit".into(),
             alias: String::new(),
             fallbacks: String::new(),
@@ -896,15 +982,16 @@ async fn exports_stream_large_ranges_in_both_formats() {
     assert!(text.starts_with("id,started_at,"));
     assert!(
         text.lines().next().unwrap().ends_with(
-            ",source,overhead_ms,stream_processing_ms,cache_breakpoints,request_upload_ms,response_cache,alias,fallbacks,media_unit,media_input,media_output,media_detail,cost_known,cost_basis"
+            ",source,overhead_us,stream_processing_us,cache_breakpoints,request_upload_us,response_cache,alias,fallbacks,media_unit,media_input,media_output,media_detail,cost_known,cost_basis"
         ),
         "{text}"
     );
     assert_eq!(text.lines().count(), 2501);
     assert!(
-        text.lines().skip(1).all(
-            |l| l.ends_with(",\"api\",1,,2,40,\"hit\",\"\",\"\",\"\",,,\"\",true,\"reported\"")
-        ),
+        text.lines()
+            .skip(1)
+            .all(|l| l
+                .ends_with(",\"api\",180,,2,40,\"hit\",\"\",\"\",\"\",,,\"\",true,\"reported\"")),
         "the overhead, the breakpoints, the upload and the response cache are exported, and a stream's processing time is empty for other requests"
     );
     assert!(text.contains("\"ua, with comma\""), "CSV fields are quoted");
