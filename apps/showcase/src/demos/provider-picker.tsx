@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ProviderPicker, type ProviderPickerOption } from "@logicplanes/kaeso-ui";
+import { ProviderPicker, icons, type ProviderPickerOption } from "@logicplanes/kaeso-ui";
 import { StateSection } from "~/lib/states";
 
 const providers: ProviderPickerOption[] = [
@@ -23,6 +23,25 @@ const providers: ProviderPickerOption[] = [
   { id: "zai", name: "Z.ai" },
 ];
 
+const servers: ProviderPickerOption[] = [
+  { id: "vllm", name: "vLLM" },
+  { id: "sglang", name: "SGLang" },
+  { id: "ollama", name: "Ollama" },
+  { id: "lm-studio", name: "LM Studio" },
+  { id: "llama-cpp", name: "llama.cpp" },
+  { id: "localai", name: "LocalAI" },
+  { id: "tgi", name: "Text Generation Inference" },
+  { id: "lmdeploy", name: "LMDeploy" },
+  { id: "nim", name: "NVIDIA NIM" },
+  { id: "docker-model-runner", name: "Docker Model Runner" },
+  { id: "koboldcpp", name: "KoboldCpp" },
+  { id: "tabbyapi", name: "TabbyAPI" },
+  { id: "xinference", name: "Xinference" },
+  { id: "mlx-lm", name: "MLX LM" },
+  { id: "jan", name: "Jan" },
+  { id: "other", name: "Other server or proxy", hint: "Kaeso detects the software", icon: icons.instance },
+];
+
 export const meta = {
   title: "ProviderPicker",
   description: "Choosing a provider from any number of them: connected ones first with their key counts, then the rest.",
@@ -41,6 +60,7 @@ export const meta = {
 };
 export const examples = [
   { id: "grid", title: "Tiles in a dialog's first step", fn: "Grid" },
+  { id: "servers", title: "Server software, with an icon for any other", fn: "Servers" },
   { id: "list", title: "In a dialog step", fn: "List" },
   { id: "select", title: "In a toolbar", fn: "Select", minHeight: 420 },
 ];
@@ -49,6 +69,14 @@ export function Grid() {
   return (
     <div className="w-512 max-w-full">
       <ProviderPicker appearance="grid" aria-label="Provider" providers={providers} value={provider} onValueChange={setProvider} />
+    </div>
+  );
+}
+export function Servers() {
+  const [server, setServer] = useState<string | null>(null);
+  return (
+    <div className="w-672 max-w-full">
+      <ProviderPicker appearance="grid" ordered aria-label="Server software" providers={servers} value={server} onValueChange={setServer} />
     </div>
   );
 }
