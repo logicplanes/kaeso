@@ -168,6 +168,28 @@ describe("custom providers", () => {
     await waitFor(() => expect(requests("PATCH", ONE)[0]?.body).toMatchObject({ media: ["images", "transcriptions"] }));
   });
 
+  it("turns on the media APIs a new provider's server software documents, and none for another server", async () => {
+    signedIn();
+    withCustom([]);
+    on("POST", DETECT, detected({ base_url: "http://host.docker.internal:11434/", name: "Ollama", id: "ollama", auth: "none", server: "ollama" }));
+    const { user } = await renderApp(PATH);
+
+    await user.click(await screen.findByRole("button", { name: "Add custom provider" }));
+    const dialog = await screen.findByRole("dialog", { name: "Add custom provider" });
+    await pickSoftware(user, dialog, "Ollama");
+    await fill(user, within(dialog).getByRole("textbox", { name: "Base URL" }), "http://host.docker.internal:11434");
+    await user.click(within(dialog).getByRole("button", { name: "Detect settings" }));
+    const server = await within(dialog).findByRole("combobox", { name: "Server" });
+    expect(within(dialog).getByRole("switch", { name: "Serves transcriptions" })).not.toBeChecked();
+
+    await user.click(server);
+    await user.click(await screen.findByRole("option", { name: /vLLM/ }));
+    expect(within(dialog).getByRole("switch", { name: "Serves transcriptions" })).toBeChecked();
+    await user.click(server);
+    await user.click(await screen.findByRole("option", { name: "Other server or proxy" }));
+    expect(within(dialog).getByRole("switch", { name: "Serves transcriptions" })).not.toBeChecked();
+  });
+
   it("shows a provider's server software next to its id and lets an edit change it", async () => {
     signedIn();
     withCustom([customProvider({ server: "vllm" })]);
