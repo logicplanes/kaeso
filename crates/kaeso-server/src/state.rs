@@ -29,6 +29,7 @@ pub struct Inner {
     pub kpmr: crate::services::kpmr::Kpmr,
     pub upstream: kaeso_upstream::Upstream,
     pub mcp: kaeso_upstream::mcp::McpUpstream,
+    pub public_mcp: kaeso_upstream::mcp::McpUpstream,
     pub limits: Arc<dyn crate::model_api::hooks::Limits>,
     pub sink: Arc<dyn crate::model_api::hooks::Sink>,
     pub usage: crate::services::usage::Batch,
@@ -92,6 +93,14 @@ impl AppState {
             .guarding(reach),
             mcp: kaeso_upstream::mcp::McpUpstream::new(
                 kaeso_upstream::guard::Reach::networks(mcp_networks),
+                kaeso_upstream::guard::Lookup::default(),
+                connect_timeout,
+                concat!("kaeso-gateway/", env!("CARGO_PKG_VERSION")),
+            ),
+            // Anyone can name a client document's address before signing in, so the networks an
+            // admin opened for MCP servers never apply to it.
+            public_mcp: kaeso_upstream::mcp::McpUpstream::new(
+                kaeso_upstream::guard::Reach::public_only(),
                 kaeso_upstream::guard::Lookup::default(),
                 connect_timeout,
                 concat!("kaeso-gateway/", env!("CARGO_PKG_VERSION")),
