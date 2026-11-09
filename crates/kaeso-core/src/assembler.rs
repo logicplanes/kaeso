@@ -43,6 +43,7 @@ pub struct Assembler {
     images: u64,
     audio_bytes: u64,
     audio_ms: Option<u64>,
+    characters: Option<u64>,
 }
 
 impl std::fmt::Debug for Assembler {
@@ -66,6 +67,8 @@ pub struct Assembled {
     pub audio_bytes: u64,
     /// The length of the transcribed audio, in milliseconds, when the transcript's end says.
     pub audio_ms: Option<u64>,
+    /// The characters the provider says it billed, when a speech stream's end says.
+    pub characters: Option<u64>,
 }
 
 fn kept(origin: DialectId, value: &impl serde::Serialize) -> RawItem {
@@ -172,6 +175,7 @@ impl Assembler {
             images: 0,
             audio_bytes: 0,
             audio_ms: None,
+            characters: None,
         }
     }
 
@@ -261,6 +265,7 @@ impl Assembler {
                 }
                 if e.done {
                     self.complete = true;
+                    self.characters = e.characters.or(self.characters);
                 }
             }
             StreamEvent::Transcript(e) => {
@@ -303,6 +308,7 @@ impl Assembler {
             images: self.images,
             audio_bytes: self.audio_bytes,
             audio_ms: self.audio_ms,
+            characters: self.characters,
         }
     }
 }

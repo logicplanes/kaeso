@@ -516,6 +516,8 @@ const messages = (): Rule[] => [
   rule("errors.videoLinkUnreadable", () => t("errors.videoLinkUnreadable", "The provider named a link Kaeso cannot read.")),
   rule("errors.videoLinkUnreachable", () => t("errors.videoLinkUnreachable", "The provider named a link Kaeso cannot fetch.")),
   rule("errors.videoFileWithheld", (v) => t("errors.videoFileWithheld", "{provider} did not hand over the video's file; try again shortly.", v)),
+  rule("errors.resultLinkRefused", (v) => t("errors.resultLinkRefused", "{provider} answered with a link Kaeso does not fetch.", v)),
+  rule("errors.resultFileWithheld", (v) => t("errors.resultFileWithheld", "{provider} did not hand over the file it made; try again shortly.", v)),
   rule("errors.videoWrongReply", () => t("errors.videoWrongReply", "The provider answered a video job with another kind of reply.")),
   rule("errors.noSpeechAtProvider", (v) => t("errors.noSpeechAtProvider", "{provider} offers no speech API Kaeso can call, so `{name}` can't speak.", v)),
   rule("errors.noTranscriptionAtProvider", (v) =>

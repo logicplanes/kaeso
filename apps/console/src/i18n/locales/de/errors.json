@@ -685,5 +685,7 @@
   "errors.videoLinkUnreadable": "Der Anbieter hat einen Link genannt, den Kaeso nicht lesen kann.",
   "errors.videoLinkUnreachable": "Der Anbieter hat einen Link genannt, den Kaeso nicht abrufen kann.",
   "errors.videoFileWithheld": "{provider} hat die Datei des Videos nicht übergeben; versuchen Sie es gleich noch einmal.",
+  "errors.resultLinkRefused": "{provider} hat mit einem Link geantwortet, den Kaeso nicht abruft.",
+  "errors.resultFileWithheld": "{provider} hat die erzeugte Datei nicht übergeben; versuchen Sie es gleich noch einmal.",
   "errors.videoWrongReply": "Der Anbieter hat auf einen Videojob mit einer anderen Art von Antwort geantwortet."
 }

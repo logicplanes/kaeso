@@ -497,6 +497,11 @@ async fn answer(ctx: Ctx, method: Method, uri: Uri, headers: HeaderMap, body: By
         return error_response(&dir, name);
     }
     if method == Method::POST
+        && let Some(resp) = dashscope(&ctx.fixtures, &path, &text, &headers)
+    {
+        return resp;
+    }
+    if method == Method::POST
         && let Some(resp) = audio(&ctx.fixtures, &path, &text)
     {
         return resp;
@@ -688,6 +693,67 @@ fn form_value<'a>(form: &'a str, name: &str) -> Option<&'a str> {
 
 // Speech and transcription paths of every provider form Kaeso speaks, answered from the
 // `openai_speech`, `openai_transcriptions` and `minimax_speech` fixtures.
+/// The mock's link for files a DashScope reply names, which is not one of the hosts Kaeso
+/// fetches QwenCloud's results from.
+pub const DASHSCOPE_LINK: &str = "https://files.example.com/dashscope/result.png";
+
+// QwenCloud's DashScope API: images, Qwen3-TTS and Qwen-Audio-ASR share one path, told apart
+// by the model; Qwen-Audio-TTS streams from its own. Links in replies point away from
+// QwenCloud's result hosts, so a test never reaches them.
+fn dashscope(fixtures: &Path, path: &str, text: &str, headers: &HeaderMap) -> Option<Response> {
+    let dir = fixtures.join("dashscope");
+    let sse = headers
+        .get("x-dashscope-sse")
+        .is_some_and(|v| v.as_bytes() == b"enable");
+    let local = |rel: &str| {
+        let bytes = std::fs::read(dir.join(rel)).ok()?;
+        let mut v: serde_json::Value = serde_json::from_slice(&bytes).ok()?;
+        point_links_at(&mut v, DASHSCOPE_LINK);
+        Response::builder()
+            .header("content-type", "application/json")
+            .body(axum::body::Body::from(serde_json::to_vec(&v).ok()?))
+            .ok()
+    };
+    match path {
+        "/api/v1/services/audio/tts/SpeechSynthesizer" => Some(bytes_file(
+            &dir.join("streams/speech/qwen-audio-tts.sse"),
+            "text/event-stream",
+        )),
+        "/api/v1/services/aigc/multimodal-generation/generation" => {
+            if text.contains("\"qwen3-tts") && sse {
+                Some(bytes_file(
+                    &dir.join("streams/speech/qwen3-tts-pcm.sse"),
+                    "text/event-stream",
+                ))
+            } else if text.contains("\"qwen3-tts") {
+                local("responses/speech/qwen3-tts-link.json")
+            } else if text.contains("-asr-") {
+                local("responses/transcriptions/asr.json")
+            } else if text.contains("\"z-image") {
+                local("responses/images/z-image.json")
+            } else if text.contains("\"wan2.7") {
+                local("responses/images/wan27.json")
+            } else if text.contains("\"image\"") {
+                local("responses/images/qwen-image-edit.json")
+            } else {
+                local("responses/images/qwen-image-generate.json")
+            }
+        }
+        _ => None,
+    }
+}
+
+fn point_links_at(v: &mut serde_json::Value, link: &str) {
+    match v {
+        serde_json::Value::String(s) if s.starts_with("http") && s.contains("dashscope-result") => {
+            *s = link.to_owned();
+        }
+        serde_json::Value::Array(items) => items.iter_mut().for_each(|i| point_links_at(i, link)),
+        serde_json::Value::Object(map) => map.values_mut().for_each(|i| point_links_at(i, link)),
+        _ => {}
+    }
+}
+
 fn audio(fixtures: &Path, path: &str, text: &str) -> Option<Response> {
     let speech = fixtures.join("openai_speech");
     let transcripts = fixtures.join("openai_transcriptions");

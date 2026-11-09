@@ -95,15 +95,15 @@ pub(super) fn egress_of(
             from_root: e.from_root,
             auth: e.auth,
         }),
-        RequestKind::Image => provider.images().map(|e| MediaEgress {
+        RequestKind::Image => provider.images(model).map(|e| MediaEgress {
             from_root: e.from_root,
             auth: e.auth,
         }),
-        RequestKind::Speech => provider.speech().map(|e| MediaEgress {
+        RequestKind::Speech => provider.speech(model).map(|e| MediaEgress {
             from_root: e.from_root,
             auth: e.auth,
         }),
-        RequestKind::Transcription => provider.transcriptions().map(|e| MediaEgress {
+        RequestKind::Transcription => provider.transcriptions(model).map(|e| MediaEgress {
             from_root: e.from_root,
             auth: e.auth,
         }),

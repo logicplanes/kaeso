@@ -6,6 +6,7 @@ pub mod gemini;
 pub mod hooks;
 pub mod in_flight;
 mod input_count;
+mod links;
 pub mod listing;
 mod media;
 pub mod memory;

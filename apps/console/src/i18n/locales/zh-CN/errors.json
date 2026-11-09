@@ -685,5 +685,7 @@
   "errors.videoLinkUnreadable": "服务商给出了 Kaeso 无法读取的链接。",
   "errors.videoLinkUnreachable": "服务商给出了 Kaeso 无法获取的链接。",
   "errors.videoFileWithheld": "{provider} 没有交出视频文件；请稍后重试。",
+  "errors.resultLinkRefused": "{provider} 返回了一个 Kaeso 不会获取的链接。",
+  "errors.resultFileWithheld": "{provider} 没有交出生成的文件；请稍后重试。",
   "errors.videoWrongReply": "服务商对视频任务返回了另一种回复。"
 }

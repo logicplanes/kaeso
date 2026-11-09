@@ -604,6 +604,11 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
                         units.input_ms = ms;
                     }
                 }
+                RequestKind::Speech => {
+                    if let Some(c) = assembled.characters {
+                        units.characters = c;
+                    }
+                }
                 _ => {}
             }
         }
