@@ -135,6 +135,7 @@ Responses 应用可以给 OpenAI 模型提供 `image_generation` 工具。Kaeso 
 
 ## 后续步骤
 
+- [试验场](../console/playground.md)：在编写代码之前，先在控制台中试用图片模型。
 - [模型 API](model-api.md)：查阅每个端点、请求头和模型名称。
 - [请求日志](../console/request-logs.md)：查找图片请求及其费用。
 - [支持的服务商](../concepts/supported-providers.md)：了解 Kaeso 调用哪些服务商以及如何添加它们的密钥。

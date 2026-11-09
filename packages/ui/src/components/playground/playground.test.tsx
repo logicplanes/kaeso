@@ -570,7 +570,7 @@ describe("ModelPicker", () => {
 describe("playground variants", () => {
   it("document every key", () => {
     const entries = Object.entries(playground).filter(([k]) => /^KAESO_.+_VARIANTS$/.test(k) && !k.endsWith("_DEFAULT_VARIANTS"));
-    expect(entries.length).toBe(8);
+    expect(entries.length).toBe(9);
     for (const [, variants] of entries)
       for (const keys of Object.values(variants as Record<string, Record<string, { classes: string; description: string }>>))
         for (const v of Object.values(keys)) {

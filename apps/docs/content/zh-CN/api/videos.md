@@ -128,6 +128,7 @@ SpaceX 通过其编辑 API 进行 remix，Gemini Omni 延续先前的交互。�
 
 ## 后续步骤
 
+- [试验场](../console/playground.md)：在编写代码之前，先在控制台中试用视频模型。
 - [模型 API](model-api.md)：查阅每个端点、请求头和模型名称。
 - [请求日志](../console/request-logs.md)：查找视频及其费用。
 - [支持的服务商](../concepts/supported-providers.md)：了解 Kaeso 调用哪些服务商以及如何添加它们的密钥。

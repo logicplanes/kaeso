@@ -471,6 +471,27 @@ function speech(res, body) {
   return sendStream(res, [dataLine({ type: "speech.audio.delta", audio: audio.toString("base64") }), dataLine({ type: "speech.audio.done", usage })]);
 }
 
+// xAI's video API, as its API reference documents it: a job started at `/v1/videos/generations`,
+// asked about at `/v1/videos/{request_id}` until it is done, its file a link on the provider.
+const MP4 = Buffer.from(
+  "AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAAMybW9vdgAAAGxtdmhkAAAAAAAAAAAAAAAAAAAD6AAAA+gAAQAAAQAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAlx0cmFrAAAAXHRraGQAAAADAAAAAAAAAAAAAAABAAAAAAAAA+gAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAACAAAAAgAAAAAAAkZWR0cwAAABxlbHN0AAAAAAAAAAEAAAPoAAAAAAABAAAAAAHUbWRpYQAAACBtZGhkAAAAAAAAAAAAAAAAAABAAAAAQABVxAAAAAAALWhkbHIAAAAAAAAAAHZpZGUAAAAAAAAAAAAAAABWaWRlb0hhbmRsZXIAAAABf21pbmYAAAAUdm1oZAAAAAEAAAAAAAAAAAAAACRkaW5mAAAAHGRyZWYAAAAAAAAAAQAAAAx1cmwgAAAAAQAAAT9zdGJsAAAAv3N0c2QAAAAAAAAAAQAAAK9hdmMxAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAACAAIABIAAAASAAAAAAAAAABFUxhdmM2Mi4yOC4xMDEgbGlieDI2NAAAAAAAAAAAAAAAGP//AAAANWF2Y0MBZAAK/+EAGGdkAAqs2UlsBEAAAAMAQAAAAwEDxIllgAEABmjr4OSyLP34+AAAAAAQcGFzcAAAAAEAAAABAAAAFGJ0cnQAAAAAAAAWyAAAAAAAAAAYc3R0cwAAAAAAAAABAAAAAgAAIAAAAAAUc3RzcwAAAAAAAAABAAAAAQAAABxzdHNjAAAAAAAAAAEAAAABAAAAAgAAAAEAAAAcc3RzegAAAAAAAAAAAAAAAgAAAs0AAAAMAAAAFHN0Y28AAAAAAAAAAQAAA2IAAABidWR0YQAAAFptZXRhAAAAAAAAACFoZGxyAAAAAAAAAABtZGlyYXBwbAAAAAAAAAAAAAAAAC1pbHN0AAAAJal0b28AAAAdZGF0YQAAAAEAAAAATGF2ZjYyLjEyLjEwMQAAAAhmcmVlAAAC4W1kYXQAAAKtBgX//6ncRem95tlIt5Ys2CDZI+7veDI2NCAtIGNvcmUgMTY1IHIzMjIyIGIzNTYwNWEgLSBILjI2NC9NUEVHLTQgQVZDIGNvZGVjIC0gQ29weWxlZnQgMjAwMy0yMDI1IC0gaHR0cDovL3d3dy52aWRlb2xhbi5vcmcveDI2NC5odG1sIC0gb3B0aW9uczogY2FiYWM9MSByZWY9MyBkZWJsb2NrPTE6MDowIGFuYWx5c2U9MHgzOjB4MTEzIG1lPWhleCBzdWJtZT03IHBzeT0xIHBzeV9yZD0xLjAwOjAuMDAgbWl4ZWRfcmVmPTEgbWVfcmFuZ2U9MTYgY2hyb21hX21lPTEgdHJlbGxpcz0xIDh4OGRjdD0xIGNxbT0wIGRlYWR6b25lPTIxLDExIGZhc3RfcHNraXA9MSBjaHJvbWFfcXBfb2Zmc2V0PS0yIHRocmVhZHM9MSBsb29rYWhlYWRfdGhyZWFkcz0xIHNsaWNlZF90aHJlYWRzPTAgbnI9MCBkZWNpbWF0ZT0xIGludGVybGFjZWQ9MCBibHVyYXlfY29tcGF0PTAgY29uc3RyYWluZWRfaW50cmE9MCBiZnJhbWVzPTMgYl9weXJhbWlkPTIgYl9hZGFwdD0xIGJfYmlhcz0wIGRpcmVjdD0xIHdlaWdodGI9MSBvcGVuX2dvcD0wIHdlaWdodHA9MiBrZXlpbnQ9MjUwIGtleWludF9taW49MiBzY2VuZWN1dD00MCBpbnRyYV9yZWZyZXNoPTAgcmNfbG9va2FoZWFkPTQwIHJjPWNyZiBtYnRyZWU9MSBjcmY9NDAuMCBxY29tcD0wLjYwIHFwbWluPTAgcXBtYXg9NjkgcXBzdGVwPTQgaXBfcmF0aW89MS40MCBhcT0xOjEuMDAAgAAAABhliIQAFP/+hB/ApS8BHYUodOdxQHOCP8EAAAAIQZohbEEvFdA=",
+  "base64",
+);
+const videoPolls = new Map();
+
+function videoJob(res, jobId, host) {
+  const polls = (videoPolls.get(jobId) ?? 0) + 1;
+  videoPolls.set(jobId, polls);
+  if (polls < 3) return sendJson(res, 200, { status: "pending", model: "grok-imagine-video-1.5", progress: polls * 35 });
+  return sendJson(res, 200, {
+    status: "done",
+    model: "grok-imagine-video-1.5",
+    progress: 100,
+    video: { url: `http://${host}/files/${jobId}.mp4`, duration: 1, respect_moderation: true },
+    usage: { cost_in_usd_ticks: 500000000, input_tokens: 12, output_tokens: 0, total_tokens: 12 },
+  });
+}
+
 function transcription(res, raw) {
   const model = formField(raw, "model") ?? "";
   const format = formField(raw, "response_format") ?? "json";
@@ -500,6 +521,12 @@ async function handle(req, res) {
   if (failure !== undefined) return sendError(res, dialect, failure);
   if (req.method === "GET" && path.startsWith("/v1/models")) return models(res, dialect, path, req.headers);
   if (path === "/v1/audio/transcriptions" || path === "/v1/audio/translations") return transcription(res, raw);
+  if (req.method === "POST" && path === "/v1/videos/generations") return sendJson(res, 200, { request_id: id("vid-") });
+  if (req.method === "GET" && path.startsWith("/v1/videos/")) return videoJob(res, path.slice("/v1/videos/".length), req.headers.host);
+  if (req.method === "GET" && path.startsWith("/files/") && path.endsWith(".mp4")) {
+    res.writeHead(200, { "content-type": "video/mp4", "content-length": MP4.length });
+    return res.end(MP4);
+  }
   let body = {};
   if (raw.trimStart().startsWith("{") || raw === "") {
     try {

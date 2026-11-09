@@ -60,6 +60,22 @@ export const docs = {
       value: "The message being written, when you control it.",
     },
   },
+  MediaResponse: {
+    description:
+      "What an image, speech, sound or video model made, in the place a text response takes: images in a grid of squares, audio in a player a row tall, a video in a 16:9 player, each with Download. While it is made, quiet placeholders of the same size hold the room; a video job shows its progress, the seconds it has taken and Cancel. A stop or a failure reads as in ResponseView.",
+    props: {
+      "aria-label": 'The response\'s accessible name ("GPT Image 2 response" in a comparison). Defaults to "Response" in the provider\'s language.',
+      error: 'Why it failed, shown under "No response" with status "error".',
+      expected: "How many images to hold room for while they are made.",
+      footer: "Under the response, after Retry: its metrics.",
+      items: "The files: where to show or play each from (`blob:`, `data:` or a same-origin link) and the name it downloads under.",
+      kind: "What the model makes: images, audio or a video.",
+      onCancel: "Cancels a running video job: a Cancel button under its progress.",
+      onRetry: "Sends the turn again: a Retry button after a stop or a failure, and a quiet Retry circle under a finished response.",
+      progress: "A video job's progress from 0 to 100, when its provider says; the bar pulses quietly while it doesn't.",
+      status: "Where it stands: waiting, running, done, stopped or failed.",
+    },
+  },
   ModelPicker: {
     description:
       "A model from a catalogue of any size: a pill showing the chosen model that opens a searchable list, grouped by provider under sticky captions with marks and counts, connected providers first and recent models on top, with a Provider filter that lists only the providers whose models match the search. Each row shows the name, the id, capabilities, context and price; deprecated models wait behind a toggle.",
@@ -97,12 +113,14 @@ export const docs = {
   },
   ParameterPanel: {
     description:
-      "A request's parameters: system instructions, temperature, top P, maximum output tokens, and, for a model that reasons, reasoning effort and summary. Unset values are the model's defaults; Reset returns to them (instructions stay). With a `trigger`, it opens in a 320px popover with a Close button beside its title, and focus stays inside until it closes.",
+      "A request's parameters: system instructions, temperature, top P, maximum output tokens, and, for a model that reasons, reasoning effort and summary; for media models, the image size, count and quality, the voice, the length in seconds and whether a transcript is in English. Unset values are the model's defaults; Reset returns to them (instructions stay). With a `trigger`, it opens in a 320px popover with a Close button beside its title, and focus stays inside until it closes.",
     props: {
       align: "How the popover lines up with its trigger.",
       defaultOpen: "Whether the popover starts open, when the component keeps its own state.",
       defaults: "What unset shows (temperature 1 and top P 1 unless given): the model's defaults.",
       disabled: "Turns off every parameter.",
+      duration: "Shows the length in seconds, for sound effect and music models.",
+      image: "An image model's options: the size, how many images per prompt (up to four shown) and its qualities.",
       instructions: "Shows the system instructions field (true by default).",
       layout: "Compact inside a popover, or roomier in a side panel.",
       maxOutputTokensLimit: "The model's maximum output tokens: the field's maximum, named in a hint under it.",
@@ -112,9 +130,12 @@ export const docs = {
       reasoning: "The reasoning efforts the model takes, or false (the default) when it doesn't reason: no effort and no summary.",
       sampling: "Shows temperature and top P; models that reason often take neither (true by default).",
       side: "The side the popover opens on.",
+      text: "Shows the text parameters, such as the maximum output tokens (true by default); off when no text model is chosen.",
       title: "The popover's title, also its name. Defaults to \"Parameters\" in the provider's language.",
+      translate: "Shows whether a transcript is as spoken or in English, for transcription models that translate.",
       trigger: "The button that opens the parameters in a popover; without one, the parameters sit in the page.",
-      value: "The parameters, such as temperature and effort.",
+      value: "The parameters, such as temperature and effort, image size and voice.",
+      voices: "A speech model's voices to choose from, or true for a field that takes any voice name or id.",
     },
   },
   Reasoning: {
@@ -136,6 +157,7 @@ export const docs = {
     description:
       'A response\'s numbers on one line: time to first token, total time, tokens ("412 in · 168 out", and reasoning), cost with the decimals it was given, as request logs show it. Tabular figures, labels in tertiary text. Every value keeps the room a typical value takes, so nothing moves when values arrive; while `live`, values not known yet show "—"; before any response the line is empty, its height kept.',
     props: {
+      costKnown: 'False when the model has no price for what it made: the cost reads "Unknown" (true by default).',
       cost: 'USD as a decimal string, shown with its own decimals (two at least, six at most): "0.004213" reads "$0.004213", "1.2311" reads "$1.2311", zero reads "$0" and less than a millionth reads "< $0.000001".',
       duration: "Milliseconds from sending to the last token.",
       inputTokens: "The tokens sent, once known.",

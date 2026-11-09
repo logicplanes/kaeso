@@ -3,6 +3,7 @@ import { cn } from "../../utils/cn.js";
 import { icons } from "../../icons/vocabulary.js";
 import { formatNumber } from "../../format/index.js";
 import { Button } from "../button/button.js";
+import { Input } from "../input/input.js";
 import { NumberInput } from "../input/number-input.js";
 import { Textarea } from "../input/textarea.js";
 import { Popover } from "../popover/popover.js";
@@ -29,7 +30,23 @@ export interface PlaygroundParameters {
   maxOutputTokens?: number | undefined;
   reasoningEffort?: ReasoningEffort | undefined;
   reasoningSummary?: ReasoningSummary | undefined;
+  imageSize?: string | undefined;
+  imageCount?: number | undefined;
+  imageQuality?: string | undefined;
+  voice?: string | undefined;
+  durationSeconds?: number | undefined;
+  translate?: boolean | undefined;
 }
+
+/** What an image model takes: how many images at once, its qualities, and whether it takes a size. */
+export interface ImageParameterOptions {
+  maxCount: number;
+  qualities: readonly string[];
+  sizes: boolean;
+}
+
+const IMAGE_SIZES = ["1024x1024", "1536x1024", "1024x1536"] as const;
+const MAX_IMAGES_SHOWN = 4;
 
 function efforts(t: UiText): { value: ReasoningEffort; label: string }[] {
   return [
@@ -51,6 +68,11 @@ export interface ParameterPanelProps {
   sampling?: boolean | undefined;
   reasoning?: ReasoningEffort[] | boolean | undefined;
   maxOutputTokensLimit?: number | undefined;
+  text?: boolean | undefined;
+  image?: ImageParameterOptions | undefined;
+  voices?: readonly string[] | boolean | undefined;
+  duration?: boolean | undefined;
+  translate?: boolean | undefined;
   disabled?: boolean | undefined;
   layout?: keyof typeof KAESO_PARAMETER_PANEL_VARIANTS.layout | undefined;
   className?: string | undefined;
@@ -121,6 +143,11 @@ const PanelBody = forwardRef<HTMLDivElement, PanelBodyProps>(function PanelBody(
     sampling = true,
     reasoning = false,
     maxOutputTokensLimit,
+    text = true,
+    image,
+    voices = false,
+    duration = false,
+    translate = false,
     disabled = false,
     layout = "popover",
     className,
@@ -136,7 +163,25 @@ const PanelBody = forwardRef<HTMLDivElement, PanelBodyProps>(function PanelBody(
     value.topP !== undefined ||
     value.maxOutputTokens !== undefined ||
     value.reasoningEffort !== undefined ||
-    value.reasoningSummary !== undefined;
+    value.reasoningSummary !== undefined ||
+    value.imageSize !== undefined ||
+    value.imageCount !== undefined ||
+    value.imageQuality !== undefined ||
+    value.voice !== undefined ||
+    value.durationSeconds !== undefined ||
+    value.translate !== undefined;
+  const modelDefault = t("parameterPanel.modelDefault", "Model default");
+  const sizeLabel = (size: (typeof IMAGE_SIZES)[number]) => {
+    const [w, h] = size.split("x");
+    const shape =
+      w === h
+        ? t("parameterPanel.sizeSquare", "Square")
+        : Number(w) > Number(h)
+          ? t("parameterPanel.sizeLandscape", "Landscape")
+          : t("parameterPanel.sizePortrait", "Portrait");
+    return t("parameterPanel.sizeValue", "{shape}, {width} × {height}", { shape, width: w ?? "", height: h ?? "" });
+  };
+  const counts = image ? Array.from({ length: Math.min(MAX_IMAGES_SHOWN, Math.max(1, image.maxCount)) }, (_, i) => i + 1) : [];
   return (
     <div ref={ref} className={cn("flex min-w-0 flex-col", KAESO_PARAMETER_PANEL_VARIANTS.layout[layout].classes, className)}>
       {instructions && (
@@ -176,26 +221,28 @@ const PanelBody = forwardRef<HTMLDivElement, PanelBodyProps>(function PanelBody(
           />
         </>
       )}
-      <NumberInput
-        label={t("parameterPanel.maxOutputTokens", "Max output tokens")}
-        size="sm"
-        placeholder={t("parameterPanel.modelDefault", "Model default")}
-        align="start"
-        min="1"
-        {...(maxOutputTokensLimit
-          ? {
-              max: String(maxOutputTokensLimit),
-              description: t("parameterPanel.maxOutputTokensLimit", "Up to {max} for this model", { max: formatNumber(maxOutputTokensLimit) }),
-            }
-          : {})}
-        step="256"
-        value={value.maxOutputTokens === undefined ? "" : String(value.maxOutputTokens)}
-        disabled={disabled}
-        onValueChange={(v) => {
-          const n = Number(v);
-          set({ maxOutputTokens: v.trim() === "" || !Number.isFinite(n) || n <= 0 ? undefined : Math.round(n) });
-        }}
-      />
+      {text && (
+        <NumberInput
+          label={t("parameterPanel.maxOutputTokens", "Max output tokens")}
+          size="sm"
+          placeholder={t("parameterPanel.modelDefault", "Model default")}
+          align="start"
+          min="1"
+          {...(maxOutputTokensLimit
+            ? {
+                max: String(maxOutputTokensLimit),
+                description: t("parameterPanel.maxOutputTokensLimit", "Up to {max} for this model", { max: formatNumber(maxOutputTokensLimit) }),
+              }
+            : {})}
+          step="256"
+          value={value.maxOutputTokens === undefined ? "" : String(value.maxOutputTokens)}
+          disabled={disabled}
+          onValueChange={(v) => {
+            const n = Number(v);
+            set({ maxOutputTokens: v.trim() === "" || !Number.isFinite(n) || n <= 0 ? undefined : Math.round(n) });
+          }}
+        />
+      )}
       {shownEfforts.length > 0 && (
         <>
           <Select
@@ -227,6 +274,92 @@ const PanelBody = forwardRef<HTMLDivElement, PanelBodyProps>(function PanelBody(
             />
           </div>
         </>
+      )}
+      {image?.sizes && (
+        <Select
+          label={t("parameterPanel.imageSize", "Image size")}
+          size="sm"
+          fullWidth
+          disabled={disabled}
+          value={value.imageSize ?? "default"}
+          options={[{ value: "default", label: modelDefault }, ...IMAGE_SIZES.map((v) => ({ value: v, label: sizeLabel(v) }))]}
+          onValueChange={(v: string) => set({ imageSize: v === "default" ? undefined : v })}
+        />
+      )}
+      {counts.length > 1 && (
+        <Select
+          label={t("parameterPanel.imageCount", "Images per prompt")}
+          size="sm"
+          fullWidth
+          disabled={disabled}
+          value={String(value.imageCount ?? 1)}
+          options={counts.map((n) => ({ value: String(n), label: formatNumber(n) }))}
+          onValueChange={(v: string) => set({ imageCount: v === "1" ? undefined : Number(v) })}
+        />
+      )}
+      {image && image.qualities.length > 0 && (
+        <Select
+          label={t("parameterPanel.imageQuality", "Image quality")}
+          size="sm"
+          fullWidth
+          disabled={disabled}
+          value={value.imageQuality ?? "default"}
+          options={[{ value: "default", label: modelDefault }, ...image.qualities.map((q) => ({ value: q, label: q }))]}
+          onValueChange={(v: string) => set({ imageQuality: v === "default" ? undefined : v })}
+        />
+      )}
+      {Array.isArray(voices) && voices.length > 0 ? (
+        <Select
+          label={t("parameterPanel.voice", "Voice")}
+          size="sm"
+          fullWidth
+          disabled={disabled}
+          value={value.voice ?? voices[0] ?? ""}
+          options={voices.map((v) => ({ value: v, label: v }))}
+          onValueChange={(v: string) => set({ voice: v === voices[0] ? undefined : v })}
+        />
+      ) : voices ? (
+        <Input
+          label={t("parameterPanel.voice", "Voice")}
+          size="sm"
+          placeholder={t("parameterPanel.voicePlaceholder", "A voice name or id")}
+          disabled={disabled}
+          value={value.voice ?? ""}
+          onChange={(e) => set({ voice: e.target.value.trim() === "" ? undefined : e.target.value })}
+        />
+      ) : null}
+      {duration && (
+        <NumberInput
+          label={t("parameterPanel.duration", "Length in seconds")}
+          size="sm"
+          placeholder={modelDefault}
+          align="start"
+          min="0.5"
+          step="0.5"
+          value={value.durationSeconds === undefined ? "" : String(value.durationSeconds)}
+          disabled={disabled}
+          onValueChange={(v) => {
+            const n = Number(v);
+            set({ durationSeconds: v.trim() === "" || !Number.isFinite(n) || n <= 0 ? undefined : n });
+          }}
+        />
+      )}
+      {translate && (
+        <div className="flex flex-col gap-8">
+          <span className={cn("text-body font-medium", disabled ? "text-fg-disabled" : "text-fg")}>{t("parameterPanel.transcript", "Transcript")}</span>
+          <Segmented
+            aria-label={t("parameterPanel.transcript", "Transcript")}
+            size="sm"
+            fullWidth
+            disabled={disabled}
+            value={value.translate ? "english" : "spoken"}
+            options={[
+              { value: "spoken", label: t("parameterPanel.transcriptSpoken", "As spoken") },
+              { value: "english", label: t("parameterPanel.transcriptEnglish", "In English") },
+            ]}
+            onValueChange={(v) => set({ translate: v === "english" ? true : undefined })}
+          />
+        </div>
       )}
       <div className="flex justify-end">
         <Button

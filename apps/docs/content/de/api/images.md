@@ -135,6 +135,7 @@ Eine Responses-App kann einem Modell von OpenAI das Werkzeug `image_generation` 
 
 ## Nächste Schritte
 
+- [Playground](../console/playground.md): Ein Bildmodell in der Konsole ausprobieren, bevor Sie Code schreiben.
 - [Modell-API](model-api.md): Jeden Endpunkt, Header und Modellnamen nachschlagen.
 - [Anfrage-Logs](../console/request-logs.md): Eine Bildanfrage finden und sehen, was sie gekostet hat.
 - [Unterstützte Anbieter](../concepts/supported-providers.md): Sehen, welche Anbieter Kaeso aufruft und wie Sie ihre Schlüssel hinzufügen.

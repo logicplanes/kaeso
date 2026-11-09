@@ -1,5 +1,6 @@
 import { userContent, type TurnFile } from "./attachments";
-import type { ResponseViewProps } from "@logicplanes/kaeso-ui/playground";
+import type { MediaItem, ResponseViewProps } from "@logicplanes/kaeso-ui/playground";
+import type { PlaygroundModel } from "~/api/queries/playground";
 import { t } from "~/i18n";
 
 type ResponseStatus = "waiting" | "streaming" | "completed" | "incomplete" | "failed" | "stopped";
@@ -31,7 +32,13 @@ export interface ResponseState {
   endedAt: number | null;
   parts: Record<string, string>;
   thoughts: Record<string, string>;
+  media?: MediaItem[] | undefined;
+  progress?: number | null | undefined;
+  cost?: string | null | undefined;
+  costKnown?: boolean | undefined;
 }
+
+export type Mode = PlaygroundModel["mode"];
 
 export const newResponse = (startedAt: number): ResponseState => ({
   status: "waiting",
@@ -58,7 +65,7 @@ const obj = (v: unknown): Json | null => (v && typeof v === "object" && !Array.i
 const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : 0);
 const str = (v: unknown) => (typeof v === "string" ? v : "");
 
-function usageOf(response: Json | null): ResponseUsage | null {
+export function usageOf(response: Json | null): ResponseUsage | null {
   const u = obj(response?.usage);
   if (!u) return null;
   const cost = u.cost;
@@ -165,6 +172,7 @@ export type InputItem = { role: "user"; content: ReturnType<typeof userContent> 
 
 export interface Turn {
   id: string;
+  mode?: Mode | undefined;
   prompt: string;
   files?: TurnFile[] | undefined;
   response: ResponseState;
@@ -180,8 +188,8 @@ function messageText(item: OutputItem): string {
 
 export function historyItems(turns: readonly Turn[]): InputItem[] {
   const items: InputItem[] = [];
-  for (const { prompt, files, response: r } of turns) {
-    if (isLive(r)) continue;
+  for (const { prompt, files, mode, response: r } of turns) {
+    if (isLive(r) || (mode && mode !== "text")) continue;
     const finished = r.status === "completed" || r.status === "incomplete";
     if (!finished && !r.text) continue;
     items.push({ role: "user", content: userContent(prompt, files) });

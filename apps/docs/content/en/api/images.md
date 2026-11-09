@@ -135,6 +135,7 @@ A Responses app can give an OpenAI model the `image_generation` tool. Kaeso pass
 
 ## Next steps
 
+- [Playground](../console/playground.md): Try an image model from the console before writing code.
 - [Model API](model-api.md): Look up every endpoint, header and model name.
 - [Request logs](../console/request-logs.md): Find an image request and what it cost.
 - [Supported providers](../concepts/supported-providers.md): See which providers Kaeso calls and how to add their keys.
