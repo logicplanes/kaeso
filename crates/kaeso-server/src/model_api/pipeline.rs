@@ -167,6 +167,11 @@ impl Recording {
         let o = self.outcome();
         o.error_kind = Some(kind.to_owned());
         o.error_message = Some(err.message.clone());
+        // Units are counted when the request is read; one refused before its model was known
+        // made and asked nothing of any model.
+        if o.model_id.is_none() {
+            o.media = None;
+        }
         self.finish(status).await;
     }
 }
