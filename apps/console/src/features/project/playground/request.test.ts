@@ -11,6 +11,7 @@ const model = (patch: Partial<PlaygroundModel> = {}): PlaygroundModel => ({
   mode: "text",
   voices: [],
   translations: false,
+  durations: false,
   aliases: [],
   input_modalities: ["text"],
   model: "gpt-5.4-mini",

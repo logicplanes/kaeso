@@ -247,7 +247,7 @@ docker compose exec gateway kaeso openapi > openapi.json
 
 | 路由 | 作用 |
 | --- | --- |
-| `GET orgs/{org}/projects/{project}/playground/models` | 列出成员可以调用的模型：不含嵌入、重排序和实时模型的目录，再按成员的模型访问范围收窄。每个模型都带有 `mode`（`text`、`image`、`speech`、`sound_effects`、`music`、`transcription` 或 `video`）、名称、别名、推理强度、限额和价格，是否接受 `temperature`、项目是否有对应的服务商密钥、`max_request_bytes` 中它接受的最大请求，以及与其模式相应的图片选项、`voices` 或 `translations`。 |
+| `GET orgs/{org}/projects/{project}/playground/models` | 列出成员可以调用的模型：不含嵌入、重排序和实时模型的目录，再按成员的模型访问范围收窄。每个模型都带有 `mode`（`text`、`image`、`speech`、`sound_effects`、`music`、`transcription` 或 `video`）、名称、别名、推理强度、限额和价格，是否接受 `temperature`、项目是否有对应的服务商密钥、`max_request_bytes` 中它接受的最大请求（聊天、图片和转写采用模型 API 的上限，其他提示词采用 Platform API 的上限），以及与其模式相应的图片选项、`voices`、`translations` 或 `durations`。 |
 | `POST orgs/{org}/projects/{project}/playground/responses` | 接受带 `"stream": true` 的 OpenAI Responses 请求，并以 `/v1/responses` 发送的事件流响应，包括保活注释。 |
 | `POST orgs/{org}/projects/{project}/playground/images/generations`、`…/images/edits` | 接受 [`/v1/images/generations` 和 `/v1/images/edits`](images.md) 的请求体，并以相同方式响应。 |
 | `POST orgs/{org}/projects/{project}/playground/audio/speech`、`…/audio/transcriptions`、`…/audio/translations` | 接受[音频 API](audio.md) 的请求体，并以相同方式响应。 |

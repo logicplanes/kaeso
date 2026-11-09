@@ -723,6 +723,9 @@ const messages = (): Rule[] => [
   rule("errors.uploadTooLarge", () => t("errors.uploadTooLarge", "The upload is larger than Kaeso accepts for this model.")),
   rule("errors.mediaUnreadable", () => t("errors.mediaUnreadable", "Kaeso can't read this request for the model; check its settings.")),
   rule("errors.videoNotYours", () => t("errors.videoNotYours", "No video of yours in this project has this id.")),
+  rule("errors.videoVariant", () => t("errors.videoVariant", "`variant` must be `video`, `thumbnail` or `spritesheet`.")),
+  rule("errors.videoNoSuchFile", () => t("errors.videoNoSuchFile", "The provider keeps no file of this kind for the video.")),
+  rule("errors.playgroundVideoExpired", () => t("errors.playgroundVideoExpired", "The video's files expired; make the video again.")),
   rule("errors.playgroundVideoKeyReplaced", () =>
     t("errors.playgroundVideoKeyReplaced", "The provider key that started this video was replaced; start it again."),
   ),

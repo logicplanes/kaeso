@@ -136,7 +136,7 @@ const ROWS: &[Row] = &[
     s("body_limits.images", "KAESO_BODY_LIMITS_IMAGES", Text, Some("64MiB"), false, "Largest request body of the image endpoints and the Playground's image requests, uploads included."),
     s("body_limits.audio", "KAESO_BODY_LIMITS_AUDIO", Text, Some("26MiB"), false, "Largest request body of the transcription and translation endpoints, the Playground's transcriptions and every upload to the ElevenLabs endpoints, the upload included."),
     s("body_limits.in_flight", "KAESO_BODY_LIMITS_IN_FLIGHT", Text, Some("512MiB"), false, "Memory the model API and the Playground may use at once to translate requests, estimated from each body as received and its messages, blocks and tools; a request waits up to 10s for room."),
-    s("body_limits.platform_api", "KAESO_BODY_LIMITS_PLATFORM_API", Text, Some("1MiB"), false, "Largest request body of the Platform API; the Playground's model requests take the model API's limits."),
+    s("body_limits.platform_api", "KAESO_BODY_LIMITS_PLATFORM_API", Text, Some("1MiB"), false, "Largest request body of the Platform API, the Playground's speech, sound, music and video prompts included; its chats, images and transcripts take the model API's limits."),
     s("body_limits.provider_response", "KAESO_BODY_LIMITS_PROVIDER_RESPONSE", Text, Some("128MiB"), false, "Largest non-streaming response body Kaeso reads from a provider; a larger one fails the request with 502."),
     s("logs.buffer_size", "KAESO_LOGS_BUFFER_SIZE", Text, Some("256MiB"), false, "Memory for request log rows waiting for ClickHouse; the oldest rows are dropped beyond it."),
     s("logs.flush_interval", "KAESO_LOGS_FLUSH_INTERVAL", Text, Some("1s"), false, "How often buffered log rows are written to ClickHouse."),

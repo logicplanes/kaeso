@@ -74,7 +74,7 @@ Ein Video zu erstellen antwortet sofort mit seinem Job, `queued` oder `in_progre
 
 Jeder Abruf fragt den Anbieter, wie der Job steht, solange er läuft, und behält, was er sagt. Kann der Anbieter nicht antworten, gibt der Abruf den Job so zurück, wie Kaeso ihn zuletzt gesehen hat; fragen Sie dann später noch einmal. Nach einem beendeten Job wird nie wieder gefragt. `poll` und `create_and_poll` der SDKs rufen den Job ab, bis er endet.
 
-Eine Liste zeigt jedes Video so, wie Kaeso es zuletzt gesehen hat, ohne die Anbieter zu fragen. Ein Video gehört dem Projekt, dessen Schlüssel es gestartet hat; der Schlüssel eines anderen Projekts bekommt 404, dieselbe Antwort wie für eine ID, die es nicht gibt. Wird der Anbieterschlüssel ersetzt, der ein Video gestartet hat, erreicht Kaeso den Job nicht mehr und antwortet mit 409.
+Eine Liste zeigt jedes Video so, wie Kaeso es zuletzt gesehen hat, ohne die Anbieter zu fragen. Ein Video gehört dem Projekt, dessen Schlüssel es gestartet hat; der Schlüssel eines anderen Projekts bekommt 404, dieselbe Antwort wie für eine ID, die es nicht gibt. Ein Video, das ein Mitglied im [Playground](../console/playground.md) startet, gehört nur ihm: Kein Schlüssel listet oder erreicht es. Wird der Anbieterschlüssel ersetzt, der ein Video gestartet hat, erreicht Kaeso den Job nicht mehr und antwortet mit 409.
 
 Abrufe, Downloads, Löschungen und Remixe, die den Anbieter fragen, zählen wie jede Modellanfrage gegen die [Anfrageraten](../console/limits-and-budgets.md) des Schlüssels, denn jede verbraucht das Kontingent des Anbieters mit dem Schlüssel der Organisation; der Abruf eines beendeten Jobs antwortet aus Kaesos Aufzeichnung und zählt nicht.
 

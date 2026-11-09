@@ -582,6 +582,8 @@ pub struct PlaygroundModel {
     pub voices: Vec<String>,
     #[doc = "For a transcription model: whether it also translates audio into English."]
     pub translations: bool,
+    #[doc = "For a sound effect or music model: whether it takes a length."]
+    pub durations: bool,
 }
 
 #[utoipa::path(
@@ -683,6 +685,7 @@ pub async fn models(
             image: options.image,
             voices: options.voices,
             translations: options.translations,
+            durations: options.durations,
         });
     }
     Ok(axum::Json(List::complete(out)))

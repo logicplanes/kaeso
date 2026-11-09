@@ -86,7 +86,7 @@ expression: settings_reference()
 | `KAESO_BODY_LIMITS_IMAGES` | `body_limits.images` | text | `64MiB` | Largest request body of the image endpoints and the Playground's image requests, uploads included. |
 | `KAESO_BODY_LIMITS_AUDIO` | `body_limits.audio` | text | `26MiB` | Largest request body of the transcription and translation endpoints, the Playground's transcriptions and every upload to the ElevenLabs endpoints, the upload included. |
 | `KAESO_BODY_LIMITS_IN_FLIGHT` | `body_limits.in_flight` | text | `512MiB` | Memory the model API and the Playground may use at once to translate requests, estimated from each body as received and its messages, blocks and tools; a request waits up to 10s for room. |
-| `KAESO_BODY_LIMITS_PLATFORM_API` | `body_limits.platform_api` | text | `1MiB` | Largest request body of the Platform API; the Playground's model requests take the model API's limits. |
+| `KAESO_BODY_LIMITS_PLATFORM_API` | `body_limits.platform_api` | text | `1MiB` | Largest request body of the Platform API, the Playground's speech, sound, music and video prompts included; its chats, images and transcripts take the model API's limits. |
 | `KAESO_BODY_LIMITS_PROVIDER_RESPONSE` | `body_limits.provider_response` | text | `128MiB` | Largest non-streaming response body Kaeso reads from a provider; a larger one fails the request with 502. |
 | `KAESO_LOGS_BUFFER_SIZE` | `logs.buffer_size` | text | `256MiB` | Memory for request log rows waiting for ClickHouse; the oldest rows are dropped beyond it. |
 | `KAESO_LOGS_FLUSH_INTERVAL` | `logs.flush_interval` | text | `1s` | How often buffered log rows are written to ClickHouse. |

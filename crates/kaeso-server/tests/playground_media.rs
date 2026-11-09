@@ -185,6 +185,8 @@ async fn every_kind_of_model_is_listed_with_its_mode_and_what_the_playground_off
     assert_eq!(image["max_request_bytes"], json!(64u64 << 20));
     let speech = of("tts-1");
     assert_eq!(speech["mode"], "speech");
+    assert_eq!(speech["max_request_bytes"], json!(1u64 << 20));
+    assert_eq!(of("eleven_text_to_sound_v2")["durations"], true);
     assert!(
         speech["voices"]
             .as_array()
@@ -354,6 +356,13 @@ async fn a_member_follows_downloads_and_cancels_their_own_videos_only() {
     .await;
     assert_eq!(file.status, StatusCode::OK, "{}", file.text());
     assert_eq!(file.header("content-type"), Some("video/mp4"));
+    let charged = env
+        .outcomes()
+        .await
+        .into_iter()
+        .find(|o| kaeso_server::services::logs::endpoint(o) == "videos/completed")
+        .expect("the finished job is charged");
+    by_member(&env, &charged);
 
     let (other, _) = join(&env.app, &env.owner, "dev@example.com", "developer").await;
     let theirs = send(
@@ -375,6 +384,7 @@ async fn a_member_follows_downloads_and_cancels_their_own_videos_only() {
     )
     .await;
     let keyed = by_key.json()["id"].as_str().unwrap().to_owned();
+    let keyed_id = keyed.clone();
     let hidden = get(keyed).await;
     assert_eq!(
         hidden.status,
@@ -386,6 +396,111 @@ async fn a_member_follows_downloads_and_cancels_their_own_videos_only() {
         unknown.json()["error"]["message"],
         "No video of yours in this project has this id."
     );
+
+    let app = |method: Method, rest: String| {
+        let env = &env;
+        async move {
+            let req = Request::builder()
+                .method(method)
+                .uri(format!("/v1/videos{rest}"))
+                .header(header::AUTHORIZATION, format!("Bearer {}", env.key))
+                .header(header::CONTENT_TYPE, "application/json")
+                .body(Body::from(r#"{"prompt":"again"}"#))
+                .unwrap();
+            env.app.raw_bytes(req).await
+        }
+    };
+    for (method, rest) in [
+        (Method::GET, format!("/{id}")),
+        (Method::GET, format!("/{id}/content")),
+        (Method::POST, format!("/{id}/remix")),
+        (Method::DELETE, format!("/{id}")),
+    ] {
+        let (status, _, _) = app(method.clone(), rest.clone()).await;
+        assert_eq!(
+            status,
+            StatusCode::NOT_FOUND,
+            "{method} {rest}: an app never reaches a member's Playground video"
+        );
+    }
+    let (status, _, listed) = app(Method::GET, "?limit=1".to_owned()).await;
+    assert_eq!(status, StatusCode::OK);
+    let listed: Value = serde_json::from_slice(&listed).unwrap();
+    let ids: Vec<&str> = listed["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter_map(|v| v["id"].as_str())
+        .collect();
+    assert_eq!(
+        ids,
+        vec![keyed_id.as_str()],
+        "a page of one skips the member's video"
+    );
+    assert_eq!(listed["has_more"], false);
+
+    let bad = send(
+        &env.app,
+        Method::GET,
+        &path(&env, &format!("videos/{id}/content?variant=gif")),
+        &env.owner.cookie,
+        None,
+    )
+    .await;
+    assert_eq!(bad.status, StatusCode::BAD_REQUEST);
+    assert_eq!(bad.json()["error"]["param"], "variant");
+    let thumb = send(
+        &env.app,
+        Method::GET,
+        &path(&env, &format!("videos/{id}/content?variant=thumbnail")),
+        &env.owner.cookie,
+        None,
+    )
+    .await;
+    assert_eq!(thumb.status, StatusCode::NOT_FOUND);
+    assert_eq!(
+        thumb.json()["error"]["message"],
+        "The provider keeps no file of this kind for the video."
+    );
+
+    let r = env
+        .app
+        .post(
+            &format!("/orgs/{}/projects/{}/limits", env.owner.org_id, env.project),
+            json!({ "level": "member", "user": env.owner.user_id, "kind": "request_rate", "period": "minute", "amount": 1 }),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
+    for _ in 0..3 {
+        let seek = send(
+            &env.app,
+            Method::GET,
+            &path(&env, &format!("videos/{id}/content")),
+            &env.owner.cookie,
+            None,
+        )
+        .await;
+        assert_eq!(
+            seek.status,
+            StatusCode::OK,
+            "playing and seeking a finished video never runs into the rate: {}",
+            seek.text()
+        );
+    }
+    let limit = r.body["id"].as_str().unwrap().to_owned();
+    let removed = send(
+        &env.app,
+        Method::DELETE,
+        &format!(
+            "/platform/v1/orgs/{}/projects/{}/limits/{limit}",
+            env.owner.org_id, env.project
+        ),
+        &env.owner.cookie,
+        None,
+    )
+    .await;
+    assert!(removed.status.is_success(), "{}", removed.text());
 
     let deleted = send(
         &env.app,
@@ -433,6 +548,18 @@ async fn sessions_rights_and_body_limits_are_checked_before_anything_is_sent() {
     .await;
     assert_eq!(big.status, StatusCode::PAYLOAD_TOO_LARGE, "{}", big.text());
     assert_eq!(big.json()["error"]["type"], "request_too_large");
+    let long = post_json(
+        &env,
+        "audio/speech",
+        json!({ "model": "tts-1", "input": "a".repeat(1 << 20), "voice": "alloy" }),
+    )
+    .await;
+    assert_eq!(
+        long.status,
+        StatusCode::PAYLOAD_TOO_LARGE,
+        "{}",
+        long.text()
+    );
 
     let unknown = post_json(
         &env,

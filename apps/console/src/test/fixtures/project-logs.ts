@@ -66,6 +66,7 @@ export function playgroundModel(overrides: Partial<PlaygroundModel> = {}): Playg
     mode: "text",
     voices: [],
     translations: false,
+    durations: false,
     availability: "available",
     ...overrides,
   };

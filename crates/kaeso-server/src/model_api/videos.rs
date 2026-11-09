@@ -328,12 +328,22 @@ fn not_found(id: &str) -> KppError {
     .with_param("video_id")
 }
 
+const UNAVAILABLE: &str = "Kaeso cannot read its videos right now; try again shortly.";
+
+/// Whether a video request failed on Kaeso's own store, not at the provider.
+pub(crate) fn is_unavailable(e: &KppError) -> bool {
+    e.status == Some(503) && e.message == UNAVAILABLE
+}
+
+const EXPIRED: &str = "expired; create the video again.";
+
+/// Whether a video's files are gone at its provider.
+pub(crate) fn is_expired(e: &KppError) -> bool {
+    e.status == Some(404) && e.message.ends_with(EXPIRED)
+}
+
 fn unavailable() -> KppError {
-    error(
-        ErrorKind::ProviderError,
-        503,
-        "Kaeso cannot read its videos right now; try again shortly.",
-    )
+    error(ErrorKind::ProviderError, 503, UNAVAILABLE)
 }
 
 /// Who asks about a video: an app with its key, which sees every video of its project, or a
@@ -360,8 +370,18 @@ impl Viewer {
     }
 
     fn sees(&self, row: &VideoRow) -> bool {
-        !self.playground || (row.api_key_id.is_none() && row.user_id == self.caller.user_id)
+        if self.playground {
+            from_playground(row) && row.user_id == self.caller.user_id
+        } else {
+            !from_playground(row)
+        }
     }
+}
+
+/// A video a member started in the Playground: no key started it, a person did. Apps never
+/// see these, and the members who didn't start them neither.
+fn from_playground(row: &VideoRow) -> bool {
+    row.api_key_id.is_none() && row.user_id.is_some()
 }
 
 // An id that isn't Kaeso's or belongs to another project is answered the same way, so ids
@@ -518,19 +538,14 @@ pub(super) async fn list(
             None => None,
         };
         let limit = q.limit();
-        let rows = store::list(
-            &state.pg,
-            key.org_id,
-            key.project_id,
+        let rows = visible(
+            &state,
+            &viewer,
             after.map(|r| r.id),
             q.order == kaeso_kpp::ListOrder::Asc,
-            i64::from(limit) + 1,
+            limit as usize + 1,
         )
-        .await
-        .map_err(|e| {
-            tracing::error!(error = %e, "cannot list videos");
-            unavailable()
-        })?;
+        .await?;
         let has_more = rows.len() > limit as usize;
         let videos = rows
             .iter()
@@ -541,6 +556,35 @@ pub(super) async fn list(
     }
     .await;
     answer(StatusCode::OK, listed)
+}
+
+// The project's videos the viewer may see, `wanted` at most, in pages until there are enough
+// or the project has no more; members' Playground videos are left out without a gap in paging.
+async fn visible(
+    state: &AppState,
+    viewer: &Viewer,
+    mut after: Option<uuid::Uuid>,
+    ascending: bool,
+    wanted: usize,
+) -> Result<Vec<VideoRow>, KppError> {
+    let c = &viewer.caller;
+    let page = i64::try_from(wanted).unwrap_or(i64::MAX);
+    let mut out = Vec::with_capacity(wanted);
+    loop {
+        let rows = store::list(&state.pg, c.org_id, c.project_id, after, ascending, page)
+            .await
+            .map_err(|e| {
+                tracing::error!(error = %e, "cannot list videos");
+                unavailable()
+            })?;
+        let full = rows.len() == wanted;
+        after = rows.last().map(|r| r.id);
+        out.extend(rows.into_iter().filter(|r| viewer.sees(r)));
+        if !full || out.len() >= wanted {
+            out.truncate(wanted);
+            return Ok(out);
+        }
+    }
 }
 
 /// `GET /v1/videos/{video_id}`: the job, after asking its provider how it stands.
@@ -622,6 +666,7 @@ pub(crate) async fn delete_as(
                 tracing::error!(error = %e, "cannot delete a video");
                 unavailable()
             })?;
+        state.caches.finished_videos.invalidate(&row.id).await;
         openai_videos::encode_deleted(&VideoId::from_uuid(row.id).to_string())
     }
 }
@@ -970,6 +1015,9 @@ async fn record_completion(
     });
     o.ingress = D;
     o.kind = RequestKind::Video;
+    if from_playground(row) {
+        o.source = super::hooks::Source::Playground;
+    }
     o.egress = row.dialect.parse().ok();
     match kaeso_core::provider::provider(&row.provider) {
         Some(p) => o.provider = Some(p.id),
@@ -1043,12 +1091,29 @@ pub(crate) async fn content_as(
         return Err(error(
             ErrorKind::NotFound,
             404,
-            format!("The files of `{id}` expired; create the video again."),
+            format!("The files of `{id}` {EXPIRED}"),
         )
         .with_param("video_id"));
     }
+    let finished = state.caches.finished_videos.get(&row.id).await;
+    if finished.is_some() {
+        asking
+            .counted
+            .store(true, std::sync::atomic::Ordering::Relaxed);
+    }
     let up = reach(&asking, &row).await?;
-    let job = poll(state, &up, &row).await?;
+    let job = match finished {
+        Some(job) => job,
+        None => {
+            let job = Arc::new(poll(state, &up, &row).await?);
+            state
+                .caches
+                .finished_videos
+                .insert(row.id, job.clone())
+                .await;
+            job
+        }
+    };
     let Some(output) = job.output(variant) else {
         return Err(error(
             ErrorKind::NotFound,

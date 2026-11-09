@@ -119,6 +119,14 @@ fn translates(eff: &Effective) -> bool {
     })
 }
 
+// ElevenLabs takes `duration_seconds` and `music_length_ms`; QwenCloud's sound effects model,
+// which the same request reaches, has no field for a length.
+fn takes_lengths(eff: &Effective) -> bool {
+    eff.provider
+        .speech(&eff.model_id)
+        .is_some_and(|s| s.dialect == DialectId::ElevenLabs)
+}
+
 fn has(list: Option<&Vec<String>>, modality: &str) -> bool {
     list.is_some_and(|l| l.iter().any(|m| m == modality))
 }
@@ -136,8 +144,8 @@ pub(super) fn mode_of(eff: &Effective, kind: Option<&str>) -> Option<PlaygroundM
         Some("image") if eff.provider.images(id).is_some() => Some(PlaygroundMode::Image),
         Some("video") if eff.provider.videos(id).is_some() => Some(PlaygroundMode::Video),
         Some("speech") if speaks && text_in => Some(PlaygroundMode::Speech),
-        Some("sound_effects") if text_in => Some(PlaygroundMode::SoundEffects),
-        Some("music") if text_in => Some(PlaygroundMode::Music),
+        Some("sound_effects") if speaks && text_in => Some(PlaygroundMode::SoundEffects),
+        Some("music") if speaks && text_in => Some(PlaygroundMode::Music),
         Some("transcription") if eff.provider.transcriptions(id).is_some() => {
             Some(PlaygroundMode::Transcription)
         }
@@ -173,6 +181,7 @@ pub(super) struct ModeOptions {
     pub image: Option<PlaygroundImageOptions>,
     pub voices: Vec<String>,
     pub translations: bool,
+    pub durations: bool,
     pub max_request_bytes: u64,
 }
 
@@ -189,10 +198,16 @@ pub(super) fn options(state: &AppState, eff: &Effective, mode: PlaygroundMode) -
             Vec::new()
         },
         translations: mode == PlaygroundMode::Transcription && translates(eff),
+        durations: matches!(mode, PlaygroundMode::SoundEffects | PlaygroundMode::Music)
+            && takes_lengths(eff),
         max_request_bytes: match mode {
+            PlaygroundMode::Text => limits.model_api.0,
             PlaygroundMode::Image => limits.images.0,
             PlaygroundMode::Transcription => limits.audio.0,
-            _ => limits.model_api.0,
+            PlaygroundMode::Speech
+            | PlaygroundMode::SoundEffects
+            | PlaygroundMode::Music
+            | PlaygroundMode::Video => limits.platform_api.0,
         },
     }
 }
@@ -310,7 +325,7 @@ fn elevenlabs(state: &AppState, path: &str) -> ApiResult<Call> {
     Ok(Call {
         ingress: DialectId::ElevenLabs,
         kind: call.kind(),
-        max_body: state.config.body_limits.model_api.as_usize(),
+        max_body: state.config.body_limits.platform_api.as_usize(),
         image: None,
         transcription: None,
         elevenlabs: Some(call),
@@ -322,7 +337,7 @@ fn speech_call(state: &AppState) -> Call {
     Call {
         ingress: DialectId::OpenAiSpeech,
         kind: RequestKind::Speech,
-        max_body: state.config.body_limits.model_api.as_usize(),
+        max_body: state.config.body_limits.platform_api.as_usize(),
         image: None,
         transcription: None,
         elevenlabs: None,
@@ -334,7 +349,7 @@ fn video_call(state: &AppState) -> Call {
     Call {
         ingress: DialectId::OpenAiVideos,
         kind: RequestKind::Video,
-        max_body: state.config.body_limits.model_api.as_usize(),
+        max_body: state.config.body_limits.platform_api.as_usize(),
         image: None,
         transcription: None,
         elevenlabs: None,
@@ -563,18 +578,31 @@ pub async fn video_create(
 }
 
 fn video_error(e: &KppError) -> ApiError {
-    match e.kind {
-        ErrorKind::NotFound => {
+    match (&e.kind, e.param.as_deref()) {
+        (_, _) if videos::is_unavailable(e) => ApiError::Unavailable(
+            "Kaeso cannot read its videos right now; try again shortly.".into(),
+        ),
+        (ErrorKind::InvalidRequest, Some("variant")) => ApiError::invalid(
+            "variant",
+            "`variant` must be `video`, `thumbnail` or `spritesheet`.",
+        ),
+        (ErrorKind::NotFound, Some("variant")) => {
+            ApiError::NotFound("The provider keeps no file of this kind for the video.".into())
+        }
+        (ErrorKind::NotFound, _) if videos::is_expired(e) => {
+            ApiError::NotFound("The video's files expired; make the video again.".into())
+        }
+        (ErrorKind::NotFound, _) => {
             ApiError::NotFound("No video of yours in this project has this id.".into())
         }
-        ErrorKind::RateLimited => ApiError::RateLimited {
+        (ErrorKind::RateLimited, _) => ApiError::RateLimited {
             message: "A limit of this project refused the request; try again later.".into(),
             retry_after: e.retry_after.map(|d| d.as_secs().max(1)),
         },
-        ErrorKind::InvalidRequest if e.status == Some(409) => ApiError::Conflict(
+        (ErrorKind::InvalidRequest, _) if e.status == Some(409) => ApiError::Conflict(
             "The provider key that started this video was replaced; start it again.".into(),
         ),
-        ErrorKind::InvalidRequest => ApiError::InvalidRequest {
+        (ErrorKind::InvalidRequest, _) => ApiError::InvalidRequest {
             message: "The video isn't ready for that yet; wait until it is completed.".into(),
             param: Some("video".into()),
         },
@@ -786,5 +814,89 @@ mod tests {
         assert!(
             voices(&model("openai", "tts-1", &["text"], &["audio"])).contains(&"alloy".to_owned())
         );
+    }
+
+    #[test]
+    fn sound_effects_and_music_need_a_speech_api_and_only_elevenlabs_takes_a_length() {
+        let qwen = model(
+            "alibaba",
+            "qwen-audio-3.1-tts-next",
+            &["text", "audio"],
+            &["audio"],
+        );
+        assert_eq!(
+            mode_of(&qwen, Some("sound_effects")),
+            Some(PlaygroundMode::SoundEffects)
+        );
+        assert!(!takes_lengths(&qwen));
+        let eleven = model(
+            "elevenlabs",
+            "eleven_text_to_sound_v2",
+            &["text"],
+            &["audio"],
+        );
+        assert!(takes_lengths(&eleven));
+        let no_speech = model("anthropic", "claude-haiku-4-5", &["text"], &["audio"]);
+        assert_eq!(mode_of(&no_speech, Some("sound_effects")), None);
+        assert_eq!(mode_of(&no_speech, Some("music")), None);
+    }
+
+    #[test]
+    fn every_video_failure_reads_as_what_went_wrong() {
+        let said = |e: KppError| {
+            let a = video_error(&e);
+            (a.status().as_u16(), a.to_string())
+        };
+        let kpp = |kind: ErrorKind, status: u16, message: &str| {
+            KppError::new(kind, message).with_status(status)
+        };
+        assert_eq!(
+            said(kpp(
+                ErrorKind::ProviderError,
+                503,
+                "Kaeso cannot read its videos right now; try again shortly."
+            )),
+            (
+                503,
+                "Kaeso cannot read its videos right now; try again shortly.".to_owned()
+            )
+        );
+        assert_eq!(
+            said(kpp(ErrorKind::InvalidRequest, 400, "`variant` must be …").with_param("variant"))
+                .0,
+            400
+        );
+        assert_eq!(
+            said(kpp(ErrorKind::NotFound, 404, "x").with_param("variant")).1,
+            "The provider keeps no file of this kind for the video."
+        );
+        assert_eq!(
+            said(
+                kpp(
+                    ErrorKind::NotFound,
+                    404,
+                    "The files of `video_1` expired; create the video again."
+                )
+                .with_param("video_id")
+            )
+            .1,
+            "The video's files expired; make the video again."
+        );
+        assert_eq!(
+            said(kpp(
+                ErrorKind::NotFound,
+                404,
+                "No video `x` belongs to this project."
+            ))
+            .1,
+            "No video of yours in this project has this id."
+        );
+        assert_eq!(said(kpp(ErrorKind::InvalidRequest, 409, "replaced")).0, 409);
+        assert_eq!(
+            said(kpp(ErrorKind::InvalidRequest, 400, "running").with_param("video_id")).0,
+            400
+        );
+        assert_eq!(said(kpp(ErrorKind::RateLimited, 429, "slow down")).0, 429);
+        assert_eq!(said(kpp(ErrorKind::ProviderError, 502, "down")).0, 502);
     }
 }

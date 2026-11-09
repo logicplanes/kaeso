@@ -30042,7 +30042,8 @@
                 "max_request_bytes",
                 "mode",
                 "voices",
-                "translations"
+                "translations",
+                "durations"
               ],
               "properties": {
                 "aliases": {
@@ -30083,6 +30084,10 @@
                   "type": "string",
                   "description": "The name to show.",
                   "example": "Claude Sonnet 4.5"
+                },
+                "durations": {
+                  "type": "boolean",
+                  "description": "For a sound effect or music model: whether it takes a length."
                 },
                 "efforts": {
                   "type": "array",
@@ -34590,7 +34595,8 @@
           "max_request_bytes",
           "mode",
           "voices",
-          "translations"
+          "translations",
+          "durations"
         ],
         "properties": {
           "aliases": {
@@ -34631,6 +34637,10 @@
             "type": "string",
             "description": "The name to show.",
             "example": "Claude Sonnet 4.5"
+          },
+          "durations": {
+            "type": "boolean",
+            "description": "For a sound effect or music model: whether it takes a length."
           },
           "efforts": {
             "type": "array",

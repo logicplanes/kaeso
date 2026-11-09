@@ -1102,7 +1102,8 @@ async fn attempt(
         Request::Video(r) => r.model.clone_from(&eff.model_id),
         _ => {}
     }
-    let fetch = super::links::Fetch::of(&mut req, &eff.provider, &eff.model_id);
+    let playground = rec.outcome().source == super::hooks::Source::Playground;
+    let fetch = super::links::Fetch::of(&mut req, &eff.provider, &eff.model_id, playground);
     if let Request::Image(r) = &req
         && let Some(units) = rec.outcome().media.as_mut()
     {
