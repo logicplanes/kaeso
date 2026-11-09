@@ -72,6 +72,17 @@ Sources: Fireworks' [Create a Message](https://docs.fireworks.ai/api-reference/a
 | errors in Anthropic's envelope with a `request_id` (`errors/recorded-invalid-api-key`) | `KppError` | An unknown model or path gets Fireworks' own `{"error": {"code": …}}` body instead, read like OpenAI's. |
 | `POST /v1/messages/count_tokens` | — | Fireworks answers 404, so Kaeso refuses token counts before sending anything. |
 
+## SambaNova
+
+Sources: SambaNova's [Messages API](https://docs.sambanova.ai/docs/en/features/messages) and [Anthropic compatibility](https://docs.sambanova.ai/docs/en/features/anthropic-compatibility) pages and the `Message` schema of its [OpenAPI document](https://raw.githubusercontent.com/sambanova/sambanova-inference-api-spec/refs/heads/main/openapi.documented.json), read 2026-11-09, and `fixtures/anthropic_messages/providers/sambanova/`, built from them, with the error answered live without a valid key. A SambaNova model sends as Messages when its **Sends as** value says so; the key goes as `Authorization: Bearer`.
+
+| SambaNova field | KPP | Notes |
+|---|---|---|
+| `thinking` blocks without `signature` | `Block::Reasoning` | Reasoning models send them without any thinking setting (`responses/thinking`). |
+| server tools, `document` blocks, images by URL | sent | SambaNova answers 400, which reaches the app. |
+| errors in Anthropic's envelope with a `request_id` (`errors/recorded-invalid-api-key`) | `KppError` | |
+| `POST /v1/messages/count_tokens` | `input_tokens` | Anthropic's shape. Kaeso counts the tokens of every SambaNova model there, whatever format the model sends as. |
+
 ## Next steps
 
 - [Anthropic Messages](anthropic-messages.md): Find where every field of the Anthropic Messages format goes in KPP.

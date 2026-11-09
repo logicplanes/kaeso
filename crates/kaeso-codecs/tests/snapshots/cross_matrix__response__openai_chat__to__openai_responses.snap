@@ -8760,6 +8760,130 @@ expression: outcomes
     },
     "user": null
   },
+  "providers/sambanova/palindrome-poem-doc": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "83a7809d-e18f-44f9-9ab7-2bc494c6c661",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "gpt-oss-120b",
+    "object": "response",
+    "output": [
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "In madam moon's silver glow,  Aha, a palindrome to know,  Radar spins, a circular tale,  Level heads prevail, without fail.  A man, a plan, a canal, Panama!  Able was I ere I saw Elba,  A Santa at NASA, a curious sight,  Do geese see God, in the pale moonlight?  Mr. Owl ate my metal worm,  Do nine men interpret? Nine men, I nod,  Never odd or even, a palindrome's might,  Madam, in Eden, I'm Adam.  Aibohphobia, a fear to confess,  A palindrome's symmetry, I must address,  Refer, a word that reads the same,  A palindrome's beauty, in its circular game.  In the stillness of the night,  Ava, a palindrome, shining bright,  Hannah, a name that reads the same,  A palindrome's magic, in its circular flame.  Note: Please keep in mind that creating a poem using palindromes can be a challenging task,  and the resulting poem may not be as cohesive or flowing as one that doesn't rely on palindromes.  However, I hope you enjoy the attempt!",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_83a7809de18f44f99ab72bc494c6c661_0",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 43,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 350,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 393
+    },
+    "user": null
+  },
+  "providers/sambanova/thinking-tool-call-doc": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "42d3a6ac-d984-40b1-9389-f5af73cb599e",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "gemma-4-31B-it",
+    "object": "response",
+    "output": [
+      {
+        "arguments": "{\"value\":7}",
+        "call_id": "call_92ad8c74a4594172b6",
+        "id": "fc_kaeso_42d3a6acd98440b19389f5af73cb599e_0",
+        "name": "return_integer",
+        "status": "completed",
+        "type": "function_call"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 91,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 74,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 165
+    },
+    "user": null
+  },
   "providers/togetherai/recorded-json-schema": {
     "background": false,
     "completed_at": 1760000000,

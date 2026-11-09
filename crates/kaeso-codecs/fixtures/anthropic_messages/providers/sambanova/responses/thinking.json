@@ -1,0 +1,22 @@
+{
+  "id": "msg_0f1e2d3c4b5a69788796a5b4c3d2e1f0",
+  "type": "message",
+  "role": "assistant",
+  "content": [
+    {
+      "type": "thinking",
+      "thinking": "27 times 43 is 27 times 40 plus 27 times 3: 1080 plus 81 is 1161."
+    },
+    {
+      "type": "text",
+      "text": "27 × 43 = 1161."
+    }
+  ],
+  "model": "gpt-oss-120b",
+  "stop_reason": "end_turn",
+  "stop_sequence": null,
+  "usage": {
+    "input_tokens": 78,
+    "output_tokens": 46
+  }
+}

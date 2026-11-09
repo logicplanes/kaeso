@@ -1066,6 +1066,42 @@ expression: outcomes
     },
     "path": "/v1beta/models/MiniMax-M3.1-Flash:generateContent"
   },
+  "providers/sambanova/invalid-api-key": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "hi"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1
+      }
+    },
+    "path": "/v1beta/models/gpt-oss-120b:generateContent"
+  },
+  "providers/sambanova/thinking": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What is 27 * 43?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1024
+      }
+    },
+    "path": "/v1beta/models/gpt-oss-120b:generateContent"
+  },
   "providers/vercel/rate-limited": {
     "body": {
       "contents": [

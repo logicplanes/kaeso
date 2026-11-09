@@ -3529,6 +3529,70 @@ expression: outcomes
     },
     "path": "/v1/responses"
   },
+  "providers/sambanova/invalid-api-key": {
+    "message": "`max_tokens 1` is not supported by OpenAI Responses. OpenAI Responses needs an output limit of at least 16 tokens; raise it or route the request to another model.",
+    "param": "max_tokens",
+    "unsupported": "max_tokens 1"
+  },
+  "providers/sambanova/missing-api-key": {
+    "message": "`max_tokens 1` is not supported by OpenAI Responses. OpenAI Responses needs an output limit of at least 16 tokens; raise it or route the request to another model.",
+    "param": "max_tokens",
+    "unsupported": "max_tokens 1"
+  },
+  "providers/sambanova/palindrome-poem-doc": {
+    "body": {
+      "input": [
+        {
+          "content": "create a poem using palindromes",
+          "role": "user"
+        }
+      ],
+      "model": "gpt-oss-120b",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/sambanova/reasoning-stream": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "What is 17 times 23?",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 512,
+      "model": "gpt-oss-120b",
+      "reasoning": {
+        "effort": "low"
+      },
+      "store": false,
+      "stream": true
+    },
+    "path": "/v1/responses"
+  },
+  "providers/sambanova/stream-length-doc": {
+    "body": {
+      "input": [
+        {
+          "content": "create a poem using palindromes",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 100,
+      "model": "gpt-oss-120b",
+      "store": false,
+      "stream": true
+    },
+    "path": "/v1/responses"
+  },
+  "providers/sambanova/thinking-tool-call-doc": {
+    "message": "`chat_template_kwargs` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "chat_template_kwargs"
+  },
   "providers/togetherai/context-length-error": {
     "message": "`context_length_exceeded_behavior` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
     "param": null,

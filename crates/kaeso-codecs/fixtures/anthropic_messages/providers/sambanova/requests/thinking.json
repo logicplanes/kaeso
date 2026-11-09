@@ -1,0 +1,10 @@
+{
+  "model": "gpt-oss-120b",
+  "max_tokens": 1024,
+  "messages": [
+    {
+      "role": "user",
+      "content": "What is 27 * 43?"
+    }
+  ]
+}

@@ -1276,3 +1276,60 @@ fn a_cerebras_listing_decodes_and_its_errors_keep_cerebras_message_without_an_er
     assert_eq!(e.kind, ErrorKind::Authentication);
     assert_eq!(e.message, "Wrong API Key");
 }
+
+#[test]
+fn a_sambanova_listing_decodes_with_its_prices_and_its_wrong_keys_and_unknown_models_are_errors() {
+    let body = fixture("openai_chat", "providers/sambanova/list-recorded");
+    let l = list(DialectId::OpenAiChat, &body);
+    let ids: Vec<&str> = l.models.iter().map(|m| m.id.as_str()).collect();
+    assert_eq!(
+        ids,
+        [
+            "GLM-5.3",
+            "Meta-Llama-3.3-70B-Instruct",
+            "MiniMax-M3.1-Flash",
+            "gemma-4-31B-it",
+            "gpt-oss-120b"
+        ]
+    );
+    assert_json_eq(
+        "providers/sambanova/list-recorded",
+        &body,
+        &dispatch::encode_models(DialectId::OpenAiChat, &l).unwrap(),
+    );
+    let one = fixture("openai_chat", "providers/sambanova/retrieve-recorded");
+    assert_json_eq(
+        "providers/sambanova/retrieve-recorded",
+        &one,
+        &dispatch::encode_model(DialectId::OpenAiChat, &model(DialectId::OpenAiChat, &one))
+            .unwrap(),
+    );
+    let errors = fixtures("openai_chat", "errors", "json");
+    let error = |name: &str| {
+        errors
+            .iter()
+            .find(|(n, _)| n == name)
+            .unwrap_or_else(|| panic!("no error fixture {name}"))
+            .1
+            .clone()
+    };
+    let e = dispatch::decode_models(
+        DialectId::OpenAiChat,
+        401,
+        &h(),
+        &error("providers/sambanova/recorded-invalid-api-key"),
+    )
+    .unwrap_err();
+    assert_eq!(e.kind, ErrorKind::Authentication);
+    let e = dispatch::decode_model(
+        DialectId::OpenAiChat,
+        404,
+        &h(),
+        &error("providers/sambanova/recorded-embeddings-model-not-found"),
+    )
+    .unwrap_err();
+    assert_eq!(
+        (e.kind, e.param.as_deref()),
+        (ErrorKind::NotFound, Some("model"))
+    );
+}

@@ -413,6 +413,28 @@ describe("ProviderKeyDialog", () => {
     ]);
   });
 
+  it("adds a SambaNova key, which has no fixed prefix, with SambaCloud's API page as its key hint", async () => {
+    on("POST", CREDENTIALS, credential({ provider: "sambanova", name: "SambaNova prod", is_default: true }));
+    const { user, dialog } = await open();
+
+    await choose(user, dialog, "SambaNova");
+
+    expect(await within(dialog).findByRole("heading", { name: "Paste your SambaNova API key" })).toBeVisible();
+    const link = within(dialog).getByRole("link", { name: "cloud.sambanova.ai (opens in a new tab)" });
+    expect(link).toHaveAttribute("href", "https://cloud.sambanova.ai/apis");
+    expect((link.closest("p") as HTMLElement).textContent?.replace(/⁠? \(opens in a new tab\)/, "")).toBe("Create one at cloud.sambanova.ai under API Keys.");
+    const secret = within(dialog).getByLabelText("SambaNova API key");
+    expect(secret).not.toHaveAttribute("placeholder");
+    await user.type(secret, "sambanova-key-0123");
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "SambaNova prod");
+    await user.click(within(dialog).getByRole("button", { name: "Add key" }));
+
+    expect(await notifications().findByText("SambaNova prod is the SambaNova default")).toBeInTheDocument();
+    expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([
+      { provider: "sambanova", name: "SambaNova prod", secret: "sambanova-key-0123", make_default: false },
+    ]);
+  });
+
   it("adds a Google AI Studio key, which has no fixed prefix, with AI Studio's key page as its key hint", async () => {
     on("POST", CREDENTIALS, credential({ provider: "google", name: "AI Studio prod", is_default: true }));
     const { user, dialog } = await open();

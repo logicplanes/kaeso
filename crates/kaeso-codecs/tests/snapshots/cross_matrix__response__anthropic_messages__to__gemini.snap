@@ -366,6 +366,29 @@ expression: outcomes
       "totalTokenCount": 2638
     }
   },
+  "providers/sambanova/thinking": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "27 × 43 = 1161."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-oss-120b",
+    "responseId": "msg_0f1e2d3c4b5a69788796a5b4c3d2e1f0",
+    "usageMetadata": {
+      "candidatesTokenCount": 46,
+      "promptTokenCount": 78,
+      "totalTokenCount": 124
+    }
+  },
   "providers/vercel/recorded-text": {
     "candidates": [
       {

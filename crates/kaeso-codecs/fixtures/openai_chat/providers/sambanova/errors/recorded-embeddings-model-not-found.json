@@ -1,0 +1,9 @@
+{
+  "error": {
+    "code": "model_not_found",
+    "message": "The model `E5-Mistral-7B-Instruct` does not exist or you do not have access to it.",
+    "param": "model",
+    "type": "invalid_request_error"
+  },
+  "request_id": "00000000"
+}

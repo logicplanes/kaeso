@@ -1,0 +1,32 @@
+{
+  "model": "gemma-4-31B-it",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Call the tool to get the integer 7."
+    }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "return_integer",
+        "description": "Returns the integer it is given.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "value"
+          ]
+        }
+      }
+    }
+  ],
+  "chat_template_kwargs": {
+    "enable_thinking": true
+  }
+}

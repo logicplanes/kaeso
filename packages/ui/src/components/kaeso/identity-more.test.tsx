@@ -192,6 +192,7 @@ const MARKED_PROVIDERS = {
   "gemini-agent-platform": "Gemini Enterprise Agent Platform",
   "fireworks-ai": "Fireworks AI",
   nebius: "Nebius Token Factory",
+  sambanova: "SambaNova",
   vllm: "vLLM",
   ollama: "Ollama",
   "lm-studio": "LM Studio",

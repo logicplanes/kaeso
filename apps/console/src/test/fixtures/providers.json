@@ -457,6 +457,25 @@
       "service_account": null,
       "model_routes": [],
       "server": null
+    },
+    {
+      "id": "sambanova",
+      "name": "SambaNova",
+      "custom": false,
+      "takes_key": true,
+      "hides_built_in": null,
+      "key_page": {
+        "url": "https://cloud.sambanova.ai/apis",
+        "label": "API Keys"
+      },
+      "key_prefix": null,
+      "dialects": ["openai_chat", "anthropic_messages"],
+      "count_tokens": "anthropic_messages",
+      "embeddings": null,
+      "account": null,
+      "service_account": null,
+      "model_routes": [],
+      "server": null
     }
   ],
   "has_more": false,

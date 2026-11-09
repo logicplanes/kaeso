@@ -47,6 +47,10 @@ const PROFILES: &[(&str, ChatProfile)] = &[
         ChatProfile::compatible("OpenRouter").reasoning_fields(&["reasoning"]),
     ),
     (
+        "sambanova",
+        ChatProfile::compatible("SambaNova").reasoning_fields(&["reasoning"]),
+    ),
+    (
         "togetherai",
         ChatProfile::compatible("Together AI")
             .reasoning_fields(&["reasoning_content", "reasoning"]),

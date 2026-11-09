@@ -3375,6 +3375,54 @@ expression: outcomes
       }
     }
   },
+  "providers/sambanova/palindrome-poem-doc": {
+    "content": [
+      {
+        "text": "In madam moon's silver glow,  Aha, a palindrome to know,  Radar spins, a circular tale,  Level heads prevail, without fail.  A man, a plan, a canal, Panama!  Able was I ere I saw Elba,  A Santa at NASA, a curious sight,  Do geese see God, in the pale moonlight?  Mr. Owl ate my metal worm,  Do nine men interpret? Nine men, I nod,  Never odd or even, a palindrome's might,  Madam, in Eden, I'm Adam.  Aibohphobia, a fear to confess,  A palindrome's symmetry, I must address,  Refer, a word that reads the same,  A palindrome's beauty, in its circular game.  In the stillness of the night,  Ava, a palindrome, shining bright,  Hannah, a name that reads the same,  A palindrome's magic, in its circular flame.  Note: Please keep in mind that creating a poem using palindromes can be a challenging task,  and the resulting poem may not be as cohesive or flowing as one that doesn't rely on palindromes.  However, I hope you enjoy the attempt!",
+        "type": "text"
+      }
+    ],
+    "id": "83a7809d-e18f-44f9-9ab7-2bc494c6c661",
+    "model": "gpt-oss-120b",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 43,
+      "output_tokens": 350
+    }
+  },
+  "providers/sambanova/thinking-tool-call-doc": {
+    "content": [
+      {
+        "id": "call_92ad8c74a4594172b6",
+        "input": {
+          "value": 7
+        },
+        "name": "return_integer",
+        "type": "tool_use"
+      }
+    ],
+    "id": "42d3a6ac-d984-40b1-9389-f5af73cb599e",
+    "model": "gemma-4-31B-it",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 91,
+      "output_tokens": 74
+    }
+  },
   "providers/togetherai/recorded-json-schema": {
     "content": [
       {

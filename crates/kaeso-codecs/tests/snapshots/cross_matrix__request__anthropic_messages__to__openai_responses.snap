@@ -925,6 +925,25 @@ expression: outcomes
     "param": "messages[0].blocks[1]",
     "unsupported": "video block"
   },
+  "providers/sambanova/invalid-api-key": {
+    "message": "`max_tokens 1` is not supported by OpenAI Responses. OpenAI Responses needs an output limit of at least 16 tokens; raise it or route the request to another model.",
+    "param": "max_tokens",
+    "unsupported": "max_tokens 1"
+  },
+  "providers/sambanova/thinking": {
+    "body": {
+      "input": [
+        {
+          "content": "What is 27 * 43?",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 1024,
+      "model": "gpt-oss-120b",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
   "providers/vercel/rate-limited": {
     "body": {
       "input": [

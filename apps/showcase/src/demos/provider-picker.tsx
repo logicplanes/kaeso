@@ -19,6 +19,7 @@ const providers: ProviderPickerOption[] = [
   { id: "moonshotai", name: "Moonshot" },
   { id: "ollama-cloud", name: "Ollama Cloud" },
   { id: "openrouter", name: "OpenRouter" },
+  { id: "sambanova", name: "SambaNova" },
   { id: "togetherai", name: "Together AI" },
   { id: "vercel", name: "Vercel" },
   { id: "xai", name: "SpaceX" },

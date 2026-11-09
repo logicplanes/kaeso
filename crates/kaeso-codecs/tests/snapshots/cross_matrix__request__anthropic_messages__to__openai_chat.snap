@@ -934,6 +934,32 @@ expression: outcomes
     "param": "messages[0].blocks[1]",
     "unsupported": "video block"
   },
+  "providers/sambanova/invalid-api-key": {
+    "body": {
+      "max_completion_tokens": 1,
+      "messages": [
+        {
+          "content": "hi",
+          "role": "user"
+        }
+      ],
+      "model": "gpt-oss-120b"
+    },
+    "path": "/v1/chat/completions"
+  },
+  "providers/sambanova/thinking": {
+    "body": {
+      "max_completion_tokens": 1024,
+      "messages": [
+        {
+          "content": "What is 27 * 43?",
+          "role": "user"
+        }
+      ],
+      "model": "gpt-oss-120b"
+    },
+    "path": "/v1/chat/completions"
+  },
   "providers/vercel/rate-limited": {
     "body": {
       "max_completion_tokens": 1024,

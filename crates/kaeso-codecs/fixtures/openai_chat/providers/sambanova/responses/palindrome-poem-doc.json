@@ -1,0 +1,32 @@
+{
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "In madam moon's silver glow,  Aha, a palindrome to know,  Radar spins, a circular tale,  Level heads prevail, without fail.  A man, a plan, a canal, Panama!  Able was I ere I saw Elba,  A Santa at NASA, a curious sight,  Do geese see God, in the pale moonlight?  Mr. Owl ate my metal worm,  Do nine men interpret? Nine men, I nod,  Never odd or even, a palindrome's might,  Madam, in Eden, I'm Adam.  Aibohphobia, a fear to confess,  A palindrome's symmetry, I must address,  Refer, a word that reads the same,  A palindrome's beauty, in its circular game.  In the stillness of the night,  Ava, a palindrome, shining bright,  Hannah, a name that reads the same,  A palindrome's magic, in its circular flame.  Note: Please keep in mind that creating a poem using palindromes can be a challenging task,  and the resulting poem may not be as cohesive or flowing as one that doesn't rely on palindromes.  However, I hope you enjoy the attempt!",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1737583288.6076705,
+  "id": "83a7809d-e18f-44f9-9ab7-2bc494c6c661",
+  "model": "gpt-oss-120b",
+  "object": "chat.completion",
+  "system_fingerprint": "fastcoe",
+  "usage": {
+    "acceptance_rate": 4.058139324188232,
+    "completion_tokens": 350,
+    "completion_tokens_after_first_per_sec": 248.09314856382406,
+    "completion_tokens_after_first_per_sec_first_ten": 249.67922929952655,
+    "completion_tokens_per_sec": 238.91966176995348,
+    "end_time": 1737583289.7345645,
+    "is_last_response": true,
+    "prompt_tokens": 43,
+    "start_time": 1737583288.264706,
+    "time_to_first_token": 0.06312894821166992,
+    "total_latency": 1.4649275719174653,
+    "total_tokens": 393,
+    "total_tokens_per_sec": 268.27264878740493
+  }
+}

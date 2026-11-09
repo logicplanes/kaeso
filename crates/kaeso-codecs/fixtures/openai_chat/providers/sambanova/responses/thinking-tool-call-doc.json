@@ -1,0 +1,32 @@
+{
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": null,
+        "reasoning": "The user wants me to call a tool to get the integer 7. Looking at the available tools, there is a function called `return_integer` which takes an integer `value` as a parameter. I should call `return_integer` with `value=7`.",
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "function": {
+              "arguments": "{\"value\":7}",
+              "name": "return_integer"
+            },
+            "id": "call_92ad8c74a4594172b6",
+            "type": "function"
+          }
+        ]
+      }
+    }
+  ],
+  "created": 1794225660,
+  "id": "42d3a6ac-d984-40b1-9389-f5af73cb599e",
+  "model": "gemma-4-31B-it",
+  "object": "chat.completion",
+  "usage": {
+    "completion_tokens": 74,
+    "prompt_tokens": 91,
+    "total_tokens": 165
+  }
+}

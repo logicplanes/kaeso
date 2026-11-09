@@ -2546,3 +2546,36 @@ fn nebius_models_speak_chat_completions_with_kpmrs_prices_and_its_embeddings_emb
         (DialectId::OpenAiEmbeddings, Some(dec!(0.01)))
     );
 }
+
+#[test]
+fn sambanova_models_speak_chat_completions_and_count_tokens_in_messages() {
+    let gpt_oss = eff(&entry("sambanova", "gpt-oss-120b"));
+    assert_eq!(gpt_oss.dialect, DialectId::OpenAiChat);
+    assert_eq!(gpt_oss.provider.chat().provider, "SambaNova");
+    assert_eq!(
+        (gpt_oss.fields.input_price, gpt_oss.fields.output_price),
+        (Some(dec!(0.22)), Some(dec!(0.59)))
+    );
+    assert_eq!(
+        effort_levels(&gpt_oss, DialectId::OpenAiChat),
+        ["low", "medium", "high"]
+    );
+    let glm = eff(&entry("sambanova", "GLM-5.3"));
+    assert_eq!(
+        (glm.fields.input_price, glm.fields.cache_read_price),
+        (Some(dec!(2.8)), Some(dec!(0.14)))
+    );
+    let provider = gpt_oss.provider.clone();
+    assert_eq!(
+        provider.count_tokens_for(DialectId::OpenAiChat),
+        Some(DialectId::AnthropicMessages)
+    );
+    let mut sent_as = entry("sambanova", "GLM-5.3");
+    sent_as.overrides.egress_dialect = Some(DialectId::AnthropicMessages);
+    let messages = eff(&sent_as);
+    assert_eq!(messages.dialect, DialectId::AnthropicMessages);
+    assert_eq!(
+        messages.provider.count_tokens_for(messages.dialect),
+        Some(messages.dialect)
+    );
+}

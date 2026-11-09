@@ -200,6 +200,7 @@ Die ersten drei Einstellungen legen nur die Anfangswerte einer neuen Installatio
 | `KAESO_PROVIDERS_GEMINI_AGENT_PLATFORM_BASE_URL`<br>`providers.gemini-agent-platform.base_url` | Text | `https://aiplatform.googleapis.com` | Basis-URL der Gemini-Enterprise-Agent-Platform-API. |
 | `KAESO_PROVIDERS_FIREWORKS_AI_BASE_URL`<br>`providers.fireworks-ai.base_url` | Text | `https://api.fireworks.ai/inference` | Basis-URL der Fireworks-AI-API. |
 | `KAESO_PROVIDERS_NEBIUS_BASE_URL`<br>`providers.nebius.base_url` | Text | `https://api.tokenfactory.nebius.com` | Basis-URL der Nebius-Token-Factory-API. |
+| `KAESO_PROVIDERS_SAMBANOVA_BASE_URL`<br>`providers.sambanova.base_url` | Text | `https://api.sambanova.ai` | Basis-URL der SambaNova-API. |
 | `KAESO_UPSTREAM_CONNECT_TIMEOUT`<br>`upstream.connect_timeout` | Text | `10s` | Zeit für den Verbindungsaufbau zu einem Anbieter, TCP und TLS; höchstens 24h. |
 | `KAESO_UPSTREAM_REQUEST_TIMEOUT`<br>`upstream.request_timeout` | Text | `600s` | Gesamtzeit einer Anbieter-Anfrage ohne Streaming; höchstens 24h. |
 | `KAESO_UPSTREAM_FIRST_BYTE_TIMEOUT`<br>`upstream.first_byte_timeout` | Text | `60s` | Streaming: Zeit bis zum ersten Byte des Anbieters; höchstens 24h. |
