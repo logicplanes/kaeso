@@ -103,7 +103,7 @@ fn a_body_no_parser_accepts_is_still_searched() {
     }
     let cut = format!(
         r#"{{"model":"m","image":{{"media_type":"image/png","data":"{}"#,
-        noise(90)
+        noise(120)
     );
     let out = off(&cut).unwrap();
     assert!(out.ends_with(r#""reason":"not_kept"}}"#), "{out}");
@@ -191,13 +191,16 @@ fn a_file_is_known_by_the_type_beside_it_whatever_its_key_or_by_how_it_starts() 
         let text = format!(r#"{{"{key}":"{unknown}"}}"#);
         assert_eq!(stripped(&text)[key]["kaeso_media"]["bytes"], 60, "{key}");
     }
-    let odd = format!(r#"{{"payload":"{unknown}","content_type":"audio/pcm"}}"#);
+    let odd = format!(
+        r#"{{"payload":"{}","content_type":"audio/pcm"}}"#,
+        noise(900)
+    );
     assert_eq!(
         stripped(&odd)["payload"]["kaeso_media"]["media_type"],
         "audio/pcm"
     );
-    let pcm = format!(r#"{{"mediaType":"audio/pcm","data":"{}"}}"#, noise(12));
-    assert_eq!(stripped(&pcm)["data"]["kaeso_media"]["bytes"], 12);
+    let pcm = format!(r#"{{"mediaType":"audio/pcm","data":"{}"}}"#, noise(120));
+    assert_eq!(stripped(&pcm)["data"]["kaeso_media"]["bytes"], 120);
 
     for (start, media_type) in [
         (&b"II*\0 a scan"[..], "image/tiff"),
@@ -288,6 +291,15 @@ fn text_that_only_looks_like_media_stays() {
         r#"{"response_format":{"type":"json_schema","format":"wav","name":"configuration_name_1"}}"#.to_owned(),
         r#"{"media_type":"image/png","name":"a_reasonably_long_file_name","id":"msg_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz"}"#.to_owned(),
         r#"{"arguments":"{\"city\":\"Paris\",\"note\":\"plain words\"}"}"#.to_owned(),
+        format!(r#"{{"mimeType":"inode/directory","location":"/{}"}}"#, "projects/".repeat(9)),
+        format!(r#"{{"content_type":"application/json","sha256":"{}"}}"#, "0123456789abcdef".repeat(4)),
+        format!(r#"{{"content_type":"application/json","digest":"{}"}}"#, "0123456789abcdef".repeat(80)),
+        r#"{"mimeType":"application/json","result":"completed_successfully"}"#.to_owned(),
+        r#"{"image":"library/postgres-alpine","mimeType":"application/vnd.oci.image"}"#.to_owned(),
+        format!(r#"{{"resource":{{"uri":"file:///a.txt","mimeType":"text/plain","text":"{}"}}}}"#, "token".repeat(300)),
+        format!(r#"{{"mimeType":"text/plain","name":"{}","path":"{}"}}"#, "n".repeat(1100), "p".repeat(1100)),
+        format!(r#"{{"content":"{}"}}"#, "please summarise the following report for the team ".repeat(100)),
+        r#"{"data":"configuration_name_1","media_type":"application/json"}"#.to_owned(),
     ];
     for text in kept {
         assert_eq!(off(&text), None, "{text}");
@@ -344,4 +356,379 @@ fn decoded_media_is_left_out_before_it_is_written() {
     assert_eq!(written[0]["base64"]["data"], png_left_out());
     assert_eq!(written[1]["url"], "https://example.com/a.png");
     assert_eq!(LeftOut::default().write(&"plain").unwrap(), "\"plain\"");
+}
+
+fn within(limit: std::time::Duration, work: impl FnOnce() -> Option<String>) -> Option<String> {
+    let started = std::time::Instant::now();
+    let out = work();
+    assert!(started.elapsed() < limit, "took {:?}", started.elapsed());
+    out
+}
+
+#[test]
+fn nesting_no_format_has_is_logged_as_one_file_at_once() {
+    let limit = std::time::Duration::from_secs(5);
+    let strings = "\"AAAAAAAAAAAAAAAA\",".repeat((1 << 20) / 38);
+    let nested = format!("{}{strings}", "[".repeat(1 << 19));
+    let brackets = "[".repeat(8 << 20);
+    let keyed = format!(r#"{{"{}":{}"#, "k".repeat(200), "[".repeat(8 << 20));
+    let objects = r#"{"a":"#.repeat(1 << 20);
+    for body in [nested, brackets, keyed, objects] {
+        let out = within(limit, || off(&body)).unwrap();
+        let out: Value = serde_json::from_str(&out).unwrap();
+        assert_eq!(
+            out["kaeso_media"],
+            json!({ "media_type": "application/json", "bytes": body.len(), "reason": "not_kept" })
+        );
+    }
+    let wide = format!(r#"{{"data":[{}"x"]}}"#, strings.repeat(8));
+    assert_eq!(
+        within(limit, || off(&wide)),
+        None,
+        "many strings in one array are read once"
+    );
+    let at_the_limit = format!("{}{}", "[".repeat(128), "]".repeat(128));
+    assert_eq!(off(&at_the_limit), None);
+}
+
+#[test]
+fn a_flood_of_schemes_is_read_once() {
+    let flood = serde_json::to_string(&"data:".repeat(400_000)).unwrap();
+    assert_eq!(
+        within(std::time::Duration::from_secs(5), || off(&flood)),
+        None
+    );
+    let headers = serde_json::to_string(&"data:image/png;".repeat(150_000)).unwrap();
+    assert_eq!(
+        within(std::time::Duration::from_secs(5), || off(&headers)),
+        None
+    );
+}
+
+fn wrapped(text: &str, every: usize, with: &str) -> String {
+    text.as_bytes()
+        .chunks(every)
+        .map(|line| std::str::from_utf8(line).unwrap())
+        .collect::<Vec<_>>()
+        .join(with)
+}
+
+#[test]
+fn base64_that_is_wrapped_or_not_quite_valid_is_still_a_file() {
+    let mut file = PNG.to_vec();
+    file.resize(600, 5);
+    let clean = b64(&file);
+    for (name, text) in [
+        ("lines of 76", wrapped(&clean, 76, "\n")),
+        (
+            "lines of 60 with carriage returns",
+            wrapped(&clean, 60, "\r\n"),
+        ),
+        (
+            "a stray space",
+            format!("{} {}", &clean[..300], &clean[300..]),
+        ),
+        ("one character too many", format!("{clean}A")),
+    ] {
+        let typed =
+            json!({ "source": { "type": "base64", "media_type": "image/png", "data": text } })
+                .to_string();
+        let media = &stripped(&typed)["source"]["data"]["kaeso_media"];
+        assert_eq!(media["media_type"], "image/png", "{name}");
+        assert_eq!(media["width"], 800, "{name}");
+        assert!(
+            media["bytes"].as_u64().unwrap().abs_diff(600) <= 1,
+            "{name}"
+        );
+        let keyed = json!({ "data": [{ "b64_json": text }] }).to_string();
+        assert!(
+            stripped(&keyed)["data"][0]["b64_json"]["kaeso_media"].is_object(),
+            "{name}"
+        );
+        let url = json!({ "url": format!("data:image/png;base64,{text}") }).to_string();
+        assert_eq!(
+            stripped(&url)["url"]["kaeso_media"]["media_type"],
+            "image/png",
+            "{name}"
+        );
+        let inside =
+            json!({ "content": format!("See data:image/png;base64,{text}\nand tell me.") })
+                .to_string();
+        let out = off(&inside).unwrap();
+        assert!(
+            !out.contains(&clean[80..120]) && !out.contains(&clean[700..740]),
+            "{name}: {out}"
+        );
+    }
+    let noisy = noise(6000).replace('A', "!");
+    assert!(noisy.contains('!') && base64_of(&noisy).is_none());
+    assert_eq!(
+        stripped(&json!({ "anything": noisy }).to_string())["anything"]["kaeso_media"]["media_type"],
+        "application/octet-stream",
+        "long text that is nearly all base64 alphabet is a file"
+    );
+}
+
+#[test]
+fn a_file_inside_a_text_block_is_found_by_how_it_starts() {
+    let png = b64(&PNG);
+    let result = format!(
+        r#"{{"type":"tool_result","content":[{{"type":"text","text":"{png}"}},{{"type":"text","text":"SGVsbG8gd29ybGQgYWdhaW4="}}]}}"#
+    );
+    let out = stripped(&result);
+    assert_eq!(out["content"][0]["text"], png_left_out());
+    assert_eq!(out["content"][1]["text"], "SGVsbG8gd29ybGQgYWdhaW4=");
+}
+
+#[test]
+fn audio_is_found_where_nothing_states_a_type_the_search_knows() {
+    let sound = noise(1200);
+    let short = noise(150);
+    for (text, at, media_type) in [
+        (
+            format!(r#"{{"input_audio":{{"data":"{short}","format":"aiff"}}}}"#),
+            "/input_audio/data",
+            "audio/aiff",
+        ),
+        (
+            format!(r#"{{"audio":{{"id":"audio_abc","data":"{sound}"}}}}"#),
+            "/audio/data",
+            "application/octet-stream",
+        ),
+        (
+            format!(r#"{{"input_audio":"{sound}"}}"#),
+            "/input_audio",
+            "application/octet-stream",
+        ),
+        (
+            format!(r#"{{"type":"audio/pcm","data":"{short}"}}"#),
+            "/data",
+            "audio/pcm",
+        ),
+        (
+            format!(
+                r#"{{"media_type":"audio/{}","data":"{short}"}}"#,
+                "x".repeat(200)
+            ),
+            "/data",
+            "application/octet-stream",
+        ),
+    ] {
+        let out = stripped(&text);
+        assert_eq!(
+            out.pointer(at).unwrap()["kaeso_media"]["media_type"],
+            media_type,
+            "{text:.80}"
+        );
+    }
+}
+
+#[test]
+fn media_hidden_by_escapes_depth_or_quotes_is_found() {
+    let png = b64(&PNG);
+    let escaped = format!(r#"{{"url":"\u0064\u0061ta:image/png\u003bbase64\u002c{png}"}}"#);
+    assert_eq!(stripped(&escaped)["url"], png_left_out());
+    assert_eq!(
+        unescaped(r"\u+041 \u-041"),
+        r"u+041 u-041",
+        "a signed number is no escape"
+    );
+
+    let mut deep = json!({ "media_type": "image/png", "data": noise(300) }).to_string();
+    for _ in 0..7 {
+        deep = json!({ "arguments": deep }).to_string();
+    }
+    let out = off(&deep).unwrap();
+    assert!(!out.contains(&noise(300)[40..120]), "{out}");
+    assert!(out.contains("kaeso_media"), "{out}");
+
+    let svg = "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3C%2Fsvg%3E";
+    let text = json!({ "content": format!("![a]({svg}) and ![b](data:image/png;name=\"a b.png\";base64,{png}) end") }).to_string();
+    assert_eq!(
+        stripped(&text)["content"],
+        format!(
+            "![a]([kaeso_media: image/svg+xml, {} bytes, not_kept]) and ![b]([kaeso_media: image/png, 33 bytes, not_kept]) end",
+            svg.len() - "data:image/svg+xml,".len()
+        )
+        .as_str()
+    );
+}
+
+#[test]
+fn nothing_an_app_sends_can_pass_for_a_file_taken_out() {
+    let mut image = Source::bytes("image/png", PNG.to_vec());
+    let mut left_out = LeftOut::default();
+    left_out.fit(&mut image, &mut Keep::nothing());
+    let old_mark = b64(b"kaeso media left out 0");
+    let prompt = format!("a quote \" then \"{old_mark}");
+    let text = left_out
+        .write(&json!({ "prompt": prompt, "old": old_mark, "image": image }))
+        .unwrap();
+    let written: Value = serde_json::from_str(&text).unwrap();
+    assert_eq!(written["prompt"], prompt.as_str());
+    assert_eq!(written["old"], old_mark.as_str());
+    assert_eq!(written["image"]["base64"]["data"], png_left_out());
+    let mut again = Source::bytes("image/png", PNG.to_vec());
+    let mut other = LeftOut::default();
+    other.fit(&mut again, &mut Keep::nothing());
+    assert_ne!(
+        serde_json::to_string(&image).unwrap(),
+        serde_json::to_string(&again).unwrap()
+    );
+}
+
+#[test]
+fn a_file_where_a_type_belongs_is_found_and_never_repeated_as_the_type() {
+    let both = r#"{"media_type":"see data:audio/wav;base64,AAAAAAAAAAAAAAAA here","text":"data:image/png;base64,AAAAAAAAAAAAAAAA"}"#;
+    let out = stripped(both);
+    assert_eq!(
+        out["media_type"],
+        "see [kaeso_media: audio/wav, 12 bytes, not_kept] here"
+    );
+    assert_eq!(out["text"]["kaeso_media"]["media_type"], "image/png");
+
+    let mut file = PNG.to_vec();
+    file.resize(45, 0);
+    let png = b64(&file);
+    let out = off(&format!(r#"{{"media_type":"{png}","data":"{png}"}}"#)).unwrap();
+    assert!(!out.contains(&png[..16]), "{out}");
+    assert_eq!(
+        serde_json::from_str::<Value>(&out).unwrap()["data"]["kaeso_media"]["media_type"],
+        "image/png",
+        "the type the bytes show, not the text that stood where a type belongs"
+    );
+}
+
+mod property {
+    use proptest::prelude::*;
+
+    use super::*;
+
+    fn media() -> impl Strategy<Value = String> {
+        let bytes = prop::collection::vec(any::<u8>(), 12..200);
+        prop_oneof![
+            bytes.clone().prop_map(|b| b64(&b)),
+            bytes
+                .clone()
+                .prop_map(|b| format!("data:image/png;base64,{}", b64(&b))),
+            bytes.clone().prop_map(|mut b| {
+                b.splice(0..0, PNG);
+                b64(&b)
+            }),
+            bytes.prop_map(|b| format!("see data:audio/wav;base64,{} here", b64(&b))),
+        ]
+    }
+
+    fn key() -> impl Strategy<Value = String> {
+        prop_oneof![
+            Just("data".to_owned()),
+            Just("media_type".to_owned()),
+            Just("mimeType".to_owned()),
+            Just("type".to_owned()),
+            Just("format".to_owned()),
+            Just("text".to_owned()),
+            Just("b64_json".to_owned()),
+            Just("audio".to_owned()),
+            "[a-z]{1,6}",
+        ]
+    }
+
+    fn leaf() -> impl Strategy<Value = Value> {
+        prop_oneof![
+            Just(Value::Null),
+            any::<bool>().prop_map(Value::from),
+            any::<i64>().prop_map(Value::from),
+            any::<String>().prop_map(Value::from),
+            "[ -~]{0,40}".prop_map(Value::from),
+            Just(Value::from("image/png")),
+            Just(Value::from("text")),
+            Just(Value::from("wav")),
+            media().prop_map(Value::from),
+        ]
+    }
+
+    fn document() -> impl Strategy<Value = Value> {
+        leaf().prop_recursive(5, 48, 6, |inner| {
+            prop_oneof![
+                prop::collection::vec(inner.clone(), 0..6).prop_map(Value::Array),
+                prop::collection::vec((key(), inner.clone()), 0..6)
+                    .prop_map(|fields| Value::Object(fields.into_iter().collect())),
+                inner.prop_map(|v| Value::from(v.to_string())),
+            ]
+        })
+    }
+
+    fn left_out(v: &Value) -> bool {
+        v.as_object()
+            .is_some_and(|o| o.len() == 1 && o.get("kaeso_media").is_some_and(Value::is_object))
+    }
+
+    // Whether a string could hold a file at all: only such a string may differ in the log.
+    fn could_hold_media(text: &str) -> bool {
+        let mut run = 0;
+        text.bytes().any(|b| {
+            run = if base64_byte(b) || b == b'=' {
+                run + 1
+            } else {
+                0
+            };
+            run >= MEDIA_MIN_CHARS
+        })
+    }
+
+    fn same_but_for_media(before: &Value, after: &Value) -> Result<(), TestCaseError> {
+        match (before, after) {
+            (Value::Array(a), Value::Array(b)) => {
+                prop_assert_eq!(a.len(), b.len());
+                a.iter()
+                    .zip(b)
+                    .try_for_each(|(a, b)| same_but_for_media(a, b))
+            }
+            (Value::Object(a), Value::Object(b)) => {
+                prop_assert!(a.keys().eq(b.keys()));
+                a.values()
+                    .zip(b.values())
+                    .try_for_each(|(a, b)| same_but_for_media(a, b))
+            }
+            (Value::String(a), after) if Some(a.as_str()) != after.as_str() => {
+                prop_assert!(could_hold_media(a), "{a:?} became {after}");
+                prop_assert!(left_out(after) || after.is_string(), "{a:?} became {after}");
+                Ok(())
+            }
+            (a, b) => {
+                prop_assert_eq!(a, b);
+                Ok(())
+            }
+        }
+    }
+
+    proptest! {
+        #![proptest_config(ProptestConfig::with_cases(256))]
+
+        #[test]
+        fn valid_json_stays_valid_and_only_media_changes(doc in document(), pretty in any::<bool>()) {
+            let text = if pretty {
+                serde_json::to_string_pretty(&doc).unwrap()
+            } else {
+                doc.to_string()
+            };
+            match off(&text) {
+                None => {}
+                Some(out) => {
+                    let after: Value = serde_json::from_str(&out)
+                        .map_err(|e| TestCaseError::fail(format!("{e}: {out}")))?;
+                    same_but_for_media(&doc, &after)?;
+                    prop_assert_eq!(off(&out), None, "what is left holds no file: {}", out);
+                }
+            }
+        }
+
+        #[test]
+        fn any_text_is_searched_without_failing(text in "\\PC{0,400}", cut in 0usize..400) {
+            let _ = off(&text);
+            let json = json!({ "media_type": "image/png", "data": text, "nested": [text] }).to_string();
+            let end = json.char_indices().map(|(i, _)| i).nth(cut).unwrap_or(json.len());
+            let _ = off(&json[..end]);
+        }
+    }
 }

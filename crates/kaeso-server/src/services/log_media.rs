@@ -23,14 +23,24 @@ const UNKNOWN_TYPE: &str = "application/octet-stream";
 const HEAD_CHARS: usize = 87_384;
 
 const MEDIA_MIN_CHARS: usize = 16;
-// Base64 this long beside a media type is a file whatever its key is called; shorter text
-// there must sit under a key that names content or start like a known file.
-const TYPED_ANY_KEY_CHARS: usize = 64;
+// Under a key that names content, text this long beside a media type is a file; under any
+// other key it must be this long. Shorter text must start like a known file, so a status
+// word, an image tag or a digest beside a type stays.
+const NAMED_MIN_CHARS: usize = 128;
+const UNNAMED_MIN_CHARS: usize = 1024;
+// A string this long that is nearly all base64 alphabet is a file even when it isn't valid
+// base64: wrapped, cut off or with a stray character.
+const BLOB_MIN_CHARS: usize = 4096;
 const MEDIA_TYPE_MAX_CHARS: usize = 100;
 const DATA_URL_HEADER_MAX: usize = 4096;
 const KEY_MAX_CHARS: usize = 256;
 // JSON inside a JSON string, such as a tool call's arguments, is read this many levels deep.
 const NESTED_MAX: usize = 4;
+// The codecs refuse deeper nesting (`kaeso_codecs::limits`); the search keeps a frame per
+// level, so a body nested deeper is logged as one file instead of being searched.
+const DEPTH_MAX: usize = 128;
+// Inside text that is no longer read as JSON, a run of base64 alphabet this long is a file.
+const RUN_MIN_CHARS: usize = 256;
 
 /// What a request's log keeps of its media: nothing.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -59,8 +69,17 @@ fn placeholder(media_type: &str, bytes: u64, size: Option<(u32, u32)>, reason: &
     serde_json::json!({ "kaeso_media": media }).to_string()
 }
 
+// A media type as RFC 6838 writes it, without parameters: a placeholder repeats only that,
+// never text a request put where a type belongs.
 fn stated(media_type: Option<&str>) -> Option<&str> {
-    media_type.filter(|m| !m.is_empty() && m.len() <= MEDIA_TYPE_MAX_CHARS)
+    let name = media_type?.split(';').next()?.trim();
+    let (kind, subtype) = name.split_once('/')?;
+    let part = |p: &str| {
+        (1..=MEDIA_TYPE_MAX_CHARS / 2).contains(&p.len())
+            && p.bytes()
+                .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'.' | b'+' | b'-' | b'_'))
+    };
+    (part(kind) && part(subtype)).then_some(name)
 }
 
 fn of_bytes(media_type: Option<&str>, data: &[u8], reason: &str) -> String {
@@ -82,9 +101,54 @@ fn base64_byte(b: u8) -> bool {
     b.is_ascii_alphanumeric() || matches!(b, b'+' | b'/' | b'-' | b'_')
 }
 
-fn is_base64(text: &str) -> bool {
-    let body = text.trim_end_matches('=');
-    body.len() % 4 != 1 && text.len() - body.len() <= 2 && body.bytes().all(base64_byte)
+fn wraps(b: u8) -> bool {
+    matches!(b, b' ' | b'\n' | b'\r' | b'\t')
+}
+
+// Base64 as apps really send it: also wrapped into lines, as `base64(1)`, Ruby's `encode64`
+// and Python's `encodebytes` write it, or with a stray space. Returns it without the
+// whitespace. Prose made of letters and spaces is not base64: it has far more spaces.
+fn base64_of(text: &str) -> Option<Cow<'_, str>> {
+    let mut spaces = 0usize;
+    for b in text.bytes() {
+        if wraps(b) {
+            spaces += 1;
+        } else if !base64_byte(b) && b != b'=' {
+            return None;
+        }
+    }
+    if spaces.saturating_mul(20) > text.len() {
+        return None;
+    }
+    let compact = if spaces == 0 {
+        Cow::Borrowed(text)
+    } else {
+        Cow::Owned(text.chars().filter(|c| !c.is_ascii_whitespace()).collect())
+    };
+    let body = compact.trim_end_matches('=');
+    let whole = !body.contains('=')
+        && compact.len() - body.len() <= 2
+        && (body.len() % 4 != 1 || body.len() >= NAMED_MIN_CHARS);
+    (whole && compact.len() >= MEDIA_MIN_CHARS).then_some(compact)
+}
+
+fn blob_like(text: &str) -> bool {
+    if text.len() < BLOB_MIN_CHARS {
+        return false;
+    }
+    let (mut spaces, mut other) = (0usize, 0usize);
+    for b in text.bytes() {
+        if wraps(b) {
+            spaces += 1;
+        } else if !base64_byte(b) && b != b'=' {
+            other += 1;
+        }
+    }
+    spaces.saturating_mul(20) <= text.len() && other.saturating_mul(33) <= text.len()
+}
+
+fn all_hex(text: &str) -> bool {
+    text.bytes().all(|b| b.is_ascii_hexdigit())
 }
 
 fn decoded_len(text: &str) -> u64 {
@@ -92,7 +156,10 @@ fn decoded_len(text: &str) -> u64 {
 }
 
 fn head(text: &str) -> Vec<u8> {
-    let cut = text.get(..HEAD_CHARS).unwrap_or(text);
+    let whole = text.trim_end_matches('=');
+    let cut = whole
+        .get(..whole.len().min(HEAD_CHARS) & !3)
+        .unwrap_or(whole);
     let engine = if cut.contains(['-', '_']) {
         URL_SAFE
     } else {
@@ -229,8 +296,8 @@ fn dimensions(data: &[u8]) -> Option<(u32, u32)> {
     }
 }
 
-fn audio_format(format: &str) -> Option<&'static str> {
-    Some(match format {
+fn audio_format(format: &str) -> Cow<'static, str> {
+    Cow::Borrowed(match format {
         "wav" => "audio/wav",
         "mp3" => "audio/mpeg",
         "flac" => "audio/flac",
@@ -239,19 +306,23 @@ fn audio_format(format: &str) -> Option<&'static str> {
         "m4a" => "audio/mp4",
         "webm" => "audio/webm",
         "pcm16" | "pcm" => "audio/pcm",
-        _ => return None,
+        other if other.len() <= 16 && other.bytes().all(|b| b.is_ascii_alphanumeric()) => {
+            return Cow::Owned(format!("audio/{other}"));
+        }
+        _ => "audio/basic",
     })
 }
 
 struct DataUrl<'a> {
     media_type: &'a str,
-    payload: &'a str,
+    payload: Cow<'a, str>,
     base64: bool,
 }
 
 // The codecs' reading of a `data:` URL (`kaeso_codecs::wire::parse_data_url`): the scheme and
-// `base64` in any case, any parameters before it. Here leading space and a URL that is
-// percent-encoded instead of base64 count too, since both still carry a file.
+// `base64` in any case, any parameters before it. Here leading space, wrapped or cut-off
+// base64 and a URL that is percent-encoded instead of base64 count too, since each still
+// carries a file.
 fn data_url(text: &str) -> Option<DataUrl<'_>> {
     let text = text.trim_start();
     if !text.get(..5)?.eq_ignore_ascii_case("data:") {
@@ -267,16 +338,28 @@ fn data_url(text: &str) -> Option<DataUrl<'_>> {
         .rsplit(';')
         .next()
         .is_some_and(|last| last.eq_ignore_ascii_case("base64"));
-    let holds_file = if base64 {
-        payload.len() >= 4 && is_base64(payload)
+    let payload = if base64 {
+        match base64_of(payload) {
+            Some(compact) => compact,
+            None if payload.len() >= 4 && is_short_base64(payload) => Cow::Borrowed(payload),
+            None if blob_like(payload) => Cow::Borrowed(payload),
+            None => return None,
+        }
+    } else if !media_type.is_empty() && payload.len() >= MEDIA_MIN_CHARS {
+        Cow::Borrowed(payload)
     } else {
-        !media_type.is_empty() && payload.len() >= MEDIA_MIN_CHARS
+        return None;
     };
-    holds_file.then_some(DataUrl {
+    Some(DataUrl {
         media_type,
         payload,
         base64,
     })
+}
+
+fn is_short_base64(text: &str) -> bool {
+    let body = text.trim_end_matches('=');
+    body.len() % 4 != 1 && text.len() - body.len() <= 2 && body.bytes().all(base64_byte)
 }
 
 struct Span {
@@ -284,14 +367,48 @@ struct Span {
     end: usize,
     media_type: (usize, usize),
     payload: usize,
+    base64: bool,
 }
 
-// `data:…;base64,…` inside longer text, such as Markdown or a tool's answer: from the scheme
-// to the end of the base64 that follows it.
+// Where base64 that starts at `from` ends: at the first byte outside its alphabet, or, for
+// base64 wrapped into lines or broken by a stray space, after its last piece. A short piece
+// counts only as the last line of wrapped base64, so the words after a file stay.
+fn base64_run(bytes: &[u8], from: usize) -> usize {
+    let piece = |at: usize| {
+        bytes
+            .iter()
+            .skip(at)
+            .take_while(|b| base64_byte(**b) || **b == b'=')
+            .count()
+    };
+    let mut last = piece(from);
+    let mut end = from + last;
+    loop {
+        let between = bytes
+            .get(end..(end + 2).min(bytes.len()))
+            .unwrap_or_default();
+        let gap = between.iter().take_while(|b| wraps(**b)).count();
+        let wrapped = between.iter().take(gap).all(|b| matches!(b, b'\n' | b'\r'));
+        let next = piece(end + gap);
+        let closes = bytes
+            .get(end + gap + next)
+            .is_none_or(|b| !b.is_ascii_whitespace() || matches!(b, b'\n' | b'\r'));
+        if gap == 0 || next == 0 || !(next >= 60 || (wrapped && last >= 60 && closes)) {
+            return end;
+        }
+        end += gap + next;
+        last = next;
+    }
+}
+
+// `data:` URLs inside longer text, such as Markdown or a tool's answer: from the scheme to the
+// end of the file that follows it.
 fn data_url_spans(text: &str) -> Vec<Span> {
     let bytes = text.as_bytes();
     let mut spans = Vec::new();
     let mut from = 0;
+    // Bytes before this hold no comma that ends a header, so a flood of schemes is read once.
+    let mut searched = 0;
     for (colon, _) in text.match_indices(':') {
         let Some(start) = colon.checked_sub(4).filter(|s| *s >= from) else {
             continue;
@@ -302,46 +419,69 @@ fn data_url_spans(text: &str) -> Vec<Span> {
         {
             continue;
         }
-        let header_end = bytes
-            .iter()
-            .enumerate()
-            .skip(colon + 1)
-            .take(DATA_URL_HEADER_MAX)
-            .find(|(_, b)| {
-                matches!(b, b',' | b'"' | b'\'' | b'<' | b'>') || b.is_ascii_whitespace()
-            })
-            .filter(|(_, b)| **b == b',')
-            .map(|(i, _)| i);
-        let Some(comma) = header_end else { continue };
+        let limit = (colon + 1 + DATA_URL_HEADER_MAX).min(bytes.len());
+        let mut at = searched.max(colon + 1);
+        let mut comma = None;
+        let mut quoted = false;
+        while at < limit {
+            match bytes.get(at) {
+                Some(b'"') => {
+                    quoted = !quoted;
+                    at += 1;
+                }
+                Some(b',') if !quoted => {
+                    comma = Some(at);
+                    break;
+                }
+                Some(b) if !quoted && (b.is_ascii_whitespace() || matches!(b, b'<' | b'>')) => {
+                    break;
+                }
+                _ => at += 1,
+            }
+        }
+        searched = at;
+        let Some(comma) = comma else { continue };
         let Some(params) = text.get(colon + 1..comma) else {
             continue;
         };
-        if !params
+        let media_type = params.split(';').next().unwrap_or_default();
+        let base64 = params
             .rsplit(';')
             .next()
-            .is_some_and(|last| last.eq_ignore_ascii_case("base64"))
-        {
-            continue;
-        }
+            .is_some_and(|last| last.eq_ignore_ascii_case("base64"));
         let payload = comma + 1;
-        let run = bytes
-            .iter()
-            .skip(payload)
-            .take_while(|b| base64_byte(**b) || **b == b'=')
-            .count();
-        if run < MEDIA_MIN_CHARS {
+        let end = if base64 {
+            base64_run(bytes, payload)
+        } else if media_type.contains('/') {
+            payload
+                + bytes
+                    .iter()
+                    .skip(payload)
+                    .take_while(|b| {
+                        !b.is_ascii_whitespace() && !matches!(b, b'"' | b'\'' | b')' | b'<' | b'>')
+                    })
+                    .count()
+        } else {
+            payload
+        };
+        if end - payload < MEDIA_MIN_CHARS {
             continue;
         }
-        let media_type = params.split(';').next().unwrap_or_default().len();
         spans.push(Span {
             start,
-            end: payload + run,
-            media_type: (colon + 1, colon + 1 + media_type),
+            end,
+            media_type: (colon + 1, colon + 1 + media_type.len()),
             payload,
+            base64,
         });
-        from = payload + run;
+        from = end;
+        searched = end;
     }
     spans
+}
+
+fn note(media_type: &str, bytes: u64, reason: &str) -> String {
+    format!("[kaeso_media: {media_type}, {bytes} bytes, {reason}]")
 }
 
 fn swap_spans(text: &str, keep: &mut Keep) -> Option<String> {
@@ -354,7 +494,11 @@ fn swap_spans(text: &str, keep: &mut Keep) -> Option<String> {
         ) else {
             continue;
         };
-        let bytes = decoded_len(payload);
+        let bytes = if span.base64 {
+            decoded_len(payload)
+        } else {
+            payload.len() as u64
+        };
         let Some(reason) = keep.left_out(bytes) else {
             continue;
         };
@@ -362,9 +506,7 @@ fn swap_spans(text: &str, keep: &mut Keep) -> Option<String> {
             .or(sniff(&head(payload)).map(|s| s.0))
             .unwrap_or(UNKNOWN_TYPE);
         out.push_str(text.get(copied..span.start).unwrap_or_default());
-        out.push_str(&format!(
-            "[kaeso_media: {media_type}, {bytes} bytes, {reason}]"
-        ));
+        out.push_str(&note(media_type, bytes, reason));
         copied = span.end;
     }
     (copied > 0).then(|| {
@@ -373,8 +515,39 @@ fn swap_spans(text: &str, keep: &mut Keep) -> Option<String> {
     })
 }
 
+// Text that is no longer read as JSON, because it sits too many strings deep: every long run
+// of base64 alphabet in it is taken for a file.
+fn swap_runs(text: &str, keep: &mut Keep) -> Option<String> {
+    let bytes = text.as_bytes();
+    let mut out = String::new();
+    let mut copied = 0;
+    let mut i = 0;
+    while i < bytes.len() {
+        let run = bytes
+            .iter()
+            .skip(i)
+            .take_while(|b| base64_byte(**b) || **b == b'=')
+            .count();
+        if run >= RUN_MIN_CHARS
+            && let Some(payload) = text.get(i..i + run)
+            && let Some(reason) = keep.left_out(decoded_len(payload))
+        {
+            let media_type = sniff(&head(payload)).map_or(UNKNOWN_TYPE, |s| s.0);
+            out.push_str(text.get(copied..i).unwrap_or_default());
+            out.push_str(&note(media_type, decoded_len(payload), reason));
+            copied = i + run;
+        }
+        i += run.max(1);
+    }
+    (copied > 0).then(|| {
+        out.push_str(text.get(copied..).unwrap_or_default());
+        out
+    })
+}
+
 fn hex4(digits: Option<&str>) -> Option<u32> {
-    u32::from_str_radix(digits.filter(|d| d.len() == 4)?, 16).ok()
+    let digits = digits.filter(|d| d.len() == 4 && all_hex(d))?;
+    u32::from_str_radix(digits, 16).ok()
 }
 
 // A JSON string's text, read as far as it can be: an escape JSON doesn't know stays as written
@@ -435,15 +608,35 @@ const TYPE_KEYS: [&str; 6] = [
 // Keys that hold a file's bytes in the formats Kaeso reads and in MCP: base64 under one of
 // them is a file even without a type beside it.
 const FILE_KEYS: [&str; 4] = ["b64_json", "file_data", "blob", "bytes"];
-const CONTENT_KEYS: [&str; 5] = ["data", "result", "image", "audio", "video"];
-// Base64 that is never a file, however long: what providers sign or encrypt.
-const OPAQUE_KEYS: [&str; 5] = [
+const CONTENT_KEYS: [&str; 6] = ["data", "result", "image", "audio", "video", "input_audio"];
+// Objects that hold one file: long base64 in or under one of these keys is that file even
+// when nothing states its type.
+const MEDIA_KEYS: [&str; 7] = [
+    "audio",
+    "input_audio",
+    "image",
+    "video",
+    "inline_data",
+    "inlineData",
+    "source",
+];
+// Text that is never a file, however long: what providers sign or encrypt, and what names or
+// locates something.
+const TEXT_KEYS: [&str; 12] = [
     "signature",
     "encrypted_content",
     "thoughtSignature",
     "thought_signature",
     "id",
+    "text",
+    "path",
+    "name",
+    "uri",
+    "url",
+    "title",
+    "filename",
 ];
+const OPAQUE_KINDS: [&str; 4] = ["thinking", "reasoning", "signature", "encrypted"];
 
 #[derive(Clone, Copy)]
 struct Token {
@@ -465,8 +658,10 @@ struct Frame<'a> {
     under: Option<Cow<'a, str>>,
     key: Option<Cow<'a, str>>,
     declared: Option<Cow<'a, str>>,
+    kind: Option<Cow<'a, str>>,
     format: Option<Cow<'a, str>>,
     holds_text: bool,
+    opaque: bool,
     candidates: Vec<Candidate<'a>>,
 }
 
@@ -478,7 +673,9 @@ impl<'a> Frame<'a> {
             under,
             key: None,
             declared: None,
+            kind: None,
             format: None,
+            opaque: false,
             candidates: Vec::new(),
         }
     }
@@ -504,114 +701,139 @@ struct Finding {
 }
 
 // Media beside the type it is in is decided once the whole object has been read, since the
-// type may follow the bytes. A text source holds text, not base64.
-fn close<'a>(frame: Frame<'a>, parent: Option<&mut Frame<'a>>, found: &mut Vec<Finding>) {
-    if !frame.object
-        && let Some(parent) = parent
-    {
-        parent.candidates.extend(frame.candidates);
-        return;
-    }
-    if frame.holds_text {
-        return;
-    }
+// type may follow the bytes. A text source holds text and a reasoning block what its provider
+// signed, so in those only what starts like a file is one.
+fn close(frame: Frame<'_>, found: &mut Vec<Finding>) {
+    let declared = frame.declared.as_deref().or(frame.kind.as_deref());
+    let in_media = frame
+        .under
+        .as_deref()
+        .is_some_and(|under| MEDIA_KEYS.contains(&under));
     for c in frame.candidates {
         let key = c.key.as_deref().unwrap_or_default();
-        let named = CONTENT_KEYS.contains(&key);
-        let declared = frame.declared.as_deref();
-        let typed =
-            declared.is_some() && (c.len >= TYPED_ANY_KEY_CHARS || named || c.starts_like_a_file);
-        let media_type = if c.certain || typed {
-            Some(declared)
-        } else if key == "data" {
-            frame.format.as_deref().and_then(audio_format).map(Some)
-        } else {
+        let media_type = if c.certain {
+            Some(declared.map(str::to_owned))
+        } else if frame.holds_text || frame.opaque {
             None
+        } else {
+            let named = CONTENT_KEYS.contains(&key);
+            let enough = if named {
+                NAMED_MIN_CHARS
+            } else {
+                UNNAMED_MIN_CHARS
+            };
+            if declared.is_some() && (c.len >= enough || c.starts_like_a_file) {
+                Some(declared.map(str::to_owned))
+            } else if key == "data"
+                && c.len >= NAMED_MIN_CHARS
+                && let Some(format) = &frame.format
+            {
+                Some(Some(audio_format(format).into_owned()))
+            } else if c.len >= UNNAMED_MIN_CHARS
+                && (MEDIA_KEYS.contains(&key) || (key == "data" && in_media))
+            {
+                Some(None)
+            } else {
+                None
+            }
         };
         if let Some(media_type) = media_type {
             found.push(Finding {
                 token: c.token,
-                kind: Kind::Base64(media_type.map(str::to_owned)),
+                kind: Kind::Base64(media_type),
             });
         }
     }
 }
 
-fn contains_base64_mark(raw: &str) -> bool {
-    raw.match_indices(';').any(|(at, _)| {
-        raw.get(at + 1..at + 8)
-            .is_some_and(|next| next.eq_ignore_ascii_case("base64,"))
-    })
+fn contains_mark(text: &str, mark: &str) -> bool {
+    let Some(last) = mark.as_bytes().last().copied() else {
+        return false;
+    };
+    text.as_bytes()
+        .iter()
+        .enumerate()
+        .filter(|(_, b)| **b == last)
+        .any(|(at, _)| {
+            (at + 1)
+                .checked_sub(mark.len())
+                .and_then(|from| text.get(from..=at))
+                .is_some_and(|found| found.eq_ignore_ascii_case(mark))
+        })
+}
+
+fn note_type<'a>(frame: &mut Frame<'a>, key: &str, text: Cow<'a, str>) {
+    if TYPE_KEYS.contains(&key) {
+        frame.declared = Some(text);
+    } else if key == "format" {
+        frame.format = Some(text);
+    } else if key == "type" || key == "kind" {
+        if OPAQUE_KINDS.iter().any(|kind| text.contains(kind)) {
+            frame.opaque = true;
+        }
+        if key == "type" && text == "text" {
+            frame.holds_text = true;
+        } else if key == "type" && text.contains('/') && !text.contains(' ') {
+            frame.kind = Some(text);
+        }
+    }
 }
 
 fn value<'a>(raw: &'a str, token: Token, stack: &mut [Frame<'a>], found: &mut Vec<Finding>) {
     let key = stack.last().and_then(Frame::current_key);
-    if raw.len() <= MEDIA_TYPE_MAX_CHARS
-        && let (Some(frame), Some(key)) = (stack.last_mut().filter(|f| f.object), key.as_deref())
-    {
-        let text = || unescaped(raw);
-        if TYPE_KEYS.contains(&key) {
-            frame.declared = Some(text());
-        } else if key == "format" {
-            frame.format = Some(text());
-        } else if key == "type" && raw == "text" {
-            frame.holds_text = true;
-        }
+    let key_name = key.as_deref().unwrap_or_default();
+    let named_type =
+        TYPE_KEYS.contains(&key_name) || matches!(key_name, "format" | "type" | "kind");
+    if named_type && let Some(frame) = stack.last_mut().filter(|f| f.object) {
+        // A type too long to be one still says that the object holds a file.
+        let text = if raw.len() <= DATA_URL_HEADER_MAX {
+            unescaped(raw)
+        } else {
+            Cow::Borrowed("")
+        };
+        note_type(frame, key_name, text);
     }
     if raw.len() < MEDIA_MIN_CHARS {
         return;
     }
-    let start = raw.trim_start();
-    let could_be_base64 = raw
-        .bytes()
-        .all(|b| base64_byte(b) || matches!(b, b'=' | b'\\'));
-    let opens_with_scheme = raw
-        .as_bytes()
-        .iter()
-        .take(64)
-        .position(|b| *b == b':')
-        .and_then(|colon| raw.get(colon.checked_sub(4)?..colon))
-        .is_some_and(|s| s.eq_ignore_ascii_case("data"));
-    if opens_with_scheme && data_url(&unescaped(raw)).is_some() {
-        found.push(Finding {
-            token,
-            kind: Kind::DataUrl,
-        });
-    } else if could_be_base64 {
-        let text = unescaped(raw);
-        if !is_base64(&text) {
-            return;
-        }
-        let key_name = key.as_deref().unwrap_or_default();
-        let sniffed = sniff(&head(text.get(..64).unwrap_or(&text)));
-        let certain = sniffed.is_some_and(|s| s.1) || FILE_KEYS.contains(&key_name);
-        match stack.last_mut() {
-            Some(frame) if certain || !OPAQUE_KEYS.contains(&key_name) => {
+    let text = unescaped(raw);
+    let finding = |kind| Finding { token, kind };
+    if data_url(&text).is_some() {
+        found.push(finding(Kind::DataUrl));
+    } else if let Some(base64) = base64_of(&text) {
+        let sniffed = sniff(&head(base64.get(..64).unwrap_or(&base64)));
+        let plain = all_hex(&base64) || (base64.starts_with('/') && sniffed.is_none());
+        let certain = sniffed.is_some_and(|s| s.1)
+            || (FILE_KEYS.contains(&key_name) && base64.len() >= 32 && !plain);
+        let object = stack.iter_mut().rev().find(|f| f.object);
+        match object {
+            Some(frame) if certain || !(plain || named_type || TEXT_KEYS.contains(&key_name)) => {
                 frame.candidates.push(Candidate {
                     token,
-                    key,
-                    len: text.len(),
+                    len: base64.len(),
                     starts_like_a_file: sniffed.is_some(),
                     certain,
+                    key,
                 });
             }
-            None if certain => found.push(Finding {
-                token,
-                kind: Kind::Base64(None),
-            }),
+            None if certain => found.push(finding(Kind::Base64(None))),
             _ => {}
         }
-    } else if start.starts_with(['{', '[']) || contains_base64_mark(raw) {
-        found.push(Finding {
-            token,
-            kind: Kind::Inner,
-        });
+    } else if text.trim_start().starts_with(['{', '['])
+        || contains_mark(&text, "base64,")
+        || contains_mark(&text, "data:")
+    {
+        found.push(finding(Kind::Inner));
+    } else if blob_like(&text) {
+        found.push(finding(Kind::Base64(None)));
     }
 }
 
-// Reads JSON's strings without parsing it, so a body a parser refuses (cut off, nested too
-// deep, with a lone surrogate) is searched like any other.
-fn find(text: &str) -> Vec<Finding> {
+struct TooDeep;
+
+// Reads JSON's strings without parsing it, so a body a parser refuses (cut off, with a lone
+// surrogate or a trailing comma) is searched like any other.
+fn find(text: &str) -> Result<Vec<Finding>, TooDeep> {
     let bytes = text.as_bytes();
     let mut stack: Vec<Frame<'_>> = Vec::new();
     let mut found = Vec::new();
@@ -619,13 +841,16 @@ fn find(text: &str) -> Vec<Finding> {
     while let Some(&b) = bytes.get(i) {
         match b {
             b'{' | b'[' => {
+                if stack.len() >= DEPTH_MAX {
+                    return Err(TooDeep);
+                }
                 let under = stack.last().and_then(Frame::current_key);
                 stack.push(Frame::new(b == b'{', under));
                 i += 1;
             }
             b'}' | b']' => {
                 if let Some(frame) = stack.pop() {
-                    close(frame, stack.last_mut(), &mut found);
+                    close(frame, &mut found);
                 }
                 i += 1;
             }
@@ -662,23 +887,34 @@ fn find(text: &str) -> Vec<Finding> {
         }
     }
     while let Some(frame) = stack.pop() {
-        close(frame, stack.last_mut(), &mut found);
+        close(frame, &mut found);
     }
     found.sort_by_key(|f| f.token.start);
-    found
+    Ok(found)
 }
 
 fn nested(text: &str, keep: &mut Keep, depth: usize) -> Option<String> {
-    let json = text.trim_start().starts_with(['{', '[']) && depth < NESTED_MAX;
-    json.then(|| strip(text, keep, depth + 1))
-        .flatten()
-        .or_else(|| swap_spans(text, keep))
+    let json = text.trim_start().starts_with(['{', '[']);
+    if json && depth < NESTED_MAX {
+        return strip(text, keep, depth + 1).or_else(|| swap_spans(text, keep));
+    }
+    let spans = swap_spans(text, keep);
+    if !json {
+        return spans;
+    }
+    swap_runs(spans.as_deref().unwrap_or(text), keep).or(spans)
 }
 
 fn strip(text: &str, keep: &mut Keep, depth: usize) -> Option<String> {
+    let Ok(found) = find(text) else {
+        let bytes = text.len() as u64;
+        return keep
+            .left_out(bytes)
+            .map(|reason| placeholder("application/json", bytes, None, reason));
+    };
     let mut out = String::new();
     let mut copied = 0;
-    for Finding { token, kind } in find(text) {
+    for Finding { token, kind } in found {
         let Some(raw) = text.get(token.start + 1..token.inner_end) else {
             continue;
         };
@@ -686,8 +922,8 @@ fn strip(text: &str, keep: &mut Keep, depth: usize) -> Option<String> {
         let swapped = match kind {
             Kind::DataUrl => data_url(&content).and_then(|url| {
                 if url.base64 {
-                    let reason = keep.left_out(decoded_len(url.payload))?;
-                    Some(of_base64(Some(url.media_type), url.payload, reason))
+                    let reason = keep.left_out(decoded_len(&url.payload))?;
+                    Some(of_base64(Some(url.media_type), &url.payload, reason))
                 } else {
                     let bytes = url.payload.len() as u64;
                     let reason = keep.left_out(bytes)?;
@@ -695,12 +931,18 @@ fn strip(text: &str, keep: &mut Keep, depth: usize) -> Option<String> {
                     Some(placeholder(media_type, bytes, None, reason))
                 }
             }),
-            Kind::Base64(media_type) => keep
-                .left_out(decoded_len(&content))
-                .map(|reason| of_base64(media_type.as_deref(), &content, reason)),
-            Kind::Inner => {
-                nested(&content, keep, depth).and_then(|inner| serde_json::to_string(&inner).ok())
+            Kind::Base64(media_type) => {
+                let base64 = base64_of(&content).unwrap_or(Cow::Borrowed(&content));
+                keep.left_out(decoded_len(&base64))
+                    .map(|reason| of_base64(media_type.as_deref(), &base64, reason))
             }
+            Kind::Inner => match nested(&content, keep, depth) {
+                Some(inner) => serde_json::to_string(&inner).ok(),
+                None if blob_like(&content) => keep
+                    .left_out(decoded_len(&content))
+                    .map(|reason| of_base64(None, &content, reason)),
+                None => None,
+            },
         };
         if let Some(new) = swapped {
             out.push_str(text.get(copied..token.start).unwrap_or_default());
@@ -760,9 +1002,21 @@ pub fn body(bytes: &[u8], keep: &mut Keep) -> String {
 
 /// The media of a decoded request or reply, taken out before it is written as JSON so the
 /// bytes are never encoded only to be dropped.
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct LeftOut {
+    // Each file taken out leaves a mark where it stood. The marks carry a random part, so
+    // nothing an app sends can be one.
+    nonce: uuid::Uuid,
     marks: HashMap<String, String>,
+}
+
+impl Default for LeftOut {
+    fn default() -> Self {
+        LeftOut {
+            nonce: uuid::Uuid::now_v7(),
+            marks: HashMap::new(),
+        }
+    }
 }
 
 impl LeftOut {
@@ -771,13 +1025,25 @@ impl LeftOut {
         let Source::Base64(media) = source else {
             return;
         };
-        let Some(reason) = keep.left_out(media.data.len() as u64) else {
+        if let Some(reason) = keep.left_out(media.data.len() as u64) {
+            let bytes = media.data.len() as u64;
+            self.take(source, bytes, reason);
+        }
+    }
+
+    /// Takes `source` out as a file of `bytes` in all, of which `source` holds at least the
+    /// start: its type and, for an image, its dimensions are read from that.
+    pub fn take(&mut self, source: &mut Source, bytes: u64, reason: &str) {
+        let Source::Base64(media) = source else {
             return;
         };
-        let mark = Bytes::from(format!("kaeso media left out {}", self.marks.len()));
+        let media_type = stated(Some(&media.media_type))
+            .or(sniff(&media.data).map(|s| s.0))
+            .unwrap_or(UNKNOWN_TYPE);
+        let mark = Bytes::from(format!("kaeso media {} {}", self.nonce, self.marks.len()));
         self.marks.insert(
             STANDARD_PADDED.encode(&mark),
-            of_bytes(Some(&media.media_type), &media.data, reason),
+            placeholder(media_type, bytes, dimensions(&media.data), reason),
         );
         *source = Source::bytes(media.media_type.clone(), mark);
     }
@@ -787,21 +1053,29 @@ impl LeftOut {
         if self.marks.is_empty() {
             return Ok(text);
         }
+        let bytes = text.as_bytes();
         let mut out = String::with_capacity(text.len());
         let mut copied = 0;
-        for (at, _) in text.match_indices('"') {
-            if at < copied {
+        let mut i = 0;
+        while let Some(&b) = bytes.get(i) {
+            if b != b'"' {
+                i += 1;
                 continue;
             }
-            let Some(end) = text.get(at + 1..).and_then(|rest| rest.find('"')) else {
-                break;
-            };
-            let end = at + 1 + end;
-            if let Some(new) = text.get(at + 1..end).and_then(|s| self.marks.get(s)) {
-                out.push_str(text.get(copied..at).unwrap_or_default());
+            let mut end = i + 1;
+            while let Some(&b) = bytes.get(end) {
+                match b {
+                    b'\\' => end += 2,
+                    b'"' => break,
+                    _ => end += 1,
+                }
+            }
+            if let Some(new) = text.get(i + 1..end).and_then(|s| self.marks.get(s)) {
+                out.push_str(text.get(copied..i).unwrap_or_default());
                 out.push_str(new);
                 copied = end + 1;
             }
+            i = end + 1;
         }
         out.push_str(text.get(copied..).unwrap_or_default());
         Ok(out)
