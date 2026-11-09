@@ -1,7 +1,7 @@
 ---
 title: 错误
 description: 模型请求失败时在各 API 格式下返回的内容，以及每个状态码的含义。
-order: 2
+order: 6
 ---
 
 模型请求失败时，会返回一个 HTTP 状态码和采用应用所调用格式的错误，因此 SDK 会抛出它惯常的错误。每个响应都带有 `kaeso-request-id` 响应头，[请求日志](../console/request-logs.md)中有同一 ID 的条目。Platform API 的错误见[其页面](platform-api.md#错误)。
@@ -252,6 +252,85 @@ try {
 | 504 | `DEADLINE_EXCEEDED` |
 
 `Retry-After` 以整秒给出等待时间，向上取整。等待时间已知的 429 或 503 还会在 `details` 中以带 `retryDelay` 的 `RetryInfo` 给出它，例如 `"23s"`。
+
+## ElevenLabs 格式
+
+使用官方 ElevenLabs SDK 的同一个错误，该 SDK 在 `xi-api-key` 中发送密钥：
+
+```bash tab="curl"
+curl -i "https://kaeso.example.com/v1/text-to-speech/21m00Tcm4TlvDq8ikWAM" \
+  -H "xi-api-key: $KAESO_API_KEY" \
+  -H "content-type: application/json" \
+  -d '{"text": "Write a haiku about gateways.", "model_id": "gpt-9"}'
+```
+
+```python tab="Python"
+import os
+from elevenlabs import ElevenLabs
+from elevenlabs.core.api_error import ApiError
+
+client = ElevenLabs(
+    base_url="https://kaeso.example.com",
+    api_key=os.environ["KAESO_API_KEY"],
+)
+
+try:
+    audio = client.text_to_speech.convert(
+        voice_id="21m00Tcm4TlvDq8ikWAM",
+        text="Write a haiku about gateways.",
+        model_id="gpt-9",
+    )
+    b"".join(audio)
+except ApiError as error:
+    print(error.status_code, error.body)
+```
+
+```ts tab="TypeScript"
+import { ElevenLabsClient, ElevenLabsError } from "@elevenlabs/elevenlabs-js";
+
+const client = new ElevenLabsClient({
+  baseUrl: "https://kaeso.example.com",
+  apiKey: process.env.KAESO_API_KEY,
+});
+
+try {
+  await client.textToSpeech.convert("21m00Tcm4TlvDq8ikWAM", {
+    text: "Write a haiku about gateways.",
+    modelId: "gpt-9",
+  });
+} catch (error) {
+  if (!(error instanceof ElevenLabsError)) throw error;
+  console.log(error.statusCode, error.body);
+}
+```
+
+错误正文采用 ElevenLabs 文档中的形式，`code` 和 `status` 的值相同。请从 `kaeso-request-id` 响应头读取请求 ID：
+
+```json
+{
+  "detail": {
+    "type": "not_found",
+    "code": "not_found",
+    "message": "The model `gpt-9` does not exist or this key may not use it.",
+    "status": "not_found",
+    "param": "model"
+  }
+}
+```
+
+| 状态码 | `detail.type` | `detail.code` |
+| --- | --- | --- |
+| 400 | `invalid_request` | `invalid_parameters`；模型所属服务商不接受的字段为 `unsupported_parameter` |
+| 401 | `authentication_error` | `invalid_api_key` |
+| 402 | `payment_required` | `insufficient_credits` |
+| 403 | `authorization_error` | `permission_denied` |
+| 404 | `not_found` | `not_found` |
+| 413 | `invalid_request` | `request_too_large` |
+| 429 | `rate_limit_error` | `rate_limit_exceeded` |
+| 503 | `service_unavailable` | `system_busy` |
+| 500, 502, 504 | `internal_error` | `internal_error` |
+
+ElevenLabs 自己发送的错误按原样连同其状态码传给应用。`Retry-After` 以整秒给出等待时间，向上取整。Kaeso 不提供的路径（例如 `/v1/dubbing`）以这种形式返回 404（[ElevenLabs API](elevenlabs.md#kaeso-拒绝的内容)）。
 
 ## 原因
 

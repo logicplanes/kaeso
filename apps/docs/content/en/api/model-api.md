@@ -181,15 +181,15 @@ Any format reaches any generation model in the project's catalogue, so a Gemini 
 
 In a `/v1beta` path, `{model}` is any [model name](#model-names), such as `claude-haiku-4-5`.
 
-`/v1/embeddings`, `:embedContent` and `:batchEmbedContents` serve only embeddings models, which only some [providers](../concepts/supported-providers.md) offer, and embeddings models serve no other endpoint. Kaeso answers 400 to a request that mixes them.
+`/v1/embeddings`, `:embedContent` and `:batchEmbedContents` serve only embeddings models, which only some [providers](../concepts/provider-apis.md) offer, and embeddings models serve no other endpoint. Kaeso answers 400 to a request that mixes them.
 
-Any other path under `/v1` gets 404, and a known path called with the wrong method gets 405. Both errors are in the Anthropic format when the request has an `anthropic-version` header, and in the OpenAI format otherwise.
+Any other path under `/v1` gets 404, and a known path called with the wrong method gets 405. Both errors are in the Anthropic format when the request has an `anthropic-version` header, in ElevenLabs' format when it has an `xi-api-key` header, and in the OpenAI format otherwise.
 
 Under `/v1beta`, every error is in the Gemini format. Other methods, such as `batchGenerateContent`, and other paths, such as files or cached contents, get 404. A known path called with the wrong method gets 405. A call takes only the query parameters `key` and `alt`, and any other gets 400. A Gemini call under `/v1`, which `google-genai` makes with `api_version="v1"`, gets 404 with a message that points to `/v1beta`.
 
 ### Listing models
 
-`GET /v1/models` chooses its format the same way, by the `anthropic-version` header. `GET /v1beta/models` always answers in the Gemini format and names each model `models/<name>`. The list holds the catalogue's models that the key may call, followed by the project's aliases that point at them. Each model is listed by its own id, or as `provider/model` when its own id doesn't lead to it, for example when another provider serves the same id ([model names](#model-names)). The list leaves out a model that the provider doesn't serve to the project's provider key ([availability](../console/models-and-aliases.md#availability)).
+`GET /v1/models` chooses its format the same way: Anthropic's with an `anthropic-version` header, ElevenLabs' with an `xi-api-key` header ([ElevenLabs API](elevenlabs.md#endpoints)). `GET /v1beta/models` always answers in the Gemini format and names each model `models/<name>`. The list holds the catalogue's models that the key may call, followed by the project's aliases that point at them. Each model is listed by its own id, or as `provider/model` when its own id doesn't lead to it, for example when another provider serves the same id ([model names](#model-names)). The list leaves out a model that the provider doesn't serve to the project's provider key ([availability](../console/models-and-aliases.md#availability)).
 
 | | OpenAI format | Anthropic format | Gemini format |
 | --- | --- | --- | --- |
@@ -206,9 +206,10 @@ Send an API key with inference access in one of these headers, on any endpoint:
 Authorization: Bearer sk-kso-…
 x-api-key: sk-kso-…
 x-goog-api-key: sk-kso-…
+xi-api-key: sk-kso-…
 ```
 
-When a request sends several, `x-api-key` wins, then `x-goog-api-key`, then `Authorization`. Under `/v1beta`, the key can also come in the query, as `?key=sk-kso-…`, as in Google's REST examples. Kaeso uses it only when no header carries a key, and the query key never reaches the logs or the provider. The key decides the project. It acts with the rights and model access of its member or service account, which needs the right `api.request`.
+When a request sends several, `x-api-key` wins, then `x-goog-api-key`, then `xi-api-key`, then `Authorization`. Under `/v1beta`, the key can also come in the query, as `?key=sk-kso-…`, as in Google's REST examples. Kaeso uses it only when no header carries a key, and the query key never reaches the logs or the provider. The key decides the project. It acts with the rights and model access of its member or service account, which needs the right `api.request`.
 
 Kaeso refuses keys with platform access only, and organization platform keys (`sk-kso-org-…`), with 403: they never call models. [API keys](../console/api-keys.md) explains how to create and limit keys.
 

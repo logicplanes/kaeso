@@ -181,15 +181,15 @@ Jedes Format erreicht jedes Generierungsmodell im Katalog des Projekts, eine Gem
 
 In einem `/v1beta`-Pfad ist `{model}` ein beliebiger [Modellname](#modellnamen), etwa `claude-haiku-4-5`.
 
-`/v1/embeddings`, `:embedContent` und `:batchEmbedContents` bedienen nur Embeddings-Modelle, die nur manche [Anbieter](../concepts/supported-providers.md) anbieten, und Embeddings-Modelle bedienen keinen anderen Endpunkt. Kaeso antwortet mit 400 auf eine Anfrage, die beides mischt.
+`/v1/embeddings`, `:embedContent` und `:batchEmbedContents` bedienen nur Embeddings-Modelle, die nur manche [Anbieter](../concepts/provider-apis.md) anbieten, und Embeddings-Modelle bedienen keinen anderen Endpunkt. Kaeso antwortet mit 400 auf eine Anfrage, die beides mischt.
 
-Jeder andere Pfad unter `/v1` erhält 404, ein bekannter Pfad mit der falschen Methode 405. Beide Fehler kommen im Anthropic-Format, wenn die Anfrage einen `anthropic-version`-Header hat, sonst im OpenAI-Format.
+Jeder andere Pfad unter `/v1` erhält 404, ein bekannter Pfad mit der falschen Methode 405. Beide Fehler kommen im Anthropic-Format, wenn die Anfrage einen `anthropic-version`-Header hat, im Format von ElevenLabs, wenn sie einen `xi-api-key`-Header hat, und sonst im OpenAI-Format.
 
 Unter `/v1beta` kommt jeder Fehler im Gemini-Format. Andere Methoden wie `batchGenerateContent` und andere Pfade wie Dateien oder Cached Contents erhalten 404. Ein bekannter Pfad mit der falschen Methode erhält 405. Ein Aufruf nimmt nur die Query-Parameter `key` und `alt` an, jeder andere erhält 400. Ein Gemini-Aufruf unter `/v1`, wie ihn `google-genai` mit `api_version="v1"` sendet, erhält 404 mit einer Meldung, die auf `/v1beta` verweist.
 
 ### Modelle auflisten
 
-`GET /v1/models` wählt sein Format ebenso über den Header `anthropic-version`. `GET /v1beta/models` antwortet immer im Gemini-Format und nennt jedes Modell `models/<name>`. Die Liste enthält die Katalogmodelle, die der Schlüssel aufrufen darf, danach die Aliasse des Projekts, die auf sie zeigen. Jedes Modell steht mit seiner eigenen ID in der Liste, oder als `provider/model`, wenn seine eigene ID nicht zu ihm führt, etwa weil ein anderer Anbieter dieselbe ID anbietet ([Modellnamen](#modellnamen)). Ein Modell, das der Anbieter dem Anbieter-Schlüssel des Projekts nicht bereitstellt, fehlt ([Verfügbarkeit](../console/models-and-aliases.md#verfügbarkeit)).
+`GET /v1/models` wählt sein Format ebenso: das von Anthropic mit einem Header `anthropic-version`, das von ElevenLabs mit einem Header `xi-api-key` ([ElevenLabs API](elevenlabs.md#endpunkte)). `GET /v1beta/models` antwortet immer im Gemini-Format und nennt jedes Modell `models/<name>`. Die Liste enthält die Katalogmodelle, die der Schlüssel aufrufen darf, danach die Aliasse des Projekts, die auf sie zeigen. Jedes Modell steht mit seiner eigenen ID in der Liste, oder als `provider/model`, wenn seine eigene ID nicht zu ihm führt, etwa weil ein anderer Anbieter dieselbe ID anbietet ([Modellnamen](#modellnamen)). Ein Modell, das der Anbieter dem Anbieter-Schlüssel des Projekts nicht bereitstellt, fehlt ([Verfügbarkeit](../console/models-and-aliases.md#verfügbarkeit)).
 
 | | OpenAI-Format | Anthropic-Format | Gemini-Format |
 | --- | --- | --- | --- |
@@ -206,9 +206,10 @@ Senden Sie einen API-Schlüssel mit Inferenzzugriff in einem dieser Header, an j
 Authorization: Bearer sk-kso-…
 x-api-key: sk-kso-…
 x-goog-api-key: sk-kso-…
+xi-api-key: sk-kso-…
 ```
 
-Sendet eine Anfrage mehrere, gilt `x-api-key`, dann `x-goog-api-key`, dann `Authorization`. Unter `/v1beta` kann der Schlüssel auch in der Query stehen, als `?key=sk-kso-…`, wie in Googles REST-Beispielen. Kaeso nutzt ihn nur, wenn kein Header einen Schlüssel trägt, und der Schlüssel aus der Query erreicht nie die Protokolle oder den Anbieter. Der Schlüssel bestimmt das Projekt. Er handelt mit den Rechten und dem Modellzugriff seines Mitglieds oder Dienstkontos, das dafür das Recht `api.request` braucht.
+Sendet eine Anfrage mehrere, gilt `x-api-key`, dann `x-goog-api-key`, dann `xi-api-key`, dann `Authorization`. Unter `/v1beta` kann der Schlüssel auch in der Query stehen, als `?key=sk-kso-…`, wie in Googles REST-Beispielen. Kaeso nutzt ihn nur, wenn kein Header einen Schlüssel trägt, und der Schlüssel aus der Query erreicht nie die Protokolle oder den Anbieter. Der Schlüssel bestimmt das Projekt. Er handelt mit den Rechten und dem Modellzugriff seines Mitglieds oder Dienstkontos, das dafür das Recht `api.request` braucht.
 
 Schlüssel nur mit Plattformzugriff und Plattform-Schlüssel der Organisation (`sk-kso-org-…`) lehnt Kaeso mit 403 ab: Sie rufen nie Modelle auf. [API-Schlüssel](../console/api-keys.md) erklärt, wie Sie Schlüssel erstellen und begrenzen.
 

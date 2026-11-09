@@ -101,7 +101,7 @@ for (const block of message.content) {
 }
 ```
 
-Every endpoint accepts the key in `Authorization: Bearer`, `x-api-key` or `x-goog-api-key`, so a tool that only sends `Authorization: Bearer` works here too.
+Every endpoint accepts the key in `Authorization: Bearer`, `x-api-key`, `x-goog-api-key` or `xi-api-key`, so a tool that only sends `Authorization: Bearer` works here too.
 
 ## Use the Google Gen AI SDK
 

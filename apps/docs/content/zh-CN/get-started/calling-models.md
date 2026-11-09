@@ -101,7 +101,7 @@ for (const block of message.content) {
 }
 ```
 
-每个端点都接受放在 `Authorization: Bearer`、`x-api-key` 或 `x-goog-api-key` 中的密钥，所以只发送 `Authorization: Bearer` 的工具也能使用。
+每个端点都接受放在 `Authorization: Bearer`、`x-api-key`、`x-goog-api-key` 或 `xi-api-key` 中的密钥，所以只发送 `Authorization: Bearer` 的工具也能使用。
 
 ## 使用 Google Gen AI SDK
 
