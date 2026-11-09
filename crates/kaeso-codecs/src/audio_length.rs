@@ -36,7 +36,8 @@ pub fn audio_duration(bytes: &[u8]) -> Option<Duration> {
         mp3(bytes)
     }?;
     // Under a millisecond is no audio a provider bills, and rounds to no length at all.
-    (seconds.is_finite() && seconds >= 0.001 && seconds <= MAX_SECONDS)
+    (0.001..=MAX_SECONDS)
+        .contains(&seconds)
         .then(|| Duration::from_secs_f64(seconds))
 }
 
