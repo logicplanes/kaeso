@@ -168,7 +168,7 @@ export const ResponseView = forwardRef<HTMLElement, ResponseViewProps>(function 
       )}
       {status === "done" && !hasText && <span className="px-12 text-small text-fg-tertiary">{t("responseView.noText", "The model returned no text")}</span>}
       {(tools || hasFooter) && (
-        <div className="flex min-h-32 min-w-0 flex-wrap items-center gap-x-4 gap-y-4">
+        <div data-reply-tools="" className={cn("flex min-h-32 min-w-0 flex-wrap items-center gap-x-4 gap-y-4", tools && "pl-4")}>
           {tools}
           {hasFooter && <div className={cn("min-w-0", tools ? "px-8" : "px-12")}>{footer}</div>}
         </div>
