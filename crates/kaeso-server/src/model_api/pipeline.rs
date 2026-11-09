@@ -214,7 +214,7 @@ fn mark_cancelled(o: &mut Outcome) {
         Some("The app closed the connection before the reply was complete.".to_owned());
 }
 
-pub(super) fn blank_outcome(request_id: RequestId) -> Outcome {
+pub(crate) fn blank_outcome(request_id: RequestId) -> Outcome {
     Outcome {
         request_id,
         caller: None,

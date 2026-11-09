@@ -24,11 +24,11 @@ Schlagen Sie nach, wie die Endpunkte von ElevenLabs zum Erzeugen, Transkribieren
 
 | ElevenLabs | KPP | Klasse |
 | --- | --- | --- |
-| Pfad `voice_id` | `voice: Voice::Id` | typisiert |
+| Pfad `voice_id` | `voice: Voice::Id`; eine ID, die nicht nur aus Buchstaben und Ziffern besteht, ist `InvalidRequest` mit `param: voice_id`, bevor ein Schlüssel gesucht wird | typisiert |
 | Query `output_format`, etwa `mp3_44100_128`, `pcm_24000`, `opus_48000_64`, `wav_16000`, `ulaw_8000` | `format`, `sample_rate`, `bitrate`; `pcm_24000` ist `Pcm16`; der Wert wie geschrieben | typisiert, Form |
 | andere Query-Parameter | das Feld `query` | Extras |
 | `text` (Sprache, Soundeffekte), `prompt` (Musik) | `input` | typisiert |
-| `inputs[]` `{text, voice_id}` | Zeilen in `dialogue` | typisiert |
+| `inputs[]` `{text, voice_id}` | Zeilen in `dialogue`; eine ungültige `voice_id` ist `InvalidRequest` mit `param: inputs[i].voice_id` | typisiert |
 | `model_id` | `model` | typisiert |
 | `language_code` | `language` | typisiert |
 | `seed` | `seed` | typisiert |

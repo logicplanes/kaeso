@@ -612,6 +612,57 @@ async fn a_voice_id_that_would_leave_its_path_never_reaches_elevenlabs() {
 }
 
 #[tokio::test]
+async fn a_request_refused_before_the_provider_costs_nothing() {
+    let env = common::v1::env(
+        Some(std::sync::Arc::new(common::v1::Capture::default())),
+        None,
+    )
+    .await;
+    let r = env
+        .app
+        .post(
+            &format!("/orgs/{}/projects/{}/models", env.owner.org_id, env.project),
+            json!({ "provider": "elevenlabs", "model_id": "eleven_flash_v2_5" }),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
+    let before = env.mock.received().len();
+    let r = elevenlabs(
+        &env,
+        &format!("/v1/text-to-speech/{VOICE}"),
+        Some(json!({"text": "Hi.", "model_id": "eleven_flash_v2_5"})),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    assert_eq!(env.mock.received().len(), before);
+    let o = outcome(&env).await;
+    assert_eq!(
+        o.media.as_ref().unwrap().characters,
+        3,
+        "what was asked is still logged"
+    );
+    let (_, cost) = kaeso_server::services::usage::costed(&o);
+    assert_eq!(cost, rust_decimal::Decimal::ZERO);
+    assert!(kaeso_server::services::usage::cost_known(&o));
+    assert_eq!(kaeso_server::services::usage::media_sums(&o).characters, 0);
+
+    let r = elevenlabs(
+        &env,
+        "/v1/text-to-speech/a_voice",
+        Some(json!({"text": "Hi.", "model_id": "eleven_flash_v2_5"})),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    assert_eq!(
+        r.json()["detail"]["param"],
+        "voice_id",
+        "the request's shape is checked before its credential: {}",
+        r.text()
+    );
+}
+
+#[tokio::test]
 async fn voice_listings_count_against_the_keys_request_rate() {
     let env = env().await;
     let org = &env.owner.org_id;

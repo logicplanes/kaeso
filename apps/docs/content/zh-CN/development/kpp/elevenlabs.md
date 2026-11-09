@@ -24,11 +24,11 @@ order: 9
 
 | ElevenLabs | KPP | 类别 |
 | --- | --- | --- |
-| 路径 `voice_id` | `voice: Voice::Id` | typed |
+| 路径 `voice_id` | `voice: Voice::Id`；不全是字母和数字的 ID 在查找凭据之前即为 `InvalidRequest`，`param` 为 `voice_id` | typed |
 | 查询 `output_format`，例如 `mp3_44100_128`、`pcm_24000`、`opus_48000_64`、`wav_16000`、`ulaw_8000` | `format`、`sample_rate`、`bitrate`；`pcm_24000` 为 `Pcm16`；保留原样的值 | typed、form |
 | 其他查询参数 | `query` 字段 | extras |
 | `text`（语音、音效）、`prompt`（音乐） | `input` | typed |
-| `inputs[]` `{text, voice_id}` | `dialogue` 的各句 | typed |
+| `inputs[]` `{text, voice_id}` | `dialogue` 的各句；格式不对的 `voice_id` 为 `InvalidRequest`，`param` 为 `inputs[i].voice_id` | typed |
 | `model_id` | `model` | typed |
 | `language_code` | `language` | typed |
 | `seed` | `seed` | typed |

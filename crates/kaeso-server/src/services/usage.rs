@@ -356,9 +356,19 @@ async fn flush_rows(state: &AppState, taken: Taken) -> Result<usize, StoreError>
     Ok(written)
 }
 
+/// Whether the provider served the request, so it may cost something. A request Kaeso refused
+/// before sending it, or one the provider refused or failed, costs nothing: none of the
+/// providers bills a failed request. An app that disconnects is billed for what the provider
+/// was sent, and a realtime session (status 101) for what it spoke or heard before it ended.
+pub fn served(outcome: &Outcome) -> bool {
+    !outcome.is_error()
+        || (outcome.status == 499 && (outcome.ttfb.is_some() || outcome.usage_estimated))
+}
+
 /// Whether the request's cost is known; a video job's start is priced when the job ends.
 pub fn cost_known(outcome: &Outcome) -> bool {
-    if outcome.response_cache == Some(crate::services::response_cache::Verdict::Hit)
+    if !served(outcome)
+        || outcome.response_cache == Some(crate::services::response_cache::Verdict::Hit)
         || matches!(
             outcome.video,
             Some(
@@ -379,12 +389,15 @@ pub fn media_sums(outcome: &Outcome) -> MediaSums {
         unpriced: i64::from(!cost_known(outcome)),
         ..MediaSums::default()
     };
-    if matches!(
-        outcome.video,
-        Some(
-            crate::model_api::hooks::VideoCall::Create | crate::model_api::hooks::VideoCall::Remix
+    if !served(outcome)
+        || matches!(
+            outcome.video,
+            Some(
+                crate::model_api::hooks::VideoCall::Create
+                    | crate::model_api::hooks::VideoCall::Remix
+            )
         )
-    ) {
+    {
         return sums;
     }
     if let Some(m) = &outcome.media {
@@ -404,7 +417,8 @@ pub fn media_sums(outcome: &Outcome) -> MediaSums {
 pub fn costed(outcome: &Outcome) -> (Usage, Decimal) {
     let usage = outcome.usage.clone().unwrap_or_default();
     // A video job is billed once, when it ends; the request that started it costs nothing.
-    if outcome.response_cache == Some(crate::services::response_cache::Verdict::Hit)
+    if !served(outcome)
+        || outcome.response_cache == Some(crate::services::response_cache::Verdict::Hit)
         || matches!(
             outcome.video,
             Some(
@@ -748,6 +762,58 @@ mod tests {
             cost: Decimal::ZERO,
             media: Default::default(),
         }
+    }
+
+    fn speech(status: u16) -> Outcome {
+        let mut o = crate::model_api::pipeline::blank_outcome(kaeso_core::id::RequestId::new());
+        o.status = status;
+        o.prices = Some(kaeso_core::catalogue::Fields {
+            unit_prices: Some(vec![kaeso_core::catalogue::UnitPrice {
+                per: "million_characters".into(),
+                of: "input".into(),
+                usd: rust_decimal::Decimal::from(40),
+                ..Default::default()
+            }]),
+            ..Default::default()
+        });
+        o.media = Some(cost::MediaUnits {
+            characters: 3,
+            ..Default::default()
+        });
+        o
+    }
+
+    #[test]
+    fn only_requests_the_provider_served_cost_anything() {
+        let billed = rust_decimal::Decimal::new(12, 5);
+        assert_eq!(costed(&speech(200)).1, billed);
+        assert_eq!(media_sums(&speech(200)).characters, 3);
+        for status in [400, 401, 404, 429, 500, 502, 503] {
+            let o = speech(status);
+            assert_eq!(costed(&o).1, Decimal::ZERO, "{status}");
+            assert!(cost_known(&o), "{status}");
+            assert_eq!(media_sums(&o).characters, 0, "{status}");
+            assert_eq!(media_sums(&o).unpriced, 0, "{status}");
+        }
+        let mut gone = speech(499);
+        assert_eq!(
+            costed(&gone).1,
+            Decimal::ZERO,
+            "the app left before anything was sent"
+        );
+        gone.ttfb = Some(std::time::Duration::from_millis(5));
+        assert_eq!(
+            costed(&gone).1,
+            billed,
+            "the provider had started answering"
+        );
+        let mut session = speech(101);
+        session.error_kind = Some("provider_error".into());
+        assert_eq!(
+            costed(&session).1,
+            billed,
+            "a realtime session pays for what it used"
+        );
     }
 
     #[test]
