@@ -251,7 +251,7 @@ pub async fn probe(
         .send(kaeso_upstream::Call {
             base_url: &egress.base,
             auth: Some(egress.auth),
-            guarded: false,
+            guard: kaeso_upstream::Guard::Off,
             credential: &egress.secret,
             request: kaeso_upstream::Outgoing::from(encoded),
             stream: false,

@@ -231,6 +231,7 @@ Während der Updater die Version umstellt oder wann immer Gateway oder Konsole n
 | `/platform/v1/*`, `/mcp`, `/mcp/*`, `/oauth/*` und `/.well-known/oauth-*` | 503 mit dem Fehler der Platform API, Typ `unavailable` |
 | `/v1/messages` und andere `/v1/*` mit einem `anthropic-version`-Header, außer `/v1/chat/completions`, `/v1/responses`, `/v1/responses/*` und `/v1/embeddings` | 529 mit Anthropics `overloaded_error` |
 | `/v1beta` und `/v1beta/*` | 503 mit Geminis Fehler `UNAVAILABLE` |
+| `/v2` und `/v2/*` sowie andere Anfragen mit einem `xi-api-key`-Header | 503 mit ElevenLabs' Fehler `service_unavailable` |
 | Andere `/v1/*` | 503 mit OpenAIs `service_unavailable_error` |
 
 Jede Antwort trägt `Retry-After: 30`, das die SDKs von OpenAI und Anthropic bei Wiederholungen beachten.

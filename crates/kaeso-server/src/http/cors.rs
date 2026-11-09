@@ -107,7 +107,12 @@ impl AllowedOrigins {
 }
 
 pub fn in_scope(path: &str) -> bool {
-    path == "/v1" || path.starts_with("/v1/") || path == "/v1beta" || path.starts_with("/v1beta/")
+    ["/v1", "/v1beta", "/v2"].iter().any(|p| {
+        path == *p
+            || path
+                .strip_prefix(p)
+                .is_some_and(|rest| rest.starts_with('/'))
+    })
 }
 
 pub fn allowed_header(name: &str) -> bool {
@@ -340,6 +345,7 @@ mod tests {
             "/v1/models/gpt-4o",
             "/v1beta",
             "/v1beta/models/gemini-3.5-flash:generateContent",
+            "/v2/voices",
         ] {
             assert!(in_scope(path), "{path}");
         }
@@ -348,6 +354,7 @@ mod tests {
             "/v10",
             "/v1betax/models",
             "/v1x/models",
+            "/v2x/voices",
             "/platform/v1",
             "/platform/v1/me",
             "/healthz",

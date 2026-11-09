@@ -1008,3 +1008,78 @@ async fn a_wan_video_runs_as_a_dashscope_task_at_qwencloud() {
     );
     assert_eq!(refused.json()["error"]["param"], "size");
 }
+
+#[tokio::test]
+async fn asking_about_a_video_counts_against_the_keys_request_rate() {
+    let env = env().await;
+    let org = &env.owner.org_id;
+    let base = format!("/orgs/{org}/projects/{}", env.project);
+    let key = env
+        .app
+        .post(
+            &format!("{base}/keys"),
+            json!({ "name": "rated" }),
+            Some(&env.owner.cookie),
+        )
+        .await
+        .body;
+    let rated = key["secret"].as_str().unwrap().to_owned();
+    let r = env
+        .app
+        .post(
+            &format!("{base}/limits"),
+            json!({ "level": "key", "key": key["id"], "kind": "request_rate", "period": "minute", "amount": 3 }),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
+    let made = send(
+        &env,
+        "POST",
+        "/v1/videos",
+        &rated,
+        Some(json!({ "model": "grok-imagine-video-1.5", "prompt": "fox" })),
+        None,
+    )
+    .await;
+    assert_eq!(made.status, StatusCode::OK, "{}", made.text());
+    let id = made.json()["id"].as_str().unwrap().to_owned();
+    let path = format!("/v1/videos/{id}");
+    for _ in 0..2 {
+        let r = send(&env, "GET", &path, &rated, None, None).await;
+        assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    }
+    let asked = env.mock.received().len();
+    for (method, path) in [("GET", format!("{path}/content")), ("DELETE", path.clone())] {
+        let r = send(&env, method, &path, &rated, None, None).await;
+        assert_eq!(
+            r.status,
+            StatusCode::TOO_MANY_REQUESTS,
+            "{method} {path}: {}",
+            r.text()
+        );
+        assert_eq!(r.json()["error"]["type"], "rate_limit_error");
+        assert!(r.headers.contains_key("retry-after"));
+    }
+    assert_eq!(
+        env.mock.received().len(),
+        asked,
+        "the provider was not asked"
+    );
+    let r = send(&env, "GET", &path, &rated, None, None).await;
+    assert_eq!(
+        (r.status, r.json()["status"].as_str()),
+        (StatusCode::OK, Some("completed")),
+        "a finished video is answered from Kaeso's record without asking the provider"
+    );
+    let r = send(
+        &env,
+        "GET",
+        &format!("{path}/content"),
+        &env.key,
+        None,
+        None,
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "another key is not held back");
+}

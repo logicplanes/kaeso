@@ -111,6 +111,8 @@ def test_api_paths_reach_the_gateway_and_everything_else_the_console(edge):
         assert page.status_code == 200, path
         assert "text/html" in page.headers["content-type"], path
     assert httpx.get(f"{edge.url}/v1/models", timeout=10).status_code == 401
+    voices = httpx.get(f"{edge.url}/v2/voices", timeout=10)
+    assert voices.status_code == 401 and "detail" in voices.json(), "ElevenLabs' /v2 reaches the gateway"
 
 
 def test_streams_pass_through_the_edge_chunk_by_chunk(edge, project):
@@ -167,6 +169,9 @@ def test_the_edge_answers_every_api_in_its_format_while_the_gateway_is_away(edge
         gemini = httpx.post(f"{url}/v1beta/models/gemini-3.5-flash:generateContent", json={}, timeout=10)
         assert gemini.status_code == 503
         assert gemini.json() == {"error": {"code": 503, "message": UNREACHABLE, "status": "UNAVAILABLE"}}
+        voices = httpx.get(f"{url}/v2/voices", headers={"xi-api-key": "sk-kso-test"}, timeout=10)
+        assert voices.status_code == 503
+        assert voices.json()["detail"]["message"] == UNREACHABLE
         page = httpx.get(f"{url}/", timeout=10)
         assert page.status_code == 200, "the console stays up while the gateway is away"
     finally:

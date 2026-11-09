@@ -208,7 +208,7 @@ async fn exchange(
         .send(Call {
             base_url: &endpoint,
             auth: None,
-            guarded: true,
+            guard: kaeso_upstream::Guard::Install,
             credential: &none,
             request,
             stream: false,

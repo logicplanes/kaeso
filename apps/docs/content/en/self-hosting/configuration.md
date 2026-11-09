@@ -98,7 +98,7 @@ On a loopback `http` address, such as `http://localhost:8080`, the session cooki
 
 | Variable<br>TOML key | Type | Default | What it does |
 | --- | --- | --- | --- |
-| `KAESO_CORS_ALLOWED_ORIGINS`<br>`cors.allowed_origins` | text | — | Comma-separated origins of web apps that may call the model API from a browser, such as `https://app.example.com,http://localhost:5173`. Only these get CORS headers, only on `/v1` and `/v1beta`, and `*` stops the gateway at startup. |
+| `KAESO_CORS_ALLOWED_ORIGINS`<br>`cors.allowed_origins` | text | — | Comma-separated origins of web apps that may call the model API from a browser, such as `https://app.example.com,http://localhost:5173`. Only these get CORS headers, only on `/v1`, `/v1beta` and `/v2`, and `*` stops the gateway at startup. |
 
 Without this setting, Kaeso sends no CORS headers. The [model API](../api/model-api.md) explains how a browser app calls Kaeso.
 

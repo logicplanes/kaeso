@@ -16,7 +16,7 @@ order: 3
 | `kaeso-valkey`，按钮 | 端口 6379 上的服务，只有应用自己的组件能访问 | Valkey 官方镜像，与 Compose 包相同的版本 | `apps-s-1vcpu-0.5gb` |
 | `kaeso-valkey`，`doctl` | 托管 Valkey 数据库 | DigitalOcean 提供，需先创建 | 自选 |
 
-应用的边缘终止 TLS 并按路径转发：`/v1`、`/v1beta`、`/platform`、`/mcp`、`/oauth` 和 `/.well-known` 到达网关，其他所有路径到达控制台，因此这里不运行 `kaeso-edge`。网关只信任来自私有网络（边缘所在）的 `X-Forwarded-For`，并把指标保留在回环地址上。
+应用的边缘终止 TLS 并按路径转发：`/v1`、`/v1beta`、`/v2`、`/platform`、`/mcp`、`/oauth` 和 `/.well-known` 到达网关，其他所有路径到达控制台，因此这里不运行 `kaeso-edge`。网关只信任来自私有网络（边缘所在）的 `X-Forwarded-For`，并把指标保留在回环地址上。
 
 按钮只创建开发用数据库，而开发用数据库只有 PostgreSQL。因此按钮的 Valkey 是应用内的一个服务，数据保持在 256 MB 以内，从不逐出键。它每次部署时都从空开始。Valkey 只保存计数器和缓存：网关会从 PostgreSQL 重建预算计数器，速率窗口重新开始（[备份和主密钥](../backups.md)）。`.do/app.yaml` 的托管 Valkey 使用 DigitalOcean 自有机构签发的证书进行 TLS 通信，规范把它作为 `KAESO_VALKEY_CA` 交给网关（[配置](../configuration.md#设置)）。
 

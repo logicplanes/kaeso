@@ -9,7 +9,7 @@ use crate::state::AppState;
 const CUSTOM_MODEL: &str = "custom";
 
 fn surface(path: &str) -> &'static str {
-    if path.starts_with("/v1/") || path.starts_with("/v1beta/") {
+    if path.starts_with("/v1/") || path.starts_with("/v1beta/") || path.starts_with("/v2/") {
         "model_api"
     } else if path.starts_with("/platform/") {
         "platform_api"

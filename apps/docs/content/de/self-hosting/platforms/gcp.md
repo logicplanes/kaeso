@@ -35,7 +35,7 @@ Sobald die Instanz läuft und das Zertifikat ausgestellt ist, führen Sie die Au
 - Cloud SQL für PostgreSQL 17 nur mit privater Adresse und Memorystore für Valkey mit `noeviction`, nur über die VPC erreichbar;
 - Secret-Manager-Geheimnisse für die Hauptschlüssel, die PostgreSQL-URL, das SMTP-Passwort und die ClickHouse-URL, gelesen vom Dienstkonto des Gateways;
 - Cloud-Run-Dienste für das Gateway (standardmäßig 2 CPUs und 4 GB, mindestens eine warme Instanz, ein Anfrage-Timeout von einer Stunde) und die Konsole, nur über den Load Balancer erreichbar;
-- einen globalen externen Application Load Balancer mit verwaltetem Zertifikat, HTTP auf HTTPS umgeleitet und Pfadregeln, die `/v1/*`, `/v1beta/*`, `/platform/*`, `/mcp`, `/mcp/*`, `/oauth/*` und `/.well-known/oauth-*` an das Gateway und alles andere an die Konsole senden, mit einem Backend-Timeout von einer Stunde für lange Streams;
+- einen globalen externen Application Load Balancer mit verwaltetem Zertifikat, HTTP auf HTTPS umgeleitet und Pfadregeln, die `/v1/*`, `/v1beta/*`, `/v2/*`, `/platform/*`, `/mcp`, `/mcp/*`, `/oauth/*` und `/.well-known/oauth-*` an das Gateway und alles andere an die Konsole senden, mit einem Backend-Timeout von einer Stunde für lange Streams;
 - einen optionalen Cloud-DNS-Eintrag.
 
 ```bash

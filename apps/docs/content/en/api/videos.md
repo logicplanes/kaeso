@@ -76,9 +76,11 @@ Each retrieve asks the provider how the job stands while it runs, and keeps what
 
 A listing shows each video as Kaeso last saw it, without asking providers. A video belongs to the project whose key started it; another project's key gets 404, the same answer as for an id that doesn't exist. Once the provider key that started a video is replaced, Kaeso can't reach the job and answers 409.
 
+Retrieves, downloads, deletes and remixes that ask the provider count against the key's [request rates](../console/limits-and-budgets.md) like any model request, since each spends the provider's quota with the organization's key; a retrieve of a job that ended answers from Kaeso's record and doesn't count.
+
 ## Download a video
 
-Kaeso streams the file from where the provider keeps it, without storing it, and passes `Range` through. Veo and Gemini Omni send the file inside their answer; Kaeso reads it again for each download, bounded by `body_limits.provider_response` (128 MiB by default).
+Kaeso streams the file from where the provider keeps it, without storing it, and passes `Range` through. Veo and Gemini Omni send the file inside their answer; Kaeso reads it again for each download, bounded by `body_limits.provider_response` (128 MiB by default). A link on a host other than the provider's own API is fetched from public addresses only, whatever [`custom_providers.allowed_networks`](../self-hosting/configuration.md) opens, and never gets the provider key.
 
 Providers keep files for a limited time. Kaeso fetches a fresh link for each download where the provider hands out short-lived links, as MiniMax and ElevenLabs do. After the job's `expires_at`, the download answers 404. Only Z.ai offers a `thumbnail` and no provider offers a `spritesheet`; asking for one answers 404 with `param` `variant`.
 

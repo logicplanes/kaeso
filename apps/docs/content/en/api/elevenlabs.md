@@ -57,9 +57,9 @@ The SDK sends the key in `xi-api-key`; Kaeso takes a Kaeso key there as in `Auth
 | `POST /v1/voice-changer/{voice_id}` and `/stream` | `speech_to_speech.convert`, `.stream` | speech in another voice, from an upload |
 | `POST /v1/speech-to-text` | `speech_to_text.convert` | a transcript with timed words and speakers |
 | `GET /v1/models` | `models.list` | the project's ElevenLabs models, from Kaeso's catalogue |
-| `GET /v1/voices`, `GET /v2/voices`, `GET /v1/voices/{voice_id}` | `voices.get_all`, `voices.search`, `voices.get` | the voices of the project's ElevenLabs account, asked of ElevenLabs with the project's ElevenLabs key |
+| `GET /v1/voices`, `GET /v2/voices`, `GET /v1/voices/{voice_id}` | `voices.get_all`, `voices.search`, `voices.get` | the voices of the project's ElevenLabs account, asked of ElevenLabs with the project's ElevenLabs key; each listing counts against the key's request rates |
 
-`output_format`, `enable_logging` and `optimize_streaming_latency` pass to ElevenLabs as written. The request body of an upload is bounded by [`body_limits.audio`](../self-hosting/configuration.md#request-and-response-bodies).
+`output_format`, `enable_logging` and `optimize_streaming_latency` pass to ElevenLabs as written. The request body of an upload is bounded by [`body_limits.audio`](../self-hosting/configuration.md#request-and-response-bodies). A voice id is letters and digits, as ElevenLabs lists them; any other is refused with 400 before anything is sent.
 
 ## Other providers
 

@@ -396,10 +396,16 @@ fn voice_id(voice: &Voice) -> Option<&str> {
     let s = voice.as_str();
     let id_like = s.len() == 20 && s.bytes().all(|b| b.is_ascii_alphanumeric());
     match voice {
-        Voice::Id(id) => Some(id),
+        // The id becomes a path segment, so it is the listing's alphabet and nothing else.
+        Voice::Id(id) if is_voice_id(id) => Some(id),
         Voice::Named(_) if id_like => Some(s),
         _ => None,
     }
+}
+
+/// Whether `id` has the shape of an ElevenLabs voice id: letters and digits, at most 64.
+pub(super) fn is_voice_id(id: &str) -> bool {
+    (1..=64).contains(&id.len()) && id.bytes().all(|b| b.is_ascii_alphanumeric())
 }
 
 struct SpeechPlan {

@@ -403,10 +403,14 @@ async fn what_a_model_or_provider_cannot_do_is_refused_before_anything_is_sent()
 }
 
 async fn elevenlabs(env: &Env, path: &str, body: Option<Value>) -> Answer {
+    elevenlabs_as(env, &env.key, path, body).await
+}
+
+async fn elevenlabs_as(env: &Env, key: &str, path: &str, body: Option<Value>) -> Answer {
     let req = Request::builder()
         .uri(path)
         .method(if body.is_some() { "POST" } else { "GET" })
-        .header("xi-api-key", env.key.clone())
+        .header("xi-api-key", key)
         .header("content-type", "application/json")
         .body(Body::from(body.map(|b| b.to_string()).unwrap_or_default()))
         .unwrap();
@@ -581,4 +585,65 @@ async fn an_openai_app_reaches_elevenlabs_by_voice_id_and_scribe_by_upload() {
     assert_eq!(env.mock.last().unwrap().path, "/v1/speech-to-text");
     let o = outcome(&env).await;
     assert!(o.media.unwrap().input_ms > 0);
+}
+
+#[tokio::test]
+async fn a_voice_id_that_would_leave_its_path_never_reaches_elevenlabs() {
+    let env = env().await;
+    let before = env.mock.received().len();
+    for voice in ["x/../../../v1/user?a=#", "..", "x%2F..%2F..%2Fv1%2Fuser"] {
+        let r = speak(
+            &env,
+            json!({"model": "eleven_flash_v2_5", "input": "Hi.", "voice": {"id": voice}}),
+        )
+        .await;
+        assert_eq!(r.status, StatusCode::BAD_REQUEST, "{voice}: {}", r.text());
+        assert_eq!(r.json()["error"]["param"], "voice", "{voice}");
+    }
+    let r = elevenlabs(
+        &env,
+        "/v1/text-to-speech/..%2F..%2Fv1%2Fuser",
+        Some(json!({"text": "Hi.", "model_id": "eleven_flash_v2_5"})),
+    )
+    .await;
+    assert!(r.status.is_client_error(), "{}", r.text());
+    assert!(r.json()["detail"]["message"].is_string(), "{}", r.text());
+    assert_eq!(env.mock.received().len(), before);
+}
+
+#[tokio::test]
+async fn voice_listings_count_against_the_keys_request_rate() {
+    let env = env().await;
+    let org = &env.owner.org_id;
+    let base = format!("/orgs/{org}/projects/{}", env.project);
+    let key = env
+        .app
+        .post(
+            &format!("{base}/keys"),
+            json!({ "name": "rated" }),
+            Some(&env.owner.cookie),
+        )
+        .await
+        .body;
+    let r = env
+        .app
+        .post(
+            &format!("{base}/limits"),
+            json!({ "level": "key", "key": key["id"], "kind": "request_rate", "period": "minute", "amount": 2 }),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
+    let rated = key["secret"].as_str().unwrap();
+    for _ in 0..2 {
+        let r = elevenlabs_as(&env, rated, "/v2/voices", None).await;
+        assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    }
+    let sent = env.mock.received().len();
+    let r = elevenlabs_as(&env, rated, "/v1/voices", None).await;
+    assert_eq!(r.status, StatusCode::TOO_MANY_REQUESTS, "{}", r.text());
+    assert!(r.headers.contains_key("retry-after"));
+    assert_eq!(env.mock.received().len(), sent, "ElevenLabs was not asked");
+    let r = elevenlabs(&env, "/v1/voices", None).await;
+    assert_eq!(r.status, StatusCode::OK, "another key is not held back");
 }

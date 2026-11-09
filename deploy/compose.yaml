@@ -316,7 +316,7 @@ configs:
       		root /srv/maintenance
       		try_files /active
       	}
-      	@api path /v1/* /v1beta/* /platform/* /mcp /mcp/* /oauth/* /.well-known/oauth-authorization-server /.well-known/oauth-protected-resource /.well-known/oauth-protected-resource/*
+      	@api path /v1/* /v1beta/* /v2/* /platform/* /mcp /mcp/* /oauth/* /.well-known/oauth-authorization-server /.well-known/oauth-protected-resource /.well-known/oauth-protected-resource/*
       	route {
       		handle /kaeso-maintenance.json {
       			header Cache-Control "no-store"
@@ -360,6 +360,7 @@ configs:
       		@platform path /platform/* /mcp /mcp/* /oauth/* /.well-known/oauth-*
       		@anthropic expression path('/v1/messages', '/v1/messages/*') || (header({'Anthropic-Version': '*'}) && !path('/v1/chat/completions', '/v1/responses', '/v1/responses/*', '/v1/embeddings'))
       		@gemini path /v1beta /v1beta/*
+      		@elevenlabs expression path('/v2', '/v2/*') || header({'Xi-Api-Key': '*'})
       		@openai path /v1 /v1/*
       		handle @platform {
       			header Content-Type "application/json"
@@ -372,6 +373,10 @@ configs:
       		handle @gemini {
       			header Content-Type "application/json"
       			respond `{"error":{"code":503,"message":"{vars.message}","status":"UNAVAILABLE"}}` 503
+      		}
+      		handle @elevenlabs {
+      			header Content-Type "application/json"
+      			respond `{"detail":{"type":"service_unavailable","code":"system_busy","message":"{vars.message}","status":"system_busy"}}` 503
       		}
       		handle @openai {
       			header Content-Type "application/json"

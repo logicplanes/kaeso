@@ -187,7 +187,7 @@ impl Asked<'_> {
             .send(Call {
                 base_url: base,
                 auth: self.provider.auth(),
-                guarded: self.provider.custom().is_some(),
+                guard: crate::model_api::pipeline::guard_for(self.provider),
                 credential: &self.credential.secret,
                 request: Outgoing::from(request),
                 stream: false,

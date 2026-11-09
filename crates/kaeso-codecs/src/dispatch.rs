@@ -287,6 +287,12 @@ pub fn encode_request(
     req: &Request,
     ctx: &mut EgressCtx,
 ) -> Result<EncodedRequest, KppError> {
+    if let Request::Video(v) = req {
+        one_segment(&v.model, "model")?;
+        if let Some(source) = &v.remix_of {
+            one_segment(source, "video_id")?;
+        }
+    }
     dispatch!(dialect, encode_request(req, ctx))?
 }
 
@@ -411,6 +417,20 @@ pub fn next_models_query(
     Some(next)
 }
 
+/// Refuses an id that some dialect puts into a URL path and that no encoding keeps there.
+fn one_segment(id: &str, param: &'static str) -> Result<(), KppError> {
+    // A URL parser removes a `.` or `..` path segment even when it is percent-encoded
+    // (WHATWG URL, "single-dot" and "double-dot" segments).
+    if matches!(id, "" | "." | "..") {
+        return Err(KppError::invalid_request(format!(
+            "The id `{id}` can't be part of a URL; use the real id."
+        ))
+        .with_param(param)
+        .with_status(400));
+    }
+    Ok(())
+}
+
 fn path_segment(model: &str) -> Result<(), KppError> {
     // A URL parser removes a `.` or `..` path segment even when it is percent-encoded
     // (WHATWG URL, "single-dot" and "double-dot" segments), so no encoding keeps them.
@@ -463,6 +483,8 @@ pub fn encode_video_poll(
     model: &str,
     ctx: &EgressCtx,
 ) -> Result<EncodedRequest, KppError> {
+    one_segment(job, "video_id")?;
+    one_segment(model, "model")?;
     dispatch!(dialect, encode_video_poll(job, model, ctx))?
 }
 
@@ -484,6 +506,8 @@ pub fn encode_video_delete(
     model: &str,
     ctx: &EgressCtx,
 ) -> Result<Option<EncodedRequest>, KppError> {
+    one_segment(job, "video_id")?;
+    one_segment(model, "model")?;
     dispatch!(dialect, encode_video_delete(job, model, ctx))?
 }
 
@@ -493,6 +517,7 @@ pub fn encode_video_file(
     file: &str,
     ctx: &EgressCtx,
 ) -> Result<EncodedRequest, KppError> {
+    one_segment(file, "video_id")?;
     dispatch!(dialect, encode_video_file(file, ctx))?
 }
 
@@ -509,6 +534,30 @@ pub fn decode_video_file(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_job_or_model_id_no_url_keeps_is_refused_for_every_video_dialect() {
+        let ctx = EgressCtx::for_kind(RequestKind::Video, kaeso_kpp::StreamMode::Off);
+        for d in DialectId::ALL {
+            for (job, model) in [("..", "m"), (".", "m"), ("", "m"), ("job", "..")] {
+                for err in [
+                    encode_video_poll(d, job, model, &ctx).err(),
+                    encode_video_delete(d, job, model, &ctx).err(),
+                ] {
+                    let err = err.unwrap_or_else(|| panic!("{d} sent {job:?} {model:?}"));
+                    assert_eq!(err.status, Some(400), "{d}");
+                }
+            }
+            let err = encode_video_file(d, "..", &ctx).unwrap_err();
+            assert_eq!(err.param.as_deref(), Some("video_id"), "{d}");
+        }
+        let mut remix = kaeso_kpp::VideoRequest::new("sora-2", kaeso_kpp::VideoOperation::Remix);
+        remix.remix_of = Some("..".into());
+        let req = Request::Video(remix);
+        let err =
+            encode_request(DialectId::OpenAiVideos, &req, &mut EgressCtx::new(&req)).unwrap_err();
+        assert_eq!(err.param.as_deref(), Some("video_id"));
+    }
 
     #[test]
     fn every_known_dialect_has_a_codec() {
