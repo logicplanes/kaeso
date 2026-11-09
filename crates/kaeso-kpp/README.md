@@ -1,8 +1,8 @@
 # kaeso-kpp
 
-KPP, the Kaeso Provider Protocol: the canonical, stateless in-process representation of model requests, responses, stream events, errors, token counts, embeddings and model listings that every Kaeso wire format translates through.
+KPP, the Kaeso Provider Protocol: the canonical, stateless in-process representation of model requests, responses, stream events, errors, token counts, embeddings, images, speech, transcriptions, video jobs and model listings that every Kaeso wire format translates through.
 
-This crate holds the KPP types and the rules that need no wire format: `validate()` checks a request, `required_capabilities()` says what a model must support to serve it, and `ModelList::page` pages a model listing. It has no codec logic and no I/O. The codecs that translate the Anthropic and OpenAI wire formats into KPP and back are in [`kaeso-codecs`](https://crates.io/crates/kaeso-codecs).
+This crate holds the KPP types and the rules that need no wire format: `validate()` checks a request, `required_capabilities()` says what a model must support to serve it, and `ModelList::page` pages a model listing. It has no codec logic and no I/O. The codecs that translate every wire format, from Anthropic, OpenAI and Gemini chat to images, audio and video, into KPP and back are in [`kaeso-codecs`](https://crates.io/crates/kaeso-codecs).
 
 ```toml
 [dependencies]
