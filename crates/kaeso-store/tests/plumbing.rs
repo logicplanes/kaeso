@@ -55,7 +55,8 @@ async fn provider_columns_accept_exactly_the_provider_id_rule() {
             "catalogue_models",
             "custom_providers",
             "provider_credentials",
-            "usage_daily"
+            "usage_daily",
+            "videos"
         ]
     );
     for (table, check) in &checks {
