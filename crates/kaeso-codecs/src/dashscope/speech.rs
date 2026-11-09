@@ -1,7 +1,9 @@
 //! Speech on DashScope: Qwen-Audio-TTS on `POST /api/v1/services/audio/tts/SpeechSynthesizer`
-//! (<https://docs.qwencloud.com/api-reference/speech-synthesis/qwen-audio-tts/http-api>) and
-//! Qwen3-TTS on the multimodal generation path
-//! (<https://docs.qwencloud.com/api-reference/speech-synthesis/qwen-tts>), read 2026-11-09.
+//! (<https://docs.qwencloud.com/api-reference/speech-synthesis/qwen-audio-tts/http-api>),
+//! audio generation with Qwen-Audio-TTS-Next on the same path
+//! (<https://docs.qwencloud.com/api-reference/audio-generation>), and Qwen3-TTS on the
+//! multimodal generation path (<https://docs.qwencloud.com/api-reference/speech-synthesis/qwen-tts>),
+//! read 2026-11-09.
 //! A whole reply is a link to the audio; with `X-DashScope-SSE: enable` the audio arrives as
 //! base64 pieces in server-sent events, which is how Kaeso asks whenever the format allows.
 
@@ -44,6 +46,9 @@ pub enum SpeechFamily {
     QwenAudio,
     /// Qwen3-TTS Flash: a link to a wav file, or 24 kHz pcm when streamed.
     Qwen3,
+    /// Qwen-Audio-TTS-Next: speech, sound effects and ambient sound from one described scene,
+    /// without voices, answered whole with a link to a wav, mp3 or pcm file.
+    AudioGeneration,
 }
 
 /// The family of a QwenCloud speech model, or `None` for one Kaeso doesn't send, such as the
@@ -52,6 +57,8 @@ pub fn speech_family(model: &str) -> Option<SpeechFamily> {
     let m = model.to_ascii_lowercase();
     if m.contains("realtime") {
         None
+    } else if m.starts_with("qwen-audio-") && m.contains("-tts-next") {
+        Some(SpeechFamily::AudioGeneration)
     } else if m.starts_with("qwen-audio-") && m.contains("-tts-") {
         Some(SpeechFamily::QwenAudio)
     } else if m.starts_with("qwen3-tts-flash") {
@@ -122,6 +129,10 @@ pub(super) fn decode_request(body: &[u8]) -> Result<Request, KppError> {
     let mut r = SpeechRequest::new(model, SpeechOperation::Speech);
     if let Some(mut input) = f.object("input")? {
         r.input = input.str("text")?;
+        if let Some(prompt) = input.str("text_prompt")? {
+            r.operation = SpeechOperation::SoundEffect;
+            r.input = Some(prompt);
+        }
         r.voice = input.str("voice")?.map(Voice::Named);
         r.format = input.str("format")?.as_deref().map(format_of);
         r.sample_rate = input.u32("sample_rate")?;
@@ -165,6 +176,9 @@ pub(super) fn check(r: &SpeechRequest) -> Result<SpeechFamily, KppError> {
         )
         .with_param("model"));
     };
+    if fam == SpeechFamily::AudioGeneration {
+        return check_generation(r).map(|()| fam);
+    }
     if r.operation != SpeechOperation::Speech || !r.dialogue.is_empty() || r.audio.is_some() {
         return Err(no(r.operation.as_str(), "model", "send text to speak."));
     }
@@ -250,8 +264,93 @@ pub(super) fn check(r: &SpeechRequest) -> Result<SpeechFamily, KppError> {
                 return Err(no(&format!("`{field}` on Qwen3-TTS"), field, "remove it."));
             }
         }
+        SpeechFamily::AudioGeneration => {}
     }
     Ok(fam)
+}
+
+const GENERATION_FORMATS: &[&str] = &["wav", "mp3", "pcm"];
+const GENERATION_RATES: &[u32] = &[8_000, 16_000, 24_000, 44_100, 48_000];
+
+// Qwen-Audio-TTS-Next takes a described scene: a sound effect, or speech whose voice the prompt
+// describes. It has no voices, no length and no music (the audio generation reference).
+fn check_generation(r: &SpeechRequest) -> Result<(), KppError> {
+    match r.operation {
+        SpeechOperation::SoundEffect => {}
+        SpeechOperation::Speech if r.voice.is_none() => {}
+        SpeechOperation::Speech => {
+            return Err(no(
+                "a voice on Qwen-Audio-TTS-Next",
+                "voice",
+                "describe the voice in the input instead.",
+            ));
+        }
+        SpeechOperation::Music => {
+            return Err(no("music", "model", "QwenCloud offers no music model."));
+        }
+        other => {
+            return Err(no(
+                other.as_str(),
+                "model",
+                "describe the scene to generate in one prompt.",
+            ));
+        }
+    }
+    if r.input.as_deref().is_none_or(str::is_empty) {
+        return Err(no(
+            "audio generation without a prompt",
+            "input",
+            "describe the audio.",
+        ));
+    }
+    let unsupported = [
+        ("duration", r.duration.is_some()),
+        ("timestamps", r.timestamps),
+        ("instructions", r.instructions.is_some()),
+        ("language", r.language.is_some()),
+    ];
+    if let Some((field, _)) = unsupported.iter().find(|(_, set)| *set) {
+        return Err(no(
+            &format!("`{field}` on Qwen-Audio-TTS-Next"),
+            field,
+            "remove it.",
+        ));
+    }
+    if let Some(f) = &r.format
+        && !GENERATION_FORMATS.contains(&wire_format(f))
+    {
+        return Err(no(
+            &format!("the format `{}` on Qwen-Audio-TTS-Next", f.as_wire()),
+            "response_format",
+            "use wav, mp3 or pcm.",
+        ));
+    }
+    if let Some(rate) = r.sample_rate
+        && !GENERATION_RATES.contains(&rate)
+    {
+        return Err(no(
+            &format!("the sample rate {rate}"),
+            "sample_rate",
+            "use 8000, 16000, 24000, 44100 or 48000.",
+        ));
+    }
+    if let Some(s) = r.speed
+        && !(0.5..=2.0).contains(&s)
+    {
+        return Err(no(
+            &format!("the speed {s}"),
+            "speed",
+            "choose a speed from 0.5 to 2.0.",
+        ));
+    }
+    if r.bitrate.is_some() && r.format != Some(AudioFormat::Mp3) {
+        return Err(no(
+            "a bitrate for this format",
+            "bitrate",
+            "ask for mp3, or remove it.",
+        ));
+    }
+    Ok(())
 }
 
 fn rate(r: &SpeechRequest) -> Option<Value> {
@@ -271,7 +370,12 @@ pub(super) fn encode_request(
     let fam = check(r)?;
     let own = r.extras.is_from(D);
     let mut input = Map::new();
-    input.insert("text".into(), r.input.clone().unwrap_or_default().into());
+    let text_key = if fam == SpeechFamily::AudioGeneration {
+        "text_prompt"
+    } else {
+        "text"
+    };
+    input.insert(text_key.into(), r.input.clone().unwrap_or_default().into());
     put(
         &mut input,
         "voice",
@@ -303,6 +407,24 @@ pub(super) fn encode_request(
             ctx.audio_format = Some(r.format.clone().unwrap_or(AudioFormat::Mp3));
             ctx.stream = StreamMode::on(false);
             headers.push("x-dashscope-sse", "enable");
+            SYNTHESIZER_PATH
+        }
+        SpeechFamily::AudioGeneration => {
+            put(
+                &mut input,
+                "format",
+                r.format.as_ref().map(|f| wire_format(f).to_owned()),
+            );
+            put(&mut input, "sample_rate", r.sample_rate);
+            put(&mut input, "rate", rate(r));
+            put(&mut input, "seed", r.seed);
+            if r.bitrate.is_some() && !own {
+                put(&mut input, "enable_cbr", Some(true));
+            }
+            put(&mut input, "bit_rate", r.bitrate);
+            // Answered whole, with a link; the reference documents no streamed form.
+            ctx.audio_format = Some(r.format.clone().unwrap_or(AudioFormat::Wav));
+            ctx.stream = StreamMode::Off;
             SYNTHESIZER_PATH
         }
         SpeechFamily::Qwen3 => {

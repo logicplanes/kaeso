@@ -354,3 +354,72 @@ async fn z_image_costs_twice_as_much_with_a_rewritten_prompt_and_qwen_image_by_i
         );
     }
 }
+
+#[tokio::test]
+async fn an_elevenlabs_sound_effect_reaches_qwen_audio_tts_next_as_a_described_scene() {
+    let env = env().await;
+    let r = env
+        .app
+        .post(
+            &format!("/orgs/{}/projects/{}/models", env.owner.org_id, env.project),
+            json!({
+                "provider": "alibaba", "model_id": "qwen-audio-3.1-tts-next", "custom": true,
+                "overrides": {
+                    "input_modalities": ["text", "audio"], "output_modalities": ["audio"],
+                    "input_price": "0.93", "output_price": "1.87"
+                }
+            }),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
+    let sound = |body: Value| {
+        Request::builder()
+            .uri("/v1/sound-generation?output_format=mp3_44100_128")
+            .method("POST")
+            .header("xi-api-key", &env.key)
+            .header("content-type", "application/json")
+            .body(Body::from(body.to_string()))
+            .unwrap()
+    };
+    let before = env.mock.received().len();
+    let resp = env
+        .app
+        .router
+        .clone()
+        .oneshot(sound(json!({
+            "text": "Rain on a tin roof", "model_id": "qwen-audio-3.1-tts-next", "duration_seconds": 3
+        })))
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
+    let body = resp.into_body().collect().await.unwrap().to_bytes();
+    let error: Value = serde_json::from_slice(&body).unwrap();
+    assert_eq!(error["detail"]["param"], "duration", "{error}");
+    assert_eq!(
+        env.mock.received().len(),
+        before,
+        "refused before anything is sent"
+    );
+
+    let _ = env
+        .app
+        .router
+        .clone()
+        .oneshot(sound(
+            json!({ "text": "Rain on a tin roof", "model_id": "qwen-audio-3.1-tts-next" }),
+        ))
+        .await
+        .unwrap();
+    let sent = env.mock.last().unwrap();
+    assert_eq!(sent.path, "/api/v1/services/audio/tts/SpeechSynthesizer");
+    assert_eq!(sent.header("x-dashscope-sse"), None);
+    let body: Value = serde_json::from_slice(&sent.body).unwrap();
+    assert_eq!(
+        body,
+        json!({"model": "qwen-audio-3.1-tts-next", "input": {
+            "text_prompt": "Rain on a tin roof", "format": "mp3", "sample_rate": 44100,
+            "enable_cbr": true, "bit_rate": 128
+        }})
+    );
+}

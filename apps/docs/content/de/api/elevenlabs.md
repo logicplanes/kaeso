@@ -95,7 +95,7 @@ with open("speech.mp3", "wb") as f:
 
 ## Andere Anbieter
 
-Die Anfrage einer ElevenLabs-App ist eine Kaeso-Anfrage: Ein Alias oder ein Modell eines anderen Anbieters bedient sie, wenn es kann. Text to Speech erreicht OpenAI, Google und jeden Anbieter der [Audio-API](audio.md#anbieter), mit der Stimmen-ID als Stimme; Speech to Text erreicht jeden Anbieter für Transkription, zeitlich markierte Wörter eingeschlossen, wo der Anbieter Zeiten liefert. Was nur ElevenLabs nimmt, etwa `voice_settings` über `speed` hinaus, Aussprachewörterbücher oder `keyterms`, wird für andere Anbieter mit dem Feld in `param` abgelehnt.
+Die Anfrage einer ElevenLabs-App ist eine Kaeso-Anfrage: Ein Alias oder ein Modell eines anderen Anbieters bedient sie, wenn es kann. Text to Speech erreicht OpenAI, Google und jeden Anbieter der [Audio-API](audio.md#anbieter), mit der Stimmen-ID als Stimme; Speech to Text erreicht jeden Anbieter für Transkription, zeitlich markierte Wörter eingeschlossen, wo der Anbieter Zeiten liefert; Soundeffekte erreichen auch Qwen-Audio-TTS-Next von QwenCloud, ohne `duration_seconds`, wofür es kein Feld hat ([Zuordnung für QwenCloud](../development/kpp/dashscope.md#audio-generierung)). Was nur ElevenLabs nimmt, etwa `voice_settings` über `speed` hinaus, Aussprachewörterbücher oder `keyterms`, wird für andere Anbieter mit dem Feld in `param` abgelehnt.
 
 ## Was Kaeso ablehnt
 

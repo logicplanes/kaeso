@@ -1,0 +1,16 @@
+{
+  "request_id": "example-request-id",
+  "output": {
+    "finish_reason": "stop",
+    "audio": {
+      "data": "",
+      "url": "https://example.com/generated.wav",
+      "id": "audio_example-request-id",
+      "expires_at": 1789616932,
+      "duration": 1.12
+    }
+  },
+  "usage": {
+    "duration": 1
+  }
+}
