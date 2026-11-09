@@ -2,6 +2,7 @@
 #![doc = include_str!("../README.md")]
 
 mod adapt;
+pub mod audio_length;
 mod codec;
 pub mod continuity;
 pub mod cross;

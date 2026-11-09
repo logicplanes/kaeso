@@ -646,6 +646,8 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
                 RequestKind::Transcription => {
                     if let Some(ms) = assembled.audio_ms {
                         units.input_ms = ms;
+                        units.measured = false;
+                        units.input_length_unknown = false;
                     }
                 }
                 RequestKind::Speech => {

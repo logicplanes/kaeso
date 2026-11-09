@@ -16,6 +16,13 @@ kaeso-codecs = { path = "../crates/kaeso-codecs" }
 kaeso-mcp = { path = "../crates/kaeso-mcp" }
 
 [[bin]]
+name = "audio_length"
+path = "fuzz_targets/audio_length.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
 name = "sse"
 path = "fuzz_targets/sse.rs"
 test = false

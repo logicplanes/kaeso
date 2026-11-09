@@ -8,6 +8,7 @@ export function logRow(overrides: Partial<LogView> = {}): LogView {
     client_ip: "203.0.113.7",
     cost: "0.000420",
     cost_known: true,
+    cost_basis: "reported",
     duration_ms: 1250,
     egress_dialect: "openai_chat",
     endpoint: "/v1/chat/completions",

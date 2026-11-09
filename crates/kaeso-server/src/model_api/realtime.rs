@@ -454,6 +454,7 @@ impl Measured {
             characters: self.characters,
             input_ms: self.audio_ms,
             format,
+            measured: self.audio_ms > 0,
             ..MediaUnits::default()
         }
     }

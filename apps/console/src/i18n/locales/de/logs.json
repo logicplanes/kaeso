@@ -247,6 +247,7 @@
   "logs.inspector.video": "Video",
   "logs.inspector.videos": "{count, plural, one {# Video} other {# Videos}}",
   "logs.inspector.videosMade": "{videos} · {duration}",
+  "logs.inspector.costMeasured": "Aus der Länge des Audios, die Kaeso aus der Datei gelesen hat",
   "logs.inspector.costUnknown": "Kein Preis für das, was sie erzeugt hat",
   "logs.media.hint": "{label}: {units}",
   "logs.media.images": "{count, plural, one {# Bild} other {# Bilder}}",

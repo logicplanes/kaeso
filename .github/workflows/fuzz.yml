@@ -41,6 +41,7 @@ jobs:
       matrix:
         target:
           [
+            audio_length,
             decode_anthropic_messages,
             decode_dashscope,
             decode_elevenlabs,

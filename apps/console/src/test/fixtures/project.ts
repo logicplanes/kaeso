@@ -223,6 +223,7 @@ export function failedLog(overrides: Partial<LogView> = {}): LogView {
     client_ip: "127.0.0.1",
     cost: "0",
     cost_known: true,
+    cost_basis: "reported",
     duration_ms: 12,
     egress_dialect: "anthropic_messages",
     ingress_dialect: "anthropic_messages",

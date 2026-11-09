@@ -74,6 +74,7 @@
   "logs.inspector.characters": "{count} characters",
   "logs.inspector.charactersMade": "{characters} · {duration} made",
   "logs.inspector.clientIp": "Client IP",
+  "logs.inspector.costMeasured": "From the audio's length, which Kaeso read from the file",
   "logs.inspector.costUnknown": "No price for what it made",
   "logs.inspector.error": "Error",
   "logs.inspector.estimated": "Estimated",
