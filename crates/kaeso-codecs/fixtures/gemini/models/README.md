@@ -1,6 +1,6 @@
 # `fixtures/gemini/models`
 
-Response bodies of `GET /v1beta/models` (`ListModelsResponse`: `models`, `nextPageToken`) and `GET /v1beta/models/{model}` (`Model`). They were fetched with the free-tier key on 2026-11-08 and indented by two spaces.
+Response bodies of `GET /v1beta/models` (`ListModelsResponse`: `models`, `nextPageToken`) and `GET /v1beta/models/{model}` (`Model`). They were fetched on 2026-11-08 and indented by two spaces.
 
 | file | what it covers | provenance |
 |---|---|---|

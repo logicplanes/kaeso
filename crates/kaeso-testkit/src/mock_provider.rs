@@ -864,7 +864,7 @@ fn audio(fixtures: &Path, path: &str, text: &str) -> Option<Response> {
         "/v1/sound-generation" => el_audio("recorded-sound.mp3", "audio/mpeg"),
         "/v1/music" | "/v1/music/stream" => Some(error_response(
             &fixtures.join("elevenlabs"),
-            "recorded-music-free-tier-402",
+            "recorded-music-402",
         )),
         "/v1/speech-to-text" => json(&elevenlabs, "recorded-transcribe"),
         "/v1/t2a_v2" => json(&fixtures.join("minimax_speech/responses"), "speech"),

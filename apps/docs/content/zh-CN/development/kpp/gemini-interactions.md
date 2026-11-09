@@ -8,7 +8,7 @@ order: 8
 
 - **编解码器：**`kaeso_codecs::gemini_interactions::GeminiInteractions`（`crates/kaeso-codecs/src/gemini_interactions/`）
 - **路径：**Google AI Studio 上为 `POST /v1beta/interactions`、`GET /v1beta/interactions/{id}` 和 `DELETE /v1beta/interactions/{id}`；Agent Platform 上为 `/v1beta1/projects/{project}/locations/global/interactions` 下的 `POST` 和 `GET`
-- **Fixture：**`crates/kaeso-codecs/fixtures/gemini_interactions/`；`responses/recorded-started.json` 和 `polls/recorded-failed-quota.json` 使用免费套餐的密钥录制，其余依据参考文档构建
+- **Fixture：**`crates/kaeso-codecs/fixtures/gemini_interactions/`；`responses/recorded-started.json` 和 `polls/recorded-failed-quota.json` 为实时录制，其余依据参考文档构建
 
 **来源。**Google AI Studio 的 [Gemini Omni Flash](https://aistudio.google.com/docs/omni) 和[创建交互](https://aistudio.google.com/api-reference/interactions-api/create-interaction)参考文档，以及 Agent Platform 的[根据文本生成视频](https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/video/generate-videos-from-text)，2026-11-09 查阅。
 

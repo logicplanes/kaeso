@@ -53,7 +53,7 @@ SDK 在 `xi-api-key` 中发送密钥；Kaeso 在这里接受 Kaeso 密钥，与�
 | `POST /v1/text-to-speech/{voice_id}` 以及 `/stream`、`/with-timestamps`、`/stream/with-timestamps` | `text_to_speech.convert`、`.stream`、`.convert_with_timestamps`、`.stream_with_timestamps` | 语音，音频边生成边发送；时间戳为 ElevenLabs 的 JSON 或其逐行 JSON |
 | `POST /v1/text-to-dialogue` 及其流式和时间戳形式 | `text_to_dialogue.convert` 等 | 对话，每句使用各自的声音 |
 | `POST /v1/sound-generation` | `text_to_sound_effects.convert` | 音效，按其时长的分钟计费 |
-| `POST /v1/music` 和 `/v1/music/stream` | `music.compose`、`music.stream` | 音乐；ElevenLabs 在免费套餐中拒绝 |
+| `POST /v1/music` 和 `/v1/music/stream` | `music.compose`、`music.stream` | 音乐；不含音乐的套餐会被 ElevenLabs 拒绝 |
 | `POST /v1/voice-changer/{voice_id}` 和 `/stream` | `speech_to_speech.convert`、`.stream` | 由上传内容生成换成另一个声音的语音 |
 | `POST /v1/speech-to-text` | `speech_to_text.convert` | 带时间的词和说话人的转写稿 |
 | `GET /v1/models` | `models.list` | 项目的 ElevenLabs 模型，来自 Kaeso 的目录 |

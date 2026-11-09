@@ -1,6 +1,6 @@
 # `elevenlabs/video`
 
-ElevenLabs' video generations, `POST /v1/flows/video` and `GET /v1/flows/video/{id}`. Nothing here is recorded: video generation is a paid feature the free tier doesn't call.
+ElevenLabs' video generations, `POST /v1/flows/video` and `GET /v1/flows/video/{id}`. Nothing here is recorded: everything is built from ElevenLabs' OpenAPI document.
 
 | file | what it covers | provenance |
 |---|---|---|

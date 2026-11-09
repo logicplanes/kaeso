@@ -8,7 +8,7 @@ Schlagen Sie hier nach, wie ein Videojob Gemini Omni auf Google AI Studio und Ge
 
 - **Codec:** `kaeso_codecs::gemini_interactions::GeminiInteractions` (`crates/kaeso-codecs/src/gemini_interactions/`)
 - **Pfade:** `POST /v1beta/interactions`, `GET /v1beta/interactions/{id}` und `DELETE /v1beta/interactions/{id}` bei Google AI Studio; `POST` und `GET` unter `/v1beta1/projects/{project}/locations/global/interactions` auf der Agent Platform
-- **Fixtures:** `crates/kaeso-codecs/fixtures/gemini_interactions/`; `responses/recorded-started.json` und `polls/recorded-failed-quota.json` sind mit einem Schlüssel der kostenlosen Stufe aufgezeichnet, der Rest aus der Referenz gebaut
+- **Fixtures:** `crates/kaeso-codecs/fixtures/gemini_interactions/`; `responses/recorded-started.json` und `polls/recorded-failed-quota.json` sind live aufgezeichnet, der Rest aus der Referenz gebaut
 
 **Quellen.** Die Referenzen von Google AI Studio zu [Gemini Omni Flash](https://aistudio.google.com/docs/omni) und [Interaktion erstellen](https://aistudio.google.com/api-reference/interactions-api/create-interaction) sowie die Seite [Videos aus Text erzeugen](https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/video/generate-videos-from-text) der Agent Platform, gelesen am 2026-11-09.
 

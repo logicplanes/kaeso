@@ -12,7 +12,7 @@ The layout and the provenance marks (`doc:`, `sdk:`, `schema:`) are in [Fixtures
 
 ## Recordings
 
-Every `recorded-*` file comes from the live API with a free-tier Google AI Studio key, through `cargo xtask record gemini`, on 2026-11-08. A Gemini request names its model and method in the path, so a request fixture's `<name>.meta.json` holds `{"model", "action"}` where it needs another model or method than `--model` and `generateContent`. `gemini-3.5-flash` answered as `gemini-3.6-flash`.
+Every `recorded-*` file comes from the live API, through `cargo xtask record gemini`, on 2026-11-08. A Gemini request names its model and method in the path, so a request fixture's `<name>.meta.json` holds `{"model", "action"}` where it needs another model or method than `--model` and `generateContent`. `gemini-3.5-flash` answered as `gemini-3.6-flash`.
 
 ## Gaps
 

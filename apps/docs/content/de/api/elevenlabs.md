@@ -53,7 +53,7 @@ Das SDK sendet den Schlüssel in `xi-api-key`; Kaeso nimmt dort einen Kaeso-Schl
 | `POST /v1/text-to-speech/{voice_id}` und `/stream`, `/with-timestamps`, `/stream/with-timestamps` | `text_to_speech.convert`, `.stream`, `.convert_with_timestamps`, `.stream_with_timestamps` | Sprache, das Audio gesendet, während es entsteht; Zeitmarken als JSON von ElevenLabs oder als seine JSON-Zeilen |
 | `POST /v1/text-to-dialogue` und seine Formen mit Streaming und Zeitmarken | `text_to_dialogue.convert` und die übrigen | ein Dialog, jede Zeile in ihrer Stimme |
 | `POST /v1/sound-generation` | `text_to_sound_effects.convert` | ein Soundeffekt, nach Minuten seiner Länge abgerechnet |
-| `POST /v1/music` und `/v1/music/stream` | `music.compose`, `music.stream` | Musik; im kostenlosen Tarif lehnt ElevenLabs sie ab |
+| `POST /v1/music` und `/v1/music/stream` | `music.compose`, `music.stream` | Musik; bei Tarifen ohne Musik lehnt ElevenLabs sie ab |
 | `POST /v1/voice-changer/{voice_id}` und `/stream` | `speech_to_speech.convert`, `.stream` | Sprache in einer anderen Stimme, aus einem Upload |
 | `POST /v1/speech-to-text` | `speech_to_text.convert` | ein Transkript mit zeitlich markierten Wörtern und Sprechern |
 | `GET /v1/models` | `models.list` | die ElevenLabs-Modelle des Projekts, aus dem Katalog von Kaeso |
