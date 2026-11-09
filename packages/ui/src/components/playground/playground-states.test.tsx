@@ -189,6 +189,7 @@ describe("ResponseView marks and announcements", () => {
     expect(metrics.parentElement).toHaveClass("min-h-32");
     expect(metrics.parentElement).not.toHaveClass("px-4");
     const row = metrics.parentElement!;
+    expect(row).toHaveClass("pl-4");
     expect(within(row).getByRole("button", { name: "Copy response" })).toHaveClass("size-32", "text-fg-secondary");
     expect(within(row).getByRole("button", { name: "Retry" })).toHaveClass("material-ghost", "text-fg-secondary");
   });
