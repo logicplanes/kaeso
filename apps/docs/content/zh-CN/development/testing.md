@@ -134,6 +134,7 @@ cargo install cargo-deny cargo-llvm-cov cargo-nextest sqlx-cli --locked
 | --- | --- | --- |
 | `t_<uuid>` | 测试中的 `TestServices::start`，或 `kaeso-testkit fresh-services --temporary` | 测试结束时（panic 时也会），或由清扫删除 |
 | `dev_<uuid>` | `kaeso-testkit fresh-services`，供[从源码运行的网关](stack.md#从源码运行网关)使用 | 只能通过 `kaeso-testkit drop-services dev_<uuid>` 删除 |
+| `tpl_<hash>` | 迁移变更后的第一个测试：一个已应用所有迁移的 PostgreSQL 数据库，每个测试的数据库都从它复制 | 从不删除；每组迁移保留一个 |
 
 一个进程中的第一个测试会清扫超过六小时且不再使用的 `t_` 数据库。要保留失败测试的数据库，用 `KAESO_TEST_KEEP_DATABASES=1` 运行它，测试会输出这些数据库的名称。
 

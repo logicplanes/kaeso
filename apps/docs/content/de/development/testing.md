@@ -134,6 +134,7 @@ Jeder Test legt eigene Datenbanken auf den Entwicklungsinstanzen von PostgreSQL,
 | --- | --- | --- |
 | `t_<uuid>` | `TestServices::start` in einem Test oder `kaeso-testkit fresh-services --temporary` | Wenn der Test endet, auch bei einer Panic, oder beim Aufräumen |
 | `dev_<uuid>` | `kaeso-testkit fresh-services`, für ein [aus dem Quellcode gestartetes Gateway](stack.md#gateway-aus-dem-quellcode-starten) | Nur durch `kaeso-testkit drop-services dev_<uuid>` |
+| `tpl_<hash>` | Der erste Test nach einer Änderung der Migrationen: eine PostgreSQL-Datenbank mit allen Migrationen, aus der jede Testdatenbank kopiert wird | Nie; für jeden Stand der Migrationen bleibt eine |
 
 Der erste Test eines Prozesses räumt `t_`-Datenbanken auf, die älter als sechs Stunden sind und nicht mehr genutzt werden. Um die Datenbanken eines fehlgeschlagenen Tests zu behalten, führen Sie ihn mit `KAESO_TEST_KEEP_DATABASES=1` aus. Er gibt dann ihre Namen aus.
 

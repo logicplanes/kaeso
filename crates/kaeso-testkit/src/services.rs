@@ -7,6 +7,7 @@ use kaeso_store::clickhouse::ClickHouse;
 use kaeso_store::valkey::Valkey;
 use secrecy::{ExposeSecret, SecretString};
 use serde::Deserialize;
+use sha2::{Digest, Sha256};
 use sqlx::postgres::PgPoolOptions;
 use sqlx::{Connection, PgConnection, PgPool};
 use uuid::Uuid;
@@ -21,6 +22,7 @@ pub const DEFAULT_CLICKHOUSE_URL: &str = "http://kaeso:kaeso@127.0.0.1:58123";
 pub const DEFAULT_VALKEY_URL: &str = "redis://127.0.0.1:56379";
 
 pub const TEST_PREFIX: &str = "t_";
+pub const TEMPLATE_PREFIX: &str = "tpl_";
 pub const DEV_PREFIX: &str = "dev_";
 pub const TEST_MARK: &str = "kaeso-testkit: test database";
 pub const SWEEP_AGE: Duration = Duration::from_secs(6 * 60 * 60);
@@ -116,6 +118,78 @@ enum Ownership {
 }
 
 static SWEPT: AtomicBool = AtomicBool::new(false);
+
+// Every test runs in a process of its own, and running the migrations took most of its setup;
+// copying a database migrated once per set of migrations takes a fraction of that.
+fn template_name() -> String {
+    let mut hash = Sha256::new();
+    for migration in kaeso_store::pg::MIGRATOR.iter() {
+        hash.update(migration.version.to_le_bytes());
+        hash.update(&migration.checksum);
+    }
+    let digest = hash.finalize();
+    let hex: String = digest.iter().take(8).map(|b| format!("{b:02x}")).collect();
+    format!("{TEMPLATE_PREFIX}{hex}")
+}
+
+const TEMPLATE_LOCK: i64 = 0x6b61_6573_6f74_0001;
+
+async fn migrated_template(admin: &mut PgConnection, admin_url: &SecretString) -> String {
+    let template = template_name();
+    sqlx::query("SELECT pg_advisory_lock($1)")
+        .bind(TEMPLATE_LOCK)
+        .execute(&mut *admin)
+        .await
+        .expect("lock the template database");
+    let exists: Option<(i32,)> = sqlx::query_as("SELECT 1 FROM pg_database WHERE datname = $1")
+        .bind(&template)
+        .fetch_optional(&mut *admin)
+        .await
+        .expect("look for the template database");
+    if exists.is_none() {
+        let building = format!("{template}_{}", Uuid::now_v7().simple());
+        sqlx::query(sqlx::AssertSqlSafe(format!("CREATE DATABASE {building}")))
+            .execute(&mut *admin)
+            .await
+            .expect("create the template database");
+        let mut url =
+            url::Url::parse(admin_url.expose_secret()).expect("KAESO_TEST_POSTGRES_URL is a URL");
+        url.set_path(&building);
+        let pool = PgPoolOptions::new()
+            .max_connections(1)
+            .connect(url.as_str())
+            .await
+            .expect("connect to the template database");
+        kaeso_store::pg::migrate(&pool)
+            .await
+            .expect("migrate the template database");
+        pool.close().await;
+        // The server may still count the closed session for a moment, and a database with a
+        // session can be neither renamed nor copied.
+        let mut renamed = false;
+        for _ in 0..50 {
+            if sqlx::query(sqlx::AssertSqlSafe(format!(
+                "ALTER DATABASE {building} RENAME TO {template}"
+            )))
+            .execute(&mut *admin)
+            .await
+            .is_ok()
+            {
+                renamed = true;
+                break;
+            }
+            tokio::time::sleep(Duration::from_millis(20)).await;
+        }
+        assert!(renamed, "rename the template database {building}");
+    }
+    sqlx::query("SELECT pg_advisory_unlock($1)")
+        .bind(TEMPLATE_LOCK)
+        .execute(&mut *admin)
+        .await
+        .expect("unlock the template database");
+    template
+}
+
 async fn create(
     kind: Kind,
     (pg, ch, vk): (String, String, String),
@@ -147,10 +221,13 @@ async fn create(
     let mut admin = PgConnection::connect(databases.admin_url.expose_secret())
         .await
         .expect("connect to KAESO_TEST_POSTGRES_URL");
-    sqlx::query(sqlx::AssertSqlSafe(format!("CREATE DATABASE {name}")))
-        .execute(&mut admin)
-        .await
-        .expect("create a test database");
+    let template = migrated_template(&mut admin, &databases.admin_url).await;
+    sqlx::query(sqlx::AssertSqlSafe(format!(
+        "CREATE DATABASE {name} TEMPLATE {template}"
+    )))
+    .execute(&mut admin)
+    .await
+    .expect("create a test database");
     if kind == Kind::Test {
         sqlx::query(sqlx::AssertSqlSafe(format!(
             "COMMENT ON DATABASE {name} IS '{TEST_MARK}'"

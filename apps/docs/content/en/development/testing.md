@@ -134,6 +134,7 @@ Every test creates its own databases on the development PostgreSQL, ClickHouse a
 | --- | --- | --- |
 | `t_<uuid>` | `TestServices::start` in a test, or `kaeso-testkit fresh-services --temporary` | When the test ends, also on a panic, or by the sweep |
 | `dev_<uuid>` | `kaeso-testkit fresh-services`, for a gateway you [run from source](stack.md#run-the-gateway-from-source) | Only by `kaeso-testkit drop-services dev_<uuid>` |
+| `tpl_<hash>` | The first test after the migrations change: a PostgreSQL database with every migration applied, which each test's database is copied from | Never; one stays for each set of migrations |
 
 The first test in a process sweeps away `t_` databases that are older than six hours and no longer in use. To keep a failed test's databases, run it with `KAESO_TEST_KEEP_DATABASES=1`, and it prints their names.
 
