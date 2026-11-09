@@ -70,13 +70,13 @@ AWS 和 Google Cloud 不是一键部署：您需要选择区域、域名及其�
 | AWS 快速服务器 | 2026-11-07 在测试实例上修正主密钥所有权后，堆栈和应用检查通过；修正后的模板尚未重新部署 |
 | Google Cloud 快速服务器 | Terraform 配置和设置链接于 2026-11-07 通过 |
 | AWS 和 Google Cloud 托管堆栈 | 已通过 CI 的 lint 和格式检查；本轮未部署 |
-| Railway | 受阻：登录的测试工作区试用已过期，Railway 要求升级套餐后才能应用新基础设施 |
+| Railway | 2026 年 11 月 9 日，文件和按钮的模板各自部署到一个空项目，并通过边缘服务完成设置和登录；邮件投递和流式传输尚未测试 |
 | DigitalOcean | 未部署；App Platform 的校验和提案 API 于 2026 年 11 月 9 日接受了按钮的规范 |
 
 ## 下一步
 
 - [Render](render.md)：用 Render Postgres 和 Key Value 部署蓝图。
-- [Railway](railway.md)：用 Railway Postgres 和 Redis 应用基础设施文件。
+- [Railway](railway.md)：用按钮部署，或用 Railway CLI 应用基础设施文件。
 - [DigitalOcean](digitalocean.md)：用按钮部署，或用 `doctl` 创建使用托管 Valkey 的应用。
 - [AWS](aws.md)：启动一台 EC2 服务器，或使用带 Application Load Balancer、RDS 和 ElastiCache 的 ECS Fargate。
 - [Google Cloud](gcp.md)：启动一台 Compute Engine 服务器，或使用带负载均衡器、Cloud SQL 和 Memorystore 的 Cloud Run。

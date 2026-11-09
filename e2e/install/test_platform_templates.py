@@ -156,6 +156,7 @@ def test_platform_launch_links_use_the_published_templates():
     readme = (ROOT / "README.md").read_text()
     assert "https://render.com/deploy?repo=https://github.com/logicplanes/kaeso/tree/prod" in readme
     assert "https://cloud.digitalocean.com/apps/new?repo=https://github.com/logicplanes/kaeso/tree/prod&refcode=881255e24b11" in readme
+    assert "https://railway.com/new/template/cmVV60?utm_medium=integration&utm_source=button&utm_campaign=kaeso" in readme
     assert "kaeso-cloudformation.s3.amazonaws.com%2Flatest%2Fquick-server.yaml" in readme
     assert "cloudshell_workspace=deploy/gcp/quick-server" in readme
     assert "KAESO_EDGE_CLIENT_IP_HEADERS" in (ROOT / "deploy/console/edge.Caddyfile").read_text()
@@ -175,6 +176,16 @@ def test_railway_listens_on_ipv6_and_takes_secrets_from_shared_variables():
     assert "${{kaeso-gateway.RAILWAY_PRIVATE_DOMAIN}}:8080" in text
     assert "${{kaeso-console.RAILWAY_PRIVATE_DOMAIN}}:3000" in text
     assert "fc00::/7" in text
+
+
+def test_railway_health_checks_reach_the_port_each_service_listens_on():
+    text = (ROOT / ".railway/railway.ts").read_text()
+    gateway = text[text.index('service("kaeso-gateway"') : text.index('service("kaeso-console"')]
+    console = text[text.index('service("kaeso-console"') : text.index('service("kaeso-edge"')]
+    edge = text[text.index('service("kaeso-edge"') :]
+    assert 'PORT: "8080"' in gateway and 'KAESO_LISTEN: "[::]:8080"' in gateway
+    assert 'PORT: "3000"' in console, "the console listens on 3000"
+    assert 'PORT: "8080"' in edge
 
 
 def test_the_cloudformation_templates_lint_clean():

@@ -70,13 +70,13 @@ Der Render-Blueprint wurde am selben Tag aus einem leeren Render-Projekt in Fran
 | AWS, schneller Server | Stack und App-Prüfungen am 2026-11-07 nach der Korrektur des Master-Key-Besitzes auf der Testinstanz bestanden; die korrigierte Vorlage wurde nicht erneut ausgerollt |
 | Google Cloud, schneller Server | Terraform-Konfiguration und Einrichtungslink am 2026-11-07 bestanden |
 | AWS und Google Cloud, verwaltete Stacks | In CI gelintet und formatiert; in diesem Durchlauf nicht ausgerollt |
-| Railway | Blockiert: Die Testversion des angemeldeten Test-Workspace war abgelaufen; Railway verlangt vor neuer Infrastruktur einen Tarif |
+| Railway | Datei und Vorlage des Buttons am 9. November 2026 jeweils in ein leeres Projekt ausgerollt, mit Einrichtung und Anmeldung über den Edge; E-Mail-Zustellung und Streaming nicht getestet |
 | DigitalOcean | Nicht ausgerollt; die Validierungs- und Proposal-API von App Platform hat die Spec des Buttons am 9. November 2026 angenommen |
 
 ## Nächste Schritte
 
 - [Render](render.md): Rollen Sie den Blueprint mit Render Postgres und Key Value aus.
-- [Railway](railway.md): Wenden Sie die Infrastrukturdatei mit Railway Postgres und Redis an.
+- [Railway](railway.md): Rollen Sie mit dem Button aus, oder wenden Sie die Infrastrukturdatei mit der Railway-CLI an.
 - [DigitalOcean](digitalocean.md): Rollen Sie mit dem Button aus, oder legen Sie die App mit einer verwalteten Valkey mit `doctl` an.
 - [AWS](aws.md): Starten Sie einen EC2-Server oder ECS Fargate mit Application Load Balancer, RDS und ElastiCache.
 - [Google Cloud](gcp.md): Starten Sie einen Compute-Engine-Server oder Cloud Run mit Load Balancer, Cloud SQL und Memorystore.

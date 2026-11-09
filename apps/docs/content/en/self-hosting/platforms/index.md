@@ -70,13 +70,13 @@ The Render Blueprint was created from an empty Render project in Frankfurt on th
 | AWS quick server | Stack and app checks passed after correcting master-key ownership on the test instance on 2026-11-07; the corrected template has not been redeployed |
 | Google Cloud quick server | Terraform configuration and setup-link path passed on 2026-11-07 |
 | AWS and Google Cloud managed stacks | Linted and formatted by CI; not deployed in this pass |
-| Railway | Blocked: the signed-in test workspace's trial had expired, and Railway requires a plan before applying new infrastructure |
+| Railway | The file and the button's template each deployed to an empty project on 2026-11-09, with setup and sign-in through the edge; email delivery and streaming not tested |
 | DigitalOcean | Not deployed; App Platform's validation and proposal API accepted the button's spec on 2026-11-09 |
 
 ## Next steps
 
 - [Render](render.md): Deploy the blueprint with Render Postgres and Key Value.
-- [Railway](railway.md): Apply the infrastructure file with Railway Postgres and Redis.
+- [Railway](railway.md): Deploy with the button, or apply the infrastructure file with the Railway CLI.
 - [DigitalOcean](digitalocean.md): Deploy with the button, or create the app with a managed Valkey with `doctl`.
 - [AWS](aws.md): Launch one EC2 server, or ECS Fargate with an Application Load Balancer, RDS and ElastiCache.
 - [Google Cloud](gcp.md): Launch one Compute Engine server, or Cloud Run with a load balancer, Cloud SQL and Memorystore.
