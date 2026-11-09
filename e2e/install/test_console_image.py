@@ -48,13 +48,13 @@ def checkout_with_umask_077(base: Path) -> tuple[Path, Path]:
 def image(tmp_path_factory):
     context, build = checkout_with_umask_077(tmp_path_factory.mktemp("console"))
     tag = f"kaeso-console:umask-{uuid.uuid4().hex[:8]}"
-    subprocess.run(
+    built = subprocess.run(
         ["docker", "build", "-q", "-f", str(context / "deploy" / "console.Dockerfile")]
         + ["--build-context", f"build={build}", "-t", tag, str(context)],
-        check=True,
         capture_output=True,
         text=True,
     )
+    assert built.returncode == 0, built.stderr[-4000:]
     try:
         yield tag
     finally:
