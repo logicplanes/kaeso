@@ -298,7 +298,7 @@ Die einzige erforderliche Prüfung ist **CI**. Sie besteht, wenn **Changes** und
 | Rust dependencies | `cargo deny check`, mit der Richtlinie des Workspaces und der von KPP |
 | Fuzz targets | Die Fuzz-Targets bauen |
 | Published crates | `cargo publish --dry-run` und `cargo doc` mit Warnungen als Fehler für `kaeso-kpp` und `kaeso-codecs`, und `cargo semver-checks`: gegen die zuletzt veröffentlichte Version für ein Minor-Release und bei einem Pull Request gegen seine Basis für ein Patch-Release, außer er trägt das Label `breaking` |
-| Fuzz runs | Der Workflow **Fuzz** mit 30 Sekunden je Target in vier Jobs, wenn sich KPP, `crates/kaeso-mcp` oder `fuzz/` geändert hat |
+| Fuzz runs | Der Workflow **Fuzz** mit 30 Sekunden je Target in vier Jobs, wenn sich KPP, `crates/kaeso-mcp` oder `fuzz/` geändert hat; nicht bei einem Push auf `dev`, den der nächtliche Lauf abdeckt |
 | SDK conformance, SDK end-to-end | `pytest -q e2e/conformance`, `pytest -q e2e/sdk` und `pytest -q e2e/mcp` |
 | Compose config | `docker compose config` für beide Compose-Dateien |
 | Images (gateway, mock provider, updater, console) | Bauen die vier Images; der Job der Konsole prüft außerdem, dass ihr Image die Konsole mit einer Content Security Policy ausliefert |

@@ -298,7 +298,7 @@ CI 工作流 `.github/workflows/ci.yml` 在每个拉取请求、每次推送到 
 | Rust dependencies | 用工作区和 KPP 的政策运行 `cargo deny check` |
 | Fuzz targets | 模糊测试目标能够构建 |
 | Published crates | 为 `kaeso-kpp` 和 `kaeso-codecs` 运行 `cargo publish --dry-run` 和把警告视为错误的 `cargo doc`，并运行 `cargo semver-checks`：对照最近发布的版本检查是否适合次版本发布；在拉取请求中对照其基础提交检查是否适合补丁发布，除非它带有 `breaking` 标签 |
-| Fuzz runs | KPP、`crates/kaeso-mcp` 或 `fuzz/` 有变化时，在四个作业中以每个目标 30 秒运行 **Fuzz** 工作流 |
+| Fuzz runs | KPP、`crates/kaeso-mcp` 或 `fuzz/` 有变化时，在四个作业中以每个目标 30 秒运行 **Fuzz** 工作流；推送到 `dev` 时不运行，由夜间运行覆盖 |
 | SDK conformance、SDK end-to-end | `pytest -q e2e/conformance`、`pytest -q e2e/sdk` 和 `pytest -q e2e/mcp` |
 | Compose config | 对两个 Compose 文件运行 `docker compose config` |
 | Images（gateway、mock provider、updater、console） | 构建四个镜像；控制台的作业还检查其镜像以内容安全策略提供控制台 |

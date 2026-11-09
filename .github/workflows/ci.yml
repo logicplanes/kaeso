@@ -340,7 +340,8 @@ jobs:
   fuzz-runs:
     name: Fuzz runs
     needs: changes
-    if: needs.changes.outputs.fuzz == 'true'
+    # A push to dev merges a pull request whose fuzz runs passed; the nightly Fuzz run covers dev for ten minutes per target.
+    if: needs.changes.outputs.fuzz == 'true' && !(github.event_name == 'push' && github.ref == 'refs/heads/dev')
     permissions:
       contents: read
     uses: ./.github/workflows/fuzz.yml
