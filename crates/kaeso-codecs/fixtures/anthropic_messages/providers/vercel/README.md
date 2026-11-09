@@ -9,7 +9,7 @@ Vercel AI Gateway's Anthropic Messages API, `POST https://ai-gateway.vercel.sh/v
 | Anthropic Messages API, `count_tokens`, errors | https://vercel.com/docs/ai-gateway/sdks-and-apis/anthropic-messages-api |
 | Extended thinking | https://vercel.com/docs/ai-gateway/sdks-and-apis/anthropic-messages-api/reasoning |
 
-Every live recording was made on 2026-10-29 with a free-tier Vercel account, with `nvidia/nemotron-3.5-lightning-free` (free) or models that cost under $0.0001 a request, and is listed with its model in the `RECORDED.md` of its folder. The free tier refuses paid models such as Claude with 403, and allows 5 requests a minute to the free model. Vercel's `provider_metadata` (or `providerMetadata`) carries `gateway.routing.clientSessionId`, a fingerprint of the client; it is replaced with zeros and nothing else is changed. Generation ids (`gen_…`) and the upstream provider's request ids are kept as recorded.
+Every live recording was made on 2026-10-29 with `nvidia/nemotron-3.5-lightning-free` (free) or models that cost under $0.0001 a request, and is listed with its model in the `RECORDED.md` of its folder. Vercel's free tier refuses paid models such as Claude with 403, and allows 5 requests a minute to the free model. Vercel's `provider_metadata` (or `providerMetadata`) carries `gateway.routing.clientSessionId`, a fingerprint of the client; it is replaced with zeros and nothing else is changed. Generation ids (`gen_…`) and the upstream provider's request ids are kept as recorded.
 
 ## Files
 
