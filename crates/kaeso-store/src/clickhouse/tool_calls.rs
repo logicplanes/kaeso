@@ -127,6 +127,27 @@ pub async fn content(
         .await?)
 }
 
+pub async fn contents(
+    ch: &ClickHouse,
+    org: Uuid,
+    project: Uuid,
+    ids: &[Uuid],
+) -> Result<Vec<ToolCallContentRow>, StoreError> {
+    if ids.is_empty() {
+        return Ok(Vec::new());
+    }
+    Ok(ch
+        .client()
+        .query(
+            "SELECT ?fields FROM tool_call_content WHERE org_id = ? AND project_id = ? AND id IN ?",
+        )
+        .bind(org)
+        .bind(project)
+        .bind(ids)
+        .fetch_all::<ToolCallContentRow>()
+        .await?)
+}
+
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Filter {
     pub from: Option<OffsetDateTime>,

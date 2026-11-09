@@ -16,6 +16,7 @@ import {
   Status,
   Toolbar,
   col,
+  icons,
 } from "@logicplanes/kaeso-ui";
 import { formatBytes, formatDuration } from "@logicplanes/kaeso-ui/format";
 import { isApiError } from "~/api/errors";
@@ -27,10 +28,12 @@ import { useProjectRights } from "~/auth/rights";
 import { t } from "~/i18n";
 import { common } from "~/i18n/common";
 import { patchSearch, type SearchPatch } from "~/search";
+import { showExportProgress } from "~/shell/export-job";
 import { ProjectHeader } from "~/shell/project-header";
 import { usePhone } from "~/shell/use-phone";
 import { usePartyName } from "../keys/party";
 import type { LogsSearch } from "./logs-page";
+import { ToolCallsExportDialog } from "./export-dialog";
 import { useLiveToolCalls } from "./live";
 import {
   FilterBar,
@@ -78,6 +81,9 @@ export function ToolCallsPage({ org, project, search }: { org: string; project: 
   const navigate = useNavigate();
   const partyName = usePartyName(org, project);
   const phone = usePhone();
+  const rights = useProjectRights(org, project);
+  const needs = useNeedsRight(org, project);
+  const [exporting, setExporting] = useState(false);
   const { keyName, keyOptions, memberOptions } = usePartyFilters(org, project);
   const tools = useQuery(projectToolsQuery(org, project));
   const servers = useQuery(projectServersQuery(org, project));
@@ -161,9 +167,46 @@ export function ToolCallsPage({ org, project, search }: { org: string; project: 
     [partyName],
   );
   const unavailable = calls.error && isApiError(calls.error) && calls.error.type === "unavailable";
+  const canExport = rights.has("logs.export");
+  const nothingToExport = calls.isSuccess && rows.length === 0;
   return (
     <>
-      <ProjectHeader org={org} project={project} page={t("logs.title", "Request logs")} path="logs" />
+      <ProjectHeader
+        org={org}
+        project={project}
+        page={t("logs.title", "Request logs")}
+        path="logs"
+        actions={
+          <Button
+            size="sm"
+            leadingIcon={icons.download}
+            disabled={!canExport || nothingToExport}
+            disabledReason={!canExport ? needs("logs.export") : nothingToExport ? t("logs.tools.noMatch", "No tool calls match these filters") : undefined}
+            onClick={() => showExportProgress() || setExporting(true)}
+          >
+            {common.export()}
+          </Button>
+        }
+      />
+      {canExport && (
+        <ToolCallsExportDialog
+          org={org}
+          project={project}
+          filters={filters}
+          names={{
+            key: filters.key && keyName(filters.key),
+            member: memberOptions.find((m) => m.value === filters.member)?.label,
+            server: filters.server && serverName(filters.server),
+          }}
+          labels={{
+            ...(filters.status ? { status: statusOf(filters.status).label } : {}),
+            ...(filters.error ? { error: errorLabel(filters.error) } : {}),
+          }}
+          canContent={rights.has("logs.content.view")}
+          open={exporting}
+          onOpenChange={setExporting}
+        />
+      )}
       <Toolbar aria-label={t("logs.tools.filtersLabel", "Filter tool calls")}>
         <KindSwitch value="tools" onChange={(kind) => setSearch({ kind, call: undefined })} />
         <RangeControls value={search} onChange={setSearch} />

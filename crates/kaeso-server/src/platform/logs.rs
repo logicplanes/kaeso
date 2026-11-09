@@ -1180,7 +1180,7 @@ enum Cell {
     Number(String),
 }
 
-fn csv_text(s: &str) -> String {
+pub(crate) fn csv_text(s: &str) -> String {
     let mut out = String::with_capacity(s.len() + 4);
     out.push('"');
     if s.starts_with(FORMULA_STARTS) || s.contains(SPLIT_ON) {
