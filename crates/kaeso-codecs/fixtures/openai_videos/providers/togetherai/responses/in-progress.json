@@ -1,0 +1,9 @@
+{
+  "id": "019a0068-794a-7213-90f6-bbbbbbbbbbbb",
+  "object": "video",
+  "model": "Wan-AI/wan2.7-t2v",
+  "status": "in_progress",
+  "created_at": 1761072000,
+  "size": "1280x720",
+  "seconds": "5"
+}

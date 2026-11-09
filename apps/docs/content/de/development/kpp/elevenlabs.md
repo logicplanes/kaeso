@@ -4,7 +4,7 @@ description: Wie die API von ElevenLabs auf KPP abgebildet wird, für Apps im Fo
 order: 9
 ---
 
-Schlagen Sie nach, wie die Endpunkte von ElevenLabs zum Erzeugen, Transkribieren und Auflisten auf KPP abgebildet werden, wie Kaeso sie von Apps im Format von ElevenLabs liest und an ElevenLabs schreibt. Prüfen Sie es, bevor Sie den ElevenLabs-Codec ändern.
+Schlagen Sie nach, wie die Endpunkte von ElevenLabs zum Erzeugen, Transkribieren, für Videos und zum Auflisten auf KPP abgebildet werden, wie Kaeso sie von Apps im Format von ElevenLabs liest und an ElevenLabs schreibt. Prüfen Sie es, bevor Sie den ElevenLabs-Codec ändern.
 
 - **Codec:** `kaeso_codecs::elevenlabs::ElevenLabs` (`crates/kaeso-codecs/src/elevenlabs/`)
 - **Fixtures:** `crates/kaeso-codecs/fixtures/elevenlabs/`, live im kostenlosen Tarif aufgezeichnet, einmal pro Endpunkt, insgesamt etwa 40 Credits
@@ -60,6 +60,24 @@ Eine OpenAI-App bekommt die Wörter von ElevenLabs ohne deren Einträge `spacing
 ## Fehler
 
 ElevenLabs antwortet mit `{"detail": {"type", "code", "message", "status", "request_id", "param"}}`; ältere Endpunkte mit `{"detail": {"status", "message"}}`, die Validierung mit `{"detail": [{"loc", "msg"}]}`. Kaeso liest alle drei, bildet `type` und `code` auf die Fehlerart ab (`insufficient_credits` und `payment_required` auf Abrechnung, `rate_limit_error` auf Ratenlimit) und schreibt seine eigenen Fehler an ElevenLabs-Apps in der dokumentierten Form. Die eigenen Fehler von ElevenLabs gehen weiter, wie sie kamen, mit ihrem Status.
+
+## Videoerzeugungen
+
+ElevenLabs erzeugt Videos mit Veo-3.1- und Seedance-2-Modellen über `POST /v1/flows/video`, gemeldet von `GET /v1/flows/video/{id}`; der Body hängt von `model_id` ab (`VideoGenerationRequest`). Kaeso sendet Videojobs für eine App eines anderen Formats dorthin; Apps im Format von ElevenLabs rufen es nicht über Kaeso auf. Die Fixtures in `fixtures/elevenlabs/video/` sind aus dem OpenAPI-Dokument gebaut: Video ist eine kostenpflichtige Funktion, die in der kostenlosen Stufe nie aufgerufen wird.
+
+| KPP | ElevenLabs |
+| --- | --- |
+| `model` | `model_id`: `veo-3.1-generate-001`, `veo-3.1-fast-generate-001`, `bytedance-seedance-v2`, `-v2-fast`, `-v2-mini`, `-v2.5` |
+| `prompt`, `seed`, `audio` | `prompt`, `seed`, `generate_audio` |
+| `negative_prompt` | `negative_prompt`, nur Veo-Modelle |
+| `seconds`, `aspect_ratio`, `resolution` | `duration_secs`, `aspect_ratio`, `resolution`, jeweils aus den Listen des Modells |
+| Bilder `FirstFrame`, `LastFrame` | `start_frame`, `end_frame`: `{type: "inline_base64", content_base64, mime_type}` oder `{type: "asset", asset_id}` |
+| Bilder `Reference` | `images[]` `{image, role}`, nur Veo-Modelle, `role` `subject`, außer die App nannte `style` |
+| Antwort `status` `pending`, `generating`, `completed`, `failed` | `queued`, `in_progress`, `completed`, `failed` |
+| Antwort `content_url`, `content_mime_type` | der Ausgabelink und sein Medientyp, etwa eine Stunde gültig |
+| Antwort `failure_reason`, `error_message` | `error.code`, `error.message` |
+
+Bilder per Weblink, `creatify-aurora` (es braucht Audio als Eingabe) und Remixe werden vor dem Senden abgelehnt.
 
 ## Listen
 

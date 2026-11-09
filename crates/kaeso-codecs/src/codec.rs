@@ -7,10 +7,11 @@ use crate::openai_images::ImagesProfile;
 use crate::openai_responses::ResponsesProfile;
 use crate::openai_speech::SpeechProfile;
 use crate::openai_transcriptions::TranscriptionsProfile;
+use crate::openai_videos::VideosProfile;
 use indexmap::IndexMap;
 use kaeso_kpp::{
     AudioFormat, DialectId, KppError, ModelInfo, ModelList, ModelsQuery, Origin, Reply, Request,
-    RequestKind, StreamEvent, StreamMode, TranscriptFormat,
+    RequestKind, Source, StreamEvent, StreamMode, TranscriptFormat, VideoJob,
 };
 
 pub trait Codec: sealed::Sealed {
@@ -79,6 +80,56 @@ pub trait Codec: sealed::Sealed {
         Self::decode_error(status, headers, body)
     }
 
+    /// The request that asks the provider how its video job `job`, made by `model`, stands.
+    fn encode_video_poll(
+        _job: &str,
+        _model: &str,
+        _ctx: &EgressCtx,
+    ) -> Result<EncodedRequest, KppError> {
+        Err(no_video_jobs(Self::DIALECT))
+    }
+
+    /// Reads the provider's answer to [`encode_video_poll`](Self::encode_video_poll).
+    fn decode_video_poll(
+        status: u16,
+        headers: &HeaderList,
+        body: &[u8],
+        _ctx: &EgressCtx,
+    ) -> Result<VideoJob, KppError> {
+        if !(200..300).contains(&status) {
+            return Err(Self::decode_error(status, headers, body));
+        }
+        Err(no_video_jobs(Self::DIALECT))
+    }
+
+    /// The request that deletes the provider's video job `job`, or `None` when the provider
+    /// documents no way to delete one.
+    fn encode_video_delete(
+        _job: &str,
+        _model: &str,
+        _ctx: &EgressCtx,
+    ) -> Result<Option<EncodedRequest>, KppError> {
+        Ok(None)
+    }
+
+    /// The request that turns the file id a finished video job named into a link to the file.
+    fn encode_video_file(_file: &str, _ctx: &EgressCtx) -> Result<EncodedRequest, KppError> {
+        Err(no_video_jobs(Self::DIALECT))
+    }
+
+    /// Reads the provider's answer to [`encode_video_file`](Self::encode_video_file): the
+    /// file's link.
+    fn decode_video_file(
+        status: u16,
+        headers: &HeaderList,
+        body: &[u8],
+    ) -> Result<Source, KppError> {
+        if !(200..300).contains(&status) {
+            return Err(Self::decode_error(status, headers, body));
+        }
+        Err(no_video_jobs(Self::DIALECT))
+    }
+
     fn decode_models_query(query: &str) -> Result<ModelsQuery, KppError>;
 
     fn encode_models(list: &ModelList) -> Result<Vec<u8>, KppError>;
@@ -110,6 +161,13 @@ pub trait Codec: sealed::Sealed {
     ) -> Result<EncodedRequest, KppError> {
         Self::encode_models_request(query)
     }
+}
+
+fn no_video_jobs(dialect: DialectId) -> KppError {
+    KppError::unsupported(
+        "video jobs",
+        format!("{} runs no video jobs.", dialect.display_name()),
+    )
 }
 
 /// The `content-type` of a JSON reply.
@@ -200,6 +258,8 @@ pub struct EgressCtx {
     pub speech_profile: SpeechProfile,
     /// How a provider that speaks a form of OpenAI's transcription API takes transcriptions.
     pub transcriptions_profile: TranscriptionsProfile,
+    /// How a provider that speaks a form of OpenAI's Videos API takes video jobs.
+    pub videos_profile: VideosProfile,
     pub left_out: Vec<String>,
     pub adapted: Vec<String>,
     /// The prompt-cache breakpoints (`cache_control`) an encoded generation request
@@ -256,6 +316,7 @@ impl EgressCtx {
             images_profile: ImagesProfile::OPENAI,
             speech_profile: SpeechProfile::OPENAI,
             transcriptions_profile: TranscriptionsProfile::OPENAI,
+            videos_profile: VideosProfile::OPENAI,
             left_out: Vec::new(),
             adapted: Vec::new(),
             cache_breakpoints: None,
@@ -337,6 +398,13 @@ impl EgressCtx {
         self
     }
 
+    /// Sends video jobs in the form `profile` describes.
+    #[must_use]
+    pub fn with_videos_profile(mut self, profile: VideosProfile) -> Self {
+        self.videos_profile = profile;
+        self
+    }
+
     #[must_use]
     pub fn with_messages_profile(mut self, profile: MessagesProfile) -> Self {
         self.messages_profile = profile;
@@ -390,6 +458,15 @@ impl EncodedRequest {
             path: path.into(),
             headers,
             body,
+        }
+    }
+
+    pub fn delete(path: impl Into<String>, headers: HeaderList) -> Self {
+        EncodedRequest {
+            method: "DELETE",
+            path: path.into(),
+            headers,
+            body: Vec::new(),
         }
     }
 
@@ -485,6 +562,7 @@ pub const FORWARDED_HEADERS: &[(DialectId, &str)] = &[
     (DialectId::OpenAiImages, "openai-beta"),
     (DialectId::OpenAiSpeech, "openai-beta"),
     (DialectId::OpenAiTranscriptions, "openai-beta"),
+    (DialectId::OpenAiVideos, "openai-beta"),
 ];
 
 pub fn is_forwarded_header(dialect: DialectId, name: &str) -> bool {

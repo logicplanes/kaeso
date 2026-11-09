@@ -1,0 +1,8 @@
+{
+  "error": {
+    "message": "Invalid value: '640x480'. Supported values are: '720x1280', '1280x720', '1024x1792' and '1792x1024'.",
+    "type": "invalid_request_error",
+    "param": "size",
+    "code": "invalid_value"
+  }
+}

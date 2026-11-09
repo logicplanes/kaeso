@@ -20,6 +20,7 @@ mod tool_patterns;
 mod tool_roots;
 mod tool_search;
 mod verbosity;
+mod video_jobs;
 mod web_search;
 mod wire;
 
@@ -27,14 +28,21 @@ pub mod anthropic_messages;
 pub mod elevenlabs;
 pub mod gemini;
 pub mod gemini_embeddings;
+pub mod gemini_interactions;
 pub mod minimax_images;
 pub mod minimax_speech;
+pub mod minimax_videos;
 pub mod openai_chat;
 pub mod openai_embeddings;
 pub mod openai_images;
 pub mod openai_responses;
 pub mod openai_speech;
 pub mod openai_transcriptions;
+pub mod openai_videos;
+pub mod openrouter_videos;
+pub mod veo;
+pub mod xai_videos;
+pub mod zai_videos;
 
 #[cfg(test)]
 mod models_tests;

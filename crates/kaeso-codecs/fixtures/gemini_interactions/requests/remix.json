@@ -1,0 +1,9 @@
+{
+  "model": "gemini-omni-1.2-flash",
+  "input": "Make it snow. Keep everything else the same.",
+  "previous_interaction_id": "v1_previous",
+  "response_format": {
+    "type": "video"
+  },
+  "background": true
+}

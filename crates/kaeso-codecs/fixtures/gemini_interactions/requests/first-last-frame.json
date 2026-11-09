@@ -1,0 +1,29 @@
+{
+  "model": "gemini-omni-1.2-flash",
+  "input": [
+    {
+      "type": "image",
+      "data": "iVBORw0KGgo=",
+      "mime_type": "image/jpeg"
+    },
+    {
+      "type": "image",
+      "data": "iVBORw0KGgo=",
+      "mime_type": "image/jpeg"
+    },
+    {
+      "type": "text",
+      "text": "The fish jumps out of the water and lands on the rock"
+    }
+  ],
+  "generation_config": {
+    "video_config": {
+      "task": "image_to_video"
+    }
+  },
+  "response_format": {
+    "type": "video",
+    "duration": "8s"
+  },
+  "background": true
+}

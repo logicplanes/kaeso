@@ -88,8 +88,15 @@ Beide Crates sind auf crates.io veröffentlicht. Ihr Bibliothekscode darf nur vo
 | `openai_speech` | Speech von OpenAI (`/v1/audio/speech`) und die Anbieter, die eine Form davon sprechen ([OpenAI Speech](openai-speech.md)) |
 | `openai_transcriptions` | Transkriptionen und Übersetzungen von OpenAI und die Anbieter, die eine Form davon sprechen ([OpenAI Transcriptions](openai-transcriptions.md)) |
 | `minimax_speech` | Text to Speech von MiniMax (`/v1/t2a_v2`) |
-| `elevenlabs` | Die Endpunkte von ElevenLabs zum Erzeugen, Transkribieren und Auflisten ([ElevenLabs](elevenlabs.md)) |
-| `multipart` | Der begrenzte Leser und Schreiber für `multipart/form-data` von Bild-Uploads |
+| `elevenlabs` | Die Endpunkte von ElevenLabs zum Erzeugen, Transkribieren, für Videos und zum Auflisten ([ElevenLabs](elevenlabs.md)) |
+| `openai_videos` | Die Videos API von OpenAI (`/v1/videos`) und die Form von Together AI ([OpenAI Videos](openai-videos.md)) |
+| `xai_videos` | Die Video-API von SpaceX ([SpaceX Videos](xai-videos.md)) |
+| `minimax_videos` | Die Video-APIs Hailuo und H3 von MiniMax ([MiniMax Videos](minimax-videos.md)) |
+| `zai_videos` | Die CogVideoX-API von Z.ai ([Z.ai Videos](zai-videos.md)) |
+| `openrouter_videos` | Die Videoerzeugungs-API von OpenRouter ([OpenRouter Videos](openrouter-videos.md)) |
+| `veo` | Die lang laufenden Vorgänge von Veo auf Gemini Enterprise Agent Platform ([Veo](veo.md)) |
+| `gemini_interactions` | Die Videojobs von Gemini Omni in der Interactions API von Google AI Studio ([Gemini Interactions](gemini-interactions.md)) |
+| `multipart` | Der begrenzte Leser und Schreiber für `multipart/form-data` von Bild-, Audio- und Video-Uploads |
 
 | Gemeinsames Modul | Aufgabe |
 | --- | --- |

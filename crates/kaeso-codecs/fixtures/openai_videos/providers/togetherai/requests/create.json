@@ -1,0 +1,10 @@
+{
+  "model": "Wan-AI/wan2.7-t2v",
+  "prompt": "A cartoon of an astronaut riding a horse on the moon",
+  "width": 1280,
+  "height": 720,
+  "seconds": "5",
+  "seed": 42,
+  "negative_prompt": "blurry",
+  "generate_audio": true
+}

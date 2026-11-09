@@ -7,6 +7,7 @@ mod format;
 mod listing;
 mod reply;
 mod request;
+mod video;
 
 #[cfg(test)]
 mod tests;
@@ -24,6 +25,7 @@ use crate::codec::{
 
 pub use listing::{VOICES_PATHS, voice_listing_request, voices_reply};
 pub use reply::billed_characters;
+pub use video::VIDEO_PATH;
 
 const D: DialectId = DialectId::ElevenLabs;
 
@@ -156,6 +158,10 @@ impl Codec for ElevenLabs {
         body: &[u8],
         headers: &HeaderList,
     ) -> Result<Request, KppError> {
+        if kind == RequestKind::Video {
+            crate::limits::request_shape(D, body)?;
+            return video::decode(body);
+        }
         let operation = match kind {
             RequestKind::Transcription => ElevenLabsOperation::SpeechToText,
             _ => ElevenLabsOperation::TextToSpeech,
@@ -171,6 +177,9 @@ impl Codec for ElevenLabs {
     }
 
     fn encode_response(reply: &Reply, ctx: &EncodeCtx) -> Result<Vec<u8>, KppError> {
+        if let Reply::Video(job) = reply {
+            return crate::wire::to_body(&video::encode_job(job));
+        }
         reply::encode(reply, ctx)
     }
 
@@ -191,10 +200,16 @@ impl Codec for ElevenLabs {
     }
 
     fn check(req: &Request, ctx: &EgressCtx) -> Result<(), KppError> {
+        if let Request::Video(r) = req {
+            return video::check(r);
+        }
         request::check(req, ctx)
     }
 
     fn encode_request(req: &Request, ctx: &mut EgressCtx) -> Result<EncodedRequest, KppError> {
+        if matches!(req, Request::Video(_)) {
+            return video::encode(req);
+        }
         request::encode(req, ctx)
     }
 
@@ -208,7 +223,33 @@ impl Codec for ElevenLabs {
         body: &[u8],
         ctx: &EgressCtx,
     ) -> Result<Reply, KppError> {
+        if ctx.kind == RequestKind::Video {
+            if !(200..300).contains(&status) {
+                return Err(Self::decode_error(status, headers, body));
+            }
+            return video::decode_job(body, ctx).map(Reply::Video);
+        }
         reply::decode(status, headers, body, ctx)
+    }
+
+    fn encode_video_poll(
+        job: &str,
+        _model: &str,
+        _ctx: &EgressCtx,
+    ) -> Result<EncodedRequest, KppError> {
+        Ok(video::poll_request(job))
+    }
+
+    fn decode_video_poll(
+        status: u16,
+        headers: &HeaderList,
+        body: &[u8],
+        ctx: &EgressCtx,
+    ) -> Result<kaeso_kpp::VideoJob, KppError> {
+        if !(200..300).contains(&status) {
+            return Err(Self::decode_error(status, headers, body));
+        }
+        video::decode_job(body, ctx)
     }
 
     fn stream_decoder(ctx: &EgressCtx) -> Box<dyn StreamDecoder> {

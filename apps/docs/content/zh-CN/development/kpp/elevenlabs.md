@@ -4,7 +4,7 @@ description: ElevenLabs 的 API 如何映射到 KPP，适用于 ElevenLabs 格�
 order: 9
 ---
 
-查阅 ElevenLabs 的生成、转写和列表端点如何映射到 KPP，即 Kaeso 如何从 ElevenLabs 格式的应用读取它们、如何写给 ElevenLabs。修改 ElevenLabs 编解码器之前，先查看这里。
+查阅 ElevenLabs 的生成、转写、视频和列表端点如何映射到 KPP，即 Kaeso 如何从 ElevenLabs 格式的应用读取它们、如何写给 ElevenLabs。修改 ElevenLabs 编解码器之前，先查看这里。
 
 - **编解码器：**`kaeso_codecs::elevenlabs::ElevenLabs`（`crates/kaeso-codecs/src/elevenlabs/`）
 - **Fixture：**`crates/kaeso-codecs/fixtures/elevenlabs/`，在免费套餐上实时录制，每个端点一次，共约 40 个额度
@@ -60,6 +60,24 @@ OpenAI 应用收到的 ElevenLabs 词不含其 `spacing` 和 `audio_event` 条�
 ## 错误
 
 ElevenLabs 返回 `{"detail": {"type", "code", "message", "status", "request_id", "param"}}`；较早的端点返回 `{"detail": {"status", "message"}}`，校验错误返回 `{"detail": [{"loc", "msg"}]}`。Kaeso 读取这三种结构，把 `type` 和 `code` 映射为错误类型（`insufficient_credits` 和 `payment_required` 映射为计费，`rate_limit_error` 映射为速率限制），并以文档规定的结构向 ElevenLabs 应用写出自己的错误。ElevenLabs 自己的错误连同其状态码按原样传递。
+
+## 视频生成
+
+ElevenLabs 通过 `POST /v1/flows/video` 使用 Veo 3.1 和 Seedance 2 模型生成视频，由 `GET /v1/flows/video/{id}` 报告；请求体取决于 `model_id`（`VideoGenerationRequest`）。Kaeso 为其他格式的应用把视频任务发往那里；ElevenLabs 格式的应用不通过 Kaeso 调用它。`fixtures/elevenlabs/video/` 中的 fixture 依据 OpenAPI 文档构建：视频是付费功能，从不在免费套餐上调用。
+
+| KPP | ElevenLabs |
+| --- | --- |
+| `model` | `model_id`：`veo-3.1-generate-001`、`veo-3.1-fast-generate-001`、`bytedance-seedance-v2`、`-v2-fast`、`-v2-mini`、`-v2.5` |
+| `prompt`、`seed`、`audio` | `prompt`、`seed`、`generate_audio` |
+| `negative_prompt` | `negative_prompt`，仅限 Veo 模型 |
+| `seconds`、`aspect_ratio`、`resolution` | `duration_secs`、`aspect_ratio`、`resolution`，各自取自该模型的列表 |
+| `FirstFrame`、`LastFrame` 图片 | `start_frame`、`end_frame`：`{type: "inline_base64", content_base64, mime_type}` 或 `{type: "asset", asset_id}` |
+| `Reference` 图片 | `images[]` `{image, role}`，仅限 Veo 模型，`role` 为 `subject`，除非应用指定了 `style` |
+| 回复 `status` `pending`、`generating`、`completed`、`failed` | `queued`、`in_progress`、`completed`、`failed` |
+| 回复 `content_url`、`content_mime_type` | 输出链接及其媒体类型，有效期约一小时 |
+| 回复 `failure_reason`、`error_message` | `error.code`、`error.message` |
+
+网页链接形式的图片、`creatify-aurora`（它需要音频输入）和 remix 会在发送前被拒绝。
 
 ## 列表
 

@@ -1,0 +1,23 @@
+{
+  "data": [
+    {
+      "id": "video_123",
+      "object": "video",
+      "model": "sora-2",
+      "status": "completed",
+      "created_at": 1712697600,
+      "completed_at": 1712697840,
+      "progress": 100,
+      "expires_at": null,
+      "error": null,
+      "prompt": "A calico cat playing a piano on stage",
+      "size": "1024x1792",
+      "seconds": "8",
+      "remixed_from_video_id": null
+    }
+  ],
+  "object": "list",
+  "first_id": "video_123",
+  "last_id": "video_123",
+  "has_more": false
+}

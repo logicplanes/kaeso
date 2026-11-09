@@ -1,0 +1,8 @@
+{
+  "model": "MiniMax-Hailuo-2.3-Fast",
+  "prompt": "The cat turns its head",
+  "first_frame_image": "https://example.com/cat.jpg",
+  "prompt_optimizer": false,
+  "duration": 10,
+  "resolution": "768P"
+}

@@ -614,7 +614,10 @@ pub fn request_shape(dialect: DialectId, body: &[u8]) -> Result<RequestShape, Kp
     // JSON to walk; its parts are counted and bounded by the multipart reader instead.
     let uploads = matches!(
         dialect,
-        DialectId::OpenAiImages | DialectId::OpenAiTranscriptions | DialectId::ElevenLabs
+        DialectId::OpenAiImages
+            | DialectId::OpenAiTranscriptions
+            | DialectId::ElevenLabs
+            | DialectId::OpenAiVideos
     );
     if uploads && !looks_like_json(body) {
         return Ok(RequestShape {

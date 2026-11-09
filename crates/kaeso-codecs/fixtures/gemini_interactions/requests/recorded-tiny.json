@@ -1,0 +1,10 @@
+{
+  "model": "gemini-omni-1.2-flash",
+  "input": "A red ball rolls slowly across a white table.",
+  "response_format": {
+    "type": "video",
+    "resolution": "360p",
+    "duration": "3s"
+  },
+  "background": true
+}

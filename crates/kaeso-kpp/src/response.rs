@@ -7,6 +7,7 @@ use crate::dialect::Origin;
 use crate::extras::Extras;
 use crate::image::ImageResponse;
 use crate::request::RequestKind;
+use crate::video::VideoJob;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -18,6 +19,7 @@ pub enum Reply {
     Image(ImageResponse),
     Speech(SpeechResponse),
     Transcription(TranscriptionResponse),
+    Video(VideoJob),
 }
 
 impl Reply {
@@ -29,6 +31,7 @@ impl Reply {
             Reply::Image(_) => RequestKind::Image,
             Reply::Speech(_) => RequestKind::Speech,
             Reply::Transcription(_) => RequestKind::Transcription,
+            Reply::Video(_) => RequestKind::Video,
         }
     }
 }

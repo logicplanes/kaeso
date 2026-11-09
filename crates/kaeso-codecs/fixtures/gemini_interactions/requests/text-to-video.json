@@ -1,0 +1,11 @@
+{
+  "model": "gemini-omni-1.2-flash",
+  "input": "A marble rolling fast on a chain reaction style track, continuous smooth shot.",
+  "response_format": {
+    "type": "video",
+    "aspect_ratio": "9:16",
+    "resolution": "1080p",
+    "duration": "15s"
+  },
+  "background": true
+}

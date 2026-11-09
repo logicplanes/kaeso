@@ -1,0 +1,18 @@
+{
+  "id": "video_789",
+  "object": "video",
+  "model": "sora-2",
+  "status": "failed",
+  "created_at": 1712697600,
+  "completed_at": 1712697700,
+  "progress": 0,
+  "expires_at": null,
+  "error": {
+    "code": "moderation_blocked",
+    "message": "The prompt was blocked by the moderation system."
+  },
+  "prompt": "A calico cat playing a piano on stage",
+  "size": "1024x1792",
+  "seconds": "8",
+  "remixed_from_video_id": null
+}

@@ -1,5 +1,5 @@
 mod audio;
-mod error;
+pub(crate) mod error;
 mod images;
 pub(crate) mod models;
 mod parts;

@@ -1,0 +1,28 @@
+{
+  "model": "gemini-omni-1.2-flash",
+  "input": [
+    {
+      "type": "image",
+      "data": "iVBORw0KGgo=",
+      "mime_type": "image/png"
+    },
+    {
+      "type": "image",
+      "uri": "https://generativelanguage.googleapis.com/v1beta/files/yarn",
+      "mime_type": "image/png"
+    },
+    {
+      "type": "text",
+      "text": "The cat plays with the ball of yarn"
+    }
+  ],
+  "generation_config": {
+    "video_config": {
+      "task": "reference_to_video"
+    }
+  },
+  "response_format": {
+    "type": "video"
+  },
+  "background": true
+}

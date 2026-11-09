@@ -22,7 +22,9 @@ Jede Codec-Änderung beginnt mit einer Fixture: einem echten Anfrage-Body, einer
 | `openai_speech/` | Speech von OpenAI (`/v1/audio/speech`); die Audioantwort als `responses/<name>.mp3` mit ihrem Content-Type in `<name>.mp3.meta.json` |
 | `openai_transcriptions/` | Transkriptionen und Übersetzungen von OpenAI (`/v1/audio/transcriptions`, `/v1/audio/translations`); Uploads als `requests/<name>.multipart`, Textformen als `.txt`, `.srt` und `.vtt` |
 | `minimax_speech/` | Text to Speech von MiniMax (`/v1/t2a_v2`) |
-| `elevenlabs/` | ElevenLabs; Pfad und Query jeder Anfrage in `<name>.meta.json`, Audioantworten als `.mp3` und `.pcm`, der Stream mit Zeitmarken als `.ndjson` |
+| `elevenlabs/` | ElevenLabs; Pfad und Query jeder Anfrage in `<name>.meta.json`, Audioantworten als `.mp3` und `.pcm`, der Stream mit Zeitmarken als `.ndjson`; Videoerzeugungen in `video/` |
+| `openai_videos/` | Die Videos API von OpenAI; Uploads als `requests/<name>.multipart`, Listen und Löschungen in `lists/`, die Datei eines erzeugten Videos in `content/` |
+| `xai_videos/`, `minimax_videos/`, `zai_videos/`, `openrouter_videos/`, `veo/`, `gemini_interactions/` | Die Video-APIs der Anbieter; `responses/` hält die Antworten, die einen Job starten, `polls/` die Antworten der Anbieter auf die Frage nach einem Job, `minimax_videos/files/` eine Datei-ID, die zum Link wird |
 
 Jeder Dialektordner hat `requests/`, `responses/`, `streams/`, sofern der Endpunkt streamt, und `errors/`.
 

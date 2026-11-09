@@ -8,13 +8,14 @@ use kaeso_kpp::{
 };
 use kaeso_mcp::{Message, RequestHeaders, headers, names};
 
-const KINDS: [RequestKind; 6] = [
+const KINDS: [RequestKind; 7] = [
     RequestKind::Generate,
     RequestKind::CountTokens,
     RequestKind::Embed,
     RequestKind::Image,
     RequestKind::Speech,
     RequestKind::Transcription,
+    RequestKind::Video,
 ];
 
 const ELEVENLABS_PATHS: [&str; 8] = [
@@ -113,6 +114,7 @@ pub fn decoders(dialect: DialectId, data: &[u8]) {
             response(&reply);
         }
     }
+    videos(dialect, data, &headers, &upload);
     let err = dispatch::decode_error(dialect, 400 + u16::from(salt), &headers, data);
     for target in DialectId::ALL {
         let _ = dispatch::encode_error(target, &err);
@@ -198,6 +200,40 @@ fn empty_reply(req: &Request) -> Reply {
         RequestKind::CountTokens => Reply::CountTokens(CountTokensResponse::new(0)),
         RequestKind::Image => Reply::Image(ImageResponse::new(req.model(), Vec::new())),
         _ => Reply::Generate(Response::new("resp_fuzz", req.model(), Vec::new())),
+    }
+}
+
+// A video job read as a provider reports it, a file it names, and OpenAI's remix body and
+// queries, then written back as OpenAI's video resource and listing.
+fn videos(dialect: DialectId, data: &[u8], headers: &HeaderList, upload: &HeaderList) {
+    let ctx = EgressCtx::for_kind(RequestKind::Video, StreamMode::Off)
+        .with_videos_profile(kaeso_codecs::openai_videos::VideosProfile::TOGETHER);
+    for c in [
+        EgressCtx::for_kind(RequestKind::Video, StreamMode::Off),
+        ctx,
+    ] {
+        if let Ok(job) = dispatch::decode_video_poll(dialect, 200, headers, data, &c) {
+            response(&Reply::Video(job.clone()));
+            let _ = kaeso_codecs::openai_videos::encode_list(&kaeso_kpp::VideoList::new(
+                vec![job],
+                true,
+            ));
+        }
+    }
+    let _ = dispatch::decode_video_file(dialect, 200, headers, data);
+    if dialect == DialectId::OpenAiVideos {
+        for h in [headers, upload] {
+            if let Ok(req) = kaeso_codecs::openai_videos::decode_remix(data, h) {
+                request(dialect, &req);
+            }
+            if let Ok(req) = dispatch::decode_request(dialect, RequestKind::Video, data, h) {
+                request(dialect, &req);
+            }
+        }
+        if let Ok(q) = std::str::from_utf8(data) {
+            let _ = kaeso_codecs::openai_videos::decode_list_query(q);
+            let _ = kaeso_codecs::openai_videos::decode_content_query(q);
+        }
     }
 }
 

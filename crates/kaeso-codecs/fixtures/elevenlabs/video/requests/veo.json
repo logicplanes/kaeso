@@ -1,0 +1,11 @@
+{
+  "model_id": "veo-3.1-generate-001",
+  "prompt": "A corgi rides a tiny surfboard across a sunlit wave at golden hour, cinematic",
+  "negative_prompt": "blurry",
+  "seed": 42,
+  "duration_secs": 8,
+  "aspect_ratio": "16:9",
+  "resolution": "1080p",
+  "generate_audio": true,
+  "enhance_prompt": false
+}

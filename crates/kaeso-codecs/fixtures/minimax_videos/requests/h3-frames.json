@@ -1,0 +1,28 @@
+{
+  "model": "MiniMax-H3-Highspeed",
+  "content": [
+    {
+      "type": "text",
+      "text": "The door opens slowly"
+    },
+    {
+      "type": "image_url",
+      "image_url": {
+        "url": "https://example.com/closed.png"
+      },
+      "role": "first_frame"
+    },
+    {
+      "type": "image_url",
+      "image_url": {
+        "url": "https://example.com/open.png"
+      },
+      "role": "last_frame"
+    }
+  ],
+  "resolution": "480P",
+  "duration": 8,
+  "extra": {
+    "prompt_expansion_mode": "quality"
+  }
+}

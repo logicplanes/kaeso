@@ -1,0 +1,8 @@
+{
+  "id": "v1_ChdabcInteraction",
+  "status": "in_progress",
+  "created": "2026-05-29T02:17:56Z",
+  "updated": "2026-05-29T02:17:56Z",
+  "object": "interaction",
+  "model": "gemini-omni-1.2-flash"
+}

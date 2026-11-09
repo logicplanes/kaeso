@@ -1,0 +1,21 @@
+{
+  "model": "Wan-AI/wan2.7-i2v",
+  "prompt": "The astronaut waves",
+  "resolution": "720p",
+  "ratio": "16:9",
+  "media": {
+    "frame_images": [
+      {
+        "input_image": "https://example.com/first.png",
+        "frame": "first"
+      },
+      {
+        "input_image": "https://example.com/last.png",
+        "frame": "last"
+      }
+    ],
+    "reference_images": [
+      "https://example.com/style.png"
+    ]
+  }
+}

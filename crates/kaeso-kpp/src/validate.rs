@@ -17,6 +17,7 @@ impl Request {
             Request::Image(r) => r.validate(),
             Request::Speech(r) => r.validate(),
             Request::Transcription(r) => r.validate(),
+            Request::Video(r) => r.validate(),
         }
     }
 }
@@ -217,6 +218,7 @@ pub struct Capabilities {
     pub video_input: bool,
     pub audio_output: bool,
     pub image_output: bool,
+    pub video_output: bool,
     pub tools: bool,
     pub parallel_tools: bool,
     pub reasoning: bool,

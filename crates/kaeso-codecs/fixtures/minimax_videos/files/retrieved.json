@@ -1,0 +1,14 @@
+{
+  "file": {
+    "file_id": 176844028768320,
+    "bytes": 0,
+    "created_at": 1700469398,
+    "filename": "output_aigc.mp4",
+    "purpose": "video_generation",
+    "download_url": "https://public-cdn-video-data-algeng.oss-cn-wulanchabu.aliyuncs.com/output_aigc.mp4"
+  },
+  "base_resp": {
+    "status_code": 0,
+    "status_msg": "success"
+  }
+}

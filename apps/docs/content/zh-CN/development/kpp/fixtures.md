@@ -22,7 +22,9 @@ order: 10
 | `openai_speech/` | OpenAI 语音（`/v1/audio/speech`）；音频回复为 `responses/<name>.mp3`，content type 写在 `<name>.mp3.meta.json` 中 |
 | `openai_transcriptions/` | OpenAI 转写和翻译（`/v1/audio/transcriptions`、`/v1/audio/translations`）；上传文件为 `requests/<name>.multipart`，文本形式为 `.txt`、`.srt` 和 `.vtt` |
 | `minimax_speech/` | MiniMax 文本转语音（`/v1/t2a_v2`） |
-| `elevenlabs/` | ElevenLabs；每个请求的路径和查询写在 `<name>.meta.json` 中，音频回复为 `.mp3` 和 `.pcm`，带时间戳的流为 `.ndjson` |
+| `elevenlabs/` | ElevenLabs；每个请求的路径和查询写在 `<name>.meta.json` 中，音频回复为 `.mp3` 和 `.pcm`，带时间戳的流为 `.ndjson`；视频生成在 `video/` 中 |
+| `openai_videos/` | OpenAI 的 Videos API；上传为 `requests/<name>.multipart`，列表和删除在 `lists/` 中，生成的视频文件在 `content/` 中 |
+| `xai_videos/`、`minimax_videos/`、`zai_videos/`、`openrouter_videos/`、`veo/`、`gemini_interactions/` | 各服务商的视频 API；`responses/` 保存启动任务的回复，`polls/` 保存查询任务时服务商的回答，`minimax_videos/files/` 保存一个变为链接的文件 ID |
 
 每个方言文件夹都有 `requests/`、`responses/` 和 `errors/`，端点支持流式时还有 `streams/`。
 

@@ -88,8 +88,15 @@ sequenceDiagram
 | `openai_speech` | OpenAI 语音（`/v1/audio/speech`）以及使用其某种形式的服务商（[OpenAI Speech](openai-speech.md)） |
 | `openai_transcriptions` | OpenAI 转写和翻译以及使用其某种形式的服务商（[OpenAI Transcriptions](openai-transcriptions.md)） |
 | `minimax_speech` | MiniMax 文本转语音（`/v1/t2a_v2`） |
-| `elevenlabs` | ElevenLabs 的生成、转写和列表端点（[ElevenLabs](elevenlabs.md)） |
-| `multipart` | 图片上传使用的有上限的 `multipart/form-data` 读取器和写入器 |
+| `elevenlabs` | ElevenLabs 的生成、转写、视频和列表端点（[ElevenLabs](elevenlabs.md)） |
+| `openai_videos` | OpenAI 的 Videos API（`/v1/videos`）以及 Together AI 的形式（[OpenAI Videos](openai-videos.md)） |
+| `xai_videos` | SpaceX 的视频 API（[SpaceX Videos](xai-videos.md)） |
+| `minimax_videos` | MiniMax 的 Hailuo 和 H3 视频 API（[MiniMax Videos](minimax-videos.md)） |
+| `zai_videos` | Z.ai 的 CogVideoX API（[Z.ai Videos](zai-videos.md)） |
+| `openrouter_videos` | OpenRouter 的视频生成 API（[OpenRouter Videos](openrouter-videos.md)） |
+| `veo` | Gemini Enterprise Agent Platform 上 Veo 的长时间运行操作（[Veo](veo.md)） |
+| `gemini_interactions` | Google AI Studio Interactions API 上 Gemini Omni 的视频任务（[Gemini Interactions](gemini-interactions.md)） |
+| `multipart` | 图片、音频和视频上传使用的有上限的 `multipart/form-data` 读取器和写入器 |
 
 | 共享模块 | 职责 |
 | --- | --- |

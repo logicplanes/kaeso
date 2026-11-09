@@ -1,0 +1,12 @@
+{
+  "model": "MiniMax-H3",
+  "content": [
+    {
+      "type": "text",
+      "text": "A boy playing basketball by the sea"
+    }
+  ],
+  "resolution": "768P",
+  "duration": 5,
+  "ratio": "16:9"
+}

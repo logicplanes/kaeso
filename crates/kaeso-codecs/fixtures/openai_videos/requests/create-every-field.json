@@ -1,0 +1,9 @@
+{
+  "model": "sora-2-pro",
+  "prompt": "A calico cat playing a piano on stage",
+  "input_reference": {
+    "image_url": "https://example.com/source-image.png"
+  },
+  "seconds": "8",
+  "size": "1280x720"
+}

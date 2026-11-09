@@ -1,0 +1,17 @@
+{
+  "instances": [
+    {
+      "prompt": "A paper plane looping over a city at dusk"
+    }
+  ],
+  "parameters": {
+    "aspectRatio": "16:9",
+    "negativePrompt": "low quality",
+    "personGeneration": "allow_adult",
+    "resolution": "720p",
+    "sampleCount": 1,
+    "seed": 0,
+    "durationSeconds": 8,
+    "generateAudio": true
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "model": "google/veo-3.1",
+  "prompt": "A serene mountain landscape at sunset",
+  "aspect_ratio": "16:9",
+  "duration": 8,
+  "resolution": "720p"
+}
