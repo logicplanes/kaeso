@@ -1,36 +1,50 @@
-import { useMemo } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useInfiniteQuery, useQuery, type UseQueryResult } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import {
   AppFrame,
+  Button,
   DataTable,
+  DisplayOptions,
   Empty,
-  FilterChip,
   JsonView,
   KeyValue,
   Section,
   Segmented,
-  Select,
   Sheet,
   Skeleton,
   Status,
   Toolbar,
   col,
-  icons,
 } from "@logicplanes/kaeso-ui";
 import { formatBytes, formatDuration } from "@logicplanes/kaeso-ui/format";
 import { isApiError } from "~/api/errors";
 import type { ToolCallEntryView, ToolCallView } from "~/api/generated/types";
 import { toolCallQuery, toolCallsInfiniteQuery, type ToolCallFilters } from "~/api/queries/logs";
+import { projectServersQuery, projectToolsQuery } from "~/api/queries/tools";
 import { useNeedsRight } from "~/auth/needs-right";
 import { useProjectRights } from "~/auth/rights";
 import { t } from "~/i18n";
 import { common } from "~/i18n/common";
 import { patchSearch, type SearchPatch } from "~/search";
 import { ProjectHeader } from "~/shell/project-header";
+import { usePhone } from "~/shell/use-phone";
 import { usePartyName } from "../keys/party";
-import { ranges, type LogsSearch } from "./logs-page";
-import { toolCallStatus as statusOf, toolErrorLabel as errorLabel, TOOL_CALL_STATUSES } from "~/format/labels";
+import type { LogsSearch } from "./logs-page";
+import { useLiveToolCalls } from "./live";
+import {
+  FilterBar,
+  IdSearch,
+  LiveButton,
+  RangeControls,
+  useLoadMoreNearEnd,
+  usePartyFilters,
+  useRowStepping,
+  densityRow,
+  type Density,
+  type FilterDef,
+} from "./toolbar";
+import { toolCallStatus as statusOf, toolErrorLabel as errorLabel, TOOL_CALL_STATUSES, TOOL_ERROR_TYPES } from "~/format/labels";
 
 export function KindSwitch({ value, onChange }: { value: "models" | "tools"; onChange: (kind: "tools" | undefined) => void }) {
   return (
@@ -49,20 +63,86 @@ export function KindSwitch({ value, onChange }: { value: "models" | "tools"; onC
   );
 }
 
+type ToolFilterId = "key" | "member" | "server" | "tool" | "status" | "error";
+const TOOL_FILTER_IDS: ToolFilterId[] = ["key", "member", "server", "tool", "status", "error"];
+const SEARCH_OF: Record<ToolFilterId, keyof LogsSearch> = {
+  key: "key",
+  member: "member",
+  server: "call_server",
+  tool: "call_tool",
+  status: "call_status",
+  error: "call_error",
+};
+
 export function ToolCallsPage({ org, project, search }: { org: string; project: string; search: LogsSearch }) {
   const navigate = useNavigate();
   const partyName = usePartyName(org, project);
+  const phone = usePhone();
+  const { keyName, keyOptions, memberOptions } = usePartyFilters(org, project);
+  const tools = useQuery(projectToolsQuery(org, project));
+  const servers = useQuery(projectServersQuery(org, project));
+  const [density, setDensity] = useState<Density>("default");
+  const scroller = useRef<HTMLDivElement | null>(null);
   const filters: ToolCallFilters = {
     ...(search.range ? { range: search.range } : {}),
     ...(search.from && search.to ? { from: search.from, to: search.to } : {}),
-    ...(search.call_status ? { status: search.call_status } : {}),
+    ...(search.key ? { key: search.key } : {}),
+    ...(search.member ? { member: search.member } : {}),
+    ...(search.call_server ? { server: search.call_server } : {}),
     ...(search.call_tool ? { tool: search.call_tool } : {}),
+    ...(search.call_status ? { status: search.call_status } : {}),
+    ...(search.call_error ? { error: search.call_error } : {}),
   };
   const calls = useInfiniteQuery(toolCallsInfiniteQuery(org, project, filters));
-  const rows = useMemo(() => calls.data?.pages.flatMap((p) => p.data) ?? [], [calls.data]);
+  const base = useMemo(() => calls.data?.pages.flatMap((p) => p.data) ?? [], [calls.data]);
+  const { rows, pending, fresh, cut, showPending } = useLiveToolCalls({ org, project, filters, live: !!search.live, base, scroller });
+  const hasNextPage = calls.hasNextPage && !cut;
   const setSearch = (patch: SearchPatch<LogsSearch>) => {
     void navigate({ to: "/orgs/$org/projects/$project/logs", params: { org, project }, search: patchSearch(search, patch), replace: true });
   };
+  useLoadMoreNearEnd(scroller, { ...calls, hasNextPage });
+  useRowStepping(rows, search.call, (id) => setSearch({ call: id }));
+
+  const serverName = (id: string) => servers.data?.find((s) => s.id === id)?.name ?? id;
+  const filterDefs: FilterDef[] = TOOL_FILTER_IDS.map((id): FilterDef => {
+    const value = search[SEARCH_OF[id]] as string | undefined;
+    switch (id) {
+      case "key":
+        return { id, label: t("logs.filter.key", "Key"), value, values: keyOptions, valueLabel: keyName, searchable: true };
+      case "member":
+        return { id, label: t("logs.filter.member", "Member"), value, values: memberOptions, searchable: true };
+      case "server":
+        return {
+          id,
+          label: t("logs.tools.server", "MCP server"),
+          value,
+          values: (servers.data ?? []).map((s) => ({ value: s.id, label: s.name })),
+          valueLabel: serverName,
+          searchable: true,
+        };
+      case "tool":
+        return {
+          id,
+          label: t("logs.tools.tool", "Tool"),
+          value,
+          values: (tools.data ?? [])
+            .filter((tool) => !search.call_server || tool.server === search.call_server)
+            .map((tool) => ({ value: tool.exposed_name, label: tool.exposed_name })),
+          searchable: true,
+          width: "lg",
+        };
+      case "status":
+        return { id, label: common.status(), value, values: TOOL_CALL_STATUSES.map((s) => ({ value: s, label: statusOf(s).label })) };
+      case "error":
+        return { id, label: t("logs.filter.error", "Error kind"), value, values: TOOL_ERROR_TYPES.map((e) => ({ value: e, label: errorLabel(e) })) };
+    }
+  });
+  const setFilter = (id: string, v: string | undefined) => {
+    if (id === "status") setSearch({ call_status: v === "ok" || v === "error" || v === "refused" ? v : undefined, call: undefined });
+    else setSearch({ [SEARCH_OF[id as ToolFilterId]]: v, call: undefined });
+  };
+  const filtered = filterDefs.some((f) => f.value !== undefined);
+
   const columns = useMemo(
     () => [
       col.date({ id: "time", header: t("logs.column.started", "Started"), size: 176, priority: 1 }, (r: ToolCallView) => r.started_at),
@@ -85,63 +165,62 @@ export function ToolCallsPage({ org, project, search }: { org: string; project: 
     <>
       <ProjectHeader org={org} project={project} page={t("logs.title", "Request logs")} path="logs" />
       <Toolbar aria-label={t("logs.tools.filtersLabel", "Filter tool calls")}>
-        <KindSwitch value="tools" onChange={(kind) => setSearch({ kind, call: undefined, call_status: undefined, call_tool: undefined })} />
-        <div className="shrink-0">
-          <Select
-            aria-label={t("logs.timeRange", "Time range")}
-            size="sm"
-            icon={icons.calendar}
-            value={search.range ?? "24h"}
-            onValueChange={(v) => setSearch({ range: ranges().find((r) => r.value === v && v !== "24h")?.value, from: undefined, to: undefined })}
-            options={ranges()}
-          />
-        </div>
-        {search.call_tool && (
-          <FilterChip
-            property={t("logs.tools.tool", "Tool")}
-            operator={t("logs.filter.is", "is")}
-            value={search.call_tool}
-            onRemove={() => setSearch({ call_tool: undefined })}
-          />
-        )}
-        <div className="shrink-0">
-          <Select
-            aria-label={common.status()}
-            size="sm"
-            value={search.call_status ?? "all"}
-            onValueChange={(v) => setSearch({ call_status: v === "ok" || v === "error" || v === "refused" ? v : undefined })}
-            options={[
-              { value: "all", label: t("logs.tools.status.all", "Every status") },
-              ...TOOL_CALL_STATUSES.map((value) => ({ value, label: statusOf(value).label })),
-            ]}
-          />
-        </div>
+        <KindSwitch value="tools" onChange={(kind) => setSearch({ kind, call: undefined })} />
+        <RangeControls value={search} onChange={setSearch} />
+        <FilterBar filters={filterDefs} onChange={setFilter} compact={phone} />
+        <Toolbar.Spacer />
+        <IdSearch
+          label={t("logs.tools.openById", "Open a tool call by id")}
+          placeholder={t("logs.tools.callId", "Call id")}
+          onOpen={(id) => setSearch({ call: id })}
+        />
+        <LiveButton live={!!search.live} onChange={(on) => setSearch({ live: on || undefined })} />
+        <DisplayOptions rows={[densityRow(density, setDensity)]} />
       </Toolbar>
       <AppFrame.Body padding="none">
-        <DataTable
-          aria-label={t("logs.tools.label", "Tool calls")}
-          data={rows}
-          columns={columns}
-          getRowId={(r) => r.id}
-          loading={calls.isPending}
-          error={calls.isError && !unavailable && rows.length === 0 ? t("logs.tools.loadFailed", "Tool calls couldn't load") : undefined}
-          onRetry={() => void calls.refetch()}
-          empty={
-            <Empty
-              title={unavailable ? t("logs.unavailable", "Request logs are unavailable for now") : t("logs.tools.empty", "No tool calls in this range")}
-              description={
-                unavailable
-                  ? t("logs.unavailableHint", "Usage and limits still work.")
-                  : t("logs.tools.emptyHint", "Calls appear here as clients use the project's MCP portal.")
-              }
-            />
-          }
-          hasMore={calls.hasNextPage}
-          loadingMore={calls.isFetchingNextPage}
-          onLoadMore={() => void calls.fetchNextPage()}
-          onRowClick={(r) => setSearch({ call: r.id })}
-          activeRowId={search.call}
-        />
+        <div ref={scroller} className="flex min-h-0 flex-col">
+          {pending.length > 0 && (
+            <div className="my-8 flex justify-center">
+              <Button size="sm" onClick={showPending}>
+                {t("logs.tools.showNew", "{count, plural, one {Show # new tool call} other {Show # new tool calls}}", { count: pending.length })}
+              </Button>
+            </div>
+          )}
+          <DataTable
+            aria-label={t("logs.tools.label", "Tool calls")}
+            data={rows}
+            columns={columns}
+            getRowId={(r) => r.id}
+            density={density}
+            loading={calls.isPending}
+            error={calls.isError && !unavailable && rows.length === 0 ? t("logs.tools.loadFailed", "Tool calls couldn't load") : undefined}
+            onRetry={() => void calls.refetch()}
+            empty={
+              <Empty
+                title={
+                  unavailable
+                    ? t("logs.unavailable", "Request logs are unavailable for now")
+                    : filtered
+                      ? t("logs.tools.noMatch", "No tool calls match these filters")
+                      : t("logs.tools.empty", "No tool calls in this range")
+                }
+                description={
+                  unavailable
+                    ? t("logs.unavailableHint", "Usage and limits still work.")
+                    : filtered
+                      ? t("logs.noMatchHint", "Remove a filter or widen the time range.")
+                      : t("logs.tools.emptyHint", "Calls appear here as clients use the project's MCP portal.")
+                }
+              />
+            }
+            hasMore={hasNextPage}
+            loadingMore={calls.isFetchingNextPage}
+            onLoadMore={() => void calls.fetchNextPage()}
+            onRowClick={(r) => setSearch({ call: r.id })}
+            activeRowId={search.call}
+            freshRowIds={fresh}
+          />
+        </div>
       </AppFrame.Body>
       <ToolCallSheet org={org} project={project} callId={search.call} onClose={() => setSearch({ call: undefined })} />
     </>

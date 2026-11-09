@@ -1,8 +1,8 @@
 import { screen, waitFor, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ToolCallEntryView, ToolCallView } from "~/api/generated/types";
 import { ALL_PROJECT_RIGHTS, USER, signedIn } from "~/test/fixtures";
-import { projectData, projectMember, projectPath } from "~/test/fixtures/project";
+import { apiKey, projectData, projectMember, projectPath } from "~/test/fixtures/project";
 import { listPage, logsData } from "~/test/fixtures/project-logs";
 import { apiError, on, page, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
@@ -38,6 +38,22 @@ function calls(rows: ToolCallView[], entries: ToolCallEntryView[] = []) {
   on("GET", CALLS, listPage(rows));
   on(
     "GET",
+    "orgs/:org/projects/:project/tools",
+    page([
+      { exposed_name: "x__create_post", server: "mcp_x" },
+      { exposed_name: "gh__get_me", server: "mcp_gh" },
+    ]),
+  );
+  on(
+    "GET",
+    "orgs/:org/projects/:project/mcp-servers",
+    page([
+      { id: "mcp_x", name: "X" },
+      { id: "mcp_gh", name: "GitHub" },
+    ]),
+  );
+  on(
+    "GET",
     `${CALLS}/:call`,
     ({ params }: { params: Record<string, string> }) =>
       entries.find((e) => e.id === params.call) ?? apiError(404, "not_found", "No such tool call, or you cannot see it."),
@@ -66,6 +82,86 @@ describe("Tool calls in the request logs", () => {
     expect(window.location.search).not.toContain("kind=tools");
   });
 
+  it("keeps the range, the filters and live updates when switching between models and tools", async () => {
+    signedIn();
+    projectData({ members: [projectMember()] });
+    logsData();
+    calls([toolCall()], [{ ...toolCall(), content: null } as ToolCallEntryView]);
+    const { user } = await renderApp(projectPath("logs?range=7d&model=gpt-5&live=true&kind=tools&call_status=error&call=call_0001"));
+    expect(await screen.findByRole("dialog", { name: "x__create_post" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Live" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Remove the Status filter" })).toBeInTheDocument();
+    await user.click(screen.getByRole("radio", { name: "Models" }));
+    await screen.findByRole("grid", { name: "Requests" });
+    const back = new URLSearchParams(window.location.search);
+    expect(Object.fromEntries(back)).toMatchObject({ range: "7d", model: "gpt-5", live: "true", call_status: "error" });
+    expect(back.has("call")).toBe(false);
+    expect(screen.getByRole("button", { name: "Live" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Remove the Model filter" })).toBeInTheDocument();
+    await user.click(screen.getByRole("radio", { name: "Tools" }));
+    expect(await screen.findByRole("button", { name: "Remove the Status filter" })).toBeInTheDocument();
+    expect(requests("GET", CALLS).at(-1)?.query.get("status")).toBe("error");
+  });
+
+  it("filters by key, member, server, tool and error kind", async () => {
+    signedIn();
+    projectData({ members: [projectMember()], keys: [apiKey({ id: "key_web", name: "Web app" })] });
+    calls([toolCall()]);
+    const { user } = await renderApp(projectPath("logs?kind=tools&member=user:" + USER));
+    await screen.findByRole("row", { name: /x__create_post/ });
+    expect(requests("GET", CALLS)[0]?.query.get("user")).toBe(USER);
+    const pick = async (filter: string, value: string) => {
+      await user.click(screen.getByRole("button", { name: "Add filter" }));
+      await user.click(await screen.findByRole("menuitem", { name: filter }));
+      await user.click(await screen.findByRole("menuitemradio", { name: value }));
+    };
+    await pick("Key", "Web app");
+    await pick("MCP server", "GitHub");
+    await pick("Tool", "gh__get_me");
+    await pick("Error kind", "Server too slow");
+    await waitFor(() =>
+      expect(Object.fromEntries(requests("GET", CALLS).at(-1)?.query ?? [])).toMatchObject({
+        key: "key_web",
+        user: USER,
+        server: "mcp_gh",
+        tool: "gh__get_me",
+        error_type: "timeout",
+      }),
+    );
+    expect(screen.getByRole("button", { name: "Remove the MCP server filter" }).closest("div")).toHaveTextContent("GitHub");
+  });
+
+  it("names a server it no longer knows by its id, and makes the list compact", async () => {
+    signedIn();
+    projectData({ members: [projectMember()] });
+    calls([toolCall()]);
+    const { user } = await renderApp(projectPath("logs?kind=tools&call_server=mcp_gone"));
+    await screen.findByRole("row", { name: /x__create_post/ });
+    expect(screen.getByRole("button", { name: "Remove the MCP server filter" }).closest("div")).toHaveTextContent("mcp_gone");
+    expect(requests("GET", CALLS)[0]?.query.get("server")).toBe("mcp_gone");
+    await user.click(screen.getByRole("button", { name: "Display options" }));
+    const options = await screen.findByRole("dialog", { name: "Display options" });
+    await user.click(within(options).getByRole("combobox", { name: "Density" }));
+    await user.click(await screen.findByRole("option", { name: "Compact" }));
+    expect(within(options).getByRole("combobox", { name: "Density" })).toHaveTextContent("Compact");
+  });
+
+  it("opens a call by its id and steps through calls with j and k", async () => {
+    signedIn();
+    projectData({ members: [projectMember()] });
+    const second = toolCall({ id: "call_0002", tool: "x__get_me" });
+    calls([toolCall(), second], [{ ...toolCall(), content: null } as ToolCallEntryView, { ...second, content: null } as ToolCallEntryView]);
+    const { user } = await renderApp(projectPath("logs?kind=tools"));
+    await screen.findByRole("row", { name: /x__create_post/ });
+    await user.type(screen.getByRole("searchbox", { name: "Open a tool call by id" }), "call_0001{Enter}");
+    expect(await screen.findByRole("dialog", { name: "x__create_post" })).toBeInTheDocument();
+    await user.click(document.body);
+    await user.keyboard("j");
+    expect(await screen.findByRole("dialog", { name: "x__get_me" })).toBeInTheDocument();
+    await user.keyboard("k");
+    expect(await screen.findByRole("dialog", { name: "x__create_post" })).toBeInTheDocument();
+  });
+
   it("filters by status and opens a call with its arguments and answer", async () => {
     signedIn();
     projectData({ members: [projectMember()] });
@@ -79,8 +175,9 @@ describe("Tool calls in the request logs", () => {
       ],
     );
     const { user } = await renderApp(projectPath("logs?kind=tools"));
-    await user.click(await screen.findByRole("combobox", { name: "Status" }));
-    await user.click(await screen.findByRole("option", { name: "Refused" }));
+    await user.click(await screen.findByRole("button", { name: "Add filter" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Status" }));
+    await user.click(await screen.findByRole("menuitemradio", { name: "Refused" }));
     await waitFor(() => expect(requests("GET", CALLS).at(-1)?.query.get("status")).toBe("refused"));
     await user.click(await screen.findByRole("row", { name: /x__create_post/ }));
     const sheet = await screen.findByRole("dialog", { name: "x__create_post" });
@@ -136,8 +233,7 @@ describe("Tool calls in the request logs", () => {
     const first = requests("GET", CALLS)[0]?.query;
     expect(first?.get("to")).toBeTruthy();
     expect(first?.get("status")).toBe("error");
-    await user.click(screen.getByRole("combobox", { name: "Status" }));
-    await user.click(await screen.findByRole("option", { name: "Every status" }));
+    await user.click(screen.getByRole("button", { name: "Remove the Status filter" }));
     await waitFor(() => expect(requests("GET", CALLS).at(-1)?.query.get("status")).toBeNull());
   });
 
@@ -174,5 +270,39 @@ describe("Tool calls in the request logs", () => {
     await renderApp(projectPath("logs?kind=tools"));
     expect(await screen.findByText("No tool calls in this range")).toBeInTheDocument();
     expect(screen.getByText("Calls appear here as clients use the project's MCP portal.")).toBeInTheDocument();
+  });
+});
+
+describe("Live tool calls", () => {
+  afterEach(() => vi.useRealTimers());
+
+  it("adds new calls at the top while live, and holds them behind a button while scrolled", async () => {
+    signedIn();
+    projectData({ members: [projectMember()] });
+    calls([toolCall()]);
+    let newest = [toolCall()];
+    on("GET", CALLS, () => listPage(newest));
+    const { user } = await renderApp(projectPath("logs?kind=tools"));
+    await screen.findByRole("row", { name: /x__create_post/ });
+    vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] });
+    await user.click(screen.getByRole("button", { name: "Live" }));
+    await waitFor(() => expect(screen.getByRole("button", { name: "Live" })).toHaveAttribute("aria-pressed", "true"));
+
+    newest = [toolCall({ id: "call_0002", tool: "x__get_me", started_at: "2026-10-15T11:59:30Z" }), toolCall()];
+    await vi.advanceTimersByTimeAsync(5000);
+    const added = await screen.findByRole("row", { name: /x__get_me/ });
+    expect(added).toHaveAttribute("data-fresh");
+    expect(requests("GET", CALLS).at(-1)?.query.get("from")).toBe("2026-10-15T11:59:00Z");
+
+    const body = screen.getByRole("grid", { name: "Tool calls" }).closest<HTMLElement>(".overflow-y-auto");
+    if (!body) throw new Error("no scrolling body");
+    body.style.overflowY = "auto";
+    body.scrollTop = 400;
+    newest = [toolCall({ id: "call_0003", tool: "x__delete_post", started_at: "2026-10-15T11:59:40Z" }), ...newest];
+    await vi.advanceTimersByTimeAsync(5000);
+    await user.click(await screen.findByRole("button", { name: "Show 1 new tool call" }));
+    expect(await screen.findByRole("row", { name: /x__delete_post/ })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Live" }));
+    await waitFor(() => expect(window.location.search).not.toContain("live="));
   });
 });
