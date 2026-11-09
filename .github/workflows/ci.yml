@@ -345,7 +345,8 @@ jobs:
       contents: read
     uses: ./.github/workflows/fuzz.yml
     with:
-      seconds: 60
+      seconds: 30
+      shards: 4
 
   test-gateway:
     name: Test gateway (${{ matrix.shard }}/4)
