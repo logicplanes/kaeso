@@ -5,7 +5,6 @@ import { fileURLToPath } from "node:url";
 import { GROUPS, TOPICS, context, draft, escaped, hazard, history, linked, notes, release } from "./changelog.mjs";
 
 export const MODEL = "claude-sonnet-5-5";
-export const API_URL = "https://ai.logicplanes.com";
 export const CHANGELOG_URL = "https://kaeso.app/changelog";
 const MAX_TOKENS = 64000;
 const REQUEST_TIMEOUT = 600_000;
@@ -621,9 +620,10 @@ const run = (command) => (args) => execFileSync(command, args, { cwd: root, enco
 
 const clientFromEnv = async () => {
   const apiKey = process.env.LOG_AI_KEY;
-  if (!apiKey) return null;
+  const baseURL = process.env.RELEASE_NOTES_API_URL;
+  if (!apiKey || !baseURL) return null;
   const { default: Anthropic } = await import("@anthropic-ai/sdk");
-  return new Anthropic({ apiKey, authToken: null, baseURL: process.env.RELEASE_NOTES_API_URL || API_URL, maxRetries: 3, timeout: REQUEST_TIMEOUT });
+  return new Anthropic({ apiKey, authToken: null, baseURL, maxRetries: 3, timeout: REQUEST_TIMEOUT });
 };
 
 const options = (args) => {

@@ -779,7 +779,7 @@ test("only the step that writes the release notes sees LOG_AI_KEY, in a release-
   const step = notes.slice(notes.indexOf("- name: Write the release notes"));
   assert.match(step, /continue-on-error: true/);
   assert.match(step, /timeout-minutes: 20/);
-  assert.match(step, /RELEASE_NOTES_API_URL: https:\/\/ai\.logicplanes\.com/);
+  assert.match(step, /RELEASE_NOTES_API_URL: \$\{\{ secrets\.RELEASE_NOTES_API_URL \}\}/);
   assert.match(
     step,
     /node scripts\/release-notes\.mjs write --pulls "\$RUNNER_TEMP\/pulls\/pulls\.json" --version "\$VERSION" --out "\$RUNNER_TEMP\/notes\/notes\.md"/,
