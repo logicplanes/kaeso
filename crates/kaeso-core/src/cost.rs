@@ -337,6 +337,29 @@ pub fn media_cost(units: &MediaUnits, prices: &Fields) -> Decimal {
     total.normalize()
 }
 
+/// Whether a request's cost is known: its model has a price for everything it measured. A
+/// request that measured nothing costs a known 0; one that measured units or tokens its model
+/// has no price for, such as a Veo clip or the minutes a voice changer heard, has an unknown
+/// cost, which is not 0.
+pub fn is_priced(usage: &Usage, prices: Option<&Fields>, media: Option<&MediaUnits>) -> bool {
+    let measured_tokens = usage.input_tokens > 0 || usage.output_tokens > 0;
+    let measured_media = media.is_some_and(|m| {
+        m.input_images > 0
+            || m.output_images > 0
+            || m.characters > 0
+            || m.input_ms > 0
+            || m.output_ms > 0
+            || m.output_videos > 0
+    });
+    if !measured_tokens && !measured_media {
+        return true;
+    }
+    let Some(prices) = prices else {
+        return false;
+    };
+    cost_with_media(usage, prices, media) > Decimal::ZERO
+}
+
 /// The cost of a request: its tokens, and its media units when it has any.
 pub fn cost_with_media(usage: &Usage, prices: &Fields, media: Option<&MediaUnits>) -> Decimal {
     let tokens = cost(usage, prices);
@@ -889,5 +912,44 @@ mod tests {
             unpriced_model(&tokens, &none, RequestKind::Image, "m"),
             None
         );
+    }
+
+    #[test]
+    fn a_cost_is_unknown_when_the_model_has_no_price_for_what_was_measured() {
+        let units = |per: &str, of: &str| Fields {
+            unit_prices: Some(vec![unit(per, of, dec!(0.12))]),
+            ..Fields::default()
+        };
+        let none = Usage::default();
+        assert!(
+            is_priced(&none, None, None),
+            "nothing measured costs a known 0"
+        );
+        let clip = MediaUnits {
+            output_videos: 1,
+            output_ms: 8000,
+            ..MediaUnits::default()
+        };
+        assert!(!is_priced(&none, Some(&Fields::default()), Some(&clip)));
+        assert!(!is_priced(&none, None, Some(&clip)));
+        let heard_characters = MediaUnits {
+            characters: 12,
+            ..MediaUnits::default()
+        };
+        assert!(
+            !is_priced(
+                &none,
+                Some(&units("minute", "input")),
+                Some(&heard_characters)
+            ),
+            "a voice changer priced per input minute, with only characters measured"
+        );
+        let speech = units("million_characters", "input");
+        assert!(is_priced(&none, Some(&speech), Some(&heard_characters)));
+        assert!(!is_priced(
+            &Usage::new(10, 5),
+            Some(&Fields::default()),
+            None
+        ));
     }
 }

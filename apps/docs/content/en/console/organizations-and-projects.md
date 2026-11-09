@@ -22,6 +22,8 @@ A project's **Overview** shows its activity over the last days, its latest reque
 
 A route is the app's format, the format Kaeso sent to the provider, and the provider. Its breakdown has a **Cache hit** column: the share of the input read from the prompt cache. The same model can hit the cache through one route and never through another, so **By route** shows where caching fails. Requests from before Kaeso recorded routes show as **Route not recorded**.
 
+A breakdown with media requests has a **Media** column: the images made, the characters spoken, the length of audio made or transcribed, and the videos made with their length. A group whose requests had no known price shows its cost as **Unknown**; one where only some had none shows its cost with how many requests are unknown.
+
 ## Change organization settings
 
 Open **Organization settings** in the menu at the foot of the sidebar. It has these pages:

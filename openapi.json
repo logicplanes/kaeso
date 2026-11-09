@@ -17691,7 +17691,7 @@
           "projects"
         ],
         "summary": "The models the signed-in member can call in the Playground.",
-        "description": "The project's catalogue without embeddings models, narrowed by the member's\nmodel access, with what the Playground shows and offers (reasoning,\nefforts, temperature, prices). A reply's cost is `(input − cached) ×\ninput_price + cached × cache_read_price + output × output_price`, per\nmillion tokens, at the prices of the highest of `price_tiers` whose\n`context_above` the input exceeds, as the request log charges it\n(Anthropic cache writes, which Responses usage does not show, are in the\nlog's cost only).\n\n**Right:** `playground.use` on the project in the path.",
+        "description": "The project's catalogue without embeddings models and without the image,\nspeech, transcription and video models that take or make no text, narrowed by the member's\nmodel access, with what the Playground shows and offers (reasoning,\nefforts, temperature, prices). A reply's cost is `(input − cached) ×\ninput_price + cached × cache_read_price + output × output_price`, per\nmillion tokens, at the prices of the highest of `price_tiers` whose\n`context_above` the input exceeds, as the request log charges it\n(Anthropic cache writes, which Responses usage does not show, are in the\nlog's cost only).\n\n**Right:** `playground.use` on the project in the path.",
         "operationId": "getOrgsOrgProjectsProjectPlaygroundModels",
         "parameters": [
           {
@@ -27918,6 +27918,7 @@
                 "status",
                 "usage",
                 "cost",
+                "cost_known",
                 "user_agent",
                 "client_ip",
                 "upstream_request_id",
@@ -27949,6 +27950,10 @@
                 "cost": {
                   "type": "string",
                   "description": "Cost in USD at the prices of request time."
+                },
+                "cost_known": {
+                  "type": "boolean",
+                  "description": "Whether the cost is known. `false` when the model has no price for what the\nrequest made or heard, such as a video model without a price per clip; `cost`\nis then 0 and means unknown."
                 },
                 "duration_ms": {
                   "type": "integer",
@@ -30156,7 +30161,9 @@
                 "cache_write_tokens",
                 "reasoning_tokens",
                 "tool_calls",
-                "tool_call_errors"
+                "tool_call_errors",
+                "unpriced",
+                "media"
               ],
               "properties": {
                 "cache_hit_rate": {
@@ -30202,6 +30209,10 @@
                   "type": "string",
                   "description": "The day, the Monday of the week, the first day of the month,\n`provider/model`, provider, key id (`playground` for the requests members\nmade in the console's Playground, without a key), member (`user:<id>` or\n`service_account:<id>`), route (`<app format>:<provider format>:<provider>`,\nsuch as `openai_responses:anthropic_messages:anthropic`; both formats are\nempty for requests made before Kaeso recorded them, and the provider\nformat for requests refused before a provider was chosen), or project\nid. The filter of the same name takes it as it is."
                 },
+                "media": {
+                  "$ref": "#/components/schemas/UsageMedia",
+                  "description": "What the group's media requests made or heard."
+                },
                 "output_tokens": {
                   "type": "integer",
                   "format": "int64",
@@ -30230,6 +30241,12 @@
                   "type": "integer",
                   "format": "int64",
                   "description": "Tool calls through the project's MCP portals, refusals included. Counted by\nday and project, so 0 when grouped or filtered by model, provider, key,\nmember or route.",
+                  "minimum": 0
+                },
+                "unpriced": {
+                  "type": "integer",
+                  "format": "int64",
+                  "description": "Requests whose cost is unknown: their model has no price for what they\nmade or heard, such as a video model without a price per clip. `cost` leaves\nthem out.",
                   "minimum": 0
                 }
               }
@@ -30382,6 +30399,7 @@
           "status",
           "usage",
           "cost",
+          "cost_known",
           "user_agent",
           "client_ip",
           "upstream_request_id",
@@ -30413,6 +30431,10 @@
           "cost": {
             "type": "string",
             "description": "Cost in USD at the prices of request time."
+          },
+          "cost_known": {
+            "type": "boolean",
+            "description": "Whether the cost is known. `false` when the model has no price for what the\nrequest made or heard, such as a video model without a price per clip; `cost`\nis then 0 and means unknown."
           },
           "duration_ms": {
             "type": "integer",
@@ -38310,6 +38332,49 @@
           }
         }
       },
+      "UsageMedia": {
+        "type": "object",
+        "description": "What a usage group's media requests made or heard.",
+        "required": [
+          "images",
+          "characters",
+          "audio_ms",
+          "videos",
+          "video_ms"
+        ],
+        "properties": {
+          "audio_ms": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Milliseconds of audio made or transcribed.",
+            "minimum": 0
+          },
+          "characters": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Characters of text spoken.",
+            "minimum": 0
+          },
+          "images": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Images made.",
+            "minimum": 0
+          },
+          "video_ms": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Milliseconds of video made.",
+            "minimum": 0
+          },
+          "videos": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Videos made, counted when their jobs end.",
+            "minimum": 0
+          }
+        }
+      },
       "UsageRow": {
         "type": "object",
         "description": "Usage of one group.",
@@ -38323,7 +38388,9 @@
           "cache_write_tokens",
           "reasoning_tokens",
           "tool_calls",
-          "tool_call_errors"
+          "tool_call_errors",
+          "unpriced",
+          "media"
         ],
         "properties": {
           "cache_hit_rate": {
@@ -38369,6 +38436,10 @@
             "type": "string",
             "description": "The day, the Monday of the week, the first day of the month,\n`provider/model`, provider, key id (`playground` for the requests members\nmade in the console's Playground, without a key), member (`user:<id>` or\n`service_account:<id>`), route (`<app format>:<provider format>:<provider>`,\nsuch as `openai_responses:anthropic_messages:anthropic`; both formats are\nempty for requests made before Kaeso recorded them, and the provider\nformat for requests refused before a provider was chosen), or project\nid. The filter of the same name takes it as it is."
           },
+          "media": {
+            "$ref": "#/components/schemas/UsageMedia",
+            "description": "What the group's media requests made or heard."
+          },
           "output_tokens": {
             "type": "integer",
             "format": "int64",
@@ -38397,6 +38468,12 @@
             "type": "integer",
             "format": "int64",
             "description": "Tool calls through the project's MCP portals, refusals included. Counted by\nday and project, so 0 when grouped or filtered by model, provider, key,\nmember or route.",
+            "minimum": 0
+          },
+          "unpriced": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Requests whose cost is unknown: their model has no price for what they\nmade or heard, such as a video model without a price per clip. `cost` leaves\nthem out.",
             "minimum": 0
           }
         }

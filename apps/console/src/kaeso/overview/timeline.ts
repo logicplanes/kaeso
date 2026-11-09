@@ -22,6 +22,8 @@ const asRow = (b: TimelineBucket): UsageRow => ({
   cost: b.cost ?? null,
   tool_calls: 0,
   tool_call_errors: 0,
+  unpriced: 0,
+  media: { images: 0, characters: 0, audio_ms: 0, videos: 0, video_ms: 0 },
 });
 
 /** Every step from `from` up to `to`, with the buckets the API returned and nothing for the steps it left out. */

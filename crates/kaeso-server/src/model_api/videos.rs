@@ -921,7 +921,13 @@ async fn record_completion(
     o.ingress = D;
     o.kind = RequestKind::Video;
     o.egress = row.dialect.parse().ok();
-    o.provider = kaeso_core::provider::provider(&row.provider).map(|p| p.id);
+    match kaeso_core::provider::provider(&row.provider) {
+        Some(p) => o.provider = Some(p.id),
+        None => {
+            o.provider = Some(kaeso_core::providers::METRIC_LABEL);
+            o.custom_provider = Some(row.provider.clone());
+        }
+    }
     o.requested_model = Some(row.model.clone());
     o.catalogue_model_id = row.catalogue_model_id;
     o.model_id = Some(row.upstream_model.clone());

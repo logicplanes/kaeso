@@ -8,9 +8,9 @@ import { orgUsageQuery } from "~/api/queries/usage";
 import { everyProjectRights, useOrgRights, useSession } from "~/auth/session";
 import { useProviders } from "~/kaeso/providers";
 import { totalTokens } from "~/kaeso/tokens";
-import { periodUSD } from "~/kaeso/usage-panels";
 import { projectPath } from "~/shell/pages";
 import { usePhone } from "~/shell/use-phone";
+import { UsageCost } from "~/kaeso/media-usage";
 import { t } from "~/i18n";
 
 export type OrgBreakdown = "project" | "model" | "member";
@@ -149,7 +149,7 @@ export function OrgUsageBreakdown({
           col.custom(
             { id: "cost", header: t("common.cost", "Cost"), size: NUMBER_WIDTH, priority: 1 },
             (r: UsageRow) => r.cost ?? "",
-            (v: string) => <Text tabular>{v ? periodUSD(v) : "—"}</Text>,
+            (_v: string, r: UsageRow) => <UsageCost row={r} />,
             { align: "end" },
           ),
         ]

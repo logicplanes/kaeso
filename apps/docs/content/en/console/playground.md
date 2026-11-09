@@ -6,6 +6,8 @@ order: 10
 
 The **Playground** sends a prompt to up to four of the project's models at once and shows their replies side by side. Each column is its own conversation. Using it needs the right **Use the Playground**, which project admins and developers have.
 
+The Playground is a conversation, so it lists the models that take and answer text. Image, speech, transcription and video models aren't listed: each needs its own request, such as an upload, audio to play or a job to wait for, and is billed per image, character or second. Try them with the [Images](../api/images.md), [Audio](../api/audio.md) or [Videos API](../api/videos.md); the request logs show each one.
+
 ## Compare models
 
 1. Choose a model for the first column, and choose **Add column** for each further one. Search by name, id or provider, or narrow the list to one provider; models are grouped by provider, and the ones you chose recently come first. You can't choose a model whose provider has no key for this project, or one marked [Unavailable](models-and-aliases.md) because the provider doesn't serve it to the project's key.

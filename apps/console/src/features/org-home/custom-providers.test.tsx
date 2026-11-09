@@ -148,6 +148,46 @@ describe("custom providers", () => {
     expect(requests("POST", LIST)[0]?.body).toMatchObject({ id: "ollama", auth: "none", server: "ollama" });
   });
 
+  it("starts a provider for known software with the media APIs its docs list, and every switch explains its path", async () => {
+    signedIn();
+    withCustom([]);
+    on(
+      "POST",
+      DETECT,
+      detected({
+        base_url: "http://gpus.example.com:8000/",
+        generation: "openai_chat",
+        auth: "bearer",
+        count_tokens: null,
+        server: "vllm",
+        media: ["transcriptions"],
+      }),
+    );
+    on("POST", LIST, customProvider({ server: "vllm", media: ["transcriptions", "videos"] }));
+    const { user } = await renderApp(PATH);
+
+    await user.click(await screen.findByRole("button", { name: "Add custom provider" }));
+    const dialog = await screen.findByRole("dialog", { name: "Add custom provider" });
+    await pickSoftware(user, dialog, "vLLM");
+    await fill(user, within(dialog).getByRole("textbox", { name: "Base URL" }), "http://gpus.example.com:8000");
+    await user.click(within(dialog).getByRole("button", { name: "Detect settings" }));
+    expect(await within(dialog).findByRole("switch", { name: "Serves transcriptions" })).toBeChecked();
+    for (const hint of [
+      "In OpenAI's Images API format, at /v1/images/generations and /v1/images/edits.",
+      "In OpenAI's format, at /v1/audio/transcriptions and /v1/audio/translations.",
+      "In OpenAI's Videos API format, at /v1/videos.",
+    ])
+      expect(within(dialog).getByText(hint)).toBeInTheDocument();
+    const server = within(dialog).getByRole("combobox", { name: "Server" });
+    await user.click(server);
+    await user.click(await screen.findByRole("option", { name: "Other server or proxy" }));
+    expect(within(dialog).getByRole("switch", { name: "Serves transcriptions" })).not.toBeChecked();
+    await user.click(within(dialog).getByRole("switch", { name: "Serves videos" }));
+    await user.click(within(dialog).getByRole("switch", { name: "Serves transcriptions" }));
+    await user.click(within(dialog).getByRole("button", { name: "Add custom provider" }));
+    await waitFor(() => expect(requests("POST", LIST)[0]?.body).toMatchObject({ server: null, media: ["transcriptions", "videos"] }));
+  });
+
   it("turns OpenAI's media APIs on and off for a provider, in a fixed order", async () => {
     signedIn();
     withCustom([customProvider({ server: "vllm", media: ["transcriptions"] })]);

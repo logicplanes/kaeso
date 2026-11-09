@@ -211,6 +211,19 @@ describe("LogInspector", () => {
     expect(section(await sheet(), "Route")).toHaveTextContent("Images2 sent · 1 made1024x1024 high");
   });
 
+  it("says a cost no price covers is unknown, not $0", async () => {
+    signedIn();
+    projectData();
+    logsData({
+      rows: [logRow({ cost: "0", cost_known: false })],
+      entries: [logEntry({ endpoint: "videos/completed", cost: "0", cost_known: false, media: { unit: "video", input: 1, output: 8000, detail: "720p" } })],
+    });
+    await renderApp(projectPath("logs?log=req_0001"));
+    const sheetEl = await sheet();
+    expect(await within(sheetEl).findByText("No price for what it made")).toBeInTheDocument();
+    expect(within(sheetEl).getAllByText("Unknown").length).toBeGreaterThan(0);
+  });
+
   it("shows the characters of speech and the length of transcribed audio", async () => {
     signedIn();
     projectData();

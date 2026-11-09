@@ -514,11 +514,20 @@ pub struct PlaygroundModel {
     pub availability: crate::platform::projects::models::AvailabilityState,
 }
 
+// The Playground is a conversation: a model must take text and answer with text. Media models
+// are tried through the model API, where each has its own request.
+fn chats(f: &kaeso_core::catalogue::Fields) -> bool {
+    let has =
+        |list: &Option<Vec<String>>| list.as_ref().is_none_or(|l| l.iter().any(|m| m == "text"));
+    has(&f.input_modalities) && has(&f.output_modalities)
+}
+
 #[utoipa::path(
     get,
     path = "/orgs/{org}/projects/{project}/playground/models",
     summary = "The models the signed-in member can call in the Playground.",
-    description = "The project's catalogue without embeddings models, narrowed by the member's\n\
+    description = "The project's catalogue without embeddings models and without the image,\n\
+    speech, transcription and video models that take or make no text, narrowed by the member's\n\
     model access, with what the Playground shows and offers (reasoning,\n\
     efforts, temperature, prices). A reply's cost is `(input − cached) ×\n\
     input_price + cached × cache_read_price + output × output_price`, per\n\
@@ -555,7 +564,7 @@ pub async fn models(
         else {
             continue;
         };
-        if eff.is_embeddings() {
+        if eff.is_embeddings() || !chats(&eff.fields) {
             continue;
         }
         let provider_key = match keys.iter().find(|(p, _)| p == eff.provider.id()) {

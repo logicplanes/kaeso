@@ -5,7 +5,7 @@ import type { UsageRow } from "~/api/generated/types";
 import { allKeysQuery } from "~/api/queries/keys";
 import { useProviders } from "~/kaeso/providers";
 import { totalTokens } from "~/kaeso/tokens";
-import { periodUSD } from "~/kaeso/usage-panels";
+import { hasMedia, mediaSummary, UsageCost } from "~/kaeso/media-usage";
 import { bucketLabel, type Granularity } from "~/format/buckets";
 import { keyLabel, serviceAccountName, usePartyName, usePartyNamesLoading } from "./keys/party";
 import type { AnalyticsSearch } from "~/kaeso/overview/views";
@@ -151,12 +151,21 @@ export function Breakdown({
           col.custom(
             { id: "cost", header: common.cost(), size: COST_WIDTH, priority: 1 },
             (r: UsageRow) => r.cost ?? "",
-            (v: string) => (v ? periodUSD(v) : "—"),
+            (_v: string, r: UsageRow) => <UsageCost row={r} />,
             { align: "end" },
           ),
         ]
       : []),
     ...(by === "route" ? [cache] : []),
+    ...(hasMedia(sorted)
+      ? [
+          col.custom(
+            { id: "media", header: t("kaeso.usage.media.header", "Media"), size: MEDIA_WIDTH, priority: 3 },
+            (r: UsageRow) => mediaSummary(r.media),
+            (v: string) => (v ? <Text truncate>{v}</Text> : <Text tone="secondary">—</Text>),
+          ),
+        ]
+      : []),
   ].map((c) => ({ ...c, enableSorting: false, enableResizing: false }));
   return (
     <Section
@@ -190,6 +199,8 @@ export function Breakdown({
   );
 }
 
+const MEDIA_WIDTH = 220;
+
 const SHORT_DIALECTS: Record<string, string> = {
   anthropic_messages: "Messages",
   openai_chat: "Chat",
@@ -197,6 +208,20 @@ const SHORT_DIALECTS: Record<string, string> = {
   openai_embeddings: "Embeddings",
   gemini: "Gemini",
   gemini_embeddings: "Gemini Embeddings",
+  openai_images: "Images",
+  openai_speech: "Speech",
+  openai_transcriptions: "Transcriptions",
+  openai_videos: "Videos",
+  elevenlabs: "ElevenLabs",
+  minimax_images: "MiniMax Images",
+  minimax_speech: "MiniMax Speech",
+  minimax_videos: "MiniMax Videos",
+  xai_videos: "SpaceX Videos",
+  zai_videos: "Z.ai Videos",
+  openrouter_videos: "OpenRouter Videos",
+  veo: "Veo",
+  gemini_interactions: "Gemini Interactions",
+  dashscope: "DashScope",
 };
 const shortDialectLabel = (d: string) => SHORT_DIALECTS[d] ?? d;
 

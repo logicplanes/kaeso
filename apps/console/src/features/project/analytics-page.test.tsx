@@ -134,6 +134,33 @@ describe("AnalyticsPage", () => {
     expect(screen.getByRole("radio", { name: "By route" })).toBeChecked();
   });
 
+  it("names media routes and shows what they made, and a cost no price covers as unknown", async () => {
+    signedIn();
+    projectData({ models: [catalogueModel()] });
+    const media = { images: 0, characters: 0, audio_ms: 0, videos: 0, video_ms: 0 };
+    usage({
+      route: [
+        usageRow({ key: "openai_images:openai_images:openai", requests: 4, cost: "0.16", media: { ...media, images: 4 } }),
+        usageRow({ key: "openai_videos:veo:gemini-agent-platform", requests: 2, cost: "0", unpriced: 2, media: { ...media, videos: 2, video_ms: 16000 } }),
+        usageRow({ key: "elevenlabs:elevenlabs:elevenlabs", requests: 3, cost: "0.0008", unpriced: 1, media: { ...media, characters: 120, audio_ms: 2500 } }),
+        usageRow({ key: "openai_chat:openai_chat:openai", requests: 5, cost: "0.01" }),
+      ],
+    });
+    await renderApp(projectPath(`analytics?${PERIOD}&by=route`));
+
+    const table = await breakdown();
+    await waitFor(() => expect(bodyRows(table)).toHaveLength(4));
+    const rows = bodyRows(table);
+    const row = (text: string) => rows.find((r) => r.textContent?.includes(text)) as HTMLElement;
+    expect(row("Images→ Images")).toHaveTextContent("4 images");
+    expect(row("Videos→ Veo")).toHaveTextContent("Unknown");
+    expect(row("Videos→ Veo")).toHaveTextContent(/2 videos, 16/);
+    expect(row("ElevenLabs→ ElevenLabs")).toHaveTextContent("1 request unknown");
+    expect(row("ElevenLabs→ ElevenLabs")).toHaveTextContent(/120 characters · .+ of audio/);
+    expect(within(table).getByRole("columnheader", { name: "Media" })).toBeInTheDocument();
+    expect(row("Chat→ Chat")).toHaveTextContent("—");
+  });
+
   it("tells a replaced key from its replacement in usage by key", async () => {
     signedIn();
     projectData({ keys: [apiKey({ replaced_by: "key_next" }), apiKey({ id: "key_next", rotated_from: "key_web" })] });

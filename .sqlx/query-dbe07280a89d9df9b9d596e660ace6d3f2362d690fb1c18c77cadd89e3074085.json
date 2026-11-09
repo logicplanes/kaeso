@@ -1,0 +1,38 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO usage_daily AS u (day, org_id, project_id, user_id, service_account_id, api_key_id, catalogue_model_id, model_id, provider, ingress_dialect, egress_dialect, requests, errors, input_tokens, output_tokens, cache_read_tokens, cache_write_tokens, reasoning_tokens, cost, unpriced, images, characters, audio_ms, videos, video_ms) SELECT * FROM unnest($1::date[], $2::uuid[], $3::uuid[], $4::uuid[], $5::uuid[], $6::uuid[], $7::uuid[], $8::text[], $9::text[], $10::text[], $11::text[], $12::bigint[], $13::bigint[], $14::bigint[], $15::bigint[], $16::bigint[], $17::bigint[], $18::bigint[], $19::numeric[], $20::bigint[], $21::bigint[], $22::bigint[], $23::bigint[], $24::bigint[], $25::bigint[]) ON CONFLICT (project_id, day, api_key_id, user_id, service_account_id, provider, model_id, ingress_dialect, egress_dialect) DO UPDATE SET requests = u.requests + excluded.requests, errors = u.errors + excluded.errors, input_tokens = u.input_tokens + excluded.input_tokens, output_tokens = u.output_tokens + excluded.output_tokens, cache_read_tokens = u.cache_read_tokens + excluded.cache_read_tokens, cache_write_tokens = u.cache_write_tokens + excluded.cache_write_tokens, reasoning_tokens = u.reasoning_tokens + excluded.reasoning_tokens, cost = u.cost + excluded.cost, unpriced = u.unpriced + excluded.unpriced, images = u.images + excluded.images, characters = u.characters + excluded.characters, audio_ms = u.audio_ms + excluded.audio_ms, videos = u.videos + excluded.videos, video_ms = u.video_ms + excluded.video_ms, catalogue_model_id = coalesce(excluded.catalogue_model_id, u.catalogue_model_id)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "DateArray",
+        "UuidArray",
+        "UuidArray",
+        "UuidArray",
+        "UuidArray",
+        "UuidArray",
+        "UuidArray",
+        "TextArray",
+        "TextArray",
+        "TextArray",
+        "TextArray",
+        "Int8Array",
+        "Int8Array",
+        "Int8Array",
+        "Int8Array",
+        "Int8Array",
+        "Int8Array",
+        "Int8Array",
+        "NumericArray",
+        "Int8Array",
+        "Int8Array",
+        "Int8Array",
+        "Int8Array",
+        "Int8Array",
+        "Int8Array"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "dbe07280a89d9df9b9d596e660ace6d3f2362d690fb1c18c77cadd89e3074085"
+}

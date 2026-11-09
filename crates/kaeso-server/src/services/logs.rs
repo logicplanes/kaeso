@@ -647,6 +647,7 @@ pub async fn record(state: &AppState, o: &Outcome) {
         media_input: o.media.as_ref().map_or(0, |m| m.logged().1),
         media_output: o.media.as_ref().map_or(0, |m| m.logged().2),
         media_detail: o.media.as_ref().map(media_detail).unwrap_or_default(),
+        cost_known: crate::services::usage::cost_known(o),
     };
     let content = content.then(|| ContentRow {
         request_id: log.request_id,

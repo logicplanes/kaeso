@@ -10,7 +10,7 @@ use kaeso_core::notifications::Kind;
 use kaeso_kpp::Usage;
 use kaeso_mail::{Budget, BudgetAlert, LimitKind, LimitPeriod};
 use kaeso_store::StoreError;
-use kaeso_store::pg::limits::{self as store, UsageRow};
+use kaeso_store::pg::limits::{self as store, MediaSums, UsageRow};
 use kaeso_store::pg::notifications;
 use kaeso_store::pg::usage as store_usage;
 use rust_decimal::Decimal;
@@ -203,6 +203,7 @@ fn merge(into: &mut UsageRow, add: &UsageRow) {
         .saturating_add(add.cache_write_tokens);
     into.reasoning_tokens = into.reasoning_tokens.saturating_add(add.reasoning_tokens);
     into.cost = into.cost.saturating_add(add.cost);
+    into.media.add(&add.media);
 }
 
 fn i(v: u64) -> i64 {
@@ -355,6 +356,51 @@ async fn flush_rows(state: &AppState, taken: Taken) -> Result<usize, StoreError>
     Ok(written)
 }
 
+/// Whether the request's cost is known; a video job's start is priced when the job ends.
+pub fn cost_known(outcome: &Outcome) -> bool {
+    if outcome.response_cache == Some(crate::services::response_cache::Verdict::Hit)
+        || matches!(
+            outcome.video,
+            Some(
+                crate::model_api::hooks::VideoCall::Create
+                    | crate::model_api::hooks::VideoCall::Remix
+            )
+        )
+    {
+        return true;
+    }
+    let usage = outcome.usage.clone().unwrap_or_default();
+    cost::is_priced(&usage, outcome.prices.as_ref(), outcome.media.as_ref())
+}
+
+/// What a request made or heard, for the usage totals: a video job's units count when it ends.
+pub fn media_sums(outcome: &Outcome) -> MediaSums {
+    let mut sums = MediaSums {
+        unpriced: i64::from(!cost_known(outcome)),
+        ..MediaSums::default()
+    };
+    if matches!(
+        outcome.video,
+        Some(
+            crate::model_api::hooks::VideoCall::Create | crate::model_api::hooks::VideoCall::Remix
+        )
+    ) {
+        return sums;
+    }
+    if let Some(m) = &outcome.media {
+        sums.images = i(m.output_images);
+        sums.characters = i(m.characters);
+        sums.videos = i(m.output_videos);
+        if m.output_videos > 0 {
+            sums.video_ms = i(m.output_ms);
+            sums.audio_ms = i(m.input_ms);
+        } else {
+            sums.audio_ms = i(m.input_ms.saturating_add(m.output_ms));
+        }
+    }
+    sums
+}
+
 pub fn costed(outcome: &Outcome) -> (Usage, Decimal) {
     let usage = outcome.usage.clone().unwrap_or_default();
     // A video job is billed once, when it ends; the request that started it costs nothing.
@@ -420,6 +466,7 @@ pub async fn account(state: &AppState, outcome: &Outcome) {
         cache_write_tokens: i(usage.cache_write_tokens),
         reasoning_tokens: i(usage.reasoning_tokens.unwrap_or(0)),
         cost: c,
+        media: media_sums(outcome),
     });
     let (Some(entry), Some(provider)) = (outcome.catalogue_model_id, outcome.provider) else {
         return;
@@ -699,6 +746,7 @@ mod tests {
             cache_write_tokens: 0,
             reasoning_tokens: 0,
             cost: Decimal::ZERO,
+            media: Default::default(),
         }
     }
 

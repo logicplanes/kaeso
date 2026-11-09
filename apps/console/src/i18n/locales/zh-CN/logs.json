@@ -246,5 +246,6 @@
   "logs.inspector.audioSent": "发送 {duration} 音频",
   "logs.inspector.video": "视频",
   "logs.inspector.videos": "{count, plural, other {# 个视频}}",
-  "logs.inspector.videosMade": "{videos} · {duration}"
+  "logs.inspector.videosMade": "{videos} · {duration}",
+  "logs.inspector.costUnknown": "所生成内容没有价格"
 }

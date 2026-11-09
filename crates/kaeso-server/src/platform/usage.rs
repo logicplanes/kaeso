@@ -170,6 +170,27 @@ pub struct UsageRow {
     pub tool_calls: u64,
     #[doc = "Of those, the ones refused or failed."]
     pub tool_call_errors: u64,
+    #[doc = "Requests whose cost is unknown: their model has no price for what they\n\
+        made or heard, such as a video model without a price per clip. `cost` leaves\n\
+        them out."]
+    pub unpriced: u64,
+    #[doc = "What the group's media requests made or heard."]
+    pub media: UsageMedia,
+}
+
+#[derive(Clone, Debug, Default, Serialize, ToSchema)]
+#[schema(description = "What a usage group's media requests made or heard.")]
+pub struct UsageMedia {
+    #[doc = "Images made."]
+    pub images: u64,
+    #[doc = "Characters of text spoken."]
+    pub characters: u64,
+    #[doc = "Milliseconds of audio made or transcribed."]
+    pub audio_ms: u64,
+    #[doc = "Videos made, counted when their jobs end."]
+    pub videos: u64,
+    #[doc = "Milliseconds of video made."]
+    pub video_ms: u64,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -337,6 +358,14 @@ async fn usage(
                 cost: costs.then(|| r.cost.normalize().to_string()),
                 tool_calls: 0,
                 tool_call_errors: 0,
+                unpriced: count(r.media.unpriced),
+                media: UsageMedia {
+                    images: count(r.media.images),
+                    characters: count(r.media.characters),
+                    audio_ms: count(r.media.audio_ms),
+                    videos: count(r.media.videos),
+                    video_ms: count(r.media.video_ms),
+                },
             };
             (r.key, row)
         })
@@ -355,6 +384,8 @@ async fn usage(
             cost: costs.then(|| "0".to_owned()),
             tool_calls: 0,
             tool_call_errors: 0,
+            unpriced: 0,
+            media: UsageMedia::default(),
         });
         row.tool_calls = count(t.calls);
         row.tool_call_errors = count(t.errors);

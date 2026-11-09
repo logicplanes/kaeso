@@ -204,6 +204,8 @@ export function usageRow(overrides: Partial<UsageRow> = {}): UsageRow {
     cost: "1.25",
     tool_calls: 0,
     tool_call_errors: 0,
+    unpriced: 0,
+    media: { images: 0, characters: 0, audio_ms: 0, videos: 0, video_ms: 0 },
     ...overrides,
   };
 }
@@ -220,6 +222,7 @@ export function failedLog(overrides: Partial<LogView> = {}): LogView {
     started_at: DAY_AGO,
     client_ip: "127.0.0.1",
     cost: "0",
+    cost_known: true,
     duration_ms: 12,
     egress_dialect: "anthropic_messages",
     ingress_dialect: "anthropic_messages",

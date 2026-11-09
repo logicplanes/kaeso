@@ -401,5 +401,13 @@
   "kaeso.providerKey.serviceAccountKey": "JSON-Schlüssel",
   "kaeso.providerKey.serviceAccountPlaceholder": "Den Inhalt der Schlüsseldatei einfügen",
   "kaeso.providerKey.serviceAccountTooLarge": "Diese Datei ist zu groß für einen JSON-Schlüssel.",
-  "kaeso.providerKey.serviceAccountChoose": "Datei auswählen"
+  "kaeso.providerKey.serviceAccountChoose": "Datei auswählen",
+  "kaeso.usage.media.images": "{count, plural, one {# Bild} other {# Bilder}}",
+  "kaeso.usage.media.characters": "{count} Zeichen",
+  "kaeso.usage.media.audio": "{duration} Audio",
+  "kaeso.usage.media.videosLong": "{count, plural, one {# Video} other {# Videos}}, {duration}",
+  "kaeso.usage.media.videos": "{count, plural, one {# Video} other {# Videos}}",
+  "kaeso.usage.costUnknown": "Unbekannt",
+  "kaeso.usage.unpriced": "{count, plural, one {# Anfrage} other {# Anfragen}} unbekannt",
+  "kaeso.usage.media.header": "Medien"
 }
