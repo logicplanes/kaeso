@@ -81,6 +81,7 @@ gh stack submit
 - **界面只使用 `@logicplanes/kaeso-ui`**，`className` 只用于布局，每个词都有三种语言（[翻译](translations.md)）。
 - **JavaScript 只用 pnpm**，一次性工具用 `pnpm dlx`。Cargo 构建 Rust 代码，锁文件只通过各自的工具修改。
 - **仓库中不放机密信息或个人数据。** Kaeso 本身写作 `kaeso.example.com`，密钥写作 `sk-kso-…`，读者或所有者写作 `owner@example.com`。其他一切，例如身份提供商或 SMTP 服务器，使用保留域名 `example.com` 或 `.example` 下的其他名称（[RFC 2606](https://www.rfc-editor.org/rfc/rfc2606)），绝不使用真实的主机、密钥或人员。
+- **拉取请求、议题、评论和提交信息中不写你自己的实例或账号的细节：** 不写测试变更所用的主机、地址或路径，不写服务商账号的密钥、套餐、余额或配额，也不写用量数字。写“一个线上实例”或“一台测试服务器”，描述服务商的行为，而不是你的账号拥有什么。
 - **仓库中不放计划。** 路线图、待办事项和未决问题都放到 issue 中。
 
 网关有自己的附加规则，例如不允许 panic、金额不使用浮点数（[网关规则](architecture/gateway.md#规则)）。KPP 也是如此（[设计原则](kpp/index.md#设计原则)）。
