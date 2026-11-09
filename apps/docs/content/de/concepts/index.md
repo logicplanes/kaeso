@@ -36,6 +36,7 @@ Diese Seiten erklären, wie Kaeso arbeitet, damit Sie wissen, was Sie erwartet, 
 
 - [Anbieter](providers.md): Sehen Sie, welche Anbieter Kaeso aufruft, wie Sie einen nutzen und worin sie sich unterscheiden.
 - [Unterstützte Anbieter](supported-providers.md): Schlagen Sie ID, Formate und Schlüssel jedes Anbieters nach.
+- [APIs nach Anbieter](provider-apis.md): Sehen Sie, welche Modell-APIs jeden Anbieter erreichen, mit seinen Modellen.
 - [Ablauf einer Anfrage](request-flow.md): Verfolgen Sie eine Modellanfrage durch das Gateway, und erfahren Sie, welchen Fehler sie erhält und was sie kostet.
 - [Alias-Routen](alias-routes.md): Leiten Sie jede Anfrage an einen Alias zum passenden Modell, und weichen Sie aus, wenn eines ausfällt.
 - [Formatübersetzung](format-translation.md): Sehen Sie, was erhalten bleibt, wenn eine App das Modell eines anderen Anbieters aufruft.

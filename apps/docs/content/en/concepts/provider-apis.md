@@ -1,0 +1,41 @@
+---
+title: APIs by provider
+description: Look up which model APIs Kaeso serves on each built-in provider, with their models and a source for each.
+order: 2
+---
+
+Find a provider and see which of Kaeso's model APIs reach its models. Each column links to the API's page, which has the fields, limits and costs.
+
+## How to read the table
+
+- **Yes.** Kaeso calls the provider for this API, with the models named in the cell. Any model of the provider that the project's catalogue lists for the API works; the names are examples.
+- **Refused.** The provider offers it, but Kaeso doesn't call it. Kaeso answers 400 before anything is sent, and the cell gives the reason.
+- **Not offered.** The provider's documentation, linked in the last column, offers no such API.
+
+The provider documentation was read on 2026-11-09. A row's source covers its cells unless a cell names its own.
+
+## Providers
+
+| Provider | [Chat](../api/model-api.md) | [Embeddings](../api/model-api.md) | [Images](../api/images.md) | [Speech](../api/audio.md) | [Transcription](../api/audio.md) | [Translation](../api/audio.md) | [Video](../api/videos.md) | [Music and sound effects](../api/elevenlabs.md) | Source |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Anthropic `anthropic` | Yes: Claude models | Not offered: Anthropic points to Voyage AI ([embeddings](https://platform.claude.com/docs/en/build-with-claude/embeddings)) | Not offered | Not offered | Not offered | Not offered | Not offered | Not offered | [Models](https://platform.claude.com/docs/en/about-claude/models/overview) |
+| Cerebras `cerebras` | Yes: `gpt-oss-120b`, `qwen-3.8-27b` | Not offered | Not offered | Not offered | Not offered | Not offered | Not offered | Not offered | [Models](https://inference-docs.cerebras.ai/models/overview) |
+| Cohere `cohere` | Yes: Command models | Yes: Embed models, such as `embed-v4.0`, added as custom models | Not offered | Not offered | Yes: `cohere-transcribe-03-2026` | Not offered | Not offered | Not offered | [Models](https://docs.cohere.com/docs/models) |
+| DeepSeek `deepseek` | Yes: DeepSeek models | Not offered | Not offered | Not offered | Not offered | Not offered | Not offered | Not offered | [API docs](https://api-docs.deepseek.com/) |
+| ElevenLabs `elevenlabs` | Not offered: ElevenLabs writes no text | Not offered | Refused: Kaeso doesn't map ElevenLabs' image generations (`/v1/flows/image`) | Yes: `eleven_v3`, `eleven_multilingual_v2`, `eleven_flash_v2_5` and the rest | Yes: `scribe_v2`, `scribe_v2_medical` | Not offered | Yes: `veo-3.1-*`, `bytedance-seedance-v2*` | Yes: `music_v1`, `music_v2*`, `eleven_text_to_sound_v2`, `eleven_text_to_sound_v3` | [OpenAPI document](https://api.elevenlabs.io/openapi.json) |
+| Gemini Enterprise Agent Platform `gemini-agent-platform` | Yes: Gemini, Claude and partner models | Refused: the platform documents its embeddings models only through `:predict` ([text embeddings](https://docs.cloud.google.com/gemini-enterprise-agent-platform/reference/models/text-embeddings-api)) | Yes: Gemini image models | Yes: `gemini-3.8-flash-tts`, `gemini-2.5-*-tts` | Yes: Gemini models with `audioTranscriptionConfig` | Not offered | Yes: `veo-3.1-*`, `gemini-omni-*`, with a service account key | Refused: Kaeso doesn't map Lyria (`lyria-002`, `lyria-3-*`) ([generate music](https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/music/generate-music)) | [Models](https://docs.cloud.google.com/gemini-enterprise-agent-platform/models) |
+| Google AI Studio `google` | Yes: Gemini and Gemma models | Yes: `gemini-embedding-2`, `gemini-embedding-001` | Yes: `gemini-*-image`, `gemini-nano-banana-2.1` | Yes: `gemini-3.8-flash-tts`, `gemini-3.8-flash-lite-tts` | Yes: `gemini-3.5-transcribe` | Not offered | Yes: `gemini-omni-*` | Refused: Kaeso doesn't map Lyria (`lyria-3-clip-preview`, `lyria-3.5`) ([music generation](https://aistudio.google.com/docs/music-generation)) | [Gemini API](https://aistudio.google.com/docs) |
+| Groq `groq` | Yes: Groq's models | Not offered | Not offered | Yes: Orpheus | Yes: `whisper-large-v3`, `whisper-large-v3-turbo` | Yes: `whisper-large-v3` | Not offered | Not offered | [Models](https://console.groq.com/docs/models) |
+| MiniMax `minimax` | Yes: `MiniMax-M3`, `MiniMax-M3.1-Flash` | Not offered | Yes: `image-01` | Yes: `speech-2.8-*`, `speech-2.6-*`, `speech-02-*` | Yes: `asr-1.0` | Not offered | Yes: `MiniMax-Hailuo-*`, `MiniMax-H3*` | Refused: Kaeso doesn't map MiniMax's music generation ([music generation](https://platform.minimax.io/docs/api-reference/music-generation)) | [API overview](https://platform.minimax.io/docs/api-reference/api-overview) |
+| Mistral `mistral` | Yes: Mistral models | Yes: `mistral-embed`, `codestral-embed` | Refused: Mistral makes images only as a tool of its agents ([image generation tool](https://docs.mistral.ai/studio/agents/agent-tools/image_generation)) | Yes: `voxtral-mini-tts-3-0` | Yes: Voxtral Transcribe 3 | Not offered | Not offered | Not offered | [Models](https://docs.mistral.ai/getting-started/models) |
+| Moonshot `moonshotai` | Yes: Kimi models | Not offered | Not offered | Not offered | Not offered | Not offered | Not offered | Not offered | [Kimi API](https://platform.kimi.ai/docs) |
+| Ollama Cloud `ollama-cloud` | Yes: Ollama's cloud models | Not offered | Not offered | Not offered | Not offered | Not offered | Not offered | Not offered | [Cloud](https://docs.ollama.com/cloud) |
+| OpenAI `openai` | Yes: GPT models | Yes: `text-embedding-3-*` | Yes: `gpt-image-*`, `chatgpt-image-latest` | Yes: `gpt-4o-mini-tts`, `tts-1`, `tts-1-hd` | Yes: `gpt-transcribe`, `gpt-4o-*-transcribe`, `whisper-1` | Yes: `whisper-1` | Refused: OpenAI shut Sora down on 24 September 2026 ([deprecations](https://platform.openai.com/docs/deprecations)) | Not offered | [Models](https://developers.openai.com/api/docs/models) |
+| OpenRouter `openrouter` | Yes: its catalogue | Yes: its embeddings models | Yes: its image models | Yes: its speech models | Yes: its transcription models | Not offered | Yes: its video models | Not offered | [OpenAPI document](https://openrouter.ai/openapi.json) |
+| QwenCloud `alibaba` | Yes: Qwen and other makers' models | Yes: `text-embedding-v4`, added as a custom model | Yes: Qwen-Image, Wan Image, the Wan text-to-image models `wan2.6-t2i` to `wan2.1-t2i-*`, Z-Image | Yes: Qwen-Audio-TTS, `qwen3-tts-flash`; real-time models refused | Yes: `qwen3-asr-flash`, Qwen-Audio-ASR Flash; file and real-time models refused | Refused: Kaeso doesn't map the Livetranslate models ([Livetranslate](https://www.alibabacloud.com/help/en/model-studio/qwen3-livetranslate-flash)) | Yes: Wan text and image to video | Not offered | [Models](https://www.alibabacloud.com/help/en/model-studio/models) |
+| SpaceX `xai` | Yes: Grok models | Not offered | Yes: `grok-imagine-image*` | Yes: `grok-tts` | Yes: `grok-voice-transcribe-2.0` | Not offered | Yes: `grok-imagine-video*` | Not offered | [REST API reference](https://docs.x.ai/developers/rest-api-reference) |
+| Together AI `togetherai` | Yes: Together's models | Yes: models on a dedicated endpoint, since Together lists none serverless | Yes: FLUX, Seedream, Qwen-Image | Yes: Orpheus, Cartesia Sonic, Kokoro | Yes: Whisper, Parakeet, Nemotron ASR | Yes: `openai/whisper-large-v3` | Yes: Seedance, Wan and others | Not offered | [Serverless models](https://docs.together.ai/docs/serverless-models) |
+| Vercel `vercel` | Yes: its catalogue | Yes: its embeddings models | Yes: its image models | Yes: its speech models | Yes: its transcription models | Not offered | Refused: Vercel documents video only through its AI SDK, not over HTTP | Refused: Kaeso calls Vercel's speech models for speech only | [Modalities](https://vercel.com/docs/ai-gateway/modalities) |
+| Z.ai `zai` | Yes: GLM models | Not offered | Yes: `glm-image` | Not offered | Yes: `glm-asr-2512` | Not offered | Yes: `cogvideox-3` | Not offered | [API reference](https://docs.z.ai/llms.txt) |
+
+Custom providers reach OpenAI's Images, audio and Videos APIs only where you turn each API on for the provider ([custom providers](../console/custom-providers.md)).

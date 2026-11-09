@@ -36,6 +36,7 @@ order: 2
 
 - [服务商](providers.md)：了解 Kaeso 调用哪些服务商、如何使用其中一个，以及它们之间的差异。
 - [支持的服务商](supported-providers.md)：查阅每个服务商的 ID、格式和密钥。
+- [各服务商的 API](provider-apis.md)：查看每个服务商能通过哪些模型 API 调用，以及对应的模型。
 - [请求流程](request-flow.md)：跟随一个模型请求走过网关，了解它会得到哪种错误以及如何计费。
 - [别名路由](alias-routes.md)：把每个指向别名的请求送到合适的模型，并在某个模型失败时回退。
 - [格式转换](format-translation.md)：了解应用调用其他服务商的模型时，哪些内容能够保留。

@@ -36,6 +36,7 @@ These pages explain how Kaeso works, so you know what to expect before you rely 
 
 - [Providers](providers.md): See which providers Kaeso calls, how to use one and what differs between them.
 - [Supported providers](supported-providers.md): Look up every provider's id, formats and keys.
+- [APIs by provider](provider-apis.md): See which model APIs reach each provider, with its models.
 - [Request flow](request-flow.md): Follow a model request through the gateway, and learn which error it gets and what it is charged.
 - [Alias routes](alias-routes.md): Send each request that names an alias to the right model, and fall back when one fails.
 - [Format translation](format-translation.md): See what carries across when an app calls another provider's model.
