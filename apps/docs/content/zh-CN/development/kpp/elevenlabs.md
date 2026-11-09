@@ -61,6 +61,26 @@ OpenAI 应用收到的 ElevenLabs 词不含其 `spacing` 和 `audio_event` 条�
 
 ElevenLabs 返回 `{"detail": {"type", "code", "message", "status", "request_id", "param"}}`；较早的端点返回 `{"detail": {"status", "message"}}`，校验错误返回 `{"detail": [{"loc", "msg"}]}`。Kaeso 读取这三种结构，把 `type` 和 `code` 映射为错误类型（`insufficient_credits` 和 `payment_required` 映射为计费，`rate_limit_error` 映射为速率限制），并以文档规定的结构向 ElevenLabs 应用写出自己的错误。ElevenLabs 自己的错误连同其状态码按原样传递。
 
+## 图片生成
+
+ElevenLabs 通过 `POST /v1/flows/image` 使用 OpenAI、Google 和字节跳动的模型生成图片，由 `GET /v1/flows/image/{id}` 报告；请求体取决于 `model_id`（OpenAPI 文档中的 `ImageGenerationRequest`，2026-11-09 阅读，以及[图片和视频指南](https://elevenlabs.io/docs/eleven-api/guides/cookbooks/image-and-video)）。Kaeso 把 OpenAI Images API 请求发往那里，然后按 ElevenLabs 的要求，至少间隔两秒查询生成状态，直到结束，全部在同一个请求内完成；`dispatch::pending_task`、`encode_task_poll` 和 `task_poll_gap` 对应这些步骤。ElevenLabs 格式的应用不通过 Kaeso 调用图片生成：其 SDK 的 `flows.image` 会保存生成 ID，Kaeso 需要像处理视频那样把它们映射到项目。`fixtures/elevenlabs/image/` 中的 fixture 依据 OpenAPI 文档构建；图片生成未实际调用。
+
+| KPP | ElevenLabs |
+| --- | --- |
+| `model` | `model_id`：`gpt-image-2.5-sunburst`、`gpt-image-2.5-flare`、`gpt-image-2`、`gpt-image-1.5`、`gpt-image-1`、`gemini-3.1-flash-image`、`gemini-3.1-flash-lite-image`、`gemini-3-pro-image`、`gemini-2.5-flash-image`、`bytedance-seedream-5-pro`、`bytedance-seedream-5-lite` |
+| `prompt` | `prompt` |
+| `images`、`mask` | `images[]`、`mask`：`{type: "inline_base64", content_base64, mime_type}` 或 `{type: "asset", asset_id}`，最多为模型的 5、10 或 14 张；仅 GPT Image 支持蒙版 |
+| `quality` | 来自模型列表的 `quality`（`low`、`medium`、`high`，GPT Image 2.5 另有 `xhigh` 和 `max`）；`auto` 不发送 |
+| `background` | `background`，仅 GPT Image 1 和 1.5 |
+| `size` | `aspect_ratio`：`1024x1024` 为 `1:1`，`1536x1024` 为 `3:2`，`1024x1536` 为 `2:3`，`auto` 为 `auto`；其他尺寸被拒绝 |
+| `aspect_ratio`、`resolution` | `aspect_ratio`、`resolution`，均取自模型的列表 |
+| `seed` | `seed`，仅 Seedream |
+| 回复 `status` 为 `pending` 或 `generating` | 生成尚未完成；Kaeso 再次查询 |
+| 回复 `content_url`、`content_mime_type` | 图片链接，约一小时内有效；应用要求 `b64_json` 时由 Kaeso 下载 |
+| 回复 `failure_reason`、`error_message` | 错误：`moderated` 为内容过滤，`invalid_parameters` 为无效请求，`timeout`，`charging_failed` 为计费，其他为服务商错误 |
+
+`n` 大于 1、图片链接、`output_format`、`output_compression`、`negative_prompt`、部分图片和变体会在发送前被拒绝。ElevenLabs 以积分计费，KPMR 未列出，因此其费用保持未知。字节跳动的模型在 ElevenLabs 账户中默认关闭，直到 ElevenLabs 开通访问；其 `model_access_denied` 拒绝会连同这一说明返回给应用。
+
 ## 视频生成
 
 ElevenLabs 通过 `POST /v1/flows/video` 使用 Veo 3.1 和 Seedance 2 模型生成视频，由 `GET /v1/flows/video/{id}` 报告；请求体取决于 `model_id`（`VideoGenerationRequest`）。Kaeso 为其他格式的应用把视频任务发往那里；ElevenLabs 格式的应用不通过 Kaeso 调用它。`fixtures/elevenlabs/video/` 中的 fixture 依据 OpenAPI 文档构建。

@@ -61,6 +61,26 @@ Eine OpenAI-App bekommt die Wörter von ElevenLabs ohne deren Einträge `spacing
 
 ElevenLabs antwortet mit `{"detail": {"type", "code", "message", "status", "request_id", "param"}}`; ältere Endpunkte mit `{"detail": {"status", "message"}}`, die Validierung mit `{"detail": [{"loc", "msg"}]}`. Kaeso liest alle drei, bildet `type` und `code` auf die Fehlerart ab (`insufficient_credits` und `payment_required` auf Abrechnung, `rate_limit_error` auf Ratenlimit) und schreibt seine eigenen Fehler an ElevenLabs-Apps in der dokumentierten Form. Die eigenen Fehler von ElevenLabs gehen weiter, wie sie kamen, mit ihrem Status.
 
+## Bilderzeugungen
+
+ElevenLabs erzeugt Bilder mit Modellen von OpenAI, Google und ByteDance über `POST /v1/flows/image`, gemeldet von `GET /v1/flows/image/{id}`; der Body hängt von `model_id` ab (`ImageGenerationRequest` im OpenAPI-Dokument, gelesen am 2026-11-09, und der [Leitfaden zu Bild und Video](https://elevenlabs.io/docs/eleven-api/guides/cookbooks/image-and-video)). Kaeso sendet eine Anfrage der Images API von OpenAI dorthin und fragt dann den Status der Generierung ab, höchstens alle zwei Sekunden, wie ElevenLabs es verlangt, bis sie endet, alles innerhalb der einen Anfrage; `dispatch::pending_task`, `encode_task_poll` und `task_poll_gap` benennen die Schritte. Apps im Format von ElevenLabs rufen die Bilderzeugung nicht über Kaeso auf: `flows.image` ihres SDK behält Generierungs-IDs, die Kaeso dem Projekt zuordnen müsste, wie es das für Videos tut. Die Fixtures in `fixtures/elevenlabs/image/` sind aus dem OpenAPI-Dokument gebaut; die Bilderzeugung wurde nicht live aufgerufen.
+
+| KPP | ElevenLabs |
+| --- | --- |
+| `model` | `model_id`: `gpt-image-2.5-sunburst`, `gpt-image-2.5-flare`, `gpt-image-2`, `gpt-image-1.5`, `gpt-image-1`, `gemini-3.1-flash-image`, `gemini-3.1-flash-lite-image`, `gemini-3-pro-image`, `gemini-2.5-flash-image`, `bytedance-seedream-5-pro`, `bytedance-seedream-5-lite` |
+| `prompt` | `prompt` |
+| `images`, `mask` | `images[]`, `mask`: `{type: "inline_base64", content_base64, mime_type}` oder `{type: "asset", asset_id}`, bis zu den 5, 10 oder 14 des Modells; eine Maske nur bei GPT Image |
+| `quality` | `quality` aus der Liste des Modells (`low`, `medium`, `high`, dazu `xhigh` und `max` bei GPT Image 2.5); `auto` entfällt |
+| `background` | `background`, nur GPT Image 1 und 1.5 |
+| `size` | `aspect_ratio`: `1024x1024` als `1:1`, `1536x1024` als `3:2`, `1024x1536` als `2:3`, `auto` als `auto`; andere Größen werden abgelehnt |
+| `aspect_ratio`, `resolution` | `aspect_ratio`, `resolution`, jeweils aus den Listen des Modells |
+| `seed` | `seed`, nur Seedream |
+| Antwort `status` `pending` oder `generating` | die Generierung ist nicht fertig; Kaeso fragt erneut |
+| Antwort `content_url`, `content_mime_type` | das Bild als Link, etwa eine Stunde gültig, den Kaeso für eine App herunterlädt, die `b64_json` verlangt |
+| Antwort `failure_reason`, `error_message` | der Fehler: `moderated` als gefilterter Inhalt, `invalid_parameters` als ungültige Anfrage, `timeout`, `charging_failed` als Abrechnung, andere als Anbieterfehler |
+
+`n` über 1, Bildlinks, `output_format`, `output_compression`, `negative_prompt`, Teilbilder und Variationen werden vor dem Senden abgelehnt. ElevenLabs rechnet Generierungen in Credits ab, die KPMR nicht listet, deshalb bleiben ihre Kosten unbekannt. Die Modelle von ByteDance sind in einem ElevenLabs-Konto aus, bis ElevenLabs den Zugriff freigibt; seine Ablehnung `model_access_denied` erreicht die App mit dieser Erklärung.
+
 ## Videoerzeugungen
 
 ElevenLabs erzeugt Videos mit Veo-3.1- und Seedance-2-Modellen über `POST /v1/flows/video`, gemeldet von `GET /v1/flows/video/{id}`; der Body hängt von `model_id` ab (`VideoGenerationRequest`). Kaeso sendet Videojobs für eine App eines anderen Formats dorthin; Apps im Format von ElevenLabs rufen es nicht über Kaeso auf. Die Fixtures in `fixtures/elevenlabs/video/` sind aus dem OpenAPI-Dokument gebaut.

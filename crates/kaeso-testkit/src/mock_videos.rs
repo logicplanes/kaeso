@@ -137,6 +137,9 @@ pub(crate) fn answer(
         "/v1/flows/video" if post => {
             json(read(fixtures, "elevenlabs/video/responses/started.json"))
         }
+        "/v1/flows/image" if post => {
+            json(read(fixtures, "elevenlabs/image/responses/started.json"))
+        }
         "/api/v1/services/aigc/video-generation/video-synthesis"
         | "/api/v1/services/aigc/image2video/video-synthesis"
             if post =>
@@ -232,6 +235,14 @@ pub(crate) fn answer(
         _ if method == Method::DELETE && tail("/v1beta/interactions/").is_some() => {
             json(serde_json::json!({}))
         }
+        _ if get && tail("/v1/flows/image/").is_some() => staged(
+            polls,
+            fixtures,
+            path,
+            "elevenlabs/image/polls/generating.json",
+            "elevenlabs/image/polls/completed.json",
+            &link,
+        ),
         _ if get && tail("/v1/flows/video/").is_some() => staged(
             polls,
             fixtures,

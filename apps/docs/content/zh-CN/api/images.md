@@ -110,7 +110,7 @@ for event in stream:
 | Z.ai | 支持，每次请求一张图片 | 不支持 | `glm-image` | [Generate image](https://docs.z.ai/api-reference/image/generate-image) |
 | MiniMax | 支持 | 不支持 | `image-01` | [Text to image](https://platform.minimax.io/docs/api-reference/image-generation-t2i) |
 | Mistral | 不支持：图片只作为其智能体的工具提供 | 不支持 | — | [Image generation tool](https://docs.mistral.ai/studio/agents/agent-tools/image_generation) |
-| ElevenLabs | 不支持：Kaeso 没有映射 ElevenLabs 的图片生成（`/v1/flows/image`） | 不支持 | — | [OpenAPI document](https://api.elevenlabs.io/openapi.json) |
+| ElevenLabs | 支持，每个请求一张图片；Kaeso 等待生成完成（`/v1/flows/image`） | 按模型最多 5、10 或 14 张图片，以上传或素材形式；GPT Image 支持蒙版 | `gpt-image-2.5-sunburst`、`gpt-image-2.5-flare`、`gpt-image-2`、`gpt-image-1.5`、`gpt-image-1`、`gemini-3.1-flash-image`、`gemini-3.1-flash-lite-image`、`gemini-3-pro-image`、`gemini-2.5-flash-image`、`bytedance-seedream-5-pro`、`bytedance-seedream-5-lite` | [图片和视频指南](https://elevenlabs.io/docs/eleven-api/guides/cookbooks/image-and-video) |
 | Anthropic、DeepSeek、Groq、Cohere、Ollama Cloud、Moonshot、Cerebras | 服务商不提供 | — | — | 各服务商的 API 参考 |
 
 Google 已停用 Imagen，因此 Kaeso 只调用 Gemini 图片模型。只有 Google 尺寸表中列出的尺寸才能传给它们，例如 `1024x1024`（`1K` 下的 `1:1`）。其他尺寸请发送 `aspect_ratio` 和 `resolution`。

@@ -265,6 +265,16 @@ impl ImagesEgress {
         }
     }
 
+    // ElevenLabs answers a finished image generation with a signed link on Google Cloud
+    // Storage (`content_url` in its image and video guide).
+    const fn elevenlabs() -> ImagesEgress {
+        ImagesEgress {
+            dialect: DialectId::ElevenLabs,
+            fetch_hosts: &["storage.googleapis.com"],
+            ..ImagesEgress::ANY
+        }
+    }
+
     const fn for_models(self, models: &'static str) -> ImagesEgress {
         ImagesEgress { models, ..self }
     }
@@ -1281,7 +1291,11 @@ pub const PROVIDERS: &[Provider] = &[
         generation: DialectId::ElevenLabs,
         count_tokens: None,
         embeddings: None,
-        images: &[],
+        images: &[
+            ImagesEgress::elevenlabs().for_models("gpt-image-*"),
+            ImagesEgress::elevenlabs().for_models("gemini-*-image"),
+            ImagesEgress::elevenlabs().for_models("bytedance-seedream-*"),
+        ],
         speech: &[SpeechEgress {
             dialect: DialectId::ElevenLabs,
             profile: SpeechProfile::OPENAI,

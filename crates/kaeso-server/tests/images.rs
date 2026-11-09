@@ -440,3 +440,76 @@ async fn the_agent_platform_takes_image_requests_on_its_own_paths_with_output_op
         json!({ "mimeType": "image/jpeg", "compressionQuality": 80 })
     );
 }
+
+#[tokio::test]
+async fn an_openai_app_gets_an_elevenlabs_image_once_its_generation_finishes() {
+    let env = env().await;
+    let org = &env.owner.org_id;
+    let r = env
+        .app
+        .post(
+            &format!("/orgs/{org}/credentials"),
+            json!({ "provider": "elevenlabs", "name": "elevenlabs", "secret": "sk_test-elevenlabs-images-000000000000000" }),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
+    let r = env
+        .app
+        .post(
+            &format!("/orgs/{org}/projects/{}/models", env.project),
+            json!({ "provider": "elevenlabs", "model_id": "gpt-image-1.5" }),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
+
+    let r = generate(
+        &env,
+        json!({"model": "gpt-image-1.5", "prompt": "A lighthouse", "size": "1536x1024", "quality": "high", "response_format": "url"}),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert!(
+        r.json()["data"][0]["url"]
+            .as_str()
+            .unwrap()
+            .starts_with("http://"),
+        "{}",
+        r.text()
+    );
+    let calls: Vec<_> = env
+        .mock
+        .received()
+        .into_iter()
+        .filter(|c| c.path.starts_with("/v1/flows/image"))
+        .collect();
+    assert_eq!(calls[0].method, "POST");
+    assert_eq!(
+        calls[0].header("xi-api-key"),
+        Some("sk_test-elevenlabs-images-000000000000000")
+    );
+    let body: Value = serde_json::from_slice(&calls[0].body).unwrap();
+    assert_eq!(
+        body,
+        json!({"model_id": "gpt-image-1.5", "prompt": "A lighthouse", "quality": "high", "aspect_ratio": "3:2"})
+    );
+    assert!(
+        calls.len() >= 3,
+        "created, then polled until it finished: {calls:?}"
+    );
+    assert!(
+        calls[1..]
+            .iter()
+            .all(|c| c.method == "GET" && c.path == "/v1/flows/image/JWr5N6X9ZTqf8jD2LmQb")
+    );
+    assert_eq!(outcome(&env).await.media.unwrap().output_images, 1);
+
+    let r = generate(
+        &env,
+        json!({"model": "gpt-image-1.5", "prompt": "A lighthouse", "n": 2}),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    assert_eq!(r.json()["error"]["param"], "n");
+}

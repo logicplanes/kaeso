@@ -499,7 +499,17 @@ pub fn encode_video_poll(
 pub fn pending_task(dialect: DialectId, kind: RequestKind, body: &[u8]) -> Option<String> {
     match (dialect, kind) {
         (DialectId::DashScope, RequestKind::Image) => crate::dashscope::images::pending_task(body),
+        (DialectId::ElevenLabs, RequestKind::Image) => crate::elevenlabs::images_pending_task(body),
         _ => None,
+    }
+}
+
+/// How long a caller waits at least between two calls of [`encode_task_poll`]: ElevenLabs asks
+/// for two seconds between status calls of an image generation.
+pub fn task_poll_gap(dialect: DialectId) -> std::time::Duration {
+    match dialect {
+        DialectId::ElevenLabs => crate::elevenlabs::POLL_GAP,
+        _ => std::time::Duration::ZERO,
     }
 }
 
@@ -512,6 +522,7 @@ pub fn encode_task_poll(
     one_segment(task, "task_id")?;
     match dialect {
         DialectId::DashScope => dispatch!(dialect, encode_video_poll(task, "", ctx))?,
+        DialectId::ElevenLabs => Ok(crate::elevenlabs::images_poll_request(task)),
         other => Err(KppError::unsupported_by(
             "tasks",
             other,
