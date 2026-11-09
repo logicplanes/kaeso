@@ -588,3 +588,19 @@ async fn a_person_without_tool_access_cannot_connect_a_client() {
         "You need the right `tools.use` in this project; ask one of its admins for it."
     );
 }
+
+#[tokio::test]
+async fn a_client_document_on_a_network_opened_for_mcp_servers_is_still_refused() {
+    let s = TestServices::start().await;
+    let app = App::start_with(&s, &[LOOPBACK]).await;
+    for address in [
+        "https://127.0.0.1:9/oauth/client.json",
+        "https://[::1]:9/oauth/client.json",
+    ] {
+        let answer = cimd::client(&app.state, address).await.unwrap();
+        assert!(
+            matches!(answer, Err(cimd::Refused::Address)),
+            "{address}: {answer:?}"
+        );
+    }
+}
