@@ -722,14 +722,20 @@ impl Fields {
             }
             return Ok(());
         }
-        // An image model has no context or output limit and no generation dialect: it needs its
-        // modalities and a price, per image or for its output.
-        let images_only = self
-            .output_modalities
-            .as_ref()
-            .is_some_and(|o| o.iter().any(|m| m == "image") && !o.iter().any(|m| m == "text"));
-        if images_only {
+        // An image, speech or transcription model has no context or output limit and no
+        // generation dialect: it needs its modalities and a price, per unit or per token.
+        let has = |list: &Option<Vec<String>>, m: &str| {
+            list.as_ref().is_some_and(|l| l.iter().any(|x| x == m))
+        };
+        let makes_media = (has(&self.output_modalities, "image")
+            || has(&self.output_modalities, "audio"))
+            && !has(&self.output_modalities, "text");
+        let transcribes = has(&self.input_modalities, "audio")
+            && !has(&self.input_modalities, "text")
+            && has(&self.output_modalities, "text");
+        if makes_media || transcribes {
             let unpriced = self.unit_prices.is_none()
+                && self.input_price.is_none()
                 && self.output_price.is_none()
                 && self.output_image_price.is_none();
             if self.input_modalities.is_none() || unpriced {

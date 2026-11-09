@@ -51,6 +51,19 @@ Kaeso picks the format it detects. When you change it, choose the format your se
 
 For **Other server or proxy**, Kaeso speaks the plain format. It knows how each built-in provider differs from its format, such as fields Mistral refuses, but it can't know that of your server. A field your server doesn't take comes back as your server's own error. For the software Kaeso knows, it adapts requests as it does for a built-in provider ([server software](#server-software)). A field the format can't carry is refused as for any provider ([what Kaeso refuses](../concepts/format-translation.md#what-kaeso-refuses)).
 
+## Media APIs
+
+A custom provider can also serve OpenAI's media APIs at its base URL. Turn each on that your server answers; Kaeso then sends that API's requests for the provider's models there, in OpenAI's own format:
+
+| Switch | Your server answers | Apps call |
+| --- | --- | --- |
+| **Serves images** | `POST /v1/images/generations` and `/v1/images/edits` | the [Images API](../api/images.md) |
+| **Serves speech** | `POST /v1/audio/speech` | the [Audio API](../api/audio.md)'s speech |
+| **Serves transcriptions** | `POST /v1/audio/transcriptions` and `/v1/audio/translations` | the Audio API's transcriptions and translations |
+| **Serves videos** | OpenAI's Videos API under `/v1/videos` | the [Videos API](../api/videos.md) |
+
+A new provider for server software Kaeso knows starts with the APIs that software documents: LocalAI with images, speech and transcriptions, Xinference with images, speech and transcriptions, and vLLM with transcriptions. Detection never tries them, since a test request would make an image or a sound. With an API off, Kaeso refuses the provider's models for it with 400 and says an admin turns it on. A media model of a custom provider needs its modalities and a price per unit, such as per image or per minute of audio ([add its models](#add-its-models)).
+
 ## Server software
 
 Kaeso knows how the inference servers below differ from the format they speak. A custom provider that names its **Server** gets these differences on every request, and the console shows the software's mark wherever the provider appears:

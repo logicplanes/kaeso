@@ -107,6 +107,16 @@ pub(crate) fn answer(
             json(read(fixtures, "xai_videos/responses/started.json"))
         }
         "/v1/videos" if post => json(read(fixtures, "openrouter_videos/responses/started.json")),
+        // A server that speaks OpenAI's own Videos API, as a custom provider at `{mock}/openai`.
+        "/openai/v1/videos" if post => json(read(fixtures, "openai_videos/responses/queued.json")),
+        _ if get && tail("/openai/v1/videos/").is_some() => staged(
+            polls,
+            fixtures,
+            path,
+            "openai_videos/responses/queued.json",
+            "openai_videos/responses/completed.json",
+            &link,
+        ),
         "/v2/videos" if post => json(read(
             fixtures,
             "openai_videos/providers/togetherai/responses/in-progress.json",

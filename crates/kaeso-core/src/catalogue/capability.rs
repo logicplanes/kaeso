@@ -24,6 +24,17 @@ fn refuse(capability: &'static str, param: Option<&'static str>, message: String
     }
 }
 
+// A custom provider serves a media API only once its admin turns it on.
+fn no_media_api(eff: &Effective, api: &str, fallback: String) -> String {
+    match eff.provider.custom() {
+        Some(c) => format!(
+            "The custom provider `{}` has no {api} turned on; an organization admin turns it on under Providers.",
+            c.id()
+        ),
+        None => fallback,
+    }
+}
+
 fn app_param(ingress: DialectId, field: &'static str) -> &'static str {
     use DialectId::{AnthropicMessages as A, Gemini as G, OpenAiResponses as R};
     match (field, ingress) {
@@ -167,9 +178,13 @@ pub fn prepare(
                 return Err(refuse(
                     "images",
                     Some("model"),
-                    format!(
-                        "{} offers no image API Kaeso can call, so `{name}` can't make images.",
-                        eff.provider.name()
+                    no_media_api(
+                        eff,
+                        "Images API",
+                        format!(
+                            "{} offers no image API Kaeso can call, so `{name}` can't make images.",
+                            eff.provider.name()
+                        ),
                     ),
                 ));
             };
@@ -211,9 +226,13 @@ pub fn prepare(
                 return Err(refuse(
                     "speech",
                     Some("model"),
-                    format!(
-                        "{} offers no speech API Kaeso can call, so `{name}` can't speak.",
-                        eff.provider.name()
+                    no_media_api(
+                        eff,
+                        "speech API",
+                        format!(
+                            "{} offers no speech API Kaeso can call, so `{name}` can't speak.",
+                            eff.provider.name()
+                        ),
                     ),
                 ));
             };
@@ -238,9 +257,13 @@ pub fn prepare(
                 return Err(refuse(
                     "transcription",
                     Some("model"),
-                    format!(
-                        "{} offers no transcription API Kaeso can call, so `{name}` can't transcribe.",
-                        eff.provider.name()
+                    no_media_api(
+                        eff,
+                        "Transcriptions API",
+                        format!(
+                            "{} offers no transcription API Kaeso can call, so `{name}` can't transcribe.",
+                            eff.provider.name()
+                        ),
                     ),
                 ));
             };
@@ -265,9 +288,13 @@ pub fn prepare(
                 let message = if eff.provider.has_videos() {
                     format!("The model `{name}` does not make videos.")
                 } else {
-                    format!(
-                        "{} offers no video API Kaeso can call, so `{name}` can't make videos.",
-                        eff.provider.name()
+                    no_media_api(
+                        eff,
+                        "Videos API",
+                        format!(
+                            "{} offers no video API Kaeso can call, so `{name}` can't make videos.",
+                            eff.provider.name()
+                        ),
                     )
                 };
                 return Err(refuse("videos", Some("model"), message));

@@ -33,6 +33,7 @@ import type {
   CustomProviderView,
   EmbeddingsDialect,
   GenerationDialect,
+  MediaApi,
   ServerKind,
   ServerView,
 } from "~/api/generated/types";
@@ -50,6 +51,33 @@ import { locale, t } from "~/i18n";
 const GENERATIONS: GenerationDialect[] = ["openai_chat", "openai_responses", "anthropic_messages"];
 const COUNTING = new Set<GenerationDialect>(["openai_responses", "anthropic_messages"]);
 const AUTHS: CustomAuthView[] = ["bearer", "x_api_key", "none"];
+const MEDIA: MediaApi[] = ["images", "speech", "transcriptions", "videos"];
+
+function mediaLabel(m: MediaApi): string {
+  switch (m) {
+    case "images":
+      return t("orgHome.custom.media.images", "Serves images");
+    case "speech":
+      return t("orgHome.custom.media.speech", "Serves speech");
+    case "transcriptions":
+      return t("orgHome.custom.media.transcriptions", "Serves transcriptions");
+    case "videos":
+      return t("orgHome.custom.media.videos", "Serves videos");
+  }
+}
+
+function mediaHint(m: MediaApi): string {
+  switch (m) {
+    case "images":
+      return t("orgHome.custom.media.imagesHint", "In OpenAI's Images API format, at /v1/images/generations and /v1/images/edits.");
+    case "speech":
+      return t("orgHome.custom.media.speechHint", "In OpenAI's speech format, at /v1/audio/speech.");
+    case "transcriptions":
+      return t("orgHome.custom.media.transcriptionsHint", "In OpenAI's format, at /v1/audio/transcriptions and /v1/audio/translations.");
+    case "videos":
+      return t("orgHome.custom.media.videosHint", "In OpenAI's Videos API format, at /v1/videos.");
+  }
+}
 const OTHER = "other";
 
 function useServers(org: string): ServerView[] {
@@ -340,6 +368,7 @@ interface Draft {
   embeddings: boolean;
   count_tokens: boolean;
   server: ServerKind | null;
+  media: MediaApi[];
 }
 
 function draftOf(p: CustomProviderView | CustomProviderDetection, idTouched: boolean): Draft {
@@ -353,6 +382,7 @@ function draftOf(p: CustomProviderView | CustomProviderDetection, idTouched: boo
     embeddings: !!p.embeddings,
     count_tokens: !!p.count_tokens,
     server: p.server ?? null,
+    media: [...p.media],
   };
 }
 
@@ -366,7 +396,7 @@ function draftProblem(d: Draft): string | undefined {
 function settingsOf(d: Draft) {
   const embeddings: EmbeddingsDialect | null = d.embeddings ? "openai_embeddings" : null;
   const count_tokens: GenerationDialect | null = d.count_tokens && COUNTING.has(d.generation) ? d.generation : null;
-  return { base_url: d.base_url.trim(), auth: d.auth, generation: d.generation, embeddings, count_tokens, server: d.server };
+  return { base_url: d.base_url.trim(), auth: d.auth, generation: d.generation, embeddings, count_tokens, server: d.server, media: d.media };
 }
 
 function SettingsFields({
@@ -425,7 +455,10 @@ function SettingsFields({
         description={t("orgHome.custom.serverSelectHint", "Kaeso talks to it the way this software expects.")}
         fullWidth
         value={draft.server ?? OTHER}
-        onValueChange={(v) => set({ server: v === OTHER ? null : (v as ServerKind) })}
+        onValueChange={(v) => {
+          const server = v === OTHER ? null : (v as ServerKind);
+          set(editing ? { server } : { server, media: [...(servers.find((s) => s.server === server)?.media ?? [])] });
+        }}
         options={serverOptions(servers)}
         error={fieldError(error, "server")}
       />
@@ -453,6 +486,15 @@ function SettingsFields({
             onCheckedChange={(v) => set({ count_tokens: v })}
           />
         )}
+        {MEDIA.map((m) => (
+          <Switch
+            key={m}
+            label={mediaLabel(m)}
+            description={mediaHint(m)}
+            checked={draft.media.includes(m)}
+            onCheckedChange={(v) => set({ media: v ? MEDIA.filter((x) => x === m || draft.media.includes(x)) : draft.media.filter((x) => x !== m) })}
+          />
+        ))}
       </div>
       <Select
         label={t("orgHome.custom.auth", "Key")}
@@ -500,6 +542,7 @@ const NOTHING_FOUND: CustomProviderDetection = {
   embeddings: null,
   count_tokens: null,
   server: null,
+  media: [],
   models: null,
 };
 
@@ -528,12 +571,12 @@ export function AddCustomProviderDialog({ org, onClose }: { org: string; onClose
   const save = useApiMutation({
     mutationFn: async (): Promise<{ added: CustomProviderView; keySaved: boolean }> => {
       const key = server.key.trim();
-      const settings = settingsOf(draft);
+      const { media, ...settings } = settingsOf(draft);
       if (changedFrom(found, draft)) await detect({ ...settings, key: key || null });
       const added = data(
         await api.POST("/platform/v1/orgs/{org}/custom-providers", {
           params: { path: { org } },
-          body: { id: draft.id, name: draft.name.trim(), ...settings },
+          body: { id: draft.id, name: draft.name.trim(), ...settings, media },
         }),
       );
       if (!key || draft.auth === "none" || !savesKey) return { added, keySaved: false };
@@ -671,11 +714,11 @@ export function CustomProviderDialog({ org, editing, onClose }: { org: string; e
   };
   const save = useApiMutation({
     mutationFn: async () => {
-      const { base_url, auth, generation, embeddings, count_tokens, server } = settingsOf(draft);
+      const { base_url, auth, generation, embeddings, count_tokens, server, media } = settingsOf(draft);
       return data(
         await api.PATCH("/platform/v1/orgs/{org}/custom-providers/{provider}", {
           params: { path: { org, provider: editing.id }, header: { "If-Match": `"${editing.revision}"` } },
-          body: { name: draft.name.trim(), base_url, auth, generation, embeddings, count_tokens, server },
+          body: { name: draft.name.trim(), base_url, auth, generation, embeddings, count_tokens, server, media },
         }),
       );
     },

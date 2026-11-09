@@ -23795,6 +23795,16 @@
             "$ref": "#/components/schemas/ProviderId",
             "description": "The id: lowercase letters and digits with single hyphens between them, at\nmost 40 characters. It can't be the id of a built-in provider or of a\nprovider listed in KPMR."
           },
+          "media": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/MediaApi"
+            },
+            "description": "OpenAI's media APIs it serves at its base URL; absent for the ones its\n`server` documents, none without one."
+          },
           "name": {
             "type": "string",
             "description": "The name people see, 1 to 100 characters.",
@@ -23899,7 +23909,8 @@
           "name",
           "id",
           "auth",
-          "generation"
+          "generation",
+          "media"
         ],
         "properties": {
           "auth": {
@@ -23940,6 +23951,16 @@
           "id": {
             "$ref": "#/components/schemas/ProviderId",
             "description": "An id to start from that the organization can still take."
+          },
+          "media": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MediaApi"
+            },
+            "description": "OpenAI's media APIs its server software documents; none for another server\nor a proxy.",
+            "example": [
+              "transcriptions"
+            ]
           },
           "models": {
             "type": [
@@ -24024,6 +24045,16 @@
               }
             ]
           },
+          "media": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/MediaApi"
+            },
+            "description": "OpenAI's media APIs it serves at its base URL; `[]` for none."
+          },
           "name": {
             "type": [
               "string",
@@ -24080,6 +24111,7 @@
           "base_url",
           "auth",
           "generation",
+          "media",
           "in_use",
           "created_by",
           "created_at",
@@ -24146,6 +24178,16 @@
           "in_use": {
             "$ref": "#/components/schemas/CustomProviderUse",
             "description": "What deleting it would remove."
+          },
+          "media": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MediaApi"
+            },
+            "description": "OpenAI's media APIs it serves at its base URL, which reach its catalogue\nmodels: `images`, `speech`, `transcriptions` (with translations) and `videos`.",
+            "example": [
+              "transcriptions"
+            ]
           },
           "name": {
             "type": "string",
@@ -27106,6 +27148,7 @@
                 "base_url",
                 "auth",
                 "generation",
+                "media",
                 "in_use",
                 "created_by",
                 "created_at",
@@ -27172,6 +27215,16 @@
                 "in_use": {
                   "$ref": "#/components/schemas/CustomProviderUse",
                   "description": "What deleting it would remove."
+                },
+                "media": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MediaApi"
+                  },
+                  "description": "OpenAI's media APIs it serves at its base URL, which reach its catalogue\nmodels: `images`, `speech`, `transcriptions` (with translations) and `videos`.",
+                  "example": [
+                    "transcriptions"
+                  ]
                 },
                 "name": {
                   "type": "string",
@@ -29544,12 +29597,23 @@
                 "name",
                 "port",
                 "path",
-                "detected"
+                "detected",
+                "media"
               ],
               "properties": {
                 "detected": {
                   "type": "boolean",
                   "description": "Whether detection can tell this software from its model listing, its\n`server` header or one of its own endpoints."
+                },
+                "media": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MediaApi"
+                  },
+                  "description": "OpenAI's media APIs the software documents, which a new custom provider\nfor it serves unless set otherwise.",
+                  "example": [
+                    "transcriptions"
+                  ]
                 },
                 "name": {
                   "type": "string",
@@ -31607,6 +31671,16 @@
           }
         ],
         "description": "The signed-in user's account."
+      },
+      "MediaApi": {
+        "type": "string",
+        "description": "One of OpenAI's media APIs a custom provider serves.",
+        "enum": [
+          "images",
+          "speech",
+          "transcriptions",
+          "videos"
+        ]
       },
       "MediaView": {
         "type": "object",
@@ -35825,12 +35899,23 @@
           "name",
           "port",
           "path",
-          "detected"
+          "detected",
+          "media"
         ],
         "properties": {
           "detected": {
             "type": "boolean",
             "description": "Whether detection can tell this software from its model listing, its\n`server` header or one of its own endpoints."
+          },
+          "media": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MediaApi"
+            },
+            "description": "OpenAI's media APIs the software documents, which a new custom provider\nfor it serves unless set otherwise.",
+            "example": [
+              "transcriptions"
+            ]
           },
           "name": {
             "type": "string",

@@ -184,6 +184,7 @@ async fn admins_add_change_and_delete_custom_providers_with_their_own_rights_and
             "embeddings": "openai_embeddings",
             "count_tokens": null,
             "server": null,
+            "media": [],
             "hides_built_in": null,
             "in_use": { "keys": 0, "models": 0, "projects": 0 },
             "created_by": created.body["created_by"],
@@ -1544,6 +1545,7 @@ async fn kaeso_detects_an_openai_compatible_server_from_its_base_url_and_key() {
             "embeddings": "openai_embeddings",
             "count_tokens": null,
             "server": "vllm",
+            "media": ["transcriptions"],
             "models": [
                 { "model_id": "BAAI/bge-m3", "context_limit": null, "output_limit": null },
                 { "model_id": "meta-llama/Llama-3.3-70B-Instruct", "context_limit": 131072, "output_limit": null },
@@ -2028,9 +2030,9 @@ async fn kaeso_recognizes_the_server_software_from_its_listing_its_server_header
         .await
         .expect_status(StatusCode::OK);
     let servers = servers.body["data"].as_array().unwrap().clone();
-    assert!(servers.contains(&json!({ "server": "ollama", "name": "Ollama", "port": 11434, "path": "", "detected": true })));
-    assert!(servers.contains(&json!({ "server": "docker_model_runner", "name": "Docker Model Runner", "port": 12434, "path": "/engines", "detected": true })));
-    assert!(servers.contains(&json!({ "server": "mlx_lm", "name": "MLX LM", "port": 8080, "path": "", "detected": false })));
+    assert!(servers.contains(&json!({ "server": "ollama", "name": "Ollama", "port": 11434, "path": "", "detected": true, "media": [] })));
+    assert!(servers.contains(&json!({ "server": "docker_model_runner", "name": "Docker Model Runner", "port": 12434, "path": "/engines", "detected": true, "media": [] })));
+    assert!(servers.contains(&json!({ "server": "mlx_lm", "name": "MLX LM", "port": 8080, "path": "", "detected": false, "media": [] })));
 
     let base = software_lab("vllm", None, None).await;
     for (sent, kept) in [(json!(null), json!(null)), (json!("jan"), json!("jan"))] {
@@ -2234,4 +2236,188 @@ async fn a_local_servers_thinking_and_its_context_overflow_reach_an_anthropic_ap
         "a server of unknown software keeps its own error: {}",
         r.text()
     );
+}
+
+fn media_model(provider: &str, model: &str, output: &str) -> Value {
+    let (per, of) = match output {
+        "image" => ("image", "output"),
+        "audio" => ("million_characters", "input"),
+        "video" => ("second", "output"),
+        _ => ("minute", "input"),
+    };
+    json!({
+        "provider": provider,
+        "model_id": model,
+        "custom": true,
+        "overrides": {
+            "input_modalities": [if output == "text" { "audio" } else { "text" }],
+            "output_modalities": [output],
+            "unit_prices": [{ "per": per, "of": of, "usd": "0.01" }],
+        },
+    })
+}
+
+#[tokio::test]
+async fn a_custom_provider_serves_the_media_apis_its_admin_turns_on_and_refuses_the_rest() {
+    let env = env().await;
+    let (app, owner) = (&env.app, &env.owner);
+    let base = env.mock.base_url.clone();
+    let r = add_provider(
+        app,
+        owner,
+        json!({ "id": "studio", "name": "Studio", "base_url": base, "auth": "bearer", "generation": "openai_chat", "media": ["videos", "images", "speech", "transcriptions", "images"] }),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
+    assert_eq!(
+        r.body["media"],
+        json!(["images", "speech", "transcriptions", "videos"])
+    );
+    key(app, owner, "studio", LAB_SECRET).await;
+    for (model, output) in [
+        ("gpt-image-2", "image"),
+        ("gpt-4o-mini-tts", "audio"),
+        ("whisper-1", "text"),
+    ] {
+        add_model(
+            app,
+            owner,
+            &env.project,
+            media_model("studio", model, output),
+        )
+        .await
+        .expect_status(StatusCode::CREATED);
+    }
+    let bearer = format!("Bearer {LAB_SECRET}");
+    let r = call(
+        &env,
+        "/v1/images/generations",
+        Some(&env.key),
+        false,
+        Some(json!({ "model": "studio/gpt-image-2", "prompt": "A red fox" })),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    let sent = env.mock.last().unwrap();
+    assert_eq!(sent.path, "/v1/images/generations");
+    assert_eq!(sent.header("authorization"), Some(bearer.as_str()));
+
+    let r = call(
+        &env,
+        "/v1/audio/speech",
+        Some(&env.key),
+        false,
+        Some(json!({ "model": "studio/gpt-4o-mini-tts", "input": "Hi.", "voice": "alloy" })),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(env.mock.last().unwrap().path, "/v1/audio/speech");
+
+    let r = add_provider(
+        app,
+        owner,
+        json!({ "id": "studio-video", "name": "Studio video", "base_url": format!("{base}/openai"), "auth": "bearer", "generation": "openai_chat", "media": ["videos"] }),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
+    key(app, owner, "studio-video", LAB_SECRET).await;
+    add_model(
+        app,
+        owner,
+        &env.project,
+        media_model("studio-video", "sora-like", "video"),
+    )
+    .await
+    .expect_status(StatusCode::CREATED);
+    let r = call(
+        &env,
+        "/v1/videos",
+        Some(&env.key),
+        false,
+        Some(json!({ "model": "studio-video/sora-like", "prompt": "A red fox" })),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(env.mock.last().unwrap().path, "/openai/v1/videos");
+    let id = r.json()["id"].as_str().unwrap().to_owned();
+    let r = call(
+        &env,
+        &format!("/v1/videos/{id}"),
+        Some(&env.key),
+        false,
+        None,
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    let polled = env.mock.last().unwrap();
+    assert!(
+        polled.path.starts_with("/openai/v1/videos/"),
+        "{}",
+        polled.path
+    );
+    assert_eq!(polled.header("authorization"), Some(bearer.as_str()));
+
+    let r = patch_if_match(
+        app,
+        &format!("/orgs/{}/custom-providers/studio", owner.org_id),
+        json!({ "media": [] }),
+        &owner.cookie,
+        "*",
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    assert_eq!(r.body["media"], json!([]));
+    let before = env.mock.received().len();
+    let r = call(
+        &env,
+        "/v1/images/generations",
+        Some(&env.key),
+        false,
+        Some(json!({ "model": "studio/gpt-image-2", "prompt": "A red fox" })),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    assert_eq!(
+        r.json()["error"]["message"],
+        "The custom provider `studio` has no Images API turned on; an organization admin turns it on under Providers."
+    );
+    assert_eq!(env.mock.received().len(), before, "nothing was sent");
+}
+
+#[tokio::test]
+async fn a_server_kind_brings_the_media_apis_its_software_documents() {
+    let env = env().await;
+    let (app, owner) = (&env.app, &env.owner);
+    for (id, server, media) in [
+        (
+            "local-ai",
+            "localai",
+            json!(["images", "speech", "transcriptions"]),
+        ),
+        ("local-vllm", "vllm", json!(["transcriptions"])),
+        ("local-ollama", "ollama", json!([])),
+    ] {
+        let r = add_provider(
+            app,
+            owner,
+            json!({ "id": id, "name": id, "base_url": env.mock.base_url, "auth": "none", "generation": "openai_chat", "server": server }),
+        )
+        .await;
+        assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
+        assert_eq!(r.body["media"], media, "{server}");
+    }
+    let r = add_provider(
+        app,
+        owner,
+        json!({ "id": "picked", "name": "Picked", "base_url": env.mock.base_url, "auth": "none", "generation": "openai_chat", "server": "localai", "media": ["speech"] }),
+    )
+    .await;
+    assert_eq!(r.body["media"], json!(["speech"]));
+    let r = add_provider(
+        app,
+        owner,
+        json!({ "id": "bad", "name": "Bad", "base_url": env.mock.base_url, "auth": "none", "generation": "openai_chat", "media": ["music"] }),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{:?}", r.body);
 }

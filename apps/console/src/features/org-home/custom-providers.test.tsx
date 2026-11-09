@@ -13,9 +13,9 @@ const LIST = "orgs/:org/custom-providers";
 const ONE = "orgs/:org/custom-providers/:provider";
 const DETECT = "orgs/:org/custom-provider-detection";
 const SERVERS: ServerView[] = [
-  { server: "llama_cpp", name: "llama.cpp", port: 9931, path: "", detected: true },
-  { server: "ollama", name: "Ollama", port: 11434, path: "", detected: true },
-  { server: "vllm", name: "vLLM", port: 8000, path: "", detected: true },
+  { server: "llama_cpp", name: "llama.cpp", port: 9931, path: "", detected: true, media: [] },
+  { server: "ollama", name: "Ollama", port: 11434, path: "", detected: true, media: [] },
+  { server: "vllm", name: "vLLM", port: 8000, path: "", detected: true, media: ["transcriptions"] },
 ];
 const KEYS = "orgs/:org/credentials";
 const LAB_KEY = "lab-test-key-0000000001";
@@ -30,6 +30,7 @@ function detected(overrides: Partial<CustomProviderDetection> = {}): CustomProvi
     embeddings: null,
     count_tokens: "anthropic_messages",
     server: null,
+    media: [],
     models: [{ model_id: "lab-sonnet", context_limit: 200000, output_limit: 64000 }],
     ...overrides,
   };
@@ -45,6 +46,7 @@ function customProvider(overrides: Partial<CustomProviderView> = {}): CustomProv
     embeddings: null,
     count_tokens: null,
     server: null,
+    media: [],
     hides_built_in: null,
     in_use: { keys: 1, models: 3, projects: 2 },
     created_by: { kind: "user", id: "usr_ada" },
@@ -146,6 +148,26 @@ describe("custom providers", () => {
     expect(requests("POST", LIST)[0]?.body).toMatchObject({ id: "ollama", auth: "none", server: "ollama" });
   });
 
+  it("turns OpenAI's media APIs on and off for a provider, in a fixed order", async () => {
+    signedIn();
+    withCustom([customProvider({ server: "vllm", media: ["transcriptions"] })]);
+    on("PATCH", ONE, customProvider({ server: "vllm", media: ["images", "transcriptions"] }));
+    const { user } = await renderApp(PATH);
+
+    const row = (await within(await table()).findByText("Research vLLM")).closest('[role="row"]') as HTMLElement;
+    await user.click(within(row).getByRole("button", { name: "Actions for Research vLLM" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Edit" }));
+    const dialog = await screen.findByRole("dialog", { name: "Edit Research vLLM" });
+    expect(within(dialog).getByRole("switch", { name: "Serves transcriptions" })).toBeChecked();
+    expect(within(dialog).getByRole("switch", { name: "Serves videos" })).not.toBeChecked();
+    expect(within(dialog).getByText("In OpenAI's speech format, at /v1/audio/speech.")).toBeInTheDocument();
+    await user.click(within(dialog).getByRole("switch", { name: "Serves images" }));
+    await user.click(within(dialog).getByRole("switch", { name: "Serves speech" }));
+    await user.click(within(dialog).getByRole("switch", { name: "Serves speech" }));
+    await user.click(within(dialog).getByRole("button", { name: "Save" }));
+    await waitFor(() => expect(requests("PATCH", ONE)[0]?.body).toMatchObject({ media: ["images", "transcriptions"] }));
+  });
+
   it("shows a provider's server software next to its id and lets an edit change it", async () => {
     signedIn();
     withCustom([customProvider({ server: "vllm" })]);
@@ -205,6 +227,7 @@ describe("custom providers", () => {
         embeddings: null,
         count_tokens: "anthropic_messages",
         server: null,
+        media: [],
       },
     ]);
     expect(requests("POST", KEYS).map((r) => r.body)).toEqual([{ provider: "gpus-example-com", name: "gpus.example.com", secret: LAB_KEY }]);
@@ -436,6 +459,7 @@ describe("custom providers", () => {
       embeddings: "openai_embeddings",
       count_tokens: null,
       server: null,
+      media: [],
     });
   });
 

@@ -38,6 +38,7 @@ async fn add_provider(pg: &sqlx::PgPool, org: Uuid, base_url: &str) -> bool {
                 embeddings: None,
                 count_tokens: None,
                 server: None,
+                media: vec!["speech".into()],
             },
             created_by_kind: "system",
             created_by_id: None,
@@ -101,6 +102,10 @@ async fn each_organization_reads_and_deletes_only_its_own_custom_provider_of_an_
     assert_eq!(
         seen[0].custom_provider().unwrap().base_url().as_str(),
         "https://globex.example.com/"
+    );
+    assert_eq!(
+        seen[0].custom_provider().unwrap().media(),
+        [kaeso_core::providers::MediaApi::Speech]
     );
     let mut conn = s.pg.acquire().await.unwrap();
     assert_eq!(
