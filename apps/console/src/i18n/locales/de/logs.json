@@ -247,5 +247,8 @@
   "logs.inspector.video": "Video",
   "logs.inspector.videos": "{count, plural, one {# Video} other {# Videos}}",
   "logs.inspector.videosMade": "{videos} · {duration}",
-  "logs.inspector.costUnknown": "Kein Preis für das, was sie erzeugt hat"
+  "logs.inspector.costUnknown": "Kein Preis für das, was sie erzeugt hat",
+  "logs.media.hint": "{label}: {units}",
+  "logs.media.images": "{count, plural, one {# Bild} other {# Bilder}}",
+  "logs.media.imagesSent": "{count, plural, one {# Bild} other {# Bilder}} gesendet"
 }

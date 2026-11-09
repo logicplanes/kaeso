@@ -199,7 +199,13 @@ export function HomeMetrics({
             href={link("cost")}
             value={periodUSD(s.cost ?? "0")}
             change={ch("cost")}
-            detail={ch("cost") ? vs : undefined}
+            detail={
+              s.unpriced
+                ? t("kaeso.usage.unpriced", "{count, plural, one {# request} other {# requests}} unknown", { count: s.unpriced })
+                : ch("cost")
+                  ? vs
+                  : undefined
+            }
             trend={series(METRICS.cost.of)}
             labels={labels}
             format={METRICS.cost.format}

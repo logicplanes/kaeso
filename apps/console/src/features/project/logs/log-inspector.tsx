@@ -24,7 +24,7 @@ import {
   Tooltip,
   UsageBreakdown,
 } from "@logicplanes/kaeso-ui";
-import { formatBytes, formatDate, formatDuration, formatNumber, formatPercent } from "@logicplanes/kaeso-ui/format";
+import { formatBytes, formatDate, formatNumber, formatPercent } from "@logicplanes/kaeso-ui/format";
 import { isApiError } from "~/api/errors";
 import type { LogEntryView } from "~/api/generated/types";
 import { logEntryQuery } from "~/api/queries/logs";
@@ -37,6 +37,7 @@ import { catalogueQuery } from "~/api/queries/models";
 import { usePartyName } from "../keys/party";
 import { inputTokens, totalTokens } from "~/kaeso/tokens";
 import { cachedShare, isEmbedding, sentWithoutBreakpoint } from "./columns";
+import { mediaCount, mediaLabel } from "./media";
 import { embeddingsView, isKnownReplyForm, replyView, requestView } from "./render";
 import { seconds, startedLabel } from "./timing";
 import { logMessage, useGatewayErrors } from "./messages";
@@ -697,28 +698,4 @@ function responseCacheLabel(result: NonNullable<LogEntryView["response_cache"]>)
     case "bypass":
       return t("logs.inspector.responseCacheBypass", "Not cacheable, or skipped by the app");
   }
-}
-
-function mediaLabel(unit: string): string {
-  if (unit === "character") return t("logs.inspector.speech", "Speech");
-  if (unit === "millisecond") return t("logs.inspector.audio", "Audio");
-  if (unit === "video") return t("logs.inspector.video", "Video");
-  return t("logs.inspector.images", "Images");
-}
-
-function mediaCount(m: { unit: string; input: number; output: number }): string {
-  if (m.unit === "character") {
-    const characters = t("logs.inspector.characters", "{count} characters", { count: formatNumber(m.input) });
-    return m.output ? t("logs.inspector.charactersMade", "{characters} · {duration} made", { characters, duration: formatDuration(m.output) }) : characters;
-  }
-  if (m.unit === "millisecond") {
-    return m.output
-      ? t("logs.inspector.audioMade", "{duration} made", { duration: formatDuration(m.output) })
-      : t("logs.inspector.audioSent", "{duration} of audio sent", { duration: formatDuration(m.input) });
-  }
-  if (m.unit === "video") {
-    const videos = t("logs.inspector.videos", "{count, plural, one {# video} other {# videos}}", { count: m.input });
-    return m.output ? t("logs.inspector.videosMade", "{videos} · {duration}", { videos, duration: formatDuration(m.output) }) : videos;
-  }
-  return t("logs.inspector.imagesCount", "{input} sent · {output} made", { input: formatNumber(m.input), output: formatNumber(m.output) });
 }

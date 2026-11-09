@@ -47,6 +47,16 @@ describe("the project overview", () => {
     expect(screen.getByRole("link", { name: "Requests" })).toHaveAttribute("href", `${projectPath("analytics")}?period=7d&metric=requests`);
   });
 
+  it("counts the requests the cost leaves out because no price covers them", async () => {
+    signedIn();
+    projectData();
+    on("GET", "orgs/:org/projects/:project/logs", listed([]));
+    usage({ "2026-10-02": [usageRow({ key: "2026-10-14", requests: 40, cost: "1.5", unpriced: 2 })] });
+    await renderApp(projectPath());
+
+    await waitFor(() => expect(cell("Cost")).toHaveTextContent(/\$1\.50.*2 requests unknown/));
+  });
+
   it("lists the latest requests with their models and keys, and opens one in the request logs", async () => {
     signedIn();
     projectData({ keys: [apiKey()] });

@@ -22,6 +22,8 @@ export interface UsageTotals {
   tokens: number;
   cost: string | null;
   toolCalls: number;
+  /** Requests whose cost is unknown, which `cost` leaves out. */
+  unpriced: number;
 }
 
 export function totals(rows: UsageRow[]): UsageTotals {
@@ -32,6 +34,7 @@ export function totals(rows: UsageRow[]): UsageTotals {
     tokens: rows.reduce((a, r) => a + totalTokens(r), 0),
     cost: withCost ? sumUSD(rows.map((r) => r.cost)) : null,
     toolCalls: rows.reduce((a, r) => a + r.tool_calls, 0),
+    unpriced: rows.reduce((a, r) => a + r.unpriced, 0),
   };
 }
 

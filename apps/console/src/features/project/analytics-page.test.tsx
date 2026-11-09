@@ -74,6 +74,33 @@ describe("AnalyticsPage", () => {
     expect(header.style.gridTemplateColumns).toBe("minmax(200px, 1fr) 88px 88px 88px 88px 96px");
   });
 
+  it("widens the cost column for a count of requests without a price", async () => {
+    signedIn();
+    projectData({ models: [catalogueModel()] });
+    usage({ model: [usageRow({ key: "anthropic/claude-sonnet-4-5", requests: 12, cost: "2.5", unpriced: 3 })] });
+    await renderApp(projectPath(`analytics?${PERIOD}&by=model`));
+
+    const header = within(await breakdown()).getAllByRole("row")[0] as HTMLElement;
+    expect(header.style.gridTemplateColumns).toBe("minmax(200px, 1fr) 88px 88px 88px 88px 120px");
+  });
+
+  it("keeps the requests beside the count of requests without a price on a phone", async () => {
+    onPhone();
+    signedIn();
+    projectData({ models: [catalogueModel()] });
+    usage({ model: [usageRow({ key: "anthropic/claude-sonnet-4-5", requests: 12, cost: "2.5", unpriced: 3 })] });
+    await renderApp(projectPath(`analytics?${PERIOD}&by=model`));
+
+    const table = await breakdown();
+    await waitFor(() => expect(bodyRows(table)).toHaveLength(1));
+    expect(
+      within(table)
+        .getAllByRole("columnheader")
+        .map((h) => h.textContent),
+    ).toEqual(["Model", "Requests", "Cost"]);
+    expect(bodyRows(table)[0]).toHaveTextContent("+3 unknown");
+  });
+
   it("breaks usage down by model with names from the catalogue", async () => {
     signedIn();
     projectData({ models: [catalogueModel()] });
@@ -155,7 +182,8 @@ describe("AnalyticsPage", () => {
     expect(row("Images→ Images")).toHaveTextContent("4 images");
     expect(row("Videos→ Veo")).toHaveTextContent("Unknown");
     expect(row("Videos→ Veo")).toHaveTextContent(/2 videos, 16/);
-    expect(row("ElevenLabs→ ElevenLabs")).toHaveTextContent("1 request unknown");
+    expect(row("ElevenLabs→ ElevenLabs")).toHaveTextContent("+1 unknown");
+    expect(within(row("ElevenLabs→ ElevenLabs")).getByLabelText("1 request unknown")).toBeInTheDocument();
     expect(row("ElevenLabs→ ElevenLabs")).toHaveTextContent(/120 characters · .+ of audio/);
     expect(within(table).getByRole("columnheader", { name: "Media" })).toBeInTheDocument();
     expect(row("Chat→ Chat")).toHaveTextContent("—");

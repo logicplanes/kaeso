@@ -22,8 +22,10 @@ import { orgUsageQuery, projectUsageQuery } from "~/api/queries/usage";
 import { previousPeriod } from "~/format/period";
 import { t } from "~/i18n";
 import { totalTokens } from "~/kaeso/tokens";
+import { costUnknown, costWidth, hasMedia, mediaSummary, UsageCost } from "~/kaeso/media-usage";
 import { periodUSD, tileUSD } from "~/kaeso/usage-panels";
 import { projectPath } from "~/shell/pages";
+import { usePhone } from "~/shell/use-phone";
 import type { Overview } from "./data";
 import { cacheHit, change, type Dimension } from "./metrics";
 
@@ -35,6 +37,8 @@ interface Entity {
   tokens: number;
   cost: number;
   cache: number | null;
+  row: UsageRow;
+  known: boolean;
   before: number | undefined;
   delta: number;
   change: number | undefined;
@@ -65,7 +69,9 @@ export function DimensionView({ o, dim }: { o: Overview; dim: Dimension }) {
   const was = new Map((prev.data ?? []).map((r) => [r.key, r.requests]));
   const nameOf = (key: string) =>
     dim === "model" ? o.modelName(key) : dim === "key" ? o.keyName(key) : dim === "member" ? o.memberName(key) : (o.projectOf(key)?.name ?? key);
-  const entities: Entity[] = (now.data ?? [])
+  const phone = usePhone();
+  const rows = now.data ?? [];
+  const entities: Entity[] = rows
     .map((r: UsageRow) => {
       const b = prev.data ? (was.get(r.key) ?? 0) : undefined;
       return {
@@ -76,6 +82,8 @@ export function DimensionView({ o, dim }: { o: Overview; dim: Dimension }) {
         tokens: totalTokens(r),
         cost: Number(r.cost ?? 0),
         cache: cacheHit([r]),
+        row: r,
+        known: !costUnknown(r),
         before: b,
         delta: r.requests - (b ?? 0),
         change: b ? change(r.requests, b) : undefined,
@@ -85,6 +93,14 @@ export function DimensionView({ o, dim }: { o: Overview; dim: Dimension }) {
   const requests = entities.reduce((a, e) => a + e.requests, 0);
   const total = requests || 1;
   const totalCost = entities.reduce((a, e) => a + e.cost, 0);
+  const unpriced = entities.reduce((a, e) => a + e.row.unpriced, 0);
+  const unpricedNote = unpriced
+    ? t(
+        "kaeso.analytics.costShareUnpriced",
+        "{count, plural, one {# request without a price isn't included.} other {# requests without a price aren't included.}}",
+        { count: unpriced },
+      )
+    : undefined;
 
   const label = (e: Entity) => {
     if (dim === "model") {
@@ -146,7 +162,7 @@ export function DimensionView({ o, dim }: { o: Overview; dim: Dimension }) {
     .slice(0, MOVERS)
     .map(mover);
   const busiest = entities[0];
-  const priciest = [...entities].sort((a, b) => b.cost - a.cost)[0];
+  const priciest = [...entities].filter((e) => e.cost > 0).sort((a, b) => b.cost - a.cost)[0];
   const flakiest = [...entities].filter((e) => e.requests >= 10).sort((a, b) => b.errors / b.requests - a.errors / a.requests)[0];
   const loading = now.isPending;
 
@@ -208,16 +224,25 @@ export function DimensionView({ o, dim }: { o: Overview; dim: Dimension }) {
     ...(o.showCost
       ? [
           col.custom(
-            { id: "cost", header: t("common.cost", "Cost"), size: 96, priority: 1 },
-            (e: Entity) => e.cost,
-            (v: number) => periodUSD(v.toFixed(6)),
+            { id: "cost", header: t("common.cost", "Cost"), size: costWidth(rows, 96, phone), priority: 1 },
+            (e: Entity) => (e.known ? e.cost : -1),
+            (_v: number, e: Entity) => <UsageCost row={e.row} />,
             { align: "end" },
           ),
           col.custom(
             { id: "unit", header: t("kaeso.analytics.avgCost", "Avg cost"), size: 112, priority: 5 },
-            (e: Entity) => (e.requests ? e.cost / e.requests : 0),
-            (v: number) => tileUSD(v.toFixed(8)),
+            (e: Entity) => (e.known && e.requests > e.row.unpriced ? e.cost / (e.requests - e.row.unpriced) : -1),
+            (v: number) => (v < 0 ? <Text tone="secondary">{t("kaeso.usage.costUnknown", "Unknown")}</Text> : tileUSD(v.toFixed(8))),
             { align: "end" },
+          ),
+        ]
+      : []),
+    ...(hasMedia(rows)
+      ? [
+          col.custom(
+            { id: "media", header: t("kaeso.usage.media.header", "Media"), size: 180, minWidth: 120, priority: 3 },
+            (e: Entity) => mediaSummary(e.row.media),
+            (v: string) => (v ? <Text truncate>{v}</Text> : <Text tone="secondary">—</Text>),
           ),
         ]
       : []),
@@ -249,13 +274,18 @@ export function DimensionView({ o, dim }: { o: Overview; dim: Dimension }) {
           {o.showCost ? (
             <Readout
               size="sm"
-              value={priciest ? priciest.name : "—"}
+              value={priciest ? priciest.name : unpriced ? t("kaeso.usage.costUnknown", "Unknown") : "—"}
               {...(priciest && totalCost
                 ? {
-                    detail: t("kaeso.analytics.costShare", "{amount}, {share} of cost", {
-                      amount: periodUSD(priciest.cost.toFixed(6)),
-                      share: formatPercent(priciest.cost / totalCost, 0),
-                    }),
+                    detail: unpriced
+                      ? t("kaeso.analytics.costShareKnown", "{amount}, {share} of the known cost", {
+                          amount: periodUSD(priciest.cost.toFixed(6)),
+                          share: formatPercent(priciest.cost / totalCost, 0),
+                        })
+                      : t("kaeso.analytics.costShare", "{amount}, {share} of cost", {
+                          amount: periodUSD(priciest.cost.toFixed(6)),
+                          share: formatPercent(priciest.cost / totalCost, 0),
+                        }),
                   }
                 : {})}
               loading={loading}
@@ -299,6 +329,11 @@ export function DimensionView({ o, dim }: { o: Overview; dim: Dimension }) {
                 slices={shareSlices((e) => e.cost)}
                 formatValue={(v) => periodUSD(v.toFixed(6))}
               />
+              {unpricedNote && (
+                <Text as="p" variant="caption" tone="tertiary" className="mt-12">
+                  {unpricedNote}
+                </Text>
+              )}
             </CellInset>
           </DashboardCell>
         )}

@@ -429,7 +429,63 @@ function models(res, dialect, path, headers) {
 async function readBody(req) {
   const chunks = [];
   for await (const chunk of req) chunks.push(chunk);
-  return Buffer.concat(chunks).toString("utf8");
+  return Buffer.concat(chunks).toString("latin1");
+}
+
+// A 1×1 PNG, and an MPEG audio stream of silent frames: what OpenAI's media APIs answer with, in
+// the shapes their API reference documents.
+const PNG = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==";
+const MP3_FRAME = Buffer.concat([Buffer.from([0xff, 0xfb, 0x90, 0x00]), Buffer.alloc(413)]);
+const mp3 = (seconds) => Buffer.concat(Array.from({ length: Math.max(1, Math.round((seconds * 44100) / 1152)) }, () => MP3_FRAME));
+
+function formField(raw, name) {
+  return new RegExp(`name="${name}"\\r\\n\\r\\n([^\\r]*)`).exec(raw)?.[1];
+}
+
+function images(res, raw, body) {
+  const multipart = !raw.trimStart().startsWith("{");
+  const n = Number((multipart ? formField(raw, "n") : body.n) ?? 1);
+  const prompt = (multipart ? formField(raw, "prompt") : body.prompt) ?? "";
+  const tokens = Math.max(1, Math.ceil(prompt.length / 4));
+  sendJson(res, 200, {
+    created: now(),
+    data: Array.from({ length: n }, () => ({ b64_json: PNG })),
+    usage: {
+      input_tokens: tokens,
+      input_tokens_details: { text_tokens: tokens, image_tokens: multipart ? 194 : 0 },
+      output_tokens: 272 * n,
+      total_tokens: tokens + 272 * n,
+    },
+  });
+}
+
+function speech(res, body) {
+  const characters = String(body.input ?? "").length;
+  const audio = mp3(Math.max(0.5, characters / 15));
+  if (body.stream_format !== "sse") {
+    res.writeHead(200, { "content-type": "audio/mpeg", "x-request-id": id("req_") });
+    return res.end(audio);
+  }
+  const usage = { input_tokens: Math.ceil(characters / 4), output_tokens: Math.ceil(audio.length / 64), total_tokens: 0 };
+  usage.total_tokens = usage.input_tokens + usage.output_tokens;
+  return sendStream(res, [dataLine({ type: "speech.audio.delta", audio: audio.toString("base64") }), dataLine({ type: "speech.audio.done", usage })]);
+}
+
+function transcription(res, raw) {
+  const model = formField(raw, "model") ?? "";
+  const format = formField(raw, "response_format") ?? "json";
+  const text = "The parcel left the dock this morning, so tracking updates should appear soon.";
+  if (format === "text") {
+    res.writeHead(200, { "content-type": "text/plain", "x-request-id": id("req_") });
+    return res.end(`${text}\n`);
+  }
+  const seconds = 4.2;
+  const usage = model.startsWith("whisper")
+    ? { type: "duration", seconds: Math.ceil(seconds) }
+    : { type: "tokens", input_tokens: 70, input_token_details: { text_tokens: 0, audio_tokens: 70 }, output_tokens: 18, total_tokens: 88 };
+  return format === "verbose_json"
+    ? sendJson(res, 200, { task: "transcribe", language: "english", duration: seconds, text, segments: [], usage })
+    : sendJson(res, 200, { text, usage });
 }
 
 async function handle(req, res) {
@@ -443,12 +499,19 @@ async function handle(req, res) {
   const failure = marker(raw, "error");
   if (failure !== undefined) return sendError(res, dialect, failure);
   if (req.method === "GET" && path.startsWith("/v1/models")) return models(res, dialect, path, req.headers);
-  let body;
-  try {
-    body = JSON.parse(raw || "{}");
-  } catch {
+  if (path === "/v1/audio/transcriptions" || path === "/v1/audio/translations") return transcription(res, raw);
+  let body = {};
+  if (raw.trimStart().startsWith("{") || raw === "") {
+    try {
+      body = JSON.parse(raw || "{}");
+    } catch {
+      return sendError(res, dialect, "invalid-request");
+    }
+  } else if (!path.startsWith("/v1/images/")) {
     return sendError(res, dialect, "invalid-request");
   }
+  if (path === "/v1/images/generations" || path === "/v1/images/edits") return images(res, raw, body);
+  if (path === "/v1/audio/speech") return speech(res, body);
   const failing = typeof body.model === "string" ? failureFor(raw, body.model) : undefined;
   if (failing !== undefined) return sendError(res, dialect, failing);
   const scripted = dialect === "openai_embeddings" ? undefined : scriptedReply(body);

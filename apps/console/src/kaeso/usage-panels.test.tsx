@@ -41,7 +41,7 @@ describe("usage sums", () => {
   });
 
   it("totals requests, errors, tokens and cost", () => {
-    expect(totals(twoDays)).toEqual({ requests: 140, errors: 5, tokens: 3500, cost: "1.75", toolCalls: 0 });
+    expect(totals(twoDays)).toEqual({ requests: 140, errors: 5, tokens: 3500, cost: "1.75", toolCalls: 0, unpriced: 0 });
     expect(totals([usage({ cost: null })]).cost).toBeNull();
   });
 });

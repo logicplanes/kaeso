@@ -53,7 +53,9 @@
   "kaeso.analytics.busiest": "Most requests",
   "kaeso.analytics.change": "Change",
   "kaeso.analytics.costShare": "{amount}, {share} of cost",
+  "kaeso.analytics.costShareKnown": "{amount}, {share} of the known cost",
   "kaeso.analytics.costShareTitle": "Share of cost",
+  "kaeso.analytics.costShareUnpriced": "{count, plural, one {# request without a price isn't included.} other {# requests without a price aren't included.}}",
   "kaeso.analytics.failedOf": "{rate} of {requests} failed",
   "kaeso.analytics.flakiest": "Highest error rate",
   "kaeso.analytics.growing": "Grew the most, {compare}",
@@ -409,5 +411,7 @@
   "kaeso.usage.noRequests": "No requests in this period.",
   "kaeso.usage.tileFailed": "Couldn't load",
   "kaeso.usage.toolCalls": "Tool calls",
-  "kaeso.usage.unpriced": "{count, plural, one {# request} other {# requests}} unknown"
+  "kaeso.usage.unpriced": "{count, plural, one {# request} other {# requests}} unknown",
+  "kaeso.usage.unpricedHint": "{requests}; the amount leaves them out.",
+  "kaeso.usage.unpricedShort": "+{count} unknown"
 }

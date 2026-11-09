@@ -106,6 +106,17 @@ describe("the analytics control room", () => {
     expect(router.state.location.searchStr).toBe("?model=gpt-5.4-mini");
   });
 
+  it("counts the requests the spend leaves out because no price covers them", async () => {
+    signedIn();
+    projectData({ models: [catalogueModel()], keys: [apiKey()] });
+    on("GET", "orgs/:org/projects/:project/logs", listed([]));
+    usage(USAGE, { ...THIS_PERIOD, day: [usageRow({ key: "2026-10-13", requests: 40, cost: "2", unpriced: 3 })] }, BEFORE);
+    on("GET", `${USAGE}/timeline`, () => ({ data: [bucket("2026-10-13T09:00:00Z")] }));
+    await renderApp(projectPath(`analytics?${PERIOD}`));
+
+    await waitFor(() => expect(cell("Spend")).toHaveTextContent(/\$2\.00.*3 requests unknown/));
+  });
+
   it("opens the request logs for a key from its rank", async () => {
     signedIn();
     projectData({ keys: [apiKey()] });
@@ -287,6 +298,48 @@ describe("the analytics views", () => {
     await renderApp(`/orgs/${ORG}/analytics/models`);
     expect(await screen.findByText("You can't see this organization's usage")).toBeInTheDocument();
     expect(screen.queryByRole("tablist", { name: "Analytics views" })).not.toBeInTheDocument();
+  });
+
+  it("shows models without a price as unknown, not $0, with what their media requests made", async () => {
+    signedIn();
+    projectData();
+    const none = { images: 0, characters: 0, audio_ms: 0, videos: 0, video_ms: 0 };
+    usage(
+      USAGE,
+      {
+        model: [
+          usageRow({ key: "openai/gpt-5.4-mini", requests: 20, cost: "3" }),
+          usageRow({ key: "openai/sora-2", requests: 6, unpriced: 6, cost: "0", media: { ...none, videos: 6, video_ms: 48000 } }),
+          usageRow({ key: "openai/gpt-image-2", requests: 4, unpriced: 1, cost: "1", media: { ...none, images: 5 } }),
+        ],
+      },
+      {},
+    );
+    await renderApp(projectPath(`analytics/models?${PERIOD}`));
+    const table = await screen.findByRole("grid", { name: "Models in the period" });
+    await waitFor(() => expect(within(table).getAllByRole("row")).toHaveLength(4));
+    const sora = within(table)
+      .getAllByRole("row")
+      .find((r) => r.textContent?.includes("sora-2")) as HTMLElement;
+    expect(sora).toHaveTextContent(/6 videos, 48/);
+    expect(within(sora).getAllByText("Unknown")).toHaveLength(2);
+    expect(within(sora).queryByText("$0.00")).not.toBeInTheDocument();
+    const image = within(table)
+      .getAllByRole("row")
+      .find((r) => r.textContent?.includes("gpt-image-2")) as HTMLElement;
+    expect(image).toHaveTextContent(/5 images/);
+    expect(within(image).getByText("+1 unknown")).toBeInTheDocument();
+    expect(cell("Highest cost")).toHaveTextContent(/\$3\.00, 75% of the known cost/);
+    expect(cell("Share of cost")).toHaveTextContent("7 requests without a price aren't included.");
+  });
+
+  it("calls the highest cost unknown when no model has a price", async () => {
+    signedIn();
+    projectData();
+    usage(USAGE, { model: [usageRow({ key: "openai/sora-2", requests: 6, unpriced: 6, cost: "0" })] }, {});
+    await renderApp(projectPath(`analytics/models?${PERIOD}`));
+
+    await waitFor(() => expect(cell("Highest cost")).toHaveTextContent("Unknown"));
   });
 
   it("breaks a project down by member and key without cost or request logs", async () => {

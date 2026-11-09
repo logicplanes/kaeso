@@ -5,12 +5,13 @@ import type { UsageRow } from "~/api/generated/types";
 import { allKeysQuery } from "~/api/queries/keys";
 import { useProviders } from "~/kaeso/providers";
 import { totalTokens } from "~/kaeso/tokens";
-import { hasMedia, mediaSummary, UsageCost } from "~/kaeso/media-usage";
+import { costWidth, hasMedia, mediaSummary, UsageCost } from "~/kaeso/media-usage";
 import { bucketLabel, type Granularity } from "~/format/buckets";
 import { keyLabel, serviceAccountName, usePartyName, usePartyNamesLoading } from "./keys/party";
 import type { AnalyticsSearch } from "~/kaeso/overview/views";
 import { useProjectRights } from "~/auth/rights";
 import { t } from "~/i18n";
+import { usePhone } from "~/shell/use-phone";
 import { common } from "~/i18n/common";
 
 const byOptions = (g: Granularity) => [
@@ -58,6 +59,7 @@ export function Breakdown({
 }) {
   const rights = useProjectRights(org, project);
   const providers = useProviders(org);
+  const phone = usePhone();
   const keys = useQuery({ ...allKeysQuery(org, project, { include_archived: true }), enabled: by === "key" && rights.has("keys.all.view") });
   const partyName = usePartyName(org, project);
   const partiesLoading = usePartyNamesLoading(org, project);
@@ -149,7 +151,7 @@ export function Breakdown({
     ...(showCost
       ? [
           col.custom(
-            { id: "cost", header: common.cost(), size: COST_WIDTH, priority: 1 },
+            { id: "cost", header: common.cost(), size: costWidth(sorted, COST_WIDTH, phone), priority: 1 },
             (r: UsageRow) => r.cost ?? "",
             (_v: string, r: UsageRow) => <UsageCost row={r} />,
             { align: "end" },

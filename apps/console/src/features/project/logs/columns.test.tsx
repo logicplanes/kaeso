@@ -159,6 +159,30 @@ describe("logColumns", () => {
     expect(failed).toHaveClass("@cell-md:inline-flex");
   });
 
+  it("shows what a media request made in place of tokens it didn't count", () => {
+    const all = logColumns({ spansDays: true, keyName: (id) => id, partyName: (p) => p.id ?? "", providerName: (id) => id });
+    const zero = { input_tokens: 0, output_tokens: 0, cache_read_tokens: 0, cache_write_tokens: 0, reasoning_tokens: 0, estimated: false };
+    const media = (id: string, unit: string, input: number, output: number) => logRow({ id, usage: zero, media: { unit, input, output, detail: "" } });
+    render(
+      <DataTable
+        aria-label="Requests"
+        data={[
+          media("req_1", "image", 0, 1),
+          media("req_2", "character", 17, 0),
+          media("req_3", "millisecond", 4200, 0),
+          media("req_4", "video", 1, 6000),
+          media("req_5", "image", 2, 0),
+          logRow({ id: "req_6", media: { unit: "image", input: 1, output: 1, detail: "" } }),
+        ]}
+        columns={[all.tokens]}
+        getRowId={(r) => r.id}
+      />,
+    );
+    const cells = screen.getAllByRole("cell").map((c) => c.textContent);
+    expect(cells.slice(0, 5)).toEqual(["1 image", "17 characters", "4.2 s", "1 video · 6 s", "2 images sent"]);
+    expect(cells[5]).toMatch(/^\d[\d,]* \/ \d/);
+  });
+
   it("shows how much of the input was read from the cache, and marks a request sent without a breakpoint", () => {
     const all = logColumns({ spansDays: true, keyName: (id) => id, partyName: (p) => p.id ?? "", providerName: (id) => id });
     const usage = { input_tokens: 25, output_tokens: 10, cache_read_tokens: 75, cache_write_tokens: 0, reasoning_tokens: 0, estimated: false };
