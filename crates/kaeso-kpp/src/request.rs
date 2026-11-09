@@ -5,6 +5,7 @@ use crate::block::{Block, CacheHint, RawItem};
 use crate::extras::Extras;
 use crate::image::ImageRequest;
 use crate::raw::RawJson;
+use crate::video::VideoRequest;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -16,6 +17,7 @@ pub enum Request {
     Image(ImageRequest),
     Speech(SpeechRequest),
     Transcription(TranscriptionRequest),
+    Video(VideoRequest),
 }
 
 impl Request {
@@ -27,6 +29,7 @@ impl Request {
             Request::Image(_) => RequestKind::Image,
             Request::Speech(_) => RequestKind::Speech,
             Request::Transcription(_) => RequestKind::Transcription,
+            Request::Video(_) => RequestKind::Video,
         }
     }
 
@@ -37,6 +40,7 @@ impl Request {
             Request::Image(r) => &r.model,
             Request::Speech(r) => &r.model,
             Request::Transcription(r) => &r.model,
+            Request::Video(r) => &r.model,
         }
     }
 
@@ -46,7 +50,7 @@ impl Request {
             Request::Image(r) => r.stream,
             Request::Speech(r) => r.stream,
             Request::Transcription(r) => r.stream,
-            Request::CountTokens(_) | Request::Embed(_) => StreamMode::Off,
+            Request::CountTokens(_) | Request::Embed(_) | Request::Video(_) => StreamMode::Off,
         }
     }
 }
@@ -61,6 +65,7 @@ pub enum RequestKind {
     Image,
     Speech,
     Transcription,
+    Video,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]

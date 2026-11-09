@@ -1,0 +1,12 @@
+{
+  "id": "gen-vid-1789480874-Ab3dEf9hIjKlMnOpQrSt",
+  "polling_url": "/api/v1/videos/gen-vid-1789480874-Ab3dEf9hIjKlMnOpQrSt",
+  "status": "completed",
+  "expires_at": 1789567274,
+  "urls": [
+    "https://storage.example.com/gen-vid-1789480874.mp4?signature=abc"
+  ],
+  "unsigned_urls": [
+    "https://openrouter.ai/api/v1/videos/gen-vid-1789480874-Ab3dEf9hIjKlMnOpQrSt/content?index=0"
+  ]
+}

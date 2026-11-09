@@ -1,0 +1,9 @@
+{
+  "model": "sora-2",
+  "prompt": "The piano lid closes",
+  "input_reference": {
+    "file_id": "file-123"
+  },
+  "seconds": "4",
+  "size": "720x1280"
+}

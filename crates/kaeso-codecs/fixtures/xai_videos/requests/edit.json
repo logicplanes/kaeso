@@ -1,0 +1,7 @@
+{
+  "model": "grok-imagine-video",
+  "prompt": "Give the woman a silver necklace",
+  "video": {
+    "url": "https://vidgen.x.ai/xai-vidgen-bucket/xai-video-a3d1008e.mp4"
+  }
+}

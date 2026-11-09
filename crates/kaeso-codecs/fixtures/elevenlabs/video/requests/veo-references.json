@@ -1,0 +1,22 @@
+{
+  "model_id": "veo-3.1-generate-001",
+  "prompt": "The two friends wave",
+  "duration_secs": 8,
+  "images": [
+    {
+      "image": {
+        "type": "inline_base64",
+        "content_base64": "iVBORw0KGgo=",
+        "mime_type": "image/png"
+      },
+      "role": "subject"
+    },
+    {
+      "image": {
+        "type": "asset",
+        "asset_id": "5xM2KqOnZyce22SPZ9d4"
+      },
+      "role": "style"
+    }
+  ]
+}

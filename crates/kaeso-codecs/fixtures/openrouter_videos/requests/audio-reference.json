@@ -1,0 +1,12 @@
+{
+  "model": "bytedance/seedance-2.0",
+  "prompt": "Lip-sync to the clip",
+  "input_references": [
+    {
+      "type": "audio_url",
+      "audio_url": {
+        "url": "https://example.com/voice.mp3"
+      }
+    }
+  ]
+}

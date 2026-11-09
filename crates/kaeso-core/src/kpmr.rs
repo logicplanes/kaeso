@@ -599,7 +599,7 @@ mod tests {
             r#"{
             "openai": {"id": "openai", "name": "OpenAI", "brand_new": 1, "models": {
                 "good": {"id": "good", "future_field": {"x": 1}, "pricing": {"unit": "usd_per_million_tokens", "input": "1.25", "output": "10", "future": "1"},
-                    "gateway": {"egress_dialect": "openai_videos"}, "reasoning": {"efforts": ["low"], "next": true}},
+                    "gateway": {"egress_dialect": "openai_holograms"}, "reasoning": {"efforts": ["low"], "next": true}},
                 "float": {"id": "float", "pricing": {"unit": "usd_per_million_tokens", "input": 1.25}},
                 "bad": {"id": "bad", "pricing": {"unit": "usd_per_million_tokens", "input": "cheap"}},
                 "euro": {"id": "euro", "pricing": {"unit": "eur_per_million_tokens", "input": "1"}},

@@ -1,0 +1,20 @@
+{
+  "instances": [
+    {
+      "prompt": "The bud opens into a flower",
+      "image": {
+        "bytesBase64Encoded": "iVBORw0KGgo=",
+        "mimeType": "image/png"
+      },
+      "lastFrame": {
+        "gcsUri": "gs://example-bucket/bloom.png",
+        "mimeType": "image/png"
+      }
+    }
+  ],
+  "parameters": {
+    "durationSeconds": 6,
+    "resolution": "1080p",
+    "enhancePrompt": false
+  }
+}

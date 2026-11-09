@@ -195,6 +195,7 @@ sequenceDiagram
 | `POST /v1/images/generations`, `/v1/images/edits`, `/v1/images/variations` | `openai_images` | `images.generate` (also streamed), `images.edit` with uploads, `images.create_variation` |
 | `POST /v1/audio/speech` | `openai_speech` | `audio.speech.create` (audio and `stream_format="sse"`) |
 | `POST /v1/audio/transcriptions`, `/v1/audio/translations` | `openai_transcriptions` | `audio.transcriptions.create` in every `response_format` and streamed, `audio.translations.create` |
+| `/v1/videos`, `/v1/videos/{id}`, `/v1/videos/{id}/remix`, `/v1/videos/{id}/content` | `openai_videos`, answering every job fixture of every video dialect | `videos.create` (JSON and with an upload), `videos.retrieve`, `videos.remix`, `videos.list`, `videos.download_content`, `videos.delete`, `videos.poll` |
 
 Every response and stream [fixture](kpp/fixtures.md) of every generation dialect goes through every generation endpoint, streamed and not. The tests compare what the SDK parsed with what KPP decoded (`GET /_expected`), so a translation that loses text, tool arguments or readable reasoning fails. They also check that structured output stays valid JSON and that every error fixture raises the SDK's error with the right status (`e2e/conformance/test_errors.py`): `APIStatusError` in the OpenAI and Anthropic SDKs, `APIError` in `google-genai`.
 

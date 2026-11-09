@@ -1,0 +1,11 @@
+{
+  "model": "cogvideox-3",
+  "task_status": "SUCCESS",
+  "video_result": [
+    {
+      "url": "https://aigc-files.bigmodel.cn/api/cogvideo/example.mp4",
+      "cover_image_url": "https://aigc-files.bigmodel.cn/api/cogvideo/example_cover.jpeg"
+    }
+  ],
+  "request_id": "kaeso-req-0001"
+}

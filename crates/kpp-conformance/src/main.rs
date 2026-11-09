@@ -16,6 +16,8 @@ use kaeso_kpp::{
 };
 use serde_json::{Value, json};
 
+mod videos;
+
 const CREATED_AT: u64 = 1_760_000_000;
 
 #[derive(Clone)]
@@ -95,6 +97,13 @@ async fn main() -> std::io::Result<()> {
             "/v1/audio/translations",
             post(|s, h, b| serve_transcription(s, h, b, TranscriptionOperation::Translate)),
         )
+        .route("/v1/videos", post(videos::create).get(videos::list))
+        .route(
+            "/v1/videos/{id}",
+            get(videos::retrieve).delete(videos::delete),
+        )
+        .route("/v1/videos/{id}/remix", post(videos::remix))
+        .route("/v1/videos/{id}/content", get(videos::content))
         .route("/v1beta/models", get(list_gemini_models))
         .route(
             "/v1beta/models/{*rest}",
@@ -649,6 +658,9 @@ async fn expected(State(app): State<App>, Query(q): Query<ExpectedQuery>) -> Res
         _ => RequestKind::Generate,
     };
     let dir = app.fixtures.join(source.as_str());
+    if q.kind.as_deref() == Some("video") {
+        return json_response(videos::expected(&dir, source, &q.name));
+    }
     if let Some(name) = q.name.strip_prefix("errors/") {
         let (status, headers, body) = match error_fixture(&dir, name) {
             Ok(x) => x,
@@ -846,6 +858,14 @@ async fn scenarios(State(app): State<App>) -> Response {
                     other => other,
                 };
                 out.push(json!({"source": source.as_str(), "name": full, "kind": kind, "stream": stream}));
+            }
+        }
+    }
+    for (source, prefix) in videos::SOURCES {
+        let dir = app.fixtures.join(source.as_str());
+        for folder in ["responses", "polls"] {
+            for name in videos::names(&dir, &format!("{prefix}{folder}")) {
+                out.push(json!({"source": source.as_str(), "name": format!("{prefix}{folder}/{name}"), "kind": "video", "stream": false}));
             }
         }
     }

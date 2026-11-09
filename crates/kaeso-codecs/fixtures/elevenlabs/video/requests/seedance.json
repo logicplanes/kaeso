@@ -1,0 +1,11 @@
+{
+  "model_id": "bytedance-seedance-v2",
+  "prompt": "A kite rises over a hill",
+  "aspect_ratio": "21:9",
+  "duration_secs": 5,
+  "resolution": "720p",
+  "generate_audio": false,
+  "webhook": {
+    "type": "all"
+  }
+}

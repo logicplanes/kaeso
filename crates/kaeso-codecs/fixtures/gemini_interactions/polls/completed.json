@@ -1,0 +1,57 @@
+{
+  "id": "v1_ChdabcInteraction",
+  "status": "completed",
+  "created": "2026-05-29T02:17:56Z",
+  "updated": "2026-05-29T02:19:40Z",
+  "object": "interaction",
+  "role": "model",
+  "model": "gemini-omni-1.2-flash",
+  "usage": {
+    "total_tokens": 29311,
+    "total_input_tokens": 26,
+    "input_tokens_by_modality": [
+      {
+        "modality": "text",
+        "tokens": 26
+      }
+    ],
+    "output_tokens_by_modality": [
+      {
+        "modality": "video",
+        "tokens": 28832
+      }
+    ],
+    "total_output_tokens": 28832,
+    "total_thought_tokens": 453
+  },
+  "steps": [
+    {
+      "type": "user_input",
+      "content": [
+        {
+          "type": "text",
+          "text": "A marble rolling fast"
+        }
+      ]
+    },
+    {
+      "type": "thought",
+      "summary": [
+        {
+          "type": "text",
+          "text": "Planning the shot."
+        }
+      ]
+    },
+    {
+      "type": "model_output",
+      "content": [
+        {
+          "type": "video",
+          "mime_type": "video/mp4",
+          "data": "AAAAIGZ0eXBpc29t"
+        }
+      ]
+    }
+  ]
+}

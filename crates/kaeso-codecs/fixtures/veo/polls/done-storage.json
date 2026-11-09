@@ -1,0 +1,14 @@
+{
+  "name": "projects/example-project/locations/us-central1/publishers/google/models/veo-3.1-generate-001/operations/a1b07c8e-7b5a-4aba-bb34-3e1ccb8afcc8",
+  "done": true,
+  "response": {
+    "raiMediaFilteredCount": 0,
+    "@type": "type.googleapis.com/cloud.ai.large_models.vision.GenerateVideoResponse",
+    "videos": [
+      {
+        "gcsUri": "gs://example-bucket/run/sample_0.mp4",
+        "mimeType": "video/mp4"
+      }
+    ]
+  }
+}

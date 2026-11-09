@@ -1,0 +1,10 @@
+{
+  "model": "cogvideox-3",
+  "image_url": "https://example.com/free_stock_photo.jpg",
+  "prompt": "Make the picture move",
+  "quality": "quality",
+  "with_audio": true,
+  "size": "1920x1080",
+  "fps": 30,
+  "duration": 10
+}

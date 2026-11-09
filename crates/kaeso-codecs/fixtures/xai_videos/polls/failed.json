@@ -1,0 +1,7 @@
+{
+  "status": "failed",
+  "error": {
+    "code": "invalid_argument",
+    "message": "The duration must be between 1 and 15 seconds."
+  }
+}

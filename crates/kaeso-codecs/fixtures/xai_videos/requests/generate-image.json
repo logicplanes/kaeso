@@ -1,0 +1,9 @@
+{
+  "model": "grok-imagine-video-1.5",
+  "prompt": "The lake begins to ripple as a heron lands",
+  "image": {
+    "url": "https://example.com/lake.png"
+  },
+  "duration": 12,
+  "user": "user-1234"
+}

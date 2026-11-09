@@ -1,0 +1,6 @@
+{
+  "detail": {
+    "status": "quota_exceeded",
+    "message": "This request exceeds your quota."
+  }
+}

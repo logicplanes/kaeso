@@ -30,10 +30,24 @@ pub enum DialectId {
     MinimaxSpeech,
     #[serde(rename = "elevenlabs")]
     ElevenLabs,
+    #[serde(rename = "openai_videos")]
+    OpenAiVideos,
+    #[serde(rename = "xai_videos")]
+    XaiVideos,
+    #[serde(rename = "minimax_videos")]
+    MinimaxVideos,
+    #[serde(rename = "zai_videos")]
+    ZaiVideos,
+    #[serde(rename = "openrouter_videos")]
+    OpenRouterVideos,
+    #[serde(rename = "veo")]
+    Veo,
+    #[serde(rename = "gemini_interactions")]
+    GeminiInteractions,
 }
 
 impl DialectId {
-    pub const ALL: [DialectId; 12] = [
+    pub const ALL: [DialectId; 19] = [
         DialectId::AnthropicMessages,
         DialectId::OpenAiChat,
         DialectId::OpenAiResponses,
@@ -46,6 +60,13 @@ impl DialectId {
         DialectId::OpenAiTranscriptions,
         DialectId::MinimaxSpeech,
         DialectId::ElevenLabs,
+        DialectId::OpenAiVideos,
+        DialectId::XaiVideos,
+        DialectId::MinimaxVideos,
+        DialectId::ZaiVideos,
+        DialectId::OpenRouterVideos,
+        DialectId::Veo,
+        DialectId::GeminiInteractions,
     ];
 
     pub const fn as_str(self) -> &'static str {
@@ -62,6 +83,13 @@ impl DialectId {
             DialectId::OpenAiTranscriptions => "openai_transcriptions",
             DialectId::MinimaxSpeech => "minimax_speech",
             DialectId::ElevenLabs => "elevenlabs",
+            DialectId::OpenAiVideos => "openai_videos",
+            DialectId::XaiVideos => "xai_videos",
+            DialectId::MinimaxVideos => "minimax_videos",
+            DialectId::ZaiVideos => "zai_videos",
+            DialectId::OpenRouterVideos => "openrouter_videos",
+            DialectId::Veo => "veo",
+            DialectId::GeminiInteractions => "gemini_interactions",
         }
     }
 
@@ -79,6 +107,13 @@ impl DialectId {
             DialectId::OpenAiTranscriptions => "OpenAI Transcriptions",
             DialectId::MinimaxSpeech => "MiniMax Speech",
             DialectId::ElevenLabs => "ElevenLabs",
+            DialectId::OpenAiVideos => "OpenAI Videos",
+            DialectId::XaiVideos => "SpaceX Videos",
+            DialectId::MinimaxVideos => "MiniMax Videos",
+            DialectId::ZaiVideos => "Z.ai Videos",
+            DialectId::OpenRouterVideos => "OpenRouter Videos",
+            DialectId::Veo => "Veo",
+            DialectId::GeminiInteractions => "Gemini Interactions",
         }
     }
 }

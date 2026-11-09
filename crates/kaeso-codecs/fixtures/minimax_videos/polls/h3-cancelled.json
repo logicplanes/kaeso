@@ -1,0 +1,14 @@
+{
+  "task": {
+    "id": "424010985738631",
+    "model": "MiniMax-H3",
+    "status": "cancelled",
+    "created_at": 1785125529,
+    "updated_at": 1785125540,
+    "resolution": "768P",
+    "duration": 5,
+    "ratio": "16:9",
+    "task_type": "generation",
+    "modality": "video"
+  }
+}

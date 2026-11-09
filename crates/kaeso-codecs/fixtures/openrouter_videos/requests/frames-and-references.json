@@ -1,0 +1,31 @@
+{
+  "model": "bytedance/seedance-2.0",
+  "prompt": "The kite rises over the hill",
+  "duration": 5,
+  "size": "1280x720",
+  "seed": 7,
+  "generate_audio": true,
+  "frame_images": [
+    {
+      "type": "image_url",
+      "image_url": {
+        "url": "https://example.com/first.png"
+      },
+      "frame_type": "first_frame"
+    }
+  ],
+  "input_references": [
+    {
+      "type": "image_url",
+      "image_url": {
+        "url": "https://example.com/kite.png"
+      }
+    }
+  ],
+  "user": "user-1234",
+  "provider": {
+    "order": [
+      "BytePlus"
+    ]
+  }
+}

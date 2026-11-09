@@ -112,3 +112,52 @@ path = "fuzz_targets/decode_elevenlabs.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "decode_openai_videos"
+path = "fuzz_targets/decode_openai_videos.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "decode_xai_videos"
+path = "fuzz_targets/decode_xai_videos.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "decode_minimax_videos"
+path = "fuzz_targets/decode_minimax_videos.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "decode_zai_videos"
+path = "fuzz_targets/decode_zai_videos.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "decode_openrouter_videos"
+path = "fuzz_targets/decode_openrouter_videos.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "decode_veo"
+path = "fuzz_targets/decode_veo.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "decode_gemini_interactions"
+path = "fuzz_targets/decode_gemini_interactions.rs"
+test = false
+doc = false
+bench = false

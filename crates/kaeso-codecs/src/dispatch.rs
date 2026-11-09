@@ -7,15 +7,22 @@ use crate::anthropic_messages::AnthropicMessages;
 use crate::elevenlabs::{ElevenLabs, ElevenLabsCall};
 use crate::gemini::{Gemini, GeminiAction};
 use crate::gemini_embeddings::GeminiEmbeddings;
+use crate::gemini_interactions::GeminiInteractions;
 use crate::limits::Checked;
 use crate::minimax_images::MinimaxImages;
 use crate::minimax_speech::MinimaxSpeech;
+use crate::minimax_videos::MinimaxVideos;
 use crate::openai_chat::OpenAiChat;
 use crate::openai_embeddings::OpenAiEmbeddings;
 use crate::openai_images::OpenAiImages;
 use crate::openai_responses::OpenAiResponses;
 use crate::openai_speech::OpenAiSpeech;
 use crate::openai_transcriptions::OpenAiTranscriptions;
+use crate::openai_videos::OpenAiVideos;
+use crate::openrouter_videos::OpenRouterVideos;
+use crate::veo::Veo;
+use crate::xai_videos::XaiVideos;
+use crate::zai_videos::ZaiVideos;
 use crate::{
     Codec, EgressCtx, EncodeCtx, EncodedError, EncodedRequest, HeaderList, StreamDecoder,
     StreamEncoder,
@@ -36,6 +43,13 @@ macro_rules! dispatch {
             DialectId::OpenAiTranscriptions => Ok(OpenAiTranscriptions::$f($($arg),*)),
             DialectId::MinimaxSpeech => Ok(MinimaxSpeech::$f($($arg),*)),
             DialectId::ElevenLabs => Ok(ElevenLabs::$f($($arg),*)),
+            DialectId::OpenAiVideos => Ok(OpenAiVideos::$f($($arg),*)),
+            DialectId::XaiVideos => Ok(XaiVideos::$f($($arg),*)),
+            DialectId::GeminiInteractions => Ok(GeminiInteractions::$f($($arg),*)),
+            DialectId::Veo => Ok(Veo::$f($($arg),*)),
+            DialectId::OpenRouterVideos => Ok(OpenRouterVideos::$f($($arg),*)),
+            DialectId::MinimaxVideos => Ok(MinimaxVideos::$f($($arg),*)),
+            DialectId::ZaiVideos => Ok(ZaiVideos::$f($($arg),*)),
             other => Err(no_codec(other)),
         }
     };
@@ -77,6 +91,13 @@ pub fn decode_checked_request<B: AsRef<[u8]>>(
         DialectId::OpenAiSpeech => OpenAiSpeech::decode_checked(kind, body, headers),
         DialectId::MinimaxSpeech => MinimaxSpeech::decode_request(kind, body, headers),
         DialectId::ElevenLabs => ElevenLabs::decode_request(kind, body, headers),
+        DialectId::OpenAiVideos => OpenAiVideos::decode_checked(kind, body, headers),
+        DialectId::XaiVideos => XaiVideos::decode_request(kind, body, headers),
+        DialectId::GeminiInteractions => GeminiInteractions::decode_request(kind, body, headers),
+        DialectId::Veo => Veo::decode_request(kind, body, headers),
+        DialectId::OpenRouterVideos => OpenRouterVideos::decode_request(kind, body, headers),
+        DialectId::MinimaxVideos => MinimaxVideos::decode_request(kind, body, headers),
+        DialectId::ZaiVideos => ZaiVideos::decode_request(kind, body, headers),
         DialectId::OpenAiTranscriptions => OpenAiTranscriptions::decode_call(
             kaeso_kpp::TranscriptionOperation::Transcribe,
             body,
@@ -430,6 +451,56 @@ pub fn encode_models_request_with(
     ctx: &EgressCtx,
 ) -> Result<EncodedRequest, KppError> {
     dispatch!(dialect, encode_models_request_with(query, ctx))?
+}
+
+/// The request that asks the provider how its video job `job`, made by `model`, stands.
+pub fn encode_video_poll(
+    dialect: DialectId,
+    job: &str,
+    model: &str,
+    ctx: &EgressCtx,
+) -> Result<EncodedRequest, KppError> {
+    dispatch!(dialect, encode_video_poll(job, model, ctx))?
+}
+
+/// Reads the provider's answer to [`encode_video_poll`].
+pub fn decode_video_poll(
+    dialect: DialectId,
+    status: u16,
+    headers: &HeaderList,
+    body: &[u8],
+    ctx: &EgressCtx,
+) -> Result<kaeso_kpp::VideoJob, KppError> {
+    dispatch!(dialect, decode_video_poll(status, headers, body, ctx))?
+}
+
+/// The request that deletes the provider's video job, or `None` when it documents no delete.
+pub fn encode_video_delete(
+    dialect: DialectId,
+    job: &str,
+    model: &str,
+    ctx: &EgressCtx,
+) -> Result<Option<EncodedRequest>, KppError> {
+    dispatch!(dialect, encode_video_delete(job, model, ctx))?
+}
+
+/// The request that turns the file id a finished video job named into a link.
+pub fn encode_video_file(
+    dialect: DialectId,
+    file: &str,
+    ctx: &EgressCtx,
+) -> Result<EncodedRequest, KppError> {
+    dispatch!(dialect, encode_video_file(file, ctx))?
+}
+
+/// Reads the provider's answer to [`encode_video_file`]: the file's link.
+pub fn decode_video_file(
+    dialect: DialectId,
+    status: u16,
+    headers: &HeaderList,
+    body: &[u8],
+) -> Result<kaeso_kpp::Source, KppError> {
+    dispatch!(dialect, decode_video_file(status, headers, body))?
 }
 
 #[cfg(test)]

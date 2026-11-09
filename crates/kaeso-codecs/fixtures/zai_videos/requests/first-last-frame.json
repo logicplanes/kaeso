@@ -1,0 +1,13 @@
+{
+  "model": "cogvideox-3",
+  "image_url": [
+    "https://example.com/first.webp",
+    "https://example.com/last.webp"
+  ],
+  "prompt": "Make the picture move",
+  "quality": "speed",
+  "with_audio": true,
+  "size": "1920x1080",
+  "fps": 30,
+  "user_id": "user-123456"
+}

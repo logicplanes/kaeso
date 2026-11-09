@@ -1,0 +1,8 @@
+{
+  "model": "MiniMax-Hailuo-02",
+  "prompt": "The flower blooms",
+  "first_frame_image": "https://example.com/bud.jpg",
+  "last_frame_image": "https://example.com/bloom.jpg",
+  "duration": 6,
+  "resolution": "768P"
+}

@@ -1,0 +1,9 @@
+{
+  "status": "done",
+  "video": {
+    "duration": 6,
+    "respect_moderation": false
+  },
+  "model": "grok-imagine-video",
+  "progress": 100
+}

@@ -1,0 +1,20 @@
+{
+  "model": "grok-imagine-video-1.5",
+  "prompt": "The two characters walk along the shore",
+  "reference_images": [
+    {
+      "url": "https://example.com/a.png"
+    },
+    {
+      "file_id": "file-abc123"
+    }
+  ],
+  "keyframes": [
+    {
+      "image": {
+        "url": "https://example.com/mid.png"
+      },
+      "timestamp_s": 3
+    }
+  ]
+}

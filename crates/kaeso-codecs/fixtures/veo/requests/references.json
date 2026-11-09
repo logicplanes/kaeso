@@ -1,0 +1,26 @@
+{
+  "instances": [
+    {
+      "prompt": "The two characters dance",
+      "referenceImages": [
+        {
+          "image": {
+            "bytesBase64Encoded": "iVBORw0KGgo=",
+            "mimeType": "image/png"
+          },
+          "referenceType": "asset"
+        },
+        {
+          "image": {
+            "gcsUri": "gs://example-bucket/b.png"
+          },
+          "referenceType": "asset"
+        }
+      ]
+    }
+  ],
+  "parameters": {
+    "durationSeconds": 8,
+    "compressionQuality": "optimized"
+  }
+}

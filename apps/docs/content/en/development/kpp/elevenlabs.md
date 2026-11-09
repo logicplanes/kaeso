@@ -4,7 +4,7 @@ description: How ElevenLabs' API maps to KPP, for ElevenLabs-format apps and for
 order: 9
 ---
 
-Look up how ElevenLabs' generation, transcription and listing endpoints map to KPP, as Kaeso reads them from ElevenLabs-format apps and writes them to ElevenLabs. Check it before you change the ElevenLabs codec.
+Look up how ElevenLabs' generation, transcription, video and listing endpoints map to KPP, as Kaeso reads them from ElevenLabs-format apps and writes them to ElevenLabs. Check it before you change the ElevenLabs codec.
 
 - **Codec:** `kaeso_codecs::elevenlabs::ElevenLabs` (`crates/kaeso-codecs/src/elevenlabs/`)
 - **Fixtures:** `crates/kaeso-codecs/fixtures/elevenlabs/`, recorded live on the free tier once per endpoint, about 40 credits in all
@@ -60,6 +60,24 @@ An OpenAI app gets ElevenLabs' words without its `spacing` and `audio_event` ent
 ## Errors
 
 ElevenLabs answers `{"detail": {"type", "code", "message", "status", "request_id", "param"}}`; older endpoints `{"detail": {"status", "message"}}`, validation `{"detail": [{"loc", "msg"}]}`. Kaeso reads all three, maps `type` and `code` to the error kind (`insufficient_credits` and `payment_required` to billing, `rate_limit_error` to rate limited) and writes its own errors to ElevenLabs apps in the documented shape. ElevenLabs' own errors pass on as they came, with their status.
+
+## Video generations
+
+ElevenLabs makes video with Veo 3.1 and Seedance 2 models through `POST /v1/flows/video`, reported by `GET /v1/flows/video/{id}`; the body depends on `model_id` (`VideoGenerationRequest`). Kaeso sends video jobs there for an app of another format; ElevenLabs-format apps don't call it through Kaeso. The fixtures in `fixtures/elevenlabs/video/` are built from the OpenAPI document: video is a paid feature, never called on the free tier.
+
+| KPP | ElevenLabs |
+| --- | --- |
+| `model` | `model_id`: `veo-3.1-generate-001`, `veo-3.1-fast-generate-001`, `bytedance-seedance-v2`, `-v2-fast`, `-v2-mini`, `-v2.5` |
+| `prompt`, `seed`, `audio` | `prompt`, `seed`, `generate_audio` |
+| `negative_prompt` | `negative_prompt`, Veo models only |
+| `seconds`, `aspect_ratio`, `resolution` | `duration_secs`, `aspect_ratio`, `resolution`, each from the model's lists |
+| `FirstFrame`, `LastFrame` images | `start_frame`, `end_frame`: `{type: "inline_base64", content_base64, mime_type}` or `{type: "asset", asset_id}` |
+| `Reference` images | `images[]` `{image, role}`, Veo models only, `role` `subject` unless the app named `style` |
+| reply `status` `pending`, `generating`, `completed`, `failed` | `queued`, `in_progress`, `completed`, `failed` |
+| reply `content_url`, `content_mime_type` | the output link and its media type, valid for about an hour |
+| reply `failure_reason`, `error_message` | `error.code`, `error.message` |
+
+Images by web link, `creatify-aurora` (it needs audio input) and remixes are refused before sending.
 
 ## Listings
 

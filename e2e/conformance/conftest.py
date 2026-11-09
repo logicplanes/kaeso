@@ -70,34 +70,45 @@ def expected(url: str, s: dict):
 
 GENERATION = ("anthropic_messages", "openai_chat", "openai_responses", "gemini")
 
+# Video fixtures of providers that keep them beside other fixtures, by the folder they are in.
+VIDEO_PREFIXES = {"openai_videos": ("", "providers/togetherai/"), "elevenlabs": ("video/",)}
+
+FOLDERS = {
+    "generate": [("responses", False), ("streams", True)],
+    "count_tokens": [("responses/count_tokens", False), ("responses/input_tokens", False)],
+    "embed": [("responses", False)],
+    "image": [("responses", False), ("streams", True)],
+    "error": [("errors", False)],
+    "video": [("responses", False), ("polls", False)],
+}
+
+
+def _scenarios(source: str, kind: str) -> list[dict]:
+    out = []
+    prefixes = VIDEO_PREFIXES.get(source, ("",)) if kind == "video" else ("",)
+    for prefix in prefixes:
+        for folder, stream in FOLDERS[kind]:
+            d = FIXTURES / source / (prefix + folder)
+            if not d.is_dir():
+                continue
+            for f in sorted(d.iterdir()):
+                if f.suffix not in (".json", ".sse") or f.name.endswith(".meta.json"):
+                    continue
+                name = f.stem
+                if kind == "video":
+                    name = f"{prefix}{folder}/{name}"
+                elif folder.startswith("responses/"):
+                    name = folder.split("/", 1)[1] + "/" + name
+                if kind == "error":
+                    name = "errors/" + name
+                out.append({"source": source, "name": name, "kind": kind, "stream": stream})
+    return out
+
 
 def pytest_generate_tests(metafunc):
     if "scenario" not in metafunc.fixturenames:
         return
     wanted = getattr(metafunc.module, "SCENARIO_KINDS", ("generate",))
     sources = getattr(metafunc.module, "SCENARIO_SOURCES", GENERATION)
-    out = []
-    for source in sources:
-        base = FIXTURES / source
-        folders = {
-            "generate": [("responses", False), ("streams", True)],
-            "count_tokens": [("responses/count_tokens", False), ("responses/input_tokens", False)],
-            "embed": [("responses", False)],
-            "image": [("responses", False), ("streams", True)],
-            "error": [("errors", False)],
-        }
-        for kind in wanted:
-            for folder, stream in folders[kind]:
-                d = base / folder
-                if not d.is_dir():
-                    continue
-                for f in sorted(d.iterdir()):
-                    if f.suffix not in (".json", ".sse") or f.name.endswith(".meta.json"):
-                        continue
-                    name = f.stem
-                    if folder.startswith("responses/"):
-                        name = folder.split("/", 1)[1] + "/" + name
-                    if kind == "error":
-                        name = "errors/" + name
-                    out.append({"source": source, "name": name, "kind": kind, "stream": stream})
+    out = [s for source in sources for kind in wanted for s in _scenarios(source, kind)]
     metafunc.parametrize("scenario", out, ids=[f"{s['source']}:{s['name']}{'+stream' if s['stream'] else ''}" for s in out])

@@ -55,6 +55,7 @@ mod request;
 mod response;
 mod stream;
 mod validate;
+mod video;
 
 pub use audio::{
     AudioInput, DialogueLine, SpeechAlignment, SpeechEvent, SpeechOperation, SpeechRequest,
@@ -91,6 +92,10 @@ pub use stream::{
     ToolCallHeader,
 };
 pub use validate::Capabilities;
+pub use video::{
+    ListOrder, VideoError, VideoImage, VideoImageRole, VideoJob, VideoList, VideoListQuery,
+    VideoOperation, VideoOutput, VideoRequest, VideoStatus, VideoVariant,
+};
 
 pub use indexmap;
 pub use serde_json;

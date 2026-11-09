@@ -1,0 +1,9 @@
+{
+  "type": "error",
+  "error": {
+    "type": "authorized_error",
+    "message": "login fail: Please carry the API secret key in the 'Authorization' field of the request header (1004)",
+    "http_code": "401"
+  },
+  "request_id": "05b5e6a0f6d7e7c5a6e1d6b7e5c4a3b2"
+}

@@ -1,0 +1,15 @@
+{
+  "id": "video_456",
+  "object": "video",
+  "model": "sora-2",
+  "status": "queued",
+  "progress": 0,
+  "created_at": 1712698600,
+  "size": "720x1280",
+  "seconds": "8",
+  "remixed_from_video_id": "video_123",
+  "prompt": "Extend the scene with the cat taking a bow to the cheering audience",
+  "completed_at": null,
+  "expires_at": null,
+  "error": null
+}

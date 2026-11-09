@@ -1,0 +1,14 @@
+{
+  "id": "v1_ChdabcInteraction",
+  "status": "failed",
+  "created": "2026-05-29T02:17:56Z",
+  "updated": "2026-05-29T02:18:02Z",
+  "object": "interaction",
+  "model": "gemini-omni-1.2-flash",
+  "errors": [
+    {
+      "message": "Setting a duration over 10 seconds with two frames is not supported.",
+      "code": "INVALID_ARGUMENT"
+    }
+  ]
+}

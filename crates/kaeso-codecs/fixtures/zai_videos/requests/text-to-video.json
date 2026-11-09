@@ -1,0 +1,8 @@
+{
+  "model": "cogvideox-3",
+  "prompt": "A cat is playing with a ball.",
+  "quality": "quality",
+  "with_audio": true,
+  "size": "1920x1080",
+  "fps": 30
+}

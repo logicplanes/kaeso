@@ -1,0 +1,13 @@
+{
+  "model_id": "veo-3.1-fast-generate-001",
+  "prompt": "The door opens",
+  "start_frame": {
+    "type": "inline_base64",
+    "content_base64": "iVBORw0KGgo=",
+    "mime_type": "image/png"
+  },
+  "end_frame": {
+    "type": "asset",
+    "asset_id": "5xM2KqOnZyce22SPZ9d4"
+  }
+}

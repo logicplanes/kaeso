@@ -1,0 +1,5 @@
+{
+  "id": "video_123",
+  "object": "video.deleted",
+  "deleted": true
+}
