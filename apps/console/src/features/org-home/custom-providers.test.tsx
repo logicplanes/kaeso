@@ -151,7 +151,18 @@ describe("custom providers", () => {
   it("starts a provider for known software with the media APIs its docs list, and every switch explains its path", async () => {
     signedIn();
     withCustom([]);
-    on("POST", DETECT, detected({ base_url: "http://gpus.example.com:8000/", generation: "openai_chat", auth: "bearer", count_tokens: null, server: "vllm", media: ["transcriptions"] }));
+    on(
+      "POST",
+      DETECT,
+      detected({
+        base_url: "http://gpus.example.com:8000/",
+        generation: "openai_chat",
+        auth: "bearer",
+        count_tokens: null,
+        server: "vllm",
+        media: ["transcriptions"],
+      }),
+    );
     on("POST", LIST, customProvider({ server: "vllm", media: ["transcriptions", "videos"] }));
     const { user } = await renderApp(PATH);
 
