@@ -849,7 +849,7 @@
   "List only: focuses the search field when it appears.": "仅限列表：出现时聚焦搜索框。",
   "Called with the chosen provider's id, or `null` for `allLabel`.": "以选中服务商的 ID 调用；选择 `allLabel` 时为 `null`。",
   "The search field's placeholder; in a pill without `allLabel`, also the text shown while nothing is chosen.": "搜索框的占位符；在没有 `allLabel` 的胶囊按钮中，也是未选择时显示的文本。",
-  "The providers: id, name, whether the organization has connected it, and a short hint such as its key count.": "服务商：ID、名称、组织是否已连接它，以及简短提示，例如其密钥数量。",
+  "The providers: id, name, whether the organization has connected it, a short hint such as its key count, and an icon for a choice without a mark, such as any other server.": "服务商：ID、名称、组织是否已连接它、简短提示（例如其密钥数量），以及没有标志的选项所用的图标，例如任何其他服务器。",
   "Keeps the providers in the order given instead of A to Z, for a list whose last entry, such as “Other”, must stay last.": "按传入的顺序保留服务商，而不是按 A 到 Z 排序，适用于最后一项（例如“其他”）必须保持在末尾的列表。",
   "Select only: the height of the pill.": "仅限选择框：胶囊按钮的高度。",
   "The chosen provider's id, when you control it.": "受控时选中服务商的 ID。",
@@ -1163,5 +1163,6 @@
   "Highlighted code on a well in Kaeso's syntax palette, in every common language: copy in the header or on hover, tabs, line numbers, collapse.": "以 Kaeso 语法配色在底板上高亮显示的代码，支持所有常用语言：在标题栏或悬停时复制，标签页、行号、折叠。",
   "The language to highlight (`ts` by default), or `text` to show the code plain. `resolveCodeLang` turns a Markdown fence name such as `py` or `sh` into one.": "要高亮的语言（默认 `ts`），或用 `text` 原样显示代码。`resolveCodeLang` 可将 `py`、`sh` 等 Markdown 代码块名称转换为对应语言。",
   "The language of both versions to highlight (`text` by default). `resolveCodeLang` turns a fence name such as `py` or `sh` into one.": "两个版本要高亮的语言（默认 `text`）。`resolveCodeLang` 可将 `py`、`sh` 等代码块名称转换为对应语言。",
-  "Languages": "语言"
+  "Languages": "语言",
+  "Server software, with an icon for any other": "服务器软件，其他软件显示一个图标"
 }

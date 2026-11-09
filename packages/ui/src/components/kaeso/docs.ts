@@ -81,8 +81,9 @@ export const docs = {
   },
   ProviderBadge: {
     description:
-      "A provider's mark on a quiet tile, in the provider's own colours for the theme, or the text colour for a mark its owner draws in black and white; for a provider without a mark, the first letter of its name. A `ProviderMarksProvider` around an app names the mark of providers whose id isn't one, such as custom providers that run vLLM or Ollama.",
+      "A provider's mark on a quiet tile, in the provider's own colours for the theme, or the text colour for a mark its owner draws in black and white; for a provider without a mark, the first letter of its name, or an icon for a choice that isn't one provider. A `ProviderMarksProvider` around an app names the mark of providers whose id isn't one, such as custom providers that run vLLM or Ollama.",
     props: {
+      icon: "An icon for the tile when there is no mark, instead of the first letter: for a choice that isn't one provider, such as any other server.",
       mark: "The mark to show instead of the provider id's own or the one `ProviderMarksProvider` names, such as `vllm`.",
       name: "The provider's name from the gateway's provider list: the badge's accessible name, the text `withName` writes and the source of the letter; the id without it.",
       provider: "The provider id, such as `openai` or `anthropic`.",
@@ -108,7 +109,8 @@ export const docs = {
       onValueChange: "Called with the chosen provider's id, or `null` for `allLabel`.",
       onChoose: "With `grid`: called when a tile is pressed or clicked, not when the arrow keys move the choice, so a dialog step can continue at once.",
       placeholder: "The search field's placeholder; in a pill without `allLabel`, also the text shown while nothing is chosen.",
-      providers: "The providers: id, name, whether the organization has connected it, and a short hint such as its key count.",
+      providers:
+        "The providers: id, name, whether the organization has connected it, a short hint such as its key count, and an icon for a choice without a mark, such as any other server.",
       ordered: "Keeps the providers in the order given instead of A to Z, for a list whose last entry, such as “Other”, must stay last.",
       size: "Select only: the height of the pill.",
       value: "The chosen provider's id, when you control it.",

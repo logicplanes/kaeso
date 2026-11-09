@@ -131,7 +131,12 @@ describe("custom providers", () => {
 
     await user.click(await screen.findByRole("button", { name: "Add custom provider" }));
     const dialog = await screen.findByRole("dialog", { name: "Add custom provider" });
-    expect(await within(dialog).findByRole("radio", { name: /vLLM/ })).toBeInTheDocument();
+    const vllm = await within(dialog).findByRole("radio", { name: /vLLM/ });
+    expect(vllm.querySelector("svg path")).not.toBeNull();
+    const other = within(dialog).getByRole("radio", { name: /Other server or proxy/ });
+    expect(other.querySelector("svg")).not.toBeNull();
+    expect(other.querySelector("[role=img]")).toHaveTextContent("");
+    expect(dialog).toHaveClass("w-720");
     await hoverReason(user, within(dialog).getByRole("button", { name: "Continue" }), "Choose what runs the server");
     await pickSoftware(user, dialog, "Ollama");
     const url = within(dialog).getByRole("textbox", { name: "Base URL" });

@@ -60,11 +60,12 @@ export const ProviderBadge = forwardRef<
     provider: string;
     name?: string | undefined;
     mark?: string | null | undefined;
+    icon?: IconData | undefined;
     size?: keyof typeof KAESO_IDENTITY_VARIANTS.provider | undefined;
     withName?: boolean | undefined;
     className?: string | undefined;
   }
->(function ProviderBadge({ provider, name, mark: chosen, size = "md", withName, className }, ref) {
+>(function ProviderBadge({ provider, name, mark: chosen, icon, size = "md", withName, className }, ref) {
   const markOf = useProviderMarkOf();
   const mark = PROVIDER_MARKS[chosen ?? markOf(provider) ?? provider];
   const label = providerName(provider, name);
@@ -78,7 +79,7 @@ export const ProviderBadge = forwardRef<
         KAESO_IDENTITY_VARIANTS.provider[size].classes,
       )}
     >
-      {mark ? <MarkGlyph mark={mark} className={MARK_SIZE[size]} /> : providerLetter(provider, name)}
+      {mark ? <MarkGlyph mark={mark} className={MARK_SIZE[size]} /> : icon ? <Icon icon={icon} className={MARK_SIZE[size]} /> : providerLetter(provider, name)}
     </span>
   );
   if (!withName)

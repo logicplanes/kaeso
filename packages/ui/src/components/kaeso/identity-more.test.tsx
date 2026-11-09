@@ -5,6 +5,7 @@ import { KeyDisplay, ModelLabel, ProviderBadge, StatusCode, KAESO_IDENTITY_VARIA
 import { providerMark } from "@logicplanes/kaeso-tokens";
 import { PROVIDER_MARKS, type ProviderMark, type ProviderMarkPart } from "./provider-marks.js";
 import { Slider } from "../slider/slider.js";
+import { icons } from "../../icons/vocabulary.js";
 import { LocaleProvider } from "../../i18n/index.js";
 import { TooltipProvider } from "../tooltip/tooltip-provider.js";
 import { hoverWithMouse } from "../../../test/hover.js";
@@ -25,6 +26,19 @@ describe("identity parts", () => {
     expect(screen.getByText("OpenAI")).toBeInTheDocument();
     expect(screen.getByRole("img", { name: "Zenith Labs" })).toHaveTextContent(/^Z$/);
     expect(screen.getByRole("img", { name: "302.AI" })).toHaveTextContent(/^3$/);
+  });
+
+  it("draws an icon instead of a letter for a choice that isn't one provider, and a mark over the icon", () => {
+    render(
+      <>
+        <ProviderBadge provider="other" name="Any other server" icon={icons.instance} />
+        <ProviderBadge provider="jan" name="Jan" icon={icons.instance} />
+      </>,
+    );
+    const other = screen.getByRole("img", { name: "Any other server" });
+    expect(other).toHaveTextContent("");
+    expect(other.querySelector("svg")).toHaveClass("size-12");
+    expect(screen.getByRole("img", { name: "Jan" }).querySelectorAll("svg path")).toHaveLength(PROVIDER_MARKS.jan!.parts!.length);
   });
 
   it("draws the mark a caller or a ProviderMarksProvider names for a provider id without one", () => {
@@ -184,6 +198,11 @@ const MARKED_PROVIDERS = {
   nim: "NVIDIA NIM",
   "docker-model-runner": "Docker Model Runner",
   xinference: "Xinference",
+  sglang: "SGLang",
+  lmdeploy: "LMDeploy",
+  localai: "LocalAI",
+  "mlx-lm": "MLX LM",
+  jan: "Jan",
 };
 const PARAMS: Record<string, number> = { m: 2, l: 2, h: 1, v: 1, c: 6, s: 4, q: 4, t: 2, a: 7, z: 0 };
 

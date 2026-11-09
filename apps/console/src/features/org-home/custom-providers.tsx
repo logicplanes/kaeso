@@ -622,7 +622,7 @@ export function AddCustomProviderDialog({ org, onClose }: { org: string; onClose
     <StepDialog
       open
       onOpenChange={(o) => !o && onClose()}
-      size="md"
+      size="lg"
       title={t("orgHome.custom.add", "Add custom provider")}
       submitLabel={t("orgHome.custom.add", "Add custom provider")}
       submitting={save.isPending}
@@ -644,6 +644,7 @@ export function AddCustomProviderDialog({ org, onClose }: { org: string; onClose
                   id: OTHER,
                   name: t("orgHome.custom.otherServer", "Other server or proxy"),
                   hint: t("orgHome.custom.otherServerHint", "Kaeso detects the software"),
+                  icon: icons.instance,
                 },
               ]}
               value={software === OTHER ? OTHER : (serverMark(software) ?? null)}

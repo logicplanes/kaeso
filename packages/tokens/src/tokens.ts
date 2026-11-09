@@ -156,6 +156,14 @@ export const providerMark = {
   "xinference-pink": mode("#f52b76", "#f52b76"),
   "xinference-violet": mode("#6a0cf5", "#7a25f6"),
   "xinference-lilac": mode("#ab66f3", "#ab66f3"),
+  sglang: mode("#a5300f", "#e8613c"),
+  "jan-hand": mode("#b88600", "#ffc83d"),
+  "jan-detail": mode("#b06200", "#f0a030"),
+  "jan-lines": mode("#8a8a8a", "#9a9a9a"),
+  "lmdeploy-blue": mode("#2b50ff", "#5a76ff"),
+  "lmdeploy-violet": mode("#8f6cf5", "#9c8bfe"),
+  "lmdeploy-purple": mode("#9a55dd", "#aa5fe6"),
+  "lmdeploy-sky": mode("#2e75fe", "#4a8afe"),
 } as const;
 
 export const type = {

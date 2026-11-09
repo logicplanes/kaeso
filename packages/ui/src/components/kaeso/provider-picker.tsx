@@ -7,6 +7,7 @@ import { useLocale, useUiText } from "../../i18n/context.js";
 import { CommandList, type CommandListGroup } from "../command-list/command-list.js";
 import { PickerPopover, PickerTrigger } from "../command-list/picker-popover.js";
 import { useField, useFieldControl, withField, type FieldWrapProps } from "../field/field.js";
+import type { IconData } from "../icon/icon.js";
 import { ProviderBadge, providerName } from "./identity.js";
 
 export const KAESO_PROVIDER_PICKER_VARIANTS = {
@@ -23,6 +24,7 @@ export interface ProviderPickerOption {
   name?: string | undefined;
   connected?: boolean | undefined;
   hint?: ReactNode | undefined;
+  icon?: IconData | undefined;
   keywords?: readonly string[] | undefined;
   disabled?: boolean | undefined;
   "data-force"?: string | undefined;
@@ -133,10 +135,10 @@ function ProviderTiles({
                     )}
                   >
                     <span aria-hidden className="flex">
-                      <ProviderBadge provider={p.id} name={p.name} size="lg" />
+                      <ProviderBadge provider={p.id} name={p.name} icon={p.icon} size="lg" />
                     </span>
                     <span className="flex min-w-0 flex-1 flex-col">
-                      <span className="line-clamp-2 text-body font-medium text-pretty wrap-break-word text-fg">{nameOf(p)}</span>
+                      <span className="line-clamp-3 text-body font-medium text-pretty wrap-break-word text-fg">{nameOf(p)}</span>
                       {p.hint !== undefined && <span className="line-clamp-2 text-small text-pretty text-fg-secondary">{p.hint}</span>}
                     </span>
                   </BaseRadio.Root>
@@ -162,7 +164,7 @@ export function useProviderGroups(providers: ProviderPickerOption[], allLabel?: 
       keywords: [p.id, ...(p.keywords ?? [])],
       leading: (
         <span aria-hidden className="flex">
-          <ProviderBadge provider={p.id} name={p.name} />
+          <ProviderBadge provider={p.id} name={p.name} icon={p.icon} />
         </span>
       ),
       ...(p.hint !== undefined ? { meta: p.hint } : {}),
