@@ -575,6 +575,7 @@
   "errors.modelApi.customKeyRefused": "Der eigene Anbieter `{provider}` hat den Schlüssel dieses Projekts abgelehnt; bitten Sie einen Admin der Organisation, ihn unter Anbieter zu prüfen.",
   "errors.modelApi.customUnreadable": "Der eigene Anbieter `{provider}` hat in einer Form geantwortet, die `{dialect}` nicht lesen kann; prüfen Sie sein API-Format.",
   "errors.modelApi.customTurnedOff": "Eigene Anbieter sind auf dieser Installation ausgeschaltet, daher kann `{provider}` nicht aufgerufen werden.",
+  "errors.modelApi.customNoMediaApi": "Beim eigenen Anbieter `{provider}` ist die {api} nicht eingeschaltet; ein Admin der Organisation schaltet sie unter Anbieter ein.",
   "errors.signUpInvitationOnly": "Konten gibt es in dieser Installation nur auf Einladung; bitten Sie einen Administrator um eine Einladung.",
   "errors.signUpDomainNotAllowed": "Mit dieser E-Mail-Adresse lässt sich hier kein Konto erstellen; bitten Sie einen Administrator um eine Einladung.",
   "errors.orgCreationDomainNotAllowed": "Mit Ihrer E-Mail-Adresse lassen sich hier keine Organisationen erstellen; wenden Sie sich an einen Instanz-Admin.",

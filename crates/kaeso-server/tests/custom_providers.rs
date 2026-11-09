@@ -2379,7 +2379,7 @@ async fn a_custom_provider_serves_the_media_apis_its_admin_turns_on_and_refuses_
     assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
     assert_eq!(
         r.json()["error"]["message"],
-        "The custom provider `studio` has no Images API turned on; an organization admin turns it on under Providers."
+        "The custom provider `studio` has no Images API turned on; an org admin turns it on under Providers."
     );
     assert_eq!(env.mock.received().len(), before, "nothing was sent");
 }

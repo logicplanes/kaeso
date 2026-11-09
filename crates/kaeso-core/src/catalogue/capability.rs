@@ -28,7 +28,7 @@ fn refuse(capability: &'static str, param: Option<&'static str>, message: String
 fn no_media_api(eff: &Effective, api: &str, fallback: String) -> String {
     match eff.provider.custom() {
         Some(c) => format!(
-            "The custom provider `{}` has no {api} turned on; an organization admin turns it on under Providers.",
+            "The custom provider `{}` has no {api} turned on; an org admin turns it on under Providers.",
             c.id()
         ),
         None => fallback,
@@ -228,7 +228,7 @@ pub fn prepare(
                     Some("model"),
                     no_media_api(
                         eff,
-                        "speech API",
+                        "Speech API",
                         format!(
                             "{} offers no speech API Kaeso can call, so `{name}` can't speak.",
                             eff.provider.name()
