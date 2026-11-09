@@ -10,7 +10,7 @@ const sonnet = answers["claude-sonnet-4-5"]![1]!;
 export const meta = {
   title: "ResponseView",
   description:
-    "A model's response as it arrives: a quiet caret until the first token, Markdown as it streams, reasoning in a Thinking disclosure, and calm stopped, cut-off and failed states.",
+    "A model's response as it arrives: nothing until the first token, Markdown as it streams, reasoning in a Thinking disclosure, and calm stopped, cut-off and failed states.",
   group: "Playground",
   entry: "playground",
   import: "ResponseView, UserMessage, Thread",

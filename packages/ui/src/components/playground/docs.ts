@@ -135,7 +135,7 @@ export const docs = {
   },
   ResponseView: {
     description:
-      'A model\'s response as it arrives: a quiet caret where the text will start until the first token, then Markdown text for reading (15/22) with the caret at its end while it streams; the reasoning summary in a "Thinking" disclosure (closed by default, live while it streams); and calm states for a stop, a cut-off reply or a failure, which shows its error in place. Text sits 12px in, code and tables on the edge; screen readers hear when a response finishes or stops.',
+      'A model\'s response as it arrives: nothing until the first token, then Markdown text for reading (15/22) that grows as it streams; the reasoning summary in a "Thinking" disclosure (closed by default, live while it streams); and calm states for a stop, a cut-off reply or a failure, which shows its error in place. Text sits 12px in, code and tables on the edge; screen readers hear when a response finishes or stops.',
     props: {
       "aria-label": 'The response\'s accessible name ("GPT-5 response" in a comparison). Defaults to "Response" in the provider\'s language.',
       defaultReasoningOpen: "Whether the reasoning starts expanded.",
