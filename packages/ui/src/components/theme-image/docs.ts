@@ -2,7 +2,8 @@ import type { ComponentDocs } from "../../component-docs.js";
 
 export const docs = {
   ThemeImage: {
-    description: "An image drawn twice, once for each theme: it follows the site's theme setting, not only the system's, and prints the light one.",
+    description:
+      "A drawing on a transparent ground made twice, once for each theme, such as a diagram: it follows the site's theme setting, not only the system's, prints the light one and has no outline.",
     props: {
       alt: "What the image shows, read by screen readers and shown when it can't load.",
       "aria-describedby": "The id of a longer description, such as a diagram's text alternative.",

@@ -23,4 +23,9 @@ describe("ThemeImage", () => {
     expect(container.firstElementChild).toHaveClass("min-w-320");
     expect(screen.getAllByRole("img", { name: "Logo" })[0]).not.toHaveAttribute("width");
   });
+
+  it("draws no outline around the drawing, which has a transparent ground", () => {
+    render(<ThemeImage light="/flow.light.svg" dark="/flow.dark.svg" alt="Route of a request" />);
+    for (const img of screen.getAllByRole("img", { name: "Route of a request" })) expect(img).not.toHaveClass("image-outline");
+  });
 });
