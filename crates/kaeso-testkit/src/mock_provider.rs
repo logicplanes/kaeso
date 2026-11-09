@@ -790,6 +790,9 @@ fn dashscope(fixtures: &Path, path: &str, text: &str, headers: &HeaderMap) -> Op
         {
             local("polls/images/started.json")
         }
+        "/api/v1/services/audio/tts/SpeechSynthesizer" if text.contains("\"text_prompt\"") => {
+            local("responses/speech/qwen-audio-next-link.json")
+        }
         "/api/v1/services/audio/tts/SpeechSynthesizer" => Some(bytes_file(
             &dir.join("streams/speech/qwen-audio-tts.sse"),
             "text/event-stream",

@@ -95,7 +95,7 @@ with open("speech.mp3", "wb") as f:
 
 ## 其他服务商
 
-ElevenLabs 应用的请求就是 Kaeso 请求：别名或其他服务商的模型能处理时，就由它们处理。文本转语音可以调用 OpenAI、Google 以及[音频 API](audio.md#服务商)的每个服务商，声音 ID 作为声音；语音转文本可以调用每个转写服务商，服务商提供时间信息时也包括带时间的词。只有 ElevenLabs 接受的内容，例如 `speed` 以外的 `voice_settings`、发音词典或 `keyterms`，对其他服务商会被拒绝，`param` 中给出该字段。
+ElevenLabs 应用的请求就是 Kaeso 请求：别名或其他服务商的模型能处理时，就由它们处理。文本转语音可以调用 OpenAI、Google 以及[音频 API](audio.md#服务商)的每个服务商，声音 ID 作为声音；语音转文本可以调用每个转写服务商，服务商提供时间信息时也包括带时间的词；音效也可以调用 QwenCloud 的 Qwen-Audio-TTS-Next，但不能带 `duration_seconds`，因为它没有对应字段（[QwenCloud 映射](../development/kpp/dashscope.md#音频生成)）。只有 ElevenLabs 接受的内容，例如 `speed` 以外的 `voice_settings`、发音词典或 `keyterms`，对其他服务商会被拒绝，`param` 中给出该字段。
 
 ## Kaeso 拒绝的内容
 

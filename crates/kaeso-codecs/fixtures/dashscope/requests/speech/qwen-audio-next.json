@@ -1,0 +1,9 @@
+{
+  "model": "qwen-audio-3.1-tts-next",
+  "input": {
+    "text_prompt": "A woman clearly says: Hello, welcome.",
+    "format": "wav",
+    "sample_rate": 48000,
+    "channels": 2
+  }
+}

@@ -830,3 +830,126 @@ fn wan_text_to_image_takes_a_prompt_and_refuses_edits_tiers_and_more_than_four()
     tier.resolution = Some("2K".into());
     assert_eq!(image_param(&tier), "resolution");
 }
+
+#[test]
+fn qwen_audio_tts_next_makes_sound_effects_and_described_speech_without_voices() {
+    const NEXT: &str = "qwen-audio-3.1-tts-next";
+    assert_eq!(speech_family(NEXT), Some(SpeechFamily::AudioGeneration));
+    assert_eq!(
+        speech_family("qwen-audio-3.1-tts-flash"),
+        Some(SpeechFamily::QwenAudio)
+    );
+
+    let mut rain = SpeechRequest::new(NEXT, SpeechOperation::SoundEffect)
+        .with_input("Rain on a tin roof, distant thunder");
+    rain.format = Some(AudioFormat::Mp3);
+    rain.sample_rate = Some(44_100);
+    rain.bitrate = Some(128);
+    let (enc, ctx) = sent_speech(&rain).unwrap();
+    assert_eq!(enc.path, SYNTHESIZER_PATH);
+    assert_eq!(enc.headers.get("x-dashscope-sse"), None, "answered whole");
+    assert!(ctx.stream.is_off());
+    assert_eq!(ctx.audio_format, Some(AudioFormat::Mp3));
+    let body: Value = serde_json::from_slice(&enc.body).unwrap();
+    assert_eq!(
+        body,
+        json!({"model": NEXT, "input": {
+            "text_prompt": "Rain on a tin roof, distant thunder",
+            "format": "mp3", "sample_rate": 44100, "enable_cbr": true, "bit_rate": 128,
+        }})
+    );
+
+    let described = SpeechRequest::new(NEXT, SpeechOperation::Speech)
+        .with_input("A calm man says: Welcome back.");
+    let (enc, _) = sent_speech(&described).unwrap();
+    let body: Value = serde_json::from_slice(&enc.body).unwrap();
+    assert_eq!(
+        body["input"]["text_prompt"],
+        "A calm man says: Welcome back."
+    );
+
+    let refused = |r: SpeechRequest| speech_param(&r);
+    assert_eq!(
+        refused(described.clone().with_voice(Voice::Named("Cherry".into()))),
+        "voice"
+    );
+    assert_eq!(
+        refused(SpeechRequest::new(NEXT, SpeechOperation::Music).with_input("A waltz")),
+        "model"
+    );
+    let mut timed = rain.clone();
+    timed.duration = Some(4.0);
+    assert_eq!(refused(timed), "duration");
+    let mut opus = rain.clone();
+    opus.format = Some(AudioFormat::Opus);
+    opus.bitrate = None;
+    assert_eq!(refused(opus), "response_format");
+    let mut odd_rate = rain.clone();
+    odd_rate.sample_rate = Some(22_050);
+    assert_eq!(refused(odd_rate), "sample_rate");
+    let mut wav_bitrate = rain.clone();
+    wav_bitrate.format = Some(AudioFormat::Wav);
+    assert_eq!(refused(wav_bitrate), "bitrate");
+    assert_eq!(
+        refused(SpeechRequest::new(NEXT, SpeechOperation::SoundEffect)),
+        "input"
+    );
+    let mut changer = SpeechRequest::new(NEXT, SpeechOperation::VoiceChange);
+    changer.audio = Some(AudioInput::new(Source::Url(
+        "https://example.com/a.wav".into(),
+    )));
+    assert_eq!(refused(changer), "model");
+
+    let ctx = EgressCtx::new(&Request::Speech(rain));
+    let body = fixtures(DIR, "responses/speech", "json")
+        .into_iter()
+        .find(|(n, _)| n == "qwen-audio-next-link")
+        .unwrap()
+        .1;
+    let Reply::Speech(r) =
+        DashScope::decode_response(200, &HeaderList::new(), &body, &ctx).unwrap()
+    else {
+        panic!()
+    };
+    assert_eq!(
+        r.audio,
+        Source::Url("https://example.com/generated.wav".into())
+    );
+}
+
+#[test]
+fn qwen_audio_tts_next_limits_are_checked_before_sending() {
+    let long = SpeechRequest::new("qwen-audio-3.1-tts-next", SpeechOperation::SoundEffect)
+        .with_input("a".repeat(3_001));
+    assert_eq!(speech_param(&long), "input");
+    assert!(
+        sent_speech(
+            &SpeechRequest::new("qwen-audio-3.1-tts-next", SpeechOperation::SoundEffect)
+                .with_input("雨".repeat(3_000))
+        )
+        .is_ok(),
+        "characters, not bytes"
+    );
+    let with_refs = |n: usize, size: usize| {
+        let clip = json!({ "audio_data": format!("data:audio/wav;base64,{}", "A".repeat(size)) });
+        let body = json!({
+            "model": "qwen-audio-3.1-tts-next",
+            "input": { "text_prompt": "@voice1 laughs.", "references": vec![clip; n] }
+        });
+        let Request::Speech(r) = DashScope::decode_request(
+            RequestKind::Speech,
+            &serde_json::to_vec(&body).unwrap(),
+            &HeaderList::new(),
+        )
+        .unwrap() else {
+            panic!()
+        };
+        r
+    };
+    assert!(sent_speech(&with_refs(3, 8)).is_ok());
+    assert_eq!(speech_param(&with_refs(4, 8)), "input.references");
+    assert_eq!(
+        speech_param(&with_refs(1, 14_000_000)),
+        "input.references[0]"
+    );
+}

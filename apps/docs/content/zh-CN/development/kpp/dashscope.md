@@ -87,7 +87,7 @@ order: 8
 
 ## 语音合成
 
-`dashscope::speech::speech_family` 读取模型名称：`qwen-audio-*-tts-*`（Qwen-Audio-TTS 3.0 和 3.1）和 `qwen3-tts-flash*`。实时模型只接受 WebSocket 连接，会被拒绝。
+`dashscope::speech::speech_family` 读取模型名称：`qwen-audio-*-tts-next`（Qwen-Audio-TTS-Next，音频生成）、`qwen-audio-*-tts-*`（Qwen-Audio-TTS 3.0 和 3.1）和 `qwen3-tts-flash*`。实时模型只接受 WebSocket 连接，会被拒绝。
 
 | KPP | Qwen-Audio-TTS | Qwen3-TTS Flash |
 | --- | --- | --- |
@@ -111,6 +111,24 @@ order: 8
 | `output.finish_reason` 为 `stop` 的事件 | 结束，带 `usage`，`usage.characters` 作为计费字符数 |
 | 完整回复中的 `output.audio.url` | 以链接形式提供的音频 |
 | `error` 事件，或不在 2xx 范围内的 `:HTTP_STATUS/` 行 | 错误 |
+
+
+### 音频生成
+
+Qwen-Audio-TTS-Next（[音频生成参考](https://docs.qwencloud.com/api-reference/audio-generation)，2026-11-09 阅读）根据一段场景描述生成语音、音效和环境声，使用 Qwen-Audio-TTS 的路径，以链接一次性返回。它不接受声音：由提示词描述声音。
+
+| KPP | Qwen-Audio-TTS-Next |
+| --- | --- |
+| `SoundEffect`，或不带声音的 `Speech`，加上 `input` | `input.text_prompt`；带 `text_prompt` 的原生请求读回为 `SoundEffect` |
+| `format` | `input.format`：`wav`（默认）、`mp3`、`pcm16` 作为 `pcm`；其他格式被拒绝 |
+| `sample_rate` | `input.sample_rate`：8,000、16,000、24,000、44,100 或 48,000 |
+| `speed`、`seed` | `input.rate`（0.5 到 2.0）、`input.seed` |
+| `bitrate` | `input.bit_rate` 加 `input.enable_cbr: true`，仅限 `mp3` |
+| `voice`、`duration`、`timestamps`、`instructions`、`language` | 拒绝：该模型没有对应字段 |
+| `Music`、`Dialogue`、`VoiceChange` | 拒绝；QwenCloud 不提供音乐模型 |
+| `output.audio.url`、`output.audio.duration` | 音频链接，由 Kaeso 下载；时长保留在回复的 extras 中 |
+
+参考音频（`input.references`）以及 `channels`、`volume`、`quality` 和 `enable_aigc_tag` 是 DashScope 自己的字段：它们在 DashScope 应用与 QwenCloud 之间传递，来自其他格式时会被拒绝。回复不含 QwenCloud 计价所依据的 token 数，因此其费用保持未知。按参考文档，超过 3,000 字符的提示词、超过三个参考音频以及超过 10 MB 的音频会在发送前被拒绝；单个音频 30 秒的时长和单次请求生成 120 秒音频的上限由 QwenCloud 检查。
 
 ## 转写
 

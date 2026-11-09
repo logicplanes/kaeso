@@ -87,7 +87,7 @@ Bilder gehen als Links oder Data-URLs, außer erstem und letztem Bild bei Wan 2.
 
 ## Sprachausgabe
 
-`dashscope::speech::speech_family` liest den Modellnamen: `qwen-audio-*-tts-*` (Qwen-Audio-TTS 3.0 und 3.1) und `qwen3-tts-flash*`. Echtzeitmodelle nehmen nur WebSocket-Verbindungen und werden abgelehnt.
+`dashscope::speech::speech_family` liest den Modellnamen: `qwen-audio-*-tts-next` (Qwen-Audio-TTS-Next, Audio-Generierung), `qwen-audio-*-tts-*` (Qwen-Audio-TTS 3.0 und 3.1) und `qwen3-tts-flash*`. Echtzeitmodelle nehmen nur WebSocket-Verbindungen und werden abgelehnt.
 
 | KPP | Qwen-Audio-TTS | Qwen3-TTS Flash |
 | --- | --- | --- |
@@ -111,6 +111,24 @@ Bilder gehen als Links oder Data-URLs, außer erstem und letztem Bild bei Wan 2.
 | das Event, dessen `output.finish_reason` `stop` ist | das Ende, mit `usage` und `usage.characters` als abgerechneten Zeichen |
 | `output.audio.url` einer ganzen Antwort | das Audio als Link |
 | ein Event `error` oder eine Zeile `:HTTP_STATUS/` außerhalb von 2xx | der Fehler |
+
+
+### Audio-Generierung
+
+Qwen-Audio-TTS-Next ([Referenz zur Audio-Generierung](https://docs.qwencloud.com/api-reference/audio-generation), gelesen am 2026-11-09) erzeugt Sprache, Soundeffekte und Umgebungsgeräusche aus einer beschriebenen Szene, auf dem Pfad von Qwen-Audio-TTS, und antwortet als Ganzes mit einem Link. Es nimmt keine Stimmen: Der Prompt beschreibt sie.
+
+| KPP | Qwen-Audio-TTS-Next |
+| --- | --- |
+| `SoundEffect` oder `Speech` ohne Stimme, mit `input` | `input.text_prompt`; eine native Anfrage mit `text_prompt` wird als `SoundEffect` gelesen |
+| `format` | `input.format`: `wav` (Standard), `mp3`, `pcm16` als `pcm`; andere werden abgelehnt |
+| `sample_rate` | `input.sample_rate`: 8.000, 16.000, 24.000, 44.100 oder 48.000 |
+| `speed`, `seed` | `input.rate` (0,5 bis 2,0), `input.seed` |
+| `bitrate` | `input.bit_rate` mit `input.enable_cbr: true`, nur bei `mp3` |
+| `voice`, `duration`, `timestamps`, `instructions`, `language` | abgelehnt: Das Modell hat kein Feld dafür |
+| `Music`, `Dialogue`, `VoiceChange` | abgelehnt; QwenCloud bietet kein Musikmodell |
+| `output.audio.url`, `output.audio.duration` | das Audio als Link, den Kaeso herunterlädt; die Länge bleibt in den Extras der Antwort |
+
+Referenzclips (`input.references`) sowie `channels`, `volume`, `quality` und `enable_aigc_tag` sind eigene Felder von DashScope: Sie gehen zwischen DashScope-Apps und QwenCloud hin und her und werden aus jedem anderen Format abgelehnt. Die Antwort enthält keine Tokenzahlen, nach denen QwenCloud sie bepreist, deshalb bleiben ihre Kosten unbekannt. Ein Prompt über 3.000 Zeichen, mehr als drei Referenzclips und ein Clip über 10 MB werden vor dem Senden abgelehnt, wie die Referenz es dokumentiert; die 30 Sekunden eines Clips und die 120 Sekunden Audio einer Anfrage prüft QwenCloud.
 
 ## Transkription
 
