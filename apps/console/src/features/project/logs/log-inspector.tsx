@@ -523,7 +523,7 @@ function Overview({ org, project, e, keyName }: { org: string; project: string; 
 function TabHeader({ children, control }: { children: ReactNode; control?: ReactNode }) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-x-16 gap-y-12">
-      <div className="flex min-w-0 flex-1 basis-280 items-center gap-8">{children}</div>
+      <div className="flex min-w-0 flex-1 basis-280 items-baseline gap-8">{children}</div>
       {control && <div className="flex shrink-0 items-center">{control}</div>}
     </div>
   );
