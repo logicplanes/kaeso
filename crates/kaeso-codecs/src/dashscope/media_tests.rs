@@ -916,3 +916,40 @@ fn qwen_audio_tts_next_makes_sound_effects_and_described_speech_without_voices()
         Source::Url("https://example.com/generated.wav".into())
     );
 }
+
+#[test]
+fn qwen_audio_tts_next_limits_are_checked_before_sending() {
+    let long = SpeechRequest::new("qwen-audio-3.1-tts-next", SpeechOperation::SoundEffect)
+        .with_input("a".repeat(3_001));
+    assert_eq!(speech_param(&long), "input");
+    assert!(
+        sent_speech(
+            &SpeechRequest::new("qwen-audio-3.1-tts-next", SpeechOperation::SoundEffect)
+                .with_input("雨".repeat(3_000))
+        )
+        .is_ok(),
+        "characters, not bytes"
+    );
+    let with_refs = |n: usize, size: usize| {
+        let clip = json!({ "audio_data": format!("data:audio/wav;base64,{}", "A".repeat(size)) });
+        let body = json!({
+            "model": "qwen-audio-3.1-tts-next",
+            "input": { "text_prompt": "@voice1 laughs.", "references": vec![clip; n] }
+        });
+        let Request::Speech(r) = DashScope::decode_request(
+            RequestKind::Speech,
+            &serde_json::to_vec(&body).unwrap(),
+            &HeaderList::new(),
+        )
+        .unwrap() else {
+            panic!()
+        };
+        r
+    };
+    assert!(sent_speech(&with_refs(3, 8)).is_ok());
+    assert_eq!(speech_param(&with_refs(4, 8)), "input.references");
+    assert_eq!(
+        speech_param(&with_refs(1, 14_000_000)),
+        "input.references[0]"
+    );
+}

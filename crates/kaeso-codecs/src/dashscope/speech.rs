@@ -270,6 +270,41 @@ pub(super) fn check(r: &SpeechRequest) -> Result<SpeechFamily, KppError> {
 }
 
 const GENERATION_FORMATS: &[&str] = &["wav", "mp3", "pcm"];
+// The audio generation reference's limits: a prompt of 3,000 characters and at most three
+// reference clips of 10 MB each.
+const MAX_PROMPT_CHARS: usize = 3_000;
+const MAX_REFERENCES: usize = 3;
+const MAX_REFERENCE_BYTES: usize = 10 * 1024 * 1024;
+
+// Reference clips are DashScope's own `input.references`, so only a DashScope app sends them.
+fn check_references(r: &SpeechRequest) -> Result<(), KppError> {
+    let Some(raw) = r.extras.fields.get("input.references") else {
+        return Ok(());
+    };
+    let Ok(Value::Array(clips)) = raw.to_value() else {
+        return Ok(());
+    };
+    if clips.len() > MAX_REFERENCES {
+        return Err(KppError::invalid_request(format!(
+            "Qwen-Audio-TTS-Next takes at most {MAX_REFERENCES} reference clips; send fewer."
+        ))
+        .with_param("input.references"));
+    }
+    for (i, clip) in clips.iter().enumerate() {
+        let data = clip
+            .get("audio_data")
+            .and_then(Value::as_str)
+            .unwrap_or_default();
+        let base64 = data.split_once(',').map_or(data, |(_, d)| d);
+        if base64.len() / 4 * 3 > MAX_REFERENCE_BYTES {
+            return Err(KppError::invalid_request(
+                "A reference clip is larger than the 10 MB Qwen-Audio-TTS-Next takes; send a shorter one.",
+            )
+            .with_param(format!("input.references[{i}]")));
+        }
+    }
+    Ok(())
+}
 const GENERATION_RATES: &[u32] = &[8_000, 16_000, 24_000, 44_100, 48_000];
 
 // Qwen-Audio-TTS-Next takes a described scene: a sound effect, or speech whose voice the prompt
@@ -296,13 +331,21 @@ fn check_generation(r: &SpeechRequest) -> Result<(), KppError> {
             ));
         }
     }
-    if r.input.as_deref().is_none_or(str::is_empty) {
+    let prompt = r.input.as_deref().unwrap_or_default();
+    if prompt.is_empty() {
         return Err(no(
             "audio generation without a prompt",
             "input",
             "describe the audio.",
         ));
     }
+    if prompt.chars().count() > MAX_PROMPT_CHARS {
+        return Err(KppError::invalid_request(format!(
+            "Qwen-Audio-TTS-Next takes a prompt of at most {MAX_PROMPT_CHARS} characters; shorten it."
+        ))
+        .with_param("input"));
+    }
+    check_references(r)?;
     let unsupported = [
         ("duration", r.duration.is_some()),
         ("timestamps", r.timestamps),

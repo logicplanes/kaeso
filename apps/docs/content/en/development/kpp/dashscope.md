@@ -128,7 +128,7 @@ Qwen-Audio-TTS-Next ([audio generation reference](https://docs.qwencloud.com/api
 | `Music`, `Dialogue`, `VoiceChange` | refused; QwenCloud offers no music model |
 | `output.audio.url`, `output.audio.duration` | the audio as a link, which Kaeso downloads; the length stays in the reply's extras |
 
-Reference clips (`input.references`) and `channels`, `volume`, `quality` and `enable_aigc_tag` are DashScope's own fields: they pass between DashScope apps and QwenCloud and are refused from any other format. The reply carries no token counts, which QwenCloud prices it by, so its cost stays unknown.
+Reference clips (`input.references`) and `channels`, `volume`, `quality` and `enable_aigc_tag` are DashScope's own fields: they pass between DashScope apps and QwenCloud and are refused from any other format. The reply carries no token counts, which QwenCloud prices it by, so its cost stays unknown. A prompt over 3,000 characters, more than three reference clips and a clip over 10 MB are refused before sending, as the reference documents; the 30-second length of a clip and the 120 seconds of audio a request makes are QwenCloud's to check.
 
 ## Transcription
 

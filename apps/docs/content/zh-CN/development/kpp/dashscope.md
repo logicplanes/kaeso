@@ -128,7 +128,7 @@ Qwen-Audio-TTS-Next（[音频生成参考](https://docs.qwencloud.com/api-refere
 | `Music`、`Dialogue`、`VoiceChange` | 拒绝；QwenCloud 不提供音乐模型 |
 | `output.audio.url`、`output.audio.duration` | 音频链接，由 Kaeso 下载；时长保留在回复的 extras 中 |
 
-参考音频（`input.references`）以及 `channels`、`volume`、`quality` 和 `enable_aigc_tag` 是 DashScope 自己的字段：它们在 DashScope 应用与 QwenCloud 之间传递，来自其他格式时会被拒绝。回复不含 QwenCloud 计价所依据的 token 数，因此其费用保持未知。
+参考音频（`input.references`）以及 `channels`、`volume`、`quality` 和 `enable_aigc_tag` 是 DashScope 自己的字段：它们在 DashScope 应用与 QwenCloud 之间传递，来自其他格式时会被拒绝。回复不含 QwenCloud 计价所依据的 token 数，因此其费用保持未知。按参考文档，超过 3,000 字符的提示词、超过三个参考音频以及超过 10 MB 的音频会在发送前被拒绝；单个音频 30 秒的时长和单次请求生成 120 秒音频的上限由 QwenCloud 检查。
 
 ## 转写
 
