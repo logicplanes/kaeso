@@ -271,7 +271,8 @@ pub struct EgressCtx {
     /// Messages with [`MessagesProfile::raw_predict`], such as
     /// `/v1/projects/{project}/locations/{location}/publishers/anthropic/models`, or the
     /// directory of `chat/completions` for OpenAI Chat Completions, such as
-    /// `/v1/projects/{project}/locations/{location}/endpoints/openapi`.
+    /// `/v1/projects/{project}/locations/{location}/endpoints/openapi`, or the directory of
+    /// `interactions` for Gemini Interactions, `/v1beta1/projects/{project}/locations/global`.
     pub base_path: Option<String>,
     /// The audio format the request asked for, which tells a reply decoder the media type of
     /// audio the provider doesn't label, as Chat Completions' `message.audio`. The encoder sets

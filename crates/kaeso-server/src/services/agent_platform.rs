@@ -141,8 +141,15 @@ pub async fn egress(
         }));
     };
     let project = account.key.project_id();
-    let location = account.location.as_str();
+    // Gemini Omni's video generation is served only in the global location
+    // (https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/video/generate-videos-from-text).
+    let location = if dialect == DialectId::GeminiInteractions {
+        google::GLOBAL
+    } else {
+        account.location.as_str()
+    };
     let base_path = match dialect {
+        DialectId::GeminiInteractions => Some(google::interactions_base(project)),
         DialectId::AnthropicMessages => {
             Some(google::publisher_path(project, location, "anthropic"))
         }

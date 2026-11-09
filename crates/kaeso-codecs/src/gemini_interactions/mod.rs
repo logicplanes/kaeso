@@ -3,7 +3,11 @@
 //! the Gemini Omni models make video through (<https://aistudio.google.com/docs/omni>):
 //! `POST /v1beta/interactions` with `background: true` starts a job, `GET
 //! /v1beta/interactions/{id}` reports it with the video inline, and `DELETE` removes it.
-//! Only the video part of the API is mapped.
+//! Gemini Enterprise Agent Platform serves the same API in its global location
+//! (<https://docs.cloud.google.com/gemini-enterprise-agent-platform/generative-ai/docs/video/generate-videos-from-text>):
+//! with [`EgressCtx::base_path`] set to `/v1beta1/projects/{project}/locations/global`, the
+//! interactions live under it, and a job is never deleted there, since its reference documents
+//! no delete. Only the video part of the API is mapped.
 
 #[cfg(test)]
 mod tests;
@@ -313,7 +317,14 @@ fn image_value(image: &VideoImage) -> Value {
     Value::Object(out)
 }
 
-fn encode_request(req: &Request) -> Result<EncodedRequest, KppError> {
+fn interactions(ctx: &EgressCtx) -> String {
+    match &ctx.base_path {
+        Some(base) => format!("{base}/interactions"),
+        None => INTERACTIONS_PATH.to_owned(),
+    }
+}
+
+fn encode_request(req: &Request, ctx: &EgressCtx) -> Result<EncodedRequest, KppError> {
     check(req)?;
     let r = video_request(req, D)?;
     let mut out = Map::new();
@@ -367,7 +378,7 @@ fn encode_request(req: &Request) -> Result<EncodedRequest, KppError> {
     put_extras(&mut out, &r.extras, D, "");
     let headers = HeaderList::new().with("content-type", crate::codec::JSON_MEDIA_TYPE);
     Ok(EncodedRequest::post_json(
-        INTERACTIONS_PATH,
+        interactions(ctx),
         headers,
         body(&out)?,
     ))
@@ -539,8 +550,8 @@ impl Codec for GeminiInteractions {
         check(req)
     }
 
-    fn encode_request(req: &Request, _ctx: &mut EgressCtx) -> Result<EncodedRequest, KppError> {
-        encode_request(req)
+    fn encode_request(req: &Request, ctx: &mut EgressCtx) -> Result<EncodedRequest, KppError> {
+        encode_request(req, ctx)
     }
 
     fn decode_response(
@@ -572,11 +583,12 @@ impl Codec for GeminiInteractions {
     fn encode_video_poll(
         job: &str,
         _model: &str,
-        _ctx: &EgressCtx,
+        ctx: &EgressCtx,
     ) -> Result<EncodedRequest, KppError> {
         Ok(EncodedRequest::get(
             format!(
-                "{INTERACTIONS_PATH}/{}",
+                "{}/{}",
+                interactions(ctx),
                 crate::video_jobs::path_segment(job)
             ),
             HeaderList::new(),
@@ -598,8 +610,11 @@ impl Codec for GeminiInteractions {
     fn encode_video_delete(
         job: &str,
         _model: &str,
-        _ctx: &EgressCtx,
+        ctx: &EgressCtx,
     ) -> Result<Option<EncodedRequest>, KppError> {
+        if ctx.base_path.is_some() {
+            return Ok(None);
+        }
         Ok(Some(EncodedRequest::delete(
             format!(
                 "{INTERACTIONS_PATH}/{}",

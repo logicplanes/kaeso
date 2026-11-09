@@ -1,16 +1,16 @@
 ---
 title: Gemini Interactions
-description: Wie die Videojobs von KPP auf Gemini Omni in der Interactions API von Google AI Studio abgebildet werden.
+description: Wie KPP Videojobs auf Gemini Omni in der Interactions API von Google AI Studio und Gemini Enterprise Agent Platform abbildet.
 order: 8
 ---
 
-Schlagen Sie hier nach, wie ein Videojob Gemini Omni auf Google AI Studio erreicht: welches Feld wohin gehört, wie nach dem Job gefragt wird und woher jede Abbildung stammt. Abgebildet ist nur der Videoteil der Interactions API.
+Schlagen Sie hier nach, wie ein Videojob Gemini Omni auf Google AI Studio und Gemini Enterprise Agent Platform erreicht: welches Feld wohin gehört, wie nach dem Job gefragt wird und woher jede Abbildung stammt. Abgebildet ist nur der Videoteil der Interactions API.
 
 - **Codec:** `kaeso_codecs::gemini_interactions::GeminiInteractions` (`crates/kaeso-codecs/src/gemini_interactions/`)
-- **Pfade:** `POST /v1beta/interactions`, `GET /v1beta/interactions/{id}` und `DELETE /v1beta/interactions/{id}`
+- **Pfade:** `POST /v1beta/interactions`, `GET /v1beta/interactions/{id}` und `DELETE /v1beta/interactions/{id}` bei Google AI Studio; `POST` und `GET` unter `/v1beta1/projects/{project}/locations/global/interactions` auf der Agent Platform
 - **Fixtures:** `crates/kaeso-codecs/fixtures/gemini_interactions/`; `responses/recorded-started.json` und `polls/recorded-failed-quota.json` sind mit einem Schlüssel der kostenlosen Stufe aufgezeichnet, der Rest aus der Referenz gebaut
 
-**Quellen.** Die Referenzen von Google AI Studio zu [Gemini Omni Flash](https://aistudio.google.com/docs/omni) und [Interaktion erstellen](https://aistudio.google.com/api-reference/interactions-api/create-interaction), gelesen am 2026-11-09.
+**Quellen.** Die Referenzen von Google AI Studio zu [Gemini Omni Flash](https://aistudio.google.com/docs/omni) und [Interaktion erstellen](https://aistudio.google.com/api-reference/interactions-api/create-interaction) sowie die Seite [Videos aus Text erzeugen](https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/video/generate-videos-from-text) der Agent Platform, gelesen am 2026-11-09.
 
 ## Entscheidungen
 
@@ -18,6 +18,7 @@ Schlagen Sie hier nach, wie ein Videojob Gemini Omni auf Google AI Studio erreic
 - **Im Hintergrund.** Jeder Job geht mit `background: true`, das sofort mit der ID der Interaktion antwortet; spätere Fragen danach liefern das Video in der Antwort.
 - **Die Aufgabe folgt den Bildern.** Erstes und letztes Bild senden `generation_config.video_config.task: "image_to_video"`, Referenzbilder `"reference_to_video"`; ohne Bilder leitet das Modell die Aufgabe ab.
 - **Ein Remix setzt die Interaktion fort.** `previous_interaction_id` verfeinert das frühere Video mit dem neuen Prompt, so wie Googles zustandsbehaftete Bearbeitung.
+- **Die Agent Platform: global, Dienstkonten, kein Löschen.** Omni wird dort nur am Standort `global` angeboten, deshalb sendet Kaeso es dorthin, gleich welchen Standort der Schlüssel nennt. Der Express-Modus listet keine Omni-Modelle, deshalb erreicht es nur ein Dienstkonto. Ihre Referenz dokumentiert kein Löschen, deshalb vergisst Kaeso ein gelöschtes Video. Kaeso sendet kein `gcs_uri`, deshalb kommt das Video wie bei Google AI Studio in der Antwort zurück.
 - **Omni erzeugt immer Ton.** `audio: false` wird abgelehnt (Parameter `audio`); `audio: true` sendet nichts.
 
 ## Anfrage

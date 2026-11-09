@@ -1,16 +1,16 @@
 ---
 title: Gemini Interactions
-description: How KPP's video jobs map to Gemini Omni on Google AI Studio's Interactions API.
+description: How KPP's video jobs map to Gemini Omni on the Interactions API of Google AI Studio and Gemini Enterprise Agent Platform.
 order: 8
 ---
 
-Look up how a video job reaches Gemini Omni on Google AI Studio here: which field goes where, how the job is asked about, and the source of each mapping. Only the video part of the Interactions API is mapped.
+Look up how a video job reaches Gemini Omni on Google AI Studio and Gemini Enterprise Agent Platform here: which field goes where, how the job is asked about, and the source of each mapping. Only the video part of the Interactions API is mapped.
 
 - **Codec:** `kaeso_codecs::gemini_interactions::GeminiInteractions` (`crates/kaeso-codecs/src/gemini_interactions/`)
-- **Paths:** `POST /v1beta/interactions`, `GET /v1beta/interactions/{id}` and `DELETE /v1beta/interactions/{id}`
+- **Paths:** `POST /v1beta/interactions`, `GET /v1beta/interactions/{id}` and `DELETE /v1beta/interactions/{id}` on Google AI Studio; `POST` and `GET` under `/v1beta1/projects/{project}/locations/global/interactions` on the Agent Platform
 - **Fixtures:** `crates/kaeso-codecs/fixtures/gemini_interactions/`; `responses/recorded-started.json` and `polls/recorded-failed-quota.json` were recorded with a free-tier key, the rest built from the reference
 
-**Sources.** Google AI Studio's [Gemini Omni Flash](https://aistudio.google.com/docs/omni) and [create interaction](https://aistudio.google.com/api-reference/interactions-api/create-interaction) references, read 2026-11-09.
+**Sources.** Google AI Studio's [Gemini Omni Flash](https://aistudio.google.com/docs/omni) and [create interaction](https://aistudio.google.com/api-reference/interactions-api/create-interaction) references, and the Agent Platform's [Generate videos from text](https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/video/generate-videos-from-text), read 2026-11-09.
 
 ## Decisions
 
@@ -18,6 +18,7 @@ Look up how a video job reaches Gemini Omni on Google AI Studio here: which fiel
 - **In the background.** Every job is sent with `background: true`, which answers at once with the interaction's id; asking for it later returns the video inline.
 - **The task follows the images.** First and last frames send `generation_config.video_config.task: "image_to_video"`, reference images `"reference_to_video"`; without images the model infers the task.
 - **A remix continues the interaction.** `previous_interaction_id` refines the earlier video with the new prompt, as Google's stateful editing does.
+- **The Agent Platform: global, service accounts, no delete.** Omni is served there only in the `global` location, so Kaeso sends it there whatever location the key names. Express mode lists no Omni models, so only a service account reaches it. Its reference documents no delete, so Kaeso forgets a deleted video. Kaeso sends no `gcs_uri`, so the video comes back inline, as on Google AI Studio.
 - **Omni always makes sound.** `audio: false` is refused (param `audio`); `audio: true` sends nothing.
 
 ## Request

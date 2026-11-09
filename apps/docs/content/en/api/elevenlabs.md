@@ -73,4 +73,4 @@ The realtime WebSocket APIs (text to speech input streaming, multi-context, the 
 
 ## Costs and logs
 
-ElevenLabs bills speech per character, at KPMR's price per million characters of each model; Kaeso logs the characters ElevenLabs reports in its `character-cost` header. Transcripts are billed by the hour of audio, sound effects and music by the minute of their length. The [request log](../console/request-logs.md) names the endpoint, such as `text-to-speech` or `speech-to-text`, and never stores audio.
+ElevenLabs bills speech per character, at KPMR's price per million characters of each model; Kaeso logs the characters ElevenLabs reports in its `character-cost` header. The voice changer's cost stays unknown: Kaeso doesn't decode the audio to measure its length, and KPMR has no price for the speech-to-speech models, so only the header's characters are logged when ElevenLabs sends it. Transcripts are billed by the hour of audio, sound effects and music by the minute of their length. The [request log](../console/request-logs.md) names the endpoint, such as `text-to-speech` or `speech-to-text`, and never stores audio.

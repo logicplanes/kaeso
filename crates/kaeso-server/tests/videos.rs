@@ -784,6 +784,91 @@ async fn gemini_omni_makes_a_video_in_the_background_and_its_file_comes_inline()
 }
 
 #[tokio::test]
+async fn gemini_omni_runs_on_the_agent_platforms_global_interactions_with_a_service_account() {
+    let capture = std::sync::Arc::new(common::v1::Capture::default());
+    let env = common::v1::env_with_google_token(Some(capture)).await;
+    let org = &env.owner.org_id;
+    let key = kaeso_testkit::google::ServiceAccountKey::new(
+        "kaeso@kaeso-example.iam.gserviceaccount.com",
+        "kaeso-example",
+    );
+    let r = env
+        .app
+        .post(
+            &format!("/orgs/{org}/credentials"),
+            json!({ "provider": "gemini-agent-platform", "name": "sa", "secret": key.json, "auth_method": "google_service_account", "location": "europe-west4" }),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
+    let r = env
+        .app
+        .post(
+            &format!("/orgs/{org}/projects/{}/models", env.project),
+            json!({
+                "provider": "gemini-agent-platform", "model_id": "gemini-omni-1.2-flash", "custom": true,
+                "overrides": {
+                    "input_modalities": ["text", "image"], "output_modalities": ["video"],
+                    "context_limit": 32000, "output_limit": 32000,
+                    "input_price": "1.5", "output_price": "12", "egress_dialect": "gemini"
+                }
+            }),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
+    let r = create(&env, json!({ "model": "gemini-omni-1.2-flash", "prompt": "A marble rolling", "seconds": "8", "size": "1280x720" })).await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    let id = r.json()["id"].as_str().unwrap().to_owned();
+    let interactions = "/v1beta1/projects/kaeso-example/locations/global/interactions";
+    let sent = env
+        .mock
+        .received()
+        .into_iter()
+        .rev()
+        .find(|r| r.path == interactions)
+        .unwrap();
+    assert!(
+        sent.header("authorization")
+            .unwrap()
+            .starts_with("Bearer ya29.")
+    );
+    assert_eq!(sent.json()["background"], true);
+    retrieve(&env, &id).await;
+    assert_eq!(retrieve(&env, &id).await.json()["status"], "completed");
+    assert!(
+        env.mock
+            .received()
+            .iter()
+            .any(|r| r.method == "GET" && r.path.starts_with(&format!("{interactions}/")))
+    );
+    let file = send(
+        &env,
+        "GET",
+        &format!("/v1/videos/{id}/content"),
+        &env.key,
+        None,
+        None,
+    )
+    .await;
+    assert_eq!(file.status, StatusCode::OK, "{}", file.text());
+    let deleted = send(
+        &env,
+        "DELETE",
+        &format!("/v1/videos/{id}"),
+        &env.key,
+        None,
+        None,
+    )
+    .await;
+    assert_eq!(deleted.status, StatusCode::OK);
+    assert!(
+        !env.mock.received().iter().any(|r| r.method == "DELETE"),
+        "the platform documents no delete, so Kaeso only forgets the video"
+    );
+}
+
+#[tokio::test]
 async fn veo_runs_on_the_agent_platform_with_a_service_account_and_without_a_price() {
     let capture = std::sync::Arc::new(common::v1::Capture::default());
     let env = common::v1::env_with_google_token(Some(capture)).await;

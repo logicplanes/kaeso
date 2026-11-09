@@ -73,4 +73,4 @@ Die Echtzeit-APIs über WebSocket (Text to Speech mit gestreamter Eingabe, Multi
 
 ## Kosten und Logs
 
-ElevenLabs rechnet Sprache pro Zeichen ab, zum Preis von KPMR pro Million Zeichen jedes Modells; Kaeso loggt die Zeichen, die ElevenLabs in seinem Header `character-cost` meldet. Transkripte werden nach Stunden Audio abgerechnet, Soundeffekte und Musik nach Minuten ihrer Länge. Das [Anfrage-Log](../console/request-logs.md) nennt den Endpunkt, etwa `text-to-speech` oder `speech-to-text`, und speichert nie Audio.
+ElevenLabs rechnet Sprache pro Zeichen ab, zum Preis von KPMR pro Million Zeichen jedes Modells; Kaeso loggt die Zeichen, die ElevenLabs in seinem Header `character-cost` meldet. Die Kosten des Voice Changers bleiben unbekannt: Kaeso dekodiert das Audio nicht, um seine Länge zu messen, und KPMR hat keinen Preis für die Speech-to-Speech-Modelle; geloggt werden nur die Zeichen des Headers, wenn ElevenLabs ihn sendet. Transkripte werden nach Stunden Audio abgerechnet, Soundeffekte und Musik nach Minuten ihrer Länge. Das [Anfrage-Log](../console/request-logs.md) nennt den Endpunkt, etwa `text-to-speech` oder `speech-to-text`, und speichert nie Audio.

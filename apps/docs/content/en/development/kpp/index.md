@@ -95,7 +95,7 @@ Both crates are published to crates.io. Their library code may depend only on `s
 | `zai_videos` | Z.ai's CogVideoX API ([Z.ai Videos](zai-videos.md)) |
 | `openrouter_videos` | OpenRouter's video generation API ([OpenRouter Videos](openrouter-videos.md)) |
 | `veo` | Veo's long-running operations on Gemini Enterprise Agent Platform ([Veo](veo.md)) |
-| `gemini_interactions` | Gemini Omni's video jobs on Google AI Studio's Interactions API ([Gemini Interactions](gemini-interactions.md)) |
+| `gemini_interactions` | Gemini Omni's video jobs on the Interactions API of Google AI Studio and Gemini Enterprise Agent Platform ([Gemini Interactions](gemini-interactions.md)) |
 | `dashscope` | QwenCloud's DashScope API: images, speech, transcription and Wan video synthesis ([DashScope](dashscope.md)) |
 | `multipart` | The bounded `multipart/form-data` reader and writer of image, audio and video uploads |
 

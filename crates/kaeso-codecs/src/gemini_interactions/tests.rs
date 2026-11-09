@@ -196,3 +196,25 @@ fn omni_refuses_what_it_lacks_before_sending() {
         .is_err()
     );
 }
+
+#[test]
+fn the_agent_platform_serves_interactions_under_its_global_location_without_deletes() {
+    let base = "/v1beta1/projects/kaeso-example/locations/global";
+    let req = Request::Video(
+        VideoRequest::new("gemini-omni-1.2-flash", VideoOperation::Generate)
+            .with_prompt("A marble rolling"),
+    );
+    let mut ctx = EgressCtx::new(&req).with_base_path(base);
+    let enc = GeminiInteractions::encode_request(&req, &mut ctx).unwrap();
+    assert_eq!(enc.path, format!("{base}/interactions"));
+    let poll = GeminiInteractions::encode_video_poll("v1_abc", "m", &ctx).unwrap();
+    assert_eq!(poll.path, format!("{base}/interactions/v1_abc"));
+    assert!(
+        GeminiInteractions::encode_video_delete("v1_abc", "m", &ctx)
+            .unwrap()
+            .is_none()
+    );
+    let studio = EgressCtx::new(&req);
+    let delete = GeminiInteractions::encode_video_delete("v1_abc", "m", &studio).unwrap();
+    assert_eq!(delete.unwrap().path, "/v1beta/interactions/v1_abc");
+}

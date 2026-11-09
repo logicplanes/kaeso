@@ -103,6 +103,7 @@ Every built-in provider's documentation was read for video generation on 2026-11
 | SpaceX | `grok-imagine-video-1.5`, `grok-imagine-video-1.5-lite`, `grok-imagine-video` | First frame, uploaded or linked | Yes | [Videos](https://docs.x.ai/developers/rest-api-reference/inference/videos) |
 | Google AI Studio | `gemini-omni-1.2-flash`, `gemini-omni-1.1-flash` | First frame, uploaded or linked | Yes | [Gemini Omni](https://aistudio.google.com/docs/omni) |
 | Gemini Enterprise Agent Platform | `veo-3.1-generate-001`, `veo-3.1-fast-generate-001`, `veo-3.1-lite-generate-001`, with a service account key | First frame, uploaded | No | [Veo 3.1](https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/veo/3-1-generate) |
+| Gemini Enterprise Agent Platform | `gemini-omni-1.2-flash`, `gemini-omni-1.1-flash-preview`, `gemini-omni-flash-preview`, with a service account key | First frame, uploaded or as a `gs://` link | Yes | [Generate videos from text](https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/video/generate-videos-from-text) |
 | MiniMax | `MiniMax-Hailuo-2.3`, `MiniMax-Hailuo-2.3-Fast`, `MiniMax-Hailuo-02`, `MiniMax-H3` and its variants | First frame, uploaded or linked | No | [Video generation](https://platform.minimax.io/docs/api-reference/video-generation-t2v) |
 | Z.ai | `cogvideox-3` | First frame, uploaded or linked | No | [Generate video](https://docs.z.ai/api-reference/video/generate-video) |
 | OpenRouter | Its video models, such as `google/veo-3.1` and `alibaba/wan-3.0` | First frame, uploaded or linked | No | [Video generation](https://openrouter.ai/docs/api/api-reference/video-generation/submit-a-video-generation-request) |
@@ -113,13 +114,13 @@ Every built-in provider's documentation was read for video generation on 2026-11
 | QwenCloud | Wan text to video and image to video, such as `wan3.0-video`, `wan2.7-t2v` and `wan2.6-i2v-flash` | First frame, uploaded or linked, on image to video models and Wan 3.0 | No | [Video generation](https://docs.qwencloud.com/api-reference/video-generation/wan-text-to-video/create-task) |
 | Anthropic, DeepSeek, Groq, Mistral, Cohere, Ollama Cloud, Moonshot, Cerebras | Not offered by the provider | — | — | Each provider's API reference |
 
-A project lists a model for video when KPMR or its own entry says the model makes video. Veo on Gemini Enterprise Agent Platform needs a service account key: express mode lists no Veo models, so Kaeso refuses an express mode key for them. Kaeso doesn't call Gemini Omni on the Agent Platform, which serves it only from its global location.
+A project lists a model for video when KPMR or its own entry says the model makes video. Veo on Gemini Enterprise Agent Platform needs a service account key: express mode lists no Veo models, so Kaeso refuses an express mode key for them. Gemini Omni on the Agent Platform needs a service account key too, since express mode lists no Omni models, and goes to the platform's global location whatever location the key names, since Omni is served only there.
 
 The [OpenAI Videos mapping](../development/kpp/openai-videos.md) and the provider pages beside it list every field and how each provider takes it.
 
 ## Costs and logs
 
-Starting a video costs nothing. Kaeso bills it once, when the first request sees it completed, at the model's prices from KPMR: per second or per video, by resolution, sound and length where the prices differ. Gemini Omni is billed by its tokens. A failed video costs nothing, and a model without prices in KPMR is logged without a cost. Kaeso doesn't use Together AI's `outputs.cost`, since Together doesn't document its unit.
+Starting a video costs nothing. Kaeso bills it once, when the first request sees it completed, at the model's prices from KPMR: per second or per video, by resolution, sound and length where the prices differ. Gemini Omni is billed by its tokens. A failed video costs nothing, and a model without prices in KPMR is logged without a cost. Kaeso keeps Together AI's `outputs.cost` with the job but doesn't bill it: Together's reference gives it as a whole number without a unit.
 
 Spend budgets check a video's dearest case before it starts, and its cost counts once it ends. Request logs show the start as `videos` or `videos/remix` and the finished video as `videos/completed`, with its clips, seconds and resolution. They never keep video or image bytes ([request logs](../console/request-logs.md)).
 
