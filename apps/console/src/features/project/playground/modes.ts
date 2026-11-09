@@ -6,26 +6,18 @@ import { filesFor, type TurnFile } from "./attachments";
 import { mediaRun, type MediaContext } from "./media";
 import { requestFor } from "./request";
 import type { Mode, Turn } from "./responses";
-import type { Send } from "./use-threads";
+import type { Sent } from "./use-threads";
 
-export function modeLabel(mode: Mode): string {
-  switch (mode) {
-    case "image":
-      return t("playground.mode.image", "Images");
-    case "speech":
-      return t("playground.mode.speech", "Speech");
-    case "sound_effects":
-      return t("playground.mode.soundEffects", "Sound effects");
-    case "music":
-      return t("playground.mode.music", "Music");
-    case "transcription":
-      return t("playground.mode.transcription", "Transcription");
-    case "video":
-      return t("playground.mode.video", "Video");
-    default:
-      return "";
-  }
-}
+const MODE_LABELS: Record<Exclude<Mode, "text">, () => string> = {
+  image: () => t("playground.mode.image", "Images"),
+  speech: () => t("playground.mode.speech", "Speech"),
+  sound_effects: () => t("playground.mode.soundEffects", "Sound effects"),
+  music: () => t("playground.mode.music", "Music"),
+  transcription: () => t("playground.mode.transcription", "Transcription"),
+  video: () => t("playground.mode.video", "Video"),
+};
+
+export const modeLabel = (mode: Exclude<Mode, "text">): string => MODE_LABELS[mode]();
 
 /** What one column sends for a prompt, in its model's mode. */
 export function sendFor(
@@ -35,7 +27,7 @@ export function sendFor(
   prompt: string,
   files: readonly TurnFile[],
   p: PlaygroundParameters,
-): Omit<Send, "column"> {
+): Sent {
   const taken = filesFor(m, files);
   return m.mode === "text"
     ? { mode: "text", files: taken, request: requestFor(m, turns, prompt, p, taken) }

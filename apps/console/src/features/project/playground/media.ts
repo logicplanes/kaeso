@@ -23,7 +23,7 @@ export const videoPolling = { first: 2_000, factor: 1.5, longest: 15_000 };
 
 function wait(ms: number, signal: AbortSignal): Promise<void> {
   return new Promise((resolve, reject) => {
-    if (signal.aborted) return reject(signal.reason);
+    signal.throwIfAborted();
     const id = setTimeout(() => {
       signal.removeEventListener("abort", abort);
       resolve();

@@ -25,13 +25,9 @@ const id = (prefix: string) => `${prefix}${++next}`;
 const newThread = (): Thread => ({ key: id("col"), turns: [] });
 
 /** What one column sends: a chat request it streams, or a media request it runs. */
-export interface Send {
-  column: number;
-  mode: Mode;
-  files: TurnFile[];
-  request?: PlaygroundRequest | undefined;
-  media?: MediaRun | undefined;
-}
+/** What a column sends: a chat request, or a media run of the model's mode. */
+export type Sent = { mode: Mode; files: TurnFile[] } & ({ request: PlaygroundRequest; media?: undefined } | { media: MediaRun; request?: undefined });
+export type Send = Sent & { column: number };
 
 // Audio a turn made plays from a blob: link that holds its bytes until it is revoked.
 function release(turns: readonly Turn[]) {
@@ -185,9 +181,9 @@ export function useThreads(
   );
 
   const start = useCallback(
-    (turn: Turn, s: Pick<Send, "request" | "media">) => {
+    (turn: Turn, s: Sent) => {
       if (s.media) void runMedia(turn, s.media);
-      else if (s.request) void run(turn, s.request);
+      else void run(turn, s.request);
     },
     [run, runMedia],
   );
@@ -209,7 +205,7 @@ export function useThreads(
   );
 
   const retry = useCallback(
-    (column: number, again: Omit<Send, "column">) => {
+    (column: number, again: Sent) => {
       const thread = threads[column];
       const last = thread?.turns.at(-1);
       if (!thread || !last || isLive(last.response)) return;
@@ -238,7 +234,7 @@ export function useThreads(
 
   const remove = (column: number) => {
     threads[column]?.turns.forEach((x) => controllers.current.get(x.id)?.abort());
-    release(threads[column]?.turns ?? []);
+    release(threads.filter((_, i) => i === column).flatMap((t) => t.turns));
     setThreads((ts) => ts.filter((_, i) => i !== column));
   };
 

@@ -30,7 +30,7 @@ export function useRecorder(onRecorded: (file: File) => void, onRefused: () => v
       for (const track of stream.getTracks()) track.stop();
       recorder.current = null;
       setRecording(false);
-      const type = (r.mimeType || chunks[0]?.type || "audio/webm").split(";")[0] ?? "audio/webm";
+      const type = (r.mimeType || chunks[0]?.type || "audio/webm").replace(/;.*$/, "");
       const extension = type.includes("mp4") ? "m4a" : type.includes("ogg") ? "ogg" : "webm";
       if (chunks.length) done.current(new File(chunks, `recording-${new Date().toISOString().slice(11, 19).replaceAll(":", "")}.${extension}`, { type }));
     };
