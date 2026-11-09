@@ -5,7 +5,6 @@ import { limitsQuery } from "~/api/queries/limits";
 import { catalogueQuery } from "~/api/queries/models";
 import { orgMembersQuery } from "~/api/queries/orgs";
 import { orgProjectsQuery } from "~/api/queries/projects";
-import { recentErrorsQuery } from "~/api/queries/recent-errors";
 import { orgUsageQuery, projectUsageQuery, timelineQuery, usageSpanQuery, type GroupBy, type TimelineStep } from "~/api/queries/usage";
 import { useProjectRights } from "~/auth/rights";
 import { useOrgRights, useRequestLogs, useSession } from "~/auth/session";
@@ -28,6 +27,11 @@ function keepWithin(key: QueryKey, by: GroupBy) {
     return JSON.stringify(query.queryKey.slice(0, -1)) === scope && last?.groupBy === by ? previous : undefined;
   };
 }
+
+const DAY_MS = 86_400_000;
+// The timeline answers by the hour for at most 62 days; a chart of hours stays readable for two.
+const HOURLY_DAYS = 62;
+const CHART_HOURS_DAYS = 2;
 
 export interface Scope {
   org: string;
@@ -61,19 +65,29 @@ export function useOverview(scope: Scope, search: PeriodSearch) {
   const startMs = Date.parse(`${from}T00:00:00Z`);
   const endMs = Math.min(Date.parse(`${to}T00:00:00Z`) + 86_400_000, nowMs + 60_000);
   const periodMs = Date.parse(`${to}T00:00:00Z`) + 86_400_000 - startMs;
-  const step: TimelineStep | undefined = !logsOn ? undefined : periodMs <= 86_400_000 ? "minute" : periodMs <= 31 * 86_400_000 ? "hour" : undefined;
+  const hourly = logsOn && periodMs <= HOURLY_DAYS * DAY_MS;
+  const step: TimelineStep | undefined = hourly && periodMs <= CHART_HOURS_DAYS * DAY_MS ? "hour" : undefined;
   const fine = useQuery({
-    ...timelineQuery(org, project, iso(startMs), iso(endMs), step ?? "hour"),
-    enabled: ready && !!step,
+    ...timelineQuery(org, project, iso(startMs), iso(endMs), "hour"),
+    enabled: ready && hourly,
     placeholderData: (p) => p,
     retry: false,
   });
   const fineStep = fine.isError ? undefined : step;
   const finePrev = useQuery({
-    ...timelineQuery(org, project, iso(startMs - periodMs), iso(endMs - periodMs), step ?? "hour"),
+    ...timelineQuery(org, project, iso(startMs - periodMs), iso(endMs - periodMs), "hour"),
     enabled: ready && !!step && !!compare,
     placeholderData: (p) => p,
   });
+  const failures = useQuery({
+    ...timelineQuery(org, project, iso(startMs), iso(endMs), "hour", { group_by: "error_kind", failed: true }),
+    enabled: ready && hourly,
+    placeholderData: (p) => p,
+    retry: false,
+  });
+  const today = utcDay(new Date(nowMs));
+  const monthStart = `${today.slice(0, 8)}01`;
+  const month = useQuery({ ...usage(monthStart, today, "day"), enabled: ready && showCost });
   const single = from === to;
   const contextFrom = shiftDay(to, -13);
   const context = useQuery({ ...usage(contextFrom, to, "day"), enabled: ready && single });
@@ -83,6 +97,9 @@ export function useOverview(scope: Scope, search: PeriodSearch) {
   const bySecond = useQuery({ ...usage(from, to, second), enabled: ready });
   const byThird = useQuery({ ...usage(from, to, third), enabled: ready });
   const grouped: Partial<Record<Dimension, typeof byFirst>> = { [first]: byFirst, [second]: bySecond, [third]: byThird };
+  const wasFirst = useQuery({ ...usage(before.from, before.to, first), enabled: ready && !!compare });
+  const wasSecond = useQuery({ ...usage(before.from, before.to, second), enabled: ready && !!compare });
+  const groupedBefore: Partial<Record<Dimension, typeof byFirst>> = compare ? { [first]: wasFirst, [second]: wasSecond } : {};
 
   const models = useQuery({ ...catalogueQuery(org, project ?? ""), enabled: !!project && can("models.view") });
   const keys = useQuery({ ...allKeysQuery(org, project ?? "", { include_archived: true }), enabled: !!project && can("keys.all.view") });
@@ -90,7 +107,6 @@ export function useOverview(scope: Scope, search: PeriodSearch) {
   const orgMembers = useQuery({ ...orgMembersQuery(org), enabled: !project && orgRights.has("members.view") });
   const limits = useQuery({ ...limitsQuery(org, project ?? "", { level: "project" }), enabled: !!project && can("limits.view") });
   const showErrors = !!project && logsOn && can("logs.metadata.view");
-  const errors = useQuery({ ...recentErrorsQuery(org, project ?? "", 4), enabled: showErrors });
   const providers = useProviders(org);
   const partyName = usePartyName(org, project ?? "");
 
@@ -156,9 +172,11 @@ export function useOverview(scope: Scope, search: PeriodSearch) {
     pointsLoading: fineStep ? fine.isPending : daily.isPending,
     context: single ? { query: context, days: byBucket(context.data ?? [], contextFrom, to, "day") } : undefined,
     grouped,
+    groupedBefore,
+    hours: hourly && !fine.isError ? fine : undefined,
+    failures: hourly && !failures.isError ? failures : undefined,
     spend: limits.data?.find((l) => l.kind === "spend_budget"),
     limits,
-    errors,
     showErrors,
     providers,
     projects,
@@ -168,7 +186,8 @@ export function useOverview(scope: Scope, search: PeriodSearch) {
     projectOf,
     namesLoading: models.isLoading || keys.isLoading || projects.isLoading || orgMembers.isLoading,
     live: to === utcDay(new Date()),
-    forecast: showCost && g === "day" && to === utcDay(new Date()) ? forecast(rows, from, to) : undefined,
+    forecast: month.data ? forecast(month.data, monthStart, today) : undefined,
+    forecastLoading: showCost && month.isPending,
   };
 }
 

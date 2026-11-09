@@ -64,8 +64,11 @@ export function bucketAxisLabel(key: string, g: Granularity): string {
   return opensYear(key, g) ? yearName(key) : month(key);
 }
 
-const DAILY_UP_TO = 400;
+const DAILY_UP_TO = 92;
+const WEEKLY_UP_TO = 731;
 
-/** Analytics charts every day of a period up to about a year, so a long range still shows each day's swings; weeks or months beyond that. */
-export const analyticsGranularity = (from: string, to: string): Granularity =>
-  Math.round((at(to) - at(from)) / DAY) + 1 <= DAILY_UP_TO ? "day" : granularity(from, to);
+/** Analytics charts days up to a quarter, weeks up to two years and months beyond, so a chart never has more points than a person can read. */
+export function analyticsGranularity(from: string, to: string): Granularity {
+  const days = Math.round((at(to) - at(from)) / DAY) + 1;
+  return days <= DAILY_UP_TO ? "day" : days <= WEEKLY_UP_TO ? "week" : "month";
+}

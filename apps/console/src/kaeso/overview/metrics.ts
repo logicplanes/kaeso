@@ -16,7 +16,7 @@ export interface Metric {
   rank: (r: UsageRow) => number;
   format: (v: number) => string;
   formatRank: (v: number) => string;
-  better: "up" | "down";
+  better: "up" | "down" | "none";
 }
 
 export function cacheHit(rows: UsageRow[]): number | null {
@@ -39,7 +39,7 @@ export const METRICS: Record<MetricId, Metric> = {
     rank: (r) => r.requests,
     format: (v) => formatNumber(v),
     formatRank: (v) => formatNumber(v),
-    better: "up",
+    better: "none",
   },
   tokens: {
     id: "tokens",
@@ -49,7 +49,7 @@ export const METRICS: Record<MetricId, Metric> = {
     rank: (r) => totalTokens(r),
     format: tokens,
     formatRank: tokens,
-    better: "up",
+    better: "none",
   },
   cost: {
     id: "cost",
@@ -59,7 +59,7 @@ export const METRICS: Record<MetricId, Metric> = {
     rank: (r) => costOf(r),
     format: (v) => tileUSD(v.toFixed(6)),
     formatRank: (v) => periodUSD(v.toFixed(6)),
-    better: "up",
+    better: "none",
   },
   errors: {
     id: "errors",
@@ -79,7 +79,7 @@ export const METRICS: Record<MetricId, Metric> = {
     rank: (r) => r.tool_calls,
     format: (v) => formatNumber(v),
     formatRank: (v) => formatNumber(v),
-    better: "up",
+    better: "none",
   },
   cache: {
     id: "cache",

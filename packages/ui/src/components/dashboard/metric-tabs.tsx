@@ -133,13 +133,13 @@ export const MetricTabs = forwardRef<
                     </SwapValue>
                   )}
                 </span>
-                <span className="mt-2 flex h-20 w-full min-w-0 items-center gap-6">
+                <span className="mt-2 flex min-h-20 w-full min-w-0 flex-wrap items-center gap-x-6">
                   {loading ? (
                     <Skeleton shape="line" className="w-80" />
                   ) : (
                     <>
                       {item.change && <Delta value={item.change.value} better={item.change.better ?? "up"} />}
-                      {item.detail && <span className="truncate text-small text-fg-tertiary">{item.detail}</span>}
+                      {item.detail && <span className="min-w-0 text-small text-fg-tertiary">{item.detail}</span>}
                     </>
                   )}
                 </span>

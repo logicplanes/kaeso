@@ -74,7 +74,6 @@
   "project.overview.noModel": "Kein Modell",
   "project.overview.noRequests": "Keine Anfragen in diesem Zeitraum",
   "project.overview.playground": "Playground",
-  "project.overview.recentErrors": "Letzte Fehler",
   "project.overview.resets": "Wird {when} zurückgesetzt",
   "project.overview.route": "Route",
   "project.overview.routeNotRecorded": "Route nicht erfasst",
