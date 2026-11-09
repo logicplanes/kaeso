@@ -170,6 +170,8 @@ pub struct Outcome {
     pub image: Option<kaeso_kpp::ImageOperation>,
     pub transcription: Option<kaeso_kpp::TranscriptionOperation>,
     pub elevenlabs: Option<kaeso_codecs::elevenlabs::ElevenLabsOperation>,
+    /// The ElevenLabs socket a realtime session ran on.
+    pub realtime: Option<kaeso_codecs::elevenlabs::realtime::RealtimeApi>,
     pub media: Option<kaeso_core::cost::MediaUnits>,
     pub video: Option<VideoCall>,
     /// The media type of a whole reply that isn't JSON, such as speech's audio.

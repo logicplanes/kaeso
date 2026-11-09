@@ -82,3 +82,16 @@ Images by web link, `creatify-aurora` (it needs audio input) and remixes are ref
 ## Listings
 
 `GET /v1/models` lists the project's ElevenLabs models in ElevenLabs' `ModelResponseModel` shape, `model_id` and `name`. The voice listings are the account's own at ElevenLabs: `voice_listing_request` builds `GET /v1/voices`, `/v2/voices` or `/v1/voices/{voice_id}` with the app's query, and `voices_reply` checks that the answer is a voice list or a voice before it passes on.
+
+## Realtime sockets
+
+`elevenlabs::realtime` reads ElevenLabs' realtime WebSockets without I/O, for the gateway's session proxy. These messages aren't translated: an ElevenLabs socket reaches only ElevenLabs, so no KPP type stands between them.
+
+| Function | What it does |
+| --- | --- |
+| `RealtimeApi::from_path`, `path` | Names the socket of `/v1/text-to-speech/{voice_id}/stream-input` and `/multi-stream-input`, `/v1/text-to-dialogue/stream-input` and `/multi-stream-input`, and `/v1/speech-to-text/realtime`, and writes its path at ElevenLabs with the voice as one checked segment |
+| `read_client_message` | Takes `xi_api_key`, `authorization` and `single_use_token` out of an app's message and counts what it carries: the characters of `text` or of each `inputs[].text`, or the bytes of `audio_base_64` and its `sample_rate` |
+| `bytes_per_second` | The bytes one second of `pcm_*` (16-bit) or `ulaw_8000` audio takes |
+| `error_message` | The socket's own error message, `{"message_type", "error"}` for speech to text and `{"message", "error", "code", "param"}` otherwise, and the close code: 1008 for what the app can fix, 1011 otherwise |
+
+Sources: ElevenLabs' [WebSocket references](https://elevenlabs.io/docs/websockets) and [text to dialogue WebSocket](https://elevenlabs.io/docs/api-reference/text-to-dialogue/ttd-websocket), read 2026-11-09, and the official `elevenlabs` Python SDK 2.77.0 (`realtime_tts.py`, `realtime/`).

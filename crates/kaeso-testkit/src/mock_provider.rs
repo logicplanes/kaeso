@@ -144,9 +144,23 @@ pub struct MockProvider {
 }
 
 #[derive(Clone)]
-struct Ctx {
+pub(crate) struct Ctx {
     shared: Arc<Shared>,
     fixtures: PathBuf,
+}
+
+impl Ctx {
+    pub(crate) fn record(&self, r: Received) {
+        let mut list = self
+            .shared
+            .received
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner);
+        if list.len() >= KEEP_RECEIVED {
+            list.pop_front();
+        }
+        list.push_back(r);
+    }
 }
 
 impl MockProvider {
@@ -170,6 +184,26 @@ impl MockProvider {
             .route("/__mock/received", axum::routing::get(control_received))
             .route("/__mock/streams", axum::routing::get(control_streams))
             .route("/__mock/reset", axum::routing::post(control_reset))
+            .route(
+                "/v1/text-to-speech/{voice}/stream-input",
+                axum::routing::get(crate::mock_realtime::socket),
+            )
+            .route(
+                "/v1/text-to-speech/{voice}/multi-stream-input",
+                axum::routing::get(crate::mock_realtime::socket),
+            )
+            .route(
+                "/v1/text-to-dialogue/stream-input",
+                axum::routing::get(crate::mock_realtime::socket),
+            )
+            .route(
+                "/v1/text-to-dialogue/multi-stream-input",
+                axum::routing::get(crate::mock_realtime::socket),
+            )
+            .route(
+                "/v1/speech-to-text/realtime",
+                axum::routing::get(crate::mock_realtime::socket),
+            )
             .fallback(handle)
             // Anthropic takes request bodies up to 32 MB, more than axum's default.
             .layer(axum::extract::DefaultBodyLimit::max(64 << 20))

@@ -2,6 +2,7 @@
 
 pub mod guard;
 pub mod mcp;
+pub mod ws;
 
 use std::collections::HashMap;
 use std::pin::Pin;

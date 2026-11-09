@@ -59,6 +59,7 @@ Agents sign in through `/oauth/` and `/.well-known/oauth-` and then call `/mcp` 
 Set up the proxy for Kaeso:
 
 - Turn off response buffering for `/v1/` and `/v1beta/`, so streamed replies reach apps as they arrive.
+- Pass WebSocket upgrades on `/v1/`, so ElevenLabs apps can open [realtime sessions](../api/elevenlabs.md#realtime-sessions).
 - Pass `X-Forwarded-For`, and set `KAESO_TRUSTED_PROXIES` in `.env` to your proxy's exact address. The gateway believes the header only from there. By default, the Compose package trusts loopback and the `edge` network, `EDGE_SUBNET`. A proxy on the server that calls the ports above reaches the gateway from the first address of `EDGE_SUBNET`, `172.30.83.1` by default. Behind an untrusted proxy, logs and [API key throttling](configuration.md#api-key-throttling) see every client as the proxy.
 - If people reach Kaeso at another address than `https://` and `KAESO_DOMAIN`, set `KAESO_PUBLIC_URL` in `.env` to that address.
 - Never route the metrics port, 9100.

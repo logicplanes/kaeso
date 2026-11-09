@@ -85,7 +85,7 @@ pub(super) fn decode(status: u16, headers: &HeaderList, body: &[u8]) -> KppError
     err
 }
 
-fn wire_for(err: &KppError) -> (u16, &'static str, &'static str) {
+pub(super) fn wire_for(err: &KppError) -> (u16, &'static str, &'static str) {
     match &err.kind {
         ErrorKind::InvalidRequest | ErrorKind::ContextTooLong => {
             (400, "invalid_request", "invalid_parameters")

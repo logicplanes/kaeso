@@ -28,13 +28,28 @@ pub async fn authenticate(
     client: Option<IpAddr>,
 ) -> Result<Arc<KeyAuth>, KppError> {
     let Some(secret) = presented(headers).filter(|s| !s.is_empty()) else {
-        metrics::counter!(crate::metrics::AUTH_FAILURES, "method" => "api_key", "reason" => "missing").increment(1);
-        return Err(error(
-            ErrorKind::Authentication,
-            401,
-            "Send a Kaeso API key as `Authorization: Bearer <key>`, `x-api-key`, `x-goog-api-key` or `xi-api-key`.",
-        ));
+        return Err(missing_key());
     };
+    authenticate_secret(state, secret, client).await
+}
+
+pub fn missing_key() -> KppError {
+    metrics::counter!(crate::metrics::AUTH_FAILURES, "method" => "api_key", "reason" => "missing")
+        .increment(1);
+    error(
+        ErrorKind::Authentication,
+        401,
+        "Send a Kaeso API key as `Authorization: Bearer <key>`, `x-api-key`, `x-goog-api-key` or `xi-api-key`.",
+    )
+}
+
+/// Checks a key an app sent some other way than in a header, such as in the first message of
+/// an ElevenLabs socket.
+pub async fn authenticate_secret(
+    state: &AppState,
+    secret: &str,
+    client: Option<IpAddr>,
+) -> Result<Arc<KeyAuth>, KppError> {
     let found = match keys::authenticate(state, secret, client).await {
         Ok(found) => found,
         Err(LookupError::Throttled(t)) => {

@@ -483,6 +483,38 @@ async fn count_one(
     refused.map_or(Ok(()), Err)
 }
 
+/// Whether a session that has run up `spent_nano_usd` so far still fits every hard spend budget
+/// of its project, member, key and model, as their counters stand now.
+pub async fn session_within_budgets(
+    state: &AppState,
+    caller: &Caller,
+    model: Uuid,
+    at: OffsetDateTime,
+    spent_nano_usd: i64,
+) -> Result<(), Refusal> {
+    let Ok(all) = project_limits(state, caller.project_id).await else {
+        return Ok(());
+    };
+    let applicable = limits::applicable(
+        &all,
+        caller.project_id,
+        member_of(caller),
+        caller.key_id,
+        model,
+    );
+    for l in applicable
+        .into_iter()
+        .filter(|l| l.kind == Kind::SpendBudget && l.enforced())
+    {
+        let used = current(state, caller.project_id, l, at).await.unwrap_or(0);
+        if used.saturating_add(spent_nano_usd) >= l.units() {
+            metrics::counter!(crate::metrics::LIMIT_REFUSALS, "kind" => l.kind.as_str(), "level" => l.subject.level().as_str()).increment(1);
+            return Err(refusal(l, at, Why::Over(0)));
+        }
+    }
+    Ok(())
+}
+
 pub async fn forget(state: &AppState, project: Uuid) {
     state
         .caches

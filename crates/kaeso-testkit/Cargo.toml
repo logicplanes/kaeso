@@ -15,7 +15,7 @@ kaeso-codecs.workspace = true
 futures.workspace = true
 bytes.workspace = true
 kaeso-store.workspace = true
-axum = { workspace = true, features = ["form"] }
+axum = { workspace = true, features = ["form", "ws"] }
 tokio.workspace = true
 serde_json.workspace = true
 sqlx.workspace = true

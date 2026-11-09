@@ -21,7 +21,7 @@ kaeso-update.workspace = true
 jiff.workspace = true
 kaeso-kpp.workspace = true
 kaeso-codecs.workspace = true
-axum.workspace = true
+axum = { workspace = true, features = ["ws"] }
 hyper.workspace = true
 hyper-util.workspace = true
 tower.workspace = true
@@ -63,6 +63,7 @@ workspace = true
 
 [dev-dependencies]
 ed25519-dalek.workspace = true
+tokio-tungstenite.workspace = true
 insta.workspace = true
 kaeso-testkit.workspace = true
 reqwest = { workspace = true, features = ["json"] }
