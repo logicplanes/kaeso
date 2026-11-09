@@ -278,7 +278,7 @@ Kaeso is its own authorization server. Its issuer is the install's public URL, s
 
 A loopback redirect URI may change its port at every sign-in, as RFC 8252 allows. Its host and path must stay as registered.
 
-Instead of registering, a client may use the HTTPS address of its client ID metadata document as its `client_id`, as claude.ai does. Kaeso fetches the document, at most 5 KiB, through the same address checks as MCP servers and keeps it for 10 minutes. The document must name that address as its `client_id`, list its redirect URIs and ask for no client authentication; the consent page shows the host it comes from.
+Instead of registering, a client may use the HTTPS address of its client ID metadata document as its `client_id`, as claude.ai does. Kaeso fetches the document, at most 5 KiB, only from a public address, whatever networks `mcp_servers.allowed_networks` opens, and keeps it for 10 minutes. The document must name that address as its `client_id`, list its redirect URIs and ask for no client authentication; the consent page shows the host it comes from.
 
 An agent keeps its `client_id` across restarts, but Kaeso deletes registrations that never led to a sign-in, and a new database has none. When an agent signs in with a `client_id` Kaeso doesn't know and a loopback redirect URI, Kaeso registers it again under that id as "MCP client", and the sign-in goes on. You can rename it on the consent page. For any other redirect URI, the console says it doesn't know the agent.
 

@@ -14,7 +14,11 @@ on:
       seconds:
         description: Seconds to run each target
         type: number
-        default: 60
+        default: 30
+      shards:
+        description: Jobs that share the targets, each running its targets one after another
+        type: number
+        default: 4
 
 permissions:
   contents: read
@@ -29,6 +33,7 @@ env:
 jobs:
   fuzz:
     name: Fuzz ${{ matrix.target }}
+    if: ${{ !inputs.shards }}
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     strategy:
@@ -98,5 +103,65 @@ jobs:
         with:
           name: fuzz-crash-${{ matrix.target }}
           path: fuzz/artifacts/${{ matrix.target }}
+          if-no-files-found: ignore
+          retention-days: 30
+
+  # CI shares the targets among a few jobs: one build each instead of one per target, and fewer runners waiting.
+  fuzz-shards:
+    name: Fuzz (${{ matrix.shard }}/${{ inputs.shards }})
+    if: ${{ inputs.shards }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    env:
+      SHARD: ${{ matrix.shard }}
+      SHARDS: ${{ inputs.shards }}
+      SECONDS_PER_TARGET: ${{ inputs.seconds }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: The matrix has a job for every shard, and the nightly matrix lists every target
+        run: |
+          if [[ "$SHARDS" != 4 ]]; then
+            echo "::error::The matrix of fuzz-shards lists 4 shards; make it list $SHARDS."
+            exit 1
+          fi
+          sed -n 's/^name = "\(.*\)"$/\1/p' fuzz/Cargo.toml | grep -vx kpp-fuzz | while read -r target; do
+            if ! grep -qE "^ +$target,?$" .github/workflows/fuzz.yml; then
+              echo "::error::fuzz/Cargo.toml has the target $target; list it in the matrix of the fuzz job in .github/workflows/fuzz.yml."
+              exit 1
+            fi
+          done
+      - run: rustup toolchain install nightly --profile minimal
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0
+        with:
+          workspaces: fuzz
+          shared-key: fuzz-nightly
+          save-if: false
+      - uses: taiki-e/install-action@68a389c788b2cd04016ce8c80ee23b80d2ab3d68
+        with:
+          tool: cargo-fuzz
+      - name: Run this shard's targets with the fixtures as their seed corpus
+        run: |
+          set -euo pipefail
+          host="$(rustc +nightly -vV | sed -n 's/^host: //p')"
+          mapfile -t targets < <(sed -n 's/^name = "\(.*\)"$/\1/p' fuzz/Cargo.toml | grep -vx kpp-fuzz | sort | awk -v shard="$SHARD" -v shards="$SHARDS" '(NR - 1) % shards == shard - 1')
+          for target in "${targets[@]}"; do
+            seed=crates/kaeso-codecs/fixtures
+            if [[ "$target" == decode_* ]]; then seed="$seed/${target#decode_}"; fi
+            if [[ "$target" == mcp ]]; then seed=crates/kaeso-mcp/fixtures; fi
+            mkdir -p "fuzz/corpus/$target"
+            cargo +nightly fuzz run --target "$host" "$target" "fuzz/corpus/$target" "$seed" -- -max_total_time="$SECONDS_PER_TARGET" -rss_limit_mb=2048 -max_len=65536
+            echo "\`$target\` ran for $SECONDS_PER_TARGET seconds without a crash." >> "$GITHUB_STEP_SUMMARY"
+          done
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: failure()
+        with:
+          name: fuzz-crash-${{ matrix.shard }}
+          path: fuzz/artifacts
           if-no-files-found: ignore
           retention-days: 30
