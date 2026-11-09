@@ -871,7 +871,12 @@ const messages = (): Rule[] => [
   rule("errors.modelApi.keyRefused", () =>
     t("errors.modelApi.keyRefused", "The provider refused this project's provider key. Ask an organization admin to check it under Providers."),
   ),
-  rule("errors.modelApi.permissionRefused", () => t("errors.modelApi.permissionRefused", "The provider doesn't allow this request with this project's provider key, for example for this model, plan or region. Ask an organization admin to check it under Providers.")),
+  rule("errors.modelApi.permissionRefused", () =>
+    t(
+      "errors.modelApi.permissionRefused",
+      "The provider doesn't allow this request with this project's provider key, for example for this model, plan or region. Ask an organization admin to check it under Providers.",
+    ),
+  ),
   rule("errors.modelApi.accountRefused", () =>
     t(
       "errors.modelApi.accountRefused",
