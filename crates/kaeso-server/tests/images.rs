@@ -458,13 +458,7 @@ async fn an_openai_app_gets_an_elevenlabs_image_once_its_generation_finishes() {
         .app
         .post(
             &format!("/orgs/{org}/projects/{}/models", env.project),
-            json!({
-                "provider": "elevenlabs", "model_id": "gpt-image-1.5", "custom": true,
-                "overrides": {
-                    "input_modalities": ["text", "image"], "output_modalities": ["image"],
-                    "input_price": "5", "output_price": "40"
-                }
-            }),
+            json!({ "provider": "elevenlabs", "model_id": "gpt-image-1.5" }),
             Some(&env.owner.cookie),
         )
         .await;
