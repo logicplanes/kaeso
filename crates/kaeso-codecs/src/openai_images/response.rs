@@ -51,6 +51,7 @@ pub(super) fn decode(
     resp.settings = settings;
     if let Some(raw) = &w.usage {
         resp.usage = usage_of(raw, &origin);
+        resp.settings.resolution = billed_tier(raw);
     }
     let mut extras = extras_from(&origin, extra, verbatim);
     if let Some(Value::String(model)) = extras.fields.get("model").and_then(|m| m.to_value().ok()) {
@@ -109,6 +110,17 @@ fn image_of(
     }
     image.extras = extras;
     Ok(image)
+}
+
+/// The tier QwenCloud's OpenAI-compatible image mode reports it billed, such as
+/// `"output_image_type": "qima_output_2k"`
+/// (<https://docs.qwencloud.com/api-reference/image-generation/qwen-text-to-image-openai>).
+fn billed_tier(raw: &RawJson) -> Option<String> {
+    let usage = raw.to_value().ok()?;
+    let kind = usage.get("output_image_type")?.as_str()?;
+    let tier = kind.rsplit('_').next()?.to_ascii_uppercase();
+    let digits = tier.strip_suffix('K')?;
+    (!digits.is_empty() && digits.bytes().all(|b| b.is_ascii_digit())).then_some(tier)
 }
 
 pub(super) fn usage_of(raw: &RawJson, origin: &Origin) -> Usage {

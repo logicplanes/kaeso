@@ -223,6 +223,8 @@ pub struct ImagesEgress {
     /// The hosts Kaeso may fetch the provider's image links from, for an app that asks for the
     /// bytes of a provider that answers with links only.
     pub fetch_hosts: &'static [&'static str],
+    /// Whether rewriting the prompt (`prompt_extend`) doubles the price per image.
+    pub extended_prompt_doubles: bool,
 }
 
 impl ImagesEgress {
@@ -233,6 +235,7 @@ impl ImagesEgress {
         auth: None,
         models: "*",
         fetch_hosts: &[],
+        extended_prompt_doubles: false,
     };
 
     const fn openai(profile: ImagesProfile) -> ImagesEgress {
@@ -266,6 +269,13 @@ impl ImagesEgress {
     const fn fetching(self, fetch_hosts: &'static [&'static str]) -> ImagesEgress {
         ImagesEgress {
             fetch_hosts,
+            ..self
+        }
+    }
+
+    const fn doubling_with_extended_prompt(self) -> ImagesEgress {
+        ImagesEgress {
+            extended_prompt_doubles: true,
             ..self
         }
     }
@@ -1055,7 +1065,11 @@ pub const PROVIDERS: &[Provider] = &[
                 .fetching(DASHSCOPE_RESULTS),
             ImagesEgress::dashscope().for_models("qwen-image-*"),
             ImagesEgress::dashscope().for_models("wan*"),
-            ImagesEgress::dashscope().for_models("z-image*"),
+            // Z-Image costs twice as much per image when QwenCloud rewrites the prompt
+            // (KPMR's note on `z-image-turbo`, from QwenCloud's pricing page).
+            ImagesEgress::dashscope()
+                .for_models("z-image*")
+                .doubling_with_extended_prompt(),
             ImagesEgress::openai(ImagesProfile::QWENCLOUD).fetching(DASHSCOPE_RESULTS),
         ],
         speech: &[SpeechEgress::dashscope()],

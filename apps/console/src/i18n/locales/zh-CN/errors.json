@@ -467,6 +467,7 @@
   "errors.modelApi.modelsUnavailable": "Kaeso 暂时无法加载此项目的模型。请稍后重试。",
   "errors.modelApi.noBaseUrl": "此服务商未配置基础 URL。",
   "errors.modelApi.idNotInUrl": "此请求中的某个 ID 不能成为服务商 URL 的一部分；请使用真实的 ID。",
+  "errors.modelApi.taskUnfinished": "服务商的任务未能按时完成；请稍后重试。",
   "errors.modelApi.noCredential": "此项目未设置服务商 `{provider}` 的凭据。组织管理员可通过 POST /platform/v1/orgs/{org}/credentials 为其添加密钥、将组织的某个密钥设为默认，或为此项目分配一个。",
   "errors.modelApi.noRequestRight": "此 API 密钥的所有者不能在其项目中调用模型（缺少权限 `api.request`）。",
   "errors.modelApi.noRoute": "Kaeso 不提供 `{path}`。",

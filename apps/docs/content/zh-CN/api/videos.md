@@ -105,7 +105,7 @@ SpaceX 通过其编辑 API 进行 remix，Gemini Omni 延续先前的交互。�
 | SpaceX | `grok-imagine-video-1.5`、`grok-imagine-video-1.5-lite`、`grok-imagine-video` | 第一帧，上传或链接 | 是 | [Videos](https://docs.x.ai/developers/rest-api-reference/inference/videos) |
 | Google AI Studio | `gemini-omni-1.2-flash`、`gemini-omni-1.1-flash` | 第一帧，上传或链接 | 是 | [Gemini Omni](https://aistudio.google.com/docs/omni) |
 | Gemini Enterprise Agent Platform | `veo-3.1-generate-001`、`veo-3.1-fast-generate-001`、`veo-3.1-lite-generate-001`，需服务账号密钥 | 第一帧，上传 | 否 | [Veo 3.1](https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/veo/3-1-generate) |
-| Gemini Enterprise Agent Platform | `gemini-omni-1.2-flash`、`gemini-omni-1.1-flash-preview`、`gemini-omni-flash-preview`，需服务账号密钥 | 第一帧，上传或 `gs://` 链接 | 是 | [根据文本生成视频](https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/video/generate-videos-from-text) |
+| Gemini Enterprise Agent Platform | `gemini-omni-1.2-flash`、`gemini-omni-1.1-flash-preview`、`gemini-omni-flash-preview`，需服务账号密钥 | 第一帧，上传或 `gs://` 链接，`gemini-omni-flash-preview` 除外 | 是 | [根据文本生成视频](https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/video/generate-videos-from-text) |
 | MiniMax | `MiniMax-Hailuo-2.3`、`MiniMax-Hailuo-2.3-Fast`、`MiniMax-Hailuo-02`、`MiniMax-H3` 及其变体 | 第一帧，上传或链接 | 否 | [视频生成](https://platform.minimax.io/docs/api-reference/video-generation-t2v) |
 | Z.ai | `cogvideox-3` | 第一帧，上传或链接 | 否 | [生成视频](https://docs.z.ai/api-reference/video/generate-video) |
 | OpenRouter | 其视频模型，例如 `google/veo-3.1` 和 `alibaba/wan-3.0` | 第一帧，上传或链接 | 否 | [视频生成](https://openrouter.ai/docs/api/api-reference/video-generation/submit-a-video-generation-request) |

@@ -32,7 +32,7 @@ order: 8
 | `size`，或 `resolution` 和 `aspect_ratio` | `response_format.resolution`（`360p`、`720p`、`1080p`、`4k`）、`response_format.aspect_ratio`（`16:9`、`9:16`） |
 | remix 的 `remix_of` | `previous_interaction_id` |
 
-Omni 不接收种子、负面提示词或数量，也不接收同时带有帧和参考图片的请求。
+Omni 不接收种子、负面提示词或数量，也不接收同时带有帧和参考图片的请求。第一个预览版 `gemini-omni-flash-preview` 也不能从首帧或尾帧开始；它接收参考图片。
 
 ## 回复
 

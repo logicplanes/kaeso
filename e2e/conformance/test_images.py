@@ -98,3 +98,8 @@ def test_dashscope_image_replies_reach_an_openai_app(base_url):
     assert z.data[0].revised_prompt == "Photo of a stylish young woman..."
     with pytest.raises(openai.BadRequestError):
         c.images.generate(model="dashscope:errors/invalid-parameter-400", prompt="A red fox")
+
+
+def test_wan_text_to_image_replies_reach_an_openai_app(base_url):
+    wan = client(base_url).images.generate(model="dashscope:images/wan26-t2i", prompt="A flower shop")
+    assert len(wan.data) == 1 and wan.data[0].url

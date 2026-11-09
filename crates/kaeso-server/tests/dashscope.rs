@@ -32,6 +32,9 @@ async fn env() -> Env {
         "qwen-image-2.0",
         "wan2.7-image",
         "z-image-turbo",
+        "qwen-image-3.0-pro",
+        "wan2.6-t2i",
+        "wan2.2-t2i-flash",
         "qwen-audio-3.0-tts-flash",
         "qwen3-tts-flash",
         "qwen-audio-3.0-asr-flash",
@@ -251,4 +254,103 @@ async fn qwen_audio_asr_transcribes_through_dashscope_and_is_billed_by_its_secon
     assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
     assert_eq!(r.json()["error"]["param"], "model");
     assert_eq!(env.mock.received().len(), before, "nothing was sent");
+}
+
+fn cost(o: &kaeso_server::model_api::hooks::Outcome) -> rust_decimal::Decimal {
+    kaeso_server::services::usage::costed(o).1
+}
+
+#[tokio::test]
+async fn wan_text_to_image_waits_for_its_task_and_kpmr_prices_bill_each_image() {
+    let env = env().await;
+    let r = post(
+        &env,
+        "/v1/images/generations",
+        json!({ "model": "wan2.2-t2i-flash", "prompt": "A red fox", "size": "1024x1024" }),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(r.json()["data"].as_array().unwrap().len(), 1);
+    assert_eq!(r.json()["data"][0]["url"], DASHSCOPE_LINK);
+    let sent = env.mock.received();
+    let started = &sent[sent.len() - 2];
+    assert_eq!(
+        started.path,
+        "/api/v1/services/aigc/text2image/image-synthesis"
+    );
+    assert_eq!(started.header("x-dashscope-async"), Some("enable"));
+    assert_eq!(
+        started.json(),
+        json!({"model": "wan2.2-t2i-flash", "input": {"prompt": "A red fox"}, "parameters": {"n": 1, "size": "1024*1024"}})
+    );
+    let polled = env.mock.last().unwrap();
+    assert_eq!(
+        polled.path,
+        format!(
+            "/api/v1/tasks/{}",
+            kaeso_testkit::mock_provider::DASHSCOPE_IMAGE_TASK
+        )
+    );
+    assert_eq!(
+        polled.header("authorization"),
+        Some(format!("Bearer {QWENCLOUD_SECRET}").as_str())
+    );
+    let o = outcome(&env).await;
+    assert_eq!(o.media.as_ref().unwrap().output_images, 1);
+    assert_eq!(cost(&o), "0.025".parse::<rust_decimal::Decimal>().unwrap());
+
+    let r = post(
+        &env,
+        "/v1/images/generations",
+        json!({ "model": "wan2.6-t2i", "prompt": "A red fox", "size": "1280x1280" }),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(env.mock.last().unwrap().path, GENERATION);
+    assert_eq!(
+        cost(&outcome(&env).await),
+        "0.03".parse::<rust_decimal::Decimal>().unwrap()
+    );
+}
+
+#[tokio::test]
+async fn z_image_costs_twice_as_much_with_a_rewritten_prompt_and_qwen_image_by_its_tier() {
+    let env = env().await;
+    for (extend, price) in [(false, "0.015"), (true, "0.03")] {
+        let r = post(
+            &env,
+            "/v1/images/generations",
+            json!({ "model": "z-image-turbo", "prompt": "A red fox", "prompt_extend": extend }),
+        )
+        .await;
+        assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+        assert_eq!(
+            env.mock.last().unwrap().json()["parameters"]["prompt_extend"],
+            extend
+        );
+        assert_eq!(
+            cost(&outcome(&env).await),
+            price.parse::<rust_decimal::Decimal>().unwrap(),
+            "prompt_extend {extend}"
+        );
+    }
+    for (fixture, price) in [("generate", "0.04"), ("generate-2k", "0.075")] {
+        let r = post(
+            &env,
+            "/v1/images/generations",
+            json!({ "model": "qwen-image-3.0-pro", "prompt": format!("A red fox [mock:fixture=providers/alibaba/{fixture}]") }),
+        )
+        .await;
+        assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+        let o = outcome(&env).await;
+        assert_eq!(
+            o.media.as_ref().unwrap().resolution.as_deref(),
+            Some(if fixture == "generate" { "1K" } else { "2K" })
+        );
+        assert_eq!(
+            cost(&o),
+            price.parse::<rust_decimal::Decimal>().unwrap(),
+            "{fixture}"
+        );
+    }
 }

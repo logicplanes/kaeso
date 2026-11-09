@@ -1,0 +1,14 @@
+{
+  "model": "wan2.2-t2i-flash",
+  "input": {
+    "prompt": "A flower shop with exquisite windows, a beautiful wooden door, and flowers on display",
+    "negative_prompt": "people"
+  },
+  "parameters": {
+    "size": "1024*1024",
+    "n": 1,
+    "seed": 42,
+    "prompt_extend": false,
+    "watermark": false
+  }
+}

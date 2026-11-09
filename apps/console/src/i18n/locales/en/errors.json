@@ -356,6 +356,7 @@
   "errors.modelApi.streamCapped": "The reply reached this install's limit for a stream; Kaeso ended it.",
   "errors.modelApi.streamEnded": "The provider's stream ended before the reply was complete.",
   "errors.modelApi.streamOnly": "Only streamed requests are served here; send `stream: true`.",
+  "errors.modelApi.taskUnfinished": "The provider's task didn't finish in time; try again later.",
   "errors.modelApi.timeout": "The provider did not answer in time ({stage}). Kaeso does not retry; try again or raise the model's timeout.",
   "errors.modelApi.transfer": "The connection to the provider failed before the response was complete.",
   "errors.modelApi.translateUnavailable": "Kaeso cannot translate this request right now. Try again shortly.",

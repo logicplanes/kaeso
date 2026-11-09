@@ -953,6 +953,7 @@ const messages = (): Rule[] => [
   ),
   rule("errors.modelApi.noBaseUrl", () => t("errors.modelApi.noBaseUrl", "No base URL is configured for this provider.")),
   rule("errors.modelApi.idNotInUrl", () => t("errors.modelApi.idNotInUrl", "An id in this request can't be part of the provider's URL; use the real id.")),
+  rule("errors.modelApi.taskUnfinished", () => t("errors.modelApi.taskUnfinished", "The provider's task didn't finish in time; try again later.")),
   rule("errors.modelApi.streamEnded", () => t("errors.modelApi.streamEnded", "The provider's stream ended before the reply was complete.")),
   rule("errors.modelApi.streamCapped", () => t("errors.modelApi.streamCapped", "The reply reached this install's limit for a stream; Kaeso ended it.")),
   rule("errors.modelApi.noCredential", (v) =>

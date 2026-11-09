@@ -175,6 +175,10 @@ pub struct MediaUnits {
     /// The audio format or transcript form, as the request names it, for the request log.
     #[serde(default)]
     pub format: Option<String>,
+    /// Whether the provider rewrote the prompt at a price that doubles the price per image, as
+    /// QwenCloud's Z-Image does with `prompt_extend`.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub extended_prompt: bool,
 }
 
 const MS_PER_SECOND: Decimal = Decimal::from_parts(1_000, 0, 0, false, 0);
@@ -190,7 +194,10 @@ impl MediaUnits {
         let duration = |per_unit: Decimal| (ms > 0).then(|| Decimal::from(ms) / per_unit);
         match (per, of) {
             ("image", "input") => Some(Decimal::from(self.input_images)),
-            ("image", "output") => Some(Decimal::from(self.output_images)),
+            ("image", "output") => Some(Decimal::from(
+                self.output_images
+                    .saturating_mul(if self.extended_prompt { 2 } else { 1 }),
+            )),
             ("megapixel", "output") => {
                 let pixels = self.output_pixels?.checked_mul(self.output_images)?;
                 Some(Decimal::from(pixels) / MILLION)

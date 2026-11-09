@@ -1,0 +1,17 @@
+{
+  "request_id": "e5d70b02-ebd3-98ce-9fe8-xxxxxx",
+  "output": {
+    "task_id": "86ecf553-d340-4e21-xxxxxxxxx",
+    "task_status": "FAILED",
+    "submit_time": "2026-11-09 10:12:31.105",
+    "scheduled_time": "2026-11-09 10:12:31.142",
+    "end_time": "2026-11-09 10:12:33.050",
+    "code": "InvalidParameter",
+    "message": "The size is not match the allowed size ['1024*1024', '720*1280', '1280*720']",
+    "task_metrics": {
+      "TOTAL": 1,
+      "SUCCEEDED": 0,
+      "FAILED": 1
+    }
+  }
+}

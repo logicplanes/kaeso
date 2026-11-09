@@ -95,3 +95,13 @@ def test_errors_raise_the_sdks_errors(base_url):
         transcribe(base_url, "openai_transcriptions:errors/file-too-large-413")
     assert e.value.status_code == 413
     assert pathlib.Path(__file__).exists()
+
+
+def test_elevenlabs_and_minimax_replies_reach_an_openai_app(base_url):
+    c = client(base_url)
+    with c.audio.speech.with_streaming_response.create(
+        model="elevenlabs:recorded-speech", voice="hpp4J3VqNfWAUOO0d1Us", input="Hi"
+    ) as response:
+        assert response.read().startswith(b"ID3")
+    t = transcribe(base_url, "elevenlabs:recorded-transcribe", response_format="verbose_json")
+    assert t.text and t.words

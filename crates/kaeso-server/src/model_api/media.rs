@@ -1,4 +1,8 @@
+use std::time::Duration;
+
 use bytes::Bytes;
+use futures::StreamExt as _;
+use kaeso_codecs::{EgressCtx, HeaderList, dispatch};
 use kaeso_core::cost::MediaUnits;
 use kaeso_core::provider::AuthStyle;
 use kaeso_core::providers::ProviderRef;
@@ -6,7 +10,11 @@ use kaeso_kpp::{
     AudioInput, ImageRequest, ImageResponse, ImageSize, RequestKind, Source, SpeechRequest,
     SpeechResponse, TranscriptionRequest, TranscriptionResponse,
 };
+use kaeso_kpp::{DialectId, KppError};
+use kaeso_upstream::{Call, Guard, Outgoing, ResponseBody, Timeouts};
 use url::Url;
+
+use crate::state::AppState;
 
 /// The request as the log keeps it: every field, each image replaced by its media type and
 /// size, since request logs never hold media.
@@ -127,6 +135,9 @@ pub(super) fn units_of_request(r: &ImageRequest) -> MediaUnits {
 /// when it reports them.
 pub(super) fn add_reply(units: &mut MediaUnits, reply: &ImageResponse) {
     units.output_images = reply.images.len() as u64;
+    if let Some(tier) = &reply.settings.resolution {
+        units.resolution = Some(tier.clone());
+    }
     add_settings(
         units,
         reply.settings.size.as_ref(),
@@ -153,6 +164,94 @@ fn add_settings(units: &mut MediaUnits, size: Option<&ImageSize>, quality: Optio
 fn pixels(size: Option<&ImageSize>) -> Option<u64> {
     let (w, h) = size?.dimensions()?;
     u64::from(w).checked_mul(u64::from(h))
+}
+
+/// How the request that started a provider's task reached it, for asking how the task stands.
+pub(super) struct Asked<'a> {
+    pub(super) base: &'a Url,
+    pub(super) auth: Option<AuthStyle>,
+    pub(super) guard: Guard,
+    pub(super) credential: &'a secrecy::SecretString,
+    pub(super) timeouts: Timeouts,
+    pub(super) max_body: usize,
+}
+
+// QwenCloud asks callers to check a text-to-image task every few seconds and makes a small image
+// in a few (https://docs.qwencloud.com/api-reference/image-generation/wan-text-to-image-v2/query-result).
+const TASK_WAITS: [Duration; 4] = [
+    Duration::ZERO,
+    Duration::from_secs(2),
+    Duration::from_secs(3),
+    Duration::from_secs(5),
+];
+
+/// Asks the provider how the task an image reply named stands until its answer names no
+/// pending task, within the request's deadline, and hands back that answer.
+pub(super) async fn wait_for_task(
+    state: &AppState,
+    asked: &Asked<'_>,
+    dialect: DialectId,
+    ctx: &EgressCtx,
+    task: &str,
+    deadline: tokio::time::Instant,
+) -> Result<(u16, HeaderList, Bytes), KppError> {
+    for round in 0usize.. {
+        let wait = TASK_WAITS
+            .get(round)
+            .or(TASK_WAITS.last())
+            .copied()
+            .unwrap_or_default();
+        let at = tokio::time::Instant::now() + wait;
+        if at >= deadline {
+            return Err(super::pipeline::upstream_error(
+                &kaeso_upstream::UpstreamError::Timeout("request"),
+            ));
+        }
+        tokio::time::sleep_until(at).await;
+        let req = dispatch::encode_task_poll(dialect, task, ctx)?;
+        let resp = tokio::time::timeout_at(
+            deadline,
+            state.upstream.send(Call {
+                base_url: asked.base,
+                auth: asked.auth,
+                guard: asked.guard,
+                credential: asked.credential,
+                request: Outgoing::from(req),
+                stream: false,
+                timeouts: asked.timeouts,
+                max_body: asked.max_body,
+            }),
+        )
+        .await
+        .map_err(|_| {
+            super::pipeline::upstream_error(&kaeso_upstream::UpstreamError::Timeout("request"))
+        })?
+        .map_err(|e| super::pipeline::upstream_error(&e))?;
+        let body = match resp.body {
+            ResponseBody::Full(b) => b,
+            ResponseBody::Stream(mut s) => {
+                let mut all = Vec::new();
+                while let Some(chunk) = s.next().await {
+                    all.extend_from_slice(&chunk.map_err(|e| super::pipeline::upstream_error(&e))?);
+                }
+                Bytes::from(all)
+            }
+        };
+        if !(200..300).contains(&resp.status) {
+            return Err(dispatch::decode_error(
+                dialect,
+                resp.status,
+                &resp.headers,
+                &body,
+            ));
+        }
+        if dispatch::pending_task(dialect, ctx.kind, &body).is_none() {
+            return Ok((resp.status, resp.headers, body));
+        }
+    }
+    Err(KppError::provider(
+        "The provider's task didn't finish in time; try again later.",
+    ))
 }
 
 /// The base URL without its path, for image APIs served from the root of the provider's host.

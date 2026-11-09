@@ -7,7 +7,7 @@ use kaeso_kpp::{
 };
 use serde_json::{Value, json};
 
-use super::images::{GENERATION_PATH, ImageFamily, image_family};
+use super::images::{GENERATION_PATH, ImageFamily, TEXT2IMAGE_PATH, image_family};
 use super::speech::{SYNTHESIZER_PATH, SpeechFamily, speech_family};
 use super::transcription::transcribes;
 use super::*;
@@ -74,9 +74,20 @@ fn image_param(r: &ImageRequest) -> String {
 #[test]
 fn image_fixtures_round_trip_and_read_their_images_and_sizes() {
     let requests = round_trip_requests(RequestKind::Image, "images");
-    assert_eq!(requests.len(), 6);
+    assert_eq!(requests.len(), 8);
     for (name, req, enc) in &requests {
-        assert_eq!(enc.path, GENERATION_PATH, "{name}");
+        let task = name.ends_with("-task");
+        let path = if task {
+            TEXT2IMAGE_PATH
+        } else {
+            GENERATION_PATH
+        };
+        assert_eq!(enc.path, path, "{name}");
+        assert_eq!(
+            enc.headers.get("x-dashscope-async"),
+            task.then_some("enable"),
+            "{name}"
+        );
         let Request::Image(r) = req else { panic!() };
         let edits = r.operation == ImageOperation::Edit;
         assert_eq!(edits, name.contains("edit"), "{name}");
@@ -114,7 +125,18 @@ fn models_pick_their_family() {
     assert_eq!(image_family("wan2.7-image-pro"), Some(ImageFamily::Wan27));
     assert_eq!(image_family("wan2.6-image"), Some(ImageFamily::Wan26));
     assert_eq!(image_family("z-image-turbo"), Some(ImageFamily::ZImage));
-    assert_eq!(image_family("wan2.6-t2i"), None);
+    assert_eq!(image_family("wan2.6-t2i"), Some(ImageFamily::WanT2i));
+    for m in [
+        "wan2.5-t2i-preview",
+        "wan2.2-t2i-plus",
+        "wan2.2-t2i-flash",
+        "wan2.1-t2i-plus",
+        "wan2.1-t2i-turbo",
+        "wanx2.1-t2i-turbo",
+    ] {
+        assert_eq!(image_family(m), Some(ImageFamily::WanT2iTask), "{m}");
+    }
+    assert_eq!(image_family("wan2.7-t2v"), None);
     assert_eq!(
         speech_family("qwen-audio-3.1-tts-flash"),
         Some(SpeechFamily::QwenAudio)
@@ -213,7 +235,7 @@ fn image_fields_dashscope_lacks_are_refused_before_sending() {
     let mut seven = image("qwen-image-2.0");
     seven.count = Some(7);
     assert_eq!(image_param(&seven), "n");
-    assert_eq!(image_param(&image("wan2.6-t2i")), "model");
+    assert_eq!(image_param(&image("wan2.7-t2v")), "model");
     let mut partial = image("qwen-image-2.0");
     partial.stream = StreamMode::on(true);
     partial.partial_images = Some(2);
@@ -698,4 +720,113 @@ fn native_speech_requests_and_replies_keep_every_field() {
         (err.kind.clone(), err.status),
         (ErrorKind::RateLimited, Some(429))
     );
+}
+
+fn image_task(name: &str) -> Vec<u8> {
+    fixtures(DIR, "polls/images", "json")
+        .into_iter()
+        .find(|(n, _)| n == name)
+        .unwrap()
+        .1
+}
+
+#[test]
+fn older_wan_text_to_image_runs_as_a_task_kaeso_waits_for() {
+    let mut r = image("wan2.2-t2i-flash");
+    r.size = Some(ImageSize::pixels(1024, 1024));
+    r.negative_prompt = Some("people".into());
+    let req = Request::Image(r);
+    let mut ctx = EgressCtx::new(&req);
+    let enc = DashScope::encode_request(&req, &mut ctx).unwrap();
+    assert_eq!(enc.path, TEXT2IMAGE_PATH);
+    assert_eq!(enc.headers.get("x-dashscope-async"), Some("enable"));
+    assert_eq!(
+        serde_json::from_slice::<Value>(&enc.body).unwrap(),
+        json!({"model": "wan2.2-t2i-flash", "input": {"prompt": "A red fox", "negative_prompt": "people"}, "parameters": {"n": 1, "size": "1024*1024"}})
+    );
+    for (name, pending) in [
+        ("started", true),
+        ("running", true),
+        ("succeeded", false),
+        ("failed", false),
+    ] {
+        assert_eq!(
+            crate::dispatch::pending_task(
+                DialectId::DashScope,
+                RequestKind::Image,
+                &image_task(name)
+            )
+            .is_some(),
+            pending,
+            "{name}"
+        );
+    }
+    assert_eq!(
+        crate::dispatch::pending_task(
+            DialectId::DashScope,
+            RequestKind::Video,
+            &image_task("started")
+        ),
+        None
+    );
+    let poll = crate::dispatch::encode_task_poll(
+        DialectId::DashScope,
+        "7d4ac4b2-2e1a-4c84-8c6d-xxxxxx",
+        &ctx,
+    )
+    .unwrap();
+    assert_eq!(poll.path, "/api/v1/tasks/7d4ac4b2-2e1a-4c84-8c6d-xxxxxx");
+    assert!(crate::dispatch::encode_task_poll(DialectId::DashScope, "..", &ctx).is_err());
+    assert!(crate::dispatch::encode_task_poll(DialectId::OpenAiImages, "t", &ctx).is_err());
+
+    let ictx = EgressCtx::for_kind(RequestKind::Image, StreamMode::Off);
+    let body = image_task("succeeded");
+    let Reply::Image(done) =
+        DashScope::decode_response(200, &HeaderList::new(), &body, &ictx).unwrap()
+    else {
+        panic!()
+    };
+    assert_eq!(
+        done.images.len(),
+        1,
+        "the image that failed alone makes none"
+    );
+    assert!(
+        done.images[0]
+            .revised_prompt
+            .as_deref()
+            .unwrap()
+            .contains("carved windows")
+    );
+    let back = DashScope::encode_response(
+        &Reply::Image(done),
+        &EncodeCtx::new(RequestKind::Image, StreamMode::Off),
+    )
+    .unwrap();
+    assert_json_eq("succeeded", &body, &back);
+    let err = DashScope::decode_response(200, &HeaderList::new(), &image_task("failed"), &ictx)
+        .unwrap_err();
+    assert!(err.message.contains("size is not match"), "{err:?}");
+    let err = DashScope::decode_response(200, &HeaderList::new(), &image_task("running"), &ictx)
+        .unwrap_err();
+    assert_eq!(err.kind, ErrorKind::ProviderError);
+}
+
+#[test]
+fn wan_text_to_image_takes_a_prompt_and_refuses_edits_tiers_and_more_than_four() {
+    let sent = sent_image(&image("wan2.6-t2i")).unwrap();
+    assert_eq!(sent["parameters"]["n"], 1);
+    assert_eq!(
+        sent["input"]["messages"][0]["content"],
+        json!([{"text": "A red fox"}])
+    );
+    assert_eq!(image_param(&edit("wan2.6-t2i", 1)), "image");
+    let mut many = image("wan2.2-t2i-plus");
+    many.count = Some(5);
+    let req = Request::Image(many);
+    let err = DashScope::check(&req, &EgressCtx::new(&req)).unwrap_err();
+    assert_eq!(err.param.as_deref(), Some("n"));
+    let mut tier = image("wan2.6-t2i");
+    tier.resolution = Some("2K".into());
+    assert_eq!(image_param(&tier), "resolution");
 }

@@ -130,6 +130,25 @@ fn omni_refuses_what_it_lacks_before_sending() {
     let mut silent = base.clone();
     silent.audio = Some(false);
     assert_eq!(param(&silent), "audio");
+    let framed = |model: &str| {
+        let mut r = base.clone().with_image(VideoImage::new(
+            Source::Url("https://example.com/a.png".into()),
+            VideoImageRole::FirstFrame,
+        ));
+        r.model = model.into();
+        r
+    };
+    assert_eq!(
+        param(&framed("gemini-omni-flash-preview")),
+        "input_reference"
+    );
+    assert!(encode(&framed("gemini-omni-1.1-flash-preview")).is_ok());
+    let mut referenced = base.clone().with_image(VideoImage::new(
+        Source::Url("https://example.com/a.png".into()),
+        VideoImageRole::Reference,
+    ));
+    referenced.model = "gemini-omni-flash-preview".into();
+    assert!(encode(&referenced).is_ok());
     let mut neg = base.clone();
     neg.negative_prompt = Some("x".into());
     assert_eq!(param(&neg), "negative_prompt");
