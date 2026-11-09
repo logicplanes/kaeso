@@ -1,7 +1,7 @@
 ---
 title: Videos API
 description: Make videos through Kaeso with OpenAI's Videos API, on every provider that makes video.
-order: 2
+order: 4
 ---
 
 Apps make videos through Kaeso with OpenAI's Videos API and the official OpenAI SDKs. Kaeso starts the job at the model's provider in that provider's own form, keeps track of it under an id of its own, and answers in OpenAI's form.

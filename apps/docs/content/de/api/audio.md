@@ -1,7 +1,7 @@
 ---
 title: Audio-API
 description: Sprache erzeugen und Audio transkribieren oder übersetzen, über Kaeso mit der Audio-API von OpenAI, bei jedem Anbieter, der sie anbietet.
-order: 2
+order: 3
 ---
 
 Apps erzeugen Sprache und transkribieren Audio über Kaeso mit der Audio-API von OpenAI und den offiziellen SDKs von OpenAI. Kaeso sendet jede Anfrage in der eigenen Form des Anbieters an das Modell, und die Antwort kommt in der Form von OpenAI zurück: das Audio selbst, Ereignisse `speech.audio.*` oder ein Transkript in der Form, die die App verlangt hat.
@@ -68,7 +68,7 @@ Schlüssel, die Auflösung von Modellen mit Aliassen und Routen, Limits und Budg
 - **Jede Form.** Hat der Anbieter die Form der App nicht, verlangt Kaeso zeitlich markierte Segmente und schreibt die Untertitel oder Segmente selbst: `srt` und `vtt` aus `verbose_json` bei Groq, aus den Segmenten von Mistral, aus den zeitlich markierten Wörtern von Gemini und SpaceX und aus den Wörtern von ElevenLabs. Eine Form, die keine Zeitangabe eines Anbieters ergeben kann, etwa `diarized_json` ohne Sprecher, wird abgelehnt.
 - **Links.** Der Upload einer App geht als Upload. Einen Link, den eine App in `url` oder `file_url` sendet oder eine ElevenLabs-App in `source_url`, bekommen die Anbieter, die Links nehmen, als Link (`url` bei Groq und SpaceX, `file` bei Together AI, `file_url` bei Mistral, `source_url` bei OpenRouter und ElevenLabs); OpenAI nimmt keine.
 - **Streaming.** OpenAI, Mistral, Z.ai und MiniMax streamen ihre Transkripte; Kaeso schreibt sie als `transcript.text.delta` und `transcript.text.done`. Andere Anbieter antworten ganz, und die App bekommt ein Delta und das Ende.
-- **Übersetzungen** gehen nur an Anbieter mit einem Endpunkt für Übersetzungen: OpenAI und Groq.
+- **Übersetzungen** gehen nur an Anbieter mit einem Endpunkt für Übersetzungen: OpenAI, Groq und Together AI.
 - **Die Modelle für Dateitranskription von QwenCloud** (`*-filetrans`) beantworten nur asynchrone Aufgaben, seine Streaming- und Echtzeitmodelle nur WebSocket-Verbindungen; sie werden deshalb abgelehnt.
 
 ## Anbieter

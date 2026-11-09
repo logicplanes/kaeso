@@ -1,7 +1,7 @@
 ---
 title: MCP 门户 API
 description: 通过 MCP 调用项目的工具，并查阅门户的登录方式、版本和错误。
-order: 6
+order: 10
 ---
 
 每个项目的 MCP 门户位于实例域名下的 `/mcp/<项目 ID>`。任何 MCP 客户端都可以用具有**工具**能力的 API 密钥调用它，或以个人身份通过 OAuth 登录。下面的示例使用 `KAESO_API_KEY` 中的密钥和 `KAESO_PROJECT` 中的项目 ID 列出项目的工具：

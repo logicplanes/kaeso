@@ -1,7 +1,7 @@
 ---
 title: Platform API
 description: 通过 HTTP 管理实例时如何进行身份验证、翻页、处理错误以及查找路由。
-order: 3
+order: 7
 ---
 
 Platform API 管理控制台显示的一切：组织、项目、成员、密钥、服务商密钥、模型、限额、用量和日志。它位于您实例域名下的 `/platform/v1`，控制台只使用这个 API。

@@ -1,7 +1,7 @@
 ---
 title: ElevenLabs-API
 description: Sprache, Klänge, Musik und Transkription von ElevenLabs über Kaeso mit den offiziellen SDKs von ElevenLabs aufrufen.
-order: 2
+order: 5
 ---
 
 Apps, die mit den offiziellen SDKs `elevenlabs` gebaut sind, rufen ElevenLabs über Kaeso auf: Setzen Sie Kaeso als Basis-URL und einen Kaeso-Schlüssel als API-Schlüssel. Kaeso bedient die Endpunkte von ElevenLabs zum Erzeugen und Auflisten mit Schlüsseln, Limits, Logs und Kosten und sendet jede Anfrage an den Anbieter des Modells, sodass eine ElevenLabs-App auch die Sprach- und Transkriptionsmodelle anderer Anbieter erreicht.

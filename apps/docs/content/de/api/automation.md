@@ -2,7 +2,7 @@
 title: Mit der Platform API automatisieren
 nav: Automatisierung
 description: Ein Projekt, ein Modell und einen Schlüssel für eine App per Skript einrichten und Nutzung und Protokolle lesen.
-order: 4
+order: 8
 ---
 
 Richten Sie alles, was eine App braucht, per Skript ein: ein Projekt, einen Anbieter-Schlüssel, ein Modell und den eigenen API-Schlüssel der App. Die Anfragen verwenden einen Plattform-Schlüssel, der mit den Rechten der Rolle Admin in der ganzen Organisation handelt.

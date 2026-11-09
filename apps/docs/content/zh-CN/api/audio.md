@@ -1,7 +1,7 @@
 ---
 title: 音频 API
 description: 通过 Kaeso 使用 OpenAI 的音频 API 生成语音、转写或翻译音频，适用于所有提供该功能的服务商。
-order: 2
+order: 3
 ---
 
 应用通过 Kaeso，使用 OpenAI 的音频 API 和 OpenAI 官方 SDK 生成语音和转写音频。Kaeso 按模型所属服务商自己的形式发送每个请求，回复以 OpenAI 的形式返回：音频本身、`speech.audio.*` 事件，或应用所要求形式的转写稿。
@@ -68,7 +68,7 @@ console.log(transcript.text);
 - **各种形式。** 服务商不支持应用要求的形式时，Kaeso 向它请求带时间的片段，自己写出字幕或片段：Groq 由 `verbose_json` 生成 `srt` 和 `vtt`，Mistral 由其片段生成，Gemini 和 SpaceX 由其带时间的词生成，ElevenLabs 由其词生成。任何服务商的时间信息都无法生成的形式，例如没有说话人的 `diarized_json`，会被拒绝。
 - **链接。** 应用的上传内容以上传形式发送。应用在 `url` 或 `file_url` 中发送的链接，或 ElevenLabs 应用在 `source_url` 中发送的链接，会以链接形式发给接受链接的服务商（Groq 和 SpaceX 的 `url`、Together AI 的 `file`、Mistral 的 `file_url`、OpenRouter 和 ElevenLabs 的 `source_url`）；OpenAI 不接受链接。
 - **流式。** OpenAI、Mistral、Z.ai 和 MiniMax 以流式返回转写稿；Kaeso 把它们写成 `transcript.text.delta` 和 `transcript.text.done`。其他服务商一次性返回，应用会得到一个增量和结束事件。
-- **翻译**只发给有翻译端点的服务商：OpenAI 和 Groq。
+- **翻译**只发给有翻译端点的服务商：OpenAI、Groq 和 Together AI。
 - **QwenCloud 的**文件转写模型（`*-filetrans`）只回复异步任务，其流式和实时模型只接受 WebSocket 连接，因此会被拒绝。
 
 ## 服务商

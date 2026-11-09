@@ -1,7 +1,7 @@
 ---
 title: ElevenLabs API
 description: Call ElevenLabs speech, sound, music and transcription through Kaeso with the official ElevenLabs SDKs.
-order: 2
+order: 5
 ---
 
 Apps built with the official `elevenlabs` SDKs call ElevenLabs through Kaeso: set Kaeso as the base URL and a Kaeso key as the API key. Kaeso serves ElevenLabs' generation and listing endpoints with keys, limits, logs and costs, and sends each request to the model's provider, so an ElevenLabs app can also reach other providers' speech and transcription models.
