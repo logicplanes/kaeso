@@ -249,7 +249,7 @@ pub(super) async fn wait_for_task(
             return Ok((resp.status, resp.headers, body));
         }
     }
-    Err(KppError::provider("The provider's task never ended."))
+    Err(KppError::provider("The provider's task didn't finish in time; try again later."))
 }
 
 /// The base URL without its path, for image APIs served from the root of the provider's host.
