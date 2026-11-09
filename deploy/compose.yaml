@@ -376,7 +376,7 @@ configs:
       		}
       		handle @elevenlabs {
       			header Content-Type "application/json"
-      			respond `{"detail":{"type":"service_unavailable","code":"system_busy","message":"{vars.message}","status":"system_busy"}}` 503
+      			respond `{"detail":{"type":"service_unavailable","code":"system_busy","message":"{vars.message}","status":"system_busy","param":null}}` 503
       		}
       		handle @openai {
       			header Content-Type "application/json"
