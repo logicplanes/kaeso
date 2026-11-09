@@ -9,8 +9,8 @@ Jedes Modell im Katalog eines Projekts beginnt mit den Werten aus KPMR, der Kaes
 ```mermaid
 flowchart TD
   accTitle: Woher die Modelldaten kommen
-  accDescr: KPMR baut seinen Katalog aus models.dev und seiner geprüften Registry. Das Gateway ruft den Katalog ab und nutzt ihn für die Modelle jedes Projekts.
-  modelsdev[models.dev]:::outside --> kpmr[KPMR auf kpmr.kaeso.app]:::outside
+  accDescr: KPMR baut seinen Katalog aus der Dokumentation und den Preislisten der Anbieter, geprüft in seiner Registry. Das Gateway ruft den Katalog ab und nutzt ihn für die Modelle jedes Projekts.
+  sources[Dokumentation und Preislisten der Anbieter]:::outside --> kpmr[KPMR auf kpmr.kaeso.app]:::outside
   registry[Geprüfte Registry]:::outside --> kpmr
   kpmr -- signierter Katalog --> gateway[Gateway]:::accent
   gateway --> catalogue[Kataloge der Projekte]
@@ -18,17 +18,17 @@ flowchart TD
 
 ## Was KPMR ist
 
-KPMR ist ein Dienst, den Logicplanes unter [kpmr.kaeso.app](https://kpmr.kaeso.app) betreibt. Alle zehn Minuten ruft er [models.dev](https://models.dev) ab, die offene, MIT-lizenzierte Modelldatenbank, wendet seine eigene geprüfte Registry an und liefert das Ergebnis als ein Dokument aus, den **KPMR-Katalog**. Die Website zeigt außerdem jeden Anbieter und jedes Modell, die Änderungen und woher jeder Wert kommt.
+KPMR ist ein Dienst, den Logicplanes unter [kpmr.kaeso.app](https://kpmr.kaeso.app) betreibt. Er sammelt, was Anbieter über ihre Modelle veröffentlichen, prüft es in seiner eigenen Registry und liefert das Ergebnis als ein Dokument aus, den **KPMR-Katalog**. Die Website zeigt außerdem jeden Anbieter und jedes Modell, die Änderungen und woher jeder Wert kommt.
 
 ## Warum Kaeso eine eigene Registry hat
 
-models.dev umfasst Hunderte Anbieter und bleibt die Grundlage von KPMR. Ein Gateway braucht aber mehr als eine Liste: Es rechnet Budgets zu diesen Preisen ab und lehnt Anfragen ab, die ein Modell nicht annimmt. KPMR ergänzt, was Kaeso braucht:
+Ein Gateway braucht mehr als eine Liste von Modellen: Es rechnet Budgets zu diesen Preisen ab und lehnt Anfragen ab, die ein Modell nicht annimmt. KPMR ergänzt, was Kaeso braucht:
 
 - **Korrekturen und Überschreibungen.** Ein falscher Preis, ein falsches Limit oder eine falsche Fähigkeit wird zuerst in KPMR korrigiert, und die Korrektur erreicht jede Installation bei ihrer nächsten Prüfung.
-- **Ergänzungen und Entfernungen.** KPMR kann ein Modell oder einen Anbieter aufnehmen, den models.dev noch nicht führt, und eines weglassen, das es nicht anbieten sollte.
+- **Ergänzungen und Entfernungen.** KPMR nimmt ein Modell oder einen Anbieter auf, sobald es erscheint, und lässt eines weg, das Kaeso nicht anbieten sollte.
 - **Fakten für das Gateway.** Ob ein Claude-Modell adaptives Thinking oder eine erzwungene Tool-Wahl annimmt, welche Aufwandsstufen es kennt, den Preis für Ein-Stunden-Cache-Schreibvorgänge und in welchem API-Format Kaeso ein Modell aufruft.
 
-Jeder Eintrag der Registry nennt seine Quellen, etwa die Dokumentation eines Anbieters oder eine aufgezeichnete Live-Anfrage, und Sie können sie auf der Seite des Modells auf kpmr.kaeso.app lesen. Wo KPMR einen Wert setzt, gilt er vor models.dev; alles andere ist der Wert von models.dev, wie er ist.
+Jeder Eintrag der Registry nennt seine Quellen, etwa die Dokumentation eines Anbieters oder eine aufgezeichnete Live-Anfrage, und Sie können sie auf der Seite des Modells auf kpmr.kaeso.app lesen.
 
 ## Der Katalog
 
@@ -54,9 +54,7 @@ Der Katalog ist ein JSON-Dokument in Kaesos eigenem Format, versioniert durch ei
           "pricing": { "unit": "usd_per_million_tokens", "input": "5", "output": "25", "cache_read": "0.5", "cache_write": "6.25", "cache_write_1h": "10" },
           "capabilities": { "tool_call": true, "forced_tool_choice": false, "structured_output": true, "temperature": false },
           "reasoning": { "efforts": ["low", "medium", "high", "xhigh", "max"], "adaptive_thinking": true, "thinking_binding": true },
-          "gateway": { "egress_dialect": null },
-          "origin": "models_dev",
-          "corrected": ["capabilities.forced_tool_choice", "reasoning.adaptive_thinking", "reasoning.thinking_binding"]
+          "gateway": { "egress_dialect": null }
         }
       }
     }
@@ -68,7 +66,6 @@ Der Katalog ist ein JSON-Dokument in Kaesos eigenem Format, versioniert durch ei
 - **Preise sind exakte Dezimalzahlen als Strings** in US-Dollar je Million Token, nie Gleitkommazahlen. `cache_write_1h` ist der Preis eines Cache-Schreibvorgangs, der eine Stunde gilt, wo der Anbieter einen dokumentiert.
 - **`pricing.tiers`** listet die Preise eines Modells für lange Kontexte, das niedrigste `context_above` zuerst, oder ist leer. Die Preise einer Stufe gelten für jedes Token einer Anfrage, deren Prompt länger als `context_above` Token ist; ein Preis `null` ist der Grundpreis.
 - **`gateway.egress_dialect`** nennt das API-Format, in dem Kaeso das Modell aufruft, wenn es nicht das Standardformat des Anbieters ist.
-- **`origin`** sagt, ob ein Modell von models.dev kommt oder von KPMR ergänzt wurde, und **`corrected`** nennt die Felder, die KPMR gesetzt hat.
 - **Unbekannte Schlüssel werden ignoriert.** Ein neues Feld im Format 1 stört ein älteres Gateway nicht; eine Änderung, die es stören würde, wird Format 2.
 
 ## Wie das Gateway ihn abruft

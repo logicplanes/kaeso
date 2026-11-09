@@ -148,7 +148,7 @@ export const escaped = (text) =>
 const HOST = /(?<![\p{L}\p{N}_.-])((?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+([a-z][a-z0-9-]*[a-z0-9]))(?![\p{L}\p{N}_-])/giu;
 const OWN_HOST = /^(?:[a-z0-9-]+\.)*kaeso\.app$/;
 const OWN_PATHS = [/^github\.com\/logicplanes\/kaeso(?![\w-]|\.\w)/i, /^ghcr\.io\/logicplanes\/kaeso-/i];
-const SERVICES = new Set(["crates.io", "models.dev"]);
+const SERVICES = new Set(["crates.io"]);
 const PATH = /^(?::\d+)?\/[^\s`()<>]*|^:\d+/;
 const CODE_TYPES = new Set(["cs", "go", "js", "md", "py", "rb", "rs", "ts"]);
 const DOMAINS = new Set(

@@ -17,7 +17,7 @@ const KIND_LABELS: Record<string, () => string> = {
   member: () => t("format.audit.kind.member", "Members"),
   kpmr: () => t("format.audit.kind.kpmr", "KPMR"),
   model_access: () => t("format.audit.kind.modelAccess", "Model access"),
-  models_dev: () => t("format.audit.kind.modelsDev", "models.dev"),
+  models_dev: () => t("format.audit.kind.modelsDev", "Model data before KPMR"),
   org: () => t("format.audit.kind.org", "Organization"),
   platform_key: () => t("format.audit.kind.platformKey", "Platform keys"),
   portal_grant: () => t("format.audit.kind.portalGrant", "Portal clients"),
@@ -167,11 +167,11 @@ export const AUDIT_ACTIONS: Record<string, string[]> = Object.keys(ACTION_LABELS
   return kinds;
 }, {});
 
-// Actions older gateways wrote, for models.dev before KPMR replaced it and for the default project; the audit log keeps them as they are.
+// Actions older gateways wrote, for model data before KPMR and for the default project; the audit log keeps them as they are.
 const RETIRED_ACTION_LABELS: Record<string, () => string> = {
-  "models_dev.sync": () => t("format.audit.action.modelsDevSync", "models.dev synced"),
-  "models_dev.price_change": () => t("format.audit.action.modelsDevPriceChange", "Price changed on models.dev"),
-  "models_dev.model_delisted": () => t("format.audit.action.modelsDevModelDelisted", "Model taken off models.dev"),
+  "models_dev.sync": () => t("format.audit.action.modelsDevSync", "Model data synced"),
+  "models_dev.price_change": () => t("format.audit.action.modelsDevPriceChange", "Price changed in the model data"),
+  "models_dev.model_delisted": () => t("format.audit.action.modelsDevModelDelisted", "Model no longer in the model data"),
   "project.default": () => t("format.audit.action.projectDefault", "Default project changed"),
 };
 

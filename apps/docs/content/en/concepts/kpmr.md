@@ -9,8 +9,8 @@ Every model in a project's catalogue starts from the values in KPMR, the Kaeso P
 ```mermaid
 flowchart TD
   accTitle: Where model data comes from
-  accDescr: KPMR builds its catalogue from models.dev and its reviewed registry. The gateway fetches the catalogue and uses it for every project's models.
-  modelsdev[models.dev]:::outside --> kpmr[KPMR at kpmr.kaeso.app]:::outside
+  accDescr: KPMR builds its catalogue from providers' documentation and price lists, reviewed in its registry. The gateway fetches the catalogue and uses it for every project's models.
+  sources[Providers' documentation and price lists]:::outside --> kpmr[KPMR at kpmr.kaeso.app]:::outside
   registry[Reviewed registry]:::outside --> kpmr
   kpmr -- signed catalogue --> gateway[Gateway]:::accent
   gateway --> catalogue[Project catalogues]
@@ -18,17 +18,17 @@ flowchart TD
 
 ## What KPMR is
 
-KPMR is a service that Logicplanes runs at [kpmr.kaeso.app](https://kpmr.kaeso.app). Every ten minutes it fetches [models.dev](https://models.dev), the open, MIT-licensed model database, applies its own reviewed registry and serves the result as one document, the **KPMR catalogue**. The site also shows every provider and model, the changes, and where each value comes from.
+KPMR is a service that Logicplanes runs at [kpmr.kaeso.app](https://kpmr.kaeso.app). It collects what providers publish about their models, reviews it in its own registry and serves the result as one document, the **KPMR catalogue**. The site also shows every provider and model, the changes, and where each value comes from.
 
 ## Why Kaeso has its own registry
 
-models.dev covers hundreds of providers and stays the base of KPMR. A gateway needs more than a listing, though: it charges budgets at these prices and refuses requests a model can't take. KPMR adds what Kaeso needs on top:
+A gateway needs more than a list of models: it charges budgets at these prices and refuses requests a model can't take. KPMR adds what Kaeso needs on top:
 
 - **Corrections and overrides.** A wrong price, limit or capability is fixed in KPMR first, and the fix reaches every install at its next check.
-- **Additions and removals.** KPMR can add a model or a provider that models.dev doesn't list yet, and leave out one it shouldn't offer.
+- **Additions and removals.** KPMR adds a model or a provider as soon as it ships, and leaves out one Kaeso shouldn't offer.
 - **Gateway facts.** Whether a Claude model takes adaptive thinking or a forced tool choice, which effort levels it accepts, the one-hour cache write price, and which API format Kaeso sends a model in.
 
-Every registry entry cites its sources, such as a provider's documentation or a recorded live request, and you can read them on the model's page at kpmr.kaeso.app. Where KPMR sets a value, it wins over models.dev; everything else is models.dev's value as it is.
+Every registry entry cites its sources, such as a provider's documentation or a recorded live request, and you can read them on the model's page at kpmr.kaeso.app.
 
 ## The catalogue
 
@@ -54,9 +54,7 @@ The catalogue is a JSON document in Kaeso's own format, versioned by a format nu
           "pricing": { "unit": "usd_per_million_tokens", "input": "5", "output": "25", "cache_read": "0.5", "cache_write": "6.25", "cache_write_1h": "10" },
           "capabilities": { "tool_call": true, "forced_tool_choice": false, "structured_output": true, "temperature": false },
           "reasoning": { "efforts": ["low", "medium", "high", "xhigh", "max"], "adaptive_thinking": true, "thinking_binding": true },
-          "gateway": { "egress_dialect": null },
-          "origin": "models_dev",
-          "corrected": ["capabilities.forced_tool_choice", "reasoning.adaptive_thinking", "reasoning.thinking_binding"]
+          "gateway": { "egress_dialect": null }
         }
       }
     }
@@ -68,7 +66,6 @@ The catalogue is a JSON document in Kaeso's own format, versioned by a format nu
 - **Prices are exact decimal strings** in US dollars per million tokens, never floating-point numbers. `cache_write_1h` is the price of a cache write kept for an hour, where the provider documents one.
 - **`pricing.tiers`** lists a model's long-context prices, lowest `context_above` first, or is empty. A tier's prices apply to every token of a request whose prompt is longer than `context_above` tokens; a `null` price is the base price.
 - **`gateway.egress_dialect`** names the API format Kaeso sends the model in, when it isn't the provider's default.
-- **`origin`** says whether a model comes from models.dev or was added by KPMR, and **`corrected`** lists the fields KPMR set.
 - **Unknown keys are ignored.** A new field in format 1 doesn't break an older gateway; a change that would break it becomes format 2.
 
 ## How the gateway fetches it
