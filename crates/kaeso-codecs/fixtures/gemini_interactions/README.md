@@ -5,7 +5,7 @@ Gemini Omni's video jobs on Google AI Studio's Interactions API: `POST /v1beta/i
 ## Sources
 
 - https://aistudio.google.com/docs/omni and https://aistudio.google.com/api-reference/interactions-api/create-interaction, read 2026-11-09.
-- `requests/recorded-tiny.json`, `responses/recorded-started.json` and `polls/recorded-failed-quota.json` were recorded on 2026-11-08 with a free-tier Google AI Studio key and billing off: one request, a 3-second 360p video, which the free tier refused as `RESOURCE_EXHAUSTED`. Nothing was spent. The rest is built from the reference.
+- `requests/recorded-tiny.json`, `responses/recorded-started.json` and `polls/recorded-failed-quota.json` were recorded on 2026-11-08: one request for a 3-second 360p video, whose job ended as `RESOURCE_EXHAUSTED`. The rest is built from the reference.
 
 The layout and the provenance marks are in [Fixtures and recordings](https://docs.kaeso.app/development/kpp/fixtures). `polls/` holds the provider's answers to a job's status call.
 

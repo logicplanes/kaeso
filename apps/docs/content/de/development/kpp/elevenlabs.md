@@ -7,7 +7,7 @@ order: 9
 Schlagen Sie nach, wie die Endpunkte von ElevenLabs zum Erzeugen, Transkribieren, für Videos und zum Auflisten auf KPP abgebildet werden, wie Kaeso sie von Apps im Format von ElevenLabs liest und an ElevenLabs schreibt. Prüfen Sie es, bevor Sie den ElevenLabs-Codec ändern.
 
 - **Codec:** `kaeso_codecs::elevenlabs::ElevenLabs` (`crates/kaeso-codecs/src/elevenlabs/`)
-- **Fixtures:** `crates/kaeso-codecs/fixtures/elevenlabs/`, live im kostenlosen Tarif aufgezeichnet, einmal pro Endpunkt, insgesamt etwa 40 Credits
+- **Fixtures:** `crates/kaeso-codecs/fixtures/elevenlabs/`, live aufgezeichnet, einmal pro Endpunkt
 
 **Quellen.** Das OpenAPI-Dokument von ElevenLabs, [api.elevenlabs.io/openapi.json](https://api.elevenlabs.io/openapi.json) (gelesen am 2026-11-08), seine [Fehler](https://elevenlabs.io/docs/eleven-api/resources/errors) und [Kosten-Header](https://elevenlabs.io/docs/api-reference/introduction) sowie die Pfade des offiziellen Python-SDKs (das `x-fern-sdk-method-name` jeder Operation).
 
@@ -43,7 +43,7 @@ Schlagen Sie nach, wie die Endpunkte von ElevenLabs zum Erzeugen, Transkribieren
 | `timestamps_granularity` `word` (der Standard) oder `none` | `format` `verbose_json` oder `json`; `word` auch `timestamps`; `character` die Markierung `timestamps_granularity` | typisiert, Form |
 | `tag_audio_events`, `additional_formats`, `keyterms`, `entity_detection`, `webhook`, … | das Feld | Extras |
 
-Aus einem anderen Format werden `mp3`, `opus`, `wav`, `pcm16`, μ-law und A-law ein `output_format`, das ElevenLabs listet, mit den Raten des kostenlosen Tarifs, wenn die Anfrage keine nennt: 44,1 kHz bei 128 kbit/s für MP3, 48 kHz bei 64 kbit/s für Opus, 24 kHz für WAV und PCM. `aac`, `flac` und Raten, die ElevenLabs nicht listet, sind `Unsupported`. `speed` geht an `voice_settings.speed`; `instructions` ist `Unsupported`.
+Aus einem anderen Format werden `mp3`, `opus`, `wav`, `pcm16`, μ-law und A-law ein `output_format`, das ElevenLabs listet, mit Raten, die jeder Tarif bietet, wenn die Anfrage keine nennt: 44,1 kHz bei 128 kbit/s für MP3, 48 kHz bei 64 kbit/s für Opus, 24 kHz für WAV und PCM. `aac`, `flac` und Raten, die ElevenLabs nicht listet, sind `Unsupported`. `speed` geht an `voice_settings.speed`; `instructions` ist `Unsupported`.
 
 ## Antworten
 
@@ -63,7 +63,7 @@ ElevenLabs antwortet mit `{"detail": {"type", "code", "message", "status", "requ
 
 ## Videoerzeugungen
 
-ElevenLabs erzeugt Videos mit Veo-3.1- und Seedance-2-Modellen über `POST /v1/flows/video`, gemeldet von `GET /v1/flows/video/{id}`; der Body hängt von `model_id` ab (`VideoGenerationRequest`). Kaeso sendet Videojobs für eine App eines anderen Formats dorthin; Apps im Format von ElevenLabs rufen es nicht über Kaeso auf. Die Fixtures in `fixtures/elevenlabs/video/` sind aus dem OpenAPI-Dokument gebaut: Video ist eine kostenpflichtige Funktion, die in der kostenlosen Stufe nie aufgerufen wird.
+ElevenLabs erzeugt Videos mit Veo-3.1- und Seedance-2-Modellen über `POST /v1/flows/video`, gemeldet von `GET /v1/flows/video/{id}`; der Body hängt von `model_id` ab (`VideoGenerationRequest`). Kaeso sendet Videojobs für eine App eines anderen Formats dorthin; Apps im Format von ElevenLabs rufen es nicht über Kaeso auf. Die Fixtures in `fixtures/elevenlabs/video/` sind aus dem OpenAPI-Dokument gebaut.
 
 | KPP | ElevenLabs |
 | --- | --- |

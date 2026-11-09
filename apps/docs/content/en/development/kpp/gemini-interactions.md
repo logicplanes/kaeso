@@ -8,7 +8,7 @@ Look up how a video job reaches Gemini Omni on Google AI Studio and Gemini Enter
 
 - **Codec:** `kaeso_codecs::gemini_interactions::GeminiInteractions` (`crates/kaeso-codecs/src/gemini_interactions/`)
 - **Paths:** `POST /v1beta/interactions`, `GET /v1beta/interactions/{id}` and `DELETE /v1beta/interactions/{id}` on Google AI Studio; `POST` and `GET` under `/v1beta1/projects/{project}/locations/global/interactions` on the Agent Platform
-- **Fixtures:** `crates/kaeso-codecs/fixtures/gemini_interactions/`; `responses/recorded-started.json` and `polls/recorded-failed-quota.json` were recorded with a free-tier key, the rest built from the reference
+- **Fixtures:** `crates/kaeso-codecs/fixtures/gemini_interactions/`; `responses/recorded-started.json` and `polls/recorded-failed-quota.json` were recorded live, the rest built from the reference
 
 **Sources.** Google AI Studio's [Gemini Omni Flash](https://aistudio.google.com/docs/omni) and [create interaction](https://aistudio.google.com/api-reference/interactions-api/create-interaction) references, and the Agent Platform's [Generate videos from text](https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/video/generate-videos-from-text), read 2026-11-09.
 

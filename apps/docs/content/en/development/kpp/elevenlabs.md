@@ -7,7 +7,7 @@ order: 9
 Look up how ElevenLabs' generation, transcription, video and listing endpoints map to KPP, as Kaeso reads them from ElevenLabs-format apps and writes them to ElevenLabs. Check it before you change the ElevenLabs codec.
 
 - **Codec:** `kaeso_codecs::elevenlabs::ElevenLabs` (`crates/kaeso-codecs/src/elevenlabs/`)
-- **Fixtures:** `crates/kaeso-codecs/fixtures/elevenlabs/`, recorded live on the free tier once per endpoint, about 40 credits in all
+- **Fixtures:** `crates/kaeso-codecs/fixtures/elevenlabs/`, recorded live once per endpoint
 
 **Sources.** ElevenLabs' OpenAPI document, [api.elevenlabs.io/openapi.json](https://api.elevenlabs.io/openapi.json) (read 2026-11-08), its [errors](https://elevenlabs.io/docs/eleven-api/resources/errors) and [cost headers](https://elevenlabs.io/docs/api-reference/introduction), and the official Python SDK's paths (each operation's `x-fern-sdk-method-name`).
 
@@ -43,7 +43,7 @@ Look up how ElevenLabs' generation, transcription, video and listing endpoints m
 | `timestamps_granularity` `word` (the default) or `none` | `format` `verbose_json` or `json`; `word` also `timestamps`; `character` the marker `timestamps_granularity` | typed, form |
 | `tag_audio_events`, `additional_formats`, `keyterms`, `entity_detection`, `webhook`, … | the field | extras |
 
-From another format, `mp3`, `opus`, `wav`, `pcm16`, μ-law and A-law become an `output_format` ElevenLabs lists, with free-tier rates when the request names none: 44.1 kHz at 128 kbps for MP3, 48 kHz at 64 kbps for Opus, 24 kHz for WAV and PCM. `aac`, `flac` and rates ElevenLabs doesn't list are `Unsupported`. `speed` goes to `voice_settings.speed`; `instructions` is `Unsupported`.
+From another format, `mp3`, `opus`, `wav`, `pcm16`, μ-law and A-law become an `output_format` ElevenLabs lists, with rates every plan offers when the request names none: 44.1 kHz at 128 kbps for MP3, 48 kHz at 64 kbps for Opus, 24 kHz for WAV and PCM. `aac`, `flac` and rates ElevenLabs doesn't list are `Unsupported`. `speed` goes to `voice_settings.speed`; `instructions` is `Unsupported`.
 
 ## Replies
 
@@ -63,7 +63,7 @@ ElevenLabs answers `{"detail": {"type", "code", "message", "status", "request_id
 
 ## Video generations
 
-ElevenLabs makes video with Veo 3.1 and Seedance 2 models through `POST /v1/flows/video`, reported by `GET /v1/flows/video/{id}`; the body depends on `model_id` (`VideoGenerationRequest`). Kaeso sends video jobs there for an app of another format; ElevenLabs-format apps don't call it through Kaeso. The fixtures in `fixtures/elevenlabs/video/` are built from the OpenAPI document: video is a paid feature, never called on the free tier.
+ElevenLabs makes video with Veo 3.1 and Seedance 2 models through `POST /v1/flows/video`, reported by `GET /v1/flows/video/{id}`; the body depends on `model_id` (`VideoGenerationRequest`). Kaeso sends video jobs there for an app of another format; ElevenLabs-format apps don't call it through Kaeso. The fixtures in `fixtures/elevenlabs/video/` are built from the OpenAPI document.
 
 | KPP | ElevenLabs |
 | --- | --- |

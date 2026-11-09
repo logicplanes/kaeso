@@ -7,7 +7,7 @@ order: 9
 查阅 ElevenLabs 的生成、转写、视频和列表端点如何映射到 KPP，即 Kaeso 如何从 ElevenLabs 格式的应用读取它们、如何写给 ElevenLabs。修改 ElevenLabs 编解码器之前，先查看这里。
 
 - **编解码器：**`kaeso_codecs::elevenlabs::ElevenLabs`（`crates/kaeso-codecs/src/elevenlabs/`）
-- **Fixture：**`crates/kaeso-codecs/fixtures/elevenlabs/`，在免费套餐上实时录制，每个端点一次，共约 40 个额度
+- **Fixture：**`crates/kaeso-codecs/fixtures/elevenlabs/`，实时录制，每个端点一次
 
 **来源。**ElevenLabs 的 OpenAPI 文档 [api.elevenlabs.io/openapi.json](https://api.elevenlabs.io/openapi.json)（2026-11-08 查阅）、其[错误](https://elevenlabs.io/docs/eleven-api/resources/errors)和[费用响应头](https://elevenlabs.io/docs/api-reference/introduction)，以及官方 Python SDK 的路径（每个操作的 `x-fern-sdk-method-name`）。
 
@@ -43,7 +43,7 @@ order: 9
 | `timestamps_granularity` 为 `word`（默认）或 `none` | `format` 为 `verbose_json` 或 `json`；`word` 还设置 `timestamps`；`character` 为 `timestamps_granularity` 标记 | typed、form |
 | `tag_audio_events`、`additional_formats`、`keyterms`、`entity_detection`、`webhook`…… | 该字段 | extras |
 
-来自其他格式时，`mp3`、`opus`、`wav`、`pcm16`、μ-law 和 A-law 变为 ElevenLabs 列出的某个 `output_format`；请求未指定速率时使用免费套餐的速率：MP3 为 44.1 kHz、128 kbps，Opus 为 48 kHz、64 kbps，WAV 和 PCM 为 24 kHz。`aac`、`flac` 以及 ElevenLabs 未列出的速率为 `Unsupported`。`speed` 传给 `voice_settings.speed`；`instructions` 为 `Unsupported`。
+来自其他格式时，`mp3`、`opus`、`wav`、`pcm16`、μ-law 和 A-law 变为 ElevenLabs 列出的某个 `output_format`；请求未指定速率时使用所有套餐都提供的速率：MP3 为 44.1 kHz、128 kbps，Opus 为 48 kHz、64 kbps，WAV 和 PCM 为 24 kHz。`aac`、`flac` 以及 ElevenLabs 未列出的速率为 `Unsupported`。`speed` 传给 `voice_settings.speed`；`instructions` 为 `Unsupported`。
 
 ## 回复
 
@@ -63,7 +63,7 @@ ElevenLabs 返回 `{"detail": {"type", "code", "message", "status", "request_id"
 
 ## 视频生成
 
-ElevenLabs 通过 `POST /v1/flows/video` 使用 Veo 3.1 和 Seedance 2 模型生成视频，由 `GET /v1/flows/video/{id}` 报告；请求体取决于 `model_id`（`VideoGenerationRequest`）。Kaeso 为其他格式的应用把视频任务发往那里；ElevenLabs 格式的应用不通过 Kaeso 调用它。`fixtures/elevenlabs/video/` 中的 fixture 依据 OpenAPI 文档构建：视频是付费功能，从不在免费套餐上调用。
+ElevenLabs 通过 `POST /v1/flows/video` 使用 Veo 3.1 和 Seedance 2 模型生成视频，由 `GET /v1/flows/video/{id}` 报告；请求体取决于 `model_id`（`VideoGenerationRequest`）。Kaeso 为其他格式的应用把视频任务发往那里；ElevenLabs 格式的应用不通过 Kaeso 调用它。`fixtures/elevenlabs/video/` 中的 fixture 依据 OpenAPI 文档构建。
 
 | KPP | ElevenLabs |
 | --- | --- |
