@@ -1,0 +1,254 @@
+#![allow(clippy::unwrap_used, clippy::indexing_slicing)]
+
+mod common;
+
+use axum::body::Body;
+use axum::http::{Request, StatusCode};
+use common::v1::{Answer, Env, call};
+use http_body_util::BodyExt;
+use kaeso_testkit::mock_provider::DASHSCOPE_LINK;
+use serde_json::{Value, json};
+use tower::ServiceExt;
+
+const QWENCLOUD_SECRET: &str = "sk-test-qwencloud-media-000000000000000";
+const GENERATION: &str = "/api/v1/services/aigc/multimodal-generation/generation";
+const WAV: &[u8] = b"RIFF\x24\0\0\0WAVEfmt ";
+
+async fn env() -> Env {
+    let capture = std::sync::Arc::new(common::v1::Capture::default());
+    let env = common::v1::env(Some(capture), None).await;
+    let org = &env.owner.org_id;
+    let r = env
+        .app
+        .post(
+            &format!("/orgs/{org}/credentials"),
+            json!({ "provider": "alibaba", "name": "QwenCloud", "secret": QWENCLOUD_SECRET }),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
+    for model in [
+        "qwen-image-3.0",
+        "qwen-image-2.0",
+        "wan2.7-image",
+        "z-image-turbo",
+        "qwen-audio-3.0-tts-flash",
+        "qwen3-tts-flash",
+        "qwen-audio-3.0-asr-flash",
+        "qwen3-asr-flash-filetrans",
+    ] {
+        let r = env
+            .app
+            .post(
+                &format!("/orgs/{org}/projects/{}/models", env.project),
+                json!({ "provider": "alibaba", "model_id": model }),
+                Some(&env.owner.cookie),
+            )
+            .await;
+        assert_eq!(r.status, StatusCode::CREATED, "{model}: {:?}", r.body);
+    }
+    env
+}
+
+async fn post(env: &Env, path: &str, body: Value) -> Answer {
+    call(env, path, Some(&env.key), false, Some(body)).await
+}
+
+async fn transcribe(env: &Env, model: &str, extra: &[(&str, &str)]) -> Answer {
+    let mut body = Vec::new();
+    for (name, value) in [("model", model)].iter().chain(extra) {
+        body.extend_from_slice(
+            format!("--kb\r\nContent-Disposition: form-data; name=\"{name}\"\r\n\r\n{value}\r\n")
+                .as_bytes(),
+        );
+    }
+    body.extend_from_slice(
+        b"--kb\r\nContent-Disposition: form-data; name=\"file\"; filename=\"a.wav\"\r\nContent-Type: audio/wav\r\n\r\n",
+    );
+    body.extend_from_slice(WAV);
+    body.extend_from_slice(b"\r\n--kb--\r\n");
+    let req = Request::builder()
+        .uri("/v1/audio/transcriptions")
+        .method("POST")
+        .header("authorization", format!("Bearer {}", env.key))
+        .header("content-type", "multipart/form-data; boundary=kb")
+        .body(Body::from(body))
+        .unwrap();
+    let resp = env.app.router.clone().oneshot(req).await.unwrap();
+    let status = resp.status();
+    let headers = resp.headers().clone();
+    let body = resp
+        .into_body()
+        .collect()
+        .await
+        .unwrap()
+        .to_bytes()
+        .to_vec();
+    Answer {
+        status,
+        headers,
+        body,
+    }
+}
+
+async fn outcome(env: &Env) -> kaeso_server::model_api::hooks::Outcome {
+    env.outcomes().await.into_iter().last().unwrap()
+}
+
+#[tokio::test]
+async fn qwencloud_image_models_reach_dashscope_or_the_openai_compatible_mode_by_model() {
+    let env = env().await;
+    let r = post(
+        &env,
+        "/v1/images/generations",
+        json!({ "model": "wan2.7-image", "prompt": "A red fox", "size": "1024x1024", "n": 1 }),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(r.json()["data"][0]["url"], DASHSCOPE_LINK);
+    let sent = env.mock.last().unwrap();
+    assert_eq!(sent.path, GENERATION);
+    assert_eq!(
+        sent.header("authorization"),
+        Some(format!("Bearer {QWENCLOUD_SECRET}").as_str())
+    );
+    assert_eq!(
+        sent.json(),
+        json!({
+            "model": "wan2.7-image",
+            "input": {"messages": [{"role": "user", "content": [{"text": "A red fox"}]}]},
+            "parameters": {"n": 1, "size": "1024*1024"},
+        })
+    );
+    let o = outcome(&env).await;
+    assert_eq!(o.media.as_ref().unwrap().output_images, 1);
+    assert!(kaeso_server::services::usage::costed(&o).1 > rust_decimal::Decimal::ZERO);
+
+    let r = post(
+        &env,
+        "/v1/images/generations",
+        json!({ "model": "z-image-turbo", "prompt": "A red fox" }),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(
+        r.json()["data"][0]["revised_prompt"],
+        "Photo of a stylish young woman..."
+    );
+
+    let r = post(
+        &env,
+        "/v1/images/generations",
+        json!({ "model": "qwen-image-3.0", "prompt": "A red fox" }),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(env.mock.last().unwrap().path, "/v1/images/generations");
+}
+
+#[tokio::test]
+async fn bytes_are_fetched_only_from_qwenclouds_result_hosts() {
+    let env = env().await;
+    let r = post(
+        &env,
+        "/v1/images/generations",
+        json!({ "model": "qwen-image-2.0", "prompt": "A red fox", "response_format": "b64_json" }),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::BAD_GATEWAY, "{}", r.text());
+    assert_eq!(
+        r.json()["error"]["message"],
+        "QwenCloud answered with a link Kaeso does not fetch."
+    );
+    let sent = env.mock.last().unwrap();
+    assert_eq!(sent.path, GENERATION);
+    assert!(sent.json()["parameters"].get("response_format").is_none());
+    assert!(
+        !env.mock
+            .received()
+            .iter()
+            .any(|r| r.path.contains("result.png")),
+        "the link was not followed"
+    );
+}
+
+#[tokio::test]
+async fn qwen_speech_streams_its_audio_and_is_billed_per_character() {
+    let env = env().await;
+    let r = post(
+        &env,
+        "/v1/audio/speech",
+        json!({ "model": "qwen-audio-3.0-tts-flash", "input": "你好，今天的天气真不错。", "voice": "longanhuan_v3.6", "response_format": "wav" }),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(r.header("content-type"), Some("audio/wav"));
+    assert!(r.body.starts_with(b"RIFF"));
+    let sent = env.mock.last().unwrap();
+    assert_eq!(sent.path, "/api/v1/services/audio/tts/SpeechSynthesizer");
+    assert_eq!(sent.header("x-dashscope-sse"), Some("enable"));
+    assert_eq!(sent.json()["input"]["format"], "wav");
+    let o = outcome(&env).await;
+    assert_eq!(
+        o.media.as_ref().unwrap().characters,
+        22,
+        "the billed characters"
+    );
+
+    let r = post(
+        &env,
+        "/v1/audio/speech",
+        json!({ "model": "qwen3-tts-flash", "input": "Hi", "voice": "Cherry", "response_format": "pcm", "stream_format": "sse" }),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(r.text().matches("speech.audio.delta").count(), 2);
+
+    let r = post(
+        &env,
+        "/v1/audio/speech",
+        json!({ "model": "qwen3-tts-flash", "input": "Hi", "voice": "Cherry", "response_format": "wav" }),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::BAD_GATEWAY, "{}", r.text());
+    assert!(
+        env.mock.last().unwrap().header("x-dashscope-sse").is_none(),
+        "a wav reply is asked for whole"
+    );
+
+    let r = post(
+        &env,
+        "/v1/audio/speech",
+        json!({ "model": "qwen3-tts-flash", "input": "Hi", "voice": "alloy", "response_format": "wav" }),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    assert_eq!(r.json()["error"]["param"], "voice");
+}
+
+#[tokio::test]
+async fn qwen_audio_asr_transcribes_through_dashscope_and_is_billed_by_its_seconds() {
+    let env = env().await;
+    let r = transcribe(&env, "qwen-audio-3.0-asr-flash", &[("language", "en")]).await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(r.json()["text"], "Hello World, this is Alibaba Speech Lab.");
+    let sent = env.mock.last().unwrap().json();
+    assert_eq!(
+        sent["parameters"],
+        json!({"format": "wav", "language_hints": ["en"]})
+    );
+    assert!(
+        sent["input"]["messages"][0]["content"][0]["input_audio"]["data"]
+            .as_str()
+            .unwrap()
+            .starts_with("data:audio/wav;base64,")
+    );
+    let o = outcome(&env).await;
+    assert_eq!(o.media.as_ref().unwrap().input_ms, 4000);
+
+    let before = env.mock.received().len();
+    let r = transcribe(&env, "qwen3-asr-flash-filetrans", &[]).await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    assert_eq!(r.json()["error"]["param"], "model");
+    assert_eq!(env.mock.received().len(), before, "nothing was sent");
+}

@@ -106,7 +106,7 @@ Every built-in provider's documentation was read for image generation on 2026-11
 | OpenRouter | Yes, streamed for OpenAI's models | As reference images | Its image catalogue, such as `openai/gpt-image-2` and `google/gemini-3.1-flash-image` | [Image generation](https://openrouter.ai/docs/guides/overview/multimodal/image-generation) |
 | Vercel | Yes | Uploads or JSON, with a mask where the model takes one | Its image models, such as `openai/gpt-image-2` and `bfl/flux-2-pro` | [Image generation](https://vercel.com/docs/ai-gateway/capabilities/image-generation/openai) |
 | Together AI | Yes | One image by link | Its image models, such as `black-forest-labs/FLUX.2-pro` | [Create image](https://docs.together.ai/reference/post-images-generations) |
-| QwenCloud | Yes | Up to 10 images, no mask | `qwen-image-3.0-pro`, `qwen-image-3.0`, `qwen-image-2.1-pro` | [OpenAI-compatible text-to-image](https://docs.qwencloud.com/api-reference/image-generation/qwen-text-to-image-openai) |
+| QwenCloud | Yes, except `wan2.6-image` | Up to 10 images on Qwen-Image 2.1, 3 on the other Qwen-Image models, 9 on Wan 2.7, 1 to 4 on Wan 2.6, none on Z-Image; no mask | OpenAI-compatible mode: `qwen-image-3.0-pro`, `qwen-image-3.0`, `qwen-image-2.1-pro`; DashScope: `qwen-image-2.1-turbo`, `qwen-image-2.0-pro`, `qwen-image-2.0`, `wan2.7-image-pro`, `wan2.7-image`, `wan2.6-image`, `z-image-turbo` | [OpenAI-compatible text-to-image](https://docs.qwencloud.com/api-reference/image-generation/qwen-text-to-image-openai), [Qwen-Image](https://docs.qwencloud.com/api-reference/image-generation/qwen-text-to-image), [Wan 2.7 Image](https://docs.qwencloud.com/api-reference/image-generation/wan27-image-gen-edit/synchronous), [Wan 2.6 Image](https://docs.qwencloud.com/api-reference/image-generation/wan26-image-gen-edit/synchronous), [Z-Image](https://docs.qwencloud.com/api-reference/image-generation/z-image) |
 | Z.ai | Yes, one image per request | No | `glm-image` | [Generate image](https://docs.z.ai/api-reference/image/generate-image) |
 | MiniMax | Yes | No | `image-01` | [Text to image](https://platform.minimax.io/docs/api-reference/image-generation-t2i) |
 | Mistral | No: images only as a tool of its agents | No | — | [Image generation tool](https://docs.mistral.ai/studio/agents/agent-tools/image_generation) |
@@ -114,9 +114,11 @@ Every built-in provider's documentation was read for image generation on 2026-11
 
 Google retired Imagen, so Kaeso calls the Gemini image models only. A size reaches them only when Google's size tables list it, such as `1024x1024` (`1:1` at `1K`). Send `aspect_ratio` and `resolution` for the others.
 
-SpaceX takes `aspect_ratio` and `resolution` instead of `size`. Z.ai and QwenCloud answer only with links, which expire after 30 days and 24 hours, so `response_format: "b64_json"` answers 400 there. Gemini and OpenRouter answer only with base64, so `response_format: "url"` answers 400 there.
+SpaceX takes `aspect_ratio` and `resolution` instead of `size`. Z.ai answers only with links, which expire after 30 days, so `response_format: "b64_json"` answers 400 there. QwenCloud answers with links too, valid for 24 hours. For `b64_json`, Kaeso downloads them over https from QwenCloud's result hosts (`dashscope-*.aliyuncs.com`) only, without the provider key or redirects, within the provider response limit and the request timeout. Gemini and OpenRouter answer only with base64, so `response_format: "url"` answers 400 there.
 
-The [OpenAI Images mapping](../development/kpp/openai-images.md) lists every parameter and how each provider takes it.
+QwenCloud's OpenAI-compatible mode serves only Qwen-Image 3.0 and 2.1 Pro, so its other image models go to its own DashScope API, which takes `resolution` (`1K`, `2K`, `4K`) on Wan. None of its models adds a watermark unless the app sends `watermark: true`.
+
+The [OpenAI Images mapping](../development/kpp/openai-images.md) lists every parameter and how each provider takes it; [DashScope](../development/kpp/dashscope.md) lists QwenCloud's own API.
 
 ## Costs and logs
 

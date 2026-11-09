@@ -68,7 +68,7 @@ Bilder gehen als Links oder Data-URLs, außer erstem und letztem Bild bei Wan 2.
 | `user` | weggelassen, in `kaeso-left-out` genannt | ebenso | ebenso | ebenso |
 | `mask`, `quality`, `output_format`, `output_compression`, `background`, `aspect_ratio`, Datei-IDs | abgelehnt | abgelehnt | abgelehnt | abgelehnt |
 
-- **Nur Links.** DashScope antwortet mit Links, die 24 Stunden gelten, deshalb lehnt der Codec `b64_json` ab.
+- **Nur Links.** DashScope antwortet mit Links, die 24 Stunden gelten, deshalb lehnt der Codec `b64_json` ab; das Gateway nimmt es aus der Anfrage und lädt die Bilder für eine App herunter, die Bytes verlangt ([Bilder-API](../../api/images.md#anbieter)).
 - **Erweiterungen gehen mit.** `prompt_extend`, `prompt_extend_mode`, `enable_thinking` und `watermark` einer App im Format von OpenAI gehen nach `parameters`, so wie der OpenAI-kompatible Modus von QwenCloud sie dokumentiert. Jedes andere fremde Feld wird abgelehnt.
 - **Standardmäßig kein Wasserzeichen.** Jedes dieser Modelle lässt das Wasserzeichen weg, solange `watermark` nicht `true` ist; Kaeso sendet deshalb nichts.
 - **Ganze Antworten.** Die Bilder kommen in einer Antwort; eine gestreamte Anfrage bekommt sie als fertige Events.

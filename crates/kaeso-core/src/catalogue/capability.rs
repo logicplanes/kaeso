@@ -163,7 +163,7 @@ pub fn prepare(
             })
         }
         Request::Image(r) => {
-            let Some(images) = eff.provider.images() else {
+            let Some(images) = eff.provider.images(name) else {
                 return Err(refuse(
                     "images",
                     Some("model"),
@@ -207,7 +207,7 @@ pub fn prepare(
             })
         }
         Request::Speech(r) => {
-            let Some(speech) = eff.provider.speech() else {
+            let Some(speech) = eff.provider.speech(name) else {
                 return Err(refuse(
                     "speech",
                     Some("model"),
@@ -234,7 +234,7 @@ pub fn prepare(
             Ok(media_plan(speech.dialect))
         }
         Request::Transcription(_) => {
-            let Some(transcriptions) = eff.provider.transcriptions() else {
+            let Some(transcriptions) = eff.provider.transcriptions(name) else {
                 return Err(refuse(
                     "transcription",
                     Some("model"),

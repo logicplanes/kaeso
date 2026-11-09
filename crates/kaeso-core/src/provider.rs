@@ -204,7 +204,11 @@ impl AuthMethod {
     }
 }
 
-/// Where and how Kaeso sends image requests to a provider.
+// The hosts QwenCloud's result links point at: DashScope's OSS buckets, such as
+// `dashscope-result-sgp.oss-ap-southeast-1.aliyuncs.com` in its image, speech and video references.
+const DASHSCOPE_RESULTS: &[&str] = &["dashscope-*.aliyuncs.com"];
+
+/// Where and how Kaeso sends image requests to a provider, for the models `models` matches.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct ImagesEgress {
     pub dialect: DialectId,
@@ -214,29 +218,64 @@ pub struct ImagesEgress {
     pub from_root: bool,
     /// The auth header the image API takes when it differs from the provider's.
     pub auth: Option<AuthStyle>,
+    /// The model ids this API serves, `*` standing for any run of characters.
+    pub models: &'static str,
+    /// The hosts Kaeso may fetch the provider's image links from, for an app that asks for the
+    /// bytes of a provider that answers with links only.
+    pub fetch_hosts: &'static [&'static str],
 }
 
 impl ImagesEgress {
-    const fn openai(profile: ImagesProfile) -> Option<ImagesEgress> {
-        Some(ImagesEgress {
-            dialect: DialectId::OpenAiImages,
+    const ANY: ImagesEgress = ImagesEgress {
+        dialect: DialectId::OpenAiImages,
+        profile: ImagesProfile::OPENAI,
+        from_root: false,
+        auth: None,
+        models: "*",
+        fetch_hosts: &[],
+    };
+
+    const fn openai(profile: ImagesProfile) -> ImagesEgress {
+        ImagesEgress {
             profile,
-            from_root: false,
-            auth: None,
-        })
+            ..ImagesEgress::ANY
+        }
     }
 
-    const fn gemini() -> Option<ImagesEgress> {
-        Some(ImagesEgress {
+    const fn gemini() -> ImagesEgress {
+        ImagesEgress {
             dialect: DialectId::Gemini,
-            profile: ImagesProfile::OPENAI,
-            from_root: false,
-            auth: None,
-        })
+            ..ImagesEgress::ANY
+        }
+    }
+
+    const fn dashscope() -> ImagesEgress {
+        ImagesEgress {
+            dialect: DialectId::DashScope,
+            from_root: true,
+            auth: Some(AuthStyle::Bearer),
+            fetch_hosts: DASHSCOPE_RESULTS,
+            ..ImagesEgress::ANY
+        }
+    }
+
+    const fn for_models(self, models: &'static str) -> ImagesEgress {
+        ImagesEgress { models, ..self }
+    }
+
+    const fn fetching(self, fetch_hosts: &'static [&'static str]) -> ImagesEgress {
+        ImagesEgress {
+            fetch_hosts,
+            ..self
+        }
+    }
+
+    pub fn serves(&self, model: &str) -> bool {
+        glob(self.models, model)
     }
 }
 
-/// Where and how Kaeso sends speech requests to a provider.
+/// Where and how Kaeso sends speech requests to a provider, for the models `models` matches.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct SpeechEgress {
     pub dialect: DialectId,
@@ -246,54 +285,102 @@ pub struct SpeechEgress {
     pub from_root: bool,
     /// The auth header the speech API takes when it differs from the provider's.
     pub auth: Option<AuthStyle>,
+    /// The model ids this API serves, as for [`ImagesEgress::models`].
+    pub models: &'static str,
+    /// The hosts Kaeso may fetch a whole reply's audio link from, as for
+    /// [`ImagesEgress::fetch_hosts`].
+    pub fetch_hosts: &'static [&'static str],
 }
 
 impl SpeechEgress {
-    const fn openai(profile: SpeechProfile) -> Option<SpeechEgress> {
-        Some(SpeechEgress {
-            dialect: DialectId::OpenAiSpeech,
+    const ANY: SpeechEgress = SpeechEgress {
+        dialect: DialectId::OpenAiSpeech,
+        profile: SpeechProfile::OPENAI,
+        from_root: false,
+        auth: None,
+        models: "*",
+        fetch_hosts: &[],
+    };
+
+    const fn openai(profile: SpeechProfile) -> SpeechEgress {
+        SpeechEgress {
             profile,
-            from_root: false,
-            auth: None,
-        })
+            ..SpeechEgress::ANY
+        }
     }
 
-    const fn gemini() -> Option<SpeechEgress> {
-        Some(SpeechEgress {
+    const fn gemini() -> SpeechEgress {
+        SpeechEgress {
             dialect: DialectId::Gemini,
-            profile: SpeechProfile::OPENAI,
-            from_root: false,
-            auth: None,
-        })
+            ..SpeechEgress::ANY
+        }
+    }
+
+    const fn dashscope() -> SpeechEgress {
+        SpeechEgress {
+            dialect: DialectId::DashScope,
+            from_root: true,
+            auth: Some(AuthStyle::Bearer),
+            fetch_hosts: DASHSCOPE_RESULTS,
+            ..SpeechEgress::ANY
+        }
+    }
+
+    pub fn serves(&self, model: &str) -> bool {
+        glob(self.models, model)
     }
 }
 
-/// Where and how Kaeso sends transcription requests to a provider.
+/// Where and how Kaeso sends transcription requests to a provider, for the models `models`
+/// matches.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct TranscriptionsEgress {
     pub dialect: DialectId,
     pub profile: TranscriptionsProfile,
     pub from_root: bool,
     pub auth: Option<AuthStyle>,
+    /// The model ids this API serves, as for [`ImagesEgress::models`].
+    pub models: &'static str,
 }
 
 impl TranscriptionsEgress {
-    const fn openai(profile: TranscriptionsProfile) -> Option<TranscriptionsEgress> {
-        Some(TranscriptionsEgress {
-            dialect: DialectId::OpenAiTranscriptions,
+    const ANY: TranscriptionsEgress = TranscriptionsEgress {
+        dialect: DialectId::OpenAiTranscriptions,
+        profile: TranscriptionsProfile::OPENAI,
+        from_root: false,
+        auth: None,
+        models: "*",
+    };
+
+    const fn openai(profile: TranscriptionsProfile) -> TranscriptionsEgress {
+        TranscriptionsEgress {
             profile,
-            from_root: false,
-            auth: None,
-        })
+            ..TranscriptionsEgress::ANY
+        }
     }
 
-    const fn gemini() -> Option<TranscriptionsEgress> {
-        Some(TranscriptionsEgress {
+    const fn gemini() -> TranscriptionsEgress {
+        TranscriptionsEgress {
             dialect: DialectId::Gemini,
-            profile: TranscriptionsProfile::OPENAI,
-            from_root: false,
-            auth: None,
-        })
+            ..TranscriptionsEgress::ANY
+        }
+    }
+
+    const fn dashscope() -> TranscriptionsEgress {
+        TranscriptionsEgress {
+            dialect: DialectId::DashScope,
+            from_root: true,
+            auth: Some(AuthStyle::Bearer),
+            ..TranscriptionsEgress::ANY
+        }
+    }
+
+    const fn for_models(self, models: &'static str) -> TranscriptionsEgress {
+        TranscriptionsEgress { models, ..self }
+    }
+
+    pub fn serves(&self, model: &str) -> bool {
+        glob(self.models, model)
     }
 }
 
@@ -352,6 +439,12 @@ impl ModelRoute {
     }
 }
 
+/// Whether `host` is one of `hosts`, each a pattern where `*` stands for any run of characters.
+pub fn fetchable(hosts: &[&str], host: &str) -> bool {
+    let host = host.to_ascii_lowercase();
+    hosts.iter().any(|pattern| glob(pattern, &host))
+}
+
 // `*` stands for any run of characters, every other character for itself.
 fn glob(pattern: &str, text: &str) -> bool {
     let mut parts = pattern.split('*');
@@ -400,9 +493,13 @@ pub struct Provider {
     pub generation: DialectId,
     pub count_tokens: Option<DialectId>,
     pub embeddings: Option<DialectId>,
-    pub images: Option<ImagesEgress>,
-    pub speech: Option<SpeechEgress>,
-    pub transcriptions: Option<TranscriptionsEgress>,
+    /// Where Kaeso sends image requests, by model, the first match winning; empty for a
+    /// provider that offers no image API.
+    pub images: &'static [ImagesEgress],
+    /// Where Kaeso sends speech requests, by model, as for `images`.
+    pub speech: &'static [SpeechEgress],
+    /// Where Kaeso sends transcriptions, by model, as for `images`.
+    pub transcriptions: &'static [TranscriptionsEgress],
     /// Where Kaeso sends video jobs, by model; empty for a provider that offers no video API.
     pub videos: &'static [VideosEgress],
     pub dialects: &'static [DialectId],
@@ -470,9 +567,9 @@ pub const PROVIDERS: &[Provider] = &[
         generation: DialectId::OpenAiResponses,
         count_tokens: Some(DialectId::OpenAiResponses),
         embeddings: Some(DialectId::OpenAiEmbeddings),
-        images: ImagesEgress::openai(ImagesProfile::OPENAI),
-        speech: SpeechEgress::openai(SpeechProfile::OPENAI),
-        transcriptions: TranscriptionsEgress::openai(TranscriptionsProfile::OPENAI),
+        images: &[ImagesEgress::openai(ImagesProfile::OPENAI)],
+        speech: &[SpeechEgress::openai(SpeechProfile::OPENAI)],
+        transcriptions: &[TranscriptionsEgress::openai(TranscriptionsProfile::OPENAI)],
         videos: &[],
         dialects: &[
             DialectId::OpenAiResponses,
@@ -510,9 +607,9 @@ pub const PROVIDERS: &[Provider] = &[
         generation: DialectId::AnthropicMessages,
         count_tokens: Some(DialectId::AnthropicMessages),
         embeddings: None,
-        images: None,
-        speech: None,
-        transcriptions: None,
+        images: &[],
+        speech: &[],
+        transcriptions: &[],
         videos: &[],
         dialects: &[DialectId::AnthropicMessages],
         refused_key_messages: &[],
@@ -540,9 +637,9 @@ pub const PROVIDERS: &[Provider] = &[
         generation: DialectId::OpenAiChat,
         count_tokens: None,
         embeddings: None,
-        images: None,
-        speech: None,
-        transcriptions: None,
+        images: &[],
+        speech: &[],
+        transcriptions: &[],
         videos: &[],
         dialects: &[DialectId::OpenAiChat],
         refused_key_messages: &[],
@@ -575,9 +672,9 @@ pub const PROVIDERS: &[Provider] = &[
         generation: DialectId::OpenAiResponses,
         count_tokens: None,
         embeddings: None,
-        images: ImagesEgress::openai(ImagesProfile::XAI),
-        speech: SpeechEgress::openai(SpeechProfile::XAI),
-        transcriptions: TranscriptionsEgress::openai(TranscriptionsProfile::XAI),
+        images: &[ImagesEgress::openai(ImagesProfile::XAI)],
+        speech: &[SpeechEgress::openai(SpeechProfile::XAI)],
+        transcriptions: &[TranscriptionsEgress::openai(TranscriptionsProfile::XAI)],
         videos: &[VideosEgress::of(DialectId::XaiVideos)],
         dialects: &[DialectId::OpenAiResponses, DialectId::OpenAiChat],
         refused_key_messages: &["Incorrect API key provided"],
@@ -618,9 +715,11 @@ pub const PROVIDERS: &[Provider] = &[
         generation: DialectId::OpenAiChat,
         count_tokens: None,
         embeddings: Some(DialectId::OpenAiEmbeddings),
-        images: ImagesEgress::openai(ImagesProfile::TOGETHER),
-        speech: SpeechEgress::openai(SpeechProfile::TOGETHER),
-        transcriptions: TranscriptionsEgress::openai(TranscriptionsProfile::TOGETHER),
+        images: &[ImagesEgress::openai(ImagesProfile::TOGETHER)],
+        speech: &[SpeechEgress::openai(SpeechProfile::TOGETHER)],
+        transcriptions: &[TranscriptionsEgress::openai(
+            TranscriptionsProfile::TOGETHER,
+        )],
         videos: &[VideosEgress {
             profile: VideosProfile::TOGETHER,
             ..VideosEgress::of(DialectId::OpenAiVideos)
@@ -652,9 +751,9 @@ pub const PROVIDERS: &[Provider] = &[
         generation: DialectId::OpenAiChat,
         count_tokens: None,
         embeddings: None,
-        images: None,
-        speech: SpeechEgress::openai(SpeechProfile::GROQ),
-        transcriptions: TranscriptionsEgress::openai(TranscriptionsProfile::GROQ),
+        images: &[],
+        speech: &[SpeechEgress::openai(SpeechProfile::GROQ)],
+        transcriptions: &[TranscriptionsEgress::openai(TranscriptionsProfile::GROQ)],
         videos: &[],
         dialects: &[DialectId::OpenAiChat],
         refused_key_messages: &[],
@@ -688,9 +787,11 @@ pub const PROVIDERS: &[Provider] = &[
         generation: DialectId::OpenAiChat,
         count_tokens: None,
         embeddings: Some(DialectId::OpenAiEmbeddings),
-        images: ImagesEgress::openai(ImagesProfile::OPENROUTER),
-        speech: SpeechEgress::openai(SpeechProfile::OPENROUTER),
-        transcriptions: TranscriptionsEgress::openai(TranscriptionsProfile::OPENROUTER),
+        images: &[ImagesEgress::openai(ImagesProfile::OPENROUTER)],
+        speech: &[SpeechEgress::openai(SpeechProfile::OPENROUTER)],
+        transcriptions: &[TranscriptionsEgress::openai(
+            TranscriptionsProfile::OPENROUTER,
+        )],
         videos: &[VideosEgress::of(DialectId::OpenRouterVideos)],
         dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
         refused_key_messages: &[],
@@ -724,9 +825,9 @@ pub const PROVIDERS: &[Provider] = &[
         generation: DialectId::OpenAiChat,
         count_tokens: None,
         embeddings: Some(DialectId::OpenAiEmbeddings),
-        images: None,
-        speech: SpeechEgress::openai(SpeechProfile::MISTRAL),
-        transcriptions: TranscriptionsEgress::openai(TranscriptionsProfile::MISTRAL),
+        images: &[],
+        speech: &[SpeechEgress::openai(SpeechProfile::MISTRAL)],
+        transcriptions: &[TranscriptionsEgress::openai(TranscriptionsProfile::MISTRAL)],
         videos: &[],
         dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
         refused_key_messages: &[],
@@ -775,9 +876,9 @@ pub const PROVIDERS: &[Provider] = &[
         generation: DialectId::OpenAiChat,
         count_tokens: None,
         embeddings: Some(DialectId::OpenAiEmbeddings),
-        images: ImagesEgress::openai(ImagesProfile::VERCEL),
-        speech: SpeechEgress::openai(SpeechProfile::VERCEL),
-        transcriptions: TranscriptionsEgress::openai(TranscriptionsProfile::VERCEL),
+        images: &[ImagesEgress::openai(ImagesProfile::VERCEL)],
+        speech: &[SpeechEgress::openai(SpeechProfile::VERCEL)],
+        transcriptions: &[TranscriptionsEgress::openai(TranscriptionsProfile::VERCEL)],
         videos: &[],
         dialects: &[
             DialectId::OpenAiChat,
@@ -810,14 +911,15 @@ pub const PROVIDERS: &[Provider] = &[
         generation: DialectId::OpenAiChat,
         count_tokens: None,
         embeddings: Some(DialectId::OpenAiEmbeddings),
-        images: None,
-        speech: None,
-        transcriptions: Some(TranscriptionsEgress {
+        images: &[],
+        speech: &[],
+        transcriptions: &[TranscriptionsEgress {
             dialect: DialectId::OpenAiTranscriptions,
             profile: TranscriptionsProfile::COHERE,
             from_root: true,
             auth: Some(AuthStyle::Bearer),
-        }),
+            ..TranscriptionsEgress::ANY
+        }],
         videos: &[],
         dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
         refused_key_messages: &[],
@@ -862,9 +964,9 @@ pub const PROVIDERS: &[Provider] = &[
         generation: DialectId::OpenAiChat,
         count_tokens: None,
         embeddings: None,
-        images: None,
-        speech: None,
-        transcriptions: None,
+        images: &[],
+        speech: &[],
+        transcriptions: &[],
         videos: &[],
         dialects: &[DialectId::OpenAiChat],
         refused_key_messages: &[],
@@ -895,9 +997,9 @@ pub const PROVIDERS: &[Provider] = &[
         generation: DialectId::OpenAiChat,
         count_tokens: None,
         embeddings: None,
-        images: None,
-        speech: None,
-        transcriptions: None,
+        images: &[],
+        speech: &[],
+        transcriptions: &[],
         videos: &[],
         dialects: &[DialectId::OpenAiChat],
         refused_key_messages: &[],
@@ -941,14 +1043,31 @@ pub const PROVIDERS: &[Provider] = &[
         generation: DialectId::OpenAiChat,
         count_tokens: None,
         embeddings: Some(DialectId::OpenAiEmbeddings),
-        images: ImagesEgress::openai(ImagesProfile::QWENCLOUD),
-        speech: None,
-        transcriptions: Some(TranscriptionsEgress {
-            dialect: DialectId::OpenAiChat,
-            profile: TranscriptionsProfile::OPENAI,
-            from_root: false,
-            auth: None,
-        }),
+        // QwenCloud's OpenAI-compatible image mode serves Qwen-Image 3.0 and 2.1 Pro only
+        // (https://docs.qwencloud.com/api-reference/image-generation/qwen-text-to-image-openai);
+        // its other image models answer on DashScope's own API.
+        images: &[
+            ImagesEgress::openai(ImagesProfile::QWENCLOUD)
+                .for_models("qwen-image-3.0*")
+                .fetching(DASHSCOPE_RESULTS),
+            ImagesEgress::openai(ImagesProfile::QWENCLOUD)
+                .for_models("qwen-image-2.1-pro*")
+                .fetching(DASHSCOPE_RESULTS),
+            ImagesEgress::dashscope().for_models("qwen-image-*"),
+            ImagesEgress::dashscope().for_models("wan*"),
+            ImagesEgress::dashscope().for_models("z-image*"),
+            ImagesEgress::openai(ImagesProfile::QWENCLOUD).fetching(DASHSCOPE_RESULTS),
+        ],
+        speech: &[SpeechEgress::dashscope()],
+        transcriptions: &[
+            TranscriptionsEgress::dashscope().for_models("qwen-audio-*"),
+            TranscriptionsEgress::dashscope().for_models("qwen3-asr-flash-filetrans*"),
+            TranscriptionsEgress::dashscope().for_models("qwen3-asr-flash-realtime*"),
+            TranscriptionsEgress {
+                dialect: DialectId::OpenAiChat,
+                ..TranscriptionsEgress::ANY
+            },
+        ],
         videos: &[VideosEgress::rooted(DialectId::DashScope).for_models("wan*")],
         dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
         refused_key_messages: &[],
@@ -990,9 +1109,9 @@ pub const PROVIDERS: &[Provider] = &[
         generation: DialectId::OpenAiChat,
         count_tokens: None,
         embeddings: None,
-        images: None,
-        speech: None,
-        transcriptions: None,
+        images: &[],
+        speech: &[],
+        transcriptions: &[],
         videos: &[],
         dialects: &[DialectId::OpenAiChat],
         refused_key_messages: &[],
@@ -1028,19 +1147,21 @@ pub const PROVIDERS: &[Provider] = &[
         generation: DialectId::AnthropicMessages,
         count_tokens: None,
         embeddings: None,
-        images: Some(ImagesEgress {
+        images: &[ImagesEgress {
             dialect: DialectId::OpenAiImages,
             profile: ImagesProfile::ZAI,
             from_root: true,
             auth: Some(AuthStyle::Bearer),
-        }),
-        speech: None,
-        transcriptions: Some(TranscriptionsEgress {
+            ..ImagesEgress::ANY
+        }],
+        speech: &[],
+        transcriptions: &[TranscriptionsEgress {
             dialect: DialectId::OpenAiTranscriptions,
             profile: TranscriptionsProfile::ZAI,
             from_root: true,
             auth: Some(AuthStyle::Bearer),
-        }),
+            ..TranscriptionsEgress::ANY
+        }],
         videos: &[VideosEgress::rooted(DialectId::ZaiVideos)],
         dialects: &[DialectId::AnthropicMessages],
         refused_key_messages: &[],
@@ -1068,24 +1189,27 @@ pub const PROVIDERS: &[Provider] = &[
         generation: DialectId::AnthropicMessages,
         count_tokens: None,
         embeddings: None,
-        images: Some(ImagesEgress {
+        images: &[ImagesEgress {
             dialect: DialectId::MinimaxImages,
             profile: ImagesProfile::OPENAI,
             from_root: true,
             auth: Some(AuthStyle::Bearer),
-        }),
-        speech: Some(SpeechEgress {
+            ..ImagesEgress::ANY
+        }],
+        speech: &[SpeechEgress {
             dialect: DialectId::MinimaxSpeech,
             profile: SpeechProfile::OPENAI,
             from_root: true,
             auth: Some(AuthStyle::Bearer),
-        }),
-        transcriptions: Some(TranscriptionsEgress {
+            ..SpeechEgress::ANY
+        }],
+        transcriptions: &[TranscriptionsEgress {
             dialect: DialectId::OpenAiTranscriptions,
             profile: TranscriptionsProfile::MINIMAX,
             from_root: true,
             auth: Some(AuthStyle::Bearer),
-        }),
+            ..TranscriptionsEgress::ANY
+        }],
         videos: &[VideosEgress::rooted(DialectId::MinimaxVideos)],
         dialects: &[DialectId::AnthropicMessages],
         refused_key_messages: &[],
@@ -1130,19 +1254,21 @@ pub const PROVIDERS: &[Provider] = &[
         generation: DialectId::ElevenLabs,
         count_tokens: None,
         embeddings: None,
-        images: None,
-        speech: Some(SpeechEgress {
+        images: &[],
+        speech: &[SpeechEgress {
             dialect: DialectId::ElevenLabs,
             profile: SpeechProfile::OPENAI,
             from_root: false,
             auth: None,
-        }),
-        transcriptions: Some(TranscriptionsEgress {
+            ..SpeechEgress::ANY
+        }],
+        transcriptions: &[TranscriptionsEgress {
             dialect: DialectId::ElevenLabs,
             profile: TranscriptionsProfile::OPENAI,
             from_root: false,
             auth: None,
-        }),
+            ..TranscriptionsEgress::ANY
+        }],
         videos: &[VideosEgress::of(DialectId::ElevenLabs)],
         dialects: &[DialectId::ElevenLabs],
         refused_key_messages: &[],
@@ -1171,9 +1297,9 @@ pub const PROVIDERS: &[Provider] = &[
         generation: DialectId::Gemini,
         count_tokens: Some(DialectId::Gemini),
         embeddings: Some(DialectId::GeminiEmbeddings),
-        images: ImagesEgress::gemini(),
-        speech: SpeechEgress::gemini(),
-        transcriptions: TranscriptionsEgress::gemini(),
+        images: &[ImagesEgress::gemini()],
+        speech: &[SpeechEgress::gemini()],
+        transcriptions: &[TranscriptionsEgress::gemini()],
         videos: &[VideosEgress::of(DialectId::GeminiInteractions).for_models("gemini-omni-*")],
         dialects: &[DialectId::Gemini, DialectId::GeminiEmbeddings],
         refused_key_messages: &[],
@@ -1202,9 +1328,9 @@ pub const PROVIDERS: &[Provider] = &[
         generation: DialectId::Gemini,
         count_tokens: Some(DialectId::Gemini),
         embeddings: None,
-        images: ImagesEgress::gemini(),
-        speech: SpeechEgress::gemini(),
-        transcriptions: TranscriptionsEgress::gemini(),
+        images: &[ImagesEgress::gemini()],
+        speech: &[SpeechEgress::gemini()],
+        transcriptions: &[TranscriptionsEgress::gemini()],
         videos: &[VideosEgress::of(DialectId::Veo).for_models("veo-*")],
         dialects: &[
             DialectId::Gemini,
@@ -2284,6 +2410,58 @@ mod tests {
         assert!(!r("exact").matches("exactly"));
         assert!(r("a*b*c").matches("aXbYc"));
         assert!(!r("a*b*c").matches("aXcYb"));
+    }
+
+    #[test]
+    fn qwencloud_sends_each_media_model_to_the_api_that_serves_it() {
+        let qwen = provider("alibaba").unwrap();
+        let images = |m: &str| qwen.images.iter().find(|e| e.serves(m)).unwrap();
+        for m in [
+            "qwen-image-3.0-pro",
+            "qwen-image-3.0",
+            "qwen-image-2.1-pro",
+            "flux",
+        ] {
+            assert_eq!(images(m).dialect, DialectId::OpenAiImages, "{m}");
+            assert!(!images(m).from_root);
+        }
+        for m in [
+            "qwen-image-2.1-turbo",
+            "qwen-image-2.0-pro-2026-06-22",
+            "wan2.7-image-pro",
+            "wan2.6-image",
+            "z-image-turbo",
+        ] {
+            assert_eq!(images(m).dialect, DialectId::DashScope, "{m}");
+            assert!(images(m).from_root && !images(m).fetch_hosts.is_empty());
+        }
+        assert!(
+            qwen.speech
+                .iter()
+                .all(|e| e.dialect == DialectId::DashScope)
+        );
+        let asr = |m: &str| {
+            qwen.transcriptions
+                .iter()
+                .find(|e| e.serves(m))
+                .unwrap()
+                .dialect
+        };
+        assert_eq!(asr("qwen3-asr-flash"), DialectId::OpenAiChat);
+        assert_eq!(asr("qwen3-asr-flash-2025-09-08"), DialectId::OpenAiChat);
+        assert_eq!(asr("qwen3-asr-flash-filetrans"), DialectId::DashScope);
+        assert_eq!(asr("qwen-audio-3.1-asr-flash"), DialectId::DashScope);
+        assert!(fetchable(
+            DASHSCOPE_RESULTS,
+            "Dashscope-Result-SGP.oss-ap-southeast-1.aliyuncs.com"
+        ));
+        assert!(!fetchable(
+            DASHSCOPE_RESULTS,
+            "dashscope-result.aliyuncs.com.example.com"
+        ));
+        assert!(!fetchable(&[], "dashscope-result.aliyuncs.com"));
+        let openai = provider("openai").unwrap();
+        assert!(openai.images.iter().all(|e| e.fetch_hosts.is_empty()));
     }
 
     #[test]

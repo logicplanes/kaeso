@@ -57,10 +57,11 @@ Keys, model resolution with aliases and routes, limits and budgets, request logs
 
 ## Speech
 
-- **Voices.** A voice crosses only where the provider lists it: OpenAI's voices for OpenAI, Gemini's 30 prebuilt voices for Google models, SpaceX's voice ids for SpaceX. Providers whose voices depend on the model (Groq, Together AI, Mistral, OpenRouter, MiniMax) take the name as it is. ElevenLabs takes a voice by its id, as its `GET /v1/voices` lists it: send the id as `voice`, or `{"id": "…"}`; a name such as `alloy` is refused, since Kaeso doesn't guess which ElevenLabs voice it means.
-- **Formats** are never converted. A format the provider lacks is refused before anything is sent, with `response_format` in `param`. When the app names no format, OpenAI answers mp3, so Kaeso asks every provider for mp3 by name.
+- **Voices.** A voice crosses only where the provider lists it: OpenAI's voices for OpenAI, Gemini's 30 prebuilt voices for Google models, SpaceX's voice ids for SpaceX. Providers whose voices depend on the model (Groq, Together AI, Mistral, OpenRouter, MiniMax) take the name as it is. QwenCloud takes a voice its lists name for the model, such as `Cherry` for `qwen3-tts-flash`, or a voice id such as a cloned voice's. ElevenLabs takes a voice by its id, as its `GET /v1/voices` lists it: send the id as `voice`, or `{"id": "…"}`; a name such as `alloy` is refused, since Kaeso doesn't guess which ElevenLabs voice it means.
+- **Formats** are never converted. A format the provider lacks is refused before anything is sent, with `response_format` in `param`. When the app names no format, OpenAI answers mp3, so Kaeso asks every provider for mp3 by name; `qwen3-tts-flash` makes only wav and pcm, so an app names one of them.
 - **Streaming.** The audio goes to the app as the provider sends it. Asked for `stream_format: "sse"`, Kaeso writes `speech.audio.delta` events from any provider; a provider that sends its audio whole gets one delta and the end. OpenAI reports usage only in its events, so Kaeso asks OpenAI for events and turns them back into audio for an app that wants the audio; `tts-1` and `tts-1-hd` have no events and are billed per character.
 - **Settings** a provider lacks, such as `instructions` for Gemini or `speed` for Together AI, are refused with the field in `param`.
+- **QwenCloud** streams its speech as it makes it, and Kaeso always asks for that. A whole `qwen3-tts-flash` reply in wav is a link, which Kaeso downloads as it does [QwenCloud's images](images.md#providers). Its real-time models take only WebSocket connections and are refused.
 
 ## Transcription and translation
 
@@ -68,6 +69,7 @@ Keys, model resolution with aliases and routes, limits and budgets, request logs
 - **Links.** An app's upload goes as an upload. A link an app sends in `url` or `file_url`, or an ElevenLabs app in `source_url`, goes as a link to the providers that take one (`url` at Groq and SpaceX, `file` at Together AI, `file_url` at Mistral, `source_url` at OpenRouter and ElevenLabs); OpenAI takes none.
 - **Streaming.** OpenAI, Mistral, Z.ai and MiniMax stream their transcripts; Kaeso writes them as `transcript.text.delta` and `transcript.text.done`. Other providers answer whole, and the app gets one delta and the end.
 - **Translations** go only to providers with a translations endpoint: OpenAI and Groq.
+- **QwenCloud's** file transcription models (`*-filetrans`) answer only asynchronous tasks, and its streaming and real-time models only WebSocket connections, so they are refused.
 
 ## Providers
 
@@ -85,7 +87,7 @@ Keys, model resolution with aliases and routes, limits and budgets, request logs
 | MiniMax | `/v1/t2a_v2`: `speech-2.8-*`, `speech-2.6-*`, `speech-02-*` | `/v1/speech_to_text`: `asr-1.0` | [T2A](https://platform.minimax.io/docs/api-reference/speech-t2a-http), [speech to text](https://platform.minimax.io/docs/api-reference/speech-to-text) |
 | ElevenLabs | text to speech: `eleven_v4`, `eleven_v3`, `eleven_multilingual_v2`, `eleven_flash_v2_5` and the rest | speech to text: `scribe_v2`, `scribe_v2_medical` | [ElevenLabs API](elevenlabs.md) |
 | Z.ai | not offered | `/api/paas/v4/audio/transcriptions`: `glm-asr-2512` | [GLM-ASR](https://docs.z.ai/guides/audio/glm-asr-2512) |
-| QwenCloud | not yet: its speech models answer only on QwenCloud's own API | `qwen3-asr-flash` through `chat/completions` | [Qwen-ASR](https://www.alibabacloud.com/help/en/model-studio/qwen-asr-api-reference) |
+| QwenCloud | DashScope: `qwen-audio-3.1-tts-flash`, `qwen-audio-3.1-tts-plus`, `qwen-audio-3.0-tts-flash`, `qwen-audio-3.0-tts-plus` (mp3, wav, opus, pcm), `qwen3-tts-flash` (wav or pcm) | `qwen3-asr-flash` through `chat/completions`; DashScope: `qwen-audio-3.1-asr-flash`, `qwen-audio-3.0-asr-flash`, `json` and `text` | [Qwen-ASR](https://www.alibabacloud.com/help/en/model-studio/qwen-asr-api-reference), [Qwen-Audio-TTS](https://docs.qwencloud.com/api-reference/speech-synthesis/qwen-audio-tts/http-api), [Qwen3-TTS](https://docs.qwencloud.com/api-reference/speech-synthesis/qwen-tts), [Qwen-Audio-ASR](https://docs.qwencloud.com/api-reference/speech-recognition/qwen-audio-asr/http-api) |
 | Cohere | not offered | `/v2/audio/transcriptions`: `cohere-transcribe-03-2026`, `language` required | [transcribe](https://docs.cohere.com/v2/docs/transcribe) |
 | Anthropic, DeepSeek, Moonshot, Cerebras, Ollama Cloud | not offered | not offered | [supported providers](../concepts/supported-providers.md) |
 
@@ -93,5 +95,5 @@ A request to a provider without the API is refused before anything is sent, for 
 
 ## Costs and logs
 
-- **Costs.** Speech is billed per character (`tts-1`, Groq, Together AI, Mistral, MiniMax, ElevenLabs) or by tokens with the model's audio output price (`gpt-4o-mini-tts`, Gemini). Transcripts are billed by the minute or the hour of audio (Whisper, Scribe, Voxtral, Groq with its 10-second minimum) or by tokens with the audio input price. Prices come from KPMR's prices per unit and audio token prices; MiniMax and ElevenLabs report the characters they billed, which Kaeso uses.
+- **Costs.** Speech is billed per character (`tts-1`, Groq, Together AI, Mistral, MiniMax, ElevenLabs, QwenCloud) or by tokens with the model's audio output price (`gpt-4o-mini-tts`, Gemini). Transcripts are billed by the minute or the hour of audio (Whisper, Scribe, Voxtral, Groq with its 10-second minimum) or by the second (QwenCloud) or by tokens with the audio input price. Prices come from KPMR's prices per unit and audio token prices; MiniMax, ElevenLabs and QwenCloud report the characters they billed, which Kaeso uses.
 - **Logs.** The [request log](../console/request-logs.md) shows the endpoint, the characters of speech or the length of the transcribed audio, and the format. Audio is never logged: an upload is logged as its fields, the audio as its media type and size.

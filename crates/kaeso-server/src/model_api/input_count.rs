@@ -74,7 +74,8 @@ impl InputCounter {
         };
         let app_req = Request::CountTokens(app);
         let req = Request::CountTokens(sent);
-        let mut ctx = super::pipeline::egress_ctx(&app_req, &self.provider, self.flags);
+        let mut ctx =
+            super::pipeline::egress_ctx(&app_req, &self.provider, req.model(), self.flags);
         if let Some(p) = &self.platform {
             ctx = p.apply(ctx);
         }

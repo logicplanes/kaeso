@@ -537,6 +537,8 @@
   "errors.responseCacheTtlRange": "Must be 60 to 604800 seconds (1 minute to 7 days).",
   "errors.restarting": "Kaeso is restarting and ended this request; send it again.",
   "errors.restoreBeforeOwner": "Restore the organization before appointing an owner.",
+  "errors.resultFileWithheld": "{provider} did not hand over the file it made; try again shortly.",
+  "errors.resultLinkRefused": "{provider} answered with a link Kaeso does not fetch.",
   "errors.retentionRange": "Retention must be 1 to 36,500 days.",
   "errors.rightNeeds": "`{right}` needs `{needs}`.",
   "errors.rightNeedsRemoved": "`{right}` needs `{needs}`; remove `{right}` too.",

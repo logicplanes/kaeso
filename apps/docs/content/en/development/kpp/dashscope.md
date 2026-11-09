@@ -68,7 +68,7 @@ Images go as links or data URLs, except Wan 2.2 and 2.1 first and last frames, w
 | `user` | left out, named in `kaeso-left-out` | the same | the same | the same |
 | `mask`, `quality`, `output_format`, `output_compression`, `background`, `aspect_ratio`, file ids | refused | refused | refused | refused |
 
-- **Links only.** DashScope answers with links valid for 24 hours, so the codec refuses `b64_json`.
+- **Links only.** DashScope answers with links valid for 24 hours, so the codec refuses `b64_json`; the gateway takes it off the request and downloads the images for an app that asks for bytes ([Images API](../../api/images.md#providers)).
 - **Extensions carry over.** `prompt_extend`, `prompt_extend_mode`, `enable_thinking` and `watermark` from an OpenAI-format app go to `parameters`, as QwenCloud's OpenAI-compatible mode documents them. Every other foreign field is refused.
 - **No watermark by default.** Every one of these models leaves the watermark off unless `watermark` is `true`, so Kaeso sends nothing.
 - **Whole replies.** The images come in one reply; a streamed request gets them as finished events.

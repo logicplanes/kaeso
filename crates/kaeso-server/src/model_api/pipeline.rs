@@ -1010,6 +1010,7 @@ async fn attempt(
         Request::Video(r) => r.model.clone_from(&eff.model_id),
         _ => {}
     }
+    let fetch = super::links::Fetch::of(&mut req, &eff.provider, &eff.model_id);
     if let Some(source) = sh.video.and_then(|v| v.remix.as_ref()) {
         source
             .check_provider(eff.provider.id())
@@ -1159,7 +1160,12 @@ async fn attempt(
             return Err(fail(Stage::KeyRefused)(e.into_kpp()));
         }
     };
-    let mut ectx = egress_ctx(&app_req, &eff.provider, ModelFlags::of(&plan));
+    let mut ectx = egress_ctx(
+        &app_req,
+        &eff.provider,
+        &eff.model_id,
+        ModelFlags::of(&plan),
+    );
     if let Some(videos) = eff.provider.videos(&eff.model_id) {
         ectx = ectx.with_videos_profile(videos.profile);
     }
@@ -1556,7 +1562,9 @@ async fn attempt(
             }
             let decoded_by = eff.provider.clone();
             let model_id = eff.model_id.clone();
-            let (reply, out, media_type) = off_thread(bytes.len(), move || {
+            let audio_format = ectx.audio_format.clone();
+            let size = bytes.len();
+            let mut reply = off_thread(size, move || {
                 let mut reply = decode_reply(dialect, status, &headers, &bytes, &ectx)
                     .map_err(|e| unreadable(e, &decoded_by, dialect))?;
                 // Gemini's embeddings replies and most image replies name no model.
@@ -1567,12 +1575,22 @@ async fn attempt(
                     Reply::Transcription(r) if r.model.is_empty() => r.model = model_id,
                     _ => {}
                 }
-                let out = dispatch::encode_response(ingress, &reply, &encode_ctx);
-                let media_type = dispatch::response_media_type(ingress, &reply, &encode_ctx);
-                Ok::<_, KppError>((reply, out, media_type))
+                Ok::<_, KppError>(reply)
             })
             .await
             .and_then(|r| r)
+            .map_err(fail(Stage::Reply))?;
+            if let Some(f) = &fetch {
+                f.resolve(state, audio_format.as_ref(), &mut reply)
+                    .await
+                    .map_err(fail(Stage::Upstream))?;
+            }
+            let (reply, out, media_type) = off_thread(size, move || {
+                let out = dispatch::encode_response(ingress, &reply, &encode_ctx);
+                let media_type = dispatch::response_media_type(ingress, &reply, &encode_ctx);
+                (reply, out, media_type)
+            })
+            .await
             .map_err(fail(Stage::Reply))?;
             if matches!(kind, RequestKind::Speech | RequestKind::Transcription) {
                 rec.outcome().content_type = Some(media_type);
@@ -2185,6 +2203,7 @@ impl ModelFlags {
 pub(super) fn egress_ctx(
     app_req: &Request,
     provider: &ProviderRef,
+    model: &str,
     flags: ModelFlags,
 ) -> EgressCtx {
     let mut ctx = EgressCtx::new(app_req)
@@ -2193,13 +2212,13 @@ pub(super) fn egress_ctx(
         .with_responses_profile(provider.responses())
         .with_messages_profile(provider.messages())
         .with_gemini_profile(provider.gemini());
-    if let Some(images) = provider.images() {
+    if let Some(images) = provider.images(model) {
         ctx = ctx.with_images_profile(images.profile);
     }
-    if let Some(speech) = provider.speech() {
+    if let Some(speech) = provider.speech(model) {
         ctx = ctx.with_speech_profile(speech.profile);
     }
-    if let Some(transcriptions) = provider.transcriptions() {
+    if let Some(transcriptions) = provider.transcriptions(model) {
         ctx = ctx.with_transcriptions_profile(transcriptions.profile);
     }
     if let Some(a) = flags.adaptive_thinking {
@@ -2267,7 +2286,7 @@ mod tests {
                 thinking_binding: Some(false),
                 reasoning: Some(false),
             };
-            let ctx = egress_ctx(&req, &p, flags);
+            let ctx = egress_ctx(&req, &p, "m", flags);
             assert_eq!(ctx.provider.as_deref(), Some(id));
             assert_eq!(ctx.chat_profile, p.chat(), "{id}");
             assert_eq!(ctx.responses_profile, p.responses(), "{id}");
@@ -2280,7 +2299,7 @@ mod tests {
         }
         let xai = ProviderRef::from(kaeso_core::provider::provider("xai").unwrap());
         assert_eq!(
-            egress_ctx(&req, &xai, ModelFlags::default())
+            egress_ctx(&req, &xai, "m", ModelFlags::default())
                 .responses_profile
                 .web_search,
             kaeso_codecs::openai_responses::WebSearchTool::Xai

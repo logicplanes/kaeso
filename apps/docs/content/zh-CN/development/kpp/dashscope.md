@@ -68,7 +68,7 @@ order: 8
 | `user` | 省略，并在 `kaeso-left-out` 中注明 | 相同 | 相同 | 相同 |
 | `mask`、`quality`、`output_format`、`output_compression`、`background`、`aspect_ratio`、文件 ID | 拒绝 | 拒绝 | 拒绝 | 拒绝 |
 
-- **只有链接。**DashScope 返回有效期 24 小时的链接，因此编解码器拒绝 `b64_json`。
+- **只有链接。**DashScope 返回有效期 24 小时的链接，因此编解码器拒绝 `b64_json`；网关会把它从请求中去掉，并为要求字节的应用下载图片（[图片 API](../../api/images.md#服务商)）。
 - **扩展字段会转过去。**OpenAI 格式应用中的 `prompt_extend`、`prompt_extend_mode`、`enable_thinking` 和 `watermark` 会放进 `parameters`，与 QwenCloud 的 OpenAI 兼容模式文档一致。其他外来字段都会被拒绝。
 - **默认无水印。**这些模型在 `watermark` 不为 `true` 时都不加水印，因此 Kaeso 不发送该字段。
 - **完整回复。**图片在一个回复中返回；流式请求会以完成事件的形式收到它们。

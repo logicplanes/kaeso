@@ -106,7 +106,7 @@ Die Dokumentation jedes eingebauten Anbieters wurde am 2026-11-08 auf Bildgeneri
 | OpenRouter | Ja, für die Modelle von OpenAI gestreamt | Als Referenzbilder | Sein Bildkatalog, etwa `openai/gpt-image-2` und `google/gemini-3.1-flash-image` | [Image generation](https://openrouter.ai/docs/guides/overview/multimodal/image-generation) |
 | Vercel | Ja | Uploads oder JSON, mit Maske, wo das Modell eine nimmt | Seine Bildmodelle, etwa `openai/gpt-image-2` und `bfl/flux-2-pro` | [Image generation](https://vercel.com/docs/ai-gateway/capabilities/image-generation/openai) |
 | Together AI | Ja | Ein Bild per Link | Seine Bildmodelle, etwa `black-forest-labs/FLUX.2-pro` | [Create image](https://docs.together.ai/reference/post-images-generations) |
-| QwenCloud | Ja | Bis zu 10 Bilder, keine Maske | `qwen-image-3.0-pro`, `qwen-image-3.0`, `qwen-image-2.1-pro` | [OpenAI-compatible text-to-image](https://docs.qwencloud.com/api-reference/image-generation/qwen-text-to-image-openai) |
+| QwenCloud | Ja, außer `wan2.6-image` | Bis zu 10 Bilder bei Qwen-Image 2.1, 3 bei den übrigen Qwen-Image-Modellen, 9 bei Wan 2.7, 1 bis 4 bei Wan 2.6, keine bei Z-Image; keine Maske | OpenAI-kompatibler Modus: `qwen-image-3.0-pro`, `qwen-image-3.0`, `qwen-image-2.1-pro`; DashScope: `qwen-image-2.1-turbo`, `qwen-image-2.0-pro`, `qwen-image-2.0`, `wan2.7-image-pro`, `wan2.7-image`, `wan2.6-image`, `z-image-turbo` | [OpenAI-compatible text-to-image](https://docs.qwencloud.com/api-reference/image-generation/qwen-text-to-image-openai), [Qwen-Image](https://docs.qwencloud.com/api-reference/image-generation/qwen-text-to-image), [Wan 2.7 Image](https://docs.qwencloud.com/api-reference/image-generation/wan27-image-gen-edit/synchronous), [Wan 2.6 Image](https://docs.qwencloud.com/api-reference/image-generation/wan26-image-gen-edit/synchronous), [Z-Image](https://docs.qwencloud.com/api-reference/image-generation/z-image) |
 | Z.ai | Ja, ein Bild pro Anfrage | Nein | `glm-image` | [Generate image](https://docs.z.ai/api-reference/image/generate-image) |
 | MiniMax | Ja | Nein | `image-01` | [Text to image](https://platform.minimax.io/docs/api-reference/image-generation-t2i) |
 | Mistral | Nein: Bilder nur als Werkzeug seiner Agenten | Nein | — | [Image generation tool](https://docs.mistral.ai/studio/agents/agent-tools/image_generation) |
@@ -114,9 +114,11 @@ Die Dokumentation jedes eingebauten Anbieters wurde am 2026-11-08 auf Bildgeneri
 
 Google hat Imagen eingestellt, deshalb ruft Kaeso nur die Bildmodelle von Gemini auf. Eine Größe erreicht sie nur, wenn die Größentabellen von Google sie nennen, etwa `1024x1024` (`1:1` bei `1K`). Senden Sie für andere `aspect_ratio` und `resolution`.
 
-SpaceX nimmt `aspect_ratio` und `resolution` statt `size`. Z.ai und QwenCloud antworten nur mit Links, die nach 30 Tagen bzw. 24 Stunden ablaufen, deshalb beantwortet Kaeso dort `response_format: "b64_json"` mit 400. Gemini und OpenRouter antworten nur mit Base64, deshalb beantwortet Kaeso dort `response_format: "url"` mit 400.
+SpaceX nimmt `aspect_ratio` und `resolution` statt `size`. Z.ai antwortet nur mit Links, die nach 30 Tagen ablaufen, deshalb beantwortet Kaeso dort `response_format: "b64_json"` mit 400. Auch QwenCloud antwortet mit Links, die 24 Stunden gelten. Für `b64_json` lädt Kaeso sie über https nur von den Ergebnis-Hosts von QwenCloud (`dashscope-*.aliyuncs.com`), ohne den Anbieterschlüssel und ohne Weiterleitungen, innerhalb des Limits für Anbieterantworten und des Zeitlimits der Anfrage. Gemini und OpenRouter antworten nur mit Base64, deshalb beantwortet Kaeso dort `response_format: "url"` mit 400.
 
-Die [Abbildung von OpenAI Images](../development/kpp/openai-images.md) nennt jeden Parameter und wie jeder Anbieter ihn nimmt.
+Der OpenAI-kompatible Modus von QwenCloud bedient nur Qwen-Image 3.0 und 2.1 Pro, deshalb gehen seine übrigen Bildmodelle an seine eigene DashScope-API, die bei Wan `resolution` (`1K`, `2K`, `4K`) nimmt. Keines seiner Modelle setzt ein Wasserzeichen, solange die App nicht `watermark: true` sendet.
+
+Die [Abbildung von OpenAI Images](../development/kpp/openai-images.md) nennt jeden Parameter und wie jeder Anbieter ihn nimmt; [DashScope](../development/kpp/dashscope.md) nennt die eigene API von QwenCloud.
 
 ## Kosten und Logs
 

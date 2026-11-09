@@ -376,26 +376,26 @@ impl ProviderRef {
         }
     }
 
-    /// Where Kaeso sends image requests; custom providers take none.
-    pub fn images(&self) -> Option<crate::provider::ImagesEgress> {
+    /// Where Kaeso sends image requests for `model`; custom providers take none.
+    pub fn images(&self, model: &str) -> Option<crate::provider::ImagesEgress> {
         match self {
-            ProviderRef::BuiltIn(p) => p.images,
+            ProviderRef::BuiltIn(p) => p.images.iter().copied().find(|e| e.serves(model)),
             ProviderRef::Custom(_) => None,
         }
     }
 
-    /// Where Kaeso sends speech requests; custom providers take none.
-    pub fn speech(&self) -> Option<crate::provider::SpeechEgress> {
+    /// Where Kaeso sends speech requests for `model`; custom providers take none.
+    pub fn speech(&self, model: &str) -> Option<crate::provider::SpeechEgress> {
         match self {
-            ProviderRef::BuiltIn(p) => p.speech,
+            ProviderRef::BuiltIn(p) => p.speech.iter().copied().find(|e| e.serves(model)),
             ProviderRef::Custom(_) => None,
         }
     }
 
-    /// Where Kaeso sends transcription requests; custom providers take none.
-    pub fn transcriptions(&self) -> Option<crate::provider::TranscriptionsEgress> {
+    /// Where Kaeso sends transcriptions for `model`; custom providers take none.
+    pub fn transcriptions(&self, model: &str) -> Option<crate::provider::TranscriptionsEgress> {
         match self {
-            ProviderRef::BuiltIn(p) => p.transcriptions,
+            ProviderRef::BuiltIn(p) => p.transcriptions.iter().copied().find(|e| e.serves(model)),
             ProviderRef::Custom(_) => None,
         }
     }

@@ -106,7 +106,7 @@ for event in stream:
 | OpenRouter | 支持，OpenAI 的模型可流式 | 作为参考图片 | 其图片目录，例如 `openai/gpt-image-2` 和 `google/gemini-3.1-flash-image` | [Image generation](https://openrouter.ai/docs/guides/overview/multimodal/image-generation) |
 | Vercel | 支持 | 上传或 JSON，模型接受时支持遮罩 | 其图片模型，例如 `openai/gpt-image-2` 和 `bfl/flux-2-pro` | [Image generation](https://vercel.com/docs/ai-gateway/capabilities/image-generation/openai) |
 | Together AI | 支持 | 通过链接提供一张图片 | 其图片模型，例如 `black-forest-labs/FLUX.2-pro` | [Create image](https://docs.together.ai/reference/post-images-generations) |
-| QwenCloud | 支持 | 最多 10 张图片，不支持遮罩 | `qwen-image-3.0-pro`、`qwen-image-3.0`、`qwen-image-2.1-pro` | [OpenAI-compatible text-to-image](https://docs.qwencloud.com/api-reference/image-generation/qwen-text-to-image-openai) |
+| QwenCloud | 支持，`wan2.6-image` 除外 | Qwen-Image 2.1 最多 10 张，其他 Qwen-Image 模型 3 张，Wan 2.7 为 9 张，Wan 2.6 为 1 到 4 张，Z-Image 不支持；不支持遮罩 | OpenAI 兼容模式：`qwen-image-3.0-pro`、`qwen-image-3.0`、`qwen-image-2.1-pro`；DashScope：`qwen-image-2.1-turbo`、`qwen-image-2.0-pro`、`qwen-image-2.0`、`wan2.7-image-pro`、`wan2.7-image`、`wan2.6-image`、`z-image-turbo` | [OpenAI-compatible text-to-image](https://docs.qwencloud.com/api-reference/image-generation/qwen-text-to-image-openai), [Qwen-Image](https://docs.qwencloud.com/api-reference/image-generation/qwen-text-to-image), [Wan 2.7 Image](https://docs.qwencloud.com/api-reference/image-generation/wan27-image-gen-edit/synchronous), [Wan 2.6 Image](https://docs.qwencloud.com/api-reference/image-generation/wan26-image-gen-edit/synchronous), [Z-Image](https://docs.qwencloud.com/api-reference/image-generation/z-image) |
 | Z.ai | 支持，每次请求一张图片 | 不支持 | `glm-image` | [Generate image](https://docs.z.ai/api-reference/image/generate-image) |
 | MiniMax | 支持 | 不支持 | `image-01` | [Text to image](https://platform.minimax.io/docs/api-reference/image-generation-t2i) |
 | Mistral | 不支持：图片只作为其智能体的工具提供 | 不支持 | — | [Image generation tool](https://docs.mistral.ai/studio/agents/agent-tools/image_generation) |
@@ -114,9 +114,11 @@ for event in stream:
 
 Google 已停用 Imagen，因此 Kaeso 只调用 Gemini 图片模型。只有 Google 尺寸表中列出的尺寸才能传给它们，例如 `1024x1024`（`1K` 下的 `1:1`）。其他尺寸请发送 `aspect_ratio` 和 `resolution`。
 
-SpaceX 用 `aspect_ratio` 和 `resolution` 代替 `size`。Z.ai 和 QwenCloud 只返回链接，分别在 30 天和 24 小时后过期，因此在它们那里 `response_format: "b64_json"` 会得到 400。Gemini 和 OpenRouter 只返回 base64，因此在它们那里 `response_format: "url"` 会得到 400。
+SpaceX 用 `aspect_ratio` 和 `resolution` 代替 `size`。Z.ai 只返回链接，30 天后过期，因此在那里 `response_format: "b64_json"` 会得到 400。QwenCloud 也返回链接，有效期 24 小时。对于 `b64_json`，Kaeso 只通过 https 从 QwenCloud 的结果主机（`dashscope-*.aliyuncs.com`）下载这些链接，不带服务商密钥，不跟随重定向，并受服务商回复上限和请求超时的限制。Gemini 和 OpenRouter 只返回 base64，因此在它们那里 `response_format: "url"` 会得到 400。
 
-[OpenAI Images 映射](../development/kpp/openai-images.md)列出了每个参数以及各服务商如何接收它。
+QwenCloud 的 OpenAI 兼容模式只提供 Qwen-Image 3.0 和 2.1 Pro，因此它的其他图片模型发往它自己的 DashScope API，该 API 在 Wan 上接收 `resolution`（`1K`、`2K`、`4K`）。除非应用发送 `watermark: true`，它的模型都不加水印。
+
+[OpenAI Images 映射](../development/kpp/openai-images.md)列出了每个参数以及各服务商如何接收它；[DashScope](../development/kpp/dashscope.md) 列出了 QwenCloud 自己的 API。
 
 ## 费用和日志
 
