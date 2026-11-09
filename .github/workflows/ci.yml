@@ -802,11 +802,18 @@ jobs:
       - name: Install OpenTofu
         run: |
           set -euo pipefail
-          curl -fsSLo "$RUNNER_TEMP/tofu.zip" https://github.com/opentofu/opentofu/releases/download/v1.13.9/tofu_1.13.9_linux_amd64.zip
+          curl -fsSL --retry 8 --retry-delay 15 --retry-all-errors -o "$RUNNER_TEMP/tofu.zip" https://github.com/opentofu/opentofu/releases/download/v1.13.9/tofu_1.13.9_linux_amd64.zip
           echo "bc44eb6b06446ba83bd4072114891987f590f66cca712737a7f1147c50c539ce  $RUNNER_TEMP/tofu.zip" | sha256sum --check --quiet
           sudo unzip -q -o "$RUNNER_TEMP/tofu.zip" tofu -d /usr/local/bin
           tofu version
-      - run: pytest -q e2e/install
+      # Both GCP folders pin the same Google provider; a cache hit means tofu init downloads nothing.
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: ${{ runner.temp }}/tofu-plugins
+          key: tofu-plugins-${{ hashFiles('deploy/gcp/*/.terraform.lock.hcl') }}
+      - run: mkdir -p "$TF_PLUGIN_CACHE_DIR" && pytest -q e2e/install
+        env:
+          TF_PLUGIN_CACHE_DIR: ${{ runner.temp }}/tofu-plugins
 
   node-lint:
     name: TypeScript lint
