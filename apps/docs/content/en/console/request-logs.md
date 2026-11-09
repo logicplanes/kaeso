@@ -70,6 +70,8 @@ In a project with the [response cache](response-cache.md) on, **Usage** also say
 
 Exporting needs the right **Export logs**, and with content also **View prompts and outputs**.
 
+On **Tools**, **Export** downloads the tool calls that match the filters there, in the same three formats; with content, each call carries its stored arguments and result. The file is named `kaeso-tool-calls-…`.
+
 In CSV, Kaeso puts every text value in double quotes. It adds a `'` in front of a value that starts with `=`, `+`, `-`, `@`, a tab or a carriage return. It does the same for a value that holds `;`, `|` or a tab, and after such a separator when one of those characters follows. A spreadsheet then shows the value as text instead of running it as a formula, whichever separator it splits on.
 
 ## Retention

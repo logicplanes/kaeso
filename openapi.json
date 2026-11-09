@@ -15661,6 +15661,177 @@
         "x-kaeso-access": "right:logs.metadata.view"
       }
     },
+    "/platform/v1/orgs/{org}/projects/{project}/logs/tool-calls/export": {
+      "get": {
+        "tags": [
+          "logs"
+        ],
+        "summary": "Exports the tool calls matching a filter, newest first, streamed in\nbatches: JSON Lines (metadata, plus arguments and results with\n`include_content=true` and `logs.content.view`) or CSV (metadata only).",
+        "description": "**Right:** `logs.export` on the project in the path.",
+        "operationId": "getOrgsOrgProjectsProjectLogsToolCallsExport",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "description": "`jsonl` (default) or `csv` (metadata only).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "include_content",
+            "in": "query",
+            "description": "JSON Lines: include content (needs `logs.content.view`).",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "description": "From (inclusive), RFC 3339.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "description": "To (exclusive), RFC 3339.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "description": "Only calls with this key.",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ApiKeyId"
+            }
+          },
+          {
+            "name": "user",
+            "in": "query",
+            "description": "Only this user's calls.",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/UserId"
+            }
+          },
+          {
+            "name": "service_account",
+            "in": "query",
+            "description": "Only this service account's calls.",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ServiceAccountId"
+            }
+          },
+          {
+            "name": "server",
+            "in": "query",
+            "description": "Only this MCP server's tools.",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/McpServerId"
+            }
+          },
+          {
+            "name": "tool",
+            "in": "query",
+            "description": "Only this tool, by its name for clients, such as `x__create_post`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Only calls that went through (`ok`), failed (`error`) or were refused before\nreaching the server (`refused`).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "error_type",
+            "in": "query",
+            "description": "Only this error type: `denied`, `tool_off`, `tool_changed`, `limited`,\n`upstream_auth`, `upstream_unreachable`, `upstream_error`, `timeout` or\n`too_large`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON Lines or CSV.",
+            "content": {
+              "application/x-ndjson": {}
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:logs.export"
+      }
+    },
     "/platform/v1/orgs/{org}/projects/{project}/logs/tool-calls/{call}": {
       "get": {
         "tags": [

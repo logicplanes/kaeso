@@ -70,6 +70,8 @@ In einem Projekt mit eingeschaltetem [Antwort-Cache](response-cache.md) nennt di
 
 Exportieren erfordert das Recht **Protokolle exportieren**, mit Inhalt zusätzlich **Prompts und Ausgaben ansehen**.
 
+Unter **Tools** lädt **Exportieren** die Tool-Aufrufe herunter, die zu den Filtern dort passen, in denselben drei Formaten; mit Inhalt trägt jeder Aufruf seine gespeicherten Argumente und sein Ergebnis. Die Datei heißt `kaeso-tool-calls-…`.
+
 In CSV setzt Kaeso jeden Textwert in doppelte Anführungszeichen. Ein `'` setzt es vor jeden Wert, der mit `=`, `+`, `-`, `@`, einem Tabulator oder einem Wagenrücklauf beginnt. Dasselbe gilt für einen Wert mit `;`, `|` oder einem Tabulator und nach einem solchen Trennzeichen, wenn eines dieser Zeichen folgt. Eine Tabellenkalkulation zeigt den Wert dann als Text, statt ihn als Formel auszuführen, an welchem Trennzeichen sie auch teilt.
 
 ## Aufbewahrung

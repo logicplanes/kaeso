@@ -293,7 +293,10 @@ pub async fn export_finished(
         let (place, open) = match project {
             Some(p) => (
                 project_name(state, org, p).await?,
-                format!("{}/logs", project_path(org, p)),
+                match what {
+                    Export::ToolCalls => format!("{}/logs?kind=tools", project_path(org, p)),
+                    _ => format!("{}/logs", project_path(org, p)),
+                },
             ),
             None => (
                 org_name(state, org).await?,
@@ -310,7 +313,7 @@ pub async fn export_finished(
             actor: None,
         };
         let right = match what {
-            Export::Logs => ProjectRight::LogsExport.as_str(),
+            Export::Logs | Export::ToolCalls => ProjectRight::LogsExport.as_str(),
             Export::AuditLog => OrgRight::AuditLogExport.as_str(),
         };
         let to = Recipients::from([(user, Because::Right(right))]);
