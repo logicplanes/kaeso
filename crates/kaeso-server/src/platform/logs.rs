@@ -621,6 +621,34 @@ pub struct LogFilter {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "snake_case")]
+#[schema(description = "What a request's cost is based on.")]
+pub enum CostBasis {
+    #[doc = "The provider's own usage, or units Kaeso counted from the request, such as images\n\
+        or characters."]
+    Reported,
+    #[doc = "The length of the audio the request sent, read by Kaeso from the file's header\n\
+        because the provider reported none."]
+    Measured,
+}
+
+impl CostBasis {
+    fn of(stored: &str) -> CostBasis {
+        match stored {
+            "measured" => CostBasis::Measured,
+            _ => CostBasis::Reported,
+        }
+    }
+
+    fn as_str(self) -> &'static str {
+        match self {
+            CostBasis::Reported => "reported",
+            CostBasis::Measured => "measured",
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
 #[schema(description = "What the response cache did with a request.")]
 pub enum ResponseCacheResult {
     #[doc = "Answered from the cache."]
@@ -809,6 +837,10 @@ pub struct LogView {
         request made or heard, such as a video model without a price per clip; `cost`\n\
         is then 0 and means unknown."]
     pub cost_known: bool,
+    #[doc = "What the cost's units come from: `reported` by the provider, or `measured`\n\
+        by Kaeso when the provider bills by the length of audio it was sent but\n\
+        reported none, and Kaeso read the length from the file's header."]
+    pub cost_basis: CostBasis,
     #[doc = "User agent."]
     pub user_agent: String,
     #[doc = "Client address."]
@@ -971,6 +1003,7 @@ fn view(r: &LogRow) -> LogView {
         },
         cost: cost_from_raw(r.cost).to_string(),
         cost_known: r.cost_known,
+        cost_basis: CostBasis::of(&r.cost_basis),
         user_agent: r.user_agent.clone(),
         client_ip: r.client_ip.clone(),
         upstream_request_id: r.upstream_request_id.clone(),
@@ -1130,7 +1163,7 @@ pub struct ExportParams {
     pub include_content: Option<bool>,
 }
 
-const CSV_HEADER: &str = "id,started_at,duration_ms,ttfb_ms,key_id,principal_kind,principal_id,endpoint,ingress_dialect,egress_dialect,provider,requested_model,model,stream,status,error_kind,input_tokens,output_tokens,cache_read_tokens,cache_write_tokens,reasoning_tokens,cost,user_agent,client_ip,upstream_request_id,stream_events,stream_bytes,stream_first_byte_ms,stream_keepalives,usage_estimated,source,overhead_ms,stream_processing_ms,cache_breakpoints,request_upload_ms,response_cache,alias,fallbacks,media_unit,media_input,media_output,media_detail,cost_known\n";
+const CSV_HEADER: &str = "id,started_at,duration_ms,ttfb_ms,key_id,principal_kind,principal_id,endpoint,ingress_dialect,egress_dialect,provider,requested_model,model,stream,status,error_kind,input_tokens,output_tokens,cache_read_tokens,cache_write_tokens,reasoning_tokens,cost,user_agent,client_ip,upstream_request_id,stream_events,stream_bytes,stream_first_byte_ms,stream_keepalives,usage_estimated,source,overhead_ms,stream_processing_ms,cache_breakpoints,request_upload_ms,response_cache,alias,fallbacks,media_unit,media_input,media_output,media_detail,cost_known,cost_basis\n";
 
 // OWASP CSV injection (https://owasp.org/www-community/attacks/CSV_Injection): quote every
 // text cell and prefix `'` to one that starts a formula or holds a separator a spreadsheet
@@ -1234,6 +1267,7 @@ fn csv_line(v: &LogView) -> String {
                 .unwrap_or_default(),
         ),
         Number(v.cost_known.to_string()),
+        Text(v.cost_basis.as_str().to_owned()),
     ];
     let mut line = cells
         .iter()

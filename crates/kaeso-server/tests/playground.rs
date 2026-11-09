@@ -1121,7 +1121,7 @@ async fn playground_requests_are_charged_and_logged_as_the_members() {
     let mut lines = csv.lines();
     assert!(
         lines.next().unwrap().ends_with(
-            ",usage_estimated,source,overhead_ms,stream_processing_ms,cache_breakpoints,request_upload_ms,response_cache,alias,fallbacks,media_unit,media_input,media_output,media_detail,cost_known"
+            ",usage_estimated,source,overhead_ms,stream_processing_ms,cache_breakpoints,request_upload_ms,response_cache,alias,fallbacks,media_unit,media_input,media_output,media_detail,cost_known,cost_basis"
         )
     );
     let row = lines.next().unwrap();
@@ -1139,6 +1139,7 @@ async fn playground_requests_are_charged_and_logged_as_the_members() {
         media_output,
         media_detail,
         cost_known,
+        cost_basis,
     ] = rest.split(',').collect::<Vec<_>>()[..]
     else {
         panic!("{row}");
@@ -1158,6 +1159,7 @@ async fn playground_requests_are_charged_and_logged_as_the_members() {
         cost_known, "true",
         "the playground's model has a price: {row}"
     );
+    assert_eq!(cost_basis, "\"reported\"", "{row}");
     assert!(
         [overhead, processing, upload]
             .iter()

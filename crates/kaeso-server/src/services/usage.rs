@@ -380,6 +380,17 @@ pub fn cost_known(outcome: &Outcome) -> bool {
         return true;
     }
     let usage = outcome.usage.clone().unwrap_or_default();
+    // Audio billed by its length, when neither the provider nor the file said how long it was;
+    // a model that bills it in tokens reports them.
+    if outcome
+        .media
+        .as_ref()
+        .is_some_and(|m| m.input_length_unknown && m.input_ms == 0)
+        && usage.input_tokens == 0
+        && usage.output_tokens == 0
+    {
+        return false;
+    }
     cost::is_priced(&usage, outcome.prices.as_ref(), outcome.media.as_ref())
 }
 

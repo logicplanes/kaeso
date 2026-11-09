@@ -405,6 +405,12 @@ pub fn mcp(data: &[u8]) {
     }
 }
 
+pub fn audio_length(data: &[u8]) {
+    if let Some(length) = kaeso_codecs::audio_length::audio_duration(data) {
+        assert!(length.as_secs_f64() > 0.0 && length.as_secs_f64() <= 24.0 * 3600.0);
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -76,6 +76,15 @@ async fn speak(env: &Env, body: Value) -> Answer {
 }
 
 async fn upload(env: &Env, path: &str, fields: &[(&str, &str)]) -> Answer {
+    upload_file(env, path, fields, ("file", "a.mp3", "audio/mpeg", MP3)).await
+}
+
+async fn upload_file(
+    env: &Env,
+    path: &str,
+    fields: &[(&str, &str)],
+    (field, filename, media_type, bytes): (&str, &str, &str, &[u8]),
+) -> Answer {
     let mut body = Vec::new();
     for (name, value) in fields {
         body.extend_from_slice(
@@ -84,14 +93,15 @@ async fn upload(env: &Env, path: &str, fields: &[(&str, &str)]) -> Answer {
         );
     }
     body.extend_from_slice(
-        b"--kb\r\nContent-Disposition: form-data; name=\"file\"; filename=\"a.mp3\"\r\nContent-Type: audio/mpeg\r\n\r\n",
+        format!("--kb\r\nContent-Disposition: form-data; name=\"{field}\"; filename=\"{filename}\"\r\nContent-Type: {media_type}\r\n\r\n").as_bytes(),
     );
-    body.extend_from_slice(MP3);
+    body.extend_from_slice(bytes);
     body.extend_from_slice(b"\r\n--kb--\r\n");
     let req = Request::builder()
         .uri(path)
         .method("POST")
         .header("authorization", format!("Bearer {}", env.key))
+        .header("xi-api-key", &env.key)
         .header("content-type", "multipart/form-data; boundary=kb")
         .body(Body::from(body))
         .unwrap();
@@ -234,6 +244,104 @@ async fn other_providers_speak_in_their_own_forms() {
         o.media.unwrap().characters,
         163,
         "MiniMax's billed characters"
+    );
+}
+
+// 16 kHz, mono, 16-bit PCM: 32,000 bytes a second.
+fn wav(ms: u32) -> Vec<u8> {
+    let data = ms * 32;
+    let mut b = b"RIFF".to_vec();
+    b.extend_from_slice(&(36 + data).to_le_bytes());
+    b.extend_from_slice(b"WAVEfmt \x10\0\0\0\x01\0\x01\0");
+    b.extend_from_slice(&16_000u32.to_le_bytes());
+    b.extend_from_slice(&32_000u32.to_le_bytes());
+    b.extend_from_slice(b"\x02\0\x10\0data");
+    b.extend_from_slice(&data.to_le_bytes());
+    b.resize(b.len() + data as usize, 0);
+    b
+}
+
+#[tokio::test]
+async fn audio_length_is_read_from_the_file_when_the_provider_reports_none() {
+    let env = env().await;
+    let clip = wav(1500);
+    let r = upload_file(
+        &env,
+        "/v1/audio/transcriptions",
+        &[("model", "whisper-1"), ("response_format", "srt")],
+        ("file", "a.wav", "audio/wav", &clip),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    let o = outcome(&env).await;
+    let media = o.media.clone().unwrap();
+    assert_eq!((media.input_ms, media.measured), (1500, true));
+    assert!(kaeso_server::services::usage::cost_known(&o));
+    let (_, cost) = kaeso_server::services::usage::costed(&o);
+    assert_eq!(
+        cost,
+        "0.00015".parse::<rust_decimal::Decimal>().unwrap(),
+        "1.5 s at $0.006 a minute"
+    );
+    assert_eq!(kaeso_server::services::logs::cost_basis(&o), "measured");
+
+    let r = upload_file(
+        &env,
+        "/v1/audio/transcriptions",
+        &[("model", "whisper-1"), ("response_format", "verbose_json")],
+        ("file", "a.wav", "audio/wav", &clip),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    let o = outcome(&env).await;
+    let media = o.media.clone().unwrap();
+    assert_eq!(
+        (media.input_ms, media.measured),
+        (3320, false),
+        "the length the provider reports wins"
+    );
+    assert_eq!(kaeso_server::services::logs::cost_basis(&o), "");
+
+    let r = upload(
+        &env,
+        "/v1/audio/transcriptions",
+        &[("model", "whisper-1"), ("response_format", "text")],
+    )
+    .await;
+    assert_eq!(
+        r.status,
+        StatusCode::OK,
+        "a file that states no length is still sent"
+    );
+    let o = outcome(&env).await;
+    assert_eq!(o.media.as_ref().unwrap().input_ms, 0);
+    assert!(!kaeso_server::services::usage::cost_known(&o));
+
+    let r = env
+        .app
+        .post(
+            &format!("/orgs/{}/projects/{}/models", env.owner.org_id, env.project),
+            json!({ "provider": "elevenlabs", "model_id": "eleven_multilingual_sts_v2" }),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
+    let r = upload_file(
+        &env,
+        &format!("/v1/voice-changer/{VOICE}"),
+        &[("model_id", "eleven_multilingual_sts_v2")],
+        ("audio", "a.wav", "audio/wav", &wav(30_000)),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    let o = outcome(&env).await;
+    let media = o.media.clone().unwrap();
+    assert_eq!((media.input_ms, media.measured), (30_000, true));
+    let (_, cost) = kaeso_server::services::usage::costed(&o);
+    assert_eq!(
+        cost,
+        "0.06".parse::<rust_decimal::Decimal>().unwrap(),
+        "half a minute at $0.12"
     );
 }
 

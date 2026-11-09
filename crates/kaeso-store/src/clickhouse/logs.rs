@@ -67,6 +67,7 @@ pub struct LogRow {
     pub media_output: u64,
     pub media_detail: String,
     pub cost_known: bool,
+    pub cost_basis: String,
 }
 
 #[derive(Clone, Debug, PartialEq, Row, Serialize, Deserialize)]

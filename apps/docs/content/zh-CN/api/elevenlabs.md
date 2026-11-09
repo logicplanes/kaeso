@@ -105,4 +105,4 @@ ElevenLabs 应用的请求就是 Kaeso 请求：别名或其他服务商的模�
 
 ## 费用和日志
 
-ElevenLabs 按字符对语音计费，按 KPMR 中每个模型每百万字符的价格计算；Kaeso 记录 ElevenLabs 在 `character-cost` 响应头中报告的字符数。变声器的费用仍然未知：KPMR 按输入音频的分钟为语音转语音模型定价，但 Kaeso 不解码音频来测量时长；ElevenLabs 发送该响应头时，只记录其中的字符数。转写稿按音频的小时计费，音效和音乐按其时长的分钟计费。[请求日志](../console/request-logs.md)写明端点，例如 `text-to-speech` 或 `speech-to-text`，从不保存音频。
+ElevenLabs 按字符对语音计费，按 KPMR 中每个模型每百万字符的价格计算；Kaeso 记录 ElevenLabs 在 `character-cost` 响应头中报告的字符数。变声器按其听到的音频的分钟计费，使用 KPMR 的语音转语音价格；ElevenLabs 不报告时长，因此 Kaeso 从上传文件的文件头读取时长而不解码音频，并把费用标为测得（[音频](audio.md#费用和日志)）；文件未写明时长时，费用保持未知。转写稿按音频的小时计费，音效和音乐按其时长的分钟计费。[请求日志](../console/request-logs.md)写明端点，例如 `text-to-speech` 或 `speech-to-text`，从不保存音频。

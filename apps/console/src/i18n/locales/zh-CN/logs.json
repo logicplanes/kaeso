@@ -247,6 +247,7 @@
   "logs.inspector.video": "视频",
   "logs.inspector.videos": "{count, plural, other {# 个视频}}",
   "logs.inspector.videosMade": "{videos} · {duration}",
+  "logs.inspector.costMeasured": "按音频时长计算，时长由 Kaeso 从文件中读取",
   "logs.inspector.costUnknown": "所生成内容没有价格",
   "logs.media.hint": "{label}：{units}",
   "logs.media.images": "{count, plural, other {# 张图片}}",

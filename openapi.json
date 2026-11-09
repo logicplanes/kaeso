@@ -23265,6 +23265,14 @@
           }
         }
       },
+      "CostBasis": {
+        "type": "string",
+        "description": "What a request's cost is based on.",
+        "enum": [
+          "reported",
+          "measured"
+        ]
+      },
       "CreatedKey_KeyView": {
         "allOf": [
           {
@@ -27919,6 +27927,7 @@
                 "usage",
                 "cost",
                 "cost_known",
+                "cost_basis",
                 "user_agent",
                 "client_ip",
                 "upstream_request_id",
@@ -27950,6 +27959,10 @@
                 "cost": {
                   "type": "string",
                   "description": "Cost in USD at the prices of request time."
+                },
+                "cost_basis": {
+                  "$ref": "#/components/schemas/CostBasis",
+                  "description": "What the cost's units come from: `reported` by the provider, or `measured`\nby Kaeso when the provider bills by the length of audio it was sent but\nreported none, and Kaeso read the length from the file's header."
                 },
                 "cost_known": {
                   "type": "boolean",
@@ -30400,6 +30413,7 @@
           "usage",
           "cost",
           "cost_known",
+          "cost_basis",
           "user_agent",
           "client_ip",
           "upstream_request_id",
@@ -30431,6 +30445,10 @@
           "cost": {
             "type": "string",
             "description": "Cost in USD at the prices of request time."
+          },
+          "cost_basis": {
+            "$ref": "#/components/schemas/CostBasis",
+            "description": "What the cost's units come from: `reported` by the provider, or `measured`\nby Kaeso when the provider bills by the length of audio it was sent but\nreported none, and Kaeso read the length from the file's header."
           },
           "cost_known": {
             "type": "boolean",

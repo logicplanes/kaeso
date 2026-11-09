@@ -54,21 +54,44 @@ pub(super) fn logged_speech(r: &SpeechRequest) -> Bytes {
     Bytes::from(serde_json::to_vec(&kept).unwrap_or_default())
 }
 
-/// The characters a request asks to speak, and the length it asks a sound or music to last.
+/// The characters a request asks to speak, the length it asks a sound or music to last, and the
+/// length of the audio a voice changer hears, which providers bill but don't report.
 pub(super) fn units_of_speech(r: &SpeechRequest) -> MediaUnits {
-    MediaUnits {
+    let mut units = MediaUnits {
         characters: r.characters(),
         output_ms: r.duration.map_or(0, kaeso_core::assembler::seconds_to_ms),
         format: r.format.as_ref().map(|f| f.as_wire().to_owned()),
         ..MediaUnits::default()
+    };
+    if let Some(audio) = &r.audio {
+        measure(&mut units, audio);
     }
+    units
 }
 
-/// A transcription's units: the audio's length is known only from the reply.
+/// A transcription's units: the audio's length as its file states it, until the provider
+/// reports the length it billed.
 pub(super) fn units_of_transcription(r: &TranscriptionRequest) -> MediaUnits {
-    MediaUnits {
+    let mut units = MediaUnits {
         format: Some(r.format_or_default().as_wire().to_owned()),
         ..MediaUnits::default()
+    };
+    measure(&mut units, &r.audio);
+    units
+}
+
+// Only the file's headers are read, never its audio; a file that states no length leaves the
+// length unknown, and the request goes ahead either way.
+fn measure(units: &mut MediaUnits, audio: &AudioInput) {
+    let Source::Base64(b) = &audio.source else {
+        return;
+    };
+    match kaeso_codecs::audio_length::audio_duration(&b.data) {
+        Some(length) => {
+            units.input_ms = u64::try_from(length.as_millis()).unwrap_or(u64::MAX).max(1);
+            units.measured = true;
+        }
+        None => units.input_length_unknown = true,
     }
 }
 
@@ -83,6 +106,8 @@ pub(super) fn add_speech(units: &mut MediaUnits, reply: &SpeechResponse) {
 pub(super) fn add_transcript(units: &mut MediaUnits, reply: &TranscriptionResponse) {
     if let Some(seconds) = reply.audio_seconds() {
         units.input_ms = kaeso_core::assembler::seconds_to_ms(seconds);
+        units.measured = false;
+        units.input_length_unknown = false;
     }
 }
 

@@ -498,6 +498,19 @@ pub fn endpoint(o: &Outcome) -> &'static str {
     }
 }
 
+/// `measured` when the cost rests on the audio length Kaeso read from the file because the
+/// provider reported none; empty when the units are the provider's or counted from the request.
+pub fn cost_basis(o: &Outcome) -> &'static str {
+    if o.media
+        .as_ref()
+        .is_some_and(|m| m.measured && m.input_ms > 0)
+    {
+        "measured"
+    } else {
+        ""
+    }
+}
+
 fn media_detail(m: &kaeso_core::cost::MediaUnits) -> String {
     [&m.size, &m.quality, &m.resolution, &m.format]
         .into_iter()
@@ -648,6 +661,7 @@ pub async fn record(state: &AppState, o: &Outcome) {
         media_output: o.media.as_ref().map_or(0, |m| m.logged().2),
         media_detail: o.media.as_ref().map(media_detail).unwrap_or_default(),
         cost_known: crate::services::usage::cost_known(o),
+        cost_basis: cost_basis(o).to_owned(),
     };
     let content = content.then(|| ContentRow {
         request_id: log.request_id,

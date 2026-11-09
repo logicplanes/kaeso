@@ -224,6 +224,24 @@ describe("LogInspector", () => {
     expect(within(sheetEl).getAllByText("Unknown").length).toBeGreaterThan(0);
   });
 
+  it("says when a cost comes from the audio length Kaeso read from the file", async () => {
+    signedIn();
+    projectData();
+    logsData({
+      rows: [logRow({ cost: "0.00015" })],
+      entries: [
+        logEntry({
+          endpoint: "audio/transcriptions",
+          cost: "0.00015",
+          cost_basis: "measured",
+          media: { unit: "millisecond", input: 1500, output: 0, detail: "srt" },
+        }),
+      ],
+    });
+    await renderApp(projectPath("logs?log=req_0001"));
+    expect(await within(await sheet()).findByText("From the audio's length, which Kaeso read from the file")).toBeInTheDocument();
+  });
+
   it("shows the characters of speech and the length of transcribed audio", async () => {
     signedIn();
     projectData();

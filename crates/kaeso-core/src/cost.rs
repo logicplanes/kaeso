@@ -179,6 +179,14 @@ pub struct MediaUnits {
     /// QwenCloud's Z-Image does with `prompt_extend`.
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub extended_prompt: bool,
+    /// Whether `input_ms` is the length Kaeso read from the audio itself, because the provider
+    /// reported none.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub measured: bool,
+    /// Whether the request sent audio whose length neither the provider nor the file stated,
+    /// so a price per second, minute or hour of it can't be applied.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub input_length_unknown: bool,
 }
 
 const MS_PER_SECOND: Decimal = Decimal::from_parts(1_000, 0, 0, false, 0);
