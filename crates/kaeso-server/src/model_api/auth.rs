@@ -32,7 +32,7 @@ pub async fn authenticate(
         return Err(error(
             ErrorKind::Authentication,
             401,
-            "Send a Kaeso API key as `Authorization: Bearer <key>`, `x-api-key` or `x-goog-api-key`.",
+            "Send a Kaeso API key as `Authorization: Bearer <key>`, `x-api-key`, `x-goog-api-key` or `xi-api-key`.",
         ));
     };
     let found = match keys::authenticate(state, secret, client).await {

@@ -8,7 +8,7 @@ use axum::middleware::Next;
 use axum::response::Response;
 use url::Url;
 
-pub const ALLOW_METHODS: &str = "GET, POST";
+pub const ALLOW_METHODS: &str = "GET, POST, DELETE";
 
 pub const MAX_AGE_SECONDS: &str = "7200";
 
@@ -29,6 +29,7 @@ pub const ALLOWED_HEADERS: &[&str] = &[
     "x-api-key",
     "x-goog-api-client",
     "x-goog-api-key",
+    "xi-api-key",
 ];
 
 pub const STAINLESS_PREFIX: &str = "x-stainless-";

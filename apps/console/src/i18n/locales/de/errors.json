@@ -476,7 +476,7 @@
   "errors.modelApi.providerUnavailable": "Der Anbieter `{provider}` ist nicht verfügbar.",
   "errors.modelApi.responseTooLarge": "Die Antwort des Anbieters ist größer, als diese Installation annimmt.",
   "errors.modelApi.restarting": "Kaeso startet neu und hat diese Anfrage beendet. Erneut senden.",
-  "errors.modelApi.sendKey": "Einen Kaeso-API-Schlüssel als `Authorization: Bearer <key>`, `x-api-key` oder `x-goog-api-key` senden.",
+  "errors.modelApi.sendKey": "Einen Kaeso-API-Schlüssel als `Authorization: Bearer <key>`, `x-api-key`, `x-goog-api-key` oder `xi-api-key` senden.",
   "errors.modelApi.streamCapped": "Die Antwort hat das Stream-Limit dieser Installation erreicht; Kaeso hat sie beendet.",
   "errors.modelApi.streamEnded": "Der Stream des Anbieters endete, bevor die Antwort vollständig war.",
   "errors.modelApi.streamOnly": "Hier werden nur gestreamte Anfragen bedient; `stream: true` senden.",

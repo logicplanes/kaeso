@@ -822,7 +822,7 @@ const messages = (): Rule[] => [
     ),
   ),
   rule("errors.modelApi.sendKey", () =>
-    t("errors.modelApi.sendKey", "Send a Kaeso API key as `Authorization: Bearer <key>`, `x-api-key` or `x-goog-api-key`."),
+    t("errors.modelApi.sendKey", "Send a Kaeso API key as `Authorization: Bearer <key>`, `x-api-key`, `x-goog-api-key` or `xi-api-key`."),
   ),
   rule("errors.modelApi.geminiParameter", (v) =>
     t("errors.modelApi.geminiParameter", "Kaeso doesn't take the query parameter `{name}` on Gemini calls; remove it.", v),
