@@ -141,14 +141,14 @@ describe("CompareGrid focus and headers", () => {
 });
 
 describe("ResponseView marks and announcements", () => {
-  it("draws a quiet caret while waiting and at the end while writing, and none when done", () => {
+  it("draws no caret while waiting or writing, only the text that has arrived", () => {
     const { container, rerender } = render(<ResponseView status="pending" />);
-    expect(container.querySelector("[data-pending] > span")).toHaveClass("animate-pulse-quiet", "reduced:animate-none");
+    const article = screen.getByRole("article", { name: "Response" });
+    expect(article).toHaveAttribute("aria-busy", "true");
+    expect(article.querySelectorAll(":scope > :not(.sr-only)")).toHaveLength(0);
     rerender(<ResponseView status="streaming" text="The p95 latency" />);
-    expect(container.querySelector("[data-pending]")).toBeNull();
-    expect(container.querySelector("p [data-caret]")).toBeInTheDocument();
-    rerender(<ResponseView status="done" text="The p95 latency rose." />);
-    expect(container.querySelector("[data-caret], [data-pending]")).toBeNull();
+    expect(container.querySelector("p")?.textContent).toBe("The p95 latency");
+    expect(container.querySelector("p")?.children).toHaveLength(0);
   });
 
   it("says once, by name, that a response finished, stopped or was cut off", () => {

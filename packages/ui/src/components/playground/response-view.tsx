@@ -44,14 +44,6 @@ function incompleteText(t: UiText, reason: string | undefined): string {
   return t("responseView.incomplete", "The model ended the response early");
 }
 
-const STREAM_CARET = (
-  <span
-    aria-hidden
-    data-caret=""
-    className="ml-2 inline-block h-16 w-2 rounded-pill bg-fg-tertiary align-text-bottom animate-pulse-quiet forced-line reduced:animate-none"
-  />
-);
-
 function useEndAnnouncement(status: ResponseStatus, ended: string) {
   const [said, setSaid] = useState("");
   const before = useRef(status);
@@ -128,21 +120,7 @@ export const ResponseView = forwardRef<HTMLElement, ResponseViewProps>(function 
           onOpenChange={onReasoningOpenChange}
         />
       )}
-      {hasText ? (
-        <Markdown
-          text={text}
-          size="lg"
-          streaming={active}
-          collapseAfter={0}
-          wrapCode
-          trailing={status === "streaming" ? STREAM_CARET : undefined}
-          className="markdown-text-inset"
-        />
-      ) : active && !hasReasoning ? (
-        <div aria-hidden data-pending="" className="flex h-22 items-center px-12">
-          <span className="h-16 w-2 rounded-pill bg-fg-tertiary animate-pulse-quiet forced-line reduced:animate-none" />
-        </div>
-      ) : null}
+      {hasText ? <Markdown text={text} size="lg" streaming={active} collapseAfter={0} wrapCode className="markdown-text-inset" /> : null}
       {(status === "stopped" || status === "incomplete") && (
         <div className="flex min-h-32 flex-wrap items-center gap-x-12 gap-y-4 px-12">
           <span className="text-small text-fg-secondary">
