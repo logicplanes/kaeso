@@ -44,7 +44,7 @@ fn kind_for_status(status: u16) -> ErrorKind {
         401 => ErrorKind::Authentication,
         402 => ErrorKind::Billing,
         403 => ErrorKind::PermissionDenied,
-        404 => ErrorKind::NotFound,
+        404 | 410 => ErrorKind::NotFound,
         413 => ErrorKind::RequestTooLarge,
         429 => ErrorKind::RateLimited,
         408 | 504 => ErrorKind::Timeout,

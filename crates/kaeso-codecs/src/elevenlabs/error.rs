@@ -25,7 +25,7 @@ fn kind_of(status: u16, ty: Option<&str>, code: Option<&str>) -> ErrorKind {
             401 => ErrorKind::Authentication,
             402 => ErrorKind::Billing,
             403 => ErrorKind::PermissionDenied,
-            404 => ErrorKind::NotFound,
+            404 | 410 => ErrorKind::NotFound,
             429 => ErrorKind::RateLimited,
             503 => ErrorKind::Overloaded,
             _ => ErrorKind::ProviderError,

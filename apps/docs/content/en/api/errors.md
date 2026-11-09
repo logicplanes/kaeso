@@ -404,7 +404,7 @@ When the provider answers with an error in its format, your app gets that error 
 
 ### Models the provider doesn't serve
 
-When the provider answers 404 for a model in the catalogue, Kaeso asks the provider whether it still serves that model to the project's provider key. If it doesn't, your app gets 404 with a message that names the provider and the model.
+When the provider answers 404 for a model in the catalogue, Kaeso asks the provider whether it still serves that model to the project's provider key. If it doesn't, your app gets 404 with a message that names the provider and the model. A 410, which providers send for a model they retired, counts like a 404. In another format than the provider's, your app gets it as 404.
 
 The catalogue then shows the model as **Unavailable** ([availability](../console/models-and-aliases.md#availability)), unless the project's provider key changed during the request. Kaeso then answers later requests for the model with the same 404 without calling the provider, apart from one request every five minutes. The first answer and every later one carry the same message, and so does the request log.
 

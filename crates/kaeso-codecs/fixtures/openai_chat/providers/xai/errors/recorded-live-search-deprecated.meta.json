@@ -3,7 +3,7 @@
   "encoded": {
     "error": {
       "message": "Live search is deprecated. Please switch to the Agent Tools API: https://docs.x.ai/docs/guides/tools/overview",
-      "type": "server_error",
+      "type": "invalid_request_error",
       "param": null,
       "code": null
     }
