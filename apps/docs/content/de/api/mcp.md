@@ -278,7 +278,7 @@ Kaeso ist sein eigener Autorisierungsserver. Sein Issuer ist die öffentliche UR
 
 Eine Loopback-Weiterleitungs-URI darf ihren Port bei jeder Anmeldung ändern, wie RFC 8252 es erlaubt. Host und Pfad müssen wie registriert bleiben.
 
-Statt sich zu registrieren, kann ein Client die HTTPS-Adresse seines Client-ID-Metadatendokuments als `client_id` nutzen, wie claude.ai es tut. Kaeso lädt das Dokument, höchstens 5 KiB, mit denselben Adressprüfungen wie bei MCP-Servern und behält es 10 Minuten. Das Dokument muss diese Adresse als `client_id` nennen, seine Weiterleitungs-URIs auflisten und keine Client-Authentifizierung verlangen; die Zustimmungsseite zeigt den Host, von dem es stammt.
+Statt sich zu registrieren, kann ein Client die HTTPS-Adresse seines Client-ID-Metadatendokuments als `client_id` nutzen, wie claude.ai es tut. Kaeso lädt das Dokument, höchstens 5 KiB, nur von einer öffentlichen Adresse, welche Netze `mcp_servers.allowed_networks` auch öffnet, und behält es 10 Minuten. Das Dokument muss diese Adresse als `client_id` nennen, seine Weiterleitungs-URIs auflisten und keine Client-Authentifizierung verlangen; die Zustimmungsseite zeigt den Host, von dem es stammt.
 
 Ein Agent behält seine `client_id` über Neustarts hinweg, aber Kaeso löscht Registrierungen, aus denen nie eine Anmeldung wurde, und eine neue Datenbank hat keine. Meldet sich ein Agent mit einer `client_id` an, die Kaeso nicht kennt, und mit einer Loopback-Weiterleitungs-URI, registriert Kaeso ihn unter dieser ID erneut als „MCP client“, und die Anmeldung geht weiter. Auf der Zustimmungsseite können Sie ihn umbenennen. Bei jeder anderen Weiterleitungs-URI sagt die Konsole, dass sie den Agenten nicht kennt.
 

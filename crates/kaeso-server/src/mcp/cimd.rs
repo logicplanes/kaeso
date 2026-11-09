@@ -167,7 +167,7 @@ pub async fn client(state: &AppState, raw: &str) -> Result<Result<Client, Refuse
         .await
         .map(Ok);
     }
-    let (status, body) = match state.mcp.get_json(&url, LIMITS).await {
+    let (status, body) = match state.public_mcp.get_json(&url, LIMITS).await {
         Ok(answer) => answer,
         Err(UpstreamError::Refused(_)) => return Ok(Err(Refused::Address)),
         Err(e) => {
