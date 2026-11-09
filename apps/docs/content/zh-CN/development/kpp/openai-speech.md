@@ -6,9 +6,9 @@ order: 8
 
 在这里查阅 OpenAI 语音 API 的任意字段：它在 KPP 中的位置、哪些服务商以何种形式接收它，以及每项映射的来源。修改语音编解码器读写某个字段的方式之前，先查看这里。
 
-- **编解码器：**`kaeso_codecs::openai_speech::OpenAiSpeech`（`crates/kaeso-codecs/src/openai_speech/`）、`kaeso_codecs::minimax_speech::MinimaxSpeech`（`crates/kaeso-codecs/src/minimax_speech/`），以及 Gemini 编解码器中的语音请求（`crates/kaeso-codecs/src/gemini/audio.rs`）
+- **编解码器：**`kaeso_codecs::openai_speech::OpenAiSpeech`（`crates/kaeso-codecs/src/openai_speech/`），以及 Gemini 编解码器中的语音请求（`crates/kaeso-codecs/src/gemini/audio.rs`）；MiniMax 自己的格式见[其页面](minimax-speech.md)
 - **端点：**`POST /v1/audio/speech`
-- **Fixture：**`crates/kaeso-codecs/fixtures/openai_speech/` 和 `fixtures/minimax_speech/`，依据规范和服务商文档构建；`fixtures/gemini/` 包含录制的 Gemini 语音
+- **Fixture：**`crates/kaeso-codecs/fixtures/openai_speech/`，依据规范和服务商文档构建；`fixtures/gemini/` 包含录制的 Gemini 语音
 
 **来源。**OpenAI OpenAPI 规范，提交 `926a7b8133226630bac025350e84b0ca5c31d45a`（2026-11-07）：`CreateSpeechRequest`、`CreateSpeechResponseStreamEvent`、`SpeechAudioDeltaEvent`、`SpeechAudioDoneEvent`。各服务商的页面列在[服务商](#服务商及其形式)中。
 
@@ -77,4 +77,4 @@ SpaceX 和 Vercel 的请求体不接受其他方言的字段；extras 中的字�
 
 ## MiniMax 语音
 
-`minimax_speech` 读写 `POST /v1/t2a_v2`（[T2A](https://platform.minimax.io/docs/api-reference/speech-t2a-http)），该端点位于 MiniMax 主机的根路径下，使用 `Authorization: Bearer`。文本为 `text`；声音为 `voice_setting.voice_id`，`speed` 为 `voice_setting.speed`；格式、采样率和码率为 `audio_setting.format`、`sample_rate` 和 `bitrate`（每秒比特数；KPP 以千比特计）。KPP 的 `pcm16` 为 24 kHz，因此 `pcm` 带 `sample_rate: 24000` 发送。Kaeso 用 `output_format: hex` 请求完整回复：MiniMax 的流分帧没有文档说明。十六进制音频转为 base64，`extra_info.audio_format` 给出其媒体类型，`extra_info.usage_characters` 给出计费字符数（`SpeechResponse::characters`）。MiniMax 以 HTTP 200 发送的失败 `base_resp` 是错误，按其代码映射。`instructions`、`language`、`seed`、时间戳和其他操作都是 `Unsupported`。
+`minimax_speech` 是 MiniMax 自己的格式，即 `POST /v1/t2a_v2`。[MiniMax Speech](minimax-speech.md) 列出了它的字段映射、拒绝项和错误。

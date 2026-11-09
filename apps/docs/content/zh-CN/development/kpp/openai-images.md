@@ -6,9 +6,9 @@ order: 8
 
 在这里查阅 OpenAI Images API 的任意字段：它在 KPP 中的位置、哪些服务商以何种形式接收它，以及每项映射的来源。修改图片编解码器读写某个字段的方式之前，先查看这里。
 
-- **编解码器：**`kaeso_codecs::openai_images::OpenAiImages`（`crates/kaeso-codecs/src/openai_images/`）、`kaeso_codecs::minimax_images::MinimaxImages`（`crates/kaeso-codecs/src/minimax_images/`），以及 Gemini 编解码器中的图片请求（`crates/kaeso-codecs/src/gemini/images.rs`）
+- **编解码器：**`kaeso_codecs::openai_images::OpenAiImages`（`crates/kaeso-codecs/src/openai_images/`），以及 Gemini 编解码器中的图片请求（`crates/kaeso-codecs/src/gemini/images.rs`）；MiniMax 自己的格式见[其页面](minimax-images.md)
 - **端点：**`POST /v1/images/generations`、`POST /v1/images/edits`（JSON 或 `multipart/form-data`）和 `POST /v1/images/variations`
-- **Fixture：**`crates/kaeso-codecs/fixtures/openai_images/` 和 `fixtures/minimax_images/`，全部依据规范和服务商文档构建，没有录制的
+- **Fixture：**`crates/kaeso-codecs/fixtures/openai_images/`，全部依据规范和服务商文档构建，没有录制的
 
 **来源。**OpenAI OpenAPI 规范，提交 `926a7b8133226630bac025350e84b0ca5c31d45a`（2026-11-07）：`CreateImageRequest`、`CreateImageEditRequest`、`EditImageBodyJsonParam`、`ImageRefParam`、`CreateImageVariationRequest`、`ImagesResponse`、`Image`、`ImageGenUsage`、`ImagesUsage`、`ImageGenPartialImageEvent`、`ImageGenCompletedEvent` 以及对应的 `image_edit.*`。图片相关的 schema 在其他 OpenAI 编解码器固定的提交（`e95c0fe`）之后有改动，因此这个方言固定较新的提交。`multipart/form-data` 依据 RFC 7578。各服务商的页面列在[服务商及其形式](#服务商及其形式)中。
 
@@ -121,15 +121,4 @@ Gemini 编解码器把图片请求写为 `generateContent`：提示词和编辑�
 
 ## MiniMax Images
 
-`minimax_images` 读写 `POST /v1/image_generation`，该端点位于 MiniMax 主机的根路径下（[MiniMax text to image](https://platform.minimax.io/docs/api-reference/image-generation-t2i)）。
-
-| KPP | MiniMax | 说明 |
-|---|---|---|
-| `prompt`、`model`、`seed`、`count` | `prompt`、`model`、`seed`、`n` | `n` 最多 9。 |
-| `size` `WIDTHxHEIGHT` | `width`、`height` | 由 MiniMax 检查范围（512 到 2,048，能被 8 整除）。 |
-| `aspect_ratio` | `aspect_ratio` | |
-| `delivery` | `response_format` `url`、`base64` | |
-| `prompt_optimizer`、未知键 | extras | |
-| 编辑、变体、`quality`、`output_format`、`output_compression`、`background`、`resolution`、`negative_prompt` | `Unsupported` | MiniMax 的图生图 API 接受一个角色参考图，这不是编辑。 |
-
-回复中的 `data.image_urls` 成为链接，`data.image_base64` 成为字节，其媒体类型从开头的字节读出，因为 MiniMax 不说明格式。MiniMax 以 HTTP 200 回复，并在 `base_resp` 中报告失败：`1002` 和 `1039` 为 `RateLimited`，`1004` 和 `2049` 为 `Authentication`，`1008` 为 `Billing`，`1026` 和 `1027` 为 `ContentFiltered`，`2013` 为 `InvalidRequest`，其他为 `ProviderError`。该端点不支持流式。
+`minimax_images` 是 MiniMax 自己的格式，即 `POST /v1/image_generation`。[MiniMax Images](minimax-images.md) 列出了它的字段映射、拒绝项和错误。

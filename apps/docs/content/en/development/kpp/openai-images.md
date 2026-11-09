@@ -6,9 +6,9 @@ order: 8
 
 Look up any field of OpenAI's Images API here: where it goes in KPP, which providers take it in which form, and the source of each mapping. Check it before you change how an image codec reads or writes a field.
 
-- **Codecs:** `kaeso_codecs::openai_images::OpenAiImages` (`crates/kaeso-codecs/src/openai_images/`), `kaeso_codecs::minimax_images::MinimaxImages` (`crates/kaeso-codecs/src/minimax_images/`), and image requests in the Gemini codec (`crates/kaeso-codecs/src/gemini/images.rs`)
+- **Codecs:** `kaeso_codecs::openai_images::OpenAiImages` (`crates/kaeso-codecs/src/openai_images/`) and image requests in the Gemini codec (`crates/kaeso-codecs/src/gemini/images.rs`); MiniMax's own format has [its page](minimax-images.md)
 - **Endpoints:** `POST /v1/images/generations`, `POST /v1/images/edits` (JSON or `multipart/form-data`) and `POST /v1/images/variations`
-- **Fixtures:** `crates/kaeso-codecs/fixtures/openai_images/` and `fixtures/minimax_images/`, all built from the specification and the providers' documentation, none recorded
+- **Fixtures:** `crates/kaeso-codecs/fixtures/openai_images/`, all built from the specification and the providers' documentation, none recorded
 
 **Sources.** The OpenAI OpenAPI spec at commit `926a7b8133226630bac025350e84b0ca5c31d45a` (2026-11-07): `CreateImageRequest`, `CreateImageEditRequest`, `EditImageBodyJsonParam`, `ImageRefParam`, `CreateImageVariationRequest`, `ImagesResponse`, `Image`, `ImageGenUsage`, `ImagesUsage`, `ImageGenPartialImageEvent`, `ImageGenCompletedEvent` and their `image_edit.*` twins. The image schemas changed after the spec commit the other OpenAI codecs pin (`e95c0fe`), so this dialect pins the newer one. RFC 7578 for `multipart/form-data`. The provider pages are named in [providers](#providers-and-their-forms).
 
@@ -121,15 +121,4 @@ The reply's image parts become the images, and `usageMetadata.candidatesTokensDe
 
 ## MiniMax Images
 
-`minimax_images` reads and writes `POST /v1/image_generation`, served from the root of MiniMax's host ([MiniMax text to image](https://platform.minimax.io/docs/api-reference/image-generation-t2i)).
-
-| KPP | MiniMax | Notes |
-|---|---|---|
-| `prompt`, `model`, `seed`, `count` | `prompt`, `model`, `seed`, `n` | `n` at most 9. |
-| `size` `WIDTHxHEIGHT` | `width`, `height` | MiniMax checks its range (512 to 2,048, divisible by 8). |
-| `aspect_ratio` | `aspect_ratio` | |
-| `delivery` | `response_format` `url`, `base64` | |
-| `prompt_optimizer`, unknown keys | extras | |
-| edits, variations, `quality`, `output_format`, `output_compression`, `background`, `resolution`, `negative_prompt` | `Unsupported` | MiniMax's image-to-image API takes one character reference, which is not an edit. |
-
-The reply's `data.image_urls` become links and `data.image_base64` bytes, whose media type is read from their first bytes, since MiniMax doesn't name the format. MiniMax answers HTTP 200 with failures in `base_resp`: `1002` and `1039` are `RateLimited`, `1004` and `2049` `Authentication`, `1008` `Billing`, `1026` and `1027` `ContentFiltered`, `2013` `InvalidRequest`, others `ProviderError`. The endpoint doesn't stream.
+`minimax_images` is MiniMax's own format, `POST /v1/image_generation`. [MiniMax Images](minimax-images.md) maps its fields, refusals and errors.

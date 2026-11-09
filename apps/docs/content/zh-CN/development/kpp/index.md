@@ -84,10 +84,10 @@ sequenceDiagram
 | `gemini` | Gemini API（`{models}/{model}:generateContent`、`:streamGenerateContent`、`:countTokens` 以及模型列表） |
 | `gemini_embeddings` | Gemini 嵌入（`{models}/{model}:embedContent`、`:batchEmbedContents`） |
 | `openai_images` | OpenAI Images（`/v1/images/generations`、`/v1/images/edits`、`/v1/images/variations`）以及使用其某种形式的服务商（[OpenAI Images](openai-images.md)） |
-| `minimax_images` | MiniMax 图片生成（`/v1/image_generation`） |
+| `minimax_images` | MiniMax 图片生成（`/v1/image_generation`）（[MiniMax Images](minimax-images.md)） |
 | `openai_speech` | OpenAI 语音（`/v1/audio/speech`）以及使用其某种形式的服务商（[OpenAI Speech](openai-speech.md)） |
 | `openai_transcriptions` | OpenAI 转写和翻译以及使用其某种形式的服务商（[OpenAI Transcriptions](openai-transcriptions.md)） |
-| `minimax_speech` | MiniMax 文本转语音（`/v1/t2a_v2`） |
+| `minimax_speech` | MiniMax 文本转语音（`/v1/t2a_v2`）（[MiniMax Speech](minimax-speech.md)） |
 | `elevenlabs` | ElevenLabs 的生成、转写、视频和列表端点（[ElevenLabs](elevenlabs.md)） |
 | `openai_videos` | OpenAI 的 Videos API（`/v1/videos`）以及 Together AI 的形式（[OpenAI Videos](openai-videos.md)） |
 | `xai_videos` | SpaceX 的视频 API（[SpaceX Videos](xai-videos.md)） |
@@ -262,5 +262,19 @@ OpenAI Responses 把不同的写法记录为形式覆盖项，只在值未改变
 - [OpenAI Responses](openai-responses.md)：查找 Responses 格式的每个字段在 KPP 中的位置。
 - [OpenAI Embeddings](openai-embeddings.md)：查找 Embeddings 格式的每个字段在 KPP 中的位置。
 - [Gemini API](gemini.md)：查找 Gemini API 的每个字段在 KPP 中的位置，包括嵌入。
+- [OpenAI Images](openai-images.md)：查找 OpenAI Images API 的每个字段在 KPP 中的位置，以及各服务商如何接收它。
+- [MiniMax Images](minimax-images.md)：了解图片请求如何映射到 MiniMax 的文生图 API。
+- [OpenAI Speech](openai-speech.md)：查找 OpenAI 语音 API 的每个字段在 KPP 中的位置，以及各服务商如何接收它。
+- [MiniMax Speech](minimax-speech.md)：了解语音请求如何映射到 MiniMax 的文本转语音 API。
+- [OpenAI Transcriptions](openai-transcriptions.md)：查找 OpenAI 转写和翻译 API 的每个字段在 KPP 中的位置。
+- [ElevenLabs](elevenlabs.md)：了解 ElevenLabs 的语音、音效、音乐、转写和视频端点如何映射到 KPP。
+- [OpenAI Videos](openai-videos.md)：查找 OpenAI Videos API 的每个字段在 KPP 中的位置。
+- [SpaceX Videos](xai-videos.md)：了解视频任务如何映射到 SpaceX 的 Grok Imagine 视频 API。
+- [MiniMax Videos](minimax-videos.md)：了解视频任务如何映射到 MiniMax 的 Hailuo 和 H3 视频 API。
+- [Z.ai Videos](zai-videos.md)：了解视频任务如何映射到 Z.ai 的 CogVideoX API。
+- [OpenRouter Videos](openrouter-videos.md)：了解视频任务如何映射到 OpenRouter 的视频生成 API。
+- [Veo](veo.md)：了解视频任务如何映射到 Gemini Enterprise Agent Platform 上的 Veo。
+- [Gemini Interactions](gemini-interactions.md)：了解 Gemini Omni 视频任务如何映射到 Interactions API。
+- [DashScope](dashscope.md)：了解图片、语音、转写和视频任务如何映射到 QwenCloud 的 DashScope API。
 - [Fixture 与录制](fixtures.md)：添加编解码器测试所用的真实载荷，并录制新的载荷。
 - [Fixture 约定](fixture-conventions.md)：查阅每个构造的 fixture 都遵循的规则。
