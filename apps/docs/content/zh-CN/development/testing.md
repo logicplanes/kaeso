@@ -275,7 +275,7 @@ cargo +nightly fuzz run decode_openai_chat \
   -- -max_total_time=600 -rss_limit_mb=2048 -max_len=65536
 ```
 
-**Fuzz** 工作流每晚让每个目标运行 10 分钟；每个修改 KPP、`crates/kaeso-mcp` 或 `fuzz/` 的拉取请求，则让每个目标运行 60 秒。出现崩溃时它会失败，并把输入保存为制品 `fuzz-crash-<target>`。崩溃会写入 `fuzz/artifacts/<target>/`。用 `cargo +nightly fuzz run <target> <file>` 复现它，把它变成编解码器中的回归测试，然后修复编解码器。
+**Fuzz** 工作流每晚让每个目标运行 10 分钟；每个修改 KPP、`crates/kaeso-mcp` 或 `fuzz/` 的拉取请求，则由四个作业分担各目标，让每个目标运行 30 秒。出现崩溃时它会失败，并把输入保存为制品：夜间为 `fuzz-crash-<target>`，拉取请求中为 `fuzz-crash-<shard>`。崩溃会写入 `fuzz/artifacts/<target>/`。用 `cargo +nightly fuzz run <target> <file>` 复现它，把它变成编解码器中的回归测试，然后修复编解码器。
 
 ## 持续集成
 
@@ -291,14 +291,14 @@ CI 工作流 `.github/workflows/ci.yml` 在每个拉取请求、每次推送到 
 | Rust format、Rust lint | 对工作区和 `fuzz/` 运行 `cargo fmt` 和 `cargo clippy` |
 | Test KPP | `cargo coverage-kpp` 以及 `kaeso-kpp` 和 `kaeso-codecs` 的文档测试 |
 | Minimum Rust version | 用各自的 `rust-version` 对每个 KPP crate 运行 `cargo check` 和 `cargo test` |
-| Test gateway | 在开发栈上运行 `cargo coverage-gateway` |
+| Test gateway | 在开发栈上运行 `cargo coverage-gateway`，分为四个分片，另一个作业合并它们的行覆盖率，并按该别名的阈值检查 |
 | Repository tooling | `node scripts/version.mjs check`、`cargo test -p xtask -p kpp-conformance` 和 `cargo test -p kaeso-server --test docs_paths` |
 | Query data | 先执行 PostgreSQL 迁移，再运行 `cargo sqlx prepare --workspace --check` |
 | OpenAPI document | `openapi.json` 是最新的 |
 | Rust dependencies | 用工作区和 KPP 的政策运行 `cargo deny check` |
 | Fuzz targets | 模糊测试目标能够构建 |
 | Published crates | 为 `kaeso-kpp` 和 `kaeso-codecs` 运行 `cargo publish --dry-run` 和把警告视为错误的 `cargo doc`，并运行 `cargo semver-checks`：对照最近发布的版本检查是否适合次版本发布；在拉取请求中对照其基础提交检查是否适合补丁发布，除非它带有 `breaking` 标签 |
-| Fuzz runs | KPP、`crates/kaeso-mcp` 或 `fuzz/` 有变化时，以每个目标 60 秒运行 **Fuzz** 工作流 |
+| Fuzz runs | KPP、`crates/kaeso-mcp` 或 `fuzz/` 有变化时，在四个作业中以每个目标 30 秒运行 **Fuzz** 工作流；推送到 `dev` 时不运行，由夜间运行覆盖 |
 | SDK conformance、SDK end-to-end | `pytest -q e2e/conformance`、`pytest -q e2e/sdk` 和 `pytest -q e2e/mcp` |
 | Compose config | 对两个 Compose 文件运行 `docker compose config` |
 | Images（gateway、mock provider、updater、console） | 构建四个镜像；控制台的作业还检查其镜像以内容安全策略提供控制台 |

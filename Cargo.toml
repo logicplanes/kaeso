@@ -132,3 +132,10 @@ opt-level = 3
 
 [profile.dev.package.blake2]
 opt-level = 3
+
+# The test identity providers make a 2048-bit RSA key each; unoptimized, that takes seconds.
+[profile.dev.package.rsa]
+opt-level = 3
+
+[profile.dev.package.num-bigint-dig]
+opt-level = 3

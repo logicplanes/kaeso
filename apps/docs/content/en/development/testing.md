@@ -275,7 +275,7 @@ cargo +nightly fuzz run decode_openai_chat \
   -- -max_total_time=600 -rss_limit_mb=2048 -max_len=65536
 ```
 
-The **Fuzz** workflow runs every target for 10 minutes each night, and for 60 seconds on every pull request that changes KPP, `crates/kaeso-mcp` or `fuzz/`. It fails on a crash and keeps the input as the artifact `fuzz-crash-<target>`. A crash is written to `fuzz/artifacts/<target>/`. Reproduce it with `cargo +nightly fuzz run <target> <file>`, turn it into a regression test in the codec, then fix the codec.
+The **Fuzz** workflow runs every target for 10 minutes each night, and for 30 seconds on every pull request that changes KPP, `crates/kaeso-mcp` or `fuzz/`, where four jobs share the targets. It fails on a crash and keeps the input as an artifact: `fuzz-crash-<target>` at night, `fuzz-crash-<shard>` on a pull request. A crash is written to `fuzz/artifacts/<target>/`. Reproduce it with `cargo +nightly fuzz run <target> <file>`, turn it into a regression test in the codec, then fix the codec.
 
 ## Continuous integration
 
@@ -291,14 +291,14 @@ The one required check is **CI**. It passes when **Changes** and **Comments** pa
 | Rust format, Rust lint | `cargo fmt` and `cargo clippy`, for the workspace and `fuzz/` |
 | Test KPP | `cargo coverage-kpp` and the doc tests of `kaeso-kpp` and `kaeso-codecs` |
 | Minimum Rust version | `cargo check` and `cargo test` of each KPP crate with its `rust-version` |
-| Test gateway | `cargo coverage-gateway`, with the development stack |
+| Test gateway | `cargo coverage-gateway`, with the development stack, in four shards whose line coverage is merged and checked against the alias's threshold in one more job |
 | Repository tooling | `node scripts/version.mjs check`, `cargo test -p xtask -p kpp-conformance` and `cargo test -p kaeso-server --test docs_paths` |
 | Query data | The PostgreSQL migrations, then `cargo sqlx prepare --workspace --check` |
 | OpenAPI document | `openapi.json` is current |
 | Rust dependencies | `cargo deny check`, with the workspace's policy and KPP's |
 | Fuzz targets | The fuzz targets build |
 | Published crates | `cargo publish --dry-run` and `cargo doc` with warnings as errors for `kaeso-kpp` and `kaeso-codecs`, and `cargo semver-checks`: against the last published version for a minor release, and on a pull request against its base for a patch release, unless it is labelled `breaking` |
-| Fuzz runs | The **Fuzz** workflow for 60 seconds per target, when KPP, `crates/kaeso-mcp` or `fuzz/` changed |
+| Fuzz runs | The **Fuzz** workflow for 30 seconds per target in four jobs, when KPP, `crates/kaeso-mcp` or `fuzz/` changed; not on a push to `dev`, which the nightly run covers |
 | SDK conformance, SDK end-to-end | `pytest -q e2e/conformance`, `pytest -q e2e/sdk` and `pytest -q e2e/mcp` |
 | Compose config | `docker compose config` for both Compose files |
 | Images (gateway, mock provider, updater, console) | Build the four images; the console's job also checks that its image serves the console with a content security policy |
