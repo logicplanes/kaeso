@@ -8,6 +8,11 @@ export function seconds(ms: number): string {
   return formatDuration(ms);
 }
 
+export function microseconds(us: number): string {
+  if (us >= 1000) return seconds(us / 1000);
+  return t("logs.inspector.microseconds", "{us} µs", { us: formatNumber(us, { maximumFractionDigits: 0 }) });
+}
+
 export function startedLabel(iso: string, now = new Date()): string {
   const d = new Date(iso);
   const when =

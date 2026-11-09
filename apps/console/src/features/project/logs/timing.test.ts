@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { apply, load } from "~/i18n";
-import { seconds, startedLabel } from "./timing";
+import { microseconds, seconds, startedLabel } from "./timing";
 
 describe("seconds", () => {
   it("reads as the timeline does", () => {
@@ -8,6 +8,20 @@ describe("seconds", () => {
     expect(seconds(1054)).toBe("1.1 s");
     expect(seconds(15_532)).toBe("15.5 s");
     expect(seconds(65_000)).toBe("1 min 5 s");
+  });
+});
+
+describe("microseconds", () => {
+  it("writes a time under a millisecond in microseconds", () => {
+    expect(microseconds(180)).toBe("180 µs");
+    expect(microseconds(999)).toBe("999 µs");
+    expect(microseconds(0)).toBe("0 µs");
+  });
+  it("writes a millisecond and more as the timeline does", () => {
+    expect(microseconds(1000)).toBe(seconds(1));
+    expect(microseconds(1500)).toBe(seconds(1.5));
+    expect(microseconds(14_000)).toBe("14 ms");
+    expect(microseconds(2_500_000)).toBe("2.5 s");
   });
 });
 

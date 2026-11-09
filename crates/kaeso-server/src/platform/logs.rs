@@ -777,15 +777,15 @@ pub struct LogView {
     pub duration_ms: u32,
     #[doc = "Time to the provider's first byte, in milliseconds."]
     pub ttfb_ms: Option<u32>,
-    #[doc = "Time the app took to send the request body, in milliseconds, from\n\
+    #[doc = "Time the app took to send the request body, in microseconds, from\n\
         when Kaeso began reading it until all of it had arrived; `null` when\n\
         it wasn't recorded."]
-    pub request_upload_ms: Option<u32>,
-    #[doc = "Kaeso's own time before it called the provider, in milliseconds:\n\
+    pub request_upload_us: Option<u32>,
+    #[doc = "Kaeso's own time before it called the provider, in microseconds:\n\
         the key, decoding, the catalogue, the provider credential, limits\n\
         and encoding, without the request upload; `null` when the request\n\
         ended before reaching the provider."]
-    pub overhead_ms: Option<u32>,
+    pub overhead_us: Option<u32>,
     #[doc = "The key; `null` for requests from the Playground, which have none."]
     pub key_id: Option<ApiKeyId>,
     #[doc = "Where the request came from: `api` (the model API, with a key) or\n\
@@ -960,9 +960,9 @@ pub struct StreamProgressView {
         keepalive interval."]
     pub keepalives: u32,
     #[doc = "Kaeso's time decoding the provider's events and encoding them for the\n\
-        app, in milliseconds, without the waits for the provider or the app;\n\
+        app, in microseconds, without the waits for the provider or the app;\n\
         `null` when it wasn't recorded."]
-    pub processing_ms: Option<u32>,
+    pub processing_us: Option<u32>,
 }
 
 fn view(r: &LogRow) -> LogView {
@@ -977,8 +977,8 @@ fn view(r: &LogRow) -> LogView {
         started_at: r.started_at,
         duration_ms: r.duration_ms,
         ttfb_ms: r.ttfb_ms,
-        request_upload_ms: r.request_upload_ms,
-        overhead_ms: r.overhead_ms,
+        request_upload_us: r.request_upload_us,
+        overhead_us: r.overhead_us,
         key_id: (!r.key_id.is_nil()).then(|| ApiKeyId::from_uuid(r.key_id)),
         source: r.source.clone(),
         principal_kind: r.principal_kind.clone(),
@@ -1013,7 +1013,7 @@ fn view(r: &LogRow) -> LogView {
             bytes: r.stream_bytes,
             first_byte_ms: r.stream_first_byte_ms,
             keepalives: r.stream_keepalives,
-            processing_ms: r.stream_processing_ms,
+            processing_us: r.stream_processing_us,
         }),
         cache_breakpoints: r.cache_breakpoints,
         response_cache: ResponseCacheResult::parse(&r.response_cache),
@@ -1046,12 +1046,13 @@ pub(crate) fn decode_cursor(c: &str) -> Option<(OffsetDateTime, Uuid)> {
     path = "/orgs/{org}/projects/{project}/logs",
     summary = "The project's request log, newest first (metadata only).",
     description = "One entry per model request, kept for the org's metadata retention:\n\
-    timings in milliseconds (`duration_ms`, `ttfb_ms`, `overhead_ms`), status and\n\
-    `error_kind`, tokens, cost in USD, key, member, model and route. Filters\n\
-    combine; `from` and `to` are RFC 3339 times. To explain a spike in the usage\n\
-    timeline, list its bucket's range with the same model or key and\n\
-    `failed=true`, or `min_duration_ms` set to the bucket's `duration_p95_ms`.\n\
-    Pages hold up to 100 entries; pass `next_cursor` as `after` for the next.",
+    timings in milliseconds (`duration_ms`, `ttfb_ms`) and microseconds\n\
+    (`request_upload_us`, `overhead_us`), status and `error_kind`, tokens, cost\n\
+    in USD, key, member, model and route. Filters combine; `from` and `to` are\n\
+    RFC 3339 times. To explain a spike in the usage timeline, list its bucket's\n\
+    range with the same model or key and `failed=true`, or `min_duration_ms` set\n\
+    to the bucket's `duration_p95_ms`. Pages hold up to 100 entries; pass\n\
+    `next_cursor` as `after` for the next.",
     tag = "logs",
     params(("org" = OrgId, Path), ("project" = ProjectId, Path), PageParams, LogFilter),
     responses((status = 200, body = List<LogView>))
@@ -1163,7 +1164,7 @@ pub struct ExportParams {
     pub include_content: Option<bool>,
 }
 
-const CSV_HEADER: &str = "id,started_at,duration_ms,ttfb_ms,key_id,principal_kind,principal_id,endpoint,ingress_dialect,egress_dialect,provider,requested_model,model,stream,status,error_kind,input_tokens,output_tokens,cache_read_tokens,cache_write_tokens,reasoning_tokens,cost,user_agent,client_ip,upstream_request_id,stream_events,stream_bytes,stream_first_byte_ms,stream_keepalives,usage_estimated,source,overhead_ms,stream_processing_ms,cache_breakpoints,request_upload_ms,response_cache,alias,fallbacks,media_unit,media_input,media_output,media_detail,cost_known,cost_basis\n";
+const CSV_HEADER: &str = "id,started_at,duration_ms,ttfb_ms,key_id,principal_kind,principal_id,endpoint,ingress_dialect,egress_dialect,provider,requested_model,model,stream,status,error_kind,input_tokens,output_tokens,cache_read_tokens,cache_write_tokens,reasoning_tokens,cost,user_agent,client_ip,upstream_request_id,stream_events,stream_bytes,stream_first_byte_ms,stream_keepalives,usage_estimated,source,overhead_us,stream_processing_us,cache_breakpoints,request_upload_us,response_cache,alias,fallbacks,media_unit,media_input,media_output,media_detail,cost_known,cost_basis\n";
 
 // OWASP CSV injection (https://owasp.org/www-community/attacks/CSV_Injection): quote every
 // text cell and prefix `'` to one that starts a formula or holds a separator a spreadsheet
@@ -1237,10 +1238,10 @@ fn csv_line(v: &LogView) -> String {
         number(progress.map(|p| p.keepalives)),
         Number(v.usage.estimated.to_string()),
         Text(v.source.clone()),
-        number(v.overhead_ms),
-        number(progress.and_then(|p| p.processing_ms)),
+        number(v.overhead_us),
+        number(progress.and_then(|p| p.processing_us)),
         number(v.cache_breakpoints),
-        number(v.request_upload_ms),
+        number(v.request_upload_us),
         Text(
             v.response_cache
                 .map(|c| c.as_str().to_owned())
