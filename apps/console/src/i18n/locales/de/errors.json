@@ -466,6 +466,7 @@
   "errors.modelApi.method": "`{path}` nimmt keine `{method}`-Anfragen an.",
   "errors.modelApi.modelsUnavailable": "Kaeso kann die Modelle dieses Projekts gerade nicht laden. Gleich erneut versuchen.",
   "errors.modelApi.noBaseUrl": "Für diesen Anbieter ist keine Basis-URL eingerichtet.",
+  "errors.modelApi.idNotInUrl": "Eine ID in dieser Anfrage kann nicht Teil der Anbieter-URL sein; verwenden Sie die echte ID.",
   "errors.modelApi.noCredential": "Für den Anbieter `{provider}` sind für dieses Projekt keine Zugangsdaten eingerichtet. Ein Admin der Organisation fügt mit POST /platform/v1/orgs/{org}/credentials einen Schlüssel hinzu, macht einen Schlüssel der Organisation zum Standard oder weist diesem Projekt einen zu.",
   "errors.modelApi.noRequestRight": "Der Inhaber dieses API-Schlüssels darf in seinem Projekt keine Modelle aufrufen (das Recht `api.request` fehlt).",
   "errors.modelApi.noRoute": "Kaeso bedient `{path}` nicht.",
