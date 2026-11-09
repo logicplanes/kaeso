@@ -6,7 +6,7 @@ import { apiKey, projectData, projectMember, projectPath } from "~/test/fixtures
 import { listPage, logsData } from "~/test/fixtures/project-logs";
 import { apiError, on, page, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
-import { hoverReason } from "~/test/fixtures/org";
+import { hoverReason, notifications } from "~/test/fixtures/org";
 
 const CALLS = "orgs/:org/projects/:project/logs/tool-calls";
 
@@ -344,6 +344,36 @@ describe("Exporting tool calls", () => {
       error_type: "timeout",
     });
     expect(requests("GET", CALLS).some((r) => r.query.get("limit") === "1")).toBe(true);
+  });
+
+  it("shows the export while it runs and when it finished", async () => {
+    signedIn();
+    projectData();
+    calls([toolCall()]);
+    const written: string[] = [];
+    const decoder = new TextDecoder();
+    Object.defineProperty(window, "showSaveFilePicker", {
+      configurable: true,
+      writable: true,
+      value: async () => ({
+        name: "tool-calls.csv",
+        createWritable: async () => new WritableStream<Uint8Array>({ write: (chunk) => void written.push(decoder.decode(chunk)) }),
+      }),
+    });
+    let finish: (r: Response) => void = () => {};
+    on("GET", `${CALLS}/export`, () => new Promise<Response>((resolve) => (finish = resolve)));
+    const { user } = await renderApp(projectPath("logs?kind=tools"));
+
+    await screen.findByRole("row", { name: /x__create_post/ });
+    await user.click(screen.getByRole("button", { name: "Export" }));
+    await user.click(within(await screen.findByRole("dialog", { name: "Export tool calls" })).getByRole("button", { name: "Export" }));
+    expect((await notifications().findAllByText("Exporting tool calls")).length).toBeGreaterThan(0);
+    await waitFor(() => expect(requests("GET", `${CALLS}/export`)).toHaveLength(1));
+
+    finish(new Response("id,tool\ncall_0001,x__create_post\n", { status: 200, headers: { "content-type": "text/csv" } }));
+    expect(await notifications().findByText("Tool calls exported")).toBeInTheDocument();
+    expect(written.join("")).toBe("id,tool\ncall_0001,x__create_post\n");
+    Reflect.deleteProperty(window, "showSaveFilePicker");
   });
 
   it("says which right export needs, and that there is nothing to export", async () => {
