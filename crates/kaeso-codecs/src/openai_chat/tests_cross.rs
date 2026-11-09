@@ -134,13 +134,13 @@ fn tool_names_chat_rejects_are_rewritten_and_mapped_back() {
 
 #[test]
 fn chat_documents_encode_as_file_parts() {
-    let mut doc = DocumentBlock::new(Source::base64("application/pdf", "JVBE"));
+    let mut doc = DocumentBlock::new(Source::base64("application/pdf", "JVBE").unwrap());
     doc.cache = Some(kaeso_kpp::CacheHint::default());
     let req = GenerateRequest::new("m").with_message(Message::new(
         Role::User,
         vec![
             Block::Document(doc),
-            Block::image(Source::base64("image/png", "iVBO")),
+            Block::image(Source::base64("image/png", "iVBO").unwrap()),
         ],
     ));
     let (out, _) = encode(&req);

@@ -1,4 +1,3 @@
-use base64::Engine as _;
 use kaeso_kpp::{
     AudioFormat, ErrorKind, Reply, Request, RequestKind, Source, SpeechEvent, SpeechOperation,
     SpeechRequest, SpeechResponse, StreamEvent, StreamMode, Usage, Voice,
@@ -200,7 +199,10 @@ fn raw_audio_streams_through_piece_by_piece() {
 fn a_whole_reply_to_an_events_app_is_one_delta_and_the_end() {
     let mut req = speech("Hi");
     req.stream = StreamMode::on(false);
-    let mut r = SpeechResponse::new("gpt-4o-mini-tts", Source::base64("audio/mpeg", "SUQz"));
+    let mut r = SpeechResponse::new(
+        "gpt-4o-mini-tts",
+        Source::base64("audio/mpeg", "SUQz").unwrap(),
+    );
     r.usage = Usage::new(3, 4);
     let out = OpenAiSpeech::encode_response(&Reply::Speech(r), &app_ctx(&req)).unwrap();
     let items = crate::testing::sse_items(&out).unwrap();
@@ -314,12 +316,7 @@ fn an_event_stream_answered_whole_is_assembled() {
     };
     let Source::Base64(b) = r.audio else { panic!() };
     let (_, mp3) = own(DIR, "responses", "mp3");
-    assert_eq!(
-        base64::engine::general_purpose::STANDARD
-            .decode(b.data)
-            .unwrap(),
-        mp3
-    );
+    assert_eq!(b.data.to_vec(), mp3);
     let event = SpeechEvent::done(None);
     assert!(event.done);
 }
@@ -438,7 +435,7 @@ fn each_provider_gets_its_documented_body() {
     .unwrap();
     let Reply::Speech(r) = reply else { panic!() };
     assert!(
-        matches!(&r.audio, Source::Base64(b) if b.data == "SUQzBAAAAAAA" && b.media_type == "audio/mpeg")
+        matches!(&r.audio, Source::Base64(b) if b.to_base64() == "SUQzBAAAAAAA" && b.media_type == "audio/mpeg")
     );
 }
 
@@ -475,7 +472,7 @@ fn mistral_replies_and_events_carry_audio_data() {
     )
     .unwrap();
     let Reply::Speech(r) = reply else { panic!() };
-    assert!(matches!(&r.audio, Source::Base64(b) if b.data.starts_with("SUQz")));
+    assert!(matches!(&r.audio, Source::Base64(b) if b.data.starts_with(b"ID3")));
     assert!(OpenAiSpeech::decode_response(200, &HeaderList::new(), b"{}", &ctx).is_err());
     assert!(OpenAiSpeech::decode_response(200, &HeaderList::new(), b"nope", &ctx).is_err());
 
@@ -578,10 +575,9 @@ fn unknown_fields_headers_and_settings_reach_a_provider_that_takes_them() {
         (&json!("Calm."), &json!(1.25), &json!("de"))
     );
     let mut dialogue = speech("Hi");
-    dialogue.audio = Some(kaeso_kpp::AudioInput::new(Source::base64(
-        "audio/mpeg",
-        "SUQz",
-    )));
+    dialogue.audio = Some(kaeso_kpp::AudioInput::new(
+        Source::base64("audio/mpeg", "SUQz").unwrap(),
+    ));
     assert_eq!(refusal(SpeechProfile::OPENAI, &dialogue).0, "input");
     let r = Request::Speech(dialogue);
     let ctx = EgressCtx::new(&r).with_speech_profile(SpeechProfile::OPENAI);

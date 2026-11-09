@@ -1,4 +1,4 @@
-use base64::Engine as _;
+use bytes::Bytes;
 use indexmap::IndexMap;
 use kaeso_kpp::{
     Extras, ImageBackground, ImageDelivery, ImageFormat, ImageInput, ImageOperation, ImageQuality,
@@ -11,7 +11,9 @@ use super::profile::{DeliveryForm, EditsForm, ImageField, ImagesProfile, SizeFor
 use super::wire::{ImageRefW, ImageRequestW, REQUEST_FIELDS};
 use crate::codec::{EgressCtx, EncodedRequest, HeaderList, is_forwarded_header};
 use crate::cross::check_extras;
-use crate::multipart::{FormError, FormField, FormLimits, FormPart, form_boundary, read_form};
+use crate::multipart::{
+    FormError, FormField, FormLimits, FormPart, Upload, form_boundary, read_form,
+};
 use crate::wire::{Ext, extra_for, extras_from, parse_data_url, to_body, verbatim_from_form};
 
 /// The most parts one edit upload may hold: OpenAI's 16 images, a mask, a markup image and
@@ -51,9 +53,10 @@ fn refused(feature: &str, profile: &ImagesProfile, param: &str, hint: &str) -> K
 /// `multipart/form-data` for uploads.
 pub(super) fn decode(
     operation: ImageOperation,
-    body: &[u8],
+    upload: Upload<'_>,
     headers: &HeaderList,
 ) -> Result<Request, KppError> {
+    let body = upload.bytes();
     let multipart = headers.get("content-type").is_some_and(|t| {
         t.trim_start()
             .to_ascii_lowercase()
@@ -62,7 +65,7 @@ pub(super) fn decode(
     let mut req = if multipart {
         decode_form(
             operation,
-            body,
+            upload,
             headers.get("content-type").unwrap_or_default(),
         )?
     } else {
@@ -171,7 +174,9 @@ fn image_ref(r: &Ext<ImageRefW>) -> Result<ImageInput, KppError> {
 
 fn url_source(url: &str) -> Source {
     match parse_data_url(url) {
-        Some(d) if d.header.is_none() => Source::base64(d.media_type, d.data),
+        Some(d) if d.header.is_none() => {
+            Source::base64(d.media_type, d.data).unwrap_or_else(|_| Source::Url(url.to_owned()))
+        }
         _ => Source::Url(url.to_owned()),
     }
 }
@@ -283,12 +288,12 @@ fn form_error(e: FormError) -> KppError {
 
 fn decode_form(
     operation: ImageOperation,
-    body: &[u8],
+    body: Upload<'_>,
     content_type: &str,
 ) -> Result<ImageRequest, KppError> {
     let boundary = form_boundary(content_type).map_err(form_error)?;
     let parts = read_form(
-        body,
+        body.bytes(),
         &boundary,
         FormLimits::new(MAX_FORM_PARTS, MAX_IMAGE_BYTES),
     )
@@ -309,11 +314,11 @@ fn decode_form(
                 if !extras.form.contains_key(FORM_IMAGE_FIELD) {
                     extras.form.insert(FORM_IMAGE_FIELD.to_owned(), name.into());
                 }
-                req.images.push(uploaded(part));
+                req.images.push(uploaded(part, body));
             }
-            "mask" if part.filename.is_some() => req.mask = Some(uploaded(part)),
+            "mask" if part.filename.is_some() => req.mask = Some(uploaded(part, body)),
             MARKUP if part.filename.is_some() => {
-                let url = data_url(&uploaded(part).source).unwrap_or_default();
+                let url = data_url(&uploaded(part, body).source).unwrap_or_default();
                 let raw = RawJson::from_serialize(&json!({ "image_url": url }))
                     .map_err(|_| invalid("`markup` cannot be read"))?;
                 extras.fields.insert(MARKUP.to_owned(), raw);
@@ -414,20 +419,19 @@ fn decode_form(
     Ok(req)
 }
 
-fn uploaded(part: &FormPart<'_>) -> ImageInput {
+fn uploaded(part: &FormPart<'_>, body: Upload<'_>) -> ImageInput {
     let media_type = part
         .content_type
         .clone()
         .unwrap_or_else(|| "application/octet-stream".to_owned());
-    let data = base64::engine::general_purpose::STANDARD.encode(part.body);
-    let mut input = ImageInput::new(Source::base64(media_type, data));
+    let mut input = ImageInput::new(Source::bytes(media_type, body.share(part.body)));
     input.filename = part.filename.clone();
     input
 }
 
 pub(super) fn data_url(source: &Source) -> Option<String> {
     match source {
-        Source::Base64(b) => Some(format!("data:{};base64,{}", b.media_type, b.data)),
+        Source::Base64(b) => Some(b.data_url()),
         Source::Url(u) => Some(u.clone()),
         _ => None,
     }
@@ -700,7 +704,7 @@ pub(super) fn encode(req: &Request, ctx: &mut EgressCtx) -> Result<EncodedReques
         Some(base) => format!("{base}{}", plan.path),
         None => plan.path.to_owned(),
     };
-    let body = json_body(r, &p, plan.streams)?;
+    let body = json_body(r, &p, plan.streams, plan.multipart)?;
     if plan.multipart {
         let (content_type, bytes) = form_body(r, body)?;
         let mut headers = headers;
@@ -723,6 +727,7 @@ fn json_body(
     r: &ImageRequest,
     p: &ImagesProfile,
     streams: bool,
+    multipart: bool,
 ) -> Result<IndexMap<String, Value>, KppError> {
     let mut out = IndexMap::new();
     if !r.model.is_empty() {
@@ -731,7 +736,8 @@ fn json_body(
     if let Some(prompt) = &r.prompt {
         put(&mut out, "prompt", prompt.clone());
     }
-    if r.operation == ImageOperation::Edit {
+    // An upload sends the images as files, so they aren't written as data URLs first.
+    if r.operation == ImageOperation::Edit && !multipart {
         edit_inputs(&mut out, r, p)?;
     }
     if let Some(n) = r.count
@@ -901,13 +907,11 @@ fn form_body(
     r: &ImageRequest,
     body: IndexMap<String, Value>,
 ) -> Result<(String, Vec<u8>), KppError> {
-    let decode = |input: &ImageInput| -> Result<(String, Vec<u8>, String), KppError> {
+    let decode = |input: &ImageInput| -> Result<(String, Bytes, String), KppError> {
         let Source::Base64(b) = &input.source else {
             return Err(invalid("an uploaded image must be bytes"));
         };
-        let bytes = base64::engine::general_purpose::STANDARD
-            .decode(&b.data)
-            .map_err(|_| invalid("an image is not valid base64").with_param("image"))?;
+        let bytes = b.data.clone();
         let name = input
             .filename
             .clone()
@@ -925,10 +929,11 @@ fn form_body(
             let d = parse_data_url(url).ok_or_else(|| {
                 invalid("`markup` must be an upload or a data URL").with_param(MARKUP)
             })?;
-            let bytes = base64::engine::general_purpose::STANDARD
-                .decode(d.data)
-                .map_err(|_| invalid("`markup` is not valid base64").with_param(MARKUP))?;
-            Some((default_name(d.media_type), bytes, d.media_type.to_owned()))
+            let bytes = crate::media::from_base64(d.media_type, d.data, MARKUP)?;
+            let Source::Base64(b) = bytes else {
+                return Err(invalid("`markup` must be an upload or a data URL").with_param(MARKUP));
+            };
+            Some((default_name(d.media_type), b.data, d.media_type.to_owned()))
         }
         None => None,
     };

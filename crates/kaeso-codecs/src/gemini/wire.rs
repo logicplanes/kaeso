@@ -65,7 +65,7 @@ pub(crate) struct PartW {
 #[serde(rename_all = "camelCase")]
 pub(crate) struct BlobW {
     pub(crate) mime_type: String,
-    pub(crate) data: String,
+    pub(crate) data: crate::wire::B64,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]

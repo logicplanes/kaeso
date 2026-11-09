@@ -1,4 +1,3 @@
-use base64::Engine as _;
 use indexmap::IndexMap;
 use kaeso_kpp::{
     AudioInput, Extras, KppError, Origin, RawJson, Request, Source, StreamMode,
@@ -10,7 +9,9 @@ use super::DIALECT;
 use super::profile::{LanguageField, TimestampsField, TranscriptionBody, TranscriptionsProfile};
 use crate::codec::{EgressCtx, EncodedRequest, HeaderList, is_forwarded_header};
 use crate::cross::check_extras;
-use crate::multipart::{FormError, FormField, FormLimits, FormPart, form_boundary, read_form};
+use crate::multipart::{
+    FormError, FormField, FormLimits, FormPart, Upload, form_boundary, read_form,
+};
 use crate::wire::{extra_for, note_integers, spelled_number};
 
 /// The most parts one upload may hold: the file and every field of `CreateTranscriptionRequest`,
@@ -80,7 +81,7 @@ fn form_error(e: FormError) -> KppError {
 /// Decodes a transcription or translation upload; the path names the operation.
 pub(super) fn decode(
     operation: TranscriptionOperation,
-    body: &[u8],
+    body: Upload<'_>,
     headers: &HeaderList,
 ) -> Result<Request, KppError> {
     let content_type = headers.get("content-type").unwrap_or_default();
@@ -95,7 +96,7 @@ pub(super) fn decode(
     }
     let boundary = form_boundary(content_type).map_err(form_error)?;
     let parts = read_form(
-        body,
+        body.bytes(),
         &boundary,
         FormLimits::new(MAX_FORM_PARTS, MAX_AUDIO_BYTES),
     )
@@ -111,7 +112,7 @@ pub(super) fn decode(
             if part.filename.is_none() {
                 return Err(invalid("`file` must be a file").with_param("file"));
             }
-            if audio.replace(uploaded(part)).is_some() {
+            if audio.replace(uploaded(part, body)).is_some() {
                 return Err(invalid("`file` is sent more than once").with_param("file"));
             }
             continue;
@@ -221,13 +222,12 @@ pub(super) fn decode(
     Ok(Request::Transcription(req))
 }
 
-fn uploaded(part: &FormPart<'_>) -> AudioInput {
+fn uploaded(part: &FormPart<'_>, body: Upload<'_>) -> AudioInput {
     let media_type = part
         .content_type
         .clone()
         .unwrap_or_else(|| "application/octet-stream".to_owned());
-    let data = base64::engine::general_purpose::STANDARD.encode(part.body);
-    let mut input = AudioInput::new(Source::base64(media_type, data));
+    let mut input = AudioInput::new(Source::bytes(media_type, body.share(part.body)));
     input.filename = part.filename.clone();
     input
 }
@@ -471,9 +471,7 @@ pub(super) fn encode(req: &Request, ctx: &mut EgressCtx) -> Result<EncodedReques
     }
     let file = match &r.audio.source {
         Source::Base64(b) => {
-            let bytes = base64::engine::general_purpose::STANDARD
-                .decode(&b.data)
-                .map_err(|_| invalid("the audio is not valid base64").with_param("file"))?;
+            let bytes = &b.data;
             let name = r
                 .audio
                 .filename
@@ -515,7 +513,7 @@ fn ai_sdk(
     let Source::Base64(b) = &r.audio.source else {
         return Err(invalid("the audio must be an upload").with_param("file"));
     };
-    let body = serde_json::json!({ "audio": b.data, "mediaType": b.media_type });
+    let body = serde_json::json!({ "audio": b.base64(), "mediaType": b.media_type });
     let headers = HeaderList::new()
         .with("content-type", "application/json")
         .with("ai-gateway-protocol-version", "0.0.1")

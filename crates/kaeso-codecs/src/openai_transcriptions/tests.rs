@@ -60,7 +60,7 @@ fn sorted(mut parts: Vec<(String, Value)>) -> Vec<(String, Value)> {
 }
 
 fn mp3() -> AudioInput {
-    AudioInput::new(Source::base64("audio/mpeg", "SUQz")).with_filename("a.mp3")
+    AudioInput::new(Source::base64("audio/mpeg", "SUQz").unwrap()).with_filename("a.mp3")
 }
 
 fn transcribe(format: Option<TranscriptFormat>) -> TranscriptionRequest {

@@ -79,7 +79,7 @@ fn an_openai_image_request_asks_gemini_for_images_only() {
 fn an_edit_sends_its_images_inline_after_the_prompt() {
     let edit = ImageRequest::new("gemini-3-pro-image", ImageOperation::Edit)
         .with_prompt("Add a hat")
-        .with_image(ImageInput::new(Source::base64("image/png", PNG)));
+        .with_image(ImageInput::new(Source::base64("image/png", PNG).unwrap()));
     assert_eq!(
         body(edit)["contents"][0]["parts"],
         json!([{"text": "Add a hat"}, {"inlineData": {"mimeType": "image/png", "data": PNG}}])
@@ -135,8 +135,8 @@ fn what_gemini_lacks_is_refused_with_the_field() {
     assert_eq!(param(r, p.clone()), "partial_images");
     let mut masked = ImageRequest::new("gemini-3.1-flash-image", ImageOperation::Edit)
         .with_prompt("hat")
-        .with_image(ImageInput::new(Source::base64("image/png", PNG)));
-    masked.mask = Some(ImageInput::new(Source::base64("image/png", PNG)));
+        .with_image(ImageInput::new(Source::base64("image/png", PNG).unwrap()));
+    masked.mask = Some(ImageInput::new(Source::base64("image/png", PNG).unwrap()));
     assert_eq!(param(masked, p.clone()), "mask");
     let linked = ImageRequest::new("gemini-3.1-flash-image", ImageOperation::Edit)
         .with_prompt("hat")
@@ -145,7 +145,7 @@ fn what_gemini_lacks_is_refused_with_the_field() {
         )));
     assert_eq!(param(linked, p.clone()), "images[0]");
     let vary = ImageRequest::new("gemini-3.1-flash-image", ImageOperation::Variation)
-        .with_image(ImageInput::new(Source::base64("image/png", PNG)));
+        .with_image(ImageInput::new(Source::base64("image/png", PNG).unwrap()));
     assert_eq!(param(vary, p), "image");
 }
 

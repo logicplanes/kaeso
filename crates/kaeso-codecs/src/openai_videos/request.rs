@@ -1,4 +1,3 @@
-use base64::Engine as _;
 use kaeso_kpp::{
     Extras, ImageSize, KppError, Origin, Request, Source, VideoImage, VideoImageRole,
     VideoOperation, VideoRequest,
@@ -192,8 +191,8 @@ fn uploaded(part: &FormPart<'_>) -> VideoImage {
         .content_type
         .clone()
         .unwrap_or_else(|| "application/octet-stream".to_owned());
-    let data = base64::engine::general_purpose::STANDARD.encode(part.body);
-    let mut image = VideoImage::new(Source::base64(media_type, data), VideoImageRole::FirstFrame);
+    let source = Source::bytes(media_type, bytes::Bytes::copy_from_slice(part.body));
+    let mut image = VideoImage::new(source, VideoImageRole::FirstFrame);
     image.filename = part.filename.clone();
     image
 }
@@ -413,15 +412,7 @@ fn form_body(r: &VideoRequest, body: Map<String, Value>) -> Result<(String, Vec<
             source: Source::Base64(b),
             filename: Some(name),
             ..
-        }) => Some((
-            name.clone(),
-            base64::engine::general_purpose::STANDARD
-                .decode(&b.data)
-                .map_err(|_| {
-                    invalid("the reference is not valid base64").with_param("input_reference")
-                })?,
-            b.media_type.clone(),
-        )),
+        }) => Some((name.clone(), b.data.clone(), b.media_type.clone())),
         _ => None,
     };
     let mut fields: Vec<FormField<'_>> = texts.iter().map(|(k, v)| FormField::Text(k, v)).collect();

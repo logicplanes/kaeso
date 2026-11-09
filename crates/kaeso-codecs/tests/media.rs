@@ -73,7 +73,7 @@ fn chat_input_audio_is_an_audio_block_that_reaches_gemini_inline() {
     let [Block::Audio(audio), Block::Text(_)] = blocks(&req) else {
         panic!("{req:?}")
     };
-    assert_eq!(audio.source, Source::base64("audio/mpeg", MP3));
+    assert_eq!(audio.source, Source::base64("audio/mpeg", MP3).unwrap());
     let sent = encode(G, &req).unwrap();
     assert_eq!(
         sent["contents"][0]["parts"][0],
@@ -108,7 +108,9 @@ fn gemini_audio_reaches_chat_with_its_format_and_responses_and_anthropic_refuse_
 
 #[test]
 fn chat_audio_formats_follow_the_provider_profile() {
-    let flac = user(vec![Block::audio(Source::base64("audio/flac", "ZkxhQw=="))]);
+    let flac = user(vec![Block::audio(
+        Source::base64("audio/flac", "ZkxhQw==").unwrap(),
+    )]);
     let err = refused(encode(C, &flac));
     assert_eq!(err.unsupported_feature(), Some("audio format `flac`"));
     assert!(err.message.contains("wav, mp3"), "{}", err.message);
@@ -121,7 +123,9 @@ fn chat_audio_formats_follow_the_provider_profile() {
         "flac"
     );
 
-    let webm = user(vec![Block::audio(Source::base64("audio/webm", "GkXf"))]);
+    let webm = user(vec![Block::audio(
+        Source::base64("audio/webm", "GkXf").unwrap(),
+    )]);
     let err = refused(encode(C, &webm));
     assert_eq!(
         err.unsupported_feature(),
@@ -142,7 +146,9 @@ fn chat_takes_audio_only_as_base64_in_user_messages_and_no_video() {
         .with_message(Message::user("Say it."))
         .with_message(Message::new(
             Role::Assistant,
-            vec![Block::audio(Source::base64("audio/wav", "UklGRg=="))],
+            vec![Block::audio(
+                Source::base64("audio/wav", "UklGRg==").unwrap(),
+            )],
         ));
     assistant.sampling.max_output_tokens = Some(16);
     let assistant = Request::Generate(assistant);
@@ -169,7 +175,10 @@ fn video_url_parts_go_only_to_chat_providers_that_document_them() {
     let [Block::Video(inline), Block::Video(file), Block::Text(_)] = blocks(&req) else {
         panic!("{req:?}")
     };
-    assert_eq!(inline.source, Source::base64("video/mp4", "AAAAIGZ0eXA="));
+    assert_eq!(
+        inline.source,
+        Source::base64("video/mp4", "AAAAIGZ0eXA=").unwrap()
+    );
     assert_eq!(file.source, Source::Url("ms://cvb1kle0".into()));
     let mut ctx = EgressCtx::new(&req)
         .with_chat_profile(ChatProfile::compatible("Moonshot").with_video_url());
@@ -277,7 +286,9 @@ fn gemini_function_responses_keep_audio_raw_and_refuse_foreign_audio() {
             Role::User,
             vec![Block::tool_result(
                 "call_1",
-                vec![Block::audio(Source::base64("audio/wav", "UklGRg=="))],
+                vec![Block::audio(
+                    Source::base64("audio/wav", "UklGRg==").unwrap(),
+                )],
                 false,
             )],
         ));
@@ -305,7 +316,10 @@ fn minimax_takes_video_blocks_and_anthropic_refuses_them() {
     let [Block::Video(inline), Block::Video(file), Block::Text(_)] = blocks(&req) else {
         panic!("{req:?}")
     };
-    assert_eq!(inline.source, Source::base64("video/mp4", "AAAAIGZ0eXA="));
+    assert_eq!(
+        inline.source,
+        Source::base64("video/mp4", "AAAAIGZ0eXA=").unwrap()
+    );
     assert!(file.cache.is_some());
 
     let minimax = MessagesProfile::compatible("MiniMax").with_video(MINIMAX_VIDEO_MEDIA_TYPES);
@@ -317,7 +331,9 @@ fn minimax_takes_video_blocks_and_anthropic_refuses_them() {
     assert_eq!(err.unsupported_feature(), Some("video block"));
     assert_eq!(err.param.as_deref(), Some("messages[0].blocks[0]"));
 
-    let webm = user(vec![Block::video(Source::base64("video/webm", "GkXf"))]);
+    let webm = user(vec![Block::video(
+        Source::base64("video/webm", "GkXf").unwrap(),
+    )]);
     let mut ctx = EgressCtx::new(&webm).with_messages_profile(minimax);
     let err = refused(encode_with(A, &webm, &mut ctx));
     assert_eq!(

@@ -93,7 +93,7 @@ fn no(feature: &str, param: &str, hint: &str) -> KppError {
 fn image_link(input: &ImageInput) -> Option<String> {
     match &input.source {
         Source::Url(u) => Some(u.clone()),
-        Source::Base64(b) => Some(format!("data:{};base64,{}", b.media_type, b.data)),
+        Source::Base64(b) => Some(b.data_url()),
         _ => None,
     }
 }
@@ -694,7 +694,7 @@ pub(super) fn decode_response(body: &[u8], ctx: &EgressCtx) -> Result<Reply, Kpp
 fn link_of(image: &GeneratedImage) -> Value {
     match &image.source {
         Source::Url(u) => u.clone().into(),
-        Source::Base64(b) => format!("data:{};base64,{}", b.media_type, b.data).into(),
+        Source::Base64(b) => b.data_url().into(),
         _ => Value::Null,
     }
 }

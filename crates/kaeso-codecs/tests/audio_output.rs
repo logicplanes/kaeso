@@ -211,7 +211,7 @@ fn a_chat_audio_reply_reaches_a_gemini_app_inline_with_its_requested_format() {
     let [Block::Audio(audio)] = r.blocks.as_slice() else {
         panic!("{:?}", r.blocks)
     };
-    assert_eq!(audio.source, Source::base64("audio/mpeg", "SUQz"));
+    assert_eq!(audio.source, Source::base64("audio/mpeg", "SUQz").unwrap());
     assert_eq!(audio.transcript.as_deref(), Some("Hi."));
     let ectx = EncodeCtx::new(RequestKind::Generate, StreamMode::Off);
     let out: Value =
@@ -238,7 +238,7 @@ fn a_replayed_audio_reply_stays_at_openai_unless_its_transcript_comes_along() {
     let err = encode(G, &req).unwrap_err();
     assert_eq!(err.unsupported_feature(), Some("file id"));
 
-    let mut spoken = kaeso_kpp::AudioBlock::new(Source::base64(PCM16_MEDIA_TYPE, "AAAA"));
+    let mut spoken = kaeso_kpp::AudioBlock::new(Source::base64(PCM16_MEDIA_TYPE, "AAAA").unwrap());
     spoken.transcript = Some("Hello!".into());
     let mut r = GenerateRequest::new("gpt-audio-mini")
         .with_message(Message::user("Say hello."))
@@ -307,7 +307,7 @@ fn streamed_audio_crosses_between_chat_and_gemini_piece_by_piece() {
 
 #[test]
 fn an_audio_only_reply_round_trips_through_the_logged_form() {
-    let mut block = kaeso_kpp::AudioBlock::new(Source::base64("audio/wav", "UklGRg=="));
+    let mut block = kaeso_kpp::AudioBlock::new(Source::base64("audio/wav", "UklGRg==").unwrap());
     block.transcript = Some("Hi.".into());
     let reply = Response::new("r", "m", vec![Block::Audio(block)]);
     let json = serde_json::to_value(&reply).unwrap();

@@ -110,10 +110,13 @@ impl Decoder {
                     .map(str::to_owned)
             })
             .unwrap_or_else(|| "image/png".to_owned());
-        let Some(data) = w.b64_json.clone() else {
+        let Some(data) = &w.b64_json else {
             return Ok(None);
         };
-        let image = GeneratedImage::new(Source::base64(media, data));
+        let source = Source::base64(media, data).map_err(|_| {
+            KppError::provider("The provider sent an image that is not valid base64.")
+        })?;
+        let image = GeneratedImage::new(source);
         let mut event = if stage == PARTIAL {
             ImageEvent::partial(w.partial_image_index.unwrap_or(0), image)
         } else {
@@ -211,7 +214,7 @@ impl Encoder {
         let mut m = Map::new();
         m.insert("type".to_owned(), ty.clone().into());
         if let Source::Base64(b) = &e.image.source {
-            m.insert("b64_json".to_owned(), b.data.clone().into());
+            m.insert("b64_json".to_owned(), b.to_base64().into());
         }
         if let Some(i) = e.partial {
             m.insert("partial_image_index".to_owned(), i.into());

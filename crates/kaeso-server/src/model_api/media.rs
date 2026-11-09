@@ -22,7 +22,7 @@ pub(super) fn logged_request(r: &ImageRequest) -> Bytes {
     let mut kept = r.clone();
     for input in kept.images.iter_mut().chain(kept.mask.as_mut()) {
         if let Source::Base64(b) = &input.source {
-            let bytes = b.data.len() / 4 * 3;
+            let bytes = b.data.len();
             input.source = Source::text(b.media_type.clone(), format!("{bytes} bytes, not logged"));
         }
     }
@@ -31,7 +31,7 @@ pub(super) fn logged_request(r: &ImageRequest) -> Bytes {
 
 fn without_bytes(input: &mut AudioInput) {
     if let Source::Base64(b) = &input.source {
-        let bytes = b.data.len() / 4 * 3;
+        let bytes = b.data.len();
         input.source = Source::text(b.media_type.clone(), format!("{bytes} bytes, not logged"));
     }
 }
@@ -271,11 +271,15 @@ mod tests {
     fn logged_requests_keep_fields_and_drop_image_bytes() {
         let mut r = ImageRequest::new("gpt-image-2", ImageOperation::Edit)
             .with_prompt("hat")
-            .with_image(ImageInput::new(Source::base64("image/png", "AAAAAAAA")))
+            .with_image(ImageInput::new(
+                Source::base64("image/png", "AAAAAAAA").unwrap(),
+            ))
             .with_image(ImageInput::new(Source::Url(
                 "https://example.com/a.png".into(),
             )));
-        r.mask = Some(ImageInput::new(Source::base64("image/png", "AAAA")));
+        r.mask = Some(ImageInput::new(
+            Source::base64("image/png", "AAAA").unwrap(),
+        ));
         let logged = String::from_utf8(logged_request(&r).to_vec()).unwrap();
         assert!(!logged.contains("AAAA"), "{logged}");
         assert!(logged.contains("6 bytes, not logged") && logged.contains("3 bytes, not logged"));

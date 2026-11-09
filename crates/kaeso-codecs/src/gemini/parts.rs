@@ -1,4 +1,4 @@
-use base64::Engine as _;
+use crate::wire::B64;
 use kaeso_kpp::{
     AudioBlock, Block, DocumentBlock, Extras, ImageBlock, KppError, Opaque, OpaqueKind, Origin,
     RawItem, RawJson, ReasoningBlock, Source, TextBlock, ToolCallBlock, ToolResultBlock,
@@ -143,7 +143,7 @@ fn file_source(origin: &Origin, uri: &str) -> Source {
     }
 }
 
-fn blob_block(blob: Ext<BlobW>, mut extras: Extras) -> Block {
+fn blob_block(blob: Ext<BlobW>, mut extras: Extras) -> Result<Block, KppError> {
     let Ext {
         known,
         extra,
@@ -152,7 +152,8 @@ fn blob_block(blob: Ext<BlobW>, mut extras: Extras) -> Block {
     add_nested_extra(&mut extras, INLINE, extra);
     verbatim_into_form(&mut extras, INLINE, verbatim);
     let media = Media::of(Some(&known.mime_type));
-    source_block(Source::base64(known.mime_type, known.data), media, extras)
+    let source = known.data.into_source(known.mime_type, "inlineData.data")?;
+    Ok(source_block(source, media, extras))
 }
 
 fn file_block(origin: &Origin, file: Ext<FileDataW>, mut extras: Extras) -> Block {
@@ -283,7 +284,7 @@ impl PartDecoder<'_> {
             t.extras = extras;
             Block::Text(t)
         } else if let Some(blob) = p.inline_data {
-            blob_block(blob, extras)
+            blob_block(blob, extras).map_err(|e| e.message)?
         } else if let Some(file) = p.file_data {
             file_block(self.origin, file, extras)
         } else if let Some(call) = p.function_call {
@@ -396,7 +397,10 @@ impl PartDecoder<'_> {
         let extras = extras_from(self.origin, extra, verbatim);
         match (known.inline_data, known.file_data) {
             (Some(blob), None) if !is_media_without_block(&blob.mime_type) => {
-                blob_block(blob, extras)
+                match blob_block(blob, extras) {
+                    Ok(block) => block,
+                    Err(_) => self.unknown(raw),
+                }
             }
             (None, Some(file))
                 if !file
@@ -735,7 +739,7 @@ fn media_fields(
             Some(own_ext(
                 BlobW {
                     mime_type: b.media_type.clone(),
-                    data: b.data.clone(),
+                    data: B64::Bytes(b.data.clone()),
                 },
                 extras,
                 INLINE,
@@ -746,7 +750,7 @@ fn media_fields(
             Some(own_ext(
                 BlobW {
                     mime_type: t.media_type.clone(),
-                    data: base64::engine::general_purpose::STANDARD.encode(t.data.as_bytes()),
+                    data: B64::Bytes(bytes::Bytes::copy_from_slice(t.data.as_bytes())),
                 },
                 extras,
                 INLINE,
@@ -767,7 +771,7 @@ fn media_fields(
                     Some(own_ext(
                         BlobW {
                             mime_type: d.media_type.to_owned(),
-                            data: d.data.to_owned(),
+                            data: B64::Text(d.data.to_owned()),
                         },
                         extras,
                         INLINE,

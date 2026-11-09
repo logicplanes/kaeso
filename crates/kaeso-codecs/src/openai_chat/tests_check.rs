@@ -200,19 +200,19 @@ fn documents_chat_cannot_carry_are_refused() {
         ))))),
         "document URL"
     );
-    let mut d = doc(Source::base64("application/pdf", "JVBE"));
+    let mut d = doc(Source::base64("application/pdf", "JVBE").unwrap());
     d.citations = true;
     assert_eq!(
         feature(with_user_block(Block::Document(d))),
         "document citations"
     );
-    let mut d = doc(Source::base64("application/pdf", "JVBE"));
+    let mut d = doc(Source::base64("application/pdf", "JVBE").unwrap());
     d.title = Some("Report".into());
     assert_eq!(
         feature(with_user_block(Block::Document(d))),
         "document title"
     );
-    let mut d = doc(Source::base64("application/pdf", "JVBE"));
+    let mut d = doc(Source::base64("application/pdf", "JVBE").unwrap());
     d.context = Some("Q3".into());
     assert_eq!(
         feature(with_user_block(Block::Document(d))),
@@ -221,7 +221,8 @@ fn documents_chat_cannot_carry_are_refused() {
     passes(with_user_block(Block::Document(doc(Source::base64(
         "application/pdf",
         "JVBE",
-    )))));
+    )
+    .unwrap()))));
 }
 
 #[test]
@@ -260,10 +261,9 @@ fn content_in_roles_that_cannot_carry_it_is_refused_or_moved() {
     assert_eq!(feature(r), "image in system, developer and tool messages");
     let r = with_user_block(Block::Refusal(kaeso_kpp::RefusalBlock::new("no")));
     assert_eq!(feature(r), "refusal in user messages");
-    let doc = Block::Document(DocumentBlock::new(Source::base64(
-        "application/pdf",
-        "JVBE",
-    )));
+    let doc = Block::Document(DocumentBlock::new(
+        Source::base64("application/pdf", "JVBE").unwrap(),
+    ));
     let r = base()
         .with_message(Message::new(
             Role::Assistant,
@@ -285,10 +285,9 @@ fn content_in_roles_that_cannot_carry_it_is_refused_or_moved() {
 }
 
 fn doc_in_system() -> Block {
-    Block::Document(DocumentBlock::new(Source::base64(
-        "application/pdf",
-        "JVBE",
-    )))
+    Block::Document(DocumentBlock::new(
+        Source::base64("application/pdf", "JVBE").unwrap(),
+    ))
 }
 
 #[test]

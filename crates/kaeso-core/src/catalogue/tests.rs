@@ -810,17 +810,18 @@ fn check(g: GenerateRequest, ingress: DialectId, e: &Effective) -> Result<Reques
 fn capabilities_are_checked_before_sending() {
     let gpt35 = eff(&entry("openai", "gpt-3.5-turbo"));
     let gpt4o = eff(&entry("openai", "gpt-4o"));
-    let image = user(vec![Block::image(Source::base64("image/png", "AAAA"))]);
+    let image = user(vec![Block::image(
+        Source::base64("image/png", "AAAA").unwrap(),
+    )]);
     let err = check(image.clone(), DialectId::OpenAiChat, &gpt35).unwrap_err();
     assert!(
         err.contains("gpt-3.5-turbo") && err.contains("images"),
         "{err}"
     );
     assert!(check(image, DialectId::OpenAiChat, &gpt4o).is_ok());
-    let pdf = user(vec![Block::Document(DocumentBlock::new(Source::base64(
-        "application/pdf",
-        "AAAA",
-    )))]);
+    let pdf = user(vec![Block::Document(DocumentBlock::new(
+        Source::base64("application/pdf", "AAAA").unwrap(),
+    ))]);
     let mini = eff(&entry("openai", "gpt-5-mini"));
     assert!(
         check(pdf.clone(), DialectId::AnthropicMessages, &mini)
@@ -881,7 +882,9 @@ fn audio_and_video_need_a_model_that_takes_them() {
     let gpt4o = eff(&entry("openai", "gpt-4o"));
     let gemini = eff(&entry("google", "gemini-3.5-flash"));
     let minimax = eff(&entry("minimax", "MiniMax-M3"));
-    let audio = user(vec![Block::audio(Source::base64("audio/wav", "UklGRg=="))]);
+    let audio = user(vec![Block::audio(
+        Source::base64("audio/wav", "UklGRg==").unwrap(),
+    )]);
     let video = user(vec![Block::video(Source::Url(
         "https://www.youtube.com/watch?v=UTdfxFyOQTI".into(),
     ))]);
@@ -1598,7 +1601,9 @@ fn capability_refusals_name_the_apps_own_field() {
     ] {
         assert_eq!(refusal(schema.clone(), ingress, &gpt35).param, Some(param));
     }
-    let image = user(vec![Block::image(Source::base64("image/png", "AAAA"))]);
+    let image = user(vec![Block::image(
+        Source::base64("image/png", "AAAA").unwrap(),
+    )]);
     for (ingress, param) in [(C, "messages"), (R, "input"), (A, "messages")] {
         assert_eq!(refusal(image.clone(), ingress, &gpt35).param, Some(param));
     }
@@ -2387,7 +2392,9 @@ fn image_requests_go_to_the_providers_image_api_and_need_an_image_model() {
     let mut edit = Request::Image(
         ImageRequest::new("m", ImageOperation::Edit)
             .with_prompt("hat")
-            .with_image(ImageInput::new(Source::base64("image/png", "AA=="))),
+            .with_image(ImageInput::new(
+                Source::base64("image/png", "AA==").unwrap(),
+            )),
     );
     assert_eq!(
         prepare(&mut edit, DialectId::OpenAiImages, &text_only)

@@ -759,7 +759,9 @@ mod tests {
         };
         let mut edit = ImageRequest::new("m", ImageOperation::Edit)
             .with_prompt("hat")
-            .with_image(ImageInput::new(Source::base64("image/png", "AA==")));
+            .with_image(ImageInput::new(
+                Source::base64("image/png", "AA==").unwrap(),
+            ));
         edit.count = Some(3);
         let worst = WorstCase::of(
             &Request::Image(edit.clone()),

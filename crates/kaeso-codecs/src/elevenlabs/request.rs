@@ -1,4 +1,3 @@
-use base64::Engine as _;
 use kaeso_kpp::{
     AudioFormat, AudioInput, DialogueLine, Extras, KppError, Origin, RawJson, Request, Source,
     SpeechOperation, SpeechRequest, StreamMode, TimestampGranularity, TranscriptFormat,
@@ -10,6 +9,7 @@ use super::format;
 use super::{D, ElevenLabsCall, ElevenLabsOperation};
 use crate::codec::{EgressCtx, EncodedRequest, HeaderList};
 use crate::cross::check_extras;
+use crate::multipart::Upload;
 use crate::multipart::{FormError, FormField, FormLimits, FormPart, form_boundary, read_form};
 use crate::wire::{note_integers, spelled_number, to_body};
 
@@ -93,9 +93,10 @@ fn into_extras(extras: &mut Extras, rest: Map<String, Value>) -> Result<(), KppE
 /// uploads for the voice changer and speech to text.
 pub(super) fn decode(
     call: &ElevenLabsCall,
-    body: &[u8],
+    upload: Upload<'_>,
     headers: &HeaderList,
 ) -> Result<Request, KppError> {
+    let body = upload.bytes();
     let mut extras = Extras::new(Origin::new(D));
     let mut query = Map::new();
     let mut output_format = None;
@@ -112,7 +113,7 @@ pub(super) fn decode(
         extras.fields.insert(QUERY.to_owned(), raw);
     }
     if call.operation == ElevenLabsOperation::SpeechToText {
-        return decode_transcription(body, headers, extras);
+        return decode_transcription(upload, headers, extras);
     }
     let mut req = SpeechRequest::new(String::new(), operation_of(call));
     if let Some(of) = &output_format {
@@ -142,7 +143,7 @@ pub(super) fn decode(
         req.stream = StreamMode::on(false);
     }
     let mut m = if call.operation == ElevenLabsOperation::VoiceChanger {
-        decode_voice_change_form(body, headers, &mut req)?
+        decode_voice_change_form(upload, headers, &mut req)?
     } else {
         match serde_json::from_slice::<Value>(body) {
             Ok(Value::Object(m)) => m,
@@ -247,15 +248,12 @@ fn form<'a>(body: &'a [u8], headers: &HeaderList) -> Result<Vec<FormPart<'a>>, K
     read_form(body, &boundary, FormLimits::new(64, MAX_UPLOAD)).map_err(form_error)
 }
 
-fn uploaded(part: &FormPart<'_>) -> AudioInput {
+fn uploaded(part: &FormPart<'_>, body: Upload<'_>) -> AudioInput {
     let media = part
         .content_type
         .clone()
         .unwrap_or_else(|| "application/octet-stream".to_owned());
-    let mut input = AudioInput::new(Source::base64(
-        media,
-        base64::engine::general_purpose::STANDARD.encode(part.body),
-    ));
+    let mut input = AudioInput::new(Source::bytes(media, body.share(part.body)));
     input.filename = part.filename.clone();
     input
 }
@@ -273,14 +271,14 @@ fn form_value(name: &str, text: &str) -> Value {
 }
 
 fn decode_voice_change_form(
-    body: &[u8],
+    body: Upload<'_>,
     headers: &HeaderList,
     req: &mut SpeechRequest,
 ) -> Result<Map<String, Value>, KppError> {
     let mut m = Map::new();
-    for part in form(body, headers)? {
+    for part in form(body.bytes(), headers)? {
         if part.name == "audio" && part.filename.is_some() {
-            req.audio = Some(uploaded(&part));
+            req.audio = Some(uploaded(&part, body));
             continue;
         }
         let text = part
@@ -305,15 +303,15 @@ fn decode_voice_change_form(
 }
 
 fn decode_transcription(
-    body: &[u8],
+    body: Upload<'_>,
     headers: &HeaderList,
     mut extras: Extras,
 ) -> Result<Request, KppError> {
     let mut text_fields = Map::new();
     let mut audio = None;
-    for part in form(body, headers)? {
+    for part in form(body.bytes(), headers)? {
         if part.name == "file" && part.filename.is_some() {
-            audio = Some(uploaded(&part));
+            audio = Some(uploaded(&part, body));
             continue;
         }
         let value = part
@@ -740,9 +738,7 @@ fn voice_change_form(
     let Some(Source::Base64(b)) = r.audio.as_ref().map(|a| &a.source) else {
         return Err(refused("audio by link", "audio", "upload the audio."));
     };
-    let bytes = base64::engine::general_purpose::STANDARD
-        .decode(&b.data)
-        .map_err(|_| invalid("the audio is not valid base64").with_param("audio"))?;
+    let bytes = &b.data;
     let name = r
         .audio
         .as_ref()
@@ -750,7 +746,7 @@ fn voice_change_form(
         .unwrap_or_else(|| crate::openai_transcriptions::default_name(&b.media_type));
     let texts: Vec<(String, String)> = out.iter().map(|(k, v)| (k.clone(), text_of(v))).collect();
     let mut fields: Vec<FormField<'_>> = texts.iter().map(|(k, v)| FormField::Text(k, v)).collect();
-    fields.push(FormField::File("audio", &name, &b.media_type, &bytes));
+    fields.push(FormField::File("audio", &name, &b.media_type, bytes));
     let w = crate::multipart::FormWriter::write(&fields);
     Ok(EncodedRequest::post_json(
         path,
@@ -815,9 +811,7 @@ fn encode_transcription(
                 .clone()
                 .unwrap_or_else(|| crate::openai_transcriptions::default_name(&b.media_type)),
             b.media_type.clone(),
-            base64::engine::general_purpose::STANDARD
-                .decode(&b.data)
-                .map_err(|_| invalid("the audio is not valid base64").with_param("file"))?,
+            b.data.clone(),
         )),
         _ => None,
     };

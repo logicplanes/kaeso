@@ -76,7 +76,7 @@ fn zai_refuses_what_it_lacks_before_sending() {
     remix.remix_of = Some("j".into());
     assert_eq!(param(&remix), "video_id");
     let two = base.with_image(VideoImage::new(
-        Source::base64("image/png", "AAAA"),
+        Source::base64("image/png", "AAAA").unwrap(),
         VideoImageRole::FirstFrame,
     ));
     let body: Value = serde_json::from_slice(&encode(&two).unwrap().body).unwrap();

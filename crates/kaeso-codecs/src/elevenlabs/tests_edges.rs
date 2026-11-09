@@ -50,7 +50,7 @@ fn transcription_with(f: impl FnOnce(&mut TranscriptionRequest)) -> Request {
     let mut r = TranscriptionRequest::new(
         "scribe_v2",
         TranscriptionOperation::Transcribe,
-        AudioInput::new(Source::base64("audio/mpeg", "SUQz")).with_filename("a.mp3"),
+        AudioInput::new(Source::base64("audio/mpeg", "SUQz").unwrap()).with_filename("a.mp3"),
     );
     f(&mut r);
     Request::Transcription(r)
@@ -206,9 +206,9 @@ fn what_elevenlabs_cannot_make_is_refused_before_sending() {
     .unwrap();
     assert_eq!(refused(&wav_stream), "output_format");
     assert_eq!(
-        refused(&speech_with(
-            |r| r.audio = Some(AudioInput::new(Source::base64("audio/mpeg", "SUQz")))
-        )),
+        refused(&speech_with(|r| r.audio = Some(AudioInput::new(
+            Source::base64("audio/mpeg", "SUQz").unwrap()
+        )))),
         "input"
     );
     assert_eq!(
@@ -317,7 +317,7 @@ fn foreign_transcripts_and_audio_get_elevenlabs_forms() {
     let linked = SpeechResponse::new("m", Source::Url("https://example.com/a.mp3".into()));
     assert!(ElevenLabs::encode_response(&Reply::Speech(linked.clone()), &app).is_err());
     let plain = EncodeCtx::new(kaeso_kpp::RequestKind::Speech, kaeso_kpp::StreamMode::Off);
-    let wav = SpeechResponse::new("m", Source::base64("audio/wav", "UklG"));
+    let wav = SpeechResponse::new("m", Source::base64("audio/wav", "UklG").unwrap());
     assert_eq!(
         ElevenLabs::response_media_type(&Reply::Speech(wav), &plain),
         "audio/wav"
@@ -407,7 +407,9 @@ fn a_voice_id_that_could_leave_its_path_segment_is_refused_before_sending() {
             if op == SpeechOperation::Speech {
                 r = r.with_input("Hi");
             } else {
-                r.audio = Some(AudioInput::new(Source::base64("audio/mpeg", "SUQz")));
+                r.audio = Some(AudioInput::new(
+                    Source::base64("audio/mpeg", "SUQz").unwrap(),
+                ));
             }
             let err = encode(&Request::Speech(r)).unwrap_err();
             assert_eq!(err.param.as_deref(), Some("voice"), "{id}");

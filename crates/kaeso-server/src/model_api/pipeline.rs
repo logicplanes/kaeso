@@ -728,7 +728,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
 
     let limit = max_body;
     let reading = Instant::now();
-    let read = axum::body::to_bytes(body, limit).await;
+    let read = crate::http::body::read(body, limit).await;
     let upload = reading.elapsed();
     rec.outcome().upload = Some(upload);
     let body = read.map_err(|e| {

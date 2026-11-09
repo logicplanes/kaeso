@@ -247,7 +247,9 @@ fn check_refuses_content_anthropic_cannot_carry() {
         "refusal block"
     );
     assert_eq!(
-        feature(push(Block::image(Source::base64("image/bmp", "AA")))),
+        feature(push(Block::image(
+            Source::base64("image/bmp", "AA").unwrap()
+        ))),
         "image media type `image/bmp`"
     );
     assert_eq!(
@@ -255,10 +257,9 @@ fn check_refuses_content_anthropic_cannot_carry() {
         "text image source"
     );
     assert_eq!(
-        feature(push(Block::Document(DocumentBlock::new(Source::base64(
-            "application/msword",
-            "AA"
-        ))))),
+        feature(push(Block::Document(DocumentBlock::new(
+            Source::base64("application/msword", "AA").unwrap()
+        )))),
         "document media type `application/msword`"
     );
     assert_eq!(
@@ -281,7 +282,7 @@ fn check_refuses_content_anthropic_cannot_carry() {
         Role::User,
         vec![Block::tool_result(
             "c",
-            vec![Block::image(Source::base64("image/tiff", "AA"))],
+            vec![Block::image(Source::base64("image/tiff", "AA").unwrap())],
             false,
         )],
     ));

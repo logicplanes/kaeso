@@ -145,8 +145,18 @@ pub(crate) fn is_pcm16(media_type: &str) -> bool {
     rate
 }
 
-/// The audio of several blocks or stream deltas as one base64 string. Pieces without padding
-/// join as they are; padded pieces are decoded and encoded again, which changes no byte.
+/// Inline media decoded from base64 text an app or a provider wrote; text that isn't base64
+/// is an `InvalidRequest` naming `param`.
+pub(crate) fn from_base64(
+    media_type: impl Into<String>,
+    text: impl AsRef<[u8]>,
+    param: &str,
+) -> Result<kaeso_kpp::Source, kaeso_kpp::KppError> {
+    kaeso_kpp::Source::base64(media_type, text).map_err(|e| e.with_param(param))
+}
+
+/// Base64 stream deltas as one base64 string. Pieces without padding join as they are;
+/// padded pieces are decoded and encoded again, which changes no byte.
 pub(crate) fn join_base64<'a>(pieces: impl IntoIterator<Item = &'a str>) -> Option<String> {
     use base64::Engine as _;
     let pieces: Vec<&str> = pieces.into_iter().collect();
@@ -164,6 +174,19 @@ pub(crate) fn join_base64<'a>(pieces: impl IntoIterator<Item = &'a str>) -> Opti
         bytes.extend(engine.decode(p.trim()).ok()?);
     }
     Some(engine.encode(bytes))
+}
+
+/// The bytes of several audio blocks as one buffer.
+pub(crate) fn join_bytes<'a>(pieces: impl IntoIterator<Item = &'a bytes::Bytes>) -> bytes::Bytes {
+    let pieces: Vec<&bytes::Bytes> = pieces.into_iter().collect();
+    if let [one] = pieces.as_slice() {
+        return (*one).clone();
+    }
+    let mut out = Vec::with_capacity(pieces.iter().map(|p| p.len()).sum());
+    for p in pieces {
+        out.extend_from_slice(p);
+    }
+    bytes::Bytes::from(out)
 }
 
 #[cfg(test)]
@@ -202,6 +225,24 @@ mod tests {
     }
 
     #[test]
+    fn audio_pieces_join_into_one_buffer() {
+        let (a, b) = (
+            bytes::Bytes::from_static(&[0, 1]),
+            bytes::Bytes::from_static(&[2]),
+        );
+        assert_eq!(join_bytes([&a, &b]), bytes::Bytes::from_static(&[0, 1, 2]));
+        assert_eq!(join_bytes([&a]).as_ptr(), a.as_ptr());
+        assert!(join_bytes([]).is_empty());
+    }
+
+    #[test]
+    fn text_that_is_not_base64_is_refused_with_its_field() {
+        let e = from_base64("image/png", "%%", "image_url.url").unwrap_err();
+        assert_eq!(e.param.as_deref(), Some("image_url.url"));
+        assert!(from_base64("image/png", "AA", "x").is_ok());
+    }
+
+    #[test]
     fn pcm16_is_24_khz_mono_l16_in_both_spellings() {
         assert!(is_pcm16("audio/l16; rate=24000; channels=1"));
         assert!(is_pcm16("audio/L16;codec=pcm;rate=24000"));
@@ -213,14 +254,9 @@ mod tests {
     }
 }
 
-/// The media type of base64 image bytes, from their first bytes, for providers that send
-/// images without naming the format.
-pub(crate) fn sniff_image(data: &str) -> Option<&'static str> {
-    use base64::Engine as _;
-    let head = data.get(..16).unwrap_or(data);
-    let bytes = base64::engine::general_purpose::STANDARD_NO_PAD
-        .decode(head.trim_end_matches('='))
-        .ok()?;
+/// The media type of image bytes, from their first bytes, for providers that send images
+/// without naming the format.
+pub(crate) fn sniff_image(bytes: &[u8]) -> Option<&'static str> {
     let starts = |magic: &[u8]| bytes.starts_with(magic);
     Some(if starts(&[0x89, b'P', b'N', b'G']) {
         "image/png"
@@ -241,14 +277,12 @@ mod sniff_tests {
 
     #[test]
     fn image_formats_are_told_by_their_first_bytes() {
-        assert_eq!(
-            sniff_image("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJ"),
-            Some("image/png")
-        );
-        assert_eq!(sniff_image("/9j/4AAQSkZJRgABAQ"), Some("image/jpeg"));
-        assert_eq!(sniff_image("R0lGODlhAQABAIAAAA"), Some("image/gif"));
-        assert_eq!(sniff_image("UklGRiQAAABXRUJQVlA4"), Some("image/webp"));
-        assert_eq!(sniff_image("AAAA"), None);
-        assert_eq!(sniff_image("!!"), None);
+        assert_eq!(sniff_image(b"\x89PNG\r\n\x1a\n"), Some("image/png"));
+        assert_eq!(sniff_image(&[0xFF, 0xD8, 0xFF, 0xE0]), Some("image/jpeg"));
+        assert_eq!(sniff_image(b"GIF89a"), Some("image/gif"));
+        assert_eq!(sniff_image(b"RIFF\x24\0\0\0WEBPVP8 "), Some("image/webp"));
+        assert_eq!(sniff_image(b"RIFF\x24\0\0\0WAVE"), None);
+        assert_eq!(sniff_image(&[0, 0, 0]), None);
+        assert_eq!(sniff_image(b""), None);
     }
 }

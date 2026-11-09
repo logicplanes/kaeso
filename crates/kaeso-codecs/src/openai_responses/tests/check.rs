@@ -101,7 +101,7 @@ fn documents_and_tool_errors_responses_cannot_express_are_refused() {
         feature(with_block(Block::Document(doc.clone()))),
         "text document"
     );
-    doc.source = Source::base64("application/pdf", "JVBE");
+    doc.source = Source::base64("application/pdf", "JVBE").unwrap();
     doc.title = Some("t".into());
     assert_eq!(
         feature(with_block(Block::Document(doc.clone()))),

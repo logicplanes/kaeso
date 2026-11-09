@@ -125,7 +125,11 @@ fn the_encoder_refuses_what_check_refuses() {
             RawJson::from_string("{\"type\":\"x\"}".to_owned()).unwrap(),
         )
     };
-    let image = || Block::Image(ImageBlock::new(Source::base64("image/png", "AA==")));
+    let image = || {
+        Block::Image(ImageBlock::new(
+            Source::base64("image/png", "AA==").unwrap(),
+        ))
+    };
     let user = |blocks| Message::new(Role::User, blocks);
     let mut cases = Vec::new();
     let mut r = GenerateRequest::new("gpt-5.6-sol").with_message(user(vec![Block::text("Hi")]));

@@ -415,10 +415,9 @@ mod tests {
         req.messages[0].blocks.push(Block::Image(image));
         req.messages[2].blocks = vec![Block::tool_result(
             "c1",
-            vec![Block::Document(DocumentBlock::new(Source::base64(
-                "application/pdf",
-                "JVBERi0=",
-            )))],
+            vec![Block::Document(DocumentBlock::new(
+                Source::base64("application/pdf", "JVBERi0=").unwrap(),
+            ))],
             false,
         )];
         req.messages[1]
@@ -441,7 +440,7 @@ mod tests {
         let mut req = tool_turns();
         req.messages[0]
             .blocks
-            .push(Block::audio(Source::base64("audio/mpeg", "SUQz")));
+            .push(Block::audio(Source::base64("audio/mpeg", "SUQz").unwrap()));
         let caps = req.required_capabilities();
         assert!(caps.audio_input && !caps.video_input && !caps.images);
 

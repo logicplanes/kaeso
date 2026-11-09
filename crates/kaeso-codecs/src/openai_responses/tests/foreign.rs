@@ -19,7 +19,7 @@ fn foreign_request() -> GenerateRequest {
         OpaqueKind::AnthropicThinkingSignature,
         "sig",
     ));
-    let mut doc = DocumentBlock::new(Source::base64("application/pdf", "JVBERi0="));
+    let mut doc = DocumentBlock::new(Source::base64("application/pdf", "JVBERi0=").unwrap());
     doc.cache = Some(CacheHint::default());
     req.messages = vec![
         Message::new(

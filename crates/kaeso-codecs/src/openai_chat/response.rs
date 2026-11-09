@@ -227,13 +227,14 @@ fn take_audio(
         Some(Err(_)) => return None,
         None => None,
     };
-    extra.shift_remove(AUDIO);
     let media_type = ctx
         .audio_format
         .as_ref()
         .and_then(kaeso_kpp::AudioFormat::media_type)
         .unwrap_or(NO_MEDIA_TYPE);
-    let mut block = AudioBlock::new(Source::base64(media_type, data));
+    let source = Source::base64(media_type, data).ok()?;
+    extra.shift_remove(AUDIO);
+    let mut block = AudioBlock::new(source);
     block.transcript = transcript;
     block.extras = Extras::new(origin.clone());
     block.extras.fields = fields;
@@ -257,18 +258,18 @@ fn reply_audio(resp: &Response, created: u64) -> Result<Option<RawJson>, KppErro
     let Source::Base64(source) = &first.source else {
         return Ok(None);
     };
-    let pieces: Vec<&str> = audio
+    let pieces: Vec<&bytes::Bytes> = audio
         .iter()
         .take_while(
             |a| matches!(&a.source, Source::Base64(s) if crate::media::is_pcm16(&s.media_type)),
         )
         .filter_map(|a| match &a.source {
-            Source::Base64(s) => Some(s.data.as_str()),
+            Source::Base64(s) => Some(&s.data),
             _ => None,
         })
         .collect();
     let data = if pieces.len() > 1 {
-        crate::media::join_base64(pieces).unwrap_or_else(|| source.data.clone())
+        crate::media::join_bytes(pieces)
     } else {
         source.data.clone()
     };
@@ -283,7 +284,10 @@ fn reply_audio(resp: &Response, created: u64) -> Result<Option<RawJson>, KppErro
         out.insert("id".to_owned(), to_raw(&format!("audio_{}", resp.id))?);
         out.insert("expires_at".to_owned(), to_raw(&created)?);
     }
-    out.insert("data".to_owned(), to_raw(&data)?);
+    out.insert(
+        "data".to_owned(),
+        to_raw(&kaeso_kpp::Base64Text::new(&data))?,
+    );
     if first.transcript.is_some() || !first.extras.is_from(DIALECT) {
         out.insert("transcript".to_owned(), to_raw(&transcript)?);
     }

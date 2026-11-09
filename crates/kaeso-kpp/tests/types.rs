@@ -33,7 +33,9 @@ fn every_block_names_its_kind() {
     let blocks = [
         (Block::text("Hi"), "text"),
         (
-            Block::Image(ImageBlock::new(Source::base64("image/png", "AA=="))),
+            Block::Image(ImageBlock::new(
+                Source::base64("image/png", "AA==").unwrap(),
+            )),
             "image",
         ),
         (
@@ -41,7 +43,7 @@ fn every_block_names_its_kind() {
             "document",
         ),
         (
-            Block::audio(Source::base64("audio/wav", "UklGRg==")),
+            Block::audio(Source::base64("audio/wav", "UklGRg==").unwrap()),
             "audio",
         ),
         (
@@ -71,7 +73,7 @@ fn every_block_names_its_kind() {
 fn only_inline_sources_have_a_media_type() {
     let origin = Origin::new(DialectId::OpenAiResponses);
     assert_eq!(
-        Source::base64("image/png", "AA==").media_type(),
+        Source::base64("image/png", "AA==").unwrap().media_type(),
         Some("image/png")
     );
     assert_eq!(
@@ -165,4 +167,54 @@ fn unknown_blocks_that_are_not_objects_carry_no_call_ids() {
         ],
     );
     assert!(req.validate().is_ok());
+}
+
+#[test]
+fn media_bytes_are_held_once_and_keep_their_json_form() {
+    let source = Source::base64("image/png", "iVBORw0KGgo=").unwrap();
+    let Source::Base64(b) = &source else {
+        panic!("{source:?}")
+    };
+    assert_eq!(&b.data[..], b"\x89PNG\r\n\x1a\n");
+    assert_eq!(b.to_base64(), "iVBORw0KGgo=");
+    assert_eq!(b.base64().to_string(), "iVBORw0KGgo=");
+    assert_eq!(b.data_url(), "data:image/png;base64,iVBORw0KGgo=");
+    assert_eq!(
+        b.data_url_with("data:image/png;name=a.png;base64"),
+        "data:image/png;name=a.png;base64,iVBORw0KGgo="
+    );
+    assert_eq!(
+        format!("{source:?}"),
+        r#"Base64(Base64Source { media_type: "image/png", data: 8 bytes })"#
+    );
+
+    let json = kaeso_kpp::serde_json::to_value(&source).unwrap();
+    assert_eq!(
+        json,
+        kaeso_kpp::serde_json::json!({"base64": {"media_type": "image/png", "data": "iVBORw0KGgo="}})
+    );
+    let back: Source = kaeso_kpp::serde_json::from_value(json).unwrap();
+    assert_eq!(back, source);
+    let unpadded: Source = kaeso_kpp::serde_json::from_str(
+        r#"{"base64": {"media_type": "image/png", "data": "iVBORw0KGgo"}}"#,
+    )
+    .unwrap();
+    assert_eq!(unpadded, source);
+    assert!(
+        kaeso_kpp::serde_json::from_str::<Source>(
+            r#"{"base64": {"media_type": "image/png", "data": "not base64!"}}"#
+        )
+        .is_err()
+    );
+
+    let shared = kaeso_kpp::bytes::Bytes::from_static(b"\x89PNG\r\n\x1a\n");
+    let from_bytes = Source::bytes("image/png", shared.clone());
+    assert_eq!(from_bytes, source);
+    let Source::Base64(b) = from_bytes.clone() else {
+        panic!()
+    };
+    assert_eq!(b.data.as_ptr(), shared.as_ptr(), "cloning shares the bytes");
+
+    let refused = Source::base64("image/png", "not base64!").unwrap_err();
+    assert_eq!(refused.kind, ErrorKind::InvalidRequest);
 }

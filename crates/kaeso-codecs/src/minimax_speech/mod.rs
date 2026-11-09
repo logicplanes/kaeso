@@ -300,7 +300,6 @@ fn decode_response(
     body: &[u8],
     ctx: &EgressCtx,
 ) -> Result<Reply, KppError> {
-    use base64::Engine as _;
     if !(200..300).contains(&status) {
         return Err(decode_error(status, headers, body));
     }
@@ -343,13 +342,7 @@ fn decode_response(
         .get("audio_format")
         .and_then(Value::as_str)
         .unwrap_or("mp3");
-    let mut resp = SpeechResponse::new(
-        String::new(),
-        Source::base64(
-            media_type(format),
-            base64::engine::general_purpose::STANDARD.encode(bytes),
-        ),
-    );
+    let mut resp = SpeechResponse::new(String::new(), Source::bytes(media_type(format), bytes));
     resp.characters = info.get("usage_characters").and_then(Value::as_u64);
     let mut extras = extras_from(&origin, extra, verbatim);
     let mut rest = data;
@@ -371,7 +364,6 @@ fn decode_response(
 }
 
 fn encode_response(reply: &Reply) -> Result<Vec<u8>, KppError> {
-    use base64::Engine as _;
     let Reply::Speech(r) = reply else {
         return Err(not_speech(reply.kind()));
     };
@@ -380,9 +372,7 @@ fn encode_response(reply: &Reply) -> Result<Vec<u8>, KppError> {
             "MiniMax's reply carries the audio itself.",
         ));
     };
-    let bytes = base64::engine::general_purpose::STANDARD
-        .decode(&b.data)
-        .map_err(|_| KppError::provider("The audio is not valid base64."))?;
+    let bytes = &b.data;
     let mut out = Map::new();
     if r.extras.is_from(D) {
         for (k, v) in &r.extras.fields {
@@ -393,7 +383,7 @@ fn encode_response(reply: &Reply) -> Result<Vec<u8>, KppError> {
     }
     let data = out.entry("data").or_insert_with(|| json!({"status": 2}));
     if let Value::Object(d) = data {
-        d.insert("audio".into(), bytes_to_hex(&bytes).into());
+        d.insert("audio".into(), bytes_to_hex(bytes).into());
     }
     out.entry("base_resp")
         .or_insert_with(|| json!({"status_code": 0, "status_msg": "success"}));
@@ -424,7 +414,7 @@ impl StreamDecoder for Whole {
                 let Source::Base64(b) = r.audio else {
                     return Vec::new();
                 };
-                let mut piece = kaeso_kpp::SpeechEvent::audio(b.data);
+                let mut piece = kaeso_kpp::SpeechEvent::audio(b.to_base64());
                 piece.media_type = Some(b.media_type);
                 let mut done = kaeso_kpp::SpeechEvent::done(Some(r.usage));
                 done.characters = r.characters;

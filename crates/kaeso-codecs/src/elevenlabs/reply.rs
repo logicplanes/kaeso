@@ -107,13 +107,12 @@ pub(super) fn decode(
             let v: Value =
                 serde_json::from_slice(body).map_err(|_| bad("the audio is not JSON"))?;
             let piece = timed_piece(v, &origin);
-            let mut resp = SpeechResponse::new(
-                String::new(),
-                Source::base64(
-                    media_of(&HeaderList::new(), ctx),
-                    piece.audio.unwrap_or_default(),
-                ),
-            );
+            let source = Source::base64(
+                media_of(&HeaderList::new(), ctx),
+                piece.audio.unwrap_or_default(),
+            )
+            .map_err(|_| bad("the audio is not valid base64"))?;
+            let mut resp = SpeechResponse::new(String::new(), source);
             resp.alignment = piece.alignment;
             resp.extras = piece.extras;
             resp.characters = billed_characters(headers);
@@ -122,7 +121,7 @@ pub(super) fn decode(
         RequestKind::Speech => {
             let mut resp = SpeechResponse::new(
                 String::new(),
-                Source::base64(media_of(headers, ctx), B64.encode(body)),
+                Source::bytes(media_of(headers, ctx), bytes::Bytes::copy_from_slice(body)),
             );
             resp.characters = billed_characters(headers);
             Ok(Reply::Speech(resp))
@@ -351,12 +350,12 @@ pub(super) fn encode(reply: &Reply, ctx: &EncodeCtx) -> Result<Vec<u8>, KppError
                 ));
             };
             let mut enc = Encoder::new(ctx);
-            let mut piece = SpeechEvent::audio(b.data.clone());
-            piece.alignment.clone_from(&r.alignment);
-            piece.extras.clone_from(&r.extras);
+            if !enc.lines && !enc.timestamps {
+                return Ok(b.data.to_vec());
+            }
             if enc.timestamps && !enc.lines {
                 let mut m = Map::new();
-                m.insert("audio_base64".into(), b.data.clone().into());
+                m.insert("audio_base64".into(), b.to_base64().into());
                 m.insert(
                     "alignment".into(),
                     r.alignment.as_ref().map_or(Value::Null, wire_alignment),
@@ -364,6 +363,9 @@ pub(super) fn encode(reply: &Reply, ctx: &EncodeCtx) -> Result<Vec<u8>, KppError
                 put_timed_extras(&mut m, &r.extras);
                 return crate::wire::to_body(&m);
             }
+            let mut piece = SpeechEvent::audio(b.to_base64());
+            piece.alignment.clone_from(&r.alignment);
+            piece.extras.clone_from(&r.extras);
             let mut out = enc.encode(&StreamEvent::Speech(piece))?;
             out.extend(enc.encode(&StreamEvent::Speech(SpeechEvent::done(None)))?);
             Ok(out)

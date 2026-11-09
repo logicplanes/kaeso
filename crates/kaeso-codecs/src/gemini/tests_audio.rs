@@ -1,4 +1,3 @@
-use base64::Engine as _;
 use kaeso_kpp::{
     AudioFormat, AudioInput, ErrorKind, Reply, Request, Source, SpeechOperation, SpeechRequest,
     StreamEvent, StreamMode, TimestampGranularity, TranscriptFormat, TranscriptionOperation,
@@ -68,12 +67,7 @@ fn an_openai_speech_request_becomes_the_recorded_generate_content_call() {
     assert_eq!(r.usage.output_audio_tokens, Some(26));
     let app = EncodeCtx::for_request(req.clone());
     let bytes = OpenAiSpeech::encode_response(&reply, &app).unwrap();
-    assert_eq!(
-        bytes,
-        base64::engine::general_purpose::STANDARD
-            .decode(&b.data)
-            .unwrap()
-    );
+    assert_eq!(bytes, b.data.to_vec());
     assert_eq!(
         OpenAiSpeech::response_media_type(&reply, &app),
         "audio/mpeg"

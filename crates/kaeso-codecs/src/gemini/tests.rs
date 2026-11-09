@@ -441,7 +441,8 @@ fn tool_results_from_other_formats_take_the_documented_shapes() {
         "lookup",
         kaeso_kpp::RawJson::from_string("{}".into()).unwrap(),
     );
-    let mut image = kaeso_kpp::ImageBlock::new(kaeso_kpp::Source::base64("image/png", "AAAA"));
+    let mut image =
+        kaeso_kpp::ImageBlock::new(kaeso_kpp::Source::base64("image/png", "AAAA").unwrap());
     image.extras = Extras::new(DialectId::AnthropicMessages);
     let r = GenerateRequest::new(MODEL)
         .with_message(Message::user("Go"))
@@ -658,7 +659,9 @@ fn content_gemini_cannot_take_is_refused_before_sending() {
         Some("refusal block")
     );
     let mut r = GenerateRequest::new(MODEL).with_message(Message::user("hi"));
-    r.system = vec![Block::image(kaeso_kpp::Source::base64("image/png", "AAAA"))];
+    r.system = vec![Block::image(
+        kaeso_kpp::Source::base64("image/png", "AAAA").unwrap(),
+    )];
     assert_eq!(
         refused(&from(DialectId::AnthropicMessages, r)).unsupported_feature(),
         Some("image block in the system prompt")

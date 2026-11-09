@@ -1,6 +1,5 @@
 use std::collections::BTreeMap;
 
-use base64::Engine as _;
 use kaeso_codecs::dispatch;
 use kaeso_kpp::{
     AudioBlock, Block, BlockHeader, Delta, DialectId, Extras, KppError, RawItem, RawJson,
@@ -122,7 +121,7 @@ impl Body {
             }
             BlockHeader::Refusal => Body::Refusal(RefusalBlock::new("")),
             BlockHeader::Audio(h) => Body::Audio(
-                AudioBlock::new(Source::base64(h.media_type.clone(), "")),
+                AudioBlock::new(Source::bytes(h.media_type.clone(), bytes::Bytes::new())),
                 Vec::new(),
             ),
             BlockHeader::Unknown(raw) => Body::Unknown(raw.clone(), Vec::new()),
@@ -322,26 +321,17 @@ pub fn seconds_to_ms(seconds: f64) -> u64 {
     }
 }
 
-// Each streamed audio piece is base64 of its own bytes; pieces with padding inside can't be
-// joined as text, so they are joined as bytes.
-fn joined_base64(pieces: &[String]) -> String {
-    let padded = pieces
-        .iter()
-        .rev()
-        .skip(1)
-        .any(|p| p.trim_end().ends_with('='));
-    if !padded {
-        return pieces.concat();
-    }
-    let engine = base64::engine::general_purpose::STANDARD;
-    let mut bytes = Vec::new();
+// Each streamed audio piece is base64 of its own bytes, padded or not, so pieces are decoded
+// one by one and joined as bytes.
+fn joined_bytes(pieces: &[String]) -> Option<bytes::Bytes> {
+    let mut out = Vec::new();
     for p in pieces {
-        match engine.decode(p.trim()) {
-            Ok(b) => bytes.extend(b),
-            Err(_) => return pieces.concat(),
-        }
+        let Ok(Source::Base64(b)) = Source::base64("", p.trim()) else {
+            return None;
+        };
+        out.extend_from_slice(&b.data);
     }
-    engine.encode(bytes)
+    Some(bytes::Bytes::from(out))
 }
 
 fn unknown_with_deltas(start: RawItem, deltas: Vec<RawItem>) -> RawItem {
@@ -385,10 +375,19 @@ fn into_block(body: Body, origin: DialectId) -> Block {
         }
         Body::Refusal(r) => Block::Refusal(r),
         Body::Audio(mut a, pieces) => {
-            if let Source::Base64(source) = &a.source {
-                a.source = Source::base64(source.media_type.clone(), joined_base64(&pieces));
+            let Source::Base64(source) = &a.source else {
+                return Block::Audio(a);
+            };
+            match joined_bytes(&pieces) {
+                Some(data) => {
+                    a.source = Source::bytes(source.media_type.clone(), data);
+                    Block::Audio(a)
+                }
+                None => Block::Unknown(kept(
+                    origin,
+                    &serde_json::json!({ "audio": pieces.concat(), "media_type": source.media_type }),
+                )),
             }
-            Block::Audio(a)
         }
         Body::Unknown(start, deltas) => Block::Unknown(
             dispatch::finished_item(origin, &start, &deltas)
@@ -453,14 +452,17 @@ mod tests {
         let [Block::Audio(audio)] = reply.blocks.as_slice() else {
             panic!("{:?}", reply.blocks)
         };
-        assert_eq!(audio.source, Source::base64("audio/wav", "AAE="));
+        assert_eq!(audio.source, Source::bytes("audio/wav", vec![0u8, 1]));
         assert_eq!(audio.transcript.as_deref(), Some("Hello"));
         assert_eq!(
             audio.extras.fields.keys().collect::<Vec<_>>(),
             ["id", "expires_at"]
         );
-        assert_eq!(joined_base64(&["AAAA".into(), "AQ==".into()]), "AAAAAQ==");
-        assert_eq!(joined_base64(&["AA==".into(), "%".into()]), "AA==%");
+        assert_eq!(
+            joined_bytes(&["AAAA".into(), "AQ==".into()]).as_deref(),
+            Some(&[0u8, 0, 0, 1][..])
+        );
+        assert_eq!(joined_bytes(&["AA==".into(), "%".into()]), None);
     }
 
     #[test]

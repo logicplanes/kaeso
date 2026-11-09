@@ -409,7 +409,7 @@ impl TranscriptFormatCtx {
         let mut r = kaeso_kpp::TranscriptionRequest::new(
             "scribe_v2",
             kaeso_kpp::TranscriptionOperation::Transcribe,
-            kaeso_kpp::AudioInput::new(Source::base64("audio/mpeg", "SUQz")),
+            kaeso_kpp::AudioInput::new(Source::base64("audio/mpeg", "SUQz").unwrap()),
         );
         r.format = Some(TranscriptFormat::VerboseJson);
         TranscriptFormatCtx(r)
