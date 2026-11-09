@@ -38,6 +38,7 @@ Every reply, stream and error below is a live recording made with `cargo xtask r
 | `errors/recorded-unknown-model.json` | 404 `not_found_error` that suggests a free model | live |
 | `errors/recorded-model-outside-plan.json` | 402 `api_error` for a model the plan doesn't include | live, `kimi-k2.6` |
 | `errors/recorded-content-array-all-roles.json` | 400 `invalid_request_error` `invalid message format`: Ollama refuses a `refusal` content part on an assistant message; text parts in every role are accepted | live, `gemma4:31b` |
+| `errors/recorded-retired-model.json` | 410 `api_error` for a model Ollama retired, naming a free model to try instead | live on 2026-11-09, `nemotron-3-nano:30b`, relayed unchanged through Kaeso's OpenAI-format passthrough |
 | `errors/retrieve-not-found.json` | 404 from `GET /v1/models/{model}` for an unknown model | live, `GET /v1/models/no-such-model:1b` |
 | `models/list-recorded.json` | `GET /v1/models`: OpenAI's list with `owned_by: "ollama"`, and a top-level `models` array in Codex's model-catalogue shape. Three of 23 models are kept in both arrays, unchanged | live |
 | `models/retrieve-recorded.json` | `GET /v1/models/gpt-oss:20b`, a tagged id in the path | live |

@@ -519,6 +519,38 @@ fn cerebras_error_bodies_reach_apps_with_cerebras_message_param_and_status() {
 }
 
 #[test]
+fn a_retired_model_is_not_found_in_every_format_not_a_server_error() {
+    use crate::anthropic_messages::AnthropicMessages;
+    use crate::elevenlabs::ElevenLabs;
+    use crate::gemini::Gemini;
+    let body = br#"{"error":{"message":"nemotron-3-nano:30b was retired on November 9, 2026.","type":"api_error","param":null,"code":null}}"#;
+    let err = OpenAiChat::decode_error(410, &HeaderList::new(), body);
+    assert_eq!(err.kind, ErrorKind::NotFound);
+    assert_eq!(OpenAiChat::encode_error(&err).status, 410);
+    let anthropic = AnthropicMessages::encode_error(&err);
+    let v: Value = serde_json::from_slice(&anthropic.body).unwrap();
+    assert_eq!(
+        (anthropic.status, &v["error"]["type"]),
+        (404, &json!("not_found_error"))
+    );
+    assert_eq!(v["error"]["message"], err.message);
+    let gemini = Gemini::encode_error(&err);
+    let v: Value = serde_json::from_slice(&gemini.body).unwrap();
+    assert_eq!(
+        (gemini.status, &v["error"]["status"]),
+        (404, &json!("NOT_FOUND"))
+    );
+    let gone = br#"{"message":"Gone."}"#;
+    for kind in [
+        AnthropicMessages::decode_error(410, &HeaderList::new(), gone).kind,
+        Gemini::decode_error(410, &HeaderList::new(), gone).kind,
+        ElevenLabs::decode_error(410, &HeaderList::new(), gone).kind,
+    ] {
+        assert_eq!(kind, ErrorKind::NotFound);
+    }
+}
+
+#[test]
 fn string_errors_keep_their_message_and_status_in_the_openai_shape() {
     let body = br#"{"error":"Live search is deprecated. Please switch to the Agent Tools API."}"#;
     let err = OpenAiChat::decode_error(410, &HeaderList::new(), body);
@@ -530,7 +562,7 @@ fn string_errors_keep_their_message_and_status_in_the_openai_shape() {
     assert_eq!(out.status, 410);
     let v: Value = serde_json::from_slice(&out.body).unwrap();
     assert_eq!(v["error"]["message"], err.message);
-    assert_eq!(v["error"]["type"], "server_error");
+    assert_eq!(v["error"]["type"], "invalid_request_error");
     let mut key = OpenAiChat::decode_error(
         400,
         &HeaderList::new(),

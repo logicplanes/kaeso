@@ -285,6 +285,43 @@ async fn ollama_errors_reach_each_app_in_its_own_format_and_key_refusals_name_no
 }
 
 #[tokio::test]
+async fn a_retired_model_is_not_found_in_every_format_not_a_server_error() {
+    let env = env().await;
+    let retired = error("recorded-retired-model");
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(json!({ "model": GEMMA, "messages": [{ "role": "user", "content": retired }] })),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::GONE, "{}", r.text());
+    assert_eq!(r.json()["error"]["type"], "api_error");
+
+    let r = call(
+        &env,
+        "/v1/messages",
+        Some(&env.key),
+        true,
+        Some(json!({ "model": GEMMA, "max_tokens": 50, "messages": [{ "role": "user", "content": retired }] })),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::NOT_FOUND, "{}", r.text());
+    let body = r.json();
+    assert_eq!(body["error"]["type"], "not_found_error");
+    assert!(
+        body["error"]["message"]
+            .as_str()
+            .unwrap()
+            .starts_with("nemotron-3-nano:30b was retired"),
+        "{body}"
+    );
+    let o = env.outcomes().await.pop().unwrap();
+    assert_eq!(o.error_kind.as_deref(), Some("not_found"));
+}
+
+#[tokio::test]
 async fn token_counting_is_refused_in_the_apps_format_without_calling_ollama() {
     let env = env().await;
     let before = env.mock.received().len();

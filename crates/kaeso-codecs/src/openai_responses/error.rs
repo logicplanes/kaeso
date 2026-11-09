@@ -82,7 +82,8 @@ pub(crate) fn kind_for(status: Option<u16>, ty: Option<&str>, code: Option<&str>
         Some(401) => ErrorKind::Authentication,
         Some(402) => ErrorKind::Billing,
         Some(403) => ErrorKind::PermissionDenied,
-        Some(404) => ErrorKind::NotFound,
+        // Providers answer 410 for a model or feature they retired.
+        Some(404 | 410) => ErrorKind::NotFound,
         Some(413) => ErrorKind::RequestTooLarge,
         Some(429) => ErrorKind::RateLimited,
         Some(408 | 504) => ErrorKind::Timeout,
@@ -389,11 +390,11 @@ mod tests {
             &HeaderList::new(),
             br#"{"error":"Live search is deprecated."}"#,
         );
-        assert_eq!(gone.kind, ErrorKind::ProviderError);
+        assert_eq!(gone.kind, ErrorKind::NotFound);
         assert_eq!(encode(&gone).status, 410);
         let mut changed = gone;
         changed.message = "Kaeso: try later".into();
-        assert_eq!(encode(&changed).status, 500);
+        assert_eq!(encode(&changed).status, 404);
         let mut key = decode(
             D,
             400,

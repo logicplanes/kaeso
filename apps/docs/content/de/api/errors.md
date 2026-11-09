@@ -404,7 +404,7 @@ Antwortet der Anbieter mit einem Fehler in seinem Format, erhält Ihre App diese
 
 ### Modelle, die der Anbieter nicht bereitstellt
 
-Antwortet der Anbieter auf ein Modell aus dem Katalog mit 404, fragt Kaeso den Anbieter, ob er dieses Modell dem Anbieter-Schlüssel des Projekts noch bereitstellt. Ist das nicht so, erhält Ihre App 404 mit einer Meldung, die Anbieter und Modell nennt.
+Antwortet der Anbieter auf ein Modell aus dem Katalog mit 404, fragt Kaeso den Anbieter, ob er dieses Modell dem Anbieter-Schlüssel des Projekts noch bereitstellt. Ist das nicht so, erhält Ihre App 404 mit einer Meldung, die Anbieter und Modell nennt. Ein 410, das Anbieter für ein eingestelltes Modell senden, zählt wie ein 404. In einem anderen Format als dem des Anbieters erhält Ihre App es als 404.
 
 Der Katalog zeigt das Modell dann als **Nicht verfügbar** ([Verfügbarkeit](../console/models-and-aliases.md#verfügbarkeit)), außer der Anbieter-Schlüssel des Projekts hat sich während der Anfrage geändert. Spätere Anfragen nach dem Modell beantwortet Kaeso dann mit demselben 404, ohne den Anbieter aufzurufen, bis auf eine Anfrage alle fünf Minuten. Die erste Antwort und jede spätere tragen dieselbe Meldung, ebenso das Anfrageprotokoll.
 
