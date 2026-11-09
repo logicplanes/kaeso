@@ -63,6 +63,42 @@ def test_digitalocean_binds_the_databases_and_keeps_secrets_out_of_the_spec(app_
     assert databases["kaeso-valkey"] == {"name": "kaeso-valkey", "engine": "VALKEY", "production": True, "cluster_name": "kaeso-valkey"}
 
 
+@pytest.fixture(scope="module")
+def deploy_template() -> dict:
+    return yaml.safe_load((ROOT / ".do/deploy.template.yaml").read_text())
+
+
+def test_the_deploy_button_runs_the_app_specs_gateway_console_and_routes(app_spec, deploy_template):
+    spec = deploy_template["spec"]
+    services = {s["name"]: s for s in spec["services"]}
+    for name, service in {s["name"]: s for s in app_spec["services"]}.items():
+        if name == "kaeso-gateway":
+            assert {k: v for k, v in services[name].items() if k != "envs"} == {k: v for k, v in service.items() if k != "envs"}
+        else:
+            assert services[name] == service, name
+    assert spec["ingress"] == app_spec["ingress"]
+    assert spec["region"] == app_spec["region"]
+
+
+def test_the_deploy_button_keeps_valkey_inside_the_app_and_creates_only_a_dev_database(app_spec, deploy_template):
+    spec = deploy_template["spec"]
+    services = {s["name"]: s for s in spec["services"]}
+    valkey = services["kaeso-valkey"]
+    assert valkey["image"] == {"registry_type": "DOCKER_HUB", "registry": "valkey", "repository": "valkey", "tag": valkey["image"]["tag"]}
+    compose = (ROOT / "deploy/compose.yaml").read_text()
+    assert f"valkey/valkey:{valkey['image']['tag']}@" in compose, "the same Valkey release as the Compose package"
+    assert valkey["internal_ports"] == [6379] and "http_port" not in valkey, "only the app's own components reach Valkey"
+    assert "--maxmemory-policy noeviction" in valkey["run_command"]
+    assert valkey["health_check"] == {"port": 6379}
+
+    gateway = {e["key"]: e for e in services["kaeso-gateway"]["envs"]}
+    [app_gateway] = [s for s in app_spec["services"] if s["name"] == "kaeso-gateway"]
+    expected = {e["key"]: e for e in app_gateway["envs"] if e["key"] != "KAESO_VALKEY_CA"}
+    expected["KAESO_VALKEY_URL"] = {"key": "KAESO_VALKEY_URL", "value": "redis://kaeso-valkey:6379"}
+    assert gateway == expected
+    assert spec["databases"] == [{"name": "kaeso-postgres", "engine": "PG", "version": "18", "production": False}]
+
+
 def test_the_quick_servers_install_the_newest_stable_release_unless_told_a_version():
     for file in ["deploy/aws/quick-server.yaml", "deploy/gcp/quick-server/main.tf"]:
         text = (ROOT / file).read_text()
@@ -119,6 +155,7 @@ def test_render_keeps_secrets_out_of_the_blueprint_and_counters_out_of_eviction(
 def test_platform_launch_links_use_the_published_templates():
     readme = (ROOT / "README.md").read_text()
     assert "https://render.com/deploy?repo=https://github.com/logicplanes/kaeso/tree/prod" in readme
+    assert "https://cloud.digitalocean.com/apps/new?repo=https://github.com/logicplanes/kaeso/tree/prod&refcode=881255e24b11" in readme
     assert "kaeso-cloudformation.s3.amazonaws.com%2Flatest%2Fquick-server.yaml" in readme
     assert "cloudshell_workspace=deploy/gcp/quick-server" in readme
     assert "KAESO_EDGE_CLIENT_IP_HEADERS" in (ROOT / "deploy/console/edge.Caddyfile").read_text()

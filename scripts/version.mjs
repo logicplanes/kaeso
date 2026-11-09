@@ -120,7 +120,7 @@ const RULES = [
   },
   {
     what: "App Platform image tag",
-    match: (file) => file === ".do/app.yaml",
+    match: (file) => file === ".do/app.yaml" || file === ".do/deploy.template.yaml",
     required: true,
     read: (text) => matches(text, APP_SPEC_TAG, 2),
     write: (text, version) => replaceGroup(text, APP_SPEC_TAG, version),
