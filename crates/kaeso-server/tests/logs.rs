@@ -902,9 +902,9 @@ async fn exports_stream_large_ranges_in_both_formats() {
     );
     assert_eq!(text.lines().count(), 2501);
     assert!(
-        text.lines()
-            .skip(1)
-            .all(|l| l.ends_with(",\"api\",1,,2,40,\"hit\",\"\",\"\",\"\",,,\"\",true,\"reported\"")),
+        text.lines().skip(1).all(
+            |l| l.ends_with(",\"api\",1,,2,40,\"hit\",\"\",\"\",\"\",,,\"\",true,\"reported\"")
+        ),
         "the overhead, the breakpoints, the upload and the response cache are exported, and a stream's processing time is empty for other requests"
     );
     assert!(text.contains("\"ua, with comma\""), "CSV fields are quoted");

@@ -40,23 +40,33 @@ pub fn audio_duration(bytes: &[u8]) -> Option<Duration> {
 }
 
 fn u16_le(b: &[u8], at: usize) -> Option<u16> {
-    Some(u16::from_le_bytes(b.get(at..at + 2)?.try_into().ok()?))
+    Some(u16::from_le_bytes(
+        b.get(at..at.checked_add(2)?)?.try_into().ok()?,
+    ))
 }
 
 fn u32_le(b: &[u8], at: usize) -> Option<u32> {
-    Some(u32::from_le_bytes(b.get(at..at + 4)?.try_into().ok()?))
+    Some(u32::from_le_bytes(
+        b.get(at..at.checked_add(4)?)?.try_into().ok()?,
+    ))
 }
 
 fn u64_le(b: &[u8], at: usize) -> Option<u64> {
-    Some(u64::from_le_bytes(b.get(at..at + 8)?.try_into().ok()?))
+    Some(u64::from_le_bytes(
+        b.get(at..at.checked_add(8)?)?.try_into().ok()?,
+    ))
 }
 
 fn u32_be(b: &[u8], at: usize) -> Option<u32> {
-    Some(u32::from_be_bytes(b.get(at..at + 4)?.try_into().ok()?))
+    Some(u32::from_be_bytes(
+        b.get(at..at.checked_add(4)?)?.try_into().ok()?,
+    ))
 }
 
 fn u64_be(b: &[u8], at: usize) -> Option<u64> {
-    Some(u64::from_be_bytes(b.get(at..at + 8)?.try_into().ok()?))
+    Some(u64::from_be_bytes(
+        b.get(at..at.checked_add(8)?)?.try_into().ok()?,
+    ))
 }
 
 // RIFF/WAVE: the `fmt ` chunk's average bytes per second and the `data` chunk's size. A streamed
@@ -65,7 +75,7 @@ fn wav(b: &[u8]) -> Option<f64> {
     let mut at = 12usize;
     let mut byte_rate = None;
     while at.saturating_add(8) <= b.len().min(MAX_SCAN) {
-        let id = b.get(at..at + 4)?;
+        let id = b.get(at..at.checked_add(4)?)?;
         let size = u32_le(b, at + 4)?;
         let body = at + 8;
         match id {
@@ -159,6 +169,9 @@ fn mp4(b: &[u8]) -> Option<f64> {
 fn find_box<'a>(b: &'a [u8], name: &[u8; 4]) -> Option<&'a [u8]> {
     let mut at = 0usize;
     for _ in 0..4096 {
+        if at >= b.len() {
+            return None;
+        }
         let size = u64::from(u32_be(b, at)?);
         let kind = b.get(at + 4..at + 8)?;
         let (header, size) = match size {
@@ -690,6 +703,21 @@ mod tests {
             None,
             "a bad bitrate index"
         );
+    }
+
+    #[test]
+    fn a_box_size_that_runs_past_the_end_ends_the_search() {
+        let mut file = mp4_box(b"ftyp", b"isom\0\0\x02\0isomiso2avc1mp41");
+        file.extend_from_slice(&[0, 0, 3, 0x32]);
+        file.extend_from_slice(b"moov");
+        file.extend_from_slice(&[0, 0, 0, 1]);
+        file.extend_from_slice(&[0xFF; 112]);
+        assert_eq!(secs(&file), None);
+        let mut huge = mp4_box(b"ftyp", b"isom\0\0\0\0");
+        huge.extend_from_slice(&[0, 0, 0, 1]);
+        huge.extend_from_slice(b"free");
+        huge.extend_from_slice(&u64::MAX.to_be_bytes());
+        assert_eq!(secs(&huge), None);
     }
 
     #[test]
