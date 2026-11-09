@@ -200,7 +200,8 @@ pub(super) async fn wait_for_task(
             .get(round)
             .or(TASK_WAITS.last())
             .copied()
-            .unwrap_or_default();
+            .unwrap_or_default()
+            .max(dispatch::task_poll_gap(dialect));
         let at = tokio::time::Instant::now() + wait;
         if at >= deadline {
             return Err(super::pipeline::upstream_error(

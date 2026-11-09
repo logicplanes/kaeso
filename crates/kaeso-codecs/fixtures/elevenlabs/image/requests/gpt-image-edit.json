@@ -1,0 +1,18 @@
+{
+  "model_id": "gpt-image-1.5",
+  "prompt": "A corgi in a tiny lifeguard chair on a sunlit beach at golden hour, photorealistic",
+  "images": [
+    {
+      "type": "inline_base64",
+      "content_base64": "iVBORw0KGgo=",
+      "mime_type": "image/png"
+    },
+    {
+      "type": "asset",
+      "asset_id": "5xM2KqOnZyce22SPZ9d4"
+    }
+  ],
+  "quality": "high",
+  "background": "transparent",
+  "aspect_ratio": "3:2"
+}

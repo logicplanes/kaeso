@@ -110,7 +110,7 @@ Every built-in provider's documentation was read for image generation on 2026-11
 | Z.ai | Yes, one image per request | No | `glm-image` | [Generate image](https://docs.z.ai/api-reference/image/generate-image) |
 | MiniMax | Yes | No | `image-01` | [Text to image](https://platform.minimax.io/docs/api-reference/image-generation-t2i) |
 | Mistral | No: images only as a tool of its agents | No | — | [Image generation tool](https://docs.mistral.ai/studio/agents/agent-tools/image_generation) |
-| ElevenLabs | No: Kaeso doesn't map ElevenLabs' image generations (`/v1/flows/image`) | No | — | [OpenAPI document](https://api.elevenlabs.io/openapi.json) |
+| ElevenLabs | Yes, one image per request; Kaeso waits for the generation (`/v1/flows/image`) | Up to 5, 10 or 14 images by upload or asset, as the model takes; a mask on GPT Image | `gpt-image-2.5-sunburst`, `gpt-image-2.5-flare`, `gpt-image-2`, `gpt-image-1.5`, `gpt-image-1`, `gemini-3.1-flash-image`, `gemini-3.1-flash-lite-image`, `gemini-3-pro-image`, `gemini-2.5-flash-image`, `bytedance-seedream-5-pro`, `bytedance-seedream-5-lite` | [Image and video guide](https://elevenlabs.io/docs/eleven-api/guides/cookbooks/image-and-video) |
 | Anthropic, DeepSeek, Groq, Cohere, Ollama Cloud, Moonshot, Cerebras | Not offered by the provider | — | — | Each provider's API reference |
 
 Google retired Imagen, so Kaeso calls the Gemini image models only. A size reaches them only when Google's size tables list it, such as `1024x1024` (`1:1` at `1K`). Send `aspect_ratio` and `resolution` for the others.

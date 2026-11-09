@@ -4,6 +4,7 @@
 
 mod error;
 mod format;
+mod images;
 mod listing;
 pub mod realtime;
 mod reply;
@@ -14,6 +15,8 @@ mod video;
 mod tests;
 #[cfg(test)]
 mod tests_edges;
+#[cfg(test)]
+mod tests_images;
 
 use kaeso_kpp::{
     DialectId, KppError, ModelInfo, ModelList, ModelsQuery, Reply, Request, RequestKind,
@@ -24,6 +27,8 @@ use crate::codec::{
     StreamEncoder,
 };
 
+pub use images::{IMAGE_PATH, POLL_GAP};
+pub(crate) use images::{pending_task as images_pending_task, poll_request as images_poll_request};
 pub use listing::{VOICES_PATHS, voice_listing_request, voices_reply};
 pub use reply::billed_characters;
 pub use video::VIDEO_PATH;
@@ -212,12 +217,18 @@ impl Codec for ElevenLabs {
         if let Request::Video(r) = req {
             return video::check(r);
         }
+        if let Request::Image(r) = req {
+            return images::check(r);
+        }
         request::check(req, ctx)
     }
 
     fn encode_request(req: &Request, ctx: &mut EgressCtx) -> Result<EncodedRequest, KppError> {
         if matches!(req, Request::Video(_)) {
             return video::encode(req);
+        }
+        if matches!(req, Request::Image(_)) {
+            return images::encode(req, ctx);
         }
         request::encode(req, ctx)
     }
@@ -237,6 +248,12 @@ impl Codec for ElevenLabs {
                 return Err(Self::decode_error(status, headers, body));
             }
             return video::decode_job(body, ctx).map(Reply::Video);
+        }
+        if ctx.kind == RequestKind::Image {
+            if !(200..300).contains(&status) {
+                return Err(Self::decode_error(status, headers, body));
+            }
+            return images::decode(body);
         }
         reply::decode(status, headers, body, ctx)
     }

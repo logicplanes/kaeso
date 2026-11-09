@@ -61,6 +61,26 @@ An OpenAI app gets ElevenLabs' words without its `spacing` and `audio_event` ent
 
 ElevenLabs answers `{"detail": {"type", "code", "message", "status", "request_id", "param"}}`; older endpoints `{"detail": {"status", "message"}}`, validation `{"detail": [{"loc", "msg"}]}`. Kaeso reads all three, maps `type` and `code` to the error kind (`insufficient_credits` and `payment_required` to billing, `rate_limit_error` to rate limited) and writes its own errors to ElevenLabs apps in the documented shape. ElevenLabs' own errors pass on as they came, with their status.
 
+## Image generations
+
+ElevenLabs makes images with OpenAI's, Google's and ByteDance's models through `POST /v1/flows/image`, reported by `GET /v1/flows/image/{id}`; the body depends on `model_id` (`ImageGenerationRequest` in the OpenAPI document, read 2026-11-09, and the [image and video guide](https://elevenlabs.io/docs/eleven-api/guides/cookbooks/image-and-video)). Kaeso sends an OpenAI Images API request there, then asks for the generation's status, no more often than every two seconds as ElevenLabs asks, until it ends, all within the one request; `dispatch::pending_task`, `encode_task_poll` and `task_poll_gap` name the steps. ElevenLabs-format apps don't call the image generations through Kaeso: their SDK's `flows.image` keeps generation ids, which Kaeso would have to map to the project, as it does for videos. The fixtures in `fixtures/elevenlabs/image/` are built from the OpenAPI document; image generation was not called live.
+
+| KPP | ElevenLabs |
+| --- | --- |
+| `model` | `model_id`: `gpt-image-2.5-sunburst`, `gpt-image-2.5-flare`, `gpt-image-2`, `gpt-image-1.5`, `gpt-image-1`, `gemini-3.1-flash-image`, `gemini-3.1-flash-lite-image`, `gemini-3-pro-image`, `gemini-2.5-flash-image`, `bytedance-seedream-5-pro`, `bytedance-seedream-5-lite` |
+| `prompt` | `prompt` |
+| `images`, `mask` | `images[]`, `mask`: `{type: "inline_base64", content_base64, mime_type}` or `{type: "asset", asset_id}`, up to the model's 5, 10 or 14; a mask on GPT Image only |
+| `quality` | `quality` from the model's list (`low`, `medium`, `high`, and `xhigh`, `max` on GPT Image 2.5); `auto` is left out |
+| `background` | `background`, GPT Image 1 and 1.5 only |
+| `size` | `aspect_ratio`: `1024x1024` as `1:1`, `1536x1024` as `3:2`, `1024x1536` as `2:3`, `auto` as `auto`; other sizes are refused |
+| `aspect_ratio`, `resolution` | `aspect_ratio`, `resolution`, each from the model's lists |
+| `seed` | `seed`, Seedream only |
+| reply `status` `pending` or `generating` | the generation isn't finished; Kaeso asks again |
+| reply `content_url`, `content_mime_type` | the image as a link, valid for about an hour, which Kaeso downloads for an app that asks for `b64_json` |
+| reply `failure_reason`, `error_message` | the error: `moderated` as content filtered, `invalid_parameters` as an invalid request, `timeout`, `charging_failed` as billing, others as a provider error |
+
+`n` above 1, image links, `output_format`, `output_compression`, `negative_prompt`, partial images and variations are refused before sending. ElevenLabs bills generations in credits, which KPMR doesn't list, so their cost stays unknown.
+
 ## Video generations
 
 ElevenLabs makes video with Veo 3.1 and Seedance 2 models through `POST /v1/flows/video`, reported by `GET /v1/flows/video/{id}`; the body depends on `model_id` (`VideoGenerationRequest`). Kaeso sends video jobs there for an app of another format; ElevenLabs-format apps don't call it through Kaeso. The fixtures in `fixtures/elevenlabs/video/` are built from the OpenAPI document.
