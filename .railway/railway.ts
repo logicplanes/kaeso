@@ -6,7 +6,8 @@ const GATEWAY_IMAGE = "ghcr.io/logicplanes/kaeso-gateway:0.6.0-rc.8";
 const CONSOLE_IMAGE = "ghcr.io/logicplanes/kaeso-console:0.6.0-rc.8";
 
 // Railway's private network is IPv6 only, so the gateway listens on every address family and
-// trusts the edge from the unique local range.
+// trusts the edge from the unique local range. Railway's health checks call the port in PORT, so every
+// service sets it to the port it listens on.
 const TRUSTED_PROXIES = "fc00::/7,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,127.0.0.0/8,::1/128";
 
 export default defineRailway((ctx) => {
@@ -18,6 +19,7 @@ export default defineRailway((ctx) => {
     healthcheck: "/healthz",
     healthcheckTimeout: 300,
     env: {
+      PORT: "8080",
       KAESO_LISTEN: "[::]:8080",
       KAESO_METRICS_LISTEN: "127.0.0.1:9100",
       KAESO_PUBLIC_URL: ctx.shared.KAESO_PUBLIC_URL,
@@ -39,6 +41,7 @@ export default defineRailway((ctx) => {
   const console = service("kaeso-console", {
     source: image(CONSOLE_IMAGE, { autoUpdates: { type: "disabled" } }),
     healthcheck: "/healthz",
+    env: { PORT: "3000" },
   });
 
   const edge = service("kaeso-edge", {
