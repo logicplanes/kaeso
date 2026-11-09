@@ -104,7 +104,7 @@ docker compose exec gateway kaeso openapi > openapi.json
 
 以下操作要求近期登录：
 
-- **组织和项目中：** 在 `orgs/{org}/rights` 中带有 `recent_sign_in` 标记的权限，即 `org.delete`、`org.ownership.transfer`、`provider_credentials.create`、`provider_credentials.replace`、`providers.custom.manage`、`security.sso.manage`、`security.sso.require`、`security.2fa.require`、`platform_keys.create`、`logs.delete` 和 `keys.platform_access.grant`。
+- **组织和项目中：** 在 `orgs/{org}/rights` 中带有 `recent_sign_in` 标记的权限，即 `org.delete`、`org.ownership.transfer`、`provider_credentials.create`、`provider_credentials.replace`、`providers.custom.manage`、`mcp_servers.manage`、`security.sso.manage`、`security.sso.require`、`security.2fa.require`、`platform_keys.create`、`logs.settings.manage`、`logs.delete` 和 `keys.platform_access.grant`。
 - **自己的账户中：** 更改电子邮件地址、为没有密码的账户设置密码和删除账户。设置或关闭双重验证、生成新的恢复码，以及关联或取消关联单点登录，同样需要近期登录。
 - **实例管理员：** 更改账户创建、组织创建或允许的域名，选择自动更新，应用更新，以及计划删除或删除组织。将某人设为实例管理员或取消其身份、删除用户、重置用户的双重验证和指定组织的所有者同样需要。选择实例管理员的单点登录也要求近期登录，且只能用密码或登录链接确认。
 
@@ -113,7 +113,7 @@ docker compose exec gateway kaeso openapi > openapi.json
 | 主题 | 规则 |
 | --- | --- |
 | 格式 | 基于 JSON 的 REST：路径使用复数 kebab case（`service-accounts`），字段使用 `snake_case`。请求正文以 `content-type: application/json` 发送；端点不认识的字段会得到 400。 |
-| ID | 前缀加按时间排序的部分：`org_…`、`proj_…`、`usr_…`、`mem_…`、`inv_…`、`svc_…`、`key_…`、`opk_…`、`cred_…`、`model_…`、`alias_…`、`lim_…`、`role_…`、`ses_…`、`req_…`、`evt_…`、`exp_…`、`upd_…`、`agt_…`、`act_…`、`cli_…`。 |
+| ID | 前缀加按时间排序的部分：`org_…`、`proj_…`、`usr_…`、`mem_…`、`inv_…`、`svc_…`、`key_…`、`opk_…`、`cred_…`、`model_…`、`alias_…`、`lim_…`、`role_…`、`ses_…`、`req_…`、`evt_…`、`exp_…`、`upd_…`、`agt_…`、`act_…`、`cli_…`、`mcp_…`、`conn_…`、`tool_…`、`grant_…`、`call_…`、`video_…`。 |
 | 时间 | RFC 3339，UTC。每个响应都在 `Kaeso-Time-Zone` 中给出实例的时区，例如 `Europe/Berlin`，即控制台显示时间所用的时区。 |
 | 金额 | 以十进制字符串表示的美元，例如 `"0.0001"`。价格和数额以十进制字符串或整数发送；JSON 小数（例如 `0.5`）会得到 400。 |
 | 限额数额 | 最多 10^12 个请求或 Token；支出预算最多 1,000,000,000 美元。 |
@@ -187,8 +187,8 @@ docker compose exec gateway kaeso openapi > openapi.json
 | `auth/*` | 首次设置、登录方式、密码和双重验证登录、登录链接、重置密码、单点登录、会话、实例允许该地址时的注册，以及邀请。`auth/session` 返回用户、其带有角色和权限的成员身份、管理该账户的组织（`managed_by`），以及能否创建组织（`can_create_orgs`）。 |
 | `me`、`me/*` | 您的个人资料、头像和语言（`locale`：`auto`、`en`、`de` 或 `zh-CN`）、电子邮件地址、密码、双重验证和恢复码。还有您的会话、成员身份、密钥、通知和智能体，以及创建组织和删除账户。 |
 | `notifications/unsubscribe` | 邮件末尾的链接：`GET` 说明它会停止哪封邮件，`POST` 关闭该邮件。它不需要会话，并且为了邮件应用的一键退订（RFC 8058）也不需要 `Origin`；链接中的签名令牌即为凭证。 |
-| `orgs/{org}/*` | 组织及其头像、成员、邀请、角色和权限，以及项目。还有 Kaeso 调用的服务商、服务商密钥、安全设置、平台密钥、日志设置和存储、用量、审计日志、所有权转让、删除和恢复。 |
-| `orgs/{org}/projects/{project}/*` | 项目及其头像、成员及其模型访问范围、服务账号、密钥及其模型和限额，以及密钥策略。还有目录和别名、限额、内容日志、请求日志和导出、用量、审计日志和[试验场](#试验场)。 |
+| `orgs/{org}/*` | 组织及其头像、成员、邀请、角色和权限，以及项目。还有 Kaeso 调用的服务商、服务商密钥、自定义服务商（`custom-providers`）、MCP 服务器及其工具（`mcp-servers`）、项目能否使用响应缓存（`response-cache`）、安全设置、平台密钥、日志设置和存储、用量及其时间线（`usage/timeline`）和首末日期（`usage/span`）、审计日志、所有权转让、删除和恢复。 |
+| `orgs/{org}/projects/{project}/*` | 项目及其头像、成员及其模型访问范围、服务账号、密钥及其模型和限额，以及密钥策略。还有目录和别名、限额、响应缓存、项目使用的 MCP 服务器及其工具（`tools`）和谁可以调用哪个工具（`tool-access`）、连接到其门户的客户端（`portal-grants`）、内容日志、请求日志、工具调用（`logs/tool-calls`）和导出、带 `usage/timeline` 和 `usage/span` 的用量、审计日志和[试验场](#试验场)。 |
 | `instance/*` | 供实例管理员使用：用户、组织、实例设置和可通过其单点登录管理实例的组织（`instance/settings/admin-sso`）、智能体策略、系统健康状况、存储和模型数据、更新，以及实例审计日志。 |
 | `orgs/{org}/agents`、`orgs/{org}/security/agents`、`me/agents/*`、`me/agent-requests/*` | 智能体、其权限和智能体策略，带有 `agents` 标签（[路由](mcp.md#platform-api-路由)）。 |
 
@@ -243,14 +243,15 @@ docker compose exec gateway kaeso openapi > openapi.json
 
 ## 试验场
 
-控制台的[试验场](../console/playground.md)以已登录成员的身份向项目的模型发送请求。它的两个路由都需要会话和项目权限 `playground.use`。它们对密钥返回 403，因为应用在 `/v1` 上调用模型。
+控制台的[试验场](../console/playground.md)以已登录成员的身份向项目的模型发送请求。它在 `playground/` 下的两个路由都需要会话和项目权限 `playground.use`。它们对密钥返回 403，因为应用在 `/v1` 上调用模型。从试验场调用项目的工具需要 `playground.use` 和 `tools.use`，并且请求背后必须是一个人：会话、智能体或成员的密钥。
 
 | 路由 | 作用 |
 | --- | --- |
 | `GET orgs/{org}/projects/{project}/playground/models` | 列出成员可以调用的模型：不含嵌入模型的目录，再按成员的模型访问范围收窄。每个模型都带有名称、别名、推理强度、限额和价格，以及是否接受 `temperature`、项目是否有对应的服务商密钥。 |
 | `POST orgs/{org}/projects/{project}/playground/responses` | 接受带 `"stream": true` 的 OpenAI Responses 请求，并以 `/v1/responses` 发送的事件流响应，包括保活注释。 |
+| `POST orgs/{org}/projects/{project}/tools/{tool}/call` | 以调用者的身份，通过项目的门户用 `arguments` 调用项目的一个工具。该工具必须已开启并已批准，调用者的工具访问范围和工具调用速率都适用，调用会以来源 `playground` 记录。响应中包含工具的 `result`，调用被拒绝时则包含 `error`。 |
 
-请求接受 `model`、`input`（字符串或输入项）、`instructions`、`temperature`、`top_p`、`max_output_tokens`、`reasoning.effort`、`reasoning.summary` 和必须为 `true` 的 `stream`。使用[会话](automation.md#改用会话)：
+请求接受 `model`、`input`（字符串或输入项）、`instructions`、`temperature`、`top_p`、`max_output_tokens`、`reasoning.effort`、`reasoning.summary`、`tools` 和必须为 `true` 的 `stream`。`tools` 包含模型可以调用的 Responses `function` 工具，试验场只在被要求时才执行调用。`headers` 像应用一样发送最多 20 个请求头，供路由的条件和分流读取，不能包含凭据。`route` 用于试用一条路由而不解析 `model`，此时 `model` 指明其别名；`alias` 指明 `route` 编辑的已保存别名。使用[会话](automation.md#改用会话)：
 
 ```bash
 project=https://kaeso.example.com/platform/v1/orgs/org_…/projects/proj_…

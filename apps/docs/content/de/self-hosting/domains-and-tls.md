@@ -51,14 +51,14 @@ Leiten Sie dann diese Pfade weiter:
 
 | Pfad | An |
 | --- | --- |
-| `/v1/`, `/platform/`, `/mcp`, `/mcp/`, `/oauth/` und `/.well-known/oauth-` | Das Gateway, Port 8080 |
+| `/v1/`, `/v1beta/`, `/v2/`, `/platform/`, `/mcp`, `/mcp/`, `/oauth/` und `/.well-known/oauth-` | Das Gateway, Port 8080 |
 | Alles andere | Die Konsole, Port 3000 |
 
 Agenten melden sich über `/oauth/` und `/.well-known/oauth-` an und rufen dann `/mcp` auf ([MCP-Server](../api/mcp.md)); MCP-Clients rufen das Portal eines Projekts unter `/mcp/<Projekt-ID>` auf. Ein Proxy, der diese Pfade an die Konsole leitet, hindert jeden Agenten am Verbinden.
 
 Richten Sie den Proxy für Kaeso ein:
 
-- Schalten Sie die Pufferung von Antworten für `/v1/` ab, damit gestreamte Antworten die Apps sofort erreichen.
+- Schalten Sie die Pufferung von Antworten für `/v1/` und `/v1beta/` ab, damit gestreamte Antworten die Apps sofort erreichen.
 - Geben Sie `X-Forwarded-For` weiter, und setzen Sie `KAESO_TRUSTED_PROXIES` in `.env` auf die genaue Adresse Ihres Proxys. Nur von dort glaubt das Gateway den Header. Standardmäßig vertraut das Compose-Paket Loopback und dem Netzwerk `edge`, `EDGE_SUBNET`. Ein Proxy auf dem Server, der die Ports oben aufruft, erreicht das Gateway von der ersten Adresse von `EDGE_SUBNET` aus, standardmäßig `172.30.83.1`. Hinter einem Proxy, dem es nicht vertraut, sehen Protokolle und die [Drosselung von API-Schlüsseln](configuration.md#drosselung-von-api-schlüsseln) jeden Client als den Proxy.
 - Erreichen Personen Kaeso unter einer anderen Adresse als `https://` und `KAESO_DOMAIN`, setzen Sie `KAESO_PUBLIC_URL` in der `.env` auf diese Adresse.
 - Leiten Sie den Metrik-Port 9100 nie weiter.

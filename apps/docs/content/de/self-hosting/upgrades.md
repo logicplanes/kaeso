@@ -132,6 +132,13 @@ Der Updater installiert ein Release, wenn alles hier zutrifft. Sonst zeigt die K
 - Es bringt `release.json` mit, das signierte Manifest, das der Updater liest.
 - Der Updater ist neu genug dafür. Ist er es nicht, aktualisiert ihn der Befehl des Installationsskripts einmal.
 
+> [!NOTE]
+> Installationen von vor {{version}}, deren Konsole nach dem Installationsskript fragt, haben einen Updater, der für neuere Releases zu alt ist. Führen Sie das Installationsskript einmal im Ordner der Installation aus; danach funktioniert **Auf … aktualisieren** in der Konsole:
+
+```bash
+curl -fsSL https://kaeso.app/install.sh | sh -s -- --update --version {{version}}
+```
+
 Die meisten Releases ändern in der `compose.yaml` nur die Image-Versionen. Ein Release, das mehr ändert, etwa eine neue Einstellung oder einen neuen Dienst, wird genauso eingespielt, wenn zwei weitere Dinge zutreffen:
 
 - Die `compose.yaml` der Installation ist die des laufenden Release. Halten Sie Ihre Änderungen in der `compose.override.yaml`.
@@ -222,7 +229,7 @@ Während der Updater die Version umstellt oder wann immer Gateway oder Konsole n
 | --- | --- |
 | Eine Konsolenseite | 503 mit einer Seite in der Sprache des Browsers, die sagt, was gerade passiert, alle 5 Sekunden prüft und zurückkehrt, sobald Kaeso wieder da ist |
 | `/platform/v1/*`, `/mcp`, `/mcp/*`, `/oauth/*` und `/.well-known/oauth-*` | 503 mit dem Fehler der Platform API, Typ `unavailable` |
-| `/v1/messages` und andere `/v1/*` mit einem `anthropic-version`-Header, außer `/v1/chat/completions`, `/v1/responses` und `/v1/embeddings` | 529 mit Anthropics `overloaded_error` |
+| `/v1/messages` und andere `/v1/*` mit einem `anthropic-version`-Header, außer `/v1/chat/completions`, `/v1/responses`, `/v1/responses/*` und `/v1/embeddings` | 529 mit Anthropics `overloaded_error` |
 | `/v1beta` und `/v1beta/*` | 503 mit Geminis Fehler `UNAVAILABLE` |
 | Andere `/v1/*` | 503 mit OpenAIs `service_unavailable_error` |
 

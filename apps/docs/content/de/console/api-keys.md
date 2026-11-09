@@ -71,7 +71,7 @@ Neben **Rotieren** hat das Menü im Sheet eines Schlüssels drei Aktionen:
 
 Die eigenen Schlüssel zu ändern erfordert das Recht **Eigene Schlüssel verwalten**, die Schlüssel aller Personen zu ändern erfordert **Alle Schlüssel verwalten**.
 
-Ein Schlüssel hört auch auf zu funktionieren, wenn er abläuft, wenn sein Projekt archiviert wird und wenn sein Mitglied das Projekt oder die Organisation verlässt. Kaeso schickt 7 Tage und 1 Tag vor dem Ablauf eine E-Mail. Sie geht an den Inhaber des Schlüssels, beim Schlüssel eines Dienstkontos an die Admins des Projekts. Jede Person kann diese E-Mails unter **Ablaufende Schlüssel** in den **Benachrichtigungen** ihres Kontos abschalten.
+Ein Schlüssel hört auch auf zu funktionieren, wenn er abläuft, wenn sein Projekt archiviert wird und wenn sein Mitglied das Projekt oder die Organisation verlässt. Kaeso schickt 7 Tage und 1 Tag vor dem Ablauf eine E-Mail. Sie geht an den Inhaber des Schlüssels, beim Schlüssel eines Dienstkontos an die Admins des Projekts. Jede Person kann diese E-Mails unter **Ihr Schlüssel läuft ab** in den **Benachrichtigungen** ihres Kontos abschalten.
 
 **API-Schlüssel** in Ihrem [Konto](account.md) listet Ihre eigenen Schlüssel aus allen Projekten, wo Sie sie deaktivieren, aktivieren oder archivieren können. Neue Schlüssel erstellen Sie in einem Projekt.
 

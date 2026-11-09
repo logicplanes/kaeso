@@ -104,7 +104,7 @@ In a session, some actions need a sign-in within the last 15 minutes. Otherwise 
 
 These actions need a recent sign-in:
 
-- **In organizations and projects:** the rights flagged `recent_sign_in` in `orgs/{org}/rights`. These are `org.delete`, `org.ownership.transfer`, `provider_credentials.create`, `provider_credentials.replace`, `providers.custom.manage`, `security.sso.manage`, `security.sso.require`, `security.2fa.require`, `platform_keys.create`, `logs.delete` and `keys.platform_access.grant`.
+- **In organizations and projects:** the rights flagged `recent_sign_in` in `orgs/{org}/rights`. These are `org.delete`, `org.ownership.transfer`, `provider_credentials.create`, `provider_credentials.replace`, `providers.custom.manage`, `mcp_servers.manage`, `security.sso.manage`, `security.sso.require`, `security.2fa.require`, `platform_keys.create`, `logs.settings.manage`, `logs.delete` and `keys.platform_access.grant`.
 - **In your account:** changing your email, setting a password when the account has none, and deleting the account. Setting up or turning off two-factor authentication, creating new recovery codes, and linking or unlinking single sign-on need one too.
 - **For instance admins:** changing account creation, organization creation or the allowed domains, choosing automatic updates, applying an update, and scheduling an organization for deletion or deleting it. Making someone an instance admin or removing it, deleting a user, resetting a user's two-factor authentication and appointing an organization's owner need one too. Choosing single sign-on for instance admins needs one too, and only a password or a sign-in link confirms it.
 
@@ -113,7 +113,7 @@ These actions need a recent sign-in:
 | Topic | Rule |
 | --- | --- |
 | Format | REST with JSON: paths in plural kebab case (`service-accounts`), fields in `snake_case`. Send bodies with `content-type: application/json`; Kaeso answers 400 to a field the endpoint doesn't know. |
-| Ids | A prefix and a time-ordered part: `org_…`, `proj_…`, `usr_…`, `mem_…`, `inv_…`, `svc_…`, `key_…`, `opk_…`, `cred_…`, `model_…`, `alias_…`, `lim_…`, `role_…`, `ses_…`, `req_…`, `evt_…`, `exp_…`, `upd_…`, `agt_…`, `act_…`, `cli_…`. |
+| Ids | A prefix and a time-ordered part: `org_…`, `proj_…`, `usr_…`, `mem_…`, `inv_…`, `svc_…`, `key_…`, `opk_…`, `cred_…`, `model_…`, `alias_…`, `lim_…`, `role_…`, `ses_…`, `req_…`, `evt_…`, `exp_…`, `upd_…`, `agt_…`, `act_…`, `cli_…`, `mcp_…`, `conn_…`, `tool_…`, `grant_…`, `call_…`, `video_…`. |
 | Times | RFC 3339, in UTC. Every response names the install's time zone in `Kaeso-Time-Zone`, such as `Europe/Berlin`, the zone the console shows times in. |
 | Money | US dollars as decimal strings, such as `"0.0001"`. Send prices and amounts as decimal strings or whole numbers; a JSON fraction such as `0.5` gets 400. |
 | Limit amounts | At most 10^12 requests or tokens, or 1,000,000,000 USD for a spend budget. |
@@ -187,8 +187,8 @@ Routes are relative to `/platform/v1`. [`openapi.json`](#openapi-document) lists
 | `auth/*` | First-start setup, sign-in methods, password and two-factor sign-in, sign-in links, password reset, single sign-on, sessions, sign-up where the instance allows the address, and invitations. `auth/session` returns the user, their memberships with roles and rights, the organization that manages the account (`managed_by`), and whether they may create organizations (`can_create_orgs`). |
 | `me`, `me/*` | Your profile, picture and language (`locale`: `auto`, `en`, `de` or `zh-CN`), email, password, two-factor authentication and recovery codes. Also your sessions, memberships, keys, notifications and agents, creating an organization and deleting your account. |
 | `notifications/unsubscribe` | The link at the foot of an email: `GET` says which email it stops, `POST` turns that email off. It needs no session and, for mail apps' one-click unsubscribe (RFC 8058), no `Origin`; the signed token in the link is the authority. |
-| `orgs/{org}/*` | The organization and its picture, members, invitations, roles and rights, and projects. Also the providers Kaeso calls, provider keys, security settings, platform keys, log settings and storage, usage, the audit log, ownership transfer, deletion and restoring. |
-| `orgs/{org}/projects/{project}/*` | The project and its picture, members with their model access, service accounts, keys with their models and limits, and key policy. Also the catalogue and aliases, limits, content logging, request logs and exports, usage, the audit log and the [Playground](#playground). |
+| `orgs/{org}/*` | The organization and its picture, members, invitations, roles and rights, and projects. Also the providers Kaeso calls, provider keys, custom providers (`custom-providers`), MCP servers and their tools (`mcp-servers`), whether projects may use the response cache (`response-cache`), security settings, platform keys, log settings and storage, usage with its timeline (`usage/timeline`) and first and last day (`usage/span`), the audit log, ownership transfer, deletion and restoring. |
+| `orgs/{org}/projects/{project}/*` | The project and its picture, members with their model access, service accounts, keys with their models and limits, and key policy. Also the catalogue and aliases, limits, the response cache, the MCP servers it uses, their tools (`tools`) and who may call which (`tool-access`), the clients connected to its portal (`portal-grants`), content logging, request logs, tool calls (`logs/tool-calls`) and exports, usage with `usage/timeline` and `usage/span`, the audit log and the [Playground](#playground). |
 | `instance/*` | For instance admins: users, organizations, instance settings and the organization whose single sign-on may administer the instance (`instance/settings/admin-sso`), the agent policy, system health, storage and model data, updates and the instance audit log. |
 | `orgs/{org}/agents`, `orgs/{org}/security/agents`, `me/agents/*`, `me/agent-requests/*` | Agents, their rights and the agent policies, tagged `agents` ([routes](mcp.md#platform-api-routes)). |
 
@@ -243,14 +243,15 @@ An effective right lists its sources:
 
 ## Playground
 
-The console's [Playground](../console/playground.md) sends requests to the project's models as the signed-in member. Both of its routes need a session and the project right `playground.use`. They answer keys with 403, since apps call models on `/v1`.
+The console's [Playground](../console/playground.md) sends requests to the project's models as the signed-in member. Its two `playground/` routes need a session and the project right `playground.use`. They answer keys with 403, since apps call models on `/v1`. Calling one of the project's tools from it needs `playground.use` and `tools.use`, and a person behind the request: a session, an agent or a member's key.
 
 | Route | Does |
 | --- | --- |
 | `GET orgs/{org}/projects/{project}/playground/models` | Lists the models the member can call: the catalogue without embeddings models, narrowed by the member's model access. Each has its name, aliases, reasoning efforts, limits and prices, whether it takes `temperature` and whether the project has a provider key for it. |
 | `POST orgs/{org}/projects/{project}/playground/responses` | Takes an OpenAI Responses request with `"stream": true` and answers with the event stream that `/v1/responses` sends, keepalive comments included. |
+| `POST orgs/{org}/projects/{project}/tools/{tool}/call` | Calls one of the project's tools with `arguments` through the project's portal, as the caller. The tool must be on and approved, the caller's tool access and the tool call rates apply, and the call is logged with the source `playground`. Answers with the tool's `result`, or `error` when the call was refused. |
 
-The request takes `model`, `input` (a string or input items), `instructions`, `temperature`, `top_p`, `max_output_tokens`, `reasoning.effort`, `reasoning.summary` and `stream`, which must be `true`. With a [session](automation.md#use-a-session-instead):
+The request takes `model`, `input` (a string or input items), `instructions`, `temperature`, `top_p`, `max_output_tokens`, `reasoning.effort`, `reasoning.summary`, `tools` and `stream`, which must be `true`. `tools` holds Responses `function` tools the model may call, and the Playground runs a call only when asked. `headers` sends up to 20 headers as an app would, for a route's conditions and splits, none that carry credentials. `route` tries a route instead of resolving `model`, which then names its alias, and `alias` names the saved alias that `route` edits. With a [session](automation.md#use-a-session-instead):
 
 ```bash
 project=https://kaeso.example.com/platform/v1/orgs/org_…/projects/proj_…

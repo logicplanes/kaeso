@@ -9,7 +9,7 @@
   <br>
   <br>
   <h3>The open-source AI gateway you run yourself</h3>
-  <p>One OpenAI- and Anthropic-compatible API in front of every provider, with single sign-on, roles, budgets, request logs and an MCP portal, in one Rust process.</p>
+  <p>One OpenAI-, Anthropic-, Gemini- and ElevenLabs-compatible API in front of every provider, for chat, images, audio and video, with single sign-on, roles, budgets, request logs and an MCP portal, in one Rust process.</p>
   <p>
     <a href="https://github.com/logicplanes/kaeso/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/logicplanes/kaeso/actions/workflows/ci.yml/badge.svg?branch=dev"></a>
     <a href="https://scorecard.dev/viewer/?uri=github.com/logicplanes/kaeso"><img alt="OpenSSF Scorecard" src="https://api.scorecard.dev/projects/github.com/logicplanes/kaeso/badge"></a>
@@ -114,7 +114,7 @@ Every page below is the [live demo](https://demo.kaeso.app), a read-only install
 ```mermaid
 flowchart LR
   accTitle: How Kaeso sits between apps and providers
-  accDescr: Apps, SDKs and coding tools call the gateway in the OpenAI or Anthropic format, and MCP clients call its MCP portal. The gateway resolves the model, checks rights and limits, calls the provider in its own format, and writes usage and logs to PostgreSQL, ClickHouse and Valkey, which the console reads.
+  accDescr: Apps, SDKs and coding tools call the gateway in the OpenAI, Anthropic, Gemini or ElevenLabs format, and MCP clients call its MCP portal. The gateway resolves the model, checks rights and limits, calls the provider in its own format, and writes usage and logs to PostgreSQL, ClickHouse and Valkey, which the console reads.
   apps[Apps, SDKs and coding tools]:::outside
   mcp[MCP clients]:::outside
   subgraph install [Your Kaeso install]
@@ -127,7 +127,7 @@ flowchart LR
   end
   providers[Model providers]:::outside
   servers[Your MCP servers]:::outside
-  apps -- OpenAI or Anthropic format --> gateway
+  apps -- OpenAI, Anthropic, Gemini or ElevenLabs format --> gateway
   mcp -- MCP --> gateway
   gateway -- the provider's format --> providers
   gateway -- MCP --> servers
@@ -136,7 +136,7 @@ flowchart LR
 <table>
   <tr>
     <td width="33%" valign="top"><b>Single sign-on and roles</b><br>Each organization signs in through its own OpenID Connect provider, for any number of people at no cost, with organization and project roles and single rights on top (<a href="https://docs.kaeso.app/console/members-and-roles">members and roles</a>).</td>
-    <td width="33%" valign="top"><b>One format in, any provider out</b><br>Apps speak the OpenAI or Anthropic API; Kaeso decodes every request, encodes it for the provider and translates the reply and the stream back (<a href="https://docs.kaeso.app/concepts/format-translation">format translation</a>).</td>
+    <td width="33%" valign="top"><b>One format in, any provider out</b><br>Apps speak the OpenAI, Anthropic, Gemini or ElevenLabs API, for chat, images, audio and video; Kaeso decodes every request, encodes it for the provider and translates the reply and the stream back (<a href="https://docs.kaeso.app/concepts/format-translation">format translation</a>).</td>
     <td width="33%" valign="top"><b>Alias routes with fallbacks</b><br>An alias names the models behind it in order; a failing step is skipped for every gateway at once, and the next one answers (<a href="https://docs.kaeso.app/concepts/alias-routes">alias routes</a>).</td>
   </tr>
   <tr>
@@ -170,14 +170,14 @@ Checked on 6 November 2026 against each project's repository and documentation. 
 
 ## In this repository
 
-| Part                                                                          | What it is                                                                                                                  |
-| ----------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| [`crates/`](crates)                                                           | The gateway, the updater and KPP, the protocol every request is decoded to; `kaeso-kpp` and `kaeso-codecs` are on crates.io |
-| [`apps/console`](apps/console)                                                | The web console                                                                                                             |
-| [`packages/ui`](packages/ui) and [`packages/tokens`](packages/tokens)         | The UI library and design tokens behind it, on npm, with a [showcase](https://ui.kaeso.app)                                 |
-| [`apps/docs`](apps/docs)                                                      | The documentation at [docs.kaeso.app](https://docs.kaeso.app), in English, German and Chinese                               |
-| [`deploy/`](deploy), [`render.yaml`](render.yaml) and [`.railway/`](.railway) | The Compose package, the container images and the templates for Render, Railway, AWS and Google Cloud                       |
-| [`plugins/`](plugins)                                                         | The Claude Code and Cursor plugins for Kaeso's MCP server                                                                   |
+| Part                                                                                         | What it is                                                                                                                  |
+| -------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| [`crates/`](crates)                                                                          | The gateway, the updater and KPP, the protocol every request is decoded to; `kaeso-kpp` and `kaeso-codecs` are on crates.io |
+| [`apps/console`](apps/console)                                                               | The web console                                                                                                             |
+| [`packages/ui`](packages/ui) and [`packages/tokens`](packages/tokens)                        | The UI library and design tokens behind it, on npm, with a [showcase](https://ui.kaeso.app)                                 |
+| [`apps/docs`](apps/docs)                                                                     | The documentation at [docs.kaeso.app](https://docs.kaeso.app), in English, German and Chinese                               |
+| [`deploy/`](deploy), [`render.yaml`](render.yaml), [`.railway/`](.railway) and [`.do/`](.do) | The Compose package, the container images and the templates for Render, Railway, DigitalOcean, AWS and Google Cloud         |
+| [`plugins/`](plugins)                                                                        | The Claude Code and Cursor plugins for Kaeso's MCP server                                                                   |
 
 [Architecture](https://docs.kaeso.app/development/architecture) explains how the parts fit, and [contributing](https://docs.kaeso.app/development/contributing) how to work in them.
 

@@ -71,7 +71,7 @@ Besides **Rotate**, the menu of a key's sheet has three actions:
 
 Changing your own keys needs the right **Manage own keys**, and changing anyone's keys **Manage all keys**.
 
-A key also stops working when it expires, when its project is archived, and when its member leaves the project or the organization. Kaeso emails 7 days and 1 day before a key expires. The email goes to the key's owner, or for a service account's key to the project's admins. Anyone can turn these emails off under **Expiring keys** in their account's **Notifications**.
+A key also stops working when it expires, when its project is archived, and when its member leaves the project or the organization. Kaeso emails 7 days and 1 day before a key expires. The email goes to the key's owner, or for a service account's key to the project's admins. Anyone can turn these emails off under **Your key expires** in their account's **Notifications**.
 
 **API keys** in your [account](account.md) lists your own keys across every project, where you can disable, enable or archive them. You create new keys in a project.
 
