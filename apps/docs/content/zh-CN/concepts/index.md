@@ -27,7 +27,7 @@ order: 2
 | 别名 | 项目为其目录中的模型起的名称，例如 `fast`，其路由可以回退到其他模型（[别名路由](alias-routes.md)） |
 | 限额 | 针对项目、成员或密钥的请求速率或 Token 速率，或 Token 预算或支出预算。硬性预算会拒绝请求，软性预算只发出提醒（[限额和预算](../console/limits-and-budgets.md)） |
 | 请求日志 | 一个模型请求的记录：状态、Token、费用、耗时，以及在保留时的内容（[请求日志](../console/request-logs.md)） |
-| API 格式 | 请求及其回复的形式：OpenAI Chat Completions、Responses 或 Embeddings，Anthropic Messages，或 Gemini |
+| API 格式 | 请求及其回复的形式：OpenAI Chat Completions、Responses 或 Embeddings，Anthropic Messages，Gemini，或 OpenAI 的 Images API、ElevenLabs 的 API 等媒体 API（[各服务商的 API](provider-apis.md)） |
 | KPP | Kaeso Provider Protocol，一种统一格式：网关把每种 API 格式转换为它，再从它转换回去（[格式转换](format-translation.md)） |
 | 模型 API、Platform API | 实例的两个 API。应用在 `/v1`、`/v1beta` 和 `/v2` 上调用模型，控制台和脚本在 `/platform/v1` 上管理实例（[API](../api/index.md)） |
 | MCP 服务器、MCP 门户 | MCP 服务器提供工具，例如在 X 上发帖。每个项目都在 `/mcp/<项目 ID>` 有一个 MCP 门户，把其服务器的工具提供给 claude.ai 等客户端（[MCP 门户](mcp-portal.md)） |
@@ -36,6 +36,7 @@ order: 2
 
 - [服务商](providers.md)：了解 Kaeso 调用哪些服务商、如何使用其中一个，以及它们之间的差异。
 - [支持的服务商](supported-providers.md)：查阅每个服务商的 ID、格式和密钥。
+- [各服务商的 API](provider-apis.md)：查看每个服务商能通过哪些模型 API 调用，以及对应的模型。
 - [请求流程](request-flow.md)：跟随一个模型请求走过网关，了解它会得到哪种错误以及如何计费。
 - [别名路由](alias-routes.md)：把每个指向别名的请求送到合适的模型，并在某个模型失败时回退。
 - [格式转换](format-translation.md)：了解应用调用其他服务商的模型时，哪些内容能够保留。

@@ -1,7 +1,7 @@
 ---
 title: Fehler
 description: Was eine fehlgeschlagene Modellanfrage in jedem API-Format zurückgibt und was jeder Status bedeutet.
-order: 2
+order: 6
 ---
 
 Eine fehlgeschlagene Modellanfrage gibt einen HTTP-Status und einen Fehler im Format zurück, das Ihre App aufgerufen hat. So löst das SDK seinen gewohnten Fehler aus. Jede Antwort trägt den Header `kaeso-request-id`, und die [Anfrageprotokolle](../console/request-logs.md) führen einen Eintrag unter dieser ID. Die Fehler der Platform API stehen auf [ihrer eigenen Seite](platform-api.md#fehler).
@@ -252,6 +252,85 @@ Der Fehler-Body folgt Googles Form. Er hat kein Feld für die ID der Anfrage. Le
 | 504 | `DEADLINE_EXCEEDED` |
 
 `Retry-After` nennt die Wartezeit in ganzen Sekunden, aufgerundet. Bei 429 oder 503 mit bekannter Wartezeit steht sie auch in `details`, als `RetryInfo` mit `retryDelay`, etwa `"23s"`.
+
+## ElevenLabs-Format
+
+Derselbe Fehler mit dem offiziellen ElevenLabs SDK, das den Schlüssel in `xi-api-key` sendet:
+
+```bash tab="curl"
+curl -i "https://kaeso.example.com/v1/text-to-speech/21m00Tcm4TlvDq8ikWAM" \
+  -H "xi-api-key: $KAESO_API_KEY" \
+  -H "content-type: application/json" \
+  -d '{"text": "Write a haiku about gateways.", "model_id": "gpt-9"}'
+```
+
+```python tab="Python"
+import os
+from elevenlabs import ElevenLabs
+from elevenlabs.core.api_error import ApiError
+
+client = ElevenLabs(
+    base_url="https://kaeso.example.com",
+    api_key=os.environ["KAESO_API_KEY"],
+)
+
+try:
+    audio = client.text_to_speech.convert(
+        voice_id="21m00Tcm4TlvDq8ikWAM",
+        text="Write a haiku about gateways.",
+        model_id="gpt-9",
+    )
+    b"".join(audio)
+except ApiError as error:
+    print(error.status_code, error.body)
+```
+
+```ts tab="TypeScript"
+import { ElevenLabsClient, ElevenLabsError } from "@elevenlabs/elevenlabs-js";
+
+const client = new ElevenLabsClient({
+  baseUrl: "https://kaeso.example.com",
+  apiKey: process.env.KAESO_API_KEY,
+});
+
+try {
+  await client.textToSpeech.convert("21m00Tcm4TlvDq8ikWAM", {
+    text: "Write a haiku about gateways.",
+    modelId: "gpt-9",
+  });
+} catch (error) {
+  if (!(error instanceof ElevenLabsError)) throw error;
+  console.log(error.statusCode, error.body);
+}
+```
+
+Der Fehler-Body folgt der dokumentierten Form von ElevenLabs, mit demselben Wert in `code` und `status`. Lesen Sie die ID der Anfrage aus dem Header `kaeso-request-id`:
+
+```json
+{
+  "detail": {
+    "type": "not_found",
+    "code": "not_found",
+    "message": "The model `gpt-9` does not exist or this key may not use it.",
+    "status": "not_found",
+    "param": "model"
+  }
+}
+```
+
+| Status | `detail.type` | `detail.code` |
+| --- | --- | --- |
+| 400 | `invalid_request` | `invalid_parameters`, oder `unsupported_parameter` für ein Feld, das der Anbieter des Modells nicht nimmt |
+| 401 | `authentication_error` | `invalid_api_key` |
+| 402 | `payment_required` | `insufficient_credits` |
+| 403 | `authorization_error` | `permission_denied` |
+| 404 | `not_found` | `not_found` |
+| 413 | `invalid_request` | `request_too_large` |
+| 429 | `rate_limit_error` | `rate_limit_exceeded` |
+| 503 | `service_unavailable` | `system_busy` |
+| 500, 502, 504 | `internal_error` | `internal_error` |
+
+Einen Fehler, den ElevenLabs selbst sendet, erhält die App so, wie ElevenLabs ihn gesendet hat, mit seinem Status. `Retry-After` nennt die Wartezeit in ganzen Sekunden, aufgerundet. Ein Pfad, den Kaeso nicht bedient, etwa `/v1/dubbing`, erhält 404 in dieser Form ([ElevenLabs API](elevenlabs.md#was-kaeso-ablehnt)).
 
 ## Ursachen
 

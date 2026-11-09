@@ -181,15 +181,15 @@ console.log(response.text);
 
 在 `/v1beta` 路径中，`{model}` 可以是任何[模型名称](#模型名称)，例如 `claude-haiku-4-5`。
 
-`/v1/embeddings`、`:embedContent` 和 `:batchEmbedContents` 只服务嵌入模型，这类模型只有部分[服务商](../concepts/supported-providers.md)提供；嵌入模型也不服务其他端点。混用两者的请求，Kaeso 返回 400。
+`/v1/embeddings`、`:embedContent` 和 `:batchEmbedContents` 只服务嵌入模型，这类模型只有部分[服务商](../concepts/provider-apis.md)提供；嵌入模型也不服务其他端点。混用两者的请求，Kaeso 返回 400。
 
-`/v1` 下的其他路径返回 404，已知路径使用了错误的方法则返回 405。请求带有 `anthropic-version` 请求头时，这两种错误采用 Anthropic 格式，否则采用 OpenAI 格式。
+`/v1` 下的其他路径返回 404，已知路径使用了错误的方法则返回 405。请求带有 `anthropic-version` 请求头时，这两种错误采用 Anthropic 格式；带有 `xi-api-key` 请求头时采用 ElevenLabs 的格式；否则采用 OpenAI 格式。
 
 在 `/v1beta` 下，所有错误都采用 Gemini 格式。其他方法（例如 `batchGenerateContent`）和其他路径（例如文件或缓存内容）返回 404。已知路径使用了错误的方法则返回 405。调用只接受查询参数 `key` 和 `alt`，其他参数返回 400。`/v1` 下的 Gemini 调用（`google-genai` 设置 `api_version="v1"` 时会这样调用）返回 404，消息会指向 `/v1beta`。
 
 ### 列出模型
 
-`GET /v1/models` 同样根据 `anthropic-version` 请求头选择格式。`GET /v1beta/models` 始终采用 Gemini 格式，并把每个模型命名为 `models/<name>`。列表先列出该密钥可调用的目录模型，再列出项目中指向这些模型的别名。每个模型以其自身的 ID 列出；如果其自身的 ID 不能指向它（例如另一个服务商提供同一 ID），则以 `provider/model` 列出（[模型名称](#模型名称)）。服务商不向项目的服务商密钥提供的模型不会列出（[可用性](../console/models-and-aliases.md#可用性)）。
+`GET /v1/models` 以同样的方式选择格式：带 `anthropic-version` 请求头时采用 Anthropic 的格式，带 `xi-api-key` 请求头时采用 ElevenLabs 的格式（[ElevenLabs API](elevenlabs.md#端点)）。`GET /v1beta/models` 始终采用 Gemini 格式，并把每个模型命名为 `models/<name>`。列表先列出该密钥可调用的目录模型，再列出项目中指向这些模型的别名。每个模型以其自身的 ID 列出；如果其自身的 ID 不能指向它（例如另一个服务商提供同一 ID），则以 `provider/model` 列出（[模型名称](#模型名称)）。服务商不向项目的服务商密钥提供的模型不会列出（[可用性](../console/models-and-aliases.md#可用性)）。
 
 | | OpenAI 格式 | Anthropic 格式 | Gemini 格式 |
 | --- | --- | --- | --- |
@@ -206,9 +206,10 @@ console.log(response.text);
 Authorization: Bearer sk-kso-…
 x-api-key: sk-kso-…
 x-goog-api-key: sk-kso-…
+xi-api-key: sk-kso-…
 ```
 
-请求发送了多个时，优先使用 `x-api-key`，其次是 `x-goog-api-key`，最后是 `Authorization`。在 `/v1beta` 下，密钥也可以像 Google 的 REST 示例那样放在查询参数中，即 `?key=sk-kso-…`。只有在没有请求头携带密钥时，Kaeso 才使用它，而且查询参数中的密钥绝不会进入日志，也不会发给服务商。密钥决定所属项目。它以其成员或服务账号的权限和模型访问范围行事，该成员或服务账号需要 `api.request` 权限。
+请求发送了多个时，优先使用 `x-api-key`，其次是 `x-goog-api-key`，然后是 `xi-api-key`，最后是 `Authorization`。在 `/v1beta` 下，密钥也可以像 Google 的 REST 示例那样放在查询参数中，即 `?key=sk-kso-…`。只有在没有请求头携带密钥时，Kaeso 才使用它，而且查询参数中的密钥绝不会进入日志，也不会发给服务商。密钥决定所属项目。它以其成员或服务账号的权限和模型访问范围行事，该成员或服务账号需要 `api.request` 权限。
 
 仅具有平台访问权限的密钥和组织平台密钥（`sk-kso-org-…`），Kaeso 以 403 拒绝：它们从不调用模型。如何创建和限制密钥，见 [API 密钥](../console/api-keys.md)。
 

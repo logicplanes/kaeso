@@ -39,6 +39,8 @@ Kaeso 运行在一台装有 Docker 的 Linux 服务器上。请按需要记录�
 | 入站 | TCP 端口 80 和 443，以及用于 HTTP/3 的 UDP 端口 443 | 证书和 HTTPS |
 | 出站 | 您使用的每个服务商的主机（[支持的服务商](../concepts/supported-providers.md)），或您为其设置的基础 URL（[服务商设置](configuration.md#服务商设置)） | 您使用的服务商 |
 | 出站 | `oauth2.googleapis.com` | Gemini Enterprise Agent Platform 服务账号密钥的访问令牌 |
+| 出站 | `dashscope-*.aliyuncs.com` | QwenCloud 以链接返回的图片、`qwen3-tts-flash` 音频和 Wan 视频（[Images API](../api/images.md#服务商)） |
+| 出站 | 服务商存放已完成视频的主机（按其参考文档所示）：SpaceX 为 `vidgen.x.ai`，MiniMax 为 `video-product.cdn.minimax.io` 和阿里云 OSS 存储桶（例如 `public-cdn-video-data-algeng.oss-cn-wulanchabu.aliyuncs.com`），Z.ai 为 `aigc-files.bigmodel.cn`。ElevenLabs 没有固定主机；OpenRouter 和 Together AI 从自己的主机提供文件，Veo 和 Gemini Omni 在回复中直接返回文件 | 下载已完成的视频（[Videos API](../api/videos.md#下载视频)） |
 | 出站 | `kpmr.kaeso.app` | 来自 [KPMR](../concepts/kpmr.md) 的模型数据，大约每小时检查一次 |
 | 出站 | `update.kaeso.app` | 检查 Kaeso 新版本，每 5 分钟一次 |
 | 出站 | `acme-v02.api.letsencrypt.org`、`acme.zerossl.com` | Caddy 获取和续期证书 |

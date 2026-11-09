@@ -84,10 +84,10 @@ Beide Crates sind auf crates.io veröffentlicht. Ihr Bibliothekscode darf nur vo
 | `gemini` | Die Gemini API (`{models}/{model}:generateContent`, `:streamGenerateContent`, `:countTokens` und die Modellliste) |
 | `gemini_embeddings` | Gemini-Embeddings (`{models}/{model}:embedContent`, `:batchEmbedContents`) |
 | `openai_images` | OpenAI Images (`/v1/images/generations`, `/v1/images/edits`, `/v1/images/variations`) und die Anbieter, die eine Form davon sprechen ([OpenAI Images](openai-images.md)) |
-| `minimax_images` | Bildgenerierung von MiniMax (`/v1/image_generation`) |
+| `minimax_images` | Bildgenerierung von MiniMax (`/v1/image_generation`) ([MiniMax Images](minimax-images.md)) |
 | `openai_speech` | Speech von OpenAI (`/v1/audio/speech`) und die Anbieter, die eine Form davon sprechen ([OpenAI Speech](openai-speech.md)) |
 | `openai_transcriptions` | Transkriptionen und Übersetzungen von OpenAI und die Anbieter, die eine Form davon sprechen ([OpenAI Transcriptions](openai-transcriptions.md)) |
-| `minimax_speech` | Text to Speech von MiniMax (`/v1/t2a_v2`) |
+| `minimax_speech` | Text to Speech von MiniMax (`/v1/t2a_v2`) ([MiniMax Speech](minimax-speech.md)) |
 | `elevenlabs` | Die Endpunkte von ElevenLabs zum Erzeugen, Transkribieren, für Videos und zum Auflisten ([ElevenLabs](elevenlabs.md)) |
 | `openai_videos` | Die Videos API von OpenAI (`/v1/videos`) und die Form von Together AI ([OpenAI Videos](openai-videos.md)) |
 | `xai_videos` | Die Video-API von SpaceX ([SpaceX Videos](xai-videos.md)) |
@@ -262,5 +262,19 @@ Verändert ein Pull Request die Ausgabe über Dialekte hinweg, prüfen Sie den S
 - [OpenAI Responses](openai-responses.md): Finden Sie, wohin jedes Feld des Formats Responses in KPP gehört.
 - [OpenAI Embeddings](openai-embeddings.md): Finden Sie, wohin jedes Feld des Formats Embeddings in KPP gehört.
 - [Gemini API](gemini.md): Finden Sie, wohin jedes Feld der Gemini API in KPP gehört, Embeddings eingeschlossen.
+- [OpenAI Images](openai-images.md): Finden Sie, wohin jedes Feld der Images API von OpenAI in KPP gehört und wie jeder Anbieter es nimmt.
+- [MiniMax Images](minimax-images.md): Sehen Sie, wie Bildanfragen auf die Text-zu-Bild-API von MiniMax abgebildet werden.
+- [OpenAI Speech](openai-speech.md): Finden Sie, wohin jedes Feld der Speech API von OpenAI in KPP gehört und wie jeder Anbieter es nimmt.
+- [MiniMax Speech](minimax-speech.md): Sehen Sie, wie Sprachanfragen auf die Text-to-Speech-API von MiniMax abgebildet werden.
+- [OpenAI Transcriptions](openai-transcriptions.md): Finden Sie, wohin jedes Feld der Transkriptions- und Übersetzungs-API von OpenAI in KPP gehört.
+- [ElevenLabs](elevenlabs.md): Sehen Sie, wie die Endpunkte von ElevenLabs für Sprache, Sound, Musik, Transkription und Video auf KPP abgebildet werden.
+- [OpenAI Videos](openai-videos.md): Finden Sie, wohin jedes Feld der Videos API von OpenAI in KPP gehört.
+- [SpaceX Videos](xai-videos.md): Sehen Sie, wie Videojobs auf die Video-API Grok Imagine von SpaceX abgebildet werden.
+- [MiniMax Videos](minimax-videos.md): Sehen Sie, wie Videojobs auf die Video-APIs Hailuo und H3 von MiniMax abgebildet werden.
+- [Z.ai Videos](zai-videos.md): Sehen Sie, wie Videojobs auf die CogVideoX-API von Z.ai abgebildet werden.
+- [OpenRouter Videos](openrouter-videos.md): Sehen Sie, wie Videojobs auf die Videogenerierungs-API von OpenRouter abgebildet werden.
+- [Veo](veo.md): Sehen Sie, wie Videojobs auf Veo in Gemini Enterprise Agent Platform abgebildet werden.
+- [Gemini Interactions](gemini-interactions.md): Sehen Sie, wie Videojobs von Gemini Omni auf die Interactions API abgebildet werden.
+- [DashScope](dashscope.md): Sehen Sie, wie Bilder, Sprache, Transkriptionen und Videojobs auf die DashScope-API von QwenCloud abgebildet werden.
 - [Fixtures und Aufzeichnungen](fixtures.md): Legen Sie die echten Payloads an, gegen die die Codecs getestet werden, und zeichnen Sie neue auf.
 - [Fixture-Konventionen](fixture-conventions.md): Schlagen Sie die Regeln nach, denen jede konstruierte Fixture folgt.

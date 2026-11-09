@@ -1,7 +1,7 @@
 ---
 title: Platform API
 description: Authentifizieren, Listen durchblättern, Fehler behandeln und die Routen finden, um eine Installation über HTTP zu verwalten.
-order: 3
+order: 7
 ---
 
 Die Platform API verwaltet alles, was die Konsole zeigt: Organisationen, Projekte, Mitglieder, Schlüssel, Anbieter-Schlüssel, Modelle, Limits, Nutzung und Protokolle. Sie liegt unter `/platform/v1` auf der Domain Ihrer Installation, und die Konsole nutzt nichts anderes.

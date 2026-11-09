@@ -1,7 +1,7 @@
 ---
 title: MCP portal API
 description: Call a project's tools over MCP, and look up the portal's sign-in, versions and errors.
-order: 6
+order: 10
 ---
 
 Each project's MCP portal answers at `/mcp/<project id>` on your install's domain. Any MCP client calls it with an API key that has the **Tools** ability, or signs in as a person with OAuth. These examples list the project's tools with the key in `KAESO_API_KEY` and the project's id in `KAESO_PROJECT`:

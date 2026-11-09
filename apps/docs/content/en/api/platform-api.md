@@ -1,7 +1,7 @@
 ---
 title: Platform API
 description: Authenticate, page through lists, handle errors and find the routes to manage an install over HTTP.
-order: 3
+order: 7
 ---
 
 The Platform API manages everything the console shows: organizations, projects, members, keys, provider keys, models, limits, usage and logs. It lives under `/platform/v1` on your install's domain, and the console uses nothing else.

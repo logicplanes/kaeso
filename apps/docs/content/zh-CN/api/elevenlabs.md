@@ -1,7 +1,7 @@
 ---
 title: ElevenLabs API
 description: 通过 Kaeso 使用 ElevenLabs 官方 SDK 调用 ElevenLabs 的语音、音效、音乐和转写。
-order: 2
+order: 5
 ---
 
 使用官方 `elevenlabs` SDK 构建的应用可以通过 Kaeso 调用 ElevenLabs：把 Kaeso 设为基础 URL，把 Kaeso 密钥设为 API 密钥。Kaeso 提供 ElevenLabs 的生成和列表端点，带有密钥、限额、日志和费用，并把每个请求发送给模型所属的服务商，因此 ElevenLabs 应用也能调用其他服务商的语音和转写模型。

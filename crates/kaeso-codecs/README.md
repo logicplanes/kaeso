@@ -1,17 +1,28 @@
 # kaeso-codecs
 
-Sans-IO codecs between [KPP](https://crates.io/crates/kaeso-kpp) and the wire formats Kaeso speaks, each in both directions (app ingress and provider egress):
+Sans-IO codecs between [KPP](https://crates.io/crates/kaeso-kpp) and the wire formats Kaeso speaks with apps and providers, one per dialect (`DialectId`):
 
-| Dialect | Requests and responses | SSE streams | Token counting | Errors and model listings |
-| --- | --- | --- | --- | --- |
-| Anthropic Messages | yes | yes | yes | yes |
-| OpenAI Chat Completions | yes | yes | no | yes |
-| OpenAI Responses | yes | yes | yes | yes |
-| OpenAI Embeddings | yes | no | no | yes |
-| Gemini API | yes | yes | yes | yes |
-| Gemini Embeddings | yes | no | no | yes |
+| Dialect | Carries |
+| --- | --- |
+| Anthropic Messages | Generation, streams, token counts |
+| OpenAI Chat Completions | Generation, streams |
+| OpenAI Responses | Generation, streams, token counts |
+| OpenAI Embeddings | Embeddings |
+| Gemini API | Generation, streams, token counts, and image, speech and transcription requests to Gemini models |
+| Gemini Embeddings | Embeddings |
+| OpenAI Images | Image generations and edits, streamed partial images |
+| MiniMax Images | Image generations |
+| OpenAI Speech | Speech, as audio or as events |
+| OpenAI Transcriptions | Transcriptions and translations, streamed transcripts |
+| MiniMax Speech | Speech |
+| ElevenLabs | Speech, dialogue, sound effects, music, the voice changer, speech to text and video jobs |
+| OpenAI Videos | Video jobs, in OpenAI's and Together AI's form |
+| SpaceX Videos, MiniMax Videos, Z.ai Videos, OpenRouter Videos | Video jobs |
+| Veo | Video jobs on Gemini Enterprise Agent Platform |
+| Gemini Interactions | Gemini Omni video jobs |
+| DashScope | QwenCloud's images, speech, transcriptions and video jobs |
 
-What a dialect cannot do is refused with an `Unsupported` error.
+Every dialect also reads and writes its own errors, and the chat and embeddings dialects their model listings. What a dialect cannot do is refused with an `Unsupported` error.
 
 ```toml
 [dependencies]

@@ -27,7 +27,7 @@ These pages explain how Kaeso works, so you know what to expect before you rely 
 | Alias | A project's own name for a model in its catalogue, such as `fast`, with a route that can fall back to other models ([alias routes](alias-routes.md)) |
 | Limit | A request or token rate, or a token or spend budget, for a project, a member or a key. A hard budget refuses requests, and a soft one only alerts ([limits and budgets](../console/limits-and-budgets.md)) |
 | Request log | The record of one model request: status, tokens, cost, timing and, where kept, its content ([request logs](../console/request-logs.md)) |
-| API format | The shape of a request and its reply: OpenAI Chat Completions, Responses or Embeddings, Anthropic Messages, or Gemini |
+| API format | The shape of a request and its reply: OpenAI Chat Completions, Responses or Embeddings, Anthropic Messages, Gemini, or a media API such as OpenAI's Images API or ElevenLabs' ([APIs by provider](provider-apis.md)) |
 | KPP | The Kaeso Provider Protocol, the one format the gateway translates every API format into and out of ([format translation](format-translation.md)) |
 | Model API, Platform API | The two APIs of an install. Apps call models on `/v1`, `/v1beta` and `/v2`, and the console and scripts manage the install on `/platform/v1` ([API](../api/index.md)) |
 | MCP server, MCP portal | An MCP server offers tools, such as posting to X. Every project has an MCP portal at `/mcp/<project id>` that offers its servers' tools to clients such as claude.ai ([MCP portal](mcp-portal.md)) |
@@ -36,6 +36,7 @@ These pages explain how Kaeso works, so you know what to expect before you rely 
 
 - [Providers](providers.md): See which providers Kaeso calls, how to use one and what differs between them.
 - [Supported providers](supported-providers.md): Look up every provider's id, formats and keys.
+- [APIs by provider](provider-apis.md): See which model APIs reach each provider, with its models.
 - [Request flow](request-flow.md): Follow a model request through the gateway, and learn which error it gets and what it is charged.
 - [Alias routes](alias-routes.md): Send each request that names an alias to the right model, and fall back when one fails.
 - [Format translation](format-translation.md): See what carries across when an app calls another provider's model.

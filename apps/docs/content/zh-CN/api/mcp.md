@@ -1,7 +1,7 @@
 ---
 title: MCP 服务器
 description: 将编程智能体连接到实例，决定它们能做什么，并查阅 MCP 服务器的工具和登录方式。
-order: 5
+order: 9
 ---
 
 通过 MCP 服务器，Claude Code 或 Codex 等智能体可以借助 Platform API 为您管理实例。智能体通过您的浏览器登录，由您决定它能做什么。服务器位于实例域名下的 `/mcp`。

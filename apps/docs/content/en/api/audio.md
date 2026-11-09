@@ -1,7 +1,7 @@
 ---
 title: Audio API
 description: Make speech and transcribe or translate audio through Kaeso with OpenAI's audio API, on every provider that offers it.
-order: 2
+order: 3
 ---
 
 Apps make speech and transcribe audio through Kaeso with OpenAI's audio API and the official OpenAI SDKs. Kaeso sends each request to the model's provider in that provider's own form, and the reply comes back in OpenAI's: the audio itself, `speech.audio.*` events, or a transcript in the form the app asked for.
@@ -68,7 +68,7 @@ Keys, model resolution with aliases and routes, limits and budgets, request logs
 - **Every form.** When the provider lacks the app's form, Kaeso asks it for timed segments and writes the subtitles or the segments itself: `srt` and `vtt` from `verbose_json` on Groq, from Mistral's segments, from Gemini's and SpaceX's timed words, and from ElevenLabs' words. A form no provider timing can make, such as `diarized_json` without speakers, is refused.
 - **Links.** An app's upload goes as an upload. A link an app sends in `url` or `file_url`, or an ElevenLabs app in `source_url`, goes as a link to the providers that take one (`url` at Groq and SpaceX, `file` at Together AI, `file_url` at Mistral, `source_url` at OpenRouter and ElevenLabs); OpenAI takes none.
 - **Streaming.** OpenAI, Mistral, Z.ai and MiniMax stream their transcripts; Kaeso writes them as `transcript.text.delta` and `transcript.text.done`. Other providers answer whole, and the app gets one delta and the end.
-- **Translations** go only to providers with a translations endpoint: OpenAI and Groq.
+- **Translations** go only to providers with a translations endpoint: OpenAI, Groq and Together AI.
 - **QwenCloud's** file transcription models (`*-filetrans`) answer only asynchronous tasks, and its streaming and real-time models only WebSocket connections, so they are refused.
 
 ## Providers

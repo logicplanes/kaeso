@@ -6,9 +6,9 @@ order: 8
 
 Schlagen Sie hier jedes Feld der Images API von OpenAI nach: wohin es in KPP gehört, welche Anbieter es in welcher Form nehmen und woher jede Abbildung stammt. Prüfen Sie es, bevor Sie ändern, wie ein Bild-Codec ein Feld liest oder schreibt.
 
-- **Codecs:** `kaeso_codecs::openai_images::OpenAiImages` (`crates/kaeso-codecs/src/openai_images/`), `kaeso_codecs::minimax_images::MinimaxImages` (`crates/kaeso-codecs/src/minimax_images/`) und Bildanfragen im Gemini-Codec (`crates/kaeso-codecs/src/gemini/images.rs`)
+- **Codecs:** `kaeso_codecs::openai_images::OpenAiImages` (`crates/kaeso-codecs/src/openai_images/`) und Bildanfragen im Gemini-Codec (`crates/kaeso-codecs/src/gemini/images.rs`); das eigene Format von MiniMax hat [seine Seite](minimax-images.md)
 - **Endpunkte:** `POST /v1/images/generations`, `POST /v1/images/edits` (JSON oder `multipart/form-data`) und `POST /v1/images/variations`
-- **Fixtures:** `crates/kaeso-codecs/fixtures/openai_images/` und `fixtures/minimax_images/`, alle aus der Spezifikation und der Dokumentation der Anbieter gebaut, keine aufgezeichnet
+- **Fixtures:** `crates/kaeso-codecs/fixtures/openai_images/`, alle aus der Spezifikation und der Dokumentation der Anbieter gebaut, keine aufgezeichnet
 
 **Quellen.** Die OpenAPI-Spezifikation von OpenAI im Commit `926a7b8133226630bac025350e84b0ca5c31d45a` (2026-11-07): `CreateImageRequest`, `CreateImageEditRequest`, `EditImageBodyJsonParam`, `ImageRefParam`, `CreateImageVariationRequest`, `ImagesResponse`, `Image`, `ImageGenUsage`, `ImagesUsage`, `ImageGenPartialImageEvent`, `ImageGenCompletedEvent` und ihre Gegenstücke `image_edit.*`. Die Bildschemata haben sich nach dem Commit geändert, den die anderen OpenAI-Codecs festhalten (`e95c0fe`), deshalb hält dieser Dialekt den neueren fest. RFC 7578 für `multipart/form-data`. Die Seiten der Anbieter stehen unter [Anbieter und ihre Formen](#anbieter-und-ihre-formen).
 
@@ -121,15 +121,4 @@ Die Bildteile der Antwort werden die Bilder, und `usageMetadata.candidatesTokens
 
 ## MiniMax Images
 
-`minimax_images` liest und schreibt `POST /v1/image_generation`, bedient von der Wurzel des Hosts von MiniMax ([MiniMax text to image](https://platform.minimax.io/docs/api-reference/image-generation-t2i)).
-
-| KPP | MiniMax | Hinweise |
-|---|---|---|
-| `prompt`, `model`, `seed`, `count` | `prompt`, `model`, `seed`, `n` | `n` höchstens 9. |
-| `size` `WIDTHxHEIGHT` | `width`, `height` | MiniMax prüft seinen Bereich (512 bis 2.048, durch 8 teilbar). |
-| `aspect_ratio` | `aspect_ratio` | |
-| `delivery` | `response_format` `url`, `base64` | |
-| `prompt_optimizer`, unbekannte Schlüssel | Extras | |
-| Bearbeitungen, Variationen, `quality`, `output_format`, `output_compression`, `background`, `resolution`, `negative_prompt` | `Unsupported` | Die Image-to-Image-API von MiniMax nimmt eine Figurenreferenz, und das ist keine Bearbeitung. |
-
-`data.image_urls` der Antwort werden Links und `data.image_base64` Bytes, deren Medientyp aus ihren ersten Bytes gelesen wird, weil MiniMax das Format nicht nennt. MiniMax antwortet mit HTTP 200 und meldet Fehler in `base_resp`: `1002` und `1039` sind `RateLimited`, `1004` und `2049` `Authentication`, `1008` `Billing`, `1026` und `1027` `ContentFiltered`, `2013` `InvalidRequest`, andere `ProviderError`. Der Endpunkt streamt nicht.
+`minimax_images` ist das eigene Format von MiniMax, `POST /v1/image_generation`. [MiniMax Images](minimax-images.md) bildet seine Felder, Ablehnungen und Fehler ab.

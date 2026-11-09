@@ -27,7 +27,7 @@ Diese Seiten erklären, wie Kaeso arbeitet, damit Sie wissen, was Sie erwartet, 
 | Alias | Ein eigener Name eines Projekts für ein Modell seines Katalogs, etwa `fast`, mit einer Route, die auf andere Modelle ausweichen kann ([Alias-Routen](alias-routes.md)) |
 | Limit | Eine Anfrage- oder Token-Rate oder ein Token- oder Ausgabenbudget, für ein Projekt, ein Mitglied oder einen Schlüssel. Ein hartes Budget lehnt Anfragen ab, ein weiches warnt nur ([Limits und Budgets](../console/limits-and-budgets.md)) |
 | Anfrageprotokoll | Der Eintrag zu einer Modellanfrage: Status, Token, Kosten, Zeiten und, wo aufbewahrt, ihr Inhalt ([Anfrageprotokolle](../console/request-logs.md)) |
-| API-Format | Die Form einer Anfrage und ihrer Antwort: OpenAI Chat Completions, Responses oder Embeddings, Anthropic Messages oder Gemini |
+| API-Format | Die Form einer Anfrage und ihrer Antwort: OpenAI Chat Completions, Responses oder Embeddings, Anthropic Messages, Gemini oder eine Medien-API wie die Images API von OpenAI oder die von ElevenLabs ([APIs nach Anbieter](provider-apis.md)) |
 | KPP | Das Kaeso Provider Protocol, das eine Format, in das und aus dem das Gateway jedes API-Format übersetzt ([Formatübersetzung](format-translation.md)) |
 | Modell-API, Platform API | Die beiden APIs einer Installation. Apps rufen Modelle über `/v1`, `/v1beta` und `/v2` auf, Konsole und Skripte verwalten die Installation über `/platform/v1` ([API](../api/index.md)) |
 | MCP-Server, MCP-Portal | Ein MCP-Server bietet Tools an, etwa das Posten auf X. Jedes Projekt hat unter `/mcp/<Projekt-ID>` ein MCP-Portal, das die Tools seiner Server Clients wie claude.ai anbietet ([MCP-Portal](mcp-portal.md)) |
@@ -36,6 +36,7 @@ Diese Seiten erklären, wie Kaeso arbeitet, damit Sie wissen, was Sie erwartet, 
 
 - [Anbieter](providers.md): Sehen Sie, welche Anbieter Kaeso aufruft, wie Sie einen nutzen und worin sie sich unterscheiden.
 - [Unterstützte Anbieter](supported-providers.md): Schlagen Sie ID, Formate und Schlüssel jedes Anbieters nach.
+- [APIs nach Anbieter](provider-apis.md): Sehen Sie, welche Modell-APIs jeden Anbieter erreichen, mit seinen Modellen.
 - [Ablauf einer Anfrage](request-flow.md): Verfolgen Sie eine Modellanfrage durch das Gateway, und erfahren Sie, welchen Fehler sie erhält und was sie kostet.
 - [Alias-Routen](alias-routes.md): Leiten Sie jede Anfrage an einen Alias zum passenden Modell, und weichen Sie aus, wenn eines ausfällt.
 - [Formatübersetzung](format-translation.md): Sehen Sie, was erhalten bleibt, wenn eine App das Modell eines anderen Anbieters aufruft.

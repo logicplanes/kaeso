@@ -1,7 +1,7 @@
 ---
 title: MCP-Server
 description: Coding-Agenten mit Ihrer Installation verbinden, festlegen, was sie dürfen, und Tools und Anmeldung des MCP-Servers nachschlagen.
-order: 5
+order: 9
 ---
 
 Über den MCP-Server verwaltet ein Agent wie Claude Code oder Codex Ihre Installation mit der Platform API. Der Agent meldet sich über Ihren Browser an, und Sie legen fest, was er darf. Der Server antwortet unter `/mcp` auf der Domain Ihrer Installation.

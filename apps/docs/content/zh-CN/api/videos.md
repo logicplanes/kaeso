@@ -1,7 +1,7 @@
 ---
 title: 视频 API
 description: 通过 Kaeso 使用 OpenAI 的 Videos API 生成视频，适用于每个提供视频生成的服务商。
-order: 2
+order: 4
 ---
 
 应用通过 Kaeso 使用 OpenAI 的 Videos API 和 OpenAI 官方 SDK 生成视频。Kaeso 以模型所属服务商自己的格式在该服务商处启动任务，用自己的 ID 跟踪它，并以 OpenAI 的格式回答。

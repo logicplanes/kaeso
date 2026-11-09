@@ -6,9 +6,9 @@ order: 8
 
 Look up any field of OpenAI's speech API here: where it goes in KPP, which providers take it in which form, and the source of each mapping. Check it before you change how a speech codec reads or writes a field.
 
-- **Codecs:** `kaeso_codecs::openai_speech::OpenAiSpeech` (`crates/kaeso-codecs/src/openai_speech/`), `kaeso_codecs::minimax_speech::MinimaxSpeech` (`crates/kaeso-codecs/src/minimax_speech/`), and speech requests in the Gemini codec (`crates/kaeso-codecs/src/gemini/audio.rs`)
+- **Codecs:** `kaeso_codecs::openai_speech::OpenAiSpeech` (`crates/kaeso-codecs/src/openai_speech/`) and speech requests in the Gemini codec (`crates/kaeso-codecs/src/gemini/audio.rs`); MiniMax's own format has [its page](minimax-speech.md)
 - **Endpoint:** `POST /v1/audio/speech`
-- **Fixtures:** `crates/kaeso-codecs/fixtures/openai_speech/` and `fixtures/minimax_speech/`, built from the specification and the providers' documentation; `fixtures/gemini/` holds recorded Gemini speech
+- **Fixtures:** `crates/kaeso-codecs/fixtures/openai_speech/`, built from the specification and the providers' documentation; `fixtures/gemini/` holds recorded Gemini speech
 
 **Sources.** The OpenAI OpenAPI spec at commit `926a7b8133226630bac025350e84b0ca5c31d45a` (2026-11-07): `CreateSpeechRequest`, `CreateSpeechResponseStreamEvent`, `SpeechAudioDeltaEvent`, `SpeechAudioDoneEvent`. The provider pages are named in [providers](#providers-and-their-forms).
 
@@ -77,4 +77,4 @@ A speech request becomes a `generateContent` call (`gemini/audio.rs`) with the t
 
 ## MiniMax speech
 
-`minimax_speech` reads and writes `POST /v1/t2a_v2` ([T2A](https://platform.minimax.io/docs/api-reference/speech-t2a-http)), served from the root of MiniMax's host with `Authorization: Bearer`. The text is `text`; the voice is `voice_setting.voice_id`, and `speed` is `voice_setting.speed`; the format, sample rate and bit rate are `audio_setting.format`, `sample_rate` and `bitrate` (bits per second; KPP counts kilobits). KPP's `pcm16` is 24 kHz, so `pcm` goes with `sample_rate: 24000`. Kaeso asks for the whole reply with `output_format: hex`: MiniMax's stream framing isn't documented. The hex audio becomes base64, `extra_info.audio_format` names its media type and `extra_info.usage_characters` the characters billed (`SpeechResponse::characters`). A failing `base_resp`, which MiniMax sends with HTTP 200, is an error mapped by its code. `instructions`, `language`, `seed`, timestamps and other operations are `Unsupported`.
+`minimax_speech` is MiniMax's own format, `POST /v1/t2a_v2`. [MiniMax Speech](minimax-speech.md) maps its fields, refusals and errors.
