@@ -41,8 +41,14 @@ pub(super) fn decode(status: u16, headers: &HeaderList, body: &[u8]) -> KppError
         Some(d @ Value::Object(_)) => {
             let ty = text(d, "type");
             let code = text(d, "code").or_else(|| text(d, "status"));
-            let message = text(d, "message")
-                .unwrap_or_else(|| format!("ElevenLabs returned HTTP {status} without a message."));
+            let message = match code.as_deref() {
+                // The image and video guide: ByteDance models are off until ElevenLabs grants
+                // access, and requests for them fail with `model_access_denied` until then.
+                Some("model_access_denied") => "ElevenLabs hasn't enabled this model for the account; ByteDance's Seedream and Seedance models need ElevenLabs support to turn them on.".to_owned(),
+                _ => text(d, "message").unwrap_or_else(|| {
+                    format!("ElevenLabs returned HTTP {status} without a message.")
+                }),
+            };
             let mut err = KppError::new(kind_of(status, ty.as_deref(), code.as_deref()), message);
             if let Some(p) = text(d, "param") {
                 err = err.with_param(p);

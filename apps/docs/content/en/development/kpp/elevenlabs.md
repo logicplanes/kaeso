@@ -79,7 +79,7 @@ ElevenLabs makes images with OpenAI's, Google's and ByteDance's models through `
 | reply `content_url`, `content_mime_type` | the image as a link, valid for about an hour, which Kaeso downloads for an app that asks for `b64_json` |
 | reply `failure_reason`, `error_message` | the error: `moderated` as content filtered, `invalid_parameters` as an invalid request, `timeout`, `charging_failed` as billing, others as a provider error |
 
-`n` above 1, image links, `output_format`, `output_compression`, `negative_prompt`, partial images and variations are refused before sending. ElevenLabs bills generations in credits, which KPMR doesn't list, so their cost stays unknown.
+`n` above 1, image links, `output_format`, `output_compression`, `negative_prompt`, partial images and variations are refused before sending. ElevenLabs bills generations in credits, which KPMR doesn't list, so their cost stays unknown. ByteDance's models are off on an ElevenLabs account until ElevenLabs grants access; its `model_access_denied` refusal reaches the app with that explanation.
 
 ## Video generations
 

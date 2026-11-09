@@ -79,7 +79,7 @@ ElevenLabs 通过 `POST /v1/flows/image` 使用 OpenAI、Google 和字节跳动�
 | 回复 `content_url`、`content_mime_type` | 图片链接，约一小时内有效；应用要求 `b64_json` 时由 Kaeso 下载 |
 | 回复 `failure_reason`、`error_message` | 错误：`moderated` 为内容过滤，`invalid_parameters` 为无效请求，`timeout`，`charging_failed` 为计费，其他为服务商错误 |
 
-`n` 大于 1、图片链接、`output_format`、`output_compression`、`negative_prompt`、部分图片和变体会在发送前被拒绝。ElevenLabs 以积分计费，KPMR 未列出，因此其费用保持未知。
+`n` 大于 1、图片链接、`output_format`、`output_compression`、`negative_prompt`、部分图片和变体会在发送前被拒绝。ElevenLabs 以积分计费，KPMR 未列出，因此其费用保持未知。字节跳动的模型在 ElevenLabs 账户中默认关闭，直到 ElevenLabs 开通访问；其 `model_access_denied` 拒绝会连同这一说明返回给应用。
 
 ## 视频生成
 

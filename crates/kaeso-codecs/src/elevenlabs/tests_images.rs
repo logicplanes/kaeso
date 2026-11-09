@@ -233,3 +233,11 @@ fn a_generation_is_polled_until_it_ends_with_a_link_or_a_failure() {
         .is_err()
     );
 }
+
+#[test]
+fn an_account_without_bytedance_models_is_told_how_to_get_them() {
+    let body = br#"{"detail":{"type":"authorization_error","code":"model_access_denied","message":"Access denied.","status":"model_access_denied"}}"#;
+    let e = ElevenLabs::decode_error(403, &HeaderList::new(), body);
+    assert_eq!(e.status, Some(403));
+    assert!(e.message.contains("ElevenLabs support"), "{}", e.message);
+}
