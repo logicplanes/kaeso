@@ -720,6 +720,21 @@ async fn a_request_refused_before_the_provider_costs_nothing() {
 }
 
 #[tokio::test]
+async fn a_request_refused_before_its_model_is_known_logs_no_media() {
+    let env = env().await;
+    let r = speak(
+        &env,
+        json!({"model": "no-such-tts", "voice": "alloy", "input": "Hello there."}),
+    )
+    .await;
+    assert!(r.status.is_client_error(), "{}", r.text());
+    let o = outcome(&env).await;
+    assert_eq!(o.model_id, None);
+    assert_eq!(o.media, None, "{:?}", o.media);
+    assert_eq!(kaeso_server::services::usage::media_sums(&o).characters, 0);
+}
+
+#[tokio::test]
 async fn voice_listings_count_against_the_keys_request_rate() {
     let env = env().await;
     let org = &env.owner.org_id;

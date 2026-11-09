@@ -186,6 +186,15 @@ const MS_PER_MINUTE: Decimal = Decimal::from_parts(60_000, 0, 0, false, 0);
 const MS_PER_HOUR: Decimal = Decimal::from_parts(3_600_000, 0, 0, false, 0);
 
 impl MediaUnits {
+    fn measured(&self) -> bool {
+        self.input_images > 0
+            || self.output_images > 0
+            || self.characters > 0
+            || self.input_ms > 0
+            || self.output_ms > 0
+            || self.output_videos > 0
+    }
+
     fn count(&self, per: &str, of: &str) -> Option<Decimal> {
         let ms = match of {
             "input" => self.input_ms,
@@ -338,26 +347,73 @@ pub fn media_cost(units: &MediaUnits, prices: &Fields) -> Decimal {
 }
 
 /// Whether a request's cost is known: its model has a price for everything it measured. A
-/// request that measured nothing costs a known 0; one that measured units or tokens its model
-/// has no price for, such as a Veo clip or the minutes a voice changer heard, has an unknown
-/// cost, which is not 0.
+/// request that measured nothing costs a known 0, and so does one whose prices are set to 0,
+/// as a free model's are. One that measured tokens or units its model has no price for, such
+/// as a Veo clip or the minutes a voice changer heard, has an unknown cost, which is not 0.
 pub fn is_priced(usage: &Usage, prices: Option<&Fields>, media: Option<&MediaUnits>) -> bool {
-    let measured_tokens = usage.input_tokens > 0 || usage.output_tokens > 0;
-    let measured_media = media.is_some_and(|m| {
-        m.input_images > 0
-            || m.output_images > 0
-            || m.characters > 0
-            || m.input_ms > 0
-            || m.output_ms > 0
-            || m.output_videos > 0
-    });
+    let measured_tokens = usage.input_tokens > 0
+        || usage.output_tokens > 0
+        || usage.cache_read_tokens > 0
+        || usage.cache_write_tokens > 0;
+    let measured_media = media.is_some_and(MediaUnits::measured);
     if !measured_tokens && !measured_media {
         return true;
     }
     let Some(prices) = prices else {
         return false;
     };
-    cost_with_media(usage, prices, media) > Decimal::ZERO
+    let tokens = !measured_tokens || tokens_priced(usage, prices);
+    let media = match media.filter(|m| m.measured()) {
+        // A provider bills a media request by one kind of unit, such as the minutes of a sound
+        // effect, not also by the characters of its prompt; a token-billed model reports tokens.
+        Some(units) => units_priced(units, prices) || (measured_tokens && tokens),
+        None => true,
+    };
+    tokens && media
+}
+
+// Every kind of token the request used has the price `cost` bills it at, with the same
+// fallbacks: image and audio tokens at the input or output price, cache tokens at the input
+// price when the model lists no cache price.
+fn tokens_priced(usage: &Usage, prices: &Fields) -> bool {
+    let p = prices_for_prompt(prices, usage.total_input_tokens());
+    let input = p.input_price.is_some()
+        || (usage
+            .input_image_tokens
+            .is_some_and(|t| t >= usage.input_tokens)
+            && p.input_image_price.is_some())
+        || (usage
+            .input_audio_tokens
+            .is_some_and(|t| t >= usage.input_tokens)
+            && p.input_audio_price.is_some());
+    let output = p.output_price.is_some()
+        || (usage
+            .output_image_tokens
+            .is_some_and(|t| t >= usage.output_tokens)
+            && p.output_image_price.is_some())
+        || (usage
+            .output_audio_tokens
+            .is_some_and(|t| t >= usage.output_tokens)
+            && p.output_audio_price.is_some());
+    (usage.input_tokens == 0 || input)
+        && (usage.output_tokens == 0 || output)
+        && (usage.cache_read_tokens == 0 || p.cache_read_price.is_some() || p.input_price.is_some())
+        && (usage.cache_write_tokens == 0
+            || p.cache_write_price.is_some()
+            || p.input_price.is_some())
+}
+
+// One of the units the request measured has a price, its conditions matching.
+fn units_priced(units: &MediaUnits, prices: &Fields) -> bool {
+    let Some(list) = prices.unit_prices.as_deref() else {
+        return false;
+    };
+    crate::catalogue::UNITS.iter().any(|per| {
+        ["input", "output"].into_iter().any(|of| {
+            units.count(per, of).is_some_and(|n| n > Decimal::ZERO)
+                && unit_price(list, units, per, of).is_some()
+        })
+    })
 }
 
 /// The cost of a request: its tokens, and its media units when it has any.
@@ -951,5 +1007,94 @@ mod tests {
             Some(&Fields::default()),
             None
         ));
+    }
+
+    #[test]
+    fn a_price_of_zero_is_a_known_cost_of_zero() {
+        let free = Fields {
+            input_price: Some(dec!(0)),
+            output_price: Some(dec!(0)),
+            ..Fields::default()
+        };
+        let mut usage = Usage::new(1200, 300);
+        usage.cache_read_tokens = 400;
+        assert!(
+            is_priced(&usage, Some(&free), None),
+            "a free model's cost is known"
+        );
+        assert_eq!(cost_with_media(&usage, &free, None), Decimal::ZERO);
+
+        let no_output = Fields {
+            input_price: Some(dec!(3)),
+            ..Fields::default()
+        };
+        assert!(
+            !is_priced(&usage, Some(&no_output), None),
+            "output with no output price"
+        );
+        assert!(is_priced(&Usage::new(10, 0), Some(&no_output), None));
+
+        let mut images_only = Usage::new(500, 0);
+        images_only.input_image_tokens = Some(500);
+        let image_price = Fields {
+            input_image_price: Some(dec!(0)),
+            ..Fields::default()
+        };
+        assert!(is_priced(&images_only, Some(&image_price), None));
+        assert!(!is_priced(&Usage::new(500, 0), Some(&image_price), None));
+    }
+
+    #[test]
+    fn media_is_priced_by_a_unit_price_that_matches_it() {
+        let none = Usage::default();
+        let per_image = |quality: &str, usd| Fields {
+            unit_prices: Some(vec![UnitPrice {
+                quality: Some(quality.into()),
+                ..unit("image", "output", usd)
+            }]),
+            ..Fields::default()
+        };
+        let image = MediaUnits {
+            output_images: 1,
+            quality: Some("high".into()),
+            ..MediaUnits::default()
+        };
+        assert!(is_priced(
+            &none,
+            Some(&per_image("high", dec!(0))),
+            Some(&image)
+        ));
+        assert!(!is_priced(
+            &none,
+            Some(&per_image("low", dec!(0.01))),
+            Some(&image)
+        ));
+        let sound = MediaUnits {
+            characters: 20,
+            output_ms: 5000,
+            ..MediaUnits::default()
+        };
+        let per_minute = Fields {
+            unit_prices: Some(vec![unit("minute", "output", dec!(0.12))]),
+            ..Fields::default()
+        };
+        assert!(
+            is_priced(&none, Some(&per_minute), Some(&sound)),
+            "a sound effect is billed by its length, not its prompt's characters"
+        );
+        let tokens = Fields {
+            input_price: Some(dec!(2.5)),
+            output_price: Some(dec!(10)),
+            ..Fields::default()
+        };
+        let heard = MediaUnits {
+            input_ms: 3000,
+            ..MediaUnits::default()
+        };
+        assert!(
+            is_priced(&Usage::new(40, 8), Some(&tokens), Some(&heard)),
+            "billed in tokens"
+        );
+        assert!(!is_priced(&none, Some(&tokens), Some(&heard)));
     }
 }
