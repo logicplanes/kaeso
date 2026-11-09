@@ -1,4 +1,6 @@
-import { Badge, Banner, JsonView, Link, Tag, Separator, Text, Thumbnail, type ContentBlock, type ConversationMessage } from "@logicplanes/kaeso-ui";
+import { Badge, Banner, JsonView, Link, Tag, Separator, Text, Thumbnail, type ConversationMessage } from "@logicplanes/kaeso-ui";
+import { leftOutLabel } from "./left-out";
+import type { LogBlock, LogMessage } from "./render";
 import { t } from "~/i18n";
 import { tRich } from "~/i18n/rich";
 import { Markdown, safeHref } from "@logicplanes/kaeso-ui/markdown";
@@ -24,7 +26,8 @@ const isJson = (s: string) => {
   }
 };
 
-const DATA_IMAGE = /^data:image\/[a-z0-9.+-]+;/i;
+// Only bitmap formats a browser draws without running anything: an SVG is a document, so a logged one is never drawn.
+const DATA_IMAGE = /^data:image\/(png|jpeg|gif|webp|avif);base64,/i;
 
 function webHref(src: string): string | null {
   const href = safeHref(src);
@@ -62,7 +65,7 @@ function VideoInput({ src, mediaType }: { src: string | undefined; mediaType: st
   );
 }
 
-function Blocks({ blocks }: { blocks: ContentBlock[] }) {
+function Blocks({ blocks }: { blocks: LogBlock[] }) {
   return (
     <div className="flex min-w-0 flex-col gap-12">
       {blocks.map((b, i) => {
@@ -159,6 +162,12 @@ function Blocks({ blocks }: { blocks: ContentBlock[] }) {
             );
           case "video":
             return <VideoInput key={i} src={b.src} mediaType={b.media_type} />;
+          case "left_out":
+            return (
+              <Text key={i} variant="small" tone="secondary" className="mx-12">
+                {leftOutLabel(b.media, b.name)}
+              </Text>
+            );
           case "refusal":
             return (
               <Banner key={i} tone="warning" title={t("logs.conversation.refused", "The model refused.")}>
@@ -171,7 +180,7 @@ function Blocks({ blocks }: { blocks: ContentBlock[] }) {
   );
 }
 
-export default function Conversation({ messages }: { messages: ConversationMessage[] }) {
+export default function Conversation({ messages }: { messages: LogMessage[] }) {
   return (
     <div className="flex flex-col gap-24">
       {messages.map((m, i) => {

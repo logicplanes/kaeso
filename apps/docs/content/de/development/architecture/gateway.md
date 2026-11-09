@@ -140,7 +140,7 @@ Ein Videojob überdauert die Anfrage, die ihn startet, deshalb hält die Tabelle
 
 ## Protokollierte Antworten
 
-Bei eingeschalteter Inhaltsprotokollierung speichert das Gateway jede Antwort als serde-JSON von `kaeso_kpp::Response` in der Spalte `reply` von `request_content` in ClickHouse. Der Log-Inspektor der Konsole zeichnet sie so, wie sie gespeichert ist. Eine Organisation darf Inhalte bis zu 36.500 Tage aufbewahren, also muss jede spätere Konsole eine heute protokollierte Antwort noch lesen können.
+Bei eingeschalteter Inhaltsprotokollierung speichert das Gateway jede Antwort als serde-JSON von `kaeso_kpp::Response` in der Spalte `reply` von `request_content` in ClickHouse. Der Log-Inspektor der Konsole zeichnet sie so, wie sie gespeichert ist. Eine Organisation darf Inhalte bis zu 36.500 Tage aufbewahren, also muss jede spätere Konsole eine heute protokollierte Antwort noch lesen können. Medien in einer protokollierten Anfrage oder Antwort werden als `{"kaeso_media": {"media_type", "bytes", "reason"}}` anstelle ihres Base64-Texts gespeichert, bei einem Bild mit `width` und `height`.
 
 - **Die erste Form hat kein Versionsfeld.** Snapshots in `crates/kaeso-server/src/services/snapshots/` halten sie für repräsentative Antworten fest, und `logged_replies_keep_the_v0_1_form` schlägt bei einer serde-Änderung an einem KPP-Typ fehl.
 - **Eine Änderung dieser Form ist eine Formatänderung.** Ab der ersten Änderung schreibt das Gateway eine Nummer `format` in die Antwort, `2` für die zweite Form. Die Konsole lernt die neue Form und behält ihren Renderer für jede ältere. Die geänderten Snapshots nur zu akzeptieren, reicht nie.

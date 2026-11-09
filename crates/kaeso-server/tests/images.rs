@@ -187,7 +187,7 @@ async fn an_upload_with_a_mask_reaches_openai_as_an_upload_and_is_logged_without
     if let Some(logged) = &o.request_body {
         let text = String::from_utf8_lossy(logged);
         assert!(
-            !text.contains("IHDR") && text.contains("not logged"),
+            !text.contains("IHDR") && text.contains(r#""reason":"not_kept""#),
             "{text}"
         );
     }

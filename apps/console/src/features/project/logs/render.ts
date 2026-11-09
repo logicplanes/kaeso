@@ -1,4 +1,5 @@
 import type { ContentBlock, ConversationMessage } from "@logicplanes/kaeso-ui";
+import { leftOutOf, type LeftOut } from "./left-out";
 import { formatNumber } from "@logicplanes/kaeso-ui/format";
 import { t } from "~/i18n";
 
@@ -8,6 +9,22 @@ const isObj = (v: Json): v is Obj => typeof v === "object" && v !== null && !Arr
 const str = (v: Json): string | undefined => (typeof v === "string" ? v : undefined);
 const arr = (v: Json): Json[] => (Array.isArray(v) ? v : []);
 
+type Plain = Exclude<ContentBlock, { type: "tool_result" }>;
+export type LogBlock =
+  | Plain
+  | { type: "left_out"; media: LeftOut; name?: string | undefined }
+  | { type: "tool_result"; tool_call_id?: string | undefined; content: string | LogBlock[]; is_error?: boolean | undefined };
+
+export interface LogMessage {
+  role: ConversationMessage["role"];
+  content: string | LogBlock[];
+}
+
+const leftOutBlock = (v: Json, name?: string): LogBlock | null => {
+  const media = leftOutOf(v);
+  return media ? { type: "left_out", media, ...(name ? { name } : {}) } : null;
+};
+
 interface ToolInfo {
   name: string;
   description?: string;
@@ -15,7 +32,7 @@ interface ToolInfo {
 }
 
 export interface RequestView {
-  messages: ConversationMessage[];
+  messages: LogMessage[];
   tools: ToolInfo[];
   params: { label: string; value: string }[];
 }
@@ -80,7 +97,7 @@ const paragraphs = (parts: Json[]): string =>
     .filter((t) => t !== "")
     .join("\n\n");
 
-const reasoning = (text: string, redacted: boolean): ContentBlock => ({ type: "reasoning", text, ...(!text && redacted ? { redacted: true } : {}) });
+const reasoning = (text: string, redacted: boolean): LogBlock => ({ type: "reasoning", text, ...(!text && redacted ? { redacted: true } : {}) });
 
 const paramLabels = (): Record<string, string> => ({
   max_tokens: t("logs.param.maxTokens", "Max tokens"),
@@ -124,10 +141,12 @@ function anthropicSource(source: Json): { src?: string; media_type?: string } {
   return media ? { media_type: media } : {};
 }
 
-function anthropicBlocks(content: Json): ContentBlock[] {
+function anthropicBlocks(content: Json): LogBlock[] {
   if (typeof content === "string") return [{ type: "text", text: content }];
-  return arr(content).map((b): ContentBlock => {
+  return arr(content).map((b): LogBlock => {
     if (!isObj(b)) return fail();
+    const left = isObj(b.source) ? leftOutBlock(b.source.data, str(b.title)) : null;
+    if (left && (b.type === "image" || b.type === "document" || b.type === "video")) return left;
     switch (b.type) {
       case "text":
         return { type: "text", text: str(b.text) ?? fail() };
@@ -161,7 +180,7 @@ function anthropicBlocks(content: Json): ContentBlock[] {
 }
 
 function anthropicRequest(body: Obj): RequestView {
-  const messages: ConversationMessage[] = [];
+  const messages: LogMessage[] = [];
   if (body.system !== undefined) messages.push({ role: "system", content: anthropicBlocks(body.system) });
   for (const m of arr(body.messages)) {
     if (!isObj(m)) fail();
@@ -179,28 +198,36 @@ function anthropicRequest(body: Obj): RequestView {
   return { messages, tools, params: params(body) };
 }
 
-function chatParts(content: Json): ContentBlock[] {
+function chatParts(content: Json): LogBlock[] {
   if (typeof content === "string") return [{ type: "text", text: content }];
   if (content === null || content === undefined) return [];
-  return arr(content).map((p): ContentBlock => {
+  return arr(content).map((p): LogBlock => {
     if (!isObj(p)) return fail();
     switch (p.type) {
       case "text":
         return { type: "text", text: str(p.text) ?? fail() };
       case "image_url": {
+        const left = isObj(p.image_url) ? leftOutBlock(p.image_url.url) : null;
+        if (left) return left;
         const url = isObj(p.image_url) ? str(p.image_url.url) : undefined;
         return { type: "image", ...(url ? { src: url } : {}) };
       }
       case "file": {
         const name = isObj(p.file) ? str(p.file.filename) : undefined;
+        const left = isObj(p.file) ? leftOutBlock(p.file.file_data, name) : null;
+        if (left) return left;
         return { type: "document", ...(name ? { name } : {}) };
       }
       case "input_audio": {
+        const left = isObj(p.input_audio) ? leftOutBlock(p.input_audio.data) : null;
+        if (left) return left;
         const format = isObj(p.input_audio) ? str(p.input_audio.format) : undefined;
         const media = format ? (CHAT_AUDIO[format] ?? format) : undefined;
         return { type: "audio", ...(media ? { media_type: media } : {}) };
       }
       case "video_url": {
+        const left = isObj(p.video_url) ? leftOutBlock(p.video_url.url) : null;
+        if (left) return left;
         const url = isObj(p.video_url) ? str(p.video_url.url) : undefined;
         return { type: "video", ...(url ? { src: url } : {}) };
       }
@@ -215,7 +242,7 @@ function chatParts(content: Json): ContentBlock[] {
 const CHAT_AUDIO: Record<string, string> = { wav: "audio/wav", mp3: "audio/mpeg" };
 
 function chatRequest(body: Obj): RequestView {
-  const messages = arr(body.messages).map((m): ConversationMessage => {
+  const messages = arr(body.messages).map((m): LogMessage => {
     if (!isObj(m)) return fail();
     const r = role(m.role);
     if (r === "tool") {
@@ -252,18 +279,18 @@ function chatRequest(body: Obj): RequestView {
   return { messages, tools, params: params(body) };
 }
 
-function responsesParts(content: Json): ContentBlock[] {
+function responsesParts(content: Json): LogBlock[] {
   if (typeof content === "string") return [{ type: "text", text: content }];
-  return arr(content).map((p): ContentBlock => {
+  return arr(content).map((p): LogBlock => {
     if (!isObj(p)) return fail();
     switch (p.type) {
       case "input_text":
       case "output_text":
         return { type: "text", text: str(p.text) ?? fail() };
       case "input_image":
-        return { type: "image", ...(str(p.image_url) ? { src: String(p.image_url) } : {}) };
+        return leftOutBlock(p.image_url) ?? { type: "image", ...(str(p.image_url) ? { src: String(p.image_url) } : {}) };
       case "input_file":
-        return { type: "document", ...(str(p.filename) ? { name: String(p.filename) } : {}) };
+        return leftOutBlock(p.file_data, str(p.filename)) ?? { type: "document", ...(str(p.filename) ? { name: String(p.filename) } : {}) };
       case "refusal":
         return { type: "refusal", text: str(p.refusal) ?? "" };
       default:
@@ -273,7 +300,7 @@ function responsesParts(content: Json): ContentBlock[] {
 }
 
 function responsesRequest(body: Obj): RequestView {
-  const messages: ConversationMessage[] = [];
+  const messages: LogMessage[] = [];
   if (str(body.instructions)) messages.push({ role: "system", content: String(body.instructions) });
   if (typeof body.input === "string") messages.push({ role: "user", content: body.input });
   else
@@ -312,8 +339,8 @@ function responsesRequest(body: Obj): RequestView {
   return { messages, tools, params: params(body) };
 }
 
-function geminiParts(parts: Json): ContentBlock[] {
-  return arr(parts).flatMap((p): ContentBlock[] => {
+function geminiParts(parts: Json): LogBlock[] {
+  return arr(parts).flatMap((p): LogBlock[] => {
     if (!isObj(p)) return fail();
     if (str(p.text) !== undefined) return [p.thought === true ? reasoning(String(p.text), false) : { type: "text", text: String(p.text) }];
     if (isObj(p.functionCall))
@@ -334,6 +361,8 @@ function geminiParts(parts: Json): ContentBlock[] {
         },
       ];
     if (isObj(p.inlineData)) {
+      const left = leftOutBlock(p.inlineData.data);
+      if (left) return [left];
       const media = str(p.inlineData.mimeType);
       if (media?.startsWith("image/") && str(p.inlineData.data))
         return [{ type: "image", src: `data:${media};base64,${String(p.inlineData.data)}`, media_type: media }];
@@ -374,7 +403,7 @@ const geminiParamLabels = (): Record<string, string> => ({
 });
 
 function geminiRequest(body: Obj): RequestView {
-  const messages: ConversationMessage[] = [];
+  const messages: LogMessage[] = [];
   if (isObj(body.systemInstruction)) messages.push({ role: "system", content: geminiParts(body.systemInstruction.parts) });
   for (const c of arr(body.contents)) {
     if (!isObj(c)) fail();
@@ -430,7 +459,7 @@ export function embeddingsView(dialect: string, body: Json): EmbeddingsView | nu
 }
 
 export interface ReplyView {
-  blocks: ContentBlock[];
+  blocks: LogBlock[];
   unknown: Json[];
   stop: string;
   model: string;
@@ -467,10 +496,12 @@ function kppSource(source: Json): { src?: string; media_type?: string } {
 
 const opaqueBytes = (opaque: Json[]) => opaque.reduce<number>((n, o) => n + (isObj(o) ? (str(o.data)?.length ?? 0) : 0), 0);
 
-function kppBlock(b: Json, unknown: Json[]): ContentBlock | null {
+function kppBlock(b: Json, unknown: Json[]): LogBlock | null {
   if (!isObj(b)) return fail();
   const [tag, v] = Object.entries(b)[0] ?? fail();
   const x = isObj(v) ? v : {};
+  const left = isObj(x.source) && isObj(x.source.base64) ? leftOutBlock(x.source.base64.data, str(x.title)) : null;
+  if (left && (tag === "image" || tag === "document" || tag === "audio" || tag === "video")) return left;
   switch (tag) {
     case "text":
       return { type: "text", text: str(x.text) ?? fail() };
