@@ -25,6 +25,8 @@ Die Protokolle zu lesen erfordert das Recht **Anfrageprotokolle ansehen**.
 
 **Tools** oben auf der Seite listet stattdessen die Aufrufe, die MCP-Clients über das MCP-Portal des Projekts gemacht haben: das Tool, ob es aufgerufen wurde, fehlschlug oder abgelehnt wurde, den Aufrufer, den Client und wie lange der Server brauchte. Ein abgelehnter Aufruf nennt den Grund, etwa ein ausgeschaltetes Tool, eines, das auf Prüfung wartet oder außerhalb des Zugriffs des Aufrufers liegt, oder eine Tool-Aufrufrate. Mit eingeschalteter Inhaltsprotokollierung behält ein Aufruf auch seine Argumente und seine Antwort, sichtbar nur mit dem Recht **Prompts und Ausgaben ansehen**.
 
+Die Tool-Aufrufe haben dieselbe Werkzeugleiste: **Filter hinzufügen** grenzt sie nach Schlüssel, Mitglied, MCP-Server, Tool, Status und Fehlerart ein, **Live** fügt neue Aufrufe hinzu, sobald sie eintreffen, und **Tool-Aufruf per ID öffnen** findet einen einzelnen Aufruf. Der Wechsel zwischen **Modelle** und **Tools** behält den Zeitraum, die Filter beider Ansichten und **Live**.
+
 ## Anfrage lesen
 
 Wählen Sie eine Anfrage, um sie zu öffnen:

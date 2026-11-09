@@ -151,4 +151,5 @@ const TOOL_ERRORS: Record<string, () => string> = {
   timeout: () => t("logs.tools.error.timeout", "Server too slow"),
   too_large: () => t("logs.tools.error.tooLarge", "Answer too large"),
 };
+export const TOOL_ERROR_TYPES = Object.keys(TOOL_ERRORS);
 export const toolErrorLabel = (e: string) => TOOL_ERRORS[e]?.() ?? e;

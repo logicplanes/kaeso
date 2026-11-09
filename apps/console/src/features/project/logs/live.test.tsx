@@ -3,7 +3,7 @@ import { act, renderHook } from "@testing-library/react";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { LogView } from "~/api/generated/types";
-import { LIVE_PAGES, newestLogsQuery } from "~/api/queries/logs";
+import { LIVE_PAGES, newestLogsQuery, newestToolCallsQuery } from "~/api/queries/logs";
 import { queryClient } from "~/query";
 import { ORG, PROJECT } from "~/test/fixtures";
 import { logRow } from "~/test/fixtures/project-logs";
@@ -36,6 +36,27 @@ describe("asking for the newest requests", () => {
     on("GET", LOGS, page([row(1)], "cur_2"));
     expect(await queryClient.fetchQuery(newestLogsQuery(ORG, PROJECT, { range: "1h" }))).toEqual({ rows: [row(1)], complete: true });
     expect(requests("GET", LOGS)).toHaveLength(1);
+  });
+});
+
+describe("asking for the newest tool calls", () => {
+  const CALLS = "orgs/:org/projects/:project/logs/tool-calls";
+  const call = (n: number) => ({ id: `call_${n}`, started_at: `2026-10-15T11:59:0${n}Z` });
+
+  it("pages through what started since the newest call shown, with the filters", async () => {
+    on("GET", CALLS, ({ query }: ApiRequest) => (query.get("after") ? page([call(1)]) : page([call(3), call(2)], "cur_2")));
+    const newest = await queryClient.fetchQuery(newestToolCallsQuery(ORG, PROJECT, { member: "sa:sa_bot", error: "timeout" }, "2026-10-15T11:58:30Z"));
+    expect(newest).toEqual({ rows: [call(3), call(2), call(1)], complete: true });
+    expect(requests("GET", CALLS).map((r) => Object.fromEntries(r.query))).toEqual([
+      { from: "2026-10-15T11:58:30Z", service_account: "sa_bot", error_type: "timeout", limit: "100" },
+      { from: "2026-10-15T11:58:30Z", service_account: "sa_bot", error_type: "timeout", limit: "100", after: "cur_2" },
+    ]);
+  });
+
+  it("asks for one page of the range when nothing is shown yet", async () => {
+    on("GET", CALLS, page([call(1)], "cur_2"));
+    expect(await queryClient.fetchQuery(newestToolCallsQuery(ORG, PROJECT, { range: "1h" }))).toEqual({ rows: [call(1)], complete: true });
+    expect(requests("GET", CALLS)).toHaveLength(1);
   });
 });
 

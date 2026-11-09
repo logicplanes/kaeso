@@ -1,8 +1,8 @@
 import { infiniteQueryOptions, queryOptions } from "@tanstack/react-query";
 import { dayEnd, dayStart } from "~/format/zone";
 import { api, data } from "../client";
-import type { LogEntryView, LogView, ToolCallEntryView } from "../generated/types";
-import { nextPageParam, refetchOnFocusWhileOnePage } from "../paging";
+import type { LogEntryView, LogView, ToolCallEntryView, ToolCallView } from "../generated/types";
+import { nextPageParam, refetchOnFocusWhileOnePage, type Page } from "../paging";
 
 export type LogRange = "1h" | "24h" | "7d" | "30d";
 const RANGE_MS: Record<LogRange, number> = { "1h": 3_600_000, "24h": 86_400_000, "7d": 7 * 86_400_000, "30d": 30 * 86_400_000 };
@@ -66,30 +66,39 @@ export const logsInfiniteQuery = (org: string, project: string, filters: LogFilt
 
 export const LIVE_PAGES = 5;
 
-export interface NewestLogs {
-  rows: LogView[];
+export interface Newest<T> {
+  rows: T[];
   complete: boolean;
+}
+export type NewestLogs = Newest<LogView>;
+
+async function newestRows<T>(fetchPage: (after: string | undefined) => Promise<Page<T>>, since: string | undefined): Promise<Newest<T>> {
+  const rows: T[] = [];
+  let after: string | undefined;
+  for (let pages = 0; pages < LIVE_PAGES; pages++) {
+    const page = await fetchPage(after);
+    rows.push(...page.data);
+    after = nextPageParam(page);
+    if (!after || !since) return { rows, complete: true };
+  }
+  return { rows, complete: false };
 }
 
 export const newestLogsQuery = (org: string, project: string, filters: LogFilters, since?: string) =>
   queryOptions({
     queryKey: ["orgs", org, "projects", project, "logs", "newest", filters, since ?? null],
-    queryFn: async ({ signal }): Promise<NewestLogs> => {
+    queryFn: ({ signal }): Promise<NewestLogs> => {
       const query = { ...logsParams(filters), ...(since ? { from: since } : {}), limit: 100 };
-      const rows: LogView[] = [];
-      let after: string | undefined;
-      for (let pages = 0; pages < LIVE_PAGES; pages++) {
-        const page = data(
-          await api.GET("/platform/v1/orgs/{org}/projects/{project}/logs", {
-            params: { path: { org, project }, query: { ...query, ...(after ? { after } : {}) } },
-            signal,
-          }),
-        );
-        rows.push(...page.data);
-        after = nextPageParam(page);
-        if (!after || !since) return { rows, complete: true };
-      }
-      return { rows, complete: false };
+      return newestRows(
+        async (after) =>
+          data(
+            await api.GET("/platform/v1/orgs/{org}/projects/{project}/logs", {
+              params: { path: { org, project }, query: { ...query, ...(after ? { after } : {}) } },
+              signal,
+            }),
+          ),
+        since,
+      );
     },
     gcTime: 0,
   });
@@ -106,8 +115,35 @@ export interface ToolCallFilters {
   range?: LogRange;
   from?: string;
   to?: string;
-  status?: "ok" | "error" | "refused";
+  key?: string;
+  member?: string;
+  server?: string;
   tool?: string;
+  status?: "ok" | "error" | "refused";
+  error?: string;
+}
+
+export function toolCallParams(f: ToolCallFilters, now = Date.now()) {
+  const { from, to, key, user, service_account } = logsParams(
+    {
+      ...(f.range ? { range: f.range } : {}),
+      ...(f.from && f.to ? { from: f.from, to: f.to } : {}),
+      ...(f.key ? { key: f.key } : {}),
+      ...(f.member ? { member: f.member } : {}),
+    },
+    now,
+  );
+  return {
+    from,
+    ...(to ? { to } : {}),
+    ...(key ? { key } : {}),
+    ...(user ? { user } : {}),
+    ...(service_account ? { service_account } : {}),
+    ...(f.server ? { server: f.server } : {}),
+    ...(f.tool ? { tool: f.tool } : {}),
+    ...(f.status ? { status: f.status } : {}),
+    ...(f.error ? { error_type: f.error } : {}),
+  };
 }
 
 export const toolCallsInfiniteQuery = (org: string, project: string, filters: ToolCallFilters) =>
@@ -115,17 +151,7 @@ export const toolCallsInfiniteQuery = (org: string, project: string, filters: To
     queryKey: ["orgs", org, "projects", project, "logs", "tool-calls", filters],
     initialPageParam: undefined as { after: string; from: string } | undefined,
     queryFn: async ({ pageParam, signal }) => {
-      const { from, to } = logsParams({
-        ...(filters.range ? { range: filters.range } : {}),
-        ...(filters.from && filters.to ? { from: filters.from, to: filters.to } : {}),
-      });
-      const query = {
-        from,
-        ...(to ? { to } : {}),
-        ...(filters.status ? { status: filters.status } : {}),
-        ...(filters.tool ? { tool: filters.tool } : {}),
-        ...pageParam,
-      };
+      const query = { ...toolCallParams(filters), ...pageParam };
       const page = data(
         await api.GET("/platform/v1/orgs/{org}/projects/{project}/logs/tool-calls", {
           params: { path: { org, project }, query: { ...query, limit: 100 } },
@@ -139,6 +165,25 @@ export const toolCallsInfiniteQuery = (org: string, project: string, filters: To
       return after ? { after, from: page.from } : undefined;
     },
     refetchOnWindowFocus: refetchOnFocusWhileOnePage,
+  });
+
+export const newestToolCallsQuery = (org: string, project: string, filters: ToolCallFilters, since?: string) =>
+  queryOptions({
+    queryKey: ["orgs", org, "projects", project, "logs", "tool-calls", "newest", filters, since ?? null],
+    queryFn: ({ signal }): Promise<Newest<ToolCallView>> => {
+      const query = { ...toolCallParams(filters), ...(since ? { from: since } : {}), limit: 100 };
+      return newestRows(
+        async (after) =>
+          data(
+            await api.GET("/platform/v1/orgs/{org}/projects/{project}/logs/tool-calls", {
+              params: { path: { org, project }, query: { ...query, ...(after ? { after } : {}) } },
+              signal,
+            }),
+          ),
+        since,
+      );
+    },
+    gcTime: 0,
   });
 
 export const toolCallQuery = (org: string, project: string, call: string) =>
