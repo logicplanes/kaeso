@@ -2,6 +2,7 @@ import json
 import re
 import shutil
 import subprocess
+import time
 from pathlib import Path
 
 import pytest
@@ -240,7 +241,13 @@ def test_the_terraform_for_gcp_is_formatted_and_valid(folder):
     assert shutil.which("tofu"), "OpenTofu is on PATH in CI and for this suite"
     cwd = ROOT / "deploy" / "gcp" / folder
     for args in [["fmt", "-check", "-diff"], ["init", "-backend=false", "-input=false", "-no-color"], ["validate", "-no-color"]]:
-        done = subprocess.run(["tofu", *args], cwd=cwd, capture_output=True, text=True)
+        # init downloads the provider from GitHub releases, which times out now and then.
+        for attempt in range(3 if args[0] == "init" else 1):
+            if attempt:
+                time.sleep(10 * attempt)
+            done = subprocess.run(["tofu", *args], cwd=cwd, capture_output=True, text=True)
+            if done.returncode == 0:
+                break
         assert done.returncode == 0, (folder, args, done.stdout + done.stderr)
 
 
