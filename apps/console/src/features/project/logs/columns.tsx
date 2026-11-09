@@ -208,7 +208,7 @@ export function logColumns({
     cost: col.custom(
       { id: "cost", header: columnLabel("cost"), size: KEPT_WIDTHS.cost, priority: 2 },
       (r: LogView) => r.cost,
-      (v) => requestUSD(v),
+      (v, r) => (r.cost_known ? requestUSD(v) : <Text tone="secondary">{t("kaeso.usage.costUnknown", "Unknown")}</Text>),
       { align: "end" },
     ),
     key: col.custom(

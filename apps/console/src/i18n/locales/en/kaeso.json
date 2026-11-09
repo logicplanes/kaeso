@@ -398,8 +398,16 @@
   "kaeso.toolAccess.saved": "Tools saved",
   "kaeso.toolAccess.title": "Tools",
   "kaeso.usage.chartFailed": "Couldn't load this chart",
+  "kaeso.usage.costUnknown": "Unknown",
   "kaeso.usage.lessThan": "<{amount}",
+  "kaeso.usage.media.audio": "{duration} of audio",
+  "kaeso.usage.media.characters": "{count} characters",
+  "kaeso.usage.media.header": "Media",
+  "kaeso.usage.media.images": "{count, plural, one {# image} other {# images}}",
+  "kaeso.usage.media.videos": "{count, plural, one {# video} other {# videos}}",
+  "kaeso.usage.media.videosLong": "{count, plural, one {# video} other {# videos}}, {duration}",
   "kaeso.usage.noRequests": "No requests in this period.",
   "kaeso.usage.tileFailed": "Couldn't load",
-  "kaeso.usage.toolCalls": "Tool calls"
+  "kaeso.usage.toolCalls": "Tool calls",
+  "kaeso.usage.unpriced": "{count, plural, one {# request} other {# requests}} unknown"
 }

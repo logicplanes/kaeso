@@ -6,6 +6,8 @@ order: 10
 
 Der **Playground** sendet einen Prompt an bis zu vier Modelle des Projekts zugleich und zeigt ihre Antworten nebeneinander. Jede Spalte ist ein eigenes Gespräch. Ihn zu nutzen erfordert das Recht **Playground nutzen**, das Admins und Entwickler eines Projekts haben.
 
+Der Playground ist ein Gespräch, deshalb listet er die Modelle, die Text nehmen und mit Text antworten. Bild-, Sprach-, Transkriptions- und Videomodelle fehlen: Jedes braucht eine eigene Anfrage, etwa einen Upload, abzuspielendes Audio oder einen Job, auf den man wartet, und wird pro Bild, Zeichen oder Sekunde abgerechnet. Probieren Sie sie mit der [Images API](../api/images.md), der [Audio API](../api/audio.md) oder der [Videos API](../api/videos.md) aus; die Anfrage-Logs zeigen jede.
+
 ## Modelle vergleichen
 
 1. Wählen Sie ein Modell für die erste Spalte und mit **Spalte hinzufügen** jede weitere. Suchen Sie nach Name, ID oder Anbieter, oder beschränken Sie die Liste auf einen Anbieter; die Modelle sind nach Anbieter gruppiert, und die zuletzt gewählten stehen oben. Ein Modell, dessen Anbieter keinen Schlüssel für dieses Projekt hat, können Sie nicht wählen, ebenso wenig eines, das als [Nicht verfügbar](models-and-aliases.md) markiert ist, weil der Anbieter es dem Schlüssel des Projekts nicht anbietet.

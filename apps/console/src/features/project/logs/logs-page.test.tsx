@@ -36,6 +36,7 @@ describe("LogsPage", () => {
           usage: { input_tokens: 10, output_tokens: 5, cache_read_tokens: 3, cache_write_tokens: 2, reasoning_tokens: 1, estimated: true },
         }),
         logRow({ id: "req_0003", status: 499, error_kind: "client_disconnected", requested_model: "openai/gpt-5.4-mini", principal_id: "usr_grace" }),
+        logRow({ id: "req_0004", status: 202, requested_model: "house-video", cost: "0", cost_known: false, principal_id: "usr_grace" }),
       ],
     });
     const { user } = await renderApp(projectPath("logs"));
@@ -55,6 +56,7 @@ describe("LogsPage", () => {
     const disconnected = screen.getByRole("row", { name: /Client disconnected/ });
     expect(disconnected).not.toHaveTextContent("from openai/gpt-5.4-mini");
     expect(disconnected).toHaveTextContent("Grace Hopper");
+    expect(screen.getByRole("row", { name: /house-video/ })).toHaveTextContent("Unknown");
 
     await hoverReason(user, within(failed).getByText("≈ 15 / 5"), /3 cache read · 2 cache write · 1 reasoning/);
     expect(lastQuery()).toMatchObject({ limit: "100" });

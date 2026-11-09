@@ -401,5 +401,13 @@
   "kaeso.providerKey.serviceAccountKey": "JSON 密钥",
   "kaeso.providerKey.serviceAccountPlaceholder": "粘贴密钥文件的内容",
   "kaeso.providerKey.serviceAccountTooLarge": "该文件过大，不可能是 JSON 密钥。",
-  "kaeso.providerKey.serviceAccountChoose": "选择文件"
+  "kaeso.providerKey.serviceAccountChoose": "选择文件",
+  "kaeso.usage.media.images": "{count, plural, other {# 张图片}}",
+  "kaeso.usage.media.characters": "{count} 个字符",
+  "kaeso.usage.media.audio": "{duration} 音频",
+  "kaeso.usage.media.videosLong": "{count, plural, other {# 个视频}}，{duration}",
+  "kaeso.usage.media.videos": "{count, plural, other {# 个视频}}",
+  "kaeso.usage.costUnknown": "未知",
+  "kaeso.usage.unpriced": "{count, plural, other {# 个请求}}未知",
+  "kaeso.usage.media.header": "媒体"
 }

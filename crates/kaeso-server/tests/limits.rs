@@ -921,6 +921,7 @@ async fn a_rebuilt_budget_reserves_at_least_the_period_average() {
             cache_write_tokens: 0,
             reasoning_tokens: 0,
             cost: rust_decimal::Decimal::ZERO,
+            media: Default::default(),
         }],
     )
     .await
@@ -965,6 +966,7 @@ async fn a_new_period_reserves_at_least_the_recent_average() {
             cache_write_tokens: 0,
             reasoning_tokens: 0,
             cost: rust_decimal::Decimal::ZERO,
+            media: Default::default(),
         }],
     )
     .await

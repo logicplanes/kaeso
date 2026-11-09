@@ -618,6 +618,7 @@ fn usage(day: time::Date, org: Uuid, project: Uuid, requests: i64, cost: &str) -
         cache_write_tokens: 0,
         reasoning_tokens: 0,
         cost: cost.parse().unwrap(),
+        media: Default::default(),
     }
 }
 

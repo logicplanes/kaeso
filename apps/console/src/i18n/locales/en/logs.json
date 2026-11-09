@@ -74,6 +74,7 @@
   "logs.inspector.characters": "{count} characters",
   "logs.inspector.charactersMade": "{characters} · {duration} made",
   "logs.inspector.clientIp": "Client IP",
+  "logs.inspector.costUnknown": "No price for what it made",
   "logs.inspector.error": "Error",
   "logs.inspector.estimated": "Estimated",
   "logs.inspector.estimatedHint": "The stream ended before the provider's final count; cost and limits use these numbers.",

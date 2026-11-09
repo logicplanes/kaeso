@@ -246,5 +246,6 @@
   "logs.inspector.audioSent": "{duration} Audio gesendet",
   "logs.inspector.video": "Video",
   "logs.inspector.videos": "{count, plural, one {# Video} other {# Videos}}",
-  "logs.inspector.videosMade": "{videos} · {duration}"
+  "logs.inspector.videosMade": "{videos} · {duration}",
+  "logs.inspector.costUnknown": "Kein Preis für das, was sie erzeugt hat"
 }

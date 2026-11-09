@@ -950,6 +950,20 @@ async fn veo_runs_on_the_agent_platform_with_a_service_account_and_without_a_pri
         rust_decimal::Decimal::ZERO
     );
     assert_eq!(billed[0].media.as_ref().unwrap().output_ms, 8000);
+    assert!(
+        !kaeso_server::services::usage::cost_known(&billed[0]),
+        "without a price per clip, the cost is unknown, not 0"
+    );
+    let sums = kaeso_server::services::usage::media_sums(&billed[0]);
+    assert_eq!((sums.unpriced, sums.videos, sums.video_ms), (1, 1, 8000));
+    let started = env.outcomes().await;
+    assert!(
+        started
+            .iter()
+            .filter(|o| o.video != Some(VideoCall::Completed))
+            .all(kaeso_server::services::usage::cost_known),
+        "the request that starts a job is billed when the job ends"
+    );
 }
 
 #[tokio::test]

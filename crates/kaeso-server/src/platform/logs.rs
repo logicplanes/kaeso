@@ -805,6 +805,10 @@ pub struct LogView {
     #[doc = "Cost in USD at the prices of request time."]
     #[schema(value_type = String)]
     pub cost: String,
+    #[doc = "Whether the cost is known. `false` when the model has no price for what the\n\
+        request made or heard, such as a video model without a price per clip; `cost`\n\
+        is then 0 and means unknown."]
+    pub cost_known: bool,
     #[doc = "User agent."]
     pub user_agent: String,
     #[doc = "Client address."]
@@ -966,6 +970,7 @@ fn view(r: &LogRow) -> LogView {
             estimated: r.usage_estimated,
         },
         cost: cost_from_raw(r.cost).to_string(),
+        cost_known: r.cost_known,
         user_agent: r.user_agent.clone(),
         client_ip: r.client_ip.clone(),
         upstream_request_id: r.upstream_request_id.clone(),
@@ -1125,7 +1130,7 @@ pub struct ExportParams {
     pub include_content: Option<bool>,
 }
 
-const CSV_HEADER: &str = "id,started_at,duration_ms,ttfb_ms,key_id,principal_kind,principal_id,endpoint,ingress_dialect,egress_dialect,provider,requested_model,model,stream,status,error_kind,input_tokens,output_tokens,cache_read_tokens,cache_write_tokens,reasoning_tokens,cost,user_agent,client_ip,upstream_request_id,stream_events,stream_bytes,stream_first_byte_ms,stream_keepalives,usage_estimated,source,overhead_ms,stream_processing_ms,cache_breakpoints,request_upload_ms,response_cache,alias,fallbacks,media_unit,media_input,media_output,media_detail\n";
+const CSV_HEADER: &str = "id,started_at,duration_ms,ttfb_ms,key_id,principal_kind,principal_id,endpoint,ingress_dialect,egress_dialect,provider,requested_model,model,stream,status,error_kind,input_tokens,output_tokens,cache_read_tokens,cache_write_tokens,reasoning_tokens,cost,user_agent,client_ip,upstream_request_id,stream_events,stream_bytes,stream_first_byte_ms,stream_keepalives,usage_estimated,source,overhead_ms,stream_processing_ms,cache_breakpoints,request_upload_ms,response_cache,alias,fallbacks,media_unit,media_input,media_output,media_detail,cost_known\n";
 
 // OWASP CSV injection (https://owasp.org/www-community/attacks/CSV_Injection): quote every
 // text cell and prefix `'` to one that starts a formula or holds a separator a spreadsheet
@@ -1228,6 +1233,7 @@ fn csv_line(v: &LogView) -> String {
                 .map(|m| m.detail.clone())
                 .unwrap_or_default(),
         ),
+        Number(v.cost_known.to_string()),
     ];
     let mut line = cells
         .iter()

@@ -66,6 +66,11 @@ const MIGRATIONS: &[Migration] = &[
         name: "media_units",
         sql: include_str!("../../migrations/clickhouse/0010_media_units.sql"),
     },
+    Migration {
+        version: 11,
+        name: "cost_known",
+        sql: include_str!("../../migrations/clickhouse/0011_cost_known.sql"),
+    },
 ];
 
 #[derive(Clone)]
@@ -218,7 +223,7 @@ mod tests {
     #[test]
     fn migration_files_split_into_statements() {
         let all: Vec<String> = MIGRATIONS.iter().flat_map(|m| statements(m.sql)).collect();
-        assert_eq!(all.len(), 21);
+        assert_eq!(all.len(), 22);
         assert!(all.iter().all(|s| s.starts_with("CREATE ")
             || s.starts_with("ALTER TABLE ")
             || s.starts_with("DROP ")));

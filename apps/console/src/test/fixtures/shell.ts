@@ -57,6 +57,8 @@ export function usage(overrides: Partial<UsageRow> = {}): UsageRow {
     cost: "1.25",
     tool_calls: 0,
     tool_call_errors: 0,
+    unpriced: 0,
+    media: { images: 0, characters: 0, audio_ms: 0, videos: 0, video_ms: 0 },
     ...overrides,
   };
 }

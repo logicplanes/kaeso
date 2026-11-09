@@ -2356,6 +2356,25 @@ async fn a_custom_provider_serves_the_media_apis_its_admin_turns_on_and_refuses_
         polled.path
     );
     assert_eq!(polled.header("authorization"), Some(bearer.as_str()));
+    for _ in 0..3 {
+        call(
+            &env,
+            &format!("/v1/videos/{id}"),
+            Some(&env.key),
+            false,
+            None,
+        )
+        .await;
+    }
+    let done = env
+        .outcomes()
+        .await
+        .into_iter()
+        .find(|o| o.video == Some(kaeso_server::model_api::hooks::VideoCall::Completed))
+        .unwrap();
+    assert_eq!(done.custom_provider.as_deref(), Some("studio-video"));
+    assert!(kaeso_server::services::usage::cost_known(&done));
+    assert!(kaeso_server::services::usage::costed(&done).1 > rust_decimal::Decimal::ZERO);
 
     let r = patch_if_match(
         app,

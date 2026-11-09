@@ -300,6 +300,17 @@ async fn reasoning_summaries_stream_from_a_model_that_reasons() {
     let at = |x: &str| t.iter().position(|y| y == x).unwrap();
     assert!(at("response.reasoning_summary_text.delta") < at("response.output_text.delta"));
 
+    for model in ["gpt-image-2", "whisper-1", "gpt-4o-mini-tts"] {
+        let r = env
+            .app
+            .post(
+                &format!("{}/models", base(&env)),
+                json!({ "provider": "openai", "model_id": model }),
+                Some(&env.owner.cookie),
+            )
+            .await;
+        assert!(r.status.is_success(), "{model}: {:?}", r.body);
+    }
     let list = env
         .app
         .get(
@@ -318,10 +329,14 @@ async fn reasoning_summaries_stream_from_a_model_that_reasons() {
     assert!(opus["input_price"].is_string(), "{opus}");
     assert!(opus["output_price"].is_string(), "{opus}");
     assert!(!opus["display_name"].as_str().unwrap().is_empty());
-    assert!(
-        data.iter()
-            .all(|m| m["model_id"] != "text-embedding-3-small")
-    );
+    for absent in [
+        "text-embedding-3-small",
+        "gpt-image-2",
+        "whisper-1",
+        "gpt-4o-mini-tts",
+    ] {
+        assert!(data.iter().all(|m| m["model_id"] != absent), "{absent}");
+    }
     assert!(data.iter().any(|m| m["model_id"] == "gpt-4o"));
 }
 

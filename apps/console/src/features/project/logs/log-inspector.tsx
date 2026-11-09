@@ -336,7 +336,14 @@ function Overview({ org, project, e, keyName }: { org: string; project: string; 
                 : t("logs.inspector.tokensInOut", "{input} in · {output} out", { input: formatNumber(tokensIn), output: formatNumber(u.output_tokens) })
           }
         />
-        <Stat variant="tile" label={common.cost()} value={costUSD(e.cost)} detail={u.estimated ? t("logs.inspector.estimated", "Estimated") : undefined} />
+        <Stat
+          variant="tile"
+          label={common.cost()}
+          value={e.cost_known ? costUSD(e.cost) : t("kaeso.usage.costUnknown", "Unknown")}
+          detail={
+            !e.cost_known ? t("logs.inspector.costUnknown", "No price for what it made") : u.estimated ? t("logs.inspector.estimated", "Estimated") : undefined
+          }
+        />
       </StatGroup>
       {(known(e.ttfb_ms) || timing.length > 0) && (
         <Section title={t("logs.inspector.timing", "Timing")} spacing="none">

@@ -205,6 +205,28 @@ pub async fn list_org(db: impl PgExecutor<'_>, org_id: Uuid) -> Result<Vec<Limit
     .await?)
 }
 
+/// What a group's media requests made or heard, and how many of its requests had no known price.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, sqlx::FromRow)]
+pub struct MediaSums {
+    pub unpriced: i64,
+    pub images: i64,
+    pub characters: i64,
+    pub audio_ms: i64,
+    pub videos: i64,
+    pub video_ms: i64,
+}
+
+impl MediaSums {
+    pub fn add(&mut self, o: &MediaSums) {
+        self.unpriced = self.unpriced.saturating_add(o.unpriced);
+        self.images = self.images.saturating_add(o.images);
+        self.characters = self.characters.saturating_add(o.characters);
+        self.audio_ms = self.audio_ms.saturating_add(o.audio_ms);
+        self.videos = self.videos.saturating_add(o.videos);
+        self.video_ms = self.video_ms.saturating_add(o.video_ms);
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct UsageRow {
     pub day: Date,
@@ -226,6 +248,7 @@ pub struct UsageRow {
     pub cache_write_tokens: i64,
     pub reasoning_tokens: i64,
     pub cost: Decimal,
+    pub media: MediaSums,
 }
 
 pub async fn add_usage(db: impl PgExecutor<'_>, rows: &[UsageRow]) -> Result<(), StoreError> {
@@ -237,13 +260,20 @@ pub async fn add_usage(db: impl PgExecutor<'_>, rows: &[UsageRow]) -> Result<(),
             rows.iter().map(|r| r.$f.clone()).collect::<Vec<_>>()
         };
     }
+    macro_rules! media {
+        ($f:ident) => {
+            rows.iter().map(|r| r.media.$f).collect::<Vec<_>>()
+        };
+    }
     sqlx::query!(
         "INSERT INTO usage_daily AS u (day, org_id, project_id, user_id, service_account_id, api_key_id, \
            catalogue_model_id, model_id, provider, ingress_dialect, egress_dialect, requests, errors, input_tokens, \
-           output_tokens, cache_read_tokens, cache_write_tokens, reasoning_tokens, cost) \
+           output_tokens, cache_read_tokens, cache_write_tokens, reasoning_tokens, cost, unpriced, images, characters, \
+           audio_ms, videos, video_ms) \
          SELECT * FROM unnest($1::date[], $2::uuid[], $3::uuid[], $4::uuid[], $5::uuid[], $6::uuid[], $7::uuid[], \
            $8::text[], $9::text[], $10::text[], $11::text[], $12::bigint[], $13::bigint[], $14::bigint[], $15::bigint[], \
-           $16::bigint[], $17::bigint[], $18::bigint[], $19::numeric[]) \
+           $16::bigint[], $17::bigint[], $18::bigint[], $19::numeric[], $20::bigint[], $21::bigint[], $22::bigint[], \
+           $23::bigint[], $24::bigint[], $25::bigint[]) \
          ON CONFLICT (project_id, day, api_key_id, user_id, service_account_id, provider, model_id, ingress_dialect, \
            egress_dialect) DO UPDATE SET \
            requests = u.requests + excluded.requests, errors = u.errors + excluded.errors, \
@@ -252,6 +282,9 @@ pub async fn add_usage(db: impl PgExecutor<'_>, rows: &[UsageRow]) -> Result<(),
            cache_read_tokens = u.cache_read_tokens + excluded.cache_read_tokens, \
            cache_write_tokens = u.cache_write_tokens + excluded.cache_write_tokens, \
            reasoning_tokens = u.reasoning_tokens + excluded.reasoning_tokens, cost = u.cost + excluded.cost, \
+           unpriced = u.unpriced + excluded.unpriced, images = u.images + excluded.images, \
+           characters = u.characters + excluded.characters, audio_ms = u.audio_ms + excluded.audio_ms, \
+           videos = u.videos + excluded.videos, video_ms = u.video_ms + excluded.video_ms, \
            catalogue_model_id = coalesce(excluded.catalogue_model_id, u.catalogue_model_id)",
         &col!(day),
         &col!(org_id),
@@ -271,7 +304,13 @@ pub async fn add_usage(db: impl PgExecutor<'_>, rows: &[UsageRow]) -> Result<(),
         &col!(cache_read_tokens),
         &col!(cache_write_tokens),
         &col!(reasoning_tokens),
-        &col!(cost)
+        &col!(cost),
+        &media!(unpriced),
+        &media!(images),
+        &media!(characters),
+        &media!(audio_ms),
+        &media!(videos),
+        &media!(video_ms)
     )
     .execute(db)
     .await?;

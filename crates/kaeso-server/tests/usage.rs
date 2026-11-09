@@ -495,6 +495,7 @@ fn usage_row(
         cache_write_tokens: 0,
         reasoning_tokens: 0,
         cost: rust_decimal::Decimal::ZERO,
+        media: Default::default(),
     }
 }
 
@@ -826,4 +827,41 @@ async fn usage_filters_take_the_keys_groupings_return_and_combine_with_any_group
         assert_eq!(r.body["error"]["param"], param, "{path}");
         assert_eq!(r.body["error"]["message"], message, "{path}");
     }
+}
+
+#[tokio::test]
+async fn usage_shows_what_media_requests_made_and_how_many_had_no_known_price() {
+    let env = common::v1::env(None, None).await;
+    let day = time::macros::date!(2026 - 11 - 02);
+    let mut row = usage_row(day, uuid(&env.owner.org_id), uuid(&env.project), 0);
+    row.requests = 3;
+    row.media = kaeso_store::pg::limits::MediaSums {
+        unpriced: 2,
+        images: 4,
+        characters: 120,
+        audio_ms: 6_500,
+        videos: 1,
+        video_ms: 8_000,
+    };
+    kaeso_store::pg::limits::add_usage(&env.app.state.pg, &[row.clone(), row])
+        .await
+        .unwrap();
+    let r = env
+        .app
+        .get(
+            &format!(
+                "{}/usage?group_by=day&from=2026-11-01&to=2026-11-03",
+                base(&env)
+            ),
+            &env.owner.cookie,
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    let got = &r.body["data"][0];
+    assert_eq!(got["requests"], 6);
+    assert_eq!(got["unpriced"], 4);
+    assert_eq!(
+        got["media"],
+        json!({ "images": 8, "characters": 240, "audio_ms": 13000, "videos": 2, "video_ms": 16000 })
+    );
 }

@@ -97,6 +97,8 @@ pub struct UsageGroup {
     pub cache_write_tokens: i64,
     pub reasoning_tokens: i64,
     pub cost: Decimal,
+    #[sqlx(flatten)]
+    pub media: crate::pg::limits::MediaSums,
 }
 
 pub async fn usage(
@@ -114,7 +116,9 @@ pub async fn usage(
         "SELECT {key} AS key, sum(requests)::bigint AS requests, sum(errors)::bigint AS errors, \
          sum(input_tokens)::bigint AS input_tokens, sum(output_tokens)::bigint AS output_tokens, \
          sum(cache_read_tokens)::bigint AS cache_read_tokens, sum(cache_write_tokens)::bigint AS cache_write_tokens, \
-         sum(reasoning_tokens)::bigint AS reasoning_tokens, sum(cost) AS cost \
+         sum(reasoning_tokens)::bigint AS reasoning_tokens, sum(cost) AS cost, \
+         sum(unpriced)::bigint AS unpriced, sum(images)::bigint AS images, sum(characters)::bigint AS characters, \
+         sum(audio_ms)::bigint AS audio_ms, sum(videos)::bigint AS videos, sum(video_ms)::bigint AS video_ms \
          FROM usage_daily WHERE org_id = $1 AND ($2::uuid IS NULL OR project_id = $2) AND day >= $3 AND day <= $4 \
          AND ($5::text IS NULL OR provider = $5) AND ($6::text IS NULL OR model_id = $6) \
          AND ($7::uuid IS NULL OR coalesce(api_key_id, '00000000-0000-0000-0000-000000000000') = $7) \
