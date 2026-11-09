@@ -10,7 +10,7 @@ import { useProviders } from "~/kaeso/providers";
 import { totalTokens } from "~/kaeso/tokens";
 import { projectPath } from "~/shell/pages";
 import { usePhone } from "~/shell/use-phone";
-import { UsageCost } from "~/kaeso/media-usage";
+import { costWidth, UsageCost } from "~/kaeso/media-usage";
 import { t } from "~/i18n";
 
 export type OrgBreakdown = "project" | "model" | "member";
@@ -147,7 +147,7 @@ export function OrgUsageBreakdown({
     ...(showCost
       ? [
           col.custom(
-            { id: "cost", header: t("common.cost", "Cost"), size: NUMBER_WIDTH, priority: 1 },
+            { id: "cost", header: t("common.cost", "Cost"), size: costWidth(rows, NUMBER_WIDTH, phone), priority: 1 },
             (r: UsageRow) => r.cost ?? "",
             (_v: string, r: UsageRow) => <UsageCost row={r} />,
             { align: "end" },

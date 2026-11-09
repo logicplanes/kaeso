@@ -347,7 +347,9 @@
   "kaeso.analytics.busiest": "Meiste Anfragen",
   "kaeso.analytics.change": "Änderung",
   "kaeso.analytics.costShare": "{amount}, {share} der Kosten",
+  "kaeso.analytics.costShareKnown": "{amount}, {share} der bekannten Kosten",
   "kaeso.analytics.costShareTitle": "Anteil an den Kosten",
+  "kaeso.analytics.costShareUnpriced": "{count, plural, one {# Anfrage ohne Preis ist nicht enthalten.} other {# Anfragen ohne Preis sind nicht enthalten.}}",
   "kaeso.analytics.failedOf": "{rate} von {requests} fehlgeschlagen",
   "kaeso.analytics.flakiest": "Höchste Fehlerquote",
   "kaeso.analytics.growing": "Am stärksten gewachsen, {compare}",
@@ -409,5 +411,7 @@
   "kaeso.usage.media.videos": "{count, plural, one {# Video} other {# Videos}}",
   "kaeso.usage.costUnknown": "Unbekannt",
   "kaeso.usage.unpriced": "{count, plural, one {# Anfrage} other {# Anfragen}} unbekannt",
-  "kaeso.usage.media.header": "Medien"
+  "kaeso.usage.media.header": "Medien",
+  "kaeso.usage.unpricedHint": "{requests}; der Betrag lässt sie aus.",
+  "kaeso.usage.unpricedShort": "+{count} unbekannt"
 }

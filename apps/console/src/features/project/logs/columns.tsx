@@ -7,6 +7,7 @@ import { requestUSD } from "~/format/money";
 import { locale, t, type Locale } from "~/i18n";
 import { common } from "~/i18n/common";
 import { inputTokens, totalTokens } from "~/kaeso/tokens";
+import { mediaCount, mediaLabel, mediaShort } from "./media";
 import { readStoredJson, writeStored } from "~/storage";
 import { inZone } from "~/format/zone";
 import { CodeText } from "~/kaeso/code-text";
@@ -293,6 +294,15 @@ export const sentWithoutBreakpoint = (row: LogView) =>
 
 function TokensCell({ row }: { row: LogView }) {
   const u = row.usage;
+  if (row.media && totalTokens(u) === 0) {
+    return (
+      <Tooltip content={t("logs.media.hint", "{label}: {units}", { label: mediaLabel(row.media.unit), units: mediaCount(row.media) })}>
+        <Text tabular tabIndex={0} truncate>
+          {mediaShort(row.media)}
+        </Text>
+      </Tooltip>
+    );
+  }
   const share = isEmbedding(row) ? null : cachedShare(u);
   const unmarked = sentWithoutBreakpoint(row);
   const detail = [

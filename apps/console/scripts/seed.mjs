@@ -1,5 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
-import OpenAI from "openai";
+import OpenAI, { toFile } from "openai";
 import { DRAFT_SYSTEM, SLACK_SYSTEM, TRIAGE_SYSTEM, slackQuestion, ticket } from "../stack/conversations.mjs";
 import { pictureUpload } from "./png.mjs";
 import { clickhouse, writeHistory } from "./seed-history.mjs";
@@ -22,13 +22,13 @@ const PROJECTS = [
   {
     name: "Checkout assistant",
     share: 5,
-    openai: ["gpt-5.4-mini", "gpt-6-sol", "text-embedding-3-small"],
+    openai: ["gpt-5.4-mini", "gpt-6-sol", "text-embedding-3-small", "gpt-image-2", "tts-1", "whisper-1"],
     anthropic: ["claude-haiku-5-5", "claude-sonnet-5-5"],
   },
   { name: "Support triage", share: 3, openai: ["gpt-5.4-mini", "gpt-5.4-nano"], anthropic: ["claude-haiku-5-5", "claude-sonnet-5-5", "claude-haiku-4-5"] },
   { name: "Search ranking", share: 2, openai: ["text-embedding-3-large", "text-embedding-3-small", "gpt-5.4-nano"], anthropic: [] },
   { name: "Research agent", share: 1.5, openai: ["gpt-6-sol", "gpt-5.6"], anthropic: ["claude-opus-5-5", "claude-haiku-5-5"] },
-  { name: "Internal tools", share: 0.6, openai: ["gpt-5.4-mini"], anthropic: ["claude-haiku-5-5"] },
+  { name: "Internal tools", share: 0.6, openai: ["gpt-5.4-mini", "gpt-image-1-mini"], anthropic: ["claude-haiku-5-5"] },
 ];
 const TICKETS = 5000;
 const QUESTIONS = 600;
@@ -99,6 +99,9 @@ async function addModels(owner, base, provider, wanted) {
     const hits = await owner.get(`${base}/models/search?provider=${provider}&q=${encodeURIComponent(query)}`);
     const hit = hits.data.find((h) => h.model_id === query);
     if (hit) ids.push(hit.model_id);
+    // The search leaves out deprecated models, such as OpenAI's speech and transcription models,
+    // which a project can still add by id.
+    else await owner.post(`${base}/models`, { provider, model_id: query });
   }
   if (ids.length) await owner.post(`${base}/models/batch`, { provider, model_ids: ids });
 }
@@ -506,6 +509,31 @@ COMMIT;
 }
 
 // The last time each key and provider key was used, from the history.
+// A few media requests after the history, so the request log, usage and analytics show images,
+// speech and transcripts: priced models in Checkout, whose spend budget refuses unpriced ones, and
+// one image model without a price in Internal tools, whose cost shows as unknown.
+async function media(keys) {
+  const checkout = clients(keys.find((k) => k.name === "checkout-web")).openai;
+  const internal = clients(keys.find((k) => k.name === "slack-helper")).openai;
+  const audio = await toFile(
+    Buffer.concat(Array.from({ length: 160 }, () => Buffer.concat([Buffer.from([0xff, 0xfb, 0x90, 0x00]), Buffer.alloc(413)]))),
+    "call.mp3",
+    {
+      type: "audio/mpeg",
+    },
+  );
+  await checkout.images.generate({ model: "gpt-image-2", prompt: "A parcel on a doorstep, flat illustration", size: "1024x1024" });
+  await checkout.images.generate({ model: "gpt-image-2", prompt: "Two parcels, one opened", n: 2 });
+  await (await checkout.audio.speech.create({ model: "tts-1", voice: "alloy", input: "Your parcel is on its way." })).arrayBuffer();
+  await (
+    await checkout.audio.speech.create({ model: "tts-1", voice: "nova", input: "We refunded your order; it reaches your account within three business days." })
+  ).arrayBuffer();
+  await checkout.audio.transcriptions.create({ model: "whisper-1", file: audio });
+  await checkout.audio.transcriptions.create({ model: "whisper-1", file: audio, response_format: "text" });
+  await internal.images.generate({ model: "gpt-image-1-mini", prompt: "A team photo of three robots" });
+  return 7;
+}
+
 async function lastUsed() {
   const used = await rows("SELECT toString(key_id) AS key, toString(max(started_at)) AS at FROM request_log GROUP BY key_id");
   const last = await rows("SELECT toString(max(started_at)) AS at FROM request_log");
@@ -563,10 +591,12 @@ const history = await writeHistory({
   recordUsage: (sql) => psql(stack, sql),
 });
 await addLimits(await limitsFor(keyRows));
+const mediaSent = await media(keys);
 psql(stack, backdate(people, projects) + (await lastUsed()));
 console.log(`seed: ${OWNER.org} (${org}) with ${projects.length} projects, ${people.length + 1} members, ${keys.length + 1} keys`);
 console.log(`seed: ${history.written} requests over 70 days, ${history.contents} of them with content (${sent} conversations sent through the gateway for it)`);
 console.log(
   `seed: Anthropic overload ${history.outageDay} days ago, autumn sale ${history.saleDay} days ago, reindex rate limits ${history.reindexIncident} days ago`,
 );
+console.log(`seed: ${mediaSent} media requests: images, speech and transcripts`);
 console.log(`seed: sign in at ${stack.publicUrl}/sign-in as ${OWNER.email} with the password "${PASSWORD}"`);

@@ -259,7 +259,13 @@ function SpendCell({ o, className }: { o: Overview; className: string }) {
           size="sm"
           value={periodUSD(o.now.cost ?? "0")}
           change={changeOf(o, "cost")}
-          detail={changeOf(o, "cost") ? o.compare : undefined}
+          detail={
+            o.now.unpriced
+              ? t("kaeso.usage.unpriced", "{count, plural, one {# request} other {# requests}} unknown", { count: o.now.unpriced })
+              : changeOf(o, "cost")
+                ? o.compare
+                : undefined
+          }
           loading={o.loading}
         />
       )}

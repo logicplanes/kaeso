@@ -347,7 +347,9 @@
   "kaeso.analytics.busiest": "请求最多",
   "kaeso.analytics.change": "变化",
   "kaeso.analytics.costShare": "{amount}，占费用的 {share}",
+  "kaeso.analytics.costShareKnown": "{amount}，占已知费用的 {share}",
   "kaeso.analytics.costShareTitle": "费用占比",
+  "kaeso.analytics.costShareUnpriced": "不含 {count, plural, other {# 个}}没有价格的请求。",
   "kaeso.analytics.failedOf": "{requests} 次中 {rate} 失败",
   "kaeso.analytics.flakiest": "错误率最高",
   "kaeso.analytics.growing": "增长最多，{compare}",
@@ -409,5 +411,7 @@
   "kaeso.usage.media.videos": "{count, plural, other {# 个视频}}",
   "kaeso.usage.costUnknown": "未知",
   "kaeso.usage.unpriced": "{count, plural, other {# 个请求}}未知",
-  "kaeso.usage.media.header": "媒体"
+  "kaeso.usage.media.header": "媒体",
+  "kaeso.usage.unpricedHint": "{requests}；金额不含这些请求。",
+  "kaeso.usage.unpricedShort": "另有 {count} 个未知"
 }

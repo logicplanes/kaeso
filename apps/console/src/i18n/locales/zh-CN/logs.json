@@ -247,5 +247,8 @@
   "logs.inspector.video": "视频",
   "logs.inspector.videos": "{count, plural, other {# 个视频}}",
   "logs.inspector.videosMade": "{videos} · {duration}",
-  "logs.inspector.costUnknown": "所生成内容没有价格"
+  "logs.inspector.costUnknown": "所生成内容没有价格",
+  "logs.media.hint": "{label}：{units}",
+  "logs.media.images": "{count, plural, other {# 张图片}}",
+  "logs.media.imagesSent": "已发送 {count, plural, other {# 张图片}}"
 }
