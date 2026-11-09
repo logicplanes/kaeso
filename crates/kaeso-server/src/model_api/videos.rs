@@ -101,7 +101,10 @@ pub(super) fn logged_request(r: &VideoRequest) -> Bytes {
     let mut kept = r.clone();
     let mut left_out = crate::services::log_media::LeftOut::default();
     for image in &mut kept.images {
-        left_out.take(&mut image.source);
+        left_out.fit(
+            &mut image.source,
+            &mut crate::services::log_media::Keep::nothing(),
+        );
     }
     Bytes::from(left_out.write(&kept).unwrap_or_default())
 }

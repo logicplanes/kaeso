@@ -126,6 +126,59 @@ async fn images_and_files_inside_a_chat_request_are_logged_as_their_type_and_siz
 }
 
 #[tokio::test]
+async fn a_refused_body_and_media_inside_strings_are_logged_without_the_media() {
+    let env = env(&[]).await;
+    let send = |body: String| {
+        let req = axum::http::Request::builder()
+            .uri("/v1/chat/completions")
+            .method("POST")
+            .header("authorization", format!("Bearer {}", env.key))
+            .header("content-type", "application/json")
+            .body(axum::body::Body::from(body))
+            .unwrap();
+        tower::ServiceExt::oneshot(env.app.router.clone(), req)
+    };
+    let broken = format!(
+        r#"{{"model":"claude-haiku-4-5","note":"\ud83d","messages":[{{"role":"user","content":[{{"type":"image_url","image_url":{{"url":"DATA:image/png;base64,{PIXEL}"}}}}]}}],}}"#
+    );
+    let refused = send(broken).await.unwrap();
+    assert_eq!(refused.status(), StatusCode::BAD_REQUEST);
+    let refused = refused.headers()["kaeso-request-id"]
+        .to_str()
+        .unwrap()
+        .to_owned();
+    let inside = json!({
+        "model": "claude-haiku-4-5",
+        "messages": [
+            { "role": "user", "content": format!("What is ![this](data:image/png;base64,{PIXEL})?") },
+            { "role": "assistant", "content": null, "tool_calls": [{ "id": "call_1", "type": "function", "function": {
+                "name": "lookup", "arguments": json!({ "picture": format!("data:image/png;base64,{PIXEL}") }).to_string(),
+            }}]},
+            { "role": "tool", "tool_call_id": "call_1", "content": json!([{ "type": "image", "mimeType": "image/png", "data": PIXEL }]).to_string() },
+        ],
+        "tools": [{ "type": "function", "function": { "name": "lookup", "parameters": { "type": "object" } } }],
+    });
+    let ok = send(inside.to_string()).await.unwrap();
+    assert_eq!(ok.status(), StatusCode::OK);
+    let ok = ok.headers()["kaeso-request-id"]
+        .to_str()
+        .unwrap()
+        .to_owned();
+    flush(&env).await;
+
+    for id in [refused, ok] {
+        let entry = env
+            .app
+            .get(&format!("{}/logs/{id}", base(&env)), &env.owner.cookie)
+            .await
+            .body;
+        let request = entry["content"]["request"].to_string();
+        assert!(!request.contains(PIXEL), "{request}");
+        assert!(request.contains("not_kept"), "{request}");
+    }
+}
+
+#[tokio::test]
 async fn an_alias_request_is_logged_with_the_steps_it_tried_first() {
     let env = env(&[]).await;
     let models = env

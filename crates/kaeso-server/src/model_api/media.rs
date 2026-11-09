@@ -14,7 +14,7 @@ use kaeso_kpp::{DialectId, KppError};
 use kaeso_upstream::{Call, Guard, Outgoing, ResponseBody, Timeouts};
 use url::Url;
 
-use crate::services::log_media::LeftOut;
+use crate::services::log_media::{Keep, LeftOut};
 use crate::state::AppState;
 
 fn written<T: serde::Serialize>(left_out: &LeftOut, kept: &T) -> Bytes {
@@ -27,7 +27,7 @@ pub(super) fn logged_request(r: &ImageRequest) -> Bytes {
     let mut kept = r.clone();
     let mut left_out = LeftOut::default();
     for input in kept.images.iter_mut().chain(kept.mask.as_mut()) {
-        left_out.take(&mut input.source);
+        left_out.fit(&mut input.source, &mut Keep::nothing());
     }
     written(&left_out, &kept)
 }
@@ -37,7 +37,7 @@ pub(super) fn logged_request(r: &ImageRequest) -> Bytes {
 pub(super) fn logged_transcription(r: &TranscriptionRequest) -> Bytes {
     let mut kept = r.clone();
     let mut left_out = LeftOut::default();
-    left_out.take(&mut kept.audio.source);
+    left_out.fit(&mut kept.audio.source, &mut Keep::nothing());
     written(&left_out, &kept)
 }
 
@@ -47,7 +47,7 @@ pub(super) fn logged_speech(r: &SpeechRequest) -> Bytes {
     let mut kept = r.clone();
     let mut left_out = LeftOut::default();
     if let Some(audio) = kept.audio.as_mut() {
-        left_out.take(&mut audio.source);
+        left_out.fit(&mut audio.source, &mut Keep::nothing());
     }
     written(&left_out, &kept)
 }

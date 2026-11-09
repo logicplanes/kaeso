@@ -19,7 +19,7 @@ use tokio_util::sync::CancellationToken;
 use uuid::Uuid;
 
 use crate::model_api::hooks::{Outcome, Sink};
-use crate::services::log_media;
+use crate::services::log_media::{self, Keep};
 use crate::state::AppState;
 
 const WRITE_RETRY_WAIT: Duration = Duration::from_secs(2);
@@ -553,14 +553,16 @@ fn content_of(
     reply: Option<&Response>,
     request_id: RequestId,
 ) -> (String, String) {
-    let request_body = body.map(log_media::body).unwrap_or_default();
+    let request_body = body
+        .map(|b| log_media::body(b, &mut Keep::nothing()))
+        .unwrap_or_default();
     let reply = reply
         .and_then(|r| {
             reply_json(r)
                 .map_err(|e| tracing::warn!(error = %e, %request_id, "cannot serialize a reply for the request log; it is logged without it"))
                 .ok()
         })
-        .map(|json| log_media::without_media(&json).unwrap_or(json))
+        .map(|json| log_media::without_media(&json, &mut Keep::nothing()).unwrap_or(json))
         .unwrap_or_default();
     (request_body, reply)
 }
@@ -747,12 +749,10 @@ pub async fn record_tool_call(
         }
     };
     row.expires_at = days(row.started_at, cfg.metadata_days);
-    let content = content
-        .filter(|_| cfg.org_content && cfg.project_content)
-        .map(|(arguments, result)| {
-            let kept = |json: String| log_media::without_media(&json).unwrap_or(json);
-            (kept(arguments), kept(result))
-        });
+    let content = match content.filter(|_| cfg.org_content && cfg.project_content) {
+        Some(content) => Some(tool_call_content(content).await),
+        None => None,
+    };
     row.has_content = content.is_some();
     let call_content = content.map(|(arguments, result)| ToolCallContentRow {
         id: row.id,
@@ -784,6 +784,23 @@ pub async fn record_tool_call(
         limits.buffer_size.0,
         limits.flush_rows as usize,
     );
+}
+
+// Tool results can be megabytes of base64, so a large one is read off the async worker.
+async fn tool_call_content((arguments, result): (String, String)) -> (String, String) {
+    let small = arguments.len() + result.len() < crate::model_api::pipeline::OFF_THREAD_BYTES;
+    let strip = move || {
+        let kept =
+            |json: String| log_media::without_media(&json, &mut Keep::nothing()).unwrap_or(json);
+        (kept(arguments), kept(result))
+    };
+    if small {
+        return strip();
+    }
+    tokio::task::spawn_blocking(strip).await.unwrap_or_else(|e| {
+        tracing::error!(error = %e, "cannot prepare a tool call's content for the log; it is logged without it");
+        Default::default()
+    })
 }
 
 fn text_bytes(log: &LogRow) -> u64 {
@@ -1066,6 +1083,28 @@ mod tests {
             let back: Response = serde_json::from_str(&stored).unwrap();
             assert_eq!(back, reply, "{name}");
         }
+    }
+
+    #[tokio::test]
+    async fn a_tool_calls_content_is_logged_without_its_media_however_it_is_written() {
+        let png = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
+        let arguments = format!(r#"{{"note":"\ud83d","picture":"data:image/png;base64,{png}"}}"#);
+        let result = format!(
+            r#"{{"content":[{{"type":"image","data":"{png}","mimeType":"image/png"}},{{"type":"resource","resource":{{"mimeType":"application/x-thing","blob":"{}"}}}}]}}"#,
+            png.trim_end_matches('=').repeat(40_000)
+        );
+        assert!(result.len() > crate::model_api::pipeline::OFF_THREAD_BYTES);
+        let (arguments, result) = tool_call_content((arguments, result)).await;
+        assert!(!arguments.contains(png) && !result.contains(&png[..60]));
+        assert!(
+            arguments.starts_with(r#"{"note":"\ud83d","picture":{"kaeso_media":"#),
+            "{arguments}"
+        );
+        assert_eq!(
+            result.matches(r#""reason":"not_kept""#).count(),
+            2,
+            "{result}"
+        );
     }
 
     #[test]
