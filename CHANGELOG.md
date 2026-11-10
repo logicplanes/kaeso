@@ -195,6 +195,11 @@ Before you upgrade, read the breaking changes. The first applies to every instal
 - Kaeso fetches an MCP client's metadata document only from a public address, whatever networks MCP servers may reach. ([#826](https://github.com/logicplanes/kaeso/pull/826))
 - Voice and video ids can no longer steer provider calls, links on a host other than the provider's own are fetched from public addresses only, video and voice lookups count against rates, and `/v2` reaches the gateway. ([#829](https://github.com/logicplanes/kaeso/pull/829))
 - The Render template keeps the client's address behind Render by reading the header Cloudflare sets instead of a forwarded one the caller can extend. ([#747](https://github.com/logicplanes/kaeso/pull/747))
+- The gateway shares one memory budget, the size of `body_limits.in_flight`, among all providers' answers, so large answers from a provider or a custom provider can no longer run it out of memory: a request that gets no room within 10 seconds is answered 503, and a stream that would need more than the budget ends with the stream limit's error. ([#912](https://github.com/logicplanes/kaeso/pull/912))
+- MCP portal clients meet the organization's two-factor and single sign-on rules and need the person's `tools.use` right. Their grants and tokens stop working when the project is archived or the organization is scheduled for deletion, and a password change that signs agents out, or signing out everywhere, ends them too. ([#911](https://github.com/logicplanes/kaeso/pull/911))
+- A key with platform access creates and rotates keys only within its own model list, expiry and Tools access, and creates none while limits apply to it; a key can still rotate itself. ([#914](https://github.com/logicplanes/kaeso/pull/914))
+- A key limited to some models no longer lists, reads, downloads, polls or deletes videos and image generations made with other models of its project. ([#915](https://github.com/logicplanes/kaeso/pull/915))
+- Pending agent sign-ins for a client are capped per network, so requests from one network no longer end other people's, and client names drop invisible and direction-changing characters. ([#916](https://github.com/logicplanes/kaeso/pull/916))
 
 ## [0.5.6] - 2026-11-02
 
