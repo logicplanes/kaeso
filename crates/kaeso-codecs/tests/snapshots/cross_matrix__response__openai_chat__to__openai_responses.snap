@@ -4926,6 +4926,260 @@ expression: outcomes
     },
     "user": null
   },
+  "providers/fireworks-ai/fireworks-fields": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "5a7c9e1f-3b5d-4f7a-8c2e-4d6f8a0b2c35",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "accounts/fireworks/models/glm-5p3-flash",
+    "object": "response",
+    "output": [
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "Red, yellow and blue.",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_5a7c9e1f3b5d4f7a8c2e4d6f8a0b2c35_0",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 14,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 7,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 21
+    },
+    "user": null
+  },
+  "providers/fireworks-ai/reasoning": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "0c6b1f2e-8d3a-4c57-9a1e-5f7d2b8c4e01",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "accounts/fireworks/models/glm-5p3-flash",
+    "object": "response",
+    "output": [
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "The capital of France is Paris.",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_0c6b1f2e8d3a4c579a1e5f7d2b8c4e01_0",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 24,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 27,
+      "output_tokens_details": {
+        "reasoning_tokens": 18
+      },
+      "total_tokens": 51
+    },
+    "user": null
+  },
+  "providers/fireworks-ai/reasoning-content-sent-back": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "8f2a4c6e-1b3d-4e5f-9a7b-2c4d6e8f0a13",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "accounts/fireworks/models/kimi-k3",
+    "object": "response",
+    "output": [
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "It is 18 °C and cloudy in Paris.",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_8f2a4c6e1b3d4e5f9a7b2c4d6e8f0a13_0",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 148,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 128
+      },
+      "output_tokens": 24,
+      "output_tokens_details": {
+        "reasoning_tokens": 9
+      },
+      "total_tokens": 172
+    },
+    "user": null
+  },
+  "providers/fireworks-ai/tools": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "3d9e7a10-2b4c-4f6d-8e1a-7c5b9d3f2a64",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "accounts/fireworks/models/kimi-k3",
+    "object": "response",
+    "output": [
+      {
+        "arguments": "{\"city\": \"Paris\"}",
+        "call_id": "call_0aB1cD2eF3gH4iJ5kL6mN7oP",
+        "id": "fc_kaeso_3d9e7a102b4c4f6d8e1a7c5b9d3f2a64_0",
+        "name": "get_weather",
+        "status": "completed",
+        "type": "function_call"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 96,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 64
+      },
+      "output_tokens": 39,
+      "output_tokens_details": {
+        "reasoning_tokens": 19
+      },
+      "total_tokens": 135
+    },
+    "user": null
+  },
   "providers/groq/recorded-include-reasoning-false": {
     "background": false,
     "completed_at": 1760000000,

@@ -129,6 +129,15 @@ async fn every_member_reads_each_provider_with_its_name_key_page_and_formats() {
         google["key_page"],
         json!({ "url": "https://aistudio.google.com/apikey", "label": "API keys" })
     );
+    let fireworks = listed.iter().find(|p| p["id"] == "fireworks-ai").unwrap();
+    assert_eq!(fireworks["name"], "Fireworks AI");
+    assert_eq!(
+        fireworks["dialects"],
+        json!(["openai_chat", "anthropic_messages", "openai_embeddings"])
+    );
+    assert_eq!(fireworks["count_tokens"], Value::Null);
+    assert_eq!(fireworks["embeddings"], "openai_embeddings");
+    assert_eq!(fireworks["key_prefix"], "fw_");
 
     let anonymous = app
         .call(Method::GET, &format!("/orgs/{org}/providers"), None, None)

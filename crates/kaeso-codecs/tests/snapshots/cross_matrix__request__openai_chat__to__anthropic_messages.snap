@@ -2813,6 +2813,235 @@ expression: outcomes
     "param": null,
     "unsupported": "thinking"
   },
+  "providers/fireworks-ai/fireworks-fields": {
+    "message": "`top_k` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "top_k"
+  },
+  "providers/fireworks-ai/invalid-api-key": {
+    "body": {
+      "max_tokens": 1,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "hi",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "accounts/fireworks/models/glm-5p3-flash"
+    },
+    "path": "/v1/messages"
+  },
+  "providers/fireworks-ai/missing-api-key": {
+    "body": {
+      "max_tokens": 1,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "hi",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "accounts/fireworks/models/glm-5p3-flash"
+    },
+    "path": "/v1/messages"
+  },
+  "providers/fireworks-ai/reasoning": {
+    "body": {
+      "max_tokens": 512,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "What is the capital of France?",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "accounts/fireworks/models/glm-5p3-flash",
+      "output_config": {
+        "effort": "low"
+      },
+      "system": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "text": "Answer in one short sentence.",
+          "type": "text"
+        }
+      ],
+      "thinking": {
+        "type": "adaptive"
+      }
+    },
+    "path": "/v1/messages"
+  },
+  "providers/fireworks-ai/reasoning-content-sent-back": {
+    "body": {
+      "max_tokens": 512,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "What is the weather in Paris?",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "content": [
+            {
+              "id": "call_0aB1cD2eF3gH4iJ5kL6mN7oP",
+              "input": {
+                "city": "Paris"
+              },
+              "name": "get_weather",
+              "type": "tool_use"
+            }
+          ],
+          "role": "assistant"
+        },
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "content": [
+                {
+                  "text": "{\"temperature_celsius\": 18, \"condition\": \"cloudy\"}",
+                  "type": "text"
+                }
+              ],
+              "tool_use_id": "call_0aB1cD2eF3gH4iJ5kL6mN7oP",
+              "type": "tool_result"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "accounts/fireworks/models/kimi-k3",
+      "tools": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "description": "Get the current weather for a city.",
+          "input_schema": {
+            "properties": {
+              "city": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "city"
+            ],
+            "type": "object"
+          },
+          "name": "get_weather"
+        }
+      ]
+    },
+    "path": "/v1/messages"
+  },
+  "providers/fireworks-ai/reasoning-stream": {
+    "body": {
+      "max_tokens": 512,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "What is 17 times 23?",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "accounts/fireworks/models/glm-5p3-flash",
+      "output_config": {
+        "effort": "medium"
+      },
+      "stream": true,
+      "thinking": {
+        "type": "adaptive"
+      }
+    },
+    "path": "/v1/messages"
+  },
+  "providers/fireworks-ai/tools": {
+    "body": {
+      "max_tokens": 512,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "What is the weather in Paris?",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "accounts/fireworks/models/kimi-k3",
+      "tool_choice": {
+        "type": "auto"
+      },
+      "tools": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "description": "Get the current weather for a city.",
+          "input_schema": {
+            "properties": {
+              "city": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "city"
+            ],
+            "type": "object"
+          },
+          "name": "get_weather"
+        }
+      ]
+    },
+    "path": "/v1/messages"
+  },
+  "providers/fireworks-ai/video-url": {
+    "message": "`video block` is not supported by Anthropic Messages. Anthropic has no video content block; send frames of the video as images, or route the request to a model that takes video.",
+    "param": "messages[0].blocks[1]",
+    "unsupported": "video block"
+  },
   "providers/groq/include-reasoning-false": {
     "message": "`include_reasoning` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
     "param": null,

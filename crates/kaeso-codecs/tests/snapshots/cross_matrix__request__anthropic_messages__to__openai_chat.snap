@@ -763,6 +763,55 @@ expression: outcomes
     },
     "path": "/v1/chat/completions"
   },
+  "providers/fireworks-ai/invalid-api-key": {
+    "body": {
+      "max_completion_tokens": 1,
+      "messages": [
+        {
+          "content": "hi",
+          "role": "user"
+        }
+      ],
+      "model": "accounts/fireworks/models/kimi-k3"
+    },
+    "path": "/v1/chat/completions"
+  },
+  "providers/fireworks-ai/text-stream": {
+    "body": {
+      "max_completion_tokens": 256,
+      "messages": [
+        {
+          "content": "Say hello in Spanish. Reply in one word.",
+          "role": "user"
+        }
+      ],
+      "model": "accounts/fireworks/models/kimi-k3",
+      "reasoning_effort": "none",
+      "stream": true,
+      "stream_options": {
+        "include_usage": true
+      }
+    },
+    "path": "/v1/chat/completions"
+  },
+  "providers/fireworks-ai/thinking-effort": {
+    "body": {
+      "max_completion_tokens": 1024,
+      "messages": [
+        {
+          "content": "Answer in one short sentence.",
+          "role": "system"
+        },
+        {
+          "content": "What is the capital of France?",
+          "role": "user"
+        }
+      ],
+      "model": "accounts/fireworks/models/kimi-k3",
+      "reasoning_effort": "low"
+    },
+    "path": "/v1/chat/completions"
+  },
   "providers/minimax/deep-thinking": {
     "body": {
       "max_completion_tokens": 4096,

@@ -238,6 +238,29 @@ expression: outcomes
       "totalTokenCount": 5330
     }
   },
+  "providers/fireworks-ai/thinking-effort": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "The capital of France is Paris."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "accounts/fireworks/models/kimi-k3",
+    "responseId": "msg_01XFDUDYJgAACzvnptvVoYEL",
+    "usageMetadata": {
+      "candidatesTokenCount": 27,
+      "promptTokenCount": 22,
+      "totalTokenCount": 49
+    }
+  },
   "providers/minimax/deep-thinking": {
     "candidates": [
       {

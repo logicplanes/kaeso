@@ -802,3 +802,25 @@ fn a_profile_that_replays_reasoning_as_read_sends_grok_clis_reasoning_content_in
     assert_eq!(sent["messages"][1]["reasoning_content"], "One number.");
     assert_eq!(sent["messages"][1]["reasoning"], "Seven.");
 }
+
+#[test]
+fn fireworks_takes_video_url_parts_and_the_end_user_as_user() {
+    let fireworks = ChatProfile::compatible("Fireworks AI")
+        .end_user_as_user()
+        .with_video_url()
+        .reasoning_fields(&["reasoning_content"]);
+    let (_, body) = fixtures("openai_chat", "requests", "json")
+        .into_iter()
+        .find(|(n, _)| n == "providers/fireworks-ai/video-url")
+        .unwrap();
+    let sent = encode_with(&decode(&body).unwrap(), fireworks).unwrap();
+    assert_eq!(sent, serde_json::from_slice::<Value>(&body).unwrap());
+
+    let mut req = foreign(DialectId::AnthropicMessages);
+    req.user = Some("user-0001".to_owned());
+    let sent = encode_with(&Request::Generate(req), fireworks).unwrap();
+    assert_eq!(
+        (&sent["user"], sent.get("safety_identifier")),
+        (&json!("user-0001"), None)
+    );
+}

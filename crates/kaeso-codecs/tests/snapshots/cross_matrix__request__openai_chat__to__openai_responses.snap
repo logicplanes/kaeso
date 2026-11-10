@@ -2198,6 +2198,144 @@ expression: outcomes
     "param": null,
     "unsupported": "thinking"
   },
+  "providers/fireworks-ai/fireworks-fields": {
+    "message": "`top_k` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "top_k"
+  },
+  "providers/fireworks-ai/invalid-api-key": {
+    "message": "`max_tokens 1` is not supported by OpenAI Responses. OpenAI Responses needs an output limit of at least 16 tokens; raise it or route the request to another model.",
+    "param": "max_tokens",
+    "unsupported": "max_tokens 1"
+  },
+  "providers/fireworks-ai/missing-api-key": {
+    "message": "`max_tokens 1` is not supported by OpenAI Responses. OpenAI Responses needs an output limit of at least 16 tokens; raise it or route the request to another model.",
+    "param": "max_tokens",
+    "unsupported": "max_tokens 1"
+  },
+  "providers/fireworks-ai/reasoning": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "What is the capital of France?",
+          "role": "user"
+        }
+      ],
+      "instructions": "Answer in one short sentence.",
+      "max_output_tokens": 512,
+      "model": "accounts/fireworks/models/glm-5p3-flash",
+      "reasoning": {
+        "effort": "low"
+      },
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/fireworks-ai/reasoning-content-sent-back": {
+    "body": {
+      "input": [
+        {
+          "content": "What is the weather in Paris?",
+          "role": "user"
+        },
+        {
+          "arguments": "{\"city\": \"Paris\"}",
+          "call_id": "call_0aB1cD2eF3gH4iJ5kL6mN7oP",
+          "name": "get_weather",
+          "type": "function_call"
+        },
+        {
+          "call_id": "call_0aB1cD2eF3gH4iJ5kL6mN7oP",
+          "output": "{\"temperature_celsius\": 18, \"condition\": \"cloudy\"}",
+          "type": "function_call_output"
+        }
+      ],
+      "max_output_tokens": 512,
+      "model": "accounts/fireworks/models/kimi-k3",
+      "store": false,
+      "tools": [
+        {
+          "description": "Get the current weather for a city.",
+          "name": "get_weather",
+          "parameters": {
+            "properties": {
+              "city": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "city"
+            ],
+            "type": "object"
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
+  },
+  "providers/fireworks-ai/reasoning-stream": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "What is 17 times 23?",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 512,
+      "model": "accounts/fireworks/models/glm-5p3-flash",
+      "reasoning": {
+        "effort": "medium"
+      },
+      "store": false,
+      "stream": true
+    },
+    "path": "/v1/responses"
+  },
+  "providers/fireworks-ai/tools": {
+    "body": {
+      "input": [
+        {
+          "content": "What is the weather in Paris?",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 512,
+      "model": "accounts/fireworks/models/kimi-k3",
+      "store": false,
+      "tool_choice": "auto",
+      "tools": [
+        {
+          "description": "Get the current weather for a city.",
+          "name": "get_weather",
+          "parameters": {
+            "properties": {
+              "city": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "city"
+            ],
+            "type": "object"
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
+  },
+  "providers/fireworks-ai/video-url": {
+    "message": "`video block` is not supported by OpenAI Responses. Its input has no video content part; send frames of the video as images, or route the request to a Gemini model.",
+    "param": "messages[0].blocks[1]",
+    "unsupported": "video block"
+  },
   "providers/groq/include-reasoning-false": {
     "message": "`include_reasoning` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
     "param": null,

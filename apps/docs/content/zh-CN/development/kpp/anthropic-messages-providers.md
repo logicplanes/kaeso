@@ -60,6 +60,18 @@ nav: Messages 服务商
 | `GET /v1/models`、`GET /v1/models/{model_id}` | `ModelList`、`ModelInfo` | Anthropic 的结构（`models/list-documented`、`models/retrieve-documented`）；错误的密钥会得到 401，因此**检查可用性**能发现它。 |
 | 错误 | `KppError` | Anthropic 的结构，带有 MiniMax 自己的 `request_id`（`errors/recorded-invalid-api-key`）。 |
 
+## Fireworks AI
+
+来源：Fireworks 的 [Create a Message](https://docs.fireworks.ai/api-reference/anthropic-messages) 参考和 [Anthropic compatibility](https://docs.fireworks.ai/tools-sdks/anthropic-compatibility) 页面（2026-11-09 阅读），以及据此构建的 `fixtures/anthropic_messages/providers/fireworks-ai/`，其中的错误是在没有有效密钥的情况下实时返回的。当 Fireworks 模型的**发送格式**为 Messages 时，它以 Messages 发送；密钥以 `Authorization: Bearer` 发送。
+
+| Fireworks 字段 | KPP | 说明 |
+|---|---|---|
+| `output_config.effort`、带 `budget_tokens` 的 `thinking` | `reasoning` | Fireworks 将两者都映射到它的 `reasoning_effort`。 |
+| 用量为零的 `message_start`，计数在唯一的 `message_delta` 中 | `Usage` | 与兼容性页面描述一致；`cache_creation_input_tokens` 始终为 0。 |
+| `document` 块、来源为文件的 `image` 块、服务器工具、思考时强制的 `tool_choice` 或预填充 | 发送 | Fireworks 返回 400，该错误会到达应用。 |
+| 带 `request_id` 的 Anthropic 封装中的错误（`errors/recorded-invalid-api-key`） | `KppError` | 未知的模型或路径会得到 Fireworks 自己的 `{"error": {"code": …}}` 正文，按 OpenAI 的格式读取。 |
+| `POST /v1/messages/count_tokens` | — | Fireworks 返回 404，因此 Kaeso 在发送任何内容之前拒绝Token 计数。 |
+
 ## 后续步骤
 
 - [Anthropic Messages](anthropic-messages.md)：查看 Anthropic Messages 格式的每个字段在 KPP 中的去向。

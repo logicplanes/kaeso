@@ -1,0 +1,25 @@
+{
+  "id": "msg_01XFDUDYJgAACzvnptvVoYEL",
+  "type": "message",
+  "role": "assistant",
+  "content": [
+    {
+      "type": "thinking",
+      "thinking": "The user asks for the capital of France. It is Paris.",
+      "signature": "EqQBCkYIBRgCIkB0aGlua2luZy1zaWduYXR1cmUtZXhhbXBsZS0wMDAx"
+    },
+    {
+      "type": "text",
+      "text": "The capital of France is Paris."
+    }
+  ],
+  "model": "accounts/fireworks/models/kimi-k3",
+  "stop_reason": "end_turn",
+  "stop_sequence": null,
+  "usage": {
+    "input_tokens": 22,
+    "cache_creation_input_tokens": 0,
+    "cache_read_input_tokens": 0,
+    "output_tokens": 27
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "model": "fireworks/qwen3-embedding-8b",
+  "input": [
+    "Kaeso routes model requests.",
+    "Fireworks serves open models."
+  ],
+  "dimensions": 8
+}

@@ -60,6 +60,18 @@ Quellen: MiniMax' Seite zur [Anthropic-API-Kompatibilität](https://platform.min
 | `GET /v1/models`, `GET /v1/models/{model_id}` | `ModelList`, `ModelInfo` | Anthropics Form (`models/list-documented`, `models/retrieve-documented`); ein falscher Schlüssel erhält 401, daher erkennt **Verfügbarkeit prüfen** ihn. |
 | Fehler | `KppError` | Anthropics Form mit einer eigenen `request_id` von MiniMax (`errors/recorded-invalid-api-key`). |
 
+## Fireworks AI
+
+Quellen: Fireworks' Referenz [Create a Message](https://docs.fireworks.ai/api-reference/anthropic-messages) und die Seite [Anthropic compatibility](https://docs.fireworks.ai/tools-sdks/anthropic-compatibility), gelesen am 2026-11-09, und `fixtures/anthropic_messages/providers/fireworks-ai/`, daraus gebaut, mit dem live erhaltenen Fehler ohne gültigen Schlüssel. Ein Fireworks-Modell sendet als Messages, wenn sein Wert **Sendet als** das sagt; der Schlüssel geht als `Authorization: Bearer`.
+
+| Fireworks-Feld | KPP | Hinweise |
+|---|---|---|
+| `output_config.effort`, `thinking` mit `budget_tokens` | `reasoning` | Fireworks bildet beide auf sein `reasoning_effort` ab. |
+| `message_start` mit Usage null, die Zahlen im einen `message_delta` | `Usage` | Wie die Kompatibilitätsseite beschreibt; `cache_creation_input_tokens` ist immer 0. |
+| `document`-Blöcke, `image`-Blöcke mit einer Datei-Quelle, Server-Tools, ein erzwungenes `tool_choice` oder ein Prefill bei aktivem Thinking | gesendet | Fireworks antwortet mit 400, das die App erreicht. |
+| Fehler in Anthropics Hülle mit einer `request_id` (`errors/recorded-invalid-api-key`) | `KppError` | Ein unbekanntes Modell oder ein unbekannter Pfad erhält stattdessen Fireworks' eigenen Body `{"error": {"code": …}}`, der wie OpenAIs gelesen wird. |
+| `POST /v1/messages/count_tokens` | — | Fireworks antwortet mit 404, daher lehnt Kaeso Token-Zählungen ab, bevor etwas gesendet wird. |
+
 ## Nächste Schritte
 
 - [Anthropic Messages](anthropic-messages.md): Finden Sie, wohin jedes Feld des Formats Anthropic Messages in KPP geht.

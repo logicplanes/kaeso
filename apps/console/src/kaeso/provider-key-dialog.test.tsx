@@ -247,6 +247,26 @@ describe("ProviderKeyDialog", () => {
     ]);
   });
 
+  it("adds a Fireworks AI key with Fireworks' key page and its fw_ prefix as the key hint", async () => {
+    on("POST", CREDENTIALS, credential({ provider: "fireworks-ai", name: "Fireworks prod", is_default: true }));
+    const { user, dialog } = await open();
+
+    await choose(user, dialog, "Fireworks AI");
+
+    expect(await within(dialog).findByRole("heading", { name: "Paste your Fireworks AI API key" })).toBeVisible();
+    expectKeyHint(dialog, "app.fireworks.ai", "https://app.fireworks.ai/settings/users/api-keys", "Settings → API Keys", "fw_");
+    const secret = within(dialog).getByLabelText("Fireworks AI API key");
+    expect(secret).toHaveAttribute("placeholder", "fw_…");
+    await user.type(secret, "fw_123");
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "Fireworks prod");
+    await user.click(within(dialog).getByRole("button", { name: "Add key" }));
+
+    expect(await notifications().findByText("Fireworks prod is the Fireworks AI default")).toBeInTheDocument();
+    expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([
+      { provider: "fireworks-ai", name: "Fireworks prod", secret: "fw_123", make_default: false },
+    ]);
+  });
+
   it("adds an OpenRouter key with OpenRouter's own key hint", async () => {
     on("POST", CREDENTIALS, credential({ provider: "openrouter", name: "OpenRouter prod", is_default: true }));
     const { user, dialog } = await open();

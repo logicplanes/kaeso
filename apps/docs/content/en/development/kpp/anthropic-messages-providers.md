@@ -60,6 +60,18 @@ Sources: MiniMax's [Anthropic API compatibility](https://platform.minimax.io/doc
 | `GET /v1/models`, `GET /v1/models/{model_id}` | `ModelList`, `ModelInfo` | Anthropic's shape (`models/list-documented`, `models/retrieve-documented`); a wrong key gets 401, so **Check availability** spots it. |
 | errors | `KppError` | Anthropic's shape with a `request_id` of MiniMax's own (`errors/recorded-invalid-api-key`). |
 
+## Fireworks AI
+
+Sources: Fireworks' [Create a Message](https://docs.fireworks.ai/api-reference/anthropic-messages) reference and [Anthropic compatibility](https://docs.fireworks.ai/tools-sdks/anthropic-compatibility) page, read 2026-11-09, and `fixtures/anthropic_messages/providers/fireworks-ai/`, built from them, with the error answered live without a valid key. A Fireworks model sends as Messages when its **Sends as** value says so; the key goes as `Authorization: Bearer`.
+
+| Fireworks field | KPP | Notes |
+|---|---|---|
+| `output_config.effort`, `thinking` with `budget_tokens` | `reasoning` | Fireworks maps both to its `reasoning_effort`. |
+| `message_start` with zero usage, the counts on the one `message_delta` | `Usage` | As the compatibility page describes; `cache_creation_input_tokens` is always 0. |
+| `document` blocks, `image` blocks with a file source, server tools, a forced `tool_choice` or a prefill while thinking | sent | Fireworks answers 400, which reaches the app. |
+| errors in Anthropic's envelope with a `request_id` (`errors/recorded-invalid-api-key`) | `KppError` | An unknown model or path gets Fireworks' own `{"error": {"code": …}}` body instead, read like OpenAI's. |
+| `POST /v1/messages/count_tokens` | — | Fireworks answers 404, so Kaeso refuses token counts before sending anything. |
+
 ## Next steps
 
 - [Anthropic Messages](anthropic-messages.md): Find where every field of the Anthropic Messages format goes in KPP.

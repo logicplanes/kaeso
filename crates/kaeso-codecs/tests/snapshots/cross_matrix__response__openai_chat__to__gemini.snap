@@ -1852,6 +1852,109 @@ expression: outcomes
       "totalTokenCount": 462
     }
   },
+  "providers/fireworks-ai/fireworks-fields": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Red, yellow and blue."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "accounts/fireworks/models/glm-5p3-flash",
+    "responseId": "5a7c9e1f-3b5d-4f7a-8c2e-4d6f8a0b2c35",
+    "usageMetadata": {
+      "candidatesTokenCount": 7,
+      "promptTokenCount": 14,
+      "totalTokenCount": 21
+    }
+  },
+  "providers/fireworks-ai/reasoning": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "The capital of France is Paris."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "accounts/fireworks/models/glm-5p3-flash",
+    "responseId": "0c6b1f2e-8d3a-4c57-9a1e-5f7d2b8c4e01",
+    "usageMetadata": {
+      "candidatesTokenCount": 9,
+      "promptTokenCount": 24,
+      "thoughtsTokenCount": 18,
+      "totalTokenCount": 51
+    }
+  },
+  "providers/fireworks-ai/reasoning-content-sent-back": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "It is 18 °C and cloudy in Paris."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "accounts/fireworks/models/kimi-k3",
+    "responseId": "8f2a4c6e-1b3d-4e5f-9a7b-2c4d6e8f0a13",
+    "usageMetadata": {
+      "cachedContentTokenCount": 128,
+      "candidatesTokenCount": 15,
+      "promptTokenCount": 148,
+      "thoughtsTokenCount": 9,
+      "totalTokenCount": 172
+    }
+  },
+  "providers/fireworks-ai/tools": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "functionCall": {
+                "args": {
+                  "city": "Paris"
+                },
+                "id": "call_0aB1cD2eF3gH4iJ5kL6mN7oP",
+                "name": "get_weather"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "accounts/fireworks/models/kimi-k3",
+    "responseId": "3d9e7a10-2b4c-4f6d-8e1a-7c5b9d3f2a64",
+    "usageMetadata": {
+      "cachedContentTokenCount": 64,
+      "candidatesTokenCount": 20,
+      "promptTokenCount": 96,
+      "thoughtsTokenCount": 19,
+      "totalTokenCount": 135
+    }
+  },
   "providers/groq/recorded-include-reasoning-false": {
     "candidates": [
       {

@@ -97,3 +97,7 @@ order: 8
 ### QwenCloud
 
 来源：阿里云百炼（现为 QwenCloud）的 [Embedding](https://www.alibabacloud.com/help/en/model-studio/embedding) 页面（2026-10-30 查阅），以及 `fixtures/openai_embeddings/providers/alibaba/` 中在国际站（新加坡）地域使用 `text-embedding-v4` 和 `text-embedding-v3` 的实时录制。QwenCloud 接受 `encoding_format` 为 `float` 和 `base64`，并按要求的格式回答；`dimensions` 可取每个模型列出的尺寸（`responses/recorded-embed-dimensions`，256 个浮点数），其他尺寸返回 400 并列出可用尺寸。一个批次最多 10 条输入；11 条返回 400（`errors/recorded-embed-batch-eleven`）。以 token ID 作为输入返回 400，生成模型返回 404。回答带有顶层 `id`，保留在扩展字段中。KPMR 未列出 QwenCloud 的嵌入模型，因此需要将它们添加为以 Embeddings 发送的自定义模型。
+
+### Fireworks AI
+
+来源：Fireworks 的 [create embeddings](https://docs.fireworks.ai/api-reference/creates-an-embedding-vector-representing-the-input-text) 参考和[嵌入指南](https://docs.fireworks.ai/guides/querying-embeddings-models)（2026-11-09 阅读），以及据此构建的 `fixtures/openai_embeddings/providers/fireworks-ai/`，其中的错误是在没有有效密钥的情况下实时返回的。无服务器模型为 `qwen3-embedding-8b`（`fireworks/qwen3-embedding-8b`）以及使用 Hugging Face ID 的较旧模型，例如 `nomic-ai/nomic-embed-text-v1.5`；只有可调整大小的模型接受 `dimensions`。Fireworks 自己的 `prompt_template`、`normalize` 和 `return_logits` 保留为请求的 extras。它的 schema 没有 `encoding_format`，因此当应用要求 base64 时，由编解码器把浮点数编码为 base64。

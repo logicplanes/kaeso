@@ -190,6 +190,7 @@ const MARKED_PROVIDERS = {
   elevenlabs: "ElevenLabs",
   google: "Google AI Studio",
   "gemini-agent-platform": "Gemini Enterprise Agent Platform",
+  "fireworks-ai": "Fireworks AI",
   vllm: "vLLM",
   ollama: "Ollama",
   "lm-studio": "LM Studio",

@@ -1,0 +1,9 @@
+{
+  "error": {
+    "message": "You must provide an API key. See https://docs.fireworks.ai/api-reference/introduction#authentication for more information.",
+    "param": null,
+    "code": "UNAUTHORIZED",
+    "type": "error"
+  },
+  "request_id": "chatcmpl-00000000000000000000000000000000"
+}

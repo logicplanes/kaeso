@@ -1,0 +1,15 @@
+{
+  "model": "accounts/fireworks/models/glm-5p3-flash",
+  "messages": [
+    {
+      "role": "system",
+      "content": "Answer in one short sentence."
+    },
+    {
+      "role": "user",
+      "content": "What is the capital of France?"
+    }
+  ],
+  "max_completion_tokens": 512,
+  "reasoning_effort": "low"
+}

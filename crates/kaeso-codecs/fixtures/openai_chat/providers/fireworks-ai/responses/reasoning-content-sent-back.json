@@ -1,0 +1,28 @@
+{
+  "id": "8f2a4c6e-1b3d-4e5f-9a7b-2c4d6e8f0a13",
+  "object": "chat.completion",
+  "created": 1794225720,
+  "model": "accounts/fireworks/models/kimi-k3",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "It is 18 °C and cloudy in Paris.",
+        "reasoning_content": "The tool says 18 degrees and cloudy."
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 148,
+    "total_tokens": 172,
+    "completion_tokens": 24,
+    "prompt_tokens_details": {
+      "cached_tokens": 128
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 9
+    }
+  }
+}

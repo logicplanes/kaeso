@@ -2582,6 +2582,232 @@ expression: outcomes
     "param": null,
     "unsupported": "thinking"
   },
+  "providers/fireworks-ai/fireworks-fields": {
+    "message": "`top_k` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "top_k"
+  },
+  "providers/fireworks-ai/invalid-api-key": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "hi"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1
+      }
+    },
+    "path": "/v1beta/models/accounts%2Ffireworks%2Fmodels%2Fglm-5p3-flash:generateContent"
+  },
+  "providers/fireworks-ai/missing-api-key": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "hi"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1
+      }
+    },
+    "path": "/v1beta/models/accounts%2Ffireworks%2Fmodels%2Fglm-5p3-flash:generateContent"
+  },
+  "providers/fireworks-ai/reasoning": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What is the capital of France?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 512,
+        "thinkingConfig": {
+          "thinkingLevel": "LOW"
+        }
+      },
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "Answer in one short sentence."
+          }
+        ]
+      }
+    },
+    "path": "/v1beta/models/accounts%2Ffireworks%2Fmodels%2Fglm-5p3-flash:generateContent"
+  },
+  "providers/fireworks-ai/reasoning-content-sent-back": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What is the weather in Paris?"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "parts": [
+            {
+              "functionCall": {
+                "args": {
+                  "city": "Paris"
+                },
+                "id": "call_0aB1cD2eF3gH4iJ5kL6mN7oP",
+                "name": "get_weather"
+              },
+              "thoughtSignature": "skip_thought_signature_validator"
+            }
+          ],
+          "role": "model"
+        },
+        {
+          "parts": [
+            {
+              "functionResponse": {
+                "id": "call_0aB1cD2eF3gH4iJ5kL6mN7oP",
+                "name": "get_weather",
+                "response": {
+                  "output": "{\"temperature_celsius\": 18, \"condition\": \"cloudy\"}"
+                }
+              }
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 512
+      },
+      "tools": [
+        {
+          "functionDeclarations": [
+            {
+              "description": "Get the current weather for a city.",
+              "name": "get_weather",
+              "parametersJsonSchema": {
+                "properties": {
+                  "city": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "city"
+                ],
+                "type": "object"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "path": "/v1beta/models/accounts%2Ffireworks%2Fmodels%2Fkimi-k3:generateContent"
+  },
+  "providers/fireworks-ai/reasoning-stream": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What is 17 times 23?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 512,
+        "thinkingConfig": {
+          "thinkingLevel": "MEDIUM"
+        }
+      }
+    },
+    "path": "/v1beta/models/accounts%2Ffireworks%2Fmodels%2Fglm-5p3-flash:streamGenerateContent?alt=sse"
+  },
+  "providers/fireworks-ai/tools": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What is the weather in Paris?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 512
+      },
+      "toolConfig": {
+        "functionCallingConfig": {
+          "mode": "AUTO"
+        }
+      },
+      "tools": [
+        {
+          "functionDeclarations": [
+            {
+              "description": "Get the current weather for a city.",
+              "name": "get_weather",
+              "parametersJsonSchema": {
+                "properties": {
+                  "city": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "city"
+                ],
+                "type": "object"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "path": "/v1beta/models/accounts%2Ffireworks%2Fmodels%2Fkimi-k3:generateContent"
+  },
+  "providers/fireworks-ai/video-url": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Describe this clip in one sentence."
+            },
+            {
+              "fileData": {
+                "fileUri": "https://example.com/clip.mp4",
+                "mimeType": "video/mp4"
+              }
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 256
+      }
+    },
+    "path": "/v1beta/models/accounts%2Ffireworks%2Fmodels%2Fglm-5p3-flash:generateContent"
+  },
   "providers/groq/include-reasoning-false": {
     "message": "`include_reasoning` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
     "param": null,

@@ -1,0 +1,10 @@
+{
+  "model": "accounts/fireworks/models/kimi-k3",
+  "max_tokens": 1,
+  "messages": [
+    {
+      "role": "user",
+      "content": "hi"
+    }
+  ]
+}

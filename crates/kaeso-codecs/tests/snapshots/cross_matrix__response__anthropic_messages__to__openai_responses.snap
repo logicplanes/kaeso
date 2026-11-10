@@ -669,6 +669,82 @@ expression: outcomes
     },
     "user": null
   },
+  "providers/fireworks-ai/thinking-effort": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "msg_01XFDUDYJgAACzvnptvVoYEL",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "accounts/fireworks/models/kimi-k3",
+    "object": "response",
+    "output": [
+      {
+        "encrypted_content": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6ImFudGhyb3BpY19tZXNzYWdlcyJ9LCJ0ZXh0IjpbIlRoZSB1c2VyIGFza3MgZm9yIHRoZSBjYXBpdGFsIG9mIEZyYW5jZS4gSXQgaXMgUGFyaXMuIl0sIm9wYXF1ZSI6W3sib3JpZ2luIjp7ImRpYWxlY3QiOiJhbnRocm9waWNfbWVzc2FnZXMifSwia2luZCI6ImFudGhyb3BpY190aGlua2luZ19zaWduYXR1cmUiLCJkYXRhIjoiRXFRQkNrWUlCUmdDSWtCMGFHbHVhMmx1WnkxemFXZHVZWFIxY21VdFpYaGhiWEJzWlMwd01EQXgifV19",
+        "id": "rs_kaeso_msg01XFDUDYJgAACzvnptvVoYEL_0",
+        "summary": [
+          {
+            "text": "The user asks for the capital of France. It is Paris.",
+            "type": "summary_text"
+          }
+        ],
+        "type": "reasoning"
+      },
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "The capital of France is Paris.",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_msg01XFDUDYJgAACzvnptvVoYEL_1",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 22,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 27,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 49
+    },
+    "user": null
+  },
   "providers/minimax/deep-thinking": {
     "background": false,
     "completed_at": 1760000000,

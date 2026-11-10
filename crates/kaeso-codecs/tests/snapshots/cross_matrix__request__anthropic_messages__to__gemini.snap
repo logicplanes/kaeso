@@ -827,6 +827,73 @@ expression: outcomes
     },
     "path": "/v1beta/models/claude-opus-5-5:generateContent"
   },
+  "providers/fireworks-ai/invalid-api-key": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "hi"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1
+      }
+    },
+    "path": "/v1beta/models/accounts%2Ffireworks%2Fmodels%2Fkimi-k3:generateContent"
+  },
+  "providers/fireworks-ai/text-stream": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Say hello in Spanish. Reply in one word."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 256,
+        "thinkingConfig": {
+          "thinkingBudget": 0
+        }
+      }
+    },
+    "path": "/v1beta/models/accounts%2Ffireworks%2Fmodels%2Fkimi-k3:streamGenerateContent?alt=sse"
+  },
+  "providers/fireworks-ai/thinking-effort": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What is the capital of France?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1024,
+        "thinkingConfig": {
+          "thinkingLevel": "LOW"
+        }
+      },
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "Answer in one short sentence."
+          }
+        ]
+      }
+    },
+    "path": "/v1beta/models/accounts%2Ffireworks%2Fmodels%2Fkimi-k3:generateContent"
+  },
   "providers/minimax/deep-thinking": {
     "body": {
       "contents": [
