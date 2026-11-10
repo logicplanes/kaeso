@@ -228,13 +228,20 @@ pub(super) async fn create(
 // never tell whether a generation exists elsewhere.
 async fn load(state: &AppState, caller: &Caller, id: &str) -> Result<ImageGenerationRow, KppError> {
     let parsed: ImageGenerationId = id.parse().map_err(|_| not_found(id))?;
-    store::get(&state.pg, caller.org_id, caller.project_id, parsed.uuid())
+    let row = store::get(&state.pg, caller.org_id, caller.project_id, parsed.uuid())
         .await
         .map_err(|e| {
             tracing::error!(error = %e, "cannot load an image generation");
             unavailable()
         })?
-        .ok_or_else(|| not_found(id))
+        .ok_or_else(|| not_found(id))?;
+    if !super::listing::ModelAccess::of(caller, state)
+        .await?
+        .allows(row.catalogue_model_id)
+    {
+        return Err(not_found(id));
+    }
+    Ok(row)
 }
 
 fn generation_id(uri: &axum::http::Uri) -> String {
@@ -298,24 +305,37 @@ pub(super) async fn list(
             ),
             None => None,
         };
-        let filter = ImageGenerationFilter {
+        let mut filter = ImageGenerationFilter {
             before,
             status: q.status.map(|s| s.as_wire().to_owned()),
             model: q.model_id.clone(),
         };
         let size = usize::try_from(q.page_size).unwrap_or(usize::MAX);
-        let rows = store::list(
-            &state.pg,
-            caller.org_id,
-            caller.project_id,
-            &filter,
-            i64::from(q.page_size) + 1,
-        )
-        .await
-        .map_err(|e| {
-            tracing::error!(error = %e, "cannot list image generations");
-            unavailable()
-        })?;
+        let models = super::listing::ModelAccess::of(&caller, &state).await?;
+        let mut rows = Vec::with_capacity(size + 1);
+        loop {
+            let page = store::list(
+                &state.pg,
+                caller.org_id,
+                caller.project_id,
+                &filter,
+                i64::from(q.page_size) + 1,
+            )
+            .await
+            .map_err(|e| {
+                tracing::error!(error = %e, "cannot list image generations");
+                unavailable()
+            })?;
+            let full = page.len() > size;
+            filter.before = page.last().map(|r| r.id);
+            rows.extend(
+                page.into_iter()
+                    .filter(|r| models.allows(r.catalogue_model_id)),
+            );
+            if !full || rows.len() > size {
+                break;
+            }
+        }
         let has_more = rows.len() > size;
         let page: Vec<Generation> = rows.iter().take(size).map(app_view).collect();
         let next = has_more
