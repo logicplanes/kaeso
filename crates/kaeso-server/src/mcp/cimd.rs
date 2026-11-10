@@ -78,7 +78,7 @@ fn clean(s: Option<String>, max: usize) -> Option<String> {
     s.map(|s| {
         s.trim()
             .chars()
-            .filter(|c| !c.is_control())
+            .filter(|c| !kaeso_core::text::hidden(*c))
             .take(max)
             .collect::<String>()
     })
@@ -233,6 +233,17 @@ mod tests {
         assert_eq!(
             describe(&url(), unnamed.as_bytes()).map(|d| d.name),
             Ok("claude.example".to_owned())
+        );
+    }
+
+    #[test]
+    fn a_client_name_keeps_no_invisible_or_reordering_characters() {
+        let spoofed = format!(
+            r#"{{"client_id":"{URL}","client_name":"Clau\u200bde \u202eedoC\u202c","redirect_uris":["https://claude.example/cb"]}}"#
+        );
+        assert_eq!(
+            describe(&url(), spoofed.as_bytes()).map(|d| d.name),
+            Ok("Claude edoC".to_owned())
         );
     }
 }

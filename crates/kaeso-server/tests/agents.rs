@@ -2019,6 +2019,48 @@ async fn registrations_no_agent_signed_in_with_are_capped_oldest_first() {
 }
 
 #[tokio::test]
+async fn requests_from_one_network_never_push_out_another_networks_sign_in() {
+    let (_s, app, owner) = setup().await;
+    let client = register(&app, "Claude Code").await;
+    let from = |peer: &str| {
+        let q = form(&[
+            ("response_type", "code"),
+            ("client_id", &client),
+            ("redirect_uri", "http://127.0.0.1:50000/callback"),
+            ("code_challenge", CHALLENGE),
+            ("code_challenge_method", "S256"),
+            ("resource", "https://kaeso.test/mcp"),
+        ]);
+        let mut req = Request::builder()
+            .uri(format!("/oauth/authorize?{q}"))
+            .body(Body::empty())
+            .unwrap();
+        req.extensions_mut()
+            .insert(axum::extract::ConnectInfo(std::net::SocketAddr::new(
+                peer.parse().unwrap(),
+                40000,
+            )));
+        let app = &app;
+        async move {
+            let r = app.raw(req).await;
+            assert_eq!(r.status, StatusCode::SEE_OTHER, "{:?}", r.body);
+            location(&r).split_once("#request=").unwrap().1.to_owned()
+        }
+    };
+    let victim = from("198.51.100.7").await;
+    for _ in 0..20 {
+        from("203.0.113.9").await;
+    }
+    app.post(
+        "/me/agent-requests/view",
+        json!({ "request": victim }),
+        Some(&owner.cookie),
+    )
+    .await
+    .expect_status(StatusCode::OK);
+}
+
+#[tokio::test]
 async fn a_client_keeps_only_its_newest_sign_in_requests() {
     let (_s, app, owner) = setup().await;
     let client = register(&app, "Claude Code").await;
