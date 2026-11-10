@@ -300,6 +300,7 @@ pub async fn responses(
         transcription: None,
         elevenlabs: None,
         video: None,
+        generation: None,
     };
     Ok(pipeline::serve_with(state, incoming, answer_with(&CHAT)).await)
 }

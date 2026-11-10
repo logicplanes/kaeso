@@ -1,6 +1,6 @@
 ---
 title: ElevenLabs API
-description: 通过 Kaeso 使用 ElevenLabs 官方 SDK 调用 ElevenLabs 的语音、音效、音乐和转写。
+description: 通过 Kaeso 使用 ElevenLabs 官方 SDK 调用 ElevenLabs 的语音、音效、音乐、图片和转写。
 order: 5
 ---
 
@@ -58,8 +58,29 @@ SDK 在 `xi-api-key` 中发送密钥；Kaeso 在这里接受 Kaeso 密钥，与�
 | `POST /v1/speech-to-text` | `speech_to_text.convert` | 带时间的词和说话人的转写稿 |
 | `GET /v1/models` | `models.list` | 项目的 ElevenLabs 模型，来自 Kaeso 的目录 |
 | `GET /v1/voices`、`GET /v2/voices`、`GET /v1/voices/{voice_id}` | `voices.get_all`、`voices.search`、`voices.get` | 项目所用 ElevenLabs 账户的声音，用项目的 ElevenLabs 密钥向 ElevenLabs 查询；每次列出都计入密钥的请求速率 |
+| `POST /v1/flows/image` | `flows.image.create` | 用项目的某个 ElevenLabs 图片模型进行图片生成，立即以 Kaeso 自己的 ID 应答（[图片生成](#图片生成)） |
+| `GET /v1/flows/image/{generation_id}`、`GET /v1/flows/image` | `flows.image.get`、`flows.image.list` | 向 ElevenLabs 询问进度后的生成，以及项目的各个生成，最新的在前 |
 
 `output_format`、`enable_logging` 和 `optimize_streaming_latency` 按原样传给 ElevenLabs。上传的请求体受 [`body_limits.audio`](../self-hosting/configuration.md#请求体与响应体) 限制。声音 ID 由字母和数字组成，与 ElevenLabs 列出的一致；其他任何 ID 都会在发送前以 400 拒绝。
+
+## 图片生成
+
+ElevenLabs 应用通过 `flows.image` 使用 ElevenLabs 提供的图片模型生成图片，例如 `gpt-image-1.5`、`gemini-3-pro-image` 或 `bytedance-seedream-5-pro`。Kaeso 用项目的 ElevenLabs 密钥在 ElevenLabs 启动生成，以自己的 ID（例如 `imggen_01k7a3f8m2xq4v9c5r6t8w0yz1`）记录它，并立即应答 `{"id": …, "status": "pending"}`。应用随后查询 `GET /v1/flows/image/{generation_id}`，直到状态为 `completed`（带有图片的 `content_url`）或 `failed`（带有 `failure_reason`）；ElevenLabs 要求两次查询之间等待两秒。
+
+```bash
+curl https://kaeso.example.com/v1/flows/image \
+  -H "xi-api-key: $KAESO_API_KEY" \
+  -H "content-type: application/json" \
+  -d '{"model_id": "gpt-image-1.5", "prompt": "A lighthouse at dusk", "aspect_ratio": "3:2"}'
+```
+
+- **ID。** 生成属于启动它的密钥所在的项目，项目的每个密钥都能看到它。其他项目的密钥会得到 404，与不存在的 ID 相同。
+- **状态。** 对尚未失败的生成，每次 `GET` 都会向 ElevenLabs 询问进度，并计入密钥的请求速率。已完成的生成每次都会得到新的 `content_url`，因为 ElevenLabs 的链接大约一小时内有效。
+- **列表。** `GET /v1/flows/image` 按最新在前列出项目的生成，内容是 Kaeso 最后一次看到的样子，不会询问 ElevenLabs，因此列表中的链接可能已经失效。它接受 `page_size`（1 到 100，默认 30）、`cursor`（上一页的 `next_cursor`）、`status` 和 `model_id`（应用发送的模型名称）。
+- **模型。** Kaeso 只用项目的 ElevenLabs 图片模型（按名称或通过别名）提供 `flows.image`：其他服务商直接应答图片本身，没有可供之后查询的生成。其他服务商的模型会在发送任何内容之前以 400 和 `param: model_id` 被拒绝；请通过[图片 API](images.md) 调用它。
+- **拒绝的内容。** `webhook` 会以 400 被拒绝，因为 webhook 会带有 ElevenLabs 自己的生成 ID，而 Kaeso 不对外提供该 ID。模型不接受的字段（例如 `gpt-image-1.5` 上的 `aspect_ratio` `16:9`）会在发送前被拒绝，字段放在 `param` 中。
+- **密钥。** 生成始终属于启动它的 ElevenLabs 密钥。项目改用另一个 ElevenLabs 密钥后，查询该生成会得到 409。
+- **费用和日志。** [请求日志](../console/request-logs.md)把开始显示为不产生费用的 `flows/image`，把完成的图片显示为带有费用的 `flows/image/completed`，无论多少请求看到它结束，都只计费一次。ElevenLabs 以积分计费图片，而 KPMR 不列出积分，因此其费用保持未知。除非组织和项目都[保留媒体](../console/request-logs.md#请求和回复中的媒体)，否则上传的图片只记录媒体类型和大小。
 
 ## 实时会话
 

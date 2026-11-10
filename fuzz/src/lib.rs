@@ -127,6 +127,14 @@ pub fn decoders(dialect: DialectId, data: &[u8]) {
             }
             let _ = RealtimeApi::from_path(text);
             let _ = realtime::bytes_per_second(text);
+            let _ = kaeso_codecs::elevenlabs::decode_generation_query(text);
+        }
+        if let Ok(g) = kaeso_codecs::elevenlabs::decode_generation(200, &headers, data) {
+            let written = kaeso_codecs::elevenlabs::encode_generation(&g)
+                .unwrap_or_else(|e| panic!("a generation writes: {e:?}"));
+            let again = kaeso_codecs::elevenlabs::decode_generation(200, &headers, &written)
+                .unwrap_or_else(|e| panic!("a written generation reads again: {e:?}"));
+            assert_eq!(again.status, g.status);
         }
     }
     for kind in KINDS {

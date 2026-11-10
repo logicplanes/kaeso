@@ -1,0 +1,21 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE image_generations SET status = $3, content_url = $4, content_mime_type = $5, failure_reason = $6, error_message = $7, completed_at = COALESCE(completed_at, $8) WHERE org_id = $1 AND id = $2 AND (accounted_at IS NULL OR status = $3)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "65b4036f6caec92111f3d913627c0a6b27487d711de196884a99a5c5e9fbfe43"
+}

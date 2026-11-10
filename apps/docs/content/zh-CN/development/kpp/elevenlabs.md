@@ -63,7 +63,7 @@ ElevenLabs 返回 `{"detail": {"type", "code", "message", "status", "request_id"
 
 ## 图片生成
 
-ElevenLabs 通过 `POST /v1/flows/image` 使用 OpenAI、Google 和字节跳动的模型生成图片，由 `GET /v1/flows/image/{id}` 报告；请求体取决于 `model_id`（OpenAPI 文档中的 `ImageGenerationRequest`，2026-11-09 阅读，以及[图片和视频指南](https://elevenlabs.io/docs/eleven-api/guides/cookbooks/image-and-video)）。Kaeso 把 OpenAI Images API 请求发往那里，然后按 ElevenLabs 的要求，至少间隔两秒查询生成状态，直到结束，全部在同一个请求内完成；`dispatch::pending_task`、`encode_task_poll` 和 `task_poll_gap` 对应这些步骤。ElevenLabs 格式的应用不通过 Kaeso 调用图片生成：其 SDK 的 `flows.image` 会保存生成 ID，Kaeso 需要像处理视频那样把它们映射到项目。`fixtures/elevenlabs/image/` 中的 fixture 依据 OpenAPI 文档构建；图片生成未实际调用。
+ElevenLabs 通过 `POST /v1/flows/image` 使用 OpenAI、Google 和字节跳动的模型生成图片，由 `GET /v1/flows/image/{id}` 报告；请求体取决于 `model_id`（OpenAPI 文档中的 `ImageGenerationRequest`，2026-11-09 阅读，以及[图片和视频指南](https://elevenlabs.io/docs/eleven-api/guides/cookbooks/image-and-video)）。Kaeso 把 OpenAI Images API 请求发往那里，然后按 ElevenLabs 的要求，至少间隔两秒查询生成状态，直到结束，全部在同一个请求内完成；`dispatch::pending_task`、`encode_task_poll` 和 `task_poll_gap` 对应这些步骤。ElevenLabs 格式的应用把同样的请求体发往 `POST /v1/flows/image`，按下表读回 KPP；Kaeso 没有类型化的字段作为 ElevenLabs 扩展字段保留，`webhook` 为 `Unsupported`，因为 webhook 会带有 ElevenLabs 的 ID 而非 Kaeso 的 ID。其 SDK 的 `flows.image` 会保存生成的 ID，因此网关立即应答，并以自己的 ID 记录该生成：`decode_generation` 把 ElevenLabs 对创建和状态调用的应答（`MediaGenerationCreateResponse`、`MediaGenerationResponse`）读为 `Generation`，`encode_generation` 和 `encode_generation_list`（`MediaGenerationListResponse`）把它写回给应用，`decode_generation_query` 读取 `GET /v1/flows/image`（`list_image_generations`，2026-11-10 阅读）的 `cursor`、`page_size`（1 到 100，默认 30）、`status` 和 `model_id`。`fixtures/elevenlabs/image/` 中的 fixture 依据 OpenAPI 文档构建；图片生成未实际调用。
 
 | KPP | ElevenLabs |
 | --- | --- |

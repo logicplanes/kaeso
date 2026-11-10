@@ -71,6 +71,7 @@ pub(super) async fn generate(
             transcription: None,
             elevenlabs: Some(call),
             video: None,
+            generation: None,
         },
     )
     .await
