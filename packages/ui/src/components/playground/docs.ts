@@ -156,16 +156,15 @@ export const docs = {
   },
   ResponseMetrics: {
     description:
-      'A response\'s numbers on one line: time to first token, total time, tokens ("412 in · 168 out", and reasoning), cost with the decimals it was given, as request logs show it. Tabular figures, labels in tertiary text. Every value keeps the room a typical value takes, so nothing moves when values arrive; while `live`, values not known yet show "—"; before any response the line is empty, its height kept.',
+      'A response\'s numbers on one line: time to first token, total time, tokens ("412 in · 168 out"), reasoning tokens, cost with the decimals it was given, as request logs show it. Tabular figures, labels in tertiary text, the same gap between items. Only what is known is shown: while `live` that is the first token and a quietly counting Total, and the rest joins at the end, so no placeholder or empty room sits between items. Empty before a response, keeping its height.',
     props: {
       costKnown: 'False when the model has no price for what it made: the cost reads "Unknown" (true by default).',
       cost: 'USD as a decimal string, shown with its own decimals (two at least, six at most): "0.004213" reads "$0.004213", "1.2311" reads "$1.2311", zero reads "$0" and less than a millionth reads "< $0.000001".',
       duration: "Milliseconds from sending to the last token.",
       inputTokens: "The tokens sent, once known.",
-      live: 'A response is arriving: values not known yet show a quiet "—" in the room they will take.',
+      live: "A response is arriving: Total counts up from `startedAt`, and an unknown cost isn't called Unknown yet.",
       outputTokens: "The tokens received, once known.",
-      reasoning: "The model reasons: while `live`, the reasoning item waits with a placeholder.",
-      reasoningTokens: 'Of the output tokens, those spent reasoning. Shown when given, or when `reasoning` is set ("—" when the provider didn\'t report them).',
+      reasoningTokens: "Of the output tokens, those spent reasoning. Shown when the provider reported them.",
       size: "The text size.",
       startedAt:
         "When the request was sent (Date.now()): while live, Total counts up quietly, in tenths of a second and in whole seconds past ten, until `duration` arrives.",

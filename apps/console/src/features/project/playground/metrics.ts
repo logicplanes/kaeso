@@ -22,7 +22,6 @@ export function metricsOf(r: ResponseState, model: PlaygroundModel | null, mode:
     inputTokens: u?.input_tokens ?? null,
     outputTokens: u?.output_tokens ?? null,
     reasoningTokens: u?.reasoning_tokens || null,
-    reasoning: !!model?.reasoning,
     live,
     startedAt: Date.now() - (performance.now() - r.startedAt),
     cost: u ? replyCost(u, model) : null,

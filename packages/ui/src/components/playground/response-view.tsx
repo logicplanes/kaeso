@@ -97,16 +97,19 @@ export const ResponseView = forwardRef<HTMLElement, ResponseViewProps>(function 
   ) : null;
   const copyLabel = t("responseView.copy", "Copy response");
   const hasFooter = footer !== undefined && footer !== null;
+  // The buttons arrive once the reply is done: they slide in from the text's edge, so the metrics beside them move over
+  // instead of jumping, and nothing holds their place while the reply streams.
   const tools =
     status === "done" && (hasText || onRetry) ? (
-      <>
+      <span
+        data-reply-actions=""
+        className={cn(
+          "flex items-center gap-x-4 transition-[margin,opacity] duration-200 ease-standard reduced:transition-none starting:opacity-0",
+          hasText && onRetry ? "starting:-ml-72" : "starting:-ml-36",
+        )}
+      >
         {hasText && <CopyButton value={text} size="sm" variant="quiet" label={copyLabel} />}
         {onRetry && <Button size="sm" variant="quiet" icon={icons.retry} aria-label={retryLabel} onClick={onRetry} />}
-      </>
-    ) : active && hasFooter ? (
-      <span aria-hidden data-tools-reserved="" className="invisible flex items-center gap-x-4">
-        <Button size="sm" variant="quiet" icon={icons.copy} aria-label={copyLabel} tabIndex={-1} />
-        <Button size="sm" variant="quiet" icon={icons.retry} aria-label={retryLabel} tabIndex={-1} />
       </span>
     ) : null;
   return (

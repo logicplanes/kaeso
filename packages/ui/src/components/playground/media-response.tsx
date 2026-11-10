@@ -117,7 +117,13 @@ export const MediaResponse = forwardRef<HTMLElement, MediaResponseProps>(functio
   const saveVideo = status === "done" && kind === "video" && items[0];
   const tools =
     status === "done" && (onRetry || saveVideo) ? (
-      <>
+      <span
+        data-reply-actions=""
+        className={cn(
+          "flex items-center gap-x-4 transition-[margin,opacity] duration-200 ease-standard reduced:transition-none starting:opacity-0",
+          saveVideo && onRetry ? "starting:-ml-72" : "starting:-ml-36",
+        )}
+      >
         {saveVideo && (
           <Button
             size="sm"
@@ -129,11 +135,6 @@ export const MediaResponse = forwardRef<HTMLElement, MediaResponseProps>(functio
           />
         )}
         {onRetry && <Button size="sm" variant="quiet" icon={icons.retry} aria-label={retryLabel} onClick={onRetry} />}
-      </>
-    ) : waiting && hasFooter ? (
-      <span aria-hidden data-tools-reserved="" className="invisible flex gap-x-4">
-        {kind === "video" && <Button size="sm" variant="quiet" icon={icons.download} aria-label={retryLabel} tabIndex={-1} />}
-        <Button size="sm" variant="quiet" icon={icons.retry} aria-label={retryLabel} tabIndex={-1} />
       </span>
     ) : null;
   const item = items[0];

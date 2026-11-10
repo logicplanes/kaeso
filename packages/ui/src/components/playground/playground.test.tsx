@@ -428,19 +428,19 @@ describe("ResponseMetrics", () => {
   });
 
   it("is empty before a response, keeping its height", () => {
-    const { container } = render(<ResponseMetrics reasoning />);
+    const { container } = render(<ResponseMetrics />);
     const dl = screen.getByLabelText("Metrics");
     expect(dl.textContent).toBe("");
     expect(dl.className).toContain("min-h-16");
     expect(container.querySelectorAll("dd")).toHaveLength(0);
   });
 
-  it("holds placeholders in place while live, then shows what is known", () => {
-    const { rerender, container } = render(<ResponseMetrics live reasoning />);
-    const items = () => [...container.querySelectorAll("dd")].map((d) => d.firstElementChild?.textContent?.replace("not yet known", ""));
-    expect(items()).toEqual(["—", "—", "—", "—", "—"]);
-    rerender(<ResponseMetrics live reasoning timeToFirstToken={380} />);
-    expect(items()).toEqual(["380 ms", "—", "—", "—", "—"]);
+  it("is empty while live with nothing known, then shows what is known", () => {
+    const { rerender, container } = render(<ResponseMetrics live />);
+    const items = () => [...container.querySelectorAll("dd")].map((d) => d.textContent);
+    expect(items()).toEqual([]);
+    rerender(<ResponseMetrics live timeToFirstToken={380} />);
+    expect(items()).toEqual(["380 ms"]);
     rerender(<ResponseMetrics timeToFirstToken={380} duration={65_000} inputTokens={12} outputTokens={0} reasoningTokens={0} cost="12.5" />);
     expect(items()).toEqual(["380 ms", "1 min 5 s", "12 in · 0 out", "0", "$12.50"]);
     rerender(<ResponseMetrics timeToFirstToken={380} duration={900} inputTokens={12} outputTokens={4} />);
@@ -455,12 +455,12 @@ describe("ResponseMetrics", () => {
     vi.useFakeTimers();
     try {
       const { container, rerender } = render(<ResponseMetrics live startedAt={Date.now() - 1500} />);
-      const shown = (i: number) => container.querySelectorAll("dd")[i]?.firstElementChild?.textContent;
-      expect(shown(1)).toBe("1.5 s");
+      const shown = (i: number) => container.querySelectorAll("dd")[i]?.textContent;
+      expect(shown(0)).toBe("1.5 s");
       act(() => void vi.advanceTimersByTime(530));
-      expect(shown(1)).toBe("2.0 s");
+      expect(shown(0)).toBe("2.0 s");
       act(() => void vi.advanceTimersByTime(9_000));
-      expect(shown(1)).toBe("11 s");
+      expect(shown(0)).toBe("11 s");
       rerender(<ResponseMetrics startedAt={Date.now() - 2000} duration={2140} />);
       expect(shown(0)).toBe("2.14 s");
     } finally {

@@ -334,8 +334,6 @@ const en: Readonly<Record<string, string>> = {
   "responseMetrics.costUnknown": "Unknown",
   "responseMetrics.firstToken": "First token",
   "responseMetrics.metrics": "Metrics",
-  "responseMetrics.notReported": "not reported",
-  "responseMetrics.notYetKnown": "not yet known",
   "responseMetrics.reasoning": "Reasoning",
   "responseMetrics.tokens": "Tokens",
   "responseMetrics.tokensValue": "{input} in · {output} out",
