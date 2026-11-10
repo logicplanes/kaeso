@@ -97,8 +97,22 @@ fn placeholder(media_type: &str, bytes: u64, size: Option<(u32, u32)>, reason: &
 }
 
 // A media type as RFC 6838 writes it, without parameters: a placeholder repeats only that,
-// never text a request put where a type belongs.
+// never text a request put where a type belongs. The top-level name must be a registered one
+// (RFC 6838 section 4.2), or base64 with a `/` in it would pass for a type and be copied back.
 fn stated(media_type: Option<&str>) -> Option<&str> {
+    const TOP_LEVEL: &[&str] = &[
+        "application",
+        "audio",
+        "example",
+        "font",
+        "haptics",
+        "image",
+        "message",
+        "model",
+        "multipart",
+        "text",
+        "video",
+    ];
     let name = media_type?.split(';').next()?.trim();
     let (kind, subtype) = name.split_once('/')?;
     let part = |p: &str| {
@@ -106,7 +120,7 @@ fn stated(media_type: Option<&str>) -> Option<&str> {
             && p.bytes()
                 .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'.' | b'+' | b'-' | b'_'))
     };
-    (part(kind) && part(subtype)).then_some(name)
+    (TOP_LEVEL.iter().any(|t| kind.eq_ignore_ascii_case(t)) && part(subtype)).then_some(name)
 }
 
 fn of_bytes(media_type: Option<&str>, data: &[u8], reason: &str) -> String {
