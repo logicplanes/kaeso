@@ -1352,7 +1352,13 @@ async fn a_password_change_disconnects_agents_only_when_asked() {
         .iter()
         .map(|e| &e["after"])
         .collect();
-    assert_eq!(afters, [&json!({ "agents_revoked": 2 }), &Value::Null]);
+    assert_eq!(
+        afters,
+        [
+            &json!({ "agents_revoked": 2, "portal_grants_revoked": 0 }),
+            &Value::Null
+        ]
+    );
     s.cleanup().await;
 }
 
