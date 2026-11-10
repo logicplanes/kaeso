@@ -502,6 +502,11 @@ async fn streams_end_at_the_installs_limits() {
             "Hi [mock:fixture=thinking-long-tool-loop]",
         ),
         ("KAESO_STREAMS_MAX_DURATION", "1s", "Hi [mock:stall]"),
+        (
+            "KAESO_BODY_LIMITS_IN_FLIGHT",
+            "32KiB",
+            "Hi [mock:fixture=thinking-long-tool-loop]",
+        ),
     ] {
         let env = env(&[(setting, value)]).await;
         let r = send(

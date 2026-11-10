@@ -329,6 +329,7 @@
   "errors.modelApi.accountSignedOut": "The {product} account of this project's {provider} key is signed out. Ask an organization admin to sign in again under Providers.",
   "errors.modelApi.accountUnrenewed": "Kaeso cannot renew the {product} account's access right now. Try again shortly.",
   "errors.modelApi.ambiguous": "The model name `{model}` is served by several providers in this project ({providers}). Use a prefixed name such as `{provider}/{model}`.",
+  "errors.modelApi.answersBusy": "Kaeso is busy reading other providers' answers; try again shortly.",
   "errors.modelApi.appClosed": "The app closed the connection before the reply was complete.",
   "errors.modelApi.appStalled": "The app stopped reading the stream for too long; Kaeso ended it.",
   "errors.modelApi.bodyBrokeOff": "The request body broke off before it was complete; send it again.",

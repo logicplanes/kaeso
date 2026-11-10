@@ -28,6 +28,10 @@ const PER_TOKEN: u64 = 4;
 
 pub const WAIT: Duration = Duration::from_secs(10);
 
+// A provider's answer read whole peaked at 4 bytes per byte once decoded (a 100 MiB JSON
+// answer, its raw body included), the same each streamed byte the reply holds on to.
+pub const PER_ANSWER_BYTE: u64 = 4;
+
 const SHARES_PER_BUDGET: u32 = 4;
 
 fn count(n: usize) -> u64 {

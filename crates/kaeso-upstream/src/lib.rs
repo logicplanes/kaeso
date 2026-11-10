@@ -2,6 +2,7 @@
 
 pub mod guard;
 pub mod mcp;
+pub mod memory;
 pub mod ws;
 
 use std::collections::HashMap;
@@ -67,6 +68,8 @@ pub enum UpstreamError {
     Refused(#[source] guard::Refused),
     #[error("the path has a segment a URL parser would resolve away")]
     Path,
+    #[error("no memory is free to read the provider's answer")]
+    Busy,
 }
 
 #[derive(Debug)]
@@ -159,6 +162,7 @@ pub struct Upstream {
     roots: Vec<reqwest::Certificate>,
     reach: guard::Reach,
     lookup: guard::Lookup,
+    answers: Option<memory::AnswerMemory>,
 }
 
 #[derive(Debug)]
@@ -306,7 +310,18 @@ impl Upstream {
             roots: Vec::new(),
             reach: guard::Reach::public_only(),
             lookup: guard::Lookup::default(),
+            answers: None,
         }
+    }
+
+    pub fn answers(&self) -> Option<&memory::AnswerMemory> {
+        self.answers.as_ref()
+    }
+
+    #[must_use]
+    pub fn holding_answers_in(mut self, memory: memory::AnswerMemory) -> Upstream {
+        self.answers = Some(memory);
+        self
     }
 
     #[must_use]
@@ -481,7 +496,7 @@ impl Upstream {
                 lease.answered(resp.version());
                 let status = resp.status().as_u16();
                 let headers = headers_of(&resp);
-                let body = read_capped(resp, call.max_body).await?;
+                let body = read_capped(resp, call.max_body, self.answers.as_ref()).await?;
                 Ok::<_, UpstreamError>((status, headers, body))
             };
             let (status, headers, body) = tokio::time::timeout(call.timeouts.request, fut)
@@ -496,21 +511,44 @@ impl Upstream {
     }
 }
 
-async fn read_capped(mut resp: reqwest::Response, max: usize) -> Result<Bytes, UpstreamError> {
-    if resp
+async fn read_capped(
+    mut resp: reqwest::Response,
+    max: usize,
+    memory: Option<&memory::AnswerMemory>,
+) -> Result<Bytes, UpstreamError> {
+    let announced = resp
         .content_length()
-        .is_some_and(|len| usize::try_from(len).map_or(true, |len| len > max))
-    {
+        .map(|len| usize::try_from(len).unwrap_or(usize::MAX));
+    if announced.is_some_and(|len| len > max) {
         return Err(UpstreamError::TooLarge(max));
     }
-    let mut body = bytes::BytesMut::new();
+    let mut charge = memory.map(memory::AnswerMemory::charge);
+    let mut body = Vec::new();
+    if let Some(len) = announced {
+        if let Some(c) = &mut charge {
+            c.cover(len).await.map_err(|_| UpstreamError::Busy)?;
+        }
+        body.reserve_exact(len);
+    }
     while let Some(chunk) = resp.chunk().await.map_err(classify)? {
-        if body.len() + chunk.len() > max {
+        let needed = body.len() + chunk.len();
+        if needed > max {
             return Err(UpstreamError::TooLarge(max));
+        }
+        // Charged before it grows, so the buffer never holds more than it paid for.
+        if needed > body.capacity() {
+            let grown = needed.max(body.capacity().saturating_mul(2)).min(max);
+            if let Some(c) = &mut charge {
+                c.cover(grown).await.map_err(|_| UpstreamError::Busy)?;
+            }
+            body.reserve_exact(grown - body.len());
         }
         body.extend_from_slice(&chunk);
     }
-    Ok(body.freeze())
+    Ok(match charge {
+        Some(c) => c.hold(body),
+        None => Bytes::from(body),
+    })
 }
 
 // The path goes after the base URL as written, and URL parsing resolves `.` and `..` segments,
@@ -775,6 +813,61 @@ mod tests {
             fetch(&base, 8).await,
             Err(UpstreamError::TooLarge(8))
         ));
+    }
+
+    #[tokio::test]
+    async fn answers_read_whole_hold_their_memory_until_dropped_and_wait_for_room() {
+        let memory = memory::AnswerMemory::new(64 * 1024, 4, Duration::ZERO);
+        let upstream =
+            Upstream::new(Duration::from_secs(5), "kaeso-test").holding_answers_in(memory.clone());
+        let call = |base: &Url| {
+            let base = base.clone();
+            let upstream = &upstream;
+            async move {
+                let credential = SecretString::from("sk-test");
+                upstream
+                    .send(Call {
+                        base_url: &base,
+                        auth: None,
+                        guard: Guard::Off,
+                        credential: &credential,
+                        request: EncodedRequest::post_json("/v1", HeaderList::new(), Vec::new())
+                            .into(),
+                        stream: false,
+                        timeouts: Timeouts {
+                            request: Duration::from_secs(5),
+                            first_byte: Duration::from_secs(5),
+                            idle: Duration::from_secs(5),
+                        },
+                        max_body: 1 << 20,
+                    })
+                    .await
+            }
+        };
+        let answer = |len: usize| {
+            let mut r =
+                format!("HTTP/1.1 200 OK\r\ncontent-length: {len}\r\nconnection: close\r\n\r\n")
+                    .into_bytes();
+            r.extend(std::iter::repeat_n(b'a', len));
+            r
+        };
+        let first = call(&serve_once(answer(8 * 1024)).await).await.unwrap();
+        assert_eq!(
+            memory.free(),
+            32 * 1024,
+            "8 KiB read whole holds four times that"
+        );
+        let second = call(&serve_once(answer(10 * 1024)).await).await;
+        assert!(matches!(second, Err(UpstreamError::Busy)), "{second:?}");
+        drop(first);
+        assert_eq!(memory.free(), 64 * 1024);
+        let huge = call(&serve_once(answer(100 * 1024)).await).await.unwrap();
+        assert!(matches!(&huge.body, ResponseBody::Full(b) if b.len() == 100 * 1024));
+        assert_eq!(
+            memory.free(),
+            0,
+            "one answer larger than the budget takes all of it"
+        );
     }
 
     #[tokio::test(start_paused = true)]
