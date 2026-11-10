@@ -25,6 +25,8 @@ const leftOutBlock = (v: Json, name?: string): LogBlock | null => {
   return media ? { type: "left_out", media, ...(name ? { name } : {}) } : null;
 };
 
+const MEDIA_BLOCKS = new Set<Json>(["image", "document", "audio", "video"]);
+
 interface ToolInfo {
   name: string;
   description?: string;
@@ -145,8 +147,8 @@ function anthropicBlocks(content: Json): LogBlock[] {
   if (typeof content === "string") return [{ type: "text", text: content }];
   return arr(content).map((b): LogBlock => {
     if (!isObj(b)) return fail();
-    const left = isObj(b.source) ? leftOutBlock(b.source.data, str(b.title)) : null;
-    if (left && (b.type === "image" || b.type === "document" || b.type === "video")) return left;
+    const left = MEDIA_BLOCKS.has(b.type) && isObj(b.source) ? leftOutBlock(b.source.data, str(b.title)) : null;
+    if (left) return left;
     switch (b.type) {
       case "text":
         return { type: "text", text: str(b.text) ?? fail() };
@@ -500,8 +502,8 @@ function kppBlock(b: Json, unknown: Json[]): LogBlock | null {
   if (!isObj(b)) return fail();
   const [tag, v] = Object.entries(b)[0] ?? fail();
   const x = isObj(v) ? v : {};
-  const left = isObj(x.source) && isObj(x.source.base64) ? leftOutBlock(x.source.base64.data, str(x.title)) : null;
-  if (left && (tag === "image" || tag === "document" || tag === "audio" || tag === "video")) return left;
+  const left = MEDIA_BLOCKS.has(tag) && isObj(x.source) && isObj(x.source.base64) ? leftOutBlock(x.source.base64.data, str(x.title)) : null;
+  if (left) return left;
   switch (tag) {
     case "text":
       return { type: "text", text: str(x.text) ?? fail() };

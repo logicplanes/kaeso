@@ -247,6 +247,76 @@ async fn a_member_makes_and_edits_images_and_hears_what_they_cost() {
     );
 }
 
+async fn logged_content(env: &Env) -> Value {
+    let o = last(env).await;
+    let state = &env.app.state;
+    let clickhouse = state.clickhouse.as_ref().unwrap();
+    clickhouse.migrate(&state.pg).await.unwrap();
+    kaeso_server::services::logs::record(state, &o).await;
+    kaeso_server::services::logs::flush_all(state, std::time::Duration::from_secs(10)).await;
+    let r = env
+        .app
+        .get(
+            &format!(
+                "/orgs/{}/projects/{}/logs/{}",
+                env.owner.org_id, env.project, o.request_id
+            ),
+            &env.owner.cookie,
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    assert_eq!(r.body["source"], "playground");
+    r.body["content"].clone()
+}
+
+#[tokio::test]
+async fn playground_requests_are_logged_without_their_media() {
+    use base64::Engine as _;
+    let png = base64::engine::general_purpose::STANDARD.encode(PNG);
+    let env = env().await;
+    let chat = json!({
+        "model": "claude-haiku-4-5",
+        "stream": true,
+        "input": [{ "role": "user", "content": [
+            { "type": "input_text", "text": "What is in this picture?" },
+            { "type": "input_image", "image_url": format!("data:image/png;base64,{png}") },
+        ]}],
+    });
+    let r = post_json(&env, "responses", chat).await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    let content = logged_content(&env).await;
+    let image = &content["request"]["input"][0]["content"][1]["image_url"]["kaeso_media"];
+    assert_eq!(image["reason"], "not_kept", "{content}");
+    assert_eq!((&image["width"], &image["height"]), (&json!(1), &json!(1)));
+
+    let r = upload(
+        &env,
+        "images/edits",
+        &[("model", "gpt-image-2"), ("prompt", "Add a hat")],
+        ("image[]", "otter.png", "image/png", PNG),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    let content = logged_content(&env).await;
+    assert_eq!(
+        content["request"]["images"][0]["source"]["base64"]["data"]["kaeso_media"]["reason"],
+        "not_kept",
+        "{content}"
+    );
+    upload(
+        &env,
+        "audio/transcriptions",
+        &[("model", "whisper-1")],
+        ("file", "a.mp3", "audio/mpeg", MP3),
+    )
+    .await;
+    let content = logged_content(&env).await;
+    assert_eq!(
+        content["request"]["audio"]["source"]["base64"]["data"]["kaeso_media"]["bytes"],
+        MP3.len()
+    );
+}
+
 #[tokio::test]
 async fn speech_sound_effects_and_music_come_back_as_audio() {
     let env = env().await;
