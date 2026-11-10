@@ -467,5 +467,10 @@
   "org.twoFactor.requireHint": "登录时需要验证码；单点登录视为已验证。",
   "org.twoFactor.requiredOff": "已不再要求双重验证",
   "org.twoFactor.requiredOn": "已要求双重验证",
-  "org.wholeDays": "请输入整数天数，至少为 1"
+  "org.wholeDays": "请输入整数天数，至少为 1",
+  "org.logging.mediaOn": "从现在起保留媒体",
+  "org.logging.mediaOff": "不再保留媒体",
+  "org.logging.keepMedia": "保留媒体",
+  "org.logging.keepMediaHint": "保留图片、音频和文件，每个请求最多 {size}。",
+  "org.logging.keepMediaNeedsContent": "请先开启内容日志"
 }

@@ -107,6 +107,8 @@ pub async fn finish(
 pub struct LogSettings {
     pub org_content: bool,
     pub project_content: bool,
+    pub org_media: bool,
+    pub project_media: bool,
     pub metadata_days: i32,
     pub content_days: i32,
 }
@@ -118,6 +120,7 @@ pub async fn settings(
     Ok(sqlx::query_as!(
         LogSettings,
         "SELECT o.content_logging AS org_content, p.content_logging AS project_content, \
+         o.keep_media AS org_media, p.keep_media AS project_media, \
          o.metadata_retention_days AS metadata_days, o.content_retention_days AS content_days \
          FROM projects p JOIN organizations o ON o.id = p.org_id WHERE p.id = $1",
         project_id

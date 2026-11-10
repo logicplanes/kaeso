@@ -257,7 +257,7 @@ export function memberRights(rights: string[], user = "usr_grace"): ProjectRight
 }
 
 export function logSettings(overrides: Partial<ProjectLogSettings> = {}): ProjectLogSettings {
-  return { content_logging: true, effective_content_logging: true, ...overrides };
+  return { content_logging: true, effective_content_logging: true, keep_media: false, effective_keep_media: false, ...overrides };
 }
 
 export const projectPath = (tail = "") => `/orgs/${ORG}/projects/${PROJECT}${tail ? `/${tail}` : ""}`;

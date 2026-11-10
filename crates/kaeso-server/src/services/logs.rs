@@ -7,7 +7,7 @@ use bytes::Bytes;
 use futures::future::BoxFuture;
 use kaeso_codecs::gemini::GeminiAction;
 use kaeso_core::id::RequestId;
-use kaeso_kpp::{DialectId, RequestKind, Response};
+use kaeso_kpp::{DialectId, Reply, RequestKind, Response};
 use kaeso_store::StoreError;
 use kaeso_store::clickhouse::logs::{self as ch, ContentRow, LogRow};
 use kaeso_store::clickhouse::tool_calls::{self, ToolCallContentRow, ToolCallRow};
@@ -387,15 +387,34 @@ async fn settings(state: &AppState, project: Uuid) -> Result<Option<LogSettings>
     Ok(found.map(|c| (*c).into()))
 }
 
-pub async fn keeps_content(state: &AppState, project: Uuid) -> bool {
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct Kept {
+    pub content: bool,
+    pub media: bool,
+}
+
+pub async fn keeps(state: &AppState, project: Uuid) -> Kept {
     if !state.request_logs() {
-        return false;
+        return Kept::default();
     }
     match settings(state, project).await {
-        Ok(Some(cfg)) => cfg.org_content && cfg.project_content,
-        Ok(None) => false,
-        Err(_) => true,
+        Ok(Some(cfg)) => {
+            let content = cfg.org_content && cfg.project_content;
+            Kept {
+                content,
+                media: content && cfg.org_media && cfg.project_media,
+            }
+        }
+        Ok(None) => Kept::default(),
+        Err(_) => Kept {
+            content: true,
+            media: false,
+        },
     }
+}
+
+pub async fn keeps_content(state: &AppState, project: Uuid) -> bool {
+    keeps(state, project).await.content
 }
 
 pub async fn forget(state: &AppState, project: Uuid) {
@@ -410,6 +429,10 @@ pub async fn forget(state: &AppState, project: Uuid) {
 pub struct Cached {
     org_content: bool,
     project_content: bool,
+    #[serde(default)]
+    org_media: bool,
+    #[serde(default)]
+    project_media: bool,
     metadata_days: i32,
     content_days: i32,
 }
@@ -419,6 +442,8 @@ impl From<LogSettings> for Cached {
         Cached {
             org_content: s.org_content,
             project_content: s.project_content,
+            org_media: s.org_media,
+            project_media: s.project_media,
             metadata_days: s.metadata_days,
             content_days: s.content_days,
         }
@@ -430,6 +455,8 @@ impl From<Cached> for LogSettings {
         LogSettings {
             org_content: c.org_content,
             project_content: c.project_content,
+            org_media: c.org_media,
+            project_media: c.project_media,
             metadata_days: c.metadata_days,
             content_days: c.content_days,
         }
@@ -548,38 +575,96 @@ fn reply_json(reply: &Response) -> Result<String, serde_json::Error> {
     serde_json::to_string(reply)
 }
 
-fn content_of(
-    body: Option<&[u8]>,
-    reply: Option<&Response>,
+// A reply that isn't a chat reply is logged under its kind, such as `{"image": {…}}`, as
+// format 2 of the logged reply. Media beyond the request's allowance is taken out before the
+// reply is written, so it is never encoded.
+fn media_reply_json(reply: &Reply, keep: &mut Keep) -> Result<String, serde_json::Error> {
+    let mut kept = reply.clone();
+    let mut left_out = log_media::LeftOut::default();
+    match &mut kept {
+        Reply::Image(r) => {
+            for image in &mut r.images {
+                left_out.fit(&mut image.source, keep);
+            }
+        }
+        Reply::Speech(r) => left_out.fit(&mut r.audio, keep),
+        _ => {}
+    }
+    written_media_reply(&kept, &left_out)
+}
+
+pub(crate) fn written_media_reply(
+    reply: &Reply,
+    left_out: &log_media::LeftOut,
+) -> Result<String, serde_json::Error> {
+    let text = left_out.write(reply)?;
+    Ok(match text.strip_prefix('{') {
+        Some(rest) => format!("{{\"format\":{MEDIA_REPLY_FORMAT},{rest}"),
+        None => text,
+    })
+}
+
+const MEDIA_REPLY_FORMAT: u8 = 2;
+
+struct Content {
+    body: Option<Bytes>,
+    reply: Option<Response>,
+    media_reply: Option<Reply>,
+    logged_reply: Option<String>,
+    keep: Keep,
     request_id: RequestId,
-) -> (String, String) {
-    let request_body = body
-        .map(|b| log_media::body(b, &mut Keep::nothing()))
-        .unwrap_or_default();
-    let reply = reply
-        .and_then(|r| {
-            reply_json(r)
-                .map_err(|e| tracing::warn!(error = %e, %request_id, "cannot serialize a reply for the request log; it is logged without it"))
-                .ok()
-        })
-        .map(|json| log_media::without_media(&json, &mut Keep::nothing()).unwrap_or(json))
-        .unwrap_or_default();
-    (request_body, reply)
+}
+
+impl Content {
+    fn logged(self) -> (String, String) {
+        let mut keep = self.keep;
+        let request_body = self
+            .body
+            .map(|b| log_media::body(&b, &mut keep))
+            .unwrap_or_default();
+        let reply = match (&self.reply, &self.media_reply) {
+            (Some(r), _) => Some(
+                reply_json(r)
+                    .map(|json| log_media::without_media(&json, &mut keep).unwrap_or(json)),
+            ),
+            (None, Some(r)) => Some(media_reply_json(r, &mut keep)),
+            // What a stream gathered was measured against the whole allowance; it is read
+            // again so that the request's own media counts first.
+            (None, None) => self
+                .logged_reply
+                .map(|json| Ok(log_media::without_media(&json, &mut keep).unwrap_or(json))),
+        };
+        let reply = reply
+            .and_then(|json| {
+                json.map_err(|e| tracing::warn!(error = %e, request_id = %self.request_id, "cannot serialize a reply for the request log; it is logged without it"))
+                    .ok()
+            })
+            .unwrap_or_default();
+        (request_body, reply)
+    }
 }
 
 // Leaving media out reads the whole body, so a large one is read off the request's thread.
-async fn logged_content(o: &Outcome) -> (String, String) {
+async fn logged_content(o: &Outcome, keep: Keep) -> (String, String) {
     let request_id = o.request_id;
     let size = o.request_body.as_ref().map_or(0, Bytes::len);
-    let media = o
-        .reply
-        .as_ref()
-        .is_some_and(|r| !r.blocks.iter().all(is_text));
+    let media = o.media_reply.is_some()
+        || o.media_reply_logged.is_some()
+        || o.reply
+            .as_ref()
+            .is_some_and(|r| !r.blocks.iter().all(is_text));
+    let content = Content {
+        body: o.request_body.clone(),
+        reply: o.reply.clone(),
+        media_reply: o.media_reply.clone(),
+        logged_reply: o.media_reply_logged.clone(),
+        keep,
+        request_id,
+    };
     if size < crate::model_api::pipeline::OFF_THREAD_BYTES && !media {
-        return content_of(o.request_body.as_deref(), o.reply.as_ref(), request_id);
+        return content.logged();
     }
-    let (body, reply) = (o.request_body.clone(), o.reply.clone());
-    tokio::task::spawn_blocking(move || content_of(body.as_deref(), reply.as_ref(), request_id))
+    tokio::task::spawn_blocking(move || content.logged())
         .await
         .unwrap_or_else(|e| {
             tracing::error!(error = %e, %request_id, "cannot prepare a request's content for the log; it is logged without it");
@@ -612,8 +697,13 @@ pub async fn record(state: &AppState, o: &Outcome) {
     let (_, cost) = crate::services::usage::costed(o);
     let progress = o.stream_progress.unwrap_or_default();
     let content = o.content_kept && cfg.org_content && cfg.project_content;
+    let keep = if o.media_kept && cfg.org_media && cfg.project_media {
+        Keep::media()
+    } else {
+        Keep::nothing()
+    };
     let (request_body, reply) = if content {
-        logged_content(o).await
+        logged_content(o, keep).await
     } else {
         Default::default()
     };
@@ -749,8 +839,13 @@ pub async fn record_tool_call(
         }
     };
     row.expires_at = days(row.started_at, cfg.metadata_days);
+    let keep = if cfg.org_media && cfg.project_media {
+        Keep::media()
+    } else {
+        Keep::nothing()
+    };
     let content = match content.filter(|_| cfg.org_content && cfg.project_content) {
-        Some(content) => Some(tool_call_content(content).await),
+        Some(content) => Some(tool_call_content(content, keep).await),
         None => None,
     };
     row.has_content = content.is_some();
@@ -787,11 +882,13 @@ pub async fn record_tool_call(
 }
 
 // Tool results can be megabytes of base64, so a large one is read off the async worker.
-async fn tool_call_content((arguments, result): (String, String)) -> (String, String) {
+async fn tool_call_content(
+    (arguments, result): (String, String),
+    mut keep: Keep,
+) -> (String, String) {
     let small = arguments.len() + result.len() < crate::model_api::pipeline::OFF_THREAD_BYTES;
     let strip = move || {
-        let kept =
-            |json: String| log_media::without_media(&json, &mut Keep::nothing()).unwrap_or(json);
+        let mut kept = |json: String| log_media::without_media(&json, &mut keep).unwrap_or(json);
         (kept(arguments), kept(result))
     };
     if small {
@@ -1085,6 +1182,41 @@ mod tests {
         }
     }
 
+    #[test]
+    fn replies_that_are_not_chat_are_logged_under_their_kind() {
+        use kaeso_kpp::{
+            GeneratedImage, ImageResponse, Source, SpeechResponse, TranscriptionResponse,
+        };
+        let image = Reply::Image(ImageResponse::new(
+            "gpt-image-2",
+            vec![
+                GeneratedImage::new(Source::bytes("image/png", &b"\x89PNG\r\n\x1a\n"[..])),
+                GeneratedImage::new(Source::Url("https://example.com/otter.png".into())),
+            ],
+        ));
+        let speech = Reply::Speech(SpeechResponse::new(
+            "gpt-4o-mini-tts",
+            Source::bytes("audio/mpeg", &b"ID3\x04"[..]),
+        ));
+        let transcript = Reply::Transcription(TranscriptionResponse::new("whisper-1", "Hello."));
+        for (name, reply) in [
+            ("image", image),
+            ("speech", speech),
+            ("transcription", transcript),
+        ] {
+            for (keep, kept) in [(Keep::media(), "kept"), (Keep::nothing(), "left_out")] {
+                let stored = media_reply_json(&reply, &mut keep.clone()).unwrap();
+                let value: serde_json::Value = serde_json::from_str(&stored).unwrap();
+                assert!(stored.starts_with(r#"{"format":2,"#), "{stored}");
+                assert!(value["format"] == 2 && value.get(name).is_some(), "{name}");
+                insta::assert_snapshot!(
+                    format!("logged_reply_{name}_{kept}"),
+                    serde_json::to_string_pretty(&value).unwrap()
+                );
+            }
+        }
+    }
+
     #[tokio::test]
     async fn a_tool_calls_content_is_logged_without_its_media_however_it_is_written() {
         let png = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
@@ -1094,7 +1226,7 @@ mod tests {
             png.trim_end_matches('=').repeat(40_000)
         );
         assert!(result.len() > crate::model_api::pipeline::OFF_THREAD_BYTES);
-        let (arguments, result) = tool_call_content((arguments, result)).await;
+        let (arguments, result) = tool_call_content((arguments, result), Keep::nothing()).await;
         assert!(!arguments.contains(png) && !result.contains(&png[..60]));
         assert!(
             arguments.starts_with(r#"{"note":"\ud83d","picture":{"kaeso_media":"#),
@@ -1105,6 +1237,15 @@ mod tests {
             2,
             "{result}"
         );
+        let (_, kept) = tool_call_content(
+            (
+                String::new(),
+                format!(r#"{{"data":"{png}","mimeType":"image/png"}}"#),
+            ),
+            Keep::media(),
+        )
+        .await;
+        assert!(kept.contains(png));
     }
 
     #[test]

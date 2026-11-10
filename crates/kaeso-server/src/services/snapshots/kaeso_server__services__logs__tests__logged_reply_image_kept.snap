@@ -1,0 +1,31 @@
+---
+source: crates/kaeso-server/src/services/logs.rs
+expression: "serde_json::to_string_pretty(&value).unwrap()"
+---
+{
+  "format": 2,
+  "image": {
+    "images": [
+      {
+        "source": {
+          "base64": {
+            "data": "iVBORw0KGgo=",
+            "media_type": "image/png"
+          }
+        }
+      },
+      {
+        "source": {
+          "url": "https://example.com/otter.png"
+        }
+      }
+    ],
+    "model": "gpt-image-2",
+    "usage": {
+      "cache_read_tokens": 0,
+      "cache_write_tokens": 0,
+      "input_tokens": 0,
+      "output_tokens": 0
+    }
+  }
+}

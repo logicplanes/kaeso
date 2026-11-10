@@ -136,6 +136,7 @@ Die Seite **Einstellungen** eines Projekts enthält diese Einstellungen:
 | Projekt-ID | Die ID, die die Platform API verwendet |
 | Maximale Schlüssellaufzeit | **Vorgabe der Organisation verwenden** oder ein kürzeres Maximum für neue Schlüssel dieses Projekts |
 | Inhaltsprotokollierung | Ob Anfragen und Antworten mit ihren Protokolleinträgen gespeichert werden. Lässt sich nicht einschalten, solange die Organisation sie ausgeschaltet hat |
+| Medien aufbewahren | Ob protokollierte Inhalte ihre Bilder, Audios und Dateien behalten ([Anfrageprotokolle](request-logs.md#medien-in-anfragen-und-antworten)). Lässt sich nicht einschalten, solange die Organisation keine aufbewahrt |
 | Projekt archivieren | Archiviert das Projekt mit seinen Schlüsseln und Dienstkonten endgültig. Seine Schlüssel hören sofort auf zu funktionieren |
 
 Kaeso archiviert Projekte und löscht sie nie, damit ihre Nutzung und Protokolle erhalten bleiben. Jedes Projekt lässt sich archivieren.

@@ -36,6 +36,33 @@ describe("log settings", () => {
     expect(requests("PATCH", "orgs/:org/logs/settings").map((r) => r.body)).toEqual([{ content_logging: false }, { content_logging: true }]);
   });
 
+  it("keeps media only once content is logged, and says how much", async () => {
+    signedIn();
+    let current = logSettings();
+    on("GET", "orgs/:org/logs/settings", () => current);
+    on(
+      "PATCH",
+      "orgs/:org/logs/settings",
+      ({ body }: { body: { keep_media?: boolean; content_logging?: boolean } }) => (current = logSettings({ ...current, ...body })),
+    );
+    const { user } = await renderApp(PATH);
+    const media = () => screen.getByRole("switch", { name: "Keep media" });
+    expect(await screen.findByText("Keeps images, audio and files, up to 10.0 MB a request.")).toBeInTheDocument();
+    expect(media()).not.toBeChecked();
+    await user.click(media());
+    expect(await notifications().findByText("Media is kept from now on")).toBeInTheDocument();
+    await waitFor(() => expect(media()).toBeChecked());
+    await user.click(media());
+    expect(await notifications().findByText("Media is no longer kept")).toBeInTheDocument();
+    await user.click(media());
+    await waitFor(() => expect(media()).toBeChecked());
+    expect(requests("PATCH", "orgs/:org/logs/settings").map((r) => r.body)).toEqual([{ keep_media: true }, { keep_media: false }, { keep_media: true }]);
+
+    await user.click(screen.getByRole("switch", { name: "Log request content" }));
+    await waitFor(() => expect(media()).not.toBeChecked());
+    await hoverReason(user, media(), "Turn on content logging first");
+  });
+
   it("marks only the setting that is saving as busy", async () => {
     signedIn();
     on("GET", "orgs/:org/logs/settings", logSettings());
@@ -184,6 +211,7 @@ describe("log settings", () => {
     const { user } = await renderApp(`${PATH}?tab=storage`);
     const toggle = await screen.findByRole("switch", { name: "Log request content" });
     await hoverReason(user, toggle, "You need Manage log settings; ask an owner or admin for it.");
+    await hoverReason(user, screen.getByRole("switch", { name: "Keep media" }), "You need Manage log settings; ask an owner or admin for it.");
     expect(screen.getByRole("spinbutton", { name: "Metadata retention" })).toBeDisabled();
     expect(screen.getByRole("spinbutton", { name: "Content retention" })).toBeDisabled();
     await hoverReason(user, screen.getByRole("button", { name: "Save metadata retention" }), "You need Manage log settings; ask an owner or admin for it.");

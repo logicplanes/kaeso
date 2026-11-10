@@ -138,18 +138,22 @@ function LogSettingsForm({ org, settings, canManage }: { org: string; settings: 
   const [shortening, setShortening] = useState<{ field: RetentionField; days: number } | null>(null);
   const [confirming, setConfirming] = useState(false);
   const save = useApiMutation({
-    mutationFn: async (body: { content_logging?: boolean } & Partial<Record<RetentionField, number>>) =>
+    mutationFn: async (body: { content_logging?: boolean; keep_media?: boolean } & Partial<Record<RetentionField, number>>) =>
       data(await api.PATCH("/platform/v1/orgs/{org}/logs/settings", { params: { path: { org } }, body })),
     invalidates: [["orgs", org, "logs"], orgViewKey(org), projectListKey(org), projectViews(org), projectLogSettings(org)],
     onSuccess: (saved, body) => {
       queryClient.setQueryData(logSettingsQuery(org).queryKey, saved);
       setDrafts((d) => Object.fromEntries(Object.entries(d).filter(([field]) => !(field in body))));
       toast.success(
-        body.content_logging === undefined
-          ? t("org.logging.retentionSaved", "Retention saved")
-          : body.content_logging
-            ? t("org.logging.contentOn", "Content logging turned on")
-            : t("org.logging.contentOff", "Content logging turned off"),
+        body.keep_media !== undefined
+          ? body.keep_media
+            ? t("org.logging.mediaOn", "Media is kept from now on")
+            : t("org.logging.mediaOff", "Media is no longer kept")
+          : body.content_logging === undefined
+            ? t("org.logging.retentionSaved", "Retention saved")
+            : body.content_logging
+              ? t("org.logging.contentOn", "Content logging turned on")
+              : t("org.logging.contentOff", "Content logging turned off"),
       );
     },
     onError: () => setConfirming(false),
@@ -218,6 +222,26 @@ function LogSettingsForm({ org, settings, canManage }: { org: string; settings: 
                 {...(canManage ? {} : { disabledReason: needs("logs.settings.manage") })}
                 loading={save.isPending && save.variables?.content_logging !== undefined}
                 onCheckedChange={(on) => save.mutate({ content_logging: on })}
+              />
+            }
+          />
+          <SettingsRow
+            title={t("org.logging.keepMedia", "Keep media")}
+            description={t("org.logging.keepMediaHint", "Keeps images, audio and files, up to {size} a request.", {
+              size: formatBytes(settings.media_bytes_per_request),
+            })}
+            control={
+              <Switch
+                aria-label={t("org.logging.keepMedia", "Keep media")}
+                checked={settings.keep_media && settings.content_logging}
+                disabled={!canManage || !settings.content_logging}
+                {...(!canManage
+                  ? { disabledReason: needs("logs.settings.manage") }
+                  : settings.content_logging
+                    ? {}
+                    : { disabledReason: t("org.logging.keepMediaNeedsContent", "Turn on content logging first") })}
+                loading={save.isPending && save.variables?.keep_media !== undefined}
+                onCheckedChange={(on) => save.mutate({ keep_media: on })}
               />
             }
           />

@@ -1,4 +1,5 @@
 import { Badge, Banner, JsonView, Link, Tag, Separator, Text, Thumbnail, type ConversationMessage } from "@logicplanes/kaeso-ui";
+import { KeptMedia } from "./kept-media";
 import { leftOutLabel } from "./left-out";
 import type { LogBlock, LogMessage } from "./render";
 import { t } from "~/i18n";
@@ -164,9 +165,19 @@ function Blocks({ blocks }: { blocks: LogBlock[] }) {
             return <VideoInput key={i} src={b.src} mediaType={b.media_type} />;
           case "left_out":
             return (
-              <Text key={i} variant="small" tone="secondary" className="mx-12">
-                {leftOutLabel(b.media, b.name)}
-              </Text>
+              <div key={i} className="flex flex-col gap-8">
+                <Text variant="small" tone="secondary" className="mx-12">
+                  {leftOutLabel(b.media, b.name)}
+                </Text>
+                {b.transcript && <Markdown text={b.transcript} className="mx-12" />}
+              </div>
+            );
+          case "kept":
+            return (
+              <div key={i} className="flex flex-col gap-8">
+                <KeptMedia media={b.media} name={b.name} index={i} />
+                {b.transcript && <Markdown text={b.transcript} className="mx-12" />}
+              </div>
             );
           case "refusal":
             return (

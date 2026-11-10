@@ -124,7 +124,7 @@ SpaceX 通过其编辑 API 进行 remix，Gemini Omni 延续先前的交互。�
 
 启动视频不产生费用。当第一个请求看到视频完成时，Kaeso 按 KPMR 中该模型的价格计费一次：按秒或按视频计价，价格不同时按分辨率、声音和时长区分。Gemini Omni 按其 Token 计费。失败的视频不产生费用，KPMR 中没有价格的模型记录日志时不带费用。Kaeso 会把 Together AI 的 `outputs.cost` 保存在任务中，但不按它计费：Together 的参考文档把它写成不带单位的整数。
 
-支出预算在视频启动前检查其最贵的情况，视频结束后才计入其费用。请求日志把启动显示为 `videos` 或 `videos/remix`，把完成的视频显示为 `videos/completed`，带有片段数、秒数和分辨率。日志从不保存视频或图片字节（[请求日志](../console/request-logs.md)）。
+支出预算在视频启动前检查其最贵的情况，视频结束后才计入其费用。请求日志把启动显示为 `videos` 或 `videos/remix`，把完成的视频显示为 `videos/completed`，带有片段数、秒数和分辨率。日志从不保存视频。除非组织和项目都[保留媒体](../console/request-logs.md#请求和回复中的媒体)，否则上传的图片只记录媒体类型和大小。
 
 ## 后续步骤
 

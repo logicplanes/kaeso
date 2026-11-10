@@ -265,5 +265,15 @@
   "logs.media.imageNotKept": "Bild ({detail}), nicht aufbewahrt",
   "logs.media.audioNotKept": "Audio ({detail}), nicht aufbewahrt",
   "logs.media.videoNotKept": "Video ({detail}), nicht aufbewahrt",
-  "logs.media.fileNotKept": "Datei ({detail}), nicht aufbewahrt"
+  "logs.media.fileNotKept": "Datei ({detail}), nicht aufbewahrt",
+  "logs.media.image": "Bild",
+  "logs.media.audio": "Audio",
+  "logs.media.video": "Video",
+  "logs.media.file": "Datei",
+  "logs.media.shortened": "{start}… ({size})",
+  "logs.media.namedTooLarge": "{name} ({detail}), zu groß zum Aufbewahren",
+  "logs.media.imageTooLarge": "Bild ({detail}), zu groß zum Aufbewahren",
+  "logs.media.audioTooLarge": "Audio ({detail}), zu groß zum Aufbewahren",
+  "logs.media.videoTooLarge": "Video ({detail}), zu groß zum Aufbewahren",
+  "logs.media.fileTooLarge": "Datei ({detail}), zu groß zum Aufbewahren"
 }

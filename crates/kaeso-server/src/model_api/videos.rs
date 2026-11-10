@@ -97,14 +97,14 @@ pub(super) fn refuse_sora(r: &VideoRequest) -> Result<(), KppError> {
 
 /// The request as the log keeps it: every field, each uploaded image replaced by its media
 /// type and size.
-pub(super) fn logged_request(r: &VideoRequest) -> Bytes {
+pub(super) fn logged_request(
+    r: &VideoRequest,
+    mut keep: crate::services::log_media::Keep,
+) -> Bytes {
     let mut kept = r.clone();
     let mut left_out = crate::services::log_media::LeftOut::default();
     for image in &mut kept.images {
-        left_out.fit(
-            &mut image.source,
-            &mut crate::services::log_media::Keep::nothing(),
-        );
+        left_out.fit(&mut image.source, &mut keep);
     }
     Bytes::from(left_out.write(&kept).unwrap_or_default())
 }
@@ -1380,7 +1380,15 @@ mod tests {
             ));
         r.seconds = Some(8);
         r.size = Some(ImageSize::pixels(1280, 720));
-        let logged = String::from_utf8(logged_request(&r).to_vec()).unwrap();
+        let kept = String::from_utf8(
+            logged_request(&r, crate::services::log_media::Keep::media()).to_vec(),
+        )
+        .unwrap();
+        assert!(kept.contains("AAAAAAAA"), "{kept}");
+        let logged = String::from_utf8(
+            logged_request(&r, crate::services::log_media::Keep::nothing()).to_vec(),
+        )
+        .unwrap();
         assert!(!logged.contains("AAAAAAAA") && logged.contains(r#""bytes":6"#));
         let units = units_of_request(&r);
         assert_eq!((units.output_videos, units.output_ms), (1, 8000));

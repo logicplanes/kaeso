@@ -732,3 +732,144 @@ mod property {
         }
     }
 }
+
+#[test]
+fn kept_media_stays_as_sent_until_the_request_has_used_its_allowance() {
+    let small = b64(&PNG);
+    let mut big = PNG.to_vec();
+    big.resize(6 << 20, 7);
+    let big = b64(&big);
+    let mut other = PNG.to_vec();
+    other.resize((6 << 20) + 3, 9);
+    let other = b64(&other);
+    let request = format!(
+        r#"{{"a":"data:image/png;base64,{big}","b":"data:image/png;base64,{other}","c":"data:image/png;base64,{small}"}}"#
+    );
+    let mut keep = Keep::media();
+    let out: Value = serde_json::from_str(&without_media(&request, &mut keep).unwrap()).unwrap();
+    assert_eq!(out["a"], format!("data:image/png;base64,{big}").as_str());
+    assert_eq!(out["b"]["kaeso_media"]["reason"], "too_large");
+    assert_eq!(out["b"]["kaeso_media"]["bytes"], (6 << 20) + 3);
+    assert_eq!(out["c"], format!("data:image/png;base64,{small}").as_str());
+
+    let reply = format!(r#"{{"image":"data:image/png;base64,{other}"}}"#);
+    let out: Value = serde_json::from_str(&without_media(&reply, &mut keep).unwrap()).unwrap();
+    assert_eq!(
+        out["image"]["kaeso_media"]["reason"], "too_large",
+        "the reply shares the request's allowance"
+    );
+    assert_eq!(
+        without_media(
+            &format!(r#"{{"c":"data:image/png;base64,{small}"}}"#),
+            &mut Keep::media()
+        ),
+        None
+    );
+}
+
+#[test]
+fn a_body_no_parser_accepts_never_gets_past_the_allowance() {
+    let mut big = PNG.to_vec();
+    big.resize(11 << 20, 7);
+    let cut = format!(r#"{{"a":"data:image/png;base64,{}","b":["#, b64(&big));
+    let out = without_media(&cut, &mut Keep::media()).unwrap();
+    assert!(
+        out.len() < 200 && out.contains(r#""reason":"too_large""#),
+        "{}",
+        out.len()
+    );
+    let text = format!("see data:image/png;base64,{} here", b64(&big));
+    let out = without_media(&serde_json::to_string(&text).unwrap(), &mut Keep::media()).unwrap();
+    assert_eq!(
+        out,
+        r#""see [kaeso_media: image/png, 11534336 bytes, too_large] here""#
+    );
+}
+
+#[test]
+fn a_kept_body_that_is_not_json_is_one_file() {
+    let mut upload = PNG.to_vec();
+    upload.extend([0xff, 0xfe]);
+    let kept: Value = serde_json::from_str(&body(&upload, &mut Keep::media())).unwrap();
+    assert_eq!(
+        kept,
+        format!("data:image/png;base64,{}", b64(&upload)).as_str()
+    );
+    let kept: Value = serde_json::from_str(&body(b"prompt=hello", &mut Keep::media())).unwrap();
+    assert_eq!(
+        kept,
+        format!("data:text/plain;base64,{}", b64(b"prompt=hello")).as_str()
+    );
+}
+
+#[test]
+fn an_upload_beyond_the_allowance_is_taken_out_before_it_is_encoded() {
+    let mut first = Source::bytes("audio/wav", vec![1; 6 << 20]);
+    let mut second = Source::bytes("audio/wav", vec![2; 6 << 20]);
+    let mut third = Source::bytes("image/png", PNG.to_vec());
+    let mut left_out = LeftOut::default();
+    let mut keep = Keep::media();
+    for source in [&mut first, &mut second, &mut third] {
+        left_out.fit(source, &mut keep);
+    }
+    let text = left_out.write(&vec![first, second, third]).unwrap();
+    let written: Value = serde_json::from_str(&text).unwrap();
+    assert_eq!(
+        written[0]["base64"]["data"].as_str().unwrap().len(),
+        8 << 20
+    );
+    assert_eq!(
+        written[1]["base64"]["data"]["kaeso_media"],
+        json!({ "media_type": "audio/wav", "bytes": 6 << 20, "reason": "too_large" })
+    );
+    assert_eq!(written[2]["base64"]["data"], b64(&PNG).as_str());
+    assert_eq!(
+        without_media(&text, &mut Keep::media()),
+        None,
+        "what was kept still fits"
+    );
+}
+
+mod kept_property {
+    use proptest::prelude::*;
+
+    use super::*;
+
+    proptest! {
+        #![proptest_config(ProptestConfig::with_cases(128))]
+
+        #[test]
+        fn what_fits_the_allowance_is_kept_as_it_was_sent(
+            files in prop::collection::vec(prop::collection::vec(any::<u8>(), 12..300), 0..6),
+            text in "[ -~]{0,60}",
+        ) {
+            let doc = json!({
+                "text": text,
+                "files": files.iter().map(|f| json!({ "media_type": "image/png", "data": b64(f) })).collect::<Vec<_>>(),
+                "urls": files.iter().map(|f| format!("data:image/png;base64,{}", b64(f))).collect::<Vec<_>>(),
+            });
+            prop_assert_eq!(without_media(&doc.to_string(), &mut Keep::media()), None);
+        }
+    }
+}
+
+#[test]
+fn nesting_no_format_has_is_kept_only_within_the_allowance() {
+    let small = "[".repeat(200);
+    assert_eq!(without_media(&small, &mut Keep::media()), None);
+    let big = "[".repeat(11 << 20);
+    let out: Value =
+        serde_json::from_str(&without_media(&big, &mut Keep::media()).unwrap()).unwrap();
+    assert_eq!(out["kaeso_media"]["reason"], "too_large");
+    let mut file = PNG.to_vec();
+    file.resize(11 << 20, 5);
+    let wrapped_url =
+        json!({ "url": format!("data:image/png;base64,{}", wrapped(&b64(&file), 76, "\n")) })
+            .to_string();
+    let out = without_media(&wrapped_url, &mut Keep::media()).unwrap();
+    assert!(
+        out.len() < 200 && out.contains("too_large"),
+        "{}",
+        out.len()
+    );
+}

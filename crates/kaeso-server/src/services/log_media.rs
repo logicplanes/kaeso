@@ -15,6 +15,12 @@ const URL_SAFE: GeneralPurpose = GeneralPurpose::new(&alphabet::URL_SAFE, LENIEN
 const STANDARD_PADDED: GeneralPurpose = base64::engine::general_purpose::STANDARD;
 
 pub const NOT_KEPT: &str = "not_kept";
+pub const TOO_LARGE: &str = "too_large";
+
+// Decoded bytes, so a request's kept media takes at most a third more as base64. Chosen to
+// hold a few photos or a minute of speech while one request stays a small part of the log
+// buffer.
+pub const KEPT_PER_REQUEST: u64 = 10 << 20;
 
 const UNKNOWN_TYPE: &str = "application/octet-stream";
 
@@ -42,18 +48,35 @@ const DEPTH_MAX: usize = 128;
 // Inside text that is no longer read as JSON, a run of base64 alphabet this long is a file.
 const RUN_MIN_CHARS: usize = 256;
 
-/// What a request's log keeps of its media: nothing.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-pub struct Keep;
+/// What a request's log keeps of its media: nothing, or files in the order they appear until
+/// the request's allowance is used up.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Keep {
+    left: Option<u64>,
+}
 
 impl Keep {
     pub fn nothing() -> Self {
-        Keep
+        Keep { left: None }
     }
 
-    // The reason a file of this size is left out; `None` would keep it.
-    fn left_out(&mut self, _bytes: u64) -> Option<&'static str> {
-        Some(NOT_KEPT)
+    pub fn media() -> Self {
+        Keep {
+            left: Some(KEPT_PER_REQUEST),
+        }
+    }
+
+    fn left_out(&mut self, bytes: u64) -> Option<&'static str> {
+        let Some(left) = self.left else {
+            return Some(NOT_KEPT);
+        };
+        match left.checked_sub(bytes) {
+            Some(rest) => {
+                self.left = Some(rest);
+                None
+            }
+            None => Some(TOO_LARGE),
+        }
     }
 }
 
@@ -984,7 +1007,8 @@ fn whole_file(media_type: Option<&'static str>, bytes: &[u8], keep: &mut Keep) -
 }
 
 /// A request body as the log keeps it. A body that isn't JSON, such as an upload that could
-/// not be read, is one file, logged as its type and size alone, never as its text.
+/// not be read, is one file: kept as a `data:` URL, or logged as its type and size alone,
+/// never as its text.
 pub fn body(bytes: &[u8], keep: &mut Keep) -> String {
     let Ok(text) = std::str::from_utf8(bytes) else {
         return whole_file(None, bytes, keep);
@@ -1020,7 +1044,8 @@ impl Default for LeftOut {
 }
 
 impl LeftOut {
-    /// Takes `source`'s bytes out, leaving its type and size.
+    /// Leaves `source` as it is when the request's allowance still holds it, and takes it
+    /// out otherwise.
     pub fn fit(&mut self, source: &mut Source, keep: &mut Keep) {
         let Source::Base64(media) = source else {
             return;

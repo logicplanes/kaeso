@@ -10002,7 +10002,7 @@
         "tags": [
           "logs"
         ],
-        "summary": "Changes retention or content logging. A shorter retention removes older\nrows in the background; a longer one applies to new rows.",
+        "summary": "Changes retention, content logging or whether media is kept. A shorter\nretention removes older rows in the background; a longer one applies to new rows.",
         "description": "**Right:** `logs.settings.manage` on the organization in the path; with a session, a sign-in within the last 15 minutes.",
         "operationId": "patchOrgsOrgLogsSettings",
         "parameters": [
@@ -15400,7 +15400,7 @@
         "tags": [
           "logs"
         ],
-        "summary": "Switches content logging for the project. It cannot be switched on while\nthe org has it off.",
+        "summary": "Switches content logging, or keeping media, for the project. Neither can be\nswitched on while the org has it off.",
         "description": "**Right:** `logs.content.manage` on the project in the path.",
         "operationId": "patchOrgsOrgProjectsProjectLogsSettings",
         "parameters": [
@@ -34080,6 +34080,8 @@
         "description": "An org's log settings.",
         "required": [
           "content_logging",
+          "keep_media",
+          "media_bytes_per_request",
           "metadata_retention_days",
           "content_retention_days",
           "max_metadata_retention_days",
@@ -34095,6 +34097,10 @@
             "format": "int32",
             "description": "Days content is kept (never longer than metadata)."
           },
+          "keep_media": {
+            "type": "boolean",
+            "description": "Whether logged content keeps its images, audio, video and files, up to\n`media_bytes_per_request` a request. Off, each is logged as its media type and size."
+          },
           "max_content_retention_days": {
             "type": "integer",
             "format": "int32",
@@ -34104,6 +34110,12 @@
             "type": "integer",
             "format": "int32",
             "description": "The install's maximum for metadata."
+          },
+          "media_bytes_per_request": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The most media one request's log keeps, in bytes.",
+            "minimum": 0
           },
           "metadata_retention_days": {
             "type": "integer",
@@ -34130,6 +34142,13 @@
             ],
             "format": "int32",
             "description": "Days to keep content."
+          },
+          "keep_media": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Keep the media of logged content."
           },
           "metadata_retention_days": {
             "type": [
@@ -35237,7 +35256,9 @@
         "description": "A project's content logging.",
         "required": [
           "content_logging",
-          "effective_content_logging"
+          "effective_content_logging",
+          "keep_media",
+          "effective_keep_media"
         ],
         "properties": {
           "content_logging": {
@@ -35247,19 +35268,34 @@
           "effective_content_logging": {
             "type": "boolean",
             "description": "Whether content is logged: the org's and the project's switch are both on."
+          },
+          "effective_keep_media": {
+            "type": "boolean",
+            "description": "Whether media is kept: content is logged, and the org and the project both keep media."
+          },
+          "keep_media": {
+            "type": "boolean",
+            "description": "The project's own switch for keeping the media of logged content."
           }
         }
       },
       "ProjectLogSettingsUpdate": {
         "type": "object",
-        "description": "A project content switch.",
-        "required": [
-          "content_logging"
-        ],
+        "description": "A project's content switches; one left out stays as it is.",
         "properties": {
           "content_logging": {
-            "type": "boolean",
+            "type": [
+              "boolean",
+              "null"
+            ],
             "description": "Log request and reply bodies in this project (only when the org does)."
+          },
+          "keep_media": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Keep the media of this project's logged content (only when the org does)."
           }
         },
         "additionalProperties": false

@@ -155,7 +155,7 @@ Die [Platform API](../api/platform-api.md) beschreibt die Routen für Rechte, Ro
 
 | Recht | Name | Was es erlaubt | Hinweise |
 | --- | --- | --- | --- |
-| `logs.settings.manage` | Protokollierung verwalten | Aufbewahrung festlegen und Inhaltsprotokollierung der Organisation ein- oder ausschalten. | sensibel; kürzliche Anmeldung |
+| `logs.settings.manage` | Protokollierung verwalten | Aufbewahrung festlegen und Inhaltsprotokollierung und aufbewahrte Medien der Organisation ein- oder ausschalten. | sensibel; kürzliche Anmeldung |
 | `logs.storage.view` | Protokollspeicher ansehen | Sehen, wie viele Protokolleinträge es gibt und wie viel Platz sie belegen. |  |
 | `logs.delete` | Protokolle löschen | Protokolle der Organisation für einen Zeitraum löschen. | sensibel; kürzliche Anmeldung; erfordert `logs.storage.view` |
 
@@ -246,7 +246,7 @@ Die [Platform API](../api/platform-api.md) beschreibt die Routen für Rechte, Ro
 | `logs.metadata.view` | Anfrageprotokolle ansehen | Anfrageprotokolle sehen: Modell, Token, Kosten, Latenz, Status und Schlüssel. |  |
 | `logs.content.view` | Prompts und Ausgaben ansehen | Anfrage- und Antwortinhalte in den Protokollen sehen. | sensibel; erfordert `logs.metadata.view` |
 | `logs.export` | Protokolle exportieren | Die Anfrageprotokolle des Projekts exportieren. | sensibel; erfordert `logs.metadata.view` |
-| `logs.content.manage` | Inhaltsprotokollierung schalten | Die Inhaltsprotokollierung für dieses Projekt ein- oder ausschalten. | sensibel |
+| `logs.content.manage` | Inhaltsprotokollierung schalten | Inhaltsprotokollierung und aufbewahrte Medien für dieses Projekt ein- oder ausschalten. | sensibel |
 
 ### Nutzung & Kosten
 

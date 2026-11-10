@@ -21,33 +21,33 @@ fn written<T: serde::Serialize>(left_out: &LeftOut, kept: &T) -> Bytes {
     Bytes::from(left_out.write(kept).unwrap_or_default())
 }
 
-/// The request as the log keeps it: every field, each image replaced by its media type and
-/// size.
-pub(super) fn logged_request(r: &ImageRequest) -> Bytes {
+/// The request as the log keeps it: every field, each image that isn't kept replaced by its
+/// media type and size.
+pub(super) fn logged_request(r: &ImageRequest, mut keep: Keep) -> Bytes {
     let mut kept = r.clone();
     let mut left_out = LeftOut::default();
     for input in kept.images.iter_mut().chain(kept.mask.as_mut()) {
-        left_out.fit(&mut input.source, &mut Keep::nothing());
+        left_out.fit(&mut input.source, &mut keep);
     }
     written(&left_out, &kept)
 }
 
 /// A transcription as the log keeps it: every field, the audio replaced by its media type and
 /// size.
-pub(super) fn logged_transcription(r: &TranscriptionRequest) -> Bytes {
+pub(super) fn logged_transcription(r: &TranscriptionRequest, mut keep: Keep) -> Bytes {
     let mut kept = r.clone();
     let mut left_out = LeftOut::default();
-    left_out.fit(&mut kept.audio.source, &mut Keep::nothing());
+    left_out.fit(&mut kept.audio.source, &mut keep);
     written(&left_out, &kept)
 }
 
 /// A request for audio made from audio, as the log keeps it: the source audio replaced by its
 /// media type and size.
-pub(super) fn logged_speech(r: &SpeechRequest) -> Bytes {
+pub(super) fn logged_speech(r: &SpeechRequest, mut keep: Keep) -> Bytes {
     let mut kept = r.clone();
     let mut left_out = LeftOut::default();
     if let Some(audio) = kept.audio.as_mut() {
-        left_out.fit(&mut audio.source, &mut Keep::nothing());
+        left_out.fit(&mut audio.source, &mut keep);
     }
     written(&left_out, &kept)
 }
@@ -304,7 +304,9 @@ mod tests {
         r.mask = Some(ImageInput::new(
             Source::base64("image/png", "AAAA").unwrap(),
         ));
-        let logged = String::from_utf8(logged_request(&r).to_vec()).unwrap();
+        let kept = String::from_utf8(logged_request(&r, Keep::media()).to_vec()).unwrap();
+        assert!(kept.contains(r#""data":"AAAAAAAA""#), "{kept}");
+        let logged = String::from_utf8(logged_request(&r, Keep::nothing()).to_vec()).unwrap();
         assert!(!logged.contains("AAAA"), "{logged}");
         assert!(
             logged.contains(r#""bytes":6"#) && logged.contains(r#""bytes":3"#),

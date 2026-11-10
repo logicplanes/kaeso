@@ -270,7 +270,7 @@ async fn logged_content(env: &Env) -> Value {
 }
 
 #[tokio::test]
-async fn playground_requests_are_logged_without_their_media() {
+async fn playground_requests_are_logged_without_their_media_unless_media_is_kept() {
     use base64::Engine as _;
     let png = base64::engine::general_purpose::STANDARD.encode(PNG);
     let env = env().await;
@@ -282,38 +282,91 @@ async fn playground_requests_are_logged_without_their_media() {
             { "type": "input_image", "image_url": format!("data:image/png;base64,{png}") },
         ]}],
     });
-    let r = post_json(&env, "responses", chat).await;
+    let edit = [("model", "gpt-image-2"), ("prompt", "Add a hat")];
+    let picture = ("image[]", "otter.png", "image/png", PNG);
+    let ask = json!({ "model": "gpt-image-2", "prompt": "A sea otter", "n": 1 });
+    let speak = json!({ "model": "tts-1", "input": "The order ships tomorrow.", "voice": "alloy" });
+    let recording = ("file", "a.mp3", "audio/mpeg", MP3);
+
+    let r = post_json(&env, "responses", chat.clone()).await;
     assert_eq!(r.status, StatusCode::OK, "{}", r.text());
     let content = logged_content(&env).await;
     let image = &content["request"]["input"][0]["content"][1]["image_url"]["kaeso_media"];
     assert_eq!(image["reason"], "not_kept", "{content}");
     assert_eq!((&image["width"], &image["height"]), (&json!(1), &json!(1)));
 
-    let r = upload(
-        &env,
-        "images/edits",
-        &[("model", "gpt-image-2"), ("prompt", "Add a hat")],
-        ("image[]", "otter.png", "image/png", PNG),
-    )
-    .await;
-    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    upload(&env, "images/edits", &edit, picture).await;
     let content = logged_content(&env).await;
     assert_eq!(
         content["request"]["images"][0]["source"]["base64"]["data"]["kaeso_media"]["reason"],
         "not_kept",
         "{content}"
     );
+    assert_eq!(
+        content["reply"]["image"]["images"][0]["source"]["base64"]["data"]["kaeso_media"]["reason"],
+        "not_kept"
+    );
+    let r = post_json(&env, "audio/speech", speak.clone()).await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    let content = logged_content(&env).await;
+    assert_eq!(
+        content["reply"]["speech"]["audio"]["base64"]["data"]["kaeso_media"]["bytes"],
+        r.body.len()
+    );
     upload(
         &env,
         "audio/transcriptions",
         &[("model", "whisper-1")],
-        ("file", "a.mp3", "audio/mpeg", MP3),
+        recording,
     )
     .await;
     let content = logged_content(&env).await;
     assert_eq!(
         content["request"]["audio"]["source"]["base64"]["data"]["kaeso_media"]["bytes"],
         MP3.len()
+    );
+
+    let org = &env.owner.org_id;
+    for settings in [
+        format!("/orgs/{org}/logs/settings"),
+        format!("/orgs/{org}/projects/{}/logs/settings", env.project),
+    ] {
+        let r = env
+            .app
+            .call(
+                Method::PATCH,
+                &settings,
+                Some(json!({ "keep_media": true })),
+                Some(&env.owner.cookie),
+            )
+            .await;
+        assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    }
+    post_json(&env, "responses", chat).await;
+    let content = logged_content(&env).await;
+    assert_eq!(
+        content["request"]["input"][0]["content"][1]["image_url"],
+        format!("data:image/png;base64,{png}").as_str()
+    );
+    upload(&env, "images/edits", &edit, picture).await;
+    let content = logged_content(&env).await;
+    assert_eq!(
+        content["request"]["images"][0]["source"]["base64"]["data"],
+        png.as_str()
+    );
+    let made = post_json(&env, "images/generations", ask).await;
+    let content = logged_content(&env).await;
+    assert_eq!(
+        content["reply"]["image"]["images"][0]["source"]["base64"]["data"],
+        made.json()["data"][0]["b64_json"]
+    );
+    let r = post_json(&env, "audio/speech", speak).await;
+    let content = logged_content(&env).await;
+    assert_eq!(
+        content["reply"]["speech"]["audio"]["base64"]["data"],
+        base64::engine::general_purpose::STANDARD
+            .encode(&r.body)
+            .as_str()
     );
 }
 

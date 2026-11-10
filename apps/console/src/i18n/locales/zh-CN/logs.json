@@ -265,5 +265,15 @@
   "logs.media.imageNotKept": "图片（{detail}），未保留",
   "logs.media.audioNotKept": "音频（{detail}），未保留",
   "logs.media.videoNotKept": "视频（{detail}），未保留",
-  "logs.media.fileNotKept": "文件（{detail}），未保留"
+  "logs.media.fileNotKept": "文件（{detail}），未保留",
+  "logs.media.image": "图片",
+  "logs.media.audio": "音频",
+  "logs.media.video": "视频",
+  "logs.media.file": "文件",
+  "logs.media.shortened": "{start}…（{size}）",
+  "logs.media.namedTooLarge": "{name}（{detail}），过大，无法保留",
+  "logs.media.imageTooLarge": "图片（{detail}），过大，无法保留",
+  "logs.media.audioTooLarge": "音频（{detail}），过大，无法保留",
+  "logs.media.videoTooLarge": "视频（{detail}），过大，无法保留",
+  "logs.media.fileTooLarge": "文件（{detail}），过大，无法保留"
 }
