@@ -334,8 +334,6 @@ const zhCN: Readonly<Record<string, string>> = {
   "responseMetrics.costUnknown": "未知",
   "responseMetrics.firstToken": "首个 Token",
   "responseMetrics.metrics": "指标",
-  "responseMetrics.notReported": "未报告",
-  "responseMetrics.notYetKnown": "尚未确定",
   "responseMetrics.reasoning": "推理",
   "responseMetrics.tokens": "Token",
   "responseMetrics.tokensValue": "输入 {input} · 输出 {output}",

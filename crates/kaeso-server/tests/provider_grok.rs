@@ -176,6 +176,62 @@ async fn xai_errors_reach_the_app_in_its_format_without_a_retry() {
 }
 
 #[tokio::test]
+async fn an_image_request_goes_to_xais_images_api_with_the_accounts_token() {
+    let p = plan().await;
+    let project = p
+        .app
+        .get(
+            &format!("/orgs/{}/projects", p.owner.org_id),
+            &p.owner.cookie,
+        )
+        .await
+        .body["data"][0]["id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let base = format!("/orgs/{}/projects/{project}", p.owner.org_id);
+    p.app
+        .post(
+            &format!("{base}/models"),
+            json!({ "provider": "xai", "model_id": "grok-imagine-image" }),
+            Some(&p.owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::CREATED);
+    let listed = p
+        .app
+        .get(&format!("{base}/playground/models"), &p.owner.cookie)
+        .await
+        .expect_status(StatusCode::OK);
+    let image = listed.body["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|m| m["model_id"] == "grok-imagine-image")
+        .unwrap();
+    assert_eq!(
+        (&image["mode"], &image["needs_api_key"]),
+        (&json!("image"), &json!(false))
+    );
+    p.call(
+        "/v1/images/generations",
+        false,
+        json!({ "model": "grok-imagine-image", "prompt": "A fox" }),
+    )
+    .await;
+    let sent = p.sent();
+    assert_eq!(sent.len(), 1);
+    assert_eq!(sent[0].path, "/v1/images/generations");
+    assert_eq!(
+        sent[0].header("authorization"),
+        Some(format!("Bearer {}", p.access_token().await).as_str())
+    );
+    assert_eq!(sent[0].json()["prompt"], "A fox");
+    assert!(p.api.received().is_empty());
+    p.services.cleanup().await;
+}
+
+#[tokio::test]
 async fn a_plan_without_api_access_stops_requests_until_someone_signs_in_again() {
     let p = plan().await;
     p.app.clock.advance(time::Duration::minutes(29));

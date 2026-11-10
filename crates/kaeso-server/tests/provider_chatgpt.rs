@@ -661,3 +661,208 @@ async fn a_signed_out_account_asks_for_a_new_sign_in_everywhere() {
     assert_eq!(p.oauth.refreshes(), 1);
     p.services.cleanup().await;
 }
+
+fn audio_upload(path: &str) -> (axum::http::request::Builder, Body) {
+    let mut form = b"--kb\r\nContent-Disposition: form-data; name=\"model\"\r\n\r\nwhisper-1\r\n--kb\r\nContent-Disposition: form-data; name=\"file\"; filename=\"standup.mp3\"\r\nContent-Type: audio/mpeg\r\n\r\n".to_vec();
+    form.extend_from_slice(b"ID3\x04\0\0\0\0\0\x23TSSE\r\n--kb--\r\n");
+    let request = Request::builder()
+        .method(Method::POST)
+        .uri(path)
+        .header(header::CONTENT_TYPE, "multipart/form-data; boundary=kb");
+    (request, Body::from(form))
+}
+
+#[tokio::test]
+async fn images_speech_and_transcriptions_need_an_api_key() {
+    let p = plan().await;
+    let mut image_model = String::new();
+    for model in ["gpt-image-2", "tts-1", "whisper-1"] {
+        let added = p
+            .app
+            .post(
+                &format!("{}/models", p.base()),
+                json!({ "provider": "openai", "model_id": model }),
+                Some(&p.owner.cookie),
+            )
+            .await
+            .expect_status(StatusCode::CREATED);
+        if model == "gpt-image-2" {
+            image_model = added.body["id"].as_str().unwrap().to_owned();
+        }
+    }
+    p.app
+        .post(
+            &format!("{}/aliases", p.base()),
+            json!({ "name": "pictures", "route": { "type": "model", "model": image_model } }),
+            Some(&p.owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::CREATED);
+    let needs_key = |what: &str| {
+        format!(
+            "A ChatGPT account can't {what}. Use an API key for OpenAI in this project instead."
+        )
+    };
+    for model in ["gpt-image-2", "pictures"] {
+        let r = p
+            .call(
+                "/v1/images/generations",
+                false,
+                json!({ "model": model, "prompt": "A sea otter" }),
+            )
+            .await;
+        assert_eq!(r.status, StatusCode::BAD_REQUEST, "{model}: {}", r.text());
+        assert_eq!(
+            r.json()["error"]["message"],
+            needs_key("make images"),
+            "{model}"
+        );
+        assert_eq!(r.json()["error"]["param"], "model");
+    }
+    let r = p
+        .call(
+            "/v1/audio/speech",
+            false,
+            json!({ "model": "tts-1", "input": "Your parcel left the dock.", "voice": "alloy" }),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    assert_eq!(r.json()["error"]["message"], needs_key("create speech"));
+    let (request, form) = audio_upload("/v1/audio/transcriptions");
+    let (status, _, body) = p
+        .app
+        .raw_bytes(
+            request
+                .header(header::AUTHORIZATION, format!("Bearer {}", p.key))
+                .body(form)
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_eq!(
+        serde_json::from_slice::<Value>(&body).unwrap()["error"]["message"],
+        needs_key("transcribe audio")
+    );
+
+    let playground = format!("{}/playground", p.base());
+    let refused = |api: &str| {
+        format!("OpenAI's {api} needs an API key; this project's key for it is a ChatGPT account.")
+    };
+    for model in ["gpt-image-2", "pictures"] {
+        let r = p
+            .app
+            .post(
+                &format!("{playground}/images/generations"),
+                json!({ "model": model, "prompt": "Generate a picture" }),
+                Some(&p.owner.cookie),
+            )
+            .await;
+        assert_eq!(r.status, StatusCode::CONFLICT, "{model}: {:?}", r.body);
+        assert_eq!(r.body["error"]["message"], refused("Images API"), "{model}");
+    }
+    let r = p
+        .app
+        .post(
+            &format!("{playground}/audio/speech"),
+            json!({ "model": "tts-1", "input": "Your parcel left the dock.", "voice": "alloy" }),
+            Some(&p.owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::CONFLICT, "{:?}", r.body);
+    assert_eq!(r.body["error"]["message"], refused("Speech API"));
+    let (request, form) = audio_upload(&format!("/platform/v1{playground}/audio/transcriptions"));
+    let r = p
+        .app
+        .raw(
+            request
+                .header(
+                    header::COOKIE,
+                    format!("__Host-kaeso_session={}", p.owner.cookie),
+                )
+                .header(header::ORIGIN, ORIGIN)
+                .body(form)
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::CONFLICT, "{:?}", r.body);
+    assert_eq!(r.body["error"]["message"], refused("Transcriptions API"));
+
+    assert!(p.sent().is_empty(), "{:?}", p.sent());
+    assert!(p.api.received().is_empty());
+
+    let listed = p
+        .app
+        .get(&format!("{playground}/models"), &p.owner.cookie)
+        .await
+        .expect_status(StatusCode::OK);
+    for (model, needs) in [
+        ("gpt-5", false),
+        ("gpt-image-2", true),
+        ("tts-1", true),
+        ("whisper-1", true),
+    ] {
+        let listed = listed.body["data"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|m| m["model_id"] == model)
+            .unwrap();
+        assert_eq!(listed["needs_api_key"], needs, "{model}");
+    }
+
+    let key = p
+        .app
+        .post(
+            &format!("/orgs/{}/credentials", p.owner.org_id),
+            json!({ "provider": "openai", "name": "API", "secret": "sk-test-images-0123456789ABCDEFGH" }),
+            Some(&p.owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::CREATED);
+    assert_eq!(key.body["is_default"], false);
+    p.app
+        .call(
+            Method::PUT,
+            &format!(
+                "/orgs/{}/credentials/{}/projects",
+                p.owner.org_id,
+                key.body["id"].as_str().unwrap()
+            ),
+            Some(json!({ "projects": [p.project] })),
+            Some(&p.owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::OK);
+    let listed = p
+        .app
+        .get(&format!("{playground}/models"), &p.owner.cookie)
+        .await
+        .expect_status(StatusCode::OK);
+    assert!(
+        listed.body["data"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|m| m["needs_api_key"] == false)
+    );
+    let r = p
+        .app
+        .post(
+            &format!("{playground}/images/generations"),
+            json!({ "model": "pictures", "prompt": "A sea otter", "n": 1, "quality": "low" }),
+            Some(&p.owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::OK);
+    assert!(r.body["data"][0]["b64_json"].is_string());
+    let sent = p.api.received();
+    assert_eq!(sent.len(), 1, "{sent:?}");
+    assert_eq!(sent[0].path, "/v1/images/generations");
+    let body: Value = serde_json::from_slice(&sent[0].body).unwrap();
+    assert_eq!(
+        (&body["model"], &body["prompt"], &body["input"]),
+        (&json!("gpt-image-2"), &json!("A sea otter"), &Value::Null)
+    );
+    assert!(p.sent().is_empty(), "{:?}", p.sent());
+    p.services.cleanup().await;
+}

@@ -91,7 +91,7 @@ Keys, model resolution with aliases and routes, limits and budgets, request logs
 | Cohere | not offered | `/v2/audio/transcriptions`: `cohere-transcribe-03-2026`, `language` required | [transcribe](https://docs.cohere.com/v2/docs/transcribe) |
 | Anthropic, DeepSeek, Moonshot, Cerebras, Ollama Cloud | not offered | not offered | [supported providers](../concepts/supported-providers.md) |
 
-A request to a provider without the API is refused before anything is sent, for example "Anthropic offers no speech API Kaeso can call, so `claude-haiku-4-5` can't speak.".
+A request to a provider without the API is refused before anything is sent, for example "Anthropic offers no speech API Kaeso can call, so `claude-haiku-4-5` can't speak.". So is a request to OpenAI in a project whose OpenAI key is a [ChatGPT account](../console/provider-keys.md#sign-in-with-a-chatgpt-account), which can't create speech or transcribe audio; the error asks for an API key.
 
 ## Costs and logs
 

@@ -132,6 +132,12 @@
   }
 }
 
+@utility transition-arrive {
+  transition-property: margin, opacity;
+  transition-duration: 200ms;
+  transition-timing-function: var(--k-ease-standard);
+}
+
 @utility transition-control {
   transition-property: background-color, color, box-shadow, filter, opacity, transform, outline-color, text-decoration-color;
   transition-duration:
@@ -498,12 +504,6 @@
     &[data-force~="open"] {
       background-color: var(--k-raised-pressed);
     }
-  }
-}
-
-@utility reserve-text {
-  &::after {
-    content: attr(data-reserve);
   }
 }
 

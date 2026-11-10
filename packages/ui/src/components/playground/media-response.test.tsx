@@ -17,7 +17,7 @@ describe("MediaResponse", () => {
     expect(article).toHaveAttribute("aria-busy", "true");
     expect(container.querySelectorAll("li")).toHaveLength(2);
     expect(screen.getByText("Making the image")).toBeInTheDocument();
-    expect(container.querySelector("[data-tools-reserved]")).toHaveClass("invisible");
+    expect(container.querySelector("[data-reply-actions]")).toBeNull();
     rerender(
       <MediaResponse
         kind="image"
