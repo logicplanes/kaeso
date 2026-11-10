@@ -202,6 +202,7 @@ The first three settings only seed a new install. After that, instance admins ch
 | `KAESO_PROVIDERS_NEBIUS_BASE_URL`<br>`providers.nebius.base_url` | text | `https://api.tokenfactory.nebius.com` | Base URL of the Nebius Token Factory API. |
 | `KAESO_PROVIDERS_SAMBANOVA_BASE_URL`<br>`providers.sambanova.base_url` | text | `https://api.sambanova.ai` | Base URL of the SambaNova API. |
 | `KAESO_PROVIDERS_SCALEWAY_BASE_URL`<br>`providers.scaleway.base_url` | text | `https://api.scaleway.ai` | Base URL of the Scaleway API. |
+| `KAESO_PROVIDERS_NVIDIA_BASE_URL`<br>`providers.nvidia.base_url` | text | `https://integrate.api.nvidia.com` | Base URL of the NVIDIA API. |
 | `KAESO_UPSTREAM_CONNECT_TIMEOUT`<br>`upstream.connect_timeout` | text | `10s` | Time to connect to a provider, TCP and TLS; at most 24h. |
 | `KAESO_UPSTREAM_REQUEST_TIMEOUT`<br>`upstream.request_timeout` | text | `600s` | Total time of a provider request that doesn't stream; at most 24h. |
 | `KAESO_UPSTREAM_FIRST_BYTE_TIMEOUT`<br>`upstream.first_byte_timeout` | text | `60s` | Streaming: time to the provider's first byte; at most 24h. |

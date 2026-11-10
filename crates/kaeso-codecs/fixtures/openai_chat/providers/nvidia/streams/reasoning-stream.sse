@@ -1,0 +1,14 @@
+data: {"id":"chatcmpl-8d2f6a0b1e3c4d5f","object":"chat.completion.chunk","created":1794225600,"model":"nvidia/nemotron-3-super-120b-a12b","choices":[{"index":0,"delta":{"role":"assistant","content":""},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-8d2f6a0b1e3c4d5f","object":"chat.completion.chunk","created":1794225600,"model":"nvidia/nemotron-3-super-120b-a12b","choices":[{"index":0,"delta":{"reasoning_content":"Compare 9.11 and 9.8: the tenths are 1 and 8,"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-8d2f6a0b1e3c4d5f","object":"chat.completion.chunk","created":1794225600,"model":"nvidia/nemotron-3-super-120b-a12b","choices":[{"index":0,"delta":{"reasoning_content":" so 9.8 is larger."},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-8d2f6a0b1e3c4d5f","object":"chat.completion.chunk","created":1794225600,"model":"nvidia/nemotron-3-super-120b-a12b","choices":[{"index":0,"delta":{"content":"9.8 is larger"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-8d2f6a0b1e3c4d5f","object":"chat.completion.chunk","created":1794225600,"model":"nvidia/nemotron-3-super-120b-a12b","choices":[{"index":0,"delta":{"content":" than 9.11."},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-8d2f6a0b1e3c4d5f","object":"chat.completion.chunk","created":1794225600,"model":"nvidia/nemotron-3-super-120b-a12b","choices":[{"index":0,"delta":{},"finish_reason":"stop"}]}
+
+data: [DONE]
+

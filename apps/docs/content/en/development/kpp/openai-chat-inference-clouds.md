@@ -46,6 +46,23 @@ Sources: Nebius' [OpenAPI document](https://api.tokenfactory.nebius.com/openapi.
 
 Nebius serves no images, audio, Messages or token counts: its OpenAPI document has no such path, and `/v1/images/generations`, `/v1/audio/transcriptions` and `/v1/messages` answer 404. Its Responses API isn't used: Responses apps reach Nebius through Chat Completions.
 
+## NVIDIA
+
+Sources: NVIDIA's [LLM APIs](https://docs.api.nvidia.com/nim/reference/llm-apis) reference and the OpenAPI documents of its model pages, such as [`nvidia/nemotron-3-super-120b-a12b`](https://docs.api.nvidia.com/nim/reference/nvidia-nemotron-3-super-120b-a12b-infer), read 2026-11-10. Not tested with a successful call: the reply and the stream in `fixtures/openai_chat/providers/nvidia/` are built from them, the stream's request the reference's own example; the model listing and the errors were answered live, without a valid key. Kaeso's base URL is `https://integrate.api.nvidia.com`, which takes `Authorization: Bearer` with an `nvapi-` key.
+
+| NVIDIA field | KPP | Notes |
+|---|---|---|
+| `message.reasoning_content`, `delta.reasoning_content` | `Block::Reasoning` | Through the profile's `reasoning_fields`. |
+| `chat_template_kwargs` (`enable_thinking`, `low_effort`), `reasoning_budget` | extras | The models' own thinking switches; a Chat app's go as written, refused when the request goes to another dialect. |
+| `max_completion_tokens` | `max_tokens` | The request schemas have only `max_tokens` (`max_tokens()`). |
+| the `developer` role | `Role::System` | The schemas list `system`, `context`, `user` and `assistant`, so `system_role()` sends `system`. |
+| an end user's id | left out | The schemas have no `user` or `safety_identifier` (`without_end_user()`). |
+| errors as RFC 9457 problem documents with `status`, `title` and `detail` | `KppError` | The kind follows the status: a key NVIDIA doesn't know gets 403 (`errors/recorded-invalid-api-key`), a retired model 410 (`errors/recorded-retired-model`). |
+| a 202 with an `NVCF-REQID` header | — | NVIDIA's reply when the result isn't ready, to poll for; Kaeso doesn't poll. |
+| `GET /v1/models` | `ModelList` | Answered without a key (`models/list-recorded`), so a model check can't spot a wrong key. |
+
+NVIDIA serves no Responses, Messages or token counts: `/v1/responses` and `/v1/messages/count_tokens` answer 404, and `/v1/messages` answers `model not found` for every model. Its embeddings models take `input_type` and `truncate`, which stay in extras ([OpenAI Embeddings](openai-embeddings.md#nvidia)).
+
 ## SambaNova
 
 Sources: SambaNova's [OpenAPI document](https://raw.githubusercontent.com/sambanova/sambanova-inference-api-spec/refs/heads/main/openapi.documented.json) (SambaNova cloud API 1.2.0), its [OpenAI compatibility](https://docs.sambanova.ai/docs/en/features/openai-compatibility), [text generation](https://docs.sambanova.ai/docs/en/features/text-generation) and [API error codes](https://docs.sambanova.ai/docs/en/api-reference/using-the-api/api-error-codes) pages, read 2026-11-09. No key was available: `fixtures/openai_chat/providers/sambanova/` holds the document's own example reply and stream and replies built from it, the model listing as SambaCloud serves it without a key, and errors answered live without a valid key. Kaeso's base URL is `https://api.sambanova.ai`, which takes `Authorization: Bearer`.

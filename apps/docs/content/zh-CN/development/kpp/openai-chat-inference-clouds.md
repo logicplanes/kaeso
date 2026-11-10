@@ -46,6 +46,23 @@ Fireworks 没有记录图像、语音、转录、视频或Token 计数端点，�
 
 Nebius 不提供图像、音频、Messages 或Token 计数：它的 OpenAPI 文档中没有这样的路径，`/v1/images/generations`、`/v1/audio/transcriptions` 和 `/v1/messages` 返回 404。它的 Responses API 不被使用：Responses 应用通过 Chat Completions 访问 Nebius。
 
+## NVIDIA
+
+来源：NVIDIA 的 [LLM APIs](https://docs.api.nvidia.com/nim/reference/llm-apis) 参考及其模型页面的 OpenAPI 文档，例如 [`nvidia/nemotron-3-super-120b-a12b`](https://docs.api.nvidia.com/nim/reference/nvidia-nemotron-3-super-120b-a12b-infer)，2026-11-10 阅读。未经成功调用测试：`fixtures/openai_chat/providers/nvidia/` 中的回复和流据此构建，流的请求是参考自己的示例；模型列表和错误是在没有有效密钥的情况下实时返回的。Kaeso 的基础 URL 为 `https://integrate.api.nvidia.com`，使用 `Authorization: Bearer` 和 `nvapi-` 密钥。
+
+| NVIDIA 字段 | KPP | 说明 |
+|---|---|---|
+| `message.reasoning_content`、`delta.reasoning_content` | `Block::Reasoning` | 通过配置的 `reasoning_fields`。 |
+| `chat_template_kwargs`（`enable_thinking`、`low_effort`）、`reasoning_budget` | extras | 模型自己的思考开关；Chat 应用发送的会按原样转发，请求发往其他方言时会被拒绝。 |
+| `max_completion_tokens` | `max_tokens` | 请求 schema 只有 `max_tokens`（`max_tokens()`）。 |
+| `developer` 角色 | `Role::System` | schema 列出 `system`、`context`、`user` 和 `assistant`，因此 `system_role()` 发送 `system`。 |
+| 终端用户的 ID | 省略 | schema 没有 `user` 或 `safety_identifier`（`without_end_user()`）。 |
+| 以 RFC 9457 问题文档表示、带有 `status`、`title` 和 `detail` 的错误 | `KppError` | 类别由状态码决定：NVIDIA 不认识的密钥返回 403（`errors/recorded-invalid-api-key`），已退役的模型返回 410（`errors/recorded-retired-model`）。 |
+| 带有 `NVCF-REQID` 头的 202 | — | 结果尚未就绪时 NVIDIA 的回复，需要轮询；Kaeso 不轮询。 |
+| `GET /v1/models` | `ModelList` | 无需密钥即可返回（`models/list-recorded`），因此模型检查无法发现错误的密钥。 |
+
+NVIDIA 不提供 Responses、Messages 或 Token 计数：`/v1/responses` 和 `/v1/messages/count_tokens` 返回 404，`/v1/messages` 对每个模型都返回 `model not found`。它的嵌入模型接受 `input_type` 和 `truncate`，这些字段保留在 extras 中（[OpenAI Embeddings](openai-embeddings.md#nvidia)）。
+
 ## SambaNova
 
 来源：SambaNova 的 [OpenAPI document](https://raw.githubusercontent.com/sambanova/sambanova-inference-api-spec/refs/heads/main/openapi.documented.json)（SambaNova cloud API 1.2.0）及其 [OpenAI compatibility](https://docs.sambanova.ai/docs/en/features/openai-compatibility)、[文本生成](https://docs.sambanova.ai/docs/en/features/text-generation)和 [API error codes](https://docs.sambanova.ai/docs/en/api-reference/using-the-api/api-error-codes) 页面，2026-11-09 阅读。由于没有可用的密钥，`fixtures/openai_chat/providers/sambanova/` 包含该文档自己的示例回复和示例流、据此构建的回复、SambaCloud 无需密钥即提供的模型列表，以及在没有有效密钥的情况下实时返回的错误。Kaeso 的基础 URL 为 `https://api.sambanova.ai`，使用 `Authorization: Bearer`。

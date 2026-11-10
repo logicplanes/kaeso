@@ -160,6 +160,7 @@ export const providerMark = {
   "sambanova-violet-10": mode("#a75bd8", "#a75bd8"),
   "sambanova-lilac": mode("#b57fd8", "#cd90f4"),
   scaleway: mode("#a883dc", "#bf95f9"),
+  nvidia: mode("#69a500", "#76b900"),
   "vllm-yellow": mode("#c68902", "#fdb515"),
   "vllm-blue": mode("#1b98ff", "#30a2ff"),
   "llama-cpp": mode("#ff6202", "#ff8236"),

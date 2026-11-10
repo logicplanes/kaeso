@@ -45,6 +45,7 @@ export const providers = [
   { id: "nebius", name: "Nebius Token Factory" },
   { id: "sambanova", name: "SambaNova" },
   { id: "scaleway", name: "Scaleway" },
+  { id: "nvidia", name: "NVIDIA" },
 ];
 export const providerNames: Record<string, string> = Object.fromEntries(providers.map((p) => [p.id, p.name]));
 

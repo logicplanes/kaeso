@@ -164,6 +164,19 @@ async fn every_member_reads_each_provider_with_its_name_key_page_and_formats() {
         scaleway["key_page"],
         json!({ "url": "https://console.scaleway.com/iam/api-keys", "label": "IAM → API keys" })
     );
+    let nvidia = listed.iter().find(|p| p["id"] == "nvidia").unwrap();
+    assert_eq!(nvidia["name"], "NVIDIA");
+    assert_eq!(
+        nvidia["dialects"],
+        json!(["openai_chat", "openai_embeddings"])
+    );
+    assert_eq!(nvidia["count_tokens"], Value::Null);
+    assert_eq!(nvidia["embeddings"], "openai_embeddings");
+    assert_eq!(nvidia["key_prefix"], "nvapi-");
+    assert_eq!(
+        nvidia["key_page"],
+        json!({ "url": "https://build.nvidia.com/settings/api-keys", "label": "API Keys" })
+    );
 
     let anonymous = app
         .call(Method::GET, &format!("/orgs/{org}/providers"), None, None)

@@ -130,6 +130,9 @@ base_url = "https://api.sambanova.ai"
 [providers.scaleway]
 base_url = "https://api.scaleway.ai"
 
+[providers.nvidia]
+base_url = "https://integrate.api.nvidia.com"
+
 [custom_providers]
 enabled = true
 allowed_networks = ""

@@ -459,6 +459,24 @@ describe("ProviderKeyDialog", () => {
     ]);
   });
 
+  it("adds an NVIDIA key with build.nvidia.com's key page and its nvapi- prefix as the key hint", async () => {
+    on("POST", CREDENTIALS, credential({ provider: "nvidia", name: "NVIDIA prod", is_default: true }));
+    const { user, dialog } = await open();
+
+    await choose(user, dialog, "NVIDIA");
+
+    expect(await within(dialog).findByRole("heading", { name: "Paste your NVIDIA API key" })).toBeVisible();
+    expectKeyHint(dialog, "build.nvidia.com", "https://build.nvidia.com/settings/api-keys", "API Keys", "nvapi-");
+    const secret = within(dialog).getByLabelText("NVIDIA API key");
+    expect(secret).toHaveAttribute("placeholder", "nvapi-…");
+    await user.type(secret, "nvapi-123");
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "NVIDIA prod");
+    await user.click(within(dialog).getByRole("button", { name: "Add key" }));
+
+    expect(await notifications().findByText("NVIDIA prod is the NVIDIA default")).toBeInTheDocument();
+    expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([{ provider: "nvidia", name: "NVIDIA prod", secret: "nvapi-123", make_default: false }]);
+  });
+
   it("adds a Google AI Studio key, which has no fixed prefix, with AI Studio's key page as its key hint", async () => {
     on("POST", CREDENTIALS, credential({ provider: "google", name: "AI Studio prod", is_default: true }));
     const { user, dialog } = await open();
