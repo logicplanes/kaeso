@@ -196,6 +196,7 @@ const MARKED_PROVIDERS = {
   scaleway: "Scaleway",
   huggingface: "Hugging Face",
   nvidia: "NVIDIA",
+  baseten: "Baseten",
   vllm: "vLLM",
   ollama: "Ollama",
   "lm-studio": "LM Studio",

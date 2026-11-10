@@ -387,6 +387,10 @@ export const PROVIDER_MARKS: Record<string, ProviderMark> = {
     d: NVIDIA_MARK,
     color: "text-mark-nvidia",
   },
+  baseten: {
+    d: "M11.923 19.2H16.723V24H11.923ZM16.726 14.4H21.526V19.2H16.726ZM7.124 9.6H16.723V14.4H7.124ZM16.726 4.8H21.526V9.6H16.726ZM2.474 0H16.723V4.8H2.474Z",
+    color: "text-fg",
+  },
 
   vllm: {
     parts: [

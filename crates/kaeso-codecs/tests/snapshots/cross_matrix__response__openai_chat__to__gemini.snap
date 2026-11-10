@@ -914,6 +914,29 @@ expression: outcomes
       "totalTokenCount": 53
     }
   },
+  "providers/baseten/reasoning-doc": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "No, 91 is not a prime number because it can be factored as $7 \\times 13$."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "zai-org/GLM-5.2",
+    "responseId": "chatcmpl-4c1e8f7a2b9d4e6f",
+    "usageMetadata": {
+      "candidatesTokenCount": 203,
+      "promptTokenCount": 21,
+      "totalTokenCount": 224
+    }
+  },
   "providers/cerebras/recorded-basic": {
     "candidates": [
       {

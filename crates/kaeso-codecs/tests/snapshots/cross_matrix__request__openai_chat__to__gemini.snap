@@ -861,6 +861,44 @@ expression: outcomes
     "param": null,
     "unsupported": "web_search_options"
   },
+  "providers/baseten/invalid-api-key": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "hi"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1
+      }
+    },
+    "path": "/v1beta/models/openai%2Fgpt-oss-120b:generateContent"
+  },
+  "providers/baseten/reasoning-doc": {
+    "message": "`chat_template_args` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "chat_template_args"
+  },
+  "providers/baseten/text-stream-doc": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Reply with exactly: Café from Baseten."
+            }
+          ],
+          "role": "user"
+        }
+      ]
+    },
+    "path": "/v1beta/models/deepseek-ai%2FDeepSeek-V4.1-Flash-1017:streamGenerateContent?alt=sse"
+  },
   "providers/cerebras/assistant-refusal": {
     "body": {
       "contents": [

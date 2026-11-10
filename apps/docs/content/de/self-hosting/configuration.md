@@ -204,6 +204,7 @@ Die ersten drei Einstellungen legen nur die Anfangswerte einer neuen Installatio
 | `KAESO_PROVIDERS_SCALEWAY_BASE_URL`<br>`providers.scaleway.base_url` | Text | `https://api.scaleway.ai` | Basis-URL der Scaleway-API. |
 | `KAESO_PROVIDERS_HUGGINGFACE_BASE_URL`<br>`providers.huggingface.base_url` | Text | `https://router.huggingface.co` | Basis-URL der Hugging-Face-API. |
 | `KAESO_PROVIDERS_NVIDIA_BASE_URL`<br>`providers.nvidia.base_url` | Text | `https://integrate.api.nvidia.com` | Basis-URL der NVIDIA-API. |
+| `KAESO_PROVIDERS_BASETEN_BASE_URL`<br>`providers.baseten.base_url` | Text | `https://inference.baseten.co` | Basis-URL der Baseten-API. |
 | `KAESO_UPSTREAM_CONNECT_TIMEOUT`<br>`upstream.connect_timeout` | Text | `10s` | Zeit für den Verbindungsaufbau zu einem Anbieter, TCP und TLS; höchstens 24h. |
 | `KAESO_UPSTREAM_REQUEST_TIMEOUT`<br>`upstream.request_timeout` | Text | `600s` | Gesamtzeit einer Anbieter-Anfrage ohne Streaming; höchstens 24h. |
 | `KAESO_UPSTREAM_FIRST_BYTE_TIMEOUT`<br>`upstream.first_byte_timeout` | Text | `60s` | Streaming: Zeit bis zum ersten Byte des Anbieters; höchstens 24h. |

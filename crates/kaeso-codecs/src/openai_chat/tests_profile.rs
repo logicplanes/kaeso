@@ -973,3 +973,37 @@ fn nvidia_gets_max_tokens_developer_messages_as_system_no_end_user_and_its_think
         "{sent}"
     );
 }
+
+#[test]
+fn baseten_gets_max_tokens_system_messages_the_end_user_as_user_and_its_thinking_back() {
+    let baseten = ChatProfile::compatible("Baseten")
+        .max_tokens()
+        .system_role()
+        .end_user_as_user()
+        .reasoning_fields(&["reasoning_content"]);
+    let sent = encode_with(
+        &chat(json!({
+            "model": "reflection/Beam-1.0",
+            "messages": [
+                {"role": "developer", "content": "Answer briefly."},
+                {"role": "user", "content": "Is 91 prime?"},
+                {"role": "assistant", "content": "No.", "reasoning_content": "91 = 7 × 13."},
+                {"role": "user", "content": "And 97?"}
+            ],
+            "max_completion_tokens": 1024,
+            "safety_identifier": "user-0001"
+        })),
+        baseten,
+    )
+    .unwrap();
+    assert_eq!(sent["messages"][0]["role"], "system");
+    assert_eq!(sent["messages"][2]["reasoning_content"], "91 = 7 × 13.");
+    assert_eq!(
+        (&sent["max_tokens"], sent.get("max_completion_tokens")),
+        (&json!(1024), None)
+    );
+    assert_eq!(
+        (&sent["user"], sent.get("safety_identifier")),
+        (&json!("user-0001"), None)
+    );
+}

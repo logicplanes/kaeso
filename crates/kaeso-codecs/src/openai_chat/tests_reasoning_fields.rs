@@ -10,6 +10,10 @@ use crate::test_support::{assert_json_eq, assert_sse_eq, fixtures};
 
 const PROFILES: &[(&str, ChatProfile)] = &[
     (
+        "baseten",
+        ChatProfile::compatible("Baseten").reasoning_fields(&["reasoning_content"]),
+    ),
+    (
         "alibaba",
         ChatProfile::compatible("QwenCloud").reasoning_fields(&["reasoning_content"]),
     ),
@@ -212,6 +216,7 @@ fn a_reasoning_field_is_a_reasoning_block_before_the_answer() {
             "recorded-reasoning-sent-back",
             "reasoning_content",
         ),
+        ("baseten", "reasoning-doc", "reasoning_content"),
         ("cerebras", "recorded-basic", "reasoning"),
         ("cerebras", "recorded-reasoning", "reasoning"),
         ("cerebras", "recorded-reasoning-sent-back", "reasoning"),

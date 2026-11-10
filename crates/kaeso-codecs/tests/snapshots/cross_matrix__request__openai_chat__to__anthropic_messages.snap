@@ -907,6 +907,54 @@ expression: outcomes
     "param": null,
     "unsupported": "web_search_options"
   },
+  "providers/baseten/invalid-api-key": {
+    "body": {
+      "max_tokens": 1,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "hi",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "openai/gpt-oss-120b"
+    },
+    "path": "/v1/messages"
+  },
+  "providers/baseten/reasoning-doc": {
+    "message": "`chat_template_args` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "chat_template_args"
+  },
+  "providers/baseten/text-stream-doc": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Reply with exactly: Café from Baseten.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "deepseek-ai/DeepSeek-V4.1-Flash-1017",
+      "stream": true
+    },
+    "path": "/v1/messages"
+  },
   "providers/cerebras/assistant-refusal": {
     "body": {
       "max_tokens": 200,

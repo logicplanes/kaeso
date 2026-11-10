@@ -497,6 +497,30 @@ describe("ProviderKeyDialog", () => {
     expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([{ provider: "nvidia", name: "NVIDIA prod", secret: "nvapi-123", make_default: false }]);
   });
 
+  it("adds a Baseten key, which has no fixed prefix, with Baseten's API keys page as its key hint", async () => {
+    on("POST", CREDENTIALS, credential({ provider: "baseten", name: "Baseten prod", is_default: true }));
+    const { user, dialog } = await open();
+
+    await choose(user, dialog, "Baseten");
+
+    expect(await within(dialog).findByRole("heading", { name: "Paste your Baseten API key" })).toBeVisible();
+    const link = within(dialog).getByRole("link", { name: "app.baseten.co (opens in a new tab)" });
+    expect(link).toHaveAttribute("href", "https://app.baseten.co/settings/api_keys");
+    expect((link.closest("p") as HTMLElement).textContent?.replace(/⁠? \(opens in a new tab\)/, "")).toBe(
+      "Create one at app.baseten.co under Organization settings → API keys.",
+    );
+    const secret = within(dialog).getByLabelText("Baseten API key");
+    expect(secret).not.toHaveAttribute("placeholder");
+    await user.type(secret, "abcd1234.0123456789");
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "Baseten prod");
+    await user.click(within(dialog).getByRole("button", { name: "Add key" }));
+
+    expect(await notifications().findByText("Baseten prod is the Baseten default")).toBeInTheDocument();
+    expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([
+      { provider: "baseten", name: "Baseten prod", secret: "abcd1234.0123456789", make_default: false },
+    ]);
+  });
+
   it("adds a Google AI Studio key, which has no fixed prefix, with AI Studio's key page as its key hint", async () => {
     on("POST", CREDENTIALS, credential({ provider: "google", name: "AI Studio prod", is_default: true }));
     const { user, dialog } = await open();

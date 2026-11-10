@@ -9,6 +9,22 @@ nav: 推理云
 
 它们的 fixture 位于 `fixtures/openai_chat/providers/<id>/`（[fixtures](fixtures.md)）。
 
+## Baseten
+
+来源：Baseten 的 [Model APIs](https://docs.baseten.co/inference/model-apis/overview) 概览、其 Chat Completions、Messages 和 Responses 的 OpenAPI 文档、[reasoning](https://docs.baseten.co/inference/model-apis/reasoning) 和[流式](https://docs.baseten.co/inference/streaming)指南，以及[推理错误](https://docs.baseten.co/inference/errors)页面，2026-11-10 阅读。未经成功调用测试：`fixtures/openai_chat/providers/baseten/` 中的回复是 reasoning 指南自己的示例，流是流式指南自己的摘录，并按 schema 补全；错误是在没有有效密钥的情况下实时返回的。Kaeso 的基础 URL 为 `https://inference.baseten.co`，使用 `Authorization: Bearer`。
+
+| Baseten 字段 | KPP | 说明 |
+|---|---|---|
+| `message.reasoning_content` | `Block::Reasoning` | 通过配置的 `reasoning_fields`。应用发回的思考内容会以 `reasoning_content` 发给 Baseten，Beam 要求之前的 assistant 消息带有它。 |
+| `chat_template_args`、带有 `max_tokens` 的 `reasoning`、`top_k`、`min_p`、`repetition_penalty` 以及 Baseten 的其他请求字段 | extras | 请求发往其他方言时会被拒绝，与其他仅限 Chat 的字段相同。 |
+| `max_completion_tokens` | `max_tokens` | schema 只有 `max_tokens`（`max_tokens()`）。 |
+| `developer` 角色 | `Role::System` | schema 列出 `system`、`user`、`assistant` 和 `tool`，因此 `system_role()` 发送 `system`。 |
+| `user` | `user` | schema 没有 `safety_identifier`，因此终端用户的 ID 以 `user` 发送（`end_user_as_user()`）。 |
+| `{"error": "<message>"}` 形式的错误 | `KppError` | 类别由状态码决定：401 表示密钥被拒绝（`errors/recorded-invalid-api-key`）。 |
+| 没有 `[DONE]` 就结束的流 | `KppError` | Baseten 可能在没有错误事件的情况下提前结束流；应用会收到流解码器的错误，说明流在回复完成前就结束了。 |
+
+Baseten 的 Messages 端点不被使用：它的 schema 只接受文本和工具块，不接受思考内容或图像。它不存储任何内容的 Responses API 也不被使用：Messages 和 Responses 应用通过 Chat Completions 访问 Baseten。Model APIs 不提供嵌入、图像、音频或 Token 计数。
+
 ## Fireworks AI
 
 来源：Fireworks 的 [Create Chat Completion](https://docs.fireworks.ai/api-reference/post-chatcompletions) 参考（其 OpenAPI 文档）以及 [OpenAI compatibility](https://docs.fireworks.ai/tools-sdks/openai-compatibility) 和 [reasoning](https://docs.fireworks.ai/guides/reasoning) 页面，2026-11-09 阅读。由于没有可用的密钥，`fixtures/openai_chat/providers/fireworks-ai/` 中的回复和流都据此构建；错误是在没有有效密钥的情况下实时返回的。Kaeso 的基础 URL 为 `https://api.fireworks.ai/inference`，使用 `Authorization: Bearer` 和 `fw_` 开头的密钥。

@@ -136,6 +136,9 @@ base_url = "https://router.huggingface.co"
 [providers.nvidia]
 base_url = "https://integrate.api.nvidia.com"
 
+[providers.baseten]
+base_url = "https://inference.baseten.co"
+
 [custom_providers]
 enabled = true
 allowed_networks = ""
