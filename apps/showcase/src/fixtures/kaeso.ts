@@ -44,6 +44,7 @@ export const providers = [
   { id: "fireworks-ai", name: "Fireworks AI" },
   { id: "nebius", name: "Nebius Token Factory" },
   { id: "sambanova", name: "SambaNova" },
+  { id: "scaleway", name: "Scaleway" },
 ];
 export const providerNames: Record<string, string> = Object.fromEntries(providers.map((p) => [p.id, p.name]));
 

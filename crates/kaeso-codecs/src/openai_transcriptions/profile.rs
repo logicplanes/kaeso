@@ -229,6 +229,17 @@ impl TranscriptionsProfile {
     };
 
     /// Whether the provider takes the Kaeso-typed field `name` beyond OpenAI's.
+    /// Scaleway Generative APIs: OpenAI's path and multipart form, `json` only, no timestamps
+    /// and no translations.
+    pub const SCALEWAY: TranscriptionsProfile = TranscriptionsProfile {
+        provider: "Scaleway",
+        translations_path: None,
+        formats: &["json"],
+        timestamps: TimestampsField::None,
+        words: false,
+        ..TranscriptionsProfile::OPENAI
+    };
+
     pub fn takes(&self, name: &str) -> bool {
         self.extensions.contains(&name)
     }

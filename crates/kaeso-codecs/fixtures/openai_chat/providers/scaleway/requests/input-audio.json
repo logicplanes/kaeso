@@ -1,0 +1,24 @@
+{
+  "model": "voxtral-small-24b-2507",
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "Transcribe this audio"
+        },
+        {
+          "type": "input_audio",
+          "input_audio": {
+            "data": "UklGRiwAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQgAAAAAAAAAAAAAAA==",
+            "format": "wav"
+          }
+        }
+      ]
+    }
+  ],
+  "temperature": 0.2,
+  "max_tokens": 2048,
+  "top_p": 0.95
+}

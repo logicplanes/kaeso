@@ -105,3 +105,7 @@ Sources: Fireworks' [create embeddings](https://docs.fireworks.ai/api-reference/
 ### Nebius Token Factory
 
 Sources: Nebius' [create embeddings](https://docs.tokenfactory.nebius.com/api-reference/inference/create-embeddings) reference, read 2026-11-09, and `fixtures/openai_embeddings/providers/nebius/`, built from it, with the error answered live without a valid key. Nebius' embeddings model is `Qwen/Qwen3-Embedding-8B`. It takes `encoding_format` and `dimensions`, and every reply carries `service_tier`, which stays in extras.
+
+### Scaleway
+
+Sources: Scaleway's [Generative APIs reference](https://www.scaleway.com/en/developers/api/generative-apis/) (`CreateEmbeddingResponse`), read 2026-11-09, and `fixtures/openai_embeddings/providers/scaleway/`, built from it, with the error answered live without a valid key. The serverless models are `bge-multilingual-gemma2` and `qwen3-embedding-8b`. Replies add `id`, `created` and `usage.completion_tokens: 0`, which stay in extras. `dimensions` takes only a model's largest size, so Scaleway answers other values itself.

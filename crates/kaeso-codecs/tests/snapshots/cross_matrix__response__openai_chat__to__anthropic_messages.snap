@@ -3423,6 +3423,28 @@ expression: outcomes
       "output_tokens": 74
     }
   },
+  "providers/scaleway/reasoning": {
+    "content": [
+      {
+        "text": "**City of Luminara – A Blueprint for the Future** rises from a reclaimed river delta, powered by sun, wind and tide.",
+        "type": "text"
+      }
+    ],
+    "id": "chatcmpl-5e2b8f0c-7a41-4d93-b6e1-3c9f0a2d4b17",
+    "model": "gpt-oss-120b",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 81,
+      "output_tokens": 77
+    }
+  },
   "providers/togetherai/recorded-json-schema": {
     "content": [
       {

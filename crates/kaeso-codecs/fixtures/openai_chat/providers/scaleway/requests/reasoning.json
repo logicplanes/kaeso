@@ -1,0 +1,13 @@
+{
+  "model": "gpt-oss-120b",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Describe a futuristic city with advanced technology and green energy solutions."
+    }
+  ],
+  "temperature": 0.2,
+  "max_completion_tokens": 512,
+  "top_p": 0.7,
+  "reasoning_effort": "medium"
+}

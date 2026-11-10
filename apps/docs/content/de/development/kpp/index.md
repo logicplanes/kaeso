@@ -259,6 +259,7 @@ Verändert ein Pull Request die Ausgabe über Dialekte hinweg, prüfen Sie den S
 - [Messages-Anbieter](anthropic-messages-providers.md): Sehen Sie, wie sich der Messages-Codec an jeden Anbieter anpasst, der das Format spricht.
 - [OpenAI Chat Completions](openai-chat.md): Finden Sie, wohin jedes Feld des Formats Chat Completions in KPP gehört.
 - [Chat-Completions-Anbieter](openai-chat-providers.md): Sehen Sie, wie sich der Codec an jeden Anbieter anpasst, der Chat Completions spricht.
+- [Chat-Completions-Inferenz-Clouds](openai-chat-inference-clouds.md): Sehen Sie, was die Inferenz-Clouds offener Modelle zu Chat Completions ergänzen.
 - [OpenAI Responses](openai-responses.md): Finden Sie, wohin jedes Feld des Formats Responses in KPP gehört.
 - [OpenAI Embeddings](openai-embeddings.md): Finden Sie, wohin jedes Feld des Formats Embeddings in KPP gehört.
 - [Gemini API](gemini.md): Finden Sie, wohin jedes Feld der Gemini API in KPP gehört, Embeddings eingeschlossen.

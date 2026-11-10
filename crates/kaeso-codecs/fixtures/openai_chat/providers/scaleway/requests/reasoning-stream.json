@@ -1,0 +1,18 @@
+{
+  "model": "qwen3.5-397b-a17b",
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a helpful assistant."
+    },
+    {
+      "role": "user",
+      "content": "Hello!"
+    }
+  ],
+  "reasoning_effort": "medium",
+  "stream": true,
+  "stream_options": {
+    "include_usage": true
+  }
+}

@@ -3593,6 +3593,64 @@ expression: outcomes
     "param": null,
     "unsupported": "chat_template_kwargs"
   },
+  "providers/scaleway/input-audio": {
+    "message": "`audio block` is not supported by OpenAI Responses. Its input has no audio content part; send a transcript of the audio as text, or route the request to a Chat Completions or Gemini model.",
+    "param": "messages[0].blocks[1]",
+    "unsupported": "audio block"
+  },
+  "providers/scaleway/invalid-api-key": {
+    "message": "`max_tokens 1` is not supported by OpenAI Responses. OpenAI Responses needs an output limit of at least 16 tokens; raise it or route the request to another model.",
+    "param": "max_tokens",
+    "unsupported": "max_tokens 1"
+  },
+  "providers/scaleway/missing-api-key": {
+    "message": "`max_tokens 1` is not supported by OpenAI Responses. OpenAI Responses needs an output limit of at least 16 tokens; raise it or route the request to another model.",
+    "param": "max_tokens",
+    "unsupported": "max_tokens 1"
+  },
+  "providers/scaleway/reasoning": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "Describe a futuristic city with advanced technology and green energy solutions.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 512,
+      "model": "gpt-oss-120b",
+      "reasoning": {
+        "effort": "medium"
+      },
+      "store": false,
+      "temperature": 0.2,
+      "top_p": 0.7
+    },
+    "path": "/v1/responses"
+  },
+  "providers/scaleway/reasoning-stream": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "Hello!",
+          "role": "user"
+        }
+      ],
+      "instructions": "You are a helpful assistant.",
+      "model": "qwen3.5-397b-a17b",
+      "reasoning": {
+        "effort": "medium"
+      },
+      "store": false,
+      "stream": true
+    },
+    "path": "/v1/responses"
+  },
   "providers/togetherai/context-length-error": {
     "message": "`context_length_exceeded_behavior` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
     "param": null,

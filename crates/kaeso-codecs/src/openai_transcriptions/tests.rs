@@ -749,3 +749,36 @@ fn xai_openrouter_cohere_and_vercel_read_their_replies() {
     );
     assert_eq!(refusal(TranscriptionsProfile::VERCEL, &foreign), "include");
 }
+
+#[test]
+fn scaleway_transcribes_to_json_only_without_timestamps_or_translations() {
+    let mut r = transcribe(Some(TranscriptFormat::Json));
+    r.model = "whisper-large-v3".into();
+    r.language = Some("en".into());
+    r.prompt = Some("Scaleway".into());
+    let (enc, _, parts) = sent_parts(TranscriptionsProfile::SCALEWAY, &r);
+    assert_eq!(enc.path, "/v1/audio/transcriptions");
+    assert!(has(&parts, "language", "en") && has(&parts, "prompt", "Scaleway"));
+    let t = decoded(
+        TranscriptionsProfile::SCALEWAY,
+        &r,
+        &provider_reply("scaleway", "responses", "json", "json"),
+    );
+    assert_eq!(t.text, "Scaleway's AI revolution starts in Paris.");
+    assert_eq!(
+        refusal(
+            TranscriptionsProfile::SCALEWAY,
+            &transcribe(Some(TranscriptFormat::VerboseJson))
+        ),
+        "response_format"
+    );
+    let mut timed = transcribe(None);
+    timed.timestamps = vec![TimestampGranularity::Segment];
+    assert_eq!(
+        refusal(TranscriptionsProfile::SCALEWAY, &timed),
+        "timestamp_granularities"
+    );
+    let mut translate = transcribe(None);
+    translate.operation = TranscriptionOperation::Translate;
+    assert!(encode(TranscriptionsProfile::SCALEWAY, &translate).is_err());
+}

@@ -435,6 +435,30 @@ describe("ProviderKeyDialog", () => {
     ]);
   });
 
+  it("adds a Scaleway secret key, which has no fixed prefix, with Scaleway's IAM API keys page as its key hint", async () => {
+    on("POST", CREDENTIALS, credential({ provider: "scaleway", name: "Scaleway prod", is_default: true }));
+    const { user, dialog } = await open();
+
+    await choose(user, dialog, "Scaleway");
+
+    expect(await within(dialog).findByRole("heading", { name: "Paste your Scaleway API key" })).toBeVisible();
+    const link = within(dialog).getByRole("link", { name: "console.scaleway.com (opens in a new tab)" });
+    expect(link).toHaveAttribute("href", "https://console.scaleway.com/iam/api-keys");
+    expect((link.closest("p") as HTMLElement).textContent?.replace(/⁠? \(opens in a new tab\)/, "")).toBe(
+      "Create one at console.scaleway.com under IAM → API keys.",
+    );
+    const secret = within(dialog).getByLabelText("Scaleway API key");
+    expect(secret).not.toHaveAttribute("placeholder");
+    await user.type(secret, "00000000-0000-4000-8000-000000000001");
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "Scaleway prod");
+    await user.click(within(dialog).getByRole("button", { name: "Add key" }));
+
+    expect(await notifications().findByText("Scaleway prod is the Scaleway default")).toBeInTheDocument();
+    expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([
+      { provider: "scaleway", name: "Scaleway prod", secret: "00000000-0000-4000-8000-000000000001", make_default: false },
+    ]);
+  });
+
   it("adds a Google AI Studio key, which has no fixed prefix, with AI Studio's key page as its key hint", async () => {
     on("POST", CREDENTIALS, credential({ provider: "google", name: "AI Studio prod", is_default: true }));
     const { user, dialog } = await open();
