@@ -7,6 +7,7 @@ use clap::ValueEnum;
 use serde::Serialize;
 use tokio::sync::{Semaphore, watch};
 
+use crate::agent::{self, Phase};
 use crate::baseline::{self, Baseline, Until};
 use crate::harness::{Install, by_label};
 use crate::stats::Summary;
@@ -24,6 +25,7 @@ pub(crate) enum Scenario {
     SlowClients,
     Mixed,
     Portal,
+    Agent,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -52,6 +54,11 @@ pub(crate) struct Plan {
     pub(crate) gateway_max_connections: usize,
     pub(crate) portal_seconds: u64,
     pub(crate) portal_concurrency: usize,
+    pub(crate) agent_requests: usize,
+    pub(crate) agent_paced_requests: usize,
+    pub(crate) agent_every_ms: u64,
+    pub(crate) agent_paused_requests: usize,
+    pub(crate) agent_pause_ms: u64,
 }
 
 impl Plan {
@@ -125,6 +132,16 @@ pub(crate) struct MixedResult {
     pub(crate) slow_clients: SlowResult,
 }
 
+#[derive(Clone, Debug, Serialize)]
+pub(crate) struct AgentResult {
+    pub(crate) app_format: &'static str,
+    pub(crate) provider_format: &'static str,
+    pub(crate) request_bytes: usize,
+    pub(crate) back_to_back: Phase,
+    pub(crate) paced: Phase,
+    pub(crate) after_a_pause: Phase,
+}
+
 #[derive(Clone, Debug, Default, Serialize)]
 pub(crate) struct Results {
     pub(crate) baseline: Option<Baseline>,
@@ -133,6 +150,7 @@ pub(crate) struct Results {
     pub(crate) slow_clients: Option<SlowResult>,
     pub(crate) mixed: Option<MixedResult>,
     pub(crate) portal: Option<Baseline>,
+    pub(crate) agent: Option<AgentResult>,
     pub(crate) checks: Vec<Check>,
 }
 
@@ -197,6 +215,10 @@ pub(crate) async fn run(plan: &Plan, install: &mut Install) -> Results {
             Scenario::Portal => {
                 bench.fresh("portal").await;
                 bench.portal().await;
+            }
+            Scenario::Agent => {
+                bench.fresh("agent").await;
+                bench.agent().await;
             }
         }
     }
@@ -353,6 +375,92 @@ impl Bench<'_> {
             ),
         );
         self.results.portal = Some(b);
+    }
+
+    // One agent session: tool-heavy Anthropic Messages streams for a name that routes to the
+    // mock's OpenAI Responses model. Back to back everything is cached; paced over more than
+    // the caches' 30 seconds some requests meet an entry that ran out; after a pause all do.
+    async fn agent(&mut self) {
+        let p = self.plan;
+        let body = agent::body(8);
+        let gw = self.install.gateway.addr;
+        let key = self.install.key.clone();
+        let _ = agent::run(gw, &key, &body, 20, Duration::ZERO, Duration::ZERO).await;
+        say(&format!(
+            "agent: {} streams of {} bytes back to back",
+            p.agent_requests,
+            body.len()
+        ));
+        let back_to_back = agent::run(
+            gw,
+            &key,
+            &body,
+            p.agent_requests,
+            Duration::ZERO,
+            Duration::ZERO,
+        )
+        .await;
+        let every = Duration::from_millis(p.agent_every_ms);
+        say(&format!(
+            "agent: {} streams, one every {} ms",
+            p.agent_paced_requests, p.agent_every_ms
+        ));
+        let paced = agent::run(
+            gw,
+            &key,
+            &body,
+            p.agent_paced_requests,
+            every,
+            Duration::ZERO,
+        )
+        .await;
+        let pause = Duration::from_millis(p.agent_pause_ms);
+        say(&format!(
+            "agent: {} streams, each after a pause of {} ms",
+            p.agent_paused_requests, p.agent_pause_ms
+        ));
+        let after_a_pause = agent::run(
+            gw,
+            &key,
+            &body,
+            p.agent_paused_requests,
+            Duration::ZERO,
+            pause,
+        )
+        .await;
+        let left = upstream_left_open(&self.install.mock, LEAK_WAIT).await;
+        for (name, phase) in [
+            ("back to back", &back_to_back),
+            ("paced", &paced),
+            ("after a pause", &after_a_pause),
+        ] {
+            self.check(
+                "agent",
+                &format!("every stream {name} completed and was timed"),
+                phase.failed == 0 && phase.overhead_ms.count == phase.requests,
+                format!(
+                    "{} of {} failed, {} were timed{}",
+                    phase.failed,
+                    phase.requests,
+                    phase.overhead_ms.count,
+                    phase.why()
+                ),
+            );
+        }
+        self.check(
+            "agent",
+            "no upstream stream was left open",
+            left == 0,
+            format!("{left} still open"),
+        );
+        self.results.agent = Some(AgentResult {
+            app_format: "Anthropic Messages",
+            provider_format: "OpenAI Responses",
+            request_bytes: body.len(),
+            back_to_back,
+            paced,
+            after_a_pause,
+        });
     }
 
     async fn mock_alone(&mut self, n: usize) -> Profile {
