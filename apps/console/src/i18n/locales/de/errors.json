@@ -508,6 +508,7 @@
   "errors.modelApi.transfer": "Die Verbindung zum Anbieter ist abgebrochen, bevor die Antwort vollständig war.",
   "errors.modelApi.translateUnavailable": "Kaeso kann diese Anfrage gerade nicht übersetzen. Gleich erneut versuchen.",
   "errors.modelApi.translatingBusy": "Kaeso übersetzt gerade andere Anfragen; gleich erneut versuchen.",
+  "errors.modelApi.answersBusy": "Kaeso liest gerade Antworten anderer Anbieter; gleich erneut versuchen.",
   "errors.modelApi.unreachable": "Kaeso erreicht den Anbieter nicht. Gleich erneut versuchen.",
   "errors.modelApi.unserved": "{provider} bietet das Modell `{model}` dem Anbieter-Schlüssel dieses Projekts nicht an; den Zugriff des Schlüssels darauf prüfen oder das Modell aus dem Katalog entfernen.",
   "errors.timeoutStage.connect": "Verbindungsaufbau",
