@@ -49,6 +49,49 @@ pub struct KeyCreate {
     pub other: crate::platform::json::NoOtherFields,
 }
 
+pub const BEYOND_THE_CALLING_KEY: &str =
+    "A key can only create or rotate keys within its own limits; use a console session.";
+
+// A key's own restrictions contain it if it leaks, so a key it creates, or another key it rotates
+// and so receives the secret of, may reach no further: no later expiry, no Tools it lacks, only
+// its models, and none at all while limits of its own hold it.
+async fn within_caller(
+    state: &AppState,
+    caller: &kaeso_store::pg::keys::KeyAuth,
+    expires_at: Option<time::OffsetDateTime>,
+    tools: bool,
+    models: Option<&std::collections::BTreeSet<uuid::Uuid>>,
+) -> ApiResult<()> {
+    let beyond = || ApiError::PermissionDenied(BEYOND_THE_CALLING_KEY.into());
+    if tools && !caller.tools {
+        return Err(beyond());
+    }
+    if let Some(own) = caller.expires_at
+        && expires_at.is_none_or(|e| e > own)
+    {
+        return Err(beyond());
+    }
+    let mut conn = state.pg.acquire().await?;
+    if let Some(own) = kaeso_store::pg::catalogue::access(
+        &mut conn,
+        caller.project_id,
+        kaeso_store::pg::catalogue::Subject::Key(caller.id),
+    )
+    .await?
+        && !models.is_some_and(|m| m.is_subset(&own))
+    {
+        return Err(beyond());
+    }
+    if kaeso_store::pg::limits::list(&mut *conn, caller.project_id)
+        .await?
+        .iter()
+        .any(|l| l.api_key_id == Some(caller.id))
+    {
+        return Err(beyond());
+    }
+    Ok(())
+}
+
 struct Rotation<'a> {
     old: &'a keys::KeyRow,
     stops_at: time::OffsetDateTime,
@@ -93,6 +136,11 @@ async fn create_key(
         .models
         .as_ref()
         .map(|m| m.iter().map(|id| id.uuid()).collect());
+    if let Caller::ProjectKey(caller) = &ctx.caller
+        && rotation.as_ref().is_none_or(|r| r.old.id != caller.id)
+    {
+        within_caller(state, caller, expires_at, req.tools, models.as_ref()).await?;
+    }
     if let Some(list) = &models {
         let allowed = super::access::member_allowed_for(
             state,

@@ -217,6 +217,7 @@
   "errors.keyRotateDisabled": "This key is disabled; enable it before you rotate it.",
   "errors.keyRotatedAlready": "This key was rotated already; rotate the key that replaced it.",
   "errors.keysCantMintPlatformKeys": "Keys can't create keys with platform access; use a console session.",
+  "errors.keysBeyondTheirOwnLimits": "A key can only create or rotate keys within its own limits; use a console session.",
   "errors.lastInstanceAdmin": "This is the last instance admin; make someone else an instance admin first.",
   "errors.lastOwnerLeaving": "You are this organization's last owner; transfer ownership before leaving.",
   "errors.lastOwnerMakeAnother": "This is the organization's last owner; make someone else an owner first.",
