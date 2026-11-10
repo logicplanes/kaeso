@@ -759,6 +759,30 @@ expression: outcomes
     "param": null,
     "unsupported": "web_search_options"
   },
+  "providers/baseten/invalid-api-key": {
+    "message": "`max_tokens 1` is not supported by OpenAI Responses. OpenAI Responses needs an output limit of at least 16 tokens; raise it or route the request to another model.",
+    "param": "max_tokens",
+    "unsupported": "max_tokens 1"
+  },
+  "providers/baseten/reasoning-doc": {
+    "message": "`chat_template_args` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "chat_template_args"
+  },
+  "providers/baseten/text-stream-doc": {
+    "body": {
+      "input": [
+        {
+          "content": "Reply with exactly: Café from Baseten.",
+          "role": "user"
+        }
+      ],
+      "model": "deepseek-ai/DeepSeek-V4.1-Flash-1017",
+      "store": false,
+      "stream": true
+    },
+    "path": "/v1/responses"
+  },
   "providers/cerebras/assistant-refusal": {
     "body": {
       "include": [
@@ -2493,6 +2517,47 @@ expression: outcomes
     },
     "path": "/v1/responses"
   },
+  "providers/huggingface/invalid-api-key": {
+    "message": "`max_tokens 1` is not supported by OpenAI Responses. OpenAI Responses needs an output limit of at least 16 tokens; raise it or route the request to another model.",
+    "param": "max_tokens",
+    "unsupported": "max_tokens 1"
+  },
+  "providers/huggingface/provider-suffix": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "How many 'G's in 'huggingface'?",
+          "role": "user"
+        }
+      ],
+      "instructions": "You are a helpful assistant.",
+      "max_output_tokens": 512,
+      "model": "openai/gpt-oss-120b:cheapest",
+      "reasoning": {
+        "effort": "low"
+      },
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/huggingface/reasoning-stream": {
+    "body": {
+      "input": [
+        {
+          "content": "Hello!",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 256,
+      "model": "deepseek-ai/DeepSeek-V4.1-Flash-1017:novita",
+      "store": false,
+      "stream": true
+    },
+    "path": "/v1/responses"
+  },
   "providers/mistral/assistant-prefill": {
     "body": {
       "input": [
@@ -3159,6 +3224,26 @@ expression: outcomes
     "message": "`video block` is not supported by OpenAI Responses. Its input has no video content part; send frames of the video as images, or route the request to a Gemini model.",
     "param": "messages[0].blocks[1]",
     "unsupported": "video block"
+  },
+  "providers/nvidia/invalid-api-key": {
+    "message": "`max_tokens 1` is not supported by OpenAI Responses. OpenAI Responses needs an output limit of at least 16 tokens; raise it or route the request to another model.",
+    "param": "max_tokens",
+    "unsupported": "max_tokens 1"
+  },
+  "providers/nvidia/reasoning": {
+    "message": "`seed` is not supported by OpenAI Responses. The Responses API has no `seed`. Remove it or use the Chat Completions format.",
+    "param": "seed",
+    "unsupported": "seed"
+  },
+  "providers/nvidia/reasoning-stream": {
+    "message": "`seed` is not supported by OpenAI Responses. The Responses API has no `seed`. Remove it or use the Chat Completions format.",
+    "param": "seed",
+    "unsupported": "seed"
+  },
+  "providers/nvidia/retired-model": {
+    "message": "`max_tokens 1` is not supported by OpenAI Responses. OpenAI Responses needs an output limit of at least 16 tokens; raise it or route the request to another model.",
+    "param": "max_tokens",
+    "unsupported": "max_tokens 1"
   },
   "providers/ollama-cloud/image": {
     "message": "`max_tokens 10` is not supported by OpenAI Responses. OpenAI Responses needs an output limit of at least 16 tokens; raise it or route the request to another model.",

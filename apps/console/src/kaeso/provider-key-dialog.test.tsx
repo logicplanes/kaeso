@@ -459,6 +459,68 @@ describe("ProviderKeyDialog", () => {
     ]);
   });
 
+  it("adds a Hugging Face token with the access tokens page and its hf_ prefix as the key hint", async () => {
+    on("POST", CREDENTIALS, credential({ provider: "huggingface", name: "Hugging Face prod", is_default: true }));
+    const { user, dialog } = await open();
+
+    await choose(user, dialog, "Hugging Face");
+
+    expect(await within(dialog).findByRole("heading", { name: "Paste your Hugging Face API key" })).toBeVisible();
+    expectKeyHint(dialog, "huggingface.co", "https://huggingface.co/settings/tokens", "Settings → Access Tokens", "hf_");
+    const secret = within(dialog).getByLabelText("Hugging Face API key");
+    expect(secret).toHaveAttribute("placeholder", "hf_…");
+    await user.type(secret, "hf_123");
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "Hugging Face prod");
+    await user.click(within(dialog).getByRole("button", { name: "Add key" }));
+
+    expect(await notifications().findByText("Hugging Face prod is the Hugging Face default")).toBeInTheDocument();
+    expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([
+      { provider: "huggingface", name: "Hugging Face prod", secret: "hf_123", make_default: false },
+    ]);
+  });
+
+  it("adds an NVIDIA key with build.nvidia.com's key page and its nvapi- prefix as the key hint", async () => {
+    on("POST", CREDENTIALS, credential({ provider: "nvidia", name: "NVIDIA prod", is_default: true }));
+    const { user, dialog } = await open();
+
+    await choose(user, dialog, "NVIDIA");
+
+    expect(await within(dialog).findByRole("heading", { name: "Paste your NVIDIA API key" })).toBeVisible();
+    expectKeyHint(dialog, "build.nvidia.com", "https://build.nvidia.com/settings/api-keys", "API Keys", "nvapi-");
+    const secret = within(dialog).getByLabelText("NVIDIA API key");
+    expect(secret).toHaveAttribute("placeholder", "nvapi-…");
+    await user.type(secret, "nvapi-123");
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "NVIDIA prod");
+    await user.click(within(dialog).getByRole("button", { name: "Add key" }));
+
+    expect(await notifications().findByText("NVIDIA prod is the NVIDIA default")).toBeInTheDocument();
+    expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([{ provider: "nvidia", name: "NVIDIA prod", secret: "nvapi-123", make_default: false }]);
+  });
+
+  it("adds a Baseten key, which has no fixed prefix, with Baseten's API keys page as its key hint", async () => {
+    on("POST", CREDENTIALS, credential({ provider: "baseten", name: "Baseten prod", is_default: true }));
+    const { user, dialog } = await open();
+
+    await choose(user, dialog, "Baseten");
+
+    expect(await within(dialog).findByRole("heading", { name: "Paste your Baseten API key" })).toBeVisible();
+    const link = within(dialog).getByRole("link", { name: "app.baseten.co (opens in a new tab)" });
+    expect(link).toHaveAttribute("href", "https://app.baseten.co/settings/api_keys");
+    expect((link.closest("p") as HTMLElement).textContent?.replace(/⁠? \(opens in a new tab\)/, "")).toBe(
+      "Create one at app.baseten.co under Organization settings → API keys.",
+    );
+    const secret = within(dialog).getByLabelText("Baseten API key");
+    expect(secret).not.toHaveAttribute("placeholder");
+    await user.type(secret, "abcd1234.0123456789");
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "Baseten prod");
+    await user.click(within(dialog).getByRole("button", { name: "Add key" }));
+
+    expect(await notifications().findByText("Baseten prod is the Baseten default")).toBeInTheDocument();
+    expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([
+      { provider: "baseten", name: "Baseten prod", secret: "abcd1234.0123456789", make_default: false },
+    ]);
+  });
+
   it("adds a SiliconFlow key with SiliconFlow's API keys page and its sk- prefix as the key hint", async () => {
     on("POST", CREDENTIALS, credential({ provider: "siliconflow", name: "SiliconFlow prod", is_default: true }));
     const { user, dialog } = await open();

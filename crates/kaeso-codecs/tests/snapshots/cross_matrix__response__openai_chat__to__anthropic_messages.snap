@@ -908,6 +908,28 @@ expression: outcomes
       "output_tokens": 30
     }
   },
+  "providers/baseten/reasoning-doc": {
+    "content": [
+      {
+        "text": "No, 91 is not a prime number because it can be factored as $7 \\times 13$.",
+        "type": "text"
+      }
+    ],
+    "id": "chatcmpl-4c1e8f7a2b9d4e6f",
+    "model": "zai-org/GLM-5.2",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 21,
+      "output_tokens": 203
+    }
+  },
   "providers/cerebras/recorded-basic": {
     "content": [
       {
@@ -2167,6 +2189,28 @@ expression: outcomes
       }
     }
   },
+  "providers/huggingface/provider-suffix": {
+    "content": [
+      {
+        "text": "There are three 'g's in \"huggingface\".",
+        "type": "text"
+      }
+    ],
+    "id": "chatcmpl-6f1c2a9e8b7d4c3a",
+    "model": "openai/gpt-oss-120b",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 82,
+      "output_tokens": 41
+    }
+  },
   "providers/mistral/recorded-assistant-prefix": {
     "content": [
       {
@@ -2951,6 +2995,28 @@ expression: outcomes
       "output_tokens_details": {
         "thinking_tokens": 11
       }
+    }
+  },
+  "providers/nvidia/reasoning": {
+    "content": [
+      {
+        "text": "A GPU with cores by the score\nmade matrices multiply galore;\nit trained in a night\nwhat took weeks to get right,\nand the data scientists cheered for more.",
+        "type": "text"
+      }
+    ],
+    "id": "chatcmpl-3b9e4f1d2c7a4e8b",
+    "model": "nvidia/nemotron-3-super-120b-a12b",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 25,
+      "output_tokens": 64
     }
   },
   "providers/ollama-cloud/recorded-image": {

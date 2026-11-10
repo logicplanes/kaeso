@@ -2429,6 +2429,71 @@ expression: outcomes
     },
     "user": null
   },
+  "providers/baseten/reasoning-doc": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "chatcmpl-4c1e8f7a2b9d4e6f",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "zai-org/GLM-5.2",
+    "object": "response",
+    "output": [
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "No, 91 is not a prime number because it can be factored as $7 \\times 13$.",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_chatcmpl4c1e8f7a2b9d4e6f_0",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 21,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 203,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 224
+    },
+    "user": null
+  },
   "providers/cerebras/recorded-basic": {
     "background": false,
     "completed_at": 1760000000,
@@ -5629,6 +5694,71 @@ expression: outcomes
     },
     "user": null
   },
+  "providers/huggingface/provider-suffix": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "chatcmpl-6f1c2a9e8b7d4c3a",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "openai/gpt-oss-120b",
+    "object": "response",
+    "output": [
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "There are three 'g's in \"huggingface\".",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_chatcmpl6f1c2a9e8b7d4c3a_0",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 82,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 41,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 123
+    },
+    "user": null
+  },
   "providers/mistral/recorded-assistant-prefix": {
     "background": false,
     "completed_at": 1760000000,
@@ -7622,6 +7752,71 @@ expression: outcomes
         "reasoning_tokens": 11
       },
       "total_tokens": 127
+    },
+    "user": null
+  },
+  "providers/nvidia/reasoning": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "chatcmpl-3b9e4f1d2c7a4e8b",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "nvidia/nemotron-3-super-120b-a12b",
+    "object": "response",
+    "output": [
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "A GPU with cores by the score\nmade matrices multiply galore;\nit trained in a night\nwhat took weeks to get right,\nand the data scientists cheered for more.",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_chatcmpl3b9e4f1d2c7a4e8b_0",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 25,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 64,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 89
     },
     "user": null
   },

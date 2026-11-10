@@ -1,0 +1,22 @@
+{
+  "id": "chatcmpl-3b9e4f1d2c7a4e8b",
+  "object": "chat.completion",
+  "created": 1794225600,
+  "model": "nvidia/nemotron-3-super-120b-a12b",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "A GPU with cores by the score\nmade matrices multiply galore;\nit trained in a night\nwhat took weeks to get right,\nand the data scientists cheered for more.",
+        "reasoning_content": "A limerick has five lines in AABBA. Theme: parallel cores, fast training."
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 25,
+    "completion_tokens": 64,
+    "total_tokens": 89
+  }
+}

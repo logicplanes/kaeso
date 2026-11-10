@@ -1586,6 +1586,118 @@ pub const PROVIDERS: &[Provider] = &[
         service_account: None,
     },
     Provider {
+        id: "huggingface",
+        name: "Hugging Face",
+        key_page: KeyPage {
+            url: "https://huggingface.co/settings/tokens",
+            label: "Settings → Access Tokens",
+        },
+        key_prefix: Some("hf_"),
+        default_base_url: "https://router.huggingface.co",
+        auth: AuthStyle::Bearer,
+        generation: DialectId::OpenAiChat,
+        count_tokens: None,
+        embeddings: None,
+        images: &[],
+        speech: &[],
+        transcriptions: &[],
+        videos: &[],
+        dialects: &[DialectId::OpenAiChat],
+        refused_key_messages: &[],
+        context_window_messages: &[],
+        reasoning_beyond_output_limit: false,
+        end_user_limit: None,
+        // The router's chat schema has only `max_tokens` and no end-user field, and it passes
+        // messages on to the model's own provider, not every one of which takes `developer`
+        // (https://huggingface.co/docs/inference-providers/tasks/chat-completion); thinking
+        // comes in that provider's field, `reasoning_content` or `reasoning`.
+        chat: ChatProfile::compatible("Hugging Face")
+            .max_tokens()
+            .system_role()
+            .without_end_user()
+            .reasoning_fields(&["reasoning_content", "reasoning"]),
+        responses: ResponsesProfile::compatible("Hugging Face"),
+        messages: MessagesProfile::compatible("Hugging Face"),
+        gemini: GeminiProfile::GOOGLE_AI_STUDIO,
+        account: None,
+        routes: &[],
+        service_account: None,
+    },
+    Provider {
+        id: "nvidia",
+        name: "NVIDIA",
+        key_page: KeyPage {
+            url: "https://build.nvidia.com/settings/api-keys",
+            label: "API Keys",
+        },
+        key_prefix: Some("nvapi-"),
+        default_base_url: "https://integrate.api.nvidia.com",
+        auth: AuthStyle::Bearer,
+        generation: DialectId::OpenAiChat,
+        count_tokens: None,
+        embeddings: Some(DialectId::OpenAiEmbeddings),
+        images: &[],
+        speech: &[],
+        transcriptions: &[],
+        videos: &[],
+        dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
+        refused_key_messages: &[],
+        context_window_messages: &[],
+        reasoning_beyond_output_limit: false,
+        end_user_limit: None,
+        // The hosted NIM API's request schemas have only `max_tokens`, no end-user field and the
+        // roles `system`, `context`, `user` and `assistant`, and its samples read thinking from
+        // `reasoning_content` (https://docs.api.nvidia.com/nim/reference/llm-apis).
+        chat: ChatProfile::compatible("NVIDIA")
+            .max_tokens()
+            .system_role()
+            .without_end_user()
+            .reasoning_fields(&["reasoning_content"]),
+        responses: ResponsesProfile::compatible("NVIDIA"),
+        messages: MessagesProfile::compatible("NVIDIA"),
+        gemini: GeminiProfile::GOOGLE_AI_STUDIO,
+        account: None,
+        routes: &[],
+        service_account: None,
+    },
+    Provider {
+        id: "baseten",
+        name: "Baseten",
+        key_page: KeyPage {
+            url: "https://app.baseten.co/settings/api_keys",
+            label: "Organization settings → API keys",
+        },
+        key_prefix: None,
+        default_base_url: "https://inference.baseten.co",
+        auth: AuthStyle::Bearer,
+        generation: DialectId::OpenAiChat,
+        count_tokens: None,
+        embeddings: None,
+        images: &[],
+        speech: &[],
+        transcriptions: &[],
+        videos: &[],
+        dialects: &[DialectId::OpenAiChat],
+        refused_key_messages: &[],
+        context_window_messages: &[],
+        reasoning_beyond_output_limit: false,
+        end_user_limit: None,
+        // Model APIs' request schema has only `max_tokens`, the end user only as `user` and the
+        // roles `system`, `user`, `assistant` and `tool`; thinking comes as `reasoning_content`
+        // (https://docs.baseten.co/inference/model-apis/reasoning).
+        chat: ChatProfile::compatible("Baseten")
+            .max_tokens()
+            .system_role()
+            .end_user_as_user()
+            .reasoning_fields(&["reasoning_content"]),
+        responses: ResponsesProfile::compatible("Baseten"),
+        messages: MessagesProfile::compatible("Baseten"),
+        gemini: GeminiProfile::GOOGLE_AI_STUDIO,
+        account: None,
+        routes: &[],
+        service_account: None,
+    },
+    Provider {
         id: "siliconflow",
         name: "SiliconFlow",
         key_page: KeyPage {
@@ -1924,7 +2036,7 @@ mod tests {
         assert!(provider("gemini").is_none());
         assert_eq!(
             ids(),
-            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras, zai, minimax, elevenlabs, google, gemini-agent-platform, fireworks-ai, nebius, sambanova, scaleway, siliconflow"
+            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras, zai, minimax, elevenlabs, google, gemini-agent-platform, fireworks-ai, nebius, sambanova, scaleway, huggingface, nvidia, baseten, siliconflow"
         );
     }
 
@@ -2745,6 +2857,9 @@ mod tests {
                 "nebius",
                 "sambanova",
                 "scaleway",
+                "huggingface",
+                "nvidia",
+                "baseten",
                 "siliconflow"
             ]
         );

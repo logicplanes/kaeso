@@ -1,0 +1,145 @@
+{
+  "object": "list",
+  "data": [
+    {
+      "id": "Qwen/Qwen3.8-27B",
+      "object": "model",
+      "created": 1785918179,
+      "owned_by": "Qwen",
+      "architecture": {
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "text"
+        ]
+      },
+      "providers": [
+        {
+          "provider": "novita",
+          "status": "live",
+          "context_length": 1000000,
+          "pricing": {
+            "input": 0.42,
+            "output": 3
+          },
+          "is_free": false,
+          "supports_tools": true,
+          "supports_structured_output": false,
+          "first_token_latency_ms": 1650.2,
+          "throughput": 25.74814683730196,
+          "is_model_author": false
+        },
+        {
+          "provider": "cerebras",
+          "status": "live",
+          "context_length": 65536,
+          "pricing": {
+            "input": 0.99,
+            "output": 1.49
+          },
+          "is_free": false,
+          "supports_tools": true,
+          "supports_structured_output": true,
+          "first_token_latency_ms": 127.4,
+          "throughput": 887.5645316080679,
+          "is_model_author": false
+        }
+      ]
+    },
+    {
+      "id": "deepseek-ai/DeepSeek-V4.1-Flash-1017",
+      "object": "model",
+      "created": 1792204838,
+      "owned_by": "deepseek-ai",
+      "architecture": {
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "text"
+        ]
+      },
+      "providers": [
+        {
+          "provider": "novita",
+          "status": "live",
+          "context_length": 1048576,
+          "pricing": {
+            "input": 0.3,
+            "output": 1.2
+          },
+          "is_free": false,
+          "supports_tools": true,
+          "supports_structured_output": true,
+          "first_token_latency_ms": 1233.8,
+          "throughput": 79.14920030497692,
+          "is_model_author": false
+        },
+        {
+          "provider": "baseten",
+          "status": "live",
+          "context_length": 1048576,
+          "pricing": {
+            "input": 0.3,
+            "output": 1.2
+          },
+          "is_free": false,
+          "supports_tools": true,
+          "supports_structured_output": true,
+          "first_token_latency_ms": 242.2,
+          "throughput": 114.98007374523436,
+          "is_model_author": false
+        }
+      ]
+    },
+    {
+      "id": "openai/gpt-oss-120b",
+      "object": "model",
+      "created": 1754346786,
+      "owned_by": "openai",
+      "architecture": {
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "text"
+        ]
+      },
+      "providers": [
+        {
+          "provider": "groq",
+          "status": "live",
+          "context_length": 131072,
+          "pricing": {
+            "input": 0.15,
+            "output": 0.75
+          },
+          "is_free": false,
+          "supports_tools": true,
+          "supports_structured_output": true,
+          "first_token_latency_ms": 165.8,
+          "throughput": 428.83169466270954,
+          "is_model_author": false
+        },
+        {
+          "provider": "novita",
+          "status": "live",
+          "context_length": 131072,
+          "pricing": {
+            "input": 0.05,
+            "output": 0.25
+          },
+          "is_free": false,
+          "supports_tools": true,
+          "supports_structured_output": true,
+          "first_token_latency_ms": 535.8,
+          "throughput": 218.34239306899218,
+          "is_model_author": false
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "model": "deepseek-ai/DeepSeek-V4.1-Flash-1017",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Reply with exactly: Café from Baseten."
+    }
+  ],
+  "stream": true,
+  "stream_options": {
+    "include_usage": true
+  }
+}

@@ -110,6 +110,10 @@ Quellen: die Referenz [create embeddings](https://docs.tokenfactory.nebius.com/a
 
 Quellen: die [Generative APIs reference](https://www.scaleway.com/en/developers/api/generative-apis/) von Scaleway (`CreateEmbeddingResponse`), gelesen am 2026-11-09, und `fixtures/openai_embeddings/providers/scaleway/`, daraus gebaut, mit dem live erhaltenen Fehler ohne gültigen Schlüssel. Die serverlosen Modelle sind `bge-multilingual-gemma2` und `qwen3-embedding-8b`. Antworten ergänzen `id`, `created` und `usage.completion_tokens: 0`, die in den Extras bleiben. `dimensions` nimmt nur die größte Größe eines Modells an, daher beantwortet Scaleway andere Werte selbst.
 
+### NVIDIA
+
+Quellen: die Embedding-Referenzen von NVIDIA wie [`nvidia/nv-embedqa-e5-v5`](https://docs.api.nvidia.com/nim/reference/nvidia-nv-embedqa-e5-v5-infer), gelesen am 2026-11-10, und `fixtures/openai_embeddings/providers/nvidia/`, daraus gebaut, mit dem live erhaltenen Fehler ohne gültigen Schlüssel. Zu seinen Modellen gehören `nvidia/nemotron-3.5-embed-1b` und `nvidia/nv-embedqa-e5-v5`. Anfragen nehmen `input_type`, `query` oder `passage`, das die Modelle für die Suche verlangen, und `truncate`, `NONE`, `START` oder `END`; beide bleiben in den Extras und gehen unverändert. Die Fehler von NVIDIA sind Problemdokumente, die Apps in der Form von OpenAI erhalten, mit dem Inhalt von NVIDIA in der Meldung.
+
 ### SiliconFlow
 
 Quellen: die Referenz [create embeddings](https://docs.siliconflow.com/en/api-reference/embeddings/create-embeddings) von SiliconFlow, gelesen am 2026-11-10, und `fixtures/openai_embeddings/providers/siliconflow/`, daraus gebaut, mit dem live erhaltenen Fehler ohne gültigen Schlüssel. Zu seinen Modellen gehören `Qwen/Qwen3-Embedding-8B`, `-4B` und `-0.6B` und `BAAI/bge-m3`. Nur die Qwen3-Modelle nehmen `dimensions` an, und eine Anfrage nimmt höchstens 32 Zeichenketten. Antworten tragen `usage.completion_tokens: 0`, das in den Extras bleibt. Die Fehler von SiliconFlow haben kein `error`-Objekt; Apps erhalten sie in der Form von OpenAI mit der Meldung von SiliconFlow.

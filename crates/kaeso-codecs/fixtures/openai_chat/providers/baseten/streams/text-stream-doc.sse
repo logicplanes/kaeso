@@ -1,0 +1,8 @@
+data: {"id":"chatcmpl-9e2d4b6a8c0f1e3d","object":"chat.completion.chunk","created":1794225600,"model":"deepseek-ai/DeepSeek-V4.1-Flash-1017","choices":[{"index":0,"delta":{"content":"Café from Baseten."}}]}
+
+data: {"id":"chatcmpl-9e2d4b6a8c0f1e3d","object":"chat.completion.chunk","created":1794225600,"model":"deepseek-ai/DeepSeek-V4.1-Flash-1017","choices":[{"index":0,"delta":{},"finish_reason":"stop"}]}
+
+data: {"id":"chatcmpl-9e2d4b6a8c0f1e3d","object":"chat.completion.chunk","created":1794225600,"model":"deepseek-ai/DeepSeek-V4.1-Flash-1017","choices":[],"usage":{"prompt_tokens":14,"completion_tokens":6,"total_tokens":20}}
+
+data: [DONE]
+

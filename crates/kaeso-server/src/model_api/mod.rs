@@ -3,6 +3,7 @@ pub mod auth;
 mod elevenlabs;
 pub mod errors;
 pub mod gemini;
+mod generations;
 pub mod hooks;
 pub mod in_flight;
 mod input_count;
@@ -93,6 +94,7 @@ async fn serve_call(
             transcription,
             elevenlabs: None,
             video: None,
+            generation: None,
         },
     )
     .await
@@ -294,6 +296,14 @@ pub fn router() -> Router<AppState> {
         .route("/v1/voices/{*rest}", get(elevenlabs::voices))
         .route("/v2/voices", get(elevenlabs::voices))
         .route("/v2/{*rest}", axum::routing::any(elevenlabs::management))
+        .route(
+            "/v1/flows/image",
+            post(generations::create).get(generations::list),
+        )
+        .route(
+            "/v1/flows/image/{generation_id}",
+            get(generations::retrieve),
+        )
         .route("/v1/videos", post(videos::create).get(videos::list))
         .route("/v1/videos/edits", post(videos::not_served))
         .route("/v1/videos/extensions", post(videos::not_served))

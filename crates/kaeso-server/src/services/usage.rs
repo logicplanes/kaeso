@@ -365,17 +365,12 @@ pub fn served(outcome: &Outcome) -> bool {
         || (outcome.status == 499 && (outcome.ttfb.is_some() || outcome.usage_estimated))
 }
 
-/// Whether the request's cost is known; a video job's start is priced when the job ends.
+/// Whether the request's cost is known; the start of a video job or an image generation is
+/// priced when it ends.
 pub fn cost_known(outcome: &Outcome) -> bool {
     if !served(outcome)
         || outcome.response_cache == Some(crate::services::response_cache::Verdict::Hit)
-        || matches!(
-            outcome.video,
-            Some(
-                crate::model_api::hooks::VideoCall::Create
-                    | crate::model_api::hooks::VideoCall::Remix
-            )
-        )
+        || billed_when_done(outcome)
     {
         return true;
     }
@@ -394,21 +389,14 @@ pub fn cost_known(outcome: &Outcome) -> bool {
     cost::is_priced(&usage, outcome.prices.as_ref(), outcome.media.as_ref())
 }
 
-/// What a request made or heard, for the usage totals: a video job's units count when it ends.
+/// What a request made or heard, for the usage totals: a video job's or an image generation's
+/// units count when it ends.
 pub fn media_sums(outcome: &Outcome) -> MediaSums {
     let mut sums = MediaSums {
         unpriced: i64::from(!cost_known(outcome)),
         ..MediaSums::default()
     };
-    if !served(outcome)
-        || matches!(
-            outcome.video,
-            Some(
-                crate::model_api::hooks::VideoCall::Create
-                    | crate::model_api::hooks::VideoCall::Remix
-            )
-        )
-    {
+    if !served(outcome) || billed_when_done(outcome) {
         return sums;
     }
     if let Some(m) = &outcome.media {
@@ -427,16 +415,11 @@ pub fn media_sums(outcome: &Outcome) -> MediaSums {
 
 pub fn costed(outcome: &Outcome) -> (Usage, Decimal) {
     let usage = outcome.usage.clone().unwrap_or_default();
-    // A video job is billed once, when it ends; the request that started it costs nothing.
+    // A video job or an image generation is billed once, when it ends; the request that started
+    // it costs nothing.
     if !served(outcome)
         || outcome.response_cache == Some(crate::services::response_cache::Verdict::Hit)
-        || matches!(
-            outcome.video,
-            Some(
-                crate::model_api::hooks::VideoCall::Create
-                    | crate::model_api::hooks::VideoCall::Remix
-            )
-        )
+        || billed_when_done(outcome)
     {
         return (usage, Decimal::ZERO);
     }
@@ -455,9 +438,20 @@ impl Sink for Accounting {
     }
 }
 
-// The end of a video job adds its cost to the request that started it, not a request of its own.
-fn completes_video(outcome: &Outcome) -> bool {
+// The end of a video job or an image generation adds its cost to the request that started it,
+// not a request of its own.
+fn completes_job(outcome: &Outcome) -> bool {
     outcome.video == Some(crate::model_api::hooks::VideoCall::Completed)
+        || outcome.generation == Some(crate::model_api::hooks::GenerationCall::Completed)
+}
+
+fn billed_when_done(outcome: &Outcome) -> bool {
+    matches!(
+        outcome.video,
+        Some(
+            crate::model_api::hooks::VideoCall::Create | crate::model_api::hooks::VideoCall::Remix
+        )
+    ) || outcome.generation == Some(crate::model_api::hooks::GenerationCall::Create)
 }
 
 pub async fn account(state: &AppState, outcome: &Outcome) {
@@ -483,8 +477,8 @@ pub async fn account(state: &AppState, outcome: &Outcome) {
             .egress
             .map(|d| d.as_str().to_owned())
             .unwrap_or_default(),
-        requests: i64::from(!completes_video(outcome)),
-        errors: i64::from(outcome.is_error() && !completes_video(outcome)),
+        requests: i64::from(!completes_job(outcome)),
+        errors: i64::from(outcome.is_error() && !completes_job(outcome)),
         input_tokens: i(usage.input_tokens),
         output_tokens: i(usage.output_tokens),
         cache_read_tokens: i(usage.cache_read_tokens),

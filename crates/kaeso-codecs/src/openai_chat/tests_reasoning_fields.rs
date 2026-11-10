@@ -10,6 +10,10 @@ use crate::test_support::{assert_json_eq, assert_sse_eq, fixtures};
 
 const PROFILES: &[(&str, ChatProfile)] = &[
     (
+        "baseten",
+        ChatProfile::compatible("Baseten").reasoning_fields(&["reasoning_content"]),
+    ),
+    (
         "alibaba",
         ChatProfile::compatible("QwenCloud").reasoning_fields(&["reasoning_content"]),
     ),
@@ -30,6 +34,11 @@ const PROFILES: &[(&str, ChatProfile)] = &[
         ChatProfile::compatible("Groq").reasoning_fields(&["reasoning"]),
     ),
     (
+        "huggingface",
+        ChatProfile::compatible("Hugging Face")
+            .reasoning_fields(&["reasoning_content", "reasoning"]),
+    ),
+    (
         "moonshotai",
         ChatProfile::compatible("Moonshot").reasoning_fields(&["reasoning_content"]),
     ),
@@ -37,6 +46,10 @@ const PROFILES: &[(&str, ChatProfile)] = &[
         "nebius",
         ChatProfile::compatible("Nebius Token Factory")
             .reasoning_fields(&["reasoning_content", "reasoning"]),
+    ),
+    (
+        "nvidia",
+        ChatProfile::compatible("NVIDIA").reasoning_fields(&["reasoning_content"]),
     ),
     (
         "ollama-cloud",
@@ -207,6 +220,7 @@ fn a_reasoning_field_is_a_reasoning_block_before_the_answer() {
             "recorded-reasoning-sent-back",
             "reasoning_content",
         ),
+        ("baseten", "reasoning-doc", "reasoning_content"),
         ("cerebras", "recorded-basic", "reasoning"),
         ("cerebras", "recorded-reasoning", "reasoning"),
         ("cerebras", "recorded-reasoning-sent-back", "reasoning"),
@@ -218,6 +232,7 @@ fn a_reasoning_field_is_a_reasoning_block_before_the_answer() {
         ),
         ("groq", "recorded-plain-developer-string", "reasoning"),
         ("groq", "recorded-reasoning-format-parsed", "reasoning"),
+        ("huggingface", "provider-suffix", "reasoning"),
         ("moonshotai", "recorded-reasoning", "reasoning_content"),
         (
             "moonshotai",
@@ -225,6 +240,7 @@ fn a_reasoning_field_is_a_reasoning_block_before_the_answer() {
             "reasoning_content",
         ),
         ("moonshotai", "recorded-tool-result", "reasoning_content"),
+        ("nvidia", "reasoning", "reasoning_content"),
         ("ollama-cloud", "recorded-reasoning-effort", "reasoning"),
         ("ollama-cloud", "recorded-reasoning-object", "reasoning"),
         ("ollama-cloud", "recorded-reasoning-sent-back", "reasoning"),
@@ -519,11 +535,18 @@ fn streamed_reasoning_fields_are_one_reasoning_block_that_ends_before_the_answer
             answered,
         ),
         (
+            "huggingface",
+            "reasoning-stream",
+            "reasoning_content",
+            answered,
+        ),
+        (
             "moonshotai",
             "recorded-reasoning-stream",
             "reasoning_content",
             answered,
         ),
+        ("nvidia", "reasoning-stream", "reasoning_content", answered),
         (
             "ollama-cloud",
             "recorded-reasoning-stream",

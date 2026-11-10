@@ -37,6 +37,26 @@ const FOREIGN_ERROR_BODIES: &[(&str, ErrorKind)] = &[
         ErrorKind::InvalidRequest,
     ),
     (
+        "providers/baseten/recorded-invalid-api-key",
+        ErrorKind::Authentication,
+    ),
+    (
+        "providers/nvidia/recorded-invalid-api-key",
+        ErrorKind::PermissionDenied,
+    ),
+    (
+        "providers/nvidia/recorded-retired-model",
+        ErrorKind::NotFound,
+    ),
+    (
+        "providers/nvidia/unprocessable-entity-doc",
+        ErrorKind::InvalidRequest,
+    ),
+    (
+        "providers/huggingface/recorded-invalid-api-key",
+        ErrorKind::Authentication,
+    ),
+    (
         "providers/nebius/list-invalid-api-key",
         ErrorKind::Authentication,
     ),

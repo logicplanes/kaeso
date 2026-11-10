@@ -150,9 +150,11 @@ fn a_rejected_key_in_another_error_format_is_an_authentication_error_quoted_with
 #[test]
 fn every_error_fixture_round_trips_with_status_and_retry_after() {
     for (name, body) in fixtures(DIR, "errors", "json") {
-        // SiliconFlow answers `{"code", "message", "data"}`, which apps get in OpenAI's shape.
+        // NVIDIA answers with RFC 9457 problem documents and SiliconFlow with `{"code", "message", "data"}`;
+        // apps get both in OpenAI's shape.
         if FOREIGN_ERROR_BODIES.contains(&name.as_str())
             || name.starts_with("providers/cohere/")
+            || name.starts_with("providers/nvidia/")
             || name.starts_with("providers/siliconflow/")
         {
             continue;
@@ -437,6 +439,25 @@ fn vectors_follow_the_apps_encoding_and_absent_usage_stays_absent() {
         body,
         &OpenAiEmbeddings::encode_response(&reply, &encode_ctx()).unwrap(),
     );
+}
+
+#[test]
+fn an_nvidia_problem_document_reaches_embeddings_apps_as_a_key_that_isnt_allowed() {
+    let body = fixture("errors", "providers/nvidia/recorded-invalid-api-key");
+    let err = OpenAiEmbeddings::decode_error(403, &HeaderList::new(), &body);
+    assert_eq!(
+        (&err.kind, err.status),
+        (&ErrorKind::PermissionDenied, Some(403))
+    );
+    assert!(
+        err.message.contains("\"detail\": \"Authorization failed\""),
+        "{}",
+        err.message
+    );
+    let out = OpenAiEmbeddings::encode_error(&err);
+    assert_eq!(out.status, 403);
+    let sent: Value = serde_json::from_slice(&out.body).unwrap();
+    assert_eq!(sent["error"]["message"], err.message.as_str());
 }
 
 #[test]

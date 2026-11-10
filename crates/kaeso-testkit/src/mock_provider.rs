@@ -448,6 +448,7 @@ async fn answer(ctx: Ctx, method: Method, uri: Uri, headers: HeaderMap, body: By
         &path,
         uri.query(),
         &headers,
+        &text,
     ) {
         return resp;
     }

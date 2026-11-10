@@ -1,0 +1,24 @@
+{
+  "object": "list",
+  "data": [
+    {
+      "object": "embedding",
+      "embedding": [
+        0.0194,
+        -0.0461,
+        0.0117,
+        0.0652,
+        -0.0308,
+        0.0233,
+        -0.0089,
+        0.0415
+      ],
+      "index": 0
+    }
+  ],
+  "model": "nvidia/nemotron-3.5-embed-1b",
+  "usage": {
+    "prompt_tokens": 9,
+    "total_tokens": 9
+  }
+}

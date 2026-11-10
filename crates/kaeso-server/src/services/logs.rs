@@ -466,6 +466,12 @@ impl From<Cached> for LogSettings {
 pub fn endpoint(o: &Outcome) -> &'static str {
     let (ingress, kind, gemini, image, transcription) =
         (o.ingress, o.kind, o.gemini, o.image, o.transcription);
+    if let Some(call) = o.generation {
+        return match call {
+            crate::model_api::hooks::GenerationCall::Create => "flows/image",
+            crate::model_api::hooks::GenerationCall::Completed => "flows/image/completed",
+        };
+    }
     if let Some(call) = o.video {
         return match call {
             crate::model_api::hooks::VideoCall::Create => "videos",

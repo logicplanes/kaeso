@@ -9,6 +9,22 @@ nav: 推理云
 
 它们的 fixture 位于 `fixtures/openai_chat/providers/<id>/`（[fixtures](fixtures.md)）。
 
+## Baseten
+
+来源：Baseten 的 [Model APIs](https://docs.baseten.co/inference/model-apis/overview) 概览、其 Chat Completions、Messages 和 Responses 的 OpenAPI 文档、[reasoning](https://docs.baseten.co/inference/model-apis/reasoning) 和[流式](https://docs.baseten.co/inference/streaming)指南，以及[推理错误](https://docs.baseten.co/inference/errors)页面，2026-11-10 阅读。未经成功调用测试：`fixtures/openai_chat/providers/baseten/` 中的回复是 reasoning 指南自己的示例，流是流式指南自己的摘录，并按 schema 补全；错误是在没有有效密钥的情况下实时返回的。Kaeso 的基础 URL 为 `https://inference.baseten.co`，使用 `Authorization: Bearer`。
+
+| Baseten 字段 | KPP | 说明 |
+|---|---|---|
+| `message.reasoning_content` | `Block::Reasoning` | 通过配置的 `reasoning_fields`。应用发回的思考内容会以 `reasoning_content` 发给 Baseten，Beam 要求之前的 assistant 消息带有它。 |
+| `chat_template_args`、带有 `max_tokens` 的 `reasoning`、`top_k`、`min_p`、`repetition_penalty` 以及 Baseten 的其他请求字段 | extras | 请求发往其他方言时会被拒绝，与其他仅限 Chat 的字段相同。 |
+| `max_completion_tokens` | `max_tokens` | schema 只有 `max_tokens`（`max_tokens()`）。 |
+| `developer` 角色 | `Role::System` | schema 列出 `system`、`user`、`assistant` 和 `tool`，因此 `system_role()` 发送 `system`。 |
+| `user` | `user` | schema 没有 `safety_identifier`，因此终端用户的 ID 以 `user` 发送（`end_user_as_user()`）。 |
+| `{"error": "<message>"}` 形式的错误 | `KppError` | 类别由状态码决定：401 表示密钥被拒绝（`errors/recorded-invalid-api-key`）。 |
+| 没有 `[DONE]` 就结束的流 | `KppError` | Baseten 可能在没有错误事件的情况下提前结束流；应用会收到流解码器的错误，说明流在回复完成前就结束了。 |
+
+Baseten 的 Messages 端点不被使用：它的 schema 只接受文本和工具块，不接受思考内容或图像。它不存储任何内容的 Responses API 也不被使用：Messages 和 Responses 应用通过 Chat Completions 访问 Baseten。Model APIs 不提供嵌入、图像、音频或 Token 计数。
+
 ## Fireworks AI
 
 来源：Fireworks 的 [Create Chat Completion](https://docs.fireworks.ai/api-reference/post-chatcompletions) 参考（其 OpenAPI 文档）以及 [OpenAI compatibility](https://docs.fireworks.ai/tools-sdks/openai-compatibility) 和 [reasoning](https://docs.fireworks.ai/guides/reasoning) 页面，2026-11-09 阅读。由于没有可用的密钥，`fixtures/openai_chat/providers/fireworks-ai/` 中的回复和流都据此构建；错误是在没有有效密钥的情况下实时返回的。Kaeso 的基础 URL 为 `https://api.fireworks.ai/inference`，使用 `Authorization: Bearer` 和 `fw_` 开头的密钥。
@@ -28,6 +44,23 @@ nav: 推理云
 
 Fireworks 没有记录图像、语音、转录、视频或Token 计数端点，因此这些保持为空，`count_tokens` 为 `None`。它的 Responses API 以 `prompt_tokens` 和 `completion_tokens` 报告用量，而不是 OpenAI 的字段名，因此 Kaeso 不向它发送 Responses；Responses 应用通过 Chat Completions 访问 Fireworks。
 
+## Hugging Face
+
+来源：Hugging Face 的 [Inference Providers](https://huggingface.co/docs/inference-providers/index) 概览、其 [chat completion](https://huggingface.co/docs/inference-providers/tasks/chat-completion) 参考及 `huggingface.js` 中的 schema，以及 [Claude Code](https://huggingface.co/docs/inference-providers/integrations/claude-code) 和 [Responses API](https://huggingface.co/docs/inference-providers/guides/responses-api) 指南，2026-11-10 阅读。未经成功调用测试：`fixtures/openai_chat/providers/huggingface/` 中的回复和流根据参考构建，思考内容放在路由器背后服务商记录的字段中；模型列表和错误是在没有有效密钥的情况下实时返回的。Kaeso 的基础 URL 为 `https://router.huggingface.co`，使用 `Authorization: Bearer` 和 `hf_` 令牌。
+
+| Hugging Face 字段 | KPP | 说明 |
+|---|---|---|
+| `message.reasoning_content`、`message.reasoning` 及其增量 | `Block::Reasoning` | 通过配置的 `reasoning_fields`；路由器转发其背后服务商的字段。 |
+| `max_completion_tokens` | `max_tokens` | schema 只有 `max_tokens`（`max_tokens()`）。 |
+| `developer` 角色 | `Role::System` | `role` 会按原样转给服务商，而它们并非都接受 `developer`，因此 `system_role()` 发送 `system`。 |
+| 终端用户的 ID | 省略 | schema 没有 `user` 或 `safety_identifier`（`without_end_user()`）。 |
+| 模型 ID 上的 `:provider`、`:fastest`、`:cheapest` 或 `:preferred` 后缀 | `model` | 按原样发送；回复中的模型名不带后缀（`responses/provider-suffix`）。 |
+| `tool_prompt` | extras | 请求发往其他方言时会被拒绝，与其他仅限 Chat 的字段相同。 |
+| `{"error": "<message>"}` 形式的错误 | `KppError` | 类别由状态码决定：401 表示密钥被拒绝（`errors/recorded-invalid-api-key`）。 |
+| 带有 `architecture` 以及包含状态、上下文长度、价格和速度的 `providers` 数组的 `GET /v1/models` | `ModelList` | 无需密钥即可返回（`models/list-recorded`），因此模型检查无法发现错误的密钥。 |
+
+路由器的 OpenAI 兼容 API 只用于聊天：`/v1/embeddings`、`/v1/images/generations` 和 `/v1/audio/*` 返回 404。它的 Responses API 不被使用，因为它对被拒绝的令牌返回 200 和 `status: "failed"`。它的 Messages 端点也不被使用：它对被拒绝的令牌返回 `api_error`，应用会将其视为服务商失败，而不是密钥被拒绝。`/v1/messages/count_tokens` 不检查令牌就返回结果，且没有文档，因此 Kaeso 拒绝 Token 计数。
+
 ## Nebius Token Factory
 
 来源：Nebius 的 [OpenAPI document](https://api.tokenfactory.nebius.com/openapi.json)（版本 `20261105-4c58718c5`）、其[文本生成](https://docs.tokenfactory.nebius.com/api-reference/examples/text-generation)示例和[概览](https://docs.tokenfactory.nebius.com/ai-models-inference/overview)，2026-11-09 阅读。由于没有可用的密钥，`fixtures/openai_chat/providers/nebius/` 中的回复和流都据此构建，其中一个是文档自己的示例；错误是在没有有效密钥的情况下实时返回的。Kaeso 的基础 URL 为 `https://api.tokenfactory.nebius.com`，使用 `Authorization: Bearer`。
@@ -45,6 +78,23 @@ Fireworks 没有记录图像、语音、转录、视频或Token 计数端点，�
 | `GET /v1/models` | `ModelList` | 错误的密钥返回只有 `{"detail": "…"}` 的 401（`errors/list-invalid-api-key`），应用会以 OpenAI 的格式收到 Nebius 的消息，因此模型检查能发现它。 |
 
 Nebius 不提供图像、音频、Messages 或Token 计数：它的 OpenAPI 文档中没有这样的路径，`/v1/images/generations`、`/v1/audio/transcriptions` 和 `/v1/messages` 返回 404。它的 Responses API 不被使用：Responses 应用通过 Chat Completions 访问 Nebius。
+
+## NVIDIA
+
+来源：NVIDIA 的 [LLM APIs](https://docs.api.nvidia.com/nim/reference/llm-apis) 参考及其模型页面的 OpenAPI 文档，例如 [`nvidia/nemotron-3-super-120b-a12b`](https://docs.api.nvidia.com/nim/reference/nvidia-nemotron-3-super-120b-a12b-infer)，2026-11-10 阅读。未经成功调用测试：`fixtures/openai_chat/providers/nvidia/` 中的回复和流据此构建，流的请求是参考自己的示例；模型列表和错误是在没有有效密钥的情况下实时返回的。Kaeso 的基础 URL 为 `https://integrate.api.nvidia.com`，使用 `Authorization: Bearer` 和 `nvapi-` 密钥。
+
+| NVIDIA 字段 | KPP | 说明 |
+|---|---|---|
+| `message.reasoning_content`、`delta.reasoning_content` | `Block::Reasoning` | 通过配置的 `reasoning_fields`。 |
+| `chat_template_kwargs`（`enable_thinking`、`low_effort`）、`reasoning_budget` | extras | 模型自己的思考开关；Chat 应用发送的会按原样转发，请求发往其他方言时会被拒绝。 |
+| `max_completion_tokens` | `max_tokens` | 请求 schema 只有 `max_tokens`（`max_tokens()`）。 |
+| `developer` 角色 | `Role::System` | schema 列出 `system`、`context`、`user` 和 `assistant`，因此 `system_role()` 发送 `system`。 |
+| 终端用户的 ID | 省略 | schema 没有 `user` 或 `safety_identifier`（`without_end_user()`）。 |
+| 以 RFC 9457 问题文档表示、带有 `status`、`title` 和 `detail` 的错误 | `KppError` | 类别由状态码决定：NVIDIA 不认识的密钥返回 403（`errors/recorded-invalid-api-key`），已退役的模型返回 410（`errors/recorded-retired-model`）。 |
+| 带有 `NVCF-REQID` 头的 202 | — | 结果尚未就绪时 NVIDIA 的回复，需要轮询；Kaeso 不轮询。 |
+| `GET /v1/models` | `ModelList` | 无需密钥即可返回（`models/list-recorded`），因此模型检查无法发现错误的密钥。 |
+
+NVIDIA 不提供 Responses、Messages 或 Token 计数：`/v1/responses` 和 `/v1/messages/count_tokens` 返回 404，`/v1/messages` 对每个模型都返回 `model not found`。它的嵌入模型接受 `input_type` 和 `truncate`，这些字段保留在 extras 中（[OpenAI Embeddings](openai-embeddings.md#nvidia)）。
 
 ## SambaNova
 

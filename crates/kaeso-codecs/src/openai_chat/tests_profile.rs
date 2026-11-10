@@ -905,6 +905,110 @@ fn sambanova_refuses_the_penalties_it_ignores_and_leaves_out_the_end_user_and_ca
 }
 
 #[test]
+fn hugging_face_gets_max_tokens_developer_messages_as_system_and_no_end_user() {
+    let hugging_face = ChatProfile::compatible("Hugging Face")
+        .max_tokens()
+        .system_role()
+        .without_end_user()
+        .reasoning_fields(&["reasoning_content", "reasoning"]);
+    let sent = encode_with(
+        &chat(json!({
+            "model": "openai/gpt-oss-120b:groq",
+            "messages": [
+                {"role": "developer", "content": "Answer briefly."},
+                {"role": "user", "content": "Hi"}
+            ],
+            "max_completion_tokens": 256,
+            "safety_identifier": "user-0001"
+        })),
+        hugging_face,
+    )
+    .unwrap();
+    assert_eq!(sent["model"], "openai/gpt-oss-120b:groq");
+    assert_eq!(sent["messages"][0]["role"], "system");
+    assert_eq!(
+        (&sent["max_tokens"], sent.get("max_completion_tokens")),
+        (&json!(256), None)
+    );
+    assert!(
+        sent.get("safety_identifier").is_none() && sent.get("user").is_none(),
+        "{sent}"
+    );
+}
+
+#[test]
+fn nvidia_gets_max_tokens_developer_messages_as_system_no_end_user_and_its_thinking_switch() {
+    let nvidia = ChatProfile::compatible("NVIDIA")
+        .max_tokens()
+        .system_role()
+        .without_end_user()
+        .reasoning_fields(&["reasoning_content"]);
+    let (_, body) = fixtures("openai_chat", "requests", "json")
+        .into_iter()
+        .find(|(n, _)| n == "providers/nvidia/reasoning-stream")
+        .unwrap();
+    let sent = encode_with(&decode(&body).unwrap(), nvidia).unwrap();
+    assert_eq!(sent, serde_json::from_slice::<Value>(&body).unwrap());
+
+    let sent = encode_with(
+        &chat(json!({
+            "model": "nvidia/nemotron-3-super-120b-a12b",
+            "messages": [
+                {"role": "developer", "content": "Answer briefly."},
+                {"role": "user", "content": "Hi"}
+            ],
+            "max_completion_tokens": 1024,
+            "user": "user-0001"
+        })),
+        nvidia,
+    )
+    .unwrap();
+    assert_eq!(sent["messages"][0]["role"], "system");
+    assert_eq!(
+        (&sent["max_tokens"], sent.get("max_completion_tokens")),
+        (&json!(1024), None)
+    );
+    assert!(
+        sent.get("safety_identifier").is_none() && sent.get("user").is_none(),
+        "{sent}"
+    );
+}
+
+#[test]
+fn baseten_gets_max_tokens_system_messages_the_end_user_as_user_and_its_thinking_back() {
+    let baseten = ChatProfile::compatible("Baseten")
+        .max_tokens()
+        .system_role()
+        .end_user_as_user()
+        .reasoning_fields(&["reasoning_content"]);
+    let sent = encode_with(
+        &chat(json!({
+            "model": "reflection/Beam-1.0",
+            "messages": [
+                {"role": "developer", "content": "Answer briefly."},
+                {"role": "user", "content": "Is 91 prime?"},
+                {"role": "assistant", "content": "No.", "reasoning_content": "91 = 7 × 13."},
+                {"role": "user", "content": "And 97?"}
+            ],
+            "max_completion_tokens": 1024,
+            "safety_identifier": "user-0001"
+        })),
+        baseten,
+    )
+    .unwrap();
+    assert_eq!(sent["messages"][0]["role"], "system");
+    assert_eq!(sent["messages"][2]["reasoning_content"], "91 = 7 × 13.");
+    assert_eq!(
+        (&sent["max_tokens"], sent.get("max_completion_tokens")),
+        (&json!(1024), None)
+    );
+    assert_eq!(
+        (&sent["user"], sent.get("safety_identifier")),
+        (&json!("user-0001"), None)
+    );
+}
+
+#[test]
 fn siliconflow_gets_an_anthropic_apps_thinking_as_enable_thinking_and_its_budget() {
     let siliconflow = ChatProfile::compatible("SiliconFlow")
         .max_tokens()

@@ -31,6 +31,14 @@ pub enum VideoCall {
     Completed,
 }
 
+/// Which step of an image generation an outcome records: the request that started it, or its
+/// end, when its image is billed.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum GenerationCall {
+    Create,
+    Completed,
+}
+
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum Source {
     #[default]
@@ -182,6 +190,7 @@ pub struct Outcome {
     pub realtime: Option<kaeso_codecs::elevenlabs::realtime::RealtimeApi>,
     pub media: Option<kaeso_core::cost::MediaUnits>,
     pub video: Option<VideoCall>,
+    pub generation: Option<GenerationCall>,
     /// The media type of a whole reply that isn't JSON, such as speech's audio.
     pub content_type: Option<String>,
 }

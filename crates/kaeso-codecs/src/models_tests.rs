@@ -1333,3 +1333,88 @@ fn a_sambanova_listing_decodes_with_its_prices_and_its_wrong_keys_and_unknown_mo
         (ErrorKind::NotFound, Some("model"))
     );
 }
+
+#[test]
+fn a_hugging_face_listing_decodes_with_its_providers_and_a_refused_token_is_an_error() {
+    let body = fixture("openai_chat", "providers/huggingface/list-recorded");
+    let l = list(DialectId::OpenAiChat, &body);
+    let ids: Vec<&str> = l.models.iter().map(|m| m.id.as_str()).collect();
+    assert_eq!(
+        ids,
+        [
+            "Qwen/Qwen3.8-27B",
+            "deepseek-ai/DeepSeek-V4.1-Flash-1017",
+            "openai/gpt-oss-120b"
+        ]
+    );
+    assert_json_eq(
+        "providers/huggingface/list-recorded",
+        &body,
+        &dispatch::encode_models(DialectId::OpenAiChat, &l).unwrap(),
+    );
+    let (_, error) = fixtures("openai_chat", "errors", "json")
+        .into_iter()
+        .find(|(n, _)| n == "providers/huggingface/recorded-invalid-api-key")
+        .unwrap();
+    let e = dispatch::decode_models(DialectId::OpenAiChat, 401, &h(), &error).unwrap_err();
+    assert_eq!(
+        (e.kind, e.message.as_str()),
+        (ErrorKind::Authentication, "Invalid username or password.")
+    );
+}
+
+#[test]
+fn an_nvidia_listing_decodes_and_its_problem_documents_keep_nvidias_detail() {
+    let body = fixture("openai_chat", "providers/nvidia/list-recorded");
+    let l = list(DialectId::OpenAiChat, &body);
+    let ids: Vec<&str> = l.models.iter().map(|m| m.id.as_str()).collect();
+    assert_eq!(
+        ids,
+        [
+            "nvidia/nemotron-3-super-120b-a12b",
+            "nvidia/nemotron-3.5-embed-1b",
+            "openai/gpt-oss-20b",
+            "z-ai/glm-5.3-flash"
+        ]
+    );
+    assert_json_eq(
+        "providers/nvidia/list-recorded",
+        &body,
+        &dispatch::encode_models(DialectId::OpenAiChat, &l).unwrap(),
+    );
+    let errors = fixtures("openai_chat", "errors", "json");
+    let error = |name: &str| {
+        errors
+            .iter()
+            .find(|(n, _)| n == name)
+            .unwrap_or_else(|| panic!("no error fixture {name}"))
+            .1
+            .clone()
+    };
+    let e = dispatch::decode_models(
+        DialectId::OpenAiChat,
+        403,
+        &h(),
+        &error("providers/nvidia/recorded-invalid-api-key"),
+    )
+    .unwrap_err();
+    assert_eq!(
+        (e.kind, e.message.as_str()),
+        (
+            ErrorKind::PermissionDenied,
+            "The provider returned an error (HTTP 403): Authorization failed."
+        )
+    );
+    let e = dispatch::decode_error(
+        DialectId::OpenAiChat,
+        410,
+        &h(),
+        &error("providers/nvidia/recorded-retired-model"),
+    );
+    assert_eq!(e.kind, ErrorKind::NotFound);
+    assert!(
+        e.message.contains("has reached its end of life"),
+        "{}",
+        e.message
+    );
+}

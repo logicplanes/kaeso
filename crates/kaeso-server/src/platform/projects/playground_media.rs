@@ -291,6 +291,7 @@ async fn send(
         transcription: call.transcription,
         elevenlabs: call.elevenlabs,
         video: call.video,
+        generation: None,
     };
     Ok(pipeline::serve_with(state, incoming, answer_with(&MEDIA)).await)
 }

@@ -17,6 +17,7 @@ const QWEN: &str = "Qwen/Qwen3-8B";
 const EMBED: &str = "Qwen/Qwen3-Embedding-8B";
 const TTS: &str = "FunAudioLLM/CosyVoice2-0.5B";
 const ASR: &str = "FunAudioLLM/SenseVoiceSmall";
+const IN_KPMR: &[&str] = &[R1, QWEN];
 const MP3: &[u8] = b"ID3\x04\0\0\0\0\0\x23TSSE";
 
 fn fixture(folder: &str, name: &str) -> String {
@@ -28,7 +29,7 @@ async fn add_model(env: &Env, model: &str, overrides: Value) {
         .app
         .post(
             &format!("/orgs/{}/projects/{}/models", env.owner.org_id, env.project),
-            json!({ "provider": "siliconflow", "model_id": model, "custom": true, "overrides": overrides }),
+            json!({ "provider": "siliconflow", "model_id": model, "custom": !IN_KPMR.contains(&model), "overrides": overrides }),
             Some(&env.owner.cookie),
         )
         .await;

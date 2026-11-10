@@ -1,6 +1,6 @@
 ---
 title: ElevenLabs-API
-description: Sprache, Klänge, Musik und Transkription von ElevenLabs über Kaeso mit den offiziellen SDKs von ElevenLabs aufrufen.
+description: Sprache, Klänge, Musik, Bilder und Transkription von ElevenLabs über Kaeso mit den offiziellen SDKs von ElevenLabs aufrufen.
 order: 5
 ---
 
@@ -58,8 +58,29 @@ Das SDK sendet den Schlüssel in `xi-api-key`; Kaeso nimmt dort einen Kaeso-Schl
 | `POST /v1/speech-to-text` | `speech_to_text.convert` | ein Transkript mit zeitlich markierten Wörtern und Sprechern |
 | `GET /v1/models` | `models.list` | die ElevenLabs-Modelle des Projekts, aus dem Katalog von Kaeso |
 | `GET /v1/voices`, `GET /v2/voices`, `GET /v1/voices/{voice_id}` | `voices.get_all`, `voices.search`, `voices.get` | die Stimmen des ElevenLabs-Kontos des Projekts, bei ElevenLabs mit dem ElevenLabs-Schlüssel des Projekts abgefragt; jede Liste zählt gegen die Anfrageraten des Schlüssels |
+| `POST /v1/flows/image` | `flows.image.create` | eine Bildgenerierung mit einem der ElevenLabs-Bildmodelle des Projekts, sofort beantwortet mit einer eigenen ID von Kaeso ([Bildgenerierungen](#bildgenerierungen)) |
+| `GET /v1/flows/image/{generation_id}`, `GET /v1/flows/image` | `flows.image.get`, `flows.image.list` | die Generierung, nachdem Kaeso ElevenLabs nach ihrem Stand gefragt hat, und die Generierungen des Projekts, die neueste zuerst |
 
 `output_format`, `enable_logging` und `optimize_streaming_latency` gehen wie geschrieben an ElevenLabs. Den Anfrage-Body eines Uploads begrenzt [`body_limits.audio`](../self-hosting/configuration.md#anfrage--und-antwortkörper). Eine Stimmen-ID besteht aus Buchstaben und Ziffern, wie ElevenLabs sie listet; jede andere wird mit 400 abgelehnt, bevor etwas gesendet wird.
+
+## Bildgenerierungen
+
+Eine ElevenLabs-App erzeugt Bilder mit den Bildmodellen, die ElevenLabs anbietet, etwa `gpt-image-1.5`, `gemini-3-pro-image` oder `bytedance-seedream-5-pro`, über `flows.image`. Kaeso startet die Generierung bei ElevenLabs mit dem ElevenLabs-Schlüssel des Projekts, führt sie unter einer eigenen ID wie `imggen_01k7a3f8m2xq4v9c5r6t8w0yz1` und antwortet sofort mit `{"id": …, "status": "pending"}`. Die App fragt dann `GET /v1/flows/image/{generation_id}` ab, bis der Status `completed` ist, mit der `content_url` des Bildes, oder `failed`, mit dem `failure_reason`; ElevenLabs bittet darum, zwischen zwei Abfragen zwei Sekunden zu warten.
+
+```bash
+curl https://kaeso.example.com/v1/flows/image \
+  -H "xi-api-key: $KAESO_API_KEY" \
+  -H "content-type: application/json" \
+  -d '{"model_id": "gpt-image-1.5", "prompt": "A lighthouse at dusk", "aspect_ratio": "3:2"}'
+```
+
+- **IDs.** Eine Generierung gehört dem Projekt, dessen Schlüssel sie gestartet hat, und jeder Schlüssel des Projekts sieht sie. Ein Schlüssel eines anderen Projekts erhält 404, wie für eine ID, die es nicht gibt.
+- **Status.** Jedes `GET` einer Generierung, die nicht fehlgeschlagen ist, fragt ElevenLabs nach ihrem Stand und zählt gegen die Anfrageraten des Schlüssels. Eine fertige Generierung erhält jedes Mal eine frische `content_url`, da ElevenLabs einen Link etwa eine Stunde lang gültig hält.
+- **Liste.** `GET /v1/flows/image` listet die Generierungen des Projekts, die neueste zuerst, so wie Kaeso sie zuletzt gesehen hat, ohne ElevenLabs zu fragen; ein Link in der Liste kann daher abgelaufen sein. Die Liste nimmt `page_size` (1 bis 100, standardmäßig 30), `cursor` (den `next_cursor` der vorigen Seite), `status` und `model_id`, den Modellnamen, den die App gesendet hat.
+- **Modelle.** Kaeso bedient `flows.image` mit den ElevenLabs-Bildmodellen des Projekts, per Name oder über einen Alias: Andere Anbieter antworten mit dem Bild selbst, sodass keine Generierung bleibt, nach der man später fragen könnte. Ein Modell eines anderen Anbieters wird mit 400 und `param: model_id` abgelehnt, bevor etwas gesendet wird; rufen Sie es über die [Bilder-API](images.md) auf.
+- **Was abgelehnt wird.** `webhook` wird mit 400 abgelehnt, weil der Webhook die eigene ID von ElevenLabs für die Generierung trüge, die Kaeso nicht herausgibt. Ein Feld, das das Modell nicht nimmt, etwa `aspect_ratio` `16:9` bei `gpt-image-1.5`, wird vor dem Senden abgelehnt, mit dem Feld in `param`.
+- **Schlüssel.** Eine Generierung bleibt beim ElevenLabs-Schlüssel, der sie gestartet hat. Sobald das Projekt einen anderen ElevenLabs-Schlüssel nutzt, erhält eine Abfrage der Generierung 409.
+- **Kosten und Logs.** Die [Anfrage-Logs](../console/request-logs.md) zeigen den Start als `flows/image`, der nichts kostet, und das fertige Bild als `flows/image/completed`, das die Kosten trägt, einmal, egal wie viele Anfragen das Ende sehen. ElevenLabs rechnet Bilder in Credits ab, die KPMR nicht führt, daher bleiben ihre Kosten unbekannt. Ein hochgeladenes Bild wird als Medientyp und Größe geloggt, solange Organisation und Projekt keine [Medien aufbewahren](../console/request-logs.md#medien-in-anfragen-und-antworten).
 
 ## Echtzeit-Sitzungen
 

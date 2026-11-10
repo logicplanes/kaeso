@@ -107,6 +107,22 @@ describe("DataTable selection and rows", () => {
     expect(fnRef).toHaveBeenCalled();
   });
 
+  it("keeps its header flush with the top of a padded scroll container, so no row shows above it", () => {
+    const { container, rerender } = render(
+      <div style={{ overflowY: "auto", paddingTop: "16px" }}>
+        <DataTable aria-label="Keys" data={rows} columns={columns} />
+      </div>,
+    );
+    const head = () => container.querySelector<HTMLElement>("[role=rowgroup]")!;
+    expect(head()).toHaveStyle({ top: "-16px" });
+    rerender(
+      <div style={{ overflowY: "auto" }}>
+        <DataTable key="unpadded" aria-label="Keys" data={rows} columns={columns} />
+      </div>,
+    );
+    expect(head().style.top).toBe("");
+  });
+
   it("renders only the visible rows of a long table", () => {
     const many = Array.from({ length: 300 }, (_, i) => ({ id: String(i), key: `key-${i}`, requests: i }));
     render(<DataTable aria-label="Keys" data={many} columns={columns} getRowId={(r) => r.id} virtualizeAbove={50} />);

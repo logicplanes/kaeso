@@ -1,0 +1,16 @@
+{
+  "generations": [
+    {
+      "id": "JWr5N6X9ZTqf8jD2LmQb",
+      "status": "completed",
+      "content_url": "https://storage.googleapis.com/generations/JWr5N6X9ZTqf8jD2LmQb",
+      "content_mime_type": "image/png"
+    },
+    {
+      "id": "Kx2mP7Y4WVrg9kE3NnRc",
+      "status": "generating"
+    }
+  ],
+  "next_cursor": "MjAyNi0wNy0xN1QxMjowMDowMHxLeDJtUDdZNFdWcmc5a0UzTm5SYw",
+  "has_more": true
+}
