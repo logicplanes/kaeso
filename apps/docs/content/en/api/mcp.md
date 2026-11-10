@@ -20,19 +20,19 @@ Then run `/mcp` in Claude Code and choose `kaeso` to sign in. Your browser opens
 
 Each client below signs in with OAuth on its own. It finds Kaeso's sign-in from the server's first answer, registers itself and opens your browser, so you never copy a key.
 
-**Account** › **Agents** in the console shows your install's MCP address next to the marks of Claude Code, Cursor and GitHub Copilot. Each opens the steps for that client, with your install's address filled in: the plugin and command for Claude Code, **Add to Cursor**, and **Add to VS Code** for GitHub Copilot.
+**Account** › **Agents** in the console shows your install's MCP address next to the marks of Claude Code, Cursor and GitHub Copilot. Each opens the steps for that client, with your install's address filled in: the command and the plugin for Claude Code, **Add to Cursor**, and **Add to VS Code** for GitHub Copilot.
 
 ### Claude Code
 
 The command above adds the server to the current project. Add `--scope user` to make it available in every project. `/mcp` signs in, and signs in again after you revoke the agent.
 
-Or install the Kaeso plugin, which asks for your install's address when you enable it:
+The Kaeso plugin adds Kaeso's skill, which teaches the agent the server's tools and, if the server isn't connected yet, asks for your install's address and connects it:
 
 ```text
 /plugin install kaeso --marketplace logicplanes/kaeso
 ```
 
-`/plugin configure kaeso@kaeso` changes the address later. To get each release of the plugin, turn on auto-update for the `kaeso` marketplace under `/plugin` › **Marketplaces**.
+To get each release of the plugin, turn on auto-update for the `kaeso` marketplace under `/plugin` › **Marketplaces**.
 
 ### Codex
 

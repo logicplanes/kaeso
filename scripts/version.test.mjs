@@ -25,8 +25,8 @@ const tree = (version, extra = {}) => ({
   "CHANGELOG.md": `# Changelog\n\n## [Unreleased]\n\n## [${version}] - 2026-10-16\n`,
   "apps/docs/content/en/index.md": "This documentation describes Kaeso {{version}}.\n",
   "pnpm-lock.yaml": `packages:\n  find-proc@${version}: {}\n`,
-  "plugins/kaeso/.claude-plugin/plugin.json": `{\n  "name": "kaeso",\n  "version": "${version}",\n  "userConfig": {\n    "kaeso_url": { "type": "string" }\n  }\n}\n`,
-  "plugins/kaeso/.cursor-plugin/plugin.json": `{\n  "name": "kaeso",\n  "version": "${version}",\n  "logo": "assets/logo.svg"\n}\n`,
+  "plugins/kaeso/.claude-plugin/plugin.json": `{\n  "name": "kaeso",\n  "version": "${version}",\n  "icon": "./assets/icon.png"\n}\n`,
+  "plugins/kaeso-cursor/.cursor-plugin/plugin.json": `{\n  "name": "kaeso",\n  "version": "${version}",\n  "logo": "assets/logo.svg"\n}\n`,
   ...extra,
 });
 
@@ -53,8 +53,8 @@ test("the release owns every manifest, lockfile, image tag and crate dependency,
     "openapi.json",
     "package.json",
     "packages/ui/package.json",
+    "plugins/kaeso-cursor/.cursor-plugin/plugin.json",
     "plugins/kaeso/.claude-plugin/plugin.json",
-    "plugins/kaeso/.cursor-plugin/plugin.json",
   ]);
 });
 
@@ -67,8 +67,8 @@ test("setting a version rewrites the files JavaScript owns and leaves other vers
     "deploy/compose.yaml",
     "package.json",
     "packages/ui/package.json",
+    "plugins/kaeso-cursor/.cursor-plugin/plugin.json",
     "plugins/kaeso/.claude-plugin/plugin.json",
-    "plugins/kaeso/.cursor-plugin/plugin.json",
   ]);
   for (const [file, text] of changes) assert.equal(text, after[file], file);
   assert.match(changes.get("packages/ui/package.json"), /"uqr": "1\.4\.0"/);

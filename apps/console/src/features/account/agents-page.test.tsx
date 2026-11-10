@@ -59,13 +59,11 @@ describe("the agents tab", () => {
     const url = `${window.location.origin}/mcp`;
     await user.click(await screen.findByRole("button", { name: "Add to Claude Code" }));
     let dialog = await screen.findByRole("dialog", { name: "Add Kaeso to Claude Code" });
-    expect(within(dialog).getByText("/plugin install kaeso --marketplace logicplanes/kaeso")).toBeInTheDocument();
-    expect(
-      within(dialog).getByText(`When the plugin asks for your Kaeso address, enter ${window.location.origin}. Then run /mcp to sign in.`),
-    ).toBeInTheDocument();
-    await user.click(within(dialog).getByRole("tab", { name: "Server only" }));
-    const command = `claude mcp add --transport http --scope user kaeso ${url}`;
-    await waitFor(() => expect(dialog).toHaveTextContent(command));
+    expect(within(dialog).getByText("Connect the server, then run /mcp to sign in.")).toBeInTheDocument();
+    await waitFor(() => expect(dialog).toHaveTextContent(`claude mcp add --transport http --scope user kaeso ${url}`));
+    expect(within(dialog).getByText("The plugin adds Kaeso's skill, which teaches your agent the tools and can connect the server too.")).toBeInTheDocument();
+    await waitFor(() => expect(dialog).toHaveTextContent("/plugin install kaeso --marketplace logicplanes/kaeso"));
+    expect(within(dialog).queryByRole("tab")).toBeNull();
     await user.click(within(dialog).getByRole("button", { name: "Finish" }));
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
 

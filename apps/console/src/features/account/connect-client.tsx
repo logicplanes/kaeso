@@ -20,16 +20,14 @@ function Steps({ client }: { client: ClientMark }) {
   if (client === "claude")
     return (
       <div className="flex flex-col gap-12">
-        <CodeBlock
-          copy
-          tabs={[
-            { label: t("account.connectPlugin", "Plugin"), code: "/plugin install kaeso --marketplace logicplanes/kaeso", lang: "text" },
-            { label: t("account.connectServerOnly", "Server only"), code: `claude mcp add --transport http --scope user kaeso ${mcpUrl()}`, lang: "bash" },
-          ]}
-        />
         <Text variant="small" tone="secondary">
-          {t("account.connectClaudeHint", "When the plugin asks for your Kaeso address, enter {origin}. Then run /mcp to sign in.", { origin })}
+          {t("account.connectClaudeServer", "Connect the server, then run /mcp to sign in.")}
         </Text>
+        <CodeBlock copy lang="bash" code={`claude mcp add --transport http --scope user kaeso ${mcpUrl()}`} />
+        <Text variant="small" tone="secondary">
+          {t("account.connectClaudePlugin", "The plugin adds Kaeso's skill, which teaches your agent the tools and can connect the server too.")}
+        </Text>
+        <CodeBlock copy lang="text" code="/plugin install kaeso --marketplace logicplanes/kaeso" />
       </div>
     );
   if (client === "cursor")
