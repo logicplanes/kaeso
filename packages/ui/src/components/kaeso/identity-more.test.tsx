@@ -194,6 +194,8 @@ const MARKED_PROVIDERS = {
   nebius: "Nebius Token Factory",
   sambanova: "SambaNova",
   scaleway: "Scaleway",
+  huggingface: "Hugging Face",
+  nvidia: "NVIDIA",
   baseten: "Baseten",
   vllm: "vLLM",
   ollama: "Ollama",

@@ -1,0 +1,32 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE image_generations SET units = $3, cost = $4, accounted_at = $5 WHERE org_id = $1 AND id = $2 AND accounted_at IS NULL AND status IN ('completed', 'failed') RETURNING id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "image_generations",
+            "name": "id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Jsonb",
+        "Numeric",
+        "Timestamptz"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "469f30e0155f0c3224410d6dff002518c876ec8d106a2bdba3372d744d5d075b"
+}

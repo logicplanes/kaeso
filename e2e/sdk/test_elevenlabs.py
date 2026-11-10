@@ -3,7 +3,7 @@ import base64
 import pathlib
 
 import pytest
-from elevenlabs import AudioFormat, CommitStrategy, RealtimeEvents
+from elevenlabs import AudioFormat, CommitStrategy, ImageGenerationRequest_GptImage15, RealtimeEvents
 from elevenlabs.core.api_error import ApiError
 
 FIXTURES = pathlib.Path(__file__).resolve().parents[2] / "crates" / "kaeso-codecs" / "fixtures" / "elevenlabs"
@@ -46,6 +46,24 @@ def test_management_is_refused_in_elevenlabs_shape(el, mock):
         el.user.subscription.get()
     assert e.value.status_code == 404
     assert "ElevenLabs" in e.value.body["detail"]["message"]
+
+
+def test_image_generations_keep_kaesos_id_and_end_with_a_link(el, mock):
+    started = el.flows.image.create(
+        request=ImageGenerationRequest_GptImage15(prompt="A lighthouse at dusk", aspect_ratio="3:2")
+    )
+    assert started.id.startswith("imggen_") and started.status == "pending"
+    sent = [r for r in mock.received() if r["path"] == "/v1/flows/image"]
+    assert sent[-1]["headers"]["xi-api-key"].startswith("sk_test-elevenlabs")
+    seen = [el.flows.image.get(started.id) for _ in range(3)]
+    done = seen[-1]
+    assert done.status == "completed" and done.id == started.id
+    assert done.content_mime_type == "image/png" and done.content_url.startswith("http")
+    page = el.flows.image.list(page_size=1, model_id="gpt-image-1.5")
+    assert [g.id for g in page.generations] == [started.id]
+    with pytest.raises(ApiError) as e:
+        el.flows.image.get("imggen_01k7a3f8m2xq4v9c5r6t8w0yz1")
+    assert e.value.status_code == 404
 
 
 def plain_sockets(el):

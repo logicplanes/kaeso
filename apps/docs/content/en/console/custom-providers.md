@@ -84,7 +84,7 @@ Kaeso knows how the inference servers below differ from the format they speak. A
 | LMDeploy | owner `lmdeploy` | `23333` | `--api-keys` sets keys, `--reasoning-parser` and `--tool-call-parser` turn on thinking and tools. |
 | LocalAI | `/version` | `8080` | `LOCALAI_API_KEY` sets a key. |
 | MLX LM | can't be | `8080` | `mlx_lm.server` serves Chat Completions only. |
-| NVIDIA NIM | can't be | `8000` | Choose it by hand. |
+| NVIDIA NIM | can't be | `8000` | Choose it by hand. NVIDIA's hosted API is the built-in [NVIDIA](../concepts/supported-providers.md) provider. |
 | Ollama | `/api/version` | `11434` | `OLLAMA_HOST=0.0.0.0` for other machines. Ollama takes no key, so choose **No key**. Kaeso refuses `logit_bias`, which Ollama ignores. |
 | SGLang | owner `sglang` | `30000` | `--api-key` sets a key, `--reasoning-parser` and `--tool-call-parser` turn on thinking and tools. |
 | TabbyAPI | owner `tabbyAPI` | `5000` | Needs a key from `api_tokens.yml` unless `disable_auth` is set. |

@@ -459,6 +459,44 @@ describe("ProviderKeyDialog", () => {
     ]);
   });
 
+  it("adds a Hugging Face token with the access tokens page and its hf_ prefix as the key hint", async () => {
+    on("POST", CREDENTIALS, credential({ provider: "huggingface", name: "Hugging Face prod", is_default: true }));
+    const { user, dialog } = await open();
+
+    await choose(user, dialog, "Hugging Face");
+
+    expect(await within(dialog).findByRole("heading", { name: "Paste your Hugging Face API key" })).toBeVisible();
+    expectKeyHint(dialog, "huggingface.co", "https://huggingface.co/settings/tokens", "Settings → Access Tokens", "hf_");
+    const secret = within(dialog).getByLabelText("Hugging Face API key");
+    expect(secret).toHaveAttribute("placeholder", "hf_…");
+    await user.type(secret, "hf_123");
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "Hugging Face prod");
+    await user.click(within(dialog).getByRole("button", { name: "Add key" }));
+
+    expect(await notifications().findByText("Hugging Face prod is the Hugging Face default")).toBeInTheDocument();
+    expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([
+      { provider: "huggingface", name: "Hugging Face prod", secret: "hf_123", make_default: false },
+    ]);
+  });
+
+  it("adds an NVIDIA key with build.nvidia.com's key page and its nvapi- prefix as the key hint", async () => {
+    on("POST", CREDENTIALS, credential({ provider: "nvidia", name: "NVIDIA prod", is_default: true }));
+    const { user, dialog } = await open();
+
+    await choose(user, dialog, "NVIDIA");
+
+    expect(await within(dialog).findByRole("heading", { name: "Paste your NVIDIA API key" })).toBeVisible();
+    expectKeyHint(dialog, "build.nvidia.com", "https://build.nvidia.com/settings/api-keys", "API Keys", "nvapi-");
+    const secret = within(dialog).getByLabelText("NVIDIA API key");
+    expect(secret).toHaveAttribute("placeholder", "nvapi-…");
+    await user.type(secret, "nvapi-123");
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "NVIDIA prod");
+    await user.click(within(dialog).getByRole("button", { name: "Add key" }));
+
+    expect(await notifications().findByText("NVIDIA prod is the NVIDIA default")).toBeInTheDocument();
+    expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([{ provider: "nvidia", name: "NVIDIA prod", secret: "nvapi-123", make_default: false }]);
+  });
+
   it("adds a Baseten key, which has no fixed prefix, with Baseten's API keys page as its key hint", async () => {
     on("POST", CREDENTIALS, credential({ provider: "baseten", name: "Baseten prod", is_default: true }));
     const { user, dialog } = await open();

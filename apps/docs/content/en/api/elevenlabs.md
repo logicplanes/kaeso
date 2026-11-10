@@ -1,6 +1,6 @@
 ---
 title: ElevenLabs API
-description: Call ElevenLabs speech, sound, music and transcription through Kaeso with the official ElevenLabs SDKs.
+description: Call ElevenLabs speech, sound, music, images and transcription through Kaeso with the official ElevenLabs SDKs.
 order: 5
 ---
 
@@ -58,8 +58,29 @@ The SDK sends the key in `xi-api-key`; Kaeso takes a Kaeso key there as in `Auth
 | `POST /v1/speech-to-text` | `speech_to_text.convert` | a transcript with timed words and speakers |
 | `GET /v1/models` | `models.list` | the project's ElevenLabs models, from Kaeso's catalogue |
 | `GET /v1/voices`, `GET /v2/voices`, `GET /v1/voices/{voice_id}` | `voices.get_all`, `voices.search`, `voices.get` | the voices of the project's ElevenLabs account, asked of ElevenLabs with the project's ElevenLabs key; each listing counts against the key's request rates |
+| `POST /v1/flows/image` | `flows.image.create` | an image generation with one of the project's ElevenLabs image models, answered at once with an id of Kaeso's own ([image generations](#image-generations)) |
+| `GET /v1/flows/image/{generation_id}`, `GET /v1/flows/image` | `flows.image.get`, `flows.image.list` | the generation after asking ElevenLabs how it stands, and the project's generations, newest first |
 
 `output_format`, `enable_logging` and `optimize_streaming_latency` pass to ElevenLabs as written. The request body of an upload is bounded by [`body_limits.audio`](../self-hosting/configuration.md#request-and-response-bodies). A voice id is letters and digits, as ElevenLabs lists them; any other is refused with 400 before anything is sent.
+
+## Image generations
+
+An ElevenLabs app makes images with the image models ElevenLabs serves, such as `gpt-image-1.5`, `gemini-3-pro-image` or `bytedance-seedream-5-pro`, through `flows.image`. Kaeso starts the generation at ElevenLabs with the project's ElevenLabs key, keeps it under an id of its own, such as `imggen_01k7a3f8m2xq4v9c5r6t8w0yz1`, and answers `{"id": …, "status": "pending"}` at once. The app then asks `GET /v1/flows/image/{generation_id}` until the status is `completed`, with the image's `content_url`, or `failed`, with its `failure_reason`; ElevenLabs asks callers to wait two seconds between calls.
+
+```bash
+curl https://kaeso.example.com/v1/flows/image \
+  -H "xi-api-key: $KAESO_API_KEY" \
+  -H "content-type: application/json" \
+  -d '{"model_id": "gpt-image-1.5", "prompt": "A lighthouse at dusk", "aspect_ratio": "3:2"}'
+```
+
+- **Ids.** A generation belongs to the project whose key started it, and every key of the project sees it. A key of another project gets 404, as for an id that doesn't exist.
+- **Status.** Each `GET` of a generation that hasn't failed asks ElevenLabs how it stands and counts against the key's request rates. A completed generation gets a fresh `content_url` each time, since ElevenLabs keeps a link valid for about an hour.
+- **Listing.** `GET /v1/flows/image` lists the project's generations newest first, as Kaeso last saw them, without asking ElevenLabs, so a link in the list may have run out. It takes `page_size` (1 to 100, 30 by default), `cursor` (the `next_cursor` of the page before), `status` and `model_id`, the model name the app sent.
+- **Models.** Kaeso serves `flows.image` with the project's ElevenLabs image models, by name or through an alias: other providers answer with the image itself, which leaves no generation to ask about later. A model of another provider is refused with 400 and `param: model_id` before anything is sent; call it through the [Images API](images.md).
+- **What is refused.** `webhook` is refused with 400, because the webhook would carry ElevenLabs' own id for the generation, which Kaeso doesn't give out. A field the model doesn't take, such as `aspect_ratio` `16:9` on `gpt-image-1.5`, is refused before sending, with the field in `param`.
+- **Key.** A generation stays with the ElevenLabs key that started it. Once the project uses another ElevenLabs key, asking about the generation gets 409.
+- **Costs and logs.** The [request log](../console/request-logs.md) shows the start as `flows/image`, which costs nothing, and the finished image as `flows/image/completed`, which carries the cost, once however many requests see it end. ElevenLabs bills images in credits, which KPMR doesn't list, so their cost stays unknown. An uploaded image is logged as its media type and size unless the organization and the project [keep media](../console/request-logs.md#media-in-requests-and-replies).
 
 ## Realtime sessions
 

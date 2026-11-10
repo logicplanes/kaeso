@@ -427,6 +427,7 @@ async fn video_request(
             transcription: None,
             elevenlabs: None,
             video: Some(video),
+            generation: None,
         },
     )
     .await

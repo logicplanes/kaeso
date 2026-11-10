@@ -9,10 +9,10 @@ A snapshot of the catalogue of [KPMR](https://kpmr.kaeso.app), the Kaeso Provide
 | | |
 |---|---|
 | Source | `https://kpmr.kaeso.app/v1/catalogue` |
-| Revision | `2026-11-09T17:36:44Z-d475e9d55817` |
-| Generated | 2026-11-09T17:36:44Z |
-| Content | the providers Kaeso calls (`alibaba`, `anthropic`, `cerebras`, `cohere`, `deepseek`, `elevenlabs`, `fireworks-ai`, `gemini-agent-platform`, `google`, `groq`, `minimax`, `mistral`, `moonshotai`, `nebius`, `ollama-cloud`, `openai`, `openrouter`, `sambanova`, `scaleway`, `togetherai`, `vercel`, `xai`, `zai`); 1509 models |
-| SHA-256 | `14fb6e5646627a7674b94c08ab3c4c3af5b089f986306865683c89a6a54dc73d` |
+| Revision | `2026-11-10T16:38:28Z-45f419682c5a` |
+| Generated | 2026-11-10T16:38:28Z |
+| Content | the providers Kaeso calls (`alibaba`, `anthropic`, `baseten`, `cerebras`, `cohere`, `deepseek`, `elevenlabs`, `fireworks-ai`, `gemini-agent-platform`, `google`, `groq`, `huggingface`, `minimax`, `mistral`, `moonshotai`, `nebius`, `nvidia`, `ollama-cloud`, `openai`, `openrouter`, `sambanova`, `scaleway`, `togetherai`, `vercel`, `xai`, `zai`); 1670 models |
+| SHA-256 | `adc6568d5f4667d8523da183184fde42f255f93bb3363c7bbd3f002f5acab77f` |
 | License | MIT, © models.dev contributors (see [NOTICE.md](https://github.com/logicplanes/kaeso/blob/dev/NOTICE.md)) |
 
 To refresh it for a release, download the catalogue and check its signature against the built-in key:

@@ -719,5 +719,13 @@
   "errors.resultFileWithheld": "{provider} 没有交出生成的文件；请稍后重试。",
   "errors.videoWrongReply": "服务商对视频任务返回了另一种回复。",
   "errors.modelApi.permissionRefused": "服务商不允许用此项目的服务商密钥发出此请求，例如因为模型、套餐或地区。请组织管理员在“服务商”中检查。",
-  "errors.orgKeepMediaOff": "组织不保留媒体；项目无法开启。"
+  "errors.orgKeepMediaOff": "组织不保留媒体；项目无法开启。",
+  "errors.imageGenerationCursorUnknown": "`cursor` 指向的不是此项目的图片生成：`{cursor}`。",
+  "errors.imageGenerationNotFound": "此项目中没有图片生成 `{id}`。",
+  "errors.imageGenerationOnlyElevenLabs": "`flows.image` 只接受 ElevenLabs 的模型；请把 {provider} 的模型发往 `/v1/images/generations`。",
+  "errors.imageGenerationWrongKind": "图片生成是为另一种请求启动的。",
+  "errors.imageGenerationsUnavailable": "Kaeso 暂时无法读取其图片生成；请稍后重试。",
+  "errors.imageKeyReplaced": "启动此图片的服务商密钥已被替换，因此 Kaeso 无法访问它。",
+  "errors.imageModelGone": "{provider} 已不再提供此图片的模型。",
+  "errors.imageNotKept": "Kaeso 已启动图片生成，但无法跟踪它；请稍后重试。"
 }

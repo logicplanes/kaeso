@@ -1,0 +1,9 @@
+{
+  "input": [
+    "What is the capital of France?"
+  ],
+  "model": "nvidia/nemotron-3.5-embed-1b",
+  "input_type": "query",
+  "encoding_format": "float",
+  "truncate": "END"
+}

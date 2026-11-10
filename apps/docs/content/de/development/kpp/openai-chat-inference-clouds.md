@@ -44,6 +44,23 @@ Quellen: Fireworks' Referenz [Create Chat Completion](https://docs.fireworks.ai/
 
 Fireworks dokumentiert keinen Endpunkt für Bilder, Sprache, Transkription, Video oder Token-Zählung, daher bleiben diese leer und `count_tokens` ist `None`. Seine Responses API meldet die Usage als `prompt_tokens` und `completion_tokens` statt unter OpenAIs Namen, daher sendet Kaeso ihm kein Responses; Responses-Apps erreichen Fireworks über Chat Completions.
 
+## Hugging Face
+
+Quellen: die Übersicht [Inference Providers](https://huggingface.co/docs/inference-providers/index) von Hugging Face, seine Referenz [chat completion](https://huggingface.co/docs/inference-providers/tasks/chat-completion) mit den Schemas in `huggingface.js` und seine Leitfäden [Claude Code](https://huggingface.co/docs/inference-providers/integrations/claude-code) und [Responses API](https://huggingface.co/docs/inference-providers/guides/responses-api), gelesen am 2026-11-10. Nicht mit einem erfolgreichen Aufruf getestet: Die Antwort und der Stream in `fixtures/openai_chat/providers/huggingface/` sind aus der Referenz gebaut, mit dem Thinking in dem Feld, das der Anbieter hinter dem Router dokumentiert; die Modellliste und der Fehler kamen live, ohne gültigen Schlüssel. Kaesos Basis-URL ist `https://router.huggingface.co`, die `Authorization: Bearer` mit einem `hf_`-Token annimmt.
+
+| Hugging-Face-Feld | KPP | Hinweise |
+|---|---|---|
+| `message.reasoning_content`, `message.reasoning` und ihre Deltas | `Block::Reasoning` | Über `reasoning_fields` des Profils; der Router gibt das Feld des Anbieters hinter ihm weiter. |
+| `max_completion_tokens` | `max_tokens` | Das Schema hat nur `max_tokens` (`max_tokens()`). |
+| die Rolle `developer` | `Role::System` | `role` geht unverändert an Anbieter, die nicht alle `developer` annehmen, daher sendet `system_role()` `system`. |
+| die ID eines Endnutzers | weggelassen | Das Schema hat kein `user` oder `safety_identifier` (`without_end_user()`). |
+| ein Suffix `:provider`, `:fastest`, `:cheapest` oder `:preferred` an der Modell-ID | `model` | Unverändert gesendet; die Antwort nennt das Modell ohne Suffix (`responses/provider-suffix`). |
+| `tool_prompt` | Extras | Abgelehnt, wenn die Anfrage an einen anderen Dialekt geht, wie andere reine Chat-Felder. |
+| Fehler als `{"error": "<message>"}` | `KppError` | Die Art folgt dem Status: 401 ist ein abgelehnter Schlüssel (`errors/recorded-invalid-api-key`). |
+| `GET /v1/models` mit `architecture` und einem Array `providers` mit Status, Kontextlänge, Preisen und Geschwindigkeit | `ModelList` | Ohne Schlüssel beantwortet (`models/list-recorded`), daher kann eine Modellprüfung einen falschen Schlüssel nicht erkennen. |
+
+Die OpenAI-kompatible API des Routers ist nur für Chat: `/v1/embeddings`, `/v1/images/generations` und `/v1/audio/*` antworten mit 404. Seine Responses API wird nicht genutzt, da sie ein abgelehntes Token mit 200 und `status: "failed"` beantwortet. Auch sein Messages-Endpunkt wird nicht genutzt: Er beantwortet ein abgelehntes Token mit `api_error`, das Apps als fehlgeschlagenen Anbieter statt als abgelehnten Schlüssel erreichen würde. `/v1/messages/count_tokens` antwortet, ohne das Token zu prüfen, und ist nicht dokumentiert, daher lehnt Kaeso Token-Zählungen ab.
+
 ## Nebius Token Factory
 
 Quellen: das [OpenAPI document](https://api.tokenfactory.nebius.com/openapi.json) von Nebius (Version `20261105-4c58718c5`), sein Beispiel zur [Textgenerierung](https://docs.tokenfactory.nebius.com/api-reference/examples/text-generation) und seine [Übersicht](https://docs.tokenfactory.nebius.com/ai-models-inference/overview), gelesen am 2026-11-09. Es gab keinen Schlüssel, daher sind die Antworten und der Stream in `fixtures/openai_chat/providers/nebius/` daraus gebaut, eine davon ist das Beispiel der Dokumentation selbst; die Fehler kamen live, ohne gültigen Schlüssel. Kaesos Basis-URL ist `https://api.tokenfactory.nebius.com`, die `Authorization: Bearer` annimmt.
@@ -61,6 +78,23 @@ Quellen: das [OpenAPI document](https://api.tokenfactory.nebius.com/openapi.json
 | `GET /v1/models` | `ModelList` | Ein falscher Schlüssel erhält 401 nur mit `{"detail": "…"}` (`errors/list-invalid-api-key`), das Apps in OpenAIs Form mit der Meldung von Nebius erhalten, sodass eine Modellprüfung ihn erkennt. |
 
 Nebius bietet weder Bilder, Audio, Messages noch Token-Zählungen an: Sein OpenAPI-Dokument hat keinen solchen Pfad, und `/v1/images/generations`, `/v1/audio/transcriptions` und `/v1/messages` antworten mit 404. Seine Responses API wird nicht genutzt: Responses-Apps erreichen Nebius über Chat Completions.
+
+## NVIDIA
+
+Quellen: die Referenz [LLM APIs](https://docs.api.nvidia.com/nim/reference/llm-apis) von NVIDIA und die OpenAPI-Dokumente seiner Modellseiten wie [`nvidia/nemotron-3-super-120b-a12b`](https://docs.api.nvidia.com/nim/reference/nvidia-nemotron-3-super-120b-a12b-infer), gelesen am 2026-11-10. Nicht mit einem erfolgreichen Aufruf getestet: Die Antwort und der Stream in `fixtures/openai_chat/providers/nvidia/` sind daraus gebaut, die Anfrage des Streams ist das eigene Beispiel der Referenz; die Modellliste und die Fehler kamen live, ohne gültigen Schlüssel. Kaesos Basis-URL ist `https://integrate.api.nvidia.com`, die `Authorization: Bearer` mit einem `nvapi-`-Schlüssel annimmt.
+
+| NVIDIA-Feld | KPP | Hinweise |
+|---|---|---|
+| `message.reasoning_content`, `delta.reasoning_content` | `Block::Reasoning` | Über `reasoning_fields` des Profils. |
+| `chat_template_kwargs` (`enable_thinking`, `low_effort`), `reasoning_budget` | Extras | Die eigenen Thinking-Schalter der Modelle; die einer Chat-App gehen unverändert, abgelehnt, wenn die Anfrage an einen anderen Dialekt geht. |
+| `max_completion_tokens` | `max_tokens` | Die Anfrageschemas haben nur `max_tokens` (`max_tokens()`). |
+| die Rolle `developer` | `Role::System` | Die Schemas führen `system`, `context`, `user` und `assistant`, daher sendet `system_role()` `system`. |
+| die ID eines Endnutzers | weggelassen | Die Schemas haben kein `user` oder `safety_identifier` (`without_end_user()`). |
+| Fehler als Problemdokumente nach RFC 9457 mit `status`, `title` und `detail` | `KppError` | Die Art folgt dem Status: Ein Schlüssel, den NVIDIA nicht kennt, erhält 403 (`errors/recorded-invalid-api-key`), ein ausgemustertes Modell 410 (`errors/recorded-retired-model`). |
+| eine 202 mit einem Header `NVCF-REQID` | — | Die Antwort von NVIDIA, wenn das Ergebnis noch nicht fertig ist, zum Abfragen; Kaeso fragt nicht ab. |
+| `GET /v1/models` | `ModelList` | Ohne Schlüssel beantwortet (`models/list-recorded`), daher kann eine Modellprüfung einen falschen Schlüssel nicht erkennen. |
+
+NVIDIA bietet weder Responses noch Messages oder Token-Zählungen an: `/v1/responses` und `/v1/messages/count_tokens` antworten mit 404, und `/v1/messages` antwortet für jedes Modell mit `model not found`. Seine Embedding-Modelle nehmen `input_type` und `truncate` an, die in den Extras bleiben ([OpenAI Embeddings](openai-embeddings.md#nvidia)).
 
 ## SambaNova
 

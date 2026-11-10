@@ -1,0 +1,330 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id, org_id, project_id, api_key_id, user_id, service_account_id, provider, credential_id, catalogue_model_id, model, upstream_model, dialect, upstream_id, request_id, params, prices, status, content_url, content_mime_type, failure_reason, error_message, units, cost, created_at, completed_at, accounted_at FROM image_generations WHERE org_id = $1 AND project_id = $2 AND id = $3",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "image_generations",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "org_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "image_generations",
+            "name": "org_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "project_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "image_generations",
+            "name": "project_id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "api_key_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "image_generations",
+            "name": "api_key_id"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "user_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "image_generations",
+            "name": "user_id"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "service_account_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "image_generations",
+            "name": "service_account_id"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "provider",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "image_generations",
+            "name": "provider"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "credential_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "image_generations",
+            "name": "credential_id"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "catalogue_model_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "image_generations",
+            "name": "catalogue_model_id"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "model",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "image_generations",
+            "name": "model"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "upstream_model",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "image_generations",
+            "name": "upstream_model"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "dialect",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "image_generations",
+            "name": "dialect"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "upstream_id",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "image_generations",
+            "name": "upstream_id"
+          }
+        }
+      },
+      {
+        "ordinal": 13,
+        "name": "request_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "image_generations",
+            "name": "request_id"
+          }
+        }
+      },
+      {
+        "ordinal": 14,
+        "name": "params",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "image_generations",
+            "name": "params"
+          }
+        }
+      },
+      {
+        "ordinal": 15,
+        "name": "prices",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "image_generations",
+            "name": "prices"
+          }
+        }
+      },
+      {
+        "ordinal": 16,
+        "name": "status",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "image_generations",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 17,
+        "name": "content_url",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "image_generations",
+            "name": "content_url"
+          }
+        }
+      },
+      {
+        "ordinal": 18,
+        "name": "content_mime_type",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "image_generations",
+            "name": "content_mime_type"
+          }
+        }
+      },
+      {
+        "ordinal": 19,
+        "name": "failure_reason",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "image_generations",
+            "name": "failure_reason"
+          }
+        }
+      },
+      {
+        "ordinal": 20,
+        "name": "error_message",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "image_generations",
+            "name": "error_message"
+          }
+        }
+      },
+      {
+        "ordinal": 21,
+        "name": "units",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "image_generations",
+            "name": "units"
+          }
+        }
+      },
+      {
+        "ordinal": 22,
+        "name": "cost",
+        "type_info": "Numeric",
+        "origin": {
+          "Table": {
+            "table": "image_generations",
+            "name": "cost"
+          }
+        }
+      },
+      {
+        "ordinal": 23,
+        "name": "created_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "image_generations",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 24,
+        "name": "completed_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "image_generations",
+            "name": "completed_at"
+          }
+        }
+      },
+      {
+        "ordinal": 25,
+        "name": "accounted_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "image_generations",
+            "name": "accounted_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "35bc7162d7a48440229088b7a24c06c433ecacf0a2d80c6580e18abb2bb87af8"
+}

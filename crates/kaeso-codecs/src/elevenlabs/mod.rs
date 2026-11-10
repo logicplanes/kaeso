@@ -4,6 +4,7 @@
 
 mod error;
 mod format;
+mod generations;
 mod images;
 mod listing;
 pub mod realtime;
@@ -27,6 +28,10 @@ use crate::codec::{
     StreamEncoder,
 };
 
+pub use generations::{
+    GENERATION_PAGE_SIZE, Generation, GenerationQuery, GenerationStatus, decode_generation,
+    decode_generation_query, encode_generation, encode_generation_list,
+};
 pub use images::{IMAGE_PATH, POLL_GAP};
 pub(crate) use images::{pending_task as images_pending_task, poll_request as images_poll_request};
 pub use listing::{VOICES_PATHS, voice_listing_request, voices_reply};
@@ -165,8 +170,9 @@ impl ElevenLabs {
 impl Codec for ElevenLabs {
     const DIALECT: DialectId = D;
 
-    /// Decodes a body without its path as text to speech with no voice; apps' requests go
-    /// through [`crate::dispatch::decode_elevenlabs_request`].
+    /// Decodes a video or image generation body, or a body without its path as text to speech
+    /// with no voice; apps' speech requests go through
+    /// [`crate::dispatch::decode_elevenlabs_request`].
     fn decode_request(
         kind: RequestKind,
         body: &[u8],
@@ -175,6 +181,10 @@ impl Codec for ElevenLabs {
         if kind == RequestKind::Video {
             crate::limits::request_shape(D, body)?;
             return video::decode(body);
+        }
+        if kind == RequestKind::Image {
+            crate::limits::request_shape(D, body)?;
+            return images::decode_request(body);
         }
         let operation = match kind {
             RequestKind::Transcription => ElevenLabsOperation::SpeechToText,

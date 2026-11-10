@@ -719,5 +719,13 @@
   "errors.resultFileWithheld": "{provider} hat die erzeugte Datei nicht übergeben; versuchen Sie es gleich noch einmal.",
   "errors.videoWrongReply": "Der Anbieter hat auf einen Videojob mit einer anderen Art von Antwort geantwortet.",
   "errors.modelApi.permissionRefused": "Der Anbieter erlaubt diese Anfrage mit dem Anbieter-Schlüssel dieses Projekts nicht, etwa für dieses Modell, diesen Tarif oder diese Region. Einen Admin der Organisation bitten, ihn unter Anbieter zu prüfen.",
-  "errors.orgKeepMediaOff": "Die Organisation bewahrt keine Medien auf; ein Projekt kann das nicht einschalten."
+  "errors.orgKeepMediaOff": "Die Organisation bewahrt keine Medien auf; ein Projekt kann das nicht einschalten.",
+  "errors.imageGenerationCursorUnknown": "`cursor` nennt keine Bildgenerierung dieses Projekts: `{cursor}`.",
+  "errors.imageGenerationNotFound": "Zu diesem Projekt gehört keine Bildgenerierung `{id}`.",
+  "errors.imageGenerationOnlyElevenLabs": "`flows.image` nimmt nur Modelle von ElevenLabs; senden Sie Modelle von {provider} an `/v1/images/generations`.",
+  "errors.imageGenerationWrongKind": "Eine Bildgenerierung wurde für eine andere Art von Anfrage gestartet.",
+  "errors.imageGenerationsUnavailable": "Kaeso kann seine Bildgenerierungen gerade nicht lesen; versuchen Sie es gleich noch einmal.",
+  "errors.imageKeyReplaced": "Der Anbieterschlüssel, der dieses Bild gestartet hat, wurde ersetzt, deshalb erreicht Kaeso es nicht.",
+  "errors.imageModelGone": "{provider} bedient das Modell dieses Bildes nicht mehr.",
+  "errors.imageNotKept": "Kaeso hat das Bild gestartet, kann es aber nicht verfolgen; versuchen Sie es gleich noch einmal."
 }

@@ -2904,6 +2904,70 @@ expression: outcomes
     "param": "parallel_tool_calls",
     "unsupported": "`parallel_tool_calls: false`"
   },
+  "providers/huggingface/invalid-api-key": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "hi"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1
+      }
+    },
+    "path": "/v1beta/models/openai%2Fgpt-oss-120b:generateContent"
+  },
+  "providers/huggingface/provider-suffix": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "How many 'G's in 'huggingface'?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 512,
+        "thinkingConfig": {
+          "thinkingLevel": "LOW"
+        }
+      },
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "You are a helpful assistant."
+          }
+        ]
+      }
+    },
+    "path": "/v1beta/models/openai%2Fgpt-oss-120b%3Acheapest:generateContent"
+  },
+  "providers/huggingface/reasoning-stream": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Hello!"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 256
+      }
+    },
+    "path": "/v1beta/models/deepseek-ai%2FDeepSeek-V4.1-Flash-1017%3Anovita:streamGenerateContent?alt=sse"
+  },
   "providers/mistral/assistant-prefill": {
     "body": {
       "contents": [
@@ -3846,6 +3910,52 @@ expression: outcomes
       }
     },
     "path": "/v1beta/models/nvidia%2FNemotron-3.5-Super-VL:generateContent"
+  },
+  "providers/nvidia/invalid-api-key": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "hi"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1
+      }
+    },
+    "path": "/v1beta/models/nvidia%2Fnemotron-3-super-120b-a12b:generateContent"
+  },
+  "providers/nvidia/reasoning": {
+    "message": "`chat_template_kwargs` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "chat_template_kwargs"
+  },
+  "providers/nvidia/reasoning-stream": {
+    "message": "`chat_template_kwargs` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "chat_template_kwargs"
+  },
+  "providers/nvidia/retired-model": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "hi"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1
+      }
+    },
+    "path": "/v1beta/models/meta%2Fllama-3.1-8b-instruct:generateContent"
   },
   "providers/ollama-cloud/image": {
     "body": {

@@ -3,18 +3,18 @@
 //! Seedream (the `ImageGenerationRequest` schema of ElevenLabs' OpenAPI document and its image
 //! and video guide, read 2026-11-09). A generation is a task: the create call answers with an
 //! id, and the generation's status call, asked no more than every two seconds, ends with a
-//! link to the image.
+//! link to the image. ElevenLabs-format apps send the same body, which is read back to KPP.
 
 use kaeso_kpp::{
     GeneratedImage, ImageBackground, ImageInput, ImageOperation, ImageQuality, ImageRequest,
-    ImageResponse, ImageSize, KppError, Reply, Request, Source,
+    ImageResponse, ImageSize, KppError, Origin, Reply, Request, Source,
 };
 use serde_json::{Map, Value};
 
 use super::D;
 use crate::codec::{EgressCtx, EncodedRequest, HeaderList};
 use crate::cross::check_extras;
-use crate::video_jobs::{body, put};
+use crate::video_jobs::{Fields, body, put, put_extras};
 
 /// The path of image generations; a generation's own path adds its id.
 pub const IMAGE_PATH: &str = "/v1/flows/image";
@@ -297,7 +297,77 @@ fn reference(image: &ImageInput) -> Value {
         }
         _ => {}
     }
+    put_extras(&mut out, &image.extras, D, "");
     Value::Object(out)
+}
+
+// An `ImageReference`: an image sent inline or an asset already in the ElevenLabs workspace.
+fn reference_from(v: Value, param: &str) -> Result<ImageInput, KppError> {
+    let Value::Object(map) = v else {
+        return Err(
+            KppError::invalid_request(format!("`{param}` takes image reference objects."))
+                .with_param(param),
+        );
+    };
+    let mut f = Fields::from_map(map, D, "request");
+    let source = match f.str("type")?.as_deref() {
+        Some("inline_base64") => crate::media::from_base64(
+            f.str("mime_type")?.unwrap_or_default(),
+            f.str("content_base64")?.unwrap_or_default(),
+            param,
+        )?,
+        Some("asset") => Source::file_id(Origin::new(D), f.str("asset_id")?.unwrap_or_default()),
+        _ => {
+            return Err(KppError::unsupported_by(
+                "an image reference other than an upload or an asset",
+                D,
+                "Send the image inline.",
+            )
+            .with_param(param));
+        }
+    };
+    let mut image = ImageInput::new(source);
+    image.extras = f.rest(&Origin::new(D));
+    Ok(image)
+}
+
+/// An ElevenLabs-format app's `POST /v1/flows/image` body.
+pub(super) fn decode_request(body: &[u8]) -> Result<Request, KppError> {
+    let mut f = Fields::parse(body, D, "request")?;
+    let model = f.str("model_id")?.unwrap_or_default();
+    if model.is_empty() {
+        return Err(
+            KppError::invalid_request("An image generation needs a `model_id`.")
+                .with_param("model_id"),
+        );
+    }
+    // A webhook would report ElevenLabs' own generation id, which the app can't ask Kaeso about.
+    if f.take("webhook").is_some() {
+        return Err(KppError::unsupported_by(
+            "webhooks",
+            D,
+            "Ask `GET /v1/flows/image/{generation_id}` until the generation ends instead.",
+        )
+        .with_param("webhook"));
+    }
+    let mut r = ImageRequest::new(model, ImageOperation::Generate);
+    r.prompt = f.str("prompt")?;
+    for item in f.array("images")?.unwrap_or_default() {
+        r.images.push(reference_from(item, "images")?);
+    }
+    if let Some(mask) = f.take("mask") {
+        r.mask = Some(reference_from(mask, "mask")?);
+    }
+    if !r.images.is_empty() || r.mask.is_some() {
+        r.operation = ImageOperation::Edit;
+    }
+    r.quality = f.str("quality")?.map(|q| ImageQuality::from_wire(&q));
+    r.background = f.str("background")?.map(|b| ImageBackground::from_wire(&b));
+    r.aspect_ratio = f.str("aspect_ratio")?;
+    r.resolution = f.str("resolution")?;
+    r.seed = f.i64("seed")?;
+    r.extras = f.rest(&Origin::new(D));
+    Ok(Request::Image(r))
 }
 
 /// The create call of an image generation.
@@ -346,6 +416,7 @@ pub(super) fn encode(req: &Request, ctx: &mut EgressCtx) -> Result<EncodedReques
     put(&mut out, "aspect_ratio", ratio);
     put(&mut out, "resolution", r.resolution.clone());
     put(&mut out, "seed", r.seed);
+    put_extras(&mut out, &r.extras, D, "");
     Ok(EncodedRequest::post_json(
         IMAGE_PATH,
         HeaderList::new().with("content-type", crate::codec::JSON_MEDIA_TYPE),

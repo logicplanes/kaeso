@@ -516,6 +516,20 @@ const messages = (): Rule[] => [
   rule("errors.videoUnreadable", () => t("errors.videoUnreadable", "The provider sent a video Kaeso cannot read.")),
   rule("errors.videoLinkUnreadable", () => t("errors.videoLinkUnreadable", "The provider named a link Kaeso cannot read.")),
   rule("errors.videoLinkUnreachable", () => t("errors.videoLinkUnreachable", "The provider named a link Kaeso cannot fetch.")),
+  rule("errors.imageGenerationCursorUnknown", (v) =>
+    t("errors.imageGenerationCursorUnknown", "`cursor` names no image generation of this project: `{cursor}`.", v),
+  ),
+  rule("errors.imageGenerationNotFound", (v) => t("errors.imageGenerationNotFound", "No image generation `{id}` belongs to this project.", v)),
+  rule("errors.imageGenerationOnlyElevenLabs", (v) =>
+    t("errors.imageGenerationOnlyElevenLabs", "`flows.image` takes only ElevenLabs models; send {provider} models to `/v1/images/generations`.", v),
+  ),
+  rule("errors.imageGenerationWrongKind", () => t("errors.imageGenerationWrongKind", "An image generation started for another kind of request.")),
+  rule("errors.imageGenerationsUnavailable", () =>
+    t("errors.imageGenerationsUnavailable", "Kaeso cannot read its image generations right now; try again shortly."),
+  ),
+  rule("errors.imageKeyReplaced", () => t("errors.imageKeyReplaced", "The provider key that started this image was replaced, so Kaeso can't reach it.")),
+  rule("errors.imageModelGone", (v) => t("errors.imageModelGone", "{provider} no longer serves this image's model.", v)),
+  rule("errors.imageNotKept", () => t("errors.imageNotKept", "Kaeso started the image but cannot keep track of it; try again shortly.")),
   rule("errors.videoFileWithheld", (v) => t("errors.videoFileWithheld", "{provider} did not hand over the video's file; try again shortly.", v)),
   rule("errors.resultLinkRefused", (v) => t("errors.resultLinkRefused", "{provider} answered with a link Kaeso does not fetch.", v)),
   rule("errors.resultFileWithheld", (v) => t("errors.resultFileWithheld", "{provider} did not hand over the file it made; try again shortly.", v)),

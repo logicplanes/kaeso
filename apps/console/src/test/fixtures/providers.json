@@ -497,6 +497,44 @@
       "server": null
     },
     {
+      "id": "huggingface",
+      "name": "Hugging Face",
+      "custom": false,
+      "takes_key": true,
+      "hides_built_in": null,
+      "key_page": {
+        "url": "https://huggingface.co/settings/tokens",
+        "label": "Settings → Access Tokens"
+      },
+      "key_prefix": "hf_",
+      "dialects": ["openai_chat"],
+      "count_tokens": null,
+      "embeddings": null,
+      "account": null,
+      "service_account": null,
+      "model_routes": [],
+      "server": null
+    },
+    {
+      "id": "nvidia",
+      "name": "NVIDIA",
+      "custom": false,
+      "takes_key": true,
+      "hides_built_in": null,
+      "key_page": {
+        "url": "https://build.nvidia.com/settings/api-keys",
+        "label": "API Keys"
+      },
+      "key_prefix": "nvapi-",
+      "dialects": ["openai_chat", "openai_embeddings"],
+      "count_tokens": null,
+      "embeddings": "openai_embeddings",
+      "account": null,
+      "service_account": null,
+      "model_routes": [],
+      "server": null
+    },
+    {
       "id": "baseten",
       "name": "Baseten",
       "custom": false,

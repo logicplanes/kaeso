@@ -3295,6 +3295,85 @@ expression: outcomes
     },
     "path": "/v1/messages"
   },
+  "providers/huggingface/invalid-api-key": {
+    "body": {
+      "max_tokens": 1,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "hi",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "openai/gpt-oss-120b"
+    },
+    "path": "/v1/messages"
+  },
+  "providers/huggingface/provider-suffix": {
+    "body": {
+      "max_tokens": 512,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "How many 'G's in 'huggingface'?",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "openai/gpt-oss-120b:cheapest",
+      "output_config": {
+        "effort": "low"
+      },
+      "system": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "text": "You are a helpful assistant.",
+          "type": "text"
+        }
+      ],
+      "thinking": {
+        "type": "adaptive"
+      }
+    },
+    "path": "/v1/messages"
+  },
+  "providers/huggingface/reasoning-stream": {
+    "body": {
+      "max_tokens": 256,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Hello!",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "deepseek-ai/DeepSeek-V4.1-Flash-1017:novita",
+      "stream": true
+    },
+    "path": "/v1/messages"
+  },
   "providers/mistral/assistant-prefill": {
     "body": {
       "max_tokens": 30,
@@ -4354,6 +4433,58 @@ expression: outcomes
     "message": "`video block` is not supported by Anthropic Messages. Anthropic has no video content block; send frames of the video as images, or route the request to a model that takes video.",
     "param": "messages[0].blocks[1]",
     "unsupported": "video block"
+  },
+  "providers/nvidia/invalid-api-key": {
+    "body": {
+      "max_tokens": 1,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "hi",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "nvidia/nemotron-3-super-120b-a12b"
+    },
+    "path": "/v1/messages"
+  },
+  "providers/nvidia/reasoning": {
+    "message": "`chat_template_kwargs` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "chat_template_kwargs"
+  },
+  "providers/nvidia/reasoning-stream": {
+    "message": "`chat_template_kwargs` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "chat_template_kwargs"
+  },
+  "providers/nvidia/retired-model": {
+    "body": {
+      "max_tokens": 1,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "hi",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "meta/llama-3.1-8b-instruct"
+    },
+    "path": "/v1/messages"
   },
   "providers/ollama-cloud/image": {
     "body": {

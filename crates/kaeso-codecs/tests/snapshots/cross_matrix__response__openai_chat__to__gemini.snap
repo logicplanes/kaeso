@@ -2152,6 +2152,29 @@ expression: outcomes
       "totalTokenCount": 217
     }
   },
+  "providers/huggingface/provider-suffix": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "There are three 'g's in \"huggingface\"."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "openai/gpt-oss-120b",
+    "responseId": "chatcmpl-6f1c2a9e8b7d4c3a",
+    "usageMetadata": {
+      "candidatesTokenCount": 41,
+      "promptTokenCount": 82,
+      "totalTokenCount": 123
+    }
+  },
   "providers/mistral/recorded-assistant-prefix": {
     "candidates": [
       {
@@ -2911,6 +2934,29 @@ expression: outcomes
       "promptTokenCount": 96,
       "thoughtsTokenCount": 11,
       "totalTokenCount": 127
+    }
+  },
+  "providers/nvidia/reasoning": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "A GPU with cores by the score\nmade matrices multiply galore;\nit trained in a night\nwhat took weeks to get right,\nand the data scientists cheered for more."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "nvidia/nemotron-3-super-120b-a12b",
+    "responseId": "chatcmpl-3b9e4f1d2c7a4e8b",
+    "usageMetadata": {
+      "candidatesTokenCount": 64,
+      "promptTokenCount": 25,
+      "totalTokenCount": 89
     }
   },
   "providers/ollama-cloud/recorded-image": {
