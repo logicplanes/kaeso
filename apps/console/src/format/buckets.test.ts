@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { axisLabelIndexes } from "@logicplanes/kaeso-ui";
 import { apply, load } from "~/i18n";
-import { bucketAxisLabel, bucketLabel, bucketsBetween, granularity, mondayOf, partialBuckets, spansYears } from "./buckets";
+import { analyticsGranularity, bucketAxisLabel, bucketLabel, bucketsBetween, granularity, mondayOf, partialBuckets, spansYears } from "./buckets";
 import { periodSearch } from "./period";
 import { comparedWith, presetDays, resolvePeriod } from "./presets";
 
@@ -12,6 +12,16 @@ describe("granularity", () => {
     expect(granularity("2026-04-15", "2026-10-14")).toBe("week");
     expect(granularity("2025-10-15", "2026-10-14")).toBe("week");
     expect(granularity("2024-01-01", "2026-10-14")).toBe("month");
+  });
+});
+
+describe("the analytics chart", () => {
+  it("draws days up to a quarter, weeks up to two years and months beyond, so it never has more points than a person can read", () => {
+    expect(analyticsGranularity("2026-10-14", "2026-10-14")).toBe("day");
+    expect(analyticsGranularity("2026-07-15", "2026-10-14")).toBe("day");
+    expect(analyticsGranularity("2026-07-14", "2026-10-14")).toBe("week");
+    expect(analyticsGranularity("2024-10-14", "2026-10-14")).toBe("week");
+    expect(analyticsGranularity("2024-10-13", "2026-10-14")).toBe("month");
   });
 });
 

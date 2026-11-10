@@ -70,7 +70,7 @@ test("switching projects client-side shows the new project's data, at its top, w
   await expect(page.getByRole("button", { name: "Switch narrow", description: "Switch project", exact: true })).toBeVisible();
   await expect(breakdownRows(page)).toHaveCount(1);
   await expect(breakdownRows(page).first()).toContainText("gpt-5.4-nano");
-  await expect(page.getByRole("heading", { name: "Requests per hour, UTC" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Requests per day, UTC" })).toBeVisible();
   expect(await page.locator("main > div.overflow-y-auto").evaluate((el) => (el as unknown as Scroller).scrollTop)).toBe(0);
 
   await page.goBack();

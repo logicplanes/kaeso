@@ -74,7 +74,6 @@
   "project.overview.noModel": "无模型",
   "project.overview.noRequests": "该时段没有请求",
   "project.overview.playground": "试验场",
-  "project.overview.recentErrors": "最近错误",
   "project.overview.resets": "{when}重置",
   "project.overview.route": "路由",
   "project.overview.routeNotRecorded": "未记录路由",

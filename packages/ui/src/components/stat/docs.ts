@@ -6,7 +6,7 @@ export const docs = {
       'A number. Plain, it is a big number followed by its word, no box, as on a usage page. As a `tile` (`variant="tile"`), it is one metric of a dashboard row in a `StatGroup`: its label, the number, the change against the previous period and the trend.',
     props: {
       change:
-        'The change against the previous period, as a fraction (0.12 is +12%). `better` says which direction is good: errors are better down. It is written as text by `Delta`: green or red, and "better" or "worse" for screen readers.',
+        'The change against the previous period, as a fraction (0.12 is +12%). `better` says which direction is good: errors are better down, and `none` keeps a number such as cost neutral. It is written as text by `Delta`: green or red, and "better" or "worse" for screen readers.',
       delta: 'A delta badge: "+12%".',
       detail: 'A quiet line under the number: "vs. the previous 30 days", "0.4% of requests".',
       label: 'What the number is: "Requests", "Cost".',
@@ -33,7 +33,8 @@ export const docs = {
     description:
       'A change written as text, "↑16%", in the success or danger text color only when one direction is better, and said as "better" or "worse" to screen readers. No pill: it sits beside a quiet note such as "vs. prior 30 days".',
     props: {
-      better: "Which direction is good: `down` for errors and latency. Without a better side the change is written in the secondary text color.",
+      better:
+        "Which direction is good: `up` by default, `down` for errors and latency, `none` for a number such as requests or cost where more is neither good nor bad. A change of `none` is written in the secondary text color and says nothing to screen readers about better or worse.",
       value: "The change as a fraction: 0.16 for 16% more, -0.04 for 4% less.",
     },
   },

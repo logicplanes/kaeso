@@ -1147,7 +1147,7 @@
   "A filled circle (`secondary`), a ghost (`ghost`), or a ghost in secondary text until hovered (`quiet`).": "填充圆形（`secondary`）、幽灵样式（`ghost`），或悬停前为次要文本色的幽灵样式（`quiet`）。",
   "fluid fills its container's width, as in a tile Stat; the line keeps its weight at any width.": "fluid 填满容器宽度，如在磁贴式 Stat 中；线条在任何宽度下保持粗细。",
   "A big number followed by its word, no box, or a tile with its label, change and trend. StatGroup lines numbers up in a row or tiles in a grid.": "一个大数字后跟说明文字，没有边框；或带标签、变化和趋势的磁贴。StatGroup 将数字排成一行或将磁贴排成网格。",
-  "The change against the previous period, as a fraction (0.12 is +12%). `better` says which direction is good: errors are better down. It is written as text by `Delta`: green or red, and \"better\" or \"worse\" for screen readers.": "相对上一期间的变化，以比例表示（0.12 即 +12%）。`better` 说明哪个方向更好：错误越少越好。由 `Delta` 以文字显示：绿色或红色，并向屏幕阅读器读出“更好”或“更差”。",
+  "The change against the previous period, as a fraction (0.12 is +12%). `better` says which direction is good: errors are better down, and `none` keeps a number such as cost neutral. It is written as text by `Delta`: green or red, and \"better\" or \"worse\" for screen readers.": "相对上一期间的变化，以比例表示（0.12 即 +12%）。`better` 说明哪个方向更好：错误越少越好，`none` 则让费用这类数字保持中性。由 `Delta` 以文字显示：绿色或红色，并向屏幕阅读器读出“更好”或“更差”。",
   "A quiet line under the number: \"vs. the previous 30 days\", \"0.4% of requests\".": "数字下方的一行低调文字：“与前 30 天相比”“占请求的 0.4%”。",
   "What the number is: \"Requests\", \"Cost\".": "数字代表什么：“请求”“费用”。",
   "While the numbers load: the value, the change and the trend show their shape at the tile's final height.": "数字加载期间：值、变化和趋势以磁贴最终高度显示其占位形状。",

@@ -20,17 +20,17 @@ const BEFORE = NOW.map((v, i) => Math.round(v * 0.86 + ((i * 37) % 120) - 60));
 const points = (values: number[]) => values.map((v, i) => ({ t: START + i * 86_400_000, v }));
 
 const TABS = [
-  { id: "requests", label: "Requests", value: "59,415", change: { value: 0.17 }, detail: "vs. prior 30 days" },
-  { id: "tokens", label: "Tokens", value: "137.1M", change: { value: 0.19 }, detail: "vs. prior 30 days" },
-  { id: "cost", label: "Cost", value: "$62.19", change: { value: 0.18 }, detail: "vs. prior 30 days" },
-  { id: "errors", label: "Error rate", value: "0.7%", change: { value: 0.23, better: "down" as const }, detail: "412 failed" },
+  { id: "requests", label: "Requests", value: "59,415", change: { value: 0.17, better: "none" as const }, detail: "vs. prior 30 days" },
+  { id: "tokens", label: "Tokens", value: "137.1M", change: { value: 0.19, better: "none" as const }, detail: "vs. prior 30 days" },
+  { id: "cost", label: "Cost", value: "$62.19", change: { value: 0.18, better: "none" as const }, detail: "vs. prior 30 days" },
+  { id: "errors", label: "Error rate", value: "0.7%", change: { value: 0.23, better: "down" as const }, detail: "vs. prior 30 days" },
 ];
 
 const MODELS = [
-  { id: "haiku", label: "Claude Haiku 5.5", value: "31,629", secondary: "53%", share: 0.53 },
-  { id: "embed", label: "text-embedding-3-small", value: "13,043", secondary: "22%", share: 0.22 },
-  { id: "sonnet", label: "Claude Sonnet 5.5", value: "8,007", secondary: "13%", share: 0.13 },
-  { id: "mini", label: "GPT-5.4 mini", value: "4,655", secondary: "8%", share: 0.08 },
+  { id: "haiku", label: "Claude Haiku 5.5", value: "31,629", secondary: "53%", share: 0.53, change: { value: 0.21, better: "none" as const } },
+  { id: "embed", label: "text-embedding-3-small", value: "13,043", secondary: "22%", share: 0.22, change: { value: -0.04, better: "none" as const } },
+  { id: "sonnet", label: "Claude Sonnet 5.5", value: "8,007", secondary: "13%", share: 0.13, change: { value: 0.36, better: "none" as const } },
+  { id: "mini", label: "GPT-5.4 mini", value: "4,655", secondary: "8%", share: 0.08, change: "New" },
 ];
 
 export function Overview() {
@@ -43,8 +43,8 @@ export function Overview() {
           <CellInset grow>
             <Legend
               items={[
-                { id: "now", label: "This period", value: "59,415", color: "var(--k-viz-1)" },
-                { id: "before", label: "vs. prior 30 days", value: "50,819", color: "var(--k-text-tertiary)", dashed: true },
+                { id: "now", label: "This period", color: "var(--k-viz-1)" },
+                { id: "before", label: "Prior 30 days", color: "var(--k-text-tertiary)", dashed: true },
               ]}
             />
             <div id="dashboard-chart" className="mt-16">
@@ -56,7 +56,7 @@ export function Overview() {
                 timeZone="UTC"
                 series={[
                   { id: "now", label: "This period", points: points(NOW) },
-                  { id: "before", label: "vs. prior 30 days", color: "var(--k-text-tertiary)", dashed: true, points: points(BEFORE) },
+                  { id: "before", label: "Prior 30 days", color: "var(--k-text-tertiary)", dashed: true, points: points(BEFORE) },
                 ]}
               />
             </div>
@@ -109,6 +109,7 @@ export function States() {
         <div className="flex gap-16">
           <Delta value={0.17} />
           <Delta value={-0.04} />
+          <Delta value={0.18} better="none" />
           <Delta value={0.23} better="down" />
           <Delta value={0} />
         </div>

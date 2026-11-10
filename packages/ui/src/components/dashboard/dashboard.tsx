@@ -19,7 +19,7 @@ export const KAESO_DASHBOARD_DEFAULT_VARIANTS = { surface: "grid" } as const;
 
 export interface Change {
   value: number;
-  better?: "up" | "down" | undefined;
+  better?: "up" | "down" | "none" | undefined;
 }
 
 const XL_COLS: Record<number, string> = { 2: "xl:grid-cols-2", 3: "xl:grid-cols-3", 4: "xl:grid-cols-4", 6: "xl:grid-cols-6", 12: "xl:grid-cols-12" };
