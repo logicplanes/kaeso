@@ -2519,3 +2519,30 @@ fn fireworks_models_speak_chat_completions_with_kpmrs_prices_and_its_embeddings_
     sent_as.overrides.egress_dialect = Some(DialectId::AnthropicMessages);
     assert_eq!(eff(&sent_as).dialect, DialectId::AnthropicMessages);
 }
+
+#[test]
+fn nebius_models_speak_chat_completions_with_kpmrs_prices_and_its_embeddings_embed() {
+    let glm = eff(&entry("nebius", "zai-org/GLM-5.3"));
+    assert_eq!(glm.dialect, DialectId::OpenAiChat);
+    assert_eq!(glm.provider.chat().provider, "Nebius Token Factory");
+    assert_eq!(
+        (
+            glm.fields.input_price,
+            glm.fields.output_price,
+            glm.fields.cache_read_price
+        ),
+        (Some(dec!(1.4)), Some(dec!(4.4)), Some(dec!(0.26)))
+    );
+    assert_eq!(
+        effort_levels(
+            &eff(&entry("nebius", "moonshotai/Kimi-K3")),
+            DialectId::OpenAiChat
+        ),
+        ["none", "low", "medium", "high", "max"]
+    );
+    let embed = eff(&entry("nebius", "Qwen/Qwen3-Embedding-8B"));
+    assert_eq!(
+        (embed.dialect, embed.fields.input_price),
+        (DialectId::OpenAiEmbeddings, Some(dec!(0.01)))
+    );
+}

@@ -1,0 +1,26 @@
+{
+  "id": "cmpl-0a1b2c3d4e5f60718293a4b5c6d7e8f9",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "logprobs": null,
+      "message": {
+        "content": "Hello! It's nice to meet you. Is there something I can help you with, or would you like to chat?",
+        "role": "assistant",
+        "function_call": null,
+        "tool_calls": []
+      },
+      "stop_reason": null
+    }
+  ],
+  "created": 1721397089,
+  "model": "meta-llama/Meta-Llama-3.1-70B-Instruct",
+  "object": "chat.completion",
+  "system_fingerprint": null,
+  "usage": {
+    "completion_tokens": 26,
+    "prompt_tokens": 12,
+    "total_tokens": 38
+  }
+}

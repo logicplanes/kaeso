@@ -1,0 +1,39 @@
+{
+  "object": "list",
+  "data": [
+    {
+      "object": "embedding",
+      "embedding": [
+        0.035312448,
+        0.46607894,
+        -0.3472699,
+        0.37001368,
+        -0.09662729,
+        -0.097505905,
+        0.7083237,
+        0.058738623
+      ],
+      "index": 0
+    },
+    {
+      "object": "embedding",
+      "embedding": [
+        0.018638577,
+        0.2120727,
+        -0.21026267,
+        0.16086866,
+        0.42252138,
+        0.1876367,
+        0.71261734,
+        -0.4037738
+      ],
+      "index": 1
+    }
+  ],
+  "model": "Qwen/Qwen3-Embedding-8B",
+  "usage": {
+    "prompt_tokens": 13,
+    "total_tokens": 13
+  },
+  "service_tier": "default"
+}

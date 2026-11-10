@@ -20,11 +20,18 @@ pub(super) const REJECTED_REQUESTS: &[(&str, &str)] = &[
 ];
 
 // Requests only their provider's profile sends, which `tests_profile` round-trips under it.
-const PROFILE_ONLY_REQUESTS: &[&str] = &["providers/fireworks-ai/video-url"];
+const PROFILE_ONLY_REQUESTS: &[&str] = &[
+    "providers/fireworks-ai/video-url",
+    "providers/nebius/video-url",
+];
 
 const REJECTED_RESPONSES: &[(&str, &str)] = &[("n-2", "n")];
 
 const FOREIGN_ERROR_BODIES: &[(&str, ErrorKind)] = &[
+    (
+        "providers/nebius/list-invalid-api-key",
+        ErrorKind::Authentication,
+    ),
     (
         "providers/mistral/recorded-assistant-prefill",
         ErrorKind::InvalidRequest,

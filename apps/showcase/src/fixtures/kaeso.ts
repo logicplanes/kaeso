@@ -42,6 +42,7 @@ export const providers = [
   { id: "google", name: "Google AI Studio" },
   { id: "gemini-agent-platform", name: "Gemini Enterprise Agent Platform" },
   { id: "fireworks-ai", name: "Fireworks AI" },
+  { id: "nebius", name: "Nebius Token Factory" },
 ];
 export const providerNames: Record<string, string> = Object.fromEntries(providers.map((p) => [p.id, p.name]));
 

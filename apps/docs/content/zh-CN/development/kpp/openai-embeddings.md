@@ -101,3 +101,7 @@ order: 8
 ### Fireworks AI
 
 来源：Fireworks 的 [create embeddings](https://docs.fireworks.ai/api-reference/creates-an-embedding-vector-representing-the-input-text) 参考和[嵌入指南](https://docs.fireworks.ai/guides/querying-embeddings-models)（2026-11-09 阅读），以及据此构建的 `fixtures/openai_embeddings/providers/fireworks-ai/`，其中的错误是在没有有效密钥的情况下实时返回的。无服务器模型为 `qwen3-embedding-8b`（`fireworks/qwen3-embedding-8b`）以及使用 Hugging Face ID 的较旧模型，例如 `nomic-ai/nomic-embed-text-v1.5`；只有可调整大小的模型接受 `dimensions`。Fireworks 自己的 `prompt_template`、`normalize` 和 `return_logits` 保留为请求的 extras。它的 schema 没有 `encoding_format`，因此当应用要求 base64 时，由编解码器把浮点数编码为 base64。
+
+### Nebius Token Factory
+
+来源：Nebius 的 [create embeddings](https://docs.tokenfactory.nebius.com/api-reference/inference/create-embeddings) 参考（2026-11-09 阅读），以及据此构建的 `fixtures/openai_embeddings/providers/nebius/`，其中的错误是在没有有效密钥的情况下实时返回的。Nebius 的嵌入模型是 `Qwen/Qwen3-Embedding-8B`。它接受 `encoding_format` 和 `dimensions`，每个回复都带有 `service_tier`，保留在 extras 中。

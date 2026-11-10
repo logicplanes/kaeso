@@ -824,3 +824,39 @@ fn fireworks_takes_video_url_parts_and_the_end_user_as_user() {
         (&json!("user-0001"), None)
     );
 }
+
+#[test]
+fn nebius_gets_developer_messages_as_system_the_end_user_as_user_and_video_url_parts() {
+    let nebius = ChatProfile::compatible("Nebius Token Factory")
+        .system_role()
+        .end_user_as_user()
+        .with_video_url()
+        .reasoning_fields(&["reasoning_content", "reasoning"]);
+    let (_, body) = fixtures("openai_chat", "requests", "json")
+        .into_iter()
+        .find(|(n, _)| n == "providers/nebius/video-url")
+        .unwrap();
+    let sent = encode_with(&decode(&body).unwrap(), nebius).unwrap();
+    assert_eq!(sent, serde_json::from_slice::<Value>(&body).unwrap());
+
+    let sent = encode_with(
+        &chat(json!({
+            "model": "zai-org/GLM-5.3",
+            "messages": [
+                {"role": "developer", "content": "Answer briefly."},
+                {"role": "user", "content": "Hi"}
+            ],
+            "safety_identifier": "user-0001"
+        })),
+        nebius,
+    )
+    .unwrap();
+    assert_eq!(
+        (
+            &sent["messages"][0]["role"],
+            &sent["user"],
+            sent.get("safety_identifier")
+        ),
+        (&json!("system"), &json!("user-0001"), None)
+    );
+}

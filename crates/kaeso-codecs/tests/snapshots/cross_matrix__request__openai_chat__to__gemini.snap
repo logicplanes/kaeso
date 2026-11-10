@@ -3641,6 +3641,174 @@ expression: outcomes
     },
     "path": "/v1beta/models/kimi-no-such-model:generateContent"
   },
+  "providers/nebius/invalid-api-key": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "hi"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1
+      }
+    },
+    "path": "/v1beta/models/zai-org%2FGLM-5.3:generateContent"
+  },
+  "providers/nebius/missing-api-key": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "hi"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1
+      }
+    },
+    "path": "/v1beta/models/zai-org%2FGLM-5.3:generateContent"
+  },
+  "providers/nebius/reasoning": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What is the capital of France?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 512,
+        "thinkingConfig": {
+          "thinkingLevel": "LOW"
+        }
+      },
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "Answer in one short sentence."
+          }
+        ]
+      }
+    },
+    "path": "/v1beta/models/zai-org%2FGLM-5.3:generateContent"
+  },
+  "providers/nebius/reasoning-stream": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What is 17 times 23?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 512
+      }
+    },
+    "path": "/v1beta/models/zai-org%2FGLM-5.3:streamGenerateContent?alt=sse"
+  },
+  "providers/nebius/text-generation-doc": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Hello!"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "temperature": 0.6
+      }
+    },
+    "path": "/v1beta/models/meta-llama%2FMeta-Llama-3.1-70B-Instruct:generateContent"
+  },
+  "providers/nebius/tools": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What is the weather in Paris?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 512
+      },
+      "toolConfig": {
+        "functionCallingConfig": {
+          "mode": "AUTO"
+        }
+      },
+      "tools": [
+        {
+          "functionDeclarations": [
+            {
+              "description": "Get the current weather for a city.",
+              "name": "get_weather",
+              "parametersJsonSchema": {
+                "properties": {
+                  "city": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "city"
+                ],
+                "type": "object"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "path": "/v1beta/models/moonshotai%2FKimi-K3:generateContent"
+  },
+  "providers/nebius/video-url": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Describe this clip in one sentence."
+            },
+            {
+              "fileData": {
+                "fileUri": "https://example.com/clip.mp4",
+                "mimeType": "video/mp4"
+              }
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 256
+      }
+    },
+    "path": "/v1beta/models/nvidia%2FNemotron-3.5-Super-VL:generateContent"
+  },
   "providers/ollama-cloud/image": {
     "body": {
       "contents": [

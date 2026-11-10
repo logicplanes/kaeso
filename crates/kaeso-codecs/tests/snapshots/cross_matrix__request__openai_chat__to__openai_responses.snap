@@ -3062,6 +3062,104 @@ expression: outcomes
     "param": "max_completion_tokens",
     "unsupported": "max_completion_tokens 10"
   },
+  "providers/nebius/invalid-api-key": {
+    "message": "`max_tokens 1` is not supported by OpenAI Responses. OpenAI Responses needs an output limit of at least 16 tokens; raise it or route the request to another model.",
+    "param": "max_tokens",
+    "unsupported": "max_tokens 1"
+  },
+  "providers/nebius/missing-api-key": {
+    "message": "`max_tokens 1` is not supported by OpenAI Responses. OpenAI Responses needs an output limit of at least 16 tokens; raise it or route the request to another model.",
+    "param": "max_tokens",
+    "unsupported": "max_tokens 1"
+  },
+  "providers/nebius/reasoning": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "What is the capital of France?",
+          "role": "user"
+        }
+      ],
+      "instructions": "Answer in one short sentence.",
+      "max_output_tokens": 512,
+      "model": "zai-org/GLM-5.3",
+      "reasoning": {
+        "effort": "low"
+      },
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/nebius/reasoning-stream": {
+    "body": {
+      "input": [
+        {
+          "content": "What is 17 times 23?",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 512,
+      "model": "zai-org/GLM-5.3",
+      "store": false,
+      "stream": true
+    },
+    "path": "/v1/responses"
+  },
+  "providers/nebius/text-generation-doc": {
+    "body": {
+      "input": [
+        {
+          "content": "Hello!",
+          "role": "user"
+        }
+      ],
+      "model": "meta-llama/Meta-Llama-3.1-70B-Instruct",
+      "store": false,
+      "temperature": 0.6
+    },
+    "path": "/v1/responses"
+  },
+  "providers/nebius/tools": {
+    "body": {
+      "input": [
+        {
+          "content": "What is the weather in Paris?",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 512,
+      "model": "moonshotai/Kimi-K3",
+      "store": false,
+      "tool_choice": "auto",
+      "tools": [
+        {
+          "description": "Get the current weather for a city.",
+          "name": "get_weather",
+          "parameters": {
+            "properties": {
+              "city": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "city"
+            ],
+            "type": "object"
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
+  },
+  "providers/nebius/video-url": {
+    "message": "`video block` is not supported by OpenAI Responses. Its input has no video content part; send frames of the video as images, or route the request to a Gemini model.",
+    "param": "messages[0].blocks[1]",
+    "unsupported": "video block"
+  },
   "providers/ollama-cloud/image": {
     "message": "`max_tokens 10` is not supported by OpenAI Responses. OpenAI Responses needs an output limit of at least 16 tokens; raise it or route the request to another model.",
     "param": "max_tokens",

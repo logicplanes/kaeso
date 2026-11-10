@@ -101,3 +101,7 @@ Quellen: die Seite [Embedding](https://www.alibabacloud.com/help/en/model-studio
 ### Fireworks AI
 
 Quellen: Fireworks' Referenz [create embeddings](https://docs.fireworks.ai/api-reference/creates-an-embedding-vector-representing-the-input-text) und sein [Embeddings-Leitfaden](https://docs.fireworks.ai/guides/querying-embeddings-models), gelesen am 2026-11-09, und `fixtures/openai_embeddings/providers/fireworks-ai/`, daraus gebaut, mit dem live erhaltenen Fehler ohne gültigen Schlüssel. Die serverlosen Modelle sind `qwen3-embedding-8b` (`fireworks/qwen3-embedding-8b`) und ältere Modelle unter ihren Hugging-Face-IDs wie `nomic-ai/nomic-embed-text-v1.5`; nur veränderbare nehmen `dimensions` an. Fireworks' eigene Felder `prompt_template`, `normalize` und `return_logits` bleiben Extras der Anfrage. Sein Schema hat kein `encoding_format`, daher kodiert der Codec die Floats als Base64 für eine App, die danach fragt.
+
+### Nebius Token Factory
+
+Quellen: die Referenz [create embeddings](https://docs.tokenfactory.nebius.com/api-reference/inference/create-embeddings) von Nebius, gelesen am 2026-11-09, und `fixtures/openai_embeddings/providers/nebius/`, daraus gebaut, mit dem live erhaltenen Fehler ohne gültigen Schlüssel. Das Embedding-Modell von Nebius ist `Qwen/Qwen3-Embedding-8B`. Es nimmt `encoding_format` und `dimensions` an, und jede Antwort trägt `service_tier`, das in den Extras bleibt.

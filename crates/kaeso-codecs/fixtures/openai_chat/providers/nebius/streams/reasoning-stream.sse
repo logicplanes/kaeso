@@ -1,0 +1,16 @@
+data: {"id":"chatcmpl-9b1d3f5a7c9e4b2d6f8a0c1e3b5d7f9a","object":"chat.completion.chunk","created":1794225720,"model":"zai-org/GLM-5.3","system_fingerprint":null,"choices":[{"index":0,"delta":{"role":"assistant","content":""},"logprobs":null,"finish_reason":null}],"usage":null}
+
+data: {"id":"chatcmpl-9b1d3f5a7c9e4b2d6f8a0c1e3b5d7f9a","object":"chat.completion.chunk","created":1794225720,"model":"zai-org/GLM-5.3","system_fingerprint":null,"choices":[{"index":0,"delta":{"reasoning":"17 times 20 is 340"},"logprobs":null,"finish_reason":null}],"usage":null}
+
+data: {"id":"chatcmpl-9b1d3f5a7c9e4b2d6f8a0c1e3b5d7f9a","object":"chat.completion.chunk","created":1794225720,"model":"zai-org/GLM-5.3","system_fingerprint":null,"choices":[{"index":0,"delta":{"reasoning":", plus 51 is 391."},"logprobs":null,"finish_reason":null}],"usage":null}
+
+data: {"id":"chatcmpl-9b1d3f5a7c9e4b2d6f8a0c1e3b5d7f9a","object":"chat.completion.chunk","created":1794225720,"model":"zai-org/GLM-5.3","system_fingerprint":null,"choices":[{"index":0,"delta":{"content":"17 × 23 = "},"logprobs":null,"finish_reason":null}],"usage":null}
+
+data: {"id":"chatcmpl-9b1d3f5a7c9e4b2d6f8a0c1e3b5d7f9a","object":"chat.completion.chunk","created":1794225720,"model":"zai-org/GLM-5.3","system_fingerprint":null,"choices":[{"index":0,"delta":{"content":"391."},"logprobs":null,"finish_reason":null}],"usage":null}
+
+data: {"id":"chatcmpl-9b1d3f5a7c9e4b2d6f8a0c1e3b5d7f9a","object":"chat.completion.chunk","created":1794225720,"model":"zai-org/GLM-5.3","system_fingerprint":null,"choices":[{"index":0,"delta":{},"logprobs":null,"finish_reason":"stop"}],"usage":null}
+
+data: {"id":"chatcmpl-9b1d3f5a7c9e4b2d6f8a0c1e3b5d7f9a","object":"chat.completion.chunk","created":1794225720,"model":"zai-org/GLM-5.3","system_fingerprint":null,"choices":[],"usage":{"completion_tokens":29,"prompt_tokens":16,"total_tokens":45,"completion_tokens_details":{"reasoning_tokens":15}}}
+
+data: [DONE]
+

@@ -1,0 +1,10 @@
+{
+  "model": "zai-org/GLM-5.3",
+  "messages": [
+    {
+      "role": "user",
+      "content": "hi"
+    }
+  ],
+  "max_tokens": 1
+}

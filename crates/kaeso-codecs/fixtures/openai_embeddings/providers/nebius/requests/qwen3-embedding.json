@@ -1,0 +1,8 @@
+{
+  "model": "Qwen/Qwen3-Embedding-8B",
+  "input": [
+    "Kaeso routes model requests.",
+    "Nebius serves open models."
+  ],
+  "dimensions": 8
+}

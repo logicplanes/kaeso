@@ -183,8 +183,8 @@ pub struct CredentialCreate {
     #[doc = "The id of a provider Kaeso calls: `openai`, `anthropic`, `deepseek`, `xai`,\n\
         `togetherai`, `groq`, `openrouter`, `mistral`, `vercel`, `cohere`,\n\
         `ollama-cloud`, `moonshotai`, `alibaba`, `cerebras`, `zai`, `minimax`,\n\
-        `elevenlabs`, `google`, `gemini-agent-platform`, `fireworks-ai`, or one of the\n\
-        organization's custom providers that takes a key."]
+        `elevenlabs`, `google`, `gemini-agent-platform`, `fireworks-ai`, `nebius`, or\n\
+        one of the organization's custom providers that takes a key."]
     #[schema(value_type = ProviderId, example = "openai")]
     pub provider: String,
     #[doc = "A name to recognise it by."]

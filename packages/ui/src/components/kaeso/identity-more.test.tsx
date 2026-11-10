@@ -191,6 +191,7 @@ const MARKED_PROVIDERS = {
   google: "Google AI Studio",
   "gemini-agent-platform": "Gemini Enterprise Agent Platform",
   "fireworks-ai": "Fireworks AI",
+  nebius: "Nebius Token Factory",
   vllm: "vLLM",
   ollama: "Ollama",
   "lm-studio": "LM Studio",

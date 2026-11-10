@@ -2812,6 +2812,84 @@ expression: outcomes
       "totalTokenCount": 186
     }
   },
+  "providers/nebius/reasoning": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "The capital of France is Paris."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "zai-org/GLM-5.3",
+    "responseId": "chatcmpl-7f3e9a1c2b4d4e6f8a0b1c2d3e4f5a6b",
+    "usageMetadata": {
+      "candidatesTokenCount": 9,
+      "promptTokenCount": 24,
+      "thoughtsTokenCount": 18,
+      "totalTokenCount": 51
+    }
+  },
+  "providers/nebius/text-generation-doc": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Hello! It's nice to meet you. Is there something I can help you with, or would you like to chat?"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "meta-llama/Meta-Llama-3.1-70B-Instruct",
+    "responseId": "cmpl-0a1b2c3d4e5f60718293a4b5c6d7e8f9",
+    "usageMetadata": {
+      "candidatesTokenCount": 26,
+      "promptTokenCount": 12,
+      "totalTokenCount": 38
+    }
+  },
+  "providers/nebius/tools": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "functionCall": {
+                "args": {
+                  "city": "Paris"
+                },
+                "id": "functions.get_weather:0",
+                "name": "get_weather"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "moonshotai/Kimi-K3",
+    "responseId": "chatcmpl-2c4e6a8b0d1f4a3c5e7b9d0f1a2c3e4d",
+    "usageMetadata": {
+      "cachedContentTokenCount": 64,
+      "candidatesTokenCount": 20,
+      "promptTokenCount": 96,
+      "thoughtsTokenCount": 11,
+      "totalTokenCount": 127
+    }
+  },
   "providers/ollama-cloud/recorded-image": {
     "candidates": [
       {

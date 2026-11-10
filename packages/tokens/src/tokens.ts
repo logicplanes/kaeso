@@ -146,6 +146,7 @@ export const providerMark = {
   "gemini-agent-platform-red": mode("#fa423f", "#fa423f"),
   "gemini-agent-platform-green": mode("#12aa5b", "#14ba64"),
   "gemini-agent-platform-yellow": mode("#b59007", "#fac70b"),
+  nebius: mode("#052b42", "#ffffff"),
   "vllm-yellow": mode("#c68902", "#fdb515"),
   "vllm-blue": mode("#1b98ff", "#30a2ff"),
   "llama-cpp": mode("#ff6202", "#ff8236"),

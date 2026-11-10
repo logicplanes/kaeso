@@ -1,0 +1,9 @@
+{
+  "error": {
+    "type": "invalid_request_error",
+    "message": "Couldn't authenticate. Reason: token is not present",
+    "param": null,
+    "code": "unauthenticated"
+  },
+  "detail": "Invalid request. Please check the parameters and try again. Details: Couldn't authenticate. Reason: token is not present"
+}
