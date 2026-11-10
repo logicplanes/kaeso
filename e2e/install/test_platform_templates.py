@@ -3,7 +3,9 @@ import re
 import shutil
 import subprocess
 import time
+import tomllib
 from pathlib import Path
+from urllib.parse import quote
 
 import pytest
 import yaml
@@ -20,7 +22,15 @@ def images_in(text: str) -> list[tuple[str, str]]:
 
 
 def test_every_platform_file_pins_the_gateway_and_console_to_this_release():
-    for file in ["render.yaml", ".railway/railway.ts", "deploy/aws/managed.yaml", "deploy/gcp/managed/main.tf"]:
+    for file in [
+        "render.yaml",
+        ".railway/railway.ts",
+        "deploy/aws/managed.yaml",
+        "deploy/gcp/managed/main.tf",
+        "deploy/coolify/compose.yaml",
+        "deploy/dokploy/docker-compose.yml",
+        "deploy/caprover/kaeso.yml",
+    ]:
         found = images_in((ROOT / file).read_text())
         assert {name for name, _ in found} == {"gateway", "console"}, file
         assert all(tag == VERSION for _, tag in found), (file, found)
@@ -101,7 +111,7 @@ def test_the_deploy_button_keeps_valkey_inside_the_app_and_creates_only_a_dev_da
 
 
 def test_the_quick_servers_install_the_newest_stable_release_unless_told_a_version():
-    for file in ["deploy/aws/quick-server.yaml", "deploy/gcp/quick-server/main.tf"]:
+    for file in ["deploy/aws/quick-server.yaml", "deploy/gcp/quick-server/main.tf", "deploy/azure/quick-server.json"]:
         text = (ROOT / file).read_text()
         assert "kaeso.app/install.sh" in text and "--install-docker" in text, file
         assert not images_in(text), file
@@ -160,6 +170,9 @@ def test_platform_launch_links_use_the_published_templates():
     assert "https://railway.com/new/template/cmVV60?utm_medium=integration&utm_source=button&utm_campaign=kaeso" in readme
     assert "kaeso-cloudformation.s3.amazonaws.com%2Flatest%2Fquick-server.yaml" in readme
     assert "cloudshell_workspace=deploy/gcp/quick-server" in readme
+    template = quote("https://raw.githubusercontent.com/logicplanes/kaeso/prod/deploy/azure/quick-server.json", safe="")
+    form = quote("https://raw.githubusercontent.com/logicplanes/kaeso/prod/deploy/azure/createUiDefinition.json", safe="")
+    assert f"https://portal.azure.com/#create/Microsoft.Template/uri/{template}/createUIFormUri/{form}" in readme
     assert "KAESO_EDGE_CLIENT_IP_HEADERS" in (ROOT / "deploy/console/edge.Caddyfile").read_text()
 
 
@@ -264,3 +277,212 @@ def test_gcp_routes_api_paths_to_the_gateway_and_keeps_the_data_stores_private()
     assert 'value = "127.0.0.1:9100"' in text
     assert "deletion_protection = true" in text
     assert 'sensitive   = true' in (ROOT / "deploy/gcp/managed/variables.tf").read_text()
+
+
+def compose_service_images() -> dict[str, str]:
+    services = yaml.safe_load((ROOT / "deploy/compose.yaml").read_text())["services"]
+    return {name: services[name]["image"] for name in ["postgres", "clickhouse", "valkey"]}
+
+
+def compose_postgres_init() -> str:
+    return yaml.safe_load((ROOT / "deploy/compose.yaml").read_text())["configs"]["postgres_init"]["content"]
+
+
+@pytest.mark.parametrize("file", ["deploy/coolify/compose.yaml", "deploy/dokploy/docker-compose.yml"])
+def test_coolify_and_dokploy_run_the_compose_packages_services_behind_a_private_edge(file):
+    services = yaml.safe_load((ROOT / file).read_text())["services"]
+    assert set(services) == {"edge", "gateway", "console", "postgres", "clickhouse", "valkey"}
+    assert services["edge"]["image"] == services["console"]["image"]
+    assert services["edge"]["command"] == ["kaeso-edge"]
+    assert "/kaeso-edge/healthz" in " ".join(services["edge"]["healthcheck"]["test"]), "the image's own check asks the console's port"
+    for name, image in compose_service_images().items():
+        assert services[name]["image"] == image, f"{file}: {name} runs the Compose package's release"
+    for name, service in services.items():
+        assert "ports" not in service, f"{file}: {name} is reached through the platform's proxy only"
+        assert service["security_opt"] == ["no-new-privileges:true"], name
+        assert service["cap_drop"] == ["ALL"], name
+    for name in ["edge", "gateway", "console"]:
+        assert services[name]["read_only"] is True, name
+    assert services["valkey"]["user"] == "999:1000"
+    assert "noeviction" in services["valkey"]["command"] and "--requirepass" in services["valkey"]["command"]
+    init = services["postgres"]["command"][2].replace("$$", "$")
+    for line in compose_postgres_init().replace("$$", "$").strip().splitlines():
+        assert line in init, f"{file}: the gateway's PostgreSQL user is the Compose package's, not a superuser"
+    assert services["gateway"]["stop_grace_period"] == "75s"
+
+
+def environment(service: dict) -> dict[str, str]:
+    env = service.get("environment", {})
+    if isinstance(env, list):
+        return dict(entry.split("=", 1) if "=" in entry else (entry, "") for entry in env)
+    return env
+
+
+def test_coolify_generates_every_secret_and_routes_its_domain_to_the_edge():
+    services = yaml.safe_load((ROOT / "deploy/coolify/compose.yaml").read_text())["services"]
+    assert "SERVICE_URL_EDGE_8080" in environment(services["edge"])
+    gateway = environment(services["gateway"])
+    assert gateway["KAESO_PUBLIC_URL"] == "${SERVICE_URL_EDGE}"
+    assert gateway["KAESO_MASTER_KEYS"] == "k1:${SERVICE_REALBASE64_32_MASTERKEY}", "32 random bytes in standard base64"
+    assert gateway["KAESO_METRICS_LISTEN"] == "127.0.0.1:9100"
+    assert "fc00::/7" in gateway["KAESO_TRUSTED_PROXIES"]
+    assert gateway["KAESO_MAIL_TRANSPORT"] == "${KAESO_MAIL_TRANSPORT:-log}", "the gateway starts without an SMTP server"
+    secrets = set(re.findall(r"\$\{(SERVICE_[A-Z0-9_]+)\}", (ROOT / "deploy/coolify/compose.yaml").read_text()))
+    assert secrets == {
+        "SERVICE_URL_EDGE",
+        "SERVICE_REALBASE64_32_MASTERKEY",
+        "SERVICE_PASSWORD_POSTGRES",
+        "SERVICE_PASSWORD_POSTGRESADMIN",
+        "SERVICE_PASSWORD_CLICKHOUSE",
+        "SERVICE_PASSWORD_VALKEY",
+    }
+
+
+@pytest.fixture(scope="module")
+def dokploy_template() -> dict:
+    return tomllib.loads((ROOT / "deploy/dokploy/template.toml").read_text())
+
+
+def test_dokploy_fills_every_required_variable_from_its_template(dokploy_template):
+    compose = (ROOT / "deploy/dokploy/docker-compose.yml").read_text()
+    required = set(re.findall(r"\$\{([A-Z0-9_]+):\?", compose))
+    env = dokploy_template["config"]["env"]
+    assert required <= set(env), required - set(env)
+    assert dokploy_template["config"]["domains"] == [{"serviceName": "edge", "port": 8080, "host": "${main_domain}"}]
+    assert env["KAESO_PUBLIC_URL"] == "https://${main_domain}"
+    assert dokploy_template["variables"]["master_key"] == "${base64:32}" and env["KAESO_MASTER_KEYS"] == "k1:${master_key}"
+    for name in ["postgres_password", "postgres_superuser_password", "clickhouse_password", "valkey_password"]:
+        assert dokploy_template["variables"][name] == "${hash:48}", f"{name}: Dokploy's password helper isn't cryptographically random"
+    assert env["KAESO_MAIL_TRANSPORT"] == "log"
+
+
+def test_the_coolify_and_dokploy_compose_files_are_valid(dokploy_template, tmp_path):
+    assert shutil.which("docker"), "Docker is on PATH in CI and for this suite"
+    values = {key: re.sub(r"\$\{[^}]+\}", "x", value) for key, value in dokploy_template["config"]["env"].items()}
+    env_file = tmp_path / ".env"
+    env_file.write_text("".join(f"{key}={value}\n" for key, value in values.items()))
+    for file, args in [("deploy/dokploy/docker-compose.yml", ["--env-file", str(env_file)]), ("deploy/coolify/compose.yaml", [])]:
+        done = subprocess.run(["docker", "compose", "-f", file, *args, "config", "-q"], cwd=ROOT, capture_output=True, text=True)
+        assert done.returncode == 0, (file, done.stderr)
+
+
+@pytest.fixture(scope="module")
+def caprover() -> dict:
+    return yaml.safe_load((ROOT / "deploy/caprover/kaeso.yml").read_text())
+
+
+def test_caprover_uses_only_the_fields_it_reads(caprover):
+    assert caprover["captainVersion"] == 4
+    assert set(caprover) == {"captainVersion", "services", "caproverOneClickApp"}
+    for name, service in caprover["services"].items():
+        assert set(service) <= {"image", "volumes", "ports", "environment", "depends_on", "hostname", "cap_add", "command", "caproverExtra"}, name
+        assert set(service.get("caproverExtra", {})) <= {"dockerfileLines", "containerHttpPort", "notExposeAsWebApp", "websocketSupport"}, name
+        assert "ports" not in service, name
+
+
+def test_caprover_runs_a_public_edge_that_reads_nginxs_client_address(caprover):
+    services = caprover["services"]
+    edge = services["$$cap_appname"]
+    assert edge["image"] == services["$$cap_appname-console"]["image"]
+    assert edge["command"] == ["kaeso-edge"]
+    assert edge["environment"]["KAESO_EDGE_CLIENT_IP_HEADERS"] == "X-Real-IP", "CapRover's nginx appends to X-Forwarded-For"
+    assert edge["caproverExtra"] == {"containerHttpPort": "8080", "websocketSupport": "true"}
+    for name, service in services.items():
+        if name != "$$cap_appname":
+            assert service["caproverExtra"] == {"notExposeAsWebApp": "true"}, name
+    gateway = services["$$cap_appname-gateway"]["environment"]
+    assert gateway["KAESO_METRICS_LISTEN"] == "127.0.0.1:9100"
+    assert "fc00::/7" in gateway["KAESO_TRUSTED_PROXIES"]
+    for name, image in compose_service_images().items():
+        assert services[f"$$cap_appname-{name}"]["image"] == image, name
+    assert "noeviction" in services["$$cap_appname-valkey"]["command"]
+    assert services["$$cap_appname-valkey"]["command"][0] == "docker-entrypoint.sh", "Valkey runs as its own user"
+    init = services["$$cap_appname-postgres"]["command"][2]
+    for line in compose_postgres_init().replace("$$", "$").strip().splitlines():
+        assert line in init
+
+
+def test_caprover_declares_every_variable_it_uses_and_checks_the_master_key(caprover):
+    text = (ROOT / "deploy/caprover/kaeso.yml").read_text()
+    used = set(re.findall(r"\$\$cap_[a-z0-9_]+", text)) - {"$$cap_appname", "$$cap_root_domain", "$$cap_gen_random_hex"}
+    variables = {v["id"]: v for v in caprover["caproverOneClickApp"]["variables"]}
+    assert used == set(variables)
+    pattern = re.compile(variables["$$cap_master_keys"]["validRegex"].strip("/").replace("\\/", "/"))
+    assert pattern.fullmatch("k0123456789:" + "A" * 43 + "=")
+    assert not pattern.fullmatch("")
+    assert variables["$$cap_public_url"]["defaultValue"] == "https://$$cap_appname.$$cap_root_domain"
+
+
+@pytest.fixture(scope="module")
+def fly() -> dict[str, dict]:
+    return {name: tomllib.loads((ROOT / f"deploy/fly/{name}.toml").read_text()) for name in ["edge", "gateway", "console", "valkey"]}
+
+
+def test_fly_pins_one_release_and_makes_only_the_edge_public(fly):
+    images = {name: config["build"]["image"] for name, config in fly.items()}
+    assert images["edge"] == images["console"] == f"ghcr.io/logicplanes/kaeso-console:{VERSION}"
+    assert images["gateway"] == f"ghcr.io/logicplanes/kaeso-gateway:{VERSION}"
+    assert compose_service_images()["valkey"].startswith(images["valkey"] + "@"), "the Compose package's Valkey release"
+    for name in ["gateway", "console", "valkey"]:
+        assert "http_service" not in fly[name] and "services" not in fly[name], f"{name} is reachable only on the private network"
+        assert fly[name]["checks"], name
+    edge = fly["edge"]
+    assert edge["experimental"]["cmd"] == ["kaeso-edge"]
+    assert edge["env"]["KAESO_EDGE_CLIENT_IP_HEADERS"] == "Fly-Client-IP", "Fly's proxy appends to X-Forwarded-For"
+    assert edge["http_service"]["internal_port"] == 8080 and edge["http_service"]["force_https"] is True
+    assert edge["http_service"]["checks"][0]["path"] == "/kaeso-edge/healthz"
+    assert all("app" not in config for config in fly.values()), "app names are chosen with --app"
+
+
+def test_fly_runs_the_gateway_on_the_ipv6_private_network_and_valkey_without_eviction(fly):
+    gateway = fly["gateway"]
+    assert gateway["env"]["KAESO_LISTEN"] == "[::]:8080"
+    assert gateway["env"]["KAESO_METRICS_LISTEN"] == "127.0.0.1:9100"
+    assert gateway["env"]["KAESO_TRUSTED_PROXIES"].startswith("fc00::/7")
+    assert gateway["kill_signal"] == "SIGTERM" and gateway["kill_timeout"] == 75
+    valkey = fly["valkey"]
+    [command] = valkey["experimental"]["cmd"][2:]
+    assert command.startswith("exec docker-entrypoint.sh valkey-server"), "Valkey runs as its own user"
+    assert '--requirepass "$VALKEY_PASSWORD"' in command and "--maxmemory-policy noeviction" in command
+    assert valkey["mounts"][0]["destination"] == "/data"
+
+
+@pytest.fixture(scope="module")
+def azure() -> dict:
+    return json.loads((ROOT / "deploy/azure/quick-server.json").read_text())
+
+
+def test_azure_opens_only_the_web_ports_unless_ssh_is_asked_for(azure):
+    variables = azure["variables"]
+    web = {(r["properties"]["protocol"], r["properties"]["destinationPortRange"]) for r in variables["webRules"]}
+    assert web == {("Tcp", "80"), ("Tcp", "443"), ("Udp", "443")}
+    assert all(r["properties"]["sourceAddressPrefix"] == "Internet" for r in variables["webRules"])
+    [ssh] = variables["sshRule"]
+    assert ssh["properties"]["destinationPortRange"] == "22"
+    assert ssh["properties"]["sourceAddressPrefix"] == "[parameters('sshSourceAddress')]"
+    [nsg] = [r for r in azure["resources"] if r["type"] == "Microsoft.Network/networkSecurityGroups"]
+    assert nsg["properties"]["securityRules"].startswith("[if(empty(parameters('sshSourceAddress')), variables('webRules'),")
+    assert azure["parameters"]["sshSourceAddress"]["defaultValue"] == ""
+
+
+def test_azure_keeps_secrets_out_of_the_template_and_follows_resource_manager_practice(azure):
+    parameters = azure["parameters"]
+    assert parameters["adminPasswordOrKey"]["type"] == "securestring" and "defaultValue" not in parameters["adminPasswordOrKey"]
+    assert parameters["location"]["defaultValue"] == "[resourceGroup().location]"
+    assert all("description" in p["metadata"] for p in parameters.values())
+    [vm] = [r for r in azure["resources"] if r["type"] == "Microsoft.Compute/virtualMachines"]
+    assert vm["properties"]["securityProfile"]["securityType"] == "TrustedLaunch"
+    image = vm["properties"]["storageProfile"]["imageReference"]
+    assert image == {"publisher": "Canonical", "offer": "ubuntu-24_04-lts", "sku": "server", "version": "latest"}
+    [script] = [r for r in azure["resources"] if r["type"] == "Microsoft.Compute/virtualMachines/extensions"]
+    assert "--dir /opt/kaeso --install-docker --no-open" in script["properties"]["protectedSettings"]["commandToExecute"]
+    assert {"url", "fqdn", "publicIp", "setupLink"} == set(azure["outputs"])
+    assert "docker compose exec -T gateway kaeso setup-link" in azure["outputs"]["setupLink"]["value"]
+
+
+def test_the_azure_portal_form_fills_exactly_the_templates_parameters(azure):
+    form = json.loads((ROOT / "deploy/azure/createUiDefinition.json").read_text())
+    assert set(form["parameters"]["outputs"]) == set(azure["parameters"])
+    [server] = form["parameters"]["steps"]
+    [sizes] = [e for e in server["elements"] if e["name"] == "vmSize"]
+    assert sizes["constraints"]["allowedSizes"] == azure["parameters"]["vmSize"]["allowedValues"]

@@ -164,6 +164,26 @@ describe("RankList", () => {
     fireEvent.click(rows[1]!);
     expect(open).toHaveBeenCalledWith("b");
   });
+  it("gives every row's change a column of its own: neutral, better or worse, or a word", () => {
+    render(
+      <RankList
+        aria-label="Models by failed requests"
+        items={[
+          { ...items[0]!, change: { value: 0.12, better: "none" } },
+          { ...items[1]!, change: { value: -0.3, better: "down" } },
+          { id: "c", label: "GPT-6 Sol", value: "12", change: "New" },
+          { id: "d", label: "Whisper", value: "2" },
+        ]}
+      />,
+    );
+    const rows = screen.getAllByRole("listitem");
+    expect(rows[0]).toHaveTextContent("Claude Haiku 5.553%↑12%31,629");
+    expect(rows[0]).not.toHaveTextContent(/better|worse/);
+    expect(screen.getByText("53%")).toHaveClass("max-sm:hidden");
+    expect(rows[1]).toHaveTextContent("↓30% better");
+    expect(rows[2]).toHaveTextContent("GPT-6 SolNew12");
+    expect(rows[3]).toHaveTextContent(/^Whisper2$/);
+  });
   it("shows plain rows without bars, its loading shape and its empty state", () => {
     const { rerender } = render(<RankList aria-label="Recent errors" items={[{ id: "x", label: "Provider overloaded", secondary: "1 h ago" }]} />);
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
@@ -188,6 +208,22 @@ describe("Legend and Delta", () => {
     );
     expect(screen.getAllByRole("listitem")[1]).toHaveTextContent("vs. prior 30 days50,819");
     expect(container.querySelectorAll("line")[1]).toHaveAttribute("stroke-dasharray", "3 3");
+  });
+  it("names the series alone when the totals stand elsewhere", () => {
+    render(<Legend items={[{ id: "now", label: "This period", color: "var(--k-viz-1)" }]} />);
+    expect(screen.getByRole("listitem")).toHaveTextContent(/^This period$/);
+  });
+  it("writes a change with no better side in the secondary color, without calling it better or worse", () => {
+    render(<Delta value={0.18} better="none" />);
+    const delta = screen.getByText("↑18%").parentElement?.parentElement;
+    expect(delta).toHaveClass("text-fg-secondary");
+    expect(delta).toHaveTextContent(/^↑18%$/);
+  });
+  it("lets a total's change and its note wrap instead of cutting the note short", () => {
+    render(<MetricTabs aria-label="Metric to chart" items={tabs} value="requests" onValueChange={() => {}} />);
+    const note = screen.getByText("vs. prior 30 days");
+    expect(note).not.toHaveClass("truncate");
+    expect(note.parentElement).toHaveClass("flex-wrap", "min-h-20");
   });
   it("writes no change in the secondary color and says nothing about better or worse", () => {
     render(<Delta value={0} />);

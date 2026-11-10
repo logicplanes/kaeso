@@ -1,0 +1,181 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/0.1.2-preview/CreateUIDefinition.MultiVm.json#",
+  "handler": "Microsoft.Azure.CreateUIDef",
+  "version": "0.1.2-preview",
+  "parameters": {
+    "config": {
+      "isWizard": false,
+      "basics": {
+        "description": "Kaeso on one virtual machine: the Compose package with Caddy, PostgreSQL, ClickHouse, Valkey and the updater, installed at first boot. [Docs](https://docs.kaeso.app/self-hosting/platforms/azure)",
+        "location": {
+          "label": "Region",
+          "toolTip": "Where the server runs.",
+          "resourceTypes": ["Microsoft.Compute/virtualMachines"]
+        }
+      }
+    },
+    "basics": [
+      {
+        "name": "domain",
+        "type": "Microsoft.Common.TextBox",
+        "label": "Domain",
+        "defaultValue": "",
+        "toolTip": "The domain Kaeso answers on, such as kaeso.example.com; point its CNAME record at the fqdn output. Empty uses the address Azure gives the server, under cloudapp.azure.com.",
+        "constraints": {
+          "required": false,
+          "regex": "^$|^(?=.{4,253}$)[a-z0-9]([a-z0-9-]*[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$",
+          "validationMessage": "A lowercase domain, such as kaeso.example.com, or empty."
+        }
+      },
+      {
+        "name": "dnsLabel",
+        "type": "Microsoft.Common.TextBox",
+        "label": "DNS name",
+        "defaultValue": "",
+        "toolTip": "The server's name under <region>.cloudapp.azure.com, unique in the region. Empty makes one from the resource group.",
+        "constraints": {
+          "required": false,
+          "regex": "^$|^[a-z][a-z0-9-]{1,61}[a-z0-9]$",
+          "validationMessage": "3 to 63 lowercase letters, digits and hyphens, starting with a letter, or empty."
+        }
+      },
+      {
+        "name": "kaesoVersion",
+        "type": "Microsoft.Common.TextBox",
+        "label": "Kaeso version",
+        "defaultValue": "",
+        "toolTip": "The Kaeso release to install, as major.minor.patch; empty installs the newest stable release.",
+        "constraints": {
+          "required": false,
+          "regex": "^$|^(?=.{5,64}$)[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.-]+)?$",
+          "validationMessage": "A release as major.minor.patch, or empty."
+        }
+      }
+    ],
+    "steps": [
+      {
+        "name": "server",
+        "label": "Server",
+        "elements": [
+          {
+            "name": "vmSize",
+            "type": "Microsoft.Compute.SizeSelector",
+            "label": "Size",
+            "toolTip": "An x64 size with at least 2 vCPUs and 4 GB of memory.",
+            "recommendedSizes": ["Standard_B2als_v2", "Standard_B2as_v2", "Standard_D2as_v5"],
+            "constraints": {
+              "allowedSizes": [
+                "Standard_B2als_v2",
+                "Standard_B2as_v2",
+                "Standard_B4as_v2",
+                "Standard_D2as_v5",
+                "Standard_D4as_v5",
+                "Standard_D2s_v5",
+                "Standard_D4s_v5"
+              ]
+            },
+            "osPlatform": "Linux",
+            "imageReference": {
+              "publisher": "Canonical",
+              "offer": "ubuntu-24_04-lts",
+              "sku": "server"
+            },
+            "count": 1
+          },
+          {
+            "name": "diskSizeGb",
+            "type": "Microsoft.Common.Slider",
+            "label": "Disk size",
+            "subLabel": "GB",
+            "toolTip": "OS disk in GB; request logs grow it.",
+            "min": 30,
+            "max": 2048,
+            "defaultValue": 40,
+            "showStepMarkers": false,
+            "constraints": {
+              "required": true
+            }
+          },
+          {
+            "name": "diskType",
+            "type": "Microsoft.Common.DropDown",
+            "label": "Disk type",
+            "toolTip": "The OS disk's kind.",
+            "defaultValue": "Standard SSD",
+            "constraints": {
+              "allowedValues": [
+                {
+                  "label": "Standard SSD",
+                  "value": "StandardSSD_LRS"
+                },
+                {
+                  "label": "Premium SSD",
+                  "value": "Premium_LRS"
+                }
+              ],
+              "required": true
+            }
+          },
+          {
+            "name": "adminUsername",
+            "type": "Microsoft.Compute.UserNameTextBox",
+            "label": "Administrator",
+            "toolTip": "The server's administrator, for SSH and the serial console.",
+            "osPlatform": "Linux",
+            "constraints": {
+              "required": true
+            }
+          },
+          {
+            "name": "credentials",
+            "type": "Microsoft.Compute.CredentialsCombo",
+            "label": {
+              "authenticationType": "Authentication type",
+              "password": "Password",
+              "confirmPassword": "Confirm password",
+              "sshPublicKey": "SSH public key"
+            },
+            "toolTip": {
+              "authenticationType": "How the administrator signs in.",
+              "password": "The administrator's password.",
+              "sshPublicKey": "The administrator's SSH public key."
+            },
+            "constraints": {
+              "required": true
+            },
+            "options": {
+              "hideConfirmation": false,
+              "hidePassword": false
+            },
+            "osPlatform": "Linux"
+          },
+          {
+            "name": "sshSourceAddress",
+            "type": "Microsoft.Common.TextBox",
+            "label": "SSH from",
+            "defaultValue": "",
+            "toolTip": "An address range allowed to reach SSH, such as 203.0.113.0/24; empty keeps port 22 closed. The setupLink output works without SSH.",
+            "constraints": {
+              "required": false,
+              "regex": "^$|^([0-9]{1,3}\\.){3}[0-9]{1,3}(/[0-9]{1,2})?$",
+              "validationMessage": "An IPv4 address or range, such as 203.0.113.0/24, or empty."
+            }
+          }
+        ]
+      }
+    ],
+    "outputs": {
+      "location": "[location()]",
+      "domain": "[basics('domain')]",
+      "dnsLabel": "[basics('dnsLabel')]",
+      "kaesoVersion": "[basics('kaesoVersion')]",
+      "vmSize": "[steps('server').vmSize]",
+      "diskSizeGb": "[steps('server').diskSizeGb]",
+      "diskType": "[steps('server').diskType]",
+      "adminUsername": "[steps('server').adminUsername]",
+      "authenticationType": "[steps('server').credentials.authenticationType]",
+      "adminPasswordOrKey": "[coalesce(steps('server').credentials.password, steps('server').credentials.sshPublicKey)]",
+      "sshSourceAddress": "[steps('server').sshSourceAddress]"
+    }
+  }
+}

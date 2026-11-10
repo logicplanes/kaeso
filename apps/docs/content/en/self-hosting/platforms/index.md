@@ -1,10 +1,10 @@
 ---
 title: Managed platforms
-description: Run Kaeso on Render, Railway, DigitalOcean, AWS or Google Cloud with the templates in the repository.
+description: Run Kaeso on Render, Railway, DigitalOcean, Fly.io, AWS, Azure, Google Cloud, Coolify, Dokploy or CapRover from the repository's templates.
 order: 12
 ---
 
-The Compose package runs Kaeso on one server you manage. The templates in the repository run the same release on a managed platform instead, where the platform terminates TLS, keeps the databases and rolls out new versions.
+The Compose package runs Kaeso on one server you manage. The templates in the repository run the same release on a managed platform instead, where the platform terminates TLS, keeps the databases and rolls out new versions. Others run it on a platform such as Coolify on your own server.
 
 ```mermaid
 flowchart LR
@@ -27,21 +27,22 @@ flowchart LR
   gateway -- HTTPS --> providers
 ```
 
-## Two kinds of path
+## Four kinds of path
 
 | Path | What it is | Where |
 | --- | --- | --- |
-| Platform template | One file the platform reads, with a public edge, a private gateway and console, and the platform's PostgreSQL and Valkey | [Render](render.md), [Railway](railway.md), [DigitalOcean](digitalocean.md) |
-| Quick server | One virtual machine with the Compose package, Caddy, bundled ClickHouse and the updater, as on your own server | [AWS](aws.md), [Google Cloud](gcp.md) |
+| Platform template | Files the platform reads, with a public edge, a private gateway and console, and PostgreSQL and Valkey on the platform | [Render](render.md), [Railway](railway.md), [DigitalOcean](digitalocean.md), [Fly.io](fly.md) |
+| Quick server | One virtual machine with the Compose package, Caddy, bundled ClickHouse and the updater, as on your own server | [AWS](aws.md), [Azure](azure.md), [Google Cloud](gcp.md) |
 | Managed production | The platform's containers, load balancer, PostgreSQL and Valkey, with secrets in its secret store | [AWS](aws.md), [Google Cloud](gcp.md) |
+| Self-hosted platform | A Compose file or one-click app for a platform on your own server, with a public edge behind its proxy and the Compose package's PostgreSQL, ClickHouse and Valkey | [Coolify](coolify.md), [Dokploy](dokploy.md), [CapRover](caprover.md) |
 
-AWS and Google Cloud are not one click: you choose a region, a domain and its certificate, the sizes of the data stores, where request logs go, an SMTP server and where the master key lives.
+The managed stacks on AWS and Google Cloud are not one click: you choose a region, a domain and its certificate, the sizes of the data stores, where request logs go, an SMTP server and where the master key lives. Fly.io takes a few commands, since it has no button for a project of several apps.
 
 ## What every path keeps
 
-- **One origin.** The console and the APIs answer on one domain. `/v1/*`, `/v1beta/*`, `/v2/*`, `/platform/*`, `/mcp`, `/mcp/*`, `/oauth/*` and `/.well-known/oauth-*` reach the gateway; every other path reaches the console. On Render and Railway, `kaeso-edge`, a second command in the console image, does this; on DigitalOcean, the app's ingress rules; on AWS and Google Cloud, the load balancer's path rules.
+- **One origin.** The console and the APIs answer on one domain. `/v1/*`, `/v1beta/*`, `/v2/*`, `/platform/*`, `/mcp`, `/mcp/*`, `/oauth/*` and `/.well-known/oauth-*` reach the gateway; every other path reaches the console. On Render, Railway, Fly.io, Coolify, Dokploy and CapRover, `kaeso-edge`, a second command in the console image, does this; on DigitalOcean, the app's ingress rules; on the managed stacks of AWS and Google Cloud, the load balancer's path rules; on a quick server, Caddy.
 - **Streams stay unbuffered.** The edge flushes every chunk, and a load balancer's idle timeout is longer than the gateway's keepalive interval ([long streams](../domains-and-tls.md#long-streams)).
-- **The client address is believed only from the platform's proxy.** The edge takes `X-Forwarded-For` only from the platform's private network and sends the gateway one address; the gateway trusts the edge alone ([`KAESO_TRUSTED_PROXIES`](../configuration.md#settings)).
+- **The client address is believed only from the platform's proxy.** The edge takes the client's address only from the platform's proxy, from a header the proxy sets, and sends the gateway one address; the gateway trusts the edge alone ([`KAESO_TRUSTED_PROXIES`](../configuration.md#settings)).
 - **Health checks** use `/healthz` for the process and `/readyz` for PostgreSQL, Valkey and ClickHouse ([health and metrics](../monitoring.md)). The metrics port is never public.
 - **The updater is off.** The platform rolls a new release out and back; a release's migrations only move forward ([upgrades](../upgrades.md)).
 - **One version.** Gateway, console and edge are pinned to the same release; a release updates the templates.
@@ -50,10 +51,10 @@ AWS and Google Cloud are not one click: you choose a region, a domain and its ce
 
 | Need | How |
 | --- | --- |
-| A master key | `docker run --rm ghcr.io/logicplanes/kaeso-gateway:{{version}} master-key generate`, kept in the platform's secret store and in a password manager ([backups and master keys](../backups.md)) |
+| A master key | `docker run --rm ghcr.io/logicplanes/kaeso-gateway:{{version}} master-key generate`, kept in the platform's secret store and in a password manager; Coolify and Dokploy generate it, and you copy it into a password manager ([backups and master keys](../backups.md)) |
 | Email | An SMTP server; `KAESO_MAIL_TRANSPORT=log` only for trying Kaeso ([email](../email.md)) |
-| The first user | `KAESO_SETUP_EMAIL`: the gateway emails the one-time setup link at every start until the first user exists, since the gateway image has no shell for `kaeso setup-link` ([configuration](../configuration.md#settings)) |
-| Request logs | An external ClickHouse, such as ClickHouse Cloud, in `KAESO_CLICKHOUSE_URL`; without it, request logs are off and usage, limits and budgets work the same ([choose how to keep request logs](../installation.md#choose-how-to-keep-request-logs)) |
+| The first user | `KAESO_SETUP_EMAIL`: the gateway emails the one-time setup link at every start until the first user exists, since the gateway image has no shell for `kaeso setup-link`; on Coolify, Dokploy and CapRover, `docker exec` on the server also runs it ([configuration](../configuration.md#settings)) |
+| Request logs | An external ClickHouse, such as ClickHouse Cloud, in `KAESO_CLICKHOUSE_URL`; without it, request logs are off and usage, limits and budgets work the same; Coolify, Dokploy and CapRover run ClickHouse beside Kaeso ([choose how to keep request logs](../installation.md#choose-how-to-keep-request-logs)) |
 | A public address | `KAESO_PUBLIC_URL`, the `https` address people and apps use |
 
 ## What was validated
@@ -72,11 +73,20 @@ The Render Blueprint was created from an empty Render project in Frankfurt on th
 | AWS and Google Cloud managed stacks | Linted and formatted by CI; not deployed in this pass |
 | Railway | The file and the button's template each deployed to an empty project on 2026-11-09, with setup and sign-in through the edge; email delivery and streaming not tested |
 | DigitalOcean | Not deployed; App Platform's validation and proposal API accepted the button's spec on 2026-11-09 |
+| Fly.io | Not deployed; the files pass the SchemaStore schema for `fly.toml` |
+| Azure quick server | Not deployed; the template passes the ARM template test toolkit |
+| Coolify, Dokploy | Not deployed on the platforms; both files ran locally with Docker on 2026-11-09, with healthy services, path routing and the setup link |
+| CapRover | Not deployed; the template parses and uses only fields CapRover reads |
 
 ## Next steps
 
 - [Render](render.md): Deploy the blueprint with Render Postgres and Key Value.
 - [Railway](railway.md): Deploy with the button, or apply the infrastructure file with the Railway CLI.
 - [DigitalOcean](digitalocean.md): Deploy with the button, or create the app with a managed Valkey with `doctl`.
+- [Fly.io](fly.md): Deploy four apps on the private network with `fly`, and Fly Managed Postgres.
 - [AWS](aws.md): Launch one EC2 server, or ECS Fargate with an Application Load Balancer, RDS and ElastiCache.
+- [Azure](azure.md): Launch one virtual machine from the Deploy to Azure button or the Azure CLI.
 - [Google Cloud](gcp.md): Launch one Compute Engine server, or Cloud Run with a load balancer, Cloud SQL and Memorystore.
+- [Coolify](coolify.md): Deploy the Compose file with Coolify's proxy and generated passwords.
+- [Dokploy](dokploy.md): Import the template with Traefik and generated passwords.
+- [CapRover](caprover.md): Deploy the one-click app from the template.

@@ -51,6 +51,11 @@ pub(crate) fn log_store(state: &AppState) -> ApiResult<&ClickHouse> {
 pub struct OrgLogSettings {
     #[doc = "Whether request and reply bodies are logged."]
     pub content_logging: bool,
+    #[doc = "Whether logged content keeps its images, audio, video and files, up to\n\
+        `media_bytes_per_request` a request. Off, each is logged as its media type and size."]
+    pub keep_media: bool,
+    #[doc = "The most media one request's log keeps, in bytes."]
+    pub media_bytes_per_request: u64,
     #[doc = "Days metadata is kept."]
     pub metadata_retention_days: i32,
     #[doc = "Days content is kept (never longer than metadata)."]
@@ -65,6 +70,8 @@ async fn org_settings(state: &AppState, org: &orgs::Org) -> ApiResult<OrgLogSett
     let i = instance::get(&state.pg).await?;
     Ok(OrgLogSettings {
         content_logging: org.content_logging,
+        keep_media: org.keep_media,
+        media_bytes_per_request: crate::services::log_media::KEPT_PER_REQUEST,
         metadata_retention_days: org.metadata_retention_days,
         content_retention_days: org.content_retention_days,
         max_metadata_retention_days: i.max_metadata_retention_days,
@@ -94,6 +101,8 @@ pub async fn get_org_settings(
 pub struct OrgLogSettingsUpdate {
     #[doc = "Log request and reply bodies."]
     pub content_logging: Option<bool>,
+    #[doc = "Keep the media of logged content."]
+    pub keep_media: Option<bool>,
     #[doc = "Days to keep metadata."]
     pub metadata_retention_days: Option<i32>,
     #[doc = "Days to keep content."]
@@ -117,8 +126,8 @@ async fn forget_org(state: &AppState, org: Uuid) -> ApiResult<()> {
 #[utoipa::path(
     patch,
     path = "/orgs/{org}/logs/settings",
-    summary = "Changes retention or content logging. A shorter retention removes older\n\
-    rows in the background; a longer one applies to new rows.",
+    summary = "Changes retention, content logging or whether media is kept. A shorter\n\
+    retention removes older rows in the background; a longer one applies to new rows.",
     tag = "logs",
     params(("org" = OrgId, Path)),
     request_body = OrgLogSettingsUpdate,
@@ -136,6 +145,9 @@ pub async fn update_org_settings(
     let mut org = before.clone();
     if let Some(c) = req.content_logging {
         org.content_logging = c;
+    }
+    if let Some(k) = req.keep_media {
+        org.keep_media = k;
     }
     if let Some(d) = req.metadata_retention_days {
         org.metadata_retention_days = d;
@@ -170,6 +182,9 @@ pub async fn update_org_settings(
     let now = ctx.now;
     let (kind, by) = creator_of(&ctx);
     orgs::update(&mut *tx, &org).await?;
+    if org.keep_media != before.keep_media {
+        orgs::set_keep_media(&mut *tx, org.id, org.keep_media).await?;
+    }
     let epoch = OffsetDateTime::UNIX_EPOCH;
     if org.metadata_retention_days < before.metadata_retention_days {
         let cut = now - time::Duration::days(i64::from(org.metadata_retention_days));
@@ -206,8 +221,8 @@ pub async fn update_org_settings(
         .await?;
     }
     ctx.audit(Some(ctx.org()?.id()), Action::LogsSettingsUpdate)
-        .before(serde_json::json!({ "content_logging": before.content_logging, "metadata_retention_days": before.metadata_retention_days, "content_retention_days": before.content_retention_days }))
-        .after(serde_json::json!({ "content_logging": org.content_logging, "metadata_retention_days": org.metadata_retention_days, "content_retention_days": org.content_retention_days }))
+        .before(serde_json::json!({ "content_logging": before.content_logging, "keep_media": before.keep_media, "metadata_retention_days": before.metadata_retention_days, "content_retention_days": before.content_retention_days }))
+        .after(serde_json::json!({ "content_logging": org.content_logging, "keep_media": org.keep_media, "metadata_retention_days": org.metadata_retention_days, "content_retention_days": org.content_retention_days }))
         .write(&mut tx)
         .await?;
     tx.commit().await?;
@@ -222,6 +237,20 @@ pub struct ProjectLogSettings {
     pub content_logging: bool,
     #[doc = "Whether content is logged: the org's and the project's switch are both on."]
     pub effective_content_logging: bool,
+    #[doc = "The project's own switch for keeping the media of logged content."]
+    pub keep_media: bool,
+    #[doc = "Whether media is kept: content is logged, and the org and the project both keep media."]
+    pub effective_keep_media: bool,
+}
+
+fn project_settings(p: &projects::Project, org: &orgs::Org) -> ProjectLogSettings {
+    let content = p.content_logging && org.content_logging;
+    ProjectLogSettings {
+        content_logging: p.content_logging,
+        effective_content_logging: content,
+        keep_media: p.keep_media,
+        effective_keep_media: content && p.keep_media && org.keep_media,
+    }
 }
 
 #[utoipa::path(
@@ -236,26 +265,27 @@ pub async fn get_project_settings(
     ctx: Ctx,
     Path(_p): Path<(String, String)>,
 ) -> ApiResult<Json<ProjectLogSettings>> {
-    let p = &ctx.project()?.project;
-    Ok(Json(ProjectLogSettings {
-        content_logging: p.content_logging,
-        effective_content_logging: p.content_logging && ctx.org()?.org.content_logging,
-    }))
+    Ok(Json(project_settings(
+        &ctx.project()?.project,
+        &ctx.org()?.org,
+    )))
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
 #[serde(deny_unknown_fields)]
-#[schema(description = "A project content switch.")]
+#[schema(description = "A project's content switches; one left out stays as it is.")]
 pub struct ProjectLogSettingsUpdate {
     #[doc = "Log request and reply bodies in this project (only when the org does)."]
-    pub content_logging: bool,
+    pub content_logging: Option<bool>,
+    #[doc = "Keep the media of this project's logged content (only when the org does)."]
+    pub keep_media: Option<bool>,
 }
 
 #[utoipa::path(
     patch,
     path = "/orgs/{org}/projects/{project}/logs/settings",
-    summary = "Switches content logging for the project. It cannot be switched on while\n\
-    the org has it off.",
+    summary = "Switches content logging, or keeping media, for the project. Neither can be\n\
+    switched on while the org has it off.",
     tag = "logs",
     params(("org" = OrgId, Path), ("project" = ProjectId, Path)),
     request_body = ProjectLogSettingsUpdate,
@@ -267,17 +297,21 @@ pub async fn update_project_settings(
     Path(_p): Path<(String, String)>,
     JsonBody(req): JsonBody<ProjectLogSettingsUpdate>,
 ) -> ApiResult<Json<ProjectLogSettings>> {
+    let switching_on = req.content_logging == Some(true) || req.keep_media == Some(true);
     let mut tx = state.pg.begin().await?;
-    let org_on = if req.content_logging {
-        crate::platform::orgs::org::lock_changeable(&mut tx, &ctx)
-            .await?
-            .content_logging
+    let org = if switching_on {
+        crate::platform::orgs::org::lock_changeable(&mut tx, &ctx).await?
     } else {
-        ctx.org()?.org.content_logging
+        ctx.org()?.org.clone()
     };
-    if req.content_logging && !org_on {
+    if req.content_logging == Some(true) && !org.content_logging {
         return Err(ApiError::Conflict(
             "The org has content logging off; a project cannot switch it on.".into(),
+        ));
+    }
+    if req.keep_media == Some(true) && !org.keep_media {
+        return Err(ApiError::Conflict(
+            "The org doesn't keep media; a project cannot switch it on.".into(),
         ));
     }
     let scope = &ctx.project()?.project;
@@ -289,21 +323,30 @@ pub async fn update_project_settings(
             crate::platform::projects::ARCHIVED.to_owned(),
         ));
     }
-    let before = p.content_logging;
-    p.content_logging = req.content_logging;
-    projects::update(&mut *tx, &p).await?;
-    ctx.audit(Some(ctx.org()?.id()), Action::LogsProjectContentLogging)
-        .target("project", ProjectId::from_uuid(p.id))
-        .before(serde_json::json!({ "content_logging": before }))
-        .after(serde_json::json!({ "content_logging": p.content_logging }))
-        .write(&mut tx)
-        .await?;
+    let before = p.clone();
+    if let Some(c) = req.content_logging.filter(|c| *c != before.content_logging) {
+        p.content_logging = c;
+        projects::update(&mut *tx, &p).await?;
+        ctx.audit(Some(ctx.org()?.id()), Action::LogsProjectContentLogging)
+            .target("project", ProjectId::from_uuid(p.id))
+            .before(serde_json::json!({ "content_logging": before.content_logging }))
+            .after(serde_json::json!({ "content_logging": p.content_logging }))
+            .write(&mut tx)
+            .await?;
+    }
+    if let Some(k) = req.keep_media.filter(|k| *k != before.keep_media) {
+        p.keep_media = k;
+        projects::set_keep_media(&mut *tx, p.org_id, p.id, k).await?;
+        ctx.audit(Some(ctx.org()?.id()), Action::LogsProjectKeepMedia)
+            .target("project", ProjectId::from_uuid(p.id))
+            .before(serde_json::json!({ "keep_media": before.keep_media }))
+            .after(serde_json::json!({ "keep_media": p.keep_media }))
+            .write(&mut tx)
+            .await?;
+    }
     tx.commit().await?;
     forget(&state, p.id).await;
-    Ok(Json(ProjectLogSettings {
-        content_logging: p.content_logging,
-        effective_content_logging: p.content_logging && org_on,
-    }))
+    Ok(Json(project_settings(&p, &org)))
 }
 
 #[derive(Clone, Debug, Serialize, ToSchema)]
@@ -956,8 +999,8 @@ pub struct StreamProgressView {
     #[doc = "Time from the request's arrival to the first reply bytes written to\n\
         the app, in milliseconds; `null` when none were."]
     pub first_byte_ms: Option<u32>,
-    #[doc = "Keepalives the gateway wrote because the app had seen nothing for the\n\
-        keepalive interval."]
+    #[doc = "Keepalives the gateway wrote: after the keepalive interval without\n\
+        output, and in place of what it held back or the app's format can't show."]
     pub keepalives: u32,
     #[doc = "Kaeso's time decoding the provider's events and encoding them for the\n\
         app, in microseconds, without the waits for the provider or the app;\n\
@@ -1180,7 +1223,7 @@ enum Cell {
     Number(String),
 }
 
-fn csv_text(s: &str) -> String {
+pub(crate) fn csv_text(s: &str) -> String {
     let mut out = String::with_capacity(s.len() + 4);
     out.push('"');
     if s.starts_with(FORMULA_STARTS) || s.contains(SPLIT_ON) {

@@ -28,6 +28,7 @@ pub struct Unsubscribe {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Export {
     Logs,
+    ToolCalls,
     AuditLog,
 }
 
@@ -767,6 +768,7 @@ impl Fact<'_> {
             Fact::ExportReady(e) => {
                 let what = match e {
                     Export::Logs => "request logs",
+                    Export::ToolCalls => "tool calls",
                     Export::AuditLog => "audit log",
                 };
                 w(
@@ -1098,6 +1100,7 @@ impl Fact<'_> {
             Fact::ExportReady(e) => {
                 let what = match e {
                     Export::Logs => "der Anfrageprotokolle",
+                    Export::ToolCalls => "der Tool-Aufrufe",
                     Export::AuditLog => "des Audit-Logs",
                 };
                 w(
@@ -1451,6 +1454,7 @@ impl Fact<'_> {
             Fact::ExportReady(e) => {
                 let what = match e {
                     Export::Logs => "请求日志",
+                    Export::ToolCalls => "工具调用",
                     Export::AuditLog => "审计日志",
                 };
                 w(

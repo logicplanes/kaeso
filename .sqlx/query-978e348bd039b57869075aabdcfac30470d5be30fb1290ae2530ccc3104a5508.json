@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, name, state, deletion_due_at, content_logging, metadata_retention_days, content_retention_days, require_2fa, require_sso, max_key_lifetime_days, sso_default_preset, sso_default_role_id, created_at, avatar FROM organizations o WHERE ($1::uuid IS NULL OR id > $1) AND ($3::text IS NULL OR name ILIKE $3) AND ($4::bool IS NULL OR EXISTS (SELECT 1 FROM org_oidc x WHERE x.org_id = o.id) = $4) ORDER BY id LIMIT $2",
+  "query": "SELECT id, name, state, deletion_due_at, content_logging, keep_media, metadata_retention_days, content_retention_days, require_2fa, require_sso, max_key_lifetime_days, sso_default_preset, sso_default_role_id, created_at, avatar FROM organizations o WHERE ($1::uuid IS NULL OR id > $1) AND ($3::text IS NULL OR name ILIKE $3) AND ($4::bool IS NULL OR EXISTS (SELECT 1 FROM org_oidc x WHERE x.org_id = o.id) = $4) ORDER BY id LIMIT $2",
   "describe": {
     "columns": [
       {
@@ -60,6 +60,17 @@
       },
       {
         "ordinal": 5,
+        "name": "keep_media",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "organizations",
+            "name": "keep_media"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
         "name": "metadata_retention_days",
         "type_info": "Int4",
         "origin": {
@@ -70,7 +81,7 @@
         }
       },
       {
-        "ordinal": 6,
+        "ordinal": 7,
         "name": "content_retention_days",
         "type_info": "Int4",
         "origin": {
@@ -81,7 +92,7 @@
         }
       },
       {
-        "ordinal": 7,
+        "ordinal": 8,
         "name": "require_2fa",
         "type_info": "Bool",
         "origin": {
@@ -92,7 +103,7 @@
         }
       },
       {
-        "ordinal": 8,
+        "ordinal": 9,
         "name": "require_sso",
         "type_info": "Bool",
         "origin": {
@@ -103,7 +114,7 @@
         }
       },
       {
-        "ordinal": 9,
+        "ordinal": 10,
         "name": "max_key_lifetime_days",
         "type_info": "Int4",
         "origin": {
@@ -114,7 +125,7 @@
         }
       },
       {
-        "ordinal": 10,
+        "ordinal": 11,
         "name": "sso_default_preset",
         "type_info": "Text",
         "origin": {
@@ -125,7 +136,7 @@
         }
       },
       {
-        "ordinal": 11,
+        "ordinal": 12,
         "name": "sso_default_role_id",
         "type_info": "Uuid",
         "origin": {
@@ -136,7 +147,7 @@
         }
       },
       {
-        "ordinal": 12,
+        "ordinal": 13,
         "name": "created_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -147,7 +158,7 @@
         }
       },
       {
-        "ordinal": 13,
+        "ordinal": 14,
         "name": "avatar",
         "type_info": "Text",
         "origin": {
@@ -176,6 +187,7 @@
       false,
       false,
       false,
+      false,
       true,
       true,
       true,
@@ -183,5 +195,5 @@
       true
     ]
   },
-  "hash": "53c7bebda9a3467165d17ac7e5ca6090952aaa689dd1c72e9bb3d1349c1e167b"
+  "hash": "978e348bd039b57869075aabdcfac30470d5be30fb1290ae2530ccc3104a5508"
 }

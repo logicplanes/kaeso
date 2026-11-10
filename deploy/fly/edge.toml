@@ -1,0 +1,36 @@
+# Kaeso's public edge on Fly.io: the console image running kaeso-edge, which sends the APIs to the gateway
+# app and every other path to the console app over the private network.
+# Docs: https://docs.kaeso.app/self-hosting/platforms/fly
+primary_region = "fra"
+
+[build]
+  image = "ghcr.io/logicplanes/kaeso-console:0.6.0-rc.8"
+
+[experimental]
+  cmd = ["kaeso-edge"]
+
+[env]
+  # Fly's proxy appends to the caller's X-Forwarded-For and sets Fly-Client-IP itself.
+  KAESO_EDGE_CLIENT_IP_HEADERS = "Fly-Client-IP"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "off"
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [http_service.concurrency]
+    type = "requests"
+    soft_limit = 500
+
+  [[http_service.checks]]
+    grace_period = "10s"
+    interval = "15s"
+    timeout = "3s"
+    method = "GET"
+    path = "/kaeso-edge/healthz"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"

@@ -1,20 +1,30 @@
 use axum::Json;
+use axum::body::Body;
 use axum::extract::State;
+use axum::http::{HeaderValue, header};
+use axum::response::Response;
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
+use bytes::Bytes;
 use kaeso_core::id::{
     ApiKeyId, McpServerId, OrgId, PortalGrantId, ProjectId, ServiceAccountId, ToolCallId, UserId,
 };
 use kaeso_core::rights::ProjectRight;
+use kaeso_store::clickhouse::ClickHouse;
 use kaeso_store::clickhouse::tool_calls::{self as store, Filter, ToolCallRow};
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
+use time::format_description::well_known::Rfc3339;
 use utoipa::{IntoParams, ToSchema};
+use uuid::Uuid;
 
 use crate::platform::access::Ctx;
+use crate::platform::audit::Action;
 use crate::platform::error::{ApiError, ApiResult};
 use crate::platform::keys::Party;
-use crate::platform::logs::{decode_cursor, log_store, parse_time, unavailable};
+use crate::platform::logs::{
+    ExportParams, csv_text, decode_cursor, log_store, parse_time, unavailable,
+};
 use crate::platform::pagination::{List, PageParams};
 use crate::platform::params::{Path, Query};
 use crate::state::AppState;
@@ -262,4 +272,212 @@ pub async fn get(
         call: view(&row),
         content,
     }))
+}
+
+const CSV_HEADER: &str = "id,started_at,tool,upstream_tool,server,caller_kind,caller_id,key_id,grant_id,client,protocol_version,source,status,error_type,error_message,duration_ms,upstream_ms,request_bytes,response_bytes,has_content\n";
+
+fn csv_line(v: &ToolCallView) -> String {
+    let text = |s: &str| csv_text(s);
+    let number = |n: Option<String>| n.unwrap_or_default();
+    let cells = [
+        text(&v.id.to_string()),
+        text(&v.started_at.format(&Rfc3339).unwrap_or_default()),
+        text(&v.tool),
+        text(&v.upstream_tool),
+        text(&v.server.to_string()),
+        text(&v.caller.kind),
+        text(v.caller.id.as_deref().unwrap_or_default()),
+        text(&v.key_id.map(|k| k.to_string()).unwrap_or_default()),
+        text(&v.grant_id.map(|g| g.to_string()).unwrap_or_default()),
+        text(&v.client),
+        text(&v.protocol_version),
+        text(&v.source),
+        text(&v.status),
+        text(&v.error_type),
+        text(&v.error_message),
+        v.duration_ms.to_string(),
+        number(v.upstream_ms.map(|n| n.to_string())),
+        v.request_bytes.to_string(),
+        v.response_bytes.to_string(),
+        v.has_content.to_string(),
+    ];
+    let mut line = cells.join(",");
+    line.push('\n');
+    line
+}
+
+const EXPORT_PAGE: i64 = 1000;
+
+struct ExportState {
+    clickhouse: ClickHouse,
+    org: Uuid,
+    project: Uuid,
+    filter: Filter,
+    after: Option<(OffsetDateTime, Uuid)>,
+    content: bool,
+    csv: bool,
+    done: bool,
+    header: bool,
+}
+
+fn export_failed(s: &mut ExportState, e: &kaeso_store::StoreError) -> std::io::Error {
+    tracing::warn!(error = %e, "tool call export stopped: ClickHouse failed");
+    s.done = true;
+    std::io::Error::other("ClickHouse failed during the export")
+}
+
+async fn next_chunk(s: &mut ExportState) -> Option<Result<Bytes, std::io::Error>> {
+    if s.done {
+        return None;
+    }
+    let rows = match store::search(
+        &s.clickhouse,
+        s.org,
+        s.project,
+        &s.filter,
+        s.after,
+        EXPORT_PAGE,
+    )
+    .await
+    {
+        Ok(rows) => rows,
+        Err(e) => return Some(Err(export_failed(s, &e))),
+    };
+    s.done = rows.len() < EXPORT_PAGE as usize;
+    s.after = rows.last().map(|r| (r.started_at, r.id));
+    let contents = if s.content {
+        let ids: Vec<Uuid> = rows
+            .iter()
+            .filter(|r| r.has_content)
+            .map(|r| r.id)
+            .collect();
+        match store::contents(&s.clickhouse, s.org, s.project, &ids).await {
+            Ok(c) => c,
+            Err(e) => return Some(Err(export_failed(s, &e))),
+        }
+    } else {
+        Vec::new()
+    };
+    let mut out = String::new();
+    if s.header {
+        out.push_str(CSV_HEADER);
+        s.header = false;
+    }
+    for r in &rows {
+        let call = view(r);
+        if s.csv {
+            out.push_str(&csv_line(&call));
+            continue;
+        }
+        let line = if s.content {
+            let content = contents
+                .iter()
+                .find(|c| c.id == r.id)
+                .map(|c| ToolCallContentView {
+                    arguments: json_or_text(&c.arguments),
+                    result: json_or_text(&c.result),
+                });
+            serde_json::to_string(&ToolCallEntryView { call, content })
+        } else {
+            serde_json::to_string(&call)
+        };
+        out.push_str(&line.unwrap_or_default());
+        out.push('\n');
+    }
+    Some(Ok(Bytes::from(out)))
+}
+
+#[utoipa::path(
+    get,
+    path = "/orgs/{org}/projects/{project}/logs/tool-calls/export",
+    summary = "Exports the tool calls matching a filter, newest first, streamed in\n\
+    batches: JSON Lines (metadata, plus arguments and results with\n\
+    `include_content=true` and `logs.content.view`) or CSV (metadata only).",
+    tag = "logs",
+    params(("org" = OrgId, Path), ("project" = ProjectId, Path), ExportParams, ToolCallFilter),
+    responses((status = 200, description = "JSON Lines or CSV.", content_type = "application/x-ndjson"))
+)]
+pub async fn export(
+    State(state): State<AppState>,
+    ctx: Ctx,
+    Path(_p): Path<(String, String)>,
+    Query(params): Query<ExportParams>,
+    Query(f): Query<ToolCallFilter>,
+) -> ApiResult<Response> {
+    let csv = match params.format.as_deref() {
+        None | Some("jsonl") => false,
+        Some("csv") => true,
+        Some(_) => return Err(ApiError::invalid("format", "Use `jsonl` or `csv`.")),
+    };
+    let scope = ctx.project()?;
+    let content = params.include_content.unwrap_or(false);
+    if content && csv {
+        return Err(ApiError::invalid(
+            "include_content",
+            "CSV exports carry metadata only.",
+        ));
+    }
+    if content && !scope.rights.contains(ProjectRight::LogsContentView) {
+        return Err(ApiError::PermissionDenied(
+            "Exporting content needs the right `logs.content.view`.".into(),
+        ));
+    }
+    let filter = f.filter()?;
+    let clickhouse = log_store(&state)?.clone();
+    let (org, project) = (scope.project.org_id, scope.project.id);
+    store::search(&clickhouse, org, project, &filter, None, 1)
+        .await
+        .map_err(unavailable)?;
+    ctx.audit(Some(ctx.org()?.id()), Action::LogsExport)
+        .target("project", ProjectId::from_uuid(project))
+        .after(serde_json::json!({
+            "kind": "tool_calls",
+            "format": if csv { "csv" } else { "jsonl" },
+            "content": content,
+        }))
+        .write(&mut *state.pg.acquire().await?)
+        .await?;
+    let start = ExportState {
+        clickhouse,
+        org,
+        project,
+        filter,
+        after: None,
+        content,
+        csv,
+        done: false,
+        header: csv,
+    };
+    let stream = futures::stream::unfold(start, |mut s| async move {
+        next_chunk(&mut s).await.map(|item| (item, s))
+    });
+    let user = ctx.user_id().ok().map(|u| u.uuid());
+    let done = async move {
+        if let Some(user) = user {
+            crate::services::notifications::system::export_finished(
+                &state,
+                org,
+                Some(project),
+                user,
+                kaeso_mail::notices::Export::ToolCalls,
+            )
+            .await;
+        }
+    };
+    let stream = crate::services::notifications::system::when_done(stream, done);
+    let mut resp = Response::new(Body::from_stream(stream));
+    let (ct, ext) = if csv {
+        ("text/csv; charset=utf-8", "csv")
+    } else {
+        ("application/x-ndjson", "jsonl")
+    };
+    resp.headers_mut()
+        .insert(header::CONTENT_TYPE, HeaderValue::from_static(ct));
+    if let Ok(v) = HeaderValue::from_str(&format!(
+        "attachment; filename=\"kaeso-tool-calls-{}.{ext}\"",
+        ProjectId::from_uuid(project)
+    )) {
+        resp.headers_mut().insert(header::CONTENT_DISPOSITION, v);
+    }
+    Ok(resp)
 }

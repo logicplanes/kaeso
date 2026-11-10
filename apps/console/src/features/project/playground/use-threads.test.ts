@@ -40,7 +40,7 @@ describe("useThreads", () => {
     const s = streamingFetch();
     fetchMock = s.fetch;
     const { result } = renderHook(() => useThreads("org_1", "proj_1", 1));
-    act(() => result.current.send("Hi", [{ column: 0, request }]));
+    act(() => result.current.send("Hi", [{ column: 0, mode: "text", files: [], request }]));
     await waitFor(() => expect(s.fetch).toHaveBeenCalled());
     const sent = s.fetch.mock.calls[0]?.[0] as Request;
     expect(sent.url).toMatch(/\/platform\/v1\/orgs\/org_1\/projects\/proj_1\/playground\/responses$/);
@@ -59,7 +59,7 @@ describe("useThreads", () => {
     const s = streamingFetch();
     fetchMock = s.fetch;
     const { result } = renderHook(() => useThreads("org_1", "proj_1", 2));
-    act(() => result.current.send("Hi", [{ column: 0, request }]));
+    act(() => result.current.send("Hi", [{ column: 0, mode: "text", files: [], request }]));
     await waitFor(() => expect(s.fetch).toHaveBeenCalled());
     const sent = s.fetch.mock.calls[0]?.[0] as Request;
     act(() => s.push(event("response.output_text.delta", { item_id: "m", delta: "Done." }) + event("response.completed", { response: {} })));
@@ -78,7 +78,7 @@ describe("useThreads", () => {
     const s = streamingFetch();
     fetchMock = s.fetch;
     const { result, unmount } = renderHook(() => useThreads("org_1", "proj_1", 1));
-    act(() => result.current.send("Hi", [{ column: 0, request }]));
+    act(() => result.current.send("Hi", [{ column: 0, mode: "text", files: [], request }]));
     await waitFor(() => expect(s.fetch).toHaveBeenCalled());
     const sent = s.fetch.mock.calls[0]?.[0] as Request;
     act(() => s.push(event("response.completed", { response: {} })));
@@ -93,7 +93,7 @@ describe("useThreads", () => {
     const s = streamingFetch();
     fetchMock = s.fetch;
     const { result } = renderHook(() => useThreads("org_1", "proj_1", 1));
-    act(() => result.current.send("Hi", [{ column: 0, request }]));
+    act(() => result.current.send("Hi", [{ column: 0, mode: "text", files: [], request }]));
     await waitFor(() => expect(s.fetch).toHaveBeenCalled());
     act(() => s.push(event("response.output_text.delta", { item_id: "m", delta: "Partial" })));
     await waitFor(() => expect(result.current.threads[0]?.turns[0]?.response.text).toBe("Partial"));
@@ -112,7 +112,7 @@ describe("useThreads", () => {
         }),
     );
     const { result } = renderHook(() => useThreads("org_1", "proj_1", 2));
-    act(() => result.current.send("Hi", [{ column: 1, request }]));
+    act(() => result.current.send("Hi", [{ column: 1, mode: "text", files: [], request }]));
     await waitFor(() => expect(result.current.threads[1]?.turns[0]?.response.status).toBe("failed"));
     expect(result.current.threads[0]?.turns).toEqual([]);
     expect(result.current.threads[1]?.turns[0]?.response).toMatchObject({ error: "Budget used up: the project's $5.00 per month.", requestId: null });
@@ -122,7 +122,7 @@ describe("useThreads", () => {
     const s = streamingFetch();
     fetchMock = s.fetch;
     const { result } = renderHook(() => useThreads("org_1", "proj_1", 1));
-    act(() => result.current.send("Hi", [{ column: 0, request }]));
+    act(() => result.current.send("Hi", [{ column: 0, mode: "text", files: [], request }]));
     await waitFor(() => expect(s.fetch).toHaveBeenCalled());
     act(() =>
       s.push(
@@ -146,14 +146,14 @@ describe("useThreads", () => {
         }),
     );
     const { result } = renderHook(() => useThreads("org_1", "proj_1", 1));
-    act(() => result.current.send("Hi", [{ column: 0, request }]));
+    act(() => result.current.send("Hi", [{ column: 0, mode: "text", files: [], request }]));
     await waitFor(() => expect(result.current.threads[0]?.turns[0]?.response.status).toBe("failed"));
     expect(result.current.threads[0]?.turns[0]?.response).toMatchObject({ error: "The gateway failed.", requestId: expect.stringMatching(/\S+/) });
 
     fetchMock = vi.fn(async () => {
       throw new TypeError("offline");
     });
-    act(() => result.current.send("Again", [{ column: 0, request }]));
+    act(() => result.current.send("Again", [{ column: 0, mode: "text", files: [], request }]));
     await waitFor(() => expect(result.current.threads[0]?.turns.at(-1)?.response.status).toBe("failed"));
     expect(result.current.threads[0]?.turns.at(-1)?.response).toMatchObject({ error: "Can't reach the gateway; try again.", requestId: null });
   });
@@ -168,7 +168,7 @@ describe("useThreads", () => {
         }),
     );
     const { result } = renderHook(() => useThreads("org_1", "proj_1", 1));
-    act(() => result.current.send("Hi", [{ column: 0, request }]));
+    act(() => result.current.send("Hi", [{ column: 0, mode: "text", files: [], request }]));
     await waitFor(() => expect(result.current.threads[0]?.turns[0]?.response.error).toBe("Etwas ist schiefgelaufen; bitte erneut versuchen."));
   });
 
@@ -184,10 +184,10 @@ describe("useThreads", () => {
       );
     });
     const { result, rerender } = renderHook(({ columns }) => useThreads("org_1", "proj_1", columns), { initialProps: { columns: 1 } });
-    act(() => result.current.retry(0, request));
-    act(() => result.current.send("Hi", [{ column: 0, request }]));
+    act(() => result.current.retry(0, { mode: "text", files: [], request }));
+    act(() => result.current.send("Hi", [{ column: 0, mode: "text", files: [], request }]));
     await waitFor(() => expect(result.current.threads[0]?.turns[0]?.response.status).toBe("failed"));
-    act(() => result.current.retry(0, request));
+    act(() => result.current.retry(0, { mode: "text", files: [], request }));
     await waitFor(() => expect(result.current.threads[0]?.turns[0]?.response.text).toBe("Yes."));
     expect(result.current.threads[0]?.turns).toHaveLength(1);
     expect(fetchMock).toHaveBeenCalledTimes(2);
@@ -217,7 +217,7 @@ describe("useThreads", () => {
     const s = streamingFetch();
     fetchMock = s.fetch;
     const { result, unmount } = renderHook(() => useThreads("org_1", "proj_1", 2));
-    act(() => result.current.send("Hi", [{ column: 0, request }]));
+    act(() => result.current.send("Hi", [{ column: 0, mode: "text", files: [], request }]));
     await waitFor(() => expect(s.fetch).toHaveBeenCalled());
     const sent = s.fetch.mock.calls[0]?.[0] as Request;
     act(() => result.current.remove(0));
@@ -225,7 +225,7 @@ describe("useThreads", () => {
 
     const t = streamingFetch();
     fetchMock = t.fetch;
-    act(() => result.current.send("Again", [{ column: 0, request }]));
+    act(() => result.current.send("Again", [{ column: 0, mode: "text", files: [], request }]));
     await waitFor(() => expect(t.fetch).toHaveBeenCalled());
     const again = t.fetch.mock.calls[0]?.[0] as Request;
     unmount();
@@ -238,7 +238,7 @@ describe("useThreads", () => {
         new Promise<Response>((_, reject) => input.signal.addEventListener("abort", () => reject(new DOMException("The request was aborted.", "AbortError")))),
     );
     const { result } = renderHook(() => useThreads("org_1", "proj_1", 1));
-    act(() => result.current.send("Hi", [{ column: 0, request }]));
+    act(() => result.current.send("Hi", [{ column: 0, mode: "text", files: [], request }]));
     await waitFor(() => expect(fetchMock).toHaveBeenCalled());
     act(() => result.current.stop());
     await waitFor(() => expect(result.current.threads[0]?.turns[0]?.response.status).toBe("stopped"));
@@ -249,7 +249,7 @@ describe("useThreads", () => {
     const s = streamingFetch();
     fetchMock = s.fetch;
     const { result } = renderHook(() => useThreads("org_1", "proj_1", 1));
-    act(() => result.current.send("Hi", [{ column: 0, request }]));
+    act(() => result.current.send("Hi", [{ column: 0, mode: "text", files: [], request }]));
     await waitFor(() => expect(s.fetch).toHaveBeenCalled());
     act(() => s.push(event("response.output_text.delta", { item_id: "m", delta: "Half" })));
     await waitFor(() => expect(result.current.threads[0]?.turns[0]?.response.text).toBe("Half"));
@@ -272,14 +272,14 @@ describe("useThreads", () => {
     const { result } = renderHook(() => useThreads("org_1", "proj_1", 2));
     act(() =>
       result.current.send("Hi", [
-        { column: 0, request: { ...request, model: "a" } },
-        { column: 1, request: { ...request, model: "b" } },
+        { column: 0, mode: "text", files: [], request: { ...request, model: "a" } },
+        { column: 1, mode: "text", files: [], request: { ...request, model: "b" } },
       ]),
     );
     await waitFor(() => expect(result.current.threads[0]?.turns[0]?.response.status).toBe("failed"));
     await waitFor(() => expect(result.current.threads[1]?.turns[0]?.response.text).toBe("From b."));
     const other = result.current.threads[1];
-    act(() => result.current.retry(0, { ...request, model: "a" }));
+    act(() => result.current.retry(0, { mode: "text", files: [], request: { ...request, model: "a" } }));
     await waitFor(() => expect(result.current.threads[0]?.turns[0]?.response.text).toBe("From a."));
     expect(result.current.threads[1]).toBe(other);
   });
@@ -289,7 +289,7 @@ describe("useThreads", () => {
     fetchMock = s.fetch;
     const onLeave = vi.fn();
     const { result, unmount } = renderHook(() => useThreads("org_1", "proj_1", 2, { onLeave }));
-    act(() => result.current.send("Hi", [{ column: 0, request }]));
+    act(() => result.current.send("Hi", [{ column: 0, mode: "text", files: [], request }]));
     await waitFor(() => expect(s.fetch).toHaveBeenCalled());
     act(() => s.push(event("response.output_text.delta", { item_id: "m", delta: "Half" })));
     await waitFor(() => expect(result.current.threads[0]?.turns[0]?.response.text).toBe("Half"));
@@ -304,7 +304,7 @@ describe("useThreads", () => {
 
     const t = streamingFetch();
     fetchMock = t.fetch;
-    act(() => result.current.send("Again", [{ column: 0, request }]));
+    act(() => result.current.send("Again", [{ column: 0, mode: "text", files: [], request }]));
     await waitFor(() => expect(t.fetch).toHaveBeenCalled());
     act(() => result.current.restore([{ key: result.current.threads[0]?.key ?? "", turns: [] }]));
     expect(result.current.threads[0]?.turns).toHaveLength(2);
@@ -324,7 +324,7 @@ describe("useThreads", () => {
     const s = streamingFetch();
     fetchMock = s.fetch;
     const { result, unmount } = renderHook(() => useThreads("org_1", "proj_1", 1));
-    act(() => result.current.send("Hi", [{ column: 0, request }]));
+    act(() => result.current.send("Hi", [{ column: 0, mode: "text", files: [], request }]));
     await waitFor(() => expect(s.fetch).toHaveBeenCalled());
     act(() => s.push(event("response.output_text.delta", { item_id: "m", delta: "Hel" })));
     await waitFor(() => expect(frames).toHaveBeenCalled());

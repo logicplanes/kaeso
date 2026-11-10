@@ -4,6 +4,7 @@ use serde::Serialize;
 pub(crate) struct Summary {
     pub(crate) count: usize,
     pub(crate) p50: Option<f64>,
+    pub(crate) p95: Option<f64>,
     pub(crate) p99: Option<f64>,
     pub(crate) p999: Option<f64>,
     pub(crate) max: Option<f64>,
@@ -16,6 +17,7 @@ impl Summary {
         Summary {
             count: sorted.len(),
             p50: percentile(&sorted, 50.0),
+            p95: percentile(&sorted, 95.0),
             p99: percentile(&sorted, 99.0),
             p999: percentile(&sorted, 99.9),
             max: sorted.last().copied(),
@@ -48,6 +50,7 @@ mod tests {
         let s = Summary::of(&values);
         assert_eq!(s.count, 1000);
         assert_eq!(s.p50, Some(500.0));
+        assert_eq!(s.p95, Some(950.0));
         assert_eq!(s.p99, Some(990.0));
         assert_eq!(s.p999, Some(999.0));
         assert_eq!(s.max, Some(1000.0));

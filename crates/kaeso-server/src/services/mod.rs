@@ -14,6 +14,7 @@ pub mod invites;
 pub mod keys;
 pub mod kpmr;
 pub mod limits;
+pub mod log_media;
 pub mod logs;
 pub mod mail_lang;
 pub mod managed;

@@ -79,6 +79,7 @@ actions! {
         LogsDelete = "logs.delete",
         LogsExport = "logs.export",
         LogsProjectContentLogging = "logs.project_content_logging",
+        LogsProjectKeepMedia = "logs.project_keep_media",
         LogsSettingsUpdate = "logs.settings_update",
         McpServerConnect = "mcp_server.connect",
         McpServerCreate = "mcp_server.create",

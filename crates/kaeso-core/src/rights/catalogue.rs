@@ -202,7 +202,7 @@ rights!(
         PlatformKeysView = "platform_keys.view", Keys, "View platform keys", false, false, false, [], "See the organization's platform keys (metadata).";
         PlatformKeysCreate = "platform_keys.create", Keys, "Create platform keys", true, true, false, [PlatformKeysView], "Create and rotate organization platform keys, which manage everything at org level.";
         PlatformKeysRevoke = "platform_keys.revoke", Keys, "Disable platform keys", false, false, false, [PlatformKeysView], "Disable, enable or archive organization platform keys.";
-        LogsSettingsManage = "logs.settings.manage", Logs, "Manage log settings", true, true, false, [], "Set log retention and switch content logging on or off for the organization.";
+        LogsSettingsManage = "logs.settings.manage", Logs, "Manage log settings", true, true, false, [], "Set log retention and switch content logging and kept media on or off for the organization.";
         LogsStorageView = "logs.storage.view", Logs, "View log storage", false, false, false, [], "See how many log entries exist and how much space they take.";
         LogsDelete = "logs.delete", Logs, "Delete logs", true, true, false, [LogsStorageView], "Delete the organization's logs for a time range.";
         UsageOrgView = "usage.org.view", UsageBilling, "View org usage", false, false, false, [], "See usage across all projects.";
@@ -246,7 +246,7 @@ rights!(
         LogsMetadataView = "logs.metadata.view", Logs, "View request logs", false, false, false, [], "See request logs: model, tokens, cost, latency, status and key.";
         LogsContentView = "logs.content.view", Logs, "View prompts and outputs", true, false, false, [LogsMetadataView], "See request and response bodies in the logs.";
         LogsExport = "logs.export", Logs, "Export logs", true, false, false, [LogsMetadataView], "Export the project's request logs.";
-        LogsContentManage = "logs.content.manage", Logs, "Switch content logging", true, false, false, [], "Switch content logging on or off for this project.";
+        LogsContentManage = "logs.content.manage", Logs, "Switch content logging", true, false, false, [], "Switch content logging and kept media on or off for this project.";
         UsageView = "usage.view", UsageCosts, "View usage", false, false, false, [], "See the project's usage.";
         CostsView = "costs.view", UsageCosts, "View costs", false, false, false, [UsageView], "See the project's costs.";
         ProjectAuditLogView = "project.audit_log.view", Audit, "View project audit log", false, false, false, [], "Read the audit log of changes in this project.";

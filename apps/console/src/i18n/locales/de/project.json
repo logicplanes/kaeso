@@ -74,7 +74,6 @@
   "project.overview.noModel": "Kein Modell",
   "project.overview.noRequests": "Keine Anfragen in diesem Zeitraum",
   "project.overview.playground": "Playground",
-  "project.overview.recentErrors": "Letzte Fehler",
   "project.overview.resets": "Wird {when} zurückgesetzt",
   "project.overview.route": "Route",
   "project.overview.routeNotRecorded": "Route nicht erfasst",
@@ -268,5 +267,11 @@
   "project.tools.allOn": "Alle einschalten",
   "project.tools.allOff": "Alle ausschalten",
   "project.tools.turnedAllOn": "{count, plural, one {# Tool} other {# Tools}} von {server} an",
-  "project.tools.turnedAllOff": "{count, plural, one {# Tool} other {# Tools}} von {server} aus"
+  "project.tools.turnedAllOff": "{count, plural, one {# Tool} other {# Tools}} von {server} aus",
+  "project.settings.mediaOn": "Medien werden ab jetzt aufbewahrt",
+  "project.settings.mediaOff": "Medien werden nicht mehr aufbewahrt",
+  "project.settings.keepMedia": "Medien aufbewahren",
+  "project.settings.mediaNeedsContent": "Medien bleiben nur, wo Anfrageinhalte protokolliert werden.",
+  "project.settings.mediaKept": "Bilder, Audio und Dateien bleiben bei den Inhalten.",
+  "project.settings.mediaLeftOut": "Von Medien bleiben nur Typ und Größe."
 }

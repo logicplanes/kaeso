@@ -21,7 +21,6 @@ use kaeso_kpp::{
     DialectId, ErrorKind, ImageSize, KppError, Reply, RequestKind, Source, StreamMode, VideoError,
     VideoJob, VideoList, VideoRequest, VideoStatus, VideoVariant,
 };
-use kaeso_store::pg::keys::KeyAuth;
 use kaeso_store::pg::videos::{self as store, VideoProgress, VideoRow};
 use kaeso_upstream::{Call, Outgoing, ResponseBody, Timeouts};
 use serde_json::{Value, json};
@@ -97,16 +96,17 @@ pub(super) fn refuse_sora(r: &VideoRequest) -> Result<(), KppError> {
 }
 
 /// The request as the log keeps it: every field, each uploaded image replaced by its media
-/// type and size, since request logs never hold media.
-pub(super) fn logged_request(r: &VideoRequest) -> Bytes {
+/// type and size.
+pub(super) fn logged_request(
+    r: &VideoRequest,
+    mut keep: crate::services::log_media::Keep,
+) -> Bytes {
     let mut kept = r.clone();
+    let mut left_out = crate::services::log_media::LeftOut::default();
     for image in &mut kept.images {
-        if let Source::Base64(b) = &image.source {
-            let bytes = b.data.len();
-            image.source = Source::text(b.media_type.clone(), format!("{bytes} bytes, not logged"));
-        }
+        left_out.fit(&mut image.source, &mut keep);
     }
-    Bytes::from(serde_json::to_vec(&kept).unwrap_or_default())
+    Bytes::from(left_out.write(&kept).unwrap_or_default())
 }
 
 fn seconds_ms(seconds: Option<u32>) -> u64 {
@@ -329,24 +329,74 @@ fn not_found(id: &str) -> KppError {
     .with_param("video_id")
 }
 
+const UNAVAILABLE: &str = "Kaeso cannot read its videos right now; try again shortly.";
+
+/// Whether a video request failed on Kaeso's own store, not at the provider.
+pub(crate) fn is_unavailable(e: &KppError) -> bool {
+    e.status == Some(503) && e.message == UNAVAILABLE
+}
+
+const EXPIRED: &str = "expired; create the video again.";
+
+/// Whether a video's files are gone at its provider.
+pub(crate) fn is_expired(e: &KppError) -> bool {
+    e.status == Some(404) && e.message.ends_with(EXPIRED)
+}
+
 fn unavailable() -> KppError {
-    error(
-        ErrorKind::ProviderError,
-        503,
-        "Kaeso cannot read its videos right now; try again shortly.",
-    )
+    error(ErrorKind::ProviderError, 503, UNAVAILABLE)
+}
+
+/// Who asks about a video: an app with its key, which sees every video of its project, or a
+/// member in the Playground, who sees only the videos they made there.
+#[derive(Clone, Debug)]
+pub(crate) struct Viewer {
+    caller: Caller,
+    playground: bool,
+}
+
+impl Viewer {
+    fn app(key: &kaeso_store::pg::keys::KeyAuth) -> Viewer {
+        Viewer {
+            caller: pipeline::key_caller(key),
+            playground: false,
+        }
+    }
+
+    pub(crate) fn member(caller: Caller) -> Viewer {
+        Viewer {
+            caller,
+            playground: true,
+        }
+    }
+
+    fn sees(&self, row: &VideoRow) -> bool {
+        if self.playground {
+            from_playground(row) && row.user_id == self.caller.user_id
+        } else {
+            !from_playground(row)
+        }
+    }
+}
+
+/// A video a member started in the Playground: no key started it, a person did. Apps never
+/// see these, and the members who didn't start them neither.
+fn from_playground(row: &VideoRow) -> bool {
+    row.api_key_id.is_none() && row.user_id.is_some()
 }
 
 // An id that isn't Kaeso's or belongs to another project is answered the same way, so ids
 // never tell whether a video exists elsewhere.
-async fn load(state: &AppState, key: &KeyAuth, id: &str) -> Result<VideoRow, KppError> {
+async fn load(state: &AppState, viewer: &Viewer, id: &str) -> Result<VideoRow, KppError> {
     let parsed: VideoId = id.parse().map_err(|_| not_found(id))?;
-    store::get(&state.pg, key.org_id, key.project_id, parsed.uuid())
+    let c = &viewer.caller;
+    store::get(&state.pg, c.org_id, c.project_id, parsed.uuid())
         .await
         .map_err(|e| {
             tracing::error!(error = %e, "cannot load a video");
             unavailable()
         })?
+        .filter(|row| viewer.sees(row))
         .ok_or_else(|| not_found(id))
 }
 
@@ -423,9 +473,9 @@ async fn remix_source(
     ip: ClientIp,
     id: &str,
 ) -> Result<RemixSource, KppError> {
-    let key = super::auth::authenticate(state, headers, ip.0).await?;
-    let asking = Asking::new(state, &key);
-    let row = refresh(&asking, load(state, &key, id).await?).await?;
+    let viewer = Viewer::app(&*super::auth::authenticate(state, headers, ip.0).await?);
+    let asking = Asking::new(state, &viewer);
+    let row = refresh(&asking, load(state, &viewer, id).await?).await?;
     if row.status != VideoStatus::Completed.as_str() {
         return Err(error(
             ErrorKind::InvalidRequest,
@@ -475,9 +525,10 @@ pub(super) async fn list(
 ) -> Response {
     let listed = async {
         let key = super::auth::authenticate(&state, &headers, ip.0).await?;
+        let viewer = Viewer::app(&key);
         let q = openai_videos::decode_list_query(uri.query().unwrap_or(""))?;
         let after = match &q.after {
-            Some(a) => Some(load(&state, &key, a).await.map_err(|_| {
+            Some(a) => Some(load(&state, &viewer, a).await.map_err(|_| {
                 error(
                     ErrorKind::NotFound,
                     404,
@@ -488,19 +539,14 @@ pub(super) async fn list(
             None => None,
         };
         let limit = q.limit();
-        let rows = store::list(
-            &state.pg,
-            key.org_id,
-            key.project_id,
+        let rows = visible(
+            &state,
+            &viewer,
             after.map(|r| r.id),
             q.order == kaeso_kpp::ListOrder::Asc,
-            i64::from(limit) + 1,
+            limit as usize + 1,
         )
-        .await
-        .map_err(|e| {
-            tracing::error!(error = %e, "cannot list videos");
-            unavailable()
-        })?;
+        .await?;
         let has_more = rows.len() > limit as usize;
         let videos = rows
             .iter()
@@ -513,6 +559,35 @@ pub(super) async fn list(
     answer(StatusCode::OK, listed)
 }
 
+// The project's videos the viewer may see, `wanted` at most, in pages until there are enough
+// or the project has no more; members' Playground videos are left out without a gap in paging.
+async fn visible(
+    state: &AppState,
+    viewer: &Viewer,
+    mut after: Option<uuid::Uuid>,
+    ascending: bool,
+    wanted: usize,
+) -> Result<Vec<VideoRow>, KppError> {
+    let c = &viewer.caller;
+    let page = i64::try_from(wanted).unwrap_or(i64::MAX);
+    let mut out = Vec::with_capacity(wanted);
+    loop {
+        let rows = store::list(&state.pg, c.org_id, c.project_id, after, ascending, page)
+            .await
+            .map_err(|e| {
+                tracing::error!(error = %e, "cannot list videos");
+                unavailable()
+            })?;
+        let full = rows.len() == wanted;
+        after = rows.last().map(|r| r.id);
+        out.extend(rows.into_iter().filter(|r| viewer.sees(r)));
+        if !full || out.len() >= wanted {
+            out.truncate(wanted);
+            return Ok(out);
+        }
+    }
+}
+
 /// `GET /v1/videos/{video_id}`: the job, after asking its provider how it stands.
 pub(super) async fn retrieve(
     State(state): State<AppState>,
@@ -522,16 +597,40 @@ pub(super) async fn retrieve(
 ) -> Response {
     let id = video_id(&uri);
     let found = async {
-        let key = super::auth::authenticate(&state, &headers, ip.0).await?;
-        let row = refresh(&Asking::new(&state, &key), load(&state, &key, &id).await?).await?;
-        dispatch::encode_response(
-            D,
-            &Reply::Video(app_view(&row, None)),
-            &kaeso_codecs::EncodeCtx::new(RequestKind::Video, StreamMode::Off),
-        )
+        let viewer = Viewer::app(&*super::auth::authenticate(&state, &headers, ip.0).await?);
+        retrieve_as(&state, &viewer, &id)
+            .await
+            .map(|(body, _)| body)
     }
     .await;
     answer(StatusCode::OK, found)
+}
+
+/// The job as OpenAI's Videos API shows it, after asking its provider how it stands.
+pub(crate) async fn retrieve_as(
+    state: &AppState,
+    viewer: &Viewer,
+    id: &str,
+) -> Result<(Vec<u8>, Option<String>), KppError> {
+    let row = refresh(&Asking::new(state, viewer), load(state, viewer, id).await?).await?;
+    let body = dispatch::encode_response(
+        D,
+        &Reply::Video(app_view(&row, None)),
+        &kaeso_codecs::EncodeCtx::new(RequestKind::Video, StreamMode::Off),
+    )?;
+    Ok((body, charged(&row)))
+}
+
+/// What the job was charged once it ended: its cost, `0` for a job that failed, or `unknown`
+/// when the model has no price for what it made; `None` while it runs.
+fn charged(row: &VideoRow) -> Option<String> {
+    row.accounted_at?;
+    Some(if row.status != VideoStatus::Completed.as_str() {
+        "0".to_owned()
+    } else {
+        row.cost
+            .map_or_else(|| "unknown".to_owned(), |c| c.normalize().to_string())
+    })
 }
 
 /// `DELETE /v1/videos/{video_id}`: deletes the job at its provider where the provider can, and
@@ -544,9 +643,22 @@ pub(super) async fn delete(
 ) -> Response {
     let id = video_id(&uri);
     let deleted = async {
-        let key = super::auth::authenticate(&state, &headers, ip.0).await?;
-        let row = load(&state, &key, &id).await?;
-        let reached = match reach(&Asking::new(&state, &key), &row).await {
+        let viewer = Viewer::app(&*super::auth::authenticate(&state, &headers, ip.0).await?);
+        delete_as(&state, &viewer, &id).await
+    }
+    .await;
+    answer(StatusCode::OK, deleted)
+}
+
+/// Deletes the job at its provider where the provider can, and forgets it.
+pub(crate) async fn delete_as(
+    state: &AppState,
+    viewer: &Viewer,
+    id: &str,
+) -> Result<Vec<u8>, KppError> {
+    {
+        let row = load(state, viewer, id).await?;
+        let reached = match reach(&Asking::new(state, viewer), &row).await {
             Err(e) if e.status == Some(429) => return Err(e),
             r => r,
         };
@@ -558,21 +670,21 @@ pub(super) async fn delete(
                 &up.ectx,
             )?
         {
-            let resp = send(&state, &up, req).await?;
+            let resp = send(state, &up, req).await?;
             if !(200..300).contains(&resp.0) && resp.0 != 404 {
                 return Err(dispatch::decode_error(up.dialect, resp.0, &resp.1, &resp.2));
             }
         }
-        store::delete(&state.pg, key.org_id, key.project_id, row.id)
+        let c = &viewer.caller;
+        store::delete(&state.pg, c.org_id, c.project_id, row.id)
             .await
             .map_err(|e| {
                 tracing::error!(error = %e, "cannot delete a video");
                 unavailable()
             })?;
+        state.caches.finished_videos.invalidate(&row.id).await;
         openai_videos::encode_deleted(&VideoId::from_uuid(row.id).to_string())
     }
-    .await;
-    answer(StatusCode::OK, deleted)
 }
 
 /// The parts of OpenAI's Videos API Kaeso doesn't route: edits, extensions and characters.
@@ -618,15 +730,15 @@ fn setup() -> KppError {
 /// against the key's request rates, since it spends the provider's quota with the org's key.
 struct Asking<'a> {
     state: &'a AppState,
-    key: &'a KeyAuth,
+    viewer: &'a Viewer,
     counted: std::sync::atomic::AtomicBool,
 }
 
 impl<'a> Asking<'a> {
-    fn new(state: &'a AppState, key: &'a KeyAuth) -> Self {
+    fn new(state: &'a AppState, viewer: &'a Viewer) -> Self {
         Asking {
             state,
-            key,
+            viewer,
             counted: std::sync::atomic::AtomicBool::new(false),
         }
     }
@@ -638,7 +750,7 @@ async fn reach(asking: &Asking<'_>, row: &VideoRow) -> Result<Reached, KppError>
         .counted
         .swap(true, std::sync::atomic::Ordering::Relaxed)
     {
-        pipeline::admit_follow_up(state, asking.key, row.catalogue_model_id).await?;
+        pipeline::admit_follow_up(state, &asking.viewer.caller, row.catalogue_model_id).await?;
     }
     let dialect: DialectId = row.dialect.parse().map_err(|_| unavailable())?;
     let provider = match kaeso_core::provider::provider(&row.provider) {
@@ -919,6 +1031,9 @@ async fn record_completion(
     });
     o.ingress = D;
     o.kind = RequestKind::Video;
+    if from_playground(row) {
+        o.source = super::hooks::Source::Playground;
+    }
     o.egress = row.dialect.parse().ok();
     match kaeso_core::provider::provider(&row.provider) {
         Some(p) => o.provider = Some(p.id),
@@ -954,23 +1069,29 @@ pub(super) async fn content(
     OriginalUri(uri): OriginalUri,
 ) -> Response {
     let id = video_id(&uri);
-    match fetch_content(&state, &headers, ip, &id, uri.query().unwrap_or("")).await {
+    let fetched = async {
+        let viewer = Viewer::app(&*super::auth::authenticate(&state, &headers, ip.0).await?);
+        content_as(&state, &viewer, &headers, &id, uri.query().unwrap_or("")).await
+    }
+    .await;
+    match fetched {
         Ok(resp) => resp,
         Err(e) => refuse(&e),
     }
 }
 
-async fn fetch_content(
+/// A file of a completed video, streamed from where its provider keeps it, with `Range`
+/// passed through.
+pub(crate) async fn content_as(
     state: &AppState,
+    viewer: &Viewer,
     headers: &HeaderMap,
-    ip: ClientIp,
     id: &str,
     query: &str,
 ) -> Result<Response, KppError> {
-    let key = super::auth::authenticate(state, headers, ip.0).await?;
     let variant = openai_videos::decode_content_query(query)?;
-    let asking = Asking::new(state, &key);
-    let row = refresh(&asking, load(state, &key, id).await?).await?;
+    let asking = Asking::new(state, viewer);
+    let row = refresh(&asking, load(state, viewer, id).await?).await?;
     if row.status != VideoStatus::Completed.as_str() {
         return Err(error(
             ErrorKind::InvalidRequest,
@@ -986,12 +1107,29 @@ async fn fetch_content(
         return Err(error(
             ErrorKind::NotFound,
             404,
-            format!("The files of `{id}` expired; create the video again."),
+            format!("The files of `{id}` {EXPIRED}"),
         )
         .with_param("video_id"));
     }
+    let finished = state.caches.finished_videos.get(&row.id).await;
+    if finished.is_some() {
+        asking
+            .counted
+            .store(true, std::sync::atomic::Ordering::Relaxed);
+    }
     let up = reach(&asking, &row).await?;
-    let job = poll(state, &up, &row).await?;
+    let job = match finished {
+        Some(job) => job,
+        None => {
+            let job = Arc::new(poll(state, &up, &row).await?);
+            state
+                .caches
+                .finished_videos
+                .insert(row.id, job.clone())
+                .await;
+            job
+        }
+    };
     let Some(output) = job.output(variant) else {
         return Err(error(
             ErrorKind::NotFound,
@@ -1242,8 +1380,16 @@ mod tests {
             ));
         r.seconds = Some(8);
         r.size = Some(ImageSize::pixels(1280, 720));
-        let logged = String::from_utf8(logged_request(&r).to_vec()).unwrap();
-        assert!(!logged.contains("AAAAAAAA") && logged.contains("6 bytes, not logged"));
+        let kept = String::from_utf8(
+            logged_request(&r, crate::services::log_media::Keep::media()).to_vec(),
+        )
+        .unwrap();
+        assert!(kept.contains("AAAAAAAA"), "{kept}");
+        let logged = String::from_utf8(
+            logged_request(&r, crate::services::log_media::Keep::nothing()).to_vec(),
+        )
+        .unwrap();
+        assert!(!logged.contains("AAAAAAAA") && logged.contains(r#""bytes":6"#));
         let units = units_of_request(&r);
         assert_eq!((units.output_videos, units.output_ms), (1, 8000));
         assert_eq!(units.resolution.as_deref(), Some("720p"));

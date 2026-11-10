@@ -7,6 +7,7 @@ pub mod members;
 pub mod model_check;
 pub mod models;
 pub mod playground;
+pub mod playground_media;
 pub mod project;
 pub mod service_accounts;
 pub mod tools;
@@ -73,6 +74,16 @@ pub fn routes(s: &Secure) -> OpenApiRouter<AppState> {
         .routes(s.route(Access::Project(R::ModelsManage), routes!(models::delete)))
         .routes(s.route(Access::Project(R::PlaygroundUse), routes!(playground::responses)))
         .routes(s.route(Access::Project(R::PlaygroundUse), routes!(playground::models)))
+        .routes(s.route(Access::Project(R::PlaygroundUse), routes!(playground_media::image_generations)))
+        .routes(s.route(Access::Project(R::PlaygroundUse), routes!(playground_media::image_edits)))
+        .routes(s.route(Access::Project(R::PlaygroundUse), routes!(playground_media::speech)))
+        .routes(s.route(Access::Project(R::PlaygroundUse), routes!(playground_media::transcriptions)))
+        .routes(s.route(Access::Project(R::PlaygroundUse), routes!(playground_media::translations)))
+        .routes(s.route(Access::Project(R::PlaygroundUse), routes!(playground_media::sound_effects)))
+        .routes(s.route(Access::Project(R::PlaygroundUse), routes!(playground_media::music)))
+        .routes(s.route(Access::Project(R::PlaygroundUse), routes!(playground_media::video_create)))
+        .routes(s.route(Access::Project(R::PlaygroundUse), routes!(playground_media::video_get, playground_media::video_delete)))
+        .routes(s.route(Access::Project(R::PlaygroundUse), routes!(playground_media::video_content)))
         .routes(s.route(Access::Project(R::ModelsView), routes!(aliases::list)))
         .routes(s.route(Access::Project(R::ModelsManage), routes!(aliases::create)))
         .routes(s.route(Access::Project(R::ModelsView), routes!(aliases::trace)))
@@ -93,6 +104,7 @@ pub fn routes(s: &Secure) -> OpenApiRouter<AppState> {
         .routes(s.route(Access::Project(R::LogsMetadataView), routes!(crate::platform::logs::list)))
         .routes(s.route(Access::Project(R::LogsExport), routes!(crate::platform::logs::export)))
         .routes(s.route(Access::Project(R::LogsMetadataView), routes!(crate::platform::logs::get)))
+        .routes(s.route(Access::Project(R::LogsExport), routes!(crate::platform::tool_logs::export)))
         .routes(s.route(Access::Project(R::LogsMetadataView), routes!(crate::platform::tool_logs::list)))
         .routes(s.route(Access::Project(R::LogsMetadataView), routes!(crate::platform::tool_logs::get)))
         .routes(s.route(Access::Project(R::UsageView), routes!(crate::platform::usage::project)))

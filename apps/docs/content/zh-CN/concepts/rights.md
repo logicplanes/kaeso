@@ -155,7 +155,7 @@ order: 4
 
 | 权限 | 名称 | 允许的操作 | 备注 |
 | --- | --- | --- | --- |
-| `logs.settings.manage` | 管理日志设置 | 设置日志保留期，并为组织开启或关闭内容日志。 | 敏感；需近期登录 |
+| `logs.settings.manage` | 管理日志设置 | 设置日志保留期，并为组织开启或关闭内容日志和媒体保留。 | 敏感；需近期登录 |
 | `logs.storage.view` | 查看日志存储 | 查看日志条目的数量及其占用的空间。 |  |
 | `logs.delete` | 删除日志 | 删除组织在某一时间范围内的日志。 | 敏感；需近期登录；需要 `logs.storage.view` |
 
@@ -246,7 +246,7 @@ order: 4
 | `logs.metadata.view` | 查看请求日志 | 查看请求日志：模型、Token、费用、延迟、状态和密钥。 |  |
 | `logs.content.view` | 查看提示词和输出 | 查看日志中的请求和响应正文。 | 敏感；需要 `logs.metadata.view` |
 | `logs.export` | 导出日志 | 导出项目的请求日志。 | 敏感；需要 `logs.metadata.view` |
-| `logs.content.manage` | 切换内容日志 | 为此项目开启或关闭内容日志。 | 敏感 |
+| `logs.content.manage` | 切换内容日志 | 为此项目开启或关闭内容日志和媒体保留。 | 敏感 |
 
 ### 用量与费用
 

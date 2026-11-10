@@ -127,7 +127,7 @@ Kaeso bills image tokens at the model's image prices from KPMR when the provider
 
 If the request leaves out the size, quality or resolution a price depends on, the lowest listed price applies. That is the provider's default. A price KPMR marks as an estimate is shown as one on the model's sheet. Spend budgets reserve each request's dearest case before it is sent.
 
-Request logs show the endpoint, such as `images/edits`, the images sent and made, and the size and quality. They never keep image bytes: an upload is logged as its fields, each image as its media type and size ([request logs](../console/request-logs.md)).
+Request logs show the endpoint, such as `images/edits`, the images sent and made, and the size and quality. Unless the organization and the project [keep media](../console/request-logs.md#media-in-requests-and-replies), an upload is logged as its fields, each image as its media type and size, and so is each image a model made.
 
 ## OpenAI's image tool in Responses
 
@@ -135,6 +135,7 @@ A Responses app can give an OpenAI model the `image_generation` tool. Kaeso pass
 
 ## Next steps
 
+- [Playground](../console/playground.md): Try an image model from the console before writing code.
 - [Model API](model-api.md): Look up every endpoint, header and model name.
 - [Request logs](../console/request-logs.md): Find an image request and what it cost.
 - [Supported providers](../concepts/supported-providers.md): See which providers Kaeso calls and how to add their keys.

@@ -17,6 +17,9 @@ pub const UNSUBSCRIBED_TTL: Duration = Duration::from_secs(2);
 pub const REFRESH_AFTER: Duration = Duration::from_secs(20);
 
 const KEY_BLOCK_TTL: Duration = Duration::from_secs(3600);
+// A player asks for a finished video in many ranges while it plays and seeks; the job's files
+// are taken from the provider's answer to the first of them for this long.
+const FINISHED_VIDEO_TTL: Duration = Duration::from_secs(60);
 
 const FLIGHT_IDLE: Duration = Duration::from_secs(60);
 
@@ -524,12 +527,27 @@ where
 
 pub struct MemoryCache<V: Send + Sync + 'static> {
     name: &'static str,
-    memory: Cache<String, Arc<V>>,
+    memory: Cache<String, Loaded<V>>,
     fallback: Cache<String, Arc<V>>,
     flights: Flights,
     valkey: Valkey,
     subscription: Arc<Subscription>,
+    refresh_after: Duration,
     dropped: Arc<AtomicU64>,
+}
+
+struct Loaded<V> {
+    value: Arc<V>,
+    at: Instant,
+}
+
+impl<V> Clone for Loaded<V> {
+    fn clone(&self) -> Self {
+        Loaded {
+            value: self.value.clone(),
+            at: self.at,
+        }
+    }
 }
 
 impl<V: Send + Sync + 'static> Clone for MemoryCache<V> {
@@ -541,6 +559,7 @@ impl<V: Send + Sync + 'static> Clone for MemoryCache<V> {
             flights: self.flights.clone(),
             valkey: self.valkey.clone(),
             subscription: self.subscription.clone(),
+            refresh_after: self.refresh_after,
             dropped: self.dropped.clone(),
         }
     }
@@ -571,17 +590,24 @@ impl<V: Send + Sync + 'static> MemoryCache<V> {
             flights: Flights::new(10_000),
             valkey,
             subscription,
+            refresh_after: REFRESH_AFTER,
             dropped: Arc::new(AtomicU64::new(0)),
         }
     }
 
-    async fn held(&self, key: &str, seen: Seen) -> Option<Arc<V>> {
-        if seen.subscribed
-            && let Some(v) = self.memory.get(key).await
-        {
-            return Some(v);
+    async fn loaded(&self, key: &str, seen: Seen) -> Option<Loaded<V>> {
+        if seen.subscribed {
+            self.memory.get(key).await
+        } else {
+            None
         }
-        self.fallback.get(key).await
+    }
+
+    async fn held(&self, key: &str, seen: Seen) -> Option<Arc<V>> {
+        match self.loaded(key, seen).await {
+            Some(l) => Some(l.value),
+            None => self.fallback.get(key).await,
+        }
     }
 
     pub async fn get_or_load<E, F, Fut>(
@@ -599,6 +625,77 @@ impl<V: Send + Sync + 'static> MemoryCache<V> {
         if let Some(v) = self.held(&key, seen).await {
             return Ok(Some(v));
         }
+        Box::pin(self.load_once(key, seen, load)).await
+    }
+
+    // Like `get_or_load`, and an entry in its last third is loaded again in the background,
+    // so a caller that keeps using it never waits for the load.
+    pub async fn get_or_refresh<E, F, Fut>(
+        &self,
+        group: &str,
+        rest: &str,
+        load: F,
+    ) -> Result<Option<Arc<V>>, E>
+    where
+        F: FnOnce() -> Fut + Send + 'static,
+        Fut: Future<Output = Result<Option<V>, E>> + Send + 'static,
+        E: std::fmt::Display + Send + 'static,
+    {
+        let key = format!("{group}:{rest}");
+        let seen = self.subscription.seen();
+        if let Some(l) = self.loaded(&key, seen).await {
+            if l.at.elapsed() >= self.refresh_after
+                && let Ok(guard) = self.flights.lane(&key).await.try_lock_owned()
+            {
+                self.refresh(key, seen, load, guard);
+            }
+            return Ok(Some(l.value));
+        }
+        if let Some(v) = self.fallback.get(&key).await {
+            return Ok(Some(v));
+        }
+        Box::pin(self.load_once(key, seen, load)).await
+    }
+
+    fn refresh<E, F, Fut>(&self, key: String, seen: Seen, load: F, guard: OwnedMutexGuard<()>)
+    where
+        F: FnOnce() -> Fut + Send + 'static,
+        Fut: Future<Output = Result<Option<V>, E>> + Send + 'static,
+        E: std::fmt::Display + Send + 'static,
+    {
+        let cache = self.clone();
+        let dropped = self.dropped.load(Ordering::Acquire);
+        tokio::spawn(async move {
+            let loaded = load().await;
+            let undisturbed =
+                cache.subscription.still(seen) && cache.dropped.load(Ordering::Acquire) == dropped;
+            match loaded {
+                Ok(Some(value)) if undisturbed => cache.remember(key, Arc::new(value)).await,
+                Ok(None) if undisturbed => cache.memory.invalidate(&key).await,
+                Ok(_) => {}
+                Err(e) => {
+                    tracing::debug!(cache = cache.name, error = %e, "cannot refresh a cache entry ahead of time; it expires as usual");
+                }
+            }
+            drop(guard);
+        });
+    }
+
+    async fn remember(&self, key: String, value: Arc<V>) {
+        let at = Instant::now();
+        self.memory.insert(key, Loaded { value, at }).await;
+    }
+
+    async fn load_once<E, F, Fut>(
+        &self,
+        key: String,
+        seen: Seen,
+        load: F,
+    ) -> Result<Option<Arc<V>>, E>
+    where
+        F: FnOnce() -> Fut,
+        Fut: Future<Output = Result<Option<V>, E>>,
+    {
         let mut flight = Some(self.flights.board(&key).await);
         if flight.as_ref().is_some_and(|f| f.waited) {
             if let Some(v) = self.held(&key, self.subscription.seen()).await {
@@ -617,7 +714,7 @@ impl<V: Send + Sync + 'static> MemoryCache<V> {
             return Ok(Some(value));
         }
         if self.subscription.still(seen) {
-            self.memory.insert(key, value.clone()).await;
+            self.remember(key, value.clone()).await;
         } else {
             self.fallback.insert(key, value.clone()).await;
         }
@@ -644,14 +741,21 @@ impl<V: Send + Sync + 'static> MemoryCache<V> {
 
     fn drop_group(&self, group: &str) {
         self.dropped.fetch_add(1, Ordering::AcqRel);
-        for cache in [&self.memory, &self.fallback] {
-            let prefix = format!("{group}:");
-            if cache
-                .invalidate_entries_if(move |k, _| k.starts_with(&prefix))
-                .is_err()
-            {
-                cache.invalidate_all();
-            }
+        let prefix = format!("{group}:");
+        let own = prefix.clone();
+        if self
+            .memory
+            .invalidate_entries_if(move |k, _| k.starts_with(&own))
+            .is_err()
+        {
+            self.memory.invalidate_all();
+        }
+        if self
+            .fallback
+            .invalidate_entries_if(move |k, _| k.starts_with(&prefix))
+            .is_err()
+        {
+            self.fallback.invalidate_all();
         }
     }
 
@@ -687,6 +791,7 @@ pub struct Caches {
     pub unknown_keys: Cache<String, ()>,
     pub key_blocks: Cache<String, time::OffsetDateTime>,
     pub time_zone: Cache<(), Arc<str>>,
+    pub finished_videos: Cache<uuid::Uuid, Arc<kaeso_kpp::VideoJob>>,
     pub refreshes: Flights,
     subscription: Arc<Subscription>,
 }
@@ -754,6 +859,10 @@ impl Caches {
                 .time_to_live(KEY_BLOCK_TTL)
                 .build(),
             time_zone: Cache::builder().max_capacity(1).time_to_live(TTL).build(),
+            finished_videos: Cache::builder()
+                .max_capacity(10_000)
+                .time_to_live(FINISHED_VIDEO_TTL)
+                .build(),
             refreshes: Flights::new(10_000),
             subscription,
         }
@@ -1118,6 +1227,100 @@ mod tests {
             })
             .await;
         assert_eq!(next, Ok(Some(Arc::new("current".to_owned()))));
+    }
+
+    fn memory_cache(subscription: &Arc<Subscription>) -> MemoryCache<String> {
+        let mut cache = MemoryCache::new("test", unreachable_valkey(), subscription.clone());
+        cache.refresh_after = Duration::ZERO;
+        cache
+    }
+
+    async fn current(cache: &MemoryCache<String>) -> Option<Arc<String>> {
+        cache.held("org:p:openai", cache.subscription.seen()).await
+    }
+
+    #[tokio::test]
+    async fn an_old_memory_entry_is_served_while_it_is_loaded_again_in_the_background() {
+        let subscription = Arc::new(Subscription::default());
+        subscription.set(true);
+        let cache = memory_cache(&subscription);
+        let loads = Arc::new(AtomicUsize::new(0));
+        let load = |loads: Arc<AtomicUsize>| {
+            move || async move {
+                let n = loads.fetch_add(1, Ordering::SeqCst) + 1;
+                Ok::<_, String>(Some(format!("v{n}")))
+            }
+        };
+        let first = cache
+            .get_or_refresh("org", "p:openai", load(loads.clone()))
+            .await;
+        assert_eq!(first, Ok(Some(Arc::new("v1".to_owned()))));
+        let served = cache
+            .get_or_refresh("org", "p:openai", load(loads.clone()))
+            .await;
+        assert_eq!(served, Ok(Some(Arc::new("v1".to_owned()))));
+        let deadline = Instant::now() + Duration::from_secs(10);
+        while current(&cache).await.as_deref() != Some(&"v2".to_owned()) {
+            assert!(Instant::now() < deadline, "the entry was not loaded again");
+            tokio::task::yield_now().await;
+        }
+        assert_eq!(loads.load(Ordering::SeqCst), 2);
+    }
+
+    #[tokio::test]
+    async fn a_fresh_memory_entry_is_not_loaded_again() {
+        let subscription = Arc::new(Subscription::default());
+        subscription.set(true);
+        let cache: MemoryCache<String> =
+            MemoryCache::new("test", unreachable_valkey(), subscription.clone());
+        let loads = Arc::new(AtomicUsize::new(0));
+        for _ in 0..3 {
+            let loads = loads.clone();
+            let served = cache
+                .get_or_refresh("org", "p:openai", move || async move {
+                    loads.fetch_add(1, Ordering::SeqCst);
+                    Ok::<_, String>(Some("v1".to_owned()))
+                })
+                .await;
+            assert_eq!(served, Ok(Some(Arc::new("v1".to_owned()))));
+        }
+        assert!(cache.flights.lane("org:p:openai").await.try_lock().is_ok());
+        assert_eq!(loads.load(Ordering::SeqCst), 1);
+    }
+
+    #[tokio::test]
+    async fn a_memory_refresh_that_overlaps_a_group_invalidation_is_dropped() {
+        let subscription = Arc::new(Subscription::default());
+        subscription.set(true);
+        let cache = memory_cache(&subscription);
+        let first = cache
+            .get_or_refresh("org", "p:openai", || async {
+                Ok::<_, String>(Some("old".to_owned()))
+            })
+            .await;
+        assert_eq!(first, Ok(Some(Arc::new("old".to_owned()))));
+        let started = Arc::new(tokio::sync::Notify::new());
+        let release = Arc::new(tokio::sync::Notify::new());
+        let refreshing = {
+            let (started, release) = (started.clone(), release.clone());
+            move || async move {
+                started.notify_one();
+                release.notified().await;
+                Ok::<_, String>(Some("read before the change".to_owned()))
+            }
+        };
+        let served = cache.get_or_refresh("org", "p:openai", refreshing).await;
+        assert_eq!(served, Ok(Some(Arc::new("old".to_owned()))));
+        started.notified().await;
+        cache.drop_group("org");
+        release.notify_one();
+        let deadline = Instant::now() + Duration::from_secs(10);
+        while cache.flights.lane("org:p:openai").await.try_lock().is_err() {
+            assert!(Instant::now() < deadline, "the refresh did not finish");
+            tokio::task::yield_now().await;
+        }
+        cache.memory.run_pending_tasks().await;
+        assert_eq!(current(&cache).await, None);
     }
 
     #[tokio::test]

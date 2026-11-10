@@ -20,4 +20,4 @@ Kaeso 以一个 Docker Compose 项目的形式运行在您的服务器上。[快
 - [健康状态和指标](monitoring.md)：检查健康状态、抓取 Prometheus 指标并阅读日志。
 - [故障排除](troubleshooting.md)：为遇到的问题找到解决方法。
 - [多个网关](scaling.md)：在 Caddy 或负载均衡器后面运行多个网关，并了解它们共享什么。
-- [托管平台](platforms/index.md)：用仓库中的模板在 Render、Railway、DigitalOcean、AWS 或 Google Cloud 上运行 Kaeso。
+- [托管平台](platforms/index.md)：用仓库中的模板在 Render、Railway、DigitalOcean、Fly.io、AWS、Azure、Google Cloud、Coolify、Dokploy 或 CapRover 上运行 Kaeso。

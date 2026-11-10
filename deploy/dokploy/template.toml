@@ -1,0 +1,31 @@
+# Dokploy's hash and base64 helpers draw from crypto random bytes; its password helper doesn't.
+[variables]
+main_domain = "${domain}"
+postgres_password = "${hash:48}"
+postgres_superuser_password = "${hash:48}"
+clickhouse_password = "${hash:48}"
+valkey_password = "${hash:48}"
+# A master key is an id and 32 random bytes in standard base64.
+master_key = "${base64:32}"
+
+[config]
+[[config.domains]]
+serviceName = "edge"
+port = 8080
+host = "${main_domain}"
+
+[config.env]
+KAESO_PUBLIC_URL = "https://${main_domain}"
+KAESO_MASTER_KEYS = "k1:${master_key}"
+POSTGRES_PASSWORD = "${postgres_password}"
+POSTGRES_SUPERUSER_PASSWORD = "${postgres_superuser_password}"
+CLICKHOUSE_PASSWORD = "${clickhouse_password}"
+VALKEY_PASSWORD = "${valkey_password}"
+KAESO_MAIL_TRANSPORT = "log"
+KAESO_SETUP_EMAIL = ""
+KAESO_SMTP_HOST = ""
+KAESO_SMTP_PORT = "587"
+KAESO_SMTP_TLS = "starttls"
+KAESO_SMTP_USER = ""
+KAESO_SMTP_PASSWORD = ""
+KAESO_SMTP_FROM = ""

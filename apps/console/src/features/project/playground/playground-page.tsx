@@ -2,26 +2,29 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { AppFrame, Button, Empty, Text, icons } from "@logicplanes/kaeso-ui";
-import { CompareGrid, Composer, ModelPicker, ParameterPanel, type ReasoningEffort } from "@logicplanes/kaeso-ui/playground";
+import { CompareGrid, Composer, ModelPicker, ParameterPanel } from "@logicplanes/kaeso-ui/playground";
 import { playgroundModelsQuery, type PlaygroundModel } from "~/api/queries/playground";
 import { useProjectRights } from "~/auth/rights";
 import { playgroundModelOption, recentModels, rememberModel } from "~/kaeso/model-options";
 import { useModelPickerProviders, useProviders } from "~/kaeso/providers";
 import { usePageCreateAction } from "~/shell/create-action";
 import { ProjectHeader } from "~/shell/project-header";
-import { modelRef, requestFor } from "./request";
+import { modelRef } from "./request";
 import { parametersOf, searchOf } from "./search";
-import { EFFORTS, MAX_COLUMNS, parseModels, validatePlaygroundSearch, type PlaygroundSearch } from "~/format/playground-search";
+import { MAX_COLUMNS, parseModels, validatePlaygroundSearch, type PlaygroundSearch } from "~/format/playground-search";
 import Thread from "./thread";
-import type { Turn } from "./responses";
+import { isLive } from "./responses";
 import { useThreads, type Thread as ThreadState } from "./use-threads";
-import { t } from "~/i18n";
+import { locale, t } from "~/i18n";
 import { common } from "~/i18n/common";
 import { readStored, writeStored } from "~/storage";
 import { PLAYGROUND_CONVERSATION, playgroundDraftKey } from "~/auth/user-data";
 import { forget, recall, remember } from "~/shell/session-memory";
 import { toast } from "~/shell/toast";
 import { patchSearch, type SearchPatch } from "~/search";
+import { acceptOf, fileId, fileRules, readFile, shown, sizeOf, type TurnFile } from "./attachments";
+import { imagesExpected, modeLabel, panelOptions, sendFor } from "./modes";
+import { canRecord, useRecorder } from "./use-recorder";
 
 const fullReason = () => t("playground.full", "Compare up to {count} models at once", { count: MAX_COLUMNS });
 
@@ -53,7 +56,8 @@ export function PlaygroundPage({ org, project, search }: { org: string; project:
   );
   const byRef = useMemo(() => new Map(chat.map((m) => [modelRef(m), m])), [chat]);
 
-  const callable = chat.filter((m) => m.provider_key && m.availability !== "unavailable");
+  // A new column starts with a chat model, so a project with media models still opens on a conversation.
+  const callable = chat.filter((m) => m.provider_key && m.availability !== "unavailable").sort((a, b) => Number(a.mode !== "text") - Number(b.mode !== "text"));
   const first = callable[0] ?? chat[0];
   const [saved] = useState(() => recall<Conversation>(conversationKey(project)));
   const linked = parseModels(search.models);
@@ -107,7 +111,7 @@ export function PlaygroundPage({ org, project, search }: { org: string; project:
   useEffect(() => {
     shownRefs.current = refs;
   });
-  const { threads, busy, send, retry, stop, add, remove, clear, restore } = useThreads(org, project, refs.length, {
+  const { threads, busy, send, retry, stop, cancel, add, remove, clear, restore } = useThreads(org, project, refs.length, {
     initial: saved && same(saved.refs, refs) ? saved.threads : undefined,
     onLeave: (left) => {
       if (left.some((x) => x.turns.length)) remember<Conversation>(conversationKey(project), { refs: shownRefs.current, threads: left });
@@ -137,15 +141,30 @@ export function PlaygroundPage({ org, project, search }: { org: string; project:
     remove(i);
     updateRefs((current) => current.filter((_, j) => j !== i));
   };
+  const [files, setFiles] = useState<TurnFile[]>([]);
+  const waiting = useMemo(() => shown(files), [files]);
+  const media = { org, project, now: () => performance.now() };
   const submit = (text: string) => {
     const sends = threads.flatMap((thread, i) => {
       const m = models[i];
-      return m ? [{ column: i, request: requestFor(m, thread.turns, text, parameters) }] : [];
+      return m ? [{ column: i, ...sendFor(media, m, thread.turns, text, files, parameters) }] : [];
     });
     send(text, sends);
     changePrompt("");
+    setFiles([]);
   };
-  const retryColumn = (i: number, m: PlaygroundModel, earlier: Turn[], last: Turn) => retry(i, requestFor(m, earlier, last.prompt, parameters));
+  const latest = useRef({ threads, models, parameters, retry, media });
+  useEffect(() => {
+    latest.current = { threads, models, parameters, retry, media };
+  });
+  const retryThread = useCallback((key: string) => {
+    const now = latest.current;
+    const i = now.threads.findIndex((x) => x.key === key);
+    const m = now.models[i];
+    const thread = now.threads[i];
+    const last = thread?.turns.at(-1);
+    if (m && thread && last) now.retry(i, sendFor(now.media, m, thread.turns.slice(0, -1), last.prompt, last.files ?? [], now.parameters));
+  }, []);
 
   const noModels = catalogue.isSuccess && chat.length === 0;
   usePageCreateAction(noModels ? null : { label: t("playground.addColumn", "Add column"), run: addColumn, disabledReason: full ? fullReason() : undefined });
@@ -171,7 +190,10 @@ export function PlaygroundPage({ org, project, search }: { org: string; project:
   };
   const options = useMemo(
     () =>
-      chat.map((m) => playgroundModelOption(m, modelRef(m), t("playground.noProviderKeyShort", "No {provider} key", { provider: providers.name(m.provider) }))),
+      chat.map((m) => {
+        const option = playgroundModelOption(m, modelRef(m), t("playground.noProviderKeyShort", "No {provider} key", { provider: providers.name(m.provider) }));
+        return option.note || m.mode === "text" ? option : { ...option, note: modeLabel(m.mode) };
+      }),
     [chat, providers],
   );
   const providerIds = useMemo(() => [...new Set(chat.map((m) => m.provider))], [chat]);
@@ -181,12 +203,63 @@ export function PlaygroundPage({ org, project, search }: { org: string; project:
   useEffect(() => {
     if (ready && window.matchMedia("(pointer: fine)").matches) composer.current?.focus();
   }, [ready]);
-  const reasoners = chosen.filter((m) => m.reasoning);
-  const efforts: ReasoningEffort[] | boolean = reasoners.length
-    ? reasoners.some((m) => m.efforts.length === 0)
-      ? true
-      : EFFORTS.filter((e) => reasoners.some((m) => m.efforts.includes(e)))
-    : false;
+  const rules = fileRules(chosen);
+  const attach = async (picked: File[], label?: string) => {
+    const sent = Math.max(0, ...threads.map((x) => sizeOf(x.turns.flatMap((turn) => turn.files ?? []))));
+    let used = sent + sizeOf(files);
+    const added: TurnFile[] = [];
+    const refused: string[] = [];
+    for (const file of picked) {
+      if (!rules.takes(file.type)) {
+        refused.push(t("playground.fileType", "{name} isn't a file these models take.", { name: file.name }));
+        continue;
+      }
+      let data: string;
+      try {
+        data = await readFile(file);
+      } catch {
+        refused.push(t("playground.fileUnreadable", "{name} couldn't be read; try it again.", { name: file.name }));
+        continue;
+      }
+      if (used + data.length > rules.maxBytes(file.type)) {
+        refused.push(t("playground.fileTooLarge", "{name} makes the conversation too large to send.", { name: file.name }));
+        continue;
+      }
+      used += data.length;
+      added.push({ id: fileId(), name: label ?? file.name, type: file.type, data, ...(label ? { filename: file.name } : {}) });
+    }
+    if (added.length) setFiles((now) => [...now, ...added]);
+    if (refused.length === 1) toast.error(refused[0]);
+    else if (refused.length > 1) toast.error(t("playground.filesRefused", "{count} files were too large or not taken.", { count: refused.length }));
+  };
+  const panel = panelOptions(chosen);
+  const modes = new Set(chosen.map((m) => m.mode));
+  const recorder = useRecorder(
+    (file) =>
+      void attach(
+        [file],
+        t("playground.recordingName", "Recording {time}", {
+          time: new Date().toLocaleTimeString(locale(), { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+        }),
+      ),
+    () => toast.error(t("playground.microphoneRefused", "The microphone isn't available; allow it in the browser.")),
+  );
+  const recordable = modes.has("transcription") && canRecord();
+  const attachLabel = rules.types.some((x) => x.startsWith("audio/"))
+    ? rules.types.length > 1
+      ? t("playground.attachFiles", "Attach files")
+      : t("playground.attachAudio", "Attach audio")
+    : rules.types.includes("application/pdf")
+      ? rules.types.length > 1
+        ? t("playground.attachImagesPdfs", "Attach images or PDFs")
+        : t("playground.attachPdfs", "Attach PDFs")
+      : t("playground.attachImages", "Attach images");
+  const placeholder =
+    modes.size === 1 && modes.has("transcription")
+      ? t("playground.promptAudio", "Attach or record audio, and add a note if it helps")
+      : refs.length > 1
+        ? t("playground.promptEvery", "Send a prompt to every model")
+        : t("playground.prompt", "Send a prompt");
 
   return (
     <>
@@ -230,6 +303,7 @@ export function PlaygroundPage({ org, project, search }: { org: string; project:
                     <CompareGrid.Column
                       key={thread?.key ?? `col${i}`}
                       label={label}
+                      followKey={lastTurn?.id}
                       header={
                         <ModelPicker
                           aria-label={common.model()}
@@ -262,7 +336,10 @@ export function PlaygroundPage({ org, project, search }: { org: string; project:
                           turns={thread.turns}
                           model={m}
                           label={label}
-                          onRetry={m && !busy ? () => retryColumn(i, m, thread.turns.slice(0, -1), lastTurn) : null}
+                          threadKey={thread.key}
+                          expected={imagesExpected(m, parameters)}
+                          onRetry={m && !isLive(lastTurn.response) ? retryThread : null}
+                          onCancel={cancel}
                         />
                       ) : empty ? (
                         i === 0 && (
@@ -291,25 +368,41 @@ export function PlaygroundPage({ org, project, search }: { org: string; project:
                   onStop={stop}
                   streaming={busy}
                   disabled={catalogue.isPending || chosen.length === 0}
-                  placeholder={refs.length > 1 ? t("playground.promptEvery", "Send a prompt to every model") : t("playground.prompt", "Send a prompt")}
+                  placeholder={placeholder}
+                  attachments={waiting}
+                  onAttach={rules.types.length ? (picked) => void attach(picked) : undefined}
+                  onRemoveAttachment={(id) => setFiles((now) => now.filter((f) => f.id !== id))}
+                  accept={acceptOf(rules)}
+                  attachLabel={attachLabel}
                   actions={
-                    <ParameterPanel
-                      value={parameters}
-                      onValueChange={setParameters}
-                      sampling={chosen.length === 0 || chosen.some((m) => m.temperature)}
-                      reasoning={efforts}
-                      side="top"
-                      align="start"
-                      trigger={
+                    <>
+                      <ParameterPanel
+                        value={parameters}
+                        onValueChange={setParameters}
+                        {...panel}
+                        side="top"
+                        align="start"
+                        trigger={
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            icon={icons.displayOptions}
+                            aria-label={t("playground.parameters", "Parameters")}
+                            disabled={noModels}
+                          />
+                        }
+                      />
+                      {recordable && (
                         <Button
                           size="sm"
                           variant="ghost"
-                          icon={icons.displayOptions}
-                          aria-label={t("playground.parameters", "Parameters")}
-                          disabled={noModels}
+                          icon={recorder.recording ? icons.stop : icons.record}
+                          aria-label={recorder.recording ? t("playground.stopRecording", "Stop recording") : t("playground.record", "Record audio")}
+                          pressed={recorder.recording}
+                          onClick={() => (recorder.recording ? recorder.stop() : void recorder.start())}
                         />
-                      }
-                    />
+                      )}
+                    </>
                   }
                 />
               </div>

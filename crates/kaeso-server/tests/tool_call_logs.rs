@@ -393,3 +393,76 @@ async fn the_playground_reads_a_tool_answer_that_arrives_as_a_stream() {
     assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
     assert_eq!(r.body["result"]["isError"], false);
 }
+
+async fn export(e: &Env, query: &str) -> (StatusCode, String, String) {
+    let resp = tower::ServiceExt::oneshot(
+        e.app.router.clone(),
+        Request::builder()
+            .uri(format!(
+                "/platform/v1{}/logs/tool-calls/export{query}",
+                e.at()
+            ))
+            .header(
+                header::COOKIE,
+                format!("__Host-kaeso_session={}", e.owner.cookie),
+            )
+            .body(Body::empty())
+            .unwrap(),
+    )
+    .await
+    .unwrap();
+    let status = resp.status();
+    let kind = resp
+        .headers()
+        .get(header::CONTENT_TYPE)
+        .map(|v| v.to_str().unwrap().to_owned())
+        .unwrap_or_default();
+    let body = http_body_util::BodyExt::collect(resp.into_body())
+        .await
+        .unwrap()
+        .to_bytes();
+    (status, kind, String::from_utf8(body.to_vec()).unwrap())
+}
+
+#[tokio::test]
+async fn tool_calls_export_as_csv_or_json_lines_with_their_arguments_and_results() {
+    let s = TestServices::start().await;
+    let mock = MockMcp::start(Options::default()).await;
+    let e = env(&s, &mock).await;
+    call(&e, "x__create_post").await;
+    e.app.clock.advance(time::Duration::seconds(1));
+    call(&e, "x__get_me").await;
+    flushed(&e).await;
+
+    let (status, kind, csv) = export(&e, "?format=csv").await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(kind, "text/csv; charset=utf-8");
+    let lines: Vec<&str> = csv.lines().collect();
+    assert_eq!(lines.len(), 3, "{csv}");
+    assert!(lines[0].starts_with("id,started_at,tool,upstream_tool,server,"));
+    assert!(lines[1].contains("\"x__get_me\"") && lines[1].contains("\"tool_off\""));
+    assert!(lines[2].contains("\"x__create_post\",\"create_post\"") && lines[2].ends_with(",true"));
+
+    let (status, kind, jsonl) = export(&e, "?include_content=true&status=ok").await;
+    assert_eq!(
+        (status, kind.as_str()),
+        (StatusCode::OK, "application/x-ndjson")
+    );
+    let rows: Vec<Value> = jsonl
+        .lines()
+        .map(|l| serde_json::from_str(l).unwrap())
+        .collect();
+    assert_eq!(rows.len(), 1);
+    assert_eq!(rows[0]["tool"], "x__create_post");
+    assert_eq!(rows[0]["content"]["arguments"], json!({ "text": "Hello" }));
+    assert_eq!(rows[0]["content"]["result"]["result"]["isError"], false);
+
+    let (_, _, plain) = export(&e, "").await;
+    let first: Value = serde_json::from_str(plain.lines().next().unwrap()).unwrap();
+    assert!(first.get("content").is_none());
+
+    let (status, _, refused) = export(&e, "?format=csv&include_content=true").await;
+    assert_eq!(status, StatusCode::BAD_REQUEST, "{refused}");
+    let (status, _, _) = export(&e, "?format=xml").await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+}
