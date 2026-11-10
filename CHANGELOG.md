@@ -200,6 +200,7 @@ Before you upgrade, read the breaking changes. The first applies to every instal
 - A key with platform access creates and rotates keys only within its own model list, expiry and Tools access, and creates none while limits apply to it; a key can still rotate itself. ([#914](https://github.com/logicplanes/kaeso/pull/914))
 - A key limited to some models no longer lists, reads, downloads, polls or deletes videos and image generations made with other models of its project. ([#915](https://github.com/logicplanes/kaeso/pull/915))
 - Pending agent sign-ins for a client are capped per network, so requests from one network no longer end other people's, and client names drop invisible and direction-changing characters. ([#916](https://github.com/logicplanes/kaeso/pull/916))
+- With Keep media off, a file a request sent where a media type belongs no longer stays in the request log inside the note that stands for it. ([#918](https://github.com/logicplanes/kaeso/pull/918))
 
 ## [0.5.6] - 2026-11-02
 
