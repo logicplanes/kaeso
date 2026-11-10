@@ -19,6 +19,42 @@ use super::errors::{Served, error, respond};
 use super::pipeline::header_list;
 use crate::state::AppState;
 
+// A job made with a model the asker may not use stays hidden from it; one whose model left the
+// catalogue is seen only by askers without a model list.
+pub(super) struct ModelAccess {
+    models: Arc<ProjectModels>,
+    caller: super::hooks::Caller,
+}
+
+impl ModelAccess {
+    pub(super) async fn of(
+        caller: &super::hooks::Caller,
+        state: &AppState,
+    ) -> Result<ModelAccess, KppError> {
+        Ok(ModelAccess {
+            models: project_models(
+                state,
+                caller.project_id,
+                caller.key_id,
+                caller.service_account_id,
+            )
+            .await?,
+            caller: caller.clone(),
+        })
+    }
+
+    pub(super) fn allows(&self, model: Option<Uuid>) -> bool {
+        let c = &self.caller;
+        let access = self
+            .models
+            .access(c.key_id, c.user_id, c.service_account_id);
+        match model {
+            Some(m) => access.allows(m),
+            None => access.member.is_none() && access.key.is_none(),
+        }
+    }
+}
+
 pub(super) async fn project_models(
     state: &AppState,
     project: Uuid,
