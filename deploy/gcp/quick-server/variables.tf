@@ -31,7 +31,7 @@ variable "domain" {
 }
 
 variable "kaeso_version" {
-  description = "The Kaeso release to install, such as 0.6.0; empty installs the newest stable release."
+  description = "The Kaeso release to install, such as 0.5.6; empty installs the newest stable release."
   type        = string
   default     = ""
 }

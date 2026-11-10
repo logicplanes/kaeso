@@ -2,13 +2,13 @@
 source: crates/kaeso-mail/src/templates.rs
 expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
 ---
-Subject: Kaeso 0.6.0 is out
+Subject: Kaeso 1.4.0 is out
 
-Kaeso 0.6.0 is out
+Kaeso 1.4.0 is out
 
 It installs by itself in the next update window.
 
-Version: 0.6.0
+Version: 1.4.0
 Running now: 0.5.6
 Installs: By itself, 9 Nov 2026, 03:00 UTC
 
@@ -23,7 +23,7 @@ Open updates:
 https://kaeso.example.com/orgs/org_1
 
 Read the release notes:
-https://github.com/logicplanes/kaeso/releases/tag/v0.6.0
+https://github.com/logicplanes/kaeso/releases/tag/v1.4.0
 
 -- 
 Sent by Kaeso at kaeso.example.com.
