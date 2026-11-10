@@ -109,3 +109,7 @@ Quellen: die Referenz [create embeddings](https://docs.tokenfactory.nebius.com/a
 ### Scaleway
 
 Quellen: die [Generative APIs reference](https://www.scaleway.com/en/developers/api/generative-apis/) von Scaleway (`CreateEmbeddingResponse`), gelesen am 2026-11-09, und `fixtures/openai_embeddings/providers/scaleway/`, daraus gebaut, mit dem live erhaltenen Fehler ohne gültigen Schlüssel. Die serverlosen Modelle sind `bge-multilingual-gemma2` und `qwen3-embedding-8b`. Antworten ergänzen `id`, `created` und `usage.completion_tokens: 0`, die in den Extras bleiben. `dimensions` nimmt nur die größte Größe eines Modells an, daher beantwortet Scaleway andere Werte selbst.
+
+### NVIDIA
+
+Quellen: die Embedding-Referenzen von NVIDIA wie [`nvidia/nv-embedqa-e5-v5`](https://docs.api.nvidia.com/nim/reference/nvidia-nv-embedqa-e5-v5-infer), gelesen am 2026-11-10, und `fixtures/openai_embeddings/providers/nvidia/`, daraus gebaut, mit dem live erhaltenen Fehler ohne gültigen Schlüssel. Zu seinen Modellen gehören `nvidia/nemotron-3.5-embed-1b` und `nvidia/nv-embedqa-e5-v5`. Anfragen nehmen `input_type`, `query` oder `passage`, das die Modelle für die Suche verlangen, und `truncate`, `NONE`, `START` oder `END`; beide bleiben in den Extras und gehen unverändert. Die Fehler von NVIDIA sind Problemdokumente, die Apps in der Form von OpenAI erhalten, mit dem Inhalt von NVIDIA in der Meldung.

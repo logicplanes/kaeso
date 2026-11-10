@@ -514,6 +514,25 @@
       "service_account": null,
       "model_routes": [],
       "server": null
+    },
+    {
+      "id": "nvidia",
+      "name": "NVIDIA",
+      "custom": false,
+      "takes_key": true,
+      "hides_built_in": null,
+      "key_page": {
+        "url": "https://build.nvidia.com/settings/api-keys",
+        "label": "API Keys"
+      },
+      "key_prefix": "nvapi-",
+      "dialects": ["openai_chat", "openai_embeddings"],
+      "count_tokens": null,
+      "embeddings": "openai_embeddings",
+      "account": null,
+      "service_account": null,
+      "model_routes": [],
+      "server": null
     }
   ],
   "has_more": false,

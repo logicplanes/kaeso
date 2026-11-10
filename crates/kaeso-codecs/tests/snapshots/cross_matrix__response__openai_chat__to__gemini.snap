@@ -2913,6 +2913,29 @@ expression: outcomes
       "totalTokenCount": 127
     }
   },
+  "providers/nvidia/reasoning": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "A GPU with cores by the score\nmade matrices multiply galore;\nit trained in a night\nwhat took weeks to get right,\nand the data scientists cheered for more."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "nvidia/nemotron-3-super-120b-a12b",
+    "responseId": "chatcmpl-3b9e4f1d2c7a4e8b",
+    "usageMetadata": {
+      "candidatesTokenCount": 64,
+      "promptTokenCount": 25,
+      "totalTokenCount": 89
+    }
+  },
   "providers/ollama-cloud/recorded-image": {
     "candidates": [
       {

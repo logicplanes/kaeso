@@ -3873,6 +3873,52 @@ expression: outcomes
     },
     "path": "/v1beta/models/nvidia%2FNemotron-3.5-Super-VL:generateContent"
   },
+  "providers/nvidia/invalid-api-key": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "hi"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1
+      }
+    },
+    "path": "/v1beta/models/nvidia%2Fnemotron-3-super-120b-a12b:generateContent"
+  },
+  "providers/nvidia/reasoning": {
+    "message": "`chat_template_kwargs` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "chat_template_kwargs"
+  },
+  "providers/nvidia/reasoning-stream": {
+    "message": "`chat_template_kwargs` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "chat_template_kwargs"
+  },
+  "providers/nvidia/retired-model": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "hi"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1
+      }
+    },
+    "path": "/v1beta/models/meta%2Fllama-3.1-8b-instruct:generateContent"
+  },
   "providers/ollama-cloud/image": {
     "body": {
       "contents": [

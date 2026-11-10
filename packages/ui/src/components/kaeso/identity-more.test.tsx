@@ -195,6 +195,7 @@ const MARKED_PROVIDERS = {
   sambanova: "SambaNova",
   scaleway: "Scaleway",
   huggingface: "Hugging Face",
+  nvidia: "NVIDIA",
   vllm: "vLLM",
   ollama: "Ollama",
   "lm-studio": "LM Studio",

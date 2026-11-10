@@ -44,6 +44,10 @@ const PROFILES: &[(&str, ChatProfile)] = &[
             .reasoning_fields(&["reasoning_content", "reasoning"]),
     ),
     (
+        "nvidia",
+        ChatProfile::compatible("NVIDIA").reasoning_fields(&["reasoning_content"]),
+    ),
+    (
         "ollama-cloud",
         ChatProfile::compatible("Ollama Cloud").reasoning_fields(&["reasoning"]),
     ),
@@ -227,6 +231,7 @@ fn a_reasoning_field_is_a_reasoning_block_before_the_answer() {
             "reasoning_content",
         ),
         ("moonshotai", "recorded-tool-result", "reasoning_content"),
+        ("nvidia", "reasoning", "reasoning_content"),
         ("ollama-cloud", "recorded-reasoning-effort", "reasoning"),
         ("ollama-cloud", "recorded-reasoning-object", "reasoning"),
         ("ollama-cloud", "recorded-reasoning-sent-back", "reasoning"),
@@ -531,6 +536,7 @@ fn streamed_reasoning_fields_are_one_reasoning_block_that_ends_before_the_answer
             "reasoning_content",
             answered,
         ),
+        ("nvidia", "reasoning-stream", "reasoning_content", answered),
         (
             "ollama-cloud",
             "recorded-reasoning-stream",

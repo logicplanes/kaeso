@@ -17,6 +17,7 @@ const providers: ProviderPickerOption[] = [
   { id: "minimax", name: "MiniMax" },
   { id: "mistral", name: "Mistral" },
   { id: "nebius", name: "Nebius Token Factory" },
+  { id: "nvidia", name: "NVIDIA" },
   { id: "moonshotai", name: "Moonshot" },
   { id: "ollama-cloud", name: "Ollama Cloud" },
   { id: "openrouter", name: "OpenRouter" },

@@ -63,6 +63,23 @@ Quellen: das [OpenAPI document](https://api.tokenfactory.nebius.com/openapi.json
 
 Nebius bietet weder Bilder, Audio, Messages noch Token-Zählungen an: Sein OpenAPI-Dokument hat keinen solchen Pfad, und `/v1/images/generations`, `/v1/audio/transcriptions` und `/v1/messages` antworten mit 404. Seine Responses API wird nicht genutzt: Responses-Apps erreichen Nebius über Chat Completions.
 
+## NVIDIA
+
+Quellen: die Referenz [LLM APIs](https://docs.api.nvidia.com/nim/reference/llm-apis) von NVIDIA und die OpenAPI-Dokumente seiner Modellseiten wie [`nvidia/nemotron-3-super-120b-a12b`](https://docs.api.nvidia.com/nim/reference/nvidia-nemotron-3-super-120b-a12b-infer), gelesen am 2026-11-10. Nicht mit einem erfolgreichen Aufruf getestet: Die Antwort und der Stream in `fixtures/openai_chat/providers/nvidia/` sind daraus gebaut, die Anfrage des Streams ist das eigene Beispiel der Referenz; die Modellliste und die Fehler kamen live, ohne gültigen Schlüssel. Kaesos Basis-URL ist `https://integrate.api.nvidia.com`, die `Authorization: Bearer` mit einem `nvapi-`-Schlüssel annimmt.
+
+| NVIDIA-Feld | KPP | Hinweise |
+|---|---|---|
+| `message.reasoning_content`, `delta.reasoning_content` | `Block::Reasoning` | Über `reasoning_fields` des Profils. |
+| `chat_template_kwargs` (`enable_thinking`, `low_effort`), `reasoning_budget` | Extras | Die eigenen Thinking-Schalter der Modelle; die einer Chat-App gehen unverändert, abgelehnt, wenn die Anfrage an einen anderen Dialekt geht. |
+| `max_completion_tokens` | `max_tokens` | Die Anfrageschemas haben nur `max_tokens` (`max_tokens()`). |
+| die Rolle `developer` | `Role::System` | Die Schemas führen `system`, `context`, `user` und `assistant`, daher sendet `system_role()` `system`. |
+| die ID eines Endnutzers | weggelassen | Die Schemas haben kein `user` oder `safety_identifier` (`without_end_user()`). |
+| Fehler als Problemdokumente nach RFC 9457 mit `status`, `title` und `detail` | `KppError` | Die Art folgt dem Status: Ein Schlüssel, den NVIDIA nicht kennt, erhält 403 (`errors/recorded-invalid-api-key`), ein ausgemustertes Modell 410 (`errors/recorded-retired-model`). |
+| eine 202 mit einem Header `NVCF-REQID` | — | Die Antwort von NVIDIA, wenn das Ergebnis noch nicht fertig ist, zum Abfragen; Kaeso fragt nicht ab. |
+| `GET /v1/models` | `ModelList` | Ohne Schlüssel beantwortet (`models/list-recorded`), daher kann eine Modellprüfung einen falschen Schlüssel nicht erkennen. |
+
+NVIDIA bietet weder Responses noch Messages oder Token-Zählungen an: `/v1/responses` und `/v1/messages/count_tokens` antworten mit 404, und `/v1/messages` antwortet für jedes Modell mit `model not found`. Seine Embedding-Modelle nehmen `input_type` und `truncate` an, die in den Extras bleiben ([OpenAI Embeddings](openai-embeddings.md#nvidia)).
+
 ## SambaNova
 
 Quellen: das [OpenAPI document](https://raw.githubusercontent.com/sambanova/sambanova-inference-api-spec/refs/heads/main/openapi.documented.json) von SambaNova (SambaNova cloud API 1.2.0) und seine Seiten [OpenAI compatibility](https://docs.sambanova.ai/docs/en/features/openai-compatibility), [Textgenerierung](https://docs.sambanova.ai/docs/en/features/text-generation) und [API error codes](https://docs.sambanova.ai/docs/en/api-reference/using-the-api/api-error-codes), gelesen am 2026-11-09. Es gab keinen Schlüssel: `fixtures/openai_chat/providers/sambanova/` enthält die Beispielantwort und den Beispiel-Stream des Dokuments und daraus gebaute Antworten, die Modellliste, wie SambaCloud sie ohne Schlüssel liefert, und Fehler, die live ohne gültigen Schlüssel kamen. Kaesos Basis-URL ist `https://api.sambanova.ai`, die `Authorization: Bearer` annimmt.

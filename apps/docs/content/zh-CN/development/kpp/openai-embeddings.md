@@ -109,3 +109,7 @@ order: 8
 ### Scaleway
 
 来源：Scaleway 的 [Generative APIs reference](https://www.scaleway.com/en/developers/api/generative-apis/)（`CreateEmbeddingResponse`，2026-11-09 阅读），以及据此构建的 `fixtures/openai_embeddings/providers/scaleway/`，其中的错误是在没有有效密钥的情况下实时返回的。无服务器模型为 `bge-multilingual-gemma2` 和 `qwen3-embedding-8b`。回复中额外的 `id`、`created` 和 `usage.completion_tokens: 0` 保留在 extras 中。`dimensions` 只接受模型的最大尺寸，其他值由 Scaleway 自行响应。
+
+### NVIDIA
+
+来源：NVIDIA 的嵌入参考，例如 [`nvidia/nv-embedqa-e5-v5`](https://docs.api.nvidia.com/nim/reference/nvidia-nv-embedqa-e5-v5-infer)（2026-11-10 阅读），以及据此构建的 `fixtures/openai_embeddings/providers/nvidia/`，其中的错误是在没有有效密钥的情况下实时返回的。它的模型包括 `nvidia/nemotron-3.5-embed-1b` 和 `nvidia/nv-embedqa-e5-v5`。请求接受 `input_type`（`query` 或 `passage`，检索模型必须提供）和 `truncate`（`NONE`、`START` 或 `END`）；两者都保留在 extras 中并按原样发送。NVIDIA 的错误是问题文档，应用会以 OpenAI 的形式收到，消息中包含 NVIDIA 的原始内容。

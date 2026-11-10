@@ -84,7 +84,7 @@ Kaeso weiß, wie die Inferenz-Server unten von dem Format abweichen, das sie spr
 | LMDeploy | Besitzer `lmdeploy` | `23333` | `--api-keys` setzt Schlüssel, `--reasoning-parser` und `--tool-call-parser` schalten Reasoning und Tools ein. |
 | LocalAI | `/version` | `8080` | `LOCALAI_API_KEY` setzt einen Schlüssel. |
 | MLX LM | nicht erkennbar | `8080` | `mlx_lm.server` bietet nur Chat Completions. |
-| NVIDIA NIM | nicht erkennbar | `8000` | Wählen Sie es von Hand. |
+| NVIDIA NIM | nicht erkennbar | `8000` | Wählen Sie es von Hand. Die gehostete API von NVIDIA ist der eingebaute Anbieter [NVIDIA](../concepts/supported-providers.md). |
 | Ollama | `/api/version` | `11434` | `OLLAMA_HOST=0.0.0.0` für andere Rechner. Ollama nimmt keinen Schlüssel, wählen Sie also **Kein Schlüssel**. Kaeso lehnt `logit_bias` ab, das Ollama ignoriert. |
 | SGLang | Besitzer `sglang` | `30000` | `--api-key` setzt einen Schlüssel, `--reasoning-parser` und `--tool-call-parser` schalten Reasoning und Tools ein. |
 | TabbyAPI | Besitzer `tabbyAPI` | `5000` | Braucht einen Schlüssel aus `api_tokens.yml`, außer `disable_auth` ist gesetzt. |

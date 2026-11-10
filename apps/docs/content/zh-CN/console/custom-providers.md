@@ -84,7 +84,7 @@ Kaeso 知道下列推理服务器与其所用格式之间的差异。指定了**
 | LMDeploy | 所有者 `lmdeploy` | `23333` | `--api-keys` 设置密钥，`--reasoning-parser` 和 `--tool-call-parser` 开启思考和工具。 |
 | LocalAI | `/version` | `8080` | `LOCALAI_API_KEY` 设置密钥。 |
 | MLX LM | 无法识别 | `8080` | `mlx_lm.server` 只提供 Chat Completions。 |
-| NVIDIA NIM | 无法识别 | `8000` | 请手动选择。 |
+| NVIDIA NIM | 无法识别 | `8000` | 请手动选择。NVIDIA 托管的 API 是内置的 [NVIDIA](../concepts/supported-providers.md) 服务商。 |
 | Ollama | `/api/version` | `11434` | `OLLAMA_HOST=0.0.0.0` 供其他机器访问。Ollama 不使用密钥，请选择**不使用密钥**。Kaeso 会拒绝 Ollama 忽略的 `logit_bias`。 |
 | SGLang | 所有者 `sglang` | `30000` | `--api-key` 设置密钥，`--reasoning-parser` 和 `--tool-call-parser` 开启思考和工具。 |
 | TabbyAPI | 所有者 `tabbyAPI` | `5000` | 除非设置了 `disable_auth`，否则需要 `api_tokens.yml` 中的密钥。 |
