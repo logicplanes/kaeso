@@ -599,6 +599,19 @@ fn a_file_where_a_type_belongs_is_found_and_never_repeated_as_the_type() {
     );
 }
 
+#[test]
+fn a_file_where_a_media_type_belongs_is_never_copied_into_its_placeholder() {
+    let png = "iVBORw0KGgoAAAANSUhEUgAAAyAAAAJYCAYAAAAAAAAAK/AAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+    let text = json!({ "media_type": png }).to_string();
+    let out = off(&text).expect("the file is left out");
+    assert_eq!(off(&out), None, "what is left holds no file: {out}");
+    let out: Value = serde_json::from_str(&out).unwrap();
+    assert_eq!(out["media_type"]["kaeso_media"]["media_type"], "image/png");
+    assert_eq!(stated(Some("iVBORw0KGgo/AAAA")), None);
+    assert_eq!(stated(Some("Image/PNG; q=1")), Some("Image/PNG"));
+    assert_eq!(stated(Some("application/vnd.api+json")), Some("application/vnd.api+json"));
+}
+
 mod property {
     use proptest::prelude::*;
 
