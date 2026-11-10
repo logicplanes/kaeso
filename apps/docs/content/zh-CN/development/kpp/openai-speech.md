@@ -68,6 +68,7 @@ Kaeso 向应用写出音频字节，媒体类型与 OpenAI 对所要求格式的
 | `OPENROUTER` | `mp3` 或 `pcm`，默认 `pcm`，没有事件 | [TTS](https://openrouter.ai/docs/guides/overview/multimodal/tts) |
 | `XAI` | `POST /v1/tts`：`text`、`voice_id`、必填的 `language`（应用未指定时为 `auto`）、`output_format {codec, sample_rate}`，没有模型 | [voice](https://docs.x.ai/developers/rest-api-reference/inference/voice) |
 | `VERCEL` | `POST /v4/ai/speech-model`，模型放在 `ai-model-id` 中，`text`、`voice`、`outputFormat`（文档只写了 `mp3`），带 base64 `audio` 的 JSON 回复 | [text to speech](https://vercel.com/docs/ai-gateway/modalities/text-to-speech) |
+| `SILICONFLOW` | 音色命名为 `<model>:<voice>`，`mp3`、`opus`、`wav` 或 `pcm`、`sample_rate`、`speed`，没有事件，没有 `instructions` | [create speech](https://docs.siliconflow.com/en/api-reference/audio/create-speech) |
 
 SpaceX 和 Vercel 的请求体不接受其他方言的字段；extras 中的字段会被拒绝。
 

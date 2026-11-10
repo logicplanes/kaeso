@@ -162,6 +162,7 @@ export const providerMark = {
   scaleway: mode("#a883dc", "#bf95f9"),
   huggingface: mode("#b49000", "#ffd21e"),
   nvidia: mode("#69a500", "#76b900"),
+  siliconflow: mode("#6e29f6", "#844bf7"),
   "vllm-yellow": mode("#c68902", "#fdb515"),
   "vllm-blue": mode("#1b98ff", "#30a2ff"),
   "llama-cpp": mode("#ff6202", "#ff8236"),

@@ -1,0 +1,6 @@
+{
+  "model": "FunAudioLLM/CosyVoice2-0.5B",
+  "input": "Can you say it with a happy emotion? <|endofprompt|>I'm so happy, Spring Festival is coming!",
+  "voice": "FunAudioLLM/CosyVoice2-0.5B:alex",
+  "response_format": "mp3"
+}

@@ -113,3 +113,7 @@ order: 8
 ### NVIDIA
 
 来源：NVIDIA 的嵌入参考，例如 [`nvidia/nv-embedqa-e5-v5`](https://docs.api.nvidia.com/nim/reference/nvidia-nv-embedqa-e5-v5-infer)（2026-11-10 阅读），以及据此构建的 `fixtures/openai_embeddings/providers/nvidia/`，其中的错误是在没有有效密钥的情况下实时返回的。它的模型包括 `nvidia/nemotron-3.5-embed-1b` 和 `nvidia/nv-embedqa-e5-v5`。请求接受 `input_type`（`query` 或 `passage`，检索模型必须提供）和 `truncate`（`NONE`、`START` 或 `END`）；两者都保留在 extras 中并按原样发送。NVIDIA 的错误是问题文档，应用会以 OpenAI 的形式收到，消息中包含 NVIDIA 的原始内容。
+
+### SiliconFlow
+
+来源：SiliconFlow 的 [create embeddings](https://docs.siliconflow.com/en/api-reference/embeddings/create-embeddings) 参考（2026-11-10 阅读），以及据此构建的 `fixtures/openai_embeddings/providers/siliconflow/`，其中的错误是在没有有效密钥的情况下实时返回的。它的模型包括 `Qwen/Qwen3-Embedding-8B`、`-4B` 和 `-0.6B` 以及 `BAAI/bge-m3`。只有 Qwen3 模型接受 `dimensions`，一个请求最多包含 32 个字符串。回复带有 `usage.completion_tokens: 0`，保留在 extras 中。SiliconFlow 的错误没有 `error` 对象；应用会以 OpenAI 的形式收到，并带有 SiliconFlow 的消息。

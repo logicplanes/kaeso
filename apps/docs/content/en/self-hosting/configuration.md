@@ -205,6 +205,7 @@ The first three settings only seed a new install. After that, instance admins ch
 | `KAESO_PROVIDERS_HUGGINGFACE_BASE_URL`<br>`providers.huggingface.base_url` | text | `https://router.huggingface.co` | Base URL of the Hugging Face API. |
 | `KAESO_PROVIDERS_NVIDIA_BASE_URL`<br>`providers.nvidia.base_url` | text | `https://integrate.api.nvidia.com` | Base URL of the NVIDIA API. |
 | `KAESO_PROVIDERS_BASETEN_BASE_URL`<br>`providers.baseten.base_url` | text | `https://inference.baseten.co` | Base URL of the Baseten API. |
+| `KAESO_PROVIDERS_SILICONFLOW_BASE_URL`<br>`providers.siliconflow.base_url` | text | `https://api.siliconflow.com` | Base URL of the SiliconFlow API. |
 | `KAESO_UPSTREAM_CONNECT_TIMEOUT`<br>`upstream.connect_timeout` | text | `10s` | Time to connect to a provider, TCP and TLS; at most 24h. |
 | `KAESO_UPSTREAM_REQUEST_TIMEOUT`<br>`upstream.request_timeout` | text | `600s` | Total time of a provider request that doesn't stream; at most 24h. |
 | `KAESO_UPSTREAM_FIRST_BYTE_TIMEOUT`<br>`upstream.first_byte_timeout` | text | `60s` | Streaming: time to the provider's first byte; at most 24h. |

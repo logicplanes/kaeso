@@ -1,0 +1,22 @@
+{
+  "id": "0194f3a2c7d84e1b9a6f2d3c4b5a6978",
+  "object": "chat.completion",
+  "created": 1794225600,
+  "model": "deepseek-ai/DeepSeek-R1",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "Jesse Owens, Nadia Comăneci, Michael Phelps and Usain Bolt are among the most celebrated Olympians.",
+        "reasoning_content": "The user asks for legendary Olympians. Pick a few from different sports and eras."
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 14,
+    "completion_tokens": 58,
+    "total_tokens": 72
+  }
+}

@@ -3511,6 +3511,28 @@ expression: outcomes
       "output_tokens": 77
     }
   },
+  "providers/siliconflow/reasoning-doc": {
+    "content": [
+      {
+        "text": "Jesse Owens, Nadia Comăneci, Michael Phelps and Usain Bolt are among the most celebrated Olympians.",
+        "type": "text"
+      }
+    ],
+    "id": "0194f3a2c7d84e1b9a6f2d3c4b5a6978",
+    "model": "deepseek-ai/DeepSeek-R1",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 14,
+      "output_tokens": 58
+    }
+  },
   "providers/togetherai/recorded-json-schema": {
     "content": [
       {

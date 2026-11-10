@@ -5282,6 +5282,42 @@ expression: outcomes
     },
     "path": "/v1/messages"
   },
+  "providers/siliconflow/invalid-api-key": {
+    "body": {
+      "max_tokens": 1,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "hi",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "Qwen/Qwen3-8B"
+    },
+    "path": "/v1/messages"
+  },
+  "providers/siliconflow/reasoning-doc": {
+    "message": "`thinking_budget` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking_budget"
+  },
+  "providers/siliconflow/reasoning-stream-doc": {
+    "message": "`thinking_budget` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking_budget"
+  },
+  "providers/siliconflow/thinking-off": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
   "providers/togetherai/context-length-error": {
     "message": "`context_length_exceeded_behavior` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
     "param": null,

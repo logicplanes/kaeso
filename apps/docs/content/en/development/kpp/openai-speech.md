@@ -68,6 +68,7 @@ To an app, Kaeso writes the audio bytes, with the media type OpenAI answers the 
 | `OPENROUTER` | `mp3` or `pcm`, `pcm` by default, no events | [TTS](https://openrouter.ai/docs/guides/overview/multimodal/tts) |
 | `XAI` | `POST /v1/tts`: `text`, `voice_id`, a required `language` (`auto` when the app names none), `output_format {codec, sample_rate}`, no model | [voice](https://docs.x.ai/developers/rest-api-reference/inference/voice) |
 | `VERCEL` | `POST /v4/ai/speech-model`, the model in `ai-model-id`, `text`, `voice`, `outputFormat` (`mp3` only documented), a JSON reply with base64 `audio` | [text to speech](https://vercel.com/docs/ai-gateway/modalities/text-to-speech) |
+| `SILICONFLOW` | voices named `<model>:<voice>`, `mp3`, `opus`, `wav` or `pcm`, `sample_rate`, `speed`, no events, no `instructions` | [create speech](https://docs.siliconflow.com/en/api-reference/audio/create-speech) |
 
 SpaceX's and Vercel's bodies take no fields from other dialects; a field in extras is refused.
 

@@ -139,6 +139,9 @@ base_url = "https://integrate.api.nvidia.com"
 [providers.baseten]
 base_url = "https://inference.baseten.co"
 
+[providers.siliconflow]
+base_url = "https://api.siliconflow.com"
+
 [custom_providers]
 enabled = true
 allowed_networks = ""

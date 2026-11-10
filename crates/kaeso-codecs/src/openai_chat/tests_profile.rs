@@ -1007,3 +1007,40 @@ fn baseten_gets_max_tokens_system_messages_the_end_user_as_user_and_its_thinking
         (&json!("user-0001"), None)
     );
 }
+
+#[test]
+fn siliconflow_gets_an_anthropic_apps_thinking_as_enable_thinking_and_its_budget() {
+    let siliconflow = ChatProfile::compatible("SiliconFlow")
+        .max_tokens()
+        .system_role()
+        .without_end_user()
+        .thinking_switch()
+        .reasoning_fields(&["reasoning_content"]);
+    let (_, body) = fixtures("openai_chat", "requests", "json")
+        .into_iter()
+        .find(|(n, _)| n == "providers/siliconflow/thinking-off")
+        .unwrap();
+    let sent = encode_with(&decode(&body).unwrap(), siliconflow).unwrap();
+    assert_eq!(sent, serde_json::from_slice::<Value>(&body).unwrap());
+
+    let mut req = foreign(DialectId::AnthropicMessages);
+    req.user = Some("user-0001".to_owned());
+    req.sampling.max_output_tokens = Some(4096);
+    let mut thinking = kaeso_kpp::ReasoningConfig::default();
+    thinking.mode = Some(kaeso_kpp::ReasoningMode::Enabled);
+    thinking.budget_tokens = Some(1024);
+    req.reasoning = Some(thinking);
+    let sent = encode_with(&Request::Generate(req), siliconflow).unwrap();
+    assert_eq!(
+        (
+            &sent["enable_thinking"],
+            &sent["thinking_budget"],
+            &sent["max_tokens"]
+        ),
+        (&json!(true), &json!(1024), &json!(4096))
+    );
+    assert!(
+        sent.get("safety_identifier").is_none() && sent.get("user").is_none(),
+        "{sent}"
+    );
+}

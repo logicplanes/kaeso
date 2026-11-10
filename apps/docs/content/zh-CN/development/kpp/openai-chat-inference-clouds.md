@@ -129,3 +129,19 @@ SambaCloud 不提供嵌入和 Whisper；SambaNova 只为 SambaStack 记录了这
 | 旧的错误格式 `{"object": "error", "message", "type", "param", "code"}` | `KppError` | 旧模型仍会发送它（`errors/legacy-model-error-doc`）；应用会收到带有其消息的 OpenAI 错误。 |
 
 Scaleway 不提供 Messages、图像、语音或 Token 计数：`/v1/messages`、`/v1/images/generations` 和 `/v1/audio/speech` 返回 404 `route_not_found`。它的 Responses API 无状态，只支持函数工具，不被使用：Responses 应用通过 Chat Completions 访问 Scaleway。
+
+## SiliconFlow
+
+来源：SiliconFlow 的 [chat completions](https://docs.siliconflow.com/en/api-reference/chat-completions/chat-completions) 参考、其 [reasoning](https://docs.siliconflow.com/en/userguide/capabilities/reasoning) 指南和 [error handling](https://docs.siliconflow.com/en/faqs/error-code) 页面，2026-11-10 阅读。未经成功调用测试：`fixtures/openai_chat/providers/siliconflow/` 中的请求是 reasoning 指南自己的示例，回复和流根据参考构建；错误是在没有有效密钥的情况下实时返回的。Kaeso 的基础 URL 为 `https://api.siliconflow.com`，使用 `Authorization: Bearer` 和 `sk-` 密钥。
+
+| SiliconFlow 字段 | KPP | 说明 |
+|---|---|---|
+| `message.reasoning_content`、`delta.reasoning_content` | `Block::Reasoning` | 通过配置的 `reasoning_fields`。流增量在其填充的字段旁带有 `content: null`。 |
+| `enable_thinking`、`thinking_budget` | `reasoning` | `thinking_switch()`，与 QwenCloud 相同：应用的思考设置会开启或关闭它们；Chat 应用自己的值按原样发送。 |
+| `max_tokens` | `max_tokens` | 它只限制回答，因此使用 `max_tokens()` 和服务商的 `reasoning_beyond_output_limit`。 |
+| `developer` 角色 | `Role::System` | 参考只列出 `system`、`user` 和 `assistant`，因此 `system_role()` 发送 `system`。 |
+| 终端用户的 ID | 省略 | 参考没有 `user` 或 `safety_identifier`（`without_end_user()`）。 |
+| `min_p`、`top_k` | extras | 请求发往其他方言时会被拒绝，与其他仅限 Chat 的字段相同。 |
+| `{"code", "message", "data"}` 形式的错误 | `KppError` | SiliconFlow 的消息；类别由状态码决定：401 表示密钥被拒绝（`errors/recorded-invalid-api-key`）。 |
+
+SiliconFlow 不提供 Responses 或 Token 计数：`/v1/responses` 和 `/v1/messages/count_tokens` 返回 404。它的 Messages 端点不被使用，因为其参考只记录了文本和工具块。它的嵌入、语音和转录使用 OpenAI 的形式（[OpenAI Embeddings](openai-embeddings.md#siliconflow)）；图像和视频则不是。

@@ -228,7 +228,6 @@ impl TranscriptionsProfile {
         ..TranscriptionsProfile::OPENAI
     };
 
-    /// Whether the provider takes the Kaeso-typed field `name` beyond OpenAI's.
     /// Scaleway Generative APIs: OpenAI's path and multipart form, `json` only, no timestamps
     /// and no translations.
     pub const SCALEWAY: TranscriptionsProfile = TranscriptionsProfile {
@@ -240,6 +239,23 @@ impl TranscriptionsProfile {
         ..TranscriptionsProfile::OPENAI
     };
 
+    /// SiliconFlow's SenseVoice and TeleSpeech models: OpenAI's path, a form with only `file`
+    /// and `model`, and a reply with the text alone; no translations.
+    pub const SILICONFLOW: TranscriptionsProfile = TranscriptionsProfile {
+        provider: "SiliconFlow",
+        translations_path: None,
+        formats: &["json"],
+        format_field: false,
+        language: LanguageField::None,
+        timestamps: TimestampsField::None,
+        words: false,
+        streams: false,
+        prompt: false,
+        temperature: false,
+        ..TranscriptionsProfile::OPENAI
+    };
+
+    /// Whether the provider takes the Kaeso-typed field `name` beyond OpenAI's.
     pub fn takes(&self, name: &str) -> bool {
         self.extensions.contains(&name)
     }

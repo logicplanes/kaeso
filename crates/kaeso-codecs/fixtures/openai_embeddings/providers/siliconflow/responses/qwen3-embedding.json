@@ -1,0 +1,25 @@
+{
+  "object": "list",
+  "model": "Qwen/Qwen3-Embedding-8B",
+  "data": [
+    {
+      "object": "embedding",
+      "embedding": [
+        0.0213,
+        -0.0187,
+        0.0442,
+        0.0071,
+        -0.0356,
+        0.0129,
+        0.0264,
+        -0.0093
+      ],
+      "index": 0
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 19,
+    "completion_tokens": 0,
+    "total_tokens": 19
+  }
+}

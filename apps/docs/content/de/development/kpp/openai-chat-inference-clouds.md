@@ -129,3 +129,19 @@ Quellen: die [Generative APIs reference](https://www.scaleway.com/en/developers/
 | die ältere Fehlerform `{"object": "error", "message", "type", "param", "code"}` | `KppError` | Ältere Modelle senden sie noch (`errors/legacy-model-error-doc`); Apps erhalten einen OpenAI-Fehler mit ihrer Meldung. |
 
 Scaleway bietet weder Messages noch Bilder, Sprache oder Token-Zählungen an: `/v1/messages`, `/v1/images/generations` und `/v1/audio/speech` antworten mit 404 `route_not_found`. Seine zustandslose Responses API, nur mit Funktionswerkzeugen, wird nicht genutzt: Responses-Apps erreichen Scaleway über Chat Completions.
+
+## SiliconFlow
+
+Quellen: die Referenz [chat completions](https://docs.siliconflow.com/en/api-reference/chat-completions/chat-completions) von SiliconFlow, sein Leitfaden [reasoning](https://docs.siliconflow.com/en/userguide/capabilities/reasoning) und seine Seite [error handling](https://docs.siliconflow.com/en/faqs/error-code), gelesen am 2026-11-10. Nicht mit einem erfolgreichen Aufruf getestet: Die Anfragen in `fixtures/openai_chat/providers/siliconflow/` sind die eigenen Beispiele des Reasoning-Leitfadens, die Antwort und der Stream sind aus der Referenz gebaut; der Fehler kam live, ohne gültigen Schlüssel. Kaesos Basis-URL ist `https://api.siliconflow.com`, die `Authorization: Bearer` mit einem `sk-`-Schlüssel annimmt.
+
+| SiliconFlow-Feld | KPP | Hinweise |
+|---|---|---|
+| `message.reasoning_content`, `delta.reasoning_content` | `Block::Reasoning` | Über `reasoning_fields` des Profils. Stream-Deltas tragen `content: null` neben dem Feld, das sie füllen. |
+| `enable_thinking`, `thinking_budget` | `reasoning` | `thinking_switch()`, wie bei QwenCloud: Das Thinking einer App schaltet sie ein oder aus; die eigenen Werte einer Chat-App gehen unverändert. |
+| `max_tokens` | `max_tokens` | Es begrenzt nur die Antwort, daher `max_tokens()` und `reasoning_beyond_output_limit` des Anbieters. |
+| die Rolle `developer` | `Role::System` | Die Referenz führt `system`, `user` und `assistant`, daher sendet `system_role()` `system`. |
+| die ID eines Endnutzers | weggelassen | Die Referenz hat kein `user` oder `safety_identifier` (`without_end_user()`). |
+| `min_p`, `top_k` | Extras | Abgelehnt, wenn die Anfrage an einen anderen Dialekt geht, wie andere reine Chat-Felder. |
+| Fehler als `{"code", "message", "data"}` | `KppError` | Die Meldung von SiliconFlow; die Art folgt dem Status: 401 ist ein abgelehnter Schlüssel (`errors/recorded-invalid-api-key`). |
+
+SiliconFlow bietet weder Responses noch Token-Zählungen an: `/v1/responses` und `/v1/messages/count_tokens` antworten mit 404. Sein Messages-Endpunkt wird nicht genutzt, da seine Referenz nur Text- und Tool-Blöcke dokumentiert. Seine Embeddings, Sprache und Transkriptionen nutzen die Formen von OpenAI ([OpenAI Embeddings](openai-embeddings.md#siliconflow)); seine Bilder und Videos nicht.

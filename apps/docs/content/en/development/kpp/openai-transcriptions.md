@@ -66,6 +66,7 @@ Kaeso writes a transcript in the app's form with `Codec::response_media_type`: `
 | `MINIMAX` | `/v1/speech_to_text` from the root of the host, `Authorization: Bearer`; `json`, `verbose_json`, `srt`, `vtt`; the language in a `language` header; `timestamp_level` `sentence` or `word`; `{index, delta, finish, duration}` events | [speech to text](https://platform.minimax.io/docs/api-reference/speech-to-text) |
 | `VERCEL` | `/v4/ai/transcription-model`; JSON with base64 `audio` and `mediaType`, the model in `ai-model-id`; a reply with `durationInSeconds` | [speech to text](https://vercel.com/docs/ai-gateway/modalities/speech-to-text) |
 | `SCALEWAY` | OpenAI's path and form; `json` only, with `usage` of type `duration`; no timestamps, no translations | [Generative APIs reference](https://www.scaleway.com/en/developers/api/generative-apis/) (`CreateAudioTranscriptionResponse`) |
+| `SILICONFLOW` | OpenAI's path; a form with only `file` and `model`; the text alone; no language, prompt, temperature, timestamps or translations | [create transcription](https://docs.siliconflow.com/en/api-reference/audio/create-audio-transcriptions) |
 
 ## Gemini transcription
 

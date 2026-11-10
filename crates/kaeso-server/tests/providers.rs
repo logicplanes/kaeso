@@ -197,6 +197,19 @@ async fn every_member_reads_each_provider_with_its_name_key_page_and_formats() {
         baseten["key_page"],
         json!({ "url": "https://app.baseten.co/settings/api_keys", "label": "Organization settings → API keys" })
     );
+    let siliconflow = listed.iter().find(|p| p["id"] == "siliconflow").unwrap();
+    assert_eq!(siliconflow["name"], "SiliconFlow");
+    assert_eq!(
+        siliconflow["dialects"],
+        json!(["openai_chat", "openai_embeddings"])
+    );
+    assert_eq!(siliconflow["count_tokens"], Value::Null);
+    assert_eq!(siliconflow["embeddings"], "openai_embeddings");
+    assert_eq!(siliconflow["key_prefix"], "sk-");
+    assert_eq!(
+        siliconflow["key_page"],
+        json!({ "url": "https://cloud.siliconflow.com/account/ak", "label": "API Keys" })
+    );
 
     let anonymous = app
         .call(Method::GET, &format!("/orgs/{org}/providers"), None, None)

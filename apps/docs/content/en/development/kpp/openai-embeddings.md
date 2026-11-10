@@ -113,3 +113,7 @@ Sources: Scaleway's [Generative APIs reference](https://www.scaleway.com/en/deve
 ### NVIDIA
 
 Sources: NVIDIA's embeddings references, such as [`nvidia/nv-embedqa-e5-v5`](https://docs.api.nvidia.com/nim/reference/nvidia-nv-embedqa-e5-v5-infer), read 2026-11-10, and `fixtures/openai_embeddings/providers/nvidia/`, built from them, with the error answered live without a valid key. Its models include `nvidia/nemotron-3.5-embed-1b` and `nvidia/nv-embedqa-e5-v5`. Requests take `input_type`, `query` or `passage`, which the retrieval models require, and `truncate`, `NONE`, `START` or `END`; both stay in extras and go as written. NVIDIA's errors are problem documents, which apps get in OpenAI's shape with NVIDIA's body in the message.
+
+### SiliconFlow
+
+Sources: SiliconFlow's [create embeddings](https://docs.siliconflow.com/en/api-reference/embeddings/create-embeddings) reference, read 2026-11-10, and `fixtures/openai_embeddings/providers/siliconflow/`, built from it, with the error answered live without a valid key. Its models include `Qwen/Qwen3-Embedding-8B`, `-4B` and `-0.6B` and `BAAI/bge-m3`. Only the Qwen3 models take `dimensions`, and a request takes at most 32 strings. Replies carry `usage.completion_tokens: 0`, which stays in extras. SiliconFlow's errors have no `error` object; apps get them in OpenAI's shape with SiliconFlow's message.

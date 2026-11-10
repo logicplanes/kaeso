@@ -197,6 +197,7 @@ const MARKED_PROVIDERS = {
   huggingface: "Hugging Face",
   nvidia: "NVIDIA",
   baseten: "Baseten",
+  siliconflow: "SiliconFlow",
   vllm: "vLLM",
   ollama: "Ollama",
   "lm-studio": "LM Studio",

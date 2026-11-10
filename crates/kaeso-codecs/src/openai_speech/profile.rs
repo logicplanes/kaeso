@@ -190,6 +190,22 @@ impl SpeechProfile {
         ..SpeechProfile::OPENAI
     };
 
+    /// SiliconFlow's CosyVoice and Fish Speech models: OpenAI's body, voices named
+    /// `<model>:<voice>`, the audio itself in `mp3`, `opus`, `wav` or `pcm`, and `sample_rate`.
+    pub const SILICONFLOW: SpeechProfile = SpeechProfile {
+        provider: "SiliconFlow",
+        voices: None,
+        voice_ids: false,
+        formats: &["mp3", "opus", "wav", "pcm"],
+        default_format: "mp3",
+        events: None,
+        sse_refused: &[],
+        usage_in_events: false,
+        instructions: false,
+        extensions: &["sample_rate"],
+        ..SpeechProfile::OPENAI
+    };
+
     /// Whether the provider takes the Kaeso-typed field `name` beyond OpenAI's.
     pub fn takes(&self, name: &str) -> bool {
         self.extensions.contains(&name)
