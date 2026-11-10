@@ -300,7 +300,12 @@ struct Registered {
 
 fn clean(s: Option<&str>, max: usize) -> Option<String> {
     let s = s?.trim();
-    (!s.is_empty()).then(|| s.chars().filter(|c| !c.is_control()).take(max).collect())
+    (!s.is_empty()).then(|| {
+        s.chars()
+            .filter(|c| !kaeso_core::text::hidden(*c))
+            .take(max)
+            .collect()
+    })
 }
 
 fn metadata_error(description: &str) -> Response {
@@ -595,14 +600,22 @@ pub async fn authorize(
         return refuse(&state, &client, &redirect_uri, client_state, error).await;
     }
     let token = random_token();
+    let now = state.clock.now();
+    let from = secret::hash(&key_failures::subject(ip));
     let stored = store_request(
         &state,
-        &client,
-        &redirect_uri,
-        client_state,
-        get("code_challenge").unwrap_or_default(),
-        get("resource").map(|r| r.trim_end_matches('/')),
-        &token,
+        &NewRequest {
+            id: Uuid::now_v7(),
+            token_hash: &secret::hash(&token),
+            client_id: client.id,
+            redirect_uri: &redirect_uri,
+            state: client_state,
+            code_challenge: get("code_challenge").unwrap_or_default(),
+            resource: get("resource").map(|r| r.trim_end_matches('/')),
+            requested_from: &from,
+            now,
+            expires_at: now + REQUEST_LIFETIME,
+        },
     )
     .await;
     match stored {
@@ -616,34 +629,18 @@ pub async fn authorize(
     }
 }
 
-// Any page can send a browser here, so each client keeps only its newest requests.
-async fn store_request(
-    state: &AppState,
-    client: &Client,
-    redirect_uri: &str,
-    client_state: Option<&str>,
-    challenge: &str,
-    target: Option<&str>,
-    token: &str,
-) -> Result<(), StoreError> {
-    let now = state.clock.now();
-    let id = Uuid::now_v7();
-    agents::insert_request(
+// Any page can send a browser here, so each client keeps only its newest requests from each
+// network; counted across networks, one page could push out everyone's pending sign-ins.
+async fn store_request(state: &AppState, r: &NewRequest<'_>) -> Result<(), StoreError> {
+    agents::insert_request(&state.pg, r).await?;
+    agents::keep_requests(
         &state.pg,
-        &NewRequest {
-            id,
-            token_hash: &secret::hash(token),
-            client_id: client.id,
-            redirect_uri,
-            state: client_state,
-            code_challenge: challenge,
-            resource: target,
-            now,
-            expires_at: now + REQUEST_LIFETIME,
-        },
+        r.client_id,
+        r.requested_from,
+        MAX_REQUESTS_PER_CLIENT,
+        r.id,
     )
     .await?;
-    agents::keep_requests(&state.pg, client.id, MAX_REQUESTS_PER_CLIENT, id).await?;
     Ok(())
 }
 
