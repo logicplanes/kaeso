@@ -119,6 +119,8 @@ SpaceX 用 `aspect_ratio` 和 `resolution` 代替 `size`。Z.ai 只返回链接�
 
 QwenCloud 的 OpenAI 兼容模式只提供 Qwen-Image 3.0 和 2.1 Pro，因此它的其他图片模型发往它自己的 DashScope API，该 API 在 Wan 上接收 `resolution`（`1K`、`2K`、`4K`）。它的 2.6 之前的 Wan 文生图模型只以任务方式生成图片：Kaeso 启动任务，并在请求的超时内等待图片，因此应用在同一个请求中拿到图片。Qwen-Image 3.0 按 QwenCloud 报告的档位 `1K` 或 `2K` 计费；应用发送 `prompt_extend: true` 时，Z-Image 按每张图片两倍的价格计费，与 QwenCloud 的计费一致。除非应用发送 `watermark: true`，它的模型都不加水印。
 
+OpenAI 的 Images API 只接受 API 密钥。如果项目的 OpenAI 密钥是 [ChatGPT 账户](../console/provider-keys.md#使用-chatgpt-账户登录)，Kaeso 会在发送任何内容之前返回 400：“A ChatGPT account can't make images. Use an API key for OpenAI in this project instead.”。
+
 [OpenAI Images 映射](../development/kpp/openai-images.md)列出了每个参数以及各服务商如何接收它；[DashScope](../development/kpp/dashscope.md) 列出了 QwenCloud 自己的 API。
 
 ## 费用和日志

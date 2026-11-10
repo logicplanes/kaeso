@@ -57,7 +57,7 @@ ChatGPT 账户按 OpenAI 的套餐使用规则处理请求：
 
 - 每个请求都以 OpenAI 不保存的流的形式发送到 `https://api.openai.com/v1/responses`，与实例为 OpenAI 设置的基础 URL 无关。对于需要单个回复的应用，Kaeso 会把流合并为一个回复。
 - Kaeso 会省略套餐拒绝的字段：`temperature`、`top_p`、输出和工具调用的限额、`metadata`、`truncation`、用户 ID 以及其他[预览版限制](https://developers.openai.com/siwc/token-sharing-open-source/preview-limitations)。
-- 嵌入和 Token 计数需要 API 密钥；Kaeso 会为该账户拒绝这些请求。
+- 图片、语音合成、转写、嵌入和 Token 计数需要 API 密钥；Kaeso 会在发送任何内容之前为该账户拒绝这些请求，并在错误中说明原因。
 - 套餐达到用量上限时，应用会收到 `429`，其中链接到 [ChatGPT 的用量设置](https://chatgpt.com/settings/usage)。
 - **检查可用性**只提供该账户在其套餐中列出的模型。
 

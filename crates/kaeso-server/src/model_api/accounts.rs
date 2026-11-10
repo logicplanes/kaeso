@@ -1,5 +1,5 @@
-use kaeso_core::provider::AccountSignIn;
-use kaeso_kpp::{DialectId, ErrorKind, KppError, Request};
+use kaeso_core::provider::{AccountSignIn, AuthMethod};
+use kaeso_kpp::{DialectId, ErrorKind, KppError, Request, RequestKind};
 
 use super::errors::error;
 
@@ -8,26 +8,39 @@ pub(super) fn prepare(
     account: AccountSignIn,
     provider: &str,
 ) -> Result<DialectId, KppError> {
-    let product = account.product;
-    match req {
-        Request::Embed(_) => Err(KppError::unsupported(
-            "embeddings",
-            format!("A {product} account can't create embeddings. Use an API key for {provider} in this project instead."),
-        )
-        .with_status(400)
-        .with_param("model")),
-        Request::CountTokens(_) => Err(KppError::unsupported(
-            "token counting",
-            format!("A {product} account can't count tokens. Use an API key for {provider} in this project instead."),
-        )
-        .with_status(400)
-        .with_param("model")),
+    let (capability, cannot) = match req {
         Request::Generate(g) => {
             kaeso_codecs::openai_responses::for_chatgpt_plan(g);
-            Ok(DialectId::OpenAiResponses)
+            return Ok(DialectId::OpenAiResponses);
         }
-        _ => Ok(DialectId::OpenAiResponses),
+        Request::Embed(_) => ("embeddings", "create embeddings"),
+        Request::CountTokens(_) => ("token counting", "count tokens"),
+        Request::Image(_) => ("images", "make images"),
+        Request::Speech(_) => ("speech", "create speech"),
+        Request::Transcription(_) => ("transcription", "transcribe audio"),
+        _ => ("endpoint", "serve this endpoint"),
+    };
+    let product = account.product;
+    Err(KppError::unsupported(
+        capability,
+        format!("A {product} account can't {cannot}. Use an API key for {provider} in this project instead."),
+    )
+    .with_status(400)
+    .with_param("model"))
+}
+
+pub(super) fn media_api(kind: RequestKind) -> Option<&'static str> {
+    match kind {
+        RequestKind::Image => Some("Images API"),
+        RequestKind::Speech => Some("Speech API"),
+        RequestKind::Transcription => Some("Transcriptions API"),
+        RequestKind::Video => Some("Videos API"),
+        _ => None,
     }
+}
+
+pub(crate) fn text_only(method: AuthMethod) -> bool {
+    method == AuthMethod::ChatGpt
 }
 
 // The ChatGPT backend refuses a model the plan doesn't include with 400 and this text, so
@@ -64,7 +77,6 @@ pub(super) fn plan_limit(account: Option<AccountSignIn>, err: &KppError) -> Opti
 #[cfg(test)]
 mod tests {
     use super::*;
-    use kaeso_core::provider::AuthMethod;
 
     const CHATGPT: AccountSignIn = AccountSignIn {
         method: AuthMethod::ChatGpt,
@@ -75,6 +87,27 @@ mod tests {
 
     fn refused(message: &str) -> KppError {
         KppError::new(ErrorKind::InvalidRequest, message).with_status(400)
+    }
+
+    #[test]
+    fn a_plan_serves_generation_only_and_says_what_needs_an_api_key() {
+        let mut video = Request::Video(kaeso_kpp::VideoRequest::new(
+            "m",
+            kaeso_kpp::VideoOperation::Generate,
+        ));
+        let err = prepare(&mut video, CHATGPT, "OpenAI").unwrap_err();
+        assert_eq!(
+            err.message,
+            "A ChatGPT account can't serve this endpoint. Use an API key for OpenAI in this project instead."
+        );
+        assert_eq!(
+            (err.status, err.param.as_deref()),
+            (Some(400), Some("model"))
+        );
+        assert_eq!(media_api(RequestKind::Video), Some("Videos API"));
+        assert_eq!(media_api(RequestKind::Generate), None);
+        assert!(text_only(AuthMethod::ChatGpt));
+        assert!(!text_only(AuthMethod::Grok) && !text_only(AuthMethod::ApiKey));
     }
 
     #[test]

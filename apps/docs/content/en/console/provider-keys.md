@@ -57,7 +57,7 @@ A ChatGPT account serves requests under OpenAI's rules for plan usage:
 
 - Every request goes to `https://api.openai.com/v1/responses` as a stream that OpenAI doesn't store, whatever base URL the install sets for OpenAI. Kaeso joins the stream into one reply for apps that ask for one.
 - Kaeso leaves out the fields a plan refuses: `temperature`, `top_p`, the output and tool call limits, `metadata`, `truncation`, user ids and the other [preview limitations](https://developers.openai.com/siwc/token-sharing-open-source/preview-limitations).
-- Embeddings and token counts need an API key; Kaeso refuses them for the account.
+- Images, speech, transcriptions, embeddings and token counts need an API key; Kaeso refuses them for the account before anything is sent, and the error says so.
 - When the plan's usage limit is reached, apps get a `429` that links to [ChatGPT's usage settings](https://chatgpt.com/settings/usage).
 - **Check availability** offers only the models the account lists for its plan.
 

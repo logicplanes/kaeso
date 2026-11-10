@@ -7,6 +7,7 @@ use bytes::Bytes;
 use kaeso_core::catalogue::resolve::Alias;
 use kaeso_core::catalogue::route::{self, Step};
 use kaeso_core::id::{AliasId, CatalogueModelId, OrgId, ProjectId};
+use kaeso_core::provider::AuthMethod;
 use kaeso_kpp::{DialectId, ErrorKind, KppError, RequestKind};
 use kaeso_store::pg::credentials;
 use serde::{Deserialize, Serialize};
@@ -418,6 +419,13 @@ fn refusal(f: &Failure, ask: &Ask) -> ApiError {
         Stage::NoApiAccess(product) => ApiError::Conflict(format!(
             "This {product} plan has no API access; add an API key instead."
         )),
+        Stage::NeedsApiKey {
+            product,
+            provider,
+            api,
+        } => ApiError::Conflict(format!(
+            "{provider}'s {api} needs an API key; this project's key for it is a {product} account."
+        )),
         Stage::Credential if e.status == Some(503) => ApiError::Unavailable(
             "Kaeso cannot load the project's provider key right now; try again shortly.".into(),
         ),
@@ -568,6 +576,10 @@ pub struct PlaygroundModel {
         last check or request found; the Playground offers an `unavailable`\n\
         model only greyed out."]
     pub availability: crate::platform::projects::models::AvailabilityState,
+    #[doc = "Whether the project's provider key is an account that can't call the API the\n\
+        model needs, such as a ChatGPT account for an image model; requests fail until the\n\
+        project uses an API key."]
+    pub needs_api_key: bool,
     #[doc = "The largest Playground request Kaeso takes for it, in bytes, attachments\n\
         and uploads included as sent."]
     #[schema(example = 33554432)]
@@ -617,7 +629,7 @@ pub async fn models(
     let models = crate::services::catalogue::project_models(&state, project.id).await?;
     let access = models.access(None, Some(session.user_id), None);
     let snapshot = state.kpmr.current();
-    let mut keys: Vec<(String, bool)> = Vec::new();
+    let mut keys: Vec<(String, Option<AuthMethod>)> = Vec::new();
     let mut out = Vec::new();
     for entry in models
         .catalogue
@@ -638,22 +650,22 @@ pub async fn models(
             continue;
         };
         let options = options(&state, &eff, mode);
-        let provider_key = match keys.iter().find(|(p, _)| p == eff.provider.id()) {
-            Some((_, has)) => *has,
+        let key = match keys.iter().find(|(p, _)| p == eff.provider.id()) {
+            Some((_, method)) => *method,
             None => {
-                let has = eff.provider.auth().is_none()
-                    || credentials::resolve(
-                        &state.pg,
-                        project.org_id,
-                        project.id,
-                        eff.provider.id(),
-                    )
-                    .await?
-                    .is_some();
-                keys.push((eff.provider.id().to_owned(), has));
-                has
+                let method =
+                    credentials::resolve(&state.pg, project.org_id, project.id, eff.provider.id())
+                        .await?
+                        .map(|row| {
+                            AuthMethod::parse(&row.auth_method).unwrap_or(AuthMethod::ApiKey)
+                        });
+                keys.push((eff.provider.id().to_owned(), method));
+                method
             }
         };
+        let provider_key = key.is_some() || eff.provider.auth().is_none();
+        let needs_api_key =
+            mode != PlaygroundMode::Text && key.is_some_and(crate::model_api::accounts::text_only);
         let f = &eff.fields;
         let price = |p: Option<rust_decimal::Decimal>| p.map(|d| d.normalize().to_string());
         out.push(PlaygroundModel {
@@ -680,6 +692,7 @@ pub async fn models(
             price_tiers: f.price_tiers.clone().unwrap_or_default(),
             provider_key,
             availability: entry.availability.into(),
+            needs_api_key,
             max_request_bytes: options.max_request_bytes,
             mode,
             image: options.image,

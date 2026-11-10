@@ -91,7 +91,7 @@ console.log(transcript.text);
 | Cohere | 不提供 | `/v2/audio/transcriptions`：`cohere-transcribe-03-2026`，必须提供 `language` | [transcribe](https://docs.cohere.com/v2/docs/transcribe) |
 | Anthropic、DeepSeek、Moonshot、Cerebras、Ollama Cloud | 不提供 | 不提供 | [支持的服务商](../concepts/supported-providers.md) |
 
-发给没有该 API 的服务商的请求会在发送任何内容之前被拒绝，例如“Anthropic offers no speech API Kaeso can call, so `claude-haiku-4-5` can't speak.”。
+发给没有该 API 的服务商的请求会在发送任何内容之前被拒绝，例如“Anthropic offers no speech API Kaeso can call, so `claude-haiku-4-5` can't speak.”。如果项目的 OpenAI 密钥是 [ChatGPT 账户](../console/provider-keys.md#使用-chatgpt-账户登录)，发往 OpenAI 的请求同样会被拒绝，因为该账户无法生成语音或转写音频；错误会要求使用 API 密钥。
 
 ## 费用和日志
 

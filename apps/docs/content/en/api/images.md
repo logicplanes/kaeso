@@ -119,6 +119,8 @@ SpaceX takes `aspect_ratio` and `resolution` instead of `size`. Z.ai answers onl
 
 QwenCloud's OpenAI-compatible mode serves only Qwen-Image 3.0 and 2.1 Pro, so its other image models go to its own DashScope API, which takes `resolution` (`1K`, `2K`, `4K`) on Wan. Its Wan text-to-image models before 2.6 make images only as tasks: Kaeso starts the task and waits for its images within the request's timeout, so apps get them in the same request. Qwen-Image 3.0 is billed at the tier QwenCloud reports, `1K` or `2K`, and Z-Image at twice its price per image when the app sends `prompt_extend: true`, as QwenCloud bills it. None of its models adds a watermark unless the app sends `watermark: true`.
 
+OpenAI's Images API takes an API key only. In a project whose OpenAI key is a [ChatGPT account](../console/provider-keys.md#sign-in-with-a-chatgpt-account), Kaeso answers 400 before anything is sent: "A ChatGPT account can't make images. Use an API key for OpenAI in this project instead.".
+
 The [OpenAI Images mapping](../development/kpp/openai-images.md) lists every parameter and how each provider takes it; [DashScope](../development/kpp/dashscope.md) lists QwenCloud's own API.
 
 ## Costs and logs

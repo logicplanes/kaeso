@@ -1,4 +1,4 @@
-mod accounts;
+pub(crate) mod accounts;
 pub mod auth;
 mod elevenlabs;
 pub mod errors;
