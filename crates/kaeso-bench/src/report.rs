@@ -205,7 +205,7 @@ pub(crate) fn table(r: &Report<'_>) -> String {
     if let Some(a) = &r.results.agent {
         let _ = writeln!(
             out,
-            "\n### Agent session: {} app, a route, {} provider, {} request\n",
+            "\n### Agent session: {} app, an alias, {} provider, {} request\n",
             a.app_format,
             a.provider_format,
             bytes(Some(a.request_bytes as f64))

@@ -471,7 +471,7 @@ async fn portal(p: &mut Platform, org: &str, project: &str, mcp: &str) -> Result
     })
 }
 
-// The name the agent scenario asks for: a route of one step to the project's model.
+// The alias the agent scenario asks for: a route of one step to the project's model.
 async fn agent_route(p: &mut Platform, org: &str, project: &str) -> Result<()> {
     let models = p
         .call(

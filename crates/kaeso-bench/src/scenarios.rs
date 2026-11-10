@@ -377,7 +377,7 @@ impl Bench<'_> {
         self.results.portal = Some(b);
     }
 
-    // One agent session: tool-heavy Anthropic Messages streams for a name that routes to the
+    // One agent session: tool-heavy Anthropic Messages streams for an alias that routes to the
     // mock's OpenAI Responses model. Back to back everything is cached; paced over more than
     // the caches' 30 seconds some requests meet an entry that ran out; after a pause all do.
     async fn agent(&mut self) {
