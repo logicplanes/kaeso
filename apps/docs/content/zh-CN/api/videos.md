@@ -115,6 +115,7 @@ SpaceX 通过其编辑 API 进行 remix，Gemini Omni 延续先前的交互。�
 | Vercel | 否：Vercel 只通过其 AI SDK 记录视频功能，而不是通过 HTTP | — | — | [视频生成](https://vercel.com/docs/ai-gateway/modalities/video-generation) |
 | QwenCloud | Wan 文生视频和图生视频，例如 `wan3.0-video`、`wan2.7-t2v` 和 `wan2.6-i2v-flash` | 第一帧，上传或链接，适用于图生视频模型和 Wan 3.0 | 否 | [视频生成](https://docs.qwencloud.com/api-reference/video-generation/wan-text-to-video/create-task) |
 | Anthropic、DeepSeek、Groq、Mistral、Cohere、Ollama Cloud、Moonshot、Cerebras | 服务商不提供 | — | — | 各服务商的 API 参考 |
+| Fireworks AI、Nebius Token Factory、SambaNova、Scaleway、Hugging Face、NVIDIA、Baseten、SiliconFlow | 不通过 Kaeso 提供 | — | — | [支持的服务商](../concepts/supported-providers.md) |
 
 当 KPMR 或项目自己的条目表明某个模型生成视频时，项目会把它列为视频模型。Gemini Enterprise Agent Platform 上的 Veo 需要服务账号密钥：快捷模式不列出任何 Veo 模型，因此 Kaeso 会拒绝用于这些模型的快捷模式密钥。Agent Platform 上的 Gemini Omni 同样需要服务账号密钥，因为快捷模式不列出任何 Omni 模型；无论密钥指定哪个位置，它都发往平台的全局位置，因为 Omni 只在那里提供。
 

@@ -49,12 +49,15 @@ console.log(response.output_text);
 
 ## Kaeso 提供什么
 
-- **一个 API 对接所有服务商。** Kaeso 提供 OpenAI 的 Chat Completions、Responses 和 Embeddings，Anthropic 的 Messages，以及 Gemini API。每种聊天格式都能调用目录中的任意聊天模型，无论由哪个[服务商](concepts/providers.md)提供，因此 OpenAI SDK 也能调用 Claude。
+- **一个 API 对接所有服务商。** Kaeso 提供 OpenAI 的 Chat Completions、Responses 和 Embeddings，Anthropic 的 Messages、Gemini API 以及 ElevenLabs API。每种聊天格式都能调用目录中的任意聊天模型，无论由哪个[服务商](concepts/providers.md)提供，因此 OpenAI SDK 也能调用 Claude。
+- **媒体。** 通过 OpenAI 的 [Images](api/images.md)、[Audio](api/audio.md) 和 [Videos](api/videos.md) API 以及 [ElevenLabs API](api/elevenlabs.md) 生成图片、视频、语音、音效和音乐，以及转写音频，覆盖所有提供这些功能的服务商。
 - **服务商密钥留在您手中。** 应用拿到的是 Kaeso API 密钥（`sk-kso-…`），您可以为它设置限额和到期时间，也可以停用它。您的服务商密钥用只有本实例持有的主密钥加密。
-- **组织和项目。** 成员、角色、权限和服务账号，以及每个项目各自的模型目录和别名。
+- **组织和项目。** 成员、角色、权限和服务账号，以及每个项目各自的模型目录，价格和能力来自 [KPMR](concepts/kpmr.md)。
+- **别名和路由。** 别名指定其背后的模型，支持回退、条件和按权重分流（[别名路由](concepts/alias-routes.md)）。
 - **限额和预算。** 请求速率和 Token 速率，以及 Token 预算和支出预算，可针对项目、成员或单个密钥设置。
 - **请求日志。** 每个请求的状态、Token、费用和耗时；您选择保留时，还包括请求内容。
-- **控制台。** 管理以上一切的 Web 界面，提供英语、德语和简体中文。
+- **MCP 门户。** 每个项目通过一次登录，把您的 MCP 服务器的工具提供给 claude.ai、ChatGPT、Cursor 和任何 MCP 客户端（[MCP 门户](concepts/mcp-portal.md)）。
+- **控制台。** 管理以上一切的 Web 界面，带有可并排比较最多四个模型的[试验场](console/playground.md)，提供英语、德语和简体中文。
 
 ## 各部分如何配合
 

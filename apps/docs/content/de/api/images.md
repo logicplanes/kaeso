@@ -112,6 +112,7 @@ Die Dokumentation jedes eingebauten Anbieters wurde am 2026-11-08 auf Bildgeneri
 | Mistral | Nein: Bilder nur als Werkzeug seiner Agenten | Nein | — | [Image generation tool](https://docs.mistral.ai/studio/agents/agent-tools/image_generation) |
 | ElevenLabs | Ja, ein Bild pro Anfrage; Kaeso wartet auf die Generierung (`/v1/flows/image`) | Bis zu 5, 10 oder 14 Bilder als Upload oder Asset, je nach Modell; eine Maske bei GPT Image | `gpt-image-2.5-sunburst`, `gpt-image-2.5-flare`, `gpt-image-2`, `gpt-image-1.5`, `gpt-image-1`, `gemini-3.1-flash-image`, `gemini-3.1-flash-lite-image`, `gemini-3-pro-image`, `gemini-2.5-flash-image`, `bytedance-seedream-5-pro`, `bytedance-seedream-5-lite` | [Leitfaden zu Bild und Video](https://elevenlabs.io/docs/eleven-api/guides/cookbooks/image-and-video) |
 | Anthropic, DeepSeek, Groq, Cohere, Ollama Cloud, Moonshot, Cerebras | Vom Anbieter nicht angeboten | — | — | Die API-Referenz jedes Anbieters |
+| Fireworks AI, Nebius Token Factory, SambaNova, Scaleway, Hugging Face, NVIDIA, Baseten, SiliconFlow | Nicht über Kaeso | — | — | [Unterstützte Anbieter](../concepts/supported-providers.md) |
 
 Google hat Imagen eingestellt, deshalb ruft Kaeso nur die Bildmodelle von Gemini auf. Eine Größe erreicht sie nur, wenn die Größentabellen von Google sie nennen, etwa `1024x1024` (`1:1` bei `1K`). Senden Sie für andere `aspect_ratio` und `resolution`.
 

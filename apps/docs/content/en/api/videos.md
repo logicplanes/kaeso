@@ -115,6 +115,7 @@ Every built-in provider's documentation was read for video generation on 2026-11
 | Vercel | No: Vercel documents video only through its AI SDK, not over HTTP | — | — | [Video generation](https://vercel.com/docs/ai-gateway/modalities/video-generation) |
 | QwenCloud | Wan text to video and image to video, such as `wan3.0-video`, `wan2.7-t2v` and `wan2.6-i2v-flash` | First frame, uploaded or linked, on image to video models and Wan 3.0 | No | [Video generation](https://docs.qwencloud.com/api-reference/video-generation/wan-text-to-video/create-task) |
 | Anthropic, DeepSeek, Groq, Mistral, Cohere, Ollama Cloud, Moonshot, Cerebras | Not offered by the provider | — | — | Each provider's API reference |
+| Fireworks AI, Nebius Token Factory, SambaNova, Scaleway, Hugging Face, NVIDIA, Baseten, SiliconFlow | Not through Kaeso | — | — | [Supported providers](../concepts/supported-providers.md) |
 
 A project lists a model for video when KPMR or its own entry says the model makes video. Veo on Gemini Enterprise Agent Platform needs a service account key: express mode lists no Veo models, so Kaeso refuses an express mode key for them. Gemini Omni on the Agent Platform needs a service account key too, since express mode lists no Omni models, and goes to the platform's global location whatever location the key names, since Omni is served only there.
 

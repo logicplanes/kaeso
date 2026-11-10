@@ -8,7 +8,7 @@ Jedes Release gibt allen Teilen von Kaeso eine Versionsnummer und folgt Semantic
 
 ## Von Hand aktualisieren
 
-1. Lesen Sie die Release-Notizen auf Schritte, die etwas von Ihnen verlangen. Sie stehen auf der [Release-Seite](https://github.com/logicplanes/kaeso/releases) und unter **Instanz** › **Updates**.
+1. Lesen Sie die Release-Notizen auf Schritte, die etwas von Ihnen verlangen. Sie stehen auf der [Release-Seite](https://github.com/logicplanes/kaeso/releases) und unter **Instanz** › **Updates**. Mit einem eigenen Reverse Proxy prüfen Sie, dass er jeden Pfad des Gateways weiterleitet, wie [Eigenen Reverse Proxy verwenden](domains-and-tls.md#eigenen-reverse-proxy-verwenden) sie auflistet; ein Release, das einen Pfad hinzufügt, etwa `/v1beta/` und `/v2/`, nennt ihn in seinen Notizen.
 2. [Sichern](backups.md) Sie PostgreSQL, und ClickHouse, solange es Anfrageprotokolle speichert, damit Sie bei Bedarf [zurückgehen](#downgrade) können.
 3. Führen Sie im Ordner der Installation das Installationsskript mit `--update` und dem Release aus, auf das Sie aktualisieren. Es lädt `compose.yaml` und `release.json` dieses Releases und ersetzt die `compose.yaml` der Installation nur, wenn ihr Hash dem entspricht, den `release.json` nennt. Es behält die alte Datei als `compose.yaml.previous`, geht nie auf ein älteres Release zurück und lädt und startet dann die Images. Ohne `--version` installiert es das neueste stabile Release.
 

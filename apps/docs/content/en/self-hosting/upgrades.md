@@ -8,7 +8,7 @@ Every release gives all parts of Kaeso one version number and follows semantic v
 
 ## Update by hand
 
-1. Read the release notes for anything that needs action. They are on the [releases page](https://github.com/logicplanes/kaeso/releases) and under **Instance** › **Updates**.
+1. Read the release notes for anything that needs action. They are on the [releases page](https://github.com/logicplanes/kaeso/releases) and under **Instance** › **Updates**. With a reverse proxy of your own, check that it sends every path the gateway serves, as [your own reverse proxy](domains-and-tls.md#use-your-own-reverse-proxy) lists them; a release that adds a path, such as `/v1beta/` and `/v2/`, names it in its notes.
 2. [Back up](backups.md) PostgreSQL, and ClickHouse while it keeps request logs, so you can [go back](#downgrade) if you need to.
 3. In the install's folder, run the installer with `--update` and the release you update to. It downloads that release's `compose.yaml` and `release.json`, and replaces the install's `compose.yaml` only when its hash matches the one `release.json` names. It keeps the old file as `compose.yaml.previous`, never goes back to an older release, and then pulls the images and starts them. Without `--version`, it installs the newest stable release.
 

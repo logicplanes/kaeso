@@ -49,12 +49,15 @@ This documentation describes Kaeso {{version}}.
 
 ## What Kaeso gives you
 
-- **One API for every provider.** Kaeso serves OpenAI Chat Completions, Responses and Embeddings, Anthropic Messages, and the Gemini API. Each chat format can call every chat model in your catalogue, whichever [provider](concepts/providers.md) serves it, so an OpenAI SDK can talk to Claude.
+- **One API for every provider.** Kaeso serves OpenAI Chat Completions, Responses and Embeddings, Anthropic Messages, the Gemini API and the ElevenLabs API. Each chat format can call every chat model in your catalogue, whichever [provider](concepts/providers.md) serves it, so an OpenAI SDK can talk to Claude.
+- **Media.** Images, video, speech, transcription, sound effects and music through OpenAI's [Images](api/images.md), [Audio](api/audio.md) and [Videos](api/videos.md) APIs and the [ElevenLabs API](api/elevenlabs.md), on every provider that offers them.
 - **Provider keys that stay with you.** Apps get Kaeso API keys (`sk-kso-…`) that you can limit, expire and disable. Your provider keys are encrypted under a master key that only your install holds.
-- **Organizations and projects.** Members, roles, rights and service accounts, and a model catalogue with aliases in each project.
+- **Organizations and projects.** Members, roles, rights and service accounts, and a model catalogue in each project, with prices and capabilities from [KPMR](concepts/kpmr.md).
+- **Aliases and routes.** An alias names the models behind it, with fallbacks, conditions and weighted splits ([alias routes](concepts/alias-routes.md)).
 - **Limits and budgets.** Request and token rates, and token and spend budgets, for a project, a member or a single key.
 - **Request logs.** The status, tokens, cost and timing of every request, and its content where you choose to keep it.
-- **A console.** A web interface for all of it, in English, German and Simplified Chinese.
+- **An MCP portal.** Each project offers the tools of your MCP servers to claude.ai, ChatGPT, Cursor and any MCP client, behind one sign-in ([MCP portal](concepts/mcp-portal.md)).
+- **A console.** A web interface for all of it, with a [playground](console/playground.md) that compares up to four models side by side, in English, German and Simplified Chinese.
 
 ## How the parts fit
 
