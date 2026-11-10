@@ -146,7 +146,7 @@ KAESO_API_KEY=$(
 
 An API key with platform access works the same way inside its own project, with its member's or service account's rights. Send it as `Authorization: Bearer sk-kso-…`. It can add models with `models.manage` and read usage and logs with `usage.view` and `logs.metadata.view`.
 
-Creating projects and adding provider keys are organization rights, which a project key never has. A key that belongs to a member can create more keys for that member with `POST orgs/{org}/projects/{project}/keys`. [API keys](../console/api-keys.md) explains how to give a key platform access.
+Creating projects and adding provider keys are organization rights, which a project key never has. A key that belongs to a member can create more keys for that member with `POST orgs/{org}/projects/{project}/keys`, within its own limits: none with Tools it lacks, models it may not use or a later expiry, none at all while limits of its own apply to it, and it rotates no other key. [API keys](../console/api-keys.md) explains how to give a key platform access.
 
 ## Use a session instead
 

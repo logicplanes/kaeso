@@ -542,3 +542,74 @@ async fn a_key_asked_for_while_its_service_account_is_archived_is_refused() {
     );
     s.cleanup().await;
 }
+
+#[tokio::test]
+async fn a_key_creates_and_rotates_keys_only_within_its_own_limits() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let org = owner.org_id.clone();
+    let project = common::first_project(&app, &owner).await;
+    let base = format!("/orgs/{org}/projects/{project}");
+    let mut models = Vec::new();
+    for (provider, model) in [("openai", "gpt-4o"), ("anthropic", "claude-haiku-4-5")] {
+        let r = app
+            .post(
+                &format!("{base}/models"),
+                json!({ "provider": provider, "model_id": model }),
+                Some(&owner.cookie),
+            )
+            .await
+            .expect_status(StatusCode::CREATED);
+        models.push(r.body["id"].as_str().unwrap().to_owned());
+    }
+    let (_, limited) = new_key(
+        &app,
+        &base,
+        &owner.cookie,
+        json!({ "name": "limited", "access": "both", "models": [models[0]], "expires_in_days": 1 }),
+    )
+    .await;
+    let (open, _) = new_key(&app, &base, &owner.cookie, json!({ "name": "open" })).await;
+    let refused =
+        "A key can only create or rotate keys within its own limits; use a console session.";
+
+    for body in [
+        json!({ "name": "no expiry", "models": [models[0]] }),
+        json!({ "name": "later", "models": [models[0]], "expires_in_days": 30 }),
+        json!({ "name": "every model", "expires_in_days": 1 }),
+        json!({ "name": "other model", "models": [models[1]], "expires_in_days": 1 }),
+        json!({ "name": "tools", "models": [models[0]], "expires_in_days": 1, "tools": true }),
+    ] {
+        let r = app
+            .with_key(
+                Method::POST,
+                &format!("{base}/keys"),
+                Some(body.clone()),
+                &limited,
+            )
+            .await
+            .expect_status(StatusCode::FORBIDDEN);
+        assert_eq!(r.body["error"]["message"], refused, "{body}");
+    }
+    let r = app
+        .with_key(
+            Method::POST,
+            &format!("{base}/keys/{open}/rotate"),
+            Some(json!({ "grace_hours": 0 })),
+            &limited,
+        )
+        .await
+        .expect_status(StatusCode::FORBIDDEN);
+    assert_eq!(r.body["error"]["message"], refused);
+
+    app.with_key(
+        Method::POST,
+        &format!("{base}/keys"),
+        Some(json!({ "name": "narrower", "models": [models[0]], "expires_in_days": 1 })),
+        &limited,
+    )
+    .await
+    .expect_status(StatusCode::CREATED);
+    s.cleanup().await;
+}
