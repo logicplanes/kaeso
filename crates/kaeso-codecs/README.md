@@ -15,7 +15,7 @@ Sans-IO codecs between [KPP](https://crates.io/crates/kaeso-kpp) and the wire fo
 | OpenAI Speech | Speech, as audio or as events |
 | OpenAI Transcriptions | Transcriptions and translations, streamed transcripts |
 | MiniMax Speech | Speech |
-| ElevenLabs | Speech, dialogue, sound effects, music, the voice changer, speech to text and video jobs |
+| ElevenLabs | Speech, dialogue, sound effects, music, the voice changer, speech to text, images and video jobs |
 | OpenAI Videos | Video jobs, in OpenAI's and Together AI's form |
 | SpaceX Videos, MiniMax Videos, Z.ai Videos, OpenRouter Videos | Video jobs |
 | Veo | Video jobs on Gemini Enterprise Agent Platform |

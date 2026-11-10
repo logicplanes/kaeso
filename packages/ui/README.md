@@ -32,6 +32,8 @@ export function App() {
 }
 ```
 
+Every component is also its own import, such as `@logicplanes/kaeso-ui/button`; the charts are under `@logicplanes/kaeso-ui/charts/*`, the parts Kaeso's own interfaces share, such as the rights matrix and the conversation view, under `@logicplanes/kaeso-ui/kaeso/*`, and the helpers under `/format`, `/theme`, `/i18n` and `/utils`.
+
 Installation, theming and every component: [ui.kaeso.app](https://ui.kaeso.app).
 
 ## For agents

@@ -1,6 +1,6 @@
 # Kaeso plugin for Claude Code
 
-Adds the Kaeso skill to Claude Code. It teaches your agent the tools of your self-hosted [Kaeso](https://kaeso.app) install's MCP server and, if the server isn't connected yet, asks for your install's address and connects it.
+Adds the Kaeso skill to Claude Code. It teaches your agent the tools of your self-hosted [Kaeso](https://kaeso.app) install's MCP server. The plugin itself needs no settings: when the server isn't connected yet, the skill asks for your install's address and connects it.
 
 ```text
 /plugin install kaeso --marketplace logicplanes/kaeso

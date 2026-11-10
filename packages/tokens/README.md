@@ -1,6 +1,6 @@
 # @logicplanes/kaeso-tokens
 
-Kaeso's design tokens: CSS variables, the Tailwind CSS v4 theme, TypeScript constants and JSON. Pure white and pure black canvases, a tint-free grey ramp, and color only for data and status. `@logicplanes/kaeso-ui` is built on them; use them directly where the components cannot go, such as emails or native code.
+Kaeso's design tokens: CSS variables, the Tailwind CSS v4 theme, TypeScript constants and JSON. Pure white and pure black canvases, a tint-free grey ramp, and color only for data, status and providers' marks. `@logicplanes/kaeso-ui` is built on them; use them directly where the components cannot go, such as emails or native code.
 
 ## Install
 
