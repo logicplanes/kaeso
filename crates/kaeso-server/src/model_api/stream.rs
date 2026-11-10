@@ -361,6 +361,15 @@ impl ToApp {
     }
 }
 
+// The keepalive an encoder writes in place of an event the app's format can't show or that it
+// holds back, which the request log counts like the ones the interval earns. The app's own
+// format's `ping` is the provider's event, replayed.
+fn stands_in(frame: &[u8], bytes: &[u8], event: &StreamEvent, app: DialectId) -> bool {
+    !frame.is_empty()
+        && bytes == frame
+        && !matches!(event, StreamEvent::Extra(item) if item.origin.is(app))
+}
+
 #[derive(Default)]
 struct Processing(Duration);
 
@@ -395,6 +404,7 @@ pub(super) struct Parts {
     pub(super) chunks: kaeso_upstream::ByteStream,
     pub(super) decoder: Box<dyn StreamDecoder>,
     pub(super) encoder: Box<dyn StreamEncoder>,
+    pub(super) app: DialectId,
     pub(super) keepalive: Keepalive,
     pub(super) counter: InputCounter,
     pub(super) carry: Option<StreamCarry>,
@@ -499,6 +509,7 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
         mut chunks,
         mut decoder,
         mut encoder,
+        app: app_dialect,
         keepalive,
         counter,
         mut carry,
@@ -536,6 +547,7 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
     let mut last_event_at: Option<u64> = None;
     let mut processing = Processing::default();
     let mut last_write = Instant::now();
+    let frame = encoder.keepalive();
     {
         let watch = app.tx.clone();
         let closed = watch.closed();
@@ -633,6 +645,7 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
             let mut out = Vec::new();
             let mut stop = false;
             let mut ends = false;
+            let mut in_place = 0u32;
             for event in &events {
                 asm.feed(event);
                 tally.feed(event);
@@ -650,6 +663,9 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
                         bytes
                     }
                 };
+                if stands_in(&frame, &bytes, event, app_dialect) {
+                    in_place += 1;
+                }
                 if out.is_empty() {
                     out = bytes;
                 } else {
@@ -665,6 +681,7 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
                     break 'read;
                 }
                 last_write = Instant::now();
+                app.progress.keepalives = app.progress.keepalives.saturating_add(in_place);
                 if let Some(f) = first.take() {
                     let _ = f.send(None);
                 }

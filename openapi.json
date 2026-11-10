@@ -38424,7 +38424,7 @@
           "keepalives": {
             "type": "integer",
             "format": "int32",
-            "description": "Keepalives the gateway wrote because the app had seen nothing for the\nkeepalive interval.",
+            "description": "Keepalives the gateway wrote: after the keepalive interval without\noutput, and in place of what it held back or the app's format can't show.",
             "minimum": 0
           },
           "processing_us": {

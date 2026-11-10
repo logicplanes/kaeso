@@ -999,8 +999,8 @@ pub struct StreamProgressView {
     #[doc = "Time from the request's arrival to the first reply bytes written to\n\
         the app, in milliseconds; `null` when none were."]
     pub first_byte_ms: Option<u32>,
-    #[doc = "Keepalives the gateway wrote because the app had seen nothing for the\n\
-        keepalive interval."]
+    #[doc = "Keepalives the gateway wrote: after the keepalive interval without\n\
+        output, and in place of what it held back or the app's format can't show."]
     pub keepalives: u32,
     #[doc = "Kaeso's time decoding the provider's events and encoding them for the\n\
         app, in microseconds, without the waits for the provider or the app;\n\

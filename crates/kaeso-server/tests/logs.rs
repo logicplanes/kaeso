@@ -865,6 +865,8 @@ async fn streams_that_fail_after_their_headers_are_logged_as_failures() {
     .await;
     assert_eq!(r.status, StatusCode::OK);
     assert!(r.text().contains("\"error\""), "{}", r.text());
+    let keepalives = r.text().matches(": keepalive\n\n").count();
+    assert!(keepalives > 0, "{}", r.text());
     flush(&env).await;
 
     let data = logs(&env, "").await["data"].as_array().unwrap().clone();
@@ -876,7 +878,7 @@ async fn streams_that_fail_after_their_headers_are_logged_as_failures() {
     assert!(p["events"].as_u64().unwrap() > 0, "{broken}");
     assert!(p["bytes"].as_u64().unwrap() > 0, "{broken}");
     assert!(p["first_byte_ms"].is_u64(), "{broken}");
-    assert_eq!(p["keepalives"], 0);
+    assert_eq!(p["keepalives"], keepalives, "{broken}");
     let one = env
         .app
         .get(
