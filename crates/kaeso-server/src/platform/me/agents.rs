@@ -866,10 +866,11 @@ fn portal_of(state: &AppState, r: &agents::Request) -> Option<uuid::Uuid> {
 
 async fn portal_view(
     state: &AppState,
-    user: uuid::Uuid,
+    session: &kaeso_store::pg::sessions::SessionRow,
     r: &agents::Request,
     project: uuid::Uuid,
 ) -> ApiResult<PortalRequestView> {
+    let user = session.user_id;
     let mut conn = state.pg.acquire().await?;
     let row = sqlx::query_scalar!("SELECT org_id FROM projects WHERE id = $1", project)
         .fetch_optional(&mut *conn)
@@ -885,6 +886,15 @@ async fn portal_view(
     if p.archived_at.is_some() {
         return Err(ApiError::not_found("project"));
     }
+    if found.org.state != "active" {
+        return Err(ApiError::OrgScheduledForDeletion);
+    }
+    crate::platform::access::require_policy(
+        state,
+        session,
+        crate::platform::access::Area::of_org(&found.org),
+    )
+    .await?;
     let org_grant = crate::platform::grants::org_from_store(org_grant)?;
     let project_grant = found
         .project_grant
@@ -963,10 +973,10 @@ pub async fn request(
     ctx: Ctx,
     Body(req): Body<AgentRequestRef>,
 ) -> ApiResult<Json<AgentRequestView>> {
-    let user = ctx.session()?.user_id;
+    let session = ctx.session()?;
     let r = pending(&state, &ctx, &req).await?;
     let portal = match portal_of(&state, &r) {
-        Some(project) => Some(portal_view(&state, user, &r, project).await?),
+        Some(project) => Some(portal_view(&state, session, &r, project).await?),
         None => None,
     };
     Ok(Json(AgentRequestView {
@@ -1098,14 +1108,15 @@ pub async fn approve_portal(
     ctx: Ctx,
     Body(req): Body<AgentRequestRef>,
 ) -> ApiResult<Json<AgentRedirect>> {
-    let user = ctx.session()?.user_id;
+    let session = ctx.session()?;
+    let user = session.user_id;
     let r = pending(&state, &ctx, &req).await?;
     let Some(project) = portal_of(&state, &r) else {
         return Err(ApiError::Conflict(
             "This sign-in is for an agent, not a project's MCP portal; reload the page.".into(),
         ));
     };
-    let view = portal_view(&state, user, &r, project).await?;
+    let view = portal_view(&state, session, &r, project).await?;
     let grant = uuid::Uuid::now_v7();
     let mut tx = state.pg.begin().await?;
     if !agents::use_request(&mut *tx, r.id, ctx.now).await? {
@@ -1122,6 +1133,9 @@ pub async fn approve_portal(
             project_id: project,
             client_id: r.client_id,
             redirect_uri: &r.redirect_uri,
+            sign_in_method: &session.method,
+            second_factor: session.second_factor,
+            oidc_org_id: session.oidc_org_id,
             now: ctx.now,
         },
     )
