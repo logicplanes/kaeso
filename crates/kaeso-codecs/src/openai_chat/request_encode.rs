@@ -26,6 +26,7 @@ use super::wire::{
 };
 use crate::codec::EgressCtx;
 use crate::cross::{self, reasoning_replayable};
+use crate::inline_media::Media;
 use crate::verbosity;
 use crate::wire::{Ext, StringOr};
 
@@ -34,6 +35,7 @@ pub(crate) const DEFAULT_SCHEMA_NAME: &str = "response";
 pub(crate) fn encode_generate(
     req: &GenerateRequest,
     ctx: &mut EgressCtx,
+    media: &mut Media,
 ) -> Result<Ext<ChatRequest>, KppError> {
     let own = req.extras.is_from(DIALECT);
     let form = |key: &str| req.extras.form_value(DIALECT, key);
@@ -146,7 +148,7 @@ pub(crate) fn encode_generate(
 
     encode_system(&req.system, rules.developer_role, &mut w.messages)?;
     for message in &req.messages {
-        encode_message(message, &mut names, &mut w.messages)?;
+        encode_message(message, &mut names, media, &mut w.messages)?;
     }
     if rules.partial_prefill && !own && ends_with_prefill(req) {
         mark_partial(&mut w.messages)?;
@@ -557,6 +559,7 @@ fn content_form(message: &Message) -> Option<&str> {
 fn encode_message(
     message: &Message,
     names: &mut Names<'_>,
+    media: &mut Media,
     out: &mut Vec<RawJson>,
 ) -> Result<(), KppError> {
     match message.role {
@@ -577,7 +580,7 @@ fn encode_message(
             };
             out.push(to_raw(&ext_with(wire, &message.extras))?);
         }
-        Role::User => encode_user(message, out)?,
+        Role::User => encode_user(message, media, out)?,
         Role::Assistant => out.push(encode_assistant(message, names)?),
         _ => {
             return Err(KppError::unsupported_by(
@@ -590,7 +593,11 @@ fn encode_message(
     Ok(())
 }
 
-fn encode_user(message: &Message, out: &mut Vec<RawJson>) -> Result<(), KppError> {
+fn encode_user(
+    message: &Message,
+    media: &mut Media,
+    out: &mut Vec<RawJson>,
+) -> Result<(), KppError> {
     if message.extras.form_str(DIALECT, FORM_ROLE) == Some(FUNCTION_ROLE)
         && let [Block::Unknown(item)] = message.blocks.as_slice()
         && item.origin.is(DIALECT)
@@ -619,10 +626,10 @@ fn encode_user(message: &Message, out: &mut Vec<RawJson>) -> Result<(), KppError
             for block in blocks {
                 parts.push(match block {
                     Block::Text(t) => encode_text_part(t)?,
-                    Block::Image(i) => encode_image_part(i)?,
-                    Block::Document(d) => encode_file_part(d)?,
-                    Block::Audio(a) => encode_audio_part(a)?,
-                    Block::Video(v) => encode_video_part(v)?,
+                    Block::Image(i) => encode_image_part(i, media)?,
+                    Block::Document(d) => encode_file_part(d, media)?,
+                    Block::Audio(a) => encode_audio_part(a, media)?,
+                    Block::Video(v) => encode_video_part(v, media)?,
                     Block::Unknown(item) if item.origin.is(DIALECT) => item.raw.clone(),
                     other => return Err(block_unsupported(other, "a user message")),
                 });

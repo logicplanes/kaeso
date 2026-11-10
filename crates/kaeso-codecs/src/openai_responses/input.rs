@@ -13,6 +13,7 @@ use super::parts::{
 use super::request::Names;
 use super::wire;
 use crate::cross::reasoning_replayable;
+use crate::inline_media::Media;
 use crate::wire::{StringOr, type_tag};
 
 pub(super) const RAW_ITEM: &str = "raw_item";
@@ -35,10 +36,11 @@ fn wire_role(role: Role) -> &'static str {
     }
 }
 
-fn message_item(role: Role, blocks: &[&Block], owner: &Extras) -> Node {
-    Node::obj()
-        .with("role", Node::str(wire_role(role)))
-        .with("content", content_node(blocks, text_kind(role), owner))
+fn message_item(role: Role, blocks: &[&Block], owner: &Extras, media: &mut Media) -> Node {
+    Node::obj().with("role", Node::str(wire_role(role))).with(
+        "content",
+        content_node(blocks, text_kind(role), owner, media),
+    )
 }
 
 enum Item {
@@ -107,7 +109,7 @@ fn decode_message(raw: &RawValue, origin: &Origin) -> Option<Item> {
         }
     }
     let refs: Vec<&Block> = blocks.iter().collect();
-    let canon = message_item(role, &refs, &extras);
+    let canon = message_item(role, &refs, &extras, &mut Media::inline());
     let overrides = Overrides::diff(&canon, raw, &["content"]);
     let mut item_overrides = Extras::new(origin.clone());
     overrides.record(&mut item_overrides, "");
@@ -256,7 +258,11 @@ pub(super) fn decode_items(items: &[Box<RawValue>], origin: &Origin) -> DecodedI
     out
 }
 
-pub(super) fn encode_system(system: &[Block], req_extras: &Extras) -> (Option<String>, Vec<Node>) {
+pub(super) fn encode_system(
+    system: &[Block],
+    req_extras: &Extras,
+    media: &mut Media,
+) -> (Option<String>, Vec<Node>) {
     let markers = req_extras
         .form_value(DIALECT, SYSTEM_ITEMS)
         .and_then(Value::as_array);
@@ -275,7 +281,7 @@ pub(super) fn encode_system(system: &[Block], req_extras: &Extras) -> (Option<St
             Node::Arr(
                 blocks
                     .iter()
-                    .filter_map(|b| parts::encode_part(b, TextKind::Input))
+                    .filter_map(|b| parts::encode_part(b, TextKind::Input, media))
                     .collect(),
             ),
         );
@@ -315,7 +321,7 @@ pub(super) fn encode_system(system: &[Block], req_extras: &Extras) -> (Option<St
             _ => Node::Arr(
                 blocks
                     .iter()
-                    .filter_map(|b| parts::encode_part(b, TextKind::Input))
+                    .filter_map(|b| parts::encode_part(b, TextKind::Input, media))
                     .collect(),
             ),
         };
@@ -329,7 +335,7 @@ pub(super) fn encode_system(system: &[Block], req_extras: &Extras) -> (Option<St
                 Node::Arr(
                     leftover
                         .iter()
-                        .filter_map(|b| parts::encode_part(b, TextKind::Input))
+                        .filter_map(|b| parts::encode_part(b, TextKind::Input, media))
                         .collect(),
                 ),
             ),
@@ -359,18 +365,19 @@ pub(super) fn encode_messages(
             .and_then(|i| usize::try_from(i).ok());
         let mut first_run = true;
         let mut i = 0;
-        let emit_message = |blocks: &[&Block], items: &mut Vec<Node>, first: bool| {
-            let empty = Extras::default();
-            let owner = if first { &m.extras } else { &empty };
-            let mut node = message_item(m.role, blocks, owner);
-            if first {
-                apply(&m.extras, DIALECT, "", &[], &mut node);
-            }
-            items.push(node);
-        };
+        let emit_message =
+            |blocks: &[&Block], items: &mut Vec<Node>, first: bool, media: &mut Media| {
+                let empty = Extras::default();
+                let owner = if first { &m.extras } else { &empty };
+                let mut node = message_item(m.role, blocks, owner, media);
+                if first {
+                    apply(&m.extras, DIALECT, "", &[], &mut node);
+                }
+                items.push(node);
+            };
         while i <= m.blocks.len() {
             if empty_at == Some(i) && first_run {
-                emit_message(&[], &mut items, true);
+                emit_message(&[], &mut items, true, &mut names.media);
                 first_run = false;
             }
             let Some(block) = m.blocks.get(i) else { break };
@@ -382,7 +389,7 @@ pub(super) fn encode_messages(
                     .take_while(|b| is_content(b))
                     .collect();
                 i += run.len();
-                emit_message(&run, &mut items, first_run);
+                emit_message(&run, &mut items, first_run, &mut names.media);
                 first_run = false;
                 continue;
             }
@@ -399,8 +406,8 @@ pub(super) fn encode_messages(
                     items.push(node);
                 }
                 Block::ToolResult(result) => {
-                    let mut node =
-                        function_call_output_item(&names.call_id(&result.call_id), result);
+                    let call_id = names.call_id(&result.call_id);
+                    let mut node = function_call_output_item(&call_id, result, &mut names.media);
                     apply(&result.extras, DIALECT, "", &[], &mut node);
                     items.push(node);
                 }

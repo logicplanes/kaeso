@@ -145,12 +145,20 @@ pub(crate) fn entries_of(raw: &RawValue) -> Option<Vec<(Cow<'_, str>, &RawValue)
     Some(fields)
 }
 
-impl<T: DeserializeOwned + Serialize> Ext<T> {
-    pub(crate) fn from_raw(raw: &RawValue) -> Result<Self, serde_json::Error> {
+// The parses read `T` from the text they are given, so a `T` that borrows from it, such as one
+// with `&RawValue` fields, leaves a large value such as an image's base64 where it is.
+impl<T: Serialize> Ext<T> {
+    pub(crate) fn from_raw<'de>(raw: &'de RawValue) -> Result<Self, serde_json::Error>
+    where
+        T: Deserialize<'de>,
+    {
         Ext::from_text(raw.get())
     }
 
-    pub(crate) fn from_text(text: &str) -> Result<Self, serde_json::Error> {
+    pub(crate) fn from_text<'de>(text: &'de str) -> Result<Self, serde_json::Error>
+    where
+        T: Deserialize<'de>,
+    {
         match one_pass::read::<T>(text) {
             Some((known, extra)) => Ok(Ext {
                 known,
@@ -161,7 +169,10 @@ impl<T: DeserializeOwned + Serialize> Ext<T> {
         }
     }
 
-    fn two_passes(text: &str) -> Result<Self, serde_json::Error> {
+    fn two_passes<'de>(text: &'de str) -> Result<Self, serde_json::Error>
+    where
+        T: Deserialize<'de>,
+    {
         let declared = struct_fields::<T>();
         let Fields(entries) = serde_json::from_str(text)?;
         let known: T = serde_json::from_str(text)?;
@@ -188,7 +199,10 @@ impl<T: DeserializeOwned + Serialize> Ext<T> {
         })
     }
 
-    pub(crate) fn from_slice(bytes: &[u8]) -> Result<Self, serde_json::Error> {
+    pub(crate) fn from_slice<'de>(bytes: &'de [u8]) -> Result<Self, serde_json::Error>
+    where
+        T: Deserialize<'de>,
+    {
         // A body these parses read whole is valid JSON, so it skips the pass that only checks
         // that; any other gets the errors that pass gives.
         if let Some(ext) = std::str::from_utf8(bytes)
@@ -211,16 +225,16 @@ mod one_pass {
     use indexmap::IndexMap;
     use kaeso_kpp::RawJson;
     use serde::de::value::CowStrDeserializer;
-    use serde::de::{DeserializeOwned, DeserializeSeed, MapAccess, Visitor};
-    use serde::{Deserializer, Serialize};
+    use serde::de::{DeserializeSeed, MapAccess, Visitor};
+    use serde::{Deserialize, Deserializer, Serialize};
     use serde_json::value::RawValue;
 
     use super::{Key, carriable, struct_fields, written_names};
 
     type Seen<'de> = Vec<(Cow<'de, str>, Option<&'de RawValue>)>;
 
-    pub(super) fn read<T: DeserializeOwned + Serialize>(
-        text: &str,
+    pub(super) fn read<'de, T: Deserialize<'de> + Serialize>(
+        text: &'de str,
     ) -> Option<(T, IndexMap<String, RawJson>)> {
         let declared = struct_fields::<T>();
         let mut seen = Seen::new();
@@ -447,7 +461,7 @@ fn carriable(key: &str) -> bool {
     !key.contains('.') && !key.starts_with(HEADER_PREFIX)
 }
 
-pub(crate) fn struct_fields<T: DeserializeOwned>() -> &'static [&'static str] {
+pub(crate) fn struct_fields<'de, T: Deserialize<'de>>() -> &'static [&'static str] {
     struct Grab<'a>(&'a mut Option<&'static [&'static str]>);
 
     // An error that carries no message: `T::deserialize` always fails here, once per decoded
@@ -614,7 +628,7 @@ pub(crate) enum StringOr<T> {
 
 // Read in the one pass over the value, not captured and parsed again: message content, the
 // bulk of a request, goes through here.
-impl<'de, T: DeserializeOwned> Deserialize<'de> for StringOr<T> {
+impl<'de, T: Deserialize<'de>> Deserialize<'de> for StringOr<T> {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         struct V<T>(std::marker::PhantomData<T>);
 
@@ -622,7 +636,7 @@ impl<'de, T: DeserializeOwned> Deserialize<'de> for StringOr<T> {
             Err(E::custom("expected a string or an array"))
         }
 
-        impl<'de, T: DeserializeOwned> Visitor<'de> for V<T> {
+        impl<'de, T: Deserialize<'de>> Visitor<'de> for V<T> {
             type Value = StringOr<T>;
 
             fn expecting(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -680,6 +694,53 @@ impl<T: Serialize> Serialize for StringOr<T> {
             StringOr::String(s) => s.serialize(serializer),
             StringOr::List(l) => l.serialize(serializer),
         }
+    }
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub(crate) struct Text<'a>(pub(crate) Cow<'a, str>);
+
+impl Text<'_> {
+    pub(crate) fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
+// `Cow<str>`'s own impl always copies.
+impl<'de: 'a, 'a> Deserialize<'de> for Text<'a> {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        struct V;
+
+        impl<'de> Visitor<'de> for V {
+            type Value = Text<'de>;
+
+            fn expecting(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                f.write_str("a string")
+            }
+
+            fn visit_borrowed_str<E: serde::de::Error>(
+                self,
+                v: &'de str,
+            ) -> Result<Self::Value, E> {
+                Ok(Text(Cow::Borrowed(v)))
+            }
+
+            fn visit_str<E: serde::de::Error>(self, v: &str) -> Result<Self::Value, E> {
+                Ok(Text(Cow::Owned(v.to_owned())))
+            }
+
+            fn visit_string<E: serde::de::Error>(self, v: String) -> Result<Self::Value, E> {
+                Ok(Text(Cow::Owned(v)))
+            }
+        }
+
+        deserializer.deserialize_str(V)
+    }
+}
+
+impl Serialize for Text<'_> {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        serializer.serialize_str(&self.0)
     }
 }
 

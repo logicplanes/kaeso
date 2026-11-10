@@ -15,6 +15,7 @@ use super::overrides::{Overrides, apply};
 use super::wire;
 use crate::codec::{EgressCtx, EncodedRequest, HeaderList, is_forwarded_header};
 use crate::cross::{Setting, app_field, check_foreign};
+use crate::inline_media::Media;
 use crate::wire::{StringOr, to_body, type_tag};
 
 pub(super) const INPUT: &str = "input";
@@ -26,15 +27,22 @@ const ENCRYPTED: &str = "reasoning.encrypted_content";
 
 pub(crate) struct Names<'a> {
     ctx: Option<&'a mut EgressCtx>,
+    pub(crate) media: Media,
 }
 
 impl<'a> Names<'a> {
     pub(crate) fn none() -> Names<'a> {
-        Names { ctx: None }
+        Names {
+            ctx: None,
+            media: Media::inline(),
+        }
     }
 
     pub(crate) fn new(ctx: &'a mut EgressCtx) -> Names<'a> {
-        Names { ctx: Some(ctx) }
+        Names {
+            ctx: Some(ctx),
+            media: Media::deferred(),
+        }
     }
 
     fn model_reasons(&self) -> Option<bool> {
@@ -504,7 +512,7 @@ fn canonical_body_with(
     if !(count && req.model.is_empty()) {
         node.insert("model", Node::str(&req.model));
     }
-    let (instructions, system_items) = encode_system(&req.system, &req.extras);
+    let (instructions, system_items) = encode_system(&req.system, &req.extras, &mut names.media);
     if input != Input::Left {
         let as_string =
             req.extras.form_str(DIALECT, INPUT) == Some("string") && system_items.is_empty();
@@ -752,7 +760,9 @@ pub(super) fn encode(
         Request::CountTokens(r) => (r, super::INPUT_TOKENS_PATH),
         _ => return Err(KppError::unsupported_by("request kind", DIALECT, "")),
     };
-    let mut body = body_node(r, req.kind(), &target, &mut Names::new(ctx));
+    let mut names = Names::new(ctx);
+    let mut body = body_node(r, req.kind(), &target, &mut names);
+    let media = names.media;
     if req.kind() == RequestKind::Generate {
         hosted_search_fields(r, search_limit, &mut body);
         if let Some(key) = crate::cross::sibling_cache_key(&r.extras, DIALECT) {
@@ -767,7 +777,11 @@ pub(super) fn encode(
             }
         }
     }
-    Ok(EncodedRequest::post_json(path, headers, to_body(&body)?))
+    Ok(EncodedRequest::post_json(
+        path,
+        headers,
+        media.finish(to_body(&body)?)?,
+    ))
 }
 
 fn hosted_search_fields(r: &GenerateRequest, limit: Option<(&str, u64)>, body: &mut Node) {

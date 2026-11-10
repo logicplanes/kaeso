@@ -10,6 +10,7 @@ use super::node::Node;
 use super::overrides::Overrides;
 use super::wire;
 use crate::cross::{ReplyPolicy, opaque_replayable, reply_policy};
+use crate::inline_media::Media;
 use crate::wire::{StringOr, type_tag};
 
 pub(super) const BREAKPOINT: &str = "breakpoint";
@@ -109,43 +110,47 @@ pub(super) fn refusal_part(text: &str) -> Node {
         .with("refusal", Node::str(text))
 }
 
-fn image_part(b: &ImageBlock) -> Option<Node> {
+fn data_url(s: &kaeso_kpp::Base64Source, media: &mut Media) -> Node {
+    Node::str(media.data_url(s, &format!("data:{};base64", s.media_type)))
+}
+
+fn image_part(b: &ImageBlock, media: &mut Media) -> Option<Node> {
     let node = Node::obj().with("type", Node::str("input_image"));
     let node = match &b.source {
         Source::Url(u) => node.with("image_url", Node::str(u)),
-        Source::Base64(s) => node.with("image_url", Node::str(s.data_url())),
+        Source::Base64(s) => node.with("image_url", data_url(s, media)),
         Source::FileId(f) => node.with("file_id", Node::str(&f.id)),
         _ => return None,
     };
     Some(node.with_opt("prompt_cache_breakpoint", breakpoint_node(b.cache.as_ref())))
 }
 
-fn file_part(b: &DocumentBlock) -> Option<Node> {
+fn file_part(b: &DocumentBlock, media: &mut Media) -> Option<Node> {
     let node = Node::obj().with("type", Node::str("input_file"));
     let node = match &b.source {
         Source::Url(u) => node.with("file_url", Node::str(u)),
         Source::Base64(s) => node
             .with("filename", Node::str(default_filename(&s.media_type)))
-            .with("file_data", Node::str(s.data_url())),
+            .with("file_data", data_url(s, media)),
         Source::FileId(f) => node.with("file_id", Node::str(&f.id)),
         _ => return None,
     };
     Some(node.with_opt("prompt_cache_breakpoint", breakpoint_node(b.cache.as_ref())))
 }
 
-pub(super) fn canonical_part(block: &Block, kind: TextKind) -> Option<Node> {
+pub(super) fn canonical_part(block: &Block, kind: TextKind, media: &mut Media) -> Option<Node> {
     match block {
         Block::Text(t) => Some(text_part(t, kind)),
         Block::Refusal(r) => Some(refusal_part(&r.text)),
-        Block::Image(b) => image_part(b),
-        Block::Document(b) => file_part(b),
+        Block::Image(b) => image_part(b, media),
+        Block::Document(b) => file_part(b, media),
         Block::Unknown(item) if item.origin.is(DIALECT) => Some(Node::raw(&item.raw)),
         _ => None,
     }
 }
 
-pub(super) fn encode_part(block: &Block, kind: TextKind) -> Option<Node> {
-    let mut node = canonical_part(block, kind)?;
+pub(super) fn encode_part(block: &Block, kind: TextKind, media: &mut Media) -> Option<Node> {
+    let mut node = canonical_part(block, kind, media)?;
     if let Some(extras) = block.extras() {
         super::overrides::apply(extras, DIALECT, "", &[], &mut node);
     }
@@ -220,7 +225,7 @@ pub(super) fn decode_part(raw: &RawValue, kind: TextKind, origin: &Origin) -> Bl
         return unknown(raw, origin);
     };
     set_extras(&mut block, Extras::new(origin.clone()));
-    if let Some(canon) = canonical_part(&block, kind) {
+    if let Some(canon) = canonical_part(&block, kind, &mut Media::inline()) {
         let overrides = Overrides::diff(&canon, raw, &[]);
         if let Some(extras) = extras_mut(&mut block) {
             overrides.record(extras, "");
@@ -266,13 +271,23 @@ pub(super) fn single_string(blocks: &[&Block]) -> Option<String> {
     }
 }
 
-pub(super) fn content_node(blocks: &[&Block], kind: TextKind, owner: &Extras) -> Node {
+pub(super) fn content_node(
+    blocks: &[&Block],
+    kind: TextKind,
+    owner: &Extras,
+    media: &mut Media,
+) -> Node {
     if !owner.form_flag(DIALECT, PARTS)
         && let Some(s) = single_string(blocks)
     {
         return Node::str(s);
     }
-    Node::Arr(blocks.iter().filter_map(|b| encode_part(b, kind)).collect())
+    Node::Arr(
+        blocks
+            .iter()
+            .filter_map(|b| encode_part(b, kind, media))
+            .collect(),
+    )
 }
 
 pub(super) fn arguments_from(text: String, extras: &mut Extras) -> RawJson {
@@ -338,12 +353,16 @@ pub(super) fn decode_function_call(
     Some(call)
 }
 
-pub(super) fn function_call_output_item(call_id: &str, result: &ToolResultBlock) -> Node {
+pub(super) fn function_call_output_item(
+    call_id: &str,
+    result: &ToolResultBlock,
+    media: &mut Media,
+) -> Node {
     let blocks: Vec<&Block> = result.content.iter().collect();
     let output = if blocks.is_empty() && !result.extras.form_flag(DIALECT, PARTS) {
         Node::str("")
     } else {
-        content_node(&blocks, TextKind::Input, &result.extras)
+        content_node(&blocks, TextKind::Input, &result.extras, media)
     };
     Node::obj()
         .with("type", Node::str("function_call_output"))
@@ -365,7 +384,7 @@ pub(super) fn decode_function_call_output(
             result.extras.form.insert(PARTS.to_owned(), true.into());
         }
     }
-    let canon = function_call_output_item(&result.call_id, &result);
+    let canon = function_call_output_item(&result.call_id, &result, &mut Media::inline());
     Overrides::diff(&canon, raw, &["output"]).record(&mut result.extras, "");
     Some(result)
 }

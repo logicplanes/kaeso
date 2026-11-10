@@ -88,6 +88,7 @@ pub(super) struct Recording {
     sent_input: Option<u64>,
     held: Option<super::memory::Held>,
     keep_in_cache: Option<response_cache::Slot>,
+    logging: Option<tokio::task::JoinHandle<Bytes>>,
 }
 
 impl Recording {
@@ -136,10 +137,19 @@ impl Recording {
         }
     }
 
-    fn hand_over(&self, o: Outcome) -> tokio::sync::oneshot::Receiver<()> {
+    fn hand_over(&mut self, mut o: Outcome) -> tokio::sync::oneshot::Receiver<()> {
         let (done, charged) = tokio::sync::oneshot::channel();
         let (sink, state) = (self.sink.clone(), self.state.clone());
+        let logging = self.logging.take();
         self.state.in_flight.finish(async move {
+            if let Some(logging) = logging {
+                match logging.await {
+                    Ok(body) => o.request_body = Some(body),
+                    Err(e) => {
+                        tracing::error!(error = %e, request_id = %o.request_id, "cannot prepare a request's body for the log; it is logged without it");
+                    }
+                }
+            }
             sink.finish_charged(&state, o, done).await;
         });
         charged
@@ -360,6 +370,7 @@ pub async fn serve_with(
         sent_input: None,
         held: None,
         keep_in_cache: None,
+        logging: None,
     };
     let cut = state.in_flight.cut();
     let done = tokio::select! {
@@ -679,6 +690,22 @@ pub(crate) fn in_place<T>(bytes: usize, work: impl FnOnce() -> T) -> T {
     }
 }
 
+// A large body is written as the log keeps it on a blocking thread while the request is
+// decoded, so the raw body is let go once both are done instead of being held for the whole
+// call, as an upload's is. The record reads it again with the same allowance: media kept the
+// first time is kept again and what was left out is already a placeholder.
+fn logged_early(body: Bytes, keep_media: bool) -> tokio::task::JoinHandle<Bytes> {
+    tokio::task::spawn_blocking(move || {
+        let mut keep = if keep_media {
+            crate::services::log_media::Keep::media()
+        } else {
+            crate::services::log_media::Keep::nothing()
+        };
+        let logged = crate::services::log_media::owned_body(body, &mut keep);
+        Bytes::from(logged)
+    })
+}
+
 // An upload as the log keeps it. Kept media is written as base64, which for a large upload is
 // work for a blocking thread; the clone shares the upload's bytes.
 async fn logged_upload<R: Clone + Send + 'static>(
@@ -826,7 +853,11 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
                 .as_ref()
                 .is_some_and(|c| c.kind() == RequestKind::Transcription);
         if image.is_none() && video.is_none() && !uploads {
-            o.request_body = Some(body.clone());
+            if body.len() < OFF_THREAD_BYTES {
+                o.request_body = Some(body.clone());
+            } else {
+                rec.logging = Some(logged_early(body.clone(), keep_media));
+            }
         }
     }
     let request_bytes = body.len();
@@ -1578,6 +1609,7 @@ async fn attempt(
                 sent_input: None,
                 held: rec.held.take(),
                 keep_in_cache: None,
+                logging: rec.logging.take(),
             };
             let keepalive = state.config.streams.keepalive_interval;
             let carry = carry.map(|key_id| continuity::StreamCarry::new(state.clone(), key_id));

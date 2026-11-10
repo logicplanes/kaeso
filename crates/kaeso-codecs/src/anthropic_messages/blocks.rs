@@ -15,9 +15,10 @@ use super::wire::{
 };
 use crate::codec::EgressCtx;
 use crate::cross::{ReplyPolicy, reasoning_replayable, reasoning_reply_policy};
+use crate::inline_media::Media;
 use crate::limits::{Form, Scope};
 use crate::wire::{
-    Ext, StringOr, add_nested_extra, extra_for, extras_from, type_tag, verbatim_from_form,
+    Ext, StringOr, Text, add_nested_extra, extra_for, extras_from, type_tag, verbatim_from_form,
     verbatim_into_form,
 };
 use crate::wire::{leading_type, without_position};
@@ -110,9 +111,9 @@ fn decode_kind(raw: &RawValue, dec: Dec<'_>, kind: BlockKind) -> Result<Block, S
             Block::Text(b)
         }
         BlockKind::Image => {
-            let w: Ext<ImageW> = parse(raw, "image")?;
+            let w: Ext<ImageW<&RawValue>> = parse(raw, "image")?;
             let mut extras = extras_from(origin, w.extra, w.verbatim);
-            let Some(source) = decode_source(&w.known.source, origin, &mut extras, false)? else {
+            let Some(source) = decode_source(w.known.source, origin, &mut extras, false)? else {
                 return Ok(unknown());
             };
             let mut b = ImageBlock::new(source);
@@ -121,9 +122,9 @@ fn decode_kind(raw: &RawValue, dec: Dec<'_>, kind: BlockKind) -> Result<Block, S
             Block::Image(b)
         }
         BlockKind::Video => {
-            let w: Ext<ImageW> = parse(raw, "video")?;
+            let w: Ext<ImageW<&RawValue>> = parse(raw, "video")?;
             let mut extras = extras_from(origin, w.extra, w.verbatim);
-            let Some(source) = decode_source(&w.known.source, origin, &mut extras, false)? else {
+            let Some(source) = decode_source(w.known.source, origin, &mut extras, false)? else {
                 return Ok(unknown());
             };
             let mut b = VideoBlock::new(source);
@@ -132,9 +133,9 @@ fn decode_kind(raw: &RawValue, dec: Dec<'_>, kind: BlockKind) -> Result<Block, S
             Block::Video(b)
         }
         BlockKind::Document => {
-            let w: Ext<DocumentW> = parse(raw, "document")?;
+            let w: Ext<DocumentW<&RawValue>> = parse(raw, "document")?;
             let mut extras = extras_from(origin, w.extra, w.verbatim);
-            let Some(source) = decode_source(&w.known.source, origin, &mut extras, true)? else {
+            let Some(source) = decode_source(w.known.source, origin, &mut extras, true)? else {
                 return Ok(unknown());
             };
             let mut b = DocumentBlock::new(source);
@@ -176,7 +177,7 @@ fn decode_kind(raw: &RawValue, dec: Dec<'_>, kind: BlockKind) -> Result<Block, S
             Block::ToolCall(b)
         }
         BlockKind::ToolResult => {
-            let w: Ext<ToolResultW> = parse(raw, "tool_result")?;
+            let w: Ext<ToolResultW<&RawValue>> = parse(raw, "tool_result")?;
             let mut extras = extras_from(origin, w.extra, w.verbatim);
             let content = match w.known.content {
                 None => Vec::new(),
@@ -298,8 +299,8 @@ pub(crate) fn block_form(raw: &RawValue, depth: u8) -> Form {
     }
 }
 
-pub(crate) fn decode_content(
-    content: StringOr<Raw>,
+pub(crate) fn decode_content<C: std::ops::Deref<Target = RawValue>>(
+    content: StringOr<C>,
     dec: Dec<'_>,
     extras: &mut kaeso_kpp::Extras,
     scope: &str,
@@ -397,8 +398,8 @@ pub(crate) fn tool_change(item: &RawItem) -> Option<Result<ToolChange, String>> 
     Some(read())
 }
 
-fn parse<T: serde::de::DeserializeOwned + serde::Serialize>(
-    raw: &RawValue,
+fn parse<'a, T: serde::Deserialize<'a> + serde::Serialize>(
+    raw: &'a RawValue,
     what: &str,
 ) -> Result<Ext<T>, String> {
     Ext::from_raw(raw).map_err(|e| format!("invalid `{what}` block: {}", without_position(&e)))
@@ -417,8 +418,8 @@ fn decode_source(
     };
     let (source, extra, verbatim) = match kind {
         SourceKind::Base64 => {
-            let w: Ext<DataSourceW> = Ext::from_raw(raw).map_err(err)?;
-            let source = Source::base64(w.known.media_type, w.known.data)
+            let w: Ext<DataSourceW<Text>> = Ext::from_raw(raw).map_err(err)?;
+            let source = Source::base64(w.known.media_type, w.known.data.as_str())
                 .map_err(|_| "`source.data` is not valid base64".to_owned())?;
             (source, w.extra, w.verbatim)
         }
@@ -524,6 +525,7 @@ pub(crate) struct BlockEncoder {
     pub(crate) side: Side,
     pub(crate) rewrites: Rewrites,
     pub(crate) breakpoints: usize,
+    pub(crate) media: Media,
 }
 
 impl BlockEncoder {
@@ -533,6 +535,10 @@ impl BlockEncoder {
             side,
             rewrites: Rewrites::default(),
             breakpoints: 0,
+            media: match side {
+                Side::Request => Media::deferred(),
+                Side::Reply => Media::inline(),
+            },
         }
     }
 
@@ -783,7 +789,7 @@ impl BlockEncoder {
     }
 
     fn source(
-        &self,
+        &mut self,
         source: &Source,
         extras: &kaeso_kpp::Extras,
         document: bool,
@@ -793,7 +799,7 @@ impl BlockEncoder {
                 BytesSourceW {
                     ty: "base64",
                     media_type: &s.media_type,
-                    data: s.base64(),
+                    data: self.media.base64(s),
                 },
                 extras,
                 "source",

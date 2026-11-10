@@ -38,6 +38,8 @@ use kaeso_kpp::{
     RequestKind,
 };
 
+use crate::inline_media::Media;
+
 use crate::codec::{
     Codec, EgressCtx, EncodeCtx, EncodedError, EncodedRequest, HeaderList, StreamDecoder,
     StreamEncoder, is_forwarded_header,
@@ -153,9 +155,10 @@ impl Codec for OpenAiChat {
                 "Chat Completions only generates responses; send token counting and embeddings requests to an API that offers them (Anthropic Messages, OpenAI Responses or OpenAI Embeddings).",
             ));
         };
-        let wire = request_encode::encode_generate(generate, ctx)?;
+        let mut media = Media::deferred();
+        let wire = request_encode::encode_generate(generate, ctx, &mut media)?;
         ctx.chat_profile.refuse(generate, &wire)?;
-        let body = to_body(&wire)?;
+        let body = media.finish(to_body(&wire)?)?;
         let mut headers = HeaderList::new().with("content-type", "application/json");
         if generate.extras.is_from(DIALECT) {
             for (name, value) in generate.extras.headers() {

@@ -214,6 +214,62 @@ async fn logged_image(env: &Env, id: &str) -> Value {
         .unwrap_or_default()
 }
 
+// A body this large is written for the log while it is decoded, on a blocking thread.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_large_request_is_logged_as_a_small_one_is_with_or_without_its_media() {
+    use base64::Engine as _;
+    let env = env(&[]).await;
+    let mut png = base64::engine::general_purpose::STANDARD
+        .decode(PIXEL)
+        .unwrap();
+    png.resize(400 << 10, 7);
+    let url = format!(
+        "data:image/png;base64,{}",
+        base64::engine::general_purpose::STANDARD.encode(&png)
+    );
+    let ask = || async {
+        let r = call(
+            &env,
+            "/v1/chat/completions",
+            Some(&env.key),
+            false,
+            Some(json!({
+                "model": "claude-haiku-4-5",
+                "messages": [{ "role": "user", "content": [
+                    { "type": "text", "text": "What is in this picture?" },
+                    { "type": "image_url", "image_url": { "url": url } },
+                ]}],
+            })),
+        )
+        .await;
+        assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+        r.header("kaeso-request-id").unwrap().to_owned()
+    };
+    let left_out = ask().await;
+    patch(
+        &env,
+        &format!("/orgs/{}/logs/settings", env.owner.org_id),
+        json!({ "keep_media": true }),
+    )
+    .await;
+    patch(
+        &env,
+        &format!("{}/logs/settings", base(&env)),
+        json!({ "keep_media": true }),
+    )
+    .await;
+    let kept = ask().await;
+    flush(&env).await;
+
+    assert_eq!(
+        logged_image(&env, &left_out).await,
+        json!({ "kaeso_media": {
+            "media_type": "image/png", "bytes": png.len(), "width": 1, "height": 1, "reason": "not_kept"
+        }})
+    );
+    assert_eq!(logged_image(&env, &kept).await, url.as_str());
+}
+
 #[tokio::test]
 async fn media_is_kept_only_where_the_org_and_the_project_keep_it_and_every_switch_is_audited() {
     let env = env(&[]).await;
