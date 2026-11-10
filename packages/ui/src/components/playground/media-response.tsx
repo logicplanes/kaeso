@@ -120,7 +120,7 @@ export const MediaResponse = forwardRef<HTMLElement, MediaResponseProps>(functio
       <span
         data-reply-actions=""
         className={cn(
-          "flex items-center gap-x-4 transition-[margin,opacity] duration-200 ease-standard reduced:transition-none starting:opacity-0",
+          "flex items-center gap-x-4 transition-arrive reduced:transition-none starting:opacity-0",
           saveVideo && onRetry ? "starting:-ml-72" : "starting:-ml-36",
         )}
       >

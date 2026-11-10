@@ -104,7 +104,7 @@ export const ResponseView = forwardRef<HTMLElement, ResponseViewProps>(function 
       <span
         data-reply-actions=""
         className={cn(
-          "flex items-center gap-x-4 transition-[margin,opacity] duration-200 ease-standard reduced:transition-none starting:opacity-0",
+          "flex items-center gap-x-4 transition-arrive reduced:transition-none starting:opacity-0",
           hasText && onRetry ? "starting:-ml-72" : "starting:-ml-36",
         )}
       >
