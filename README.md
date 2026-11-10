@@ -9,7 +9,7 @@
   <br>
   <br>
   <h3>The open-source AI gateway you run yourself</h3>
-  <p>One OpenAI-, Anthropic-, Gemini- and ElevenLabs-compatible API in front of every provider, for chat, images, audio and video, with single sign-on, roles, budgets, request logs and an MCP portal, in one Rust process.</p>
+  <p>One OpenAI-, Anthropic-, Gemini- and ElevenLabs-compatible API in front of every provider, for chat, embeddings, images, video, speech, transcription and music, with single sign-on, roles, budgets, alias routes, request logs, a playground and an MCP portal, in one Rust process.</p>
   <p>
     <a href="https://github.com/logicplanes/kaeso/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/logicplanes/kaeso/actions/workflows/ci.yml/badge.svg?branch=dev"></a>
     <a href="https://scorecard.dev/viewer/?uri=github.com/logicplanes/kaeso"><img alt="OpenSSF Scorecard" src="https://api.scorecard.dev/projects/github.com/logicplanes/kaeso/badge"></a>
@@ -76,34 +76,52 @@ print(client.responses.create(model="claude-haiku-5-5", input="Hello").output_te
 
 The Anthropic SDK works the same way with `base_url="https://kaeso.example.com"`. Kaeso translates the request and the reply between the formats ([calling models](https://docs.kaeso.app/get-started/calling-models)).
 
+Built in are Anthropic, Baseten, Cerebras, Cohere, DeepSeek, ElevenLabs, Fireworks AI, Gemini Enterprise Agent Platform, Google AI Studio, Groq, Hugging Face, MiniMax, Mistral, Moonshot, Nebius Token Factory, NVIDIA, Ollama Cloud, OpenAI, OpenRouter, QwenCloud, SambaNova, Scaleway, SiliconFlow, SpaceX (xAI), Together AI, Vercel and Z.ai ([supported providers](https://docs.kaeso.app/concepts/supported-providers)). A server of your own, such as vLLM, Ollama, LM Studio or llama.cpp, joins as a [custom provider](https://docs.kaeso.app/console/custom-providers).
+
 ## The console
 
-Every page below is the [live demo](https://demo.kaeso.app), a read-only install with sample data.
+The pages below show the console with sample data. The [live demo](https://demo.kaeso.app) is a read-only install to try it yourself.
 
 <table>
   <tr>
     <td width="50%" valign="top">
       <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/console-overview-dark.webp">
-        <img alt="The organization overview: requests, tokens, cost and errors for the last 30 days, with a chart of requests and errors per day" src="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/console-overview-light.webp" width="100%">
+        <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/console-analytics-dark.webp">
+        <img alt="Analytics: requests, tokens, cost and error rate for the last 30 days against the 30 days before, a chart of requests per day, and the projects and models with the most usage" src="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/console-analytics-light.webp" width="100%">
       </picture>
-      <p><b><a href="https://docs.kaeso.app/console/organizations-and-projects">Overview</a></b><br>Requests, tokens, cost and errors per organization and project, against the prior period.</p>
+      <p><b><a href="https://docs.kaeso.app/console/organizations-and-projects#read-usage">Analytics</a></b><br>Requests, tokens, cost and errors per organization, project, model and member, against the period before.</p>
     </td>
     <td width="50%" valign="top">
       <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/console-logs-dark.webp">
-        <img alt="Request logs: every request with its status, model, provider, duration, tokens, cached share and cost, updating live" src="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/console-logs-light.webp" width="100%">
+        <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/console-playground-dark.webp">
+        <img alt="The Playground: two prompts to Claude Haiku 5.5 with their replies, each with its time to first token, total time, tokens and cost" src="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/console-playground-light.webp" width="100%">
       </picture>
-      <p><b><a href="https://docs.kaeso.app/console/request-logs">Request logs</a></b><br>Every request with its model, status, tokens, cost, timing and caller, and its content if you keep it.</p>
+      <p><b><a href="https://docs.kaeso.app/console/playground">Playground</a></b><br>Try any model in the project, up to four side by side, for text, images, speech, music, transcription and video.</p>
     </td>
   </tr>
   <tr>
     <td width="50%" valign="top">
       <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/console-models-dark.webp">
-        <img alt="The project's model catalogue: Claude and GPT models with their aliases, capabilities, context windows, prices and release dates" src="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/console-models-light.webp" width="100%">
+        <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/console-logs-dark.webp">
+        <img alt="Request logs: every request with its status, model, provider, duration, tokens or audio length, cached share and cost, transcriptions, speech and images among the chat requests" src="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/console-logs-light.webp" width="100%">
       </picture>
-      <p><b><a href="https://docs.kaeso.app/console/models-and-aliases">Models and aliases</a></b><br>A catalogue per project with prices and capabilities, and aliases that fall back to the next model when one fails.</p>
+      <p><b><a href="https://docs.kaeso.app/console/request-logs">Request logs</a></b><br>Every request with its model, status, tokens, cost, timing and caller, and its content and media if you keep them.</p>
+    </td>
+    <td width="50%" valign="top">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/console-models-dark.webp">
+        <img alt="The project's model catalogue: Claude and GPT models with their aliases, capabilities, context windows, prices and release dates from KPMR" src="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/console-models-light.webp" width="100%">
+      </picture>
+      <p><b><a href="https://docs.kaeso.app/console/models-and-aliases">Models</a></b><br>A catalogue per project with the prices and capabilities of every model from KPMR, the Kaeso Provider &amp; Model Registry.</p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/console-aliases-dark.webp">
+        <img alt="An alias route in the editor: a condition sends enterprise requests to Claude Sonnet 5.5 with a fallback to GPT-6 Sol, and splits the rest by caller between Claude Haiku 5.5 and GPT-5.4 mini" src="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/console-aliases-light.webp" width="100%">
+      </picture>
+      <p><b><a href="https://docs.kaeso.app/concepts/alias-routes">Alias routes</a></b><br>Name the models behind an alias, with fallbacks, conditions on headers and tokens, and weighted splits.</p>
     </td>
     <td width="50%" valign="top">
       <picture>
@@ -143,7 +161,7 @@ flowchart LR
   <tr>
     <td width="33%" valign="top"><b>Single sign-on and roles</b><br>Each organization signs in through its own OpenID Connect provider, for any number of people at no cost, with organization and project roles and single rights on top (<a href="https://docs.kaeso.app/console/members-and-roles">members and roles</a>).</td>
     <td width="33%" valign="top"><b>One format in, any provider out</b><br>Apps speak the OpenAI, Anthropic, Gemini or ElevenLabs API, for chat, images, audio and video; Kaeso decodes every request, encodes it for the provider and translates the reply and the stream back (<a href="https://docs.kaeso.app/concepts/format-translation">format translation</a>).</td>
-    <td width="33%" valign="top"><b>Alias routes with fallbacks</b><br>An alias names the models behind it in order; a failing step is skipped for every gateway at once, and the next one answers (<a href="https://docs.kaeso.app/concepts/alias-routes">alias routes</a>).</td>
+    <td width="33%" valign="top"><b>Media through the same gateway</b><br>Images, video, speech, transcription, sound effects and music go through the same keys, limits, request logs and costs as chat, on every provider that makes them (<a href="https://docs.kaeso.app/api/images">images</a>, <a href="https://docs.kaeso.app/api/audio">audio</a>, <a href="https://docs.kaeso.app/api/videos">videos</a>).</td>
   </tr>
   <tr>
     <td width="33%" valign="top"><b>An MCP portal per project</b><br>Connect your own MCP servers once, review their tools, and let claude.ai, ChatGPT, Cursor or any MCP client call them through one signed-in portal (<a href="https://docs.kaeso.app/concepts/mcp-portal">MCP portal</a>).</td>
@@ -167,12 +185,12 @@ Checked on 6 November 2026 against each project's repository and documentation. 
 
 ## Works with
 
-| Tool                                                                                                                                                                                                                        | How                                                                                                                                                   |
-| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [Claude Code](https://docs.kaeso.app/get-started/coding-tools#set-up-claude-code) and [Codex](https://docs.kaeso.app/get-started/coding-tools#set-up-codex)                                                                 | Kaeso is their model provider, so every session is logged and budgeted                                                                                |
-| [Cursor](https://docs.kaeso.app/api/mcp#cursor) and Claude Code                                                                                                                                                             | Manage Kaeso through its MCP server, from keys to limits                                                                                              |
-| [claude.ai](https://docs.kaeso.app/console/tools#connect-a-client), ChatGPT and any MCP client                                                                                                                              | Call your MCP servers' tools through a project's [MCP portal](https://docs.kaeso.app/concepts/mcp-portal)                                             |
-| The [OpenAI SDK](https://docs.kaeso.app/get-started/calling-models) and the [Anthropic SDK](https://docs.kaeso.app/get-started/calling-models#use-the-anthropic-sdk), in any language, and anything with a base URL setting | Point the base URL at Kaeso; [supported providers](https://docs.kaeso.app/concepts/supported-providers) lists what each one can do through either API |
+| Tool                                                                                                                                                                                                                                                                                                                                                                    | How                                                                                                                                                      |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [Claude Code](https://docs.kaeso.app/get-started/coding-tools#set-up-claude-code) and [Codex](https://docs.kaeso.app/get-started/coding-tools#set-up-codex)                                                                                                                                                                                                             | Kaeso is their model provider, so every session is logged and budgeted                                                                                   |
+| The Kaeso plugins for [Claude Code](https://docs.kaeso.app/api/mcp#claude-code) and [Cursor](https://docs.kaeso.app/api/mcp#cursor)                                                                                                                                                                                                                                     | Manage Kaeso through its MCP server, from keys to limits; the Claude Code plugin's skill connects the server for you                                     |
+| [claude.ai](https://docs.kaeso.app/console/tools#connect-a-client), ChatGPT and any MCP client                                                                                                                                                                                                                                                                          | Call your MCP servers' tools through a project's [MCP portal](https://docs.kaeso.app/concepts/mcp-portal)                                                |
+| The [OpenAI](https://docs.kaeso.app/get-started/calling-models), [Anthropic](https://docs.kaeso.app/get-started/calling-models#use-the-anthropic-sdk), [Google Gen AI](https://docs.kaeso.app/get-started/calling-models#use-the-google-gen-ai-sdk) and [ElevenLabs](https://docs.kaeso.app/api/elevenlabs) SDKs, in any language, and anything with a base URL setting | Point the base URL at Kaeso; [supported providers](https://docs.kaeso.app/concepts/supported-providers) lists what each provider can do through each API |
 
 ## In this repository
 
