@@ -9,7 +9,7 @@
   "plugins": [
     {
       "name": "kaeso",
-      "source": "plugins/kaeso",
+      "source": "plugins/kaeso-cursor",
       "description": "Manage your self-hosted Kaeso AI gateway from your agent: organizations, projects, keys, models, limits, usage and logs, with only the rights you grant."
     }
   ]

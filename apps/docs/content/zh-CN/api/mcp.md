@@ -20,19 +20,19 @@ claude mcp add --transport http kaeso https://kaeso.example.com/mcp
 
 下面每种客户端都会自行通过 OAuth 登录。它从服务器的第一个响应中找到 Kaeso 的登录方式，完成注册并打开您的浏览器，您无需复制任何密钥。
 
-控制台中的**账户** › **智能体**会在您实例的 MCP 地址旁显示 Claude Code、Cursor 和 GitHub Copilot 的标志。点击任一标志即可打开该客户端的步骤，并已填好您实例的地址：Claude Code 的插件和命令、**添加到 Cursor**，以及用于 GitHub Copilot 的**添加到 VS Code**。
+控制台中的**账户** › **智能体**会在您实例的 MCP 地址旁显示 Claude Code、Cursor 和 GitHub Copilot 的标志。点击任一标志即可打开该客户端的步骤，并已填好您实例的地址：Claude Code 的命令和插件、**添加到 Cursor**，以及用于 GitHub Copilot 的**添加到 VS Code**。
 
 ### Claude Code
 
 上面的命令把服务器添加到当前项目。加上 `--scope user` 可在所有项目中使用。`/mcp` 负责登录，撤销智能体后也用它重新登录。
 
-也可以安装 Kaeso 插件，启用时它会询问您实例的地址：
+Kaeso 插件会添加 Kaeso 的技能。它教智能体使用服务器的工具；如果服务器尚未连接，它会询问您实例的地址并完成连接：
 
 ```text
 /plugin install kaeso --marketplace logicplanes/kaeso
 ```
 
-之后可用 `/plugin configure kaeso@kaeso` 更改地址。要获得插件的每个新版本，请在 `/plugin` › **Marketplaces** 中为 `kaeso` 市场开启自动更新。
+要获得插件的每个新版本，请在 `/plugin` › **Marketplaces** 中为 `kaeso` 市场开启自动更新。
 
 ### Codex
 

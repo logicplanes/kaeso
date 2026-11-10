@@ -20,19 +20,19 @@ Führen Sie dann `/mcp` in Claude Code aus und wählen Sie `kaeso`, um sich anzu
 
 Jeder Client unten meldet sich selbst per OAuth an. Er findet die Anmeldung von Kaeso in der ersten Antwort des Servers, registriert sich und öffnet Ihren Browser, sodass Sie nie einen Schlüssel kopieren.
 
-**Konto** › **Agenten** in der Konsole zeigt die MCP-Adresse Ihrer Installation neben den Zeichen von Claude Code, Cursor und GitHub Copilot. Jedes öffnet die Schritte für diesen Client, mit der Adresse Ihrer Installation: das Plugin und den Befehl für Claude Code, **Zu Cursor hinzufügen** und **Zu VS Code hinzufügen** für GitHub Copilot.
+**Konto** › **Agenten** in der Konsole zeigt die MCP-Adresse Ihrer Installation neben den Zeichen von Claude Code, Cursor und GitHub Copilot. Jedes öffnet die Schritte für diesen Client, mit der Adresse Ihrer Installation: den Befehl und das Plugin für Claude Code, **Zu Cursor hinzufügen** und **Zu VS Code hinzufügen** für GitHub Copilot.
 
 ### Claude Code
 
 Der Befehl oben fügt den Server dem aktuellen Projekt hinzu. Mit `--scope user` steht er in jedem Projekt bereit. `/mcp` meldet an, auch erneut, nachdem Sie den Agenten widerrufen haben.
 
-Oder installieren Sie das Kaeso-Plugin, das beim Aktivieren nach der Adresse Ihrer Installation fragt:
+Das Kaeso-Plugin fügt den Skill von Kaeso hinzu. Er bringt dem Agenten die Tools des Servers bei und fragt, wenn der Server noch nicht verbunden ist, nach der Adresse Ihrer Installation und verbindet ihn:
 
 ```text
 /plugin install kaeso --marketplace logicplanes/kaeso
 ```
 
-`/plugin configure kaeso@kaeso` ändert die Adresse später. Damit Sie jede Version des Plugins erhalten, schalten Sie unter `/plugin` › **Marketplaces** die automatische Aktualisierung für den Marketplace `kaeso` ein.
+Damit Sie jede Version des Plugins erhalten, schalten Sie unter `/plugin` › **Marketplaces** die automatische Aktualisierung für den Marketplace `kaeso` ein.
 
 ### Codex
 

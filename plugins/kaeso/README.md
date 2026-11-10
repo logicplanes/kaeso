@@ -1,15 +1,17 @@
-# Kaeso plugin
+# Kaeso plugin for Claude Code
 
-Connects Claude Code and Cursor to your self-hosted [Kaeso](https://kaeso.app) install through its MCP server. Your agent signs in through your browser, and you choose what it may do on the instance, in each organization and project, and on your account.
-
-In Claude Code:
+Adds the Kaeso skill to Claude Code. It teaches your agent the tools of your self-hosted [Kaeso](https://kaeso.app) install's MCP server and, if the server isn't connected yet, asks for your install's address and connects it.
 
 ```text
 /plugin install kaeso --marketplace logicplanes/kaeso
 ```
 
-In Cursor, install **Kaeso** from the Cursor Marketplace.
+You can also connect the server yourself:
 
-When you enable the plugin, it asks for the address of your Kaeso install, such as `https://kaeso.example.com`.
+```bash
+claude mcp add --transport http --scope user kaeso https://kaeso.example.com/mcp
+```
+
+Then run `/mcp` and choose `kaeso` to sign in. Your browser opens your install's console, where you choose what the agent may do on the instance, in each organization and project, and on your account.
 
 Installation, sign-in and every tool are described in the [MCP server documentation](https://docs.kaeso.app/api/mcp).

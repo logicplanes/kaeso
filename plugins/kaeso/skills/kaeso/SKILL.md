@@ -1,11 +1,21 @@
 ---
 name: kaeso
-description: Use when the user asks about their Kaeso AI gateway, such as its organizations, projects, API keys, models, aliases and their routes, provider keys, limits, usage, costs, request logs or audit log, or wants to change any of them.
+description: Use when the user asks about their Kaeso AI gateway, such as its organizations, projects, API keys, models, aliases and their routes, provider keys, limits, usage, costs, request logs or audit log, or wants to change any of them. Also use it to connect Claude Code to their Kaeso install.
 ---
 
 # Working with Kaeso
 
 Kaeso is a self-hosted AI gateway. The `kaeso` MCP server gives you one tool per Platform API operation you are allowed to use, named after its operation id, such as `get_orgs_org_usage`.
+
+## Connecting Kaeso
+
+If the `kaeso` MCP tools aren't available, connect the server first:
+
+1. Ask the user for the address of their Kaeso install, such as `https://kaeso.example.com`.
+2. Run `claude mcp add --transport http --scope user kaeso https://<their install>/mcp` with that address.
+3. Tell them to run `/mcp`, choose `kaeso` and sign in through their browser, where they choose what you may do. If `/mcp` doesn't list `kaeso` yet, they restart Claude Code first.
+
+## Calling the tools
 
 - Start with `get_me_memberships` to find the user's organizations. Ids look like `org_…` and `proj_…`.
 - Every tool takes `agent_model`: the model family you are, such as `claude`, or `unknown` if none in its list fits.
