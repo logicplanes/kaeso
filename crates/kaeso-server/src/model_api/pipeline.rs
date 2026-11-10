@@ -785,8 +785,13 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
 
     let limit = max_body;
     let reading = Instant::now();
-    let read = crate::http::body::read(body, limit).await;
-    let upload = reading.elapsed();
+    let ((read, upload), ()) = tokio::join!(
+        async {
+            let read = crate::http::body::read(body, limit).await;
+            (read, reading.elapsed())
+        },
+        preload(state, caller.project_id),
+    );
     rec.outcome().upload = Some(upload);
     let body = read.map_err(|e| {
         let refused = if crate::http::body_timeout::timed_out(&e) {
@@ -1000,6 +1005,30 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
             route(state, rec, &sh, alias, req).await
         }
     }
+}
+
+// After a pause every cached entry of a project has run out at once, and the request would
+// wait for each load in turn. They are loaded beside each other while the body arrives; the
+// steps below then find them, and report a load that failed as they always did.
+async fn preload(state: &AppState, project: Uuid) {
+    if state
+        .caches
+        .project_models
+        .cached(&project.to_string())
+        .await
+        .is_some()
+    {
+        return;
+    }
+    Box::pin(async {
+        let _ = tokio::join!(
+            crate::services::logs::keeps(state, project),
+            crate::services::catalogue::project_models(state, project),
+            crate::services::limits::project_limits(state, project),
+            response_cache::active(state, project),
+        );
+    })
+    .await;
 }
 
 #[derive(Clone, Copy)]

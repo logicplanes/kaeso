@@ -153,6 +153,36 @@ async fn a_request_refused_before_the_provider_call_times_kaeso_alone() {
 }
 
 #[tokio::test]
+async fn a_cold_project_is_loaded_beside_the_upload_even_for_a_request_refused_at_once() {
+    let env = env().await;
+    let project: kaeso_core::id::ProjectId = env.project.parse().unwrap();
+    let key = project.uuid().to_string();
+    let caches = &env.app.state.caches;
+    let refused = || {
+        call(
+            &env,
+            "/v1/chat/completions",
+            Some(&env.key),
+            false,
+            Some(json!({ "model": 3 })),
+        )
+    };
+    caches.project_models.invalidate(&key).await;
+    caches.project_limits.invalidate(&key).await;
+    let r = refused().await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    assert!(caches.project_models.cached(&key).await.is_some());
+    assert!(caches.project_limits.cached(&key).await.is_some());
+
+    caches.project_limits.invalidate(&key).await;
+    assert_eq!(refused().await.status, StatusCode::BAD_REQUEST);
+    assert!(
+        caches.project_limits.cached(&key).await.is_none(),
+        "a project whose models are in memory loads nothing ahead"
+    );
+}
+
+#[tokio::test]
 async fn a_slow_upload_is_timed_apart_from_kaesos_work() {
     use axum::body::{Body, Bytes};
     use axum::http::Request;
