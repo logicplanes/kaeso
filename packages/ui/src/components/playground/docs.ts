@@ -1,9 +1,19 @@
 import type { ComponentDocs } from "../../component-docs.js";
 
 export const docs = {
+  Attachments: {
+    description:
+      "The files sent with a prompt, in a row that wraps: an image as a 64px thumbnail, a PDF, audio or any other file as a pill with its name. In the composer each has a remove button; above a sent prompt they line up at the end, over its bubble.",
+    props: {
+      align: "Where the row lines up: the start (in the composer) or the end (above a sent prompt).",
+      "aria-label": 'The list\'s accessible name ("Attachments" by default).',
+      items: "The files: an id, the name, the media type and, for an image, a `blob:` or `data:` URL to draw it from.",
+      onRemove: "Removes a file by its id: a remove button on each thumbnail and pill, named after the file.",
+    },
+  },
   CompareGrid: {
     description:
-      "Columns side by side to compare models: equal widths of at least 320px, a header, a body that scrolls on its own and a footer each. When the columns don't fit, Previous column and Next column reach the hidden ones. Removing a column is instant, so offer Undo in a toast.",
+      "Columns side by side to compare models: equal widths of at least 320px, a header, a body that scrolls on its own and a footer each. When the columns don't fit, Previous column and Next column reach the hidden ones. A column's body follows its end as content arrives while the reader is there, lets go the moment they scroll up, and follows again when they return to the end or its `followKey` changes. Removing a column is instant, so offer Undo in a toast.",
     props: {
       active: "The column on screen on a phone, or scrolled to when the columns don't fit.",
       addLabel: "The add circle's name. Defaults to \"Add model\" in the provider's language.",
@@ -20,7 +30,10 @@ export const docs = {
     description:
       "The prompt box: a text box that grows with what is written up to `maxRows`, then scrolls, its edge fading where more lines wait; under it a row with the caller's actions at the start and a round Send arrow at the end, which becomes a Stop square while a response streams. Enter sends and Shift Enter adds a line (`submitOn`); ⌘ Enter or Ctrl Enter also sends. On a touch screen Enter adds a line and the button sends. A click anywhere in the box, the button row included, puts the cursor in the text.",
     props: {
+      accept: "The file types the Attach button offers, as an `accept` attribute (`image/*,application/pdf`).",
       actions: "Controls at the start of the button row: parameters, clear. Ghost and secondary buttons there take tones made for the composer's surface.",
+      attachLabel: 'The Attach button\'s name and tooltip ("Attach files" by default).',
+      attachments: "Files waiting to go with the prompt, drawn above the text box; with any, Send works without text.",
       "aria-label": 'The text box\'s accessible name ("Prompt" by default).',
       autoFocus: "Focuses the composer when it appears.",
       clearOnSubmit: "Clears an uncontrolled composer after Send (true by default).",
@@ -30,6 +43,9 @@ export const docs = {
       maxRows: "Lines before the text box scrolls (10 by default).",
       name: "The field name the value is sent under in a form.",
       onStop: "Stop: the button while `streaming`.",
+      onAttach:
+        "Takes files: an Attach button at the start of the button row, files dropped anywhere on the composer (its outline darkens while they hover) and files pasted into the text box. Check their type and size here and say what was refused.",
+      onRemoveAttachment: "Removes a waiting file by its id.",
       onSubmit:
         "Send: the Send button, Enter in the text box (see `submitOn`), or ⌘ Enter (Ctrl Enter). Not called for a prompt that is empty or only spaces, while disabled, sending or streaming, or while an input method is composing.",
       onValueChange: "Called with the message as it is typed.",
@@ -164,6 +180,7 @@ export const docs = {
       'A person\'s turn: their prompt in a bubble on a quiet fill at the end of the line, so it reads apart from the response that starts at the other edge. A long prompt shows its first lines until "Show all", a disclosure button under them.',
     props: {
       "aria-label": "The message's accessible name. Defaults to \"Prompt\" in the provider's language.",
+      attachments: "The files sent with the prompt, above its bubble: images as thumbnails, other files by name.",
       children: "The prompt as it was written: plain text, line breaks kept.",
       maxLines: 'Lines shown before "Show all" (4 by default; 0 shows everything).',
     },

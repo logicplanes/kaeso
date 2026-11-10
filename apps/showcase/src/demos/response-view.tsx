@@ -175,6 +175,22 @@ export function States() {
       <StateSection title="A long prompt, clamped">
         <UserMessage>{Array.from({ length: 3 }, () => prompts[0]).join(" ")}</UserMessage>
       </StateSection>
+      <StateSection title="A prompt with files">
+        <UserMessage
+          attachments={[
+            { id: "receipt", name: "receipt-northwind.svg", type: "image/svg+xml", src: "/demos/receipt.svg" },
+            { id: "invoice", name: "invoice-2026-10.pdf", type: "application/pdf" },
+          ]}
+        >
+          What did we pay Northwind in October?
+        </UserMessage>
+      </StateSection>
+      <StateSection title="Files alone">
+        <UserMessage attachments={[{ id: "receipt", name: "receipt-northwind.svg", type: "image/svg+xml", src: "/demos/receipt.svg" }]}>{""}</UserMessage>
+      </StateSection>
+      <StateSection title="Streaming, room kept for Copy and Retry">
+        <ResponseView status="streaming" text={half} footer={<ResponseMetrics live timeToFirstToken={412} />} />
+      </StateSection>
       <StateSection title="A thread">
         <ThreadDemo />
       </StateSection>

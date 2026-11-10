@@ -125,7 +125,7 @@ async fn relay_voices(
         return Err(unserved(path));
     };
     let elevenlabs = ProviderRef::from(builtin);
-    pipeline::admit_follow_up(state, &key, None).await?;
+    pipeline::admit_follow_up(state, &pipeline::key_caller(&key), None).await?;
     let credential = crate::services::credentials::for_provider(
         state,
         OrgId::from_uuid(key.org_id),

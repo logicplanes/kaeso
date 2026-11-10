@@ -3,6 +3,7 @@ import { isApiError } from "~/api/errors";
 import { streamPlayground, type PlaygroundRequest } from "~/api/playground";
 import { locale, t } from "~/i18n";
 import { applyEvent, endResponse, isLive, newResponse, type ResponseState, type Turn } from "./responses";
+import type { TurnFile } from "./attachments";
 
 async function inLanguage(message: string): Promise<string> {
   if (locale() === "en") return message;
@@ -142,9 +143,12 @@ export function useThreads(
   );
 
   const send = useCallback(
-    (prompt: string, sends: Send[]) => {
+    (prompt: string, sends: Send[], files?: TurnFile[]) => {
       const now = performance.now();
-      const turns = sends.map((s) => ({ ...s, turn: { id: id("turn"), prompt, response: newResponse(now) } satisfies Turn }));
+      const turns = sends.map((s) => ({
+        ...s,
+        turn: { id: id("turn"), prompt, ...(files?.length ? { files } : {}), response: newResponse(now) } satisfies Turn,
+      }));
       for (const t of turns) live.current.set(t.turn.id, t.turn.response);
       setThreads((ts) => ts.map((t, i) => ({ ...t, turns: [...t.turns, ...turns.filter((x) => x.column === i).map((x) => x.turn)] })));
       for (const t of turns) void run(t.turn, t.request);
@@ -157,7 +161,7 @@ export function useThreads(
       const thread = threads[column];
       const last = thread?.turns.at(-1);
       if (!thread || !last || isLive(last.response)) return;
-      const turn: Turn = { id: id("turn"), prompt: last.prompt, response: newResponse(performance.now()) };
+      const turn: Turn = { id: id("turn"), prompt: last.prompt, ...(last.files ? { files: last.files } : {}), response: newResponse(performance.now()) };
       live.current.set(turn.id, turn.response);
       setThreads((ts) => ts.map((t) => (t.key === thread.key ? { ...t, turns: [...t.turns.slice(0, -1), turn] } : t)));
       void run(turn, request);

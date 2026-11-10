@@ -1,3 +1,5 @@
+export { Attachments, KAESO_ATTACHMENTS_DEFAULT_VARIANTS, KAESO_ATTACHMENTS_VARIANTS } from "./attachments.js";
+export type { Attachment, AttachmentsProps } from "./attachments.js";
 export { Composer, KAESO_COMPOSER_DEFAULT_VARIANTS, KAESO_COMPOSER_VARIANTS } from "./composer.js";
 export type { ComposerProps } from "./composer.js";
 export { CompareGrid, KAESO_COMPARE_GRID_DEFAULT_VARIANTS, KAESO_COMPARE_GRID_VARIANTS } from "./compare-grid.js";

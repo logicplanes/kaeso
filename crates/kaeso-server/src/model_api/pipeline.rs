@@ -193,7 +193,7 @@ impl Drop for Recording {
     }
 }
 
-fn over_limit(error: &(dyn std::error::Error + 'static)) -> bool {
+pub(crate) fn over_limit(error: &(dyn std::error::Error + 'static)) -> bool {
     let mut cause = Some(error);
     while let Some(e) = cause {
         if e.is::<http_body_util::LengthLimitError>() {
@@ -373,6 +373,10 @@ pub async fn serve_with(
     match done {
         Ok(Done::Complete(mut resp, status)) => {
             rec.time(&mut resp);
+            if rec.outcome().source == super::hooks::Source::Playground {
+                rec.outcome().status = status;
+                cost_header(rec.outcome(), &mut resp);
+            }
             rec.finish(status).await;
             resp
         }
@@ -394,6 +398,24 @@ pub async fn serve_with(
             Box::pin(rec.fail(failure.logged(), resp.status().as_u16())).await;
             resp
         }
+    }
+}
+
+/// What a Playground reply was charged, as its request log will say: the amount, or
+/// `unknown` where the model has no price for what it made.
+pub const COST_HEADER: &str = "kaeso-cost";
+
+fn cost_header(outcome: &Outcome, resp: &mut Response) {
+    let value = if crate::services::usage::cost_known(outcome) {
+        crate::services::usage::costed(outcome)
+            .1
+            .normalize()
+            .to_string()
+    } else {
+        "unknown".to_owned()
+    };
+    if let Ok(v) = HeaderValue::from_str(&value) {
+        resp.headers_mut().insert(COST_HEADER, v);
     }
 }
 
@@ -486,19 +508,22 @@ pub(super) fn limited(refusal: super::hooks::Refusal) -> KppError {
 /// rates.
 pub(super) async fn admit_follow_up(
     state: &AppState,
-    key: &kaeso_store::pg::keys::KeyAuth,
+    caller: &Caller,
     model: Option<uuid::Uuid>,
 ) -> Result<(), KppError> {
-    let caller = Caller {
+    crate::services::limits::admit_follow_up(state, caller, model, state.clock.now())
+        .await
+        .map_err(limited)
+}
+
+pub(super) fn key_caller(key: &kaeso_store::pg::keys::KeyAuth) -> Caller {
+    Caller {
         org_id: key.org_id,
         project_id: key.project_id,
         key_id: Some(key.id),
         user_id: key.user_id,
         service_account_id: key.service_account_id,
-    };
-    crate::services::limits::admit_follow_up(state, &caller, model, state.clock.now())
-        .await
-        .map_err(limited)
+    }
 }
 
 /// Custom providers reach only the networks the install opened for them; built-in providers'
@@ -1077,7 +1102,8 @@ async fn attempt(
         Request::Video(r) => r.model.clone_from(&eff.model_id),
         _ => {}
     }
-    let fetch = super::links::Fetch::of(&mut req, &eff.provider, &eff.model_id);
+    let playground = rec.outcome().source == super::hooks::Source::Playground;
+    let fetch = super::links::Fetch::of(&mut req, &eff.provider, &eff.model_id, playground);
     if let Request::Image(r) = &req
         && let Some(units) = rec.outcome().media.as_mut()
     {
