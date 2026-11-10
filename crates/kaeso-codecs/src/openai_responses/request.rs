@@ -619,8 +619,23 @@ fn check_rules(req: &Request) -> Result<(), KppError> {
             DIALECT,
             "Send embeddings requests through the OpenAI Embeddings format.",
         )),
-        _ => Err(KppError::unsupported_by("request kind", DIALECT, "")),
+        other => Err(other_kind(other.kind())),
     }
+}
+
+pub(super) fn other_kind(kind: RequestKind) -> KppError {
+    let requests = match kind {
+        RequestKind::Image => "image requests",
+        RequestKind::Speech => "speech requests",
+        RequestKind::Transcription => "transcription requests",
+        RequestKind::Video => "video requests",
+        _ => "requests of this kind",
+    };
+    KppError::unsupported_by(
+        requests,
+        DIALECT,
+        "OpenAI Responses serves text generation (`/v1/responses`) and token counting (`/v1/responses/input_tokens`) only.",
+    )
 }
 
 fn unsupported(feature: &str, hint: &str) -> KppError {
@@ -750,7 +765,7 @@ pub(super) fn encode(
     let (r, path) = match req {
         Request::Generate(r) => (r, super::RESPONSES_PATH),
         Request::CountTokens(r) => (r, super::INPUT_TOKENS_PATH),
-        _ => return Err(KppError::unsupported_by("request kind", DIALECT, "")),
+        other => return Err(other_kind(other.kind())),
     };
     let mut body = body_node(r, req.kind(), &target, &mut Names::new(ctx));
     if req.kind() == RequestKind::Generate {

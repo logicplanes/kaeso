@@ -11,6 +11,7 @@ export function pickerPrice(input: string | null | undefined, output: string | n
 }
 
 const notServed = () => t("kaeso.modelOptions.notServed", "The provider doesn't serve it");
+const needsApiKey = () => t("kaeso.modelOptions.needsApiKey", "Needs an API key");
 
 export function catalogueModelOption(m: CatalogueModelView): ModelPickerOption {
   const name = modelName(m);
@@ -46,7 +47,13 @@ export function playgroundModelOption(m: PlaygroundModel, value: string, noKey: 
     ],
     ...(m.context_limit ? { context: m.context_limit } : {}),
     ...(price ? { price } : {}),
-    ...(!m.provider_key ? { disabled: true, note: noKey } : m.availability === "unavailable" ? { disabled: true, note: notServed() } : {}),
+    ...(!m.provider_key
+      ? { disabled: true, note: noKey }
+      : m.needs_api_key
+        ? { disabled: true, note: needsApiKey() }
+        : m.availability === "unavailable"
+          ? { disabled: true, note: notServed() }
+          : {}),
   };
 }
 

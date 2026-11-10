@@ -77,6 +77,34 @@ describe("a refusal of a spend budget that is too large", () => {
   });
 });
 
+describe("a refusal of an API the project's account can't call", () => {
+  it("names the provider, the API and the account in German and Chinese", async () => {
+    const message = "OpenAI's Images API needs an API key; this project's key for it is a ChatGPT account.";
+    await speak("de");
+    expect((await errorFromResponse(refusal(message))).message).toBe(
+      "Die Images API von OpenAI braucht einen API-Schlüssel; der Schlüssel dieses Projekts dafür ist ein ChatGPT-Konto.",
+    );
+    await speak("zh-CN");
+    expect((await errorFromResponse(refusal(message))).message).toBe("OpenAI 的 Images API 需要 API 密钥；此项目为其使用的密钥是 ChatGPT 账户。");
+  });
+
+  it("says what the account can't do, as the model API wrote it, in German and Chinese", async () => {
+    const said = (what: string) => `A ChatGPT account can't ${what}. Use an API key for OpenAI in this project instead.`;
+    const instead = "Stattdessen in diesem Projekt einen API-Schlüssel für OpenAI verwenden.";
+    await speak("de");
+    for (const [what, german] of [
+      ["make images", "keine Bilder erstellen"],
+      ["create speech", "keine Sprachausgabe erstellen"],
+      ["transcribe audio", "kein Audio transkribieren"],
+      ["serve this endpoint", "diesen Endpunkt nicht bedienen"],
+    ] as const) {
+      expect((await errorFromResponse(refusal(said(what)))).message).toBe(`Ein ChatGPT-Konto kann ${german}. ${instead}`);
+    }
+    await speak("zh-CN");
+    expect((await errorFromResponse(refusal(said("make images")))).message).toBe("ChatGPT 账户无法生成图片。请改为在此项目中使用 OpenAI 的 API 密钥。");
+  });
+});
+
 describe("a role change that would leave its holders without a right they need", () => {
   it("names the right, its need and the holders in German and Chinese", async () => {
     const keep = "`members.invite` needs `members.view` for 1200 of this role's holders; keep it in the role.";

@@ -57,7 +57,9 @@ export function PlaygroundPage({ org, project, search }: { org: string; project:
   const byRef = useMemo(() => new Map(chat.map((m) => [modelRef(m), m])), [chat]);
 
   // A new column starts with a chat model, so a project with media models still opens on a conversation.
-  const callable = chat.filter((m) => m.provider_key && m.availability !== "unavailable").sort((a, b) => Number(a.mode !== "text") - Number(b.mode !== "text"));
+  const callable = chat
+    .filter((m) => m.provider_key && !m.needs_api_key && m.availability !== "unavailable")
+    .sort((a, b) => Number(a.mode !== "text") - Number(b.mode !== "text"));
   const first = callable[0] ?? chat[0];
   const [saved] = useState(() => recall<Conversation>(conversationKey(project)));
   const linked = parseModels(search.models);

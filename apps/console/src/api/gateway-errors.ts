@@ -580,6 +580,9 @@ const messages = (): Rule[] => [
   rule("errors.accountUnverified", (v) => t("errors.accountUnverified", "The answer from {product} could not be verified; start again.", v)),
   rule("errors.accountNoPlan", (v) => t("errors.accountNoPlan", "The account didn't allow using its {product} plan; start again and allow it.", v)),
   rule("errors.accountOther", (v) => t("errors.accountOther", "You signed in to another {product} account; sign in as {account}.", v)),
+  rule("errors.accountNeedsApiKey", (v) =>
+    t("errors.accountNeedsApiKey", "{provider}'s {api} needs an API key; this project's key for it is a {product} account.", v),
+  ),
   rule("errors.accountNoApiAccess", (v) => t("errors.accountNoApiAccess", "This {product} plan has no API access; add an API key instead.", v)),
   rule("errors.noModelInCatalogue", () => t("errors.noModelInCatalogue", "No such model in this project's catalogue.")),
   rule("errors.modelNotInCatalogue", (v) => t("errors.modelNotInCatalogue", "The model `{model}` is not in this project's catalogue.", v)),
@@ -907,6 +910,18 @@ const messages = (): Rule[] => [
   ),
   rule("errors.modelApi.accountNoTokenCount", (v) =>
     t("errors.modelApi.accountNoTokenCount", "A {product} account can't count tokens. Use an API key for {provider} in this project instead.", v),
+  ),
+  rule("errors.modelApi.accountNoEndpoint", (v) =>
+    t("errors.modelApi.accountNoEndpoint", "A {product} account can't serve this endpoint. Use an API key for {provider} in this project instead.", v),
+  ),
+  rule("errors.modelApi.accountNoImages", (v) =>
+    t("errors.modelApi.accountNoImages", "A {product} account can't make images. Use an API key for {provider} in this project instead.", v),
+  ),
+  rule("errors.modelApi.accountNoSpeech", (v) =>
+    t("errors.modelApi.accountNoSpeech", "A {product} account can't create speech. Use an API key for {provider} in this project instead.", v),
+  ),
+  rule("errors.modelApi.accountNoTranscription", (v) =>
+    t("errors.modelApi.accountNoTranscription", "A {product} account can't transcribe audio. Use an API key for {provider} in this project instead.", v),
   ),
   rule("errors.modelApi.planUsageLimit", (v) => t("errors.modelApi.planUsageLimit", "Your {product} plan's usage limit is reached. Review it at {url}.", v)),
   rule("errors.modelApi.accountNoApiAccess", (v) =>

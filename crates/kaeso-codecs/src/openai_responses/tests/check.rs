@@ -199,6 +199,36 @@ fn embeddings_requests_are_refused() {
 }
 
 #[test]
+fn media_requests_are_refused_by_name() {
+    let image = Request::Image(kaeso_kpp::ImageRequest::new(
+        "m",
+        kaeso_kpp::ImageOperation::Generate,
+    ));
+    let err = OpenAiResponses::check(&image, &crate::test_support::egress()).unwrap_err();
+    assert_eq!(
+        err.message,
+        "`image requests` is not supported by OpenAI Responses. OpenAI Responses serves text generation (`/v1/responses`) and token counting (`/v1/responses/input_tokens`) only."
+    );
+    let mut ctx = EgressCtx::new(&image);
+    let err = OpenAiResponses::encode_request(&image, &mut ctx).unwrap_err();
+    assert_eq!(err.unsupported_feature(), Some("image requests"));
+    for (kind, feature) in [
+        (kaeso_kpp::RequestKind::Speech, "speech requests"),
+        (
+            kaeso_kpp::RequestKind::Transcription,
+            "transcription requests",
+        ),
+        (kaeso_kpp::RequestKind::Video, "video requests"),
+        (kaeso_kpp::RequestKind::Embed, "requests of this kind"),
+    ] {
+        assert_eq!(
+            super::super::request::other_kind(kind).unsupported_feature(),
+            Some(feature)
+        );
+    }
+}
+
+#[test]
 fn encode_request_runs_check_first() {
     let mut r = base();
     r.sampling.top_k = Some(3);
