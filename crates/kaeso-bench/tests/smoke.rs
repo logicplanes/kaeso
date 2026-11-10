@@ -43,6 +43,7 @@ fn every_scenario_runs_at_small_sizes_without_leaks_or_unbounded_memory() {
         "slow-clients",
         "mixed",
         "portal",
+        "agent",
     ] {
         assert!(
             checks.iter().any(|c| c["scenario"] == scenario),
@@ -80,4 +81,11 @@ fn every_scenario_runs_at_small_sizes_without_leaks_or_unbounded_memory() {
     assert!(table.contains("### Slow clients"), "{table}");
     assert!(table.contains("### MCP portal: warm tool calls"), "{table}");
     assert!(results["portal"]["overhead_ms"]["count"].as_u64().unwrap() > 0);
+    assert!(table.contains("### Agent session"), "{table}");
+    let agent = &results["agent"];
+    assert!(agent["request_bytes"].as_u64().unwrap() > 45_000);
+    for (sent, requests) in [("back_to_back", 20), ("paced", 10), ("after_a_pause", 2)] {
+        assert_eq!(agent[sent]["overhead_ms"]["count"], requests, "{sent}");
+        assert_eq!(agent[sent]["failed"], 0, "{sent}");
+    }
 }
