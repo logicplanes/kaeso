@@ -22,7 +22,7 @@ async fn add_model(env: &Env, model: &str) {
         .post(
             &format!("/orgs/{}/projects/{}/models", env.owner.org_id, env.project),
             json!({
-                "provider": "baseten", "model_id": model, "custom": true,
+                "provider": "baseten", "model_id": model,
                 "overrides": {
                     "input_modalities": ["text", "image"], "output_modalities": ["text"],
                     "context_limit": 202752, "output_limit": 131072,
