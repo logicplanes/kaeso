@@ -4301,6 +4301,101 @@ expression: outcomes
     },
     "path": "/v1beta/models/kaeso-example%2Fno-such-model%3Afree:generateContent"
   },
+  "providers/sambanova/invalid-api-key": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "hi"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1
+      }
+    },
+    "path": "/v1beta/models/gpt-oss-120b:generateContent"
+  },
+  "providers/sambanova/missing-api-key": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "hi"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1
+      }
+    },
+    "path": "/v1beta/models/gpt-oss-120b:generateContent"
+  },
+  "providers/sambanova/palindrome-poem-doc": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "create a poem using palindromes"
+            }
+          ],
+          "role": "user"
+        }
+      ]
+    },
+    "path": "/v1beta/models/gpt-oss-120b:generateContent"
+  },
+  "providers/sambanova/reasoning-stream": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What is 17 times 23?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 512,
+        "thinkingConfig": {
+          "thinkingLevel": "LOW"
+        }
+      }
+    },
+    "path": "/v1beta/models/gpt-oss-120b:streamGenerateContent?alt=sse"
+  },
+  "providers/sambanova/stream-length-doc": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "create a poem using palindromes"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 100
+      }
+    },
+    "path": "/v1beta/models/gpt-oss-120b:streamGenerateContent?alt=sse"
+  },
+  "providers/sambanova/thinking-tool-call-doc": {
+    "message": "`chat_template_kwargs` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "chat_template_kwargs"
+  },
   "providers/togetherai/context-length-error": {
     "message": "`context_length_exceeded_behavior` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
     "param": null,

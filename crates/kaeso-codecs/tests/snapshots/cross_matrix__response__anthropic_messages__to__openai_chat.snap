@@ -392,6 +392,33 @@ expression: outcomes
       "total_tokens": 2638
     }
   },
+  "providers/sambanova/thinking": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "27 × 43 = 1161.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "msg_0f1e2d3c4b5a69788796a5b4c3d2e1f0",
+    "model": "gpt-oss-120b",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 46,
+      "prompt_tokens": 78,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 124
+    }
+  },
   "providers/vercel/recorded-text": {
     "choices": [
       {

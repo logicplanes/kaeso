@@ -66,6 +66,7 @@ Kaeso 读取回复时的设置（`ChatProfile::reply`，即一个 `ReplyProfile`
 | Ollama Cloud（`ollama-cloud`） | `max_tokens()`、`reasoning_fields(["reasoning"])`；拒绝 `logit_bias`、`logprobs` 和 `top_logprobs` | Ollama 的 OpenAI 兼容性页面（消息和增量中的 `reasoning`）；`responses/recorded-reasoning-effort` 和 `streams/recorded-reasoning-stream`；`responses/recorded-max-completion-tokens-ignored`（要求 20，生成 150 个 completion token）和 `responses/recorded-max-tokens-honoured`（要求 20，生成 20，`finish_reason: "length"`）；2026-10-30 的实时测试中，Ollama 对 `logprobs`、`top_logprobs` 和 `logit_bias` 返回 200，且没有返回对数概率 |
 | OpenRouter（`openrouter`） | `any_audio_format()`、`with_video_url()`、`reasoning_fields(["reasoning"])`、`error_detail(["error", "metadata", "raw"])` | OpenRouter 的音频和视频输入指南（2026-11-08 阅读：服务商接受的任何 `input_audio.format`，以及带 URL 或 data URL 的 `video_url` 部分）；OpenRouter 的推理 token 指南（`reasoning`，旁边还有 `reasoning_details`）；`responses/recorded-free-reasoning` 和 `streams/recorded-free-reasoning-stream`；OpenRouter 的错误与调试页面（`metadata.raw`，即上游服务商的错误），`errors/recorded-upstream-rate-limited` 和 `errors/recorded-routing-fields` |
 | QwenCloud（`alibaba`） | `system_role()`、`thinking_switch()`、`reasoning_fields(["reasoning_content"])`；拒绝 `audio`、`logit_bias`、`metadata`、`modalities`、`prediction`、`service_tier`、`store`、`verbosity` 和 `web_search_options` | 百炼的[深度思考](https://www.alibabacloud.com/help/en/model-studio/deep-thinking)页面（`enable_thinking`、`thinking_budget`、`reasoning_content`，2026-10-30 查阅）；`fixtures/openai_chat/providers/alibaba/errors/recorded-developer-role`（`developer` 角色返回 400）；`responses/recorded-reasoning-effort-alone`（在 `qwen-flash` 上使用 `reasoning_effort: "high"`：没有思考）和 `responses/recorded-enable-thinking`（100 token 预算用满 100 个推理 token）；`responses/recorded-thinking` 和 `streams/recorded-thinking-stream`；`responses/recorded-logit-bias-field`、`recorded-store-metadata-fields`、`recorded-prediction-field`、`recorded-audio-fields` 和 `recorded-web-search-options-field`，百炼对它们以 200 回答，就像没有这些字段 |
+| SambaNova（`sambanova`） | `without_end_user()`、`without_cache_key()`、`with_video_url()`、`reasoning_fields(["reasoning"])`；拒绝 `frequency_penalty` 和 `presence_penalty` | SambaNova 的 [OpenAI compatibility](https://docs.sambanova.ai/docs/en/features/openai-compatibility) 页面（两种惩罚参数“will be ignored”）和 [OpenAPI document](https://raw.githubusercontent.com/sambanova/sambanova-inference-api-spec/refs/heads/main/openapi.documented.json)（没有 `user`、`safety_identifier` 或 `prompt_cache_key`，`additionalProperties: false`；消息和增量上的 `reasoning`），2026-11-09 阅读；据此构建于 `fixtures/openai_chat/providers/sambanova/` |
 | SpaceX（`xai`） | `reasoning_fields(["reasoning_content"])`、`with_message_bookkeeping()`、`tool_schema_root(ToolSchemaRoot::ObjectUnions)` | xAI 的 Chat Completions 参考（`reasoning_content`）；xAI 的函数调用指南（对象根部或对象组成的联合）；Grok CLI（xAI 自己的客户端）在每个助手轮次都向它发送 `model_id`（`requests/grok-cli-model-id.json`）；`responses/recorded-reasoning-content` 和 `streams/recorded-reasoning-content-stream` |
 | Together AI（`togetherai`） | `reasoning_fields(["reasoning_content", "reasoning"])` | Together AI 的 chat completions 参考；键名取决于模型：`responses/recorded-sampling-extras`（`reasoning_content`），`responses/recorded-reasoning-reply` 和 `streams/recorded-reasoning-stream`（`reasoning`） |
 | Vercel（`vercel`） | `reasoning_fields(["reasoning"])` | Vercel 的 Chat Completions 推理页面（`message.reasoning` 和 `delta.reasoning`，旁边还有 `reasoning_details`）；`responses/recorded-reasoning` 和 `streams/recorded-reasoning-stream` |
@@ -272,7 +273,7 @@ Cerebras 没有 Responses、Messages、embeddings 或 token 计数端点（都�
 | Fireworks 字段 | KPP | 说明 |
 |---|---|---|
 | `message.reasoning_content`、`delta.reasoning_content` | `Block::Reasoning` | 通过配置的 `reasoning_fields`。其他格式的应用发回的思考内容以 `reasoning_content` 到达 Fireworks，这正是其 reasoning 指南在工具调用时所要求的。文档没有描述 `content` 中的 `<think>` 标签。 |
-| 带 `xhigh`、`max`、布尔值或 Token 数的 `reasoning_effort`；Anthropic 形式的 `thinking`；`reasoning_history` | `reasoning.effort`、extras | 目录中的推理强度决定其他格式发送什么；Chat 应用自己的值原样发送。 |
+| 带 `xhigh`、`max`、布尔值或Token 数的 `reasoning_effort`；Anthropic 形式的 `thinking`；`reasoning_history` | `reasoning.effort`、extras | 目录中的推理强度决定其他格式发送什么；Chat 应用自己的值原样发送。 |
 | `top_k`、`min_p`、`typical_p`、`repetition_penalty`、`mirostat_*`、`context_length_exceeded_behavior`、`prompt_cache_isolation_key`、`perf_metrics_in_response`、`raw_output` 及 Fireworks 的其他请求字段 | extras | 当请求发往其他方言时被拒绝，与其他仅限 Chat 的字段相同。 |
 | 超出上下文窗口剩余空间的 `max_tokens` | 发送 | Fireworks 会将其调低而不是拒绝，除非请求设置 `context_length_exceeded_behavior: "error"`。 |
 | `user` | `user` | Fireworks 的 schema 没有 `safety_identifier`，因此配置以 `user` 发送终端用户的 ID（`end_user_as_user()`）。 |
@@ -282,7 +283,7 @@ Cerebras 没有 Responses、Messages、embeddings 或 token 计数端点（都�
 | OpenAI `error` 对象中的错误，带大写的 `code`（例如 `UNAUTHORIZED`）、`type: "error"` 和顶层的 `request_id` | `KppError` | 类别由状态码决定：401 表示密钥被拒绝（`errors/recorded-invalid-api-key`）。 |
 | `GET /v1/models` | `ModelList` | 错误的密钥返回 401（`errors/list-invalid-api-key`），因此模型检查能发现它。Fireworks 没有记录此路径上的列表；控制台从 KPMR 获取其模型。 |
 
-Fireworks 没有记录图像、语音、转录、视频或 Token 计数端点，因此这些保持为空，`count_tokens` 为 `None`。它的 Responses API 以 `prompt_tokens` 和 `completion_tokens` 报告用量，而不是 OpenAI 的字段名，因此 Kaeso 不向它发送 Responses；Responses 应用通过 Chat Completions 访问 Fireworks。
+Fireworks 没有记录图像、语音、转录、视频或Token 计数端点，因此这些保持为空，`count_tokens` 为 `None`。它的 Responses API 以 `prompt_tokens` 和 `completion_tokens` 报告用量，而不是 OpenAI 的字段名，因此 Kaeso 不向它发送 Responses；Responses 应用通过 Chat Completions 访问 Fireworks。
 
 ### Nebius Token Factory
 
@@ -300,4 +301,22 @@ Fireworks 没有记录图像、语音、转录、视频或 Token 计数端点，
 | 带 OpenAI `error` 对象和顶层 `detail` 的错误 | `KppError` | 类别由状态码决定：401 表示密钥被拒绝（`errors/recorded-invalid-api-key`）。 |
 | `GET /v1/models` | `ModelList` | 错误的密钥返回只有 `{"detail": "…"}` 的 401（`errors/list-invalid-api-key`），应用会以 OpenAI 的格式收到 Nebius 的消息，因此模型检查能发现它。 |
 
-Nebius 不提供图像、音频、Messages 或 Token 计数：它的 OpenAPI 文档中没有这样的路径，`/v1/images/generations`、`/v1/audio/transcriptions` 和 `/v1/messages` 返回 404。它的 Responses API 不被使用：Responses 应用通过 Chat Completions 访问 Nebius。
+Nebius 不提供图像、音频、Messages 或Token 计数：它的 OpenAPI 文档中没有这样的路径，`/v1/images/generations`、`/v1/audio/transcriptions` 和 `/v1/messages` 返回 404。它的 Responses API 不被使用：Responses 应用通过 Chat Completions 访问 Nebius。
+
+### SambaNova
+
+来源：SambaNova 的 [OpenAPI document](https://raw.githubusercontent.com/sambanova/sambanova-inference-api-spec/refs/heads/main/openapi.documented.json)（SambaNova cloud API 1.2.0）及其 [OpenAI compatibility](https://docs.sambanova.ai/docs/en/features/openai-compatibility)、[文本生成](https://docs.sambanova.ai/docs/en/features/text-generation)和 [API error codes](https://docs.sambanova.ai/docs/en/api-reference/using-the-api/api-error-codes) 页面，2026-11-09 阅读。由于没有可用的密钥，`fixtures/openai_chat/providers/sambanova/` 包含该文档自己的示例回复和示例流、据此构建的回复、SambaCloud 无需密钥即提供的模型列表，以及在没有有效密钥的情况下实时返回的错误。Kaeso 的基础 URL 为 `https://api.sambanova.ai`，使用 `Authorization: Bearer`。
+
+| SambaNova 字段 | KPP | 说明 |
+|---|---|---|
+| `message.reasoning`、`delta.reasoning`、`channel` | `Block::Reasoning`、extras | 通过配置的 `reasoning_fields`。assistant 消息接受发回的 `reasoning`。 |
+| `chat_template_kwargs`（`enable_thinking`）、`top_k`、`repetition_penalty` | extras | DeepSeek-V3.2 和 Gemma 4 只有在 `enable_thinking` 时才思考，而只有 Chat 应用能发送它。当请求发往其他方言时被拒绝。 |
+| `frequency_penalty`、`presence_penalty` | 拒绝 | SambaNova 接受并忽略它们，因此配置在发送之前拒绝它们。 |
+| 终端用户的 ID、Responses 应用的 `prompt_cache_key` | 省略 | 请求 schema 两者都没有，并拒绝未声明的属性（`without_end_user()`、`without_cache_key()`）。其他未声明的字段原样发送，由 SambaNova 自己返回 400。 |
+| `video_url` 部分 | `Block::Video` | `with_video_url()`；Gemma 4 接受视频。 |
+| 浮点数形式的 `created`、`system_fingerprint` | extras | `responses/palindrome-poem-doc`。 |
+| 带 SambaNova 计时字段的 `usage`（`time_to_first_token`、`total_latency`、`acceptance_rate`、`is_last_response` 等） | `Usage`、`raw` usage | 出现在回复中，以及流的最后一个 `choices: []` 的 chunk 中（`streams/stream-length-doc`）。 |
+| 带 OpenAI `error` 对象和顶层 `request_id` 的错误；410 `model_deprecated` | `KppError` | 类别由状态码决定：401 表示密钥被拒绝，410 表示未找到。 |
+| `GET /v1/models`、`GET /v1/models/{id}` | `ModelList`、`ModelInfo` | 无需密钥即可返回，带 `context_length`、`max_completion_tokens` 和 `pricing`（`models/list-recorded`），因此模型检查无法发现错误的密钥。 |
+
+SambaCloud 不提供嵌入和 Whisper；SambaNova 只为 SambaStack 记录了这两项，SambaCloud 对它们的模型返回 `model_not_found`（`errors/recorded-embeddings-model-not-found`）。它的 Responses API 不被使用：Responses 应用通过 Chat Completions 访问 SambaNova。

@@ -4874,6 +4874,124 @@ expression: outcomes
     },
     "path": "/v1/messages"
   },
+  "providers/sambanova/invalid-api-key": {
+    "body": {
+      "max_tokens": 1,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "hi",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-oss-120b"
+    },
+    "path": "/v1/messages"
+  },
+  "providers/sambanova/missing-api-key": {
+    "body": {
+      "max_tokens": 1,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "hi",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-oss-120b"
+    },
+    "path": "/v1/messages"
+  },
+  "providers/sambanova/palindrome-poem-doc": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "create a poem using palindromes",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-oss-120b"
+    },
+    "path": "/v1/messages"
+  },
+  "providers/sambanova/reasoning-stream": {
+    "body": {
+      "max_tokens": 512,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "What is 17 times 23?",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-oss-120b",
+      "output_config": {
+        "effort": "low"
+      },
+      "stream": true,
+      "thinking": {
+        "type": "adaptive"
+      }
+    },
+    "path": "/v1/messages"
+  },
+  "providers/sambanova/stream-length-doc": {
+    "body": {
+      "max_tokens": 100,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "create a poem using palindromes",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-oss-120b",
+      "stream": true
+    },
+    "path": "/v1/messages"
+  },
+  "providers/sambanova/thinking-tool-call-doc": {
+    "message": "`chat_template_kwargs` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "chat_template_kwargs"
+  },
   "providers/togetherai/context-length-error": {
     "message": "`context_length_exceeded_behavior` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
     "param": null,

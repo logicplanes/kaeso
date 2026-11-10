@@ -860,3 +860,46 @@ fn nebius_gets_developer_messages_as_system_the_end_user_as_user_and_video_url_p
         (&json!("system"), &json!("user-0001"), None)
     );
 }
+
+#[test]
+fn sambanova_refuses_the_penalties_it_ignores_and_leaves_out_the_end_user_and_cache_key() {
+    let sambanova = ChatProfile::compatible("SambaNova")
+        .without_end_user()
+        .without_cache_key()
+        .with_video_url()
+        .reasoning_fields(&["reasoning"])
+        .refusing(&["frequency_penalty", "presence_penalty"]);
+    for field in ["frequency_penalty", "presence_penalty"] {
+        let err = encode_with(
+            &chat(json!({
+                "model": "gpt-oss-120b",
+                "messages": [{"role": "user", "content": "Hi"}],
+                field: 0.5
+            })),
+            sambanova,
+        )
+        .unwrap_err();
+        assert_eq!(
+            refusal(&err),
+            (
+                Some(field),
+                Some(field),
+                format!("`{field}` is not supported by SambaNova; remove it from the request.")
+            )
+        );
+    }
+    let sent = encode_with(
+        &chat(json!({
+            "model": "gpt-oss-120b",
+            "messages": [{"role": "developer", "content": "Be brief."}, {"role": "user", "content": "Hi"}],
+            "safety_identifier": "user-0001"
+        })),
+        sambanova,
+    )
+    .unwrap();
+    assert_eq!(sent["messages"][0]["role"], "developer");
+    assert!(
+        sent.get("safety_identifier").is_none() && sent.get("user").is_none(),
+        "{sent}"
+    );
+}

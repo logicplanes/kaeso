@@ -1,0 +1,8 @@
+{
+  "error": {
+    "message": "Incorrect API key provided: 000000*****0000.",
+    "type": "authentication_error"
+  },
+  "request_id": "00000000000000000000",
+  "type": "error"
+}

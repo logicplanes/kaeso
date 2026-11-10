@@ -1,0 +1,14 @@
+{
+  "model": "gpt-oss-120b",
+  "messages": [
+    {
+      "role": "user",
+      "content": "create a poem using palindromes"
+    }
+  ],
+  "max_tokens": 100,
+  "stream": true,
+  "stream_options": {
+    "include_usage": true
+  }
+}

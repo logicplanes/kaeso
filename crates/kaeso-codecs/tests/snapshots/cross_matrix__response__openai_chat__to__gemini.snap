@@ -3334,6 +3334,58 @@ expression: outcomes
       "totalTokenCount": 403
     }
   },
+  "providers/sambanova/palindrome-poem-doc": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "In madam moon's silver glow,  Aha, a palindrome to know,  Radar spins, a circular tale,  Level heads prevail, without fail.  A man, a plan, a canal, Panama!  Able was I ere I saw Elba,  A Santa at NASA, a curious sight,  Do geese see God, in the pale moonlight?  Mr. Owl ate my metal worm,  Do nine men interpret? Nine men, I nod,  Never odd or even, a palindrome's might,  Madam, in Eden, I'm Adam.  Aibohphobia, a fear to confess,  A palindrome's symmetry, I must address,  Refer, a word that reads the same,  A palindrome's beauty, in its circular game.  In the stillness of the night,  Ava, a palindrome, shining bright,  Hannah, a name that reads the same,  A palindrome's magic, in its circular flame.  Note: Please keep in mind that creating a poem using palindromes can be a challenging task,  and the resulting poem may not be as cohesive or flowing as one that doesn't rely on palindromes.  However, I hope you enjoy the attempt!"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-oss-120b",
+    "responseId": "83a7809d-e18f-44f9-9ab7-2bc494c6c661",
+    "usageMetadata": {
+      "candidatesTokenCount": 350,
+      "promptTokenCount": 43,
+      "totalTokenCount": 393
+    }
+  },
+  "providers/sambanova/thinking-tool-call-doc": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "functionCall": {
+                "args": {
+                  "value": 7
+                },
+                "id": "call_92ad8c74a4594172b6",
+                "name": "return_integer"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gemma-4-31B-it",
+    "responseId": "42d3a6ac-d984-40b1-9389-f5af73cb599e",
+    "usageMetadata": {
+      "candidatesTokenCount": 74,
+      "promptTokenCount": 91,
+      "totalTokenCount": 165
+    }
+  },
   "providers/togetherai/recorded-json-schema": {
     "candidates": [
       {

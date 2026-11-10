@@ -72,6 +72,17 @@ nav: Messages 服务商
 | 带 `request_id` 的 Anthropic 封装中的错误（`errors/recorded-invalid-api-key`） | `KppError` | 未知的模型或路径会得到 Fireworks 自己的 `{"error": {"code": …}}` 正文，按 OpenAI 的格式读取。 |
 | `POST /v1/messages/count_tokens` | — | Fireworks 返回 404，因此 Kaeso 在发送任何内容之前拒绝Token 计数。 |
 
+## SambaNova
+
+来源：SambaNova 的 [Messages API](https://docs.sambanova.ai/docs/en/features/messages) 和 [Anthropic compatibility](https://docs.sambanova.ai/docs/en/features/anthropic-compatibility) 页面以及其 [OpenAPI document](https://raw.githubusercontent.com/sambanova/sambanova-inference-api-spec/refs/heads/main/openapi.documented.json) 中的 `Message` schema（2026-11-09 阅读），以及据此构建的 `fixtures/anthropic_messages/providers/sambanova/`，其中的错误是在没有有效密钥的情况下实时返回的。当 SambaNova 模型的**发送格式**为 Messages 时，它以 Messages 发送；密钥以 `Authorization: Bearer` 发送。
+
+| SambaNova 字段 | KPP | 说明 |
+|---|---|---|
+| 没有 `signature` 的 `thinking` 块 | `Block::Reasoning` | 推理模型无需任何思考设置就会发送它们（`responses/thinking`）。 |
+| 服务器工具、`document` 块、通过 URL 的图像 | 发送 | SambaNova 返回 400，该错误会到达应用。 |
+| 带 `request_id` 的 Anthropic 封装中的错误（`errors/recorded-invalid-api-key`） | `KppError` | |
+| `POST /v1/messages/count_tokens` | `input_tokens` | Anthropic 的格式。无论模型以哪种格式发送，Kaeso 都在这里计算每个 SambaNova 模型的 Token。 |
+
 ## 后续步骤
 
 - [Anthropic Messages](anthropic-messages.md)：查看 Anthropic Messages 格式的每个字段在 KPP 中的去向。

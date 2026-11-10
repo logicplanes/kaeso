@@ -146,6 +146,14 @@ async fn every_member_reads_each_provider_with_its_name_key_page_and_formats() {
     );
     assert_eq!(nebius["embeddings"], "openai_embeddings");
     assert_eq!(nebius["key_prefix"], Value::Null);
+    let sambanova = listed.iter().find(|p| p["id"] == "sambanova").unwrap();
+    assert_eq!(sambanova["name"], "SambaNova");
+    assert_eq!(
+        sambanova["dialects"],
+        json!(["openai_chat", "anthropic_messages"])
+    );
+    assert_eq!(sambanova["count_tokens"], "anthropic_messages");
+    assert_eq!(sambanova["embeddings"], Value::Null);
 
     let anonymous = app
         .call(Method::GET, &format!("/orgs/{org}/providers"), None, None)

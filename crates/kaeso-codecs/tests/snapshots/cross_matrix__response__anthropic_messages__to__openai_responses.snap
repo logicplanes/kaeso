@@ -1057,6 +1057,82 @@ expression: outcomes
     },
     "user": null
   },
+  "providers/sambanova/thinking": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "msg_0f1e2d3c4b5a69788796a5b4c3d2e1f0",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "gpt-oss-120b",
+    "object": "response",
+    "output": [
+      {
+        "encrypted_content": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6ImFudGhyb3BpY19tZXNzYWdlcyJ9LCJ0ZXh0IjpbIjI3IHRpbWVzIDQzIGlzIDI3IHRpbWVzIDQwIHBsdXMgMjcgdGltZXMgMzogMTA4MCBwbHVzIDgxIGlzIDExNjEuIl19",
+        "id": "rs_kaeso_msg0f1e2d3c4b5a69788796a5b4c3d2e1f0_0",
+        "summary": [
+          {
+            "text": "27 times 43 is 27 times 40 plus 27 times 3: 1080 plus 81 is 1161.",
+            "type": "summary_text"
+          }
+        ],
+        "type": "reasoning"
+      },
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "27 × 43 = 1161.",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_msg0f1e2d3c4b5a69788796a5b4c3d2e1f0_1",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 78,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 46,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 124
+    },
+    "user": null
+  },
   "providers/vercel/recorded-text": {
     "background": false,
     "completed_at": 1760000000,

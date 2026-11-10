@@ -1509,6 +1509,44 @@ pub const PROVIDERS: &[Provider] = &[
         routes: &[],
         service_account: None,
     },
+    Provider {
+        id: "sambanova",
+        name: "SambaNova",
+        key_page: KeyPage {
+            url: "https://cloud.sambanova.ai/apis",
+            label: "API Keys",
+        },
+        key_prefix: None,
+        default_base_url: "https://api.sambanova.ai",
+        auth: AuthStyle::Bearer,
+        generation: DialectId::OpenAiChat,
+        count_tokens: Some(DialectId::AnthropicMessages),
+        embeddings: None,
+        images: &[],
+        speech: &[],
+        transcriptions: &[],
+        videos: &[],
+        dialects: &[DialectId::OpenAiChat, DialectId::AnthropicMessages],
+        refused_key_messages: &[],
+        context_window_messages: &[],
+        reasoning_beyond_output_limit: false,
+        end_user_limit: None,
+        // SambaNova's request schema declares no end-user or cache-key field and refuses
+        // undeclared ones; it accepts both penalties without acting on them
+        // (https://docs.sambanova.ai/docs/en/features/openai-compatibility).
+        chat: ChatProfile::compatible("SambaNova")
+            .without_end_user()
+            .without_cache_key()
+            .with_video_url()
+            .reasoning_fields(&["reasoning"])
+            .refusing(&["frequency_penalty", "presence_penalty"]),
+        responses: ResponsesProfile::compatible("SambaNova"),
+        messages: MessagesProfile::compatible("SambaNova"),
+        gemini: GeminiProfile::GOOGLE_AI_STUDIO,
+        account: None,
+        routes: &[],
+        service_account: None,
+    },
 ];
 
 const _: () = {
@@ -1805,7 +1843,7 @@ mod tests {
         assert!(provider("gemini").is_none());
         assert_eq!(
             ids(),
-            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras, zai, minimax, elevenlabs, google, gemini-agent-platform, fireworks-ai, nebius"
+            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras, zai, minimax, elevenlabs, google, gemini-agent-platform, fireworks-ai, nebius, sambanova"
         );
     }
 
@@ -2623,7 +2661,8 @@ mod tests {
                 "google",
                 "gemini-agent-platform",
                 "fireworks-ai",
-                "nebius"
+                "nebius",
+                "sambanova"
             ]
         );
         assert_eq!(
