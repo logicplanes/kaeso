@@ -74,7 +74,7 @@ Creating a video answers at once with its job, `queued` or `in_progress`, under 
 
 Each retrieve asks the provider how the job stands while it runs, and keeps what it says. When the provider can't answer, the retrieve returns the job as Kaeso last saw it, so ask again later. A job that ended is never asked about again. The SDKs' `poll` and `create_and_poll` call retrieve until the job ends.
 
-A listing shows each video as Kaeso last saw it, without asking providers. A video belongs to the project whose key started it; another project's key gets 404, the same answer as for an id that doesn't exist. Once the provider key that started a video is replaced, Kaeso can't reach the job and answers 409.
+A listing shows each video as Kaeso last saw it, without asking providers. A video belongs to the project whose key started it; another project's key gets 404, the same answer as for an id that doesn't exist. A video a member starts in the [Playground](../console/playground.md) is theirs alone: no key lists or reaches it. Once the provider key that started a video is replaced, Kaeso can't reach the job and answers 409.
 
 Retrieves, downloads, deletes and remixes that ask the provider count against the key's [request rates](../console/limits-and-budgets.md) like any model request, since each spends the provider's quota with the organization's key; a retrieve of a job that ended answers from Kaeso's record and doesn't count.
 

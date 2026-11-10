@@ -63,6 +63,10 @@ export function playgroundModel(overrides: Partial<PlaygroundModel> = {}): Playg
     price_tiers: [],
     provider_key: true,
     max_request_bytes: 33_554_432,
+    mode: "text",
+    voices: [],
+    translations: false,
+    durations: false,
     availability: "available",
     ...overrides,
   };

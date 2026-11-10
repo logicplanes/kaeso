@@ -17,6 +17,9 @@ pub const UNSUBSCRIBED_TTL: Duration = Duration::from_secs(2);
 pub const REFRESH_AFTER: Duration = Duration::from_secs(20);
 
 const KEY_BLOCK_TTL: Duration = Duration::from_secs(3600);
+// A player asks for a finished video in many ranges while it plays and seeks; the job's files
+// are taken from the provider's answer to the first of them for this long.
+const FINISHED_VIDEO_TTL: Duration = Duration::from_secs(60);
 
 const FLIGHT_IDLE: Duration = Duration::from_secs(60);
 
@@ -687,6 +690,7 @@ pub struct Caches {
     pub unknown_keys: Cache<String, ()>,
     pub key_blocks: Cache<String, time::OffsetDateTime>,
     pub time_zone: Cache<(), Arc<str>>,
+    pub finished_videos: Cache<uuid::Uuid, Arc<kaeso_kpp::VideoJob>>,
     pub refreshes: Flights,
     subscription: Arc<Subscription>,
 }
@@ -754,6 +758,10 @@ impl Caches {
                 .time_to_live(KEY_BLOCK_TTL)
                 .build(),
             time_zone: Cache::builder().max_capacity(1).time_to_live(TTL).build(),
+            finished_videos: Cache::builder()
+                .max_capacity(10_000)
+                .time_to_live(FINISHED_VIDEO_TTL)
+                .build(),
             refreshes: Flights::new(10_000),
             subscription,
         }

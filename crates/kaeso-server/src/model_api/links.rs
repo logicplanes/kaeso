@@ -13,6 +13,9 @@ use crate::state::AppState;
 #[derive(Clone, Debug)]
 pub(super) struct Fetch {
     hosts: &'static [&'static str],
+    /// Any public https host: the images of a Playground reply, which the console can show only
+    /// as bytes, since its pages load images from their own origin alone.
+    anywhere: bool,
     provider: &'static str,
     audio: Option<AudioFormat>,
 }
@@ -20,7 +23,25 @@ pub(super) struct Fetch {
 impl Fetch {
     /// What to fetch for `req` at `provider`, taking the asked bytes off the request the
     /// provider gets, since it answers with links only.
-    pub(super) fn of(req: &mut Request, provider: &ProviderRef, model: &str) -> Option<Fetch> {
+    pub(super) fn of(
+        req: &mut Request,
+        provider: &ProviderRef,
+        model: &str,
+        playground: bool,
+    ) -> Option<Fetch> {
+        let documented = Self::documented(req, provider, model);
+        if documented.is_some() || !playground || !matches!(req, Request::Image(_)) {
+            return documented;
+        }
+        Some(Fetch {
+            hosts: &[],
+            anywhere: true,
+            provider: provider.built_in().map_or("The provider", |p| p.name),
+            audio: None,
+        })
+    }
+
+    fn documented(req: &mut Request, provider: &ProviderRef, model: &str) -> Option<Fetch> {
         let name = provider.built_in()?.name;
         match req {
             Request::Image(r) if r.delivery == Some(ImageDelivery::Base64) => {
@@ -31,6 +52,7 @@ impl Fetch {
                 r.delivery = None;
                 Some(Fetch {
                     hosts,
+                    anywhere: false,
                     provider: name,
                     audio: None,
                 })
@@ -39,6 +61,7 @@ impl Fetch {
                 let hosts = provider.speech(model)?.fetch_hosts;
                 (!hosts.is_empty()).then(|| Fetch {
                     hosts,
+                    anywhere: false,
                     provider: name,
                     audio: r.format.clone(),
                 })
@@ -136,7 +159,7 @@ impl Fetch {
             .host_str()
             .map(str::to_owned)
             .ok_or_else(|| self.refused())?;
-        if !fetchable(self.hosts, &host)
+        if !(self.anywhere || fetchable(self.hosts, &host))
             || !url.username().is_empty()
             || url.password().is_some()
             || url.port().is_some_and(|p| p != 443)
@@ -230,6 +253,7 @@ mod tests {
     fn fetch(audio: Option<AudioFormat>) -> Fetch {
         Fetch {
             hosts: &["dashscope-*.aliyuncs.com"],
+            anywhere: false,
             provider: "QwenCloud",
             audio,
         }
@@ -262,6 +286,35 @@ mod tests {
                 "QwenCloud answered with a link Kaeso does not fetch."
             );
         }
+    }
+
+    #[test]
+    fn the_playground_fetches_image_links_from_any_public_https_host_only() {
+        let xai = ProviderRef::from(kaeso_core::provider::provider("xai").unwrap());
+        let mut image = Request::Image(ImageRequest::new(
+            "grok-imagine-image",
+            ImageOperation::Generate,
+        ));
+        assert!(Fetch::of(&mut image, &xai, "grok-imagine-image", false).is_none());
+        let f = Fetch::of(&mut image, &xai, "grok-imagine-image", true).unwrap();
+        let (origin, path) = f.target("https://imgen.x.ai/xai-imgen/a.jpg").unwrap();
+        assert_eq!(
+            (origin.as_str(), path.as_str()),
+            ("https://imgen.x.ai/", "/xai-imgen/a.jpg")
+        );
+        for link in [
+            "ftp://imgen.x.ai/a.jpg",
+            "https://user@imgen.x.ai/a.jpg",
+            "https://imgen.x.ai:8443/a.jpg",
+        ] {
+            assert!(f.target(link).is_err(), "{link}");
+        }
+        let mut speech = Request::Speech(kaeso_kpp::SpeechRequest::new(
+            "tts-1",
+            kaeso_kpp::SpeechOperation::Speech,
+        ));
+        let openai = ProviderRef::from(kaeso_core::provider::provider("openai").unwrap());
+        assert!(Fetch::of(&mut speech, &openai, "tts-1", true).is_none());
     }
 
     #[tokio::test]
@@ -328,24 +381,25 @@ mod tests {
             ImageRequest::new("wan2.7-image", ImageOperation::Generate).with_prompt("p");
         asked.delivery = Some(ImageDelivery::Base64);
         let mut req = Request::Image(asked.clone());
-        assert!(Fetch::of(&mut req, &qwen, "wan2.7-image").is_some());
+        assert!(Fetch::of(&mut req, &qwen, "wan2.7-image", false).is_some());
         let Request::Image(sent) = &req else { panic!() };
         assert_eq!(sent.delivery, None);
         let mut req = Request::Image(asked.clone());
-        assert!(Fetch::of(&mut req, &openai, "gpt-image-2").is_none());
+        assert!(Fetch::of(&mut req, &openai, "gpt-image-2", false).is_none());
         let mut links = asked;
         links.delivery = None;
-        assert!(Fetch::of(&mut Request::Image(links), &qwen, "wan2.7-image").is_none());
+        assert!(Fetch::of(&mut Request::Image(links), &qwen, "wan2.7-image", false).is_none());
         let speech =
             kaeso_kpp::SpeechRequest::new("qwen3-tts-flash", kaeso_kpp::SpeechOperation::Speech);
         assert!(
             Fetch::of(
                 &mut Request::Speech(speech.clone()),
                 &qwen,
-                "qwen3-tts-flash"
+                "qwen3-tts-flash",
+                false
             )
             .is_some()
         );
-        assert!(Fetch::of(&mut Request::Speech(speech), &openai, "tts-1").is_none());
+        assert!(Fetch::of(&mut Request::Speech(speech), &openai, "tts-1", false).is_none());
     }
 }

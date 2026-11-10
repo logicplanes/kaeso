@@ -49,7 +49,10 @@ export function PlaygroundPage({ org, project, search }: { org: string; project:
   const catalogue = useQuery(playgroundModelsQuery(org, project));
   const providers = useProviders(org);
   const chat = useMemo(
-    () => [...(catalogue.data ?? [])].sort((a, b) => providers.byName(a.provider, b.provider) || a.display_name.localeCompare(b.display_name)),
+    () =>
+      (catalogue.data ?? [])
+        .filter((m) => m.mode === "text")
+        .sort((a, b) => providers.byName(a.provider, b.provider) || a.display_name.localeCompare(b.display_name)),
     [catalogue.data, providers],
   );
   const byRef = useMemo(() => new Map(chat.map((m) => [modelRef(m), m])), [chat]);
