@@ -18,6 +18,7 @@ use super::request::echo_body;
 use super::wire;
 use crate::codec::{EgressCtx, EncodeCtx, HeaderList};
 use crate::cross::{ReplyPolicy, reasoning_reply_policy};
+use crate::inline_media::Media;
 use crate::web_search;
 use crate::wire::{to_body, type_tag};
 
@@ -463,7 +464,7 @@ pub(super) fn output_items(resp: &Response, namespaces: &Namespaces) -> Vec<Node
                 .iter()
                 .skip(i)
                 .take(n)
-                .filter_map(|b| encode_part(b, TextKind::Output))
+                .filter_map(|b| encode_part(b, TextKind::Output, &mut Media::inline()))
                 .collect();
             let id = generated_id("msg", &resp.id, u32::try_from(index).unwrap_or(u32::MAX));
             let mut node = message_item(&id, status, parts);
@@ -495,7 +496,7 @@ pub(super) fn output_items(resp: &Response, namespaces: &Namespaces) -> Vec<Node
             i += run.len();
             let parts = run
                 .iter()
-                .filter_map(|b| encode_part(b, TextKind::Output))
+                .filter_map(|b| encode_part(b, TextKind::Output, &mut Media::inline()))
                 .collect();
             let mut node = message_item(&generated_id("msg", &resp.id, index32), status, parts);
             if marker.is_some() {

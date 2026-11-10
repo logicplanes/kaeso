@@ -9,7 +9,8 @@ use serde_json::value::RawValue;
 
 use super::DIALECT;
 use super::convert::{
-    PartContext, add_nested, decode_part, decode_tool_call, extras_of, form_str, parse_ext, to_raw,
+    AsRaw, PartContext, add_nested, decode_part, decode_tool_call, extras_of, form_str, parse_ext,
+    to_raw,
 };
 use super::wire::{
     AssistantMessage, AudioParam, ChatRequest, FunctionToolWire, InstructionMessage,
@@ -59,7 +60,8 @@ pub(crate) fn decode_request(
         ));
     }
     let origin = Origin::new(DIALECT);
-    let wire: Ext<ChatRequest> = Ext::from_slice(body).map_err(|e| describe(body, &e))?;
+    let wire: Ext<ChatRequest<Vec<&RawValue>>> =
+        Ext::from_slice(body).map_err(|e| describe(body, &e))?;
     let mut req = decode_generate(wire, &origin)?;
     for (name, value) in headers.iter() {
         if is_forwarded_header(DIALECT, name) {
@@ -134,7 +136,10 @@ fn describe(body: &[u8], err: &serde_json::Error) -> KppError {
     invalid(crate::wire::without_position(err))
 }
 
-fn decode_generate(wire: Ext<ChatRequest>, origin: &Origin) -> Result<GenerateRequest, KppError> {
+fn decode_generate(
+    wire: Ext<ChatRequest<Vec<&RawValue>>>,
+    origin: &Origin,
+) -> Result<GenerateRequest, KppError> {
     let Ext {
         known: w,
         extra,
@@ -451,19 +456,19 @@ fn decode_tool_choice(raw: &RawJson, origin: &Origin) -> Result<ToolChoice, KppE
 
 fn decode_messages(
     req: &mut GenerateRequest,
-    messages: &[RawJson],
+    messages: &[&RawValue],
     origin: &Origin,
 ) -> Result<(), KppError> {
     let mut leading = true;
-    for (i, raw) in messages.iter().enumerate() {
+    for (i, &raw) in messages.iter().enumerate() {
         let param = || format!("messages[{i}]");
-        let role = role_tag(raw.as_raw())
+        let role = role_tag(raw)
             .map_err(|e| invalid_message(i, &e.to_string()))?
             .ok_or_else(|| invalid_message(i, "the message has no `role`"))?;
         match role.as_str() {
             "system" | "developer" => {
-                let msg: Ext<InstructionMessage> = parse_ext(raw.as_raw(), "system message", false)
-                    .map_err(|e| e.with_param(param()))?;
+                let msg: Ext<InstructionMessage> =
+                    parse_ext(raw, "system message", false).map_err(|e| e.with_param(param()))?;
                 let blocks =
                     decode_content(msg.known.content.clone(), PartContext::TextOnly, origin)
                         .map_err(|e| with_param(e, param()))?;
@@ -492,8 +497,8 @@ fn decode_messages(
             }
             "user" => {
                 leading = false;
-                let msg: Ext<UserMessage> = parse_ext(raw.as_raw(), "user message", false)
-                    .map_err(|e| e.with_param(param()))?;
+                let msg: Ext<UserMessage<&RawValue>> =
+                    parse_ext(raw, "user message", false).map_err(|e| e.with_param(param()))?;
                 let Ext {
                     known,
                     extra,
@@ -536,7 +541,7 @@ fn decode_messages(
                 leading = false;
                 let mut message = Message::new(
                     Role::User,
-                    vec![Block::Unknown(RawItem::new(origin.clone(), raw.clone()))],
+                    vec![Block::Unknown(RawItem::new(origin.clone(), raw.into()))],
                 );
                 message.extras =
                     Extras::new(origin.clone()).with_form(FORM_ROLE, form_str(FUNCTION_ROLE));
@@ -560,10 +565,10 @@ pub(crate) fn message_form(raw: &RawValue) -> Form {
     Form::Nests(Scope::Chat(parts))
 }
 
-fn previous_is_tool(messages: &[RawJson], i: usize) -> bool {
+fn previous_is_tool(messages: &[&RawValue], i: usize) -> bool {
     i.checked_sub(1)
         .and_then(|p| messages.get(p))
-        .and_then(|m| role_tag(m.as_raw()).ok().flatten())
+        .and_then(|m| role_tag(m).ok().flatten())
         .is_some_and(|r| r == "tool")
 }
 
@@ -597,8 +602,8 @@ fn content_spelling<T>(content: &StringOr<T>) -> &'static str {
     }
 }
 
-fn decode_content(
-    content: StringOr<RawJson>,
+fn decode_content<C: AsRaw>(
+    content: StringOr<C>,
     ctx: PartContext,
     origin: &Origin,
 ) -> Result<Vec<Block>, KppError> {
@@ -610,7 +615,10 @@ fn decode_content(
                     "Message `content` must be a string or a non-empty array of content parts.",
                 ));
             }
-            parts.iter().map(|p| decode_part(p, ctx, origin)).collect()
+            parts
+                .iter()
+                .map(|p| decode_part(p.raw(), ctx, origin))
+                .collect()
         }
     }
 }
@@ -679,8 +687,8 @@ fn replayed_audio(extras: &mut Extras, origin: &Origin) -> Option<kaeso_kpp::Aud
 
 pub(crate) const AUDIO: &str = "audio";
 
-fn decode_assistant(raw: &RawJson, origin: &Origin) -> Result<Message, KppError> {
-    let msg: Ext<AssistantMessage> = parse_ext(raw.as_raw(), "assistant message", false)?;
+fn decode_assistant(raw: &RawValue, origin: &Origin) -> Result<Message, KppError> {
+    let msg: Ext<AssistantMessage> = parse_ext(raw, "assistant message", false)?;
     let Ext {
         known,
         extra,
@@ -704,7 +712,7 @@ fn decode_assistant(raw: &RawJson, origin: &Origin) -> Result<Message, KppError>
                 ));
             }
             for part in &parts {
-                blocks.push(decode_part(part, PartContext::Assistant, origin)?);
+                blocks.push(decode_part(part.as_raw(), PartContext::Assistant, origin)?);
             }
             extras
                 .form
@@ -805,8 +813,8 @@ fn readable(key: &str, value: &Value) -> Option<(Vec<String>, Vec<String>)> {
     }
 }
 
-fn decode_tool_message(raw: &RawJson, origin: &Origin) -> Result<Block, KppError> {
-    let msg: Ext<ToolMessage> = parse_ext(raw.as_raw(), "tool message", false)?;
+fn decode_tool_message(raw: &RawValue, origin: &Origin) -> Result<Block, KppError> {
+    let msg: Ext<ToolMessage> = parse_ext(raw, "tool message", false)?;
     let Ext {
         known,
         extra,

@@ -13,11 +13,13 @@ pub(crate) fn is_none_or_empty<T>(v: &Option<Vec<T>>) -> bool {
     v.as_ref().is_none_or(Vec::is_empty)
 }
 
+// The decoder reads `messages`, their content and each block's `source` as `&RawValue`
+// borrowed from the body, so an image's base64 is read once, where it was sent.
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
-pub(crate) struct RequestW {
+pub(crate) struct RequestW<M = Vec<Ext<MessageW>>> {
     #[serde(skip_serializing_if = "String::is_empty")]
     pub(crate) model: String,
-    pub(crate) messages: Vec<Ext<MessageW>>,
+    pub(crate) messages: M,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) max_tokens: Option<u32>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -45,9 +47,9 @@ pub(crate) struct RequestW {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub(crate) struct MessageW {
+pub(crate) struct MessageW<C = Raw> {
     pub(crate) role: String,
-    pub(crate) content: StringOr<Raw>,
+    pub(crate) content: StringOr<C>,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
@@ -151,19 +153,19 @@ pub(crate) struct TextW {
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
-pub(crate) struct ImageW {
+pub(crate) struct ImageW<S = Raw> {
     #[serde(rename = "type")]
     pub(crate) ty: String,
-    pub(crate) source: Raw,
+    pub(crate) source: S,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) cache_control: Option<Ext<CacheControlW>>,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
-pub(crate) struct DocumentW {
+pub(crate) struct DocumentW<S = Raw> {
     #[serde(rename = "type")]
     pub(crate) ty: String,
-    pub(crate) source: Raw,
+    pub(crate) source: S,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) title: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -181,19 +183,19 @@ pub(crate) struct CitationsConfigW {
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
-pub(crate) struct DataSourceW {
+pub(crate) struct DataSourceW<S = String> {
     #[serde(rename = "type")]
     pub(crate) ty: String,
     pub(crate) media_type: String,
-    pub(crate) data: String,
+    pub(crate) data: S,
 }
 
-#[derive(Clone, Copy, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize)]
 pub(crate) struct BytesSourceW<'a> {
     #[serde(rename = "type")]
     pub(crate) ty: &'static str,
     pub(crate) media_type: &'a str,
-    pub(crate) data: kaeso_kpp::Base64Text<'a>,
+    pub(crate) data: crate::inline_media::MediaText<'a>,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
@@ -222,12 +224,13 @@ pub(crate) struct ToolUseW {
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
-pub(crate) struct ToolResultW {
+#[serde(bound(deserialize = "C: Deserialize<'de>"))]
+pub(crate) struct ToolResultW<C = Raw> {
     #[serde(rename = "type")]
     pub(crate) ty: String,
     pub(crate) tool_use_id: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub(crate) content: Option<StringOr<Raw>>,
+    pub(crate) content: Option<StringOr<C>>,
     #[serde(default, skip_serializing_if = "is_not_true")]
     pub(crate) is_error: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]

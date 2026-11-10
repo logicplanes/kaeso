@@ -162,7 +162,12 @@ fn the_encoder_refuses_what_check_refuses() {
             "{generate:?}"
         );
         let mut ctx = EgressCtx::new(&req);
-        let err = super::request_encode::encode_generate(&generate, &mut ctx).unwrap_err();
+        let err = super::request_encode::encode_generate(
+            &generate,
+            &mut ctx,
+            &mut crate::inline_media::Media::deferred(),
+        )
+        .unwrap_err();
         assert!(matches!(err.kind, ErrorKind::Unsupported { .. }), "{err:?}");
     }
 }

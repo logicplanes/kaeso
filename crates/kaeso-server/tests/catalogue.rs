@@ -247,8 +247,8 @@ async fn entries_store_only_overrides_and_merge_with_kpmr() {
 
     let current = format!("{b}/models/search?provider=anthropic&current=true&limit=1");
     let before = app.get(&current, &owner.cookie).await;
-    assert_eq!(before.body["total"], 17, "{:?}", before.body);
-    assert_eq!(before.body["not_in_catalogue"], 16);
+    assert_eq!(before.body["total"], 18, "{:?}", before.body);
+    assert_eq!(before.body["not_in_catalogue"], 17);
     assert_eq!(before.body["has_more"], true);
     let first = &before.body["data"][0];
     assert_eq!(before.body["data"].as_array().unwrap().len(), 1);
@@ -276,9 +276,9 @@ async fn entries_store_only_overrides_and_merge_with_kpmr() {
         .await;
     assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
     assert_eq!(r.body["skipped"], json!(["claude-haiku-4-5"]));
-    assert_eq!(r.body["added"].as_array().unwrap().len(), 16);
+    assert_eq!(r.body["added"].as_array().unwrap().len(), 17);
     let list = app.get(&format!("{b}/models"), &owner.cookie).await;
-    assert_eq!(list.body["data"].as_array().unwrap().len(), 18);
+    assert_eq!(list.body["data"].as_array().unwrap().len(), 19);
     let after = app.get(&current, &owner.cookie).await;
     assert_eq!(after.body["not_in_catalogue"], 0, "{:?}", after.body);
 

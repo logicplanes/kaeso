@@ -43,10 +43,12 @@ pub(crate) fn role_tag(raw: &RawValue) -> Result<Option<String>, serde_json::Err
     Ok(serde_json::from_str::<Tag>(raw.get())?.role)
 }
 
+// The decoder reads `messages` as `&RawValue` borrowed from the body, the encoder writes
+// `RawJson`.
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
-pub(crate) struct ChatRequest {
+pub(crate) struct ChatRequest<M = Vec<RawJson>> {
     pub(crate) model: String,
-    pub(crate) messages: Vec<RawJson>,
+    pub(crate) messages: M,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) temperature: Option<serde_json::Number>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -114,9 +116,9 @@ pub(crate) struct InstructionMessage {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub(crate) struct UserMessage {
+pub(crate) struct UserMessage<C = RawJson> {
     pub(crate) role: String,
-    pub(crate) content: StringOr<RawJson>,
+    pub(crate) content: StringOr<C>,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
@@ -164,54 +166,54 @@ pub(crate) struct RefusalPart {
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
-pub(crate) struct ImagePart {
+pub(crate) struct ImagePart<U = Ext<ImageUrl>> {
     #[serde(rename = "type")]
     pub(crate) ty: String,
-    pub(crate) image_url: Ext<ImageUrl>,
+    pub(crate) image_url: U,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) prompt_cache_breakpoint: Option<Ext<CacheBreakpoint>>,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
-pub(crate) struct ImageUrl {
-    pub(crate) url: String,
+pub(crate) struct ImageUrl<S = String> {
+    pub(crate) url: S,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
-pub(crate) struct VideoPart {
+pub(crate) struct VideoPart<U = Ext<ImageUrl>> {
     #[serde(rename = "type")]
     pub(crate) ty: String,
-    pub(crate) video_url: Ext<ImageUrl>,
+    pub(crate) video_url: U,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
-pub(crate) struct AudioPart {
+pub(crate) struct AudioPart<A = Ext<InputAudio>> {
     #[serde(rename = "type")]
     pub(crate) ty: String,
-    pub(crate) input_audio: Ext<InputAudio>,
+    pub(crate) input_audio: A,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) prompt_cache_breakpoint: Option<Ext<CacheBreakpoint>>,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
-pub(crate) struct InputAudio {
-    pub(crate) data: String,
+pub(crate) struct InputAudio<S = String> {
+    pub(crate) data: S,
     pub(crate) format: String,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
-pub(crate) struct FilePart {
+pub(crate) struct FilePart<F = Ext<FileRef>> {
     #[serde(rename = "type")]
     pub(crate) ty: String,
-    pub(crate) file: Ext<FileRef>,
+    pub(crate) file: F,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) prompt_cache_breakpoint: Option<Ext<CacheBreakpoint>>,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
-pub(crate) struct FileRef {
+pub(crate) struct FileRef<S = String> {
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub(crate) file_data: Option<String>,
+    pub(crate) file_data: Option<S>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) file_id: Option<String>,
 }

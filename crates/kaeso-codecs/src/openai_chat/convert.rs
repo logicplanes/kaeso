@@ -3,8 +3,7 @@ use kaeso_kpp::{
     AudioBlock, Base64Source, Block, CacheHint, DocumentBlock, Extras, ImageBlock, KppError,
     Origin, RawItem, RawJson, RefusalBlock, Source, TextBlock, ToolCallBlock, VideoBlock,
 };
-use serde::Serialize;
-use serde::de::DeserializeOwned;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use serde_json::value::RawValue;
 
@@ -13,11 +12,12 @@ use super::wire::{
     AudioPart, CacheBreakpoint, FilePart, FileRef, FunctionCall, ImagePart, ImageUrl, InputAudio,
     RefusalPart, TextPart, ToolCall, VideoPart,
 };
+use crate::inline_media::Media;
 use crate::limits::Form;
 use crate::media::from_base64;
 use crate::wire::{
-    Ext, add_nested_extra, extra_for, extras_from, nested_extra_for, parse_data_url, type_tag,
-    verbatim_from_form, verbatim_into_form, without_position,
+    Ext, Text, add_nested_extra, extra_for, extras_from, nested_extra_for, parse_data_url,
+    type_tag, verbatim_from_form, verbatim_into_form, without_position,
 };
 
 pub(crate) const FORM_BREAKPOINT_MODE: &str = "mode";
@@ -90,8 +90,8 @@ pub(crate) fn ext_nested<T>(known: T, extras: &Extras, prefix: &str) -> Ext<T> {
     Ext::with(known, extra, verbatim)
 }
 
-pub(crate) fn parse_ext<T: DeserializeOwned + Serialize>(
-    raw: &RawValue,
+pub(crate) fn parse_ext<'a, T: Deserialize<'a> + Serialize>(
+    raw: &'a RawValue,
     what: &str,
     from_provider: bool,
 ) -> Result<Ext<T>, KppError> {
@@ -123,14 +123,14 @@ pub(crate) fn form_str(value: &str) -> Value {
 
 pub(crate) const FORM_DATA_URL: &str = "data_url";
 
-pub(crate) fn data_url_for(extras: &Extras, source: &Base64Source) -> String {
+pub(crate) fn data_url_for(extras: &Extras, source: &Base64Source, media: &mut Media) -> String {
     if let Some(header) = extras.form_str(DIALECT, FORM_DATA_URL) {
         let probe = format!("{header},");
         if parse_data_url(&probe).is_some_and(|d| d.media_type == source.media_type) {
-            return source.data_url_with(header);
+            return media.data_url(source, header);
         }
     }
-    source.data_url()
+    media.data_url(source, &format!("data:{};base64", source.media_type))
 }
 
 fn mark_header(extras: &mut Extras, header: Option<&str>) {
@@ -186,12 +186,30 @@ pub(crate) enum PartContext {
     Assistant,
 }
 
+// Parts are read borrowed from the message: an image or a file is only decoded from its
+// base64, never copied as text first.
+pub(crate) trait AsRaw {
+    fn raw(&self) -> &RawValue;
+}
+
+impl AsRaw for RawJson {
+    fn raw(&self) -> &RawValue {
+        self.as_raw()
+    }
+}
+
+impl AsRaw for &RawValue {
+    fn raw(&self) -> &RawValue {
+        self
+    }
+}
+
 pub(crate) fn decode_part(
-    raw: &RawJson,
+    raw: &RawValue,
     ctx: PartContext,
     origin: &Origin,
 ) -> Result<Block, KppError> {
-    let ty = type_tag(raw.as_raw()).map_err(|e| {
+    let ty = type_tag(raw).map_err(|e| {
         KppError::invalid_request(format!(
             "The request contains an invalid OpenAI Chat Completions content part: {}.",
             without_position(&e)
@@ -200,7 +218,7 @@ pub(crate) fn decode_part(
     match part_kind(ty.as_deref(), ctx) {
         PartKind::Text => decode_text_part(raw, origin),
         PartKind::Refusal => {
-            let part: Ext<RefusalPart> = parse_ext(raw.as_raw(), "refusal part", false)?;
+            let part: Ext<RefusalPart> = parse_ext(raw, "refusal part", false)?;
             let mut block = RefusalBlock::new(part.known.refusal);
             block.extras = extras_of(origin, part.extra, part.verbatim);
             block
@@ -213,7 +231,7 @@ pub(crate) fn decode_part(
         PartKind::File => decode_file_part(raw, origin),
         PartKind::Audio => decode_audio_part(raw, origin),
         PartKind::Video => decode_video_part(raw, origin),
-        PartKind::Unknown => Ok(Block::Unknown(RawItem::new(origin.clone(), raw.clone()))),
+        PartKind::Unknown => Ok(Block::Unknown(RawItem::new(origin.clone(), raw.into()))),
     }
 }
 
@@ -247,8 +265,8 @@ pub(crate) fn part_form(raw: &RawValue, ctx: PartContext) -> Form {
     }
 }
 
-fn decode_text_part(raw: &RawJson, origin: &Origin) -> Result<Block, KppError> {
-    let part: Ext<TextPart> = parse_ext(raw.as_raw(), "text part", false)?;
+fn decode_text_part(raw: &RawValue, origin: &Origin) -> Result<Block, KppError> {
+    let part: Ext<TextPart> = parse_ext(raw, "text part", false)?;
     let Ext {
         known,
         extra,
@@ -263,8 +281,21 @@ fn decode_text_part(raw: &RawJson, origin: &Origin) -> Result<Block, KppError> {
     Ok(Block::Text(block))
 }
 
-fn decode_image_part(raw: &RawJson, origin: &Origin) -> Result<Block, KppError> {
-    let part: Ext<ImagePart> = parse_ext(raw.as_raw(), "image_url part", false)?;
+// Nested objects are read as `&RawValue` and then as their own `Ext`, which reports what is
+// wrong with them in the words the one parse of the part used.
+fn nested<'a, T: Deserialize<'a> + Serialize>(
+    raw: &'a RawValue,
+    what: &str,
+) -> Result<Ext<T>, KppError> {
+    Ext::from_raw(raw).map_err(|e| {
+        KppError::invalid_request(format!(
+            "The request contains an invalid OpenAI Chat Completions {what}: {e}."
+        ))
+    })
+}
+
+fn decode_image_part(raw: &RawValue, origin: &Origin) -> Result<Block, KppError> {
+    let part: Ext<ImagePart<&RawValue>> = parse_ext(raw, "image_url part", false)?;
     let Ext {
         known,
         extra,
@@ -276,12 +307,13 @@ fn decode_image_part(raw: &RawJson, origin: &Origin) -> Result<Block, KppError> 
         extra: url_extra,
         verbatim: url_verbatim,
         ..
-    } = known.image_url;
-    let parsed = parse_data_url(&image_url.url);
+    } = nested::<ImageUrl<Text>>(known.image_url, "image_url part")?;
+    let url = image_url.url.as_str();
+    let parsed = parse_data_url(url);
     let header = parsed.as_ref().and_then(|d| d.header.map(str::to_owned));
     let source = match parsed {
         Some(d) => from_base64(d.media_type, d.data, "image_url.url")?,
-        None => Source::Url(image_url.url.clone()),
+        None => Source::Url(url.to_owned()),
     };
     let mut block = ImageBlock::new(source);
     block.cache = known
@@ -295,9 +327,9 @@ fn decode_image_part(raw: &RawJson, origin: &Origin) -> Result<Block, KppError> 
 
 // Mistral also takes the base64 string itself as `input_audio`, and OpenRouter any format
 // its providers take; a part whose format names no media type round-trips as written.
-fn decode_audio_part(raw: &RawJson, origin: &Origin) -> Result<Block, KppError> {
-    let unknown = || Ok(Block::Unknown(RawItem::new(origin.clone(), raw.clone())));
-    let Ok(part) = parse_ext::<AudioPart>(raw.as_raw(), "input_audio part", false) else {
+fn decode_audio_part(raw: &RawValue, origin: &Origin) -> Result<Block, KppError> {
+    let unknown = || Ok(Block::Unknown(RawItem::new(origin.clone(), raw.into())));
+    let Ok(part) = parse_ext::<AudioPart<&RawValue>>(raw, "input_audio part", false) else {
         return unknown();
     };
     let Ext {
@@ -306,16 +338,23 @@ fn decode_audio_part(raw: &RawJson, origin: &Origin) -> Result<Block, KppError> 
         verbatim,
         ..
     } = part;
-    let Ext {
+    let Ok(Ext {
         known: audio,
         extra: audio_extra,
         verbatim: audio_verbatim,
         ..
-    } = known.input_audio;
+    }) = Ext::<InputAudio<Text>>::from_raw(known.input_audio)
+    else {
+        return unknown();
+    };
     let Some(media_type) = crate::media::audio_media_type(&audio.format) else {
         return unknown();
     };
-    let mut block = AudioBlock::new(from_base64(media_type, audio.data, "input_audio.data")?);
+    let mut block = AudioBlock::new(from_base64(
+        media_type,
+        audio.data.as_str(),
+        "input_audio.data",
+    )?);
     block.cache = known
         .prompt_cache_breakpoint
         .map(|bp| decode_breakpoint(bp, origin));
@@ -330,8 +369,8 @@ fn decode_audio_part(raw: &RawJson, origin: &Origin) -> Result<Block, KppError> 
 }
 
 // OpenRouter's and Moonshot's `video_url` part, which OpenAI's API doesn't have.
-fn decode_video_part(raw: &RawJson, origin: &Origin) -> Result<Block, KppError> {
-    let part: Ext<VideoPart> = parse_ext(raw.as_raw(), "video_url part", false)?;
+fn decode_video_part(raw: &RawValue, origin: &Origin) -> Result<Block, KppError> {
+    let part: Ext<VideoPart<&RawValue>> = parse_ext(raw, "video_url part", false)?;
     let Ext {
         known,
         extra,
@@ -343,12 +382,13 @@ fn decode_video_part(raw: &RawJson, origin: &Origin) -> Result<Block, KppError> 
         extra: url_extra,
         verbatim: url_verbatim,
         ..
-    } = known.video_url;
-    let parsed = parse_data_url(&video_url.url);
+    } = nested::<ImageUrl<Text>>(known.video_url, "video_url part")?;
+    let url = video_url.url.as_str();
+    let parsed = parse_data_url(url);
     let header = parsed.as_ref().and_then(|d| d.header.map(str::to_owned));
     let source = match parsed {
         Some(d) => from_base64(d.media_type, d.data, "video_url.url")?,
-        None => Source::Url(video_url.url.clone()),
+        None => Source::Url(url.to_owned()),
     };
     let mut block = VideoBlock::new(source);
     block.extras = extras_of(origin, extra, verbatim);
@@ -357,8 +397,8 @@ fn decode_video_part(raw: &RawJson, origin: &Origin) -> Result<Block, KppError> 
     Ok(Block::Video(block))
 }
 
-fn decode_file_part(raw: &RawJson, origin: &Origin) -> Result<Block, KppError> {
-    let part: Ext<FilePart> = parse_ext(raw.as_raw(), "file part", false)?;
+fn decode_file_part(raw: &RawValue, origin: &Origin) -> Result<Block, KppError> {
+    let part: Ext<FilePart<&RawValue>> = parse_ext(raw, "file part", false)?;
     let Ext {
         known,
         extra,
@@ -370,7 +410,7 @@ fn decode_file_part(raw: &RawJson, origin: &Origin) -> Result<Block, KppError> {
         extra: mut file_extra,
         verbatim: file_verbatim,
         ..
-    } = known.file;
+    } = nested::<FileRef<Text>>(known.file, "file part")?;
     let mut bare = false;
     let mut header = None;
     let source = match (file.file_data, file.file_id) {
@@ -378,14 +418,14 @@ fn decode_file_part(raw: &RawJson, origin: &Origin) -> Result<Block, KppError> {
             if let Some(id) = file_id {
                 file_extra.insert("file_id".to_owned(), to_raw(&id)?);
             }
-            match parse_data_url(&file_data) {
+            match parse_data_url(file_data.as_str()) {
                 Some(d) => {
                     header = d.header.map(str::to_owned);
                     from_base64(d.media_type, d.data, "file.file_data")?
                 }
                 None => {
                     bare = true;
-                    from_base64("application/pdf", &file_data, "file.file_data")?
+                    from_base64("application/pdf", file_data.as_str(), "file.file_data")?
                 }
             }
         }
@@ -429,10 +469,13 @@ pub(crate) fn encode_refusal_part(block: &RefusalBlock) -> Result<RawJson, KppEr
     to_raw(&ext_with(part, &block.extras))
 }
 
-pub(crate) fn encode_image_part(block: &ImageBlock) -> Result<RawJson, KppError> {
+pub(crate) fn encode_image_part(
+    block: &ImageBlock,
+    media: &mut Media,
+) -> Result<RawJson, KppError> {
     let url = match &block.source {
         Source::Url(url) => url.clone(),
-        Source::Base64(b) => data_url_for(&block.extras, b),
+        Source::Base64(b) => data_url_for(&block.extras, b, media),
         other => {
             return Err(source_unsupported("image", other));
         }
@@ -445,7 +488,10 @@ pub(crate) fn encode_image_part(block: &ImageBlock) -> Result<RawJson, KppError>
     to_raw(&ext_with(part, &block.extras))
 }
 
-pub(crate) fn encode_audio_part(block: &AudioBlock) -> Result<RawJson, KppError> {
+pub(crate) fn encode_audio_part(
+    block: &AudioBlock,
+    media: &mut Media,
+) -> Result<RawJson, KppError> {
     let Source::Base64(b) = &block.source else {
         return Err(source_unsupported("audio", &block.source));
     };
@@ -460,7 +506,7 @@ pub(crate) fn encode_audio_part(block: &AudioBlock) -> Result<RawJson, KppError>
         ty: "input_audio".to_owned(),
         input_audio: ext_nested(
             InputAudio {
-                data: b.to_base64(),
+                data: media.base64_string(b),
                 format: format.to_owned(),
             },
             &block.extras,
@@ -471,10 +517,13 @@ pub(crate) fn encode_audio_part(block: &AudioBlock) -> Result<RawJson, KppError>
     to_raw(&ext_with(part, &block.extras))
 }
 
-pub(crate) fn encode_video_part(block: &VideoBlock) -> Result<RawJson, KppError> {
+pub(crate) fn encode_video_part(
+    block: &VideoBlock,
+    media: &mut Media,
+) -> Result<RawJson, KppError> {
     let url = match &block.source {
         Source::Url(url) => url.clone(),
-        Source::Base64(b) => data_url_for(&block.extras, b),
+        Source::Base64(b) => data_url_for(&block.extras, b, media),
         other => return Err(source_unsupported("video", other)),
     };
     let part = VideoPart {
@@ -484,7 +533,10 @@ pub(crate) fn encode_video_part(block: &VideoBlock) -> Result<RawJson, KppError>
     to_raw(&ext_with(part, &block.extras))
 }
 
-pub(crate) fn encode_file_part(block: &DocumentBlock) -> Result<RawJson, KppError> {
+pub(crate) fn encode_file_part(
+    block: &DocumentBlock,
+    media: &mut Media,
+) -> Result<RawJson, KppError> {
     let mut file = FileRef::default();
     let mut filename = None;
     match &block.source {
@@ -494,9 +546,9 @@ pub(crate) fn encode_file_part(block: &DocumentBlock) -> Result<RawJson, KppErro
             }
             let bare = block.extras.form_flag(DIALECT, FORM_BARE_FILE_DATA);
             file.file_data = Some(if bare {
-                b.to_base64()
+                media.base64_string(b)
             } else {
-                data_url_for(&block.extras, b)
+                data_url_for(&block.extras, b, media)
             });
         }
         Source::FileId(f) => file.file_id = Some(f.id.clone()),
