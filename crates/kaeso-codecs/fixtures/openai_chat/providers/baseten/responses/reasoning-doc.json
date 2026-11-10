@@ -1,0 +1,22 @@
+{
+  "id": "chatcmpl-4c1e8f7a2b9d4e6f",
+  "object": "chat.completion",
+  "created": 1794225600,
+  "model": "zai-org/GLM-5.2",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "reasoning_content": "The user is asking whether 91 is a prime number... 91 = 7 × 13, so it is not prime...",
+        "content": "No, 91 is not a prime number because it can be factored as $7 \\times 13$."
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 21,
+    "completion_tokens": 203,
+    "total_tokens": 224
+  }
+}

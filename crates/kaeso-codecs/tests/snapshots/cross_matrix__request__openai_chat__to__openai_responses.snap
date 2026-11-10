@@ -759,6 +759,30 @@ expression: outcomes
     "param": null,
     "unsupported": "web_search_options"
   },
+  "providers/baseten/invalid-api-key": {
+    "message": "`max_tokens 1` is not supported by OpenAI Responses. OpenAI Responses needs an output limit of at least 16 tokens; raise it or route the request to another model.",
+    "param": "max_tokens",
+    "unsupported": "max_tokens 1"
+  },
+  "providers/baseten/reasoning-doc": {
+    "message": "`chat_template_args` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "chat_template_args"
+  },
+  "providers/baseten/text-stream-doc": {
+    "body": {
+      "input": [
+        {
+          "content": "Reply with exactly: Café from Baseten.",
+          "role": "user"
+        }
+      ],
+      "model": "deepseek-ai/DeepSeek-V4.1-Flash-1017",
+      "store": false,
+      "stream": true
+    },
+    "path": "/v1/responses"
+  },
   "providers/cerebras/assistant-refusal": {
     "body": {
       "include": [

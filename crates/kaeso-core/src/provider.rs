@@ -1585,6 +1585,43 @@ pub const PROVIDERS: &[Provider] = &[
         routes: &[],
         service_account: None,
     },
+    Provider {
+        id: "baseten",
+        name: "Baseten",
+        key_page: KeyPage {
+            url: "https://app.baseten.co/settings/api_keys",
+            label: "Organization settings → API keys",
+        },
+        key_prefix: None,
+        default_base_url: "https://inference.baseten.co",
+        auth: AuthStyle::Bearer,
+        generation: DialectId::OpenAiChat,
+        count_tokens: None,
+        embeddings: None,
+        images: &[],
+        speech: &[],
+        transcriptions: &[],
+        videos: &[],
+        dialects: &[DialectId::OpenAiChat],
+        refused_key_messages: &[],
+        context_window_messages: &[],
+        reasoning_beyond_output_limit: false,
+        end_user_limit: None,
+        // Model APIs' request schema has only `max_tokens`, the end user only as `user` and the
+        // roles `system`, `user`, `assistant` and `tool`; thinking comes as `reasoning_content`
+        // (https://docs.baseten.co/inference/model-apis/reasoning).
+        chat: ChatProfile::compatible("Baseten")
+            .max_tokens()
+            .system_role()
+            .end_user_as_user()
+            .reasoning_fields(&["reasoning_content"]),
+        responses: ResponsesProfile::compatible("Baseten"),
+        messages: MessagesProfile::compatible("Baseten"),
+        gemini: GeminiProfile::GOOGLE_AI_STUDIO,
+        account: None,
+        routes: &[],
+        service_account: None,
+    },
 ];
 
 const _: () = {
@@ -1881,7 +1918,7 @@ mod tests {
         assert!(provider("gemini").is_none());
         assert_eq!(
             ids(),
-            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras, zai, minimax, elevenlabs, google, gemini-agent-platform, fireworks-ai, nebius, sambanova, scaleway"
+            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras, zai, minimax, elevenlabs, google, gemini-agent-platform, fireworks-ai, nebius, sambanova, scaleway, baseten"
         );
     }
 
@@ -2701,7 +2738,8 @@ mod tests {
                 "fireworks-ai",
                 "nebius",
                 "sambanova",
-                "scaleway"
+                "scaleway",
+                "baseten"
             ]
         );
         assert_eq!(

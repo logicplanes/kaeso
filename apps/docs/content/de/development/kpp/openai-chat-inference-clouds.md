@@ -9,6 +9,22 @@ Inferenz-Clouds, die offene Modelle betreiben, sprechen [OpenAI Chat Completions
 
 Ihre Fixtures liegen in `fixtures/openai_chat/providers/<id>/` ([Fixtures](fixtures.md)).
 
+## Baseten
+
+Quellen: die Übersicht [Model APIs](https://docs.baseten.co/inference/model-apis/overview) von Baseten, seine OpenAPI-Dokumente für Chat Completions, Messages und Responses, seine Leitfäden zu [Reasoning](https://docs.baseten.co/inference/model-apis/reasoning) und [Streaming](https://docs.baseten.co/inference/streaming) und seine Seite zu [Inferenzfehlern](https://docs.baseten.co/inference/errors), gelesen am 2026-11-10. Nicht mit einem erfolgreichen Aufruf getestet: Die Antwort in `fixtures/openai_chat/providers/baseten/` ist das eigene Beispiel des Reasoning-Leitfadens und der Stream der eigene Auszug des Streaming-Leitfadens, aus dem Schema ergänzt; der Fehler kam live, ohne gültigen Schlüssel. Kaesos Basis-URL ist `https://inference.baseten.co`, die `Authorization: Bearer` annimmt.
+
+| Baseten-Feld | KPP | Hinweise |
+|---|---|---|
+| `message.reasoning_content` | `Block::Reasoning` | Über `reasoning_fields` des Profils. Thinking, das eine App zurücksendet, erreicht Baseten als `reasoning_content`, das Beam in früheren Assistant-Nachrichten verlangt. |
+| `chat_template_args`, `reasoning` mit `max_tokens`, `top_k`, `min_p`, `repetition_penalty` und die anderen Anfragefelder von Baseten | Extras | Abgelehnt, wenn die Anfrage an einen anderen Dialekt geht, wie andere reine Chat-Felder. |
+| `max_completion_tokens` | `max_tokens` | Das Schema hat nur `max_tokens` (`max_tokens()`). |
+| die Rolle `developer` | `Role::System` | Das Schema führt `system`, `user`, `assistant` und `tool`, daher sendet `system_role()` `system`. |
+| `user` | `user` | Das Schema hat kein `safety_identifier`, daher geht die ID des Endnutzers als `user` (`end_user_as_user()`). |
+| Fehler als `{"error": "<message>"}` | `KppError` | Die Art folgt dem Status: 401 ist ein abgelehnter Schlüssel (`errors/recorded-invalid-api-key`). |
+| ein Stream, der ohne `[DONE]` endet | `KppError` | Baseten kann einen Stream ohne Fehlerereignis vorzeitig beenden; Apps erhalten den Fehler des Stream-Decoders, dass der Stream vor dem Ende der Antwort abbrach. |
+
+Der Messages-Endpunkt von Baseten wird nicht genutzt: Sein Schema nimmt nur Text- und Tool-Blöcke an, ohne Thinking oder Bilder. Auch seine Responses API, die nichts speichert, wird nicht genutzt: Messages- und Responses-Apps erreichen Baseten über Chat Completions. Model APIs bieten weder Embeddings noch Bilder, Audio oder Token-Zählungen an.
+
 ## Fireworks AI
 
 Quellen: Fireworks' Referenz [Create Chat Completion](https://docs.fireworks.ai/api-reference/post-chatcompletions) (sein OpenAPI-Dokument) und die Seiten [OpenAI compatibility](https://docs.fireworks.ai/tools-sdks/openai-compatibility) und [Reasoning](https://docs.fireworks.ai/guides/reasoning), gelesen am 2026-11-09. Es gab keinen Schlüssel, daher sind die Antworten und der Stream in `fixtures/openai_chat/providers/fireworks-ai/` daraus gebaut; die Fehler kamen live, ohne gültigen Schlüssel. Kaesos Basis-URL ist `https://api.fireworks.ai/inference`, die `Authorization: Bearer` mit einem `fw_`-Schlüssel annimmt.

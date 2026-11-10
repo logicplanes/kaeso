@@ -164,6 +164,16 @@ async fn every_member_reads_each_provider_with_its_name_key_page_and_formats() {
         scaleway["key_page"],
         json!({ "url": "https://console.scaleway.com/iam/api-keys", "label": "IAM → API keys" })
     );
+    let baseten = listed.iter().find(|p| p["id"] == "baseten").unwrap();
+    assert_eq!(baseten["name"], "Baseten");
+    assert_eq!(baseten["dialects"], json!(["openai_chat"]));
+    assert_eq!(baseten["count_tokens"], Value::Null);
+    assert_eq!(baseten["embeddings"], Value::Null);
+    assert_eq!(baseten["key_prefix"], Value::Null);
+    assert_eq!(
+        baseten["key_page"],
+        json!({ "url": "https://app.baseten.co/settings/api_keys", "label": "Organization settings → API keys" })
+    );
 
     let anonymous = app
         .call(Method::GET, &format!("/orgs/{org}/providers"), None, None)

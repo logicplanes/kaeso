@@ -9,6 +9,22 @@ Inference clouds that host open models speak [OpenAI Chat Completions](openai-ch
 
 Their fixtures are in `fixtures/openai_chat/providers/<id>/` ([fixtures](fixtures.md)).
 
+## Baseten
+
+Sources: Baseten's [Model APIs](https://docs.baseten.co/inference/model-apis/overview) overview, its Chat Completions, Messages and Responses OpenAPI documents, its [reasoning](https://docs.baseten.co/inference/model-apis/reasoning) and [streaming](https://docs.baseten.co/inference/streaming) guides and its [inference errors](https://docs.baseten.co/inference/errors) page, read 2026-11-10. Not tested with a successful call: the reply in `fixtures/openai_chat/providers/baseten/` is the reasoning guide's own example and the stream the streaming guide's own excerpt, completed from the schema; the error was answered live, without a valid key. Kaeso's base URL is `https://inference.baseten.co`, which takes `Authorization: Bearer`.
+
+| Baseten field | KPP | Notes |
+|---|---|---|
+| `message.reasoning_content` | `Block::Reasoning` | Through the profile's `reasoning_fields`. Thinking that an app sends back reaches Baseten as `reasoning_content`, which Beam requires on earlier assistant messages. |
+| `chat_template_args`, `reasoning` with `max_tokens`, `top_k`, `min_p`, `repetition_penalty` and Baseten's other request fields | extras | Refused when the request goes to another dialect, like other Chat-only fields. |
+| `max_completion_tokens` | `max_tokens` | The schema has only `max_tokens` (`max_tokens()`). |
+| the `developer` role | `Role::System` | The schema lists `system`, `user`, `assistant` and `tool`, so `system_role()` sends `system`. |
+| `user` | `user` | The schema has no `safety_identifier`, so the end user's id goes as `user` (`end_user_as_user()`). |
+| errors as `{"error": "<message>"}` | `KppError` | The kind follows the status: 401 is a refused key (`errors/recorded-invalid-api-key`). |
+| a stream that ends without `[DONE]` | `KppError` | Baseten can end a stream early without an error event; apps get the stream decoder's error that the stream ended before the reply was complete. |
+
+Baseten's Messages endpoint isn't used: its schema takes only text and tool blocks, without thinking or images. Its Responses API, which stores nothing, isn't used either: Messages and Responses apps reach Baseten through Chat Completions. Model APIs serve no embeddings, images, audio or token counts.
+
 ## Fireworks AI
 
 Sources: Fireworks' [Create Chat Completion](https://docs.fireworks.ai/api-reference/post-chatcompletions) reference (its OpenAPI document), [OpenAI compatibility](https://docs.fireworks.ai/tools-sdks/openai-compatibility) and [reasoning](https://docs.fireworks.ai/guides/reasoning) pages, read 2026-11-09. No key was available, so the replies and the stream in `fixtures/openai_chat/providers/fireworks-ai/` are built from them; the errors were answered live, without a valid key. Kaeso's base URL is `https://api.fireworks.ai/inference`, which takes `Authorization: Bearer` with a `fw_` key.

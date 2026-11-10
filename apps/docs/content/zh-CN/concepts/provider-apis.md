@@ -19,6 +19,7 @@ order: 2
 | 服务商 | [聊天](../api/model-api.md) | [嵌入](../api/model-api.md) | [图片](../api/images.md) | [语音合成](../api/audio.md) | [转写](../api/audio.md) | [翻译](../api/audio.md) | [视频](../api/videos.md) | [音乐和音效](../api/elevenlabs.md) | 来源 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Anthropic `anthropic` | 支持：Claude 模型 | 不提供：Anthropic 推荐 Voyage AI（[Embeddings](https://platform.claude.com/docs/en/build-with-claude/embeddings)） | 不提供 | 不提供 | 不提供 | 不提供 | 不提供 | 不提供 | [Models](https://platform.claude.com/docs/en/about-claude/models/overview) |
+| Baseten `baseten` | 支持：Model APIs 的模型 | 不提供：Model APIs 不提供；嵌入运行在专用部署上 | 不提供 | 不提供 | 不提供 | 不提供 | 不提供 | 不提供 | [Model APIs](https://docs.baseten.co/inference/model-apis/overview) |
 | Cerebras `cerebras` | 支持：`gpt-oss-120b`、`qwen-3.8-27b` | 不提供 | 不提供 | 不提供 | 不提供 | 不提供 | 不提供 | 不提供 | [Models](https://inference-docs.cerebras.ai/models/overview) |
 | Cohere `cohere` | 支持：Command 模型 | 支持：Embed 模型，例如 `embed-v4.0`，作为自定义模型添加 | 不提供 | 不提供 | 支持：`cohere-transcribe-03-2026` | 不提供 | 不提供 | 不提供 | [Models](https://docs.cohere.com/docs/models) |
 | DeepSeek `deepseek` | 支持：DeepSeek 模型 | 不提供 | 不提供 | 不提供 | 不提供 | 不提供 | 不提供 | 不提供 | [API docs](https://api-docs.deepseek.com/) |
