@@ -30,6 +30,11 @@ const PROFILES: &[(&str, ChatProfile)] = &[
         ChatProfile::compatible("Groq").reasoning_fields(&["reasoning"]),
     ),
     (
+        "huggingface",
+        ChatProfile::compatible("Hugging Face")
+            .reasoning_fields(&["reasoning_content", "reasoning"]),
+    ),
+    (
         "moonshotai",
         ChatProfile::compatible("Moonshot").reasoning_fields(&["reasoning_content"]),
     ),
@@ -214,6 +219,7 @@ fn a_reasoning_field_is_a_reasoning_block_before_the_answer() {
         ),
         ("groq", "recorded-plain-developer-string", "reasoning"),
         ("groq", "recorded-reasoning-format-parsed", "reasoning"),
+        ("huggingface", "provider-suffix", "reasoning"),
         ("moonshotai", "recorded-reasoning", "reasoning_content"),
         (
             "moonshotai",
@@ -511,6 +517,12 @@ fn streamed_reasoning_fields_are_one_reasoning_block_that_ends_before_the_answer
             "groq",
             "recorded-stream-reasoning-parsed",
             "reasoning",
+            answered,
+        ),
+        (
+            "huggingface",
+            "reasoning-stream",
+            "reasoning_content",
             answered,
         ),
         (

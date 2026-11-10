@@ -1585,6 +1585,44 @@ pub const PROVIDERS: &[Provider] = &[
         routes: &[],
         service_account: None,
     },
+    Provider {
+        id: "huggingface",
+        name: "Hugging Face",
+        key_page: KeyPage {
+            url: "https://huggingface.co/settings/tokens",
+            label: "Settings → Access Tokens",
+        },
+        key_prefix: Some("hf_"),
+        default_base_url: "https://router.huggingface.co",
+        auth: AuthStyle::Bearer,
+        generation: DialectId::OpenAiChat,
+        count_tokens: None,
+        embeddings: None,
+        images: &[],
+        speech: &[],
+        transcriptions: &[],
+        videos: &[],
+        dialects: &[DialectId::OpenAiChat],
+        refused_key_messages: &[],
+        context_window_messages: &[],
+        reasoning_beyond_output_limit: false,
+        end_user_limit: None,
+        // The router's chat schema has only `max_tokens` and no end-user field, and it passes
+        // messages on to the model's own provider, not every one of which takes `developer`
+        // (https://huggingface.co/docs/inference-providers/tasks/chat-completion); thinking
+        // comes in that provider's field, `reasoning_content` or `reasoning`.
+        chat: ChatProfile::compatible("Hugging Face")
+            .max_tokens()
+            .system_role()
+            .without_end_user()
+            .reasoning_fields(&["reasoning_content", "reasoning"]),
+        responses: ResponsesProfile::compatible("Hugging Face"),
+        messages: MessagesProfile::compatible("Hugging Face"),
+        gemini: GeminiProfile::GOOGLE_AI_STUDIO,
+        account: None,
+        routes: &[],
+        service_account: None,
+    },
 ];
 
 const _: () = {
@@ -1881,7 +1919,7 @@ mod tests {
         assert!(provider("gemini").is_none());
         assert_eq!(
             ids(),
-            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras, zai, minimax, elevenlabs, google, gemini-agent-platform, fireworks-ai, nebius, sambanova, scaleway"
+            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras, zai, minimax, elevenlabs, google, gemini-agent-platform, fireworks-ai, nebius, sambanova, scaleway, huggingface"
         );
     }
 
@@ -2701,7 +2739,8 @@ mod tests {
                 "fireworks-ai",
                 "nebius",
                 "sambanova",
-                "scaleway"
+                "scaleway",
+                "huggingface"
             ]
         );
         assert_eq!(

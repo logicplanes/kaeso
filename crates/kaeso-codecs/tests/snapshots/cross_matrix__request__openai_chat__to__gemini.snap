@@ -2866,6 +2866,70 @@ expression: outcomes
     "param": "parallel_tool_calls",
     "unsupported": "`parallel_tool_calls: false`"
   },
+  "providers/huggingface/invalid-api-key": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "hi"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1
+      }
+    },
+    "path": "/v1beta/models/openai%2Fgpt-oss-120b:generateContent"
+  },
+  "providers/huggingface/provider-suffix": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "How many 'G's in 'huggingface'?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 512,
+        "thinkingConfig": {
+          "thinkingLevel": "LOW"
+        }
+      },
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "You are a helpful assistant."
+          }
+        ]
+      }
+    },
+    "path": "/v1beta/models/openai%2Fgpt-oss-120b%3Acheapest:generateContent"
+  },
+  "providers/huggingface/reasoning-stream": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Hello!"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 256
+      }
+    },
+    "path": "/v1beta/models/deepseek-ai%2FDeepSeek-V4.1-Flash-1017%3Anovita:streamGenerateContent?alt=sse"
+  },
   "providers/mistral/assistant-prefill": {
     "body": {
       "contents": [

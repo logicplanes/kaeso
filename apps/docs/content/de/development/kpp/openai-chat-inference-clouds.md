@@ -28,6 +28,23 @@ Quellen: Fireworks' Referenz [Create Chat Completion](https://docs.fireworks.ai/
 
 Fireworks dokumentiert keinen Endpunkt für Bilder, Sprache, Transkription, Video oder Token-Zählung, daher bleiben diese leer und `count_tokens` ist `None`. Seine Responses API meldet die Usage als `prompt_tokens` und `completion_tokens` statt unter OpenAIs Namen, daher sendet Kaeso ihm kein Responses; Responses-Apps erreichen Fireworks über Chat Completions.
 
+## Hugging Face
+
+Quellen: die Übersicht [Inference Providers](https://huggingface.co/docs/inference-providers/index) von Hugging Face, seine Referenz [chat completion](https://huggingface.co/docs/inference-providers/tasks/chat-completion) mit den Schemas in `huggingface.js` und seine Leitfäden [Claude Code](https://huggingface.co/docs/inference-providers/integrations/claude-code) und [Responses API](https://huggingface.co/docs/inference-providers/guides/responses-api), gelesen am 2026-11-10. Nicht mit einem erfolgreichen Aufruf getestet: Die Antwort und der Stream in `fixtures/openai_chat/providers/huggingface/` sind aus der Referenz gebaut, mit dem Thinking in dem Feld, das der Anbieter hinter dem Router dokumentiert; die Modellliste und der Fehler kamen live, ohne gültigen Schlüssel. Kaesos Basis-URL ist `https://router.huggingface.co`, die `Authorization: Bearer` mit einem `hf_`-Token annimmt.
+
+| Hugging-Face-Feld | KPP | Hinweise |
+|---|---|---|
+| `message.reasoning_content`, `message.reasoning` und ihre Deltas | `Block::Reasoning` | Über `reasoning_fields` des Profils; der Router gibt das Feld des Anbieters hinter ihm weiter. |
+| `max_completion_tokens` | `max_tokens` | Das Schema hat nur `max_tokens` (`max_tokens()`). |
+| die Rolle `developer` | `Role::System` | `role` geht unverändert an Anbieter, die nicht alle `developer` annehmen, daher sendet `system_role()` `system`. |
+| die ID eines Endnutzers | weggelassen | Das Schema hat kein `user` oder `safety_identifier` (`without_end_user()`). |
+| ein Suffix `:provider`, `:fastest`, `:cheapest` oder `:preferred` an der Modell-ID | `model` | Unverändert gesendet; die Antwort nennt das Modell ohne Suffix (`responses/provider-suffix`). |
+| `tool_prompt` | Extras | Abgelehnt, wenn die Anfrage an einen anderen Dialekt geht, wie andere reine Chat-Felder. |
+| Fehler als `{"error": "<message>"}` | `KppError` | Die Art folgt dem Status: 401 ist ein abgelehnter Schlüssel (`errors/recorded-invalid-api-key`). |
+| `GET /v1/models` mit `architecture` und einem Array `providers` mit Status, Kontextlänge, Preisen und Geschwindigkeit | `ModelList` | Ohne Schlüssel beantwortet (`models/list-recorded`), daher kann eine Modellprüfung einen falschen Schlüssel nicht erkennen. |
+
+Die OpenAI-kompatible API des Routers ist nur für Chat: `/v1/embeddings`, `/v1/images/generations` und `/v1/audio/*` antworten mit 404. Seine Responses API wird nicht genutzt, da sie ein abgelehntes Token mit 200 und `status: "failed"` beantwortet. Auch sein Messages-Endpunkt wird nicht genutzt: Er beantwortet ein abgelehntes Token mit `api_error`, das Apps als fehlgeschlagenen Anbieter statt als abgelehnten Schlüssel erreichen würde. `/v1/messages/count_tokens` antwortet, ohne das Token zu prüfen, und ist nicht dokumentiert, daher lehnt Kaeso Token-Zählungen ab.
+
 ## Nebius Token Factory
 
 Quellen: das [OpenAPI document](https://api.tokenfactory.nebius.com/openapi.json) von Nebius (Version `20261105-4c58718c5`), sein Beispiel zur [Textgenerierung](https://docs.tokenfactory.nebius.com/api-reference/examples/text-generation) und seine [Übersicht](https://docs.tokenfactory.nebius.com/ai-models-inference/overview), gelesen am 2026-11-09. Es gab keinen Schlüssel, daher sind die Antworten und der Stream in `fixtures/openai_chat/providers/nebius/` daraus gebaut, eine davon ist das Beispiel der Dokumentation selbst; die Fehler kamen live, ohne gültigen Schlüssel. Kaesos Basis-URL ist `https://api.tokenfactory.nebius.com`, die `Authorization: Bearer` annimmt.

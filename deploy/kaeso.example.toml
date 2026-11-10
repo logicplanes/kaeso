@@ -130,6 +130,9 @@ base_url = "https://api.sambanova.ai"
 [providers.scaleway]
 base_url = "https://api.scaleway.ai"
 
+[providers.huggingface]
+base_url = "https://router.huggingface.co"
+
 [custom_providers]
 enabled = true
 allowed_networks = ""

@@ -11,7 +11,7 @@ pub fn hashes_equal(a: &[u8], b: &[u8]) -> bool {
 
 const TOKEN_PREFIXES: &[&str] = &[
     "sk-", "sk_", "org-", "proj_", "proj-", "key-", "xai-", "gsk_", "nvapi-", "AIza", "tgp_v1_",
-    "vck_", "cohere_", "ak-", "csk-", "AQ.", "ya29.", "fw_",
+    "vck_", "cohere_", "ak-", "csk-", "AQ.", "ya29.", "fw_", "hf_",
 ];
 
 const ACCOUNT_LABELS: &[&str] = &[
@@ -187,6 +187,10 @@ mod tests {
         assert_eq!(
             redact_tokens("The API key fw_0AbCdEf123456 you provided is invalid."),
             "The API key fw_[redacted] you provided is invalid."
+        );
+        assert_eq!(
+            redact_tokens("Invalid credentials in Authorization header: hf_AbCdEf0123456789."),
+            "Invalid credentials in Authorization header: hf_[redacted]."
         );
     }
 
