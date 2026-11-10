@@ -128,24 +128,23 @@ describe("a column that follows a stream", () => {
 });
 
 describe("a response's row as it finishes", () => {
-  it("keeps the room for Copy and Retry while the reply streams, so the metrics never move", () => {
+  it("lines the metrics up with the reply's text while it streams, then slides Copy and Retry in beside them", () => {
     const footer = <ResponseMetrics live inputTokens={null} outputTokens={null} />;
     const { container, rerender } = render(<ResponseView status="streaming" text="Half a reply" footer={footer} />);
-    const reserved = container.querySelector("[data-tools-reserved]");
-    expect(reserved).toHaveClass("invisible");
-    expect(reserved).toHaveAttribute("aria-hidden");
+    expect(container.querySelector("[data-reply-actions]")).toBeNull();
     expect(screen.queryByRole("button", { name: "Copy response" })).toBeNull();
-    expect(container.querySelector("dl")?.parentElement).toHaveClass("px-8");
+    expect(container.querySelector("dl")?.parentElement).toHaveClass("px-12");
 
     rerender(<ResponseView status="done" text="Half a reply, then the rest." footer={footer} onRetry={() => undefined} />);
-    expect(container.querySelector("[data-tools-reserved]")).toBeNull();
-    expect(screen.getByRole("button", { name: "Copy response" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
+    const actions = container.querySelector("[data-reply-actions]");
+    expect(actions).toHaveClass("starting:-ml-72", "starting:opacity-0", "reduced:transition-none");
+    expect(actions).toContainElement(screen.getByRole("button", { name: "Copy response" }));
+    expect(actions).toContainElement(screen.getByRole("button", { name: "Retry" }));
     expect(container.querySelector("dl")?.parentElement).toHaveClass("px-8");
   });
 
-  it("reserves nothing for a response without a footer", () => {
-    const { container } = render(<ResponseView status="streaming" text="Half a reply" />);
-    expect(container.querySelector("[data-tools-reserved]")).toBeNull();
+  it("slides one button in by its own width", () => {
+    const { container } = render(<ResponseView status="done" text="A reply" footer={<ResponseMetrics duration={900} />} />);
+    expect(container.querySelector("[data-reply-actions]")).toHaveClass("starting:-ml-36");
   });
 });

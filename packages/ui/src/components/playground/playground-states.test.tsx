@@ -235,7 +235,7 @@ describe("ResponseView marks and announcements", () => {
 describe("ResponseMetrics room and money", () => {
   it("keeps the decimals the API sent, two at least, six at most", () => {
     const { rerender } = render(<ResponseMetrics cost="1.2311" />);
-    const cost = () => screen.getByText("Cost").nextElementSibling?.firstElementChild?.textContent;
+    const cost = () => screen.getByText("Cost").nextElementSibling?.textContent;
     expect(cost()).toBe("$1.2311");
     rerender(<ResponseMetrics cost="0.5" />);
     expect(cost()).toBe("$0.50");
@@ -243,19 +243,22 @@ describe("ResponseMetrics room and money", () => {
     expect(cost()).toBe("<\u00a0$0.000001");
   });
 
-  it("reserves a typical value's room under every value, live or done", () => {
-    const { container, rerender } = render(<ResponseMetrics live reasoning />);
-    const reserved = () => [...container.querySelectorAll("dd > [aria-hidden]")].map((s) => s.getAttribute("data-reserve"));
-    const live = reserved();
-    expect(live).toEqual(["8.88 s", "8.88 s", "8,888 in · 888 out", "888", "$0.008888"]);
-    rerender(<ResponseMetrics reasoning timeToFirstToken={420} duration={3140} inputTokens={1204} outputTokens={856} reasoningTokens={312} cost="0.004213" />);
-    expect(reserved()).toEqual(live);
+  it("shows only what is known, each value beside its label and nothing held open for the rest", () => {
+    const { container, rerender } = render(<ResponseMetrics live startedAt={Date.now()} />);
+    const labels = () => [...container.querySelectorAll("dt")].map((d) => d.textContent);
+    expect(labels()).toEqual(["Total"]);
+    rerender(<ResponseMetrics live startedAt={Date.now()} timeToFirstToken={420} />);
+    expect(labels()).toEqual(["First token", "Total"]);
+    rerender(<ResponseMetrics timeToFirstToken={420} duration={3140} inputTokens={1204} outputTokens={856} reasoningTokens={312} cost="0.004213" />);
+    expect(labels()).toEqual(["First token", "Total", "Tokens", "Reasoning", "Cost"]);
     expect(screen.getByText("Tokens").nextElementSibling).toHaveTextContent(/^1,204 in · 856 out$/);
+    expect(container.querySelectorAll("dd [aria-hidden]")).toHaveLength(0);
   });
 
-  it("keeps the reasoning item after a response whose reasoning wasn't reported", () => {
-    render(<ResponseMetrics reasoning duration={1200} inputTokens={12} outputTokens={4} />);
-    expect(screen.getByText("Reasoning").nextElementSibling).toHaveTextContent("—not reported");
+  it("leaves reasoning out of a response that reported none", () => {
+    render(<ResponseMetrics duration={1200} inputTokens={12} outputTokens={4} />);
+    expect(screen.queryByText("Reasoning")).toBeNull();
+    expect(screen.getByLabelText("Metrics")).not.toHaveTextContent("—");
   });
 });
 

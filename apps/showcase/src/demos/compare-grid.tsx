@@ -53,7 +53,6 @@ function Columns({ columns, height = 400, divider }: { columns: Column[]; height
                   reasoningTokens={last?.metrics.reasoningTokens}
                   cost={last?.metrics.cost}
                   live={last?.status === "pending" || last?.status === "streaming"}
-                  reasoning={model.reasoning}
                 />
               }
             >

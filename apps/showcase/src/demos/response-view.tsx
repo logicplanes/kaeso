@@ -79,7 +79,6 @@ export function Stream() {
         {...(state.took !== undefined ? { reasoningDuration: state.took } : {})}
         footer={
           <ResponseMetrics
-            reasoning
             live={state.status === "pending" || state.status === "streaming"}
             startedAt={state.started}
             duration={state.total}
@@ -119,7 +118,7 @@ export function States() {
   return (
     <div className="flex w-560 flex-col">
       <StateSection title="Pending: a quiet mark until the first token">
-        <ResponseView status="pending" footer={<ResponseMetrics live reasoning />} />
+        <ResponseView status="pending" footer={<ResponseMetrics live />} />
       </StateSection>
       <StateSection title="Thinking, closed: the latest line">
         <ResponseView status="streaming" reasoning={gpt.reasoning!.slice(0, 220)} />

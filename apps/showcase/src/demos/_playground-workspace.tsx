@@ -243,7 +243,6 @@ export function PlaygroundWorkspace({ initial, initialPrompt = "" }: { initial: 
                     inputTokens={last?.metrics.input}
                     outputTokens={last?.metrics.output}
                     reasoningTokens={last?.metrics.reasoningTokens}
-                    reasoning={model.reasoning}
                     live={last?.status === "pending" || last?.status === "streaming"}
                     startedAt={last?.startedAt}
                     cost={last?.metrics.cost}

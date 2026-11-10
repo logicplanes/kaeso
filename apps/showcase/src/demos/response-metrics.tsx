@@ -5,7 +5,7 @@ import { StateSection } from "~/lib/states";
 export const meta = {
   title: "ResponseMetrics",
   description:
-    "A response's numbers on one line: time to first token, total time, tokens in and out, reasoning, cost. Empty before a response; quiet placeholders hold their place while one streams.",
+    "A response's numbers on one line: time to first token, total time, tokens in and out, reasoning, cost. Empty before a response; while one streams it shows what is known so far.",
   group: "Playground",
   entry: "playground",
   import: "ResponseMetrics, formatLatency",
@@ -20,11 +20,11 @@ export function Basic() {
   return <ResponseMetrics timeToFirstToken={420} duration={3140} inputTokens={1204} outputTokens={856} reasoningTokens={312} cost="0.009725" />;
 }
 export function Streaming() {
-  return <ResponseMetrics live reasoning timeToFirstToken={1180} />;
+  return <ResponseMetrics live timeToFirstToken={1180} />;
 }
 function Counting() {
   const [startedAt] = useState(() => Date.now() - 2_400);
-  return <ResponseMetrics live reasoning startedAt={startedAt} timeToFirstToken={1180} />;
+  return <ResponseMetrics live startedAt={startedAt} timeToFirstToken={1180} />;
 }
 export function States() {
   return (
@@ -33,7 +33,7 @@ export function States() {
         <ResponseMetrics />
       </StateSection>
       <StateSection title="Waiting for the first token">
-        <ResponseMetrics live reasoning />
+        <ResponseMetrics live />
       </StateSection>
       <StateSection title="First token">
         <Streaming />
@@ -46,9 +46,6 @@ export function States() {
       </StateSection>
       <StateSection title="Done, no reasoning">
         <ResponseMetrics timeToFirstToken={280} duration={1460} inputTokens={98} outputTokens={41} cost="0.000026" />
-      </StateSection>
-      <StateSection title="Done, reasoning not reported">
-        <ResponseMetrics reasoning timeToFirstToken={2920} duration={4380} inputTokens={412} outputTokens={168} cost="0.003756" />
       </StateSection>
       <StateSection title="Slow and long">
         <ResponseMetrics timeToFirstToken={12_400} duration={71_000} inputTokens={182_400} outputTokens={12_031} reasoningTokens={9_870} cost="1.2311" />
@@ -66,7 +63,7 @@ export function States() {
         <ResponseMetrics size="md" timeToFirstToken={420} duration={3140} inputTokens={1204} outputTokens={856} cost="0.009725" />
       </StateSection>
       <StateSection title="Medium, while it streams">
-        <ResponseMetrics size="md" live reasoning timeToFirstToken={420} />
+        <ResponseMetrics size="md" live timeToFirstToken={420} />
       </StateSection>
       <StateSection title="In a narrow column">
         <div className="w-240">
