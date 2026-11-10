@@ -57,7 +57,7 @@ Ein ChatGPT-Konto bedient Anfragen nach den Regeln von OpenAI für die Nutzung v
 
 - Jede Anfrage geht als Stream, den OpenAI nicht speichert, an `https://api.openai.com/v1/responses`, unabhängig von der Basis-URL, die die Installation für OpenAI festlegt. Für Apps, die eine einzelne Antwort erwarten, fügt Kaeso den Stream zu einer Antwort zusammen.
 - Kaeso lässt die Felder weg, die ein Abo ablehnt: `temperature`, `top_p`, die Limits für Ausgabe und Tool-Aufrufe, `metadata`, `truncation`, Benutzer-IDs und die anderen [Einschränkungen der Vorschau](https://developers.openai.com/siwc/token-sharing-open-source/preview-limitations).
-- Embeddings und Token-Zählungen brauchen einen API-Schlüssel; für das Konto lehnt Kaeso sie ab.
+- Bilder, Sprachausgabe, Transkriptionen, Embeddings und Token-Zählungen brauchen einen API-Schlüssel; für das Konto lehnt Kaeso sie ab, bevor etwas gesendet wird, und der Fehler sagt das.
 - Ist das Nutzungslimit des Abos erreicht, erhalten Apps eine `429`, die auf die [Nutzungseinstellungen von ChatGPT](https://chatgpt.com/settings/usage) verweist.
 - **Verfügbarkeit prüfen** bietet nur die Modelle an, die das Konto für sein Abo listet.
 

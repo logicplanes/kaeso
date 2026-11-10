@@ -27,6 +27,7 @@ const model = (patch: Partial<PlaygroundModel> = {}): PlaygroundModel => ({
   cache_write_price: null,
   price_tiers: [],
   provider_key: true,
+  needs_api_key: false,
   ...patch,
 });
 

@@ -135,6 +135,7 @@ describe("PlaygroundPage", () => {
       page([
         playgroundModel(),
         playgroundModel({ id: "cm_x", provider: "anthropic", model_id: "claude-x", display_name: "Claude X", provider_key: false }),
+        playgroundModel({ id: "cm_i", model: "gpt-image-2", model_id: "gpt-image-2", display_name: "GPT Image 2", mode: "image", needs_api_key: true }),
         claude,
       ]),
     );
@@ -144,6 +145,7 @@ describe("PlaygroundPage", () => {
     await user.click(screen.getByRole("button", { description: "Model" }));
     const listbox = await screen.findByRole("listbox");
     expect(within(listbox).getByRole("option", { name: /Claude X claude-x No Anthropic key/ })).toHaveAttribute("aria-disabled", "true");
+    expect(within(listbox).getByRole("option", { name: /GPT Image 2 gpt-image-2 Needs an API key/ })).toHaveAttribute("aria-disabled", "true");
     await user.click(within(listbox).getByRole("option", { name: /GPT-5.4 mini/ }));
     await user.click(screen.getByRole("button", { description: "Model" }));
     const recent = within(await screen.findByRole("listbox")).getByRole("group", { name: "Recent" });

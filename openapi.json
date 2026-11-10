@@ -30039,6 +30039,7 @@
                 "price_tiers",
                 "provider_key",
                 "availability",
+                "needs_api_key",
                 "max_request_bytes",
                 "mode",
                 "voices",
@@ -30145,6 +30146,10 @@
                 "model_id": {
                   "type": "string",
                   "description": "The provider's model id."
+                },
+                "needs_api_key": {
+                  "type": "boolean",
+                  "description": "Whether the project's provider key is an account that can't call the API the\nmodel needs, such as a ChatGPT account for an image model; requests fail until the\nproject uses an API key."
                 },
                 "output_limit": {
                   "type": [
@@ -34611,6 +34616,7 @@
           "price_tiers",
           "provider_key",
           "availability",
+          "needs_api_key",
           "max_request_bytes",
           "mode",
           "voices",
@@ -34717,6 +34723,10 @@
           "model_id": {
             "type": "string",
             "description": "The provider's model id."
+          },
+          "needs_api_key": {
+            "type": "boolean",
+            "description": "Whether the project's provider key is an account that can't call the API the\nmodel needs, such as a ChatGPT account for an image model; requests fail until the\nproject uses an API key."
           },
           "output_limit": {
             "type": [

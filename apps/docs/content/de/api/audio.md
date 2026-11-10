@@ -91,7 +91,7 @@ Schlüssel, die Auflösung von Modellen mit Aliassen und Routen, Limits und Budg
 | Cohere | nicht angeboten | `/v2/audio/transcriptions`: `cohere-transcribe-03-2026`, `language` verlangt | [transcribe](https://docs.cohere.com/v2/docs/transcribe) |
 | Anthropic, DeepSeek, Moonshot, Cerebras, Ollama Cloud | nicht angeboten | nicht angeboten | [Unterstützte Anbieter](../concepts/supported-providers.md) |
 
-Eine Anfrage an einen Anbieter ohne die API wird abgelehnt, bevor etwas gesendet wird, zum Beispiel „Anthropic offers no speech API Kaeso can call, so `claude-haiku-4-5` can't speak.“.
+Eine Anfrage an einen Anbieter ohne die API wird abgelehnt, bevor etwas gesendet wird, zum Beispiel „Anthropic offers no speech API Kaeso can call, so `claude-haiku-4-5` can't speak.“. Ebenso eine Anfrage an OpenAI in einem Projekt, dessen OpenAI-Schlüssel ein [ChatGPT-Konto](../console/provider-keys.md#mit-einem-chatgpt-konto-anmelden) ist, das weder Sprachausgabe erstellen noch Audio transkribieren kann; der Fehler verlangt einen API-Schlüssel.
 
 ## Kosten und Logs
 

@@ -230,6 +230,7 @@
   "kaeso.modelAccess.ownerCount": "{count, plural, one {Every model its owner may use: # model.} other {Every model its owner may use: # models.}}",
   "kaeso.modelAccess.ownerModels": "Every model its owner may use",
   "kaeso.modelAccess.saved": "Models saved",
+  "kaeso.modelOptions.needsApiKey": "Needs an API key",
   "kaeso.modelOptions.notServed": "The provider doesn't serve it",
   "kaeso.overview.cacheHit": "Cache hit",
   "kaeso.overview.cacheRead": "{tokens} input tokens from cache",

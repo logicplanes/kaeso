@@ -63,6 +63,11 @@ describe("model picker options", () => {
     });
   });
 
+  it("disable a Playground model the project's account can't call and say what it needs", () => {
+    const m = { provider: "openai", model_id: "gpt-image-2", display_name: "GPT Image 2", input_modalities: ["text"], provider_key: true, needs_api_key: true };
+    expect(playgroundModelOption(m as unknown as PlaygroundModel, "gpt-image-2", "No OpenAI key")).toMatchObject({ disabled: true, note: "Needs an API key" });
+  });
+
   it("leave out what a Playground model doesn't list", () => {
     const m = {
       provider: "openai",

@@ -287,6 +287,11 @@ pub enum Stage {
     MissingCredential(String),
     SignedOut(&'static str),
     NoApiAccess(&'static str),
+    NeedsApiKey {
+        product: &'static str,
+        provider: String,
+        api: &'static str,
+    },
     Credential,
     Upstream,
     Provider,
@@ -1232,8 +1237,14 @@ async fn attempt(
         .filter(|a| a.method == credential.method);
     let chatgpt = account.filter(|a| a.method == AuthMethod::ChatGpt);
     if let Some(a) = chatgpt {
-        plan.dialect = super::accounts::prepare(&mut req, a, eff.provider.name())
-            .map_err(fail(Stage::Capability))?;
+        let stage =
+            super::accounts::media_api(kind).map_or(Stage::Capability, |api| Stage::NeedsApiKey {
+                product: a.product,
+                provider: eff.provider.name().to_owned(),
+                api,
+            });
+        plan.dialect =
+            super::accounts::prepare(&mut req, a, eff.provider.name()).map_err(fail(stage))?;
         rec.outcome().egress = Some(plan.dialect);
     }
 
@@ -1865,7 +1876,7 @@ fn classify(f: &Failure) -> Next {
         | Stage::Upstream
         | Stage::KeyRefused
         | Stage::Unserved(_) => Next::Fall(RouteFailure::Unavailable),
-        Stage::Capability => Next::Fall(RouteFailure::Unsupported),
+        Stage::Capability | Stage::NeedsApiKey { .. } => Next::Fall(RouteFailure::Unsupported),
         // Kaeso can't read the counters: every other step would be refused the same way.
         Stage::Limits if f.err.status == Some(503) => Next::Stop,
         Stage::Limits => Next::Fall(RouteFailure::Limited),

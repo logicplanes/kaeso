@@ -172,6 +172,7 @@ async fn every_kind_of_model_is_listed_with_its_mode_and_what_the_playground_off
     assert_eq!(of("claude-haiku-4-5")["image"], Value::Null);
     let image = of("gpt-image-2");
     assert_eq!(image["mode"], "image");
+    assert_eq!(image["needs_api_key"], false);
     assert_eq!(image["image"]["edits"], true);
     assert_eq!(image["image"]["max_count"], 10);
     assert_eq!(image["image"]["size"], "pixels");
