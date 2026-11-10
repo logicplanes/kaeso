@@ -110,7 +110,7 @@ test("the organization's analytics take the same periods", async ({ page }) => {
   await signInToProject(page);
   const org = /\/orgs\/([^/]+)/.exec(new URL(page.url()).pathname)?.[1] ?? "";
   await page.goto(`/orgs/${org}/analytics?period=12m`);
-  await expect(page.getByText("Requests per day, UTC")).toBeVisible();
+  await expect(page.getByText("Requests per week, UTC")).toBeVisible();
   await pick(page, "Last 90 days");
   await expect.poll(() => search(page).get("period")).toBe("90d");
   await expect(page.getByText("Requests per day, UTC")).toBeVisible();
