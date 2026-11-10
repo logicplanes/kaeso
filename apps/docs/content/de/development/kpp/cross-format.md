@@ -343,6 +343,8 @@ Frames gelangen auf zwei Wegen auf die Leitung:
 - **Im Stream.** Ein Encoder hängt den Frame an das an, was `StreamEncoder::encode` zurückgibt, wenn ein Event aus einem anderen Dialekt keine Bytes erzeugt hat. Ein Taktgeber begrenzt das ohne Uhr. Ein Extra-Event eines anderen Dialekts wie `ping` löst immer einen Frame aus, weil der Anbieter es bereits taktet. Verborgener Text, etwa Thinking, das die App nicht sehen kann, oder gepufferte Tool-Argumente, löst einen Frame pro `kaeso_codecs::HIDDEN_TEXT_PER_KEEPALIVE` Bytes aus, also 1.024. Alles, was der Encoder schreibt, setzt die Zählung zurück. Events aus dem eigenen Dialekt der App lösen nie Frames aus, sodass eine Wiedergabe im selben Dialekt exakt bleibt.
 - **Vom Gateway gesteuert.** `StreamEncoder::keepalive` liefert den Frame auf Abruf, für Stille beim Anbieter, die der Encoder nicht sehen kann. Das Gateway schreibt ihn, wenn es `KAESO_STREAMS_KEEPALIVE_INTERVAL` lang nichts an die App geschrieben hat, standardmäßig 15 Sekunden.
 
+Das Anfrageprotokoll zählt beide Arten in `stream_progress.keepalives`. Ein eigenes Keepalive des Anbieters, das eine App desselben Dialekts wiedergegeben bekommt, etwa Anthropics `ping`, ist ein Event des Anbieters und wird nicht mitgezählt.
+
 Der Encoder für OpenAI Chat sendet seinen Rollen-Chunk außerdem, sobald die Antwort beginnt, statt mit dem ersten Text. So hört die App vom Stream, während das Modell denkt.
 
 ## Strukturierte Ausgabe

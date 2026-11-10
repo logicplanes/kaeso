@@ -1556,6 +1556,7 @@ async fn attempt(
                 chunks,
                 decoder,
                 encoder,
+                app: ingress,
                 keepalive: stream::Keepalive::new(keepalive),
                 counter,
                 carry,
