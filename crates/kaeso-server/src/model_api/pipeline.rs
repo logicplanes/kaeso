@@ -46,6 +46,7 @@ use crate::services::availability::{self, Probe};
 use crate::services::continuity;
 use crate::services::cooldowns;
 use crate::services::credentials::{self, ResolveError as CredentialError};
+use crate::services::log_media::Keep;
 use crate::services::response_cache::{self, Verdict};
 use crate::state::AppState;
 
@@ -88,7 +89,7 @@ pub(super) struct Recording {
     sent_input: Option<u64>,
     held: Option<super::memory::Held>,
     keep_in_cache: Option<response_cache::Slot>,
-    logging: Option<tokio::task::JoinHandle<Bytes>>,
+    logging: Option<tokio::task::JoinHandle<(Bytes, Keep)>>,
 }
 
 impl Recording {
@@ -144,7 +145,10 @@ impl Recording {
         self.state.in_flight.finish(async move {
             if let Some(logging) = logging {
                 match logging.await {
-                    Ok(body) => o.request_body = Some(body),
+                    Ok((body, left)) => {
+                        o.request_body = Some(body);
+                        o.request_logged = Some(left);
+                    }
                     Err(e) => {
                         tracing::error!(error = %e, request_id = %o.request_id, "cannot prepare a request's body for the log; it is logged without it");
                     }
@@ -259,6 +263,7 @@ pub(crate) fn blank_outcome(request_id: RequestId) -> Outcome {
         client_ip: None,
         upstream_request_id: None,
         request_body: None,
+        request_logged: None,
         reply: None,
         cancelled: false,
         stream_progress: None,
@@ -692,17 +697,16 @@ pub(crate) fn in_place<T>(bytes: usize, work: impl FnOnce() -> T) -> T {
 
 // A large body is written as the log keeps it on a blocking thread while the request is
 // decoded, so the raw body is let go once both are done instead of being held for the whole
-// call, as an upload's is. The record reads it again with the same allowance: media kept the
-// first time is kept again and what was left out is already a placeholder.
-fn logged_early(body: Bytes, keep_media: bool) -> tokio::task::JoinHandle<Bytes> {
+// call. The allowance it leaves goes with it, so the record writes only the reply.
+fn logged_early(body: Bytes, keep_media: bool) -> tokio::task::JoinHandle<(Bytes, Keep)> {
     tokio::task::spawn_blocking(move || {
         let mut keep = if keep_media {
-            crate::services::log_media::Keep::media()
+            Keep::media()
         } else {
-            crate::services::log_media::Keep::nothing()
+            Keep::nothing()
         };
-        let logged = crate::services::log_media::owned_body(body, &mut keep);
-        Bytes::from(logged)
+        let logged = crate::services::log_media::shared_body(body, &mut keep);
+        (logged, keep)
     })
 }
 
@@ -875,7 +879,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         .unwrap_or(caller.project_id);
     // Held for the whole call, after the translation's share is returned: the app's
     // decoded request, kept to encode the reply, the request sent while the input
-    // counter may still need it, and the raw body until it is logged.
+    // counter may still need it, and the body's size again for its log entry, raw or written.
     let logged = u64::try_from(if keep_content { request_bytes } else { 0 }).unwrap_or(u64::MAX);
     let decoded = super::memory::decoded(&shape);
     let retained = |copies: u64| decoded.saturating_mul(copies).saturating_add(logged);

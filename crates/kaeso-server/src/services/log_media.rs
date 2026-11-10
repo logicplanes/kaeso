@@ -66,6 +66,10 @@ impl Keep {
         }
     }
 
+    pub fn keeps_media(&self) -> bool {
+        self.left.is_some()
+    }
+
     fn left_out(&mut self, bytes: u64) -> Option<&'static str> {
         let Some(left) = self.left else {
             return Some(NOT_KEPT);
@@ -1059,19 +1063,29 @@ pub fn body(bytes: &[u8], keep: &mut Keep) -> String {
     }
 }
 
-/// [`body`] of a body the log may take: JSON kept whole becomes the logged text without a copy
-/// when nothing else holds its bytes.
-pub fn owned_body(bytes: Bytes, keep: &mut Keep) -> String {
+/// [`body`] of a body the log may share: JSON kept whole is the same bytes, not a copy.
+pub fn shared_body(bytes: Bytes, keep: &mut Keep) -> Bytes {
     let Ok(text) = std::str::from_utf8(&bytes) else {
-        return body(&bytes, keep);
+        return Bytes::from(body(&bytes, keep));
     };
     let start = text.trim_start();
     if !(start.is_empty() || start.starts_with(['{', '[', '"'])) {
-        return body(&bytes, keep);
+        return Bytes::from(body(&bytes, keep));
     }
-    if let Some(stripped) = without_media(text, keep) {
-        return stripped;
+    match without_media(text, keep) {
+        Some(stripped) => Bytes::from(stripped),
+        None => bytes,
     }
+}
+
+/// [`body`] of a body the log may take: JSON kept whole becomes the logged text without a copy
+/// when nothing else holds its bytes.
+pub fn owned_body(bytes: Bytes, keep: &mut Keep) -> String {
+    into_text(shared_body(bytes, keep))
+}
+
+/// Text the log already keeps, as a `String`, without a copy when nothing else holds it.
+pub fn into_text(bytes: Bytes) -> String {
     String::from_utf8(Vec::from(bytes))
         .unwrap_or_else(|e| String::from_utf8_lossy(e.as_bytes()).into_owned())
 }

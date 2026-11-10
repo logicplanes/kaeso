@@ -1,5 +1,7 @@
 use std::collections::hash_map::RandomState;
 use std::hash::BuildHasher;
+use std::sync::OnceLock;
+use std::sync::atomic::{AtomicU64, Ordering};
 
 use base64::Engine as _;
 use kaeso_kpp::{Base64Source, Base64Text, KppError};
@@ -10,9 +12,11 @@ const WRITE: base64::engine::GeneralPurpose = base64::engine::general_purpose::S
 // The request encoders build each part and message as JSON text and the body from those, so
 // base64 written where a part is built would be copied once per layer. A deferring `Media`
 // hands out a short marker in its place and `finish` writes the base64 into the body once, at
-// its final size. The marker carries 64 random bits, so no text of a request can spell one.
+// its final size. Each marker must appear exactly once, as a whole JSON string, or the body is
+// refused: text that spells a marker can make a request fail but never moves media.
 #[derive(Debug)]
 pub(crate) struct Media {
+    deferring: bool,
     tag: Option<String>,
     items: Vec<Item>,
 }
@@ -38,24 +42,43 @@ impl Serialize for MediaText<'_> {
     }
 }
 
+// The seed is drawn once per process, from the system's randomness where std has it; the
+// counter and an address make each request's tag differ even where it hasn't.
+fn tag() -> String {
+    static SEED: OnceLock<RandomState> = OnceLock::new();
+    static COUNT: AtomicU64 = AtomicU64::new(0);
+    let n = COUNT.fetch_add(1, Ordering::Relaxed);
+    let at = std::ptr::addr_of!(n) as usize;
+    let random = SEED.get_or_init(RandomState::new).hash_one((n, at));
+    format!("kaeso-media-{random:016x}-")
+}
+
 impl Media {
     pub(crate) fn deferred() -> Media {
-        let random = RandomState::new().hash_one(0u8);
+        #[cfg(test)]
+        if tests::INLINE.with(std::cell::Cell::get) {
+            return Media::inline();
+        }
         Media {
-            tag: Some(format!("kaeso-media-{random:016x}-")),
+            deferring: true,
+            tag: None,
             items: Vec::new(),
         }
     }
 
     pub(crate) fn inline() -> Media {
         Media {
+            deferring: false,
             tag: None,
             items: Vec::new(),
         }
     }
 
     fn defer(&mut self, prefix: String, source: &Base64Source) -> Option<String> {
-        let tag = self.tag.as_ref()?;
+        if !self.deferring {
+            return None;
+        }
+        let tag = self.tag.get_or_insert_with(tag);
         let marker = format!("{tag}{}", self.items.len());
         self.items.push(Item {
             prefix,
@@ -87,12 +110,8 @@ impl Media {
             return Ok(body);
         };
         let tag = tag.as_bytes();
-        let prefixes = self
-            .items
-            .iter()
-            .map(|i| escaped(&i.prefix))
-            .collect::<Result<Vec<_>, _>>()?;
-        let mut found = Vec::new();
+        let mut found = Vec::with_capacity(self.items.len());
+        let mut seen = vec![false; self.items.len()];
         let mut at = 0;
         while let Some(offset) = find(body.get(at..).unwrap_or_default(), tag) {
             let start = at + offset;
@@ -110,26 +129,30 @@ impl Media {
                 && body.get(start - 1) == Some(&b'"')
                 && body.get(end) == Some(&b'"')
                 && body.get(start.wrapping_sub(2)) != Some(&b'\\');
-            match index.filter(|i| *i < self.items.len()) {
-                Some(index) if quoted => found.push((start, end, index)),
+            let first = index.and_then(|i| seen.get_mut(i)).filter(|s| !**s);
+            match (index, first) {
+                (Some(index), Some(seen)) if quoted => {
+                    *seen = true;
+                    found.push((start, end, index));
+                }
                 _ => return Err(broken()),
             }
             at = end;
         }
+        if seen.contains(&false) {
+            return Err(broken());
+        }
+        let mut written = Vec::with_capacity(found.len());
         let mut size = body.len();
-        for (start, end, index) in &found {
-            let (prefix, item) = (prefixes.get(*index), self.items.get(*index));
-            let (Some(prefix), Some(item)) = (prefix, item) else {
-                return Err(broken());
-            };
+        for (start, end, index) in found {
+            let item = self.items.get(index).ok_or_else(broken)?;
+            let prefix = escaped(&item.prefix)?;
             size = size - (end - start) + prefix.len() + Base64Text::new(&item.source.data).len();
+            written.push((start, end, prefix, item));
         }
         let mut out = Vec::with_capacity(size);
         let mut copied = 0;
-        for (start, end, index) in found {
-            let (Some(prefix), Some(item)) = (prefixes.get(index), self.items.get(index)) else {
-                return Err(broken());
-            };
+        for (start, end, prefix, item) in written {
             out.extend_from_slice(body.get(copied..start).unwrap_or_default());
             out.extend_from_slice(prefix.as_bytes());
             let from = out.len();
@@ -171,8 +194,17 @@ fn broken() -> KppError {
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
+    use std::cell::Cell;
+
+    use kaeso_kpp::{DialectId, RequestKind};
+
     use super::*;
+    use crate::{EgressCtx, HeaderList, dispatch};
+
+    thread_local! {
+        pub(crate) static INLINE: Cell<bool> = const { Cell::new(false) };
+    }
 
     fn source(len: usize) -> Base64Source {
         Base64Source::new(
@@ -206,15 +238,105 @@ mod tests {
     }
 
     #[test]
-    fn a_marker_out_of_place_is_an_error_not_a_broken_body() {
+    fn a_request_without_media_draws_no_tag() {
+        let media = Media::deferred();
+        assert!(media.tag.is_none());
+        let body = br#"{"text":"kaeso-media-0000000000000000-0"}"#.to_vec();
+        assert_eq!(media.finish(body.clone()).unwrap(), body);
+    }
+
+    #[test]
+    fn a_marker_out_of_place_twice_or_missing_is_an_error_not_a_broken_body() {
+        let marker = |media: &mut Media| media.base64_string(&source(3));
         let mut media = Media::deferred();
-        let marker = media.base64_string(&source(3));
+        let m = marker(&mut media);
         let nested =
-            serde_json::to_vec(&serde_json::json!({ "args": format!("\"{marker}\"") })).unwrap();
+            serde_json::to_vec(&serde_json::json!({ "args": format!("\"{m}\"") })).unwrap();
         assert!(media.finish(nested).is_err());
         let mut media = Media::deferred();
-        let marker = media.base64_string(&source(3));
-        let unknown = format!("\"{marker}7\"").into_bytes();
-        assert!(media.finish(unknown).is_err());
+        let m = marker(&mut media);
+        assert!(media.finish(format!("\"{m}7\"").into_bytes()).is_err());
+        let mut media = Media::deferred();
+        let m = marker(&mut media);
+        let twice = serde_json::to_vec(&serde_json::json!([m, m])).unwrap();
+        assert!(
+            media.finish(twice).is_err(),
+            "a duplicated index is refused"
+        );
+        let mut media = Media::deferred();
+        let _ = marker(&mut media);
+        assert!(
+            media.finish(b"[]".to_vec()).is_err(),
+            "a lost file is refused"
+        );
+    }
+
+    #[test]
+    fn every_request_draws_its_own_tag() {
+        let mut a = Media::deferred();
+        let mut b = Media::deferred();
+        assert_ne!(a.base64_string(&source(1)), b.base64_string(&source(1)));
+    }
+
+    fn image_request(from: DialectId, text: &str) -> Vec<u8> {
+        let b64 = source(90_000).to_base64();
+        let body = match from {
+            DialectId::AnthropicMessages => serde_json::json!({
+                "model": "claude-sonnet-4-5", "max_tokens": 64,
+                "messages": [{"role": "user", "content": [
+                    {"type": "text", "text": text},
+                    {"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": b64}},
+                    {"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": b64}},
+                ]}, {"role": "assistant", "content": [
+                    {"type": "tool_use", "id": "toolu_1", "name": "look", "input": {"note": text}},
+                ]}, {"role": "user", "content": [
+                    {"type": "tool_result", "tool_use_id": "toolu_1", "content": [
+                        {"type": "text", "text": serde_json::json!({"seen": text}).to_string()},
+                    ]},
+                ]}],
+            }),
+            _ => serde_json::json!({
+                "model": "gpt-4o",
+                "messages": [{"role": "user", "content": [
+                    {"type": "text", "text": text},
+                    {"type": "image_url", "image_url": {"url": format!("data:image/png;base64,{b64}")}},
+                    {"type": "image_url", "image_url": {"url": format!("data:image/png;base64,{b64}")}},
+                ]}, {"role": "assistant", "tool_calls": [
+                    {"id": "call_1", "type": "function", "function": {"name": "look", "arguments": serde_json::json!({"note": text}).to_string()}},
+                ]}, {"role": "tool", "tool_call_id": "call_1", "content": serde_json::json!({"seen": text}).to_string()}],
+            }),
+        };
+        serde_json::to_vec(&body).unwrap()
+    }
+
+    fn encoded(from: DialectId, to: DialectId, body: &[u8], inline: bool) -> Vec<u8> {
+        let req = dispatch::decode_request(from, RequestKind::Generate, body, &HeaderList::new())
+            .unwrap();
+        INLINE.with(|i| i.set(inline));
+        let out = dispatch::encode_request(to, &req, &mut EgressCtx::new(&req));
+        INLINE.with(|i| i.set(false));
+        out.unwrap().body
+    }
+
+    #[test]
+    fn deferred_bodies_equal_inline_bodies_byte_for_byte_and_keep_marker_like_text() {
+        let lookalike = "kaeso-media-0123456789abcdef-0";
+        for (from, to) in [
+            (DialectId::OpenAiChat, DialectId::OpenAiChat),
+            (DialectId::OpenAiChat, DialectId::OpenAiResponses),
+            (DialectId::AnthropicMessages, DialectId::AnthropicMessages),
+            (DialectId::AnthropicMessages, DialectId::OpenAiResponses),
+        ] {
+            let body = image_request(from, lookalike);
+            let deferred = encoded(from, to, &body, false);
+            let inline = encoded(from, to, &body, true);
+            assert!(deferred == inline, "{from:?} to {to:?}");
+            let text = String::from_utf8(deferred).unwrap();
+            assert_eq!(
+                text.matches(lookalike).count(),
+                3,
+                "{from:?} to {to:?}: {text:.300}"
+            );
+        }
     }
 }

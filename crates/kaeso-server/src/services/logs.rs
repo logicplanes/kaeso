@@ -608,6 +608,7 @@ const MEDIA_REPLY_FORMAT: u8 = 2;
 
 struct Content {
     body: Option<Bytes>,
+    body_logged: Option<Keep>,
     reply: Option<Response>,
     media_reply: Option<Reply>,
     logged_reply: Option<String>,
@@ -618,9 +619,17 @@ struct Content {
 impl Content {
     fn logged(self) -> (String, String) {
         let mut keep = self.keep;
+        // A body written for the log while it was decoded is taken as it is, with the allowance
+        // it left; only one that kept media the log now leaves out is read again.
         let request_body = self
             .body
-            .map(|b| log_media::owned_body(b, &mut keep))
+            .map(|b| match self.body_logged {
+                Some(left) if left.keeps_media() == keep.keeps_media() => {
+                    keep = left;
+                    log_media::into_text(b)
+                }
+                _ => log_media::owned_body(b, &mut keep),
+            })
             .unwrap_or_default();
         let reply = match (&self.reply, &self.media_reply) {
             (Some(r), _) => Some(
@@ -647,7 +656,13 @@ impl Content {
 // Leaving media out reads the whole body, so a large one is read off the request's thread.
 async fn logged_content(o: &Outcome, body: Option<Bytes>, keep: Keep) -> (String, String) {
     let request_id = o.request_id;
-    let size = body.as_ref().map_or(0, Bytes::len);
+    let size = body
+        .as_ref()
+        .filter(|_| {
+            !o.request_logged
+                .is_some_and(|left| left.keeps_media() == keep.keeps_media())
+        })
+        .map_or(0, Bytes::len);
     let media = o.media_reply.is_some()
         || o.media_reply_logged.is_some()
         || o.reply
@@ -655,6 +670,7 @@ async fn logged_content(o: &Outcome, body: Option<Bytes>, keep: Keep) -> (String
             .is_some_and(|r| !r.blocks.iter().all(is_text));
     let content = Content {
         body,
+        body_logged: o.request_logged,
         reply: o.reply.clone(),
         media_reply: o.media_reply.clone(),
         logged_reply: o.media_reply_logged.clone(),

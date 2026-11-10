@@ -912,6 +912,15 @@ fn a_body_written_as_the_log_keeps_it_reads_the_same_when_it_is_written_again() 
         assert_eq!(first, again, "{keep:?}");
         assert_eq!(once, body(request.as_bytes(), &mut direct), "{keep:?}");
     }
+    let text_only =
+        Bytes::from(json!({ "messages": [{ "content": "x".repeat(300 << 10) }] }).to_string());
+    let held = text_only.clone();
+    let shared = shared_body(text_only, &mut Keep::nothing());
+    assert_eq!(
+        shared.as_ptr(),
+        held.as_ptr(),
+        "text the log keeps whole is shared"
+    );
     let kept = Bytes::from(request);
     let at = kept.as_ptr();
     let logged = owned_body(kept, &mut Keep::media());

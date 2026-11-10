@@ -110,15 +110,21 @@ pub(super) fn refusal_part(text: &str) -> Node {
         .with("refusal", Node::str(text))
 }
 
-fn data_url(s: &kaeso_kpp::Base64Source, media: &mut Media) -> Node {
-    Node::str(media.data_url(s, &format!("data:{};base64", s.media_type)))
+// An app's own spelling of a file, such as base64 without padding, is an override recorded
+// against the canonical data URL; that one is written in place, so the override still applies.
+fn data_url(s: &kaeso_kpp::Base64Source, extras: &Extras, key: &str, media: &mut Media) -> Node {
+    let header = format!("data:{};base64", s.media_type);
+    if super::overrides::has_canon(extras, DIALECT, key) {
+        return Node::str(s.data_url_with(&header));
+    }
+    Node::str(media.data_url(s, &header))
 }
 
 fn image_part(b: &ImageBlock, media: &mut Media) -> Option<Node> {
     let node = Node::obj().with("type", Node::str("input_image"));
     let node = match &b.source {
         Source::Url(u) => node.with("image_url", Node::str(u)),
-        Source::Base64(s) => node.with("image_url", data_url(s, media)),
+        Source::Base64(s) => node.with("image_url", data_url(s, &b.extras, "image_url", media)),
         Source::FileId(f) => node.with("file_id", Node::str(&f.id)),
         _ => return None,
     };
@@ -131,7 +137,7 @@ fn file_part(b: &DocumentBlock, media: &mut Media) -> Option<Node> {
         Source::Url(u) => node.with("file_url", Node::str(u)),
         Source::Base64(s) => node
             .with("filename", Node::str(default_filename(&s.media_type)))
-            .with("file_data", data_url(s, media)),
+            .with("file_data", data_url(s, &b.extras, "file_data", media)),
         Source::FileId(f) => node.with("file_id", Node::str(&f.id)),
         _ => return None,
     };

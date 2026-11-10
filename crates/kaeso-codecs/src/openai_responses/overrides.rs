@@ -138,6 +138,11 @@ impl Overrides {
     }
 }
 
+pub(crate) fn has_canon(extras: &Extras, dialect: DialectId, key: &str) -> bool {
+    extras.is_from(dialect)
+        && matches!(extras.form.get(CANON), Some(Value::Object(m)) if m.contains_key(key))
+}
+
 pub(crate) fn form_set_insert(extras: &mut Extras, key: String, value: Value) {
     form_map_insert(extras, SET, key, value);
 }

@@ -157,6 +157,9 @@ pub struct Outcome {
     pub client_ip: Option<IpAddr>,
     pub upstream_request_id: Option<String>,
     pub request_body: Option<Bytes>,
+    /// The allowance `request_body` left when it was written as the log keeps it while the
+    /// request was decoded; `None` when the record still writes it.
+    pub request_logged: Option<crate::services::log_media::Keep>,
     pub reply: Option<Response>,
     pub cancelled: bool,
     pub stream_progress: Option<StreamProgress>,
