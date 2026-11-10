@@ -19,7 +19,7 @@ Parameters:
   KaesoVersion:
     Type: String
     Default: ""
-    Description: The Kaeso release to install, such as 0.6.0; empty installs the newest stable release.
+    Description: The Kaeso release to install, such as 0.5.6; empty installs the newest stable release.
     AllowedPattern: ^$|^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$
   InstanceType:
     Type: String
