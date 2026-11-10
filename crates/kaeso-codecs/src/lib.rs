@@ -7,6 +7,7 @@ mod codec;
 pub mod continuity;
 pub mod cross;
 pub mod dispatch;
+mod inline_media;
 mod inline_tools;
 mod keepalive;
 pub mod limits;

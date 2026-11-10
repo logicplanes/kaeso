@@ -19,6 +19,7 @@ use super::wire::{
 use super::{ANTHROPIC_VERSION, COUNT_TOKENS_PATH, MESSAGES_PATH, RAW_PREDICT_VERSION};
 use crate::codec::{EgressCtx, EncodedRequest, HeaderList, is_forwarded_header};
 use crate::cross::{self, reasoning_map, reasoning_replayable};
+use crate::inline_media::Media;
 use crate::wire::without_position;
 use crate::wire::{
     Ext, StringOr, add_nested_extra, extras_from, nested_extra_for, to_body, type_tag,
@@ -36,25 +37,48 @@ fn invalid_body(detail: impl std::fmt::Display) -> KppError {
     ))
 }
 
-fn parse_body(body: &[u8]) -> Result<Ext<RequestW>, KppError> {
-    if let Some(w) = std::str::from_utf8(body)
+type Body<'a> = (
+    Ext<RequestW<Vec<&'a RawValue>>>,
+    Vec<Ext<MessageW<&'a RawValue>>>,
+);
+
+// Messages are read borrowed from the body, after the request around them, and a message that
+// doesn't parse is reported as the one parse of the body reported it, its position included.
+fn parse_body(body: &[u8]) -> Result<Body<'_>, KppError> {
+    let parsed = std::str::from_utf8(body)
         .ok()
-        .and_then(|text| Ext::from_text(text).ok())
-    {
-        return Ok(w);
-    }
-    let raw: &serde_json::value::RawValue =
-        serde_json::from_slice(body).map_err(|_| invalid_body("the body is not valid JSON"))?;
-    Ext::from_raw(raw).map_err(|e| {
-        match serde_json::from_str::<serde_json::Map<String, Value>>(raw.get()) {
-            Ok(object) => describe(&object, &e),
-            Err(_) if raw.get().starts_with('{') => invalid_body(without_position(&e)),
-            Err(_) => invalid_body("the body must be a JSON object"),
+        .and_then(|text| Ext::<RequestW<Vec<&RawValue>>>::from_text(text).ok());
+    let w = match parsed {
+        Some(w) => w,
+        None => {
+            let raw: &RawValue = serde_json::from_slice(body)
+                .map_err(|_| invalid_body("the body is not valid JSON"))?;
+            Ext::from_raw(raw).map_err(|e| refused(raw, without_position(&e)))?
         }
-    })
+    };
+    let mut messages = Vec::with_capacity(w.known.messages.len());
+    for m in &w.known.messages {
+        match Ext::from_raw(m) {
+            Ok(m) => messages.push(m),
+            Err(e) => {
+                let raw: &RawValue = serde_json::from_slice(body)
+                    .map_err(|_| invalid_body("the body is not valid JSON"))?;
+                return Err(refused(raw, e.to_string()));
+            }
+        }
+    }
+    Ok((w, messages))
 }
 
-fn describe(object: &serde_json::Map<String, Value>, err: &serde_json::Error) -> KppError {
+fn refused(raw: &RawValue, detail: String) -> KppError {
+    match serde_json::from_str::<serde_json::Map<String, Value>>(raw.get()) {
+        Ok(object) => describe(&object, detail),
+        Err(_) if raw.get().starts_with('{') => invalid_body(detail),
+        Err(_) => invalid_body("the body must be a JSON object"),
+    }
+}
+
+fn describe(object: &serde_json::Map<String, Value>, detail: String) -> KppError {
     type Check = fn(&Value) -> bool;
     let int: Check = |v| v.as_u64().is_some_and(|n| u32::try_from(n).is_ok());
     let fields: &[(&str, Check, &str)] = &[
@@ -112,7 +136,7 @@ fn describe(object: &serde_json::Map<String, Value>, err: &serde_json::Error) ->
             return invalid_body(format!("message {i} {problem}")).with_param(param);
         }
     }
-    invalid_body(without_position(err))
+    invalid_body(detail)
 }
 
 pub(crate) fn decode_tool(
@@ -148,7 +172,7 @@ pub(crate) fn decode_request(
     headers: &HeaderList,
 ) -> Result<Request, KppError> {
     let origin = Origin::new(D);
-    let w = parse_body(body)?;
+    let (w, messages) = parse_body(body)?;
     let Ext {
         known: w,
         extra,
@@ -196,7 +220,7 @@ pub(crate) fn decode_request(
         }
     }
 
-    for (i, m) in w.messages.into_iter().enumerate() {
+    for (i, m) in messages.into_iter().enumerate() {
         let role = match m.known.role.as_str() {
             "user" => Role::User,
             "assistant" => Role::Assistant,
@@ -351,7 +375,7 @@ pub(crate) fn encode_request(
     };
     let count_only = matches!(req, Request::CountTokens(_)) && !own;
     let mut enc = BlockEncoder::new(ctx.origin(D), Side::Request);
-    let mut w = RequestW {
+    let mut w: RequestW = RequestW {
         model: r.model.clone(),
         ..RequestW::default()
     };
@@ -615,7 +639,8 @@ pub(crate) fn encode_request(
             ext.extra.insert("anthropic_version".to_owned(), version);
         }
     }
-    let body = to_body(&ext)?;
+    let media = std::mem::replace(&mut enc.media, Media::inline());
+    let body = media.finish(to_body(&ext)?)?;
     if matches!(req, Request::Generate(_)) {
         let automatic = own
             && r.extras

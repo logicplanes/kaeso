@@ -873,3 +873,56 @@ fn nesting_no_format_has_is_kept_only_within_the_allowance() {
         out.len()
     );
 }
+
+#[test]
+fn the_byte_table_reads_base64_as_testing_each_byte_does() {
+    for b in 0..=u8::MAX {
+        let expected = if wraps(b) {
+            WRAPS_BASE64
+        } else if base64_byte(b) || b == b'=' {
+            IN_BASE64
+        } else {
+            NOT_BASE64
+        };
+        assert_eq!(BASE64_CLASSES[usize::from(b)], expected, "{b}");
+    }
+    let long = b64(&[7; 9000]);
+    assert!(base64_of(&long).is_some());
+    let mut broken = long.clone();
+    broken.insert(5000, '!');
+    assert!(base64_of(&broken).is_none());
+}
+
+#[test]
+fn a_body_written_as_the_log_keeps_it_reads_the_same_when_it_is_written_again() {
+    let mut file = PNG.to_vec();
+    file.resize(300 << 10, 3);
+    let request = json!({ "model": "m", "messages": [{ "role": "user", "content": [
+        { "type": "text", "text": "Look" },
+        { "type": "image_url", "image_url": { "url": format!("data:image/png;base64,{}", b64(&file)) } },
+        { "type": "input_audio", "input_audio": { "format": "wav", "data": b64(&file) } },
+        { "type": "text", "text": json!({ "nested": format!("data:image/png;base64,{}", b64(&PNG)) }).to_string() },
+    ]}]})
+    .to_string();
+    for keep in [Keep::nothing(), Keep::media()] {
+        let (mut first, mut again, mut direct) = (keep, keep, keep);
+        let once = owned_body(Bytes::from(request.clone()), &mut first);
+        let twice = owned_body(Bytes::from(once.clone()), &mut again);
+        assert_eq!(once, twice, "{keep:?}");
+        assert_eq!(first, again, "{keep:?}");
+        assert_eq!(once, body(request.as_bytes(), &mut direct), "{keep:?}");
+    }
+    let text_only =
+        Bytes::from(json!({ "messages": [{ "content": "x".repeat(300 << 10) }] }).to_string());
+    let held = text_only.clone();
+    let shared = shared_body(text_only, &mut Keep::nothing());
+    assert_eq!(
+        shared.as_ptr(),
+        held.as_ptr(),
+        "text the log keeps whole is shared"
+    );
+    let kept = Bytes::from(request);
+    let at = kept.as_ptr();
+    let logged = owned_body(kept, &mut Keep::media());
+    assert_eq!(logged.as_ptr(), at, "a body kept whole is not copied");
+}

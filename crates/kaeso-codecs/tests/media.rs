@@ -347,3 +347,41 @@ fn minimax_takes_video_blocks_and_anthropic_refuses_them() {
         Some("messages[0].blocks[1]")
     );
 }
+
+// "iVBORw0KGgo" is a PNG signature without padding; "iVBORw0KGgp" is the same bytes with
+// trailing bits that aren't zero. Responses keeps the app's spelling of every value; Chat
+// Completions and Messages always write base64 padded.
+#[test]
+fn base64_as_the_app_spelled_it_round_trips_in_responses_and_is_padded_elsewhere() {
+    for data in ["iVBORw0KGgo", "iVBORw0KGgp"] {
+        let url = format!("data:image/png;base64,{data}");
+        let responses = json!({ "model": "gpt-4o", "input": [{ "role": "user", "content": [
+            { "type": "input_text", "text": "What is this?" },
+            { "type": "input_image", "image_url": url, "detail": "high" },
+        ]}]});
+        assert_eq!(
+            encode(R, &decode(R, &responses)).unwrap(),
+            responses,
+            "{data}"
+        );
+
+        let chat = json!({ "model": "gpt-4o", "messages": [{ "role": "user", "content": [
+            { "type": "image_url", "image_url": { "url": url } },
+        ]}]});
+        let sent = encode(C, &decode(C, &chat)).unwrap();
+        assert_eq!(
+            sent["messages"][0]["content"][0]["image_url"]["url"],
+            "data:image/png;base64,iVBORw0KGgo="
+        );
+
+        let messages = json!({ "model": "claude-haiku-4-5", "max_tokens": 16, "messages": [{
+            "role": "user",
+            "content": [{ "type": "image", "source": { "type": "base64", "media_type": "image/png", "data": data } }],
+        }]});
+        let sent = encode(A, &decode(A, &messages)).unwrap();
+        assert_eq!(
+            sent["messages"][0]["content"][0]["source"]["data"],
+            "iVBORw0KGgo="
+        );
+    }
+}

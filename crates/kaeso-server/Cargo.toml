@@ -70,3 +70,4 @@ reqwest = { workspace = true, features = ["json"] }
 semver.workspace = true
 tokio = { workspace = true, features = ["test-util"] }
 proptest.workspace = true
+peak_alloc.workspace = true

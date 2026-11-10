@@ -608,6 +608,7 @@ const MEDIA_REPLY_FORMAT: u8 = 2;
 
 struct Content {
     body: Option<Bytes>,
+    body_logged: Option<Keep>,
     reply: Option<Response>,
     media_reply: Option<Reply>,
     logged_reply: Option<String>,
@@ -618,9 +619,17 @@ struct Content {
 impl Content {
     fn logged(self) -> (String, String) {
         let mut keep = self.keep;
+        // A body written for the log while it was decoded is taken as it is, with the allowance
+        // it left; only one that kept media the log now leaves out is read again.
         let request_body = self
             .body
-            .map(|b| log_media::body(&b, &mut keep))
+            .map(|b| match self.body_logged {
+                Some(left) if left.keeps_media() == keep.keeps_media() => {
+                    keep = left;
+                    log_media::into_text(b)
+                }
+                _ => log_media::owned_body(b, &mut keep),
+            })
             .unwrap_or_default();
         let reply = match (&self.reply, &self.media_reply) {
             (Some(r), _) => Some(
@@ -645,16 +654,23 @@ impl Content {
 }
 
 // Leaving media out reads the whole body, so a large one is read off the request's thread.
-async fn logged_content(o: &Outcome, keep: Keep) -> (String, String) {
+async fn logged_content(o: &Outcome, body: Option<Bytes>, keep: Keep) -> (String, String) {
     let request_id = o.request_id;
-    let size = o.request_body.as_ref().map_or(0, Bytes::len);
+    let size = body
+        .as_ref()
+        .filter(|_| {
+            !o.request_logged
+                .is_some_and(|left| left.keeps_media() == keep.keeps_media())
+        })
+        .map_or(0, Bytes::len);
     let media = o.media_reply.is_some()
         || o.media_reply_logged.is_some()
         || o.reply
             .as_ref()
             .is_some_and(|r| !r.blocks.iter().all(is_text));
     let content = Content {
-        body: o.request_body.clone(),
+        body,
+        body_logged: o.request_logged,
         reply: o.reply.clone(),
         media_reply: o.media_reply.clone(),
         logged_reply: o.media_reply_logged.clone(),
@@ -680,6 +696,12 @@ fn is_text(block: &kaeso_kpp::Block) -> bool {
 }
 
 pub async fn record(state: &AppState, o: &Outcome) {
+    record_with(state, o, o.request_body.clone()).await;
+}
+
+// The body is passed on its own so the finished request's log can take it: a body kept whole
+// becomes the logged text without a copy.
+async fn record_with(state: &AppState, o: &Outcome, body: Option<Bytes>) {
     let Some(caller) = &o.caller else { return };
     if !state.request_logs() {
         return;
@@ -703,7 +725,7 @@ pub async fn record(state: &AppState, o: &Outcome) {
         Keep::nothing()
     };
     let (request_body, reply) = if content {
-        logged_content(o, keep).await
+        logged_content(o, body, keep).await
     } else {
         Default::default()
     };
@@ -920,23 +942,25 @@ fn text_bytes(log: &LogRow) -> u64 {
 pub struct Recorder;
 
 impl Sink for Recorder {
-    fn finish<'a>(&'a self, state: &'a AppState, outcome: Outcome) -> BoxFuture<'a, ()> {
+    fn finish<'a>(&'a self, state: &'a AppState, mut outcome: Outcome) -> BoxFuture<'a, ()> {
         Box::pin(async move {
             crate::services::usage::account(state, &outcome).await;
-            record(state, &outcome).await;
+            let body = outcome.request_body.take();
+            record_with(state, &outcome, body).await;
         })
     }
 
     fn finish_charged<'a>(
         &'a self,
         state: &'a AppState,
-        outcome: Outcome,
+        mut outcome: Outcome,
         charged: tokio::sync::oneshot::Sender<()>,
     ) -> BoxFuture<'a, ()> {
         Box::pin(async move {
             crate::services::usage::account(state, &outcome).await;
             let _ = charged.send(());
-            record(state, &outcome).await;
+            let body = outcome.request_body.take();
+            record_with(state, &outcome, body).await;
         })
     }
 }

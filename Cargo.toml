@@ -106,6 +106,7 @@ anyhow = "1"
 regex = { version = "1.12", default-features = false, features = ["std", "unicode-perl"] }
 insta = { version = "1.49", features = ["json"] }
 proptest = "1.12"
+peak_alloc = "0.3"
 
 [workspace.lints.rust]
 unsafe_code = "forbid"
