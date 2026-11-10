@@ -1,5 +1,5 @@
 import type { ExportFile } from "~/api/download";
-import { logsParams, type LogFilters } from "~/api/queries/logs";
+import { logsParams, toolCallParams, type LogFilters, type ToolCallFilters } from "~/api/queries/logs";
 import { dialectLabel, errorKindLabel } from "~/format/labels";
 import { fullDayLabel } from "~/format/period";
 import { t } from "~/i18n";
@@ -66,5 +66,54 @@ export function exportRequest(org: string, project: string, f: LogFilters, forma
     url: `${base}/export?${query({ format: type, ...(format === "content" ? { include_content: true } : {}) })}`,
     check: `${base}?${query({ limit: 1 })}`,
     file: { name: `kaeso-logs-${project}.${FILE[type].extension}`, ...FILE[type] },
+  };
+}
+
+export type ToolExportNames = { key?: string | undefined; member?: string | undefined; server?: string | undefined };
+
+export function toolExportFilters(
+  f: ToolCallFilters,
+  names: ToolExportNames = {},
+  labels: { status?: string; error?: string } = {},
+): { label: string; value: string }[] {
+  const filters: { label: string; value: string | false | undefined }[] = [
+    { label: t("logs.filter.key", "Key"), value: f.key && (names.key ?? f.key) },
+    { label: t("logs.filter.member", "Member"), value: f.member && (names.member ?? f.member.replace(/^(user|sa):/, "")) },
+    { label: t("logs.tools.server", "MCP server"), value: f.server && (names.server ?? f.server) },
+    { label: t("logs.tools.tool", "Tool"), value: f.tool },
+    { label: common.status(), value: f.status && (labels.status ?? f.status) },
+    { label: t("logs.filter.error", "Error kind"), value: f.error && (labels.error ?? f.error) },
+  ];
+  return filters.flatMap(({ label, value }) => (value ? [{ label, value }] : []));
+}
+
+export function toolExportSummary(f: ToolCallFilters): string {
+  const period = f.from && f.to ? (f.from === f.to ? "date" : "span") : PERIOD[f.range ?? "24h"];
+  const days = f.from && f.to ? { day: fullDayLabel(f.from), from: fullDayLabel(f.from), to: fullDayLabel(f.to) } : {};
+  const count = toolExportFilters(f).length;
+  return count
+    ? t(
+        "logs.tools.export.summaryFiltered",
+        "{period, select, hour {Every tool call from the last hour that matches {count, plural, one {this filter} other {these filters}}, newest first.} day {Every tool call from the last 24 hours that matches {count, plural, one {this filter} other {these filters}}, newest first.} week {Every tool call from the last 7 days that matches {count, plural, one {this filter} other {these filters}}, newest first.} month {Every tool call from the last 30 days that matches {count, plural, one {this filter} other {these filters}}, newest first.} date {Every tool call on {day} that matches {count, plural, one {this filter} other {these filters}}, newest first.} other {Every tool call from {from} to {to} that matches {count, plural, one {this filter} other {these filters}}, newest first.}}",
+        { period, count, ...days },
+      )
+    : t(
+        "logs.tools.export.summary",
+        "{period, select, hour {Every tool call from the last hour, newest first.} day {Every tool call from the last 24 hours, newest first.} week {Every tool call from the last 7 days, newest first.} month {Every tool call from the last 30 days, newest first.} date {Every tool call on {day}, newest first.} other {Every tool call from {from} to {to}, newest first.}}",
+        { period, ...days },
+      );
+}
+
+export function toolExportRequest(org: string, project: string, f: ToolCallFilters, format: ExportFormat, now = Date.now()) {
+  const params = toolCallParams(f, now);
+  const span = { ...params, ...(params.to ? {} : { to: new Date(now).toISOString() }) };
+  const query = (extra: Record<string, string | number | boolean>) =>
+    new URLSearchParams(Object.entries({ ...span, ...extra }).map(([k, v]) => [k, String(v)])).toString();
+  const base = `/platform/v1/orgs/${org}/projects/${project}/logs/tool-calls`;
+  const type = format === "csv" ? "csv" : "jsonl";
+  return {
+    url: `${base}/export?${query({ format: type, ...(format === "content" ? { include_content: true } : {}) })}`,
+    check: `${base}?${query({ limit: 1 })}`,
+    file: { name: `kaeso-tool-calls-${project}.${FILE[type].extension}`, ...FILE[type] },
   };
 }

@@ -127,7 +127,7 @@ QwenCloud 的 OpenAI 兼容模式只提供 Qwen-Image 3.0 和 2.1 Pro，因此�
 
 当请求没有指明价格所依据的尺寸、质量或分辨率时，按所列最低价格计费。那是服务商的默认档。KPMR 标记为估算的价格在模型详情中显示为估算。支出预算会在发送前为每个请求预留最贵的情况。
 
-请求日志显示端点（例如 `images/edits`）、发送和生成的图片数量，以及尺寸和质量。日志从不保存图片字节：上传内容只记录其字段，每张图片只记录媒体类型和大小（[请求日志](../console/request-logs.md)）。
+请求日志显示端点（例如 `images/edits`）、发送和生成的图片数量，以及尺寸和质量。除非组织和项目都[保留媒体](../console/request-logs.md#请求和回复中的媒体)，否则上传内容只记录其字段，每张图片只记录媒体类型和大小，模型生成的图片也是如此。
 
 ## Responses 中 OpenAI 的图片工具
 
@@ -135,6 +135,7 @@ Responses 应用可以给 OpenAI 模型提供 `image_generation` 工具。Kaeso 
 
 ## 后续步骤
 
+- [试验场](../console/playground.md)：在编写代码之前，先在控制台中试用图片模型。
 - [模型 API](model-api.md)：查阅每个端点、请求头和模型名称。
 - [请求日志](../console/request-logs.md)：查找图片请求及其费用。
 - [支持的服务商](../concepts/supported-providers.md)：了解 Kaeso 调用哪些服务商以及如何添加它们的密钥。

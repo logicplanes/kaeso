@@ -4,7 +4,7 @@ import { SwapValue, textOf } from "./swap-value.js";
 export interface LegendEntry {
   id: string;
   label: ReactNode;
-  value: ReactNode;
+  value?: ReactNode | undefined;
   color: string;
   dashed?: boolean | undefined;
 }
@@ -27,9 +27,11 @@ export const Legend = forwardRef<HTMLUListElement, { items: LegendEntry[] }>(fun
             />
           </svg>
           <span>{i.label}</span>
-          <SwapValue text={textOf(i.value)} className="font-medium text-fg tabular">
-            {i.value}
-          </SwapValue>
+          {i.value !== undefined && (
+            <SwapValue text={textOf(i.value)} className="font-medium text-fg tabular">
+              {i.value}
+            </SwapValue>
+          )}
         </li>
       ))}
     </ul>

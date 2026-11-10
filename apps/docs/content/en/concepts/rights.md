@@ -155,7 +155,7 @@ Every change of roles and rights follows these rules:
 
 | Right | Name | What it allows | Notes |
 | --- | --- | --- | --- |
-| `logs.settings.manage` | Manage log settings | Set log retention and switch content logging on or off for the organization. | sensitive; recent sign-in |
+| `logs.settings.manage` | Manage log settings | Set log retention and switch content logging and kept media on or off for the organization. | sensitive; recent sign-in |
 | `logs.storage.view` | View log storage | See how many log entries exist and how much space they take. |  |
 | `logs.delete` | Delete logs | Delete the organization's logs for a time range. | sensitive; recent sign-in; needs `logs.storage.view` |
 
@@ -246,7 +246,7 @@ Every change of roles and rights follows these rules:
 | `logs.metadata.view` | View request logs | See request logs: model, tokens, cost, latency, status and key. |  |
 | `logs.content.view` | View prompts and outputs | See request and response bodies in the logs. | sensitive; needs `logs.metadata.view` |
 | `logs.export` | Export logs | Export the project's request logs. | sensitive; needs `logs.metadata.view` |
-| `logs.content.manage` | Switch content logging | Switch content logging on or off for this project. | sensitive |
+| `logs.content.manage` | Switch content logging | Switch content logging and kept media on or off for this project. | sensitive |
 
 ### Usage & costs
 

@@ -26,8 +26,8 @@ export function deltaLabel(v: number, t: UiText, locale: string): string {
 export interface DeltaProps {
   /** The change as a share: 0.16 for 16% more, -0.04 for 4% less. */
   value: number;
-  /** Which direction is good; without it the change reads as neutral. */
-  better?: "up" | "down" | undefined;
+  /** Which direction is good; `none` when neither is, so the change reads as neutral. */
+  better?: "up" | "down" | "none" | undefined;
   className?: string | undefined;
 }
 
@@ -35,7 +35,7 @@ export interface DeltaProps {
 export const Delta = forwardRef<HTMLSpanElement, DeltaProps>(function Delta({ value, better = "up", className }, ref) {
   const t = useUiText();
   const locale = useLocale();
-  const good = value === 0 || !Number.isFinite(value) ? undefined : value > 0 === (better === "up");
+  const good = value === 0 || !Number.isFinite(value) || better === "none" ? undefined : value > 0 === (better === "up");
   const tone = good === undefined ? "flat" : good ? "better" : "worse";
   return (
     <span

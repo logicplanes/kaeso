@@ -23,6 +23,13 @@ export const meta = {
 export const examples = [
   { id: "popover", title: "In a popover", fn: "Basic", minHeight: 120 },
   { id: "panel", title: "As a panel", description: "A model that reasons: effort and summary appear.", fn: "Panel", minHeight: 640 },
+  {
+    id: "media",
+    title: "Media models",
+    description: "An image, a speech and a transcription model: their own settings instead of the text ones.",
+    fn: "Media",
+    minHeight: 640,
+  },
 ];
 export function Basic() {
   const [value, setValue] = useState<PlaygroundParameters>({ instructions });
@@ -53,6 +60,23 @@ export function Panel() {
     />
   );
 }
+export function Media() {
+  const [value, setValue] = useState<PlaygroundParameters>({ imageSize: "1536x1024" });
+  return (
+    <ParameterPanel
+      layout="panel"
+      className="max-w-320"
+      value={value}
+      onValueChange={setValue}
+      text={false}
+      instructions={false}
+      sampling={false}
+      image={{ maxCount: 10, qualities: ["auto", "low", "medium", "high"], sizes: true }}
+      voices={["alloy", "coral", "nova", "sage"]}
+      translate
+    />
+  );
+}
 export function States() {
   const none = () => undefined;
   return (
@@ -80,6 +104,21 @@ export function States() {
       </StateSection>
       <StateSection title="Disabled">
         <ParameterPanel value={{ instructions }} onValueChange={none} disabled reasoning />
+      </StateSection>
+      <StateSection title="Image, speech and transcription models">
+        <ParameterPanel
+          value={{ imageCount: 2, voice: "nova", translate: true }}
+          onValueChange={none}
+          text={false}
+          instructions={false}
+          sampling={false}
+          image={{ maxCount: 4, qualities: ["low", "high"], sizes: true }}
+          voices={["alloy", "nova"]}
+          translate
+        />
+      </StateSection>
+      <StateSection title="Sound effects, any voice">
+        <ParameterPanel value={{ durationSeconds: 4 }} onValueChange={none} text={false} instructions={false} sampling={false} voices duration />
       </StateSection>
       <StateSection title="As a panel">
         <ParameterPanel layout="panel" value={{ temperature: 0.4 }} onValueChange={none} reasoning={["minimal", "low", "medium", "high"]} />

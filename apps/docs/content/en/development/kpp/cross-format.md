@@ -343,6 +343,8 @@ Frames reach the wire in two ways:
 - **In band.** An encoder adds the frame to what `StreamEncoder::encode` returns when an event from another dialect produced no bytes. A pacer limits this without a clock. Another dialect's extra event, such as `ping`, always earns a frame, because the provider already paces it. Hidden text, such as thinking the app can't see or buffered tool arguments, earns one frame per `kaeso_codecs::HIDDEN_TEXT_PER_KEEPALIVE` bytes, 1,024. Anything the encoder writes resets the count. Events of the app's own dialect never earn frames, so a same-dialect replay stays exact.
 - **Driven by the gateway.** `StreamEncoder::keepalive` returns the frame on demand, for upstream silence the encoder can't see. The gateway writes it when it has written nothing to the app for `KAESO_STREAMS_KEEPALIVE_INTERVAL`, 15 seconds by default.
 
+The request log counts both kinds in `stream_progress.keepalives`. A provider's own keepalive that an app of the same dialect gets replayed, such as Anthropic's `ping`, is one of the provider's events and isn't counted.
+
 The OpenAI Chat encoder also sends its role chunk as soon as the response starts, rather than with the first text. That way the app hears from the stream while the model thinks.
 
 ## Structured output

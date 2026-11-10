@@ -193,7 +193,7 @@ impl Drop for Recording {
     }
 }
 
-fn over_limit(error: &(dyn std::error::Error + 'static)) -> bool {
+pub(crate) fn over_limit(error: &(dyn std::error::Error + 'static)) -> bool {
     let mut cause = Some(error);
     while let Some(e) = cause {
         if e.is::<http_body_util::LengthLimitError>() {
@@ -254,6 +254,9 @@ pub(crate) fn blank_outcome(request_id: RequestId) -> Outcome {
         stream_progress: None,
         usage_estimated: false,
         content_kept: false,
+        media_kept: false,
+        media_reply: None,
+        media_reply_logged: None,
         cache_breakpoints: None,
         response_cache: None,
         alias: None,
@@ -373,6 +376,10 @@ pub async fn serve_with(
     match done {
         Ok(Done::Complete(mut resp, status)) => {
             rec.time(&mut resp);
+            if rec.outcome().source == super::hooks::Source::Playground {
+                rec.outcome().status = status;
+                cost_header(rec.outcome(), &mut resp);
+            }
             rec.finish(status).await;
             resp
         }
@@ -394,6 +401,24 @@ pub async fn serve_with(
             Box::pin(rec.fail(failure.logged(), resp.status().as_u16())).await;
             resp
         }
+    }
+}
+
+/// What a Playground reply was charged, as its request log will say: the amount, or
+/// `unknown` where the model has no price for what it made.
+pub const COST_HEADER: &str = "kaeso-cost";
+
+fn cost_header(outcome: &Outcome, resp: &mut Response) {
+    let value = if crate::services::usage::cost_known(outcome) {
+        crate::services::usage::costed(outcome)
+            .1
+            .normalize()
+            .to_string()
+    } else {
+        "unknown".to_owned()
+    };
+    if let Ok(v) = HeaderValue::from_str(&value) {
+        resp.headers_mut().insert(COST_HEADER, v);
     }
 }
 
@@ -486,19 +511,22 @@ pub(super) fn limited(refusal: super::hooks::Refusal) -> KppError {
 /// rates.
 pub(super) async fn admit_follow_up(
     state: &AppState,
-    key: &kaeso_store::pg::keys::KeyAuth,
+    caller: &Caller,
     model: Option<uuid::Uuid>,
 ) -> Result<(), KppError> {
-    let caller = Caller {
+    crate::services::limits::admit_follow_up(state, caller, model, state.clock.now())
+        .await
+        .map_err(limited)
+}
+
+pub(super) fn key_caller(key: &kaeso_store::pg::keys::KeyAuth) -> Caller {
+    Caller {
         org_id: key.org_id,
         project_id: key.project_id,
         key_id: Some(key.id),
         user_id: key.user_id,
         service_account_id: key.service_account_id,
-    };
-    crate::services::limits::admit_follow_up(state, &caller, model, state.clock.now())
-        .await
-        .map_err(limited)
+    }
 }
 
 /// Custom providers reach only the networks the install opened for them; built-in providers'
@@ -651,6 +679,23 @@ pub(crate) fn in_place<T>(bytes: usize, work: impl FnOnce() -> T) -> T {
     }
 }
 
+// An upload as the log keeps it. Kept media is written as base64, which for a large upload is
+// work for a blocking thread; the clone shares the upload's bytes.
+async fn logged_upload<R: Clone + Send + 'static>(
+    bytes: usize,
+    request: &R,
+    write: fn(&R, crate::services::log_media::Keep) -> Bytes,
+    keep_media: bool,
+) -> Option<Bytes> {
+    let keep = if keep_media {
+        crate::services::log_media::Keep::media()
+    } else {
+        crate::services::log_media::Keep::nothing()
+    };
+    let request = request.clone();
+    off_thread(bytes, move || write(&request, keep)).await.ok()
+}
+
 pub(crate) async fn off_thread<T, F>(bytes: usize, work: F) -> Result<T, KppError>
 where
     T: Send + 'static,
@@ -740,8 +785,13 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
 
     let limit = max_body;
     let reading = Instant::now();
-    let read = crate::http::body::read(body, limit).await;
-    let upload = reading.elapsed();
+    let ((read, upload), ()) = tokio::join!(
+        async {
+            let read = crate::http::body::read(body, limit).await;
+            (read, reading.elapsed())
+        },
+        preload(state, caller.project_id),
+    );
     rec.outcome().upload = Some(upload);
     let body = read.map_err(|e| {
         let refused = if crate::http::body_timeout::timed_out(&e) {
@@ -765,10 +815,12 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         };
         Failure::new(refused, Stage::Request)
     })?;
-    let keep_content = crate::services::logs::keeps_content(state, caller.project_id).await;
+    let kept = crate::services::logs::keeps(state, caller.project_id).await;
+    let (keep_content, keep_media) = (kept.content, kept.media);
     if keep_content {
         let o = rec.outcome();
         o.content_kept = true;
+        o.media_kept = keep_media;
         let uploads = transcription.is_some()
             || elevenlabs
                 .as_ref()
@@ -843,28 +895,38 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         super::videos::refuse_sora(r).map_err(at(Stage::Request))?;
     }
     match &req {
-        // Request logs keep no media: an upload is logged as its fields, each image as its size.
+        // An upload is logged as its fields; its media as type and size, unless media is kept.
         Request::Image(r) => {
             if keep_content {
-                rec.outcome().request_body = Some(super::media::logged_request(r));
+                rec.outcome().request_body =
+                    logged_upload(request_bytes, r, super::media::logged_request, keep_media).await;
             }
             rec.outcome().media = Some(super::media::units_of_request(r));
         }
         Request::Transcription(r) => {
             if keep_content {
-                rec.outcome().request_body = Some(super::media::logged_transcription(r));
+                rec.outcome().request_body = logged_upload(
+                    request_bytes,
+                    r,
+                    super::media::logged_transcription,
+                    keep_media,
+                )
+                .await;
             }
             rec.outcome().media = Some(super::media::units_of_transcription(r));
         }
         Request::Speech(r) => {
             if keep_content && r.audio.is_some() {
-                rec.outcome().request_body = Some(super::media::logged_speech(r));
+                rec.outcome().request_body =
+                    logged_upload(request_bytes, r, super::media::logged_speech, keep_media).await;
             }
             rec.outcome().media = Some(super::media::units_of_speech(r));
         }
         Request::Video(r) => {
             if keep_content {
-                rec.outcome().request_body = Some(super::videos::logged_request(r));
+                rec.outcome().request_body =
+                    logged_upload(request_bytes, r, super::videos::logged_request, keep_media)
+                        .await;
             }
             rec.outcome().media = Some(super::videos::units_of_request(r));
         }
@@ -943,6 +1005,30 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
             route(state, rec, &sh, alias, req).await
         }
     }
+}
+
+// After a pause every cached entry of a project has run out at once, and the request would
+// wait for each load in turn. They are loaded beside each other while the body arrives; the
+// steps below then find them, and report a load that failed as they always did.
+async fn preload(state: &AppState, project: Uuid) {
+    if state
+        .caches
+        .project_models
+        .cached(&project.to_string())
+        .await
+        .is_some()
+    {
+        return;
+    }
+    Box::pin(async {
+        let _ = tokio::join!(
+            crate::services::logs::keeps(state, project),
+            crate::services::catalogue::project_models(state, project),
+            crate::services::limits::project_limits(state, project),
+            response_cache::active(state, project),
+        );
+    })
+    .await;
 }
 
 #[derive(Clone, Copy)]
@@ -1077,7 +1163,8 @@ async fn attempt(
         Request::Video(r) => r.model.clone_from(&eff.model_id),
         _ => {}
     }
-    let fetch = super::links::Fetch::of(&mut req, &eff.provider, &eff.model_id);
+    let playground = rec.outcome().source == super::hooks::Source::Playground;
+    let fetch = super::links::Fetch::of(&mut req, &eff.provider, &eff.model_id, playground);
     if let Request::Image(r) = &req
         && let Some(units) = rec.outcome().media.as_mut()
     {
@@ -1498,6 +1585,7 @@ async fn attempt(
                 chunks,
                 decoder,
                 encoder,
+                app: ingress,
                 keepalive: stream::Keepalive::new(keepalive),
                 counter,
                 carry,
@@ -2090,8 +2178,14 @@ async fn answer_with(
     // Speech is audio and a transcript may be plain text or events: the app's codec names the
     // media type of what it wrote.
     let media_type = rec.outcome().content_type.take();
-    if let Reply::Generate(r) = reply {
-        rec.outcome().reply = Some(r);
+    match reply {
+        Reply::Generate(r) => rec.outcome().reply = Some(r),
+        Reply::Image(_) | Reply::Speech(_) | Reply::Transcription(_)
+            if rec.outcome().content_kept =>
+        {
+            rec.outcome().media_reply = Some(reply);
+        }
+        _ => {}
     }
     // An image stream the provider answered whole is written as its finished events.
     let events = matches!(reply_kind, RequestKind::Image) && rec.outcome().stream;

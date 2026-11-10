@@ -23,7 +23,7 @@ const DIM: Record<ProjectView, Dimension> = { models: "model", keys: "key", memb
 
 export function AnalyticsPage({ org, project, search, view }: { org: string; project: string; search: AnalyticsSearch; view?: ProjectView | undefined }) {
   const navigate = useNavigate();
-  const by = search.by ?? "model";
+  const by = search.by ?? "day";
   const o = useOverview({ org, project }, search);
   const span = useQuery(usageSpanQuery(org, project));
   const routes = useQuery({ ...projectUsageQuery(org, project, o.from, o.to, "route"), enabled: by === "route" });

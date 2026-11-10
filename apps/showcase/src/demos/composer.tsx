@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button, icons } from "@logicplanes/kaeso-ui";
-import { Composer } from "@logicplanes/kaeso-ui/playground";
+import { Composer, type Attachment } from "@logicplanes/kaeso-ui/playground";
 import { prompts } from "~/fixtures/playground";
 import { StateSection } from "~/lib/states";
 
@@ -23,11 +23,18 @@ export const meta = {
     "Send and Stop are one button that keeps its place and width, so the focus stays on it when a response starts or ends.",
     "While a response arrives, the text box's description says to stop it to send the next prompt.",
     "A click anywhere in the box, the button row included, puts the cursor in the text box.",
+    "Attach files is a button in the row, so files reach the prompt without dragging; dropping and pasting are shortcuts for it. Each waiting file has a remove button named after it.",
   ],
 };
 export const examples = [
   { id: "basic", title: "Send and stop", fn: "Basic", minHeight: 200 },
   { id: "actions", title: "With actions", description: "Controls at the start of the button row.", fn: "WithActions" },
+  {
+    id: "attachments",
+    title: "With attachments",
+    description: "Files picked with Attach files, dropped on the box or pasted wait above the prompt; Send works with files alone.",
+    fn: "WithAttachments",
+  },
   {
     id: "mod-enter",
     title: "Send with ⌘ Enter",
@@ -56,6 +63,31 @@ export function WithActions() {
       aria-label="Message all models"
       placeholder="Message 3 models"
       actions={<Button size="sm" variant="ghost" icon={icons.displayOptions} aria-label="Parameters" />}
+    />
+  );
+}
+const receipt: Attachment = { id: "receipt", name: "receipt-northwind.svg", type: "image/svg+xml", src: "/demos/receipt.svg" };
+const invoice: Attachment = { id: "invoice", name: "invoice-2026-10.pdf", type: "application/pdf" };
+export function WithAttachments() {
+  const [items, setItems] = useState<Attachment[]>([receipt, invoice]);
+  return (
+    <Composer
+      className="w-full max-w-640"
+      placeholder="Ask about the files"
+      accept="image/*,application/pdf"
+      attachments={items}
+      onAttach={(files) =>
+        setItems((now) => [
+          ...now,
+          ...files.map((f) => ({
+            id: `${f.name}-${f.size}`,
+            name: f.name,
+            type: f.type,
+            ...(f.type.startsWith("image/") ? { src: URL.createObjectURL(f) } : {}),
+          })),
+        ])
+      }
+      onRemoveAttachment={(id) => setItems((now) => now.filter((a) => a.id !== id))}
     />
   );
 }
@@ -118,6 +150,20 @@ export function States() {
       </StateSection>
       <StateSection title="With actions">
         <WithActions />
+      </StateSection>
+      <StateSection title="With attachments">
+        <Composer
+          attachments={[receipt, invoice]}
+          defaultValue="What did we pay Northwind in October?"
+          onAttach={() => undefined}
+          onRemoveAttachment={() => undefined}
+        />
+      </StateSection>
+      <StateSection title="Files hovering over it">
+        <Composer data-force="drop" attachments={[receipt]} onAttach={() => undefined} onRemoveAttachment={() => undefined} />
+      </StateSection>
+      <StateSection title="Disabled, with attachments">
+        <Composer disabled attachments={[receipt, invoice]} onAttach={() => undefined} onRemoveAttachment={() => undefined} />
       </StateSection>
       <StateSection title="Button row controls on the composer">
         <div className="flex flex-col gap-12">

@@ -87,6 +87,19 @@ const IMAGE_TAG = /(ghcr\.io\/logicplanes\/kaeso-[a-z]+:)([0-9A-Za-z.+-]+)()/g;
 const APP_SPEC_TAG = /(?<=repository: kaeso-[a-z]+\n\s+)(tag: )([0-9A-Za-z.+-]+)()/g;
 const CRATE_REQUIREMENT = /^(kaeso-[a-z-]+ = ")([^"]+)(")$/gm;
 
+const PLATFORM_FILES = [
+  "render.yaml",
+  ".railway/railway.ts",
+  "deploy/aws/managed.yaml",
+  "deploy/gcp/managed/main.tf",
+  "deploy/fly/edge.toml",
+  "deploy/fly/gateway.toml",
+  "deploy/fly/console.toml",
+  "deploy/coolify/compose.yaml",
+  "deploy/dokploy/docker-compose.yml",
+  "deploy/caprover/kaeso.yml",
+];
+
 const RULES = [
   {
     what: "package version",
@@ -113,7 +126,7 @@ const RULES = [
   },
   {
     what: "platform image tag",
-    match: (file) => ["render.yaml", ".railway/railway.ts", "deploy/aws/managed.yaml", "deploy/gcp/managed/main.tf"].includes(file),
+    match: (file) => PLATFORM_FILES.includes(file),
     required: true,
     read: (text) => matches(text, IMAGE_TAG, 2),
     write: (text, version) => replaceGroup(text, IMAGE_TAG, version),

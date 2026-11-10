@@ -35,5 +35,5 @@ project | Aliases | orgs/{org}/projects/{project}/aliases | models.manage |
 project | Tools | orgs/{org}/projects/{project}/mcp-servers, orgs/{org}/projects/{project}/tools, orgs/{org}/projects/{project}/tool-access, orgs/{org}/projects/{project}/portal-grants | tools.view, tools.manage |
 project | Limits | orgs/{org}/projects/{project}/limits | limits.view, limits.manage |
 project | Logs | orgs/{org}/projects/{project}/logs, orgs/{org}/projects/{project}/logs/export | logs.metadata.view, logs.content.view, logs.export |
-project | Playground | orgs/{org}/projects/{project}/playground/responses, orgs/{org}/projects/{project}/playground/models | playground.use |
+project | Playground | orgs/{org}/projects/{project}/playground/responses, orgs/{org}/projects/{project}/playground/models, orgs/{org}/projects/{project}/playground/images, orgs/{org}/projects/{project}/playground/audio, orgs/{org}/projects/{project}/playground/sound-effects, orgs/{org}/projects/{project}/playground/music, orgs/{org}/projects/{project}/playground/videos | playground.use |
 project | Audit log | orgs/{org}/projects/{project}/audit-log | project.audit_log.view |

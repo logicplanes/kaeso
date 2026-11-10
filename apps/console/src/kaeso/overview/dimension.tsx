@@ -184,7 +184,7 @@ export function DimensionView({ o, dim }: { o: Overview; dim: Dimension }) {
                   {e.before === 0 ? t("kaeso.analytics.newInPeriod", "New") : "—"}
                 </Text>
               ) : (
-                <Delta value={e.change} />
+                <Delta value={e.change} better="none" />
               ),
             { align: "end" },
           ),

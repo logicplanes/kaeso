@@ -110,7 +110,7 @@ const rights: Readonly<Record<string, () => [string, string]>> = {
   ],
   "logs.settings.manage": () => [
     t("rights.logsSettingsManage.name", "Manage log settings"),
-    t("rights.logsSettingsManage.description", "Set log retention and switch content logging on or off for the organization."),
+    t("rights.logsSettingsManage.description", "Set log retention and switch content logging and kept media on or off for the organization."),
   ],
   "logs.storage.view": () => [
     t("rights.logsStorageView.name", "View log storage"),
@@ -236,7 +236,7 @@ const rights: Readonly<Record<string, () => [string, string]>> = {
   "logs.export": () => [t("rights.logsExport.name", "Export logs"), t("rights.logsExport.description", "Export the project's request logs.")],
   "logs.content.manage": () => [
     t("rights.logsContentManage.name", "Switch content logging"),
-    t("rights.logsContentManage.description", "Switch content logging on or off for this project."),
+    t("rights.logsContentManage.description", "Switch content logging and kept media on or off for this project."),
   ],
   "usage.view": () => [t("rights.usageView.name", "View usage"), t("rights.usageView.description", "See the project's usage.")],
   "costs.view": () => [t("rights.costsView.name", "View costs"), t("rights.costsView.description", "See the project's costs.")],

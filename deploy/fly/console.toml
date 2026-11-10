@@ -1,0 +1,20 @@
+# Kaeso's console on Fly.io, reachable only over the organization's private network.
+# Docs: https://docs.kaeso.app/self-hosting/platforms/fly
+primary_region = "fra"
+
+[build]
+  image = "ghcr.io/logicplanes/kaeso-console:0.6.0-rc.8"
+
+[checks]
+  [checks.alive]
+    type = "http"
+    port = 3000
+    method = "GET"
+    path = "/healthz"
+    grace_period = "10s"
+    interval = "15s"
+    timeout = "3s"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"

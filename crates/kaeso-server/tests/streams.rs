@@ -112,12 +112,21 @@ async fn events_the_apps_format_leaves_out_do_not_count_as_writes() {
 #[tokio::test]
 async fn keepalives_can_be_turned_off() {
     let env = env(&[("KAESO_STREAMS_KEEPALIVE_INTERVAL", "0s")]).await;
-    let [(path, anthropic, body, _), ..] = cases("Hi [mock:silence=1500]");
+    let [(path, anthropic, body, keepalive), ..] = cases("Hi [mock:silence=1500]");
+    let [(_, _, loud, _), ..] = cases("Hi");
+    let loud = send(&env, path, anthropic, loud).await;
     let r = send(&env, path, anthropic, body).await;
     assert_eq!(r.status, 200, "{}", r.text());
+    assert_eq!(r.text(), loud.text(), "the silence earned no keepalive");
+    let written = r.text().matches(&keepalive).count();
     let id = r.header("kaeso-request-id").unwrap().to_owned();
     let o = outcome(&env, |o| o.request_id.to_string() == id).await;
-    assert_eq!(o.stream_progress.unwrap().keepalives, 0, "{}", r.text());
+    assert_eq!(
+        o.stream_progress.unwrap().keepalives as usize,
+        written,
+        "{}",
+        r.text()
+    );
     assert!(
         r.text().trim_end().ends_with("data: [DONE]"),
         "{}",
@@ -903,4 +912,151 @@ async fn a_request_body_dripped_in_time_for_each_part_is_refused_at_its_deadline
         "The request body did not arrive in time; send it again."
     );
     assert!(env.mock.received().is_empty());
+}
+
+fn gemini_frames(text: &str) -> (usize, Vec<Value>) {
+    let chunks: Vec<Value> = text
+        .lines()
+        .filter_map(|l| l.strip_prefix("data: "))
+        .map(|d| serde_json::from_str(d.trim_end()).unwrap())
+        .collect();
+    let lines = text.matches('\n').count();
+    (lines - 2 * chunks.len(), chunks)
+}
+
+#[tokio::test]
+async fn apps_hear_keepalives_while_a_tool_calls_arguments_are_held_back() {
+    let env = env(&[("KAESO_STREAMS_KEEPALIVE_INTERVAL", "1s")]).await;
+    let r = env
+        .app
+        .post(
+            &format!("/orgs/{}/projects/{}/models", env.owner.org_id, env.project),
+            json!({
+                "provider": "openai", "model_id": "chat-only", "custom": true,
+                "overrides": {
+                    "input_modalities": ["text"], "output_modalities": ["text"],
+                    "context_limit": 32000, "output_limit": 4000,
+                    "input_price": "1", "output_price": "1", "egress_dialect": "openai_chat"
+                }
+            }),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, 201, "{:?}", r.body);
+    let responses = "Weather? [mock:fixture=function-call-stream] [mock:slow=500]";
+    let chat = "Weather? [mock:fixture=tools-single] [mock:slow=250]";
+    let boston = json!({ "city": "Boston", "unit": "fahrenheit" });
+    let paris = json!({ "location": "Paris, France", "unit": "celsius" });
+    let anthropic = [
+        ("gpt-4o", responses, DialectId::OpenAiResponses, &boston),
+        ("chat-only", chat, DialectId::OpenAiChat, &paris),
+    ]
+    .map(|(model, text, provider, arguments)| {
+        let env = &env;
+        async move {
+            let body = streaming(messages(model, text));
+            let r = send(env, "/v1/messages", true, body).await;
+            assert_eq!(r.status, 200, "{model}: {}", r.text());
+            let text = r.text();
+            let ping = keepalive_of(DialectId::AnthropicMessages);
+            let frames: Vec<&str> = text.split_inclusive("\n\n").collect();
+            let at = |event: &str| {
+                frames
+                    .iter()
+                    .position(|f| f.starts_with(&format!("event: {event}\n")))
+                    .unwrap_or_else(|| panic!("{model}: no {event} in {text}"))
+            };
+            let (start, held) = (at("content_block_start"), at("content_block_delta"));
+            let waiting = frames[start..held].iter().filter(|f| **f == ping).count();
+            assert!(waiting >= 2, "{model}: {text}");
+            let deltas: Vec<Value> = frames
+                .iter()
+                .filter(|f| f.starts_with("event: content_block_delta\n"))
+                .map(|f| {
+                    serde_json::from_str(f.lines().nth(1).unwrap().trim_start_matches("data: "))
+                        .unwrap()
+                })
+                .collect();
+            assert_eq!(deltas.len(), 1, "{model}: {text}");
+            assert_eq!(deltas[0]["delta"]["type"], "input_json_delta");
+            let sent: Value =
+                serde_json::from_str(deltas[0]["delta"]["partial_json"].as_str().unwrap()).unwrap();
+            assert_eq!(&sent, arguments, "{model}");
+            assert!(
+                text.contains("\"stop_reason\":\"tool_use\""),
+                "{model}: {text}"
+            );
+            let id = r.header("kaeso-request-id").unwrap().to_owned();
+            let o = outcome(env, |o| o.request_id.to_string() == id).await;
+            assert_eq!(o.egress, Some(provider), "{model}");
+            let written = frames.iter().filter(|f| **f == ping).count();
+            assert_eq!(
+                o.stream_progress.unwrap().keepalives as usize,
+                written,
+                "{model}: {text}"
+            );
+        }
+    });
+    let gemini = async {
+        let path = format!(
+            "/v1beta/models/gpt-4o:streamGenerateContent?alt=sse&key={}",
+            env.key
+        );
+        let body = json!({ "contents": [{ "role": "user", "parts": [{ "text": responses }] }] });
+        let r = call(&env, &path, None, false, Some(body)).await;
+        assert_eq!(r.status, 200, "{}", r.text());
+        let text = r.text();
+        assert_eq!(keepalive_of(DialectId::Gemini), "\n");
+        let (blank, chunks) = gemini_frames(&text);
+        assert!(blank >= 2, "{text:?}");
+        let calls: Vec<&Value> = chunks
+            .iter()
+            .filter_map(|c| c["candidates"][0]["content"]["parts"].as_array())
+            .flatten()
+            .filter_map(|p| p.get("functionCall"))
+            .collect();
+        assert_eq!(calls.len(), 1, "{text}");
+        assert_eq!(calls[0]["name"], "get_weather");
+        assert_eq!(calls[0]["args"], boston);
+        let before = text.find("functionCall").unwrap();
+        let (waiting, _) = gemini_frames(&text[..text[..before].rfind("data: ").unwrap()]);
+        assert_eq!(waiting, blank, "{text:?}");
+        let id = r.header("kaeso-request-id").unwrap().to_owned();
+        let o = outcome(&env, |o| o.request_id.to_string() == id).await;
+        assert_eq!(o.stream_progress.unwrap().keepalives as usize, blank);
+    };
+    tokio::join!(futures::future::join_all(anthropic), gemini);
+}
+
+#[tokio::test]
+async fn the_request_log_counts_the_keepalives_written_in_place_of_hidden_events() {
+    let env = env(&[]).await;
+    let body = streaming(chat(
+        "claude-haiku-4-5",
+        "Think [mock:fixture=thinking-long-tool-loop]",
+    ));
+    let r = send(&env, "/v1/chat/completions", false, body).await;
+    assert_eq!(r.status, 200, "{}", r.text());
+    let text = r.text();
+    let keepalive = keepalive_of(DialectId::OpenAiChat);
+    let written = text
+        .split_inclusive("\n\n")
+        .filter(|f| *f == keepalive)
+        .count();
+    assert!(written >= 2, "{text}");
+    let id = r.header("kaeso-request-id").unwrap().to_owned();
+    let o = outcome(&env, |o| o.request_id.to_string() == id).await;
+    assert_eq!(o.stream_progress.unwrap().keepalives as usize, written);
+
+    let body = streaming(messages("claude-haiku-4-5", "Hi"));
+    let r = send(&env, "/v1/messages", true, body).await;
+    assert_eq!(r.status, 200, "{}", r.text());
+    assert!(r.text().contains("event: ping\n"), "{}", r.text());
+    let id = r.header("kaeso-request-id").unwrap().to_owned();
+    let o = outcome(&env, |o| o.request_id.to_string() == id).await;
+    assert_eq!(
+        o.stream_progress.unwrap().keepalives,
+        0,
+        "the provider's own pings are its events"
+    );
 }

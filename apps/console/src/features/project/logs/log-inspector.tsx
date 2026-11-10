@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   Badge,
@@ -39,6 +39,8 @@ import { inputTokens, totalTokens } from "~/kaeso/tokens";
 import { cachedShare, isEmbedding, sentWithoutBreakpoint } from "./columns";
 import { mediaCount, mediaLabel } from "./media";
 import { embeddingsView, isKnownReplyForm, replyView, requestView } from "./render";
+import { collectMedia, forReading } from "./logged-media";
+import { MediaList } from "./kept-media";
 import { microseconds, seconds, startedLabel } from "./timing";
 import { logMessage, useGatewayErrors } from "./messages";
 import { CodeText } from "~/kaeso/code-text";
@@ -531,10 +533,13 @@ type ConversationView = ConversationModule["default"] | undefined;
 
 function RequestTab({ e, Conversation }: { e: LogEntryView; Conversation: ConversationView }) {
   const [raw, setRaw] = useState(false);
+  const body = e.content?.request as unknown;
+  // Kept media is megabytes of base64: reading it again on every render would decode it anew and restart players.
+  const view = useMemo(() => requestView(e.ingress_dialect, body), [e.ingress_dialect, body]);
+  const media = useMemo(() => collectMedia(body), [body]);
+  const readable = useMemo(() => forReading(body), [body]);
   if (!e.content) return <NotLogged />;
-  const body = e.content.request as unknown;
   const embeddings = embeddingsView(e.ingress_dialect, body);
-  const view = requestView(e.ingress_dialect, body);
   const mapped = !!(view || embeddings);
   return (
     <div className="mt-24 flex flex-col gap-24">
@@ -544,7 +549,10 @@ function RequestTab({ e, Conversation }: { e: LogEntryView; Conversation: Conver
         </Text>
       </TabHeader>
       {raw || !mapped ? (
-        <JsonView value={body} defaultDepth={4} />
+        <>
+          {!mapped && <MediaList media={media} />}
+          <JsonView value={readable} defaultDepth={4} />
+        </>
       ) : embeddings ? (
         <Text>{t("logs.inspector.inputsEmbedded", "{count, plural, one {# input embedded.} other {# inputs embedded.}}", { count: embeddings.inputs })}</Text>
       ) : (
@@ -594,8 +602,11 @@ function RequestTab({ e, Conversation }: { e: LogEntryView; Conversation: Conver
 
 function ReplyTab({ e, Conversation }: { e: LogEntryView; Conversation: ConversationView }) {
   const [raw, setRaw] = useState(false);
+  const reply = e.content?.reply as unknown;
+  const view = useMemo(() => replyView(reply), [reply]);
+  const media = useMemo(() => collectMedia(reply), [reply]);
+  const readable = useMemo(() => forReading(reply), [reply]);
   if (!e.content) return <NotLogged />;
-  const reply = e.content.reply as unknown;
   if (isEmbedding(e)) {
     return (
       <div className="mt-24">
@@ -628,11 +639,10 @@ function ReplyTab({ e, Conversation }: { e: LogEntryView; Conversation: Conversa
             {t("logs.inspector.replyUnknownFormat", "This reply was logged in a format this console can't read yet; it's shown as stored.")}
           </Text>
         </TabHeader>
-        <JsonView value={reply} defaultDepth={4} />
+        <JsonView value={readable} defaultDepth={4} />
       </div>
     );
   }
-  const view = replyView(reply);
   return (
     <div className="mt-24 flex flex-col gap-24">
       <TabHeader control={view && <Switch size="sm" label={t("logs.inspector.showRaw", "Show raw")} checked={raw} onCheckedChange={setRaw} />}>
@@ -667,7 +677,10 @@ function ReplyTab({ e, Conversation }: { e: LogEntryView; Conversation: Conversa
           ))}
         </>
       ) : (
-        <JsonView value={reply} defaultDepth={4} />
+        <>
+          {!view && <MediaList media={media} />}
+          <JsonView value={readable} defaultDepth={4} />
+        </>
       )}
     </div>
   );
@@ -675,6 +688,8 @@ function ReplyTab({ e, Conversation }: { e: LogEntryView; Conversation: Conversa
 
 function RawTab({ e, canContent }: { e: LogEntryView; canContent: boolean }) {
   const { content, ...meta } = e;
+  const request = useMemo(() => JSON.stringify(forReading(content?.request), null, 2), [content?.request]);
+  const reply = useMemo(() => JSON.stringify(forReading(content?.reply), null, 2), [content?.reply]);
   return (
     <div className="mt-24 flex flex-col gap-24">
       <TabHeader control={<CopyButton display="inline" value={e.id} label={t("logs.copyRequestId", "Copy request id")} />}>
@@ -685,8 +700,8 @@ function RawTab({ e, canContent }: { e: LogEntryView; canContent: boolean }) {
       <CodeBlock title={t("logs.inspector.metadata", "Metadata")} lang="json" code={JSON.stringify(meta, null, 2)} collapseAfter={0} />
       {canContent && content && (
         <>
-          <CodeBlock title={t("logs.inspector.request", "Request")} lang="json" code={JSON.stringify(content.request, null, 2)} />
-          <CodeBlock title={t("logs.inspector.reply", "Reply")} lang="json" code={JSON.stringify(content.reply, null, 2)} />
+          <CodeBlock title={t("logs.inspector.request", "Request")} lang="json" code={request} />
+          <CodeBlock title={t("logs.inspector.reply", "Reply")} lang="json" code={reply} />
         </>
       )}
     </div>

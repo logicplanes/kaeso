@@ -114,6 +114,101 @@ async fn outcome(env: &Env) -> kaeso_server::model_api::hooks::Outcome {
     env.outcomes().await.into_iter().last().unwrap()
 }
 
+async fn keep_media(env: &Env) {
+    let org = &env.owner.org_id;
+    for path in [
+        format!("/orgs/{org}/logs/settings"),
+        format!("/orgs/{org}/projects/{}/logs/settings", env.project),
+    ] {
+        let r = env
+            .app
+            .call(
+                axum::http::Method::PATCH,
+                &path,
+                Some(json!({ "keep_media": true })),
+                Some(&env.owner.cookie),
+            )
+            .await;
+        assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    }
+}
+
+async fn logged_content(env: &Env) -> Value {
+    let o = outcome(env).await;
+    let state = &env.app.state;
+    let clickhouse = state.clickhouse.as_ref().unwrap();
+    clickhouse.migrate(&state.pg).await.unwrap();
+    kaeso_server::services::logs::record(state, &o).await;
+    kaeso_server::services::logs::flush_all(state, std::time::Duration::from_secs(10)).await;
+    let r = env
+        .app
+        .get(
+            &format!(
+                "/orgs/{}/projects/{}/logs/{}",
+                env.owner.org_id, env.project, o.request_id
+            ),
+            &env.owner.cookie,
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    r.body.get("content").cloned().unwrap_or_default()
+}
+
+#[tokio::test]
+async fn generated_and_uploaded_images_are_logged_whole_only_where_media_is_kept() {
+    use base64::Engine as _;
+    let sent = base64::engine::general_purpose::STANDARD.encode(PNG);
+    let env = env().await;
+    let ask = json!({ "model": "gpt-image-2", "prompt": "A cute baby sea otter" });
+    let r = generate(&env, ask.clone()).await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    let content = logged_content(&env).await;
+    assert_eq!(content["request"]["prompt"], "A cute baby sea otter");
+    let left_out =
+        &content["reply"]["image"]["images"][0]["source"]["base64"]["data"]["kaeso_media"];
+    assert_eq!(left_out["reason"], "not_kept", "{content}");
+    assert!(left_out["bytes"].as_u64().unwrap() > 0);
+
+    let streamed = json!({ "model": "gpt-image-2", "prompt": "A red fox", "stream": true, "partial_images": 1 });
+    let r = generate(&env, streamed.clone()).await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    let content = logged_content(&env).await;
+    let images = content["reply"]["image"]["images"].as_array().unwrap();
+    assert_eq!(images.len(), 1, "only the finished image: {content}");
+    assert_eq!(
+        images[0]["source"]["base64"]["data"]["kaeso_media"]["reason"],
+        "not_kept"
+    );
+
+    keep_media(&env).await;
+    generate(&env, streamed).await;
+    let content = logged_content(&env).await;
+    assert!(
+        content["reply"]["image"]["images"][0]["source"]["base64"]["data"].is_string(),
+        "{content}"
+    );
+    let r = generate(&env, ask).await;
+    let made = r.json()["data"][0]["b64_json"].as_str().unwrap().to_owned();
+    let content = logged_content(&env).await;
+    assert_eq!(
+        content["reply"]["image"]["images"][0]["source"]["base64"]["data"],
+        made.as_str()
+    );
+    let r = upload(
+        &env,
+        "/v1/images/edits",
+        &[("model", "gpt-image-2"), ("prompt", "Put a hat on it")],
+        &[("image[]", PNG)],
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    let content = logged_content(&env).await;
+    assert_eq!(
+        content["request"]["images"][0]["source"]["base64"]["data"],
+        sent.as_str()
+    );
+}
+
 #[tokio::test]
 async fn an_openai_app_generates_images_with_a_gpt_image_model_and_is_billed_for_its_tokens() {
     let env = env().await;
@@ -187,7 +282,7 @@ async fn an_upload_with_a_mask_reaches_openai_as_an_upload_and_is_logged_without
     if let Some(logged) = &o.request_body {
         let text = String::from_utf8_lossy(logged);
         assert!(
-            !text.contains("IHDR") && text.contains("not logged"),
+            !text.contains("IHDR") && text.contains(r#""reason":"not_kept""#),
             "{text}"
         );
     }

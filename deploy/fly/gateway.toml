@@ -1,0 +1,31 @@
+# Kaeso's gateway on Fly.io, reachable only over the organization's private network.
+# Docs: https://docs.kaeso.app/self-hosting/platforms/fly
+primary_region = "fra"
+kill_signal = "SIGTERM"
+# KAESO_SHUTDOWN_GRACE (30s), then up to 10s each to record outcomes, write logs and send mail.
+kill_timeout = 75
+
+[build]
+  image = "ghcr.io/logicplanes/kaeso-gateway:0.6.0-rc.8"
+
+[env]
+  # Fly's private network is IPv6, so the gateway listens on every address family.
+  KAESO_LISTEN = "[::]:8080"
+  KAESO_METRICS_LISTEN = "127.0.0.1:9100"
+  # Only the edge reaches the gateway, from the private network.
+  KAESO_TRUSTED_PROXIES = "fc00::/7,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,127.0.0.0/8,::1/128"
+  KAESO_LOG_FORMAT = "json"
+
+[checks]
+  [checks.alive]
+    type = "http"
+    port = 8080
+    method = "GET"
+    path = "/healthz"
+    grace_period = "60s"
+    interval = "15s"
+    timeout = "5s"
+
+[[vm]]
+  size = "shared-cpu-2x"
+  memory = "2gb"

@@ -312,12 +312,12 @@ async fn cached(
 ) -> Result<std::sync::Arc<Resolved>, ResolveError> {
     let st = state.clone();
     let rest = format!("{}:{provider}", project.uuid());
+    let name = provider.to_owned();
     let found = state
         .caches
         .credentials
-        .get_or_load(&org.uuid().to_string(), &rest, || async move {
-            let Some(row) =
-                credentials::resolve(&st.pg, org.uuid(), project.uuid(), provider).await?
+        .get_or_refresh(&org.uuid().to_string(), &rest, move || async move {
+            let Some(row) = credentials::resolve(&st.pg, org.uuid(), project.uuid(), &name).await?
             else {
                 return Ok::<_, ResolveError>(None);
             };

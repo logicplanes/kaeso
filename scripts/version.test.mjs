@@ -76,6 +76,26 @@ test("setting a version rewrites the files JavaScript owns and leaves other vers
   assert.equal(apply(fake(after), "1.5.0").size, 0);
 });
 
+test("a release moves the Kaeso images of the Fly.io, Coolify, Dokploy and CapRover templates and leaves their data stores alone", () => {
+  const platforms = (version) => ({
+    "deploy/fly/gateway.toml": `[build]\n  image = "ghcr.io/logicplanes/kaeso-gateway:${version}"\n`,
+    "deploy/fly/valkey.toml": `[build]\n  image = "valkey/valkey:1.4.0-alpine"\n`,
+    "deploy/coolify/compose.yaml": `services:\n  edge:\n    image: ghcr.io/logicplanes/kaeso-console:${version}\n  valkey:\n    image: valkey/valkey:1.4.0-alpine\n`,
+    "deploy/dokploy/docker-compose.yml": `services:\n  gateway:\n    image: ghcr.io/logicplanes/kaeso-gateway:${version}\n`,
+    "deploy/caprover/kaeso.yml": `services:\n  $$cap_appname:\n    image: ghcr.io/logicplanes/kaeso-console:${version}\ncaproverOneClickApp:\n  instructions:\n    start: docker run --rm ghcr.io/logicplanes/kaeso-gateway:${version} master-key generate\n`,
+  });
+  const before = tree("1.4.0", platforms("1.4.0"));
+  const changes = apply(fake(before), "1.5.0");
+  for (const [file, text] of Object.entries(platforms("1.5.0"))) {
+    if (file === "deploy/fly/valkey.toml") assert.equal(changes.has(file), false, file);
+    else assert.equal(changes.get(file), text, file);
+  }
+  assert.deepEqual(
+    check(fake(tree("1.5.0", { ...platforms("1.5.0"), "deploy/fly/gateway.toml": platforms("1.4.0")["deploy/fly/gateway.toml"] }))).map(({ file }) => file),
+    ["deploy/fly/gateway.toml"],
+  );
+});
+
 test("a pre-release pins the crates' README dependency to itself", () => {
   const changes = apply(fake(tree("1.4.0")), "2.0.0-rc.1");
   assert.match(changes.get("crates/kaeso-kpp/README.md"), /^kaeso-kpp = "2\.0\.0-rc\.1"$/m);
