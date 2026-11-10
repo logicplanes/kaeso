@@ -2,7 +2,7 @@
 
 Hugging Face Inference Providers, the router's OpenAI-compatible Chat Completions at `POST https://router.huggingface.co/v1/chat/completions`, with `Authorization: Bearer` and a fine-grained Hugging Face token with the "Make calls to Inference Providers" permission. Kaeso's base URL is `https://router.huggingface.co`. The router passes each request on to one of the providers that serve the model: the fastest by default, the one a `:provider` suffix names (`openai/gpt-oss-120b:groq`), or the one a `:fastest`, `:cheapest` or `:preferred` suffix picks.
 
-Not recorded from a successful call. The reply and the stream are built from the router's chat completion reference (the request and response schemas of `huggingface.js` `packages/tasks/src/tasks/chat-completion/spec`), read on 2026-11-10, with the thinking in the field the provider behind the router uses: `reasoning` for `openai/gpt-oss-120b` as Groq and Cerebras serve it, `reasoning_content` as Novita and Together AI serve DeepSeek's models. The model listing and the error were answered live, without a valid key; the router lists its models publicly.
+Not recorded from a successful call. The reply and the stream are built from the router's chat completion reference (the request and response schemas in huggingface.js, linked below), read on 2026-11-10, with the thinking in the field the provider behind the router uses: `reasoning` for `openai/gpt-oss-120b` as Groq and Cerebras serve it, `reasoning_content` as Novita and Together AI serve DeepSeek's models. The model listing and the error were answered live, without a valid key; the router lists its models publicly.
 
 ## Sources (read 2026-11-10)
 
