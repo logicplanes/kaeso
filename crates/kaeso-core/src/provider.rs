@@ -1585,6 +1585,49 @@ pub const PROVIDERS: &[Provider] = &[
         routes: &[],
         service_account: None,
     },
+    Provider {
+        id: "siliconflow",
+        name: "SiliconFlow",
+        key_page: KeyPage {
+            url: "https://cloud.siliconflow.com/account/ak",
+            label: "API Keys",
+        },
+        key_prefix: Some("sk-"),
+        default_base_url: "https://api.siliconflow.com",
+        auth: AuthStyle::Bearer,
+        generation: DialectId::OpenAiChat,
+        count_tokens: None,
+        embeddings: Some(DialectId::OpenAiEmbeddings),
+        images: &[],
+        speech: &[SpeechEgress::openai(SpeechProfile::SILICONFLOW)],
+        transcriptions: &[TranscriptionsEgress::openai(
+            TranscriptionsProfile::SILICONFLOW,
+        )],
+        videos: &[],
+        dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
+        refused_key_messages: &[],
+        context_window_messages: &[],
+        // `max_tokens` caps only the answer, `thinking_budget` the thinking before it
+        // (https://docs.siliconflow.com/en/userguide/capabilities/reasoning).
+        reasoning_beyond_output_limit: true,
+        end_user_limit: None,
+        // SiliconFlow's request schema has only `max_tokens`, no end-user field and the roles
+        // `system`, `user` and `assistant`; its thinking models take `enable_thinking` and
+        // `thinking_budget` and answer with `reasoning_content`
+        // (https://docs.siliconflow.com/en/api-reference/chat-completions/chat-completions).
+        chat: ChatProfile::compatible("SiliconFlow")
+            .max_tokens()
+            .system_role()
+            .without_end_user()
+            .thinking_switch()
+            .reasoning_fields(&["reasoning_content"]),
+        responses: ResponsesProfile::compatible("SiliconFlow"),
+        messages: MessagesProfile::compatible("SiliconFlow"),
+        gemini: GeminiProfile::GOOGLE_AI_STUDIO,
+        account: None,
+        routes: &[],
+        service_account: None,
+    },
 ];
 
 const _: () = {
@@ -1881,7 +1924,7 @@ mod tests {
         assert!(provider("gemini").is_none());
         assert_eq!(
             ids(),
-            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras, zai, minimax, elevenlabs, google, gemini-agent-platform, fireworks-ai, nebius, sambanova, scaleway"
+            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras, zai, minimax, elevenlabs, google, gemini-agent-platform, fireworks-ai, nebius, sambanova, scaleway, siliconflow"
         );
     }
 
@@ -2701,7 +2744,8 @@ mod tests {
                 "fireworks-ai",
                 "nebius",
                 "sambanova",
-                "scaleway"
+                "scaleway",
+                "siliconflow"
             ]
         );
         assert_eq!(

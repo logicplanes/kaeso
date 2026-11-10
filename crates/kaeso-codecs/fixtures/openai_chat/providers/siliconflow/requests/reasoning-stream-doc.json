@@ -1,0 +1,12 @@
+{
+  "model": "deepseek-ai/DeepSeek-R1",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Who are the legendary athletes of the Olympic Games?"
+    }
+  ],
+  "stream": true,
+  "max_tokens": 4096,
+  "thinking_budget": 1024
+}

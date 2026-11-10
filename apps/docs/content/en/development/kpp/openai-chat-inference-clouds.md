@@ -79,3 +79,19 @@ Sources: Scaleway's [Generative APIs reference](https://www.scaleway.com/en/deve
 | the legacy error shape, `{"object": "error", "message", "type", "param", "code"}` | `KppError` | Older models still send it (`errors/legacy-model-error-doc`); apps get an OpenAI error with its message. |
 
 Scaleway serves no Messages, images, speech or token counts: `/v1/messages`, `/v1/images/generations` and `/v1/audio/speech` answer 404 `route_not_found`. Its Responses API, stateless and with function tools only, isn't used: Responses apps reach Scaleway through Chat Completions.
+
+## SiliconFlow
+
+Sources: SiliconFlow's [chat completions](https://docs.siliconflow.com/en/api-reference/chat-completions/chat-completions) reference, its [reasoning](https://docs.siliconflow.com/en/userguide/capabilities/reasoning) guide and its [error handling](https://docs.siliconflow.com/en/faqs/error-code) page, read 2026-11-10. Not tested with a successful call: the requests in `fixtures/openai_chat/providers/siliconflow/` are the reasoning guide's own examples, and the reply and the stream are built from the reference; the error was answered live, without a valid key. Kaeso's base URL is `https://api.siliconflow.com`, which takes `Authorization: Bearer` with an `sk-` key.
+
+| SiliconFlow field | KPP | Notes |
+|---|---|---|
+| `message.reasoning_content`, `delta.reasoning_content` | `Block::Reasoning` | Through the profile's `reasoning_fields`. Stream deltas carry `content: null` beside the field they fill. |
+| `enable_thinking`, `thinking_budget` | `reasoning` | `thinking_switch()`, as for QwenCloud: an app's thinking turns them on or off; a Chat app's own values go as written. |
+| `max_tokens` | `max_tokens` | It limits only the answer, so `max_tokens()` and the provider's `reasoning_beyond_output_limit`. |
+| the `developer` role | `Role::System` | The reference lists `system`, `user` and `assistant`, so `system_role()` sends `system`. |
+| an end user's id | left out | The reference has no `user` or `safety_identifier` (`without_end_user()`). |
+| `min_p`, `top_k` | extras | Refused when the request goes to another dialect, like other Chat-only fields. |
+| errors as `{"code", "message", "data"}` | `KppError` | SiliconFlow's message; the kind follows the status: 401 is a refused key (`errors/recorded-invalid-api-key`). |
+
+SiliconFlow serves no Responses or token counts: `/v1/responses` and `/v1/messages/count_tokens` answer 404. Its Messages endpoint isn't used, as its reference documents only text and tool blocks. Its embeddings, speech and transcriptions use OpenAI's forms ([OpenAI Embeddings](openai-embeddings.md#siliconflow)); its images and videos don't.

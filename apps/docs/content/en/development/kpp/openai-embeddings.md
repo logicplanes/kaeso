@@ -109,3 +109,7 @@ Sources: Nebius' [create embeddings](https://docs.tokenfactory.nebius.com/api-re
 ### Scaleway
 
 Sources: Scaleway's [Generative APIs reference](https://www.scaleway.com/en/developers/api/generative-apis/) (`CreateEmbeddingResponse`), read 2026-11-09, and `fixtures/openai_embeddings/providers/scaleway/`, built from it, with the error answered live without a valid key. The serverless models are `bge-multilingual-gemma2` and `qwen3-embedding-8b`. Replies add `id`, `created` and `usage.completion_tokens: 0`, which stay in extras. `dimensions` takes only a model's largest size, so Scaleway answers other values itself.
+
+### SiliconFlow
+
+Sources: SiliconFlow's [create embeddings](https://docs.siliconflow.com/en/api-reference/embeddings/create-embeddings) reference, read 2026-11-10, and `fixtures/openai_embeddings/providers/siliconflow/`, built from it, with the error answered live without a valid key. Its models include `Qwen/Qwen3-Embedding-8B`, `-4B` and `-0.6B` and `BAAI/bge-m3`. Only the Qwen3 models take `dimensions`, and a request takes at most 32 strings. Replies carry `usage.completion_tokens: 0`, which stays in extras. SiliconFlow's errors have no `error` object; apps get them in OpenAI's shape with SiliconFlow's message.

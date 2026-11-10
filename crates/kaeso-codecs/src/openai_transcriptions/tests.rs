@@ -782,3 +782,34 @@ fn scaleway_transcribes_to_json_only_without_timestamps_or_translations() {
     translate.operation = TranscriptionOperation::Translate;
     assert!(encode(TranscriptionsProfile::SCALEWAY, &translate).is_err());
 }
+
+#[test]
+fn siliconflow_transcribes_from_the_file_and_model_alone_and_refuses_the_rest() {
+    let mut r = transcribe(None);
+    r.model = "FunAudioLLM/SenseVoiceSmall".into();
+    let (enc, _, parts) = sent_parts(TranscriptionsProfile::SILICONFLOW, &r);
+    assert_eq!(enc.path, "/v1/audio/transcriptions");
+    assert!(has(&parts, "model", "FunAudioLLM/SenseVoiceSmall"));
+    let t = decoded(
+        TranscriptionsProfile::SILICONFLOW,
+        &r,
+        &provider_reply("siliconflow", "responses", "json", "json"),
+    );
+    assert_eq!(t.text, "SiliconFlow transcribes speech to text.");
+    assert_eq!(
+        refusal(
+            TranscriptionsProfile::SILICONFLOW,
+            &transcribe(Some(TranscriptFormat::VerboseJson))
+        ),
+        "response_format"
+    );
+    let mut prompted = transcribe(None);
+    prompted.prompt = Some("SiliconFlow".into());
+    assert_eq!(
+        refusal(TranscriptionsProfile::SILICONFLOW, &prompted),
+        "prompt"
+    );
+    let mut translate = transcribe(None);
+    translate.operation = TranscriptionOperation::Translate;
+    assert!(encode(TranscriptionsProfile::SILICONFLOW, &translate).is_err());
+}

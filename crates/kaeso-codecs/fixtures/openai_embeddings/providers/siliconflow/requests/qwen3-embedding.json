@@ -1,0 +1,6 @@
+{
+  "model": "Qwen/Qwen3-Embedding-8B",
+  "input": "Silicon flow embedding online: fast, affordable, and high-quality embedding services. come try it out!",
+  "encoding_format": "float",
+  "dimensions": 1024
+}

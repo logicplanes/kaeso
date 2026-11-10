@@ -109,3 +109,7 @@ order: 8
 ### Scaleway
 
 来源：Scaleway 的 [Generative APIs reference](https://www.scaleway.com/en/developers/api/generative-apis/)（`CreateEmbeddingResponse`，2026-11-09 阅读），以及据此构建的 `fixtures/openai_embeddings/providers/scaleway/`，其中的错误是在没有有效密钥的情况下实时返回的。无服务器模型为 `bge-multilingual-gemma2` 和 `qwen3-embedding-8b`。回复中额外的 `id`、`created` 和 `usage.completion_tokens: 0` 保留在 extras 中。`dimensions` 只接受模型的最大尺寸，其他值由 Scaleway 自行响应。
+
+### SiliconFlow
+
+来源：SiliconFlow 的 [create embeddings](https://docs.siliconflow.com/en/api-reference/embeddings/create-embeddings) 参考（2026-11-10 阅读），以及据此构建的 `fixtures/openai_embeddings/providers/siliconflow/`，其中的错误是在没有有效密钥的情况下实时返回的。它的模型包括 `Qwen/Qwen3-Embedding-8B`、`-4B` 和 `-0.6B` 以及 `BAAI/bge-m3`。只有 Qwen3 模型接受 `dimensions`，一个请求最多包含 32 个字符串。回复带有 `usage.completion_tokens: 0`，保留在 extras 中。SiliconFlow 的错误没有 `error` 对象；应用会以 OpenAI 的形式收到，并带有 SiliconFlow 的消息。

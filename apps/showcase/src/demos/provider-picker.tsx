@@ -21,6 +21,7 @@ const providers: ProviderPickerOption[] = [
   { id: "openrouter", name: "OpenRouter" },
   { id: "sambanova", name: "SambaNova" },
   { id: "scaleway", name: "Scaleway" },
+  { id: "siliconflow", name: "SiliconFlow" },
   { id: "togetherai", name: "Together AI" },
   { id: "vercel", name: "Vercel" },
   { id: "xai", name: "SpaceX" },

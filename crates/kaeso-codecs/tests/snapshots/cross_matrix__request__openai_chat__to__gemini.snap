@@ -4508,6 +4508,39 @@ expression: outcomes
     },
     "path": "/v1beta/models/qwen3.5-397b-a17b:streamGenerateContent?alt=sse"
   },
+  "providers/siliconflow/invalid-api-key": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "hi"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1
+      }
+    },
+    "path": "/v1beta/models/Qwen%2FQwen3-8B:generateContent"
+  },
+  "providers/siliconflow/reasoning-doc": {
+    "message": "`thinking_budget` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking_budget"
+  },
+  "providers/siliconflow/reasoning-stream-doc": {
+    "message": "`thinking_budget` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking_budget"
+  },
+  "providers/siliconflow/thinking-off": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
   "providers/togetherai/context-length-error": {
     "message": "`context_length_exceeded_behavior` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
     "param": null,

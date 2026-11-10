@@ -1,0 +1,10 @@
+data: {"id":"0194f3a2c7d84e1b9a6f2d3c4b5a6979","object":"chat.completion.chunk","created":1794225600,"model":"deepseek-ai/DeepSeek-R1","choices":[{"index":0,"delta":{"role":"assistant","content":null,"reasoning_content":"Legendary Olympians"},"finish_reason":null}]}
+
+data: {"id":"0194f3a2c7d84e1b9a6f2d3c4b5a6979","object":"chat.completion.chunk","created":1794225600,"model":"deepseek-ai/DeepSeek-R1","choices":[{"index":0,"delta":{"content":null,"reasoning_content":" across sports and eras."},"finish_reason":null}]}
+
+data: {"id":"0194f3a2c7d84e1b9a6f2d3c4b5a6979","object":"chat.completion.chunk","created":1794225600,"model":"deepseek-ai/DeepSeek-R1","choices":[{"index":0,"delta":{"content":"Jesse Owens, Nadia Comăneci","reasoning_content":null},"finish_reason":null}]}
+
+data: {"id":"0194f3a2c7d84e1b9a6f2d3c4b5a6979","object":"chat.completion.chunk","created":1794225600,"model":"deepseek-ai/DeepSeek-R1","choices":[{"index":0,"delta":{"content":" and Usain Bolt.","reasoning_content":null},"finish_reason":"stop"}],"usage":{"prompt_tokens":14,"completion_tokens":31,"total_tokens":45}}
+
+data: [DONE]
+

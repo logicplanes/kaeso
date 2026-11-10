@@ -150,7 +150,11 @@ fn a_rejected_key_in_another_error_format_is_an_authentication_error_quoted_with
 #[test]
 fn every_error_fixture_round_trips_with_status_and_retry_after() {
     for (name, body) in fixtures(DIR, "errors", "json") {
-        if FOREIGN_ERROR_BODIES.contains(&name.as_str()) || name.starts_with("providers/cohere/") {
+        // SiliconFlow answers `{"code", "message", "data"}`, which apps get in OpenAI's shape.
+        if FOREIGN_ERROR_BODIES.contains(&name.as_str())
+            || name.starts_with("providers/cohere/")
+            || name.starts_with("providers/siliconflow/")
+        {
             continue;
         }
         let meta = sidecar(DIR, "errors", &name, "meta").unwrap();
@@ -433,4 +437,19 @@ fn vectors_follow_the_apps_encoding_and_absent_usage_stays_absent() {
         body,
         &OpenAiEmbeddings::encode_response(&reply, &encode_ctx()).unwrap(),
     );
+}
+
+#[test]
+fn a_siliconflow_error_reaches_embeddings_apps_as_an_openai_error_with_its_message() {
+    let body = fixture("errors", "providers/siliconflow/recorded-invalid-api-key");
+    let err = OpenAiEmbeddings::decode_error(401, &HeaderList::new(), &body);
+    assert_eq!(
+        (&err.kind, err.status),
+        (&ErrorKind::Authentication, Some(401))
+    );
+    assert!(err.message.contains("Token is invalid."), "{}", err.message);
+    let out = OpenAiEmbeddings::encode_error(&err);
+    assert_eq!(out.status, 401);
+    let sent: Value = serde_json::from_slice(&out.body).unwrap();
+    assert_eq!(sent["error"]["message"], err.message.as_str());
 }

@@ -459,6 +459,26 @@ describe("ProviderKeyDialog", () => {
     ]);
   });
 
+  it("adds a SiliconFlow key with SiliconFlow's API keys page and its sk- prefix as the key hint", async () => {
+    on("POST", CREDENTIALS, credential({ provider: "siliconflow", name: "SiliconFlow prod", is_default: true }));
+    const { user, dialog } = await open();
+
+    await choose(user, dialog, "SiliconFlow");
+
+    expect(await within(dialog).findByRole("heading", { name: "Paste your SiliconFlow API key" })).toBeVisible();
+    expectKeyHint(dialog, "cloud.siliconflow.com", "https://cloud.siliconflow.com/account/ak", "API Keys", "sk-");
+    const secret = within(dialog).getByLabelText("SiliconFlow API key");
+    expect(secret).toHaveAttribute("placeholder", "sk-…");
+    await user.type(secret, "sk-123");
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "SiliconFlow prod");
+    await user.click(within(dialog).getByRole("button", { name: "Add key" }));
+
+    expect(await notifications().findByText("SiliconFlow prod is the SiliconFlow default")).toBeInTheDocument();
+    expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([
+      { provider: "siliconflow", name: "SiliconFlow prod", secret: "sk-123", make_default: false },
+    ]);
+  });
+
   it("adds a Google AI Studio key, which has no fixed prefix, with AI Studio's key page as its key hint", async () => {
     on("POST", CREDENTIALS, credential({ provider: "google", name: "AI Studio prod", is_default: true }));
     const { user, dialog } = await open();

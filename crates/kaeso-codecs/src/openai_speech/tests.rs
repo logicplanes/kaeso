@@ -626,3 +626,33 @@ fn broken_event_replies_fail_and_unknown_events_pass_to_events_apps() {
             .is_err()
     );
 }
+
+#[test]
+fn siliconflow_gets_its_documented_body_with_a_model_voice_and_answers_with_the_audio() {
+    let mut req = SpeechRequest::new("FunAudioLLM/CosyVoice2-0.5B", SpeechOperation::Speech)
+        .with_input("Can you say it with a happy emotion? <|endofprompt|>I'm so happy, Spring Festival is coming!")
+        .with_voice(Voice::Named("FunAudioLLM/CosyVoice2-0.5B:alex".into()));
+    req.format = Some(AudioFormat::Mp3);
+    let (enc, ctx, body) = sent(SpeechProfile::SILICONFLOW, &req);
+    assert_eq!(enc.path, "/v1/audio/speech");
+    assert!(ctx.stream.is_off());
+    let expected: Value = serde_json::from_slice(&provider_fixture(
+        "siliconflow",
+        "requests",
+        "speech",
+        "json",
+    ))
+    .unwrap();
+    assert_eq!(body, expected);
+
+    req.sample_rate = Some(32000);
+    assert_eq!(
+        sent(SpeechProfile::SILICONFLOW, &req).2["sample_rate"],
+        32000
+    );
+    req.format = Some(AudioFormat::Flac);
+    assert_eq!(
+        refusal(SpeechProfile::SILICONFLOW, &req).0,
+        "response_format"
+    );
+}

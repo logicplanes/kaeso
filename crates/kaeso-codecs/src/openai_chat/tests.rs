@@ -29,6 +29,14 @@ const REJECTED_RESPONSES: &[(&str, &str)] = &[("n-2", "n")];
 
 const FOREIGN_ERROR_BODIES: &[(&str, ErrorKind)] = &[
     (
+        "providers/siliconflow/recorded-invalid-api-key",
+        ErrorKind::Authentication,
+    ),
+    (
+        "providers/siliconflow/model-does-not-exist-doc",
+        ErrorKind::InvalidRequest,
+    ),
+    (
         "providers/nebius/list-invalid-api-key",
         ErrorKind::Authentication,
     ),
