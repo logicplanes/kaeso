@@ -608,3 +608,346 @@ async fn an_openai_app_gets_an_elevenlabs_image_once_its_generation_finishes() {
     assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
     assert_eq!(r.json()["error"]["param"], "n");
 }
+
+const ELEVENLABS_SECRET: &str = "sk_test-elevenlabs-images-000000000000000";
+
+async fn with_elevenlabs(env: &Env) {
+    let org = &env.owner.org_id;
+    let r = env
+        .app
+        .post(
+            &format!("/orgs/{org}/credentials"),
+            json!({ "provider": "elevenlabs", "name": "elevenlabs", "secret": ELEVENLABS_SECRET }),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
+    let r = env
+        .app
+        .post(
+            &format!("/orgs/{org}/projects/{}/models", env.project),
+            json!({ "provider": "elevenlabs", "model_id": "gpt-image-1.5" }),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
+}
+
+async fn flows(env: &Env, method: &str, path: &str, key: &str, body: Option<Value>) -> Answer {
+    let req = Request::builder()
+        .uri(path)
+        .method(method)
+        .header("xi-api-key", key);
+    let req = match body {
+        Some(b) => req
+            .header("content-type", "application/json")
+            .body(Body::from(serde_json::to_vec(&b).unwrap()))
+            .unwrap(),
+        None => req.body(Body::empty()).unwrap(),
+    };
+    let resp = env.app.router.clone().oneshot(req).await.unwrap();
+    let status = resp.status();
+    let headers = resp.headers().clone();
+    let body = resp
+        .into_body()
+        .collect()
+        .await
+        .unwrap()
+        .to_bytes()
+        .to_vec();
+    Answer {
+        status,
+        headers,
+        body,
+    }
+}
+
+async fn start(env: &Env, prompt: &str) -> String {
+    let r = flows(
+        env,
+        "POST",
+        "/v1/flows/image",
+        &env.key,
+        Some(json!({"model_id": "gpt-image-1.5", "prompt": prompt})),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    r.json()["id"].as_str().unwrap().to_owned()
+}
+
+async fn generation(env: &Env, id: &str) -> Value {
+    let r = flows(env, "GET", &format!("/v1/flows/image/{id}"), &env.key, None).await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    r.json()
+}
+
+async fn finished_generations(env: &Env) -> Vec<kaeso_server::model_api::hooks::Outcome> {
+    env.outcomes()
+        .await
+        .into_iter()
+        .filter(|o| kaeso_server::services::logs::endpoint(o) == "flows/image/completed")
+        .collect()
+}
+
+fn sent_to_flows(env: &Env) -> Vec<kaeso_testkit::mock_provider::Received> {
+    env.mock
+        .received()
+        .into_iter()
+        .filter(|c| c.path.starts_with("/v1/flows/image"))
+        .collect()
+}
+
+#[tokio::test]
+async fn an_elevenlabs_app_keeps_its_image_generation_id_and_kaeso_bills_it_once_it_completes() {
+    let env = env().await;
+    with_elevenlabs(&env).await;
+    let asked = json!({
+        "model_id": "gpt-image-1.5",
+        "prompt": "A lighthouse",
+        "images": [{"type": "inline_base64", "content_base64": "iVBORw0KGgo=", "mime_type": "image/png"}],
+        "quality": "high",
+        "aspect_ratio": "3:2"
+    });
+    let r = flows(
+        &env,
+        "POST",
+        "/v1/flows/image",
+        &env.key,
+        Some(asked.clone()),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    let id = r.json()["id"].as_str().unwrap().to_owned();
+    assert!(id.starts_with("imggen_"), "{id}");
+    assert_eq!(r.json(), json!({"id": id, "status": "pending"}));
+    let sent = sent_to_flows(&env);
+    assert_eq!(sent.len(), 1, "Kaeso does not wait for the generation");
+    assert_eq!(
+        (sent[0].method.as_str(), sent[0].header("xi-api-key")),
+        ("POST", Some(ELEVENLABS_SECRET))
+    );
+    assert_eq!(sent[0].json(), asked);
+    let started = outcome(&env).await;
+    assert_eq!(
+        kaeso_server::services::logs::endpoint(&started),
+        "flows/image"
+    );
+    assert_eq!(
+        kaeso_server::services::usage::costed(&started).1,
+        rust_decimal::Decimal::ZERO
+    );
+    assert!(kaeso_server::services::usage::cost_known(&started));
+
+    let running = generation(&env, &id).await;
+    assert_eq!(running, json!({"id": id, "status": "generating"}));
+    assert!(finished_generations(&env).await.is_empty());
+    let (a, b) = tokio::join!(generation(&env, &id), generation(&env, &id));
+    for done in [&a, &b] {
+        assert_eq!(done["id"], id);
+        assert_eq!(done["status"], "completed");
+        assert_eq!(done["content_mime_type"], "image/png");
+        assert!(
+            done["content_url"].as_str().unwrap().starts_with("http://"),
+            "{done}"
+        );
+    }
+    assert_eq!(generation(&env, &id).await["status"], "completed");
+    let billed = finished_generations(&env).await;
+    assert_eq!(billed.len(), 1, "two requests saw it end, one billed it");
+    let media = billed[0].media.clone().unwrap();
+    assert_eq!((media.input_images, media.output_images), (1, 1));
+    assert_eq!(media.quality.as_deref(), Some("high"));
+    assert_eq!(billed[0].requested_model.as_deref(), Some("gpt-image-1.5"));
+    assert!(
+        sent_to_flows(&env)[1..]
+            .iter()
+            .all(|c| c.method == "GET" && c.path == "/v1/flows/image/JWr5N6X9ZTqf8jD2LmQb")
+    );
+}
+
+#[tokio::test]
+async fn image_generations_answer_only_their_own_project_and_list_in_pages() {
+    let env = env().await;
+    with_elevenlabs(&env).await;
+    let mut ids = Vec::new();
+    for n in 0..3 {
+        ids.push(start(&env, &format!("A lighthouse {n}")).await);
+    }
+    let org = &env.owner.org_id;
+    let project = env
+        .app
+        .post(
+            &format!("/orgs/{org}/projects"),
+            json!({ "name": "Elsewhere" }),
+            Some(&env.owner.cookie),
+        )
+        .await
+        .body["id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let other = env
+        .app
+        .post(
+            &format!("/orgs/{org}/projects/{project}/keys"),
+            json!({ "name": "other" }),
+            Some(&env.owner.cookie),
+        )
+        .await
+        .body["secret"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    for (key, id) in [
+        (other.as_str(), ids[0].as_str()),
+        (env.key.as_str(), "imggen_01k7a3f8m2xq4v9c5r6t8w0yz1"),
+        (env.key.as_str(), "JWr5N6X9ZTqf8jD2LmQb"),
+    ] {
+        let r = flows(&env, "GET", &format!("/v1/flows/image/{id}"), key, None).await;
+        assert_eq!(r.status, StatusCode::NOT_FOUND, "{id}: {}", r.text());
+        assert_eq!(r.json()["detail"]["type"], "not_found");
+        assert!(
+            r.json()["detail"]["message"]
+                .as_str()
+                .unwrap()
+                .contains("belongs to this project")
+        );
+    }
+    let elsewhere = flows(&env, "GET", "/v1/flows/image", &other, None).await;
+    assert_eq!(
+        elsewhere.json(),
+        json!({"generations": [], "next_cursor": null, "has_more": false})
+    );
+    let pg = &env.app.state.pg;
+    let generation: kaeso_core::id::ImageGenerationId = ids[0].parse().unwrap();
+    let project: kaeso_core::id::ProjectId = env.project.parse().unwrap();
+    let get = |o| kaeso_store::pg::image_generations::get(pg, o, project.uuid(), generation.uuid());
+    let owner: kaeso_core::id::OrgId = org.parse().unwrap();
+    assert!(get(owner.uuid()).await.unwrap().is_some());
+    assert!(get(uuid::Uuid::new_v4()).await.unwrap().is_none());
+
+    let listed = |query: String| {
+        let env = &env;
+        async move {
+            flows(
+                env,
+                "GET",
+                &format!("/v1/flows/image{query}"),
+                &env.key,
+                None,
+            )
+            .await
+        }
+    };
+    let ids_of = |v: &Value| -> Vec<String> {
+        v["generations"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|g| g["id"].as_str().unwrap().to_owned())
+            .collect()
+    };
+    let page = listed("?page_size=2".into()).await.json();
+    assert_eq!(ids_of(&page), [ids[2].clone(), ids[1].clone()]);
+    assert_eq!(
+        (page["has_more"].as_bool(), page["next_cursor"].as_str()),
+        (Some(true), Some(ids[1].as_str()))
+    );
+    let rest = listed(format!("?page_size=2&cursor={}", ids[1]))
+        .await
+        .json();
+    assert_eq!(ids_of(&rest), [ids[0].clone()]);
+    assert_eq!(rest["has_more"], false);
+    assert!(rest["next_cursor"].is_null());
+    assert_eq!(
+        rest["generations"][0],
+        json!({"id": ids[0], "status": "pending"})
+    );
+    assert_eq!(
+        ids_of(&listed("?status=pending".into()).await.json()).len(),
+        3
+    );
+    assert!(ids_of(&listed("?status=completed".into()).await.json()).is_empty());
+    assert_eq!(
+        ids_of(&listed("?model_id=gpt-image-1.5".into()).await.json()).len(),
+        3
+    );
+    assert!(ids_of(&listed("?model_id=gpt-image-1".into()).await.json()).is_empty());
+    for (query, param) in [
+        ("?page_size=0", "page_size"),
+        ("?page_size=101", "page_size"),
+        ("?status=queued", "status"),
+        ("?cursor=imggen_01k7a3f8m2xq4v9c5r6t8w0yz1", "cursor"),
+    ] {
+        let r = listed(query.into()).await;
+        assert_eq!(r.status, StatusCode::BAD_REQUEST, "{query}: {}", r.text());
+        assert_eq!(r.json()["detail"]["param"], param, "{query}");
+    }
+    assert_eq!(
+        flows(&env, "GET", "/v1/flows/image", "sk-kso-nonsense", None)
+            .await
+            .status,
+        StatusCode::UNAUTHORIZED
+    );
+}
+
+#[tokio::test]
+async fn what_an_image_generation_cannot_do_is_refused_before_anything_is_sent() {
+    let env = env().await;
+    with_elevenlabs(&env).await;
+    for (body, param) in [
+        (
+            json!({"model_id": "gpt-image-1.5", "prompt": "A lighthouse", "webhook": {"type": "all"}}),
+            "webhook",
+        ),
+        (
+            json!({"model_id": "gpt-image-2", "prompt": "A lighthouse"}),
+            "model_id",
+        ),
+        (json!({"prompt": "A lighthouse"}), "model_id"),
+        (
+            json!({"model_id": "gpt-image-1.5", "prompt": "A lighthouse", "aspect_ratio": "16:9"}),
+            "aspect_ratio",
+        ),
+    ] {
+        let r = flows(
+            &env,
+            "POST",
+            "/v1/flows/image",
+            &env.key,
+            Some(body.clone()),
+        )
+        .await;
+        assert_eq!(r.status, StatusCode::BAD_REQUEST, "{body}: {}", r.text());
+        assert_eq!(r.json()["detail"]["param"], param, "{body}");
+    }
+    assert!(sent_to_flows(&env).is_empty());
+    assert!(
+        env.mock
+            .received()
+            .iter()
+            .all(|c| !c.path.starts_with("/v1/images")),
+        "another provider's model is never sent"
+    );
+
+    let id = start(&env, "A lighthouse [mock:generation=failed]").await;
+    assert_eq!(generation(&env, &id).await["status"], "generating");
+    let failed = generation(&env, &id).await;
+    assert_eq!(
+        failed,
+        json!({
+            "id": id,
+            "status": "failed",
+            "failure_reason": "timeout",
+            "error_message": "Timed out while processing. You were not charged for this generation."
+        })
+    );
+    let asked = sent_to_flows(&env).len();
+    assert_eq!(generation(&env, &id).await, failed);
+    assert_eq!(
+        sent_to_flows(&env).len(),
+        asked,
+        "a failed generation is not asked again"
+    );
+    assert!(finished_generations(&env).await.is_empty());
+}

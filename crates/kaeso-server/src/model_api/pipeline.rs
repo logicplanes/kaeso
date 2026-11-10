@@ -72,6 +72,7 @@ pub struct Incoming {
     pub transcription: Option<TranscriptionOperation>,
     pub elevenlabs: Option<kaeso_codecs::elevenlabs::ElevenLabsCall>,
     pub video: Option<super::videos::VideoIncoming>,
+    pub generation: Option<super::hooks::GenerationCall>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -283,6 +284,7 @@ pub(crate) fn blank_outcome(request_id: RequestId) -> Outcome {
         realtime: None,
         media: None,
         video: None,
+        generation: None,
         content_type: None,
     }
 }
@@ -362,6 +364,7 @@ pub async fn serve_with(
     outcome.transcription = inc.transcription;
     outcome.elevenlabs = inc.elevenlabs.as_ref().map(|c| c.operation);
     outcome.video = inc.video.as_ref().map(|v| v.call);
+    outcome.generation = inc.generation;
     outcome.source = inc.source;
     outcome.caller.clone_from(&inc.caller);
     outcome.started_at = now;
@@ -799,6 +802,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         transcription,
         elevenlabs,
         video,
+        generation,
         ..
     } = inc;
     let caller = match caller {
@@ -861,7 +865,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
             || elevenlabs
                 .as_ref()
                 .is_some_and(|c| c.kind() == RequestKind::Transcription);
-        if image.is_none() && video.is_none() && !uploads {
+        if image.is_none() && video.is_none() && generation.is_none() && !uploads {
             if body.len() < OFF_THREAD_BYTES {
                 o.request_body = Some(body.clone());
             } else {
@@ -999,6 +1003,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         ingress,
         kind,
         video: video.as_ref(),
+        generation: generation.is_some(),
         headers: &headers,
         caller: &caller,
         models: &models,
@@ -1076,6 +1081,7 @@ struct Shared<'a> {
     ingress: DialectId,
     kind: RequestKind,
     video: Option<&'a super::videos::VideoIncoming>,
+    generation: bool,
     headers: &'a HeaderMap,
     caller: &'a Caller,
     models: &'a ProjectModels,
@@ -1194,6 +1200,11 @@ async fn attempt(
         fail(Stage::Capability)(e)
     })?;
     rec.outcome().egress = Some(plan.dialect);
+    if sh.generation && plan.dialect != DialectId::ElevenLabs {
+        return Err(fail(Stage::Capability)(super::generations::not_elevenlabs(
+            &eff,
+        )));
+    }
     match &mut req {
         Request::Generate(g) | Request::CountTokens(g) => g.model.clone_from(&eff.model_id),
         Request::Embed(e) => e.model.clone_from(&eff.model_id),
@@ -1566,7 +1577,7 @@ async fn attempt(
         crate::services::notifications::system::key_answered(credential.id.uuid());
     }
 
-    let video_req = Arc::clone(&app_req);
+    let started_req = Arc::clone(&app_req);
     let counter = InputCounter {
         state: state.clone(),
         credential: credential.clone(),
@@ -1758,6 +1769,30 @@ async fn attempt(
                 }
                 return Err(fail(Stage::Provider)(err));
             }
+            if sh.generation {
+                let generation =
+                    kaeso_codecs::elevenlabs::decode_generation(status, &resp.headers, &bytes)
+                        .map_err(|e| unreadable(e, &eff.provider, dialect))
+                        .map_err(fail(Stage::Reply))?;
+                let started = super::generations::Started {
+                    caller,
+                    entry: entry.id,
+                    eff: &eff,
+                    credential: credential.id,
+                    dialect,
+                    app: &started_req,
+                };
+                let out = super::generations::register(state, rec, &started, generation)
+                    .await
+                    .map_err(fail(Stage::Reply))?;
+                let mut resp = Response::new(Body::from(out));
+                resp.headers_mut().insert(
+                    header::CONTENT_TYPE,
+                    HeaderValue::from_static("application/json"),
+                );
+                stamp(&mut resp, &served);
+                return Ok(Done::Complete(resp, StatusCode::OK.as_u16()));
+            }
             let (status, headers, bytes) = match dispatch::pending_task(dialect, kind, &bytes) {
                 Some(task) => {
                     let asked = super::media::Asked {
@@ -1790,7 +1825,7 @@ async fn attempt(
                     eff: &eff,
                     credential: credential.id,
                     dialect,
-                    app: &video_req,
+                    app: &started_req,
                     remix: sh.video.and_then(|v| v.remix.as_ref()),
                 };
                 let job = super::videos::register(state, rec, &started, job)

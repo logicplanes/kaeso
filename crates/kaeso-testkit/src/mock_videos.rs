@@ -1,5 +1,7 @@
-//! Video jobs at the mock provider, built from KPP's video fixtures: each job answers as
-//! running the first time it is asked and as finished after, with its file served by the mock.
+//! Video jobs and image generations at the mock provider, built from KPP's fixtures: each job
+//! answers as running the first time it is asked and as finished after, with its file served by
+//! the mock. An ElevenLabs image generation whose prompt carries `[mock:generation=failed]`
+//! ends as failed.
 
 use std::collections::HashMap;
 use std::path::Path;
@@ -9,6 +11,8 @@ use axum::body::Body;
 use axum::http::{HeaderMap, Method, StatusCode};
 use axum::response::{IntoResponse, Response};
 use serde_json::Value;
+
+const FAILED: &str = "failed-";
 
 /// The path the mock serves every made video's file at.
 pub const SAMPLE_PATH: &str = "/__mock/videos/sample.mp4";
@@ -87,6 +91,7 @@ pub(crate) fn answer(
     path: &str,
     query: Option<&str>,
     headers: &HeaderMap,
+    body: &str,
 ) -> Option<Response> {
     if method == Method::GET && path == SAMPLE_PATH {
         return Some(sample(fixtures, headers));
@@ -138,7 +143,11 @@ pub(crate) fn answer(
             json(read(fixtures, "elevenlabs/video/responses/started.json"))
         }
         "/v1/flows/image" if post => {
-            json(read(fixtures, "elevenlabs/image/responses/started.json"))
+            let mut started = read(fixtures, "elevenlabs/image/responses/started.json");
+            if body.contains("[mock:generation=failed]") {
+                started["id"] = Value::from(format!("{FAILED}JWr5N6X9ZTqf8jD2LmQb"));
+            }
+            json(started)
         }
         "/api/v1/services/aigc/video-generation/video-synthesis"
         | "/api/v1/services/aigc/image2video/video-synthesis"
@@ -235,6 +244,14 @@ pub(crate) fn answer(
         _ if method == Method::DELETE && tail("/v1beta/interactions/").is_some() => {
             json(serde_json::json!({}))
         }
+        _ if get && tail("/v1/flows/image/").is_some_and(|t| t.starts_with(FAILED)) => staged(
+            polls,
+            fixtures,
+            path,
+            "elevenlabs/image/polls/generating.json",
+            "elevenlabs/image/polls/failed.json",
+            &link,
+        ),
         _ if get && tail("/v1/flows/image/").is_some() => staged(
             polls,
             fixtures,

@@ -152,6 +152,7 @@ async fn call(
             transcription: None,
             elevenlabs: None,
             video: None,
+            generation: None,
         },
     )
     .await

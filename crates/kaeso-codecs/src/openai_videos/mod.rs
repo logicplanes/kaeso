@@ -112,7 +112,7 @@ pub fn encode_deleted(id: &str) -> Result<Vec<u8>, KppError> {
     reply::encode_deleted(id)
 }
 
-fn form_pairs(query: &str) -> impl Iterator<Item = (String, String)> + '_ {
+pub(crate) fn form_pairs(query: &str) -> impl Iterator<Item = (String, String)> + '_ {
     query.split('&').filter(|p| !p.is_empty()).map(|pair| {
         let (k, v) = pair.split_once('=').unwrap_or((pair, ""));
         (unescape(k), unescape(v))
