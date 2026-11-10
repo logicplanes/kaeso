@@ -27,6 +27,7 @@ import { TruncatedText } from "../text/truncated.js";
 import { STATUS_TONE_TEXT, type StatusTone } from "../../utils/tone.js";
 import { scrollParent } from "../../hooks/scroll-parent.js";
 import { useScrollMargin } from "../../hooks/use-scroll-margin.js";
+import { useStickyTop } from "../../hooks/use-sticky-top.js";
 import { useUiText } from "../../i18n/context.js";
 import { useScrollFadeX } from "../../hooks/use-scroll-fade.js";
 import { useCoarsePointer } from "../../hooks/use-coarse-pointer.js";
@@ -314,6 +315,7 @@ function DataTableInner<T>(
   const rowHeight = Math.max(ROW_H[density], useCoarsePointer() ? 44 : 0);
   const getScrollElement = () => scrollParent(root.current);
   const scrollMargin = useScrollMargin(body, getScrollElement, rows.length, virtual);
+  const headTop = useStickyTop(head);
   const virtualizer = useVirtualizer({
     count: rows.length,
     getScrollElement,
@@ -688,6 +690,7 @@ function DataTableInner<T>(
           role="rowgroup"
           hidden={headless}
           className={cn("sticky top-0 z-20 overflow-hidden", onRaised ? "bg-raised" : "bg-panel")}
+          {...(headTop ? { style: { top: headTop } } : {})}
           onKeyDown={onHeadKeyDown}
           onFocus={(e) => {
             const at = headTargets(head.current).indexOf(e.target as HTMLElement);
