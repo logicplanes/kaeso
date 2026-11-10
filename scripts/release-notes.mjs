@@ -262,7 +262,8 @@ export const correction = (problems) =>
 export function factsOf(collected, changelog, version = null) {
   const known = context(changelog, version ?? "next");
   const visible = collected.pulls.filter(({ labels }) => !labels.includes(INTERNAL));
-  const earlier = known.prereleases.flatMap(({ markdown }) => linked(markdown));
+  // Pull requests that the maintainer's lines or a pre-release's notes link must keep their links, also those merged before the last pre-release.
+  const earlier = [...known.prereleases.flatMap(({ markdown }) => linked(markdown)), ...linked(known.curated)];
   return {
     project: "Kaeso",
     repository: `https://github.com/${collected.repository}`,

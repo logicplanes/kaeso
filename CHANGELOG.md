@@ -4,241 +4,195 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 ## [Unreleased]
 
-## [0.6.0-rc.8] - 2026-11-07
+This release makes Kaeso one gateway for every kind of model, not only chat. Apps make images and videos, speech, transcripts, music and sound effects through OpenAI's and ElevenLabs' APIs, Gemini-format apps join the formats Kaeso speaks, thirteen providers become built-in, and local inference servers become custom providers that Kaeso knows how to talk to. Aliases become routes with fallbacks and splits, every project gets an MCP portal for the tools its organization approves, and the updater now installs releases that change `compose.yaml`. These notes cover everything since the last stable release, the release candidates included.
 
-This release candidate fixes a sign-in failure for MCP clients known by their metadata document: when registration churn trimmed such a client's registration while its description was still cached, an authorize request stored a request for a client that no longer existed and the console showed server_error until the cache lapsed. The scaling page is re-measured with the rc.7 images and now shows both streamed and non-streamed throughput for one, two and three gateways.
+- **Media:** images, video, speech, transcription and translation, music and sound effects through OpenAI's Images, Audio and Videos APIs and the ElevenLabs API, on every provider that offers them, with audio and video in chat, per-unit costs, and a Keep media setting that keeps a request's files in its log.
+- **Providers:** MiniMax, Google AI Studio, Gemini Enterprise Agent Platform, ElevenLabs, Fireworks AI, Nebius Token Factory, SambaNova, Scaleway, Hugging Face Inference Providers, NVIDIA's hosted NIM API, Baseten, SiliconFlow and Zhipu AI's GLM platform (`zai`) are built in, and apps built on the google-genai and ElevenLabs SDKs can call any model.
+- **Playground:** every kind of model side by side, with images and PDFs in chat, recorded audio, a calmer chat and smoother streaming.
+- **Local servers:** a custom provider names the software it runs, such as vLLM, Ollama, LM Studio, llama.cpp or SGLang, and Kaeso adapts to what each one expects.
+- **Alias routes:** fallbacks, conditions and weighted splits, built and tested in a route editor, with a failing step held for every gateway of the install.
+- **MCP portal:** connect remote MCP servers once, review every tool definition, and serve the approved tools to MCP clients per project, with sign-in, access rules, limits and logs.
+- **Analytics:** overview pages become homes, and a new Analytics page breaks usage down by model, provider, key, member, route and project.
+- **Updates:** the updater speaks protocol 2 and installs releases that change `compose.yaml`, and the installer turns it on and updates an install in one command.
+- **Scaling and deploys:** several gateways per install, Valkey over TLS, the `kaeso-edge` image, and deploy buttons or templates for Render, Railway, DigitalOcean, AWS, Google Cloud, Azure, Fly, Coolify, Dokploy and CapRover.
+- **Performance and security:** a 200 KB Claude Code request decodes in under a millisecond, hot paths no longer queue on shared locks, media takes a fraction of the memory it did, and voice ids, provider links and client documents are checked and fetched more strictly.
 
-**Contributors:** @dvnold
+Before you upgrade, read the breaking changes. The first applies to every install that updates from the console, the second to every install behind a reverse proxy of its own.
 
-**Full changes:** [v0.6.0-rc.7...v0.6.0-rc.8](https://github.com/logicplanes/kaeso/compare/v0.6.0-rc.7...v0.6.0-rc.8)
-
-### Changed
-
-#### Documentation
-
-- The scaling page shows what one, two and three gateways serve for streamed and non-streamed requests, re-measured with the rc.7 images, one CPU per gateway, Caddy in front and the mock provider behind. Three gateways serve twice the completions of one and 2.8 times the streams, at half the latency; the page said streams gain capacity rather than speed, but their translation costs CPU on every event, so they gain throughput too, and the table carries both columns in all three languages. ([#744](https://github.com/logicplanes/kaeso/pull/744))
-
-### Fixed
-
-#### Gateway
-
-- An MCP client known by its metadata document signs in again after registration churn trimmed its registration. Its description stayed cached for ten minutes after the row was gone, so an `/oauth/authorize` from that client stored a request for a client that no longer existed and the console showed `server_error` until the cache lapsed; a cache hit now checks that the row still exists and, when it is gone, puts the document's description back under the same URL, which takes one indexed read per interactive sign-in. ([#743](https://github.com/logicplanes/kaeso/pull/743))
-
-## [0.6.0-rc.7] - 2026-11-07
-
-### Changed
-
-- The console patches the router's code-split wrapper so a route replayed after its module arrived calls use() again, as React 19 expects ([#731](https://github.com/logicplanes/kaeso/pull/731))
-- The README shows the console's pages in a theme-aware grid, a diagram of where Kaeso sits, what makes it different and the deploy buttons ([#734](https://github.com/logicplanes/kaeso/pull/734))
-- The create-key step shows its access choices and Tools as one box, through card variants of Checkbox and CheckboxGroup that share a SettingsGroup's surface ([#735](https://github.com/logicplanes/kaeso/pull/735))
-- The consent page sums up a client's tools per server and opens to their names, and the Tools tab turns every tool of a server on or off at once ([#738](https://github.com/logicplanes/kaeso/pull/738))
-- The create-key step offers Inference, Platform and Tools as three checkboxes in one box, and needs at least one API ([#739](https://github.com/logicplanes/kaeso/pull/739))
-- The gateway connects to Valkey over TLS, with KAESO_VALKEY_CA for a server whose authority is private ([#740](https://github.com/logicplanes/kaeso/pull/740))
-- DigitalOcean App Platform runs Kaeso from an app spec, with a guide, CI checks and the release pinning its images ([#741](https://github.com/logicplanes/kaeso/pull/741))
-
-#### Gateway
-
-- A response cache clear keeps the replies stored since the clear, because the sweep removes only the retired generations ([#732](https://github.com/logicplanes/kaeso/pull/732))
-- A fresh install starts with KPMR's model data as of 6 November 2026, 23:33 UTC ([#737](https://github.com/logicplanes/kaeso/pull/737))
-
-#### Documentation
-
-- The README offers Deploy to Render and Open in Cloud Shell buttons, and the platform pages link the same way ([#730](https://github.com/logicplanes/kaeso/pull/730))
-
-### Fixed
-
-#### Gateway
-
-- Tool calls from newest-version clients reach older MCP servers without the newest version's `_meta` claims ([#736](https://github.com/logicplanes/kaeso/pull/736))
-
-## [0.6.0-rc.6] - 2026-11-06
-
-This release gives every project an MCP portal for approved upstream tools, with client sign-in, change review, access controls, limits, logs and console management. It also adds configurable notification emails, managed-platform deployment templates, multi-gateway Compose installs and more resilient alias routing. One configuration compatibility path is removed: installs still using `models_dev.*` settings must rename them before upgrading.
-
-- **Breaking:** The `models_dev.*` compatibility path is removed; rename `[models_dev]` to `[kpmr]` and `KAESO_MODELS_DEV_SYNC` to `KAESO_KPMR_SYNC`, because a leftover `[models_dev]` section stops the gateway. ([#710](https://github.com/logicplanes/kaeso/pull/710))
+- **Breaking:** An install of any earlier release, the release candidates included, has an updater that speaks protocol 1, so Instance › Updates calls it outdated: run the installer once with `--update` in the install's folder, and Update in the console works again from then on. The installer replaces `compose.yaml` only when its hash matches the release's, keeps the old file and turns the updater on if it was off; the Upgrades page of the documentation has the command. ([#780](https://github.com/logicplanes/kaeso/pull/780), [#769](https://github.com/logicplanes/kaeso/pull/769))
+- **Breaking:** A reverse proxy of your own in front of Kaeso must also send `/v1beta/` (the Gemini API, with response buffering off) and `/v2/` (ElevenLabs' voice listing) to the gateway, and pass WebSocket upgrades on for ElevenLabs' realtime sessions. The bundled Caddy and the platform templates already do; the Domains and TLS page lists every path. ([#834](https://github.com/logicplanes/kaeso/pull/834), [#829](https://github.com/logicplanes/kaeso/pull/829))
+- **Breaking:** Projects in an organization are all alike: there is no default project, Kaeso opens on the organization's overview, and new members join only the projects their invitation names. ([#647](https://github.com/logicplanes/kaeso/pull/647))
+- **Breaking:** Kaeso no longer reads the `models_dev` settings: rename a `[models_dev]` section to `[kpmr]` and `KAESO_MODELS_DEV_SYNC` to `KAESO_KPMR_SYNC` before you upgrade, because a leftover `[models_dev]` section stops the gateway. ([#710](https://github.com/logicplanes/kaeso/pull/710))
+- **Breaking:** The request log keeps short timings in microseconds, so the Platform API and the CSV export rename `request_upload_ms`, `overhead_ms` and `stream_progress.processing_ms` to `request_upload_us`, `overhead_us` and `stream_progress.processing_us`, and the CSV's `stream_processing_ms` to `stream_processing_us`, with no alias for the old names. Code that reads them divides by 1,000 for milliseconds; `duration_ms`, `ttfb_ms` and `stream_progress.first_byte_ms` stay in milliseconds. ([#868](https://github.com/logicplanes/kaeso/pull/868))
+- **Breaking:** The UI library exports only its documented components and folds many of them into variants: aliases and internal parts are no longer public, StatusDot is now Status, and IconButton, SearchInput, SensitiveInput, FilterToggle, Gauge, ParameterPopover, DeleteResource, PromptSuggestions and the components that only wrapped another one are removed, and ResponseMetrics no longer takes `reasoning`. ([#664](https://github.com/logicplanes/kaeso/pull/664), [#665](https://github.com/logicplanes/kaeso/pull/665), [#666](https://github.com/logicplanes/kaeso/pull/666), [#667](https://github.com/logicplanes/kaeso/pull/667), [#668](https://github.com/logicplanes/kaeso/pull/668), [#669](https://github.com/logicplanes/kaeso/pull/669), [#672](https://github.com/logicplanes/kaeso/pull/672), [#760](https://github.com/logicplanes/kaeso/pull/760), [#893](https://github.com/logicplanes/kaeso/pull/893))
+- **Breaking:** In `kaeso-kpp`, `Base64Source::data` holds the decoded bytes as `bytes::Bytes` instead of base64 text, so code that builds or reads media sources changes; KPP's JSON form is unchanged. ([#849](https://github.com/logicplanes/kaeso/pull/849))
 
 **Contributors:** @dvnold
 
-**Full changes:** [v0.6.0-rc.4...v0.6.0-rc.6](https://github.com/logicplanes/kaeso/compare/v0.6.0-rc.4...v0.6.0-rc.6)
-
 ### Added
 
-- New `mcp_servers.*` and `tools.*` rights govern server management, tool review, access and use; server management requires a recent sign-in, and agents can never receive `tools.use`. The Platform API manages MCP servers, project tools, per-principal access and connected portal clients, with audit events for every change. ([#685](https://github.com/logicplanes/kaeso/pull/685), [#689](https://github.com/logicplanes/kaeso/pull/689))
-- Kaeso reaches remote MCP servers over Streamable HTTP only, without following redirects, using `mcp_servers.allowed_networks` to permit private networks. Loopback, private and metadata addresses are refused by default, and link-local and metadata addresses remain refused even when every network is allowed. ([#686](https://github.com/logicplanes/kaeso/pull/686))
-- Kaeso stores each MCP tool's definition and syncs it on `mcp_servers.sync_interval`. With the default `hold` policy, changed tools are hidden and refused until the reviewed hash is approved; `accept` approves changes automatically, while rejection switches the tool off in every project that had it on. ([#688](https://github.com/logicplanes/kaeso/pull/688))
-- Every project has an MCP portal at `/mcp/{project}`, serving its enabled tools to MCP clients through an API key with the `tools` ability. Clients can instead sign in with Client ID Metadata Documents and consent; portal tokens work only at their own resource, and disconnecting a client revokes its tokens immediately. Held tools are hidden, while off, held and denied calls are refused. ([#690](https://github.com/logicplanes/kaeso/pull/690), [#691](https://github.com/logicplanes/kaeso/pull/691))
-- Portal tool calls now appear in request logs, usage and the project overview, with arguments and results available only where content logging kept them. A `tool_call_rate` limit applies per sliding minute to a project, member or key without affecting model requests; exceeding it returns HTTP 429 with `Retry-After` and logs the call as `limited`. ([#692](https://github.com/logicplanes/kaeso/pull/692))
-- Organization › MCP servers adds servers, probes addresses, handles shared sign-in and reviews definition changes with a diff before approving or rejecting them. Project › Tools switches servers and tools on, manages tool access and API-key abilities, and connects or disconnects portal clients. ([#693](https://github.com/logicplanes/kaeso/pull/693), [#694](https://github.com/logicplanes/kaeso/pull/694))
-- Servers requiring per-person credentials now work end to end through Account › Connections and `/me/mcp-connections`. Their sync uses the most recent working personal connection; until anyone connects, the server remains unchecked and has no tools, and leaving the organization removes that person's connections and portal grants. ([#695](https://github.com/logicplanes/kaeso/pull/695))
-- The Playground can send a project's offered tools as Responses function tools and asks before each model-requested call. Run returns the tool's answer and Skip records that the person declined; calls use the portal's approval, access and rate rules and are logged with the Playground as their source. ([#696](https://github.com/logicplanes/kaeso/pull/696))
-- Account › Notifications offers now, daily or off for every email the person's rights allow, while security emails remain always on. People can mute an organization, send a test email or unsubscribe through a signed link; notifications are dispatched only after successful changes, with rights-based recipients, daily digests and per-person throttling. ([#699](https://github.com/logicplanes/kaeso/pull/699), [#700](https://github.com/logicplanes/kaeso/pull/700))
-- A public demo now marks every console page as read-only with sample data and links to the installation guide. The shell learns this from the new `demo` field in `auth/session`, and the notice is loaded only for demo installs. ([#719](https://github.com/logicplanes/kaeso/pull/719))
-- `KAESO_SETUP_EMAIL` and `setup.email` support installs without a shell: until the first user exists, every gateway start emails a fresh 24-hour, one-time setup link and invalidates older links. The setting requires SMTP and exactly one address, becomes inert after setup and never writes the link to logs. ([#723](https://github.com/logicplanes/kaeso/pull/723))
-- `GATEWAY_REPLICAS` runs multiple gateways behind Caddy in the Compose package, while the default of one behaves as before. The updater retires every old replica before launching replacements, waits for each one and recovers replicas caught mid-update; new documentation explains what gateways share and what remains per process. ([#727](https://github.com/logicplanes/kaeso/pull/727))
+- Aliases route requests: fallbacks, conditions and weighted splits by request, caller or header, built in a full-page route editor with templates and a Test tab that sends a request through the draft and colors each step by its answer. A request's trace shows the path it took, and the `kaeso-route` header names every step it tried. ([#649](https://github.com/logicplanes/kaeso/pull/649), [#650](https://github.com/logicplanes/kaeso/pull/650))
+- Every project has an MCP portal at `/mcp/{project}` that serves its enabled tools to MCP clients, through an API key with the `tools` ability or a client that signs in with a Client ID Metadata Document and the person's consent. Portal tokens work only at their own portal, disconnecting a client revokes its tokens at once, and held, switched-off or denied tools are refused. ([#690](https://github.com/logicplanes/kaeso/pull/690), [#691](https://github.com/logicplanes/kaeso/pull/691))
+- Organizations connect remote MCP servers over Streamable HTTP, signed in with a sealed secret header or OAuth with PKCE, and Kaeso reads and writes MCP messages of every protocol version from `2025-03-26` to `2026-07-28`. Private networks are reached only when `mcp_servers.allowed_networks` lists them, and secrets and tokens are sealed by the master key. ([#682](https://github.com/logicplanes/kaeso/pull/682), [#683](https://github.com/logicplanes/kaeso/pull/683), [#686](https://github.com/logicplanes/kaeso/pull/686), [#687](https://github.com/logicplanes/kaeso/pull/687))
+- Kaeso keeps each MCP tool's definition and syncs it on `mcp_servers.sync_interval`; with the default `hold` policy a changed tool is hidden and refused until someone approves the new definition, `accept` approves changes on its own, and rejecting a tool switches it off in every project. ([#688](https://github.com/logicplanes/kaeso/pull/688))
+- New `mcp_servers.*` and `tools.*` rights, in every role and agent preset, govern server management, tool review, access and use, and the Platform API manages MCP servers, project tools, per-principal access and connected portal clients, with an audit entry for every change. Its Playground routes call a project's tool with `POST …/tools/{tool}/call`, under the portal's approval, access and rate rules. ([#685](https://github.com/logicplanes/kaeso/pull/685), [#689](https://github.com/logicplanes/kaeso/pull/689), [#696](https://github.com/logicplanes/kaeso/pull/696))
+- Organization › MCP servers adds servers, probes their address, signs in and reviews definition changes with a diff. Project › Tools turns servers and tools on, one by one or a whole server at once, sets who may call them, connects or disconnects clients and sorts servers by name, calls, last use or tools on, and the consent page sums up a client's tools per server. ([#693](https://github.com/logicplanes/kaeso/pull/693), [#694](https://github.com/logicplanes/kaeso/pull/694), [#738](https://github.com/logicplanes/kaeso/pull/738), [#745](https://github.com/logicplanes/kaeso/pull/745))
+- Servers that need a personal account work through Account › Connections: each person connects their own, the server's sync uses the latest working connection, and leaving an organization removes that person's connections and portal grants. ([#695](https://github.com/logicplanes/kaeso/pull/695))
+- Tool calls appear in the request logs, usage and the project overview, and a `tool_call_rate` limit caps them per sliding minute for a project, member or key. The Tools tab of the request logs has live updates, every filter the Models tab has and an export to CSV or JSON Lines with each call's arguments and results. ([#692](https://github.com/logicplanes/kaeso/pull/692), [#844](https://github.com/logicplanes/kaeso/pull/844), [#870](https://github.com/logicplanes/kaeso/pull/870))
+- Kaeso emails the people responsible when something changes in an instance, organization, project or portal. Account › Notifications offers now, daily or off for each email a person's rights allow, a switch for the weekly summary and the monthly cost report, a mute per organization, a test email and a signed unsubscribe link, while security emails stay on. ([#699](https://github.com/logicplanes/kaeso/pull/699), [#700](https://github.com/logicplanes/kaeso/pull/700), [#746](https://github.com/logicplanes/kaeso/pull/746))
+- Every email names its organization and project, alerts name the provider, key, budget and answer behind them, announcements open with a cover and reports with their figures and tables, and the footer names the right a person holds as the console does. ([#756](https://github.com/logicplanes/kaeso/pull/756), [#761](https://github.com/logicplanes/kaeso/pull/761), [#764](https://github.com/logicplanes/kaeso/pull/764))
+- An install can run as a public, read-only demo: `KAESO_AUTH_DEMO_USER`, under the gateway's environment in `compose.override.yaml`, signs every visitor in as one user and refuses every change. Every console page then says it is read-only with sample data, each visitor sees only their own session, and `models/offered` is refused before any provider is asked. ([#670](https://github.com/logicplanes/kaeso/pull/670), [#718](https://github.com/logicplanes/kaeso/pull/718), [#719](https://github.com/logicplanes/kaeso/pull/719))
+- Star on GitHub links to Kaeso's repository from the documentation's sidebar and from Instance › Updates, with the star count once it reaches 100. ([#675](https://github.com/logicplanes/kaeso/pull/675))
 
 #### Gateway
 
-- MCP servers, connections, tools, project access, portal grants and tool-call records now have PostgreSQL and ClickHouse stores. Connection secrets and OAuth tokens are sealed by the master key, and organization departure removes the person's own connections and portal grants through database constraints. ([#683](https://github.com/logicplanes/kaeso/pull/683))
-- Kaeso signs in to upstream MCP servers with a sealed secret header or OAuth using PKCE, supporting client metadata documents, dynamic registration and manually registered clients. OAuth callbacks require the starter's session, tokens renew near expiry, and a refused refresh marks the connection signed out once. ([#687](https://github.com/logicplanes/kaeso/pull/687))
-
-#### Documentation
-
-- The new MCP protocol layer reads and writes versions `2025-03-26` through `2026-07-28`, checking protocol headers and negotiating session-based versions. Unknown message fields pass through byte for byte, duplicate members are refused and tool renames touch only the relevant parameter. ([#682](https://github.com/logicplanes/kaeso/pull/682))
-- New English, German and Chinese pages document the MCP portal, server and project console workflows, client sign-in and the portal API, including SDK examples and error behavior. The README also compares MCP portal support and lists MCP clients among the ways to use Kaeso. ([#697](https://github.com/logicplanes/kaeso/pull/697))
-- Deployment templates and guides now cover Render, Railway, AWS and Google Cloud, including quick-server and managed options where provided. Releases pin the platform templates to their version, validation checks their structure, and the guides state that no path has yet been deployed from an empty account. ([#725](https://github.com/logicplanes/kaeso/pull/725))
-
-#### Self-hosting
-
-- The console image also provides `kaeso-edge`, a public edge for platforms that terminate TLS and run the gateway and console privately. It routes API and portal paths without buffering streams, trusts forwarded client addresses only from configured proxies, preserves each API's outage format and exposes its own health check. ([#724](https://github.com/logicplanes/kaeso/pull/724))
-
-### Changed
-
-- The README links the live read-only demo beside the documentation, letting visitors inspect a seeded console without connecting providers or making changes. ([#679](https://github.com/logicplanes/kaeso/pull/679))
-- Rust and JavaScript dependencies are refreshed, including `rustix` 1.1.6, `aws-lc-rs` 1.19.0, `resvg` 0.49.0, `ed25519-dalek` 3.0.0 and minor or patch updates across the console, documentation and UI packages. ([#705](https://github.com/logicplanes/kaeso/pull/705), [#706](https://github.com/logicplanes/kaeso/pull/706), [#707](https://github.com/logicplanes/kaeso/pull/707), [#708](https://github.com/logicplanes/kaeso/pull/708))
-- The Compose package gives the gateway a 75-second stop grace period and a `nofile` limit of 65536, while Caddy uses shorter keepalives and more idle connections to match gateway behavior. PostgreSQL now sizes `shared_buffers` and `effective_cache_size` from its container memory limit; because `compose.yaml` changes beyond image versions, the release manifest asks for manual update steps. ([#714](https://github.com/logicplanes/kaeso/pull/714))
-- Alias routes hold a step after a lasting failure and skip it only when that step's `fall_back_on` includes the reason; a refusal of the request itself never holds a step. Holds last five minutes for refused keys, empty balances and unserved models, follow `Retry-After` for rate limits and 30 seconds for connectivity or server failures, and a held step is still tried when no later step is ready. Anthropic credit-balance 400 responses now count as billing without changing the body returned to Anthropic apps, and skipped steps appear in routes, logs, exports and metrics. ([#717](https://github.com/logicplanes/kaeso/pull/717))
-- Held alias-route steps now live in Valkey per project, so a failure seen by one gateway immediately spares the install's other gateways and an answer releases the hold for all of them. While Valkey is unreachable, each gateway uses its own memory and logs that fallback. ([#722](https://github.com/logicplanes/kaeso/pull/722))
-- The development and demo seed now resembles a real organization's history, with written support and internal-help conversations, per-model latency, distinct callers and working hours, incidents, aliases and response-cache activity. Content respects the 30-day retention period, and an option can end generated history with yesterday for nightly demo resets. ([#720](https://github.com/logicplanes/kaeso/pull/720))
-
-#### Gateway
-
-- A fresh install starts with KPMR's model data as of 6 November 2026, 11:23 UTC, covering 1059 models. ([#709](https://github.com/logicplanes/kaeso/pull/709))
-
-#### Self-hosting
-
-- The Compose package updates the ClickHouse, Valkey and socket-proxy images. The gateway and updater Dockerfiles also move to a newer distroless base-image digest. ([#701](https://github.com/logicplanes/kaeso/pull/701), [#702](https://github.com/logicplanes/kaeso/pull/702))
-
-### Removed
-
-#### Gateway
-
-- Breaking: The deprecated `models_dev.*` compatibility path is removed. Rename `[models_dev]` to `[kpmr]` and `KAESO_MODELS_DEV_SYNC` to `KAESO_KPMR_SYNC`; a leftover `[models_dev]` section stops the gateway, and old environment variables are reported as unknown. ([#710](https://github.com/logicplanes/kaeso/pull/710))
-
-### Fixed
-
-- The installer refuses to take over an existing install, including leftover Docker data without `.env`, and a rerun no longer claims first-user setup is needed. Local installs move to free ports, domain installs stop before downloading when ports are taken, and typed domains, shared folders, architectures and memory are checked; Linux can offer Docker installation, failures name the service with recent logs, and master-key files are readable by their backup group. ([#677](https://github.com/logicplanes/kaeso/pull/677))
-- Turning thinking off now selects the model's lowest listed effort for an OpenAI-dialect target that reasons and lists no `none`, for generation and token counting, including within a format. Claude models and models that list `none` are unchanged, and `kaeso-adapted` names the selected effort. ([#712](https://github.com/logicplanes/kaeso/pull/712))
-- A public demo's session lists now contain only the caller's own session rather than every visitor's address and browser; installs without a demo still list every session as before. Demos also refuse `models/offered` with 403 before reading a key or contacting a provider. ([#718](https://github.com/logicplanes/kaeso/pull/718))
-- The OSV scanner configuration drops the obsolete block-buffer advisory ignore, bringing it back in line with cargo deny and the repository's advisory consistency check. This changes scanning configuration only. ([#729](https://github.com/logicplanes/kaeso/pull/729))
-
-#### Gateway
-
-- The response cache and other Valkey users recover after Valkey refuses and later accepts the gateway's password, without a gateway restart. A five-second health check replaces managers stuck on non-I/O connection failures, while ordinary I/O reconnects remain handled by redis-rs. ([#711](https://github.com/logicplanes/kaeso/pull/711))
-
-#### UI library
-
-- `DataTable` omits its header when it is empty, its columns overflow and it is neither loading nor showing an error, preventing narrow screens such as the update history at 320 pixels from scrolling sideways. The header and its row count return when rows load or the columns fit. ([#713](https://github.com/logicplanes/kaeso/pull/713))
-
-#### Self-hosting
-
-- Rerunning the installer on an install that never started now chooses a free edge-network range when `.env` has no `EDGE_SUBNET` and the network does not yet exist. A running install keeps its existing range. ([#680](https://github.com/logicplanes/kaeso/pull/680))
-
-## [0.6.0-rc.4] - 2026-11-05
-
-- **Breaking:** The UI library exports only documented components: aliases are gone, internal parts are no longer public, and StatusDot is now Status ([#664](https://github.com/logicplanes/kaeso/pull/664))
-- **Breaking:** Tabs, RadioGroup, Section, Skeleton and Kbd take variants instead of PillTabs, RadioCards, SettingsSection, SkeletonLine and KbdSequence ([#665](https://github.com/logicplanes/kaeso/pull/665))
-- **Breaking:** An icon-only button is a Button with an icon, which shows its name as a tooltip; IconButton is removed ([#666](https://github.com/logicplanes/kaeso/pull/666))
-- **Breaking:** Search, password and secret fields are types of Input: SearchInput and SensitiveInput are removed ([#667](https://github.com/logicplanes/kaeso/pull/667))
-- **Breaking:** Button takes pressed, Meter a gauge shape and ParameterPanel a trigger: FilterToggle, Gauge, ParameterPopover and DeleteResource are removed ([#668](https://github.com/logicplanes/kaeso/pull/668))
-- **Breaking:** Stat, StatGroup, CopyButton and Avatar take variants instead of StatTile, StatGrid, MetricRow, ClipboardText, InlineCopyText, AgentAvatar, AgentAttribution and AvatarGroup ([#669](https://github.com/logicplanes/kaeso/pull/669))
-- **Breaking:** The UI library drops components that only wrapped another one: Menubar, Accordion, HoverCard, ProviderCard, EnvironmentSnippet, Grid, Stack, Inline, ThemeSelect, the page blocks and ResourceList ([#672](https://github.com/logicplanes/kaeso/pull/672))
-
-### Added
-
-- An install can run as a public, read-only demo: KAESO_AUTH_DEMO_USER signs every visitor in as one user and refuses every change ([#670](https://github.com/logicplanes/kaeso/pull/670))
-- Star on GitHub links to Kaeso's repository from the documentation's sidebar and from Instance › Updates, with the star count once it reaches 100 ([#675](https://github.com/logicplanes/kaeso/pull/675))
-
-#### Self-hosting
-
-- Kaeso installs with one command from kaeso.app, which downloads the newest release, writes its settings and master key and starts it ([#662](https://github.com/logicplanes/kaeso/pull/662))
-
-### Changed
-
-- The UI library exports only documented components: aliases are gone, internal parts are no longer public, and StatusDot is now Status ([#664](https://github.com/logicplanes/kaeso/pull/664))
-- Tabs, RadioGroup, Section, Skeleton and Kbd take variants instead of PillTabs, RadioCards, SettingsSection, SkeletonLine and KbdSequence ([#665](https://github.com/logicplanes/kaeso/pull/665))
-- An icon-only button is a Button with an icon, which shows its name as a tooltip; IconButton is removed ([#666](https://github.com/logicplanes/kaeso/pull/666))
-- Search, password and secret fields are types of Input: SearchInput and SensitiveInput are removed ([#667](https://github.com/logicplanes/kaeso/pull/667))
-- Button takes pressed, Meter a gauge shape and ParameterPanel a trigger: FilterToggle, Gauge, ParameterPopover and DeleteResource are removed ([#668](https://github.com/logicplanes/kaeso/pull/668))
-- Stat, StatGroup, CopyButton and Avatar take variants instead of StatTile, StatGrid, MetricRow, ClipboardText, InlineCopyText, AgentAvatar, AgentAttribution and AvatarGroup ([#669](https://github.com/logicplanes/kaeso/pull/669))
-- The README shows how to install Kaeso in one command, send a first request, and how it compares with LiteLLM, Bifrost and Portkey ([#673](https://github.com/logicplanes/kaeso/pull/673))
-
-#### Gateway
-
-- A fresh install starts with KPMR's model data as of 5 November 2026, 15:32 UTC ([#674](https://github.com/logicplanes/kaeso/pull/674))
-
-#### UI library
-
-- The UI library drops components that only wrapped another one: Menubar, Accordion, HoverCard, ProviderCard, EnvironmentSnippet, Grid, Stack, Inline, ThemeSelect, the page blocks and ResourceList ([#672](https://github.com/logicplanes/kaeso/pull/672))
-
-#### Documentation
-
-- GitHub release notes lead with two or three highlights, and a small release goes out every week ([#671](https://github.com/logicplanes/kaeso/pull/671))
-
-### Fixed
+- Apps generate and edit images through OpenAI's Images API, with uploads and streamed partial images, on OpenAI, SpaceX, Google, OpenRouter, Vercel, Together AI, QwenCloud, Zhipu AI, MiniMax and ElevenLabs models, including QwenCloud's Wan and Z-Image models and ElevenLabs' GPT Image, Gemini and Seedream models. Keys, aliases, limits, budgets, logs and costs work as for every other model request. ([#799](https://github.com/logicplanes/kaeso/pull/799), [#801](https://github.com/logicplanes/kaeso/pull/801), [#835](https://github.com/logicplanes/kaeso/pull/835), [#859](https://github.com/logicplanes/kaeso/pull/859))
+- Apps make speech and transcribe or translate audio through OpenAI's Audio API on every built-in provider that offers it, with speech streamed as events when asked, and sound effects reach QwenCloud's Qwen-Audio-TTS-Next. ([#806](https://github.com/logicplanes/kaeso/pull/806), [#807](https://github.com/logicplanes/kaeso/pull/807), [#857](https://github.com/logicplanes/kaeso/pull/857))
+- Apps make videos through OpenAI's Videos API on SpaceX, Google AI Studio, Gemini Enterprise Agent Platform, MiniMax, Zhipu AI, OpenRouter, Together AI, QwenCloud and ElevenLabs. Kaeso keeps each job under an id of its own, asks the provider while it runs, streams the finished file and bills the job once, when it ends. ([#815](https://github.com/logicplanes/kaeso/pull/815), [#816](https://github.com/logicplanes/kaeso/pull/816), [#818](https://github.com/logicplanes/kaeso/pull/818), [#822](https://github.com/logicplanes/kaeso/pull/822))
+- QwenCloud's image, speech, transcription and video models that answer only on DashScope are reached in DashScope's own API, with images and audio fetched from its result links. ([#820](https://github.com/logicplanes/kaeso/pull/820), [#821](https://github.com/logicplanes/kaeso/pull/821))
+- Apps send audio and video to every provider that takes them, from any API format, Chat and Gemini apps get audio replies from each other's models, and images that Gemini models make reach Gemini apps. A format or provider with no place for them refuses before anything is sent. ([#791](https://github.com/logicplanes/kaeso/pull/791), [#794](https://github.com/logicplanes/kaeso/pull/794))
+- Gemini-format apps, such as the google-genai SDKs or plain Gemini REST calls, use Kaeso as their base URL under `/v1beta/` and call any model of the project, with streams, thinking, tool calls, token counts, embeddings and model listings. ([#783](https://github.com/logicplanes/kaeso/pull/783), [#787](https://github.com/logicplanes/kaeso/pull/787))
+- Zhipu AI's GLM platform (`zai`) and MiniMax are built-in providers: add a key and call GLM and MiniMax-M3 models from any app format. Fields MiniMax documents but ignores are refused before sending instead of dropped silently. ([#781](https://github.com/logicplanes/kaeso/pull/781), [#782](https://github.com/logicplanes/kaeso/pull/782))
+- Google AI Studio and Gemini Enterprise Agent Platform are built-in providers. AI Studio takes an API key; Agent Platform takes an express mode API key or a service account key, which also reaches its Claude, partner and open models. Kaeso calls Gemini in its own format, so thought signatures survive tool loops in every app format. ([#786](https://github.com/logicplanes/kaeso/pull/786), [#789](https://github.com/logicplanes/kaeso/pull/789), [#790](https://github.com/logicplanes/kaeso/pull/790))
+- ElevenLabs is a built-in provider. OpenAI-format apps reach its text to speech and Scribe through the Audio API, and apps built with the official ElevenLabs SDKs call its speech, voice changer, sound effects, music, transcription and image endpoints with a Kaeso key and open its realtime speech and transcription sessions, with Kaeso's limits, logs and costs. ([#808](https://github.com/logicplanes/kaeso/pull/808), [#837](https://github.com/logicplanes/kaeso/pull/837), [#901](https://github.com/logicplanes/kaeso/pull/901))
+- Fireworks AI, Nebius Token Factory, SambaNova and Scaleway are built-in providers: add a key and call their models from any app format, with embeddings where they offer them and Scaleway's transcriptions. ([#871](https://github.com/logicplanes/kaeso/pull/871), [#872](https://github.com/logicplanes/kaeso/pull/872), [#873](https://github.com/logicplanes/kaeso/pull/873), [#874](https://github.com/logicplanes/kaeso/pull/874))
+- Hugging Face Inference Providers, NVIDIA's hosted NIM API, Baseten and SiliconFlow are built-in providers: add a key and call their models from every app format, with NVIDIA's and SiliconFlow's embeddings and SiliconFlow's speech and transcriptions. ([#896](https://github.com/logicplanes/kaeso/pull/896), [#897](https://github.com/logicplanes/kaeso/pull/897), [#898](https://github.com/logicplanes/kaeso/pull/898), [#899](https://github.com/logicplanes/kaeso/pull/899))
+- Custom providers name the server software they run, one of fifteen such as vLLM, SGLang, Ollama, LM Studio, llama.cpp, LocalAI, Text Generation Inference, NVIDIA NIM or Docker Model Runner, so Kaeso sends each one what it expects. Models added from a local server start with the context window the server lists and prices of 0. ([#804](https://github.com/logicplanes/kaeso/pull/804), [#812](https://github.com/logicplanes/kaeso/pull/812))
+- Custom providers serve OpenAI's images, speech, transcription and videos APIs once an admin turns each one on; a new provider for LocalAI, Xinference or vLLM starts with the APIs that software documents, and an API that is off is refused before sending. ([#838](https://github.com/logicplanes/kaeso/pull/838))
+- Organizations and projects can keep the images, audio and files of logged requests, up to 10 MiB per request, with Keep media beside content logging, and the request inspector shows, plays and downloads them. It is off by default, and the organization's setting is the ceiling for its projects. ([#883](https://github.com/logicplanes/kaeso/pull/883))
+- Usage and its timeline filter by model, provider, key, member, route and project, the timeline groups by them and reports latency, and the request log finds slow requests, so agents connected over MCP can analyse usage in depth. ([#763](https://github.com/logicplanes/kaeso/pull/763))
+- Long prompts are billed at the model's long-context prices from KPMR, and a price override without its own tiers keeps one flat price for every prompt length. ([#798](https://github.com/logicplanes/kaeso/pull/798))
 
 #### Console
 
-- On a phone, the update button on Instance › Updates moves under See what's new instead of past the screen's edge ([#676](https://github.com/logicplanes/kaeso/pull/676))
-
-## [0.6.0-rc.3] - 2026-11-05
-
-### Changed
+- Overview pages become homes, with the release the install runs, activity, spend, projects, members, keys, MCP servers and recent changes, and a new Analytics page shows usage by the minute and hour, per project, model, key and member. It leads with the period's totals and one readable chart, then what drives usage, reliability, efficiency and spend. ([#762](https://github.com/logicplanes/kaeso/pull/762), [#886](https://github.com/logicplanes/kaeso/pull/886))
+- The Playground tries every kind of model, side by side from one prompt: chat, images, speech, sound effects, music, transcription with recorded or attached audio, and video with progress and Cancel. Chat takes images and PDFs by attaching, dropping or pasting them, and the Platform API sends each of these requests for a member. ([#877](https://github.com/logicplanes/kaeso/pull/877), [#878](https://github.com/logicplanes/kaeso/pull/878), [#879](https://github.com/logicplanes/kaeso/pull/879))
+- The console shows what media requests made, such as images, characters spoken and audio or video length, and calls a cost without a price Unknown instead of $0. ([#842](https://github.com/logicplanes/kaeso/pull/842), [#863](https://github.com/logicplanes/kaeso/pull/863))
 
 #### UI library
 
-- Buttons press to 0.96, icons draw a 1.5px stroke and cross-fade when they change, and pictures get a translucent edge in their own shape ([#660](https://github.com/logicplanes/kaeso/pull/660))
-
-### Fixed
-
-#### UI library
-
-- The route editor stays usable on short screens and phones, and a Segmented wider than its row scrolls instead of being cut off ([#659](https://github.com/logicplanes/kaeso/pull/659))
-- Links in a paragraph no longer overlap each other's touch areas, a small select gets a full hit area, and a system theme change no longer replays transitions ([#661](https://github.com/logicplanes/kaeso/pull/661))
-
-## [0.6.0-rc.2] - 2026-11-05
-
-### Changed
-
-- The route canvas hangs a model's fallbacks under it, so a route fits beside the inspector ([#653](https://github.com/logicplanes/kaeso/pull/653))
-- The route editor's Audit log tab replaces Versions, and Test says why a split by caller always takes your branch ([#654](https://github.com/logicplanes/kaeso/pull/654))
-
-#### Gateway
-
-- A fresh install starts with KPMR's model data as of 4 November 2026, 22:33 UTC ([#657](https://github.com/logicplanes/kaeso/pull/657))
-
-### Fixed
-
-- The Security page lists an organization's agents with access in a section of its own ([#655](https://github.com/logicplanes/kaeso/pull/655))
-- An alias whose route names a removed model can be renamed, and its 404 says no model is left for the request ([#658](https://github.com/logicplanes/kaeso/pull/658))
-
-## [0.6.0-rc.1] - 2026-11-04
-
-- **Breaking:** Projects in an organization are all alike: there is no default project, Kaeso opens on the organization's overview, and new members join only the projects their invitation names ([#647](https://github.com/logicplanes/kaeso/pull/647))
-
-### Added
-
-- Aliases route requests: fallbacks, conditions and weighted splits by request, caller or header, with a trace of a request's path and a kaeso-route header naming every step it tried ([#649](https://github.com/logicplanes/kaeso/pull/649))
-- Aliases are built in a full-page route editor with templates, versions and a Test tab that sends a request through the draft and colors each step by its answer ([#650](https://github.com/logicplanes/kaeso/pull/650))
-
-#### UI library
-
-- FlowCanvas and FlowWorkspace draw and edit routes as trees, with fallback chains, traced paths, badges and the answer of each tried step ([#648](https://github.com/logicplanes/kaeso/pull/648))
-
-### Changed
-
-#### Gateway
-
-- A fresh install starts with KPMR's model data as of 4 November 2026, 13:22 UTC ([#652](https://github.com/logicplanes/kaeso/pull/652))
-
-### Removed
-
-- Projects in an organization are all alike: there is no default project, Kaeso opens on the organization's overview, and new members join only the projects their invitation names ([#647](https://github.com/logicplanes/kaeso/pull/647))
-
-### Fixed
+- FlowCanvas and FlowWorkspace draw and edit routes as trees, with fallback chains, traced paths, badges and the answer of each tried step. ([#648](https://github.com/logicplanes/kaeso/pull/648))
+- Custom providers that run vLLM, Ollama, LM Studio, llama.cpp, Text Generation Inference, NVIDIA NIM, Docker Model Runner, Xinference, SGLang, LMDeploy, LocalAI, MLX LM or Jan show that software's logo, and the server picker shows every name in full. ([#811](https://github.com/logicplanes/kaeso/pull/811), [#869](https://github.com/logicplanes/kaeso/pull/869))
 
 #### Documentation
 
-- The request flow page gives the right answers for limits: no Retry-After for a used-up budget, 403 for a spend budget that can't price a feature, and 529 in the Anthropic format when the gateway is busy ([#646](https://github.com/logicplanes/kaeso/pull/646))
+- A new APIs by provider page shows which model APIs reach each of the built-in providers, from chat and embeddings to images, speech, transcription, video, music and sound effects, and says why where one is refused. ([#840](https://github.com/logicplanes/kaeso/pull/840))
+- The MCP portal has its own concept page, guides for servers, tools and client sign-in and a portal API reference, in English, German and Chinese. ([#697](https://github.com/logicplanes/kaeso/pull/697))
+- `pnpm bootstrap` takes a fresh clone to a seeded development stack in one command and says how to fix what's missing, and the seed reads like a real organization's history. ([#720](https://github.com/logicplanes/kaeso/pull/720), [#768](https://github.com/logicplanes/kaeso/pull/768))
+
+#### Self-hosting
+
+- Kaeso installs with one command from kaeso.app, which downloads the newest release, writes its settings and master key and starts it. The installer starts a stopped Docker, checks the domain's DNS record and certificate, opens the setup link in your browser and turns the updater on, so Update in the console works from the first start. ([#662](https://github.com/logicplanes/kaeso/pull/662), [#765](https://github.com/logicplanes/kaeso/pull/765), [#767](https://github.com/logicplanes/kaeso/pull/767))
+- The updater installs releases that change `compose.yaml` and then replaces itself and Caddy, so Update and automatic updates install every release but a new major version or one that changes `docker-proxy`; for those, the console shows the one installer command with `--update` that does it. ([#769](https://github.com/logicplanes/kaeso/pull/769), [#780](https://github.com/logicplanes/kaeso/pull/780), [#793](https://github.com/logicplanes/kaeso/pull/793))
+- `GATEWAY_REPLICAS` runs several gateways behind Caddy in the Compose package, the updater replaces every replica, and a page says what gateways share. ([#727](https://github.com/logicplanes/kaeso/pull/727))
+- The gateway connects to Valkey over TLS, with `KAESO_VALKEY_CA` for a server whose authority is private. ([#740](https://github.com/logicplanes/kaeso/pull/740))
+- `KAESO_SETUP_EMAIL` emails a one-time setup link at every start until the first user exists, for installs without a shell; it needs SMTP and never writes the link to the logs. ([#723](https://github.com/logicplanes/kaeso/pull/723))
+- The console image carries `kaeso-edge`, a public edge for platforms that terminate TLS themselves and run the gateway and console as private services. ([#724](https://github.com/logicplanes/kaeso/pull/724))
+- Kaeso deploys from buttons in the README to Render, Railway, DigitalOcean, AWS, Google Cloud and Azure, and has templates and guides for Fly, Coolify, Dokploy and CapRover. Every template pins Kaeso's images to its release, the AWS templates are published with every release, the AWS quick server keeps its master key readable, and each guide says which paths were tested live. ([#725](https://github.com/logicplanes/kaeso/pull/725), [#741](https://github.com/logicplanes/kaeso/pull/741), [#751](https://github.com/logicplanes/kaeso/pull/751), [#752](https://github.com/logicplanes/kaeso/pull/752), [#754](https://github.com/logicplanes/kaeso/pull/754), [#814](https://github.com/logicplanes/kaeso/pull/814), [#819](https://github.com/logicplanes/kaeso/pull/819), [#885](https://github.com/logicplanes/kaeso/pull/885))
+
+### Changed
+
+- The Claude Code plugin adds only Kaeso's skill, which connects your install's MCP server when it isn't connected yet, so the plugin no longer asks for your install's address; the Cursor plugin keeps its MCP configuration in a folder of its own. ([#903](https://github.com/logicplanes/kaeso/pull/903))
+- Dependencies are updated, among them `resvg` 0.49.0 and `ed25519-dalek` 3.0.0, with minor and patch updates of the Rust crates, the console, the documentation and the UI packages, and newer ClickHouse, Valkey, socket-proxy and distroless base images. ([#701](https://github.com/logicplanes/kaeso/pull/701), [#702](https://github.com/logicplanes/kaeso/pull/702), [#705](https://github.com/logicplanes/kaeso/pull/705), [#706](https://github.com/logicplanes/kaeso/pull/706), [#707](https://github.com/logicplanes/kaeso/pull/707), [#708](https://github.com/logicplanes/kaeso/pull/708))
+
+#### Gateway
+
+- Alias routes hold a step after a lasting failure, such as a refused key, an empty balance or a rate limit, and skip it while a later step is ready when the step's `fall_back_on` includes the reason; every gateway of the install shares which steps are held. A route with a single step no longer asks Valkey, and skipped steps show in routes, logs, exports and metrics. ([#717](https://github.com/logicplanes/kaeso/pull/717), [#722](https://github.com/logicplanes/kaeso/pull/722), [#890](https://github.com/logicplanes/kaeso/pull/890))
+- Kaeso adapts what a model can't take instead of refusing the request: turning thinking off on a model that always reasons sends its lowest effort, an effort the model doesn't list becomes the nearest one it does, adaptive thinking becomes a thinking budget on Claude models without it, and a temperature a model can't take is left out, each named in `kaeso-adapted` or `kaeso-left-out`. ([#712](https://github.com/logicplanes/kaeso/pull/712), [#759](https://github.com/logicplanes/kaeso/pull/759))
+- When a provider answers 403, apps hear that the provider key may not make this request, for example for this model, plan or region, instead of that the key was refused. A model the provider retired answers not found in every format instead of a server error, and turns Unavailable in the catalogue when the provider no longer lists it. ([#828](https://github.com/logicplanes/kaeso/pull/828), [#847](https://github.com/logicplanes/kaeso/pull/847))
+- Request logs no longer keep the images, audio and files inside chat requests, replies and tool calls, and show each as its type and size instead; Keep media keeps them where an organization wants them. ([#882](https://github.com/logicplanes/kaeso/pull/882))
+- Requests no longer queue on shared locks for request-log flushes, usage rows or request ids, carry a 12 KB future instead of 33.5 KB, load a cold project's settings, models and limits at the same time while the body arrives, and never wait for the database for provider credentials, which refresh in the background. ([#770](https://github.com/logicplanes/kaeso/pull/770), [#771](https://github.com/logicplanes/kaeso/pull/771), [#772](https://github.com/logicplanes/kaeso/pull/772), [#775](https://github.com/logicplanes/kaeso/pull/775), [#891](https://github.com/logicplanes/kaeso/pull/891), [#892](https://github.com/logicplanes/kaeso/pull/892))
+- Media uploads are held once in memory, so a 25 MiB transcription upload raises the gateway's peak memory by twice its size instead of six times, and a chat request with a large inline image takes about 1.75 times its size instead of up to 7.8 times. ([#849](https://github.com/logicplanes/kaeso/pull/849), [#895](https://github.com/logicplanes/kaeso/pull/895))
+- A fresh install starts with a newer KPMR snapshot of more than 1,400 models, including Claude Fable 5.2, Liquid LFM 3, long-context price tiers and the image, speech, transcription and video models of the providers Kaeso calls. ([#652](https://github.com/logicplanes/kaeso/pull/652), [#657](https://github.com/logicplanes/kaeso/pull/657), [#674](https://github.com/logicplanes/kaeso/pull/674), [#709](https://github.com/logicplanes/kaeso/pull/709), [#737](https://github.com/logicplanes/kaeso/pull/737), [#748](https://github.com/logicplanes/kaeso/pull/748), [#755](https://github.com/logicplanes/kaeso/pull/755), [#800](https://github.com/logicplanes/kaeso/pull/800), [#825](https://github.com/logicplanes/kaeso/pull/825), [#858](https://github.com/logicplanes/kaeso/pull/858), [#900](https://github.com/logicplanes/kaeso/pull/900))
+
+#### KPP
+
+- Kaeso checks and decodes large agent requests much faster, about 35% and then another 26%, so a 200 KB Claude Code request takes under a millisecond, and checks them 25% faster before decoding. ([#777](https://github.com/logicplanes/kaeso/pull/777), [#778](https://github.com/logicplanes/kaeso/pull/778), [#779](https://github.com/logicplanes/kaeso/pull/779))
+- Kaeso decodes OpenAI Responses replies about 18% faster and encodes them about 12% faster, translates their streams about 6% faster per event, and adapts Codex requests with MCP tools about 30% faster and those with union schemas a little faster. ([#774](https://github.com/logicplanes/kaeso/pull/774), [#776](https://github.com/logicplanes/kaeso/pull/776), [#784](https://github.com/logicplanes/kaeso/pull/784), [#785](https://github.com/logicplanes/kaeso/pull/785), [#796](https://github.com/logicplanes/kaeso/pull/796))
+
+#### Console
+
+- The Playground is a calm chat, with a compact model picker, a modern composer, messages in bubbles and metrics that show only what is known, and it no longer draws a caret before the first token; it doesn't offer tools, which are called through the MCP portal. ([#760](https://github.com/logicplanes/kaeso/pull/760), [#864](https://github.com/logicplanes/kaeso/pull/864), [#893](https://github.com/logicplanes/kaeso/pull/893))
+- The request log shows Kaeso's overhead, request upload and stream processing under 1 ms in microseconds. ([#868](https://github.com/logicplanes/kaeso/pull/868))
+- Creating a key offers Inference, Platform and Tools as three checkboxes in one box and needs at least one API. ([#735](https://github.com/logicplanes/kaeso/pull/735), [#739](https://github.com/logicplanes/kaeso/pull/739))
+- The route canvas hangs a model's fallbacks under it, so a route fits beside the inspector, and the route editor's Audit log tab replaces Versions. ([#653](https://github.com/logicplanes/kaeso/pull/653), [#654](https://github.com/logicplanes/kaeso/pull/654))
+- The docs and console name KPMR as the source of Kaeso's model data. ([#881](https://github.com/logicplanes/kaeso/pull/881))
+
+#### UI library
+
+- Buttons press to 0.96, icons draw a 1.5px stroke and cross-fade when they change, and pictures get a translucent edge in their own shape. ([#660](https://github.com/logicplanes/kaeso/pull/660))
+- Many UI library components take variants: Tabs, RadioGroup, Section, Skeleton and Kbd replace PillTabs, RadioCards, SettingsSection, SkeletonLine and KbdSequence; Stat, StatGroup, CopyButton and Avatar replace StatTile, StatGrid, MetricRow, ClipboardText, InlineCopyText, AgentAvatar, AgentAttribution and AvatarGroup; Button takes `pressed`, Meter a gauge shape and ParameterPanel a trigger; an icon-only button is a Button with an icon that shows its name as a tooltip; and search, password and secret fields are types of Input. Aliases are gone, internal parts are no longer public, and StatusDot is now Status. ([#664](https://github.com/logicplanes/kaeso/pull/664), [#665](https://github.com/logicplanes/kaeso/pull/665), [#666](https://github.com/logicplanes/kaeso/pull/666), [#667](https://github.com/logicplanes/kaeso/pull/667), [#668](https://github.com/logicplanes/kaeso/pull/668), [#669](https://github.com/logicplanes/kaeso/pull/669))
+- Code blocks highlight 41 languages, loaded as they are needed, with a syntax palette that reads well in light and dark. ([#773](https://github.com/logicplanes/kaeso/pull/773))
+
+#### Documentation
+
+- The README shows how to install Kaeso in one command and send a first request, how it compares with LiteLLM, Bifrost and Portkey, the console's pages in a theme-aware grid, the live demo, the OpenSSF Best Practices badge and one set of deploy buttons with the platforms' logos. ([#673](https://github.com/logicplanes/kaeso/pull/673), [#679](https://github.com/logicplanes/kaeso/pull/679), [#730](https://github.com/logicplanes/kaeso/pull/730), [#734](https://github.com/logicplanes/kaeso/pull/734), [#749](https://github.com/logicplanes/kaeso/pull/749), [#757](https://github.com/logicplanes/kaeso/pull/757), [#797](https://github.com/logicplanes/kaeso/pull/797))
+- The scaling page shows what one, two and three gateways serve for streamed and non-streamed requests, and the benchmark reports CPU time per request, the latency Kaeso adds and an agent session's streams through an alias. ([#744](https://github.com/logicplanes/kaeso/pull/744), [#766](https://github.com/logicplanes/kaeso/pull/766), [#792](https://github.com/logicplanes/kaeso/pull/792), [#889](https://github.com/logicplanes/kaeso/pull/889))
+- The docs describe the Gemini and ElevenLabs paths behind your own proxy, the one-time installer step for older installs and the Platform API's newer routes, and the Images API page reads in shorter paragraphs. ([#805](https://github.com/logicplanes/kaeso/pull/805), [#834](https://github.com/logicplanes/kaeso/pull/834))
+- GitHub release notes lead with two or three highlights, and a small release goes out every week. ([#671](https://github.com/logicplanes/kaeso/pull/671))
+- The development pages describe a faster CI, which runs the gateway tests in four shards and each app's own suite only when it changed, and ask contributors to keep details of their own installs and provider accounts out of pull requests, issues and commits. ([#824](https://github.com/logicplanes/kaeso/pull/824), [#827](https://github.com/logicplanes/kaeso/pull/827), [#831](https://github.com/logicplanes/kaeso/pull/831), [#836](https://github.com/logicplanes/kaeso/pull/836), [#862](https://github.com/logicplanes/kaeso/pull/862))
+
+#### Self-hosting
+
+- The Compose package gives the gateway time to drain on stop and room for connections, keeps steady connections from Caddy and sizes PostgreSQL from its container's memory. ([#714](https://github.com/logicplanes/kaeso/pull/714))
+
+### Removed
+
+#### Gateway
+
+- Kaeso no longer reads the `models_dev` settings; a `[models_dev]` section stops the gateway until it is renamed to `[kpmr]`, and the old environment variables are reported as unknown. ([#710](https://github.com/logicplanes/kaeso/pull/710))
+
+#### Console
+
+- Projects in an organization are all alike: there is no default project, Kaeso opens on the organization's overview, and new members join only the projects their invitation names. ([#647](https://github.com/logicplanes/kaeso/pull/647))
+
+#### UI library
+
+- The UI library drops the components that only wrapped another one: Menubar, Accordion, HoverCard, ProviderCard, EnvironmentSnippet, Grid, Stack, Inline, ThemeSelect, the page blocks and ResourceList. ([#672](https://github.com/logicplanes/kaeso/pull/672))
+
+### Fixed
+
+#### Gateway
+
+- Claude Code sessions that connect an MCP server mid-session reach models in other formats, because Kaeso applies its inline tool changes to their tool list, and DeepSeek gets tool patterns it can compile. ([#753](https://github.com/logicplanes/kaeso/pull/753))
+- Requests that Kaeso or the provider refused cost nothing, free models are logged at a known cost of $0, and transcripts and the ElevenLabs voice changer are billed by the length their file states when the provider reports none. ([#848](https://github.com/logicplanes/kaeso/pull/848), [#852](https://github.com/logicplanes/kaeso/pull/852), [#854](https://github.com/logicplanes/kaeso/pull/854))
+- Speech that fails before its first byte answers with an error in the app's format instead of an empty 200, and audio that breaks off ends in an error. ([#851](https://github.com/logicplanes/kaeso/pull/851))
+- An image, speech or transcription model whose project's OpenAI key is a ChatGPT account says it needs an API key, in the Playground and on `/v1`. ([#894](https://github.com/logicplanes/kaeso/pull/894))
+- The request log counts every keepalive a stream wrote, also while Kaeso holds back a tool call or leaves events out. ([#888](https://github.com/logicplanes/kaeso/pull/888))
+- Tool calls from newest-version clients reach older MCP servers without the newest version's `_meta` claims, and an MCP client known by its metadata document signs in again after registration churn trimmed its registration. ([#736](https://github.com/logicplanes/kaeso/pull/736), [#743](https://github.com/logicplanes/kaeso/pull/743))
+- The response cache and every other Valkey user reconnect on their own after Valkey refused the gateway's password for a while, and a response cache clear keeps the replies stored since the clear. ([#711](https://github.com/logicplanes/kaeso/pull/711), [#732](https://github.com/logicplanes/kaeso/pull/732))
+- An alias whose route names a removed model can be renamed, and its 404 says no model is left for the request. ([#658](https://github.com/logicplanes/kaeso/pull/658))
+
+#### KPP
+
+- An MP3 whose ID3v1 tag reaches back over its first frame no longer crashes the audio length reader. ([#876](https://github.com/logicplanes/kaeso/pull/876))
+
+#### Console
+
+- The console patches the router's code-split wrapper, so a route replayed after its module arrived works as React 19 expects. ([#731](https://github.com/logicplanes/kaeso/pull/731))
+- The Security page lists an organization's agents with access in a section of its own, and the Projects page shows its Active, Archived and All tabs beside the title like every other page. ([#655](https://github.com/logicplanes/kaeso/pull/655), [#758](https://github.com/logicplanes/kaeso/pull/758))
+- On a phone, the update button on Instance › Updates moves under See what's new instead of past the screen's edge. ([#676](https://github.com/logicplanes/kaeso/pull/676))
+- A request's reply tab lines up its stop tag with the first line of a wrapped note, every right in an access view lines up with its heading, and the copy and retry buttons under a Playground reply line up with its text. ([#865](https://github.com/logicplanes/kaeso/pull/865), [#866](https://github.com/logicplanes/kaeso/pull/866), [#867](https://github.com/logicplanes/kaeso/pull/867))
+
+#### UI library
+
+- The route editor stays usable on short screens and phones, a Segmented wider than its row scrolls, links in a paragraph no longer overlap each other's touch areas, a small select gets a full hit area, and a system theme change no longer replays transitions. ([#659](https://github.com/logicplanes/kaeso/pull/659), [#661](https://github.com/logicplanes/kaeso/pull/661))
+- An empty table whose columns don't fit no longer scrolls sideways, and table column headers stay flush under the page header while you scroll. ([#713](https://github.com/logicplanes/kaeso/pull/713), [#902](https://github.com/logicplanes/kaeso/pull/902))
+- Diagrams in the docs no longer have a thin box drawn around them inside their card. ([#830](https://github.com/logicplanes/kaeso/pull/830))
+
+#### Documentation
+
+- The request flow page gives the right answers for limits: no Retry-After for a used-up budget, 403 for a spend budget that can't price a feature, and 529 in the Anthropic format when the gateway is busy. ([#646](https://github.com/logicplanes/kaeso/pull/646))
+
+#### Self-hosting
+
+- The installer refuses to take over an existing install, moves a local install off taken ports, checks the typed domain and installs Docker on Linux when asked, and picks a free network range when it runs again on an install that never started. ([#677](https://github.com/logicplanes/kaeso/pull/677), [#680](https://github.com/logicplanes/kaeso/pull/680))
+
+### Security
+
+- Kaeso fetches an MCP client's metadata document only from a public address, whatever networks MCP servers may reach. ([#826](https://github.com/logicplanes/kaeso/pull/826))
+- Voice and video ids can no longer steer provider calls, links on a host other than the provider's own are fetched from public addresses only, video and voice lookups count against rates, and `/v2` reaches the gateway. ([#829](https://github.com/logicplanes/kaeso/pull/829))
+- The Render template keeps the client's address behind Render by reading the header Cloudflare sets instead of a forwarded one the caller can extend. ([#747](https://github.com/logicplanes/kaeso/pull/747))
 
 ## [0.5.6] - 2026-11-02
 
@@ -1449,14 +1403,7 @@ The first release of Kaeso, the open-source AI gateway you run yourself: the gat
 
 - A Release workflow that runs only from `prod`: it prepares the version changes and the changelog without write access to the repository, lets only jobs that run nothing but git push the release commit and the tag, syncs the release commit back to `dev`, and pins every action by commit SHA.
 
-[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.6.0-rc.8...HEAD
-[0.6.0-rc.8]: https://github.com/logicplanes/kaeso/releases/tag/v0.6.0-rc.8
-[0.6.0-rc.7]: https://github.com/logicplanes/kaeso/releases/tag/v0.6.0-rc.7
-[0.6.0-rc.6]: https://github.com/logicplanes/kaeso/releases/tag/v0.6.0-rc.6
-[0.6.0-rc.4]: https://github.com/logicplanes/kaeso/releases/tag/v0.6.0-rc.4
-[0.6.0-rc.3]: https://github.com/logicplanes/kaeso/releases/tag/v0.6.0-rc.3
-[0.6.0-rc.2]: https://github.com/logicplanes/kaeso/releases/tag/v0.6.0-rc.2
-[0.6.0-rc.1]: https://github.com/logicplanes/kaeso/releases/tag/v0.6.0-rc.1
+[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.5.6...HEAD
 [0.5.6]: https://github.com/logicplanes/kaeso/releases/tag/v0.5.6
 [0.5.5]: https://github.com/logicplanes/kaeso/releases/tag/v0.5.5
 [0.5.4]: https://github.com/logicplanes/kaeso/releases/tag/v0.5.4

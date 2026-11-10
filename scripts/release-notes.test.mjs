@@ -420,6 +420,16 @@ test("a stable release after pre-releases hands their notes to the model, which 
   assert.deepEqual(check(output, facts), []);
 });
 
+test("curated lines that link pull requests merged before the last pre-release make the model list those too", () => {
+  const text = changelog(`### Added\n\n- Batch results, with their own page. ([#9](${repo}/pull/9), [#12](${repo}/pull/12))`);
+  const facts = factsOf(collected, text, "1.1.0");
+  assert.deepEqual(facts.must_list, [9, 11, 12, 14]);
+  assert.match(check(valid(), facts).join(";"), /#9 appears 0 times/);
+  const output = valid();
+  output.sections[1].topics[0].entries.push({ text: "Batch results are kept.", prs: [9] });
+  assert.deepEqual(check(output, facts), []);
+});
+
 test("written notes become the version's section, replace the pre-releases, and are formatted as Prettier formats them", async () => {
   const { lines } = await run(answer(valid()));
   const text = changelog().replace("## [1.0.0]", "## [1.1.0-rc.1] - 2026-09-20\n\n### Added\n\n- Batch results.\n\n## [1.0.0]");
