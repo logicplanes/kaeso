@@ -6049,7 +6049,7 @@
         "tags": [
           "me"
         ],
-        "summary": "Sets or changes the password. Ends every session of the user; the\ncaller gets a new session (new cookie). Without a current password (a\nuser who signs in by sign-in link or SSO), a recent sign-in is needed.\nWith `revoke_agents`, the user's agents are revoked too.",
+        "summary": "Sets or changes the password. Ends every session of the user; the\ncaller gets a new session (new cookie). Without a current password (a\nuser who signs in by sign-in link or SSO), a recent sign-in is needed.\nWith `revoke_agents`, the user's agents and portal connections are revoked too.",
         "description": "**Access:** a signed-in console session; one from the SSO of an org that doesn't manage the account gets `other_sign_in_required`.",
         "operationId": "postMePassword",
         "requestBody": {

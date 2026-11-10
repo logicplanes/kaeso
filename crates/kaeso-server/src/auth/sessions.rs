@@ -169,10 +169,26 @@ pub async fn revoke_all(
     keep: Option<SessionId>,
 ) -> Result<usize, StoreError> {
     let mut tx = state.pg.begin().await?;
-    let hashes = revoke_all_in(&mut tx, user, keep, state.clock.now()).await?;
+    let ended = revoke_all_in(&mut tx, user, keep, state.clock.now()).await?;
     tx.commit().await?;
-    forget(state, &hashes).await;
-    Ok(hashes.len())
+    ended.forget(state).await;
+    Ok(ended.sessions.len())
+}
+
+/// What ending a user's sessions ended, to drop from the caches once the transaction committed.
+#[derive(Debug, Default)]
+pub struct Ended {
+    pub sessions: Vec<Vec<u8>>,
+    pub portal_grants: Vec<uuid::Uuid>,
+}
+
+impl Ended {
+    pub async fn forget(&self, state: &AppState) {
+        forget(state, &self.sessions).await;
+        for grant in &self.portal_grants {
+            crate::portal::auth::forget_grant(state, *grant).await;
+        }
+    }
 }
 
 pub async fn revoke_all_in(
@@ -180,16 +196,21 @@ pub async fn revoke_all_in(
     user: UserId,
     keep: Option<SessionId>,
     now: OffsetDateTime,
-) -> Result<Vec<Vec<u8>>, StoreError> {
-    let hashes = sessions::revoke_all(&mut *tx, user.uuid(), keep.map(|k| k.uuid()), now).await?;
+) -> Result<Ended, StoreError> {
+    let sessions = sessions::revoke_all(&mut *tx, user.uuid(), keep.map(|k| k.uuid()), now).await?;
     for kind in [TokenKind::EmailChange, TokenKind::EmailChangeCancel] {
         tokens::retire_all(&mut *tx, kind, Some(user.uuid()), now).await?;
     }
+    let mut portal_grants = Vec::new();
     if keep.is_none() {
         kaeso_store::pg::agents::revoke_of_user(&mut *tx, user.uuid(), now).await?;
-        kaeso_store::pg::portal_grants::revoke_of_user(&mut *tx, user.uuid(), now).await?;
+        portal_grants =
+            kaeso_store::pg::portal_grants::revoke_of_user(&mut *tx, user.uuid(), now).await?;
     }
-    Ok(hashes)
+    Ok(Ended {
+        sessions,
+        portal_grants,
+    })
 }
 
 pub async fn refresh_user(state: &AppState, user: UserId) -> Result<(), StoreError> {

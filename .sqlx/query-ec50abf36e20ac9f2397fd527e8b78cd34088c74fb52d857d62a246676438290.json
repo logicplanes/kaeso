@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT g.id AS grant_id, g.user_id, g.org_id, g.project_id, g.client_id, c.name AS client_name, t.resource, t.expires_at AS token_expires_at, u.state AS user_state FROM portal_tokens t JOIN portal_grants g ON g.id = t.grant_id JOIN agent_clients c ON c.id = g.client_id JOIN users u ON u.id = g.user_id WHERE t.token_hash = $1 AND t.kind = 'access' AND t.revoked_at IS NULL AND g.revoked_at IS NULL AND (t.expires_at IS NULL OR t.expires_at > $2)",
+  "query": "SELECT g.id AS grant_id, g.user_id, g.org_id, g.project_id, g.client_id, c.name AS client_name, t.resource, t.expires_at AS token_expires_at, u.state AS user_state, g.sign_in_method, g.second_factor, g.oidc_org_id, g.created_at FROM portal_tokens t JOIN portal_grants g ON g.id = t.grant_id JOIN agent_clients c ON c.id = g.client_id JOIN users u ON u.id = g.user_id WHERE t.token_hash = $1 AND t.kind = 'access' AND t.revoked_at IS NULL AND g.revoked_at IS NULL AND (t.expires_at IS NULL OR t.expires_at > $2)",
   "describe": {
     "columns": [
       {
@@ -101,6 +101,50 @@
             "name": "state"
           }
         }
+      },
+      {
+        "ordinal": 9,
+        "name": "sign_in_method",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "portal_grants",
+            "name": "sign_in_method"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "second_factor",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "portal_grants",
+            "name": "second_factor"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "oidc_org_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "portal_grants",
+            "name": "oidc_org_id"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "created_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "portal_grants",
+            "name": "created_at"
+          }
+        }
       }
     ],
     "parameters": {
@@ -118,8 +162,12 @@
       false,
       false,
       true,
+      false,
+      false,
+      false,
+      true,
       false
     ]
   },
-  "hash": "36d091e75fda685441db11f46363e3560573514be1a507ea4413b58d7d784ced"
+  "hash": "ec50abf36e20ac9f2397fd527e8b78cd34088c74fb52d857d62a246676438290"
 }

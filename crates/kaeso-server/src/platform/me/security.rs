@@ -154,7 +154,7 @@ pub struct PasswordChange {
     summary = "Sets or changes the password. Ends every session of the user; the\n\
     caller gets a new session (new cookie). Without a current password (a\n\
     user who signs in by sign-in link or SSO), a recent sign-in is needed.\n\
-    With `revoke_agents`, the user's agents are revoked too.",
+    With `revoke_agents`, the user's agents and portal connections are revoked too.",
     tag = "me",
     request_body = PasswordChange,
     responses((status = 200, description = "Changed; a new session cookie is set.", body = crate::platform::auth::SignedIn))
@@ -205,12 +205,21 @@ pub async fn change_password(
     let mut audit = ctx
         .audit(None, Action::UserPasswordChange)
         .target("user", user_id);
+    let mut portal_grants = Vec::new();
     if req.revoke_agents {
         let revoked = agents::revoke_of_user(&mut *tx, user.id, ctx.now).await?;
-        audit = audit.after(serde_json::json!({ "agents_revoked": revoked }));
+        portal_grants =
+            kaeso_store::pg::portal_grants::revoke_of_user(&mut *tx, user.id, ctx.now).await?;
+        audit = audit.after(serde_json::json!({
+            "agents_revoked": revoked,
+            "portal_grants_revoked": portal_grants.len(),
+        }));
     }
     audit.write(&mut tx).await?;
     tx.commit().await?;
+    for grant in portal_grants {
+        crate::portal::auth::forget_grant(&state, grant).await;
+    }
     if let Some(email) = &user.email {
         let lang =
             crate::services::mail_lang::of_user(&state.pg, user.id, ctx.accept_language.as_deref())
