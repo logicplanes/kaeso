@@ -467,5 +467,10 @@
   "org.twoFactor.requireHint": "Verlangt einen Code bei der Anmeldung; SSO zählt als einer.",
   "org.twoFactor.requiredOff": "Zwei-Faktor-Authentifizierung ist nicht mehr Pflicht",
   "org.twoFactor.requiredOn": "Zwei-Faktor-Authentifizierung ist jetzt Pflicht",
-  "org.wholeDays": "Ganze Tage eingeben, mindestens 1"
+  "org.wholeDays": "Ganze Tage eingeben, mindestens 1",
+  "org.logging.mediaOn": "Medien werden ab jetzt aufbewahrt",
+  "org.logging.mediaOff": "Medien werden nicht mehr aufbewahrt",
+  "org.logging.keepMedia": "Medien aufbewahren",
+  "org.logging.keepMediaHint": "Bewahrt Bilder, Audio und Dateien auf, bis {size} je Anfrage.",
+  "org.logging.keepMediaNeedsContent": "Schalten Sie zuerst die Inhaltsprotokollierung ein"
 }

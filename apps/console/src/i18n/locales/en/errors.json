@@ -481,6 +481,7 @@
   "errors.orgContentLoggingOff": "The org has content logging off; a project cannot switch it on.",
   "errors.orgCreationDomainNotAllowed": "Your email address can't create organizations here; ask an instance admin.",
   "errors.orgCreationInstanceAdminsOnly": "Only instance admins can create organizations on this install.",
+  "errors.orgKeepMediaOff": "The org doesn't keep media; a project cannot switch it on.",
   "errors.orgMaxDays": "The organization allows at most {max} days.",
   "errors.orgNotScheduled": "The organization is not scheduled for deletion.",
   "errors.orgPastRestore": "The organization is being deleted for good and can no longer be restored.",

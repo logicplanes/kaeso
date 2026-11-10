@@ -290,6 +290,51 @@ describe("content logging", () => {
   });
 });
 
+describe("kept media", () => {
+  it("turns keeping media on and off", async () => {
+    setUp();
+    let current = logSettings();
+    on("GET", LOG_SETTINGS, () => current);
+    on(
+      "PATCH",
+      LOG_SETTINGS,
+      ({ body }: { body: { keep_media: boolean } }) => (current = logSettings({ keep_media: body.keep_media, effective_keep_media: body.keep_media })),
+    );
+    const { user } = await renderApp(projectPath("settings"));
+
+    const toggle = await screen.findByRole("switch", { name: "Keep media" });
+    expect(await screen.findByText("Media is logged as its type and size only.")).toBeInTheDocument();
+    expect(toggle).not.toBeChecked();
+    await user.click(toggle);
+    expect(await notifications().findByText("Media is kept from now on")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole("switch", { name: "Keep media" })).toBeChecked());
+    await user.click(screen.getByRole("switch", { name: "Keep media" }));
+    expect(await notifications().findByText("Media is no longer kept")).toBeInTheDocument();
+    expect(requests("PATCH", LOG_SETTINGS).map((r) => r.body)).toEqual([{ keep_media: true }, { keep_media: false }]);
+  });
+
+  it("says that media is kept with the bodies", async () => {
+    setUp({ settings: logSettings({ keep_media: true, effective_keep_media: true }) });
+    await renderApp(projectPath("settings"));
+    expect(await screen.findByText("Images, audio and files are kept with the bodies.")).toBeInTheDocument();
+    expect(screen.getByRole("switch", { name: "Keep media" })).toBeChecked();
+  });
+
+  it("can't be turned on where the organization keeps none", async () => {
+    setUp({ settings: logSettings({ keep_media: true, effective_keep_media: false }) });
+    await renderApp(projectPath("settings"));
+    expect(await screen.findByText("Off for the organization; it can't be turned on here.")).toBeInTheDocument();
+    expect(screen.getByRole("switch", { name: "Keep media" })).toHaveAttribute("aria-disabled", "true");
+  });
+
+  it("waits for content logging", async () => {
+    setUp({ settings: logSettings({ content_logging: false, effective_content_logging: false, keep_media: true }) });
+    await renderApp(projectPath("settings"));
+    expect(await screen.findByText("Media is kept only where request content is logged.")).toBeInTheDocument();
+    expect(screen.getByRole("switch", { name: "Keep media" })).toHaveAttribute("aria-disabled", "true");
+  });
+});
+
 describe("archiving the project", () => {
   it("archives the project once its name is typed", async () => {
     setUp();

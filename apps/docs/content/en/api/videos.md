@@ -124,7 +124,7 @@ The [OpenAI Videos mapping](../development/kpp/openai-videos.md) and the provide
 
 Starting a video costs nothing. Kaeso bills it once, when the first request sees it completed, at the model's prices from KPMR: per second or per video, by resolution, sound and length where the prices differ. Gemini Omni is billed by its tokens. A failed video costs nothing, and a model without prices in KPMR is logged without a cost. Kaeso keeps Together AI's `outputs.cost` with the job but doesn't bill it: Together's reference gives it as a whole number without a unit.
 
-Spend budgets check a video's dearest case before it starts, and its cost counts once it ends. Request logs show the start as `videos` or `videos/remix` and the finished video as `videos/completed`, with its clips, seconds and resolution. They never keep video or image bytes ([request logs](../console/request-logs.md)).
+Spend budgets check a video's dearest case before it starts, and its cost counts once it ends. Request logs show the start as `videos` or `videos/remix` and the finished video as `videos/completed`, with its clips, seconds and resolution. They never keep the video. An uploaded image is logged as its media type and size unless the organization and the project [keep media](../console/request-logs.md#media-in-requests-and-replies).
 
 ## Next steps
 

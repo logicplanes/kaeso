@@ -309,6 +309,7 @@ const messages = (): Rule[] => [
   rule("errors.logsOff", () => t("errors.logsOff", "Request logs are off on this install.")),
   rule("errors.daysRangeInstall", (v) => t("errors.daysRangeInstall", "Must be 1 to {max} days on this install.", v)),
   rule("errors.orgContentLoggingOff", () => t("errors.orgContentLoggingOff", "The org has content logging off; a project cannot switch it on.")),
+  rule("errors.orgKeepMediaOff", () => t("errors.orgKeepMediaOff", "The org doesn't keep media; a project cannot switch it on.")),
   rule("errors.orgResponseCacheOff", () => t("errors.orgResponseCacheOff", "The organization has the response cache off; a project cannot turn it on.")),
   rule("errors.responseCacheOffOnInstall", () => t("errors.responseCacheOffOnInstall", "The response cache is off on this install.")),
   rule("errors.projectArchivedResponseCache", () => t("errors.projectArchivedResponseCache", "The project is archived; its response cache cannot change.")),

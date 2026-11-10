@@ -97,7 +97,7 @@ console.log(transcript.text);
 
 - **费用。** 语音按字符计费（`tts-1`、Groq、Together AI、Mistral、MiniMax、ElevenLabs、QwenCloud），或按 Token 以模型的音频输出价格计费（`gpt-4o-mini-tts`、Gemini）。转写稿按音频的分钟或小时计费（Whisper、Scribe、Voxtral，Groq 最少按 10 秒计费）或按秒计费（QwenCloud），或按 Token 以音频输入价格计费。价格来自 KPMR 的按单位价格和音频 Token 价格；MiniMax、ElevenLabs 和 QwenCloud 会报告其计费的字符数，Kaeso 采用这些数字。
 - **音频时长**是转写和变声器的计费依据，按以下顺序取得：先用服务商报告的时长（OpenAI 的 `usage.seconds` 和 `duration`、Mistral 的 `prompt_audio_seconds`、ElevenLabs 的 `audio_duration_secs`、QwenCloud 的 `usage.duration`、详细转写的 `duration`）；没有时，用文件头中写明的时长，Kaeso 读取它而不解码音频（WAV、FLAC、MP3、Ogg Opus 和 Vorbis、MP4 和 M4A、WebM 和 Matroska）；仍没有时，费用为**未知**。`text`、`srt` 和 `vtt` 等格式不带用量，ElevenLabs 也不报告变声器的时长，因此它们的费用来自文件。请求日志会把这类费用标为由 Kaeso 测得（`cost_basis: measured`）。文件从不会因为读不出时长而被拒绝；原始 PCM 和浏览器录制、未写明时长的文件，时长保持未知。
-- **日志。** [请求日志](../console/request-logs.md)显示端点、语音的字符数或所转写音频的时长，以及格式。音频从不记录：上传内容只记录其字段，音频只记录媒体类型和大小。
+- **日志。** [请求日志](../console/request-logs.md)显示端点、语音的字符数或所转写音频的时长，以及格式。除非组织和项目都[保留媒体](../console/request-logs.md#请求和回复中的媒体)，否则上传内容只记录其字段，音频只记录媒体类型和大小。开启内容日志后，转写的文本和语音回复属于记录的内容。
 
 ## 后续步骤
 

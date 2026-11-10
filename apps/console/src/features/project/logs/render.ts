@@ -1,5 +1,6 @@
 import type { ContentBlock, ConversationMessage } from "@logicplanes/kaeso-ui";
-import { leftOutOf, type LeftOut } from "./left-out";
+import type { LeftOut } from "./left-out";
+import { mediaOf, type Kept } from "./logged-media";
 import { formatNumber } from "@logicplanes/kaeso-ui/format";
 import { t } from "~/i18n";
 
@@ -12,7 +13,8 @@ const arr = (v: Json): Json[] => (Array.isArray(v) ? v : []);
 type Plain = Exclude<ContentBlock, { type: "tool_result" }>;
 export type LogBlock =
   | Plain
-  | { type: "left_out"; media: LeftOut; name?: string | undefined }
+  | { type: "left_out"; media: LeftOut; name?: string | undefined; transcript?: string | undefined }
+  | { type: "kept"; media: Kept; name?: string | undefined; transcript?: string | undefined }
   | { type: "tool_result"; tool_call_id?: string | undefined; content: string | LogBlock[]; is_error?: boolean | undefined };
 
 export interface LogMessage {
@@ -20,9 +22,11 @@ export interface LogMessage {
   content: string | LogBlock[];
 }
 
-const leftOutBlock = (v: Json, name?: string): LogBlock | null => {
-  const media = leftOutOf(v);
-  return media ? { type: "left_out", media, ...(name ? { name } : {}) } : null;
+const mediaBlock = (v: Json, declared: string | undefined, name?: string, transcript?: string): LogBlock | null => {
+  const media = mediaOf(v, declared);
+  if (!media) return null;
+  const said = { ...(name ? { name } : {}), ...(transcript ? { transcript } : {}) };
+  return "kept" in media ? { type: "kept", media: media.kept, ...said } : { type: "left_out", media: media.leftOut, ...said };
 };
 
 const MEDIA_BLOCKS = new Set<Json>(["image", "document", "audio", "video"]);
@@ -147,7 +151,8 @@ function anthropicBlocks(content: Json): LogBlock[] {
   if (typeof content === "string") return [{ type: "text", text: content }];
   return arr(content).map((b): LogBlock => {
     if (!isObj(b)) return fail();
-    const left = MEDIA_BLOCKS.has(b.type) && isObj(b.source) ? leftOutBlock(b.source.data, str(b.title)) : null;
+    const left =
+      MEDIA_BLOCKS.has(b.type) && isObj(b.source) && b.source.type !== "text" ? mediaBlock(b.source.data, str(b.source.media_type) ?? "", str(b.title)) : null;
     if (left) return left;
     switch (b.type) {
       case "text":
@@ -209,26 +214,26 @@ function chatParts(content: Json): LogBlock[] {
       case "text":
         return { type: "text", text: str(p.text) ?? fail() };
       case "image_url": {
-        const left = isObj(p.image_url) ? leftOutBlock(p.image_url.url) : null;
+        const left = isObj(p.image_url) ? mediaBlock(p.image_url.url, undefined) : null;
         if (left) return left;
         const url = isObj(p.image_url) ? str(p.image_url.url) : undefined;
         return { type: "image", ...(url ? { src: url } : {}) };
       }
       case "file": {
         const name = isObj(p.file) ? str(p.file.filename) : undefined;
-        const left = isObj(p.file) ? leftOutBlock(p.file.file_data, name) : null;
+        const left = isObj(p.file) ? mediaBlock(p.file.file_data, "", name) : null;
         if (left) return left;
         return { type: "document", ...(name ? { name } : {}) };
       }
       case "input_audio": {
-        const left = isObj(p.input_audio) ? leftOutBlock(p.input_audio.data) : null;
-        if (left) return left;
         const format = isObj(p.input_audio) ? str(p.input_audio.format) : undefined;
+        const left = isObj(p.input_audio) ? mediaBlock(p.input_audio.data, (format && CHAT_AUDIO[format]) ?? "") : null;
+        if (left) return left;
         const media = format ? (CHAT_AUDIO[format] ?? format) : undefined;
         return { type: "audio", ...(media ? { media_type: media } : {}) };
       }
       case "video_url": {
-        const left = isObj(p.video_url) ? leftOutBlock(p.video_url.url) : null;
+        const left = isObj(p.video_url) ? mediaBlock(p.video_url.url, undefined) : null;
         if (left) return left;
         const url = isObj(p.video_url) ? str(p.video_url.url) : undefined;
         return { type: "video", ...(url ? { src: url } : {}) };
@@ -290,9 +295,9 @@ function responsesParts(content: Json): LogBlock[] {
       case "output_text":
         return { type: "text", text: str(p.text) ?? fail() };
       case "input_image":
-        return leftOutBlock(p.image_url) ?? { type: "image", ...(str(p.image_url) ? { src: String(p.image_url) } : {}) };
+        return mediaBlock(p.image_url, undefined) ?? { type: "image", ...(str(p.image_url) ? { src: String(p.image_url) } : {}) };
       case "input_file":
-        return leftOutBlock(p.file_data, str(p.filename)) ?? { type: "document", ...(str(p.filename) ? { name: String(p.filename) } : {}) };
+        return mediaBlock(p.file_data, "", str(p.filename)) ?? { type: "document", ...(str(p.filename) ? { name: String(p.filename) } : {}) };
       case "refusal":
         return { type: "refusal", text: str(p.refusal) ?? "" };
       default:
@@ -363,7 +368,7 @@ function geminiParts(parts: Json): LogBlock[] {
         },
       ];
     if (isObj(p.inlineData)) {
-      const left = leftOutBlock(p.inlineData.data);
+      const left = mediaBlock(p.inlineData.data, str(p.inlineData.mimeType) ?? "");
       if (left) return [left];
       const media = str(p.inlineData.mimeType);
       if (media?.startsWith("image/") && str(p.inlineData.data))
@@ -502,7 +507,10 @@ function kppBlock(b: Json, unknown: Json[]): LogBlock | null {
   if (!isObj(b)) return fail();
   const [tag, v] = Object.entries(b)[0] ?? fail();
   const x = isObj(v) ? v : {};
-  const left = MEDIA_BLOCKS.has(tag) && isObj(x.source) && isObj(x.source.base64) ? leftOutBlock(x.source.base64.data, str(x.title)) : null;
+  const left =
+    MEDIA_BLOCKS.has(tag) && isObj(x.source) && isObj(x.source.base64)
+      ? mediaBlock(x.source.base64.data, str(x.source.base64.media_type) ?? "", str(x.title), str(x.transcript))
+      : null;
   if (left) return left;
   switch (tag) {
     case "text":
@@ -547,7 +555,11 @@ function kppBlock(b: Json, unknown: Json[]): LogBlock | null {
   }
 }
 
-export const isKnownReplyForm = (reply: Json): boolean => !isObj(reply) || !("format" in reply);
+// Format 2 is a reply that isn't a chat reply, under its kind: `{"format": 2, "image": {…}}`.
+const MEDIA_REPLY_FORMAT = 2;
+const MEDIA_REPLY_KINDS = ["image", "speech", "transcription"];
+export const isKnownReplyForm = (reply: Json): boolean =>
+  !isObj(reply) || !("format" in reply) || (reply.format === MEDIA_REPLY_FORMAT && MEDIA_REPLY_KINDS.some((kind) => isObj(reply[kind])));
 
 export function replyView(reply: Json): ReplyView | null {
   if (!isObj(reply) || !isKnownReplyForm(reply) || !Array.isArray(reply.blocks)) return null;

@@ -35,7 +35,7 @@ expression: rights_reference()
 | `platform_keys.view` | Keys | View platform keys | See the organization's platform keys (metadata). |  |  |  |
 | `platform_keys.create` ⚠ | Keys | Create platform keys | Create and rotate organization platform keys, which manage everything at org level. | `platform_keys.view` | ✓ |  |
 | `platform_keys.revoke` | Keys | Disable platform keys | Disable, enable or archive organization platform keys. | `platform_keys.view` |  |  |
-| `logs.settings.manage` ⚠ | Logs & data | Manage log settings | Set log retention and switch content logging on or off for the organization. |  | ✓ |  |
+| `logs.settings.manage` ⚠ | Logs & data | Manage log settings | Set log retention and switch content logging and kept media on or off for the organization. |  | ✓ |  |
 | `logs.storage.view` | Logs & data | View log storage | See how many log entries exist and how much space they take. |  |  |  |
 | `logs.delete` ⚠ | Logs & data | Delete logs | Delete the organization's logs for a time range. | `logs.storage.view` | ✓ |  |
 | `usage.org.view` | Usage & billing | View org usage | See usage across all projects. |  |  |  |
@@ -79,7 +79,7 @@ expression: rights_reference()
 | `logs.metadata.view` | Logs & data | View request logs | See request logs: model, tokens, cost, latency, status and key. |  |  |  |
 | `logs.content.view` ⚠ | Logs & data | View prompts and outputs | See request and response bodies in the logs. | `logs.metadata.view` |  |  |
 | `logs.export` ⚠ | Logs & data | Export logs | Export the project's request logs. | `logs.metadata.view` |  |  |
-| `logs.content.manage` ⚠ | Logs & data | Switch content logging | Switch content logging on or off for this project. |  |  |  |
+| `logs.content.manage` ⚠ | Logs & data | Switch content logging | Switch content logging and kept media on or off for this project. |  |  |  |
 | `usage.view` | Usage & costs | View usage | See the project's usage. |  |  |  |
 | `costs.view` | Usage & costs | View costs | See the project's costs. | `usage.view` |  |  |
 | `project.audit_log.view` | Audit | View project audit log | Read the audit log of changes in this project. |  |  |  |

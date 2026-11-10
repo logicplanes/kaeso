@@ -136,6 +136,7 @@ A project's **Settings** page holds these settings:
 | Project id | The id the Platform API uses |
 | Maximum key lifetime | **Use the organization's limit**, or a shorter maximum for new keys in this project |
 | Content logging | Whether request and reply bodies are kept with their log entries. It can't be on while the organization has it off |
+| Keep media | Whether logged content keeps its images, audio and files ([request logs](request-logs.md#media-in-requests-and-replies)). It can't be on while the organization keeps none |
 | Archive project | Archives the project with its keys and service accounts, for good. Its keys stop working at once |
 
 Kaeso archives projects and never deletes them, so their usage and logs stay. Any project can be archived.

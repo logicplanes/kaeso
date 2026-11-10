@@ -254,6 +254,9 @@ pub(crate) fn blank_outcome(request_id: RequestId) -> Outcome {
         stream_progress: None,
         usage_estimated: false,
         content_kept: false,
+        media_kept: false,
+        media_reply: None,
+        media_reply_logged: None,
         cache_breakpoints: None,
         response_cache: None,
         alias: None,
@@ -676,6 +679,23 @@ pub(crate) fn in_place<T>(bytes: usize, work: impl FnOnce() -> T) -> T {
     }
 }
 
+// An upload as the log keeps it. Kept media is written as base64, which for a large upload is
+// work for a blocking thread; the clone shares the upload's bytes.
+async fn logged_upload<R: Clone + Send + 'static>(
+    bytes: usize,
+    request: &R,
+    write: fn(&R, crate::services::log_media::Keep) -> Bytes,
+    keep_media: bool,
+) -> Option<Bytes> {
+    let keep = if keep_media {
+        crate::services::log_media::Keep::media()
+    } else {
+        crate::services::log_media::Keep::nothing()
+    };
+    let request = request.clone();
+    off_thread(bytes, move || write(&request, keep)).await.ok()
+}
+
 pub(crate) async fn off_thread<T, F>(bytes: usize, work: F) -> Result<T, KppError>
 where
     T: Send + 'static,
@@ -790,10 +810,12 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         };
         Failure::new(refused, Stage::Request)
     })?;
-    let keep_content = crate::services::logs::keeps_content(state, caller.project_id).await;
+    let kept = crate::services::logs::keeps(state, caller.project_id).await;
+    let (keep_content, keep_media) = (kept.content, kept.media);
     if keep_content {
         let o = rec.outcome();
         o.content_kept = true;
+        o.media_kept = keep_media;
         let uploads = transcription.is_some()
             || elevenlabs
                 .as_ref()
@@ -868,28 +890,38 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         super::videos::refuse_sora(r).map_err(at(Stage::Request))?;
     }
     match &req {
-        // Request logs keep no media: an upload is logged as its fields, each image as its size.
+        // An upload is logged as its fields; its media as type and size, unless media is kept.
         Request::Image(r) => {
             if keep_content {
-                rec.outcome().request_body = Some(super::media::logged_request(r));
+                rec.outcome().request_body =
+                    logged_upload(request_bytes, r, super::media::logged_request, keep_media).await;
             }
             rec.outcome().media = Some(super::media::units_of_request(r));
         }
         Request::Transcription(r) => {
             if keep_content {
-                rec.outcome().request_body = Some(super::media::logged_transcription(r));
+                rec.outcome().request_body = logged_upload(
+                    request_bytes,
+                    r,
+                    super::media::logged_transcription,
+                    keep_media,
+                )
+                .await;
             }
             rec.outcome().media = Some(super::media::units_of_transcription(r));
         }
         Request::Speech(r) => {
             if keep_content && r.audio.is_some() {
-                rec.outcome().request_body = Some(super::media::logged_speech(r));
+                rec.outcome().request_body =
+                    logged_upload(request_bytes, r, super::media::logged_speech, keep_media).await;
             }
             rec.outcome().media = Some(super::media::units_of_speech(r));
         }
         Request::Video(r) => {
             if keep_content {
-                rec.outcome().request_body = Some(super::videos::logged_request(r));
+                rec.outcome().request_body =
+                    logged_upload(request_bytes, r, super::videos::logged_request, keep_media)
+                        .await;
             }
             rec.outcome().media = Some(super::videos::units_of_request(r));
         }
@@ -2116,8 +2148,14 @@ async fn answer_with(
     // Speech is audio and a transcript may be plain text or events: the app's codec names the
     // media type of what it wrote.
     let media_type = rec.outcome().content_type.take();
-    if let Reply::Generate(r) = reply {
-        rec.outcome().reply = Some(r);
+    match reply {
+        Reply::Generate(r) => rec.outcome().reply = Some(r),
+        Reply::Image(_) | Reply::Speech(_) | Reply::Transcription(_)
+            if rec.outcome().content_kept =>
+        {
+            rec.outcome().media_reply = Some(reply);
+        }
+        _ => {}
     }
     // An image stream the provider answered whole is written as its finished events.
     let events = matches!(reply_kind, RequestKind::Image) && rec.outcome().stream;

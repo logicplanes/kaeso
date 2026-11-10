@@ -178,6 +178,139 @@ async fn a_refused_body_and_media_inside_strings_are_logged_without_the_media() 
     }
 }
 
+async fn patch(env: &Env, path: &str, body: Value) -> common::Resp {
+    env.app
+        .call(Method::PATCH, path, Some(body), Some(&env.owner.cookie))
+        .await
+}
+
+async fn ask_about_a_pixel(env: &Env) -> String {
+    let r = call(
+        env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(json!({
+            "model": "claude-haiku-4-5",
+            "messages": [{ "role": "user", "content": [
+                { "type": "text", "text": "What is in this picture?" },
+                { "type": "image_url", "image_url": { "url": format!("data:image/png;base64,{PIXEL}") } },
+            ]}],
+        })),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    r.header("kaeso-request-id").unwrap().to_owned()
+}
+
+async fn logged_image(env: &Env, id: &str) -> Value {
+    let r = env
+        .app
+        .get(&format!("{}/logs/{id}", base(env)), &env.owner.cookie)
+        .await;
+    r.body
+        .pointer("/content/request/messages/0/content/1/image_url/url")
+        .cloned()
+        .unwrap_or_default()
+}
+
+#[tokio::test]
+async fn media_is_kept_only_where_the_org_and_the_project_keep_it_and_every_switch_is_audited() {
+    let env = env(&[]).await;
+    let org = format!("/orgs/{}/logs/settings", env.owner.org_id);
+    let project = format!("{}/logs/settings", base(&env));
+    let r = env.app.get(&org, &env.owner.cookie).await;
+    assert_eq!(r.body["keep_media"], false, "{:?}", r.body);
+    assert_eq!(r.body["media_bytes_per_request"], 10 << 20);
+    let r = env.app.get(&project, &env.owner.cookie).await;
+    assert_eq!(
+        (&r.body["keep_media"], &r.body["effective_keep_media"]),
+        (&json!(false), &json!(false))
+    );
+
+    let r = patch(&env, &project, json!({ "keep_media": true })).await;
+    assert_eq!(r.status, StatusCode::CONFLICT, "{:?}", r.body);
+    let r = patch(&env, &org, json!({ "keep_media": true })).await;
+    assert_eq!(r.body["keep_media"], true, "{:?}", r.body);
+    let off = ask_about_a_pixel(&env).await;
+    let r = patch(&env, &project, json!({ "keep_media": true })).await;
+    assert_eq!(r.body["effective_keep_media"], true, "{:?}", r.body);
+    assert_eq!(r.body["content_logging"], true, "left as it was");
+    let kept = ask_about_a_pixel(&env).await;
+    flush(&env).await;
+
+    assert_eq!(
+        logged_image(&env, &off).await["kaeso_media"]["reason"],
+        "not_kept"
+    );
+    assert_eq!(
+        logged_image(&env, &kept).await,
+        format!("data:image/png;base64,{PIXEL}").as_str()
+    );
+    let req = axum::http::Request::builder()
+        .uri(format!(
+            "/platform/v1{}/logs/export?include_content=true",
+            base(&env)
+        ))
+        .header(
+            "cookie",
+            format!("__Host-kaeso_session={}", env.owner.cookie),
+        )
+        .body(axum::body::Body::empty())
+        .unwrap();
+    let resp = tower::ServiceExt::oneshot(env.app.router.clone(), req)
+        .await
+        .unwrap();
+    let export = http_body_util::BodyExt::collect(resp.into_body())
+        .await
+        .unwrap()
+        .to_bytes();
+    assert_eq!(
+        std::str::from_utf8(&export).unwrap().matches(PIXEL).count(),
+        1,
+        "an export with content holds the kept image and not the one left out"
+    );
+
+    let r = patch(&env, &project, json!({ "content_logging": false })).await;
+    assert_eq!(
+        (&r.body["keep_media"], &r.body["effective_keep_media"]),
+        (&json!(true), &json!(false)),
+        "media is content, so nothing is kept without content logging"
+    );
+    patch(&env, &project, json!({ "content_logging": true })).await;
+    patch(&env, &org, json!({ "keep_media": false })).await;
+    let r = env.app.get(&project, &env.owner.cookie).await;
+    assert_eq!(
+        r.body["effective_keep_media"], false,
+        "the org is the ceiling"
+    );
+    let after = ask_about_a_pixel(&env).await;
+    flush(&env).await;
+    assert_eq!(
+        logged_image(&env, &after).await["kaeso_media"]["reason"],
+        "not_kept"
+    );
+
+    let audit = env
+        .app
+        .get(
+            &format!("/orgs/{}/audit-log?action=logs.", env.owner.org_id),
+            &env.owner.cookie,
+        )
+        .await;
+    let events = audit.body["data"].as_array().unwrap();
+    let changed = |action: &str, to: bool| {
+        events.iter().any(|e| {
+            e["action"] == action
+                && e["before"]["keep_media"] == !to
+                && e["after"]["keep_media"] == to
+        })
+    };
+    assert!(changed("logs.settings_update", true), "{events:?}");
+    assert!(changed("logs.settings_update", false), "{events:?}");
+    assert!(changed("logs.project_keep_media", true), "{events:?}");
+}
+
 #[tokio::test]
 async fn an_alias_request_is_logged_with_the_steps_it_tried_first() {
     let env = env(&[]).await;

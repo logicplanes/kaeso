@@ -267,5 +267,11 @@
   "project.tools.allOn": "全部开启",
   "project.tools.allOff": "全部关闭",
   "project.tools.turnedAllOn": "{server} 的 {count, plural, other {# 个工具}}已开启",
-  "project.tools.turnedAllOff": "{server} 的 {count, plural, other {# 个工具}}已关闭"
+  "project.tools.turnedAllOff": "{server} 的 {count, plural, other {# 个工具}}已关闭",
+  "project.settings.mediaOn": "从现在起保留媒体",
+  "project.settings.mediaOff": "不再保留媒体",
+  "project.settings.keepMedia": "保留媒体",
+  "project.settings.mediaNeedsContent": "只有记录请求内容时才保留媒体。",
+  "project.settings.mediaKept": "图片、音频和文件随请求内容一起保留。",
+  "project.settings.mediaLeftOut": "媒体只记录类型和大小。"
 }

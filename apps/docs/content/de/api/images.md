@@ -127,7 +127,7 @@ Kaeso berechnet Bild-Token zu den Bildpreisen des Modells aus KPMR, wenn der Anb
 
 Nennt die Anfrage die Größe, Qualität oder Auflösung nicht, von der ein Preis abhängt, gilt der niedrigste gelistete Preis. Das ist der Standard des Anbieters. Einen Preis, den KPMR als Schätzung markiert, zeigt die Modellansicht als Schätzung. Ausgabenbudgets reservieren vor dem Senden den teuersten Fall jeder Anfrage.
 
-Die Anfrage-Logs zeigen den Endpunkt, etwa `images/edits`, die gesendeten und erzeugten Bilder und die Größe und Qualität. Bild-Bytes behalten sie nie: Ein Upload wird als seine Felder geloggt, jedes Bild als Medientyp und Größe ([Anfrage-Logs](../console/request-logs.md)).
+Die Anfrage-Logs zeigen den Endpunkt, etwa `images/edits`, die gesendeten und erzeugten Bilder und die Größe und Qualität. Solange Organisation und Projekt keine [Medien aufbewahren](../console/request-logs.md#medien-in-anfragen-und-antworten), wird ein Upload als seine Felder geloggt, jedes Bild als Medientyp und Größe, ebenso jedes Bild, das ein Modell erzeugt hat.
 
 ## Das Bildwerkzeug von OpenAI in Responses
 
