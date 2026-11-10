@@ -22,6 +22,13 @@ async function pick(page: Page, model: string) {
   }).toPass({ timeout: 10_000 });
 }
 
+// The search is debounced: a row ticked before its answer arrives can move under the next click.
+async function searchFor(page: Page, query: string) {
+  const answered = page.waitForResponse((r) => r.url().includes("/models/search") && new URL(r.url()).searchParams.get("q") === query && r.ok());
+  await page.getByRole("dialog").getByRole("searchbox", { name: "Search models" }).fill(query);
+  await answered;
+}
+
 async function openModels(page: Page) {
   await signInToProject(page);
   await page.getByRole("link", { name: "Models" }).click();
@@ -33,9 +40,9 @@ test("an empty catalogue explains itself; models are added from KPMR in a batch"
   await expect(page.getByText("No models yet")).toBeVisible();
   await page.getByRole("button", { name: "Add models" }).first().click();
   const dialog = page.getByRole("dialog", { name: "Add models" });
-  await dialog.getByRole("searchbox", { name: "Search models" }).fill("gpt-5.6");
+  await searchFor(page, "gpt-5.6");
   await pick(page, "gpt-5.6");
-  await dialog.getByRole("searchbox", { name: "Search models" }).fill("gpt-5.4-mini");
+  await searchFor(page, "gpt-5.4-mini");
   await pick(page, "gpt-5.4-mini");
   await expect(dialog.getByRole("button", { name: "Add 2 models" })).toBeEnabled();
   await expect(page.getByRole("region", { name: "Selection" })).toHaveCount(0);
@@ -49,7 +56,7 @@ test("every current model of a provider is added at once, and models already the
   await openModels(page);
   await page.getByRole("button", { name: "Add models" }).first().click();
   const dialog = page.getByRole("dialog");
-  await dialog.getByRole("searchbox", { name: "Search models" }).fill("gpt-5.6");
+  await searchFor(page, "gpt-5.6");
   await expect(hit(page, "gpt-5.6").getByText("In catalogue")).toBeVisible();
   await expect(hit(page, "gpt-5.6").getByRole("checkbox", { name: "Select gpt-5.6" })).toHaveAttribute("aria-disabled", "true");
   await dialog.getByRole("button", { description: "Provider" }).click();
@@ -66,7 +73,7 @@ test("one model's values are reviewed before adding; a changed value becomes an 
   await openModels(page);
   await page.getByRole("button", { name: "Add models" }).first().click();
   const dialog = page.getByRole("dialog");
-  await dialog.getByRole("searchbox", { name: "Search models" }).fill("gpt-5.4-nano");
+  await searchFor(page, "gpt-5.4-nano");
   await pick(page, "gpt-5.4-nano");
   await dialog.getByRole("button", { name: "Review values" }).click();
   await expect(dialog.getByRole("heading", { name: "Review gpt-5.4-nano" })).toBeVisible();
