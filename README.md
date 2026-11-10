@@ -41,21 +41,27 @@ curl -fsSL https://kaeso.app/install.sh | sh
 
 It installs Kaeso with PostgreSQL, ClickHouse and Valkey into `./kaeso`, starts it at `https://localhost` and prints the link that creates the first user. Add `-s -- --domain kaeso.example.com` to serve your own domain. The [quick start](https://docs.kaeso.app/get-started/quick-start) continues from there, and [install by hand](https://docs.kaeso.app/self-hosting/installation#install-by-hand) shows each step.
 
-On a managed platform, the [platform templates](https://docs.kaeso.app/self-hosting/platforms) run the same release with the platform's TLS and databases:
+On a cloud or a hosting platform, the [platform templates](https://docs.kaeso.app/self-hosting/platforms) run the same release:
 
 <p align="center">
   <a href="https://render.com/deploy?repo=https://github.com/logicplanes/kaeso/tree/prod"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/badges/deploy-to-render-dark.svg"><img alt="Deploy to Render" src="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/badges/deploy-to-render-light.svg"></picture></a>
   <a href="https://railway.com/new/template/cmVV60?utm_medium=integration&utm_source=button&utm_campaign=kaeso"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/badges/deploy-on-railway-dark.svg"><img alt="Deploy on Railway" src="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/badges/deploy-on-railway-light.svg"></picture></a>
   <a href="https://cloud.digitalocean.com/apps/new?repo=https://github.com/logicplanes/kaeso/tree/prod&refcode=881255e24b11"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/badges/deploy-to-digitalocean-dark.svg"><img alt="Deploy to DigitalOcean" src="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/badges/deploy-to-digitalocean-light.svg"></picture></a><br>
   <a href="https://console.aws.amazon.com/cloudformation/home#/stacks/create/review?templateURL=https%3A%2F%2Fkaeso-cloudformation.s3.amazonaws.com%2Flatest%2Fquick-server.yaml&stackName=kaeso"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/badges/launch-on-aws-dark.svg"><img alt="Launch on AWS" src="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/badges/launch-on-aws-light.svg"></picture></a>
+  <a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Flogicplanes%2Fkaeso%2Fprod%2Fdeploy%2Fazure%2Fquick-server.json/createUIFormUri/https%3A%2F%2Fraw.githubusercontent.com%2Flogicplanes%2Fkaeso%2Fprod%2Fdeploy%2Fazure%2FcreateUiDefinition.json"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/badges/deploy-to-azure-dark.svg"><img alt="Deploy to Azure" src="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/badges/deploy-to-azure-light.svg"></picture></a>
   <a href="https://shell.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/logicplanes/kaeso&cloudshell_git_branch=prod&cloudshell_workspace=deploy/gcp/quick-server"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/badges/open-in-cloud-shell-dark.svg"><img alt="Open in Google Cloud Shell" src="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/badges/open-in-cloud-shell-light.svg"></picture></a>
 </p>
 <p align="center">
   <a href="https://docs.kaeso.app/self-hosting/platforms/render">Render</a> ·
   <a href="https://docs.kaeso.app/self-hosting/platforms/railway">Railway</a> ·
   <a href="https://docs.kaeso.app/self-hosting/platforms/digitalocean">DigitalOcean</a> ·
+  <a href="https://docs.kaeso.app/self-hosting/platforms/fly">Fly.io</a> ·
   <a href="https://docs.kaeso.app/self-hosting/platforms/aws">AWS</a> ·
-  <a href="https://docs.kaeso.app/self-hosting/platforms/gcp">Google Cloud</a>
+  <a href="https://docs.kaeso.app/self-hosting/platforms/azure">Azure</a> ·
+  <a href="https://docs.kaeso.app/self-hosting/platforms/gcp">Google Cloud</a> ·
+  <a href="https://docs.kaeso.app/self-hosting/platforms/coolify">Coolify</a> ·
+  <a href="https://docs.kaeso.app/self-hosting/platforms/dokploy">Dokploy</a> ·
+  <a href="https://docs.kaeso.app/self-hosting/platforms/caprover">CapRover</a>
 </p>
 
 ## Send your first request
@@ -170,14 +176,14 @@ Checked on 6 November 2026 against each project's repository and documentation. 
 
 ## In this repository
 
-| Part                                                                                         | What it is                                                                                                                  |
-| -------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| [`crates/`](crates)                                                                          | The gateway, the updater and KPP, the protocol every request is decoded to; `kaeso-kpp` and `kaeso-codecs` are on crates.io |
-| [`apps/console`](apps/console)                                                               | The web console                                                                                                             |
-| [`packages/ui`](packages/ui) and [`packages/tokens`](packages/tokens)                        | The UI library and design tokens behind it, on npm, with a [showcase](https://ui.kaeso.app)                                 |
-| [`apps/docs`](apps/docs)                                                                     | The documentation at [docs.kaeso.app](https://docs.kaeso.app), in English, German and Chinese                               |
-| [`deploy/`](deploy), [`render.yaml`](render.yaml), [`.railway/`](.railway) and [`.do/`](.do) | The Compose package, the container images and the templates for Render, Railway, DigitalOcean, AWS and Google Cloud         |
-| [`plugins/`](plugins)                                                                        | The Claude Code and Cursor plugins for Kaeso's MCP server                                                                   |
+| Part                                                                                         | What it is                                                                                                                                                     |
+| -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`crates/`](crates)                                                                          | The gateway, the updater and KPP, the protocol every request is decoded to; `kaeso-kpp` and `kaeso-codecs` are on crates.io                                    |
+| [`apps/console`](apps/console)                                                               | The web console                                                                                                                                                |
+| [`packages/ui`](packages/ui) and [`packages/tokens`](packages/tokens)                        | The UI library and design tokens behind it, on npm, with a [showcase](https://ui.kaeso.app)                                                                    |
+| [`apps/docs`](apps/docs)                                                                     | The documentation at [docs.kaeso.app](https://docs.kaeso.app), in English, German and Chinese                                                                  |
+| [`deploy/`](deploy), [`render.yaml`](render.yaml), [`.railway/`](.railway) and [`.do/`](.do) | The Compose package, the container images and the templates for Render, Railway, DigitalOcean, Fly.io, AWS, Azure, Google Cloud, Coolify, Dokploy and CapRover |
+| [`plugins/`](plugins)                                                                        | The Claude Code and Cursor plugins for Kaeso's MCP server                                                                                                      |
 
 [Architecture](https://docs.kaeso.app/development/architecture) explains how the parts fit, and [contributing](https://docs.kaeso.app/development/contributing) how to work in them.
 

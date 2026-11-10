@@ -2723,6 +2723,7 @@ dependencies = [
  "moka",
  "openidconnect",
  "percent-encoding",
+ "proptest",
  "redis",
  "reqwest",
  "rust_decimal",

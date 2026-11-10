@@ -1,0 +1,170 @@
+# Kaeso as a CapRover one-click app: a public edge behind CapRover's nginx, a private gateway and console,
+# and the Compose package's PostgreSQL, ClickHouse and Valkey. Docs: https://docs.kaeso.app/self-hosting/platforms/caprover
+captainVersion: 4
+
+services:
+  $$cap_appname:
+    image: ghcr.io/logicplanes/kaeso-console:0.6.0-rc.8
+    # CapRover sets this as the container's entrypoint; the console image has none of its own.
+    command: ["kaeso-edge"]
+    environment:
+      KAESO_GATEWAY_UPSTREAM: srv-captain--$$cap_appname-gateway:8080
+      KAESO_CONSOLE_UPSTREAM: srv-captain--$$cap_appname-console:3000
+      # CapRover's nginx appends to the caller's X-Forwarded-For and overwrites X-Real-IP.
+      KAESO_EDGE_CLIENT_IP_HEADERS: X-Real-IP
+    depends_on:
+      - $$cap_appname-gateway
+      - $$cap_appname-console
+    caproverExtra:
+      containerHttpPort: "8080"
+      # Also makes nginx speak HTTP/1.1 to the edge, so streams arrive chunked.
+      websocketSupport: "true"
+
+  $$cap_appname-gateway:
+    image: ghcr.io/logicplanes/kaeso-gateway:0.6.0-rc.8
+    environment:
+      KAESO_PUBLIC_URL: $$cap_public_url
+      KAESO_MASTER_KEYS: $$cap_master_keys
+      KAESO_POSTGRES_URL: postgres://kaeso:$$cap_postgres_password@srv-captain--$$cap_appname-postgres:5432/kaeso
+      KAESO_CLICKHOUSE_URL: http://kaeso:$$cap_clickhouse_password@srv-captain--$$cap_appname-clickhouse:8123
+      KAESO_VALKEY_URL: redis://:$$cap_valkey_password@srv-captain--$$cap_appname-valkey:6379
+      KAESO_MAIL_TRANSPORT: $$cap_mail_transport
+      KAESO_SETUP_EMAIL: $$cap_setup_email
+      KAESO_SMTP_HOST: $$cap_smtp_host
+      KAESO_SMTP_PORT: $$cap_smtp_port
+      KAESO_SMTP_USER: $$cap_smtp_user
+      KAESO_SMTP_PASSWORD: $$cap_smtp_password
+      KAESO_SMTP_FROM: $$cap_smtp_from
+      # Only the edge and CapRover's nginx reach the gateway, on the swarm's overlay network.
+      KAESO_TRUSTED_PROXIES: 10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,fc00::/7,127.0.0.0/8,::1/128
+      KAESO_METRICS_LISTEN: 127.0.0.1:9100
+      KAESO_LOG_FORMAT: json
+    depends_on:
+      - $$cap_appname-postgres
+      - $$cap_appname-valkey
+      - $$cap_appname-clickhouse
+    caproverExtra:
+      notExposeAsWebApp: "true"
+
+  $$cap_appname-console:
+    image: ghcr.io/logicplanes/kaeso-console:0.6.0-rc.8
+    caproverExtra:
+      notExposeAsWebApp: "true"
+
+  $$cap_appname-postgres:
+    image: postgres:18.6-alpine@sha256:83148c0bc09eac4d598b70a61e1404d0212b76c95c504bfd6c81a4c59ec91792
+    # The gateway signs in as kaeso, which owns its database but isn't a superuser, as in the Compose package.
+    command:
+      - sh
+      - -c
+      - |
+        cat >/docker-entrypoint-initdb.d/kaeso.sh <<'EOF'
+        psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" -v password="$KAESO_POSTGRES_PASSWORD" <<'SQL'
+        CREATE ROLE kaeso LOGIN PASSWORD :'password';
+        CREATE DATABASE kaeso OWNER kaeso;
+        SQL
+        EOF
+        exec docker-entrypoint.sh postgres
+    environment:
+      POSTGRES_PASSWORD: $$cap_postgres_superuser_password
+      KAESO_POSTGRES_PASSWORD: $$cap_postgres_password
+    volumes:
+      - $$cap_appname-postgres:/var/lib/postgresql
+    caproverExtra:
+      notExposeAsWebApp: "true"
+
+  $$cap_appname-clickhouse:
+    image: clickhouse/clickhouse-server:26.3.62.3-alpine@sha256:1d45e52080e6ed136a6377863046a0e53d69fb0418d799f12e23184ed6460c55
+    environment:
+      CLICKHOUSE_USER: kaeso
+      CLICKHOUSE_PASSWORD: $$cap_clickhouse_password
+      CLICKHOUSE_DB: kaeso
+    volumes:
+      - $$cap_appname-clickhouse:/var/lib/clickhouse
+    caproverExtra:
+      notExposeAsWebApp: "true"
+
+  $$cap_appname-valkey:
+    image: valkey/valkey:9.1.3-alpine@sha256:bf09d58e96d6b4524a15396b65b242bbe18beebbcc15a04d8ee75ddac62fae0b
+    # Through the image's entrypoint, so Valkey runs as its own user. Never evict, so a full Valkey refuses
+    # writes instead of dropping limit counters.
+    command:
+      - docker-entrypoint.sh
+      - valkey-server
+      - --appendonly
+      - "yes"
+      - --requirepass
+      - $$cap_valkey_password
+      - --maxmemory
+      - 512mb
+      - --maxmemory-policy
+      - noeviction
+    volumes:
+      - $$cap_appname-valkey:/data
+    caproverExtra:
+      notExposeAsWebApp: "true"
+
+caproverOneClickApp:
+  displayName: Kaeso
+  isOfficial: false
+  description: The open-source, self-hosted AI gateway, with its console, PostgreSQL, ClickHouse and Valkey.
+  documentation: https://docs.kaeso.app/self-hosting/platforms/caprover
+  instructions:
+    start: |-
+      Kaeso is an AI gateway: one API for every model provider, with keys, limits, budgets and request logs.
+      It runs six services, the edge, the gateway, the console, PostgreSQL, ClickHouse and Valkey, and needs a server with at least 4 GB of memory.
+      Before you continue, generate a master key with:
+      docker run --rm ghcr.io/logicplanes/kaeso-gateway:0.6.0-rc.8 master-key generate
+      and keep it in a password manager. The docs: https://docs.kaeso.app/self-hosting/platforms/caprover
+    end: |-
+      Kaeso is starting as $$cap_appname. It takes a minute or two.
+      Open the app $$cap_appname, turn on HTTPS and Force HTTPS, and connect your domain if KAESO_PUBLIC_URL names one.
+      Then create the first user with the setup link: it arrives at the setup email when SMTP is set, or run this on the server:
+      docker exec $(docker ps -q -f name=srv-captain--$$cap_appname-gateway) kaeso setup-link
+  variables:
+    - id: $$cap_public_url
+      label: Public URL
+      defaultValue: https://$$cap_appname.$$cap_root_domain
+      description: The https address people and apps use. Keep this one, or enter your domain, such as https://kaeso.example.com, and connect it to the app afterwards.
+      validRegex: /^https:\/\/[a-z0-9.-]+(:[0-9]+)?$/
+    - id: $$cap_master_keys
+      label: Master key
+      description: The output of docker run --rm ghcr.io/logicplanes/kaeso-gateway:0.6.0-rc.8 master-key generate. Keep a copy in a password manager; without it, stored provider keys can't be decrypted.
+      validRegex: /^[A-Za-z0-9_-]{1,32}:[A-Za-z0-9+\/]{43}=$/
+    - id: $$cap_postgres_password
+      label: PostgreSQL password of the gateway
+      defaultValue: $$cap_gen_random_hex(48)
+      validRegex: /^[A-Za-z0-9]{16,}$/
+    - id: $$cap_postgres_superuser_password
+      label: PostgreSQL superuser password
+      defaultValue: $$cap_gen_random_hex(48)
+      validRegex: /^[A-Za-z0-9]{16,}$/
+    - id: $$cap_clickhouse_password
+      label: ClickHouse password
+      defaultValue: $$cap_gen_random_hex(48)
+      validRegex: /^[A-Za-z0-9]{16,}$/
+    - id: $$cap_valkey_password
+      label: Valkey password
+      defaultValue: $$cap_gen_random_hex(48)
+      validRegex: /^[A-Za-z0-9]{16,}$/
+    - id: $$cap_mail_transport
+      label: Mail transport
+      defaultValue: log
+      description: smtp sends email through the SMTP server below; log only writes the kind of each email to the gateway's log.
+      validRegex: /^(smtp|log)$/
+    - id: $$cap_setup_email
+      label: Setup email
+      description: With SMTP, the gateway emails the one-time setup link here until the first user exists.
+    - id: $$cap_smtp_host
+      label: SMTP host
+    - id: $$cap_smtp_port
+      label: SMTP port
+      defaultValue: "587"
+      validRegex: /^[0-9]+$/
+    - id: $$cap_smtp_user
+      label: SMTP user
+    - id: $$cap_smtp_password
+      label: SMTP password
+    - id: $$cap_smtp_from
+      label: Sender
+      description: The From address, such as Kaeso <kaeso@example.com>.

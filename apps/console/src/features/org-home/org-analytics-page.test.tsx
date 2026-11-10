@@ -105,9 +105,9 @@ describe("organization analytics", () => {
     const list = await screen.findByRole("list", { name: "Projects by requests" });
     await waitFor(() => expect(within(list).getAllByRole("button")).toHaveLength(3));
     const ranked = within(list).getAllByRole("button");
-    expect(ranked[0]).toHaveTextContent(/Checkout assistant67%30$/);
-    expect(ranked[1]).toHaveTextContent(/Support triage22%10$/);
-    expect(ranked[2]).toHaveTextContent(/Old pilot11%5$/);
+    expect(ranked[0]).toHaveTextContent(/Checkout assistant67%0%30$/);
+    expect(ranked[1]).toHaveTextContent(/Support triage22%0%10$/);
+    expect(ranked[2]).toHaveTextContent(/Old pilot11%0%5$/);
 
     expect(usageQueries()).toEqual(
       expect.arrayContaining([
@@ -284,10 +284,11 @@ describe("organization analytics", () => {
     await breakdown();
     expect(await notifications().findAllByText("Usage is being rebuilt.")).not.toHaveLength(0);
     const main = screen.getByRole("main");
-    await waitFor(() => expect(within(main).getAllByRole("button", { name: "Try again" })).toHaveLength(3));
+    await waitFor(() => expect(within(main).getAllByRole("button", { name: "Try again" })).toHaveLength(4));
     usage({ day: wrap([usageRow("2026-10-03", { requests: 12, cost: "0.40" })]), project: wrap([usageRow(PROJECT, { requests: 12, cost: "0.40" })]) });
     const before = usageQueries().length;
-    await user.click(within(main).getAllByRole("button", { name: "Try again" })[0] as HTMLElement);
+    const failed = screen.getByRole("heading", { name: "Failed requests" }).closest("section") as HTMLElement;
+    await user.click(within(failed).getByRole("button", { name: "Try again" }));
     await waitFor(() => expect(within(main).getAllByRole("button", { name: "Try again" })).toHaveLength(1));
     await user.click(within(await breakdown()).getByRole("button", { name: "Try again" }));
     await waitFor(() => expect(within(main).queryAllByRole("button", { name: "Try again" })).toHaveLength(0));
@@ -326,7 +327,8 @@ describe("organization analytics", () => {
     await renderApp(`/orgs/${ORG}/analytics?period=all`);
     await breakdown();
     await waitFor(() => expect(usageQueries()).toContainEqual(expect.objectContaining({ from: "2026-10-10", group_by: "project" })));
-    expect(usageQueries().every((q) => q.from === "2026-10-10")).toBe(true);
+    const month = `${new Date().toISOString().slice(0, 8)}01`;
+    expect(usageQueries().every((q) => q.from === "2026-10-10" || q.from === month)).toBe(true);
   });
 
   it("changes the period from the picker", async () => {

@@ -79,6 +79,7 @@ const ACTION_LABELS: Record<string, () => string> = {
   "limit.threshold_reached": () => t("format.audit.action.limitThresholdReached", "Limit alert threshold reached"),
   "logs.settings_update": () => t("format.audit.action.logsSettingsUpdate", "Logging settings changed"),
   "logs.project_content_logging": () => t("format.audit.action.logsProjectContentLogging", "A project's content logging changed"),
+  "logs.project_keep_media": () => t("format.audit.action.logsProjectKeepMedia", "A project's kept media changed"),
   "logs.export": () => t("format.audit.action.logsExport", "Request logs exported"),
   "logs.delete": () => t("format.audit.action.logsDelete", "Request logs deleted"),
   "mcp_server.create": () => t("format.audit.action.mcpServerCreate", "MCP server added"),

@@ -1,11 +1,12 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ToolCallEntryView, ToolCallView } from "~/api/generated/types";
-import { ALL_PROJECT_RIGHTS, USER, signedIn } from "~/test/fixtures";
+import { ALL_PROJECT_RIGHTS, USER, signedIn, without } from "~/test/fixtures";
 import { apiKey, projectData, projectMember, projectPath } from "~/test/fixtures/project";
 import { listPage, logsData } from "~/test/fixtures/project-logs";
 import { apiError, on, page, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
+import { hoverReason, notifications } from "~/test/fixtures/org";
 
 const CALLS = "orgs/:org/projects/:project/logs/tool-calls";
 
@@ -304,5 +305,96 @@ describe("Live tool calls", () => {
     expect(await screen.findByRole("row", { name: /x__delete_post/ })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Live" }));
     await waitFor(() => expect(window.location.search).not.toContain("live="));
+  });
+});
+
+describe("Exporting tool calls", () => {
+  it("summarises the filters and downloads the tool calls with their arguments and results", async () => {
+    signedIn();
+    projectData();
+    calls([toolCall({ status: "error", error_type: "timeout" })]);
+    const clicked: string[] = [];
+    vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (this: HTMLAnchorElement) {
+      clicked.push(this.href);
+    });
+    const { user } = await renderApp(projectPath("logs?kind=tools&call_server=mcp_x&call_status=error&call_error=timeout&from=2026-10-01&to=2026-10-03"));
+
+    await screen.findByRole("row", { name: /x__create_post/ });
+    await user.click(screen.getByRole("button", { name: "Export" }));
+    const dialog = await screen.findByRole("dialog", { name: "Export tool calls" });
+    expect(dialog).toHaveTextContent("Every tool call from 1 Oct 2026 to 3 Oct 2026 that matches these filters, newest first.");
+    const applied = [...dialog.querySelectorAll("dt")].map((dt) => [dt.textContent, dt.nextElementSibling?.textContent]);
+    expect(applied).toEqual([
+      ["MCP server", "X"],
+      ["Status", "Failed"],
+      ["Error kind", "Server too slow"],
+    ]);
+    expect(within(dialog).getByRole("radio", { name: "JSON Lines" })).toHaveAccessibleDescription("Metadata, one tool call per line.");
+    await user.click(within(dialog).getByRole("radio", { name: "JSON Lines with content", description: "Adds the stored arguments and results." }));
+    await user.click(within(dialog).getByRole("button", { name: "Export" }));
+
+    await waitFor(() => expect(clicked).toHaveLength(1));
+    const url = new URL(clicked[0] ?? "");
+    expect(url.pathname).toBe("/platform/v1/orgs/org_northwind/projects/proj_checkout/logs/tool-calls/export");
+    expect(Object.fromEntries(url.searchParams)).toMatchObject({
+      format: "jsonl",
+      include_content: "true",
+      server: "mcp_x",
+      status: "error",
+      error_type: "timeout",
+    });
+    expect(requests("GET", CALLS).some((r) => r.query.get("limit") === "1")).toBe(true);
+  });
+
+  it("shows the export while it runs and when it finished", async () => {
+    signedIn();
+    projectData();
+    calls([toolCall()]);
+    const written: string[] = [];
+    const decoder = new TextDecoder();
+    Object.defineProperty(window, "showSaveFilePicker", {
+      configurable: true,
+      writable: true,
+      value: async () => ({
+        name: "tool-calls.csv",
+        createWritable: async () => new WritableStream<Uint8Array>({ write: (chunk) => void written.push(decoder.decode(chunk)) }),
+      }),
+    });
+    let finish: (r: Response) => void = () => {};
+    on("GET", `${CALLS}/export`, () => new Promise<Response>((resolve) => (finish = resolve)));
+    const { user } = await renderApp(projectPath("logs?kind=tools"));
+
+    await screen.findByRole("row", { name: /x__create_post/ });
+    await user.click(screen.getByRole("button", { name: "Export" }));
+    await user.click(within(await screen.findByRole("dialog", { name: "Export tool calls" })).getByRole("button", { name: "Export" }));
+    expect((await notifications().findAllByText("Exporting tool calls")).length).toBeGreaterThan(0);
+    await waitFor(() => expect(requests("GET", `${CALLS}/export`)).toHaveLength(1));
+
+    finish(new Response("id,tool\ncall_0001,x__create_post\n", { status: 200, headers: { "content-type": "text/csv" } }));
+    expect(await notifications().findByText("Tool calls exported")).toBeInTheDocument();
+    expect(written.join("")).toBe("id,tool\ncall_0001,x__create_post\n");
+    Reflect.deleteProperty(window, "showSaveFilePicker");
+  });
+
+  it("says which right export needs, and that there is nothing to export", async () => {
+    signedIn({ projectRights: without("logs.export") });
+    projectData();
+    calls([toolCall()]);
+    const { user } = await renderApp(projectPath("logs?kind=tools"));
+    await screen.findByRole("row", { name: /x__create_post/ });
+    const button = screen.getByRole("button", { name: "Export" });
+    expect(button).toHaveAttribute("aria-disabled", "true");
+    await hoverReason(user, button, /^You need Export logs; ask .+ for it\.$/);
+    await user.click(button);
+    expect(screen.queryByRole("dialog", { name: "Export tool calls" })).not.toBeInTheDocument();
+  });
+
+  it("has nothing to export when no call matches", async () => {
+    signedIn();
+    projectData();
+    calls([]);
+    await renderApp(projectPath("logs?kind=tools&call_status=refused"));
+    await screen.findByRole("heading", { name: "No tool calls match these filters" });
+    expect(screen.getByRole("button", { name: "Export" })).toHaveAttribute("aria-disabled", "true");
   });
 });

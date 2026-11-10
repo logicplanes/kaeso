@@ -36,7 +36,7 @@ These options choose the scenarios and their sizes; every scenario and default a
 
 | Option | Default | Sets |
 | --- | --- | --- |
-| `--scenarios` | All five | Scenarios to run, comma-separated: `baseline`, `streams`, `cancellation`, `slow-clients`, `mixed` |
+| `--scenarios` | All | Scenarios to run, comma-separated: `baseline`, `streams`, `cancellation`, `slow-clients`, `mixed`, `agent` |
 | `--baseline-requests`, `--baseline-concurrency` | 20,000, 64 | Non-streamed requests in the baseline and the connections they go over |
 | `--streams` | 100, 1,000, 5,000 | Concurrent stream counts, one run each |
 | `--gap-ms`, `--chunks` | 100, 100 | The mock's gap between two chunks and the chunks in a stream |
@@ -46,6 +46,8 @@ These options choose the scenarios and their sizes; every scenario and default a
 | `--idle-timeout-ms` | 5,000 | The gateway's `KAESO_UPSTREAM_STREAM_IDLE_TIMEOUT` |
 | `--mixed-streams` | 1,000 | Streams in the mixed scenario |
 | `--opening` | 100 | Streams the clients open at once |
+| `--agent-requests`, `--agent-paced-requests`, `--agent-every-ms` | 300, 300, 250 | Back-to-back and paced streams in the agent scenario, and the milliseconds from one paced stream to the next |
+| `--agent-paused-requests`, `--agent-pause-ms` | 5, 31,000 | Streams the agent scenario sends after a pause each, and that pause in milliseconds |
 | `--smoke` | Off | Small sizes, as CI runs them |
 | `--out` | `target/bench` | Where the reports and the log go |
 
@@ -73,6 +75,7 @@ Each scenario starts with a fresh gateway:
 | Cancellation | A share of the streams disconnects at a point between a fifth and four fifths of the stream. Their mock streams never end on their own, so each disconnect has a provider request to close. The others read to the end |
 | Slow clients | A share of the clients reads the first chunk and then stops, on a small receive buffer, while the mock writes a 4 KiB text delta every millisecond without end. They use a second project that logs no content, so the gateway's memory shows what it buffers for them, not the reply it keeps for the log. The others read normally |
 | Mixed | Streams, disconnects and slow clients at once, beside non-streamed requests as fast as the gateway answers them |
+| Agent session | One client sends the streams of a coding agent's session, one after another on one connection. Each request is about 50 KB in the Anthropic Messages format: a system prompt, 24 tool definitions with their schemas, and a conversation of tool calls and their results. It asks for an alias whose route has one step, the mock's OpenAI Responses model, in a project that logs content. The streams go back to back first, then one every 250 ms for longer than the 30 seconds Kaeso keeps a project's settings in memory, then each after a pause longer than that |
 
 ## Read the numbers
 
@@ -94,6 +97,8 @@ Every time comes as percentiles over all requests or chunks of a run:
 | Logged as client_stalled | Stalled streams, counted by `kaeso_stream_failures_total{kind="client_stalled"}` |
 | Growth per stream | The peak memory minus the memory after the warm-up, divided by the scenario's streams |
 | Left open | Streams the mock provider still had open after the scenario |
+
+The agent session reports the overhead of its three ways of sending apart. Back to back, everything a request needs is in memory, so the number is the work on the request itself: checking, decoding and translating 50 KB. Paced, some requests meet an entry that is being loaded again. After a pause, every entry has run out, and the request waits for PostgreSQL and Valkey; this row shows what the first request of a session costs after an agent has been idle. The mock provider's key is an API key: the scenario doesn't cover a provider account that signs in and renews its token.
 
 A gateway that keeps whatever a stalled app doesn't read grows by the mock's chunks until the idle timeout. That shows as a growth per stream far above the per open stream of a run without slow clients.
 

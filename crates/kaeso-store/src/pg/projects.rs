@@ -10,6 +10,7 @@ pub struct Project {
     pub org_id: Uuid,
     pub name: String,
     pub content_logging: bool,
+    pub keep_media: bool,
     pub max_key_lifetime_days: Option<i32>,
     pub archived_at: Option<OffsetDateTime>,
     pub created_at: OffsetDateTime,
@@ -40,7 +41,7 @@ pub async fn get(
 ) -> Result<Option<Project>, StoreError> {
     Ok(sqlx::query_as!(
         Project,
-        "SELECT id, org_id, name, content_logging, max_key_lifetime_days, archived_at, created_at, avatar \
+        "SELECT id, org_id, name, content_logging, keep_media, max_key_lifetime_days, archived_at, created_at, avatar \
          FROM projects WHERE org_id = $1 AND id = $2",
         org_id,
         id
@@ -71,7 +72,7 @@ pub async fn get_for_update(
 ) -> Result<Option<Project>, StoreError> {
     Ok(sqlx::query_as!(
         Project,
-        "SELECT id, org_id, name, content_logging, max_key_lifetime_days, archived_at, created_at, avatar \
+        "SELECT id, org_id, name, content_logging, keep_media, max_key_lifetime_days, archived_at, created_at, avatar \
          FROM projects WHERE org_id = $1 AND id = $2 FOR NO KEY UPDATE",
         org_id,
         id
@@ -86,6 +87,23 @@ pub async fn ids_of_org(db: impl PgExecutor<'_>, org_id: Uuid) -> Result<Vec<Uui
             .fetch_all(db)
             .await?,
     )
+}
+
+pub async fn set_keep_media(
+    db: impl PgExecutor<'_>,
+    org_id: Uuid,
+    id: Uuid,
+    keep: bool,
+) -> Result<(), StoreError> {
+    sqlx::query!(
+        "UPDATE projects SET keep_media = $3, updated_at = now() WHERE org_id = $1 AND id = $2",
+        org_id,
+        id,
+        keep
+    )
+    .execute(db)
+    .await?;
+    Ok(())
 }
 
 pub async fn update(db: impl PgExecutor<'_>, p: &Project) -> Result<(), StoreError> {
@@ -116,7 +134,7 @@ pub async fn list(
 ) -> Result<Vec<Project>, StoreError> {
     Ok(sqlx::query_as!(
         Project,
-        "SELECT p.id, p.org_id, p.name, p.content_logging, p.max_key_lifetime_days, p.archived_at, p.created_at, p.avatar \
+        "SELECT p.id, p.org_id, p.name, p.content_logging, p.keep_media, p.max_key_lifetime_days, p.archived_at, p.created_at, p.avatar \
          FROM projects p WHERE p.org_id = $1 \
          AND ($2::uuid IS NULL OR EXISTS (SELECT 1 FROM project_memberships m WHERE m.project_id = p.id AND m.user_id = $2)) \
          AND ($6::uuid[] IS NULL OR p.id = ANY($6)) \

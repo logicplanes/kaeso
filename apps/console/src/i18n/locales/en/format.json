@@ -52,6 +52,7 @@
   "format.audit.action.logsDelete": "Request logs deleted",
   "format.audit.action.logsExport": "Request logs exported",
   "format.audit.action.logsProjectContentLogging": "A project's content logging changed",
+  "format.audit.action.logsProjectKeepMedia": "A project's kept media changed",
   "format.audit.action.logsSettingsUpdate": "Logging settings changed",
   "format.audit.action.mcpServerConnect": "Signed in to an MCP server",
   "format.audit.action.mcpServerCreate": "MCP server added",

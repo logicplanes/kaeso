@@ -20,6 +20,7 @@ use crate::gateway::{READY, SETUP_TOKEN};
 use crate::{Result, fail};
 
 pub(crate) const MODEL: &str = "gpt-4o";
+pub(crate) const AGENT_MODEL: &str = "bench-agent";
 const MASTER_KEY: &str = "k1:AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE=";
 const PASSWORD: &str = "correct horse battery staple";
 const START_WAIT: Duration = Duration::from_secs(180);
@@ -400,6 +401,7 @@ async fn set_up(addr: SocketAddr, token: &str, mcp: &str) -> Result<(String, Str
     )
     .await?;
     let key = serving_key(&mut p, &org, &project).await?;
+    agent_route(&mut p, &org, &project).await?;
     let slow = p
         .call(
             Method::POST,
@@ -467,6 +469,31 @@ async fn portal(p: &mut Platform, org: &str, project: &str, mcp: &str) -> Result
         path: format!("/mcp/{project}"),
         key: text(&key, "/secret")?,
     })
+}
+
+// The alias the agent scenario asks for: a route of one step to the project's model.
+async fn agent_route(p: &mut Platform, org: &str, project: &str) -> Result<()> {
+    let models = p
+        .call(
+            Method::GET,
+            &format!("orgs/{org}/projects/{project}/models"),
+            None,
+        )
+        .await?;
+    let model = models
+        .pointer("/data")
+        .and_then(Value::as_array)
+        .and_then(|all| all.iter().find(|m| m["model_id"] == MODEL))
+        .and_then(|m| m["id"].as_str())
+        .ok_or_else(|| fail("the project's model is not in its catalogue"))?
+        .to_owned();
+    p.call(
+        Method::POST,
+        &format!("orgs/{org}/projects/{project}/aliases"),
+        Some(json!({ "name": AGENT_MODEL, "route": { "type": "model", "model": model } })),
+    )
+    .await?;
+    Ok(())
 }
 
 async fn serving_key(p: &mut Platform, org: &str, project: &str) -> Result<String> {

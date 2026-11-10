@@ -46,6 +46,271 @@ async fn logs(env: &Env, query: &str) -> Value {
     r.body
 }
 
+// A 1x1 PNG: the smallest file that states its own size.
+const PIXEL: &str = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
+
+#[tokio::test]
+async fn images_and_files_inside_a_chat_request_are_logged_as_their_type_and_size() {
+    let env = env(&[]).await;
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(json!({
+            "model": "claude-haiku-4-5",
+            "messages": [{ "role": "user", "content": [
+                { "type": "text", "text": "What is in this picture?" },
+                { "type": "image_url", "image_url": { "url": format!("data:image/png;base64,{PIXEL}") } },
+            ]}],
+        })),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    let chat = r.header("kaeso-request-id").unwrap().to_owned();
+    let r = call(
+        &env,
+        "/v1/messages",
+        Some(&env.key),
+        true,
+        Some(json!({
+            "model": "claude-haiku-4-5",
+            "max_tokens": 64,
+            "messages": [{ "role": "user", "content": [
+                { "type": "image", "source": { "type": "base64", "media_type": "image/png", "data": PIXEL } },
+                { "type": "text", "text": "And in this one?" },
+            ]}],
+        })),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    let messages = r.header("kaeso-request-id").unwrap().to_owned();
+    flush(&env).await;
+
+    let left_out = json!({ "kaeso_media": {
+        "media_type": "image/png", "bytes": 70, "width": 1, "height": 1, "reason": "not_kept"
+    }});
+    let entry = env
+        .app
+        .get(&format!("{}/logs/{chat}", base(&env)), &env.owner.cookie)
+        .await
+        .body;
+    let parts = &entry["content"]["request"]["messages"][0]["content"];
+    assert_eq!(parts[0]["text"], "What is in this picture?");
+    assert_eq!(parts[1]["image_url"]["url"], left_out);
+    let entry = env
+        .app
+        .get(
+            &format!("{}/logs/{messages}", base(&env)),
+            &env.owner.cookie,
+        )
+        .await
+        .body;
+    let parts = &entry["content"]["request"]["messages"][0]["content"];
+    assert_eq!(parts[0]["source"]["data"], left_out);
+    assert_eq!(parts[0]["source"]["media_type"], "image/png");
+    assert_eq!(parts[1]["text"], "And in this one?");
+
+    let storage = env
+        .app
+        .get(
+            &format!("/orgs/{}/logs/storage", env.owner.org_id),
+            &env.owner.cookie,
+        )
+        .await
+        .body;
+    assert!(
+        storage["logical_bytes"].as_u64().unwrap() > 0,
+        "{storage:?}"
+    );
+}
+
+#[tokio::test]
+async fn a_refused_body_and_media_inside_strings_are_logged_without_the_media() {
+    let env = env(&[]).await;
+    let send = |body: String| {
+        let req = axum::http::Request::builder()
+            .uri("/v1/chat/completions")
+            .method("POST")
+            .header("authorization", format!("Bearer {}", env.key))
+            .header("content-type", "application/json")
+            .body(axum::body::Body::from(body))
+            .unwrap();
+        tower::ServiceExt::oneshot(env.app.router.clone(), req)
+    };
+    let broken = format!(
+        r#"{{"model":"claude-haiku-4-5","note":"\ud83d","messages":[{{"role":"user","content":[{{"type":"image_url","image_url":{{"url":"DATA:image/png;base64,{PIXEL}"}}}}]}}],}}"#
+    );
+    let refused = send(broken).await.unwrap();
+    assert_eq!(refused.status(), StatusCode::BAD_REQUEST);
+    let refused = refused.headers()["kaeso-request-id"]
+        .to_str()
+        .unwrap()
+        .to_owned();
+    let inside = json!({
+        "model": "claude-haiku-4-5",
+        "messages": [
+            { "role": "user", "content": format!("What is ![this](data:image/png;base64,{PIXEL})?") },
+            { "role": "assistant", "content": null, "tool_calls": [{ "id": "call_1", "type": "function", "function": {
+                "name": "lookup", "arguments": json!({ "picture": format!("data:image/png;base64,{PIXEL}") }).to_string(),
+            }}]},
+            { "role": "tool", "tool_call_id": "call_1", "content": json!([{ "type": "image", "mimeType": "image/png", "data": PIXEL }]).to_string() },
+        ],
+        "tools": [{ "type": "function", "function": { "name": "lookup", "parameters": { "type": "object" } } }],
+    });
+    let ok = send(inside.to_string()).await.unwrap();
+    assert_eq!(ok.status(), StatusCode::OK);
+    let ok = ok.headers()["kaeso-request-id"]
+        .to_str()
+        .unwrap()
+        .to_owned();
+    flush(&env).await;
+
+    for id in [refused, ok] {
+        let entry = env
+            .app
+            .get(&format!("{}/logs/{id}", base(&env)), &env.owner.cookie)
+            .await
+            .body;
+        let request = entry["content"]["request"].to_string();
+        assert!(!request.contains(PIXEL), "{request}");
+        assert!(request.contains("not_kept"), "{request}");
+    }
+}
+
+async fn patch(env: &Env, path: &str, body: Value) -> common::Resp {
+    env.app
+        .call(Method::PATCH, path, Some(body), Some(&env.owner.cookie))
+        .await
+}
+
+async fn ask_about_a_pixel(env: &Env) -> String {
+    let r = call(
+        env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(json!({
+            "model": "claude-haiku-4-5",
+            "messages": [{ "role": "user", "content": [
+                { "type": "text", "text": "What is in this picture?" },
+                { "type": "image_url", "image_url": { "url": format!("data:image/png;base64,{PIXEL}") } },
+            ]}],
+        })),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    r.header("kaeso-request-id").unwrap().to_owned()
+}
+
+async fn logged_image(env: &Env, id: &str) -> Value {
+    let r = env
+        .app
+        .get(&format!("{}/logs/{id}", base(env)), &env.owner.cookie)
+        .await;
+    r.body
+        .pointer("/content/request/messages/0/content/1/image_url/url")
+        .cloned()
+        .unwrap_or_default()
+}
+
+#[tokio::test]
+async fn media_is_kept_only_where_the_org_and_the_project_keep_it_and_every_switch_is_audited() {
+    let env = env(&[]).await;
+    let org = format!("/orgs/{}/logs/settings", env.owner.org_id);
+    let project = format!("{}/logs/settings", base(&env));
+    let r = env.app.get(&org, &env.owner.cookie).await;
+    assert_eq!(r.body["keep_media"], false, "{:?}", r.body);
+    assert_eq!(r.body["media_bytes_per_request"], 10 << 20);
+    let r = env.app.get(&project, &env.owner.cookie).await;
+    assert_eq!(
+        (&r.body["keep_media"], &r.body["effective_keep_media"]),
+        (&json!(false), &json!(false))
+    );
+
+    let r = patch(&env, &project, json!({ "keep_media": true })).await;
+    assert_eq!(r.status, StatusCode::CONFLICT, "{:?}", r.body);
+    let r = patch(&env, &org, json!({ "keep_media": true })).await;
+    assert_eq!(r.body["keep_media"], true, "{:?}", r.body);
+    let off = ask_about_a_pixel(&env).await;
+    let r = patch(&env, &project, json!({ "keep_media": true })).await;
+    assert_eq!(r.body["effective_keep_media"], true, "{:?}", r.body);
+    assert_eq!(r.body["content_logging"], true, "left as it was");
+    let kept = ask_about_a_pixel(&env).await;
+    flush(&env).await;
+
+    assert_eq!(
+        logged_image(&env, &off).await["kaeso_media"]["reason"],
+        "not_kept"
+    );
+    assert_eq!(
+        logged_image(&env, &kept).await,
+        format!("data:image/png;base64,{PIXEL}").as_str()
+    );
+    let req = axum::http::Request::builder()
+        .uri(format!(
+            "/platform/v1{}/logs/export?include_content=true",
+            base(&env)
+        ))
+        .header(
+            "cookie",
+            format!("__Host-kaeso_session={}", env.owner.cookie),
+        )
+        .body(axum::body::Body::empty())
+        .unwrap();
+    let resp = tower::ServiceExt::oneshot(env.app.router.clone(), req)
+        .await
+        .unwrap();
+    let export = http_body_util::BodyExt::collect(resp.into_body())
+        .await
+        .unwrap()
+        .to_bytes();
+    assert_eq!(
+        std::str::from_utf8(&export).unwrap().matches(PIXEL).count(),
+        1,
+        "an export with content holds the kept image and not the one left out"
+    );
+
+    let r = patch(&env, &project, json!({ "content_logging": false })).await;
+    assert_eq!(
+        (&r.body["keep_media"], &r.body["effective_keep_media"]),
+        (&json!(true), &json!(false)),
+        "media is content, so nothing is kept without content logging"
+    );
+    patch(&env, &project, json!({ "content_logging": true })).await;
+    patch(&env, &org, json!({ "keep_media": false })).await;
+    let r = env.app.get(&project, &env.owner.cookie).await;
+    assert_eq!(
+        r.body["effective_keep_media"], false,
+        "the org is the ceiling"
+    );
+    let after = ask_about_a_pixel(&env).await;
+    flush(&env).await;
+    assert_eq!(
+        logged_image(&env, &after).await["kaeso_media"]["reason"],
+        "not_kept"
+    );
+
+    let audit = env
+        .app
+        .get(
+            &format!("/orgs/{}/audit-log?action=logs.", env.owner.org_id),
+            &env.owner.cookie,
+        )
+        .await;
+    let events = audit.body["data"].as_array().unwrap();
+    let changed = |action: &str, to: bool| {
+        events.iter().any(|e| {
+            e["action"] == action
+                && e["before"]["keep_media"] == !to
+                && e["after"]["keep_media"] == to
+        })
+    };
+    assert!(changed("logs.settings_update", true), "{events:?}");
+    assert!(changed("logs.settings_update", false), "{events:?}");
+    assert!(changed("logs.project_keep_media", true), "{events:?}");
+}
+
 #[tokio::test]
 async fn an_alias_request_is_logged_with_the_steps_it_tried_first() {
     let env = env(&[]).await;
@@ -600,6 +865,8 @@ async fn streams_that_fail_after_their_headers_are_logged_as_failures() {
     .await;
     assert_eq!(r.status, StatusCode::OK);
     assert!(r.text().contains("\"error\""), "{}", r.text());
+    let keepalives = r.text().matches(": keepalive\n\n").count();
+    assert!(keepalives > 0, "{}", r.text());
     flush(&env).await;
 
     let data = logs(&env, "").await["data"].as_array().unwrap().clone();
@@ -611,7 +878,7 @@ async fn streams_that_fail_after_their_headers_are_logged_as_failures() {
     assert!(p["events"].as_u64().unwrap() > 0, "{broken}");
     assert!(p["bytes"].as_u64().unwrap() > 0, "{broken}");
     assert!(p["first_byte_ms"].is_u64(), "{broken}");
-    assert_eq!(p["keepalives"], 0);
+    assert_eq!(p["keepalives"], keepalives, "{broken}");
     let one = env
         .app
         .get(

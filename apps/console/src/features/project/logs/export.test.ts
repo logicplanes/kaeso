@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { setFormatTimeZone } from "@logicplanes/kaeso-ui/format";
 import { apply, load } from "~/i18n";
-import { exportFilters, exportRequest, exportSummary } from "./export";
+import { exportFilters, exportRequest, exportSummary, toolExportFilters, toolExportRequest, toolExportSummary } from "./export";
 
 describe("exportSummary", () => {
   it("names the period alone when nothing else filters", () => {
@@ -101,5 +101,48 @@ describe("exportRequest", () => {
       include_content: "true",
     });
     expect(r.file.name).toBe("kaeso-logs-proj_1.jsonl");
+  });
+});
+
+describe("the tool call export", () => {
+  it("names the period alone, or says the calls match the filters", async () => {
+    apply(await load("en"));
+    expect(toolExportSummary({})).toBe("Every tool call from the last 24 hours, newest first.");
+    expect(toolExportSummary({ range: "1h" })).toBe("Every tool call from the last hour, newest first.");
+    expect(toolExportSummary({ from: "2026-08-14", to: "2026-08-14" })).toBe("Every tool call on 14 Aug 2026, newest first.");
+    expect(toolExportSummary({ from: "2026-08-14", to: "2026-10-13" })).toBe("Every tool call from 14 Aug 2026 to 13 Oct 2026, newest first.");
+    expect(toolExportSummary({ range: "7d", tool: "x__create_post" })).toBe("Every tool call from the last 7 days that matches this filter, newest first.");
+    expect(toolExportSummary({ from: "2026-08-14", to: "2026-08-14", status: "error", error: "timeout" })).toBe(
+      "Every tool call on 14 Aug 2026 that matches these filters, newest first.",
+    );
+  });
+
+  it("lists each filter by its name, or by its id when it has none", () => {
+    const filters = { key: "key_web", member: "sa:sa_ci", server: "mcp_x", tool: "x__create_post", status: "refused" as const, error: "tool_off" };
+    expect(toolExportFilters(filters).map((f) => f.value)).toEqual(["key_web", "sa_ci", "mcp_x", "x__create_post", "refused", "tool_off"]);
+    expect(toolExportFilters(filters, { key: "Web app", member: "CI", server: "X" }, { status: "Refused", error: "Tool is off" }).map((f) => f.value)).toEqual([
+      "Web app",
+      "CI",
+      "X",
+      "x__create_post",
+      "Refused",
+      "Tool is off",
+    ]);
+    expect(toolExportFilters({})).toEqual([]);
+  });
+
+  it("asks for the chosen format with the filters, up to now or to the range's end", () => {
+    const now = Date.parse("2026-10-15T12:00:00Z");
+    const csv = toolExportRequest("org_1", "proj_1", { server: "mcp_x" }, "csv", now);
+    expect(csv.file.name).toBe("kaeso-tool-calls-proj_1.csv");
+    const url = new URL(csv.url, "https://kaeso.example.com");
+    expect(url.pathname).toBe("/platform/v1/orgs/org_1/projects/proj_1/logs/tool-calls/export");
+    expect(Object.fromEntries(url.searchParams)).toMatchObject({ format: "csv", server: "mcp_x", to: "2026-10-15T12:00:00.000Z" });
+    expect(url.searchParams.has("include_content")).toBe(false);
+    const content = toolExportRequest("org_1", "proj_1", { from: "2026-10-01", to: "2026-10-03" }, "content", now);
+    expect(content.file.name).toBe("kaeso-tool-calls-proj_1.jsonl");
+    const query = new URL(content.url, "https://kaeso.example.com").searchParams;
+    expect(query.get("include_content")).toBe("true");
+    expect(query.get("to")).not.toBe("2026-10-15T12:00:00.000Z");
   });
 });

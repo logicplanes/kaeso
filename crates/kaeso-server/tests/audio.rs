@@ -126,6 +126,100 @@ async fn outcome(env: &Env) -> kaeso_server::model_api::hooks::Outcome {
     env.outcomes().await.into_iter().last().unwrap()
 }
 
+async fn keep_media(env: &Env) {
+    let org = &env.owner.org_id;
+    for path in [
+        format!("/orgs/{org}/logs/settings"),
+        format!("/orgs/{org}/projects/{}/logs/settings", env.project),
+    ] {
+        let r = env
+            .app
+            .call(
+                axum::http::Method::PATCH,
+                &path,
+                Some(json!({ "keep_media": true })),
+                Some(&env.owner.cookie),
+            )
+            .await;
+        assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    }
+}
+
+async fn logged_content(env: &Env) -> Value {
+    let o = outcome(env).await;
+    let state = &env.app.state;
+    let clickhouse = state.clickhouse.as_ref().unwrap();
+    clickhouse.migrate(&state.pg).await.unwrap();
+    kaeso_server::services::logs::record(state, &o).await;
+    kaeso_server::services::logs::flush_all(state, std::time::Duration::from_secs(10)).await;
+    let r = env
+        .app
+        .get(
+            &format!(
+                "/orgs/{}/projects/{}/logs/{}",
+                env.owner.org_id, env.project, o.request_id
+            ),
+            &env.owner.cookie,
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    r.body.get("content").cloned().unwrap_or_default()
+}
+
+#[tokio::test]
+async fn an_uploaded_recording_and_spoken_audio_are_logged_whole_only_where_media_is_kept() {
+    use base64::Engine as _;
+    let b64 = |bytes: &[u8]| base64::engine::general_purpose::STANDARD.encode(bytes);
+    let env = env().await;
+    let fields = [("model", "gpt-4o-transcribe")];
+    let r = upload(&env, "/v1/audio/transcriptions", &fields).await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    let content = logged_content(&env).await;
+    assert_eq!(
+        content["request"]["audio"]["source"]["base64"]["data"]["kaeso_media"],
+        json!({ "media_type": "audio/mpeg", "bytes": MP3.len(), "reason": "not_kept" })
+    );
+    assert!(
+        content["reply"]["transcription"]["text"]
+            .as_str()
+            .unwrap()
+            .starts_with("Imagine"),
+        "{content}"
+    );
+
+    let spoken =
+        json!({"model": "gpt-4o-mini-tts", "input": "The quick brown fox.", "voice": "alloy"});
+    let r = speak(&env, spoken.clone()).await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    let content = logged_content(&env).await;
+    assert_eq!(content["reply"]["format"], 2);
+    assert_eq!(
+        content["reply"]["speech"]["audio"]["base64"]["data"]["kaeso_media"],
+        json!({ "media_type": "audio/mpeg", "bytes": r.body.len(), "reason": "not_kept" }),
+        "a streamed reply is logged like one that came whole"
+    );
+
+    keep_media(&env).await;
+    upload(&env, "/v1/audio/transcriptions", &fields).await;
+    let content = logged_content(&env).await;
+    assert_eq!(
+        content["request"]["audio"]["source"]["base64"]["data"],
+        b64(MP3).as_str()
+    );
+    let r = speak(
+        &env,
+        json!({"model": "gpt-4o-mini-tts", "input": "The quick brown fox.", "voice": "alloy"}),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    let content = logged_content(&env).await;
+    assert_eq!(content["request"]["input"], "The quick brown fox.");
+    assert_eq!(
+        content["reply"]["speech"]["audio"]["base64"]["data"],
+        b64(&r.body).as_str()
+    );
+}
+
 fn endpoint(o: &kaeso_server::model_api::hooks::Outcome) -> &'static str {
     kaeso_server::services::logs::endpoint(o)
 }
@@ -419,7 +513,7 @@ async fn transcriptions_take_every_form_and_log_the_audio_length_without_its_byt
     if let Some(logged) = &o.request_body {
         let text = String::from_utf8_lossy(logged);
         assert!(
-            !text.contains("ID3") && text.contains("not logged"),
+            !text.contains("ID3") && text.contains(r#""reason":"not_kept""#),
             "{text}"
         );
     }

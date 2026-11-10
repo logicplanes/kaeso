@@ -84,7 +84,11 @@ def test_an_image_built_from_a_umask_077_checkout_serves_the_console(image):
             reply = httpx.get(f"{url}/{path}", timeout=5)
             assert reply.status_code == 200, f"/{path}: {reply.status_code}"
             assert reply.text == text
-        assert httpx.get(f"{url}/keys", timeout=5).text == DIST["index.html"]
+        page = httpx.get(f"{url}/keys", timeout=5)
+        assert page.text == DIST["index.html"]
+        assert "microphone=(self)" in page.headers["permissions-policy"], "the Playground records audio for transcription"
+        assert "camera=()" in page.headers["permissions-policy"]
+        assert "media-src 'self' blob:" in page.headers["content-security-policy"], "generated audio plays from blob: links"
         files = subprocess.run(
             ["docker", "exec", name, "stat", "-c", "%a %U %n", "/etc/caddy/Caddyfile", "/srv", "/srv/index.html", "/srv/assets"],
             check=True,

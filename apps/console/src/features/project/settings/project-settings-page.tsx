@@ -303,8 +303,17 @@ function ContentLogging({ org, project, canChange, archived }: { org: string; pr
         s.content_logging ? t("project.settings.loggingOn", "Content logging turned on") : t("project.settings.loggingOff", "Content logging turned off"),
       ),
   });
+  const media = useApiMutation({
+    mutationFn: async (on: boolean) =>
+      data(await api.PATCH("/platform/v1/orgs/{org}/projects/{project}/logs/settings", { params: { path: { org, project } }, body: { keep_media: on } })),
+    invalidates: [logSettingsQuery(org, project).queryKey],
+    onSuccess: (s) =>
+      toast.success(s.keep_media ? t("project.settings.mediaOn", "Media is kept from now on") : t("project.settings.mediaOff", "Media is no longer kept")),
+  });
   const s = settings.data;
   const orgOff = !!s && s.content_logging && !s.effective_content_logging;
+  const logged = !!s?.effective_content_logging;
+  const orgMediaOff = logged && !!s?.keep_media && !s.effective_keep_media;
   return (
     <Section
       spacing="settings"
@@ -328,6 +337,28 @@ function ContentLogging({ org, project, canChange, archived }: { org: string; pr
               disabled={!s || orgOff || !canChange || archived}
               {...(!canChange ? { disabledReason: needs("logs.content.manage") } : archived ? { disabledReason: archivedReadOnly() } : {})}
               onCheckedChange={(on) => toggle.mutate(on)}
+            />
+          }
+        />
+        <SettingsRow
+          title={t("project.settings.keepMedia", "Keep media")}
+          description={
+            orgMediaOff
+              ? t("project.settings.loggingOrgOff", "Off for the organization; it can't be turned on here.")
+              : !logged
+                ? t("project.settings.mediaNeedsContent", "Media is kept only where request content is logged.")
+                : s?.effective_keep_media
+                  ? t("project.settings.mediaKept", "Images, audio and files are kept with the bodies.")
+                  : t("project.settings.mediaLeftOut", "Media is logged as its type and size only.")
+          }
+          control={
+            <Switch
+              aria-label={t("project.settings.keepMedia", "Keep media")}
+              checked={!!s?.effective_keep_media}
+              disabled={!logged || orgMediaOff || !canChange || archived}
+              {...(!canChange ? { disabledReason: needs("logs.content.manage") } : archived ? { disabledReason: archivedReadOnly() } : {})}
+              loading={media.isPending}
+              onCheckedChange={(on) => media.mutate(on)}
             />
           }
         />

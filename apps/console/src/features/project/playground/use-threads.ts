@@ -2,7 +2,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { isApiError } from "~/api/errors";
 import { streamPlayground, type PlaygroundRequest } from "~/api/playground";
 import { locale, t } from "~/i18n";
-import { applyEvent, endResponse, isLive, newResponse, type ResponseState, type Turn } from "./responses";
+import { applyEvent, endResponse, isLive, newResponse, type Mode, type ResponseState, type Turn } from "./responses";
+import type { TurnFile } from "./attachments";
+import type { MediaRun } from "./media";
 
 async function inLanguage(message: string): Promise<string> {
   if (locale() === "en") return message;
@@ -22,9 +24,14 @@ let next = 0;
 const id = (prefix: string) => `${prefix}${++next}`;
 const newThread = (): Thread => ({ key: id("col"), turns: [] });
 
-export interface Send {
-  column: number;
-  request: PlaygroundRequest;
+/** What one column sends: a chat request it streams, or a media request it runs. */
+/** What a column sends: a chat request, or a media run of the model's mode. */
+export type Sent = { mode: Mode; files: TurnFile[] } & ({ request: PlaygroundRequest; media?: undefined } | { media: MediaRun; request?: undefined });
+export type Send = Sent & { column: number };
+
+// Audio a turn made plays from a blob: link that holds its bytes until it is revoked.
+function release(turns: readonly Turn[]) {
+  for (const turn of turns) for (const item of turn.response.media ?? []) if (item.src.startsWith("blob:")) URL.revokeObjectURL(item.src);
 }
 
 const settled = (threads: Thread[], now: number): Thread[] =>
@@ -48,6 +55,7 @@ export function useThreads(
   const mounted = useRef(true);
   const latest = useRef(threads);
   const leave = useRef(onLeave);
+  const cleared = useRef<Turn[]>([]);
   useEffect(() => {
     latest.current = threads;
     leave.current = onLeave;
@@ -76,6 +84,7 @@ export function useThreads(
     return () => {
       mounted.current = false;
       leave.current?.(settled(latest.current, performance.now()));
+      release(cleared.current);
       for (const c of open.values()) c.abort();
       open.clear();
       if (frame.current !== null) cancelAnimationFrame(frame.current);
@@ -141,56 +150,113 @@ export function useThreads(
     [org, project, schedule, settle],
   );
 
+  const runMedia = useCallback(
+    async (turn: Turn, media: MediaRun) => {
+      const controller = new AbortController();
+      controllers.current.set(turn.id, controller);
+      const report = (state: ResponseState) => {
+        live.current.set(turn.id, state);
+        schedule();
+      };
+      let state: ResponseState;
+      try {
+        state = await media(controller.signal, report, { ...turn.response, status: "streaming" });
+      } catch (e) {
+        const now = performance.now();
+        state = controller.signal.aborted
+          ? endResponse(turn.response, "stopped", now)
+          : endResponse(
+              turn.response,
+              "failed",
+              now,
+              isApiError(e) ? e.message : t("playground.connectionClosed", "The connection closed before the reply finished. Try again."),
+              isApiError(e) && e.status >= 500 ? e.requestId : null,
+            );
+      } finally {
+        controllers.current.delete(turn.id);
+      }
+      await settle(turn, state);
+    },
+    [schedule, settle],
+  );
+
+  const start = useCallback(
+    (turn: Turn, s: Sent) => {
+      if (s.media) void runMedia(turn, s.media);
+      else void run(turn, s.request);
+    },
+    [run, runMedia],
+  );
+
   const send = useCallback(
     (prompt: string, sends: Send[]) => {
       const now = performance.now();
-      const turns = sends.map((s) => ({ ...s, turn: { id: id("turn"), prompt, response: newResponse(now) } satisfies Turn }));
+      const turns = sends.map((s) => ({
+        ...s,
+        turn: { id: id("turn"), mode: s.mode, prompt, ...(s.files.length ? { files: s.files } : {}), response: newResponse(now) } satisfies Turn,
+      }));
       for (const t of turns) live.current.set(t.turn.id, t.turn.response);
+      release(cleared.current);
+      cleared.current = [];
       setThreads((ts) => ts.map((t, i) => ({ ...t, turns: [...t.turns, ...turns.filter((x) => x.column === i).map((x) => x.turn)] })));
-      for (const t of turns) void run(t.turn, t.request);
+      for (const t of turns) start(t.turn, t);
     },
-    [run],
+    [start],
   );
 
   const retry = useCallback(
-    (column: number, request: PlaygroundRequest) => {
+    (column: number, again: Sent) => {
       const thread = threads[column];
       const last = thread?.turns.at(-1);
       if (!thread || !last || isLive(last.response)) return;
-      const turn: Turn = { id: id("turn"), prompt: last.prompt, response: newResponse(performance.now()) };
+      const turn: Turn = {
+        id: id("turn"),
+        mode: again.mode,
+        prompt: last.prompt,
+        ...(again.files.length ? { files: again.files } : {}),
+        response: newResponse(performance.now()),
+      };
       live.current.set(turn.id, turn.response);
+      release([last]);
       setThreads((ts) => ts.map((t) => (t.key === thread.key ? { ...t, turns: [...t.turns.slice(0, -1), turn] } : t)));
-      void run(turn, request);
+      start(turn, again);
     },
-    [threads, run],
+    [threads, start],
   );
 
   const stop = useCallback(() => {
     for (const [turn, c] of controllers.current) if (!finished.current.has(turn)) c.abort();
   }, []);
 
+  const cancel = useCallback((turn: string) => controllers.current.get(turn)?.abort(), []);
+
   const add = useCallback(() => setThreads((ts) => [...ts, newThread()]), []);
 
   const remove = (column: number) => {
     threads[column]?.turns.forEach((x) => controllers.current.get(x.id)?.abort());
+    release(threads.filter((_, i) => i === column).flatMap((t) => t.turns));
     setThreads((ts) => ts.filter((_, i) => i !== column));
   };
 
   const clear = (): Thread[] => {
     stop();
     const before = settled(threads, performance.now());
+    release(cleared.current);
+    cleared.current = before.flatMap((t) => t.turns);
     setThreads((ts) => ts.map((t) => ({ ...t, turns: [] })));
     return before;
   };
 
-  const restore = (before: Thread[]) =>
+  const restore = (before: Thread[]) => {
+    cleared.current = [];
     setThreads((ts) =>
       ts.map((t) => {
         const kept = before.find((b) => b.key === t.key);
         return kept && t.turns.length === 0 ? kept : t;
       }),
     );
+  };
 
   const busy = threads.some((t) => t.turns.some((x) => isLive(x.response)));
-  return { threads, busy, send, retry, stop, add, remove, clear, restore };
+  return { threads, busy, send, retry, stop, cancel, add, remove, clear, restore };
 }

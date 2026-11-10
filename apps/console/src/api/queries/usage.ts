@@ -35,17 +35,19 @@ export const usageSpanQuery = (org: string, project?: string) =>
 
 export type TimelineStep = "minute" | "hour";
 
-export const timelineQuery = (org: string, project: string | undefined, from: string, to: string, step: TimelineStep) =>
-  queryOptions({
+export interface TimelineFilter {
+  group_by?: "error_kind";
+  failed?: boolean;
+}
+
+export const timelineQuery = (org: string, project: string | undefined, from: string, to: string, step: TimelineStep, filter: TimelineFilter = {}) => {
+  const query = { from, to, step, ...filter };
+  return queryOptions({
     ...CHARTED,
-    queryKey: project ? ["orgs", org, "projects", project, "usage", "timeline", { from, to, step }] : ["orgs", org, "usage", "timeline", { from, to, step }],
+    queryKey: project ? ["orgs", org, "projects", project, "usage", "timeline", query] : ["orgs", org, "usage", "timeline", query],
     queryFn: async ({ signal }): Promise<TimelineBucket[]> =>
       project
-        ? data(
-            await api.GET("/platform/v1/orgs/{org}/projects/{project}/usage/timeline", {
-              params: { path: { org, project }, query: { from, to, step } },
-              signal,
-            }),
-          ).data
-        : data(await api.GET("/platform/v1/orgs/{org}/usage/timeline", { params: { path: { org }, query: { from, to, step } }, signal })).data,
+        ? data(await api.GET("/platform/v1/orgs/{org}/projects/{project}/usage/timeline", { params: { path: { org, project }, query }, signal })).data
+        : data(await api.GET("/platform/v1/orgs/{org}/usage/timeline", { params: { path: { org }, query }, signal })).data,
   });
+};

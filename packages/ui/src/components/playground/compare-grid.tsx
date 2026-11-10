@@ -228,10 +228,13 @@ export interface CompareColumnProps {
   onRemove?: (() => void) | undefined;
   removeLabel?: string | undefined;
   stickToEnd?: boolean | undefined;
+  followKey?: string | number | undefined;
   className?: string | undefined;
 }
 
-function useStickToEnd(enabled: boolean) {
+const UP_KEYS = new Set(["ArrowUp", "PageUp", "Home"]);
+
+function useStickToEnd(enabled: boolean, followKey: unknown) {
   const body = useRef<HTMLDivElement | null>(null);
   const content = useRef<HTMLDivElement | null>(null);
   const pinned = useRef(true);
@@ -240,15 +243,37 @@ function useStickToEnd(enabled: boolean) {
     const inner = content.current;
     if (!enabled || !el || !inner || typeof ResizeObserver === "undefined") return;
     let last = el.scrollTop;
+    let touchY: number | null = null;
+    const toEnd = () => el.scrollHeight - el.clientHeight - el.scrollTop;
     const fade = () => {
       el.style.setProperty("--scroll-area-overflow-y-start", `${Math.max(0, el.scrollTop)}px`);
-      el.style.setProperty("--scroll-area-overflow-y-end", `${Math.max(0, el.scrollHeight - el.clientHeight - el.scrollTop)}px`);
+      el.style.setProperty("--scroll-area-overflow-y-end", `${Math.max(0, toEnd())}px`);
+    };
+    // A trackpad scrolls up a few pixels at a time; the reader's intent lets go at once, before
+    // the next frame of a stream pulls the column back down.
+    const release = () => {
+      if (el.scrollHeight > el.clientHeight && el.scrollTop > 0) pinned.current = false;
     };
     const onScroll = () => {
       fade();
-      const near = el.scrollHeight - el.scrollTop - el.clientHeight <= 24;
-      pinned.current = el.scrollTop < last - 1 ? near : pinned.current || near;
+      if (toEnd() <= 2) pinned.current = true;
+      else if (el.scrollTop < last - 1) pinned.current = false;
       last = el.scrollTop;
+    };
+    const onWheel = (e: WheelEvent) => {
+      if (e.deltaY < 0) release();
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (UP_KEYS.has(e.key)) release();
+    };
+    const onTouchStart = (e: TouchEvent) => {
+      touchY = e.touches[0]?.clientY ?? null;
+    };
+    const onTouchMove = (e: TouchEvent) => {
+      const y = e.touches[0]?.clientY;
+      if (y === undefined) return;
+      if (touchY !== null && y > touchY) release();
+      touchY = y;
     };
     const ro = new ResizeObserver(() => {
       if (pinned.current) {
@@ -258,23 +283,37 @@ function useStickToEnd(enabled: boolean) {
       fade();
     });
     el.addEventListener("scroll", onScroll, { passive: true });
+    el.addEventListener("wheel", onWheel, { passive: true });
+    el.addEventListener("keydown", onKey);
+    el.addEventListener("touchstart", onTouchStart, { passive: true });
+    el.addEventListener("touchmove", onTouchMove, { passive: true });
     ro.observe(inner);
     ro.observe(el);
     return () => {
       el.removeEventListener("scroll", onScroll);
+      el.removeEventListener("wheel", onWheel);
+      el.removeEventListener("keydown", onKey);
+      el.removeEventListener("touchstart", onTouchStart);
+      el.removeEventListener("touchmove", onTouchMove);
       ro.disconnect();
     };
   }, [enabled]);
+  useLayoutEffect(() => {
+    const el = body.current;
+    if (!enabled || !el || followKey === undefined) return;
+    pinned.current = true;
+    el.scrollTop = el.scrollHeight;
+  }, [enabled, followKey]);
   return { body, content };
 }
 
 const Column = forwardRef<HTMLElement, CompareColumnProps>(function CompareGridColumn(
-  { label, header, actions, children, footer, onRemove, removeLabel, stickToEnd = true, className },
+  { label, header, actions, children, footer, onRemove, removeLabel, stickToEnd = true, followKey, className },
   ref,
 ) {
   const t = useUiText();
   const { index, count, divider, add, removing } = useContext(ColumnContext);
-  const { body, content } = useStickToEnd(stickToEnd);
+  const { body, content } = useStickToEnd(stickToEnd, followKey);
   return (
     <section
       ref={ref}

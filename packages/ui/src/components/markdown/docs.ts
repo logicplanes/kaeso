@@ -8,7 +8,7 @@ export const docs = {
       collapseAfter: 'Texts longer than this many characters show their start and "Show all" (24,000 by default; 0 never collapses).',
       headingLevel: "The heading level `#` becomes (3 by default: below a page's and a section's own headings).",
       size: "The text size: `small`, `body` or `lg`.",
-      streaming: "The text is still arriving: nothing collapses, and the tokens aren't cached.",
+      streaming: "The text is still arriving: nothing collapses, and each update reads only its last blocks again, so a long reply stays cheap to follow.",
       text: "The Markdown source. Raw HTML in it stays text.",
       tone: "Primary text (`default`) or secondary text (`secondary`).",
       trailing: "Drawn inline after the last word of a paragraph, heading or list item (never on a line of its own).",

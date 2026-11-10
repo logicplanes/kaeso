@@ -239,5 +239,6 @@
   "format.limitKind.toolCallRate": "Tool-Aufrufrate",
   "format.limitUnit.toolCallsPerMinute": "Tool-Aufrufe / Min.",
   "format.limit.toolCallRate": "Tool-Aufrufrate von {amount} Tool-Aufrufen pro Minute",
-  "format.audit.action.mcpServerDisconnect": "Von einem MCP-Server abgemeldet"
+  "format.audit.action.mcpServerDisconnect": "Von einem MCP-Server abgemeldet",
+  "format.audit.action.logsProjectKeepMedia": "Aufbewahrte Medien eines Projekts geändert"
 }

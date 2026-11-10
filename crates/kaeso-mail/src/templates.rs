@@ -2049,6 +2049,35 @@ mod tests {
     }
 
     #[test]
+    fn a_finished_export_names_what_was_exported() {
+        use crate::notices::*;
+        let links = Links {
+            settings: "https://kaeso.example.com/settings".to_owned(),
+            unsubscribe: None,
+        };
+        for (lang, what) in [
+            (
+                Locale::En,
+                "The export of the tool calls you started finished.",
+            ),
+            (Locale::De, "der Tool-Aufrufe"),
+            (Locale::ZhCn, "工具调用"),
+        ] {
+            let mail = notice(
+                lang,
+                TO,
+                None,
+                &Fact::ExportReady(Export::ToolCalls),
+                Because::Right("logs.export"),
+                URL,
+                &links,
+            )
+            .render(&instance());
+            assert!(mail.text.contains(what), "{}", mail.text);
+        }
+    }
+
+    #[test]
     fn the_weekly_summary_names_each_organization_and_the_week() {
         use crate::notices::*;
         let links = Links {

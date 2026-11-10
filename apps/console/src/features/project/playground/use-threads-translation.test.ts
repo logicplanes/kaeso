@@ -24,7 +24,7 @@ describe("useThreads without its translations", () => {
   it("shows the model's error as it came when the translations can't load", async () => {
     apply(await load("de"));
     const { result } = renderHook(() => useThreads("org_1", "proj_1", 1));
-    act(() => result.current.send("Hi", [{ column: 0, request: { model: "gpt-5.4-mini", input: [], stream: true } }]));
+    act(() => result.current.send("Hi", [{ column: 0, mode: "text", files: [], request: { model: "gpt-5.4-mini", input: [], stream: true } }]));
     await waitFor(() => expect(result.current.threads[0]?.turns[0]?.response.error).toBe("Something went wrong; try again."));
   });
 });

@@ -17,6 +17,8 @@ use tokio_util::sync::CancellationToken;
 
 use kaeso_upstream::UpstreamError;
 
+use crate::services::log_media::{KEPT_PER_REQUEST, LeftOut, NOT_KEPT, TOO_LARGE};
+
 const INCOMPLETE: &str = "incomplete";
 
 use super::hooks::{CLIENT_STALLED, SHUT_DOWN, STREAM_INTERRUPTED, STREAM_LIMIT, StreamProgress};
@@ -26,6 +28,107 @@ use super::pipeline::{
     upstream_error,
 };
 use crate::services::continuity::StreamCarry;
+
+// A streamed image or speech reply as the request log keeps it. Its media is gathered only
+// where media is kept and while it fits the request's allowance; otherwise only the start of
+// each file is held, which is enough to log its type and size.
+struct StreamedMedia {
+    logged: bool,
+    keep: bool,
+    left: u64,
+    left_out: LeftOut,
+    audio: Vec<u8>,
+    audio_bytes: u64,
+    audio_type: Option<String>,
+    images: Vec<kaeso_kpp::GeneratedImage>,
+}
+
+// Enough of a file to read its type from.
+const STREAMED_HEAD: usize = 64;
+
+impl StreamedMedia {
+    fn new(logged: bool, keep: bool) -> Self {
+        StreamedMedia {
+            logged,
+            keep,
+            left: KEPT_PER_REQUEST,
+            left_out: LeftOut::default(),
+            audio: Vec::new(),
+            audio_bytes: 0,
+            audio_type: None,
+            images: Vec::new(),
+        }
+    }
+
+    fn reason(&self) -> &'static str {
+        if self.keep { TOO_LARGE } else { NOT_KEPT }
+    }
+
+    fn feed(&mut self, event: &StreamEvent) {
+        use base64::Engine as _;
+        if !self.logged {
+            return;
+        }
+        match event {
+            StreamEvent::Speech(e) => {
+                if self.audio_type.is_none() {
+                    self.audio_type.clone_from(&e.media_type);
+                }
+                let piece = e.audio.as_deref().unwrap_or_default();
+                let size = (piece.trim_end_matches('=').len() as u64).saturating_mul(3) / 4;
+                let held = self.audio_bytes;
+                self.audio_bytes = held.saturating_add(size);
+                let fits = self.keep && self.audio_bytes <= self.left;
+                if fits || self.audio.len() < STREAMED_HEAD {
+                    let bytes = base64::engine::general_purpose::STANDARD
+                        .decode(piece)
+                        .unwrap_or_default();
+                    self.audio.extend_from_slice(&bytes);
+                }
+                if !fits {
+                    self.audio.truncate(STREAMED_HEAD);
+                }
+            }
+            StreamEvent::Image(i) if i.partial.is_none() => {
+                let mut image = i.image.clone();
+                if let kaeso_kpp::Source::Base64(b) = &image.source {
+                    let size = b.data.len() as u64;
+                    match self.left.checked_sub(size).filter(|_| self.keep) {
+                        Some(rest) => self.left = rest,
+                        None => self.left_out.take(&mut image.source, size, self.reason()),
+                    }
+                }
+                self.images.push(image);
+            }
+            _ => {}
+        }
+    }
+
+    fn reply(mut self, model: &str, content_type: Option<&str>) -> Option<String> {
+        let reply = if !self.images.is_empty() {
+            Reply::Image(kaeso_kpp::ImageResponse::new(model, self.images))
+        } else if self.audio_bytes > 0 {
+            let media_type = self
+                .audio_type
+                .as_deref()
+                .or(content_type)
+                .unwrap_or("application/octet-stream")
+                .to_owned();
+            let whole = self.keep && self.audio_bytes <= self.left;
+            let reason = self.reason();
+            let mut audio = kaeso_kpp::Source::bytes(media_type, self.audio);
+            if !whole {
+                self.left_out.take(&mut audio, self.audio_bytes, reason);
+            }
+            Reply::Speech(kaeso_kpp::SpeechResponse::new(model, audio))
+        } else {
+            return None;
+        };
+        crate::services::logs::written_media_reply(&reply, &self.left_out)
+            .map_err(|e| tracing::warn!(error = %e, "cannot serialize a streamed reply for the request log; it is logged without it"))
+            .ok()
+    }
+}
 
 pub(super) struct Keepalive {
     interval: Option<Duration>,
@@ -258,6 +361,15 @@ impl ToApp {
     }
 }
 
+// The keepalive an encoder writes in place of an event the app's format can't show or that it
+// holds back, which the request log counts like the ones the interval earns. The app's own
+// format's `ping` is the provider's event, replayed.
+fn stands_in(frame: &[u8], bytes: &[u8], event: &StreamEvent, app: DialectId) -> bool {
+    !frame.is_empty()
+        && bytes == frame
+        && !matches!(event, StreamEvent::Extra(item) if item.origin.is(app))
+}
+
 #[derive(Default)]
 struct Processing(Duration);
 
@@ -292,6 +404,7 @@ pub(super) struct Parts {
     pub(super) chunks: kaeso_upstream::ByteStream,
     pub(super) decoder: Box<dyn StreamDecoder>,
     pub(super) encoder: Box<dyn StreamEncoder>,
+    pub(super) app: DialectId,
     pub(super) keepalive: Keepalive,
     pub(super) counter: InputCounter,
     pub(super) carry: Option<StreamCarry>,
@@ -396,6 +509,7 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
         mut chunks,
         mut decoder,
         mut encoder,
+        app: app_dialect,
         keepalive,
         counter,
         mut carry,
@@ -414,6 +528,7 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
         Assembler::without_blocks(counter.dialect)
     };
     let mut tally = Tally::new();
+    let mut streamed = StreamedMedia::new(rec.outcome().content_kept, rec.outcome().media_kept);
     let mut app = ToApp {
         tx,
         taken,
@@ -432,6 +547,7 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
     let mut last_event_at: Option<u64> = None;
     let mut processing = Processing::default();
     let mut last_write = Instant::now();
+    let frame = encoder.keepalive();
     {
         let watch = app.tx.clone();
         let closed = watch.closed();
@@ -529,9 +645,11 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
             let mut out = Vec::new();
             let mut stop = false;
             let mut ends = false;
+            let mut in_place = 0u32;
             for event in &events {
                 asm.feed(event);
                 tally.feed(event);
+                streamed.feed(event);
                 if let Some(c) = carry.as_mut() {
                     c.observe(event);
                 }
@@ -545,6 +663,9 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
                         bytes
                     }
                 };
+                if stands_in(&frame, &bytes, event, app_dialect) {
+                    in_place += 1;
+                }
                 if out.is_empty() {
                     out = bytes;
                 } else {
@@ -560,6 +681,7 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
                     break 'read;
                 }
                 last_write = Instant::now();
+                app.progress.keepalives = app.progress.keepalives.saturating_add(in_place);
                 if let Some(f) = first.take() {
                     let _ = f.send(None);
                 }
@@ -588,6 +710,7 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
     for event in &held {
         asm.feed(event);
         tally.feed(event);
+        streamed.feed(event);
     }
     drop(chunks);
     let cancelled = gone && !last_event_at.is_some_and(|at| app.taken.reached(at));
@@ -662,6 +785,10 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
             r.clone_from(&o.requested_model.clone().unwrap_or_default());
         }
         o.reply = if media { None } else { assembled.response };
+        if media && assembled.complete {
+            let model = o.response_model.clone().unwrap_or_default();
+            o.media_reply_logged = streamed.reply(&model, o.content_type.as_deref());
+        }
         o.stream_progress = Some(app.progress);
         o.stream_processing = Some(processing.0);
     }
@@ -784,6 +911,42 @@ async fn end_capped(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn speech(bytes: &[u8]) -> StreamEvent {
+        use base64::Engine as _;
+        let mut event = kaeso_kpp::SpeechEvent::default();
+        event.audio = Some(base64::engine::general_purpose::STANDARD.encode(bytes));
+        event.media_type = Some("audio/mpeg".into());
+        StreamEvent::Speech(event)
+    }
+
+    #[test]
+    fn a_streamed_reply_beyond_the_allowance_is_logged_as_too_large_without_being_held() {
+        let piece = vec![7u8; 1 << 20];
+        let mut over = StreamedMedia::new(true, true);
+        for _ in 0..11 {
+            over.feed(&speech(&piece));
+        }
+        assert!(over.audio.len() <= STREAMED_HEAD);
+        let logged: serde_json::Value =
+            serde_json::from_str(&over.reply("tts-1", None).unwrap()).unwrap();
+        assert_eq!(
+            logged["speech"]["audio"]["base64"]["data"]["kaeso_media"],
+            serde_json::json!({ "media_type": "audio/mpeg", "bytes": 11 << 20, "reason": "too_large" })
+        );
+
+        let mut kept = StreamedMedia::new(true, true);
+        kept.feed(&speech(b"ID3\x04 a short sound"));
+        let logged = kept.reply("tts-1", None).unwrap();
+        assert!(
+            logged.starts_with(r#"{"format":2,"speech":"#) && !logged.contains("kaeso_media"),
+            "{logged}"
+        );
+
+        let mut unlogged = StreamedMedia::new(false, false);
+        unlogged.feed(&speech(&piece));
+        assert!(unlogged.audio.is_empty() && unlogged.reply("tts-1", None).is_none());
+    }
 
     #[test]
     fn zero_turns_keepalives_off() {

@@ -74,7 +74,7 @@ Creating a video answers at once with its job, `queued` or `in_progress`, under 
 
 Each retrieve asks the provider how the job stands while it runs, and keeps what it says. When the provider can't answer, the retrieve returns the job as Kaeso last saw it, so ask again later. A job that ended is never asked about again. The SDKs' `poll` and `create_and_poll` call retrieve until the job ends.
 
-A listing shows each video as Kaeso last saw it, without asking providers. A video belongs to the project whose key started it; another project's key gets 404, the same answer as for an id that doesn't exist. Once the provider key that started a video is replaced, Kaeso can't reach the job and answers 409.
+A listing shows each video as Kaeso last saw it, without asking providers. A video belongs to the project whose key started it; another project's key gets 404, the same answer as for an id that doesn't exist. A video a member starts in the [Playground](../console/playground.md) is theirs alone: no key lists or reaches it. Once the provider key that started a video is replaced, Kaeso can't reach the job and answers 409.
 
 Retrieves, downloads, deletes and remixes that ask the provider count against the key's [request rates](../console/limits-and-budgets.md) like any model request, since each spends the provider's quota with the organization's key; a retrieve of a job that ended answers from Kaeso's record and doesn't count.
 
@@ -124,10 +124,11 @@ The [OpenAI Videos mapping](../development/kpp/openai-videos.md) and the provide
 
 Starting a video costs nothing. Kaeso bills it once, when the first request sees it completed, at the model's prices from KPMR: per second or per video, by resolution, sound and length where the prices differ. Gemini Omni is billed by its tokens. A failed video costs nothing, and a model without prices in KPMR is logged without a cost. Kaeso keeps Together AI's `outputs.cost` with the job but doesn't bill it: Together's reference gives it as a whole number without a unit.
 
-Spend budgets check a video's dearest case before it starts, and its cost counts once it ends. Request logs show the start as `videos` or `videos/remix` and the finished video as `videos/completed`, with its clips, seconds and resolution. They never keep video or image bytes ([request logs](../console/request-logs.md)).
+Spend budgets check a video's dearest case before it starts, and its cost counts once it ends. Request logs show the start as `videos` or `videos/remix` and the finished video as `videos/completed`, with its clips, seconds and resolution. They never keep the video. An uploaded image is logged as its media type and size unless the organization and the project [keep media](../console/request-logs.md#media-in-requests-and-replies).
 
 ## Next steps
 
+- [Playground](../console/playground.md): Try a video model from the console before writing code.
 - [Model API](model-api.md): Look up every endpoint, header and model name.
 - [Request logs](../console/request-logs.md): Find a video and what it cost.
 - [Supported providers](../concepts/supported-providers.md): See which providers Kaeso calls and how to add their keys.

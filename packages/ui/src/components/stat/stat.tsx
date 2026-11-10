@@ -39,7 +39,7 @@ export interface StatProps {
   unit?: ReactNode | undefined;
   delta?: { label: string; tone?: "success" | "danger" | "neutral" | undefined } | undefined;
   size?: keyof typeof KAESO_STAT_VARIANTS.size | undefined;
-  change?: { value: number; better?: "up" | "down" | undefined } | undefined;
+  change?: { value: number; better?: "up" | "down" | "none" | undefined } | undefined;
   detail?: ReactNode | undefined;
   trend?: number[] | undefined;
   trendColor?: string | undefined;

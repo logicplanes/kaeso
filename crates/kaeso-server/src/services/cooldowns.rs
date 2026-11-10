@@ -153,7 +153,12 @@ impl Cooldowns {
         &self.memory
     }
 
+    // A held step is skipped only for a later one that is ready, so a route with a single
+    // step it can take tries that step whatever is held, and asks Valkey nothing.
     pub async fn lookup(&self, valkey: &Valkey, steps: &[Step<'_>], now: OffsetDateTime) -> Lookup {
+        if steps.len() < 2 {
+            return Lookup::default();
+        }
         let mut keys: Vec<Key> = Vec::with_capacity(steps.len() * 2);
         for step in steps {
             for key in step.keys() {
@@ -306,6 +311,28 @@ mod tests {
         assert_eq!(m.held(&at(OPUS), now), None);
         m.release(&at(FABLE));
         assert_eq!(m.held(&at(FABLE), now), None);
+    }
+
+    #[tokio::test]
+    async fn a_route_with_one_step_asks_valkey_nothing_and_one_with_two_reads_what_is_held() {
+        let now = OffsetDateTime::UNIX_EPOCH;
+        let unreachable = Valkey::new(
+            &secrecy::SecretString::from("redis://127.0.0.1:1"),
+            "kaeso-test:",
+            None,
+        )
+        .unwrap_or_else(|e| panic!("{e}"));
+        let cooldowns = Cooldowns::default();
+        cooldowns
+            .memory()
+            .hold(&at(FABLE), Reach::Model, held(now + MODEL), now);
+        let alone = cooldowns.lookup(&unreachable, &[at(FABLE)], now).await;
+        assert_eq!(alone.held(&at(FABLE), now), None);
+        let both = cooldowns
+            .lookup(&unreachable, &[at(FABLE), at(OPUS)], now)
+            .await;
+        assert_eq!(both.held(&at(FABLE), now).map(|h| h.status), Some(402));
+        assert_eq!(both.held(&at(OPUS), now), None);
     }
 
     #[test]
