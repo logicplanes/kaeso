@@ -1,0 +1,24 @@
+{
+  "id": "chatcmpl-6f1c2a9e8b7d4c3a",
+  "object": "chat.completion",
+  "created": 1794225600,
+  "model": "openai/gpt-oss-120b",
+  "system_fingerprint": null,
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "There are three 'g's in \"huggingface\".",
+        "reasoning": "Count the letter g in huggingface: h-u-g-g-i-n-g-f-a-c-e. That is three."
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 82,
+    "completion_tokens": 41,
+    "total_tokens": 123
+  }
+}

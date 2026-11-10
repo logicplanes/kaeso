@@ -2129,6 +2129,29 @@ expression: outcomes
       "totalTokenCount": 217
     }
   },
+  "providers/huggingface/provider-suffix": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "There are three 'g's in \"huggingface\"."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "openai/gpt-oss-120b",
+    "responseId": "chatcmpl-6f1c2a9e8b7d4c3a",
+    "usageMetadata": {
+      "candidatesTokenCount": 41,
+      "promptTokenCount": 82,
+      "totalTokenCount": 123
+    }
+  },
   "providers/mistral/recorded-assistant-prefix": {
     "candidates": [
       {

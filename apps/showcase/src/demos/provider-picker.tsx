@@ -13,6 +13,7 @@ const providers: ProviderPickerOption[] = [
   { id: "gemini-agent-platform", name: "Gemini Enterprise Agent Platform" },
   { id: "google", name: "Google AI Studio" },
   { id: "groq", name: "Groq" },
+  { id: "huggingface", name: "Hugging Face" },
   { id: "minimax", name: "MiniMax" },
   { id: "mistral", name: "Mistral" },
   { id: "nebius", name: "Nebius Token Factory" },
