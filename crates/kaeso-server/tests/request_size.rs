@@ -582,14 +582,100 @@ async fn a_key_over_its_share_is_refused_after_the_wait_while_other_keys_are_ser
 }
 
 #[tokio::test]
-async fn the_playground_takes_bodies_up_to_the_platform_api_limit() {
+async fn the_playground_takes_chat_bodies_up_to_the_model_api_limit() {
+    let env = common::v1::env(
+        None,
+        Some(&[
+            ("KAESO_BODY_LIMITS_MODEL_API", "2MiB"),
+            ("KAESO_BODY_LIMITS_PLATFORM_API", "64KiB"),
+        ]),
+    )
+    .await;
+    let path = format!(
+        "/orgs/{}/projects/{}/playground/responses",
+        env.owner.org_id, env.project
+    );
+    let image = format!("data:image/png;base64,{}", "A".repeat(1 << 20));
+    let attached = json!({
+        "model": "claude-haiku-4-5",
+        "input": [{ "role": "user", "content": [
+            { "type": "input_text", "text": "What is in this picture?" },
+            { "type": "input_image", "image_url": image },
+        ] }],
+        "stream": true,
+    });
+    let r = env.app.post(&path, attached, Some(&env.owner.cookie)).await;
+    assert_ne!(r.status, StatusCode::PAYLOAD_TOO_LARGE, "{:?}", r.body);
+
+    let body = json!({ "model": "claude-haiku-4-5", "input": "a".repeat(2 << 20), "stream": true });
+    let r = env.app.post(&path, body, Some(&env.owner.cookie)).await;
+    assert_eq!(r.status, StatusCode::PAYLOAD_TOO_LARGE, "{:?}", r.body);
+    assert_eq!(r.error_type(), "request_too_large");
+    assert_eq!(
+        r.body["error"]["message"],
+        "The conversation is larger than Kaeso accepts."
+    );
+
+    let models = env
+        .app
+        .get(
+            &format!(
+                "/orgs/{}/projects/{}/playground/models",
+                env.owner.org_id, env.project
+            ),
+            &env.owner.cookie,
+        )
+        .await;
+    let listed = models.body["data"].as_array().unwrap();
+    assert!(!listed.is_empty());
+    assert!(
+        listed
+            .iter()
+            .all(|m| m["max_request_bytes"] == json!(2 << 20))
+    );
+}
+
+#[tokio::test]
+async fn a_playground_body_cut_off_by_the_app_is_a_bad_request_not_too_large() {
     let env = common::v1::env(None, None).await;
     let path = format!(
         "/orgs/{}/projects/{}/playground/responses",
         env.owner.org_id, env.project
     );
-    let body = json!({ "model": "claude-haiku-4-5", "input": "a".repeat(1 << 20), "stream": true });
-    let r = env.app.post(&path, body, Some(&env.owner.cookie)).await;
-    assert_eq!(r.status, StatusCode::PAYLOAD_TOO_LARGE, "{:?}", r.body);
-    assert_eq!(r.error_type(), "request_too_large");
+    let chunks: Vec<Result<bytes::Bytes, std::io::Error>> = vec![
+        Ok(bytes::Bytes::from_static(
+            br#"{"model":"claude-haiku-4-5","input":"#,
+        )),
+        Err(std::io::Error::new(
+            std::io::ErrorKind::ConnectionReset,
+            "gone",
+        )),
+    ];
+    let req = Request::builder()
+        .method(Method::POST)
+        .uri(format!("/platform/v1{path}"))
+        .header(
+            "cookie",
+            format!("__Host-kaeso_session={}", env.owner.cookie),
+        )
+        .header("origin", common::ORIGIN)
+        .header("content-type", "application/json")
+        .body(Body::from_stream(futures::stream::iter(chunks)))
+        .unwrap();
+    let (status, _, body) = env.app.raw_bytes(req).await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    let error: Value = serde_json::from_slice(&body).unwrap();
+    assert_eq!(
+        error["error"]["message"],
+        "The request body broke off before it was complete; send it again."
+    );
+    assert!(env.mock.received().is_empty());
+
+    let named = json!({
+        "model": "claude-haiku-4-5",
+        "input": "Explain \"route\" and \"alias\" in one line.",
+        "stream": true,
+    });
+    let r = env.app.post(&path, named, Some(&env.owner.cookie)).await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
 }

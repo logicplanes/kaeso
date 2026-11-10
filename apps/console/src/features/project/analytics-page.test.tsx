@@ -112,7 +112,7 @@ describe("AnalyticsPage", () => {
         usageRow({ key: "anthropic/", requests: 3, errors: 0, cost: "0.001" }),
       ],
     });
-    await renderApp(projectPath(`analytics?${PERIOD}`));
+    await renderApp(projectPath(`analytics?${PERIOD}&by=model`));
 
     const table = await breakdown();
     await waitFor(() => expect(bodyRows(table)).toHaveLength(3));
@@ -265,7 +265,7 @@ describe("AnalyticsPage", () => {
     signedIn({ projectRights: without("costs.view") });
     projectData();
     usage({ model: apiError(500, "internal", "Usage is down.") });
-    await renderApp(projectPath(`analytics?${PERIOD}`));
+    await renderApp(projectPath(`analytics?${PERIOD}&by=model`));
 
     const table = await breakdown();
     expect(await within(table).findByText("Couldn't load these rows")).toBeInTheDocument();
@@ -276,7 +276,7 @@ describe("AnalyticsPage", () => {
     signedIn({ projectRights: without("costs.view", "models.view") });
     projectData({ models: [catalogueModel()] });
     usage({ model: [usageRow({ key: "anthropic/claude-sonnet-4-5" })] });
-    await renderApp(projectPath(`analytics?${PERIOD}`));
+    await renderApp(projectPath(`analytics?${PERIOD}&by=model`));
 
     const table = await breakdown();
     await waitFor(() => expect(bodyRows(table)[0]).toHaveTextContent("claude-sonnet-4-5"));
@@ -295,7 +295,8 @@ describe("AnalyticsPage", () => {
 
     await breakdown();
     await waitFor(() => expect(requests("GET", USAGE).map((r) => r.query.get("from"))).toContain("2026-09-01"));
-    expect(requests("GET", USAGE).every((r) => r.query.get("from") === "2026-09-01")).toBe(true);
+    const month = `${new Date().toISOString().slice(0, 8)}01`;
+    expect(requests("GET", USAGE).every((r) => ["2026-09-01", month].includes(r.query.get("from") ?? ""))).toBe(true);
   });
 
   it("loads the daily usage again from a chart that couldn't load", async () => {
@@ -338,19 +339,19 @@ describe("AnalyticsPage", () => {
     await waitFor(() => expect(bodyRows(screen.getByRole("table", { name: "Usage breakdown" }))[0]).toHaveTextContent("13 Oct"));
   });
 
-  it("charts every day of a period up to a year, and names the year of each day when it spans two", async () => {
+  it("charts the weeks of a period longer than a quarter, and names the year of each when it spans two", async () => {
     signedIn();
     projectData();
     on("GET", `${USAGE}/span`, { first_day: "2025-10-01", last_day: "2026-10-14" });
     on("GET", USAGE, ({ query }: { query: URLSearchParams }) => ({
-      data: query.get("group_by") === "day" ? [usageRow({ key: "2025-10-21", requests: 3 }), usageRow({ key: "2026-10-12", requests: 7 })] : [],
+      data: query.get("group_by") === "week" ? [usageRow({ key: "2025-10-20", requests: 3 }), usageRow({ key: "2026-10-12", requests: 7 })] : [],
     }));
     await renderApp(projectPath("analytics?from=2025-10-21&to=2026-10-14&by=day"));
     await breakdown();
     await waitFor(() =>
       expect(bodyRows(screen.getByRole("table", { name: "Usage breakdown" })).map((r) => within(r).getAllByRole("cell")[0]?.textContent)).toEqual([
-        "12 Oct 2026",
-        "21 Oct 2025",
+        "Week of 12 Oct 2026",
+        "Week of 20 Oct 2025",
       ]),
     );
   });

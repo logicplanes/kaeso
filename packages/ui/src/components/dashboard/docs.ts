@@ -66,7 +66,8 @@ export const docs = {
     props: {
       "aria-label": "The list's accessible name.",
       empty: 'What an empty list says: "Nothing in this period".',
-      items: "The rows: `id`, `label`, `value`, `secondary` (the share or a time) and `share` for the bar; leave `share` out for plain rows.",
+      items:
+        'The rows: `id`, `label`, `value`, `secondary` (the share or a time), `change` against the previous period (a fraction with its `better` side, or a word such as "New"; on a phone it takes the place of `secondary`, so the label keeps its room) and `share` for the bar; leave `share` out for plain rows.',
       loading: "While the rows load: `rows` lines of their shape.",
       onOpen: "Called with a row's id when it is chosen; without it, rows are plain text.",
       rows: "How many lines the loading state shows.",
@@ -97,9 +98,11 @@ export const docs = {
     },
   },
   Legend: {
-    description: "A chart's key that also says each series' total: a solid line for this period, a dashed one for the period it is compared with.",
+    description:
+      "A chart's key: a solid line for this period, a dashed one for the period it is compared with. It says each series' total too, unless the totals already stand beside the chart.",
     props: {
-      items: "One entry per series: `label`, `value`, `color`, and `dashed` for the comparison.",
+      items:
+        "One entry per series: `label`, `color`, `dashed` for the comparison, and `value` for its total; leave `value` out when a tab above already says it.",
     },
   },
 } satisfies ComponentDocs;

@@ -140,7 +140,7 @@ cargo xtask kpmr
 
 ## 记录的回复
 
-开启内容记录后，网关把每个回复以 `kaeso_kpp::Response` 的 serde JSON 形式存入 ClickHouse 中 `request_content` 的 `reply` 列。控制台的日志查看器按存储的原样绘制它。组织最多可以保留内容 36,500 天，所以之后的每个控制台版本都必须还能读取今天记录的回复。
+开启内容记录后，网关把每个聊天回复以 `kaeso_kpp::Response` 的 serde JSON 形式，把图片、语音或转写回复以按其类别包裹的 `kaeso_kpp::Reply` 的 serde JSON 形式（格式 2，例如 `{"format": 2, "image": {…}}`），存入 ClickHouse 中 `request_content` 的 `reply` 列。控制台的日志查看器按存储的原样绘制它。组织最多可以保留内容 36,500 天，所以之后的每个控制台版本都必须还能读取今天记录的回复。未保留的媒体以 `{"kaeso_media": {"media_type", "bytes", "reason"}}` 的形式存储，取代其 base64 文本，图片还带有 `width` 和 `height`；`reason` 为 `not_kept`，超出请求 10 MiB 额度的文件则为 `too_large`。保留的媒体仍是收到时的 base64 文本。
 
 - **第一种形式没有版本字段。** `crates/kaeso-server/src/services/snapshots/` 中的快照为有代表性的回复固定了这种形式，KPP 类型的 serde 变化会让 `logged_replies_keep_the_v0_1_form` 失败。
 - **改变这种形式就是格式变更。** 从第一次变更起，网关会在回复中写入一个 `format` 编号，第二种形式为 `2`。控制台学会新形式，同时保留每种旧形式的渲染器。仅仅接受变化后的快照永远不够。

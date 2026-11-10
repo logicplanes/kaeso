@@ -5,8 +5,9 @@ use std::path::Path;
 use kaeso_codecs::sse::{SseItem, parse_all};
 use kaeso_codecs::{EgressCtx, EncodeCtx, HIDDEN_TEXT_PER_KEEPALIVE, dispatch};
 use kaeso_kpp::{
-    Delta, DialectId, RawItem, RawJson, RequestKind, ResponseStart, ResponseStop, StreamEvent,
-    StreamMode,
+    BlockDelta, BlockHeader, BlockStart, BlockStop, Delta, DialectId, RawItem, RawJson,
+    RequestKind, ResponseDelta, ResponseStart, ResponseStop, StopReason, StreamEvent, StreamMode,
+    ToolCallHeader,
 };
 
 const A: DialectId = DialectId::AnthropicMessages;
@@ -199,4 +200,73 @@ fn claude_thinking_streams_to_a_responses_app_as_reasoning_summary_text() {
         40
     );
     assert_eq!(comments(all.as_bytes()), 2);
+}
+
+#[test]
+fn a_tool_call_held_until_it_is_complete_keeps_the_app_hearing_from_the_stream() {
+    let pieces = 4000;
+    let mut events = vec![
+        StreamEvent::ResponseStart(ResponseStart::new("x", "m")),
+        StreamEvent::BlockStart(BlockStart::new(
+            0,
+            BlockHeader::ToolCall(ToolCallHeader::new("call_1", "write_file")),
+        )),
+        StreamEvent::BlockDelta(BlockDelta::new(
+            0,
+            Delta::ToolArguments(r#"{"text":""#.into()),
+        )),
+    ];
+    events.extend(
+        (0..pieces).map(|_| {
+            StreamEvent::BlockDelta(BlockDelta::new(0, Delta::ToolArguments("ab".into())))
+        }),
+    );
+    events.extend([
+        StreamEvent::BlockDelta(BlockDelta::new(0, Delta::ToolArguments(r#""}"#.into()))),
+        StreamEvent::BlockStop(BlockStop::new(0)),
+        StreamEvent::ResponseDelta(ResponseDelta::new(Some(StopReason::ToolUse), None)),
+        StreamEvent::ResponseStop(ResponseStop::new()),
+    ]);
+    let text = "ab".repeat(pieces);
+    let held = events.iter().map(hidden_text).sum::<usize>();
+    let frames = held / HIDDEN_TEXT_PER_KEEPALIVE;
+    assert!(frames >= 7);
+
+    let outputs = encode_each(A, &events);
+    assert!(longest_silence(&events, &outputs) <= HIDDEN_TEXT_PER_KEEPALIVE);
+    let all = outputs.concat();
+    assert_eq!(pings(&all), frames);
+    let deltas: Vec<serde_json::Value> = parse_all(&all)
+        .unwrap()
+        .iter()
+        .filter_map(|i| match i {
+            SseItem::Event(e) if e.event.as_deref() == Some("content_block_delta") => {
+                serde_json::from_str(&e.data).ok()
+            }
+            _ => None,
+        })
+        .collect();
+    assert_eq!(deltas.len(), 1);
+    let sent: serde_json::Value =
+        serde_json::from_str(deltas[0]["delta"]["partial_json"].as_str().unwrap()).unwrap();
+    assert_eq!(sent, serde_json::json!({ "text": text }));
+
+    let g = DialectId::Gemini;
+    let outputs = encode_each(g, &events);
+    assert!(longest_silence(&events, &outputs) <= HIDDEN_TEXT_PER_KEEPALIVE);
+    let blank = outputs.iter().filter(|o| o.as_slice() == b"\n").count();
+    assert_eq!(blank, frames);
+    let back = decode(g, &outputs.concat());
+    let arguments: String = back
+        .iter()
+        .filter_map(|e| match e {
+            StreamEvent::BlockDelta(d) => match &d.delta {
+                Delta::ToolArguments(a) => Some(a.as_str()),
+                _ => None,
+            },
+            _ => None,
+        })
+        .collect();
+    let sent: serde_json::Value = serde_json::from_str(&arguments).unwrap();
+    assert_eq!(sent, serde_json::json!({ "text": text }));
 }

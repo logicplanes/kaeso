@@ -9,6 +9,8 @@ export const docs = {
       disabledReason:
         "Why the button is disabled, shown as a tooltip and read out as the button's description. The button stays focusable so people can reach it.",
       fullWidth: "Fills the width of its container.",
+      download:
+        "With `href`, saves the file the link points to under this name instead of opening it, such as a generated image (`blob:` and `data:` links included).",
       href: "Renders a link that looks like the button.",
       icon: "Makes it an icon-only circle with this icon. Give it an `aria-label`: the name screen readers read and the tooltip shows.",
       leadingIcon: "An icon before the text.",

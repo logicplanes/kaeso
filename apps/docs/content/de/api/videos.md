@@ -74,7 +74,7 @@ Ein Video zu erstellen antwortet sofort mit seinem Job, `queued` oder `in_progre
 
 Jeder Abruf fragt den Anbieter, wie der Job steht, solange er läuft, und behält, was er sagt. Kann der Anbieter nicht antworten, gibt der Abruf den Job so zurück, wie Kaeso ihn zuletzt gesehen hat; fragen Sie dann später noch einmal. Nach einem beendeten Job wird nie wieder gefragt. `poll` und `create_and_poll` der SDKs rufen den Job ab, bis er endet.
 
-Eine Liste zeigt jedes Video so, wie Kaeso es zuletzt gesehen hat, ohne die Anbieter zu fragen. Ein Video gehört dem Projekt, dessen Schlüssel es gestartet hat; der Schlüssel eines anderen Projekts bekommt 404, dieselbe Antwort wie für eine ID, die es nicht gibt. Wird der Anbieterschlüssel ersetzt, der ein Video gestartet hat, erreicht Kaeso den Job nicht mehr und antwortet mit 409.
+Eine Liste zeigt jedes Video so, wie Kaeso es zuletzt gesehen hat, ohne die Anbieter zu fragen. Ein Video gehört dem Projekt, dessen Schlüssel es gestartet hat; der Schlüssel eines anderen Projekts bekommt 404, dieselbe Antwort wie für eine ID, die es nicht gibt. Ein Video, das ein Mitglied im [Playground](../console/playground.md) startet, gehört nur ihm: Kein Schlüssel listet oder erreicht es. Wird der Anbieterschlüssel ersetzt, der ein Video gestartet hat, erreicht Kaeso den Job nicht mehr und antwortet mit 409.
 
 Abrufe, Downloads, Löschungen und Remixe, die den Anbieter fragen, zählen wie jede Modellanfrage gegen die [Anfrageraten](../console/limits-and-budgets.md) des Schlüssels, denn jede verbraucht das Kontingent des Anbieters mit dem Schlüssel der Organisation; der Abruf eines beendeten Jobs antwortet aus Kaesos Aufzeichnung und zählt nicht.
 
@@ -124,10 +124,11 @@ Das [Mapping von OpenAI Videos](../development/kpp/openai-videos.md) und die Anb
 
 Ein Video zu starten kostet nichts. Kaeso berechnet es einmal, wenn die erste Anfrage es fertig sieht, zu den Preisen des Modells aus KPMR: pro Sekunde oder pro Video, nach Auflösung, Ton und Länge, wo die Preise sich unterscheiden. Gemini Omni wird nach seinen Token berechnet. Ein gescheitertes Video kostet nichts, und ein Modell ohne Preise in KPMR wird ohne Kosten geloggt. Kaeso behält `outputs.cost` von Together AI beim Job, rechnet es aber nicht ab: Die Referenz von Together gibt es als ganze Zahl ohne Einheit an.
 
-Ausgabenbudgets prüfen den teuersten Fall eines Videos, bevor es startet, und seine Kosten zählen, sobald es endet. Die Anfrage-Logs zeigen den Start als `videos` oder `videos/remix` und das fertige Video als `videos/completed`, mit seinen Clips, Sekunden und der Auflösung. Video- und Bild-Bytes behalten sie nie ([Anfrage-Logs](../console/request-logs.md)).
+Ausgabenbudgets prüfen den teuersten Fall eines Videos, bevor es startet, und seine Kosten zählen, sobald es endet. Die Anfrage-Logs zeigen den Start als `videos` oder `videos/remix` und das fertige Video als `videos/completed`, mit seinen Clips, Sekunden und der Auflösung. Das Video behalten sie nie. Ein hochgeladenes Bild wird als Medientyp und Größe geloggt, solange Organisation und Projekt keine [Medien aufbewahren](../console/request-logs.md#medien-in-anfragen-und-antworten).
 
 ## Nächste Schritte
 
+- [Playground](../console/playground.md): Ein Videomodell in der Konsole ausprobieren, bevor Sie Code schreiben.
 - [Modell-API](model-api.md): Jeden Endpunkt, Header und Modellnamen nachschlagen.
 - [Anfrage-Logs](../console/request-logs.md): Ein Video finden und sehen, was es gekostet hat.
 - [Unterstützte Anbieter](../concepts/supported-providers.md): Sehen, welche Anbieter Kaeso aufruft und wie Sie ihre Schlüssel hinzufügen.

@@ -243,12 +243,16 @@ docker compose exec gateway kaeso openapi > openapi.json
 
 ## 试验场
 
-控制台的[试验场](../console/playground.md)以已登录成员的身份向项目的模型发送请求。它在 `playground/` 下的两个路由都需要会话和项目权限 `playground.use`。它们对密钥返回 403，因为应用在 `/v1` 上调用模型。从试验场调用项目的工具需要 `playground.use` 和 `tools.use`，并且请求背后必须是一个人：会话、智能体或成员的密钥。
+控制台的[试验场](../console/playground.md)以已登录成员的身份向项目的模型发送请求。它在 `playground/` 下的路由都需要会话和项目权限 `playground.use`。它们对密钥返回 403，因为应用在 `/v1` 上调用模型。从试验场调用项目的工具需要 `playground.use` 和 `tools.use`，并且请求背后必须是一个人：会话、智能体或成员的密钥。
 
 | 路由 | 作用 |
 | --- | --- |
-| `GET orgs/{org}/projects/{project}/playground/models` | 列出成员可以调用的模型：不含嵌入模型的目录，再按成员的模型访问范围收窄。每个模型都带有名称、别名、推理强度、限额和价格，以及是否接受 `temperature`、项目是否有对应的服务商密钥。 |
+| `GET orgs/{org}/projects/{project}/playground/models` | 列出成员可以调用的模型：不含嵌入、重排序和实时模型的目录，再按成员的模型访问范围收窄。每个模型都带有 `mode`（`text`、`image`、`speech`、`sound_effects`、`music`、`transcription` 或 `video`）、名称、别名、推理强度、限额和价格，是否接受 `temperature`、项目是否有对应的服务商密钥、`max_request_bytes` 中它接受的最大请求（聊天、图片和转写采用模型 API 的上限，其他提示词采用 Platform API 的上限），以及与其模式相应的图片选项、`voices`、`translations` 或 `durations`。 |
 | `POST orgs/{org}/projects/{project}/playground/responses` | 接受带 `"stream": true` 的 OpenAI Responses 请求，并以 `/v1/responses` 发送的事件流响应，包括保活注释。 |
+| `POST orgs/{org}/projects/{project}/playground/images/generations`、`…/images/edits` | 接受 [`/v1/images/generations` 和 `/v1/images/edits`](images.md) 的请求体，并以相同方式响应。 |
+| `POST orgs/{org}/projects/{project}/playground/audio/speech`、`…/audio/transcriptions`、`…/audio/translations` | 接受[音频 API](audio.md) 的请求体，并以相同方式响应。 |
+| `POST orgs/{org}/projects/{project}/playground/sound-effects`、`…/music` | 接受 ElevenLabs [`/v1/sound-generation` 和 `/v1/music`](elevenlabs.md) 的请求体，并以音频响应。 |
+| `POST orgs/{org}/projects/{project}/playground/videos`；`GET`、`DELETE …/videos/{video}`；`GET …/videos/{video}/content` | 像 [`/v1/videos`](videos.md) 一样启动视频任务，跟踪、取消或删除它，并流式传输其文件。成员只能看到自己在试验场中启动的视频。 |
 | `POST orgs/{org}/projects/{project}/tools/{tool}/call` | 以调用者的身份，通过项目的门户用 `arguments` 调用项目的一个工具。该工具必须已开启并已批准，调用者的工具访问范围和工具调用速率都适用，调用会以来源 `playground` 记录。响应中包含工具的 `result`，调用被拒绝时则包含 `error`。 |
 
 请求接受 `model`、`input`（字符串或输入项）、`instructions`、`temperature`、`top_p`、`max_output_tokens`、`reasoning.effort`、`reasoning.summary`、`tools` 和必须为 `true` 的 `stream`。`tools` 包含模型可以调用的 Responses `function` 工具，试验场只在被要求时才执行调用。`headers` 像应用一样发送最多 20 个请求头，供路由的条件和分流读取，不能包含凭据。`route` 用于试用一条路由而不解析 `model`，此时 `model` 指明其别名；`alias` 指明 `route` 编辑的已保存别名。使用[会话](automation.md#改用会话)：
@@ -270,6 +274,7 @@ curl -N "$project/playground/responses" \
 
 - **相同的路径。** 模型在项目目录中解析，包括别名和 `provider/model`，且必须在成员的模型访问范围内。Kaeso 使用项目的服务商密钥，关闭流会取消发往服务商的请求。
 - **限额。** 成员和项目的速率与预算适用。密钥限额不适用，因为没有密钥。
+- **费用。** 未以流式返回的媒体响应带有 `kaeso-cost` 标头：即其日志条目将计入的金额；模型对其产出没有价格时为 `unknown`。视频任务结束后，其 `GET` 也带有该标头，失败的任务为 `0`。
 - **用量和日志。** Kaeso 将请求计入项目，并算作该成员的用量；按 `key` 查看用量时显示为 `playground`。其日志条目的来源为 `playground`，项目记录内容时还包含请求内容。`logs` 和 `logs/export` 可用 `source=api` 或 `source=playground` 筛选。
 
 流开始之前的错误是 Platform API 错误：

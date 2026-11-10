@@ -68,6 +68,13 @@ Groq is a trademark of Groq LLC and/or its affiliates. Hugging Face, NVIDIA, NIM
 
 The client marks in `packages/ui/src/components/kaeso/client-button.tsx` are their owners' trademarks: Claude of Anthropic, Cursor of Anysphere, and GitHub Copilot of GitHub. Kaeso shows them only to say which client a set of install steps is for (nominative use), and implies no affiliation or endorsement. Each is the [Simple Icons](https://simpleicons.org) vector (CC0 1.0) of that mark, unchanged, in the theme's text colour.
 
+## Deploy button marks
+
+The README's deploy buttons in `.github/assets/badges` show their platforms' marks, which are their owners' trademarks, only to say where a button deploys Kaeso (nominative use), and imply no affiliation or endorsement. Each mark is white on a tile in the platform's colour:
+
+- Render, Railway, DigitalOcean and Google Cloud: the [Simple Icons](https://simpleicons.org) 16.37.0 vector (CC0 1.0) of the mark, unchanged.
+- Microsoft Azure: the Azure logo as Microsoft's own Deploy to Azure button draws it, white on Azure blue `#0078D4`, taken from `1-CONTRIBUTION-GUIDE/images/deploytoazure.svg` in the [Azure Quickstart Templates](https://github.com/Azure/azure-quickstart-templates) repository (MIT), the image [Deploy to Azure button](https://learn.microsoft.com/azure/azure-resource-manager/templates/deploy-to-azure-button) points READMEs to, and scaled to the 20px square of the other marks. Microsoft Azure is a trademark of the Microsoft group of companies.
+
 ## Wire formats
 
 KPP implements the OpenAI and Anthropic wire formats from the vendors' public documentation and specifications:

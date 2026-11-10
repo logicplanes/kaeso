@@ -140,7 +140,7 @@ A video job outlives the request that starts it, so PostgreSQL's `videos` table 
 
 ## Logged replies
 
-With content logging on, the gateway stores each reply as the serde JSON of `kaeso_kpp::Response`, in the `reply` column of ClickHouse's `request_content`. The console's log inspector draws it as stored. An organization may keep content for up to 36,500 days, so every later console must still read a reply logged today.
+With content logging on, the gateway stores each chat reply as the serde JSON of `kaeso_kpp::Response`, and an image, speech or transcription reply as that of `kaeso_kpp::Reply` under its kind as format 2, such as `{"format": 2, "image": {…}}`, in the `reply` column of ClickHouse's `request_content`. The console's log inspector draws it as stored. An organization may keep content for up to 36,500 days, so every later console must still read a reply logged today. Media that isn't kept is stored as `{"kaeso_media": {"media_type", "bytes", "reason"}}` in place of its base64 text, with `width` and `height` for an image; `reason` is `not_kept`, or `too_large` for a file beyond the request's 10 MiB. Kept media stays as the base64 text it arrived as.
 
 - **The first form has no version field.** Snapshots in `crates/kaeso-server/src/services/snapshots/` pin it for representative replies, and `logged_replies_keep_the_v0_1_form` fails on a serde change to a KPP type.
 - **A change to that form is a format change.** From the first change on, the gateway writes a `format` number into the reply, `2` for the second form. The console learns the new form and keeps its renderer for every older one. Accepting the changed snapshots is never enough on its own.

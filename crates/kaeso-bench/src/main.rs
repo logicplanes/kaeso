@@ -1,3 +1,4 @@
+mod agent;
 mod baseline;
 mod client;
 mod gateway;
@@ -98,6 +99,16 @@ struct Options {
     mixed_streams: Option<usize>,
     #[arg(long, help = "Streams the clients open at once [100]")]
     opening: Option<usize>,
+    #[arg(long, help = "Back-to-back streams in the agent scenario [300]")]
+    agent_requests: Option<usize>,
+    #[arg(long, help = "Paced streams in the agent scenario [300]")]
+    agent_paced_requests: Option<usize>,
+    #[arg(long, help = "Milliseconds from one paced stream to the next [250]")]
+    agent_every_ms: Option<u64>,
+    #[arg(long, help = "Streams the agent scenario sends after a pause each [5]")]
+    agent_paused_requests: Option<usize>,
+    #[arg(long, help = "That pause, in milliseconds [31000]")]
+    agent_pause_ms: Option<u64>,
 }
 
 fn pick<T>(smoke: bool, full: T, small: T) -> T {
@@ -131,6 +142,7 @@ impl Options {
                     Scenario::SlowClients,
                     Scenario::Mixed,
                     Scenario::Portal,
+                    Scenario::Agent,
                 ]
             } else {
                 self.scenarios
@@ -158,6 +170,11 @@ impl Options {
             gateway_max_connections: biggest + 1000,
             portal_seconds: pick(smoke, 10, 1),
             portal_concurrency: pick(smoke, 8, 2),
+            agent_requests: self.agent_requests.unwrap_or(pick(smoke, 300, 20)),
+            agent_paced_requests: self.agent_paced_requests.unwrap_or(pick(smoke, 300, 10)),
+            agent_every_ms: self.agent_every_ms.unwrap_or(pick(smoke, 250, 20)),
+            agent_paused_requests: self.agent_paused_requests.unwrap_or(pick(smoke, 5, 2)),
+            agent_pause_ms: self.agent_pause_ms.unwrap_or(pick(smoke, 31_000, 100)),
         }
     }
 }

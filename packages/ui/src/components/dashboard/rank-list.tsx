@@ -1,6 +1,8 @@
 import { forwardRef, useEffect, useLayoutEffect, useRef, type ReactNode } from "react";
 import { cn } from "../../utils/cn.js";
 import { Skeleton } from "../skeleton/skeleton.js";
+import { Delta } from "../stat/delta.js";
+import type { Change } from "./dashboard.js";
 import { SwapValue, textOf } from "./swap-value.js";
 
 export interface RankItem {
@@ -10,6 +12,8 @@ export interface RankItem {
   /** Draws the row's share of the largest row behind it; leave it out for a plain row. */
   share?: number | undefined;
   secondary?: ReactNode | undefined;
+  /** The row's change against the previous period, in a column of its own; a word such as "New" where there is nothing to compare with. */
+  change?: Change | string | undefined;
 }
 
 const SKELETON_WIDTHS = ["w-160", "w-120", "w-140", "w-96", "w-112"];
@@ -68,6 +72,7 @@ export const RankList = forwardRef<
     );
   if (items.length === 0) return <p className="flex min-h-120 flex-1 items-center justify-center px-12 text-small text-fg-tertiary">{empty}</p>;
   const max = Math.max(...items.map((i) => i.share ?? 0), 0);
+  const changes = items.some((i) => i.change !== undefined);
   return (
     <ol
       ref={(el) => {
@@ -90,7 +95,14 @@ export const RankList = forwardRef<
             )}
             <span className="relative flex min-w-0 flex-1 items-center gap-8 text-body text-fg">{item.label}</span>
             {item.secondary !== undefined && (
-              <span className="relative min-w-56 shrink-0 text-right text-small text-fg-tertiary tabular">{item.secondary}</span>
+              <span className={cn("relative min-w-56 shrink-0 text-right text-small text-fg-tertiary tabular", changes && "max-sm:hidden")}>
+                {item.secondary}
+              </span>
+            )}
+            {changes && (
+              <span className="relative min-w-48 shrink-0 text-right text-small text-fg-tertiary tabular">
+                {typeof item.change === "object" ? <Delta value={item.change.value} better={item.change.better ?? "up"} /> : item.change}
+              </span>
             )}
             {item.value !== undefined && (
               <SwapValue text={textOf(item.value)} className="relative min-w-64 shrink-0 text-right text-body font-medium text-fg tabular">

@@ -121,6 +121,7 @@ interface CommonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "chi
   loading?: boolean | undefined;
   disabledReason?: string | undefined;
   href?: string | undefined;
+  download?: string | undefined;
   target?: string | undefined;
   rel?: string | undefined;
   fullWidth?: boolean | undefined;
@@ -159,6 +160,7 @@ export const Button = forwardRef<HTMLButtonElement | HTMLAnchorElement, ButtonPr
     disabled = false,
     disabledReason,
     href,
+    download,
     target,
     rel,
     fullWidth,
@@ -269,7 +271,22 @@ export const Button = forwardRef<HTMLButtonElement | HTMLAnchorElement, ButtonPr
   };
 
   let el: ReactNode;
-  if (href && !disabled) {
+  if (href && !disabled && download !== undefined) {
+    el = (
+      <a
+        ref={ref as Ref<HTMLAnchorElement>}
+        href={href}
+        download={download}
+        className={classes}
+        {...(domProps as object)}
+        onClick={handleClick}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
+      >
+        {content}
+      </a>
+    );
+  } else if (href && !disabled) {
     const external = isExternalHref(href);
     el = (
       <LinkComp

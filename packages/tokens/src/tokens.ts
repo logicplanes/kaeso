@@ -270,6 +270,10 @@ export const shadow = {
   control: mode("inset 0 0 0 1px var(--k-line), 0 1px 2px rgb(0 0 0 / 0.05)", "inset 0 0 0 1px var(--k-line)"),
   "control-hover": mode("inset 0 0 0 1px var(--k-line-strong), 0 1px 2px rgb(0 0 0 / 0.05)", "inset 0 0 0 1px var(--k-line-strong)"),
   "control-on-fill": mode("inset 0 0 0 1px var(--k-line-strong)", "inset 0 0 0 1px var(--k-line-strong)"),
+  "control-on-picture": mode(
+    "inset 0 0 0 1px var(--k-line-strong), 0 1px 3px rgb(0 0 0 / 0.2)",
+    "inset 0 0 0 1px var(--k-line-strong), 0 1px 3px rgb(0 0 0 / 0.5)",
+  ),
   "control-selected": mode("inset 0 0 0 2px var(--k-ink), 0 1px 2px rgb(0 0 0 / 0.05)", "inset 0 0 0 2px var(--k-ink)"),
   field: mode("inset 0 0 0 1px var(--k-line-field), 0 1px 2px rgb(0 0 0 / 0.05)", "inset 0 0 0 1px var(--k-line-field)"),
   "field-hover": mode("inset 0 0 0 1px var(--k-line-field-hover), 0 1px 2px rgb(0 0 0 / 0.05)", "inset 0 0 0 1px var(--k-line-field-hover)"),

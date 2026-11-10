@@ -153,6 +153,7 @@ pub fn kinds(action: crate::platform::audit::Action) -> &'static [Kind] {
         | A::LimitUpdate
         | A::LogsDelete
         | A::LogsExport
+        | A::LogsProjectKeepMedia
         | A::LogsSettingsUpdate
         | A::McpServerConnect
         | A::McpServerCreate

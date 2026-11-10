@@ -162,6 +162,11 @@ pub struct Outcome {
     pub stream_progress: Option<StreamProgress>,
     pub usage_estimated: bool,
     pub content_kept: bool,
+    pub media_kept: bool,
+    /// A whole reply that isn't a chat reply, such as images or speech, for the request log.
+    pub media_reply: Option<kaeso_kpp::Reply>,
+    /// A streamed reply of that kind, already written as the log keeps it.
+    pub media_reply_logged: Option<String>,
     pub cache_breakpoints: Option<usize>,
     pub response_cache: Option<crate::services::response_cache::Verdict>,
     pub alias: Option<String>,

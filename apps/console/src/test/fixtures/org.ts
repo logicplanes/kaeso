@@ -135,6 +135,8 @@ export function security(overrides: Partial<SecurityView> = {}): SecurityView {
 export function logSettings(overrides: Partial<OrgLogSettings> = {}): OrgLogSettings {
   return {
     content_logging: true,
+    keep_media: false,
+    media_bytes_per_request: 10_485_760,
     metadata_retention_days: 90,
     content_retention_days: 30,
     max_metadata_retention_days: 365,

@@ -11,6 +11,7 @@ pub struct Org {
     pub state: String,
     pub deletion_due_at: Option<OffsetDateTime>,
     pub content_logging: bool,
+    pub keep_media: bool,
     pub metadata_retention_days: i32,
     pub content_retention_days: i32,
     pub require_2fa: bool,
@@ -44,7 +45,7 @@ pub async fn insert(
 pub async fn get(db: impl PgExecutor<'_>, id: Uuid) -> Result<Option<Org>, StoreError> {
     Ok(sqlx::query_as!(
         Org,
-        "SELECT id, name, state, deletion_due_at, content_logging, metadata_retention_days, \
+        "SELECT id, name, state, deletion_due_at, content_logging, keep_media, metadata_retention_days, \
          content_retention_days, require_2fa, require_sso, max_key_lifetime_days, sso_default_preset, sso_default_role_id, created_at, avatar \
          FROM organizations WHERE id = $1",
         id
@@ -56,13 +57,28 @@ pub async fn get(db: impl PgExecutor<'_>, id: Uuid) -> Result<Option<Org>, Store
 pub async fn get_for_update(db: impl PgExecutor<'_>, id: Uuid) -> Result<Option<Org>, StoreError> {
     Ok(sqlx::query_as!(
         Org,
-        "SELECT id, name, state, deletion_due_at, content_logging, metadata_retention_days, \
+        "SELECT id, name, state, deletion_due_at, content_logging, keep_media, metadata_retention_days, \
          content_retention_days, require_2fa, require_sso, max_key_lifetime_days, sso_default_preset, sso_default_role_id, created_at, avatar \
          FROM organizations WHERE id = $1 FOR NO KEY UPDATE",
         id
     )
     .fetch_optional(db)
     .await?)
+}
+
+pub async fn set_keep_media(
+    db: impl PgExecutor<'_>,
+    id: Uuid,
+    keep: bool,
+) -> Result<(), StoreError> {
+    sqlx::query!(
+        "UPDATE organizations SET keep_media = $2, updated_at = now() WHERE id = $1",
+        id,
+        keep
+    )
+    .execute(db)
+    .await?;
+    Ok(())
 }
 
 pub async fn update(db: impl PgExecutor<'_>, org: &Org) -> Result<(), StoreError> {
@@ -121,7 +137,7 @@ pub async fn list(
         OrgOrder::Created => {
             sqlx::query_as!(
                 Org,
-                "SELECT id, name, state, deletion_due_at, content_logging, metadata_retention_days, \
+                "SELECT id, name, state, deletion_due_at, content_logging, keep_media, metadata_retention_days, \
                  content_retention_days, require_2fa, require_sso, max_key_lifetime_days, sso_default_preset, sso_default_role_id, created_at, avatar \
                  FROM organizations o WHERE ($1::uuid IS NULL OR id > $1) AND ($3::text IS NULL OR name ILIKE $3) \
                  AND ($4::bool IS NULL OR EXISTS (SELECT 1 FROM org_oidc x WHERE x.org_id = o.id) = $4) \
@@ -137,7 +153,7 @@ pub async fn list(
         OrgOrder::Deletion => {
             sqlx::query_as!(
                 Org,
-                "SELECT id, name, state, deletion_due_at, content_logging, metadata_retention_days, \
+                "SELECT id, name, state, deletion_due_at, content_logging, keep_media, metadata_retention_days, \
                  content_retention_days, require_2fa, require_sso, max_key_lifetime_days, sso_default_preset, sso_default_role_id, created_at, avatar \
                  FROM organizations o WHERE ($1::uuid IS NULL OR (COALESCE(o.deletion_due_at, 'infinity'), o.id) > \
                  (SELECT COALESCE(c.deletion_due_at, 'infinity'), c.id FROM organizations c WHERE c.id = $1)) \

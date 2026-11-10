@@ -37,7 +37,7 @@ describe("the project overview", () => {
 
     expect(await screen.findByRole("heading", { name: "Activity", level: 2 })).toBeInTheDocument();
     await waitFor(() => expect(cell("Requests")).toHaveTextContent("40"));
-    expect(cell("Requests")).toHaveTextContent("↑100% bettervs. the 14 days before");
+    expect(cell("Requests")).toHaveTextContent("↑100%vs. the 14 days before");
     expect(cell("Failed requests")).toHaveTextContent("↓50% better5% of requests");
     expect(cell("Cache hit")).toHaveTextContent(/50%.*vs\. the 14 days before/);
     expect(screen.getByRole("link", { name: "Requests" })).toHaveAttribute("href", `${projectPath("analytics")}?period=30d&metric=requests`);

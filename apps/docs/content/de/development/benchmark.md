@@ -36,7 +36,7 @@ Diese Optionen wählen die Szenarien und ihre Größen; ohne sie gelten alle Sze
 
 | Option | Standard | Legt fest |
 | --- | --- | --- |
-| `--scenarios` | Alle fünf | Die Szenarien, durch Kommas getrennt: `baseline`, `streams`, `cancellation`, `slow-clients`, `mixed` |
+| `--scenarios` | Alle | Die Szenarien, durch Kommas getrennt: `baseline`, `streams`, `cancellation`, `slow-clients`, `mixed`, `agent` |
 | `--baseline-requests`, `--baseline-concurrency` | 20.000, 64 | Nicht gestreamte Anfragen der Baseline und die Verbindungen, über die sie laufen |
 | `--streams` | 100, 1.000, 5.000 | Anzahlen gleichzeitiger Streams, je ein Lauf |
 | `--gap-ms`, `--chunks` | 100, 100 | Der Abstand des Mocks zwischen zwei Chunks und die Chunks eines Streams |
@@ -46,6 +46,8 @@ Diese Optionen wählen die Szenarien und ihre Größen; ohne sie gelten alle Sze
 | `--idle-timeout-ms` | 5.000 | `KAESO_UPSTREAM_STREAM_IDLE_TIMEOUT` des Gateways |
 | `--mixed-streams` | 1.000 | Streams im gemischten Szenario |
 | `--opening` | 100 | Streams, die die Clients gleichzeitig öffnen |
+| `--agent-requests`, `--agent-paced-requests`, `--agent-every-ms` | 300, 300, 250 | Streams direkt nacheinander und im Takt im Agenten-Szenario und die Millisekunden von einem getakteten Stream zum nächsten |
+| `--agent-paused-requests`, `--agent-pause-ms` | 5, 31.000 | Streams, die das Agenten-Szenario jeweils nach einer Pause sendet, und diese Pause in Millisekunden |
 | `--smoke` | Aus | Kleine Größen, wie CI sie ausführt |
 | `--out` | `target/bench` | Wohin die Berichte und das Log kommen |
 
@@ -73,6 +75,7 @@ Jedes Szenario beginnt mit einem frischen Gateway:
 | Abbrüche | Ein Anteil der Streams trennt die Verbindung an einer Stelle zwischen einem Fünftel und vier Fünfteln des Streams. Ihre Mock-Streams enden nie von selbst, sodass jeder Abbruch eine Anfrage beim Anbieter zu schließen hat. Die anderen lesen bis zum Ende |
 | Langsame Clients | Ein Anteil der Clients liest den ersten Chunk und hört dann auf, mit einem kleinen Empfangspuffer, während der Mock ohne Ende jede Millisekunde ein Text-Delta von 4 KiB schreibt. Sie nutzen ein zweites Projekt, das keine Inhalte protokolliert, sodass der Speicher des Gateways zeigt, was es für sie puffert, und nicht die Antwort, die es für das Protokoll behält. Die anderen lesen normal |
 | Gemischt | Streams, Abbrüche und langsame Clients zugleich, neben nicht gestreamten Anfragen, so schnell das Gateway sie beantwortet |
+| Agenten-Sitzung | Ein Client sendet die Streams der Sitzung eines Coding-Agenten, einen nach dem anderen über eine Verbindung. Jede Anfrage hat etwa 50 KB im Format Anthropic Messages: einen System-Prompt, 24 Tool-Definitionen mit ihren Schemas und ein Gespräch aus Tool-Aufrufen und ihren Ergebnissen. Sie verlangt einen Alias, dessen Route einen Schritt hat, das OpenAI-Responses-Modell des Mocks, in einem Projekt, das Inhalte protokolliert. Die Streams laufen zuerst direkt nacheinander, dann einer alle 250 ms über mehr als die 30 Sekunden, die Kaeso die Einstellungen eines Projekts im Speicher hält, dann jeder nach einer Pause, die länger ist |
 
 ## Zahlen lesen
 
@@ -94,6 +97,8 @@ Jede Zeit erscheint als Perzentile über alle Anfragen oder Chunks eines Laufs:
 | Logged as client_stalled | Hängende Streams, gezählt von `kaeso_stream_failures_total{kind="client_stalled"}` |
 | Growth per stream | Der Speicher am Höchststand minus der Speicher nach dem Aufwärmen, geteilt durch die Streams des Szenarios |
 | Left open | Streams, die der Mock-Anbieter nach dem Szenario noch offen hatte |
+
+Die Agenten-Sitzung berichtet den Overhead ihrer drei Arten zu senden getrennt. Direkt nacheinander liegt alles, was eine Anfrage braucht, im Speicher, sodass die Zahl die Arbeit an der Anfrage selbst ist: 50 KB prüfen, dekodieren und übersetzen. Im Takt treffen manche Anfragen auf einen Eintrag, der gerade neu geladen wird. Nach einer Pause ist jeder Eintrag abgelaufen, und die Anfrage wartet auf PostgreSQL und Valkey; diese Zeile zeigt, was die erste Anfrage einer Sitzung kostet, nachdem ein Agent untätig war. Der Schlüssel des Mock-Anbieters ist ein API-Schlüssel: Das Szenario deckt kein Anbieterkonto ab, das sich anmeldet und sein Token erneuert.
 
 Ein Gateway, das alles behält, was eine hängende App nicht liest, wächst bis zum Leerlauf-Zeitlimit um die Chunks des Mocks. Das zeigt sich als Wachstum pro Stream weit über dem Wert pro offenem Stream eines Laufs ohne langsame Clients.
 
