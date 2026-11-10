@@ -48,13 +48,15 @@ pub(super) struct Started<'a> {
     pub app: &'a kaeso_kpp::Request,
 }
 
-/// Only ElevenLabs makes an image as a generation an app asks about later; other providers
-/// answer with the image itself.
+// Only ElevenLabs makes an image as a generation an app asks about later; other providers
+// answer with the image itself.
 pub(super) fn not_elevenlabs(eff: &Effective) -> KppError {
-    KppError::unsupported_by(
-        format!("image generations by {}", eff.provider.name()),
-        D,
-        "Use `/v1/images/generations` for this model, or choose an ElevenLabs model.",
+    KppError::unsupported(
+        "image_generations",
+        format!(
+            "`flows.image` takes only ElevenLabs models; send {} models to `/v1/images/generations`.",
+            eff.provider.name()
+        ),
     )
     .with_status(400)
     .with_param("model_id")
