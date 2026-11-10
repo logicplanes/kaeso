@@ -259,5 +259,11 @@
   "logs.inspector.costUnknown": "Kein Preis für das, was sie erzeugt hat",
   "logs.media.hint": "{label}: {units}",
   "logs.media.images": "{count, plural, one {# Bild} other {# Bilder}}",
-  "logs.media.imagesSent": "{count, plural, one {# Bild} other {# Bilder}} gesendet"
+  "logs.media.imagesSent": "{count, plural, one {# Bild} other {# Bilder}} gesendet",
+  "logs.media.pixels": "{width} × {height}",
+  "logs.media.namedNotKept": "{name} ({detail}), nicht aufbewahrt",
+  "logs.media.imageNotKept": "Bild ({detail}), nicht aufbewahrt",
+  "logs.media.audioNotKept": "Audio ({detail}), nicht aufbewahrt",
+  "logs.media.videoNotKept": "Video ({detail}), nicht aufbewahrt",
+  "logs.media.fileNotKept": "Datei ({detail}), nicht aufbewahrt"
 }

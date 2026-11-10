@@ -96,16 +96,17 @@ pub(super) fn refuse_sora(r: &VideoRequest) -> Result<(), KppError> {
 }
 
 /// The request as the log keeps it: every field, each uploaded image replaced by its media
-/// type and size, since request logs never hold media.
+/// type and size.
 pub(super) fn logged_request(r: &VideoRequest) -> Bytes {
     let mut kept = r.clone();
+    let mut left_out = crate::services::log_media::LeftOut::default();
     for image in &mut kept.images {
-        if let Source::Base64(b) = &image.source {
-            let bytes = b.data.len();
-            image.source = Source::text(b.media_type.clone(), format!("{bytes} bytes, not logged"));
-        }
+        left_out.fit(
+            &mut image.source,
+            &mut crate::services::log_media::Keep::nothing(),
+        );
     }
-    Bytes::from(serde_json::to_vec(&kept).unwrap_or_default())
+    Bytes::from(left_out.write(&kept).unwrap_or_default())
 }
 
 fn seconds_ms(seconds: Option<u32>) -> u64 {
@@ -1380,7 +1381,7 @@ mod tests {
         r.seconds = Some(8);
         r.size = Some(ImageSize::pixels(1280, 720));
         let logged = String::from_utf8(logged_request(&r).to_vec()).unwrap();
-        assert!(!logged.contains("AAAAAAAA") && logged.contains("6 bytes, not logged"));
+        assert!(!logged.contains("AAAAAAAA") && logged.contains(r#""bytes":6"#));
         let units = units_of_request(&r);
         assert_eq!((units.output_videos, units.output_ms), (1, 8000));
         assert_eq!(units.resolution.as_deref(), Some("720p"));

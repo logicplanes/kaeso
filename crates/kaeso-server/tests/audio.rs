@@ -419,7 +419,7 @@ async fn transcriptions_take_every_form_and_log_the_audio_length_without_its_byt
     if let Some(logged) = &o.request_body {
         let text = String::from_utf8_lossy(logged);
         assert!(
-            !text.contains("ID3") && text.contains("not logged"),
+            !text.contains("ID3") && text.contains(r#""reason":"not_kept""#),
             "{text}"
         );
     }
