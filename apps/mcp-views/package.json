@@ -1,0 +1,58 @@
+{
+  "name": "kaeso-mcp-views",
+  "version": "0.6.0-rc.8",
+  "private": true,
+  "type": "module",
+  "description": "The interactive views Kaeso's MCP server shows in hosts that support MCP Apps.",
+  "license": "MIT",
+  "author": "Devin Oldenburg",
+  "homepage": "https://kaeso.app",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/logicplanes/kaeso.git",
+    "directory": "apps/mcp-views"
+  },
+  "bugs": {
+    "url": "https://github.com/logicplanes/kaeso/issues"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build && node scripts/embed.mjs",
+    "lint": "eslint .",
+    "typecheck": "tsc -b",
+    "test": "vitest run --coverage && vite build && node scripts/embed.mjs --check",
+    "licenses:check": "node scripts/licenses.mjs"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@tailwindcss/vite": "4.3.3",
+    "@testing-library/jest-dom": "7.0.1",
+    "@testing-library/react": "16.3.3",
+    "@testing-library/user-event": "14.6.8",
+    "@types/node": "24.19.2",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.1.2",
+    "@vitest/coverage-v8": "5.0.5",
+    "eslint": "10.13.0",
+    "eslint-plugin-jsx-a11y": "6.10.2",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "globals": "17.13.0",
+    "happy-dom": "21.0.4",
+    "tailwindcss": "4.3.3",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.72.1",
+    "vite": "8.3.5",
+    "vitest": "5.0.5"
+  },
+  "dependencies": {
+    "@hugeicons/core-free-icons": "4.4.0",
+    "@hugeicons/react": "1.1.10",
+    "@logicplanes/kaeso-ui": "workspace:*",
+    "@modelcontextprotocol/ext-apps": "1.7.5",
+    "@modelcontextprotocol/sdk": "1.32.2",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "zod": "4.6.7"
+  }
+}

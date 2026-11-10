@@ -205,14 +205,14 @@ sequenceDiagram
 
 ## 工具
 
-智能体可以使用的每个 Platform API 操作都是一个工具，名称取自其 operation id 的蛇形命名。`GET /platform/v1/orgs/{org}/usage` 对应 `get_orgs_org_usage`。
+智能体可以使用的每个 Platform API 操作都是一个工具，名称取自其 operation id 的蛇形命名。`GET /platform/v1/orgs/{org}/usage` 对应 `get_orgs_org_usage`。另有一个工具 `show_usage_stats`，以交互视图展示用量；参见[交互视图](#交互视图)。
 
 - **列出。** `tools/list` 只显示智能体当前在其任一组织和项目中可以使用的工具。
 - **参数。** 工具接受操作的路径参数（例如 `org` 和 `project`）、查询参数，以及作为请求体的 `body`。路径参数必填，工具没有的参数会被 Kaeso 拒绝。
 - **结果。** 工具以文本和 `structuredContent` 两种形式返回 Platform API 的 JSON。超过 200 KB 的结果会被截断；请用 `limit` 请求更小的一页。
 - **模型。** 每个工具都接受 `agent_model`，即智能体所用的模型系列：`claude`、`gpt`、`gemini`、`gemma`、`grok`、`llama`、`mistral`、`deepseek`、`qwen`、`kimi`、`glm`、`minimax`、`command`、`nova`、`phi`、`granite`、`jamba`、`ernie`、`hunyuan`、`doubao`、`yi`、`nemotron`、`olmo`、`sonar`、`reka` 或 `unknown`。Kaeso 在每次调用时保存它，并在智能体旁显示该系列的名称；其他值一律视为 `unknown`。在首次调用之前，智能体显示为 `unknown`。
 - **提示。** 读取类工具标有 `readOnlyHint`，其中包括不发送任何请求的 `post_orgs_org_projects_project_aliases_trace`；删除类工具标有 `destructiveHint`。
-- **说明。** 服务器提示智能体先用 `get_me_memberships` 列出其组织，并说明如何由粗到细分析用量：有用量的日期（`get_orgs_org_usage_span`）；按时间段或按模型、服务商、密钥、成员、路由、项目汇总的用量，其筛选条件接受任意分组的 `key`（`get_orgs_org_usage`）；按分钟或小时的请求与延迟（`get_orgs_org_usage_timeline`）；以及峰值背后的单个请求（`get_orgs_org_projects_project_logs`）。它只列出智能体能打开的组织和项目，`get_orgs_org_members_user_rights` 中成员的权限也是如此。
+- **说明。** 服务器提示智能体先用 `get_me_memberships` 列出其组织，在您想查看某项统计时调用 `show_usage_stats`，并说明如何由粗到细分析用量：有用量的日期（`get_orgs_org_usage_span`）；按时间段或按模型、服务商、密钥、成员、路由、项目汇总的用量，其筛选条件接受任意分组的 `key`（`get_orgs_org_usage`）；按分钟或小时的请求与延迟（`get_orgs_org_usage_timeline`）；以及峰值背后的单个请求（`get_orgs_org_projects_project_logs`）。它只列出智能体能打开的组织和项目，`get_orgs_org_members_user_rights` 中成员的权限也是如此。
 
 以下操作需要控制台会话，因此任何智能体都没有对应的工具：
 
@@ -224,6 +224,27 @@ sequenceDiagram
 
 智能体只能在拥有 `api.request` 的项目中创建调用模型的 API 密钥。
 
+## 交互视图
+
+在支持 [MCP Apps](https://modelcontextprotocol.io/extensions/apps/overview) 的客户端中（例如网页版和桌面版 Claude），询问本周花了多少钱时，Kaeso 的用量视图会在对话中打开；客户端有侧边栏时则在对话旁打开。视图显示该期间的合计、一张图表，以及排名靠前的模型、服务商或密钥，并带有 Kaeso 文字标识和 **在 Kaeso 中打开**，可在控制台中打开同一页面。
+
+背后的工具是 `show_usage_stats`。所有参数都是可选的：
+
+| 参数 | 取值 | 默认值 |
+| --- | --- | --- |
+| `metric` | `requests`、`tokens`、`cost`、`latency` 或 `errors`：图表显示的内容 | `requests` |
+| `range` | `24h`、`7d` 或 `30d`，截至当前 | `7d` |
+| `group_by` | `model`、`provider` 或 `key`：细分的依据 | `model` |
+| `org` | 组织；您属于多个组织时必填 | 您唯一的组织 |
+| `project` | 组织中的单个项目，而不是全部项目 | 全部项目 |
+
+- **数据。** 该工具读取与控制台概览相同的用量：7 天和 30 天读取每日用量，24 小时和延迟读取按小时汇总的请求日志。延迟取最慢一小时的第 95 百分位，以及中位小时的第 50 百分位。
+- **权限。** 组织需要 `usage.org.view`，项目需要 `usage.view`；只有拥有 `costs.org.view` 或 `costs.view` 时才显示费用。缺少权限时，调用会以 `insufficient_rights` 及其批准链接失败，视图会通过 **在 Kaeso 中批准** 显示该链接。
+- **操作。** 在视图中选择指标、期间或细分方式时，视图会通过客户端以智能体的权限再次调用该工具。视图按客户端的语言以英语、德语或简体中文显示，并跟随其浅色或深色主题。
+- **不支持 MCP Apps 时。** 不显示视图的客户端（例如 Claude Code）会收到一段简短的文字摘要，并以 `structuredContent` 收到相同的数据。
+
+该工具通过 `_meta.ui.resourceUri` 关联其视图，视图是类型为 `text/html;profile=mcp-app` 的资源 `ui://kaeso/stats`，通过 `resources/read` 获取。它是网关随二进制文件一起提供的单个 HTML 文档：不从别处加载任何内容，不包含令牌，并请求该扩展允许的最严格策略，不允许任何外部连接、脚本、样式、字体、图片或框架。它自身的 `Content-Security-Policy` 只允许其唯一的内联脚本，因此没有任何代码能执行 `eval`。视图把来自 Kaeso 的每个值都作为文本显示。
+
 ## 协议
 
 | 项目 | 规则 |
@@ -231,7 +252,7 @@ sequenceDiagram
 | 地址 | `POST https://kaeso.example.com/mcp` |
 | 传输 | Streamable HTTP，每个请求一条 JSON-RPC 消息，以 JSON 响应。Kaeso 不打开事件流：`GET` 和 `DELETE` 返回 405 和 `Allow: POST` |
 | 协议版本 | `2025-11-25`、`2025-06-18` 和 `2025-03-26`。如果 Kaeso 支持客户端请求的版本，`initialize` 就返回该版本，否则返回最新版本 |
-| 方法 | `initialize`、`ping`、`tools/list` 和 `tools/call`。通知返回 202 |
+| 方法 | `initialize`、`ping`、`tools/list`、`tools/call`、`resources/list`、`resources/templates/list` 和 `resources/read`。通知返回 202 |
 | 身份验证 | `Authorization: Bearer kso_at_…` |
 | `Origin` | 可选。如果发送，必须是实例的源或 `KAESO_CORS_ALLOWED_ORIGINS` 中的一个 |
 | 请求体 | 最大为 `KAESO_BODY_LIMITS_PLATFORM_API`，默认 1 MiB |

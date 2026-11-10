@@ -10,6 +10,7 @@
           - crates/kaeso-store/**
           - crates/kaeso-update/**
           - crates/kaeso-upstream/**
+          - apps/mcp-views/**
           - .sqlx/**
           - openapi.json
           - plugins/**

@@ -1,0 +1,11 @@
+@import "tailwindcss";
+@import "@logicplanes/kaeso-ui/tailwind.css";
+@source "./";
+
+/* The host passes its safe area in pixels; the composer can overlay an inline view's bottom edge
+   (https://claude.com/docs/connectors/building/mcp-apps/design-guidelines#safe-areas). */
+body {
+  margin: 0;
+  background: var(--k-bg-panel);
+  padding: var(--safe-top, 0px) var(--safe-right, 0px) var(--safe-bottom, 0px) var(--safe-left, 0px);
+}
