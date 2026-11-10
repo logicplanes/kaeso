@@ -484,6 +484,7 @@ pub(super) fn transport_kind(e: &UpstreamError) -> &'static str {
         UpstreamError::TooLarge(_) => "too_large",
         UpstreamError::Refused(_) => "refused",
         UpstreamError::Path => "path",
+        UpstreamError::Busy => "busy",
         UpstreamError::Client(_) | UpstreamError::Method(_) => "client",
     }
 }
@@ -595,6 +596,7 @@ pub(crate) fn upstream_error(e: &UpstreamError) -> KppError {
                 "Kaeso cannot prepare the call to the provider.",
             )
         }
+        UpstreamError::Busy => answers_busy(),
         UpstreamError::TooLarge(limit) => {
             tracing::warn!(
                 limit,
@@ -762,6 +764,15 @@ fn no_such_model(model: &str) -> KppError {
         format!("The model `{model}` does not exist or this key may not use it."),
     )
     .with_param("model")
+}
+
+fn answers_busy() -> KppError {
+    error(
+        ErrorKind::Overloaded,
+        503,
+        "Kaeso is busy reading other providers' answers; try again shortly.",
+    )
+    .with_retry_after(super::memory::WAIT)
 }
 
 fn translating_busy() -> KppError {

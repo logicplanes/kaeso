@@ -72,7 +72,8 @@ impl AppState {
             p.config.custom_providers.allowed_networks.clone(),
         );
         let mcp_networks = p.config.mcp_servers.allowed_networks.clone();
-        let translating = crate::model_api::memory::Budget::new(p.config.body_limits.in_flight.0);
+        let in_flight = p.config.body_limits.in_flight.0;
+        let translating = crate::model_api::memory::Budget::new(in_flight);
         caches.listen(&p.valkey);
         p.valkey.keep_healthy();
         AppState(Arc::new(Inner {
@@ -90,7 +91,12 @@ impl AppState {
                 connect_timeout,
                 concat!("kaeso-gateway/", env!("CARGO_PKG_VERSION")),
             )
-            .guarding(reach),
+            .guarding(reach)
+            .holding_answers_in(kaeso_upstream::memory::AnswerMemory::new(
+                in_flight,
+                crate::model_api::memory::PER_ANSWER_BYTE,
+                crate::model_api::memory::WAIT,
+            )),
             mcp: kaeso_upstream::mcp::McpUpstream::new(
                 kaeso_upstream::guard::Reach::networks(mcp_networks),
                 kaeso_upstream::guard::Lookup::default(),

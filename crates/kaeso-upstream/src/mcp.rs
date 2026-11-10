@@ -185,7 +185,7 @@ impl McpUpstream {
         let fut = async {
             let resp = builder.send().await.map_err(classify)?;
             let status = resp.status().as_u16();
-            let body = crate::read_capped(resp, limits.max_body).await?;
+            let body = crate::read_capped(resp, limits.max_body, None).await?;
             Ok::<_, UpstreamError>((status, body))
         };
         tokio::time::timeout(limits.first_byte, fut)
@@ -302,7 +302,7 @@ impl McpUpstream {
         } else {
             let read = tokio::time::timeout(
                 call.limits.first_byte.max(call.limits.idle),
-                crate::read_capped(resp, call.limits.max_body),
+                crate::read_capped(resp, call.limits.max_body, None),
             )
             .await
             .map_err(|_| UpstreamError::Timeout("request"))??;
