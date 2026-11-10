@@ -1,0 +1,16 @@
+{
+  "model": "openai/gpt-oss-120b:cheapest",
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a helpful assistant."
+    },
+    {
+      "role": "user",
+      "content": "How many 'G's in 'huggingface'?"
+    }
+  ],
+  "max_tokens": 512,
+  "reasoning_effort": "low",
+  "stream": false
+}

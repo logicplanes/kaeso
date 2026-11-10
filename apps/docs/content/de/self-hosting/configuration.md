@@ -202,6 +202,7 @@ Die ersten drei Einstellungen legen nur die Anfangswerte einer neuen Installatio
 | `KAESO_PROVIDERS_NEBIUS_BASE_URL`<br>`providers.nebius.base_url` | Text | `https://api.tokenfactory.nebius.com` | Basis-URL der Nebius-Token-Factory-API. |
 | `KAESO_PROVIDERS_SAMBANOVA_BASE_URL`<br>`providers.sambanova.base_url` | Text | `https://api.sambanova.ai` | Basis-URL der SambaNova-API. |
 | `KAESO_PROVIDERS_SCALEWAY_BASE_URL`<br>`providers.scaleway.base_url` | Text | `https://api.scaleway.ai` | Basis-URL der Scaleway-API. |
+| `KAESO_PROVIDERS_HUGGINGFACE_BASE_URL`<br>`providers.huggingface.base_url` | Text | `https://router.huggingface.co` | Basis-URL der Hugging-Face-API. |
 | `KAESO_PROVIDERS_NVIDIA_BASE_URL`<br>`providers.nvidia.base_url` | Text | `https://integrate.api.nvidia.com` | Basis-URL der NVIDIA-API. |
 | `KAESO_UPSTREAM_CONNECT_TIMEOUT`<br>`upstream.connect_timeout` | Text | `10s` | Zeit für den Verbindungsaufbau zu einem Anbieter, TCP und TLS; höchstens 24h. |
 | `KAESO_UPSTREAM_REQUEST_TIMEOUT`<br>`upstream.request_timeout` | Text | `600s` | Gesamtzeit einer Anbieter-Anfrage ohne Streaming; höchstens 24h. |

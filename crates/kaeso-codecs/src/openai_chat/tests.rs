@@ -41,6 +41,10 @@ const FOREIGN_ERROR_BODIES: &[(&str, ErrorKind)] = &[
         ErrorKind::InvalidRequest,
     ),
     (
+        "providers/huggingface/recorded-invalid-api-key",
+        ErrorKind::Authentication,
+    ),
+    (
         "providers/nebius/list-invalid-api-key",
         ErrorKind::Authentication,
     ),

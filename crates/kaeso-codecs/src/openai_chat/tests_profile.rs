@@ -905,6 +905,38 @@ fn sambanova_refuses_the_penalties_it_ignores_and_leaves_out_the_end_user_and_ca
 }
 
 #[test]
+fn hugging_face_gets_max_tokens_developer_messages_as_system_and_no_end_user() {
+    let hugging_face = ChatProfile::compatible("Hugging Face")
+        .max_tokens()
+        .system_role()
+        .without_end_user()
+        .reasoning_fields(&["reasoning_content", "reasoning"]);
+    let sent = encode_with(
+        &chat(json!({
+            "model": "openai/gpt-oss-120b:groq",
+            "messages": [
+                {"role": "developer", "content": "Answer briefly."},
+                {"role": "user", "content": "Hi"}
+            ],
+            "max_completion_tokens": 256,
+            "safety_identifier": "user-0001"
+        })),
+        hugging_face,
+    )
+    .unwrap();
+    assert_eq!(sent["model"], "openai/gpt-oss-120b:groq");
+    assert_eq!(sent["messages"][0]["role"], "system");
+    assert_eq!(
+        (&sent["max_tokens"], sent.get("max_completion_tokens")),
+        (&json!(256), None)
+    );
+    assert!(
+        sent.get("safety_identifier").is_none() && sent.get("user").is_none(),
+        "{sent}"
+    );
+}
+
+#[test]
 fn nvidia_gets_max_tokens_developer_messages_as_system_no_end_user_and_its_thinking_switch() {
     let nvidia = ChatProfile::compatible("NVIDIA")
         .max_tokens()

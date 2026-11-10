@@ -2493,6 +2493,47 @@ expression: outcomes
     },
     "path": "/v1/responses"
   },
+  "providers/huggingface/invalid-api-key": {
+    "message": "`max_tokens 1` is not supported by OpenAI Responses. OpenAI Responses needs an output limit of at least 16 tokens; raise it or route the request to another model.",
+    "param": "max_tokens",
+    "unsupported": "max_tokens 1"
+  },
+  "providers/huggingface/provider-suffix": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "How many 'G's in 'huggingface'?",
+          "role": "user"
+        }
+      ],
+      "instructions": "You are a helpful assistant.",
+      "max_output_tokens": 512,
+      "model": "openai/gpt-oss-120b:cheapest",
+      "reasoning": {
+        "effort": "low"
+      },
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/huggingface/reasoning-stream": {
+    "body": {
+      "input": [
+        {
+          "content": "Hello!",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 256,
+      "model": "deepseek-ai/DeepSeek-V4.1-Flash-1017:novita",
+      "store": false,
+      "stream": true
+    },
+    "path": "/v1/responses"
+  },
   "providers/mistral/assistant-prefill": {
     "body": {
       "input": [

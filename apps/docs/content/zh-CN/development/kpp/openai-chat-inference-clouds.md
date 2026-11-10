@@ -28,6 +28,23 @@ nav: 推理云
 
 Fireworks 没有记录图像、语音、转录、视频或Token 计数端点，因此这些保持为空，`count_tokens` 为 `None`。它的 Responses API 以 `prompt_tokens` 和 `completion_tokens` 报告用量，而不是 OpenAI 的字段名，因此 Kaeso 不向它发送 Responses；Responses 应用通过 Chat Completions 访问 Fireworks。
 
+## Hugging Face
+
+来源：Hugging Face 的 [Inference Providers](https://huggingface.co/docs/inference-providers/index) 概览、其 [chat completion](https://huggingface.co/docs/inference-providers/tasks/chat-completion) 参考及 `huggingface.js` 中的 schema，以及 [Claude Code](https://huggingface.co/docs/inference-providers/integrations/claude-code) 和 [Responses API](https://huggingface.co/docs/inference-providers/guides/responses-api) 指南，2026-11-10 阅读。未经成功调用测试：`fixtures/openai_chat/providers/huggingface/` 中的回复和流根据参考构建，思考内容放在路由器背后服务商记录的字段中；模型列表和错误是在没有有效密钥的情况下实时返回的。Kaeso 的基础 URL 为 `https://router.huggingface.co`，使用 `Authorization: Bearer` 和 `hf_` 令牌。
+
+| Hugging Face 字段 | KPP | 说明 |
+|---|---|---|
+| `message.reasoning_content`、`message.reasoning` 及其增量 | `Block::Reasoning` | 通过配置的 `reasoning_fields`；路由器转发其背后服务商的字段。 |
+| `max_completion_tokens` | `max_tokens` | schema 只有 `max_tokens`（`max_tokens()`）。 |
+| `developer` 角色 | `Role::System` | `role` 会按原样转给服务商，而它们并非都接受 `developer`，因此 `system_role()` 发送 `system`。 |
+| 终端用户的 ID | 省略 | schema 没有 `user` 或 `safety_identifier`（`without_end_user()`）。 |
+| 模型 ID 上的 `:provider`、`:fastest`、`:cheapest` 或 `:preferred` 后缀 | `model` | 按原样发送；回复中的模型名不带后缀（`responses/provider-suffix`）。 |
+| `tool_prompt` | extras | 请求发往其他方言时会被拒绝，与其他仅限 Chat 的字段相同。 |
+| `{"error": "<message>"}` 形式的错误 | `KppError` | 类别由状态码决定：401 表示密钥被拒绝（`errors/recorded-invalid-api-key`）。 |
+| 带有 `architecture` 以及包含状态、上下文长度、价格和速度的 `providers` 数组的 `GET /v1/models` | `ModelList` | 无需密钥即可返回（`models/list-recorded`），因此模型检查无法发现错误的密钥。 |
+
+路由器的 OpenAI 兼容 API 只用于聊天：`/v1/embeddings`、`/v1/images/generations` 和 `/v1/audio/*` 返回 404。它的 Responses API 不被使用，因为它对被拒绝的令牌返回 200 和 `status: "failed"`。它的 Messages 端点也不被使用：它对被拒绝的令牌返回 `api_error`，应用会将其视为服务商失败，而不是密钥被拒绝。`/v1/messages/count_tokens` 不检查令牌就返回结果，且没有文档，因此 Kaeso 拒绝 Token 计数。
+
 ## Nebius Token Factory
 
 来源：Nebius 的 [OpenAPI document](https://api.tokenfactory.nebius.com/openapi.json)（版本 `20261105-4c58718c5`）、其[文本生成](https://docs.tokenfactory.nebius.com/api-reference/examples/text-generation)示例和[概览](https://docs.tokenfactory.nebius.com/ai-models-inference/overview)，2026-11-09 阅读。由于没有可用的密钥，`fixtures/openai_chat/providers/nebius/` 中的回复和流都据此构建，其中一个是文档自己的示例；错误是在没有有效密钥的情况下实时返回的。Kaeso 的基础 URL 为 `https://api.tokenfactory.nebius.com`，使用 `Authorization: Bearer`。
