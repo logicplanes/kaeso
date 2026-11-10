@@ -3,28 +3,63 @@ import type { Attachment } from "@logicplanes/kaeso-ui/playground";
 
 export interface TurnFile {
   id: string;
+  /** What people read, such as a recording's translated name. */
   name: string;
   type: string;
   data: string;
+  /** The file name the upload carries, when it differs from `name`. */
+  filename?: string | undefined;
 }
 
 // The image types every provider's vision input takes: OpenAI, Anthropic and Gemini all read these.
 const IMAGES = ["image/png", "image/jpeg", "image/webp", "image/gif"];
 const PDF = "application/pdf";
+const AUDIO = "audio/*";
 
 // The prompt's text, the history and the request's own fields ride along with the files.
 const ROOM_FOR_TEXT = 64 * 1024;
 
+// Browsers record the microphone as WebM or MP4, which some name a video container.
+const audio = (type: string) => type.startsWith("audio/") || type === "video/webm" || type === "video/mp4";
+
+/** The file types a model reads from the composer, by its mode. */
+export function typesOf(m: PlaygroundModel): string[] {
+  switch (m.mode) {
+    case "text":
+      return [...(m.input_modalities.includes("image") ? IMAGES : []), ...(m.input_modalities.includes("pdf") ? [PDF] : [])];
+    case "image":
+      return m.image?.edits ? IMAGES : [];
+    case "transcription":
+      return [AUDIO];
+    default:
+      return [];
+  }
+}
+
+const reads = (types: readonly string[], type: string) => types.some((t) => t === type || (t === AUDIO && audio(type)));
+
+/** The files of a prompt that go to a model: what it reads, and for a transcription only the first recording. */
+export function filesFor(m: PlaygroundModel, files: readonly TurnFile[]): TurnFile[] {
+  const types = typesOf(m);
+  const taken = files.filter((f) => reads(types, f.type));
+  return m.mode === "transcription" ? taken.slice(0, 1) : taken;
+}
+
 export interface FileRules {
   types: string[];
-  maxBytes: number;
+  takes: (type: string) => boolean;
+  maxBytes: (type: string) => number;
 }
 
 export function fileRules(models: readonly PlaygroundModel[]): FileRules {
-  const all = (modality: string) => models.length > 0 && models.every((m) => m.input_modalities.includes(modality));
+  const types = [...new Set(models.flatMap(typesOf))];
   return {
-    types: [...(all("image") ? IMAGES : []), ...(all("pdf") ? [PDF] : [])],
-    maxBytes: models.length ? Math.max(0, Math.min(...models.map((m) => m.max_request_bytes)) - ROOM_FOR_TEXT) : 0,
+    types,
+    takes: (type) => reads(types, type),
+    maxBytes: (type) => {
+      const limits = models.filter((m) => reads(typesOf(m), type)).map((m) => m.max_request_bytes);
+      return limits.length ? Math.max(0, Math.min(...limits) - ROOM_FOR_TEXT) : 0;
+    },
   };
 }
 
@@ -41,11 +76,17 @@ export function readFile(file: File): Promise<string> {
   });
 }
 
+export function fileOf(file: TurnFile): File {
+  const [head = "", body = ""] = file.data.split(",", 2);
+  const bytes = Uint8Array.from(atob(body), (c) => c.charCodeAt(0));
+  return new File([bytes], file.filename ?? file.name, { type: /^data:([^;,]+)/.exec(head)?.[1] ?? file.type });
+}
+
 let next = 0;
 export const fileId = () => `file${++next}`;
 
 export const shown = (files: readonly TurnFile[] | undefined): Attachment[] =>
-  (files ?? []).map((f) => ({ id: f.id, name: f.name, type: f.type, src: f.data }));
+  (files ?? []).map((f) => ({ id: f.id, name: f.name, type: f.type, ...(f.type.startsWith("image/") ? { src: f.data } : {}) }));
 
 type Part = { type: "input_text"; text: string } | { type: "input_image"; image_url: string } | { type: "input_file"; filename: string; file_data: string };
 

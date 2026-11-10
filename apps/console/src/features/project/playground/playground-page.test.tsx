@@ -85,13 +85,6 @@ describe("PlaygroundPage", () => {
     expect(screen.queryByRole("button", { name: "Add column" })).not.toBeInTheDocument();
   });
 
-  it("offers only the models that chat", async () => {
-    signedIn();
-    on("GET", MODELS, page([playgroundModel({ id: "cm_img", model_id: "gpt-image-2", model: "gpt-image-2", display_name: "GPT Image 2", mode: "image" })]));
-    await renderApp(PLAYGROUND);
-    expect(await screen.findByText("No models to try yet")).toBeInTheDocument();
-  });
-
   it("doesn't offer to add models without the right", async () => {
     signedIn({ projectRights: without("models.manage") });
     on("GET", MODELS, page([]));

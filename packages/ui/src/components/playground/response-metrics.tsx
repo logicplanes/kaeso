@@ -21,6 +21,7 @@ export interface ResponseMetricsProps {
   live?: boolean | undefined;
   startedAt?: number | undefined;
   cost?: string | null | undefined;
+  costKnown?: boolean | undefined;
   size?: keyof typeof KAESO_RESPONSE_METRICS_VARIANTS.size | undefined;
   className?: string | undefined;
 }
@@ -63,14 +64,28 @@ function Item({ label, reserve, children }: { label: string; reserve: string; ch
 }
 
 export const ResponseMetrics = forwardRef<HTMLDListElement, ResponseMetricsProps>(function ResponseMetrics(
-  { timeToFirstToken, duration, inputTokens, outputTokens, reasoningTokens, reasoning, live = false, startedAt, cost, size = "sm", className },
+  {
+    timeToFirstToken,
+    duration,
+    inputTokens,
+    outputTokens,
+    reasoningTokens,
+    reasoning,
+    live = false,
+    startedAt,
+    cost,
+    costKnown = true,
+    size = "sm",
+    className,
+  },
   ref,
 ) {
   const t = useUiText();
   const counting = live && startedAt !== undefined && !known(duration);
   const elapsed = useElapsed(counting ? startedAt : undefined);
   const tokens = known(inputTokens) || known(outputTokens);
-  const hasCost = cost != null && cost !== "";
+  const unknownCost = !costKnown && !live;
+  const hasCost = unknownCost || (cost != null && cost !== "");
   const line = cn("flex min-w-0 flex-wrap items-baseline", KAESO_RESPONSE_METRICS_VARIANTS.size[size].classes, className);
   if (!live && !tokens && !hasCost && !known(timeToFirstToken) && !known(duration) && !known(reasoningTokens)) {
     return <dl ref={ref} aria-label={t("responseMetrics.metrics", "Metrics")} className={cn(line, size === "sm" ? "min-h-16" : "min-h-18")} />;
@@ -121,7 +136,7 @@ export const ResponseMetrics = forwardRef<HTMLDListElement, ResponseMetricsProps
       )}
       {show(hasCost) && (
         <Item label={t("responseMetrics.cost", "Cost")} reserve={formatPrice("0.008888")}>
-          {hasCost ? requestCost(cost) : dash}
+          {unknownCost ? t("responseMetrics.costUnknown", "Unknown") : hasCost && cost != null ? requestCost(cost) : dash}
         </Item>
       )}
     </dl>

@@ -128,6 +128,7 @@ Ausgabenbudgets prüfen den teuersten Fall eines Videos, bevor es startet, und s
 
 ## Nächste Schritte
 
+- [Playground](../console/playground.md): Ein Videomodell in der Konsole ausprobieren, bevor Sie Code schreiben.
 - [Modell-API](model-api.md): Jeden Endpunkt, Header und Modellnamen nachschlagen.
 - [Anfrage-Logs](../console/request-logs.md): Ein Video finden und sehen, was es gekostet hat.
 - [Unterstützte Anbieter](../concepts/supported-providers.md): Sehen, welche Anbieter Kaeso aufruft und wie Sie ihre Schlüssel hinzufügen.

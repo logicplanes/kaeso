@@ -107,20 +107,12 @@ describe("Playground attachments", () => {
     expect(await notifications().findByText("another.png makes the conversation too large to send.")).toBeInTheDocument();
   });
 
-  it("offers attachments only when every chosen model takes them", async () => {
+  it("offers no attachments when no chosen model reads files", async () => {
     signedIn();
-    on(
-      "GET",
-      MODELS,
-      page([
-        playgroundModel({ input_modalities: ["text", "pdf"] }),
-        playgroundModel({ id: "cm_t", model_id: "text-only", model: "text-only", display_name: "Text only" }),
-      ]),
-    );
-    const { user } = await renderApp(PLAYGROUND);
-    expect(await screen.findByRole("button", { name: "Attach PDFs" })).toBeInTheDocument();
-    await user.click(screen.getAllByRole("button", { name: "Add column" })[0] as HTMLElement);
-    await waitFor(() => expect(screen.queryByRole("button", { name: /^Attach/ })).not.toBeInTheDocument());
+    on("GET", MODELS, page([playgroundModel({ id: "cm_t", model_id: "text-only", model: "text-only", display_name: "Text only" })]));
+    await renderApp(PLAYGROUND);
+    await screen.findByText("text-only");
+    expect(screen.queryByRole("button", { name: /^Attach/ })).not.toBeInTheDocument();
   });
 
   it("sends a PDF as a file and a prompt of files alone without text", () => {
@@ -128,6 +120,7 @@ describe("Playground attachments", () => {
       { type: "input_file", filename: "invoice.pdf", file_data: "data:application/pdf;base64,JVBERg==" },
     ]);
     expect(userContent("Hi", [])).toBe("Hi");
-    expect(fileRules([])).toEqual({ types: [], maxBytes: 0 });
+    const none = fileRules([]);
+    expect([none.types, none.takes("image/png"), none.maxBytes("image/png")]).toEqual([[], false, 0]);
   });
 });

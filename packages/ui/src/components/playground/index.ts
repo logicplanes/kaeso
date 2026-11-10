@@ -1,6 +1,8 @@
 export { Attachments, KAESO_ATTACHMENTS_DEFAULT_VARIANTS, KAESO_ATTACHMENTS_VARIANTS } from "./attachments.js";
 export type { Attachment, AttachmentsProps } from "./attachments.js";
 export { Composer, KAESO_COMPOSER_DEFAULT_VARIANTS, KAESO_COMPOSER_VARIANTS } from "./composer.js";
+export { KAESO_MEDIA_RESPONSE_DEFAULT_VARIANTS, KAESO_MEDIA_RESPONSE_VARIANTS, MediaResponse } from "./media-response.js";
+export type { MediaItem, MediaKind, MediaResponseProps, MediaStatus } from "./media-response.js";
 export type { ComposerProps } from "./composer.js";
 export { CompareGrid, KAESO_COMPARE_GRID_DEFAULT_VARIANTS, KAESO_COMPARE_GRID_VARIANTS } from "./compare-grid.js";
 export type { CompareColumnProps, CompareGridProps } from "./compare-grid.js";
@@ -11,6 +13,6 @@ export type { ReasoningProps } from "./reasoning.js";
 export { KAESO_RESPONSE_METRICS_DEFAULT_VARIANTS, KAESO_RESPONSE_METRICS_VARIANTS, ResponseMetrics, formatLatency } from "./response-metrics.js";
 export type { ResponseMetricsProps } from "./response-metrics.js";
 export { KAESO_PARAMETER_PANEL_DEFAULT_VARIANTS, KAESO_PARAMETER_PANEL_VARIANTS, ParameterPanel } from "./parameter-panel.js";
-export type { ParameterPanelProps, PlaygroundParameters, ReasoningEffort, ReasoningSummary } from "./parameter-panel.js";
+export type { ImageParameterOptions, ParameterPanelProps, PlaygroundParameters, ReasoningEffort, ReasoningSummary } from "./parameter-panel.js";
 export { KAESO_MODEL_PICKER_DEFAULT_VARIANTS, KAESO_MODEL_PICKER_VARIANTS, ModelPicker, useModelGroups } from "./model-picker.js";
 export type { ModelPickerOption, ModelPickerProps, ModelPickerProvider, MultiModelPickerProps, SingleModelPickerProps } from "./model-picker.js";

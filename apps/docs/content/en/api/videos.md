@@ -128,6 +128,7 @@ Spend budgets check a video's dearest case before it starts, and its cost counts
 
 ## Next steps
 
+- [Playground](../console/playground.md): Try a video model from the console before writing code.
 - [Model API](model-api.md): Look up every endpoint, header and model name.
 - [Request logs](../console/request-logs.md): Find a video and what it cost.
 - [Supported providers](../concepts/supported-providers.md): See which providers Kaeso calls and how to add their keys.
