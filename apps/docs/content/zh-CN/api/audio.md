@@ -57,7 +57,7 @@ console.log(transcript.text);
 
 ## 语音
 
-- **声音。** 只有服务商列出的声音才会传过去：OpenAI 的声音传给 OpenAI，Gemini 的 30 个预置声音传给 Google 模型，SpaceX 的声音 ID 传给 SpaceX。声音取决于模型的服务商（Groq、Together AI、Mistral、OpenRouter、MiniMax）按原样接收名称。QwenCloud 接收其列表为该模型列出的声音，例如 `qwen3-tts-flash` 的 `Cherry`，或声音 ID，例如克隆声音的 ID。ElevenLabs 按 ID 接收声音，即其 `GET /v1/voices` 列出的 ID：把 ID 作为 `voice` 发送，或发送 `{"id": "…"}`；`alloy` 这样的名称会被拒绝，因为 Kaeso 不猜测它对应 ElevenLabs 的哪个声音。
+- **声音。** 只有服务商列出的声音才会传过去：OpenAI 的声音传给 OpenAI，Gemini 的 30 个预置声音传给 Google 模型，SpaceX 的声音 ID 传给 SpaceX。声音取决于模型的服务商（Groq、Together AI、Mistral、OpenRouter、MiniMax、SiliconFlow）按原样接收名称；SiliconFlow 以模型命名声音，例如 `FunAudioLLM/CosyVoice2-0.5B:alex`。QwenCloud 接收其列表为该模型列出的声音，例如 `qwen3-tts-flash` 的 `Cherry`，或声音 ID，例如克隆声音的 ID。ElevenLabs 按 ID 接收声音，即其 `GET /v1/voices` 列出的 ID：把 ID 作为 `voice` 发送，或发送 `{"id": "…"}`；`alloy` 这样的名称会被拒绝，因为 Kaeso 不猜测它对应 ElevenLabs 的哪个声音。
 - **格式**从不转换。服务商没有的格式会在发送任何内容之前被拒绝，`param` 中为 `response_format`。应用未指定格式时，OpenAI 返回 mp3，因此 Kaeso 向每个服务商都明确请求 mp3；`qwen3-tts-flash` 只生成 wav 和 pcm，因此应用需指定其中之一。
 - **流式。** 音频按服务商发送的样子传给应用。请求 `stream_format: "sse"` 时，Kaeso 为任何服务商写出 `speech.audio.delta` 事件；一次性发送完整音频的服务商会得到一个增量和结束事件。OpenAI 只在事件中报告用量，因此 Kaeso 向 OpenAI 请求事件，再为需要音频的应用还原成音频；`tts-1` 和 `tts-1-hd` 没有事件，按字符计费。音频要等服务商的首批字节到达后才返回状态：服务商在此之前失败时，应用会收到 OpenAI 格式的错误；之后中断时，响应以错误结束，绝不会是一个看似正常结束的残缺文件。
 - **设置**：服务商不支持的设置，例如 Gemini 的 `instructions` 或 Together AI 的 `speed`，会被拒绝，`param` 中给出该字段。
@@ -89,7 +89,9 @@ console.log(transcript.text);
 | Z.ai | 不提供 | `/api/paas/v4/audio/transcriptions`：`glm-asr-2512` | [GLM-ASR](https://docs.z.ai/guides/audio/glm-asr-2512) |
 | QwenCloud | DashScope：`qwen-audio-3.1-tts-flash`、`qwen-audio-3.1-tts-plus`、`qwen-audio-3.0-tts-flash`、`qwen-audio-3.0-tts-plus`（mp3、wav、opus、pcm），`qwen3-tts-flash`（wav 或 pcm） | 通过 `chat/completions` 调用 `qwen3-asr-flash`；DashScope：`qwen-audio-3.1-asr-flash`、`qwen-audio-3.0-asr-flash`，`json` 和 `text` | [Qwen-ASR](https://www.alibabacloud.com/help/en/model-studio/qwen-asr-api-reference), [Qwen-Audio-TTS](https://docs.qwencloud.com/api-reference/speech-synthesis/qwen-audio-tts/http-api), [Qwen3-TTS](https://docs.qwencloud.com/api-reference/speech-synthesis/qwen-tts), [Qwen-Audio-ASR](https://docs.qwencloud.com/api-reference/speech-recognition/qwen-audio-asr/http-api) |
 | Cohere | 不提供 | `/v2/audio/transcriptions`：`cohere-transcribe-03-2026`，必须提供 `language` | [transcribe](https://docs.cohere.com/v2/docs/transcribe) |
-| Anthropic、DeepSeek、Moonshot、Cerebras、Ollama Cloud | 不提供 | 不提供 | [支持的服务商](../concepts/supported-providers.md) |
+| Scaleway | 不提供 | `/v1/audio/transcriptions`：`whisper-large-v3`，仅 `json` | [Generative APIs](https://www.scaleway.com/en/developers/api/generative-apis/) |
+| SiliconFlow | `/v1/audio/speech`：CosyVoice 和 Fish Speech，音色写作 `<model>:<voice>`；mp3、opus、wav 或 pcm | `/v1/audio/transcriptions`：SenseVoice 和 TeleSpeech，只返回文本 | [create speech](https://docs.siliconflow.com/en/api-reference/audio/create-speech)、[create transcription](https://docs.siliconflow.com/en/api-reference/audio/create-audio-transcriptions) |
+| Anthropic、DeepSeek、Moonshot、Cerebras、Ollama Cloud、Fireworks AI、Nebius Token Factory、SambaNova、Hugging Face、NVIDIA、Baseten | 不通过 Kaeso 提供 | 不通过 Kaeso 提供 | [支持的服务商](../concepts/supported-providers.md) |
 
 发给没有该 API 的服务商的请求会在发送任何内容之前被拒绝，例如“Anthropic offers no speech API Kaeso can call, so `claude-haiku-4-5` can't speak.”。如果项目的 OpenAI 密钥是 [ChatGPT 账户](../console/provider-keys.md#使用-chatgpt-账户登录)，发往 OpenAI 的请求同样会被拒绝，因为该账户无法生成语音或转写音频；错误会要求使用 API 密钥。
 

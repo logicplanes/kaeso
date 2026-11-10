@@ -115,6 +115,7 @@ Die Dokumentation jedes eingebauten Anbieters wurde am 2026-11-09 auf Videoerzeu
 | Vercel | Nein: Vercel dokumentiert Video nur über sein AI SDK, nicht über HTTP | — | — | [Videoerzeugung](https://vercel.com/docs/ai-gateway/modalities/video-generation) |
 | QwenCloud | Text zu Video und Bild zu Video mit Wan, etwa `wan3.0-video`, `wan2.7-t2v` und `wan2.6-i2v-flash` | Erstes Bild, hochgeladen oder verlinkt, bei Bild-zu-Video-Modellen und Wan 3.0 | Nein | [Videoerzeugung](https://docs.qwencloud.com/api-reference/video-generation/wan-text-to-video/create-task) |
 | Anthropic, DeepSeek, Groq, Mistral, Cohere, Ollama Cloud, Moonshot, Cerebras | Vom Anbieter nicht angeboten | — | — | Die API-Referenz jedes Anbieters |
+| Fireworks AI, Nebius Token Factory, SambaNova, Scaleway, Hugging Face, NVIDIA, Baseten, SiliconFlow | Nicht über Kaeso | — | — | [Unterstützte Anbieter](../concepts/supported-providers.md) |
 
 Ein Projekt führt ein Modell für Video, wenn KPMR oder sein eigener Eintrag sagt, dass das Modell Video macht. Veo auf Gemini Enterprise Agent Platform braucht einen Dienstkontoschlüssel: Der Express-Modus listet keine Veo-Modelle, deshalb lehnt Kaeso einen Express-Schlüssel für sie ab. Auch Gemini Omni auf der Agent Platform braucht einen Dienstkontoschlüssel, weil der Express-Modus keine Omni-Modelle listet, und geht an den globalen Standort der Plattform, gleich welchen Standort der Schlüssel nennt, weil Omni nur dort angeboten wird.
 

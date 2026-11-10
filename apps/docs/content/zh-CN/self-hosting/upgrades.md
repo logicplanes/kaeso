@@ -8,7 +8,7 @@ order: 8
 
 ## 手动更新
 
-1. 阅读发布说明，看是否有需要您处理的事项。发布说明位于[版本页面](https://github.com/logicplanes/kaeso/releases)，以及**实例** › **更新**中。
+1. 阅读发布说明，看是否有需要您处理的事项。发布说明位于[版本页面](https://github.com/logicplanes/kaeso/releases)，以及**实例** › **更新**中。如果使用自己的反向代理，请检查它是否转发了网关提供的每个路径，见[使用自己的反向代理](domains-and-tls.md#使用自己的反向代理)中的列表；新增路径的版本（例如 `/v1beta/` 和 `/v2/`）会在发布说明中写明。
 2. [备份](backups.md) PostgreSQL，以及保存请求日志的 ClickHouse，以便在需要时[回退](#降级)。
 3. 在实例文件夹中，带上 `--update` 和要更新到的版本运行安装脚本。它会下载该版本的 `compose.yaml` 和 `release.json`，只有当 `compose.yaml` 的哈希与 `release.json` 中写明的一致时，才会替换实例的 `compose.yaml`。它会把旧文件保留为 `compose.yaml.previous`，绝不会退回到更旧的版本，然后拉取镜像并启动它们。不带 `--version` 时，它会安装最新的稳定版本。
 
