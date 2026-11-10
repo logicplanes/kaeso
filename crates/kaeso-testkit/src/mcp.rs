@@ -71,6 +71,28 @@ impl Default for Options {
     }
 }
 
+pub const VIEW: &str = "ui://x/me";
+pub const VIEW_HTML: &str = "<!doctype html><html><head><meta charset=\"utf-8\"><title>Me</title></head><body>Signed in to X</body></html>";
+
+fn shows_apps(capabilities: Option<&Value>) -> bool {
+    capabilities
+        .and_then(|c| c.pointer("/extensions/io.modelcontextprotocol~1ui/mimeTypes"))
+        .and_then(Value::as_array)
+        .is_some_and(|m| m.iter().any(|t| t == "text/html;profile=mcp-app"))
+}
+
+// Like a server built with the MCP Apps SDK, the mock names views only to clients that show them.
+fn without_views(mut tool: Value) -> Value {
+    if let Some(meta) = tool.get_mut("_meta").and_then(Value::as_object_mut) {
+        meta.remove("ui");
+        meta.remove("ui/resourceUri");
+        if meta.is_empty() {
+            tool.as_object_mut().map(|t| t.remove("_meta"));
+        }
+    }
+    tool
+}
+
 pub fn default_tools() -> Vec<Value> {
     vec![
         json!({
@@ -93,7 +115,7 @@ pub fn default_tools() -> Vec<Value> {
             "description": "Shows the signed-in account.",
             "inputSchema": { "type": "object" },
             "annotations": { "readOnlyHint": true },
-            "_meta": { "io.modelcontextprotocol/ui": { "resourceUri": "ui://x/me" } }
+            "_meta": { "ui": { "resourceUri": "ui://x/me" } }
         }),
     ]
 }
@@ -131,6 +153,7 @@ struct Inner {
     auth: Mutex<Auth>,
     tools: Mutex<Vec<Value>>,
     sessions: Mutex<HashSet<String>>,
+    apps_sessions: Mutex<HashSet<String>>,
     next: AtomicUsize,
     seen: Mutex<Vec<Seen>>,
     base: String,
@@ -157,6 +180,7 @@ impl MockMcp {
             tools: Mutex::new(options.tools.clone()),
             options,
             sessions: Mutex::default(),
+            apps_sessions: Mutex::default(),
             auth: Mutex::default(),
             next: AtomicUsize::new(1),
             seen: Mutex::default(),
@@ -590,9 +614,16 @@ async fn handle(State(inner): State<Arc<Inner>>, headers: HeaderMap, body: Bytes
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
             .insert(session.clone());
+        if shows_apps(params.get("capabilities")) {
+            inner
+                .apps_sessions
+                .lock()
+                .unwrap_or_else(PoisonError::into_inner)
+                .insert(session.clone());
+        }
         let result = json!({
             "protocolVersion": version,
-            "capabilities": { "tools": { "listChanged": false } },
+            "capabilities": { "tools": { "listChanged": false }, "resources": {} },
             "serverInfo": server_info,
             "instructions": "Posts to X."
         });
@@ -659,6 +690,17 @@ async fn handle(State(inner): State<Arc<Inner>>, headers: HeaderMap, body: Bytes
         }
     }
     let ok = |result: Value| json!({ "jsonrpc": "2.0", "id": id, "result": result });
+    let apps = if modern {
+        shows_apps(params.pointer("/_meta/io.modelcontextprotocol~1clientCapabilities"))
+    } else {
+        header_of(&headers, "mcp-session-id").is_some_and(|s| {
+            inner
+                .apps_sessions
+                .lock()
+                .unwrap_or_else(PoisonError::into_inner)
+                .contains(&s)
+        })
+    };
     match method.as_str() {
         "server/discover" => {
             let supported: Vec<&str> = match era {
@@ -691,7 +733,13 @@ async fn handle(State(inner): State<Arc<Inner>>, headers: HeaderMap, body: Bytes
                 .and_then(|c| c.parse::<usize>().ok())
                 .unwrap_or(0);
             let size = inner.options.page_size.max(1);
-            let page: Vec<Value> = tools.iter().skip(start).take(size).cloned().collect();
+            let page: Vec<Value> = tools
+                .iter()
+                .skip(start)
+                .take(size)
+                .cloned()
+                .map(|t| if apps { t } else { without_views(t) })
+                .collect();
             let mut result = json!({ "tools": page });
             if start + size < tools.len() {
                 result["nextCursor"] = json!((start + size).to_string());
@@ -746,6 +794,29 @@ async fn handle(State(inner): State<Arc<Inner>>, headers: HeaderMap, body: Bytes
             } else {
                 json_reply(StatusCode::OK, &ok(result), None)
             }
+        }
+        "resources/read" => {
+            let uri = params
+                .get("uri")
+                .and_then(Value::as_str)
+                .unwrap_or_default();
+            if uri != VIEW {
+                return json_reply(
+                    StatusCode::OK,
+                    &rpc_error(&id, -32002, "Resource not found"),
+                    None,
+                );
+            }
+            let mut result = json!({ "contents": [{
+                "uri": VIEW,
+                "mimeType": "text/html;profile=mcp-app",
+                "text": VIEW_HTML,
+                "_meta": { "ui": { "csp": { "connectDomains": ["https://api.x.example"] }, "prefersBorder": false } }
+            }] });
+            if modern {
+                result["resultType"] = json!("complete");
+            }
+            json_reply(StatusCode::OK, &ok(result), None)
         }
         "ping" => json_reply(StatusCode::OK, &ok(json!({})), None),
         _ => json_reply(

@@ -85,3 +85,31 @@ def test_a_key_without_tool_access_is_turned_away(install: Install) -> None:
     with pytest.raises(Exception):
         portal.run(names)
     assert set(portal.statuses) == {403}
+
+
+@pytest.mark.parametrize(("mode", "version"), VERSIONS)
+def test_the_sdk_reads_a_servers_view_through_the_portal(install: Install, mode: str, version: str) -> None:
+    ids = {t["name"]: t["id"] for t in install.tools()}
+
+    def switch(on: bool) -> None:
+        r = install.http.patch(f"{install.base}/tools", json={"tools": [{"id": ids["get_me"], "enabled": on}]})
+        assert r.status_code == 200, r.text
+
+    async def steps(c: Client):
+        tools = await c.list_tools()
+        resources = await c.list_resources()
+        read = await c.read_resource("ui://x/x/me")
+        return tools, resources, read
+
+    switch(True)
+    try:
+        tools, resources, read = Portal(install, mode).run(steps)
+    finally:
+        switch(False)
+    me = next(t for t in tools.tools if t.name == "x__get_me")
+    assert me.meta == {"ui": {"resourceUri": "ui://x/x/me"}}
+    assert [(r.uri, r.mime_type) for r in resources.resources] == [("ui://x/x/me", "text/html;profile=mcp-app")]
+    item = read.contents[0]
+    assert (item.uri, item.mime_type) == ("ui://x/x/me", "text/html;profile=mcp-app")
+    assert "Signed in to X" in item.text
+    assert item.meta["ui"]["csp"] == {"connectDomains": ["https://api.x.example"]}

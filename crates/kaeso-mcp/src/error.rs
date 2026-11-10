@@ -14,6 +14,8 @@ pub mod code {
     pub const HEADER_MISMATCH: i64 = -32020;
     pub const MISSING_REQUIRED_CLIENT_CAPABILITY: i64 = -32021;
     pub const UNSUPPORTED_PROTOCOL_VERSION: i64 = -32022;
+    // https://modelcontextprotocol.io/specification/2025-11-25/server/resources#error-handling
+    pub const RESOURCE_NOT_FOUND: i64 = -32002;
 }
 
 #[derive(Debug, Clone)]

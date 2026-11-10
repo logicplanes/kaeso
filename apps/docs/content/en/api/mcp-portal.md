@@ -72,8 +72,20 @@ The portal speaks MCP over Streamable HTTP in the versions `2025-03-26`, `2025-0
 | `initialize`, `ping` | The handshake of versions before `2026-07-28`, and a liveness check |
 | `tools/list` | The tools you may call. Names are the server's handle, two underscores and the tool's name, such as `x__create_post` |
 | `tools/call` | Calls one tool with its `arguments`. A server's streamed answer passes through as events |
+| `resources/list`, `resources/read` | The [MCP Apps views](#mcp-apps-views) of the tools you may call, and one view's HTML |
+| `resources/templates/list` | Always empty |
 
 Notifications get 202 and no body. Other methods get `-32601`.
+
+## MCP Apps views
+
+A server built with [MCP Apps](https://modelcontextprotocol.io/extensions/apps/overview) names an interactive view for some of its tools, which clients such as Claude show in the conversation. The portal passes these views on, so they work through Kaeso as they do with the server itself:
+
+- Kaeso tells the server, when it signs in and when it lists the tools, that its clients can show views (the `io.modelcontextprotocol/ui` extension), so servers that list views only to such clients list them to the portal.
+- A tool's `_meta` reaches the client as the server listed it, with the view's `ui://` address under the server's handle, the way tool names get it: the server `x`'s `ui://board/today` is `ui://x/board/today`. `resources/list` lists the views of the tools you may call, and `resources/read` fetches one from the server with Kaeso's sign-in and passes on its HTML and its `_meta`, among them the view's content security policy, unchanged. A view of a tool you may not call, or that is off or held for review, is unknown (`-32002`).
+- A view calls its server's tools by the server's own names. When only one server with views has a tool of that name, the portal takes the name as that tool, and the call goes through the same checks, limits and logs as any other.
+
+A view's HTML comes from the server each time a client reads it, and the review of a changed tool covers its definition, not its view.
 
 ## Errors
 

@@ -1,5 +1,6 @@
 #![forbid(unsafe_code)]
 
+pub mod apps;
 pub mod canonical;
 pub mod error;
 pub mod headers;

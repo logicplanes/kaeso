@@ -85,10 +85,7 @@ async fn a_changed_definition_is_held_until_someone_approves_it() {
         canonical::definition_hash(&default_tools()[0]).to_vec()
     );
     let me = tool(&app, &row, "get_me").await;
-    assert_eq!(
-        me.meta.unwrap()["io.modelcontextprotocol/ui"]["resourceUri"],
-        "ui://x/me"
-    );
+    assert_eq!(me.meta.unwrap()["ui"]["resourceUri"], "ui://x/me");
 
     let again = mcp_tools::sync(&app.state, &row).await.unwrap();
     assert_eq!(again, mcp_tools::Synced::default());

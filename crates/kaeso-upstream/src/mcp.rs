@@ -451,7 +451,10 @@ impl Client<'_> {
                     json!(hs.version.as_str()),
                 );
                 m.insert(meta::CLIENT_INFO.to_owned(), self.client_info());
-                m.insert(meta::CLIENT_CAPABILITIES.to_owned(), json!({}));
+                m.insert(
+                    meta::CLIENT_CAPABILITIES.to_owned(),
+                    kaeso_mcp::apps::client_capabilities(),
+                );
             }
         }
         serde_json::to_vec(
@@ -621,7 +624,9 @@ impl Client<'_> {
         let id = "kaeso-initialize";
         let params = json!({
             "protocolVersion": Version::LATEST_LEGACY.as_str(),
-            "capabilities": {},
+            // Servers list their MCP Apps views only to clients that say they show them; the
+            // portal passes the views on to its own clients.
+            "capabilities": kaeso_mcp::apps::client_capabilities(),
             "clientInfo": self.client_info(),
         });
         let answer = self.send(None, "initialize", Some(params), id).await?;

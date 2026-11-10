@@ -72,8 +72,20 @@ console.log(tools.map((tool) => tool.name));
 | `initialize`、`ping` | `2026-07-28` 之前版本的版本协商，以及存活检查 |
 | `tools/list` | 您可以调用的工具。名称由服务器的简称、两个下划线和工具名组成，例如 `x__create_post` |
 | `tools/call` | 用工具的 `arguments` 调用一个工具。服务器的流式回答会以事件形式传递 |
+| `resources/list`、`resources/read` | 您可以调用的工具的 [MCP Apps 视图](#mcp-apps-视图)，以及某个视图的 HTML |
+| `resources/templates/list` | 始终为空 |
 
 通知会收到 202，没有正文。其他方法会收到 `-32601`。
+
+## MCP Apps 视图
+
+使用 [MCP Apps](https://modelcontextprotocol.io/extensions/apps/overview) 构建的服务器会为部分工具指定交互视图，Claude 等客户端会在对话中显示这些视图。门户会传递这些视图，因此它们通过 Kaeso 使用时与直接连接服务器时一样：
+
+- Kaeso 在登录服务器和列出工具时告诉服务器其客户端可以显示视图（`io.modelcontextprotocol/ui` 扩展），因此只向这类客户端列出视图的服务器也会向门户列出视图。
+- 工具的 `_meta` 按服务器列出的样子传给客户端，视图的 `ui://` 地址会像工具名称一样加上服务器的简称：服务器 `x` 的 `ui://board/today` 变为 `ui://x/board/today`。`resources/list` 列出您可以调用的工具的视图，`resources/read` 用 Kaeso 的登录从服务器获取某个视图，并原样传递其 HTML 和 `_meta`（其中包括视图的内容安全策略）。您不能调用、已关闭或正在等待审核的工具的视图会被视为不存在（`-32002`）。
+- 视图会用服务器自己的名称调用其服务器的工具。只有一个带视图的服务器有该名称的工具时，门户会把该名称视为这个工具，调用会经过与其他调用相同的检查、限额和日志。
+
+每次客户端读取视图时，视图的 HTML 都来自服务器；对已变更工具的审核涵盖其定义，而不涵盖其视图。
 
 ## 错误
 

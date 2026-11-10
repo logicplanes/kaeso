@@ -72,8 +72,20 @@ Das Portal spricht MCP über Streamable HTTP in den Versionen `2025-03-26`, `202
 | `initialize`, `ping` | Der Versionsabgleich der Versionen vor `2026-07-28` und eine Lebendprüfung |
 | `tools/list` | Die Tools, die Sie aufrufen dürfen. Namen bestehen aus dem Kürzel des Servers, zwei Unterstrichen und dem Namen des Tools, etwa `x__create_post` |
 | `tools/call` | Ruft ein Tool mit seinen `arguments` auf. Eine gestreamte Antwort des Servers wird als Ereignisse weitergereicht |
+| `resources/list`, `resources/read` | Die [Ansichten von MCP Apps](#ansichten-von-mcp-apps) der Tools, die Sie aufrufen dürfen, und das HTML einer Ansicht |
+| `resources/templates/list` | Immer leer |
 
 Benachrichtigungen bekommen 202 ohne Inhalt. Andere Methoden bekommen `-32601`.
+
+## Ansichten von MCP Apps
+
+Ein Server, der mit [MCP Apps](https://modelcontextprotocol.io/extensions/apps/overview) gebaut ist, nennt für manche seiner Tools eine interaktive Ansicht, die Clients wie Claude im Gespräch zeigen. Das Portal reicht diese Ansichten weiter, sodass sie über Kaeso so funktionieren wie mit dem Server selbst:
+
+- Kaeso teilt dem Server bei der Anmeldung und beim Auflisten der Tools mit, dass seine Clients Ansichten zeigen können (die Erweiterung `io.modelcontextprotocol/ui`), sodass Server, die Ansichten nur solchen Clients nennen, sie auch dem Portal nennen.
+- Das `_meta` eines Tools erreicht den Client so, wie der Server es gelistet hat, mit der `ui://`-Adresse der Ansicht unter dem Kürzel des Servers, so wie es auch die Tool-Namen tragen: `ui://board/today` des Servers `x` heißt `ui://x/board/today`. `resources/list` listet die Ansichten der Tools, die Sie aufrufen dürfen, und `resources/read` holt eine mit Kaesos Anmeldung vom Server und reicht ihr HTML und ihr `_meta`, darunter die Content-Security-Policy der Ansicht, unverändert weiter. Die Ansicht eines Tools, das Sie nicht aufrufen dürfen, das aus ist oder auf eine Prüfung wartet, ist unbekannt (`-32002`).
+- Eine Ansicht ruft die Tools ihres Servers mit den Namen des Servers auf. Hat nur ein Server mit Ansichten ein Tool dieses Namens, nimmt das Portal den Namen als dieses Tool, und der Aufruf durchläuft dieselben Prüfungen, Limits und Protokolle wie jeder andere.
+
+Das HTML einer Ansicht kommt bei jedem Lesen vom Server, und die Prüfung eines geänderten Tools umfasst seine Definition, nicht seine Ansicht.
 
 ## Fehler
 
