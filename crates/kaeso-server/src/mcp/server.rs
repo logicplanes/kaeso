@@ -25,9 +25,6 @@ use crate::state::AppState;
 const LATEST_PROTOCOL: &str = "2025-11-25";
 pub const PROTOCOL_VERSIONS: &[&str] = &[LATEST_PROTOCOL, "2025-06-18", "2025-03-26"];
 const MAX_RESULT_BYTES: usize = 200 * 1024;
-// The code MCP gives an unknown resource URI:
-// https://modelcontextprotocol.io/specification/2025-11-25/server/resources#error-handling
-const RESOURCE_NOT_FOUND: i64 = -32002;
 const INSTRUCTIONS: &str = "Kaeso is a self-hosted AI gateway. These tools read and change it \
     for the user who connected you, with the rights they gave you; tools/list shows only what you \
     can use now. Ids look like `org_…` and `proj_…`; list organizations with `get_me_memberships` \
@@ -240,7 +237,11 @@ pub async fn post(
         "resources/templates/list" => rpc(id, json!({ "resourceTemplates": [] })),
         "resources/read" => match params.get("uri").and_then(Value::as_str) {
             Some(stats::VIEW) => rpc(id, stats::contents()),
-            _ => rpc_error(id, RESOURCE_NOT_FOUND, "Resource not found."),
+            _ => rpc_error(
+                id,
+                kaeso_mcp::code::RESOURCE_NOT_FOUND,
+                "Resource not found.",
+            ),
         },
         _ => rpc_error(id, -32601, "Method not found."),
     };
