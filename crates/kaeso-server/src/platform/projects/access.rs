@@ -119,6 +119,14 @@ async fn write(
 ) -> ApiResult<()> {
     let mut tx = state.pg.begin().await?;
     let before = catalogue::access(&mut tx, project, subject).await?;
+    super::bounds::check_list(
+        state,
+        ctx,
+        super::bounds::Lists::Models,
+        before.as_ref(),
+        list,
+    )
+    .await?;
     catalogue::set_access(&mut tx, project, subject, list).await?;
     if let (Some((user, account)), Some(allowed)) = (prune, list) {
         catalogue::prune_key_lists(&mut *tx, project, user, account, allowed).await?;
