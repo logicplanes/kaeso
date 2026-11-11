@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use kaeso_mcp::names;
 use kaeso_mcp::params::{self, ParamHeader};
+use kaeso_mcp::{apps, names};
 use kaeso_store::StoreError;
 use kaeso_store::pg::tool_access::{self, ProjectToolAccess};
 use kaeso_store::pg::{mcp_servers, mcp_tools};
@@ -39,6 +39,15 @@ pub struct PortalTool {
     pub params: Vec<ParamHeader>,
 }
 
+// An MCP Apps view a server's tool names, under the URI the portal shows for it.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PortalView {
+    pub exposed: String,
+    pub upstream: String,
+    pub server: usize,
+    pub tools: Vec<Uuid>,
+}
+
 // Everything a call to a project's portal needs, built once per change and shared: the tools
 // list is kept as JSON so no request serializes a definition again.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -48,6 +57,8 @@ pub struct PortalSnapshot {
     pub by_name: HashMap<String, usize>,
     pub access: ProjectToolAccess,
     pub listed: String,
+    #[serde(default)]
+    pub views: Vec<PortalView>,
 }
 
 impl PortalSnapshot {
@@ -64,10 +75,25 @@ impl PortalSnapshot {
             .iter()
             .filter(|t| t.standing == Standing::Offered)
     }
+
+    pub fn view(&self, exposed: &str) -> Option<&PortalView> {
+        self.views.iter().find(|v| v.exposed == exposed)
+    }
+
+    // A view calls its own server's tools by the names that server gave them; the portal knows
+    // them by their exposed names, so a name only one viewing server uses is taken as that tool.
+    pub fn tool_of_view(&self, upstream: &str) -> Option<&PortalTool> {
+        let mut found = self
+            .offered()
+            .filter(|t| t.upstream == upstream && self.views.iter().any(|v| v.server == t.server));
+        let first = found.next()?;
+        found.next().is_none().then_some(first)
+    }
 }
 
-// As the server listed it, with the portal's name; `_meta` and the output schema pass through.
-fn listed(exposed: &str, t: &mcp_tools::ToolRow) -> String {
+// As the server listed it, with the portal's name; `_meta` and the output schema pass through,
+// with a view's URI under the portal's name for it.
+fn listed(exposed: &str, t: &mcp_tools::ToolRow, view: Option<(&str, &str)>) -> String {
     let mut o = Map::new();
     o.insert("name".into(), Value::String(exposed.to_owned()));
     if let Some(title) = &t.title {
@@ -78,11 +104,17 @@ fn listed(exposed: &str, t: &mcp_tools::ToolRow) -> String {
     for (key, value) in [
         ("outputSchema", &t.output_schema),
         ("annotations", &t.annotations),
-        ("_meta", &t.meta),
     ] {
         if let Some(v) = value {
             o.insert(key.into(), v.clone());
         }
+    }
+    if let Some(meta) = &t.meta {
+        let mut meta = meta.clone();
+        if let Some((upstream, shown)) = view {
+            apps::rename(&mut meta, upstream, shown);
+        }
+        o.insert("_meta".into(), meta);
     }
     Value::Object(o).to_string()
 }
@@ -106,11 +138,29 @@ pub async fn build(state: &AppState, project: Uuid) -> Result<PortalSnapshot, St
         .collect();
     let mut tools = Vec::new();
     let mut by_name = HashMap::new();
+    let mut views: Vec<PortalView> = Vec::new();
     for r in mcp_tools::of_project(&state.pg, project).await? {
         let Some(&server) = index.get(&r.tool.server_id) else {
             continue;
         };
         let exposed = names::exposed(&r.server_handle, &r.tool.name);
+        let view = r
+            .tool
+            .meta
+            .as_ref()
+            .and_then(apps::view_of)
+            .and_then(|uri| Some((uri.to_owned(), apps::exposed(&r.server_handle, uri)?)));
+        if let Some((upstream, shown)) = &view {
+            match views.iter_mut().find(|v| &v.exposed == shown) {
+                Some(v) => v.tools.push(r.tool.id),
+                None => views.push(PortalView {
+                    exposed: shown.clone(),
+                    upstream: upstream.clone(),
+                    server,
+                    tools: vec![r.tool.id],
+                }),
+            }
+        }
         let standing = match (r.enabled, r.tool.is_approved()) {
             (false, _) => Standing::Off,
             (true, false) => Standing::Held,
@@ -120,7 +170,11 @@ pub async fn build(state: &AppState, project: Uuid) -> Result<PortalSnapshot, St
         tools.push(PortalTool {
             id: r.tool.id,
             server,
-            listed: listed(&exposed, &r.tool),
+            listed: listed(
+                &exposed,
+                &r.tool,
+                view.as_ref().map(|(u, e)| (u.as_str(), e.as_str())),
+            ),
             params: params::param_headers(&r.tool.input_schema).unwrap_or_default(),
             exposed,
             upstream: r.tool.name,
@@ -143,6 +197,7 @@ pub async fn build(state: &AppState, project: Uuid) -> Result<PortalSnapshot, St
         by_name,
         access,
         listed,
+        views,
     })
 }
 

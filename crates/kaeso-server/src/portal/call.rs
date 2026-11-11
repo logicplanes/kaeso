@@ -55,7 +55,7 @@ struct Logged {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum Failure {
+pub(super) enum Failure {
     Denied,
     Limited,
     ToolOff,
@@ -180,7 +180,7 @@ fn refuse(id: Option<&RawValue>, message: String) -> Response {
     rpc_error(StatusCode::OK, id, &RpcError::invalid_params(message))
 }
 
-fn owner(server: &PortalServer, caller: &Caller) -> Option<Uuid> {
+pub(super) fn owner(server: &PortalServer, caller: &Caller) -> Option<Uuid> {
     if server.per_user { caller.user } else { None }
 }
 
@@ -198,7 +198,7 @@ fn sign_in_hint(server: &PortalServer) -> String {
     }
 }
 
-fn connection_failure(server: &PortalServer, e: &ConnectionError) -> (Failure, String) {
+pub(super) fn connection_failure(server: &PortalServer, e: &ConnectionError) -> (Failure, String) {
     match e {
         ConnectionError::NotConnected | ConnectionError::SignedOut | ConnectionError::Unrenewed => {
             (
@@ -217,7 +217,7 @@ fn connection_failure(server: &PortalServer, e: &ConnectionError) -> (Failure, S
     }
 }
 
-fn upstream_failure(
+pub(super) fn upstream_failure(
     server: &PortalServer,
     e: &McpError,
     timeout: Duration,
@@ -284,14 +284,14 @@ fn size(bytes: usize) -> String {
     }
 }
 
-fn handshake_key(server: Uuid, owner: Option<Uuid>) -> String {
+pub(super) fn handshake_key(server: Uuid, owner: Option<Uuid>) -> String {
     format!(
         "{server}:{}",
         owner.map_or_else(|| "shared".to_owned(), |u| u.to_string())
     )
 }
 
-async fn handshake(
+pub(super) async fn handshake(
     state: &AppState,
     client: &Client<'_>,
     key: &str,
@@ -400,7 +400,11 @@ pub(super) async fn call(state: &AppState, r: Request<'_>) -> Response {
     let Some(name) = r.message.name() else {
         return refuse(id, "Send the tool's `name` in `params`.".to_owned());
     };
-    let Some(tool) = r.snapshot.tool(&name) else {
+    let Some(tool) = r
+        .snapshot
+        .tool(&name)
+        .or_else(|| r.snapshot.tool_of_view(&name))
+    else {
         return refuse(
             id,
             format!("No tool `{name}` in this project's portal; list the tools again."),

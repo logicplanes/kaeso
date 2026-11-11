@@ -14,7 +14,7 @@ use axum::http::{Method, Request, StatusCode, header};
 use common::{App, Owner};
 use futures::StreamExt;
 use kaeso_store::clickhouse::tool_calls::ToolCallRow;
-use kaeso_testkit::mcp::{Era, MockMcp, Options, default_tools};
+use kaeso_testkit::mcp::{Era, MockMcp, Options, VIEW_HTML, default_tools};
 use kaeso_testkit::services::TestServices;
 use serde_json::{Value, json};
 use tower::ServiceExt;
@@ -114,7 +114,12 @@ fn request(p: &Portal, key: Option<&str>, version: Option<&str>, message: &Value
     if version == Some(MODERN) {
         let method = message["method"].as_str().unwrap().to_owned();
         req = req.header("mcp-method", &method);
-        if let Some(name) = message["params"]["name"].as_str() {
+        let name = if method == "resources/read" {
+            "uri"
+        } else {
+            "name"
+        };
+        if let Some(name) = message["params"][name].as_str() {
             req = req.header("mcp-name", name);
         }
         message["params"]["_meta"]["io.modelcontextprotocol/protocolVersion"] = json!(MODERN);
@@ -816,4 +821,108 @@ async fn kaeso_sends_its_own_credential_and_marks_a_refused_one() {
         rows.iter().any(|r| r.error_type == "upstream_auth"),
         "{rows:?}"
     );
+}
+
+#[tokio::test]
+async fn a_servers_mcp_apps_views_reach_the_client_under_the_portals_names() {
+    let s = TestServices::start().await;
+    let mock = MockMcp::start(Options::default()).await;
+    let p = portal(&s, &mock, &[]).await;
+    let at_project = format!("/orgs/{}/projects/{}", p.owner.org_id, p.project);
+    p.app
+        .call(
+            Method::PATCH,
+            &format!("{at_project}/tools"),
+            Some(json!({ "tools": [{ "id": tool_id(&p, "get_me"), "enabled": true }] })),
+            Some(&p.owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::OK);
+    let view = "ui://x/x/me";
+    for version in [Some(MODERN), Some("2025-11-25")] {
+        let init = send(&p, None, rpc(1, "initialize", json!({ "protocolVersion": "2025-11-25", "capabilities": {}, "clientInfo": { "name": "claude-ai", "version": "1" } }))).await;
+        assert!(init.body["result"]["capabilities"]["resources"].is_object());
+        let list = send(&p, version, rpc(2, "tools/list", json!({}))).await;
+        let me = list.body["result"]["tools"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|t| t["name"] == "x__get_me")
+            .unwrap()
+            .clone();
+        assert_eq!(me["_meta"]["ui"]["resourceUri"], view, "{version:?}");
+        let resources = send(&p, version, rpc(3, "resources/list", json!({}))).await;
+        assert_eq!(
+            resources.body["result"]["resources"],
+            json!([{ "uri": view, "name": "x/x/me", "mimeType": "text/html;profile=mcp-app" }]),
+            "{version:?}"
+        );
+        let read = send(
+            &p,
+            version,
+            rpc(4, "resources/read", json!({ "uri": view })),
+        )
+        .await;
+        let item = &read.body["result"]["contents"][0];
+        assert_eq!(item["uri"], view, "{:?}", read.body);
+        assert_eq!(item["mimeType"], "text/html;profile=mcp-app");
+        assert_eq!(item["text"], VIEW_HTML);
+        assert_eq!(
+            item["_meta"]["ui"],
+            json!({ "csp": { "connectDomains": ["https://api.x.example"] }, "prefersBorder": false }),
+            "the server's policy goes on as it is"
+        );
+        if version == Some(MODERN) {
+            assert_eq!(read.body["result"]["resultType"], "complete");
+            assert_eq!(resources.body["result"]["ttlMs"], 300_000);
+            assert_eq!(resources.body["result"]["cacheScope"], "private");
+        }
+        let from_view = send(
+            &p,
+            version,
+            rpc(
+                5,
+                "tools/call",
+                json!({ "name": "get_me", "arguments": {} }),
+            ),
+        )
+        .await;
+        assert_eq!(
+            from_view.body["result"]["content"][0]["text"], "get_me ran with {}",
+            "a view calls its server's tool by the server's name: {:?}",
+            from_view.body
+        );
+    }
+    let asked = mock.seen();
+    let read = asked.iter().find(|s| s.method == "resources/read").unwrap();
+    assert_eq!(read.body["params"]["uri"], "ui://x/me");
+    let unknown = send(
+        &p,
+        Some(MODERN),
+        rpc(6, "resources/read", json!({ "uri": "ui://x/x/other" })),
+    )
+    .await;
+    assert_eq!(unknown.body["error"]["code"], -32002);
+
+    p.app
+        .call(
+            Method::PUT,
+            &format!("{at_project}/tool-access/{}", p.owner.user_id),
+            Some(json!({ "tools": [tool_id(&p, "search_posts")] })),
+            Some(&p.owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::OK);
+    let hidden = send(
+        &p,
+        Some(MODERN),
+        rpc(7, "resources/read", json!({ "uri": view })),
+    )
+    .await;
+    assert_eq!(
+        hidden.body["error"]["code"], -32002,
+        "a view of a tool the caller may not use is unknown"
+    );
+    let resources = send(&p, Some(MODERN), rpc(8, "resources/list", json!({}))).await;
+    assert_eq!(resources.body["result"]["resources"], json!([]));
 }

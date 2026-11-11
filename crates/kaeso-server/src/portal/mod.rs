@@ -1,5 +1,6 @@
 pub mod auth;
 mod call;
+mod resources;
 pub mod snapshot;
 
 use std::borrow::Cow;
@@ -74,7 +75,7 @@ fn server_info() -> serde_json::Value {
 }
 
 fn capabilities() -> serde_json::Value {
-    json!({ "tools": { "listChanged": false } })
+    json!({ "tools": { "listChanged": false }, "resources": { "listChanged": false } })
 }
 
 fn discover() -> String {
@@ -218,6 +219,9 @@ async fn handle(
         "initialize" => ok(&initialize(&message)),
         "ping" => ok("{}"),
         "tools/list" => ok(&list(&snapshot, &caller, version)),
+        "resources/list" => ok(&resources::list(&snapshot, &caller, version)),
+        "resources/templates/list" => ok(&resources::templates(version)),
+        "resources/read" => resources::read(&state, &caller, &snapshot, version, &message).await,
         "tools/call" => {
             call::call(
                 &state,
