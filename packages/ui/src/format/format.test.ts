@@ -50,6 +50,13 @@ describe("other formatters", () => {
     expect(formatRelative(new Date("2026-10-12T14:12:00Z"), now)).toBe("8 min ago");
     expect(formatRelative(new Date("2026-10-11T10:00:00Z"), now)).toBe("yesterday");
   });
+  describeInTimeZone("America/Los_Angeles", () => {
+    it("names an older day in the viewer's zone, or in UTC when asked", () => {
+      const now = "2026-10-15T09:00:00Z";
+      expect(formatRelative("2026-10-02T03:30:00Z", now)).toBe("1 Oct");
+      expect(formatRelative("2026-10-02T03:30:00Z", now, { utc: true })).toBe("2 Oct");
+    });
+  });
 });
 
 describe("ISO dates", () => {
