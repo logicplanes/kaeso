@@ -643,6 +643,14 @@ pub async fn set_access(
     };
     let mut tx = state.pg.begin().await?;
     let before = tool_access::access(&mut tx, project, p.subject()).await?;
+    super::bounds::check_list(
+        &state,
+        &ctx,
+        super::bounds::Lists::Tools,
+        before.as_ref(),
+        list.as_ref(),
+    )
+    .await?;
     if !tool_access::set_access(&mut tx, project, p.subject(), list.as_ref()).await? {
         return Err(ApiError::not_found(PRINCIPAL));
     }
