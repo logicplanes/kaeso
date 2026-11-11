@@ -613,3 +613,274 @@ async fn a_key_creates_and_rotates_keys_only_within_its_own_limits() {
     .expect_status(StatusCode::CREATED);
     s.cleanup().await;
 }
+
+fn widens(field: &str) -> String {
+    format!("A key can't widen `{field}` beyond its own; use a console session.")
+}
+
+async fn refused_for(
+    app: &App,
+    key: &str,
+    method: Method,
+    path: &str,
+    body: Option<Value>,
+    field: &str,
+) {
+    let r = app
+        .with_key(method.clone(), path, body.clone(), key)
+        .await
+        .expect_status(StatusCode::FORBIDDEN);
+    assert_eq!(
+        r.body["error"]["message"],
+        widens(field),
+        "{method} {path} {body:?}"
+    );
+}
+
+async fn allowed_for(app: &App, key: &str, method: Method, path: &str, body: Option<Value>) {
+    let r = app.with_key(method.clone(), path, body.clone(), key).await;
+    assert!(
+        r.status.is_success(),
+        "{method} {path} {body:?}: {:?}",
+        r.body
+    );
+}
+
+#[tokio::test]
+async fn a_key_only_narrows_its_own_models_tools_and_limits() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let org = owner.org_id.clone();
+    let project = common::first_project(&app, &owner).await;
+    let base = format!("/orgs/{org}/projects/{project}");
+    let mut models = Vec::new();
+    for (provider, model) in [("openai", "gpt-4o"), ("anthropic", "claude-haiku-4-5")] {
+        let r = app
+            .post(
+                &format!("{base}/models"),
+                json!({ "provider": provider, "model_id": model }),
+                Some(&owner.cookie),
+            )
+            .await
+            .expect_status(StatusCode::CREATED);
+        models.push(r.body["id"].as_str().unwrap().to_owned());
+    }
+    let (me, limited) = new_key(
+        &app,
+        &base,
+        &owner.cookie,
+        json!({ "name": "limited", "access": "both", "models": [models[0]], "expires_in_days": 1 }),
+    )
+    .await;
+    let (open, _) = new_key(&app, &base, &owner.cookie, json!({ "name": "open" })).await;
+    let mine = format!("{base}/keys/{me}/models");
+
+    refused_for(
+        &app,
+        &limited,
+        Method::PATCH,
+        &mine,
+        Some(json!({ "all": true })),
+        "models",
+    )
+    .await;
+    refused_for(
+        &app,
+        &limited,
+        Method::PATCH,
+        &mine,
+        Some(json!({ "models": [models[0], models[1]] })),
+        "models",
+    )
+    .await;
+    let theirs = format!("{base}/keys/{open}/models");
+    allowed_for(
+        &app,
+        &limited,
+        Method::PATCH,
+        &theirs,
+        Some(json!({ "models": [models[0]] })),
+    )
+    .await;
+    refused_for(
+        &app,
+        &limited,
+        Method::PATCH,
+        &theirs,
+        Some(json!({ "all": true })),
+        "models",
+    )
+    .await;
+    let account = app
+        .post(
+            &format!("{base}/service-accounts"),
+            json!({ "name": "deployer", "role": "developer" }),
+            Some(&owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::CREATED)
+        .body["id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let accounts = format!("{base}/service-accounts/{account}/models");
+    allowed_for(
+        &app,
+        &limited,
+        Method::PATCH,
+        &accounts,
+        Some(json!({ "models": [models[0]] })),
+    )
+    .await;
+    refused_for(
+        &app,
+        &limited,
+        Method::PATCH,
+        &accounts,
+        Some(json!({ "all": true })),
+        "models",
+    )
+    .await;
+
+    let tools = format!("{base}/tool-access/{me}");
+    app.call(
+        Method::PUT,
+        &tools,
+        Some(json!({ "tools": [] })),
+        Some(&owner.cookie),
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    refused_for(
+        &app,
+        &limited,
+        Method::PUT,
+        &tools,
+        Some(json!({ "all": true })),
+        "tools",
+    )
+    .await;
+    allowed_for(
+        &app,
+        &limited,
+        Method::PUT,
+        &tools,
+        Some(json!({ "tools": [] })),
+    )
+    .await;
+
+    let mut limit_ids = Vec::new();
+    for key in [&me, &open] {
+        let r = app
+            .post(
+                &format!("{base}/limits"),
+                json!({ "level": "key", "key": key, "kind": "request_rate", "period": "minute", "amount": "10" }),
+                Some(&owner.cookie),
+            )
+            .await
+            .expect_status(StatusCode::CREATED);
+        limit_ids.push(r.body["id"].as_str().unwrap().to_owned());
+    }
+    let own_limit = format!("{base}/limits/{}", limit_ids[0]);
+    let their_limit = format!("{base}/limits/{}", limit_ids[1]);
+    refused_for(
+        &app,
+        &limited,
+        Method::PATCH,
+        &own_limit,
+        Some(json!({ "amount": "100" })),
+        "amount",
+    )
+    .await;
+    refused_for(&app, &limited, Method::DELETE, &own_limit, None, "limits").await;
+    refused_for(&app, &limited, Method::DELETE, &their_limit, None, "limits").await;
+    allowed_for(
+        &app,
+        &limited,
+        Method::PATCH,
+        &own_limit,
+        Some(json!({ "amount": "5" })),
+    )
+    .await;
+    let budget = app
+        .post(
+            &format!("{base}/limits"),
+            json!({ "level": "project", "kind": "spend_budget", "period": "month", "amount": "50" }),
+            Some(&owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::CREATED);
+    let budget = format!("{base}/limits/{}", budget.body["id"].as_str().unwrap());
+    refused_for(
+        &app,
+        &limited,
+        Method::PATCH,
+        &budget,
+        Some(json!({ "hard": false })),
+        "hard",
+    )
+    .await;
+    refused_for(
+        &app,
+        &limited,
+        Method::PATCH,
+        &budget,
+        Some(json!({ "amount": "60" })),
+        "amount",
+    )
+    .await;
+    allowed_for(
+        &app,
+        &limited,
+        Method::PATCH,
+        &budget,
+        Some(json!({ "amount": "40" })),
+    )
+    .await;
+
+    let (_, free) = new_key(
+        &app,
+        &base,
+        &owner.cookie,
+        json!({ "name": "free", "access": "both" }),
+    )
+    .await;
+    allowed_for(
+        &app,
+        &free,
+        Method::PATCH,
+        &accounts,
+        Some(json!({ "all": true })),
+    )
+    .await;
+    allowed_for(&app, &free, Method::DELETE, &their_limit, None).await;
+
+    for (method, path, body) in [
+        (Method::PATCH, mine.clone(), Some(json!({ "all": true }))),
+        (Method::PATCH, theirs.clone(), Some(json!({ "all": true }))),
+        (
+            Method::PATCH,
+            accounts.clone(),
+            Some(json!({ "all": true })),
+        ),
+        (Method::PUT, tools.clone(), Some(json!({ "all": true }))),
+        (
+            Method::PATCH,
+            own_limit.clone(),
+            Some(json!({ "amount": "100" })),
+        ),
+        (
+            Method::PATCH,
+            budget.clone(),
+            Some(json!({ "hard": false })),
+        ),
+    ] {
+        let r = app
+            .call(method.clone(), &path, body, Some(&owner.cookie))
+            .await;
+        assert!(r.status.is_success(), "{method} {path}: {:?}", r.body);
+    }
+
+    s.cleanup().await;
+}

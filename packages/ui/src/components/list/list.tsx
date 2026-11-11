@@ -16,6 +16,7 @@ import { lazyModule, useLazyModuleRetried } from "../../utils/lazy-module.js";
 import { selectsText } from "../../utils/selects-text.js";
 import { RowCheckbox } from "./row-checkbox.js";
 import { useUiText } from "../../i18n/context.js";
+import { useHydrating } from "../../hooks/use-hydrating.js";
 
 const virtualRows = lazyModule(() => import("./virtual-rows.js"), { base: () => import.meta.url });
 
@@ -404,7 +405,8 @@ function clearOfBar(el: HTMLElement, bar: HTMLElement | null) {
 }
 
 function FirstRows({ count, estimateSize, row }: { count: number; estimateSize: (index: number) => number; row: (index: number) => ReactNode }) {
-  const view = typeof window === "undefined" ? 1024 : window.innerHeight;
+  const hydrating = useHydrating();
+  const view = hydrating ? 1024 : window.innerHeight;
   const rows: ReactNode[] = [];
   let total = 0;
   let extra = 12;
@@ -704,7 +706,8 @@ export interface SelectionBarProps {
 export const SelectionBar = forwardRef<HTMLDivElement, SelectionBarProps>(function SelectionBar({ count, onClear, children }, ref) {
   const container = usePortalContainer();
   const t = useUiText();
-  if (typeof document === "undefined") return null;
+  const hydrating = useHydrating();
+  if (hydrating) return null;
   return createPortal(
     <div
       ref={ref}
