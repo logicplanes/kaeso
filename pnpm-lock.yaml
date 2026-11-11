@@ -19,8 +19,8 @@ importers:
         specifier: 1.4.0
         version: 1.4.0(zod@4.6.7)
       knip:
-        specifier: 6.44.1
-        version: 6.44.1
+        specifier: 6.44.0
+        version: 6.44.0
       prettier:
         specifier: 3.9.10
         version: 3.9.10
@@ -46,8 +46,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/ui
       '@tanstack/react-query':
-        specifier: 5.105.3
-        version: 5.105.3(@types/react@19.3.0)(react@19.3.1)
+        specifier: 5.105.0
+        version: 5.105.0(@types/react@19.3.0)(react@19.3.1)
       '@tanstack/react-router':
         specifier: 1.170.46
         version: 1.170.46(patch_hash=0e6c925c4ddad96453957359bd5f12146649ef96bad03f47b8f0f4bbd373c4e1)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
@@ -2000,11 +2000,11 @@ packages:
     resolution: {integrity: sha512-w1+YvwmTkwt5n8yUqEH3IWZ9DsmorCZW/EQ3KYHnqEgIkOZpH54NvW6/Epq3Dzb8H0ifIeYX8PExvrNLIH5FIA==}
     engines: {node: '>=20.19'}
 
-  '@tanstack/query-core@5.105.3':
-    resolution: {integrity: sha512-v1rbNy7MB/4Akth7CQH+CerV13K7Ok9hAusEsfz4sCjDdu3/kOSJPoWfoB+YjdEX1eBFBWKNAGE5nqZCgdlHDw==}
+  '@tanstack/query-core@5.105.0':
+    resolution: {integrity: sha512-7p56vRmT/z4UJ6sctGIdl5WRUQyUv53IUpUwEKi2g97zMbO7zh8ZsCLffGAvCPBR4xD72e3VXsDyLwXHhoNTMQ==}
 
-  '@tanstack/react-query@5.105.3':
-    resolution: {integrity: sha512-dj5hGWZmwoc9NG4enoXuYbiYwb5FxgJYPVv06eUgicMTfEMTRXn08Xv9D/r1V8TfjAv+BpxdvZFzJ1h3hSWZcQ==}
+  '@tanstack/react-query@5.105.0':
+    resolution: {integrity: sha512-y+hMuDERvgg6ay1da0V1a6ZC0ZONt7dELxSFkqRZuwm7p1TTZs0MoXrPlBRflIpRoYjvzQVYxycnLImpFLhWrw==}
     peerDependencies:
       '@types/react': ^18 || ^19
       react: ^18 || ^19
@@ -3734,8 +3734,8 @@ packages:
   khroma@2.1.0:
     resolution: {integrity: sha512-Ls993zuzfayK269Svk9hzpeGUKob/sIgZzyHYdjQoAdQetRKpOLj+k/QQQ/6Qi0Yz65mlROrfd+Ev+1+7dz9Kw==}
 
-  knip@6.44.1:
-    resolution: {integrity: sha512-Hbd8nvkIsNgFfXgC7Jsb5LHv7jj6VwA3tmfHd53XPX2z9Vc9RnAZqV0BIiP4OrtYqKwCoLseFHQZerb1bNlbSw==}
+  knip@6.44.0:
+    resolution: {integrity: sha512-mT0fl71Mqrko91azUO2Jw/uhYKwldORKT4liRq6yV0ZAtt6G2eYusdnvx8eBSQJDjvhRGKkpKUUx+vUG6syV4w==}
     engines: {node: ^20.19.0 || >=22.12.0}
     hasBin: true
 
@@ -6403,11 +6403,11 @@ snapshots:
 
   '@tanstack/history@1.162.5': {}
 
-  '@tanstack/query-core@5.105.3': {}
+  '@tanstack/query-core@5.105.0': {}
 
-  '@tanstack/react-query@5.105.3(@types/react@19.3.0)(react@19.3.1)':
+  '@tanstack/react-query@5.105.0(@types/react@19.3.0)(react@19.3.1)':
     dependencies:
-      '@tanstack/query-core': 5.105.3
+      '@tanstack/query-core': 5.105.0
       react: 19.3.1
     optionalDependencies:
       '@types/react': 19.3.0
@@ -8534,7 +8534,7 @@ snapshots:
 
   khroma@2.1.0: {}
 
-  knip@6.44.1:
+  knip@6.44.0:
     dependencies:
       formatly: 0.11.4
       get-tsconfig: 4.14.3
