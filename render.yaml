@@ -5,7 +5,7 @@ services:
     name: kaeso-edge
     runtime: image
     image:
-      url: ghcr.io/logicplanes/kaeso-console:0.6.0-rc.8
+      url: ghcr.io/logicplanes/kaeso-console:0.6.0
     plan: 0.5c-512mb
     region: frankfurt
     dockerCommand: kaeso-edge
@@ -30,7 +30,7 @@ services:
     name: kaeso-gateway
     runtime: image
     image:
-      url: ghcr.io/logicplanes/kaeso-gateway:0.6.0-rc.8
+      url: ghcr.io/logicplanes/kaeso-gateway:0.6.0
     plan: 2c-4g
     region: frankfurt
     autoDeployTrigger: off
@@ -75,7 +75,7 @@ services:
     name: kaeso-console
     runtime: image
     image:
-      url: ghcr.io/logicplanes/kaeso-console:0.6.0-rc.8
+      url: ghcr.io/logicplanes/kaeso-console:0.6.0
     plan: 0.5c-512mb
     region: frankfurt
     autoDeployTrigger: off

@@ -26,8 +26,8 @@ Every dialect also reads and writes its own errors, and the chat and embeddings 
 
 ```toml
 [dependencies]
-kaeso-kpp = "0.6.0-rc.8"
-kaeso-codecs = "0.6.0-rc.8"
+kaeso-kpp = "0.6"
+kaeso-codecs = "0.6"
 ```
 
 An app sent an Anthropic Messages request, and the model is served through OpenAI Chat Completions:
