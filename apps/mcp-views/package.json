@@ -1,6 +1,6 @@
 {
   "name": "kaeso-mcp-views",
-  "version": "0.6.0-rc.8",
+  "version": "0.6.0",
   "private": true,
   "type": "module",
   "description": "The interactive views Kaeso's MCP server shows in hosts that support MCP Apps.",
