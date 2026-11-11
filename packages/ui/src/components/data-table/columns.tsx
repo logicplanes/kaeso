@@ -7,6 +7,8 @@ import { Tooltip } from "../tooltip/tooltip.js";
 import { TruncatedText } from "../text/truncated.js";
 import type { StatusTone } from "../../utils/tone.js";
 import { useUiText } from "../../i18n/context.js";
+import { useHydrating } from "../../hooks/use-hydrating.js";
+import { useUtcWhileHydrating } from "../../hooks/use-utc-while-hydrating.js";
 import { TIME_COLUMNS } from "./time-columns.js";
 
 function time<C extends object>(column: C): C {
@@ -62,12 +64,21 @@ function Tokens({ value }: { value: number }) {
   );
 }
 
-function RelativeTime({ value, now }: { value: string | Date; now: Date | number }) {
-  const exact = formatDate(value, { time: true, seconds: true });
+function DateTime({ value }: { value: string | Date }) {
+  const utc = useUtcWhileHydrating();
+  return <time dateTime={new Date(value).toISOString()}>{formatDate(value, { time: true, utc })}</time>;
+}
+
+function RelativeTime({ value, now, live }: { value: string | Date; now: Date | number; live: boolean }) {
+  const hydrating = useHydrating();
+  const utc = useUtcWhileHydrating();
+  const exact = formatDate(value, { time: true, seconds: true, utc });
+  // The server's clock is gone by the time the page hydrates, so a column without a fixed now shows the date itself until then.
+  const shown = live && hydrating ? formatDate(value, { time: true, utc }) : formatRelative(value, now, { utc });
   return (
     <Tooltip content={`${exact} · ${formatDate(value, { time: true, utc: true })}`} shape="multiline">
       <span className="text-fg-secondary">
-        <time dateTime={new Date(value).toISOString()}>{formatRelative(value, now)}</time>
+        <time dateTime={new Date(value).toISOString()}>{shown}</time>
         <span className="sr-only"> {exact}</span>
       </span>
     </Tooltip>
@@ -89,21 +100,13 @@ export const col = {
   tokens: <T,>(b: Base<T>, get: Accessor<T, number>) => make(b, get, (v) => <Tokens value={v} />, { align: "end" }),
   duration: <T,>(b: Base<T>, get: Accessor<T, number>) => make(b, get, (v) => formatDuration(v), { align: "end" }),
   date: <T,>(b: Base<T>, get: Accessor<T, string | Date>) =>
-    time(
-      make(
-        b,
-        get,
-        (v) => <time dateTime={new Date(v).toISOString()}>{formatDate(v, { time: true })}</time>,
-        { text: (r: T) => formatDate(get(r), { time: true }) },
-        "datetime",
-      ),
-    ),
+    time(make(b, get, (v) => <DateTime value={v} />, { text: (r: T) => formatDate(get(r), { time: true }) }, "datetime")),
   relative: <T,>(b: Base<T>, get: Accessor<T, string | Date>, options: { now?: Date | number | undefined } = {}) =>
     time(
       make(
         b,
         get,
-        (v) => <RelativeTime value={v} now={options.now ?? Date.now()} />,
+        (v) => <RelativeTime value={v} now={options.now ?? Date.now()} live={options.now === undefined} />,
         { text: (r: T) => formatDate(get(r), { time: true }) },
         (a, c, id) => new Date(a.getValue(id) as string).getTime() - new Date(c.getValue(id) as string).getTime(),
       ),

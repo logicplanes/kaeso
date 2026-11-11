@@ -1,5 +1,7 @@
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
+import { renderToString } from "react-dom/server";
+import { hydrateRoot } from "react-dom/client";
 import { TimeseriesChart } from "./timeseries.js";
 import { BarChart } from "./bar.js";
 import { fromWall, wallClock, wallDay, zoneTicks } from "./time-axis.js";
@@ -269,5 +271,25 @@ describe("partial points and shares", () => {
       />,
     );
     expect(screen.getAllByRole("table", { hidden: true })[1]).toHaveTextContent("Week of 12 Oct, partial");
+  });
+});
+
+describe("a chart rendered on a server in another time zone", () => {
+  it("hydrates its highlighted point without a mismatch, then names it in the viewer's zone", async () => {
+    const times = Array.from({ length: 7 }, (_, i) => new Date(Date.parse("2026-10-01T03:00:00Z") + i * DAY));
+    const chart = <TimeseriesChart aria-label="Spend" highlight={2} series={[{ id: "s", label: "Spend", points: times.map((t) => ({ t, v: 4 })) }]} />;
+    process.env.TZ = "Asia/Tokyo";
+    const html = renderToString(chart);
+    const container = document.createElement("div");
+    container.innerHTML = html;
+    document.body.append(container);
+    process.env.TZ = "America/Los_Angeles";
+    const onRecoverableError = vi.fn();
+    const root = await act(async () => hydrateRoot(container, chart, { onRecoverableError }));
+    expect(onRecoverableError).not.toHaveBeenCalled();
+    expect(html).toContain("Sat 3 Oct");
+    expect(tooltip(container)).toMatch(/^Fri 2 Oct/);
+    act(() => root.unmount());
+    container.remove();
   });
 });
