@@ -4,7 +4,7 @@
 primary_region = "fra"
 
 [build]
-  image = "ghcr.io/logicplanes/kaeso-console:0.6.0-rc.8"
+  image = "ghcr.io/logicplanes/kaeso-console:0.6.0"
 
 [experimental]
   cmd = ["kaeso-edge"]

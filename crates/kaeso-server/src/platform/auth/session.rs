@@ -349,16 +349,16 @@ pub async fn revoke_all(State(state): State<AppState>, ctx: Ctx) -> ApiResult<Js
     let mut tx = state.pg.begin().await?;
     let ended =
         sessions::revoke_all_in(&mut tx, user, Some(SessionId::from_uuid(me.id)), ctx.now).await?;
-    if !ended.is_empty() {
+    if !ended.sessions.is_empty() {
         ctx.audit(None, Action::UserSessionsRevoke)
             .target("user", user)
-            .after(serde_json::json!({ "ended": ended.len() }))
+            .after(serde_json::json!({ "ended": ended.sessions.len() }))
             .write(&mut tx)
             .await?;
     }
     tx.commit().await?;
-    sessions::forget(&state, &ended).await;
+    ended.forget(&state).await;
     Ok(Json(Revoked {
-        revoked: ended.len(),
+        revoked: ended.sessions.len(),
     }))
 }

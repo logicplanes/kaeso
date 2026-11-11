@@ -146,7 +146,7 @@ KAESO_API_KEY=$(
 
 具有平台访问权限的 API 密钥在其所属项目内同样适用，并以其成员或服务账号的权限行事。以 `Authorization: Bearer sk-kso-…` 发送。它可以凭 `models.manage` 添加模型，凭 `usage.view` 和 `logs.metadata.view` 读取用量和日志。
 
-创建项目和添加服务商密钥属于组织权限，项目密钥永远不会拥有。属于成员的密钥可以用 `POST orgs/{org}/projects/{project}/keys` 为该成员创建更多密钥。如何为密钥授予平台访问权限，见 [API 密钥](../console/api-keys.md)。
+创建项目和添加服务商密钥属于组织权限，项目密钥永远不会拥有。属于成员的密钥可以用 `POST orgs/{org}/projects/{project}/keys` 为该成员创建更多密钥，但不超出其自身限制：不能创建具有其缺少的工具、其不可使用的模型或更晚过期时间的密钥；其自身受限额约束时不能创建任何密钥；也不能轮换其他密钥。如何为密钥授予平台访问权限，见 [API 密钥](../console/api-keys.md)。
 
 ## 改用会话
 

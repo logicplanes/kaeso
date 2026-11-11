@@ -604,3 +604,98 @@ async fn a_client_document_on_a_network_opened_for_mcp_servers_is_still_refused(
         );
     }
 }
+
+#[tokio::test]
+async fn a_portal_grant_meets_the_organizations_two_factor_rule_like_a_session() {
+    let s = TestServices::start().await;
+    let mock = MockMcp::start(Options::default()).await;
+    let e = env(&s, &mock).await;
+    let (access, _, _) = signed_in(&e).await;
+    sqlx::query("UPDATE organizations SET require_2fa = true WHERE id = $1")
+        .bind(common::uuid(&e.owner.org_id))
+        .execute(&e.app.state.pg)
+        .await
+        .unwrap();
+
+    let r = mcp(&e.app, &format!("/mcp/{}", e.project), &access).await;
+    assert_eq!(r.status, StatusCode::FORBIDDEN, "{:?}", r.body);
+    assert_eq!(
+        r.body["error"]["message"],
+        "This organization requires two-factor authentication; connect the portal again."
+    );
+    let request = request_of(&authorize(&e.app, CLAUDE, &resource(&e.project), "tools").await);
+    for path in [
+        "/me/agent-requests/view",
+        "/me/agent-requests/approve-portal",
+    ] {
+        let r = e
+            .app
+            .post(path, json!({ "request": request }), Some(&e.owner.cookie))
+            .await;
+        assert_eq!(r.status, StatusCode::FORBIDDEN, "{path}: {:?}", r.body);
+        assert_eq!(
+            r.body["error"]["message"],
+            "This organization requires two-factor authentication; set it up, then sign in again."
+        );
+    }
+}
+
+#[tokio::test]
+async fn an_archived_project_closes_its_portal_to_tokens_it_issued() {
+    let s = TestServices::start().await;
+    let mock = MockMcp::start(Options::default()).await;
+    let e = env(&s, &mock).await;
+    let (access, _, _) = signed_in(&e).await;
+    e.app
+        .post(
+            &format!("/orgs/{}/projects/{}/archive", e.owner.org_id, e.project),
+            json!({}),
+            Some(&e.owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::OK);
+
+    let r = mcp(&e.app, &format!("/mcp/{}", e.project), &access).await;
+    assert_eq!(r.status, StatusCode::FORBIDDEN, "{:?}", r.body);
+    assert_eq!(
+        r.body["error"]["message"],
+        "This project is archived or its organization is closing; its tools can't be called."
+    );
+}
+
+#[tokio::test]
+async fn changing_the_password_and_disconnecting_agents_ends_portal_tokens_at_once() {
+    let s = TestServices::start().await;
+    let mock = MockMcp::start(Options::default()).await;
+    let e = env(&s, &mock).await;
+    let (access, refresh, _) = signed_in(&e).await;
+    let portal = format!("/mcp/{}", e.project);
+    assert_eq!(mcp(&e.app, &portal, &access).await.status, StatusCode::OK);
+
+    let changed = e
+        .app
+        .post(
+            "/me/password",
+            json!({
+                "current_password": common::PASSWORD,
+                "new_password": "another horse battery staple",
+                "revoke_agents": true,
+            }),
+            Some(&e.owner.cookie),
+        )
+        .await;
+    assert_eq!(changed.status, StatusCode::OK, "{:?}", changed.body);
+    let r = mcp(&e.app, &portal, &access).await;
+    assert_eq!(r.status, StatusCode::UNAUTHORIZED, "{:?}", r.body);
+    let renewed = oauth_post(
+        &e.app,
+        "/oauth/token",
+        form(&[
+            ("grant_type", "refresh_token"),
+            ("refresh_token", &refresh),
+            ("client_id", CLAUDE),
+        ]),
+    )
+    .await;
+    assert_eq!(renewed.body["error"], "invalid_grant");
+}

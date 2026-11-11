@@ -4,7 +4,7 @@ captainVersion: 4
 
 services:
   $$cap_appname:
-    image: ghcr.io/logicplanes/kaeso-console:0.6.0-rc.8
+    image: ghcr.io/logicplanes/kaeso-console:0.6.0
     # CapRover sets this as the container's entrypoint; the console image has none of its own.
     command: ["kaeso-edge"]
     environment:
@@ -21,7 +21,7 @@ services:
       websocketSupport: "true"
 
   $$cap_appname-gateway:
-    image: ghcr.io/logicplanes/kaeso-gateway:0.6.0-rc.8
+    image: ghcr.io/logicplanes/kaeso-gateway:0.6.0
     environment:
       KAESO_PUBLIC_URL: $$cap_public_url
       KAESO_MASTER_KEYS: $$cap_master_keys
@@ -47,7 +47,7 @@ services:
       notExposeAsWebApp: "true"
 
   $$cap_appname-console:
-    image: ghcr.io/logicplanes/kaeso-console:0.6.0-rc.8
+    image: ghcr.io/logicplanes/kaeso-console:0.6.0
     caproverExtra:
       notExposeAsWebApp: "true"
 
@@ -114,7 +114,7 @@ caproverOneClickApp:
       Kaeso is an AI gateway: one API for every model provider, with keys, limits, budgets and request logs.
       It runs six services, the edge, the gateway, the console, PostgreSQL, ClickHouse and Valkey, and needs a server with at least 4 GB of memory.
       Before you continue, generate a master key with:
-      docker run --rm ghcr.io/logicplanes/kaeso-gateway:0.6.0-rc.8 master-key generate
+      docker run --rm ghcr.io/logicplanes/kaeso-gateway:0.6.0 master-key generate
       and keep it in a password manager. The docs: https://docs.kaeso.app/self-hosting/platforms/caprover
     end: |-
       Kaeso is starting as $$cap_appname. It takes a minute or two.
@@ -129,7 +129,7 @@ caproverOneClickApp:
       validRegex: /^https:\/\/[a-z0-9.-]+(:[0-9]+)?$/
     - id: $$cap_master_keys
       label: Master key
-      description: The output of docker run --rm ghcr.io/logicplanes/kaeso-gateway:0.6.0-rc.8 master-key generate. Keep a copy in a password manager; without it, stored provider keys can't be decrypted.
+      description: The output of docker run --rm ghcr.io/logicplanes/kaeso-gateway:0.6.0 master-key generate. Keep a copy in a password manager; without it, stored provider keys can't be decrypted.
       validRegex: /^[A-Za-z0-9_-]{1,32}:[A-Za-z0-9+\/]{43}=$/
     - id: $$cap_postgres_password
       label: PostgreSQL password of the gateway

@@ -846,6 +846,9 @@ async fn connected_portal_clients_are_listed_and_disconnected() {
             project_id: uuid(&project),
             client_id: client,
             redirect_uri: "https://claude.example/callback",
+            sign_in_method: "password",
+            second_factor: false,
+            oidc_org_id: None,
             now,
         },
     )

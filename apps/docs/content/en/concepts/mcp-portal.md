@@ -49,7 +49,7 @@ The portal offers a tool when it is on in the project and its definition is appr
 - Tool access that includes the tool. Tool access is every tool by default, and can be narrowed for a member, a service account or a key.
 - For an API key, the **Tools** ability.
 
-A client that signs in with OAuth acts as the person who allowed it, with that person's tool access. A per-person server's tools work for a caller only after they connect their own account.
+A client that signs in with OAuth acts as the person who allowed it, with that person's tool access. It meets the organization's two-factor and SSO requirements with the sign-in that allowed it, and stops working when the project is archived or the organization is scheduled for deletion. A per-person server's tools work for a caller only after they connect their own account.
 
 ## Limits and logs
 

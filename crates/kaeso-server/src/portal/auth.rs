@@ -9,6 +9,7 @@ use uuid::Uuid;
 
 use kaeso_core::rights::effective_project_rights;
 use kaeso_core::secret;
+use kaeso_store::pg::sessions::SessionRow;
 use kaeso_store::pg::{members, portal_grants};
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
@@ -41,7 +42,43 @@ pub struct TokenAuth {
     #[serde(with = "time::serde::rfc3339::option")]
     pub expires_at: Option<OffsetDateTime>,
     pub active: bool,
-    pub tools_use: bool,
+    pub standing: Standing,
+}
+
+/// Whether a grant's person may call the project's tools now, decided as for their sessions:
+/// the project open, the organization active, its sign-in rules met by the sign-in that approved
+/// the grant, and `tools.use` held.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub enum Standing {
+    Allowed,
+    Closed,
+    NoRight,
+    NeedsSso,
+    NeedsOtherSignIn,
+    Needs2fa,
+}
+
+impl Standing {
+    fn refusal(self) -> Option<&'static str> {
+        match self {
+            Standing::Allowed => None,
+            Standing::Closed => Some(
+                "This project is archived or its organization is closing; its tools can't be called.",
+            ),
+            Standing::NoRight => {
+                Some("You may not call tools in this project; the right `tools.use` is missing.")
+            }
+            Standing::NeedsSso => {
+                Some("This organization requires signing in with SSO; connect the portal again.")
+            }
+            Standing::NeedsOtherSignIn => {
+                Some("This organization needs another sign-in; connect the portal again.")
+            }
+            Standing::Needs2fa => Some(
+                "This organization requires two-factor authentication; connect the portal again.",
+            ),
+        }
+    }
 }
 
 fn token_key(hash: &[u8]) -> String {
@@ -69,17 +106,24 @@ pub async fn forget_grant(state: &AppState, grant: Uuid) {
     }
 }
 
-async fn person_uses_tools(
+async fn standing(
     state: &AppState,
-    org: Uuid,
-    project: Uuid,
-    user: Uuid,
-) -> Result<bool, kaeso_store::StoreError> {
+    a: &portal_grants::PortalAuth,
+) -> Result<Standing, kaeso_store::StoreError> {
+    use crate::platform::access::{Area, PolicyGap, policy_gap};
     let mut conn = state.pg.acquire().await?;
-    let Some(found) = members::access_context(&mut conn, org, Some(user), Some(project)).await?
+    let Some(found) =
+        members::access_context(&mut conn, a.org_id, Some(a.user_id), Some(a.project_id)).await?
     else {
-        return Ok(false);
+        return Ok(Standing::NoRight);
     };
+    drop(conn);
+    let Some(project) = &found.project else {
+        return Ok(Standing::NoRight);
+    };
+    if project.archived_at.is_some() || found.org.state != "active" {
+        return Ok(Standing::Closed);
+    }
     let org_grant = found
         .org_grant
         .as_ref()
@@ -88,10 +132,34 @@ async fn person_uses_tools(
         .project_grant
         .as_ref()
         .and_then(|g| crate::platform::grants::project_from_store(g).ok());
-    Ok(org_grant.is_some()
-        && found.project.is_some()
-        && effective_project_rights(org_grant.as_ref(), project_grant.as_ref())
-            .contains(ProjectRight::ToolsUse))
+    if org_grant.is_none()
+        || !effective_project_rights(org_grant.as_ref(), project_grant.as_ref())
+            .contains(ProjectRight::ToolsUse)
+    {
+        return Ok(Standing::NoRight);
+    }
+    let sign_in = SessionRow {
+        id: a.grant_id,
+        user_id: a.user_id,
+        method: a.sign_in_method.clone(),
+        second_factor: a.second_factor,
+        oidc_org_id: a.oidc_org_id,
+        signed_in_at: a.created_at,
+        last_used_at: a.created_at,
+        expires_at: a.token_expires_at.unwrap_or(a.created_at),
+        user_state: a.user_state.clone(),
+        is_instance_admin: false,
+    };
+    let area = Area::of_org(&found.org);
+    let manager = crate::services::managed::of_user(&state.pg, a.user_id)
+        .await?
+        .map(|m| m.org_id);
+    Ok(match policy_gap(&sign_in, manager, area) {
+        None => Standing::Allowed,
+        Some(PolicyGap::NeedsSso) => Standing::NeedsSso,
+        Some(PolicyGap::NeedsOtherSignIn) => Standing::NeedsOtherSignIn,
+        Some(PolicyGap::Needs2fa) => Standing::Needs2fa,
+    })
 }
 
 async fn token(state: &AppState, presented: &str, project: Uuid) -> Result<Caller, Response> {
@@ -104,7 +172,7 @@ async fn token(state: &AppState, presented: &str, project: Uuid) -> Result<Calle
             let Some(a) = portal_grants::authenticate(&st.pg, &hash, st.clock.now()).await? else {
                 return Ok(None);
             };
-            let tools_use = person_uses_tools(&st, a.org_id, a.project_id, a.user_id).await?;
+            let standing = standing(&st, &a).await?;
             Ok::<_, kaeso_store::StoreError>(Some(TokenAuth {
                 grant: a.grant_id,
                 user: a.user_id,
@@ -114,7 +182,7 @@ async fn token(state: &AppState, presented: &str, project: Uuid) -> Result<Calle
                 resource: a.resource,
                 expires_at: a.token_expires_at,
                 active: a.user_state == "active",
-                tools_use,
+                standing,
             }))
         })
         .await;
@@ -148,12 +216,8 @@ async fn token(state: &AppState, presented: &str, project: Uuid) -> Result<Calle
             "This sign-in is for another resource; sign in to this project's portal.",
         ));
     }
-    if !a.tools_use {
-        return Err(refused(
-            StatusCode::FORBIDDEN,
-            "permission_denied",
-            "You may not call tools in this project; the right `tools.use` is missing.",
-        ));
+    if let Some(message) = a.standing.refusal() {
+        return Err(refused(StatusCode::FORBIDDEN, "permission_denied", message));
     }
     Ok(Caller {
         org: a.org,

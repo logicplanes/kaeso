@@ -74,7 +74,7 @@ curl https://kaeso.example.com/v1/flows/image \
   -d '{"model_id": "gpt-image-1.5", "prompt": "A lighthouse at dusk", "aspect_ratio": "3:2"}'
 ```
 
-- **IDs.** Eine Generierung gehört dem Projekt, dessen Schlüssel sie gestartet hat, und jeder Schlüssel des Projekts sieht sie. Ein Schlüssel eines anderen Projekts erhält 404, wie für eine ID, die es nicht gibt.
+- **IDs.** Eine Generierung gehört dem Projekt, dessen Schlüssel sie gestartet hat, und jeder Schlüssel des Projekts, der ihr Modell nutzen darf, sieht sie. Ein Schlüssel eines anderen Projekts erhält 404, wie für eine ID, die es nicht gibt.
 - **Status.** Jedes `GET` einer Generierung, die nicht fehlgeschlagen ist, fragt ElevenLabs nach ihrem Stand und zählt gegen die Anfrageraten des Schlüssels. Eine fertige Generierung erhält jedes Mal eine frische `content_url`, da ElevenLabs einen Link etwa eine Stunde lang gültig hält.
 - **Liste.** `GET /v1/flows/image` listet die Generierungen des Projekts, die neueste zuerst, so wie Kaeso sie zuletzt gesehen hat, ohne ElevenLabs zu fragen; ein Link in der Liste kann daher abgelaufen sein. Die Liste nimmt `page_size` (1 bis 100, standardmäßig 30), `cursor` (den `next_cursor` der vorigen Seite), `status` und `model_id`, den Modellnamen, den die App gesendet hat.
 - **Modelle.** Kaeso bedient `flows.image` mit den ElevenLabs-Bildmodellen des Projekts, per Name oder über einen Alias: Andere Anbieter antworten mit dem Bild selbst, sodass keine Generierung bleibt, nach der man später fragen könnte. Ein Modell eines anderen Anbieters wird mit 400 und `param: model_id` abgelehnt, bevor etwas gesendet wird; rufen Sie es über die [Bilder-API](images.md) auf.

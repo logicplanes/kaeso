@@ -1072,6 +1072,9 @@ async fn portal_grants_and_tokens_are_bound_to_one_portal() {
             project_id: acme.project,
             client_id: client,
             redirect_uri: "https://claude.ai/api/mcp/auth_callback",
+            sign_in_method: "password",
+            second_factor: false,
+            oidc_org_id: None,
             now: at(0),
         },
     )
@@ -1237,6 +1240,9 @@ async fn portal_grants_and_tokens_are_bound_to_one_portal() {
             project_id: acme.project,
             client_id: client,
             redirect_uri: "http://localhost:6274/callback",
+            sign_in_method: "password",
+            second_factor: false,
+            oidc_org_id: None,
             now: at(7),
         },
     )

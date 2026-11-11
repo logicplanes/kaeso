@@ -1097,3 +1097,59 @@ async fn asking_about_a_video_counts_against_the_keys_request_rate() {
     .await;
     assert_eq!(r.status, StatusCode::OK, "another key is not held back");
 }
+
+#[tokio::test]
+async fn a_key_sees_no_video_of_a_model_it_may_not_use() {
+    let env = env().await;
+    let id = create(
+        &env,
+        json!({ "model": "grok-imagine-video-1.5", "prompt": "fox" }),
+    )
+    .await
+    .json()["id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let base = format!("/orgs/{}/projects/{}", env.owner.org_id, env.project);
+    let models = env
+        .app
+        .get(&format!("{base}/models"), &env.owner.cookie)
+        .await;
+    let other = models.body["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|m| m["model_id"] == "cogvideox-3")
+        .unwrap()["id"]
+        .clone();
+    let narrow = env
+        .app
+        .post(
+            &format!("{base}/keys"),
+            json!({ "name": "zai only", "models": [other] }),
+            Some(&env.owner.cookie),
+        )
+        .await
+        .body["secret"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    for (method, path) in [
+        ("GET", format!("/v1/videos/{id}")),
+        ("GET", format!("/v1/videos/{id}/content")),
+        ("DELETE", format!("/v1/videos/{id}")),
+    ] {
+        let r = send(&env, method, &path, &narrow, None, None).await;
+        assert_eq!(
+            r.status,
+            StatusCode::NOT_FOUND,
+            "{method} {path}: {}",
+            r.text()
+        );
+    }
+    let listed = send(&env, "GET", "/v1/videos", &narrow, None, None)
+        .await
+        .json();
+    assert_eq!(listed["data"].as_array().unwrap().len(), 0);
+    assert_eq!(retrieve(&env, &id).await.status, StatusCode::OK);
+}

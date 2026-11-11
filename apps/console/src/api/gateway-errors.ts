@@ -28,6 +28,9 @@ const messages = (): Rule[] => [
     t("errors.keyDisabledBySomeoneElse", "Someone else disabled this key; ask a holder of `keys.all.manage` to enable it."),
   ),
   rule("errors.keysCantMintPlatformKeys", () => t("errors.keysCantMintPlatformKeys", "Keys can't create keys with platform access; use a console session.")),
+  rule("errors.keysBeyondTheirOwnLimits", () =>
+    t("errors.keysBeyondTheirOwnLimits", "A key can only create or rotate keys within its own limits; use a console session."),
+  ),
   rule("errors.signInFirst", () => t("errors.signInFirst", "Sign in first.")),
   rule("errors.sessionEnded", () => t("errors.sessionEnded", "Your session has ended; sign in again.")),
   rule("errors.recentSignIn", () => t("errors.recentSignIn", "This action needs a sign-in from the last 15 minutes; sign in again.")),
@@ -949,6 +952,7 @@ const messages = (): Rule[] => [
     t("errors.modelApi.translateUnavailable", "Kaeso cannot translate this request right now. Try again shortly."),
   ),
   rule("errors.modelApi.translatingBusy", () => t("errors.modelApi.translatingBusy", "Kaeso is busy translating other requests; try again shortly.")),
+  rule("errors.modelApi.answersBusy", () => t("errors.modelApi.answersBusy", "Kaeso is busy reading other providers' answers; try again shortly.")),
   rule("errors.modelApi.unserved", (v) =>
     t(
       "errors.modelApi.unserved",

@@ -393,11 +393,11 @@ pub async fn end_sessions(
     let ended = sessions::revoke_all_in(&mut tx, uid, None, ctx.now).await?;
     ctx.audit(None, Action::UserSessionsRevoke)
         .target("user", uid)
-        .after(serde_json::json!({ "ended": ended.len() }))
+        .after(serde_json::json!({ "ended": ended.sessions.len() }))
         .write(&mut tx)
         .await?;
     tx.commit().await?;
-    sessions::forget(&state, &ended).await;
+    ended.forget(&state).await;
     if let Some(email) = &target.email {
         let lang = crate::services::mail_lang::of_user(
             &state.pg,

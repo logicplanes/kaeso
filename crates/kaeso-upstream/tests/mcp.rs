@@ -23,7 +23,7 @@ fn loopback_allowed() -> McpUpstream {
         Reach::networks(vec!["127.0.0.0/8".parse().unwrap()]),
         Lookup::default(),
         Duration::from_secs(2),
-        "kaeso/0.6.0",
+        "kaeso/1.4.0",
     )
 }
 
@@ -32,7 +32,7 @@ fn resolving_to(reach: Reach, addr: &'static str) -> McpUpstream {
         let ip: IpAddr = addr.parse().unwrap();
         Box::pin(async move { Ok(vec![SocketAddr::new(ip, port)]) })
     });
-    McpUpstream::new(reach, lookup, Duration::from_secs(2), "kaeso/0.6.0")
+    McpUpstream::new(reach, lookup, Duration::from_secs(2), "kaeso/1.4.0")
 }
 
 fn client<'a>(up: &'a McpUpstream, url: &'a Url) -> Client<'a> {
@@ -77,7 +77,7 @@ async fn a_modern_server_is_spoken_to_without_a_session() {
     assert_eq!(meta["io.modelcontextprotocol/clientInfo"]["name"], "kaeso");
     assert_eq!(
         meta["io.modelcontextprotocol/clientInfo"]["version"],
-        "0.6.0"
+        "1.4.0"
     );
 }
 
@@ -219,7 +219,7 @@ async fn private_and_loopback_servers_are_refused_without_the_setting() {
         Reach::public_only(),
         Lookup::default(),
         Duration::from_secs(2),
-        "kaeso/0.6.0",
+        "kaeso/1.4.0",
     );
     let port = mock.addr.port();
     for url in [
@@ -258,7 +258,7 @@ async fn link_local_and_metadata_literals_stay_refused_with_every_network_allowe
         Reach::networks(vec!["0.0.0.0/0".parse().unwrap(), "::/0".parse().unwrap()]),
         Lookup::default(),
         Duration::from_secs(2),
-        "kaeso/0.6.0",
+        "kaeso/1.4.0",
     );
     for url in [
         "http://169.254.169.254/latest",

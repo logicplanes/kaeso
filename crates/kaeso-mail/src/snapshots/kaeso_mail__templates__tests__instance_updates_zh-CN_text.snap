@@ -2,13 +2,13 @@
 source: crates/kaeso-mail/src/templates.rs
 expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
 ---
-Subject: Kaeso 0.6.0 已发布
+Subject: Kaeso 1.4.0 已发布
 
-Kaeso 0.6.0 已发布
+Kaeso 1.4.0 已发布
 
 它会在下一个更新窗口内自动安装。
 
-版本： 0.6.0
+版本： 1.4.0
 当前版本： 0.5.6
 安装方式： 自动安装，2026年11月9日 03:00 UTC
 
@@ -23,7 +23,7 @@ Kaeso 0.6.0 已发布
 https://kaeso.example.com/orgs/org_1
 
 阅读发布说明：
-https://github.com/logicplanes/kaeso/releases/tag/v0.6.0
+https://github.com/logicplanes/kaeso/releases/tag/v1.4.0
 
 -- 
 此邮件由 kaeso.example.com 上的 Kaeso 发送。

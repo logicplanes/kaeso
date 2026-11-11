@@ -116,7 +116,7 @@ fn reports(l: Locale, to: &str) -> Vec<Email> {
             projects: vec![project("Checkout", None, "300.00")],
         },
         Fact::InstanceUpdate {
-            version: "0.6.0",
+            version: "1.4.0",
             change: Update::Available {
                 running: "0.5.6",
                 install: Install::Window {
@@ -126,7 +126,7 @@ fn reports(l: Locale, to: &str) -> Vec<Email> {
             },
             notes: Some(Notes {
                 markdown: "### Added\n\n- Cerebras is a built-in provider [#642](https://github.com/logicplanes/kaeso/pull/642)\n",
-                url: "https://github.com/logicplanes/kaeso/releases/tag/v0.6.0",
+                url: "https://github.com/logicplanes/kaeso/releases/tag/v1.4.0",
             }),
         },
     ];

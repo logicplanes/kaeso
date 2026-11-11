@@ -145,14 +145,15 @@ pub struct NewRequest<'a> {
     pub state: Option<&'a str>,
     pub code_challenge: &'a str,
     pub resource: Option<&'a str>,
+    pub requested_from: &'a [u8],
     pub now: OffsetDateTime,
     pub expires_at: OffsetDateTime,
 }
 
 pub async fn insert_request(db: impl PgExecutor<'_>, r: &NewRequest<'_>) -> Result<(), StoreError> {
     sqlx::query!(
-        "INSERT INTO agent_requests (id, token_hash, client_id, redirect_uri, state, code_challenge, created_at, expires_at, resource) \
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+        "INSERT INTO agent_requests (id, token_hash, client_id, redirect_uri, state, code_challenge, created_at, expires_at, resource, requested_from) \
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
         r.id,
         r.token_hash,
         r.client_id,
@@ -162,6 +163,7 @@ pub async fn insert_request(db: impl PgExecutor<'_>, r: &NewRequest<'_>) -> Resu
         r.now,
         r.expires_at,
         r.resource,
+        r.requested_from,
     )
     .execute(db)
     .await?;
@@ -171,15 +173,18 @@ pub async fn insert_request(db: impl PgExecutor<'_>, r: &NewRequest<'_>) -> Resu
 pub async fn keep_requests(
     db: impl PgExecutor<'_>,
     client: Uuid,
+    requested_from: &[u8],
     keep: i64,
     newest: Uuid,
 ) -> Result<u64, StoreError> {
     let dropped = sqlx::query!(
         "DELETE FROM agent_requests WHERE id IN (SELECT id FROM agent_requests \
-         WHERE client_id = $1 AND id <> $3 ORDER BY created_at DESC, id DESC OFFSET $2)",
+         WHERE client_id = $1 AND requested_from = $4 AND id <> $3 \
+         ORDER BY created_at DESC, id DESC OFFSET $2)",
         client,
         (keep - 1).max(0),
         newest,
+        requested_from,
     )
     .execute(db)
     .await?;

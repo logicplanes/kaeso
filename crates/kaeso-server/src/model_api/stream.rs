@@ -10,6 +10,7 @@ use kaeso_core::assembler::Assembler;
 use kaeso_core::estimate::{self, Tally};
 use kaeso_core::provider::AccountSignIn;
 use kaeso_kpp::{DialectId, KppError, Reply, RequestKind, StopReason, StreamEvent};
+use kaeso_upstream::memory::AnswerMemory;
 use tokio::sync::mpsc::error::TrySendError;
 use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::time::{Instant, sleep_until};
@@ -170,6 +171,11 @@ impl Broken {
             UpstreamError::Path => Broken {
                 kind: err.kind.as_str().to_owned(),
                 status: 400,
+                err,
+            },
+            UpstreamError::Busy => Broken {
+                kind: err.kind.as_str().to_owned(),
+                status: 503,
                 err,
             },
             UpstreamError::Connect(_)
@@ -542,6 +548,10 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
     };
     let limits = &state.config.streams;
     let max_bytes = limits.max_bytes.0;
+    // The reply, its log copy and an encoder that answers with the whole reply at its end grow
+    // with every byte the provider sends, so the stream holds the answers' memory for them.
+    let mut holding = state.upstream.answers().map(AnswerMemory::charge);
+    let mut received = 0usize;
     let mut gone = false;
     let mut broken: Option<Broken> = None;
     let mut last_event_at: Option<u64> = None;
@@ -600,6 +610,15 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
                     continue;
                 }
             };
+            if let (Some(Ok(bytes)), Some(h)) = (&next, holding.as_mut()) {
+                received = received.saturating_add(bytes.len());
+                if last_event_at.is_none() && h.cover_streamed(received).await.is_err() {
+                    if !end_capped(&mut app, encoder.as_mut(), &mut broken).await {
+                        gone = true;
+                    }
+                    break 'read;
+                }
+            }
             let (events, last) = match next {
                 Some(Ok(bytes)) => {
                     let mut events = processing.time(|| decoder.feed(&bytes));

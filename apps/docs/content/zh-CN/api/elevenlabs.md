@@ -74,7 +74,7 @@ curl https://kaeso.example.com/v1/flows/image \
   -d '{"model_id": "gpt-image-1.5", "prompt": "A lighthouse at dusk", "aspect_ratio": "3:2"}'
 ```
 
-- **ID。** 生成属于启动它的密钥所在的项目，项目的每个密钥都能看到它。其他项目的密钥会得到 404，与不存在的 ID 相同。
+- **ID。** 生成属于启动它的密钥所在的项目，项目中每个可使用其模型的密钥都能看到它。其他项目的密钥会得到 404，与不存在的 ID 相同。
 - **状态。** 对尚未失败的生成，每次 `GET` 都会向 ElevenLabs 询问进度，并计入密钥的请求速率。已完成的生成每次都会得到新的 `content_url`，因为 ElevenLabs 的链接大约一小时内有效。
 - **列表。** `GET /v1/flows/image` 按最新在前列出项目的生成，内容是 Kaeso 最后一次看到的样子，不会询问 ElevenLabs，因此列表中的链接可能已经失效。它接受 `page_size`（1 到 100，默认 30）、`cursor`（上一页的 `next_cursor`）、`status` 和 `model_id`（应用发送的模型名称）。
 - **模型。** Kaeso 只用项目的 ElevenLabs 图片模型（按名称或通过别名）提供 `flows.image`：其他服务商直接应答图片本身，没有可供之后查询的生成。其他服务商的模型会在发送任何内容之前以 400 和 `param: model_id` 被拒绝；请通过[图片 API](images.md) 调用它。
