@@ -70,7 +70,9 @@ updates:
           - patch
 
   - package-ecosystem: docker
-    directory: /deploy
+    directories:
+      - /deploy
+      - /.oss-scanner
     schedule:
       interval: weekly
     cooldown:
