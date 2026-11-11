@@ -1,4 +1,4 @@
-import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
+import type { CallToolResult } from "@modelcontextprotocol/client";
 import type { Stats } from "../data";
 
 export function stats(patch: Partial<Stats> = {}): Stats {
