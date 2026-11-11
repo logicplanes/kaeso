@@ -33,11 +33,11 @@
     "@hugeicons/react": "1.1.10",
     "@logicplanes/kaeso-tokens": "workspace:*",
     "@logicplanes/kaeso-ui": "workspace:*",
-    "@tailwindcss/vite": "4.3.3",
-    "astro": "7.4.4",
+    "@tailwindcss/vite": "4.3.4",
+    "astro": "7.4.5",
     "react": "19.3.1",
     "react-dom": "19.3.1",
-    "tailwindcss": "4.3.3"
+    "tailwindcss": "4.3.4"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.14.0",
@@ -46,7 +46,7 @@
     "@types/pngjs": "6.0.5",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
-    "oxlint": "1.90.0",
+    "oxlint": "1.91.0",
     "pngjs": "7.0.0",
     "typescript": "5.9.3"
   }
