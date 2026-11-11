@@ -1,4 +1,4 @@
-import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
+import type { CallToolResult } from "@modelcontextprotocol/client";
 
 export const TOOL = "show_usage_stats";
 export const METRICS = ["requests", "tokens", "cost", "latency", "errors"] as const;

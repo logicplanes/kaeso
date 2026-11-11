@@ -1,5 +1,5 @@
 import type { App, McpUiHostCapabilities, McpUiHostContext } from "@modelcontextprotocol/ext-apps";
-import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
+import type { CallToolResult } from "@modelcontextprotocol/client";
 import { askOf, outcomeOf, safeUrl, TOOL, type Ask, type Failure, type Stats } from "./data";
 
 export interface State {
