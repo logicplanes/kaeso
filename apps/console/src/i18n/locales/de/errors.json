@@ -133,6 +133,7 @@
   "errors.keyNeverNotAllowed": "Schlüssel in diesem Projekt müssen innerhalb von {days} Tagen ablaufen; „nie“ ist nicht erlaubt.",
   "errors.keyNoPlatformAccess": "Dieser Schlüssel hat keinen Zugriff auf die Platform API; einen mit Plattformzugriff verwenden.",
   "errors.keysCantMintPlatformKeys": "Schlüssel können keine Schlüssel mit Plattformzugriff erstellen; eine Konsolensitzung verwenden.",
+  "errors.keysCantWidenTheirOwn": "Ein Schlüssel kann `{field}` nicht über seine eigenen Grenzen hinaus erweitern; eine Konsolensitzung verwenden.",
   "errors.keysBeyondTheirOwnLimits": "Ein Schlüssel kann Schlüssel nur innerhalb seiner eigenen Grenzen erstellen oder rotieren; eine Konsolensitzung verwenden.",
   "errors.lastInstanceAdmin": "Das ist der letzte Instanz-Admin; zuerst jemand anderen zum Instanz-Admin machen.",
   "errors.lastOwnerLeaving": "Sie sind der letzte Inhaber dieser Organisation; vor dem Verlassen die Inhaberschaft übertragen.",

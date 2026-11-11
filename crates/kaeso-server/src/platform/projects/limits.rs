@@ -278,6 +278,50 @@ fn who(s: Subject) -> String {
     }
 }
 
+fn holds(l: &Limit, key: &keys::KeyAuth) -> bool {
+    match l.subject {
+        Subject::Project(p) => p == key.project_id,
+        Subject::User(u) => key.user_id == Some(u),
+        Subject::ServiceAccount(a) => key.service_account_id == Some(a),
+        Subject::Key(k) => k == key.id,
+    }
+}
+
+// A key acts with its member's rights, so with `limits.manage` it could otherwise lift a limit that
+// holds it, or leave another member or key with less than the limits of its own.
+async fn may_loosen(
+    state: &AppState,
+    ctx: &Ctx,
+    project: Uuid,
+    l: &Limit,
+    all: &[Limit],
+    field: &str,
+) -> ApiResult<()> {
+    let Some(key) = super::bounds::calling_key(ctx) else {
+        return Ok(());
+    };
+    let caller_member = key
+        .user_id
+        .map(Subject::User)
+        .or(key.service_account_id.map(Subject::ServiceAccount));
+    let mut own = all.iter().filter(|o| holds(o, key));
+    let refused = holds(l, key)
+        || match l.subject {
+            Subject::Key(k) => {
+                let same_member = key_member(state, project, k).await? == caller_member;
+                own.any(|o| {
+                    matches!(o.subject, Subject::Key(_))
+                        || (!same_member && !matches!(o.subject, Subject::Project(_)))
+                })
+            }
+            _ => own.any(|o| !matches!(o.subject, Subject::Project(_))),
+        };
+    if refused {
+        return Err(super::bounds::widens(field));
+    }
+    Ok(())
+}
+
 pub(crate) async fn check_hierarchy(
     state: &AppState,
     project: Uuid,
@@ -532,6 +576,11 @@ pub async fn update(
     }
     limits::validate(&l).map_err(|e| ApiError::invalid(e.field, e.message))?;
     let all = all_limits(&mut *tx, project).await?;
+    if l.amount > before.amount {
+        may_loosen(&state, &ctx, project, &before, &all, "amount").await?;
+    } else if before.hard && !l.hard {
+        may_loosen(&state, &ctx, project, &before, &all, "hard").await?;
+    }
     check_hierarchy(&state, project, &l, &all, None).await?;
     if !store::update(&mut *tx, project, &l).await? {
         return Err(ApiError::not_found("limit"));
@@ -579,6 +628,8 @@ pub async fn delete(
         .ok_or_else(|| ApiError::not_found("limit"))?;
     if_match.check(r.revision, "limit")?;
     let l = r.limit()?;
+    let all = all_limits(&mut *tx, project).await?;
+    may_loosen(&state, &ctx, project, &l, &all, "limits").await?;
     if !store::delete(&mut *tx, project, r.id).await? {
         return Err(ApiError::not_found("limit"));
     }

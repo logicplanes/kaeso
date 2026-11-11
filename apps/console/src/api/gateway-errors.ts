@@ -31,6 +31,7 @@ const messages = (): Rule[] => [
   rule("errors.keysBeyondTheirOwnLimits", () =>
     t("errors.keysBeyondTheirOwnLimits", "A key can only create or rotate keys within its own limits; use a console session."),
   ),
+  rule("errors.keysCantWidenTheirOwn", (v) => t("errors.keysCantWidenTheirOwn", "A key can't widen `{field}` beyond its own; use a console session.", v)),
   rule("errors.signInFirst", () => t("errors.signInFirst", "Sign in first.")),
   rule("errors.sessionEnded", () => t("errors.sessionEnded", "Your session has ended; sign in again.")),
   rule("errors.recentSignIn", () => t("errors.recentSignIn", "This action needs a sign-in from the last 15 minutes; sign in again.")),
