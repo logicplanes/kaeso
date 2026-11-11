@@ -390,14 +390,22 @@ fn from_playground(row: &VideoRow) -> bool {
 async fn load(state: &AppState, viewer: &Viewer, id: &str) -> Result<VideoRow, KppError> {
     let parsed: VideoId = id.parse().map_err(|_| not_found(id))?;
     let c = &viewer.caller;
-    store::get(&state.pg, c.org_id, c.project_id, parsed.uuid())
+    let row = store::get(&state.pg, c.org_id, c.project_id, parsed.uuid())
         .await
         .map_err(|e| {
             tracing::error!(error = %e, "cannot load a video");
             unavailable()
         })?
         .filter(|row| viewer.sees(row))
-        .ok_or_else(|| not_found(id))
+        .ok_or_else(|| not_found(id))?;
+    if !viewer.playground
+        && !super::listing::ModelAccess::of(c, state)
+            .await?
+            .allows(row.catalogue_model_id)
+    {
+        return Err(not_found(id));
+    }
+    Ok(row)
 }
 
 async fn video_request(
@@ -570,6 +578,11 @@ async fn visible(
     wanted: usize,
 ) -> Result<Vec<VideoRow>, KppError> {
     let c = &viewer.caller;
+    let models = if viewer.playground {
+        None
+    } else {
+        Some(super::listing::ModelAccess::of(c, state).await?)
+    };
     let page = i64::try_from(wanted).unwrap_or(i64::MAX);
     let mut out = Vec::with_capacity(wanted);
     loop {
@@ -581,7 +594,12 @@ async fn visible(
             })?;
         let full = rows.len() == wanted;
         after = rows.last().map(|r| r.id);
-        out.extend(rows.into_iter().filter(|r| viewer.sees(r)));
+        out.extend(rows.into_iter().filter(|r| {
+            viewer.sees(r)
+                && models
+                    .as_ref()
+                    .is_none_or(|m| m.allows(r.catalogue_model_id))
+        }));
         if !full || out.len() >= wanted {
             out.truncate(wanted);
             return Ok(out);

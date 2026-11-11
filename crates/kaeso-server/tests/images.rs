@@ -951,3 +951,42 @@ async fn what_an_image_generation_cannot_do_is_refused_before_anything_is_sent()
     );
     assert!(finished_generations(&env).await.is_empty());
 }
+
+#[tokio::test]
+async fn a_key_sees_no_image_generation_of_a_model_it_may_not_use() {
+    let env = env().await;
+    with_elevenlabs(&env).await;
+    let id = start(&env, "A lighthouse").await;
+    let base = format!("/orgs/{}/projects/{}", env.owner.org_id, env.project);
+    let models = env
+        .app
+        .get(&format!("{base}/models"), &env.owner.cookie)
+        .await;
+    let other = models.body["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|m| m["model_id"] == "gpt-image-2")
+        .unwrap()["id"]
+        .clone();
+    let narrow = env
+        .app
+        .post(
+            &format!("{base}/keys"),
+            json!({ "name": "openai only", "models": [other] }),
+            Some(&env.owner.cookie),
+        )
+        .await
+        .body["secret"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+
+    let r = flows(&env, "GET", &format!("/v1/flows/image/{id}"), &narrow, None).await;
+    assert_eq!(r.status, StatusCode::NOT_FOUND, "{}", r.text());
+    let r = flows(&env, "GET", "/v1/flows/image", &narrow, None).await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(r.json()["generations"], json!([]));
+    let r = flows(&env, "GET", "/v1/flows/image", &env.key, None).await;
+    assert_eq!(r.json()["generations"][0]["id"], id.as_str());
+}

@@ -121,10 +121,16 @@ export function collect({ repository, since = null, head = "HEAD", git, gh }) {
     );
     const issues = json("api", "graphql", "-f", `query=${ISSUES}`, "-F", `owner=${owner}`, "-F", `name=${name}`, "-F", `number=${number}`);
     const author = pull.user?.login ?? "";
-    const coauthors = new Set([
-      ...commits.filter(({ login, type }) => isPerson(login, type)).map(({ login }) => login),
-      ...commits.flatMap(({ message }) => (message ?? "").split("\n").map(coAuthor)).filter((login) => isPerson(login)),
-    ]);
+    // Commit authors and co-author trailers are whatever the commits claim, so only a pull
+    // request from someone who can write to the repository credits other people.
+    const coauthors = new Set(
+      canWrite(author)
+        ? [
+            ...commits.filter(({ login, type }) => isPerson(login, type)).map(({ login }) => login),
+            ...commits.flatMap(({ message }) => (message ?? "").split("\n").map(coAuthor)).filter((login) => isPerson(login)),
+          ]
+        : [],
+    );
     coauthors.delete(author);
     pulls.push({
       number,
@@ -612,8 +618,11 @@ export function review({ changelog, version, brief = null, notify = () => {} }) 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const changelogFile = join(root, "CHANGELOG.md");
 
+// A workflow command ends at the line's end, so a message carrying a newline could start another.
+export const command = (message) => String(message).replaceAll("%", "%25").replaceAll("\r", "%0D").replaceAll("\n", "%0A");
+
 const notifier = (kind, message) => {
-  if (process.env.GITHUB_ACTIONS === "true") process.stdout.write(`::${kind}::${message}\n`);
+  if (process.env.GITHUB_ACTIONS === "true") process.stdout.write(`::${kind}::${command(message)}\n`);
   else process.stderr.write(`${kind}: ${message}\n`);
 };
 

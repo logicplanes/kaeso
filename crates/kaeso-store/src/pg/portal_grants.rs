@@ -27,6 +27,9 @@ pub struct NewGrant<'a> {
     pub project_id: Uuid,
     pub client_id: Uuid,
     pub redirect_uri: &'a str,
+    pub sign_in_method: &'a str,
+    pub second_factor: bool,
+    pub oidc_org_id: Option<Uuid>,
     pub now: OffsetDateTime,
 }
 
@@ -67,18 +70,26 @@ pub struct PortalAuth {
     pub resource: String,
     pub token_expires_at: Option<OffsetDateTime>,
     pub user_state: String,
+    pub sign_in_method: String,
+    pub second_factor: bool,
+    pub oidc_org_id: Option<Uuid>,
+    pub created_at: OffsetDateTime,
 }
 
 pub async fn insert(db: impl PgExecutor<'_>, g: &NewGrant<'_>) -> Result<(), StoreError> {
     sqlx::query!(
-        "INSERT INTO portal_grants (id, user_id, org_id, project_id, client_id, redirect_uri, created_at) \
-         VALUES ($1, $2, $3, $4, $5, $6, $7)",
+        "INSERT INTO portal_grants (id, user_id, org_id, project_id, client_id, redirect_uri, \
+         sign_in_method, second_factor, oidc_org_id, created_at) \
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
         g.id,
         g.user_id,
         g.org_id,
         g.project_id,
         g.client_id,
         g.redirect_uri,
+        g.sign_in_method,
+        g.second_factor,
+        g.oidc_org_id,
         g.now
     )
     .execute(db)
@@ -290,7 +301,8 @@ pub async fn authenticate(
     Ok(sqlx::query_as!(
         PortalAuth,
         "SELECT g.id AS grant_id, g.user_id, g.org_id, g.project_id, g.client_id, c.name AS client_name, \
-         t.resource, t.expires_at AS token_expires_at, u.state AS user_state \
+         t.resource, t.expires_at AS token_expires_at, u.state AS user_state, \
+         g.sign_in_method, g.second_factor, g.oidc_org_id, g.created_at \
          FROM portal_tokens t JOIN portal_grants g ON g.id = t.grant_id \
          JOIN agent_clients c ON c.id = g.client_id JOIN users u ON u.id = g.user_id \
          WHERE t.token_hash = $1 AND t.kind = 'access' AND t.revoked_at IS NULL AND g.revoked_at IS NULL \

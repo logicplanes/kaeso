@@ -1,6 +1,7 @@
 pub mod cimd;
 pub mod oauth;
 pub mod server;
+pub mod stats;
 pub mod tools;
 pub mod upstream;
 

@@ -1145,7 +1145,7 @@ async fn the_catalogue_names_instance_and_account_rights_presets_and_models() {
 async fn mcp_speaks_json_rpc_and_refuses_strangers() {
     let (_s, app, owner) = setup().await;
     let a = sign_in(&app, &owner.cookie, builder(&owner.org_id)).await;
-    let unknown = mcp(&app, &a.access, "resources/list", json!({}))
+    let unknown = mcp(&app, &a.access, "prompts/list", json!({}))
         .await
         .expect_status(StatusCode::OK);
     assert_eq!(unknown.body["error"]["code"], -32601);
@@ -1352,7 +1352,13 @@ async fn a_password_change_disconnects_agents_only_when_asked() {
         .iter()
         .map(|e| &e["after"])
         .collect();
-    assert_eq!(afters, [&json!({ "agents_revoked": 2 }), &Value::Null]);
+    assert_eq!(
+        afters,
+        [
+            &json!({ "agents_revoked": 2, "portal_grants_revoked": 0 }),
+            &Value::Null
+        ]
+    );
     s.cleanup().await;
 }
 
@@ -2013,6 +2019,48 @@ async fn registrations_no_agent_signed_in_with_are_capped_oldest_first() {
 }
 
 #[tokio::test]
+async fn requests_from_one_network_never_push_out_another_networks_sign_in() {
+    let (_s, app, owner) = setup().await;
+    let client = register(&app, "Claude Code").await;
+    let from = |peer: &str| {
+        let q = form(&[
+            ("response_type", "code"),
+            ("client_id", &client),
+            ("redirect_uri", "http://127.0.0.1:50000/callback"),
+            ("code_challenge", CHALLENGE),
+            ("code_challenge_method", "S256"),
+            ("resource", "https://kaeso.test/mcp"),
+        ]);
+        let mut req = Request::builder()
+            .uri(format!("/oauth/authorize?{q}"))
+            .body(Body::empty())
+            .unwrap();
+        req.extensions_mut()
+            .insert(axum::extract::ConnectInfo(std::net::SocketAddr::new(
+                peer.parse().unwrap(),
+                40000,
+            )));
+        let app = &app;
+        async move {
+            let r = app.raw(req).await;
+            assert_eq!(r.status, StatusCode::SEE_OTHER, "{:?}", r.body);
+            location(&r).split_once("#request=").unwrap().1.to_owned()
+        }
+    };
+    let victim = from("198.51.100.7").await;
+    for _ in 0..20 {
+        from("203.0.113.9").await;
+    }
+    app.post(
+        "/me/agent-requests/view",
+        json!({ "request": victim }),
+        Some(&owner.cookie),
+    )
+    .await
+    .expect_status(StatusCode::OK);
+}
+
+#[tokio::test]
 async fn a_client_keeps_only_its_newest_sign_in_requests() {
     let (_s, app, owner) = setup().await;
     let client = register(&app, "Claude Code").await;
@@ -2030,4 +2078,252 @@ async fn a_client_keeps_only_its_newest_sign_in_requests() {
     };
     assert_eq!(view(&first).await.status, StatusCode::NOT_FOUND);
     view(&last).await.expect_status(StatusCode::OK);
+}
+
+#[tokio::test]
+async fn the_usage_view_is_linked_listed_and_served_under_a_strict_policy() {
+    let (_s, app, owner) = setup().await;
+    let a = sign_in(&app, &owner.cookie, builder(&owner.org_id)).await;
+    let init = mcp(&app, &a.access, "initialize", json!({ "protocolVersion": "2025-11-25", "capabilities": { "extensions": { "io.modelcontextprotocol/ui": { "mimeTypes": ["text/html;profile=mcp-app"] } } }, "clientInfo": { "name": "claude-ai", "version": "1.0" } }))
+        .await
+        .expect_status(StatusCode::OK);
+    assert!(init.body["result"]["capabilities"]["resources"].is_object());
+
+    let listed = mcp(&app, &a.access, "tools/list", json!({}))
+        .await
+        .expect_status(StatusCode::OK);
+    let tools = listed.body["result"]["tools"].as_array().unwrap();
+    let stats = tools
+        .iter()
+        .find(|t| t["name"] == "show_usage_stats")
+        .unwrap();
+    assert_eq!(stats["_meta"]["ui"]["resourceUri"], "ui://kaeso/stats");
+    assert_eq!(stats["_meta"]["ui/resourceUri"], "ui://kaeso/stats");
+    assert!(
+        tools
+            .iter()
+            .filter(|t| t["name"] != "show_usage_stats")
+            .all(|t| t.get("_meta").is_none()),
+        "only the usage tool names a view"
+    );
+
+    let resources = mcp(&app, &a.access, "resources/list", json!({}))
+        .await
+        .expect_status(StatusCode::OK);
+    let listed = &resources.body["result"]["resources"];
+    assert_eq!(listed.as_array().unwrap().len(), 1);
+    assert_eq!(listed[0]["uri"], "ui://kaeso/stats");
+    assert_eq!(listed[0]["mimeType"], "text/html;profile=mcp-app");
+    assert_eq!(
+        listed[0]["_meta"]["ui"]["csp"],
+        json!({ "connectDomains": [], "resourceDomains": [], "frameDomains": [], "baseUriDomains": [] })
+    );
+
+    let read = mcp(
+        &app,
+        &a.access,
+        "resources/read",
+        json!({ "uri": "ui://kaeso/stats" }),
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    let item = &read.body["result"]["contents"][0];
+    assert_eq!(item["uri"], "ui://kaeso/stats");
+    assert_eq!(item["mimeType"], "text/html;profile=mcp-app");
+    assert_eq!(item["_meta"]["ui"]["csp"], listed[0]["_meta"]["ui"]["csp"]);
+    assert_eq!(item["_meta"]["ui"]["prefersBorder"], true);
+    let html = item["text"].as_str().unwrap();
+    assert!(html.starts_with("<!doctype html>"));
+    assert!(html.contains("Content-Security-Policy"));
+    assert!(!html.contains(&a.access), "the view holds no token");
+
+    let missing = mcp(
+        &app,
+        &a.access,
+        "resources/read",
+        json!({ "uri": "ui://kaeso/other" }),
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    assert_eq!(missing.body["error"]["code"], -32002);
+    let templates = mcp(&app, &a.access, "resources/templates/list", json!({}))
+        .await
+        .expect_status(StatusCode::OK);
+    assert_eq!(templates.body["result"]["resourceTemplates"], json!([]));
+}
+
+#[tokio::test]
+async fn usage_stats_answer_with_a_summary_and_the_data_the_view_draws() {
+    let (_s, app, owner) = setup().await;
+    let project = common::first_project(&app, &owner).await;
+    let a = sign_in(&app, &owner.cookie, builder(&owner.org_id)).await;
+    let week_without_logs = tool(&app, &a.access, "show_usage_stats", json!({})).await;
+    assert_eq!(week_without_logs["isError"], false, "{week_without_logs:?}");
+    assert_eq!(
+        week_without_logs["structuredContent"]["totals"]["latency_p95_ms"],
+        Value::Null
+    );
+    app.state
+        .clickhouse
+        .as_ref()
+        .unwrap()
+        .migrate(&app.state.pg)
+        .await
+        .unwrap();
+
+    let week = tool(
+        &app,
+        &a.access,
+        "show_usage_stats",
+        json!({ "metric": "cost", "agent_model": "claude" }),
+    )
+    .await;
+    assert_eq!(week["isError"], false, "{week:?}");
+    let text = week["content"][0]["text"].as_str().unwrap();
+    assert!(text.starts_with("Cost of "), "{text}");
+    assert!(
+        text.contains("in the last 7 days: $0.00. 0 requests, 0 failed."),
+        "{text}"
+    );
+    let s = &week["structuredContent"];
+    assert_eq!(s["metric"], "cost");
+    assert_eq!(
+        (
+            s["range"].as_str(),
+            s["group_by"].as_str(),
+            s["step"].as_str()
+        ),
+        (Some("7d"), Some("model"), Some("day"))
+    );
+    assert_eq!(s["scope"]["org"]["id"], owner.org_id.as_str());
+    assert_eq!(s["scope"]["project"], Value::Null);
+    assert_eq!(s["series"].as_array().unwrap().len(), 7);
+    assert_eq!(s["totals"]["requests"], 0);
+    assert_eq!(s["totals"]["cost"], "0");
+    assert_eq!(s["totals"]["latency_p95_ms"], Value::Null);
+    assert_eq!(s["groups"], json!([]));
+    assert_eq!(
+        s["console_url"],
+        format!("https://kaeso.test/orgs/{}/analytics", owner.org_id)
+    );
+
+    let day = tool(&app, &a.access, "show_usage_stats", json!({ "range": "24h", "group_by": "key", "metric": "latency", "org": owner.org_id, "project": project })).await;
+    assert_eq!(day["isError"], false, "{day:?}");
+    let s = &day["structuredContent"];
+    assert_eq!(s["step"], "hour");
+    assert_eq!(s["series"].as_array().unwrap().len(), 24);
+    assert_eq!(s["series"][0]["value"], Value::Null);
+    assert_eq!(s["scope"]["project"]["id"], project.as_str());
+    assert_eq!(
+        s["console_url"],
+        format!(
+            "https://kaeso.test/orgs/{}/projects/{project}/analytics",
+            owner.org_id
+        )
+    );
+
+    let wrong = tool(
+        &app,
+        &a.access,
+        "show_usage_stats",
+        json!({ "range": "1y" }),
+    )
+    .await;
+    assert_eq!(wrong["isError"], true);
+    assert!(
+        wrong["content"][0]["text"]
+            .as_str()
+            .unwrap()
+            .contains("`range` must be one of 24h, 7d, 30d")
+    );
+
+    let elsewhere = app
+        .post(
+            "/me/orgs",
+            json!({ "name": "Elsewhere" }),
+            Some(&owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::CREATED)
+        .body["id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let mut both = builder(&owner.org_id);
+    let second = both["orgs"][0].clone();
+    both["orgs"].as_array_mut().unwrap().push(second);
+    both["orgs"][1]["org"] = json!(elsewhere);
+    let two = sign_in(&app, &owner.cookie, both).await;
+    let choose = tool(&app, &two.access, "show_usage_stats", json!({})).await;
+    assert_eq!(choose["isError"], true);
+    let text = choose["content"][0]["text"].as_str().unwrap();
+    assert!(text.starts_with("Pass `org`, one of "), "{text}");
+    assert!(text.contains(&owner.org_id), "{text}");
+}
+
+#[tokio::test]
+async fn usage_stats_keep_to_the_agents_rights() {
+    let (_s, app, owner) = setup().await;
+    let none = sign_in(
+        &app,
+        &owner.cookie,
+        grant(&owner.org_id, &["org.view"], &["project.view"]),
+    )
+    .await;
+    assert!(
+        !tool_names(&app, &none.access)
+            .await
+            .contains(&"show_usage_stats".to_owned())
+    );
+    let refused = tool(
+        &app,
+        &none.access,
+        "show_usage_stats",
+        json!({ "org": owner.org_id }),
+    )
+    .await;
+    assert_eq!(refused["isError"], true);
+    let error = &refused["structuredContent"]["error"];
+    assert_eq!(error["type"], "insufficient_rights");
+    assert_eq!(error["right"], "usage.org.view");
+    let approve = error["approve_url"].as_str().unwrap();
+    assert!(
+        approve.starts_with(&format!(
+            "https://kaeso.test/settings/account/agents/{}?add=usage.org.view&org={}",
+            none.agent, owner.org_id
+        )),
+        "{approve}"
+    );
+
+    let usage_only = sign_in(
+        &app,
+        &owner.cookie,
+        grant(&owner.org_id, &["org.view", "usage.org.view"], &[]),
+    )
+    .await;
+    assert!(
+        tool_names(&app, &usage_only.access)
+            .await
+            .contains(&"show_usage_stats".to_owned())
+    );
+    let shown = tool(
+        &app,
+        &usage_only.access,
+        "show_usage_stats",
+        json!({ "metric": "requests" }),
+    )
+    .await;
+    assert_eq!(shown["isError"], false, "{shown:?}");
+    let project = common::first_project(&app, &owner).await;
+    let other_project = tool(
+        &app,
+        &usage_only.access,
+        "show_usage_stats",
+        json!({ "project": project }),
+    )
+    .await;
+    assert_eq!(
+        other_project["isError"], true,
+        "org usage isn't a project's: {other_project:?}"
+    );
 }

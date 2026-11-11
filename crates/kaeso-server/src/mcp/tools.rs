@@ -263,7 +263,7 @@ pub fn build(doc: &Value) -> Tools {
     Tools { list, by_name }
 }
 
-fn encode_segment(v: &str) -> String {
+pub(crate) fn encode_segment(v: &str) -> String {
     url::form_urlencoded::byte_serialize(v.as_bytes())
         .collect::<String>()
         .replace('+', "%20")

@@ -15,6 +15,7 @@ import {
   check,
   coAuthor,
   collect,
+  command,
   correction,
   factsOf,
   firstSentence,
@@ -884,4 +885,42 @@ test("a short version file with more than one sentence or a badly sized title is
   assert.match(briefFrom({ ...short, breaking: [{ text: "Send it. Then wait.", prs: [11] }] }).problems.join(), /breaking change 1 is more than one sentence/);
   assert.match(briefFrom({ ...short, tagline: "Read ~~this~~ now." }).problems.join(), /the tagline has emphasis/);
   assert.deepEqual(briefFrom({ ...short, tagline: "Sends max_tokens and `**kept**` code." }).problems, []);
+});
+
+test("a pull request from someone who can't write to the repository credits only its author", () => {
+  const gh = (args) => {
+    const key = args.join(" ");
+    if (key.startsWith("api -X GET search/")) return "1\n";
+    if (key.includes("/issues/9/events")) return "";
+    if (key === "api repos/logicplanes/kaeso/pulls/9")
+      return JSON.stringify({
+        number: 9,
+        title: "Fix a typo",
+        html_url: `${repo}/pull/9`,
+        labels: [],
+        user: { login: "mallory", type: "User" },
+        merged_at: "2026-10-01T10:00:00Z",
+        body: "",
+      });
+    if (key.includes("/files")) return "";
+    if (key.includes("/commits "))
+      return JSON.stringify({ login: "linus", type: "User", message: "Typo\n\nCo-authored-by: Grace <7+grace@users.noreply.github.com>" });
+    if (key.startsWith("api graphql")) return JSON.stringify({ data: {} });
+    if (key.startsWith("api repos/logicplanes/kaeso/collaborators/")) throw new Error("gh: Not Found (HTTP 404)");
+    throw new Error(`unexpected gh ${key}`);
+  };
+  const git = fakeGit({
+    "log -1 --format=%cI v1.0.0": "2026-09-01T12:00:00+02:00\n",
+    [`${LOG_FORMAT} v1.0.0..HEAD`]: log(["eee", "Fix a typo (#9)"]),
+  });
+  const { pulls, contributors } = collect({ repository: "logicplanes/kaeso", since: "v1.0.0", git, gh });
+  assert.deepEqual(pulls[0].coauthors, []);
+  assert.deepEqual(
+    contributors.map(({ login }) => login),
+    ["mallory"],
+  );
+});
+
+test("a workflow command's message stays on its own line", () => {
+  assert.equal(command("bad\n::error::forged\r 100%"), "bad%0A::error::forged%0D 100%25");
 });

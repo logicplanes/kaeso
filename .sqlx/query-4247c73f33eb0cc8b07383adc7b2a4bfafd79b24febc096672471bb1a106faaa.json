@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM agent_requests WHERE id IN (SELECT id FROM agent_requests WHERE client_id = $1 AND requested_from = $4 AND id <> $3 ORDER BY created_at DESC, id DESC OFFSET $2)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int8",
+        "Uuid",
+        "Bytea"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "4247c73f33eb0cc8b07383adc7b2a4bfafd79b24febc096672471bb1a106faaa"
+}

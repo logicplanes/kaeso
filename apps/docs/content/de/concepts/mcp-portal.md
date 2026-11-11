@@ -49,7 +49,7 @@ Das Portal bietet ein Tool an, wenn es im Projekt an ist und seine Definition fr
 - Einen Tool-Zugriff, der das Tool enthält. Der Tool-Zugriff umfasst standardmäßig jedes Tool und lässt sich für ein Mitglied, ein Dienstkonto oder einen Schlüssel einschränken.
 - Bei einem API-Schlüssel die Fähigkeit **Tools**.
 
-Ein Client, der sich mit OAuth anmeldet, handelt als die Person, die ihn erlaubt hat, mit deren Tool-Zugriff. Die Tools eines Servers, bei dem sich jede Person anmeldet, funktionieren für einen Aufrufer erst, wenn er sein eigenes Konto verbunden hat.
+Ein Client, der sich mit OAuth anmeldet, handelt als die Person, die ihn erlaubt hat, mit deren Tool-Zugriff. Die Anforderungen der Organisation an Zwei-Faktor-Authentifizierung und SSO erfüllt er mit der Anmeldung, mit der er erlaubt wurde, und er funktioniert nicht mehr, sobald das Projekt archiviert oder die Organisation zur Löschung vorgemerkt ist. Die Tools eines Servers, bei dem sich jede Person anmeldet, funktionieren für einen Aufrufer erst, wenn er sein eigenes Konto verbunden hat.
 
 ## Limits und Protokolle
 

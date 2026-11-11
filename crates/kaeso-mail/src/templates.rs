@@ -1618,7 +1618,7 @@ mod tests {
             one(
                 None,
                 Fact::InstanceUpdate {
-                    version: "0.6.0",
+                    version: "1.4.0",
                     change: Update::Available {
                         running: "0.5.6",
                         install: Install::Window {
@@ -1628,7 +1628,7 @@ mod tests {
                     },
                     notes: Some(Notes {
                         markdown: RELEASE_NOTES,
-                        url: "https://github.com/logicplanes/kaeso/releases/tag/v0.6.0",
+                        url: "https://github.com/logicplanes/kaeso/releases/tag/v1.4.0",
                     }),
                 },
                 Because::Right("instance.updates.manage"),
@@ -1891,11 +1891,11 @@ mod tests {
                 TO,
                 None,
                 &Fact::InstanceUpdate {
-                    version: "0.6.0",
+                    version: "1.4.0",
                     change,
                     notes: Some(Notes {
                         markdown: RELEASE_NOTES,
-                        url: "https://github.com/logicplanes/kaeso/releases/tag/v0.6.0",
+                        url: "https://github.com/logicplanes/kaeso/releases/tag/v1.4.0",
                     }),
                 },
                 Because::Right("instance.updates.manage"),
@@ -1917,7 +1917,7 @@ mod tests {
         };
         let notes = Notes {
             markdown: RELEASE_NOTES,
-            url: "https://github.com/logicplanes/kaeso/releases/tag/v0.6.0",
+            url: "https://github.com/logicplanes/kaeso/releases/tag/v1.4.0",
         };
         let at = datetime!(2026 - 11 - 09 03:00);
         let cases = [
@@ -1961,7 +1961,7 @@ mod tests {
                 TO,
                 None,
                 &Fact::InstanceUpdate {
-                    version: "0.6.0",
+                    version: "1.4.0",
                     change: Update::Available {
                         running: "0.5.6",
                         install,
@@ -1975,7 +1975,7 @@ mod tests {
             let c = &email.content;
             assert_eq!(c.sentence.as_deref(), Some(sentence));
             assert_eq!(c.details.last().map(|d| d.value.as_str()), Some(installs));
-            assert_eq!(c.details.first().map(|d| d.value.as_str()), Some("0.6.0"));
+            assert_eq!(c.details.first().map(|d| d.value.as_str()), Some("1.4.0"));
             assert_eq!(c.list.items.len(), 4);
             assert_eq!(c.list.lang, (lang != Locale::En).then_some(Locale::En));
             assert_eq!(c.link.as_ref().map(|l| l.url.as_str()), Some(notes.url));
@@ -2663,8 +2663,8 @@ mod tests {
             ),
             (
                 EmailKind::InstanceUpdates,
-                ["Kaeso 0.6.0 ist erschienen", "Kaeso 0.6.0 ist erschienen"],
-                ["Kaeso 0.6.0 已发布", "Kaeso 0.6.0 已发布"],
+                ["Kaeso 1.4.0 ist erschienen", "Kaeso 1.4.0 ist erschienen"],
+                ["Kaeso 1.4.0 已发布", "Kaeso 1.4.0 已发布"],
             ),
             (
                 EmailKind::InstancePeople,

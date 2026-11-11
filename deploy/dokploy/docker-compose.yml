@@ -3,7 +3,7 @@
 # Docs: https://docs.kaeso.app/self-hosting/platforms/dokploy
 services:
   edge:
-    image: ghcr.io/logicplanes/kaeso-console:0.6.0-rc.8
+    image: ghcr.io/logicplanes/kaeso-console:0.6.0
     restart: unless-stopped
     command: ["kaeso-edge"]
     security_opt: [no-new-privileges:true]
@@ -30,7 +30,7 @@ services:
         condition: service_healthy
 
   gateway:
-    image: ghcr.io/logicplanes/kaeso-gateway:0.6.0-rc.8
+    image: ghcr.io/logicplanes/kaeso-gateway:0.6.0
     restart: unless-stopped
     security_opt: [no-new-privileges:true]
     cap_drop: [ALL]
@@ -68,7 +68,7 @@ services:
         condition: service_started
 
   console:
-    image: ghcr.io/logicplanes/kaeso-console:0.6.0-rc.8
+    image: ghcr.io/logicplanes/kaeso-console:0.6.0
     restart: unless-stopped
     security_opt: [no-new-privileges:true]
     cap_drop: [ALL]

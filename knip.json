@@ -39,6 +39,10 @@
       "entry": ["src/routes/**/*.tsx", "stack/*.mjs"],
       "project": ["src/**/*.{ts,tsx,css}", "scripts/**/*.mjs", "stack/**/*.mjs", "e2e/**/*.ts", "eslint/**/*.js"]
     },
+    "apps/mcp-views": {
+      "entry": ["scripts/*.mjs"],
+      "project": ["src/**/*.{ts,tsx,css}", "scripts/**/*.mjs"]
+    },
     "apps/docs": {}
   },
   "rules": {

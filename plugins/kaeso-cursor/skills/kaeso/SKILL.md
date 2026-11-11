@@ -5,7 +5,7 @@ description: Use when the user asks about their Kaeso AI gateway, such as its or
 
 # Working with Kaeso
 
-Kaeso is a self-hosted AI gateway. The `kaeso` MCP server gives you one tool per Platform API operation you are allowed to use, named after its operation id, such as `get_orgs_org_usage`.
+Kaeso is a self-hosted AI gateway. The `kaeso` MCP server gives you one tool per Platform API operation you are allowed to use, named after its operation id, such as `get_orgs_org_usage`, and `show_usage_stats`, which draws usage as a view.
 
 ## Calling the tools
 
@@ -25,7 +25,9 @@ An alias is a name apps send as `model`; its `route` picks the model that answer
 
 ## Usage, costs and latency
 
-Go from wide to narrow. Each tool has a `get_orgs_org_projects_project_…` twin for one project.
+When the user asks for a statistic to look at, such as how much they spent this week or which model is slowest, call `show_usage_stats` with `metric` (`requests`, `tokens`, `cost`, `latency` or `errors`), `range` (`24h`, `7d` or `30d`) and `group_by` (`model`, `provider` or `key`), and `org` or `project` when there is more than one. Clients that support MCP Apps, such as Claude, show it as an interactive view the user can change themselves; you get a short summary either way, so answer from it instead of repeating the numbers in a table.
+
+For anything else, go from wide to narrow. Each tool has a `get_orgs_org_projects_project_…` twin for one project.
 
 1. `get_orgs_org_usage_span` gives the first and last day with usage.
 2. `get_orgs_org_usage` sums requests, errors, tokens, cost and tool calls by `day`, `week`, `month`, `model`, `provider`, `key`, `member`, `route` or `project`. Its filters (`model`, `provider`, `key`, `member`, `route`, `project`) take a row's `key` as it is, and combine with each other and any grouping: `group_by=day`, `model=openai/gpt-5` and `key=key_…` is the daily usage of one model through one key.

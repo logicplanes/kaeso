@@ -146,7 +146,7 @@ KAESO_API_KEY=$(
 
 Ein API-Schlüssel mit Plattformzugriff funktioniert innerhalb seines eigenen Projekts genauso, mit den Rechten seines Mitglieds oder Dienstkontos. Senden Sie ihn als `Authorization: Bearer sk-kso-…`. Er kann mit `models.manage` Modelle hinzufügen und mit `usage.view` und `logs.metadata.view` Nutzung und Protokolle lesen.
 
-Projekte erstellen und Anbieter-Schlüssel hinzufügen sind Rechte der Organisation, die ein Projektschlüssel nie hat. Ein Schlüssel, der einem Mitglied gehört, kann mit `POST orgs/{org}/projects/{project}/keys` weitere Schlüssel für dieses Mitglied erstellen. [API-Schlüssel](../console/api-keys.md) erklärt, wie Sie einem Schlüssel Plattformzugriff geben.
+Projekte erstellen und Anbieter-Schlüssel hinzufügen sind Rechte der Organisation, die ein Projektschlüssel nie hat. Ein Schlüssel, der einem Mitglied gehört, kann mit `POST orgs/{org}/projects/{project}/keys` weitere Schlüssel für dieses Mitglied erstellen, innerhalb seiner eigenen Grenzen: keinen mit Tools, die ihm fehlen, mit Modellen, die er nicht nutzen darf, oder mit späterem Ablauf, gar keinen, solange eigene Limits für ihn gelten, und er rotiert keinen anderen Schlüssel. [API-Schlüssel](../console/api-keys.md) erklärt, wie Sie einem Schlüssel Plattformzugriff geben.
 
 ## Stattdessen eine Sitzung verwenden
 
