@@ -14,6 +14,7 @@ use tower::ServiceExt;
 use uuid::Uuid;
 
 use super::oauth;
+use super::stats;
 use super::tools::{self, Tool};
 use crate::auth::agents::{AgentCaller, Refusal};
 use crate::auth::keys::{LookupError, bearer};
@@ -24,12 +25,17 @@ use crate::state::AppState;
 const LATEST_PROTOCOL: &str = "2025-11-25";
 pub const PROTOCOL_VERSIONS: &[&str] = &[LATEST_PROTOCOL, "2025-06-18", "2025-03-26"];
 const MAX_RESULT_BYTES: usize = 200 * 1024;
+// The code MCP gives an unknown resource URI:
+// https://modelcontextprotocol.io/specification/2025-11-25/server/resources#error-handling
+const RESOURCE_NOT_FOUND: i64 = -32002;
 const INSTRUCTIONS: &str = "Kaeso is a self-hosted AI gateway. These tools read and change it \
     for the user who connected you, with the rights they gave you; tools/list shows only what you \
     can use now. Ids look like `org_…` and `proj_…`; list organizations with `get_me_memberships` \
     first. Every tool takes `agent_model`, the model family you are, or `unknown`. A call that fails \
     with `insufficient_rights` names a link where the user can grant the right; ask them to open \
-    it. To analyse usage, go from wide to narrow: `get_orgs_org_usage_span` gives the days with \
+    it. When the user asks for a statistic to look at, such as this week's spend, call \
+    `show_usage_stats`: clients that support MCP Apps show it as an interactive view. To analyse \
+    usage, go from wide to narrow: `get_orgs_org_usage_span` gives the days with \
     usage; `get_orgs_org_usage` sums them by day, week or month, or by model, provider, key, \
     member, route or project, and its filters take any `key` a grouping returns, so they combine; \
     `get_orgs_org_usage_timeline` reads the request log by minute or hour with the same filters, \
@@ -226,7 +232,16 @@ pub async fn post(
         "initialize" => initialize(id, &params),
         "ping" => rpc(id, json!({})),
         "tools/list" => list(&ctx, id).await,
+        "tools/call" if params.get("name").and_then(Value::as_str) == Some(stats::TOOL) => {
+            show_stats(&ctx, id, &params).await
+        }
         "tools/call" => call(&ctx, id, &params).await,
+        "resources/list" => rpc(id, json!({ "resources": [stats::resource()] })),
+        "resources/templates/list" => rpc(id, json!({ "resourceTemplates": [] })),
+        "resources/read" => match params.get("uri").and_then(Value::as_str) {
+            Some(stats::VIEW) => rpc(id, stats::contents()),
+            _ => rpc_error(id, RESOURCE_NOT_FOUND, "Resource not found."),
+        },
         _ => rpc_error(id, -32601, "Method not found."),
     };
     json_response(StatusCode::OK, &reply)
@@ -241,7 +256,10 @@ fn initialize(id: &Value, params: &Map<String, Value>) -> Value {
         id,
         json!({
             "protocolVersion": version,
-            "capabilities": { "tools": { "listChanged": false } },
+            "capabilities": {
+                "tools": { "listChanged": false },
+                "resources": { "listChanged": false },
+            },
             "serverInfo": {
                 "name": "kaeso",
                 "title": "Kaeso",
@@ -275,12 +293,15 @@ async fn list(c: &Call<'_>, id: &Value) -> Value {
             );
         }
     };
-    let tools: Vec<Value> = tools::catalogue()
+    let mut tools: Vec<Value> = tools::catalogue()
         .all()
         .iter()
         .filter(|t| usable.contains(t.right))
         .map(Tool::listing)
         .collect();
+    if stats::usable(&usable) {
+        tools.push(stats::listing());
+    }
     rpc(id, json!({ "tools": tools }))
 }
 
@@ -335,17 +356,8 @@ async fn call(c: &Call<'_>, id: &Value, params: &Map<String, Value>) -> Value {
     let Some(tool) = tools::catalogue().get(name) else {
         return rpc_error(id, -32602, &format!("Unknown tool: {name}."));
     };
-    let args = params
-        .get("arguments")
-        .and_then(Value::as_object)
-        .cloned()
-        .unwrap_or_default();
-    if let Some(reported) = args.get(tools::AGENT_MODEL).and_then(Value::as_str) {
-        let model = known_model(reported).unwrap_or("unknown");
-        if let Err(e) = agents::report(&c.state.pg, c.agent.agent.id, model).await {
-            tracing::warn!(error = %e, "an agent's model could not be stored");
-        }
-    }
+    let args = arguments(params);
+    report_model(c, &args).await;
     let request = match tools::call(tool, &args) {
         Ok(r) => r,
         Err(e) => {
@@ -355,21 +367,18 @@ async fn call(c: &Call<'_>, id: &Value, params: &Map<String, Value>) -> Value {
             );
         }
     };
-    let (status, body) = dispatch(c, tool, request).await;
+    let (status, body) = dispatch(c, tool.method.clone(), request).await;
     let parsed: Option<Value> = serde_json::from_slice(&body).ok();
-    let error = parsed.as_ref().and_then(|v| v.get("error")).cloned();
-    let result_kind = if status.is_success() {
-        "ok".to_owned()
-    } else if error.as_ref().and_then(|e| e.get("right")).is_some() {
-        "insufficient_rights".to_owned()
-    } else {
-        error
-            .as_ref()
-            .and_then(|e| e["type"].as_str())
-            .unwrap_or("error")
-            .to_owned()
-    };
-    record(c, tool, &args, status, &result_kind).await;
+    let result_kind = result_kind(status, parsed.as_ref());
+    record(
+        c,
+        &tool.name,
+        target_of(tool, &args),
+        &args,
+        status,
+        &result_kind,
+    )
+    .await;
     if status.is_success() {
         let text = match &parsed {
             Some(v) => serde_json::to_string_pretty(v).unwrap_or_default(),
@@ -391,6 +400,261 @@ async fn call(c: &Call<'_>, id: &Value, params: &Map<String, Value>) -> Value {
             ),
         );
     }
+    rpc(id, failure(c, &args, &result_kind, parsed))
+}
+
+enum Refused {
+    Api(StatusCode, Option<Value>),
+    Ask(String),
+}
+
+async fn platform_get(
+    c: &Call<'_>,
+    path: &str,
+    query: &[(&str, String)],
+) -> Result<Value, Refused> {
+    let mut uri = format!("{}{path}", crate::platform::PREFIX);
+    if !query.is_empty() {
+        let mut q = url::form_urlencoded::Serializer::new(String::new());
+        for (k, v) in query {
+            q.append_pair(k, v);
+        }
+        uri.push('?');
+        uri.push_str(&q.finish());
+    }
+    let (status, body) = dispatch(c, Method::GET, tools::Call { uri, body: None }).await;
+    let parsed = serde_json::from_slice::<Value>(&body).ok();
+    if status.is_success() {
+        Ok(parsed.unwrap_or(Value::Null))
+    } else {
+        Err(Refused::Api(status, parsed))
+    }
+}
+
+fn rows_of(v: Value) -> Vec<Value> {
+    match v {
+        Value::Object(mut m) => match m.remove("data") {
+            Some(Value::Array(rows)) => rows,
+            _ => Vec::new(),
+        },
+        _ => Vec::new(),
+    }
+}
+
+fn org_choice(memberships: &[Value]) -> String {
+    memberships
+        .iter()
+        .filter_map(|m| {
+            let id = m["org_id"].as_str()?;
+            Some(match m["org_name"].as_str() {
+                Some(name) => format!("`{id}` ({name})"),
+                None => format!("`{id}`"),
+            })
+        })
+        .collect::<Vec<_>>()
+        .join(", ")
+}
+
+async fn show_stats(c: &Call<'_>, id: &Value, params: &Map<String, Value>) -> Value {
+    let mut args = arguments(params);
+    report_model(c, &args).await;
+    let ask = match stats::ask(&args) {
+        Ok(a) => a,
+        Err(e) => {
+            return rpc(
+                id,
+                text_result(format!("Invalid arguments: {e}."), None, true),
+            );
+        }
+    };
+    let memberships = platform_get(c, "/me/memberships", &[])
+        .await
+        .map(rows_of)
+        .unwrap_or_default();
+    let org = match (&ask.org, memberships.as_slice()) {
+        (Some(org), _) => Ok(org.clone()),
+        (None, [one]) => one["org_id"]
+            .as_str()
+            .map(str::to_owned)
+            .ok_or_else(|| Refused::Ask("Pass `org`, the organization to show.".to_owned())),
+        (None, []) => Err(Refused::Ask(
+            "Kaeso finds no organization you can open; pass `org`.".to_owned(),
+        )),
+        (None, many) => Err(Refused::Ask(format!(
+            "Pass `org`, one of {}.",
+            org_choice(many)
+        ))),
+    };
+    let outcome = match org {
+        Ok(org) => {
+            args.insert("org".to_owned(), json!(org));
+            stats_of(c, &ask, &org, &memberships).await
+        }
+        Err(refused) => Err(refused),
+    };
+    let (status, kind, result) = match outcome {
+        Ok(result) => (StatusCode::OK, "ok".to_owned(), result),
+        Err(Refused::Api(status, parsed)) => {
+            let kind = result_kind(status, parsed.as_ref());
+            let result = failure(c, &args, &kind, parsed);
+            (status, kind, result)
+        }
+        Err(Refused::Ask(text)) => (
+            StatusCode::BAD_REQUEST,
+            "invalid_request".to_owned(),
+            text_result(text, None, true),
+        ),
+    };
+    let target = ask.project.clone().or_else(|| ask.org.clone());
+    record(c, stats::TOOL, target, &args, status, &kind).await;
+    rpc(id, result)
+}
+
+async fn stats_of(
+    c: &Call<'_>,
+    ask: &stats::Ask,
+    org: &str,
+    memberships: &[Value],
+) -> Result<Value, Refused> {
+    use stats::{Metric, Range};
+    let org_name = memberships
+        .iter()
+        .find(|m| m["org_id"].as_str() == Some(org))
+        .and_then(|m| m["org_name"].as_str())
+        .unwrap_or(org)
+        .to_owned();
+    let mut base = format!("/orgs/{}", tools::encode_segment(org));
+    let mut console = format!("orgs/{}", tools::encode_segment(org));
+    let mut project_scope = Value::Null;
+    let mut scope_name = org_name.clone();
+    if let Some(project) = &ask.project {
+        base.push_str(&format!("/projects/{}", tools::encode_segment(project)));
+        console.push_str(&format!("/projects/{}", tools::encode_segment(project)));
+        let name = platform_get(c, &base, &[])
+            .await?
+            .get("name")
+            .and_then(Value::as_str)
+            .unwrap_or(project)
+            .to_owned();
+        scope_name = format!("{name} ({org_name})");
+        project_scope = json!({ "id": project, "name": name });
+    }
+    console.push_str("/analytics");
+    let w = stats::window(ask.range, c.state.clock.now());
+    let timeline = format!("{base}/usage/timeline");
+    let usage = format!("{base}/usage");
+    let span = [
+        ("from", stats::rfc3339(w.start)),
+        ("to", stats::rfc3339(w.end)),
+        ("step", "hour".to_owned()),
+    ];
+    let days_span = [
+        ("from", stats::day(w.first_day)),
+        ("to", stats::day(w.last_day)),
+    ];
+    let group = ask.group_name().to_owned();
+    let hourly_groups = ask.range == Range::Day || ask.metric == Metric::Latency;
+    // Daily usage outlives the request log, which an install can turn off or keep for fewer
+    // days; without it only the latency totals are missing from a 7- or 30-day answer.
+    let hours = match platform_get(c, &timeline, &span).await {
+        Ok(v) => rows_of(v),
+        Err(Refused::Api(status, parsed))
+            if !hourly_groups && result_kind(status, parsed.as_ref()) != "insufficient_rights" =>
+        {
+            Vec::new()
+        }
+        Err(e) => return Err(e),
+    };
+    let grouped = if hourly_groups {
+        let mut q = span.to_vec();
+        q.push(("group_by", group.clone()));
+        q.push(("top", stats::TOP.to_string()));
+        rows_of(platform_get(c, &timeline, &q).await?)
+    } else {
+        let mut q = days_span.to_vec();
+        q.push(("group_by", group.clone()));
+        rows_of(platform_get(c, &usage, &q).await?)
+    };
+    let days = if ask.range == Range::Day {
+        Vec::new()
+    } else {
+        let mut q = days_span.to_vec();
+        q.push(("group_by", "day".to_owned()));
+        rows_of(platform_get(c, &usage, &q).await?)
+    };
+    let mut key_names = std::collections::HashMap::new();
+    if ask.group == stats::Group::Key && ask.project.is_some() {
+        let keys = platform_get(
+            c,
+            &format!("{base}/keys"),
+            &[
+                ("limit", "100".to_owned()),
+                ("include_archived", "true".to_owned()),
+            ],
+        )
+        .await
+        .map(rows_of)
+        .unwrap_or_default();
+        for k in keys {
+            if let (Some(id), Some(name)) = (
+                k.get("id").and_then(Value::as_str),
+                k.get("name").and_then(Value::as_str),
+            ) {
+                key_names.insert(id.to_owned(), name.to_owned());
+            }
+        }
+    }
+    let data = stats::Data {
+        hours: &hours,
+        days: &days,
+        grouped: &grouped,
+        key_names: &key_names,
+    };
+    let scope = json!({ "org": { "id": org, "name": org_name }, "project": project_scope });
+    let (structured, groups, totals) =
+        stats::structured(ask, &w, &data, scope, oauth::endpoint(c.state, &console));
+    let text = stats::summary(ask, &scope_name, &totals, &groups);
+    Ok(text_result(text, Some(structured), false))
+}
+
+fn arguments(params: &Map<String, Value>) -> Map<String, Value> {
+    params
+        .get("arguments")
+        .and_then(Value::as_object)
+        .cloned()
+        .unwrap_or_default()
+}
+
+async fn report_model(c: &Call<'_>, args: &Map<String, Value>) {
+    if let Some(reported) = args.get(tools::AGENT_MODEL).and_then(Value::as_str) {
+        let model = known_model(reported).unwrap_or("unknown");
+        if let Err(e) = agents::report(&c.state.pg, c.agent.agent.id, model).await {
+            tracing::warn!(error = %e, "an agent's model could not be stored");
+        }
+    }
+}
+
+fn result_kind(status: StatusCode, parsed: Option<&Value>) -> String {
+    let error = parsed.and_then(|v| v.get("error"));
+    if status.is_success() {
+        "ok".to_owned()
+    } else if error.and_then(|e| e.get("right")).is_some() {
+        "insufficient_rights".to_owned()
+    } else {
+        error
+            .and_then(|e| e["type"].as_str())
+            .unwrap_or("error")
+            .to_owned()
+    }
+}
+
+fn failure(
+    c: &Call<'_>,
+    args: &Map<String, Value>,
+    result_kind: &str,
+    parsed: Option<Value>,
+) -> Value {
+    let error = parsed.as_ref().and_then(|v| v.get("error")).cloned();
     let message = error
         .as_ref()
         .and_then(|e| e["message"].as_str())
@@ -402,30 +666,23 @@ async fn call(c: &Call<'_>, id: &Value, params: &Map<String, Value>) -> Value {
             .and_then(|e| e["right"].as_str())
             .unwrap_or_default()
             .to_owned();
-        let url = approve_url(c.state, c.agent, &right, &args);
-        return rpc(
-            id,
-            text_result(
-                format!("insufficient_rights: {message} Ask the user to approve it at {url}"),
-                Some(
-                    json!({ "error": { "type": "insufficient_rights", "right": right, "message": message, "approve_url": url } }),
-                ),
-                true,
+        let url = approve_url(c.state, c.agent, &right, args);
+        return text_result(
+            format!("insufficient_rights: {message} Ask the user to approve it at {url}"),
+            Some(
+                json!({ "error": { "type": "insufficient_rights", "right": right, "message": message, "approve_url": url } }),
             ),
+            true,
         );
     }
-    rpc(
-        id,
-        text_result(
-            format!("{result_kind}: {message}"),
-            parsed.filter(Value::is_object),
-            true,
-        ),
+    text_result(
+        format!("{result_kind}: {message}"),
+        parsed.filter(Value::is_object),
+        true,
     )
 }
 
-async fn dispatch(c: &Call<'_>, tool: &Tool, call: tools::Call) -> (StatusCode, Bytes) {
-    let method: Method = tool.method.clone();
+async fn dispatch(c: &Call<'_>, method: Method, call: tools::Call) -> (StatusCode, Bytes) {
     let mut req = Request::builder()
         .method(method)
         .uri(&call.uri)
@@ -465,7 +722,8 @@ async fn dispatch(c: &Call<'_>, tool: &Tool, call: tools::Call) -> (StatusCode, 
 
 async fn record(
     c: &Call<'_>,
-    tool: &Tool,
+    tool: &str,
+    target: Option<String>,
     args: &Map<String, Value>,
     status: StatusCode,
     result: &str,
@@ -477,13 +735,12 @@ async fn record(
     let project = id_of("project")
         .and_then(|p| p.parse::<ProjectId>().ok())
         .map(|p| p.uuid());
-    let target = target_of(tool, args);
     let stored = agents::insert_activity(
         &c.state.pg,
         &agents::NewActivity {
             id: Uuid::now_v7(),
             agent_id: c.agent.agent.id,
-            tool: &tool.name,
+            tool,
             org_id: org,
             project_id: project,
             target: target.as_deref(),
@@ -495,7 +752,7 @@ async fn record(
     )
     .await;
     if let Err(e) = stored {
-        tracing::warn!(error = %e, tool = %tool.name, "an agent's tool call could not be recorded");
+        tracing::warn!(error = %e, tool, "an agent's tool call could not be recorded");
     }
 }
 

@@ -914,6 +914,9 @@ jobs:
           - suite: scripts
             dir: scripts
             command: node --test 'scripts/*.test.mjs'
+          - suite: mcp-views
+            dir: apps/mcp-views
+            command: pnpm --filter kaeso-mcp-views test
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -1048,6 +1051,8 @@ jobs:
           cache-dependency-path: pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile --prefer-offline
       - run: pnpm build
+      - name: The gateway ships the MCP view this checkout builds
+        run: git diff --exit-code -- crates/kaeso-server/assets/mcp-stats.html
       - run: pnpm licenses:check
       - run: pnpm release:check
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9

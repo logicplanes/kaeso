@@ -205,14 +205,14 @@ Der Agent bittet Sie, den Link zu öffnen. Die Konsole bietet genau dieses Recht
 
 ## Tools
 
-Jede Operation der Platform API, die ein Agent nutzen kann, ist ein Tool, benannt nach ihrer Operation-ID in Snake Case. `GET /platform/v1/orgs/{org}/usage` ist `get_orgs_org_usage`.
+Jede Operation der Platform API, die ein Agent nutzen kann, ist ein Tool, benannt nach ihrer Operation-ID in Snake Case. `GET /platform/v1/orgs/{org}/usage` ist `get_orgs_org_usage`. Ein weiteres Tool, `show_usage_stats`, zeigt die Nutzung als interaktive Ansicht; siehe [Interaktive Ansichten](#interaktive-ansichten).
 
 - **Auflistung.** `tools/list` zeigt nur die Tools, die der Agent jetzt nutzen kann, in einer seiner Organisationen und Projekte.
 - **Argumente.** Ein Tool nimmt die Pfadparameter der Operation, etwa `org` und `project`, ihre Query-Parameter und `body` für den Anfragekörper. Pfadparameter sind Pflicht, und Kaeso lehnt ein Argument ab, das das Tool nicht hat.
 - **Ergebnisse.** Ein Tool antwortet mit dem JSON der Platform API als Text und als `structuredContent`. Eine Antwort über 200 KB wird gekürzt; fordern Sie mit `limit` eine kleinere Seite an.
 - **Modell.** Jedes Tool nimmt `agent_model`, die Modellfamilie, auf der der Agent läuft: `claude`, `gpt`, `gemini`, `gemma`, `grok`, `llama`, `mistral`, `deepseek`, `qwen`, `kimi`, `glm`, `minimax`, `command`, `nova`, `phi`, `granite`, `jamba`, `ernie`, `hunyuan`, `doubao`, `yi`, `nemotron`, `olmo`, `sonar`, `reka` oder `unknown`. Kaeso speichert sie bei jedem Aufruf und zeigt den Namen der Familie neben dem Agenten; jeder andere Wert zählt als `unknown`. Bis zu seinem ersten Aufruf erscheint ein Agent als `unknown`.
 - **Hinweise.** Lesende Tools tragen `readOnlyHint`, darunter `post_orgs_org_projects_project_aliases_trace`, das nichts sendet; löschende tragen `destructiveHint`.
-- **Anweisungen.** Der Server weist den Agenten an, zuerst seine Organisationen mit `get_me_memberships` aufzulisten, und beschreibt, wie er die Nutzung vom Groben zum Feinen analysiert: die Tage mit Nutzung (`get_orgs_org_usage_span`), die Nutzung nach Zeitraum oder nach Modell, Anbieter, Schlüssel, Mitglied, Route oder Projekt, deren Filter den `key` jeder Gruppe nehmen (`get_orgs_org_usage`), Anfragen und Latenz pro Minute oder Stunde (`get_orgs_org_usage_timeline`) und die einzelnen Anfragen hinter einer Spitze (`get_orgs_org_projects_project_logs`). Es listet nur die Organisationen und Projekte, die der Agent öffnen kann, ebenso die Rechte eines Mitglieds in `get_orgs_org_members_user_rights`.
+- **Anweisungen.** Der Server weist den Agenten an, zuerst seine Organisationen mit `get_me_memberships` aufzulisten und `show_usage_stats` aufzurufen, wenn Sie eine Kennzahl sehen möchten, und beschreibt, wie er die Nutzung vom Groben zum Feinen analysiert: die Tage mit Nutzung (`get_orgs_org_usage_span`), die Nutzung nach Zeitraum oder nach Modell, Anbieter, Schlüssel, Mitglied, Route oder Projekt, deren Filter den `key` jeder Gruppe nehmen (`get_orgs_org_usage`), Anfragen und Latenz pro Minute oder Stunde (`get_orgs_org_usage_timeline`) und die einzelnen Anfragen hinter einer Spitze (`get_orgs_org_projects_project_logs`). Es listet nur die Organisationen und Projekte, die der Agent öffnen kann, ebenso die Rechte eines Mitglieds in `get_orgs_org_members_user_rights`.
 
 Diese Aktionen brauchen eine Konsolensitzung, daher hat kein Agent ein Tool dafür:
 
@@ -224,6 +224,27 @@ Diese Aktionen brauchen eine Konsolensitzung, daher hat kein Agent ein Tool daf�
 
 Ein Agent kann API-Schlüssel, die Modelle aufrufen, nur in Projekten erstellen, in denen er `api.request` hat.
 
+## Interaktive Ansichten
+
+In einem Client, der [MCP Apps](https://modelcontextprotocol.io/extensions/apps/overview) unterstützt, etwa Claude im Web und in der Desktop-App, öffnet die Frage, wie viel Sie diese Woche ausgegeben haben, Kaesos Nutzungsansicht im Gespräch, oder daneben, wo der Client eine Seitenleiste hat. Die Ansicht zeigt die Summen des Zeitraums, ein Diagramm und die wichtigsten Modelle, Anbieter oder Schlüssel, mit dem Kaeso-Schriftzug und **In Kaeso öffnen**, das dieselbe Seite in der Konsole öffnet.
+
+Das Tool dahinter ist `show_usage_stats`. Jedes Argument ist optional:
+
+| Argument | Werte | Standard |
+| --- | --- | --- |
+| `metric` | `requests`, `tokens`, `cost`, `latency` oder `errors`: was das Diagramm zeigt | `requests` |
+| `range` | `24h`, `7d` oder `30d`, jeweils bis jetzt | `7d` |
+| `group_by` | `model`, `provider` oder `key`: wonach aufgeschlüsselt wird | `model` |
+| `org` | Die Organisation; nötig, wenn Sie zu mehreren gehören | Ihre einzige Organisation |
+| `project` | Ein Projekt der Organisation statt aller | Alle Projekte |
+
+- **Daten.** Das Tool liest dieselbe Nutzung wie die Übersicht der Konsole: die tägliche Nutzung für 7 und 30 Tage und das Anfrageprotokoll pro Stunde für 24 Stunden und für die Latenz. Die Latenz ist das 95. Perzentil der langsamsten Stunde und das 50. Perzentil der mittleren Stunde.
+- **Rechte.** Es braucht `usage.org.view` für eine Organisation oder `usage.view` für ein Projekt und zeigt Kosten nur mit `costs.org.view` oder `costs.view`. Ohne das Recht schlägt der Aufruf mit `insufficient_rights` und seinem Freigabelink fehl, den die Ansicht mit **In Kaeso freigeben** zeigt.
+- **Bedienung.** Wählen Sie in der Ansicht eine Kennzahl, einen Zeitraum oder eine Aufschlüsselung, ruft sie das Tool über den Client erneut auf, mit den Rechten des Agenten. Die Ansicht ist auf Englisch, Deutsch oder vereinfachtem Chinesisch, je nach Sprache des Clients, und folgt seinem hellen oder dunklen Design.
+- **Ohne MCP Apps.** Ein Client, der keine Ansichten zeigt, etwa Claude Code, erhält eine kurze Zusammenfassung als Text und dieselben Daten als `structuredContent`.
+
+Das Tool verknüpft seine Ansicht mit `_meta.ui.resourceUri`, und die Ansicht ist die Ressource `ui://kaeso/stats` vom Typ `text/html;profile=mcp-app`, aus `resources/read`. Sie ist ein einziges HTML-Dokument, das das Gateway in seiner Binärdatei mitbringt: Sie lädt nichts von anderswo, enthält kein Token und verlangt die strengste Richtlinie, die die Erweiterung erlaubt, ohne fremde Verbindungen, Skripte, Stile, Schriften, Bilder oder Frames. Ihre eigene `Content-Security-Policy` erlaubt nur ihr eines eingebettetes Skript, sodass nichts `eval` ausführen kann. Die Ansicht schreibt jeden Wert aus Kaeso als Text.
+
 ## Protokoll
 
 | Thema | Regel |
@@ -231,7 +252,7 @@ Ein Agent kann API-Schlüssel, die Modelle aufrufen, nur in Projekten erstellen,
 | Adresse | `POST https://kaeso.example.com/mcp` |
 | Transport | Streamable HTTP mit einer JSON-RPC-Nachricht pro Anfrage, beantwortet mit JSON. Kaeso öffnet keinen Event-Stream: `GET` und `DELETE` erhalten 405 mit `Allow: POST` |
 | Protokollversionen | `2025-11-25`, `2025-06-18` und `2025-03-26`. `initialize` erhält die Version des Clients, wenn Kaeso sie spricht, sonst die neueste |
-| Methoden | `initialize`, `ping`, `tools/list` und `tools/call`. Benachrichtigungen erhalten 202 |
+| Methoden | `initialize`, `ping`, `tools/list`, `tools/call`, `resources/list`, `resources/templates/list` und `resources/read`. Benachrichtigungen erhalten 202 |
 | Authentifizierung | `Authorization: Bearer kso_at_…` |
 | `Origin` | Optional. Wenn gesendet, muss es der Origin Ihrer Installation oder einer aus `KAESO_CORS_ALLOWED_ORIGINS` sein |
 | Body | Höchstens `KAESO_BODY_LIMITS_PLATFORM_API`, standardmäßig 1 MiB |

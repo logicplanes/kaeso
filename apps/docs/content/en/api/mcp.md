@@ -205,14 +205,14 @@ The agent asks you to open the link. The console offers exactly that right, in t
 
 ## Tools
 
-Every Platform API operation an agent can use is a tool, named after its operation id in snake case. `GET /platform/v1/orgs/{org}/usage` is `get_orgs_org_usage`.
+Every Platform API operation an agent can use is a tool, named after its operation id in snake case. `GET /platform/v1/orgs/{org}/usage` is `get_orgs_org_usage`. One more tool, `show_usage_stats`, draws usage as an interactive view; see [Interactive views](#interactive-views).
 
 - **Listing.** `tools/list` shows only the tools the agent can use now, in any of its organizations and projects.
 - **Arguments.** A tool takes the operation's path parameters, such as `org` and `project`, its query parameters, and `body` for the request body. Path parameters are required, and Kaeso refuses an argument the tool doesn't have.
 - **Results.** A tool answers with the Platform API's JSON as text and as `structuredContent`. An answer over 200 KB is cut; ask for a smaller page with `limit`.
 - **Model.** Every tool takes `agent_model`, the model family the agent runs on: `claude`, `gpt`, `gemini`, `gemma`, `grok`, `llama`, `mistral`, `deepseek`, `qwen`, `kimi`, `glm`, `minimax`, `command`, `nova`, `phi`, `granite`, `jamba`, `ernie`, `hunyuan`, `doubao`, `yi`, `nemotron`, `olmo`, `sonar`, `reka` or `unknown`. Kaeso stores it with each call and shows the family's name next to the agent; any other value counts as `unknown`. Until its first call, an agent shows as `unknown`.
 - **Hints.** Tools that read are marked `readOnlyHint`, among them `post_orgs_org_projects_project_aliases_trace`, which sends nothing; tools that delete are marked `destructiveHint`.
-- **Instructions.** The server tells the agent to list its organizations with `get_me_memberships` first, and how to analyse usage from wide to narrow: the days with usage (`get_orgs_org_usage_span`), usage by period or by model, provider, key, member, route or project, whose filters take any group's `key` (`get_orgs_org_usage`), requests and latency by minute or hour (`get_orgs_org_usage_timeline`), and the single requests behind a spike (`get_orgs_org_projects_project_logs`). It lists only the organizations and projects the agent can open, and so does a member's rights in `get_orgs_org_members_user_rights`.
+- **Instructions.** The server tells the agent to list its organizations with `get_me_memberships` first, to call `show_usage_stats` when you ask for a statistic to look at, and how to analyse usage from wide to narrow: the days with usage (`get_orgs_org_usage_span`), usage by period or by model, provider, key, member, route or project, whose filters take any group's `key` (`get_orgs_org_usage`), requests and latency by minute or hour (`get_orgs_org_usage_timeline`), and the single requests behind a spike (`get_orgs_org_projects_project_logs`). It lists only the organizations and projects the agent can open, and so does a member's rights in `get_orgs_org_members_user_rights`.
 
 These need a console session, so no agent has a tool for them:
 
@@ -224,6 +224,27 @@ These need a console session, so no agent has a tool for them:
 
 An agent can create API keys that call models only in projects where it holds `api.request`.
 
+## Interactive views
+
+In a client that supports [MCP Apps](https://modelcontextprotocol.io/extensions/apps/overview), such as Claude on the web and in the desktop app, asking how much you spent this week opens Kaeso's usage view in the conversation, or beside it where the client has a side panel. The view shows the totals for the period, a chart and the top models, providers or keys, with the Kaeso wordmark and **Open in Kaeso**, which opens the same page in the console.
+
+The tool behind it is `show_usage_stats`. Every argument is optional:
+
+| Argument | Values | Default |
+| --- | --- | --- |
+| `metric` | `requests`, `tokens`, `cost`, `latency` or `errors`: what the chart draws | `requests` |
+| `range` | `24h`, `7d` or `30d`, ending now | `7d` |
+| `group_by` | `model`, `provider` or `key`: what the breakdown is by | `model` |
+| `org` | The organization; needed when you belong to more than one | Your only organization |
+| `project` | One project of the organization, instead of all of them | All projects |
+
+- **Data.** The tool reads the same usage as the console's overview: daily usage for 7 and 30 days, and the request log by the hour for 24 hours and for latency. Latency is the 95th percentile of the slowest hour, and the median hour's 50th percentile.
+- **Rights.** It needs `usage.org.view` for an organization or `usage.view` for a project, and shows costs only with `costs.org.view` or `costs.view`. Without the right, the call fails with `insufficient_rights` and its approve link, which the view shows with **Approve in Kaeso**.
+- **Controls.** Choosing a metric, a period or a breakdown in the view calls the tool again through the client, with the agent's rights. The view is written in English, German or Simplified Chinese, following the client's language, and follows its light or dark theme.
+- **Without MCP Apps.** A client that doesn't draw views, such as Claude Code, gets a short summary as text and the same data as `structuredContent`.
+
+The tool links its view with `_meta.ui.resourceUri`, and the view is the resource `ui://kaeso/stats` of type `text/html;profile=mcp-app`, from `resources/read`. It is one HTML document that the gateway ships in its binary: it loads nothing from elsewhere, holds no token and asks for the strictest policy the extension allows, with no outside connections, scripts, styles, fonts, images or frames. Its own `Content-Security-Policy` allows only its one inline script, so nothing can run `eval`. The view renders every value from Kaeso as text.
+
 ## Protocol
 
 | Topic | Rule |
@@ -231,7 +252,7 @@ An agent can create API keys that call models only in projects where it holds `a
 | Address | `POST https://kaeso.example.com/mcp` |
 | Transport | Streamable HTTP with one JSON-RPC message per request, answered with JSON. Kaeso opens no event stream: `GET` and `DELETE` get 405 with `Allow: POST` |
 | Protocol versions | `2025-11-25`, `2025-06-18` and `2025-03-26`. `initialize` gets the client's version when Kaeso speaks it, otherwise the newest |
-| Methods | `initialize`, `ping`, `tools/list` and `tools/call`. Notifications get 202 |
+| Methods | `initialize`, `ping`, `tools/list`, `tools/call`, `resources/list`, `resources/templates/list` and `resources/read`. Notifications get 202 |
 | Authentication | `Authorization: Bearer kso_at_…` |
 | `Origin` | Optional. When sent, it must be your install's origin or one of `KAESO_CORS_ALLOWED_ORIGINS` |
 | Body | At most `KAESO_BODY_LIMITS_PLATFORM_API`, 1 MiB by default |
