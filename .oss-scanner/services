@@ -1,0 +1,81 @@
+#!/usr/bin/env bash
+# Starts PostgreSQL, ClickHouse and Valkey inside the OSS Scanner image, where Docker isn't available, on the
+# addresses the KAESO_TEST_* variables of .oss-scanner/Dockerfile name.
+set -euo pipefail
+
+state=/var/lib/kaeso-test
+pg_bin=/usr/lib/postgresql/18/bin
+
+wait_for() {
+  local what=$1
+  shift
+  for _ in $(seq 1 120); do
+    if "$@" >/dev/null 2>&1; then
+      return 0
+    fi
+    sleep 0.5
+  done
+  echo "Timed out waiting for $what." >&2
+  return 1
+}
+
+start() {
+  mkdir -p "$state"
+
+  if [[ ! -f $state/postgres/PG_VERSION ]]; then
+    install -d -o postgres -g postgres "$state/postgres"
+    runuser -u postgres -- "$pg_bin/initdb" -D "$state/postgres" -U kaeso --auth=trust --encoding=UTF8 --locale=C.UTF-8 >/dev/null
+  fi
+  runuser -u postgres -- "$pg_bin/pg_ctl" -D "$state/postgres" -l "$state/postgres/server.log" -w start \
+    -o "-c listen_addresses=127.0.0.1 -c port=5432 -c unix_socket_directories=/tmp -c max_connections=300 -c fsync=off" \
+    >/dev/null
+  wait_for PostgreSQL "$pg_bin/pg_isready" -h 127.0.0.1 -p 5432
+  if ! "$pg_bin/psql" -h 127.0.0.1 -U kaeso -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname = 'kaeso'" | grep -q 1; then
+    "$pg_bin/createdb" -h 127.0.0.1 -U kaeso kaeso
+  fi
+
+  install -d -o clickhouse -g clickhouse "$state/clickhouse"
+  runuser -u clickhouse -- clickhouse-server --config-file=/etc/clickhouse-server/config.xml \
+    --pid-file="$state/clickhouse/server.pid" --daemon -- \
+    --path="$state/clickhouse/" --logger.log="$state/clickhouse/server.log" --logger.errorlog="$state/clickhouse/error.log" \
+    --listen_host=127.0.0.1 --http_port=8123 --tcp_port=9000
+  wait_for ClickHouse curl -fsS http://127.0.0.1:8123/ping
+
+  valkey-server --bind 127.0.0.1 --port 6379 --save "" --appendonly no --daemonize yes \
+    --pidfile "$state/valkey.pid" --logfile "$state/valkey.log"
+  wait_for Valkey valkey-cli -h 127.0.0.1 -p 6379 ping
+
+  echo "PostgreSQL, ClickHouse and Valkey are running."
+}
+
+stop() {
+  if [[ -f $state/postgres/postmaster.pid ]]; then
+    runuser -u postgres -- "$pg_bin/pg_ctl" -D "$state/postgres" -m fast -w stop >/dev/null
+  fi
+  if [[ -f $state/clickhouse/server.pid ]]; then
+    local pid
+    pid=$(cat "$state/clickhouse/server.pid")
+    kill "$pid" 2>/dev/null || true
+    wait_for "ClickHouse's shutdown" bash -c "! kill -0 $pid"
+    rm -f "$state/clickhouse/server.pid"
+  fi
+  valkey-cli -h 127.0.0.1 -p 6379 shutdown nosave >/dev/null 2>&1 || true
+  wait_for "Valkey's shutdown" bash -c "! valkey-cli -h 127.0.0.1 -p 6379 ping"
+  echo "Stopped."
+}
+
+status() {
+  "$pg_bin/pg_isready" -h 127.0.0.1 -p 5432 >/dev/null 2>&1 && echo "PostgreSQL: running" || echo "PostgreSQL: stopped"
+  curl -fsS http://127.0.0.1:8123/ping >/dev/null 2>&1 && echo "ClickHouse: running" || echo "ClickHouse: stopped"
+  valkey-cli -h 127.0.0.1 -p 6379 ping >/dev/null 2>&1 && echo "Valkey: running" || echo "Valkey: stopped"
+}
+
+case "${1:-}" in
+  start) start ;;
+  stop) stop ;;
+  status) status ;;
+  *)
+    echo "usage: .oss-scanner/services start|stop|status" >&2
+    exit 2
+    ;;
+esac
