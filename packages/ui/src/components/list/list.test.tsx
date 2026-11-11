@@ -1,6 +1,8 @@
 import { createRef } from "react";
 import { describe, expect, it, vi } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { act, render, screen, within } from "@testing-library/react";
+import { renderToString } from "react-dom/server";
+import { hydrateRoot } from "react-dom/client";
 import userEvent from "@testing-library/user-event";
 import { List, SelectionAction, SelectionBar } from "./list.js";
 import { InsetContent } from "../../utils/inset.js";
@@ -61,6 +63,18 @@ describe("List", () => {
     expect(bar).toHaveTextContent("1 selected");
     await userEvent.keyboard("{Escape}");
     expect(screen.queryByRole("region", { name: "Selection" })).not.toBeInTheDocument();
+  });
+  it("hydrates a server render with rows already selected, then shows the selection bar", async () => {
+    const list = <List aria-label="Keys" items={items} selectable selected={new Set(["ci-runner"])} />;
+    const container = document.createElement("div");
+    container.innerHTML = renderToString(list);
+    document.body.append(container);
+    const onRecoverableError = vi.fn();
+    const root = await act(async () => hydrateRoot(container, list, { onRecoverableError }));
+    expect(onRecoverableError).not.toHaveBeenCalled();
+    expect(screen.getByRole("region", { name: "Selection" })).toHaveTextContent("1 selected");
+    act(() => root.unmount());
+    container.remove();
   });
   it("collapses a group from its header", async () => {
     render(<List aria-label="Keys" groups={[{ id: "active", title: "Active", items }]} />);
