@@ -245,7 +245,7 @@ export function parseISODate(text: string): Date | null {
   return d.getFullYear() === y && d.getMonth() === mo && d.getDate() === day ? d : null;
 }
 
-export function formatRelative(value: DateInput, now: DateInput = Date.now()): string {
+export function formatRelative(value: DateInput, now: DateInput = Date.now(), options: { utc?: boolean | undefined } = {}): string {
   const d = toDate(value);
   const diff = toDate(now).getTime() - d.getTime();
   const abs = Math.abs(diff);
@@ -266,11 +266,12 @@ export function formatRelative(value: DateInput, now: DateInput = Date.now()): s
       ? t("format.inDays", "{count, plural, one {in # day} other {in # days}}", { count })
       : t("format.daysAgo", "{count, plural, one {# day ago} other {# days ago}}", { count });
   }
-  const year = dateFormatter({ year: "numeric", ...inZone() }, "en");
+  const zoned = options.utc ? { timeZone: "UTC" } : inZone();
+  const year = dateFormatter({ year: "numeric", ...zoned }, "en");
   return dateFormatter({
     day: "numeric",
     month: "short",
-    ...inZone(),
+    ...zoned,
     ...(year(d) !== year(toDate(now)) ? { year: "numeric" } : {}),
   })(d);
 }
