@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useReducer, useRef, useState } from "react";
+import { useHydrating } from "../hooks/use-hydrating.js";
 
 export interface LazyModule<T> {
   current: () => T | undefined;
@@ -76,7 +77,9 @@ export function useLazyModule<T>(m: LazyModule<T>, wanted: boolean, onFail?: (()
   useLayoutEffect(() => {
     failed.current = onFail;
   });
-  const mod = m.current();
+  // A module another island already loaded must still wait for hydration: the server rendered the fallback.
+  const hydrating = useHydrating();
+  const mod = hydrating ? undefined : m.current();
   useEffect(() => {
     if (!wanted || mod) return;
     let live = true;

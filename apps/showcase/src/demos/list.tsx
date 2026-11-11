@@ -19,7 +19,7 @@ import { StateSection } from "~/lib/states";
 
 function LastUsed({ at }: { at: string | Date }) {
   useLocale();
-  return <>{formatRelative(at, NOW)}</>;
+  return <>{formatRelative(at, NOW, { utc: true })}</>;
 }
 
 const groups: ListGroup[] = (["active", "disabled", "expired"] as const).map((state) => ({

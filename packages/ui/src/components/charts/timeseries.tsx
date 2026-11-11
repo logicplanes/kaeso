@@ -5,6 +5,7 @@ import { area as d3area, curveMonotoneX, line as d3line, stack as d3stack, stack
 import { bisector, max as d3max, min as d3min } from "d3-array";
 import { cn } from "../../utils/cn.js";
 import { dateFormatter, formatNumber, formatPercent, formatTimeZone } from "../../format/index.js";
+import { useUtcWhileHydrating } from "../../hooks/use-utc-while-hydrating.js";
 import { useLocale, useUiText } from "../../i18n/context.js";
 import {
   AXIS,
@@ -143,6 +144,7 @@ export const TimeseriesChart = forwardRef<HTMLDivElement, TimeseriesChartProps>(
 ) {
   const t = useUiText();
   const locale = useLocale();
+  const utcWhileHydrating = useUtcWhileHydrating();
   const format = formatValue ?? ((v: number) => formatNumber(v));
   const [box, size] = useSize<HTMLDivElement>();
   const gid = useId().replace(/:/g, "");
@@ -186,7 +188,7 @@ export const TimeseriesChart = forwardRef<HTMLDivElement, TimeseriesChartProps>(
         .keys(visible.map((_, i) => String(i)))
         .offset(stackOffsetDiverging)(times.map((_, ti) => visible.map((_, si) => (Number.isFinite(values[si]?.[ti]) ? values[si]![ti]! : 0))))
     : null;
-  const zone = timeZone ?? formatTimeZone();
+  const zone = timeZone ?? formatTimeZone() ?? (utcWhileHydrating ? "UTC" : undefined);
   const clock = wallClock(zone);
   const span = (times[times.length - 1]?.getTime() ?? 0) - (times[0]?.getTime() ?? 0);
   const fmt = formatTick ?? (times.length === 1 ? timeFormat(locale, DAY, zone) : tickFormat(locale, span, zone, clock));
