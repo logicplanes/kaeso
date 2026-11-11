@@ -75,11 +75,12 @@ jobs:
       - name: Every target in fuzz/Cargo.toml runs
         run: |
           set -euo pipefail
-          listed="$(sed -n 's/^name = "\(.*\)"$/\1/p' fuzz/Cargo.toml | grep -vx kpp-fuzz | sort | paste -sd ' ' -)"
-          if [[ "$listed" != "decode_anthropic_messages decode_dashscope decode_elevenlabs decode_gemini decode_gemini_embeddings decode_gemini_interactions decode_minimax_images decode_minimax_speech decode_minimax_videos decode_openai_chat decode_openai_embeddings decode_openai_images decode_openai_responses decode_openai_speech decode_openai_transcriptions decode_openai_videos decode_openrouter_videos decode_veo decode_xai_videos decode_zai_videos mcp sse" ]]; then
-            echo "::error::fuzz/Cargo.toml has the targets $listed; list each one in the matrix of .github/workflows/fuzz.yml."
-            exit 1
-          fi
+          sed -n 's/^name = "\(.*\)"$/\1/p' fuzz/Cargo.toml | grep -vx kpp-fuzz | while read -r target; do
+            if ! grep -qE "^ +$target,?$" .github/workflows/fuzz.yml; then
+              echo "::error::fuzz/Cargo.toml has the target $target; list it in the matrix of the fuzz job in .github/workflows/fuzz.yml."
+              exit 1
+            fi
+          done
       - run: rustup toolchain install nightly --profile minimal
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0
         with:
