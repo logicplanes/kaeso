@@ -133,6 +133,7 @@
   "errors.keyNeverNotAllowed": "此项目中的密钥必须在 {days} 天内过期，不允许“永不过期”。",
   "errors.keyNoPlatformAccess": "此密钥无权访问 Platform API，请使用具有平台访问权限的密钥。",
   "errors.keysCantMintPlatformKeys": "密钥无法创建具有平台访问权限的密钥；请使用控制台会话。",
+  "errors.keysCantWidenTheirOwn": "密钥不能将 `{field}` 放宽到超出其自身的范围；请使用控制台会话。",
   "errors.keysBeyondTheirOwnLimits": "密钥只能在其自身限制范围内创建或轮换密钥；请使用控制台会话。",
   "errors.lastInstanceAdmin": "这是最后一位实例管理员，请先将其他人设为实例管理员。",
   "errors.lastOwnerLeaving": "您是此组织的最后一位所有者，请先转让所有权再离开。",
