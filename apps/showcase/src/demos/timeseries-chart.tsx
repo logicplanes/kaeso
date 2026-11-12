@@ -1,12 +1,15 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import { TimeseriesChart } from "@logicplanes/kaeso-ui";
-import { formatUSD } from "@logicplanes/kaeso-ui/format";
+import { useFormatters } from "@logicplanes/kaeso-ui/i18n";
 import { usageSeries } from "~/fixtures/kaeso";
 import { StateSection } from "~/lib/states";
 import { AsTable, Labelled } from "~/lib/chart-states";
 
 const series = usageSeries();
-const money = (v: number) => formatUSD(v.toFixed(2));
+function useMoney() {
+  const { formatUSD } = useFormatters();
+  return (v: number) => formatUSD(v.toFixed(2));
+}
 
 export const meta = {
   title: "TimeseriesChart",
@@ -33,6 +36,7 @@ export const examples = [
   { id: "stacked", title: "Stacked", fn: "Stacked", minHeight: 360 },
 ];
 export function Lines() {
+  const money = useMoney();
   return (
     <div className="w-full">
       <TimeseriesChart aria-label="Spend per model, last 30 days" series={series} formatValue={money} />
@@ -40,6 +44,7 @@ export function Lines() {
   );
 }
 export function Area() {
+  const money = useMoney();
   return (
     <div className="w-full">
       <TimeseriesChart
@@ -54,6 +59,7 @@ export function Area() {
   );
 }
 export function Stacked() {
+  const money = useMoney();
   return (
     <div className="w-full">
       <TimeseriesChart aria-label="Spend by model, stacked" kind="stacked" series={series} formatValue={money} />
@@ -82,6 +88,7 @@ function Hidden({ count, children }: { count: number; children: ReactNode }) {
 }
 
 export function States() {
+  const money = useMoney();
   return (
     <>
       <StateSection title="Highlighted: the crosshair, a dot on each line and the tooltip, as on hover or with the arrow keys">

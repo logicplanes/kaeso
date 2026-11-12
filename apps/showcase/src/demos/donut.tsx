@@ -1,5 +1,5 @@
 import { Donut, ShareBar } from "@logicplanes/kaeso-ui";
-import { formatUSD } from "@logicplanes/kaeso-ui/format";
+import { useFormatters } from "@logicplanes/kaeso-ui/i18n";
 import { StateSection } from "~/lib/states";
 import { Labelled } from "~/lib/chart-states";
 
@@ -10,7 +10,10 @@ const slices = [
   { id: "claude-haiku-4-5", label: "claude-haiku-4-5", value: 14.1 },
   { id: "gpt-4.1-nano", label: "gpt-4.1-nano", value: 1.2 },
 ];
-const money = (v: number) => formatUSD(v.toFixed(2));
+function useMoney() {
+  const { formatUSD } = useFormatters();
+  return (v: number) => formatUSD(v.toFixed(2));
+}
 
 export const meta = {
   title: "Donut",
@@ -24,6 +27,7 @@ export const examples = [
   { id: "share", title: "ShareBar", fn: "Share" },
 ];
 export function DonutDemo() {
+  const money = useMoney();
   return <Donut aria-label="Spend by model" slices={slices} formatValue={money} totalLabel="Total spend" />;
 }
 export function Share() {
@@ -53,6 +57,7 @@ const long = [
 ];
 
 export function States() {
+  const money = useMoney();
   return (
     <>
       <StateSection title="Sizes">

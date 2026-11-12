@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import type { ReactNode } from "react";
 import { render, screen } from "@testing-library/react";
-import { LocaleProvider, type UiMessages } from "./index.js";
+import { LocaleProvider, useFormatters, type UiMessages } from "./index.js";
 import { formatRelative, formatUSD, setFormatLocale } from "../format/index.js";
 import de from "./locales/de.js";
 import zhCN from "./locales/zh-CN.js";
@@ -114,5 +114,26 @@ describe("the formatters in German and Chinese", () => {
     setFormatLocale("en");
     expect(formatUSD("1234.5")).toBe("$1,234.50");
     expect(formatRelative(new Date(2026, 9, 14, 11, 56), now)).toBe("4 min ago");
+  });
+});
+
+describe("useFormatters", () => {
+  const now = new Date(2026, 9, 14, 12, 0);
+  function Ago() {
+    return <p>{useFormatters().formatRelative(new Date(2026, 9, 14, 11, 56), now)}</p>;
+  }
+
+  it("writes in the provider's language, and in the plain formatters' language without one", () => {
+    const { unmount } = inLanguage("de", de, <Ago />);
+    expect(screen.getByText("vor 4 Min.")).toBeInTheDocument();
+    unmount();
+    setFormatLocale("zh-CN", zhCN);
+    render(<Ago />);
+    expect(screen.getByText("4 分钟前")).toBeInTheDocument();
+  });
+
+  it("sets the plain formatters' language in the browser, as before", () => {
+    inLanguage("de", de, <Ago />);
+    expect(formatUSD("1234.5")).toBe("1.234,50\u00a0$");
   });
 });

@@ -1,7 +1,7 @@
 import { forwardRef, useEffect, useState, type ReactNode } from "react";
 import { cn } from "../../utils/cn.js";
-import { formatDuration, formatNumber, formatPrice, formatUSD } from "../../format/index.js";
-import { useUiText } from "../../i18n/context.js";
+import { plainFormatters, type Formatters } from "../../format/index.js";
+import { useUiText, useFormatters } from "../../i18n/context.js";
 
 export const KAESO_RESPONSE_METRICS_VARIANTS = {
   size: {
@@ -25,7 +25,7 @@ export interface ResponseMetricsProps {
   className?: string | undefined;
 }
 
-export function formatLatency(ms: number): string {
+export function formatLatency(ms: number, { formatDuration }: Formatters = plainFormatters): string {
   if (!Number.isFinite(ms) || ms < 0) return "—";
   return formatDuration(ms, { precise: true });
 }
@@ -41,7 +41,7 @@ function useElapsed(from: number | undefined) {
   return from === undefined ? undefined : Math.max(0, now - from);
 }
 
-function requestCost(amount: string): string {
+function requestCost(amount: string, { formatPrice, formatUSD }: Formatters): string {
   return /[1-9]/.test(amount) ? formatPrice(amount) : formatUSD("0", { decimals: 0 });
 }
 
@@ -63,6 +63,8 @@ export const ResponseMetrics = forwardRef<HTMLDListElement, ResponseMetricsProps
   ref,
 ) {
   const t = useUiText();
+  const f = useFormatters();
+  const { formatDuration, formatNumber } = f;
   const counting = live && startedAt !== undefined && !known(duration);
   const elapsed = useElapsed(counting ? startedAt : undefined);
   const tokens = known(inputTokens) || known(outputTokens);
@@ -80,10 +82,10 @@ export const ResponseMetrics = forwardRef<HTMLDListElement, ResponseMetricsProps
         : formatDuration(Math.floor(ms / 1000) * 1000);
   return (
     <dl ref={ref} aria-label={t("responseMetrics.metrics", "Metrics")} className={line}>
-      {known(timeToFirstToken) && <Item label={t("responseMetrics.firstToken", "First token")}>{formatLatency(timeToFirstToken)}</Item>}
+      {known(timeToFirstToken) && <Item label={t("responseMetrics.firstToken", "First token")}>{formatLatency(timeToFirstToken, f)}</Item>}
       {(known(duration) || elapsed !== undefined) && (
         <Item label={t("responseMetrics.total", "Total")}>
-          {known(duration) ? formatLatency(duration) : <span className="text-fg-tertiary">{seconds(elapsed ?? 0)}</span>}
+          {known(duration) ? formatLatency(duration, f) : <span className="text-fg-tertiary">{seconds(elapsed ?? 0)}</span>}
         </Item>
       )}
       {tokens && (
@@ -95,7 +97,9 @@ export const ResponseMetrics = forwardRef<HTMLDListElement, ResponseMetricsProps
         </Item>
       )}
       {known(reasoningTokens) && <Item label={t("responseMetrics.reasoning", "Reasoning")}>{formatNumber(reasoningTokens)}</Item>}
-      {hasCost && <Item label={t("responseMetrics.cost", "Cost")}>{unknownCost ? t("responseMetrics.costUnknown", "Unknown") : requestCost(cost ?? "0")}</Item>}
+      {hasCost && (
+        <Item label={t("responseMetrics.cost", "Cost")}>{unknownCost ? t("responseMetrics.costUnknown", "Unknown") : requestCost(cost ?? "0", f)}</Item>
+      )}
     </dl>
   );
 });

@@ -4,9 +4,9 @@ import { scaleLinear } from "./linear-scale.js";
 import { area as d3area, curveMonotoneX, line as d3line, stack as d3stack, stackOffsetDiverging, type SeriesPoint } from "d3-shape";
 import { bisector, max as d3max, min as d3min } from "d3-array";
 import { cn } from "../../utils/cn.js";
-import { dateFormatter, formatNumber, formatPercent, formatTimeZone } from "../../format/index.js";
+import { dateFormatter, formatTimeZone } from "../../format/index.js";
 import { useUtcWhileHydrating } from "../../hooks/use-utc-while-hydrating.js";
-import { useLocale, useUiText } from "../../i18n/context.js";
+import { useLocale, useUiText, useFormatters } from "../../i18n/context.js";
 import {
   AXIS,
   axisLabelIndexes,
@@ -25,7 +25,7 @@ import {
   wholeTicks,
   type ChartState,
 } from "./core.js";
-import { axisRoom, compactAxis, finite, onlyZero, hasPoints, valueExtent } from "./domain.js";
+import { axisRoom, finite, onlyZero, hasPoints, valueExtent } from "./domain.js";
 import { wallClock, wallDay, zoneTicks, type WallClock } from "./time-axis.js";
 
 export const KAESO_TIMESERIES_CHART_VARIANTS = {
@@ -143,12 +143,13 @@ export const TimeseriesChart = forwardRef<HTMLDivElement, TimeseriesChartProps>(
   ref,
 ) {
   const t = useUiText();
+  const { formatNumber, formatPercent, formatTokens } = useFormatters();
   const locale = useLocale();
   const utcWhileHydrating = useUtcWhileHydrating();
   const format = formatValue ?? ((v: number) => formatNumber(v));
   const [box, size] = useSize<HTMLDivElement>();
   const gid = useId().replace(/:/g, "");
-  const axisLabel = tickLabel(formatValue ?? compactAxis);
+  const axisLabel = tickLabel(formatValue ?? formatTokens);
   const [hidden, setHidden] = useState<Set<string>>(new Set());
   const [focus, setFocus] = useState<string | null>(null);
   const [hover, setHover] = useState<{ i: number; y: number } | null>(null);

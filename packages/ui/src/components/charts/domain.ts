@@ -1,4 +1,3 @@
-import { formatTokens } from "../../format/index.js";
 import { AXIS, labelWidth } from "./core.js";
 
 export const finite = (values: readonly number[]): number[] => values.filter(Number.isFinite);
@@ -14,8 +13,6 @@ export function valueExtent(values: readonly number[], also: readonly number[] =
   if (lo === 0 && hi === 0) return [0, 1];
   return [lo * 1.08, hi * 1.08];
 }
-
-export const compactAxis = (v: number): string => formatTokens(v);
 
 export function axisRoom(
   labels: readonly string[],

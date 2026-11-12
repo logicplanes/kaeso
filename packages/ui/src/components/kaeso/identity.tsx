@@ -7,8 +7,7 @@ import { Badge } from "../badge/badge.js";
 import { CopyButton } from "../copy-button/copy-button.js";
 import { PROVIDER_MARKS, type ProviderMark } from "./provider-marks.js";
 import { useProviderMarkOf } from "../../utils/provider-marks.js";
-import { formatNumber } from "../../format/index.js";
-import { useUiText, type UiText } from "../../i18n/context.js";
+import { useFormatters, useUiText, type UiText } from "../../i18n/context.js";
 
 export const KAESO_IDENTITY_VARIANTS = {
   provider: {
@@ -286,6 +285,7 @@ export const RequestTimeline = forwardRef<
   { ttfbMs: number; totalMs: number; width?: 160 | 240 | "full" | undefined; className?: string | undefined }
 >(function RequestTimeline({ ttfbMs, totalMs, width = 240, className }, ref) {
   const t = useUiText();
+  const { formatNumber } = useFormatters();
   const ratio = totalMs > 0 ? Math.min(1, ttfbMs / totalMs) : 0;
   const fmt = (ms: number) =>
     ms < 1000 ? `${Math.round(ms)} ms` : `${formatNumber(ms / 1000, { minimumFractionDigits: 1, maximumFractionDigits: 1, useGrouping: false })} s`;

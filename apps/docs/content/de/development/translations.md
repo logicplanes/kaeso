@@ -227,7 +227,8 @@ root.render(
 - Ohne `LocaleProvider` ist alles Englisch.
 - `resolveUiLocale` bildet ein BCP-47-Tag auf eine mitgelieferte Sprache ab: `de-AT` ist `de`, `zh-Hans` ist `zh-CN`, alles andere `en`. `loadUiMessages` gibt für Englisch `{}` zurück und lädt nichts.
 - Laden Sie für einen Sprachwechsel den neuen Katalog und rendern Sie den Provider dann mit neuer Sprache und neuem Katalog zugleich; behalten Sie das alte Paar, bis der Katalog da ist.
-- Der Provider setzt auch die Sprache der Formatierer (`formatNumber`, `formatDate`, `formatRelative`, `formatUSD` und andere), die einfache Funktionen sind; `setFormatLocale(locale, messages)` tut dasselbe ohne React. Die eigenen Texte einer App nutzen ihre eigenen Kataloge, und `formatMessage(template, values, locale)` formatiert ICU-Nachrichten auf dieselbe Weise.
+- Nehmen Sie die Formatierer in einer Komponente aus `useFormatters()`: `const { formatDate, formatUSD } = useFormatters()` schreibt in der Sprache des nächsten Providers, sodass ein Server, der mehrere Anfragen zugleich rendert, jede in ihrer eigenen formatiert. Außerhalb von React bindet `createFormatters({ locale, messages })` sie an eine Sprache.
+- Die einfachen Funktionen (`formatNumber`, `formatDate`, `formatRelative`, `formatUSD` und andere) teilen sich eine Sprache pro Seite: Im Browser setzt der Provider sie, und `setFormatLocale(locale, messages)` setzt sie ohne React. Auf einem Server lässt der Provider sie unverändert, daher nutzen serverseitig gerenderte Komponenten `useFormatters`. Die eigenen Texte einer App nutzen ihre eigenen Kataloge, und `formatMessage(template, values, locale)` formatiert ICU-Nachrichten auf dieselbe Weise.
 
 ## Der Showcase
 

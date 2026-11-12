@@ -85,7 +85,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
 5. **每个视图只有一个主要按钮。** 其余均为 secondary 或 ghost。
 6. **不使用装饰性卡片和装饰性图标。** 内容直接放在面板上；空状态和对话框用文字表达。
 7. **颜色只用于数据和状态**，状态始终配有文字。
-8. **使用格式化函数**：金额、Token、时长和日期使用 `@logicplanes/kaeso-ui/format`。金额始终是精确的十进制字符串。
+8. **使用格式化函数**：金额、Token、时长和日期在组件中使用 `useFormatters()`，这样在服务器上也会跟随最近的 `LocaleProvider`；在 React 之外使用 `@logicplanes/kaeso-ui/format`。金额始终是精确的十进制字符串。
 9. **使用图标词汇表**：`icons.key`、`icons.model`，绝不按外观挑选图标。
 10. **文案遵循统一语气**：句首大写，按钮以动词开头，不用感叹号或表情符号，错误提示要说明下一步该做什么。
 11. **留出空间。** 让面板保持疏朗：组件自带间距，不要用额外的包裹层、边框或标题塞满界面。元素更少，每个都清晰。

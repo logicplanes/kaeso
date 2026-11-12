@@ -28,7 +28,8 @@ import { STATUS_TONE_TEXT, type StatusTone } from "../../utils/tone.js";
 import { scrollParent } from "../../hooks/scroll-parent.js";
 import { useScrollMargin } from "../../hooks/use-scroll-margin.js";
 import { useStickyTop } from "../../hooks/use-sticky-top.js";
-import { useUiText } from "../../i18n/context.js";
+import { useFormatters, useUiText } from "../../i18n/context.js";
+import type { Formatters } from "../../format/index.js";
 import { useScrollFadeX } from "../../hooks/use-scroll-fade.js";
 import { useCoarsePointer } from "../../hooks/use-coarse-pointer.js";
 import { selectsText } from "../../utils/selects-text.js";
@@ -50,7 +51,7 @@ declare module "@tanstack/react-table" {
     grow?: boolean | undefined;
     minWidth?: number | undefined;
     mono?: boolean | undefined;
-    text?: ((row: TData) => string) | undefined;
+    text?: ((row: TData, format: Formatters) => string) | undefined;
     tone?: ((row: TData) => StatusTone | undefined) | undefined;
   }
 }
@@ -126,9 +127,9 @@ function nameColumn<T>(columns: ColumnDef<T, any>[]): ColumnDef<T, any> | undefi
   return labelled.find((c) => !TIME_COLUMNS.has(c)) ?? labelled[0] ?? columns[0];
 }
 
-function rowName<T>(column: ColumnDef<T, any> | undefined, row: Row<T>): string | undefined {
+function rowName<T>(column: ColumnDef<T, any> | undefined, row: Row<T>, format: Formatters): string | undefined {
   if (!column?.id) return undefined;
-  const text = column.meta?.text?.(row.original);
+  const text = column.meta?.text?.(row.original, format);
   if (text) return text;
   const raw = row.getValue(column.id);
   return typeof raw === "string" && raw ? raw : undefined;
@@ -199,6 +200,7 @@ function DataTableInner<T>(
   const raised = useRaised();
   const padded = useGutterPadded();
   const t = useUiText();
+  const format = useFormatters();
   const [sortingInner, setSortingInner] = useState<SortingState>([]);
   const [selectionInner, setSelectionInner] = useState<RowSelectionState>({});
   const [focusRow, setFocusRow] = useState(0);
@@ -225,7 +227,7 @@ function DataTableInner<T>(
           />
         ),
         cell: ({ row }) => {
-          const name = rowName(nameColumn(userColumns), row);
+          const name = rowName(nameColumn(userColumns), row, format);
           return (
             <CheckboxBox
               aria-label={name ? t("dataTable.selectNamed", "Select {name}", { name }) : t("dataTable.selectRow", "Select row")}
@@ -238,7 +240,7 @@ function DataTableInner<T>(
       },
       ...userColumns,
     ];
-  }, [userColumns, selectable, t]);
+  }, [userColumns, selectable, t, format]);
 
   const table = useReactTable({
     data,
@@ -567,7 +569,7 @@ function DataTableInner<T>(
         const meta = cell.column.columnDef.meta;
         const content = flexRender(cell.column.columnDef.cell, cell.getContext());
         const raw = cell.getValue();
-        const text = meta?.text ? meta.text(row.original) : typeof raw === "string" ? raw : undefined;
+        const text = meta?.text ? meta.text(row.original, format) : typeof raw === "string" ? raw : undefined;
         const tone = meta?.tone?.(row.original);
         return (
           <div

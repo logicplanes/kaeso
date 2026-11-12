@@ -1,7 +1,6 @@
 import { forwardRef, type ReactNode } from "react";
 import { cn } from "../../utils/cn.js";
 import { icons } from "../../icons/vocabulary.js";
-import { formatNumber, formatTokens } from "../../format/index.js";
 import { Icon, type IconData } from "../icon/icon.js";
 import { Badge } from "../badge/badge.js";
 import { Meter } from "../meter/meter.js";
@@ -9,7 +8,7 @@ import { Text } from "../text/text.js";
 import { Swatch, TOKEN_KIND_ORDER, tokenKindColor, tokenKindLabel, type TokenKind } from "../charts/core.js";
 import { edgeColor } from "../charts/marks.js";
 import { Tooltip } from "../tooltip/tooltip.js";
-import { useUiText } from "../../i18n/context.js";
+import { useUiText, useFormatters } from "../../i18n/context.js";
 
 export const KAESO_USAGE_VARIANTS = {
   limit: {
@@ -27,6 +26,7 @@ export const KAESO_USAGE_BREAKDOWN_DEFAULT_VARIANTS = {} as const;
 export const UsageBreakdown = forwardRef<HTMLDivElement, { tokens: Partial<Record<TokenKind, number>>; className?: string | undefined }>(
   function UsageBreakdown({ tokens, className }, ref) {
     const t = useUiText();
+    const { formatNumber, formatTokens } = useFormatters();
     const kinds = ORDER.filter((k) => (tokens[k] ?? 0) > 0);
     const total = kinds.reduce((a, k) => a + (tokens[k] ?? 0), 0) || 1;
     return (

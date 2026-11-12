@@ -85,7 +85,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
 5. **Ein primärer Button pro Ansicht.** Alles andere ist secondary oder ghost.
 6. **Keine dekorativen Karten und keine dekorativen Symbole.** Inhalt sitzt auf dem Panel; leere Zustände und Dialoge tragen Worte.
 7. **Farbe nur für Daten und Status**, und ein Status hat immer ein Wort.
-8. **Die Formatierer verwenden** aus `@logicplanes/kaeso-ui/format` für Geld, Tokens, Dauern und Daten. Geld bleibt eine exakte Dezimalzeichenkette.
+8. **Die Formatierer verwenden** für Geld, Tokens, Dauern und Daten: `useFormatters()` in Komponenten, damit sie auch auf dem Server dem nächsten `LocaleProvider` folgen; `@logicplanes/kaeso-ui/format` außerhalb von React. Geld bleibt eine exakte Dezimalzeichenkette.
 9. **Das Symbolvokabular verwenden**: `icons.key`, `icons.model`, nie ein Symbol, das nach Aussehen gewählt wurde.
 10. **Texte folgen der Stimme**: Satzanfang groß, auf Buttons zuerst das Verb, keine Ausrufezeichen oder Emoji, Fehler, die sagen, was als Nächstes zu tun ist.
 11. **Raum lassen.** Das Panel atmen lassen: Die Komponenten bringen ihre eigenen Abstände mit, also Ansichten nicht mit zusätzlichen Hüllen, Rahmen oder Überschriften füllen. Weniger Elemente, jedes klar.

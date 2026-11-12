@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import {
+  createFormatters,
   formatBytes,
   formatContext,
   formatDate,
@@ -228,5 +229,30 @@ describe("the format time zone", () => {
     expect(formatDate(at, { time: true, utc: true })).toBe("31 Dec 2026, 23:30 UTC");
     setFormatTimeZone("Mars/Olympus");
     expect(formatTimeZone()).toBeUndefined();
+  });
+});
+
+describe("formatters bound to a language", () => {
+  const at = new Date("2026-12-31T23:30:00Z");
+  afterEach(() => setFormatTimeZone(undefined));
+
+  it("write in their own language whatever the plain formatters are set to", () => {
+    const de = createFormatters({ locale: "de", messages: { "format.minutesAgo": "vor {count} Min." } });
+    const zh = createFormatters({ locale: "zh-CN", messages: { "format.minutesAgo": "{count} 分钟前" } });
+    setFormatLocale("zh-CN");
+    expect(de.locale).toBe("de");
+    expect(de.formatRelative(at.getTime() - 5 * 60_000, at)).toBe("vor 5 Min.");
+    expect(de.formatPrice("0.075")).toBe("0,075\u00a0$");
+    expect(zh.formatRelative(at.getTime() - 5 * 60_000, at)).toBe("5 分钟前");
+    setFormatLocale("en");
+    expect(zh.formatTokens(2_890_000)).toBe("289万");
+    expect(formatRelative(at.getTime() - 5 * 60_000, at)).toBe("5 min ago");
+  });
+
+  it("take their own zone, or the page's zone without one", () => {
+    setFormatTimeZone("America/New_York");
+    expect(createFormatters({ locale: "en", timeZone: "Asia/Tokyo" }).formatDate(at, { time: true })).toBe("1 Jan 2027, 08:30");
+    expect(createFormatters({ locale: "en" }).formatDate(at, { time: true })).toBe("31 Dec 2026, 18:30");
+    expect(createFormatters({ locale: "en", timeZone: "Mars/Olympus" }).formatDate(at, { time: true })).toBe("31 Dec 2026, 18:30");
   });
 });

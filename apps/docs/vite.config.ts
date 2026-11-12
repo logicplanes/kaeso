@@ -187,7 +187,6 @@ export default defineConfig({
       "@tanstack/react-router",
       "@logicplanes/kaeso-ui",
       "@logicplanes/kaeso-ui/i18n",
-      "@logicplanes/kaeso-ui/format",
       "@logicplanes/kaeso-ui/toast",
       "@logicplanes/kaeso-ui/command-palette",
     ],

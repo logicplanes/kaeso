@@ -227,7 +227,8 @@ root.render(
 - 没有 `LocaleProvider` 时，一切都是英语。
 - `resolveUiLocale` 把 BCP 47 标签映射到已提供的语言：`de-AT` 是 `de`，`zh-Hans` 是 `zh-CN`，其他都是 `en`。`loadUiMessages` 对英语返回 `{}`，不加载任何内容。
 - 要切换语言，先加载新的文案目录，再同时用新语言和新目录渲染 provider；在新目录到达之前，保留旧的一对。
-- provider 还会设置格式化函数（`formatNumber`、`formatDate`、`formatRelative`、`formatUSD` 等）的语言，这些都是普通函数；`setFormatLocale(locale, messages)` 在 React 之外做同样的事。应用自己的文本使用它自己的文案目录，`formatMessage(template, values, locale)` 以同样的方式格式化 ICU 消息。
+- 在组件中，从 `useFormatters()` 获取格式化函数：`const { formatDate, formatUSD } = useFormatters()` 使用最近的 provider 的语言，因此同时渲染多个请求的服务器会按各自的语言格式化每个请求。在 React 之外，`createFormatters({ locale, messages })` 将它们绑定到一种语言。
+- 普通函数（`formatNumber`、`formatDate`、`formatRelative`、`formatUSD` 等）在整个页面共用一种语言：在浏览器中由 provider 设置，`setFormatLocale(locale, messages)` 在 React 之外设置。在服务器上 provider 不会改动它，因此服务端渲染的组件使用 `useFormatters`。应用自己的文本使用它自己的文案目录，`formatMessage(template, values, locale)` 以同样的方式格式化 ICU 消息。
 
 ## 展示站点
 

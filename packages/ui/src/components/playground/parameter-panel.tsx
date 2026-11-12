@@ -1,7 +1,6 @@
 import { forwardRef, type ReactElement } from "react";
 import { cn } from "../../utils/cn.js";
 import { icons } from "../../icons/vocabulary.js";
-import { formatNumber } from "../../format/index.js";
 import { Button } from "../button/button.js";
 import { Input } from "../input/input.js";
 import { NumberInput } from "../input/number-input.js";
@@ -10,7 +9,7 @@ import { Popover } from "../popover/popover.js";
 import { Segmented } from "../segmented/segmented.js";
 import { Select } from "../select/select.js";
 import { Slider } from "../slider/slider.js";
-import { useUiText, type UiText } from "../../i18n/context.js";
+import { useUiText, type UiText, useFormatters } from "../../i18n/context.js";
 
 export const KAESO_PARAMETER_PANEL_VARIANTS = {
   layout: {
@@ -128,6 +127,7 @@ function SliderRow({
   onChange: (v: number) => void;
 }) {
   const t = useUiText();
+  const { formatNumber } = useFormatters();
   const shown = formatNumber(value, { minimumFractionDigits: digits, maximumFractionDigits: digits });
   return (
     <div className="flex flex-col gap-8">
@@ -174,6 +174,7 @@ const PanelBody = forwardRef<HTMLDivElement, PanelBodyProps>(function PanelBody(
   ref,
 ) {
   const t = useUiText();
+  const { formatNumber } = useFormatters();
   const set = (patch: Partial<PlaygroundParameters>) => onValueChange({ ...value, ...patch });
   const all = efforts(t);
   const shownEfforts = reasoning === true ? all : Array.isArray(reasoning) ? all.filter((e) => reasoning.includes(e.value)) : [];

@@ -8,10 +8,10 @@ import { Icon } from "../icon/icon.js";
 import { Spinner, useDelayedLoading } from "../loader/loader.js";
 import { icons } from "../../icons/vocabulary.js";
 import { PopoverRoot, PopoverTrigger } from "../popover/popover-root.js";
-import { dateFormatter, formatDateRange } from "../../format/index.js";
+import type { Formatters } from "../../format/index.js";
 import { lazyModule, preload, type LazyModule } from "../../utils/lazy-module.js";
 import { whenIdle } from "../../utils/when-idle.js";
-import { englishText, useUiText, type UiText } from "../../i18n/context.js";
+import { englishText, useUiText, type UiText, useFormatters } from "../../i18n/context.js";
 import { joinIds, useHiddenDescription } from "../../utils/hidden-description.js";
 
 export const KAESO_DATE_PICKER_VARIANTS = {
@@ -24,7 +24,7 @@ export const KAESO_DATE_PICKER_VARIANTS = {
 export const KAESO_DATE_PICKER_DEFAULT_VARIANTS = { size: "md" } as const;
 
 // The calendar picks the viewer's local midnight, so the day is named in the viewer's zone, not the format zone formatDate uses.
-const formatPickedDay = (day: Date) => dateFormatter({ day: "numeric", month: "short", year: "numeric" })(day);
+const formatPickedDay = (day: Date, { dateFormatter }: Formatters) => dateFormatter({ day: "numeric", month: "short", year: "numeric" })(day);
 
 const datePopup = lazyModule(() => import("./date-popup.js"), { base: () => import.meta.url });
 const rangePopup = lazyModule(() => import("./range-popup.js"), { base: () => import.meta.url });
@@ -224,6 +224,7 @@ export const DatePicker = forwardRef<HTMLDivElement, DatePickerProps>(function D
   const field = useField();
   const fc = useFieldControl(props);
   const t = useUiText();
+  const f = useFormatters();
   const naming = { ...(ariaLabel ? { "aria-label": ariaLabel } : {}), ...(ariaLabelledBy ? { "aria-labelledby": ariaLabelledBy } : {}) };
   const labelled = !!(label || field);
   const [date, setDate] = useControllable<Date | null>(value, defaultValue, onValueChange);
@@ -248,7 +249,7 @@ export const DatePicker = forwardRef<HTMLDivElement, DatePickerProps>(function D
             labelled={labelled}
             {...naming}
           >
-            {date ? formatPickedDay(date) : (placeholder ?? t("datePicker.chooseDate", "Choose a date"))}
+            {date ? formatPickedDay(date, f) : (placeholder ?? t("datePicker.chooseDate", "Choose a date"))}
           </TriggerButton>
         </PopoverTrigger>
         {DatePopup && <DatePopup date={date} onDateChange={setDate} onClose={() => setOpen(false)} weekStartsOn={weekStartsOn} disabledDays={disabledDays} />}
@@ -333,6 +334,7 @@ export const DateRangePicker = forwardRef<HTMLDivElement, DateRangePickerProps>(
   const field = useField();
   const fc = useFieldControl(props);
   const t = useUiText();
+  const f = useFormatters();
   const defaults = useMemo(() => rangePresets(t), [t]);
   const presets = presetsProp ?? defaults;
   const naming = { ...(ariaLabel ? { "aria-label": ariaLabel } : {}), ...(ariaLabelledBy ? { "aria-labelledby": ariaLabelledBy } : {}) };
@@ -357,9 +359,9 @@ export const DateRangePicker = forwardRef<HTMLDivElement, DateRangePickerProps>(
   const display =
     presetName ??
     (range?.from && range.to
-      ? formatDateRange(range.from, range.to)
+      ? f.formatDateRange(range.from, range.to)
       : range?.from
-        ? formatPickedDay(range.from)
+        ? formatPickedDay(range.from, f)
         : (placeholder ?? t("datePicker.chooseRange", "Choose a date range")));
   const control = (
     <div ref={ref} className={cn("inline-flex", !(label || description || error) && className)}>

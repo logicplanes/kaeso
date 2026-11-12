@@ -1,6 +1,5 @@
 import { BarChart, tokenKindColor, tokenKindLabel } from "@logicplanes/kaeso-ui";
-import { formatTokens, formatUSD } from "@logicplanes/kaeso-ui/format";
-import { useLocale, useUiText } from "@logicplanes/kaeso-ui/i18n";
+import { useLocale, useUiText, useFormatters } from "@logicplanes/kaeso-ui/i18n";
 import { StateSection } from "~/lib/states";
 import { AsTable, Labelled } from "~/lib/chart-states";
 
@@ -70,6 +69,7 @@ export const examples = [
   { id: "months", title: "Months across a year", fn: "Months", minHeight: 300 },
 ];
 export function Stacked() {
+  const { formatTokens } = useFormatters();
   const series = useSeries();
   return (
     <div className="w-full">
@@ -78,6 +78,7 @@ export function Stacked() {
   );
 }
 export function Grouped() {
+  const { formatTokens } = useFormatters();
   const series = useSeries();
   return (
     <div className="w-full">
@@ -86,6 +87,7 @@ export function Grouped() {
   );
 }
 export function Ranking() {
+  const spend = useSpend();
   return (
     <div className="w-full">
       <BarChart
@@ -94,12 +96,13 @@ export function Ranking() {
         height={200}
         categories={["checkout-web", "checkout-worker", "ci-runner", "staging"]}
         series={[{ id: "spend", label: "Spend", color: "var(--k-viz-1)", values: [84.2, 51.9, 12.4, 3.1] }]}
-        formatValue={(v) => formatUSD(v.toFixed(2))}
+        formatValue={spend}
       />
     </div>
   );
 }
 export function Months() {
+  const { formatTokens } = useFormatters();
   const { months, monthAxis } = useAxes();
   const monthTokens = useInputTokens(monthValues);
   return (
@@ -119,9 +122,14 @@ const week = ["Oct 6", "Oct 7", "Oct 8", "Oct 9", "Oct 10", "Oct 11", "Oct 12"];
 const net = [{ id: "credits", label: "Credit balance change", color: "var(--k-viz-1)", values: [12.4, 8.1, -3, -6.5, 4.2, 9.8, 2.1] }];
 const zeros = [{ id: "requests", label: "Requests", values: week.map(() => 0) }];
 const keyNames = ["checkout-web-production-eu-west", "checkout-worker", "claude-sonnet-4-5-20250929", "staging"];
-const spend = (v: number) => formatUSD(v.toFixed(2));
+function useSpend() {
+  const { formatUSD } = useFormatters();
+  return (v: number) => formatUSD(v.toFixed(2));
+}
 
 export function States() {
+  const { formatTokens } = useFormatters();
+  const spend = useSpend();
   const { months, monthAxis, weeks, weekAxis } = useAxes();
   const series = useSeries();
   const monthTokens = useInputTokens(monthValues);

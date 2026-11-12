@@ -1,7 +1,6 @@
 import { forwardRef, useCallback, useMemo, useState, type ReactNode } from "react";
-import { useLocale, useUiText } from "../../i18n/context.js";
+import { useLocale, useUiText, useFormatters } from "../../i18n/context.js";
 import { cn } from "../../utils/cn.js";
-import { formatContext, formatNumber } from "../../format/index.js";
 import { CommandList, type CommandListGroup, type CommandListItem } from "../command-list/command-list.js";
 import { PickerPopover, PickerTrigger } from "../command-list/picker-popover.js";
 import { Highlight } from "../combobox/combobox.js";
@@ -76,6 +75,7 @@ const ALL = "";
 const ALL_PROVIDERS = "*";
 
 function ModelRow({ option, query, providerLabel }: { option: ModelPickerOption; query: string; providerLabel?: string | undefined }) {
+  const { formatContext } = useFormatters();
   const model = option.model ?? option.value;
   const details = [option.context ? formatContext(option.context) : "", option.price ?? ""].filter(Boolean).join(" · ");
   return (
@@ -186,6 +186,7 @@ export const ModelPicker = forwardRef<HTMLButtonElement, ModelPickerProps>(funct
     layout,
   } = props;
   const t = useUiText();
+  const { formatNumber } = useFormatters();
   const field = useField();
   const fc = useFieldControl(props);
   const [ownOpen, setOwnOpen] = useState(false);

@@ -1,9 +1,9 @@
 import { forwardRef, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { arc as d3arc, pie as d3pie } from "d3-shape";
 import { cn } from "../../utils/cn.js";
-import { formatNumber, formatPercent } from "../../format/index.js";
+import { plainFormatters, type Formatters } from "../../format/index.js";
 import { useLayoutWidth } from "../../hooks/use-layout-width.js";
-import { englishText, useUiText, type UiText } from "../../i18n/context.js";
+import { englishText, useUiText, type UiText, useFormatters } from "../../i18n/context.js";
 import { ChartFrame, Legend, Swatch, seriesColors, useTweened, type ChartState } from "./core.js";
 import { Text } from "../text/text.js";
 import { edgeColor } from "./marks.js";
@@ -41,12 +41,12 @@ export function groupSmall(slices: Slice[], min = 0.02, t: UiText = englishText)
   ];
 }
 
-export function shareLabel(value: number, sum: number, t: UiText = englishText): string {
+export function shareLabel(value: number, sum: number, t: UiText = englishText, { formatPercent }: Formatters = plainFormatters): string {
   const share = sum ? value / sum : 0;
   return share > 0 && share < 0.005 ? t("donut.underOnePercent", "<1%") : formatPercent(share, 0);
 }
 
-export function wholeShares(values: number[], t: UiText = englishText): string[] {
+export function wholeShares(values: number[], t: UiText = englishText, { formatPercent }: Formatters = plainFormatters): string[] {
   const sum = values.reduce((a, v) => a + v, 0);
   if (!sum) return values.map(() => formatPercent(0, 0));
   const exact = values.map((v) => (v / sum) * 100);
@@ -103,8 +103,10 @@ export const Donut = forwardRef<
     "aria-label": string;
     className?: string | undefined;
   } & ChartState
->(function Donut({ slices, size = "md", total, totalLabel, formatValue = (v) => formatNumber(v), className, "aria-label": ariaLabel, ...state }, ref) {
+>(function Donut({ slices, size = "md", total, totalLabel, formatValue: chosenFormat, className, "aria-label": ariaLabel, ...state }, ref) {
   const t = useUiText();
+  const f = useFormatters();
+  const formatValue = chosenFormat ?? f.formatNumber;
   const D = { sm: 140, md: 160, lg: 180 }[size];
   const STROKE = 14;
   const data = capSlices(groupSmall(slices, 0.02, t), t);
@@ -135,10 +137,11 @@ export const Donut = forwardRef<
   const shares = wholeShares(
     data.map((d) => d.value),
     t,
+    f,
   );
   const table = {
     columns: [t("donut.slice", "Slice"), t("donut.value", "Value"), t("donut.share", "Share")],
-    rows: data.map((d) => [d.label, formatValue(d.value), formatPercent(sum ? d.value / sum : 0)]),
+    rows: data.map((d) => [d.label, formatValue(d.value), f.formatPercent(sum ? d.value / sum : 0)]),
   };
   const box = useRef<HTMLDivElement | null>(null);
   const width = useLayoutWidth(box);
@@ -220,14 +223,17 @@ export const ShareBar = forwardRef<
     "aria-label": string;
     className?: string | undefined;
   }
->(function ShareBar({ slices, formatValue = (v) => formatNumber(v), legend = true, className, "aria-label": ariaLabel }, ref) {
+>(function ShareBar({ slices, formatValue: chosenFormat, legend = true, className, "aria-label": ariaLabel }, ref) {
   const t = useUiText();
+  const f = useFormatters();
+  const formatValue = chosenFormat ?? f.formatNumber;
   const sum = slices.reduce((a, s) => a + s.value, 0) || 1;
   const palette = seriesColors(slices.map((s) => s.id));
   const color = (s: Slice) => s.color ?? palette.get(s.id)!;
   const shares = wholeShares(
     slices.map((s) => s.value),
     t,
+    f,
   );
   return (
     <div ref={ref} className={cn("flex flex-col gap-12", className)}>

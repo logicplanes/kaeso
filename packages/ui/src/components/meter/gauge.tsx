@@ -1,8 +1,7 @@
 import { forwardRef, type ReactNode } from "react";
 import { cn } from "../../utils/cn.js";
-import { formatPercent } from "../../format/index.js";
 import { useTweened } from "../charts/core.js";
-import { useUiText } from "../../i18n/context.js";
+import { useUiText, useFormatters } from "../../i18n/context.js";
 
 export const MeterGauge = forwardRef<
   HTMLDivElement,
@@ -16,6 +15,7 @@ export const MeterGauge = forwardRef<
   }
 >(function MeterGauge({ value, thresholds = [0.8], label, valueLabel, className, "aria-label": ariaLabel }, ref) {
   const t = useUiText();
+  const { formatPercent } = useFormatters();
   const W = 180;
   const R = 82;
   const known = Number.isFinite(value);
