@@ -1408,3 +1408,70 @@ fn json_parts_of_another_format_fit_or_become_text() {
         .unwrap();
     assert_eq!(part, json!({"type": "input_json", "data": {"a": 1}}));
 }
+
+#[test]
+fn requests_built_in_code_take_the_same_paths() {
+    let image = || Asset::new(Source::bytes("image/png", png(2, 2)));
+    let mut text = kaeso_kpp::TextBlock::new("Cached");
+    text.cache = Some(kaeso_kpp::CacheHint::default());
+    let req = DecideRequest::new("gpt-6-luna", DecisionInput::Text("x".into()))
+        .with_question(
+            Question::new(None, QuestionKind::Predicate(Predicate::default()))
+                .with_instructions(Instructions::Blocks(vec![
+                    Block::text("See img-1 here"),
+                    Block::Text(text),
+                ])),
+        )
+        .with_question(Question::new(
+            None,
+            QuestionKind::Score(Score::new(vec![
+                Level::new(None, None),
+                Level::new(None, Some(Description::Text("Mid".into()))),
+                Level::new(None, Some(Description::Json(RawJson::from_string(r#"{"a":1}"#.into()).unwrap()))),
+            ])),
+        ))
+        .with_asset("img-1", image());
+    let (enc, c) = encode(&req).unwrap();
+    let sent = body_of(&enc);
+    let parts = sent["questions"][0]["instructions"].as_array().unwrap();
+    let types: Vec<&str> = parts.iter().map(|p| p["type"].as_str().unwrap()).collect();
+    assert_eq!(types, ["input_text", "input_image", "input_text", "input_text"]);
+    assert_eq!(parts[3]["prompt_cache_breakpoint"], json!({"mode": "explicit"}));
+    assert_eq!(sent["questions"][1]["levels"][0], json!({"label": ""}));
+    assert_eq!(sent["questions"][1]["instructions"], "");
+    let reply = Reply::Decide(DecideResponse::new(
+        "gpt-6-luna",
+        vec![
+            Answer::new(AnswerValue::Predicate(PredicateAnswer::new(0.5))),
+            Answer::new(AnswerValue::Score(ScoreAnswer::new(1.0, vec![Some(0.2), Some(0.6), Some(0.2)]))),
+        ],
+    ));
+    let out = reply_to(DialectId::OpenAiDecisions, &reply, &req);
+    let labels: Vec<&str> = out["answers"][1]["probabilities"].as_array().unwrap().iter().map(|p| p["label"].as_str().unwrap()).collect();
+    assert_eq!(labels, ["", "Mid", r#"{"a":1}"#]);
+    assert!(c.adapted.contains(&"criteria".to_owned()));
+
+    let refusal_in_tool = DecideRequest::new("gpt-6-luna", DecisionInput::Messages(vec![Message::new(
+        Role::User,
+        vec![Block::ToolResult(ToolResultBlock::new("c", vec![Block::Refusal(kaeso_kpp::RefusalBlock::new("no"))]))],
+    )]))
+    .with_question(predicate(None, "?"));
+    let err = encode(&refusal_in_tool).unwrap_err();
+    assert_eq!(err.unsupported_feature(), Some("refusal part"));
+    assert!(err.message.contains("a tool output"), "{}", err.message);
+}
+
+#[test]
+fn usage_keeps_the_fields_openai_adds() {
+    let req = decode(&fixture("requests", "predicate"));
+    let (_, c) = encode(&req).unwrap();
+    let body = json!({"model": "gpt-6-luna", "answers": [{"type": "predicate", "name": "damaged", "probability": 0.5}],
+        "usage": {"input_tokens": 10, "input_tokens_details": {"cached_tokens": 4, "cache_write_tokens": 0, "x_audio": 1}, "output_tokens": 0, "output_tokens_details": {"reasoning_tokens": 0}, "total_tokens": 10, "x_cost": 0.001}});
+    let reply = OpenAiDecisions::decode_response(200, &HeaderList::new(), &json_body(&body), &c).unwrap();
+    let out = OpenAiDecisions::encode_response(&reply, &EncodeCtx::for_request(Request::Decide(req.clone()))).unwrap();
+    assert_json_eq("usage", &json_body(&body), &out);
+    let bare = json!({"model": "gpt-6-luna", "answers": [{"type": "predicate", "name": "damaged", "probability": 0.5}]});
+    let reply = OpenAiDecisions::decode_response(200, &HeaderList::new(), &json_body(&bare), &c).unwrap();
+    let out = OpenAiDecisions::encode_response(&reply, &EncodeCtx::for_request(Request::Decide(req))).unwrap();
+    assert_json_eq("no usage", &json_body(&bare), &out);
+}
