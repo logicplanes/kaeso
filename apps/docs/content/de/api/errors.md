@@ -196,7 +196,7 @@ from google.genai import errors
 
 client = genai.Client(
     api_key=os.environ["KAESO_API_KEY"],
-    http_options={"base_url": "https://kaeso.example.com"},
+    http_options={"base_url": "https://kaeso.example.com", "api_version": "v1beta"},
 )
 
 try:
@@ -214,7 +214,7 @@ import { ApiError, GoogleGenAI } from "@google/genai";
 
 const ai = new GoogleGenAI({
   apiKey: process.env.KAESO_API_KEY,
-  httpOptions: { baseUrl: "https://kaeso.example.com" },
+  httpOptions: { baseUrl: "https://kaeso.example.com", apiVersion: "v1beta" },
 });
 
 try {

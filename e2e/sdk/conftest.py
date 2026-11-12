@@ -222,7 +222,9 @@ def an(install: Install) -> anthropic.Anthropic:
 def gg(install: Install) -> genai.Client:
     return genai.Client(
         api_key=install.key,
-        http_options=types.HttpOptions(base_url=install.url, retry_options=types.HttpRetryOptions(attempts=1)),
+        http_options=types.HttpOptions(
+            base_url=install.url, api_version="v1beta", retry_options=types.HttpRetryOptions(attempts=1)
+        ),
     )
 
 

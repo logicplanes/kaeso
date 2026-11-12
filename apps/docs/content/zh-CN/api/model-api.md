@@ -121,7 +121,7 @@ from google import genai
 
 client = genai.Client(
     api_key=os.environ["KAESO_API_KEY"],
-    http_options={"base_url": "https://kaeso.example.com"},
+    http_options={"base_url": "https://kaeso.example.com", "api_version": "v1beta"},
 )
 
 response = client.models.generate_content(
@@ -136,7 +136,7 @@ import { GoogleGenAI } from "@google/genai";
 
 const ai = new GoogleGenAI({
   apiKey: process.env.KAESO_API_KEY,
-  httpOptions: { baseUrl: "https://kaeso.example.com" },
+  httpOptions: { baseUrl: "https://kaeso.example.com", apiVersion: "v1beta" },
 });
 
 const response = await ai.models.generateContent({

@@ -170,7 +170,9 @@ def test_models(gg: genai.Client):
 def test_errors_are_in_geminis_shape(install, gg: genai.Client):
     stranger = genai.Client(
         api_key="sk-kso-not-a-key",
-        http_options=types.HttpOptions(base_url=install.url, retry_options=types.HttpRetryOptions(attempts=1)),
+        http_options=types.HttpOptions(
+            base_url=install.url, api_version="v1beta", retry_options=types.HttpRetryOptions(attempts=1)
+        ),
     )
     with pytest.raises(errors.ClientError) as e:
         stranger.models.generate_content(model="claude-haiku-4-5", contents="Hello")
