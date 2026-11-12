@@ -388,4 +388,4 @@ Quellen: Vercels Seiten zur [OpenAI Responses API](https://vercel.com/docs/ai-ga
 | `reasoning`-Items mit `content` (`reasoning_text`) und ohne `encrypted_content` | wie bei OpenAI | Die Modelle von OpenAI fügen `encrypted_content` hinzu, wenn die Anfrage danach fragt (`responses/recorded-gpt-reasoning-encrypted`). |
 | `provider_metadata` an der Antwort, `usage.input_tokens_details.cache_write_tokens` | Extras, `raw` der Nutzung | Wie bei Chat Completions. |
 | `POST /v1/responses/input_tokens` | — | Vercel antwortet mit 404, und Kaeso lehnt die Token-Zählung für Vercel-Modelle ab, bevor etwas gesendet wird. |
-| Fehler | `KppError` | OpenAIs Hülle mit Vercels eigenem `type`, wie bei [Chat Completions](openai-chat-providers.md#vercel). |
+| Fehler | `KppError` | OpenAIs Hülle mit Vercels eigenem `type`, wie bei [Chat Completions](openai-chat-gateways.md#vercel). |

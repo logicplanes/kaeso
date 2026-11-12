@@ -388,4 +388,4 @@ order: 7
 | 带 `content`（`reasoning_text`）、不带 `encrypted_content` 的 `reasoning` 项 | 与 OpenAI 相同 | 请求要求时，OpenAI 的模型会加上 `encrypted_content`（`responses/recorded-gpt-reasoning-encrypted`）。 |
 | 回复中的 `provider_metadata`、`usage.input_tokens_details.cache_write_tokens` | extras、用量的 `raw` | 与 Chat Completions 相同。 |
 | `POST /v1/responses/input_tokens` | — | Vercel 返回 404，Kaeso 在发送任何内容之前就拒绝为 Vercel 模型计数 Token。 |
-| 错误 | `KppError` | OpenAI 的错误结构，带 Vercel 自己的 `type`，与 [Chat Completions](openai-chat-providers.md#vercel) 相同。 |
+| 错误 | `KppError` | OpenAI 的错误结构，带 Vercel 自己的 `type`，与 [Chat Completions](openai-chat-gateways.md#vercel) 相同。 |

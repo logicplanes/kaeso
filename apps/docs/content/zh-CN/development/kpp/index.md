@@ -276,6 +276,7 @@ OpenAI Responses 把不同的写法记录为形式覆盖项，只在值未改变
 - [OpenAI Chat Completions](openai-chat.md)：查找 Chat Completions 格式的每个字段在 KPP 中的位置。
 - [Chat Completions 服务商](openai-chat-providers.md)：了解编解码器如何适配使用 Chat Completions 的每个服务商。
 - [Chat Completions 推理云](openai-chat-inference-clouds.md)：了解托管开放模型的推理云为 Chat Completions 增加了什么。
+- [Chat Completions 网关](openai-chat-gateways.md)：了解把请求转发给其他服务商的网关和路由器为 Chat Completions 增加了什么。
 - [OpenAI Responses](openai-responses.md)：查找 Responses 格式的每个字段在 KPP 中的位置。
 - [OpenAI Embeddings](openai-embeddings.md)：查找 Embeddings 格式的每个字段在 KPP 中的位置。
 - [Gemini API](gemini.md)：查找 Gemini API 的每个字段在 KPP 中的位置，包括嵌入。
