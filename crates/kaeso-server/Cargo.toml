@@ -57,6 +57,8 @@ metrics-exporter-prometheus.workspace = true
 tracing-subscriber.workspace = true
 base64.workspace = true
 http-body-util.workspace = true
+flate2.workspace = true
+ruzstd.workspace = true
 
 [lints]
 workspace = true

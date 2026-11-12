@@ -37,6 +37,8 @@ reqwest = { version = "0.13", default-features = false, features = ["rustls", "s
 futures = "0.3"
 tokio-util = { version = "0.7", features = ["io", "rt"] }
 bytes = "1.12"
+flate2 = "1.1.10"
+ruzstd = "0.9.1"
 
 sqlx = { version = "0.9", default-features = false, features = ["postgres", "runtime-tokio", "tls-rustls", "uuid", "time", "rust_decimal", "json", "migrate", "macros", "ipnet"] }
 clickhouse = { version = "0.15", default-features = false, features = ["uuid", "time", "lz4", "rustls-tls"] }

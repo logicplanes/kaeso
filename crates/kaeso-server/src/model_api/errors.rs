@@ -130,8 +130,12 @@ pub fn respond(dialect: DialectId, err: &KppError, served: &Served) -> Response 
         None => dispatch::encode_error(dialect, err),
     };
     let mut resp = Response::new(Body::from(encoded.body));
-    *resp.status_mut() =
-        StatusCode::from_u16(encoded.status).unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
+    // The codecs choose a status by the error's kind, and no kind means 415: the gateway's own
+    // refusal of a content encoding keeps it, as a refused method keeps 405.
+    *resp.status_mut() = match err.status {
+        Some(415) if err.origin.is_none() => StatusCode::UNSUPPORTED_MEDIA_TYPE,
+        _ => StatusCode::from_u16(encoded.status).unwrap_or(StatusCode::INTERNAL_SERVER_ERROR),
+    };
     for (name, value) in encoded.headers.iter() {
         if let (Ok(n), Ok(v)) = (
             HeaderName::from_bytes(name.as_bytes()),

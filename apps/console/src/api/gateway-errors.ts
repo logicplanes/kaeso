@@ -967,6 +967,20 @@ const messages = (): Rule[] => [
   rule("errors.modelApi.bodyTimeout", () => t("errors.modelApi.bodyTimeout", "The request body did not arrive in time; send it again.")),
   rule("errors.modelApi.bodyBrokeOff", () => t("errors.modelApi.bodyBrokeOff", "The request body broke off before it was complete; send it again.")),
   rule("errors.modelApi.bodyTooLarge", (v) => t("errors.modelApi.bodyTooLarge", "The request body is larger than {limit} bytes.", v), { limit: "number" }),
+  rule(
+    "errors.modelApi.bodyTooLargeDecoded",
+    (v) => t("errors.modelApi.bodyTooLargeDecoded", "The request body is larger than {limit} bytes once decoded.", v),
+    { limit: "number" },
+  ),
+  rule("errors.modelApi.bodyNotDecodable", (v) =>
+    t("errors.modelApi.bodyNotDecodable", "The request body is not valid `{encoding}`; check its `Content-Encoding`.", v),
+  ),
+  rule("errors.modelApi.contentEncoding", (v) =>
+    t("errors.modelApi.contentEncoding", "Kaeso reads request bodies sent as `gzip` or `zstd`, not `{encoding}`.", v),
+  ),
+  rule("errors.modelApi.contentEncodings", (v) =>
+    t("errors.modelApi.contentEncodings", "Kaeso reads request bodies with one content encoding, not `{encodings}`.", v),
+  ),
   rule("errors.modelApi.streamOnly", () => t("errors.modelApi.streamOnly", "Only streamed requests are served here; send `stream: true`.")),
   rule("errors.modelApi.providerUnavailable", (v) => t("errors.modelApi.providerUnavailable", "The provider `{provider}` is not available.", v)),
   rule("errors.modelApi.customUnreachable", (v) =>
