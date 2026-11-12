@@ -844,7 +844,7 @@
   "`text` for long code in running text, so it breaks with the sentence instead of jumping to its own line as one box; `cell` for the same in a table cell.": "`text` 用于正文中的长代码，使其随句子换行，而不是作为一个整体跳到单独的一行；`cell` 用于表格单元格中的同类代码。",
   "A diagram in both themes": "两种主题下的图示",
   "Wraps on phones": "在手机上换行",
-  "Long lines wrap instead of scrolling sideways: code in a narrow column (a model's response). `phone` wraps them only below 640px, with wrapped parts indented, and scrolls from there up.": "长行换行显示，而不是横向滚动：用于窄栏中的代码（模型的回复）。`phone` 只在 640px 以下换行，续行缩进，更宽时仍横向滚动。",
+  "Long lines wrap instead of scrolling sideways: code in a narrow column (a model's response). They break at spaces, never inside a flag or a name unless it is wider than the line. `phone` wraps them only below 640px, with wrapped parts indented, and scrolls from there up.": "长行换行显示，而不是横向滚动：用于窄栏中的代码（模型的回复）。只在空格处换行，不会在参数或名称中间断开，除非它比整行还宽。`phone` 只在 640px 以下换行，续行缩进，更宽时仍横向滚动。",
   "A drawing on a transparent ground made twice, once for each theme, such as a diagram: it follows the theme setting, not only the system's, prints the light one and has no outline.": "在透明背景上绘制两次的图，每种主题一张，例如图示：它跟随主题设置而不仅仅是系统设置，打印时使用浅色那张，且没有轮廓线。",
   "The id of a longer description, such as a diagram's text alternative.": "较长描述的 id，例如图示的文本替代。",
   "The image's address for the dark theme.": "深色主题下图片的地址。",

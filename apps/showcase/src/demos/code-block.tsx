@@ -158,6 +158,13 @@ export function States() {
           />
         </div>
       </StateSection>
+      <StateSection title="Wraps at 320px between words, never inside a flag; a word wider than the line wraps inside itself">
+        <div className="flex w-320 max-w-full flex-col gap-24">
+          <CodeBlock lang="bash" wrap code="docker compose -f deploy/compose.yaml up -d --wait --force-recreate kaeso-gateway kaeso-console" />
+          <CodeBlock lang="text" wrap code="docker compose -f deploy/compose.yaml up -d --wait --force-recreate kaeso-gateway kaeso-console" />
+          <CodeBlock lang="bash" wrap code="curl https://kaeso.example.com/v1/projects/proj_01JC8Z3V5N2M4K7Q9R6T/models/claude-haiku-4-5/routes" />
+        </div>
+      </StateSection>
     </>
   );
 }

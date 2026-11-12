@@ -16,7 +16,7 @@ export const docs = {
       tab: "The label of the tab to show, such as a language the reader chose before. A label the block lacks leaves its own choice.",
       tabs: 'Several versions: "Python · Node · curl", shown as pill tabs.',
       title: "A file name in the title bar.",
-      wrap: "Long lines wrap instead of scrolling sideways: code in a narrow column (a model's response). `phone` wraps them only below 640px, with wrapped parts indented, and scrolls from there up.",
+      wrap: "Long lines wrap instead of scrolling sideways: code in a narrow column (a model's response). They break at spaces, never inside a flag or a name unless it is wider than the line. `phone` wraps them only below 640px, with wrapped parts indented, and scrolls from there up.",
     },
   },
   DiffView: {
