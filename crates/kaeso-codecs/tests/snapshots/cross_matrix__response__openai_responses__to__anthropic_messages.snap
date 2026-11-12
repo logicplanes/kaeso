@@ -196,6 +196,65 @@ expression: outcomes
       }
     }
   },
+  "providers/cloudflare-ai-gateway/recorded-text-input-string": {
+    "content": [
+      {
+        "signature": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6Im9wZW5haV9yZXNwb25zZXMifSwidGV4dCI6WyJUaGUgdXNlcjogXCJUZWxsIG1lIGEgdGhyZWUgc2VudGVuY2UgYmVkdGltZSBzdG9yeSBhYm91dCBhIHVuaWNvcm4uXCIgTmVlZCB0byBnaXZlIGV4YWN0bHkgdGhyZWUgc2VudGVuY2VzLCBhYm91dCBhIHVuaWNvcm4sIGJlZHRpbWUgc3Rvcnkgc3R5bGUuIFNob3VsZCBiZSB3aGltc2ljYWwsIHNvb3RoaW5nLiBMaWtlbHkgMyBzZW50ZW5jZXMgaW4gdG90YWwsIGJ1dCBjb3VsZCBiZSBsb25nLiBLZWVwIHRvIGJlZHRpbWUgdG9uZS4gU28gcHJvZHVjZSAzIHNlbnRlbmNlcy4gRW5zdXJlIGl0J3MgYSBzdG9yeS4gRW5zdXJlIG5vdCB0byBhZGQgYWRkaXRpb25hbCBjb21tZW50YXJ5IG91dHNpZGUgdGhvc2Ugc2VudGVuY2VzLiBJIGd1ZXNzIGp1c3QgZ2l2ZSB0aGUgMyBzZW50ZW5jZXMgaW4gYSBwYXJhZ3JhcGggb3Igc2VwYXJhdGVkIHNlbnRlbmNlcy4gV2UgbmVlZCB0byBlbnN1cmUgdGhlcmUncyBubyBleHRyYSBjb250ZW50IGJleW9uZCB0aGUgc3RvcnkuIFNob3VsZG4ndCBtZW50aW9uIGluc3RydWN0aW9uLiBTdHJhaWdodCB0byBzdG9yeS4gVXNlIHBvZXRpYyBsYW5ndWFnZSwgZXhhY3RseSAzIHNlbnRlbmNlcy5cblxuT2suIl0sIm9wYXF1ZSI6W3sib3JpZ2luIjp7ImRpYWxlY3QiOiJvcGVuYWlfcmVzcG9uc2VzIn0sImtpbmQiOiJvcGVuYWlfcmVhc29uaW5nX2l0ZW1faWQiLCJkYXRhIjoicnNfMDk0YjM5NzNhNzVmNGM2Nzk4NzI5ZDVlODAzN2U5NDUifV19",
+        "thinking": "The user: \"Tell me a three sentence bedtime story about a unicorn.\" Need to give exactly three sentences, about a unicorn, bedtime story style. Should be whimsical, soothing. Likely 3 sentences in total, but could be long. Keep to bedtime tone. So produce 3 sentences. Ensure it's a story. Ensure not to add additional commentary outside those sentences. I guess just give the 3 sentences in a paragraph or separated sentences. We need to ensure there's no extra content beyond the story. Shouldn't mention instruction. Straight to story. Use poetic language, exactly 3 sentences.\n\nOk.",
+        "type": "thinking"
+      },
+      {
+        "text": "In the glimmering twilight of the Enchanted Meadow, a silver unicorn named Liora drifted to the edge of the moonlit pond, her mane shimmering like stardust. She dipped her hooves into the crystal water, causing tiny silver fireflies to dance around her, each one glowing with a quiet lullaby. As the fireflies faded into the night, Liora spread her wings and softly hummed a song that carried the scent of lavender and sleep, gently cradling every dreaming wanderer into a peaceful night.",
+        "type": "text"
+      }
+    ],
+    "id": "id-1794459197350",
+    "model": "@cf/openai/gpt-oss-20b",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 76,
+      "output_tokens": 241
+    }
+  },
+  "providers/cloudflare-ai-gateway/recorded-tools-function": {
+    "content": [
+      {
+        "signature": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6Im9wZW5haV9yZXNwb25zZXMifSwidGV4dCI6WyJUaGUgdXNlciBhc2tzIGZvciBjdXJyZW50IHdlYXRoZXIgaW4gQm9zdG9uLiBXZSBoYXZlIGEgZnVuY3Rpb24gZ2V0X2N1cnJlbnRfd2VhdGhlci4gU2hvdWxkIGNhbGwgaXQuIl0sIm9wYXF1ZSI6W3sib3JpZ2luIjp7ImRpYWxlY3QiOiJvcGVuYWlfcmVzcG9uc2VzIn0sImtpbmQiOiJvcGVuYWlfcmVhc29uaW5nX2l0ZW1faWQiLCJkYXRhIjoicnNfNzRlZjc5YmM4YzliNDQzN2I3ODgzZTQyMDYzODY1M2YifV19",
+        "thinking": "The user asks for current weather in Boston. We have a function get_current_weather. Should call it.",
+        "type": "thinking"
+      },
+      {
+        "id": "call_7d3e64270cea45c9989cc82947ddd7c9",
+        "input": {
+          "location": "Boston, MA",
+          "unit": "fahrenheit"
+        },
+        "name": "get_current_weather",
+        "type": "tool_use"
+      }
+    ],
+    "id": "id-1794459197946",
+    "model": "@cf/openai/gpt-oss-20b",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "tool_use",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 156,
+      "output_tokens": 53
+    }
+  },
   "providers/vercel/recorded-gpt-reasoning-encrypted": {
     "content": [
       {

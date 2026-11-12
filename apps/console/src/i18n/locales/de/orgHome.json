@@ -330,6 +330,11 @@
   "orgHome.mcp.serverVersion": "{name} {version}",
   "orgHome.project": "Projekt",
   "orgHome.location": "Standort",
+  "orgHome.accountId": "Konto-ID",
+  "orgHome.gateway": "Gateway",
+  "orgHome.defaultGateway": "default",
+  "orgHome.keyRescoped": "{name} geht jetzt über {gateway} von Konto {account}",
+  "orgHome.changeScopeFirst": "Ändern Sie zuerst den Namen, das Konto oder das Gateway",
   "orgHome.keyMoved": "{name} ruft jetzt {location} auf",
   "orgHome.changeFirst": "Zuerst den Namen oder den Standort ändern",
   "orgHome.editKey": "{title} bearbeiten"

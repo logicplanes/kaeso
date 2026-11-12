@@ -27,8 +27,17 @@ pub struct Resolved {
     pub method: AuthMethod,
     pub account: Option<Account>,
     pub google: Option<std::sync::Arc<crate::services::google_auth::ServiceAccount>>,
+    /// The account, and optionally the gateway, a key of a provider whose API path names the
+    /// account calls, such as Cloudflare AI Gateway.
+    pub scope: Option<KeyScope>,
     keyless: bool,
     last_touched: AtomicI64,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct KeyScope {
+    pub account_id: String,
+    pub gateway_id: Option<String>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -69,6 +78,7 @@ impl Resolved {
             method: AuthMethod::ApiKey,
             account: None,
             google: None,
+            scope: None,
             keyless: true,
             last_touched: AtomicI64::new(0),
         }
@@ -383,6 +393,10 @@ fn open(
         method,
         account,
         google,
+        scope: row.account_id.clone().map(|account_id| KeyScope {
+            account_id,
+            gateway_id: row.gateway_id.clone(),
+        }),
         keyless: false,
         last_touched: AtomicI64::new(0),
     })
@@ -436,6 +450,8 @@ mod tests {
             expires_at,
             auth_error: auth_error.map(str::to_owned),
             location: None,
+            account_id: None,
+            gateway_id: None,
         }
     }
 

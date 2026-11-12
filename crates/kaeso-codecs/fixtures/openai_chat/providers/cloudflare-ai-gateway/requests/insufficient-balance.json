@@ -1,0 +1,10 @@
+{
+  "model": "openai/gpt-6-luna",
+  "messages": [
+    {
+      "role": "user",
+      "content": "hi"
+    }
+  ],
+  "max_completion_tokens": 16
+}

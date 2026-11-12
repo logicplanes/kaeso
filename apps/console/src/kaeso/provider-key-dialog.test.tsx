@@ -457,6 +457,56 @@ describe("ProviderKeyDialog", () => {
     ]);
   });
 
+  it("adds a Cloudflare AI Gateway token with the account it calls and, optionally, its gateway", async () => {
+    on(
+      "POST",
+      CREDENTIALS,
+      credential({
+        provider: "cloudflare-ai-gateway",
+        name: "Cloudflare",
+        is_default: true,
+        account_id: "0123456789abcdef0123456789abcdef",
+        gateway_id: "prod-eu",
+      }),
+    );
+    const { user, dialog } = await open();
+    const add = () => within(dialog).getByRole("button", { name: "Add key" });
+
+    await choose(user, dialog, "Cloudflare AI Gateway");
+
+    expect(await within(dialog).findByRole("heading", { name: "Paste your Cloudflare AI Gateway API key" })).toBeVisible();
+    expect(within(dialog).getByRole("link", { name: "Where to find it (opens in a new tab)" })).toHaveAttribute(
+      "href",
+      "https://developers.cloudflare.com/fundamentals/account/find-account-and-zone-ids/",
+    );
+    await user.type(within(dialog).getByLabelText("Cloudflare AI Gateway API key"), "cfut_example-token-0123");
+    await hoverReason(user, add(), "Give the 32-character account ID");
+    const account = within(dialog).getByRole("textbox", { name: "Account ID" });
+    await user.type(account, "1234");
+    expect(within(dialog).getByText("An account ID is 32 characters, 0–9 and a–f.")).toBeVisible();
+    await user.clear(account);
+    await user.type(account, "0123456789ABCDEF0123456789ABCDEF");
+    const gateway = within(dialog).getByRole("textbox", { name: "Gateway (optional)" });
+    await user.type(gateway, "prod eu");
+    await hoverReason(user, add(), "A gateway ID has only letters, digits, hyphens and underscores");
+    await user.clear(gateway);
+    await user.type(gateway, "prod-eu");
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "Cloudflare");
+    await user.click(add());
+
+    expect(await notifications().findByText("Cloudflare is the Cloudflare AI Gateway default")).toBeInTheDocument();
+    expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([
+      {
+        provider: "cloudflare-ai-gateway",
+        name: "Cloudflare",
+        secret: "cfut_example-token-0123",
+        make_default: false,
+        account_id: "0123456789abcdef0123456789abcdef",
+        gateway_id: "prod-eu",
+      },
+    ]);
+  });
+
   it("adds a Scaleway secret key, which has no fixed prefix, with Scaleway's IAM API keys page as its key hint", async () => {
     on("POST", CREDENTIALS, credential({ provider: "scaleway", name: "Scaleway prod", is_default: true }));
     const { user, dialog } = await open();

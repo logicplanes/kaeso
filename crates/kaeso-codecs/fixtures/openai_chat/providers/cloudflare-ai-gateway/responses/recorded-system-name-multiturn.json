@@ -1,0 +1,26 @@
+{
+  "id": "id-1794459119428",
+  "object": "chat.completion",
+  "created": 1794459119,
+  "model": "@cf/deepseek-ai/deepseek-v4.1-flash-1017",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "About 10–12 minutes in boiling water, then transfer to cold water to stop cooking."
+      },
+      "finish_reason": "stop",
+      "logprobs": null
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 62,
+    "completion_tokens": 20,
+    "total_tokens": 82,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "neurons": 3.872727394104004
+  }
+}

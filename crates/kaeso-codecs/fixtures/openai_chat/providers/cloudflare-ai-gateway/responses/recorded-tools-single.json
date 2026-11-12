@@ -1,0 +1,36 @@
+{
+  "id": "id-1794459124535",
+  "object": "chat.completion",
+  "created": 1794459124,
+  "model": "@cf/deepseek-ai/deepseek-v4.1-flash-1017",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "chatcmpl-tool-a0d4b8c05d0ddc30",
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "arguments": "{\"location\": \"Paris, France\", \"unit\": \"celsius\"}"
+            }
+          }
+        ]
+      },
+      "finish_reason": "tool_calls",
+      "logprobs": null
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 346,
+    "completion_tokens": 58,
+    "total_tokens": 404,
+    "prompt_tokens_details": {
+      "cached_tokens": 192
+    },
+    "neurons": 10.631999969482422
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "id": "id-1794459122976",
+  "object": "chat.completion",
+  "created": 1794459122,
+  "model": "@cf/deepseek-ai/deepseek-v4.1-flash-1017",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "**Paris:** 18°C, cloudy.\n\n**Tokyo time:** The time service is temporarily unavailable (503 error), so I can't get the live local time right now. Try me again in a moment — and safe landing tonight."
+      },
+      "finish_reason": "stop",
+      "logprobs": null
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 574,
+    "completion_tokens": 49,
+    "total_tokens": 623,
+    "prompt_tokens_details": {
+      "cached_tokens": 320
+    },
+    "neurons": 12.447272300720215
+  }
+}

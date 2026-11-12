@@ -121,9 +121,11 @@ export const SAME_AS_ENGLISH = new Set([
   "kaeso.audit.jsonLines",
   "kaeso.createKey.limit",
   "kaeso.createKey.limitNumber",
+  "kaeso.providerKey.gatewayId",
   "logs.inspector.microseconds",
   "logs.param.topK",
   "logs.param.topP",
+  "orgHome.defaultGateway",
   "orgHome.mcp.headerValuePlaceholder",
   "project.tools.claudeCode",
 ]);

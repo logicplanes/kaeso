@@ -1,0 +1,35 @@
+{
+  "id": "id-1794458989469",
+  "object": "chat.completion",
+  "created": 1794458989,
+  "model": "@cf/zai-org/glm-4.7-flash",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": null,
+        "refusal": null,
+        "annotations": null,
+        "audio": null,
+        "function_call": null,
+        "tool_calls": [],
+        "reasoning": "1.  **Analyze the Request:** The user wants a list of numbers from 1 to 10.\n2.  **Format:** The numbers must be separated by commas.\n3.  **Content:**\n    *   1\n    *   2\n    *   3\n    *   4\n    *   5\n    *   6\n    *   ",
+        "reasoning_content": "1.  **Analyze the Request:** The user wants a list of numbers from 1 to 10.\n2.  **Format:** The numbers must be separated by commas.\n3.  **Content:**\n    *   1\n    *   2\n    *   3\n    *   4\n    *   5\n    *   6\n    *   "
+      },
+      "logprobs": null,
+      "finish_reason": "stop",
+      "stop_reason": "7",
+      "token_ids": null
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 16,
+    "completion_tokens": 86,
+    "total_tokens": 102,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "neurons": 3.2184000000000004
+  }
+}

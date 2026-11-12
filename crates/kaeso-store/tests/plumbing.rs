@@ -489,6 +489,8 @@ async fn an_account_credential_refreshes_in_place_until_it_is_signed_out() {
         account_label,
         project: None,
         location: None,
+        account_id: None,
+        gateway_id: None,
     };
     let account = uuid::Uuid::now_v7();
     credentials::insert(
@@ -586,6 +588,62 @@ async fn an_account_credential_refreshes_in_place_until_it_is_signed_out() {
             .await
             .unwrap(),
         "only a service account key has a location"
+    );
+
+    let account_id = "0123456789abcdef0123456789abcdef";
+    let scoped = |id, account: Option<&'static str>, gateway: Option<&'static str>| NewCredential {
+        provider: "cloudflare-ai-gateway",
+        last4: "beef",
+        account_id: account,
+        gateway_id: gateway,
+        ..new(id, "api_key", None, None)
+    };
+    let cf = uuid::Uuid::now_v7();
+    credentials::insert(&s.pg, &scoped(cf, Some(account_id), Some("prod-eu")))
+        .await
+        .unwrap();
+    for (account, gateway, why) in [
+        (
+            Some("0123456789ABCDEF0123456789ABCDEF"),
+            None,
+            "an account id is lowercase hex",
+        ),
+        (Some("1234"), None, "an account id is 32 characters"),
+        (
+            Some(account_id),
+            Some("no spaces"),
+            "a gateway id has no spaces",
+        ),
+        (None, Some("prod-eu"), "a gateway belongs to an account"),
+    ] {
+        assert!(
+            credentials::insert(&s.pg, &scoped(uuid::Uuid::now_v7(), account, gateway))
+                .await
+                .is_err(),
+            "{why}"
+        );
+    }
+    let before = credentials::sealed(&s.pg, org, cf).await.unwrap().unwrap();
+    assert_eq!(
+        (before.account_id.as_deref(), before.gateway_id.as_deref()),
+        (Some(account_id), Some("prod-eu"))
+    );
+    assert!(
+        credentials::set_scope(&s.pg, org, cf, account_id, None)
+            .await
+            .unwrap()
+    );
+    let after = credentials::sealed(&s.pg, org, cf).await.unwrap().unwrap();
+    assert_eq!(
+        (after.gateway_id, after.revision),
+        (None, before.revision + 1),
+        "a new gateway is a new revision, so cached keys are read again"
+    );
+    assert!(
+        !credentials::set_scope(&s.pg, org, account, account_id, None)
+            .await
+            .unwrap(),
+        "only a key that names an account moves to another"
     );
 
     let later = now + time::Duration::hours(1);
@@ -770,6 +828,8 @@ async fn a_grok_account_can_lose_its_api_access() {
         account_label: Some("ada@example.com"),
         project: None,
         location: None,
+        account_id: None,
+        gateway_id: None,
     };
     let grok = uuid::Uuid::now_v7();
     credentials::insert(&s.pg, &new(grok, "grok"))

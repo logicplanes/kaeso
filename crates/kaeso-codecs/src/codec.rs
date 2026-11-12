@@ -272,7 +272,9 @@ pub struct EgressCtx {
     /// `/v1/projects/{project}/locations/{location}/publishers/anthropic/models`, or the
     /// directory of `chat/completions` for OpenAI Chat Completions, such as
     /// `/v1/projects/{project}/locations/{location}/endpoints/openapi`, or the directory of
-    /// `interactions` for Gemini Interactions, `/v1beta1/projects/{project}/locations/global`.
+    /// `interactions` for Gemini Interactions, `/v1beta1/projects/{project}/locations/global`,
+    /// or what takes the place of `/v1` for an account's API, such as Cloudflare's
+    /// `/client/v4/accounts/{account_id}/ai/v1` for Chat Completions, Responses and Messages.
     pub base_path: Option<String>,
     /// The audio format the request asked for, which tells a reply decoder the media type of
     /// audio the provider doesn't label, as Chat Completions' `message.audio`. The encoder sets
@@ -496,6 +498,15 @@ impl EncodedError {
             headers,
             body,
         }
+    }
+}
+
+/// A dialect's `/v1/…` path under the context's base path, which takes the place of `/v1`
+/// ([`EgressCtx::base_path`]); the path itself without one.
+pub(crate) fn under_base_path(ctx: &EgressCtx, path: &str) -> String {
+    match (&ctx.base_path, path.strip_prefix("/v1")) {
+        (Some(base), Some(rest)) => format!("{base}{rest}"),
+        _ => path.to_owned(),
     }
 }
 

@@ -1,0 +1,7 @@
+{
+  "type": "error",
+  "error": {
+    "type": "invalid_request_error",
+    "message": "AiError: Anthropic Messages API is not supported for model \"@cf/zai-org/glm-4.7-flash\" (90ea18b1-2c7f-4278-8958-44338769aa94)"
+  }
+}

@@ -763,6 +763,32 @@ expression: outcomes
     },
     "path": "/v1/chat/completions"
   },
+  "providers/cloudflare-ai-gateway/insufficient-balance": {
+    "body": {
+      "max_completion_tokens": 16,
+      "messages": [
+        {
+          "content": "Say OK.",
+          "role": "user"
+        }
+      ],
+      "model": "anthropic/claude-haiku-5.5"
+    },
+    "path": "/v1/chat/completions"
+  },
+  "providers/cloudflare-ai-gateway/workers-ai-model": {
+    "body": {
+      "max_completion_tokens": 20,
+      "messages": [
+        {
+          "content": "Say OK.",
+          "role": "user"
+        }
+      ],
+      "model": "@cf/zai-org/glm-4.7-flash"
+    },
+    "path": "/v1/chat/completions"
+  },
   "providers/fireworks-ai/invalid-api-key": {
     "body": {
       "max_completion_tokens": 1,

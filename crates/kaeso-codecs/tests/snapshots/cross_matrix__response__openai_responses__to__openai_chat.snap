@@ -216,6 +216,70 @@ expression: outcomes
       "total_tokens": 251
     }
   },
+  "providers/cloudflare-ai-gateway/recorded-text-input-string": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "In the glimmering twilight of the Enchanted Meadow, a silver unicorn named Liora drifted to the edge of the moonlit pond, her mane shimmering like stardust. She dipped her hooves into the crystal water, causing tiny silver fireflies to dance around her, each one glowing with a quiet lullaby. As the fireflies faded into the night, Liora spread her wings and softly hummed a song that carried the scent of lavender and sleep, gently cradling every dreaming wanderer into a peaceful night.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "id-1794459197350",
+    "model": "@cf/openai/gpt-oss-20b",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 241,
+      "prompt_tokens": 76,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 317
+    }
+  },
+  "providers/cloudflare-ai-gateway/recorded-tools-function": {
+    "choices": [
+      {
+        "finish_reason": "tool_calls",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": null,
+          "refusal": null,
+          "role": "assistant",
+          "tool_calls": [
+            {
+              "function": {
+                "arguments": "{\"location\":\"Boston, MA\",\"unit\":\"fahrenheit\"}",
+                "name": "get_current_weather"
+              },
+              "id": "call_7d3e64270cea45c9989cc82947ddd7c9",
+              "type": "function"
+            }
+          ]
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "id-1794459197946",
+    "model": "@cf/openai/gpt-oss-20b",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 53,
+      "prompt_tokens": 156,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 209
+    }
+  },
   "providers/vercel/recorded-gpt-reasoning-encrypted": {
     "choices": [
       {

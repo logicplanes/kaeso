@@ -1,0 +1,44 @@
+{
+  "id": "id-1794459120830",
+  "object": "chat.completion",
+  "created": 1794459120,
+  "model": "@cf/deepseek-ai/deepseek-v4.1-flash-1017",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "I'll get both for you.\n\n",
+        "tool_calls": [
+          {
+            "id": "chatcmpl-tool-a65a3da463bb36f0",
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "arguments": "{\"location\": \"Paris, France\", \"unit\": \"celsius\"}"
+            }
+          },
+          {
+            "id": "chatcmpl-tool-a7d902e933adde41",
+            "type": "function",
+            "function": {
+              "name": "get_local_time",
+              "arguments": "{\"timezone\": \"Asia/Tokyo\"}"
+            }
+          }
+        ]
+      },
+      "finish_reason": "tool_calls",
+      "logprobs": null
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 437,
+    "completion_tokens": 97,
+    "total_tokens": 534,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "neurons": 22.5
+  }
+}

@@ -590,6 +590,32 @@
       "service_account": null,
       "model_routes": [],
       "server": null
+    },
+    {
+      "id": "cloudflare-ai-gateway",
+      "name": "Cloudflare AI Gateway",
+      "custom": false,
+      "takes_key": true,
+      "hides_built_in": null,
+      "key_page": {
+        "url": "https://dash.cloudflare.com/profile/api-tokens",
+        "label": "API Tokens"
+      },
+      "key_prefix": null,
+      "dialects": ["openai_chat", "openai_responses", "anthropic_messages"],
+      "count_tokens": null,
+      "embeddings": null,
+      "account": null,
+      "service_account": null,
+      "account_scope": {
+        "account_page": {
+          "url": "https://developers.cloudflare.com/fundamentals/account/find-account-and-zone-ids/",
+          "label": "Find account and zone IDs"
+        },
+        "gateway_header": "cf-aig-gateway-id"
+      },
+      "model_routes": [],
+      "server": null
     }
   ],
   "has_more": false,

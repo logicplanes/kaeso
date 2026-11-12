@@ -312,6 +312,41 @@ describe("organization providers", () => {
     ]);
   });
 
+  it("shows a Cloudflare key's account and gateway and moves it to the account's default gateway", async () => {
+    signedIn();
+    const cf = credential({
+      id: "cred_cf",
+      provider: "cloudflare-ai-gateway",
+      name: "Cloudflare",
+      account_id: "0123456789abcdef0123456789abcdef",
+      gateway_id: "prod-eu",
+      last4: "beef",
+    });
+    keys([production, cf]);
+    on("PATCH", "orgs/:org/credentials/:credential", ({ body }: { body: { name: string; account_id?: string; gateway_id?: string } }) => ({
+      ...cf,
+      name: body.name,
+      account_id: body.account_id ?? cf.account_id,
+      gateway_id: body.gateway_id === "" ? null : (body.gateway_id ?? cf.gateway_id),
+    }));
+    const { user } = await renderApp(PATH);
+
+    const key = await row("Cloudflare");
+    expect(within(key).getByText("01234567…cdef")).toBeInTheDocument();
+    expect(key).toHaveTextContent("prod-eu");
+    await user.click(await screen.findByRole("button", { name: "Actions for Cloudflare AI Gateway · Cloudflare" }));
+    await user.click(within(await screen.findByRole("menu")).getByRole("menuitem", { name: "Edit" }));
+    const dialog = await screen.findByRole("dialog", { name: "Edit Cloudflare AI Gateway · Cloudflare" });
+    await user.hover(within(dialog).getByRole("button", { name: "Save" }));
+    expect(await screen.findByText("Change the name, the account or the gateway first")).toBeInTheDocument();
+    await user.clear(within(dialog).getByRole("textbox", { name: "Gateway (optional)" }));
+    await user.click(within(dialog).getByRole("button", { name: "Save" }));
+    expect(await notifications().findByText("Cloudflare now calls 0123456789abcdef0123456789abcdef via default")).toBeInTheDocument();
+    expect(requests("PATCH", "orgs/:org/credentials/:credential").map((r) => [r.params.credential, r.body])).toEqual([
+      ["cred_cf", { name: "Cloudflare", account_id: "0123456789abcdef0123456789abcdef", gateway_id: "" }],
+    ]);
+  });
+
   it("renames a key with the trimmed name", async () => {
     signedIn();
     keys([production, staging]);

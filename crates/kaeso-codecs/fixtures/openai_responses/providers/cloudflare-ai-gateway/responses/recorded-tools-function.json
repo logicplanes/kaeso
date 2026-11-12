@@ -1,0 +1,84 @@
+{
+  "id": "id-1794459197946",
+  "created_at": 1794459197,
+  "incomplete_details": null,
+  "instructions": null,
+  "metadata": null,
+  "model": "@cf/openai/gpt-oss-20b",
+  "object": "response",
+  "output": [
+    {
+      "id": "rs_74ef79bc8c9b4437b7883e420638653f",
+      "summary": [],
+      "type": "reasoning",
+      "content": [
+        {
+          "text": "The user asks for current weather in Boston. We have a function get_current_weather. Should call it.",
+          "type": "reasoning_text"
+        }
+      ],
+      "encrypted_content": null,
+      "status": null
+    },
+    {
+      "arguments": "{\"location\":\"Boston, MA\",\"unit\":\"fahrenheit\"}",
+      "call_id": "call_7d3e64270cea45c9989cc82947ddd7c9",
+      "name": "get_current_weather",
+      "type": "function_call",
+      "id": "fc_7d3e64270cea45c9989cc82947ddd7c9",
+      "status": null
+    }
+  ],
+  "input_messages": null,
+  "output_messages": null,
+  "parallel_tool_calls": true,
+  "temperature": 1,
+  "tool_choice": "auto",
+  "tools": [
+    {
+      "name": "get_current_weather",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "location": {
+            "type": "string",
+            "description": "The city and state, e.g. San Francisco, CA"
+          },
+          "unit": {
+            "type": "string",
+            "enum": [
+              "celsius",
+              "fahrenheit"
+            ]
+          }
+        },
+        "required": [
+          "location",
+          "unit"
+        ]
+      },
+      "strict": null,
+      "type": "function",
+      "description": "Get the current weather in a given location"
+    }
+  ],
+  "top_p": 1,
+  "background": false,
+  "max_output_tokens": 130916,
+  "max_tool_calls": null,
+  "previous_response_id": null,
+  "prompt": null,
+  "reasoning": null,
+  "service_tier": "auto",
+  "status": "completed",
+  "text": null,
+  "top_logprobs": null,
+  "truncation": "disabled",
+  "usage": {
+    "input_tokens": 156,
+    "output_tokens": 53,
+    "total_tokens": 209,
+    "neurons": 4.2818138999999995
+  },
+  "user": null
+}

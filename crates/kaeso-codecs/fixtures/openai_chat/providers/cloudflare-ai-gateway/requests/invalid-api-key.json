@@ -1,0 +1,10 @@
+{
+  "model": "@cf/zai-org/glm-4.7-flash",
+  "messages": [
+    {
+      "role": "user",
+      "content": "hi"
+    }
+  ],
+  "max_tokens": 1
+}

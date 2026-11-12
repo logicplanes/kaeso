@@ -1,0 +1,63 @@
+{
+  "id": "id-1794459197350",
+  "created_at": 1794459197,
+  "incomplete_details": null,
+  "instructions": null,
+  "metadata": null,
+  "model": "@cf/openai/gpt-oss-20b",
+  "object": "response",
+  "output": [
+    {
+      "id": "rs_094b3973a75f4c6798729d5e8037e945",
+      "summary": [],
+      "type": "reasoning",
+      "content": [
+        {
+          "text": "The user: \"Tell me a three sentence bedtime story about a unicorn.\" Need to give exactly three sentences, about a unicorn, bedtime story style. Should be whimsical, soothing. Likely 3 sentences in total, but could be long. Keep to bedtime tone. So produce 3 sentences. Ensure it's a story. Ensure not to add additional commentary outside those sentences. I guess just give the 3 sentences in a paragraph or separated sentences. We need to ensure there's no extra content beyond the story. Shouldn't mention instruction. Straight to story. Use poetic language, exactly 3 sentences.\n\nOk.",
+          "type": "reasoning_text"
+        }
+      ],
+      "encrypted_content": null,
+      "status": null
+    },
+    {
+      "id": "msg_9d19ee4517c142b1a171cf9b7dac4334",
+      "content": [
+        {
+          "annotations": [],
+          "text": "In the glimmering twilight of the Enchanted Meadow, a silver unicorn named Liora drifted to the edge of the moonlit pond, her mane shimmering like stardust. She dipped her hooves into the crystal water, causing tiny silver fireflies to dance around her, each one glowing with a quiet lullaby. As the fireflies faded into the night, Liora spread her wings and softly hummed a song that carried the scent of lavender and sleep, gently cradling every dreaming wanderer into a peaceful night.",
+          "type": "output_text",
+          "logprobs": null
+        }
+      ],
+      "role": "assistant",
+      "status": "completed",
+      "type": "message"
+    }
+  ],
+  "input_messages": null,
+  "output_messages": null,
+  "parallel_tool_calls": true,
+  "temperature": 1,
+  "tool_choice": "auto",
+  "tools": [],
+  "top_p": 1,
+  "background": false,
+  "max_output_tokens": 130996,
+  "max_tool_calls": null,
+  "previous_response_id": null,
+  "prompt": null,
+  "reasoning": null,
+  "service_tier": "auto",
+  "status": "completed",
+  "text": null,
+  "top_logprobs": null,
+  "truncation": "disabled",
+  "usage": {
+    "input_tokens": 76,
+    "output_tokens": 241,
+    "total_tokens": 317,
+    "neurons": 7.954537500000001
+  },
+  "user": null
+}

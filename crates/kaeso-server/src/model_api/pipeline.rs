@@ -1390,6 +1390,11 @@ async fn attempt(
     if let Some(p) = &platform {
         ectx = p.apply(ectx);
     }
+    let scoped = crate::services::account_scope::of(&eff.provider, &credential)
+        .map_err(fail(Stage::Credential))?;
+    if let Some(s) = &scoped {
+        ectx = s.apply(ectx);
+    }
     let dialect = plan.dialect;
     let (req, mut ectx, encoded) = off_thread(request_bytes, move || {
         let encoded = dispatch::encode_request(dialect, &req, &mut ectx);
@@ -1397,7 +1402,10 @@ async fn attempt(
     })
     .await
     .map_err(fail(Stage::Capability))?;
-    let encoded = encoded.map_err(fail(Stage::Capability))?;
+    let mut encoded = encoded.map_err(fail(Stage::Capability))?;
+    if let Some(s) = &scoped {
+        s.add_headers(&mut encoded.headers);
+    }
     ectx.left_out.splice(0..0, plan.left_out.iter().cloned());
     ectx.adapted.splice(0..0, plan.adapted.iter().cloned());
     rec.outcome().cache_breakpoints = ectx.cache_breakpoints;
@@ -1556,6 +1564,8 @@ async fn attempt(
         .headers
         .get("request-id")
         .or_else(|| resp.headers.get("x-request-id"))
+        // Cloudflare AI Gateway's log entry for the request.
+        .or_else(|| resp.headers.get("cf-aig-log-id"))
         .map(str::to_owned);
     if plan.dialect == DialectId::ElevenLabs
         && let Some(billed) = kaeso_codecs::elevenlabs::billed_characters(&resp.headers)

@@ -121,6 +121,11 @@ pub(crate) fn decode(
             .as_ref()
             .and_then(|v| v.get("error").or_else(|| v.get("message")))
         {
+            _ if let Some(message) =
+                value.as_ref().and_then(crate::cloudflare::envelope_message) =>
+            {
+                KppError::new(kind_for(Some(status), None, None), message)
+            }
             Some(Value::String(message)) if !message.trim().is_empty() => {
                 KppError::new(kind_for(Some(status), None, None), message.clone())
             }

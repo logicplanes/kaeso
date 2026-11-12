@@ -1,0 +1,35 @@
+{
+  "id": "id-1794458987653",
+  "object": "chat.completion",
+  "created": 1794458987,
+  "model": "@cf/zai-org/glm-4.7-flash",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "Hello! How can I help you today?",
+        "refusal": null,
+        "annotations": null,
+        "audio": null,
+        "function_call": null,
+        "tool_calls": [],
+        "reasoning": "The user's input \"Hello!\" is a simple greeting. Responding with a friendly \"Hello!\" maintains a conversational tone. A friendly greeting invites more engagement. This approach aligns with helpful, harmless, and harmless intent. The response can be concise to match the simplicity of the user's input while still being welcoming. It can optionally ask how to assist further, keeping it open-ended for follow-up.\n\n**Plan for next response:**\n- Should be polite and friendly.\n- Could mirror the user's greeting.\n- Should offer help.\n- Can include a specific question to prompt the next message, such as \"How can I help you today?\"\n\nRefining the next response:\n\"Hello! How can I help you today?\" - This conveys friendliness, readiness to assist, and opens the conversation for the user to state their needs.",
+        "reasoning_content": "The user's input \"Hello!\" is a simple greeting. Responding with a friendly \"Hello!\" maintains a conversational tone. A friendly greeting invites more engagement. This approach aligns with helpful, harmless, and harmless intent. The response can be concise to match the simplicity of the user's input while still being welcoming. It can optionally ask how to assist further, keeping it open-ended for follow-up.\n\n**Plan for next response:**\n- Should be polite and friendly.\n- Could mirror the user's greeting.\n- Should offer help.\n- Can include a specific question to prompt the next message, such as \"How can I help you today?\"\n\nRefining the next response:\n\"Hello! How can I help you today?\" - This conveys friendliness, readiness to assist, and opens the conversation for the user to state their needs."
+      },
+      "logprobs": null,
+      "finish_reason": "stop",
+      "stop_reason": 154827,
+      "token_ids": null
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 7,
+    "completion_tokens": 181,
+    "total_tokens": 188,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "neurons": 6.6269
+  }
+}

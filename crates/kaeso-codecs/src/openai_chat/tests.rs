@@ -29,6 +29,30 @@ const REJECTED_RESPONSES: &[(&str, &str)] = &[("n-2", "n")];
 
 const FOREIGN_ERROR_BODIES: &[(&str, ErrorKind)] = &[
     (
+        "providers/cloudflare-ai-gateway/recorded-image-base64-detail",
+        ErrorKind::InvalidRequest,
+    ),
+    (
+        "providers/cloudflare-ai-gateway/recorded-insufficient-balance",
+        ErrorKind::Billing,
+    ),
+    (
+        "providers/cloudflare-ai-gateway/recorded-invalid-api-key",
+        ErrorKind::Authentication,
+    ),
+    (
+        "providers/cloudflare-ai-gateway/recorded-reasoning-effort-none",
+        ErrorKind::InvalidRequest,
+    ),
+    (
+        "providers/cloudflare-ai-gateway/recorded-retired-model",
+        ErrorKind::NotFound,
+    ),
+    (
+        "providers/cloudflare-ai-gateway/recorded-unknown-model",
+        ErrorKind::NotFound,
+    ),
+    (
         "providers/siliconflow/recorded-invalid-api-key",
         ErrorKind::Authentication,
     ),

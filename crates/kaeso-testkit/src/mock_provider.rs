@@ -437,6 +437,18 @@ async fn answer(ctx: Ctx, method: Method, uri: Uri, headers: HeaderMap, body: By
         }
     }
     let path = platform.map_or(path, |p| p.as_ai_studio);
+    // Cloudflare's REST API names the account: `/client/v4/accounts/{id}/ai/v1/…` serves the
+    // dialects' `/v1/…` paths, and `…/ai/models/search` its Workers AI model search.
+    let path =
+        match cloudflare_path(&path) {
+            Some(CloudflarePath::ModelSearch) if method == Method::GET => {
+                return json_file(&ctx.fixtures.join(
+                    "openai_chat/providers/cloudflare-ai-gateway/models/search-recorded.json",
+                ));
+            }
+            Some(CloudflarePath::Api(rest)) => rest,
+            _ => path,
+        };
     if method == Method::GET && path == format!("/api/v1/tasks/{DASHSCOPE_IMAGE_TASK}") {
         return dashscope_json(&ctx.fixtures, "polls/images/succeeded.json")
             .unwrap_or_else(|| StatusCode::INTERNAL_SERVER_ERROR.into_response());
@@ -948,6 +960,25 @@ struct PlatformPath {
 // `count-tokens:rawPredict`) and other models at `…/endpoints/openapi/chat/completions`,
 // which the mock answers like Anthropic's and OpenAI's own paths. Gemini Omni's interactions,
 // at `/v1beta1/projects/{project}/locations/global/interactions`, answer like AI Studio's.
+enum CloudflarePath {
+    Api(String),
+    ModelSearch,
+}
+
+fn cloudflare_path(path: &str) -> Option<CloudflarePath> {
+    let rest = path.strip_prefix("/client/v4/accounts/")?;
+    let (account, rest) = rest.split_once('/')?;
+    if account.len() != 32 || !account.bytes().all(|b| b.is_ascii_hexdigit()) {
+        return None;
+    }
+    let rest = rest.strip_prefix("ai")?;
+    if rest == "/models/search" {
+        return Some(CloudflarePath::ModelSearch);
+    }
+    rest.starts_with("/v1/")
+        .then(|| CloudflarePath::Api(rest.to_owned()))
+}
+
 fn agent_platform_path(path: &str) -> Option<PlatformPath> {
     const MODELS: &str = "publishers/google/models";
     if let Some(rest) = path
