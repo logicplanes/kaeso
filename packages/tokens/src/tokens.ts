@@ -163,7 +163,7 @@ export const providerMark = {
   standardcompute: mode("#be8c2b", "#e2c07f"),
   "cloudflare-ai-gateway-orange": mode("#ff5f08", "#ff5f08"),
   "cloudflare-ai-gateway-amber": mode("#d97d00", "#ff9910"),
-  perplexity: mode("#1d7883", "#35b4c2"),
+  perplexity: mode("#1ba2b4", "#1fb8cd"),
   huggingface: mode("#b49000", "#ffd21e"),
   nvidia: mode("#69a500", "#76b900"),
   siliconflow: mode("#6e29f6", "#9163fe"),
