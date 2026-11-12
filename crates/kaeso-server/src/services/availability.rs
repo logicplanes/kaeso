@@ -293,6 +293,12 @@ pub async fn probe(
         dialect: eff.dialect,
         unreached: AtomicBool::new(false),
     };
+    if let Some(scoped) = match crate::services::account_scope::of(&eff.provider, credential) {
+        Ok(s) => s,
+        Err(e) => return Probe::Failed(e),
+    } {
+        return account_probe(&asked, &scoped, &eff.model_id).await;
+    }
     if asked.plan_catalogue() {
         let listing = listings
             .get(
@@ -353,6 +359,63 @@ pub async fn probe(
         },
         Listing::Failed(e) if e.kind == ErrorKind::Authentication => Probe::Failed(e.clone()),
         Listing::Unfinished | Listing::Failed(_) => Probe::Inconclusive(not_found),
+    }
+}
+
+// Cloudflare AI Gateway lists no models in a model format. Its Workers AI model search, which
+// the same token may read, lists the `@cf/` models; whether a third-party model, an alias
+// (`custom/…`) or a dynamic route (`dynamic/…`) answers takes a request Cloudflare bills, so for
+// those the search only shows that the key and its account work.
+async fn account_probe(
+    asked: &Asked<'_>,
+    scoped: &crate::services::account_scope::Scoped,
+    model: &str,
+) -> Probe {
+    let ai = scoped
+        .base_path
+        .strip_suffix("/v1")
+        .unwrap_or(&scoped.base_path);
+    let name = model.strip_prefix("@cf/");
+    let term = name.map_or("", |n| n.rsplit('/').next().unwrap_or(n));
+    let path = format!(
+        "{ai}/models/search?per_page=100&search={}",
+        percent_encoding::utf8_percent_encode(term, percent_encoding::NON_ALPHANUMERIC)
+    );
+    let (status, headers, body) = match asked
+        .send(EncodedRequest::get(path, HeaderList::new()))
+        .await
+    {
+        Ok(answer) => answer,
+        Err(e) => return Probe::Failed(e),
+    };
+    if !(200..300).contains(&status) {
+        return Probe::Failed(dispatch::decode_error(
+            DialectId::OpenAiChat,
+            status,
+            &headers,
+            &body,
+        ));
+    }
+    let Some(_) = name else {
+        return Probe::Inconclusive(KppError::provider(
+            "Cloudflare tells whether it serves a model other than a Workers AI model only by billing a request",
+        ));
+    };
+    let listed = serde_json::from_slice::<serde_json::Value>(&body)
+        .ok()
+        .and_then(|v| v.get("result").and_then(|r| r.as_array()).cloned());
+    match listed {
+        Some(models)
+            if models
+                .iter()
+                .any(|m| m.get("name").and_then(|n| n.as_str()) == Some(model)) =>
+        {
+            Probe::Served
+        }
+        Some(_) => Probe::Unserved,
+        None => Probe::Inconclusive(KppError::provider(
+            "Cloudflare's Workers AI model search answered without a list",
+        )),
     }
 }
 

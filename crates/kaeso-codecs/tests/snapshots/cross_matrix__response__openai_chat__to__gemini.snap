@@ -1316,6 +1316,213 @@ expression: outcomes
       "totalTokenCount": 94
     }
   },
+  "providers/cloudflare-ai-gateway/recorded-json-schema": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "{ \"name\": \"Science_Fair_Adventure\", \"date\": \"2026-10-16\", \"participants\": [\"Alice\", \"Bob\"] }"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "@cf/zai-org/glm-4.7-flash",
+    "responseId": "id-1794458983297",
+    "usageMetadata": {
+      "candidatesTokenCount": 1027,
+      "promptTokenCount": 23,
+      "totalTokenCount": 1050
+    }
+  },
+  "providers/cloudflare-ai-gateway/recorded-plain-developer-string": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Hello! How can I help you today?"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "@cf/zai-org/glm-4.7-flash",
+    "responseId": "id-1794458987653",
+    "usageMetadata": {
+      "candidatesTokenCount": 181,
+      "promptTokenCount": 7,
+      "totalTokenCount": 188
+    }
+  },
+  "providers/cloudflare-ai-gateway/recorded-stop-array": {
+    "candidates": [
+      {
+        "content": {
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "@cf/zai-org/glm-4.7-flash",
+    "responseId": "id-1794458989469",
+    "usageMetadata": {
+      "candidatesTokenCount": 86,
+      "promptTokenCount": 16,
+      "totalTokenCount": 102
+    }
+  },
+  "providers/cloudflare-ai-gateway/recorded-system-name-multiturn": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "About 10–12 minutes in boiling water, then transfer to cold water to stop cooking."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "@cf/deepseek-ai/deepseek-v4.1-flash-1017",
+    "responseId": "id-1794459119428",
+    "usageMetadata": {
+      "candidatesTokenCount": 20,
+      "promptTokenCount": 62,
+      "totalTokenCount": 82
+    }
+  },
+  "providers/cloudflare-ai-gateway/recorded-tools-parallel": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "I'll get both for you.\n\n"
+            },
+            {
+              "functionCall": {
+                "args": {
+                  "location": "Paris, France",
+                  "unit": "celsius"
+                },
+                "id": "chatcmpl-tool-a65a3da463bb36f0",
+                "name": "get_weather"
+              }
+            },
+            {
+              "functionCall": {
+                "args": {
+                  "timezone": "Asia/Tokyo"
+                },
+                "id": "chatcmpl-tool-a7d902e933adde41",
+                "name": "get_local_time"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "@cf/deepseek-ai/deepseek-v4.1-flash-1017",
+    "responseId": "id-1794459120830",
+    "usageMetadata": {
+      "candidatesTokenCount": 97,
+      "promptTokenCount": 437,
+      "totalTokenCount": 534
+    }
+  },
+  "providers/cloudflare-ai-gateway/recorded-tools-results-parallel-error": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "**Paris:** 18°C, cloudy.\n\n**Tokyo time:** The time service is temporarily unavailable (503 error), so I can't get the live local time right now. Try me again in a moment — and safe landing tonight."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "@cf/deepseek-ai/deepseek-v4.1-flash-1017",
+    "responseId": "id-1794459122976",
+    "usageMetadata": {
+      "cachedContentTokenCount": 320,
+      "candidatesTokenCount": 49,
+      "promptTokenCount": 574,
+      "totalTokenCount": 623
+    }
+  },
+  "providers/cloudflare-ai-gateway/recorded-tools-single": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "functionCall": {
+                "args": {
+                  "location": "Paris, France",
+                  "unit": "celsius"
+                },
+                "id": "chatcmpl-tool-a0d4b8c05d0ddc30",
+                "name": "get_weather"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "@cf/deepseek-ai/deepseek-v4.1-flash-1017",
+    "responseId": "id-1794459124535",
+    "usageMetadata": {
+      "cachedContentTokenCount": 192,
+      "candidatesTokenCount": 58,
+      "promptTokenCount": 346,
+      "totalTokenCount": 404
+    }
+  },
+  "providers/cloudflare-ai-gateway/recorded-workers-ai-reply": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "No, 91 is not a prime number because it is divisible by 7 and 13."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "@cf/zai-org/glm-4.7-flash",
+    "responseId": "id-1794459178005",
+    "usageMetadata": {
+      "candidatesTokenCount": 369,
+      "promptTokenCount": 17,
+      "totalTokenCount": 386
+    }
+  },
   "providers/cohere/recorded-assistant-prefill": {
     "candidates": [
       {

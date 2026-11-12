@@ -149,6 +149,9 @@ base_url = "https://api.siliconflow.com"
 [providers.standardcompute]
 base_url = "https://api.stdcmpt.com"
 
+[providers.cloudflare-ai-gateway]
+base_url = "https://api.cloudflare.com"
+
 [custom_providers]
 enabled = true
 allowed_networks = ""

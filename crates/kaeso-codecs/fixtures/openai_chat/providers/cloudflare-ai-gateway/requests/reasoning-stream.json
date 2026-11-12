@@ -1,0 +1,15 @@
+{
+  "model": "@cf/zai-org/glm-4.7-flash",
+  "stream": true,
+  "stream_options": {
+    "include_usage": true
+  },
+  "reasoning_effort": "low",
+  "max_tokens": 400,
+  "messages": [
+    {
+      "role": "user",
+      "content": "Is 91 a prime number? Answer in one sentence."
+    }
+  ]
+}

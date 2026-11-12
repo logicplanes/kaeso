@@ -507,6 +507,42 @@ pub struct ServiceAccountSignIn {
     pub default_location: &'static str,
 }
 
+/// A provider whose API path names the account the key belongs to, such as Cloudflare's
+/// `/client/v4/accounts/{account_id}/ai/v1`. Each key carries its account id and, optionally, the
+/// gateway its requests go through, sent in a header.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct AccountScope {
+    /// Where the console points for the account id.
+    pub account_page: KeyPage,
+    /// The API's path under the base URL, `{account}` standing for the account id; it replaces
+    /// the `/v1` of each dialect's paths.
+    pub path: &'static str,
+    /// The header that names the gateway, sent when a key names one.
+    pub gateway_header: &'static str,
+}
+
+impl AccountScope {
+    /// The account's API path under the base URL.
+    pub fn base_path(&self, account: &str) -> String {
+        self.path.replace("{account}", account)
+    }
+
+    /// Cloudflare account ids are 32 lowercase hexadecimal characters.
+    pub fn is_account_id(id: &str) -> bool {
+        id.len() == 32 && id.bytes().all(|b| matches!(b, b'0'..=b'9' | b'a'..=b'f'))
+    }
+
+    /// A gateway id: 1 to 64 letters, digits, hyphens and underscores, starting with a letter or
+    /// digit, which fits in a header and a path segment unchanged.
+    pub fn is_gateway_id(id: &str) -> bool {
+        (1..=64).contains(&id.len())
+            && id.bytes().next().is_some_and(|b| b.is_ascii_alphanumeric())
+            && id
+                .bytes()
+                .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'-' | b'_'))
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct AccountSignIn {
     pub method: AuthMethod,
@@ -582,6 +618,7 @@ pub struct Provider {
     pub account: Option<AccountSignIn>,
     pub routes: &'static [ModelRoute],
     pub service_account: Option<ServiceAccountSignIn>,
+    pub account_scope: Option<AccountScope>,
 }
 
 // The locations that serve Gemini or Claude models, from the tables of
@@ -656,6 +693,7 @@ pub const PROVIDERS: &[Provider] = &[
         gemini: GeminiProfile::GOOGLE_AI_STUDIO,
         routes: &[],
         service_account: None,
+        account_scope: None,
         account: Some(AccountSignIn {
             method: AuthMethod::ChatGpt,
             product: "ChatGPT",
@@ -693,6 +731,7 @@ pub const PROVIDERS: &[Provider] = &[
         account: None,
         routes: &[],
         service_account: None,
+        account_scope: None,
     },
     Provider {
         id: "deepseek",
@@ -729,6 +768,7 @@ pub const PROVIDERS: &[Provider] = &[
         account: None,
         routes: &[],
         service_account: None,
+        account_scope: None,
     },
     Provider {
         id: "xai",
@@ -767,6 +807,7 @@ pub const PROVIDERS: &[Provider] = &[
         gemini: GeminiProfile::GOOGLE_AI_STUDIO,
         routes: &[],
         service_account: None,
+        account_scope: None,
         account: Some(AccountSignIn {
             method: AuthMethod::Grok,
             product: "Grok",
@@ -810,6 +851,7 @@ pub const PROVIDERS: &[Provider] = &[
         account: None,
         routes: &[],
         service_account: None,
+        account_scope: None,
     },
     Provider {
         id: "groq",
@@ -847,6 +889,7 @@ pub const PROVIDERS: &[Provider] = &[
         account: None,
         routes: &[],
         service_account: None,
+        account_scope: None,
     },
     Provider {
         id: "openrouter",
@@ -886,6 +929,7 @@ pub const PROVIDERS: &[Provider] = &[
         account: None,
         routes: &[],
         service_account: None,
+        account_scope: None,
     },
     Provider {
         id: "mistral",
@@ -938,6 +982,7 @@ pub const PROVIDERS: &[Provider] = &[
         account: None,
         routes: &[],
         service_account: None,
+        account_scope: None,
     },
     Provider {
         id: "vercel",
@@ -974,6 +1019,7 @@ pub const PROVIDERS: &[Provider] = &[
         account: None,
         routes: &[],
         service_account: None,
+        account_scope: None,
     },
     Provider {
         id: "cohere",
@@ -1028,6 +1074,7 @@ pub const PROVIDERS: &[Provider] = &[
         account: None,
         routes: &[],
         service_account: None,
+        account_scope: None,
     },
     Provider {
         id: "ollama-cloud",
@@ -1062,6 +1109,7 @@ pub const PROVIDERS: &[Provider] = &[
         account: None,
         routes: &[],
         service_account: None,
+        account_scope: None,
     },
     Provider {
         id: "moonshotai",
@@ -1109,6 +1157,7 @@ pub const PROVIDERS: &[Provider] = &[
         account: None,
         routes: &[],
         service_account: None,
+        account_scope: None,
     },
     Provider {
         id: "alibaba",
@@ -1180,6 +1229,7 @@ pub const PROVIDERS: &[Provider] = &[
         account: None,
         routes: &[],
         service_account: None,
+        account_scope: None,
     },
     Provider {
         id: "cerebras",
@@ -1219,6 +1269,7 @@ pub const PROVIDERS: &[Provider] = &[
         account: None,
         routes: &[],
         service_account: None,
+        account_scope: None,
     },
     Provider {
         id: "zai",
@@ -1262,6 +1313,7 @@ pub const PROVIDERS: &[Provider] = &[
         account: None,
         routes: &[],
         service_account: None,
+        account_scope: None,
     },
     Provider {
         id: "minimax",
@@ -1326,6 +1378,7 @@ pub const PROVIDERS: &[Provider] = &[
         account: None,
         routes: &[],
         service_account: None,
+        account_scope: None,
     },
     Provider {
         id: "elevenlabs",
@@ -1375,6 +1428,7 @@ pub const PROVIDERS: &[Provider] = &[
         account: None,
         routes: &[],
         service_account: None,
+        account_scope: None,
     },
     Provider {
         id: "google",
@@ -1407,6 +1461,7 @@ pub const PROVIDERS: &[Provider] = &[
         account: None,
         routes: &[],
         service_account: None,
+        account_scope: None,
     },
     Provider {
         id: "gemini-agent-platform",
@@ -1487,6 +1542,7 @@ pub const PROVIDERS: &[Provider] = &[
             locations: AGENT_PLATFORM_LOCATIONS,
             default_location: "global",
         }),
+        account_scope: None,
     },
     Provider {
         id: "fireworks-ai",
@@ -1527,6 +1583,7 @@ pub const PROVIDERS: &[Provider] = &[
         account: None,
         routes: &[],
         service_account: None,
+        account_scope: None,
     },
     Provider {
         id: "nebius",
@@ -1564,6 +1621,7 @@ pub const PROVIDERS: &[Provider] = &[
         account: None,
         routes: &[],
         service_account: None,
+        account_scope: None,
     },
     Provider {
         id: "sambanova",
@@ -1603,6 +1661,7 @@ pub const PROVIDERS: &[Provider] = &[
         account: None,
         routes: &[],
         service_account: None,
+        account_scope: None,
     },
     Provider {
         id: "scaleway",
@@ -1642,6 +1701,7 @@ pub const PROVIDERS: &[Provider] = &[
         account: None,
         routes: &[],
         service_account: None,
+        account_scope: None,
     },
     Provider {
         id: "huggingface",
@@ -1681,6 +1741,7 @@ pub const PROVIDERS: &[Provider] = &[
         account: None,
         routes: &[],
         service_account: None,
+        account_scope: None,
     },
     Provider {
         id: "nvidia",
@@ -1719,6 +1780,7 @@ pub const PROVIDERS: &[Provider] = &[
         account: None,
         routes: &[],
         service_account: None,
+        account_scope: None,
     },
     Provider {
         id: "baseten",
@@ -1757,6 +1819,7 @@ pub const PROVIDERS: &[Provider] = &[
         account: None,
         routes: &[],
         service_account: None,
+        account_scope: None,
     },
     Provider {
         id: "siliconflow",
@@ -1801,6 +1864,7 @@ pub const PROVIDERS: &[Provider] = &[
         account: None,
         routes: &[],
         service_account: None,
+        account_scope: None,
     },
     Provider {
         id: "standardcompute",
@@ -1838,6 +1902,64 @@ pub const PROVIDERS: &[Provider] = &[
         account: None,
         routes: &[],
         service_account: None,
+        account_scope: None,
+    },
+    Provider {
+        id: "cloudflare-ai-gateway",
+        name: "Cloudflare AI Gateway",
+        // A user or account API token with Account > Workers AI > Read, which every
+        // `/accounts/{account_id}/ai/*` endpoint needs, for third-party models too
+        // (https://developers.cloudflare.com/ai-gateway/usage/rest-api/#authentication). New tokens
+        // start `cfut_` or `cfat_`; older ones have no prefix
+        // (https://developers.cloudflare.com/fundamentals/api/get-started/token-formats/).
+        key_page: KeyPage {
+            url: "https://dash.cloudflare.com/profile/api-tokens",
+            label: "API Tokens",
+        },
+        key_prefix: None,
+        default_base_url: "https://api.cloudflare.com",
+        auth: AuthStyle::Bearer,
+        // The REST API serves Chat Completions, Responses and Anthropic Messages for third-party
+        // and Workers AI models; Cloudflare deprecated the `/compat` endpoint for single-model
+        // calls. Each model's page lists the formats it takes, which KPMR carries as the model's
+        // egress dialect where it isn't Chat Completions.
+        generation: DialectId::OpenAiChat,
+        count_tokens: None,
+        embeddings: None,
+        images: &[],
+        speech: &[],
+        transcriptions: &[],
+        videos: &[],
+        dialects: &[
+            DialectId::OpenAiChat,
+            DialectId::OpenAiResponses,
+            DialectId::AnthropicMessages,
+        ],
+        refused_key_messages: &[],
+        context_window_messages: &[],
+        reasoning_beyond_output_limit: false,
+        // There is no model listing in a model format; a model check asks Cloudflare's Workers AI
+        // model search instead (services::cloudflare).
+        listing: ModelListing::Complete,
+        end_user_limit: None,
+        // Workers AI models answer thinking as `reasoning` and the same text again as
+        // `reasoning_content` (recorded live).
+        chat: ChatProfile::compatible("Cloudflare AI Gateway")
+            .reasoning_fields(&["reasoning", "reasoning_content"]),
+        responses: ResponsesProfile::compatible("Cloudflare AI Gateway"),
+        messages: MessagesProfile::compatible("Cloudflare AI Gateway"),
+        gemini: GeminiProfile::GOOGLE_AI_STUDIO,
+        account: None,
+        routes: &[],
+        service_account: None,
+        account_scope: Some(AccountScope {
+            account_page: KeyPage {
+                url: "https://developers.cloudflare.com/fundamentals/account/find-account-and-zone-ids/",
+                label: "Find account and zone IDs",
+            },
+            path: "/client/v4/accounts/{account}/ai/v1",
+            gateway_header: "cf-aig-gateway-id",
+        }),
     },
 ];
 
@@ -2135,7 +2257,7 @@ mod tests {
         assert!(provider("gemini").is_none());
         assert_eq!(
             ids(),
-            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras, zai, minimax, elevenlabs, google, gemini-agent-platform, fireworks-ai, nebius, sambanova, scaleway, huggingface, nvidia, baseten, siliconflow, standardcompute"
+            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras, zai, minimax, elevenlabs, google, gemini-agent-platform, fireworks-ai, nebius, sambanova, scaleway, huggingface, nvidia, baseten, siliconflow, standardcompute, cloudflare-ai-gateway"
         );
     }
 
@@ -2250,6 +2372,33 @@ mod tests {
             ModelListing::Complete.serves(&ids, "standardcompute"),
             Some(false)
         );
+    }
+
+    #[test]
+    fn an_account_scope_takes_cloudflare_account_and_gateway_ids_only() {
+        assert!(AccountScope::is_account_id(
+            "0123456789abcdef0123456789abcdef"
+        ));
+        for bad in [
+            "0123456789ABCDEF0123456789ABCDEF",
+            "0123456789abcdef",
+            "0123456789abcdef0123456789abcdeg",
+            "",
+        ] {
+            assert!(!AccountScope::is_account_id(bad), "{bad}");
+        }
+        for good in ["default", "prod-eu", "Team_1", &"a".repeat(64)] {
+            assert!(AccountScope::is_gateway_id(good), "{good}");
+        }
+        for bad in ["", "-x", "_x", "no spaces", "a/b", &"a".repeat(65)] {
+            assert!(!AccountScope::is_gateway_id(bad), "{bad}");
+        }
+        let scoped: Vec<&str> = PROVIDERS
+            .iter()
+            .filter(|p| p.account_scope.is_some())
+            .map(|p| p.id)
+            .collect();
+        assert_eq!(scoped, ["cloudflare-ai-gateway"]);
     }
 
     #[test]
@@ -3027,7 +3176,8 @@ mod tests {
                 "nvidia",
                 "baseten",
                 "siliconflow",
-                "standardcompute"
+                "standardcompute",
+                "cloudflare-ai-gateway"
             ]
         );
         assert_eq!(

@@ -216,6 +216,7 @@ Die ersten drei Einstellungen legen nur die Anfangswerte einer neuen Installatio
 | `KAESO_PROVIDERS_BASETEN_BASE_URL`<br>`providers.baseten.base_url` | Text | `https://inference.baseten.co` | Basis-URL der Baseten-API. |
 | `KAESO_PROVIDERS_SILICONFLOW_BASE_URL`<br>`providers.siliconflow.base_url` | Text | `https://api.siliconflow.com` | Basis-URL der SiliconFlow-API. |
 | `KAESO_PROVIDERS_STANDARDCOMPUTE_BASE_URL`<br>`providers.standardcompute.base_url` | Text | `https://api.stdcmpt.com` | Basis-URL der Standard-Compute-API. |
+| `KAESO_PROVIDERS_CLOUDFLARE_AI_GATEWAY_BASE_URL`<br>`providers.cloudflare-ai-gateway.base_url` | Text | `https://api.cloudflare.com` | Basis-URL der Cloudflare-AI-Gateway-API. |
 | `KAESO_UPSTREAM_CONNECT_TIMEOUT`<br>`upstream.connect_timeout` | Text | `10s` | Zeit für den Verbindungsaufbau zu einem Anbieter, TCP und TLS; höchstens 24h. |
 | `KAESO_UPSTREAM_REQUEST_TIMEOUT`<br>`upstream.request_timeout` | Text | `600s` | Gesamtzeit einer Anbieter-Anfrage ohne Streaming; höchstens 24h. |
 | `KAESO_UPSTREAM_FIRST_BYTE_TIMEOUT`<br>`upstream.first_byte_timeout` | Text | `60s` | Streaming: Zeit bis zum ersten Byte des Anbieters; höchstens 24h. |

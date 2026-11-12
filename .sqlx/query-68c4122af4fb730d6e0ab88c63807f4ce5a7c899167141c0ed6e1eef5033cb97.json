@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, ciphertext, nonce, wrapped_key, key_id, revision, auth_method, expires_at, auth_error, location FROM provider_credentials",
+  "query": "SELECT c.id, c.ciphertext, c.nonce, c.wrapped_key, c.key_id, c.revision, c.auth_method, c.expires_at, c.auth_error, c.location, c.account_id, c.gateway_id FROM provider_credentials c LEFT JOIN project_provider_keys a ON a.credential_id = c.id AND a.project_id = $2 WHERE c.org_id = $1 AND c.provider = $3 AND (a.project_id IS NOT NULL OR c.is_default) ORDER BY a.project_id IS NULL LIMIT 1",
   "describe": {
     "columns": [
       {
@@ -112,10 +112,36 @@
             "name": "location"
           }
         }
+      },
+      {
+        "ordinal": 10,
+        "name": "account_id",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "provider_credentials",
+            "name": "account_id"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "gateway_id",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "provider_credentials",
+            "name": "gateway_id"
+          }
+        }
       }
     ],
     "parameters": {
-      "Left": []
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text"
+      ]
     },
     "nullable": [
       false,
@@ -127,8 +153,10 @@
       false,
       true,
       true,
+      true,
+      true,
       true
     ]
   },
-  "hash": "7247f8e69678c39d6dfcbc0a744365c5b01fc327f87966176c1ea56a0f88d777"
+  "hash": "68c4122af4fb730d6e0ab88c63807f4ce5a7c899167141c0ed6e1eef5033cb97"
 }

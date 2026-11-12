@@ -8306,7 +8306,7 @@
         "tags": [
           "orgs"
         ],
-        "summary": "Renames a provider key, and moves a service account key to another location.",
+        "summary": "Renames a provider key, and moves a service account key to another location or\na key that calls an account to another account or gateway.",
         "description": "**Right:** `provider_credentials.replace` on the organization in the path; with a session, a sign-in within the last 15 minutes.",
         "operationId": "patchOrgsOrgCredentialsCredential",
         "parameters": [
@@ -23284,6 +23284,25 @@
           }
         }
       },
+      "AccountScopeView": {
+        "type": "object",
+        "description": "The account a provider's keys name, and the gateway they may name.",
+        "required": [
+          "account_page",
+          "gateway_header"
+        ],
+        "properties": {
+          "account_page": {
+            "$ref": "#/components/schemas/KeyPageView",
+            "description": "The provider's page that says where to find the account id."
+          },
+          "gateway_header": {
+            "type": "string",
+            "description": "The header Kaeso names a key's gateway in.",
+            "example": "cf-aig-gateway-id"
+          }
+        }
+      },
       "AccountSignInView": {
         "type": "object",
         "description": "An account of a provider that signs in with OAuth.",
@@ -24778,9 +24797,25 @@
           "secret"
         ],
         "properties": {
+          "account_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "For a provider whose `account_scope` isn't `null`, such as\n`cloudflare-ai-gateway`, the account the key calls: a Cloudflare account id\nis 32 hexadecimal characters. Required for such a provider, refused for others.",
+            "example": "0123456789abcdef0123456789abcdef"
+          },
           "auth_method": {
             "$ref": "#/components/schemas/KeyMethod",
             "description": "What `secret` is: `api_key` (the default) or `google_service_account`\nfor a provider whose `service_account` isn't `null`."
+          },
+          "gateway_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "For such a provider, the gateway the key's requests go through: 1 to 64\nletters, digits, hyphens and underscores. The account's default gateway when\nabsent.",
+            "example": "production"
           },
           "location": {
             "type": [
@@ -24801,7 +24836,7 @@
           },
           "provider": {
             "$ref": "#/components/schemas/ProviderId",
-            "description": "The id of a provider Kaeso calls: `openai`, `anthropic`, `deepseek`, `xai`,\n`togetherai`, `groq`, `openrouter`, `mistral`, `vercel`, `cohere`,\n`ollama-cloud`, `moonshotai`, `alibaba`, `cerebras`, `zai`, `minimax`,\n`elevenlabs`, `google`, `gemini-agent-platform`, `fireworks-ai`, `nebius`,\n`sambanova`, `scaleway`, `huggingface`, `nvidia`, `baseten`, `siliconflow`,\n`standardcompute`, or one of the organization's custom providers that takes a\nkey."
+            "description": "The id of a provider Kaeso calls: `openai`, `anthropic`, `deepseek`, `xai`,\n`togetherai`, `groq`, `openrouter`, `mistral`, `vercel`, `cohere`,\n`ollama-cloud`, `moonshotai`, `alibaba`, `cerebras`, `zai`, `minimax`,\n`elevenlabs`, `google`, `gemini-agent-platform`, `fireworks-ai`, `nebius`,\n`sambanova`, `scaleway`, `huggingface`, `nvidia`, `baseten`, `siliconflow`,\n`standardcompute`, `cloudflare-ai-gateway`, or one of the organization's\ncustom providers that takes a key."
           },
           "secret": {
             "type": "string",
@@ -24846,11 +24881,25 @@
       },
       "CredentialRename": {
         "type": "object",
-        "description": "A new name, and for a service account key a new location.",
+        "description": "A new name, for a service account key a new location, and for a key that\ncalls an account a new account or gateway.",
         "required": [
           "name"
         ],
         "properties": {
+          "account_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "For a key that calls an account, the account it calls from now on;\nunchanged when absent."
+          },
+          "gateway_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "For a key that calls an account, the gateway from now on, or an empty\nstring for the account's default gateway; unchanged when absent."
+          },
           "location": {
             "type": [
               "string",
@@ -24873,6 +24922,20 @@
           "secret"
         ],
         "properties": {
+          "account_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "For a key that calls an account, a new account id; unchanged when absent."
+          },
+          "gateway_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "For a key that calls an account, a new gateway, or an empty string for\nthe account's default gateway; unchanged when absent."
+          },
           "location": {
             "type": [
               "string",
@@ -24920,6 +24983,14 @@
             "description": "The signed-in account's email address, or a service account key's\n`client_email`; `null` for an API key.",
             "example": "owner@example.com"
           },
+          "account_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The account a key of a provider whose API names the account calls,\nsuch as a Cloudflare account id; `null` for other keys.",
+            "example": "0123456789abcdef0123456789abcdef"
+          },
           "auth_error": {
             "oneOf": [
               {
@@ -24943,6 +25014,14 @@
           "created_by": {
             "$ref": "#/components/schemas/Party",
             "description": "Who added it."
+          },
+          "gateway_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The gateway the key's requests go through, such as a Cloudflare AI\nGateway id; `null` for the account's default gateway and for other keys.",
+            "example": "production"
           },
           "id": {
             "$ref": "#/components/schemas/CredentialId",
@@ -28320,6 +28399,14 @@
                   "description": "The signed-in account's email address, or a service account key's\n`client_email`; `null` for an API key.",
                   "example": "owner@example.com"
                 },
+                "account_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "The account a key of a provider whose API names the account calls,\nsuch as a Cloudflare account id; `null` for other keys.",
+                  "example": "0123456789abcdef0123456789abcdef"
+                },
                 "auth_error": {
                   "oneOf": [
                     {
@@ -28343,6 +28430,14 @@
                 "created_by": {
                   "$ref": "#/components/schemas/Party",
                   "description": "Who added it."
+                },
+                "gateway_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "The gateway the key's requests go through, such as a Cloudflare AI\nGateway id; `null` for the account's default gateway and for other keys.",
+                  "example": "production"
                 },
                 "id": {
                   "$ref": "#/components/schemas/CredentialId",
@@ -30709,6 +30804,17 @@
                     {
                       "$ref": "#/components/schemas/AccountSignInView",
                       "description": "An account people can sign in to instead of adding an API key, with\n`POST /orgs/{org}/credentials/oauth`; `null` when the provider takes API\nkeys only."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "account_scope": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/AccountScopeView",
+                      "description": "For a provider whose API names the account, such as Cloudflare AI Gateway:\neach key also gives `account_id`, and may give `gateway_id`. `null` for\nother providers."
                     },
                     {
                       "type": "null"
@@ -35940,6 +36046,17 @@
               {
                 "$ref": "#/components/schemas/AccountSignInView",
                 "description": "An account people can sign in to instead of adding an API key, with\n`POST /orgs/{org}/credentials/oauth`; `null` when the provider takes API\nkeys only."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "account_scope": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AccountScopeView",
+                "description": "For a provider whose API names the account, such as Cloudflare AI Gateway:\neach key also gives `account_id`, and may give `gateway_id`. `null` for\nother providers."
               },
               {
                 "type": "null"

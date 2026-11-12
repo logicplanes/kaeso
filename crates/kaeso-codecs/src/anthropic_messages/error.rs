@@ -108,6 +108,11 @@ fn decode_body(body: &[u8], status: Option<u16>) -> KppError {
         Some(e) => {
             let mut kind = kind_for_type(&e.known.error.ty)
                 .unwrap_or_else(|| status.map_or(ErrorKind::ProviderError, kind_for_status));
+            // A 402 is about money whatever the type: Cloudflare answers an empty credit balance
+            // on its Messages endpoint with 402 and `invalid_request_error`.
+            if status == Some(402) {
+                kind = ErrorKind::Billing;
+            }
             if kind == ErrorKind::InvalidRequest {
                 let said = e.known.error.message.as_str();
                 if said.starts_with(CONTEXT_TOO_LONG) {
@@ -126,6 +131,12 @@ fn decode_body(body: &[u8], status: Option<u16>) -> KppError {
             err
         }
         None => {
+            if let Some(message) = raw.as_ref().and_then(crate::cloudflare::envelope_message) {
+                let kind = status.map_or(ErrorKind::ProviderError, kind_for_status);
+                let mut err = KppError::new(kind, message).with_origin(origin);
+                err.raw = raw;
+                return err;
+            }
             if let Some((ty, message)) =
                 openai_shaped(raw.as_ref()).or_else(|| failed(raw.as_ref()))
             {

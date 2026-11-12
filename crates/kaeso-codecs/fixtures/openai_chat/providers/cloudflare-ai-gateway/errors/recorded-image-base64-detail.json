@@ -1,0 +1,11 @@
+{
+  "errors": [
+    {
+      "message": "Property image_url only supports base64 encoded image data",
+      "code": 6004
+    }
+  ],
+  "success": false,
+  "result": {},
+  "messages": []
+}

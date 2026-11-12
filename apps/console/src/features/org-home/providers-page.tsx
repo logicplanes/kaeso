@@ -36,6 +36,7 @@ import { useOrgRights } from "~/auth/session";
 import { useNeedsRight } from "~/auth/needs-right";
 import { useOrgPartyName } from "~/features/org/party";
 import { docsPage } from "~/format/docs";
+import { AccountScopeFields, isAccountId, isGatewayId } from "~/kaeso/account-scope-fields";
 import { ProviderKeyDialog } from "~/kaeso/provider-key-dialog";
 import { keyTitle, useProviders, type Providers } from "~/kaeso/providers";
 import { usePageCreateAction } from "~/shell/create-action";
@@ -68,6 +69,10 @@ const joined = (names: string[]) => names.join(t("orgHome.listSeparator", ", "))
 function namesLine(names: string[]): string {
   if (names.length <= 2) return joined(names);
   return t("orgHome.namesAndMore", "{names} and {count} more", { names: joined(names.slice(0, 2)), count: names.length - 2 });
+}
+
+function compactAccountId(v: string): string {
+  return /^[0-9a-f]{32}$/.test(v) ? `${v.slice(0, 8)}…${v.slice(-4)}` : v;
 }
 
 function assignment(k: CredentialView): string {
@@ -201,7 +206,7 @@ export function OrgProvidersPage({ org, search = {} }: { org: string; search?: P
             )}
             {canChange && (
               <Menu.Item icon={icons.edit} onClick={() => setRenaming(k)}>
-                {k.location ? t("common.edit", "Edit") : t("common.rename", "Rename")}
+                {k.location || k.account_id ? t("common.edit", "Edit") : t("common.rename", "Rename")}
               </Menu.Item>
             )}
             {canDelete && (
@@ -250,6 +255,10 @@ export function OrgProvidersPage({ org, search = {} }: { org: string; search?: P
             r.key.account && !signsIn(r.key) ? { id: "service-account", label: t("orgHome.serviceAccount", "Service account"), value: r.key.account } : null,
             r.key.project ? { id: "project", label: t("orgHome.project", "Project"), value: r.key.project } : null,
             r.key.location ? { id: "location", label: t("orgHome.location", "Location"), value: r.key.location } : null,
+            r.key.account_id ? { id: "account-id", label: t("orgHome.accountId", "Account ID"), value: compactAccountId(r.key.account_id) } : null,
+            r.key.account_id
+              ? { id: "gateway", label: t("orgHome.gateway", "Gateway"), value: r.key.gateway_id ?? t("orgHome.defaultGateway", "default") }
+              : null,
             hidden.includes("projects") ? { id: "projects", label: t("common.projects", "Projects"), value: assignment(r.key) } : null,
             hidden.includes("used") ? { id: "used", label: t("common.lastUsed", "Last used"), value: lastUsed(r.key) } : null,
             hidden.includes("added") ? { id: "added", label: t("orgHome.added", "Added"), value: addedBy(r.key) } : null,
@@ -283,7 +292,13 @@ export function OrgProvidersPage({ org, search = {} }: { org: string; search?: P
                       <span key={part.id}>
                         {i > 0 && t("orgHome.partSeparator", " · ")}
                         {part.label && <VisuallyHidden>{t("orgHome.foldedLabel", "{label}:", { label: part.label })} </VisuallyHidden>}
-                        {part.value}
+                        {part.id === "account-id" ? (
+                          <Tooltip content={r.key.account_id ?? ""}>
+                            <span>{part.value}</span>
+                          </Tooltip>
+                        ) : (
+                          part.value
+                        )}
                       </span>
                     ))}
                   </Text>,
@@ -503,15 +518,24 @@ function RenameKeyDialog({ org, credential, onClose }: { org: string; credential
   const providers = useProviders(org);
   const [name, setName] = useState(credential.name);
   const [location, setLocation] = useState(credential.location);
+  const [accountId, setAccountId] = useState(credential.account_id ?? "");
+  const [gatewayId, setGatewayId] = useState(credential.gateway_id ?? "");
   const locations = providers.get(credential.provider)?.service_account?.locations ?? [];
+  const scopePage = credential.account_id ? providers.get(credential.provider)?.account_scope?.account_page : undefined;
   const trimmed = name.trim();
   const moved = location !== credential.location;
+  const rescoped = !!credential.account_id && (accountId.trim().toLowerCase() !== credential.account_id || gatewayId.trim() !== (credential.gateway_id ?? ""));
+  const editing = !!location || !!credential.account_id;
   const rename = useApiMutation({
     mutationFn: async () =>
       data(
         await api.PATCH("/platform/v1/orgs/{org}/credentials/{credential}", {
           params: { path: { org, credential: credential.id } },
-          body: moved ? { name: trimmed, location: String(location) } : { name: trimmed },
+          body: {
+            name: trimmed,
+            ...(moved ? { location: String(location) } : {}),
+            ...(rescoped ? { account_id: accountId.trim().toLowerCase(), gateway_id: gatewayId.trim() } : {}),
+          },
         }),
       ),
     invalidates: [["orgs", org, "credentials"]],
@@ -519,18 +543,30 @@ function RenameKeyDialog({ org, credential, onClose }: { org: string; credential
       toast(
         moved
           ? t("orgHome.keyMoved", "{name} now calls {location}", { name: k.name, location: String(k.location) })
-          : t("orgHome.keyRenamed", "Renamed to {name}", { name: k.name }),
+          : rescoped
+            ? t("orgHome.keyRescoped", "{name} now calls {account} via {gateway}", {
+                name: k.name,
+                gateway: k.gateway_id ?? t("orgHome.defaultGateway", "default"),
+                account: String(k.account_id),
+              })
+            : t("orgHome.keyRenamed", "Renamed to {name}", { name: k.name }),
       );
       onClose();
     },
   });
   const blocked = !trimmed
     ? t("orgHome.keyNameNeeded", "Give the key a name")
-    : trimmed === credential.name && !moved
-      ? location
-        ? t("orgHome.changeFirst", "Change the name or the location first")
-        : t("orgHome.changeNameFirst", "Change the name first")
-      : undefined;
+    : credential.account_id && !isAccountId(accountId)
+      ? t("kaeso.providerKey.accountIdBlocked", "Give the 32-character account ID")
+      : credential.account_id && gatewayId.trim() && !isGatewayId(gatewayId)
+        ? t("kaeso.providerKey.gatewayIdBlocked", "A gateway ID has only letters, digits, hyphens and underscores")
+        : trimmed === credential.name && !moved && !rescoped
+          ? location
+            ? t("orgHome.changeFirst", "Change the name or the location first")
+            : credential.account_id
+              ? t("orgHome.changeScopeFirst", "Change the name, the account or the gateway first")
+              : t("orgHome.changeNameFirst", "Change the name first")
+          : undefined;
   return (
     <Dialog
       busy={rename.isPending}
@@ -538,7 +574,7 @@ function RenameKeyDialog({ org, credential, onClose }: { org: string; credential
       onOpenChange={(o) => !o && onClose()}
       size="sm"
       title={
-        location
+        editing
           ? t("orgHome.editKey", "Edit {title}", { title: keyTitle(credential, providers) })
           : t("orgHome.renameKey", "Rename {title}", { title: keyTitle(credential, providers) })
       }
@@ -555,7 +591,7 @@ function RenameKeyDialog({ org, credential, onClose }: { org: string; credential
             loading={rename.isPending}
             onClick={() => rename.mutate()}
           >
-            {location ? t("common.save", "Save") : t("common.rename", "Rename")}
+            {editing ? t("common.save", "Save") : t("common.rename", "Rename")}
           </Button>
         </>
       }
@@ -572,6 +608,7 @@ function RenameKeyDialog({ org, credential, onClose }: { org: string; credential
             options={locations.map((l) => ({ value: l, label: l }))}
           />
         )}
+        {scopePage && <AccountScopeFields page={scopePage} accountId={accountId} onAccountId={setAccountId} gatewayId={gatewayId} onGatewayId={setGatewayId} />}
       </div>
     </Dialog>
   );

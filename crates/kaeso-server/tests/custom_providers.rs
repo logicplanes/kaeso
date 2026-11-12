@@ -226,6 +226,7 @@ async fn admins_add_change_and_delete_custom_providers_with_their_own_rights_and
             "embeddings": "openai_embeddings",
             "account": null,
             "service_account": null,
+            "account_scope": null,
             "model_routes": [],
         })
     );

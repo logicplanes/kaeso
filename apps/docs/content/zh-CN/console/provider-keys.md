@@ -38,6 +38,19 @@ Kaeso 会检查该文件是否为 `token_uri` 为 `https://oauth2.googleapis.com
 
 要调用其他位置，请在密钥菜单中选择**编辑**。要为同一个服务账号使用新的密钥文件，请选择**替换**。Kaeso 保存密钥后，请删除你下载的文件。
 
+## Cloudflare AI Gateway 密钥
+
+对于 Cloudflare AI Gateway，服务商密钥是 Cloudflare API 令牌，并注明其调用的账户，以及可选的请求所经过的网关。
+
+1. 在 Cloudflare 控制台中，于 **My Profile → API Tokens** 或账户的 **Manage account → Account API Tokens** 下，为该账户创建一个具有 **Account → Workers AI → Read** 权限的令牌。每个模型请求都需要此权限，第三方模型也一样（见 [REST API](https://developers.cloudflare.com/ai-gateway/usage/rest-api/#authentication)）；只有 AI Gateway 权限的令牌会被拒绝。
+2. 从账户主页或控制台地址中复制账户 ID（见[查找账户和区域 ID](https://developers.cloudflare.com/fundamentals/account/find-account-and-zone-ids/)）。
+3. 在 Kaeso 的**服务商**页面选择**添加服务商密钥**，然后选择 **Cloudflare AI Gateway**，粘贴令牌和账户 ID。
+4. 可选填写**网关**：该账户某个网关的 ID。请求随后经过该网关，使用其日志、缓存、速率限制和防护规则，并可调用其别名（`custom/…`）和动态路由（`dynamic/…`）。未填写时，请求经过账户的 `default` 网关，Cloudflare 会在第一次请求时创建该网关。
+
+第三方模型使用账户的 Unified Billing 额度付费，或使用网关上以别名 `default` 存储的服务商密钥付费（见[自带密钥](https://developers.cloudflare.com/ai-gateway/configuration/bring-your-own-keys/)）。两者都没有时，Cloudflare 会回复余额不足，应用会收到因计费原因被拒绝的服务商密钥。Workers AI 模型通过 Workers AI 计费，即使账户没有额度也可以使用。
+
+列表会在密钥旁显示账户 ID 和网关。要把密钥改到其他账户或网关，请在其菜单中选择**编辑**。
+
 ## 使用 ChatGPT 账户登录
 
 对于 OpenAI，服务商密钥也可以是一个 ChatGPT 账户。其请求随后使用该账户的 ChatGPT 套餐，而不是 OpenAI API 账户，并受套餐限额约束。
@@ -93,7 +106,7 @@ Grok 账户像 xAI API 密钥一样处理请求，使用该账户的令牌发送
 | 替换 | 为同一个密钥换上新的密钥值，例如在服务商处轮换之后；服务账号密钥则换上新的 JSON 密钥文件 |
 | 重新登录 | 用于账户：重新登录同一个账户，例如在其显示**已退出登录**或**无 API 访问权限**之后，并结束其之前在 OpenAI 或 xAI 的会话 |
 | 管理用量 | 用于 ChatGPT 账户：打开 ChatGPT 的用量设置，账户所有者可在其中查看和限制 Kaeso 的用量 |
-| 重命名 | 更改控制台中显示的名称。服务账号密钥的这一项为**编辑**，还可以更改位置 |
+| 重命名 | 更改控制台中显示的名称。服务账号密钥的这一项为**编辑**，还可以更改位置；Cloudflare AI Gateway 密钥的**编辑**还可以更改账户和网关 |
 | 删除 | 移除密钥。其项目改回使用默认密钥。对于账户，Kaeso 还会结束其在 OpenAI 或 xAI 的会话 |
 
 当服务商结束了账户的会话时，例如其所有者在 ChatGPT 中断开了 Kaeso，该账户会显示**已退出登录**。当 xAI 拒绝 Grok 账户的套餐时，该账户会显示**无 API 访问权限**。这两种情况下，账户的请求都会失败，直到拥有**更改服务商密钥**权限的人选择**重新登录**。

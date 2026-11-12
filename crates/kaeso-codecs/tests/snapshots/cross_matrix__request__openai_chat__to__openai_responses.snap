@@ -1591,6 +1591,93 @@ expression: outcomes
     "param": null,
     "unsupported": "verbosity"
   },
+  "providers/cloudflare-ai-gateway/insufficient-balance": {
+    "body": {
+      "input": [
+        {
+          "content": "hi",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 16,
+      "model": "openai/gpt-6-luna",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/cloudflare-ai-gateway/invalid-api-key": {
+    "message": "`max_tokens 1` is not supported by OpenAI Responses. OpenAI Responses needs an output limit of at least 16 tokens; raise it or route the request to another model.",
+    "param": "max_tokens",
+    "unsupported": "max_tokens 1"
+  },
+  "providers/cloudflare-ai-gateway/reasoning-effort-none": {
+    "body": {
+      "input": [
+        {
+          "content": "Say OK.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 200,
+      "model": "@cf/zai-org/glm-4.7-flash",
+      "reasoning": {
+        "effort": "none"
+      },
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/cloudflare-ai-gateway/reasoning-stream": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "Is 91 a prime number? Answer in one sentence.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 400,
+      "model": "@cf/zai-org/glm-4.7-flash",
+      "reasoning": {
+        "effort": "low"
+      },
+      "store": false,
+      "stream": true
+    },
+    "path": "/v1/responses"
+  },
+  "providers/cloudflare-ai-gateway/retired-model": {
+    "message": "`max_tokens 1` is not supported by OpenAI Responses. OpenAI Responses needs an output limit of at least 16 tokens; raise it or route the request to another model.",
+    "param": "max_tokens",
+    "unsupported": "max_tokens 1"
+  },
+  "providers/cloudflare-ai-gateway/unknown-model": {
+    "message": "`max_tokens 1` is not supported by OpenAI Responses. OpenAI Responses needs an output limit of at least 16 tokens; raise it or route the request to another model.",
+    "param": "max_tokens",
+    "unsupported": "max_tokens 1"
+  },
+  "providers/cloudflare-ai-gateway/workers-ai-reply": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "Is 91 a prime number? Answer in one sentence.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 400,
+      "model": "@cf/zai-org/glm-4.7-flash",
+      "reasoning": {
+        "effort": "low"
+      },
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
   "providers/cohere/assistant-prefill": {
     "body": {
       "input": [

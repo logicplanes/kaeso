@@ -58,6 +58,10 @@ pub struct ProviderView {
         `auth_method` `google_service_account`; `null` when the provider takes\n\
         none."]
     pub service_account: Option<ServiceAccountSignInView>,
+    #[doc = "For a provider whose API names the account, such as Cloudflare AI Gateway:\n\
+        each key also gives `account_id`, and may give `gateway_id`. `null` for\n\
+        other providers."]
+    pub account_scope: Option<AccountScopeView>,
     #[doc = "Which format a model id is sent in when its catalogue entry names\n\
         none, the first matching pattern winning; models no pattern matches go\n\
         in the first of `dialects`. Empty for most providers."]
@@ -109,6 +113,16 @@ pub struct AccountSignInView {
 }
 
 #[derive(Debug, Serialize, ToSchema)]
+#[schema(description = "The account a provider's keys name, and the gateway they may name.")]
+pub struct AccountScopeView {
+    #[doc = "The provider's page that says where to find the account id."]
+    pub account_page: KeyPageView,
+    #[doc = "The header Kaeso names a key's gateway in."]
+    #[schema(example = "cf-aig-gateway-id")]
+    pub gateway_header: &'static str,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
 #[schema(description = "A page on the provider's own site.")]
 pub struct KeyPageView {
     #[doc = "The page, an `https` URL."]
@@ -149,6 +163,13 @@ impl ProviderView {
                 locations: s.locations.to_vec(),
                 default_location: s.default_location,
             }),
+            account_scope: p.account_scope.map(|a| AccountScopeView {
+                account_page: KeyPageView {
+                    url: a.account_page.url,
+                    label: a.account_page.label,
+                },
+                gateway_header: a.gateway_header,
+            }),
             model_routes: p
                 .routes
                 .iter()
@@ -175,6 +196,7 @@ impl ProviderView {
             embeddings: p.embeddings().map(|d| d.as_str()),
             account: None,
             service_account: None,
+            account_scope: None,
             model_routes: Vec::new(),
             server: p.server(),
         }

@@ -827,6 +827,42 @@ expression: outcomes
     },
     "path": "/v1beta/models/claude-opus-5-5:generateContent"
   },
+  "providers/cloudflare-ai-gateway/insufficient-balance": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Say OK."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 16
+      }
+    },
+    "path": "/v1beta/models/anthropic%2Fclaude-haiku-5.5:generateContent"
+  },
+  "providers/cloudflare-ai-gateway/workers-ai-model": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Say OK."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 20
+      }
+    },
+    "path": "/v1beta/models/@cf%2Fzai-org%2Fglm-4.7-flash:generateContent"
+  },
   "providers/fireworks-ai/invalid-api-key": {
     "body": {
       "contents": [

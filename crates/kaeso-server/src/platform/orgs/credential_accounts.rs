@@ -968,6 +968,7 @@ async fn save_new(
                 account: Some(&signed.account),
                 project: None,
                 location: None,
+                scope: None,
             },
         },
     )
@@ -1104,6 +1105,7 @@ async fn save_again(
             account: Some(&signed.account),
             project: None,
             location: None,
+            scope: None,
         },
     )
     .await?;

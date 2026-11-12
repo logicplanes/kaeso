@@ -38,6 +38,19 @@ Kaeso prüft, dass die Datei ein Dienstkonto-Schlüssel ist, dessen `token_uri` 
 
 Um einen anderen Standort aufzurufen, wählen Sie im Menü des Schlüssels **Bearbeiten**. Um eine neue Schlüsseldatei desselben Dienstkontos zu verwenden, wählen Sie **Ersetzen**. Löschen Sie die heruntergeladene Datei, sobald Kaeso den Schlüssel hat.
 
+## Schlüssel für Cloudflare AI Gateway
+
+Für Cloudflare AI Gateway ist ein Anbieter-Schlüssel ein Cloudflare-API-Token, und er nennt das Konto, das er aufruft, und optional das Gateway, über das seine Anfragen laufen.
+
+1. Legen Sie im Cloudflare-Dashboard unter **My Profile → API Tokens** oder unter **Manage account → Account API Tokens** des Kontos ein Token mit der Berechtigung **Account → Workers AI → Read** für das Konto an. Jede Modellanfrage braucht sie, auch für Modelle anderer Anbieter ([REST API](https://developers.cloudflare.com/ai-gateway/usage/rest-api/#authentication)); ein Token mit nur AI-Gateway-Berechtigungen wird abgelehnt.
+2. Kopieren Sie die Konto-ID von der Startseite des Kontos oder aus der Adresse des Dashboards ([Konto- und Zonen-IDs finden](https://developers.cloudflare.com/fundamentals/account/find-account-and-zone-ids/)).
+3. Wählen Sie in Kaeso unter **Anbieter** **Anbieter-Schlüssel hinzufügen**, dann **Cloudflare AI Gateway**, und fügen Sie das Token und die Konto-ID ein.
+4. Geben Sie optional ein **Gateway** an: die ID eines Gateways des Kontos. Die Anfragen laufen dann darüber, mit seinen Logs, seinem Caching, seinen Ratenlimits und Guardrails, und können seine Aliasse (`custom/…`) und dynamischen Routen (`dynamic/…`) aufrufen. Ohne Gateway laufen sie über das Gateway `default` des Kontos, das Cloudflare bei der ersten Anfrage anlegt.
+
+Modelle anderer Anbieter werden mit den Unified-Billing-Guthaben des Kontos bezahlt oder mit den Anbieter-Schlüsseln, die auf dem Gateway unter dem Alias `default` gespeichert sind ([eigene Schlüssel](https://developers.cloudflare.com/ai-gateway/configuration/bring-your-own-keys/)). Ohne beides antwortet Cloudflare mit leerem Guthaben, das Apps als aus Abrechnungsgründen abgelehnten Anbieter-Schlüssel erhalten. Workers-AI-Modelle werden über Workers AI abgerechnet, auch wenn das Konto kein Guthaben hat.
+
+Die Liste zeigt die Konto-ID und das Gateway neben dem Schlüssel. Um den Schlüssel auf ein anderes Konto oder Gateway umzustellen, wählen Sie **Bearbeiten** in seinem Menü.
+
 ## Mit einem ChatGPT-Konto anmelden
 
 Für OpenAI kann ein Anbieter-Schlüssel auch ein ChatGPT-Konto sein. Seine Anfragen nutzen dann das ChatGPT-Abo des Kontos statt eines OpenAI-API-Kontos, im Rahmen der Limits des Abos.
@@ -93,7 +106,7 @@ Die Liste zeigt zu jedem Schlüssel seinen Namen, die letzten vier Zeichen, die 
 | Ersetzen | Nimmt ein neues Secret für denselben Schlüssel an, etwa nachdem Sie ihn beim Anbieter rotiert haben; bei einem Dienstkonto-Schlüssel eine neue JSON-Schlüsseldatei |
 | Erneut anmelden | Für ein Konto: meldet dasselbe Konto erneut an, etwa nachdem es **Abgemeldet** oder **Kein API-Zugang** zeigt, und beendet seine vorherige Sitzung bei OpenAI oder xAI |
 | Nutzung verwalten | Für ein ChatGPT-Konto: öffnet die Nutzungseinstellungen von ChatGPT, in denen sein Inhaber prüft und begrenzt, was Kaeso nutzt |
-| Umbenennen | Ändert den Namen, den die Konsole zeigt. Bei einem Dienstkonto-Schlüssel heißt es **Bearbeiten** und ändert auch den Standort |
+| Umbenennen | Ändert den Namen, den die Konsole zeigt. Bei einem Dienstkonto-Schlüssel heißt es **Bearbeiten** und ändert auch den Standort, bei einem Schlüssel für Cloudflare AI Gateway das Konto und das Gateway |
 | Löschen | Entfernt den Schlüssel. Seine Projekte nutzen wieder den Standard. Bei einem Konto beendet Kaeso außerdem seine Sitzung bei OpenAI oder xAI |
 
 Ein Konto zeigt **Abgemeldet**, wenn der Anbieter seine Sitzung beendet hat, etwa nachdem sein Inhaber Kaeso in ChatGPT getrennt hat. Ein Grok-Konto zeigt **Kein API-Zugang**, wenn xAI sein Abo ablehnt. In beiden Fällen schlagen seine Anfragen fehl, bis jemand mit **Anbieter-Schlüssel ändern** **Erneut anmelden** wählt.

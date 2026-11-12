@@ -1857,6 +1857,141 @@ expression: outcomes
     "param": null,
     "unsupported": "verbosity"
   },
+  "providers/cloudflare-ai-gateway/insufficient-balance": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "hi"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 16
+      }
+    },
+    "path": "/v1beta/models/openai%2Fgpt-6-luna:generateContent"
+  },
+  "providers/cloudflare-ai-gateway/invalid-api-key": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "hi"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1
+      }
+    },
+    "path": "/v1beta/models/@cf%2Fzai-org%2Fglm-4.7-flash:generateContent"
+  },
+  "providers/cloudflare-ai-gateway/reasoning-effort-none": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Say OK."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 200,
+        "thinkingConfig": {
+          "thinkingBudget": 0
+        }
+      }
+    },
+    "path": "/v1beta/models/@cf%2Fzai-org%2Fglm-4.7-flash:generateContent"
+  },
+  "providers/cloudflare-ai-gateway/reasoning-stream": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Is 91 a prime number? Answer in one sentence."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 400,
+        "thinkingConfig": {
+          "thinkingLevel": "LOW"
+        }
+      }
+    },
+    "path": "/v1beta/models/@cf%2Fzai-org%2Fglm-4.7-flash:streamGenerateContent?alt=sse"
+  },
+  "providers/cloudflare-ai-gateway/retired-model": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "hi"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1
+      }
+    },
+    "path": "/v1beta/models/openai%2Fo3-mini:generateContent"
+  },
+  "providers/cloudflare-ai-gateway/unknown-model": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "hi"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1
+      }
+    },
+    "path": "/v1beta/models/example%2Fnot-a-model:generateContent"
+  },
+  "providers/cloudflare-ai-gateway/workers-ai-reply": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Is 91 a prime number? Answer in one sentence."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 400,
+        "thinkingConfig": {
+          "thinkingLevel": "LOW"
+        }
+      }
+    },
+    "path": "/v1beta/models/@cf%2Fzai-org%2Fglm-4.7-flash:generateContent"
+  },
   "providers/cohere/assistant-prefill": {
     "body": {
       "contents": [

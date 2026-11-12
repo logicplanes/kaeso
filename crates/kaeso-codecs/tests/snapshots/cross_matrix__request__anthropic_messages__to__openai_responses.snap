@@ -738,6 +738,34 @@ expression: outcomes
     },
     "path": "/v1/responses"
   },
+  "providers/cloudflare-ai-gateway/insufficient-balance": {
+    "body": {
+      "input": [
+        {
+          "content": "Say OK.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 16,
+      "model": "anthropic/claude-haiku-5.5",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/cloudflare-ai-gateway/workers-ai-model": {
+    "body": {
+      "input": [
+        {
+          "content": "Say OK.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 20,
+      "model": "@cf/zai-org/glm-4.7-flash",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
   "providers/fireworks-ai/invalid-api-key": {
     "message": "`max_tokens 1` is not supported by OpenAI Responses. OpenAI Responses needs an output limit of at least 16 tokens; raise it or route the request to another model.",
     "param": "max_tokens",

@@ -1,0 +1,11 @@
+{
+  "errors": [
+    {
+      "message": "Model 'openai/o3-mini' has been deprecated. Please use 'openai/gpt-5.6-sol' instead.",
+      "code": 7010
+    }
+  ],
+  "success": false,
+  "result": {},
+  "messages": []
+}

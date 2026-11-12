@@ -38,6 +38,19 @@ Kaeso checks that the file is a service account key whose `token_uri` is `https:
 
 To call another location, choose **Edit** in the key's menu. To use a new key file for the same service account, choose **Replace**. Delete the file you downloaded once Kaeso has the key.
 
+## Cloudflare AI Gateway keys
+
+For Cloudflare AI Gateway, a provider key is a Cloudflare API token, and it names the account it calls and, optionally, the gateway its requests go through.
+
+1. In the Cloudflare dashboard, under **My Profile → API Tokens** or the account's **Manage account → Account API Tokens**, create a token with the permission **Account → Workers AI → Read** for the account. Every model request needs it, also for third-party models ([REST API](https://developers.cloudflare.com/ai-gateway/usage/rest-api/#authentication)); a token with AI Gateway permissions only is refused.
+2. Copy the account ID from the account's home page or its dashboard address ([find account and zone IDs](https://developers.cloudflare.com/fundamentals/account/find-account-and-zone-ids/)).
+3. In Kaeso, on **Providers**, choose **Add provider key**, then **Cloudflare AI Gateway**, and paste the token and the account ID.
+4. Optionally, give a **Gateway**: the ID of a gateway of the account. Requests then go through it, with its logs, caching, rate limits and guardrails, and can call its aliases (`custom/…`) and dynamic routes (`dynamic/…`). Without one, they go through the account's `default` gateway, which Cloudflare creates on the first request.
+
+Third-party models are paid with the account's Unified Billing credits, or with the provider keys stored on the gateway under the alias `default` ([bring your own keys](https://developers.cloudflare.com/ai-gateway/configuration/bring-your-own-keys/)). Without either, Cloudflare answers with an empty balance, which apps get as a provider key refused for billing reasons. Workers AI models are billed through Workers AI, also when the account has no credits.
+
+The list shows the account ID and the gateway beside the key. To move the key to another account or gateway, choose **Edit** in its menu.
+
 ## Sign in with a ChatGPT account
 
 For OpenAI, a provider key can also be a ChatGPT account. Its requests then use the account's ChatGPT plan instead of an OpenAI API account, within the plan's limits.
@@ -93,7 +106,7 @@ The list shows each key's name, its last four characters, the projects that use 
 | Replace | Takes a new secret for the same key, for example after you rotated it at the provider; for a service account key, a new JSON key file |
 | Sign in again | For an account: signs the same account in again, for example after it shows **Signed out** or **No API access**, and ends its previous session at OpenAI or xAI |
 | Manage usage | For a ChatGPT account: opens ChatGPT's usage settings, where its owner reviews and limits what Kaeso uses |
-| Rename | Changes the name the console shows. For a service account key it's **Edit**, which also changes the location |
+| Rename | Changes the name the console shows. For a service account key it's **Edit**, which also changes the location; for a Cloudflare AI Gateway key, **Edit** also changes the account and the gateway |
 | Delete | Removes the key. Its projects use the default again. For an account, Kaeso also ends its session at OpenAI or xAI |
 
 An account shows **Signed out** when the provider has ended its session, for example after its owner disconnected Kaeso in ChatGPT. A Grok account shows **No API access** when xAI refuses its plan. In both cases, its requests fail until someone with **Change provider keys** chooses **Sign in again**.

@@ -1957,6 +1957,166 @@ expression: outcomes
     "param": null,
     "unsupported": "verbosity"
   },
+  "providers/cloudflare-ai-gateway/insufficient-balance": {
+    "body": {
+      "max_tokens": 16,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "hi",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "openai/gpt-6-luna"
+    },
+    "path": "/v1/messages"
+  },
+  "providers/cloudflare-ai-gateway/invalid-api-key": {
+    "body": {
+      "max_tokens": 1,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "hi",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "@cf/zai-org/glm-4.7-flash"
+    },
+    "path": "/v1/messages"
+  },
+  "providers/cloudflare-ai-gateway/reasoning-effort-none": {
+    "body": {
+      "max_tokens": 200,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Say OK.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "@cf/zai-org/glm-4.7-flash"
+    },
+    "path": "/v1/messages"
+  },
+  "providers/cloudflare-ai-gateway/reasoning-stream": {
+    "body": {
+      "max_tokens": 400,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Is 91 a prime number? Answer in one sentence.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "@cf/zai-org/glm-4.7-flash",
+      "output_config": {
+        "effort": "low"
+      },
+      "stream": true,
+      "thinking": {
+        "type": "adaptive"
+      }
+    },
+    "path": "/v1/messages"
+  },
+  "providers/cloudflare-ai-gateway/retired-model": {
+    "body": {
+      "max_tokens": 1,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "hi",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "openai/o3-mini"
+    },
+    "path": "/v1/messages"
+  },
+  "providers/cloudflare-ai-gateway/unknown-model": {
+    "body": {
+      "max_tokens": 1,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "hi",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "example/not-a-model"
+    },
+    "path": "/v1/messages"
+  },
+  "providers/cloudflare-ai-gateway/workers-ai-reply": {
+    "body": {
+      "max_tokens": 400,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Is 91 a prime number? Answer in one sentence.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "@cf/zai-org/glm-4.7-flash",
+      "output_config": {
+        "effort": "low"
+      },
+      "thinking": {
+        "type": "adaptive"
+      }
+    },
+    "path": "/v1/messages"
+  },
   "providers/cohere/assistant-prefill": {
     "body": {
       "max_tokens": 4096,

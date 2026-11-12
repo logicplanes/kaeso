@@ -117,11 +117,14 @@ pub(crate) fn decode(
             }
             err
         }
-        None => match value
-            .as_ref()
-            .and_then(|v| v.get("error").or_else(|| v.get("message")))
-        {
-            Some(Value::String(message)) if !message.trim().is_empty() => {
+        None => match (
+            value.as_ref().and_then(crate::cloudflare::envelope_message),
+            value
+                .as_ref()
+                .and_then(|v| v.get("error").or_else(|| v.get("message"))),
+        ) {
+            (Some(message), _) => KppError::new(kind_for(Some(status), None, None), message),
+            (None, Some(Value::String(message))) if !message.trim().is_empty() => {
                 KppError::new(kind_for(Some(status), None, None), message.clone())
             }
             _ => {

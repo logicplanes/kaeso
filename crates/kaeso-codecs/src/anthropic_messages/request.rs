@@ -626,7 +626,7 @@ pub(crate) fn encode_request(
     let path = if raw_predict {
         raw_predict_path(ctx, &w.model, generation, w.stream == Some(true))?
     } else {
-        path.to_owned()
+        crate::codec::under_api_root(ctx, path)
     };
     let mut ext = own_ext(w, &r.extras);
     if raw_predict {

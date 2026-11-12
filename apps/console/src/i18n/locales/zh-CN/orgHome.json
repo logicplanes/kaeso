@@ -330,6 +330,11 @@
   "orgHome.mcp.serverVersion": "{name} {version}",
   "orgHome.project": "项目",
   "orgHome.location": "位置",
+  "orgHome.accountId": "账户 ID",
+  "orgHome.gateway": "网关",
+  "orgHome.defaultGateway": "default",
+  "orgHome.keyRescoped": "{name} 现在经过账户 {account} 的 {gateway} 网关",
+  "orgHome.changeScopeFirst": "请先更改名称、账户或网关",
   "orgHome.keyMoved": "{name} 现在调用 {location}",
   "orgHome.changeFirst": "请先更改名称或位置",
   "orgHome.editKey": "编辑 {title}"

@@ -493,6 +493,9 @@ const messages = (): Rule[] => [
   rule("errors.serviceAccount.location", () =>
     t("errors.serviceAccount.location", "Kaeso doesn't call that location for this provider; choose one from the list."),
   ),
+  rule("errors.accountScope.accountId", () => t("errors.accountScope.accountId", "The account id is 32 hexadecimal characters, as the dashboard shows it.")),
+  rule("errors.accountScope.accountMissing", (v) => t("errors.accountScope.accountMissing", "{provider} calls an account; give its `account_id`.", v)),
+  rule("errors.accountScope.gatewayId", () => t("errors.accountScope.gatewayId", "The gateway id is 1 to 64 letters, digits, hyphens and underscores.")),
   rule("errors.noEmbeddingsAtProvider", (v) =>
     t("errors.noEmbeddingsAtProvider", "Kaeso calls no embeddings models on {provider}, so `{name}` can't create embeddings.", v),
   ),

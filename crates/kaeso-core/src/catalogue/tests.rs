@@ -2617,6 +2617,45 @@ fn standard_compute_models_speak_chat_completions_without_prices_and_smart_routi
 }
 
 #[test]
+fn cloudflare_models_go_out_in_the_format_cloudflare_lists_with_their_efforts_and_prices() {
+    let claude = eff(&entry(
+        "cloudflare-ai-gateway",
+        "anthropic/claude-sonnet-5.5",
+    ));
+    assert_eq!(claude.dialect, DialectId::AnthropicMessages);
+    assert_eq!(
+        (claude.fields.input_price, claude.fields.output_price),
+        (Some(dec!(2)), Some(dec!(10)))
+    );
+    let luna = eff(&entry("cloudflare-ai-gateway", "openai/gpt-5.6-luna"));
+    assert_eq!(luna.dialect, DialectId::OpenAiResponses);
+    let glm = eff(&entry("cloudflare-ai-gateway", "@cf/zai-org/glm-4.7-flash"));
+    assert_eq!(glm.dialect, DialectId::OpenAiChat);
+    assert_eq!(glm.provider.chat().provider, "Cloudflare AI Gateway");
+    assert_eq!(glm.provider.count_tokens_for(DialectId::OpenAiChat), None);
+    assert_eq!(
+        effort_levels(&glm, DialectId::OpenAiChat),
+        ["low", "medium", "high"]
+    );
+    assert_eq!(
+        (glm.fields.input_price, glm.fields.output_price),
+        (Some(dec!(0.0605)), Some(dec!(0.4)))
+    );
+    let qwen = eff(&entry("cloudflare-ai-gateway", "@cf/qwen/qwen3.8-27b"));
+    assert_eq!(
+        effort_levels(&qwen, DialectId::OpenAiChat),
+        ["low", "medium", "xhigh"]
+    );
+    let snap = snapshot();
+    assert!(entry("cloudflare-ai-gateway", "openai/o3-mini").is_deprecated(&snap));
+    let scope = glm.provider.built_in().unwrap().account_scope.unwrap();
+    assert_eq!(
+        scope.base_path("0123456789abcdef0123456789abcdef"),
+        "/client/v4/accounts/0123456789abcdef0123456789abcdef/ai/v1"
+    );
+}
+
+#[test]
 fn scaleway_models_speak_chat_completions_and_whisper_is_priced_by_the_minute() {
     let gpt_oss = eff(&entry("scaleway", "gpt-oss-120b"));
     assert_eq!(gpt_oss.dialect, DialectId::OpenAiChat);

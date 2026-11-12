@@ -5,7 +5,7 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use kaeso_core::google::{KeyProblem, ServiceAccountKey};
 use kaeso_core::id::{CredentialId, OrgId, ProjectId};
-use kaeso_core::provider::{AuthMethod, ProviderId, ServiceAccountSignIn};
+use kaeso_core::provider::{AccountScope, AuthMethod, ProviderId, ServiceAccountSignIn};
 use kaeso_core::providers::ProviderRef;
 use kaeso_store::pg::catalogue;
 use kaeso_store::pg::credentials::{self, AssignmentRow, CredentialRow, NewCredential};
@@ -73,6 +73,14 @@ pub struct CredentialView {
         `us-central1`; `null` for other keys."]
     #[schema(example = "global")]
     pub location: Option<String>,
+    #[doc = "The account a key of a provider whose API names the account calls,\n\
+        such as a Cloudflare account id; `null` for other keys."]
+    #[schema(example = "0123456789abcdef0123456789abcdef")]
+    pub account_id: Option<String>,
+    #[doc = "The gateway the key's requests go through, such as a Cloudflare AI\n\
+        Gateway id; `null` for the account's default gateway and for other keys."]
+    #[schema(example = "production")]
+    pub gateway_id: Option<String>,
     #[doc = "Why the account can't make requests until someone signs in again:\n\
         `signed_out` when the provider ended its session, `no_api_access` when its\n\
         plan doesn't include API access; `null` while it works."]
@@ -163,6 +171,8 @@ impl CredentialView {
             account: r.account_label.clone(),
             project: r.project.clone(),
             location: r.location.clone(),
+            account_id: r.account_id.clone(),
+            gateway_id: r.gateway_id.clone(),
             auth_error: r.auth_error.as_deref().map(|e| match e {
                 service::NO_API_ACCESS => AuthErrorView::NoApiAccess,
                 _ => AuthErrorView::SignedOut,
@@ -185,8 +195,8 @@ pub struct CredentialCreate {
         `ollama-cloud`, `moonshotai`, `alibaba`, `cerebras`, `zai`, `minimax`,\n\
         `elevenlabs`, `google`, `gemini-agent-platform`, `fireworks-ai`, `nebius`,\n\
         `sambanova`, `scaleway`, `huggingface`, `nvidia`, `baseten`, `siliconflow`,\n\
-        `standardcompute`, or one of the organization's custom providers that takes a\n\
-        key."]
+        `standardcompute`, `cloudflare-ai-gateway`, or one of the organization's\n\
+        custom providers that takes a key."]
     #[schema(value_type = ProviderId, example = "openai")]
     pub provider: String,
     #[doc = "A name to recognise it by."]
@@ -209,6 +219,16 @@ pub struct CredentialCreate {
         `service_account.locations`; its `default_location` when absent."]
     #[schema(example = "global")]
     pub location: Option<String>,
+    #[doc = "For a provider whose `account_scope` isn't `null`, such as\n\
+        `cloudflare-ai-gateway`, the account the key calls: a Cloudflare account id\n\
+        is 32 hexadecimal characters. Required for such a provider, refused for others."]
+    #[schema(example = "0123456789abcdef0123456789abcdef")]
+    pub account_id: Option<String>,
+    #[doc = "For such a provider, the gateway the key's requests go through: 1 to 64\n\
+        letters, digits, hyphens and underscores. The account's default gateway when\n\
+        absent."]
+    #[schema(example = "production")]
+    pub gateway_id: Option<String>,
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Deserialize, ToSchema)]
@@ -234,11 +254,19 @@ pub struct CredentialReplace {
     pub name: Option<String>,
     #[doc = "For a service account key, a new location; unchanged when absent."]
     pub location: Option<String>,
+    #[doc = "For a key that calls an account, a new account id; unchanged when absent."]
+    pub account_id: Option<String>,
+    #[doc = "For a key that calls an account, a new gateway, or an empty string for\n\
+        the account's default gateway; unchanged when absent."]
+    pub gateway_id: Option<String>,
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
 #[serde(deny_unknown_fields)]
-#[schema(description = "A new name, and for a service account key a new location.")]
+#[schema(
+    description = "A new name, for a service account key a new location, and for a key that\n\
+    calls an account a new account or gateway."
+)]
 pub struct CredentialRename {
     #[doc = "A name to recognise the key by."]
     #[schema(example = "Production OpenAI key")]
@@ -246,6 +274,12 @@ pub struct CredentialRename {
     #[doc = "For a service account key, the location it calls from now on;\n\
         unchanged when absent."]
     pub location: Option<String>,
+    #[doc = "For a key that calls an account, the account it calls from now on;\n\
+        unchanged when absent."]
+    pub account_id: Option<String>,
+    #[doc = "For a key that calls an account, the gateway from now on, or an empty\n\
+        string for the account's default gateway; unchanged when absent."]
+    pub gateway_id: Option<String>,
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
@@ -266,6 +300,8 @@ impl std::fmt::Debug for CredentialCreate {
             .field("make_default", &self.make_default)
             .field("auth_method", &self.auth_method)
             .field("location", &self.location)
+            .field("account_id", &self.account_id)
+            .field("gateway_id", &self.gateway_id)
             .finish_non_exhaustive()
     }
 }
@@ -275,6 +311,8 @@ impl std::fmt::Debug for CredentialReplace {
         f.debug_struct("CredentialReplace")
             .field("name", &self.name)
             .field("location", &self.location)
+            .field("account_id", &self.account_id)
+            .field("gateway_id", &self.gateway_id)
             .finish_non_exhaustive()
     }
 }
@@ -393,6 +431,12 @@ pub async fn create(
                     "Only a service account key calls a location; leave `location` out.",
                 ));
             }
+            let scope = scope(
+                &provider,
+                req.account_id.as_deref(),
+                req.gateway_id.as_deref(),
+                None,
+            )?;
             let (secret, last4) = validate_secret(&req.secret)?;
             add(
                 &state,
@@ -404,12 +448,18 @@ pub async fn create(
                     name: &name,
                     make_default: req.make_default,
                     secret,
-                    auth: Auth::key(&last4),
+                    auth: Auth::key(&last4).scoped(scope.as_ref()),
                 },
             )
             .await?
         }
         KeyMethod::GoogleServiceAccount => {
+            if req.account_id.is_some() || req.gateway_id.is_some() {
+                return Err(ApiError::invalid(
+                    "account_id",
+                    format!("A service account key {NO_SCOPE}"),
+                ));
+            }
             let sign_in = service_account_sign_in(&provider)?;
             let key = service_account_key(&req.secret)?;
             let location = location(sign_in, req.location.as_deref())?;
@@ -512,6 +562,7 @@ pub(super) struct Auth<'a> {
     pub account: Option<&'a str>,
     pub project: Option<&'a str>,
     pub location: Option<&'a str>,
+    pub scope: Option<&'a Scope>,
 }
 
 impl<'a> Auth<'a> {
@@ -523,7 +574,13 @@ impl<'a> Auth<'a> {
             account: None,
             project: None,
             location: None,
+            scope: None,
         }
+    }
+
+    fn scoped(mut self, scope: Option<&'a Scope>) -> Auth<'a> {
+        self.scope = scope;
+        self
     }
 
     fn service_account(key: &'a ServiceAccountKey, last4: &'a str, location: &'a str) -> Auth<'a> {
@@ -534,7 +591,88 @@ impl<'a> Auth<'a> {
             account: Some(key.client_email()),
             project: Some(key.project_id()),
             location: Some(location),
+            scope: None,
         }
+    }
+}
+
+/// The account, and optionally the gateway, a key of a provider whose API path names the
+/// account calls.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(super) struct Scope {
+    pub account_id: String,
+    pub gateway_id: Option<String>,
+}
+
+const NO_SCOPE: &str = "takes no account or gateway; leave `account_id` and `gateway_id` out.";
+
+/// The scope a new key, or a replaced or edited one starting from `before`, calls: required for a
+/// provider whose API names the account, refused for every other provider. An empty gateway goes
+/// back to the account's default gateway.
+pub(super) fn scope(
+    provider: &ProviderRef,
+    account_id: Option<&str>,
+    gateway_id: Option<&str>,
+    before: Option<&Scope>,
+) -> ApiResult<Option<Scope>> {
+    let Some(_) = provider.built_in().and_then(|p| p.account_scope) else {
+        if account_id.is_some() || gateway_id.is_some() {
+            let field = if account_id.is_some() {
+                "account_id"
+            } else {
+                "gateway_id"
+            };
+            return Err(ApiError::invalid(
+                field,
+                format!("{} {NO_SCOPE}", provider.name()),
+            ));
+        }
+        return Ok(None);
+    };
+    let account_id = match account_id.map(|a| a.trim().to_ascii_lowercase()) {
+        Some(a) if AccountScope::is_account_id(&a) => a,
+        Some(_) => {
+            return Err(ApiError::invalid(
+                "account_id",
+                "The account id is 32 hexadecimal characters, as the dashboard shows it.",
+            ));
+        }
+        None => match before {
+            Some(b) => b.account_id.clone(),
+            None => {
+                return Err(ApiError::invalid(
+                    "account_id",
+                    format!(
+                        "{} calls an account; give its `account_id`.",
+                        provider.name()
+                    ),
+                ));
+            }
+        },
+    };
+    let gateway_id = match gateway_id.map(str::trim) {
+        Some("") => None,
+        Some(g) if AccountScope::is_gateway_id(g) => Some(g.to_owned()),
+        Some(_) => {
+            return Err(ApiError::invalid(
+                "gateway_id",
+                "The gateway id is 1 to 64 letters, digits, hyphens and underscores.",
+            ));
+        }
+        None => before.and_then(|b| b.gateway_id.clone()),
+    };
+    Ok(Some(Scope {
+        account_id,
+        gateway_id,
+    }))
+}
+
+impl CredentialView {
+    fn scope(&self) -> Option<Scope> {
+        self.account_id.clone().map(|account_id| Scope {
+            account_id,
+            gateway_id: self.gateway_id.clone(),
+        })
     }
 }
 
@@ -577,6 +715,8 @@ pub(super) async fn add(
             account_label: a.auth.account,
             project: a.auth.project,
             location: a.auth.location,
+            account_id: a.auth.scope.map(|s| s.account_id.as_str()),
+            gateway_id: a.auth.scope.and_then(|s| s.gateway_id.as_deref()),
         },
     )
     .await?;
@@ -685,8 +825,16 @@ pub async fn replace(
             "Only a service account key calls a location; leave `location` out.",
         ));
     }
+    let provider = provider_in_org(&state, org, &before.provider).await?;
+    let scope = scope(
+        &provider,
+        req.account_id.as_deref(),
+        req.gateway_id.as_deref(),
+        before.scope().as_ref(),
+    )?;
     let (secret, last4) = validate_secret(&req.secret)?;
-    let after = rewrite(&state, &ctx, tx, &before, &name, secret, Auth::key(&last4)).await?;
+    let auth = Auth::key(&last4).scoped(scope.as_ref());
+    let after = rewrite(&state, &ctx, tx, &before, &name, secret, auth).await?;
     Ok(Json(after))
 }
 
@@ -727,6 +875,8 @@ pub(super) async fn rewrite(
             account_label: auth.account,
             project: auth.project,
             location: auth.location,
+            account_id: auth.scope.map(|s| s.account_id.as_str()),
+            gateway_id: auth.scope.and_then(|s| s.gateway_id.as_deref()),
         },
     )
     .await?;
@@ -749,7 +899,8 @@ pub(super) async fn rewrite(
 #[utoipa::path(
     patch,
     path = "/orgs/{org}/credentials/{credential}",
-    summary = "Renames a provider key, and moves a service account key to another location.",
+    summary = "Renames a provider key, and moves a service account key to another location or\n\
+    a key that calls an account to another account or gateway.",
     tag = "orgs",
     params(("org" = OrgId, Path), ("credential" = CredentialId, Path)),
     request_body = CredentialRename,
@@ -786,6 +937,22 @@ pub async fn rename(
     if let Some(location) = moved {
         credentials::set_location(&mut *tx, org, id, location).await?;
     }
+    let rescoped = if req.account_id.is_some() || req.gateway_id.is_some() {
+        let provider = provider_in_org(&state, org, &before.provider).await?;
+        let wanted = scope(
+            &provider,
+            req.account_id.as_deref(),
+            req.gateway_id.as_deref(),
+            before.scope().as_ref(),
+        )?;
+        wanted.filter(|w| before.scope().as_ref() != Some(w))
+    } else {
+        None
+    };
+    if let Some(s) = &rescoped {
+        credentials::set_scope(&mut *tx, org, id, &s.account_id, s.gateway_id.as_deref()).await?;
+    }
+    let moved = moved.is_some() || rescoped.is_some();
     let after = view(&mut tx, org, id).await?;
     ctx.audit(Some(ctx.org()?.id()), Action::CredentialRename)
         .target("credential", before.id)
@@ -793,13 +960,13 @@ pub async fn rename(
         .after(&after)
         .write(&mut tx)
         .await?;
-    let projects = if moved.is_some() {
+    let projects = if moved {
         reset_availability(&mut tx, org, &before.provider).await?
     } else {
         Vec::new()
     };
     tx.commit().await?;
-    if moved.is_some() {
+    if moved {
         forget(&state, org, projects).await;
     }
     Ok(Json(after))

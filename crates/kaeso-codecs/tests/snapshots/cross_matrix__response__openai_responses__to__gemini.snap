@@ -170,6 +170,59 @@ expression: outcomes
       "totalTokenCount": 251
     }
   },
+  "providers/cloudflare-ai-gateway/recorded-text-input-string": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "In the glimmering twilight of the Enchanted Meadow, a silver unicorn named Liora drifted to the edge of the moonlit pond, her mane shimmering like stardust. She dipped her hooves into the crystal water, causing tiny silver fireflies to dance around her, each one glowing with a quiet lullaby. As the fireflies faded into the night, Liora spread her wings and softly hummed a song that carried the scent of lavender and sleep, gently cradling every dreaming wanderer into a peaceful night."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "@cf/openai/gpt-oss-20b",
+    "responseId": "id-1794459197350",
+    "usageMetadata": {
+      "candidatesTokenCount": 241,
+      "promptTokenCount": 76,
+      "totalTokenCount": 317
+    }
+  },
+  "providers/cloudflare-ai-gateway/recorded-tools-function": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "functionCall": {
+                "args": {
+                  "location": "Boston, MA",
+                  "unit": "fahrenheit"
+                },
+                "id": "call_7d3e64270cea45c9989cc82947ddd7c9",
+                "name": "get_current_weather"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "@cf/openai/gpt-oss-20b",
+    "responseId": "id-1794459197946",
+    "usageMetadata": {
+      "candidatesTokenCount": 53,
+      "promptTokenCount": 156,
+      "totalTokenCount": 209
+    }
+  },
   "providers/vercel/recorded-gpt-reasoning-encrypted": {
     "candidates": [
       {

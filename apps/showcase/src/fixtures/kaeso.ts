@@ -50,6 +50,7 @@ export const providers = [
   { id: "baseten", name: "Baseten" },
   { id: "siliconflow", name: "SiliconFlow" },
   { id: "standardcompute", name: "Standard Compute" },
+  { id: "cloudflare-ai-gateway", name: "Cloudflare AI Gateway" },
 ];
 export const providerNames: Record<string, string> = Object.fromEntries(providers.map((p) => [p.id, p.name]));
 

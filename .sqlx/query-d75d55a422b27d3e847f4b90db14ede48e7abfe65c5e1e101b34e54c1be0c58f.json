@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, ciphertext, nonce, wrapped_key, key_id, revision, auth_method, expires_at, auth_error, location FROM provider_credentials WHERE org_id = $1 AND id = $2",
+  "query": "SELECT id, ciphertext, nonce, wrapped_key, key_id, revision, auth_method, expires_at, auth_error, location, account_id, gateway_id FROM provider_credentials",
   "describe": {
     "columns": [
       {
@@ -112,13 +112,32 @@
             "name": "location"
           }
         }
+      },
+      {
+        "ordinal": 10,
+        "name": "account_id",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "provider_credentials",
+            "name": "account_id"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "gateway_id",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "provider_credentials",
+            "name": "gateway_id"
+          }
+        }
       }
     ],
     "parameters": {
-      "Left": [
-        "Uuid",
-        "Uuid"
-      ]
+      "Left": []
     },
     "nullable": [
       false,
@@ -130,8 +149,10 @@
       false,
       true,
       true,
+      true,
+      true,
       true
     ]
   },
-  "hash": "66b8c4197c9e99a1fc22cb0ec947d030bbbd719bd4e86516f3554fdbf675dd7b"
+  "hash": "d75d55a422b27d3e847f4b90db14ede48e7abfe65c5e1e101b34e54c1be0c58f"
 }

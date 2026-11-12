@@ -161,6 +161,8 @@ export const providerMark = {
   "sambanova-lilac": mode("#b57fd8", "#cd90f4"),
   scaleway: mode("#a883dc", "#bf95f9"),
   standardcompute: mode("#be8c2b", "#e2c07f"),
+  "cloudflare-ai-gateway-orange": mode("#ff5f08", "#ff5f08"),
+  "cloudflare-ai-gateway-amber": mode("#d97d00", "#ff9910"),
   huggingface: mode("#b49000", "#ffd21e"),
   nvidia: mode("#69a500", "#76b900"),
   siliconflow: mode("#6e29f6", "#9163fe"),

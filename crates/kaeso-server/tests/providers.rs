@@ -56,6 +56,7 @@ async fn every_member_reads_each_provider_with_its_name_key_page_and_formats() {
             "embeddings": null,
             "account": null,
             "service_account": null,
+            "account_scope": null,
             "model_routes": [],
             "server": null,
         })
@@ -210,6 +211,31 @@ async fn every_member_reads_each_provider_with_its_name_key_page_and_formats() {
         siliconflow["key_page"],
         json!({ "url": "https://cloud.siliconflow.com/account/ak", "label": "API Keys" })
     );
+    let cloudflare = listed
+        .iter()
+        .find(|p| p["id"] == "cloudflare-ai-gateway")
+        .unwrap();
+    assert_eq!(cloudflare["name"], "Cloudflare AI Gateway");
+    assert_eq!(
+        cloudflare["dialects"],
+        json!(["openai_chat", "openai_responses", "anthropic_messages"])
+    );
+    assert_eq!(
+        (
+            &cloudflare["count_tokens"],
+            &cloudflare["embeddings"],
+            &cloudflare["key_prefix"]
+        ),
+        (&Value::Null, &Value::Null, &Value::Null)
+    );
+    assert_eq!(
+        cloudflare["account_scope"],
+        json!({
+            "account_page": { "url": "https://developers.cloudflare.com/fundamentals/account/find-account-and-zone-ids/", "label": "Find account and zone IDs" },
+            "gateway_header": "cf-aig-gateway-id"
+        })
+    );
+    assert_eq!(cloudflare["service_account"], Value::Null);
     let standardcompute = listed
         .iter()
         .find(|p| p["id"] == "standardcompute")

@@ -1,3 +1,4 @@
+pub mod account_scope;
 pub mod accounts;
 pub mod admin_sso;
 pub mod agent_platform;

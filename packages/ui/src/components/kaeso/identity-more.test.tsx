@@ -199,6 +199,7 @@ const MARKED_PROVIDERS = {
   baseten: "Baseten",
   siliconflow: "SiliconFlow",
   standardcompute: "Standard Compute",
+  "cloudflare-ai-gateway": "Cloudflare AI Gateway",
   vllm: "vLLM",
   ollama: "Ollama",
   "lm-studio": "LM Studio",
