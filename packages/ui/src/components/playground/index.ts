@@ -16,3 +16,10 @@ export { KAESO_PARAMETER_PANEL_DEFAULT_VARIANTS, KAESO_PARAMETER_PANEL_VARIANTS,
 export type { ImageParameterOptions, ParameterPanelProps, PlaygroundParameters, ReasoningEffort, ReasoningSummary } from "./parameter-panel.js";
 export { KAESO_MODEL_PICKER_DEFAULT_VARIANTS, KAESO_MODEL_PICKER_VARIANTS, ModelPicker, useModelGroups } from "./model-picker.js";
 export type { ModelPickerOption, ModelPickerProps, ModelPickerProvider, MultiModelPickerProps, SingleModelPickerProps } from "./model-picker.js";
+export { KAESO_PROBABILITY_BAR_DEFAULT_VARIANTS, KAESO_PROBABILITY_BAR_VARIANTS, ProbabilityBar } from "./probability-bar.js";
+export type { ProbabilityBarProps } from "./probability-bar.js";
+export { DecisionResponse, KAESO_DECISION_RESPONSE_DEFAULT_VARIANTS, KAESO_DECISION_RESPONSE_VARIANTS } from "./decision-response.js";
+export type { DecisionImage, DecisionResponseProps, DecisionStatus } from "./decision-response.js";
+export { KAESO_QUESTION_EDITOR_DEFAULT_VARIANTS, KAESO_QUESTION_EDITOR_VARIANTS, QuestionEditor } from "./question-editor.js";
+export type { QuestionEditorProps } from "./question-editor.js";
+export type { DecisionAnswer, DecisionKind, DecisionLevel, DecisionOption, DecisionQuestion } from "./decision-types.js";

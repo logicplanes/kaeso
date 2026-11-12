@@ -60,6 +60,23 @@ export const docs = {
       value: "The message being written, when you control it.",
     },
   },
+  DecisionResponse: {
+    description:
+      "A decision model's answers, one row per question in the order asked: its name and type, the answer (Yes or No, the chosen option, the score on its scale), the confidence when the provider gives one, and a probability bar for every option or level, the answer's bar marked. A box question draws its box on the image and gives its edges as numbers. While the answers are on their way every row holds its room with quiet placeholders, so nothing moves when they arrive; a refused question says so in its row, and a failure shows its error in place of the answers.",
+    props: {
+      answers:
+        "The answers in question order: a yes probability, a chosen option index with a probability per option, a score with a probability per level, a box's four edges from 0 to 1, or a refusal with its reason. A probability left out reads “Not given”; a missing answer reads “No answer”.",
+      "aria-label": 'The response\'s accessible name ("GPT-6 Luna response" in a comparison). Defaults to "Response" in the provider\'s language.',
+      error: 'Why the call failed, shown under "No answers" with status "error".',
+      footer: "Under the answers, after Retry: the call's metrics.",
+      image: "The image a box question was asked about: the box is drawn on it, and its edges stay as numbers under it.",
+      maxBars:
+        "Bars shown per question before “Show all” (8 by default): the most likely ones and the answer's, in their order, so a choice of 200 options stays short.",
+      onRetry: "Sends the call again: a Retry button after a failure, and a quiet Retry circle under the answers.",
+      questions: "The questions as they were sent: kind, name, and the options or levels whose labels name the bars.",
+      status: "Where the call stands: waiting for answers, answered, or failed.",
+    },
+  },
   MediaResponse: {
     description:
       "What an image, speech, sound or video model made, in the place a text response takes: images in a grid of squares, audio in a player a row tall, a video in a 16:9 player, each with Download. While it is made, quiet placeholders of the same size hold the room; a video job shows its progress, the seconds it has taken and Cancel. A stop or a failure reads as in ResponseView.",
@@ -137,6 +154,33 @@ export const docs = {
       trigger: "The button that opens the parameters in a popover; without one, the parameters sit in the page.",
       value: "The parameters, such as temperature and effort, image size and voice.",
       voices: "A speech model's voices to choose from, or true for a field that takes any voice name or id.",
+    },
+  },
+  ProbabilityBar: {
+    description:
+      "One probability as a 6px bar beside its label and its value in whole percents, with “<1%” and “>99%” where rounding would mislead. The chosen option's bar takes the data colour and its label and value take medium weight, so it doesn't rely on colour. A probability the provider left out reads “Not given” over an empty track. The bar grows only without reduced motion.",
+    props: {
+      "aria-label": "The meter's accessible name, when the label isn't plain text.",
+      highlight: "Marks the bar as the answer: the data colour, medium-weight text, and “chosen” after its value for screen readers.",
+      label: "What the probability is of: an option, a level, Yes or No.",
+      layout: "Label, bar and value on one line, or the label and value above the bar.",
+      pending: "The value is on its way: the track pulses quietly and screen readers skip it.",
+      value: "The probability from 0 to 1; null or absent when the provider left it out.",
+    },
+  },
+  QuestionEditor: {
+    description:
+      "Typed questions for a decision model: each with a type (Yes/no, Choice, Score, and Box when the model draws boxes), a name, instructions, and what its answers mean: what yes and no mean, each option's value and description, each level's label and description from level 0 up. Add and remove questions, options and levels with buttons; Enter in an option or a level adds the next one below it, and focus follows every addition and removal.",
+    props: {
+      allowBox: "Offers the Box type, for a model that answers with a box on an image.",
+      "aria-label": 'The group\'s accessible name ("Questions" by default).',
+      disabled: "Turns off every field and button.",
+      layout: "Questions 24px apart in a panel, or 16px in a narrow column.",
+      maxLevels: "Levels a score takes at most (10 by default): Add level turns off there and says so.",
+      maxOptions: "Options a choice takes at most (255 by default): Add option turns off there and says so.",
+      maxQuestions: "Questions at most; none by default.",
+      onValueChange: "Called with the changed questions. A question added here has an `id`; empty optional text is left out.",
+      value: "The questions, in order. Give each an `id` so its fields keep their place when one above it is removed.",
     },
   },
   Reasoning: {
