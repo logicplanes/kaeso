@@ -169,7 +169,7 @@ impl Codec for OpenAiChat {
         }
         let path = match &ctx.base_path {
             Some(base) => format!("{base}/chat/completions"),
-            None => CHAT_COMPLETIONS_PATH.to_owned(),
+            None => crate::codec::under_api_root(ctx, CHAT_COMPLETIONS_PATH),
         };
         Ok(EncodedRequest::post_json(path, headers, body))
     }

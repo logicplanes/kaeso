@@ -17,7 +17,7 @@ pub struct Scoped {
 
 impl Scoped {
     pub fn apply(&self, ctx: EgressCtx) -> EgressCtx {
-        ctx.with_base_path(self.base_path.clone())
+        ctx.with_api_root(self.base_path.clone())
     }
 
     pub fn add_headers(&self, headers: &mut HeaderList) {

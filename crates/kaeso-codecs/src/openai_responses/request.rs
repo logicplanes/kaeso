@@ -793,7 +793,7 @@ pub(super) fn encode(
         }
     }
     Ok(EncodedRequest::post_json(
-        crate::codec::under_base_path(ctx, path),
+        crate::codec::under_api_root(ctx, path),
         headers,
         media.finish(to_body(&body)?)?,
     ))
