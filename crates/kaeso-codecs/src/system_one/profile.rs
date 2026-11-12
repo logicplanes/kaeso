@@ -234,7 +234,8 @@ impl SystemOneProfile {
     };
 
     /// Any other server of the format, such as vLLM, llama.cpp or a custom provider: images as
-    /// `assets`, every question type, and no limits Kaeso checks; its admin sets the path through
+    /// `assets`, every question type, image URLs where its placement can write them, and no limits
+    /// Kaeso checks; its admin sets the path through
     /// [`crate::EgressCtx::with_base_path`] and the image placement with
     /// [`SystemOneProfile::with_media`].
     pub const GENERIC: SystemOneProfile = SystemOneProfile {
@@ -247,6 +248,7 @@ impl SystemOneProfile {
         image_px: None,
         image_bytes: None,
         animated_images: true,
+        image_urls: true,
         ..SystemOneProfile::TYPESAFE
     };
 

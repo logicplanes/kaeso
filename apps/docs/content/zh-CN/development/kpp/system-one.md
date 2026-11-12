@@ -161,4 +161,4 @@ TypeSafe 的 `GET /v1/models` 返回 `{"models": [{name, description, release_da
 
 ### 其他服务器
 
-`SystemOneProfile::GENERIC` 接受所有问题类型，不检查图片限制。它的路径来自 `EgressCtx::with_base_path`，图片位置来自 `SystemOneProfile::with_media`，适用于 vLLM、llama.cpp 和该格式的其他服务器。
+`SystemOneProfile::GENERIC` 接受所有问题类型，在其图片位置写成部分时发送图片 URL，且不检查图片限制。它的路径来自 `EgressCtx::with_base_path`，图片位置来自 `SystemOneProfile::with_media`，适用于 vLLM、llama.cpp 和该格式的其他服务器。

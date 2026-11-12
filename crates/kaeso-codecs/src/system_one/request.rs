@@ -573,6 +573,11 @@ fn unsupported(feature: &str, message: String) -> KppError {
     KppError::unsupported(feature, message)
 }
 
+// A KPP value of a kind this version of the codec doesn't know.
+fn unknown(what: &str) -> KppError {
+    unsupported(what, format!("System One can't take this {what}."))
+}
+
 impl Writer<'_> {
     fn note(list: &mut Vec<&'static str>, what: &'static str) {
         if !list.contains(&what) {
@@ -632,10 +637,7 @@ impl Writer<'_> {
                 )
                 .with_param("input")),
             },
-            _ => Err(unsupported(
-                "input",
-                "System One can't take this input.".to_owned(),
-            )),
+            _ => Err(unknown("input")),
         }
     }
 
@@ -644,10 +646,7 @@ impl Writer<'_> {
             Some(Description::Text(t)) => Ok(quoted(t)),
             Some(Description::Json(raw)) => Ok(raw.get().to_owned()),
             None => Ok("null".to_owned()),
-            Some(_) => Err(unsupported(
-                "description",
-                "System One can't take this description.".to_owned(),
-            )),
+            Some(_) => Err(unknown("description")),
         }
     }
 
@@ -661,13 +660,7 @@ impl Writer<'_> {
             Some(Instructions::Blocks(blocks)) => {
                 Some(self.blocks(blocks, &format!("{param}.instructions"))?)
             }
-            Some(_) => {
-                return Err(unsupported(
-                    "instructions",
-                    "System One can't take these instructions.".to_owned(),
-                )
-                .with_param(param));
-            }
+            Some(_) => return Err(unknown("instructions").with_param(param)),
             None => None,
         };
         let mut options = Vec::new();
@@ -721,13 +714,8 @@ impl Writer<'_> {
                     if matches!(option.value, ChoiceValue::Bool(_)) {
                         Self::note(&mut self.adapted, "booleans");
                     }
-                    let key = option_key(&option.value).ok_or_else(|| {
-                        unsupported(
-                            "choice value",
-                            "System One takes text option names.".to_owned(),
-                        )
-                        .with_param(param.clone())
-                    })?;
+                    let key = option_key(&option.value)
+                        .ok_or_else(|| unknown("choice value").with_param(param.clone()))?;
                     if map.contains_key(&key) {
                         return Err(unsupported(
                             "repeated choice value",
@@ -796,13 +784,7 @@ impl Writer<'_> {
                 }
                 ("box", None)
             }
-            _ => {
-                return Err(unsupported(
-                    "question type",
-                    "System One can't ask this question.".to_owned(),
-                )
-                .with_param(param));
-            }
+            _ => return Err(unknown("question type").with_param(param)),
         };
         let w = QuestionWire {
             ty: ty.to_owned(),
@@ -841,7 +823,7 @@ impl Writer<'_> {
                 return Err(unsupported(
                     "image URL",
                     format!(
-                        "{} takes images only as bytes, and Kaeso doesn't fetch image URLs; send the image as a data URL or base64.",
+                        "{} takes images in `assets` only as bytes; send the image as a data URL or base64.",
                         self.profile.name
                     ),
                 ));
@@ -957,16 +939,14 @@ fn place(
                 let dry = w.dry;
                 let assets = &w.assets;
                 rewrite(&state_raw, &mut |v| {
-                    let Ok(s) = serde_json::from_str::<String>(v.get()) else {
-                        return Ok(None);
-                    };
-                    if !v.get().starts_with('"') || !as_parts.contains(&s) {
-                        return Ok(None);
+                    let reference = serde_json::from_str::<String>(v.get()).ok();
+                    match reference
+                        .filter(|r| as_parts.contains(r))
+                        .and_then(|r| assets.get(&r))
+                    {
+                        Some(asset) if v.get().starts_with('"') => image_part(asset, dry).map(Some),
+                        _ => Ok(None),
                     }
-                    let Some(asset) = assets.get(&s) else {
-                        return Ok(None);
-                    };
-                    image_part(asset, dry).map(Some)
                 })?
                 .unwrap_or(state)
             };

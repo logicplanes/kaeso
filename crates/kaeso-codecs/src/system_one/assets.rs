@@ -2,8 +2,6 @@
 //! instructions and the criteria, the forms each provider takes them in, and the checks of what a
 //! provider refuses.
 
-use std::borrow::Cow;
-
 use indexmap::IndexMap;
 use kaeso_kpp::{Asset, Extras, KppError, Origin, RawJson, Source};
 use serde_json::Value;
@@ -199,13 +197,7 @@ pub(super) fn image_part(asset: &Asset, dry: bool) -> Result<String, KppError> {
             Some(header) => b.data_url_with(header),
             None => b.data_url(),
         },
-        _ => {
-            return Err(KppError::unsupported_by(
-                "image source",
-                DIALECT,
-                "Send the image as base64 data.",
-            ));
-        }
+        _ => return Err(KppError::unsupported_by("image source", DIALECT, "")),
     };
     let mut url_extra = IndexMap::new();
     let mut part_extra = IndexMap::new();
@@ -232,11 +224,7 @@ pub(super) fn data_url(asset: &Asset, dry: bool) -> Result<String, KppError> {
     match &asset.source {
         Source::Base64(b) if dry => Ok(format!("data:{};base64,", b.media_type)),
         Source::Base64(b) => Ok(b.data_url()),
-        _ => Err(KppError::unsupported_by(
-            "image URL",
-            DIALECT,
-            "Send the image as base64 data.",
-        )),
+        _ => Err(KppError::unsupported_by("image URL", DIALECT, "")),
     }
 }
 
@@ -265,7 +253,7 @@ pub(super) fn check_image(
         _ => {
             return refuse(
                 "image source",
-                format!("{name} takes images only as bytes; send the image as base64."),
+                format!("{name} takes images only as bytes."),
             );
         }
     };
@@ -285,17 +273,15 @@ pub(super) fn check_image(
     if !checks_format && profile.image_px.is_none() && profile.animated_images {
         return Ok(());
     }
-    let types = profile.image_types.join(", ");
+    let types = match profile.image_types {
+        [] => "PNG, JPEG, WebP or GIF".to_owned(),
+        listed => listed.join(", "),
+    };
     let Some(info) = image_info(data) else {
         return refuse(
             "image format",
             format!(
-                "{name} takes only these images: {}; Kaeso can't read this one as any of them. Convert it before sending.",
-                if checks_format {
-                    Cow::Owned(types)
-                } else {
-                    Cow::Borrowed("files it can read")
-                }
+                "{name} takes only these images: {types}; Kaeso can't read this one as any of them. Convert it before sending."
             ),
         );
     };

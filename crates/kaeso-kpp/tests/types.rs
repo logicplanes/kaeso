@@ -441,6 +441,13 @@ mod decisions {
         );
         let q = Question::new(None, QuestionKind::Box(BoxQuestion::new()));
         assert_eq!(q.type_name(), "box");
+        let kinds = [
+            QuestionKind::Predicate(Predicate::new(Some(Description::Text("yes".into())), None)),
+            choice(&["a"]),
+            QuestionKind::Score(Score::default()),
+        ];
+        let names: Vec<&str> = kinds.iter().map(QuestionKind::as_str).collect();
+        assert_eq!(names, ["predicate", "choice", "score"]);
         assert_eq!(Block::json(raw("{}")).kind(), "json");
         assert!(Block::json(raw("{}")).extras().is_some());
     }

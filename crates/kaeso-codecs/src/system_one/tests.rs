@@ -1186,3 +1186,423 @@ fn listings_are_openais() {
             .is_err()
     );
 }
+
+fn decide(body: &Value) -> Result<Request, KppError> {
+    SystemOne::decode_request(RequestKind::Decide, &json_body(body), &HeaderList::new())
+}
+
+#[test]
+fn uploads_are_checked_part_by_part() {
+    let (json, _) = request_fixture_in("requests/multipart", "door");
+    let photo = jpeg(300, 300);
+    let decode_form = |fields: &[FormField<'_>]| {
+        let form = FormWriter::write(fields);
+        let h = HeaderList::new().with("content-type", form.content_type());
+        SystemOne::decode_request(RequestKind::Decide, &form.into_body(), &h)
+    };
+    let request = FormField::Typed("request", "application/json", &json);
+    for fields in [
+        vec![],
+        vec![
+            request,
+            FormField::File("door-photo", "d.jpg", "image/jpeg", &photo),
+            FormField::File("door-photo", "e.jpg", "image/jpeg", &photo),
+        ],
+        vec![
+            request,
+            FormField::Typed("request", "application/json", &json),
+        ],
+    ] {
+        assert!(decode_form(&fields).is_err());
+    }
+    let mut twice: Value = serde_json::from_slice(&json).unwrap();
+    twice["assets"]["second"] = json!({"type": "image", "part": "door-photo"});
+    twice["state"]["other"] = json!("second");
+    let twice = json_body(&twice);
+    let err = decode_form(&[
+        FormField::Typed("request", "application/json", &twice),
+        FormField::File("door-photo", "d.jpg", "image/jpeg", &photo),
+    ])
+    .unwrap_err();
+    assert_eq!(err.param.as_deref(), Some("assets.second.part"));
+    let missing = decode_form(&[
+        FormField::Typed("request", "application/json", &json),
+        FormField::File("other", "d.jpg", "image/jpeg", &photo),
+    ])
+    .unwrap_err();
+    assert_eq!(missing.param.as_deref(), Some("assets.a3f1c2e8-door.part"));
+
+    let mut both: Value = serde_json::from_slice(&json).unwrap();
+    both["assets"]["a3f1c2e8-door"]["data_base64"] = json!("ignored");
+    let both = json_body(&both);
+    let Request::Decide(req) = decode_form(&[
+        FormField::Typed("request", "application/json", &both),
+        FormField::File("door-photo", "d.bin", "application/octet-stream", &photo),
+    ])
+    .unwrap() else {
+        panic!()
+    };
+    let asset = &req.assets["a3f1c2e8-door"];
+    assert_eq!(asset.source.media_type(), Some("image/jpeg"));
+    let (enc, _) = encode(&req, SystemOneProfile::TYPESAFE).unwrap();
+    let ct = enc.headers.get("content-type").unwrap();
+    let boundary = crate::multipart::form_boundary(ct).unwrap();
+    let parts = crate::multipart::read_form(
+        &enc.body,
+        &boundary,
+        crate::multipart::FormLimits::new(4, 1 << 20),
+    )
+    .unwrap();
+    let sent: Value = serde_json::from_slice(parts[0].body).unwrap();
+    assert_eq!(sent["assets"]["a3f1c2e8-door"]["data_base64"], "ignored");
+    assert_eq!(
+        parts[1].content_type.as_deref(),
+        Some("application/octet-stream")
+    );
+}
+
+#[test]
+fn more_shapes_system_one_refuses() {
+    for (body, param) in [
+        (
+            json!({"model": "m", "state": "x", "questions": {"a": {"type": "noul"}}, "assets": []}),
+            "assets",
+        ),
+        (
+            json!({"model": "m", "state": "x", "questions": {"a": {"type": "noul"}}, "assets": {"r": 5}}),
+            "assets.r",
+        ),
+        (
+            json!({"model": "m", "state": "x", "questions": {"a": 5}}),
+            "questions.a",
+        ),
+        (
+            json!({"model": "m", "state": "x", "questions": {"a": {"type": "choice", "criteria": ["x"]}}}),
+            "questions.a.criteria",
+        ),
+        (
+            json!({"model": "m", "state": "x", "questions": {"a": {"type": "score"}}}),
+            "questions.a.criteria",
+        ),
+        (
+            json!({"model": "m", "questions": {"a": {"type": "noul"}}}),
+            "state",
+        ),
+    ] {
+        let err = decide(&body).unwrap_err();
+        assert_eq!(err.param.as_deref(), Some(param), "{body}: {}", err.message);
+    }
+    let chat = Request::Generate(GenerateRequest::new("m").with_message(Message::user("hi")));
+    let mut c = EgressCtx::new(&chat);
+    assert!(SystemOne::encode_request(&chat, &mut c).is_err());
+}
+
+#[test]
+fn requests_with_hints_paths_and_many_options_or_images() {
+    let mut req = DecideRequest::new("jev-latest", DecisionInput::Text("x".into())).with_question(
+        noul("a", "?").with_instructions(kaeso_kpp::Instructions::Blocks(vec![Block::text(
+            "Only text",
+        )])),
+    );
+    req.cache = Some(kaeso_kpp::DecisionCache::new(Some("k".into())));
+    req.user = Some("user-1".into());
+    let (enc, c) = encode(&req, SystemOneProfile::TYPESAFE).unwrap();
+    assert_eq!(body_of(&enc)["questions"]["a"]["instructions"], "Only text");
+    assert_eq!(c.left_out, ["cache", "user"]);
+    let request = Request::Decide(req.clone());
+    let mut c = ctx(SystemOneProfile::GENERIC, &request).with_base_path("/decisions/v1/systemone/");
+    assert_eq!(
+        SystemOne::encode_request(&request, &mut c).unwrap().path,
+        "/decisions/v1/systemone"
+    );
+    let mut c = ctx(SystemOneProfile::OPENROUTER, &request).with_api_root("/api/v1");
+    assert_eq!(
+        SystemOne::encode_request(&request, &mut c).unwrap().path,
+        "/api/v1/systemone"
+    );
+
+    let options = (0..256)
+        .map(|i| ChoiceOption::new(ChoiceValue::Text(format!("o{i}")), None))
+        .collect();
+    let wide = DecideRequest::new("jev-latest", DecisionInput::Text("x".into())).with_question(
+        Question::new(Some("c".into()), QuestionKind::Choice(Choice::new(options))),
+    );
+    assert_eq!(
+        encode(&wide, SystemOneProfile::TYPESAFE)
+            .unwrap_err()
+            .unsupported_feature(),
+        Some("options")
+    );
+
+    let items: Vec<Value> = (0..9).map(|i| json!(format!("img-{i}"))).collect();
+    let mut many = DecideRequest::new(
+        "pplx-decider-latest",
+        DecisionInput::Json(RawJson::from_serialize(&items).unwrap()),
+    )
+    .with_question(noul("a", "?"));
+    for i in 0..9 {
+        many.assets.insert(
+            format!("img-{i}"),
+            Asset::new(Source::bytes("image/png", png(300, 300))),
+        );
+    }
+    assert_eq!(
+        encode(&many, SystemOneProfile::PERPLEXITY)
+            .unwrap_err()
+            .unsupported_feature(),
+        Some("images")
+    );
+    many.assets.truncate(8);
+    many.input = DecisionInput::Json(RawJson::from_serialize(&items[..8]).unwrap());
+    encode(&many, SystemOneProfile::PERPLEXITY).unwrap();
+
+    let mut big = png(300, 300);
+    big.resize(5 * 1024 * 1024, 0);
+    let req = with_image(json!(["img-1"]), big, "image/png");
+    assert_eq!(
+        encode(&req, SystemOneProfile::CLOUDFLARE_WORKERS_AI)
+            .unwrap_err()
+            .unsupported_feature(),
+        Some("image size")
+    );
+    let unread = with_image(json!(["img-1"]), b"????".to_vec(), "image/png");
+    let err = encode(&unread, SystemOneProfile::BASETEN).unwrap_err();
+    assert_eq!(err.unsupported_feature(), Some("image format"));
+}
+
+#[test]
+fn state_parts_keep_their_url_header_and_fields() {
+    let png64 = base64::engine::general_purpose::STANDARD.encode(png(300, 300));
+    let body = json!({
+        "model": "m",
+        "state": [
+            {"type": "image_url", "image_url": {"url": format!("data:image/png;name=a.png;base64,{png64}"), "detail": "auto"}, "x_note": 1},
+            {"type": "image_url", "image_url": {"url": "https://example.com/a.png"}},
+            {"type": "image_url", "image_url": "not an object"}
+        ],
+        "questions": {"a": {"type": "noul"}}
+    });
+    let Request::Decide(req) = decide(&body).unwrap() else {
+        panic!()
+    };
+    assert_eq!(req.assets.len(), 2);
+    let request = Request::Decide(req.clone());
+    let mut c = ctx(
+        SystemOneProfile::GENERIC.with_media(MediaPlacement::State),
+        &request,
+    );
+    let enc = SystemOne::encode_request(&request, &mut c).unwrap();
+    assert_json_eq("state-parts", &json_body(&body), &enc.body);
+    assert_eq!(
+        encode(&req, SystemOneProfile::PERPLEXITY)
+            .unwrap_err()
+            .unsupported_feature(),
+        Some("image URL")
+    );
+    let bad = json!({"model": "m", "state": {"type": "image_url", "image_url": {"url": "data:image/png;base64,!!"}}, "questions": {"a": {"type": "noul"}}});
+    assert_eq!(decide(&bad).unwrap_err().param.as_deref(), Some("state"));
+}
+
+fn reply_ctx(req: &DecideRequest) -> EgressCtx {
+    encode(req, SystemOneProfile::GENERIC).unwrap().1
+}
+
+#[test]
+fn replies_system_one_cant_read() {
+    let req = DecideRequest::new("m", DecisionInput::Text("x".into()))
+        .with_question(noul("a", "?"))
+        .with_question(Question::new(
+            Some("c".into()),
+            QuestionKind::Choice(Choice::new(vec![
+                ChoiceOption::new(ChoiceValue::Text("x".into()), None),
+                ChoiceOption::new(ChoiceValue::Text("y".into()), None),
+            ])),
+        ));
+    let c = reply_ctx(&req);
+    let read = |v: Value| SystemOne::decode_response(200, &HeaderList::new(), &json_body(&v), &c);
+    let noul = json!({"type": "noul", "noul": 0.5});
+    for bad in [
+        json!({"model": "m", "answers": {"a": {"type": "noul", "noul": "high"}, "c": {"type": "choice", "choice": "x", "probabilities": {}}}}),
+        json!({"model": "m", "answers": {"a": noul, "c": {"type": "choice", "choice": "x", "probabilities": {"z": 0.1}}}}),
+        json!({"model": "m", "answers": {"a": noul, "c": {"type": "choice", "choice": "x", "probabilities": {"x": "much"}}}}),
+        json!({"model": "m", "answers": {"a": noul, "c": {"type": "choice", "choice": "x", "probabilities": []}}}),
+        json!({"model": "m", "answers": {"a": {"type": "box", "box": {"top": 0, "bottom": 1, "left": 0, "right": 1}}, "c": {"type": "refusal"}}}),
+        json!({"model": "m", "answers": []}),
+        json!({"model": "m", "answers": {"a": noul, "c": {"type": "refusal"}}, "usage": {"output_tokens": 1}}),
+    ] {
+        assert!(read(bad.clone()).is_err(), "{bad}");
+    }
+    let Reply::Decide(r) =
+        read(json!({"model": "m", "answers": {"a": noul, "c": {"type": "refusal"}}})).unwrap()
+    else {
+        panic!()
+    };
+    assert_eq!(r.answers[1].value, AnswerValue::Refusal(Refusal::new()));
+    let out: Value = serde_json::from_slice(
+        &SystemOne::encode_response(
+            &Reply::Decide(r.clone()),
+            &EncodeCtx::for_request(Request::Decide(req.clone())),
+        )
+        .unwrap(),
+    )
+    .unwrap();
+    assert_eq!(
+        out,
+        json!({"model": "m", "answers": {"a": {"type": "noul", "noul": 0.5}, "c": {"type": "refusal"}}})
+    );
+    let err = SystemOne::decode_response(
+        429,
+        &HeaderList::new().with("retry-after", "1"),
+        br#"{"detail":"Slow down."}"#,
+        &c,
+    )
+    .unwrap_err();
+    assert_eq!(err.kind, ErrorKind::RateLimited);
+    let other = EgressCtx::for_kind(RequestKind::Generate, StreamMode::Off);
+    assert!(SystemOne::decode_response(200, &HeaderList::new(), b"{}", &other).is_err());
+    let cf = c
+        .clone()
+        .with_system_one_profile(SystemOneProfile::CLOUDFLARE_WORKERS_AI);
+    for body in [&b"[]"[..], b"{\"success\":true}", b"not json"] {
+        assert!(SystemOne::decode_response(200, &HeaderList::new(), body, &cf).is_err());
+    }
+
+    let mut wrong = r.clone();
+    wrong.answers.swap(0, 1);
+    assert!(
+        SystemOne::encode_response(
+            &Reply::Decide(wrong),
+            &EncodeCtx::for_request(Request::Decide(req.clone()))
+        )
+        .is_err()
+    );
+    let mut short = r.clone();
+    short.answers.pop();
+    assert!(
+        SystemOne::encode_response(
+            &Reply::Decide(short),
+            &EncodeCtx::for_request(Request::Decide(req.clone()))
+        )
+        .is_err()
+    );
+    let mut far = r;
+    far.answers[1] = Answer::new(AnswerValue::Choice(ChoiceAnswer::new(7, vec![])));
+    assert!(
+        SystemOne::encode_response(
+            &Reply::Decide(far.clone()),
+            &EncodeCtx::for_request(Request::Decide(req.clone()))
+        )
+        .is_err()
+    );
+    far.answers[1] = Answer::new(AnswerValue::Choice(ChoiceAnswer::new(
+        0,
+        vec![Some(f64::NAN), None],
+    )));
+    assert!(
+        SystemOne::encode_response(
+            &Reply::Decide(far),
+            &EncodeCtx::for_request(Request::Decide(req))
+        )
+        .is_err()
+    );
+}
+
+#[test]
+fn legends_come_from_labels_where_a_level_has_no_description() {
+    let req =
+        DecideRequest::new("m", DecisionInput::Text("x".into())).with_question(Question::new(
+            Some("s".into()),
+            QuestionKind::Score(Score::new(vec![
+                Level::new(Some("low".into()), None),
+                Level::new(
+                    None,
+                    Some(Description::Json(
+                        RawJson::from_string("{\"a\":1}".into()).unwrap(),
+                    )),
+                ),
+                Level::default(),
+            ])),
+        ));
+    let reply = DecideResponse::new(
+        "m",
+        vec![Answer::new(AnswerValue::Score(ScoreAnswer::new(
+            1.0,
+            vec![None, Some(1.0), None],
+        )))],
+    );
+    let out: Value = serde_json::from_slice(
+        &SystemOne::encode_response(
+            &Reply::Decide(reply),
+            &EncodeCtx::for_request(Request::Decide(req)),
+        )
+        .unwrap(),
+    )
+    .unwrap();
+    assert_eq!(
+        out["answers"]["s"]["legend"],
+        json!({"0": "low", "1": {"a": 1}, "2": null})
+    );
+    assert_eq!(out["answers"]["s"]["probabilities"], json!({"1": 1.0}));
+}
+
+#[test]
+fn provider_errors_in_every_shape() {
+    let read = |status: u16, body: Value| {
+        SystemOne::decode_error(status, &HeaderList::new(), &json_body(&body))
+    };
+    for (status, kind) in [
+        (402, ErrorKind::Billing),
+        (403, ErrorKind::PermissionDenied),
+        (404, ErrorKind::NotFound),
+        (504, ErrorKind::Timeout),
+        (503, ErrorKind::Overloaded),
+        (502, ErrorKind::ProviderError),
+    ] {
+        assert_eq!(read(status, json!({"detail": "x"})).kind, kind);
+    }
+    let err = read(
+        422,
+        json!({"detail": [{"loc": ["body", "questions", 0], "msg": "bad", "type": "x"}]}),
+    );
+    assert_eq!(err.param.as_deref(), Some("questions.0"));
+    let err = read(
+        422,
+        json!({"detail": [{"loc": [], "msg": "bad", "type": "x"}]}),
+    );
+    assert_eq!((err.message.as_str(), err.param), ("bad", None));
+    assert_eq!(read(422, json!({"detail": []})).message, "[]");
+    assert_eq!(read(400, json!({"detail": 5})).message, "5");
+    assert_eq!(
+        read(400, json!({"detail": {"code": 1}})).message,
+        r#"{"code":1}"#
+    );
+    assert!(
+        read(400, json!({"detail": " "}))
+            .message
+            .contains("without a message")
+    );
+    for (kind, status) in [
+        (ErrorKind::PermissionDenied, 403),
+        (ErrorKind::NotFound, 404),
+        (ErrorKind::Timeout, 504),
+        (ErrorKind::Billing, 402),
+        (ErrorKind::ContentFiltered, 400),
+    ] {
+        assert_eq!(
+            SystemOne::encode_error(&KppError::new(kind, "x")).status,
+            status
+        );
+    }
+    let upstream = KppError::provider("x").with_status(502);
+    assert_eq!(SystemOne::encode_error(&upstream).status, 502);
+    assert_eq!(
+        SystemOne::encode_error(&KppError::provider("x").with_status(529)).status,
+        500
+    );
+    let odd = KppError::invalid_request("x").with_param("a[b");
+    assert_eq!(
+        serde_json::from_slice::<Value>(&SystemOne::encode_error(&odd).body).unwrap()["detail"][0]
+            ["loc"],
+        json!(["body", "a"])
+    );
+}

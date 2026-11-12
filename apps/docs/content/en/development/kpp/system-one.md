@@ -161,4 +161,4 @@ Each provider has a `SystemOneProfile`, and providers other than TypeSafe keep t
 
 ### Other servers
 
-`SystemOneProfile::GENERIC` takes every question type and checks no image limits. Its path comes from `EgressCtx::with_base_path`, and its image placement from `SystemOneProfile::with_media`, for vLLM, llama.cpp and other servers of the format.
+`SystemOneProfile::GENERIC` takes every question type, sends image URLs where its placement writes parts, and checks no image limits. Its path comes from `EgressCtx::with_base_path`, and its image placement from `SystemOneProfile::with_media`, for vLLM, llama.cpp and other servers of the format.

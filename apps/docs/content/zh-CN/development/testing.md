@@ -251,7 +251,7 @@ e2e/.venv/bin/pytest -q e2e/install
 
 ## 模糊测试
 
-`fuzz/` 为每个 KPP 解码器提供一个 [cargo-fuzz](https://rust-fuzz.github.io/book/cargo-fuzz.html) 目标 `decode_<dialect>`，为 SSE 解析器提供目标 `sse`，为 MCP 消息提供目标 `mcp`，为音频时长探测提供目标 `audio_length`，并为图片尺寸探测提供目标 `image_size`。解码器目标检查每个解码器接受任意字节都不会 panic，并且把结果编码为每种方言时也不会 panic。`sse` 目标检查无论输入如何切分，解析器都产生相同的条目。`mcp` 目标检查 Kaeso 读取的每条消息都能完整写回（重命名其工具之后也是如此），并且请求头的值解码后与编码前一致；它的种子语料是 `crates/kaeso-mcp/fixtures`。`audio_length` 目标检查任意字节要么得出不超过一天的时长，要么没有结果，且读取从不超出其上限；`image_size` 目标检查任意字节要么得出一个尺寸，要么没有结果。`decode_system_one` 还把这些字节当作上传，以及当作对每种类型各一个问题的回复来读取，并写出一个能再次读回的回复。`fuzz/` 是一个独立的 Cargo 工作区，因此 `libfuzzer-sys` 永远不会进入库 crate。
+`fuzz/` 为每个 KPP 解码器提供一个 [cargo-fuzz](https://rust-fuzz.github.io/book/cargo-fuzz.html) 目标 `decode_<dialect>`，为 SSE 解析器提供目标 `sse`，为 MCP 消息提供目标 `mcp`，并为音频时长探测提供目标 `audio_length`。解码器目标检查每个解码器接受任意字节都不会 panic，并且把结果编码为每种方言时也不会 panic。`sse` 目标检查无论输入如何切分，解析器都产生相同的条目。`mcp` 目标检查 Kaeso 读取的每条消息都能完整写回（重命名其工具之后也是如此），并且请求头的值解码后与编码前一致；它的种子语料是 `crates/kaeso-mcp/fixtures`。`audio_length` 目标检查任意字节要么得出不超过一天的时长，要么没有结果，且读取从不超出其上限。`fuzz/` 是一个独立的 Cargo 工作区，因此 `libfuzzer-sys` 永远不会进入库 crate。
 
 每项变更都会检查这些目标能够构建，并且通过格式和 lint 检查：
 
