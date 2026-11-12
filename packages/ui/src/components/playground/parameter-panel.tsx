@@ -9,7 +9,8 @@ import { Popover } from "../popover/popover.js";
 import { Segmented } from "../segmented/segmented.js";
 import { Select } from "../select/select.js";
 import { Slider } from "../slider/slider.js";
-import { useUiText, type UiText, useFormatters } from "../../i18n/context.js";
+import { useUiText, type UiText } from "../../i18n/context.js";
+import { useFormatters } from "../../i18n/formatters.js";
 
 export const KAESO_PARAMETER_PANEL_VARIANTS = {
   layout: {

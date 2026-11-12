@@ -3,7 +3,8 @@ import { scaleBand } from "d3-scale";
 import { radius } from "@logicplanes/kaeso-tokens";
 import { scaleLinear } from "./linear-scale.js";
 import { cn } from "../../utils/cn.js";
-import { useUiText, useFormatters } from "../../i18n/context.js";
+import { useUiText } from "../../i18n/context.js";
+import { useFormatters } from "../../i18n/formatters.js";
 import {
   AXIS,
   axisLabelIndexes,

@@ -1,7 +1,8 @@
 import { forwardRef, useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { cn } from "../../utils/cn.js";
 import { icons } from "../../icons/vocabulary.js";
-import { useUiText, useFormatters } from "../../i18n/context.js";
+import { useUiText } from "../../i18n/context.js";
+import { useFormatters } from "../../i18n/formatters.js";
 import { Button } from "../button/button.js";
 import { Markdown } from "../markdown/markdown.js";
 

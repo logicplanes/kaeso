@@ -280,24 +280,63 @@ export function createFormatters(settings: FormatSettings): Formatters {
   return bind(() => fixed);
 }
 
-/** The plain formatters, in the language set with `setFormatLocale`. */
-export const plainFormatters: Formatters = bind(() => fallback);
+let plain: Formatters | undefined;
 
-export const formatNumber = plainFormatters.formatNumber;
-export const formatTokens = plainFormatters.formatTokens;
+/** The plain formatters as one set, in the language set with `setFormatLocale`. */
+export function plainFormatters(): Formatters {
+  return (plain ??= bind(() => fallback));
+}
+
+export function formatNumber(value: number, options?: Intl.NumberFormatOptions): string {
+  return plainFormatters().formatNumber(value, options);
+}
+
+export function formatTokens(value: number): string {
+  return plainFormatters().formatTokens(value);
+}
+
 /** A model's context or output limit as models are named: a multiple of 1,024 in binary thousands ("128K" for 131,072, "1M" for 1,048,576), anything else in decimal ones ("128K" for 128,000, "200K"). */
-export const formatContext = plainFormatters.formatContext;
-export const formatBytes = plainFormatters.formatBytes;
-export const formatPercent = plainFormatters.formatPercent;
-export const formatUSD = plainFormatters.formatUSD;
+export function formatContext(tokens: number): string {
+  return plainFormatters().formatContext(tokens);
+}
+
+export function formatBytes(bytes: number): string {
+  return plainFormatters().formatBytes(bytes);
+}
+
+export function formatPercent(ratio: number, digits?: number): string {
+  return plainFormatters().formatPercent(ratio, digits);
+}
+
+export function formatUSD(amount: string, options?: { significant?: number | undefined; decimals?: number | undefined }): string {
+  return plainFormatters().formatUSD(amount, options);
+}
+
 /** A price per million tokens, exactly as set: at least two decimals and up to six ("$0.075", "$4.00", "$1.25"). */
-export const formatPrice = plainFormatters.formatPrice;
-export const formatDuration = plainFormatters.formatDuration;
+export function formatPrice(amount: string): string {
+  return plainFormatters().formatPrice(amount);
+}
+
+export function formatDuration(ms: number, options?: { precise?: boolean | undefined }): string {
+  return plainFormatters().formatDuration(ms, options);
+}
+
 /** A cached date formatter in the plain formatters' language, or in `locale`. English writes the day first with three-letter months ("20 Sep 2026", "Mon 21 Sep"), the console's English everywhere. */
-export const dateFormatter = plainFormatters.dateFormatter;
-export const formatDate = plainFormatters.formatDate;
-export const formatDateRange = plainFormatters.formatDateRange;
-export const formatRelative = plainFormatters.formatRelative;
+export function dateFormatter(options: Intl.DateTimeFormatOptions, locale?: string): (value: DateInput) => string {
+  return plainFormatters().dateFormatter(options, locale);
+}
+
+export function formatDate(value: DateInput, options?: { time?: boolean | undefined; utc?: boolean | undefined; seconds?: boolean | undefined }): string {
+  return plainFormatters().formatDate(value, options);
+}
+
+export function formatDateRange(from: DateInput, to: DateInput): string {
+  return plainFormatters().formatDateRange(from, to);
+}
+
+export function formatRelative(value: DateInput, now?: DateInput, options?: { utc?: boolean | undefined }): string {
+  return plainFormatters().formatRelative(value, now, options);
+}
 
 const pad2 = (n: number) => String(n).padStart(2, "0");
 

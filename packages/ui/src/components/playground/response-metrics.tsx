@@ -1,7 +1,8 @@
 import { forwardRef, useEffect, useState, type ReactNode } from "react";
 import { cn } from "../../utils/cn.js";
 import { plainFormatters, type Formatters } from "../../format/index.js";
-import { useUiText, useFormatters } from "../../i18n/context.js";
+import { useUiText } from "../../i18n/context.js";
+import { useFormatters } from "../../i18n/formatters.js";
 
 export const KAESO_RESPONSE_METRICS_VARIANTS = {
   size: {
@@ -25,7 +26,7 @@ export interface ResponseMetricsProps {
   className?: string | undefined;
 }
 
-export function formatLatency(ms: number, { formatDuration }: Formatters = plainFormatters): string {
+export function formatLatency(ms: number, { formatDuration }: Formatters = plainFormatters()): string {
   if (!Number.isFinite(ms) || ms < 0) return "—";
   return formatDuration(ms, { precise: true });
 }

@@ -11,7 +11,8 @@ import { PopoverRoot, PopoverTrigger } from "../popover/popover-root.js";
 import type { Formatters } from "../../format/index.js";
 import { lazyModule, preload, type LazyModule } from "../../utils/lazy-module.js";
 import { whenIdle } from "../../utils/when-idle.js";
-import { englishText, useUiText, type UiText, useFormatters } from "../../i18n/context.js";
+import { englishText, useUiText, type UiText } from "../../i18n/context.js";
+import { useFormatters } from "../../i18n/formatters.js";
 import { joinIds, useHiddenDescription } from "../../utils/hidden-description.js";
 
 export const KAESO_DATE_PICKER_VARIANTS = {

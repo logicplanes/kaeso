@@ -1,6 +1,7 @@
 import { forwardRef, type ReactNode } from "react";
 import { cn } from "../../utils/cn.js";
-import { useUiText, useFormatters } from "../../i18n/context.js";
+import { useUiText } from "../../i18n/context.js";
+import { useFormatters } from "../../i18n/formatters.js";
 import { Tooltip } from "../tooltip/tooltip.js";
 
 export const KAESO_TIMELINE_VARIANTS = {

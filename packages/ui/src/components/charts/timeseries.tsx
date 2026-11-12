@@ -6,7 +6,8 @@ import { bisector, max as d3max, min as d3min } from "d3-array";
 import { cn } from "../../utils/cn.js";
 import { dateFormatter, formatTimeZone } from "../../format/index.js";
 import { useUtcWhileHydrating } from "../../hooks/use-utc-while-hydrating.js";
-import { useLocale, useUiText, useFormatters } from "../../i18n/context.js";
+import { useLocale, useUiText } from "../../i18n/context.js";
+import { useFormatters } from "../../i18n/formatters.js";
 import {
   AXIS,
   axisLabelIndexes,

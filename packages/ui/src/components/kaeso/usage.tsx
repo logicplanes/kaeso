@@ -8,7 +8,8 @@ import { Text } from "../text/text.js";
 import { Swatch, TOKEN_KIND_ORDER, tokenKindColor, tokenKindLabel, type TokenKind } from "../charts/core.js";
 import { edgeColor } from "../charts/marks.js";
 import { Tooltip } from "../tooltip/tooltip.js";
-import { useUiText, useFormatters } from "../../i18n/context.js";
+import { useUiText } from "../../i18n/context.js";
+import { useFormatters } from "../../i18n/formatters.js";
 
 export const KAESO_USAGE_VARIANTS = {
   limit: {

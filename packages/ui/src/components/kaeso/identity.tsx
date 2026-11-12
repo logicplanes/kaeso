@@ -7,7 +7,8 @@ import { Badge } from "../badge/badge.js";
 import { CopyButton } from "../copy-button/copy-button.js";
 import { PROVIDER_MARKS, type ProviderMark } from "./provider-marks.js";
 import { useProviderMarkOf } from "../../utils/provider-marks.js";
-import { useFormatters, useUiText, type UiText } from "../../i18n/context.js";
+import { useUiText, type UiText } from "../../i18n/context.js";
+import { useFormatters } from "../../i18n/formatters.js";
 
 export const KAESO_IDENTITY_VARIANTS = {
   provider: {

@@ -3,7 +3,8 @@ import { arc as d3arc, pie as d3pie } from "d3-shape";
 import { cn } from "../../utils/cn.js";
 import { plainFormatters, type Formatters } from "../../format/index.js";
 import { useLayoutWidth } from "../../hooks/use-layout-width.js";
-import { englishText, useUiText, type UiText, useFormatters } from "../../i18n/context.js";
+import { englishText, useUiText, type UiText } from "../../i18n/context.js";
+import { useFormatters } from "../../i18n/formatters.js";
 import { ChartFrame, Legend, Swatch, seriesColors, useTweened, type ChartState } from "./core.js";
 import { Text } from "../text/text.js";
 import { edgeColor } from "./marks.js";
@@ -41,12 +42,12 @@ export function groupSmall(slices: Slice[], min = 0.02, t: UiText = englishText)
   ];
 }
 
-export function shareLabel(value: number, sum: number, t: UiText = englishText, { formatPercent }: Formatters = plainFormatters): string {
+export function shareLabel(value: number, sum: number, t: UiText = englishText, { formatPercent }: Formatters = plainFormatters()): string {
   const share = sum ? value / sum : 0;
   return share > 0 && share < 0.005 ? t("donut.underOnePercent", "<1%") : formatPercent(share, 0);
 }
 
-export function wholeShares(values: number[], t: UiText = englishText, { formatPercent }: Formatters = plainFormatters): string[] {
+export function wholeShares(values: number[], t: UiText = englishText, { formatPercent }: Formatters = plainFormatters()): string[] {
   const sum = values.reduce((a, v) => a + v, 0);
   if (!sum) return values.map(() => formatPercent(0, 0));
   const exact = values.map((v) => (v / sum) * 100);

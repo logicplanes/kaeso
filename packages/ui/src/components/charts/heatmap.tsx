@@ -1,7 +1,8 @@
 import { forwardRef, useLayoutEffect, useRef, useState } from "react";
 import { max as d3max } from "d3-array";
 import { cn } from "../../utils/cn.js";
-import { useUiText, useFormatters } from "../../i18n/context.js";
+import { useUiText } from "../../i18n/context.js";
+import { useFormatters } from "../../i18n/formatters.js";
 import { useScrollFadeX } from "../../hooks/use-scroll-fade.js";
 import { ChartFrame, ChartLive, ChartTooltip } from "./core.js";
 

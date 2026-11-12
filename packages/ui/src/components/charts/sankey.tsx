@@ -1,7 +1,8 @@
 import { forwardRef, useId, useMemo, useState } from "react";
 import { sankey as d3sankey, sankeyLinkHorizontal, type SankeyLink, type SankeyNode } from "d3-sankey";
 import { cn } from "../../utils/cn.js";
-import { useUiText, useFormatters } from "../../i18n/context.js";
+import { useUiText } from "../../i18n/context.js";
+import { useFormatters } from "../../i18n/formatters.js";
 import { ChartFrame, ChartLive, labelWidth, seriesColors, useChartKeys, useSize, type ChartState } from "./core.js";
 import { fitLabel } from "./domain.js";
 

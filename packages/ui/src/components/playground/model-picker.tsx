@@ -1,5 +1,6 @@
 import { forwardRef, useCallback, useMemo, useState, type ReactNode } from "react";
-import { useLocale, useUiText, useFormatters } from "../../i18n/context.js";
+import { useLocale, useUiText } from "../../i18n/context.js";
+import { useFormatters } from "../../i18n/formatters.js";
 import { cn } from "../../utils/cn.js";
 import { CommandList, type CommandListGroup, type CommandListItem } from "../command-list/command-list.js";
 import { PickerPopover, PickerTrigger } from "../command-list/picker-popover.js";
