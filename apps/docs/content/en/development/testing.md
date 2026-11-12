@@ -153,7 +153,7 @@ Three more tests guard text. `crates/kaeso-server/tests/error_copy.rs` checks ev
 
 ## End-to-end tests
 
-The suites in `e2e/` run the official OpenAI, Anthropic, Google Gen AI and MCP Python SDKs, pinned in `e2e/requirements.txt`, against KPP's encoders, the gateway, its MCP portal and a fresh install. Set up their virtual environment once:
+The suites in `e2e/` run the official OpenAI, Anthropic, Google Gen AI, TypeSafe and MCP Python SDKs, pinned in `e2e/requirements.txt`, against KPP's encoders, the gateway, its MCP portal and a fresh install. Set up their virtual environment once:
 
 ```bash
 python3 -m venv e2e/.venv
@@ -196,6 +196,7 @@ sequenceDiagram
 | `POST /v1/images/generations`, `/v1/images/edits`, `/v1/images/variations` | `openai_images` | `images.generate` (also streamed), `images.edit` with uploads, `images.create_variation` |
 | `POST /v1/audio/speech` | `openai_speech` | `audio.speech.create` (audio and `stream_format="sse"`) |
 | `POST /v1/audio/transcriptions`, `/v1/audio/translations` | `openai_transcriptions` | `audio.transcriptions.create` in every `response_format` and streamed, `audio.translations.create` |
+| `POST /v1/systemone` | `system_one`, JSON and uploads | `system_one` with questions, assets, extra headers and body fields (`typesafe-sdk`), and its errors |
 | `/v1/videos`, `/v1/videos/{id}`, `/v1/videos/{id}/remix`, `/v1/videos/{id}/content` | `openai_videos`, answering every job fixture of every video dialect | `videos.create` (JSON and with an upload), `videos.retrieve`, `videos.remix`, `videos.list`, `videos.download_content`, `videos.delete`, `videos.poll` |
 
 Every response and stream [fixture](kpp/fixtures.md) of every generation dialect goes through every generation endpoint, streamed and not. The tests compare what the SDK parsed with what KPP decoded (`GET /_expected`), so a translation that loses text, tool arguments or readable reasoning fails. They also check that structured output stays valid JSON and that every error fixture raises the SDK's error with the right status (`e2e/conformance/test_errors.py`): `APIStatusError` in the OpenAI and Anthropic SDKs, `APIError` in `google-genai`.
@@ -250,7 +251,7 @@ The console image also runs Caddy, as in a real install. `KAESO_TEST_GATEWAY_IMA
 
 ## Fuzzing
 
-`fuzz/` holds one [cargo-fuzz](https://rust-fuzz.github.io/book/cargo-fuzz.html) target per KPP decoder, `decode_<dialect>`, one for the SSE parser, `sse`, one for MCP messages, `mcp`, and one for the audio length probe, `audio_length`. The decoder targets check that every decoder accepts any bytes without panicking, and that encoding the result into every dialect doesn't panic either. The `sse` target checks that the parser yields the same items however the input is split. The `mcp` target checks that any message Kaeso reads is written back whole, also after its tool is renamed, and that header values decode to what was encoded; its seed corpus is `crates/kaeso-mcp/fixtures`. The `audio_length` target checks that any bytes give a length within a day or none, without reading past its limits. `fuzz/` is a Cargo workspace of its own, so `libfuzzer-sys` never reaches the library crates.
+`fuzz/` holds one [cargo-fuzz](https://rust-fuzz.github.io/book/cargo-fuzz.html) target per KPP decoder, `decode_<dialect>`, one for the SSE parser, `sse`, one for MCP messages, `mcp` and one for the audio length probe, `audio_length`. The decoder targets check that every decoder accepts any bytes without panicking, and that encoding the result into every dialect doesn't panic either. The `sse` target checks that the parser yields the same items however the input is split. The `mcp` target checks that any message Kaeso reads is written back whole, also after its tool is renamed, and that header values decode to what was encoded; its seed corpus is `crates/kaeso-mcp/fixtures`. The `audio_length` target checks that any bytes give a length within a day or none, without reading past its limits. `fuzz/` is a Cargo workspace of its own, so `libfuzzer-sys` never reaches the library crates.
 
 Every change checks that the targets build, and are formatted and linted:
 

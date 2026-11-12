@@ -1,0 +1,24 @@
+{
+  "model": "jev-1.14.0",
+  "answers": {
+    "team": {
+      "type": "choice",
+      "choice": "billing",
+      "confidence": 0.8133,
+      "probabilities": {
+        "billing": 0.86,
+        "accounts": 0.09,
+        "other": 0.03,
+        "escalate": 0.02
+      }
+    },
+    "refund": {
+      "type": "noul",
+      "noul": 0.31
+    }
+  },
+  "usage": {
+    "input_tokens": 214,
+    "output_tokens": 8
+  }
+}

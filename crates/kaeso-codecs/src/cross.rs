@@ -1,7 +1,7 @@
 use kaeso_kpp::{
-    Block, DialectId, Extras, GenerateRequest, HEADER_PREFIX, KppError, Message, Opaque,
-    OpaqueKind, Origin, RawJson, ReasoningBlock, ReasoningEffort, Request, Role, Source,
-    ToolChoice, ToolDef,
+    Block, DecideRequest, DecisionInput, DialectId, Extras, GenerateRequest, HEADER_PREFIX,
+    Instructions, KppError, Message, Opaque, OpaqueKind, Origin, QuestionKind, RawJson,
+    ReasoningBlock, ReasoningEffort, Request, Role, Source, ToolChoice, ToolDef,
 };
 use serde_json::Value;
 
@@ -37,6 +37,16 @@ pub const EXTRAS_ALLOWLIST: &[(DialectId, Scope, &str)] = &[
     (DialectId::OpenAiResponses, "request", "client_metadata"),
     (DialectId::OpenAiResponses, "image", "detail"),
     (DialectId::OpenAiResponses, "message", "phase"),
+    (
+        DialectId::SystemOne,
+        "request",
+        "header:typesafe-danger-zone-images",
+    ),
+    (
+        DialectId::SystemOne,
+        "request",
+        "header:typesafe-danger-zone-long-context",
+    ),
 ];
 
 /// The type names of OpenAI Responses' hosted search tool, current and earlier versions.
@@ -525,11 +535,68 @@ pub fn check_foreign(req: &Request, target: &Origin) -> Result<(), KppError> {
     match req {
         Request::Generate(r) | Request::CountTokens(r) => check_generate(r, target),
         Request::Embed(r) => check_extras(&r.extras, target.dialect, "", "request"),
+        Request::Decide(r) => check_decide(r, target),
         other => Err(KppError::unsupported_by(
             format!("{:?} request", other.kind()),
             target.dialect,
             "",
         )),
+    }
+}
+
+fn check_decide(r: &DecideRequest, target: &Origin) -> Result<(), KppError> {
+    let dialect = target.dialect;
+    check_extras(&r.extras, dialect, "", "request")?;
+    if let DecisionInput::Messages(messages) = &r.input {
+        for (mi, m) in messages.iter().enumerate() {
+            let path = format!("input[{mi}]");
+            check_extras(&m.extras, dialect, &path, "message")?;
+            for (bi, b) in m.blocks.iter().enumerate() {
+                check_decision_block(b, target, &format!("{path}.blocks[{bi}]"))?;
+            }
+        }
+    }
+    for (reference, asset) in &r.assets {
+        let path = format!("assets.{reference}");
+        check_source(&asset.source, target, &path)?;
+        check_extras(&asset.extras, dialect, &path, "asset")?;
+    }
+    for (qi, q) in r.questions.iter().enumerate() {
+        let path = format!("questions[{qi}]");
+        check_extras(&q.extras, dialect, &path, "question")?;
+        if let Some(Instructions::Blocks(blocks)) = &q.instructions {
+            for (bi, b) in blocks.iter().enumerate() {
+                check_decision_block(b, target, &format!("{path}.instructions[{bi}]"))?;
+            }
+        }
+        match &q.kind {
+            QuestionKind::Predicate(p) => check_extras(&p.extras, dialect, &path, "criteria")?,
+            QuestionKind::Choice(c) => {
+                for (oi, o) in c.options.iter().enumerate() {
+                    check_extras(
+                        &o.extras,
+                        dialect,
+                        &format!("{path}.options[{oi}]"),
+                        "option",
+                    )?;
+                }
+            }
+            QuestionKind::Score(s) => {
+                for (li, l) in s.levels.iter().enumerate() {
+                    check_extras(&l.extras, dialect, &format!("{path}.levels[{li}]"), "level")?;
+                }
+            }
+            _ => {}
+        }
+    }
+    Ok(())
+}
+
+// A decision input may hold JSON parts, which no generation format takes.
+fn check_decision_block(block: &Block, target: &Origin, path: &str) -> Result<(), KppError> {
+    match block {
+        Block::Json(j) => check_extras(&j.extras, target.dialect, path, "json"),
+        other => check_block(other, target, path),
     }
 }
 

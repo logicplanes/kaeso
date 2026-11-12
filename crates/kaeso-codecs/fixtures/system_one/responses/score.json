@@ -1,0 +1,24 @@
+{
+  "model": "jev-latest",
+  "answers": {
+    "urgency": {
+      "type": "score",
+      "score": 1.7,
+      "confidence": 0.55,
+      "legend": {
+        "0": "Can wait",
+        "1": "Needs attention this week",
+        "2": "Needs attention today"
+      },
+      "probabilities": {
+        "0": 0.1,
+        "1": 0.1,
+        "2": 0.8
+      }
+    }
+  },
+  "usage": {
+    "input_tokens": 120,
+    "output_tokens": 12
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "model": "jev-latest",
+  "state": "I was charged twice for my subscription this month. Please refund the extra charge.",
+  "questions": {
+    "urgency": {
+      "type": "score",
+      "instructions": "How urgent is this message?",
+      "criteria": [
+        "Can wait",
+        "Needs attention this week",
+        "Needs attention today"
+      ]
+    }
+  }
+}

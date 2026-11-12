@@ -1,0 +1,19 @@
+{
+  "model": "jev-latest",
+  "answers": {
+    "tone": {
+      "type": "choice",
+      "choice": "calm",
+      "confidence": 0.7,
+      "probabilities": {
+        "angry": 0.15,
+        "calm": 0.8,
+        "excited": 0.05
+      }
+    }
+  },
+  "usage": {
+    "input_tokens": 120,
+    "output_tokens": 12
+  }
+}

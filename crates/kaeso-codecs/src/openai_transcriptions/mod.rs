@@ -63,10 +63,11 @@ impl Codec for OpenAiTranscriptions {
 
     /// Decodes an upload without its path as a transcription.
     fn decode_request(
-        _kind: RequestKind,
+        kind: RequestKind,
         body: &[u8],
         headers: &HeaderList,
     ) -> Result<Request, KppError> {
+        crate::decisions::refuse_kind(kind, Self::DIALECT)?;
         crate::limits::request_shape(DIALECT, body)?;
         request::decode(
             TranscriptionOperation::Transcribe,
@@ -76,6 +77,7 @@ impl Codec for OpenAiTranscriptions {
     }
 
     fn encode_response(reply: &Reply, ctx: &EncodeCtx) -> Result<Vec<u8>, KppError> {
+        crate::decisions::refuse_reply(reply, Self::DIALECT)?;
         reply::encode(reply, ctx)
     }
 
@@ -92,10 +94,12 @@ impl Codec for OpenAiTranscriptions {
     }
 
     fn check(req: &Request, ctx: &EgressCtx) -> Result<(), KppError> {
+        crate::decisions::refuse_request(req, Self::DIALECT)?;
         request::check(req, ctx)
     }
 
     fn encode_request(req: &Request, ctx: &mut EgressCtx) -> Result<EncodedRequest, KppError> {
+        crate::decisions::refuse_request(req, Self::DIALECT)?;
         request::encode(req, ctx)
     }
 

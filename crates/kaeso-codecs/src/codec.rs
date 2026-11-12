@@ -8,6 +8,7 @@ use crate::openai_responses::ResponsesProfile;
 use crate::openai_speech::SpeechProfile;
 use crate::openai_transcriptions::TranscriptionsProfile;
 use crate::openai_videos::VideosProfile;
+use crate::system_one::SystemOneProfile;
 use indexmap::IndexMap;
 use kaeso_kpp::{
     AudioFormat, DialectId, KppError, ModelInfo, ModelList, ModelsQuery, Origin, Reply, Request,
@@ -260,6 +261,11 @@ pub struct EgressCtx {
     pub transcriptions_profile: TranscriptionsProfile,
     /// How a provider that speaks a form of OpenAI's Videos API takes video jobs.
     pub videos_profile: VideosProfile,
+    /// How a provider that speaks a form of TypeSafe's System One API takes decision requests.
+    pub system_one_profile: SystemOneProfile,
+    /// The questions a decision request was sent with, in question order, under the keys the
+    /// encoder chose, so that keyed answers are read back by position. The encoder sets it.
+    pub(crate) decision_questions: Vec<crate::decisions::SentQuestion>,
     pub left_out: Vec<String>,
     pub adapted: Vec<String>,
     /// The prompt-cache breakpoints (`cache_control`) an encoded generation request
@@ -322,6 +328,8 @@ impl EgressCtx {
             speech_profile: SpeechProfile::OPENAI,
             transcriptions_profile: TranscriptionsProfile::OPENAI,
             videos_profile: VideosProfile::OPENAI,
+            system_one_profile: SystemOneProfile::TYPESAFE,
+            decision_questions: Vec::new(),
             left_out: Vec::new(),
             adapted: Vec::new(),
             cache_breakpoints: None,
@@ -409,6 +417,20 @@ impl EgressCtx {
     pub fn with_videos_profile(mut self, profile: VideosProfile) -> Self {
         self.videos_profile = profile;
         self
+    }
+
+    /// Sends decision requests in the System One form `profile` describes.
+    #[must_use]
+    pub fn with_system_one_profile(mut self, profile: SystemOneProfile) -> Self {
+        self.system_one_profile = profile;
+        self
+    }
+
+    /// The keys a decision request's questions were sent under, in question order: their names,
+    /// or `q0`…`qN-1` where a provider couldn't take them. Empty until a decision request is
+    /// encoded.
+    pub fn decision_keys(&self) -> impl Iterator<Item = &str> {
+        self.decision_questions.iter().map(|q| q.key.as_str())
     }
 
     #[must_use]
@@ -587,6 +609,8 @@ pub const FORWARDED_HEADERS: &[(DialectId, &str)] = &[
     (DialectId::OpenAiSpeech, "openai-beta"),
     (DialectId::OpenAiTranscriptions, "openai-beta"),
     (DialectId::OpenAiVideos, "openai-beta"),
+    (DialectId::SystemOne, "typesafe-danger-zone-images"),
+    (DialectId::SystemOne, "typesafe-danger-zone-long-context"),
 ];
 
 pub fn is_forwarded_header(dialect: DialectId, name: &str) -> bool {

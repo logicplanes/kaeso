@@ -1,0 +1,13 @@
+{
+  "model": "decision-models/baseten-elephant-9b-latest",
+  "answers": {
+    "error_visible": {
+      "type": "noul",
+      "noul": 0.9994
+    }
+  },
+  "usage": {
+    "input_tokens": 431,
+    "output_tokens": 0
+  }
+}

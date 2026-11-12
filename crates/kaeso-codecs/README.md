@@ -21,6 +21,7 @@ Sans-IO codecs between [KPP](https://crates.io/crates/kaeso-kpp) and the wire fo
 | Veo | Video jobs on Gemini Enterprise Agent Platform |
 | Gemini Interactions | Gemini Omni video jobs |
 | DashScope | QwenCloud's images, speech, transcriptions and video jobs |
+| System One | Decisions: yes/no, choice, score and box questions with probabilities, in TypeSafe's form and the forms of the providers that took it |
 
 Every dialect also reads and writes its own errors, and the chat and embeddings dialects their model listings. What a dialect cannot do is refused with an `Unsupported` error.
 

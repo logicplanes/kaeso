@@ -448,6 +448,7 @@ impl Codec for MinimaxSpeech {
         body: &[u8],
         _headers: &HeaderList,
     ) -> Result<Request, KppError> {
+        crate::decisions::refuse_kind(kind, Self::DIALECT)?;
         if kind != RequestKind::Speech {
             return Err(not_speech(kind));
         }
@@ -456,6 +457,7 @@ impl Codec for MinimaxSpeech {
     }
 
     fn encode_response(reply: &Reply, _ctx: &EncodeCtx) -> Result<Vec<u8>, KppError> {
+        crate::decisions::refuse_reply(reply, Self::DIALECT)?;
         encode_response(reply)
     }
 
@@ -473,6 +475,7 @@ impl Codec for MinimaxSpeech {
     }
 
     fn check(req: &Request, _ctx: &EgressCtx) -> Result<(), KppError> {
+        crate::decisions::refuse_request(req, Self::DIALECT)?;
         match req {
             Request::Speech(r) => check_request(r),
             other => Err(not_speech(other.kind())),
@@ -480,6 +483,7 @@ impl Codec for MinimaxSpeech {
     }
 
     fn encode_request(req: &Request, ctx: &mut EgressCtx) -> Result<EncodedRequest, KppError> {
+        crate::decisions::refuse_request(req, Self::DIALECT)?;
         encode_request(req, ctx)
     }
 

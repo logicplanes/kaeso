@@ -1,0 +1,3 @@
+{
+  "detail": "Images are not enabled for this request. Send the header TypeSafe-Danger-Zone-Images: true."
+}

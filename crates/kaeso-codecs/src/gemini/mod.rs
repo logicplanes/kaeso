@@ -68,6 +68,7 @@ impl Codec for Gemini {
         body: &[u8],
         headers: &HeaderList,
     ) -> Result<Request, KppError> {
+        crate::decisions::refuse_kind(kind, Self::DIALECT)?;
         crate::limits::request_shape(D, body)?;
         let action = match kind {
             RequestKind::CountTokens => GeminiAction::CountTokens,
@@ -78,6 +79,7 @@ impl Codec for Gemini {
     }
 
     fn encode_response(reply: &Reply, ctx: &EncodeCtx) -> Result<Vec<u8>, KppError> {
+        crate::decisions::refuse_reply(reply, Self::DIALECT)?;
         response::encode_response(reply, ctx)
     }
 
@@ -90,6 +92,7 @@ impl Codec for Gemini {
     }
 
     fn check(req: &Request, ctx: &EgressCtx) -> Result<(), KppError> {
+        crate::decisions::refuse_request(req, Self::DIALECT)?;
         match req {
             Request::Image(r) => return images::check(r, ctx.gemini_profile.image_output_options),
             Request::Speech(r) => return audio::check_speech(r),
@@ -101,6 +104,7 @@ impl Codec for Gemini {
     }
 
     fn encode_request(req: &Request, ctx: &mut EgressCtx) -> Result<EncodedRequest, KppError> {
+        crate::decisions::refuse_request(req, Self::DIALECT)?;
         match req {
             Request::Image(r) => return images::encode(r, ctx),
             Request::Speech(r) => return audio::encode_speech(r, ctx),

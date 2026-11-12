@@ -1,0 +1,44 @@
+{
+  "model": "jev-1.14.0",
+  "state": "Limited offer! Reply STOP to unsubscribe. Win a free cruise today.",
+  "questions": {
+    "spam": {
+      "type": "noul",
+      "instructions": "Is this message spam?",
+      "criteria": {
+        "true": "Unsolicited advertising",
+        "false": "A legitimate conversation"
+      }
+    },
+    "statement": {
+      "type": "noul",
+      "instructions": "This message contains unsolicited advertising."
+    },
+    "structured": {
+      "type": "noul",
+      "instructions": {
+        "task": "Identify unsolicited advertising."
+      },
+      "criteria": {
+        "true": {
+          "signals": [
+            "prizes",
+            "urgency"
+          ]
+        },
+        "false": null
+      }
+    },
+    "no_criteria": {
+      "type": "noul",
+      "instructions": "Does the message mention a cruise?",
+      "criteria": null
+    },
+    "only_true": {
+      "type": "noul",
+      "criteria": {
+        "true": "The message asks the reader to reply."
+      }
+    }
+  }
+}

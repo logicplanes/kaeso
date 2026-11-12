@@ -46,6 +46,7 @@ macro_rules! wire_enum {
 mod audio;
 mod b64;
 mod block;
+mod decision;
 mod dialect;
 mod error;
 mod extras;
@@ -66,8 +67,14 @@ pub use audio::{
 pub use b64::Base64Text;
 pub use block::{
     AudioBlock, Base64Source, Block, CacheHint, CacheTtl, Citation, DocumentBlock, FileIdSource,
-    ImageBlock, Opaque, OpaqueKind, RawItem, ReasoningBlock, RefusalBlock, Source, TextBlock,
-    TextSource, ToolCallBlock, ToolResultBlock, VideoBlock,
+    ImageBlock, JsonBlock, Opaque, OpaqueKind, RawItem, ReasoningBlock, RefusalBlock, Source,
+    TextBlock, TextSource, ToolCallBlock, ToolResultBlock, VideoBlock,
+};
+pub use decision::{
+    Answer, AnswerValue, Asset, BoxAnswer, BoxQuestion, Choice, ChoiceAnswer, ChoiceOption,
+    ChoiceValue, DecideRequest, DecideResponse, DecisionCache, DecisionInput, Description,
+    Instructions, Level, Predicate, PredicateAnswer, Question, QuestionKind, Refusal, Score,
+    ScoreAnswer,
 };
 pub use dialect::{DialectId, Origin, UnknownDialect};
 pub use error::{ErrorKind, KppError};

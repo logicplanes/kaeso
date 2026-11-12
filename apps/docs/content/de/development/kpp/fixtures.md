@@ -24,6 +24,7 @@ Jede Codec-Änderung beginnt mit einer Fixture: einem echten Anfrage-Body, einer
 | `minimax_speech/` | Text to Speech von MiniMax (`/v1/t2a_v2`) |
 | `elevenlabs/` | ElevenLabs; Pfad und Query jeder Anfrage in `<name>.meta.json`, Audioantworten als `.mp3` und `.pcm`, der Stream mit Zeitmarken als `.ndjson`; Videoerzeugungen in `video/` |
 | `openai_videos/` | Die Videos API von OpenAI; Uploads als `requests/<name>.multipart`, Listen und Löschungen in `lists/`, die Datei eines erzeugten Videos in `content/` |
+| `system_one/` | Die System-One-API von TypeSafe (`/v1/systemone`); eine Anfrage, die einen Header braucht, hat `<name>.headers.json`, jede Antwort eine Anfrage gleichen Namens, und `requests/multipart/` enthält den JSON-Teil eines Uploads |
 | `xai_videos/`, `minimax_videos/`, `zai_videos/`, `openrouter_videos/`, `veo/`, `gemini_interactions/`, `dashscope/` | Die Video-APIs der Anbieter; `responses/` hält die Antworten, die einen Job starten, `polls/` die Antworten der Anbieter auf die Frage nach einem Job, `minimax_videos/files/` eine Datei-ID, die zum Link wird; `dashscope/` hält außerdem Bilder, Sprachausgaben und Transkriptionen in eigenen Ordnern unter `requests/`, `responses/` und `streams/` |
 
 Jeder Dialektordner hat `requests/`, `responses/`, `streams/`, sofern der Endpunkt streamt, und `errors/`.

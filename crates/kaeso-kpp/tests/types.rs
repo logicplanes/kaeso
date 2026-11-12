@@ -218,3 +218,237 @@ fn media_bytes_are_held_once_and_keep_their_json_form() {
     let refused = Source::base64("image/png", "not base64!").unwrap_err();
     assert_eq!(refused.kind, ErrorKind::InvalidRequest);
 }
+
+#[cfg(test)]
+mod decisions {
+    use kaeso_kpp::{
+        Answer, AnswerValue, Asset, Block, BoxAnswer, BoxQuestion, Choice, ChoiceAnswer,
+        ChoiceOption, ChoiceValue, DecideRequest, DecideResponse, DecisionCache, DecisionInput,
+        Description, DialectId, ImageBlock, Instructions, JsonBlock, Level, Message, Predicate,
+        PredicateAnswer, Question, QuestionKind, RawJson, Refusal, Reply, Request, RequestKind,
+        Role, Score, ScoreAnswer, Source, StreamMode,
+    };
+    use serde_json::json;
+
+    fn raw(s: &str) -> RawJson {
+        RawJson::from_string(s.to_owned()).unwrap()
+    }
+
+    fn noul(name: &str) -> Question {
+        Question::new(
+            Some(name.to_owned()),
+            QuestionKind::Predicate(Predicate::default()),
+        )
+    }
+
+    fn choice(options: &[&str]) -> QuestionKind {
+        QuestionKind::Choice(Choice::new(
+            options
+                .iter()
+                .map(|o| ChoiceOption::new(ChoiceValue::Text((*o).to_owned()), None))
+                .collect(),
+        ))
+    }
+
+    #[test]
+    fn system_one_is_a_dialect() {
+        assert_eq!(DialectId::SystemOne.as_str(), "system_one");
+        assert_eq!(DialectId::SystemOne.display_name(), "System One");
+        assert_eq!(
+            "system_one".parse::<DialectId>().unwrap(),
+            DialectId::SystemOne
+        );
+        assert!(DialectId::ALL.contains(&DialectId::SystemOne));
+    }
+
+    #[test]
+    fn a_decision_request_is_its_own_kind_and_never_streams() {
+        let req = Request::Decide(
+            DecideRequest::new("jev-latest", DecisionInput::Text("Hi".into()))
+                .with_question(noul("spam")),
+        );
+        assert_eq!(req.kind(), RequestKind::Decide);
+        assert_eq!(req.model(), "jev-latest");
+        assert_eq!(req.stream_mode(), StreamMode::Off);
+        req.validate().unwrap();
+        let reply = Reply::Decide(DecideResponse::new("jev-1.14.0", vec![]));
+        assert_eq!(reply.kind(), RequestKind::Decide);
+    }
+
+    #[test]
+    fn validation_needs_a_model_questions_options_and_used_assets() {
+        let base = || DecideRequest::new("m", DecisionInput::Text("photo-1 and more".into()));
+        let param = |r: DecideRequest| r.validate().unwrap_err().param;
+        assert_eq!(
+            param(DecideRequest::new("", DecisionInput::Text("x".into())).with_question(noul("a"))),
+            Some("model".into())
+        );
+        assert_eq!(param(base()), Some("questions".into()));
+        assert_eq!(
+            param(base().with_question(noul("a")).with_question(noul("a"))),
+            Some("questions[1]".into())
+        );
+        assert_eq!(
+            param(base().with_question(Question::new(None, choice(&[])))),
+            Some("questions[0]".into())
+        );
+        assert_eq!(
+            param(base().with_question(Question::new(None, QuestionKind::Score(Score::default())))),
+            Some("questions[0]".into())
+        );
+        base()
+            .with_question(Question::new(None, choice(&["a"])))
+            .with_question(Question::new(None, choice(&["b"])))
+            .validate()
+            .unwrap();
+        let image = || Asset::new(Source::bytes("image/png", vec![0u8; 4]));
+        base()
+            .with_question(noul("a"))
+            .with_asset("photo-1", image())
+            .validate()
+            .unwrap();
+        assert_eq!(
+            param(
+                base()
+                    .with_question(noul("a"))
+                    .with_asset("photo-2", image())
+            ),
+            Some("assets.photo-2".into())
+        );
+        assert_eq!(
+            param(base().with_question(noul("a")).with_asset(" ", image())),
+            Some("assets. ".into())
+        );
+        let in_key = DecideRequest::new("m", DecisionInput::Json(raw(r#"{"photo-1":"x"}"#)))
+            .with_question(noul("a"))
+            .with_asset("photo-1", image());
+        assert_eq!(param(in_key), Some("assets.photo-1".into()));
+        let mut described = Predicate::default();
+        described.when_true = Some(Description::Json(raw(r#"{"examples":["photo-3"]}"#)));
+        DecideRequest::new("m", DecisionInput::Text("x".into()))
+            .with_question(Question::new(None, QuestionKind::Predicate(described)))
+            .with_asset("photo-3", image())
+            .validate()
+            .unwrap();
+        let mut level = Level::new(
+            Some("low".into()),
+            Some(Description::Text("photo-4".into())),
+        );
+        level.label = Some("low".into());
+        DecideRequest::new("m", DecisionInput::Messages(vec![Message::user("x")]))
+            .with_question(
+                Question::new(None, QuestionKind::Score(Score::new(vec![level])))
+                    .with_instructions(Instructions::Blocks(vec![Block::Json(JsonBlock::new(
+                        raw(r#"["photo-5"]"#),
+                    ))])),
+            )
+            .with_asset("photo-4", image())
+            .with_asset("photo-5", image())
+            .validate()
+            .unwrap();
+    }
+
+    #[test]
+    fn capabilities_name_media_boxes_and_cache() {
+        let text =
+            DecideRequest::new("m", DecisionInput::Text("x".into())).with_question(noul("a"));
+        assert_eq!(
+            text.required_capabilities(),
+            kaeso_kpp::Capabilities::default()
+        );
+        let mut boxed = text
+            .clone()
+            .with_question(Question::new(None, QuestionKind::Box(BoxQuestion::new())));
+        boxed.cache = Some(DecisionCache::new(Some("k".into())));
+        let caps = boxed.required_capabilities();
+        assert!(caps.box_questions && caps.cache_hints && !caps.images);
+        let media = DecideRequest::new(
+            "m",
+            DecisionInput::Messages(vec![Message::new(
+                Role::User,
+                vec![
+                    Block::audio(Source::Url("https://example.com/a.wav".into())),
+                    Block::video(Source::Url("https://example.com/v.mp4".into())),
+                    Block::Document(kaeso_kpp::DocumentBlock::new(Source::Url(
+                        "https://example.com/d.pdf".into(),
+                    ))),
+                ],
+            )]),
+        )
+        .with_question(noul("a").with_instructions(Instructions::Blocks(vec![
+            Block::Image(ImageBlock::new(Source::Url(
+                "https://example.com/i.png".into(),
+            ))),
+        ])));
+        let caps = media.required_capabilities();
+        assert!(caps.audio_input && caps.video_input && caps.pdf && caps.images);
+        let with_asset = text.with_asset(
+            "x",
+            Asset::new(Source::Url("https://example.com/i.png".into())),
+        );
+        assert!(with_asset.required_capabilities().images);
+    }
+
+    #[test]
+    fn decisions_have_a_small_stable_json_form() {
+        let req = DecideRequest::new("jev-latest", DecisionInput::Text("Hi".into())).with_question(
+            Question::new(Some("tone".into()), choice(&["calm", "angry"])),
+        );
+        assert_eq!(
+            serde_json::to_value(Request::Decide(req.clone())).unwrap(),
+            json!({"decide": {"model": "jev-latest", "input": {"text": "Hi"}, "questions": [
+                {"name": "tone", "kind": {"choice": {"options": [
+                    {"value": {"text": "calm"}}, {"value": {"text": "angry"}}
+                ]}}}
+            ]}})
+        );
+        let back: DecideRequest =
+            serde_json::from_value(serde_json::to_value(&req).unwrap()).unwrap();
+        assert_eq!(back, req);
+        let reply = DecideResponse::new(
+            "jev-1.14.0",
+            vec![
+                Answer::new(AnswerValue::Predicate(PredicateAnswer::new(0.9))),
+                Answer::new(AnswerValue::Choice(ChoiceAnswer::new(
+                    1,
+                    vec![Some(0.2), None],
+                )))
+                .with_confidence(Some(0.6)),
+                Answer::new(AnswerValue::Score(ScoreAnswer::new(
+                    1.5,
+                    vec![Some(0.5), Some(0.5)],
+                ))),
+                Answer::new(AnswerValue::Box(BoxAnswer::new(0.1, 0.9, 0.2, 0.8))),
+                Answer::new(AnswerValue::Refusal(Refusal::new())),
+            ],
+        );
+        let v = serde_json::to_value(Reply::Decide(reply.clone())).unwrap();
+        assert_eq!(
+            v["decide"]["answers"],
+            json!([
+                {"value": {"predicate": {"probability": 0.9}}},
+                {"value": {"choice": {"option": 1, "probabilities": [0.2, null]}}, "confidence": 0.6},
+                {"value": {"score": {"score": 1.5, "probabilities": [0.5, 0.5]}}},
+                {"value": {"box": {"top": 0.1, "bottom": 0.9, "left": 0.2, "right": 0.8}}},
+                {"value": {"refusal": {}}}
+            ])
+        );
+        let names: Vec<&str> = reply.answers.iter().map(|a| a.value.as_str()).collect();
+        assert_eq!(names, ["predicate", "choice", "score", "box", "refusal"]);
+        assert_eq!(
+            serde_json::from_value::<Reply>(v).unwrap(),
+            Reply::Decide(reply)
+        );
+        let q = Question::new(None, QuestionKind::Box(BoxQuestion::new()));
+        assert_eq!(q.type_name(), "box");
+        let kinds = [
+            QuestionKind::Predicate(Predicate::new(Some(Description::Text("yes".into())), None)),
+            choice(&["a"]),
+            QuestionKind::Score(Score::default()),
+        ];
+        let names: Vec<&str> = kinds.iter().map(QuestionKind::as_str).collect();
+        assert_eq!(names, ["predicate", "choice", "score"]);
+        assert_eq!(Block::json(raw("{}")).kind(), "json");
+        assert!(Block::json(raw("{}")).extras().is_some());
+    }
+}

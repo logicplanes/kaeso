@@ -15,7 +15,9 @@ order: 1
 - **原始项。** `Box<RawValue>` 包装在 `RawJson` 中，按字节比较。未知的块、工具、工具选择、流事件和 delta 都是 `RawItem { origin, raw }`；引用是 `Citation { origin, raw }`，因为各方言的引用格式几乎没有共同之处。
 - **媒体字节。** 内嵌的图片、音频和视频是 `Source::Base64(Base64Source { media_type, data })`，`data` 以解码后的形式在共享的 `bytes::Bytes` 缓冲区中只保存一份。克隆请求时共享这些字节，而不复制。从 `Bytes` 请求正文（`limits::RequestBody`）读取的上传文件是该正文的切片，因此 25 MiB 的转写上传在解码时从不被复制；multipart 写入器只为正文分配一次空间。OpenAI Chat Completions 和 Anthropic Messages 的解码器以 `&RawValue` 的形式从正文中借用读取消息、消息内容以及每个部分或内容块。data URL 或 base64 字段在原处读取，因此图片的 base64 直接解码为字节，从不作为文本复制。OpenAI Chat Completions、OpenAI Responses 和 Anthropic Messages 的请求编码器在构建部分和消息时，用一个简短标记代替每个文件。随后它们把文件的 base64 只写一次，写入按最终大小分配的正文。OpenAI Responses 编解码器按应用原样保留的文件（例如不带填充的 base64）则在原处写入。其他编码器把 base64 直接写入输出（`Base64Source::base64`，`Base64Text` 通过 `Serializer::collect_str`），或把 data URL 写入一次分配好大小的字符串。解码和编码一个 24 MiB 正文中带 18 MiB 图片的请求，最多占用正文的 1.75 倍：先是正文和解码后的图片，然后是图片和发送的正文。应用或服务商写出的 base64 无论有无填充都能解码，写出时总带填充；不是 base64 的文本在请求中为 `InvalidRequest`，`param` 指明字段，在回复中为服务商错误。KPP 的 JSON 形式不变：`{"base64": {"media_type": …, "data": "<base64>"}}`。流式 delta（`AudioDelta`、`SpeechEvent::audio`）仍是 base64 文本，因为它们是到达即转发的小片段。
 - **音频时长。** `audio_length::audio_duration` 从容器的文件头读取文件时长，从不解码音频：WAV 的 `fmt ` 和 `data` 块、FLAC 的 `STREAMINFO`、MP3 的 Xing、Info 或 VBRI 帧（减去 LAME 的编码器延迟和填充），或两个匹配的恒定码率帧加上文件大小、Ogg Opus 或 Vorbis 文件最后一页的 granule 位置、MP4 的 `mvhd` 或 `mdhd`，以及 Matroska 或 WebM 的 `Duration`。它最多从开头读取 1 MiB（`MAX_SCAN`）、从末尾读取 64 KiB（`MAX_TAIL`），对其他内容或超过一天的时长返回 `None`，并有自己的 fuzz 目标。
-- **回复。** `Reply` 是 `Generate`、`CountTokens` 或 `Embed`，`RequestKind` 也对应这三种。
+- **图片尺寸。** `image_size::image_info` 从图片头部读取其格式、宽度和高度，从不解码像素：PNG 的 `IHDR`（以及动画 PNG 在图像数据之前的 `acTL` 块）、JPEG 的第一个帧开始标记、WebP 的第一个块和 GIF 的逻辑屏幕。它最多读取 64 KiB（`MAX_SCAN`），对其他任何内容返回 `None`。决策编解码器借此在发送之前拒绝服务商会拒绝的图片。
+- **决策。** `Request::Decide(DecideRequest)` 包含一个输入、按顺序排列的类型化问题以及它们引用的资产；`Reply::Decide(DecideResponse)` 为每个问题包含一个 `Answer`，顺序相同。键控格式以一个键发送每个问题，`EgressCtx` 保存发送时的键，因此回复按位置读回。选项以索引而非取值作答，因此 `true` 和 `"true"` 保持区分。概率是每个选项或级别的 `Option<f64>`，从不重新归一化。
+- **回复。** `Reply` 是 `Generate`、`CountTokens`、`Embed`、`Image`、`Speech`、`Transcription`、`Video` 或 `Decide`，`RequestKind` 也对应这些种类。
 - **工具。** `ToolDef` 是函数工具，或完整保留的未知工具；`ToolChoice` 是 `Auto`、`None`、`Required`、指定名称的工具，或未知值。函数工具的 `parameters` 是可选的，与 OpenAI 的规定一致。
 - **输出与推理设置。** `OutputSpec::JsonSchema` 有可选的名称（Anthropic 的 schema 没有名称）和描述。`ReasoningConfig` 保存模式、推理强度、预算、摘要以及是否包含加密推理；它的枚举把不认识的值保存在 `Other(String)` 中，因为服务商经常新增推理强度级别。
 - **推理块**保存来源、摘要、文本部分和不透明部分。一个 OpenAI 推理 item 同时带有 ID 和加密内容，还可能有多个文本部分。只有摘要的块也需要靠来源来决定可以回放到哪里。
@@ -103,6 +105,9 @@ OpenAI Responses 编解码器用普通的 serde 结构体读取类型化的值�
 | `MAX_BLOCKS_PER_MESSAGE` | 10,000 | 单条消息、输入项或系统提示词中的内容块，包括其工具结果中的内容块 | 远高于任何服务商对每个请求中图片或文档数量的限制 |
 | `MAX_TOOLS` | 10,000 | `tools`，以及 Chat 的 `functions` | Anthropic 工具搜索的目录规模 |
 | `MAX_EMBEDDING_INPUTS` | 2,048 | OpenAI Embeddings 中 `input` 数组的输入 | OpenAI 最多 2,048 个输入的限制 |
+| `MAX_DECISION_QUESTIONS` | 1,000 | 决策请求的问题 | Gemini 的限制，是各决策格式中最大的 |
+| `MAX_DECISION_OPTIONS`、`MAX_DECISION_LEVELS` | 255 | 一个选择题的选项、一个评分题的级别 | 各决策格式中最大的限制 |
+| `MAX_DECISION_ASSETS` | 64 | 决策请求 `assets` 中的图片 | 内存保护；服务商允许的更少 |
 | `MAX_DEPTH` | 127 | 正文中任意位置对象和数组的嵌套层数，最外层对象也计入 | serde_json 在其 128 层递归上限内能完整解析的最大层数 |
 
 serde 跳过被忽略的值和原始值时不受其递归上限约束，否则编解码器可能以每层一个栈帧的方式遍历任意深度的原始值。`request_shape` 在一次遍历字节时统计字符串之外的深度，并拒绝更深的正文，不给出 `param`。Responses 编解码器与其规范编码的比较同样在 `MAX_DEPTH` 处停止，并把服务商回复的其余部分保留为原始值，因此深层回复也不会让栈溢出。

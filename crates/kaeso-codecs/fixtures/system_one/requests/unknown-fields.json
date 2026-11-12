@@ -1,0 +1,15 @@
+{
+  "model": "jev-latest",
+  "state": "I was charged twice for my subscription this month. Please refund the extra charge.",
+  "questions": {
+    "tone": {
+      "type": "choice",
+      "instructions": "What is the tone of this message?",
+      "criteria": {
+        "angry": null,
+        "calm": null
+      },
+      "x_weight": 2
+    }
+  }
+}

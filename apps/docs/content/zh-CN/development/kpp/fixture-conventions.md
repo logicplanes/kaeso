@@ -40,6 +40,12 @@ order: 11
 - 在流中，`event:` 等于 `data.type`，`sequence_number` 从 0 开始递增。各 delta 拼接后等于其 `.done` 文本和最终回复，最后没有 `[DONE]`。
 - 每个 `*.delta` 事件都带有 `obfuscation`，但请求设置了 `include_obfuscation: false` 的流和文档自带的流除外。
 
+## System One
+
+- 回复回答同名的请求，因此按该请求发送的键读取其答案。
+- 图片是每边 280 到 336 像素的真实 PNG 和 JPEG 文件，这是 TypeSafe 接受的最小尺寸；OpenAPI 文档中 16 × 16 的 box 示例保持原样。
+- 构建的回复中，`confidence` 遵循 TypeSafe 的公式，概率之和为 1。
+
 ## OpenAI Embeddings
 
 - `input` 覆盖其四种形式：字符串、字符串数组、Token ID 数组和 Token ID 数组的数组。

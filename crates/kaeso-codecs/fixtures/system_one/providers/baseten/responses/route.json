@@ -1,0 +1,37 @@
+{
+  "model": "decision-models/baseten-joey-2b-latest",
+  "answers": {
+    "route": {
+      "type": "choice",
+      "choice": "billing",
+      "confidence": 0.94,
+      "probabilities": {
+        "billing": 0.97,
+        "technical_support": 0.03
+      }
+    },
+    "refund": {
+      "type": "noul",
+      "noul": 0.96
+    },
+    "urgency": {
+      "type": "score",
+      "score": 0.5,
+      "confidence": 0.25,
+      "legend": {
+        "0": "Routine request",
+        "1": "Needs attention today",
+        "2": "Immediate emergency"
+      },
+      "probabilities": {
+        "0": 0.55,
+        "1": 0.4,
+        "2": 0.05
+      }
+    }
+  },
+  "usage": {
+    "input_tokens": 212,
+    "output_tokens": 0
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "model": "jev-1.14.0",
+  "state": "A very long contract would go here.",
+  "questions": {
+    "renewal": {
+      "type": "noul",
+      "instructions": "Does the contract renew automatically?"
+    }
+  }
+}

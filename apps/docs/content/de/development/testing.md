@@ -153,7 +153,7 @@ Drei weitere Tests wachen über Texte. `crates/kaeso-server/tests/error_copy.rs`
 
 ## End-to-End-Tests
 
-Die Suites in `e2e/` führen die offiziellen Python-SDKs von OpenAI, Anthropic, Google Gen AI und MCP, festgelegt in `e2e/requirements.txt`, gegen die Encoder von KPP, das Gateway, sein MCP-Portal und eine frische Installation aus. Richten Sie ihre virtuelle Umgebung einmalig ein:
+Die Suites in `e2e/` führen die offiziellen Python-SDKs von OpenAI, Anthropic, Google Gen AI, TypeSafe und MCP, festgelegt in `e2e/requirements.txt`, gegen die Encoder von KPP, das Gateway, sein MCP-Portal und eine frische Installation aus. Richten Sie ihre virtuelle Umgebung einmalig ein:
 
 ```bash
 python3 -m venv e2e/.venv
@@ -196,6 +196,7 @@ sequenceDiagram
 | `POST /v1/images/generations`, `/v1/images/edits`, `/v1/images/variations` | `openai_images` | `images.generate` (auch gestreamt), `images.edit` mit Uploads, `images.create_variation` |
 | `POST /v1/audio/speech` | `openai_speech` | `audio.speech.create` (Audio und `stream_format="sse"`) |
 | `POST /v1/audio/transcriptions`, `/v1/audio/translations` | `openai_transcriptions` | `audio.transcriptions.create` in jedem `response_format` und gestreamt, `audio.translations.create` |
+| `POST /v1/systemone` | `system_one`, JSON und Uploads | `system_one` mit Fragen, Assets, zusätzlichen Headern und Body-Feldern (`typesafe-sdk`), und seine Fehler |
 | `/v1/videos`, `/v1/videos/{id}`, `/v1/videos/{id}/remix`, `/v1/videos/{id}/content` | `openai_videos`, antwortet mit jeder Job-Fixture jedes Video-Dialekts | `videos.create` (JSON und mit Upload), `videos.retrieve`, `videos.remix`, `videos.list`, `videos.download_content`, `videos.delete`, `videos.poll` |
 
 Jede Antwort- und Stream-[Fixture](kpp/fixtures.md) jedes Generierungsdialekts läuft durch jeden Generierungsendpunkt, gestreamt und nicht gestreamt. Die Tests vergleichen, was das SDK geparst hat, mit dem, was KPP dekodiert hat (`GET /_expected`), sodass eine Übersetzung fehlschlägt, die Text, Tool-Argumente oder lesbares Reasoning verliert. Die Tests prüfen außerdem, dass strukturierte Ausgabe gültiges JSON bleibt und dass jede Fehler-Fixture den Fehler des SDKs mit dem richtigen Status auslöst (`e2e/conformance/test_errors.py`): `APIStatusError` in den SDKs von OpenAI und Anthropic, `APIError` in `google-genai`.
@@ -250,7 +251,7 @@ Das Image der Konsole führt wie in einer echten Installation auch Caddy aus. `K
 
 ## Fuzzing
 
-`fuzz/` enthält ein [cargo-fuzz](https://rust-fuzz.github.io/book/cargo-fuzz.html)-Target pro KPP-Decoder, `decode_<dialect>`, eines für den SSE-Parser, `sse`, eines für MCP-Nachrichten, `mcp`, und eines für die Audiolänge, `audio_length`. Die Decoder-Targets prüfen, dass jeder Decoder beliebige Bytes ohne Panic annimmt und dass auch das Kodieren des Ergebnisses in jeden Dialekt keine Panic auslöst. Das Target `sse` prüft, dass der Parser dieselben Einträge liefert, egal wie die Eingabe geteilt ist. Das Target `mcp` prüft, dass jede Nachricht, die Kaeso liest, vollständig zurückgeschrieben wird, auch nach dem Umbenennen ihres Tools, und dass Header-Werte zu dem dekodieren, was kodiert wurde; sein Start-Korpus ist `crates/kaeso-mcp/fixtures`. Das Target `audio_length` prüft, dass beliebige Bytes eine Länge von höchstens einem Tag oder keine ergeben, ohne über seine Grenzen hinaus zu lesen. `fuzz/` ist ein eigener Cargo-Workspace, sodass `libfuzzer-sys` nie die Bibliotheks-Crates erreicht.
+`fuzz/` enthält ein [cargo-fuzz](https://rust-fuzz.github.io/book/cargo-fuzz.html)-Target pro KPP-Decoder, `decode_<dialect>`, eines für den SSE-Parser, `sse`, eines für MCP-Nachrichten, `mcp` und eines für die Audiolänge, `audio_length`. Die Decoder-Targets prüfen, dass jeder Decoder beliebige Bytes ohne Panic annimmt und dass auch das Kodieren des Ergebnisses in jeden Dialekt keine Panic auslöst. Das Target `sse` prüft, dass der Parser dieselben Einträge liefert, egal wie die Eingabe geteilt ist. Das Target `mcp` prüft, dass jede Nachricht, die Kaeso liest, vollständig zurückgeschrieben wird, auch nach dem Umbenennen ihres Tools, und dass Header-Werte zu dem dekodieren, was kodiert wurde; sein Start-Korpus ist `crates/kaeso-mcp/fixtures`. Das Target `audio_length` prüft, dass beliebige Bytes eine Länge von höchstens einem Tag oder keine ergeben, ohne über seine Grenzen hinaus zu lesen. `fuzz/` ist ein eigener Cargo-Workspace, sodass `libfuzzer-sys` nie die Bibliotheks-Crates erreicht.
 
 Jede Änderung prüft, dass die Targets bauen und formatiert und gelintet sind:
 

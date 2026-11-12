@@ -1,0 +1,29 @@
+{
+  "model": "jev-1.14.0",
+  "answers": {
+    "spam": {
+      "type": "noul",
+      "noul": 0.97
+    },
+    "statement": {
+      "type": "noul",
+      "noul": 0.95
+    },
+    "structured": {
+      "type": "noul",
+      "noul": 0.93
+    },
+    "no_criteria": {
+      "type": "noul",
+      "noul": 0.99
+    },
+    "only_true": {
+      "type": "noul",
+      "noul": 0.62
+    }
+  },
+  "usage": {
+    "input_tokens": 301,
+    "output_tokens": 15
+  }
+}

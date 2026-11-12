@@ -40,6 +40,12 @@ Fixtures that aren't live recordings follow these rules, so that the tests can c
 - In a stream, `event:` equals `data.type` and `sequence_number` counts up from 0. Deltas add up to their `.done` text and to the final reply, and no `[DONE]` follows.
 - Every `*.delta` event carries `obfuscation`, except in a stream whose request sets `include_obfuscation: false` and in the documentation's own stream.
 
+## System One
+
+- A reply answers the request of the same name, so its answers are read against the keys the request sent.
+- Images are real PNG and JPEG files of 280 to 336 pixels a side, the smallest TypeSafe takes; the OpenAPI document's 16 × 16 box example stays as written.
+- `confidence` follows TypeSafe's formulas in built replies, and probabilities sum to 1.
+
 ## OpenAI Embeddings
 
 - `input` covers its four forms: a string, an array of strings, an array of token ids and an array of token-id arrays.

@@ -1,0 +1,27 @@
+{
+  "model": "jev-1.14.0",
+  "answers": {
+    "same_dog": {
+      "type": "noul",
+      "noul": 0.08
+    },
+    "has_collar": {
+      "type": "noul",
+      "noul": 0.77
+    },
+    "coat": {
+      "type": "choice",
+      "choice": "short",
+      "confidence": 0.565,
+      "probabilities": {
+        "short": 0.71,
+        "long": 0.2,
+        "curly": 0.09
+      }
+    }
+  },
+  "usage": {
+    "input_tokens": 1834,
+    "output_tokens": 12
+  }
+}

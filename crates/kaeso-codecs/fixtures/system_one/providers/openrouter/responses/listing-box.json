@@ -1,0 +1,22 @@
+{
+  "model": "typesafe/jev-1.14-20261014",
+  "answers": {
+    "product": {
+      "type": "box",
+      "box": {
+        "top": 0.49,
+        "bottom": 0.89,
+        "left": 0.58,
+        "right": 0.96
+      },
+      "confidence": 0.93
+    }
+  },
+  "usage": {
+    "input_tokens": 1311,
+    "output_tokens": 20,
+    "cost": 5.5062e-05
+  },
+  "id": "gen-dec-1789801234-Q2wErTyUiOpAsDfGhJkL",
+  "provider": "TypeSafe"
+}

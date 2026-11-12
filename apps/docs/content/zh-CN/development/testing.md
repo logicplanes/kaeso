@@ -153,7 +153,7 @@ cargo install cargo-deny cargo-llvm-cov cargo-nextest sqlx-cli --locked
 
 ## 端到端测试
 
-`e2e/` 中的套件用 `e2e/requirements.txt` 中固定版本的 OpenAI、Anthropic、Google Gen AI 和 MCP 官方 Python SDK，测试 KPP 的编码器、网关、其 MCP 门户和全新实例。先设置一次它们的虚拟环境：
+`e2e/` 中的套件用 `e2e/requirements.txt` 中固定版本的 OpenAI、Anthropic、Google Gen AI、TypeSafe 和 MCP 官方 Python SDK，测试 KPP 的编码器、网关、其 MCP 门户和全新实例。先设置一次它们的虚拟环境：
 
 ```bash
 python3 -m venv e2e/.venv
@@ -196,6 +196,7 @@ sequenceDiagram
 | `POST /v1/images/generations`、`/v1/images/edits`、`/v1/images/variations` | `openai_images` | `images.generate`（包括流式）、带上传文件的 `images.edit`、`images.create_variation` |
 | `POST /v1/audio/speech` | `openai_speech` | `audio.speech.create`（音频和 `stream_format="sse"`） |
 | `POST /v1/audio/transcriptions`、`/v1/audio/translations` | `openai_transcriptions` | 各种 `response_format` 及流式的 `audio.transcriptions.create`、`audio.translations.create` |
+| `POST /v1/systemone` | `system_one`，JSON 和上传 | 带问题、资产、额外请求头和请求体字段的 `system_one`（`typesafe-sdk`），以及它的错误 |
 | `/v1/videos`、`/v1/videos/{id}`、`/v1/videos/{id}/remix`、`/v1/videos/{id}/content` | `openai_videos`，用每个视频方言的每个任务 fixture 回答 | `videos.create`（JSON 和带上传）、`videos.retrieve`、`videos.remix`、`videos.list`、`videos.download_content`、`videos.delete`、`videos.poll` |
 
 每个生成类方言的每个响应和流式 [fixture](kpp/fixtures.md) 都会通过每个生成类端点，包括流式和非流式。测试把 SDK 解析出的内容与 KPP 解码出的内容（`GET /_expected`）比较，因此丢失文本、工具参数或可读推理的转换都会失败。测试还检查结构化输出仍是有效的 JSON，每个错误 fixture 都会以正确的状态码引发 SDK 的错误（`e2e/conformance/test_errors.py`）：OpenAI 和 Anthropic SDK 中为 `APIStatusError`，`google-genai` 中为 `APIError`。

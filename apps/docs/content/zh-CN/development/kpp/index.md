@@ -69,7 +69,7 @@ sequenceDiagram
 
 | Crate | 内容 |
 | --- | --- |
-| `kaeso-kpp` | 只包含 KPP 类型：请求、回复、流事件、错误、Token 计数、嵌入和模型列表，以及 `validate()` 和 `required_capabilities()`。没有编解码逻辑，也没有 I/O。 |
+| `kaeso-kpp` | 只包含 KPP 类型：请求、回复、流事件、错误、Token 计数、嵌入、决策和模型列表，以及 `validate()` 和 `required_capabilities()`。没有编解码逻辑，也没有 I/O。 |
 | `kaeso-codecs` | 每种 API 格式一个 sans-IO 编解码器（代码中称为方言，即 `DialectId`），以及它们共用的构件。编解码器把字节转换为 KPP 值，把 KPP 值转换为字节；流按 chunk 逐块送入并产生事件。 |
 
 两个 crate 都发布在 crates.io 上。它们的库代码只能依赖 `serde`、`serde_json`、`bytes`、`thiserror`、`indexmap`、`base64` 和 `mime`，`cargo deny` 禁止它们使用 `tokio`、`reqwest`、`hyper` 和 `axum`（[添加依赖](../contributing.md#添加依赖)）。
@@ -97,7 +97,8 @@ sequenceDiagram
 | `veo` | Gemini Enterprise Agent Platform 上 Veo 的长时间运行操作（[Veo](veo.md)） |
 | `gemini_interactions` | Google AI Studio 和 Gemini Enterprise Agent Platform 的 Interactions API 上 Gemini Omni 的视频任务（[Gemini Interactions](gemini-interactions.md)） |
 | `dashscope` | QwenCloud 的 DashScope API：图片、语音合成、转写和 Wan 模型视频合成（[DashScope](dashscope.md)） |
-| `multipart` | 图片、音频和视频上传使用的有上限的 `multipart/form-data` 读取器和写入器 |
+| `system_one` | TypeSafe 的 System One API（`/v1/systemone`）以及使用其某种形式的服务商（[System One](system-one.md)） |
+| `multipart` | 图片、音频和视频上传以及 System One 图片部分使用的有上限的 `multipart/form-data` 读取器和写入器 |
 
 | 共享模块 | 职责 |
 | --- | --- |
@@ -110,6 +111,8 @@ sequenceDiagram
 | `continuity` | 随对话传递的推理（[推理的延续](reasoning.md#推理的延续)） |
 | `keepalive` | 让进行中的流不至于沉默的帧（[保活消息](cross-format.md#保活消息)） |
 | `models` | 模型列表的辅助函数（[模型列表](codec-design.md#模型列表)） |
+| `decisions` | 决策编解码器共用的部分：其他编解码器对决策请求给出的拒绝、键控格式的问题键，以及文档记载的 `confidence` 公式 |
+| `image_size` | 从图片头部读取其格式和尺寸，不进行解码（[图片尺寸](codec-design.md#类型)） |
 | `testing` | JSON 和 SSE 的比较工具，也供使用这些编解码器的 crate 使用 |
 
 ## 设计原则
@@ -190,6 +193,7 @@ KPP 的值和错误都按值返回。`KppError` 和部分枚举变体较大，�
 | `Reasoning.origin` | — | 决定是否回放（[推理](reasoning.md)）。没有签名的 Anthropic `thinking` 块只有在从 Anthropic Messages 读到时才会发回 Anthropic。 |
 | `Refusal.text` | 语义 | Anthropic 没有拒绝块：发往它的请求返回 `Unsupported`，给 Anthropic 应用的回复中则变为文本块。 |
 | `Unknown` | 语义 | 仅限来源方言。OpenAI Chat 的 `function` 消息作为一个这样的块完整保存（[请求](cross-format.md#请求)）。 |
+| `Json.data` | 语义 | 作为决策输入或问题说明一部分的结构化数据；所有生成格式都会拒绝它。 |
 | 每个块的 `extras` | 与请求相同 | 允许列表按块类型生效（[Extras 允许列表](cross-format.md#extras)）。 |
 
 ### `CacheHint`
@@ -198,6 +202,18 @@ KPP 的值和错误都按值返回。`KppError` 和部分枚举变体较大，�
 | --- | --- | --- |
 | `ttl` | 提示 | |
 | `extras` | 提示 | 随提示一起丢弃。 |
+
+### `DecideRequest`
+
+| 字段 | 类别 | 说明 |
+| --- | --- | --- |
+| `model`、`input`、`questions`、`assets` | 语义 | 资产由输入、说明或描述中的字符串以其键引用（[System One](system-one.md#图片)）。 |
+| `Question.name` | 语义 | 保留；格式不能接受这些名称时，每个问题都写成 `q0`…`qN-1`，回复按位置映射回来。 |
+| `Question.instructions`、`.kind` | 语义 | |
+| `Predicate.when_true`、`.when_false`、`ChoiceOption.value`、`.description`、`Level.label`、`.description` | 语义 | 没有对应位置的格式按其映射页面所述写出，或拒绝它们。 |
+| `user` | 提示 | |
+| `cache` | 提示 | |
+| `extras` | 同 `GenerateRequest` | |
 
 ### `EmbedRequest`
 
@@ -226,7 +242,7 @@ KPP 的值和错误都按值返回。`KppError` 和部分枚举变体较大，�
 
 | 测试套件 | 验证的内容 |
 | --- | --- |
-| `crates/kaeso-kpp/tests/types.rs` | 单独验证 KPP 类型：错误种类和块的名称保持稳定，以及 `validate()` 和 `required_capabilities()`。 |
+| `crates/kaeso-kpp/tests/types.rs` | 单独验证 KPP 类型：错误种类和块的名称保持稳定，`validate()` 和 `required_capabilities()`，以及决策请求和答案的 JSON 形式。 |
 | Fixture 往返（每个方言的 `tests` 模块） | `decode → KPP → encode` 把方言的每个 [fixture](fixtures.md) 重现为相等的 JSON 值（流：相等的事件序列），流还要在多种 chunk 切分下验证。必须被拒绝的 fixture 会以指定的 `Unsupported` 功能失败。 |
 | `crates/kaeso-codecs/tests/cross_matrix.rs` | 对方言 A 的每个生成类 fixture 和其他每个方言 B：请求经过 `decode_A → check_B → encode_B`，并且必须能被 B 的解码器再次解码，对话内容保持不变；回复和流经过 `decode_A → encode_B → decode_B`，并且必须保留文本、拒绝和工具调用，转回 A 之后也是如此。Token 计数的请求和回复在 Anthropic 与 Responses 之间转换。结果保存为 `insta` 快照。 |
 | `crates/kaeso-codecs/tests/dispatch.rs` | `dispatch` 在每种方言中都能解码服务商错误、编码带状态码的错误，嵌入编解码器会拒绝生成类回复，并且在没有请求要求其他编码时把 base64 向量保持为收到时的样子。 |
@@ -237,7 +253,7 @@ KPP 的值和错误都按值返回。`KppError` 和部分枚举变体较大，�
 | `crates/kaeso-codecs/tests/responses_on_anthropic.rs` | 使用 Anthropic 模型的 OpenAI Responses 应用，以及使用 OpenAI 模型的 Anthropic 应用：推理请求、按 OpenAI 事件顺序输出的思考流，以及工具循环。 |
 | `crates/kaeso-codecs/tests/nesting.rs` | 嵌套层数超过上限的 Anthropic `tool_result` 块在请求、回复和流中都会被拒绝，而不超过上限的嵌套仍能正常解码。 |
 | `crates/kaeso-codecs/tests/unknown_frames.rs` | 在每种支持流式传输的方言中，未知的 SSE 帧都能在同一方言内往返而保持原样，包括其 JSON 写法、带引号的字符串、SSE 字段和注释；Anthropic 和 Chat 的流还会保留数据为纯文本的帧。 |
-| `e2e/conformance`，由 `crates/kpp-conformance` 提供服务 | 官方的 OpenAI、Anthropic 和 Google Gen AI Python SDK 能解析编码器产生的所有内容（[测试](../testing.md#sdk-一致性)）。 |
+| `e2e/conformance`，由 `crates/kpp-conformance` 提供服务 | 官方的 OpenAI、Anthropic、Google Gen AI 和 TypeSafe Python SDK 能解析编码器产生的所有内容（[测试](../testing.md#sdk-一致性)）。 |
 | `fuzz/` | 每个解码器都能接受任意字节而不 panic，SSE 解析器在任何 chunk 切分下都产生相同的项（[模糊测试](../testing.md#模糊测试)）。 |
 
 `kaeso_codecs::testing` 按结构比较 JSON：键的顺序无关紧要，数字按 `serde_json` 读到的结果精确比较，因此 `1` 和 `1.0` 不同，而 `1e0` 和 `1.0` 是同一个数。
@@ -277,5 +293,6 @@ OpenAI Responses 把不同的写法记录为形式覆盖项，只在值未改变
 - [Veo](veo.md)：了解视频任务如何映射到 Gemini Enterprise Agent Platform 上的 Veo。
 - [Gemini Interactions](gemini-interactions.md)：了解 Gemini Omni 视频任务如何映射到 Interactions API。
 - [DashScope](dashscope.md)：了解图片、语音、转写和视频任务如何映射到 QwenCloud 的 DashScope API。
+- [System One](system-one.md)：查找 TypeSafe 决策格式的每个字段在 KPP 中的位置，以及各服务商如何接收它。
 - [Fixture 与录制](fixtures.md)：添加编解码器测试所用的真实载荷，并录制新的载荷。
 - [Fixture 约定](fixture-conventions.md)：查阅每个构造的 fixture 都遵循的规则。

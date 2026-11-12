@@ -22,6 +22,20 @@ pub const MAX_TOOLS: usize = 10_000;
 /// The most inputs one OpenAI Embeddings request may hold: OpenAI's documented limit.
 pub const MAX_EMBEDDING_INPUTS: usize = 2_048;
 
+/// The most questions one decision request may ask: Gemini's documented limit, the largest of
+/// the decision formats.
+pub const MAX_DECISION_QUESTIONS: usize = 1_000;
+
+/// The most options one choice question may have: the largest limit of the decision formats.
+pub const MAX_DECISION_OPTIONS: usize = 255;
+
+/// The most levels one score question may have: Gemini's documented limit, the largest of the
+/// decision formats.
+pub const MAX_DECISION_LEVELS: usize = 255;
+
+/// The most images one decision request may reference in its `assets`.
+pub const MAX_DECISION_ASSETS: usize = 64;
+
 /// The deepest one request body may nest objects and arrays, the outermost object
 /// counted: the most serde_json parses whole under its recursion limit of 128.
 pub const MAX_DEPTH: usize = 127;
@@ -36,6 +50,10 @@ pub struct RequestShape {
     pub blocks: usize,
     /// Tool definitions.
     pub tools: usize,
+    /// The questions of a decision request.
+    pub questions: usize,
+    /// The images a decision request's `assets` hold.
+    pub assets: usize,
     /// Token ids in the inputs of an embeddings request.
     pub tokens: usize,
     /// Bytes of the body without the whitespace that decoding drops: the whitespace
@@ -75,6 +93,10 @@ enum Node {
     EmbedRequests,
     EmbedRequest,
     Token,
+    DecideQuestions,
+    DecideQuestion,
+    DecideOptions,
+    DecideAssets,
 }
 
 impl Node {
@@ -116,6 +138,9 @@ enum Over {
     Blocks,
     Tools,
     Inputs,
+    Questions,
+    Options,
+    Assets,
 }
 
 #[derive(Clone, Default)]
@@ -146,6 +171,18 @@ impl Tally {
                 s.blocks += 1;
                 self.in_message += 1;
                 self.in_message > MAX_BLOCKS_PER_MESSAGE
+            }
+            Over::Questions => {
+                s.questions += 1;
+                s.questions > MAX_DECISION_QUESTIONS
+            }
+            Over::Options => {
+                self.in_message += 1;
+                self.in_message > MAX_DECISION_OPTIONS.max(MAX_DECISION_LEVELS)
+            }
+            Over::Assets => {
+                s.assets += 1;
+                s.assets > MAX_DECISION_ASSETS
             }
         };
         if over {
@@ -180,8 +217,13 @@ impl<'de> serde::Deserialize<'de> for Key<'de> {
 fn child(node: Node, key: &str) -> Option<Node> {
     use DialectId::{
         AnthropicMessages, Gemini, GeminiEmbeddings, OpenAiChat, OpenAiEmbeddings, OpenAiResponses,
+        SystemOne,
     };
     Some(match (node, key) {
+        (Node::Top(SystemOne), "questions") => Node::DecideQuestions,
+        (Node::Top(SystemOne), "assets") => Node::DecideAssets,
+        (Node::DecideQuestions, _) => Node::DecideQuestion,
+        (Node::DecideQuestion, "criteria") => Node::DecideOptions,
         (Node::Top(d @ Gemini), "contents") => Node::Items(d),
         (Node::Top(d @ Gemini), "systemInstruction") => Node::Item(d),
         (Node::Top(d @ Gemini), "generateContentRequest") => Node::Top(d),
@@ -303,12 +345,16 @@ impl<'de> Visitor<'de> for Walk<'_> {
                 self.tally.count(Over::Inputs)?;
                 (None, Some(Node::Token))
             }
+            Node::DecideOptions => (Some(Over::Options), None),
             Node::Top(_)
             | Node::Item(_)
             | Node::Block(_)
             | Node::Token
             | Node::ToolSet
-            | Node::EmbedRequest => (None, None),
+            | Node::EmbedRequest
+            | Node::DecideQuestions
+            | Node::DecideQuestion
+            | Node::DecideAssets => (None, None),
         };
         loop {
             if matches!(self.node, Node::Items(_)) {
@@ -352,6 +398,15 @@ impl<'de> Visitor<'de> for Walk<'_> {
             }
             if self.node == Node::Top(DialectId::GeminiEmbeddings) && key == "content" {
                 self.tally.count(Over::Inputs)?;
+            }
+            match self.node {
+                Node::DecideQuestions => {
+                    self.tally.count(Over::Questions)?;
+                    self.tally.in_message = 0;
+                }
+                Node::DecideOptions => self.tally.count(Over::Options)?,
+                Node::DecideAssets => self.tally.count(Over::Assets)?,
+                _ => {}
             }
             match child(self.node, &key) {
                 Some(_) if typed_object && key == "content" && self.nests.is_some() => {
@@ -543,6 +598,24 @@ fn refusal(dialect: DialectId, over: Over) -> KppError {
             ),
             "input",
         ),
+        Over::Questions => (
+            format!(
+                "`questions` holds more than {MAX_DECISION_QUESTIONS} questions; Kaeso takes at most {MAX_DECISION_QUESTIONS}."
+            ),
+            "questions",
+        ),
+        Over::Options => (
+            format!(
+                "A question has more than {MAX_DECISION_OPTIONS} options or levels; Kaeso takes at most {MAX_DECISION_OPTIONS}."
+            ),
+            "questions",
+        ),
+        Over::Assets => (
+            format!(
+                "`assets` holds more than {MAX_DECISION_ASSETS} images; Kaeso takes at most {MAX_DECISION_ASSETS}."
+            ),
+            "assets",
+        ),
     };
     KppError::invalid_request(message)
         .with_param(param)
@@ -633,8 +706,9 @@ impl<B: AsRef<[u8]>> Checked<B> {
 }
 
 /// Counts the messages, content blocks and tools of a request body without decoding it,
-/// and refuses one over [`MAX_MESSAGES`], [`MAX_BLOCKS_PER_MESSAGE`], [`MAX_TOOLS`] or
-/// [`MAX_EMBEDDING_INPUTS`] with an `InvalidRequest` error that names the field, and one
+/// and refuses one over [`MAX_MESSAGES`], [`MAX_BLOCKS_PER_MESSAGE`], [`MAX_TOOLS`],
+/// [`MAX_EMBEDDING_INPUTS`], [`MAX_DECISION_QUESTIONS`], [`MAX_DECISION_OPTIONS`] or
+/// [`MAX_DECISION_ASSETS`] with an `InvalidRequest` error that names the field, and one
 /// that nests deeper than [`MAX_DEPTH`] with an `InvalidRequest` error.
 ///
 /// Every codec's `decode_request` runs this first. A body that is not JSON, or not shaped
@@ -649,6 +723,7 @@ pub fn request_shape(dialect: DialectId, body: &[u8]) -> Result<RequestShape, Kp
             | DialectId::OpenAiTranscriptions
             | DialectId::ElevenLabs
             | DialectId::OpenAiVideos
+            | DialectId::SystemOne
     );
     if uploads && !looks_like_json(body) {
         return Ok(RequestShape {
