@@ -1,0 +1,58 @@
+{
+  "id": "sc-1794449395-Uku8RmaLVrBpn6J4rCPY",
+  "object": "chat.completion",
+  "created": 1794449395,
+  "model": "StandardCompute",
+  "system_fingerprint": null,
+  "service_tier": null,
+  "choices": [
+    {
+      "index": 0,
+      "logprobs": null,
+      "finish_reason": "tool_calls",
+      "native_finish_reason": "tool_calls",
+      "message": {
+        "role": "assistant",
+        "content": "\n\nLet me fetch both pieces of information for you.",
+        "refusal": null,
+        "reasoning": null,
+        "tool_calls": [
+          {
+            "type": "function",
+            "index": 0,
+            "id": "call_003e24c39ed449a5b5dc6f9e",
+            "function": {
+              "name": "get_weather",
+              "arguments": "{\"location\": \"Paris, France\", \"unit\": \"celsius\"}"
+            }
+          },
+          {
+            "type": "function",
+            "index": 1,
+            "id": "call_b0028684a94b4158913ae00c",
+            "function": {
+              "name": "get_local_time",
+              "arguments": "{\"timezone\": \"Asia/Tokyo\"}"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 444,
+    "completion_tokens": 109,
+    "total_tokens": 553,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "cache_write_tokens": 0,
+      "audio_tokens": 0,
+      "video_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "image_tokens": 0,
+      "audio_tokens": 0
+    }
+  }
+}

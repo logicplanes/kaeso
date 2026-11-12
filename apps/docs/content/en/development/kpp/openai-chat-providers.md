@@ -73,6 +73,7 @@ Each built-in provider whose profile differs from OpenAI's is listed below with 
 | Scaleway (`scaleway`) | `system_role()`, `without_end_user()`, `reasoning_fields(["reasoning_content", "reasoning"])` | Scaleway's [Generative APIs reference](https://www.scaleway.com/en/developers/api/generative-apis/) (the roles `system`, `user`, `assistant` and `tool`; no `user` or `safety_identifier`) and its [reasoning guide](https://www.scaleway.com/en/docs/generative-apis/how-to/query-reasoning-models/) (`reasoning_content` in replies, `reasoning` in stream deltas), read 2026-11-09; built into `fixtures/openai_chat/providers/scaleway/` |
 | SiliconFlow (`siliconflow`) | `max_tokens()`, `system_role()`, `without_end_user()`, `thinking_switch()`, `reasoning_fields(["reasoning_content"])` | SiliconFlow's [chat completions](https://docs.siliconflow.com/en/api-reference/chat-completions/chat-completions) reference (`max_tokens` only, the roles `system`, `user` and `assistant`, no `user` or `safety_identifier`, `enable_thinking` and `thinking_budget`) and its [reasoning](https://docs.siliconflow.com/en/userguide/capabilities/reasoning) guide (`reasoning_content`, `max_tokens` for the answer alone), read 2026-11-10; built into `fixtures/openai_chat/providers/siliconflow/` |
 | SpaceX (`xai`) | `reasoning_fields(["reasoning_content"])`, `with_message_bookkeeping()`, `tool_schema_root(ToolSchemaRoot::ObjectUnions)` | xAI's Chat Completions reference (`reasoning_content`); xAI's function calling guide (an object root, or a union of objects); Grok CLI, xAI's own client, sends `model_id` to it on every assistant turn (`requests/grok-cli-model-id.json`); `responses/recorded-reasoning-content` and `streams/recorded-reasoning-content-stream` |
+| Standard Compute (`standardcompute`) | `reasoning_fields(["reasoning"])` | Standard Compute's [Chat Completions](https://docs.standardcompute.com/api/chat-completions) and [reasoning](https://docs.standardcompute.com/reasoning) pages, read 2026-11-12; `streams/recorded-routed-reasoning-stream` (`delta.reasoning` with `reasoning_details`) |
 | Together AI (`togetherai`) | `reasoning_fields(["reasoning_content", "reasoning"])` | Together AI's chat completions reference; the key depends on the model: `responses/recorded-sampling-extras` (`reasoning_content`), `responses/recorded-reasoning-reply` and `streams/recorded-reasoning-stream` (`reasoning`) |
 | Vercel (`vercel`) | `reasoning_fields(["reasoning"])` | Vercel's Chat Completions reasoning page (`message.reasoning` and `delta.reasoning`, with `reasoning_details` beside them); `responses/recorded-reasoning` and `streams/recorded-reasoning-stream` |
 
@@ -210,6 +211,22 @@ Sources: Vercel's [Chat Completions](https://vercel.com/docs/ai-gateway/sdks-and
 | the last stream chunk, with the finish reason, `provider_metadata` and `usage` together | `Usage` | Read like a usage chunk with `choices: []`. |
 | errors in OpenAI's envelope with Vercel's own `type` (`model_not_found`, `no_providers_available`, `authentication_error`), a `param` that is an object, and `providerMetadata` beside `error` | `KppError` | The kind follows the status: 401 for a wrong key, 403 for a model the account may not call (`errors/recorded-restricted-model`, a free-tier account and Claude), 404 for an unknown model. Chat apps get the body as Vercel sent it. |
 | `GET /v1/models`: OpenAI's shape, each model with Vercel's own fields (`name`, `type`, `context_window`, `max_tokens`, `pricing`, `tags`, `supported_parameters`) | `ModelList`, extras | The listing answers a wrong key with 401 (`errors/list-invalid-api-key`), but `GET /v1/models/{model}`, which a model check asks first, answers without checking the key. |
+
+### Standard Compute
+
+Sources: Standard Compute's [Chat Completions](https://docs.standardcompute.com/api/chat-completions), [models and routing](https://docs.standardcompute.com/models), [errors](https://docs.standardcompute.com/api/errors) and [models listing](https://docs.standardcompute.com/api/models) pages, read 2026-11-12, and the live recordings in `fixtures/openai_chat/providers/standardcompute/`, most through smart routing (`standardcompute`).
+
+| Standard Compute field | KPP | Notes |
+|---|---|---|
+| `model: "StandardCompute"` on a smart routing reply | `Response.model` | The reply never names the model that answered; Standard Compute's request logs do. |
+| `message.reasoning`, `delta.reasoning` | `Block::Reasoning` | Through the profile's `reasoning_fields`, as for OpenRouter. |
+| `message.reasoning_details`, `delta.reasoning_details` | extras | The same reasoning in OpenRouter's structured form, including a Gemini model's thought signature as a `reasoning.encrypted` item; Chat apps get it back unchanged and send it back on later turns. |
+| `native_finish_reason`, `refusal: null`, `system_fingerprint: null`, `service_tier` | extras | Left out towards other dialects. |
+| `cache_write_tokens`, `audio_tokens`, `video_tokens`, `image_tokens` in `usage` | `raw` usage | |
+| the last stream chunk, which repeats the finish choice beside `usage` | `Usage` | Read like a usage chunk with `choices: []`. |
+| a 401 `error` without `code`; an error with a numeric `code` from the model's own provider | `KppError` | The kind follows the status; 402 `insufficient_quota` with `code: "budget_exhausted"` is `Billing`. |
+| 400 `model_not_found` for an unknown model | `KppError` of kind `InvalidRequest` | Never 404, so it never marks a catalogue model unavailable. |
+| `GET /v1/models`: `StandardCompute`, `context_length`, `architecture`, `supported_parameters`, `anthropic_family_tier`, `is_family_default` | `ModelList`, extras | Served without a key. A key's list can leave out models the key may still call, and names the router `StandardCompute`, writes `anthropic/claude-haiku-5-5` for the `anthropic/claude-haiku-5.5` its replies name, so a model check matches ids without regard to case or to `.` against `-`, and calls a model it can't find inconclusive. `GET /v1/models/{model}` answers 404 for every model. |
 
 ### Cohere
 

@@ -694,6 +694,7 @@ mod tests {
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
+        listing: kaeso_core::provider::ModelListing::Complete,
         end_user_limit: None,
         chat: ChatProfile::compatible("Example Cloud"),
         responses: ResponsesProfile::compatible("Example Cloud"),

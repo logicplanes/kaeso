@@ -159,6 +159,7 @@ export function searchHit(overrides: Partial<SearchHit> = {}): SearchHit {
     name: "GPT-5",
     family: "gpt",
     deprecated: false,
+    router: false,
     release_date: "2025-08-07",
     catalogue_model_id: null,
     input_price: "1.25",

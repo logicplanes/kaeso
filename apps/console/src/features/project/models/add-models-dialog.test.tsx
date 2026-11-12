@@ -86,6 +86,16 @@ describe("AddModelsDialog", () => {
     expect(within(dialog).getByRole("button", { description: "Provider" })).toHaveTextContent("OpenAI");
   });
 
+  it("starts on the first provider the organization has a key for when none is remembered", async () => {
+    setUp();
+    on("GET", "orgs/:org/credentials", { data: [credential({ provider: "anthropic" })] });
+    const { dialog } = await open();
+
+    expect(await within(dialog).findByText("claude-opus-4-1")).toBeInTheDocument();
+    expect(within(dialog).getByRole("button", { description: "Provider" })).toHaveTextContent("Anthropic");
+    expect(within(dialog).queryByText(/fail until someone adds/)).not.toBeInTheDocument();
+  });
+
   it("starts in the search box; Space selects rows and ⌘Enter adds them", async () => {
     setUp();
     on("POST", BATCH, { added: [catalogueModel({ id: "cm_gpt5", model_id: "gpt-5" })], skipped: [] });
@@ -201,6 +211,19 @@ describe("AddModelsDialog", () => {
     await user.click(screen.getByRole("button", { name: "Add models" }));
     const again = await screen.findByRole("dialog", { name: /Add models/ });
     expect(within(again).getByRole("button", { description: "Provider" })).toHaveTextContent("Anthropic");
+  });
+
+  it("marks a router, a model that picks another model for each request", async () => {
+    signedIn();
+    projectData();
+    modelsApi({
+      hits: [searchHit({ model_id: "openrouter/auto", name: "Auto Router", release_date: null, router: true }), searchHit({ model_id: "gpt-5-mini" })],
+    });
+    const { dialog } = await open();
+
+    expect(await within(dialog).findByText("openrouter/auto")).toBeInTheDocument();
+    expect(rowOf(dialog, "openrouter/auto")).toHaveTextContent("Router");
+    expect(rowOf(dialog, "gpt-5-mini")).not.toHaveTextContent("Router");
   });
 
   it("says when KPMR lists no models for the provider", async () => {

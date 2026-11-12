@@ -69,6 +69,20 @@ async fn entries_store_only_overrides_and_merge_with_kpmr() {
         .map(|h| h["model_id"].as_str().unwrap())
         .collect();
     assert!(ids.contains(&"claude-haiku-4-5"), "{ids:?}");
+    let routers = app
+        .get(
+            &format!("{b}/models/search?provider=standardcompute&limit=1"),
+            &owner.cookie,
+        )
+        .await;
+    let first = &routers.body["data"][0];
+    assert_eq!(
+        (&first["model_id"], &first["router"], &first["input_price"]),
+        (&json!("standardcompute"), &json!(true), &Value::Null),
+        "{:?}",
+        routers.body
+    );
+    assert_eq!(routers.body["has_more"], true);
     let preview = app
         .get(
             &format!("{b}/models/preview?provider=anthropic&model=claude-haiku-4-5"),
@@ -247,8 +261,8 @@ async fn entries_store_only_overrides_and_merge_with_kpmr() {
 
     let current = format!("{b}/models/search?provider=anthropic&current=true&limit=1");
     let before = app.get(&current, &owner.cookie).await;
-    assert_eq!(before.body["total"], 18, "{:?}", before.body);
-    assert_eq!(before.body["not_in_catalogue"], 17);
+    assert_eq!(before.body["total"], 16, "{:?}", before.body);
+    assert_eq!(before.body["not_in_catalogue"], 15);
     assert_eq!(before.body["has_more"], true);
     let first = &before.body["data"][0];
     assert_eq!(before.body["data"].as_array().unwrap().len(), 1);
@@ -276,9 +290,9 @@ async fn entries_store_only_overrides_and_merge_with_kpmr() {
         .await;
     assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
     assert_eq!(r.body["skipped"], json!(["claude-haiku-4-5"]));
-    assert_eq!(r.body["added"].as_array().unwrap().len(), 17);
+    assert_eq!(r.body["added"].as_array().unwrap().len(), 15);
     let list = app.get(&format!("{b}/models"), &owner.cookie).await;
-    assert_eq!(list.body["data"].as_array().unwrap().len(), 19);
+    assert_eq!(list.body["data"].as_array().unwrap().len(), 17);
     let after = app.get(&current, &owner.cookie).await;
     assert_eq!(after.body["not_in_catalogue"], 0, "{:?}", after.body);
 

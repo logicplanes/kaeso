@@ -206,6 +206,7 @@ Docker 会在每个服务的日志达到 10 MB 时轮转，并保留五个文件
 | `KAESO_PROVIDERS_NVIDIA_BASE_URL`<br>`providers.nvidia.base_url` | 文本 | `https://integrate.api.nvidia.com` | NVIDIA API 的基础 URL。 |
 | `KAESO_PROVIDERS_BASETEN_BASE_URL`<br>`providers.baseten.base_url` | 文本 | `https://inference.baseten.co` | Baseten API 的基础 URL。 |
 | `KAESO_PROVIDERS_SILICONFLOW_BASE_URL`<br>`providers.siliconflow.base_url` | 文本 | `https://api.siliconflow.com` | SiliconFlow API 的基础 URL。 |
+| `KAESO_PROVIDERS_STANDARDCOMPUTE_BASE_URL`<br>`providers.standardcompute.base_url` | 文本 | `https://api.stdcmpt.com` | Standard Compute API 的基础 URL。 |
 | `KAESO_UPSTREAM_CONNECT_TIMEOUT`<br>`upstream.connect_timeout` | 文本 | `10s` | 连接服务商的时间，含 TCP 和 TLS；最多 24h。 |
 | `KAESO_UPSTREAM_REQUEST_TIMEOUT`<br>`upstream.request_timeout` | 文本 | `600s` | 非流式服务商请求的总时间；最多 24h。 |
 | `KAESO_UPSTREAM_FIRST_BYTE_TIMEOUT`<br>`upstream.first_byte_timeout` | 文本 | `60s` | 流式：等待服务商第一个字节的时间；最多 24h。 |

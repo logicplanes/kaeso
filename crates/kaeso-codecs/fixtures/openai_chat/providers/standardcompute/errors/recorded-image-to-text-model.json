@@ -1,0 +1,8 @@
+{
+  "error": {
+    "message": "Model 'deepseek/deepseek-v4-pro' does not support image input. Choose a vision model from GET /v1/models or use 'standardcompute'.",
+    "type": "invalid_request_error",
+    "code": "unsupported_model_input",
+    "param": "model"
+  }
+}

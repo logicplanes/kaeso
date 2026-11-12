@@ -61,6 +61,10 @@ const FOREIGN_ERROR_BODIES: &[(&str, ErrorKind)] = &[
         ErrorKind::Authentication,
     ),
     (
+        "providers/standardcompute/recorded-retrieve-not-found",
+        ErrorKind::NotFound,
+    ),
+    (
         "providers/scaleway/legacy-model-error-doc",
         ErrorKind::InvalidRequest,
     ),

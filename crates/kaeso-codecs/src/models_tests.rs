@@ -1335,6 +1335,78 @@ fn a_sambanova_listing_decodes_with_its_prices_and_its_wrong_keys_and_unknown_mo
 }
 
 #[test]
+fn a_standard_compute_listing_decodes_with_its_router_and_regional_models_and_its_errors_have_their_kinds()
+ {
+    let body = fixture("openai_chat", "providers/standardcompute/list-recorded");
+    let l = list(DialectId::OpenAiChat, &body);
+    let ids: Vec<&str> = l.models.iter().map(|m| m.id.as_str()).collect();
+    assert_eq!(ids.len(), 74);
+    assert_eq!(ids.first(), Some(&"StandardCompute"));
+    for id in [
+        "openai/gpt-5.6-luna:eu",
+        "anthropic/claude-haiku-5-5",
+        "z-ai/glm-5.3:us",
+    ] {
+        assert!(ids.contains(&id), "{id}");
+    }
+    assert_json_eq(
+        "providers/standardcompute/list-recorded",
+        &body,
+        &dispatch::encode_models(DialectId::OpenAiChat, &l).unwrap(),
+    );
+    let errors = fixtures("openai_chat", "errors", "json");
+    let error = |name: &str| {
+        errors
+            .iter()
+            .find(|(n, _)| n == name)
+            .unwrap_or_else(|| panic!("no error fixture {name}"))
+            .1
+            .clone()
+    };
+    let e = dispatch::decode_model(
+        DialectId::OpenAiChat,
+        404,
+        &h(),
+        &error("providers/standardcompute/recorded-retrieve-not-found"),
+    )
+    .unwrap_err();
+    assert_eq!(e.kind, ErrorKind::NotFound);
+    let e = dispatch::decode_models(
+        DialectId::OpenAiChat,
+        401,
+        &h(),
+        &error("providers/standardcompute/recorded-invalid-api-key"),
+    )
+    .unwrap_err();
+    assert_eq!(e.kind, ErrorKind::Authentication);
+    let kind = |status: u16, name: &str| {
+        let e = dispatch::decode_error(
+            DialectId::OpenAiChat,
+            status,
+            &h(),
+            &error(&format!("providers/standardcompute/{name}")),
+        );
+        (e.kind, e.param)
+    };
+    assert_eq!(
+        kind(402, "budget-exhausted-doc"),
+        (ErrorKind::Billing, None)
+    );
+    assert_eq!(
+        kind(400, "recorded-unknown-model"),
+        (ErrorKind::InvalidRequest, Some("model".to_owned()))
+    );
+    assert_eq!(
+        kind(400, "recorded-image-to-text-model"),
+        (ErrorKind::InvalidRequest, Some("model".to_owned()))
+    );
+    assert_eq!(
+        kind(400, "recorded-image-base64-detail"),
+        (ErrorKind::InvalidRequest, None)
+    );
+}
+
+#[test]
 fn a_hugging_face_listing_decodes_with_its_providers_and_a_refused_token_is_an_error() {
     let body = fixture("openai_chat", "providers/huggingface/list-recorded");
     let l = list(DialectId::OpenAiChat, &body);

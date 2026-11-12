@@ -205,6 +205,8 @@ pub struct Reasoning {
 pub struct Gateway {
     #[serde(default, deserialize_with = "known_dialect")]
     pub egress_dialect: Option<DialectId>,
+    #[serde(default)]
+    pub router: bool,
 }
 
 // A dialect only a newer gateway knows must not make this one skip the whole model.
@@ -246,6 +248,10 @@ impl Model {
 
     pub fn egress_dialect(&self) -> Option<DialectId> {
         self.gateway.as_ref().and_then(|g| g.egress_dialect)
+    }
+
+    pub fn is_router(&self) -> bool {
+        self.gateway.as_ref().is_some_and(|g| g.router)
     }
 }
 

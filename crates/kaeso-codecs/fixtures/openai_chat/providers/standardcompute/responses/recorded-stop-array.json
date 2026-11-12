@@ -1,0 +1,46 @@
+{
+  "id": "sc-1794449375-gMMoPfHitesCbYZqrIdS",
+  "object": "chat.completion",
+  "created": 1794449375,
+  "model": "StandardCompute",
+  "system_fingerprint": null,
+  "service_tier": null,
+  "choices": [
+    {
+      "index": 0,
+      "logprobs": null,
+      "finish_reason": "stop",
+      "native_finish_reason": "stop",
+      "message": {
+        "role": "assistant",
+        "content": null,
+        "refusal": null,
+        "reasoning": "We need to count from 1 to 10 separated by commas. So output: 1,2,3,4,5,6,",
+        "reasoning_details": [
+          {
+            "type": "reasoning.text",
+            "text": "We need to count from 1 to 10 separated by commas. So output: 1,2,3,4,5,6,",
+            "format": "unknown",
+            "index": 0
+          }
+        ]
+      }
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 15,
+    "completion_tokens": 31,
+    "total_tokens": 46,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "cache_write_tokens": 0,
+      "audio_tokens": 0,
+      "video_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 30,
+      "image_tokens": 0,
+      "audio_tokens": 0
+    }
+  }
+}

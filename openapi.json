@@ -17368,7 +17368,7 @@
         "tags": [
           "models"
         ],
-        "summary": "Searches KPMR for models to add, newest first per provider.",
+        "summary": "Searches KPMR for models to add, routers and then the newest first per provider.",
         "description": "**Right:** `models.view` on the project in the path.",
         "operationId": "getOrgsOrgProjectsProjectModelsSearch",
         "parameters": [
@@ -24801,7 +24801,7 @@
           },
           "provider": {
             "$ref": "#/components/schemas/ProviderId",
-            "description": "The id of a provider Kaeso calls: `openai`, `anthropic`, `deepseek`, `xai`,\n`togetherai`, `groq`, `openrouter`, `mistral`, `vercel`, `cohere`,\n`ollama-cloud`, `moonshotai`, `alibaba`, `cerebras`, `zai`, `minimax`,\n`elevenlabs`, `google`, `gemini-agent-platform`, `fireworks-ai`, `nebius`,\n`sambanova`, `scaleway`, `huggingface`, `nvidia`, `baseten`, `siliconflow`, or one\nof the organization's custom providers that takes a key."
+            "description": "The id of a provider Kaeso calls: `openai`, `anthropic`, `deepseek`, `xai`,\n`togetherai`, `groq`, `openrouter`, `mistral`, `vercel`, `cohere`,\n`ollama-cloud`, `moonshotai`, `alibaba`, `cerebras`, `zai`, `minimax`,\n`elevenlabs`, `google`, `gemini-agent-platform`, `fireworks-ai`, `nebius`,\n`sambanova`, `scaleway`, `huggingface`, `nvidia`, `baseten`, `siliconflow`,\n`standardcompute`, or one of the organization's custom providers that takes a\nkey."
           },
           "secret": {
             "type": "string",
@@ -33502,7 +33502,7 @@
       },
       "ModelSearch": {
         "type": "object",
-        "description": "The KPMR models matching a search, newest first per provider.",
+        "description": "The KPMR models matching a search, routers and then the newest first per\nprovider.",
         "required": [
           "data",
           "has_more",
@@ -37202,7 +37202,8 @@
         "required": [
           "provider",
           "model_id",
-          "deprecated"
+          "deprecated",
+          "router"
         ],
         "properties": {
           "catalogue_model_id": {
@@ -37273,6 +37274,10 @@
               "null"
             ],
             "description": "Release date."
+          },
+          "router": {
+            "type": "boolean",
+            "description": "Whether it is a router that picks a model for each request, such as Standard\nCompute's `standardcompute`; routers come first among their provider's models."
           }
         }
       },

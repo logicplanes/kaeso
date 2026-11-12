@@ -515,6 +515,40 @@ pub struct AccountSignIn {
     pub experimental: bool,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ModelListing {
+    Complete,
+    Partial,
+}
+
+impl ModelListing {
+    // A partial listing that leaves a model out says nothing about it, hence `None`. Its
+    // provider matches ids loosely: Standard Compute lists `anthropic/claude-haiku-5-5` and
+    // answers it as `anthropic/claude-haiku-5.5`, so case and `.` against `-` don't count.
+    pub fn serves<'a>(
+        self,
+        ids: impl IntoIterator<Item = &'a String>,
+        model: &str,
+    ) -> Option<bool> {
+        let mut ids = ids.into_iter();
+        match self {
+            ModelListing::Complete => Some(ids.any(|id| id == model)),
+            ModelListing::Partial => ids.any(|id| loosely_equal(id, model)).then_some(true),
+        }
+    }
+}
+
+fn loosely_equal(a: &str, b: &str) -> bool {
+    let fold = |c: char| {
+        if c == '.' {
+            '-'
+        } else {
+            c.to_ascii_lowercase()
+        }
+    };
+    a.len() == b.len() && a.chars().map(fold).eq(b.chars().map(fold))
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Provider {
     pub id: &'static str,
@@ -539,6 +573,7 @@ pub struct Provider {
     pub refused_key_messages: &'static [&'static str],
     pub context_window_messages: &'static [&'static str],
     pub reasoning_beyond_output_limit: bool,
+    pub listing: ModelListing,
     pub end_user_limit: Option<usize>,
     pub chat: ChatProfile,
     pub responses: ResponsesProfile,
@@ -612,6 +647,7 @@ pub const PROVIDERS: &[Provider] = &[
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
+        listing: ModelListing::Complete,
         // OpenAI's OpenAPI spec caps `safety_identifier` at 128 characters, in both formats.
         end_user_limit: Some(128),
         chat: ChatProfile::OPENAI,
@@ -648,6 +684,7 @@ pub const PROVIDERS: &[Provider] = &[
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
+        listing: ModelListing::Complete,
         end_user_limit: None,
         chat: ChatProfile::compatible("Anthropic"),
         responses: ResponsesProfile::compatible("Anthropic"),
@@ -678,6 +715,7 @@ pub const PROVIDERS: &[Provider] = &[
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
+        listing: ModelListing::Complete,
         end_user_limit: None,
         chat: ChatProfile::compatible("DeepSeek")
             .max_tokens()
@@ -713,6 +751,7 @@ pub const PROVIDERS: &[Provider] = &[
         refused_key_messages: &["Incorrect API key provided"],
         context_window_messages: &[],
         reasoning_beyond_output_limit: true,
+        listing: ModelListing::Complete,
         end_user_limit: None,
         chat: ChatProfile::compatible("SpaceX")
             .reasoning_fields(&["reasoning_content"])
@@ -761,6 +800,7 @@ pub const PROVIDERS: &[Provider] = &[
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
+        listing: ModelListing::Complete,
         end_user_limit: None,
         chat: ChatProfile::compatible("Together AI")
             .reasoning_fields(&["reasoning_content", "reasoning"]),
@@ -792,6 +832,7 @@ pub const PROVIDERS: &[Provider] = &[
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
+        listing: ModelListing::Complete,
         end_user_limit: None,
         chat: ChatProfile::compatible("Groq")
             .system_role()
@@ -830,6 +871,7 @@ pub const PROVIDERS: &[Provider] = &[
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
+        listing: ModelListing::Complete,
         end_user_limit: None,
         // OpenRouter's audio and video guides: Chat Completions takes "any format string the
         // provider supports" in `input_audio.format`, and videos as `video_url` parts.
@@ -866,6 +908,7 @@ pub const PROVIDERS: &[Provider] = &[
         refused_key_messages: &[],
         context_window_messages: &["too large for model with"],
         reasoning_beyond_output_limit: false,
+        listing: ModelListing::Complete,
         end_user_limit: None,
         chat: ChatProfile::compatible("Mistral")
             .max_tokens()
@@ -922,6 +965,7 @@ pub const PROVIDERS: &[Provider] = &[
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
+        listing: ModelListing::Complete,
         end_user_limit: None,
         chat: ChatProfile::compatible("Vercel").reasoning_fields(&["reasoning"]),
         responses: ResponsesProfile::compatible("Vercel"),
@@ -958,6 +1002,7 @@ pub const PROVIDERS: &[Provider] = &[
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
+        listing: ModelListing::Complete,
         end_user_limit: None,
         chat: ChatProfile::compatible("Cohere")
             .stop_list()
@@ -1005,6 +1050,7 @@ pub const PROVIDERS: &[Provider] = &[
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
+        listing: ModelListing::Complete,
         end_user_limit: None,
         chat: ChatProfile::compatible("Ollama Cloud")
             .max_tokens()
@@ -1038,6 +1084,7 @@ pub const PROVIDERS: &[Provider] = &[
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
+        listing: ModelListing::Complete,
         end_user_limit: None,
         // Kimi's vision guide sends videos as `video_url` parts
         // (https://platform.moonshot.ai/docs/guide/use-kimi-vision-model).
@@ -1110,6 +1157,7 @@ pub const PROVIDERS: &[Provider] = &[
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: true,
+        listing: ModelListing::Complete,
         end_user_limit: None,
         chat: ChatProfile::compatible("QwenCloud")
             .system_role()
@@ -1154,6 +1202,7 @@ pub const PROVIDERS: &[Provider] = &[
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
+        listing: ModelListing::Complete,
         end_user_limit: None,
         chat: ChatProfile::compatible("Cerebras")
             .system_role()
@@ -1204,6 +1253,7 @@ pub const PROVIDERS: &[Provider] = &[
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
+        listing: ModelListing::Complete,
         end_user_limit: None,
         chat: ChatProfile::compatible("Z.ai"),
         responses: ResponsesProfile::compatible("Z.ai"),
@@ -1252,6 +1302,7 @@ pub const PROVIDERS: &[Provider] = &[
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
+        listing: ModelListing::Complete,
         end_user_limit: None,
         chat: ChatProfile::compatible("MiniMax"),
         responses: ResponsesProfile::compatible("MiniMax"),
@@ -1315,6 +1366,7 @@ pub const PROVIDERS: &[Provider] = &[
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
+        listing: ModelListing::Complete,
         end_user_limit: None,
         chat: ChatProfile::compatible("ElevenLabs"),
         responses: ResponsesProfile::compatible("ElevenLabs"),
@@ -1346,6 +1398,7 @@ pub const PROVIDERS: &[Provider] = &[
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
+        listing: ModelListing::Complete,
         end_user_limit: None,
         chat: ChatProfile::compatible("Google AI Studio"),
         responses: ResponsesProfile::compatible("Google AI Studio"),
@@ -1384,6 +1437,7 @@ pub const PROVIDERS: &[Provider] = &[
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
+        listing: ModelListing::Complete,
         end_user_limit: None,
         // The models-as-a-service endpoint ignores fields it doesn't list
         // (https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/migrate/openai/overview).
@@ -1459,6 +1513,7 @@ pub const PROVIDERS: &[Provider] = &[
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
+        listing: ModelListing::Complete,
         end_user_limit: None,
         // Fireworks' chat schema has no `safety_identifier`, only `user`, and takes `video_url`
         // parts for its video models (https://docs.fireworks.ai/guides/video-audio-inputs).
@@ -1494,6 +1549,7 @@ pub const PROVIDERS: &[Provider] = &[
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
+        listing: ModelListing::Complete,
         end_user_limit: None,
         // Nebius' OpenAPI document lists no `developer` role and no `safety_identifier`, and
         // takes `video_url` parts (https://api.tokenfactory.nebius.com/openapi.json).
@@ -1530,6 +1586,7 @@ pub const PROVIDERS: &[Provider] = &[
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
+        listing: ModelListing::Complete,
         end_user_limit: None,
         // SambaNova's request schema declares no end-user or cache-key field and refuses
         // undeclared ones; it accepts both penalties without acting on them
@@ -1570,6 +1627,7 @@ pub const PROVIDERS: &[Provider] = &[
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
+        listing: ModelListing::Complete,
         end_user_limit: None,
         // Scaleway's reference lists no `developer` role and no end-user field, and its reasoning
         // guide shows `reasoning_content` in replies and `reasoning` in stream deltas
@@ -1606,6 +1664,7 @@ pub const PROVIDERS: &[Provider] = &[
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
+        listing: ModelListing::Complete,
         end_user_limit: None,
         // The router's chat schema has only `max_tokens` and no end-user field, and it passes
         // messages on to the model's own provider, not every one of which takes `developer`
@@ -1644,6 +1703,7 @@ pub const PROVIDERS: &[Provider] = &[
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
+        listing: ModelListing::Complete,
         end_user_limit: None,
         // The hosted NIM API's request schemas have only `max_tokens`, no end-user field and the
         // roles `system`, `context`, `user` and `assistant`, and its samples read thinking from
@@ -1681,6 +1741,7 @@ pub const PROVIDERS: &[Provider] = &[
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
+        listing: ModelListing::Complete,
         end_user_limit: None,
         // Model APIs' request schema has only `max_tokens`, the end user only as `user` and the
         // roles `system`, `user`, `assistant` and `tool`; thinking comes as `reasoning_content`
@@ -1722,6 +1783,7 @@ pub const PROVIDERS: &[Provider] = &[
         // `max_tokens` caps only the answer, `thinking_budget` the thinking before it
         // (https://docs.siliconflow.com/en/userguide/capabilities/reasoning).
         reasoning_beyond_output_limit: true,
+        listing: ModelListing::Complete,
         end_user_limit: None,
         // SiliconFlow's request schema has only `max_tokens`, no end-user field and the roles
         // `system`, `user` and `assistant`; its thinking models take `enable_thinking` and
@@ -1735,6 +1797,43 @@ pub const PROVIDERS: &[Provider] = &[
             .reasoning_fields(&["reasoning_content"]),
         responses: ResponsesProfile::compatible("SiliconFlow"),
         messages: MessagesProfile::compatible("SiliconFlow"),
+        gemini: GeminiProfile::GOOGLE_AI_STUDIO,
+        account: None,
+        routes: &[],
+        service_account: None,
+    },
+    Provider {
+        id: "standardcompute",
+        name: "Standard Compute",
+        key_page: KeyPage {
+            url: "https://standardcompute.com/dashboard/api-keys",
+            label: "API Keys",
+        },
+        key_prefix: None,
+        default_base_url: "https://api.stdcmpt.com",
+        auth: AuthStyle::Bearer,
+        generation: DialectId::OpenAiChat,
+        count_tokens: None,
+        embeddings: None,
+        images: &[],
+        speech: &[],
+        transcriptions: &[],
+        videos: &[],
+        dialects: &[DialectId::OpenAiChat],
+        refused_key_messages: &[],
+        context_window_messages: &[],
+        reasoning_beyond_output_limit: false,
+        // A key's listing leaves out models it can still name, such as regional variants, and
+        // names the router `StandardCompute` where requests send `standardcompute`; ids match
+        // without regard to case (https://docs.standardcompute.com/models, checked live).
+        listing: ModelListing::Partial,
+        end_user_limit: None,
+        // Standard Compute passes Chat Completions on to the model's own provider through a
+        // router that answers thinking as `reasoning`
+        // (https://docs.standardcompute.com/api/chat-completions).
+        chat: ChatProfile::compatible("Standard Compute").reasoning_fields(&["reasoning"]),
+        responses: ResponsesProfile::compatible("Standard Compute"),
+        messages: MessagesProfile::compatible("Standard Compute"),
         gemini: GeminiProfile::GOOGLE_AI_STUDIO,
         account: None,
         routes: &[],
@@ -2036,7 +2135,7 @@ mod tests {
         assert!(provider("gemini").is_none());
         assert_eq!(
             ids(),
-            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras, zai, minimax, elevenlabs, google, gemini-agent-platform, fireworks-ai, nebius, sambanova, scaleway, huggingface, nvidia, baseten, siliconflow"
+            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras, zai, minimax, elevenlabs, google, gemini-agent-platform, fireworks-ai, nebius, sambanova, scaleway, huggingface, nvidia, baseten, siliconflow, standardcompute"
         );
     }
 
@@ -2084,6 +2183,73 @@ mod tests {
             let redacted = crate::secret::redact_tokens(&format!("API key {key} not valid."));
             assert!(!redacted.contains(&key[4..]), "{redacted}");
         }
+    }
+
+    #[test]
+    fn standard_compute_speaks_chat_completions_with_a_bearer_key_and_counts_no_tokens() {
+        let sc = provider("standardcompute").unwrap();
+        assert_eq!(
+            (sc.name, sc.auth, sc.generation, sc.dialects),
+            (
+                "Standard Compute",
+                AuthStyle::Bearer,
+                DialectId::OpenAiChat,
+                &[DialectId::OpenAiChat][..]
+            )
+        );
+        assert_eq!(sc.default_base_url, "https://api.stdcmpt.com");
+        assert_eq!(
+            (sc.count_tokens, sc.embeddings, sc.key_prefix),
+            (None, None, None)
+        );
+        assert_eq!(
+            sc.key_page.url,
+            "https://standardcompute.com/dashboard/api-keys"
+        );
+        assert!(sc.images.is_empty() && sc.speech.is_empty() && sc.videos.is_empty());
+        assert_eq!(sc.chat.reply.reasoning_fields, ["reasoning"]);
+        assert_eq!(sc.listing, ModelListing::Partial);
+        let partial: Vec<&str> = PROVIDERS
+            .iter()
+            .filter(|p| p.listing == ModelListing::Partial)
+            .map(|p| p.id)
+            .collect();
+        assert_eq!(partial, ["standardcompute"]);
+    }
+
+    #[test]
+    fn a_partial_listing_matches_ids_without_case_or_dots_and_says_nothing_of_a_model_it_leaves_out()
+     {
+        let ids = ["StandardCompute".to_owned(), "z-ai/glm-5.3".to_owned()];
+        assert_eq!(
+            ModelListing::Partial.serves(&ids, "standardcompute"),
+            Some(true)
+        );
+        assert_eq!(
+            ModelListing::Partial.serves(&ids, "openai/gpt-5.6-luna:eu"),
+            None
+        );
+        let listed = ["anthropic/claude-haiku-5-5".to_owned()];
+        assert_eq!(
+            ModelListing::Partial.serves(&listed, "anthropic/claude-haiku-5.5"),
+            Some(true)
+        );
+        assert_eq!(
+            ModelListing::Partial.serves(&listed, "anthropic/claude-haiku-5.5:eu"),
+            None
+        );
+        assert_eq!(
+            ModelListing::Complete.serves(&listed, "anthropic/claude-haiku-5.5"),
+            Some(false)
+        );
+        assert_eq!(
+            ModelListing::Complete.serves(&ids, "z-ai/glm-5.3"),
+            Some(true)
+        );
+        assert_eq!(
+            ModelListing::Complete.serves(&ids, "standardcompute"),
+            Some(false)
+        );
     }
 
     #[test]
@@ -2860,7 +3026,8 @@ mod tests {
                 "huggingface",
                 "nvidia",
                 "baseten",
-                "siliconflow"
+                "siliconflow",
+                "standardcompute"
             ]
         );
         assert_eq!(

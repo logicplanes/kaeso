@@ -1,0 +1,32 @@
+data: {"id": "sc-1794449451-yBy26vqrNtkhELe9BqgS", "object": "chat.completion.chunk", "created": 1794449451, "model": "StandardCompute", "choices": [{"index": 0, "delta": {"content": "", "role": "assistant", "reasoning": "We", "reasoning_details": [{"type": "reasoning.text", "text": "We", "format": "unknown", "index": 0}]}, "finish_reason": null, "native_finish_reason": null}]}
+
+data: {"id": "sc-1794449451-yBy26vqrNtkhELe9BqgS", "object": "chat.completion.chunk", "created": 1794449451, "model": "StandardCompute", "choices": [{"index": 0, "delta": {"content": "", "role": "assistant", "reasoning": " need to answer whether 91 is a prime", "reasoning_details": [{"type": "reasoning.text", "text": " need to answer whether 91 is a prime", "format": "unknown", "index": 0}]}, "finish_reason": null, "native_finish_reason": null}]}
+
+data: {"id": "sc-1794449451-yBy26vqrNtkhELe9BqgS", "object": "chat.completion.chunk", "created": 1794449451, "model": "StandardCompute", "choices": [{"index": 0, "delta": {"content": "", "role": "assistant", "reasoning": " number in one sentence. ", "reasoning_details": [{"type": "reasoning.text", "text": " number in one sentence. ", "format": "unknown", "index": 0}]}, "finish_reason": null, "native_finish_reason": null}]}
+
+data: {"id": "sc-1794449451-yBy26vqrNtkhELe9BqgS", "object": "chat.completion.chunk", "created": 1794449451, "model": "StandardCompute", "choices": [{"index": 0, "delta": {"content": "", "role": "assistant", "reasoning": "91 = 7 * 13", "reasoning_details": [{"type": "reasoning.text", "text": "91 = 7 * 13", "format": "unknown", "index": 0}]}, "finish_reason": null, "native_finish_reason": null}]}
+
+data: {"id": "sc-1794449451-yBy26vqrNtkhELe9BqgS", "object": "chat.completion.chunk", "created": 1794449451, "model": "StandardCompute", "choices": [{"index": 0, "delta": {"content": "", "role": "assistant", "reasoning": ", so it is composite. So answer", "reasoning_details": [{"type": "reasoning.text", "text": ", so it is composite. So answer", "format": "unknown", "index": 0}]}, "finish_reason": null, "native_finish_reason": null}]}
+
+data: {"id": "sc-1794449451-yBy26vqrNtkhELe9BqgS", "object": "chat.completion.chunk", "created": 1794449451, "model": "StandardCompute", "choices": [{"index": 0, "delta": {"content": "", "role": "assistant", "reasoning": ": No, 91", "reasoning_details": [{"type": "reasoning.text", "text": ": No, 91", "format": "unknown", "index": 0}]}, "finish_reason": null, "native_finish_reason": null}]}
+
+data: {"id": "sc-1794449451-yBy26vqrNtkhELe9BqgS", "object": "chat.completion.chunk", "created": 1794449451, "model": "StandardCompute", "choices": [{"index": 0, "delta": {"content": "", "role": "assistant", "reasoning": " is not a prime number because it", "reasoning_details": [{"type": "reasoning.text", "text": " is not a prime number because it", "format": "unknown", "index": 0}]}, "finish_reason": null, "native_finish_reason": null}]}
+
+data: {"id": "sc-1794449451-yBy26vqrNtkhELe9BqgS", "object": "chat.completion.chunk", "created": 1794449451, "model": "StandardCompute", "choices": [{"index": 0, "delta": {"content": "", "role": "assistant", "reasoning": " is divisible by 7", "reasoning_details": [{"type": "reasoning.text", "text": " is divisible by 7", "format": "unknown", "index": 0}]}, "finish_reason": null, "native_finish_reason": null}]}
+
+data: {"id": "sc-1794449451-yBy26vqrNtkhELe9BqgS", "object": "chat.completion.chunk", "created": 1794449451, "model": "StandardCompute", "choices": [{"index": 0, "delta": {"content": "", "role": "assistant", "reasoning": " and 13.", "reasoning_details": [{"type": "reasoning.text", "text": " and 13.", "format": "unknown", "index": 0}]}, "finish_reason": null, "native_finish_reason": null}]}
+
+data: {"id": "sc-1794449451-yBy26vqrNtkhELe9BqgS", "object": "chat.completion.chunk", "created": 1794449451, "model": "StandardCompute", "choices": [{"index": 0, "delta": {"content": "No, 91 is", "role": "assistant"}, "finish_reason": null, "native_finish_reason": null}]}
+
+data: {"id": "sc-1794449451-yBy26vqrNtkhELe9BqgS", "object": "chat.completion.chunk", "created": 1794449451, "model": "StandardCompute", "choices": [{"index": 0, "delta": {"content": " not a prime number because", "role": "assistant"}, "finish_reason": null, "native_finish_reason": null}]}
+
+data: {"id": "sc-1794449451-yBy26vqrNtkhELe9BqgS", "object": "chat.completion.chunk", "created": 1794449451, "model": "StandardCompute", "choices": [{"index": 0, "delta": {"content": " it is divisible by ", "role": "assistant"}, "finish_reason": null, "native_finish_reason": null}]}
+
+data: {"id": "sc-1794449451-yBy26vqrNtkhELe9BqgS", "object": "chat.completion.chunk", "created": 1794449451, "model": "StandardCompute", "choices": [{"index": 0, "delta": {"content": "7 and 13.", "role": "assistant"}, "finish_reason": null, "native_finish_reason": null}]}
+
+data: {"id": "sc-1794449451-yBy26vqrNtkhELe9BqgS", "object": "chat.completion.chunk", "created": 1794449451, "model": "StandardCompute", "choices": [{"index": 0, "delta": {"content": "", "role": "assistant", "reasoning": null}, "finish_reason": "stop", "native_finish_reason": "stop"}]}
+
+data: {"id": "sc-1794449451-yBy26vqrNtkhELe9BqgS", "object": "chat.completion.chunk", "created": 1794449451, "model": "StandardCompute", "service_tier": null, "choices": [{"index": 0, "delta": {"content": "", "role": "assistant"}, "finish_reason": "stop", "native_finish_reason": "stop"}], "usage": {"prompt_tokens": 16, "completion_tokens": 74, "total_tokens": 90, "prompt_tokens_details": {"cached_tokens": 0, "cache_write_tokens": 0, "audio_tokens": 0, "video_tokens": 0}, "completion_tokens_details": {"reasoning_tokens": 52, "image_tokens": 0, "audio_tokens": 0}}}
+
+data: [DONE]
+

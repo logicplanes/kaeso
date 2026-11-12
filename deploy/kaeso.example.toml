@@ -142,6 +142,9 @@ base_url = "https://inference.baseten.co"
 [providers.siliconflow]
 base_url = "https://api.siliconflow.com"
 
+[providers.standardcompute]
+base_url = "https://api.stdcmpt.com"
+
 [custom_providers]
 enabled = true
 allowed_networks = ""

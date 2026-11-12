@@ -3501,6 +3501,238 @@ expression: outcomes
       "totalTokenCount": 72
     }
   },
+  "providers/standardcompute/recorded-file-pdf-data": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "The document says \"Hello PDF\"."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "StandardCompute",
+    "responseId": "sc-1794449330-H4VwY4ZgHhB7oE6VWqvQ",
+    "usageMetadata": {
+      "candidatesTokenCount": 9,
+      "promptTokenCount": 23,
+      "thoughtsTokenCount": 61,
+      "totalTokenCount": 93
+    }
+  },
+  "providers/standardcompute/recorded-json-schema": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "{\n  \"date\": \"2026-10-16\",\n  \"name\": \"science fair\",\n  \"participants\": [\"Alice\", \"Bob\"]\n}"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "StandardCompute",
+    "responseId": "sc-1794449341-9EjquliCwplEt3TShf49",
+    "usageMetadata": {
+      "candidatesTokenCount": 35,
+      "promptTokenCount": 28,
+      "thoughtsTokenCount": 97,
+      "totalTokenCount": 160
+    }
+  },
+  "providers/standardcompute/recorded-logprobs-top-logprobs-doc": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Hello! How can I help you today?"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "StandardCompute",
+    "responseId": "sc-1794449354-HhI1E8DqA5iJzvfpnaBy",
+    "usageMetadata": {
+      "candidatesTokenCount": 10,
+      "promptTokenCount": 6,
+      "totalTokenCount": 16
+    }
+  },
+  "providers/standardcompute/recorded-plain-developer-string": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Hello! How can I assist you today?"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "StandardCompute",
+    "responseId": "sc-1794449365-Hsph6UgzGw9oG7EnZzwF",
+    "usageMetadata": {
+      "candidatesTokenCount": 11,
+      "promptTokenCount": 12,
+      "thoughtsTokenCount": 37,
+      "totalTokenCount": 60
+    }
+  },
+  "providers/standardcompute/recorded-stop-array": {
+    "candidates": [
+      {
+        "content": {
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "StandardCompute",
+    "responseId": "sc-1794449375-gMMoPfHitesCbYZqrIdS",
+    "usageMetadata": {
+      "candidatesTokenCount": 1,
+      "promptTokenCount": 15,
+      "thoughtsTokenCount": 30,
+      "totalTokenCount": 46
+    }
+  },
+  "providers/standardcompute/recorded-system-name-multiturn": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Boil it for 9 to 12 minutes, then plunge into cold water to stop cooking."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "StandardCompute",
+    "responseId": "sc-1794449390-MFKSuTwPbmBvQX1bW1JP",
+    "usageMetadata": {
+      "candidatesTokenCount": 21,
+      "promptTokenCount": 61,
+      "totalTokenCount": 82
+    }
+  },
+  "providers/standardcompute/recorded-tools-parallel": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "\n\nLet me fetch both pieces of information for you."
+            },
+            {
+              "functionCall": {
+                "args": {
+                  "location": "Paris, France",
+                  "unit": "celsius"
+                },
+                "id": "call_003e24c39ed449a5b5dc6f9e",
+                "name": "get_weather"
+              }
+            },
+            {
+              "functionCall": {
+                "args": {
+                  "timezone": "Asia/Tokyo"
+                },
+                "id": "call_b0028684a94b4158913ae00c",
+                "name": "get_local_time"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "StandardCompute",
+    "responseId": "sc-1794449395-Uku8RmaLVrBpn6J4rCPY",
+    "usageMetadata": {
+      "candidatesTokenCount": 109,
+      "promptTokenCount": 444,
+      "totalTokenCount": 553
+    }
+  },
+  "providers/standardcompute/recorded-tools-results-parallel-error": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Here's what I found:\n\n🌦️ **Weather in Paris, France**: Currently **18°C** and **cloudy**.\n\n🕐 **Time in Tokyo**: The time service is temporarily unavailable, so I can't give you the exact local time right now. Since you're landing tonight, it's likely evening in Tokyo, but you may want to check your phone or a device for the precise time. Could you like me to try again?"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "StandardCompute",
+    "responseId": "sc-1794449406-waiWqCmzj9xJKASWQpJm",
+    "usageMetadata": {
+      "candidatesTokenCount": 93,
+      "promptTokenCount": 589,
+      "totalTokenCount": 682
+    }
+  },
+  "providers/standardcompute/recorded-tools-single": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "functionCall": {
+                "args": {
+                  "location": "Paris, France",
+                  "unit": "celsius"
+                },
+                "id": "chatcmpl-tool-9d361a0d9e1c0147",
+                "name": "get_weather"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "StandardCompute",
+    "responseId": "sc-1794449419-vbXuQk7ROdh1NuWl0jZo",
+    "usageMetadata": {
+      "candidatesTokenCount": 64,
+      "promptTokenCount": 349,
+      "totalTokenCount": 413
+    }
+  },
   "providers/togetherai/recorded-json-schema": {
     "candidates": [
       {

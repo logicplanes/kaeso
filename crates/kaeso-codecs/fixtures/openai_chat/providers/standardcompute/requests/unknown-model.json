@@ -1,0 +1,10 @@
+{
+  "model": "example/not-a-model",
+  "messages": [
+    {
+      "role": "user",
+      "content": "hi"
+    }
+  ],
+  "max_tokens": 1
+}

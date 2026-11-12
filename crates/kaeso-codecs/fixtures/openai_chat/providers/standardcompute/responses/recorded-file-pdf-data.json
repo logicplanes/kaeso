@@ -1,0 +1,69 @@
+{
+  "id": "sc-1794449330-H4VwY4ZgHhB7oE6VWqvQ",
+  "object": "chat.completion",
+  "created": 1794449330,
+  "model": "StandardCompute",
+  "system_fingerprint": null,
+  "service_tier": null,
+  "choices": [
+    {
+      "index": 0,
+      "logprobs": null,
+      "finish_reason": "stop",
+      "native_finish_reason": "stop",
+      "message": {
+        "role": "assistant",
+        "content": "The document says \"Hello PDF\".",
+        "refusal": null,
+        "reasoning": "We need to answer what the document says. The user provided a file named \"hello.pdf\" with content \"# Hello PDF\". That seems to be the content of the PDF. So the document says \"Hello PDF\". But we must consider that it's a markdown heading. The answer should be straightforward.",
+        "reasoning_details": [
+          {
+            "type": "reasoning.text",
+            "text": "We need to answer what the document says. The user provided a file named \"hello.pdf\" with content \"# Hello PDF\". That seems to be the content of the PDF. So the document says \"Hello PDF\". But we must consider that it's a markdown heading. The answer should be straightforward.",
+            "format": "unknown",
+            "index": 0
+          }
+        ],
+        "annotations": [
+          {
+            "type": "file",
+            "file": {
+              "hash": "c81f2684b4f07ca38db744ac1d94f6a4883766452f646fb6658768c25f934e54",
+              "name": "hello.pdf",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "<file name=\"hello.pdf\">"
+                },
+                {
+                  "type": "text",
+                  "text": "# Hello PDF"
+                },
+                {
+                  "type": "text",
+                  "text": "</file>"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 23,
+    "completion_tokens": 70,
+    "total_tokens": 93,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "cache_write_tokens": 0,
+      "audio_tokens": 0,
+      "video_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 61,
+      "image_tokens": 0,
+      "audio_tokens": 0
+    }
+  }
+}
