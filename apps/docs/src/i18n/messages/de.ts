@@ -10,7 +10,7 @@ export const de: Messages = {
   "nav.overview": "Übersicht",
   "legal.label": "Rechtliches",
   "legal.privacy": "Datenschutz",
-  "legal.imprint": "Impressum",
+  "legal.notice": "Impressum",
   "language.label": "Sprache",
   "search.open": "Suchen",
   "search.placeholder": "Dokumentation durchsuchen",

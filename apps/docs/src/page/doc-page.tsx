@@ -3,6 +3,7 @@ import { AppFrame, Link, Separator, TableOfContents, Text } from "@logicplanes/k
 import { useText } from "~/i18n/text";
 import type { PageMeta } from "~/markdown/ast";
 import { Markdown } from "~/markdown/render";
+import { LegalLinks } from "~/shell/legal-links";
 import { usePageTitle } from "~/shell/title";
 import type { LoadedPage } from "./load";
 
@@ -49,10 +50,11 @@ function PageFooter({ meta, editBase }: { meta: PageMeta; editBase: string }) {
         </nav>
       )}
       <Separator />
-      <div className="flex">
+      <div className="flex flex-wrap items-start justify-between gap-x-24 gap-y-12">
         <Link href={`${editBase}${meta.file}`} variant="quiet" external>
           {t("page.edit")}
         </Link>
+        <LegalLinks />
       </div>
     </footer>
   );

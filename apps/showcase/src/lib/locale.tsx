@@ -49,7 +49,7 @@ const DOCS_TEXT: Record<Exclude<DocsLang, "en">, Record<string, string>> = {
     "Nothing matches. Try a component or a prop name.": "Keine Treffer. Suchen Sie nach einer Komponente oder einem Prop.",
     Legal: "Rechtliches",
     Privacy: "Datenschutz",
-    Imprint: "Impressum",
+    "Legal notice": "Impressum",
   },
   "zh-CN": {
     Overview: "概览",
@@ -87,7 +87,7 @@ const DOCS_TEXT: Record<Exclude<DocsLang, "en">, Record<string, string>> = {
     "Nothing matches. Try a component or a prop name.": "没有匹配项，请尝试组件名或属性名。",
     Legal: "法律信息",
     Privacy: "隐私政策",
-    Imprint: "法律声明",
+    "Legal notice": "法律声明",
   },
 };
 

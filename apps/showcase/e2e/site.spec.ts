@@ -61,16 +61,20 @@ test.describe("the changelog", () => {
 });
 
 test.describe("legal pages", () => {
-  const words = { en: ["Legal", "Privacy", "Imprint"], de: ["Rechtliches", "Datenschutz", "Impressum"], "zh-CN": ["法律信息", "隐私政策", "法律声明"] } as const;
+  const words = { en: ["Legal", "Legal notice", "Privacy"], de: ["Rechtliches", "Impressum", "Datenschutz"], "zh-CN": ["法律信息", "法律声明", "隐私政策"] } as const;
   for (const lang of LANGS) {
-    test(`the legal menu at the sidebar's foot links to the privacy policy and the imprint in ${lang}`, async ({ page }) => {
-      await open(page, at(lang, "/"));
-      const [legal, privacy, imprint] = words[lang];
-      await page.getByRole("button", { name: legal, exact: true }).click();
-      const site = lang === "en" ? "https://kaeso.app" : `https://kaeso.app/${lang}`;
-      await expect(page.getByRole("menuitem", { name: privacy, exact: true })).toHaveAttribute("href", `${site}/datenschutz`);
-      await expect(page.getByRole("menuitem", { name: imprint, exact: true })).toHaveAttribute("href", `${site}/impressum`);
-    });
+    for (const path of ["/", "/components/button", "/installation", "/404"]) {
+      test(`the foot of ${path} links to the legal notice and the privacy policy in ${lang}`, async ({ page }) => {
+        await open(page, at(lang, path));
+        const [label, notice, privacy] = words[lang];
+        const legal = page.getByRole("navigation", { name: label, exact: true });
+        await legal.scrollIntoViewIfNeeded();
+        await expect(legal).toBeVisible();
+        const site = lang === "en" ? "https://kaeso.app" : `https://kaeso.app/${lang}`;
+        await expect(legal.getByRole("link", { name: new RegExp(`^${notice}`) })).toHaveAttribute("href", `${site}/impressum`);
+        await expect(legal.getByRole("link", { name: new RegExp(`^${privacy}`) })).toHaveAttribute("href", `${site}/datenschutz`);
+      });
+    }
   }
 });
 

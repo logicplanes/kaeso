@@ -10,7 +10,7 @@ export const zhCN: Messages = {
   "nav.overview": "概览",
   "legal.label": "法律信息",
   "legal.privacy": "隐私政策",
-  "legal.imprint": "法律声明",
+  "legal.notice": "法律声明",
   "language.label": "语言",
   "search.open": "搜索",
   "search.placeholder": "搜索文档",

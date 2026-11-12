@@ -1,17 +1,11 @@
 import type * as React from "react";
 import { useEffect, useRef, useState } from "react";
-import { useSidebar, Button, Menu, PortalContainer, Toaster, Sidebar, ThemeProvider, ThemeMenu, TooltipProvider, Icon, icons } from "@logicplanes/kaeso-ui";
+import { useSidebar, Button, PortalContainer, Toaster, Sidebar, ThemeProvider, ThemeMenu, TooltipProvider, Icon, icons } from "@logicplanes/kaeso-ui";
 import { NavSheet } from "@kaeso-ui-src/components/app-frame/nav-sheet";
 import type { NavSection } from "~/lib/nav";
 import { DocsSearch } from "./DocsSearch";
 import { DocsLanguageMenu, DocsLocale, docsText, useDocsLang } from "~/lib/locale";
-import { localizedPath, type DocsLang } from "~/lib/languages";
-
-const LEGAL: Record<DocsLang, { privacy: string; imprint: string }> = {
-  en: { privacy: "https://kaeso.app/datenschutz", imprint: "https://kaeso.app/impressum" },
-  de: { privacy: "https://kaeso.app/de/datenschutz", imprint: "https://kaeso.app/de/impressum" },
-  "zh-CN": { privacy: "https://kaeso.app/zh-CN/datenschutz", imprint: "https://kaeso.app/zh-CN/impressum" },
-};
+import { localizedPath } from "~/lib/languages";
 
 const clean = (p: string) => p.replace(/\.html$/, "").replace(/\/$/, "") || "/";
 
@@ -74,15 +68,6 @@ export default function DocsSidebar({ sections, path: initial }: { sections: Nav
         ))}
       </Sidebar.Content>
       <Sidebar.Footer className="gap-8">
-        <Menu>
-          <Menu.Trigger>
-            <Button variant="ghost" size="sm" icon={icons.legal} aria-label={docsText(lang, "Legal")} />
-          </Menu.Trigger>
-          <Menu.Content side="top" align="start" className="min-w-180">
-            <Menu.LinkItem href={LEGAL[lang].privacy}>{docsText(lang, "Privacy")}</Menu.LinkItem>
-            <Menu.LinkItem href={LEGAL[lang].imprint}>{docsText(lang, "Imprint")}</Menu.LinkItem>
-          </Menu.Content>
-        </Menu>
         <ThemeMenu side="top" align="start" />
         <DocsLanguageMenu />
       </Sidebar.Footer>

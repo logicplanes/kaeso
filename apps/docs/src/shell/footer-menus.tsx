@@ -1,51 +1,27 @@
 import { forwardRef, useEffect, useRef } from "react";
 import { Button, Menu, ThemeMenu, icons } from "@logicplanes/kaeso-ui";
-import { LANGUAGE_NAMES, LOCALES, isLocale, type Locale } from "~/i18n/locales";
+import { LANGUAGE_NAMES, LOCALES, isLocale } from "~/i18n/locales";
 import { useSiteLocale, useText } from "~/i18n/text";
 import { useSwitchLocale } from "./use-switch-locale";
 
-const LEGAL: Record<Locale, { privacy: string; imprint: string }> = {
-  en: { privacy: "https://kaeso.app/datenschutz", imprint: "https://kaeso.app/impressum" },
-  de: { privacy: "https://kaeso.app/de/datenschutz", imprint: "https://kaeso.app/de/impressum" },
-  "zh-CN": { privacy: "https://kaeso.app/zh-CN/datenschutz", imprint: "https://kaeso.app/zh-CN/impressum" },
-};
-
-export type FooterMenu = "legal" | "theme" | "language";
+export type FooterMenu = "theme" | "language";
 
 export default function FooterMenus({ opening }: { opening: FooterMenu | null }) {
-  const legal = useRef<HTMLButtonElement>(null);
   const theme = useRef<HTMLButtonElement>(null);
   const language = useRef<HTMLButtonElement>(null);
   const clickedWhileLoading = useRef(opening);
   useEffect(() => {
-    const trigger = clickedWhileLoading.current && { legal, theme, language }[clickedWhileLoading.current].current;
+    const trigger = clickedWhileLoading.current && { theme, language }[clickedWhileLoading.current].current;
     trigger?.focus();
     trigger?.click();
   }, []);
   return (
     <>
-      <LegalMenu ref={legal} />
       <ThemeMenu ref={theme} side="top" align="start" />
       <LanguageMenu ref={language} />
     </>
   );
 }
-
-const LegalMenu = forwardRef<HTMLButtonElement>(function LegalMenu(_, ref) {
-  const t = useText();
-  const legal = LEGAL[useSiteLocale()];
-  return (
-    <Menu>
-      <Menu.Trigger>
-        <Button variant="ghost" size="sm" ref={ref} icon={icons.legal} aria-label={t("legal.label")} />
-      </Menu.Trigger>
-      <Menu.Content side="top" align="start" className="min-w-180">
-        <Menu.LinkItem href={legal.privacy}>{t("legal.privacy")}</Menu.LinkItem>
-        <Menu.LinkItem href={legal.imprint}>{t("legal.imprint")}</Menu.LinkItem>
-      </Menu.Content>
-    </Menu>
-  );
-});
 
 const LanguageMenu = forwardRef<HTMLButtonElement>(function LanguageMenu(_, ref) {
   const t = useText();

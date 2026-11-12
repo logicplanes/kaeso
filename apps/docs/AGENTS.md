@@ -84,8 +84,8 @@ pnpm --filter kaeso-docs e2e
 | `diagrams/`           | The drawn diagrams, a light and a dark SVG per Mermaid block, named by a hash of its source; written by `pnpm --filter kaeso-docs diagrams` |
 | `scripts/budget.ts`   | The bundle budgets `pnpm build` ends with                                                                                                   |
 | `src/markdown/`       | The page format (`ast.ts`) and its renderer (`render.tsx`), library components only                                                         |
-| `src/page/`           | A page: title, description, content, previous and next, Edit on GitHub, On this page; not found; load error                                 |
-| `src/shell/`          | `AppFrame` and the sidebar, the search, the legal, theme and language menus, links through the router, toasts, the document title           |
+| `src/page/`           | A page: title, description, content, previous and next, Edit on GitHub and the legal links, On this page; not found; load error             |
+| `src/shell/`          | `AppFrame` and the sidebar, the search, the theme and language menus, the legal links, links through the router, toasts, the document title |
 | `src/i18n/`           | The three languages, the preference and the site's own words                                                                                |
 | `src/router.tsx`      | One route tree per language; every address loads its page's chunk                                                                           |
 | `eslint/`             | The layout-only and no-colour lint rules, with tests                                                                                        |
