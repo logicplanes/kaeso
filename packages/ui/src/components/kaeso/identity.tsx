@@ -7,8 +7,8 @@ import { Badge } from "../badge/badge.js";
 import { CopyButton } from "../copy-button/copy-button.js";
 import { PROVIDER_MARKS, type ProviderMark } from "./provider-marks.js";
 import { useProviderMarkOf } from "../../utils/provider-marks.js";
-import { formatNumber } from "../../format/index.js";
 import { useUiText, type UiText } from "../../i18n/context.js";
+import { useFormatters } from "../../i18n/formatters.js";
 
 export const KAESO_IDENTITY_VARIANTS = {
   provider: {
@@ -262,22 +262,28 @@ function statusTexts(t: UiText): Record<number, string> {
   };
 }
 
-export const StatusCode = forwardRef<HTMLSpanElement, { code: number; showText?: boolean | undefined; className?: string | undefined }>(function StatusCode(
-  { code, showText, className },
-  ref,
-) {
+export const StatusCode = forwardRef<
+  HTMLSpanElement,
+  { code: number; showText?: boolean | undefined; className?: string | undefined; "data-force"?: string | undefined }
+>(function StatusCode({ code, showText, className, "data-force": force }, ref) {
   const t = useUiText();
   const text = statusTexts(t)[code];
   const tone = STATUS_CLASS(code);
   const color = { danger: "text-danger-text", warning: "text-warning-text", neutral: code >= 200 && code < 300 ? "text-fg" : "text-fg-secondary" }[tone];
+  const tooltip = !showText && !!text;
   const el = (
-    <span ref={ref} tabIndex={showText ? undefined : 0} className={cn("inline-flex items-center gap-6 outline-none", className)}>
+    <span
+      ref={ref}
+      tabIndex={tooltip ? 0 : undefined}
+      data-force={force}
+      className={cn("inline-flex items-center gap-6", tooltip && "rounded-code focus-ring", className)}
+    >
       <span className={cn("mono text-small font-medium tabular", color)}>{code}</span>
       {showText && <span className="text-small text-fg-secondary">{text ?? ""}</span>}
       <span className="sr-only">{text ?? ""}</span>
     </span>
   );
-  return showText || !text ? el : <Tooltip content={t("statusCode.tooltip", "{code} {text}", { code: String(code), text })}>{el}</Tooltip>;
+  return tooltip ? <Tooltip content={t("statusCode.tooltip", "{code} {text}", { code: String(code), text })}>{el}</Tooltip> : el;
 });
 StatusCode.displayName = "StatusCode";
 
@@ -286,6 +292,7 @@ export const RequestTimeline = forwardRef<
   { ttfbMs: number; totalMs: number; width?: 160 | 240 | "full" | undefined; className?: string | undefined }
 >(function RequestTimeline({ ttfbMs, totalMs, width = 240, className }, ref) {
   const t = useUiText();
+  const { formatNumber } = useFormatters();
   const ratio = totalMs > 0 ? Math.min(1, ttfbMs / totalMs) : 0;
   const fmt = (ms: number) =>
     ms < 1000 ? `${Math.round(ms)} ms` : `${formatNumber(ms / 1000, { minimumFractionDigits: 1, maximumFractionDigits: 1, useGrouping: false })} s`;

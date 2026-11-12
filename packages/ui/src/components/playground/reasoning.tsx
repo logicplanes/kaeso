@@ -1,7 +1,7 @@
 import { forwardRef, type ReactNode } from "react";
-import { formatDuration } from "../../format/index.js";
 import { Markdown } from "../markdown/markdown.js";
 import { useUiText } from "../../i18n/context.js";
+import { useFormatters } from "../../i18n/formatters.js";
 import { ReasoningFrame } from "./reasoning-frame.js";
 
 export const KAESO_REASONING_VARIANTS = {
@@ -40,6 +40,7 @@ export const Reasoning = forwardRef<HTMLDivElement, ReasoningProps>(function Rea
   ref,
 ) {
   const t = useUiText();
+  const { formatDuration } = useFormatters();
   const heading =
     title ??
     (!live && duration !== undefined

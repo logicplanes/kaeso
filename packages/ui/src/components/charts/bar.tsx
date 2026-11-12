@@ -3,8 +3,8 @@ import { scaleBand } from "d3-scale";
 import { radius } from "@logicplanes/kaeso-tokens";
 import { scaleLinear } from "./linear-scale.js";
 import { cn } from "../../utils/cn.js";
-import { formatNumber, formatPercent } from "../../format/index.js";
 import { useUiText } from "../../i18n/context.js";
+import { useFormatters } from "../../i18n/formatters.js";
 import {
   AXIS,
   axisLabelIndexes,
@@ -24,7 +24,7 @@ import {
   wholeTicks,
   type ChartState,
 } from "./core.js";
-import { axisRoom, compactAxis, finite, onlyZero, fitLabel, hasPoints, valueExtent } from "./domain.js";
+import { axisRoom, finite, onlyZero, fitLabel, hasPoints, valueExtent } from "./domain.js";
 import { edgeColor } from "./marks.js";
 
 export const KAESO_BAR_CHART_VARIANTS = {
@@ -135,6 +135,7 @@ export const BarChart = forwardRef<HTMLDivElement, BarChartProps>(function BarCh
   ref,
 ) {
   const t = useUiText();
+  const { formatNumber, formatPercent, formatTokens } = useFormatters();
   const format = formatValue ?? ((v: number) => formatNumber(v));
   const write = (v: number) => (Number.isFinite(v) ? format(v) : "–");
   const [box, size] = useSize<HTMLDivElement>();
@@ -158,7 +159,7 @@ export const BarChart = forwardRef<HTMLDivElement, BarChartProps>(function BarCh
   const vals = shown.map((_, si) => categories.map((_, ci) => drawn[si * categories.length + ci] ?? 0));
   const palette = seriesColors(series.map((s) => s.id));
   const color = (s: BarSeries) => s.color ?? palette.get(s.id)!;
-  const axisLabel = tickLabel(formatValue ?? compactAxis);
+  const axisLabel = tickLabel(formatValue ?? formatTokens);
   const ticks = empty ? [] : onlyZero(flat) ? [0] : wholeTicks(readableTicks(axis, axisLabel), finite(flat)).filter((v) => v >= lo - 1e-9 && v <= hi + 1e-9);
   const total = (ci: number) => {
     const known = finite(shown.map((s) => s.values[ci] ?? NaN));

@@ -49,7 +49,7 @@ export function Root({ children }: { children: React.ReactNode }) {
 
 ## Languages
 
-The components speak English, German and Simplified Chinese. Without a `LocaleProvider` everything is English; with one, the components' own text and the formatters follow its language, and the catalog loads only when it is needed.
+The components speak English, German and Simplified Chinese. Without a `LocaleProvider` everything is English; with one, the components' own text and the formatters follow its language, and the catalog loads only when it is needed. In your own components, take the formatters from `useFormatters()` so each page formats in its own language, also when a server renders several at once.
 
 <CodeView
   code={`import { LocaleProvider, loadUiMessages, resolveUiLocale } from "@logicplanes/kaeso-ui/i18n";

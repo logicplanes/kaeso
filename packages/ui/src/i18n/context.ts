@@ -8,7 +8,9 @@ export interface LocaleValue {
   messages: UiMessages;
 }
 
-export const LocaleContext = createContext<LocaleValue>({ locale: "en", messages: {} });
+export const NO_PROVIDER: LocaleValue = { locale: "en", messages: {} };
+
+export const LocaleContext = createContext<LocaleValue>(NO_PROVIDER);
 
 export function useLocale(): string {
   return useContext(LocaleContext).locale;

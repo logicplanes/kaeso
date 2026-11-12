@@ -1,7 +1,7 @@
 import { Suspense, lazy, useState } from "react";
 import { useLocation } from "@tanstack/react-router";
 import { Icon, Button, Sidebar, Text, icons, useTheme } from "@logicplanes/kaeso-ui";
-import { formatNumber } from "@logicplanes/kaeso-ui/format";
+import { useFormatters } from "@logicplanes/kaeso-ui/i18n";
 import { homePath, type Locale } from "~/i18n/locales";
 import { useSiteLocale, useText } from "~/i18n/text";
 import type { NavGroup } from "~/markdown/ast";
@@ -25,6 +25,7 @@ const STARS_SHOWN_FROM = 100;
 const FooterMenus = lazy(() => import("./footer-menus"));
 
 function StarCount({ stars }: { stars: number | null }) {
+  const { formatNumber } = useFormatters();
   return (
     <>
       {stars !== null && stars >= STARS_SHOWN_FROM && (

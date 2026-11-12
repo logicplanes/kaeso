@@ -1,8 +1,8 @@
 import { forwardRef, useId, useMemo, useState } from "react";
 import { sankey as d3sankey, sankeyLinkHorizontal, type SankeyLink, type SankeyNode } from "d3-sankey";
 import { cn } from "../../utils/cn.js";
-import { formatNumber } from "../../format/index.js";
 import { useUiText } from "../../i18n/context.js";
+import { useFormatters } from "../../i18n/formatters.js";
 import { ChartFrame, ChartLive, labelWidth, seriesColors, useChartKeys, useSize, type ChartState } from "./core.js";
 import { fitLabel } from "./domain.js";
 
@@ -40,8 +40,10 @@ export const Sankey = forwardRef<
     "aria-label": string;
     className?: string | undefined;
   } & ChartState
->(function Sankey({ nodes, links, height = 320, formatValue = (v) => formatNumber(v), className, "aria-label": ariaLabel, ...state }, ref) {
+>(function Sankey({ nodes, links, height = 320, formatValue: chosenFormat, className, "aria-label": ariaLabel, ...state }, ref) {
   const t = useUiText();
+  const { formatNumber } = useFormatters();
+  const formatValue = chosenFormat ?? formatNumber;
   const [box, size] = useSize<HTMLDivElement>();
   const [hover, setHover] = useState<string | null>(null);
   const gid = useId().replace(/:/g, "");

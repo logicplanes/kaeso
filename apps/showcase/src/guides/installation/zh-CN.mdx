@@ -49,7 +49,7 @@ export function Root({ children }: { children: React.ReactNode }) {
 
 ## 语言
 
-组件支持英语、德语和简体中文。没有 `LocaleProvider` 时一切为英语；有了它，组件自身的文字和格式化函数都会跟随其语言，语言包只在需要时加载。
+组件支持英语、德语和简体中文。没有 `LocaleProvider` 时一切为英语；有了它，组件自身的文字和格式化函数都会跟随其语言，语言包只在需要时加载。在你自己的组件中，从 `useFormatters()` 获取格式化函数，这样每个页面都按自己的语言格式化，服务器同时渲染多个页面时也是如此。
 
 <CodeView
   code={`import { LocaleProvider, loadUiMessages, resolveUiLocale } from "@logicplanes/kaeso-ui/i18n";

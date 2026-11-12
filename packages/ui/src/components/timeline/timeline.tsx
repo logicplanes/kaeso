@@ -1,7 +1,7 @@
 import { forwardRef, type ReactNode } from "react";
 import { cn } from "../../utils/cn.js";
-import { formatDate } from "../../format/index.js";
 import { useUiText } from "../../i18n/context.js";
+import { useFormatters } from "../../i18n/formatters.js";
 import { Tooltip } from "../tooltip/tooltip.js";
 
 export const KAESO_TIMELINE_VARIANTS = {
@@ -30,6 +30,7 @@ export const Timeline = forwardRef<HTMLOListElement, { events: TimelineEvent[]; 
   ref,
 ) {
   const t = useUiText();
+  const { formatDate } = useFormatters();
   const toneWord = {
     neutral: "",
     success: t("timeline.success", "Success"),

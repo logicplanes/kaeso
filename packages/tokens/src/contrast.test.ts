@@ -153,6 +153,12 @@ it.each(recoloured)("provider mark colour %s stands out from white in light mode
   expect(ratio(colour.dark, neutral["fill-1"].dark)).toBeGreaterThanOrEqual(3);
 });
 
+// WCAG 2's ratio overstates dark colours on black: a deep violet at 3:1 nearly disappears on the dark tile, so the marks also need APCA Lc 35 there (Lc 45 on the light tile, where every mark already reaches it).
+it.each(recoloured)("provider mark colour %s is legible on its tile in both themes", (_, colour) => {
+  expect(apca(colour.light, neutral["fill-1"].light)).toBeGreaterThanOrEqual(45);
+  expect(apca(colour.dark, neutral["fill-1"].dark)).toBeGreaterThanOrEqual(35);
+});
+
 it.each(mistral)("Mistral's colour %s stands out from the raised background in dark mode", (_, colour) => {
   expect(ratio(colour.dark, neutral["bg-raised"].dark)).toBeGreaterThanOrEqual(3);
 });

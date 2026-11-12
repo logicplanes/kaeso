@@ -6,6 +6,7 @@ import { SwapText } from "../swap-text/swap-text.js";
 import { highlight, type CodeLang, type CodeToken } from "./highlighter.js";
 import { INDENT, dropIndent } from "./indent.js";
 import { numberWidth } from "./numbers.js";
+import { splitWords, type WordPart } from "./words.js";
 import { Text } from "../text/text.js";
 import { useUiText } from "../../i18n/context.js";
 import { useScrollFadeX } from "../../hooks/use-scroll-fade.js";
@@ -22,6 +23,25 @@ function diffLineClass(line: string): string | false {
   if (line.startsWith("+") && !line.startsWith("+++")) return "bg-diff-added";
   if (line.startsWith("-") && !line.startsWith("---")) return "bg-diff-removed";
   return false;
+}
+
+// Each word is one inline box, so a wrapped line breaks only at its spaces: never after a flag's hyphen or inside an identifier, which browsers allow in text. A word wider than the line still wraps inside itself.
+function Words({ tokens }: { tokens: readonly WordPart[] }) {
+  const words = splitWords(tokens);
+  if (!words.length) return " ";
+  return words.map((word, i) =>
+    typeof word === "string" ? (
+      word
+    ) : (
+      <span key={i} className="inline-block max-w-full indent-0 align-top wrap-anywhere">
+        {word.map((part, j) => (
+          <span key={j} className={part.className || undefined}>
+            {part.content}
+          </span>
+        ))}
+      </span>
+    ),
+  );
 }
 
 export interface CodeTab {
@@ -127,13 +147,23 @@ export const CodeBlock = forwardRef<HTMLDivElement, CodeBlockProps>(function Cod
               )}
               {wrap && INDENT.test(line) && <span className="shrink-0 whitespace-pre">{INDENT.exec(line)?.[0]}</span>}
               <span className={cn("min-w-0", wrap === true && "pl-16 -indent-16", wrap === "phone" && "max-sm:pl-16 max-sm:-indent-16")}>
-                {tokenLines?.[i]?.length
-                  ? dropIndent(tokenLines[i], wrap ? (INDENT.exec(line)?.[0].length ?? 0) : 0).map((token, j) => (
-                      <span key={j} className={token.className || undefined}>
-                        {token.content}
-                      </span>
-                    ))
-                  : (wrap ? line.replace(INDENT, "") : line) || " "}
+                {wrap ? (
+                  <Words
+                    tokens={
+                      tokenLines?.[i]?.length
+                        ? dropIndent(tokenLines[i], INDENT.exec(line)?.[0].length ?? 0)
+                        : [{ content: line.replace(INDENT, ""), className: "" }]
+                    }
+                  />
+                ) : tokenLines?.[i]?.length ? (
+                  tokenLines[i].map((token, j) => (
+                    <span key={j} className={token.className || undefined}>
+                      {token.content}
+                    </span>
+                  ))
+                ) : (
+                  line || " "
+                )}
               </span>
             </span>
           );

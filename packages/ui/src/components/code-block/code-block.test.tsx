@@ -115,12 +115,13 @@ describe("CodeBlock", () => {
   });
 
   it("collapses long code and expands on request", async () => {
+    const line = (text: string) => screen.queryByText((_, el) => el?.parentElement?.tagName === "CODE" && el.textContent === text);
     render(<CodeBlock code={long} lang="text" wrap surface="plain" copy={false} />);
-    expect(screen.queryByText("const line29 = 29;")).toBeNull();
+    expect(line("const line29 = 29;")).toBeNull();
     await userEvent.click(screen.getByRole("button", { name: "Show all 30 lines" }));
-    expect(screen.getByText("const line29 = 29;")).toBeInTheDocument();
+    expect(line("const line29 = 29;")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Show less" }));
-    expect(screen.queryByText("const line29 = 29;")).toBeNull();
+    expect(line("const line29 = 29;")).toBeNull();
   });
 
   it("hangs a wrapped line from its own indent, and copies the code as written", () => {
@@ -149,6 +150,21 @@ describe("CodeBlock", () => {
     expect(row().lastElementChild).toHaveClass("pl-16", "-indent-16");
     rerender(<CodeBlock code={line} lang="text" copy={false} />);
     expect(container.querySelector("code")).toHaveClass("min-w-max");
+  });
+
+  it.each([
+    ["plain", "text"],
+    ["highlighted", "bash"],
+  ] as const)("breaks a wrapped %s line only between words, never inside a flag or an identifier", async (_, lang) => {
+    const line = "docker compose up -d --wait --force-recreate kaeso_gateway";
+    const { container } = render(<CodeBlock code={line} lang={lang} wrap copy={false} />);
+    await highlighted();
+    const body = container.querySelector("code > span")!.lastElementChild as HTMLElement;
+    const words = [...body.children] as HTMLElement[];
+    expect(words.map((w) => w.textContent)).toEqual(["docker", "compose", "up", "-d", "--wait", "--force-recreate", "kaeso_gateway"]);
+    for (const word of words) expect(word).toHaveClass("inline-block", "max-w-full", "wrap-anywhere", "indent-0");
+    expect(body.textContent).toBe(line);
+    if (lang === "bash") expect(container.querySelector(".text-code-keyword, .text-code-function, .text-code-string, .text-code-variable")).not.toBeNull();
   });
 
   it("keeps the code clear of the copy button on touch screens, where the button always shows", () => {

@@ -6,7 +6,8 @@ import { matchUiLocale, type UiLocale } from "./locale-tags.js";
 const NO_MESSAGES: UiMessages = {};
 
 export function LocaleProvider({ locale, messages = NO_MESSAGES, children }: { locale: string; messages?: UiMessages | undefined; children: ReactNode }) {
-  setFormatLocale(locale, messages);
+  // Plain formatters share one language per page; a server renders many requests at once, so it never sets it. Components there use useFormatters.
+  if (typeof window !== "undefined") setFormatLocale(locale, messages);
   const value = useMemo(() => ({ locale, messages }), [locale, messages]);
   return <LocaleContext.Provider value={value}>{children}</LocaleContext.Provider>;
 }

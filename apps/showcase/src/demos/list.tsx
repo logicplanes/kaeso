@@ -12,13 +12,12 @@ import {
   type ListGroup,
   type ListItemData,
 } from "@logicplanes/kaeso-ui";
-import { formatRelative } from "@logicplanes/kaeso-ui/format";
-import { useLocale } from "@logicplanes/kaeso-ui/i18n";
+import { useFormatters } from "@logicplanes/kaeso-ui/i18n";
 import { keys, members, NOW } from "~/fixtures/kaeso";
 import { StateSection } from "~/lib/states";
 
 function LastUsed({ at }: { at: string | Date }) {
-  useLocale();
+  const { formatRelative } = useFormatters();
   return <>{formatRelative(at, NOW, { utc: true })}</>;
 }
 

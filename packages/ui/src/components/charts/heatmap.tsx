@@ -1,8 +1,8 @@
 import { forwardRef, useLayoutEffect, useRef, useState } from "react";
 import { max as d3max } from "d3-array";
 import { cn } from "../../utils/cn.js";
-import { formatNumber } from "../../format/index.js";
 import { useUiText } from "../../i18n/context.js";
+import { useFormatters } from "../../i18n/formatters.js";
 import { useScrollFadeX } from "../../hooks/use-scroll-fade.js";
 import { ChartFrame, ChartLive, ChartTooltip } from "./core.js";
 
@@ -36,8 +36,10 @@ export const Heatmap = forwardRef<
     className?: string | undefined;
     columnLabelEvery?: number | undefined;
   }
->(function Heatmap({ rows, columns, values, formatValue = (v) => formatNumber(v), className, "aria-label": ariaLabel, columnLabelEvery = 3 }, ref) {
+>(function Heatmap({ rows, columns, values, formatValue: chosenFormat, className, "aria-label": ariaLabel, columnLabelEvery = 3 }, ref) {
   const t = useUiText();
+  const { formatNumber } = useFormatters();
+  const formatValue = chosenFormat ?? formatNumber;
   const hi = d3max(values.flat().filter(Number.isFinite)) ?? 0;
   const level = (v: number) => (!Number.isFinite(v) || v <= 0 || hi === 0 ? 0 : Math.min(4, Math.ceil((v / hi) * 4)));
   const empty = rows.length === 0 || columns.length === 0;

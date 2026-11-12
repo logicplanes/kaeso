@@ -25,7 +25,7 @@ Inter for everything people read: "Request logs, keys and usage for every model 
 
 ## Numbers
 
-Numbers that align in columns use tabular figures (`tabular`). Money keeps its exact decimal string from the API and is formatted only for display; token counts use thin grouping; durations pick their unit (`840 ms`, `2.4 s`). Use the formatters in `@logicplanes/kaeso-ui/format`.
+Numbers that align in columns use tabular figures (`tabular`). Money keeps its exact decimal string from the API and is formatted only for display; token counts use thin grouping; durations pick their unit (`840 ms`, `2.4 s`). Use the formatters: `useFormatters()` in components, `@logicplanes/kaeso-ui/format` outside React.
 
 ## Rules
 

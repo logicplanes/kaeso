@@ -10,7 +10,7 @@ class RO {
   disconnect() {}
 }
 globalThis.ResizeObserver ??= RO as unknown as typeof ResizeObserver;
-if (!window.matchMedia) {
+if (typeof window !== "undefined" && !window.matchMedia) {
   window.matchMedia = (q: string) =>
     ({
       matches: false,

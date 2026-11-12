@@ -49,7 +49,7 @@ export function Root({ children }: { children: React.ReactNode }) {
 
 ## Sprachen
 
-Die Komponenten sprechen Englisch, Deutsch und vereinfachtes Chinesisch. Ohne `LocaleProvider` ist alles Englisch; mit einem folgen der eigene Text der Komponenten und die Formatierer seiner Sprache, und der Katalog lädt erst, wenn er gebraucht wird.
+Die Komponenten sprechen Englisch, Deutsch und vereinfachtes Chinesisch. Ohne `LocaleProvider` ist alles Englisch; mit einem folgen der eigene Text der Komponenten und die Formatierer seiner Sprache, und der Katalog lädt erst, wenn er gebraucht wird. Nehmen Sie die Formatierer in Ihren eigenen Komponenten aus `useFormatters()`, damit jede Seite in ihrer eigenen Sprache formatiert, auch wenn ein Server mehrere zugleich rendert.
 
 <CodeView
   code={`import { LocaleProvider, loadUiMessages, resolveUiLocale } from "@logicplanes/kaeso-ui/i18n";
