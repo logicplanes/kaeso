@@ -225,6 +225,12 @@ Eine Anfrage benennt ein Modell in einer von drei Formen. Kaeso sucht im Katalog
 
 Kaeso antwortet mit 404 für ein Modell außerhalb des Katalogs und für eines, das der Schlüssel oder sein Mitglied nicht verwenden darf. Beide erhalten dieselbe Meldung, damit ein Schlüssel nicht erfährt, welche anderen Modelle das Projekt hat. Bieten mehrere Anbieter im Projekt dieselbe Modell-ID an, erhält die bloße ID 400 mit einer Meldung, die die Anbieter nennt; senden Sie dann `provider/model`. [Modelle und Aliasse](../console/models-and-aliases.md) erklärt den Katalog.
 
+## Anfragekörper
+
+Kaeso liest einen Anfragekörper, der mit `Content-Encoding: gzip`, `x-gzip` oder `zstd` gesendet wird, wie ihn manche SDKs für größere Bodys senden. Kaeso entpackt den Body, bevor es ihn prüft und übersetzt. Der Anbieter erhält die Anfrage also unkomprimiert, und ein Anfrageprotokoll, das Inhalte aufbewahrt, zeigt den entpackten Body. Die Body-Grenze zählt die entpackte Größe; ein Body, der zu mehr entpackt wird, erhält 413 ([Body-Grenzen](../self-hosting/configuration.md#anfrage--und-antwortkörper)).
+
+Ein Body trägt eine Kodierung. Jede andere, etwa `br`, und zwei auf einmal, etwa `gzip, zstd`, erhalten 415 im Format der App. Ein Body, der sich nicht entpacken lässt, erhält 400.
+
 ## Streaming
 
 Fordern Sie einen Stream so an, wie es das Format vorsieht, mit `"stream": true`. Die Antwort ist ein Server-Sent-Events-Stream im Format der App.

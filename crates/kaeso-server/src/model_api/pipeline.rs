@@ -42,6 +42,7 @@ use super::hooks::{
 use super::input_count::InputCounter;
 use super::listing::project_models;
 use super::stream;
+use crate::http::decompress::{self, Encoding, Failed, Refused};
 use crate::services::availability::{self, Probe};
 use crate::services::continuity;
 use crate::services::cooldowns;
@@ -737,6 +738,45 @@ async fn logged_upload<R: Clone + Send + 'static>(
     off_thread(bytes, move || write(&request, keep)).await.ok()
 }
 
+fn unread_encoding(refused: Refused) -> KppError {
+    let message = match refused {
+        Refused::Unsupported(coding) => format!(
+            "Kaeso reads request bodies sent as `gzip` or `zstd`, not `{}`.",
+            coding.chars().take(40).collect::<String>()
+        ),
+        Refused::Stacked(codings) => format!(
+            "Kaeso reads request bodies with one content encoding, not `{}`.",
+            codings.chars().take(40).collect::<String>()
+        ),
+    };
+    error(ErrorKind::InvalidRequest, 415, message)
+}
+
+async fn decoded_body(encoding: Encoding, raw: Bytes, limit: usize) -> Result<Bytes, KppError> {
+    if encoding == Encoding::Identity {
+        return Ok(raw);
+    }
+    // A small compressed body can decode to the whole limit, so it is never decoded inline.
+    let bytes = raw.len().max(OFF_THREAD_BYTES);
+    off_thread(bytes, move || decompress::decode(encoding, raw, limit))
+        .await?
+        .map_err(|failed| match failed {
+            Failed::TooLarge => error(
+                ErrorKind::RequestTooLarge,
+                413,
+                format!("The request body is larger than {limit} bytes once decoded."),
+            ),
+            Failed::Corrupt => error(
+                ErrorKind::InvalidRequest,
+                400,
+                format!(
+                    "The request body is not valid `{}`; check its `Content-Encoding`.",
+                    encoding.name()
+                ),
+            ),
+        })
+}
+
 pub(crate) async fn off_thread<T, F>(bytes: usize, work: F) -> Result<T, KppError>
 where
     T: Send + 'static,
@@ -814,6 +854,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         elevenlabs,
         video,
         generation,
+        source,
         ..
     } = inc;
     let caller = match caller {
@@ -834,6 +875,11 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
     rec.outcome().caller = Some(caller.clone());
     let at = |stage: Stage| move |e: KppError| Failure::new(e, stage.clone());
 
+    let encoding = match source {
+        Source::Api => decompress::encoding(&headers)
+            .map_err(|r| Failure::new(unread_encoding(r), Stage::Request))?,
+        Source::Playground => Encoding::Identity,
+    };
     let limit = max_body;
     let reading = Instant::now();
     let ((read, upload), ()) = tokio::join!(
@@ -866,6 +912,9 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         };
         Failure::new(refused, Stage::Request)
     })?;
+    let body = decoded_body(encoding, body, limit)
+        .await
+        .map_err(at(Stage::Request))?;
     let kept = crate::services::logs::keeps(state, caller.project_id).await;
     let (keep_content, keep_media) = (kept.content, kept.media);
     if keep_content {

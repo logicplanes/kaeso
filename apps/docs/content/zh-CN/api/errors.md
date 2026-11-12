@@ -77,6 +77,7 @@ Chat Completions、Responses 和 Embeddings 使用同一种错误正文：
 | 404 | `invalid_request_error` | |
 | 405 | `invalid_request_error` | |
 | 413 | `invalid_request_error` | |
+| 415 | `invalid_request_error` | |
 | 429 | `rate_limit_error` | `rate_limit_exceeded` |
 | 500、502 | `server_error` | |
 | 503 | `service_unavailable_error` | `server_is_overloaded` |
@@ -164,7 +165,7 @@ try {
 | 401 | `authentication_error` |
 | 403 | `permission_error` |
 | 404 | `not_found_error` |
-| 405 | `invalid_request_error` |
+| 405, 415 | `invalid_request_error` |
 | 413 | `request_too_large` |
 | 429 | `rate_limit_error` |
 | 504 | `timeout_error` |
@@ -245,7 +246,7 @@ try {
 | 401 | `UNAUTHENTICATED` |
 | 403 | `PERMISSION_DENIED` |
 | 404 | `NOT_FOUND` |
-| 405, 413 | `INVALID_ARGUMENT` |
+| 405, 413, 415 | `INVALID_ARGUMENT` |
 | 429 | `RESOURCE_EXHAUSTED` |
 | 500, 502 | `INTERNAL` |
 | 503 | `UNAVAILABLE`；Kaeso 无法加载自身数据或正在重启时为 `INTERNAL` |
@@ -352,7 +353,8 @@ ElevenLabs 自己发送的错误按原样连同其状态码传给应用。`Retry
 | 404 | 模型不在项目目录中，密钥或其成员无权使用该模型，或服务商不向项目的服务商密钥提供该模型。密钥无权使用的模型与不存在的模型返回相同的回答，因此密钥无法得知项目还有哪些模型。 |
 | 404 | 路径不存在。 |
 | 405 | 该路径不接受此方法。 |
-| 413 | 正文大于 `KAESO_BODY_LIMITS_MODEL_API`，默认为 32 MiB。 |
+| 413 | 正文大于 `KAESO_BODY_LIMITS_MODEL_API`（默认为 32 MiB），或解压后大于该值。 |
+| 415 | 正文的 `Content-Encoding` 不是 `gzip`、`x-gzip` 或 `zstd`，或列出了多种编码（[请求体](model-api.md#请求体)）。 |
 | 429 | 达到了速率限制或预算，或者请求的费用可能超过其剩余额度，消息会指明是哪一个。预算用尽时，消息会说明何时重置。 |
 | 429 | 来自您所在地址、使用未知密钥的请求过多。 |
 | 500 | Kaeso 无法解密服务商密钥，或模型的服务商在此实例中不可用。 |

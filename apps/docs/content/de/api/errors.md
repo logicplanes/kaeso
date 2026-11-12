@@ -77,6 +77,7 @@ Chat Completions, Responses und Embeddings teilen einen Fehler-Body:
 | 404 | `invalid_request_error` | |
 | 405 | `invalid_request_error` | |
 | 413 | `invalid_request_error` | |
+| 415 | `invalid_request_error` | |
 | 429 | `rate_limit_error` | `rate_limit_exceeded` |
 | 500, 502 | `server_error` | |
 | 503 | `service_unavailable_error` | `server_is_overloaded` |
@@ -164,7 +165,7 @@ Der Fehler-Body trägt die ID der Anfrage in `request_id`, auch wenn der Fehler 
 | 401 | `authentication_error` |
 | 403 | `permission_error` |
 | 404 | `not_found_error` |
-| 405 | `invalid_request_error` |
+| 405, 415 | `invalid_request_error` |
 | 413 | `request_too_large` |
 | 429 | `rate_limit_error` |
 | 504 | `timeout_error` |
@@ -245,7 +246,7 @@ Der Fehler-Body folgt Googles Form. Er hat kein Feld für die ID der Anfrage. Le
 | 401 | `UNAUTHENTICATED` |
 | 403 | `PERMISSION_DENIED` |
 | 404 | `NOT_FOUND` |
-| 405, 413 | `INVALID_ARGUMENT` |
+| 405, 413, 415 | `INVALID_ARGUMENT` |
 | 429 | `RESOURCE_EXHAUSTED` |
 | 500, 502 | `INTERNAL` |
 | 503 | `UNAVAILABLE`, oder `INTERNAL`, wenn Kaeso seine eigenen Daten nicht laden kann oder neu startet |
@@ -352,7 +353,8 @@ Die Meldung nennt die Ursache und was zu tun ist. Diese Ursachen stehen hinter j
 | 404 | Das Modell steht nicht im Katalog des Projekts, der Schlüssel oder sein Mitglied darf es nicht verwenden, oder der Anbieter stellt es dem Anbieter-Schlüssel des Projekts nicht bereit. Ein Modell, das der Schlüssel nicht verwenden darf, antwortet wie eines, das es nicht gibt, damit ein Schlüssel nicht erfährt, welche anderen Modelle das Projekt hat. |
 | 404 | Den Pfad gibt es nicht. |
 | 405 | Der Pfad nimmt diese Methode nicht an. |
-| 413 | Der Body ist größer als `KAESO_BODY_LIMITS_MODEL_API`, standardmäßig 32 MiB. |
+| 413 | Der Body ist größer als `KAESO_BODY_LIMITS_MODEL_API`, standardmäßig 32 MiB, oder wird zu mehr entpackt. |
+| 415 | Das `Content-Encoding` des Bodys ist weder `gzip`, `x-gzip` noch `zstd`, oder es nennt mehr als eine Kodierung ([Anfragekörper](model-api.md#anfragekörper)). |
 | 429 | Ein Ratenlimit oder Budget ist erreicht, oder die Anfrage könnte mehr kosten, als davon übrig ist, und die Meldung nennt es. Bei einem aufgebrauchten Budget nennt sie, wann es zurückgesetzt wird. |
 | 429 | Von Ihrer Adresse kamen zu viele Anfragen mit unbekannten Schlüsseln. |
 | 500 | Kaeso kann den Anbieter-Schlüssel nicht entschlüsseln, oder der Anbieter des Modells ist in dieser Installation nicht verfügbar. |

@@ -77,6 +77,7 @@ Chat Completions, Responses and Embeddings share one error body:
 | 404 | `invalid_request_error` | |
 | 405 | `invalid_request_error` | |
 | 413 | `invalid_request_error` | |
+| 415 | `invalid_request_error` | |
 | 429 | `rate_limit_error` | `rate_limit_exceeded` |
 | 500, 502 | `server_error` | |
 | 503 | `service_unavailable_error` | `server_is_overloaded` |
@@ -164,7 +165,7 @@ The error body carries the request's id in `request_id`, also when the error com
 | 401 | `authentication_error` |
 | 403 | `permission_error` |
 | 404 | `not_found_error` |
-| 405 | `invalid_request_error` |
+| 405, 415 | `invalid_request_error` |
 | 413 | `request_too_large` |
 | 429 | `rate_limit_error` |
 | 504 | `timeout_error` |
@@ -245,7 +246,7 @@ The error body follows Google's shape. It has no field for the request's id, so 
 | 401 | `UNAUTHENTICATED` |
 | 403 | `PERMISSION_DENIED` |
 | 404 | `NOT_FOUND` |
-| 405, 413 | `INVALID_ARGUMENT` |
+| 405, 413, 415 | `INVALID_ARGUMENT` |
 | 429 | `RESOURCE_EXHAUSTED` |
 | 500, 502 | `INTERNAL` |
 | 503 | `UNAVAILABLE`, or `INTERNAL` when Kaeso can't load its own data or is restarting |
@@ -352,7 +353,8 @@ The message names the cause and what to do. These are the causes behind each sta
 | 404 | The model isn't in the project's catalogue, the key or its member may not use it, or the provider doesn't serve it to the project's provider key. A model the key may not use answers like one that doesn't exist, so a key can't learn which other models the project has. |
 | 404 | The path doesn't exist. |
 | 405 | The path doesn't take this method. |
-| 413 | The body is larger than `KAESO_BODY_LIMITS_MODEL_API`, 32 MiB by default. |
+| 413 | The body is larger than `KAESO_BODY_LIMITS_MODEL_API`, 32 MiB by default, or decodes to more. |
+| 415 | The body's `Content-Encoding` is not `gzip`, `x-gzip` or `zstd`, or names more than one ([request bodies](model-api.md#request-bodies)). |
 | 429 | A rate limit or budget is reached, or the request could cost more than what's left of one, and the message names it. For a used-up budget, the message says when it resets. |
 | 429 | Too many requests with unknown keys came from your address. |
 | 500 | Kaeso can't decrypt the provider key, or the model's provider isn't available in this install. |

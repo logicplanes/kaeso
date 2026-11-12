@@ -225,6 +225,12 @@ A request names a model in one of three forms. Kaeso looks in the project's cata
 
 Kaeso answers 404 for a model outside the catalogue and for one the key or its member may not use. Both get the same message, so a key can't learn which other models the project has. When several providers in the project serve the same model id, the plain id gets 400 with a message that names the providers; send `provider/model` instead. [Models and aliases](../console/models-and-aliases.md) explains the catalogue.
 
+## Request bodies
+
+Kaeso reads a request body sent with `Content-Encoding: gzip`, `x-gzip` or `zstd`, as some SDKs send larger bodies. It decodes the body before it checks and translates it, so the provider gets the request uncompressed, and a request log that keeps content shows the decoded body. The body limit counts the decoded size, so a body that decodes to more gets 413 ([body limits](../self-hosting/configuration.md#request-and-response-bodies)).
+
+A body takes one encoding. Any other, such as `br`, and two at once, such as `gzip, zstd`, get 415 in the app's format. A body that doesn't decode gets 400.
+
 ## Streaming
 
 Ask for a stream as the format does, with `"stream": true`. The reply is a server-sent event stream in the app's format.
