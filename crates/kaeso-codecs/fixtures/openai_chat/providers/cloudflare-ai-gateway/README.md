@@ -2,7 +2,7 @@
 
 Cloudflare's REST API at `POST https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/v1/chat/completions`, with a Cloudflare API token as `Authorization: Bearer` and the gateway, when the key names one, in `cf-aig-gateway-id`. It serves third-party models (`openai/…`, `anthropic/…`), paid with Unified Billing credits or keys stored on the gateway, and Workers AI models (`@cf/…`). The same API serves Responses (`…/ai/v1/responses`, fixtures in `openai_responses/providers/cloudflare-ai-gateway/`) and Messages (`…/ai/v1/messages`, fixtures in `anthropic_messages/providers/cloudflare-ai-gateway/`).
 
-Recorded live on 2026-11-12 with `cargo xtask record` and a token with Workers AI Read, the base URL set to the account's `…/ai`. The account had no Unified Billing credits, so third-party models answered 402 and the replies come from Workers AI models: `@cf/zai-org/glm-4.7-flash` (reasoning) and `@cf/deepseek-ai/deepseek-v4.1-flash-1017` (tools, streams). `models/search-recorded.json` is Cloudflare's Workers AI model search for `glm-4.7-flash`, recorded with curl. No file holds the account id.
+Recorded live on 2026-11-12 with `cargo xtask record` and a token with Workers AI Read, the base URL set to the account's `…/ai`. The account had no Unified Billing credits, so third-party models answered 402 and the replies come from Workers AI models: `@cf/zai-org/glm-4.7-flash` (reasoning) and `@cf/deepseek-ai/deepseek-v4.1-flash-1017` (tools, streams). `account/search-recorded.json` is Cloudflare's Workers AI model search for `glm-4.7-flash`, recorded with curl. No file holds the account id.
 
 ## Sources (read 2026-11-12)
 
@@ -29,7 +29,7 @@ Recorded live on 2026-11-12 with `cargo xtask record` and a token with Workers A
 | `errors/recorded-retired-model.json` | 410, code 7010, naming the model to use instead | live |
 | `errors/recorded-reasoning-effort-none.json` | 400, code 8001 `Invalid input`: GLM-4.7-Flash takes `low`, `medium` and `high` only | live |
 | `errors/recorded-image-base64-detail.json` | 400, code 6004: Workers AI takes images as base64 data, not links | live |
-| `models/search-recorded.json` | `GET …/ai/models/search?search=glm-4.7-flash`: Workers AI's catalogue, in Cloudflare's envelope | live |
+| `account/search-recorded.json` | `GET …/ai/models/search?search=glm-4.7-flash`: Workers AI's catalogue, in Cloudflare's envelope | live |
 
 ## Where Cloudflare differs from OpenAI Chat Completions
 

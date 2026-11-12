@@ -443,7 +443,7 @@ async fn answer(ctx: Ctx, method: Method, uri: Uri, headers: HeaderMap, body: By
         match cloudflare_path(&path) {
             Some(CloudflarePath::ModelSearch) if method == Method::GET => {
                 return json_file(&ctx.fixtures.join(
-                    "openai_chat/providers/cloudflare-ai-gateway/models/search-recorded.json",
+                    "openai_chat/providers/cloudflare-ai-gateway/account/search-recorded.json",
                 ));
             }
             Some(CloudflarePath::Api(rest)) => rest,

@@ -292,7 +292,13 @@ export function OrgProvidersPage({ org, search = {} }: { org: string; search?: P
                       <span key={part.id}>
                         {i > 0 && t("orgHome.partSeparator", " · ")}
                         {part.label && <VisuallyHidden>{t("orgHome.foldedLabel", "{label}:", { label: part.label })} </VisuallyHidden>}
-                        {part.id === "account-id" ? <Tooltip content={r.key.account_id ?? ""}>{part.value}</Tooltip> : part.value}
+                        {part.id === "account-id" ? (
+                          <Tooltip content={r.key.account_id ?? ""}>
+                            <span>{part.value}</span>
+                          </Tooltip>
+                        ) : (
+                          part.value
+                        )}
                       </span>
                     ))}
                   </Text>,

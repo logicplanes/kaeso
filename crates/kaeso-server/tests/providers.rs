@@ -56,6 +56,7 @@ async fn every_member_reads_each_provider_with_its_name_key_page_and_formats() {
             "embeddings": null,
             "account": null,
             "service_account": null,
+            "account_scope": null,
             "model_routes": [],
             "server": null,
         })
