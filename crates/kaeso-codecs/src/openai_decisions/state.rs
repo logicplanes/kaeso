@@ -6,12 +6,10 @@ use kaeso_kpp::{Asset, ImageBlock, RawJson};
 use serde_json::Value;
 use serde_json::value::RawValue;
 
-/// `input_json` takes at most this many container levels
-/// (<https://developers.openai.com/api/reference/resources/decisions/methods/create>).
+// `input_json` takes at most 32 container levels, 10,000 values and 256 KiB of compact UTF-8
+// JSON (<https://developers.openai.com/api/reference/resources/decisions/methods/create>).
 pub(super) const MAX_JSON_DEPTH: usize = 32;
-/// … this many values …
 pub(super) const MAX_JSON_VALUES: usize = 10_000;
-/// … and this many bytes of compact UTF-8 JSON.
 pub(super) const MAX_JSON_BYTES: usize = 256 * 1024;
 
 /// Whether `data` can be an `input_json` part: an object, or an array of objects, within the
