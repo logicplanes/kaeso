@@ -1,3 +1,4 @@
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { KeyDisplay, ModelLabel, RequestTimeline, StatusCode } from "./identity.js";
@@ -36,6 +37,25 @@ describe("StatusCode", () => {
     rerender(<StatusCode code={529} />);
     expect(screen.getByText("529")).toHaveClass("text-danger-text");
     expect(screen.getByText("Overloaded")).toBeInTheDocument();
+  });
+  it("takes keyboard focus with a focus ring only when its tooltip has a phrase to show", async () => {
+    const user = userEvent.setup();
+    render(
+      <>
+        <StatusCode code={429} />
+        <StatusCode code={502} showText />
+        <StatusCode code={599} />
+      </>,
+    );
+    await user.tab();
+    const focused = document.activeElement as HTMLElement;
+    expect(focused).toHaveTextContent("429");
+    expect(focused).toHaveClass("focus-ring");
+    expect(focused).not.toHaveClass("outline-none");
+    await user.tab();
+    expect(document.activeElement).toBe(document.body);
+    expect(screen.getByText("599").parentElement).not.toHaveAttribute("tabindex");
+    expect(screen.getByText("502").parentElement).not.toHaveAttribute("tabindex");
   });
   it("shows a short model id whole or not at all, and keeps a long one's start before its ellipsis", () => {
     const { rerender } = render(<ModelLabel provider="openai" model="gpt-5.4-mini" name="GPT-5.4 mini" />);

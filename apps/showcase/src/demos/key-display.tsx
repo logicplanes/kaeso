@@ -87,6 +87,14 @@ export function States() {
       <StateSection title="Status">
         <Status />
       </StateSection>
+      <StateSection title="StatusCode with keyboard focus: a ring around a code whose phrase is in its tooltip; a code without a phrase takes no focus">
+        <div className="flex gap-16">
+          <StatusCode code={200} data-force="focus" />
+          <StatusCode code={429} data-force="focus" />
+          <StatusCode code={503} data-force="focus" />
+          <StatusCode code={599} />
+        </div>
+      </StateSection>
       <StateSection title="RequestTimeline at 160px, 240px and full: each time over its label, the same height whatever the times">
         <div className="flex flex-col gap-24">
           <div className="flex flex-wrap items-start gap-24">

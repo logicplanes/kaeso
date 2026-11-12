@@ -261,22 +261,28 @@ function statusTexts(t: UiText): Record<number, string> {
   };
 }
 
-export const StatusCode = forwardRef<HTMLSpanElement, { code: number; showText?: boolean | undefined; className?: string | undefined }>(function StatusCode(
-  { code, showText, className },
-  ref,
-) {
+export const StatusCode = forwardRef<
+  HTMLSpanElement,
+  { code: number; showText?: boolean | undefined; className?: string | undefined; "data-force"?: string | undefined }
+>(function StatusCode({ code, showText, className, "data-force": force }, ref) {
   const t = useUiText();
   const text = statusTexts(t)[code];
   const tone = STATUS_CLASS(code);
   const color = { danger: "text-danger-text", warning: "text-warning-text", neutral: code >= 200 && code < 300 ? "text-fg" : "text-fg-secondary" }[tone];
+  const tooltip = !showText && !!text;
   const el = (
-    <span ref={ref} tabIndex={showText ? undefined : 0} className={cn("inline-flex items-center gap-6 outline-none", className)}>
+    <span
+      ref={ref}
+      tabIndex={tooltip ? 0 : undefined}
+      data-force={force}
+      className={cn("inline-flex items-center gap-6", tooltip && "rounded-code focus-ring", className)}
+    >
       <span className={cn("mono text-small font-medium tabular", color)}>{code}</span>
       {showText && <span className="text-small text-fg-secondary">{text ?? ""}</span>}
       <span className="sr-only">{text ?? ""}</span>
     </span>
   );
-  return showText || !text ? el : <Tooltip content={t("statusCode.tooltip", "{code} {text}", { code: String(code), text })}>{el}</Tooltip>;
+  return tooltip ? <Tooltip content={t("statusCode.tooltip", "{code} {text}", { code: String(code), text })}>{el}</Tooltip> : el;
 });
 StatusCode.displayName = "StatusCode";
 

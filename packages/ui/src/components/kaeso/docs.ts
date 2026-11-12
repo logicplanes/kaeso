@@ -172,7 +172,8 @@ export const docs = {
     },
   },
   StatusCode: {
-    description: "An HTTP status: the code in mono, in its class color (with its phrase in a tooltip).",
+    description:
+      "An HTTP status: the code in mono, in its class color. Without `showText`, its phrase is in a tooltip that hover and keyboard focus open, with a focus ring.",
     props: {
       code: "The HTTP status code.",
       showText: "Writes the status's name next to its code.",
