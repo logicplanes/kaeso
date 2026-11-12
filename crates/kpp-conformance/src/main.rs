@@ -8,6 +8,7 @@ use axum::extract::{Path as UrlPath, Query, RawQuery, State};
 use axum::http::{HeaderMap, HeaderName, HeaderValue, StatusCode};
 use axum::response::Response;
 use axum::routing::{get, post};
+use kaeso_codecs::openai_decisions::DecisionsProfile;
 use kaeso_codecs::system_one::SystemOneProfile;
 use kaeso_codecs::{EgressCtx, EncodeCtx, HeaderList, dispatch};
 use kaeso_kpp::{
@@ -105,7 +106,14 @@ async fn main() -> std::io::Result<()> {
         )
         .route("/v1/videos/{id}/remix", post(videos::remix))
         .route("/v1/videos/{id}/content", get(videos::content))
-        .route("/v1/systemone", post(serve_decisions))
+        .route(
+            "/v1/systemone",
+            post(|s, h, b| serve_decisions(s, h, b, DialectId::SystemOne)),
+        )
+        .route(
+            "/v1/decisions",
+            post(|s, h, b| serve_decisions(s, h, b, DialectId::OpenAiDecisions)),
+        )
         .route("/v1beta/models", get(list_gemini_models))
         .route(
             "/v1beta/models/{*rest}",
@@ -288,8 +296,12 @@ async fn serve(
     answer(&app, req, ingress, kind)
 }
 
-async fn serve_decisions(State(app): State<App>, headers: HeaderMap, body: Bytes) -> Response {
-    let ingress = DialectId::SystemOne;
+async fn serve_decisions(
+    State(app): State<App>,
+    headers: HeaderMap,
+    body: Bytes,
+    ingress: DialectId,
+) -> Response {
     match dispatch::decode_request(ingress, RequestKind::Decide, &body, &headers_in(&headers)) {
         Ok(req) => answer(&app, req, ingress, RequestKind::Decide),
         Err(e) => error_response(ingress, &e),
@@ -299,7 +311,9 @@ async fn serve_decisions(State(app): State<App>, headers: HeaderMap, body: Bytes
 // The egress context of a decision scenario: the fixture's answers are keyed by the questions
 // the request was sent with.
 fn decide_egress(source: DialectId, req: &kaeso_kpp::Request) -> EgressCtx {
-    let mut egress = EgressCtx::new(req).with_system_one_profile(SystemOneProfile::GENERIC);
+    let mut egress = EgressCtx::new(req)
+        .with_system_one_profile(SystemOneProfile::GENERIC)
+        .with_decisions_profile(DecisionsProfile::GENERIC);
     let _ = dispatch::encode_request(source, req, &mut egress);
     egress
 }
@@ -913,7 +927,7 @@ async fn scenarios(State(app): State<App>) -> Response {
                     DialectId::OpenAiEmbeddings | DialectId::GeminiEmbeddings
                 );
                 let images = matches!(source, DialectId::OpenAiImages | DialectId::MinimaxImages);
-                let decisions = source == DialectId::SystemOne;
+                let decisions = matches!(source, DialectId::SystemOne | DialectId::OpenAiDecisions);
                 let kind = match kind {
                     "generate" if embeddings => "embed",
                     "generate" if images => "image",

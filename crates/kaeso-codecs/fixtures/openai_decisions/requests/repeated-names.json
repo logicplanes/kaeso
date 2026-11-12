@@ -1,0 +1,16 @@
+{
+  "model": "gpt-6-luna",
+  "input": "Ship it to Berlin and add gift wrap.",
+  "questions": [
+    {
+      "type": "predicate",
+      "name": "check",
+      "instructions": "Does the message name a city?"
+    },
+    {
+      "type": "predicate",
+      "name": "check",
+      "instructions": "Does the message ask for gift wrap?"
+    }
+  ]
+}

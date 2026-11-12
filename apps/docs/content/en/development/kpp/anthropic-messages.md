@@ -74,7 +74,7 @@ Schemas `CreateMessageParams` and `CountMessageTokensParams`.
 | `cache_control` (top level, automatic caching) | fields `cache_control` | Only a hint; KPP has no request-level cache hint. On the [allowlist](cross-format.md#extras), so it is dropped for other dialects. Requests from other dialects get block breakpoints instead ([cache hints](cross-format.md#cache-hints)). |
 | `container`, `inference_geo`, `service_tier`, SDK `diagnostics`, `user_profile_id`, `workspace_id`, unknown keys | `extras.fields` | |
 | header `anthropic-beta` | `extras` header `header:anthropic-beta` | Forwarded on egress to Anthropic only. |
-| header `anthropic-version` | `extras` header when it is not `2023-06-01` | The pinned version is always sent unless a newer one was forwarded ([the Anthropic version](cross-format.md#the-anthropic-version)). |
+| header `anthropic-version` | `extras` header when it is not `2023-06-01` | The pinned version is always sent unless a newer one was forwarded ([the Anthropic version](#the-anthropic-version)). |
 
 ### Content blocks
 
@@ -331,6 +331,16 @@ On the egress side, these functions build requests and read replies:
 - `decode_models` and `decode_model` take a provider's reply. A status other than 2xx goes to `decode_error`.
 
 Decoded extras carry the origin `anthropic_messages` without a provider, because these functions take no `EgressCtx`. The id `.` or `..` is `InvalidRequest`, because URL parsers drop such a segment even when it is percent-encoded.
+
+## The Anthropic version
+
+The Anthropic codec pins one API version, `2023-06-01`, exported as `kaeso_codecs::anthropic_messages::ANTHROPIC_VERSION`. It is the only version Anthropic's [versioning page](https://platform.claude.com/docs/en/api/versioning) lists, the one the official SDKs send, and the one every Anthropic fixture assumes.
+
+- **Egress.** Every request the Anthropic codec encodes carries `anthropic-version: 2023-06-01`, unless the app's own Anthropic request forwarded an `anthropic-version` naming a newer version: a well-formed `YYYY-MM-DD` that sorts after the pinned one. A malformed or older value is ignored. A request from another dialect never carries the header, so it always gets the pinned version.
+- **Ingress.** A forwarded `anthropic-version` equal to the pinned version is not stored in the request's extras. The codec sends it anyway, and keeping it would bind every Anthropic SDK request to its dialect. Any other value is kept as the extra `header:anthropic-version` and compared on egress as above.
+- **Why newer wins.** Anthropic only adds to a version, with new optional inputs and new output values, and an app that asks for a newer version relies on its behaviour. The decoders tolerate unknown fields, blocks and events, so a newer version degrades to extras and unknown items rather than failing.
+
+To change the pin, change the constant, record the fixtures again with `cargo xtask record` ([recording](fixtures.md#recording-live-responses)), and update this section.
 
 ## Round trips
 

@@ -1,0 +1,25 @@
+{
+  "model": "gpt-6-luna",
+  "input": "My order is three weeks late and nobody answers my emails.",
+  "questions": [
+    {
+      "type": "predicate",
+      "instructions": "Is the customer angry?"
+    },
+    {
+      "type": "score",
+      "instructions": "How urgent is a reply?",
+      "levels": [
+        {
+          "label": "Low"
+        },
+        {
+          "label": "Medium"
+        },
+        {
+          "label": "High"
+        }
+      ]
+    }
+  ]
+}

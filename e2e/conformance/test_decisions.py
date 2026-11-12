@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 
+import httpx
 import pytest
 from typesafe_sdk import Image, RetryPolicy, TypeSafeAPIError, TypeSafeClient
 
@@ -85,3 +86,24 @@ def test_system_one(base_url, scenario):
     assert list(got.answers) == list(req["questions"])
     for (key, question), answer in zip(req["questions"].items(), want["answers"]):
         check_answer(question, got.answers[key], answer)
+
+
+def test_openai_refusals_reach_system_one_apps(base_url):
+    want = expected(base_url, {"source": "openai_decisions", "name": "refusal", "kind": "decide", "stream": False})
+    req = json.loads((FIXTURES / "openai_decisions" / "requests" / "refusal.json").read_text())
+    how_to, topic = req["questions"]
+    questions = {
+        "how_to": {"type": "noul", "instructions": how_to["instructions"]},
+        "topic": {
+            "type": "choice",
+            "instructions": topic["instructions"],
+            "criteria": {c["value"]: None for c in topic["choices"]},
+        },
+    }
+    body = {"model": "openai_decisions:refusal", "state": req["input"], "questions": questions}
+    raw = httpx.post(f"{base_url}/v1/systemone", json=body, headers={"authorization": "Bearer test"}).json()
+    assert raw["answers"]["how_to"] == {"type": "refusal"}
+    with client(base_url) as c:
+        got = c.system_one(req["input"], questions, model="openai_decisions:refusal")
+    assert "how_to" not in got.answers
+    check_answer(questions["topic"], got.answers["topic"], want["answers"][1])

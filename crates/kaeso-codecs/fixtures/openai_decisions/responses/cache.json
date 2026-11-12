@@ -1,0 +1,22 @@
+{
+  "model": "gpt-6-luna",
+  "answers": [
+    {
+      "type": "predicate",
+      "name": "refund_allowed",
+      "probability": 0.9
+    }
+  ],
+  "usage": {
+    "input_tokens": 1310,
+    "input_tokens_details": {
+      "cached_tokens": 1152,
+      "cache_write_tokens": 64
+    },
+    "output_tokens": 0,
+    "output_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "total_tokens": 1310
+  }
+}

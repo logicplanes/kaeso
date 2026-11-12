@@ -216,14 +216,16 @@ impl<'de> serde::Deserialize<'de> for Key<'de> {
 
 fn child(node: Node, key: &str) -> Option<Node> {
     use DialectId::{
-        AnthropicMessages, Gemini, GeminiEmbeddings, OpenAiChat, OpenAiEmbeddings, OpenAiResponses,
-        SystemOne,
+        AnthropicMessages, Gemini, GeminiEmbeddings, OpenAiChat, OpenAiDecisions, OpenAiEmbeddings,
+        OpenAiResponses, SystemOne,
     };
     Some(match (node, key) {
         (Node::Top(SystemOne), "questions") => Node::DecideQuestions,
         (Node::Top(SystemOne), "assets") => Node::DecideAssets,
+        (Node::Top(OpenAiDecisions), "questions") => Node::DecideQuestions,
+        (Node::Top(d @ OpenAiDecisions), "input") => Node::Items(d),
         (Node::DecideQuestions, _) => Node::DecideQuestion,
-        (Node::DecideQuestion, "criteria") => Node::DecideOptions,
+        (Node::DecideQuestion, "criteria" | "choices" | "levels") => Node::DecideOptions,
         (Node::Top(d @ Gemini), "contents") => Node::Items(d),
         (Node::Top(d @ Gemini), "systemInstruction") => Node::Item(d),
         (Node::Top(d @ Gemini), "generateContentRequest") => Node::Top(d),
@@ -346,18 +348,18 @@ impl<'de> Visitor<'de> for Walk<'_> {
                 (None, Some(Node::Token))
             }
             Node::DecideOptions => (Some(Over::Options), None),
+            Node::DecideQuestions => (Some(Over::Questions), Some(Node::DecideQuestion)),
             Node::Top(_)
             | Node::Item(_)
             | Node::Block(_)
             | Node::Token
             | Node::ToolSet
             | Node::EmbedRequest
-            | Node::DecideQuestions
             | Node::DecideQuestion
             | Node::DecideAssets => (None, None),
         };
         loop {
-            if matches!(self.node, Node::Items(_)) {
+            if matches!(self.node, Node::Items(_) | Node::DecideQuestions) {
                 self.tally.in_message = 0;
             }
             let more = match element {
@@ -549,7 +551,10 @@ fn whitespace_outside_strings(json: &[u8]) -> usize {
 }
 
 fn refusal(dialect: DialectId, over: Over) -> KppError {
-    let responses = dialect == DialectId::OpenAiResponses;
+    let responses = matches!(
+        dialect,
+        DialectId::OpenAiResponses | DialectId::OpenAiDecisions
+    );
     let gemini = matches!(dialect, DialectId::Gemini | DialectId::GeminiEmbeddings);
     let (message, param) = match over {
         Over::Items if gemini => (

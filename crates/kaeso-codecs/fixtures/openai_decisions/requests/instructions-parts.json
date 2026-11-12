@@ -1,0 +1,70 @@
+{
+  "model": "gpt-6-luna",
+  "input": "Listing 4411: a red mug with a white handle.",
+  "questions": [
+    {
+      "type": "choice",
+      "name": "color",
+      "instructions": [
+        {
+          "type": "input_text",
+          "text": "Which listed color does this swatch show?"
+        },
+        {
+          "type": "input_image",
+          "image_url": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAEElEQVR42mPQ0DgBRAwQCgAcLgRhHY/MXwAAAABJRU5ErkJggg==",
+          "detail": "high"
+        },
+        {
+          "type": "input_json",
+          "data": {
+            "palette": [
+              "red",
+              "blue"
+            ]
+          }
+        }
+      ],
+      "choices": [
+        {
+          "value": "red"
+        },
+        {
+          "value": "blue"
+        }
+      ]
+    },
+    {
+      "type": "score",
+      "name": "match",
+      "instructions": [
+        {
+          "type": "input_text",
+          "text": "How well does the listing match these records?"
+        },
+        {
+          "type": "input_json",
+          "data": [
+            {
+              "listing": "red mug"
+            },
+            {
+              "photo": "blue swatch"
+            }
+          ]
+        }
+      ],
+      "levels": [
+        {
+          "label": "No match"
+        },
+        {
+          "label": "Partial"
+        },
+        {
+          "label": "Full match"
+        }
+      ]
+    }
+  ]
+}

@@ -48,10 +48,12 @@ pub enum DialectId {
     DashScope,
     #[serde(rename = "system_one")]
     SystemOne,
+    #[serde(rename = "openai_decisions")]
+    OpenAiDecisions,
 }
 
 impl DialectId {
-    pub const ALL: [DialectId; 21] = [
+    pub const ALL: [DialectId; 22] = [
         DialectId::AnthropicMessages,
         DialectId::OpenAiChat,
         DialectId::OpenAiResponses,
@@ -73,6 +75,7 @@ impl DialectId {
         DialectId::GeminiInteractions,
         DialectId::DashScope,
         DialectId::SystemOne,
+        DialectId::OpenAiDecisions,
     ];
 
     pub const fn as_str(self) -> &'static str {
@@ -98,6 +101,7 @@ impl DialectId {
             DialectId::GeminiInteractions => "gemini_interactions",
             DialectId::DashScope => "dashscope",
             DialectId::SystemOne => "system_one",
+            DialectId::OpenAiDecisions => "openai_decisions",
         }
     }
 
@@ -124,6 +128,7 @@ impl DialectId {
             DialectId::GeminiInteractions => "Gemini Interactions",
             DialectId::DashScope => "DashScope",
             DialectId::SystemOne => "System One",
+            DialectId::OpenAiDecisions => "OpenAI Decisions",
         }
     }
 }

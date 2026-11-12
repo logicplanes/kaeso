@@ -25,6 +25,7 @@ Every codec change starts with a fixture: a real request body, reply, stream or 
 | `elevenlabs/` | ElevenLabs; each request's path and query in `<name>.meta.json`, audio replies as `.mp3` and `.pcm`, the timestamped stream as `.ndjson`; video generations in `video/` |
 | `openai_videos/` | OpenAI's Videos API; uploads as `requests/<name>.multipart`, listings and deletions in `lists/`, a made video's file in `content/` |
 | `system_one/` | TypeSafe's System One API (`/v1/systemone`); a request that needs a header has `<name>.headers.json`, every reply a request of the same name, and `requests/multipart/` the JSON part of an upload |
+| `openai_decisions/` | OpenAI's Decisions API (`/v1/decisions`); every reply has a request of the same name |
 | `xai_videos/`, `minimax_videos/`, `zai_videos/`, `openrouter_videos/`, `veo/`, `gemini_interactions/`, `dashscope/` | The providers' video APIs; `responses/` holds the replies that start a job, `polls/` the providers' answers when a job is asked about, `minimax_videos/files/` a file id turned into a link; `dashscope/` also holds images, speech and transcriptions under `requests/`, `responses/` and `streams/` in folders of their own |
 
 Each dialect folder has `requests/`, `responses/`, `streams/` where the endpoint streams, and `errors/`.

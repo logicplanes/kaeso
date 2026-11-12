@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-
 use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -62,8 +60,9 @@ impl DecideRequest {
     }
 
     /// Checks what every decision request needs, whatever its format: a model, at least one
-    /// question, options and levels to choose from, names used once, and assets that are
-    /// referenced. The limits of each format, such as at least two options, are the codecs'.
+    /// question, options and levels to choose from, and assets that are referenced. Names may be
+    /// missing or repeated, as OpenAI's format allows; a format that keys questions by name
+    /// renames them. The limits of each format, such as at least two options, are the codecs'.
     pub fn validate(&self) -> Result<(), KppError> {
         if self.model.is_empty() {
             return Err(invalid("`model` must not be empty.", "model"));
@@ -71,14 +70,7 @@ impl DecideRequest {
         if self.questions.is_empty() {
             return Err(invalid("Ask at least one question.", "questions"));
         }
-        let mut names: HashSet<&str> = HashSet::new();
         for (i, q) in self.questions.iter().enumerate() {
-            if let Some(name) = q.name.as_deref().filter(|n| !names.insert(n)) {
-                return Err(invalid(
-                    format!("The question name `{name}` is used more than once."),
-                    format!("questions[{i}]"),
-                ));
-            }
             match &q.kind {
                 QuestionKind::Choice(c) if c.options.is_empty() => {
                     return Err(invalid(

@@ -507,10 +507,24 @@ fn decode_question(key: &str, value: &RawValue, origin: &Origin) -> Result<Quest
     Ok(q)
 }
 
+fn conversation() -> KppError {
+    unsupported(
+        "conversation input",
+        "System One takes one state, not a conversation; send one user message.".to_owned(),
+    )
+    .with_param("input")
+}
+
 pub(super) fn check(req: &Request, ctx: &EgressCtx) -> Result<(), KppError> {
     let Request::Decide(r) = req else {
         return Err(other_kind(req.kind()));
     };
+    // A conversation can't be sent at all, whatever its items carry.
+    if let DecisionInput::Messages(messages) = &r.input
+        && !matches!(messages.as_slice(), [m] if m.role == Role::User)
+    {
+        return Err(conversation());
+    }
     check_foreign(req, &ctx.origin(DIALECT))?;
     r.validate()?;
     build(r, ctx, true).map(|_| ())
@@ -630,12 +644,7 @@ impl Writer<'_> {
             DecisionInput::Json(raw) => Ok(raw.get().to_owned()),
             DecisionInput::Messages(messages) => match messages.as_slice() {
                 [m] if m.role == Role::User => self.blocks(&m.blocks, "input"),
-                _ => Err(unsupported(
-                    "conversation input",
-                    "System One takes one state, not a conversation; send one user message."
-                        .to_owned(),
-                )
-                .with_param("input")),
+                _ => Err(conversation()),
             },
             _ => Err(unknown("input")),
         }

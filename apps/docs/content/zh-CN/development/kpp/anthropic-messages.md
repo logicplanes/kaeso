@@ -74,7 +74,7 @@ Schema `CreateMessageParams` 和 `CountMessageTokensParams`。
 | `cache_control`（顶层，自动缓存） | extras `cache_control` | 只是提示字段；KPP 没有请求级别的缓存提示。它在[允许列表](cross-format.md#extras)中，因此发往其他方言时会被丢弃。来自其他方言的请求会改为得到块级断点（[缓存提示](cross-format.md#缓存提示)）。 |
 | `container`、`inference_geo`、`service_tier`、SDK `diagnostics`、`user_profile_id`、`workspace_id`、未知键 | `extras.fields` | |
 | 请求头 `anthropic-beta` | `extras` 请求头 `header:anthropic-beta` | 出站时只转发给 Anthropic。 |
-| 请求头 `anthropic-version` | 不为 `2023-06-01` 时存为 `extras` 请求头 | 总是发送固定的版本，除非转发了更新的版本（[Anthropic 版本](cross-format.md#anthropic-版本)）。 |
+| 请求头 `anthropic-version` | 不为 `2023-06-01` 时存为 `extras` 请求头 | 总是发送固定的版本，除非转发了更新的版本（[Anthropic 版本](#anthropic-版本)）。 |
 
 ### 内容块
 
@@ -331,6 +331,16 @@ Schema `ErrorResponse`。解码错误（无论是请求还是服务商的响应�
 - `decode_models` 和 `decode_model` 接收服务商的响应。非 2xx 状态码交给 `decode_error`。
 
 解码出的 extras 带有来源 `anthropic_messages`，但没有服务商，因为这些函数不接收 `EgressCtx`。ID 为 `.` 或 `..` 时结果为 `InvalidRequest`，因为 URL 解析器即使在百分号编码后也会去掉这样的路径段。
+
+## Anthropic 版本
+
+Anthropic 编解码器固定使用一个 API 版本 `2023-06-01`，导出为 `kaeso_codecs::anthropic_messages::ANTHROPIC_VERSION`。它是 Anthropic 的[版本说明页面](https://platform.claude.com/docs/en/api/versioning)列出的唯一版本，是官方 SDK 发送的版本，也是每个 Anthropic fixture 所假定的版本。
+
+- **出站。** Anthropic 编解码器编码的每个请求都带有 `anthropic-version: 2023-06-01`，除非应用自己的 Anthropic 请求转发了一个指向更新版本的 `anthropic-version`，即格式正确、排序在固定版本之后的 `YYYY-MM-DD`。格式错误或更旧的值会被忽略。来自其他方言的请求从不携带该请求头，因此总是得到固定版本。
+- **入站。** 等于固定版本的转发 `anthropic-version` 不会存入请求的 extras。编解码器无论如何都会发送它，而保存它会把每个 Anthropic SDK 请求都绑定到其方言。其他任何值都保存为 extra `header:anthropic-version`，并在出站时按上述方式比较。
+- **为什么较新的版本优先。** Anthropic 对一个版本只做增量变更，增加新的可选输入和新的输出值，而请求更新版本的应用依赖于该版本的行为。解码器能容忍未知的字段、块和事件，因此更新的版本会退化为 extras 和未知项，而不会导致失败。
+
+要修改固定版本，需要修改该常量，用 `cargo xtask record` 重新录制 fixture（[录制](fixtures.md#录制真实响应)），并更新本节。
 
 ## 往返
 

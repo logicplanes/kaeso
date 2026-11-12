@@ -1,0 +1,42 @@
+{
+  "model": "gpt-6-luna",
+  "answers": [
+    {
+      "type": "predicate",
+      "name": "resolved",
+      "probability": 0.81
+    },
+    {
+      "type": "choice",
+      "name": "next_step",
+      "choice": "close",
+      "probabilities": [
+        {
+          "value": "close",
+          "probability": 0.74
+        },
+        {
+          "value": "follow_up",
+          "probability": 0.21
+        },
+        {
+          "value": "escalate",
+          "probability": 0.05
+        }
+      ],
+      "confidence": 0.61
+    }
+  ],
+  "usage": {
+    "input_tokens": 236,
+    "input_tokens_details": {
+      "cached_tokens": 0,
+      "cache_write_tokens": 0
+    },
+    "output_tokens": 0,
+    "output_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "total_tokens": 236
+  }
+}

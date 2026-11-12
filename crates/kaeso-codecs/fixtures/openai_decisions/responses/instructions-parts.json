@@ -1,0 +1,56 @@
+{
+  "model": "gpt-6-luna",
+  "answers": [
+    {
+      "type": "choice",
+      "name": "color",
+      "choice": "blue",
+      "probabilities": [
+        {
+          "value": "red",
+          "probability": 0.04
+        },
+        {
+          "value": "blue",
+          "probability": 0.96
+        }
+      ],
+      "confidence": 0.92
+    },
+    {
+      "type": "score",
+      "name": "match",
+      "score": 0.43,
+      "probabilities": [
+        {
+          "value": 0,
+          "label": "No match",
+          "probability": 0.62
+        },
+        {
+          "value": 1,
+          "label": "Partial",
+          "probability": 0.33
+        },
+        {
+          "value": 2,
+          "label": "Full match",
+          "probability": 0.05
+        }
+      ],
+      "confidence": 0.355
+    }
+  ],
+  "usage": {
+    "input_tokens": 214,
+    "input_tokens_details": {
+      "cached_tokens": 0,
+      "cache_write_tokens": 0
+    },
+    "output_tokens": 0,
+    "output_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "total_tokens": 214
+  }
+}

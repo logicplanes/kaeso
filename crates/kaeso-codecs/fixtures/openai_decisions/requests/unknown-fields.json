@@ -1,0 +1,32 @@
+{
+  "model": "gpt-6-luna",
+  "input": [
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "input_text",
+          "text": "Delivery was two days late.",
+          "x_note": "from email"
+        }
+      ]
+    }
+  ],
+  "questions": [
+    {
+      "type": "choice",
+      "name": "tone",
+      "instructions": "What is the tone?",
+      "choices": [
+        {
+          "value": "calm",
+          "x_tag": 1
+        },
+        {
+          "value": "upset"
+        }
+      ],
+      "x_weight": 2
+    }
+  ]
+}

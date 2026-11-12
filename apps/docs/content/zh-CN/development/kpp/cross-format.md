@@ -20,6 +20,7 @@ order: 2
 | 目标没有的采样设置 | `Unsupported` | — |
 | 应用格式中没有的停止原因 | — | 映射为该格式中最接近的一个 |
 | 对始终推理的模型关闭思考 | 该模型的最低推理强度等级，并在 `kaeso-adapted` 中说明（见[始终推理的模型](reasoning.md#始终推理的模型)） | — |
+| 决策请求和答案 | 按[跨格式的决策](decisions-across-formats.md)所述映射或拒绝 | 以同样方式映射 |
 
 ## 请求
 
@@ -79,8 +80,8 @@ OpenAI Chat 已弃用的函数调用在 Chat 内部可以往返，但不会转�
 | 键 | 范围和来源 | 理由 | Fixture / 客户端 |
 | --- | --- | --- | --- |
 | `header:anthropic-beta` | request，来自 `anthropic_messages` | Beta 请求头只用于开启服务商的功能。请求实际用到的功能会以请求体字段或块的形式出现，并单独检查。 | Claude Code 在每个请求中都发送 `claude-code-20250219,interleaved-thinking-…` 及其他 beta；`anthropic_messages/requests/claude-code-mid-conversation-system.headers.json`、`anthropic_messages/requests/thinking-interleaved-tools.headers.json` |
-| `header:anthropic-version` | request，来自 `anthropic_messages` | Anthropic 线路格式的 API 版本控制，在其他地方没有意义。等于固定版本的值根本不会被保存（[Anthropic 版本](#anthropic-版本)）。 | Anthropic SDK |
-| `header:openai-beta` | request，来自 `openai_chat`、`openai_responses`、`openai_embeddings` | 同 `anthropic-beta`。 | Codex 发送 `OpenAI-Beta: responses=experimental` |
+| `header:anthropic-version` | request，来自 `anthropic_messages` | Anthropic 线路格式的 API 版本控制，在其他地方没有意义。等于固定版本的值根本不会被保存（[Anthropic 版本](anthropic-messages.md#anthropic-版本)）。 | Anthropic SDK |
+| `header:openai-beta` | request，来自 `openai_chat`、`openai_responses`、`openai_embeddings`、`openai_decisions` | 同 `anthropic-beta`。 | Codex 发送 `OpenAI-Beta: responses=experimental` |
 | `cache_control` | request，来自 `anthropic_messages` | 顶层的自动提示缓存。缓存提示属于提示字段（[缓存提示](#缓存提示)）。 | `anthropic_messages/requests/system-string-multi-turn.json`、`explicit-nulls.json` |
 | `eager_input_streaming` | tool，来自 `anthropic_messages` | 只决定 Claude 是否在写出工具参数的同时流式发送它们（细粒度工具流式传输）；参数本身相同，其他格式照常流式传输。 | Claude Code 会在会话期间连接上的 MCP 服务器的工具上发送它；`anthropic_messages/requests/claude-code-inline-tools.json` |
 | `display`（`thinking.display`） | reasoning，来自 `anthropic_messages` | 只控制是否返回思考文本（`summarized` 或 `omitted`）。发往 OpenAI Responses 时改为 `reasoning.summary: "auto"`，除非其值为 `omitted`（[可读推理与摘要](reasoning.md#可读推理与摘要)）。 | `anthropic_messages/requests/thinking-display-omitted.json`、`thinking-adaptive-effort.json` |
@@ -90,7 +91,8 @@ OpenAI Chat 已弃用的函数调用在 Chat 内部可以往返，但不会转�
 | `prompt_cache_key` | request，来自 `openai_responses` | 把请求路由到某个提示缓存。会传给 Chat Completions，发往其他目标时丢弃（[缓存提示](#缓存提示)）。配置带有 `without_cache_key()` 的 Chat Completions 服务商（例如 Groq）不会收到它，并在 `kaeso-left-out` 中注明（[服务商配置](openai-chat-providers.md#服务商配置)）。 | `openai_responses/requests/sampling-and-ids.json` |
 | `model_id` | 仅助手消息，来自 `openai_chat` | 写出某条重放的助手消息的模型，由 Grok CLI 记在它自己的历史里。属于模型从不读取的簿记信息；记录下来的请求正文会保留它。它是 `cross::CHAT_ASSISTANT_BOOKKEEPING` 中唯一的键，Chat 提供商只有在 `with_message_bookkeeping()` 下才会收到（[Chat 提供商](openai-chat-providers.md)）；出现在其他消息上时，发往其他格式的请求会被拒绝；Chat 提供商按原样收到它。 | Grok CLI 在每条重放的助手消息上都会发送；`openai_chat/requests/grok-cli-model-id.json` |
 | `client_metadata` | request，来自 `openai_responses` | 请求元数据：轮次和线程 ID、W3C 追踪上下文以及 `x-codex-turn-metadata`。它从不到达模型，记录下来的请求正文会保留它。 | Codex 每一轮都会发送；`openai_responses/requests/codex-namespace-tools.json` |
-| `detail`（位于 `input_image` 上；`auto` 已经是形式标记） | image，来自 `openai_responses` | 图像分辨率提示，同 Chat 的 `image_url.detail`。`input_file.detail`（PDF 渲染）**不**在允许列表中。 | `openai_responses/requests/image-base64-file-id.json` |
+| `detail`（位于 `input_image` 上；Responses 把 `auto` 作为形式标记） | image，来自 `openai_responses`、`openai_decisions` | 图像分辨率提示，同 Chat 的 `image_url.detail`。`input_file.detail`（PDF 渲染）**不**在允许列表中。 | `openai_responses/requests/image-base64-file-id.json` |
+| `prompt_cache_key`、`prompt_cache_options`、`safety_identifier` | request，来自 `openai_decisions` | 提示，类型化为 `DecideRequest.cache` 和 `user`（[决策](decisions-across-formats.md)）；这些条目涵盖 KPP 不做类型化的形式。 | `openai_decisions/requests/cache.json` |
 | `phase`（位于助手消息上：`commentary`、`final_answer`） | message，来自 `openai_responses` | 把助手消息标记为前言或最终回答，便于 OpenAI 在重放该轮时区分它们。两种情况下文本相同，其他格式没有这种标记。 | Codex 把 GPT-6 的消息连同它一起发回；切换到其他模型的会话会带上它们；`openai_responses/requests/codex-model-switch.json` |
 
 ### 条件条目
@@ -408,13 +410,3 @@ KPP 没有 `n`：`n` 大于 1 的 Chat 请求在解码时就会被拒绝，与�
 ## 文件
 
 服务商文件 ID（`file-…`）只能在该服务商的文件存储中使用。两种 OpenAI 生成方言共用同一个文件存储，两种 Gemini 方言也是如此，因此 `cross::check_foreign` 接受目标的 `Origin`，即其方言和服务商。跨到另一服务商的文件 ID 为 `Unsupported`。
-
-## Anthropic 版本
-
-Anthropic 编解码器固定使用一个 API 版本 `2023-06-01`，导出为 `kaeso_codecs::anthropic_messages::ANTHROPIC_VERSION`。它是 Anthropic 的[版本说明页面](https://platform.claude.com/docs/en/api/versioning)列出的唯一版本，是官方 SDK 发送的版本，也是每个 Anthropic fixture 所假定的版本。
-
-- **出站。** Anthropic 编解码器编码的每个请求都带有 `anthropic-version: 2023-06-01`，除非应用自己的 Anthropic 请求转发了一个指向更新版本的 `anthropic-version`，即格式正确、排序在固定版本之后的 `YYYY-MM-DD`。格式错误或更旧的值会被忽略。来自其他方言的请求从不携带该请求头，因此总是得到固定版本。
-- **入站。** 等于固定版本的转发 `anthropic-version` 不会存入请求的 extras。编解码器无论如何都会发送它，而保存它会把每个 Anthropic SDK 请求都绑定到其方言。其他任何值都保存为 extra `header:anthropic-version`，并在出站时按上述方式比较。
-- **为什么较新的版本优先。** Anthropic 对一个版本只做增量变更，增加新的可选输入和新的输出值，而请求更新版本的应用依赖于该版本的行为。解码器能容忍未知的字段、块和事件，因此更新的版本会退化为 extras 和未知项，而不会导致失败。
-
-要修改固定版本，需要修改该常量，用 `cargo xtask record` 重新录制 fixture（[录制](fixtures.md#录制真实响应)），并更新本节。

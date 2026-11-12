@@ -1,0 +1,41 @@
+{
+  "model": "gpt-6-luna",
+  "answers": [
+    {
+      "type": "refusal",
+      "name": "how_to"
+    },
+    {
+      "type": "choice",
+      "name": "topic",
+      "choice": "security",
+      "probabilities": [
+        {
+          "value": "security",
+          "probability": 0.86
+        },
+        {
+          "value": "home",
+          "probability": 0.1
+        },
+        {
+          "value": "other",
+          "probability": 0.04
+        }
+      ],
+      "confidence": 0.79
+    }
+  ],
+  "usage": {
+    "input_tokens": 51,
+    "input_tokens_details": {
+      "cached_tokens": 0,
+      "cache_write_tokens": 0
+    },
+    "output_tokens": 0,
+    "output_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "total_tokens": 51
+  }
+}

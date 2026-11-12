@@ -1,0 +1,35 @@
+{
+  "model": "gpt-6-luna",
+  "input": [
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "input_text",
+          "text": "Evaluate the ticket using the order evidence."
+        },
+        {
+          "type": "input_json",
+          "data": {
+            "ticket": {
+              "body": "Please refund the duplicate charge."
+            },
+            "order": {
+              "charges": [
+                49,
+                49
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "questions": [
+    {
+      "type": "predicate",
+      "name": "duplicate_charge",
+      "instructions": "Does the ticket describe a duplicate charge supported by the order?"
+    }
+  ]
+}

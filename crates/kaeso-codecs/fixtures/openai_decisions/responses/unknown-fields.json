@@ -1,0 +1,37 @@
+{
+  "model": "gpt-6-luna",
+  "answers": [
+    {
+      "type": "choice",
+      "name": "tone",
+      "choice": "upset",
+      "probabilities": [
+        {
+          "value": "calm",
+          "probability": 0.3
+        },
+        {
+          "value": "upset",
+          "probability": 0.7
+        }
+      ],
+      "confidence": 0.4,
+      "x_rationale_id": "r_19"
+    }
+  ],
+  "usage": {
+    "input_tokens": 38,
+    "input_tokens_details": {
+      "cached_tokens": 0,
+      "cache_write_tokens": 0
+    },
+    "output_tokens": 0,
+    "output_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "total_tokens": 38
+  },
+  "x_trace": {
+    "region": "eu"
+  }
+}

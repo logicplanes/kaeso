@@ -98,6 +98,7 @@ Both crates are published to crates.io. Their library code may depend only on `s
 | `gemini_interactions` | Gemini Omni's video jobs on the Interactions API of Google AI Studio and Gemini Enterprise Agent Platform ([Gemini Interactions](gemini-interactions.md)) |
 | `dashscope` | QwenCloud's DashScope API: images, speech, transcription and Wan video synthesis ([DashScope](dashscope.md)) |
 | `system_one` | TypeSafe's System One API (`/v1/systemone`) and the providers that speak a form of it ([System One](system-one.md)) |
+| `openai_decisions` | OpenAI's Decisions API (`/v1/decisions`) ([OpenAI Decisions](openai-decisions.md)) |
 | `multipart` | The bounded `multipart/form-data` reader and writer of image, audio and video uploads, and of System One's image parts |
 
 | Shared module | Job |
@@ -208,11 +209,11 @@ Every KPP field is either semantic or a hint:
 | Field | Class | Notes |
 | --- | --- | --- |
 | `model`, `input`, `questions`, `assets` | semantic | An asset is referenced by its key from strings of the input, the instructions or the descriptions ([System One](system-one.md#images)). |
-| `Question.name` | semantic | Kept, or `q0`…`qN-1` for every question where a format can't take the names; the reply maps back by position. |
+| `Question.name` | semantic | Optional and may repeat, as in OpenAI's format. Kept, or `q0`…`qN-1` for every question where a format can't take the names; the reply maps back by position. |
 | `Question.instructions`, `.kind` | semantic | |
 | `Predicate.when_true`, `.when_false`, `ChoiceOption.value`, `.description`, `Level.label`, `.description` | semantic | A format without a place for them writes them as documented on its mapping page, or refuses them. |
-| `user` | hint | |
-| `cache` | hint | |
+| `user` | hint | OpenAI's `safety_identifier`; left out for System One, named in `kaeso-left-out`. |
+| `cache` | hint | OpenAI's `prompt_cache_key` and `prompt_cache_options`; left out for System One, named in `kaeso-left-out` ([decisions](decisions-across-formats.md)). |
 | `extras` | as for `GenerateRequest` | |
 
 ### `EmbedRequest`
@@ -271,6 +272,7 @@ When a change alters cross-dialect output, review the snapshot diff: run `INSTA_
 - [Codec design](codec-design.md): Learn how the types, streams and wire structs keep every translation lossless.
 - [Crossing formats](cross-format.md): Look up what happens to data that moves from one API format to another, and why.
 - [Reasoning across formats](reasoning.md): Look up how reasoning, its settings and its signatures move between the formats.
+- [Decisions across formats](decisions-across-formats.md): Look up how decision requests and answers move between the decision formats.
 - [Anthropic Messages](anthropic-messages.md): Find where every field of the Anthropic Messages format goes in KPP.
 - [Messages providers](anthropic-messages-providers.md): See how the Messages codec adapts to each provider that speaks the format.
 - [OpenAI Chat Completions](openai-chat.md): Find where every field of the Chat Completions format goes in KPP.
@@ -295,5 +297,6 @@ When a change alters cross-dialect output, review the snapshot diff: run `INSTA_
 - [Gemini Interactions](gemini-interactions.md): See how Gemini Omni video jobs map to the Interactions API.
 - [DashScope](dashscope.md): See how images, speech, transcriptions and video jobs map to QwenCloud's DashScope API.
 - [System One](system-one.md): Find where every field of TypeSafe's decision format goes in KPP, and how each provider takes it.
+- [OpenAI Decisions](openai-decisions.md): Find where every field of OpenAI's Decisions API goes in KPP.
 - [Fixtures and recordings](fixtures.md): Add the real payloads the codecs are tested against, and record new ones.
 - [Fixture conventions](fixture-conventions.md): Look up the rules every constructed fixture follows.

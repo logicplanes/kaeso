@@ -20,6 +20,7 @@ An app may speak one API format while the provider speaks another. These are the
 | Sampling settings the target lacks | `Unsupported` | — |
 | Stop reasons the app's format lacks | — | The closest one it has |
 | Thinking off for a model that always reasons | The model's lowest effort level, named in `kaeso-adapted` ([models that always reason](reasoning.md#models-that-always-reason)) | — |
+| Decision requests and answers | Mapped or refused as [decisions across formats](decisions-across-formats.md) describes | Mapped the same way |
 
 ## Requests
 
@@ -79,8 +80,8 @@ Fixture paths in these tables are relative to `crates/kaeso-codecs/fixtures/`.
 | Key | Scope and origin | Reason | Fixture / client |
 | --- | --- | --- | --- |
 | `header:anthropic-beta` | request, from `anthropic_messages` | Beta headers only switch on provider features. A feature a request actually uses appears as a body field or block, which is checked on its own. | Claude Code sends `claude-code-20250219,interleaved-thinking-…` and further betas on every request; `anthropic_messages/requests/claude-code-mid-conversation-system.headers.json`, `anthropic_messages/requests/thinking-interleaved-tools.headers.json` |
-| `header:anthropic-version` | request, from `anthropic_messages` | API versioning of the Anthropic wire format; meaningless elsewhere. A value equal to the pinned version is not stored at all ([the Anthropic version](#the-anthropic-version)). | Anthropic SDKs |
-| `header:openai-beta` | request, from `openai_chat`, `openai_responses`, `openai_embeddings` | As `anthropic-beta`. | Codex sends `OpenAI-Beta: responses=experimental` |
+| `header:anthropic-version` | request, from `anthropic_messages` | API versioning of the Anthropic wire format; meaningless elsewhere. A value equal to the pinned version is not stored at all ([the Anthropic version](anthropic-messages.md#the-anthropic-version)). | Anthropic SDKs |
+| `header:openai-beta` | request, from `openai_chat`, `openai_responses`, `openai_embeddings`, `openai_decisions` | As `anthropic-beta`. | Codex sends `OpenAI-Beta: responses=experimental` |
 | `cache_control` | request, from `anthropic_messages` | Top-level automatic prompt caching. Cache hints are hints ([cache hints](#cache-hints)). | `anthropic_messages/requests/system-string-multi-turn.json`, `explicit-nulls.json` |
 | `eager_input_streaming` | tool, from `anthropic_messages` | Only decides whether Claude streams the tool's arguments as it writes them (fine-grained tool streaming); the arguments are the same, and other formats stream as they do. | Claude Code sends it on the tools of MCP servers that connect during a session; `anthropic_messages/requests/claude-code-inline-tools.json` |
 | `display` (`thinking.display`) | reasoning, from `anthropic_messages` | Only controls whether thinking text is returned (`summarized` or `omitted`). OpenAI Responses gets `reasoning.summary: "auto"` instead unless it is `omitted` ([readable reasoning and summaries](reasoning.md#readable-reasoning-and-summaries)). | `anthropic_messages/requests/thinking-display-omitted.json`, `thinking-adaptive-effort.json` |
@@ -90,7 +91,8 @@ Fixture paths in these tables are relative to `crates/kaeso-codecs/fixtures/`.
 | `prompt_cache_key` | request, from `openai_responses` | Routes requests to a prompt cache. Sent on to Chat Completions and dropped elsewhere ([cache hints](#cache-hints)). A Chat Completions provider whose profile has `without_cache_key()`, such as Groq, doesn't get it; it is named in `kaeso-left-out` ([provider profiles](openai-chat-providers.md#provider-profiles)). | `openai_responses/requests/sampling-and-ids.json` |
 | `model_id` | assistant messages only, from `openai_chat` | The model that wrote a replayed assistant message, which Grok CLI records in its own history. Bookkeeping the model never reads; a logged request body keeps it. It is the one key of `cross::CHAT_ASSISTANT_BOOKKEEPING`, which Chat providers get only with `with_message_bookkeeping()` ([Chat providers](openai-chat-providers.md)); on any other message, a request to another format is refused; Chat providers get it as sent. | Grok CLI sends it on every replayed assistant message; `openai_chat/requests/grok-cli-model-id.json` |
 | `client_metadata` | request, from `openai_responses` | Request metadata: turn and thread ids, W3C trace context and `x-codex-turn-metadata`. It never reaches the model, and a logged request body keeps it. | Codex sends it on every turn; `openai_responses/requests/codex-namespace-tools.json` |
-| `detail` (on `input_image`; `auto` is already a form marker) | image, from `openai_responses` | Image resolution hint, as Chat's `image_url.detail`. `input_file.detail` (PDF rendering) is **not** allowlisted. | `openai_responses/requests/image-base64-file-id.json` |
+| `detail` (on `input_image`; Responses keeps `auto` as a form marker) | image, from `openai_responses`, `openai_decisions` | Image resolution hint, as Chat's `image_url.detail`. `input_file.detail` (PDF rendering) is **not** allowlisted. | `openai_responses/requests/image-base64-file-id.json` |
+| `prompt_cache_key`, `prompt_cache_options`, `safety_identifier` | request, from `openai_decisions` | Hints, typed as `DecideRequest.cache` and `user` ([decisions](decisions-across-formats.md)); the entries cover forms KPP doesn't type. | `openai_decisions/requests/cache.json` |
 | `phase` (on assistant messages: `commentary`, `final_answer`) | message, from `openai_responses` | Marks an assistant message as a preamble or the final answer, so OpenAI can tell them apart when the turn is replayed. The text is the same either way, and other formats have no such mark. | Codex sends GPT-6's messages back with it; a thread that switches to another model carries them; `openai_responses/requests/codex-model-switch.json` |
 
 ### Conditional entries
@@ -408,13 +410,3 @@ Cache hints are hints, but a target that caches only when asked still gets asked
 ## Files
 
 A provider file id (`file-…`) is usable only within that provider's file store. The two OpenAI generation dialects share one store, and so do the two Gemini dialects, so `cross::check_foreign` takes the target's `Origin`: its dialect and provider. File ids crossing to another provider are `Unsupported`.
-
-## The Anthropic version
-
-The Anthropic codec pins one API version, `2023-06-01`, exported as `kaeso_codecs::anthropic_messages::ANTHROPIC_VERSION`. It is the only version Anthropic's [versioning page](https://platform.claude.com/docs/en/api/versioning) lists, the one the official SDKs send, and the one every Anthropic fixture assumes.
-
-- **Egress.** Every request the Anthropic codec encodes carries `anthropic-version: 2023-06-01`, unless the app's own Anthropic request forwarded an `anthropic-version` naming a newer version: a well-formed `YYYY-MM-DD` that sorts after the pinned one. A malformed or older value is ignored. A request from another dialect never carries the header, so it always gets the pinned version.
-- **Ingress.** A forwarded `anthropic-version` equal to the pinned version is not stored in the request's extras. The codec sends it anyway, and keeping it would bind every Anthropic SDK request to its dialect. Any other value is kept as the extra `header:anthropic-version` and compared on egress as above.
-- **Why newer wins.** Anthropic only adds to a version, with new optional inputs and new output values, and an app that asks for a newer version relies on its behaviour. The decoders tolerate unknown fields, blocks and events, so a newer version degrades to extras and unknown items rather than failing.
-
-To change the pin, change the constant, record the fixtures again with `cargo xtask record` ([recording](fixtures.md#recording-live-responses)), and update this section.
