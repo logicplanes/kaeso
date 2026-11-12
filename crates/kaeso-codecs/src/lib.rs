@@ -39,6 +39,7 @@ pub mod minimax_images;
 pub mod minimax_speech;
 pub mod minimax_videos;
 pub mod openai_chat;
+pub mod openai_decisions;
 pub mod openai_embeddings;
 pub mod openai_images;
 pub mod openai_responses;

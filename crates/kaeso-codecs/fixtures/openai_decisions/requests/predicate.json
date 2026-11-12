@@ -1,0 +1,11 @@
+{
+  "model": "gpt-6-luna",
+  "input": "The package arrived with a broken screen.",
+  "questions": [
+    {
+      "type": "predicate",
+      "name": "damaged",
+      "instructions": "Does the customer report a damaged item?"
+    }
+  ]
+}

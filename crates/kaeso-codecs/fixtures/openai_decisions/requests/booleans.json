@@ -1,0 +1,37 @@
+{
+  "model": "gpt-6-luna",
+  "input": "The customer says the blender works, but the box arrived crushed.",
+  "questions": [
+    {
+      "type": "choice",
+      "name": "works",
+      "instructions": "Does the product work as described?",
+      "choices": [
+        {
+          "value": true,
+          "description": "The product works."
+        },
+        {
+          "value": false,
+          "description": "The product is faulty."
+        }
+      ]
+    },
+    {
+      "type": "choice",
+      "name": "packaging",
+      "instructions": "Was the packaging damaged?",
+      "choices": [
+        {
+          "value": "unsure"
+        },
+        {
+          "value": false
+        },
+        {
+          "value": "yes"
+        }
+      ]
+    }
+  ]
+}

@@ -3,6 +3,7 @@ use std::sync::Arc;
 use crate::anthropic_messages::MessagesProfile;
 use crate::gemini::GeminiProfile;
 use crate::openai_chat::ChatProfile;
+use crate::openai_decisions::DecisionsProfile;
 use crate::openai_images::ImagesProfile;
 use crate::openai_responses::ResponsesProfile;
 use crate::openai_speech::SpeechProfile;
@@ -263,6 +264,8 @@ pub struct EgressCtx {
     pub videos_profile: VideosProfile,
     /// How a provider that speaks a form of TypeSafe's System One API takes decision requests.
     pub system_one_profile: SystemOneProfile,
+    /// How a provider that speaks OpenAI's Decisions API takes decision requests.
+    pub decisions_profile: DecisionsProfile,
     /// The questions a decision request was sent with, in question order, under the keys the
     /// encoder chose, so that keyed answers are read back by position. The encoder sets it.
     pub(crate) decision_questions: Vec<crate::decisions::SentQuestion>,
@@ -329,6 +332,7 @@ impl EgressCtx {
             transcriptions_profile: TranscriptionsProfile::OPENAI,
             videos_profile: VideosProfile::OPENAI,
             system_one_profile: SystemOneProfile::TYPESAFE,
+            decisions_profile: DecisionsProfile::OPENAI,
             decision_questions: Vec::new(),
             left_out: Vec::new(),
             adapted: Vec::new(),
@@ -423,6 +427,13 @@ impl EgressCtx {
     #[must_use]
     pub fn with_system_one_profile(mut self, profile: SystemOneProfile) -> Self {
         self.system_one_profile = profile;
+        self
+    }
+
+    /// Sends decision requests in the OpenAI Decisions form `profile` describes.
+    #[must_use]
+    pub fn with_decisions_profile(mut self, profile: DecisionsProfile) -> Self {
+        self.decisions_profile = profile;
         self
     }
 
@@ -609,6 +620,7 @@ pub const FORWARDED_HEADERS: &[(DialectId, &str)] = &[
     (DialectId::OpenAiSpeech, "openai-beta"),
     (DialectId::OpenAiTranscriptions, "openai-beta"),
     (DialectId::OpenAiVideos, "openai-beta"),
+    (DialectId::OpenAiDecisions, "openai-beta"),
     (DialectId::SystemOne, "typesafe-danger-zone-images"),
     (DialectId::SystemOne, "typesafe-danger-zone-long-context"),
 ];

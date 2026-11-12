@@ -1,0 +1,29 @@
+{
+  "model": "gpt-6-luna",
+  "input": "I was charged twice for my order.",
+  "questions": [
+    {
+      "type": "choice",
+      "name": "department",
+      "instructions": "Which department should handle this complaint?",
+      "choices": [
+        {
+          "value": "billing",
+          "description": "Payments, invoices, and refunds."
+        },
+        {
+          "value": "technical",
+          "description": "Problems using the product."
+        },
+        {
+          "value": "shipping",
+          "description": "Delivery and tracking."
+        },
+        {
+          "value": "other",
+          "description": "Requests outside these categories."
+        }
+      ]
+    }
+  ]
+}

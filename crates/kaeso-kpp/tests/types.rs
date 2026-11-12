@@ -262,6 +262,20 @@ mod decisions {
     }
 
     #[test]
+    fn openai_decisions_is_a_dialect() {
+        assert_eq!(DialectId::OpenAiDecisions.as_str(), "openai_decisions");
+        assert_eq!(
+            DialectId::OpenAiDecisions.display_name(),
+            "OpenAI Decisions"
+        );
+        assert_eq!(
+            "openai_decisions".parse::<DialectId>().unwrap(),
+            DialectId::OpenAiDecisions
+        );
+        assert!(DialectId::ALL.contains(&DialectId::OpenAiDecisions));
+    }
+
+    #[test]
     fn a_decision_request_is_its_own_kind_and_never_streams() {
         let req = Request::Decide(
             DecideRequest::new("jev-latest", DecisionInput::Text("Hi".into()))
@@ -284,10 +298,11 @@ mod decisions {
             Some("model".into())
         );
         assert_eq!(param(base()), Some("questions".into()));
-        assert_eq!(
-            param(base().with_question(noul("a")).with_question(noul("a"))),
-            Some("questions[1]".into())
-        );
+        base()
+            .with_question(noul("a"))
+            .with_question(noul("a"))
+            .validate()
+            .unwrap();
         assert_eq!(
             param(base().with_question(Question::new(None, choice(&[])))),
             Some("questions[0]".into())

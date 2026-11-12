@@ -1,0 +1,46 @@
+{
+  "model": "gpt-6-luna",
+  "input": [
+    {
+      "role": "developer",
+      "content": [
+        {
+          "type": "input_text",
+          "text": "Refund policy: refunds within 30 days of delivery, damaged items any time.",
+          "prompt_cache_breakpoint": {
+            "mode": "explicit"
+          }
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "input_image",
+          "image_url": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAEElEQVR42mM4oaEBRAwQCgAhLgRh9uHCTQAAAABJRU5ErkJggg==",
+          "prompt_cache_breakpoint": {
+            "mode": "explicit"
+          }
+        },
+        {
+          "type": "input_text",
+          "text": "Ticket: the mug arrived cracked after 45 days."
+        }
+      ]
+    }
+  ],
+  "questions": [
+    {
+      "type": "predicate",
+      "name": "refund_allowed",
+      "instructions": "Does the policy allow a refund?"
+    }
+  ],
+  "prompt_cache_key": "refund-policy-v3",
+  "prompt_cache_options": {
+    "mode": "explicit",
+    "ttl": "30m"
+  },
+  "safety_identifier": "user-7f3a"
+}

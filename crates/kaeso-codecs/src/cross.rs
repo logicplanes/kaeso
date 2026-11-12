@@ -23,6 +23,7 @@ pub const EXTRAS_ALLOWLIST: &[(DialectId, Scope, &str)] = &[
     (DialectId::OpenAiChat, "request", "header:openai-beta"),
     (DialectId::OpenAiResponses, "request", "header:openai-beta"),
     (DialectId::OpenAiEmbeddings, "request", "header:openai-beta"),
+    (DialectId::OpenAiDecisions, "request", "header:openai-beta"),
     (DialectId::AnthropicMessages, "request", "cache_control"),
     (
         DialectId::AnthropicMessages,
@@ -37,6 +38,14 @@ pub const EXTRAS_ALLOWLIST: &[(DialectId, Scope, &str)] = &[
     (DialectId::OpenAiResponses, "request", "client_metadata"),
     (DialectId::OpenAiResponses, "image", "detail"),
     (DialectId::OpenAiResponses, "message", "phase"),
+    (DialectId::OpenAiDecisions, "request", "prompt_cache_key"),
+    (
+        DialectId::OpenAiDecisions,
+        "request",
+        "prompt_cache_options",
+    ),
+    (DialectId::OpenAiDecisions, "request", "safety_identifier"),
+    (DialectId::OpenAiDecisions, "image", "detail"),
     (
         DialectId::SystemOne,
         "request",

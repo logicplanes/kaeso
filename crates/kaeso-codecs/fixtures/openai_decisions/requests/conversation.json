@@ -1,0 +1,103 @@
+{
+  "model": "gpt-6-luna",
+  "input": [
+    {
+      "role": "developer",
+      "content": "You review support conversations."
+    },
+    {
+      "role": "system",
+      "content": [
+        {
+          "type": "input_text",
+          "text": "Orders ship within two days."
+        }
+      ]
+    },
+    {
+      "type": "message",
+      "role": "user",
+      "content": "Where is order 4411?"
+    },
+    {
+      "type": "function_call",
+      "call_id": "call_lookup_1",
+      "name": "lookup_order",
+      "arguments": "{\"order_id\":\"4411\"}",
+      "id": "fc_01",
+      "status": "completed"
+    },
+    {
+      "type": "function_call_output",
+      "call_id": "call_lookup_1",
+      "output": [
+        {
+          "type": "input_text",
+          "text": "Status: delivered to a locker."
+        },
+        {
+          "type": "input_image",
+          "image_url": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAEElEQVR42mM4oaEBRAwQCgAhLgRh9uHCTQAAAABJRU5ErkJggg=="
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "phase": "final_answer",
+      "content": [
+        {
+          "type": "output_text",
+          "text": "Your order is in locker 12."
+        },
+        {
+          "type": "refusal",
+          "refusal": "I can't share the locker code here."
+        }
+      ]
+    },
+    {
+      "type": "custom_tool_call",
+      "call_id": "call_note_1",
+      "name": "add_note",
+      "input": "Customer asked for the locker code.",
+      "namespace": "crm"
+    },
+    {
+      "type": "custom_tool_call_output",
+      "call_id": "call_note_1",
+      "output": "Note saved."
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "input_text",
+          "text": "Fine, thanks."
+        }
+      ]
+    }
+  ],
+  "questions": [
+    {
+      "type": "predicate",
+      "name": "resolved",
+      "instructions": "Is the customer's issue resolved?"
+    },
+    {
+      "type": "choice",
+      "name": "next_step",
+      "instructions": "What should the agent do next?",
+      "choices": [
+        {
+          "value": "close"
+        },
+        {
+          "value": "follow_up"
+        },
+        {
+          "value": "escalate"
+        }
+      ]
+    }
+  ]
+}
