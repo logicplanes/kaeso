@@ -350,7 +350,7 @@ describe("provider marks", () => {
     expect([...used].sort()).toEqual(Object.keys(providerMark).sort());
     expect(providerMark.openrouter).toEqual({ light: "#03080a", dark: "#fcfcfe" });
     expect(providerMark.groq).toEqual({ light: "#f43e01", dark: "#f43e01" });
-    expect(providerMark["alibaba-violet"]).toEqual({ light: "#4f21ff", dark: "#543aff" });
+    expect(providerMark["alibaba-violet"]).toEqual({ light: "#4f21ff", dark: "#6e72ff" });
   });
 
   it.each(Object.entries(PROVIDER_MARKS))("keeps %s's mark on the 24px grid with at most three decimals", (_, mark) => {
